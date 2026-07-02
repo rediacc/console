@@ -75,27 +75,26 @@ export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
 export AWS_DEFAULT_REGION="auto"
 
 log_step "scrub plan for ${VERSION}"
-for product in cli desktop; do
-    local_prefix="${product}/${VERSION}/"
-    echo "  s3://${RSV_BUCKET}/${local_prefix}"
-    if rsv_sentinel_exists "$product" "$VERSION"; then
-        echo "    sentinel: PRESENT (will be deleted)"
-    else
-        echo "    sentinel: absent"
-    fi
-    # `aws s3 ls --recursive` returns exit 1 on a non-existent / empty
-    # prefix; with `set -eo pipefail` that aborts the script right here
-    # — silently — and the operator never sees the desktop plan or the
-    # delete prompt. Use list-objects-v2 instead: it returns 0 even when
-    # the prefix has no contents (Contents is null/missing).
-    count="$(aws s3api list-objects-v2 \
-        --bucket "${RSV_BUCKET}" \
-        --prefix "${local_prefix}" \
-        --endpoint-url "$R2_ENDPOINT" \
-        --query 'length(Contents || `[]`)' \
-        --output text 2>/dev/null || echo 0)"
-    echo "    objects: ${count}"
-done
+product="cli"
+local_prefix="${product}/${VERSION}/"
+echo "  s3://${RSV_BUCKET}/${local_prefix}"
+if rsv_sentinel_exists "$product" "$VERSION"; then
+    echo "    sentinel: PRESENT (will be deleted)"
+else
+    echo "    sentinel: absent"
+fi
+# `aws s3 ls --recursive` returns exit 1 on a non-existent / empty
+# prefix; with `set -eo pipefail` that aborts the script right here
+# — silently — and the operator never sees the plan or the delete
+# prompt. Use list-objects-v2 instead: it returns 0 even when the
+# prefix has no contents (Contents is null/missing).
+count="$(aws s3api list-objects-v2 \
+    --bucket "${RSV_BUCKET}" \
+    --prefix "${local_prefix}" \
+    --endpoint-url "$R2_ENDPOINT" \
+    --query 'length(Contents || `[]`)' \
+    --output text 2>/dev/null || echo 0)"
+echo "    objects: ${count}"
 
 # Safety cross-check: if a git tag exists for this version, refuse to scrub
 # without explicit acknowledgment. A scrub that removes bytes behind a live
@@ -126,11 +125,9 @@ if [[ "$SKIP_CONFIRM" != "true" ]]; then
     }
 fi
 
-for product in cli desktop; do
-    local_prefix="${product}/${VERSION}/"
-    log_step "deleting s3://${RSV_BUCKET}/${local_prefix}"
-    aws s3 rm "s3://${RSV_BUCKET}/${local_prefix}" \
-        --endpoint-url "$R2_ENDPOINT" \
-        --recursive
-done
+local_prefix="cli/${VERSION}/"
+log_step "deleting s3://${RSV_BUCKET}/${local_prefix}"
+aws s3 rm "s3://${RSV_BUCKET}/${local_prefix}" \
+    --endpoint-url "$R2_ENDPOINT" \
+    --recursive
 log_info "scrubbed ${VERSION}"

@@ -29,8 +29,6 @@ fi
 # =============================================================================
 CONTAINERS=(
     rediacc-web
-    rediacc-api
-    rediacc-sql
 )
 
 for container in "${CONTAINERS[@]}"; do
@@ -40,14 +38,5 @@ for container in "${CONTAINERS[@]}"; do
         docker rm "$container" 2>/dev/null || true
     fi
 done
-
-# =============================================================================
-# CLEANUP DATA
-# =============================================================================
-MSSQL_DIR="$ELITE_DIR/mssql"
-if [[ -d "$MSSQL_DIR" ]]; then
-    echo "  Cleaning up SQL Server data..."
-    sudo rm -rf "$MSSQL_DIR" 2>/dev/null || rm -rf "$MSSQL_DIR" 2>/dev/null || true
-fi
 
 echo "All Elite services stopped"

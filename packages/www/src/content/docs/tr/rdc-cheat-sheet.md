@@ -4,7 +4,7 @@ description: "rdc komutları için hızlı referans: yapılandırmalar, depolar,
 category: Guides
 order: 3
 language: tr
-sourceHash: "bc52628ba870dfbb"
+sourceHash: "8cde2c78200d226a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -102,7 +102,6 @@ Yalnızca dağıtım sırasında yazılabilen kimlik bilgileri. `get` komutu yal
 | `rdc config machine setup --name <machine>` | İlk makine hazırlığını çalıştır |
 | `rdc machine prune --name <machine>` | Makineden kullanılmayan kaynakları kaldır |
 | `rdc machine deprovision --name <machine>` | Makineyi tamamen kaldır |
-| `rdc machine vault-status --name <machine>` | LUKS vault durumunu göster |
 
 ## Terminal ve Senkronizasyon
 

@@ -4,7 +4,7 @@ description: "A Rediacc funciona na sua infraestrutura. Os seus dados estão sob
 category: "Legal"
 order: 0
 language: pt
-sourceHash: "1e36a25c724f4185"
+sourceHash: "e6044a3b067b54d5"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -32,7 +32,7 @@ Aqui está o que as conecta: cada referencial de conformidade nesta secção map
 - **Encriptação em repouso**: cada repositório é encriptado com LUKS2 AES-256. As credenciais são armazenadas apenas na configuração local do operador, nunca no servidor.
 - **Isolamento de rede**: cada repositório dispõe do seu próprio daemon Docker, sub-rede IP de loopback (/26) e regras iptables. Os contentores de repositórios diferentes não conseguem comunicar entre si.
 - **Clonagem copy-on-write**: `rdc repo fork` utiliza reflinks do sistema de ficheiros (`cp --reflink=always`). Os dados são duplicados na mesma máquina sem qualquer transferência de rede.
-- **Registo de auditoria**: mais de 70 tipos de eventos cobrindo autenticação (início de sessão, 2FA, alterações de palavra-passe, revogação de sessão), ciclo de vida de tokens de API, operações no arquivo de configuração, atividade de subscrição/licenciamento e operações CLI em máquinas (ciclo de vida de repositórios, backup, sincronização, sessões de terminal). Acessível via painel de administração, página de atividade do portal (com filtragem por organização) e CLI `rdc audit`. As operações em máquinas são também registadas nos registos do sistema para defesa em profundidade.
+- **Registo de auditoria**: mais de 70 tipos de eventos cobrindo autenticação (início de sessão, 2FA, alterações de palavra-passe, revogação de sessão), ciclo de vida de tokens de API, operações no arquivo de configuração, atividade de subscrição/licenciamento e operações CLI em máquinas (ciclo de vida de repositórios, backup, sincronização, sessões de terminal). Acessível via painel de administração e página de atividade do portal (com filtragem por organização e exportação JSON). As operações em máquinas são também registadas nos registos do sistema para defesa em profundidade.
 - **Backup encriptado**: `rdc repo push/pull` transfere dados via SSH. O destino do backup recebe volumes encriptados com LUKS.
 - **Arquivo de configuração de conhecimento zero**: sincronização de configuração encriptada opcional entre dispositivos. As configurações são encriptadas do lado do cliente com AES-256-GCM antes do carregamento. O servidor armazena apenas blobs opacos. O servidor não consegue ler chaves SSH, credenciais, endereços IP nem quaisquer dados de configuração em texto simples. A derivação de chaves utiliza a extensão PRF de passkey com HKDF e separação de domínio. O acesso dos membros é gerido via troca de chaves X25519 e a revogação é imediata.
 

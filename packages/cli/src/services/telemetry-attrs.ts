@@ -1,4 +1,4 @@
-import type { UserContext } from '@rediacc/shared/api';
+import type { UserContext } from '@rediacc/shared/telemetry';
 import { TELEMETRY_ATTRIBUTES } from '@rediacc/shared/telemetry';
 
 export function buildUserAttributes(userContext: Partial<UserContext>): Record<string, string> {

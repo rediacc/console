@@ -12,7 +12,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import { SFTPClient } from '../../shared-desktop/sftp/index.js';
 import { t } from '../../i18n/index.js';
 import { configService } from '../config-resources.js';
 import { pushInfraConfig, removeMachineDnsRecords } from '../infra-provision.js';

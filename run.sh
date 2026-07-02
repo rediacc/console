@@ -3,9 +3,8 @@
 # Aligned with CI workflow from .github/workflows/ci.yml
 #
 # ⚠️  IMPORTANT: When updating this file:
-# ⚠️  1. Check if CI scripts need updates (.ci/config/constants.sh, .ci/lib/elite-backend.sh)
-# ⚠️  2. Update documentation (docs/BACKEND.md)
-# ⚠️  3. Test all affected commands
+# ⚠️  1. Check if CI scripts need updates (.ci/config/constants.sh)
+# ⚠️  2. Test all affected commands
 
 set -euo pipefail
 
@@ -15,7 +14,6 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Source configuration and utilities
 source "$ROOT_DIR/.ci/config/constants.sh"
 source "$ROOT_DIR/.ci/lib/local-common.sh"
-source "$ROOT_DIR/.ci/lib/elite-backend.sh"
 source "$ROOT_DIR/.ci/lib/service.sh"
 
 # Backward compatibility: Load parent .env if exists
@@ -267,7 +265,7 @@ _bridge_rsync() {
 }
 
 # Build the linux-x64 dev rdc SEA (for the bridge), cached by source hash so
-# reruns skip the rebuild when packages/cli, packages/shared(-desktop), or renet
+# reruns skip the rebuild when packages/cli, packages/shared, or renet
 # are unchanged. Output: dist/cli/rdc-linux-x64. Mirrors `rdc.sh --override-local`
 # but installs nothing on the host.
 _build_cli_sea_cached() {
@@ -277,7 +275,7 @@ _build_cli_sea_cached() {
     cur="$(
         {
             find "$ROOT_DIR/packages/cli/src" "$ROOT_DIR/packages/shared/src" \
-                "$ROOT_DIR/packages/shared-desktop/src" -type f \
+                -type f \
                 \( -name '*.ts' -o -name '*.json' \) -exec sha256sum {} + 2>/dev/null | sort
             git -C "$ROOT_DIR/private/renet" rev-parse HEAD 2>/dev/null || true
         } | sha256sum | awk '{print $1}'
@@ -950,21 +948,7 @@ www_all() {
 dev() {
     check_node_version
 
-    # Check if backend is running
-    if ! backend_health &>/dev/null; then
-        log_warn "Backend is not running"
-        log_info ""
-        log_info "Start backend with: ./run.sh backend start"
-        log_info ""
-
-        if prompt_continue "Start backend now"; then
-            backend_start
-        else
-            exit 1
-        fi
-    fi
-
-    log_step "Starting console development server"
+    log_step "Starting www development server"
 
     # Install dependencies if needed
     if [[ ! -d "$ROOT_DIR/node_modules" ]] || [[ "$ROOT_DIR/package-lock.json" -nt "$ROOT_DIR/node_modules" ]]; then
@@ -972,116 +956,8 @@ dev() {
         npm install
     fi
 
-    # Set environment for Vite
-    export VITE_API_URL="$API_URL_LOCAL"
-    export REDIACC_BUILD_TYPE="$BUILD_TYPE_DEBUG"
-
-    # Start dev server
-    PORT="$PORT_CONSOLE_DEV" npm run dev
-}
-
-# Sandbox mode (no backend required) - preserved from original
-sandbox() {
-    check_node_version
-
-    local USE_DOCKER=false
-    local DOCKER_PORT=8080
-    local OPEN_BROWSER=true
-
-    # Parse arguments
-    for arg in "$@"; do
-        case $arg in
-            --docker)
-                USE_DOCKER=true
-                ;;
-            --port=*)
-                DOCKER_PORT="${arg#*=}"
-                ;;
-            --no-browser)
-                OPEN_BROWSER=false
-                ;;
-            --help)
-                echo "Usage: ./run.sh sandbox [OPTIONS]"
-                echo ""
-                echo "Options:"
-                echo "  --docker        Run in Docker container (recommended for quick start)"
-                echo "  --port=PORT     Docker port (default: 8080)"
-                echo "  --no-browser    Don't open browser automatically"
-                echo ""
-                echo "Examples:"
-                echo "  ./run.sh sandbox              # Run locally with npm"
-                echo "  ./run.sh sandbox --docker     # Run in Docker (recommended)"
-                echo ""
-                return 0
-                ;;
-        esac
-    done
-
-    if [[ "$USE_DOCKER" == "true" ]]; then
-        # Docker mode
-        check_docker
-
-        log_step "Building and running containerized console"
-
-        # Build the Docker image
-        log_info "Building Docker image"
-        docker build -t rediacc-console:sandbox \
-            --build-arg REDIACC_BUILD_TYPE=DEBUG . || {
-            log_error "Docker build failed"
-            return 1
-        }
-
-        # Stop any existing container
-        docker stop rediacc-console-sandbox 2>/dev/null || true
-        docker rm rediacc-console-sandbox 2>/dev/null || true
-
-        # Run the container
-        log_info "Starting container on port ${DOCKER_PORT}"
-        docker run -d \
-            --name rediacc-console-sandbox \
-            -p ${DOCKER_PORT}:80 \
-            -e INSTANCE_NAME=sandbox \
-            -e BUILD_TYPE=DEBUG \
-            -e ENABLE_DEBUG=true \
-            rediacc-console:sandbox
-
-        # Wait for container to be ready
-        local ready=false
-        for i in {1..30}; do
-            if curl -s http://localhost:${DOCKER_PORT}/health &>/dev/null; then
-                ready=true
-                break
-            fi
-            sleep 1
-        done
-
-        if [[ "$ready" == "true" ]]; then
-            log_info "Console is running at: http://localhost:${DOCKER_PORT}"
-        else
-            log_warn "Console may not be fully ready yet"
-        fi
-
-        # Show logs
-        docker logs -f rediacc-console-sandbox
-    else
-        # Local development mode
-        log_step "Starting console in sandbox mode"
-        log_info "API URL: $API_URL_SANDBOX"
-
-        # Install dependencies if needed
-        if [[ ! -d "$ROOT_DIR/node_modules" ]] || [[ "$ROOT_DIR/package-lock.json" -nt "$ROOT_DIR/node_modules" ]]; then
-            log_info "Installing dependencies"
-            npm install
-        fi
-
-        # Set environment for Vite
-        export VITE_API_URL="$API_URL_SANDBOX"
-        export REDIACC_BUILD_TYPE="$BUILD_TYPE_DEBUG"
-        export SANDBOX_MODE=true
-
-        # Start dev server
-        PORT="${PORT_CONSOLE_DEV}" npm run dev
-    fi
+    # Start dev server (marketing site)
+    npm run dev -w @rediacc/www
 }
 
 # =============================================================================
@@ -1095,42 +971,6 @@ test_unit() {
     "$ROOT_DIR/.ci/scripts/test/run-unit.sh" "$@"
 }
 
-test_cli() {
-    check_node_version
-    ensure_packages_built
-    log_step "Running CLI tests"
-    "$ROOT_DIR/.ci/scripts/test/run-cli.sh" "$@"
-}
-
-test_e2e() {
-    check_node_version
-
-    # Check if --backend is specified
-    local has_backend=false
-    for arg in "$@"; do
-        [[ "$arg" == "--backend" || "$arg" == --backend=* ]] && has_backend=true
-    done
-
-    # Only require local backend if --backend not specified
-    if [[ "$has_backend" == "false" ]]; then
-        if ! backend_health &>/dev/null; then
-            log_error "Backend is not running or unhealthy"
-            log_info "E2E tests require a running backend"
-            log_info "Start backend with: ./run.sh backend start"
-            log_info "Or use external backend: ./run.sh test e2e --backend <url>"
-            exit 1
-        fi
-        # Docker backend healthy on port 80 — inject --backend so Vite
-        # proxies /api to http://localhost instead of default :7322
-        log_info "Docker backend detected, using http://localhost"
-        set -- "--backend" "http://localhost" "$@"
-    fi
-
-    log_step "Running E2E tests"
-    "$ROOT_DIR/.ci/scripts/build/build-web.sh"
-    "$ROOT_DIR/.ci/scripts/test/run-e2e.sh" "$@"
-}
-
 test_bridge() {
     check_node_version
     ensure_packages_built
@@ -1141,30 +981,16 @@ test_bridge() {
 
 test_all() {
     test_unit
-    test_cli
-    test_e2e --projects chromium
 }
 
 # =============================================================================
 # BUILD COMMANDS
 # =============================================================================
 
-build_web() {
-    check_node_version
-    log_step "Building web application"
-    "$ROOT_DIR/.ci/scripts/build/build-web.sh"
-}
-
 build_cli() {
     check_node_version
     log_step "Building CLI application"
     "$ROOT_DIR/.ci/scripts/build/build-cli.sh"
-}
-
-build_desktop() {
-    check_node_version
-    log_step "Building desktop application"
-    "$ROOT_DIR/.ci/scripts/build/build-desktop.sh"
 }
 
 build_packages() {
@@ -1191,7 +1017,6 @@ build_all() {
     check_node_version
     log_step "Building all components"
     build_packages
-    build_web
     build_cli
 }
 
@@ -1246,9 +1071,6 @@ pr_publish() {
 
     log_step "Building www (marketing site)..."
     PUBLIC_SITE_URL="$preview_url" PUBLIC_REPO_CHANNEL="pr-${pr_number}" npm run build:www
-
-    log_step "Building web (console)..."
-    VITE_BASE_PATH=/console/ npm run build:web
 
     log_step "Building json (template catalog)..."
     npm run build:json
@@ -1490,9 +1312,6 @@ setup() {
     log_info "Installing npm dependencies"
     npm install
 
-    # Start backend
-    backend_start
-
     log_info ""
     log_info "Setup complete!"
     log_info ""
@@ -1518,16 +1337,6 @@ clean() {
 show_help() {
     cat <<EOF
 Usage: ./run.sh [COMMAND] [OPTIONS]
-
-BACKEND COMMANDS:
-  backend start              Start backend services
-  backend stop               Stop backend services
-  backend status             Show backend status
-  backend logs [service]     Show service logs (api, sql, web, all)
-  backend health             Check backend health
-  backend pull               Pull latest ghcr images
-  backend reset              Reset backend (deletes data)
-  backend auto               Auto-start backend (idempotent, for devcontainer)
 
 SERVICE COMMANDS:
   service start [port] [--no-build]  Build and run rediacc/web (default port: 8080)
@@ -1558,9 +1367,8 @@ PROVISION COMMANDS:
   provision status           Show VM status
 
 DEVELOPMENT COMMANDS:
-  dev                 Start development server (auto-starts backend if needed)
+  dev                 Start the www (marketing site) development server
   (rdc)               Use ./rdc.sh instead (standalone CLI runner)
-  sandbox             Start in sandbox mode (no backend required)
   worktree <cmd>      Manage git worktrees (create, switch, prune, list)
   setup               Interactive setup wizard
 
@@ -1590,22 +1398,12 @@ WWW COMMANDS:
 
 TEST COMMANDS:
   test unit           Run unit tests
-  test cli [opts]     Run CLI tests
-  test e2e [opts]     Run E2E tests (requires backend)
   test bridge [opts]  Run bridge tests (requires VMs)
   test all            Run all tests
 
-  Test Options (for e2e and cli):
-    --backend <url|preset>  Use external backend instead of local
-                            Presets: local, sandbox
-                            Example: --backend https://xxx.trycloudflare.com
-    --skip-health-check     Skip backend health validation
-
 BUILD COMMANDS:
-  build web           Build web application
   build cli           Build CLI application
   build renet         Build renet binary (Go, with embedded assets)
-  build desktop       Build desktop application
   build packages      Build shared packages
   build all           Build everything
 
@@ -1642,13 +1440,13 @@ MAINTENANCE:
 
 QUICK START:
   ./run.sh setup          # One-time setup
-  ./run.sh dev            # Start web development
+  ./run.sh dev            # Start www development
   ./rdc.sh auth login     # Run CLI command in dev mode
 
 REQUIREMENTS:
   Node.js v${NODE_VERSION_REQUIRED}.x (https://nodejs.org/)
   Go (for CLI/renet development)
-  Docker (for backend, and first-time renet asset extraction)
+  Docker (for first-time renet asset extraction)
 
 ENVIRONMENT:
   GITHUB_TOKEN        GitHub personal access token (for ghcr.io auth)
@@ -1661,33 +1459,6 @@ EOF
 
 main() {
     case "${1:-}" in
-        # Backend commands
-        backend)
-            shift
-            case "${1:-}" in
-                start)
-                    shift
-                    backend_start "$@"
-                    ;;
-                stop) backend_stop ;;
-                status) backend_status ;;
-                logs)
-                    shift
-                    backend_logs "$@"
-                    ;;
-                health) backend_health ;;
-                pull) backend_pull_images ;;
-                reset) backend_reset ;;
-                auto) backend_auto ;;
-                *)
-                    log_error "Unknown backend command: ${1:-}"
-                    echo ""
-                    echo "Usage: ./run.sh backend [start|stop|status|logs|health|pull|reset|auto]"
-                    exit 1
-                    ;;
-            esac
-            ;;
-
         # Service mode (rediacc/web + RustFS)
         service)
             shift
@@ -1769,10 +1540,6 @@ main() {
 
         # Development
         dev) dev ;;
-        sandbox)
-            shift
-            sandbox "$@"
-            ;;
         worktree)
             shift
             "$ROOT_DIR/scripts/dev/worktree.sh" "$@"
@@ -1857,14 +1624,6 @@ main() {
                     shift
                     test_unit "$@"
                     ;;
-                cli)
-                    shift
-                    test_cli "$@"
-                    ;;
-                e2e)
-                    shift
-                    test_e2e "$@"
-                    ;;
                 bridge)
                     shift
                     test_bridge "$@"
@@ -1873,7 +1632,7 @@ main() {
                 *)
                     log_error "Unknown test command: ${1:-}"
                     echo ""
-                    echo "Usage: ./run.sh test [unit|cli|e2e|bridge|all]"
+                    echo "Usage: ./run.sh test [unit|bridge|all]"
                     exit 1
                     ;;
             esac
@@ -1883,16 +1642,14 @@ main() {
         build)
             shift
             case "${1:-}" in
-                web) build_web ;;
                 cli) build_cli ;;
                 renet) build_renet ;;
-                desktop) build_desktop ;;
                 packages) build_packages ;;
                 all | "") build_all ;;
                 *)
                     log_error "Unknown build command: ${1:-}"
                     echo ""
-                    echo "Usage: ./run.sh build [web|cli|renet|desktop|packages|all]"
+                    echo "Usage: ./run.sh build [cli|renet|packages|all]"
                     exit 1
                     ;;
             esac

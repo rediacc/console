@@ -11,7 +11,7 @@ import * as path from 'node:path';
 import { DEFAULTS, NETWORK_DEFAULTS, PROCESS_DEFAULTS } from '@rediacc/shared/config';
 import type { BridgeFunctionName } from '@rediacc/shared/queue-vault/data/functions.generated';
 import { FUNCTION_REQUIREMENTS } from '@rediacc/shared/queue-vault/data/functions.generated';
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import { SFTPClient } from '../shared-desktop/sftp/index.js';
 import type { MachineConfig } from '../types/index.js';
 import { extractRenetToLocal, isSEA } from './embedded-assets.js';
 import { outputService } from './output.js';

@@ -4,7 +4,7 @@ description: "Rediaccの暗号化と分離アーキテクチャがHIPAAの医療
 category: "Legal"
 order: 3
 language: ja
-sourceHash: "f5fbdaa4a00491ea"
+sourceHash: "a0dd73c1923519b0"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -21,7 +21,7 @@ HIPAAは管理的、技術的、物理的保護措置を要求します。以下
 | 要件 | HIPAA参照 | Rediaccの機能 |
 |------|----------|--------------|
 | アクセス制御 | [45 CFR 164.312(a)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | SSH鍵ベースの認証。IPバインドとスコープ制限付きAPIトークン。リポジトリごとのDocker daemon分離がクロスリポジトリアクセスを防止。 |
-| 監査制御 | [45 CFR 164.312(b)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | 認証、APIトークン、設定操作、ライセンスをカバーする40以上のアカウントレベルイベントタイプ。ユーザーおよびチーム単位の追跡。管理ダッシュボードまたは`rdc audit` CLIからのエクスポート。 |
+| 監査制御 | [45 CFR 164.312(b)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | 認証、APIトークン、設定操作、ライセンスをカバーする40以上のアカウントレベルイベントタイプ。ユーザーおよびチーム単位の追跡。管理ダッシュボードまたはポータルアクティビティページからのエクスポート(JSONエクスポート対応)。 |
 | 完全性制御 | [45 CFR 164.312(c)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | CoWスナップショットが変更前の元データを保持。`rdc repo validate`がリポジトリの完全性とバックアップの健全性（LUKSコンテナ、ファイルシステムの一貫性、設定）を検証。 |
 | 保存時暗号化 | [45 CFR 164.312(a)(2)(iv)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | すべてのリポジトリボリュームでLUKS2 AES-256暗号化。認証情報はオペレーターのローカル設定にのみ保存、サーバーには保存されません。設定ストアは分割キー導出によるゼロ知識AES-256-GCM暗号化を使用。サーバーでさえ保存された設定を復号できません。 |
 | 伝送セキュリティ | [45 CFR 164.312(e)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | すべてのリモート操作はSSHを使用。バックアップ転送はエンドツーエンドで暗号化。暗号化されていないデータ転送はありません。 |

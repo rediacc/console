@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: tr
-sourceHash: "6763cd925791d474"
+sourceHash: "947fcefa63eac600"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -39,27 +39,12 @@ Yerel olarak yazdığınız her komut, uzak makinede renet'i çalıştıran bir 
 
 Tüm CLI durumu `~/.config/rediacc/` altındaki düz JSON yapılandırma dosyalarında saklanır.
 
-### Yerel Adaptör (Varsayılan)
-
-Kendi sunucunuzda barındırma için varsayılandır. Tüm durum bilgisi iş istasyonunuzdaki bir yapılandırma dosyasında saklanır (örneğin `~/.config/rediacc/rediacc.json`).
+Tüm durum bilgisi iş istasyonunuzdaki bir yapılandırma dosyasında saklanır (örneğin `~/.config/rediacc/rediacc.json`).
 
 - Makinelere doğrudan SSH bağlantısı
 - Harici hizmet gerekmez
-- Tek kullanıcı, tek iş istasyonu
 - Varsayılan yapılandırma ilk CLI kullanımında otomatik oluşturulur. Adlandırılmış yapılandırmalar `rdc config init --name <name>` ile oluşturulur
-
-### Bulut Adaptörü (Deneysel)
-
-Bir yapılandırma `apiUrl` ve `token` alanları içerdiğinde otomatik olarak etkinleşir. Durum yönetimi ve ekip işbirliği için Rediacc API'sini kullanır.
-
-- Durum bulut API'sinde saklanır
-- Rol tabanlı erişimle çok kullanıcılı ekipler
-- Görsel yönetim için web konsolu
-- `rdc auth login` ile kurulur
-
-> **Not:** Bulut adaptörü komutları deneyseldir. `REDIACC_EXPERIMENTAL=1` ayarlayarak etkinleştirin.
-
-Her iki adaptör de aynı CLI komutlarını kullanır. Adaptör yalnızca durumun nerede saklandığını ve kimlik doğrulamanın nasıl çalıştığını etkiler.
+- İsteğe bağlı şifreli yapılandırma senkronizasyonu aynı dosyayı yapılandırma deposunda, ekip başına kapsamlı olarak saklar
 
 ## rediacc Kullanıcısı
 

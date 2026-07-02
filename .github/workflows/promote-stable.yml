@@ -26,7 +26,7 @@ jobs:
       promoted: ${{ steps.result.outputs.promoted }}
       version: ${{ steps.edge.outputs.version }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Check edge manifest
         id: edge
@@ -105,7 +105,7 @@ jobs:
       # Promote ALL artifacts from edge to stable
       # =====================================================================
 
-      - name: Promote R2 artifacts (CLI, Desktop, Repos)
+      - name: Promote R2 artifacts (CLI, Repos)
         if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -121,7 +121,7 @@ jobs:
           # Cache-Control policy: channel paths reuse filenames across
           # releases, so nothing under <fmt>/<channel>/ is safe to cache.
           # All channel uploads go no-cache; CF never caches, no stale body
-          # possible. Versioned paths (cli/v<semver>/, desktop/v<semver>/)
+          # possible. Versioned paths (cli/v<semver>/)
           # keep their immutable cache via upload-to-r2.sh.
           CC_MUTABLE="no-cache"
 
@@ -142,7 +142,7 @@ jobs:
           # Channel-specific rewrites (install.sh / .repo / .conf) happen on
           # the local tmp copy BEFORE phase 2 upload, eliminating a second
           # re-upload race that the old sequential version had.
-          for dir in cli desktop apt rpm apk archlinux; do
+          for dir in cli apt rpm apk archlinux; do
             echo "Promoting ${dir}/edge/ -> ${dir}/stable/ (2-phase)"
             TMP="/tmp/promote-${dir}"
             aws s3 cp "s3://${BUCKET}/${dir}/edge/" "$TMP/" $EP --recursive --quiet
@@ -229,12 +229,6 @@ jobs:
                   --include 'install.sh' --include 'install.ps1' \
                   --include 'versions.json'
                 ;;
-              desktop)
-                # latest-*.yml references rediacc-desktop-* by name (phase 1).
-                aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
-                  --cache-control "$CC_MUTABLE" \
-                  --exclude '*' --include 'latest*.yml' --include 'versions.json'
-                ;;
             esac
 
             while IFS= read -r f; do
@@ -253,7 +247,7 @@ jobs:
 
       - name: Login to GHCR
         if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -262,7 +256,7 @@ jobs:
       - name: Promote Docker images (:edge -> :stable)
         if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
         run: |
-          for image in api bridge plugin-terminal plugin-browser web cli; do
+          for image in renet plugin-terminal plugin-browser web cli; do
             SRC="ghcr.io/rediacc/elite/${image}:edge"
             DST="ghcr.io/rediacc/elite/${image}:stable"
             echo "Promoting ${image}: edge -> stable"
@@ -289,7 +283,7 @@ jobs:
           echo "- Edge version: ${{ steps.edge.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- Previous stable: ${{ steps.stable.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- Soak days: ${{ env.SOAK_DAYS }}" >> $GITHUB_STEP_SUMMARY
-          echo "- R2: CLI, Desktop, APT, RPM, APK, Archlinux promoted" >> $GITHUB_STEP_SUMMARY
+          echo "- R2: CLI, APT, RPM, APK, Archlinux promoted" >> $GITHUB_STEP_SUMMARY
           echo "- Docker: all images retagged :edge -> :stable" >> $GITHUB_STEP_SUMMARY
 
   # Deploy stable Workers from the exact tagged version
@@ -359,7 +353,7 @@ jobs:
     if: needs.promote.outputs.promoted == 'true'
     runs-on: ubuntu-slim
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout: regions.json
           sparse-checkout-cone-mode: false

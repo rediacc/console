@@ -4,7 +4,7 @@ description: "创建配置、添加机器、配置服务器和设置基础设施
 category: "Guides"
 order: 3
 language: zh
-sourceHash: "b3c8c42db1b8d99b"
+sourceHash: "19a208e453f7d742"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -104,7 +104,7 @@ rdc term connect -m server-1 -c "hostname"
 rdc doctor
 ```
 
-> **仅限云适配器**：`rdc machine test-connection` 命令提供详细的 SSH 诊断，但需要云适配器。对于本地适配器，请直接使用 `rdc term` 或 `ssh`。
+> **提示**：要验证 SSH 连接，运行 `rdc term connect -m <machine> -c "hostname"` 或直接使用 `ssh`。
 
 ## 基础设施配置
 
@@ -233,7 +233,7 @@ rdc config provider list
 
 ```bash
 rdc config field set --pointer /defaults/machine --new '"server-1"'   # 默认机器
-rdc config set --key team --value my-team                   # 默认团队（云适配器，实验性）
+rdc config set --key team --value my-team                   # 配置存储的默认团队
 ```
 
 设置默认机器后，您可以在命令中省略 `-m server-1`：

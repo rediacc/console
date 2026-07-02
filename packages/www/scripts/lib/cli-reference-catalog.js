@@ -14,7 +14,6 @@ const LOCAL_GROUPS = [
   'storage',
   'vscode',
   'term',
-  'protocol',
   'shortcuts',
   'subscription',
   'update',
@@ -22,19 +21,9 @@ const LOCAL_GROUPS = [
   'ops',
 ];
 
-const CLOUD_GROUPS = [
-  'auth',
-  'organization',
-  'user',
-  'team',
-  'permission',
-  'region',
-  'bridge',
-  'repository',
-  'queue',
-  'ceph',
-  'audit',
-];
+// The experimental cloud command set was removed with the middleware
+// retirement; kept as an (empty) export for validator imports.
+const CLOUD_GROUPS = [];
 
 const TARGET_DOC_CATEGORIES = new Set([
   'Guides',

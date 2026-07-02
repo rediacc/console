@@ -4,7 +4,7 @@ description: "Rediacc töötab teie infrastruktuuril. Te kontrolliite oma andmei
 category: "Legal"
 order: 0
 language: et
-sourceHash: "1e36a25c724f4185"
+sourceHash: "e6044a3b067b54d5"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -32,7 +32,7 @@ Iga selles jaotises käsitletav vastavusraamistik põhineb samadel tehnilistel o
 - **Puhkeoleku krüptimine**: iga hoidla on LUKS2 AES-256 krüptitud. Mandaadid talletatakse ainult operaatori kohalikus konfiguratsioonis, mitte serveris.
 - **Võrgueraldus**: igal hoidlal on oma Dockeri deemon, loopback-IP-alamvõrk (/26) ja iptables-reeglid. Eri hoidlate konteinerid ei saa omavahel suhelda.
 - **Kirjutamisel kopeeriv kloonimine**: `rdc repo fork` kasutab failisüsteemi reflinke (`cp --reflink=always`). Andmed dubleeritakse samal masinal ilma võrguedastuseta.
-- **Auditilogi**: 70+ sündmusetüüpi, mis hõlmavad autentimist (sisselogimine, 2FA, paroolimuutused, seansi tühistamine), API-tokeni elutsüklit, konfiguratsioonihoidla toiminguid, tellimuse/litsentsimise tegevust ning CLI masina toiminguid (hoidla elutsükkel, varundamine, sünkroonimine, terminaliseanssid). Juurdepääs haldusarmatuurlaua, portaali tegevuslehe (organisatsioonipõhise filtreerimisega) ja `rdc audit` CLI kaudu. Masina toimingud salvestatakse ka teie süsteemilogidesse kaitsesügavuse eesmärgil.
+- **Auditilogi**: 70+ sündmusetüüpi, mis hõlmavad autentimist (sisselogimine, 2FA, paroolimuutused, seansi tühistamine), API-tokeni elutsüklit, konfiguratsioonihoidla toiminguid, tellimuse/litsentsimise tegevust ning CLI masina toiminguid (hoidla elutsükkel, varundamine, sünkroonimine, terminaliseanssid). Juurdepääs haldusarmatuurlaua ja portaali tegevuslehe kaudu (organisatsioonipõhise filtreerimise ja JSON-ekspordiga). Masina toimingud salvestatakse ka teie süsteemilogidesse kaitsesügavuse eesmärgil.
 - **Krüpteeritud varundamine**: `rdc repo push/pull` edastab andmeid üle SSH. Varukoopia sihtkoht saab LUKS-krüpteeritud mahud.
 - **Zero-knowledge konfiguratsioonihoidla**: valikuline krüpteeritud konfiguratsiooni sünkroonimine seadmete vahel. Konfiguratsioonid krüpteeritakse kliendipoolselt AES-256-GCM-iga enne üleslaadimist. Server salvestab ainult läbipaistmatuid plokke. Server ei saa lugeda SSH-võtmeid, mandaate, IP-aadresse ega ühtegi konfiguratsioonitekstiandmet. Võtme tuletamine kasutab pääsvõtme PRF-laiendust koos HKDF-iga ja domeenieraldusega. Liikmete juurdepääsu haldab X25519 võtmevahetus ning tühistamine on kohene.
 

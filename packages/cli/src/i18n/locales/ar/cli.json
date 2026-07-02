@@ -19,100 +19,6 @@
         "description": "عرض المخطط التفصيلي لأمر معين"
       }
     },
-    "audit": {
-      "description": "أوامر سجل التدقيق",
-      "history": {
-        "description": "عرض سجل الكيان",
-        "fetching": "جاري جلب سجل الكيان...",
-        "success": "تم جلب السجل"
-      },
-      "log": {
-        "description": "عرض سجلات التدقيق",
-        "fetching": "جاري جلب سجلات التدقيق...",
-        "success": "تم جلب سجلات التدقيق"
-      },
-      "trace": {
-        "description": "تتبع سجل التدقيق لكيان",
-        "fetching": "جاري جلب آثار التدقيق للكيان...",
-        "success": "تم جلب آثار التدقيق"
-      }
-    },
-    "auth": {
-      "activate": {
-        "activated": "تم تفعيل الحساب",
-        "activating": "جاري تفعيل الحساب...",
-        "description": "تفعيل الحساب برمز التحقق",
-        "success": "تم تفعيل الحساب! يمكنك الآن تسجيل الدخول باستخدام: rdc auth login"
-      },
-      "description": "أوامر المصادقة",
-      "login": {
-        "authenticating": "جاري المصادقة...",
-        "description": "المصادقة باستخدام Rediacc",
-        "success": "تم تسجيل الدخول بنجاح! تم الحفظ إلى السياق \"{{context}}\"",
-        "tfaPrompt": "أدخل رمز المصادقة الثنائية:",
-        "tfaRequired": "المصادقة الثنائية مطلوبة",
-        "tfaVerified": "تم التحقق من المصادقة الثنائية بنجاح",
-        "verifyingTfa": "جاري التحقق من المصادقة الثنائية..."
-      },
-      "logout": {
-        "description": "مسح بيانات المصادقة المحفوظة",
-        "loggingOut": "جاري تسجيل الخروج...",
-        "success": "تم تسجيل الخروج بنجاح"
-      },
-      "register": {
-        "description": "تسجيل مؤسسة جديدة وحساب مستخدم",
-        "nextStep": "ثم قم بتشغيل: rdc auth activate -e <email> -p <password> --code <code>",
-        "registering": "جاري تسجيل الحساب...",
-        "submitted": "تم إرسال التسجيل",
-        "success": "تم التسجيل بنجاح! تحقق من بريدك الإلكتروني للحصول على رمز التفعيل."
-      },
-      "status": {
-        "authenticated": "تم المصادقة باسم: {{email}}",
-        "description": "التحقق من حالة المصادقة الحالية",
-        "notAuthenticated": "لم تتم المصادقة. قم بتشغيل: rdc auth login"
-      },
-      "tfa": {
-        "description": "إدارة المصادقة الثنائية",
-        "disable": {
-          "confirm": "هل تريد بالتأكيد تعطيل المصادقة الثنائية؟",
-          "description": "تعطيل المصادقة الثنائية",
-          "disabling": "جاري تعطيل المصادقة الثنائية...",
-          "success": "تم تعطيل المصادقة الثنائية بنجاح"
-        },
-        "enable": {
-          "addToApp": "أضف هذا إلى تطبيق المصادقة الخاص بك",
-          "description": "تفعيل المصادقة الثنائية",
-          "enabling": "جاري تفعيل المصادقة الثنائية...",
-          "initiated": "تم بدء إعداد المصادقة الثنائية",
-          "setupKey": "مفتاح الإعداد: {{key}}",
-          "success": "تم تفعيل المصادقة الثنائية بنجاح"
-        },
-        "status": {
-          "description": "التحقق من حالة المصادقة الثنائية",
-          "disabled": "المصادقة الثنائية غير مفعلة",
-          "enabled": "المصادقة الثنائية مفعلة"
-        }
-      },
-      "token": {
-        "description": "إدارة الرموز",
-        "fork": {
-          "creating": "جاري إنشاء رمز منفصل...",
-          "description": "إنشاء رمز منفصل لتطبيق آخر",
-          "success": "تم إنشاء الرمز بنجاح",
-          "tokenValue": "الرمز: {{token}}"
-        },
-        "list": {
-          "description": "قائمة الرموز النشطة/الجلسات",
-          "fetching": "جاري جلب الرموز...",
-          "noTokens": "لا توجد رموز نشطة"
-        },
-        "revoke": {
-          "description": "إلغاء رمز معين",
-          "revoking": "جاري إلغاء الرمز...",
-          "success": "تم إلغاء الرمز بنجاح"
-        }
-      }
-    },
     "backup": {
       "description": "دفع واسترجاع ومزامنة النسخ الاحتياطية للمستودعات عبر التخزين والأجهزة",
       "schedule": {
@@ -120,163 +26,6 @@
       },
       "sync": {
         "description": "مزامنة ثنائية الاتجاه للنسخ الاحتياطية عبر الأجهزة"
-      }
-    },
-    "bridge": {
-      "description": "إدارة الجسور",
-      "list": {
-        "description": "قائمة الجسور",
-        "fetching": "جاري جلب الجسور..."
-      },
-      "resetAuth": {
-        "description": "إعادة تعيين رمز تفويض الجسر",
-        "newToken": "الرمز الجديد: {{token}}",
-        "resetting": "جاري إعادة تعيين التفويض للجسر \"{{name}}\"...",
-        "success": "تم إعادة تعيين التفويض"
-      }
-    },
-    "ceph": {
-      "clone": {
-        "assign": {
-          "assigning": "جارٍ تخصيص أجهزة للنسخة \"{{name}}\"...",
-          "description": "تخصيص أجهزة للنسخة",
-          "success": "تم تخصيص الأجهزة للنسخة \"{{name}}\""
-        },
-        "create": {
-          "creating": "جارٍ إنشاء نسخة RBD \"{{name}}\"...",
-          "description": "إنشاء نسخة RBD جديدة من لقطة",
-          "success": "تم إنشاء نسخة RBD \"{{name}}\""
-        },
-        "delete": {
-          "confirm": "هل تريد حذف نسخة RBD \"{{name}}\"؟",
-          "deleting": "جارٍ حذف نسخة RBD \"{{name}}\"...",
-          "description": "حذف نسخة RBD",
-          "success": "تم حذف نسخة RBD \"{{name}}\""
-        },
-        "description": "إدارة نسخ RBD في Ceph",
-        "list": {
-          "description": "عرض قائمة نسخ RBD",
-          "fetching": "جارٍ جلب نسخ RBD...",
-          "success": "تم جلب النسخ"
-        },
-        "machines": {
-          "description": "عرض قائمة الأجهزة المخصصة للنسخة",
-          "fetching": "جارٍ جلب أجهزة النسخة...",
-          "success": "تم جلب أجهزة النسخة"
-        },
-        "unassign": {
-          "description": "إزالة أجهزة من النسخة",
-          "success": "تم إزالة الأجهزة من النسخة \"{{name}}\"",
-          "unassigning": "جارٍ إزالة الأجهزة من النسخة \"{{name}}\"..."
-        }
-      },
-      "cluster": {
-        "create": {
-          "creating": "جارٍ إنشاء مجموعة Ceph \"{{name}}\"...",
-          "description": "إنشاء مجموعة Ceph جديدة",
-          "success": "تم إنشاء مجموعة Ceph \"{{name}}\""
-        },
-        "delete": {
-          "confirm": "هل تريد حذف مجموعة Ceph \"{{name}}\"؟",
-          "deleting": "جارٍ حذف مجموعة Ceph \"{{name}}\"...",
-          "description": "حذف مجموعة Ceph",
-          "success": "تم حذف مجموعة Ceph \"{{name}}\""
-        },
-        "description": "إدارة مجموعات Ceph",
-        "list": {
-          "description": "عرض قائمة مجموعات Ceph",
-          "fetching": "جارٍ جلب مجموعات Ceph...",
-          "success": "تم جلب المجموعات"
-        },
-        "machines": {
-          "description": "عرض قائمة الأجهزة في مجموعة Ceph",
-          "fetching": "جارٍ جلب أجهزة المجموعة...",
-          "success": "تم جلب أجهزة المجموعة"
-        },
-        "vault": {
-          "description": "إدارة خزنة مجموعة Ceph",
-          "get": {
-            "description": "الحصول على بيانات خزنة المجموعة",
-            "fetching": "جارٍ جلب خزنة المجموعة...",
-            "success": "تم جلب خزنة المجموعة"
-          },
-          "update": {
-            "description": "تحديث بيانات خزنة المجموعة",
-            "success": "تم تحديث خزنة المجموعة لـ \"{{name}}\"",
-            "updating": "جارٍ تحديث خزنة المجموعة لـ \"{{name}}\"..."
-          }
-        }
-      },
-      "description": "إدارة التخزين الموزع Ceph",
-      "image": {
-        "create": {
-          "creating": "جارٍ إنشاء صورة RBD \"{{name}}\"...",
-          "description": "إنشاء صورة RBD جديدة",
-          "success": "تم إنشاء صورة RBD \"{{name}}\""
-        },
-        "delete": {
-          "confirm": "هل تريد حذف صورة RBD \"{{name}}\"؟",
-          "deleting": "جارٍ حذف صورة RBD \"{{name}}\"...",
-          "description": "حذف صورة RBD",
-          "success": "تم حذف صورة RBD \"{{name}}\""
-        },
-        "description": "إدارة صور RBD في Ceph",
-        "list": {
-          "description": "عرض قائمة صور RBD",
-          "fetching": "جارٍ جلب صور RBD...",
-          "success": "تم جلب الصور"
-        }
-      },
-      "pool": {
-        "create": {
-          "creating": "جارٍ إنشاء تجمع Ceph \"{{name}}\"...",
-          "description": "إنشاء تجمع Ceph جديد",
-          "success": "تم إنشاء تجمع Ceph \"{{name}}\""
-        },
-        "delete": {
-          "confirm": "هل تريد حذف تجمع Ceph \"{{name}}\"؟",
-          "deleting": "جارٍ حذف تجمع Ceph \"{{name}}\"...",
-          "description": "حذف تجمع Ceph",
-          "success": "تم حذف تجمع Ceph \"{{name}}\""
-        },
-        "description": "إدارة تجمعات Ceph",
-        "list": {
-          "description": "عرض قائمة تجمعات Ceph",
-          "fetching": "جارٍ جلب تجمعات Ceph...",
-          "success": "تم جلب التجمعات"
-        },
-        "vault": {
-          "description": "إدارة خزنة تجمع Ceph",
-          "get": {
-            "description": "الحصول على بيانات خزنة التجمع",
-            "fetching": "جارٍ جلب خزنة التجمع...",
-            "success": "تم جلب خزنة التجمع"
-          },
-          "update": {
-            "description": "تحديث بيانات خزنة التجمع",
-            "success": "تم تحديث خزنة التجمع لـ \"{{name}}\"",
-            "updating": "جارٍ تحديث خزنة التجمع لـ \"{{name}}\"..."
-          }
-        }
-      },
-      "snapshot": {
-        "create": {
-          "creating": "جارٍ إنشاء لقطة RBD \"{{name}}\"...",
-          "description": "إنشاء لقطة RBD جديدة",
-          "success": "تم إنشاء لقطة RBD \"{{name}}\""
-        },
-        "delete": {
-          "confirm": "هل تريد حذف لقطة RBD \"{{name}}\"؟",
-          "deleting": "جارٍ حذف لقطة RBD \"{{name}}\"...",
-          "description": "حذف لقطة RBD",
-          "success": "تم حذف لقطة RBD \"{{name}}\""
-        },
-        "description": "إدارة لقطات RBD في Ceph",
-        "list": {
-          "description": "عرض قائمة لقطات RBD",
-          "fetching": "جارٍ جلب لقطات RBD...",
-          "success": "تم جلب اللقطات"
-        }
       }
     },
     "config": {
@@ -985,54 +734,6 @@
         "noServices": "لا توجد خدمات rediacc على هذه الآلة",
         "stabilityCheck": "وضع فحص الاستقرار - الخروج برمز 2 إذا وُجدت خدمات فاشلة/تعيد التشغيل",
         "unstableFound": "تم العثور على {{count}} خدمة غير مستقرة"
-      },
-      "testConnection": {
-        "authMethod": "  طريقة المصادقة: {{method}}",
-        "created": "تم إنشاء المهمة",
-        "creating": "جاري إنشاء مهمة اختبار SSH...",
-        "description": "اختبار اتصال SSH بآلة والتقاط مفتاح المضيف",
-        "error": "خطأ: {{error}}",
-        "knownHosts": "  إدخال المضيف: {{entry}}",
-        "message": "  الرسالة: {{message}}",
-        "publicKeyDeployed": "  المفتاح العام منتشر: {{status}}",
-        "rawOutput": "المخرجات الأولية:",
-        "results": "نتائج اختبار SSH:",
-        "saved": "تم حفظ إدخال المضيف في خزينة الآلة",
-        "saving": "جاري حفظ known_hosts في خزينة الآلة \"{{machine}}\"...",
-        "sshKeyConfigured": "  مفتاح SSH مكون: {{status}}",
-        "statusResult": "  الحالة: {{status}}",
-        "taskId": "معرف المهمة: {{taskId}}",
-        "testing": "جاري اختبار اتصال SSH إلى {{user}}@{{ip}}:{{port}}...",
-        "testResult": "اختبار SSH {{result}}",
-        "timeout": "انتهاء المهلة الزمنية أثناء الانتظار للنتيجة",
-        "timeoutMessage": "انتهت مهلة الاختبار. تحقق من تتبع الطابور للمزيد من التفاصيل.",
-        "waiting": "جاري الانتظار لنتيجة اختبار SSH...",
-        "waitingTime": "جاري الانتظار لنتيجة اختبار SSH... ({{seconds}}ث)"
-      },
-      "vault": {
-        "description": "إدارة خزنة الجهاز (محول السحابة فقط)"
-      },
-      "vault-status": {
-        "description": "عرض حالة الخزنة المحللة لجهاز (محول السحابة فقط)"
-      },
-      "vaultStatus": {
-        "deployedRepos": "\nالمستودعات المنتشرة:",
-        "description": "عرض حالة الخزينة المحللة لآلة",
-        "dockerRunning": "  Docker قيد التشغيل: {{count}}",
-        "fetched": "تم جلب الآلة",
-        "fetching": "جاري جلب الآلة...",
-        "header": "\nحالة الخزينة لـ {{name}}:",
-        "mounted": "  مثبتة: {{count}}",
-        "repoDocker": "    حالة Docker: {{status}}",
-        "repoMounted": "    مثبتة: {{mounted}}",
-        "status": "  الحالة: {{status}}",
-        "systemDatastore": "  مخزن البيانات: {{used}} / {{total}} ({{percent}})",
-        "systemDisk": "  القرص: {{used}} / {{total}} ({{percent}})",
-        "systemHostname": "  اسم المضيف: {{hostname}}",
-        "systemMemory": "  الذاكرة: {{used}} / {{total}} ({{percent}})",
-        "systemSection": "\nالنظام:",
-        "systemUptime": "  وقت التشغيل: {{uptime}}",
-        "totalRepos": "  إجمالي المستودعات: {{count}}"
       }
     },
     "mcp": {
@@ -1092,192 +793,6 @@
         "description": "إنشاء مجموعة VM محلياً",
         "failed": "فشل إنشاء مجموعة VM",
         "starting": "جارٍ بدء إنشاء مجموعة VM..."
-      }
-    },
-    "organization": {
-      "dashboard": {
-        "description": "الحصول على بيانات لوحة معلومات المؤسسة",
-        "fetching": "جاري جلب لوحة المعلومات...",
-        "success": "تم جلب لوحة المعلومات"
-      },
-      "description": "أوامر إدارة المؤسسة",
-      "export": {
-        "description": "تصدير بيانات المؤسسة",
-        "exported": "تم التصدير إلى {{path}}",
-        "exporting": "جاري تصدير بيانات المؤسسة...",
-        "success": "تم إكمال التصدير"
-      },
-      "import": {
-        "description": "استيراد بيانات المؤسسة",
-        "importing": "جاري استيراد بيانات المؤسسة...",
-        "success": "تم إكمال الاستيراد"
-      },
-      "info": {
-        "description": "الحصول على معلومات المؤسسة",
-        "fetching": "جاري جلب معلومات المؤسسة...",
-        "notFound": "لم يتم العثور على معلومات المؤسسة",
-        "success": "تم جلب معلومات المؤسسة"
-      },
-      "maintenance": {
-        "description": "تفعيل أو تعطيل وضع الصيانة (يحجب تسجيلات الدخول للمستخدمين العاديين)",
-        "disabled": "تم تعطيل وضع الصيانة",
-        "disabling": "جاري تعطيل وضع الصيانة...",
-        "enabled": "تم تفعيل وضع الصيانة",
-        "enabling": "جاري تفعيل وضع الصيانة..."
-      },
-      "vault": {
-        "description": "إدارة خزينة المؤسسة",
-        "get": {
-          "description": "الحصول على بيانات خزينة المؤسسة",
-          "fetching": "جاري جلب خزينة المؤسسة...",
-          "notFound": "لم يتم العثور على خزينة المؤسسة",
-          "success": "تم جلب الخزينة"
-        },
-        "list": {
-          "description": "قائمة جميع أنواع الخزائن",
-          "fetching": "جاري جلب الخزائن...",
-          "success": "تم جلب الخزائن"
-        },
-        "update": {
-          "description": "تحديث بيانات خزينة المؤسسة",
-          "success": "تم تحديث خزينة المؤسسة",
-          "updating": "جاري تحديث خزينة المؤسسة..."
-        }
-      }
-    },
-    "permission": {
-      "add": {
-        "adding": "جاري إضافة الإذن \"{{permission}}\" إلى المجموعة \"{{group}}\"...",
-        "description": "إضافة إذن إلى مجموعة",
-        "success": "تم إضافة الإذن"
-      },
-      "description": "أوامر إدارة الأذونات",
-      "group": {
-        "create": {
-          "creating": "جاري إنشاء مجموعة الأذونات \"{{name}}\"...",
-          "description": "إنشاء مجموعة أذونات جديدة",
-          "success": "تم إنشاء مجموعة الأذونات \"{{name}}\""
-        },
-        "delete": {
-          "confirm": "حذف مجموعة الأذونات \"{{name}}\"؟",
-          "deleting": "جاري حذف مجموعة الأذونات \"{{name}}\"...",
-          "description": "حذف مجموعة أذونات",
-          "success": "تم حذف مجموعة الأذونات \"{{name}}\""
-        },
-        "description": "إدارة مجموعات الأذونات",
-        "list": {
-          "description": "قائمة جميع مجموعات الأذونات",
-          "fetching": "جاري جلب مجموعات الأذونات...",
-          "success": "تم جلب مجموعات الأذونات"
-        },
-        "show": {
-          "description": "عرض تفاصيل مجموعة الأذونات",
-          "fetching": "جاري جلب تفاصيل مجموعة الأذونات...",
-          "success": "تم جلب التفاصيل"
-        }
-      },
-      "remove": {
-        "description": "إزالة إذن من مجموعة",
-        "removing": "جاري إزالة الإذن \"{{permission}}\" من المجموعة \"{{group}}\"...",
-        "success": "تم إزالة الإذن"
-      }
-    },
-    "protocol": {
-      "build": {
-        "description": "إنشاء عنوان URL {{scheme}}:// من المكونات"
-      },
-      "description": "تسجيل ومعالجة عناوين URL لبروتوكول {{scheme}}://",
-      "open": {
-        "action": "الإجراء:",
-        "cliCommand": "\nأمر سطر الأوامر المكافئ:",
-        "description": "فتح عنوان URL {{scheme}}:// وتنفيذ الإجراء",
-        "executing": "\nجاري تنفيذ الإجراء...\n",
-        "machine": "الآلة:",
-        "params": "المعاملات:",
-        "parsedUrl": "\nعنوان URL المحلل للبروتوكول:",
-        "repository": "المستودع:",
-        "team": "الفريق:",
-        "token": "الرمز:"
-      },
-      "parse": {
-        "cliCommand": "\nأمر سطر الأوامر:",
-        "description": "تحليل عنوان URL {{scheme}}:// وعرض المكونات",
-        "parsedUrl": "\nعنوان URL المحلل للبروتوكول:"
-      },
-      "register": {
-        "adminRequired": "ملاحظة: قد يتطلب هذا امتيازات المسؤول/root.",
-        "currentUser": "جاري تسجيل معالج البروتوكول للمستخدم الحالي...",
-        "description": "تسجيل معالج البروتوكول على النظام",
-        "exampleUrls": "\nيمكنك الآن فتح عناوين URL مثل:",
-        "registering": "جاري تسجيل معالج البروتوكول...",
-        "success": "\nتم تسجيل معالج البروتوكول {{scheme}}:// بنجاح.",
-        "systemWide": "جاري تسجيل معالج البروتوكول على مستوى النظام..."
-      },
-      "status": {
-        "description": "عرض حالة تسجيل معالج البروتوكول",
-        "error": "\nخطأ: {{error}}",
-        "handlerCommand": "أمر المعالج:",
-        "platform": "المنصة:",
-        "registered": "مسجلة:",
-        "registerHint": "\nلتسجيل معالج البروتوكول، قم بتشغيل:",
-        "supported": "مدعومة:",
-        "systemRegistration": "تسجيل النظام:",
-        "title": "\nحالة معالج البروتوكول",
-        "userRegistration": "تسجيل المستخدم:"
-      },
-      "unregister": {
-        "description": "إلغاء تسجيل معالج البروتوكول من النظام",
-        "success": "\nتم إلغاء تسجيل معالج البروتوكول {{scheme}}:// بنجاح.",
-        "unregistering": "جاري إلغاء تسجيل معالج البروتوكول..."
-      }
-    },
-    "queue": {
-      "cancel": {
-        "cancelling": "جاري إلغاء المهمة {{taskId}}...",
-        "description": "إلغاء عنصر طابور",
-        "success": "تم إلغاء المهمة"
-      },
-      "create": {
-        "buildingVault": "جاري بناء خزينة الطابور...",
-        "creating": "جاري إنشاء عنصر طابور للدالة '{{function}}'...",
-        "description": "إنشاء عنصر طابور",
-        "success": "تم إنشاء عنصر الطابور",
-        "taskId": "معرف المهمة: {{taskId}}",
-        "vaultBuilt": "تم بناء خزينة الطابور"
-      },
-      "delete": {
-        "confirm": "هل تريد بالتأكيد حذف المهمة {{taskId}}؟",
-        "deleting": "جاري حذف المهمة {{taskId}}...",
-        "description": "حذف عنصر طابور",
-        "success": "تم حذف المهمة"
-      },
-      "description": "إدارة الطابور",
-      "list": {
-        "description": "قائمة عناصر الطابور",
-        "fetching": "جاري جلب عناصر الطابور...",
-        "success": "تم جلب عناصر الطابور"
-      },
-      "retry": {
-        "description": "إعادة محاولة عنصر طابور فاشل",
-        "retrying": "جاري إعادة محاولة المهمة {{taskId}}...",
-        "success": "تم إدراج المهمة في طابور الانتظار لإعادة المحاولة"
-      },
-      "trace": {
-        "age": "العمر",
-        "description": "تتبع تنفيذ عنصر الطابور",
-        "errorDetails": "تفاصيل الخطأ:",
-        "fetched": "تم جلب تتبع الطابور",
-        "fetching": "جاري جلب تتبع الطابور...",
-        "finalStatus": "الحالة النهائية: {{status}}",
-        "noTrace": "لا توجد معلومات تتبع متاحة",
-        "watching": "جاري مراقبة تقدم المهمة..."
-      }
-    },
-    "region": {
-      "description": "إدارة المناطق",
-      "list": {
-        "description": "قائمة المناطق",
-        "fetching": "جاري جلب المناطق..."
       }
     },
     "repo": {
@@ -1377,12 +892,13 @@
         "starting": "جارٍ إنشاء المستودع \"{{repository}}\" ({{size}}) على \"{{machine}}\"..."
       },
       "delete": {
-        "archived": "تم أرشفة بيانات اعتماد \"{{repository}}\"",
         "archiveHint": "لأرشفة بيانات الاعتماد للاسترداد: أعد التشغيل باستخدام --archive-config",
         "archiveOption": "نقل إدخال الإعدادات إلى deletedRepositories للاستعادة لاحقاً",
+        "archived": "تم أرشفة بيانات اعتماد \"{{repository}}\"",
         "cloudBackupHint": "تظل النسخ الاحتياطية السحابية (إن وجدت) بعد الحذف. أزِل النسخ الاحتياطية السحابية المعزولة باستخدام: rdc storage prune --name <storage> -m {{machine}}",
         "completed": "تم حذف المستودع",
         "configRetained": "تم الاحتفاظ بإعداد \"{{repository}}\" (قد يكون المستودع موجودًا على أجهزة أخرى). للإزالة: rdc config repository remove --name {{repository}}",
+        "confirm": "هل تريد حذف المستودع \"{{repository}}\" على \"{{machine}}\"؟ سيؤدي ذلك إلى تدمير الحاويات ووحدات التخزين والصورة المشفرة.",
         "description": "حذف مستودع (يدمّر الحاويات والأقراص والصورة المشفّرة). يتم الاحتفاظ بإدخال الإعدادات. استخدم --archive-config لنقل بيانات الاعتماد إلى deletedRepositories للاستعادة عبر 'config restore-archived'",
         "descriptionShort": "حذف مستودع من جهاز",
         "examples": "\nأمثلة:\n  $ rdc repo delete --name app -m server-1\n  $ rdc repo delete --name app:test -m server-1\n",
@@ -1779,57 +1295,6 @@
       },
       "yesOption": "تخطي التأكيد للعمليات الجماعية"
     },
-    "repository": {
-      "create": {
-        "creating": "جاري إنشاء المستودع \"{{name}}\"...",
-        "description": "إنشاء مستودع جديد",
-        "success": "تم إنشاء المستودع \"{{name}}\""
-      },
-      "delete": {
-        "checkingRelationships": "جاري التحقق من العلاقات...",
-        "confirm": "حذف المستودع \"{{name}}\"؟ لا يمكن التراجع عن ذلك.",
-        "deleting": "جاري حذف المستودع \"{{name}}\"...",
-        "description": "حذف مستودع",
-        "grandRepoWarning": "هذا مستودع رئيسي (بيانات اعتماد). حذفه غير قابل للعكس.",
-        "relationshipsChecked": "تم التحقق من العلاقات",
-        "success": "تم حذف المستودع \"{{name}}\""
-      },
-      "description": "أوامر إدارة المستودع",
-      "list": {
-        "description": "قائمة المستودعات",
-        "fetching": "جاري جلب المستودعات...",
-        "success": "تم جلب المستودعات"
-      },
-      "promote": {
-        "checkingRelationships": "جاري التحقق من العلاقات...",
-        "confirmPromote": "\nهل تريد المتابعة بالترقية؟",
-        "description": "ترقية فرع إلى حالة رئيسية",
-        "promoting": "جاري ترقية المستودع \"{{name}}\"...",
-        "relationshipsChecked": "تم التحقق من العلاقات",
-        "separateInfo": "\nسيؤدي هذا إلى فصل \"{{name}}\" عن المستودع الرئيسي \"{{grandName}}\"",
-        "siblingsInfo": "\n{{count}} نسخة أخت ستبقى مرتبطة بالمستودع الأصلي:",
-        "success": "تمت ترقية المستودع \"{{name}}\" إلى حالة رئيسية"
-      },
-      "rename": {
-        "description": "إعادة تسمية مستودع",
-        "renaming": "جاري إعادة تسمية المستودع \"{{oldName}}\" إلى \"{{newName}}\"...",
-        "success": "تمت إعادة تسمية المستودع إلى \"{{name}}\""
-      },
-      "vault": {
-        "description": "إدارة خزينة المستودع",
-        "get": {
-          "description": "الحصول على بيانات خزينة المستودع",
-          "fetching": "جاري جلب خزينة المستودع...",
-          "notFound": "لم يتم العثور على خزينة المستودع",
-          "success": "تم جلب الخزينة"
-        },
-        "update": {
-          "description": "تحديث بيانات خزينة المستودع",
-          "success": "تم تحديث خزينة المستودع",
-          "updating": "جاري تحديث خزينة المستودع..."
-        }
-      }
-    },
     "shortcuts": {
       "cancel": {
         "description": "إلغاء مهمة (اختصار لـ: queue cancel)"
@@ -2030,36 +1495,6 @@
         "starting": "جاري بدء التحميل..."
       }
     },
-    "team": {
-      "create": {
-        "creating": "جاري إنشاء الفريق...",
-        "description": "إنشاء فريق",
-        "success": "تم إنشاء الفريق \"{{name}}\""
-      },
-      "description": "إدارة الفريق",
-      "list": {
-        "description": "قائمة الفرق",
-        "fetching": "جاري جلب الفرق..."
-      },
-      "member": {
-        "add": {
-          "adding": "جاري إضافة {{email}} إلى الفريق \"{{team}}\"...",
-          "description": "إضافة مستخدم إلى فريق",
-          "success": "تمت إضافة المستخدم إلى الفريق \"{{team}}\""
-        },
-        "description": "إدارة عضوية الفريق",
-        "list": {
-          "description": "قائمة أعضاء الفريق",
-          "fetching": "جاري جلب أعضاء الفريق...",
-          "success": "تم جلب الأعضاء"
-        },
-        "remove": {
-          "description": "إزالة مستخدم من فريق",
-          "removing": "جاري إزالة {{email}} من الفريق \"{{team}}\"...",
-          "success": "تمت إزالة المستخدم من الفريق \"{{team}}\""
-        }
-      }
-    },
     "term": {
       "connect": {
         "description": "الاتصال بآلة أو مستودع عبر SSH"
@@ -2111,77 +1546,6 @@
       "success": "تم التحديث من v{{from}} إلى v{{to}}",
       "unknownError": "خطأ غير معروف",
       "upToDate": "محدث بالفعل (v{{version}})"
-    },
-    "user": {
-      "activate": {
-        "activating": "جاري تفعيل المستخدم \"{{email}}\"...",
-        "description": "تفعيل حساب المستخدم",
-        "success": "تم تفعيل المستخدم"
-      },
-      "create": {
-        "activationCode": "رمز التفعيل: {{code}}",
-        "creating": "جاري إنشاء المستخدم \"{{email}}\"...",
-        "description": "إنشاء مستخدم جديد",
-        "success": "تم إنشاء المستخدم"
-      },
-      "deactivate": {
-        "confirm": "تعطيل المستخدم \"{{email}}\"؟",
-        "deactivating": "جاري تعطيل المستخدم \"{{email}}\"...",
-        "description": "تعطيل حساب المستخدم",
-        "success": "تم تعطيل المستخدم"
-      },
-      "description": "أوامر إدارة المستخدم",
-      "exists": {
-        "description": "التحقق مما إذا كان المستخدم موجوداً",
-        "exists": "المستخدم \"{{email}}\" موجود",
-        "notExists": "المستخدم \"{{email}}\" غير موجود"
-      },
-      "list": {
-        "description": "قائمة جميع المستخدمين",
-        "fetching": "جاري جلب المستخدمين...",
-        "success": "تم جلب المستخدمين"
-      },
-      "permission": {
-        "assign": {
-          "assigning": "جاري تعيين \"{{group}}\" للمستخدم \"{{email}}\"...",
-          "description": "تعيين مجموعة أذونات لمستخدم",
-          "success": "تم تعيين الإذن"
-        },
-        "description": "إدارة أذونات المستخدم"
-      },
-      "reactivate": {
-        "description": "إعادة تفعيل حساب المستخدم المعطل",
-        "reactivating": "جاري إعادة تفعيل المستخدم \"{{email}}\"...",
-        "success": "تم إعادة تفعيل المستخدم"
-      },
-      "updateEmail": {
-        "description": "تغيير عنوان البريد الإلكتروني للمستخدم",
-        "success": "تم تحديث البريد الإلكتروني إلى \"{{email}}\"",
-        "updating": "جاري تحديث البريد الإلكتروني لـ \"{{email}}\"..."
-      },
-      "updateLanguage": {
-        "description": "تعيين اللغة المفضلة للمستخدم الحالي",
-        "success": "تم تحديث اللغة إلى \"{{language}}\"",
-        "updating": "جاري تحديث تفضيل اللغة..."
-      },
-      "updatePassword": {
-        "description": "تغيير كلمة المرور الخاصة بك",
-        "success": "تم تحديث كلمة المرور",
-        "updating": "جاري تحديث كلمة المرور..."
-      },
-      "vault": {
-        "description": "إدارة خزينة المستخدم",
-        "get": {
-          "description": "الحصول على بيانات خزينة المستخدم الحالي",
-          "fetching": "جاري جلب خزينة المستخدم...",
-          "success": "تم جلب الخزينة"
-        },
-        "update": {
-          "description": "تحديث بيانات خزينة المستخدم الحالي",
-          "success": "تم تحديث خزينة المستخدم",
-          "updating": "جاري تحديث خزينة المستخدم..."
-        }
-      }
     },
     "vscode": {
       "check": {
@@ -2274,16 +1638,6 @@
       "tip": "نصيحة",
       "warning": "تحذير"
     },
-    "cloudFrontmatter": {
-      "category": "مرجع",
-      "description": "أوامر سحابية حصرية لـ Rediacc CLI — المصادقة والفرق والمنظمات وإدارة المستأجرين المتعددين",
-      "title": "تطبيق CLI (سحابي / تجريبي)"
-    },
-    "cloudOverview": {
-      "heading": "نظرة عامة",
-      "text": "تتطلب هذه الأوامر **المحول السحابي** (تجريبي) — يتم تفعيله عندما يحتوي التكوين على حقلي `apiUrl` و `token`. للمرجع الرئيسي لـ CLI، راجع [تطبيق CLI](/ar/docs/cli-application)."
-    },
-    "cloudPageTitle": "مرجع Rediacc CLI (سحابي / تجريبي)",
     "errors": {
       "heading": "رسائل الخطأ الشائعة",
       "intro": "عندما يحدث خطأ ما، يوفر سطر الأوامر رسائل خطأ واضحة:",
@@ -2325,72 +1679,32 @@
     "pageTitle": "مرجع سطر أوامر Rediacc",
     "sectionTitles": {
       "agent": "أدوات الوكيل",
-      "audit": "التدقيق والامتثال",
-      "auth": "المصادقة",
       "backup": "النسخ الاحتياطي والاستعادة",
-      "bridge": "إدارة الجسر",
-      "ceph": "إدارة تخزين Ceph",
       "config": "إدارة الإعدادات",
       "datastore": "إدارة مخزن البيانات",
       "doctor": "تشخيص النظام",
       "machine": "إدارة الأجهزة",
       "mcp": "خادم MCP",
       "ops": "عمليات VM التجريبية",
-      "organization": "إدارة المنظمة",
-      "permission": "إدارة الصلاحيات",
-      "protocol": "معالج البروتوكول",
-      "queue": "عمليات قائمة الانتظار",
-      "region": "إدارة المناطق",
       "repo": "دورة حياة المستودعات",
-      "repository": "إدارة المستودعات",
       "shortcuts": "أوامر سريعة (اختصارات)",
       "storage": "إدارة التخزين",
       "subscription": "إدارة الاشتراكات",
       "sync": "مزامنة الملفات",
-      "team": "إدارة الفرق",
       "term": "وصول طرفية SSH",
       "update": "تحديثات سطر الأوامر",
-      "user": "إدارة المستخدمين",
       "vscode": "تكامل VS Code"
     },
     "supplements": {
-      "auth": {
-        "register": {
-          "afterDescription": "بعد التسجيل، تحقق من بريدك الإلكتروني للحصول على رمز التفعيل."
-        },
-        "tip": "يتم تخزين رمز المصادقة الخاص بك محلياً في سياقك. استخدم `--save-as` لتخزين بيانات الاعتماد تحت سياق مسمى لبيئات متعددة."
-      },
       "config": {
         "afterDescription": "تخزن ملفات الإعدادات تفاصيل الاتصال (عنوان URL للـ API، بيانات الاعتماد، الفريق/المنطقة/الجسر الافتراضي) حتى تتمكن من التبديل بين البيئات بسرعة.",
         "init": {
           "afterDescription": "في الوضع المحلي يمكنك إضافة الآلات مباشرة:"
-        },
-        "set": {
-          "tip": "يعني تعيين القيم الافتراضية أنك لن تحتاج إلى تمرير `--team` أو `--region` أو `--bridge` مع كل أمر."
         }
       },
       "machine": {
         "health": {
           "afterDescription": "يُخرج أمر health مقاييس النظام وحالة الحاويات واستقرار الخدمات ومعلومات التخزين — مفيد لفحوصات خطوط أنابيب CI/CD."
-        },
-        "testConnection": {
-          "tip": "استخدم `--save` لحفظ مفتاح المضيف تلقائياً في خزنة الجهاز بعد اختبار ناجح."
-        }
-      },
-      "organization": {
-        "maintenance": {
-          "warning": "عند تفعيل وضع الصيانة، لا يمكن للمستخدمين غير المسؤولين تسجيل الدخول."
-        }
-      },
-      "queue": {
-        "afterDescription": "نظام قائمة الانتظار هو جوهر تنفيذ مهام Rediacc. كل عملية (نشر، نسخ احتياطي، تنفيذ نصوص) تمر عبر قائمة الانتظار.",
-        "trace": {
-          "tip": "استخدم `--watch` لمتابعة المهمة في الوقت الفعلي حتى تكتمل."
-        }
-      },
-      "repository": {
-        "promote": {
-          "note": "ترقية الفورك تفصله عن المستودع الأصلي (الأب)، مما يجعله مستقلاً."
         }
       }
     },
@@ -2435,7 +1749,6 @@
     },
     "authFailed": "فشلت المصادقة",
     "authRequired": "المصادقة مطلوبة. قم بتشغيل: rdc auth login",
-    "bridgeRequired": "اسم الجسر مطلوب. استخدم --bridge أو اضبط السياق.",
     "cannotDeleteGrandRepo": "لا يمكن حذف المستودع الرئيسي: {{reason}}",
     "cannotPromote": "لا يمكن الترقية: {{reason}}",
     "clusterNotFound": "مجموعة Ceph \"{{name}}\" غير موجودة",
@@ -2578,8 +1891,6 @@
     "unknownCommand": "أمر غير معروف \"{{command}}\". الأوامر المتاحة: {{available}}.",
     "unknownSubcommand": "أمر فرعي غير معروف \"{{command}}\". الأوامر الفرعية المتاحة لـ {{parent}}: {{available}}.",
     "validationError": "خطأ التحقق: {{message}}",
-    "vaultDataRequired": "بيانات الخزينة مطلوبة. استخدم --vault <json> أو أنبوب JSON عبر stdin.",
-    "vaultVersionRequired": "إصدار الخزينة مطلوب. استخدم --vault-version <n>.",
     "vscode": {
       "browserNeedsRepo": "vscode --browser يخدم بيئة مستودع معزولة — مرّر --repository <name>",
       "cleanupRequired": "حدد --all لإزالة جميع الاتصالات أو --connection <name> لواحد محدد.",

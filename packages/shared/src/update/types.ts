@@ -26,11 +26,3 @@ export interface PendingUpdate {
 export interface CliUpdateState extends UpdateStateBase {
   pendingUpdate: PendingUpdate | null;
 }
-
-/** Desktop update state (no staging — electron-updater manages downloads). */
-export interface DesktopUpdateState extends UpdateStateBase {
-  /** Version of the last downloaded update (electron-updater manages the file). */
-  lastDownloadedVersion: string | null;
-  /** Number of times install has been attempted for the current downloaded update. */
-  consecutiveInstallFailures: number;
-}

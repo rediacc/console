@@ -1059,33 +1059,28 @@
       "architectures": {
         "arm64": "ARM64",
         "arm64_apple": "Apple Silicon (ARM64)",
-        "armv7l": "ARMv7",
         "x64": "x64（64位）",
         "x64_intel": "Intel (x64)"
       },
       "autoUpdate": {
-        "description": "Rediacc桌面应用内置自动更新功能。初次安装后，应用会自动检查更新，并在新版本可用时通知您。无需手动下载，一键即可安装更新。",
+        "description": "Rediacc CLI 会自动更新。它会检查新版本并为您安装，让您始终使用最新版本。",
         "title": "自动更新信息"
       },
       "cli": {
         "binary": "二进制文件",
-        "description": "用于自动化和脚本的轻量级命令行工具。"
+        "description": "一个在终端窗口中运行的小巧快速工具。适合管理没有屏幕的服务器，或者需要在多台机器上同时运行同一条命令的场景。连接服务器、执行命令、推送更新，无需浏览器。"
       },
       "hero": {
         "released": "发布日期",
-        "subtitle": "Rediacc Desktop & CLI",
+        "subtitle": "Rediacc CLI",
         "title": "获取适用于各平台的 Rediacc 应用程序"
       },
       "installation": {
         "cli": "CLI：下载适用于您平台的二进制文件，将其设为可执行（Linux/macOS上使用chmod +x），然后放入PATH目录中。",
-        "linux_appimage": "Linux AppImage：使用\"chmod +x 文件名.AppImage\"将文件设为可执行，然后直接运行。无需安装。",
-        "linux_deb": "Linux DEB：使用\"sudo dpkg -i 文件名.deb\"安装，或在文件管理器中双击该文件。",
-        "macos": "macOS：打开.dmg文件，将Rediacc Desktop拖到应用程序文件夹。您可能需要在系统偏好设置>安全性与隐私中允许该应用。",
-        "title": "安装说明",
-        "windows": "Windows：运行.exe安装程序并按照安装向导操作。应用将安装到Program Files目录。"
+        "title": "安装说明"
       },
       "meta": {
-        "description": "下载适用于 Windows、macOS 和 Linux 平台的 Rediacc Desktop 桌面应用和命令行工具，立即开始高效管理您的基础设施。",
+        "description": "下载适用于 Windows、macOS 和 Linux 的 Rediacc CLI。安装快速，并支持自动更新。",
         "keywords": "Rediacc下载, 桌面应用, CLI, Windows应用, macOS应用, Linux应用",
         "title": "下载 Rediacc CLI 和桌面应用 - 支持 Windows macOS Linux"
       },
@@ -1096,22 +1091,13 @@
         "windows": "Windows"
       },
       "requirements": {
-        "disk": "500 MB可用磁盘空间",
-        "diskTitle": "磁盘空间",
         "linux": "具有glibc 2.28+的现代Linux发行版",
         "macos": "macOS 11（Big Sur）或更高版本",
-        "ram": "最低2 GB RAM，推荐4 GB",
-        "ramTitle": "内存",
         "title": "系统要求",
         "windows": "Windows 10或更高版本（64位）"
       },
       "sections": {
-        "cli": "命令行界面（CLI）",
-        "desktop": "桌面应用程序"
-      },
-      "types": {
-        "appimage": "AppImage（便携版）",
-        "deb": "Debian/Ubuntu (.deb)"
+        "cli": "命令行界面（CLI）"
       }
     },
     "home": {
@@ -1134,7 +1120,7 @@
       "copy": "复制",
       "hero": {
         "downloadsLink": "访问下载页面",
-        "downloadsNote": "在找桌面应用或二进制文件？",
+        "downloadsNote": "在找 CLI 的直接二进制文件吗？",
         "subtitle": "选择你首选的安装方式",
         "title": "安装 Rediacc CLI"
       },
@@ -2670,6 +2656,42 @@
             "大公司平均停机成本为每分钟 5,600 美元"
           ]
         },
+        "categories": {
+          "heading": "可选服务",
+          "intro": "每次合作都从一次沟通开始，以便我们根据你的环境确定合适的团队和时间线。",
+          "items": [
+            {
+              "description": "为团队提供实操培训，从引导式配置演示到覆盖高级工作流和事件响应流程的多天工作坊。",
+              "icon": "team-training",
+              "id": "training",
+              "name": "培训"
+            },
+            {
+              "description": "由真正的工程师提供持续支持，从工作时间的邮件支持，到为生产关键环境配备专属客户经理的 24/7/365 全天候覆盖。",
+              "icon": "security-assessment",
+              "id": "support",
+              "name": "支持"
+            },
+            {
+              "description": "端到端迁移与定制集成服务，从经过完整验证的数据迁移，到时间紧迫时的快速当日切换。",
+              "icon": "data-migration",
+              "id": "migration",
+              "name": "迁移"
+            },
+            {
+              "description": "勒索软件恢复与灾难恢复服务，从事件后的取证分析加固，到为关键业务系统建立持续复制。",
+              "icon": "ransomware-recovery",
+              "id": "recovery",
+              "name": "恢复"
+            },
+            {
+              "description": "安全审查、加固检查清单、合规操作手册以及事件响应保留服务，均根据你的环境和审计需求量身定制。",
+              "icon": "storage-hardening",
+              "id": "security",
+              "name": "安全与合规"
+            }
+          ]
+        },
         "cta": {
           "button": "联系我们",
           "description": "每次合作都根据你的环境量身定制。联系我们，我们会一起确定合适的方案。",
@@ -2680,42 +2702,6 @@
           "eligibility": "所有套餐都可以使用我们的专业服务。联系我们，我们会为你的环境量身定制合适的合作方案。",
           "subtitle": "关键时刻，专家为你出手",
           "title": "专业服务"
-        },
-        "categories": {
-          "heading": "可选服务",
-          "intro": "每次合作都从一次沟通开始，以便我们根据你的环境确定合适的团队和时间线。",
-          "items": [
-            {
-              "id": "training",
-              "name": "培训",
-              "description": "为团队提供实操培训，从引导式配置演示到覆盖高级工作流和事件响应流程的多天工作坊。",
-              "icon": "team-training"
-            },
-            {
-              "id": "support",
-              "name": "支持",
-              "description": "由真正的工程师提供持续支持，从工作时间的邮件支持，到为生产关键环境配备专属客户经理的 24/7/365 全天候覆盖。",
-              "icon": "security-assessment"
-            },
-            {
-              "id": "migration",
-              "name": "迁移",
-              "description": "端到端迁移与定制集成服务，从经过完整验证的数据迁移，到时间紧迫时的快速当日切换。",
-              "icon": "data-migration"
-            },
-            {
-              "id": "recovery",
-              "name": "恢复",
-              "description": "勒索软件恢复与灾难恢复服务，从事件后的取证分析加固，到为关键业务系统建立持续复制。",
-              "icon": "ransomware-recovery"
-            },
-            {
-              "id": "security",
-              "name": "安全与合规",
-              "description": "安全审查、加固检查清单、合规操作手册以及事件响应保留服务，均根据你的环境和审计需求量身定制。",
-              "icon": "storage-hardening"
-            }
-          ]
         }
       },
       "roiCta": {
@@ -3785,7 +3771,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc audit log --limit 200",
+          "command": "rdc repo fork --parent production --tag pentest -m server-1",
           "ctaText": "免费开始",
           "description": "从免费的社区版开始。60 秒内运行你的第一次渗透测试。",
           "title": "在攻击者之前发现漏洞"
@@ -4194,7 +4180,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc audit history repository production",
+          "command": "rdc repo status --name production -m server-1",
           "ctaText": "免费开始使用社区版",
           "description": "从免费的社区版开始。一分钟内生成你的第一份审计报告。",
           "title": "看到一切，遗漏为零。"
@@ -4409,7 +4395,7 @@
               "title": "保护"
             },
             {
-              "description": "运行 rdc audit --from --to。数秒内为任何时间段生成合规就绪报告。",
+              "description": "打开门户的活动页面，筛选任意时间段，然后导出为 JSON。几秒钟内即可获得可直接用于审计的报告。",
               "icon": "file-text",
               "title": "报告"
             }
@@ -4594,7 +4580,7 @@
         "terminal": {
           "lines": [
             {
-              "text": "rdc audit --from 2026-02-01 --to 2026-02-27",
+              "text": "jq -r '.events[]' audit-export.json",
               "type": "command"
             },
             {
@@ -6075,7 +6061,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc audit log --limit 50",
+          "command": "rdc config show",
           "ctaText": "免费开始使用社区版",
           "description": "从免费社区版开始。一分钟内运行您的第一次密钥托管审计。",
           "title": "停止从美国司法管辖的提供商那里租用您自己的数据。"
@@ -6477,7 +6463,7 @@
         "terminal": {
           "lines": [
             {
-              "text": "rdc audit log --limit 50",
+              "text": "jq -r '.keys[]' key-custody-report.json",
               "type": "command"
             },
             {
@@ -13536,37 +13522,10 @@
           "content": [
             "根据欧盟《通用数据保护条例》（GDPR）和《电子隐私指令》，我们收集遥测数据的法律依据取决于产品场景：",
             "对于<strong>Web 应用程序</strong>（基于浏览器）：遥测数据基于<strong>合法利益</strong>（GDPR第6(1)(f)条）收集，目的是维护和提高服务质量。您可以随时退出。",
-            "对于<strong>CLI、中间件和Bridge</strong>（安装在您的基础设施上）：遥测数据基于<strong>合法利益</strong>收集，并提供明确的退出机制。您可以在发送任何数据之前禁用遥测。",
-            "对于要求明确同意的司法管辖区的用户（例如韩国依据PIPA），应在传输任何数据之前通过产品配置明确选择加入遥测。"
+            "对于<strong>CLI、中间件和Bridge</strong>（安装在您的基础设施上）：遥测数据基于<strong>合法利益</strong>收集，并提供明确的退出机制。您可以在发送任何数据之前禁用遥测。"
           ],
           "id": "legal-basis",
           "title": "3. 收集的法律依据"
-        },
-        "middleware": {
-          "content": ["Rediacc中间件收集运营遥测数据。遥测数据传输至<code>rediacc.com</code>。"],
-          "id": "middleware",
-          "subsections": {
-            "middlewareDataCollected": {
-              "content": ["中间件收集以下类别的数据："],
-              "items": [
-                "<strong>系统信息：</strong>主机名、操作系统版本、.NET运行时版本",
-                "<strong>API调用：</strong>HTTP方法、端点路径、响应状态码、请求持续时间",
-                "<strong>数据库操作：</strong>存储过程名称、执行持续时间、返回行数（无查询内容、参数或结果数据）",
-                "<strong>身份验证事件：</strong>仅哈希用户标识符——用户ID使用SHA-256和盐值进行哈希，然后截断为前12个字符。原始用户ID绝不传输。",
-                "<strong>健康检查：</strong>服务组件可用性状态和响应时间",
-                "<strong>应用程序生命周期：</strong>启动、关闭和配置更改事件",
-                "<strong>错误信息：</strong>错误类型、错误消息和运营上下文"
-              ],
-              "title": "6.1 收集的数据"
-            },
-            "middlewareOptOut": {
-              "content": [
-                "在中间件配置（appsettings.json或特定环境配置）中将<code>Telemetry:Enabled</code>设置为<code>false</code>。"
-              ],
-              "title": "6.2 如何退出"
-            }
-          },
-          "title": "6. 中间件遥测"
         },
         "principles": {
           "content": ["Rediacc的所有遥测收集均遵循以下原则："],
@@ -13579,48 +13538,6 @@
             "<strong>聚合：</strong>遥测数据以聚合方式进行分析。我们不会根据遥测数据建立个人用户档案。"
           ],
           "title": "2. 我们的遥测原则"
-        },
-        "webApp": {
-          "content": [
-            "Rediacc Web 应用程序使用基于 OpenTelemetry 的分布式追踪。遥测数据传输至<code>https://www.rediacc.com/otlp</code>。在生产环境中，仅采样<strong>10%的会话</strong>。"
-          ],
-          "id": "web-app",
-          "subsections": {
-            "webDataCollected": {
-              "content": ["Web 应用程序收集以下类别的数据："],
-              "items": [
-                "<strong>浏览器信息：</strong>浏览器名称和版本、首选语言、平台（例如Windows、macOS、Linux）、屏幕分辨率、色彩深度、用户代理字符串、设备内存（如可用）、网络连接类型",
-                "<strong>用户上下文：</strong>会话ID（每次会话随机生成）、仅电子邮件域名（本地部分已编辑，例如<code>***@example.com</code>）、组织名称、团队名称",
-                "<strong>页面浏览和导航：</strong>应用程序内访问的页面、路由更改、来源信息",
-                "<strong>用户交互：</strong>点击、表单提交、模态框打开/关闭、搜索查询、筛选器更改、标签页切换、文件下载（不收集文件名）",
-                "<strong>API调用：</strong>HTTP方法、URL路径、响应状态码、请求持续时间",
-                "<strong>错误：</strong>错误类型、错误消息、堆栈追踪（截断至1,000个字符）、错误来源",
-                "<strong>性能指标：</strong>核心Web指标（LCP、FID、CLS、TTFB、INP）、资源计时、内存使用（每30秒采样）、长任务检测",
-                "<strong>组件生命周期：</strong>组件挂载/卸载计时、渲染持续时间"
-              ],
-              "title": "4.1 收集的数据"
-            },
-            "webNotCollected": {
-              "content": ["Web 应用程序不收集："],
-              "items": [
-                "完整的电子邮件地址（本地部分始终被编辑）",
-                "密码、令牌或身份验证凭据",
-                "文件内容、数据库内容或查询结果",
-                "表单字段值（仅记录表单已提交的事实）",
-                "剪贴板内容或按键记录",
-                "IP地址（我们的遥测端点不记录）"
-              ],
-              "title": "4.2 不收集的数据"
-            },
-            "webOptOut": {
-              "content": [
-                "在您的账户设置中将<code>userConsent</code>配置标志设置为<code>false</code>。退出后遥测立即停止。",
-                "<strong>桌面应用程序：</strong>桌面（Electron）应用程序默认完全禁用遥测。不收集或传输任何数据。"
-              ],
-              "title": "4.3 如何退出"
-            }
-          },
-          "title": "4. Web 应用程序遥测"
         },
         "yourRights": {
           "content": [

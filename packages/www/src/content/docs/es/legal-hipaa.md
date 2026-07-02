@@ -4,7 +4,7 @@ description: "Cómo la arquitectura de cifrado y aislamiento de Rediacc se ajust
 category: "Legal"
 order: 3
 language: es
-sourceHash: "f5fbdaa4a00491ea"
+sourceHash: "a0dd73c1923519b0"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -21,7 +21,7 @@ HIPAA requiere salvaguardas administrativas, técnicas y físicas. La tabla a co
 | Requisito | Referencia HIPAA | Capacidad de Rediacc |
 |-----------|-----------------|---------------------|
 | Control de acceso | [45 CFR 164.312(a)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Autenticación basada en clave SSH. Tokens API con vinculación IP y restricciones de alcance. Aislamiento de Docker daemon por repositorio previene acceso entre repositorios. |
-| Controles de auditoría | [45 CFR 164.312(b)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Más de 40 tipos de eventos a nivel de cuenta que cubren autenticación, tokens API, operaciones de configuración y licencias. Rastreo por usuario y equipo. Exportación vía panel de administración o `rdc audit` CLI. |
+| Controles de auditoría | [45 CFR 164.312(b)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Más de 40 tipos de eventos a nivel de cuenta que cubren autenticación, tokens API, operaciones de configuración y licencias. Rastreo por usuario y equipo. Exportación vía panel de administración o la página de actividad del portal (exportación JSON disponible). |
 | Controles de integridad | [45 CFR 164.312(c)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Los snapshots CoW preservan datos originales antes de modificaciones. `rdc repo validate` verifica la integridad del repositorio y salud del respaldo (contenedor LUKS, consistencia del sistema de archivos, configuración). |
 | Cifrado en reposo | [45 CFR 164.312(a)(2)(iv)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Cifrado LUKS2 AES-256 en todos los volúmenes de repositorios. Credenciales almacenadas solo en la configuración local del operador, nunca en el servidor. El almacén de configuración usa cifrado de conocimiento cero AES-256-GCM con derivación de clave dividida. Ni siquiera el servidor puede descifrar las configuraciones almacenadas. |
 | Seguridad de transmisión | [45 CFR 164.312(e)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Todas las operaciones remotas usan SSH. El transporte de respaldo está cifrado de extremo a extremo. Sin transferencia de datos sin cifrar. |

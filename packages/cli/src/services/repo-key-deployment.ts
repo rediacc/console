@@ -4,7 +4,7 @@
  * with the sandbox-gateway command= prefix for server-side isolation.
  */
 
-import type { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import type { SFTPClient } from '../shared-desktop/sftp/index.js';
 import { debugLog } from '../utils/debug.js';
 import { configService } from './config-resources.js';
 import { machineConnections } from './machine-connection.js';

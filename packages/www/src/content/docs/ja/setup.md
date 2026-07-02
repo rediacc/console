@@ -4,7 +4,7 @@ description: "設定の作成、マシンの追加、サーバーのプロビジ
 category: "Guides"
 order: 3
 language: ja
-sourceHash: "b3c8c42db1b8d99b"
+sourceHash: "19a208e453f7d742"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -104,7 +104,7 @@ rdc term connect -m server-1 -c "hostname"
 rdc doctor
 ```
 
-> **クラウドアダプターのみ**: `rdc machine test-connection` コマンドは詳細なSSH診断を提供しますが、クラウドアダプターが必要です。ローカルアダプターでは、`rdc term` または `ssh` を直接使用してください。
+> **ヒント**: SSH接続を確認するには、`rdc term connect -m <machine> -c "hostname"` を実行するか、`ssh` を直接使用してください。
 
 ## インフラストラクチャ設定
 
@@ -232,7 +232,7 @@ rdc config provider list
 
 ```bash
 rdc config field set --pointer /defaults/machine --new '"server-1"'   # デフォルトマシン
-rdc config set --key team --value my-team                   # デフォルトチーム（クラウドアダプター、実験的）
+rdc config set --key team --value my-team                   # デフォルトチーム（設定ストア用）
 ```
 
 デフォルトマシンを設定した後は、コマンドから`-m server-1`を省略できます：

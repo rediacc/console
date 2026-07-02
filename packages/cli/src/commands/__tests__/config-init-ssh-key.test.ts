@@ -79,7 +79,6 @@ describe('mergeInitUpdates', () => {
     const merged = mergeInitUpdates(baseConfig(), {
       sshContent: { privateKey: PRIVATE_KEY_BODY, publicKey: PUBLIC_KEY_BODY },
       mpUpdate: {},
-      apiUrlUpdate: {},
     });
 
     expect(merged.credentials?.ssh?.privateKey).toBe(PRIVATE_KEY_BODY);
@@ -89,7 +88,6 @@ describe('mergeInitUpdates', () => {
   it('leaves credentials absent when --ssh-key and --master-password are both absent', () => {
     const merged = mergeInitUpdates(baseConfig(), {
       mpUpdate: {},
-      apiUrlUpdate: {},
     });
 
     expect(merged.credentials).toBeUndefined();
@@ -102,7 +100,6 @@ describe('mergeInitUpdates', () => {
         credentials: { masterPasswordVerifier: 'hashed-mp' },
         encryption: { mode: 'master-password' },
       },
-      apiUrlUpdate: {},
     });
 
     expect(merged.credentials?.ssh?.privateKey).toBe(PRIVATE_KEY_BODY);
@@ -110,22 +107,19 @@ describe('mergeInitUpdates', () => {
     expect(merged.encryption?.mode).toBe('master-password');
   });
 
-  it('preserves account.accountServer from --server and apiUrl from --api-url', () => {
+  it('preserves account.accountServer from --server', () => {
     const merged = mergeInitUpdates(baseConfig(), {
       accountUpdate: { accountServer: 'https://edge.example.com' },
-      apiUrlUpdate: { account: { apiUrl: 'https://api.example.com' } },
       mpUpdate: {},
     });
 
     expect(merged.account?.accountServer).toBe('https://edge.example.com');
-    expect(merged.account?.apiUrl).toBe('https://api.example.com');
   });
 
   it('persists renetPath to the top-level field', () => {
     const merged = mergeInitUpdates(baseConfig(), {
       renetPath: '/opt/bin/renet',
       mpUpdate: {},
-      apiUrlUpdate: {},
     });
 
     expect(merged.renetPath).toBe('/opt/bin/renet');
@@ -140,7 +134,7 @@ describe('mergeInitUpdates', () => {
       },
     };
 
-    const merged = mergeInitUpdates(existing, { mpUpdate: {}, apiUrlUpdate: {} });
+    const merged = mergeInitUpdates(existing, { mpUpdate: {} });
 
     expect(merged.credentials?.ssh?.privateKey).toBe('existing-key');
     expect(merged.credentials?.cfDnsApiToken).toBe('existing-cf-token');

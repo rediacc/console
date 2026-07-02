@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: fr
-sourceHash: "f56ab0bacb657043"
+sourceHash: "e2f5d37c534fc40d"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -189,12 +189,12 @@ rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/r
 
 Le résultat est sauvegardé dans le même fichier JSON et est immédiatement visible dans le prochain `rdc machine query --system`.
 
-## Statut du coffre
+## Aperçu de la machine
 
 Obtenez un aperçu complet d'une machine incluant les informations de déploiement :
 
 ```bash
-rdc machine vault-status --name server-1
+rdc machine query --name server-1
 ```
 
 Ceci fournit :
@@ -207,24 +207,15 @@ Utilisez `--output json` pour une sortie lisible par les machines.
 
 ## Tester la connexion
 
-> **Adaptateur cloud uniquement.** Avec l'adaptateur local, utilisez `rdc term connect -m server-1 -c "hostname"` pour vérifier la connectivité.
-
 Vérifiez la connectivité SSH vers une machine :
 
 ```bash
-rdc machine test-connection --ip 203.0.113.50 --user deploy
+rdc term connect -m server-1 -c "hostname"
 ```
 
-Ce rapport inclut :
-- Statut de la connexion (succès/échec)
-- Méthode d'authentification utilisée
-- Configuration de la clé SSH
-- Statut de déploiement de la clé publique
-- Entrée des clés d'hôte connues
-
-Options :
-- `--port <number>`, Port SSH (par défaut : 22)
-- `--save -m server-1`, Enregistrer la clé d'hôte vérifiée dans la configuration de la machine
+La commande affiche le nom d'hôte distant en cas de succès et une erreur de
+connexion sinon, ce qui vérifie en une seule étape le DNS, le port SSH et
+l'authentification par clé.
 
 ## Diagnostics (doctor)
 

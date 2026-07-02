@@ -2,11 +2,7 @@ import { getCollection } from 'astro:content';
 import type { APIRoute } from 'astro';
 
 // Docs excluded from LLM context (cloud-specific or auto-generated references)
-const EXCLUDED_SLUGS = [
-  'en/cli-application',
-  'en/cli-application-cloud',
-  'en/web-application',
-] as const;
+const EXCLUDED_SLUGS = ['en/cli-application'] as const;
 
 // Fallback sort order for docs without an explicit order (pushes them to end)
 const ORDER_FALLBACK = 99;

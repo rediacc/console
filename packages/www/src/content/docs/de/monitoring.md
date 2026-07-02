@@ -4,7 +4,7 @@ description: 'Maschinengesundheit, Container, Dienste, Repositories und Diagnose
 category: Guides
 order: 9
 language: de
-sourceHash: "f56ab0bacb657043"
+sourceHash: "e2f5d37c534fc40d"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -187,12 +187,12 @@ rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/r
 
 Das Ergebnis wird in derselben JSON-Datei gespeichert und ist sofort im nächsten `rdc machine query --system` sichtbar.
 
-## Vault-Status
+## Maschinenübersicht
 
 Einen vollständigen Überblick über eine Maschine einschließlich Bereitstellungsinformationen erhalten:
 
 ```bash
-rdc machine vault-status --name server-1
+rdc machine query --name server-1
 ```
 
 Dies liefert:
@@ -205,24 +205,15 @@ Verwenden Sie `--output json` für maschinenlesbare Ausgabe.
 
 ## Verbindung testen
 
-> **Nur Cloud-Adapter.** Beim lokalen Adapter verwenden Sie `rdc term connect -m server-1 -c "hostname"`, um die Konnektivität zu prüfen.
-
 SSH-Konnektivität zu einer Maschine überprüfen:
 
 ```bash
-rdc machine test-connection --ip 203.0.113.50 --user deploy
+rdc term connect -m server-1 -c "hostname"
 ```
 
-Meldet:
-- Verbindungsstatus (Erfolg/Fehlgeschlagen)
-- Verwendete Authentifizierungsmethode
-- SSH-Schlüssel-Konfiguration
-- Status der Public-Key-Bereitstellung
-- Known-Hosts-Eintrag
-
-Optionen:
-- `--port <number>`, SSH-Port (Standard: 22)
-- `--save -m server-1`, Verifizierten Host-Schlüssel in der Maschinenkonfiguration speichern
+Der Befehl gibt bei Erfolg den Remote-Hostnamen aus, andernfalls einen
+Verbindungsfehler, und prüft damit DNS, den SSH-Port und die
+Schlüsselauthentifizierung in einem Schritt.
 
 ## Diagnose (doctor)
 

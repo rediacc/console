@@ -4,7 +4,7 @@ description: "Comment l'architecture de chiffrement et d'isolation de Rediacc co
 category: "Legal"
 order: 3
 language: fr
-sourceHash: "f5fbdaa4a00491ea"
+sourceHash: "a0dd73c1923519b0"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -21,7 +21,7 @@ HIPAA exige des garanties administratives, techniques et physiques. Le tableau c
 | Exigence | Référence HIPAA | Capacité Rediacc |
 |----------|----------------|-----------------|
 | Contrôle d'accès | [45 CFR 164.312(a)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Authentification par clé SSH. Jetons API avec liaison IP et restrictions de portée. L'isolation du Docker daemon par dépôt empêche l'accès inter-dépôts. |
-| Contrôles d'audit | [45 CFR 164.312(b)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Plus de 40 types d'événements au niveau du compte couvrant l'authentification, les jetons API, les opérations de configuration et les licences. Traçabilité par utilisateur et par équipe. Export via le tableau de bord d'administration ou `rdc audit` CLI. |
+| Contrôles d'audit | [45 CFR 164.312(b)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Plus de 40 types d'événements au niveau du compte couvrant l'authentification, les jetons API, les opérations de configuration et les licences. Traçabilité par utilisateur et par équipe. Export via le tableau de bord d'administration ou la page d'activité du portail (export JSON disponible). |
 | Contrôles d'intégrité | [45 CFR 164.312(c)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Les snapshots CoW préservent les données originales avant modification. `rdc repo validate` vérifie l'intégrité du dépôt et la santé des sauvegardes (conteneur LUKS, cohérence du système de fichiers, configuration). |
 | Chiffrement au repos | [45 CFR 164.312(a)(2)(iv)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Chiffrement LUKS2 AES-256 sur tous les volumes de dépôts. Identifiants stockés uniquement dans la configuration locale de l'opérateur, jamais sur le serveur. Le magasin de configuration utilise le chiffrement à connaissance nulle AES-256-GCM avec dérivation de clé fractionnée. Même le serveur ne peut pas déchiffrer les configurations stockées. |
 | Sécurité de transmission | [45 CFR 164.312(e)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Toutes les opérations distantes utilisent SSH. Le transport de sauvegarde est chiffré de bout en bout. Aucun transfert de données non chiffré. |

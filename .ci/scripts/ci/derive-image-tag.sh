@@ -50,7 +50,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --version TAG      Use explicit version tag"
             echo "  --github-output    Write 'tag=VALUE' to GITHUB_OUTPUT"
-            echo "  --env-file         Write TAG, API_TAG, WEB_TAG, BRIDGE_TAG to GITHUB_ENV"
+            echo "  --env-file         Write TAG, WEB_TAG, RENET_TAG to GITHUB_ENV"
             echo "  -h, --help         Show this help message"
             echo ""
             echo "Auto-derivation (when --version not provided):"
@@ -124,11 +124,10 @@ if [[ "$ENV_FILE_MODE" == "true" ]]; then
     if [[ -n "${GITHUB_ENV:-}" ]]; then
         {
             echo "TAG=$TAG"
-            echo "API_TAG=$TAG"
             echo "WEB_TAG=$TAG"
-            echo "BRIDGE_TAG=$TAG"
+            echo "RENET_TAG=$TAG"
         } >>"$GITHUB_ENV"
-        log_info "Set GITHUB_ENV: TAG=$TAG, API_TAG=$TAG, WEB_TAG=$TAG, BRIDGE_TAG=$TAG" >&2
+        log_info "Set GITHUB_ENV: TAG=$TAG, WEB_TAG=$TAG, RENET_TAG=$TAG" >&2
     else
         log_warn "GITHUB_ENV not set, skipping --env-file" >&2
     fi

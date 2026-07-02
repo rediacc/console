@@ -1066,33 +1066,28 @@
       "architectures": {
         "arm64": "ARM64",
         "arm64_apple": "Apple Silicon (ARM64)",
-        "armv7l": "ARMv7",
         "x64": "x64 (64-bit)",
         "x64_intel": "Intel (x64)"
       },
       "autoUpdate": {
-        "description": "Rediacc Masaüstü kendi kendini günceller. Kurulumdan sonra yeni sürümleri otomatik kontrol eder ve hazır olduğunda sizi bilgilendirir. Tek tıkla yüklenir. Yavaş bağlantılarda biraz zaman gerekebilir.",
+        "description": "Rediacc CLI kendini günceller. Yeni sürümleri kontrol eder ve sizin için kurar, böylece her zaman en güncel sürümü kullanırsınız.",
         "title": "Otomatik Güncelleme Bilgileri"
       },
       "cli": {
         "binary": "İkili Dosya",
-        "description": "Terminal'de çalışan, hafif ve hızlı bir araç. Ekransız sunucuları yönetmek ya da birden fazla makinede aynı komutu aynı anda çalıştırmak istiyorsanız ideal. Masaüstü uygulaması yerine CLI tercih etmelisiniz. Sunuculara bağlanın, komut çalıştırın, güncellemeleri gönderin. Tarayıcı gerekmez."
+        "description": "Terminalde çalıştırdığınız küçük ve hızlı bir araç. Ekransız yönettiğiniz sunucular için ya da aynı komutu birçok makinede birden çalıştırmak için ideal. Sunuculara bağlanın, komut çalıştırın, güncellemeleri gönderin. Tarayıcıya gerek yok."
       },
       "hero": {
         "released": "Yayınlandı",
-        "subtitle": "Rediacc Desktop & CLI",
+        "subtitle": "Rediacc CLI",
         "title": "Rediacc CLI'yi İndirin"
       },
       "installation": {
         "cli": "CLI: Sisteminiz için dosyayı indirin. Linux/macOS'ta terminal açıp chmod +x dosyaadi komutu çalıştırarak çalıştırılabilir hale getirin. Sonra /usr/local/bin'e taşıyın.",
-        "linux_appimage": "Linux AppImage: Dosyayı \"chmod +x dosyaadı.AppImage\" komutuyla çalıştırılabilir yapın ve doğrudan çalıştırın. Kurulum gerekmez.",
-        "linux_deb": "Linux DEB: sudo dpkg -i dosyaadı.deb ile kurun ya da dosya yöneticinizde çift tıklayın.",
-        "macos": "macOS: .dmg dosyasını açın. Rediacc Masaüstü'nü Uygulamalar klasörüne sürükleyin. macOS bunu engellerse Sistem Tercihleri > Güvenlik ve Gizlilik'ten uygulamaya izin verin.",
-        "title": "Kurulum Talimatları",
-        "windows": "Windows: .exe yükleyiciyi çalıştırıp adımları izleyin. Program Files klasörüne yüklenecektir."
+        "title": "Kurulum Talimatları"
       },
       "meta": {
-        "description": "Rediacc Desktop ve CLI'yi Windows, macOS ve Linux'da indirin.",
+        "description": "Rediacc CLI'yi Windows, macOS ve Linux için indirin.",
         "keywords": "Rediacc indirme, masaüstü uygulaması, CLI, Windows uygulaması, macOS uygulaması, Linux uygulaması",
         "title": "Tüm Platformlar İçin Rediacc CLI'yi İndirin | Rediacc"
       },
@@ -1103,22 +1098,13 @@
         "windows": "Windows"
       },
       "requirements": {
-        "disk": "500 MB boş disk alanı",
-        "diskTitle": "Disk Alanı",
         "linux": "Modern Linux dağıtımı (glibc 2.28+)",
         "macos": "macOS 11 (Big Sur) veya üzeri",
-        "ram": "En az 2 GB RAM, önerilen 4 GB",
-        "ramTitle": "Bellek",
         "title": "Sistem Gereksinimleri",
         "windows": "Windows 10 veya üzeri (64-bit)"
       },
       "sections": {
-        "cli": "Komut Satırı Arayüzü (CLI)",
-        "desktop": "Masaüstü Uygulaması"
-      },
-      "types": {
-        "appimage": "AppImage (taşınabilir)",
-        "deb": "Debian/Ubuntu (.deb)"
+        "cli": "Komut Satırı Arayüzü (CLI)"
       }
     },
     "home": {
@@ -1141,7 +1127,7 @@
       "copy": "Kopyala",
       "hero": {
         "downloadsLink": "İndirmeleri gör",
-        "downloadsNote": "Masaüstü uygulaması veya doğrudan binary mi arıyorsun?",
+        "downloadsNote": "Doğrudan CLI dosyalarını mı arıyorsunuz?",
         "subtitle": "Kurulum şeklini seç",
         "title": "Rediacc CLI Yükle"
       },
@@ -2677,6 +2663,42 @@
             "Ortalama kesinti maliyeti büyük şirketler için dakikada 5.600 USD"
           ]
         },
+        "categories": {
+          "heading": "Sunulan Hizmetler",
+          "intro": "Her işbirliği bir görüşme ile başlar; böylece kurulumunuza uygun ekibi ve zaman çizelgesini birlikte belirleyebiliriz.",
+          "items": [
+            {
+              "description": "Takımınıza yönelik uygulamalı eğitimler; rehberli kurulum turundan, ileri düzey iş akışları ve olay müdahale prosedürlerini ele alan çok günlük atölyelere kadar.",
+              "icon": "team-training",
+              "id": "training",
+              "name": "Eğitim"
+            },
+            {
+              "description": "Gerçek mühendislerden sürekli destek; iş saatleri içi e-posta desteğinden, kritik üretim ortamları için özel hesap yöneticisiyle 7/24/365 kapsama kadar.",
+              "icon": "security-assessment",
+              "id": "support",
+              "name": "Destek"
+            },
+            {
+              "description": "Uçtan uca göç ve özel entegrasyon çalışmaları; tam doğrulanmış veri göçünden, zaman baskısı altında aynı gün gerçekleştirilen hızlı kesintisiz geçişe kadar.",
+              "icon": "data-migration",
+              "id": "migration",
+              "name": "Göç"
+            },
+            {
+              "description": "Fidye yazılımı kurtarma ve afet kurtarma çalışmaları; olay sonrası adli inceleme ve sertleştirmeden, kritik sistemler için sürekli çoğaltma altyapısının devreye alınmasına kadar.",
+              "icon": "ransomware-recovery",
+              "id": "recovery",
+              "name": "Kurtarma"
+            },
+            {
+              "description": "Ortamınıza ve denetim gereksinimlerinize göre uyarlanan güvenlik incelemeleri, sertleştirme kontrol listeleri, uyumluluk runbook'ları ve olay müdahale danışmanlığı.",
+              "icon": "storage-hardening",
+              "id": "security",
+              "name": "Güvenlik ve Uyumluluk"
+            }
+          ]
+        },
         "cta": {
           "button": "Bize ulaşın",
           "description": "Her işbirliği kurulumunuza göre şekillenir. Bize ulaşın, doğru planı birlikte belirleyelim.",
@@ -2687,42 +2709,6 @@
           "eligibility": "Tüm planlar profesyonel hizmetlerimize erişebilir. Bize ulaşın, kurulumunuza uygun işbirliğini birlikte tasarlayalım.",
           "subtitle": "En çok ihtiyaç duyduğunuz anda uzman yardımı alın",
           "title": "Profesyonel Hizmetler"
-        },
-        "categories": {
-          "heading": "Sunulan Hizmetler",
-          "intro": "Her işbirliği bir görüşme ile başlar; böylece kurulumunuza uygun ekibi ve zaman çizelgesini birlikte belirleyebiliriz.",
-          "items": [
-            {
-              "id": "training",
-              "name": "Eğitim",
-              "description": "Takımınıza yönelik uygulamalı eğitimler; rehberli kurulum turundan, ileri düzey iş akışları ve olay müdahale prosedürlerini ele alan çok günlük atölyelere kadar.",
-              "icon": "team-training"
-            },
-            {
-              "id": "support",
-              "name": "Destek",
-              "description": "Gerçek mühendislerden sürekli destek; iş saatleri içi e-posta desteğinden, kritik üretim ortamları için özel hesap yöneticisiyle 7/24/365 kapsama kadar.",
-              "icon": "security-assessment"
-            },
-            {
-              "id": "migration",
-              "name": "Göç",
-              "description": "Uçtan uca göç ve özel entegrasyon çalışmaları; tam doğrulanmış veri göçünden, zaman baskısı altında aynı gün gerçekleştirilen hızlı kesintisiz geçişe kadar.",
-              "icon": "data-migration"
-            },
-            {
-              "id": "recovery",
-              "name": "Kurtarma",
-              "description": "Fidye yazılımı kurtarma ve afet kurtarma çalışmaları; olay sonrası adli inceleme ve sertleştirmeden, kritik sistemler için sürekli çoğaltma altyapısının devreye alınmasına kadar.",
-              "icon": "ransomware-recovery"
-            },
-            {
-              "id": "security",
-              "name": "Güvenlik ve Uyumluluk",
-              "description": "Ortamınıza ve denetim gereksinimlerinize göre uyarlanan güvenlik incelemeleri, sertleştirme kontrol listeleri, uyumluluk runbook'ları ve olay müdahale danışmanlığı.",
-              "icon": "storage-hardening"
-            }
-          ]
         }
       },
       "roiCta": {
@@ -3809,7 +3795,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc audit log --limit 200",
+          "command": "rdc repo fork --parent production --tag pentest -m server-1",
           "ctaText": "Ücretsiz Başlayın",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk sızma testinizi 60 saniyeden kısa sürede çalıştırın.",
           "title": "Güvenlik açıklarını saldırganlardan önce bulun"
@@ -4218,7 +4204,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc audit history repository production",
+          "command": "rdc repo status --name production -m server-1",
           "ctaText": "Community ile Ücretsiz Başlayın",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk denetim raporunuzu bir dakikadan kısa sürede oluşturun.",
           "title": "Her şeyi görün. Hiçbir şeyi kaçırmayın."
@@ -4433,7 +4419,7 @@
               "title": "Koru"
             },
             {
-              "description": "rdc audit --from --to komutunu çalıştırın. Saniyeler içinde herhangi bir zaman dilimi için uyumluluğa hazır raporlar oluşturun.",
+              "description": "Portaldaki etkinlik sayfasını açın, istediğiniz tarih aralığını filtreleyin ve JSON olarak dışa aktarın. Saniyeler içinde denetime hazır bir rapor elde edersiniz.",
               "icon": "file-text",
               "title": "Raporla"
             }
@@ -4618,7 +4604,7 @@
         "terminal": {
           "lines": [
             {
-              "text": "rdc audit --from 2026-02-01 --to 2026-02-27",
+              "text": "jq -r '.events[]' audit-export.json",
               "type": "command"
             },
             {
@@ -6099,7 +6085,7 @@
           "title": "Ne elde edersiniz"
         },
         "bottomCta": {
-          "command": "rdc audit log --limit 50",
+          "command": "rdc config show",
           "ctaText": "Community ile Ücretsiz Başlayın",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk anahtar saklama denetimini bir dakikadan kısa sürede çalıştırın.",
           "title": "Verilerinizi ABD yargı yetkisindeki bir sağlayıcıdan geri kiralamayı bırakın."
@@ -6505,7 +6491,7 @@
         "terminal": {
           "lines": [
             {
-              "text": "rdc audit log --limit 50",
+              "text": "jq -r '.keys[]' key-custody-report.json",
               "type": "command"
             },
             {
@@ -13566,39 +13552,10 @@
           "content": [
             "AB Genel Veri Koruma Yönetmeliği (GDPR) ve eGizlilik Yönergesi kapsamında, telemetri toplama için yasal dayanağımız ürün bağlamına bağlıdır:",
             "<strong>Web Uygulaması</strong> (tarayıcı tabanlı) için: telemetri, hizmet kalitesini sürdürme ve iyileştirme amacıyla <strong>meşru menfaat</strong> (GDPR Md. 6(1)(f)) kapsamında toplanır. İstediğiniz zaman devre dışı bırakabilirsiniz.",
-            "<strong>CLI, Middleware ve Bridge</strong> (altyapınıza kurulan) için: telemetri, açık devre dışı bırakma mekanizmaları sağlanarak <strong>meşru menfaat</strong> kapsamında toplanır. Herhangi bir veri gönderilmeden önce telemetriyi devre dışı bırakabilirsiniz.",
-            "Açık onay gerektiren yargı alanlarındaki kullanıcılar için (örneğin PIPA kapsamında Güney Kore), telemetri, herhangi bir veri iletilmeden önce ürün yapılandırması aracılığıyla açıkça etkinleştirilmelidir."
+            "<strong>CLI, Middleware ve Bridge</strong> (altyapınıza kurulan) için: telemetri, açık devre dışı bırakma mekanizmaları sağlanarak <strong>meşru menfaat</strong> kapsamında toplanır. Herhangi bir veri gönderilmeden önce telemetriyi devre dışı bırakabilirsiniz."
           ],
           "id": "legal-basis",
           "title": "3. Toplama için Yasal Dayanak"
-        },
-        "middleware": {
-          "content": [
-            "Rediacc Middleware, operasyonel telemetri toplar. Telemetri <code>rediacc.com</code> adresine iletilir."
-          ],
-          "id": "middleware",
-          "subsections": {
-            "middlewareDataCollected": {
-              "content": ["Middleware aşağıdaki veri kategorilerini toplar:"],
-              "items": [
-                "<strong>Sistem bilgileri:</strong> ana bilgisayar adı, işletim sistemi sürümü, .NET çalışma zamanı sürümü",
-                "<strong>API çağrıları:</strong> HTTP yöntemi, uç nokta yolu, yanıt durum kodu, istek süresi",
-                "<strong>Veritabanı işlemleri:</strong> saklı yordam adı, yürütme süresi, dönen satır sayısı (sorgu içeriği, parametreler veya sonuç verileri yok)",
-                "<strong>Kimlik doğrulama olayları:</strong> yalnızca hashlenmiş kullanıcı tanımlayıcısı — kullanıcı kimlikleri SHA-256 ve bir tuz ile hashlenir, ardından ilk 12 karaktere kısaltılır. Orijinal kullanıcı kimlikleri asla iletilmez.",
-                "<strong>Sağlık kontrolleri:</strong> hizmet bileşeni kullanılabilirlik durumu ve yanıt süreleri",
-                "<strong>Uygulama yaşam döngüsü:</strong> başlatma, kapatma ve yapılandırma değişikliği olayları",
-                "<strong>Hata bilgileri:</strong> hata türü, hata mesajı ve operasyonel bağlam"
-              ],
-              "title": "6.1 Toplanan Veriler"
-            },
-            "middlewareOptOut": {
-              "content": [
-                "Middleware yapılandırmanızda (appsettings.json veya ortama özgü yapılandırma) <code>Telemetry:Enabled</code> değerini <code>false</code> olarak ayarlayın."
-              ],
-              "title": "6.2 Nasıl Devre Dışı Bırakılır"
-            }
-          },
-          "title": "6. Middleware Telemetrisi"
         },
         "principles": {
           "content": ["Rediacc'taki tüm telemetri toplama işlemleri şu ilkeleri takip eder:"],
@@ -13611,48 +13568,6 @@
             "<strong>Toplama:</strong> Telemetri verileri toplu olarak analiz edilir. Telemetriden bireysel kullanıcı profilleri oluşturmayız."
           ],
           "title": "2. Telemetri İlkelerimiz"
-        },
-        "webApp": {
-          "content": [
-            "Rediacc Web Uygulaması, OpenTelemetry tabanlı dağıtık izleme kullanır. Telemetri <code>https://www.rediacc.com/otlp</code> adresine iletilir. Üretimde yalnızca <strong>oturumların %10'u</strong> örneklenir."
-          ],
-          "id": "web-app",
-          "subsections": {
-            "webDataCollected": {
-              "content": ["Web Uygulaması aşağıdaki veri kategorilerini toplar:"],
-              "items": [
-                "<strong>Tarayıcı bilgileri:</strong> tarayıcı adı ve sürümü, tercih edilen dil, platform (ör. Windows, macOS, Linux), ekran çözünürlüğü, renk derinliği, kullanıcı aracı dizesi, cihaz belleği (varsa), ağ bağlantı türü",
-                "<strong>Kullanıcı bağlamı:</strong> oturum kimliği (her oturum için rastgele oluşturulur), yalnızca e-posta alan adı (yerel kısım gizlenir, ör. <code>***@example.com</code>), kuruluş adı, ekip adı",
-                "<strong>Sayfa görüntülemeleri ve gezinme:</strong> uygulama içinde ziyaret edilen sayfalar, rota değişiklikleri, yönlendiren bilgileri",
-                "<strong>Kullanıcı etkileşimleri:</strong> tıklamalar, form gönderimleri, modal açma/kapama, arama sorguları, filtre değişiklikleri, sekme geçişleri, dosya indirmeleri (dosya adları toplanmaz)",
-                "<strong>API çağrıları:</strong> HTTP yöntemi, URL yolu, yanıt durum kodu, istek süresi",
-                "<strong>Hatalar:</strong> hata türü, hata mesajı, yığın izleme (1.000 karaktere kısaltılır), hata kaynağı",
-                "<strong>Performans metrikleri:</strong> Core Web Vitals (LCP, FID, CLS, TTFB, INP), kaynak zamanlama, bellek kullanımı (her 30 saniyede örneklenir), uzun görev tespiti",
-                "<strong>Bileşen yaşam döngüsü:</strong> bileşen bağlama/ayırma zamanlaması, render süresi"
-              ],
-              "title": "4.1 Toplanan Veriler"
-            },
-            "webNotCollected": {
-              "content": ["Web Uygulaması şunları toplamaz:"],
-              "items": [
-                "Tam e-posta adresleri (yerel kısım her zaman gizlenir)",
-                "Şifreler, tokenlar veya kimlik doğrulama bilgileri",
-                "Dosya içerikleri, veritabanı içerikleri veya sorgu sonuçları",
-                "Form alan değerleri (yalnızca bir formun gönderildiği kaydedilir)",
-                "Pano içerikleri veya tuş vuruşları",
-                "IP adresleri (telemetri uç noktamız tarafından kaydedilmez)"
-              ],
-              "title": "4.2 Toplanmayan Veriler"
-            },
-            "webOptOut": {
-              "content": [
-                "Hesap ayarlarınızda <code>userConsent</code> yapılandırma bayrağını <code>false</code> olarak ayarlayın. Devre dışı bırakma sonrasında telemetri hemen durur.",
-                "<strong>Masaüstü Uygulaması:</strong> Telemetri, Masaüstü (Electron) uygulamasında varsayılan olarak tamamen devre dışıdır. Hiçbir veri toplanmaz veya iletilmez."
-              ],
-              "title": "4.3 Nasıl Devre Dışı Bırakılır"
-            }
-          },
-          "title": "4. Web Uygulaması Telemetrisi"
         },
         "yourRights": {
           "content": [

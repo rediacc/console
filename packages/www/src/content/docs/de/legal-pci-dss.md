@@ -4,7 +4,7 @@ description: "So erfüllt Rediacc die PCI DSS-Anforderungen: unveränderbare Sic
 category: "Legal"
 order: 6
 language: de
-sourceHash: "d8391036876231a0"
+sourceHash: "05ca01c69d8bab61"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,7 +24,7 @@ Referenz: [PCI Security Standards Council](https://www.pcisecuritystandards.org/
 | **Anf. 7**, Zugriff einschränken | Zugriff auf Systemkomponenten und Karteninhaberdaten nach Geschäftsbedarf einschränken | Pro-Repository-Docker-Daemon-Sockets. Zugang zu einem Repository gewährt keinen Zugang zu einem anderen. SSH-Schlüssel-basierte Authentifizierung. |
 | **Anf. 8**, Benutzer identifizieren und authentifizieren | Benutzer identifizieren und Zugang zu Systemkomponenten authentifizieren | SSH-Schlüssel-Authentifizierung. API-Tokens mit IP-Bindung und bereichsbezogenen Berechtigungen. Zwei-Faktor-Authentifizierung (TOTP). |
 | **Anf. 9**, Physischen Zugang einschränken | Physischen Zugang zu Karteninhaberdaten einschränken | Self-Hosted: physische Sicherheit unter Ihrer direkten Kontrolle. LUKS-Verschlüsselung macht gestohlene Laufwerke unlesbar. |
-| **Anf. 10**, Protokollieren und überwachen | Alle Zugriffe auf Systemkomponenten und Karteninhaberdaten protokollieren und überwachen | 70+ Ereignistypen (Auth, API-Tokens, Config, Lizenzierung, Maschinenoperationen). Admin-Dashboard und Portal mit Filterung nach Benutzer, Team, Typ und Datum. `rdc audit` CLI für programmatischen Export. Maschinenoperationen auch in Systemlogs für Defense in Depth. |
+| **Anf. 10**, Protokollieren und überwachen | Alle Zugriffe auf Systemkomponenten und Karteninhaberdaten protokollieren und überwachen | 70+ Ereignistypen (Auth, API-Tokens, Config, Lizenzierung, Maschinenoperationen). Admin-Dashboard und Portal mit Filterung nach Benutzer, Team, Typ und Datum, plus JSON-Export für programmatische Nutzung. Maschinenoperationen auch in Systemlogs für Defense in Depth. |
 | **Anf. 12**, Organisatorische Richtlinien | Informationssicherheit mit organisatorischen Richtlinien und Programmen unterstützen | Self-Hosted eliminiert den Drittanbieter-Verarbeiter-Scope (Anf. 12.8). Reduziert die PCI DSS-Konformitätsgrenze. |
 
 ## Netzwerksegmentierung

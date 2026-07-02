@@ -1,9 +1,7 @@
-import type { UpdateMachineAssignedBridgeParams } from '@rediacc/shared/types';
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { getStateProvider } from '../../providers/index.js';
-import { typedApi } from '../../services/api.js';
-import { addAssignCommand, createResourceCommands } from '../../utils/commandFactory.js';
+import { createResourceCommands } from '../../utils/commandFactory.js';
 
 export function registerCrudCommands(parentCommand: Command): Command {
   // Create standard CRUD commands using factory
@@ -31,40 +29,19 @@ export function registerCrudCommands(parentCommand: Command): Command {
       },
     },
     createOptions: [
-      { flags: '-b, --bridge <name>', description: t('options.bridge'), required: true },
-      { flags: '--vault <json>', description: t('options.vaultJsonMachine') },
+      { flags: '--ip <address>', description: t('options.machineIp'), required: true },
+      { flags: '--user <name>', description: t('options.sshUser'), required: true },
+      { flags: '--port <port>', description: t('options.sshPort') },
+      { flags: '--datastore <path>', description: t('options.datastore') },
     ],
     transformCreatePayload: (name, opts) => ({
       machineName: name,
       teamName: opts.team,
-      bridgeName: opts.bridge,
-      vaultContent: opts.vault,
+      ip: opts.ip,
+      user: opts.user,
+      port: opts.port === undefined ? undefined : Number(opts.port),
+      datastore: opts.datastore,
     }),
-    vaultConfig: {
-      fetch: async (params) => {
-        const provider = await getStateProvider();
-        return provider.machines.getVault(params) as Promise<never>;
-      },
-      vaultType: 'Machine',
-    },
-    vaultUpdateConfig: {
-      update: async (payload) => {
-        const provider = await getStateProvider();
-        return provider.machines.updateVault(payload);
-      },
-      vaultFieldName: 'vaultContent',
-    },
-  });
-
-  // Add assign-bridge command (cloud-only — uses typedApi directly)
-  addAssignCommand(machine, {
-    resourceName: 'machine',
-    nameField: 'machineName',
-    targetName: 'bridge',
-    targetField: 'newBridgeName',
-    parentOption: 'team',
-    perform: (payload) =>
-      typedApi.UpdateMachineAssignedBridge(payload as unknown as UpdateMachineAssignedBridgeParams),
   });
 
   return machine;

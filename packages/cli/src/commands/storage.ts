@@ -280,16 +280,9 @@ export function registerStorageCommands(program: Command): void {
     vaultConfig: {
       fetch: async (params) => {
         const provider = await getStateProvider();
-        return provider.storage.getVault(params) as Promise<never>;
+        return provider.storage.getVault(params);
       },
       vaultType: 'Storage',
-    },
-    vaultUpdateConfig: {
-      update: async (payload) => {
-        const provider = await getStateProvider();
-        return provider.storage.updateVault(payload);
-      },
-      vaultFieldName: 'vaultContent',
     },
   });
   storage.summary(t('commands.storage.descriptionShort'));

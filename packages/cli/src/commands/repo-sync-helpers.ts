@@ -6,7 +6,7 @@ import {
   getRsyncPreview,
   type RsyncChanges,
   type RsyncExecutorOptions,
-} from '@rediacc/shared-desktop/sync';
+} from '../shared-desktop/sync/index.js';
 import chalk from 'chalk';
 import { t } from '../i18n/index.js';
 

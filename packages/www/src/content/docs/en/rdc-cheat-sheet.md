@@ -100,7 +100,6 @@ Write-only deploy-time credentials. `get` returns the digest only. The value is 
 | `rdc config machine setup --name <machine>` | Run initial machine provisioning |
 | `rdc machine prune --name <machine>` | Remove unused resources from machine |
 | `rdc machine deprovision --name <machine>` | Fully deprovision a machine |
-| `rdc machine vault-status --name <machine>` | Show LUKS vault status |
 
 ## Terminal and Sync
 

@@ -1,9 +1,9 @@
 #!/bin/bash
-# Extract renet binaries from existing Docker bridge image
-# Used when skipping full renet build (bridge_exists=true)
+# Extract renet binaries from existing Docker renet image
+# Used when skipping full renet build (renet_exists=true)
 #
 # Usage: extract-renet-from-image.sh --tag TAG --output DIR
-#   --tag TAG       Bridge image tag to extract from (required)
+#   --tag TAG       Renet image tag to extract from (required)
 #   --output DIR    Output directory for binaries (default: private/bin)
 #   --registry REG  Docker registry (default: ghcr.io/rediacc/elite)
 
@@ -46,15 +46,15 @@ fi
 
 REPO_ROOT="$(get_repo_root)"
 OUTPUT_DIR="${OUTPUT_DIR:-$REPO_ROOT/private/bin}"
-BRIDGE_IMAGE="${REGISTRY}/bridge:${TAG}"
+RENET_IMAGE="${REGISTRY}/renet:${TAG}"
 
-log_step "Extracting renet binaries from $BRIDGE_IMAGE"
+log_step "Extracting renet binaries from $RENET_IMAGE"
 
 mkdir -p "$OUTPUT_DIR"
 
 # Create a temporary container to extract files
 log_info "Creating temporary container..."
-CONTAINER_ID=$(docker create "$BRIDGE_IMAGE")
+CONTAINER_ID=$(docker create "$RENET_IMAGE")
 
 cleanup() {
     if [[ -n "${CONTAINER_ID:-}" ]]; then
@@ -73,7 +73,7 @@ docker cp "$CONTAINER_ID:/opt/renet/renet-linux-arm64" "$OUTPUT_DIR/"
 # Resolve OUTPUT_DIR to absolute path before changing directories
 OUTPUT_DIR="$(cd "$OUTPUT_DIR" && pwd)"
 
-# Extract embedded assets (CRIU/rsync/rclone) from the bridge container.
+# Extract embedded assets (CRIU/rsync/rclone) from the renet container.
 # These are Linux binaries deployed INTO VMs during provisioning — needed
 # regardless of host platform (Linux KVM or macOS QEMU).
 log_step "Extracting embedded assets from container..."

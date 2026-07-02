@@ -140,17 +140,6 @@ increment_major() {
     echo "$((major + 1)).0.0"
 }
 
-# Cross-platform sed -i
-sed_in_place() {
-    local expr="$1"
-    local file="$2"
-    if [[ "$(detect_os)" == "macos" ]]; then
-        sed -i '' -E "$expr" "$file"
-    else
-        sed -i -E "$expr" "$file"
-    fi
-}
-
 # Update package.json file
 update_package_json() {
     local file="$1"
@@ -170,26 +159,6 @@ update_package_json() {
     tmp_file=$(mktemp)
     jq --arg v "$version" '.version = $v' "$file" >"$tmp_file"
     mv "$tmp_file" "$file"
-    log_info "Updated $file"
-}
-
-# Update C# project file version
-# Pattern: <Version>X.Y.Z</Version>
-update_csproj() {
-    local file="$1"
-    local version="$2"
-
-    if [[ ! -f "$file" ]]; then
-        log_warn "File not found: $file"
-        return 1
-    fi
-
-    if [[ "$DRY_RUN" == "true" ]]; then
-        log_info "[DRY-RUN] Would update $file to $version"
-        return 0
-    fi
-
-    sed_in_place "s/<Version>[^<]*<\/Version>/<Version>$version<\/Version>/" "$file"
     log_info "Updated $file"
 }
 
@@ -243,18 +212,6 @@ main() {
             ((failed++)) || true
         fi
     done
-
-    # Update C# project version
-    local csproj_file="$CONSOLE_ROOT_DIR/$VERSION_FILE_CSPROJ"
-    if [[ -f "$csproj_file" ]]; then
-        if update_csproj "$csproj_file" "$new_version"; then
-            ((updated++)) || true
-        else
-            ((failed++)) || true
-        fi
-    else
-        log_warn "C# project file not found: $csproj_file"
-    fi
 
     # Summary
     if [[ "$DRY_RUN" == "true" ]]; then

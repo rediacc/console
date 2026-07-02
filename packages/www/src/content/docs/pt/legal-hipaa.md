@@ -4,7 +4,7 @@ description: "Como a arquitetura de encriptação e isolamento da Rediacc se map
 category: "Legal"
 order: 3
 language: pt
-sourceHash: "f5fbdaa4a00491ea"
+sourceHash: "a0dd73c1923519b0"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -21,7 +21,7 @@ A HIPAA exige salvaguardas administrativas, técnicas e físicas. A tabela segui
 | Requisito | Referência HIPAA | Capacidade da Rediacc |
 |-------------|----------------|-------------------|
 | Controlo de acesso | [45 CFR 164.312(a)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Autenticação por chave SSH. Tokens de API com vinculação de IP e restrições de âmbito. O isolamento do daemon Docker por repositório impede o acesso entre repositórios. |
-| Controlos de auditoria | [45 CFR 164.312(b)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Mais de 70 tipos de eventos cobrindo autenticação, tokens de API, operações de configuração, licenciamento e operações em máquinas (ciclo de vida de repositórios, backup, sincronização, terminal). Rastreio por utilizador e por equipa. Exportação via painel de administração, página de atividade do portal ou CLI `rdc audit`. |
+| Controlos de auditoria | [45 CFR 164.312(b)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Mais de 70 tipos de eventos cobrindo autenticação, tokens de API, operações de configuração, licenciamento e operações em máquinas (ciclo de vida de repositórios, backup, sincronização, terminal). Rastreio por utilizador e por equipa. Exportação via painel de administração ou página de atividade do portal (exportação JSON disponível). |
 | Controlos de integridade | [45 CFR 164.312(c)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Os snapshots CoW preservam os dados originais antes das modificações. `rdc repo validate` verifica a integridade do repositório e o estado do backup (contentor LUKS, consistência do sistema de ficheiros, configuração). |
 | Encriptação em repouso | [45 CFR 164.312(a)(2)(iv)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Encriptação LUKS2 AES-256 em todos os volumes de repositório. As credenciais são armazenadas apenas na configuração local do operador, nunca no servidor. O arquivo de configuração utiliza encriptação AES-256-GCM de conhecimento zero com derivação de chave dividida. Nem o servidor consegue desencriptar as configurações armazenadas. |
 | Segurança de transmissão | [45 CFR 164.312(e)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Todas as operações remotas utilizam SSH. O transporte de backup é encriptado de ponta a ponta. Nenhuma transferência de dados sem encriptação. |

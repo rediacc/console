@@ -19,100 +19,6 @@
         "description": "Mostra lo schema dettagliato per un comando specifico"
       }
     },
-    "audit": {
-      "description": "Comandi del registro di audit",
-      "history": {
-        "description": "Visualizza la cronologia dell'entita",
-        "fetching": "Recupero cronologia dell'entita in corso...",
-        "success": "Cronologia recuperata"
-      },
-      "log": {
-        "description": "Visualizza i log di audit",
-        "fetching": "Recupero log di audit in corso...",
-        "success": "Log di audit recuperati"
-      },
-      "trace": {
-        "description": "Traccia la cronologia di audit per un'entita",
-        "fetching": "Recupero traccia di audit dell'entita in corso...",
-        "success": "Traccia di audit recuperata"
-      }
-    },
-    "auth": {
-      "activate": {
-        "activated": "Account attivato",
-        "activating": "Attivazione account in corso...",
-        "description": "Attiva l'account con il codice di verifica",
-        "success": "Account attivato! Ora puoi accedere con: rdc auth login"
-      },
-      "description": "Comandi di autenticazione",
-      "login": {
-        "authenticating": "Autenticazione in corso...",
-        "description": "Autentica con Rediacc",
-        "success": "Accesso riuscito! Salvato nella configurazione \"{{context}}\"",
-        "tfaPrompt": "Inserisci il codice 2FA:",
-        "tfaRequired": "Autenticazione a due fattori richiesta",
-        "tfaVerified": "2FA verificato con successo",
-        "verifyingTfa": "Verifica 2FA in corso..."
-      },
-      "logout": {
-        "description": "Cancella le credenziali memorizzate",
-        "loggingOut": "Disconnessione in corso...",
-        "success": "Disconnessione avvenuta con successo"
-      },
-      "register": {
-        "description": "Registra una nuova organizzazione e un account utente",
-        "nextStep": "Poi esegui: rdc auth activate -e <email> -p <password> --code <code>",
-        "registering": "Registrazione account in corso...",
-        "submitted": "Registrazione inviata",
-        "success": "Registrazione riuscita! Controlla la tua email per il codice di attivazione."
-      },
-      "status": {
-        "authenticated": "Autenticato come: {{email}}",
-        "description": "Controlla lo stato di autenticazione corrente",
-        "notAuthenticated": "Non autenticato. Esegui: rdc auth login"
-      },
-      "tfa": {
-        "description": "Gestione dell'autenticazione a due fattori",
-        "disable": {
-          "confirm": "Sei sicuro di voler disabilitare la 2FA?",
-          "description": "Disabilita l'autenticazione a due fattori",
-          "disabling": "Disabilitazione 2FA in corso...",
-          "success": "2FA disabilitata con successo"
-        },
-        "enable": {
-          "addToApp": "Aggiungi questa chiave alla tua app di autenticazione",
-          "description": "Abilita l'autenticazione a due fattori",
-          "enabling": "Abilitazione 2FA in corso...",
-          "initiated": "Configurazione 2FA avviata",
-          "setupKey": "Chiave di configurazione: {{key}}",
-          "success": "2FA abilitata con successo"
-        },
-        "status": {
-          "description": "Controlla lo stato della 2FA",
-          "disabled": "La 2FA non e abilitata",
-          "enabled": "La 2FA e abilitata"
-        }
-      },
-      "token": {
-        "description": "Gestione dei token",
-        "fork": {
-          "creating": "Creazione token fork in corso...",
-          "description": "Crea un token fork per un'altra applicazione",
-          "success": "Token creato con successo",
-          "tokenValue": "Token: {{token}}"
-        },
-        "list": {
-          "description": "Elenca i token/sessioni attivi",
-          "fetching": "Recupero token in corso...",
-          "noTokens": "Nessun token attivo"
-        },
-        "revoke": {
-          "description": "Revoca un token specifico",
-          "revoking": "Revoca token in corso...",
-          "success": "Token revocato con successo"
-        }
-      }
-    },
     "backup": {
       "description": "Invia, ricevi e sincronizza i backup dei repository tra storage e macchine",
       "schedule": {
@@ -120,163 +26,6 @@
       },
       "sync": {
         "description": "Sincronizzazione bidirezionale dei backup dei repository tra macchine"
-      }
-    },
-    "bridge": {
-      "description": "Gestione dei bridge",
-      "list": {
-        "description": "Elenca i bridge",
-        "fetching": "Recupero bridge in corso..."
-      },
-      "resetAuth": {
-        "description": "Reimposta il token di autorizzazione del bridge",
-        "newToken": "Nuovo token: {{token}}",
-        "resetting": "Reimpostazione autorizzazione per il bridge \"{{name}}\" in corso...",
-        "success": "Autorizzazione reimpostata"
-      }
-    },
-    "ceph": {
-      "clone": {
-        "assign": {
-          "assigning": "Assegnazione macchine al clone \"{{name}}\" in corso...",
-          "description": "Assegna macchine a un clone",
-          "success": "Macchine assegnate al clone \"{{name}}\""
-        },
-        "create": {
-          "creating": "Creazione clone RBD \"{{name}}\" in corso...",
-          "description": "Crea un nuovo clone RBD da uno snapshot",
-          "success": "Clone RBD \"{{name}}\" creato"
-        },
-        "delete": {
-          "confirm": "Eliminare il clone RBD \"{{name}}\"?",
-          "deleting": "Eliminazione clone RBD \"{{name}}\" in corso...",
-          "description": "Elimina un clone RBD",
-          "success": "Clone RBD \"{{name}}\" eliminato"
-        },
-        "description": "Gestione dei clone RBD Ceph",
-        "list": {
-          "description": "Elenca i clone RBD",
-          "fetching": "Recupero clone RBD in corso...",
-          "success": "Clone recuperati"
-        },
-        "machines": {
-          "description": "Elenca le macchine assegnate a un clone",
-          "fetching": "Recupero macchine del clone in corso...",
-          "success": "Macchine del clone recuperate"
-        },
-        "unassign": {
-          "description": "Rimuovi macchine da un clone",
-          "success": "Macchine rimosse dal clone \"{{name}}\"",
-          "unassigning": "Rimozione macchine dal clone \"{{name}}\" in corso..."
-        }
-      },
-      "cluster": {
-        "create": {
-          "creating": "Creazione cluster Ceph \"{{name}}\" in corso...",
-          "description": "Crea un nuovo cluster Ceph",
-          "success": "Cluster Ceph \"{{name}}\" creato"
-        },
-        "delete": {
-          "confirm": "Eliminare il cluster Ceph \"{{name}}\"?",
-          "deleting": "Eliminazione cluster Ceph \"{{name}}\" in corso...",
-          "description": "Elimina un cluster Ceph",
-          "success": "Cluster Ceph \"{{name}}\" eliminato"
-        },
-        "description": "Gestione del cluster Ceph",
-        "list": {
-          "description": "Elenca i cluster Ceph",
-          "fetching": "Recupero cluster Ceph in corso...",
-          "success": "Cluster recuperati"
-        },
-        "machines": {
-          "description": "Elenca le macchine in un cluster Ceph",
-          "fetching": "Recupero macchine del cluster in corso...",
-          "success": "Macchine del cluster recuperate"
-        },
-        "vault": {
-          "description": "Gestione del vault del cluster Ceph",
-          "get": {
-            "description": "Ottieni i dati del vault del cluster",
-            "fetching": "Recupero vault del cluster in corso...",
-            "success": "Vault del cluster recuperato"
-          },
-          "update": {
-            "description": "Aggiorna i dati del vault del cluster",
-            "success": "Vault del cluster per \"{{name}}\" aggiornato",
-            "updating": "Aggiornamento vault del cluster per \"{{name}}\" in corso..."
-          }
-        }
-      },
-      "description": "Gestione dello storage distribuito Ceph",
-      "image": {
-        "create": {
-          "creating": "Creazione immagine RBD \"{{name}}\" in corso...",
-          "description": "Crea una nuova immagine RBD",
-          "success": "Immagine RBD \"{{name}}\" creata"
-        },
-        "delete": {
-          "confirm": "Eliminare l'immagine RBD \"{{name}}\"?",
-          "deleting": "Eliminazione immagine RBD \"{{name}}\" in corso...",
-          "description": "Elimina un'immagine RBD",
-          "success": "Immagine RBD \"{{name}}\" eliminata"
-        },
-        "description": "Gestione delle immagini RBD Ceph",
-        "list": {
-          "description": "Elenca le immagini RBD",
-          "fetching": "Recupero immagini RBD in corso...",
-          "success": "Immagini recuperate"
-        }
-      },
-      "pool": {
-        "create": {
-          "creating": "Creazione pool Ceph \"{{name}}\" in corso...",
-          "description": "Crea un nuovo pool Ceph",
-          "success": "Pool Ceph \"{{name}}\" creato"
-        },
-        "delete": {
-          "confirm": "Eliminare il pool Ceph \"{{name}}\"?",
-          "deleting": "Eliminazione pool Ceph \"{{name}}\" in corso...",
-          "description": "Elimina un pool Ceph",
-          "success": "Pool Ceph \"{{name}}\" eliminato"
-        },
-        "description": "Gestione dei pool Ceph",
-        "list": {
-          "description": "Elenca i pool Ceph",
-          "fetching": "Recupero pool Ceph in corso...",
-          "success": "Pool recuperati"
-        },
-        "vault": {
-          "description": "Gestione del vault del pool Ceph",
-          "get": {
-            "description": "Ottieni i dati del vault del pool",
-            "fetching": "Recupero vault del pool in corso...",
-            "success": "Vault del pool recuperato"
-          },
-          "update": {
-            "description": "Aggiorna i dati del vault del pool",
-            "success": "Vault del pool per \"{{name}}\" aggiornato",
-            "updating": "Aggiornamento vault del pool per \"{{name}}\" in corso..."
-          }
-        }
-      },
-      "snapshot": {
-        "create": {
-          "creating": "Creazione snapshot RBD \"{{name}}\" in corso...",
-          "description": "Crea un nuovo snapshot RBD",
-          "success": "Snapshot RBD \"{{name}}\" creato"
-        },
-        "delete": {
-          "confirm": "Eliminare lo snapshot RBD \"{{name}}\"?",
-          "deleting": "Eliminazione snapshot RBD \"{{name}}\" in corso...",
-          "description": "Elimina uno snapshot RBD",
-          "success": "Snapshot RBD \"{{name}}\" eliminato"
-        },
-        "description": "Gestione degli snapshot RBD Ceph",
-        "list": {
-          "description": "Elenca gli snapshot RBD",
-          "fetching": "Recupero snapshot RBD in corso...",
-          "success": "Snapshot recuperati"
-        }
       }
     },
     "config": {
@@ -985,54 +734,6 @@
         "noServices": "Nessun servizio rediacc trovato su questa macchina",
         "stabilityCheck": "Modalita controllo stabilita: esce con codice 2 se ci sono servizi in errore/riavvio",
         "unstableFound": "{{count}} servizio/i instabile/i trovato/i"
-      },
-      "testConnection": {
-        "authMethod": "  Metodo di autenticazione: {{method}}",
-        "created": "Task creato",
-        "creating": "Creazione task di test SSH in corso...",
-        "description": "Testa la connessione SSH a una macchina e acquisisce la chiave host",
-        "error": "Errore: {{error}}",
-        "knownHosts": "  Host noti: {{entry}}",
-        "message": "  Messaggio: {{message}}",
-        "publicKeyDeployed": "  Chiave pubblica distribuita: {{status}}",
-        "rawOutput": "Output grezzo:",
-        "results": "Risultati test SSH:",
-        "saved": "Host noti salvati nel vault della macchina",
-        "saving": "Salvataggio known_hosts nel vault della macchina \"{{machine}}\" in corso...",
-        "sshKeyConfigured": "  Chiave SSH configurata: {{status}}",
-        "statusResult": "  Stato: {{status}}",
-        "taskId": "ID task: {{taskId}}",
-        "testing": "Test connessione SSH a {{user}}@{{ip}}:{{port}} in corso...",
-        "testResult": "Test SSH {{result}}",
-        "timeout": "Timeout in attesa del risultato",
-        "timeoutMessage": "Test di connessione scaduto. Controlla la traccia della coda per i dettagli.",
-        "waiting": "In attesa del risultato del test SSH...",
-        "waitingTime": "In attesa del risultato del test SSH... ({{seconds}}s)"
-      },
-      "vault": {
-        "description": "Gestione del vault della macchina (solo adapter cloud)"
-      },
-      "vault-status": {
-        "description": "Mostra lo stato del vault analizzato per una macchina (solo adapter cloud)"
-      },
-      "vaultStatus": {
-        "deployedRepos": "\nRepository distribuiti:",
-        "description": "Mostra lo stato del vault analizzato per una macchina",
-        "dockerRunning": "  Docker in esecuzione: {{count}}",
-        "fetched": "Macchina recuperata",
-        "fetching": "Recupero macchina in corso...",
-        "header": "\nStato vault per {{name}}:",
-        "mounted": "  Montati: {{count}}",
-        "repoDocker": "    Docker: {{status}}",
-        "repoMounted": "    Montato: {{mounted}}",
-        "status": "  Stato: {{status}}",
-        "systemDatastore": "  Datastore: {{used}} / {{total}} ({{percent}})",
-        "systemDisk": "  Disco: {{used}} / {{total}} ({{percent}})",
-        "systemHostname": "  Hostname: {{hostname}}",
-        "systemMemory": "  Memoria: {{used}} / {{total}} ({{percent}})",
-        "systemSection": "\nSistema:",
-        "systemUptime": "  Uptime: {{uptime}}",
-        "totalRepos": "  Repository totali: {{count}}"
       }
     },
     "mcp": {
@@ -1092,192 +793,6 @@
         "description": "Provisioning del cluster VM in locale",
         "failed": "Provisioning del cluster VM fallito",
         "starting": "Avvio provisioning cluster VM in corso..."
-      }
-    },
-    "organization": {
-      "dashboard": {
-        "description": "Ottieni i dati della dashboard dell'organizzazione",
-        "fetching": "Recupero dashboard in corso...",
-        "success": "Dashboard recuperata"
-      },
-      "description": "Comandi di gestione dell'organizzazione",
-      "export": {
-        "description": "Esporta i dati dell'organizzazione",
-        "exported": "Esportato in {{path}}",
-        "exporting": "Esportazione dati dell'organizzazione in corso...",
-        "success": "Esportazione completata"
-      },
-      "import": {
-        "description": "Importa i dati dell'organizzazione",
-        "importing": "Importazione dati dell'organizzazione in corso...",
-        "success": "Importazione completata"
-      },
-      "info": {
-        "description": "Ottieni informazioni sull'organizzazione",
-        "fetching": "Recupero informazioni sull'organizzazione in corso...",
-        "notFound": "Nessuna informazione sull'organizzazione trovata",
-        "success": "Informazioni sull'organizzazione recuperate"
-      },
-      "maintenance": {
-        "description": "Abilita o disabilita la modalita di manutenzione (blocca gli accessi non admin)",
-        "disabled": "Modalita di manutenzione disabilitata",
-        "disabling": "Disabilitazione modalita di manutenzione in corso...",
-        "enabled": "Modalita di manutenzione abilitata",
-        "enabling": "Abilitazione modalita di manutenzione in corso..."
-      },
-      "vault": {
-        "description": "Gestione del vault dell'organizzazione",
-        "get": {
-          "description": "Ottieni i dati del vault dell'organizzazione",
-          "fetching": "Recupero vault dell'organizzazione in corso...",
-          "notFound": "Nessun vault dell'organizzazione trovato",
-          "success": "Vault recuperato"
-        },
-        "list": {
-          "description": "Elenca tutti i tipi di vault",
-          "fetching": "Recupero vault in corso...",
-          "success": "Vault recuperati"
-        },
-        "update": {
-          "description": "Aggiorna i dati del vault dell'organizzazione",
-          "success": "Vault dell'organizzazione aggiornato",
-          "updating": "Aggiornamento vault dell'organizzazione in corso..."
-        }
-      }
-    },
-    "permission": {
-      "add": {
-        "adding": "Aggiunta del permesso \"{{permission}}\" al gruppo \"{{group}}\" in corso...",
-        "description": "Aggiungi un permesso a un gruppo",
-        "success": "Permesso aggiunto"
-      },
-      "description": "Comandi di gestione dei permessi",
-      "group": {
-        "create": {
-          "creating": "Creazione gruppo di permessi \"{{name}}\" in corso...",
-          "description": "Crea un nuovo gruppo di permessi",
-          "success": "Gruppo di permessi \"{{name}}\" creato"
-        },
-        "delete": {
-          "confirm": "Eliminare il gruppo di permessi \"{{name}}\"?",
-          "deleting": "Eliminazione gruppo di permessi \"{{name}}\" in corso...",
-          "description": "Elimina un gruppo di permessi",
-          "success": "Gruppo di permessi \"{{name}}\" eliminato"
-        },
-        "description": "Gestione dei gruppi di permessi",
-        "list": {
-          "description": "Elenca tutti i gruppi di permessi",
-          "fetching": "Recupero gruppi di permessi in corso...",
-          "success": "Gruppi di permessi recuperati"
-        },
-        "show": {
-          "description": "Mostra i dettagli del gruppo di permessi",
-          "fetching": "Recupero dettagli del gruppo di permessi in corso...",
-          "success": "Dettagli recuperati"
-        }
-      },
-      "remove": {
-        "description": "Rimuovi un permesso da un gruppo",
-        "removing": "Rimozione del permesso \"{{permission}}\" dal gruppo \"{{group}}\" in corso...",
-        "success": "Permesso rimosso"
-      }
-    },
-    "protocol": {
-      "build": {
-        "description": "Costruisci un URL {{scheme}}:// dai componenti"
-      },
-      "description": "Registra e gestisci gli URL del protocollo {{scheme}}://",
-      "open": {
-        "action": "Azione:",
-        "cliCommand": "\nComando CLI equivalente:",
-        "description": "Apri un URL {{scheme}}:// ed esegui l'azione",
-        "executing": "\nEsecuzione azione in corso...\n",
-        "machine": "Macchina:",
-        "params": "Parametri:",
-        "parsedUrl": "\nURL protocollo analizzato:",
-        "repository": "Repository:",
-        "team": "Team:",
-        "token": "Token:"
-      },
-      "parse": {
-        "cliCommand": "\nComando CLI:",
-        "description": "Analizza un URL {{scheme}}:// e mostra i componenti",
-        "parsedUrl": "\nURL protocollo analizzato:"
-      },
-      "register": {
-        "adminRequired": "Nota: potrebbe richiedere privilegi di amministratore/root.",
-        "currentUser": "Registrazione del gestore del protocollo per l'utente corrente in corso...",
-        "description": "Registra il gestore del protocollo nel sistema",
-        "exampleUrls": "\nOra puoi aprire URL come:",
-        "registering": "Registrazione del gestore del protocollo in corso...",
-        "success": "\nGestore del protocollo {{scheme}}:// registrato con successo.",
-        "systemWide": "Registrazione del gestore del protocollo a livello di sistema in corso..."
-      },
-      "status": {
-        "description": "Mostra lo stato di registrazione del gestore del protocollo",
-        "error": "\nErrore: {{error}}",
-        "handlerCommand": "Comando gestore:",
-        "platform": "Piattaforma:",
-        "registered": "Registrato:",
-        "registerHint": "\nPer registrare il gestore del protocollo, esegui:",
-        "supported": "Supportato:",
-        "systemRegistration": "Registrazione di sistema:",
-        "title": "\nStato gestore del protocollo",
-        "userRegistration": "Registrazione utente:"
-      },
-      "unregister": {
-        "description": "Annulla la registrazione del gestore del protocollo dal sistema",
-        "success": "\nGestore del protocollo {{scheme}}:// rimosso con successo.",
-        "unregistering": "Annullamento registrazione del gestore del protocollo in corso..."
-      }
-    },
-    "queue": {
-      "cancel": {
-        "cancelling": "Annullamento del task {{taskId}} in corso...",
-        "description": "Annulla un elemento della coda",
-        "success": "Task annullato"
-      },
-      "create": {
-        "buildingVault": "Creazione vault della coda in corso...",
-        "creating": "Creazione elemento della coda per la funzione '{{function}}' in corso...",
-        "description": "Crea un elemento della coda",
-        "success": "Elemento della coda creato",
-        "taskId": "ID task: {{taskId}}",
-        "vaultBuilt": "Vault della coda creato"
-      },
-      "delete": {
-        "confirm": "Sei sicuro di voler eliminare il task {{taskId}}?",
-        "deleting": "Eliminazione del task {{taskId}} in corso...",
-        "description": "Elimina un elemento della coda",
-        "success": "Task eliminato"
-      },
-      "description": "Gestione della coda",
-      "list": {
-        "description": "Elenca gli elementi della coda",
-        "fetching": "Recupero elementi della coda in corso...",
-        "success": "Elementi della coda recuperati"
-      },
-      "retry": {
-        "description": "Riprova un elemento della coda in errore",
-        "retrying": "Nuovo tentativo per il task {{taskId}} in corso...",
-        "success": "Task accodato per un nuovo tentativo"
-      },
-      "trace": {
-        "age": "Eta",
-        "description": "Traccia l'esecuzione di un elemento della coda",
-        "errorDetails": "Dettagli errore:",
-        "fetched": "Traccia della coda recuperata",
-        "fetching": "Recupero traccia della coda in corso...",
-        "finalStatus": "Stato finale: {{status}}",
-        "noTrace": "Nessuna informazione di traccia disponibile",
-        "watching": "Monitoraggio avanzamento del task in corso..."
-      }
-    },
-    "region": {
-      "description": "Gestione delle regioni",
-      "list": {
-        "description": "Elenca le regioni",
-        "fetching": "Recupero regioni in corso..."
       }
     },
     "repo": {
@@ -1377,12 +892,13 @@
         "starting": "Creazione del repository \"{{repository}}\" ({{size}}) su \"{{machine}}\"..."
       },
       "delete": {
-        "archived": "Credenziale per \"{{repository}}\" archiviata",
         "archiveHint": "Per archiviare le credenziali e consentire il recupero: riesegui con --archive-config",
         "archiveOption": "Sposta la voce di configurazione in deletedRepositories per un recupero successivo",
+        "archived": "Credenziale per \"{{repository}}\" archiviata",
         "cloudBackupHint": "I backup cloud (se presenti) persistono dopo l'eliminazione. Rimuovi i backup cloud orfani con: rdc storage prune --name <storage> -m {{machine}}",
         "completed": "Repository eliminato",
         "configRetained": "La voce di configurazione per \"{{repository}}\" è stata conservata (il repo potrebbe esistere su altri macchinari). Per rimuoverla: rdc config repository remove --name {{repository}}",
+        "confirm": "Eliminare il repository \"{{repository}}\" su \"{{machine}}\"? Questa operazione distrugge container, volumi e l'immagine cifrata.",
         "description": "Elimina un repository (distrugge contenitori, volumi e immagine cifrata). La voce di configurazione viene conservata. Usa --archive-config per spostare le credenziali in deletedRepositories per un eventuale recupero tramite 'config restore-archived'.",
         "descriptionShort": "Elimina un repository da un macchinario",
         "examples": "\nEsempi:\n  $ rdc repo delete --name app -m server-1\n  $ rdc repo delete --name app:test -m server-1\n",
@@ -1779,57 +1295,6 @@
       },
       "yesOption": "Salta la conferma per le operazioni in batch"
     },
-    "repository": {
-      "create": {
-        "creating": "Creazione repository \"{{name}}\" in corso...",
-        "description": "Crea un nuovo repository",
-        "success": "Repository \"{{name}}\" creato"
-      },
-      "delete": {
-        "checkingRelationships": "Controllo relazioni del repository in corso...",
-        "confirm": "Eliminare il repository \"{{name}}\"? Questa operazione non puo essere annullata.",
-        "deleting": "Eliminazione repository \"{{name}}\" in corso...",
-        "description": "Elimina un repository",
-        "grandRepoWarning": "Questo e un repository grand (credenziale). L'eliminazione e irreversibile.",
-        "relationshipsChecked": "Relazioni del repository verificate",
-        "success": "Repository \"{{name}}\" eliminato"
-      },
-      "description": "Comandi di gestione dei repository",
-      "list": {
-        "description": "Elenca i repository",
-        "fetching": "Recupero repository in corso...",
-        "success": "Repository recuperati"
-      },
-      "promote": {
-        "checkingRelationships": "Controllo relazioni del repository in corso...",
-        "confirmPromote": "\nProcedere con la promozione?",
-        "description": "Promuovi un fork allo stato grand",
-        "promoting": "Promozione repository \"{{name}}\" in corso...",
-        "relationshipsChecked": "Relazioni del repository verificate",
-        "separateInfo": "\nQuesto separera \"{{name}}\" dal repository grand \"{{grandName}}\"",
-        "siblingsInfo": "\n{{count}} clone/i gemello/i rimarranno collegati al grand originale:",
-        "success": "Repository \"{{name}}\" promosso allo stato grand"
-      },
-      "rename": {
-        "description": "Rinomina un repository",
-        "renaming": "Rinomina repository \"{{oldName}}\" in \"{{newName}}\" in corso...",
-        "success": "Repository rinominato in \"{{name}}\""
-      },
-      "vault": {
-        "description": "Gestione del vault del repository",
-        "get": {
-          "description": "Ottieni i dati del vault del repository",
-          "fetching": "Recupero vault del repository in corso...",
-          "notFound": "Nessun vault del repository trovato",
-          "success": "Vault recuperato"
-        },
-        "update": {
-          "description": "Aggiorna i dati del vault del repository",
-          "success": "Vault del repository aggiornato",
-          "updating": "Aggiornamento vault del repository in corso..."
-        }
-      }
-    },
     "shortcuts": {
       "cancel": {
         "description": "Annulla un task (scorciatoia per: queue cancel)"
@@ -2030,36 +1495,6 @@
         "starting": "Avvio caricamento..."
       }
     },
-    "team": {
-      "create": {
-        "creating": "Creazione team in corso...",
-        "description": "Crea un team",
-        "success": "Team \"{{name}}\" creato"
-      },
-      "description": "Gestione dei team",
-      "list": {
-        "description": "Elenca i team",
-        "fetching": "Recupero team in corso..."
-      },
-      "member": {
-        "add": {
-          "adding": "Aggiunta di {{email}} al team \"{{team}}\" in corso...",
-          "description": "Aggiungi un utente a un team",
-          "success": "Utente aggiunto al team \"{{team}}\""
-        },
-        "description": "Gestione dei membri del team",
-        "list": {
-          "description": "Elenca i membri del team",
-          "fetching": "Recupero membri del team in corso...",
-          "success": "Membri recuperati"
-        },
-        "remove": {
-          "description": "Rimuovi un utente da un team",
-          "removing": "Rimozione di {{email}} dal team \"{{team}}\" in corso...",
-          "success": "Utente rimosso dal team \"{{team}}\""
-        }
-      }
-    },
     "term": {
       "connect": {
         "description": "Connettiti a una macchina o un repository tramite SSH"
@@ -2111,77 +1546,6 @@
       "success": "Aggiornato da v{{from}} a v{{to}}",
       "unknownError": "Errore sconosciuto",
       "upToDate": "Gia aggiornato (v{{version}})"
-    },
-    "user": {
-      "activate": {
-        "activating": "Attivazione utente \"{{email}}\" in corso...",
-        "description": "Attiva un account utente",
-        "success": "Utente attivato"
-      },
-      "create": {
-        "activationCode": "Codice di attivazione: {{code}}",
-        "creating": "Creazione utente \"{{email}}\" in corso...",
-        "description": "Crea un nuovo utente",
-        "success": "Utente creato"
-      },
-      "deactivate": {
-        "confirm": "Disattivare l'utente \"{{email}}\"?",
-        "deactivating": "Disattivazione utente \"{{email}}\" in corso...",
-        "description": "Disattiva un account utente",
-        "success": "Utente disattivato"
-      },
-      "description": "Comandi di gestione degli utenti",
-      "exists": {
-        "description": "Verifica se un utente esiste",
-        "exists": "L'utente \"{{email}}\" esiste",
-        "notExists": "L'utente \"{{email}}\" non esiste"
-      },
-      "list": {
-        "description": "Elenca tutti gli utenti",
-        "fetching": "Recupero utenti in corso...",
-        "success": "Utenti recuperati"
-      },
-      "permission": {
-        "assign": {
-          "assigning": "Assegnazione di \"{{group}}\" all'utente \"{{email}}\" in corso...",
-          "description": "Assegna un gruppo di permessi a un utente",
-          "success": "Permesso assegnato"
-        },
-        "description": "Gestione dei permessi dell'utente"
-      },
-      "reactivate": {
-        "description": "Riattiva un account utente disattivato",
-        "reactivating": "Riattivazione utente \"{{email}}\" in corso...",
-        "success": "Utente riattivato"
-      },
-      "updateEmail": {
-        "description": "Cambia l'indirizzo email di un utente",
-        "success": "Email aggiornata a \"{{email}}\"",
-        "updating": "Aggiornamento email per \"{{email}}\" in corso..."
-      },
-      "updateLanguage": {
-        "description": "Imposta la lingua preferita dell'utente corrente",
-        "success": "Lingua aggiornata a \"{{language}}\"",
-        "updating": "Aggiornamento preferenza lingua in corso..."
-      },
-      "updatePassword": {
-        "description": "Cambia la tua password",
-        "success": "Password aggiornata",
-        "updating": "Aggiornamento password in corso..."
-      },
-      "vault": {
-        "description": "Gestione del vault dell'utente",
-        "get": {
-          "description": "Ottieni i dati del vault dell'utente corrente",
-          "fetching": "Recupero vault dell'utente in corso...",
-          "success": "Vault recuperato"
-        },
-        "update": {
-          "description": "Aggiorna i dati del vault dell'utente corrente",
-          "success": "Vault dell'utente aggiornato",
-          "updating": "Aggiornamento vault dell'utente in corso..."
-        }
-      }
     },
     "vscode": {
       "check": {
@@ -2274,16 +1638,6 @@
       "tip": "Suggerimento",
       "warning": "Avviso"
     },
-    "cloudFrontmatter": {
-      "category": "Riferimento",
-      "description": "Comandi esclusivi del cloud per la CLI Rediacc: autenticazione, team, organizzazioni e gestione multi-tenant",
-      "title": "Applicazione CLI (Cloud / Sperimentale)"
-    },
-    "cloudOverview": {
-      "heading": "Panoramica",
-      "text": "Questi comandi richiedono l'**adapter cloud** (sperimentale), attivato quando una config contiene i campi `apiUrl` e `token`. Per il riferimento principale della CLI, consulta [Applicazione CLI](/it/docs/cli-application)."
-    },
-    "cloudPageTitle": "Riferimento CLI Rediacc (Cloud / Sperimentale)",
     "errors": {
       "heading": "Messaggi di errore comuni",
       "intro": "Quando qualcosa va storto, la CLI fornisce messaggi di errore chiari:",
@@ -2325,72 +1679,32 @@
     "pageTitle": "Riferimento CLI Rediacc",
     "sectionTitles": {
       "agent": "Utilità agente",
-      "audit": "Audit e conformità",
-      "auth": "Autenticazione",
       "backup": "Backup e ripristino",
-      "bridge": "Gestione del bridge",
-      "ceph": "Gestione dello storage Ceph",
       "config": "Gestione della config",
       "datastore": "Gestione del datastore",
       "doctor": "Diagnostica di sistema",
       "machine": "Gestione delle macchine",
       "mcp": "Server MCP",
       "ops": "Operazioni VM sperimentali",
-      "organization": "Gestione dell'organizzazione",
-      "permission": "Gestione dei permessi",
-      "protocol": "Gestore del protocollo",
-      "queue": "Operazioni sulla coda",
-      "region": "Gestione delle regioni",
       "repo": "Ciclo di vita del repository",
-      "repository": "Gestione dei repository",
       "shortcuts": "Comandi rapidi (scorciatoie)",
       "storage": "Gestione dello storage",
       "subscription": "Gestione dell'abbonamento",
       "sync": "Sincronizzazione file",
-      "team": "Gestione del team",
       "term": "Accesso SSH al terminale",
       "update": "Aggiornamenti CLI",
-      "user": "Gestione degli utenti",
       "vscode": "Integrazione VS Code"
     },
     "supplements": {
-      "auth": {
-        "register": {
-          "afterDescription": "Dopo la registrazione, controlla la tua email per il codice di attivazione."
-        },
-        "tip": "Il tuo token di autenticazione viene memorizzato localmente nella config. Usa `--save-as` per salvare le credenziali in una config con nome per gestire più ambienti."
-      },
       "config": {
         "afterDescription": "I file di config memorizzano i dettagli di connessione (URL API, credenziali, team/regione/bridge predefiniti) in modo da poter passare rapidamente da un ambiente all'altro.",
         "init": {
           "afterDescription": "Puoi aggiungere macchine direttamente:"
-        },
-        "set": {
-          "tip": "Impostare i valori predefiniti significa che non devi passare `--team`, `--region` o `--bridge` ad ogni comando."
         }
       },
       "machine": {
         "health": {
           "afterDescription": "Il comando health restituisce metriche di sistema, stato dei container, stabilità dei servizi e informazioni sullo storage, utile per i gate nelle pipeline CI/CD."
-        },
-        "testConnection": {
-          "tip": "Usa `--save` per salvare automaticamente la chiave host nel vault della macchina dopo un test riuscito."
-        }
-      },
-      "organization": {
-        "maintenance": {
-          "warning": "Quando la modalità di manutenzione è attivata, gli utenti non amministratori non possono effettuare il login."
-        }
-      },
-      "queue": {
-        "afterDescription": "Il sistema di code è al centro dell'esecuzione delle attività di Rediacc. Ogni operazione (deploy, backup, esecuzione di script) transita dalla coda.",
-        "trace": {
-          "tip": "Usa `--watch` per seguire l'attività in tempo reale fino al completamento."
-        }
-      },
-      "repository": {
-        "promote": {
-          "note": "Promuovere un fork lo separa dal suo grand (repository padre), rendendolo indipendente."
         }
       }
     },
@@ -2435,7 +1749,6 @@
     },
     "authFailed": "Autenticazione non riuscita",
     "authRequired": "Autenticazione richiesta. Esegui: rdc auth login",
-    "bridgeRequired": "Nome bridge obbligatorio. Usa --bridge o imposta il valore predefinito con: rdc config set --key bridge --value <name>",
     "cannotDeleteGrandRepo": "Impossibile eliminare il repository grand: {{reason}}",
     "cannotPromote": "Impossibile promuovere: {{reason}}",
     "clusterNotFound": "Cluster Ceph \"{{name}}\" non trovato",
@@ -2578,8 +1891,6 @@
     "unknownCommand": "Comando sconosciuto \"{{command}}\". Comandi disponibili: {{available}}.",
     "unknownSubcommand": "Sottocomando sconosciuto \"{{command}}\". Sottocomandi {{parent}} disponibili: {{available}}.",
     "validationError": "Errore di validazione: {{message}}",
-    "vaultDataRequired": "Dati del vault obbligatori. Usa --vault <json> oppure invia il JSON tramite stdin.",
-    "vaultVersionRequired": "Versione del vault obbligatoria. Usa --vault-version <n>.",
     "vscode": {
       "browserNeedsRepo": "vscode --browser serve la sandbox di un repository — passa --repository <nome>",
       "cleanupRequired": "Specifica --all per rimuovere tutte le connessioni o --connection <name> per una specifica.",

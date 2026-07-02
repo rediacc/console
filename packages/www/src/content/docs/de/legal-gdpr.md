@@ -4,7 +4,7 @@ description: "Wie die Self-Hosted-Architektur von Rediacc den DSGVO-Anforderunge
 category: "Legal"
 order: 1
 language: de
-sourceHash: "36a776d87c6294ff"
+sourceHash: "76d2b3a911e0d14c"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -22,7 +22,7 @@ Die folgende Tabelle ordnet spezifische DSGVO-Artikel den technischen Fähigkeit
 | [Art. 17](https://gdpr-info.eu/art-17-gdpr/), Recht auf Löschung | Personenbezogene Daten auf Anfrage löschen | `rdc repo delete` löscht das LUKS-Volume kryptographisch. Das Löschen eines Forks entfernt die geklonte Kopie vollständig. |
 | [Art. 25](https://gdpr-info.eu/art-25-gdpr/), Datenschutz durch Technikgestaltung | Datenschutz durch Voreinstellung | Verschlüsselung ist obligatorisch, nicht optional. Jedes Repository erhält einen isolierten Docker Daemon und ein eigenes Netzwerk. Keine Datenfreigabe zwischen Repositories. Der Config Store verwendet Zero-Knowledge-Verschlüsselung: Configs werden clientseitig mit AES-256-GCM vor dem Upload verschlüsselt, sodass der Server keine Klartextdaten lesen kann. |
 | [Art. 28](https://gdpr-info.eu/art-28-gdpr/), Auftragsverarbeiter | Pflichten bei Drittanbieter-Datenverarbeitung | Self-Hosted: Rediacc läuft auf Ihrer Infrastruktur. Keine Daten verlassen Ihre Maschine während Fork-, Klon- oder Backup-Operationen. Keine SaaS-Komponente verarbeitet personenbezogene Daten. |
-| [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Verarbeitungsverzeichnis | Verzeichnis von Verarbeitungstätigkeiten führen | Audit-Logging verfolgt über 40 Ereignistypen auf Kontoebene: Authentifizierung, API-Tokens, Config-Store-Operationen und Lizenzierung. Export über `rdc audit` CLI oder Admin-Dashboard. |
+| [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Verarbeitungsverzeichnis | Verzeichnis von Verarbeitungstätigkeiten führen | Audit-Logging verfolgt über 40 Ereignistypen auf Kontoebene: Authentifizierung, API-Tokens, Config-Store-Operationen und Lizenzierung. Export über das Admin-Dashboard oder die Portal-Aktivitätsseite (JSON-Export verfügbar). |
 | [Art. 32](https://gdpr-info.eu/art-32-gdpr/), Sicherheit der Verarbeitung | Angemessene technische Maßnahmen | LUKS2 AES-256-Verschlüsselung im Ruhezustand, Netzwerkisolation via iptables und separate Docker Daemons, Loopback-IP-Subnetze (/26) pro Repository. Der Config Store verwendet dreischichtige Verschlüsselung: zeitlich begrenzte SDK-Schlüssel, Split-Key-CEK-Ableitung (Passkey + Server-Geheimnis) und Organisations-Passphrase-Verschlüsselung. |
 | [Art. 33](https://gdpr-info.eu/art-33-gdpr/), Meldung von Datenschutzverletzungen | 72-Stunden-Meldung mit forensischem Trail | Audit-Logs bieten einen forensischen Trail aller Operationen. Die Self-Hosted-Architektur begrenzt den Wirkungsradius auf einzelne Repositories. |
 

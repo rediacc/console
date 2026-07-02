@@ -4,7 +4,7 @@ description: "Aquí está el punto sobre SOC 2: los auditores quieren evidencia 
 category: "Legal"
 order: 2
 language: es
-sourceHash: "27d2366f84e21d8c"
+sourceHash: "9ba8477a07292a7d"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -32,7 +32,7 @@ Así que Rediacc registra más de 70 tipos de eventos diferentes. Acciones de us
 - **Licencias**: emisión de licencias de repositorio, seguimiento de ranuras de máquina, cambios de suscripción
 - **Operaciones de máquina**: crear/iniciar/detener/eliminar repositorio, fork, push/pull de respaldo, sincronización de archivos, sesiones de terminal
 
-Tres formas de obtener estos registros. Panel de administración con filtrado por usuario, equipo y fecha. Página de actividad del portal para administradores de organizaciones, filtrado por tipo y fecha. O la CLI `rdc audit` para exportación programática. Canalízalos a tus propias herramientas, intégralos donde quieras. Las operaciones de máquina también se registran en tus registros del sistema, así que tienes defensa en profundidad.
+Dos formas de obtener estos registros. Panel de administración con filtrado por usuario, equipo y fecha. Página de actividad del portal para administradores de organizaciones, filtrado por tipo y fecha, con exportación JSON que puedes canalizar hacia tus propias herramientas. Las operaciones de máquina también se registran en tus registros del sistema, así que tienes defensa en profundidad.
 
 ## Gestión de cambios
 

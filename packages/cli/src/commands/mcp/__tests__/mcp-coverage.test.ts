@@ -102,22 +102,26 @@ describe('MCP tool coverage', () => {
   });
 
   it('exclusion list has no stale entries', () => {
-    const registryNames = new Set(COMMAND_REGISTRY.map((c) => c.name));
-    const registrySubPaths = new Set<string>();
-    for (const cmd of COMMAND_REGISTRY) {
-      if (cmd.subcommands) {
-        for (const sub of Object.keys(cmd.subcommands)) {
-          registrySubPaths.add(`${cmd.name} ${sub}`);
-        }
+    // Validate against the real Commander tree (the registry only declares
+    // top-level domains + experimental overrides, not every subcommand).
+    const actualPaths = new Set<string>();
+    function walk(cmd: (typeof cli.commands)[number], prefix: string): void {
+      const path = prefix ? `${prefix} ${cmd.name()}` : cmd.name();
+      actualPaths.add(path);
+      for (const sub of cmd.commands) {
+        if (sub.name() === 'help') continue;
+        walk(sub, path);
       }
     }
+    for (const cmd of cli.commands) {
+      if (cmd.name() === 'help') continue;
+      walk(cmd, '');
+    }
 
-    const stale = Object.keys(MCP_EXCLUDED).filter(
-      (name) => !registryNames.has(name) && !registrySubPaths.has(name)
-    );
+    const stale = Object.keys(MCP_EXCLUDED).filter((name) => !actualPaths.has(name));
 
     if (stale.length > 0) {
-      expect.fail(`MCP exclusions have entries not in the registry: ${stale.join(', ')}`);
+      expect.fail(`MCP exclusions have entries not in the CLI command tree: ${stale.join(', ')}`);
     }
   });
 

@@ -34,8 +34,6 @@ fi
 # =============================================================================
 CONTAINERS=(
     rediacc-web
-    rediacc-api
-    rediacc-sql
     rediacc-account-server
 )
 
@@ -50,13 +48,6 @@ done
 # =============================================================================
 # CLEANUP DATA
 # =============================================================================
-# SQL Server data directory (may be owned by UID 10001)
-MSSQL_DIR="$CI_DOCKER_DIR/mssql"
-if [[ -d "$MSSQL_DIR" ]]; then
-    echo "  Cleaning up SQL Server data..."
-    sudo rm -rf "$MSSQL_DIR" 2>/dev/null || rm -rf "$MSSQL_DIR" 2>/dev/null || true
-fi
-
 # Backend state file (local dev tracking)
 rm -f "$BACKEND_STATE_FILE" 2>/dev/null || true
 

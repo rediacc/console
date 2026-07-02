@@ -4,7 +4,7 @@ description: "كيف تتوافق بنية التشفير والعزل في Redi
 category: "Legal"
 order: 3
 language: ar
-sourceHash: "f5fbdaa4a00491ea"
+sourceHash: "a0dd73c1923519b0"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -21,7 +21,7 @@ sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 | المتطلب | مرجع HIPAA | قدرة Rediacc |
 |---------|------------|--------------|
 | التحكم في الوصول | [45 CFR 164.312(a)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | مصادقة بمفتاح SSH. رموز API مع ربط IP وقيود النطاق. عزل Docker daemon لكل مستودع يمنع الوصول عبر المستودعات. |
-| ضوابط التدقيق | [45 CFR 164.312(b)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | أكثر من 40 نوع حدث على مستوى الحساب يغطي المصادقة ورموز API وعمليات التكوين والترخيص. تتبع لكل مستخدم وفريق. التصدير عبر لوحة تحكم المسؤول أو `rdc audit` CLI. |
+| ضوابط التدقيق | [45 CFR 164.312(b)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | أكثر من 40 نوع حدث على مستوى الحساب يغطي المصادقة ورموز API وعمليات التكوين والترخيص. تتبع لكل مستخدم وفريق. التصدير عبر لوحة تحكم المسؤول أو صفحة نشاط البوابة (يتوفر تصدير JSON). |
 | ضوابط النزاهة | [45 CFR 164.312(c)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | تحافظ لقطات CoW على البيانات الأصلية قبل التعديلات. يتحقق `rdc repo validate` من سلامة المستودع وصحة النسخ الاحتياطية (حاوية LUKS، تناسق نظام الملفات، التكوين). |
 | التشفير في حالة السكون | [45 CFR 164.312(a)(2)(iv)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | تشفير LUKS2 AES-256 على جميع وحدات تخزين المستودعات. بيانات الاعتماد مخزنة فقط في التكوين المحلي للمشغل، وليس على الخادم أبداً. يستخدم مخزن التكوين تشفير AES-256-GCM بمعرفة صفرية مع اشتقاق مفتاح مقسم. حتى الخادم لا يستطيع فك تشفير التكوينات المخزنة. |
 | أمن النقل | [45 CFR 164.312(e)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | جميع العمليات عن بُعد تستخدم SSH. نقل النسخ الاحتياطي مشفر من طرف إلى طرف. لا نقل بيانات غير مشفر. |

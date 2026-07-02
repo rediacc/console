@@ -16,13 +16,11 @@
 #
 # Outputs (written to --output file or stdout):
 #   is_bot=true|false
-#   api_tag=<hash>
-#   bridge_tag=<hash>
+#   renet_tag=<hash>
 #   plugins_tag=<hash>
 #   web_tag=<hash>
 #   image_tag=<hash>
-#   api_exists=true|false
-#   bridge_exists=true|false
+#   renet_exists=true|false
 #   plugins_exists=true|false
 #   web_exists=true|false
 
@@ -105,7 +103,7 @@ log_step "Initializing private submodules..."
 git config --global url."https://x-access-token:${GITHUB_PAT}@github.com/".insteadOf "https://github.com/"
 
 # Check if submodules are already initialized
-if [[ -f "private/middleware/.ci/ci.sh" ]] && [[ -f "private/renet/.ci/ci.sh" ]]; then
+if [[ -f "private/renet/.ci/ci.sh" ]]; then
     log_info "Submodules already initialized"
 else
     # Initialize submodules
@@ -115,7 +113,7 @@ else
     fi
 
     # Verify initialization
-    if [[ ! -f "private/middleware/.ci/ci.sh" ]] || [[ ! -f "private/renet/.ci/ci.sh" ]]; then
+    if [[ ! -f "private/renet/.ci/ci.sh" ]]; then
         log_error "Submodule initialization incomplete"
         exit 1
     fi
@@ -127,22 +125,19 @@ fi
 # =============================================================================
 log_step "Generating CI tags..."
 
-API_TAG=$(.ci/scripts/ci/generate-tag.sh --submodule private/middleware)
-BRIDGE_TAG=$(.ci/scripts/ci/generate-tag.sh --submodule private/renet)
+RENET_TAG=$(.ci/scripts/ci/generate-tag.sh --submodule private/renet)
 PLUGINS_TAG=$(.ci/scripts/ci/generate-tag.sh --self)
 WEB_TAG=$(.ci/scripts/ci/generate-tag.sh --self)
 
 CLI_TAG="$WEB_TAG" # Same console commit hash
 
-write_output "api_tag" "$API_TAG"
-write_output "bridge_tag" "$BRIDGE_TAG"
+write_output "renet_tag" "$RENET_TAG"
 write_output "plugins_tag" "$PLUGINS_TAG"
 write_output "web_tag" "$WEB_TAG"
 write_output "cli_tag" "$CLI_TAG"
-write_output "image_tag" "$BRIDGE_TAG"
+write_output "image_tag" "$RENET_TAG"
 
-log_info "API tag: $API_TAG (middleware commit)"
-log_info "Bridge tag: $BRIDGE_TAG (renet commit)"
+log_info "Renet tag: $RENET_TAG (renet commit)"
 log_info "Plugins tag: $PLUGINS_TAG (console commit)"
 log_info "Web tag: $WEB_TAG (console commit)"
 log_info "CLI tag: $CLI_TAG (console commit)"
@@ -169,7 +164,7 @@ log_info "Next version: $NEXT_VERSION (from tag: $(.ci/scripts/version/resolve-v
 # CI builds (merge_group event) don't embed version, CD builds (push event) do —
 # different tags ensure cache miss and rebuild with correct version.
 if [[ "${GITHUB_EVENT_NAME:-}" == "push" ]]; then
-    local_tags=("API" "BRIDGE" "PLUGINS" "WEB" "CLI")
+    local_tags=("RENET" "PLUGINS" "WEB" "CLI")
     log_parts=()
     for prefix in "${local_tags[@]}"; do
         var_name="${prefix}_TAG"
@@ -178,7 +173,7 @@ if [[ "${GITHUB_EVENT_NAME:-}" == "push" ]]; then
         write_output "${prefix,,}_tag" "$new_val"
         log_parts+=("${prefix}: ${new_val}")
     done
-    write_output "image_tag" "$BRIDGE_TAG"
+    write_output "image_tag" "$RENET_TAG"
     log_info "Push event: versioned tags - $(
         IFS=', '
         echo "${log_parts[*]}"
@@ -205,20 +200,17 @@ check_image() {
     fi
 }
 
-API_EXISTS=$(check_image "api" "$API_TAG")
-BRIDGE_EXISTS=$(check_image "bridge" "$BRIDGE_TAG")
+RENET_EXISTS=$(check_image "renet" "$RENET_TAG")
 PLUGINS_EXISTS=$(check_image "plugin-terminal" "$PLUGINS_TAG")
 WEB_EXISTS=$(check_image "web" "$WEB_TAG")
 CLI_EXISTS=$(check_image "cli" "$CLI_TAG")
 
-write_output "api_exists" "$API_EXISTS"
-write_output "bridge_exists" "$BRIDGE_EXISTS"
+write_output "renet_exists" "$RENET_EXISTS"
 write_output "plugins_exists" "$PLUGINS_EXISTS"
 write_output "web_exists" "$WEB_EXISTS"
 write_output "cli_exists" "$CLI_EXISTS"
 
-log_info "api:$API_TAG exists=$API_EXISTS"
-log_info "bridge:$BRIDGE_TAG exists=$BRIDGE_EXISTS"
+log_info "renet:$RENET_TAG exists=$RENET_EXISTS"
 log_info "plugins:$PLUGINS_TAG exists=$PLUGINS_EXISTS"
 log_info "web:$WEB_TAG exists=$WEB_EXISTS"
 log_info "cli:$CLI_TAG exists=$CLI_EXISTS"

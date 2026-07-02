@@ -19,100 +19,6 @@
         "description": "Näitab konkreetse komando üksikasjalikku skeemi"
       }
     },
-    "audit": {
-      "description": "Auditilogi komandod",
-      "history": {
-        "description": "Vaatab olemi ajalugu",
-        "fetching": "Olemi ajalugu laaditakse...",
-        "success": "Ajalugu laaditud"
-      },
-      "log": {
-        "description": "Vaatab audititlogisid",
-        "fetching": "Auditiloge laaditakse...",
-        "success": "Auditiloge laaditud"
-      },
-      "trace": {
-        "description": "Jälitab olemi auditi ajalugu",
-        "fetching": "Olemi auditi jälitust laaditakse...",
-        "success": "Auditi jälitus laaditud"
-      }
-    },
-    "auth": {
-      "activate": {
-        "activated": "Konto on aktiveeritud",
-        "activating": "Kontot aktiveeritakse...",
-        "description": "Aktiveerib konto kinnituskoodiga",
-        "success": "Konto on aktiveeritud! Nüüd saad sisse logida: rdc auth login"
-      },
-      "description": "Autentimiskomandod",
-      "login": {
-        "authenticating": "Autentimine...",
-        "description": "Autentimine Rediacciga",
-        "success": "Sisselogimine õnnestus! Salvestatud konfiguratsiooni \"{{context}}\"",
-        "tfaPrompt": "Sisesta kahefaktorilise autentimise kood:",
-        "tfaRequired": "Kahefaktoriline autentimine on nõutud",
-        "tfaVerified": "2FA kinnitamine õnnestus",
-        "verifyingTfa": "2FA kontrollitakse..."
-      },
-      "logout": {
-        "description": "Kustutab salvestatud volikirjad",
-        "loggingOut": "Väljalogimine...",
-        "success": "Väljalogimine õnnestus"
-      },
-      "register": {
-        "description": "Registreerib uue organisatsiooni ja kasutajakonto",
-        "nextStep": "Seejärel käivita: rdc auth activate -e <email> -p <password> --code <code>",
-        "registering": "Konto registreerimine...",
-        "submitted": "Registreerimistaotlus esitatud",
-        "success": "Registreerimine õnnestus! Kontrolli oma e-posti aktiveerimiskoodi saamiseks."
-      },
-      "status": {
-        "authenticated": "Autenditud kasutajana: {{email}}",
-        "description": "Kontrollib praegust autentimise olekut",
-        "notAuthenticated": "Pole autenditud. Käivita: rdc auth login"
-      },
-      "tfa": {
-        "description": "Kahefaktorilise autentimise haldamine",
-        "disable": {
-          "confirm": "Kas oled kindel, et soovid 2FA keelata?",
-          "description": "Keelab kahefaktorilise autentimise",
-          "disabling": "2FA keelamine...",
-          "success": "2FA keelamine õnnestus"
-        },
-        "enable": {
-          "addToApp": "Lisa see oma autentimisrakendusse",
-          "description": "Lubab kahefaktorilise autentimise",
-          "enabling": "2FA lubamine...",
-          "initiated": "2FA seadistamine algatatud",
-          "setupKey": "Seadistusvõti: {{key}}",
-          "success": "2FA lubamine õnnestus"
-        },
-        "status": {
-          "description": "Kontrollib 2FA olekut",
-          "disabled": "2FA ei ole lubatud",
-          "enabled": "2FA on lubatud"
-        }
-      },
-      "token": {
-        "description": "Tokenite haldamine",
-        "fork": {
-          "creating": "Hargnemise tokenit luuakse...",
-          "description": "Loob hargnenud tokeni teise rakenduse jaoks",
-          "success": "Token loodud edukalt",
-          "tokenValue": "Token: {{token}}"
-        },
-        "list": {
-          "description": "Loetleb aktiivseid tokeneid/seansse",
-          "fetching": "Tokeneid laaditakse...",
-          "noTokens": "Aktiivseid tokeneid pole"
-        },
-        "revoke": {
-          "description": "Tühistab konkreetse tokeni",
-          "revoking": "Tokenit tühistatakse...",
-          "success": "Tokeni tühistamine õnnestus"
-        }
-      }
-    },
     "backup": {
       "description": "Lüka, tõmba ja sünkroniseeri repositooriumi varukoopiaid üle salvestuste ja masinate",
       "schedule": {
@@ -120,163 +26,6 @@
       },
       "sync": {
         "description": "Repositooriumi varukoopiaid kahesuunaline sünkroniseerimine masinate vahel"
-      }
-    },
-    "bridge": {
-      "description": "Silla haldamine",
-      "list": {
-        "description": "Loetleb sildu",
-        "fetching": "Sildu laaditakse..."
-      },
-      "resetAuth": {
-        "description": "Lähtestab silla autoriseerimistokeni",
-        "newToken": "Uus token: {{token}}",
-        "resetting": "Silla \"{{name}}\" autoriseerimine lähtestatakse...",
-        "success": "Autoriseerimine lähtestatud"
-      }
-    },
-    "ceph": {
-      "clone": {
-        "assign": {
-          "assigning": "Masinaid kloonile \"{{name}}\" määratakse...",
-          "description": "Määrab masinaid kloonile",
-          "success": "Masinad määratud kloonile \"{{name}}\""
-        },
-        "create": {
-          "creating": "RBD-klooni \"{{name}}\" luuakse...",
-          "description": "Loob uue RBD-klooni hetktõmmisest",
-          "success": "RBD-kloon \"{{name}}\" loodud"
-        },
-        "delete": {
-          "confirm": "Kustuta RBD-kloon \"{{name}}\"?",
-          "deleting": "RBD-klooni \"{{name}}\" kustutatakse...",
-          "description": "Kustutab RBD-klooni",
-          "success": "RBD-kloon \"{{name}}\" kustutatud"
-        },
-        "description": "Ceph RBD-klooni haldamine",
-        "list": {
-          "description": "Loetleb RBD-kloone",
-          "fetching": "RBD-kloone laaditakse...",
-          "success": "Kloonid laaditud"
-        },
-        "machines": {
-          "description": "Loetleb kloonile määratud masinaid",
-          "fetching": "Klooni masinaid laaditakse...",
-          "success": "Klooni masinad laaditud"
-        },
-        "unassign": {
-          "description": "Eemaldab masinaid kloonilt",
-          "success": "Masinad eemaldatud kloonilt \"{{name}}\"",
-          "unassigning": "Masinaid kloonilt \"{{name}}\" eemaldatakse..."
-        }
-      },
-      "cluster": {
-        "create": {
-          "creating": "Ceph klastrit \"{{name}}\" luuakse...",
-          "description": "Loob uue Ceph klastri",
-          "success": "Ceph klaster \"{{name}}\" loodud"
-        },
-        "delete": {
-          "confirm": "Kustuta Ceph klaster \"{{name}}\"?",
-          "deleting": "Ceph klastrit \"{{name}}\" kustutatakse...",
-          "description": "Kustutab Ceph klastri",
-          "success": "Ceph klaster \"{{name}}\" kustutatud"
-        },
-        "description": "Ceph klastri haldamine",
-        "list": {
-          "description": "Loetleb Ceph klastreid",
-          "fetching": "Ceph klastreid laaditakse...",
-          "success": "Klastrid laaditud"
-        },
-        "machines": {
-          "description": "Loetleb Ceph klastri masinaid",
-          "fetching": "Klastri masinaid laaditakse...",
-          "success": "Klastri masinad laaditud"
-        },
-        "vault": {
-          "description": "Ceph klastri vault-i haldamine",
-          "get": {
-            "description": "Hangib klastri vault-i andmed",
-            "fetching": "Klastri vault-i laaditakse...",
-            "success": "Klastri vault laaditud"
-          },
-          "update": {
-            "description": "Uuendab klastri vault-i andmed",
-            "success": "Klastri \"{{name}}\" vault uuendatud",
-            "updating": "Klastri \"{{name}}\" vault-i uuendatakse..."
-          }
-        }
-      },
-      "description": "Ceph hajutatud salvestuse haldamine",
-      "image": {
-        "create": {
-          "creating": "RBD-pilti \"{{name}}\" luuakse...",
-          "description": "Loob uue RBD-pildi",
-          "success": "RBD-pilt \"{{name}}\" loodud"
-        },
-        "delete": {
-          "confirm": "Kustuta RBD-pilt \"{{name}}\"?",
-          "deleting": "RBD-pilti \"{{name}}\" kustutatakse...",
-          "description": "Kustutab RBD-pildi",
-          "success": "RBD-pilt \"{{name}}\" kustutatud"
-        },
-        "description": "Ceph RBD-pildi haldamine",
-        "list": {
-          "description": "Loetleb RBD-pilte",
-          "fetching": "RBD-pilte laaditakse...",
-          "success": "Pildid laaditud"
-        }
-      },
-      "pool": {
-        "create": {
-          "creating": "Ceph pooli \"{{name}}\" luuakse...",
-          "description": "Loob uue Ceph pooli",
-          "success": "Ceph pool \"{{name}}\" loodud"
-        },
-        "delete": {
-          "confirm": "Kustuta Ceph pool \"{{name}}\"?",
-          "deleting": "Ceph pooli \"{{name}}\" kustutatakse...",
-          "description": "Kustutab Ceph pooli",
-          "success": "Ceph pool \"{{name}}\" kustutatud"
-        },
-        "description": "Ceph poolide haldamine",
-        "list": {
-          "description": "Loetleb Ceph poole",
-          "fetching": "Ceph poole laaditakse...",
-          "success": "Poolid laaditud"
-        },
-        "vault": {
-          "description": "Ceph pooli vault-i haldamine",
-          "get": {
-            "description": "Hangib pooli vault-i andmed",
-            "fetching": "Pooli vault-i laaditakse...",
-            "success": "Pooli vault laaditud"
-          },
-          "update": {
-            "description": "Uuendab pooli vault-i andmed",
-            "success": "Pooli \"{{name}}\" vault uuendatud",
-            "updating": "Pooli \"{{name}}\" vault-i uuendatakse..."
-          }
-        }
-      },
-      "snapshot": {
-        "create": {
-          "creating": "RBD-hetktõmmist \"{{name}}\" luuakse...",
-          "description": "Loob uue RBD-hetktõmmise",
-          "success": "RBD-hetktõmmis \"{{name}}\" loodud"
-        },
-        "delete": {
-          "confirm": "Kustuta RBD-hetktõmmis \"{{name}}\"?",
-          "deleting": "RBD-hetktõmmist \"{{name}}\" kustutatakse...",
-          "description": "Kustutab RBD-hetktõmmise",
-          "success": "RBD-hetktõmmis \"{{name}}\" kustutatud"
-        },
-        "description": "Ceph RBD-hetktõmmise haldamine",
-        "list": {
-          "description": "Loetleb RBD-hetktõmmiseid",
-          "fetching": "RBD-hetktõmmiseid laaditakse...",
-          "success": "Hetktõmmised laaditud"
-        }
       }
     },
     "config": {
@@ -985,54 +734,6 @@
         "noServices": "Sellel masinal ei leitud rediacc teenuseid",
         "stabilityCheck": "Stabiilsuse kontrolli režiim - väljub koodiga 2, kui mõni on ebaõnnestunud/taaskäivitav",
         "unstableFound": "Leitud {{count}} ebastabiilset teenust"
-      },
-      "testConnection": {
-        "authMethod": "  Autentimismeetod: {{method}}",
-        "created": "Ülesanne loodud",
-        "creating": "SSH-testi ülesannet luuakse...",
-        "description": "Testib SSH-ühendust masinaga ja jäädvustab hostivõtme",
-        "error": "Viga: {{error}}",
-        "knownHosts": "  Tuntud hostid: {{entry}}",
-        "message": "  Sõnum: {{message}}",
-        "publicKeyDeployed": "  Avalik võti juurutatud: {{status}}",
-        "rawOutput": "Toores väljund:",
-        "results": "SSH-testi tulemused:",
-        "saved": "Tuntud hostid salvestatud masina vault-i",
-        "saving": "Tuntud hostid salvestatakse masina \"{{machine}}\" vault-i...",
-        "sshKeyConfigured": "  SSH-võti konfigureeritud: {{status}}",
-        "statusResult": "  Olek: {{status}}",
-        "taskId": "Ülesande ID: {{taskId}}",
-        "testing": "SSH-ühendust testitakse {{user}}@{{ip}}:{{port}}...",
-        "testResult": "SSH-test {{result}}",
-        "timeout": "Tulemuse ootamine aegus",
-        "timeoutMessage": "Ühenduse testimine aegus. Kontrolli järjekorra jälitust üksikasjade saamiseks.",
-        "waiting": "SSH-testi tulemust oodatakse...",
-        "waitingTime": "SSH-testi tulemust oodatakse... ({{seconds}}s)"
-      },
-      "vault": {
-        "description": "Masina vault-i haldamine (ainult pilveadapteri jaoks)"
-      },
-      "vault-status": {
-        "description": "Näitab masina parsitud vault-i olekut (ainult pilveadapteri jaoks)"
-      },
-      "vaultStatus": {
-        "deployedRepos": "\nJuurutatud repositooriumid:",
-        "description": "Näitab masina parsitud vault-i olekut",
-        "dockerRunning": "  Docker töötab: {{count}}",
-        "fetched": "Masin laaditud",
-        "fetching": "Masinat laaditakse...",
-        "header": "\nVault-i olek masina {{name}} jaoks:",
-        "mounted": "  Ühendatud: {{count}}",
-        "repoDocker": "    Docker: {{status}}",
-        "repoMounted": "    Ühendatud: {{mounted}}",
-        "status": "  Olek: {{status}}",
-        "systemDatastore": "  Andmesalv: {{used}} / {{total}} ({{percent}})",
-        "systemDisk": "  Ketas: {{used}} / {{total}} ({{percent}})",
-        "systemHostname": "  Hostinimi: {{hostname}}",
-        "systemMemory": "  Mälu: {{used}} / {{total}} ({{percent}})",
-        "systemSection": "\nSüsteem:",
-        "systemUptime": "  Tööaeg: {{uptime}}",
-        "totalRepos": "  Repositooriumid kokku: {{count}}"
       }
     },
     "mcp": {
@@ -1092,192 +793,6 @@
         "description": "Ettevalmistab VM-klastri kohalikult",
         "failed": "VM-klastri ettevalmistamine ebaõnnestus",
         "starting": "VM-klastri ettevalmistamine..."
-      }
-    },
-    "organization": {
-      "dashboard": {
-        "description": "Hangib organisatsiooni armatuurlaua andmed",
-        "fetching": "Armatuurlauda laaditakse...",
-        "success": "Armatuurlaud laaditud"
-      },
-      "description": "Organisatsiooni haldamise komandod",
-      "export": {
-        "description": "Ekspordib organisatsiooni andmed",
-        "exported": "Eksporditud faili {{path}}",
-        "exporting": "Organisatsiooni andmeid eksporditakse...",
-        "success": "Eksport lõpetatud"
-      },
-      "import": {
-        "description": "Impordib organisatsiooni andmed",
-        "importing": "Organisatsiooni andmeid imporditakse...",
-        "success": "Import lõpetatud"
-      },
-      "info": {
-        "description": "Hangib organisatsiooni teabe",
-        "fetching": "Organisatsiooni teavet laaditakse...",
-        "notFound": "Organisatsiooni teavet ei leitud",
-        "success": "Organisatsiooni teave laaditud"
-      },
-      "maintenance": {
-        "description": "Lubab või keelab hoolduserežiimi (blokeerib mitteadministraatori sisselogimised)",
-        "disabled": "Hoolduserežiim keelatud",
-        "disabling": "Hoolduserežiimi keelamine...",
-        "enabled": "Hoolduserežiim lubatud",
-        "enabling": "Hoolduserežiimi lubamine..."
-      },
-      "vault": {
-        "description": "Organisatsiooni vault-i haldamine",
-        "get": {
-          "description": "Hangib organisatsiooni vault-i andmed",
-          "fetching": "Organisatsiooni vault-i laaditakse...",
-          "notFound": "Organisatsiooni vault-i ei leitud",
-          "success": "Vault laaditud"
-        },
-        "list": {
-          "description": "Loetleb kõik vault-i tüübid",
-          "fetching": "Vault-e laaditakse...",
-          "success": "Vault-id laaditud"
-        },
-        "update": {
-          "description": "Uuendab organisatsiooni vault-i andmeid",
-          "success": "Organisatsiooni vault uuendatud",
-          "updating": "Organisatsiooni vault-i uuendatakse..."
-        }
-      }
-    },
-    "permission": {
-      "add": {
-        "adding": "Õigust \"{{permission}}\" grupile \"{{group}}\" lisatakse...",
-        "description": "Lisab õiguse grupile",
-        "success": "Õigus lisatud"
-      },
-      "description": "Õiguste haldamise komandod",
-      "group": {
-        "create": {
-          "creating": "Õiguste gruppi \"{{name}}\" luuakse...",
-          "description": "Loob uue õiguste grupi",
-          "success": "Õiguste grupp \"{{name}}\" loodud"
-        },
-        "delete": {
-          "confirm": "Kustuta õiguste grupp \"{{name}}\"?",
-          "deleting": "Õiguste gruppi \"{{name}}\" kustutatakse...",
-          "description": "Kustutab õiguste grupi",
-          "success": "Õiguste grupp \"{{name}}\" kustutatud"
-        },
-        "description": "Õiguste grupi haldamine",
-        "list": {
-          "description": "Loetleb kõik õiguste grupid",
-          "fetching": "Õiguste gruppe laaditakse...",
-          "success": "Õiguste grupid laaditud"
-        },
-        "show": {
-          "description": "Näitab õiguste grupi üksikasju",
-          "fetching": "Õiguste grupi üksikasju laaditakse...",
-          "success": "Üksikasjad laaditud"
-        }
-      },
-      "remove": {
-        "description": "Eemaldab õiguse grupist",
-        "removing": "Õigust \"{{permission}}\" grupist \"{{group}}\" eemaldatakse...",
-        "success": "Õigus eemaldatud"
-      }
-    },
-    "protocol": {
-      "build": {
-        "description": "Ehitab {{scheme}}:// URL-i komponentidest"
-      },
-      "description": "Registreerib ja käitleb {{scheme}}:// protokolli URL-e",
-      "open": {
-        "action": "Toiming:",
-        "cliCommand": "\nSamaväärne CLI komando:",
-        "description": "Avab {{scheme}}:// URL-i ja täidab toimingu",
-        "executing": "\nToimingut täidetakse...\n",
-        "machine": "Masin:",
-        "params": "Parameetrid:",
-        "parsedUrl": "\nParsitud protokolli URL:",
-        "repository": "Repositoorium:",
-        "team": "Tiim:",
-        "token": "Token:"
-      },
-      "parse": {
-        "cliCommand": "\nCLI komando:",
-        "description": "Parsib {{scheme}}:// URL-i ja näitab komponente",
-        "parsedUrl": "\nParsitud protokolli URL:"
-      },
-      "register": {
-        "adminRequired": "Märkus: See võib vajada administraatori/root-i õigusi.",
-        "currentUser": "Protokollitöötleja registreerimine praeguse kasutaja jaoks...",
-        "description": "Registreerib protokollitöötleja süsteemis",
-        "exampleUrls": "\nNüüd saad avada URL-e nagu:",
-        "registering": "Protokollitöötleja registreerimine...",
-        "success": "\n{{scheme}}:// protokollitöötleja edukalt registreeritud.",
-        "systemWide": "Protokollitöötleja registreerimine kogu süsteemis..."
-      },
-      "status": {
-        "description": "Näitab protokollitöötleja registreerimise olekut",
-        "error": "\nViga: {{error}}",
-        "handlerCommand": "Töötleja komando:",
-        "platform": "Platvorm:",
-        "registered": "Registreeritud:",
-        "registerHint": "\nProtokollitöötleja registreerimiseks käivita:",
-        "supported": "Toetatud:",
-        "systemRegistration": "Süsteemi registreerimine:",
-        "title": "\nProtokollitöötleja olek",
-        "userRegistration": "Kasutaja registreerimine:"
-      },
-      "unregister": {
-        "description": "Tühistab protokollitöötleja registreerimise süsteemis",
-        "success": "\n{{scheme}}:// protokollitöötleja registreerimine edukalt tühistatud.",
-        "unregistering": "Protokollitöötleja registreerimise tühistamine..."
-      }
-    },
-    "queue": {
-      "cancel": {
-        "cancelling": "Ülesannet {{taskId}} katkestamine...",
-        "description": "Katkestab järjekorraelemendu",
-        "success": "Ülesanne katkestatud"
-      },
-      "create": {
-        "buildingVault": "Järjekorra vault-i ehitamine...",
-        "creating": "Järjekorraelementu funktsioonile '{{function}}' luuakse...",
-        "description": "Loob järjekorraelemendu",
-        "success": "Järjekorraelemendu loodud",
-        "taskId": "Ülesande ID: {{taskId}}",
-        "vaultBuilt": "Järjekorra vault ehitatud"
-      },
-      "delete": {
-        "confirm": "Kas oled kindel, et soovid ülesande {{taskId}} kustutada?",
-        "deleting": "Ülesannet {{taskId}} kustutatakse...",
-        "description": "Kustutab järjekorraelemendu",
-        "success": "Ülesanne kustutatud"
-      },
-      "description": "Järjekorra haldamine",
-      "list": {
-        "description": "Loetleb järjekorraelemente",
-        "fetching": "Järjekorraelemendid laaditakse...",
-        "success": "Järjekorraelemendid laaditud"
-      },
-      "retry": {
-        "description": "Proovib ebaõnnestunud järjekorraelemendu uuesti",
-        "retrying": "Ülesannet {{taskId}} korratakse...",
-        "success": "Ülesanne lisatud kordamiseks järjekorda"
-      },
-      "trace": {
-        "age": "Vanus",
-        "description": "Jälitab järjekorraelemendu täitmist",
-        "errorDetails": "Vea üksikasjad:",
-        "fetched": "Järjekorra jälitus laaditud",
-        "fetching": "Järjekorra jälitust laaditakse...",
-        "finalStatus": "Lõplik olek: {{status}}",
-        "noTrace": "Jälitusteave pole saadaval",
-        "watching": "Ülesande edenemist jälgitakse..."
-      }
-    },
-    "region": {
-      "description": "Piirkondade haldamine",
-      "list": {
-        "description": "Loetleb piirkondi",
-        "fetching": "Piirkondi laaditakse..."
       }
     },
     "repo": {
@@ -1377,12 +892,13 @@
         "starting": "Hoidla \"{{repository}}\" ({{size}}) loomine masinal \"{{machine}}\"..."
       },
       "delete": {
-        "archived": "Hoidla \"{{repository}}\" mandaat arhiveeritud",
         "archiveHint": "Mandaatide arhiveerimiseks taastamise tarbeks: käivita uuesti lipuga --archive-config",
         "archiveOption": "Teisalda konfiguratsioonikirje deletedRepositories-i hilisemaks taastamiseks",
+        "archived": "Hoidla \"{{repository}}\" mandaat arhiveeritud",
         "cloudBackupHint": "Pilvevarukoopiad (kui neid on) säilivad pärast kustutamist. Eemalda orvuks jäänud pilvevarukoopiad käsuga: rdc storage prune --name <storage> -m {{machine}}",
         "completed": "Hoidla kustutatud",
         "configRetained": "Hoidla \"{{repository}}\" konfiguratsioonikirje säilitati (hoidla võib eksisteerida teistel masinatel). Eemaldamiseks käivita: rdc config repository remove --name {{repository}}",
+        "confirm": "Kas kustutada repositoorium \"{{repository}}\" masinas \"{{machine}}\"? See hävitab konteinerid, kettad ja krüpteeritud tõmmise.",
         "description": "Kustuta hoidla (hävitab konteinerid, mahud ja krüpteeritud kujutise). Konfiguratsioonikirje säilitatakse. Kasuta --archive-config, et teisaldada mandaadid deletedRepositories-i taastamiseks käsuga 'config restore-archived'",
         "descriptionShort": "Kustuta hoidla masinalt",
         "examples": "\nNäited:\n  $ rdc repo delete --name app -m server-1\n  $ rdc repo delete --name app:test -m server-1\n",
@@ -1779,57 +1295,6 @@
       },
       "yesOption": "Jäta pakkoperatsioonide kinnitamine vahele"
     },
-    "repository": {
-      "create": {
-        "creating": "Repositooriumi \"{{name}}\" loomine...",
-        "description": "Loob uue repositooriumi",
-        "success": "Repositoorium \"{{name}}\" loodud"
-      },
-      "delete": {
-        "checkingRelationships": "Repositooriumi seoseid kontrollitakse...",
-        "confirm": "Kustuta repositoorium \"{{name}}\"? Seda ei saa tagasi võtta.",
-        "deleting": "Repositooriumi \"{{name}}\" kustutamine...",
-        "description": "Kustutab repositooriumi",
-        "grandRepoWarning": "See on grand-repositoorium (volikiri). Kustutamine on pöördumatu.",
-        "relationshipsChecked": "Repositooriumi seosed kontrollitud",
-        "success": "Repositoorium \"{{name}}\" kustutatud"
-      },
-      "description": "Repositooriumi haldamise komandod",
-      "list": {
-        "description": "Loetleb repositooriumeid",
-        "fetching": "Repositooriumeid laaditakse...",
-        "success": "Repositooriumid laaditud"
-      },
-      "promote": {
-        "checkingRelationships": "Repositooriumi seoseid kontrollitakse...",
-        "confirmPromote": "\nJätkad edutamisega?",
-        "description": "Edutab fork-i grand-staatusesse",
-        "promoting": "Repositooriumi \"{{name}}\" edutamine...",
-        "relationshipsChecked": "Repositooriumi seosed kontrollitud",
-        "separateInfo": "\nSee eraldab \"{{name}}\" grand-repositooriumist \"{{grandName}}\"",
-        "siblingsInfo": "\n{{count}} sõsarkloon(i) jäävad seotuks algse grand-iga:",
-        "success": "Repositoorium \"{{name}}\" edutatud grand-staatusesse"
-      },
-      "rename": {
-        "description": "Nimetab repositooriumi ümber",
-        "renaming": "Repositooriumi \"{{oldName}}\" ümbernimetamine nimeks \"{{newName}}\"...",
-        "success": "Repositoorium nimetatud ümber nimeks \"{{name}}\""
-      },
-      "vault": {
-        "description": "Repositooriumi vault-i haldamine",
-        "get": {
-          "description": "Hangib repositooriumi vault-i andmed",
-          "fetching": "Repositooriumi vault-i laaditakse...",
-          "notFound": "Repositooriumi vault-i ei leitud",
-          "success": "Vault laaditud"
-        },
-        "update": {
-          "description": "Uuendab repositooriumi vault-i andmeid",
-          "success": "Repositooriumi vault uuendatud",
-          "updating": "Repositooriumi vault-i uuendatakse..."
-        }
-      }
-    },
     "shortcuts": {
       "cancel": {
         "description": "Katkestab ülesande (otsetee: queue cancel)"
@@ -2030,36 +1495,6 @@
         "starting": "Üleslaadimine alustatakse..."
       }
     },
-    "team": {
-      "create": {
-        "creating": "Tiimi luuakse...",
-        "description": "Loob tiimi",
-        "success": "Tiim \"{{name}}\" loodud"
-      },
-      "description": "Tiimide haldamine",
-      "list": {
-        "description": "Loetleb tiime",
-        "fetching": "Tiime laaditakse..."
-      },
-      "member": {
-        "add": {
-          "adding": "{{email}} tiimi \"{{team}}\" lisamine...",
-          "description": "Lisab kasutaja tiimi",
-          "success": "Kasutaja lisatud tiimi \"{{team}}\""
-        },
-        "description": "Tiimi liikmesuse haldamine",
-        "list": {
-          "description": "Loetleb tiimi liikmeid",
-          "fetching": "Tiimi liikmeid laaditakse...",
-          "success": "Liikmed laaditud"
-        },
-        "remove": {
-          "description": "Eemaldab kasutaja tiimist",
-          "removing": "{{email}} tiimist \"{{team}}\" eemaldamine...",
-          "success": "Kasutaja eemaldatud tiimist \"{{team}}\""
-        }
-      }
-    },
     "term": {
       "connect": {
         "description": "Ühendumine masina või repositooriumiga SSH kaudu"
@@ -2111,77 +1546,6 @@
       "success": "Uuendatud v{{from}}-lt v{{to}}-le",
       "unknownError": "Tundmatu viga",
       "upToDate": "Juba ajakohane (v{{version}})"
-    },
-    "user": {
-      "activate": {
-        "activating": "Kasutajat \"{{email}}\" aktiveeritakse...",
-        "description": "Aktiveerib kasutajakonto",
-        "success": "Kasutaja aktiveeritud"
-      },
-      "create": {
-        "activationCode": "Aktiveerimiskood: {{code}}",
-        "creating": "Kasutajat \"{{email}}\" luuakse...",
-        "description": "Loob uue kasutaja",
-        "success": "Kasutaja loodud"
-      },
-      "deactivate": {
-        "confirm": "Deaktiveeri kasutaja \"{{email}}\"?",
-        "deactivating": "Kasutajat \"{{email}}\" deaktiveeritakse...",
-        "description": "Deaktiveerib kasutajakonto",
-        "success": "Kasutaja deaktiveeritud"
-      },
-      "description": "Kasutajate haldamise komandod",
-      "exists": {
-        "description": "Kontrollib, kas kasutaja eksisteerib",
-        "exists": "Kasutaja \"{{email}}\" eksisteerib",
-        "notExists": "Kasutaja \"{{email}}\" ei eksisteeri"
-      },
-      "list": {
-        "description": "Loetleb kõik kasutajad",
-        "fetching": "Kasutajaid laaditakse...",
-        "success": "Kasutajad laaditud"
-      },
-      "permission": {
-        "assign": {
-          "assigning": "\"{{group}}\" määramine kasutajale \"{{email}}\"...",
-          "description": "Määrab õiguste grupi kasutajale",
-          "success": "Õigus määratud"
-        },
-        "description": "Kasutaja õiguste haldamine"
-      },
-      "reactivate": {
-        "description": "Aktiveerib deaktiveeritud kasutajakonto uuesti",
-        "reactivating": "Kasutajat \"{{email}}\" aktiveeritakse uuesti...",
-        "success": "Kasutaja uuesti aktiveeritud"
-      },
-      "updateEmail": {
-        "description": "Muudab kasutaja e-posti aadressi",
-        "success": "E-post uuendatud aadressile \"{{email}}\"",
-        "updating": "E-posti uuendamine kasutajale \"{{email}}\"..."
-      },
-      "updateLanguage": {
-        "description": "Seab praeguse kasutaja eelistatud keele",
-        "success": "Keel uuendatud väärtusele \"{{language}}\"",
-        "updating": "Keele-eelistust uuendatakse..."
-      },
-      "updatePassword": {
-        "description": "Muudab sinu parooli",
-        "success": "Parool uuendatud",
-        "updating": "Parooli uuendatakse..."
-      },
-      "vault": {
-        "description": "Kasutaja vault-i haldamine",
-        "get": {
-          "description": "Hangib praeguse kasutaja vault-i andmed",
-          "fetching": "Kasutaja vault-i laaditakse...",
-          "success": "Vault laaditud"
-        },
-        "update": {
-          "description": "Uuendab praeguse kasutaja vault-i andmeid",
-          "success": "Kasutaja vault uuendatud",
-          "updating": "Kasutaja vault-i uuendatakse..."
-        }
-      }
     },
     "vscode": {
       "check": {
@@ -2274,16 +1638,6 @@
       "tip": "Vihje",
       "warning": "Hoiatus"
     },
-    "cloudFrontmatter": {
-      "category": "Viide",
-      "description": "Rediacc CLI pilvepõhised käsud -- autentimine, meeskonnad, organisatsioonid ja mitme-rentniku haldus",
-      "title": "CLI-rakendus (pilv / eksperimentaalne)"
-    },
-    "cloudOverview": {
-      "heading": "Ülevaade",
-      "text": "Need käsud nõuavad **pilveadapterit** (eksperimentaalne) -- aktiveeritakse, kui konfiguratsioon sisaldab `apiUrl` ja `token` välju. Peamise CLI viite jaoks vaata [CLI-rakendus](/en/docs/cli-application)."
-    },
-    "cloudPageTitle": "Rediacc CLI viide (pilv / eksperimentaalne)",
     "errors": {
       "heading": "Sagedased veateated",
       "intro": "Probleemi ilmnemisel kuvab CLI selged veateated:",
@@ -2325,72 +1679,32 @@
     "pageTitle": "Rediacc CLI viide",
     "sectionTitles": {
       "agent": "Agendi utiliidid",
-      "audit": "Audit ja vastavus",
-      "auth": "Autentimine",
       "backup": "Varundamine ja taastamine",
-      "bridge": "Silla haldus",
-      "ceph": "Ceph-salvestuse haldus",
       "config": "Konfiguratsiooni haldus",
       "datastore": "Andmehoidla haldus",
       "doctor": "Süsteemi diagnostika",
       "machine": "Masina haldus",
       "mcp": "MCP-server",
       "ops": "Eksperimentaalsed VM-toimingud",
-      "organization": "Organisatsiooni haldus",
-      "permission": "Õiguste haldus",
-      "protocol": "Protokollitöötleja",
-      "queue": "Järjekorra toimingud",
-      "region": "Piirkonna haldus",
       "repo": "Repositooriumi elutsükkel",
-      "repository": "Repositooriumi haldus",
       "shortcuts": "Kiirkäsud (otseteed)",
       "storage": "Salvestuse haldus",
       "subscription": "Tellimuse haldus",
       "sync": "Failide sünkroonimine",
-      "team": "Meeskonnajaldus",
       "term": "SSH-terminali juurdepääs",
       "update": "CLI uuendused",
-      "user": "Kasutajahaldus",
       "vscode": "VS Code'i integratsioon"
     },
     "supplements": {
-      "auth": {
-        "register": {
-          "afterDescription": "Pärast registreerimist kontrolli e-posti aktiveerimiskoodi saamiseks."
-        },
-        "tip": "Sinu autentimistoken salvestatakse lokaalselt konfiguratsiooni. Kasuta `--save-as`, et salvestada mandaadid nimega konfiguratsiooni mitme keskkonna jaoks."
-      },
       "config": {
         "afterDescription": "Konfiguratsioonifailid salvestavad ühenduse andmed (API URL, mandaadid, vaikimisi meeskond/piirkond/sild), et saaksid keskkondade vahel kiiresti vahetada.",
         "init": {
           "afterDescription": "Saad masinad otse lisada:"
-        },
-        "set": {
-          "tip": "Vaikeväärtuste seadistamine tähendab, et ei pea iga käsuga andma `--team`, `--region` või `--bridge`."
         }
       },
       "machine": {
         "health": {
           "afterDescription": "Tervisekäsk väljastab süsteemi mõõdikud, konteinerite oleku, teenuste stabiilsuse ja salvestusteabe -- kasulik CI/CD torujuhtmete kontrollideks."
-        },
-        "testConnection": {
-          "tip": "Kasuta `--save`, et eduka testi järel hosdi võti automaatselt masina hoidlasse salvestada."
-        }
-      },
-      "organization": {
-        "maintenance": {
-          "warning": "Kui hoolduserežiim on lubatud, ei saa mitte-administraatorist kasutajad sisse logida."
-        }
-      },
-      "queue": {
-        "afterDescription": "Järjekorra süsteem on Rediacc ülesandete täitmise tuum. Iga toiming (juurutamine, varundamine, skripti käivitamine) läbib järjekorra.",
-        "trace": {
-          "tip": "Kasuta `--watch`, et jälgida ülesannet reaalajas kuni selle lõpetamiseni."
-        }
-      },
-      "repository": {
-        "promote": {
-          "note": "Forki ülendamine eraldab selle oma pea-repositooriumist (vanemast) ja muudab selle iseseisvaks."
         }
       }
     },
@@ -2435,7 +1749,6 @@
     },
     "authFailed": "Autentimine ebaõnnestus",
     "authRequired": "Autentimine on nõutud. Käivita: rdc auth login",
-    "bridgeRequired": "Silla nimi on nõutud. Kasuta --bridge või määra vaikimisi väärtus käsuga: rdc config set --key bridge --value <name>",
     "cannotDeleteGrandRepo": "Grand-repositooriumi ei saa kustutada: {{reason}}",
     "cannotPromote": "Ülendamine ei õnnestu: {{reason}}",
     "clusterNotFound": "Ceph-klastrit \"{{name}}\" ei leitud",
@@ -2578,8 +1891,6 @@
     "unknownCommand": "Tundmatu käsk \"{{command}}\". Saadaval olevad käsud: {{available}}.",
     "unknownSubcommand": "Tundmatu alamkäsk \"{{command}}\". Saadaval olevad {{parent}} alamkäsud: {{available}}.",
     "validationError": "Valideerimise viga: {{message}}",
-    "vaultDataRequired": "Võlvi andmed on nõutud. Kasuta --vault <json> või anna JSON stdin kaudu.",
-    "vaultVersionRequired": "Võlvi versioon on nõutud. Kasuta --vault-version <n>.",
     "vscode": {
       "browserNeedsRepo": "vscode --browser teenindab repositooriumi liivakasti — anna --repository <nimi>",
       "cleanupRequired": "Määra --all kõigi ühenduste eemaldamiseks või --connection <name> konkreetse ühenduse jaoks.",

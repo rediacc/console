@@ -45,7 +45,7 @@ const { MockSFTPClient, mockGetLocalConfig, mockGetLocalMachine, mockReadSSHKey 
   }
 );
 
-vi.mock('@rediacc/shared-desktop/sftp', () => ({ SFTPClient: MockSFTPClient }));
+vi.mock('../../shared-desktop/sftp/index.js', () => ({ SFTPClient: MockSFTPClient }));
 
 vi.mock('../config-resources.js', () => ({
   configService: {

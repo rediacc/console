@@ -8,8 +8,8 @@
  */
 
 import { DEFAULTS } from '@rediacc/shared/config';
-import { parentRepoName } from '@rediacc/shared-desktop/repository';
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import { parentRepoName } from '../shared-desktop/repository/index.js';
+import { SFTPClient } from '../shared-desktop/sftp/index.js';
 import { t } from '../i18n/index.js';
 import type { InfraConfig } from '../types/index.js';
 import { CloudflareDnsClient, type DnsAction } from './cloudflare-dns.js';

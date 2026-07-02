@@ -30,7 +30,7 @@ export function registerSSHCommands(config: Command, program: Command): void {
           throw new ValidationError(t('commands.config.ssh.set.keyNotFound', { path: keyPath }));
         }
 
-        const { isValidSSHKey } = await import('@rediacc/shared-desktop/ssh');
+        const { isValidSSHKey } = await import('../shared-desktop/ssh/index.js');
         if (!isValidSSHKey(privateKey)) {
           throw new ValidationError(t('commands.config.ssh.set.invalidKey'));
         }

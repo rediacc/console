@@ -8,7 +8,6 @@
 #   --version VERSION    Release version (required)
 #   --channel CHANNEL    Release channel (e.g., "pr-123", "edge", "stable")
 #   --cli-dir DIR        CLI binaries directory (default: dist/cli/)
-#   --desktop-dir DIR    Desktop artifacts directory (default: dist/desktop/)
 #   --packages-dir DIR   DEPRECATED (packages now in self-contained repos)
 #   --dry-run            Print commands without executing
 #
@@ -26,7 +25,6 @@ source "$SCRIPT_DIR/../../config/constants.sh"
 VERSION=""
 CHANNEL=""
 CLI_DIR=""
-DESKTOP_DIR=""
 PACKAGES_DIR=""
 DRY_RUN=false
 
@@ -44,10 +42,6 @@ while [[ $# -gt 0 ]]; do
             CLI_DIR="$2"
             shift 2
             ;;
-        --desktop-dir)
-            DESKTOP_DIR="$2"
-            shift 2
-            ;;
         --packages-dir)
             PACKAGES_DIR="$2"
             shift 2
@@ -57,7 +51,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         -h | --help)
-            echo "Usage: $0 --version VERSION --channel CHANNEL [--cli-dir DIR] [--desktop-dir DIR] [--packages-dir DIR] [--dry-run]"
+            echo "Usage: $0 --version VERSION --channel CHANNEL [--cli-dir DIR] [--packages-dir DIR] [--dry-run]"
             exit 0
             ;;
         *)
@@ -74,7 +68,6 @@ fi
 
 REPO_ROOT="$(get_repo_root)"
 [[ -z "$CLI_DIR" ]] && CLI_DIR="$REPO_ROOT/dist/cli"
-[[ -z "$DESKTOP_DIR" ]] && DESKTOP_DIR="$REPO_ROOT/dist/desktop"
 [[ -z "$PACKAGES_DIR" ]] && PACKAGES_DIR="$REPO_ROOT/dist/packages"
 
 if [[ -z "$CHANNEL" ]]; then
@@ -113,7 +106,7 @@ fi
 #   and any file under a package-manager channel path (apt/<channel>/,
 #   apk/<channel>/, etc.) get "no-cache" because channel paths reuse
 #   filenames across releases -- content at the same URL changes.
-# - Truly immutable URL-versioned binaries (cli/v1.2.3/*, desktop/v1.2.3/*,
+# - Truly immutable URL-versioned binaries (cli/v1.2.3/*,
 #   npm/<channel>/rediacc-cli-<semver>.tgz) get a 1-year cache because the
 #   URL itself encodes the version and content never changes at that URL.
 readonly CACHE_CONTROL_MUTABLE="no-cache"
@@ -194,7 +187,7 @@ r2_rm() {
 
 # Sentinel-aware, idempotent write guard.
 #
-# A versioned prefix (cli/v${X}/ or desktop/v${X}/) is COMMITTED iff a
+# A versioned prefix (cli/v${X}/) is COMMITTED iff a
 # `.released` sentinel exists under it. The sentinel is written by
 # write-release-sentinel.sh in the finalize-release-sentinel CI job, only
 # after every CI gate passes. See .ci/scripts/lib/release-state-validator.sh
@@ -410,57 +403,10 @@ else
 fi
 
 # =============================================================================
-# Desktop Artifacts
-# =============================================================================
-if [[ -d "$DESKTOP_DIR" ]]; then
-    log_step "Uploading Desktop artifacts"
-
-    # Write-once guard on desktop's versioned prefix once per run, before the
-    # loop. DESKTOP_VERSIONED gates the immutable upload: a guard SKIP (10) means
-    # the version is already sealed with binaries, so we refresh only the channel
-    # path. The guard exits 1 on the corrupt sealed-but-empty state.
-    DESKTOP_VERSIONED=false
-    if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then
-        guard_rc=0
-        write_once_guard "desktop/v${VERSION}/" "desktop v${VERSION}" || guard_rc=$?
-        [[ "$guard_rc" == "0" ]] && DESKTOP_VERSIONED=true
-    fi
-
-    for artifact in "$DESKTOP_DIR"/*; do
-        [[ -f "$artifact" ]] || continue
-        local_name="$(basename "$artifact")"
-        [[ "$local_name" == "builder-debug.yml" ]] && continue
-
-        # Versioned path is immutable; only release channels may write here, and
-        # only when not already sealed (DESKTOP_VERSIONED). Channel path is
-        # overwritten per release. See CLI section above for the gating rationale.
-        if [[ "$DESKTOP_VERSIONED" == "true" ]]; then
-            r2_cp "$artifact" "$(r2_versioned_path "desktop/v${VERSION}/${local_name}")" "$CACHE_CONTROL_IMMUTABLE"
-            ((UPLOADED++)) || true
-        fi
-        r2_cp "$artifact" "$(r2_path "desktop" "${local_name}")"
-    done
-
-    if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then
-        log_info "Desktop: uploaded to desktop/v${VERSION}/ + desktop/${CHANNEL}/"
-    else
-        log_info "Desktop: uploaded to desktop/${CHANNEL}/ (versioned path skipped; not a release channel)"
-    fi
-
-    # Track Desktop versions for retention cleanup (production channels only)
-    if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then
-        DESKTOP_PRUNED=$(update_versions_tracker "desktop" "$VERSION" "$R2_MAX_RELEASE_VERSIONS")
-    fi
-else
-    log_info "Desktop directory not found: $DESKTOP_DIR (skipping)"
-fi
-
-# =============================================================================
 # Cleanup Old Versions (production channels only)
 # =============================================================================
 if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then
     cleanup_old_versions "cli" "${CLI_PRUNED:-}"
-    cleanup_old_versions "desktop" "${DESKTOP_PRUNED:-}"
 fi
 
 # =============================================================================

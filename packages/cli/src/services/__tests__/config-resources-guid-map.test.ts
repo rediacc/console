@@ -15,8 +15,7 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
 }));
 
 // Mock the base class so getRepositoryGuidMap's getCurrent/getResourceState paths
-// are controllable from the test. `hasCloudCredentials` returns false so the
-// self-hosted path runs.
+// are controllable from the test.
 let mockRepos: Record<string, { repositoryGuid: string; tag?: string }> = {};
 
 vi.mock('../config-base.js', () => ({
@@ -35,15 +34,6 @@ vi.mock('../config-base.js', () => ({
     }
   },
 }));
-
-// hasCloudCredentials always false for these tests.
-vi.mock('../../types/index.js', async () => {
-  const actual = await vi.importActual<Record<string, unknown>>('../../types/index.js');
-  return {
-    ...actual,
-    hasCloudCredentials: () => false,
-  };
-});
 
 // Bump default 5s timeout — the per-test `await import('../config-resources.js')`
 // triggers a cold load of the full module graph (commitments/canonical/walker/

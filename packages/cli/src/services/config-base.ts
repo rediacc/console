@@ -2,7 +2,7 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import { configFileStorage } from '../adapters/config-file-storage.js';
 import type { RemoteConfigAdapter } from '../adapters/remote-config-adapter.js';
 import type { RdcConfig } from '../types/index.js';
-import { hasCloudCredentials, hasRemoteConfig } from '../types/index.js';
+import { hasRemoteConfig } from '../types/index.js';
 import {
   detectSystemLanguage,
   getSupportedLanguages as getSupportedLanguagesList,
@@ -10,8 +10,6 @@ import {
   normalizeLanguage,
 } from './context-language.js';
 import type { ResourceState } from './resource-state.js';
-
-const DEFAULT_API_URL = 'https://www.rediacc.com/api';
 
 /**
  * Service for managing CLI config files.
@@ -64,8 +62,8 @@ export class ConfigServiceBase {
 
     let masterPassword: string | null = null;
     if (config.credentials?.masterPasswordVerifier) {
-      const { authService } = await import('./auth.js');
-      masterPassword = await authService.requireMasterPassword();
+      const { requireMasterPassword } = await import('./master-password.js');
+      masterPassword = await requireMasterPassword();
     }
 
     const { LocalResourceState } = await import('./resource-state.js');
@@ -192,34 +190,8 @@ export class ConfigServiceBase {
   }
 
   // ============================================================================
-  // Credential Helpers (for API client integration)
+  // Credential Helpers
   // ============================================================================
-
-  async getApiUrl(): Promise<string> {
-    if (process.env.REDIACC_API_URL) {
-      return process.env.REDIACC_API_URL;
-    }
-    const config = await this.getCurrent();
-    return config?.account?.apiUrl ?? DEFAULT_API_URL;
-  }
-
-  async getToken(): Promise<string | null> {
-    if (process.env.REDIACC_TOKEN) {
-      return process.env.REDIACC_TOKEN;
-    }
-    const config = await this.getCurrent();
-    return config?.account?.token ?? null;
-  }
-
-  async setToken(token: string): Promise<void> {
-    const name = this.getEffectiveConfigName();
-    const exists = await configFileStorage.exists(name);
-    if (!exists) return;
-    await configFileStorage.update(name, (cfg) => ({
-      ...cfg,
-      account: { ...(cfg.account ?? {}), token },
-    }));
-  }
 
   async getMasterPassword(): Promise<string | null> {
     const config = await this.getCurrent();
@@ -329,70 +301,5 @@ export class ConfigServiceBase {
     result.region ??= await this.getRegion();
     result.bridge ??= await this.getBridge();
     return result;
-  }
-
-  // ============================================================================
-  // Login Helper (creates/updates config on login)
-  // ============================================================================
-
-  async saveLoginCredentials(
-    configName: string,
-    credentials: {
-      apiUrl: string;
-      token: string;
-      userEmail: string;
-      masterPassword?: string;
-    }
-  ): Promise<void> {
-    const exists = await configFileStorage.exists(configName);
-    const apply = (cfg: RdcConfig): RdcConfig => ({
-      ...cfg,
-      account: {
-        ...(cfg.account ?? {}),
-        apiUrl: credentials.apiUrl,
-        token: credentials.token,
-        userEmail: credentials.userEmail,
-      },
-      credentials: credentials.masterPassword
-        ? { ...(cfg.credentials ?? {}), masterPasswordVerifier: credentials.masterPassword }
-        : cfg.credentials,
-    });
-    if (exists) {
-      await configFileStorage.update(configName, apply);
-    } else {
-      const config = await configFileStorage.init(configName);
-      await configFileStorage.save(apply(config), configName);
-    }
-  }
-
-  async clearCredentials(): Promise<void> {
-    const name = this.getEffectiveConfigName();
-    const exists = await configFileStorage.exists(name);
-    if (!exists) return;
-    await configFileStorage.update(name, (cfg) => ({
-      ...cfg,
-      account: cfg.account ? { ...cfg.account, token: undefined } : undefined,
-      credentials: cfg.credentials
-        ? { ...cfg.credentials, masterPasswordVerifier: undefined }
-        : undefined,
-    }));
-  }
-
-  async hasToken(): Promise<boolean> {
-    const token = await this.getToken();
-    return token !== null;
-  }
-
-  // ============================================================================
-  // Adapter Detection Helpers
-  // ============================================================================
-
-  async isCloud(): Promise<boolean> {
-    const config = await this.getCurrent();
-    return hasCloudCredentials(config);
-  }
-
-  async isSelfHosted(): Promise<boolean> {
-    return !(await this.isCloud());
   }
 }

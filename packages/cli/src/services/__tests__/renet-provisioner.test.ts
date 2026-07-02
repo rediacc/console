@@ -56,7 +56,7 @@ vi.mock('node:fs/promises', () => ({
   stat: statMock,
 }));
 
-vi.mock('@rediacc/shared-desktop/sftp', () => ({
+vi.mock('../../shared-desktop/sftp/index.js', () => ({
   SFTPClient: MockSFTPClient,
 }));
 
@@ -66,12 +66,12 @@ vi.mock('../embedded-assets.js', () => ({
   computeSha256: computeSha256Mock,
 }));
 
-vi.mock('@rediacc/shared-desktop/sync', () => ({
+vi.mock('../../shared-desktop/sync/index.js', () => ({
   executeRsync: executeRsyncMock,
   getRsyncCommand: getRsyncCommandMock,
 }));
 
-vi.mock('@rediacc/shared-desktop/ssh', () => ({
+vi.mock('../../shared-desktop/ssh/index.js', () => ({
   createTempSSHKeyFile: createTempSSHKeyFileMock,
   removeTempSSHKeyFile: removeTempSSHKeyFileMock,
 }));

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Write the `.released` commit sentinels for a release.
+# Write the `.released` commit sentinel for a release.
 #
 # This is the ATOMIC COMMIT POINT of the release pipeline. It runs from the
 # finalize-release-sentinel CI job, AFTER every gate that must pass before a
@@ -11,15 +11,12 @@
 # See .ci/scripts/lib/release-state-validator.sh for the invariant.
 #
 # Usage:
-#   write-release-sentinel.sh --version 1.0.5 --channel edge --commit-sha <sha> \
-#     [--desktop]
+#   write-release-sentinel.sh --version 1.0.5 --channel edge --commit-sha <sha>
 #
 # Flags:
 #   --version      (required) Semver version WITHOUT the leading `v`.
 #   --channel      (required) Release channel: edge | stable.
 #   --commit-sha   (required) Git commit SHA that produced the artifacts.
-#   --desktop      Emit desktop sentinel in addition to cli (platform-aware CI
-#                  sets this only if desktop artifacts were produced).
 #
 # Env (required):
 #   R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_ENDPOINT
@@ -39,7 +36,6 @@ source "$SCRIPT_DIR/../lib/release-state-validator.sh"
 VERSION=""
 CHANNEL=""
 COMMIT_SHA=""
-INCLUDE_DESKTOP=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -54,10 +50,6 @@ while [[ $# -gt 0 ]]; do
         --commit-sha)
             COMMIT_SHA="${2:-}"
             shift 2
-            ;;
-        --desktop)
-            INCLUDE_DESKTOP=true
-            shift
             ;;
         *)
             log_error "unknown flag: $1"
@@ -105,16 +97,13 @@ build_payload() {
         --arg commit "$COMMIT_SHA" \
         --arg product "$product" \
         --arg released_at "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
-        --argjson include_desktop "$INCLUDE_DESKTOP" \
         '{
             version: $version,
             channel: $channel,
             commit_sha: $commit,
             product: $product,
             released_at: $released_at,
-            artifacts_produced: (
-                ["cli"] + (if $include_desktop then ["desktop"] else [] end)
-            )
+            artifacts_produced: ["cli"]
         }'
 }
 
@@ -165,19 +154,7 @@ write_sentinel() {
     log_info "  sealed ${product}/${VERSION_TAG}/${RSV_SENTINEL_KEY}"
 }
 
-# Order matters: cli FIRST, desktop SECOND. The bijection assertion permits
-# cli-only (desktop absent) but forbids desktop-only (the library enforces
-# `desktop sentinel ⇒ cli sentinel`). Writing cli first keeps the half-written
-# state benign: a cancel between the two writes leaves cli committed and
-# desktop orphaned, which the drift gate flags as drift (not as a silent pass).
-
 write_sentinel cli
-
-if [[ "$INCLUDE_DESKTOP" == "true" ]]; then
-    write_sentinel desktop
-else
-    log_info "desktop sentinel skipped (--desktop not set)"
-fi
 
 log_info "release ${VERSION_TAG} on ${CHANNEL} is sealed"
 

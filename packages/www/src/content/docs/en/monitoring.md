@@ -185,12 +185,12 @@ rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/r
 
 The result is saved to the same JSON file and immediately visible in the next `rdc machine query --system`.
 
-## Vault Status
+## Machine Overview
 
 Get a complete overview of a machine including deployment information:
 
 ```bash
-rdc machine vault-status --name server-1
+rdc machine query --name server-1
 ```
 
 This provides:
@@ -203,24 +203,15 @@ Use `--output json` for machine-readable output.
 
 ## Test Connection
 
-> **Cloud adapter only.** In local mode, use `rdc term connect -m server-1 -c "hostname"` to verify connectivity.
-
 Verify SSH connectivity to a machine:
 
 ```bash
-rdc machine test-connection --ip 203.0.113.50 --user deploy
+rdc term connect -m server-1 -c "hostname"
 ```
 
-Reports:
-- Connection status (success/failed)
-- Authentication method used
-- SSH key configuration
-- Public key deployment status
-- Known hosts entry
-
-Options:
-- `--port <number>`, SSH port (default: 22)
-- `--save -m server-1`, Save verified host key to machine config
+The command prints the remote hostname on success and a connection error
+otherwise, which verifies DNS, the SSH port, and key authentication in one
+step.
 
 ## Diagnostics (doctor)
 

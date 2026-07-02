@@ -47,11 +47,6 @@ describe('LocalStateProvider', () => {
     });
   });
 
-  it('should have isCloud set to false', () => {
-    const provider = new LocalStateProvider();
-    expect(provider.isCloud).toBe(false);
-  });
-
   describe('vaults.getConnectionVaults — per-repo secrets', () => {
     function setupMachineWithRepo(repoConfig: Record<string, unknown>) {
       mockGetLocalConfig.mockResolvedValue({

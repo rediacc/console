@@ -24,36 +24,6 @@ echo "Starting Rediacc CI services..."
 source "$SCRIPT_DIR/ci-env.sh"
 
 # =============================================================================
-# VERIFY SQLCMD AVAILABILITY
-# =============================================================================
-# go-sqlcmd should be installed via .ci/scripts/private/run-middleware.sh or install-sqlcmd.sh
-if ! command -v sqlcmd &>/dev/null; then
-    echo "ERROR: sqlcmd (go-sqlcmd) not found in PATH"
-    echo "Install with: sudo $CONSOLE_ROOT/private/middleware/scripts/install-sqlcmd.sh"
-    exit 1
-fi
-
-# =============================================================================
-# PREPARE MSSQL DIRECTORY
-# =============================================================================
-# SQL Server 2022+ runs as non-root user (UID 10001)
-# Must create directory with correct permissions before starting container
-MSSQL_DIR="$CI_DOCKER_DIR/mssql"
-echo "Preparing SQL Server data directory: $MSSQL_DIR"
-
-if [[ -d "$MSSQL_DIR" ]]; then
-    # Use sudo to remove directory owned by SQL Server's UID (10001)
-    sudo rm -rf "$MSSQL_DIR" 2>/dev/null || rm -rf "$MSSQL_DIR" 2>/dev/null || true
-fi
-
-mkdir -p "$MSSQL_DIR"
-# Set ownership to SQL Server's UID (10001) for non-root operation
-sudo chown -R 10001:10001 "$MSSQL_DIR" 2>/dev/null || {
-    # If sudo fails (CI environment without sudo), try chmod instead
-    chmod -R 777 "$MSSQL_DIR"
-}
-
-# =============================================================================
 # START SERVICES
 # =============================================================================
 echo "Starting Docker Compose services..."
@@ -73,56 +43,6 @@ docker compose -f docker-compose.yml up -d
 # WAIT FOR HEALTH CHECKS
 # =============================================================================
 echo "Waiting for services to be ready..."
-
-# Wait for SQL Server (using external go-sqlcmd connection)
-wait_for_sql() {
-    local timeout=120
-    local elapsed=0
-    local interval=2
-    local sql_port="${SQL_PORT:-1433}"
-
-    echo "  Waiting for SQL Server (via go-sqlcmd on port $sql_port)..."
-    while [[ $elapsed -lt $timeout ]]; do
-        if SQLCMDPASSWORD="$MSSQL_SA_PASSWORD" sqlcmd \
-            -S "localhost,$sql_port" -U sa -Q "SELECT 1" -C &>/dev/null; then
-            echo "  SQL Server is ready"
-            return 0
-        fi
-        sleep $interval
-        elapsed=$((elapsed + interval))
-    done
-    echo "  SQL Server failed to start within ${timeout}s"
-    return 1
-}
-
-# Wait for API
-wait_for_api() {
-    local timeout=180
-    local elapsed=0
-    local interval=2
-
-    echo "  Waiting for API..."
-    while [[ $elapsed -lt $timeout ]]; do
-        if docker inspect rediacc-api --format='{{.State.Health.Status}}' 2>/dev/null | grep -q "healthy"; then
-            echo "  API is healthy"
-            return 0
-        fi
-        # Also check if container is running
-        if ! docker ps --format "{{.Names}}" | grep -q "^rediacc-api$"; then
-            echo "  API container stopped unexpectedly"
-            docker logs rediacc-api --tail 50 || true
-            return 1
-        fi
-        sleep $interval
-        elapsed=$((elapsed + interval))
-        if ((elapsed % 20 == 0)); then
-            echo "    Still waiting... (${elapsed}s / ${timeout}s)"
-        fi
-    done
-    echo "  API failed to become healthy within ${timeout}s"
-    docker logs rediacc-api --tail 100 || true
-    return 1
-}
 
 # Wait for Web
 wait_for_web() {
@@ -168,21 +88,9 @@ wait_for_account_server() {
 }
 
 # Execute health checks in sequence
-wait_for_sql || {
-    echo "Service startup failed: SQL Server"
-    docker compose logs
-    exit 1
-}
-
 wait_for_account_server || {
     echo "Service startup failed: Account Server"
     docker compose logs account-server
-    exit 1
-}
-
-wait_for_api || {
-    echo "Service startup failed: API"
-    docker compose logs
     exit 1
 }
 

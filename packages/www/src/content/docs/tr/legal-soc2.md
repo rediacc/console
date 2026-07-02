@@ -4,7 +4,7 @@ description: "SOC 2'nin özü: denetçiler kontrollerinizin çalıştığına da
 category: "Legal"
 order: 2
 language: tr
-sourceHash: "27d2366f84e21d8c"
+sourceHash: "9ba8477a07292a7d"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -32,7 +32,7 @@ Rediacc 70+ farklı olay türünü kaydeder. Kullanıcı işlemleri, sistem değ
 - **Lisanslama**: depo lisans verilişi, makine yuvası izleme, abonelik değişiklikleri
 - **Makine işlemleri**: depo oluştur/başlat/durdur/sil, fork, yedekleme push/pull, dosya senkronizasyonu, terminal oturumları
 
-Bu günlüklere ulaşmanın üç yolu var. Yönetici panosu kullanıcı, ekip ve tarih filtrelemesi ile. Org yöneticileri için portal aktivite sayfası tür ve tarih filtrelemesi ile. Ya da `rdc audit` CLI programatik dışa aktarım için. Günlükleri kendi araçlarınıza aktarabilir, istediğiniz yerde entegre edebilirsiniz. Makine işlemleri sistem günlüklerinize de kaydedilir, böylece çok katmanlı korumaya sahip olursunuz.
+Bu günlüklere ulaşmanın iki yolu var. Yönetici panosu kullanıcı, ekip ve tarih filtrelemesi ile. Org yöneticileri için portal aktivite sayfası tür ve tarih filtrelemesi ile, kendi araçlarınıza aktarabileceğiniz bir JSON dışa aktarma seçeneğiyle birlikte. Makine işlemleri sistem günlüklerinize de kaydedilir, böylece çok katmanlı korumaya sahip olursunuz.
 
 ## Değişiklik Yönetimi
 

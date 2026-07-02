@@ -1,7 +1,7 @@
 /* eslint-disable max-lines */
 import { DEFAULTS } from '@rediacc/shared/config';
 import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import { SFTPClient } from '../shared-desktop/sftp/index.js';
 import type { MachineConfig } from '../types/index.js';
 import { accountServerFetch } from './account-client.js';
 import { configService } from './config-resources.js';

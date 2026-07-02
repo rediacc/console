@@ -1,11 +1,10 @@
 import { t } from '../i18n/index.js';
-import { getStateProvider } from '../providers/index.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { ValidationError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
-import { coerceCliParams, validateFunctionParams } from './queue.js';
+import { coerceCliParams, validateFunctionParams } from './function-params.js';
 import { resolveExtraMachines } from './repo-backup.js';
 import { assertMachineExists, assertStorageExists } from './_validate.js';
 
@@ -94,12 +93,8 @@ export async function fetchBackupList(
   params: Record<string, unknown>,
   options: BackupRunOptions
 ): Promise<BackupListEntry[]> {
-  const provider = await getStateProvider();
   const machineName = options.machine;
   if (!machineName) throw new ValidationError(t('errors.machineRequiredLocal'));
-  if (provider.isCloud) {
-    throw new ValidationError(t('commands.repo.backup.list.localOnly'));
-  }
 
   const coerced = coerceCliParams('backup_list', params as Record<string, string>);
   validateFunctionParams('backup_list', coerced);

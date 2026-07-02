@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: ru
-sourceHash: "f56ab0bacb657043"
+sourceHash: "e2f5d37c534fc40d"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -189,12 +189,12 @@ rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/r
 
 Результат сохраняется в тот же JSON-файл и сразу становится видимым при следующем вызове `rdc machine query --system`.
 
-## Статус Vault
+## Обзор машины
 
 Получение полного обзора машины, включая информацию о развёртывании:
 
 ```bash
-rdc machine vault-status --name server-1
+rdc machine query --name server-1
 ```
 
 Предоставляет:
@@ -207,24 +207,15 @@ rdc machine vault-status --name server-1
 
 ## Проверка соединения
 
-> **Только для облачного адаптера.** При использовании локального адаптера используйте `rdc term connect -m server-1 -c "hostname"` для проверки подключения.
-
 Проверка SSH-подключения к машине:
 
 ```bash
-rdc machine test-connection --ip 203.0.113.50 --user deploy
+rdc term connect -m server-1 -c "hostname"
 ```
 
-Отчёт включает:
-- Статус соединения (успешно/неудачно)
-- Используемый метод аутентификации
-- Конфигурацию SSH-ключа
-- Статус развёртывания публичного ключа
-- Запись в Known hosts
-
-Параметры:
-- `--port <number>`, SSH-порт (по умолчанию: 22)
-- `--save -m server-1`, сохранить проверенный ключ хоста в конфигурации машины
+Команда выводит удалённое имя хоста при успехе и ошибку соединения в
+противном случае, что за один шаг проверяет DNS, SSH-порт и
+аутентификацию по ключу.
 
 ## Диагностика (doctor)
 

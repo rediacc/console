@@ -67,15 +67,6 @@ mkdir -p binaries
 cp "private/renet/bin/renet-linux-amd64" "binaries/renet-linux-amd64"
 cp "private/renet/bin/renet-linux-arm64" "binaries/renet-linux-arm64"
 
-# Stage web console SPA
-if [[ ! -d packages/web/dist ]]; then
-    echo "==> Building packages/web..."
-    (cd packages/web && npm run build)
-fi
-rm -rf web-assets
-mkdir -p web-assets
-cp -r packages/web/dist/. web-assets/
-
 # Stage marketing site
 if [[ ! -d packages/www/dist ]]; then
     echo "==> Building packages/www..."

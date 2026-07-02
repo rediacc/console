@@ -1,20 +1,11 @@
-import { DEFAULTS } from '@rediacc/shared/config';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { getStateProvider } from '../providers/index.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
-import {
-  type CreateActionOptions,
-  coerceCliParams,
-  createAction,
-  parseParamOptions,
-  traceAction,
-  validateFunctionParams,
-} from './queue.js';
+import { coerceCliParams, parseParamOptions, validateFunctionParams } from './function-params.js';
 import { assertMachineExists } from './_validate.js';
 
 interface RunLocalOptions {
@@ -97,50 +88,14 @@ async function runLocalMode(functionName: string, options: RunLocalOptions): Pro
   handleExecutionResult(result);
 }
 
-/**
- * Run function in cloud mode (queue-based execution).
- */
-async function runCloudMode(
-  functionName: string,
-  options: {
-    team?: string;
-    machine?: string;
-    bridge?: string;
-    priority?: string;
-    param?: string[];
-    watch?: boolean;
-  },
-  program: Command
-): Promise<void> {
-  // Build options for createAction
-  const createOptions: CreateActionOptions = {
-    ...options,
-    function: functionName,
-    priority: options.priority ?? String(DEFAULTS.PRIORITY.QUEUE_PRIORITY),
-  };
-
-  // Create the queue item
-  const result = await createAction(createOptions);
-
-  // Watch if requested and we have a taskId
-  if (options.watch && result.taskId) {
-    outputService.info(t('commands.shortcuts.run.watching'));
-    await traceAction(result.taskId, { watch: true, interval: '2000' }, program);
-  }
-}
-
 export function registerShortcuts(program: Command): void {
-  // run - shortcut for queue create with optional watch
-  // In local mode, executes directly via renet subprocess
+  // run - executes directly via renet subprocess
   program
     .command('run', { hidden: true })
     .summary(t('commands.shortcuts.run.descriptionShort'))
     .description(t('commands.shortcuts.run.description'))
     .requiredOption('-f, --function <name>', t('options.function'))
-    .option('-t, --team <name>', t('options.team'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
-    .option('-b, --bridge <name>', t('options.bridge'))
-    .option('-p, --priority <1-5>', t('options.priority'), '3')
     .option(
       '--param <key=value>',
       t('options.param'),
@@ -167,13 +122,7 @@ export function registerShortcuts(program: Command): void {
         await assertCommandPolicy(CMD.RUN);
 
         const functionName = options.function;
-        const provider = await getStateProvider();
-
-        if (provider.isCloud) {
-          await runCloudMode(functionName, options, program);
-        } else {
-          await runLocalMode(functionName, options);
-        }
+        await runLocalMode(functionName, options);
       } catch (error) {
         handleError(error);
       }

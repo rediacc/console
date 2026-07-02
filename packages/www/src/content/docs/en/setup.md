@@ -102,7 +102,7 @@ For more detailed diagnostics, run:
 rdc doctor
 ```
 
-> **Cloud adapter only**: The `rdc machine test-connection` command provides detailed SSH diagnostics but requires the cloud adapter. For the local adapter, use `rdc term` or `ssh` directly.
+> **Tip**: To verify SSH connectivity, run `rdc term connect -m <machine> -c "hostname"` or use `ssh` directly.
 
 ## Infrastructure Configuration
 
@@ -231,7 +231,7 @@ Set default values so you don't need to specify them on every command:
 
 ```bash
 rdc config field set --pointer /defaults/machine --new '"server-1"'   # Default machine
-rdc config set --key team --value my-team                   # Default team (cloud adapter, experimental)
+rdc config set --key team --value my-team                   # Default team for the config store
 ```
 
 After setting a default machine, you can omit `-m server-1` from commands:

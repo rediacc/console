@@ -16,7 +16,6 @@ log_step "Building shared packages..."
 # emitting files when paths change or when switching between branches
 log_debug "Cleaning TypeScript build cache..."
 rm -rf packages/shared/dist packages/shared/*.tsbuildinfo
-rm -rf packages/shared-desktop/dist packages/shared-desktop/*.tsbuildinfo
 
 if npm run build:packages; then
     log_info "Shared packages built successfully"
@@ -26,7 +25,7 @@ else
 fi
 
 # Verify build outputs exist
-PACKAGES=("packages/shared/dist" "packages/shared-desktop/dist")
+PACKAGES=("packages/shared/dist")
 for pkg in "${PACKAGES[@]}"; do
     if [[ -d "$pkg" ]]; then
         log_info "Verified: $pkg exists"

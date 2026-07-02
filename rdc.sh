@@ -96,9 +96,10 @@ if [[ "${1:-}" == "--override-local" ]]; then
         aarch64|arm64) _ovr_arch="arm64"; _ovr_goarch="arm64" ;;
         *) log_error "Unsupported arch $(uname -m) for --override-local"; exit 1 ;;
     esac
-    # The SEA bundler resolves shared-desktop / shared / provisioning through
-    # their published dist/ outputs. Without rebuilding them first, edits to
-    # those packages get silently dropped from the bundle.
+    # The SEA bundler resolves shared / provisioning through their published
+    # dist/ outputs (shared-desktop's SSH/SFTP/sync code now lives inside
+    # packages/cli). Without rebuilding them first, edits to those packages
+    # get silently dropped from the bundle.
     check_node_version "$NODE_VERSION_MIN"
     ensure_deps
     ensure_packages_built

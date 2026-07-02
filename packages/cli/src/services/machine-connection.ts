@@ -9,7 +9,7 @@
  */
 
 import { DEFAULTS } from '@rediacc/shared/config';
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import { SFTPClient } from '../shared-desktop/sftp/index.js';
 import type { MachineConfig } from '../types/index.js';
 import { configService } from './config-resources.js';
 import { readSSHKey } from './renet-execution.js';

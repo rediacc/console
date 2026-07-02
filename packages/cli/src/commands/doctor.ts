@@ -5,7 +5,6 @@ import { isSubscriptionActive, type SubscriptionStatus } from '@rediacc/shared/s
 import chalk from 'chalk';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { getEmbeddedMetadata, isSEA as isSEAEmbedded } from '../services/embedded-assets.js';
 import { fetchSubscriptionLicenseReport } from '../services/license.js';
@@ -17,7 +16,6 @@ import {
 import { resolveChannel } from '../services/updater.js';
 import { getInstallMethod } from '../utils/platform.js';
 import type { OutputFormat } from '../types/index.js';
-import { hasCloudCredentials } from '../types/index.js';
 import { isSEA } from '../utils/platform.js';
 import { VERSION } from '../version.js';
 
@@ -262,16 +260,8 @@ async function checkConfiguration(): Promise<CheckSection> {
           hint: 'Default config is created automatically. For named configs: rdc config init --name <name>',
         }
   );
-  const isCloud = hasCloudCredentials(context);
-  checks.push({
-    name: t('commands.doctor.checks.contextMode'),
-    value: isCloud ? 'cloud' : 'local',
-    status: 'ok',
-  });
-  if (!isCloud) {
-    await checkMachineCount(checks);
-    checkSshKey(checks, Boolean(context?.credentials?.ssh?.privateKey));
-  }
+  await checkMachineCount(checks);
+  checkSshKey(checks, Boolean(context?.credentials?.ssh?.privateKey));
   return { title: t('commands.doctor.sections.configuration'), checks };
 }
 
@@ -318,24 +308,6 @@ async function checkVirtualization(): Promise<CheckSection> {
   }
 
   return { title: t('commands.doctor.sections.virtualization'), checks };
-}
-
-async function checkAuthentication(): Promise<CheckSection> {
-  const isAuth = await authService.isAuthenticated();
-  const email = await authService.getStoredEmail();
-  let check: CheckResult;
-  if (isAuth) {
-    const value = email ? `Authenticated as ${email}` : 'Authenticated';
-    check = { name: t('commands.doctor.checks.authStatus'), value, status: 'ok' };
-  } else {
-    check = {
-      name: t('commands.doctor.checks.authStatus'),
-      value: t('commands.doctor.notAuthenticated'),
-      status: 'warn',
-      hint: 'Authenticate with: rdc auth login',
-    };
-  }
-  return { title: t('commands.doctor.sections.authentication'), checks: [check] };
 }
 
 const SUBSCRIPTION_CHECK_TIMEOUT_MS = 8000;
@@ -526,13 +498,10 @@ export function registerDoctorCommand(program: Command): void {
     .option('--output <format>', t('options.outputFormat'))
     .action(async (options: { output?: string }) => {
       const outputFormat = (options.output ?? program.opts().output) as OutputFormat | undefined;
-      const context = await configService.getCurrent();
-      const isCloud = hasCloudCredentials(context);
       const sections: CheckSection[] = [
         checkEnvironment(),
         await checkRenet(),
         await checkConfiguration(),
-        ...(isCloud ? [await checkAuthentication()] : []),
         await checkSubscription(),
         await checkVirtualization(),
       ];

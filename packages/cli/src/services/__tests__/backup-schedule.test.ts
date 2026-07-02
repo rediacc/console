@@ -28,7 +28,7 @@ const mockGetStorage = vi.fn();
 const mockOutputInfo = vi.fn();
 const mockOutputWarn = vi.fn();
 
-vi.mock('@rediacc/shared-desktop/sftp', () => ({
+vi.mock('../../shared-desktop/sftp/index.js', () => ({
   SFTPClient: vi.fn(
     class MockSFTPClient {
       connect = mockConnect;

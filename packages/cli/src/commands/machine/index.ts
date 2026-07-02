@@ -10,8 +10,6 @@ import { registerPruneCommand } from './prune.js';
 import { registerRepositoriesCommand } from './repositories.js';
 import { registerServicesCommand } from './services.js';
 import { registerQueryCommand } from './status.js';
-import { registerTestConnectionCommand } from './test-connection.js';
-import { registerVaultStatusCommand } from './vault-status.js';
 
 export function registerMachineCommands(program: Command): void {
   // Create machine command and register CRUD commands
@@ -19,12 +17,10 @@ export function registerMachineCommands(program: Command): void {
   machine.summary(t('commands.machine.descriptionShort'));
 
   // Register all other command modules
-  registerVaultStatusCommand(machine, program);
   registerRepositoriesCommand(machine, program);
   registerHealthCommand(machine, program);
   registerContainersCommand(machine, program);
   registerServicesCommand(machine, program);
-  registerTestConnectionCommand(machine, program);
   registerQueryCommand(machine, program);
   registerCloudCommands(machine, program);
   registerDeployBackupCommand(machine);

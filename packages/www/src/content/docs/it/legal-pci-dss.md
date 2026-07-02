@@ -4,7 +4,7 @@ description: "Come Rediacc rispetta i requisiti PCI DSS: backup immutabili, isol
 category: "Legal"
 order: 6
 language: it
-sourceHash: "d8391036876231a0"
+sourceHash: "05ca01c69d8bab61"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,7 +24,7 @@ Riferimento: [PCI Security Standards Council](https://www.pcisecuritystandards.o
 | **Req 7**, Limitare l'accesso | Limitare l'accesso ai componenti di sistema e ai dati dei titolari di carta in base alla necessità operativa | Socket del daemon Docker per repository. L'accesso a un repository non garantisce l'accesso a un altro. Autenticazione basata su chiave SSH. |
 | **Req 8**, Identificare gli utenti e autenticare | Identificare gli utenti e autenticare l'accesso ai componenti di sistema | Autenticazione con chiave SSH. Token API con binding IP e permessi limitati. Autenticazione a due fattori (TOTP). |
 | **Req 9**, Limitare l'accesso fisico | Limitare l'accesso fisico ai dati dei titolari di carta | Self-hosted: la sicurezza fisica è sotto il tuo diretto controllo. La crittografia LUKS rende i dischi sottratti illeggibili. |
-| **Req 10**, Registrare e monitorare | Registrare e monitorare tutti gli accessi ai componenti di sistema e ai dati dei titolari di carta | Oltre 70 tipi di evento (autenticazione, token API, configurazione, licenze, operazioni macchina). Dashboard amministrativa e portale con filtri per utente, team, tipo e data. CLI `rdc audit` per l'esportazione programmatica. Le operazioni macchina sono registrate anche nei log di sistema per una difesa in profondità. |
+| **Req 10**, Registrare e monitorare | Registrare e monitorare tutti gli accessi ai componenti di sistema e ai dati dei titolari di carta | Oltre 70 tipi di evento (autenticazione, token API, configurazione, licenze, operazioni macchina). Dashboard amministrativa e portale con filtri per utente, team, tipo e data, più un'esportazione JSON per uso programmatico. Le operazioni macchina sono registrate anche nei log di sistema per una difesa in profondità. |
 | **Req 12**, Politiche organizzative | Supportare la sicurezza delle informazioni con politiche e programmi organizzativi | Il self-hosted elimina l'ambito dei processori di terze parti (Req 12.8). Riduce il perimetro di conformità PCI DSS. |
 
 ## Segmentazione di Rete
