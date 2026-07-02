@@ -19,15 +19,14 @@
  * each words.json from media.rediacc.com and checks the actual per-word
  * durations for real variance.
  *
- * CJK exclusion (ja/zh): both the real aligner and the estimate fallback
- * tokenize on `text.matchAll(/\S+/g)` (whitespace-delimited "words"). CJK
- * text has no whitespace word boundaries, so this produces ~1 token per
- * cue regardless of alignment quality -- a duration-variance check can't
- * distinguish real alignment from the estimate for these two languages.
- * This is a distinct, deeper problem (tokenization, not "forgot to run
- * --subtitle") that needs its own fix. Until then, ja/zh are reported as
- * an explicit known gap on every run (not silently skipped) so the gap
- * stays visible.
+ * CJK (ja/zh): spaceless text means the duration-variance check alone can't
+ * see inside a cue whose words collapsed to one token. The pipeline now
+ * segments CJK with Intl.Segmenter (vtt-emit.ts::tokenizeForTiming) and the
+ * ASR mapping is char-position based, so real alignment produces multiple
+ * per-token entries per cue. This gate therefore checks ja/zh strictly:
+ * a CJK cue whose text segments into >= MIN_WORDS_FOR_CHECK tokens but
+ * carries <= 1 word entry has no intra-cue timing (the pre-fix data shape)
+ * and fails, in addition to the flat-spread check that applies everywhere.
  *
  * ar/et/tr are out of scope entirely: they intentionally reuse English
  * audio with translated captions and deliberately strip wordTimings (real
@@ -44,11 +43,39 @@ const manifestUrl = new URL('../src/data/video-manifest.json', import.meta.url);
 // private/generative/src/tutorial_tts/cli.py. Keep in sync -- this is the
 // TypeScript side of that list and can't import the Python source directly.
 const AUDIO_LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ru', 'zh', 'ko', 'pt', 'it'] as const;
-const CJK_LANGUAGES = new Set(['ja', 'zh']);
 
 const MIN_WORDS_FOR_CHECK = 3;
 const FLAT_SPREAD_THRESHOLD_SEC = 0.02;
 const FETCH_CONCURRENCY = 16;
+
+// CJK detection + segmentation, mirroring scripts/lib/vtt-emit.ts
+// (isCjkDominant / tokenizeForTiming). Duplicated here rather than imported
+// because vtt-emit.ts pulls in the whole scene-compile dependency chain,
+// which this network-only CI gate must not need. Keep the two in sync.
+const CJK_CHAR_RE =
+  /[\u3040-\u30ff\u31f0-\u31ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f]/;
+const KANA_RE = /[\u3040-\u30ff\u31f0-\u31ff\uff66-\uff9f]/;
+
+function isCjkDominant(text: string): boolean {
+  let cjk = 0;
+  let nonSpace = 0;
+  for (const ch of text) {
+    if (/\s/.test(ch)) continue;
+    nonSpace++;
+    if (CJK_CHAR_RE.test(ch)) cjk++;
+  }
+  return nonSpace > 0 && cjk / nonSpace >= 0.25;
+}
+
+function cjkTokenCount(text: string): number {
+  const locale = KANA_RE.test(text) ? 'ja' : 'zh';
+  const segmenter = new Intl.Segmenter(locale, { granularity: 'word' });
+  let count = 0;
+  for (const seg of segmenter.segment(text)) {
+    if (seg.isWordLike) count++;
+  }
+  return count;
+}
 
 interface WordEntry {
   start: number;
@@ -83,21 +110,16 @@ async function loadManifest(): Promise<VideoManifest> {
   return JSON.parse(fs.readFileSync(manifestUrl, 'utf8')) as VideoManifest;
 }
 
-function collectTargets(manifest: VideoManifest): { targets: Target[]; cjkCount: number } {
+function collectTargets(manifest: VideoManifest): Target[] {
   const targets: Target[] = [];
-  let cjkCount = 0;
   for (const [slug, byLang] of Object.entries(manifest.tutorials)) {
     for (const lang of AUDIO_LANGUAGES) {
       const entry = byLang[lang]?.wordsJson;
       if (!entry?.path) continue; // covered by check-locale-tutorial-assets.ts
-      if (CJK_LANGUAGES.has(lang)) {
-        cjkCount++;
-        continue;
-      }
       targets.push({ slug, lang, url: `${manifest.baseUrl}/${entry.path}` });
     }
   }
-  return { targets, cjkCount };
+  return targets;
 }
 
 async function runPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
@@ -116,6 +138,17 @@ async function runPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise
 function findFlatCues(slug: string, lang: string, doc: WordsDoc): FlatCue[] {
   const flat: FlatCue[] = [];
   doc.cues.forEach((cue, i) => {
+    // CJK: a cue whose text segments into several tokens but carries <= 1
+    // word entry has no intra-cue timing at all (whole-cue highlight only)
+    // -- the shape the pre-Intl.Segmenter pipeline produced.
+    if (
+      isCjkDominant(cue.text) &&
+      cue.words.length <= 1 &&
+      cjkTokenCount(cue.text) >= MIN_WORDS_FOR_CHECK
+    ) {
+      flat.push({ slug, lang, cueIndex: i, text: cue.text });
+      return;
+    }
     if (cue.words.length < MIN_WORDS_FOR_CHECK) return;
     const durations = cue.words.map((w) => w.end - w.start);
     const spread = Math.max(...durations) - Math.min(...durations);
@@ -138,12 +171,18 @@ async function checkTarget(target: Target): Promise<FlatCue[] | { error: string 
 }
 
 function printRemediation(slug: string, lang: string): void {
-  console.error(`  ./run.sh www tutorials generate --cast ${slug} --lang ${lang} --subtitle`);
+  console.error(
+    `  ./run.sh www tutorials generate --cast ${slug} --lang ${lang} --subtitle --resubtitle`
+  );
   console.error(`  ./run.sh www tutorials video ${slug} --lang ${lang} --captions-only`);
   console.error(
     `  npm run tutorials:publish-video -w @rediacc/www -- --cast ${slug} --lang ${lang}`
   );
   console.error(`  .ci/scripts/deploy/purge-media-cache.sh`);
+  console.error(
+    `  # --resubtitle matters: sparse-but-structurally-valid wordTimings are otherwise` +
+      ` reused as-is (has_valid_word_timings in tutorial_tts/cli.py is structural only)`
+  );
   console.error(
     `  # --captions-only skips the ffmpeg re-encode (mp4 unchanged) and just re-derives` +
       ` vtt/chapters/words.json; drop it to force a full render if that scene's browser cache is cold`
@@ -152,7 +191,7 @@ function printRemediation(slug: string, lang: string): void {
 
 async function main(): Promise<number> {
   const manifest = await loadManifest();
-  const { targets, cjkCount } = collectTargets(manifest);
+  const targets = collectTargets(manifest);
 
   console.log(
     `Checking caption sync for ${targets.length} tutorial x language combos ` +
@@ -174,13 +213,6 @@ async function main(): Promise<number> {
       flatByTutorial.set(key, result);
     }
   });
-
-  if (cjkCount > 0) {
-    console.log(
-      `⚠ ${cjkCount} tutorial x language combos in ja/zh are NOT checked by this gate ` +
-        `(CJK tokenization gap -- see this file's header comment for why). Known gap, not a failure.`
-    );
-  }
 
   if (errors.length > 0) {
     console.error(`\n✗ ${errors.length} words.json fetch(es) failed:\n`);
