@@ -28,12 +28,7 @@ export type {
   EncryptionState,
 } from '../schema/schemas.js';
 
-export {
-  createEmptyRdcConfig,
-  hasCloudCredentials,
-  hasCloudIntent,
-  hasRemoteConfig,
-} from '../schema/schemas.js';
+export { createEmptyRdcConfig, hasRemoteConfig } from '../schema/schemas.js';
 
 /**
  * SSH credentials — derived from the Zod schema's `credentials.ssh` so that

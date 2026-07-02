@@ -4,7 +4,7 @@ description: "Comment l'architecture auto-hébergée de Rediacc correspond aux e
 category: "Legal"
 order: 1
 language: fr
-sourceHash: "36a776d87c6294ff"
+sourceHash: "76d2b3a911e0d14c"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -22,7 +22,7 @@ Le tableau ci-dessous met en correspondance les articles spécifiques du RGPD av
 | [Art. 17](https://gdpr-info.eu/art-17-gdpr/), Droit à l'effacement | Supprimer les données personnelles sur demande | `rdc repo delete` efface cryptographiquement le volume LUKS. La suppression d'un fork retire entièrement la copie clonée. |
 | [Art. 25](https://gdpr-info.eu/art-25-gdpr/), Protection des données dès la conception | Vie privée par défaut | Le chiffrement est obligatoire, pas optionnel. Chaque dépôt dispose d'un Docker daemon isolé et d'un réseau dédié. Aucun partage de données entre dépôts. Le magasin de configuration utilise le chiffrement à connaissance nulle : les configurations sont chiffrées côté client avec AES-256-GCM avant l'envoi, le serveur ne peut donc lire aucune donnée en clair. |
 | [Art. 28](https://gdpr-info.eu/art-28-gdpr/), Sous-traitant | Obligations de traitement des données par un tiers | Auto-hébergé : Rediacc s'exécute sur votre infrastructure. Aucune donnée ne quitte votre machine pendant les opérations de fork, clone ou sauvegarde. Aucun composant SaaS ne traite de données personnelles. |
-| [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Registre des traitements | Tenir un registre des activités de traitement | La journalisation d'audit trace plus de 40 types d'événements au niveau du compte : authentification, jetons API, opérations du magasin de configuration et licences. Export via `rdc audit` CLI ou tableau de bord d'administration. |
+| [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Registre des traitements | Tenir un registre des activités de traitement | La journalisation d'audit trace plus de 40 types d'événements au niveau du compte : authentification, jetons API, opérations du magasin de configuration et licences. Export via le tableau de bord d'administration ou la page d'activité du portail (export JSON disponible). |
 | [Art. 32](https://gdpr-info.eu/art-32-gdpr/), Sécurité du traitement | Mesures techniques appropriées | Chiffrement LUKS2 AES-256 au repos, isolation réseau via iptables et Docker daemons séparés, sous-réseaux IP loopback (/26) par dépôt. Le magasin de configuration utilise un chiffrement à triple couche : clés SDK à fenêtre temporelle, dérivation CEK à clé fractionnée (passkey + secret serveur) et chiffrement par phrase secrète de l'organisation. |
 | [Art. 33](https://gdpr-info.eu/art-33-gdpr/), Notification de violation | Notification sous 72 heures avec piste forensique | Les journaux d'audit fournissent une piste forensique de toutes les opérations. L'architecture auto-hébergée limite le rayon d'impact aux dépôts individuels. |
 

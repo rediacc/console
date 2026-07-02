@@ -12,7 +12,7 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { SFTPClient, type SFTPClientConfig } from '@rediacc/shared-desktop/sftp';
+import { SFTPClient, type SFTPClientConfig } from '../shared-desktop/sftp/index.js';
 import { VERSION } from '../version.js';
 import { computeSha256, getEmbeddedRenetBinary, isSEA, type RenetArch } from './embedded-assets.js';
 import { acquireLocalLock, releaseLocalLock } from './file-lock.js';

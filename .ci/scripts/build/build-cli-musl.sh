@@ -105,7 +105,6 @@ npm rebuild
 
 echo "→ Building shared packages..."
 cd packages/shared && npx tsc -p tsconfig.json && cd /workspace
-cd packages/shared-desktop && npx tsc -p tsconfig.json && cd /workspace
 cd packages/provisioning && npx tsc -p tsconfig.json && cd /workspace
 
 echo "→ Building CLI bundle and SEA binary..."

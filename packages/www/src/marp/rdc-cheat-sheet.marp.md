@@ -90,8 +90,6 @@ rdc machine repos --name <machine>
 # Health check — exits 0 (healthy) / 1 (warning) / 2 (error)
 rdc machine health --name <machine>
 
-# Vault / LUKS encryption status
-rdc machine vault-status --name <machine>
 ```
 
 `--output table|json|yaml|csv` — change output format

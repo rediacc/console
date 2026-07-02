@@ -20,7 +20,7 @@
  */
 
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import { SFTPClient } from '../shared-desktop/sftp/index.js';
 import type { BackupStrategyConfig } from '../types/index.js';
 import {
   emitPlanSummary,

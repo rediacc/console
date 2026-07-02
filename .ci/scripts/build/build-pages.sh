@@ -2,15 +2,14 @@
 # Assemble pages deployment package
 # Usage: build-pages.sh [--output DIR]
 #
-# Assembles www, web (console), and json builds into a single directory
-# suitable for Cloudflare Pages deployment.
+# Assembles www and json builds into a single directory suitable for
+# Cloudflare Pages deployment.
 #
 # Options:
 #   --output DIR   Output directory (default: dist)
 #
 # Prerequisites:
 #   - packages/www/dist/ must exist (built www)
-#   - packages/web/dist/ must exist (built web with VITE_BASE_PATH=/console/)
 #   - packages/json/dist/ must exist (built json)
 
 set -euo pipefail
@@ -34,12 +33,6 @@ if [[ ! -d "packages/www/dist" ]]; then
     exit 1
 fi
 
-if [[ ! -d "packages/web/dist" ]]; then
-    log_error "web build not found at packages/web/dist/"
-    log_error "Run 'npm run build:web' with VITE_BASE_PATH=/console/ first"
-    exit 1
-fi
-
 if [[ ! -d "packages/json/dist" ]]; then
     log_error "json build not found at packages/json/dist/"
     log_error "Run 'npm run build:json' first"
@@ -54,12 +47,6 @@ mkdir -p "$OUTPUT_DIR"
 log_step "Copying www to root..."
 cp -r packages/www/dist/* "$OUTPUT_DIR/"
 log_info "Copied www to $OUTPUT_DIR/"
-
-# Copy web to /console/ subpath
-log_step "Copying web to /console/..."
-mkdir -p "$OUTPUT_DIR/console"
-cp -r packages/web/dist/* "$OUTPUT_DIR/console/"
-log_info "Copied web to $OUTPUT_DIR/console/"
 
 # Copy json to /json/ subpath
 log_step "Copying json to /json/..."
@@ -87,6 +74,5 @@ log_info "Copied pages to $WORKER_DIR/dist/"
 # Display summary
 log_info "Pages package ready at $OUTPUT_DIR/"
 log_info "  - Root:     www.rediacc.com (marketing site)"
-log_info "  - /console: www.rediacc.com/console/ (web app)"
 log_info "  - /json:    www.rediacc.com/json/ (template catalog)"
 log_info "  - /cli:     www.rediacc.com/cli/ (CLI update manifest)"

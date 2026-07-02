@@ -1,7 +1,3 @@
-[submodule "private/middleware"]
-	path = private/middleware
-	url = https://github.com/rediacc/middleware.git
-	branch = main
 [submodule "private/renet"]
 	path = private/renet
 	url = https://github.com/rediacc/renet.git

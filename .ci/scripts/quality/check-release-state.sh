@@ -41,16 +41,12 @@ log_step "listing cli sentinels"
 cli_versions="$(rsv_list_sentinels cli)"
 log_info "  ${cli_versions:+$(wc -l <<<"$cli_versions") cli sentinels}${cli_versions:-none}"
 
-log_step "listing desktop sentinels"
-desktop_versions="$(rsv_list_sentinels desktop)"
-log_info "  ${desktop_versions:+$(wc -l <<<"$desktop_versions") desktop sentinels}${desktop_versions:-none}"
-
 log_step "listing git release tags"
 tag_versions="$(rsv_list_git_tags)"
 log_info "  $(wc -l <<<"$tag_versions") git tags"
 
 log_step "asserting release-state bijection"
-if rsv_assert_bijection "$cli_versions" "$desktop_versions" "$tag_versions" "$IN_FLIGHT"; then
+if rsv_assert_bijection "$cli_versions" "$tag_versions" "$IN_FLIGHT"; then
     log_info "release-state gate: PASS"
     exit 0
 fi

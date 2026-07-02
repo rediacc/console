@@ -13,8 +13,11 @@
 
 import { randomBytes } from 'node:crypto';
 import http from 'node:http';
-import { SSHConnection, spawnSSH } from '@rediacc/shared-desktop/ssh';
-import type { VSCodeServerProvider, ServerPlatform } from '@rediacc/shared-desktop/vscode-server';
+import { SSHConnection, spawnSSH } from '../shared-desktop/ssh/index.js';
+import type {
+  VSCodeServerProvider,
+  ServerPlatform,
+} from '../shared-desktop/vscode-server/index.js';
 import { t } from '../i18n/index.js';
 import { ValidationError } from '../types/errors.js';
 import { debugLog } from '../utils/debug.js';

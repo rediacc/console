@@ -19,14 +19,10 @@ echo ""
 
 # Collect container logs
 echo "Collecting container logs..."
-docker logs rediacc-api >"$OUTPUT_DIR/rediacc-api.log" 2>&1 || echo "No rediacc-api logs available" >"$OUTPUT_DIR/rediacc-api.log"
-docker logs rediacc-sql >"$OUTPUT_DIR/rediacc-sql.log" 2>&1 || echo "No rediacc-sql logs available" >"$OUTPUT_DIR/rediacc-sql.log"
 docker logs rediacc-web >"$OUTPUT_DIR/rediacc-web.log" 2>&1 || echo "No rediacc-web logs available" >"$OUTPUT_DIR/rediacc-web.log"
 
 # Collect container states (JSON format for easy parsing)
 echo "Collecting container states..."
-docker inspect rediacc-api --format='{{json .State}}' >"$OUTPUT_DIR/rediacc-api-state.json" 2>&1 || echo '{"error": "container not found"}' >"$OUTPUT_DIR/rediacc-api-state.json"
-docker inspect rediacc-sql --format='{{json .State}}' >"$OUTPUT_DIR/rediacc-sql-state.json" 2>&1 || echo '{"error": "container not found"}' >"$OUTPUT_DIR/rediacc-sql-state.json"
 docker inspect rediacc-web --format='{{json .State}}' >"$OUTPUT_DIR/rediacc-web-state.json" 2>&1 || echo '{"error": "container not found"}' >"$OUTPUT_DIR/rediacc-web-state.json"
 
 # Collect docker ps snapshot
@@ -35,7 +31,7 @@ docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" >"$OUTPUT_DIR/
 
 # Collect health check response
 echo "Collecting health check response..."
-if curl -sf http://localhost/api/health >"$OUTPUT_DIR/health-response.json" 2>&1; then
+if curl -sf http://localhost/health >"$OUTPUT_DIR/health-response.json" 2>&1; then
     echo "Health check: OK"
 else
     echo '{"error": "health check failed", "timestamp": "'"$(date -Iseconds)"'"}' >"$OUTPUT_DIR/health-response.json"

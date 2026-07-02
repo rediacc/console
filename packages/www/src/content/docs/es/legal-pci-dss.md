@@ -4,7 +4,7 @@ description: "Cómo Rediacc cumple con los requisitos de PCI DSS: copias de segu
 category: "Legal"
 order: 6
 language: es
-sourceHash: "d8391036876231a0"
+sourceHash: "05ca01c69d8bab61"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,7 +24,7 @@ Referencia: [PCI Security Standards Council](https://www.pcisecuritystandards.or
 | **Req 7**, Restringir acceso | Restringir acceso a componentes del sistema y datos del titular por necesidad de negocio | Sockets de Docker daemon por repositorio. El acceso a un repositorio no otorga acceso a otro. Autenticación basada en clave SSH. |
 | **Req 8**, Identificar usuarios y autenticar | Identificar usuarios y autenticar acceso a componentes del sistema | Autenticación por clave SSH. Tokens API con vinculación IP y permisos de alcance definido. Autenticación de dos factores (TOTP). |
 | **Req 9**, Restringir acceso físico | Restringir acceso físico a datos del titular de tarjetas | Autoalojado: la seguridad física está bajo tu control directo. El cifrado LUKS hace ilegibles los discos robados. |
-| **Req 10**, Registrar y monitorear | Registrar y monitorear todo acceso a componentes del sistema y datos del titular | Más de 70 tipos de eventos (autenticación, tokens API, configuración, licencias, operaciones de máquina). Panel de administración y portal con filtrado por usuario, equipo, tipo y fecha. CLI `rdc audit` para exportación programática. Operaciones de máquina también en registros del sistema para defensa en profundidad. |
+| **Req 10**, Registrar y monitorear | Registrar y monitorear todo acceso a componentes del sistema y datos del titular | Más de 70 tipos de eventos (autenticación, tokens API, configuración, licencias, operaciones de máquina). Panel de administración y portal con filtrado por usuario, equipo, tipo y fecha, más una exportación JSON para uso programático. Operaciones de máquina también en registros del sistema para defensa en profundidad. |
 | **Req 12**, Políticas organizacionales | Apoyar la seguridad de la información con políticas y programas organizacionales | El autoalojamiento elimina el alcance del procesador tercero (Req 12.8). Reduce el perímetro de cumplimiento PCI DSS. |
 
 ## Segmentación de red

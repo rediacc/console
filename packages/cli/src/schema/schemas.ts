@@ -327,8 +327,6 @@ const AcmeCertCacheSchema = z.object({
 // =============================================================================
 
 const AccountSchema = z.object({
-  apiUrl: z.string().optional(),
-  token: z.string().optional(),
   userEmail: z.string().optional(),
   team: z.string().optional(),
   region: z.string().optional(),
@@ -448,14 +446,6 @@ export function createEmptyRdcConfig(): RdcConfig {
 // =============================================================================
 // Remote config detection helpers
 // =============================================================================
-
-export function hasCloudCredentials(config: RdcConfig | null | undefined): boolean {
-  return Boolean(config?.account?.apiUrl && config.account.token);
-}
-
-export function hasCloudIntent(config: RdcConfig | null | undefined): boolean {
-  return Boolean(config?.account?.apiUrl);
-}
 
 export function hasRemoteConfig(
   config: RdcConfig | null | undefined

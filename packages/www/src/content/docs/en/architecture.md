@@ -37,27 +37,12 @@ For an operator-focused rule of thumb, see [rdc vs renet](/en/docs/rdc-vs-renet)
 
 All CLI state is stored in flat JSON config files under `~/.config/rediacc/`.
 
-### Local Adapter (Default)
-
-The default for self-hosted usage. All state lives in a config file on your workstation (e.g., `~/.config/rediacc/rediacc.json`).
+All state lives in a config file on your workstation (e.g., `~/.config/rediacc/rediacc.json`).
 
 - Direct SSH connections to machines
 - No external services required
-- Single-user, single-workstation
 - Default config is created automatically on first CLI use. Named configs are created with `rdc config init --name <name>`
-
-### Cloud Adapter (Experimental)
-
-Activated automatically when a config contains `apiUrl` and `token` fields. Uses the Rediacc API for state management and team collaboration.
-
-- State stored in the cloud API
-- Multi-user teams with role-based access
-- Web console for visual management
-- Set up with `rdc auth login`
-
-> **Note:** Cloud adapter commands are experimental. Enable them by setting `REDIACC_EXPERIMENTAL=1`.
-
-Both adapters use the same CLI commands. The adapter only affects where state is stored and how authentication works.
+- Optional encrypted config sync stores the same file in the config store, scoped per team
 
 ## The rediacc User
 

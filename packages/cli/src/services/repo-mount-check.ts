@@ -1,5 +1,4 @@
 import { t } from '../i18n/index.js';
-import { getStateProvider } from '../providers/index.js';
 import { ValidationError } from '../utils/errors.js';
 import { parseRepositoryListOutput } from '../commands/repo-list-parser.js';
 import { localExecutorService } from './local-executor.js';
@@ -36,9 +35,6 @@ export async function probeRepoMounted(
   machineName: string,
   options: { debug?: boolean } = {}
 ): Promise<boolean | undefined> {
-  const provider = await getStateProvider();
-  if (provider.isCloud) return undefined;
-
   const result = await localExecutorService.execute({
     functionName: 'repository_list',
     machineName,

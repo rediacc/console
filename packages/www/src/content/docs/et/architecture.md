@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: et
-sourceHash: "6763cd925791d474"
+sourceHash: "947fcefa63eac600"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -39,27 +39,12 @@ Operaatorikeskseks rusikareeglitest vaata [rdc vs renet](/et/docs/rdc-vs-renet).
 
 Kogu CLI olek salvestatakse `~/.config/rediacc/` alla tasasel JSON-konfiguratsioonifailides.
 
-### Kohalik adapter (vaikimisi)
-
-Vaikimisi isehostatava kasutuse jaoks. Kogu olek elab tööjaamal konfiguratsioonifailis (nt `~/.config/rediacc/rediacc.json`).
+Kogu olek elab tööjaamal konfiguratsioonifailis (nt `~/.config/rediacc/rediacc.json`).
 
 - Otsesed SSH-ühendused masinatega
 - Väliseid teenuseid ei nõuta
-- Ühe kasutaja, ühe tööjaama kasutus
 - Vaikimisi konfiguratsioon luuakse automaatselt CLI esimesel kasutamisel. Nimetatud konfiguratsioonid luuakse käsuga `rdc config init --name <name>`
-
-### Pilveadapter (eksperimentaalne)
-
-Aktiveeritakse automaatselt, kui konfiguratsioon sisaldab välju `apiUrl` ja `token`. Kasutab Rediacc API-t olekuhalduseks ja meeskondliku koostöö jaoks.
-
-- Olek salvestatud pilve API-sse
-- Mitmekasutajaga meeskonnad rollipõhise juurdepääsuga
-- Veebikonsoole visuaalseks haldamiseks
-- Seadistatakse käsuga `rdc auth login`
-
-> **Märkus:** Pilveadapteri käsud on eksperimentaalsed. Luba need, seades `REDIACC_EXPERIMENTAL=1`.
-
-Mõlemad adapterid kasutavad samu CLI käsud. Adapter mõjutab ainult seda, kus olek salvestatakse ja kuidas autentimine toimib.
+- Valikuline krüpteeritud konfiguratsiooni sünkroonimine salvestab sama faili konfiguratsioonisalves, meeskonnapõhiselt piiritletuna
 
 ## Kasutaja rediacc
 

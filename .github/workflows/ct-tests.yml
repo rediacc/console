@@ -3,10 +3,7 @@ name: Console CT - Tests
 on:
   workflow_call:
     inputs:
-      api_tag:
-        type: string
-        required: false
-      bridge_tag:
+      renet_tag:
         type: string
         required: false
       web_tag:
@@ -49,368 +46,16 @@ env:
 
 jobs:
   # ============================================================================
-  # BUILD VM DISK IMAGE: Pre-build VM image with renet setup
-  # Builds a custom VM image with Docker, CRIU, and packages pre-installed.
-  # This reduces disk space usage in infra-backend by avoiding on-the-fly builds.
-  # ============================================================================
-  build-disk-image:
-    name: Build VM Disk Image
-    runs-on: ubuntu-latest
-    if: inputs.provision_vms
-    timeout-minutes: 30
-    outputs:
-      image-name: ${{ steps.build.outputs.image-name }}
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-        with:
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
-      - name: Login to GHCR
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c  # v6.4.0
-        with:
-          go-version: 'stable'
-          cache: true
-          cache-dependency-path: private/renet/go.sum
-      - name: Install clang for BPF compilation
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
-      - name: Pre-pull Docker base images (avoid buildx auth issues)
-        run: |
-          pull_with_retry() {
-            local image="$1"
-            local platform="${2:-}"
-            local args=""
-            [ -n "$platform" ] && args="--platform $platform"
-            for i in 1 2 3; do
-              if docker pull $args "$image"; then
-                return 0
-              fi
-              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
-              sleep $((i * 30))
-            done
-            echo "Failed to pull $image $platform after 3 attempts"
-            return 1
-          }
-          pull_with_retry debian:bookworm linux/amd64
-          pull_with_retry debian:bookworm-slim linux/arm64
-          pull_with_retry ubuntu:24.04 linux/amd64
-          pull_with_retry ubuntu:24.04 linux/arm64
-      - name: Build renet
-        run: .ci/scripts/infra/build-renet.sh
-
-      - name: Setup KVM Host
-        run: sudo $RENET_BINARY ops host setup
-
-      - name: Build VM Image
-        id: build
-        run: |
-          mkdir -p "$RUNNER_TEMP/vm-image"
-          sudo $RENET_BINARY ops image build \
-            --os ubuntu-24.04 \
-            --output "$RUNNER_TEMP/vm-image" \
-            --renet-binary "$RENET_BINARY"
-          IMAGE_PATH=$(ls $RUNNER_TEMP/vm-image/*.img $RUNNER_TEMP/vm-image/*.qcow2 2>/dev/null | head -1)
-          IMAGE_NAME=$(basename "$IMAGE_PATH")
-          echo "image-name=$IMAGE_NAME" >> $GITHUB_OUTPUT
-          echo "Built image: $IMAGE_NAME ($(du -h "$IMAGE_PATH" | cut -f1))"
-
-      - name: Upload VM Image Artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        with:
-          name: vm-disk-image
-          path: |
-            ${{ runner.temp }}/vm-image/*.img
-            ${{ runner.temp }}/vm-image/*.qcow2
-          retention-days: 1
-          compression-level: 0  # Already compressed qcow2
-
-  # ============================================================================
-  # GATEWAY JOB: Wait for tunnel-url artifact
-  # Lightweight job that waits for infra-backend to upload the tunnel URL.
-  # Test jobs depend on this instead of polling independently, saving runner minutes.
-  # NOTE: No 'needs: [infra-backend]' - allows infra-backend to continue in background.
-  # ============================================================================
-  wait-for-tunnel:
-    name: Wait for Tunnel
-    needs: [build-disk-image]
-    if: always() && (needs['build-disk-image'].result == 'success' || needs['build-disk-image'].result == 'skipped')
-    runs-on: ubuntu-slim
-    timeout-minutes: 25
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-        with:
-          sparse-checkout: .ci/scripts
-      - name: Wait for tunnel-url artifact
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-        run: .ci/scripts/tunnel/wait-for-artifact.sh --run-id ${{ github.run_id }} --artifact-name "tunnel-url,tunnel-url-pinggy"
-
-  infra-backend:
-    name: Infra - Backend
-    needs: [build-disk-image]
-    # Run if: (a) build succeeded when provision_vms=true, or (b) provision_vms=false (skipped build)
-    if: always() && (needs['build-disk-image'].result == 'success' || needs['build-disk-image'].result == 'skipped')
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    env:
-      CI: 'true'
-      BRIDGE_TIMEOUT: 240000
-      DOCKER_REGISTRY: ghcr.io/rediacc/elite
-      # Per-image tags for backend services
-      API_TAG: ${{ inputs.api_tag }}
-      BRIDGE_TAG: ${{ inputs.bridge_tag }}
-      WEB_TAG: ${{ inputs.web_tag }}
-    steps:
-      - name: Checkout Console Repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-        with:
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
-      - name: Login to GHCR
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c  # v6.4.0
-        with:
-          go-version: 'stable'
-          cache: true
-          cache-dependency-path: private/renet/go.sum
-      - name: Install clang for BPF compilation
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
-      - name: Pre-pull Docker base images (avoid buildx auth issues)
-        run: |
-          pull_with_retry() {
-            local image="$1"
-            local platform="${2:-}"
-            local args=""
-            [ -n "$platform" ] && args="--platform $platform"
-            for i in 1 2 3; do
-              if docker pull $args "$image"; then
-                return 0
-              fi
-              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
-              sleep $((i * 30))
-            done
-            echo "Failed to pull $image $platform after 3 attempts"
-            return 1
-          }
-          pull_with_retry debian:bookworm linux/amd64
-          pull_with_retry debian:bookworm-slim linux/arm64
-          pull_with_retry ubuntu:24.04 linux/amd64
-          pull_with_retry ubuntu:24.04 linux/arm64
-      - name: Build renet
-        run: .ci/scripts/infra/build-renet.sh
-
-      - name: Pull Backend Docker Images
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          GITHUB_ACTOR: ${{ github.actor }}
-        run: .ci/scripts/infra/ci-pull-images.sh
-
-      - name: Install sqlcmd (go-sqlcmd)
-        run: sudo private/middleware/scripts/install-sqlcmd.sh
-
-      - name: Start Backend Services
-        uses: ./.github/actions/start-backend
-        with:
-          keep-alive: 'true'
-          ci-mode: 'true'
-
-      - name: Wait for Services
-        run: .ci/scripts/infra/wait-for-health.sh --url http://localhost/health --timeout 120 --message "Backend services are ready"
-
-      - name: Create Cloudflare Tunnel
-        id: tunnel
-        run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/start-cloudflare.sh --url http://localhost --timeout 60) || true
-          echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
-          if [[ -n "$TUNNEL_URL" ]]; then
-            echo "Cloudflare tunnel: $TUNNEL_URL"
-          else
-            echo "::warning::Cloudflare tunnel failed (Pinggy fallback available)"
-          fi
-
-      - name: Start Pinggy Tunnel
-        id: pinggy-tunnel
-        run: |
-          PINGGY_URL=$(.ci/scripts/tunnel/start-pinggy.sh --port 80 --timeout 60) || true
-          echo "tunnel-url=${PINGGY_URL}" >> $GITHUB_OUTPUT
-          if [[ -n "${PINGGY_URL}" ]]; then
-            echo "Pinggy tunnel: $PINGGY_URL"
-          else
-            echo "Pinggy tunnel failed to start (non-fatal)"
-          fi
-
-      - name: Verify Pinggy Tunnel
-        if: steps.pinggy-tunnel.outputs.tunnel-url != ''
-        run: |
-          VERIFIED=false
-          for i in {1..5}; do
-            if curl -sf --max-time 10 "${{ steps.pinggy-tunnel.outputs.tunnel-url }}/health"; then
-              echo "Pinggy tunnel verified"
-              VERIFIED=true
-              break
-            fi
-            sleep 3
-          done
-          if [[ "$VERIFIED" != "true" ]]; then
-            echo "Pinggy tunnel verification failed (non-fatal)"
-          fi
-
-      - name: Validate tunnel availability
-        if: steps.tunnel.outputs.tunnel-url == '' && steps.pinggy-tunnel.outputs.tunnel-url == ''
-        run: |
-          echo "::error::Both Cloudflare and Pinggy tunnels failed"
-          exit 1
-
-      # Upload tunnel URLs immediately after verification (before CLI build / VM provisioning)
-      # so test jobs can start as soon as possible and artifacts survive cancellations.
-      - name: Upload Cloudflare Tunnel URL
-        if: steps.tunnel.outputs.tunnel-url != ''
-        run: echo "${{ steps.tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/tunnel-url.txt
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        if: steps.tunnel.outputs.tunnel-url != ''
-        with:
-          name: tunnel-url
-          path: ${{ runner.temp }}/tunnel-url.txt
-          retention-days: 3
-          overwrite: true
-
-      - name: Upload Pinggy Tunnel URL
-        if: steps.pinggy-tunnel.outputs.tunnel-url != ''
-        run: |
-          mkdir -p ${{ runner.temp }}/pinggy-artifact
-          echo "${{ steps.pinggy-tunnel.outputs.tunnel-url }}" > ${{ runner.temp }}/pinggy-artifact/tunnel-url.txt
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        if: steps.pinggy-tunnel.outputs.tunnel-url != ''
-        with:
-          name: tunnel-url-pinggy
-          path: ${{ runner.temp }}/pinggy-artifact/tunnel-url.txt
-          retention-days: 3
-          overwrite: true
-
-      # Bridge tests
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Build CLI
-        # OTLP credentials are fetched at runtime after `rdc subscription
-        # login` — no longer baked into the bundle (renet#51).
-        run: |
-          npm ci
-          npm run install:natives
-          npm run build:packages
-          npm run build:cli
-          npm run build:bundle -w @rediacc/cli
-
-      - name: Install CLI Globally
-        run: .ci/scripts/setup/install-cli-global.sh
-
-      # Login to Docker Hub to avoid rate limiting
-      - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Propagate Docker Hub credentials to root
-        run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-
-      # VM Provisioning (conditional - only when provision_vms is true)
-      # Download pre-built VM image (built in build-disk-image job)
-      - name: Download VM Image Artifact
-        if: inputs.provision_vms
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
-        with:
-          name: vm-disk-image
-          path: ${{ runner.temp }}/vm-image
-
-      - name: Provision VMs
-        id: vms
-        if: inputs.provision_vms
-        uses: ./.github/actions/provision-vms
-        with:
-          vm-image-path: ${{ runner.temp }}/vm-image
-          bridge-env-output: ${{ runner.temp }}/bridge.env
-
-      # Free disk space before long-running signal wait
-      # Docker images, build cache, and npm cache consume most space
-      - name: Free Disk Space
-        run: |
-          echo "=== Disk usage before cleanup ==="
-          df -h / || true
-          # Remove Docker build cache and dangling images (keep running containers)
-          docker system prune -f 2>/dev/null || true
-          # Clear npm cache (builds are complete)
-          npm cache clean --force 2>/dev/null || true
-          echo "=== Disk usage after cleanup ==="
-          df -h / || true
-
-      - name: Wait for Completion Signals
-        run: .ci/scripts/infra/wait-for-signals.sh --timeout 7200
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
-          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
-          E2E_BROWSERS: ${{ env.E2E_BROWSERS }}
-
-      - name: Collect Backend Logs
-        if: always()
-        run: .ci/scripts/infra/collect-backend-logs.sh ${{ runner.temp }}/backend-logs
-
-      - name: Upload Backend Logs
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        with:
-          name: infra-backend-logs-${{ github.sha }}
-          path: ${{ runner.temp }}/backend-logs/
-          retention-days: 3
-
-      - name: Cleanup
-        if: always()
-        run: |
-          # Stop VMs
-          .ci/scripts/infra/ci-provision-stop.sh || true
-          # Stop backend services
-          cd .ci/docker/ci && docker compose down --volumes --remove-orphans || true
-          rm -rf mssql || true
-
-  # ============================================================================
   # COLUMN 4: TESTS + INFRA
-  # Jobs: test-unit, test-vscode, test-cli, test-e2e, test-e2e-electron,
-  #       test-bridge-workers, test-bridge-ceph, test-renet, infra-backend
-  # Dependencies: All build jobs (runs in parallel with infra-backend)
-  # Note: Tests that need the backend tunnel URL will download the artifact
-  #       uploaded by infra-backend early in its execution
+  # Jobs: test-unit, test-bridge-workers, test-bridge-ceph,
+  #       test-fork-isolation, test-renet, test-sql-standalone, test-sql-ha,
+  #       test-account-e2e
   # ============================================================================
   test-unit:
     name: Unit
     runs-on: ubuntu-slim
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
@@ -418,290 +63,6 @@ jobs:
       - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/setup/build-packages.sh
       - run: .ci/scripts/test/run-unit.sh --coverage
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        if: always()
-        with:
-          name: test-unit-coverage-${{ github.sha }}
-          path: packages/web/coverage/
-          retention-days: 3
-
-  test-vscode:
-    name: VSCode (${{ matrix.os }})
-    timeout-minutes: 15
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh ${{ runner.os == 'Windows' && '--ignore-scripts' || '' }}
-        shell: bash
-      - run: .ci/scripts/setup/build-packages.sh
-        shell: bash
-      - run: .ci/scripts/build/build-cli.sh
-        shell: bash
-      - run: .ci/scripts/env/create-cli-env.sh --minimal --output packages/cli/tests/.env
-        shell: bash
-      - name: Run VS Code detection tests
-        working-directory: packages/cli
-        run: npx playwright test --config tests/playwright.config.ts tests/tests/09-vscode/detection.test.ts
-        env:
-          PLAYWRIGHT_SKIP_GLOBAL_SETUP: 'true'
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        if: failure()
-        with:
-          name: test-vscode-${{ matrix.os }}-${{ github.sha }}
-          path: packages/cli/tests/test-results/
-          retention-days: 3
-          if-no-files-found: ignore
-
-  test-cli:
-    name: CLI (${{ matrix.platform }})
-    needs: [wait-for-tunnel]
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 120
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            platform: Linux
-          - os: windows-latest
-            platform: Windows
-          - os: macos-latest
-            platform: macOS
-    env:
-      REDIACC_TEST_EMAIL: admin@rediacc.io
-      REDIACC_TEST_PASSWORD: admin
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh ${{ runner.os == 'Windows' && '--ignore-scripts' || '' }}
-        shell: bash
-      - run: .ci/scripts/setup/build-packages.sh
-        shell: bash
-      - run: .ci/scripts/build/build-cli.sh
-        shell: bash
-      - name: Download Cloudflare Tunnel URL
-        id: cf-tunnel
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url --max-wait 300) || true
-          echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
-      - name: Download Pinggy Tunnel URL
-        id: pinggy-tunnel
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy --max-wait 300) || true
-          echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
-      - name: Select Working Tunnel
-        id: tunnel
-        shell: bash
-        run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/select-tunnel.sh \
-            --url "${{ steps.cf-tunnel.outputs.tunnel-url }}" \
-            --url "${{ steps.pinggy-tunnel.outputs.tunnel-url }}")
-          echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
-      - run: .ci/scripts/env/create-cli-env.sh --api-url "${{ steps.tunnel.outputs.tunnel-url }}/api" --email ${{ env.REDIACC_TEST_EMAIL }} --password ${{ env.REDIACC_TEST_PASSWORD }} --output packages/cli/tests/.env
-        shell: bash
-      - run: .ci/scripts/setup/install-vscode.sh
-        shell: bash
-      - run: .ci/scripts/test/run-cli.sh
-        shell: bash
-      - if: always()
-        run: .ci/scripts/signal/create-complete.sh --name "cli-${{ matrix.platform }}" --status ${{ job.status }}
-        shell: bash
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        if: always()
-        with:
-          name: test-complete-cli-${{ matrix.platform }}-attempt-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/complete.txt
-          retention-days: 3
-          overwrite: true
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        if: always()
-        with:
-          name: test-cli-report-${{ matrix.platform }}-${{ github.sha }}
-          path: packages/cli/tests/reports/cli/
-          retention-days: 3
-
-  test-e2e:
-    name: E2E
-    needs: [wait-for-tunnel]
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
-      - name: Install Playwright Browsers
-        run: .ci/scripts/setup/install-playwright.sh --browsers "chromium webkit ${{ env.E2E_BROWSERS }}"
-      - name: Download Cloudflare Tunnel URL
-        id: cf-tunnel
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url --max-wait 300) || true
-          echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
-      - name: Download Pinggy Tunnel URL
-        id: pinggy-tunnel
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy --max-wait 300) || true
-          echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
-      - name: Select Working Tunnel
-        id: tunnel
-        run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/select-tunnel.sh \
-            --url "${{ steps.cf-tunnel.outputs.tunnel-url }}" \
-            --url "${{ steps.pinggy-tunnel.outputs.tunnel-url }}")
-          echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
-      - run: .ci/scripts/env/create-e2e-env.sh --api-url ${{ steps.tunnel.outputs.tunnel-url }} --output packages/e2e/.env
-      - name: Run E2E Tests - Browser Only
-        run: |
-          .ci/scripts/test/run-e2e.sh --projects \
-            ${{ env.E2E_BROWSERS }}
-      - name: Create Completion Signal
-        if: always()
-        run: .ci/scripts/signal/create-complete.sh --name "e2e-chromium" --status ${{ job.status }}
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        if: always()
-        with:
-          name: test-complete-e2e-chromium-attempt-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/complete.txt
-          retention-days: 3
-          overwrite: true
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        if: always()
-        with:
-          name: test-e2e-report-${{ github.sha }}
-          path: packages/e2e/reports/e2e/
-          retention-days: 3
-          if-no-files-found: ignore
-      # Upload e2e test videos for documentation embedding
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        if: always()
-        with:
-          name: e2e-videos-${{ github.sha }}
-          path: packages/e2e/videos/user-guide/
-          retention-days: 3
-          if-no-files-found: ignore
-
-  test-e2e-electron:
-    name: E2E Electron (${{ matrix.project }})
-    needs: [wait-for-tunnel]
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            project: electron-linux-x64
-            install: npx playwright install --with-deps chromium
-          - os: ubuntu-24.04-arm
-            project: electron-linux-arm64
-            install: npx playwright install --with-deps chromium
-          - os: macos-15-intel
-            project: electron-macos-x64
-            install: npx playwright install chromium
-          - os: macos-latest
-            project: electron-macos-arm64
-            install: npx playwright install chromium
-          - os: windows-latest
-            project: electron-windows-x64
-            install: npx playwright install chromium
-          - os: windows-11-arm
-            project: electron-windows-arm64
-            install: npx playwright install chromium
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh ${{ runner.os == 'Windows' && '--ignore-scripts' || '' }}
-        shell: bash
-      - name: Rebuild native modules (electron, node-pty, ssh2, cpu-features, esbuild)
-        if: runner.os != 'Windows'
-        run: npm run install:natives
-        shell: bash
-      - run: .ci/scripts/setup/build-packages.sh
-        shell: bash
-      - if: runner.os == 'Windows'
-        name: Install Electron binary
-        working-directory: packages/desktop
-        shell: bash
-        run: |
-          echo "Installing Electron binary (skipped during --ignore-scripts)..."
-          # --ignore-scripts=false is load-bearing here: the root .npmrc sets
-          # ignore-scripts=true so the install-deps.sh --ignore-scripts flag is
-          # redundant, and a bare `npm rebuild` would silently honor the global
-          # flag and never actually download/extract the electron binary.
-          npm rebuild electron --ignore-scripts=false --foreground-scripts
-      - name: Build desktop
-        working-directory: packages/desktop
-        run: npm run build
-      - name: Install Playwright
-        working-directory: packages/e2e
-        run: ${{ matrix.install }}
-      - if: runner.os == 'Linux'
-        run: .ci/scripts/setup/setup-display.sh
-      - name: Download Cloudflare Tunnel URL
-        id: cf-tunnel
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url --max-wait 300) || true
-          echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
-      - name: Download Pinggy Tunnel URL
-        id: pinggy-tunnel
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy --max-wait 300) || true
-          echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
-      - name: Select Working Tunnel
-        id: tunnel
-        shell: bash
-        run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/select-tunnel.sh \
-            --url "${{ steps.cf-tunnel.outputs.tunnel-url }}" \
-            --url "${{ steps.pinggy-tunnel.outputs.tunnel-url }}")
-          echo "tunnel-url=$TUNNEL_URL" >> $GITHUB_OUTPUT
-      - run: .ci/scripts/env/create-e2e-env.sh --api-url ${{ steps.tunnel.outputs.tunnel-url }} --output packages/e2e/.env
-        shell: bash
-      - name: Run Electron E2E Tests
-        working-directory: packages/e2e
-        run: npx playwright test --project=${{ matrix.project }}
-        env:
-          DISPLAY: ${{ env.DISPLAY }}
-      - if: always()
-        run: .ci/scripts/signal/create-complete.sh --name "e2e-${{ matrix.project }}" --status ${{ job.status }}
-        shell: bash
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        if: always()
-        with:
-          name: test-complete-e2e-${{ matrix.project }}-attempt-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/complete.txt
-          retention-days: 3
-          overwrite: true
 
   test-bridge-workers:
     name: Bridge Workers (${{ matrix.os-image }})
@@ -731,31 +92,31 @@ jobs:
       VM_CEPH_NODES: ''
       VM_IMAGE: ${{ matrix.os-image }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+          repositories: console,renet,account,sql,elite,homebrew-tap
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Login to GHCR
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c  # v6.4.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: 'stable'
           cache: true
@@ -851,31 +212,31 @@ jobs:
       VM_CEPH_NODES: '21 22 23'
       CEPH_MODE: 'true'
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+          repositories: console,renet,account,sql,elite,homebrew-tap
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Login to GHCR
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c  # v6.4.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: 'stable'
           cache: true
@@ -950,150 +311,6 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
 
-  test-cli-local:
-    name: CLI Local E2E
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    env:
-      CI: 'true'
-      VM_NET_BASE: '192.168.111'
-      REDIACC_SKIP_MACHINE_ACTIVATION: '1'
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-        with:
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
-      - name: Login to GHCR
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-      - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Propagate Docker Hub credentials to root
-        run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c  # v6.4.0
-        with:
-          go-version: 'stable'
-          cache: true
-          cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
-
-      # Renet setup
-      - name: Free Disk Space
-        run: |
-          echo "=== Disk usage before cleanup ==="
-          df -h / || true
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
-          docker system prune -af 2>/dev/null || true
-          npm cache clean --force 2>/dev/null || true
-          echo "=== Disk usage after cleanup ==="
-          df -h / || true
-      - name: Install clang for BPF compilation
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
-      - name: Pre-pull Docker base images (avoid buildx auth issues)
-        run: |
-          pull_with_retry() {
-            local image="$1"
-            local platform="${2:-}"
-            local args=""
-            [ -n "$platform" ] && args="--platform $platform"
-            for i in 1 2 3; do
-              if docker pull $args "$image"; then
-                return 0
-              fi
-              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
-              sleep $((i * 30))
-            done
-            echo "Failed to pull $image $platform after 3 attempts"
-            return 1
-          }
-          pull_with_retry debian:bookworm linux/amd64
-          pull_with_retry debian:bookworm-slim linux/arm64
-          pull_with_retry ubuntu:24.04 linux/amd64
-          pull_with_retry ubuntu:24.04 linux/arm64
-      - name: Build renet
-        run: .ci/scripts/infra/build-renet.sh --nolicense
-      - name: Add renet to PATH
-        run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
-
-      # VM provisioning
-      - name: Setup KVM Host
-        run: sudo $RENET_BINARY ops host setup
-      - name: Generate SSH keypair
-        run: |
-          ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -q
-          # Also create id_rsa symlink (tests may reference it)
-          cp ~/.ssh/id_ed25519 ~/.ssh/id_rsa
-          cp ~/.ssh/id_ed25519.pub ~/.ssh/id_rsa.pub
-      - name: Provision VM
-        run: sudo -E $RENET_BINARY ops up --force --parallel
-        env:
-          VM_NET_BASE: ${{ env.VM_NET_BASE }}
-          VM_WORKERS: '11 12'
-          VM_CEPH_NODES: ''
-          VM_BRIDGE: '1'
-      - name: Fix renet data dir ownership
-        # Renet creates staging folder as root (via sudo), but CLI tests run as runner
-        # Fix ownership so runner can access SSH keys for renet commands in tests
-        run: sudo chown -R $USER:$USER $RUNNER_TEMP/renet
-      - name: Wait for VM SSH readiness
-        run: |
-          # Wait for bridge and worker VMs
-          # Note: VMs are configured for the current user (not root) via SUDO_USER in renet
-          BRIDGE_IP="${VM_NET_BASE}.1"
-          WORKER1_IP="${VM_NET_BASE}.11"
-          WORKER2_IP="${VM_NET_BASE}.12"
-          for vm in $BRIDGE_IP $WORKER1_IP $WORKER2_IP; do
-            echo "Waiting for $vm as $USER..."
-            for i in {1..30}; do
-              if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 $USER@$vm echo ready 2>/dev/null; then
-                echo "VM $vm is SSH-ready"
-                ssh-keyscan $vm >> ~/.ssh/known_hosts 2>/dev/null
-                echo "Host keys added for $vm"
-                break
-              fi
-              echo "Waiting for VM $vm SSH... ($i/30)"
-              sleep 5
-              if [[ $i -eq 30 ]]; then
-                echo "VM $vm SSH not ready after 150s"
-                exit 1
-              fi
-            done
-          done
-
-      # Run tests
-      - name: Create CLI local E2E env
-        # Use current user (not root) since VMs are configured for SUDO_USER via renet
-        run: .ci/scripts/env/create-cli-local-env.sh --output packages/cli/tests/.env --ssh-user "$USER" --vm-net-base "$VM_NET_BASE" --vm-workers "11 12"
-      - name: Run CLI local E2E tests
-        run: .ci/scripts/test/run-cli-local.sh
-
-      # Artifacts
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        if: always()
-        with:
-          name: test-cli-local-${{ github.sha }}
-          path: packages/cli/tests/reports/
-          retention-days: 3
-          if-no-files-found: ignore
-
   test-fork-isolation:
     name: Concurrent Fork Isolation
     runs-on: ubuntu-latest
@@ -1108,31 +325,31 @@ jobs:
       VM_CEPH_NODES: ''
       REDIACC_SKIP_MACHINE_ACTIVATION: '1'
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+          repositories: console,renet,account,sql,elite,homebrew-tap
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Login to GHCR
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c  # v6.4.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: 'stable'
           cache: true
@@ -1251,166 +468,24 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
 
-  test-cli-local-ceph:
-    name: CLI Local Ceph
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    env:
-      CI: 'true'
-      VM_NET_BASE: '192.168.111'
-      VM_WORKERS: ''
-      VM_CEPH_NODES: '21 22 23'
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-        with:
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
-      - name: Login to GHCR
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c  # v6.4.0
-        with:
-          go-version: 'stable'
-          cache: true
-          cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
-
-      # Renet setup
-      - name: Free Disk Space
-        run: |
-          echo "=== Disk usage before cleanup ==="
-          df -h / || true
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
-          docker system prune -af 2>/dev/null || true
-          npm cache clean --force 2>/dev/null || true
-          echo "=== Disk usage after cleanup ==="
-          df -h / || true
-      - name: Install clang for BPF compilation
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
-      - name: Pre-pull Docker base images (avoid buildx auth issues)
-        run: |
-          pull_with_retry() {
-            local image="$1"
-            local platform="${2:-}"
-            local args=""
-            [ -n "$platform" ] && args="--platform $platform"
-            for i in 1 2 3; do
-              if docker pull $args "$image"; then
-                return 0
-              fi
-              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
-              sleep $((i * 30))
-            done
-            echo "Failed to pull $image $platform after 3 attempts"
-            return 1
-          }
-          pull_with_retry debian:bookworm linux/amd64
-          pull_with_retry debian:bookworm-slim linux/arm64
-          pull_with_retry ubuntu:24.04 linux/amd64
-          pull_with_retry ubuntu:24.04 linux/arm64
-      - name: Build renet
-        run: .ci/scripts/infra/build-renet.sh --nolicense
-      - name: Add renet to PATH
-        run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
-
-      # VM + Ceph provisioning (bridge + 3 Ceph nodes = ~13.3 GB, fits 14 GB runner)
-      - name: Setup KVM Host
-        run: sudo $RENET_BINARY ops host setup
-      - name: Generate SSH keypair
-        run: |
-          ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -q
-          cp ~/.ssh/id_ed25519 ~/.ssh/id_rsa
-          cp ~/.ssh/id_ed25519.pub ~/.ssh/id_rsa.pub
-      - name: Provision VMs
-        run: sudo -E $RENET_BINARY ops up --force --parallel
-      - name: Fix renet data dir ownership
-        run: sudo chown -R $USER:$USER $RUNNER_TEMP/renet
-      - name: Wait for VM SSH readiness
-        run: |
-          for vm in ${VM_NET_BASE}.21 ${VM_NET_BASE}.22 ${VM_NET_BASE}.23; do
-            echo "Waiting for $vm as $USER..."
-            for i in {1..30}; do
-              if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 $USER@$vm echo ready 2>/dev/null; then
-                echo "VM $vm is SSH-ready"
-                ssh-keyscan $vm >> ~/.ssh/known_hosts 2>/dev/null
-                break
-              fi
-              echo "Waiting for VM $vm SSH... ($i/30)"
-              sleep 5
-              if [[ $i -eq 30 ]]; then
-                echo "VM $vm SSH not ready after 150s"
-                exit 1
-              fi
-            done
-          done
-
-      # Prepare Ceph VM: install renet and run setup to create rediacc user, directories, etc.
-      - name: Setup Ceph VM
-        run: |
-          CEPH_IP="${VM_NET_BASE}.21"
-          scp /usr/bin/renet $USER@$CEPH_IP:/tmp/renet
-          ssh $USER@$CEPH_IP "sudo mv /tmp/renet /usr/bin/renet && sudo chmod 755 /usr/bin/renet"
-          ssh $USER@$CEPH_IP "sudo renet setup"
-
-      # Post-Ceph setup (ops up already provisions Ceph when VM_CEPH_NODES is set)
-      - name: Post-Ceph setup
-        run: |
-          CEPH_IP="${VM_NET_BASE}.21"
-          # Create 'rbd' pool used by CLI local tests (provisioner creates 'rediacc_rbd_pool')
-          ssh $USER@$CEPH_IP "sudo ceph osd pool create rbd 32"
-          ssh $USER@$CEPH_IP "sudo ceph osd pool application enable rbd rbd"
-          # Create cluster name symlinks (bridge uses --cluster rediacc, config files are ceph.*)
-          ssh $USER@$CEPH_IP "sudo ln -sf /etc/ceph/ceph.conf /etc/ceph/rediacc.conf"
-          ssh $USER@$CEPH_IP "sudo ln -sf /etc/ceph/ceph.client.admin.keyring /etc/ceph/rediacc.client.admin.keyring"
-
-      # Run Ceph E2E tests
-      - name: Create CLI local Ceph E2E env
-        run: .ci/scripts/env/create-cli-local-env.sh --output packages/cli/tests/.env --ssh-user "$USER" --vm-net-base "$VM_NET_BASE" --vm-workers "21"
-      - name: Run CLI local Ceph E2E tests
-        run: .ci/scripts/test/run-cli-local.sh -- tests/tests/08-e2e/09-ceph-operations.test.ts
-
-      # Artifacts
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        if: always()
-        with:
-          name: test-cli-local-ceph-${{ github.sha }}
-          path: packages/cli/tests/reports/
-          retention-days: 3
-          if-no-files-found: ignore
-
   test-renet:
     name: Renet
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+          repositories: console,renet,account,sql,elite,homebrew-tap
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c  # v6.4.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: 'stable'
           cache: true
@@ -1418,7 +493,7 @@ jobs:
 
       # Login to Docker Hub to avoid rate limiting
       - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -1472,20 +547,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+          repositories: console,renet,account,sql,elite,homebrew-tap
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       # Login to Docker Hub to avoid rate limiting
       - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -1512,26 +587,26 @@ jobs:
       VM_CEPH_NODES: ''
       VM_BRIDGE: ''
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+          repositories: console,renet,account,sql,elite,homebrew-tap
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Login to GHCR
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       # Login to Docker Hub to avoid rate limiting
       - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -1539,7 +614,7 @@ jobs:
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
 
       # Build renet for VM provisioning
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c  # v6.4.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: 'stable'
           cache: true
@@ -1625,14 +700,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+          repositories: console,renet,account,sql,elite,homebrew-tap
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}

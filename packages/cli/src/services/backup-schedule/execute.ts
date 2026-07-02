@@ -8,7 +8,7 @@
  * half-deployed unit.
  */
 
-import type { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import type { SFTPClient } from '../../shared-desktop/sftp/index.js';
 import { envFilePath } from '../backup-env-file.js';
 import { outputService } from '../output.js';
 import type {

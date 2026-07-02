@@ -50,11 +50,7 @@ interface CheckResult {
 const PACKAGES: PackageConfig[] = [
   { path: '', name: 'rediacc-console (root)' },
   { path: 'packages/shared', name: '@rediacc/shared' },
-  { path: 'packages/shared-desktop', name: '@rediacc/shared-desktop' },
   { path: 'packages/cli', name: '@rediacc/cli' },
-  { path: 'packages/web', name: '@rediacc/web' },
-  { path: 'packages/desktop', name: '@rediacc/desktop' },
-  { path: 'packages/e2e', name: '@rediacc/e2e' },
   { path: 'packages/bridge-tests', name: '@rediacc/bridge-tests' },
   { path: 'packages/www', name: '@rediacc/www' },
   { path: 'packages/json', name: '@rediacc/json' },
@@ -116,8 +112,7 @@ function checkVersionConsistency(): CheckResult {
       errors.push(`  ${m.name}: ${m.actual} (in ${m.path}/package.json)`);
     }
     errors.push('');
-    errors.push('To fix, run from monorepo root:');
-    errors.push(`  python _scripts/update-bridge-version.py ${rootVersion}`);
+    errors.push('To fix, set every workspace package.json version to the root version.');
     return { success: false, errors };
   }
 

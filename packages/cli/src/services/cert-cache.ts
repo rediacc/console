@@ -12,7 +12,7 @@
 
 import { X509Certificate } from 'node:crypto';
 import { gunzipSync, gzipSync } from 'node:zlib';
-import type { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import type { SFTPClient } from '../shared-desktop/sftp/index.js';
 import { t } from '../i18n/index.js';
 import type { AcmeCertCache } from '../types/index.js';
 import { parseCertAnchor } from '../utils/cert-anchor.js';

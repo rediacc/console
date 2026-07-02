@@ -4,7 +4,7 @@ description: "Kuidas Rediacc'i krüptimis- ja eraldusarhitektuur vastab HIPAA ka
 category: "Legal"
 order: 3
 language: et
-sourceHash: "f5fbdaa4a00491ea"
+sourceHash: "a0dd73c1923519b0"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -21,7 +21,7 @@ HIPAA nõuab haldus-, tehnilisi ja füüsilisi kaitsemeetmeid. Alljärgnev tabel
 | Nõue | HIPAA viide | Rediacc'i võimekus |
 |-------------|----------------|-------------------|
 | Juurdepääsu kontroll | [45 CFR 164.312(a)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | SSH-võtmepõhine autentimine. API-žetoonid IP-sidumise ja ulatuse piirangutega. Hoidlapõhine Docker-deemoni eraldus takistab hoidlate vahelist juurdepääsu. |
-| Auditikontrollid | [45 CFR 164.312(b)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Üle 70 sündmusetüübi, mis hõlmavad autentimist, API-žetoone, konfiguratsioone, litsentse ja masina toiminguid (hoidla elutsükkel, varukoopia, sünkroonimine, terminal). Kasutaja- ja meeskonnapõhine jälg. Eksport haldusarmatuurlaua, portaali tegevuslehe või `rdc audit` CLI kaudu. |
+| Auditikontrollid | [45 CFR 164.312(b)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Üle 70 sündmusetüübi, mis hõlmavad autentimist, API-žetoone, konfiguratsioone, litsentse ja masina toiminguid (hoidla elutsükkel, varukoopia, sünkroonimine, terminal). Kasutaja- ja meeskonnapõhine jälg. Eksport haldusarmatuurlaua või portaali tegevuslehe kaudu (JSON-eksport saadaval). |
 | Tervikluskontrollid | [45 CFR 164.312(c)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | CoW-hetktõmmised säilitavad algsed andmed enne muudatusi. `rdc repo validate` kontrollib hoidla terviklust ja varukoopia seisundit (LUKS-konteiner, failisüsteemi järjepidevus, konfiguratsioon). |
 | Krüptimine puhkeolekus | [45 CFR 164.312(a)(2)(iv)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | LUKS2 AES-256 krüptimine kõigil hoidla mahtudel. Volitused salvestatakse ainult operaatori lokaalses konfiguratsioonis, mitte kunagi serveris. Konfiguratsioonihoidla kasutab null-teadmise AES-256-GCM krüptimist jagatud võtme tuletamisega. Isegi server ei suuda salvestatud konfiguratsioone dekrüpteerida. |
 | Edastuse turvalisus | [45 CFR 164.312(e)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Kõik kaugoperatsioonid kasutavad SSH-i. Varukoopia transport on lõpust lõpuni krüptitud. Krüptimata andmeedastust ei toimu. |

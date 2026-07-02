@@ -4,7 +4,7 @@ description: "Rediacc läuft auf Ihrer Infrastruktur. Sie kontrollieren Ihre Dat
 category: "Legal"
 order: 0
 language: de
-sourceHash: "1e36a25c724f4185"
+sourceHash: "e6044a3b067b54d5"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -32,7 +32,7 @@ Hier ist, was sie alle verbindet: Jedes Compliance-Framework in diesem Abschnitt
 - **Verschlüsselung im Ruhezustand**: Jedes Repository ist mit LUKS2 AES-256 verschlüsselt. Anmeldedaten werden ausschließlich in der lokalen Konfiguration des Operators gespeichert, niemals auf dem Server.
 - **Netzwerkisolation**: Jedes Repository erhält seinen eigenen Docker Daemon, ein Loopback-IP-Subnetz (/26) und iptables-Regeln. Container verschiedener Repositories können nicht miteinander kommunizieren.
 - **Copy-on-Write-Kloning**: `rdc repo fork` verwendet Dateisystem-Reflinks (`cp --reflink=always`). Daten werden auf derselben Maschine dupliziert, ohne Netzwerktransfer.
-- **Audit-Logging**: Über 70+ Ereignistypen, die Authentifizierung (Login, 2FA, Passwortänderungen, Sitzungswiderruf), API-Token-Lebenszyklus, Config-Store-Operationen, Abonnement-/Lizenzaktivitäten und CLI-Operationen auf Maschinenebene (Repository-Lebenszyklus, Backup, Synchronisierung, Terminal-Sessions) abdecken. Zugänglich über das Admin-Dashboard, die Portal-Aktivitätsseite (mit organisations-weiter Filterung) und `rdc audit` CLI. Operationen auf Maschinenebene werden auch in Ihren Systemlogs für vertiefte Verteidigung aufgezeichnet.
+- **Audit-Logging**: Über 70+ Ereignistypen, die Authentifizierung (Login, 2FA, Passwortänderungen, Sitzungswiderruf), API-Token-Lebenszyklus, Config-Store-Operationen, Abonnement-/Lizenzaktivitäten und CLI-Operationen auf Maschinenebene (Repository-Lebenszyklus, Backup, Synchronisierung, Terminal-Sessions) abdecken. Zugänglich über das Admin-Dashboard und die Portal-Aktivitätsseite (mit organisations-weiter Filterung und JSON-Export). Operationen auf Maschinenebene werden auch in Ihren Systemlogs für vertiefte Verteidigung aufgezeichnet.
 - **Verschlüsseltes Backup**: `rdc repo push/pull` überträgt Daten über SSH. Das Backup-Ziel empfängt LUKS-verschlüsselte Volumes.
 - **Zero-Knowledge-Config-Store**: Optionale verschlüsselte Config-Synchronisation über Geräte hinweg. Configs werden clientseitig mit AES-256-GCM vor dem Upload verschlüsselt. Der Server speichert nur opake Blobs. Der Server kann keine SSH-Schlüssel, Anmeldedaten, IP-Adressen oder Klartext-Konfigurationsdaten lesen. Die Schlüsselableitung verwendet passkey PRF extension + HKDF mit Domain-Separation. Mitgliederzugang wird über X25519-Schlüsselaustausch verwaltet, und der Widerruf ist sofort wirksam.
 

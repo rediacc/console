@@ -4,7 +4,7 @@ description: "Como o Rediacc cumpre os requisitos PCI DSS: backups imutáveis, i
 category: "Legal"
 order: 6
 language: pt
-sourceHash: "d8391036876231a0"
+sourceHash: "05ca01c69d8bab61"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,7 +24,7 @@ Referência: [PCI Security Standards Council](https://www.pcisecuritystandards.o
 | **Req 7**, Restringir acessos | Restringir o acesso a componentes do sistema e dados de titulares por necessidade de negócio | Sockets do daemon Docker por repositório. O acesso a um repositório não concede acesso a outro. Autenticação baseada em chave SSH. |
 | **Req 8**, Identificar utilizadores e autenticar | Identificar utilizadores e autenticar o acesso a componentes do sistema | Autenticação por chave SSH. Tokens de API com vinculação de IP e permissões com âmbito. Autenticação de dois fatores (TOTP). |
 | **Req 9**, Restringir acesso físico | Restringir o acesso físico a dados de titulares | Self-hosted: a segurança física está sob o seu controlo direto. A encriptação LUKS torna as unidades roubadas ilegíveis. |
-| **Req 10**, Registar e monitorizar | Registar e monitorizar todos os acessos a componentes do sistema e dados de titulares | Mais de 70 tipos de evento (autenticação, tokens de API, configuração, licenciamento, operações de máquina). Painel de administração e portal com filtragem por utilizador, equipa, tipo e data. CLI `rdc audit` para exportação programática. As operações de máquina também ficam nos registos do sistema para defesa em profundidade. |
+| **Req 10**, Registar e monitorizar | Registar e monitorizar todos os acessos a componentes do sistema e dados de titulares | Mais de 70 tipos de evento (autenticação, tokens de API, configuração, licenciamento, operações de máquina). Painel de administração e portal com filtragem por utilizador, equipa, tipo e data, mais exportação JSON para uso programático. As operações de máquina também ficam nos registos do sistema para defesa em profundidade. |
 | **Req 12**, Políticas organizacionais | Apoiar a segurança da informação com políticas e programas organizacionais | O self-hosted elimina o âmbito de processadores terceiros (Req 12.8). Reduz o limite de conformidade PCI DSS. |
 
 ## Segmentação de Rede

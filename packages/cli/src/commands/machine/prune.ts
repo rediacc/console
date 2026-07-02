@@ -2,7 +2,7 @@ import {
   listSSHConfigEntries,
   removePersistedKeys,
   removeSSHConfigEntry,
-} from '@rediacc/shared-desktop/vscode';
+} from '../../shared-desktop/vscode/index.js';
 import type { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { configService } from '../../services/config-resources.js';

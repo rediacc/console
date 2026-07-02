@@ -4,7 +4,7 @@ description: "Comment Rediacc répond aux exigences PCI DSS : sauvegardes immuab
 category: "Legal"
 order: 6
 language: fr
-sourceHash: "d8391036876231a0"
+sourceHash: "05ca01c69d8bab61"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,7 +24,7 @@ Référence : [PCI Security Standards Council](https://www.pcisecuritystandards.
 | **Exig. 7**, Restreindre l'accès | Restreindre l'accès aux composants système et aux données du titulaire selon le besoin d'en connaître | Sockets Docker daemon par dépôt. L'accès à un dépôt ne donne pas accès à un autre. Authentification par clé SSH. |
 | **Exig. 8**, Identifier et authentifier | Identifier les utilisateurs et authentifier l'accès aux composants système | Authentification par clé SSH. Jetons API avec liaison IP et permissions à portée définie. Authentification à deux facteurs (TOTP). |
 | **Exig. 9**, Restreindre l'accès physique | Restreindre l'accès physique aux données du titulaire | Auto-hébergé : la sécurité physique est sous votre contrôle direct. Le chiffrement LUKS rend les disques volés illisibles. |
-| **Exig. 10**, Journaliser et surveiller | Journaliser et surveiller tous les accès aux composants système et aux données du titulaire | 70+ types d'événements (auth, jetons API, config, licences, opérations machines). Tableau de bord d'administration et portail avec filtrage par utilisateur, équipe, type et date. `rdc audit` CLI pour l'export programmatique. Les opérations machines sont également dans les journaux système pour la défense en profondeur. |
+| **Exig. 10**, Journaliser et surveiller | Journaliser et surveiller tous les accès aux composants système et aux données du titulaire | 70+ types d'événements (auth, jetons API, config, licences, opérations machines). Tableau de bord d'administration et portail avec filtrage par utilisateur, équipe, type et date, plus un export JSON pour un usage programmatique. Les opérations machines sont également dans les journaux système pour la défense en profondeur. |
 | **Exig. 12**, Politiques organisationnelles | Soutenir la sécurité de l'information avec des politiques et programmes organisationnels | L'auto-hébergement élimine le périmètre du sous-traitant tiers (Exig. 12.8). Réduit le périmètre de conformité PCI DSS. |
 
 ## Segmentation réseau

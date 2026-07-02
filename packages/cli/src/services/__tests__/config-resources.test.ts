@@ -19,7 +19,7 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
 const mockAddMachineSSHConfigEntry = vi.fn();
 const mockRemoveMachineSSHConfigEntry = vi.fn();
 
-vi.mock('@rediacc/shared-desktop/vscode', () => ({
+vi.mock('../../shared-desktop/vscode/index.js', () => ({
   addMachineSSHConfigEntry: (...args: unknown[]) => mockAddMachineSSHConfigEntry(...args),
   removeMachineSSHConfigEntry: (...args: unknown[]) => mockRemoveMachineSSHConfigEntry(...args),
 }));
@@ -76,7 +76,6 @@ vi.mock('../../types/index.js', async () => {
   const actual = await vi.importActual<Record<string, unknown>>('../../types/index.js');
   return {
     ...actual,
-    hasCloudCredentials: () => false,
   };
 });
 

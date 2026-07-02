@@ -22,7 +22,7 @@ Reference: [PCI Security Standards Council](https://www.pcisecuritystandards.org
 | **Req 7**, Restrict access | Restrict access to system components and cardholder data by business need to know | Per-repository Docker daemon sockets. Access to one repository does not grant access to another. SSH key-based authentication. |
 | **Req 8**, Identify users and authenticate | Identify users and authenticate access to system components | SSH key authentication. API tokens with IP binding and scoped permissions. Two-factor authentication (TOTP). |
 | **Req 9**, Restrict physical access | Restrict physical access to cardholder data | Self-hosted: physical security is under your direct control. LUKS encryption renders stolen drives unreadable. |
-| **Req 10**, Log and monitor | Log and monitor all access to system components and cardholder data | 70+ event types (auth, API tokens, config, licensing, machine operations). Admin dashboard and portal with filtering by user, team, type, and date. `rdc audit` CLI for programmatic export. Machine operations also in system logs for defense in depth. |
+| **Req 10**, Log and monitor | Log and monitor all access to system components and cardholder data | 70+ event types (auth, API tokens, config, licensing, machine operations). Admin dashboard and portal with filtering by user, team, type, and date, plus a JSON export for programmatic use. Machine operations also in system logs for defense in depth. |
 | **Req 12**, Organizational policies | Support information security with organizational policies and programs | Self-hosted eliminates third-party processor scope (Req 12.8). Reduces PCI DSS compliance boundary. |
 
 ## Network Segmentation

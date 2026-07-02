@@ -4,7 +4,7 @@ description: "Como a arquitetura self-hosted da Rediacc se mapeia com os requisi
 category: "Legal"
 order: 1
 language: pt
-sourceHash: "36a776d87c6294ff"
+sourceHash: "76d2b3a911e0d14c"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -22,7 +22,7 @@ A tabela seguinte mapeia artigos específicos do RGPD com as capacidades técnic
 | [Art. 17](https://gdpr-info.eu/art-17-gdpr/), Direito ao apagamento | Apagar dados pessoais mediante pedido | `rdc repo delete` apaga criptograficamente o volume LUKS. A eliminação de um fork remove a cópia clonada na totalidade. |
 | [Art. 25](https://gdpr-info.eu/art-25-gdpr/), Proteção de dados desde a conceção | Privacidade por defeito | A encriptação é obrigatória, não opcional. Cada repositório dispõe de um daemon Docker e de uma rede isolados. Não existe partilha de dados entre repositórios. O arquivo de configuração utiliza encriptação de conhecimento zero: as configurações são encriptadas do lado do cliente com AES-256-GCM antes do carregamento, pelo que o servidor não consegue ler nenhum dado em texto simples. |
 | [Art. 28](https://gdpr-info.eu/art-28-gdpr/), Subcontratante | Obrigações de processamento de dados por terceiros | Self-hosted: a Rediacc funciona na sua infraestrutura. Nenhum dado sai da sua máquina durante operações de fork, clone ou backup. Nenhum componente SaaS processa dados pessoais. |
-| [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Registos das atividades de tratamento | Manter registos das atividades de processamento | O registo de auditoria acompanha mais de 70 tipos de eventos: autenticação, tokens de API, operações no arquivo de configuração, licenciamento e operações CLI em máquinas (ciclo de vida de repositórios, backup, sincronização, terminal). Exportação via painel de administração, página de atividade do portal ou CLI `rdc audit`. |
+| [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Registos das atividades de tratamento | Manter registos das atividades de processamento | O registo de auditoria acompanha mais de 70 tipos de eventos: autenticação, tokens de API, operações no arquivo de configuração, licenciamento e operações CLI em máquinas (ciclo de vida de repositórios, backup, sincronização, terminal). Exportação via painel de administração ou página de atividade do portal (exportação JSON disponível). |
 | [Art. 32](https://gdpr-info.eu/art-32-gdpr/), Segurança do tratamento | Medidas técnicas adequadas | Encriptação LUKS2 AES-256 em repouso, isolamento de rede via iptables e daemons Docker separados, sub-redes IP de loopback (/26) por repositório. O arquivo de configuração utiliza encriptação de três camadas: chaves SDK com janela temporal, derivação de CEK com chave dividida (passkey e segredo do servidor) e encriptação com frase-passe da organização. |
 | [Art. 33](https://gdpr-info.eu/art-33-gdpr/), Notificação de violação | Notificação em 72 horas com trilha forense | Os registos de auditoria fornecem uma trilha forense de todas as operações. A arquitetura self-hosted limita o raio de explosão a repositórios individuais. |
 

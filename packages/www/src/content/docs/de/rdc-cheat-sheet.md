@@ -4,7 +4,7 @@ description: "Kurzreferenz für rdc: Konfigurationen, Repos, Maschinen, Dateisyn
 category: Guides
 order: 3
 language: de
-sourceHash: "bc52628ba870dfbb"
+sourceHash: "8cde2c78200d226a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -102,7 +102,6 @@ Schreibgeschützte Anmeldedaten zur Bereitstellungszeit. `get` gibt nur den Dige
 | `rdc config machine setup --name <machine>` | Erstmalige Maschinenbereitstellung ausführen |
 | `rdc machine prune --name <machine>` | Ungenutzte Ressourcen von der Maschine entfernen |
 | `rdc machine deprovision --name <machine>` | Maschine vollständig deprovisionieren |
-| `rdc machine vault-status --name <machine>` | LUKS-Vault-Status anzeigen |
 
 ## Terminal und Synchronisierung
 

@@ -17,7 +17,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { RepositoryConfig } from '../types/index.js';
-import type { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import type { SFTPClient } from '../shared-desktop/sftp/index.js';
 import { t } from '../i18n/index.js';
 import { isAgentEnvironment } from '../utils/agent-guard.js';
 import { ValidationError } from '../utils/errors.js';

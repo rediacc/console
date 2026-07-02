@@ -5,7 +5,6 @@
 #
 #   Committed(v${V}) ⇔
 #       cli/v${V}/.released      exists
-#     ∧ desktop/v${V}/.released  exists (when desktop artifacts were produced)
 #     ∧ git tag v${V}            exists
 #
 # Channel pointers (latest.json, manifest.json, Packages.gz, etc.) only ever
@@ -57,7 +56,7 @@ RSV_SENTINEL_KEY=".released"
 # trip on grep's exit-1-on-no-match through the pipefail option).
 # Requires: AWS env + R2_ENDPOINT.
 rsv_list_sentinels() {
-    local product="${1:?product (cli|desktop) required}"
+    local product="${1:?product (cli) required}"
     {
         aws s3api list-objects-v2 \
             --bucket "$RSV_BUCKET" \
@@ -178,9 +177,9 @@ rsv_get_sentinel_payload() {
 # Floor = max(observed, ratchet) when both are present.
 #
 # Why CLI-only for the observed half: every post-contract release writes the
-# cli sentinel last (see write-release-sentinel.sh). Desktop is optional;
-# git tags include pre-contract history. The cli sentinel is the only signal
-# that unambiguously dates the contract's start.
+# cli sentinel last (see write-release-sentinel.sh). Git tags include
+# pre-contract history. The cli sentinel is the only signal that
+# unambiguously dates the contract's start.
 rsv_pre_contract_floor() {
     local cli_versions="${1:-}"
     if [[ -n "${RSV_GRANDFATHER_BEFORE:-}" ]]; then
@@ -228,13 +227,12 @@ rsv_pre_contract_floor() {
 # Assertion (pure; no I/O — feed strings)
 # =============================================================================
 
-# Assert the bijection: for every strict-semver version seen in any of the
-# three inputs, require either all three (committed) or none (absent). Desktop
-# sentinel is optional but must not appear without a matching cli sentinel
-# (desktop ⇒ cli is an invariant of the writer).
+# Assert the bijection: for every strict-semver version seen in either input,
+# require both (committed) or neither (absent) — a cli sentinel and its git tag
+# must appear together.
 #
 # Usage:
-#   rsv_assert_bijection <cli_versions> <desktop_versions> <tag_versions> [in_flight]
+#   rsv_assert_bijection <cli_versions> <tag_versions> [in_flight]
 #
 # Each input is a newline-separated list of `v${X}.${Y}.${Z}` values. Callers
 # should usually feed the outputs of rsv_list_sentinels / rsv_list_git_tags.
@@ -246,9 +244,8 @@ rsv_pre_contract_floor() {
 # Exit: 0 on bijection, 1 on any drift finding.
 rsv_assert_bijection() {
     local cli_versions="$1"
-    local desktop_versions="$2"
-    local tag_versions="$3"
-    local in_flight="${4:-}"
+    local tag_versions="$2"
+    local in_flight="${3:-}"
 
     # Pre-contract floor: drop every version strictly older than the oldest
     # CLI sentinel (the canonical first-write of the contract). The floor
@@ -284,38 +281,32 @@ rsv_assert_bijection() {
         done <<<"$input"
     }
     cli_versions="$(rsv_drop_pre_contract "$cli_versions")"
-    desktop_versions="$(rsv_drop_pre_contract "$desktop_versions")"
     tag_versions="$(rsv_drop_pre_contract "$tag_versions")"
 
     local all drift=0
-    all="$(printf '%s\n%s\n%s\n' "$cli_versions" "$desktop_versions" "$tag_versions" |
+    all="$(printf '%s\n%s\n' "$cli_versions" "$tag_versions" |
         grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
         sort -uV)"
 
     # Associative-array sets give O(1) membership tests; grep-per-version
     # scaled as O(N^2) across the full release history.
-    declare -A cli_set=() desktop_set=() tag_set=()
+    declare -A cli_set=() tag_set=()
     local v
     while IFS= read -r v; do
         [[ -n "$v" ]] && cli_set["$v"]=1
     done <<<"$cli_versions"
     while IFS= read -r v; do
-        [[ -n "$v" ]] && desktop_set["$v"]=1
-    done <<<"$desktop_versions"
-    while IFS= read -r v; do
         [[ -n "$v" ]] && tag_set["$v"]=1
     done <<<"$tag_versions"
 
-    local version has_cli has_desktop has_tag
+    local version has_cli has_tag
     while IFS= read -r version; do
         [[ -z "$version" ]] && continue
         [[ -n "$in_flight" && "$version" == "$in_flight" ]] && continue
 
         has_cli=0
-        has_desktop=0
         has_tag=0
         [[ -n "${cli_set[$version]:-}" ]] && has_cli=1
-        [[ -n "${desktop_set[$version]:-}" ]] && has_desktop=1
         [[ -n "${tag_set[$version]:-}" ]] && has_tag=1
 
         if ((has_cli != has_tag)); then
@@ -326,12 +317,6 @@ rsv_assert_bijection() {
                 echo "DRIFT ${version}: git tag present, cli sentinel missing"
                 echo "  remediation: re-run CI to produce artifacts for ${version}, or delete tag ${version}"
             fi
-            drift=1
-        fi
-
-        if ((has_desktop && !has_cli)); then
-            echo "DRIFT ${version}: desktop sentinel present, cli sentinel missing"
-            echo "  remediation: inspect desktop/${version}/.released payload and reconcile; desktop should never release without cli"
             drift=1
         fi
     done <<<"$all"

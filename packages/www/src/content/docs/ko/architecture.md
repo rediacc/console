@@ -5,7 +5,7 @@ description: >-
 category: Concepts
 order: 0
 language: ko
-sourceHash: "6763cd925791d474"
+sourceHash: "947fcefa63eac600"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -38,27 +38,12 @@ Rediacc는 SSH를 통해 함께 작동하는 두 바이너리를 사용합니다
 
 모든 CLI 상태는 `~/.config/rediacc/` 아래의 플랫 JSON 설정 파일에 저장됩니다.
 
-### 로컬 어댑터 (기본값)
-
-셀프호스팅 사용의 기본값입니다. 모든 상태는 워크스테이션의 설정 파일(예: `~/.config/rediacc/rediacc.json`)에 저장됩니다.
+모든 상태는 워크스테이션의 설정 파일(예: `~/.config/rediacc/rediacc.json`)에 저장됩니다.
 
 - 머신에 직접 SSH 연결
 - 외부 서비스 불필요
-- 단일 사용자, 단일 워크스테이션
 - 기본 설정은 첫 CLI 사용 시 자동으로 생성됩니다. 명명된 설정은 `rdc config init --name <name>`으로 생성합니다.
-
-### 클라우드 어댑터 (실험적)
-
-설정에 `apiUrl`과 `token` 필드가 포함된 경우 자동으로 활성화됩니다. 상태 관리와 팀 협업을 위해 Rediacc API를 사용합니다.
-
-- 클라우드 API에 상태 저장
-- 역할 기반 접근 제어를 갖춘 다중 사용자 팀
-- 시각적 관리를 위한 웹 콘솔
-- `rdc auth login`으로 설정
-
-> **참고:** 클라우드 어댑터 명령어는 실험적입니다. `REDIACC_EXPERIMENTAL=1`을 설정하여 활성화하세요.
-
-두 어댑터 모두 동일한 CLI 명령어를 사용합니다. 어댑터는 상태가 저장되는 위치와 인증 방식에만 영향을 미칩니다.
+- 선택적으로 암호화된 설정 동기화를 사용하면 동일한 파일이 팀별로 범위가 지정된 설정 저장소에 저장됩니다.
 
 ## rediacc 사용자
 

@@ -4,7 +4,7 @@ description: "Cómo la arquitectura autoalojada de Rediacc se ajusta a los requi
 category: "Legal"
 order: 1
 language: es
-sourceHash: "36a776d87c6294ff"
+sourceHash: "76d2b3a911e0d14c"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -22,7 +22,7 @@ La tabla a continuación mapea artículos específicos del GDPR a las capacidade
 | [Art. 17](https://gdpr-info.eu/art-17-gdpr/), Derecho al olvido | Eliminar datos personales a solicitud | `rdc repo delete` elimina criptográficamente el volumen LUKS. Eliminar un fork remueve la copia clonada completamente. |
 | [Art. 25](https://gdpr-info.eu/art-25-gdpr/), Protección de datos por diseño | Privacidad por defecto | El cifrado es obligatorio, no opcional. Cada repositorio obtiene un Docker daemon aislado y una red propia. Sin compartición de datos entre repositorios. El almacén de configuración usa cifrado de conocimiento cero: las configuraciones se cifran del lado del cliente con AES-256-GCM antes de subirse, por lo que el servidor no puede leer datos en texto plano. |
 | [Art. 28](https://gdpr-info.eu/art-28-gdpr/), Procesador | Obligaciones de procesamiento de datos de terceros | Autoalojado: Rediacc se ejecuta en tu infraestructura. Ningún dato sale de tu máquina durante operaciones de fork, clonación o respaldo. Ningún componente SaaS procesa datos personales. |
-| [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Registros de procesamiento | Mantener registros de actividades de procesamiento | El registro de auditoría rastrea más de 40 tipos de eventos a nivel de cuenta: autenticación, tokens API, operaciones del almacén de configuración y licencias. Exportación vía `rdc audit` CLI o panel de administración. |
+| [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Registros de procesamiento | Mantener registros de actividades de procesamiento | El registro de auditoría rastrea más de 40 tipos de eventos a nivel de cuenta: autenticación, tokens API, operaciones del almacén de configuración y licencias. Exportación vía panel de administración o la página de actividad del portal (exportación JSON disponible). |
 | [Art. 32](https://gdpr-info.eu/art-32-gdpr/), Seguridad del procesamiento | Medidas técnicas apropiadas | Cifrado LUKS2 AES-256 en reposo, aislamiento de red vía iptables y Docker daemons separados, subredes de IP loopback (/26) por repositorio. El almacén de configuración usa cifrado de triple capa: claves SDK con ventana temporal, derivación de CEK con clave dividida (passkey + secreto del servidor) y cifrado con frase de paso de la organización. |
 | [Art. 33](https://gdpr-info.eu/art-33-gdpr/), Notificación de brechas | Notificación en 72 horas con rastro forense | Los registros de auditoría proporcionan un rastro forense de todas las operaciones. La arquitectura autoalojada limita el radio de impacto a repositorios individuales. |
 

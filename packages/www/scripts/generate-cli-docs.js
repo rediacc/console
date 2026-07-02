@@ -572,7 +572,7 @@ if (isMainModule) {
   const cliJsonEn = JSON.parse(fs.readFileSync(getCliJsonPath('en'), 'utf-8'));
   const matter = await import('gray-matter');
 
-  for (const docType of ['local', 'cloud']) {
+  for (const docType of ['local']) {
     // Generate English first (without sourceHash) to compute the hash
     const enContent = generate('en', cliJsonEn, { docType });
     const parsed = matter.default(enContent);

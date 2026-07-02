@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: de
-sourceHash: "6763cd925791d474"
+sourceHash: "947fcefa63eac600"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -39,27 +39,12 @@ Für eine operatorfokussierte Faustregel, siehe [rdc vs renet](/en/docs/rdc-vs-r
 
 Der gesamte CLI-Zustand wird in flachen JSON-Konfigurationsdateien unter `~/.config/rediacc/` gespeichert.
 
-### Lokaler Adapter (Standard)
-
-Der Standard für die Selbsthosting-Nutzung. Der gesamte Zustand liegt in einer Konfigurationsdatei auf Ihrer Workstation (z. B. `~/.config/rediacc/rediacc.json`).
+Der gesamte Zustand liegt in einer Konfigurationsdatei auf Ihrer Workstation (z. B. `~/.config/rediacc/rediacc.json`).
 
 - Direkte SSH-Verbindungen zu Maschinen
 - Keine externen Dienste erforderlich
-- Einzelbenutzer, einzelne Workstation
 - Die Standardkonfiguration wird beim ersten CLI-Aufruf automatisch erstellt. Benannte Konfigurationen werden mit `rdc config init --name <name>` erstellt
-
-### Cloud-Adapter (Experimentell)
-
-Wird automatisch aktiviert, wenn eine Konfiguration `apiUrl`- und `token`-Felder enthält. Verwendet die Rediacc-API für Zustandsverwaltung und Teamzusammenarbeit.
-
-- Zustand in der Cloud-API gespeichert
-- Mehrbenutzerbetrieb mit rollenbasiertem Zugriff
-- Web-Konsole für visuelle Verwaltung
-- Eingerichtet mit `rdc auth login`
-
-> **Hinweis:** Cloud-Adapter-Befehle sind experimentell. Aktivieren Sie sie durch Setzen von `REDIACC_EXPERIMENTAL=1`.
-
-Beide Adapter verwenden die gleichen CLI-Befehle. Der Adapter beeinflusst nur, wo der Zustand gespeichert wird und wie die Authentifizierung funktioniert.
+- Optionale verschlüsselte Config-Synchronisation speichert dieselbe Datei im Config Store, team-spezifisch
 
 ## Der rediacc-Benutzer
 

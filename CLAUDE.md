@@ -14,7 +14,7 @@ Self-hosted infrastructure platform. Each machine runs Docker-based repositories
 - **Fork**: `rdc repo fork --parent <name> --tag <tag> -m <machine>` makes a new repo with a fresh GUID and networkId that shares the parent's data via BTRFS reflink. **Forks are near-instant and constant-time** regardless of repo size: a 100 GB repo and a 1 GB repo fork in the same seconds. Use forks freely as the per-test isolation unit, do NOT assume fork cost scales with repo size.
 - **Renet**: Network orchestrator on the machine. Manages compose files, loopback IPs, Docker daemon lifecycle. CLI: `sudo renet list all --json`, `sudo renet compose -- up -d`.
 - **Rediaccfile**: Bash script with lifecycle functions (`up()`, `down()`, `info()`) sourced by renet during deployment.
-- **Config**: CLI configuration file for connecting to machines. Each config is a flat JSON file (~/.config/rediacc/rediacc.json by default) with a unique ID and version number. Adapter auto-detected: local (default) or cloud (experimental, when apiUrl+token present). Multiple named configs supported (e.g., production.json, staging.json).
+- **Config**: CLI configuration file for connecting to machines. Each config is a flat JSON file (~/.config/rediacc/rediacc.json by default) with a unique ID and version number. Multiple named configs supported (e.g., production.json, staging.json).
 - **State Provider**: Abstraction layer (`CloudStateProvider`, `LocalStateProvider`) that routes API calls based on adapter detection.
 - **Config Storage**: Optional zero-knowledge encrypted config sync. Setup via web portal (`/account/config-setup`), requires passkey with PRF extension. One store per org, configs scoped per team. Member management via portal. CLI push/pull commands planned but not yet implemented.
 
@@ -22,12 +22,9 @@ Self-hosted infrastructure platform. Each machine runs Docker-based repositories
 
 | Package | Description |
 |---------|-------------|
-| `packages/cli/` | `rdc` CLI tool (Commander.js) |
-| `packages/web/` | Console web application |
+| `packages/cli/` | `rdc` CLI tool (Commander.js); includes SSH/SFTP/sync/terminal utilities under `src/shared-desktop/` |
 | `packages/www/` | Marketing website (Astro) |
-| `packages/desktop/` | Electron desktop app |
-| `packages/shared/` | Shared types, config, services |
-| `packages/shared-desktop/` | Shared SSH, SFTP, sync utilities |
+| `packages/shared/` | Shared types, config, services (consumed by cli, www, account) |
 
 ## CLI (`packages/cli/`)
 
@@ -94,16 +91,16 @@ rdc --config production machine query --name prod-1  # Use specific config
 ```
 packages/cli/src/
 ├── commands/           # Command implementations
-│   ├── machine/        # machine subcommands (query with --system/--containers/--repositories/--services filters, vault-status)
+│   ├── machine/        # machine subcommands (query with --system/--containers/--repositories/--services filters)
 │   ├── config.ts        # Config management (replaces context)
 │   ├── term.ts          # SSH terminal
 │   ├── sync.ts          # File sync via rsync
 │   ├── vscode.ts        # VS Code Remote SSH
 │   └── repo.ts          # Repository management
-├── providers/          # State providers (cloud, local)
+├── providers/          # State provider (local, config-file backed)
 │   ├── index.ts        # Factory - getStateProvider()
-│   ├── local-state-provider.ts
-│   └── cloud-state-provider.ts
+│   └── local-state-provider.ts
+├── shared-desktop/     # SSH, SFTP, rsync, terminal, VS Code server modules
 ├── services/           # Business logic
 │   ├── config-base.ts      # Config service base
 │   ├── config-resources.ts # Config resource CRUD
@@ -113,16 +110,16 @@ packages/cli/src/
     └── commandFactory.ts  # Generic CRUD command builder
 ```
 
-### How Local Adapter Works
+### How the Local Adapter Works
 
-When a config has no cloud credentials (apiUrl + token), the local adapter is used. The CLI reads machine/repo config from `~/.config/rediacc/rediacc.json` (or other named config file) and connects via SSH directly. LocalResourceState reads from the config file directly.
+The CLI reads machine/repo config from `~/.config/rediacc/rediacc.json` (or other named config file) and connects via SSH directly. LocalResourceState reads from the config file directly.
 
 ## Terminology
 
 When writing documentation, help text, error messages, or code comments, follow these rules:
 
-- **No "modes"**: The system uses adapter-based detection, not modes. Say "local adapter" or "cloud adapter", never "local mode".
-- **Two adapters only**: `local` (default) and `cloud` (experimental, when `apiUrl` + `token` are present).
+- **No "modes"**: Say "local adapter", never "local mode".
+- **One adapter**: `local` is the only adapter. The experimental cloud adapter (middleware-backed) was removed; do not reintroduce cloud/middleware terminology.
 - **Config auto-creation**: Default config is created automatically on first use. Don't tell users to run `rdc config init` for the default config. `config init <name>` is for named configs only.
 - **Keep docs concise**: No verbose explanations or workarounds for error messages. Document what the command does, not how to work around issues.
 
@@ -152,7 +149,7 @@ translation.** Key rules:
 
 **This monorepo uses npm, not pnpm.**
 
-`.npmrc` enforces supply-chain hardening: `ignore-scripts=true`, `allow-git=none`, `minimum-release-age=1440`. The `ignore-scripts` flag blocks all dependency lifecycle scripts; after every `npm install` or `npm ci`, run `npm run install:natives` to compile the five packages that genuinely need scripts (electron, node-pty, ssh2, cpu-features, esbuild). The script passes `--ignore-scripts=false` explicitly because `npm rebuild` otherwise silently respects the global flag and does nothing. Source of truth: `.ci/scripts/quality/check-npmrc.sh`.
+`.npmrc` enforces supply-chain hardening: `ignore-scripts=true`, `allow-git=none`, `minimum-release-age=1440`. The `ignore-scripts` flag blocks all dependency lifecycle scripts; after every `npm install` or `npm ci`, run `npm run install:natives` to compile the four packages that genuinely need scripts (node-pty, ssh2, cpu-features, esbuild). The script passes `--ignore-scripts=false` explicitly because `npm rebuild` otherwise silently respects the global flag and does nothing. Source of truth: `.ci/scripts/quality/check-npmrc.sh`.
 
 ```bash
 # Install dependencies
@@ -178,7 +175,7 @@ cd packages/www && npm run dev
 
 `./rdc.sh --override-local` rebuilds the CLI SEA from local source and installs it over `~/.local/share/rediacc/bin/rdc`. Use it when iterating on SEA-only behaviors (embedded renet, auto-update gating) that the dev-mode `cli-bundle.cjs` path doesn't exercise.
 
-The flag runs `ensure_deps` + `ensure_packages_built` first, so edits to `packages/shared`, `packages/shared-desktop`, or `packages/provisioning` are picked up by the bundler — those packages resolve through their own `dist/` outputs, and forgetting to rebuild them was a silent footgun. Auto-update is short-circuited via the `VERSION === '0.0.0-dev'` guard in `packages/cli/src/utils/platform.ts::isUpdateDisabled`, so the override binary survives the next `rdc` invocation.
+The flag runs `ensure_deps` + `ensure_packages_built` first, so edits to `packages/shared` or `packages/provisioning` are picked up by the bundler — those packages resolve through their own `dist/` outputs, and forgetting to rebuild them was a silent footgun. Auto-update is short-circuited via the `VERSION === '0.0.0-dev'` guard in `packages/cli/src/utils/platform.ts::isUpdateDisabled`, so the override binary survives the next `rdc` invocation.
 
 The previous binary is preserved as a backup matching `getOldBinaryPath()` (`<base>.old<ext>` — `rdc.old` on Linux/macOS, `rdc.old.exe` on Windows) so `cleanupOldBinary()` removes it on the next successful update.
 
@@ -211,11 +208,9 @@ Version source of truth: **git tags** (e.g., `v0.8.3`). No version bump commits.
 | CLI binary | `CLI_VERSION` env -> esbuild `--define:__CLI_VERSION__` |
 | CLI Docker | Same as CLI binary (bundle built with env) |
 | www footer | `APP_VERSION` env / git tag fallback |
-| web console | `VITE_APP_VERSION` env |
 | renet (Go) | `-ldflags "-X main.Version=..."` |
-| middleware (C#) | `/p:Version=...` MSBuild arg |
 
-`bump.sh` still used by: desktop (electron-builder reads package.json), middleware (.csproj), CLI (npm pack tarball name). These run only on push-to-main.
+`bump.sh` still used by: CLI (npm pack tarball name). Runs only on push-to-main.
 
 ## Release Channels
 
@@ -333,10 +328,9 @@ Auth: `SES_AK_ID`/`SES_AK_SECRET` for AWS IAM admin, `CLOUDFLARE_API_TOKEN` (or 
 
 | Check | Fix |
 |-------|-----|
-| `check:deps` | `npx tsx scripts/check-deps.ts --upgrade`. **Respect `.syncpackrc.json` pins** — packages pinned there (currently `@opentelemetry/sdk-node`, `instrumentation`, `instrumentation-fetch`, `instrumentation-xml-http-request`, `exporter-trace-otlp-http`, `resources`) are deliberately held back across upgrades. Also respect `.deps-upgrade-blocklist` (antd, electron, zod, etc.). If `npm outdated` flags a pinned package, DO NOT bump the package.json — update the pin's `pinVersion` only if the pin is genuinely stale. |
+| `check:deps` | `npx tsx scripts/check-deps.ts --upgrade`. **Respect `.syncpackrc.json` pins** — packages pinned there (currently `@opentelemetry/sdk-node`, `instrumentation`, `instrumentation-fetch`, `instrumentation-xml-http-request`, `exporter-trace-otlp-http`, `resources`) are deliberately held back across upgrades. Also respect `.deps-upgrade-blocklist` (zod, etc.). If `npm outdated` flags a pinned package, DO NOT bump the package.json — update the pin's `pinVersion` only if the pin is genuinely stale. |
 | `Quality / Versions` (`syncpack lint`) | `.syncpackrc.json` defines `versionGroups` with `pinVersion` and a `sameRange highestSemver` policy. A mismatch means either: (a) you bumped a pinned package beyond its pin — revert to the pin version, or (b) two workspaces disagree on a range — bump the lower one. Run `npx syncpack lint` locally to see exactly which dep violates which group. |
-| `Build (Desktop)` (`Cannot compute electron version`) | Missing `packages/desktop/node_modules/electron` entry in `package-lock.json`. npm dedupes the nested copy when the root version satisfies the desktop workspace's range; electron-builder walks only the workspace's own node_modules so the nested entry must exist even though it duplicates the root. Restore it from `git show main:package-lock.json` (key: `packages/desktop/node_modules/electron`). |
-| `Build (Desktop)` (`Cannot find module @rollup/rollup-*-*` or `lightningcss.*-*.node` or `Expected "0.25.12" but got "..."`) | Lockfile is missing platform-specific native binary entries. npm issue #4828: regenerating `package-lock.json` on a single platform drops optional `@rollup/rollup-*`, `@esbuild/*`, `lightningcss-*-*`, `@tailwindcss/oxide-*-*`, `@img/sharp-*-*`, `@biomejs/biome-*-*`, `oxc-parser-*-*`, `oxc-resolver-*-*`, `syncpack-*-*`, `unrs-resolver-*-*` entries for other OS/CPU combinations. **Never `rm package-lock.json`** on a single-platform checkout; use targeted `npm install <pkg>@<ver> -w <workspace>` instead. If you must regenerate, copy `package-lock.json` from `main` first and let `npm install` reconcile only the diffs. |
+| Lockfile native-binary drift (`Cannot find module @rollup/rollup-*-*` or `lightningcss.*-*.node` or `Expected "0.25.12" but got "..."`) | Lockfile is missing platform-specific native binary entries. npm issue #4828: regenerating `package-lock.json` on a single platform drops optional `@rollup/rollup-*`, `@esbuild/*`, `lightningcss-*-*`, `@tailwindcss/oxide-*-*`, `@img/sharp-*-*`, `@biomejs/biome-*-*`, `oxc-parser-*-*`, `oxc-resolver-*-*`, `syncpack-*-*`, `unrs-resolver-*-*` entries for other OS/CPU combinations. **Never `rm package-lock.json`** on a single-platform checkout; use targeted `npm install <pkg>@<ver> -w <workspace>` instead. If you must regenerate, copy `package-lock.json` from `main` first and let `npm install` reconcile only the diffs. |
 | `check:format` | `npx biome format --write packages/ private/account/` |
 | `check:i18n` | `npm run i18n:generate-hashes && npm run i18n:sync`, then translate missing keys |
 | `check:ci-search-index` | Any www content edit (docs/blog/i18n, all locales) stales the committed indexes: `cd packages/www && node scripts/generate-search-index.js`, commit `public/search-index*.json` |
@@ -344,7 +338,7 @@ Auth: `SES_AK_ID`/`SES_AK_SECRET` for AWS IAM admin, `CLOUDFLARE_API_TOKEN` (or 
 | `Quality / Shell` | `shfmt -w -i 4 <file>` after any shell edit (gate = `npm run check:ci-shell-format`) |
 | `lint` / `check:lint` | Fix ESLint errors properly (never suppress with comments). **Never revert a dev-dep bump (or pin it in `.deps-upgrade-blocklist`) just to silence new rules a plugin surfaces.** When `eslint-plugin-react-hooks` 7.x flags `react-hooks/set-state-in-effect` / `refs-in-render` / `immutability` / `preserve-manual-memoization` across existing files, fix each site per React 19 idioms: move ref writes into a dependency-less `useEffect`, derive state via the "previous value" pattern (`const [prev, setPrev] = useState(value); if (prev !== value) { setPrev(value); setDerived(...); }`), wrap effect-only side effects in `useEffectEvent` (from `react`, available in 19+), defer problematic setState with `queueMicrotask`, use `window.location.assign(url)` instead of direct `window.location.href = url` assignments, and initialize state lazily with `useState(() => ...)` instead of a post-mount effect. Downgrade is not a fix. |
 | `lint:unused` | Add to `ignoreDependencies` in `knip.json` if it's a transitive/runtime dep |
-| `check:ci-e2e-coverage` | Add test stubs for new bridge functions in `packages/cli/tests/tests/08-e2e/` |
+| `check:ci-e2e-coverage` | Add coverage for new renet bridge functions in `packages/bridge-tests` (the gate greps bridge-tests for each generated function name) |
 | `check:ci-renet` (types) | `private/renet/bin/renet bridge generate-types --output packages/shared/src/queue-vault/data --version dev` |
 | `Initialize` (PR title) | PR title must follow Conventional Commits (`type(scope): summary` or `type: summary`). Fix with `gh pr edit <N> --title "fix: ..."`. |
 | `Quality / PR Description` (stale) | Description's `updatedAt` is older than 30 min and there are new commits. Run `gh pr edit <N> --body "..."` **immediately before pushing the next commit** so the fresh timestamp is visible to the next CI run (editing alone does not trigger CI). **The body must actually change** — an edit with identical content does NOT bump `updatedAt`; summarize the new commits instead of re-sending the same text. Stale-only failure: refresh + `gh run rerun <id> --failed`, no commit needed. |

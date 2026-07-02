@@ -19,100 +19,6 @@
         "description": "특정 명령어의 상세 스키마를 표시합니다"
       }
     },
-    "audit": {
-      "description": "감사 로그 명령어",
-      "history": {
-        "description": "엔티티 이력을 조회합니다",
-        "fetching": "엔티티 이력 가져오는 중...",
-        "success": "이력을 가져왔습니다"
-      },
-      "log": {
-        "description": "감사 로그를 조회합니다",
-        "fetching": "감사 로그 가져오는 중...",
-        "success": "감사 로그를 가져왔습니다"
-      },
-      "trace": {
-        "description": "엔티티의 감사 이력을 추적합니다",
-        "fetching": "엔티티 감사 추적 가져오는 중...",
-        "success": "감사 추적을 가져왔습니다"
-      }
-    },
-    "auth": {
-      "activate": {
-        "activated": "계정이 활성화되었습니다",
-        "activating": "계정 활성화 중...",
-        "description": "인증 코드로 계정을 활성화합니다",
-        "success": "계정이 활성화되었습니다! 이제 다음으로 로그인할 수 있습니다: rdc auth login"
-      },
-      "description": "인증 명령어",
-      "login": {
-        "authenticating": "인증 중...",
-        "description": "Rediacc에 인증합니다",
-        "success": "로그인 성공! 설정 \"{{context}}\"에 저장되었습니다",
-        "tfaPrompt": "2FA 코드를 입력하세요:",
-        "tfaRequired": "2단계 인증이 필요합니다",
-        "tfaVerified": "2FA가 성공적으로 인증되었습니다",
-        "verifyingTfa": "2FA 인증 중..."
-      },
-      "logout": {
-        "description": "저장된 자격 증명을 지웁니다",
-        "loggingOut": "로그아웃 중...",
-        "success": "성공적으로 로그아웃되었습니다"
-      },
-      "register": {
-        "description": "새 조직 및 사용자 계정을 등록합니다",
-        "nextStep": "그 다음 실행: rdc auth activate -e <email> -p <password> --code <code>",
-        "registering": "계정 등록 중...",
-        "submitted": "등록이 제출되었습니다",
-        "success": "등록 성공! 활성화 코드를 이메일로 확인하세요."
-      },
-      "status": {
-        "authenticated": "{{email}}으로 인증됨",
-        "description": "현재 인증 상태를 확인합니다",
-        "notAuthenticated": "인증되지 않았습니다. 실행: rdc auth login"
-      },
-      "tfa": {
-        "description": "2단계 인증 관리",
-        "disable": {
-          "confirm": "TFA를 비활성화하시겠습니까?",
-          "description": "2단계 인증을 비활성화합니다",
-          "disabling": "TFA 비활성화 중...",
-          "success": "TFA가 성공적으로 비활성화되었습니다"
-        },
-        "enable": {
-          "addToApp": "이것을 인증 앱에 추가하세요",
-          "description": "2단계 인증을 활성화합니다",
-          "enabling": "TFA 활성화 중...",
-          "initiated": "TFA 설정이 시작되었습니다",
-          "setupKey": "설정 키: {{key}}",
-          "success": "TFA가 성공적으로 활성화되었습니다"
-        },
-        "status": {
-          "description": "TFA 상태를 확인합니다",
-          "disabled": "TFA가 활성화되어 있지 않습니다",
-          "enabled": "TFA가 활성화되어 있습니다"
-        }
-      },
-      "token": {
-        "description": "토큰 관리",
-        "fork": {
-          "creating": "포크된 토큰 생성 중...",
-          "description": "다른 애플리케이션을 위한 포크된 토큰을 생성합니다",
-          "success": "토큰이 성공적으로 생성되었습니다",
-          "tokenValue": "토큰: {{token}}"
-        },
-        "list": {
-          "description": "활성 토큰/세션을 나열합니다",
-          "fetching": "토큰 가져오는 중...",
-          "noTokens": "활성 토큰 없음"
-        },
-        "revoke": {
-          "description": "특정 토큰을 취소합니다",
-          "revoking": "토큰 취소 중...",
-          "success": "토큰이 성공적으로 취소되었습니다"
-        }
-      }
-    },
     "backup": {
       "description": "스토리지 및 머신 간 저장소 백업 푸시, 풀, 동기화",
       "schedule": {
@@ -120,163 +26,6 @@
       },
       "sync": {
         "description": "머신 간 저장소 백업의 양방향 동기화"
-      }
-    },
-    "bridge": {
-      "description": "브릿지 관리",
-      "list": {
-        "description": "브릿지 목록을 나열합니다",
-        "fetching": "브릿지 가져오는 중..."
-      },
-      "resetAuth": {
-        "description": "브릿지 인증 토큰을 초기화합니다",
-        "newToken": "새 토큰: {{token}}",
-        "resetting": "브릿지 \"{{name}}\"의 인증을 초기화하는 중...",
-        "success": "인증이 초기화되었습니다"
-      }
-    },
-    "ceph": {
-      "clone": {
-        "assign": {
-          "assigning": "클론 \"{{name}}\"에 머신을 할당하는 중...",
-          "description": "클론에 머신을 할당합니다",
-          "success": "클론 \"{{name}}\"에 머신이 할당되었습니다"
-        },
-        "create": {
-          "creating": "RBD 클론 \"{{name}}\" 생성 중...",
-          "description": "스냅샷으로부터 새 RBD 클론을 생성합니다",
-          "success": "RBD 클론 \"{{name}}\"이 생성되었습니다"
-        },
-        "delete": {
-          "confirm": "RBD 클론 \"{{name}}\"을 삭제하시겠습니까?",
-          "deleting": "RBD 클론 \"{{name}}\" 삭제 중...",
-          "description": "RBD 클론을 삭제합니다",
-          "success": "RBD 클론 \"{{name}}\"이 삭제되었습니다"
-        },
-        "description": "Ceph RBD 클론 관리",
-        "list": {
-          "description": "RBD 클론 목록을 나열합니다",
-          "fetching": "RBD 클론 가져오는 중...",
-          "success": "클론 목록을 가져왔습니다"
-        },
-        "machines": {
-          "description": "클론에 할당된 머신을 나열합니다",
-          "fetching": "클론 머신 가져오는 중...",
-          "success": "클론 머신 목록을 가져왔습니다"
-        },
-        "unassign": {
-          "description": "클론에서 머신을 제거합니다",
-          "success": "클론 \"{{name}}\"에서 머신이 제거되었습니다",
-          "unassigning": "클론 \"{{name}}\"에서 머신을 제거하는 중..."
-        }
-      },
-      "cluster": {
-        "create": {
-          "creating": "Ceph 클러스터 \"{{name}}\" 생성 중...",
-          "description": "새 Ceph 클러스터를 생성합니다",
-          "success": "Ceph 클러스터 \"{{name}}\"이 생성되었습니다"
-        },
-        "delete": {
-          "confirm": "Ceph 클러스터 \"{{name}}\"을 삭제하시겠습니까?",
-          "deleting": "Ceph 클러스터 \"{{name}}\" 삭제 중...",
-          "description": "Ceph 클러스터를 삭제합니다",
-          "success": "Ceph 클러스터 \"{{name}}\"이 삭제되었습니다"
-        },
-        "description": "Ceph 클러스터 관리",
-        "list": {
-          "description": "Ceph 클러스터 목록을 나열합니다",
-          "fetching": "Ceph 클러스터 가져오는 중...",
-          "success": "클러스터 목록을 가져왔습니다"
-        },
-        "machines": {
-          "description": "Ceph 클러스터에 속한 머신을 나열합니다",
-          "fetching": "클러스터 머신 가져오는 중...",
-          "success": "클러스터 머신 목록을 가져왔습니다"
-        },
-        "vault": {
-          "description": "Ceph 클러스터 볼트 관리",
-          "get": {
-            "description": "클러스터 볼트 데이터를 가져옵니다",
-            "fetching": "클러스터 볼트 가져오는 중...",
-            "success": "클러스터 볼트를 가져왔습니다"
-          },
-          "update": {
-            "description": "클러스터 볼트 데이터를 업데이트합니다",
-            "success": "\"{{name}}\"의 클러스터 볼트가 업데이트되었습니다",
-            "updating": "\"{{name}}\"의 클러스터 볼트 업데이트 중..."
-          }
-        }
-      },
-      "description": "Ceph 분산 스토리지 관리",
-      "image": {
-        "create": {
-          "creating": "RBD 이미지 \"{{name}}\" 생성 중...",
-          "description": "새 RBD 이미지를 생성합니다",
-          "success": "RBD 이미지 \"{{name}}\"이 생성되었습니다"
-        },
-        "delete": {
-          "confirm": "RBD 이미지 \"{{name}}\"을 삭제하시겠습니까?",
-          "deleting": "RBD 이미지 \"{{name}}\" 삭제 중...",
-          "description": "RBD 이미지를 삭제합니다",
-          "success": "RBD 이미지 \"{{name}}\"이 삭제되었습니다"
-        },
-        "description": "Ceph RBD 이미지 관리",
-        "list": {
-          "description": "RBD 이미지 목록을 나열합니다",
-          "fetching": "RBD 이미지 가져오는 중...",
-          "success": "이미지 목록을 가져왔습니다"
-        }
-      },
-      "pool": {
-        "create": {
-          "creating": "Ceph 풀 \"{{name}}\" 생성 중...",
-          "description": "새 Ceph 풀을 생성합니다",
-          "success": "Ceph 풀 \"{{name}}\"이 생성되었습니다"
-        },
-        "delete": {
-          "confirm": "Ceph 풀 \"{{name}}\"을 삭제하시겠습니까?",
-          "deleting": "Ceph 풀 \"{{name}}\" 삭제 중...",
-          "description": "Ceph 풀을 삭제합니다",
-          "success": "Ceph 풀 \"{{name}}\"이 삭제되었습니다"
-        },
-        "description": "Ceph 풀 관리",
-        "list": {
-          "description": "Ceph 풀 목록을 나열합니다",
-          "fetching": "Ceph 풀 가져오는 중...",
-          "success": "풀 목록을 가져왔습니다"
-        },
-        "vault": {
-          "description": "Ceph 풀 볼트 관리",
-          "get": {
-            "description": "풀 볼트 데이터를 가져옵니다",
-            "fetching": "풀 볼트 가져오는 중...",
-            "success": "풀 볼트를 가져왔습니다"
-          },
-          "update": {
-            "description": "풀 볼트 데이터를 업데이트합니다",
-            "success": "\"{{name}}\"의 풀 볼트가 업데이트되었습니다",
-            "updating": "\"{{name}}\"의 풀 볼트 업데이트 중..."
-          }
-        }
-      },
-      "snapshot": {
-        "create": {
-          "creating": "RBD 스냅샷 \"{{name}}\" 생성 중...",
-          "description": "새 RBD 스냅샷을 생성합니다",
-          "success": "RBD 스냅샷 \"{{name}}\"이 생성되었습니다"
-        },
-        "delete": {
-          "confirm": "RBD 스냅샷 \"{{name}}\"을 삭제하시겠습니까?",
-          "deleting": "RBD 스냅샷 \"{{name}}\" 삭제 중...",
-          "description": "RBD 스냅샷을 삭제합니다",
-          "success": "RBD 스냅샷 \"{{name}}\"이 삭제되었습니다"
-        },
-        "description": "Ceph RBD 스냅샷 관리",
-        "list": {
-          "description": "RBD 스냅샷 목록을 나열합니다",
-          "fetching": "RBD 스냅샷 가져오는 중...",
-          "success": "스냅샷 목록을 가져왔습니다"
-        }
       }
     },
     "config": {
@@ -985,54 +734,6 @@
         "noServices": "이 머신에서 rediacc 서비스를 찾을 수 없습니다",
         "stabilityCheck": "안정성 확인 모드 - 실패하거나 재시작 중인 서비스가 있으면 종료 코드 2로 종료",
         "unstableFound": "불안정한 서비스 {{count}}개 발견"
-      },
-      "testConnection": {
-        "authMethod": "  인증 방법: {{method}}",
-        "created": "작업이 생성되었습니다",
-        "creating": "SSH 테스트 작업 생성 중...",
-        "description": "머신에 대한 SSH 연결을 테스트하고 호스트 키를 캡처합니다",
-        "error": "오류: {{error}}",
-        "knownHosts": "  Known Hosts: {{entry}}",
-        "message": "  메시지: {{message}}",
-        "publicKeyDeployed": "  공개 키 배포됨: {{status}}",
-        "rawOutput": "원시 출력:",
-        "results": "SSH 테스트 결과:",
-        "saved": "머신 볼트에 known hosts가 저장되었습니다",
-        "saving": "머신 \"{{machine}}\" 볼트에 known_hosts 저장 중...",
-        "sshKeyConfigured": "  SSH 키 설정됨: {{status}}",
-        "statusResult": "  상태: {{status}}",
-        "taskId": "작업 ID: {{taskId}}",
-        "testing": "{{user}}@{{ip}}:{{port}}에 SSH 연결 테스트 중...",
-        "testResult": "SSH 테스트 {{result}}",
-        "timeout": "결과 대기 시간 초과",
-        "timeoutMessage": "연결 테스트 시간이 초과되었습니다. 대기열 추적에서 세부 정보를 확인하세요.",
-        "waiting": "SSH 테스트 결과 대기 중...",
-        "waitingTime": "SSH 테스트 결과 대기 중... ({{seconds}}초)"
-      },
-      "vault": {
-        "description": "머신 볼트 관리 (클라우드 어댑터 전용)"
-      },
-      "vault-status": {
-        "description": "머신의 파싱된 볼트 상태를 표시합니다 (클라우드 어댑터 전용)"
-      },
-      "vaultStatus": {
-        "deployedRepos": "\n배포된 저장소:",
-        "description": "머신의 파싱된 볼트 상태를 표시합니다",
-        "dockerRunning": "  Docker 실행 중: {{count}}",
-        "fetched": "머신을 가져왔습니다",
-        "fetching": "머신 가져오는 중...",
-        "header": "\n{{name}} 볼트 상태:",
-        "mounted": "  마운트됨: {{count}}",
-        "repoDocker": "    Docker: {{status}}",
-        "repoMounted": "    마운트됨: {{mounted}}",
-        "status": "  상태: {{status}}",
-        "systemDatastore": "  데이터스토어: {{used}} / {{total}} ({{percent}})",
-        "systemDisk": "  디스크: {{used}} / {{total}} ({{percent}})",
-        "systemHostname": "  호스트명: {{hostname}}",
-        "systemMemory": "  메모리: {{used}} / {{total}} ({{percent}})",
-        "systemSection": "\n시스템:",
-        "systemUptime": "  가동 시간: {{uptime}}",
-        "totalRepos": "  전체 저장소: {{count}}"
       }
     },
     "mcp": {
@@ -1092,192 +793,6 @@
         "description": "로컬에서 VM 클러스터를 프로비저닝합니다",
         "failed": "VM 클러스터 프로비저닝에 실패했습니다",
         "starting": "VM 클러스터 프로비저닝 시작 중..."
-      }
-    },
-    "organization": {
-      "dashboard": {
-        "description": "조직 대시보드 데이터를 가져옵니다",
-        "fetching": "대시보드 가져오는 중...",
-        "success": "대시보드를 가져왔습니다"
-      },
-      "description": "조직 관리 명령어",
-      "export": {
-        "description": "조직 데이터를 내보냅니다",
-        "exported": "{{path}}로 내보냈습니다",
-        "exporting": "조직 데이터 내보내는 중...",
-        "success": "내보내기가 완료되었습니다"
-      },
-      "import": {
-        "description": "조직 데이터를 가져옵니다",
-        "importing": "조직 데이터 가져오는 중...",
-        "success": "가져오기가 완료되었습니다"
-      },
-      "info": {
-        "description": "조직 정보를 가져옵니다",
-        "fetching": "조직 정보 가져오는 중...",
-        "notFound": "조직 정보를 찾을 수 없습니다",
-        "success": "조직 정보를 가져왔습니다"
-      },
-      "maintenance": {
-        "description": "유지 관리 모드를 활성화하거나 비활성화합니다 (관리자가 아닌 로그인 차단)",
-        "disabled": "유지 관리 모드가 비활성화되었습니다",
-        "disabling": "유지 관리 모드 비활성화 중...",
-        "enabled": "유지 관리 모드가 활성화되었습니다",
-        "enabling": "유지 관리 모드 활성화 중..."
-      },
-      "vault": {
-        "description": "조직 볼트 관리",
-        "get": {
-          "description": "조직 볼트 데이터를 가져옵니다",
-          "fetching": "조직 볼트 가져오는 중...",
-          "notFound": "조직 볼트를 찾을 수 없습니다",
-          "success": "볼트를 가져왔습니다"
-        },
-        "list": {
-          "description": "모든 볼트 유형을 나열합니다",
-          "fetching": "볼트 가져오는 중...",
-          "success": "볼트 목록을 가져왔습니다"
-        },
-        "update": {
-          "description": "조직 볼트 데이터를 업데이트합니다",
-          "success": "조직 볼트가 업데이트되었습니다",
-          "updating": "조직 볼트 업데이트 중..."
-        }
-      }
-    },
-    "permission": {
-      "add": {
-        "adding": "그룹 \"{{group}}\"에 권한 \"{{permission}}\" 추가 중...",
-        "description": "그룹에 권한을 추가합니다",
-        "success": "권한이 추가되었습니다"
-      },
-      "description": "권한 관리 명령어",
-      "group": {
-        "create": {
-          "creating": "권한 그룹 \"{{name}}\" 생성 중...",
-          "description": "새 권한 그룹을 생성합니다",
-          "success": "권한 그룹 \"{{name}}\"이 생성되었습니다"
-        },
-        "delete": {
-          "confirm": "권한 그룹 \"{{name}}\"을 삭제하시겠습니까?",
-          "deleting": "권한 그룹 \"{{name}}\" 삭제 중...",
-          "description": "권한 그룹을 삭제합니다",
-          "success": "권한 그룹 \"{{name}}\"이 삭제되었습니다"
-        },
-        "description": "권한 그룹 관리",
-        "list": {
-          "description": "모든 권한 그룹을 나열합니다",
-          "fetching": "권한 그룹 가져오는 중...",
-          "success": "권한 그룹을 가져왔습니다"
-        },
-        "show": {
-          "description": "권한 그룹 세부 정보를 표시합니다",
-          "fetching": "권한 그룹 세부 정보 가져오는 중...",
-          "success": "세부 정보를 가져왔습니다"
-        }
-      },
-      "remove": {
-        "description": "그룹에서 권한을 제거합니다",
-        "removing": "그룹 \"{{group}}\"에서 권한 \"{{permission}}\" 제거 중...",
-        "success": "권한이 제거되었습니다"
-      }
-    },
-    "protocol": {
-      "build": {
-        "description": "컴포넌트로부터 {{scheme}}:// URL을 생성합니다"
-      },
-      "description": "{{scheme}}:// 프로토콜 URL을 등록하고 처리합니다",
-      "open": {
-        "action": "작업:",
-        "cliCommand": "\n동등한 CLI 명령어:",
-        "description": "{{scheme}}:// URL을 열고 작업을 실행합니다",
-        "executing": "\n작업 실행 중...\n",
-        "machine": "머신:",
-        "params": "매개변수:",
-        "parsedUrl": "\n파싱된 프로토콜 URL:",
-        "repository": "저장소:",
-        "team": "팀:",
-        "token": "토큰:"
-      },
-      "parse": {
-        "cliCommand": "\nCLI 명령어:",
-        "description": "{{scheme}}:// URL을 파싱하고 컴포넌트를 표시합니다",
-        "parsedUrl": "\n파싱된 프로토콜 URL:"
-      },
-      "register": {
-        "adminRequired": "참고: 관리자/root 권한이 필요할 수 있습니다.",
-        "currentUser": "현재 사용자에 대해 프로토콜 핸들러 등록 중...",
-        "description": "시스템에 프로토콜 핸들러를 등록합니다",
-        "exampleUrls": "\n이제 다음과 같은 URL을 열 수 있습니다:",
-        "registering": "프로토콜 핸들러 등록 중...",
-        "success": "\n{{scheme}}:// 프로토콜 핸들러가 성공적으로 등록되었습니다.",
-        "systemWide": "시스템 전체에 프로토콜 핸들러 등록 중..."
-      },
-      "status": {
-        "description": "프로토콜 핸들러 등록 상태를 표시합니다",
-        "error": "\n오류: {{error}}",
-        "handlerCommand": "핸들러 명령어:",
-        "platform": "플랫폼:",
-        "registered": "등록됨:",
-        "registerHint": "\n프로토콜 핸들러를 등록하려면 다음을 실행하세요:",
-        "supported": "지원됨:",
-        "systemRegistration": "시스템 등록:",
-        "title": "\n프로토콜 핸들러 상태",
-        "userRegistration": "사용자 등록:"
-      },
-      "unregister": {
-        "description": "시스템에서 프로토콜 핸들러를 등록 취소합니다",
-        "success": "\n{{scheme}}:// 프로토콜 핸들러가 성공적으로 등록 취소되었습니다.",
-        "unregistering": "프로토콜 핸들러 등록 취소 중..."
-      }
-    },
-    "queue": {
-      "cancel": {
-        "cancelling": "작업 {{taskId}} 취소 중...",
-        "description": "대기열 항목을 취소합니다",
-        "success": "작업이 취소되었습니다"
-      },
-      "create": {
-        "buildingVault": "대기열 볼트 빌드 중...",
-        "creating": "함수 '{{function}}'에 대한 대기열 항목 생성 중...",
-        "description": "대기열 항목을 생성합니다",
-        "success": "대기열 항목이 생성되었습니다",
-        "taskId": "작업 ID: {{taskId}}",
-        "vaultBuilt": "대기열 볼트가 빌드되었습니다"
-      },
-      "delete": {
-        "confirm": "작업 {{taskId}}를 삭제하시겠습니까?",
-        "deleting": "작업 {{taskId}} 삭제 중...",
-        "description": "대기열 항목을 삭제합니다",
-        "success": "작업이 삭제되었습니다"
-      },
-      "description": "대기열 관리",
-      "list": {
-        "description": "대기열 항목을 나열합니다",
-        "fetching": "대기열 항목 가져오는 중...",
-        "success": "대기열 항목을 가져왔습니다"
-      },
-      "retry": {
-        "description": "실패한 대기열 항목을 재시도합니다",
-        "retrying": "작업 {{taskId}} 재시도 중...",
-        "success": "작업이 재시도 대기열에 추가되었습니다"
-      },
-      "trace": {
-        "age": "경과 시간",
-        "description": "대기열 항목 실행을 추적합니다",
-        "errorDetails": "오류 세부 정보:",
-        "fetched": "대기열 추적을 가져왔습니다",
-        "fetching": "대기열 추적 가져오는 중...",
-        "finalStatus": "최종 상태: {{status}}",
-        "noTrace": "추적 정보를 사용할 수 없습니다",
-        "watching": "작업 진행 상황 확인 중..."
-      }
-    },
-    "region": {
-      "description": "지역 관리",
-      "list": {
-        "description": "지역 목록을 나열합니다",
-        "fetching": "지역 가져오는 중..."
       }
     },
     "repo": {
@@ -1377,12 +892,13 @@
         "starting": "\"{{machine}}\"에서 저장소 \"{{repository}}\" ({{size}})를 생성하는 중..."
       },
       "delete": {
-        "archived": "\"{{repository}}\"의 자격증명이 보관되었습니다",
         "archiveHint": "복구를 위해 자격증명을 보관하려면 --archive-config를 추가하여 다시 실행하십시오",
         "archiveOption": "설정 항목을 나중에 복구할 수 있도록 deletedRepositories로 이동합니다",
+        "archived": "\"{{repository}}\"의 자격증명이 보관되었습니다",
         "cloudBackupHint": "클라우드 백업(있는 경우)은 삭제 후에도 유지됩니다. 고아 클라우드 백업을 제거하려면: rdc storage prune --name <storage> -m {{machine}}",
         "completed": "저장소 삭제 완료",
         "configRetained": "\"{{repository}}\"의 설정 항목이 유지되었습니다 (저장소가 다른 머신에 존재할 수 있습니다). 제거하려면: rdc config repository remove --name {{repository}}",
+        "confirm": "\"{{machine}}\"의 리포지토리 \"{{repository}}\"를 삭제할까요? 컨테이너, 볼륨, 암호화된 이미지가 모두 삭제됩니다.",
         "description": "저장소를 삭제합니다 (컨테이너, 볼륨, 암호화 이미지를 제거합니다). 설정 항목은 유지됩니다. 'config restore-archived'를 통한 복구를 위해 자격증명을 deletedRepositories로 이동하려면 --archive-config를 사용하십시오",
         "descriptionShort": "머신에서 저장소를 삭제합니다",
         "examples": "\n예시:\n  $ rdc repo delete --name app -m server-1\n  $ rdc repo delete --name app:test -m server-1\n",
@@ -1779,57 +1295,6 @@
       },
       "yesOption": "일괄 작업에 대한 확인을 건너뜁니다"
     },
-    "repository": {
-      "create": {
-        "creating": "저장소 \"{{name}}\" 생성 중...",
-        "description": "새 저장소를 생성합니다",
-        "success": "저장소 \"{{name}}\"이 생성되었습니다"
-      },
-      "delete": {
-        "checkingRelationships": "저장소 관계 확인 중...",
-        "confirm": "저장소 \"{{name}}\"을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
-        "deleting": "저장소 \"{{name}}\" 삭제 중...",
-        "description": "저장소를 삭제합니다",
-        "grandRepoWarning": "이것은 grand 저장소 (자격 증명)입니다. 삭제는 되돌릴 수 없습니다.",
-        "relationshipsChecked": "저장소 관계가 확인되었습니다",
-        "success": "저장소 \"{{name}}\"이 삭제되었습니다"
-      },
-      "description": "저장소 관리 명령어",
-      "list": {
-        "description": "저장소 목록을 나열합니다",
-        "fetching": "저장소 가져오는 중...",
-        "success": "저장소 목록을 가져왔습니다"
-      },
-      "promote": {
-        "checkingRelationships": "저장소 관계 확인 중...",
-        "confirmPromote": "\n승격을 진행하시겠습니까?",
-        "description": "포크를 grand 상태로 승격합니다",
-        "promoting": "저장소 \"{{name}}\" 승격 중...",
-        "relationshipsChecked": "저장소 관계가 확인되었습니다",
-        "separateInfo": "\n이렇게 하면 \"{{name}}\"이 grand 저장소 \"{{grandName}}\"에서 분리됩니다",
-        "siblingsInfo": "\n{{count}}개의 형제 클론이 원본 grand에 연결된 채로 남아있습니다:",
-        "success": "저장소 \"{{name}}\"이 grand 상태로 승격되었습니다"
-      },
-      "rename": {
-        "description": "저장소 이름을 변경합니다",
-        "renaming": "저장소 \"{{oldName}}\"을 \"{{newName}}\"으로 변경 중...",
-        "success": "저장소 이름이 \"{{name}}\"으로 변경되었습니다"
-      },
-      "vault": {
-        "description": "저장소 볼트 관리",
-        "get": {
-          "description": "저장소 볼트 데이터를 가져옵니다",
-          "fetching": "저장소 볼트 가져오는 중...",
-          "notFound": "저장소 볼트를 찾을 수 없습니다",
-          "success": "볼트를 가져왔습니다"
-        },
-        "update": {
-          "description": "저장소 볼트 데이터를 업데이트합니다",
-          "success": "저장소 볼트가 업데이트되었습니다",
-          "updating": "저장소 볼트 업데이트 중..."
-        }
-      }
-    },
     "shortcuts": {
       "cancel": {
         "description": "작업 취소 (단축키: queue cancel)"
@@ -2030,36 +1495,6 @@
         "starting": "업로드 시작 중..."
       }
     },
-    "team": {
-      "create": {
-        "creating": "팀 생성 중...",
-        "description": "팀을 생성합니다",
-        "success": "팀 \"{{name}}\"이 생성되었습니다"
-      },
-      "description": "팀 관리",
-      "list": {
-        "description": "팀 목록을 나열합니다",
-        "fetching": "팀 가져오는 중..."
-      },
-      "member": {
-        "add": {
-          "adding": "팀 \"{{team}}\"에 {{email}} 추가 중...",
-          "description": "팀에 사용자를 추가합니다",
-          "success": "사용자가 팀 \"{{team}}\"에 추가되었습니다"
-        },
-        "description": "팀 멤버십 관리",
-        "list": {
-          "description": "팀 멤버를 나열합니다",
-          "fetching": "팀 멤버 가져오는 중...",
-          "success": "멤버를 가져왔습니다"
-        },
-        "remove": {
-          "description": "팀에서 사용자를 제거합니다",
-          "removing": "팀 \"{{team}}\"에서 {{email}} 제거 중...",
-          "success": "사용자가 팀 \"{{team}}\"에서 제거되었습니다"
-        }
-      }
-    },
     "term": {
       "connect": {
         "description": "SSH를 통해 머신 또는 저장소에 연결합니다"
@@ -2111,77 +1546,6 @@
       "success": "v{{from}}에서 v{{to}}로 업데이트되었습니다",
       "unknownError": "알 수 없는 오류",
       "upToDate": "이미 최신 버전입니다 (v{{version}})"
-    },
-    "user": {
-      "activate": {
-        "activating": "사용자 \"{{email}}\" 활성화 중...",
-        "description": "사용자 계정을 활성화합니다",
-        "success": "사용자가 활성화되었습니다"
-      },
-      "create": {
-        "activationCode": "활성화 코드: {{code}}",
-        "creating": "사용자 \"{{email}}\" 생성 중...",
-        "description": "새 사용자를 생성합니다",
-        "success": "사용자가 생성되었습니다"
-      },
-      "deactivate": {
-        "confirm": "사용자 \"{{email}}\"을 비활성화하시겠습니까?",
-        "deactivating": "사용자 \"{{email}}\" 비활성화 중...",
-        "description": "사용자 계정을 비활성화합니다",
-        "success": "사용자가 비활성화되었습니다"
-      },
-      "description": "사용자 관리 명령어",
-      "exists": {
-        "description": "사용자가 존재하는지 확인합니다",
-        "exists": "사용자 \"{{email}}\"이 존재합니다",
-        "notExists": "사용자 \"{{email}}\"이 존재하지 않습니다"
-      },
-      "list": {
-        "description": "모든 사용자를 나열합니다",
-        "fetching": "사용자 가져오는 중...",
-        "success": "사용자 목록을 가져왔습니다"
-      },
-      "permission": {
-        "assign": {
-          "assigning": "사용자 \"{{email}}\"에게 \"{{group}}\" 할당 중...",
-          "description": "사용자에게 권한 그룹을 할당합니다",
-          "success": "권한이 할당되었습니다"
-        },
-        "description": "사용자 권한 관리"
-      },
-      "reactivate": {
-        "description": "비활성화된 사용자 계정을 재활성화합니다",
-        "reactivating": "사용자 \"{{email}}\" 재활성화 중...",
-        "success": "사용자가 재활성화되었습니다"
-      },
-      "updateEmail": {
-        "description": "사용자의 이메일 주소를 변경합니다",
-        "success": "이메일이 \"{{email}}\"으로 업데이트되었습니다",
-        "updating": "\"{{email}}\"의 이메일 업데이트 중..."
-      },
-      "updateLanguage": {
-        "description": "현재 사용자의 기본 언어를 설정합니다",
-        "success": "언어가 \"{{language}}\"으로 업데이트되었습니다",
-        "updating": "언어 기본 설정 업데이트 중..."
-      },
-      "updatePassword": {
-        "description": "비밀번호를 변경합니다",
-        "success": "비밀번호가 업데이트되었습니다",
-        "updating": "비밀번호 업데이트 중..."
-      },
-      "vault": {
-        "description": "사용자 볼트 관리",
-        "get": {
-          "description": "현재 사용자 볼트 데이터를 가져옵니다",
-          "fetching": "사용자 볼트 가져오는 중...",
-          "success": "볼트를 가져왔습니다"
-        },
-        "update": {
-          "description": "현재 사용자 볼트 데이터를 업데이트합니다",
-          "success": "사용자 볼트가 업데이트되었습니다",
-          "updating": "사용자 볼트 업데이트 중..."
-        }
-      }
     },
     "vscode": {
       "check": {
@@ -2274,16 +1638,6 @@
       "tip": "팁",
       "warning": "경고"
     },
-    "cloudFrontmatter": {
-      "category": "참조",
-      "description": "Rediacc CLI의 클라우드 전용 명령 -- 인증, 팀, 조직, 멀티 테넌트 관리",
-      "title": "CLI 애플리케이션 (클라우드 / 실험적)"
-    },
-    "cloudOverview": {
-      "heading": "개요",
-      "text": "이 명령들은 **클라우드 어댑터** (실험적)가 필요합니다 -- 구성에 `apiUrl`과 `token` 필드가 있을 때 활성화됩니다. 기본 CLI 참조는 [CLI 애플리케이션](/en/docs/cli-application)을 참조하세요."
-    },
-    "cloudPageTitle": "Rediacc CLI 참조 (클라우드 / 실험적)",
     "errors": {
       "heading": "일반적인 오류 메시지",
       "intro": "문제가 발생하면 CLI가 명확한 오류 메시지를 제공합니다:",
@@ -2325,72 +1679,32 @@
     "pageTitle": "Rediacc CLI 참조",
     "sectionTitles": {
       "agent": "에이전트 유틸리티",
-      "audit": "감사 및 컴플라이언스",
-      "auth": "인증",
       "backup": "백업 및 복원",
-      "bridge": "브리지 관리",
-      "ceph": "Ceph 스토리지 관리",
       "config": "구성 관리",
       "datastore": "데이터스토어 관리",
       "doctor": "시스템 진단",
       "machine": "머신 관리",
       "mcp": "MCP 서버",
       "ops": "실험적 VM 작업",
-      "organization": "조직 관리",
-      "permission": "권한 관리",
-      "protocol": "프로토콜 핸들러",
-      "queue": "큐 작업",
-      "region": "리전 관리",
       "repo": "저장소 라이프사이클",
-      "repository": "저장소 관리",
       "shortcuts": "빠른 명령 (단축키)",
       "storage": "스토리지 관리",
       "subscription": "구독 관리",
       "sync": "파일 동기화",
-      "team": "팀 관리",
       "term": "SSH 터미널 접속",
       "update": "CLI 업데이트",
-      "user": "사용자 관리",
       "vscode": "VS Code 통합"
     },
     "supplements": {
-      "auth": {
-        "register": {
-          "afterDescription": "등록 후 이메일에서 활성화 코드를 확인하세요."
-        },
-        "tip": "인증 토큰은 구성 파일에 로컬로 저장됩니다. `--save-as`를 사용하여 여러 환경에 대한 자격 증명을 이름 지정 구성에 저장하세요."
-      },
       "config": {
         "afterDescription": "구성 파일은 연결 세부 정보 (API URL, 자격 증명, 기본 팀/리전/브리지)를 저장하여 환경 간 빠른 전환을 가능하게 합니다.",
         "init": {
           "afterDescription": "머신을 직접 추가할 수 있습니다:"
-        },
-        "set": {
-          "tip": "기본값을 설정하면 모든 명령에 `--team`, `--region`, `--bridge`를 전달하지 않아도 됩니다."
         }
       },
       "machine": {
         "health": {
           "afterDescription": "health 명령은 시스템 메트릭, 컨테이너 상태, 서비스 안정성, 스토리지 정보를 출력합니다 -- CI/CD 파이프라인 검사에 유용합니다."
-        },
-        "testConnection": {
-          "tip": "성공적인 테스트 후 호스트 키를 머신 볼트에 자동으로 저장하려면 `--save`를 사용하세요."
-        }
-      },
-      "organization": {
-        "maintenance": {
-          "warning": "유지 관리 모드가 활성화되면 관리자가 아닌 사용자는 로그인할 수 없습니다."
-        }
-      },
-      "queue": {
-        "afterDescription": "큐 시스템은 Rediacc 작업 실행의 핵심입니다. 모든 작업 (배포, 백업, 스크립트 실행)은 큐를 통해 실행됩니다.",
-        "trace": {
-          "tip": "작업이 완료될 때까지 실시간으로 팔로우하려면 `--watch`를 사용하세요."
-        }
-      },
-      "repository": {
-        "promote": {
-          "note": "포크를 프로모션하면 grand (상위) 저장소에서 분리되어 독립적으로 됩니다."
         }
       }
     },
@@ -2435,7 +1749,6 @@
     },
     "authFailed": "인증에 실패했습니다",
     "authRequired": "인증이 필요합니다. 실행: rdc auth login",
-    "bridgeRequired": "브리지 이름이 필요합니다. --bridge를 사용하거나 다음 명령으로 기본값을 설정하세요: rdc config set --key bridge --value <name>",
     "cannotDeleteGrandRepo": "그랜드 리포지토리를 삭제할 수 없습니다: {{reason}}",
     "cannotPromote": "승격할 수 없습니다: {{reason}}",
     "clusterNotFound": "Ceph 클러스터 \"{{name}}\"을(를) 찾을 수 없습니다",
@@ -2578,8 +1891,6 @@
     "unknownCommand": "알 수 없는 명령 \"{{command}}\"입니다. 사용 가능한 명령: {{available}}.",
     "unknownSubcommand": "알 수 없는 서브커맨드 \"{{command}}\"입니다. 사용 가능한 {{parent}} 서브커맨드: {{available}}.",
     "validationError": "유효성 검사 오류: {{message}}",
-    "vaultDataRequired": "볼트 데이터가 필요합니다. --vault <json>을 사용하거나 stdin으로 JSON을 파이프하세요.",
-    "vaultVersionRequired": "볼트 버전이 필요합니다. --vault-version <n>을 사용하세요.",
     "vscode": {
       "browserNeedsRepo": "vscode --browser는 저장소 샌드박스를 서빙합니다 — --repository <name>을 전달하세요",
       "cleanupRequired": "모든 연결을 제거하려면 --all을, 특정 연결을 제거하려면 --connection <name>을 지정하세요.",

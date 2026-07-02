@@ -4,7 +4,7 @@ description: "Crea una config, aggiungi macchine, esegui il provisioning dei ser
 category: "Guides"
 order: 3
 language: it
-sourceHash: "b3c8c42db1b8d99b"
+sourceHash: "19a208e453f7d742"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -104,7 +104,7 @@ Per una diagnostica più dettagliata, esegui:
 rdc doctor
 ```
 
-> **Solo adapter cloud**: Il comando `rdc machine test-connection` fornisce diagnostica SSH dettagliata ma richiede l'adapter cloud. Per l'adapter locale, usa `rdc term` o `ssh` direttamente.
+> **Suggerimento**: per verificare la connettività SSH, esegui `rdc term connect -m <machine> -c "hostname"` oppure usa `ssh` direttamente.
 
 ## Configurazione dell'infrastruttura
 
@@ -233,7 +233,7 @@ Imposta valori predefiniti in modo da non doverli specificare ad ogni comando:
 
 ```bash
 rdc config field set --pointer /defaults/machine --new '"server-1"'   # Macchina predefinita
-rdc config set --key team --value my-team                   # Team predefinito (adapter cloud, sperimentale)
+rdc config set --key team --value my-team                   # Team predefinito per l'archivio di configurazione
 ```
 
 Dopo aver impostato una macchina predefinita, puoi omettere `-m server-1` dai comandi:

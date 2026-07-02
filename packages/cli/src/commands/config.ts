@@ -4,7 +4,6 @@ import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
 import type { OutputFormat, RdcConfig } from '../types/index.js';
-import { hasCloudCredentials } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { registerBackupStrategyCommands } from './config-backup-strategy.js';
 import { registerPruneCommand as registerConfigPruneCommand } from './config-prune-cmd.js';
@@ -71,13 +70,6 @@ async function handleMasterPasswordSetup(options: {
   };
 }
 
-/** Normalize API URL if provided. Returns config updates. */
-async function handleApiUrlSetup(options: { apiUrl?: string }): Promise<Partial<RdcConfig>> {
-  if (!options.apiUrl) return {};
-  const { apiClient } = await import('../services/api.js');
-  return { account: { apiUrl: apiClient.normalizeApiUrl(options.apiUrl) } };
-}
-
 /**
  * Read an SSH key file + optional .pub sibling for `config init --ssh-key <path>`.
  * Returns the `credentials.ssh` sub-shape that gets merged into the config.
@@ -106,18 +98,15 @@ export function mergeInitUpdates(
     accountUpdate?: Partial<NonNullable<RdcConfig['account']>>;
     sshContent?: { privateKey: string; publicKey?: string; knownHosts?: string };
     mpUpdate: Partial<RdcConfig>;
-    apiUrlUpdate: Partial<RdcConfig>;
   }
 ): RdcConfig {
   return {
     ...newConfig,
     ...(parts.renetPath ? { renetPath: parts.renetPath } : {}),
     ...parts.mpUpdate,
-    ...parts.apiUrlUpdate,
     account: {
       ...(newConfig.account ?? {}),
       ...(parts.accountUpdate ?? {}),
-      ...(parts.apiUrlUpdate.account ?? {}),
     },
     credentials:
       parts.mpUpdate.credentials || parts.sshContent
@@ -136,16 +125,9 @@ function hasInitFlags(options: {
   sshKey?: string;
   renetPath?: string;
   masterPassword?: string;
-  apiUrl?: string;
   server?: string;
 }): boolean {
-  return !!(
-    options.sshKey ??
-    options.renetPath ??
-    options.masterPassword ??
-    options.apiUrl ??
-    options.server
-  );
+  return !!(options.sshKey ?? options.renetPath ?? options.masterPassword ?? options.server);
 }
 
 /** Gate --reveal: refuse agents and non-TTY; emit audit log. */
@@ -213,7 +195,6 @@ ${t('help.examples')}
     .option('--ssh-key <path>', t('options.sshKey'))
     .option('--renet-path <path>', t('options.renetPath'))
     .option('--master-password <password>', t('commands.config.init.optionMasterPassword'))
-    .option('-u, --api-url <url>', t('options.apiUrl'))
     .option('--server <url>', t('options.serverUrl'))
     .action(async (options) => {
       try {
@@ -245,13 +226,11 @@ ${t('help.examples')}
           : undefined;
 
         const mpUpdate = await handleMasterPasswordSetup(options);
-        const apiUrlUpdate = await handleApiUrlSetup(options);
         const merged: RdcConfig = mergeInitUpdates(newConfig, {
           renetPath: options.renetPath,
           accountUpdate,
           sshContent,
           mpUpdate,
-          apiUrlUpdate,
         });
         await configFileStorage.save(merged, configName);
         outputService.success(t('commands.config.init.success', { name: configName }));
@@ -279,14 +258,25 @@ ${t('help.examples')}
         const { configFileStorage } = await import('../adapters/config-file-storage.js');
         const displayData = [];
         for (const name of configs) {
-          const cfg = await configFileStorage.load(name);
-          const isCloud = hasCloudCredentials(cfg);
-          displayData.push({
-            name,
-            active: name === currentName ? '*' : '',
-            adapter: isCloud ? 'cloud' : 'local',
-            machines: isCloud ? '-' : Object.keys(cfg.resources?.machines ?? {}).length.toString(),
-          });
+          // One unparseable file must not abort the whole listing — show it
+          // as invalid and keep going (same tolerant-read stance as
+          // configFileStorage.getBackupInfo).
+          try {
+            const cfg = await configFileStorage.load(name);
+            displayData.push({
+              name,
+              active: name === currentName ? '*' : '',
+              machines: Object.keys(cfg.resources?.machines ?? {}).length.toString(),
+              status: 'ok',
+            });
+          } catch {
+            displayData.push({
+              name,
+              active: name === currentName ? '*' : '',
+              machines: '-',
+              status: 'invalid',
+            });
+          }
         }
 
         outputService.print(displayData, format);
@@ -321,21 +311,7 @@ ${t('help.examples')}
           Object.assign(cfg as Record<string, unknown>, redacted);
         }
 
-        const isCloud = hasCloudCredentials(cfg);
-        const display: Record<string, unknown> = isCloud
-          ? {
-              name,
-              id: cfg.id,
-              version: cfg.version,
-              adapter: 'cloud',
-              apiUrl: cfg.account?.apiUrl,
-              userEmail: cfg.account?.userEmail ?? '-',
-              team: cfg.account?.team ?? '-',
-              region: cfg.account?.region ?? '-',
-              bridge: cfg.account?.bridge ?? '-',
-              authenticated: cfg.account?.token ? 'yes' : 'no',
-            }
-          : await buildSelfHostedDisplay(cfg, name);
+        const display: Record<string, unknown> = await buildSelfHostedDisplay(cfg, name);
 
         outputService.print(display, format);
       } catch (error) {

@@ -12,8 +12,8 @@
 #   --quiet     Suppress docker pull progress output
 #
 # Example:
-#   .ci/scripts/infra/docker-pull-ghcr.sh --image ghcr.io/rediacc/elite/bridge:latest
-#   .ci/scripts/infra/docker-pull-ghcr.sh --image ghcr.io/rediacc/elite/bridge:latest --quiet
+#   .ci/scripts/infra/docker-pull-ghcr.sh --image ghcr.io/rediacc/elite/renet:latest
+#   .ci/scripts/infra/docker-pull-ghcr.sh --image ghcr.io/rediacc/elite/renet:latest --quiet
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

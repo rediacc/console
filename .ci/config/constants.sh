@@ -34,8 +34,7 @@ readonly SUPPORTED_ARCHS=("amd64" "arm64")
 
 # Docker Images
 readonly ELITE_IMAGE_WEB="${DOCKER_REGISTRY}/web:${DOCKER_TAG}"
-readonly ELITE_IMAGE_API="${DOCKER_REGISTRY}/api:${DOCKER_TAG}"
-readonly ELITE_IMAGE_BRIDGE="${DOCKER_REGISTRY}/bridge:${DOCKER_TAG}"
+readonly ELITE_IMAGE_RENET="${DOCKER_REGISTRY}/renet:${DOCKER_TAG}"
 readonly ELITE_IMAGE_SQL="mcr.microsoft.com/mssql/server:2022-CU21-ubuntu-22.04"
 readonly ELITE_IMAGE_SQL_ARM64="mcr.microsoft.com/azure-sql-edge:1.0.7"
 
@@ -51,7 +50,6 @@ readonly CI_COMPOSE_FILE="${CI_DOCKER_DIR}/docker-compose.yml"
 
 # Container Names
 readonly CI_CONTAINER_WEB="rediacc-web"
-readonly CI_CONTAINER_API="rediacc-api"
 readonly CI_CONTAINER_SQL="rediacc-sql"
 
 # Backend state file
@@ -132,15 +130,14 @@ PUBLISH_DOCKER_REGISTRY="${PUBLISH_DOCKER_REGISTRY:-ghcr.io/rediacc/elite}"
 # NOT declared here to avoid breaking local scripts that source constants.sh.
 
 # Docker images to publish
-readonly PUBLISH_IMAGES=("api" "bridge" "plugin-terminal" "plugin-browser" "web" "cli")
+readonly PUBLISH_IMAGES=("renet" "plugin-terminal" "plugin-browser" "web" "cli")
 
 # Dockerfiles (relative to CONSOLE_ROOT_DIR)
 # Associative arrays require bash 4+; skip on older bash (e.g. macOS system bash 3.2).
 # These are only used by Docker build scripts which run on Linux.
 if ((BASH_VERSINFO[0] >= 4)); then
     declare -A DOCKERFILES=(
-        ["api"]="private/middleware/Dockerfile"
-        ["bridge"]="private/renet/Dockerfile"
+        ["renet"]="private/renet/Dockerfile"
         ["plugin-terminal"]="packages/plugins/terminal/Dockerfile"
         ["plugin-browser"]="packages/plugins/browser/Dockerfile"
         ["web"]="Dockerfile"
@@ -149,8 +146,7 @@ if ((BASH_VERSINFO[0] >= 4)); then
 
     # Build contexts (relative to CONSOLE_ROOT_DIR)
     declare -A BUILD_CONTEXTS=(
-        ["api"]="private/middleware"
-        ["bridge"]="private/renet"
+        ["renet"]="private/renet"
         ["plugin-terminal"]="packages/plugins/terminal"
         ["plugin-browser"]="packages/plugins/browser"
         ["web"]="."
@@ -160,16 +156,13 @@ fi
 
 # Version source of truth: git tags (e.g., v0.8.3).
 # Version injection at build time: CLI via __CLI_VERSION__ esbuild define, www via
-# APP_VERSION env, web via VITE_APP_VERSION env, renet via ldflags, middleware via
-# /p:Version MSBuild arg. All env vars are exported together by
-# .ci/scripts/version/inject-env.sh so every build boundary sees the same value.
-# bump.sh only updates the two package.json files that downstream tooling reads at
-# pack/publish time (desktop electron-builder, CLI npm pack).
+# APP_VERSION env, web via VITE_APP_VERSION env, renet via ldflags. All env vars are
+# exported together by .ci/scripts/version/inject-env.sh so every build boundary sees
+# the same value. bump.sh only updates the package.json that downstream tooling reads
+# at pack/publish time (CLI npm pack).
 readonly VERSION_FILES_JSON=(
     "packages/cli/package.json"
-    "packages/desktop/package.json"
 )
-readonly VERSION_FILE_CSPROJ="private/middleware/middleware.csproj"
 
 # =============================================================================
 # RELEASE DISTRIBUTION CONFIGURATION (Cloudflare R2)
@@ -204,7 +197,6 @@ readonly HOMEBREW_FORMULA_PATH="Formula/rediacc-cli.rb"
 # =============================================================================
 readonly SQL_SA_USER="sa"
 readonly SQL_RA_USER_PREFIX="rediacc"
-readonly SQL_DATABASE_PREFIX="RediaccMiddleware"
 
 # =============================================================================
 # LOGGING

@@ -5,7 +5,7 @@ description: >-
 category: Concepts
 order: 0
 language: zh
-sourceHash: "6763cd925791d474"
+sourceHash: "947fcefa63eac600"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -38,27 +38,12 @@ Rediacc 采用两个通过 SSH 协同工作的二进制文件：
 
 所有 CLI 状态存储在 `~/.config/rediacc/` 下的扁平 JSON 配置文件中。
 
-### 本地适配器（默认）
-
-自托管使用的默认选项。所有状态存储在工作站的配置文件中（例如 `~/.config/rediacc/rediacc.json`）。
+所有状态存储在工作站的配置文件中（例如 `~/.config/rediacc/rediacc.json`）。
 
 - 直接通过 SSH 连接到机器
 - 无需外部服务
-- 单用户、单工作站
 - 默认配置会在首次使用 CLI 时自动创建。命名配置通过 `rdc config init --name <name>` 创建
-
-### 云适配器（实验性）
-
-当配置中包含 `apiUrl` 和 `token` 字段时自动激活。使用 Rediacc API 进行状态管理和团队协作。
-
-- 状态存储在云 API 中
-- 支持基于角色的多用户团队访问
-- Web 控制台提供可视化管理
-- 使用 `rdc auth login` 设置
-
-> **注意：**云适配器命令为实验性功能。设置 `REDIACC_EXPERIMENTAL=1` 来启用。
-
-两种适配器使用相同的 CLI 命令。适配器仅影响状态的存储位置和认证方式。
+- 可选的加密配置同步将同一文件存储在配置存储中，按团队限定范围
 
 ## rediacc 用户
 

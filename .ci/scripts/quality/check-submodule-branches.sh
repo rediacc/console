@@ -25,10 +25,10 @@
 #
 # AI TROUBLESHOOTING GUIDE:
 # -------------------------
-# ERROR: "Submodule private/middleware expected on branch 0203-1 but is on main"
+# ERROR: "Submodule private/renet expected on branch 0203-1 but is on main"
 #   CAUSE: Submodule has pointer changes but no matching branch was created
 #   FIX:
-#     cd private/middleware
+#     cd private/renet
 #     git checkout -b 0203-1
 #     git push -u origin 0203-1
 #
@@ -45,17 +45,17 @@
 #     1. Create the branch: cd private/<submodule> && git checkout -b <branch>
 #     2. Or reset pointer: git checkout origin/main -- private/<submodule>
 #
-# ERROR: "No open PR found for branch 0203-1 in rediacc/middleware"
+# ERROR: "No open PR found for branch 0203-1 in rediacc/renet"
 #   CAUSE: Branch exists but no PR was created for it
 #   FIX:
-#     cd private/middleware
+#     cd private/renet
 #     gh pr create --title "feat: your changes" --body "Description"
 #
 # ERROR: "PR not linked in console PR description"
 #   CAUSE: Submodule PR exists but is not mentioned in console PR
 #   FIX: Edit console PR description to include the submodule PR URL:
 #     ## Related PRs
-#     - https://github.com/rediacc/middleware/pull/123
+#     - https://github.com/rediacc/renet/pull/123
 #
 # ERROR: "Submodule PR has N unreplied review comments"
 #   CAUSE: Review comments on the submodule PR haven't been addressed
@@ -84,7 +84,6 @@ cd "$REPO_ROOT"
 
 # Submodule to repo mapping
 declare -A SUBMODULE_REPOS=(
-    ["private/middleware"]="rediacc/middleware"
     ["private/renet"]="rediacc/renet"
     ["private/homebrew-tap"]="rediacc/homebrew-tap"
     ["private/account"]="rediacc/account"
@@ -245,7 +244,7 @@ pr_is_linked() {
         return 0
     fi
 
-    # Check if repo#number pattern is in the text (e.g., rediacc/middleware#123)
+    # Check if repo#number pattern is in the text (e.g., rediacc/renet#123)
     local repo
     repo=$(echo "$pr_url" | grep -oE 'github\.com/[^/]+/[^/]+' | sed 's|github.com/||')
     if [[ -n "$repo" && -n "$pr_number" ]]; then
@@ -350,7 +349,7 @@ main() {
     fi
 
     # Check each submodule
-    for sm_path in private/middleware private/renet private/homebrew-tap private/account private/elite private/sql; do
+    for sm_path in private/renet private/homebrew-tap private/account private/elite private/sql; do
         if [[ ! -d "$sm_path/.git" ]] && [[ ! -f "$sm_path/.git" ]]; then
             log_warn "Submodule $sm_path not initialized - skipping"
             ((warnings++))

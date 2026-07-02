@@ -4,7 +4,7 @@ description: "Jälgige masina tervist, konteinereid, teenuseid, hoidlaid ning k�
 category: "Guides"
 order: 9
 language: et
-sourceHash: "f56ab0bacb657043"
+sourceHash: "e2f5d37c534fc40d"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -187,12 +187,12 @@ rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/r
 
 Tulemus salvestatakse samasse JSON-faili ja on koheselt nähtav järgmises `rdc machine query --system` väljundis.
 
-## Vault'i olek
+## Masina ülevaade
 
 Hankige masina täielik ülevaade koos juurutusteabega:
 
 ```bash
-rdc machine vault-status --name server-1
+rdc machine query --name server-1
 ```
 
 See annab:
@@ -205,24 +205,13 @@ Kasutage `--output json` masinloetava väljundi jaoks.
 
 ## Ühenduse testimine
 
-> **Ainult pilveadapter.** Lokaalse adapteri korral kasutage `rdc term connect -m server-1 -c "hostname"` ühenduvuse kontrollimiseks.
-
 Kontrollige SSH-ühenduvust masinaga:
 
 ```bash
-rdc machine test-connection --ip 203.0.113.50 --user deploy
+rdc term connect -m server-1 -c "hostname"
 ```
 
-Raporteerib:
-- Ühenduse olek (edukas/ebaõnnestunud)
-- Kasutatud autentimismeetod
-- SSH-võtme konfiguratsioon
-- Avaliku võtme juurutuse olek
-- Teadaolevate hostide kirje
-
-Valikud:
-- `--port <number>`, SSH-port (vaikimisi: 22)
-- `--save -m server-1`, Salvesta kontrollitud hosti võti masina konfiguratsiooni
+Käsk väljastab õnnestumisel kaugmasina hostinime ja ebaõnnestumisel ühendustõrke, kontrollides ühe sammuga nii DNS-i, SSH-porti kui ka võtmepõhist autentimist.
 
 ## Diagnostika (doctor)
 

@@ -4,7 +4,7 @@ description: "Das ist der Knackpunkt bei SOC 2: Auditoren brauchen Nachweise, da
 category: "Legal"
 order: 2
 language: de
-sourceHash: "27d2366f84e21d8c"
+sourceHash: "9ba8477a07292a7d"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -32,7 +32,7 @@ Rediacc protokolliert also über 70 verschiedene Ereignistypen. Benutzeraktionen
 - **Lizenzierung**: Repository-Lizenzausstellung, Maschinenschlitz-Tracking, Abonnementänderungen
 - **Maschinenoperationen**: Repository erstellen/starten/stoppen/löschen, Fork, Backup Push/Pull, Dateisynchronisierung, Terminal-Sitzungen
 
-Es gibt drei Wege, an diese Logs zu kommen. Admin-Dashboard mit Benutzer-, Team- und Datumsfilter. Portal-Aktivitätsseite für Org-Admins, Typ- und Datumsfilter. Oder die `rdc audit` CLI für programmatischen Export. Sie können die Logs in Ihre eigenen Tools pipen und überall integrieren. Maschinenoperationen protokollieren auch auf Ihren Systemlogs, was eine mehrschichtige Sicherheit bietet.
+Es gibt zwei Wege, an diese Logs zu kommen. Admin-Dashboard mit Benutzer-, Team- und Datumsfilter. Portal-Aktivitätsseite für Org-Admins, Typ- und Datumsfilter, mit JSON-Export, den Sie in Ihre eigenen Tools pipen können. Maschinenoperationen protokollieren auch auf Ihren Systemlogs, was eine mehrschichtige Sicherheit bietet.
 
 ## Änderungsmanagement
 

@@ -4,7 +4,7 @@ description: "Dove Rediacc ti fornisce evidenze SOC 2: i log, la traccia di chan
 category: "Legal"
 order: 2
 language: it
-sourceHash: "27d2366f84e21d8c"
+sourceHash: "9ba8477a07292a7d"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -32,7 +32,7 @@ Rediacc registra oltre 70 tipi di evento diversi. Azioni dell'utente, modifiche 
 - **Licenze**: emissione licenza repository, tracciamento slot macchina, modifiche all'abbonamento
 - **Operazioni macchina**: creazione/avvio/arresto/eliminazione repository, fork, backup push/pull, sincronizzazione file, sessioni terminale
 
-Ci sono tre modi per ottenere questi log. Dashboard amministrativa con filtri per utente, team e data. Pagina attività del portale per gli amministratori dell'organizzazione, con filtri per tipo e data. Oppure la CLI `rdc audit` per l'esportazione programmatica. Puoi usarla con i tuoi strumenti, integrarla dove vuoi. Le operazioni macchina vengono registrate anche nei log di sistema, quindi hai una difesa in profondità.
+Ci sono due modi per ottenere questi log. Dashboard amministrativa con filtri per utente, team e data. Pagina attività del portale per gli amministratori dell'organizzazione, con filtri per tipo e data e un'esportazione JSON che puoi collegare ai tuoi strumenti. Le operazioni macchina vengono registrate anche nei log di sistema, quindi hai una difesa in profondità.
 
 ## Gestione dei Cambiamenti
 

@@ -1,21 +1,17 @@
 #!/usr/bin/env node
 
 /**
- * Icon generation for www, web, and desktop packages.
+ * Icon generation for the www marketing site.
  *
  * Sources of truth:
  *   - bolt-only:  packages/www/public/favicon.svg          (small browser favicons)
- *   - full logo:  packages/www/public/assets/images/icon-rediacc.svg  (apple-touch + desktop)
- *
- * packages/web/public/favicon.svg is mirrored from www's bolt-only SVG.
+ *   - full logo:  packages/www/public/assets/images/icon-rediacc.svg  (apple-touch icons)
  *
  * Usage:  node packages/www/scripts/generate-icons.js
- * Requires: sharp (npm). Optional: icotool (Windows multi-res .ico for desktop).
+ * Requires: sharp (npm).
  */
 
-import { execFileSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdtempSync, renameSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, renameSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -46,7 +42,6 @@ const renders = [
   { src: fullSvg, out: 'packages/www/public/apple-touch-icon.png', size: 180 },
   { src: fullSvg, out: 'packages/www/public/android-chrome-192x192.png', size: 192 },
   { src: fullSvg, out: 'packages/www/public/android-chrome-512x512.png', size: 512 },
-  { src: fullSvg, out: 'packages/desktop/resources/icon.png', size: 512 },
 ];
 
 console.log('Rendering PNGs');
@@ -63,37 +58,5 @@ const tmpPng = `${faviconIco}.tmp.png`;
 await sharp(boltSvg).resize(32, 32).png().toFile(tmpPng);
 renameSync(tmpPng, faviconIco);
 console.log('  packages/www/public/favicon.ico (32x32 PNG-as-ICO)');
-
-// Mirror bolt SVG into web package so both consoles stay aligned.
-const webSvg = join(repoRoot, 'packages/web/public/favicon.svg');
-copyFileSync(boltSvg, webSvg);
-console.log('  packages/web/public/favicon.svg (mirrored from www)');
-
-// Desktop icon.ico — true multi-res Windows ICO via icotool (icoutils package).
-const desktopIco = join(repoRoot, 'packages/desktop/resources/icon.ico');
-let icotoolAvailable = true;
-try {
-  execFileSync('icotool', ['--version'], { stdio: 'ignore' });
-} catch {
-  icotoolAvailable = false;
-}
-
-if (icotoolAvailable) {
-  const tmp = mkdtempSync(join(tmpdir(), 'rdc-ico-'));
-  const sizes = [16, 32, 48, 64, 128, 256];
-  const pngPaths = [];
-  for (const s of sizes) {
-    const p = join(tmp, `${s}.png`);
-    await sharp(fullSvg).resize(s, s).png().toFile(p);
-    pngPaths.push(p);
-  }
-  execFileSync('icotool', ['-c', '-o', desktopIco, ...pngPaths], { stdio: 'inherit' });
-  rmSync(tmp, { recursive: true, force: true });
-  console.log(`  packages/desktop/resources/icon.ico (${sizes.join('/')} multi-res)`);
-} else {
-  console.warn(
-    '  packages/desktop/resources/icon.ico SKIPPED (icotool not installed; apt install icoutils)'
-  );
-}
 
 console.log('Done.');

@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 
 import { cli } from './cli.js';
-import { apiClient } from './services/api.js';
-import { authService } from './services/auth.js';
 import {
   applyPendingUpdate,
   maybeSpawnBackgroundUpdate,
@@ -65,9 +63,6 @@ if (process.argv.includes('mcp') && process.argv.includes('serve')) {
     try {
       await applyPromise; // fast: just file renames if update ready
       await spawnPromise; // near-instant: just spawns detached child
-
-      // Connect auth service's master password getter to API client
-      apiClient.setMasterPasswordGetter(() => authService.requireMasterPassword());
 
       await cli.parseAsync(process.argv);
 

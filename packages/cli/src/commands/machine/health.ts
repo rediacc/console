@@ -2,7 +2,6 @@ import { getMachineHealth, type MachineHealthResult } from '@rediacc/shared/serv
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { getStateProvider } from '../../providers/index.js';
-import { authService } from '../../services/auth.js';
 import { configService } from '../../services/config-resources.js';
 import { outputService } from '../../services/output.js';
 import type { OutputFormat } from '../../types/index.js';
@@ -148,14 +147,7 @@ export function registerHealthCommand(machine: Command, program: Command): void 
       try {
         const name = options.name;
         const provider = await getStateProvider();
-        if (provider.isCloud) {
-          await authService.requireAuth();
-        }
         const opts = await configService.applyDefaults(options);
-
-        if (provider.isCloud && !opts.team) {
-          throw new ValidationError(t('errors.teamRequired'));
-        }
 
         const machine = await withSpinner(
           t('commands.machine.health.fetching'),

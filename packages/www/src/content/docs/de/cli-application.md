@@ -6,7 +6,7 @@ order: 2
 language: de
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/de/cli.json
-sourceHash: "1235daa773aa4f19"
+sourceHash: "73650f4ed88f7c56"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -139,7 +139,6 @@ rdc config init [options]
 | `--ssh-key <path>` | {{t:cli.options.sshKey}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--renet-path <path>` | {{t:cli.options.renetPath}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--master-password <password>` | {{t:cli.commands.config.init.optionMasterPassword}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-u, --api-url <url>` | {{t:cli.options.apiUrl}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--server <url>` | {{t:cli.options.serverUrl}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -194,8 +193,6 @@ rdc config set [options]
 | `--key <key>` | {{t:cli.options.configKey}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--value <value>` | {{t:cli.options.configValue}} | {{t:cli.docs.optionLabels.yes}} | - |
 
-
-> **{{t:cli.docs.admonitions.tip}}**: {{t:cli.docs.supplements.config.set.tip}}
 
 <a id="cli-local-config-clear"></a>
 ### 2.7 clear
@@ -1034,8 +1031,10 @@ rdc machine create [options]
 |------|-------------|----------|---------|
 | `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-b, --bridge <name>` | {{t:cli.options.bridge}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--vault <json>` | {{t:cli.options.vaultJsonMachine}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--ip <address>` | {{t:cli.options.machineIp}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--user <name>` | {{t:cli.options.sshUser}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--port <port>` | {{t:cli.options.sshPort}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--datastore <path>` | {{t:cli.options.datastore}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-machine-rename"></a>
@@ -1071,32 +1070,8 @@ rdc machine delete [options]
 | `--dry-run` | {{t:cli.options.dryRun}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-<a id="cli-local-machine-vault"></a>
-### 4.5 vault
-
-{{t:cli.commands.machine.vault.description}}
-
-```bash
-rdc machine vault
-```
-
-<a id="cli-local-machine-vault-status"></a>
-### 4.6 vault-status
-
-{{t:cli.commands.machine.vault-status.description}}
-
-```bash
-rdc machine vault-status [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
 <a id="cli-local-machine-health"></a>
-### 4.7 health
+### 4.5 health
 
 {{t:cli.commands.machine.health.description}}
 
@@ -1113,7 +1088,7 @@ rdc machine health [options]
 
 
 <a id="cli-local-machine-containers"></a>
-### 4.8 containers
+### 4.6 containers
 
 {{t:cli.commands.machine.containers.description}}
 
@@ -1129,7 +1104,7 @@ rdc machine containers [options]
 
 
 <a id="cli-local-machine-services"></a>
-### 4.9 services
+### 4.7 services
 
 {{t:cli.commands.machine.services.description}}
 
@@ -1145,7 +1120,7 @@ rdc machine services [options]
 
 
 <a id="cli-local-machine-query"></a>
-### 4.10 query
+### 4.8 query
 
 {{t:cli.commands.machine.query.description}}
 
@@ -1169,23 +1144,8 @@ rdc machine query [options]
 | `--strict` | {{t:cli.options.queryStrict}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-<a id="cli-local-machine-vault-status"></a>
-### 4.11 vault-status
-
-{{t:cli.commands.machine.vaultStatus.description}}
-
-```bash
-rdc machine vault-status [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
 <a id="cli-local-machine-repos"></a>
-### 4.12 repos
+### 4.9 repos
 
 {{t:cli.commands.machine.repos.description}}
 
@@ -1200,32 +1160,8 @@ rdc machine repos [options]
 | `--search <text>` | {{t:cli.options.searchRepos}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-<a id="cli-local-machine-test-connection"></a>
-### 4.13 test-connection
-
-{{t:cli.commands.machine.testConnection.description}}
-
-```bash
-rdc machine test-connection [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--ip <address>` | {{t:cli.options.machineIp}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--user <name>` | {{t:cli.options.sshUser}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-b, --bridge <name>` | {{t:cli.options.bridge}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--port <number>` | {{t:cli.options.sshPort}} | {{t:cli.docs.optionLabels.no}} | `22` |
-| `--password <pwd>` | {{t:cli.options.sshPassword}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--datastore <path>` | {{t:cli.options.datastore}} | {{t:cli.docs.optionLabels.no}} | `/mnt/rediacc` |
-| `-m, --machine <name>` | {{t:cli.options.machineForVault}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--save` | {{t:cli.options.saveKnownHosts}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
-> **{{t:cli.docs.admonitions.tip}}**: {{t:cli.docs.supplements.machine.testConnection.tip}}
-
 <a id="cli-local-machine-provision"></a>
-### 4.14 provision
+### 4.10 provision
 
 {{t:cli.commands.machine.provision.description}}
 
@@ -1247,7 +1183,7 @@ rdc machine provision [options]
 
 
 <a id="cli-local-machine-deprovision"></a>
-### 4.15 deprovision
+### 4.11 deprovision
 
 {{t:cli.commands.machine.deprovision.description}}
 
@@ -1263,7 +1199,7 @@ rdc machine deprovision [options]
 
 
 <a id="cli-local-machine-backup"></a>
-### 4.16 backup
+### 4.12 backup
 
 {{t:cli.commands.machine.backup.description}}
 
@@ -1343,7 +1279,7 @@ rdc machine backup cancel [options]
 
 
 <a id="cli-local-machine-prune"></a>
-### 4.17 prune
+### 4.13 prune
 
 {{t:cli.commands.machine.prune.description}}
 
@@ -1595,6 +1531,7 @@ rdc repo delete [options]
 | `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--archive-config` | {{t:cli.commands.repo.delete.archiveOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--dry-run` | {{t:cli.options.dryRun}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -2287,6 +2224,7 @@ rdc storage create [options]
 |------|-------------|----------|---------|
 | `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--vault <json>` | {{t:cli.options.vaultContent}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-storage-rename"></a>
@@ -2509,93 +2447,11 @@ rdc term connect [options]
 
 ---
 
-<a id="cli-local-group-protocol"></a>
-## 10. {{t:cli.docs.sectionTitles.protocol}}
-
-{{t:cli.commands.protocol.description}}
-
-<a id="cli-local-protocol-register"></a>
-### 10.1 register
-
-{{t:cli.commands.protocol.register.description}}
-
-```bash
-rdc protocol register [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--system` | {{t:cli.options.protocolSystem}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--force` | {{t:cli.options.protocolForce}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
-<a id="cli-local-protocol-unregister"></a>
-### 10.2 unregister
-
-{{t:cli.commands.protocol.unregister.description}}
-
-```bash
-rdc protocol unregister [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--system` | {{t:cli.options.protocolSystemUnregister}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
-<a id="cli-local-protocol-status"></a>
-### 10.3 status
-
-{{t:cli.commands.protocol.status.description}}
-
-```bash
-rdc protocol status
-```
-
-<a id="cli-local-protocol-open"></a>
-### 10.4 open
-
-{{t:cli.commands.protocol.open.description}}
-
-```bash
-rdc protocol open <url>
-```
-
-<a id="cli-local-protocol-build"></a>
-### 10.5 build
-
-{{t:cli.commands.protocol.build.description}}
-
-```bash
-rdc protocol build [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--token <token>` | {{t:cli.options.protocolToken}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-r, --repository <name>` | {{t:cli.options.repository}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-a, --action <action>` | {{t:cli.options.protocolAction}} | {{t:cli.docs.optionLabels.no}} | `desktop` |
-| `-p, --params <key=value...>` | {{t:cli.options.protocolParams}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
-<a id="cli-local-protocol-parse"></a>
-### 10.6 parse
-
-{{t:cli.commands.protocol.parse.description}}
-
-```bash
-rdc protocol parse <url>
-```
-
----
-
 <a id="cli-local-group-shortcuts"></a>
-## 11. {{t:cli.docs.sectionTitles.shortcuts}}
+## 10. {{t:cli.docs.sectionTitles.shortcuts}}
 
 <a id="cli-local-shortcuts-run"></a>
-### 11.1 run
+### 10.1 run
 
 {{t:cli.commands.shortcuts.run.description}}
 
@@ -2604,7 +2460,7 @@ rdc run
 ```
 
 <a id="cli-local-shortcuts-trace"></a>
-### 11.2 trace
+### 10.2 trace
 
 {{t:cli.commands.shortcuts.trace.description}}
 
@@ -2613,7 +2469,7 @@ rdc trace
 ```
 
 <a id="cli-local-shortcuts-cancel"></a>
-### 11.3 cancel
+### 10.3 cancel
 
 {{t:cli.commands.shortcuts.cancel.description}}
 
@@ -2622,7 +2478,7 @@ rdc cancel
 ```
 
 <a id="cli-local-shortcuts-retry"></a>
-### 11.4 retry
+### 10.4 retry
 
 {{t:cli.commands.shortcuts.retry.description}}
 
@@ -2633,12 +2489,12 @@ rdc retry
 ---
 
 <a id="cli-local-group-subscription"></a>
-## 12. {{t:cli.docs.sectionTitles.subscription}}
+## 11. {{t:cli.docs.sectionTitles.subscription}}
 
 {{t:cli.commands.subscription.description}}
 
 <a id="cli-local-subscription-login"></a>
-### 12.1 login
+### 11.1 login
 
 {{t:cli.commands.subscription.login.description}}
 
@@ -2653,7 +2509,7 @@ rdc subscription login [options]
 
 
 <a id="cli-local-subscription-logout"></a>
-### 12.2 logout
+### 11.2 logout
 
 {{t:cli.commands.subscription.logout.description}}
 
@@ -2662,7 +2518,7 @@ rdc subscription logout
 ```
 
 <a id="cli-local-subscription-status"></a>
-### 12.3 status
+### 11.3 status
 
 {{t:cli.commands.subscription.status.description}}
 
@@ -2671,7 +2527,7 @@ rdc subscription status
 ```
 
 <a id="cli-local-subscription-activation"></a>
-### 12.4 activation
+### 11.4 activation
 
 {{t:cli.commands.subscription.activation.description}}
 
@@ -2690,7 +2546,7 @@ rdc subscription activation status [options]
 
 
 <a id="cli-local-subscription-repo"></a>
-### 12.5 repo
+### 11.5 repo
 
 {{t:cli.commands.subscription.repo.description}}
 
@@ -2709,7 +2565,7 @@ rdc subscription repo status [options]
 
 
 <a id="cli-local-subscription-refresh"></a>
-### 12.6 refresh
+### 11.6 refresh
 
 {{t:cli.commands.subscription.refresh.description}}
 
@@ -2759,7 +2615,7 @@ rdc subscription refresh repo [options]
 ---
 
 <a id="cli-local-group-update"></a>
-## 13. {{t:cli.docs.sectionTitles.update}}
+## 12. {{t:cli.docs.sectionTitles.update}}
 
 {{t:cli.commands.update.description}}
 
@@ -2780,7 +2636,7 @@ rdc update [options]
 ---
 
 <a id="cli-local-group-doctor"></a>
-## 14. {{t:cli.docs.sectionTitles.doctor}}
+## 13. {{t:cli.docs.sectionTitles.doctor}}
 
 {{t:cli.commands.doctor.description}}
 
@@ -2792,12 +2648,12 @@ rdc doctor
 ---
 
 <a id="cli-local-group-ops"></a>
-## 15. {{t:cli.docs.sectionTitles.ops}}
+## 14. {{t:cli.docs.sectionTitles.ops}}
 
 {{t:cli.commands.ops.description}}
 
 <a id="cli-local-ops-up"></a>
-### 15.1 up
+### 14.1 up
 
 {{t:cli.commands.ops.up.description}}
 
@@ -2818,7 +2674,7 @@ rdc ops up [options]
 
 
 <a id="cli-local-ops-down"></a>
-### 15.2 down
+### 14.2 down
 
 {{t:cli.commands.ops.down.description}}
 
@@ -2833,7 +2689,7 @@ rdc ops down [options]
 
 
 <a id="cli-local-ops-status"></a>
-### 15.3 status
+### 14.3 status
 
 {{t:cli.commands.ops.status.description}}
 
@@ -2847,7 +2703,7 @@ rdc ops status [options]
 
 
 <a id="cli-local-ops-ssh"></a>
-### 15.4 ssh
+### 14.4 ssh
 
 {{t:cli.commands.ops.ssh.description}}
 
@@ -2864,7 +2720,7 @@ rdc ops ssh [options]
 
 
 <a id="cli-local-ops-setup"></a>
-### 15.5 setup
+### 14.5 setup
 
 {{t:cli.commands.ops.setup.description}}
 
@@ -2878,7 +2734,7 @@ rdc ops setup [options]
 
 
 <a id="cli-local-ops-check"></a>
-### 15.6 check
+### 14.6 check
 
 {{t:cli.commands.ops.check.description}}
 

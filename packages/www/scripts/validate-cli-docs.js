@@ -28,10 +28,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh', 'et', 'ko', 'pt', 'it'];
 
 // Both doc types to validate
-const DOC_TYPES = [
-  { type: 'local', filename: 'cli-application.md' },
-  { type: 'cloud', filename: 'cli-application-cloud.md' },
-];
+const DOC_TYPES = [{ type: 'local', filename: 'cli-application.md' }];
 
 // Path helpers
 function getCliJsonPath(lang) {

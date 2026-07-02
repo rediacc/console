@@ -1070,33 +1070,28 @@
       "architectures": {
         "arm64": "ARM64",
         "arm64_apple": "Apple Silicon (ARM64)",
-        "armv7l": "ARMv7",
         "x64": "x64 (64-bitine)",
         "x64_intel": "Intel (x64)"
       },
       "autoUpdate": {
-        "description": "Rediacc Desktop uuendab ennast automaatselt. Pärast paigaldamist otsib see uusi versioone ja teatab teile, kui uus versioon on valmis. Ühe klõpsuga saate selle paigaldada. Aeglase ühenduse puhul kulub mõni minut.",
+        "description": "Rediacc CLI uuendab end ise. See kontrollib uusi versioone ja paigaldab need teie eest, nii et kasutate alati kõige uuemat versiooni.",
         "title": "Automaatse uuendamise teave"
       },
       "cli": {
         "binary": "Kahendmoodul",
-        "description": "Kerge ja kiire tööriist, mida käivitate terminaliaknast. Ideaalne kuvarita serverite juhtimiseks, või sama käsu käitamiseks mitmel masinal korraga. Kui see on teie seadistus, on käsuriadapter parem valik kui lauarakendus. Ühendage serveritega, käivitage käske, saatke uuendusi. Brauserit pole vaja."
+        "description": "Väike ja kiire tööriist, mida käivitate terminaliaknast. Sobib hästi serveritele, mida haldate ekraanita, või sama käsu käivitamiseks korraga paljudel masinatel. Looge ühendus serveritega, käivitage käske, saatke uuendusi. Brauserit pole vaja."
       },
       "hero": {
         "released": "Avaldatud",
-        "subtitle": "Rediacc Desktop ja CLI",
+        "subtitle": "Rediacc CLI",
         "title": "Laadi Rediacc CLI alla"
       },
       "installation": {
         "cli": "CLI: Laadige alla oma süsteemile sobiv fail. Avage Linux-is või macOS-is terminal, käivitage 'chmod +x failinimi' ja teisaldage see /usr/local/bin kausta.",
-        "linux_appimage": "Linux AppImage: Muutke fail käivitatavaks käsuga 'chmod +x failinimi.AppImage' ja käivitage see otse. Paigaldamine ei ole vajalik.",
-        "linux_deb": "Linux DEB: Paigaldage käsuga 'sudo dpkg -i failinimi.deb' või topeltklõpsake faili failihalduri abil.",
-        "macos": "macOS: Avage .dmg-fail ja lohistage Rediacc Desktop rakenduste kausta. Kui macOS blokeerib selle, lubake see eelistustes jaotises Turvalisus ja privaatsus.",
-        "title": "Paigaldusjuhised",
-        "windows": "Windows: Käivitage .exe-fail ja järgige ekraanile kuvatavaid juhiseid. Rakendus paigaldatakse Program Files kausta."
+        "title": "Paigaldusjuhised"
       },
       "meta": {
-        "description": "Laadi Rediacc Desktop ja CLI alla Windowsile, macOS-ile ja Linuxile.",
+        "description": "Laadi Rediacc CLI alla Windowsile, macOS-ile ja Linuxile.",
         "keywords": "Rediacc allalaadimine, töölauarakendus, CLI, Windowsi rakendus, macOS-i rakendus, Linuxi rakendus",
         "title": "Laadi Rediacc CLI alla kõigile platvormidele | Rediacc"
       },
@@ -1107,22 +1102,13 @@
         "windows": "Windows"
       },
       "requirements": {
-        "disk": "500 MB vaba kettamahtu",
-        "diskTitle": "Kettamaht",
         "linux": "Kaasaegne Linuxi distributioon koos glibc 2.28+",
         "macos": "macOS 11 (Big Sur) või uuem",
-        "ram": "Minimaalselt 2 GB RAM, soovitatavalt 4 GB",
-        "ramTitle": "Mälu",
         "title": "Süsteeminõuded",
         "windows": "Windows 10 või uuem (64-bitine)"
       },
       "sections": {
-        "cli": "Käsurea liides (CLI)",
-        "desktop": "Lauarakendus"
-      },
-      "types": {
-        "appimage": "AppImage (kaasaskantav)",
-        "deb": "Debian/Ubuntu (.deb)"
+        "cli": "Käsurea liides (CLI)"
       }
     },
     "home": {
@@ -1145,7 +1131,7 @@
       "copy": "Kopeeri",
       "hero": {
         "downloadsLink": "Külasta allalaadimiste lehte",
-        "downloadsNote": "Otsid töölaualikku rakendust?",
+        "downloadsNote": "Otsid otse CLI binaarfaile?",
         "subtitle": "Vali sobiv paigaldusmeetod",
         "title": "Paigalda Rediacc CLI"
       },
@@ -2681,6 +2667,42 @@
             "Ettevõtete seisaku keskmine maksumus on 5 600 $ minutis"
           ]
         },
+        "categories": {
+          "heading": "Saadaolevad teenused",
+          "intro": "Iga koostöö algab vestlusega, et saaksime sinu seadistuse jaoks paika panna õige meeskonna ja ajakava.",
+          "items": [
+            {
+              "description": "Praktiline koolitus sinu meeskonnale, alates juhitud seadistuse ülevaatest kuni mitmepäevaste töötubadeni, mis katavad edasijõudnud töövooge ja intsidentidele reageerimise protseduure.",
+              "icon": "team-training",
+              "id": "training",
+              "name": "Koolitus"
+            },
+            {
+              "description": "Pidev abi päris inseneridelt, alates tööajal saadaolevast e-posti toest kuni 24/7/365 katvuseni koos pühendunud kontohalduriga tootmiskriitilistes keskkondades.",
+              "icon": "security-assessment",
+              "id": "support",
+              "name": "Tugi"
+            },
+            {
+              "description": "Lõpuni viidud migreerimine ja kohandatud integreerimistöö, alates täielikult valideeritud andmeülekandest kuni kiire sama päeva ümberlülituseni, kui oled ajasurve all.",
+              "icon": "data-migration",
+              "id": "migration",
+              "name": "Migreerimine"
+            },
+            {
+              "description": "Lunavararünnakust taastumine ja katastroofitaaste koostöö, alates juhtumi järgsest forensilisest analüüsist ja tugevdamisest kuni missioonikriitiliste süsteemide pideva replikatsiooni seadmiseni.",
+              "icon": "ransomware-recovery",
+              "id": "recovery",
+              "name": "Taaste"
+            },
+            {
+              "description": "Turvaaudid, tugevdamise kontrollnimekirjad, vastavuse käsiraamatud ja intsidentidele reageerimise lepingud, kohandatud sinu keskkonna ja auditi nõuete järgi.",
+              "icon": "storage-hardening",
+              "id": "security",
+              "name": "Turvalisus ja vastavus"
+            }
+          ]
+        },
         "cta": {
           "button": "Võta meiega ühendust",
           "description": "Iga koostöö kohandatakse sinu seadistuse järgi. Võta meiega ühendust ja leiame koos õige plaani.",
@@ -2691,42 +2713,6 @@
           "eligibility": "Iga pakett annab juurdepääsu meie professionaalsetele teenustele. Võta meiega ühendust ja leiame sinu seadistusele sobiva koostöövormi.",
           "subtitle": "Saage ekspertabi siis, kui seda kõige rohkem vajate",
           "title": "Professionaalsed teenused"
-        },
-        "categories": {
-          "heading": "Saadaolevad teenused",
-          "intro": "Iga koostöö algab vestlusega, et saaksime sinu seadistuse jaoks paika panna õige meeskonna ja ajakava.",
-          "items": [
-            {
-              "id": "training",
-              "name": "Koolitus",
-              "description": "Praktiline koolitus sinu meeskonnale, alates juhitud seadistuse ülevaatest kuni mitmepäevaste töötubadeni, mis katavad edasijõudnud töövooge ja intsidentidele reageerimise protseduure.",
-              "icon": "team-training"
-            },
-            {
-              "id": "support",
-              "name": "Tugi",
-              "description": "Pidev abi päris inseneridelt, alates tööajal saadaolevast e-posti toest kuni 24/7/365 katvuseni koos pühendunud kontohalduriga tootmiskriitilistes keskkondades.",
-              "icon": "security-assessment"
-            },
-            {
-              "id": "migration",
-              "name": "Migreerimine",
-              "description": "Lõpuni viidud migreerimine ja kohandatud integreerimistöö, alates täielikult valideeritud andmeülekandest kuni kiire sama päeva ümberlülituseni, kui oled ajasurve all.",
-              "icon": "data-migration"
-            },
-            {
-              "id": "recovery",
-              "name": "Taaste",
-              "description": "Lunavararünnakust taastumine ja katastroofitaaste koostöö, alates juhtumi järgsest forensilisest analüüsist ja tugevdamisest kuni missioonikriitiliste süsteemide pideva replikatsiooni seadmiseni.",
-              "icon": "ransomware-recovery"
-            },
-            {
-              "id": "security",
-              "name": "Turvalisus ja vastavus",
-              "description": "Turvaaudid, tugevdamise kontrollnimekirjad, vastavuse käsiraamatud ja intsidentidele reageerimise lepingud, kohandatud sinu keskkonna ja auditi nõuete järgi.",
-              "icon": "storage-hardening"
-            }
-          ]
         }
       },
       "roiCta": {
@@ -3829,7 +3815,7 @@
           "title": "Mida saate"
         },
         "bottomCta": {
-          "command": "rdc audit log --limit 200",
+          "command": "rdc repo fork --parent production --tag pentest -m server-1",
           "ctaText": "Alusta tasuta",
           "description": "Alustage tasuta Community väljaandega. Käivitage esimene pentest alla 60 sekundiga.",
           "title": "Leidke haavatavused enne ründajaid"
@@ -4238,7 +4224,7 @@
           "title": "Mida saate"
         },
         "bottomCta": {
-          "command": "rdc audit history repository production",
+          "command": "rdc repo status --name production -m server-1",
           "ctaText": "Alusta tasuta Community väljaandega",
           "description": "Alustage tasuta Community väljaandega. Genereerige esimene auditiaruanne alla minutiga.",
           "title": "Näe kõike. Jäta midagi märkamata."
@@ -4453,7 +4439,7 @@
               "title": "Kaitse"
             },
             {
-              "description": "Käivitage rdc audit --from --to. Genereerige vastavusvalmis aruandeid mis tahes ajavahemiku kohta sekunditega.",
+              "description": "Avage portaali tegevuste leht, filtreerige mis tahes ajavahemik ja eksportige see JSON-ina. Nii saate auditivalmis aruande sekunditega.",
               "icon": "file-text",
               "title": "Aruanda"
             }
@@ -4638,7 +4624,7 @@
         "terminal": {
           "lines": [
             {
-              "text": "rdc audit --from 2026-02-01 --to 2026-02-27",
+              "text": "jq -r '.events[]' audit-export.json",
               "type": "command"
             },
             {
@@ -6119,7 +6105,7 @@
           "title": "Mida saate"
         },
         "bottomCta": {
-          "command": "rdc audit log --limit 50",
+          "command": "rdc config show",
           "ctaText": "Alusta tasuta Community väljaandega",
           "description": "Alustage tasuta Community väljaandega. Käivitage oma esimene võtmehalduse audit alla minuti jooksul.",
           "title": "Lõpetage oma andmete rentimise USA jurisdiktsiooni all olevalt teenusepakkujalt."
@@ -6525,7 +6511,7 @@
         "terminal": {
           "lines": [
             {
-              "text": "rdc audit log --limit 50",
+              "text": "jq -r '.keys[]' key-custody-report.json",
               "type": "command"
             },
             {
@@ -13586,39 +13572,10 @@
           "content": [
             "ELi isikuandmete kaitse üldmääruse (GDPR) ja ePrivacy direktiivi kohaselt sõltub meie telemetria kogumise õiguslik alus toote kontekstist:",
             "<strong>Veebirakenduse</strong> jaoks (brauseripõhine): telemetriat kogutakse <strong>õiguspärase huvi</strong> alusel (GDPR art. 6(1)(f)) teenuse kvaliteedi säilitamise ja parandamise eesmärgil. Saate igal ajal loobuda.",
-            "<strong>CLI, vahevara ja silla</strong> jaoks (paigaldatud teie infrastruktuurile): telemetriat kogutakse <strong>õiguspärase huvi</strong> alusel selgete loobumismehhanismide pakkumisega. Saate telemetria keelata enne andmete saatmist.",
-            "Selgesõnalist nõusolekut nõudvate jurisdiktsioonide kasutajatele (nt Lõuna-Korea PIPA kohaselt) tuleks telemetria sõnaselgelt toote konfiguratsiooni kaudu lubada enne andmete edastamist."
+            "<strong>CLI, vahevara ja silla</strong> jaoks (paigaldatud teie infrastruktuurile): telemetriat kogutakse <strong>õiguspärase huvi</strong> alusel selgete loobumismehhanismide pakkumisega. Saate telemetria keelata enne andmete saatmist."
           ],
           "id": "legal-basis",
           "title": "3. Kogumise õiguslik alus"
-        },
-        "middleware": {
-          "content": [
-            "Rediacc vahevara kogub operatiivset telemetriat. Telemetria edastatakse aadressile <code>rediacc.com</code>."
-          ],
-          "id": "middleware",
-          "subsections": {
-            "middlewareDataCollected": {
-              "content": ["Vahevara kogub järgmiseid andmekategooriaid:"],
-              "items": [
-                "<strong>Süsteemi teave:</strong> hostinimi, operatsioonisüsteemi versioon, .NET käitusversiooni versioon",
-                "<strong>API kutsed:</strong> HTTP meetod, lõpp-punkti tee, vastuse olekukood, päringu kestus",
-                "<strong>Andmebaasi toimingud:</strong> salvestatud protseduuri nimi, täitmise kestus, tagastatud ridade arv (päringu sisu, parameetreid ega tulemuse andmeid ei koguta)",
-                "<strong>Autentimise sündmused:</strong> ainult räsitud kasutajatunnus - kasutajatunnused räsitatakse SHA-256-ga ja soolaga, seejärel lühendatakse esimese 12 märgini. Algset kasutajatunnust ei edastata kunagi.",
-                "<strong>Tervisekontrollid:</strong> teenuse komponendi kättesaadavuse olek ja reageerimisajad",
-                "<strong>Rakenduse elutsükkel:</strong> käivitamise, sulgemise ja konfiguratsiooni muutmise sündmused",
-                "<strong>Vea teave:</strong> vea tüüp, veateade ja operatiivne kontekst"
-              ],
-              "title": "6.1 Kogutavad andmed"
-            },
-            "middlewareOptOut": {
-              "content": [
-                "Seadistage <code>Telemetry:Enabled</code> väärtusele <code>false</code> oma vahevara konfiguratsioonis (appsettings.json või keskkonnaspetsiifiline konfiguratsioon)."
-              ],
-              "title": "6.2 Kuidas loobuda"
-            }
-          },
-          "title": "6. Vahevara telemetria"
         },
         "principles": {
           "content": ["Kogu telemetria kogumine Rediaccis järgib neid põhimõtteid:"],
@@ -13631,48 +13588,6 @@
             "<strong>Koondamine:</strong> Telemetria andmeid analüüsitakse koondatult. Me ei koosta üksikisikute kasutajaprofiilid telemetria põhjal."
           ],
           "title": "2. Meie telemetria põhimõtted"
-        },
-        "webApp": {
-          "content": [
-            "Rediacc veebirakendus kasutab OpenTelemetry-põhist hajutatud jälgimist. Telemetria edastatakse aadressile <code>rediacc.com</code>. Tootmiskeskkonnas proovitakse ainult <strong>10% seanssidest</strong>."
-          ],
-          "id": "web-app",
-          "subsections": {
-            "webDataCollected": {
-              "content": ["Veebirakendus kogub järgmiseid andmekategooriaid:"],
-              "items": [
-                "<strong>Brauseri teave:</strong> brauseri nimi ja versioon, eelistatud keel, platvorm (nt Windows, macOS, Linux), ekraani lahutusvõime, värvügavus, kasutajaagendi string, seadme mälu (kui saadaval), võrguühenduse tüüp",
-                "<strong>Kasutaja kontekst:</strong> seansi ID (juhuslikult genereeritud seansi kohta), ainult e-posti domeen (kohalik osa on muudetud, nt <code>***@example.com</code>), organisatsiooni nimi, meeskonna nimi",
-                "<strong>Leheküljevaatamised ja navigeerimine:</strong> rakenduses külastatud lehed, marsruudi muudatused, viitajalehe teave",
-                "<strong>Kasutaja toimingud:</strong> klõpsud, vormide esitamised, modaalide avamised/sulgemised, otsingupäringud, filtrite muudatused, vahekaartide lülitused, failide allalaadimised (failinimesid ei koguta)",
-                "<strong>API kutsed:</strong> HTTP meetod, URL-i tee, vastuse olekukood, päringu kestus",
-                "<strong>Vead:</strong> vea tüüp, veateade, stack trace (kärbitud 1 000 märgini), vea allikas",
-                "<strong>Jõudluse mõõdikud:</strong> Core Web Vitals (LCP, FID, CLS, TTFB, INP), ressursi ajastus, mälukasutus (proovitakse iga 30 sekundi tagant), pika ülesande tuvastamine",
-                "<strong>Komponendi elutsükkel:</strong> komponendi paigaldamise/eemaldamise ajastus, renderdamise kestus"
-              ],
-              "title": "4.1 Kogutavad andmed"
-            },
-            "webNotCollected": {
-              "content": ["Veebirakendus ei kogu:"],
-              "items": [
-                "Täielikke e-posti aadresse (kohalik osa on alati muudetud)",
-                "Paroole, märgiseid ega autentimisandmeid",
-                "Failide sisu, andmebaaside sisu ega päringu tulemusi",
-                "Vormi väljade väärtusi (registreeritakse ainult vormi esitamise fakt)",
-                "Lõikepuhvri sisu ega klahvivajutusi",
-                "IP-aadresse (meie telemetria lõpp-punkt ei logi neid)"
-              ],
-              "title": "4.2 Andmed, mida EI koguta"
-            },
-            "webOptOut": {
-              "content": [
-                "Seadistage konto seadetes konfiguratsioonilipp <code>userConsent</code> väärtusele <code>false</code>. Telemetria peatub koheselt pärast loobumist.",
-                "<strong>Töölauarakendus:</strong> Telemetria on töölauarakenduses (Electron) vaikimisi täielikult keelatud. Andmeid ei koguta ega edastata."
-              ],
-              "title": "4.3 Kuidas loobuda"
-            }
-          },
-          "title": "4. Veebirakenduse telemetria"
         },
         "yourRights": {
           "content": [

@@ -20,7 +20,7 @@ source "$SCRIPT_DIR/../lib/common.sh"
 
 REPO_ROOT="$(get_repo_root)"
 MIGRATIONS_DIR="$REPO_ROOT/packages/cli/src/schema/migrations"
-FIXTURES_DIR="$REPO_ROOT/packages/cli/tests/fixtures/config"
+FIXTURES_DIR="$REPO_ROOT/packages/cli/src/__tests__/fixtures/config"
 RUNNER="$MIGRATIONS_DIR/index.ts"
 
 ERRORS=0
@@ -70,7 +70,7 @@ import { join } from 'node:path';
 import { runMigrations } from './src/schema/migrations/index.js';
 import { RdcConfigSchema } from './src/schema/schemas.js';
 
-const fixturesDir = 'tests/fixtures/config';
+const fixturesDir = 'src/__tests__/fixtures/config';
 const fixtures = readdirSync(fixturesDir).filter((f) => /^v\d+-sample\.json$/.test(f));
 let failed = 0;
 for (const f of fixtures) {
