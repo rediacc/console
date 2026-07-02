@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-02T07:18:56.063Z",
+  "generatedAt": "2026-07-02T07:24:06.521Z",
   "baseUrl": "https://media.rediacc.com",
   "tutorials": {
     "tutorial-add-server": {
@@ -1753,7 +1753,7 @@
         "vtt": {
           "path": "tutorials/video/zh/tutorial-delta-transfer.zh.vtt",
           "size": 3076,
-          "sha256": "3ae5acce5d5eefc5470a97491549f1ad99cc8b497f7e27b37a990eec35a20cc5"
+          "sha256": "b235cb6b3ab9d30834ab98bed1101c83f5fec15715980352821128cd6e0a8dbf"
         },
         "chaptersVtt": {
           "path": "tutorials/video/zh/tutorial-delta-transfer.zh.chapters.vtt",
@@ -1762,8 +1762,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/zh/tutorial-delta-transfer.zh.words.json",
-          "size": 22075,
-          "sha256": "6886e3ab191bec34c237edd89075dc9c2999a1b025e6d6c49b4c641c06ce554e"
+          "size": 22481,
+          "sha256": "d3145693ec0f159b59e656885a19d72d87dfd9bb09e35243956957dfa2960d46"
         }
       }
     },
@@ -2812,7 +2812,7 @@
         "vtt": {
           "path": "tutorials/video/zh/tutorial-forking.zh.vtt",
           "size": 4936,
-          "sha256": "d8da7873ba3411f03c0ffbce10826e9e5e8b21d179966d034e831dcdf6b9a341"
+          "sha256": "2c56145c147222211eb92b4472886a708947df6c23bd427031cccd427f997a90"
         },
         "chaptersVtt": {
           "path": "tutorials/video/zh/tutorial-forking.zh.chapters.vtt",
@@ -2821,8 +2821,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/zh/tutorial-forking.zh.words.json",
-          "size": 35366,
-          "sha256": "ae65b7cdc8cc7cedee8b9fb6ec83638e7cefa4a61348f768ecc25bbf0cf142b1"
+          "size": 35552,
+          "sha256": "f9f3006426ae3750c648218dc1da2cf7b4485b31dee47d1b50635ea65880052c"
         }
       }
     },
