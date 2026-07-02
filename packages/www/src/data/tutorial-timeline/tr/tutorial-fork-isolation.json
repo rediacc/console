@@ -1,0 +1,109 @@
+{
+  "cast": "/assets/tutorials/tutorial-fork-isolation.cast",
+  "language": "tr",
+  "version": 1,
+  "steps": [
+    {
+      "id": "tutorial-fork-isolation-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.412666,
+      "replayEndSec": 8.155445,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-01.a2636a4a.mp3",
+      "audioDurationSec": 7.157551,
+      "textHash": "a2636a4a646946bcb342235e1f3db6a628354cfa6fd108400ae9225cc7a0d078",
+      "narrationText": "Uygulamayla tanışın: demo-pgadmin, pgAdmin arayüzlü bir PostgreSQL; mount edilmiş ve çalışıyor.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-01-after.27f00449.mp3",
+      "afterAudioDurationSec": 1.880816,
+      "afterTextHash": "27f00449a715807dd2e1700087f61961c2f1c785f785585889b5a92a19b81f1f"
+    },
+    {
+      "id": "tutorial-fork-isolation-02",
+      "markerIndex": 1,
+      "replayStartSec": 8.155445,
+      "replayEndSec": 19.24953,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-02.4e3625a4.mp3",
+      "audioDurationSec": 10.266122,
+      "textHash": "4e3625a41e9ade01f2616bc98f77faac12642b1fd721e997c137429306b38700",
+      "narrationText": "Fork'layın. Copy-on-write klon, boyut fark etmeksizin saniyeler sürer; detach, container'lar başlar başlamaz döner, sağlık kontrolleri ise arka planda sürer.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-02-after.6761f936.mp3",
+      "afterAudioDurationSec": 5.564082,
+      "afterTextHash": "6761f9366b0a414afb5e2ef29296238c3e15c6739df99b1a0fe6460b71d09baf"
+    },
+    {
+      "id": "tutorial-fork-isolation-03",
+      "markerIndex": 2,
+      "replayStartSec": 19.24953,
+      "replayEndSec": 24.926391,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-03.ef21da1c.mp3",
+      "audioDurationSec": 6.347755,
+      "textHash": "ef21da1c52e9db0870054d3b9ad5504d69be1e2bc5153b8226d37209954bb67e",
+      "narrationText": "Artık iki repository var: orijinal ve deney, her biri kendi container'ları, ağı ve disk görünümüyle.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-03-after.7379fe76.mp3",
+      "afterAudioDurationSec": 3.239184,
+      "afterTextHash": "7379fe760c51bf45417d5de0e44b7a87c630d7efb5e0add9562628cec58f38c3"
+    },
+    {
+      "id": "tutorial-fork-isolation-04",
+      "markerIndex": 3,
+      "replayStartSec": 24.926391,
+      "replayEndSec": 32.437755,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-04.5eee7a7f.mp3",
+      "audioDurationSec": 9.090612,
+      "textHash": "5eee7a7f529dcaea0c960477435b36d94974c2998b0af5db1f98442d6267b1e3",
+      "narrationText": "Deneme bitti mi? Fork'u silin. Oluşturması saniyeler sürdü, atması da öyle; orijinalin bundan hiç haberi olmadı.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-04-after.49e877ac.mp3",
+      "afterAudioDurationSec": 2.76898,
+      "afterTextHash": "49e877ac7400aed68db2565db34b185f01f4c2e745a717563af4494516bc2d75"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/intro.647d4b3a.mp3",
+      "textHash": "647d4b3ab1e6b65b8b996d2519012d4926c719b9231b01db974c2e315c95a2b2",
+      "audioDurationSec": 12.512653,
+      "narrationText": "Tekrar hoş geldiniz! Geçen seferinde fork komutlarını gördünüz. Şimdi bunların gerçekte ne anlama geldiğini izleyelim: canlı bir veritabanı uygulaması, saniyeler içinde kopyalanıyor, özgürce düzenleniyor, orijinal ise hiçbir şeyden habersiz."
+    },
+    {
+      "id": "what-is-a-fork",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/what-is-a-fork.058eab6a.mp3",
+      "textHash": "058eab6a17e8f463f5a5a22e504ecc7a13911806ec33c9fb6bb54bbc1061d997",
+      "audioDurationSec": 15.56898,
+      "narrationText": "İşte kurulum: sunucuda canlı çalışan, üzerinde pgAdmin arayüzü olan gerçek bir PostgreSQL. Fork, bunun tamamının anında copy-on-write ikizdir. Doğumda aynı veri, sonrasında tamamen ayrı yaşamlar."
+    },
+    {
+      "id": "grand-pgadmin",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/grand-pgadmin.6a4e53ae.mp3",
+      "textHash": "6a4e53ae1840cf4daac72230b1d5bef511167d782875f31d09ef440a7767106f",
+      "audioDurationSec": 14.994286,
+      "narrationText": "İşte tarayıcıdaki orijinal. pgAdmin bir giriş istiyor, çünkü bu üretim kopyası ve üretim korumalı kalıyor."
+    },
+    {
+      "id": "fork-pgadmin",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/fork-pgadmin.b10a9105.mp3",
+      "textHash": "b10a910580b42eafdba7dfdd4ccc4d9b654728622f139cd6ae43bec68c5fba4d",
+      "audioDurationSec": 14.106122,
+      "narrationText": "Ve işte fork'un pgAdmin'i. Bu sefer giriş yok: fork'lar tek kullanımlık sandbox'lardır, bu yüzden kapı kenara çekilir. Aynı tablolar, aynı satırlar ama kendi evreni."
+    },
+    {
+      "id": "side-by-side",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/side-by-side.a2fdf702.mp3",
+      "textHash": "a2fdf7024c426ccbc8cc7cb83120a78d9dea1bd5945c774924b29e438857fc1f",
+      "audioDurationSec": 21.159184,
+      "narrationText": "Şimdi yan yana: solda fork, sağda orijinal. Soldakini düzenleyin, silin, bozun, sağdaki hiç kıpırdamaz. Gözle görülür bir izolasyon bu."
+    },
+    {
+      "id": "next-tutorial",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/next-tutorial.8494e35b.mp3",
+      "textHash": "8494e35be5524d161d68b4c5154262110478ff6059c1350551ec86d073538395",
+      "audioDurationSec": 9.717551,
+      "narrationText": "Yani özgürce fork'layın, üretim zarar göremez. Sırada secrets var, fork'larınızın kasıtlı olarak devralmadığı tek şey. Orada görüşürüz!"
+    }
+  ],
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "d2e775ace5867c8812ae0b5e4ec23d0dddc4bc7e4da87418b96e4349832a64b3"
+}

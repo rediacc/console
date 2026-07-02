@@ -613,7 +613,7 @@
         },
         {
           "startSec": 5.12,
-          "endSec": 5.36,
+          "endSec": 5.44,
           "startChar": 87,
           "endChar": 91
         }
@@ -678,7 +678,7 @@
       "wordTimings": [
         {
           "startSec": 0.08,
-          "endSec": 0.16,
+          "endSec": 0.24,
           "startChar": 0,
           "endChar": 3
         },
@@ -732,19 +732,37 @@
         },
         {
           "startSec": 2.24,
-          "endSec": 2.8,
+          "endSec": 2.88,
           "startChar": 42,
           "endChar": 48
         },
         {
           "startSec": 3.04,
           "endSec": 3.36,
-          "startChar": 66,
-          "endChar": 69
+          "startChar": 50,
+          "endChar": 53
         },
         {
           "startSec": 3.36,
           "endSec": 3.68,
+          "startChar": 54,
+          "endChar": 61
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.92,
+          "startChar": 62,
+          "endChar": 64
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.32,
+          "startChar": 66,
+          "endChar": 69
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.64,
           "startChar": 70,
           "endChar": 77
         },

@@ -7,7 +7,7 @@
       "id": "tutorial-storage-management-01",
       "markerIndex": 0,
       "at": 2.410441,
-      "text": "Fill the repository most of the way and check: the filesystem is getting tight.",
+      "text": "Riempi il repository quasi fino al limite e controlla: il filesystem inizia a stringere.",
       "afterText": "Quasi pieno. È ora di crescere.",
       "cardLabel": "Riempimento",
       "prose": "Riempi il repository con dati fino a quando il filesystem non è quasi saturo."
@@ -16,7 +16,7 @@
       "id": "tutorial-storage-management-02",
       "markerIndex": 1,
       "at": 12.69586,
-      "text": "Grow it online. The encrypted container and the filesystem expand while the containers keep running — zero downtime, zero unmount.",
+      "text": "Fallo crescere online. Il container cifrato e il filesystem si espandono mentre i container restano in esecuzione: zero downtime, zero smontaggi.",
       "afterText": "Quattro gigabyte ora. Niente è stato riavviato.",
       "cardLabel": "Espandi Online",
       "prose": "Espandi il repository online: il container LUKS e il filesystem crescono con i container in esecuzione."
@@ -25,7 +25,7 @@
       "id": "tutorial-storage-management-03",
       "markerIndex": 2,
       "at": 19.886575,
-      "text": "Verify from inside: same volume, double the room.",
+      "text": "Verifica dall'interno: stesso volume, il doppio dello spazio.",
       "afterText": "L'app non se n'è mai accorta.",
       "cardLabel": "Verifica Dimensione",
       "prose": "Controlla il filesystem dall'interno del repo: la nuova dimensione è attiva."
@@ -34,7 +34,7 @@
       "id": "tutorial-storage-management-04",
       "markerIndex": 3,
       "at": 26.982758,
-      "text": "Now the other direction. Delete the big file — but watch: the pool does not get the space back yet. Deleted blocks stay reserved inside the image.",
+      "text": "Ora la direzione opposta. Elimina il file grande, ma guarda: il pool non recupera subito lo spazio. I blocchi eliminati restano riservati dentro l'immagine.",
       "afterText": "Liberato all'interno del repo, ancora di proprietà dell'immagine.",
       "cardLabel": "Elimina Dati",
       "prose": "Elimina i dati all'interno del repository: nota che il pool non si riduce ancora."
@@ -43,7 +43,7 @@
       "id": "tutorial-storage-management-05",
       "markerIndex": 4,
       "at": 33.464064,
-      "text": "Trim hands those blocks back to the datastore pool, online. This is the step most setups forget.",
+      "text": "Il trim restituisce quei blocchi al pool del datastore, online. È il passaggio che quasi tutti dimenticano.",
       "afterText": "Recuperato. Il pool può respirare di nuovo.",
       "cardLabel": "Trim",
       "prose": "Esegui il trim del repo per restituire i blocchi liberati al pool condiviso: online, senza interruzioni."
@@ -52,7 +52,7 @@
       "id": "tutorial-storage-management-06",
       "markerIndex": 5,
       "at": 40.097562,
-      "text": "Now stop doing this by hand. The policy enables automatic growth up to a ceiling you choose, plus scheduled trims.",
+      "text": "Ora smetti di farlo a mano. La policy abilita la crescita automatica fino a un limite che scegli tu, più trim pianificati.",
       "afterText": "Policy salvata. La macchina prende il controllo da qui.",
       "cardLabel": "Imposta Policy",
       "prose": "Imposta una policy di dimensione: crescita automatica con un limite esplicito, più trim pianificato."
@@ -61,7 +61,7 @@
       "id": "tutorial-storage-management-07",
       "markerIndex": 6,
       "at": 50.538253,
-      "text": "Read it back: auto-grow on, ceiling at eight gigabytes, trim on a schedule.",
+      "text": "Rileggila: crescita automatica attiva, limite a otto gigabyte, trim a calendario.",
       "afterText": "Impostato una volta, dimenticato in sicurezza.",
       "cardLabel": "Verifica Policy",
       "prose": "Rileggi la policy effettiva: crescita e trim sono ora automatici."
@@ -70,7 +70,7 @@
       "id": "tutorial-storage-management-08",
       "markerIndex": 7,
       "at": 57.423655,
-      "text": "And the view that ties it together: storage health shows every repo's usage, the pool, and how much copy-on-write sharing is saving you.",
+      "text": "E la vista che mette tutto insieme: storage health mostra l'utilizzo di ogni repo, il pool, e quanto ti sta facendo risparmiare la condivisione copy-on-write.",
       "afterText": "Una sola vista: utilizzo, risparmio e spazio per crescere.",
       "cardLabel": "Vista Salute",
       "prose": "Controlla lo stato dello storage della macchina: utilizzo per repo, stato del pool e risparmi CoW reflink."

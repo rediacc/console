@@ -1640,16 +1640,100 @@
           "endChar": 49
         },
         {
-          "startSec": 8.24,
-          "endSec": 8.4,
-          "startChar": 119,
-          "endChar": 120
+          "startSec": 8.4,
+          "endSec": 8.56,
+          "startChar": 52,
+          "endChar": 53
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.8,
+          "startChar": 54,
+          "endChar": 56
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.44,
+          "startChar": 57,
+          "endChar": 61
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.56,
+          "startChar": 63,
+          "endChar": 65
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 10.8,
+          "startChar": 65,
+          "endChar": 66
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 11.12,
+          "startChar": 67,
+          "endChar": 69
+        },
+        {
+          "startSec": 11.12,
+          "endSec": 11.52,
+          "startChar": 70,
+          "endChar": 72
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.92,
+          "startChar": 72,
+          "endChar": 75
+        },
+        {
+          "startSec": 14.4,
+          "endSec": 14.64,
+          "startChar": 96,
+          "endChar": 98
+        },
+        {
+          "startSec": 14.64,
+          "endSec": 15.04,
+          "startChar": 98,
+          "endChar": 100
+        },
+        {
+          "startSec": 15.68,
+          "endSec": 16.16,
+          "startChar": 107,
+          "endChar": 109
+        },
+        {
+          "startSec": 16.16,
+          "endSec": 16.4,
+          "startChar": 110,
+          "endChar": 112
+        },
+        {
+          "startSec": 16.4,
+          "endSec": 16.64,
+          "startChar": 112,
+          "endChar": 114
+        },
+        {
+          "startSec": 16.64,
+          "endSec": 16.96,
+          "startChar": 115,
+          "endChar": 117
         },
         {
           "startSec": 16.96,
+          "endSec": 17.04,
+          "startChar": 117,
+          "endChar": 118
+        },
+        {
+          "startSec": 17.12,
           "endSec": 17.76,
-          "startChar": 120,
-          "endChar": 125
+          "startChar": 119,
+          "endChar": 124
         }
       ]
     }

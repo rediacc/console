@@ -858,6 +858,54 @@
         {
           "startSec": 0.08,
           "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.2,
+          "startChar": 8,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.6,
+          "startChar": 12,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.68,
+          "startChar": 21,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.08,
+          "startChar": 26,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.8,
+          "startChar": 36,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.2,
+          "startChar": 40,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.36,
+          "startChar": 49,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.84,
           "startChar": 54,
           "endChar": 61
         }

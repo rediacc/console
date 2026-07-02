@@ -17,85 +17,103 @@
       "narrationText": "Passo um: listar os templates disponíveis. O Rediacc já vem com configurações prontas para apps comuns, então não é preciso escrever um docker-compose do zero.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-01.4d06959f.mp3",
       "textHash": "4d06959fcfb1078ec4a1b0a8a18b3f8698c0c7b41a2267beb12fd0c118fcca03",
-      "audioDurationSec": 10.370612,
+      "audioDurationSec": 11.650612,
       "wordTimings": [
         {
           "startSec": 0.08,
-          "endSec": 0.48,
+          "endSec": 0.56,
           "startChar": 0,
           "endChar": 5
         },
         {
-          "startSec": 1.6,
-          "endSec": 2.08,
+          "startSec": 0.88,
+          "endSec": 1.44,
+          "startChar": 10,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.68,
+          "startChar": 17,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.24,
           "startChar": 20,
           "endChar": 29
         },
         {
-          "startSec": 2.08,
-          "endSec": 2.8,
+          "startSec": 2.24,
+          "endSec": 3.04,
           "startChar": 30,
           "endChar": 41
         },
         {
-          "startSec": 4.0,
-          "endSec": 4.32,
-          "startChar": 60,
-          "endChar": 63
-        },
-        {
-          "startSec": 4.32,
-          "endSec": 4.88,
+          "startSec": 5.28,
+          "endSec": 6.24,
           "startChar": 64,
           "endChar": 77
         },
         {
-          "startSec": 4.88,
-          "endSec": 5.28,
+          "startSec": 6.24,
+          "endSec": 6.8,
           "startChar": 78,
           "endChar": 85
         },
         {
-          "startSec": 5.76,
-          "endSec": 6.08,
+          "startSec": 6.8,
+          "endSec": 7.12,
           "startChar": 86,
           "endChar": 90
         },
         {
-          "startSec": 6.08,
-          "endSec": 6.24,
-          "startChar": 91,
-          "endChar": 95
-        },
-        {
-          "startSec": 6.24,
-          "endSec": 6.8,
-          "startChar": 96,
-          "endChar": 102
-        },
-        {
-          "startSec": 7.2,
-          "endSec": 7.44,
+          "startSec": 8.32,
+          "endSec": 8.8,
           "startChar": 104,
           "endChar": 109
         },
         {
-          "startSec": 8.08,
-          "endSec": 8.72,
+          "startSec": 8.8,
+          "endSec": 8.96,
+          "startChar": 110,
+          "endChar": 113
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.52,
+          "startChar": 116,
+          "endChar": 123
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 10.0,
           "startChar": 124,
           "endChar": 132
         },
         {
-          "startSec": 8.72,
-          "endSec": 8.96,
+          "startSec": 10.0,
+          "endSec": 10.32,
           "startChar": 133,
           "endChar": 135
         },
         {
-          "startSec": 8.96,
-          "endSec": 10.24,
+          "startSec": 10.32,
+          "endSec": 10.64,
           "startChar": 136,
+          "endChar": 142
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 11.12,
+          "startChar": 143,
           "endChar": 150
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.52,
+          "startChar": 154,
+          "endChar": 158
         }
       ],
       "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-01-after.46255f71.mp3",
@@ -265,6 +283,12 @@
           "endChar": 87
         },
         {
+          "startSec": 6.8,
+          "endSec": 7.6,
+          "startChar": 89,
+          "endChar": 97
+        },
+        {
           "startSec": 7.6,
           "endSec": 8.48,
           "startChar": 98,
@@ -272,7 +296,7 @@
         }
       ],
       "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-02-after.55dfb3c9.mp3",
-      "afterAudioDurationSec": 5.720816,
+      "afterAudioDurationSec": 6.19102,
       "afterTextHash": "55dfb3c92e598fd05b138b1ce081c11c2174d4c0b920bb95cbdca0803aa6efb1",
       "afterWordTimings": [
         {
@@ -282,22 +306,58 @@
           "endChar": 8
         },
         {
-          "startSec": 0.48,
+          "startSec": 0.56,
           "endSec": 1.2,
           "startChar": 9,
           "endChar": 17
         },
         {
-          "startSec": 4.48,
-          "endSec": 4.56,
-          "startChar": 22,
-          "endChar": 23
+          "startSec": 1.84,
+          "endSec": 2.0,
+          "startChar": 19,
+          "endChar": 20
         },
         {
-          "startSec": 5.28,
-          "endSec": 5.6,
-          "startChar": 66,
-          "endChar": 69
+          "startSec": 2.0,
+          "endSec": 2.72,
+          "startChar": 21,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.2,
+          "startChar": 30,
+          "endChar": 35
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.36,
+          "startChar": 36,
+          "endChar": 37
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 4.0,
+          "startChar": 38,
+          "endChar": 46
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.8,
+          "startChar": 47,
+          "endChar": 54
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.36,
+          "startChar": 57,
+          "endChar": 58
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 6.08,
+          "startChar": 59,
+          "endChar": 71
         }
       ]
     },
@@ -439,15 +499,9 @@
         },
         {
           "startSec": 10.56,
-          "endSec": 11.2,
+          "endSec": 11.36,
           "startChar": 124,
           "endChar": 135
-        },
-        {
-          "startSec": 11.2,
-          "endSec": 11.36,
-          "startChar": 136,
-          "endChar": 138
         },
         {
           "startSec": 11.36,
@@ -461,10 +515,10 @@
       "afterTextHash": "8edc2cc76c298949f60dc44560c8b198f9b0ea2293ac7aff9a4240b5fc87c5cb",
       "afterWordTimings": [
         {
-          "startSec": 0.64,
+          "startSec": 0.08,
           "endSec": 0.88,
-          "startChar": 12,
-          "endChar": 14
+          "startChar": 0,
+          "endChar": 11
         },
         {
           "startSec": 0.88,
@@ -533,39 +587,51 @@
           "endChar": 10
         },
         {
-          "startSec": 2.88,
-          "endSec": 3.04,
-          "startChar": 28,
-          "endChar": 30
-        },
-        {
           "startSec": 3.04,
           "endSec": 3.52,
           "startChar": 31,
           "endChar": 38
         },
         {
-          "startSec": 3.52,
-          "endSec": 3.6,
-          "startChar": 74,
-          "endChar": 76
+          "startSec": 3.6,
+          "endSec": 3.76,
+          "startChar": 44,
+          "endChar": 47
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.72,
+          "startChar": 48,
+          "endChar": 53
         },
         {
           "startSec": 4.72,
           "endSec": 4.88,
-          "startChar": 85,
-          "endChar": 86
+          "startChar": 54,
+          "endChar": 55
         },
         {
-          "startSec": 7.28,
+          "startSec": 4.88,
+          "endSec": 5.36,
+          "startChar": 56,
+          "endChar": 62
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 6.4,
+          "startChar": 63,
+          "endChar": 76
+        },
+        {
+          "startSec": 6.72,
           "endSec": 7.36,
-          "startChar": 88,
-          "endChar": 89
+          "startChar": 78,
+          "endChar": 84
         },
         {
           "startSec": 7.36,
           "endSec": 7.76,
-          "startChar": 89,
+          "startChar": 87,
           "endChar": 93
         },
         {
@@ -1091,10 +1157,10 @@
           "endChar": 39
         },
         {
-          "startSec": 4.08,
+          "startSec": 3.36,
           "endSec": 4.4,
-          "startChar": 51,
-          "endChar": 53
+          "startChar": 41,
+          "endChar": 50
         },
         {
           "startSec": 4.4,
@@ -1208,10 +1274,10 @@
       "audioDurationSec": 19.330612,
       "wordTimings": [
         {
-          "startSec": 0.56,
-          "endSec": 1.36,
-          "startChar": 15,
-          "endChar": 16
+          "startSec": 1.92,
+          "endSec": 2.48,
+          "startChar": 11,
+          "endChar": 17
         },
         {
           "startSec": 2.72,

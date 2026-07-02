@@ -7,8 +7,8 @@
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
       "at": 1.617466,
-      "text": "Passo uno. Generiamo una nuova chiave SSH ed25519. ed25519 e' il formato moderno consigliato: compatto, veloce e ampiamente supportato. Devi farlo una sola volta per tutti i server che aggiungerai.",
-      "afterText": "Chiave generata. La meta' pubblica e' quella che copieremo sul server.",
+      "text": "Passo uno. Generiamo una nuova chiave SSH ed25519. ed25519 è il formato moderno consigliato: compatto, veloce e ampiamente supportato. Devi farlo una sola volta per tutti i server che aggiungerai.",
+      "afterText": "Chiave generata. La meta' pubblica è quella che copieremo sul server.",
       "cardLabel": "Genera Chiave",
       "prose": "Genera una nuova chiave SSH sul tuo laptop. Ed25519 è sicuro, compatto e ampiamente supportato. Eseguilo una volta sola; la stessa chiave funziona su ogni server. Si tratta di SSH standard e non ha nulla a che fare con rdc.",
       "afterProse": "Chiave generata. La parte pubblica è quella che viene copiata su ogni server."
@@ -17,7 +17,7 @@
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
       "at": 6.370674,
-      "text": "Passo due. Copiamo la chiave pubblica sul server con ssh-copy-id. La password del server viene richiesta per l'ultima volta. Da questo momento, l'autenticazione con password non e' piu' necessaria per quel server.",
+      "text": "Passo due. Copiamo la chiave pubblica sul server con ssh-copy-id. La password del server viene richiesta per l'ultima volta. Da questo momento, l'autenticazione con password non è piu' necessaria per quel server.",
       "afterText": "Eseguilo sul tuo laptop. Una volta riuscito, le password sono fuori discussione.",
       "cardLabel": "Autorizza Server 1",
       "prose": "Autorizza la chiave sul tuo primo server con ssh-copy-id. Aggiunge la tua chiave pubblica al file authorized_keys del server, così i login successivi non richiedono la password."
@@ -43,7 +43,7 @@
     },
     {
       "id": "next-tutorial",
-      "text": "La chiave e' registrata e la CLI e' pronta a partire. Nel prossimo aggiungeremo il tuo primo server."
+      "text": "La chiave è registrata e la CLI è pronta a partire. Nel prossimo aggiungeremo il tuo primo server."
     }
   ],
   "title": "Configurazione Chiave SSH",

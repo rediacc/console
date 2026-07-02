@@ -7,7 +7,7 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "355627214ea5df7cbd71f32447017251496eefdff86caafd00b855993bf00b2f",
+  "transcriptHash": "de74b82e4b980cc28d0d9222685dbadda77a16f624c9a14a377aa6ab7af1e0bc",
   "steps": [
     {
       "id": "tutorial-production-mode-01",
@@ -444,10 +444,10 @@
       "markerIndex": 2,
       "replayStartSec": 18.718543,
       "replayEndSec": 25.169818,
-      "narrationText": "Elenchiamo i repository con l'avvio automatico abilitato. Conferma che la nostra app e' ora nella lista di avvio.",
-      "audioSrc": "/assets/tutorials/audio/it/tutorial-production-mode/tutorial-production-mode-03.13803a94.mp3",
-      "textHash": "13803a94eb4c823ff7526dc4c50494e2c882787a9e10ef556808e1a99e31ec76",
-      "audioDurationSec": 7.392653,
+      "narrationText": "Elenchiamo i repository con l'avvio automatico abilitato. Conferma che la nostra app è ora nella lista di avvio.",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-production-mode/tutorial-production-mode-03.82929f83.mp3",
+      "textHash": "82929f83ad583f52bce23b8fd39076093c180b71f05a43cc99597ed9f3dcddf4",
+      "audioDurationSec": 7.157551,
       "wordTimings": [
         {
           "startSec": 0.08,
@@ -456,46 +456,100 @@
           "endChar": 10
         },
         {
-          "startSec": 0.64,
-          "endSec": 1.44,
+          "startSec": 0.72,
+          "endSec": 1.52,
           "startChar": 13,
           "endChar": 23
         },
         {
-          "startSec": 1.44,
-          "endSec": 1.68,
+          "startSec": 1.52,
+          "endSec": 1.76,
           "startChar": 24,
           "endChar": 27
         },
         {
-          "startSec": 1.68,
-          "endSec": 1.76,
+          "startSec": 1.76,
+          "endSec": 2.16,
+          "startChar": 28,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.8,
+          "startChar": 36,
+          "endChar": 46
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.76,
+          "startChar": 47,
+          "endChar": 56
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.32,
+          "startChar": 58,
+          "endChar": 66
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.48,
+          "startChar": 67,
+          "endChar": 70
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.56,
           "startChar": 71,
           "endChar": 73
         },
         {
-          "startSec": 4.4,
-          "endSec": 4.56,
-          "startChar": 95,
-          "endChar": 97
+          "startSec": 4.56,
+          "endSec": 4.96,
+          "startChar": 74,
+          "endChar": 80
         },
         {
-          "startSec": 6.56,
-          "endSec": 6.88,
-          "startChar": 98,
-          "endChar": 103
+          "startSec": 4.96,
+          "endSec": 5.36,
+          "startChar": 81,
+          "endChar": 84
         },
         {
-          "startSec": 6.88,
-          "endSec": 6.96,
-          "startChar": 104,
-          "endChar": 106
+          "startSec": 5.52,
+          "endSec": 5.76,
+          "startChar": 85,
+          "endChar": 86
         },
         {
-          "startSec": 6.96,
-          "endSec": 7.36,
-          "startChar": 107,
-          "endChar": 112
+          "startSec": 5.84,
+          "endSec": 6.08,
+          "startChar": 87,
+          "endChar": 90
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.32,
+          "startChar": 91,
+          "endChar": 96
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.64,
+          "startChar": 97,
+          "endChar": 102
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 6.72,
+          "startChar": 103,
+          "endChar": 105
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.04,
+          "startChar": 106,
+          "endChar": 111
         }
       ],
       "afterAudioSrc": "/assets/tutorials/audio/it/tutorial-production-mode/tutorial-production-mode-03-after.e01eff1c.mp3",

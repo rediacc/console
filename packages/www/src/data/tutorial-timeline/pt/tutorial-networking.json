@@ -1552,10 +1552,58 @@
           "endChar": 81
         },
         {
-          "startSec": 7.84,
-          "endSec": 8.4,
-          "startChar": 157,
-          "endChar": 160
+          "startSec": 8.96,
+          "endSec": 9.28,
+          "startChar": 98,
+          "endChar": 103
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 10.24,
+          "startChar": 111,
+          "endChar": 119
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.44,
+          "startChar": 122,
+          "endChar": 128
+        },
+        {
+          "startSec": 11.44,
+          "endSec": 11.92,
+          "startChar": 129,
+          "endChar": 137
+        },
+        {
+          "startSec": 11.92,
+          "endSec": 12.24,
+          "startChar": 138,
+          "endChar": 140
+        },
+        {
+          "startSec": 12.24,
+          "endSec": 12.64,
+          "startChar": 141,
+          "endChar": 145
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 12.8,
+          "startChar": 146,
+          "endChar": 148
+        },
+        {
+          "startSec": 12.88,
+          "endSec": 13.28,
+          "startChar": 149,
+          "endChar": 154
+        },
+        {
+          "startSec": 13.28,
+          "endSec": 13.84,
+          "startChar": 155,
+          "endChar": 162
         },
         {
           "startSec": 14.4,
@@ -1801,8 +1849,26 @@
           "endChar": 174
         },
         {
-          "startSec": 14.88,
-          "endSec": 15.36,
+          "startSec": 16.08,
+          "endSec": 16.24,
+          "startChar": 202,
+          "endChar": 204
+        },
+        {
+          "startSec": 16.8,
+          "endSec": 17.36,
+          "startChar": 205,
+          "endChar": 208
+        },
+        {
+          "startSec": 17.84,
+          "endSec": 18.16,
+          "startChar": 210,
+          "endChar": 215
+        },
+        {
+          "startSec": 18.24,
+          "endSec": 18.48,
           "startChar": 216,
           "endChar": 220
         },

@@ -1433,6 +1433,30 @@
         {
           "startSec": 0.0,
           "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.88,
+          "startChar": 8,
+          "endChar": 17
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.6,
+          "startChar": 18,
+          "endChar": 29
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.48,
+          "startChar": 30,
+          "endChar": 43
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.96,
           "startChar": 44,
           "endChar": 51
         },

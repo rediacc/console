@@ -7,7 +7,7 @@
       "id": "tutorial-fork-isolation-01",
       "markerIndex": 0,
       "at": 2.412666,
-      "text": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "text": "先看看这个应用：demo-pgadmin，一个带 pgAdmin 界面的 PostgreSQL，已经挂载并运行中。",
       "afterText": "一个运行中的 repo。来克隆它吧。",
       "cardLabel": "实时应用",
       "prose": "从一个实时 repository 开始：机器上运行着 PostgreSQL 数据库和 pgAdmin。"
@@ -16,7 +16,7 @@
       "id": "tutorial-fork-isolation-02",
       "markerIndex": 1,
       "at": 8.155445,
-      "text": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "text": "Fork 它。写时复制克隆只需几秒，无论多大；容器一启动 detach 就立即返回，健康检查则在后台继续进行。",
       "afterText": "已 fork，正在启动。数据没有被复制，而是被共享，直到某一方修改它为止。",
       "cardLabel": "Fork + 启动",
       "prose": "使用 --up --detach fork 该 repository：CoW 克隆几乎瞬间完成，fork 的服务立即启动。"
@@ -25,7 +25,7 @@
       "id": "tutorial-fork-isolation-03",
       "markerIndex": 2,
       "at": 19.24953,
-      "text": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "text": "现在有两个 repository：原始的和用来实验的，各自拥有独立的容器、网络和磁盘视图。",
       "afterText": "同一台机器，两个隔离的世界。",
       "cardLabel": "并排运行",
       "prose": "列出 repository：原始 repository 与 fork 并排运行，完全隔离。"
@@ -34,7 +34,7 @@
       "id": "tutorial-fork-isolation-04",
       "markerIndex": 3,
       "at": 24.926391,
-      "text": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "text": "实验做完了？删掉 fork。几秒创建，几秒丢弃，原始 repo 从头到尾都不知道它存在过。",
       "afterText": "已删除。原始版本在整个过程中始终保持正常服务。",
       "cardLabel": "删除 Fork",
       "prose": "完成后删除 fork，原始 repository 保持不变。"

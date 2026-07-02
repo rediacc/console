@@ -7,7 +7,7 @@
       "id": "tutorial-vscode-browser-01",
       "markerIndex": 0,
       "at": 2.414862,
-      "text": "One command. The CLI installs the editor server on the machine once, starts it inside the repo sandbox, opens a tunnel, and hands you a link. No local VS Code, no extensions to set up.",
+      "text": "Un solo comando. La CLI installa il server dell'editor sulla macchina una volta sola, lo avvia dentro il sandbox del repo, apre un tunnel e ti consegna un link. Niente VS Code locale, niente estensioni da configurare.",
       "afterText": "Quell'URL è il tuo editor. Funziona da qualsiasi OS, l'unico requisito è un browser.",
       "cardLabel": "Connetti Browser",
       "prose": "Connetti con il flag --browser. La CLI installa il server editor open-source sulla macchina (una sola volta), lo avvia all'interno del sandbox del repo, apre un tunnel SSH e stampa un link per il tuo browser."
@@ -16,7 +16,7 @@
       "id": "tutorial-vscode-browser-02",
       "markerIndex": 1,
       "at": 12.531234,
-      "text": "Same repo from the plain terminal: the working directory is the repo, the files are the repo's files.",
+      "text": "Stesso repo dal terminal semplice: la directory di lavoro è il repo, i file sono i file del repo.",
       "afterText": "Il terminal e l'editor concordano: è lo stesso sandbox.",
       "cardLabel": "Stessa Vista",
       "prose": "Apri una sessione terminal nello stesso repo: la directory di lavoro e i file corrispondono a ciò che mostra l'editor."
@@ -25,16 +25,16 @@
       "id": "tutorial-vscode-browser-03",
       "markerIndex": 2,
       "at": 19.464899,
-      "text": "And the file we created in the browser editor? Right here. Files made in VS Code are real repo files, instantly.",
+      "text": "E il file che abbiamo creato nell'editor del browser? Eccolo qui. I file creati in VS Code sono veri file del repo, all'istante.",
       "afterText": "Creato nel browser, leggibile dal terminal. Un solo repo, due porte.",
-      "cardLabel": "Round Trip",
+      "cardLabel": "Andata e Ritorno",
       "prose": "Il file creato nell'editor del browser è un vero file del repo, leggibile da qualsiasi sessione."
     },
     {
       "id": "tutorial-vscode-browser-04",
       "markerIndex": 3,
       "at": 26.768996,
-      "text": "Now try to leave. Listing the root of the server: permission denied. The kernel scopes the editor, its terminal, and every child process to this repo.",
+      "text": "Ora prova a uscire. Elenca la root del server: permission denied. Il kernel confina l'editor, il suo terminal e ogni processo figlio dentro questo repo.",
       "afterText": "Negato dal kernel, non dalla configurazione.",
       "cardLabel": "Root Negato",
       "prose": "Prova a elencare la directory root del server: accesso negato. Il kernel limita la sessione al repo."
@@ -43,7 +43,7 @@
       "id": "tutorial-vscode-browser-05",
       "markerIndex": 4,
       "at": 32.439211,
-      "text": "Other users' homes? Also denied. Whatever runs inside this sandbox — editors, terminals, build tools — ends at the repo's walls.",
+      "text": "Le home degli altri utenti? Negate anche quelle. Qualsiasi cosa giri dentro questo sandbox, editor, terminal, strumenti di build, si ferma ai confini del repo.",
       "afterText": "Il sandbox non ha eccezioni. Questo è il punto.",
       "cardLabel": "Home Negato",
       "prose": "Anche altre directory come /home sono negate: il sandbox si applica a tutto ciò che viene avviato al suo interno."

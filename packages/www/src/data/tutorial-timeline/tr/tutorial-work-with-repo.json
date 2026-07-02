@@ -1,0 +1,95 @@
+{
+  "cast": "/assets/tutorials/tutorial-work-with-repo.cast",
+  "language": "tr",
+  "version": 1,
+  "steps": [
+    {
+      "id": "tutorial-work-with-repo-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.414306,
+      "replayEndSec": 10.610488,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-01.27a11bdb.mp3",
+      "audioDurationSec": 11.075918,
+      "textHash": "27a11bdba2d0520778d21d95003d9a12f69a7895ff31a7703b9763359f4f1352",
+      "narrationText": "Önce tunnel komutu. Uygulama sunucuda çalışıyor, dizüstü bilgisayarınızda değil. Tünel komutu, bir container'ın portunu SSH üzerinden yönlendirir; tarayıcınızda localhost adresinde açabilirsiniz.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-01-after.9d140616.mp3",
+      "afterAudioDurationSec": 3.474286,
+      "afterTextHash": "9d140616e38a9d0ea0574f4b6fdaefe756cf3b949b44ad1f6814fc08f8a0f789"
+    },
+    {
+      "id": "tutorial-work-with-repo-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.610488,
+      "replayEndSec": 17.555154,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-02.aab6bbcf.mp3",
+      "audioDurationSec": 13.400816,
+      "textHash": "aab6bbcfd6deb10f891a8c6bb14b31ba759d4839102746ead62730800c8ad6bb",
+      "narrationText": "İkinci olarak term komutu. Terminal bağlantı komutu sizi doğrudan deponun sandbox'ına bırakır; VS Code'un sağlayacağı izole görünümün aynısı. Terminalden hiç çıkmadan bu depoya ait Docker daemon'a karşı herhangi bir komut çalıştırabilirsiniz.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-02-after.83b74d9b.mp3",
+      "afterAudioDurationSec": 4.362449,
+      "afterTextHash": "83b74d9b337e39917159361f463526846b42a06c282add5ddc2ca7f5bf6cb780"
+    },
+    {
+      "id": "tutorial-work-with-repo-03",
+      "markerIndex": 2,
+      "replayStartSec": 17.555154,
+      "replayEndSec": 24.76977,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-03.bac87e7c.mp3",
+      "audioDurationSec": 9.247347,
+      "textHash": "bac87e7cc11b0179c9e91e5d0345fb35ef5656d980bf01e014df35000349068a",
+      "narrationText": "Dosya göndermeden önce --dry-run ile önizleme yapın. Hiçbir şeyi kopyalamadan tam olarak neyin değişeceğini gösterir. Emin olmadığınızda her zaman önizleme yapın.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-03-after.6e025361.mp3",
+      "afterAudioDurationSec": 2.429388,
+      "afterTextHash": "6e025361972ec725111b3f2432be40986d347bb3c5dc18a09b88998a8feccab3"
+    },
+    {
+      "id": "tutorial-work-with-repo-04",
+      "markerIndex": 3,
+      "replayStartSec": 24.76977,
+      "replayEndSec": 31.479627,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-04.5df2e073.mp3",
+      "audioDurationSec": 13.479184,
+      "textHash": "5df2e07358117742ea4a2892cc86ac37eb4e4d0c2559571414652bc0307b9ef0",
+      "narrationText": "Şimdi gerçek yüklemeyi çalıştırıyoruz. Eşitleme yükleme komutu, rsync delta sıkıştırmasıyla dizüstü bilgisayarınızdan depoya SSH üzerinden dosya taşır. Tunnel, term, sync; günlük döngüyü üç komut karşılar.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-04-after.f227dfa2.mp3",
+      "afterAudioDurationSec": 3.709388,
+      "afterTextHash": "f227dfa2fe0c2e685cd819748cd3633e7d9d973c66d2239bb504b416a464648e"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/intro.ebabbf1c.mp3",
+      "textHash": "ebabbf1c5261a57bcf3a2b35ac935a45a2f280e7e9eb84abb04ccca21d6c800b",
+      "audioDurationSec": 5.642449,
+      "narrationText": "Pekâlâ! Uygulamanız çalışıyor; şimdi gerçekten onunla çalışalım. Günlük döngüyü üç komut karşılar."
+    },
+    {
+      "id": "daily-three",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/daily-three.0dbef833.mp3",
+      "textHash": "0dbef833f31a6265b2f5bb77d8a7414af7a433d92a9f7dbda936c35e2643ee3b",
+      "audioDurationSec": 9.717551,
+      "narrationText": "Tunnel uygulamanızı tarayıcıda açar, term sandbox içinde komut çalıştırır, sync ise dosyaları girip çıkarır. Günlük iş akışının tamamı bu."
+    },
+    {
+      "id": "open-tunnel",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/open-tunnel.fef328da.mp3",
+      "textHash": "fef328dae60c718945fee32d466bd5a803be6510d80436bccf67325f80518ebc",
+      "audioDurationSec": 9.325714,
+      "narrationText": "Tünel çalışırken uygulama doğrudan tarayıcınızda açılır. Bu demoda rediacc.com'u yüklüyoruz; tıpkı container'dan doğrudan sunulan kendi uygulamanıza eriştiğiniz gibi."
+    },
+    {
+      "id": "next-tutorial",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/next-tutorial.7e29d6c4.mp3",
+      "textHash": "7e29d6c4b871d9c8f1e41e16c644c879b0bc0551157243b799c72f1b69f8da66",
+      "audioDurationSec": 3.709388,
+      "narrationText": "Günlük üçlü bu kadar. Bir sonraki bölümde görüşmek üzere!"
+    }
+  ],
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "5d13caa087069b03259e05a3a085016b018de3e527a8b3a4b19466cf6bb33734"
+}

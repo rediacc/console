@@ -11,7 +11,7 @@
       "audioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-01.05800be7.mp3",
       "audioDurationSec": 5.146122,
       "textHash": "05800be7474114c9af193cdb81a31695d21c4e4877fadcd63f3403455ba6491a",
-      "narrationText": "Fill the repository most of the way and check: the filesystem is getting tight.",
+      "narrationText": "Täida repository peaaegu ääreni ja kontrolli: failisüsteem hakkab kitsaks jääma.",
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-01-after.e4e5edf9.mp3",
       "afterAudioDurationSec": 2.272653,
       "afterTextHash": "e4e5edf91ab2e59612cc697dd83ad8aa3a18f554a77fb60308e6e31a80058eb2"
@@ -24,7 +24,7 @@
       "audioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-02.869f86d4.mp3",
       "audioDurationSec": 8.437551,
       "textHash": "869f86d44259c23b6974bec0ce486de84f3cfa8dfdf913ac941c2dead3f70d42",
-      "narrationText": "Grow it online. The encrypted container and the filesystem expand while the containers keep running — zero downtime, zero unmount.",
+      "narrationText": "Kasvata seda online. Krüpteeritud konteiner ja failisüsteem laienevad, samal ajal kui containers jätkavad tööd -- null seisakuaega, null unmounti.",
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-02-after.21fc03de.mp3",
       "afterAudioDurationSec": 2.507755,
       "afterTextHash": "21fc03de90d1292b304fc9f636d6e5cf3840e68901a04ab3ad316544f4524d56"
@@ -37,7 +37,7 @@
       "audioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-03.5f7bd3fe.mp3",
       "audioDurationSec": 3.317551,
       "textHash": "5f7bd3fe3d5768cdbae54dc1f9a4597876f88a3faa7abd195d9328fae0ba50ca",
-      "narrationText": "Verify from inside: same volume, double the room.",
+      "narrationText": "Kontrolli seestpoolt: sama köide, kaks korda rohkem ruumi.",
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-03-after.1bbd9cca.mp3",
       "afterAudioDurationSec": 1.227755,
       "afterTextHash": "1bbd9cca4e22d2e270d2223a429a60b0792b6ac46519a6f463f488a61dcca4b6"
@@ -50,7 +50,7 @@
       "audioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-04.00edc75b.mp3",
       "audioDurationSec": 10.03102,
       "textHash": "00edc75b87436fc77addf6e6c31b54feda8d9cdbb8f49a2655a9f5ff52b00f34",
-      "narrationText": "Now the other direction. Delete the big file — but watch: the pool does not get the space back yet. Deleted blocks stay reserved inside the image.",
+      "narrationText": "Nüüd vastupidises suunas. Kustuta suur fail -- aga jälgi: pool ei saa ruumi kohe tagasi. Kustutatud plokid jäävad image'i sees reserveerituks.",
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-04-after.3e35e73f.mp3",
       "afterAudioDurationSec": 2.507755,
       "afterTextHash": "3e35e73f0102041510036cfa7e1c199e4dad1525201a712720018770f2529f7b"
@@ -63,7 +63,7 @@
       "audioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-05.edd7a861.mp3",
       "audioDurationSec": 6.19102,
       "textHash": "edd7a861b929a9e1697753a9b7fd179132b1a78833912585a093bb864ac9577b",
-      "narrationText": "Trim hands those blocks back to the datastore pool, online. This is the step most setups forget.",
+      "narrationText": "Trim annab need plokid datastore poolile tagasi, võrgus. See on samm, mida enamik seadistusi unustab.",
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-05-after.919d91c1.mp3",
       "afterAudioDurationSec": 2.429388,
       "afterTextHash": "919d91c1515e30288805b4ae69966e01b2e0857264526c5641bb3ee7aa237e74"
@@ -76,7 +76,7 @@
       "audioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-06.14e859d4.mp3",
       "audioDurationSec": 8.75102,
       "textHash": "14e859d4960e0259636a044f2f616babe0c30c24cdbf099de49500af96081862",
-      "narrationText": "Now stop doing this by hand. The policy enables automatic growth up to a ceiling you choose, plus scheduled trims.",
+      "narrationText": "Nüüd lõpeta selle käsitsi tegemine. Poliitika lubab automaatse kasvu kuni sinu valitud ülempiirini, pluss ajastatud trim'id.",
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-06-after.1816a8d3.mp3",
       "afterAudioDurationSec": 2.690612,
       "afterTextHash": "1816a8d34cd9e3e0ec870a43553c5b14a65ced5c85a6ae917b50a91aceefbe1d"
@@ -89,7 +89,7 @@
       "audioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-07.5dec45f1.mp3",
       "audioDurationSec": 4.519184,
       "textHash": "5dec45f16d1ee77f174481806b882dfd8e1b76aa453da54248f6096b02bafe92",
-      "narrationText": "Read it back: auto-grow on, ceiling at eight gigabytes, trim on a schedule.",
+      "narrationText": "Loe see tagasi: automaatne kasv sees, ülempiir kaheksa gigabaiti, trim ajakava alusel.",
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-07-after.3a400c83.mp3",
       "afterAudioDurationSec": 1.880816,
       "afterTextHash": "3a400c83f7f5fcd20ca43c747cbb00018d6f4e62eebc8a54400c06e6b59662ae"
@@ -102,7 +102,7 @@
       "audioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-08.33978ee3.mp3",
       "audioDurationSec": 9.16898,
       "textHash": "33978ee327342625b608cdd9932749e47ab4a91218443ac10184bbef8819d073",
-      "narrationText": "And the view that ties it together: storage health shows every repo's usage, the pool, and how much copy-on-write sharing is saving you.",
+      "narrationText": "Ja vaade, mis kõik kokku seob: storage health näitab iga repo kasutust, pooli ennast ja kui palju copy-on-write jagamine sulle kokku hoiab.",
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-08-after.d3805f5c.mp3",
       "afterAudioDurationSec": 3.63102,
       "afterTextHash": "d3805f5ca9f5d61a49bb919d91d97501dd27339a4a91ba1c434a1ada285c7b7a"

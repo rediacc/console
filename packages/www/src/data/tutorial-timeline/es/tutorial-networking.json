@@ -942,20 +942,50 @@
         {
           "startSec": 0.72,
           "endSec": 1.36,
-          "startChar": 34,
-          "endChar": 39
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.04,
+          "startChar": 11,
+          "endChar": 17
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.56,
+          "startChar": 19,
+          "endChar": 26
         },
         {
           "startSec": 4.56,
           "endSec": 4.72,
+          "startChar": 27,
+          "endChar": 29
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 4.96,
+          "startChar": 30,
+          "endChar": 33
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.44,
+          "startChar": 34,
+          "endChar": 39
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.68,
           "startChar": 40,
           "endChar": 42
         },
         {
-          "startSec": 5.44,
+          "startSec": 5.68,
           "endSec": 6.72,
           "startChar": 43,
-          "endChar": 54
+          "endChar": 53
         }
       ]
     },

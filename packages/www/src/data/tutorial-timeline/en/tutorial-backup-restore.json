@@ -26,6 +26,12 @@
           "endChar": 4
         },
         {
+          "startSec": 0.4,
+          "endSec": 0.72,
+          "startChar": 5,
+          "endChar": 8
+        },
+        {
           "startSec": 1.2,
           "endSec": 1.36,
           "startChar": 10,
@@ -86,7 +92,7 @@
           "endChar": 77
         },
         {
-          "startSec": 6.32,
+          "startSec": 6.16,
           "endSec": 6.96,
           "startChar": 79,
           "endChar": 88
@@ -619,7 +625,7 @@
         },
         {
           "startSec": 14.08,
-          "endSec": 14.64,
+          "endSec": 14.72,
           "startChar": 190,
           "endChar": 200
         }

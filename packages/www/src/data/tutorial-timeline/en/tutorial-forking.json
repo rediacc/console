@@ -105,6 +105,12 @@
         },
         {
           "startSec": 6.08,
+          "endSec": 6.16,
+          "startChar": 77,
+          "endChar": 80
+        },
+        {
+          "startSec": 6.16,
           "endSec": 6.56,
           "startChar": 81,
           "endChar": 87
@@ -129,9 +135,9 @@
         },
         {
           "startSec": 8.32,
-          "endSec": 8.88,
+          "endSec": 9.28,
           "startChar": 109,
-          "endChar": 113
+          "endChar": 114
         },
         {
           "startSec": 9.52,
@@ -147,7 +153,7 @@
         },
         {
           "startSec": 11.92,
-          "endSec": 12.4,
+          "endSec": 12.48,
           "startChar": 156,
           "endChar": 164
         },
@@ -1643,7 +1649,7 @@
         },
         {
           "startSec": 5.36,
-          "endSec": 5.6,
+          "endSec": 5.76,
           "startChar": 55,
           "endChar": 59
         },

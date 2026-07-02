@@ -80,22 +80,70 @@
           "endChar": 70
         },
         {
-          "startSec": 8.48,
-          "endSec": 8.64,
-          "startChar": 117,
-          "endChar": 118
-        },
-        {
           "startSec": 8.64,
           "endSec": 8.88,
-          "startChar": 128,
-          "endChar": 129
+          "startChar": 72,
+          "endChar": 73
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.92,
+          "startChar": 73,
+          "endChar": 79
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 11.12,
+          "startChar": 80,
+          "endChar": 88
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.84,
+          "startChar": 90,
+          "endChar": 96
         },
         {
           "startSec": 11.84,
           "endSec": 12.0,
-          "startChar": 133,
-          "endChar": 134
+          "startChar": 97,
+          "endChar": 98
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.24,
+          "startChar": 99,
+          "endChar": 102
+        },
+        {
+          "startSec": 12.24,
+          "endSec": 12.96,
+          "startChar": 103,
+          "endChar": 112
+        },
+        {
+          "startSec": 13.52,
+          "endSec": 13.76,
+          "startChar": 114,
+          "endChar": 116
+        },
+        {
+          "startSec": 13.76,
+          "endSec": 13.92,
+          "startChar": 117,
+          "endChar": 118
+        },
+        {
+          "startSec": 13.92,
+          "endSec": 14.56,
+          "startChar": 119,
+          "endChar": 129
+        },
+        {
+          "startSec": 14.56,
+          "endSec": 14.96,
+          "startChar": 130,
+          "endChar": 135
         },
         {
           "startSec": 14.96,
@@ -641,10 +689,16 @@
       "afterTextHash": "338c2f5b40d7a677cc0f897d97ba6b43450ec9b0914a7bac5c3321073f0a284e",
       "afterWordTimings": [
         {
-          "startSec": 1.2,
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.48,
           "endSec": 1.52,
-          "startChar": 16,
-          "endChar": 18
+          "startChar": 6,
+          "endChar": 15
         }
       ]
     }

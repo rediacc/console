@@ -7,7 +7,7 @@
       "id": "tutorial-storage-management-01",
       "markerIndex": 0,
       "at": 2.410441,
-      "text": "Fill the repository most of the way and check: the filesystem is getting tight.",
+      "text": "املأ المستودع حتى قرابة الحد ثم تحقق: نظام الملفات بدأ يضيق.",
       "afterText": "على وشك الامتلاء. حان وقت التوسع.",
       "cardLabel": "ملء المستودع",
       "prose": "املأ المستودع بالبيانات حتى يضيق نظام الملفات."
@@ -16,7 +16,7 @@
       "id": "tutorial-storage-management-02",
       "markerIndex": 1,
       "at": 12.69586,
-      "text": "Grow it online. The encrypted container and the filesystem expand while the containers keep running — zero downtime, zero unmount.",
+      "text": "وسّعه وهو متصل. يكبر الحاوي المشفّر ونظام الملفات بينما تستمر الحاويات في العمل، دون أي توقف ودون أي إلغاء تحميل.",
       "afterText": "أربعة غيغابايت الآن. لم يُعَد تشغيل أي شيء.",
       "cardLabel": "توسيع متصل",
       "prose": "وسّع المستودع وهو متصل: يكبر حاوي LUKS ونظام الملفات مع استمرار تشغيل الحاويات."
@@ -25,7 +25,7 @@
       "id": "tutorial-storage-management-03",
       "markerIndex": 2,
       "at": 19.886575,
-      "text": "Verify from inside: same volume, double the room.",
+      "text": "تحقّق من الداخل: نفس القرص، لكن بضعف المساحة.",
       "afterText": "التطبيق لم يلاحظ شيئاً.",
       "cardLabel": "فحص الحجم",
       "prose": "تحقق من نظام الملفات من داخل المستودع، الحجم الجديد نشط الآن."
@@ -34,7 +34,7 @@
       "id": "tutorial-storage-management-04",
       "markerIndex": 3,
       "at": 26.982758,
-      "text": "Now the other direction. Delete the big file — but watch: the pool does not get the space back yet. Deleted blocks stay reserved inside the image.",
+      "text": "الآن في الاتجاه المعاكس. احذف الملف الكبير، لكن انتبه: المجمع لا يستعيد المساحة بعد. تبقى الكتل المحذوفة محجوزة داخل الـ image.",
       "afterText": "محرَّر داخل الـ repo، لا يزال مملوكاً للـ image.",
       "cardLabel": "حذف البيانات",
       "prose": "احذف البيانات داخل المستودع، لاحظ أن المجمع لا ينكمش بعد."
@@ -43,7 +43,7 @@
       "id": "tutorial-storage-management-05",
       "markerIndex": 4,
       "at": 33.464064,
-      "text": "Trim hands those blocks back to the datastore pool, online. This is the step most setups forget.",
+      "text": "الـ trim يعيد تلك الكتل إلى مجمع datastore، وهو متصل. هذه هي الخطوة التي تنساها معظم الإعدادات.",
       "afterText": "استُرجع. يمكن للـ pool أن يتنفس من جديد.",
       "cardLabel": "Trim",
       "prose": "شغّل أمر repo trim لإعادة الكتل المحررة إلى المجمع المشترك، متصل وبدون توقف."
@@ -52,7 +52,7 @@
       "id": "tutorial-storage-management-06",
       "markerIndex": 5,
       "at": 40.097562,
-      "text": "Now stop doing this by hand. The policy enables automatic growth up to a ceiling you choose, plus scheduled trims.",
+      "text": "توقف الآن عن فعل هذا يدوياً. تُفعّل الـ policy النمو التلقائي حتى حد أقصى تختاره، إضافةً إلى عمليات trim مجدولة.",
       "afterText": "تم حفظ الـ policy. تتولى الآلة المهمة من هنا.",
       "cardLabel": "ضبط السياسة",
       "prose": "اضبط سياسة الحجم: نمو تلقائي مع حد أقصى محدد، مع Trim مجدول."
@@ -61,7 +61,7 @@
       "id": "tutorial-storage-management-07",
       "markerIndex": 6,
       "at": 50.538253,
-      "text": "Read it back: auto-grow on, ceiling at eight gigabytes, trim on a schedule.",
+      "text": "اقرأها من جديد: النمو التلقائي مفعّل، والحد الأقصى ثمانية غيغابايت، والـ trim على جدول زمني.",
       "afterText": "يُضبط مرة واحدة، وينسى بأمان.",
       "cardLabel": "فحص السياسة",
       "prose": "اقرأ السياسة الفعلية، النمو وعملية Trim أصبحا تلقائيين الآن."
@@ -70,7 +70,7 @@
       "id": "tutorial-storage-management-08",
       "markerIndex": 7,
       "at": 57.423655,
-      "text": "And the view that ties it together: storage health shows every repo's usage, the pool, and how much copy-on-write sharing is saving you.",
+      "text": "والعرض الذي يجمع كل هذا معاً: صحة التخزين تُظهر استخدام كل repo، والمجمع، وكم توفّر عليك مشاركة copy-on-write.",
       "afterText": "عرض واحد: الاستخدام، والوفورات، والمساحة للتوسع.",
       "cardLabel": "عرض الصحة",
       "prose": "تحقق من صحة التخزين على الجهاز: الاستخدام لكل مستودع، وحالة المجمع، ووفورات CoW reflink."

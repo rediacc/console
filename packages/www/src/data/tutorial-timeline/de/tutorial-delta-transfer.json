@@ -140,16 +140,40 @@
           "endChar": 123
         },
         {
-          "startSec": 9.2,
-          "endSec": 9.44,
-          "startChar": 156,
-          "endChar": 159
+          "startSec": 9.44,
+          "endSec": 9.68,
+          "startChar": 129,
+          "endChar": 133
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 10.4,
+          "startChar": 134,
+          "endChar": 142
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.2,
+          "startChar": 144,
+          "endChar": 147
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.36,
+          "startChar": 148,
+          "endChar": 151
+        },
+        {
+          "startSec": 11.44,
+          "endSec": 11.6,
+          "startChar": 152,
+          "endChar": 155
         },
         {
           "startSec": 11.68,
           "endSec": 12.8,
-          "startChar": 159,
-          "endChar": 170
+          "startChar": 156,
+          "endChar": 169
         }
       ],
       "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-delta-transfer/tutorial-delta-transfer-01-after.78e886b7.mp3",

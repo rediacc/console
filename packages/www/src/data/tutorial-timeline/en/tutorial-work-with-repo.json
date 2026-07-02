@@ -1030,9 +1030,51 @@
       "wordTimings": [
         {
           "startSec": 0.08,
-          "endSec": 0.16,
-          "startChar": 43,
-          "endChar": 46
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.2,
+          "startChar": 9,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.36,
+          "startChar": 14,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.52,
+          "startChar": 18,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.92,
+          "startChar": 21,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.32,
+          "startChar": 30,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.48,
+          "startChar": 33,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.88,
+          "startChar": 39,
+          "endChar": 47
         },
         {
           "startSec": 2.88,

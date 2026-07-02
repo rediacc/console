@@ -756,24 +756,36 @@
         }
       ],
       "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-forking/tutorial-forking-04-after.f3e05ab8.mp3",
-      "afterAudioDurationSec": 2.925714,
+      "afterAudioDurationSec": 3.787755,
       "afterTextHash": "f3e05ab8aed66f5f9e048bee3426ebc596f584d509d296872ee55244cf8f31ab",
       "afterWordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.16,
-          "startChar": 0,
-          "endChar": 1
+          "startSec": 0.64,
+          "endSec": 1.12,
+          "startChar": 8,
+          "endChar": 13
         },
         {
-          "startSec": 1.68,
-          "endSec": 2.08,
+          "startSec": 1.12,
+          "endSec": 1.76,
+          "startChar": 14,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.56,
+          "startChar": 19,
+          "endChar": 27
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.88,
           "startChar": 28,
           "endChar": 35
         },
         {
-          "startSec": 2.08,
-          "endSec": 2.8,
+          "startSec": 2.88,
+          "endSec": 3.68,
           "startChar": 36,
           "endChar": 46
         }
@@ -913,6 +925,12 @@
           "endSec": 1.6,
           "startChar": 8,
           "endChar": 13
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.64,
+          "startChar": 15,
+          "endChar": 20
         },
         {
           "startSec": 2.88,
@@ -1793,15 +1811,9 @@
         },
         {
           "startSec": 8.16,
-          "endSec": 8.8,
+          "endSec": 9.12,
           "startChar": 112,
           "endChar": 120
-        },
-        {
-          "startSec": 8.8,
-          "endSec": 9.12,
-          "startChar": 121,
-          "endChar": 126
         },
         {
           "startSec": 9.6,
@@ -1844,15 +1856,57 @@
         },
         {
           "startSec": 0.96,
-          "endSec": 1.12,
+          "endSec": 1.84,
+          "startChar": 12,
+          "endChar": 27
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.72,
+          "startChar": 28,
+          "endChar": 39
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.52,
+          "startChar": 44,
+          "endChar": 49
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 4.16,
+          "startChar": 50,
+          "endChar": 58
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.32,
+          "startChar": 59,
+          "endChar": 61
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.88,
+          "startChar": 62,
+          "endChar": 67
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.6,
+          "startChar": 68,
+          "endChar": 73
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.92,
           "startChar": 74,
           "endChar": 77
         },
         {
-          "startSec": 1.12,
-          "endSec": 1.84,
+          "startSec": 5.92,
+          "endSec": 6.72,
           "startChar": 78,
-          "endChar": 87
+          "endChar": 86
         },
         {
           "startSec": 7.52,

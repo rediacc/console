@@ -25,7 +25,7 @@
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
       "at": 18.718543,
-      "text": "Elenchiamo i repository con l'avvio automatico abilitato. Conferma che la nostra app e' ora nella lista di avvio.",
+      "text": "Elenchiamo i repository con l'avvio automatico abilitato. Conferma che la nostra app è ora nella lista di avvio.",
       "afterText": "Eccola, nella lista di avvio.",
       "cardLabel": "Elenca Avvio Automatico",
       "prose": "Elenca i repository con l'avvio automatico abilitato per confermare che l'app sia nella lista di avvio."

@@ -635,16 +635,70 @@
       "audioDurationSec": 4.989388,
       "wordTimings": [
         {
-          "startSec": 0.48,
-          "endSec": 0.64,
-          "startChar": 51,
-          "endChar": 53
+          "startSec": 0.0,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 5
         },
         {
           "startSec": 0.64,
           "endSec": 0.72,
+          "startChar": 6,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.44,
+          "startChar": 9,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 15,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.08,
+          "startChar": 18,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 3.04,
+          "startChar": 26,
+          "endChar": 31
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.36,
+          "startChar": 32,
+          "endChar": 35
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.92,
+          "startChar": 36,
+          "endChar": 41
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.08,
+          "startChar": 42,
+          "endChar": 46
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.56,
+          "startChar": 47,
+          "endChar": 55
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.88,
           "startChar": 56,
-          "endChar": 58
+          "endChar": 59
         }
       ],
       "afterAudioSrc": "/assets/tutorials/audio/it/tutorial-branching/tutorial-branching-04-after.8e2a714b.mp3",
@@ -1118,6 +1172,12 @@
           "endChar": 11
         },
         {
+          "startSec": 1.04,
+          "endSec": 1.44,
+          "startChar": 12,
+          "endChar": 17
+        },
+        {
           "startSec": 1.44,
           "endSec": 1.84,
           "startChar": 21,
@@ -1277,6 +1337,12 @@
           "endSec": 3.04,
           "startChar": 18,
           "endChar": 23
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 4.08,
+          "startChar": 25,
+          "endChar": 28
         }
       ]
     },
@@ -1613,9 +1679,9 @@
           "endChar": 11
         },
         {
-          "startSec": 1.68,
+          "startSec": 1.36,
           "endSec": 2.08,
-          "startChar": 19,
+          "startChar": 13,
           "endChar": 24
         },
         {
@@ -2001,10 +2067,124 @@
           "endChar": 1
         },
         {
-          "startSec": 0.24,
-          "endSec": 0.32,
-          "startChar": 99,
-          "endChar": 102
+          "startSec": 0.32,
+          "endSec": 0.48,
+          "startChar": 3,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.56,
+          "startChar": 8,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.88,
+          "startChar": 11,
+          "endChar": 16
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 0.96,
+          "startChar": 18,
+          "endChar": 20
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.76,
+          "startChar": 21,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.92,
+          "startChar": 26,
+          "endChar": 28
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.4,
+          "startChar": 29,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.72,
+          "startChar": 38,
+          "endChar": 43
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 44,
+          "endChar": 46
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.28,
+          "startChar": 47,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.84,
+          "startChar": 56,
+          "endChar": 59
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.08,
+          "startChar": 61,
+          "endChar": 63
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.32,
+          "startChar": 64,
+          "endChar": 68
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.48,
+          "startChar": 69,
+          "endChar": 71
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.8,
+          "startChar": 72,
+          "endChar": 78
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 4.96,
+          "startChar": 79,
+          "endChar": 81
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.28,
+          "startChar": 82,
+          "endChar": 88
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.44,
+          "startChar": 89,
+          "endChar": 91
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.84,
+          "startChar": 92,
+          "endChar": 100
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.56,
+          "startChar": 101,
+          "endChar": 104
         },
         {
           "startSec": 6.64,

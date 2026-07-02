@@ -1260,9 +1260,33 @@
           "endChar": 11
         },
         {
-          "startSec": 0.88,
-          "endSec": 0.96,
-          "startChar": 54,
+          "startSec": 2.0,
+          "endSec": 2.24,
+          "startChar": 22,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.96,
+          "startChar": 25,
+          "endChar": 34
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.52,
+          "startChar": 36,
+          "endChar": 40
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 4.16,
+          "startChar": 41,
+          "endChar": 48
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.8,
+          "startChar": 49,
           "endChar": 57
         },
         {

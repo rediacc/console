@@ -7,7 +7,7 @@
       "id": "tutorial-vscode-browser-01",
       "markerIndex": 0,
       "at": 2.414862,
-      "text": "One command. The CLI installs the editor server on the machine once, starts it inside the repo sandbox, opens a tunnel, and hands you a link. No local VS Code, no extensions to set up.",
+      "text": "Одна команда. CLI один раз устанавливает сервер редактора на машину, запускает его внутри sandbox repo, открывает туннель и выдаёт вам ссылку. Никакого локального VS Code, никаких расширений для настройки.",
       "afterText": "Этот URL и есть ваш редактор. Работает на любой ОС, единственное требование: браузер.",
       "cardLabel": "Подключить Браузер",
       "prose": "Подключитесь с флагом --browser. CLI устанавливает open-source сервер редактора на машину (один раз), запускает его внутри sandbox repo, открывает SSH-туннель и выводит ссылку для вашего браузера."
@@ -16,7 +16,7 @@
       "id": "tutorial-vscode-browser-02",
       "markerIndex": 1,
       "at": 12.531234,
-      "text": "Same repo from the plain terminal: the working directory is the repo, the files are the repo's files.",
+      "text": "Тот же repo из обычного терминала: рабочий каталог это repo, а файлы это файлы repo.",
       "afterText": "Терминал и редактор показывают одно и то же. Это один sandbox.",
       "cardLabel": "Тот же Вид",
       "prose": "Откройте terminal-сессию в тот же repo: рабочий каталог и файлы совпадают с тем, что показывает редактор."
@@ -25,7 +25,7 @@
       "id": "tutorial-vscode-browser-03",
       "markerIndex": 2,
       "at": 19.464899,
-      "text": "And the file we created in the browser editor? Right here. Files made in VS Code are real repo files, instantly.",
+      "text": "А файл, который мы создали в браузерном редакторе? Вот он. Файлы, созданные в VS Code, это настоящие файлы repo, мгновенно.",
       "afterText": "Создано в браузере, читается из терминала. Один repo, два входа.",
       "cardLabel": "Туда-Обратно",
       "prose": "Файл, созданный в браузерном редакторе, является настоящим файлом repo и доступен для чтения из любой сессии."
@@ -34,7 +34,7 @@
       "id": "tutorial-vscode-browser-04",
       "markerIndex": 3,
       "at": 26.768996,
-      "text": "Now try to leave. Listing the root of the server: permission denied. The kernel scopes the editor, its terminal, and every child process to this repo.",
+      "text": "Теперь попробуйте выйти за пределы. Просмотр корня сервера: permission denied. Ядро ограничивает редактор, его терминал и каждый дочерний процесс рамками этого repo.",
       "afterText": "Запрет от ядра, а не от настроек.",
       "cardLabel": "Корень Закрыт",
       "prose": "Попробуйте просмотреть корневой каталог сервера: в доступе отказано. Ядро ограничивает сессию пределами repo."
@@ -43,7 +43,7 @@
       "id": "tutorial-vscode-browser-05",
       "markerIndex": 4,
       "at": 32.439211,
-      "text": "Other users' homes? Also denied. Whatever runs inside this sandbox — editors, terminals, build tools — ends at the repo's walls.",
+      "text": "Домашние каталоги других пользователей? Тоже запрещено. Что бы ни запускалось внутри этого sandbox — редакторы, терминалы, инструменты сборки — всё упирается в стены repo.",
       "afterText": "sandbox не знает исключений. В этом и суть.",
       "cardLabel": "Home Закрыт",
       "prose": "Другие каталоги, такие как /home, тоже закрыты: sandbox распространяется на всё, что запущено внутри него."

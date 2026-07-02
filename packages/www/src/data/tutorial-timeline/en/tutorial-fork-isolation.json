@@ -1406,6 +1406,42 @@
         {
           "startSec": 0.48,
           "endSec": 0.88,
+          "startChar": 15,
+          "endChar": 21
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.92,
+          "startChar": 22,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.48,
+          "startChar": 31,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.88,
+          "startChar": 34,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.12,
+          "startChar": 40,
+          "endChar": 44
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.44,
+          "startChar": 45,
+          "endChar": 49
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.16,
           "startChar": 51,
           "endChar": 56
         },

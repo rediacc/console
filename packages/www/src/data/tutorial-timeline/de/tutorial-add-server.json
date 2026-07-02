@@ -80,10 +80,34 @@
           "endChar": 77
         },
         {
-          "startSec": 5.36,
-          "endSec": 5.52,
-          "startChar": 137,
-          "endChar": 140
+          "startSec": 6.8,
+          "endSec": 6.96,
+          "startChar": 97,
+          "endChar": 100
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.84,
+          "startChar": 101,
+          "endChar": 115
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.08,
+          "startChar": 116,
+          "endChar": 119
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.32,
+          "startChar": 120,
+          "endChar": 123
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 10.0,
+          "startChar": 124,
+          "endChar": 150
         },
         {
           "startSec": 10.0,

@@ -194,57 +194,63 @@
           "endChar": 180
         }
       ],
-      "afterAudioSrc": "/assets/tutorials/audio/it/tutorial-installation/tutorial-installation-01-after.7397cf3c.mp3",
-      "afterAudioDurationSec": 4.832653,
-      "afterTextHash": "7397cf3c90c39604b327fc0ccf783580f0c61b2c70917a6732b1a13e502b8bef",
+      "afterAudioSrc": "/assets/tutorials/audio/it/tutorial-installation/tutorial-installation-01-after.8f01f221.mp3",
+      "afterAudioDurationSec": 4.440816,
+      "afterTextHash": "8f01f2212d962ac8b18e3d6c31470b1c66bf0a869cc1b5b9214fd34f6abd4171",
       "afterWordTimings": [
         {
           "startSec": 0.0,
-          "endSec": 0.96,
+          "endSec": 0.8,
           "startChar": 0,
           "endChar": 13
         },
         {
-          "startSec": 0.96,
-          "endSec": 1.76,
+          "startSec": 0.88,
+          "endSec": 1.52,
           "startChar": 14,
           "endChar": 24
         },
         {
-          "startSec": 2.08,
-          "endSec": 2.32,
+          "startSec": 1.52,
+          "endSec": 2.16,
           "startChar": 26,
           "endChar": 28
         },
         {
-          "startSec": 2.32,
-          "endSec": 2.88,
+          "startSec": 2.16,
+          "endSec": 2.64,
           "startChar": 29,
           "endChar": 36
         },
         {
-          "startSec": 3.04,
-          "endSec": 3.92,
+          "startSec": 2.64,
+          "endSec": 3.44,
           "startChar": 37,
           "endChar": 40
         },
         {
+          "startSec": 3.44,
+          "endSec": 3.6,
+          "startChar": 41,
+          "endChar": 42
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.84,
+          "startChar": 43,
+          "endChar": 46
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.08,
+          "startChar": 47,
+          "endChar": 50
+        },
+        {
           "startSec": 4.08,
-          "endSec": 4.24,
-          "startChar": 44,
-          "endChar": 47
-        },
-        {
-          "startSec": 4.24,
-          "endSec": 4.48,
-          "startChar": 48,
-          "endChar": 51
-        },
-        {
-          "startSec": 4.48,
-          "endSec": 4.72,
-          "startChar": 52,
-          "endChar": 56
+          "endSec": 4.32,
+          "startChar": 51,
+          "endChar": 55
         }
       ]
     },
