@@ -44,7 +44,13 @@ const TRANSCRIPT_DIR = path.join(ROOT, 'src', 'data', 'tutorial-transcripts');
 const TIMELINE_DIR = path.join(ROOT, 'src', 'data', 'tutorial-timeline');
 const AUDIO_DIR = path.join(ROOT, 'public', 'assets', 'tutorials', 'audio');
 const AUDIO_LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ru', 'zh', 'ko', 'pt', 'it'];
-const AUDIO_FALLBACK_LANGUAGES = ['ar', 'tr'];
+// ar/et/tr reuse English audio with translated on-screen text: their timeline
+// files are DERIVED from the en timelines + locale transcripts by
+// derive-fallback-timeline.ts (FALLBACK_LANGUAGES there) and committed like
+// et's always were. They're excluded from the per-file audio checks below
+// (their audioSrc points at en mp3s) but no longer rejected outright --
+// rejecting ar/tr while accepting et was a leftover from before those two
+// migrated to the derived-timeline convention.
 
 // The audio tree is synced to R2, not committed to git (see
 // .ci/docs/r2-media-setup.md #9) -- a clean checkout has none of it locally,
@@ -319,19 +325,6 @@ function main() {
           '.ci/scripts/deploy/sync-media-from-r2.sh --audio-only'
       )
     );
-  }
-
-  for (const blockedLang of AUDIO_FALLBACK_LANGUAGES) {
-    const blockedDir = path.join(TIMELINE_DIR, blockedLang);
-    if (!fs.existsSync(blockedDir)) continue;
-    for (const file of listJsonFiles(blockedDir)) {
-      pushError(
-        errors,
-        path.relative(ROOT, path.join(blockedDir, file)),
-        `Locale ${blockedLang} should not contain tutorial timeline files.`,
-        'Delete locale timeline and use English fallback'
-      );
-    }
   }
 
   for (const pair of pairs) {
