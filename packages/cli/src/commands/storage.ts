@@ -273,9 +273,13 @@ export function registerStorageCommands(program: Command): void {
         return provider.storage.delete(payload);
       },
     },
+    createOptions: [
+      { flags: '--vault <json>', description: t('options.vaultJson'), required: true },
+    ],
     transformCreatePayload: (name, opts) => ({
       storageName: name,
       teamName: opts.team,
+      vaultContent: opts.vault,
     }),
     vaultConfig: {
       fetch: async (params) => {

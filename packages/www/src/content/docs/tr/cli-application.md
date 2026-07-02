@@ -6,7 +6,7 @@ order: 2
 language: tr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/tr/cli.json
-sourceHash: "a8bfeecbabfd5f89"
+sourceHash: "73650f4ed88f7c56"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2224,6 +2224,7 @@ rdc storage create [options]
 |------|-------------|----------|---------|
 | `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--vault <json>` | {{t:cli.options.vaultContent}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-storage-rename"></a>

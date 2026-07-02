@@ -79,8 +79,16 @@ class LocalStorageProvider implements StorageProvider {
 
   async create(params: Record<string, unknown>): Promise<MutationResult> {
     const storageName = params.storageName as string;
-    const vaultContent = params.vaultContent as string;
-    const parsed = JSON.parse(vaultContent) as Record<string, unknown>;
+    const vaultContent = params.vaultContent;
+    if (typeof vaultContent !== 'string' || vaultContent.length === 0) {
+      throw new Error('storage create requires --vault <json> with the storage configuration');
+    }
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(vaultContent) as Record<string, unknown>;
+    } catch {
+      throw new Error('--vault must be valid JSON (e.g. \'{"provider":"s3",...}\')');
+    }
     await configService.addStorage(storageName, {
       provider: typeof parsed.provider === 'string' ? parsed.provider : 'unknown',
       vaultContent: parsed,

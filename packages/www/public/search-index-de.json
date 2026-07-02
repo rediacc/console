@@ -4132,7 +4132,7 @@
   {
     "id": "search-2818",
     "content": "7.2 create",
-    "body": "{{t:cli.commands.storage.create.description}} rdc storage create [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | --name <name> | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - | | -t, --team <name> | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-storage-rename\"></a>",
+    "body": "{{t:cli.commands.storage.create.description}} rdc storage create [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | --name <name> | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - | | -t, --team <name> | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - | | --vault <json> | {{t:cli.options.vaultContent}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-storage-rename\"></a>",
     "excerpt": "{{t:cli.commands.storage.create.description}} rdc storage create [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}...",
     "category": "Documentation",
     "page": "/de/docs/cli-application",

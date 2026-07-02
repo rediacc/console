@@ -4,6 +4,7 @@ const mockGetRepository = vi.hoisted(() => vi.fn());
 const mockGetLocalConfig = vi.hoisted(() => vi.fn());
 const mockGetCurrent = vi.hoisted(() => vi.fn());
 const mockListRepositories = vi.hoisted(() => vi.fn());
+const mockAddStorage = vi.hoisted(() => vi.fn());
 
 // Mock configService used by LocalStateProvider
 vi.mock('../../services/config-resources.js', () => ({
@@ -19,6 +20,7 @@ vi.mock('../../services/config-resources.js', () => ({
     getCurrent: mockGetCurrent.mockResolvedValue({}),
     getRepository: mockGetRepository,
     listRepositories: mockListRepositories,
+    addStorage: mockAddStorage.mockResolvedValue(undefined),
   },
 }));
 
@@ -44,6 +46,36 @@ describe('LocalStateProvider', () => {
       });
       expect(result).toMatchObject({ machineName: 'machine' });
       expect(result?.vaultStatus).toBeDefined();
+    });
+  });
+
+  describe('storage.create', () => {
+    it('parses --vault JSON and stores provider + vaultContent', async () => {
+      const provider = new LocalStateProvider();
+      const result = await provider.storage.create({
+        storageName: 'backups',
+        teamName: 'team',
+        vaultContent: '{"provider":"s3","bucket":"b"}',
+      });
+      expect(result).toEqual({ success: true });
+      expect(mockAddStorage).toHaveBeenCalledWith('backups', {
+        provider: 's3',
+        vaultContent: { provider: 's3', bucket: 'b' },
+      });
+    });
+
+    it('rejects a missing vaultContent with a clear error (not a JSON.parse crash)', async () => {
+      const provider = new LocalStateProvider();
+      await expect(provider.storage.create({ storageName: 'backups' })).rejects.toThrow(
+        /--vault <json>/
+      );
+    });
+
+    it('rejects invalid JSON with a clear error', async () => {
+      const provider = new LocalStateProvider();
+      await expect(
+        provider.storage.create({ storageName: 'backups', vaultContent: 'not-json' })
+      ).rejects.toThrow(/valid JSON/);
     });
   });
 

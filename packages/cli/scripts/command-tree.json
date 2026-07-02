@@ -2758,6 +2758,12 @@
               "descriptionKey": "options.team",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--vault <json>",
+              "descriptionKey": "options.vaultContent",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [],
