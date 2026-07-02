@@ -44,38 +44,14 @@ const manifestUrl = new URL('../src/data/video-manifest.json', import.meta.url);
 // TypeScript side of that list and can't import the Python source directly.
 const AUDIO_LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ru', 'zh', 'ko', 'pt', 'it'] as const;
 
-const MIN_WORDS_FOR_CHECK = 3;
+// 4, not 3: ASR timestamps sit on an 0.08s quantization grid, so a REAL
+// 3-word cue quite often lands three identical durations (seen live in
+// es/ru: [0.72,0.72,0.72]) -- a false positive. Estimate-fallback output
+// is uniform across every cue of the narration, so >= 4-word cues still
+// catch it reliably.
+const MIN_WORDS_FOR_CHECK = 4;
 const FLAT_SPREAD_THRESHOLD_SEC = 0.02;
 const FETCH_CONCURRENCY = 16;
-
-// CJK detection + segmentation, mirroring scripts/lib/vtt-emit.ts
-// (isCjkDominant / tokenizeForTiming). Duplicated here rather than imported
-// because vtt-emit.ts pulls in the whole scene-compile dependency chain,
-// which this network-only CI gate must not need. Keep the two in sync.
-const CJK_CHAR_RE =
-  /[\u3040-\u30ff\u31f0-\u31ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f]/;
-const KANA_RE = /[\u3040-\u30ff\u31f0-\u31ff\uff66-\uff9f]/;
-
-function isCjkDominant(text: string): boolean {
-  let cjk = 0;
-  let nonSpace = 0;
-  for (const ch of text) {
-    if (/\s/.test(ch)) continue;
-    nonSpace++;
-    if (CJK_CHAR_RE.test(ch)) cjk++;
-  }
-  return nonSpace > 0 && cjk / nonSpace >= 0.25;
-}
-
-function cjkTokenCount(text: string): number {
-  const locale = KANA_RE.test(text) ? 'ja' : 'zh';
-  const segmenter = new Intl.Segmenter(locale, { granularity: 'word' });
-  let count = 0;
-  for (const seg of segmenter.segment(text)) {
-    if (seg.isWordLike) count++;
-  }
-  return count;
-}
 
 interface WordEntry {
   start: number;
@@ -135,25 +111,36 @@ async function runPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise
   return results;
 }
 
+// A 4-5 word cue on ASR's 0.08s quantization grid occasionally collides into
+// identical REAL durations (seen live: ko networking [0.4 x5] next to cues
+// with varied durations). The estimate fallback, by contrast, spreads ONE
+// uniform span across the whole narration -- so it shows up either as a
+// long flat cue or as a RUN of adjacent flat cues sharing the same span.
+// Isolated short flat cues whose neighbors vary are real alignment.
+const DEFINITE_FLAT_WORDS = 6;
+
 function findFlatCues(slug: string, lang: string, doc: WordsDoc): FlatCue[] {
-  const flat: FlatCue[] = [];
-  doc.cues.forEach((cue, i) => {
-    // CJK: a cue whose text segments into several tokens but carries <= 1
-    // word entry has no intra-cue timing at all (whole-cue highlight only)
-    // -- the shape the pre-Intl.Segmenter pipeline produced.
-    if (
-      isCjkDominant(cue.text) &&
-      cue.words.length <= 1 &&
-      cjkTokenCount(cue.text) >= MIN_WORDS_FOR_CHECK
-    ) {
-      flat.push({ slug, lang, cueIndex: i, text: cue.text });
-      return;
-    }
-    if (cue.words.length < MIN_WORDS_FOR_CHECK) return;
+  // NOTE: no special <=1-word rule for CJK. Slide/intro/outro cues carry a
+  // single word entry spanning the cue BY DESIGN in every language (see
+  // CueGroup in vtt-emit.ts), which is indistinguishable from the old
+  // pre-Intl.Segmenter collapsed shape. Post-fix, an estimate fallback
+  // always yields multi-token cues (Intl.Segmenter), so the flat-spread
+  // logic covers CJK the same way it covers everything else.
+  const candidates = doc.cues.map((cue) => {
+    if (cue.words.length < MIN_WORDS_FOR_CHECK) return null;
     const durations = cue.words.map((w) => w.end - w.start);
     const spread = Math.max(...durations) - Math.min(...durations);
-    if (spread < FLAT_SPREAD_THRESHOLD_SEC) {
-      flat.push({ slug, lang, cueIndex: i, text: cue.text });
+    if (spread >= FLAT_SPREAD_THRESHOLD_SEC) return null;
+    return { span: durations[0], words: cue.words.length };
+  });
+  const flat: FlatCue[] = [];
+  candidates.forEach((cand, i) => {
+    if (!cand) return;
+    const sameSpan = (other: (typeof candidates)[number]) =>
+      other != null && Math.abs(other.span - cand.span) < FLAT_SPREAD_THRESHOLD_SEC;
+    const inRun = sameSpan(candidates[i - 1] ?? null) || sameSpan(candidates[i + 1] ?? null);
+    if (cand.words >= DEFINITE_FLAT_WORDS || inRun) {
+      flat.push({ slug, lang, cueIndex: i, text: doc.cues[i].text });
     }
   });
   return flat;
