@@ -253,12 +253,27 @@ build_go_package() {
           dependencies:., edges:$edges[0] }' <<<"$deps"
 }
 
+# Two-pass TSV column aligner (replacement for `column -t`, which is not
+# available in the minimal CI images -- see check-commands.sh).
+align_tsv() {
+    awk -F'\t' '
+        { nf[NR] = NF; for (i = 1; i <= NF; i++) { c[NR, i] = $i; if (length($i) > w[i]) w[i] = length($i) } }
+        END {
+            for (r = 1; r <= NR; r++) {
+                line = ""
+                for (i = 1; i <= nf[r]; i++) line = line sprintf("%-*s  ", w[i], c[r, i])
+                sub(/ +$/, "", line)
+                print line
+            }
+        }'
+}
+
 render_table() {
-    local doc="$1" np i tab
-    tab="$(printf '\t')"
+    local doc="$1" np i
     np="$(jq '.packages|length' <<<"$doc")"
-    # Render each package block separately so `column` aligns only that block's
-    # uniform TSV rows (mixing the long "===" header lines in confuses widths).
+    # Render each package block separately so the aligner sizes only that
+    # block's uniform TSV rows (mixing the long "===" header lines in
+    # confuses widths).
     for ((i = 0; i < np; i++)); do
         echo ""
         jq -r --argjson i "$i" '.packages[$i] |
@@ -266,7 +281,7 @@ render_table() {
         jq -r --argjson i "$i" '.packages[$i] |
             (["LEVEL","DEPTH","TYPE","INTERNAL","PRODREACH","NAME","VERSION"] | @tsv),
             (.dependencies[] | [.level, (.depth|tostring), .type, (.internal|tostring), (.prodReachable|tostring), .name, (.version//"?")] | @tsv)
-        ' <<<"$doc" | column -t -s "$tab"
+        ' <<<"$doc" | align_tsv
     done
     echo ""
     jq -r '.summary | "SUMMARY  packages=\(.packagesAnalyzed)  records=\(.totals.records)  unique=\(.totals.uniqueByNameVersion)  external=\(.totals.externalUniqueByNameVersion)  npm=\(.byEcosystem.npm)  go=\(.byEcosystem.go)  direct=\(.byLevel.direct)  transitive=\(.byLevel.transitive)"' <<<"$doc"
