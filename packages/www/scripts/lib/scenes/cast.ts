@@ -25,7 +25,7 @@ import {
   trimMp4Duration,
   videoDimensions,
 } from '../ffmpeg-video.ts';
-import type { SceneContext } from './index.ts';
+import type { CastNarratedDebug, SceneContext } from './index.ts';
 import { renderStepCard } from './slide.ts';
 
 /**
@@ -52,7 +52,32 @@ export function compileCast(scene: CastScene, ctx: SceneContext): string {
   return mp4;
 }
 
-export function compileCastNarrated(scene: CastNarratedScene, ctx: SceneContext): string {
+/** Duration of a (non-narrated) bridge `cast` scene -- just the marker slice
+ * length, no rendering needed. */
+export function computeCastDurationDry(scene: CastScene, ctx: SceneContext): number {
+  const startSec = resolveCastEndpoint(scene.from, ctx.markers, ctx.castEnd);
+  const endSec = resolveCastEndpoint(scene.to, ctx.markers, ctx.castEnd);
+  return Math.max(0, endSec - startSec);
+}
+
+/**
+ * Pure timing/branch-selection math for a cast-narrated scene -- everything
+ * `compileCastNarrated` needs to decide WHAT to render and HOW LONG it will
+ * be, computed entirely from the `.cast` recording's own timestamps
+ * (`cast-splitter.ts`, pure text-based parsing) and the timeline JSON's
+ * `audioDurationSec` fields. None of this touches ffmpeg or reads a
+ * rendered frame's pixels -- `isTall`/`useMainPan`/`useBurstStream`/
+ * `readPauseSec` all fall out of `countDisplayRows`/`countOutputLines`,
+ * which operate on the cast's recorded terminal-output text, not on any
+ * video.
+ *
+ * Single source of truth: `compileCastNarrated` calls this to drive its
+ * real ffmpeg rendering, and `computeCastNarratedDurationDry` (below) calls
+ * it to recover the same values WITHOUT rendering, for `--captions-only`.
+ * Extracting this once means the two paths can never drift apart -- there
+ * is only one place this branching logic lives.
+ */
+function computeCastNarratedTiming(scene: CastNarratedScene, ctx: SceneContext) {
   const startSec = ctx.markers[scene.markerIndex];
   const rawEndSec =
     scene.markerIndex + 1 < ctx.markers.length ? ctx.markers[scene.markerIndex + 1] : ctx.castEnd;
@@ -96,30 +121,7 @@ export function compileCastNarrated(scene: CastNarratedScene, ctx: SceneContext)
   if (mainEndSec <= startSec)
     throw new Error(`cast-narrated ${scene.id}: empty slice [${startSec}, ${mainEndSec}]`);
 
-  // Render the FULL slice (up through the empty prompt) once; we'll trim
-  // the front portion for main playback and extract the last frame for after.
-  const subCastPaths = writeSegments(
-    ctx.cast,
-    [{ startSec, endSec: frameEndSec }],
-    ctx.tmp,
-    scene.id
-  );
-  const gif = path.join(ctx.tmp, `${scene.id}.gif`);
-  const animSilentFull = path.join(ctx.tmp, `${scene.id}.silent-full.mp4`);
-  // Hold the last frame for 1s past the final cast event. extractLastFrame
-  // uses `-sseof -0.1` which can otherwise land BEFORE the final output +
-  // empty-prompt events render — they often cluster within ~50ms of slice
-  // end. The held-frame window gives the seek a safe target. animSilentMain
-  // is trimmed to mainAnimDur regardless, so the hold doesn't leak into the
-  // narrated animation.
-  renderCastToGif(subCastPaths[0], gif, ctx.cast.header.width, ctx.cast.header.height, 1.0);
-  encodeAnimMp4(gif, animSilentFull);
-
-  // Main mp4: trim the full anim to end at mainEndSec (= command output, no
-  // empty prompt yet), then mux with main narration audio.
   const mainAnimDur = Math.max(0.05, mainEndSec - startSec);
-  const animSilentMain = path.join(ctx.tmp, `${scene.id}.silent-main.mp4`);
-  trimMp4Duration(animSilentFull, animSilentMain, mainAnimDur);
 
   const narrationKey = scene.narrationKey ?? ctx.castMarkerToNarrationId(scene.markerIndex);
   const narration = ctx.narrations.get(narrationKey);
@@ -148,6 +150,169 @@ export function compileCastNarrated(scene: CastNarratedScene, ctx: SceneContext)
   // main narration) we fall back to the after-narration scroll.
   const MAIN_PAN_MIN_FREEZE_SEC = 2.5;
   const useMainPan = isTall && tailExtra >= MAIN_PAN_MIN_FREEZE_SEC;
+  const useBurstStream = isTall && !useMainPan;
+
+  const stepId = ctx.castMarkerToNarrationId(scene.markerIndex);
+  const afterAudio = ctx.narrations.getAfter(stepId);
+
+  let readPauseSec = 0;
+  if (!useMainPan && !isTall && afterAudio) {
+    // Output fits: hold a reading pause then freeze the full frame under the
+    // after-narration. ~250ms per output line, clamped to [0.8s, 3.0s]. Only
+    // relevant (and only computed here) in the "fits" branch that actually
+    // uses it -- mirrors the real render's branch selection exactly.
+    const outputLines = countOutputLines(ctx.cast, startSec, mainEndSec);
+    readPauseSec = Math.min(3.0, Math.max(0.8, outputLines * 0.25));
+  }
+
+  // mainCore's REAL duration after muxNarratedSegment (tpad start/end hold +
+  // `-shortest`) is NOT simply audioDur -- it's whichever is longer, the
+  // audio or the (possibly hold-padded) visual. Getting this wrong is
+  // exactly the kind of drift extracting this function once is meant to
+  // prevent: vtt-emit.ts's afterAudioStartSec already relies on the correct
+  // formula for the "fits" branch (`Math.max(audioDurSec, startHoldSec +
+  // mainAnimDur)`, vtt-emit.ts:233) -- mirror it here for every branch so
+  // there is exactly one place any of this math lives.
+  let mainCoreDuration: number;
+  let subCastPaths: string[] | null = null;
+  let streamDur = 0;
+  const lineCadenceSec = 0.1;
+  if (useMainPan) {
+    // panVisualDur (= mainAnimDur + tailExtra = audioDur - hold) + hold = audioDur.
+    mainCoreDuration = audioDur;
+  } else if (useBurstStream) {
+    // The restreamed cast (re-timed to a readable per-line cadence) is a
+    // pure text-based transform of the already-written cast slice -- cheap,
+    // no ffmpeg -- so it's safe to compute here too, not just in the real
+    // render, keeping this the single source of truth for burst-stream
+    // duration as well.
+    subCastPaths = writeSegments(ctx.cast, [{ startSec, endSec: frameEndSec }], ctx.tmp, scene.id);
+    const restreamed = path.join(ctx.tmp, `${scene.id}.restream.cast`);
+    streamDur = writeRestreamedSegment(subCastPaths[0], restreamed, {
+      lineCadenceSec,
+      maxGapSec: 0.4,
+    });
+    mainCoreDuration = Math.max(audioDur, hold + streamDur);
+  } else {
+    mainCoreDuration = Math.max(audioDur, hold + mainAnimDur);
+  }
+
+  return {
+    startSec,
+    rawEndSec,
+    promptTime,
+    mainEndSec,
+    frameEndSec,
+    mainAnimDur,
+    narrationKey,
+    narration,
+    audioPath,
+    audioDur,
+    hold,
+    tailExtra,
+    termRows,
+    displayRows,
+    needRows,
+    isTall,
+    useMainPan,
+    useBurstStream,
+    readPauseSec,
+    stepId,
+    afterAudio,
+    mainCoreDuration,
+    subCastPaths,
+    streamDur,
+    lineCadenceSec,
+  };
+}
+
+/**
+ * Total wall-clock duration of a cast-narrated scene, computed the same way
+ * `compileCastNarrated` arrives at its final concatenated chunk's length --
+ * WITHOUT rendering anything. Used by `--captions-only` (`generate-tutorial-video.ts`)
+ * to recover `sceneAbsStart`/`sceneAbsEnd` and the `CastNarratedDebug` record
+ * that VTT emission needs, at a fraction of the cost of a full compile.
+ *
+ * Duration = step-card + mainCoreDuration (see computeCastNarratedTiming --
+ * NOT simply audioDur; it's max(audioDur, hold+visualDur) since a long
+ * visual can outrun a short narration) + optional after-segment (readPause
+ * + afterAudioDur, or just afterAudioDur for the tall/pan branches which
+ * skip the reading pause).
+ */
+export function computeCastNarratedDurationDry(
+  scene: CastNarratedScene,
+  ctx: SceneContext
+): { durationSec: number; debug: CastNarratedDebug } {
+  const t = computeCastNarratedTiming(scene, ctx);
+  let durationSec = STEP_CARD_DURATION_SEC + t.mainCoreDuration;
+  if (t.afterAudio) {
+    durationSec += t.readPauseSec + (t.afterAudio.audioDurationSec ?? 0);
+  }
+  const debug: CastNarratedDebug = {
+    sceneId: scene.id,
+    markerIndex: scene.markerIndex,
+    startSec: t.startSec,
+    rawEndSec: t.rawEndSec,
+    promptTime: t.promptTime,
+    mainEndSec: t.mainEndSec,
+    frameEndSec: t.frameEndSec,
+    mainAnimDur: t.mainAnimDur,
+    readPauseSec: t.readPauseSec,
+    mainAudioDurSec: t.audioDur,
+    afterAudioDurSec: t.afterAudio ? (t.afterAudio.audioDurationSec ?? null) : null,
+    // Not extracted in dry mode (no frames rendered) -- only used for
+    // --debug's frame-copy step, which --captions-only does not support.
+    lastFramePngSrc: '',
+  };
+  return { durationSec, debug };
+}
+
+export function compileCastNarrated(scene: CastNarratedScene, ctx: SceneContext): string {
+  const t = computeCastNarratedTiming(scene, ctx);
+  const {
+    startSec,
+    rawEndSec,
+    promptTime,
+    frameEndSec,
+    mainEndSec,
+    mainAnimDur,
+    audioPath,
+    audioDur,
+    hold,
+    tailExtra,
+    termRows,
+    displayRows,
+    needRows,
+    isTall,
+    useMainPan,
+    useBurstStream,
+    readPauseSec,
+    afterAudio,
+  } = t;
+
+  // Render the FULL slice (up through the empty prompt) once; we'll trim
+  // the front portion for main playback and extract the last frame for after.
+  const subCastPaths = writeSegments(
+    ctx.cast,
+    [{ startSec, endSec: frameEndSec }],
+    ctx.tmp,
+    scene.id
+  );
+  const gif = path.join(ctx.tmp, `${scene.id}.gif`);
+  const animSilentFull = path.join(ctx.tmp, `${scene.id}.silent-full.mp4`);
+  // Hold the last frame for 1s past the final cast event. extractLastFrame
+  // uses `-sseof -0.1` which can otherwise land BEFORE the final output +
+  // empty-prompt events render — they often cluster within ~50ms of slice
+  // end. The held-frame window gives the seek a safe target. animSilentMain
+  // is trimmed to mainAnimDur regardless, so the hold doesn't leak into the
+  // narrated animation.
+  renderCastToGif(subCastPaths[0], gif, ctx.cast.header.width, ctx.cast.header.height, 1.0);
+  encodeAnimMp4(gif, animSilentFull);
+
+  // Main mp4: trim the full anim to end at mainEndSec (= command output, no
+  // empty prompt yet), then mux with main narration audio.
+  const animSilentMain = path.join(ctx.tmp, `${scene.id}.silent-main.mp4`);
+  trimMp4Duration(animSilentFull, animSilentMain, mainAnimDur);
 
   // Tall-frame assets, built once and reused by the main pan and/or the
   // after-narration scroll. `winH` is the recorded-terminal-height window we
@@ -171,10 +336,6 @@ export function compileCastNarrated(scene: CastNarratedScene, ctx: SceneContext)
   }
 
   const mainCore = path.join(ctx.tmp, `${scene.id}.main-core.mp4`);
-  // Tall output that dumps as an instant burst (a deploy log printing dozens of
-  // lines in milliseconds) with no freeze window to pan: re-time the slice so it
-  // streams in at a readable cadence under the main narration instead of a flash.
-  const useBurstStream = isTall && !useMainPan;
   if (useMainPan) {
     console.log(
       `[video] scroll-reveal ${scene.id}: ${displayRows} rows > ${termRows} → panning during main narration (${tailExtra.toFixed(1)}s window)`
@@ -244,8 +405,6 @@ export function compileCastNarrated(scene: CastNarratedScene, ctx: SceneContext)
   // (last frame of full render, where the empty prompt is visible), freeze
   // it, and play the after-narration over it. Empty prompt appears exactly
   // when after-narration begins — matches "command done, ready for next."
-  const stepId = ctx.castMarkerToNarrationId(scene.markerIndex);
-  const afterAudio = ctx.narrations.getAfter(stepId);
   if (!afterAudio) {
     if (ctx.debug) {
       const lastFrameNoAfter = path.join(ctx.tmp, `${scene.id}.after.png`);
@@ -274,7 +433,6 @@ export function compileCastNarrated(scene: CastNarratedScene, ctx: SceneContext)
   const afterAudioPath = ctx.narrations.resolvePath(afterAudio.audioSrc);
   const afterAudioDur = afterAudio.audioDurationSec ?? 0;
   extractLastFrame(animSilentFull, lastFrame);
-  let readPauseSec = 0;
 
   if (useMainPan) {
     // The full output was already revealed by the main-narration pan; the
@@ -301,10 +459,10 @@ export function compileCastNarrated(scene: CastNarratedScene, ctx: SceneContext)
     concatMp4([out, afterMp4], finalMp4, path.join(ctx.tmp, `${scene.id}.after.concat.txt`));
   } else {
     // Output fits: hold a reading pause then freeze the full frame under the
-    // after-narration. ~250ms per output line, clamped to [0.8s, 3.0s].
+    // after-narration. readPauseSec is already computed above (the "fits"
+    // branch of computeCastNarratedTiming) -- reuse it rather than
+    // recomputing, so there is exactly one place this math lives.
     const pauseMp4 = path.join(ctx.tmp, `${scene.id}.pause.mp4`);
-    const outputLines = countOutputLines(ctx.cast, startSec, mainEndSec);
-    readPauseSec = Math.min(3.0, Math.max(0.8, outputLines * 0.25));
     makeSilentFreezeMp4(lastFrame, readPauseSec, pauseMp4);
     makeFreezeMp4(lastFrame, afterAudioPath, afterAudioDur, afterMp4);
     concatMp4(
@@ -352,4 +510,13 @@ export function compileCastFreeze(scene: CastFreezeScene, ctx: SceneContext): st
   const duration = narration.audioDurationSec ?? 0;
   makeFreezeMp4(png, audioPath, duration, mp4);
   return mp4;
+}
+
+/** Duration of a `cast-freeze` scene: exactly its narration's audio length
+ * (the freeze frame is held/padded to match, no rendering needed to know
+ * this). */
+export function computeCastFreezeDurationDry(scene: CastFreezeScene, ctx: SceneContext): number {
+  const narrationId = ctx.castMarkerToNarrationId(scene.markerIndex);
+  const narration = ctx.narrations.get(narrationId);
+  return narration.audioDurationSec ?? 0;
 }

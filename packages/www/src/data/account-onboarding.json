@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "id": "install-cli",
+      "tutorial": "tutorial-installation",
+      "markerIndex": 0,
+      "titleKey": "stepLabels.installCli",
+      "docsPath": "/en/docs/tutorial-installation",
+      "shortProse": "Install the rdc CLI on your laptop with the one-liner from the install page."
+    },
+    {
+      "id": "login-cli",
+      "source": "manual",
+      "titleKey": "stepLabels.loginCli",
+      "docsPath": "/en/docs/tutorial-installation",
+      "shortProse": "Log in to your Rediacc subscription from the CLI so your license is recognized.",
+      "command": "rdc subscription login",
+      "prose": {
+        "en": "Log in to your Rediacc subscription from the CLI so your license is recognized.",
+        "de": "Melden Sie sich über die CLI bei Ihrem Rediacc-Abonnement an, damit Ihre Lizenz erkannt wird.",
+        "es": "Inicia sesión en tu suscripción de Rediacc desde la CLI para que se reconozca tu licencia.",
+        "fr": "Connectez-vous à votre abonnement Rediacc depuis la CLI pour que votre licence soit reconnue.",
+        "ja": "CLI から Rediacc サブスクリプションにログインし、ライセンスが認識されるようにします。",
+        "ar": "سجّل الدخول إلى اشتراك Rediacc من CLI حتى يتم التعرّف على ترخيصك.",
+        "ru": "Войдите в свою подписку Rediacc через CLI, чтобы лицензия была распознана.",
+        "tr": "Lisansınızın tanınması için CLI'dan Rediacc aboneliğinize giriş yapın.",
+        "zh": "从 CLI 登录到你的 Rediacc 订阅，以便识别你的许可证。",
+        "et": "Logi oma Rediacc tellimisse CLI kaudu, et litsents ära tuntaks.",
+        "ko": "CLI에서 Rediacc 구독에 로그인하여 라이선스가 인식되도록 합니다.",
+        "pt": "Inicie sessão na sua subscrição Rediacc a partir da CLI para que a sua licença seja reconhecida.",
+        "it": "Accedi al tuo abbonamento Rediacc dalla CLI in modo che la tua licenza venga riconosciuta."
+      }
+    },
+    {
+      "id": "generate-key",
+      "tutorial": "tutorial-ssh-keys",
+      "markerIndex": 0,
+      "titleKey": "stepLabels.generateKey",
+      "docsPath": "/en/docs/tutorial-ssh-keys",
+      "shortProse": "Generate an Ed25519 SSH key on your laptop once; the same key works for every server.",
+      "optional": true
+    },
+    {
+      "id": "authorize-server",
+      "tutorial": "tutorial-ssh-keys",
+      "markerIndex": 1,
+      "titleKey": "stepLabels.authorizeServer",
+      "docsPath": "/en/docs/tutorial-ssh-keys",
+      "shortProse": "Authorize the key on your first server with ssh-copy-id so future logins skip the password."
+    },
+    {
+      "id": "register-server",
+      "tutorial": "tutorial-add-server",
+      "markerIndex": 0,
+      "titleKey": "stepLabels.registerServer",
+      "docsPath": "/en/docs/tutorial-add-server",
+      "shortProse": "Register the server by giving it a local name, IP address, and SSH user."
+    },
+    {
+      "id": "provision-server",
+      "tutorial": "tutorial-add-server",
+      "markerIndex": 1,
+      "titleKey": "stepLabels.provisionServer",
+      "docsPath": "/en/docs/tutorial-add-server",
+      "shortProse": "Provision the server to install renet and create the encrypted datastore."
+    },
+    {
+      "id": "create-repo",
+      "tutorial": "tutorial-create-repo",
+      "markerIndex": 0,
+      "titleKey": "stepLabels.createRepo",
+      "docsPath": "/en/docs/tutorial-create-repo",
+      "shortProse": "Create an encrypted repository on the server; it mounts automatically as an isolated environment."
+    },
+    {
+      "id": "connect",
+      "tutorial": "tutorial-vscode-browser",
+      "markerIndex": 0,
+      "titleKey": "stepLabels.connect",
+      "docsPath": "/en/docs/tutorial-vscode-browser",
+      "shortProse": "Connect to the repository with --browser to open a full editor in your browser."
+    }
+  ]
+}

@@ -91,7 +91,28 @@ case "$PLATFORM" in
         ;;
     mac)
         export CSC_IDENTITY_AUTO_DISCOVERY=false # Skip code signing in CI
-        (cd "$DESKTOP_DIR" && npm run dist:mac -- --$ARCH --publish never)
+        # DMG creation on macOS runners is occasionally flaky when hdiutil
+        # cannot eject the temporary device ("Resource busy"). Retry a few
+        # times, but only for that specific transient error.
+        mac_success=false
+        for attempt in 1 2 3; do
+            log_info "Running electron-builder for mac (attempt $attempt/3)..."
+            if (cd "$DESKTOP_DIR" && npm run dist:mac -- --$ARCH --publish never) 2>&1 | tee /tmp/dist-mac-$attempt.log; then
+                mac_success=true
+                break
+            fi
+            if [[ "$attempt" -lt 3 ]] && grep -qE "Unable to detach device cleanly|couldn't eject|Resource busy" /tmp/dist-mac-$attempt.log; then
+                log_warn "DMG detach failed on attempt $attempt; retrying after a short delay..."
+                sleep 15
+                continue
+            fi
+            log_error "electron-builder failed for mac (attempt $attempt)"
+            exit 1
+        done
+        if [[ "$mac_success" != "true" ]]; then
+            log_error "electron-builder failed for mac after all retry attempts"
+            exit 1
+        fi
         ;;
     win)
         (cd "$DESKTOP_DIR" && npm run dist:win -- --$ARCH --publish never)

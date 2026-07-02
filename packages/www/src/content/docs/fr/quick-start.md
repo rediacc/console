@@ -4,8 +4,8 @@ description: Lancez un service conteneurisé sur votre serveur en quelques minut
 category: Guides
 order: -1
 language: fr
-sourceHash: "2047fd1ce3a47944"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "afd4d22ddc8e02e1"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # Démarrage rapide
@@ -59,7 +59,7 @@ Chaque commande rdc s'authentifie désormais avec cette clé. Aucun mot de passe
 ### 3. Ajouter votre serveur
 
 ```bash
-rdc config machine add --name my-server --ip 192.168.1.100 --user muhammed
+rdc config machine add --name my-server --ip 192.168.1.100 --user admin
 rdc config machine setup --name my-server  # Provisionne renet + crée le datastore
 ```
 

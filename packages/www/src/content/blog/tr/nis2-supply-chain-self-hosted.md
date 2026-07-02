@@ -1,7 +1,7 @@
 ---
 title: "Article 21(2)(d) Bir Tedarikçi Sorusudur. Self-Hosting ise Artık Vermek Zorunda Olmadığınız Yanıttır."
 description: "Veri katmanı hiç kiracılığınızdan ayrılmadığında üçüncü taraf BİT kaydı neden küçülür. 2026'da DPA'larını yeniden müzakere eden CISO'lar ve tedarik yöneticileri için NIS2 Article 21(2)(d)'nin veri yolu okuması."
-author: Muhammed Fatih Bayraktar
+author: Rediacc
 publishedDate: 2026-05-09
 category: guide
 tags:
@@ -12,8 +12,8 @@ tags:
   - compliance
 featured: false
 language: tr
-sourceHash: "98f0b752bc5dbd4d"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "ffdb86da48dacc58"
+sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 translatedFrom: en
 ---
 
@@ -157,12 +157,12 @@ Altının tamamını temiz yanıtlayan bir tedarikçi nadirdir. Altıdan dördü
 
 ## Sonraki Yenileme Döngüsü İçin Anlamı
 
-Önümüzdeki on iki ay içinde bir yedekleme veya DR yenileme sürecine girecekseniz ve Article 21(2)(d) tedarik puan kartındaysa üç somut adım:
+Önümüzdeki on iki ay içinde bir yedekleme veya DR yenilemesine giriyorsanız ve Article 21(2)(d) tedarik puan kartınızdaysa, üç somut hamle:
 
-1. Mevcut tedarikçinizin dört katmanlı veri yolunu bir beyaz tahtaya çizin. Üçüncü alt işlemciyi adlandıramıyorsanız, NIS2'den önce var olan bir kayıt tamlık sorununuz var ve yenileme bunu düzeltmek için doğru andır.
-2. Yukarıdaki altı soruluk kontrol listesini mevcut tedarikçinize karşı çalıştırın. Yanıtları DPO'nuza ve denetçinize gönderin ve açıkların kabul edilip edilmediğini sorun. Açıklar katman 3 (anahtar yönetimi) veya katman 4 (numaralandırmadığınız alt işlemciler) içeriyorsa bu, kaldıraç noktasıdır.
-3. Self-hosted bir kontrol düzlemiyle alternatif bir tedarikçi kaydının nasıl görüneceğine bakın. Lisans maliyetlerini değil, kayıt girdilerini karşılaştırın. Lisans maliyetleri iki kat içinde benzerdir; kayıt girdileri farklı biçimdedir. ([NIS2 yığınının yapısal maliyeti](/tr/blog/nis2-the-real-bill) üzerine yardımcı yazı, neyin çöküştürüldüğünü ve neyin kaldığını ayrıntılı olarak ele alıyor.)
+1. Mevcut tedarikçinizin dört katmanlı veri yolunu bir beyaz tahtaya çizin. Üçüncü alt işlemcinin adını veremiyorsanız, NIS2'den önce var olan bir kayıt eksikliği sorununuz var demektir ve yenileme bunu düzeltmek için doğru andır.
+2. Yukarıdaki altı soruluk kontrol listesini mevcut tedarikçinize karşı çalıştırın. Yanıtları DPO'nuza ve denetçinize gönderin; açıklar kabul ediliyor mu diye sorun. Açıklar katman 3'ü (anahtar yönetimi) veya katman 4'ü (sayamadığınız alt işlemciler) kapsıyorsa, işte kaldıraç noktanız burasıdır.
+3. Self-hosted bir kontrol düzlemiyle alternatif bir tedarikçi kaydının nasıl görüneceğine bakın. Lisans maliyetlerini değil, kayıt girdilerini karşılaştırın. Lisans maliyetleri yaklaşık iki kat içinde benzerdir; kayıt girdileri farklı biçimdedir. ([NIS2 yığınının yapısal maliyeti](/tr/blog/nis2-the-real-bill) üzerine yardımcı yazı, nelerin çöküştürüldüğünü ve nelerin kaldığını ayrıntılı olarak ele alıyor.)
 
-Kısa listenizde biz alternatifisek, teklif somuttur. Tedarikçi anketinizi bize gönderin. Dağıtılmış bir örneğe karşı, açıklar dahil sorularınızın gerçek yanıtlarıyla dolduracağız. Evrak göndermeden önce mimariyi gözden geçirmek isterseniz, kurucu ile 30 dakikalık bir mimari inceleme rezervasyonu yapabiliriz. Savunulabilir bir kayıt girdisine giden yol parlak bir broşür değildir. Rahatsız edici olanlar dahil, yanıtlardır.
+Kısa listenizde biz alternatifsek, teklif somuttur. Tedarikçi anketinizi bize gönderin. Dağıtılmış bir örneğe karşı, açıklar dahil sorularınızın gerçek yanıtlarıyla dolduracağız. Evrak göndermeden önce mimariyi gözden geçirmek isterseniz, mühendislik ekibimizle 30 dakikalık bir mimari inceleme rezerve ederiz. Savunulabilir bir kayıt girdisine giden yol parlak bir broşür değildir. Rahatsız edici olanlar dahil, yanıtlardır.
 
 Madde madde Rediacc haritasını mı istiyorsunuz? Bkz. [NIS2 ve DORA](/tr/docs/legal-nis2-dora). Daha geniş çerçeve mi? Bkz. [Uyumluluk Genel Bakışı](/tr/docs/legal-overview). Veri yerleşimi için bkz. [Veri Egemenliği](/tr/docs/legal-data-sovereignty). Neden kendi altyapınızı barındırmanın önemli olduğu için bkz. [Şirket İçi Kurulum](/tr/docs/on-premise).

@@ -7,7 +7,7 @@
       "id": "tutorial-vscode-browser-01",
       "markerIndex": 0,
       "at": 2.414862,
-      "text": "One command. The CLI installs the editor server on the machine once, starts it inside the repo sandbox, opens a tunnel, and hands you a link. No local VS Code, no extensions to set up.",
+      "text": "Tek komut. CLI, editör sunucusunu makineye bir kez kurar, repo sandbox içinde başlatır, bir tünel açar ve size bir bağlantı verir. Yerel VS Code yok, kurulacak eklenti yok.",
       "afterText": "Bu URL sizin editörünüz. Her işletim sisteminde çalışır, tek gereksinim bir tarayıcı.",
       "cardLabel": "Tarayıcıya Bağlan",
       "prose": "--browser bayrağıyla bağlanın. CLI, makinenize açık kaynaklı editör sunucusunu (bir kez) kurar, repo sandbox içinde başlatır, bir SSH tüneli açar ve tarayıcınız için bir bağlantı yazdırır."
@@ -16,7 +16,7 @@
       "id": "tutorial-vscode-browser-02",
       "markerIndex": 1,
       "at": 12.531234,
-      "text": "Same repo from the plain terminal: the working directory is the repo, the files are the repo's files.",
+      "text": "Sıradan terminalden aynı repo: çalışma dizini repo, dosyalar da repo'nun dosyaları.",
       "afterText": "Terminal ve editör aynı fikirde, bu aynı sandbox.",
       "cardLabel": "Aynı Görünüm",
       "prose": "Aynı repo içinde bir terminal oturumu açın: çalışma dizini ve dosyalar, editörün gösterdikleriyle eşleşir."
@@ -25,7 +25,7 @@
       "id": "tutorial-vscode-browser-03",
       "markerIndex": 2,
       "at": 19.464899,
-      "text": "And the file we created in the browser editor? Right here. Files made in VS Code are real repo files, instantly.",
+      "text": "Peki tarayıcı editöründe oluşturduğumuz dosya? İşte burada. VS Code'da yapılan dosyalar, anında gerçek repo dosyalarına dönüşür.",
       "afterText": "Tarayıcıda oluşturuldu, terminalden okunabilir. Bir repo, iki kapı.",
       "cardLabel": "Gidiş Dönüş",
       "prose": "Tarayıcı editöründe oluşturulan dosya gerçek bir repo dosyasıdır; herhangi bir oturumdan okunabilir."
@@ -34,7 +34,7 @@
       "id": "tutorial-vscode-browser-04",
       "markerIndex": 3,
       "at": 26.768996,
-      "text": "Now try to leave. Listing the root of the server: permission denied. The kernel scopes the editor, its terminal, and every child process to this repo.",
+      "text": "Şimdi dışarı çıkmayı deneyin. Sunucunun kök dizinini listeleyin: erişim reddedildi. Kernel, editörü, terminalini ve her alt süreci bu repo'yla sınırlandırır.",
       "afterText": "Yapılandırmayla değil, kernel tarafından engellendi.",
       "cardLabel": "Kök Reddedildi",
       "prose": "Sunucunun kök dizinini listelemeyi deneyin: erişim reddedildi. Kernel, oturumu repo ile sınırlandırır."
@@ -43,7 +43,7 @@
       "id": "tutorial-vscode-browser-05",
       "markerIndex": 4,
       "at": 32.439211,
-      "text": "Other users' homes? Also denied. Whatever runs inside this sandbox — editors, terminals, build tools — ends at the repo's walls.",
+      "text": "Diğer kullanıcıların home dizinleri? Onlar da reddedilir. Bu sandbox içinde çalışan her şey, editörler, terminaller, build araçları, repo'nun duvarlarında son bulur.",
       "afterText": "Sandbox'ın istisnası yoktur. Mesele de bu zaten.",
       "cardLabel": "Home Reddedildi",
       "prose": "/home gibi diğer dizinler de reddedilir; sandbox, içinde başlatılan her şeye uygulanır."

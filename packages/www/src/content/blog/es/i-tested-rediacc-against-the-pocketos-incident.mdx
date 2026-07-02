@@ -1,7 +1,7 @@
 ---
 title: "Probé Rediacc contra el incidente de PocketOS"
-description: "PocketOS perdió su base de datos de producción a manos de un agente de Cursor en 9 segundos. Ejecuté la misma prueba, cronometré cada paso y anoté qué aguantó y qué te toca resolver a ti."
-author: Muhammed Fatih Bayraktar
+description: "PocketOS lost their production database to a Cursor agent in 9 seconds. I ran the same test, timed every step, and noted what held and what's yours to fix."
+author: Rediacc
 publishedDate: 2026-04-28
 category: case-study
 tags:
@@ -11,8 +11,8 @@ tags:
   - case-study
 featured: true
 language: es
-sourceHash: "8ccb6579c9b25ab4"
-sourceCommit: "0a3e9865997659698502ad551e078be854b4b2c4"
+sourceHash: "277ccd50e4bac37f"
+sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 ---
 
 import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
@@ -180,9 +180,9 @@ Pero si su agente hubiera encontrado una clave de producción de Stripe en un ar
 
 ## Actualización: la brecha ya se puede cerrar
 
-He dejado la sección anterior tal y como la escribí originalmente. La honestidad se sostuvo en su momento. Desde la publicación, hemos lanzado la pieza que faltaba, y la brecha ya se puede cerrar, no cambiando cómo se comportan los forks, sino añadiendo un sitio donde poner las credenciales que vive fuera de la imagen cifrada del repositorio.
+He dejado la sección anterior tal y como la escribí originalmente. La honestidad tenía sentido entonces. Desde la publicación, hemos lanzado la pieza que faltaba, y la brecha ya se puede cerrar: no cambiando cómo se comportan los forks, sino añadiendo un lugar para guardar las credenciales fuera de la imagen cifrada del repositorio.
 
-El mecanismo es `rdc repo secret`. Está modelado a partir de los secrets de GitHub Actions. Importan dos cosas sobre cómo está construido.
+El mecanismo es `rdc repo secret`. Está inspirado en los secretos de GitHub Actions. Dos cosas importan sobre cómo está construido.
 
 **Los secretos no viven dentro de la imagen LUKS.** Viven en un plano separado del disco: los secretos en modo env llegan a los contenedores como interpolación `${REDIACC_SECRET_<KEY>}` en tu fichero compose, y los secretos en modo file llegan a los contenedores como un archivo en tmpfs en `/run/secrets/<key>` mediante el bloque `secrets:` de Docker Compose. En cualquier caso, el valor nunca toca la imagen cifrada del repositorio. El reflink BTRFS del fork copia la imagen. No copia lo que nunca estuvo en la imagen. La lista de secretos de un fork recién creado está vacía. Sus contenedores arrancan sin credenciales de producción. Ni siquiera es posible hacer llamadas a producción.
 

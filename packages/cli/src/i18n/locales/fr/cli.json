@@ -959,9 +959,9 @@
         "infrastructure": "Infrastructure",
         "noData": "Aucune donnée de statut disponible",
         "storageHealthFragmentationNote": "La fragmentation compte les extents de l'image copy-on-write de chaque dépôt, pas les fichiers qu'elle contient. Des valeurs élevées sont attendues pour les charges à écritures aléatoires (bases de données, couches de conteneurs) et sont purement informatives. La défragmentation n'est volontairement pas prise en charge ici : elle dissocierait les forks et instantanés de sauvegarde partagés par reflink et gonflerait l'utilisation du datastore.",
-        "storageHealthPoolSummary": "Pool : {{used}} utilisés, {{free}} libres ({{percent}} % plein)",
-        "storageHealthPoolSnapshots": "Les instantanés de sauvegarde retiennent {{pinned}} ({{active}} actifs, {{stale}} obsolètes ; les obsolètes sont supprimés par 'rdc machine prune')",
         "storageHealthHint": "Astuce : Exécutez avec --storage-health pour voir la fragmentation BTRFS et les économies reflink par repo",
+        "storageHealthPoolSnapshots": "Les instantanés de sauvegarde retiennent {{pinned}} ({{active}} actifs, {{stale}} obsolètes ; les obsolètes sont supprimés par 'rdc machine prune')",
+        "storageHealthPoolSummary": "Pool : {{used}} utilisés, {{free}} libres ({{percent}} % plein)",
         "storageHealthSummary": "Efficacité du stockage : {{summary}}",
         "strictDriftDetected": "--strict : {{count}} conteneur(s) au-delà du seuil de dérive ; sortie avec code non nul",
         "syncCertsFailed": "Échec de la synchronisation du cache de certificats : {{error}}"
@@ -1304,10 +1304,10 @@
         "list": {
           "completed": "Liste de démarrage automatique récupérée",
           "description": "Lister les dépôts avec le démarrage automatique activé",
-          "failed": "Échec de la récupération de la liste de démarrage automatique",
-          "starting": "Listage des dépôts avec démarrage automatique sur \"{{machine}}\"...",
           "empty": "Aucun dépôt avec démarrage automatique sur « {{machine}} »",
-          "service": "Service de démarrage automatique : installé={{installed}}, activé={{enabled}}"
+          "failed": "Échec de la récupération de la liste de démarrage automatique",
+          "service": "Service de démarrage automatique : installé={{installed}}, activé={{enabled}}",
+          "starting": "Listage des dépôts avec démarrage automatique sur \"{{machine}}\"..."
         }
       },
       "backup": {
@@ -1433,41 +1433,6 @@
         "sizeOption": "Nouvelle taille du dépôt (ex. 10G, 100G, 1T)",
         "starting": "Extension de \"{{repository}}\" à {{size}} sur \"{{machine}}\"..."
       },
-      "trim": {
-        "description": "Récupère l'espace du pool du datastore depuis les dépôts montés (en ligne, sans interruption). Les blocs supprimés dans les dépôts sont rendus au pool via fstrim. Sans --name, tous les dépôts montés et le datastore lui-même sont traités. fstrim est ignoré pour les dépôts en cours de sauvegarde ; la récupération --docker s'exécute quand même",
-        "descriptionShort": "Rendre au pool l'espace libre des dépôts",
-        "nameOption": "Dépôt à traiter (par défaut : tous les dépôts montés)",
-        "dockerOption": "Libérer l'espace Docker (conteneurs arrêtés, images orphelines, cache de build) ; s'exécute même pendant un instantané de sauvegarde actif",
-        "dockerVolumesOption": "Supprimer également les volumes Docker inutilisés",
-        "reportOnlyOption": "Afficher l'état des discards et l'estimation récupérable sans rien modifier",
-        "repoNotFound": "Dépôt introuvable : {{name}}",
-        "noMountedRepos": "Aucun dépôt monté trouvé",
-        "starting": "Trim des dépôts sur \"{{machine}}\"...",
-        "completed": "Trim terminé : {{total}} récupérés",
-        "failed": "Échec du trim"
-      },
-      "policy": {
-        "description": "Gère la politique de taille automatique appliquée par le mainteneur de stockage de la machine : agrandit le quota d'un dépôt en ligne quand il se remplit (jamais au-delà de max-quota, jamais quand le pool est bas) et lance des trims planifiés. Il n'y a pas de réduction automatique ; utilisez 'repo resize'. Sans --name, la politique par défaut de la machine est visée",
-        "descriptionShort": "Gérer la politique de taille automatique (auto-agrandissement, trim planifié)",
-        "nameOption": "Dépôt (par défaut : politique de toute la machine)",
-        "repoNotFound": "Dépôt introuvable : {{name}}",
-        "invalidBool": "{{flag}} doit être 'true' ou 'false', reçu : {{value}}",
-        "failed": "Échec de l'opération de politique",
-        "set": {
-          "description": "Définit des champs de la politique de taille. Seuls les drapeaux passés sont modifiés ; les autres champs conservent leurs valeurs. Activer l'auto-agrandissement exige --max-quota : le plafond est votre consentement explicite au surprovisionnement du pool",
-          "descriptionShort": "Définir des champs de politique (défaut machine, ou un dépôt avec --name)",
-          "autoGrowOption": "Activer l'agrandissement automatique du quota en ligne (true/false)",
-          "maxQuotaOption": "Plafond de l'auto-agrandissement (ex. 200G) ; requis pour l'auto-agrandissement",
-          "growThresholdOption": "% d'occupation du système de fichiers déclenchant un agrandissement (défaut 85)",
-          "growStepOption": "Croissance par étape : absolue (10G) ou pourcentage du quota (20%)",
-          "autoTrimOption": "Activer le trim planifié (true/false)",
-          "trimIntervalOption": "Heures minimales entre trims automatiques (défaut 24)"
-        },
-        "get": {
-          "description": "Affiche le défaut machine enregistré, la surcharge du dépôt (avec --name) et la politique effective fusionnée appliquée par le mainteneur",
-          "descriptionShort": "Afficher la politique de taille (défaut machine, surcharge du dépôt, effective)"
-        }
-      },
       "fork": {
         "alreadyExists": "Le dépôt \"{{name}}\" existe déjà dans le contexte",
         "checkpointOption": "Créer un checkpoint CRIU sur la source avant le fork (capturer l'état mémoire des processus pour restauration sur le fork)",
@@ -1537,7 +1502,6 @@
         "checkpointing": "Création du checkpoint CRIU...",
         "complete": "Migration terminée : {{name}} déplacé de {{from}} vers {{to}}",
         "deltaDone": "Synchronisation delta terminée",
-        "phase2Stats": "Bascule (TEMPS D'ARRÊT) : {{transferred}} en {{duration}}",
         "deltaFailed": "Synchronisation delta échouée",
         "deltaSync": "Synchronisation du delta...",
         "description": "Migration en direct d'un dépôt d'une machine à une autre avec un temps d'arrêt minimal. rsync en deux phases : transfert en masse pendant l'exécution, puis arrêt bref pour la synchronisation delta. Prend en charge le checkpoint CRIU pour la migration de la mémoire des processus et le provisionnement automatique des machines cibles",
@@ -1554,9 +1518,10 @@
         "optionTo": "Nom de la machine cible",
         "phase1": "Phase 1 : Transfert des données en masse (la source reste en fonctionnement)...",
         "phase1Done": "Transfert en masse terminé",
-        "phase1Stats": "{{transferred}} transférés en {{duration}} — la source est restée en ligne",
         "phase1Failed": "Transfert en masse échoué",
+        "phase1Stats": "{{transferred}} transférés en {{duration}} — la source est restée en ligne",
         "phase2": "Phase 2 : Basculement (bref temps d'arrêt)...",
+        "phase2Stats": "Bascule (TEMPS D'ARRÊT) : {{transferred}} en {{duration}}",
         "phase3": "Phase 3 : Démarrage sur la cible...",
         "provisioning": "Provisionnement de la machine cible {{machine}} via {{provider}}...",
         "sourceStopped": "Services source arrêtés",
@@ -1588,6 +1553,28 @@
         "starting": "Définition de la propriété de \"{{repository}}\" sur \"{{machine}}\"...",
         "uidOption": "UID du propriétaire (par défaut : 7111)"
       },
+      "policy": {
+        "description": "Gère la politique de taille automatique appliquée par le mainteneur de stockage de la machine : agrandit le quota d'un dépôt en ligne quand il se remplit (jamais au-delà de max-quota, jamais quand le pool est bas) et lance des trims planifiés. Il n'y a pas de réduction automatique ; utilisez 'repo resize'. Sans --name, la politique par défaut de la machine est visée",
+        "descriptionShort": "Gérer la politique de taille automatique (auto-agrandissement, trim planifié)",
+        "failed": "Échec de l'opération de politique",
+        "get": {
+          "description": "Affiche le défaut machine enregistré, la surcharge du dépôt (avec --name) et la politique effective fusionnée appliquée par le mainteneur",
+          "descriptionShort": "Afficher la politique de taille (défaut machine, surcharge du dépôt, effective)"
+        },
+        "invalidBool": "{{flag}} doit être 'true' ou 'false', reçu : {{value}}",
+        "nameOption": "Dépôt (par défaut : politique de toute la machine)",
+        "repoNotFound": "Dépôt introuvable : {{name}}",
+        "set": {
+          "autoGrowOption": "Activer l'agrandissement automatique du quota en ligne (true/false)",
+          "autoTrimOption": "Activer le trim planifié (true/false)",
+          "description": "Définit des champs de la politique de taille. Seuls les drapeaux passés sont modifiés ; les autres champs conservent leurs valeurs. Activer l'auto-agrandissement exige --max-quota : le plafond est votre consentement explicite au surprovisionnement du pool",
+          "descriptionShort": "Définir des champs de politique (défaut machine, ou un dépôt avec --name)",
+          "growStepOption": "Croissance par étape : absolue (10G) ou pourcentage du quota (20%)",
+          "growThresholdOption": "% d'occupation du système de fichiers déclenchant un agrandissement (défaut 85)",
+          "maxQuotaOption": "Plafond de l'auto-agrandissement (ex. 200G) ; requis pour l'auto-agrandissement",
+          "trimIntervalOption": "Heures minimales entre trims automatiques (défaut 24)"
+        }
+      },
       "pull": {
         "deployed": "Dépôt \"{{repo}}\" déployé sur {{machine}}",
         "deployFailed": "Échec du déploiement de \"{{repo}}\" après le pull",
@@ -1614,16 +1601,16 @@
         "optionCheckpoint": "Créer un checkpoint CRIU avant la sauvegarde (capture l'état de la mémoire des processus pour la migration à chaud)",
         "optionDeltaBase": "GUID de base immuable présent à l'identique sur les deux machines ; ne transférer que les blocs modifiés (cible machine). Omettre pour une base automatique sans intervention",
         "optionForce": "Forcer l'écrasement de la sauvegarde existante",
+        "optionJson": "Afficher les statistiques de transfert en JSON",
         "optionProvision": "Provisionner automatiquement la machine cible via le fournisseur cloud si elle n'existe pas",
         "optionStrategy": "Stratégie de delta par blocs lors de l'utilisation d'une base de delta : auto, physical ou shared",
-        "optionJson": "Afficher les statistiques de transfert en JSON",
-        "statsDelta": "\"{{repo}}\" envoyé vers {{machine}} — {{transferred}} transférés en {{duration}} (delta par rapport à la base {{base}}, image {{image}})",
-        "statsFull": "\"{{repo}}\" envoyé vers {{machine}} — {{transferred}} transférés en {{duration}} (transfert complet)",
-        "statsNoBytes": "\"{{repo}}\" envoyé vers {{machine}} — terminé en {{duration}}",
         "optionTag": "Tag de déploiement pour le versionnage",
         "optionTo": "Nom de la machine ou du stockage de destination (détecté automatiquement depuis la configuration)",
         "optionUp": "Après l'envoi, monter et déployer le dépôt sur la machine cible",
-        "pushing": "Envoi de la sauvegarde de \"{{repo}}\" vers {{dest}}..."
+        "pushing": "Envoi de la sauvegarde de \"{{repo}}\" vers {{dest}}...",
+        "statsDelta": "\"{{repo}}\" envoyé vers {{machine}} — {{transferred}} transférés en {{duration}} (delta par rapport à la base {{base}}, image {{image}})",
+        "statsFull": "\"{{repo}}\" envoyé vers {{machine}} — {{transferred}} transférés en {{duration}} (transfert complet)",
+        "statsNoBytes": "\"{{repo}}\" envoyé vers {{machine}} — terminé en {{duration}}"
       },
       "resize": {
         "completed": "Redimensionnement terminé",
@@ -1719,6 +1706,19 @@
         },
         "starting": "Application du modèle à \"{{repository}}\" sur \"{{machine}}\"..."
       },
+      "trim": {
+        "completed": "Trim terminé : {{total}} récupérés",
+        "description": "Récupère l'espace du pool du datastore depuis les dépôts montés (en ligne, sans interruption). Les blocs supprimés dans les dépôts sont rendus au pool via fstrim. Sans --name, tous les dépôts montés et le datastore lui-même sont traités. fstrim est ignoré pour les dépôts en cours de sauvegarde ; la récupération --docker s'exécute quand même",
+        "descriptionShort": "Rendre au pool l'espace libre des dépôts",
+        "dockerOption": "Libérer l'espace Docker (conteneurs arrêtés, images orphelines, cache de build) ; s'exécute même pendant un instantané de sauvegarde actif",
+        "dockerVolumesOption": "Supprimer également les volumes Docker inutilisés",
+        "failed": "Échec du trim",
+        "nameOption": "Dépôt à traiter (par défaut : tous les dépôts montés)",
+        "noMountedRepos": "Aucun dépôt monté trouvé",
+        "repoNotFound": "Dépôt introuvable : {{name}}",
+        "reportOnlyOption": "Afficher l'état des discards et l'estimation récupérable sans rien modifier",
+        "starting": "Trim des dépôts sur \"{{machine}}\"..."
+      },
       "tunnel": {
         "active": "Tunnel actif : localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
         "closed": "Tunnel fermé",
@@ -1734,9 +1734,9 @@
         "noContainers": "Aucun conteneur en cours d'exécution trouvé pour le dépôt \"{{repository}}\"",
         "noPorts": "Aucun port exposé trouvé sur le conteneur \"{{container}}\". Spécifiez --port",
         "noServiceIP": "Le conteneur \"{{container}}\" n'a pas d'IP de service assignée",
-        "portOption": "Port du conteneur distant à rediriger",
-        "portInUse": "Le port local {{port}} est déjà utilisé. Choisissez-en un autre avec --local",
         "notReady": "Le tunnel n'est pas devenu actif sur localhost:{{localPort}} dans les 15 s",
+        "portInUse": "Le port local {{port}} est déjà utilisé. Choisissez-en un autre avec --local",
+        "portOption": "Port du conteneur distant à rediriger",
         "urlOnlyOption": "Afficher uniquement l'URL locale lorsque le tunnel est prêt (lisible par les scripts)"
       },
       "unmount": {
@@ -2211,26 +2211,26 @@
         "removedKeys": "Suppression de toutes les clés SSH persistées."
       },
       "connect": {
+        "browserUrl": "Ouvrez VS Code dans votre navigateur : {{url}}",
         "configuringSSH": "Configuration de SSH...",
         "configuringVSCode": "Configuration des paramètres VS Code...",
         "description": "Se connecter à une machine ou un dépôt dans VS Code",
         "detecting": "Détection de VS Code...",
         "extensionWarning": "Avertissement : L'extension Remote SSH peut ne pas être installée.\nInstallez depuis : https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
         "fetchingDetails": "Récupération des détails de connexion...",
+        "installingServer": "Vérification de l'installation de {{provider}} {{version}} sur la machine...",
         "opening": "Ouverture de VS Code : {{connection}} → {{path}}",
+        "openingBrowser": "Ouverture du navigateur...",
+        "passwordNote": "Mot de passe de connexion : {{password}}",
         "persistingKey": "Persistance de la clé SSH...",
         "provisioningRenet": "Provisionnement de renet sur le serveur distant...",
+        "serverReused": "Réutilisation du serveur déjà en cours d'exécution",
         "settingsWarning": "Avertissement : Impossible de configurer les paramètres VS Code : {{error}}",
         "settingUpEnv": "Configuration de l'environnement distant...",
+        "startingServer": "Démarrage de {{provider}} dans le sandbox du dépôt...",
         "success": "VS Code lancé avec succès.",
         "testingConnectivity": "Test de la connectivité à {{host}}:{{port}}...",
-        "installingServer": "Vérification de l'installation de {{provider}} {{version}} sur la machine...",
-        "startingServer": "Démarrage de {{provider}} dans le sandbox du dépôt...",
-        "serverReused": "Réutilisation du serveur déjà en cours d'exécution",
-        "tunnelReady": "Tunnel actif sur localhost:{{port}}",
-        "browserUrl": "Ouvrez VS Code dans votre navigateur : {{url}}",
-        "passwordNote": "Mot de passe de connexion : {{password}}",
-        "openingBrowser": "Ouverture du navigateur..."
+        "tunnelReady": "Tunnel actif sur localhost:{{port}}"
       },
       "description": "Ouvrir VS Code Remote SSH vers une machine ou un dépôt",
       "descriptionShort": "Ouvrir VS Code Remote SSH vers une machine ou un dépôt",
@@ -2251,8 +2251,8 @@
         },
         "stop": {
           "description": "Arrêter le serveur VS Code navigateur",
-          "stopped": "{{provider}} arrêté",
-          "notRunning": "{{provider}} n'était pas en cours d'exécution"
+          "notRunning": "{{provider}} n'était pas en cours d'exécution",
+          "stopped": "{{provider}} arrêté"
         }
       }
     }
@@ -2581,16 +2581,16 @@
     "vaultDataRequired": "Données de coffre requises. Utilisez --vault <json> ou insérez JSON via stdin.",
     "vaultVersionRequired": "Version du coffre requise. Utilisez --vault-version <n>.",
     "vscode": {
+      "browserNeedsRepo": "vscode --browser sert un sandbox de dépôt — passez --repository <name>",
       "cleanupRequired": "Spécifiez --all pour supprimer toutes les connexions ou --connection <name> pour une spécifique.",
       "connectivityFailed": "Impossible d'atteindre {{host}}:{{port}}. {{error}}\n\nDépannage :\n  - Vérifiez que la machine est allumée et connectée au réseau\n  - Vérifiez que l'adresse IP est correcte dans le coffre de la machine\n  - Assurez-vous que le port {{port}} n'est pas bloqué par un pare-feu\n  - Essayez de faire un ping à la machine : ping {{host}}",
       "noHostKey": "La machine '{{machine}}' n'a pas de clé d'hôte configurée dans le coffre",
       "noIpAddress": "La machine '{{machine}}' n'a pas d'adresse IP configurée",
       "noPrivateKey": "L'équipe '{{team}}' n'a pas de clé privée SSH configurée",
       "notFound": "VS Code non trouvé.\n\nVeuillez installer depuis : https://code.visualstudio.com/\nOu définir la variable d'environnement REDIACC_VSCODE_PATH.",
-      "browserNeedsRepo": "vscode --browser sert un sandbox de dépôt — passez --repository <name>",
-      "unsupportedArch": "Architecture de machine non prise en charge pour VS Code navigateur : {{arch}}",
       "serverInstallFailed": "Échec de l'installation de {{provider}} : {{error}}",
-      "serverStartFailed": "Échec du démarrage de {{provider}} : {{error}}"
+      "serverStartFailed": "Échec du démarrage de {{provider}} : {{error}}",
+      "unsupportedArch": "Architecture de machine non prise en charge pour VS Code navigateur : {{arch}}"
     }
   },
   "help": {
@@ -2785,13 +2785,13 @@
     "vaultVersion": "Version actuelle du coffre pour le verrouillage optimiste",
     "verifyChecksum": "Vérifier les fichiers à l'aide de sommes de contrôle après synchronisation",
     "vmId": "ID de la machine virtuelle",
-    "watch": "Surveiller les modifications",
-    "watchUpdates": "Surveiller les mises à jour",
-    "yes": "Ignorer l'invite de confirmation",
     "vscodeBrowser": "Servir VS Code navigateur depuis le sandbox du dépôt (aucun VS Code local nécessaire)",
     "vscodeNoOpen": "Afficher l'URL sans ouvrir le navigateur local",
+    "vscodeServerArchive": "Chemin de l'archive du serveur pré-installée sur la machine (installations hors ligne)",
     "vscodeServerProvider": "Implémentation du serveur VS Code navigateur (openvscode, code-server)",
-    "vscodeServerArchive": "Chemin de l'archive du serveur pré-installée sur la machine (installations hors ligne)"
+    "watch": "Surveiller les modifications",
+    "watchUpdates": "Surveiller les mises à jour",
+    "yes": "Ignorer l'invite de confirmation"
   },
   "prompts": {
     "apiUrl": "URL de l'API :",

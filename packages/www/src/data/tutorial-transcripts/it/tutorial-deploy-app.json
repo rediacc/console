@@ -8,7 +8,7 @@
       "markerIndex": 0,
       "at": 2.408078,
       "text": "Primo passo: elenca i template disponibili. Rediacc include configurazioni già pronte per le app più comuni, quindi non c'è nessun docker-compose da scrivere da zero.",
-      "afterText": "Il catalogo completo dei template. Ognuno e' una coppia compose + Rediaccfile testata.",
+      "afterText": "Il catalogo completo dei template. Ognuno è una coppia compose + Rediaccfile testata.",
       "cardLabel": "Elenca Template",
       "prose": "Primo passo: elenca i template disponibili. Rediacc include template preconfigurati per le app più comuni, così non devi creare un docker-compose da zero."
     },
@@ -35,7 +35,7 @@
       "markerIndex": 3,
       "at": 21.699752,
       "text": "Terzo passo: avvia il repo. Un solo comando, e la CLI monta il volume cifrato, avvia il daemon Docker isolato e lancia i container.",
-      "afterText": "Solo i container di questo repo. L'isolamento e' reale, non solo di configurazione.",
+      "afterText": "Solo i container di questo repo. L'isolamento è reale, non solo di configurazione.",
       "cardLabel": "Avvia il Repo",
       "prose": "Avvia il repo. La CLI avvia i container, monta il volume cifrato e configura il Docker daemon isolato."
     },
@@ -56,7 +56,7 @@
     },
     {
       "id": "pick-apply-run",
-      "text": "Il flusso e' semplice: scegli un template, applicalo al repo ed eseguilo. La CLI include template integrati, cosi' non dobbiamo mai scrivere un docker-compose da zero."
+      "text": "Il flusso è semplice: scegli un template, applicalo al repo ed eseguilo. La CLI include template integrati, cosi' non dobbiamo mai scrivere un docker-compose da zero."
     },
     {
       "id": "vscode-file-tour",
@@ -64,7 +64,7 @@
     },
     {
       "id": "next-tutorial",
-      "text": "Ed e' tutto per il tuo primo deploy. Ci vediamo nel prossimo, dove approfondiremo come lavorare con il repo stesso."
+      "text": "Ed è tutto per il tuo primo deploy. Ci vediamo nel prossimo, dove approfondiremo come lavorare con il repo stesso."
     }
   ],
   "title": "Distribuire la Prima App",

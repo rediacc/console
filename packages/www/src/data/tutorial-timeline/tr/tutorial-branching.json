@@ -1,0 +1,212 @@
+{
+  "cast": "/assets/tutorials/tutorial-branching.cast",
+  "language": "tr",
+  "version": 1,
+  "steps": [
+    {
+      "id": "tutorial-branching-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.418102,
+      "replayEndSec": 10.876025,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-01.3fc17800.mp3",
+      "audioDurationSec": 5.250612,
+      "textHash": "3fc1780074420c883a8f0ed9b9a351a56aa72e8bc5e4727883cd4e4956c3920e",
+      "narrationText": "Çalışma fork'umuz uygulamanın birinci sürümünü tutuyor; basit bir işaret dosyası bunu gözler önüne seriyor.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-01-after.1765faff.mp3",
+      "afterAudioDurationSec": 2.115918,
+      "afterTextHash": "1765faff5e2baf1af721c94bbf94ed299c8a3ec8ffb2c1cb994f29d840b71d39"
+    },
+    {
+      "id": "tutorial-branching-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.876025,
+      "replayEndSec": 20.708803,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-02.e43d6b75.mp3",
+      "audioDurationSec": 9.325714,
+      "textHash": "e43d6b7592d5943a8c2c8d52db8f6b39b0398f414800a75581f0ed5cf85e4994",
+      "narrationText": "Sadece dosyalar değil. Bu fork'ta gerçek bir PostgreSQL veritabanı da çalışıyor ve customers tablosu üç satır içeriyor. Bu sayıyı aklınızda tutun.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-02-after.1916c8b0.mp3",
+      "afterAudioDurationSec": 3.63102,
+      "afterTextHash": "1916c8b046e293302ff85047023a86ace87e23103016f03bb9e31ee9217eb86d"
+    },
+    {
+      "id": "tutorial-branching-03",
+      "markerIndex": 2,
+      "replayStartSec": 20.708803,
+      "replayEndSec": 29.448478,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-03.5335a6e5.mp3",
+      "audioDurationSec": 11.154286,
+      "textHash": "5335a6e5389f8780970017cd815fa4775b613f9599d210ee423ac1f767bf16fd",
+      "narrationText": "Dondurun. Commit, tüm repository'yi bir mesaj, bir yazar ve bir üst öğeyle birlikte değişmez bir imaj olarak yakalar. Tıpkı git gibi, ama her şey için; veritabanı dahil.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-03-after.d2947271.mp3",
+      "afterAudioDurationSec": 5.067755,
+      "afterTextHash": "d29472719dbd1b3ea34a0b61870c479ef9ae77ad6343be8198d5c0350217b250"
+    },
+    {
+      "id": "tutorial-branching-04",
+      "markerIndex": 3,
+      "replayStartSec": 29.448478,
+      "replayEndSec": 34.241982,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-04.87dc8a64.mp3",
+      "audioDurationSec": 3.787755,
+      "textHash": "87dc8a6495d9009da49620a797cfd6b4864e3ecd210c5bb39c921e9b0646e57d",
+      "narrationText": "Commit'e bir isim verin. Stable branch artık birinci sürümü gösteriyor.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-04-after.59f6f0d7.mp3",
+      "afterAudioDurationSec": 2.115918,
+      "afterTextHash": "59f6f0d7b44658205cb1f55819551a1123fba8889e260287358d02b6268c8f80"
+    },
+    {
+      "id": "tutorial-branching-05",
+      "markerIndex": 4,
+      "replayStartSec": 34.241982,
+      "replayEndSec": 42.690283,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-05.b5b96bfa.mp3",
+      "audioDurationSec": 6.269388,
+      "textHash": "b5b96bfa945cb2d0ebfadccba29d5aa25299d905822a152354ee1408320c61ff",
+      "narrationText": "Çalışmaya devam edin. Çalışma fork'unda ikinci sürüm birincinin yerini alıyor. Commit'in umurunda değil.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-05-after.f27f7e45.mp3",
+      "afterAudioDurationSec": 2.76898,
+      "afterTextHash": "f27f7e4556f50c79482d4ffa6949d863280e62cfce709d51cb33cc60004105cc"
+    },
+    {
+      "id": "tutorial-branching-06",
+      "markerIndex": 5,
+      "replayStartSec": 42.690283,
+      "replayEndSec": 51.047933,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-06.e23cccd5.mp3",
+      "audioDurationSec": 8.124082,
+      "textHash": "e23cccd5c4e5ac3689592849ee05c516af306426fbd89729443eedaf5487e369",
+      "narrationText": "Şimdi felaket. Riskli değişiklik customers tablosunu siliyor. Gerçek hayatta bu, midenizin bulandığı andır.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-06-after.2e16c151.mp3",
+      "afterAudioDurationSec": 3.239184,
+      "afterTextHash": "2e16c1512b9c686e24f3fcc17847b1f3a79fa4f0c61a0b18334db3b382641ad0"
+    },
+    {
+      "id": "tutorial-branching-07",
+      "markerIndex": 6,
+      "replayStartSec": 51.047933,
+      "replayEndSec": 59.69522,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-07.1582e9f0.mp3",
+      "audioDurationSec": 8.594286,
+      "textHash": "1582e9f071a8f62e6d52387ad191052acd4f83ab39933abb24d61d69c28c33f5",
+      "narrationText": "Satırları tekrar isteyin, veritabanı açıkça söylüyor: customers ilişkisi mevcut değil. Felaket gerçek. Her satır gitti.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-07-after.f73055f4.mp3",
+      "afterAudioDurationSec": 4.440816,
+      "afterTextHash": "f73055f4e8840e88aa29bf8fa08283991a4eeff373dd3cc313db67a73f3ea522"
+    },
+    {
+      "id": "tutorial-branching-08",
+      "markerIndex": 7,
+      "replayStartSec": 59.69522,
+      "replayEndSec": 68.35661,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-08.cc7be270.mp3",
+      "audioDurationSec": 8.280816,
+      "textHash": "cc7be2705fcd6abb0c293575519a37ae82488cd2a7c6e0f29252945ed92a1cae",
+      "narrationText": "Riskli değişikliği de commit edin; bozuk tablo ve her şeyiyle. Geçmiş gerçekte ne olduğunu kaydeder. Artık iki commit var, üst ve alt.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-08-after.125bc255.mp3",
+      "afterAudioDurationSec": 1.645714,
+      "afterTextHash": "125bc2555bd73605717eacd3382e2b74b529fabf1b947d6308685f2e8be9d69a"
+    },
+    {
+      "id": "tutorial-branching-09",
+      "markerIndex": 8,
+      "replayStartSec": 68.35661,
+      "replayEndSec": 75.614559,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-09.6d7835e0.mp3",
+      "audioDurationSec": 8.986122,
+      "textHash": "6d7835e05cbad3ec77d4a7e5a608e35d27f11907353dc513ac10d7d811c3c626",
+      "narrationText": "İşte geçmiş: üstte ikinci sürüm, altında birinci sürüm, mesajlar ve yazarlar dahil; tek bir imajın kilidini açmadan.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-09-after.ba03c64f.mp3",
+      "afterAudioDurationSec": 3.160816,
+      "afterTextHash": "ba03c64f24cce2bd5a5121cbcc0a09e91f9301384697941f3cabe007c890503b"
+    },
+    {
+      "id": "tutorial-branching-10",
+      "markerIndex": 9,
+      "replayStartSec": 75.614559,
+      "replayEndSec": 83.292425,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-10.2b356f1a.mp3",
+      "audioDurationSec": 8.515918,
+      "textHash": "2b356f1a1d991468b1e81cddb8d2ff0abbe2c1e4c070722fad04471e033b9379",
+      "narrationText": "İşte ödül anı. Stable branch'i yeni bir yazılabilir fork'a checkout edin. Reflink klonu: neredeyse anında, her boyutta.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-10-after.90d42e06.mp3",
+      "afterAudioDurationSec": 3.63102,
+      "afterTextHash": "90d42e069fafa0e45775e0c3eef70031bb5dc282767c58667122d411528eb526"
+    },
+    {
+      "id": "tutorial-branching-11",
+      "markerIndex": 10,
+      "replayStartSec": 83.292425,
+      "replayEndSec": 91.555233,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-11.2c14ae7c.mp3",
+      "audioDurationSec": 2.35102,
+      "textHash": "2c14ae7c9d0715d04ad0924857f2d284718817488601ac77174f1ff2c1c5e169",
+      "narrationText": "Rollback fork'unu diğer repo'lar gibi başlatın.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-11-after.2d1e79d1.mp3",
+      "afterAudioDurationSec": 2.925714,
+      "afterTextHash": "2d1e79d15404c1f2b4cf41bba167eea72dc9964ef4667048eb3fa09fcd9e7025"
+    },
+    {
+      "id": "tutorial-branching-12",
+      "markerIndex": 11,
+      "replayStartSec": 91.555233,
+      "replayEndSec": 98.952411,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-12.0003cb69.mp3",
+      "audioDurationSec": 8.124082,
+      "textHash": "0003cb6987f9b5c7732dc029a36d4d81f3828dc2678f7a77f9374930bd12c32c",
+      "narrationText": "İşte kanıt: rollback fork'u birinci sürümü okuyor. Çalışma fork'unda hâlâ ikinci sürüm var. Çalıştırabileceğiniz bir geçmiş.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-12-after.5ab8e450.mp3",
+      "afterAudioDurationSec": 3.474286,
+      "afterTextHash": "5ab8e450ef52642702550f34a33d1e50ecfa80c5d3193c80da43c12794cb2d36"
+    },
+    {
+      "id": "tutorial-branching-13",
+      "markerIndex": 12,
+      "replayStartSec": 98.952411,
+      "replayEndSec": 107.653008,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-13.d83f15ed.mp3",
+      "audioDurationSec": 8.124082,
+      "textHash": "d83f15ed1028c16f7fa5cb8b74d46d3a85c74b42ba77fc907e88f3db9e6bcb8f",
+      "narrationText": "Ve en önemli kısım: silinen tablo geri geldi, üç satırıyla birlikte. Rollback yalnızca dosyaları değil, veritabanını da geri yükledi.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-13-after.ef87d83c.mp3",
+      "afterAudioDurationSec": 3.004082,
+      "afterTextHash": "ef87d83ce62d6b319665c9d3be669add8ca0faf5accbebbc1b087f34e1d30b1d"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/intro.e3ac8c50.mp3",
+      "textHash": "e3ac8c50e13d5e455ba8fa384c3bf893acaf41f18a3e1b6c12c928679a92db41",
+      "audioDurationSec": 12.59102,
+      "narrationText": "Repository'lerinizi kod gibi sürümleyelim! Bir kontrol noktası donduracağız, ona bir isim vereceğiz, sonra gerçek bir veritabanı tablosunu sileceğiz. Rollback, dondurulmuş durumu saniyeler içinde geri getirir; her satırıyla birlikte."
+    },
+    {
+      "id": "commit-model",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/commit-model.55d63a67.mp3",
+      "textHash": "55d63a679031fd8f526faca7f202375d3ef13ce075e2e7fa7a22e709c900d20f",
+      "audioDurationSec": 18.285714,
+      "narrationText": "Model git, ama tüm repository'ler için. Commit, dondurulmuş ve değişmez bir imajdır. Mount edilmeyi bile reddeder, yani hiçbir şey onu değiştiremez. Branch, yalnızca bir commit'i gösteren bir isimdir. Checkout ise herhangi bir commit'i yeni ve yazılabilir bir fork'a dönüştürür."
+    },
+    {
+      "id": "vscode-versions",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/vscode-versions.4c291cd0.mp3",
+      "textHash": "4c291cd0ce041752469416e6c7396e69790e69a6b02639394099963a423ff83a",
+      "audioDurationSec": 12.434286,
+      "narrationText": "Görmek inanmaktır. Soldaki rollback fork'u birinci sürümü tutarken, sağdaki çalışma fork'u ikinci sürüme geçti. İkisi de canlı, ikisi de yazılabilir, ikisi de aynı geçmişten geliyor."
+    },
+    {
+      "id": "next-tutorial",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/next-tutorial.4203830e.mp3",
+      "textHash": "4203830ebcefa86f7885923affdce1f3aa165dd3aad6426c67006e8257011c32",
+      "audioDurationSec": 9.952653,
+      "narrationText": "Commit'ler hiç değişmez, fork'lar hiç beklemez. Sıradaki derste, çalışan bir repository'nin tamamını canlı olarak başka bir makineye taşıyoruz. Bir sonrakinde görüşürüz!"
+    }
+  ],
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "41f0c0922db5c61d38ec58d331691a79e750f7c4e530180bd57371b4bda34867"
+}

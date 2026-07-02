@@ -959,9 +959,9 @@
         "infrastructure": "البنية التحتية",
         "noData": "لا تتوفر بيانات حالة",
         "storageHealthFragmentationNote": "يحسب التجزؤ عدد المقاطع (extents) في صورة النسخ-عند-الكتابة لكل مستودع، وليس الملفات بداخلها. القيم المرتفعة متوقعة في أحمال الكتابة العشوائية (قواعد البيانات، طبقات الحاويات) وهي للعلم فقط. إلغاء التجزئة غير مدعوم هنا عمدًا: فهو يلغي مشاركة النسخ المرتبطة عبر reflink ولقطات النسخ الاحتياطي ويضخّم استخدام مخزن البيانات.",
-        "storageHealthPoolSummary": "التجمّع: {{used}} مستخدم، {{free}} متاح (ممتلئ بنسبة {{percent}}%)",
-        "storageHealthPoolSnapshots": "تحتجز لقطات النسخ الاحتياطي {{pinned}} ({{active}} نشطة، {{stale}} قديمة؛ تُزال القديمة عبر 'rdc machine prune')",
         "storageHealthHint": "تلميح: شغّل مع --storage-health لعرض تجزئة BTRFS وتوفير reflink لكل مستودع",
+        "storageHealthPoolSnapshots": "تحتجز لقطات النسخ الاحتياطي {{pinned}} ({{active}} نشطة، {{stale}} قديمة؛ تُزال القديمة عبر 'rdc machine prune')",
+        "storageHealthPoolSummary": "التجمّع: {{used}} مستخدم، {{free}} متاح (ممتلئ بنسبة {{percent}}%)",
         "storageHealthSummary": "كفاءة التخزين: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} حاوية تجاوزت عتبة الانحراف؛ الخروج بقيمة غير صفرية",
         "syncCertsFailed": "فشلت مزامنة ذاكرة التخزين المؤقت للشهادات: {{error}}"
@@ -1304,8 +1304,8 @@
         "list": {
           "completed": "تم استرداد قائمة التشغيل التلقائي",
           "description": "عرض المستودعات ذات التشغيل التلقائي المفعّل",
-          "failed": "فشل سرد مستودعات التشغيل التلقائي",
           "empty": "لا توجد مستودعات ذات تشغيل تلقائي على \"{{machine}}\"",
+          "failed": "فشل سرد مستودعات التشغيل التلقائي",
           "service": "خدمة التشغيل التلقائي: مثبّتة={{installed}}، مفعّلة={{enabled}}",
           "starting": "جارٍ سرد مستودعات التشغيل التلقائي على \"{{machine}}\"..."
         }
@@ -1433,41 +1433,6 @@
         "sizeOption": "حجم المستودع الجديد (مثلاً 10G، 100G، 1T)",
         "starting": "جارٍ توسيع \"{{repository}}\" إلى {{size}} على \"{{machine}}\"..."
       },
-      "trim": {
-        "description": "يستعيد مساحة تجمّع مخزن البيانات من المستودعات المركّبة (أثناء التشغيل، دون توقف). تُعاد الكتل المحذوفة داخل المستودعات إلى التجمّع عبر fstrim. بدون ‎--name تتم معالجة كل المستودعات المركّبة ومخزن البيانات نفسه. يُتخطى fstrim للمستودعات التي يجري نسخها احتياطيًا، لكن استعادة ‎--docker تظل تُنفَّذ",
-        "descriptionShort": "إعادة المساحة الحرة من المستودعات إلى التجمّع",
-        "nameOption": "المستودع المراد معالجته (الافتراضي: كل المستودعات المركّبة)",
-        "dockerOption": "استعادة مساحة Docker (حاويات متوقفة، صور معلّقة، ذاكرة بناء مؤقتة)؛ تُنفَّذ حتى أثناء وجود لقطة نسخ احتياطي نشطة",
-        "dockerVolumesOption": "حذف وحدات تخزين Docker غير المستخدمة أيضًا",
-        "reportOnlyOption": "عرض حالة discard وتقدير المساحة القابلة للاستعادة دون تنفيذ",
-        "repoNotFound": "المستودع غير موجود: {{name}}",
-        "noMountedRepos": "لم يُعثر على مستودعات مركّبة",
-        "starting": "جارٍ تنفيذ trim للمستودعات على \"{{machine}}\"...",
-        "completed": "اكتمل trim: تمت استعادة {{total}}",
-        "failed": "فشل trim"
-      },
-      "policy": {
-        "description": "يدير سياسة الحجم التلقائية التي يطبقها مشرف التخزين في الجهاز: يوسّع حصة المستودع أثناء التشغيل عندما يمتلئ (لا يتجاوز max-quota أبدًا، ولا يوسّع عند انخفاض مساحة التجمّع) وينفّذ عمليات trim مجدولة. لا يوجد تقليص تلقائي؛ استخدم 'repo resize' لذلك. بدون ‎--name تُدار السياسة الافتراضية للجهاز كله",
-        "descriptionShort": "إدارة سياسة الحجم التلقائية (توسيع تلقائي، trim مجدول)",
-        "nameOption": "المستودع (الافتراضي: سياسة الجهاز كله)",
-        "repoNotFound": "المستودع غير موجود: {{name}}",
-        "invalidBool": "يجب أن يكون {{flag}} إما 'true' أو 'false'، المستلم: {{value}}",
-        "failed": "فشلت عملية السياسة",
-        "set": {
-          "description": "يضبط حقول سياسة الحجم. تتغير الأعلام الممررة فقط؛ تحتفظ بقية الحقول المخزنة بقيمها. يتطلب تفعيل التوسيع التلقائي ‎--max-quota: السقف هو موافقتك الصريحة على تجاوز سعة التجمّع",
-          "descriptionShort": "ضبط حقول السياسة (افتراضي الجهاز، أو مستودع واحد مع ‎--name)",
-          "autoGrowOption": "تفعيل التوسيع التلقائي للحصة أثناء التشغيل (true/false)",
-          "maxQuotaOption": "سقف التوسيع التلقائي (مثل 200G)؛ مطلوب للتوسيع التلقائي",
-          "growThresholdOption": "نسبة استخدام نظام الملفات التي تطلق التوسيع (الافتراضي 85)",
-          "growStepOption": "مقدار التوسيع لكل خطوة: مطلق (10G) أو نسبة من الحصة (20%)",
-          "autoTrimOption": "تفعيل trim المجدول (true/false)",
-          "trimIntervalOption": "الحد الأدنى من الساعات بين عمليات trim التلقائية (الافتراضي 24)"
-        },
-        "get": {
-          "description": "يعرض افتراضي الجهاز المخزن وتجاوز المستودع (مع ‎--name) والسياسة الفعلية المدمجة التي يعمل بها المشرف",
-          "descriptionShort": "عرض سياسة الحجم (افتراضي الجهاز، تجاوز المستودع، الفعلية)"
-        }
-      },
       "fork": {
         "alreadyExists": "المستودع \"{{name}}\" موجود بالفعل في السياق",
         "checkpointOption": "إنشاء نقطة تفتيش CRIU على المصدر قبل التفريع (التقاط حالة ذاكرة العمليات للاستعادة عند fork)",
@@ -1537,7 +1502,6 @@
         "checkpointing": "جاري إنشاء نقطة فحص CRIU...",
         "complete": "اكتمل الترحيل: {{name}} نُقل من {{from}} إلى {{to}}",
         "deltaDone": "اكتملت مزامنة الفرق",
-        "phase2Stats": "التحويل النهائي (وقت توقف): {{transferred}} خلال {{duration}}",
         "deltaFailed": "فشلت مزامنة الفرق",
         "deltaSync": "جاري مزامنة الفرق...",
         "description": "ترحيل مباشر لمستودع من جهاز إلى آخر مع أقل وقت توقف. rsync على مرحلتين: نقل بالجملة أثناء التشغيل، ثم توقف قصير لمزامنة الفرق. يدعم نقطة فحص CRIU لترحيل ذاكرة العمليات والتوفير التلقائي للأجهزة الهدف",
@@ -1554,9 +1518,10 @@
         "optionTo": "اسم الجهاز الهدف",
         "phase1": "المرحلة 1: نقل البيانات بالجملة (المصدر يبقى يعمل)...",
         "phase1Done": "اكتمل النقل بالجملة",
-        "phase1Stats": "نُقل {{transferred}} خلال {{duration}} — ظل المصدر يعمل",
         "phase1Failed": "فشل النقل بالجملة",
+        "phase1Stats": "نُقل {{transferred}} خلال {{duration}} — ظل المصدر يعمل",
         "phase2": "المرحلة 2: التحويل (توقف قصير)...",
+        "phase2Stats": "التحويل النهائي (وقت توقف): {{transferred}} خلال {{duration}}",
         "phase3": "المرحلة 3: البدء على الهدف...",
         "provisioning": "جاري توفير الجهاز الهدف {{machine}} عبر {{provider}}...",
         "sourceStopped": "تم إيقاف خدمات المصدر",
@@ -1588,6 +1553,28 @@
         "starting": "جارٍ تعيين ملكية \"{{repository}}\" على \"{{machine}}\"...",
         "uidOption": "معرّف المالك UID (افتراضي: 7111)"
       },
+      "policy": {
+        "description": "يدير سياسة الحجم التلقائية التي يطبقها مشرف التخزين في الجهاز: يوسّع حصة المستودع أثناء التشغيل عندما يمتلئ (لا يتجاوز max-quota أبدًا، ولا يوسّع عند انخفاض مساحة التجمّع) وينفّذ عمليات trim مجدولة. لا يوجد تقليص تلقائي؛ استخدم 'repo resize' لذلك. بدون ‎--name تُدار السياسة الافتراضية للجهاز كله",
+        "descriptionShort": "إدارة سياسة الحجم التلقائية (توسيع تلقائي، trim مجدول)",
+        "failed": "فشلت عملية السياسة",
+        "get": {
+          "description": "يعرض افتراضي الجهاز المخزن وتجاوز المستودع (مع ‎--name) والسياسة الفعلية المدمجة التي يعمل بها المشرف",
+          "descriptionShort": "عرض سياسة الحجم (افتراضي الجهاز، تجاوز المستودع، الفعلية)"
+        },
+        "invalidBool": "يجب أن يكون {{flag}} إما 'true' أو 'false'، المستلم: {{value}}",
+        "nameOption": "المستودع (الافتراضي: سياسة الجهاز كله)",
+        "repoNotFound": "المستودع غير موجود: {{name}}",
+        "set": {
+          "autoGrowOption": "تفعيل التوسيع التلقائي للحصة أثناء التشغيل (true/false)",
+          "autoTrimOption": "تفعيل trim المجدول (true/false)",
+          "description": "يضبط حقول سياسة الحجم. تتغير الأعلام الممررة فقط؛ تحتفظ بقية الحقول المخزنة بقيمها. يتطلب تفعيل التوسيع التلقائي ‎--max-quota: السقف هو موافقتك الصريحة على تجاوز سعة التجمّع",
+          "descriptionShort": "ضبط حقول السياسة (افتراضي الجهاز، أو مستودع واحد مع ‎--name)",
+          "growStepOption": "مقدار التوسيع لكل خطوة: مطلق (10G) أو نسبة من الحصة (20%)",
+          "growThresholdOption": "نسبة استخدام نظام الملفات التي تطلق التوسيع (الافتراضي 85)",
+          "maxQuotaOption": "سقف التوسيع التلقائي (مثل 200G)؛ مطلوب للتوسيع التلقائي",
+          "trimIntervalOption": "الحد الأدنى من الساعات بين عمليات trim التلقائية (الافتراضي 24)"
+        }
+      },
       "pull": {
         "deployed": "تم نشر المستودع \"{{repo}}\" على {{machine}}",
         "deployFailed": "فشل نشر \"{{repo}}\" بعد السحب",
@@ -1614,16 +1601,16 @@
         "optionCheckpoint": "إنشاء نقطة فحص CRIU قبل النسخ الاحتياطي (التقاط حالة ذاكرة العمليات للترحيل المباشر)",
         "optionDeltaBase": "معرّف GUID أساسي ثابت متطابق بايتياً على كلا الجهازين؛ نقل الكتل المتغيرة فقط (هدف الجهاز). احذفه للاكتشاف التلقائي للأساس",
         "optionForce": "فرض الكتابة فوق النسخة الاحتياطية الموجودة",
+        "optionJson": "إخراج إحصائيات النقل بصيغة JSON",
         "optionProvision": "تزويد الجهاز الهدف تلقائياً عبر مزود السحابة إذا لم يكن موجوداً",
         "optionStrategy": "استراتيجية دلتا الكتل عند استخدام أساس دلتا: auto أو physical أو shared",
-        "optionJson": "إخراج إحصائيات النقل بصيغة JSON",
-        "statsDelta": "تم دفع \"{{repo}}\" إلى {{machine}} — نُقل {{transferred}} خلال {{duration}} (دلتا مقابل الأساس {{base}}، الصورة {{image}})",
-        "statsFull": "تم دفع \"{{repo}}\" إلى {{machine}} — نُقل {{transferred}} خلال {{duration}} (نقل كامل)",
-        "statsNoBytes": "تم دفع \"{{repo}}\" إلى {{machine}} — اكتمل خلال {{duration}}",
         "optionTag": "علامة النشر للإصدارات",
         "optionTo": "اسم الجهاز أو التخزين الوجهة (يتم الكشف تلقائياً من الإعدادات)",
         "optionUp": "بعد الدفع، قم بتركيب ونشر المستودع على الجهاز الهدف",
-        "pushing": "جارٍ دفع نسخة احتياطية لـ \"{{repo}}\" إلى {{dest}}..."
+        "pushing": "جارٍ دفع نسخة احتياطية لـ \"{{repo}}\" إلى {{dest}}...",
+        "statsDelta": "تم دفع \"{{repo}}\" إلى {{machine}} — نُقل {{transferred}} خلال {{duration}} (دلتا مقابل الأساس {{base}}، الصورة {{image}})",
+        "statsFull": "تم دفع \"{{repo}}\" إلى {{machine}} — نُقل {{transferred}} خلال {{duration}} (نقل كامل)",
+        "statsNoBytes": "تم دفع \"{{repo}}\" إلى {{machine}} — اكتمل خلال {{duration}}"
       },
       "resize": {
         "completed": "اكتمل تغيير الحجم",
@@ -1719,6 +1706,19 @@
         },
         "starting": "جارٍ تطبيق القالب على \"{{repository}}\" على \"{{machine}}\"..."
       },
+      "trim": {
+        "completed": "اكتمل trim: تمت استعادة {{total}}",
+        "description": "يستعيد مساحة تجمّع مخزن البيانات من المستودعات المركّبة (أثناء التشغيل، دون توقف). تُعاد الكتل المحذوفة داخل المستودعات إلى التجمّع عبر fstrim. بدون ‎--name تتم معالجة كل المستودعات المركّبة ومخزن البيانات نفسه. يُتخطى fstrim للمستودعات التي يجري نسخها احتياطيًا، لكن استعادة ‎--docker تظل تُنفَّذ",
+        "descriptionShort": "إعادة المساحة الحرة من المستودعات إلى التجمّع",
+        "dockerOption": "استعادة مساحة Docker (حاويات متوقفة، صور معلّقة، ذاكرة بناء مؤقتة)؛ تُنفَّذ حتى أثناء وجود لقطة نسخ احتياطي نشطة",
+        "dockerVolumesOption": "حذف وحدات تخزين Docker غير المستخدمة أيضًا",
+        "failed": "فشل trim",
+        "nameOption": "المستودع المراد معالجته (الافتراضي: كل المستودعات المركّبة)",
+        "noMountedRepos": "لم يُعثر على مستودعات مركّبة",
+        "repoNotFound": "المستودع غير موجود: {{name}}",
+        "reportOnlyOption": "عرض حالة discard وتقدير المساحة القابلة للاستعادة دون تنفيذ",
+        "starting": "جارٍ تنفيذ trim للمستودعات على \"{{machine}}\"..."
+      },
       "tunnel": {
         "active": "النفق نشط: localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
         "closed": "تم إغلاق النفق",
@@ -1734,10 +1734,10 @@
         "noContainers": "لم يتم العثور على حاويات قيد التشغيل للمستودع \"{{repository}}\"",
         "noPorts": "لم يتم العثور على منافذ مكشوفة على الحاوية \"{{container}}\". حدد --port",
         "noServiceIP": "الحاوية \"{{container}}\" ليس لها عنوان IP خدمة معين",
-        "portInUse": "المنفذ المحلي {{port}} مُستخدم بالفعل. اختر منفذاً آخر باستخدام --local",
         "notReady": "لم يصبح النفق جاهزاً على localhost:{{localPort}} خلال 15 ثانية",
-        "urlOnlyOption": "طباعة عنوان URL المحلي فقط عند جهوزية النفق (قابل للقراءة آلياً)",
-        "portOption": "منفذ الحاوية البعيد للتوجيه"
+        "portInUse": "المنفذ المحلي {{port}} مُستخدم بالفعل. اختر منفذاً آخر باستخدام --local",
+        "portOption": "منفذ الحاوية البعيد للتوجيه",
+        "urlOnlyOption": "طباعة عنوان URL المحلي فقط عند جهوزية النفق (قابل للقراءة آلياً)"
       },
       "unmount": {
         "checkpointOption": "إنشاء نقطة تفتيش قبل إلغاء التثبيت",
@@ -2211,26 +2211,26 @@
         "removedKeys": "تم إزالة جميع مفاتيح SSH المحفوظة."
       },
       "connect": {
+        "browserUrl": "افتح VS Code في المتصفح: {{url}}",
         "configuringSSH": "جاري إعدادات SSH...",
         "configuringVSCode": "جاري إعدادات VS Code...",
         "description": "الاتصال بآلة أو مستودع في VS Code",
         "detecting": "جاري كشف VS Code...",
         "extensionWarning": "تحذير: قد لا يكون امتداد Remote SSH مثبتاً.\nقم بالتثبيت من: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
         "fetchingDetails": "جاري جلب تفاصيل الاتصال...",
+        "installingServer": "جارٍ التأكد من تثبيت {{provider}} {{version}} على الجهاز...",
         "opening": "جاري فتح VS Code: {{connection}} → {{path}}",
+        "openingBrowser": "جارٍ فتح المتصفح...",
+        "passwordNote": "كلمة مرور الدخول: {{password}}",
         "persistingKey": "جاري حفظ مفتاح SSH...",
         "provisioningRenet": "جارٍ تزويد renet إلى الخادم البعيد...",
+        "serverReused": "إعادة استخدام الخادم الذي يعمل بالفعل",
         "settingsWarning": "تحذير: لم يتمكن من إعدادات VS Code: {{error}}",
         "settingUpEnv": "جاري إعداد البيئة البعيدة...",
-        "success": "تم تشغيل VS Code بنجاح.",
-        "installingServer": "جارٍ التأكد من تثبيت {{provider}} {{version}} على الجهاز...",
         "startingServer": "جارٍ تشغيل {{provider}} داخل بيئة المستودع المعزولة...",
-        "serverReused": "إعادة استخدام الخادم الذي يعمل بالفعل",
-        "tunnelReady": "النفق جاهز على localhost:{{port}}",
-        "browserUrl": "افتح VS Code في المتصفح: {{url}}",
-        "passwordNote": "كلمة مرور الدخول: {{password}}",
-        "openingBrowser": "جارٍ فتح المتصفح...",
-        "testingConnectivity": "جاري اختبار الاتصال بـ {{host}}:{{port}}..."
+        "success": "تم تشغيل VS Code بنجاح.",
+        "testingConnectivity": "جاري اختبار الاتصال بـ {{host}}:{{port}}...",
+        "tunnelReady": "النفق جاهز على localhost:{{port}}"
       },
       "description": "فتح VS Code Remote SSH للاتصال بجهاز أو مستودع",
       "descriptionShort": "فتح VS Code Remote SSH للاتصال بجهاز أو مستودع",
@@ -2251,8 +2251,8 @@
         },
         "stop": {
           "description": "إيقاف خادم VS Code المتصفح",
-          "stopped": "تم إيقاف {{provider}}",
-          "notRunning": "{{provider}} لم يكن يعمل"
+          "notRunning": "{{provider}} لم يكن يعمل",
+          "stopped": "تم إيقاف {{provider}}"
         }
       }
     }
@@ -2581,16 +2581,16 @@
     "vaultDataRequired": "بيانات الخزينة مطلوبة. استخدم --vault <json> أو أنبوب JSON عبر stdin.",
     "vaultVersionRequired": "إصدار الخزينة مطلوب. استخدم --vault-version <n>.",
     "vscode": {
+      "browserNeedsRepo": "vscode --browser يخدم بيئة مستودع معزولة — مرّر --repository <name>",
       "cleanupRequired": "حدد --all لإزالة جميع الاتصالات أو --connection <name> لواحد محدد.",
       "connectivityFailed": "لا يمكن الوصول إلى {{host}}:{{port}}. {{error}}\n\nاستكشاف الأخطاء:\n  - تحقق من أن الآلة مشغلة ومتصلة بالشبكة\n  - تحقق من صحة عنوان IP في خزينة الآلة\n  - تأكد من عدم حجب المنفذ {{port}} بواسطة جدار حماية\n  - جرب ping على الآلة: ping {{host}}",
       "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة",
       "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
       "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون",
       "notFound": "لم يتم العثور على VS Code.\n\nالرجاء التثبيت من: https://code.visualstudio.com/\nأو قم بتعيين متغير البيئة REDIACC_VSCODE_PATH.",
-      "browserNeedsRepo": "vscode --browser يخدم بيئة مستودع معزولة — مرّر --repository <name>",
-      "unsupportedArch": "بنية الجهاز غير مدعومة لـ VS Code المتصفح: {{arch}}",
       "serverInstallFailed": "فشل تثبيت {{provider}}: {{error}}",
-      "serverStartFailed": "فشل تشغيل {{provider}}: {{error}}"
+      "serverStartFailed": "فشل تشغيل {{provider}}: {{error}}",
+      "unsupportedArch": "بنية الجهاز غير مدعومة لـ VS Code المتصفح: {{arch}}"
     }
   },
   "help": {
@@ -2785,13 +2785,13 @@
     "vaultVersion": "الإصدار الحالي للخزينة للأقفال المتفائلة",
     "verifyChecksum": "التحقق من الملفات باستخدام المجاميع الاختبارية بعد المزامنة",
     "vmId": "معرّف الآلة الافتراضية",
-    "watch": "الانتظار للتغييرات",
-    "watchUpdates": "الانتظار للتحديثات",
-    "yes": "تخطي نافذة التأكيد",
     "vscodeBrowser": "تشغيل VS Code المتصفح من داخل بيئة المستودع المعزولة (لا يلزم VS Code محلياً)",
     "vscodeNoOpen": "طباعة عنوان URL دون فتح المتصفح المحلي",
+    "vscodeServerArchive": "مسار أرشيف الخادم المُعدّ مسبقاً على الجهاز (للتثبيت بدون إنترنت)",
     "vscodeServerProvider": "تطبيق خادم VS Code المتصفح (openvscode, code-server)",
-    "vscodeServerArchive": "مسار أرشيف الخادم المُعدّ مسبقاً على الجهاز (للتثبيت بدون إنترنت)"
+    "watch": "الانتظار للتغييرات",
+    "watchUpdates": "الانتظار للتحديثات",
+    "yes": "تخطي نافذة التأكيد"
   },
   "prompts": {
     "apiUrl": "عنوان URL للـ API:",

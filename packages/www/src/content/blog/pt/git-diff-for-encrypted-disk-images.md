@@ -1,8 +1,11 @@
 ---
-title: "git diff para Imagens de Disco Encriptadas: Comparar Forks Sem os Desencriptar"
-description: "O rdc repo diff compara imagens encriptadas ao nível dos blocos e reporta A/M/D/R. Nenhuma chave é tocada. O custo acompanha os blocos alterados, não o tamanho do repositório."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-28
+title: 'git diff para Imagens de Disco Encriptadas: Comparar Forks Sem os Desencriptar'
+description: >-
+  O rdc repo diff compara imagens encriptadas ao nível dos blocos e reporta
+  A/M/D/R. Nenhuma chave é tocada. O custo acompanha os blocos alterados, não o
+  tamanho do repositório.
+author: Rediacc
+publishedDate: 2026-05-28T00:00:00.000Z
 category: guide
 tags:
   - luks
@@ -12,8 +15,8 @@ tags:
   - cli
 featured: false
 language: pt
-sourceHash: "516ffb7de9941f15"
-sourceCommit: "0a3e9865997659698502ad551e078be854b4b2c4"
+sourceHash: 1b08ca130594e2e4
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
 > **Resumo.** `rdc repo diff` mostra a diferença ao nível de ficheiros entre dois repositórios em fork na gramática do `git status --short` (A/M/D/R), e nunca desencripta nenhum deles.

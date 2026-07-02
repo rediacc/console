@@ -1,0 +1,270 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { createTranslator } from '../../i18n/utils';
+import { getLanguagePaths } from '../../i18n/language-utils';
+import type { Language } from '../../i18n/types';
+import { EXTERNAL_LINKS } from '../../config/constants';
+
+export const getStaticPaths = getLanguagePaths;
+
+const { lang } = Astro.params as { lang: Language };
+const { t } = createTranslator(lang);
+
+const values = [
+  { key: 'simplicity', title: t('pages.company.values.items.simplicity.title'), description: t('pages.company.values.items.simplicity.description') },
+  { key: 'security', title: t('pages.company.values.items.security.title'), description: t('pages.company.values.items.security.description') },
+  { key: 'success', title: t('pages.company.values.items.success.title'), description: t('pages.company.values.items.success.description') },
+  { key: 'innovation', title: t('pages.company.values.items.innovation.title'), description: t('pages.company.values.items.innovation.description') },
+  { key: 'global', title: t('pages.company.values.items.global.title'), description: t('pages.company.values.items.global.description') },
+  { key: 'transparency', title: t('pages.company.values.items.transparency.title'), description: t('pages.company.values.items.transparency.description') }
+];
+---
+
+<BaseLayout
+  lang={lang}
+  title={t('pages.company.meta.title')}
+  description={t('pages.company.meta.description')}
+  keywords={t('pages.company.meta.keywords')}
+  ogType="website"
+  structuredDataType="organization"
+  structuredData={{
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'Rediacc',
+    description: t('pages.company.meta.description'),
+    foundingDate: '2024'
+  }}
+>
+  <article class="company-page">
+    <!-- Hero Section -->
+    <section id="about" class="company-hero">
+      <div class="container">
+        <h1>{t('pages.company.hero.title')}</h1>
+        <p class="hero-subtitle">{t('pages.company.hero.subtitle')}</p>
+      </div>
+    </section>
+
+    <!-- Overview Section -->
+    <section id="overview" class="overview-section">
+      <div class="container">
+        <div class="overview-content">
+          <h2>{t('pages.company.overview.title')}</h2>
+          <p class="overview-text">{t('pages.company.overview.description')}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mission Section -->
+    <section id="mission" class="mission-section">
+      <div class="container">
+        <div class="mission-content">
+          <h2>{t('pages.company.mission.title')}</h2>
+          <p class="mission-text">{t('pages.company.mission.description')}</p>
+          <p class="mission-belief">{t('pages.company.mission.belief')}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Values Section -->
+    <section id="values" class="values-section">
+      <div class="container">
+        <h2>{t('pages.company.values.title')}</h2>
+
+        <div class="values-grid">
+          {values.map((value) => (
+            <div class="value-card">
+              <h3>{value.title}</h3>
+              <p>{value.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section id="contact-us" class="company-cta">
+      <div class="container">
+        <h2>{t('pages.company.cta.title')}</h2>
+        <p>{t('pages.company.cta.subtitle')}</p>
+        <div class="cta-actions">
+          <a href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION} target="_blank" rel="noopener noreferrer" class="btn btn-primary" aria-label={`${t('pages.company.cta.buttons.contact')} (${t('common.aria.opensInNewTab')})`}>
+            {t('pages.company.cta.buttons.contact')}
+          </a>
+          <a href={`/${lang}`} class="btn btn-secondary">
+            {t('pages.company.cta.buttons.learnMore')}
+          </a>
+        </div>
+      </div>
+    </section>
+  </article>
+</BaseLayout>
+
+<style>
+.company-page {
+  color: var(--color-text);
+}
+
+/* Hero Section */
+.company-hero {
+  padding: calc(var(--nav-top-offset) + var(--space-8)) 0 var(--space-12);
+  background: var(--color-bg-alt);
+  border-bottom: 1px solid var(--color-border);
+  text-align: center;
+}
+
+.company-hero h1 {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--space-4);
+  color: var(--color-text);
+}
+
+.hero-subtitle {
+  font-size: var(--font-size-xl);
+  color: var(--color-text-secondary);
+  max-width: var(--container-md);
+  margin: 0 auto;
+}
+
+/* Overview Section */
+.overview-section {
+  padding: var(--space-16) 0;
+  background: var(--color-bg);
+}
+
+.overview-content {
+  max-width: var(--container-md);
+  margin: 0 auto;
+  text-align: center;
+}
+
+.overview-section h2 {
+  font-size: var(--font-size-3xl);
+  margin-bottom: var(--space-8);
+  color: var(--color-text);
+}
+
+.overview-text {
+  font-size: var(--font-size-xl);
+  line-height: var(--leading-loose);
+  color: var(--color-text);
+}
+
+/* Mission Section */
+.mission-section {
+  padding: var(--space-16) 0;
+  background: var(--color-bg-alt);
+}
+
+.mission-content {
+  max-width: var(--container-md);
+  margin: 0 auto;
+  text-align: center;
+}
+
+.mission-section h2 {
+  font-size: var(--font-size-3xl);
+  margin-bottom: var(--space-8);
+  color: var(--color-text);
+}
+
+.mission-text {
+  font-size: var(--font-size-xl);
+  line-height: var(--leading-loose);
+  margin-bottom: var(--space-8);
+  color: var(--color-text);
+}
+
+.mission-belief {
+  font-size: var(--font-size-lg);
+  line-height: var(--leading-loose);
+  color: var(--color-text-secondary);
+}
+
+/* Values Section */
+.values-section {
+  padding: var(--space-16) 0;
+  background: var(--color-bg);
+}
+
+.values-section h2 {
+  font-size: var(--font-size-3xl);
+  margin-bottom: var(--space-12);
+  text-align: center;
+  color: var(--color-text);
+}
+
+.values-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-8);
+  max-width: var(--container-xl);
+  margin: 0 auto;
+}
+
+.value-card {
+  padding: var(--space-6);
+  background: var(--color-bg-alt);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.value-card h3 {
+  margin-bottom: var(--space-4);
+  color: var(--color-brand-primary);
+}
+
+.value-card p {
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+/* CTA Section */
+.company-cta {
+  padding: var(--space-16) 0;
+  background: var(--color-bg-alt);
+  text-align: center;
+  border-top: 1px solid var(--color-border);
+}
+
+.company-cta h2 {
+  font-size: var(--font-size-3xl);
+  margin-bottom: var(--space-6);
+  color: var(--color-text);
+}
+
+.company-cta p {
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--space-8);
+  color: var(--color-text-secondary);
+}
+
+.cta-actions {
+  display: flex;
+  gap: var(--space-4);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Responsive */
+@media (max-width: 48rem) {
+  .company-hero h1 {
+    font-size: var(--font-size-3xl);
+  }
+
+  .hero-subtitle {
+    font-size: var(--font-size-lg);
+  }
+
+  .values-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .overview-section h2,
+  .mission-section h2,
+  .values-section h2,
+  .company-cta h2 {
+    font-size: var(--font-size-2xl);
+  }
+}
+</style>

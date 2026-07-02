@@ -1,0 +1,127 @@
+{
+  "cast": "/assets/tutorials/tutorial-backup-restore.cast",
+  "language": "tr",
+  "version": 1,
+  "steps": [
+    {
+      "id": "tutorial-backup-restore-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.409089,
+      "replayEndSec": 6.555802,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-01.96283916.mp3",
+      "audioDurationSec": 14.106122,
+      "textHash": "962839166a20ad3f71b480b720dad61320969416a772cf7364e7c7f2dc6a1374",
+      "narrationText": "Birinci adım. Mevcut bir rclone yapılandırmasını içe aktarıyoruz. rclone; S3, Backblaze, Google Drive, Dropbox ve çok daha fazlasını destekler. Halihazırda kullanıyorsanız aynı yapılandırmayı doğrudan içe aktarabilirsiniz.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-01-after.56b948b9.mp3",
+      "afterAudioDurationSec": 3.63102,
+      "afterTextHash": "56b948b90c846e08ed748c46dcca8ed6601c82923c09c0bde277dd5619a72560"
+    },
+    {
+      "id": "tutorial-backup-restore-02",
+      "markerIndex": 1,
+      "replayStartSec": 6.555802,
+      "replayEndSec": 10.251839,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-02.b535c5a9.mp3",
+      "audioDurationSec": 6.269388,
+      "textHash": "b535c5a97755de8f98a6efc4974be3c38c0b4502c98c092dcf04edaef0b5a47e",
+      "narrationText": "Aracın artık tanıdığı depolama alanlarını listeliyoruz. Her depolama alanı, yedek gönderebileceğimiz bir hedef.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-02-after.29592aab.mp3",
+      "afterAudioDurationSec": 2.507755,
+      "afterTextHash": "29592aab4a9db187110d68c26016c873a6026e79b7e1b326be0177770bc73da0"
+    },
+    {
+      "id": "tutorial-backup-restore-03",
+      "markerIndex": 2,
+      "replayStartSec": 10.251839,
+      "replayEndSec": 24.484571,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-03.22e5440c.mp3",
+      "audioDurationSec": 14.759184,
+      "textHash": "22e5440c87a66cbaf7345cdcfaab93f9816108284ef8aafc445f88776c180c6a",
+      "narrationText": "İkinci adım. Tam yedek gönderiyoruz. Tüm depo yükleniyor: uygulama, veritabanı, dosyalar, yapılandırma. Depo depolandığında şifreli olduğundan yedek de şifreli olur. Ek anahtar yönetimi gerekmez.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-03-after.e404cb74.mp3",
+      "afterAudioDurationSec": 4.989388,
+      "afterTextHash": "e404cb746cb585ed4b97a75875f54dc07bbb4035d183629251322d62fa02cbf4"
+    },
+    {
+      "id": "tutorial-backup-restore-04",
+      "markerIndex": 3,
+      "replayStartSec": 24.484571,
+      "replayEndSec": 31.133919,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-04.fa462f64.mp3",
+      "audioDurationSec": 8.045714,
+      "textHash": "fa462f6411e41c5947ad664161ad83be00028bcba611bad1bf6edca098b0f893",
+      "narrationText": "Bu depolama alanında bulunan yedekleri listeliyoruz. Buradan itibaren, yeni bir sunucuda geri yükleme tek komutla yapılır: depo geri yükleme komutu. Aynı veri, aynı container'lar, farklı makine.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-04-after.254ba819.mp3",
+      "afterAudioDurationSec": 4.597551,
+      "afterTextHash": "254ba8197c7a576c588cd74f04d620469d68c771a7c46a989517fc9b065c1299"
+    },
+    {
+      "id": "tutorial-backup-restore-05",
+      "markerIndex": 4,
+      "replayStartSec": 31.133919,
+      "replayEndSec": 39.135694,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-05.07efe4fe.mp3",
+      "audioDurationSec": 9.16898,
+      "textHash": "07efe4fe6e13027f63d4d9fcbb8ecb4c06aefc29373ecc853d4669a82099b65f",
+      "narrationText": "Şimdi geri yükleme kanıtı. Önce repository'yi çevrimdışı alın: servisleri durdurun ve şifreli birimi unmount edin. Uygulama bu makineden gitti.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-05-after.39a09453.mp3",
+      "afterAudioDurationSec": 4.362449,
+      "afterTextHash": "39a09453e5d43a927cfaa5eea2841bb86a2c80222a861fc391a4cafdcc117d33"
+    },
+    {
+      "id": "tutorial-backup-restore-06",
+      "markerIndex": 5,
+      "replayStartSec": 39.135694,
+      "replayEndSec": 48.126162,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-06.a2eb07bf.mp3",
+      "audioDurationSec": 8.515918,
+      "textHash": "a2eb07bfdb282b5f323134db7f4e725e8b95fa10f327eab80489f634a03950b0",
+      "narrationText": "Ve yedeği doğrudan depolamadan geri çekin. Repo pull komutu imajı getirir, bütünlüğünü kontrol eder ve tam olarak olduğu yere koyar.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-06-after.568e143c.mp3",
+      "afterAudioDurationSec": 4.597551,
+      "afterTextHash": "568e143cd7c720ed15abf1dfa832209c0006c7e3ff46de9d81809a5d53fdefab"
+    },
+    {
+      "id": "tutorial-backup-restore-07",
+      "markerIndex": 6,
+      "replayStartSec": 48.126162,
+      "replayEndSec": 54.070366,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-07.66a28bad.mp3",
+      "audioDurationSec": 7.810612,
+      "textHash": "66a28bad256b1579461240f574d6850bf847c212f6b7be4774ab8e5056396e3a",
+      "narrationText": "Tekrar mount edin ve repository geri yüklendi. Push, list, pull, yedeklemenin tüm hikayesi bu.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-07-after.91a561e6.mp3",
+      "afterAudioDurationSec": 4.127347,
+      "afterTextHash": "91a561e6f5145a8fad630d31563162356613c13fb928d0d2829c10d09064b32f"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/intro.503c9ebf.mp3",
+      "textHash": "503c9ebff9e3836287d03b899f7adcd72d2f1ccb197876ae43d727ed3b6f9a56",
+      "audioDurationSec": 10.684082,
+      "narrationText": "Uygulamanız yayında; şimdi onu asla kaybetmediğinizden emin olalım! Bu eğitimde tüm depoyu harici depolamaya gönderiyor ve gerektiğinde geri çekiyoruz."
+    },
+    {
+      "id": "three-steps",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/three-steps.162fbbc2.mp3",
+      "textHash": "162fbbc26755b4cf70c29a0ac51c08d4f68d58181b2c702ff03439afdad953bd",
+      "audioDurationSec": 8.045714,
+      "narrationText": "Yedekleme ve geri yükleme üç adıma iner. Bir depolama sağlayıcısını yapılandırın, yedek gönderin ve ihtiyaç olduğunda geri yükleyin."
+    },
+    {
+      "id": "next-tutorial",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/next-tutorial.20e5f875.mp3",
+      "textHash": "20e5f875c6f72890c60e38d35874035356ff0ed2005b44cd2f34eddef80714bd",
+      "audioDurationSec": 5.146122,
+      "narrationText": "Verileriniz güvende ve makineler arasında taşınabilir. Bir sonraki bölümde görüşmek üzere!"
+    }
+  ],
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "8e4da959574e05a9d4a62c6ea837febeed7c3fb576f0882d8d240b1941f41754"
+}

@@ -81,7 +81,7 @@
       "at": 68.35661,
       "text": "E aí está o histórico: versão dois no topo, versão um abaixo, mensagens e autores incluídos, sem desbloquear uma única imagem.",
       "afterText": "Um log do repositório, exatamente como um git log.",
-      "cardLabel": "Repo Log",
+      "cardLabel": "Histórico",
       "prose": "Percorra o histórico de commits com repo log, mensagens, autores, pais."
     },
     {

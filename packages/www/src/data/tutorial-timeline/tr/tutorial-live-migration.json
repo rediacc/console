@@ -1,0 +1,101 @@
+{
+  "cast": "/assets/tutorials/tutorial-live-migration.cast",
+  "language": "tr",
+  "version": 1,
+  "steps": [
+    {
+      "id": "tutorial-live-migration-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.413171,
+      "replayEndSec": 10.379022,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-01.1e0684e6.mp3",
+      "audioDurationSec": 14.28898,
+      "textHash": "1e0684e69558f2c3f0b05d7ea787a94b26a23d3da36a58ccd7c784d8e59a36a7",
+      "narrationText": "Pulse ile tanışın. Süreç belleğinde bir sayaç tutar ve her beş saniyede bir nabız basar. Sayaç altıda ve tırmanıyor; yalnızca RAM'de yaşıyor. Süreci yeniden başlatın, bir'den tekrar başlar.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-01-after.85cbad9a.mp3",
+      "afterAudioDurationSec": 3.63102,
+      "afterTextHash": "85cbad9a1765de38ce71d7164b0f052252716b22e1123faaf21645e95194324d"
+    },
+    {
+      "id": "tutorial-live-migration-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.379022,
+      "replayEndSec": 101.149024,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-02.52a7ef5c.mp3",
+      "audioDurationSec": 20.27102,
+      "textHash": "52a7ef5c01174e40fb0bf0cd9ff54f752e146909d044200ce5a028c70154ccd4",
+      "narrationText": "Tek bir komut, canlı olarak taşır. Birinci aşama, kaynak çalışmaya devam ederken yaklaşık yarım dakikada iki gigabaytlık yükü aktarır. Sonra geçiş: çalışan süreçleri checkpoint'ler, son birkaç megabaytı karşıya taşır ve kesinti süresini tam orada basar. İki gigabaytlık bir taşıma için yaklaşık yirmi saniye.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-02-after.88c8d60a.mp3",
+      "afterAudioDurationSec": 5.720816,
+      "afterTextHash": "88c8d60a7541e868e220cc7ef514a241b9fd702cd8822e69a35212cae4314614"
+    },
+    {
+      "id": "tutorial-live-migration-03",
+      "markerIndex": 2,
+      "replayStartSec": 101.149024,
+      "replayEndSec": 106.859481,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-03.1243e660.mp3",
+      "audioDurationSec": 4.754286,
+      "textHash": "1243e66069579be027591f6367718723d6fb398d6cdbad9f83f09de6a31e48be",
+      "narrationText": "Yeni makineyi kontrol edin: işte orada. Mount edilmiş, Docker çalışıyor, iki container ayakta.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-03-after.64b6817e.mp3",
+      "afterAudioDurationSec": 2.847347,
+      "afterTextHash": "64b6817e1788e13779c18b378706d799396f78eef32e19dae613ef2ba1a4a036"
+    },
+    {
+      "id": "tutorial-live-migration-04",
+      "markerIndex": 3,
+      "replayStartSec": 106.859481,
+      "replayEndSec": 112.346008,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-04.700fa830.mp3",
+      "audioDurationSec": 14.445714,
+      "textHash": "700fa830e50e27895a3a3e703ade48cd9862c1d9cf5a200cf3cb16f116838e47",
+      "narrationText": "Peki kaynak? Repository hâlâ listede ama satıra bakın: mount edilmemiş, Docker yok, sıfır container. Artık burada hiçbir şey çalışmıyor. Image, bir sonraki delta transferi için temel olarak kasıtlı bırakılıyor.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-04-after.7ac1a7ee.mp3",
+      "afterAudioDurationSec": 5.067755,
+      "afterTextHash": "7ac1a7eeb63fc166befb1ba392b983f97ceca307040a5da50549a62c1ec384c1"
+    },
+    {
+      "id": "tutorial-live-migration-05",
+      "markerIndex": 4,
+      "replayStartSec": 112.346008,
+      "replayEndSec": 119.168595,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-05.731e7efe.mp3",
+      "audioDurationSec": 16.352653,
+      "textHash": "731e7efe288bc9e66fa9c452dff2e130fd2283ff2e19c0b5cc5b7acc21b43146",
+      "narrationText": "Şimdi asıl kısma geldik. Sayaç on yedi, on sekiz, on dokuz okuyup hâlâ tırmanıyor. Bir'den başlamak yerine checkpoint'in onu dondurduğu yerden tam kaldığı yerden devam etti. Süreç, makine değiştirdiğini hiç fark etmedi.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-05-after.9c477c22.mp3",
+      "afterAudioDurationSec": 3.160816,
+      "afterTextHash": "9c477c220929a3c34000abc17bf2551d5967aca4c97d6d19c5c82160b4bd7007"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/intro.c3219e34.mp3",
+      "textHash": "c3219e34c18bba123a7f171be3eea73a21cbe583f14565929fd0b6c9c681e32a",
+      "audioDurationSec": 14.680816,
+      "narrationText": "Büyük bir şey zamanı: ÇALIŞAN bir uygulamayı, çalışırken başka bir makineye taşımak. Uygulamanın belleğinde atan canlı bir sayacı izleyeceğiz, her şeyi tek komutla taşıyacağız ve sayacın yeni makinede saymaya devam ettiğini göreceğiz."
+    },
+    {
+      "id": "how-it-moves",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/how-it-moves.5edb6d24.mp3",
+      "textHash": "5edb6d24ba5530a753f3f4c028f7e4988a2ec5f01086712dc5116e2677088d28",
+      "audioDurationSec": 22.360816,
+      "narrationText": "İki aşamada çalışır. Birinci aşama, uygulama çalışmaya devam ederken yükün büyük kısmını kopyalar. İkinci aşama canlı süreçleri checkpoint'ler, son delta ve süreç durumunu karşıya taşır ve her şeyi yeni makinede devam ettirir. Yani kesinti süresi delta kadardır, verinin tamamı kadar değil. Ve uygulama taşındığını hiç bilmez."
+    },
+    {
+      "id": "next-tutorial",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/next-tutorial.f40a25d9.mp3",
+      "textHash": "f40a25d9b5e0da36566e530f6d6f9f3068295e2e786855fe1efbc5d9c855313b",
+      "audioDurationSec": 13.322449,
+      "narrationText": "Sayaç hiç sıfırlanmadı. Bellek, veritabanı, dosyalar, hepsi sadece makine değiştirdi. Sırada, ikinci transferin neden her zaman hızlı olanı olduğunu göreceğiz."
+    }
+  ],
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "3d86bc4c6235443d6a09b9956ab2b07164d0b1bf2192e2aa5200ae8c5bffae6c"
+}

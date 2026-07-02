@@ -1,11 +1,11 @@
 ---
 title: Kontohaldus ülevaade
-description: Organisatsioonid, meeskonnad, liikmed ja tellimused Rediaccis ühes kohas.
+description: 'Organisatsioonid, meeskonnad, liikmed ja tellimused Rediaccis ühes kohas.'
 category: Guides
 order: 12
 language: et
-sourceHash: "974885635641ed70"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: 3887adc59fc63c26
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 ### Organisatsioonid
@@ -57,14 +57,14 @@ Rediacc pakub nelja plaani:
 
 | Plaan | Masinad | Repo-litsentsid/kuu | Delegeerimissert vaikimisi / max | Funktsioonid |
 |-------|---------|---------------------|----------------------------------|--------------|
-| COMMUNITY | 2 | 500 | 15p / 30p | Põhiline |
-| PROFESSIONAL | 5 | 5 000 | 60p / 120p | Loagrupid, auditilogi, kohandatud bränding, prioriteettugi |
-| BUSINESS | 20 | 20 000 | 90p / 180p | Ceph, täiustatud analüütika, järjekorra prioriteet, täiustatud järjekord |
-| ENTERPRISE | 50 | 100 000 | 120p / 365p | Pühendatud kontohaldur |
+| COMMUNITY | 2 | 100 | 15p / 30p | Põhiline |
+| PROFESSIONAL | 3 | 2 000+ | 60p / 120p | Loagrupid, auditilogi, kohandatud bränding, prioriteettugi |
+| BUSINESS | 10 | 5 000+ | 90p / 180p | Ceph, täiustatud analüütika, järjekorra prioriteet, täiustatud järjekord |
+| ENTERPRISE | 25+ | 15 000+ | 120p / 365p | Pühendatud kontohaldur |
 
 ![Tellimise voog](/img/account-subscription-flow.svg)
 
-Kõik plaanid algavad 3-päevase puhverperioodiga. Masinakohti jälgitakse meeskonna kaupa ja need vabastatakse automaatselt pärast 1-tunnist tegevusetust. Vaadake üksikasju jaotisest [Tellimus ja litsentsid](/et/docs/subscription-licensing).
+Kõik plaanid algavad 3-päevase puhverperioodiga. Masinakohti jälgitakse meeskonna kaupa ja need vabastatakse automaatselt pärast 5-tunnist tegevusetust. Vaadake üksikasju jaotisest [Tellimus ja litsentsid](/et/docs/subscription-licensing).
 
 ### Arveldamine
 

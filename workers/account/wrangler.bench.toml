@@ -28,7 +28,7 @@ WEBAUTHN_RP_ID = "bench.rediacc.com"
 WEBAUTHN_ORIGIN = "https://bench.rediacc.com"
 # Auto-grant lifetime BUSINESS to every new signup. Flip to "false" (or remove
 # this line) and redeploy to close intake. See src/types/env.ts for details.
-DESIGN_PARTNER_PROGRAM_ENABLED = "true"
+DESIGN_PARTNER_PROGRAM_ENABLED = "false"
 
 [observability]
 enabled = true

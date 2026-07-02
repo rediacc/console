@@ -9,7 +9,7 @@
       "at": 2.422355,
       "text": "Teeme repositooriumist forki ühe käsuga. See kloonib kõik -- rakenduse, andmebaasi, konfiguratsioonifailid. Ja see juhtub sekunditega, olenemata repositooriumi suurusest. Üks gigabait, sada gigabaiti, üks terabait: sama aeg, iga kord.",
       "afterText": "Fork on tehtud. Kloon töötab, sõltumata suurusest.",
-      "cardLabel": "Fork Repo",
+      "cardLabel": "Forki Repo",
       "prose": "Üks käsk kloonib kogu repo: rakenduse, andmebaasi ja konfiguratsioonifailid. Fork'i aeg on konstantne sõltumata repo suurusest, olgu see üks gigabait, sada gigabaiti või üks terabait."
     },
     {

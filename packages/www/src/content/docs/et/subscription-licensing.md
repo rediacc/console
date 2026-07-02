@@ -1,11 +1,13 @@
 ---
-title: "Tellimus ja litsentsid"
-description: "Mõista, kuidas account, rdc ja renet haldavad masina kohti, repositooriumi litsentse ja plaani piiranguid."
-category: "Guides"
+title: Tellimus ja litsentsid
+description: >-
+  Mõista, kuidas account, rdc ja renet haldavad masina kohti, repositooriumi
+  litsentse ja plaani piiranguid.
+category: Guides
 order: 7
 language: et
-sourceHash: "0e18efe91c91f74c"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: 10e9f781881854be
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 # Tellimus ja litsentsid
@@ -60,7 +62,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Masina kohad (serveri pool)
 
-Masina kohtade jälgimine toimub serveri poolel. Kui CLI väljastab repositooriumilitsentsi, kontrollib account-server tellimuse masina kohtade kvooti (nt 2 masinat Community jaoks, 5 Professional jaoks). Koht hoitakse 1 tund alates sellel masinal viimase repositooriumilitsentsi väljastamisest ja vabaneb automaatselt pärast tegevusetust. 5 kohaga plaan saab seega aja jooksul katta kümneid masinaid, kuna kohti hoitakse ainult aktiivse ettevalmistamise ajal.
+Masina kohtade jälgimine toimub serveri poolel. Kui CLI väljastab repositooriumilitsentsi, kontrollib account-server tellimuse masina kohtade kvooti (nt 2 masinat Community jaoks, 3 Professional jaoks). Koht hoitakse 5 tundi alates sellel masinal viimase repositooriumilitsentsi väljastamisest ja vabaneb automaatselt pärast tegevusetust. 10-kohaga Business plaan saab seega aja jooksul katta kümneid masinaid, kuna kohti hoitakse ainult aktiivse ettevalmistamise ajal.
 
 Masinas ei salvestata ühtegi masina litsentsi faili. Koha jõustamine toimub väljastamise ajal serveris.
 
@@ -91,10 +93,10 @@ Vaikimisi tasuliste plaanide piirangud on:
 
 | Plaan | Hõljuvad litsentsid | Repositooriumi suurus | Igakuised repositooriumilitsentside väljastamised | Delegeerimissertifikaadi vaikimisi/max |
 |------|-------------------|-----------------|-------------------------------|---|
-| Community | 2 | 10 GB | 500 | 15d / 30d |
-| Professional | 5 | 100 GB | 5,000 | 60d / 120d |
-| Business | 20 | 500 GB | 20,000 | 90d / 180d |
-| Enterprise | 50 | 2048 GB | 100,000 | 120d / 365d |
+| Community | 2 | 10 GB | 100 | 15d / 30d |
+| Professional | 3 | 50 GB | 2,000+ | 60d / 120d |
+| Business | 10 | 200 GB | 5,000+ | 90d / 180d |
+| Enterprise | 25+ | 1 TB+ | 15,000+ | 120d / 365d |
 
 Lepingupõhised piirangud võivad konkreetse kliendi puhul neid väärtusi tõsta või langetada. Delegeerimissertifikaadi kehtivus on ka kõvasti piiratud väärtusega `subscription.expiresAt + 3 day grace`, nii et igakuise arveldusega tellimused saavad sertifikaadid, mis on joondatud nende arveldustsükliga. Täielikke reegleid vaata jaotisest [Litsentsiahel ja delegeerimine - kehtivuspoliitika](/en/docs/license-chain).
 
@@ -110,7 +112,7 @@ Praktikas:
 - Käsitsi sekkumist ei ole vaja
 - Kontrolli masina ID-d ja litsentsi olekut käsuga `rdc machine query --system --licenses --name <machine>`
 
-**Edge-kanali kasutajad** saavad 2-kordsed Community piirangud tasuta (20 GB repositooriumid, 1000 väljastamist/kuus, 4 masinat). Tasulised plaanid on saadaval ainult Stable-kanalil. Üksikasju vaata jaotisest [Väljalaskekanalid](/en/docs/release-channels).
+**Edge-kanali kasutajad** saavad 2-kordsed Community piirangud tasuta (20 GB repositooriumid, 200 väljastamist/kuus, 4 masinat). Tasulised plaanid on saadaval ainult Stable-kanalil. Üksikasju vaata jaotisest [Väljalaskekanalid](/en/docs/release-channels).
 
 ## Mis juhtub repositooriumi loomisel, käivitamisel, peatamisel ja taaskäivitamisel
 

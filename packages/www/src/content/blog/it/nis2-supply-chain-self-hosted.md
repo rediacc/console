@@ -1,7 +1,7 @@
 ---
 title: "Article 21(2)(d) è una questione di fornitori. Il self-hosting è la risposta che smetti di dover giustificare."
 description: "Perché il registro ICT di terze parti si riduce quando il piano dati non lascia mai la tua infrastruttura. Una lettura pratica di NIS2 Article 21(2)(d) per CISO e responsabili degli acquisti che rinegoziano i DPA nel 2026."
-author: Muhammed Fatih Bayraktar
+author: Rediacc
 publishedDate: 2026-05-09
 category: guide
 tags:
@@ -12,8 +12,8 @@ tags:
   - conformita
 featured: false
 language: it
-sourceHash: "98f0b752bc5dbd4d"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "ffdb86da48dacc58"
+sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 translatedFrom: en
 ---
 
@@ -156,12 +156,12 @@ Un fornitore che risponde a tutte e sei le domande in modo netto è insolito. Un
 
 ## Cosa significa per il prossimo ciclo di rinnovo
 
-Se stai affrontando un rinnovo di backup o DR nei prossimi dodici mesi e Article 21(2)(d) è nel scorecard di procurement, tre mosse concrete:
+Se stai per affrontare un rinnovo di backup o DR nei prossimi dodici mesi e Article 21(2)(d) è in valutazione procurement, tre mosse concrete:
 
-1. Traccia su una lavagna il percorso dati a quattro livelli del tuo fornitore attuale. Se non riesci a nominare il terzo sub-responsabile in ordine di discesa, hai un problema di completezza del registro che precede NIS2, e il rinnovo è il momento giusto per risolverlo.
-2. Applica la checklist delle sei domande al tuo fornitore attuale. Invia le risposte al tuo DPO e al tuo auditor e chiedi se le lacune sono accettate. Se le lacune riguardano il livello 3 (custodia delle chiavi) o il livello 4 (sub-responsabili non censiti), quella è la leva.
-3. Analizza come apparirebbe un registro fornitori alternativo con un piano di controllo self-hosted. Confronta le voci del registro, non i costi di licenza. I costi di licenza sono simili entro un fattore due; le voci del registro hanno forme diverse. (Il post complementare sul [costo strutturale dello stack NIS2](/it/blog/nis2-the-real-bill) illustra in dettaglio cosa viene eliminato e cosa rimane.)
+1. Disegna su una lavagna il percorso dati a quattro livelli del tuo fornitore attuale. Se non riesci a nominare il terzo sub-responsabile a valle, hai un problema di completezza del registro che precede NIS2, e il rinnovo è il momento giusto per risolverlo.
+2. Fai la checklist delle sei domande sopra al tuo fornitore attuale. Invia le risposte al tuo DPO e al tuo auditor e chiedi se le lacune sono accettate. Se le lacune includono il livello 3 (custodia delle chiavi) o il livello 4 (sub-responsabili che non hai censito), quella è la leva.
+3. Guarda come sarebbe un registro fornitori alternativo con un piano di controllo self-hosted. Confronta le voci del registro, non i costi di licenza. I costi di licenza sono simili entro un fattore due; le voci del registro hanno forme diverse. (Il post complementare sul [costo strutturale dello stack NIS2](/it/blog/nis2-the-real-bill) illustra in dettaglio cosa viene eliminato e cosa rimane.)
 
-Se siamo l'alternativa nella tua shortlist, la proposta è concreta. Inviaci il tuo questionario fornitori. Lo compileremo su un'istanza in produzione, con le nostre risposte reali alle tue domande, lacune incluse. Se vuoi esaminare l'architettura prima di inviare la documentazione, organizzeremo una revisione architetturale di 30 minuti con il fondatore. La strada verso una voce di registro difendibile non è una brochure patinata. Sono le risposte, incluse quelle scomode.
+Se siamo noi l'alternativa nella tua shortlist, l'offerta è concreta. Mandaci il tuo questionario fornitori. Lo compileremo su un'istanza deployata, con le nostre risposte reali alle tue domande, lacune incluse. Se vuoi rivedere l'architettura prima di inviare la documentazione, prenoteremo una review architetturale di 30 minuti con il nostro team di ingegneria. Il percorso verso una voce di registro difendibile non è una brochure patinata. Sono le risposte, incluse quelle scomode.
 
 Vuoi la mappa per articolo di Rediacc? Vedi [NIS2 e DORA](/it/docs/legal-nis2-dora). Ti serve il quadro piu' ampio? Leggi [Panoramica sulla conformità](/it/docs/legal-overview). Per la residenza dei dati, vedi [Sovranità dei dati](/it/docs/legal-data-sovereignty). Per capire perche' il self-hosted conta, vedi [On-Premise](/it/docs/on-premise).

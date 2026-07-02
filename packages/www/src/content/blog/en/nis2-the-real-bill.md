@@ -1,7 +1,7 @@
 ---
 title: "What Buyers Told Us in the First NIS2 Audit Cycle"
 description: "The five-tool compliance stack mid-market essential entities are quietly assembling in 2026, what a self-hosted control plane collapses, and the line items that stay yours either way."
-author: Muhammed Fatih Bayraktar
+author: Rediacc
 publishedDate: 2026-05-09
 category: guide
 tags:

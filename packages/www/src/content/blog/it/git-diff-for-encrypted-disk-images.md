@@ -1,8 +1,11 @@
 ---
-title: "git diff per immagini disco cifrate: diffing dei fork senza decifrarli"
-description: "rdc repo diff confronta le immagini cifrate a livello di blocco e riporta A/M/D/R. Nessuna chiave viene toccata. Il costo segue i blocchi modificati, non la dimensione del repository."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-28
+title: 'git diff per immagini disco cifrate: diffing dei fork senza decifrarli'
+description: >-
+  rdc repo diff confronta le immagini cifrate a livello di blocco e riporta
+  A/M/D/R. Nessuna chiave viene toccata. Il costo segue i blocchi modificati,
+  non la dimensione del repository.
+author: Rediacc
+publishedDate: 2026-05-28T00:00:00.000Z
 category: guide
 tags:
   - luks
@@ -12,8 +15,8 @@ tags:
   - cli
 featured: false
 language: it
-sourceHash: "516ffb7de9941f15"
-sourceCommit: "0a3e9865997659698502ad551e078be854b4b2c4"
+sourceHash: 1b08ca130594e2e4
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
 > **TL;DR.** `rdc repo diff` mostra la differenza a livello di file tra due repository forkati con la grammatica di `git status --short` (A/M/D/R), senza decifrare nessuno dei due.

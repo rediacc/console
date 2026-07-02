@@ -7,7 +7,7 @@
       "id": "tutorial-vscode-browser-01",
       "markerIndex": 0,
       "at": 2.414862,
-      "text": "One command. The CLI installs the editor server on the machine once, starts it inside the repo sandbox, opens a tunnel, and hands you a link. No local VS Code, no extensions to set up.",
+      "text": "명령어 하나면 됩니다. CLI가 에디터 서버를 머신에 한 번 설치하고, repo sandbox 안에서 실행한 뒤, 터널을 열고 링크를 건네줍니다. 로컬 VS Code도, 설치할 확장 프로그램도 필요 없습니다.",
       "afterText": "그 URL이 바로 에디터입니다. 어떤 OS에서도 작동하며, 브라우저만 있으면 됩니다.",
       "cardLabel": "브라우저 연결",
       "prose": "--browser 플래그로 연결하세요. CLI가 오픈소스 에디터 서버를 머신에 설치하고(한 번만), repo sandbox 내부에서 실행한 뒤, SSH 터널을 열고 브라우저 링크를 출력합니다."
@@ -16,7 +16,7 @@
       "id": "tutorial-vscode-browser-02",
       "markerIndex": 1,
       "at": 12.531234,
-      "text": "Same repo from the plain terminal: the working directory is the repo, the files are the repo's files.",
+      "text": "일반 터미널에서 같은 repo를 봅니다. 작업 디렉토리는 그 repo이고, 파일도 그 repo의 파일입니다.",
       "afterText": "terminal과 에디터가 일치합니다. 같은 sandbox입니다.",
       "cardLabel": "동일한 화면",
       "prose": "동일한 repo에 터미널 세션을 여세요. 작업 디렉토리와 파일이 에디터에 표시된 내용과 일치합니다."
@@ -25,7 +25,7 @@
       "id": "tutorial-vscode-browser-03",
       "markerIndex": 2,
       "at": 19.464899,
-      "text": "And the file we created in the browser editor? Right here. Files made in VS Code are real repo files, instantly.",
+      "text": "브라우저 에디터에서 만든 파일은요? 바로 여기 있습니다. VS Code에서 만든 파일은 곧바로 실제 repo 파일이 됩니다.",
       "afterText": "브라우저에서 만들고, terminal에서 읽습니다. 하나의 repo, 두 개의 문.",
       "cardLabel": "왕복 확인",
       "prose": "브라우저 에디터에서 생성한 파일은 실제 repo 파일입니다. 어느 세션에서든 읽을 수 있습니다."
@@ -34,7 +34,7 @@
       "id": "tutorial-vscode-browser-04",
       "markerIndex": 3,
       "at": 26.768996,
-      "text": "Now try to leave. Listing the root of the server: permission denied. The kernel scopes the editor, its terminal, and every child process to this repo.",
+      "text": "이제 밖으로 나가려고 해봅니다. 서버의 루트를 조회하면, 권한이 거부됩니다. 커널이 에디터와 그 터미널, 그리고 모든 자식 프로세스를 이 repo로 제한합니다.",
       "afterText": "설정이 아닌 커널에 의해 거부되었습니다.",
       "cardLabel": "루트 접근 거부",
       "prose": "서버의 루트 디렉토리 목록을 조회해 보세요. 권한이 거부됩니다. 커널이 세션을 repo로 제한합니다."
@@ -43,7 +43,7 @@
       "id": "tutorial-vscode-browser-05",
       "markerIndex": 4,
       "at": 32.439211,
-      "text": "Other users' homes? Also denied. Whatever runs inside this sandbox — editors, terminals, build tools — ends at the repo's walls.",
+      "text": "다른 사용자의 홈 디렉토리는요? 역시 거부됩니다. 이 sandbox 안에서 실행되는 것은 무엇이든, 에디터든 터미널이든 빌드 도구든, repo의 벽에서 멈춥니다.",
       "afterText": "sandbox에는 예외가 없습니다. 그게 핵심입니다.",
       "cardLabel": "홈 접근 거부",
       "prose": "/home 같은 다른 디렉토리도 접근이 거부됩니다. sandbox는 내부에서 실행되는 모든 것에 적용됩니다."

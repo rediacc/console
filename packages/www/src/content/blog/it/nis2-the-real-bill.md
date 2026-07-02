@@ -1,8 +1,12 @@
 ---
-title: "Cosa ci hanno detto gli acquirenti nel primo ciclo di audit NIS2"
-description: "Lo stack di conformità a cinque strumenti che le entità mid-market essenziali stanno silenziosamente assemblando nel 2026, cosa consolida un control plane self-hosted, e le voci di costo che restano comunque a carico dell'organizzazione."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-09
+title: Cosa ci hanno detto gli acquirenti nel primo ciclo di audit NIS2
+description: >-
+  Lo stack di conformità a cinque strumenti che le entità mid-market essenziali
+  stanno silenziosamente assemblando nel 2026, cosa consolida un control plane
+  self-hosted, e le voci di costo che restano comunque a carico
+  dell'organizzazione.
+author: Rediacc
+publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
 tags:
   - nis2
@@ -12,8 +16,8 @@ tags:
   - mid-market
 featured: false
 language: it
-sourceHash: "3fbb581ec14e3f80"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: 29fbcbffd8a304bc
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: "Article 21(2)(d) es una pregunta sobre proveedores. El autoalojamiento es la respuesta que deja de deberse."
 description: "Por qué el registro de TIC de terceros se reduce cuando el plano de datos nunca abandona su entorno. Una lectura práctica de NIS2 Article 21(2)(d) para CISOs y responsables de compras que renegocian DPAs en 2026."
-author: Muhammed Fatih Bayraktar
+author: Rediacc
 publishedDate: 2026-05-09
 category: guide
 tags:
@@ -12,8 +12,8 @@ tags:
   - compliance
 featured: false
 language: es
-sourceHash: "98f0b752bc5dbd4d"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "ffdb86da48dacc58"
+sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 translatedFrom: en
 ---
 
@@ -156,12 +156,12 @@ Un proveedor que responde limpiamente a las seis preguntas es inusual. Un provee
 
 ## Lo que esto significa para el próximo ciclo de renovación
 
-Si va a afrontar una renovación de copia de seguridad o recuperación ante desastres en los próximos doce meses y Article 21(2)(d) figura en la tabla de puntuación de compras, tres acciones concretas:
+Si vas a afrontar una renovación de backup o recuperación ante desastres en los próximos doce meses y el Article 21(2)(d) está en el baremo de compras, tres pasos concretos:
 
-1. Dibuje en una pizarra la ruta de datos de cuatro capas de su proveedor actual. Si no puede nombrar el tercer subencargado en la jerarquía, tiene un problema de exhaustividad del registro que es anterior a NIS2 y la renovación es el momento adecuado para resolverlo.
-2. Aplique la lista de verificación de seis preguntas anterior a su proveedor actual. Envíe las respuestas a su DPO y a su auditor y pregunte si las brechas están aceptadas. Si las brechas incluyen la capa 3 (custodia de claves) o la capa 4 (subencargados no enumerados), ahí está el punto de palanca.
-3. Analice el aspecto que tendría un registro de proveedores alternativo con un plano de control autoalojado. Compare las entradas del registro, no los costes de licencia. Los costes de licencia son similares dentro de un factor de dos; las entradas del registro tienen formas diferentes. (La entrada complementaria sobre [el coste estructural de la pila NIS2](/es/blog/nis2-the-real-bill) detalla lo que se colapsa y lo que permanece.)
+1. Dibuja en una pizarra la ruta de datos de cuatro capas de tu proveedor actual. Si no sabes nombrar el tercer subencargado en la cadena, tienes un problema de exhaustividad del registro que es anterior a NIS2 y la renovación es el momento de corregirlo.
+2. Aplica la lista de seis preguntas anterior a tu proveedor actual. Envía las respuestas a tu DPO y a tu auditor y pregunta si las brechas son asumibles. Si las brechas incluyen la capa 3 (custodia de claves) o la capa 4 (subencargados que no habías enumerado), ahí está la palanca.
+3. Mira cómo sería un registro de proveedores alternativo con un plano de control autoalojado. Compara las entradas del registro, no los costes de licencia. Los costes de licencia son similares, dentro de un factor de dos; las entradas del registro tienen formas distintas. (La entrada complementaria sobre [el coste estructural de la pila NIS2](/es/blog/nis2-the-real-bill) detalla lo que se colapsa y lo que permanece.)
 
-Si somos la alternativa en su lista corta, la oferta es concreta. Envíenos su cuestionario de proveedores. Lo completaremos contra una instancia desplegada, con nuestras respuestas reales a sus preguntas, incluidas las brechas. Si desea revisar la arquitectura antes de enviar la documentación, reservaremos una revisión de arquitectura de 30 minutos con el fundador. El camino hacia una entrada de registro defendible no es un folleto brillante. Son las respuestas, incluidas las incómodas.
+Si somos la alternativa en tu lista corta, la oferta es concreta. Envíanos tu cuestionario de proveedores. Lo completaremos contra una instancia desplegada, con nuestras respuestas reales a tus preguntas, incluidas las brechas. Si quieres revisar la arquitectura antes de enviar la documentación, reservaremos una revisión de arquitectura de 30 minutos con nuestro equipo de ingeniería. El camino hacia una entrada de registro defendible no es un folleto brillante. Son las respuestas, incluidas las incómodas.
 
 ¿Quiere el mapa de Rediacc artículo por artículo? Consulte [NIS2 y DORA](/es/docs/legal-nis2-dora). ¿Necesita el marco más amplio? Lea [Resumen de cumplimiento](/es/docs/legal-overview). Para la residencia de datos, consulte [Soberanía de datos](/es/docs/legal-data-sovereignty). Para entender por qué el autoalojamiento importa, consulte [On-Premise](/es/docs/on-premise).

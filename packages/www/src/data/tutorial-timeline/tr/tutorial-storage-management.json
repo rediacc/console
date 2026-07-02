@@ -1,0 +1,140 @@
+{
+  "cast": "/assets/tutorials/tutorial-storage-management.cast",
+  "language": "tr",
+  "version": 1,
+  "steps": [
+    {
+      "id": "tutorial-storage-management-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.410441,
+      "replayEndSec": 12.69586,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-01.05800be7.mp3",
+      "audioDurationSec": 5.146122,
+      "textHash": "05800be7474114c9af193cdb81a31695d21c4e4877fadcd63f3403455ba6491a",
+      "narrationText": "Repository'yi neredeyse tamamen doldurun ve kontrol edin: dosya sistemi daralıyor.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-01-after.e4e5edf9.mp3",
+      "afterAudioDurationSec": 2.272653,
+      "afterTextHash": "e4e5edf91ab2e59612cc697dd83ad8aa3a18f554a77fb60308e6e31a80058eb2"
+    },
+    {
+      "id": "tutorial-storage-management-02",
+      "markerIndex": 1,
+      "replayStartSec": 12.69586,
+      "replayEndSec": 19.886575,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-02.869f86d4.mp3",
+      "audioDurationSec": 8.437551,
+      "textHash": "869f86d44259c23b6974bec0ce486de84f3cfa8dfdf913ac941c2dead3f70d42",
+      "narrationText": "Çevrimiçi olarak büyütün. Şifreli container ve dosya sistemi, container'lar çalışmaya devam ederken genişler; sıfır kesinti, sıfır unmount.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-02-after.21fc03de.mp3",
+      "afterAudioDurationSec": 2.507755,
+      "afterTextHash": "21fc03de90d1292b304fc9f636d6e5cf3840e68901a04ab3ad316544f4524d56"
+    },
+    {
+      "id": "tutorial-storage-management-03",
+      "markerIndex": 2,
+      "replayStartSec": 19.886575,
+      "replayEndSec": 26.982758,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-03.5f7bd3fe.mp3",
+      "audioDurationSec": 3.317551,
+      "textHash": "5f7bd3fe3d5768cdbae54dc1f9a4597876f88a3faa7abd195d9328fae0ba50ca",
+      "narrationText": "İçeriden doğrulayın: aynı volume, iki katı alan.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-03-after.1bbd9cca.mp3",
+      "afterAudioDurationSec": 1.227755,
+      "afterTextHash": "1bbd9cca4e22d2e270d2223a429a60b0792b6ac46519a6f463f488a61dcca4b6"
+    },
+    {
+      "id": "tutorial-storage-management-04",
+      "markerIndex": 3,
+      "replayStartSec": 26.982758,
+      "replayEndSec": 33.464064,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-04.00edc75b.mp3",
+      "audioDurationSec": 10.03102,
+      "textHash": "00edc75b87436fc77addf6e6c31b54feda8d9cdbb8f49a2655a9f5ff52b00f34",
+      "narrationText": "Şimdi ters yönde. Büyük dosyayı silin, ama dikkat edin: pool alanı hemen geri almaz. Silinen bloklar image içinde rezerve kalır.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-04-after.3e35e73f.mp3",
+      "afterAudioDurationSec": 2.507755,
+      "afterTextHash": "3e35e73f0102041510036cfa7e1c199e4dad1525201a712720018770f2529f7b"
+    },
+    {
+      "id": "tutorial-storage-management-05",
+      "markerIndex": 4,
+      "replayStartSec": 33.464064,
+      "replayEndSec": 40.097562,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-05.edd7a861.mp3",
+      "audioDurationSec": 6.19102,
+      "textHash": "edd7a861b929a9e1697753a9b7fd179132b1a78833912585a093bb864ac9577b",
+      "narrationText": "Trim, bu blokları çevrimiçi olarak datastore pool'una geri verir. Çoğu kurulumun unuttuğu adım budur.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-05-after.919d91c1.mp3",
+      "afterAudioDurationSec": 2.429388,
+      "afterTextHash": "919d91c1515e30288805b4ae69966e01b2e0857264526c5641bb3ee7aa237e74"
+    },
+    {
+      "id": "tutorial-storage-management-06",
+      "markerIndex": 5,
+      "replayStartSec": 40.097562,
+      "replayEndSec": 50.538253,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-06.14e859d4.mp3",
+      "audioDurationSec": 8.75102,
+      "textHash": "14e859d4960e0259636a044f2f616babe0c30c24cdbf099de49500af96081862",
+      "narrationText": "Artık bunu elle yapmayı bırakın. Politika, sizin belirlediğiniz bir üst sınıra kadar otomatik büyümeyi ve zamanlanmış trim'leri devreye sokar.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-06-after.1816a8d3.mp3",
+      "afterAudioDurationSec": 2.690612,
+      "afterTextHash": "1816a8d34cd9e3e0ec870a43553c5b14a65ced5c85a6ae917b50a91aceefbe1d"
+    },
+    {
+      "id": "tutorial-storage-management-07",
+      "markerIndex": 6,
+      "replayStartSec": 50.538253,
+      "replayEndSec": 57.423655,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-07.5dec45f1.mp3",
+      "audioDurationSec": 4.519184,
+      "textHash": "5dec45f16d1ee77f174481806b882dfd8e1b76aa453da54248f6096b02bafe92",
+      "narrationText": "Geri okuyun: otomatik büyüme açık, üst sınır sekiz gigabayt, trim zamanlanmış.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-07-after.3a400c83.mp3",
+      "afterAudioDurationSec": 1.880816,
+      "afterTextHash": "3a400c83f7f5fcd20ca43c747cbb00018d6f4e62eebc8a54400c06e6b59662ae"
+    },
+    {
+      "id": "tutorial-storage-management-08",
+      "markerIndex": 7,
+      "replayStartSec": 57.423655,
+      "replayEndSec": 63.270016,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-08.33978ee3.mp3",
+      "audioDurationSec": 9.16898,
+      "textHash": "33978ee327342625b608cdd9932749e47ab4a91218443ac10184bbef8819d073",
+      "narrationText": "Ve hepsini bir araya getiren görünüm: storage health, her repo'nun kullanımını, pool'u ve copy-on-write paylaşımının size ne kadar tasarruf sağladığını gösterir.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/tutorial-storage-management-08-after.d3805f5c.mp3",
+      "afterAudioDurationSec": 3.63102,
+      "afterTextHash": "d3805f5ca9f5d61a49bb919d91d97501dd27339a4a91ba1c434a1ada285c7b7a"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/intro.3b6aa0e3.mp3",
+      "textHash": "3b6aa0e30bd288e7fffdc7a4cdb669fb3f54ceece50d71e6c72b48c06cc3183f",
+      "audioDurationSec": 12.355918,
+      "narrationText": "Son tutorial'a hoş geldiniz! Artık bir daha disk bitmeyeceğinden emin olalım. Container'lar çalışmaya devam ederken tam bir repository'yi büyüteceğiz, silinen alanı pool'a geri vereceğiz ve ardından makineye her ikisini otomatik yapmasını öğreteceğiz."
+    },
+    {
+      "id": "pool-model",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/pool-model.73d9b344.mp3",
+      "textHash": "73d9b3445dc25fbe5b06355391756f9de4ab1649fb26c3db588d43180d0729e3",
+      "audioDurationSec": 19.957551,
+      "narrationText": "İşte model bu. Her repository, ortak bir datastore pool içindeki tek bir dosyadır. Container'lar çalışmaya devam ederken repository'ler çevrimiçi olarak büyüyebilir. Ama bir repo içindeki veriyi silmek tek başına hiçbir şeyi serbest bırakmaz. Blokları pool'a geri veren şey Trim'dir. Ve bir policy her ikisini de otomatikleştirir."
+    },
+    {
+      "id": "next-tutorial",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-storage-management/next-tutorial.f416dc0a.mp3",
+      "textHash": "f416dc0af0eda8029f9ab18e15453f83f67c8f8570d27fb2ac128c838e890e66",
+      "audioDurationSec": 9.560816,
+      "narrationText": "Ve seri burada tamamlandı! Kurulumdan otomatik depolama yönetimine kadar on sekiz tutorial. Sunucularınız artık gerçekten sizin. İzlediğiniz için teşekkürler!"
+    }
+  ],
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "16277f55e9d7e0bea40be283028a634adb8c7dd3c0ab22e64cc2e6daf352eb12"
+}

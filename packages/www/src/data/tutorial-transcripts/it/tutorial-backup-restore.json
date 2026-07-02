@@ -16,7 +16,7 @@
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
       "at": 6.555802,
-      "text": "Elenchiamo gli storage che lo strumento conosce ora. Ogni storage e' una destinazione verso cui possiamo inviare i backup.",
+      "text": "Elenchiamo gli storage che lo strumento conosce ora. Ogni storage è una destinazione verso cui possiamo inviare i backup.",
       "afterText": "Eccolo. Pronto a ricevere backup.",
       "cardLabel": "Elenca Storage",
       "prose": "Elenca gli storage che la CLI ora conosce. Ognuno è una destinazione per i backup."
@@ -25,7 +25,7 @@
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
       "at": 10.251839,
-      "text": "Passo due. Eseguiamo un backup completo. L'intero repository -- app, database, file, configurazione -- viene caricato. Poiche' il repository e' cifrato a riposo, anche il backup e' cifrato. Nessuna gestione aggiuntiva delle chiavi.",
+      "text": "Passo due. Eseguiamo un backup completo. L'intero repository -- app, database, file, configurazione -- viene caricato. Poiche' il repository è cifrato a riposo, anche il backup è cifrato. Nessuna gestione aggiuntiva delle chiavi.",
       "afterText": "Backup caricato. Tutto cio' che c'e' in questo repo si trova ora sullo storage remoto, cifrato.",
       "cardLabel": "Invia Backup",
       "prose": "Invia un backup completo. L'intero repository viene caricato, inclusi l'app, il database, i file e la configurazione. Poiché il repository è crittografato a riposo, anche il backup è crittografato, senza alcuna gestione aggiuntiva delle chiavi."
@@ -70,7 +70,7 @@
   "narrations": [
     {
       "id": "intro",
-      "text": "La tua app e' attiva, quindi assicuriamoci di non perderla mai! In questo tutorial inviamo l'intero repository a uno storage esterno e lo recuperiamo a richiesta."
+      "text": "La tua app è attiva, quindi assicuriamoci di non perderla mai! In questo tutorial inviamo l'intero repository a uno storage esterno e lo recuperiamo a richiesta."
     },
     {
       "id": "three-steps",

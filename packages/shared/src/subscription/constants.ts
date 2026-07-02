@@ -10,6 +10,11 @@ import type { BillingPeriod, FeatureFlags, PlanCode, PlanMetadata, PlanPricing }
 /**
  * Resource limits by plan.
  * This is the canonical source of truth for all plan limits.
+ *
+ * `maxRepoLicenseIssuancesPerMonth` is a per-machine setup cap: each repo
+ * license issuance licenses exactly one machine (1 issuance = 1 Floating
+ * license). Paid-tier display copy renders these with a "+" suffix (e.g.
+ * "2,000+") to signal room to grow / contact for more.
  */
 export const PLAN_LIMITS: Record<
   PlanCode,
@@ -20,21 +25,31 @@ export const PLAN_LIMITS: Record<
 > = {
   COMMUNITY: {
     maxRepositorySizeGb: 10,
-    maxRepoLicenseIssuancesPerMonth: 500,
+    maxRepoLicenseIssuancesPerMonth: 100,
   },
   PROFESSIONAL: {
-    maxRepositorySizeGb: 100,
-    maxRepoLicenseIssuancesPerMonth: 5000,
+    maxRepositorySizeGb: 50,
+    maxRepoLicenseIssuancesPerMonth: 2000,
   },
   BUSINESS: {
-    maxRepositorySizeGb: 500,
-    maxRepoLicenseIssuancesPerMonth: 20000,
+    maxRepositorySizeGb: 200,
+    maxRepoLicenseIssuancesPerMonth: 5000,
   },
   ENTERPRISE: {
-    maxRepositorySizeGb: 2048,
-    maxRepoLicenseIssuancesPerMonth: 100000,
+    maxRepositorySizeGb: 1024,
+    maxRepoLicenseIssuancesPerMonth: 15000,
   },
 } as const;
+
+/**
+ * How long a machine holds its Floating license slot after the last repo
+ * license issuance on that machine, before it auto-releases from inactivity.
+ * Single source of truth for both the account server's enforcement
+ * (`private/account/src/constants.ts` re-exports this) and any marketing/docs
+ * copy referencing the auto-release window.
+ */
+export const MACHINE_AUTO_RELEASE_MS = 5 * 60 * 60 * 1000; // 5 hours
+export const MACHINE_AUTO_RELEASE_HOURS = MACHINE_AUTO_RELEASE_MS / (60 * 60 * 1000);
 
 /**
  * Feature availability by plan.
@@ -119,9 +134,9 @@ export const PLAN_ORDER: readonly PlanCode[] = [
  */
 export const PLAN_MAX_MACHINES: Record<PlanCode, number> = {
   COMMUNITY: 2,
-  PROFESSIONAL: 5,
-  BUSINESS: 20,
-  ENTERPRISE: 50,
+  PROFESSIONAL: 3,
+  BUSINESS: 10,
+  ENTERPRISE: 25,
 } as const;
 
 /**
@@ -295,13 +310,13 @@ export const PLAN_PRICING: Record<PlanCode, PlanPricing> = {
     currency: 'usd',
   },
   PROFESSIONAL: {
-    monthlyPriceCents: 34_900,
-    annualPriceCents: 349_000,
+    monthlyPriceCents: 7_900,
+    annualPriceCents: 79_000,
     currency: 'usd',
   },
   BUSINESS: {
-    monthlyPriceCents: 69_900,
-    annualPriceCents: 699_000,
+    monthlyPriceCents: 29_900,
+    annualPriceCents: 299_000,
     currency: 'usd',
   },
   ENTERPRISE: {
@@ -335,7 +350,7 @@ export const PLAN_METADATA: Record<PlanCode, PlanMetadata> = {
   },
   ENTERPRISE: {
     displayName: 'Enterprise',
-    description: 'For large organizations with custom infrastructure requirements',
+    description: 'Contact us for custom terms, limits, and dedicated support',
     paid: true,
     featured: false,
   },

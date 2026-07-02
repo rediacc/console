@@ -7,7 +7,7 @@
       "id": "tutorial-fork-isolation-01",
       "markerIndex": 0,
       "at": 2.412666,
-      "text": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "text": "Conheça o app: demo-pgadmin, um PostgreSQL com uma interface pgAdmin, montado e em execução.",
       "afterText": "Um repo ativo. Vamos cloná-lo.",
       "cardLabel": "App Ativo",
       "prose": "Comece a partir de um repositório ativo: um banco de dados PostgreSQL com pgAdmin em execução na máquina."
@@ -16,7 +16,7 @@
       "id": "tutorial-fork-isolation-02",
       "markerIndex": 1,
       "at": 8.155445,
-      "text": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "text": "Faça o fork. O clone copy-on-write leva segundos, não importa o tamanho; o detach retorna assim que os containers sobem, enquanto as verificações de saúde continuam em segundo plano.",
       "afterText": "Fork feito e iniciando. Os dados não foram copiados, foram compartilhados, até que um lado os altere.",
       "cardLabel": "Fork + Up",
       "prose": "Faça o fork do repositório com --up --detach: o clone CoW é quase instantâneo e os serviços do fork iniciam imediatamente."
@@ -25,7 +25,7 @@
       "id": "tutorial-fork-isolation-03",
       "markerIndex": 2,
       "at": 19.24953,
-      "text": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "text": "Dois repositórios agora: o original e o experimento, cada um com seus próprios containers, rede e visão de disco.",
       "afterText": "Mesma máquina, dois mundos isolados.",
       "cardLabel": "Lado a Lado",
       "prose": "Liste os repositórios: o original e o fork rodam lado a lado, totalmente isolados."
@@ -34,7 +34,7 @@
       "id": "tutorial-fork-isolation-04",
       "markerIndex": 3,
       "at": 24.926391,
-      "text": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "text": "Terminou de experimentar? Exclua o fork. Segundos para criar, segundos para jogar fora — o original nunca soube que ele existiu.",
       "afterText": "Removido. O original continuou servindo o tempo todo.",
       "cardLabel": "Excluir Fork",
       "prose": "Exclua o fork quando terminar. O repositório original permanece intacto."

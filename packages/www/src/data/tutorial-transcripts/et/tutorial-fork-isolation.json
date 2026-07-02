@@ -7,7 +7,7 @@
       "id": "tutorial-fork-isolation-01",
       "markerIndex": 0,
       "at": 2.412666,
-      "text": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "text": "Tutvu rakendusega: demo-pgadmin, PostgreSQL koos pgAdmin liidesega, mounditud ja töötamas.",
       "afterText": "Üks reaalajas repo. Kloonime selle.",
       "cardLabel": "Reaalajaline rakendus",
       "prose": "Alusta reaalajalise repositooriumiga: PostgreSQL andmebaas koos pgAdminiga töötab masinal."
@@ -16,7 +16,7 @@
       "id": "tutorial-fork-isolation-02",
       "markerIndex": 1,
       "at": 8.155445,
-      "text": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "text": "Tee sellest fork. Copy-on-write kloon võtab aega vaid mõne sekundi, olenemata suurusest; detach naaseb kohe, kui konteinerid käivituvad, samal ajal kui health checkid jätkuvad taustal.",
       "afterText": "Forkitud ja käivitub. Andmeid ei kopeeritud, need jagati, kuni üks pool neid muudab.",
       "cardLabel": "Fork + Up",
       "prose": "Tee repositooriumist fork kasutades --up --detach: CoW kloon on peaaegu kohene ja forki teenused käivituvad kohe."
@@ -25,7 +25,7 @@
       "id": "tutorial-fork-isolation-03",
       "markerIndex": 2,
       "at": 19.24953,
-      "text": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "text": "Nüüd on kaks repositooriumi: originaal ja eksperiment, kummalgi omad konteinerid, oma võrk ja oma kettavaade.",
       "afterText": "Sama masin, kaks isoleeritud maailma.",
       "cardLabel": "Kõrvuti",
       "prose": "Kuva repositooriumid: originaal ja fork töötavad kõrvuti, täielikult isoleeritult."
@@ -34,7 +34,7 @@
       "id": "tutorial-fork-isolation-04",
       "markerIndex": 3,
       "at": 24.926391,
-      "text": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "text": "Katsetamine läbi? Kustuta fork. Sekunditega loodud, sekunditega kadunud, originaal ei saanudki teada, et see üldse eksisteeris.",
       "afterText": "Kadunud. Originaal teenis kogu selle aja.",
       "cardLabel": "Kustuta Fork",
       "prose": "Kustuta fork, kui oled lõpetanud. Originaalrepositoorium jääb puutumata."

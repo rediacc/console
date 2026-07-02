@@ -959,9 +959,9 @@
         "infrastructure": "Infraestructura",
         "noData": "No hay datos de estado disponibles",
         "storageHealthFragmentationNote": "La fragmentación cuenta los extents de la imagen copy-on-write de cada repositorio, no los archivos que contiene. Los valores altos son esperables en cargas de escritura aleatoria (bases de datos, capas de contenedores) y son solo informativos. La desfragmentación no se admite aquí de forma intencionada: dejaría de compartir los forks e instantáneas de respaldo enlazados por reflink e inflaría el uso del datastore.",
-        "storageHealthPoolSummary": "Pool: {{used}} usados, {{free}} libres ({{percent}}% lleno)",
-        "storageHealthPoolSnapshots": "Las instantáneas de copia de seguridad retienen {{pinned}} ({{active}} activas, {{stale}} obsoletas; las obsoletas se eliminan con 'rdc machine prune')",
         "storageHealthHint": "Consejo: Ejecuta con --storage-health para ver la fragmentación de BTRFS y el ahorro de reflink por repo",
+        "storageHealthPoolSnapshots": "Las instantáneas de copia de seguridad retienen {{pinned}} ({{active}} activas, {{stale}} obsoletas; las obsoletas se eliminan con 'rdc machine prune')",
+        "storageHealthPoolSummary": "Pool: {{used}} usados, {{free}} libres ({{percent}}% lleno)",
         "storageHealthSummary": "Eficiencia de almacenamiento: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} contenedor(es) ha(n) superado el umbral de desviación; saliendo con código distinto de cero",
         "syncCertsFailed": "Falló la sincronización de la caché de certificados: {{error}}"
@@ -1304,10 +1304,10 @@
         "list": {
           "completed": "Lista de inicio automático obtenida",
           "description": "Listar repositorios con inicio automático habilitado",
-          "failed": "Fallo al listar repositorios con inicio automático",
-          "starting": "Listando repositorios con inicio automático en \"{{machine}}\"...",
           "empty": "No hay repositorios con inicio automático en \"{{machine}}\"",
-          "service": "Servicio de inicio automático: instalado={{installed}}, habilitado={{enabled}}"
+          "failed": "Fallo al listar repositorios con inicio automático",
+          "service": "Servicio de inicio automático: instalado={{installed}}, habilitado={{enabled}}",
+          "starting": "Listando repositorios con inicio automático en \"{{machine}}\"..."
         }
       },
       "backup": {
@@ -1433,41 +1433,6 @@
         "sizeOption": "Nuevo tamaño del repositorio (ej. 10G, 100G, 1T)",
         "starting": "Expandiendo \"{{repository}}\" a {{size}} en \"{{machine}}\"..."
       },
-      "trim": {
-        "description": "Recupera espacio del pool del datastore desde repositorios montados (en línea, sin tiempo de inactividad). Los bloques eliminados dentro de los repositorios vuelven al pool mediante fstrim. Sin --name, se recortan todos los repositorios montados y el propio datastore. fstrim se omite en los repositorios con una copia de seguridad activa; la recuperación de --docker se ejecuta igualmente",
-        "descriptionShort": "Devolver el espacio libre de los repositorios al pool",
-        "nameOption": "Repositorio a recortar (predeterminado: todos los repositorios montados)",
-        "dockerOption": "Liberar espacio de Docker (contenedores detenidos, imágenes colgantes, caché de build); se ejecuta incluso con una instantánea de copia de seguridad activa",
-        "dockerVolumesOption": "Eliminar además los volúmenes de Docker sin usar",
-        "reportOnlyOption": "Mostrar el estado de descartes y la estimación recuperable sin recortar",
-        "repoNotFound": "Repositorio no encontrado: {{name}}",
-        "noMountedRepos": "No se encontraron repositorios montados",
-        "starting": "Recortando repositorios en \"{{machine}}\"...",
-        "completed": "Recorte completado: {{total}} recuperados",
-        "failed": "Error al recortar"
-      },
-      "policy": {
-        "description": "Gestiona la política de tamaño automática que aplica el mantenedor de almacenamiento de la máquina: amplía la cuota de un repositorio en línea cuando se llena (nunca más allá de max-quota, nunca con el pool escaso) y ejecuta recortes programados. No existe la reducción automática; para eso use 'repo resize'. Sin --name se gestiona la política predeterminada de la máquina",
-        "descriptionShort": "Gestionar la política de tamaño automática (auto-crecimiento, recorte programado)",
-        "nameOption": "Repositorio (predeterminado: política de toda la máquina)",
-        "repoNotFound": "Repositorio no encontrado: {{name}}",
-        "invalidBool": "{{flag}} debe ser 'true' o 'false', se recibió: {{value}}",
-        "failed": "La operación de política falló",
-        "set": {
-          "description": "Establece campos de la política de tamaño. Solo cambian los flags que pase; los demás campos guardados conservan sus valores. Activar el auto-crecimiento requiere --max-quota: el tope es su consentimiento explícito para sobreaprovisionar el pool",
-          "descriptionShort": "Establecer campos de la política (predeterminado de máquina, o un repositorio con --name)",
-          "autoGrowOption": "Activar el crecimiento automático de cuota en línea (true/false)",
-          "maxQuotaOption": "Tope del auto-crecimiento (p. ej. 200G); obligatorio para el auto-crecimiento",
-          "growThresholdOption": "% de uso del sistema de archivos que dispara un crecimiento (predeterminado 85)",
-          "growStepOption": "Crecimiento por paso: absoluto (10G) o porcentaje de la cuota (20%)",
-          "autoTrimOption": "Activar el recorte programado (true/false)",
-          "trimIntervalOption": "Horas mínimas entre recortes automáticos (predeterminado 24)"
-        },
-        "get": {
-          "description": "Muestra el valor predeterminado de la máquina, la anulación del repositorio (con --name) y la política efectiva combinada que aplica el mantenedor",
-          "descriptionShort": "Mostrar la política de tamaño (predeterminada, anulación del repositorio, efectiva)"
-        }
-      },
       "fork": {
         "alreadyExists": "El repositorio \"{{name}}\" ya existe en el contexto",
         "checkpointOption": "Crear checkpoint CRIU en el origen antes de fork (capturar estado de memoria de procesos para restaurar en el fork)",
@@ -1537,7 +1502,6 @@
         "checkpointing": "Creando checkpoint CRIU...",
         "complete": "Migración completada: {{name}} movido de {{from}} a {{to}}",
         "deltaDone": "Sincronización delta completada",
-        "phase2Stats": "Conmutación (TIEMPO DE INACTIVIDAD): {{transferred}} en {{duration}}",
         "deltaFailed": "Sincronización delta fallida",
         "deltaSync": "Sincronizando delta...",
         "description": "Migración en vivo de un repositorio de una máquina a otra con tiempo de inactividad mínimo. rsync en dos fases: transferencia masiva en ejecución, luego parada breve para sincronización delta. Soporta checkpoint CRIU para migración de memoria de procesos y aprovisionamiento automático de máquinas destino",
@@ -1554,9 +1518,10 @@
         "optionTo": "Nombre de la máquina destino",
         "phase1": "Fase 1: Transfiriendo datos masivos (el origen sigue en ejecución)...",
         "phase1Done": "Transferencia masiva completada",
-        "phase1Stats": "{{transferred}} transferidos en {{duration}} — el origen siguió en línea",
         "phase1Failed": "Transferencia masiva fallida",
+        "phase1Stats": "{{transferred}} transferidos en {{duration}} — el origen siguió en línea",
         "phase2": "Fase 2: Corte (breve inactividad)...",
+        "phase2Stats": "Conmutación (TIEMPO DE INACTIVIDAD): {{transferred}} en {{duration}}",
         "phase3": "Fase 3: Iniciando en el destino...",
         "provisioning": "Aprovisionando máquina destino {{machine}} vía {{provider}}...",
         "sourceStopped": "Servicios del origen detenidos",
@@ -1588,6 +1553,28 @@
         "starting": "Estableciendo propiedad de \"{{repository}}\" en \"{{machine}}\"...",
         "uidOption": "UID del propietario (predeterminado: 7111)"
       },
+      "policy": {
+        "description": "Gestiona la política de tamaño automática que aplica el mantenedor de almacenamiento de la máquina: amplía la cuota de un repositorio en línea cuando se llena (nunca más allá de max-quota, nunca con el pool escaso) y ejecuta recortes programados. No existe la reducción automática; para eso use 'repo resize'. Sin --name se gestiona la política predeterminada de la máquina",
+        "descriptionShort": "Gestionar la política de tamaño automática (auto-crecimiento, recorte programado)",
+        "failed": "La operación de política falló",
+        "get": {
+          "description": "Muestra el valor predeterminado de la máquina, la anulación del repositorio (con --name) y la política efectiva combinada que aplica el mantenedor",
+          "descriptionShort": "Mostrar la política de tamaño (predeterminada, anulación del repositorio, efectiva)"
+        },
+        "invalidBool": "{{flag}} debe ser 'true' o 'false', se recibió: {{value}}",
+        "nameOption": "Repositorio (predeterminado: política de toda la máquina)",
+        "repoNotFound": "Repositorio no encontrado: {{name}}",
+        "set": {
+          "autoGrowOption": "Activar el crecimiento automático de cuota en línea (true/false)",
+          "autoTrimOption": "Activar el recorte programado (true/false)",
+          "description": "Establece campos de la política de tamaño. Solo cambian los flags que pase; los demás campos guardados conservan sus valores. Activar el auto-crecimiento requiere --max-quota: el tope es su consentimiento explícito para sobreaprovisionar el pool",
+          "descriptionShort": "Establecer campos de la política (predeterminado de máquina, o un repositorio con --name)",
+          "growStepOption": "Crecimiento por paso: absoluto (10G) o porcentaje de la cuota (20%)",
+          "growThresholdOption": "% de uso del sistema de archivos que dispara un crecimiento (predeterminado 85)",
+          "maxQuotaOption": "Tope del auto-crecimiento (p. ej. 200G); obligatorio para el auto-crecimiento",
+          "trimIntervalOption": "Horas mínimas entre recortes automáticos (predeterminado 24)"
+        }
+      },
       "pull": {
         "deployed": "Repositorio \"{{repo}}\" desplegado en {{machine}}",
         "deployFailed": "Error al desplegar \"{{repo}}\" después de pull",
@@ -1614,16 +1601,16 @@
         "optionCheckpoint": "Crear checkpoint CRIU antes del respaldo (captura el estado de memoria del proceso para migración en vivo)",
         "optionDeltaBase": "GUID base inmutable presente byte a byte idéntico en ambas máquinas; transfiere solo los bloques modificados (máquina destino). Omítelo para usar base automática sin intervención",
         "optionForce": "Forzar sobrescritura del respaldo existente",
+        "optionJson": "Mostrar estadísticas de transferencia en JSON",
         "optionProvision": "Aprovisionar automáticamente la máquina destino a través del proveedor de nube si no existe",
         "optionStrategy": "Estrategia de delta por bloques al usar una base delta: auto, physical o shared",
-        "optionJson": "Mostrar estadísticas de transferencia en JSON",
-        "statsDelta": "\"{{repo}}\" enviado a {{machine}} — {{transferred}} transferidos en {{duration}} (delta sobre la base {{base}}, imagen {{image}})",
-        "statsFull": "\"{{repo}}\" enviado a {{machine}} — {{transferred}} transferidos en {{duration}} (completo)",
-        "statsNoBytes": "\"{{repo}}\" enviado a {{machine}} — completado en {{duration}}",
         "optionTag": "Etiqueta de despliegue para versionamiento",
         "optionTo": "Nombre de la máquina o almacenamiento de destino (detectado automáticamente desde la configuración)",
         "optionUp": "Después del envío, montar y desplegar el repositorio en la máquina de destino",
-        "pushing": "Enviando respaldo de \"{{repo}}\" a {{dest}}..."
+        "pushing": "Enviando respaldo de \"{{repo}}\" a {{dest}}...",
+        "statsDelta": "\"{{repo}}\" enviado a {{machine}} — {{transferred}} transferidos en {{duration}} (delta sobre la base {{base}}, imagen {{image}})",
+        "statsFull": "\"{{repo}}\" enviado a {{machine}} — {{transferred}} transferidos en {{duration}} (completo)",
+        "statsNoBytes": "\"{{repo}}\" enviado a {{machine}} — completado en {{duration}}"
       },
       "resize": {
         "completed": "Redimensionamiento completado",
@@ -1719,6 +1706,19 @@
         },
         "starting": "Aplicando plantilla a \"{{repository}}\" en \"{{machine}}\"..."
       },
+      "trim": {
+        "completed": "Recorte completado: {{total}} recuperados",
+        "description": "Recupera espacio del pool del datastore desde repositorios montados (en línea, sin tiempo de inactividad). Los bloques eliminados dentro de los repositorios vuelven al pool mediante fstrim. Sin --name, se recortan todos los repositorios montados y el propio datastore. fstrim se omite en los repositorios con una copia de seguridad activa; la recuperación de --docker se ejecuta igualmente",
+        "descriptionShort": "Devolver el espacio libre de los repositorios al pool",
+        "dockerOption": "Liberar espacio de Docker (contenedores detenidos, imágenes colgantes, caché de build); se ejecuta incluso con una instantánea de copia de seguridad activa",
+        "dockerVolumesOption": "Eliminar además los volúmenes de Docker sin usar",
+        "failed": "Error al recortar",
+        "nameOption": "Repositorio a recortar (predeterminado: todos los repositorios montados)",
+        "noMountedRepos": "No se encontraron repositorios montados",
+        "repoNotFound": "Repositorio no encontrado: {{name}}",
+        "reportOnlyOption": "Mostrar el estado de descartes y la estimación recuperable sin recortar",
+        "starting": "Recortando repositorios en \"{{machine}}\"..."
+      },
       "tunnel": {
         "active": "Túnel activo: localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
         "closed": "Túnel cerrado",
@@ -1734,9 +1734,9 @@
         "noContainers": "No se encontraron contenedores en ejecución para el repositorio \"{{repository}}\"",
         "noPorts": "No se encontraron puertos expuestos en el contenedor \"{{container}}\". Especifique --port",
         "noServiceIP": "El contenedor \"{{container}}\" no tiene IP de servicio asignada",
-        "portOption": "Puerto del contenedor remoto a reenviar",
-        "portInUse": "El puerto local {{port}} ya está en uso. Elija otro con --local",
         "notReady": "El túnel no estuvo listo en localhost:{{localPort}} en 15 s",
+        "portInUse": "El puerto local {{port}} ya está en uso. Elija otro con --local",
+        "portOption": "Puerto del contenedor remoto a reenviar",
         "urlOnlyOption": "Imprimir solo la URL local cuando el túnel esté listo (legible por máquinas)"
       },
       "unmount": {
@@ -2211,26 +2211,26 @@
         "removedKeys": "Se eliminaron todas las claves SSH persistidas."
       },
       "connect": {
+        "browserUrl": "Abra VS Code en su navegador: {{url}}",
         "configuringSSH": "Configurando SSH...",
         "configuringVSCode": "Configurando ajustes de VS Code...",
         "description": "Conectarse a una máquina o repositorio en VS Code",
         "detecting": "Detectando VS Code...",
         "extensionWarning": "Advertencia: Es posible que la extensión Remote SSH no esté instalada.\nInstale desde: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
         "fetchingDetails": "Obteniendo detalles de conexión...",
+        "installingServer": "Asegurando que {{provider}} {{version}} esté instalado en la máquina...",
         "opening": "Abriendo VS Code: {{connection}} → {{path}}",
+        "openingBrowser": "Abriendo su navegador...",
+        "passwordNote": "Contraseña de acceso: {{password}}",
         "persistingKey": "Persistiendo clave SSH...",
         "provisioningRenet": "Aprovisionando renet en el servidor remoto...",
+        "serverReused": "Reutilizando el servidor ya en ejecución",
         "settingsWarning": "Advertencia: No se pudieron configurar los ajustes de VS Code: {{error}}",
         "settingUpEnv": "Configurando entorno remoto...",
+        "startingServer": "Iniciando {{provider}} dentro del sandbox del repositorio...",
         "success": "VS Code lanzado exitosamente.",
         "testingConnectivity": "Probando conectividad a {{host}}:{{port}}...",
-        "installingServer": "Asegurando que {{provider}} {{version}} esté instalado en la máquina...",
-        "startingServer": "Iniciando {{provider}} dentro del sandbox del repositorio...",
-        "serverReused": "Reutilizando el servidor ya en ejecución",
-        "tunnelReady": "Túnel listo en localhost:{{port}}",
-        "browserUrl": "Abra VS Code en su navegador: {{url}}",
-        "passwordNote": "Contraseña de acceso: {{password}}",
-        "openingBrowser": "Abriendo su navegador..."
+        "tunnelReady": "Túnel listo en localhost:{{port}}"
       },
       "description": "Abrir VS Code Remote SSH en una máquina o repositorio",
       "descriptionShort": "Abrir VS Code Remote SSH en una máquina o repositorio",
@@ -2251,8 +2251,8 @@
         },
         "stop": {
           "description": "Detener el servidor VS Code del navegador",
-          "stopped": "{{provider}} detenido",
-          "notRunning": "{{provider}} no estaba en ejecución"
+          "notRunning": "{{provider}} no estaba en ejecución",
+          "stopped": "{{provider}} detenido"
         }
       }
     }
@@ -2581,16 +2581,16 @@
     "vaultDataRequired": "Datos de bóveda requeridos. Use --vault <json> o redirija JSON vía stdin.",
     "vaultVersionRequired": "Versión de bóveda requerida. Use --vault-version <n>.",
     "vscode": {
+      "browserNeedsRepo": "vscode --browser sirve un sandbox de repositorio — pase --repository <name>",
       "cleanupRequired": "Especifique --all para eliminar todas las conexiones o --connection <name> para una específica.",
       "connectivityFailed": "No se puede alcanzar {{host}}:{{port}}. {{error}}\n\nResolución de problemas:\n  - Verificar si la máquina está encendida y conectada a la red\n  - Verificar que la dirección IP sea correcta en la bóveda de máquina\n  - Asegurarse de que el puerto {{port}} no esté bloqueado por un firewall\n  - Intente hacer ping a la máquina: ping {{host}}",
       "noHostKey": "Máquina '{{machine}}' no tiene clave de host configurada en la bóveda",
       "noIpAddress": "Máquina '{{machine}}' no tiene dirección IP configurada",
       "noPrivateKey": "Equipo '{{team}}' no tiene clave privada SSH configurada",
       "notFound": "VS Code no encontrado.\n\nInstale desde: https://code.visualstudio.com/\nO establezca la variable de entorno REDIACC_VSCODE_PATH.",
-      "browserNeedsRepo": "vscode --browser sirve un sandbox de repositorio — pase --repository <name>",
-      "unsupportedArch": "Arquitectura de máquina no compatible con VS Code en el navegador: {{arch}}",
       "serverInstallFailed": "No se pudo instalar {{provider}}: {{error}}",
-      "serverStartFailed": "No se pudo iniciar {{provider}}: {{error}}"
+      "serverStartFailed": "No se pudo iniciar {{provider}}: {{error}}",
+      "unsupportedArch": "Arquitectura de máquina no compatible con VS Code en el navegador: {{arch}}"
     }
   },
   "help": {
@@ -2778,10 +2778,6 @@
     "tfaCode": "Código 2FA actual para verificación",
     "tokenName": "Nombre de token",
     "urlOnly": "Imprimir URI de VS Code en lugar de lanzar",
-    "vscodeBrowser": "Servir VS Code en el navegador desde el sandbox del repositorio (no se necesita VS Code local)",
-    "vscodeNoOpen": "Imprimir la URL sin abrir el navegador local",
-    "vscodeServerProvider": "Implementación del servidor VS Code para el navegador (openvscode, code-server)",
-    "vscodeServerArchive": "Ruta al tarball del servidor preinstalado en la máquina (instalaciones sin conexión)",
     "userPassword": "Contraseña para el nuevo usuario",
     "vaultContent": "Contenido de bóveda como cadena JSON",
     "vaultJson": "Contenido de bóveda como cadena JSON",
@@ -2789,6 +2785,10 @@
     "vaultVersion": "Versión de bóveda actual para bloqueo optimista",
     "verifyChecksum": "Verificar archivos usando sumas de control después de sincronización",
     "vmId": "ID de máquina virtual",
+    "vscodeBrowser": "Servir VS Code en el navegador desde el sandbox del repositorio (no se necesita VS Code local)",
+    "vscodeNoOpen": "Imprimir la URL sin abrir el navegador local",
+    "vscodeServerArchive": "Ruta al tarball del servidor preinstalado en la máquina (instalaciones sin conexión)",
+    "vscodeServerProvider": "Implementación del servidor VS Code para el navegador (openvscode, code-server)",
     "watch": "Observar cambios",
     "watchUpdates": "Observar actualizaciones",
     "yes": "Omitir indicador de confirmación"

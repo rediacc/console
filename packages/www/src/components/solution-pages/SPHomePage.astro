@@ -1,6 +1,7 @@
 ---
 import type { Language } from '../../i18n/types';
 import { createTranslator } from '../../i18n/utils';
+import { ACCOUNT_PATH } from '../../config/constants';
 import SPHero from './SPHero.astro';
 import SPHomeWhyNow from './SPHomeWhyNow.astro';
 import SPHomeLogoWall from './SPHomeLogoWall.astro';
@@ -44,7 +45,7 @@ const homeHero = {
   <SPHero
     lang={lang}
     hero={homeHero}
-    ctaHref={`/${lang}/install`}
+    ctaHref={ACCOUNT_PATH}
     secondaryCtaHref={`/${lang}/docs/quick-start`}
     terminal={{ lines: heroTerminalLines }}
   />

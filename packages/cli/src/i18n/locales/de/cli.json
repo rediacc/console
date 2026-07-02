@@ -959,9 +959,9 @@
         "infrastructure": "Infrastruktur",
         "noData": "Keine Statusdaten verfügbar",
         "storageHealthFragmentationNote": "Die Fragmentierung zählt Extents im Copy-on-Write-Image jedes Repos, nicht die darin enthaltenen Dateien. Hohe Werte sind bei Workloads mit zufälligen Schreibzugriffen (Datenbanken, Container-Schichten) zu erwarten und nur informativ. Defragmentierung wird hier bewusst nicht unterstützt: Sie würde reflink-geteilte Forks und Backup-Snapshots entkoppeln und die Datastore-Nutzung aufblähen.",
-        "storageHealthPoolSummary": "Pool: {{used}} belegt, {{free}} frei ({{percent}}% voll)",
-        "storageHealthPoolSnapshots": "Backup-Snapshots binden {{pinned}} ({{active}} aktiv, {{stale}} veraltet; veraltete werden von 'rdc machine prune' entfernt)",
         "storageHealthHint": "Tipp: Mit --storage-health ausführen, um BTRFS-Fragmentierung und reflink-Einsparungen pro Repo anzuzeigen",
+        "storageHealthPoolSnapshots": "Backup-Snapshots binden {{pinned}} ({{active}} aktiv, {{stale}} veraltet; veraltete werden von 'rdc machine prune' entfernt)",
+        "storageHealthPoolSummary": "Pool: {{used}} belegt, {{free}} frei ({{percent}}% voll)",
         "storageHealthSummary": "Speichereffizienz: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} Container haben den Drift-Schwellenwert überschritten; Beenden mit Nicht-Null-Code",
         "syncCertsFailed": "Zertifikats-Cache-Sync fehlgeschlagen: {{error}}"
@@ -1304,10 +1304,10 @@
         "list": {
           "completed": "Autostart-Liste abgerufen",
           "description": "Repositories mit aktiviertem Autostart auflisten",
-          "failed": "Abrufen der Autostart-Liste fehlgeschlagen",
-          "starting": "Autostart-Repositories auf \"{{machine}}\" werden aufgelistet...",
           "empty": "Keine Repositories mit aktiviertem Autostart auf \"{{machine}}\"",
-          "service": "Autostart-Dienst: installiert={{installed}}, aktiviert={{enabled}}"
+          "failed": "Abrufen der Autostart-Liste fehlgeschlagen",
+          "service": "Autostart-Dienst: installiert={{installed}}, aktiviert={{enabled}}",
+          "starting": "Autostart-Repositories auf \"{{machine}}\" werden aufgelistet..."
         }
       },
       "backup": {
@@ -1433,41 +1433,6 @@
         "sizeOption": "Neue Repository-Größe (z.B. 10G, 100G, 1T)",
         "starting": "\"{{repository}}\" wird auf {{size}} auf \"{{machine}}\" erweitert..."
       },
-      "trim": {
-        "description": "Gibt Datastore-Poolspeicher aus gemounteten Repositories zurück (online, ohne Ausfallzeit). In Repositories gelöschte Blöcke werden per fstrim an den Pool zurückgegeben. Ohne --name werden alle gemounteten Repositories und der Datastore selbst getrimmt. Für Repositories mit laufendem Backup wird fstrim übersprungen; die Bereinigung über --docker läuft trotzdem",
-        "descriptionShort": "Freien Speicher aus Repositories an den Pool zurückgeben",
-        "nameOption": "Zu trimmendes Repository (Standard: alle gemounteten Repositories)",
-        "dockerOption": "Docker-Speicher freigeben (gestoppte Container, ungenutzte Images, Build-Cache); läuft auch bei einem aktiven Backup-Snapshot",
-        "dockerVolumesOption": "Zusätzlich ungenutzte Docker-Volumes entfernen",
-        "reportOnlyOption": "Discard-Status und rückgewinnbaren Speicher anzeigen, ohne zu trimmen",
-        "repoNotFound": "Repository nicht gefunden: {{name}}",
-        "noMountedRepos": "Keine gemounteten Repositories gefunden",
-        "starting": "Repositories auf \"{{machine}}\" werden getrimmt...",
-        "completed": "Trim abgeschlossen: {{total}} zurückgewonnen",
-        "failed": "Trim fehlgeschlagen"
-      },
-      "policy": {
-        "description": "Verwaltet die automatische Größenrichtlinie des Speicher-Maintainers der Maschine: vergrößert das Kontingent eines Repositories online, wenn es voll läuft (nie über max-quota hinaus, nie bei knappem Pool), und führt geplante Trims aus. Automatisches Verkleinern gibt es nicht; dafür 'repo resize' verwenden. Ohne --name wird die maschinenweite Standardrichtlinie angesprochen",
-        "descriptionShort": "Automatische Größenrichtlinie verwalten (Auto-Grow, geplanter Trim)",
-        "nameOption": "Repository (Standard: maschinenweite Richtlinie)",
-        "repoNotFound": "Repository nicht gefunden: {{name}}",
-        "invalidBool": "{{flag}} muss 'true' oder 'false' sein, erhalten: {{value}}",
-        "failed": "Richtlinienvorgang fehlgeschlagen",
-        "set": {
-          "description": "Setzt Felder der Größenrichtlinie. Nur übergebene Flags werden geändert; andere gespeicherte Felder behalten ihre Werte. Auto-Grow erfordert --max-quota: die Obergrenze ist die ausdrückliche Zustimmung zur Überprovisionierung des Pools",
-          "descriptionShort": "Felder der Größenrichtlinie setzen (Maschinenstandard oder ein Repository mit --name)",
-          "autoGrowOption": "Automatisches Online-Wachstum des Kontingents aktivieren (true/false)",
-          "maxQuotaOption": "Obergrenze für Auto-Grow (z. B. 200G); für Auto-Grow erforderlich",
-          "growThresholdOption": "Belegungs-% des Dateisystems, das ein Wachstum auslöst (Standard 85)",
-          "growStepOption": "Wachstum pro Schritt: absolut (10G) oder Prozent des Kontingents (20%)",
-          "autoTrimOption": "Geplanten Trim aktivieren (true/false)",
-          "trimIntervalOption": "Mindestabstand in Stunden zwischen automatischen Trims (Standard 24)"
-        },
-        "get": {
-          "description": "Zeigt den gespeicherten Maschinenstandard, die Repository-Überschreibung (mit --name) und die effektive zusammengeführte Richtlinie, nach der der Maintainer handelt",
-          "descriptionShort": "Größenrichtlinie anzeigen (Maschinenstandard, Repository-Überschreibung, effektiv)"
-        }
-      },
       "fork": {
         "alreadyExists": "Repository \"{{name}}\" existiert bereits im Kontext",
         "checkpointOption": "CRIU checkpoint auf der Quelle vor dem fork erstellen (Prozessspeicherzustand für Wiederherstellung beim fork erfassen)",
@@ -1537,7 +1502,6 @@
         "checkpointing": "CRIU-Checkpoint wird erstellt...",
         "complete": "Migration abgeschlossen: {{name}} von {{from}} nach {{to}} verschoben",
         "deltaDone": "Delta-Sync abgeschlossen",
-        "phase2Stats": "Umschaltung (AUSFALLZEIT): {{transferred}} in {{duration}}",
         "deltaFailed": "Delta-Sync fehlgeschlagen",
         "deltaSync": "Delta wird synchronisiert...",
         "description": "Live-Migration eines Repositorys von einer Maschine zur anderen mit minimaler Ausfallzeit. Zwei-Phasen-rsync: Massentransfer im Betrieb, dann kurzer Stopp für Delta-Sync. Unterstützt CRIU-Checkpoint für Prozessspeicher-Migration und automatische Bereitstellung von Zielmaschinen",
@@ -1554,9 +1518,10 @@
         "optionTo": "Name der Zielmaschine",
         "phase1": "Phase 1: Massendaten übertragen (Quelle läuft weiter)...",
         "phase1Done": "Massentransfer abgeschlossen",
-        "phase1Stats": "{{transferred}} in {{duration}} übertragen — Quelle blieb online",
         "phase1Failed": "Massentransfer fehlgeschlagen",
+        "phase1Stats": "{{transferred}} in {{duration}} übertragen — Quelle blieb online",
         "phase2": "Phase 2: Umschaltung (kurze Ausfallzeit)...",
+        "phase2Stats": "Umschaltung (AUSFALLZEIT): {{transferred}} in {{duration}}",
         "phase3": "Phase 3: Start auf dem Ziel...",
         "provisioning": "Zielmaschine {{machine}} wird über {{provider}} bereitgestellt...",
         "sourceStopped": "Quelldienste gestoppt",
@@ -1588,6 +1553,28 @@
         "starting": "Besitz von \"{{repository}}\" wird auf \"{{machine}}\" gesetzt...",
         "uidOption": "Besitzer-UID (Standard: 7111)"
       },
+      "policy": {
+        "description": "Verwaltet die automatische Größenrichtlinie des Speicher-Maintainers der Maschine: vergrößert das Kontingent eines Repositories online, wenn es voll läuft (nie über max-quota hinaus, nie bei knappem Pool), und führt geplante Trims aus. Automatisches Verkleinern gibt es nicht; dafür 'repo resize' verwenden. Ohne --name wird die maschinenweite Standardrichtlinie angesprochen",
+        "descriptionShort": "Automatische Größenrichtlinie verwalten (Auto-Grow, geplanter Trim)",
+        "failed": "Richtlinienvorgang fehlgeschlagen",
+        "get": {
+          "description": "Zeigt den gespeicherten Maschinenstandard, die Repository-Überschreibung (mit --name) und die effektive zusammengeführte Richtlinie, nach der der Maintainer handelt",
+          "descriptionShort": "Größenrichtlinie anzeigen (Maschinenstandard, Repository-Überschreibung, effektiv)"
+        },
+        "invalidBool": "{{flag}} muss 'true' oder 'false' sein, erhalten: {{value}}",
+        "nameOption": "Repository (Standard: maschinenweite Richtlinie)",
+        "repoNotFound": "Repository nicht gefunden: {{name}}",
+        "set": {
+          "autoGrowOption": "Automatisches Online-Wachstum des Kontingents aktivieren (true/false)",
+          "autoTrimOption": "Geplanten Trim aktivieren (true/false)",
+          "description": "Setzt Felder der Größenrichtlinie. Nur übergebene Flags werden geändert; andere gespeicherte Felder behalten ihre Werte. Auto-Grow erfordert --max-quota: die Obergrenze ist die ausdrückliche Zustimmung zur Überprovisionierung des Pools",
+          "descriptionShort": "Felder der Größenrichtlinie setzen (Maschinenstandard oder ein Repository mit --name)",
+          "growStepOption": "Wachstum pro Schritt: absolut (10G) oder Prozent des Kontingents (20%)",
+          "growThresholdOption": "Belegungs-% des Dateisystems, das ein Wachstum auslöst (Standard 85)",
+          "maxQuotaOption": "Obergrenze für Auto-Grow (z. B. 200G); für Auto-Grow erforderlich",
+          "trimIntervalOption": "Mindestabstand in Stunden zwischen automatischen Trims (Standard 24)"
+        }
+      },
       "pull": {
         "deployed": "Repository \"{{repo}}\" auf {{machine}} bereitgestellt",
         "deployFailed": "Bereitstellung von \"{{repo}}\" nach Pull fehlgeschlagen",
@@ -1614,16 +1601,16 @@
         "optionCheckpoint": "CRIU-Checkpoint vor Backup erstellen (erfasst Prozessspeicherstatus für Live-Migration)",
         "optionDeltaBase": "Unveränderliche Basis-GUID, die auf beiden Rechnern byte-identisch vorliegt; nur geänderte Blöcke übertragen (Rechnerziel). Weglassen für automatische Basiswahl",
         "optionForce": "Vorhandenes Backup überschreiben erzwingen",
+        "optionJson": "Übertragungsstatistik als JSON ausgeben",
         "optionProvision": "Zielrechner automatisch über Cloud-Anbieter bereitstellen, wenn nicht vorhanden",
         "optionStrategy": "Block-Delta-Strategie bei Verwendung einer Delta-Basis: auto, physical oder shared",
-        "optionJson": "Übertragungsstatistik als JSON ausgeben",
-        "statsDelta": "\"{{repo}}\" nach {{machine}} übertragen — {{transferred}} in {{duration}} (Delta gegen Basis {{base}}, Image {{image}})",
-        "statsFull": "\"{{repo}}\" nach {{machine}} übertragen — {{transferred}} in {{duration}} (vollständig)",
-        "statsNoBytes": "\"{{repo}}\" nach {{machine}} übertragen — abgeschlossen in {{duration}}",
         "optionTag": "Deployment-Tag für Versionierung",
         "optionTo": "Name des Zielrechners oder Speichers (wird automatisch aus der Konfiguration erkannt)",
         "optionUp": "Nach dem Push das Repository auf dem Zielrechner mounten und bereitstellen",
-        "pushing": "Backup von \"{{repo}}\" wird nach {{dest}} übertragen..."
+        "pushing": "Backup von \"{{repo}}\" wird nach {{dest}} übertragen...",
+        "statsDelta": "\"{{repo}}\" nach {{machine}} übertragen — {{transferred}} in {{duration}} (Delta gegen Basis {{base}}, Image {{image}})",
+        "statsFull": "\"{{repo}}\" nach {{machine}} übertragen — {{transferred}} in {{duration}} (vollständig)",
+        "statsNoBytes": "\"{{repo}}\" nach {{machine}} übertragen — abgeschlossen in {{duration}}"
       },
       "resize": {
         "completed": "Skalierung abgeschlossen",
@@ -1719,6 +1706,19 @@
         },
         "starting": "Vorlage wird auf \"{{repository}}\" auf \"{{machine}}\" angewendet..."
       },
+      "trim": {
+        "completed": "Trim abgeschlossen: {{total}} zurückgewonnen",
+        "description": "Gibt Datastore-Poolspeicher aus gemounteten Repositories zurück (online, ohne Ausfallzeit). In Repositories gelöschte Blöcke werden per fstrim an den Pool zurückgegeben. Ohne --name werden alle gemounteten Repositories und der Datastore selbst getrimmt. Für Repositories mit laufendem Backup wird fstrim übersprungen; die Bereinigung über --docker läuft trotzdem",
+        "descriptionShort": "Freien Speicher aus Repositories an den Pool zurückgeben",
+        "dockerOption": "Docker-Speicher freigeben (gestoppte Container, ungenutzte Images, Build-Cache); läuft auch bei einem aktiven Backup-Snapshot",
+        "dockerVolumesOption": "Zusätzlich ungenutzte Docker-Volumes entfernen",
+        "failed": "Trim fehlgeschlagen",
+        "nameOption": "Zu trimmendes Repository (Standard: alle gemounteten Repositories)",
+        "noMountedRepos": "Keine gemounteten Repositories gefunden",
+        "repoNotFound": "Repository nicht gefunden: {{name}}",
+        "reportOnlyOption": "Discard-Status und rückgewinnbaren Speicher anzeigen, ohne zu trimmen",
+        "starting": "Repositories auf \"{{machine}}\" werden getrimmt..."
+      },
       "tunnel": {
         "active": "Tunnel aktiv: localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
         "closed": "Tunnel geschlossen",
@@ -1734,9 +1734,9 @@
         "noContainers": "Keine laufenden Container für Repository \"{{repository}}\" gefunden",
         "noPorts": "Keine exponierten Ports auf Container \"{{container}}\" gefunden. Verwenden Sie --port",
         "noServiceIP": "Container \"{{container}}\" hat keine zugewiesene Service-IP",
-        "portOption": "Remote-Container-Port zum Weiterleiten",
         "notReady": "Tunnel wurde nicht innerhalb von 15 Sekunden unter localhost:{{localPort}} bereit",
         "portInUse": "Lokaler Port {{port}} ist bereits belegt. Wählen Sie einen anderen mit --local",
+        "portOption": "Remote-Container-Port zum Weiterleiten",
         "urlOnlyOption": "Gibt nur die lokale URL aus, sobald der Tunnel bereit ist (maschinenlesbar)"
       },
       "unmount": {
@@ -2211,26 +2211,26 @@
         "removedKeys": "Alle beibehaltenen SSH-Schlüssel entfernt."
       },
       "connect": {
+        "browserUrl": "VS Code im Browser öffnen: {{url}}",
         "configuringSSH": "SSH wird konfiguriert...",
         "configuringVSCode": "VS Code-Einstellungen werden konfiguriert...",
         "description": "Verbinden Sie sich mit einer Machine oder einem Repository in VS Code",
         "detecting": "VS Code wird erkannt...",
         "extensionWarning": "Warnung: Remote-SSH-Erweiterung möglicherweise nicht installiert.\nInstallieren Sie unter: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
         "fetchingDetails": "Verbindungsdetails werden abgerufen...",
+        "installingServer": "{{provider}} {{version}} wird auf der Maschine installiert...",
         "opening": "VS Code wird geöffnet: {{connection}} → {{path}}",
+        "openingBrowser": "Browser wird geöffnet...",
+        "passwordNote": "Anmeldepasswort: {{password}}",
         "persistingKey": "SSH-Schlüssel wird beibehalten...",
         "provisioningRenet": "Renet wird auf dem Remote-Server bereitgestellt...",
+        "serverReused": "Bereits laufenden Server wird wiederverwendet",
         "settingsWarning": "Warnung: Konnte VS Code-Einstellungen nicht konfigurieren: {{error}}",
         "settingUpEnv": "Remote-Umgebung wird eingerichtet...",
+        "startingServer": "{{provider}} wird innerhalb der Repository-Sandbox gestartet...",
         "success": "VS Code erfolgreich gestartet.",
         "testingConnectivity": "Konnektivität zu {{host}}:{{port}} wird getestet...",
-        "installingServer": "{{provider}} {{version}} wird auf der Maschine installiert...",
-        "startingServer": "{{provider}} wird innerhalb der Repository-Sandbox gestartet...",
-        "serverReused": "Bereits laufenden Server wird wiederverwendet",
-        "tunnelReady": "Tunnel bereit unter localhost:{{port}}",
-        "browserUrl": "VS Code im Browser öffnen: {{url}}",
-        "passwordNote": "Anmeldepasswort: {{password}}",
-        "openingBrowser": "Browser wird geöffnet..."
+        "tunnelReady": "Tunnel bereit unter localhost:{{port}}"
       },
       "description": "VS Code Remote SSH zu einer Maschine oder einem Repository öffnen",
       "descriptionShort": "VS Code Remote SSH zu einer Maschine oder einem Repository öffnen",
@@ -2251,8 +2251,8 @@
         },
         "stop": {
           "description": "Browser-VS-Code-Server stoppen",
-          "stopped": "{{provider}} gestoppt",
-          "notRunning": "{{provider}} lief nicht"
+          "notRunning": "{{provider}} lief nicht",
+          "stopped": "{{provider}} gestoppt"
         }
       }
     }
@@ -2581,16 +2581,16 @@
     "vaultDataRequired": "Vault-Daten erforderlich. Verwenden Sie --vault <json> oder leiten Sie JSON über stdin weiter.",
     "vaultVersionRequired": "Vault-Version erforderlich. Verwenden Sie --vault-version <n>.",
     "vscode": {
+      "browserNeedsRepo": "vscode --browser bedient eine Repository-Sandbox — übergeben Sie --repository <name>",
       "cleanupRequired": "Geben Sie --all an, um alle Verbindungen zu entfernen, oder --connection <name> für eine spezifische.",
       "connectivityFailed": "Kann {{host}}:{{port}} nicht erreichen. {{error}}\n\nFehlerbehebung:\n  - Überprüfen Sie, ob die Machine eingeschaltet ist und mit dem Netzwerk verbunden ist\n  - Überprüfen Sie, ob die IP-Adresse im Machine-Vault korrekt ist\n  - Stellen Sie sicher, dass Port {{port}} nicht durch eine Firewall blockiert ist\n  - Versuchen Sie, die Machine zu pingen: ping {{host}}",
       "noHostKey": "Machine '{{machine}}' hat keinen Host-Schlüssel im Vault konfiguriert",
       "noIpAddress": "Machine '{{machine}}' hat keine IP-Adresse konfiguriert",
       "noPrivateKey": "Team '{{team}}' hat keinen SSH-Private-Key konfiguriert",
       "notFound": "VS Code nicht gefunden.\n\nBitte installieren Sie von: https://code.visualstudio.com/\nOder setzen Sie die REDIACC_VSCODE_PATH-Umgebungsvariable.",
-      "browserNeedsRepo": "vscode --browser bedient eine Repository-Sandbox — übergeben Sie --repository <name>",
-      "unsupportedArch": "Nicht unterstützte Maschinenarchitektur für Browser-VS Code: {{arch}}",
       "serverInstallFailed": "Installation von {{provider}} fehlgeschlagen: {{error}}",
-      "serverStartFailed": "Start von {{provider}} fehlgeschlagen: {{error}}"
+      "serverStartFailed": "Start von {{provider}} fehlgeschlagen: {{error}}",
+      "unsupportedArch": "Nicht unterstützte Maschinenarchitektur für Browser-VS Code: {{arch}}"
     }
   },
   "help": {
@@ -2785,13 +2785,13 @@
     "vaultVersion": "Aktuelle Vault-Version für optimistisches Locking",
     "verifyChecksum": "Dateien mit Prüfsummen nach der Synchronisierung überprüfen",
     "vmId": "ID der virtuellen Maschine",
-    "watch": "Auf Änderungen achten",
-    "watchUpdates": "Auf Updates achten",
-    "yes": "Bestätigungsaufforderung überspringen",
     "vscodeBrowser": "Browser-VS Code innerhalb der Repository-Sandbox bereitstellen (kein lokales VS Code erforderlich)",
     "vscodeNoOpen": "URL ausgeben, ohne den lokalen Browser zu starten",
+    "vscodeServerArchive": "Vorinstallierter Server-Archivpfad auf der Maschine (für Offline-Installationen)",
     "vscodeServerProvider": "Browser-VS-Code-Server-Implementierung (openvscode, code-server)",
-    "vscodeServerArchive": "Vorinstallierter Server-Archivpfad auf der Maschine (für Offline-Installationen)"
+    "watch": "Auf Änderungen achten",
+    "watchUpdates": "Auf Updates achten",
+    "yes": "Bestätigungsaufforderung überspringen"
   },
   "prompts": {
     "apiUrl": "API-URL:",

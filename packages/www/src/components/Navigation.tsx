@@ -2,23 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import { SUPPORTED_LANGUAGES } from '../i18n/language-utils';
 import { useTranslation } from '../i18n/react';
-import { isMarketingHost } from '../utils/marketing-host';
+import { AccountCta } from './AccountCta';
 import LanguageMenu from './LanguageMenu';
 import MegaMenu from './MegaMenu';
 import PersonaMegaMenu from './PersonaMegaMenu';
 import SearchModal from './SearchModal';
 import Sidebar from './Sidebar';
 import ThemeToggle from './ThemeToggle';
-
-/** Returns the hostname for a given origin string, or '' on parse failure. */
-function hostnameFromOrigin(origin?: string): string {
-  if (!origin) return '';
-  try {
-    return new URL(origin).hostname;
-  } catch {
-    return '';
-  }
-}
 
 interface NavigationProps {
   origin?: string;
@@ -31,12 +21,6 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
   const [isPersonaMenuOpen, setIsPersonaMenuOpen] = useState(false);
   const currentLang = useLanguage();
   const { t } = useTranslation(currentLang);
-
-  // On marketing hosts (www / dev / *.rediacc.workers.dev) we render a
-  // <button> that opens the region picker. On portal hosts (regional cloud,
-  // edge, bench, on-prem) we render a plain <a> so the click navigates
-  // directly to the local /account/ portal. See utils/marketing-host.ts.
-  const accountUrl = isMarketingHost(hostnameFromOrigin(origin)) ? undefined : '/account/';
 
   // Drives `.nav-translate` groups: center nav + utility cluster slide up and
   // fade out 1:1 with the first 80px of scroll, then clamp. Brand and CTA stay.
@@ -255,44 +239,24 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
                 ariaLabel={t('navigation.selectLanguage')}
               />
             </div>
-            <a
-              href={`/${currentLang}/install`}
+            <AccountCta
+              origin={origin}
+              label={t('common.buttons.getStarted')}
               className="nav-cta-btn nav-install-btn"
-              aria-label={t('navigation.install')}
-              data-track="cta_click"
-              data-track-label="nav-install"
-              data-track-dest="install"
-            >
-              {t('navigation.install')}
-            </a>
-            {accountUrl ? (
-              <a
-                href={accountUrl}
-                className="nav-cta-btn nav-cta-btn--secondary nav-account-btn"
-                aria-label={t('navigation.login')}
-                data-track="cta_click"
-                data-track-label="nav-login"
-                data-track-dest="account"
-              >
-                {t('navigation.account')}
-              </a>
-            ) : (
-              <button
-                type="button"
-                className="nav-cta-btn nav-cta-btn--secondary nav-account-btn"
-                onClick={() => window.openRegionPicker?.('/account/')}
-                aria-label={t('navigation.login')}
-                data-track="cta_click"
-                data-track-label="nav-login"
-                data-track-dest="account"
-              >
-                {t('navigation.account')}
-              </button>
-            )}
+              ariaLabel={t('common.buttons.getStarted')}
+              track={{ event: 'cta_click', label: 'nav-get-started', dest: 'account' }}
+            />
+            <AccountCta
+              origin={origin}
+              label={t('navigation.login')}
+              className="nav-cta-btn nav-cta-btn--secondary nav-account-btn"
+              ariaLabel={t('navigation.login')}
+              track={{ event: 'cta_click', label: 'nav-login', dest: 'account' }}
+            />
           </div>
         </div>
       </nav>
-      <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} accountUrl={accountUrl} />
+      <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} origin={origin} />
       <SearchModal isOpen={isSearchOpen} onClose={closeSearch} />
     </>
   );

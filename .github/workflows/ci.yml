@@ -1404,6 +1404,9 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          sparse-checkout: |
+            .ci/scripts
       - name: Install jq
         run: command -v jq >/dev/null || sudo apt-get install -y -qq jq
       - name: Write release sentinels
@@ -1463,6 +1466,9 @@ jobs:
     if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          sparse-checkout: |
+            .ci/scripts
       - name: Check finalize-release-sentinel conclusion (release channels only)
         if: needs.initialize.result == 'success' && (needs.initialize.outputs.channel == 'edge' || needs.initialize.outputs.channel == 'stable')
         run: .ci/scripts/ci/assert-job-succeeded.sh finalize-release-sentinel "${{ needs.finalize-release-sentinel.result }}"

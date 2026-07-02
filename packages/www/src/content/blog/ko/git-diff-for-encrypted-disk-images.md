@@ -1,8 +1,10 @@
 ---
-title: "암호화된 디스크 이미지의 git diff: 복호화 없이 포크 비교하기"
-description: "rdc repo diff는 암호화된 이미지를 블록 수준에서 비교하여 A/M/D/R을 보고합니다. 키를 사용하지 않습니다. 비용은 저장소 크기가 아닌 변경된 블록 수를 추적합니다."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-28
+title: '암호화된 디스크 이미지의 git diff: 복호화 없이 포크 비교하기'
+description: >-
+  rdc repo diff는 암호화된 이미지를 블록 수준에서 비교하여 A/M/D/R을 보고합니다. 키를 사용하지 않습니다. 비용은 저장소
+  크기가 아닌 변경된 블록 수를 추적합니다.
+author: Rediacc
+publishedDate: 2026-05-28T00:00:00.000Z
 category: guide
 tags:
   - luks
@@ -12,8 +14,8 @@ tags:
   - cli
 featured: false
 language: ko
-sourceHash: "516ffb7de9941f15"
-sourceCommit: "0a3e9865997659698502ad551e078be854b4b2c4"
+sourceHash: 1b08ca130594e2e4
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
 > **요약.** `rdc repo diff`는 `git status --short` 문법(A/M/D/R)으로 두 포크된 저장소 간의 파일 수준 차이를 보여주며, 어느 쪽도 복호화하지 않습니다.

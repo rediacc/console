@@ -1,0 +1,108 @@
+{
+  "cast": "/assets/tutorials/tutorial-deploy-app.cast",
+  "language": "tr",
+  "version": 1,
+  "steps": [
+    {
+      "id": "tutorial-deploy-app-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.408078,
+      "replayEndSec": 6.077084,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-01.66b97f87.mp3",
+      "audioDurationSec": 9.482449,
+      "textHash": "66b97f87da3c7c93ead12faf1319d5373779bc86d718110d5a5c23b2e8ce36fa",
+      "narrationText": "Birinci adım: mevcut şablonları listeleyin. Rediacc, yaygın uygulamalar için hazır kurulumlarla gelir, yani docker-compose'u sıfırdan yazmak zorunda kalmazsınız.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-01-after.49ea345b.mp3",
+      "afterAudioDurationSec": 5.485714,
+      "afterTextHash": "49ea345b8e03b37388004425f3a7c9ea0229105747e82d5ac8a82ac20e390d9b"
+    },
+    {
+      "id": "tutorial-deploy-app-02",
+      "markerIndex": 1,
+      "replayStartSec": 6.077084,
+      "replayEndSec": 14.72542,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-02.b7d635e9.mp3",
+      "audioDurationSec": 6.034286,
+      "textHash": "b7d635e95a8c70aae647882690bdf56a21edf1c8a82e027ea42548c6ac6abbcc",
+      "narrationText": "İkinci adım: app-postgres şablonunu repo'ya ekleyin. Test edilmiş bir dosya seti, doğrudan kopyalanır.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-02-after.ee176ab2.mp3",
+      "afterAudioDurationSec": 3.709388,
+      "afterTextHash": "ee176ab26afd1159c5713df5d731121af0ae089bb5e56996a9e14a8296c856cc"
+    },
+    {
+      "id": "tutorial-deploy-app-03",
+      "markerIndex": 2,
+      "replayStartSec": 14.72542,
+      "replayEndSec": 21.699752,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-03.2070cfb2.mp3",
+      "audioDurationSec": 8.907755,
+      "textHash": "2070cfb258dc6be53e30313208666ccbdaac862e1dcfff7ece94122f9f5072a0",
+      "narrationText": "Repo'nun içine bir göz atın ve neler geldiğini listeleyin: başlatma ve durdurma hook'larını içeren bir Rediaccfile ve container'ları tanımlayan bir docker-compose dosyası.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-03-after.e6b5d919.mp3",
+      "afterAudioDurationSec": 6.347755,
+      "afterTextHash": "e6b5d91909508ef9f51ef81c94e32547c9e9073a3d19915a85990e92eadeee30"
+    },
+    {
+      "id": "tutorial-deploy-app-04",
+      "markerIndex": 3,
+      "replayStartSec": 21.699752,
+      "replayEndSec": 28.8781,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-04.ad01c833.mp3",
+      "audioDurationSec": 9.639184,
+      "textHash": "ad01c833362aa47f97af66a62fa554af1d90a978dc3915d48ce2a3b947f26859",
+      "narrationText": "Üçüncü adım: repo'yu başlatın. Tek bir komutla CLI, şifreli birimi bağlar, izole Docker daemon'ını başlatır ve container'ları ayağa kaldırır.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-04-after.cbbedc43.mp3",
+      "afterAudioDurationSec": 4.205714,
+      "afterTextHash": "cbbedc43643cab1c8d18b0cea121223b61b885b9396f39e22b369aca3927480d"
+    },
+    {
+      "id": "tutorial-deploy-app-05",
+      "markerIndex": 4,
+      "replayStartSec": 28.8781,
+      "replayEndSec": 34.846304,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-05.f7dbd278.mp3",
+      "audioDurationSec": 10.44898,
+      "textHash": "f7dbd27820f5874f0b4d6ec0801f67048936a89f51353035df5d6608f590d5f6",
+      "narrationText": "Nelerin çalıştığını doğrulayın. Buradaki Docker ps yalnızca bu repo'nun container'larını listeler. Bu sunucudaki diğer tüm repo'ların kendi daemon'ı vardır ve bu görünümden tamamen gizlidirler.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-05-after.df57dc44.mp3",
+      "afterAudioDurationSec": 4.91102,
+      "afterTextHash": "df57dc44ec60d28407863429c60f98fe46de072311613c3abf23c4c6fa853a96"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/intro.394f775e.mp3",
+      "textHash": "394f775e2cbc0b0dfc55fca530acc978bdde5c70ab1ae4789fb53380ba017525",
+      "audioDurationSec": 8.045714,
+      "narrationText": "Gerçek bir uygulama dağıtma zamanı! Boş bir repo'dan çalışan container'lara üç adımda: seç, uygula, çalıştır."
+    },
+    {
+      "id": "pick-apply-run",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/pick-apply-run.5e57841c.mp3",
+      "textHash": "5e57841c8c03c7720425d52a93571a693f527cd89a077242ec3eb8107d75d588",
+      "audioDurationSec": 9.482449,
+      "narrationText": "Akış basit: bir şablon seçin, depoya uygulayın ve çalıştırın. CLI yerleşik şablonlarla gelir; bu sayede sıfırdan docker-compose yazmak zorunda kalmazsınız."
+    },
+    {
+      "id": "vscode-file-tour",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/vscode-file-tour.55f3f8e6.mp3",
+      "textHash": "55f3f8e623917c1bb236fa9b56fdb39eeb6fa8287b93af231c00aed81aa18331",
+      "audioDurationSec": 12.826122,
+      "narrationText": "cat yerine editör mü tercih edersiniz? Aynı dosyalar, tarayıcınızdan doğrudan VS Code'da açılıyor. İşte Rediaccfile ve yanındaki compose dosyası. Bu kurulumu ilerleyen bir eğitimde düzgünce geziyoruz."
+    },
+    {
+      "id": "next-tutorial",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/next-tutorial.b444003f.mp3",
+      "textHash": "b444003fd2eb1b6d4161a755c252f481ce982b3cb7811249fa4e29a58be814e2",
+      "audioDurationSec": 7.706122,
+      "narrationText": "İlk dağıtımınız böylece tamamlandı. Bir sonraki bölümde deponun kendisiyle çalışmaya derinlemesine bakacağız."
+    }
+  ],
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "d9f28413fe082b20fad75a663539122a85aae6b9823668e35d76fc1afd369c56"
+}

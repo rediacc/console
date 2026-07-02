@@ -25,8 +25,8 @@
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
       "at": 19.204906,
-      "text": "Poi effettuiamo il provisioning del server. Questo installa renet e crea il datastore cifrato. Al termine, il server e' pronto ad ospitare repository.",
-      "afterText": "Fatto. renet e' installato e il datastore e' pronto.",
+      "text": "Poi effettuiamo il provisioning del server. Questo installa renet e crea il datastore cifrato. Al termine, il server è pronto ad ospitare repository.",
+      "afterText": "Fatto. renet è installato e il datastore è pronto.",
       "cardLabel": "Ispeziona Config",
       "prose": "Ispeziona il file JSON che contiene tutto: macchine, chiave SSH e infrastruttura. Puoi mantenere più config, una per ambiente, e passare da una all'altra con il flag --config. Consulta la guida alle configurazioni multiple collegata qui sotto."
     }

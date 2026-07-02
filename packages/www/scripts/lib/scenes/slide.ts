@@ -35,6 +35,18 @@ export function compileTitle(scene: TitleScene, ctx: SceneContext): string {
 }
 
 /**
+ * Duration of a `title`/`slide`/`outro` scene: exactly its narration's audio
+ * length -- `renderSvgSlide` freezes a static image and pads/holds it to
+ * match that duration via `makeFreezeMp4`, so no rendering is needed to know
+ * the final length. Shared by all three scene types since they all resolve
+ * through `renderSvgSlide`.
+ */
+export function computeFreezeSceneDurationDry(narrationKey: string, ctx: SceneContext): number {
+  const narration = ctx.narrations.get(narrationKey);
+  return narration.audioDurationSec ?? 0;
+}
+
+/**
  * Render a silent per-step "you are here" card for `durationSec` seconds.
  * Reuses the title-card SVG with the same data assembly as `compileTitle`,
  * but dims the inactive sub-item rows to STEP_CARD_INACTIVE_OPACITY so only

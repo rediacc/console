@@ -28,7 +28,7 @@ const badgeConfig: Record<string, { isPopular?: boolean; badgeLabel?: string; ba
     badgeVariant: 'popular',
   },
   business: {
-    badgeLabel: `${t(`${ns}.ui.bestValue`)} · ${t(`${ns}.ui.limitedOffer`)}`,
+    badgeLabel: t(`${ns}.ui.bestValue`),
     badgeVariant: 'best-value',
   },
 };
@@ -209,22 +209,6 @@ const faqSchema = faqItems ? {
         <div class="ps-teaser-content">
           <h2>{t(`${ns}.professionalServices.cta.heading`)}</h2>
           <p class="ps-teaser-subtitle">{t(`${ns}.professionalServices.cta.description`)}</p>
-
-          <div class="ps-teaser-packages">
-            <div class="ps-teaser-card">
-              <h3>{t(`${ns}.professionalServices.packages.standard.name`)}</h3>
-              <p class="teaser-price">{t(`${ns}.professionalServices.packages.standard.price`)}</p>
-            </div>
-            <div class="ps-teaser-card popular">
-              <div class="popular-badge">{t(`${ns}.ui.popular`)}</div>
-              <h3>{t(`${ns}.professionalServices.packages.priority.name`)}</h3>
-              <p class="teaser-price">{t(`${ns}.professionalServices.packages.priority.price`)}</p>
-            </div>
-            <div class="ps-teaser-card">
-              <h3>{t(`${ns}.professionalServices.packages.emergency.name`)}</h3>
-              <p class="teaser-price">{t(`${ns}.professionalServices.packages.emergency.price`)}</p>
-            </div>
-          </div>
 
           <a href={`/${lang}/professional-services`} class="btn btn-primary btn-large">
             {t(`${ns}.professionalServices.header.title`)} &rarr;

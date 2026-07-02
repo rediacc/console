@@ -1,7 +1,7 @@
 ---
 title: "Article 21(2)(d) on hankija küsimus. Ise majutamine on vastus, mida te enam võlgu ei ole."
 description: "Miks ICT kolmanda osapoole register kahaneb, kui andmeplaan ei lahku kunagi teie haldusest. Article 21(2)(d) praktiline lugemine CISO-dele ja hankeekspertidele, kes renegotsieerivad DPA-sid 2026. aastal."
-author: Muhammed Fatih Bayraktar
+author: Rediacc
 publishedDate: 2026-05-09
 category: guide
 tags:
@@ -12,8 +12,8 @@ tags:
   - vastavus
 featured: false
 language: et
-sourceHash: "98f0b752bc5dbd4d"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "ffdb86da48dacc58"
+sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 translatedFrom: en
 ---
 
@@ -162,6 +162,6 @@ Kui teil on järgmise kaheteistkümne kuu jooksul ees varukoopiate või DR uuend
 2. Käivitage ülaltoodud kuue küsimuse kontroll-loend oma praeguse hankija suhtes. Saatke vastused oma DPO-le ja auditorile ning küsige, kas lüngad on aktsepteeritud. Kui lüngad hõlmavad kihti 3 (võtmehaldus) või kihti 4 (alluttöötlejad, keda te ei loetlenud), on see kang.
 3. Vaadake, milline näeks välja alternatiivne hankijate register ise majutatud juhtimistasandiga. Võrrelge registrikirjeid, mitte litsentsikulusid. Litsentsikulud on kahe kordse teguri piires sarnased; registrikirjed on erineva kujuga. (Kaaslev postitus [NIS2 paketi struktuurkulude kohta](/et/blog/nis2-the-real-bill) käib läbi selle, mis kaob ja mis jääb.)
 
-Kui oleme teie lühinimistu alternatiiv, on pakkumine konkreetne. Saatke meile oma hankijaküsimustik. Me täidame selle juurutatud instantsi suhtes, meie tegelike vastustega teie küsimustele, sealhulgas lünkadega. Kui soovite arhitektuuri läbi vaadata enne paberimajanduse saatmist, broneerime 30-minutilise arhitektuuriülevaatuse asutajaga. Kaitsetava registrikirjeni viiv tee ei ole läikiv brošüür. See on vastused, sealhulgas ebamugavad.
+Kui oleme teie lühinimistu alternatiiv, on pakkumine konkreetne. Saatke meile oma hankijaküsimustik. Täidame selle juurutatud instantsi suhtes, oma tegelike vastustega teie küsimustele, sealhulgas lünkadega. Kui soovite arhitektuuri läbi vaadata enne paberimajanduse saatmist, broneerime 30-minutilise arhitektuuriülevaatuse oma insenerimeeskonnaga. Kaitsetava registrikirjeni viiv tee ei ole läikiv brošüür. See on vastused, sealhulgas ebamugavad.
 
 Soovid artiklipõhist Rediacc kaarti? Vaata [NIS2 ja DORA](/et/docs/legal-nis2-dora). Vajad laiemat raamistikku? Loe [Vastavuse ülevaade](/et/docs/legal-overview). Andmete asukoha kohta vaata [Andmesuveräänsus](/et/docs/legal-data-sovereignty). Miks ise majutamine on oluline, vaata [Kohapealne](/et/docs/on-premise).

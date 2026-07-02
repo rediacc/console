@@ -1,0 +1,88 @@
+{
+  "cast": "/assets/tutorials/tutorial-delta-transfer.cast",
+  "language": "tr",
+  "version": 1,
+  "steps": [
+    {
+      "id": "tutorial-delta-transfer-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.413668,
+      "replayEndSec": 10.922135,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-01.b1e3ffda.mp3",
+      "audioDurationSec": 9.16898,
+      "textHash": "b1e3ffda7f30e2047701123a6a0861a5c05f50f44f0253bc9fe29d0cfd1a6f50",
+      "narrationText": "İlk push başka bir makineye tam imajı taşır ve çıktı bunu açıkça söyler: iki gigabayt aktarıldı, full olarak işaretlendi. Bu taban noktasıdır.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-01-after.6c8f8077.mp3",
+      "afterAudioDurationSec": 8.124082,
+      "afterTextHash": "6c8f80770204eff00bf6deb6ddbdf37ccd3905d2de562ceda02f31a4dc4ce0af"
+    },
+    {
+      "id": "tutorial-delta-transfer-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.922135,
+      "replayEndSec": 21.404869,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-02.f8f0c124.mp3",
+      "audioDurationSec": 3.709388,
+      "textHash": "f8f0c124328d4c4e86bbfac3e444e83d4f57e22b8111d972787458f0237584f8",
+      "narrationText": "Biraz veri değiştirin: iki gigabayttan elli megabayt.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-02-after.206f0f90.mp3",
+      "afterAudioDurationSec": 2.194286,
+      "afterTextHash": "206f0f90af6edd6dcb5445967c277e730c4cef8020c73c1a717f3d5a05bdfd4a"
+    },
+    {
+      "id": "tutorial-delta-transfer-03",
+      "markerIndex": 2,
+      "replayStartSec": 21.404869,
+      "replayEndSec": 29.764702,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-03.e89df5f5.mp3",
+      "audioDurationSec": 11.807347,
+      "textHash": "e89df5f506b303b031bcde705ffea523294713340d519c1249ce7be2c2f200e5",
+      "narrationText": "Tekrar push edin. Aynı komut, ama bu sefer çıktıyı okuyun: iki gigabaytlık bir imaja karşı yaklaşık elli megabayt aktarıldı, delta olarak işaretlendi. Yalnızca değişen bloklar iletildi.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-03-after.7c4e1337.mp3",
+      "afterAudioDurationSec": 6.112653,
+      "afterTextHash": "7c4e133797f0a24c290de9e2fed2f7d8aeb6706ba0580b75747852e9aa4a7859"
+    },
+    {
+      "id": "tutorial-delta-transfer-04",
+      "markerIndex": 3,
+      "replayStartSec": 29.764702,
+      "replayEndSec": 34.159829,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-04.d62b797c.mp3",
+      "audioDurationSec": 8.515918,
+      "textHash": "d62b797c63e6c24eca4bc5c2862eca89c164c1b33fb87db8eeabce64965faaa9",
+      "narrationText": "Her iki makine de aynı repository'yi tutar, saniyeler içinde güncellenir. İsterseniz saatlik çalıştırın, maliyet boyut değil değişiklik kadardır.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-04-after.4ddf6d7a.mp3",
+      "afterAudioDurationSec": 2.429388,
+      "afterTextHash": "4ddf6d7a89d56ab490fb1653bcc4bd0d63b68ad95060d12038f6117d3b9ce079"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/intro.bebfbd10.mp3",
+      "textHash": "bebfbd10707a2c64508e4f6af8f99247bd8efa6943838d79a1c24016d17ebc3f",
+      "audioDurationSec": 15.804082,
+      "narrationText": "İşte eğlenceli bir deney. Bir gigabayt veri içeren bir repository'yi başka bir makineye iki kez push edeceğiz. İlk push her şeyi taşır, ikincisi yalnızca değişenleri taşır. Sayılara bakın, push komutu tam olarak ne kadar taşındığını yazdırır."
+    },
+    {
+      "id": "blocks-not-bytes",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/blocks-not-bytes.a509c9d5.mp3",
+      "textHash": "a509c9d54b57d5151e2a002aab8c4d697b1b980844032030c18799bfdc08d9d8",
+      "audioDurationSec": 19.226122,
+      "narrationText": "Püf nokta kurulumda. İlk push'tan sonra CLI, her iki makinede de özdeş değiştirilemez bir taban imajı tutar. Sonraki push, blokları bu tabana göre karşılaştırır ve yalnızca farkı gönderir. Bayrak yok, kayıt tutma yok, aynı push komutu."
+    },
+    {
+      "id": "next-tutorial",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/next-tutorial.490b1642.mp3",
+      "textHash": "490b164291deb19ceae9538d88d343aad879af56186b32139a465ea3a1762749",
+      "audioDurationSec": 11.31102,
+      "narrationText": "Küçük değişiklikler, ilkinden sonraki her seferinde küçük aktarımlar demektir. Şimdi sadece bir tutorial kaldı: hiçbir zaman disk alanınızın bitmemesini sağlamak. Son tutorial'da görüşürüz!"
+    }
+  ],
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "6f1269c008cd82fa258fb3bd7f613a3086d840ac0d874264c05bd458ea12821a"
+}

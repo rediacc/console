@@ -7,7 +7,7 @@
       "id": "tutorial-fork-isolation-01",
       "markerIndex": 0,
       "at": 2.412666,
-      "text": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "text": "Uygulamayla tanışın: demo-pgadmin, pgAdmin arayüzlü bir PostgreSQL; mount edilmiş ve çalışıyor.",
       "afterText": "Bir canlı repo. Hadi klonlayalım.",
       "cardLabel": "Canlı Uygulama",
       "prose": "Canlı bir repository ile başlayın: makinede pgAdmin ile birlikte çalışan bir PostgreSQL veritabanı."
@@ -16,7 +16,7 @@
       "id": "tutorial-fork-isolation-02",
       "markerIndex": 1,
       "at": 8.155445,
-      "text": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "text": "Fork'layın. Copy-on-write klon, boyut fark etmeksizin saniyeler sürer; detach, container'lar başlar başlamaz döner, sağlık kontrolleri ise arka planda sürer.",
       "afterText": "Fork edildi ve başlatılıyor. Veri kopyalanmadı, paylaşıldı. Bir taraf değiştirinceye kadar.",
       "cardLabel": "Fork + Başlat",
       "prose": "Repository'yi --up --detach ile fork edin: CoW klonu neredeyse anlıktır ve fork'un servisleri hemen başlar."
@@ -25,7 +25,7 @@
       "id": "tutorial-fork-isolation-03",
       "markerIndex": 2,
       "at": 19.24953,
-      "text": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "text": "Artık iki repository var: orijinal ve deney, her biri kendi container'ları, ağı ve disk görünümüyle.",
       "afterText": "Aynı makine, iki izole dünya.",
       "cardLabel": "Yan Yana",
       "prose": "Repository'leri listeleyin: orijinal ve fork, tam izole şekilde yan yana çalışır."
@@ -34,7 +34,7 @@
       "id": "tutorial-fork-isolation-04",
       "markerIndex": 3,
       "at": 24.926391,
-      "text": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "text": "Deneme bitti mi? Fork'u silin. Oluşturması saniyeler sürdü, atması da öyle; orijinalin bundan hiç haberi olmadı.",
       "afterText": "Silindi. Orijinal tüm bu süre boyunca çalışmaya devam etti.",
       "cardLabel": "Fork'u Sil",
       "prose": "İşiniz bittiğinde fork'u silin. Orijinal repository dokunulmadan kalır."

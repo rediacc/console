@@ -26,6 +26,7 @@ import { readStoryboard } from './lib/storyboard.ts';
 import { loadNarrationLookup, castMarkerKey } from './lib/narration-lookup.ts';
 import {
   compileScene,
+  computeSceneDurationDry,
   type CastNarratedDebug,
   type DebugCollector,
   type SceneContext,
@@ -42,6 +43,7 @@ function parseArgs(argv: string[]): {
   debug: boolean;
   cacheReuse: boolean;
   cacheRefresh: boolean;
+  captionsOnly: boolean;
 } {
   const out: Record<string, string> = {};
   let keep = false;
@@ -50,6 +52,7 @@ function parseArgs(argv: string[]): {
   // a live re-record + overwrite; --no-browser-cache disables both.
   let cacheReuse = true;
   let cacheRefresh = false;
+  let captionsOnly = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--keep-temp') {
@@ -68,6 +71,10 @@ function parseArgs(argv: string[]): {
       cacheReuse = false;
       continue;
     }
+    if (a === '--captions-only') {
+      captionsOnly = true;
+      continue;
+    }
     if (a.startsWith('--')) {
       const key = a.slice(2);
       out[key] = argv[++i];
@@ -75,10 +82,18 @@ function parseArgs(argv: string[]): {
   }
   if (!out.cast || !out.lang) {
     throw new Error(
-      'Usage: generate-tutorial-video.ts --cast <name> --lang <code> [--keep-temp] [--debug] [--refresh-browser-cache] [--no-browser-cache]'
+      'Usage: generate-tutorial-video.ts --cast <name> --lang <code> [--keep-temp] [--debug] [--refresh-browser-cache] [--no-browser-cache] [--captions-only]'
     );
   }
-  return { cast: out.cast, lang: out.lang, keep, debug, cacheReuse, cacheRefresh };
+  return {
+    cast: out.cast,
+    lang: out.lang,
+    keep,
+    debug,
+    cacheReuse,
+    cacheRefresh,
+    captionsOnly,
+  };
 }
 
 async function main(): Promise<void> {
@@ -89,6 +104,7 @@ async function main(): Promise<void> {
     debug,
     cacheReuse,
     cacheRefresh,
+    captionsOnly,
   } = parseArgs(process.argv.slice(2));
   const scriptDir = path.dirname(fileURLToPath(import.meta.url));
   const wwwRoot = path.resolve(scriptDir, '..');
@@ -222,77 +238,122 @@ async function main(): Promise<void> {
       transcriptEn,
     };
 
-    // Phase 1 — live execution in storyboard order. Eager scenes (title,
-    // slide, cast*) compile to finished chunks immediately; browser scenes
-    // run their live interactions against (possibly shared) sessions and
-    // return deferred producers — their footage is a slice of a session
-    // recording that only exists once the session closes.
-    const outputs: SceneOutput[] = [];
-    for (let i = 0; i < storyboard.scenes.length; i++) {
-      const scene = storyboard.scenes[i];
-      console.log(`[video] compiling scene ${scene.id} (${scene.type})...`);
-      sessions.beginScene(i);
-      const out = await compileScene(scene, ctx);
-      outputs.push(out);
-      // chunks mirrors compiled output for compileCastFreeze's last-frame
-      // peek; deferred scenes leave a sentinel (guarded in cast.ts).
-      chunks.push(typeof out === 'string' ? out : `__deferred__:${scene.id}`);
-      await sessions.closeFinished(i);
-    }
-    await sessions.closeAll();
-
-    // Phase 2 — materialize deferred chunks (cut + mux session slices),
-    // then pad and assemble exactly as before.
+    // --captions-only: recover each scene's duration analytically (no
+    // ffmpeg, no live sessions) instead of actually rendering it. Falls
+    // back to a full render (by throwing, so the caller re-invokes without
+    // the flag) when any scene's timing genuinely cannot be known without
+    // one -- currently only a browser/browser-split scene with a cold
+    // silent-segment cache. See scenes/index.ts::computeSceneDurationDry.
+    const sceneAbsStart: Record<string, number> = {};
+    const sceneAbsEnd: Record<string, number> = {};
+    let finalDuration: number | undefined;
+    let cursorSec = 0;
     const TAIL_PAD_SEC = 0.8;
     const FADE_SEC = 0.3;
-    // Crossfade every boundary that touches a browser surface (it smooths
-    // both the surface switch and the slice cut between two slices of one
-    // continuous session); hard cuts everywhere else.
     const isBrowserScene = (t: string) => t === 'browser' || t === 'browser-split';
     const fadeAfter = storyboard.scenes
       .slice(0, -1)
       .map((s, i) => isBrowserScene(s.type) || isBrowserScene(storyboard.scenes[i + 1].type));
-    // Track each scene's contribution to the pre-edge-pad timeline. The VTT
-    // emitter needs absolute mp4 timestamps for chapter cues + subtitle cues
-    // for non-cast-narrated scenes. Each crossfade overlaps the boundary by
-    // FADE_SEC, so downstream scenes start that much earlier.
-    const sceneAbsStart: Record<string, number> = {};
-    const sceneAbsEnd: Record<string, number> = {};
-    const finalChunks: string[] = [];
-    let cursorSec = 0;
-    for (let i = 0; i < storyboard.scenes.length; i++) {
-      const scene = storyboard.scenes[i];
-      const out = outputs[i];
-      const chunk = typeof out === 'string' ? out : out.deferred();
-      const isLast = i === storyboard.scenes.length - 1;
-      let pushed: string;
-      if (isLast) {
-        pushed = chunk;
-      } else {
-        const padded = path.join(tmp, `${scene.id}.padded.mp4`);
-        addTailPad(chunk, padded, TAIL_PAD_SEC);
-        pushed = padded;
+
+    if (captionsOnly) {
+      // --captions-only assumes the mp4 already exists (that's the entire
+      // premise -- "the video didn't change, just re-derive captions for
+      // it"). Silently proceeding without one produces vtt/chapters/
+      // words.json for a video that was never downloaded/rendered locally,
+      // which publish-tutorial-video-to-r2.ts's --all mode won't even
+      // discover (it finds tutorials by scanning for .mp4 files) -- the
+      // sidecars would be written and then silently never published. Fail
+      // loudly instead: restore/render the mp4 first (`sync-media-from-r2.sh`
+      // doesn't cover video/, only audio -- there's no per-tutorial video
+      // restore command; use a full render for now).
+      if (!existsSync(outPath)) {
+        throw new Error(
+          `--captions-only: ${outPath} does not exist locally -- this mode only ` +
+            `re-derives captions for an mp4 that's already on disk. Re-run without ` +
+            `--captions-only to render it first.`
+        );
       }
-      finalChunks.push(pushed);
-      const dur = probeDurationSec(pushed);
-      sceneAbsStart[scene.id] = cursorSec;
-      sceneAbsEnd[scene.id] = cursorSec + dur;
-      cursorSec += dur;
-      if (!isLast && fadeAfter[i]) cursorSec -= FADE_SEC;
+      console.log(`[video] --captions-only: recovering scene timing without rendering`);
+      for (let i = 0; i < storyboard.scenes.length; i++) {
+        const scene = storyboard.scenes[i];
+        const isLast = i === storyboard.scenes.length - 1;
+        const dry = computeSceneDurationDry(scene, ctx);
+        if (dry === null) {
+          throw new Error(
+            `--captions-only: scene ${scene.id} (${scene.type}) needs a live render ` +
+              `(cold browser-segment cache) -- re-run without --captions-only for this tutorial`
+          );
+        }
+        if (dry.castNarratedDebug) debugCollector.recordCastNarrated(dry.castNarratedDebug);
+        // Mirror the real render's padding/fade accounting exactly so
+        // sceneAbsStart/End land on the same absolute timeline a full
+        // compile would have produced -- TAIL_PAD_SEC is added by
+        // addTailPad to every non-last chunk before assembly, and each
+        // crossfade overlaps the boundary by FADE_SEC.
+        const dur = dry.durationSec + (isLast ? 0 : TAIL_PAD_SEC);
+        sceneAbsStart[scene.id] = cursorSec;
+        sceneAbsEnd[scene.id] = cursorSec + dur;
+        cursorSec += dur;
+        if (!isLast && fadeAfter[i]) cursorSec -= FADE_SEC;
+      }
+      console.log(`[video] recovered timing for ${storyboard.scenes.length} scenes, no encode`);
+    } else {
+      // Phase 1 — live execution in storyboard order. Eager scenes (title,
+      // slide, cast*) compile to finished chunks immediately; browser scenes
+      // run their live interactions against (possibly shared) sessions and
+      // return deferred producers — their footage is a slice of a session
+      // recording that only exists once the session closes.
+      const outputs: SceneOutput[] = [];
+      for (let i = 0; i < storyboard.scenes.length; i++) {
+        const scene = storyboard.scenes[i];
+        console.log(`[video] compiling scene ${scene.id} (${scene.type})...`);
+        sessions.beginScene(i);
+        const out = await compileScene(scene, ctx);
+        outputs.push(out);
+        // chunks mirrors compiled output for compileCastFreeze's last-frame
+        // peek; deferred scenes leave a sentinel (guarded in cast.ts).
+        chunks.push(typeof out === 'string' ? out : `__deferred__:${scene.id}`);
+        await sessions.closeFinished(i);
+      }
+      await sessions.closeAll();
+
+      // Phase 2 — materialize deferred chunks (cut + mux session slices),
+      // then pad and assemble exactly as before.
+      const finalChunks: string[] = [];
+      for (let i = 0; i < storyboard.scenes.length; i++) {
+        const scene = storyboard.scenes[i];
+        const out = outputs[i];
+        const chunk = typeof out === 'string' ? out : out.deferred();
+        const isLast = i === storyboard.scenes.length - 1;
+        let pushed: string;
+        if (isLast) {
+          pushed = chunk;
+        } else {
+          const padded = path.join(tmp, `${scene.id}.padded.mp4`);
+          addTailPad(chunk, padded, TAIL_PAD_SEC);
+          pushed = padded;
+        }
+        finalChunks.push(pushed);
+        const dur = probeDurationSec(pushed);
+        sceneAbsStart[scene.id] = cursorSec;
+        sceneAbsEnd[scene.id] = cursorSec + dur;
+        cursorSec += dur;
+        if (!isLast && fadeAfter[i]) cursorSec -= FADE_SEC;
+      }
+
+      const concatOut = path.join(tmp, 'concat.mp4');
+      console.log(`[video] assembling ${finalChunks.length} chunks → ${concatOut}`);
+      assembleWithTransitions(finalChunks, fadeAfter, concatOut, tmp, FADE_SEC);
+
+      // Add 1s of silent leading + trailing padding so the video doesn't
+      // start/end abruptly. Held first/last frames mean the eye has a beat to
+      // settle before audio begins and after it ends.
+      console.log(`[video] adding 1s edge padding → ${outPath}`);
+      addEdgePad(concatOut, outPath, 1.0, 1.0);
+
+      finalDuration = probeDurationSec(outPath);
+      console.log(`[video] done. duration=${finalDuration.toFixed(2)}s → ${outPath}`);
     }
-
-    const concatOut = path.join(tmp, 'concat.mp4');
-    console.log(`[video] assembling ${finalChunks.length} chunks → ${concatOut}`);
-    assembleWithTransitions(finalChunks, fadeAfter, concatOut, tmp, FADE_SEC);
-
-    // Add 1s of silent leading + trailing padding so the video doesn't
-    // start/end abruptly. Held first/last frames mean the eye has a beat to
-    // settle before audio begins and after it ends.
-    console.log(`[video] adding 1s edge padding → ${outPath}`);
-    addEdgePad(concatOut, outPath, 1.0, 1.0);
-
-    const finalDuration = probeDurationSec(outPath);
-    console.log(`[video] done. duration=${finalDuration.toFixed(2)}s → ${outPath}`);
 
     const EDGE_LEAD = 1.0;
     const sceneTimingAbs: Record<string, { start: number; end: number }> = {};
@@ -334,15 +395,19 @@ async function main(): Promise<void> {
 
     // Poster: extract a frame from the first cast-narrated scene (so the
     // poster shows a terminal, not the title card); fall back to 1s in.
-    const firstCastNarrated = storyboard.scenes.find((s) => s.type === 'cast-narrated');
-    const posterAtSec = firstCastNarrated
-      ? (sceneTimingAbs[firstCastNarrated.id]?.start ?? 1.0) + 0.5
-      : 1.0;
-    const posterPath = path.join(outDir, `${tutorial}.${lang}.poster.jpg`);
-    extractPosterJpg(outPath, posterAtSec, posterPath);
-    console.log(`[video] poster    → ${posterPath} (at ${posterAtSec.toFixed(2)}s)`);
+    // Skipped in --captions-only: the mp4 (and therefore its poster) is
+    // unchanged, nothing to re-extract.
+    if (!captionsOnly) {
+      const firstCastNarrated = storyboard.scenes.find((s) => s.type === 'cast-narrated');
+      const posterAtSec = firstCastNarrated
+        ? (sceneTimingAbs[firstCastNarrated.id]?.start ?? 1.0) + 0.5
+        : 1.0;
+      const posterPath = path.join(outDir, `${tutorial}.${lang}.poster.jpg`);
+      extractPosterJpg(outPath, posterAtSec, posterPath);
+      console.log(`[video] poster    → ${posterPath} (at ${posterAtSec.toFixed(2)}s)`);
+    }
 
-    if (debug) {
+    if (debug && !captionsOnly) {
       for (const entry of debugCollector.castNarrated) {
         const dstPng = path.join(
           debugFramesDir,

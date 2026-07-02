@@ -3,7 +3,7 @@ import { createTranslator } from '../i18n/utils';
 import type { Language } from '../i18n/types';
 import { PLAN_ORDER, PLAN_PRICING, PLAN_METADATA } from '@rediacc/shared/subscription';
 import CfPricingCard from './CfPricingCard.astro';
-import FounderGuarantee from './FounderGuarantee.astro';
+import CorporateGuarantee from './CorporateGuarantee.astro';
 import { filterPlansForProgram, isDesignPartnerProgramActive } from '../utils/design-partner-program';
 import '../styles/pricing-page.css';
 
@@ -24,7 +24,7 @@ const badgeConfig: Record<string, { isPopular?: boolean; badgeLabel?: string; ba
     badgeVariant: 'popular',
   },
   business: {
-    badgeLabel: `${t('pages.pricing.ui.bestValue')} · ${t('pages.pricing.ui.limitedOffer')}`,
+    badgeLabel: t('pages.pricing.ui.bestValue'),
     badgeVariant: 'best-value',
   },
 };
@@ -94,7 +94,7 @@ const buildMetrics = (planId: string) =>
     <a href={`/${lang}/pricing`} class="pricing-preview-compare" data-track="cta_click" data-track-label="pricing-compare">
       {t('pricingPreview.compareAll')} &rarr;
     </a>
-    <FounderGuarantee lang={lang} quoteKey={isDesignPartnerProgramActive() ? 'designPartner' : 'guarantee'} />
+    <CorporateGuarantee lang={lang} />
   </div>
 </section>
 

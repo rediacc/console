@@ -1,8 +1,11 @@
 ---
-title: "ما الذي أخبرنا به المشترون في دورة التدقيق الأولى على NIS2"
-description: "حزمة الأدوات الخمس التي تجمعها الكيانات الأساسية في قطاع السوق المتوسط بصمت في عام 2026، وما يُدمجه مستوى التحكم المستضاف ذاتياً، وبنود الميزانية التي تبقى على عاتقك في كلا الحالتين."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-09
+title: ما الذي أخبرنا به المشترون في دورة التدقيق الأولى على NIS2
+description: >-
+  حزمة الأدوات الخمس التي تجمعها الكيانات الأساسية في قطاع السوق المتوسط بصمت في
+  عام 2026، وما يُدمجه مستوى التحكم المستضاف ذاتياً، وبنود الميزانية التي تبقى
+  على عاتقك في كلا الحالتين.
+author: Rediacc
+publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
 tags:
   - nis2
@@ -12,8 +15,8 @@ tags:
   - mid-market
 featured: false
 language: ar
-sourceHash: "3fbb581ec14e3f80"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: 29fbcbffd8a304bc
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
 

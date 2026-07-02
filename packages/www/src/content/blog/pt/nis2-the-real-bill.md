@@ -1,8 +1,12 @@
 ---
-title: "O Que os Compradores Nos Disseram no Primeiro Ciclo de Auditoria NIS2"
-description: "O conjunto de cinco ferramentas de conformidade que as entidades essenciais do mercado intermédio estão discretamente a montar em 2026, o que um plano de controlo auto-alojado consolida, e as rubricas que ficam do seu lado de qualquer forma."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-09
+title: O Que os Compradores Nos Disseram no Primeiro Ciclo de Auditoria NIS2
+description: >-
+  O conjunto de cinco ferramentas de conformidade que as entidades essenciais do
+  mercado intermédio estão discretamente a montar em 2026, o que um plano de
+  controlo auto-alojado consolida, e as rubricas que ficam do seu lado de
+  qualquer forma.
+author: Rediacc
+publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
 tags:
   - nis2
@@ -12,8 +16,8 @@ tags:
   - mercado-intermedio
 featured: false
 language: pt
-sourceHash: "3fbb581ec14e3f80"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: 29fbcbffd8a304bc
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
 

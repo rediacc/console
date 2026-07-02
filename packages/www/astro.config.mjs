@@ -118,8 +118,8 @@ export default defineConfig({
           item.priority = 0.7;
           item.changefreq = ChangeFreqEnum.WEEKLY;
         }
-        // Team page - medium-high priority
-        else if (url.includes('/team')) {
+        // Company page - medium-high priority
+        else if (url.includes('/company')) {
           item.priority = 0.7;
           item.changefreq = ChangeFreqEnum.MONTHLY;
         }
@@ -142,6 +142,21 @@ export default defineConfig({
     routeManifestIntegration()
   ],
   output: 'static',
+  redirects: {
+    '/en/team': '/en/company',
+    '/de/team': '/de/company',
+    '/es/team': '/es/company',
+    '/fr/team': '/fr/company',
+    '/ja/team': '/ja/company',
+    '/ar/team': '/ar/company',
+    '/ru/team': '/ru/company',
+    '/tr/team': '/tr/company',
+    '/zh/team': '/zh/company',
+    '/et/team': '/et/company',
+    '/ko/team': '/ko/company',
+    '/pt/team': '/pt/company',
+    '/it/team': '/it/company'
+  },
   build: {
     assets: 'assets'
   },

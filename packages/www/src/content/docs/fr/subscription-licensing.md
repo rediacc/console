@@ -1,11 +1,13 @@
 ---
-title: "Abonnement et licences"
-description: "Comprendre comment account, rdc et renet gèrent les slots de machine, les licences de dépôt et les limites de plan."
-category: "Guides"
+title: Abonnement et licences
+description: >-
+  Comprendre comment account, rdc et renet gèrent les slots de machine, les
+  licences de dépôt et les limites de plan.
+category: Guides
 order: 7
 language: fr
-sourceHash: "0e18efe91c91f74c"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: 10e9f781881854be
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 # Abonnement et licences
@@ -60,7 +62,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Slots de machine (côté serveur)
 
-Le suivi des slots de machine est appliqué côté serveur. Lorsque le CLI émet une licence de dépôt, le serveur de comptes vérifie le quota de slots de machine de l'abonnement (par exemple, 2 machines pour Community, 5 pour Professional). Un slot est conservé pendant 1 heure à partir de la dernière émission de licence de dépôt sur cette machine et se libère automatiquement après inactivité. Un plan à 5 slots peut donc couvrir des dizaines de machines au fil du temps, puisque les slots ne sont conservés que lorsque vous approvisionnez activement.
+Le suivi des slots de machine est appliqué côté serveur. Lorsque le CLI émet une licence de dépôt, le serveur de comptes vérifie le quota de slots de machine de l'abonnement (par exemple, 2 machines pour Community, 3 pour Professional). Un slot est conservé pendant 5 heures à partir de la dernière émission de licence de dépôt sur cette machine et se libère automatiquement après inactivité. Un plan Business à 10 slots peut donc couvrir des dizaines de machines au fil du temps, puisque les slots ne sont conservés que lorsque vous approvisionnez activement.
 
 Aucun fichier de licence de machine n'est stocké sur la machine. L'application des slots se fait au moment de l'émission sur le serveur.
 
@@ -91,10 +93,10 @@ Limites par défaut des plans payants :
 
 | Plan | Licences flottantes | Taille du dépôt | Émissions mensuelles de licences de dépôt | Validité cert de délégation par défaut / max |
 |------|---------------------|-----------------|-------------------------------------------|----------------------------------------------|
-| Community | 2 | 10 GB | 500 | 15d / 30d |
-| Professional | 5 | 100 GB | 5,000 | 60d / 120d |
-| Business | 20 | 500 GB | 20,000 | 90d / 180d |
-| Enterprise | 50 | 2048 GB | 100,000 | 120d / 365d |
+| Community | 2 | 10 GB | 100 | 15d / 30d |
+| Professional | 3 | 50 GB | 2,000+ | 60d / 120d |
+| Business | 10 | 200 GB | 5,000+ | 90d / 180d |
+| Enterprise | 25+ | 1 TB+ | 15,000+ | 120d / 365d |
 
 Les limites spécifiques au contrat peuvent augmenter ou diminuer ces valeurs pour un client particulier. La validité des certificats de délégation est également plafonnée à `subscription.expiresAt + 3 day grace`, de sorte que les abonnements facturés mensuellement obtiennent naturellement des certificats alignés sur leur cycle de facturation. Voir [Chaîne de licences et délégation - Politique de validité](/fr/docs/license-chain) pour les règles complètes.
 
@@ -110,7 +112,7 @@ En pratique :
 - Aucune intervention manuelle requise
 - Vérifiez l'ID de machine et le statut de la licence avec `rdc machine query --system --licenses --name <machine>`
 
-**Les utilisateurs du canal Edge** reçoivent 2X les limites Community sans frais supplémentaires (dépôts de 20 GB, 1,000 émissions/mois, 4 machines). Les plans payants ne sont disponibles que sur le canal Stable. Voir [Canaux de publication](/fr/docs/release-channels) pour plus de détails.
+**Les utilisateurs du canal Edge** reçoivent 2X les limites Community sans frais supplémentaires (dépôts de 20 GB, 200 émissions/mois, 4 machines). Les plans payants ne sont disponibles que sur le canal Stable. Voir [Canaux de publication](/fr/docs/release-channels) pour plus de détails.
 
 ## Ce qui se passe lors de la création, du démarrage, de l'arrêt et du redémarrage d'un dépôt
 

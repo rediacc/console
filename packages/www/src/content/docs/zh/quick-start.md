@@ -4,8 +4,8 @@ description: 几分钟内在您的服务器上运行容器化服务。
 category: Guides
 order: -1
 language: zh
-sourceHash: "2047fd1ce3a47944"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "afd4d22ddc8e02e1"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # 快速开始
@@ -59,7 +59,7 @@ rdc config ssh set --key ~/.ssh/id_ed25519
 ### 3. 添加服务器
 
 ```bash
-rdc config machine add --name my-server --ip 192.168.1.100 --user muhammed
+rdc config machine add --name my-server --ip 192.168.1.100 --user admin
 rdc config machine setup --name my-server  # 配置 renet + 创建数据存储
 ```
 

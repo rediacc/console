@@ -7,7 +7,7 @@
       "id": "tutorial-vscode-browser-01",
       "markerIndex": 0,
       "at": 2.414862,
-      "text": "One command. The CLI installs the editor server on the machine once, starts it inside the repo sandbox, opens a tunnel, and hands you a link. No local VS Code, no extensions to set up.",
+      "text": "コマンドは1つです。CLI はエディターサーバーをマシンに一度だけインストールし、repo の sandbox 内で起動して、トンネルを開き、リンクを渡してくれます。ローカルの VS Code も、セットアップする拡張機能も要りません。",
       "afterText": "そのURLがエディターです。どのOSでも動作します。必要なのはブラウザだけです。",
       "cardLabel": "ブラウザ接続",
       "prose": "--browser フラグを使って接続します。CLI はオープンソースのエディターサーバーをマシンに一度インストールし、repo の sandbox 内で起動して SSH トンネルを開き、ブラウザ用のリンクを表示します。"
@@ -16,7 +16,7 @@
       "id": "tutorial-vscode-browser-02",
       "markerIndex": 1,
       "at": 12.531234,
-      "text": "Same repo from the plain terminal: the working directory is the repo, the files are the repo's files.",
+      "text": "通常のターミナルから同じ repo を見てみます。作業ディレクトリは repo で、ファイルは repo のファイルです。",
       "afterText": "ターミナルとエディターは一致しています。同じsandboxです。",
       "cardLabel": "同じビュー",
       "prose": "同じ repo へのターミナルセッションを開きます。作業ディレクトリとファイルはエディターに表示されているものと一致しています。"
@@ -25,7 +25,7 @@
       "id": "tutorial-vscode-browser-03",
       "markerIndex": 2,
       "at": 19.464899,
-      "text": "And the file we created in the browser editor? Right here. Files made in VS Code are real repo files, instantly.",
+      "text": "ブラウザのエディターで作成したファイルは？ちゃんとここにあります。VS Code で作ったファイルは、すぐに本物の repo ファイルになります。",
       "afterText": "ブラウザで作成し、ターミナルから読み取れます。1つのrepo、2つの扉。",
       "cardLabel": "往復確認",
       "prose": "ブラウザエディターで作成したファイルは実際の repo ファイルです。どのセッションからでも読み取ることができます。"
@@ -34,7 +34,7 @@
       "id": "tutorial-vscode-browser-04",
       "markerIndex": 3,
       "at": 26.768996,
-      "text": "Now try to leave. Listing the root of the server: permission denied. The kernel scopes the editor, its terminal, and every child process to this repo.",
+      "text": "では外に出ようとしてみます。サーバーのルートを一覧表示すると、権限が拒否されます。カーネルは、エディター、そのターミナル、そしてすべての子プロセスをこの repo に閉じ込めます。",
       "afterText": "設定ではなく、カーネルによって拒否されています。",
       "cardLabel": "ルート拒否",
       "prose": "サーバーのルートディレクトリを一覧表示しようとすると、権限が拒否されます。カーネルはセッションを repo に制限しています。"
@@ -43,7 +43,7 @@
       "id": "tutorial-vscode-browser-05",
       "markerIndex": 4,
       "at": 32.439211,
-      "text": "Other users' homes? Also denied. Whatever runs inside this sandbox — editors, terminals, build tools — ends at the repo's walls.",
+      "text": "他のユーザーのホームは？これも拒否されます。この sandbox の中で動くものは、エディターでもターミナルでもビルドツールでも、すべて repo の壁で行き止まりです。",
       "afterText": "sandboxに例外はありません。それがポイントです。",
       "cardLabel": "ホーム拒否",
       "prose": "/home などの他のディレクトリも拒否されます。sandbox は内部で起動されたすべてのものに適用されます。"

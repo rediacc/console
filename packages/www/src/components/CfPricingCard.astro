@@ -3,6 +3,7 @@ import { EXTERNAL_LINKS } from '../config/constants';
 import { createTranslator } from '../i18n/utils';
 import type { Language } from '../i18n/types';
 import { DESIGN_PARTNER_GRANTED_PLAN, isDesignPartnerProgramActive } from '../utils/design-partner-program';
+import AccountLink from './AccountLink.astro';
 
 interface Props {
   plan: {
@@ -39,7 +40,7 @@ const priceFormatter = new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang, {
 });
 const formatPrice = (amount: number) => priceFormatter.format(amount);
 
-const checkoutPlans = useCheckout ? new Set(['professional']) : new Set<string>();
+const checkoutPlans = useCheckout ? new Set(['professional', 'business']) : new Set<string>();
 const usesCheckout = checkoutPlans.has(plan.id);
 
 // Design Partner Program: only the granted tier (BUSINESS) gets the
@@ -69,7 +70,12 @@ const designPartner =
   ) : null}
   <h3 class="cf-plan-name">{t(`${ctaNamespace}.plans.${plan.id}.name`)}</h3>
   <div class="cf-price-block">
-    {plan.monthly === 0 ? (
+    {plan.id === 'enterprise' ? (
+      <>
+        <div class="cf-price cf-contact-us">{t(`${ctaNamespace}.ui.contactUs`)}</div>
+        <div class="cf-price-subtitle">{t(`${ctaNamespace}.ui.contactUsSub`)}</div>
+      </>
+    ) : plan.monthly === 0 ? (
       designPartner ? (
         <>
           <div class="cf-price cf-dp-free">{t('pages.pricing.ui.designPartner.price')}</div>
@@ -134,16 +140,26 @@ const designPartner =
     >
       {t('pages.pricing.ui.designPartner.cta')} &rarr;
     </a>
-  ) : plan.monthly === 0 ? (
+  ) : plan.id === 'enterprise' ? (
     <a
-      href={`/${lang}/install`}
-      class="cf-cta-btn cf-cta-featured"
+      href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="cf-cta-btn"
       data-track="cta_click"
       data-track-label="pricing-cta"
       data-track-dest={plan.id}
     >
-      {t(`${ctaNamespace}.ui.cta.community.primary`)}
+      {t(`${ctaNamespace}.ui.cta.${plan.id}.primary`)}
     </a>
+  ) : plan.monthly === 0 ? (
+    <AccountLink
+      label={t(`${ctaNamespace}.ui.cta.community.primary`)}
+      className="cf-cta-btn cf-cta-featured"
+      trackEvent="cta_click"
+      trackLabel="pricing-cta"
+      trackDest={plan.id}
+    />
   ) : usesCheckout ? (
     <button
       type="button"
@@ -156,17 +172,13 @@ const designPartner =
       {t(`${ctaNamespace}.ui.cta.${plan.id}.primary`)}
     </button>
   ) : (
-    <a
-      href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION}
-      target="_blank"
-      rel="noopener noreferrer"
-      class="cf-cta-btn"
-      data-track="cta_click"
-      data-track-label="pricing-cta"
-      data-track-dest={plan.id}
-    >
-      {t(`${ctaNamespace}.ui.cta.${plan.id}.primary`)}
-    </a>
+    <AccountLink
+      label={t(`${ctaNamespace}.ui.cta.${plan.id}.primary`)}
+      className="cf-cta-btn"
+      trackEvent="cta_click"
+      trackLabel="pricing-cta"
+      trackDest={plan.id}
+    />
   )}
 </div>
 

@@ -7,7 +7,7 @@
       "id": "tutorial-fork-isolation-01",
       "markerIndex": 0,
       "at": 2.412666,
-      "text": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "text": "تعرّف على التطبيق: demo-pgadmin، قاعدة بيانات PostgreSQL بواجهة pgAdmin، محمّلة وتعمل.",
       "afterText": "مستودع واحد نشط. لنستنسخه.",
       "cardLabel": "التطبيق المباشر",
       "prose": "ابدأ من repository مباشر: قاعدة بيانات PostgreSQL مع pgAdmin تعمل على الجهاز."
@@ -16,7 +16,7 @@
       "id": "tutorial-fork-isolation-02",
       "markerIndex": 1,
       "at": 8.155445,
-      "text": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "text": "قم بعمل fork له. النسخة بتقنية copy-on-write تستغرق ثوانٍ مهما كان الحجم، والفصل يعود فور بدء الحاويات، بينما تستمر فحوص الصحة في الخلفية.",
       "afterText": "تم التفرع وبدأ التشغيل. البيانات لم تُنسخ، بل أصبحت مشتركة، حتى يُعدّلها أحد الطرفين.",
       "cardLabel": "Fork + تشغيل",
       "prose": "انشئ fork للـ repository باستخدام --up --detach: النسخة CoW شبه فورية وخدمات الـ fork تبدأ على الفور."
@@ -25,7 +25,7 @@
       "id": "tutorial-fork-isolation-03",
       "markerIndex": 2,
       "at": 19.24953,
-      "text": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "text": "الآن مستودعان: الأصلي والتجربة، لكلٍّ حاوياته وشبكته وعرضه الخاص للقرص.",
       "afterText": "نفس الجهاز، عالمان معزولان.",
       "cardLabel": "جنباً إلى جنب",
       "prose": "اعرض قائمة الـ repositories: الأصلي والـ fork يعملان جنباً إلى جنب، معزولان تماماً."
@@ -34,7 +34,7 @@
       "id": "tutorial-fork-isolation-04",
       "markerIndex": 3,
       "at": 24.926391,
-      "text": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "text": "انتهيت من التجربة؟ احذف الـ fork. ثوانٍ لإنشائه، وثوانٍ للتخلص منه، والأصل لم يعلم يوماً بوجوده.",
       "afterText": "اختفى. والأصل ظل يعمل طوال الوقت.",
       "cardLabel": "حذف Fork",
       "prose": "احذف الـ fork عند الانتهاء. الـ repository الأصلي يبقى سليماً دون تغيير."

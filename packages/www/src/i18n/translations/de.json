@@ -184,8 +184,8 @@
     },
     "organizationLinks": {
       "aboutUs": "Über uns",
-      "contact": "Kontakt",
-      "team": "Team"
+      "company": "Unternehmen",
+      "contact": "Kontakt"
     },
     "productLinks": {
       "disasterRecovery": "Notfallwiederherstellung",
@@ -464,7 +464,7 @@
     },
     "changelog": {
       "breadcrumb": {
-        "changelog": "Changelog",
+        "changelog": "Änderungsprotokoll",
         "home": "Startseite"
       },
       "meta": {
@@ -475,7 +475,7 @@
       "subscribeDescription": "Einfach eine E-Mail bei neuen Releases, ohne Marketing-Floskeln.",
       "subscribeTitle": "Bleib über neue Releases informiert",
       "subtitle": "Entdecke Releases, Bugfixes und kommende Updates.",
-      "title": "Changelog"
+      "title": "Änderungsprotokoll"
     },
     "checkout": {
       "success": {
@@ -485,6 +485,63 @@
         "heading": "Abonnement bestätigt",
         "message": "Ihr Abonnement ist jetzt aktiv. Sie erhalten in Kürze eine E-Mail mit Ihrem Lizenzschlüssel und den Einrichtungsanweisungen.",
         "title": "Abonnement bestätigt"
+      }
+    },
+    "company": {
+      "cta": {
+        "buttons": {
+          "contact": "Kontakt aufnehmen",
+          "learnMore": "So funktioniert's"
+        },
+        "subtitle": "Installieren Sie Rediacc in unter 5 Minuten. Die Community-Stufe ist für immer kostenlos.",
+        "title": "Kostenlos testen"
+      },
+      "hero": {
+        "subtitle": "Rediacc ist für Teams gemacht, die Produktionssysteme betreiben und sie nicht verlieren können.",
+        "title": "Backup- und Recovery-Software unter Ihrer Kontrolle"
+      },
+      "meta": {
+        "description": "Rediacc entwickelt selbstgehostete Backup- und Disaster-Recovery-Software, mit der Sie Produktion klonen, sicher testen und in Sekunden wiederherstellen können.",
+        "keywords": "Rediacc Unternehmen, selbstgehostetes Backup, Disaster-Recovery-Software, Infrastruktur-Zuverlässigkeit",
+        "title": "Unternehmen | Rediacc - Backups, die Ransomware überstehen"
+      },
+      "mission": {
+        "belief": "Die Community-Edition hat alles, was die kostenpflichtigen Versionen bieten. Gleiches btrfs-Cloning. Gleiche LUKS-Verschlüsselung. Gleiche gesperrten, schreibgeschützten Backups. Nur mit niedrigeren Limits. Keine Feature-Gates. Keine versteckte Kundenfalle.",
+        "description": "Alle 47 Tage wird eine Produktionsdatenbank gelöscht. Jährlich fallen 1,71 % der Festplatten aus. 75 % der Ransomware-Angriffe zielen auf Backups. Wir bringen dich in 60 Sekunden wieder online.",
+        "title": "Unsere Mission: Katastrophen unmöglich machen"
+      },
+      "overview": {
+        "description": "Rediacc ist selbstgehostete Software für Backup, Klonen und Disaster Recovery. Sie läuft auf Ihren eigenen Servern, kopiert ganze Produktionssysteme in Sekunden und bringt Sie schnell wieder online.",
+        "title": "Was wir tun"
+      },
+      "values": {
+        "items": {
+          "global": {
+            "description": "9 Sprachen. Nutzungsdaten bleiben in der EU. Estnisches Unternehmen mit GDPR im Kern.",
+            "title": "Globales Denken"
+          },
+          "innovation": {
+            "description": "Wir publishen wöchentlich. Jede Version löst ein echtes Deployment-Problem, das unsere Nutzer berichtet haben.",
+            "title": "Kontinuierliche Innovation"
+          },
+          "security": {
+            "description": "LUKS-Verschlüsselung auf der Festplatte. TLS im Netzwerk. Eine separate Docker-Engine pro App. Alles durchgehend gesichert.",
+            "title": "Sicherheit by Design"
+          },
+          "simplicity": {
+            "description": "Ein Befehl zum Kopieren von 241 GB Live-Daten. Das ist unser gesamtes Komplexitätsbudget.",
+            "title": "Einfachheit First"
+          },
+          "success": {
+            "description": "Wir messen uns an deiner Recovery-Zeit, nicht an unserer Feature-Liste.",
+            "title": "Kundenerfolg"
+          },
+          "transparency": {
+            "description": "Offene Kommunikation, ehrliche Preise, klare Dokumentation. Keine versteckten Gebühren, keine Überraschungen, kein Kleingedrucktes.",
+            "title": "Transparenz"
+          }
+        },
+        "title": "Unsere Werte"
       }
     },
     "contact": {
@@ -739,11 +796,11 @@
       },
       "youGet": {
         "items": [
-          "BUSINESS-Plan: 500 GB pro Repository, 20 Plätze, 20.000 Aktivierungen pro Monat",
-          "Im Early-Access-Track: doppelte Limits (1 TB pro Repository, 40 Plätze, 40.000 Aktivierungen)",
+          "BUSINESS-Plan: 200 GB pro Repository, 10 Benutzerplätze, 10.000 Aktivierungen pro Monat",
+          "Im Early-Access-Track: doppelte Limits (400 GB pro Repository, 20 Benutzerplätze, 20.000 Aktivierungen)",
           "Unbegrenzte Repositories, Benutzer und Teams",
           "Backup-Wiederherstellungen, Dark Mode, alle 9 Sprachen",
-          "Direkter Draht zum Gründer für Onboarding und Support",
+          "Direkter Support vom Engineering-Team",
           "Lebenslang gesichert. Kein Ablauf, kein Downgrade, keine Karte hinterlegt."
         ],
         "lede": "Du bekommst den kompletten BUSINESS-Plan. Kostenlos. Solange Rediacc existiert.",
@@ -815,7 +872,7 @@
             "Georedundanter Speicher (3 Regionen) – ein Ausfall kann Sie nicht aufhalten",
             "Kontinuierlicher Datenschutz – kein Datenverlust",
             "4-Stunden-Wiederherstellungs-SLA (garantiert)",
-            "Unbegrenzte Repositorys, jeweils 500 GB",
+            "Unbegrenzte Repositorys, jeweils 200 GB",
             "7 aktive/3 reservierte Jobs",
             "90-tägige Aufbewahrung des Prüfprotokolls",
             "Rollenbasierte Zugriffskontrolle und umfassende Audit-Protokolle",
@@ -847,7 +904,7 @@
             "Maßgeschneidertes SLA (15–60 Minuten RTO) – Ihre Anforderungen, unser Engagement",
             "Dedizierter Infrastrukturmieter – maximale Sicherheit und Leistung",
             "24/7/365 White-Glove-Support",
-            "Unbegrenzte Repositories, je 2 TB+",
+            "Unbegrenzte Repositories, je 1 TB+",
             "96+ Stunden-Jobfenster mit 10+ aktiven/5+ reservierten Jobs",
             "1 Jahr+Aufbewahrung des Audit-Protokolls",
             "Vierteljährliche Notfallwiederherstellungsübungen – geprüfte Bereitschaft",
@@ -855,8 +912,7 @@
             "Benutzerdefinierte Integrationen und Workflows",
             "Unterstützung bei der Prüfungsdokumentation und Sicherheitsüberprüfungen"
           ],
-          "name": "Unternehmen",
-          "priceNote": "*Beginnt um"
+          "name": "Unternehmen"
         },
         "professional": {
           "description": "Professionelle Notfallwiederherstellung ohne Unternehmenskomplexität",
@@ -864,7 +920,7 @@
             "Alles in Community +",
             "Automatisierte Backup-Planung – einrichten und vergessen",
             "Point-in-Time-Wiederherstellung (24 Stunden)",
-            "Unbegrenzte Repositorys, jeweils 100 GB",
+            "Unbegrenzte Repositorys, jeweils 50 GB",
             "24-Stunden-Job-Timeout, 5 aktive/2 reservierte Jobs",
             "30-tägige Aufbewahrung des Prüfprotokolls",
             "E-Mail- und Chat-Support",
@@ -875,259 +931,9 @@
           "name": "Professional"
         }
       },
-      "professionalServices": {
-        "access": {
-          "description": "Jeder Plan kommt mit grundlegender Unterstützung. Weitere Services können Sie flexibel hinzufügen.",
-          "heading": "Professionelle Services – nach Tier verfügbar",
-          "labels": {
-            "available": "Optional hinzufügbar",
-            "included": "Enthalten"
-          },
-          "tiers": [
-            {
-              "available": [
-                "Standard-Implementierung (9.999 $) oder gestaffelte Pakete (Klein 7.499 $ · Mittel 14.999 $ · Groß 29.999 $ · Enterprise auf Anfrage)",
-                "Notfall-Response-Service (29.999 $ auf Anfrage)"
-              ],
-              "included": ["Self-Service-Dokumentation, Video-Tutorials und Community-Forum"],
-              "planId": "Gemeinschaft"
-            },
-            {
-              "available": [
-                "Priority-Implementierung (19.999 $)",
-                "Notfall-Response-Service (29.999 $ auf Anfrage)",
-                "Benutzerdefinierte Integrationsprojekte (abgegrenzt)"
-              ],
-              "included": [
-                "E-Mail-Support",
-                "Standard-Onboarding-Sitzung (Setup-Anruf + Konfiguration-Walkthrough)"
-              ],
-              "planId": "Profi"
-            },
-            {
-              "available": [
-                "Priority-Implementierungs-Upgrade (19.999 $)",
-                "Notfall-Response-Service (29.999 $ auf Anfrage)",
-                "Benutzerdefinierte Entwicklung und Sicherheitsarchitektur-Beratung"
-              ],
-              "included": [
-                "Prioritäts-Support per E-Mail/Chat/Telefon",
-                "Dediziertes Onboarding mit Konfiguration und Runbook-Übergabe",
-                "Standard-Implementierungspaket enthalten (Wert 9.999 $)",
-                "Vierteljährliche Erfolgsreviews"
-              ],
-              "planId": "Geschäft"
-            },
-            {
-              "available": [
-                "Benutzerdefinierte Entwicklung und erweiterte Integrationen",
-                "Sicherheits- und Infrastruktur-Design-Beratung",
-                "Monatlicher Notfall-Response-Vertrag (5.000–7.500 $/Monat)"
-              ],
-              "included": [
-                "Rund-um-die-Uhr-Support mit dediziertem Account Manager",
-                "Priority-Implementierung enthalten (Wert 19.999 $)",
-                "Vierteljährliche Notfallwiederherstellungs-Tests",
-                "Jährlicher Geschäftskontinuitäts-Planungs-Workshop",
-                "Eskalations-Hotline für Führungskräfte"
-              ],
-              "planId": "Unternehmen"
-            }
-          ]
-        },
-        "advancedDetails": {
-          "description": "Service-Pakete, Implementierungs-Stufen, Preisfaktoren und monatliche Support-Optionen",
-          "heading": "Implementierungs- und Preisdetails"
-        },
-        "benefits": {
-          "description": "Spezialisierte Ingenieure an Ihrer Seite, wenn Ihre Systeme ausfallen.",
-          "heading": "Warum professionelle Services?",
-          "items": [
-            "Ein engagiertes Experten-Team für Ihr Projekt",
-            "Garantierte Reaktionszeiten mit SLA",
-            "Wechsel zwischen Service-Stufen jederzeit möglich",
-            "24/7-Notfall-Hotline für die Notfall-Stufe"
-          ],
-          "statistics": [
-            "Der Durchschnittskosteneiner Ransomware-Attacke: 4,62 Millionen $ (IBM Security, 2023)",
-            "Durchschnittliche Ausfallkosten für große Unternehmen: 5.600 $ pro Minute"
-          ]
-        },
-        "cta": {
-          "button": "Beratungstermin vereinbaren",
-          "description": "Unsere Experten sind bereit, Sie zum Erfolg zu führen",
-          "heading": "Brauchen Sie professionelle Unterstützung?"
-        },
-        "header": {
-          "badge": "Mit unseren Experten schneller zum Ziel",
-          "eligibility": "Jeder Plan kommt mit professioneller Unterstützung. In der Tabelle unten sehen Sie, was enthalten ist – und welche Zusatzservices Sie hinzufügen können.",
-          "subtitle": "Experten an Ihrer Seite – genau wenn Sie sie brauchen",
-          "title": "Service-Pakete"
-        },
-        "packages": {
-          "emergency": {
-            "benefits": [
-              "Einsatz innerhalb von 2 Stunden",
-              "Analyse, Eindämmung und Wiederherstellungsplan",
-              "Analysebericht und Plan, um es in Zukunft zu verhindern"
-            ],
-            "description": "Wenn's kritisch wird, sind wir da. Wir reagieren innerhalb von 2 Stunden und bringen Ihre Systeme noch am selben Tag wieder online.",
-            "name": "Notfall",
-            "price": "29.999 $",
-            "tiers": [],
-            "turnaround": "Am selben Tag"
-          },
-          "priority": {
-            "benefits": [
-              "Dedizierter Ansprechpartner",
-              "Verfügbar abends und am Wochenende",
-              "Fachliche Unterstützung beim Live-Betrieb"
-            ],
-            "description": "Schnellere Umsetzung. Unser Team ist auch abends und am Wochenende für Sie da – zur Unterstützung bei Ihrem Go-Live.",
-            "name": "Priorität",
-            "price": "19.999 $",
-            "tiers": [],
-            "turnaround": "24–48 Stunden"
-          },
-          "standard": {
-            "benefits": [
-              "Projektanalyse und Erfolgsstrategie",
-              "Umgebung einrichten und konfigurieren",
-              "Test-Checkliste und Team-Übergabe"
-            ],
-            "description": "Planung, Implementierung, Tests und Schulung – alles aus einer Hand.",
-            "name": "Standard",
-            "price": "Ab 7.499 $",
-            "tierHeading": "Preise je nach Anzahl der Server",
-            "tierNote": "Jeder Server oder jede Anwendung zählt als eine Einheit. Die Implementierung umfasst Design, Konfiguration, Tests und Teamschulung.",
-            "tiers": [
-              "Starter (1–4 Server): 7.499 $",
-              "Growth (5–10 Server): 14.999 $",
-              "Scale (11–25 Server): 29.999 $",
-              "Enterprise (25+ Server): Individuelles Angebot"
-            ],
-            "turnaround": "3–5 Werktage"
-          }
-        },
-        "pricingFactors": {
-          "factors": [
-            {
-              "description": "Wie viele Systeme, Integrationen und Abhängigkeiten beteiligt sind",
-              "title": "Komplexität des Umfangs"
-            },
-            {
-              "description": "Standardlösungen oder benutzerdefinierte Entwicklung",
-              "title": "Grad der Anpassung"
-            },
-            {
-              "description": "Einzelne Fachperson oder vollständig engagiertes Spezialisten-Team",
-              "title": "Größe des Teams"
-            }
-          ],
-          "heading": "So entstehen die Kosten",
-          "intro": "Die endgültigen Projektkosten hängen davon ab:",
-          "note": "Beispiel: Ein mittelgroßes Setup (120 Maschinen) mit Sicherheits-Review kostet typischerweise zwischen 14.999 $ und 24.999 $, je nach Integrationen und laufender Unterstützung."
-        },
-        "retainers": {
-          "description": "Direkter Zugang zu unserem Team. Berechenbare monatliche Preise.",
-          "heading": "Retainer-Optionen für ständige Verfügbarkeit",
-          "items": [
-            {
-              "bullets": [
-                "Garantierte 2-Stunden-Reaktionszeit",
-                "Direkte Leitung zu Senior Engineers – wenn's zählt",
-                "Vierteljährliche Bereitschafts-Reviews und Playbook-Updates"
-              ],
-              "price": "5.000–7.500 $/Monat",
-              "title": "Notfall-Response-Retainer"
-            }
-          ]
-        },
-        "serviceTypes": {
-          "badgeLabels": {
-            "emergency": "Notfall",
-            "priority": "Priority",
-            "standard": "Standard"
-          },
-          "heading": "Unsere Services",
-          "intro": "Klicken Sie auf einen Service, um die Durchlaufzeiten für jedes Paket zu sehen",
-          "services": [
-            {
-              "emergency": "Sofortige Bewertung + kritische Systeme am selben Tag online + vollständige Migration startet",
-              "id": "Datenmigration",
-              "name": "Datenmigration",
-              "priority": "Schnelle Migrations-Vorbereitung + Kerndaten innerhalb von 48 Stunden transferiert",
-              "standard": "Komplette End-to-End-Migration mit vollständiger Validierung"
-            },
-            {
-              "emergency": "Sofortige Eindämmung + kritische Systeme am selben Tag wiederhergestellt + Vollwiederherstellung startet",
-              "id": "Ransomware-Wiederherstellung",
-              "name": "Ransomware-Wiederherstellung",
-              "priority": "Schnelle Bedrohungsanalyse + Kernbetrieb innerhalb von 48 Stunden wieder hergestellt",
-              "standard": "Vollständige Wiederherstellung mit Analyse und Sicherheitsverstärkung"
-            },
-            {
-              "emergency": "Kritische Schwachstellen-Scan + Hochrisiko-Patches am selben Tag + vollständiges Audit startet",
-              "id": "Sicherheitsbewertung",
-              "name": "Sicherheitsbewertung",
-              "priority": "Komplette Schwachstellen-Bewertung + Sanierungsplan innerhalb von 48 Stunden",
-              "standard": "Umfassendes Sicherheits-Audit mit klarem Aktionsplan"
-            },
-            {
-              "emergency": "Kritische Ressourcen am selben Tag eingerichtet + Auto-Scaling konfiguriert + Vollplan startet",
-              "id": "Infrastruktur-Skalierung",
-              "name": "Skalierung der Infrastruktur",
-              "priority": "Schnelle Kapazitätssteigerung + Monitoring innerhalb von 48 Stunden eingerichtet",
-              "standard": "Komplette Infrastruktur-Neugestaltung mit Performance-Verbesserungen"
-            },
-            {
-              "emergency": "Einweisung kritischer Verfahren am selben Tag + Vorbereitung Incident-Response + Vollprogramm startet",
-              "id": "Teamtraining",
-              "name": "Teamtraining",
-              "priority": "Intensiver praktischer Workshop + wichtige Workflows innerhalb von 2 Tagen abgedeckt",
-              "standard": "Mehrtägiges praktisches Schulungsprogramm"
-            },
-            {
-              "emergency": "Kritischer Engpass identifiziert + sofortiger Hotfix am selben Tag + vollständige Optimierung startet",
-              "id": "Leistungsoptimierung",
-              "name": "Leistungsoptimierung",
-              "priority": "Schnelle Profil-Analyse + hochgradig wirksame Optimierungen innerhalb von 48 Stunden",
-              "standard": "Tiefgreifende Analyse mit vollständiger Performance-Optimierung"
-            },
-            {
-              "emergency": "Kritische Verbindung am selben Tag hergestellt + Basis-Datenfluss funktioniert + Vollentwicklung startet",
-              "id": "kundenspezifische Integration",
-              "name": "Benutzerdefinierte Integration",
-              "priority": "Kern-Integration funktionsfähig + wichtigste Features innerhalb von 48 Stunden live",
-              "standard": "Komplette Integration mit Tests und Dokumentation"
-            },
-            {
-              "emergency": "Festplatten angeschlossen + RAID-Konvertierung am selben Tag gestartet + kritische Apps verifiziert + vollständige Härtung startet",
-              "id": "storage-hardening",
-              "name": "Speicherhärtung",
-              "priority": "BTRFS RAID1 oder RAID10 eingerichtet + Live-Migration gestartet + Auto-Repair aktiv – alles innerhalb von 48 Stunden",
-              "standard": "Komplette redundante BTRFS-Speichereinrichtung mit RAID1 (2 gespiegelte Festplatten) für Standard-Setups oder RAID10 (4+ Festplatten) für hochfrequente Systeme. Inklusive Live-Migration, Reflink-Verifikation, Auto-Repair und Monitoring. Abschluss mit Speicherplan und Backup-Strategie-Überprüfung."
-            }
-          ]
-        }
-      },
       "psTeaser": {
         "heading": "Brauchen Sie Expertenhilfe beim Start?",
-        "packages": {
-          "emergency": {
-            "name": "Notfall",
-            "price": "29.999 $"
-          },
-          "priority": {
-            "name": "Priorität",
-            "price": "19.999 $"
-          },
-          "standard": {
-            "name": "Standard",
-            "price": "Ab 7.499 $"
-          }
-        },
-        "subtitle": "Professionelle Implementierungs- und Support-Services für alle Pläne",
+        "subtitle": "Professionelle Implementierungs- und Support-Services für alle Tarife: Training, Support, Migration, Recovery sowie Security & Compliance",
         "viewDetails": "Services anschauen"
       },
       "strategy": {
@@ -1817,7 +1623,7 @@
           "withTag": "Mit Rediacc"
         },
         "hero": {
-          "badge": "FÜR CEOs & GRÜNDER",
+          "badge": "FÜR CEOs",
           "primaryCta": "Preise ansehen",
           "secondaryCta": "Mit dem Vertrieb sprechen",
           "subtitle": "Schützen Sie Ihre Geschäftsdaten auf Hardware, die Ihnen gehört. Ein Pauschalpreis pro Maschine, keine Pro-Sitz-Gebühren, keine überraschenden Cloud-Rechnungen, kein Anbieter, der Ihre Daten als Geisel hält.",
@@ -1891,7 +1697,7 @@
           "title": "Mit Ihrem CTO teilen"
         },
         "socialProof": {
-          "author": "CEO & Gründer",
+          "author": "CEO",
           "company": "SaaS-Startup, 45 Mitarbeiter",
           "impact": {
             "afterLabel": "Mit Rediacc",
@@ -2619,25 +2425,25 @@
             "label": "Infrastruktur",
             "rows": [
               {
-                "business": "20",
+                "business": "10",
                 "community": "2",
-                "enterprise": "50+",
-                "label": "Floating Licenses (Maschinen)",
-                "professional": "5"
+                "enterprise": "25+",
+                "label": "Floating Licenses (Machines)",
+                "professional": "3"
               },
               {
-                "business": "20,000",
-                "community": "500",
-                "enterprise": "100.000+",
-                "label": "Floating-Lizenz-Anfragen",
-                "professional": "5,000"
+                "business": "10,000",
+                "community": "100",
+                "enterprise": "25,000+",
+                "label": "Server-Setups pro Monat (1 Floating-Lizenz pro Setup)",
+                "professional": "1,000"
               },
               {
-                "business": "500 GB",
+                "business": "200 GB",
                 "community": "10 GB",
-                "enterprise": "2 TB+",
-                "label": "Speicher pro Repository",
-                "professional": "100 GB"
+                "enterprise": "1 TB+",
+                "label": "Repository size",
+                "professional": "50 GB"
               }
             ]
           },
@@ -2726,14 +2532,14 @@
       },
       "edgeChannel": {
         "cta": "Kostenlos starten",
-        "description": "2x Community-Limits, neueste Funktionen, kostenlos. Keine Kreditkarte erforderlich.",
+        "description": "2x Community-Limits. Neueste Features. Kostenlos. Keine Kreditkarte erforderlich.",
         "heading": "Edge-Kanal testen"
       },
       "faq": {
         "heading": "Häufig gestellte Fragen",
         "items": [
           {
-            "answer": "Ja. Der Community-Plan ist dauerhaft kostenlos mit bis zu 2 Maschinen, 500 Jobs pro Monat und vollständigen Snapshot-Wiederherstellungsfunktionen. Keine Kreditkarte erforderlich.",
+            "answer": "Ja. Der Community-Plan ist dauerhaft kostenlos mit bis zu 2 Maschinen, 100 Jobs pro Monat und vollständigen Snapshot-Wiederherstellungsfunktionen. Keine Kreditkarte erforderlich.",
             "question": "Gibt es einen kostenlosen Plan?"
           },
           {
@@ -2779,27 +2585,27 @@
           "startFree": "Kostenlos starten",
           "talkToSales": "Sprechen Sie mit dem Vertrieb"
         },
-        "description": "Starten Sie noch heute mit Rediacc",
-        "heading": "Bereit zum Einstieg?"
+        "description": "Installation in 5 Minuten. Kostenlos starten.",
+        "heading": "Schützen Sie Ihre Infrastruktur"
       },
       "hero": {
-        "subtitle": "Wählen Sie den Plan, der zu Ihrem Team passt. Einfache Preise, keine versteckten Gebühren, jederzeit kündbar.",
-        "title": "Einfache, transparente Preisgestaltung"
+        "subtitle": "Wählen Sie den Plan, der passt. Einfache Preise, keine versteckten Gebühren, jederzeit kündbar.",
+        "title": "Gebaut für echte Anforderungen"
       },
       "meta": {
-        "description": "Wählen Sie den richtigen Plan für Ihr Unternehmen. Vom kostenlosen Community-Zugang bis zum Schutz auf Unternehmensniveau. Keine versteckten Gebühren.",
+        "description": "Wählen Sie den richtigen Plan für Ihr Unternehmen. Kostenlose Community-Stufe inklusive. Keine versteckten Gebühren.",
         "keywords": "Preise, Infrastrukturautomatisierung, DevOps-Pläne, Aufgabenausführung",
-        "title": "Preise | Einfacher, transparenter Infrastrukturschutz"
+        "title": "Preise | Für echte Anforderungen"
       },
       "plans": {
         "business": {
           "description": "Professionelle Einrichtung, Sicherungen in mehreren Regionen und 4-Stunden-Wiederherstellungsgarantie.",
           "features": [
             "Alles in Professional +",
-            "20 gleichzeitige Setup-Slots",
+            "10 Floating-Lizenzen",
             "Unbegrenzte Repositories",
-            "20.000 Server-Setups pro Monat",
-            "$9.999 Implementierungssupport inklusive (Einführungsangebot)",
+            "5.000+ Server-Setups pro Monat",
+            "Implementierungssupport inklusive (Einführungsangebot)",
             "Geo-redundanter Speicher (3 Regionen)",
             "Kontinuierlicher Datenschutz",
             "4-Stunden-Wiederherstellungs-SLA",
@@ -2814,8 +2620,8 @@
           "features": [
             "Unbegrenzte Benutzer und Teams",
             "Unbegrenzte Repositories",
-            "500 Server-Setups pro Monat",
-            "2 gleichzeitige Setup-Slots",
+            "100 Server-Setups pro Monat (1 Floating-Lizenz pro Setup)",
+            "2 Floating-Lizenzen",
             "Backup-Wiederherstellungen",
             "Manuelle Planung",
             "Community-Slack-Zugang",
@@ -2827,9 +2633,9 @@
           "description": "Dedizierter Support und maßgeschneiderte Bedingungen für große, komplexe Umgebungen.",
           "features": [
             "Alles in Business +",
-            "50+ gleichzeitige Setup-Slots",
+            "25+ Floating-Lizenzen",
             "Unbegrenzte Repositories",
-            "100.000+ Server-Setups pro Monat",
+            "15.000+ Server-Setups pro Monat",
             "Benutzerdefinierte SLA mit garantierten Wiederherstellungszeiten",
             "Dedizierte Server-Infrastruktur",
             "24/7/365 Dedizierter Support",
@@ -2839,16 +2645,15 @@
             "Benutzerdefinierte Integrationen & Workflows",
             "Audit-Dokumentationsunterstützung & Sicherheitsüberprüfungen"
           ],
-          "name": "Unternehmen",
-          "priceNote": "*Ab"
+          "name": "Unternehmen"
         },
         "professional": {
           "description": "Professionelle Automatisierung und Planung für wachsende Teams",
           "features": [
             "Alles in Community +",
-            "5 gleichzeitige Setup-Slots",
+            "3 Floating-Lizenzen",
             "Unbegrenzte Repositories",
-            "5.000 Server-Setups pro Monat",
+            "2.000+ Server-Setups pro Monat",
             "Automatisierte Planung",
             "24-Stunden Point-in-Time-Wiederherstellung",
             "E-Mail- und Chat-Support",
@@ -2860,74 +2665,14 @@
         }
       },
       "professionalServices": {
-        "access": {
-          "description": "Ihr Plan beinhaltet Onboarding-Hilfe zum Start. Sie können weitere Leistungen dazubuchen. Die Tabelle zeigt, was enthalten ist – und was extra kostet.",
-          "heading": "Professionelle Dienstleistungen nach Plan-Stufe",
-          "labels": {
-            "available": "Verfügbare Add-ons",
-            "included": "Enthalten"
-          },
-          "tiers": [
-            {
-              "available": [
-                "Standard-Implementierung (9.999 €) oder gestaffelte Pakete (Starter 7.499 € · Wachstum 14.999 € · Skalierung 29.999 € · Enterprise maßgeschneidert)",
-                "Notfall-Einsatz (29.999 € bei Bedarf)"
-              ],
-              "included": ["Self-Service-Dokumentation, Video-Tutorials und Community-Forum"],
-              "planId": "Gemeinschaft"
-            },
-            {
-              "available": [
-                "Priority-Implementierung (19.999 €)",
-                "Notfall-Einsatz (29.999 € bei Bedarf)",
-                "Maßgeschneiderte Integrationsprojekte (mit Umfangsabsprache)"
-              ],
-              "included": ["E-Mail-Support", "Standard-Onboarding (Setup-Call und Konfiguration)"],
-              "planId": "Profi"
-            },
-            {
-              "available": [
-                "Priority-Implementierung Upgrade (19.999 €)",
-                "Notfall-Einsatz (29.999 € bei Bedarf)",
-                "Maßgeschneiderte Entwicklung und Sicherheits-Architekturberatung"
-              ],
-              "included": [
-                "Priority-Support per E-Mail/Chat/Telefon",
-                "Dediziertes Onboarding mit Konfiguration und Runbooks",
-                "Standard-Implementierungspaket inklusive (Wert 9.999 €)",
-                "Vierteljährliche Erfolgskontrollen"
-              ],
-              "planId": "Geschäft"
-            },
-            {
-              "available": [
-                "Maßgeschneiderte Entwicklung und erweiterte Integrationen",
-                "Beratung zu Sicherheit und Audit-Architektur",
-                "Notfall-Retainer (5.000–7.500 €/Monat)"
-              ],
-              "included": [
-                "24/7/365 Support mit dediziertem Account Manager",
-                "Priority-Implementierung inklusive (Wert 19.999 €)",
-                "Vierteljährliche Disaster-Recovery-Tests",
-                "Jährlicher Business-Continuity-Planungs-Workshop",
-                "Eskalations-Hotline für Führungskräfte"
-              ],
-              "planId": "Unternehmen"
-            }
-          ]
-        },
-        "advancedDetails": {
-          "description": "Service-Pakete, Implementierungs-Stufen, Preisfaktoren und Retainer-Optionen",
-          "heading": "Implementierungs- und Preisdetails"
-        },
         "benefits": {
           "description": "Echte Ingenieure am Telefon, wenn Ihre Server ausfallen. Keine Ticketqueue. Ein Mensch, noch am selben Tag.",
           "heading": "Warum professionelle Dienstleistungen?",
           "items": [
             "Engagiertes Expertenteam für Ihr Projekt",
             "Garantierte Reaktionszeiten – schriftlich festgehalten",
-            "Wechseln Sie zwischen Service-Stufen, wann immer nötig",
-            "24/7 Notfall-Hotline für die Emergency-Stufe"
+            "Wechseln Sie flexibel zwischen Services, je nach Bedarf",
+            "24/7-Notfall-Hotline für kritische Vorfälle"
           ],
           "statistics": [
             "Die durchschnittlichen Kosten eines Ransomware-Angriffs betragen 4,62 Millionen Dollar (IBM Security, 2023)",
@@ -2935,159 +2680,49 @@
           ]
         },
         "cta": {
-          "button": "Beratung vereinbaren",
-          "description": "Unsere Experten sind bereit, Sie erfolgreich zu machen",
+          "button": "Kontaktieren Sie uns",
+          "description": "Jedes Projekt wird auf Ihr Setup zugeschnitten. Kontaktieren Sie uns und wir erarbeiten gemeinsam den passenden Plan.",
           "heading": "Brauchen Sie professionelle Unterstützung?"
         },
         "header": {
           "badge": "Professionelle Begleitung von Anfang bis Ende",
-          "eligibility": "So funktioniert es: Mit jedem Plan erhalten Sie Zugang zu unseren professionellen Dienstleistungen. Die Tabelle zeigt, was bereits enthalten ist – und was Sie dazubuchen können.",
+          "eligibility": "Jeder Plan enthält Zugang zu unseren Professional Services. Kontaktieren Sie uns und wir konzipieren das passende Projekt für Ihr Setup.",
           "subtitle": "Holen Sie sich die richtige Unterstützung zur richtigen Zeit",
           "title": "Professionelle Dienstleistungen"
         },
-        "packages": {
-          "emergency": {
-            "benefits": [
-              "Sofortiger Einsatz (unter 2 Stunden)",
-              "Forensische Analyse, Eindämmung und Wiederherstellungsplan",
-              "Stabilisierungsbericht mit Härtungsroadmap"
-            ],
-            "description": "Wenn es brennt, rufen Sie uns an. Wir sind noch am selben Tag vor Ort. Wir beheben den Schaden, dann bringen wir Ihre kritischen Systeme wieder online.",
-            "name": "Notfall",
-            "price": "29.999 $",
-            "tiers": [],
-            "turnaround": "Noch am selben Tag"
-          },
-          "priority": {
-            "benefits": [
-              "Dedizierter Projektmanager",
-              "Verfügbarkeit abends und am Wochenende",
-              "Unterstützung bei der Produktionsfreigabe"
-            ],
-            "description": "Schnellere Lieferung mit erweiterer Verfügbarkeit. Wir begleiten Sie bis zur Produktionsfreigabe.",
-            "name": "Priorität",
-            "price": "19.999 $",
-            "tiers": [],
-            "turnaround": "24–48 Stunden"
-          },
-          "standard": {
-            "benefits": [
-              "Projektentdeckung und Erfolgsstrategie",
-              "Umgebungsaufbau und -konfiguration",
-              "Validierungscheckliste und Wissenstransfer"
-            ],
-            "description": "Wir planen die Lösung, setzen sie um, testen alles und schulen Ihr Team.",
-            "name": "Standard",
-            "price": "Ab 7.499 $",
-            "tierHeading": "Preise nach Serveranzahl",
-            "tierNote": "Jeder Server oder jede Anwendung, die Sie schützen möchten, zählt als eine Einheit. Die Einrichtung umfasst Planung, Bereitstellung, Tests und Schulung Ihres Teams.",
-            "tiers": [
-              "Starter (1–4 Server): 7.499 €",
-              "Wachstum (5–10 Server): 14.999 €",
-              "Skalierung (11–25 Server): 29.999 €",
-              "Enterprise (25+ Server): Individuelles Angebot"
-            ],
-            "turnaround": "3–5 Werktage"
-          }
-        },
-        "pricingFactors": {
-          "factors": [
-            {
-              "description": "Anzahl der Systeme, Integrationen und Abhängigkeiten",
-              "title": "Umfang und Komplexität"
-            },
-            {
-              "description": "Standardlösungen oder maßgeschneiderte Entwicklung",
-              "title": "Grad der Anpassung"
-            },
-            {
-              "description": "Ein einzelner Experte oder ein ganzes Spezialistenteam",
-              "title": "Teamgröße"
-            }
-          ],
-          "heading": "Wie setzen sich die Preise zusammen?",
-          "intro": "Die endgültigen Projektkosten hängen von drei Faktoren ab:",
-          "note": "Beispiel: Ein Projekt mit 120 Servern plus Sicherheitsprüfung ist ein Enterprise-Projekt mit custom-Anforderungen. Solche Projekte kosten typischerweise zwischen 14.999 und 24.999 Euro – je nach Umfang der Integrationen und Retainer-Abdeckung. Das sind Schätzungen. Den genauen Preis ermitteln wir, wenn wir Ihre Infrastruktur sehen."
-        },
-        "retainers": {
-          "description": "Sie haben direkten Zugang zu unseren Ingenieuren. Ein fester Monatspreis.",
-          "heading": "Retainer-Optionen für ständige Verfügbarkeit",
+        "categories": {
+          "heading": "Verfügbare Services",
+          "intro": "Jedes Projekt beginnt mit einem Gespräch, damit wir das passende Team und den passenden Zeitplan für Ihr Setup abstimmen können.",
           "items": [
             {
-              "bullets": [
-                "Garantierte 2-Stunden-Reaktionszeit",
-                "Vorrangiger Eskalationspfad mit War-Room-Koordination",
-                "Vierteljährliche Bereitschaftsprüfung und Playbook-Updates"
-              ],
-              "price": "5.000–7.500 $/Monat",
-              "title": "Notfall-Response-Retainer"
-            }
-          ]
-        },
-        "serviceTypes": {
-          "badgeLabels": {
-            "emergency": "Notfall",
-            "priority": "Priority",
-            "standard": "Standard"
-          },
-          "heading": "Unsere Leistungen",
-          "intro": "Klicken Sie auf eine Leistung, um die Bearbeitungszeiten pro Paket zu sehen",
-          "services": [
-            {
-              "emergency": "Soforteinschätzung + kritische Systeme noch am selben Tag online + vollständige Migration startet",
-              "id": "Datenmigration",
-              "name": "Datenmigration",
-              "priority": "Schnelle Migrationspipeline + Kerndaten-Transfer in 48 Stunden",
-              "standard": "Vollständige Migration mit umfassender Validierung"
+              "id": "training",
+              "name": "Schulungen",
+              "description": "Praxisnahes Training für Ihr Team – von einer geführten Setup-Einführung bis hin zu mehrtägigen Workshops zu fortgeschrittenen Workflows und Incident-Response-Prozessen.",
+              "icon": "team-training"
             },
             {
-              "emergency": "Sofortige Eindämmung + kritische Systeme noch am selben Tag wiederhergestellt + vollständige Wiederherstellung startet",
-              "id": "Ransomware-Wiederherstellung",
-              "name": "Ransomware-Wiederherstellung",
-              "priority": "Schnelle Threat-Analyse + Kernsysteme in 48 Stunden wiederhergestellt",
-              "standard": "Vollständige Wiederherstellung mit forensischer Analyse und Sicherheitshärtung"
+              "id": "support",
+              "name": "Kundensupport",
+              "description": "Laufende Unterstützung durch echte Engineers – von E-Mail-Support während der Geschäftszeiten bis hin zu 24/7/365-Abdeckung mit einem dedizierten Account Manager für produktionskritische Umgebungen.",
+              "icon": "security-assessment"
             },
             {
-              "emergency": "Kritischer Schwachstellen-Scan + Hochrisiko-Patches noch am selben Tag + vollständiges Audit startet",
-              "id": "Sicherheitsbewertung",
-              "name": "Sicherheitsbewertung",
-              "priority": "Vollständige Schwachstellenbewertung + Lösungsplan in 48 Stunden",
-              "standard": "Umfassendes Sicherheitsaudit mit Implementierungs-Roadmap"
+              "id": "migration",
+              "name": "Migrationen",
+              "description": "End-to-End-Migrationen und individuelle Integrationsarbeiten – von einer vollständig validierten Datenmigration bis hin zu einem schnellen Same-Day-Cutover, wenn Sie unter Zeitdruck stehen.",
+              "icon": "data-migration"
             },
             {
-              "emergency": "Kritische Ressourcen noch am selben Tag bereitgestellt + Auto-Scaling konfiguriert + vollständige Implementierung startet",
-              "id": "Infrastruktur-Skalierung",
-              "name": "Skalierung der Infrastruktur",
-              "priority": "Schnelle Kapazitätserweiterung + Monitoring-Setup in 48 Stunden",
-              "standard": "Komplette Infrastruktur-Überholung mit Optimierungen"
+              "id": "recovery",
+              "name": "Wiederherstellung",
+              "description": "Ransomware-Recovery und Disaster-Recovery-Projekte – von Forensik und Hardening nach einem Vorfall bis hin zum Aufbau kontinuierlicher Replikation für missionkritische Systeme.",
+              "icon": "ransomware-recovery"
             },
             {
-              "emergency": "Einweisung in kritische Verfahren noch am selben Tag + Vorbereitung zur Vorfallbehandlung + vollständiges Programm startet",
-              "id": "Teamtraining",
-              "name": "Teamtraining",
-              "priority": "Intensiver Workshop + zentrale Arbeitsabläufe in 2 Tagen abgedeckt",
-              "standard": "Mehrtägiges praxisorientiertes Schulungsprogramm"
-            },
-            {
-              "emergency": "Kritischen Engpass identifiziert + sofortiger Hotfix noch am selben Tag + volle Performance-Optimierung startet",
-              "id": "Leistungsoptimierung",
-              "name": "Leistungsoptimierung",
-              "priority": "Schnelle Profilerstellung + wirkungsvolle Verbesserungen in 48 Stunden live",
-              "standard": "Tiefgreifende Analyse mit umfassender Performance-Optimierung"
-            },
-            {
-              "emergency": "Kritische Verbindung noch am selben Tag hergestellt + Basis-Datenfluss funktioniert + Vollentwicklung startet",
-              "id": "kundenspezifische Integration",
-              "name": "Benutzerdefinierte Integration",
-              "priority": "Kernintegration funktionsfähig + zentrale Features in 48 Stunden live",
-              "standard": "Vollständige Integration mit Tests und Dokumentation"
-            },
-            {
-              "emergency": "Festplatten angebunden + RAID-Konvertierung noch am selben Tag gestartet + kritische Repositories verifiziert + Vollhärtung startet",
-              "id": "storage-hardening",
-              "name": "Speicherhärtung",
-              "priority": "BTRFS RAID1 oder RAID10 konfiguriert + Live-Balance-Migration gestartet + Scrub-Timer in 48 Stunden aktiv",
-              "standard": "Wir installieren BTRFS, ein Linux-Speichersystem, auf Ihren Servern. Es schreibt Ihre Daten gleichzeitig auf 2 oder mehr Festplatten. RAID1 spiegelt 2 Festplatten, sodass bei Ausfällen nichts verloren geht. RAID10 nutzt 4 oder mehr Festplatten für höchste Geschwindigkeit und Sicherheit. Ein automatischer Check findet und repariert Festplattenfehler von selbst. Wir überprüfen auch Ihre Kapazität und Backup-Strategie."
+              "id": "security",
+              "name": "Sicherheit & Compliance",
+              "description": "Security-Reviews, Hardening-Checklisten, Compliance-Runbooks und Incident-Response-Retainer – zugeschnitten auf Ihre Umgebung und Audit-Anforderungen.",
+              "icon": "storage-hardening"
             }
           ]
         }
@@ -3112,12 +2747,12 @@
           {
             "key": "floatingLicenses",
             "label": "Floating-Lizenzen",
-            "tooltip": "Wie viele Maschinen gleichzeitig aktive Aktivierungsplaetze belegen koennen."
+            "tooltip": "Wie viele Maschinen gleichzeitig Server erstellen oder kopieren können. Jede Floating-Lizenz deckt eine Maschine ab."
           },
           {
             "key": "jobsPerMonth",
             "label": "Jobs pro Monat",
-            "tooltip": "Erfolgreiche aktivierungsbasierte Repository-Lizenzausstellungen im aktuellen UTC-Kalendermonat."
+            "tooltip": "Wie viele neue Server-Setups in einem Kalendermonat gezählt werden. Das Erstellen eines Servers oder Kopieren eines bestehenden zählt jeweils als eines. Dies ist eine lizenzpro-Maschine-Regelung: Jedes Setup erhält 1 Floating-Lizenz."
           },
           {
             "key": "usersTeams",
@@ -3126,40 +2761,41 @@
         ],
         "values": {
           "business": {
-            "floatingLicenses": "20",
-            "jobsPerMonth": "20,000",
+            "floatingLicenses": "10",
+            "jobsPerMonth": "10.000",
             "repositories": "Unbegrenzt",
-            "repoSize": "500 GB",
+            "repoSize": "200 GB",
             "usersTeams": "Unbegrenzt"
           },
           "community": {
             "floatingLicenses": "2",
-            "jobsPerMonth": "500",
+            "jobsPerMonth": "100",
             "repositories": "Unbegrenzt",
             "repoSize": "10 GB",
             "usersTeams": "Unbegrenzt"
           },
           "enterprise": {
-            "floatingLicenses": "50+",
-            "jobsPerMonth": "100,000+",
+            "floatingLicenses": "25+",
+            "jobsPerMonth": "25.000+",
             "repositories": "Unbegrenzt",
-            "repoSize": "2 TB+",
+            "repoSize": "1 TB+",
             "usersTeams": "Unbegrenzt"
           },
           "professional": {
-            "floatingLicenses": "5",
-            "jobsPerMonth": "5,000",
+            "floatingLicenses": "3",
+            "jobsPerMonth": "1.000",
             "repositories": "Unbegrenzt",
-            "repoSize": "100 GB",
+            "repoSize": "50 GB",
             "usersTeams": "Unbegrenzt"
           }
         }
       },
       "trust": {
-        "heading": "Sicherheit und Zuverlässigkeit auf Unternehmensniveau",
-        "items": ["Verschlüsselung auf Bankebene", "99,9 % Verfügbarkeitsgarantie"]
+        "heading": "Sicherheit und Zuverlässigkeit",
+        "items": ["AES-256-Verschlüsselung", "99,99% Verfügbarkeitsgarantie"]
       },
       "trustSection": {
+        "corporateGuarantee": "Falls Rediacc nicht für Sie funktioniert, helfen wir Ihnen bei der Rückmigration.",
         "heading": "Deine Infrastruktur. Deine Regeln.",
         "rows": [
           {
@@ -3179,7 +2815,7 @@
             "title": "60 Tage Nachfrist für Skalierung."
           },
           {
-            "description": "Ein Setup-Slot wird nur beim Erstellen oder Kopieren eines Servers benötigt – alltägliche Operationen verbrauchen keinen. Nach 1 Stunde Inaktivität werden Slots automatisch freigegeben, sodass ein Plan mit 5 Slots dutzende Maschinen bedienen kann. Keine Gebühren pro Maschine.",
+            "description": "Eine Floating-Lizenz wird nur beim Erstellen oder Kopieren eines Servers genutzt. Die normale Arbeit belegt nie eine Lizenz. Lizenzen werden nach 5 Stunden ohne Aktion freigegeben. Ein Plan mit 5 Lizenzen funktioniert für Dutzende von Maschinen. Nie Gebühren pro Maschine.",
             "title": "Unbegrenzte Maschinen. Zahlen nur für Neue."
           },
           {
@@ -3195,8 +2831,8 @@
           "noLicenseRequired": "Keine Lizenz erforderlich – läuft immer",
           "reposKeepRunning": "Alles läuft durchgehend weiter – ohne manuelle Eingriffe.",
           "requiredOnlyHere": "Nur hier erforderlich",
-          "slotsAutoRelease": "Setup-Slots werden nach 1 Stunde Inaktivität automatisch freigegeben",
-          "slotsCreateFork": "Setup-Slots nur für Erstellen & Kopieren – tägliche Operationen sind kostenlos"
+          "slotsAutoRelease": "Floating-Lizenzen werden nach 5 Stunden Inaktivität freigegeben",
+          "slotsCreateFork": "Floating-Lizenzen nur für neue und kopierte Server. Tägliche Operationen sind immer kostenlos."
         }
       },
       "ui": {
@@ -3209,6 +2845,8 @@
           "monthly": "Monatlich"
         },
         "contactSales": "Mit uns sprechen",
+        "contactUs": "Kontaktieren Sie uns",
+        "contactUsSub": "Individuelle Limits & Konditionen",
         "cta": {
           "business": {
             "guarantee": "Geld-zurück-Garantie",
@@ -3426,8 +3064,8 @@
         "title": "Professionelle Services | Experten-Implementierung & Support"
       },
       "packages": {
-        "heading": "Professionelle Servicepakete",
-        "subtitle": "Wählen Sie den Service-Level nach Ihrer Dringlichkeit und Komplexität"
+        "heading": "Verfügbare Services",
+        "subtitle": "Jedes Projekt beginnt mit einem Gespräch, damit wir das passende Team und den passenden Zeitplan für Ihr Setup abstimmen können"
       },
       "value": {
         "description": "75 % schnellere Bereitstellung. 100 % Migrationserfolg. Notfall-Response in 2 Stunden. Das ist unser Standard.",
@@ -6809,7 +6447,7 @@
           "label": "Quellen und Referenzen"
         },
         "socialProof": {
-          "author": "Chief Information Security Officer",
+          "author": "Leiter Informationssicherheit",
           "company": "Französisches OIV unter SecNumCloud-Verpflichtung, 1.200 Mitarbeiter",
           "impact": {
             "after": {
@@ -13805,83 +13443,6 @@
         }
       }
     },
-    "team": {
-      "cta": {
-        "buttons": {
-          "contact": "In Kontakt treten",
-          "learnMore": "Wie es funktioniert"
-        },
-        "subtitle": "Installiere Rediacc in unter 5 Minuten. Community-Edition kostenlos, für immer.",
-        "title": "Kostenlos testen"
-      },
-      "hero": {
-        "subtitle": "Ingenieure, die 3-Uhr-Nachts-Datenverlust-Seiten satthatten. Also bauten wir die Lösung.",
-        "title": "Das Team hinter den Backups, die Ransomware nicht berührt"
-      },
-      "meta": {
-        "description": "Lernen Sie das Team hinter Rediacc kennen. Wir hatten genug von 3-Uhr-Nachts-Datenverlust – darum bauten wir sichere Backups.",
-        "keywords": "Rediacc-Team, Infrastrukturtechnik, Disaster-Recovery-Experten, Systemzuverlässigkeit, DevOps-Team",
-        "title": "Unser Team | Rediacc - Backups gegen Ransomware"
-      },
-      "mission": {
-        "belief": "Die Community-Edition hat alles, was die kostenpflichtigen Versionen bieten. Gleiches btrfs-Cloning. Gleiche LUKS-Verschlüsselung. Gleiche gesperrten, schreibgeschützten Backups. Nur mit niedrigeren Limits. Keine Feature-Gates. Keine versteckte Kundenfalle.",
-        "description": "Alle 47 Tage wird eine Produktionsdatenbank gelöscht. Jährlich fallen 1,71 % der Festplatten aus. 75 % der Ransomware-Angriffe zielen auf Backups. Wir bringen dich in 60 Sekunden wieder online.",
-        "title": "Unsere Mission: Katastrophen unmöglich machen"
-      },
-      "story": {
-        "beginning": {
-          "paragraph1": "2018 habe ich meinen Job als Softwareentwickler aufgegeben, um meine eigene Vision zu verfolgen. Ich arbeitete 18 Stunden am Tag und schlief 4–5 Stunden. 5–6 Monate lang habe ich alles reingesteckt.",
-          "paragraph2": "Dann verlor ich plötzlich Zugriff auf meine gesamte Entwicklungsinfrastruktur. Alles, was ich gebaut hatte, war weg. Ich hatte keine Backups. Und selbst wenn – neue Server hätte ich mir nicht leisten können.",
-          "paragraph3": "Um Schulden zu begleichen und meine Familie zu versorgen, musste ich zurück zu einem Angestelltenjob. Es dauerte 20 Monate, bis ich wieder an meine Arbeit kam. Ich lebte mit Unsicherheit und wachsenden Schulden.",
-          "title": "Der Anfang"
-        },
-        "birth": {
-          "paragraph1": "Alles begann mit einer portablen Speicherschicht. Dann ein Backup-Modul. Und dann die schwierigste Aufgabe: Live-Systeme mit minimaler Ausfallzeit verschieben, egal wie groß die Daten sind. Ich baute die Features, die ich wirklich brauchte.",
-          "paragraph2": "So entstand Rediacc – aus den härtesten Problemen, die ich selbst hatte. Jetzt steht es allen offen. Nutze es. Lass nicht zu, dass Ausfallzeiten dein Business ausbremsen. Sei bereit zu überleben und zu wachsen.",
-          "quote": "Als ich Zugriff auf meine Infrastruktur verlor, wusste ich, was ich bauen musste: ein System, das Katastrophen unmöglich macht.",
-          "title": "Entstehung von Rediacc"
-        },
-        "title": "Unsere Geschichte",
-        "turningPoint": {
-          "paragraph1": "Jahre später dachte ich immer wieder: Wie verhindere ich das nächste Mal? Ich brauchte ein Tool, um meine Systeme überall hin zu verschieben, sie jederzeit hochzufahren, einfach zu sichern und sicher zu lagern.",
-          "paragraph2": "2021 entdeckte ich Docker durch ein NetworkChuck-Video. Ich war schockiert, was möglich war. Hätte ich das früher gewusst – es hätte alles geändert.",
-          "paragraph3": "Aber Docker allein reichte nicht. Container-Dateien zwischen Systemen zu verschieben war schwierig. Dateieigenschaften gingen kaputt. Mit größeren Datenmengen wurden Übertragungen langsamer. Schlimmer noch: Services mussten offline sein, bis die Migration fertig war. Und Docker brachte kaum Sicherheit mit.",
-          "title": "Der Wendepunkt"
-        }
-      },
-      "team": {
-        "title": "Unser Team"
-      },
-      "values": {
-        "items": {
-          "global": {
-            "description": "9 Sprachen. Nutzungsdaten bleiben in der EU. Estnisches Unternehmen mit GDPR im Kern.",
-            "title": "Globales Denken"
-          },
-          "innovation": {
-            "description": "Wir publishen wöchentlich. Jede Version löst ein echtes Deployment-Problem, das unsere Nutzer berichtet haben.",
-            "title": "Kontinuierliche Innovation"
-          },
-          "security": {
-            "description": "LUKS-Verschlüsselung auf der Festplatte. TLS im Netzwerk. Eine separate Docker-Engine pro App. Alles durchgehend gesichert.",
-            "title": "Sicherheit by Design"
-          },
-          "simplicity": {
-            "description": "Ein Befehl zum Kopieren von 241 GB Live-Daten. Das ist unser gesamtes Komplexitätsbudget.",
-            "title": "Einfachheit First"
-          },
-          "success": {
-            "description": "Wir messen uns an deiner Recovery-Zeit, nicht an unserer Feature-Liste.",
-            "title": "Kundenerfolg"
-          },
-          "transparency": {
-            "description": "Offene Kommunikation, ehrliche Preise, klare Dokumentation. Keine versteckten Gebühren, keine Überraschungen, kein Kleingedrucktes.",
-            "title": "Transparenz"
-          }
-        },
-        "title": "Unsere Werte"
-      }
-    },
     "telemetryPolicy": {
       "contact": {
         "description": "Bei Fragen zu unseren Telemetriepraktiken oder wenn Sie Hilfe bei der Abmeldung benötigen, kontaktieren Sie uns unter <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>.",
@@ -14438,18 +13999,21 @@
   },
   "regionPicker": {
     "channelEdge": "Edge",
+    "channelHintLabel": "Über Release-Kanäle",
     "channelStable": "Stabil",
     "edgeHint": "Produktion, kontinuierlich bereitgestellt. Doppelte kostenlose Limits während der Einlaufphase.",
-    "footer": "Wählen Sie die Region, die Ihnen am nächsten liegt, oder die Ihre Organisation erfordert. Dies kann nach der Registrierung nicht mehr geändert werden.",
+    "footer": "Wählen Sie die Region, die Ihnen am nächsten liegt, oder die Ihre Organisation erfordert.",
+    "footerNote": "Dies kann nach der Registrierung nicht mehr geändert werden.",
     "locations": {
       "asia": "Tokio, Japan",
       "eu": "Frankfurt, Deutschland",
       "us": "Virginia, Vereinigte Staaten"
     },
+    "reassurance": "Ihre Serverdaten und Backups verbleiben auf Ihrer eigenen Infrastruktur.",
     "regionNote": "Die Region kann nach der Registrierung nicht mehr geändert werden.",
     "stableHint": "Zuverlässige Releases, nach 7-tägiger Testphase von Edge übernommen.",
-    "subtitle": "Ihr Konto, Ihre Abrechnung und Konfigurationen bleiben in der von Ihnen gewählten Region. Sie verlassen diese niemals.",
-    "title": "Wo sollen wir Ihre Daten speichern?"
+    "subtitle": "Ihr Konto, Ihre Abrechnung und Konfigurationen bleiben in der von Ihnen gewählten Region.",
+    "title": "Wählen Sie Ihre Konto-Region"
   },
   "solutions": {
     "categories": {
@@ -14464,16 +14028,6 @@
     "title": "So sichern wir Geschäftskontinuität"
   },
   "team": {
-    "founder": {
-      "contact": "Fragen? Schreiben Sie mir direkt",
-      "designPartner": "Ich begleite jeden Design Partner persönlich beim Einstieg. Melde dich kostenlos an und buche einen 30-minütigen Anruf, damit wir über deinen Stack sprechen können.",
-      "guarantee": "Wenn Rediacc für Sie nicht funktioniert, schreiben Sie mir eine E-Mail und ich helfe Ihnen bei der Rückmigration.",
-      "quote": "Ich habe Rediacc gebaut, weil Infrastruktur nicht so fragil sein sollte.",
-      "story": {
-        "description": "Ich habe über ein Jahrzehnt Server verwaltet. Ich habe erlebt, wie Backups bei echten Vorfällen versagt haben. Rediacc existiert, damit Ihre nicht versagen.",
-        "headline": "Warum ich Rediacc gebaut habe"
-      }
-    },
     "video": {
       "ccLabel": "Untertitel",
       "personaHeadline": "Eine Nachricht für Sie",
@@ -14481,7 +14035,6 @@
     }
   },
   "testimonials": {
-    "fromTheFounder": "Vom Gründer",
     "items": [
       {
         "company": "Finanzdienstleistungen",

@@ -29,6 +29,9 @@ source "$SCRIPT_DIR/../lib/blocker-validator.sh"
 # shellcheck source=../lib/age-check.sh
 # BLOCKER: age-based rot detection for blocklist entries; forces yearly re-review
 source "$SCRIPT_DIR/../lib/age-check.sh"
+# shellcheck source=../lib/release-age.sh
+# BLOCKER: shared daily-batch freshness rule; defers just-published module updates like the npm gates
+source "$SCRIPT_DIR/../lib/release-age.sh"
 
 BLOCKLIST_FILE="$REPO_ROOT/.go-deps-upgrade-blocklist"
 declare -A BLOCKED_MODULES=() BLOCKED_MODULE_REASONS=()
@@ -56,26 +59,36 @@ get_major() {
 }
 
 # Check a single Go module directory
-# Outputs: lines of "MODULE CURRENT LATEST TYPE" where TYPE is major|minor|blocked
+# Outputs: lines of "MODULE CURRENT LATEST TYPE" where TYPE is major|minor|blocked|toofresh
 check_go_dir() {
     local dir="$1"
     cd "$dir"
 
-    # Use go template to get direct deps with available updates in one pass:
-    # Format: "<path> <current> <latest>"
+    # JSON stream of direct deps with an available update; carry the update's
+    # publish time (.Update.Time) so freshly-released versions can be deferred
+    # (daily batch) exactly like the npm gates instead of forcing an immediate
+    # bump minutes after a release drops.
     local outdated
-    outdated=$(go list -u -m \
-        -f '{{if (and (not .Indirect) .Update)}}{{.Path}} {{.Version}} {{.Update.Version}}{{end}}' \
-        all 2>/dev/null || true)
+    outdated=$(go list -u -m -json all 2>/dev/null |
+        jq -rs '.[] | select((.Indirect != true) and (.Update != null))
+                | "\(.Path) \(.Version) \(.Update.Version) \(.Update.Time // "")"' 2>/dev/null || true)
 
-    local line path current latest cur_major lat_major
-    while IFS=' ' read -r path current latest; do
+    local path current latest uptime cur_major lat_major epoch
+    while IFS=' ' read -r path current latest uptime; do
         [[ -z "$path" ]] && continue
         cur_major=$(get_major "$current")
         lat_major=$(get_major "$latest")
 
         if [[ "${BLOCKED_MODULES[$path]+_}" ]]; then
             echo "$path $current $latest blocked"
+            continue
+        fi
+
+        # Defer a just-published update until the next UTC day after it ages 24h.
+        epoch=""
+        [[ -n "$uptime" ]] && epoch=$(date -u -d "$uptime" +%s 2>/dev/null || echo "")
+        if [[ -n "$epoch" ]] && is_release_deferred "$epoch"; then
+            echo "$path $current $latest toofresh"
         elif [[ "$lat_major" -gt "$cur_major" ]]; then
             echo "$path $current $latest major"
         else
@@ -101,6 +114,7 @@ fi
 declare -a ALL_MINOR=() # "submodule: path current -> latest"
 declare -a ALL_MAJOR=()
 declare -a ALL_BLOCKED=()
+declare -a ALL_TOOFRESH=()
 declare -a DIRS_WITH_MINOR=()
 
 for dir in "${GO_DIRS[@]}"; do
@@ -120,6 +134,9 @@ for dir in "${GO_DIRS[@]}"; do
                 ;;
             blocked)
                 ALL_BLOCKED+=("  $name: $path $current -> $latest (blocked)")
+                ;;
+            toofresh)
+                ALL_TOOFRESH+=("  $name: $path $current -> $latest (too new)")
                 ;;
         esac
     done < <(check_go_dir "$dir")
@@ -142,6 +159,11 @@ if [[ ${#ALL_BLOCKED[@]} -gt 0 ]]; then
     echo ""
     log_info "Blocked packages (see .go-deps-upgrade-blocklist):"
     for line in "${ALL_BLOCKED[@]}"; do echo "$line"; done
+fi
+if [[ ${#ALL_TOOFRESH[@]} -gt 0 ]]; then
+    echo ""
+    log_info "Too new — within freshness window, deferred until next UTC day:"
+    for line in "${ALL_TOOFRESH[@]}"; do echo "$line"; done
 fi
 
 # All good?

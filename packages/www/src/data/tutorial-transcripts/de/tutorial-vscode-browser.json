@@ -7,7 +7,7 @@
       "id": "tutorial-vscode-browser-01",
       "markerIndex": 0,
       "at": 2.414862,
-      "text": "One command. The CLI installs the editor server on the machine once, starts it inside the repo sandbox, opens a tunnel, and hands you a link. No local VS Code, no extensions to set up.",
+      "text": "Ein Befehl. Die CLI installiert den Editor-Server einmalig auf der Maschine, startet ihn in der repo sandbox, öffnet einen Tunnel und gibt dir einen Link. Kein lokales VS Code, keine Extensions zum Einrichten.",
       "afterText": "Diese URL ist dein Editor. Funktioniert auf jedem Betriebssystem, du brauchst nur einen Browser.",
       "cardLabel": "Browser verbinden",
       "prose": "Verbinde dich mit dem --browser Flag. Die CLI installiert den Open-Source-Editor-Server einmalig auf der Maschine, startet ihn im repo sandbox, öffnet einen SSH-Tunnel und gibt einen Link für deinen Browser aus."
@@ -16,7 +16,7 @@
       "id": "tutorial-vscode-browser-02",
       "markerIndex": 1,
       "at": 12.531234,
-      "text": "Same repo from the plain terminal: the working directory is the repo, the files are the repo's files.",
+      "text": "Dasselbe repo im normalen Terminal: Das Arbeitsverzeichnis ist das repo, die Dateien sind die Dateien des repos.",
       "afterText": "Terminal und Editor stimmen überein, es ist dieselbe sandbox.",
       "cardLabel": "Gleiche Ansicht",
       "prose": "Öffne eine Terminal-Sitzung im selben repo: Das Arbeitsverzeichnis und die Dateien stimmen mit dem überein, was der Editor anzeigt."
@@ -25,7 +25,7 @@
       "id": "tutorial-vscode-browser-03",
       "markerIndex": 2,
       "at": 19.464899,
-      "text": "And the file we created in the browser editor? Right here. Files made in VS Code are real repo files, instantly.",
+      "text": "Und die Datei, die wir im Browser-Editor erstellt haben? Genau hier. Dateien aus VS Code sind sofort echte repo-Dateien.",
       "afterText": "Im Browser erstellt, vom Terminal lesbar. Ein repo, zwei Zugänge.",
       "cardLabel": "Hin und zurück",
       "prose": "Die im Browser-Editor erstellte Datei ist eine echte repo-Datei, die aus jeder Sitzung lesbar ist."
@@ -34,7 +34,7 @@
       "id": "tutorial-vscode-browser-04",
       "markerIndex": 3,
       "at": 26.768996,
-      "text": "Now try to leave. Listing the root of the server: permission denied. The kernel scopes the editor, its terminal, and every child process to this repo.",
+      "text": "Jetzt versuchen wir auszubrechen. Das Stammverzeichnis des Servers auflisten: Zugriff verweigert. Der Kernel beschränkt Editor, Terminal und jeden Kindprozess auf dieses repo.",
       "afterText": "Vom Kernel verweigert, nicht durch Konfiguration.",
       "cardLabel": "Root verweigert",
       "prose": "Versuche, das Stammverzeichnis des Servers aufzulisten: Zugriff verweigert. Der Kernel beschränkt die Sitzung auf das repo."
@@ -43,7 +43,7 @@
       "id": "tutorial-vscode-browser-05",
       "markerIndex": 4,
       "at": 32.439211,
-      "text": "Other users' homes? Also denied. Whatever runs inside this sandbox — editors, terminals, build tools — ends at the repo's walls.",
+      "text": "Die Homes anderer Nutzer? Auch verweigert. Was auch immer in dieser sandbox läuft, Editoren, Terminals, Build-Tools, endet an den Mauern des repos.",
       "afterText": "Die sandbox kennt keine Ausnahmen. Das ist der Sinn der Sache.",
       "cardLabel": "Home verweigert",
       "prose": "Andere Verzeichnisse wie /home werden ebenfalls verweigert. Die sandbox gilt für alles, was darin gestartet wird."

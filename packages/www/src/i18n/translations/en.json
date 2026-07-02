@@ -88,7 +88,7 @@
     "builtForYou": "Built for you",
     "forDevops": "For DevOps Engineers",
     "forCtos": "For CTOs",
-    "forCeos": "For CEOs & Founders",
+    "forCeos": "For CEOs",
     "personas": {
       "devops": {
         "tagline": "Ship faster. Recover instantly. Sleep better.",
@@ -132,7 +132,7 @@
     },
     "organizationLinks": {
       "aboutUs": "About Us",
-      "team": "Team",
+      "company": "Company",
       "contact": "Contact"
     },
     "supportLinks": {
@@ -327,16 +327,6 @@
     "compareAll": "Compare all plans and features"
   },
   "team": {
-    "founder": {
-      "story": {
-        "headline": "Why I Built Rediacc",
-        "description": "I spent over a decade managing servers. I watched backups fail during real incidents. Rediacc exists so yours won't."
-      },
-      "guarantee": "If Rediacc doesn't work for you, email me and I'll help you migrate back.",
-      "contact": "Questions? Email me directly",
-      "quote": "I built Rediacc because infrastructure shouldn't be this fragile.",
-      "designPartner": "I personally onboard every Design Partner. Sign up free, then book a 30-min call so we can talk about your stack."
-    },
     "video": {
       "playLabel": "Watch video",
       "ccLabel": "Captions",
@@ -344,14 +334,13 @@
     }
   },
   "announcement": {
-    "enabled": true,
+    "enabled": false,
     "text": "Limited time: Design Partner Program. BUSINESS plan free for life.",
     "link": "/account/"
   },
   "testimonials": {
     "title": "What Teams Say",
     "subtitle": "How different roles experience Rediacc",
-    "fromTheFounder": "From the founder",
     "items": [
       {
         "role": "Disaster Recovery Manager",
@@ -466,9 +455,11 @@
   },
   "captchaRequired": "Please complete the captcha verification.",
   "regionPicker": {
-    "title": "Where should we store your data?",
-    "subtitle": "Your account, billing, and configurations stay in the region you choose. They never leave.",
-    "footer": "Pick the region closest to you, or where your organization requires. This can't be changed after sign-up.",
+    "title": "Choose your account region",
+    "subtitle": "Your account, billing, and configurations stay in the region you choose.",
+    "reassurance": "Your server data and backups stay on your own infrastructure.",
+    "footer": "Pick the region closest to you, or where your organization requires.",
+    "footerNote": "This can't be changed after sign-up.",
     "locations": {
       "eu": "Frankfurt, Germany",
       "us": "Virginia, USA",
@@ -476,6 +467,7 @@
     },
     "channelEdge": "Edge",
     "channelStable": "Stable",
+    "channelHintLabel": "About release channels",
     "edgeHint": "Continuously deployed production. 2X free limits during soak period.",
     "stableHint": "Reliable releases, promoted from edge after 7-day soak.",
     "regionNote": "Region can't be changed after sign-up."
@@ -584,18 +576,19 @@
         "legend": "Contact information"
       }
     },
-    "team": {
+    "company": {
       "meta": {
-        "title": "Our Team | Rediacc - Backups That Survive Ransomware",
-        "description": "Meet the team behind Rediacc. We got tired of 3 AM data-loss pages, so we built backups ransomware can't touch.",
-        "keywords": "Rediacc team, infrastructure engineering, disaster recovery experts, system reliability, DevOps team"
+        "title": "Company | Rediacc - Backups That Survive Ransomware",
+        "description": "Rediacc builds self-hosted backup and disaster recovery software that lets you clone production, test safely, and recover in seconds.",
+        "keywords": "Rediacc company, self-hosted backup, disaster recovery software, infrastructure reliability"
       },
       "hero": {
-        "title": "The Team Behind Backups Ransomware Can't Touch",
-        "subtitle": "Engineers who got tired of 3 AM data-loss pages. So we built the fix."
+        "title": "Backup and Recovery Software You Control",
+        "subtitle": "Rediacc is built for teams that run production systems and cannot afford to lose them."
       },
-      "team": {
-        "title": "Meet Our Team"
+      "overview": {
+        "title": "What We Do",
+        "description": "Rediacc is self-hosted software for backup, cloning, and disaster recovery. It runs on your own servers, copies entire production systems in seconds, and gets you back online fast."
       },
       "mission": {
         "title": "Our Mission: Make Disasters Impossible",
@@ -629,27 +622,6 @@
             "title": "Transparency",
             "description": "Open communication, honest pricing, and clear documentation. No hidden fees, no surprises, no fine print."
           }
-        }
-      },
-      "story": {
-        "title": "Our Story",
-        "beginning": {
-          "title": "The Beginning",
-          "paragraph1": "In 2018, I quit my software engineer job to chase my own vision. The excitement kept me on 18-hour days, sleeping 4-5 hours. I poured everything in for 5-6 months.",
-          "paragraph2": "Then I lost access to all my dev infrastructure. Just like that, everything I'd built was out of reach. I had no backups. Even if I had, I couldn't afford new physical servers.",
-          "paragraph3": "To pay off debts and support my family, I went back to a salaried job. It took 20 months to get my work back. I drifted far from my dreams. I lived with uncertainty and mounting bills."
-        },
-        "turningPoint": {
-          "title": "The Turning Point",
-          "paragraph1": "Years later, I kept thinking about how to stop this from happening again. I needed a tool to move my systems anywhere. Turn them on whenever. Back them up easily. Keep them safe no matter where I moved them.",
-          "paragraph2": "In 2021, I found Docker through a NetworkChuck video. I was shocked at what was possible. I wished I had known about it earlier. It could have changed everything.",
-          "paragraph3": "But Docker alone didn't fix everything. Moving container files between systems was hard. File ownership broke. As data grew, transfers got slower. Worst of all, I had to keep services offline until the migration finished. Docker also gave me almost no security."
-        },
-        "birth": {
-          "title": "Birth of Rediacc",
-          "paragraph1": "It started with a portable storage layer. From there, I added a backup module. Then came the hardest part. Moving live systems with almost no downtime, no matter the data size. I added the features I actually needed.",
-          "paragraph2": "This is how Rediacc was born. A product forged through the hardest problems I had. Now it's open to everyone. Use it. Don't let outages hold your business back. Be ready to survive and grow.",
-          "quote": "When I lost access to my infrastructure, I knew what I had to build: a system that makes disasters impossible."
         }
       },
       "cta": {
@@ -695,11 +667,11 @@
         "title": "What you get",
         "lede": "You get the full BUSINESS plan. Free. For as long as Rediacc exists.",
         "items": [
-          "BUSINESS plan: 500 GB per repository, 20 user seats, 20,000 seat activations per month",
-          "On the early-access track: 2x limits (1 TB per repo, 40 user seats, 40,000 seat activations)",
+          "BUSINESS plan: 200 GB per repository, 10 user seats, 10,000 seat activations per month",
+          "On the early-access track: 2x limits (400 GB per repo, 20 user seats, 20,000 seat activations)",
           "Unlimited repositories, users, and teams",
           "Backup restores, dark mode, all 9 languages",
-          "Direct line to the founder for onboarding and support",
+          "Direct engineering support",
           "Locked in for life. No expiry, no downgrade, no card on file."
         ]
       },
@@ -774,8 +746,8 @@
         ]
       },
       "packages": {
-        "heading": "Professional Service Packages",
-        "subtitle": "Choose the service level that matches your urgency and complexity"
+        "heading": "Available Services",
+        "subtitle": "Every engagement starts with a conversation so we can scope the right team and timeline for your setup"
       },
       "cta": {
         "heading": "Talk to Our Team",
@@ -801,8 +773,8 @@
           "features": [
             "Unlimited users & teams",
             "Unlimited repositories",
-            "500 server setups per month",
-            "2 setup slots",
+            "100 server setups per month (1 Floating license per setup)",
+            "2 Floating licenses",
             "Backup restores",
             "Manual scheduling",
             "Community Slack access",
@@ -814,9 +786,9 @@
           "description": "Professional automation and scheduling for growing teams",
           "features": [
             "Everything in Community +",
-            "5 setup slots",
+            "3 Floating licenses",
             "Unlimited repositories",
-            "5,000 server setups per month",
+            "2,000+ server setups per month",
             "Automated scheduling",
             "Restore from any point in the last 24 hours",
             "Email + chat support",
@@ -830,10 +802,10 @@
           "description": "Expert setup, backups across multiple regions, and a 4-hour restore promise.",
           "features": [
             "Everything in Professional +",
-            "20 setup slots",
+            "10 Floating licenses",
             "Unlimited repositories",
-            "20,000 server setups per month",
-            "$9,999 implementation support included (Launch Offer)",
+            "5,000+ server setups per month",
+            "Implementation support included (Launch Offer)",
             "Geo-redundant storage (3 regions)",
             "Continuous data protection",
             "4-hour restore SLA",
@@ -845,12 +817,11 @@
         "enterprise": {
           "name": "Enterprise",
           "description": "Dedicated support and custom terms for large, complex environments.",
-          "priceNote": "*Starting at",
           "features": [
             "Everything in Business +",
-            "50+ setup slots",
+            "25+ Floating licenses",
             "Unlimited repositories",
-            "100,000+ server setups per month",
+            "15,000+ server setups per month",
             "Custom SLA with guaranteed restore times",
             "Your own dedicated server space",
             "24/7/365 dedicated support",
@@ -864,139 +835,44 @@
       },
       "professionalServices": {
         "header": {
-          "title": "Professional Service Packages",
+          "title": "Professional Services",
           "subtitle": "Get expert help when you need it most",
           "badge": "Expert help at every stage",
-          "eligibility": "Here's how it works: every plan gets access to our professional services. The table below shows what's in your plan and what you can add on."
+          "eligibility": "Every plan gets access to our professional services. Contact us and we'll scope the right engagement for your setup."
         },
-        "packages": {
-          "standard": {
-            "name": "Standard",
-            "turnaround": "3-5 Business Days",
-            "description": "We design the setup, deploy it, run tests, and train your team.",
-            "benefits": [
-              "Project discovery and success plan",
-              "Environment setup and configuration",
-              "Testing checklist and team handoff"
-            ],
-            "price": "From $7,499",
-            "tiers": [
-              "Starter (1-4 servers): $7,499",
-              "Growth (5-10 servers): $14,999",
-              "Scale (11-25 servers): $29,999",
-              "Enterprise (25+ servers): Custom quote"
-            ],
-            "tierHeading": "Pricing by Number of Servers",
-            "tierNote": "Each server or app you want to protect counts as one unit. Setup includes planning, deployment, testing, and training your team."
-          },
-          "priority": {
-            "name": "Priority",
-            "turnaround": "24-48 Hours",
-            "description": "Faster delivery, with evening and weekend availability. We stay with you through your go-live.",
-            "benefits": [
-              "Dedicated engagement manager",
-              "Evening/weekend availability",
-              "Production go-live support"
-            ],
-            "price": "$19,999",
-            "tiers": []
-          },
-          "emergency": {
-            "name": "Emergency",
-            "turnaround": "Same Day",
-            "description": "Call us when something is on fire. We show up the same day. We stop the bleeding, then get your critical systems back online.",
-            "benefits": [
-              "Immediate engagement (under 2 hours)",
-              "Forensics, containment, and recovery plan",
-              "Stabilization report with hardening roadmap"
-            ],
-            "price": "$29,999",
-            "tiers": []
-          }
-        },
-        "pricingFactors": {
-          "heading": "Understanding Professional Service Pricing",
-          "intro": "Final project costs are determined by:",
-          "factors": [
-            {
-              "title": "Scope Complexity",
-              "description": "Number of systems, integrations, and dependencies involved"
-            },
-            {
-              "title": "Customization Level",
-              "description": "Off-the-shelf solutions vs. custom development requirements"
-            },
-            {
-              "title": "Team Size",
-              "description": "Single expert vs. full dedicated team of specialists"
-            }
-          ],
-          "note": "For example: a 120-server project plus a security review is an Enterprise custom scope. Projects like this typically run $14,999 to $24,999 on a custom quote. These are estimates. We scope the final cost once we see your setup. The final price depends on how many tools we connect and whether you add a retainer."
-        },
-        "serviceTypes": {
+        "categories": {
           "heading": "Available Services",
-          "intro": "Click any service to see turnaround times for each package tier",
-          "badgeLabels": {
-            "standard": "Standard",
-            "priority": "Priority",
-            "emergency": "Emergency"
-          },
-          "services": [
+          "intro": "Every engagement starts with a conversation so we can scope the right team and timeline for your setup.",
+          "items": [
             {
-              "name": "Data Migration",
-              "standard": "Complete end-to-end migration with full validation",
-              "priority": "Rapid migration pipeline setup + core data transferred within 48h",
-              "emergency": "Immediate assessment + critical systems online same-day + full migration begins",
-              "id": "data-migration"
+              "id": "training",
+              "name": "Training",
+              "description": "Hands-on training for your team, from a guided setup walkthrough to multi-day workshops covering advanced workflows and incident-response procedures.",
+              "icon": "team-training"
             },
             {
-              "name": "Ransomware Recovery",
-              "standard": "Complete recovery with forensics and hardening",
-              "priority": "Rapid threat assessment + core operations restored within 48h",
-              "emergency": "Immediate containment + critical systems restored same-day + full recovery begins",
-              "id": "ransomware-recovery"
+              "id": "support",
+              "name": "Support",
+              "description": "Ongoing help from real engineers, from business-hours email support up to 24/7/365 coverage with a dedicated account manager for production-critical environments.",
+              "icon": "security-assessment"
             },
             {
-              "name": "Security Assessment",
-              "standard": "Full security audit with implementation roadmap",
-              "priority": "Full vulnerability assessment + remediation plan within 48h",
-              "emergency": "Critical vulnerability scan + high-risk patches deployed same-day + full audit begins",
-              "id": "security-assessment"
+              "id": "migration",
+              "name": "Migration",
+              "description": "End-to-end migration and custom integration work, from a fully validated data migration to a rapid same-day cutover when you're under time pressure.",
+              "icon": "data-migration"
             },
             {
-              "name": "Infrastructure Scaling",
-              "standard": "Complete infrastructure redesign with improvements",
-              "priority": "Rapid capacity increase + monitoring setup within 48h",
-              "emergency": "Critical resources set up same-day + auto-scaling configured + full plan begins",
-              "id": "infrastructure-scaling"
+              "id": "recovery",
+              "name": "Recovery",
+              "description": "Ransomware recovery and disaster-recovery engagements, from forensics and hardening after an incident to standing up continuous replication for mission-critical systems.",
+              "icon": "ransomware-recovery"
             },
             {
-              "name": "Team Training",
-              "standard": "Multi-day hands-on training program",
-              "priority": "Intensive hands-on workshop + key workflows covered within 2 days",
-              "emergency": "Critical procedures briefing same-day + incident response prep + full program begins",
-              "id": "team-training"
-            },
-            {
-              "name": "Performance Optimization",
-              "standard": "Deep analysis with full performance tuning",
-              "priority": "Quick profiling + high-impact improvements deployed within 48h",
-              "emergency": "Critical bottleneck identified + immediate hotfix deployed same-day + full performance work begins",
-              "id": "performance-optimization"
-            },
-            {
-              "name": "Custom Integration",
-              "standard": "Complete integration with testing and documentation",
-              "priority": "Core integration functional + essential features live within 48h",
-              "emergency": "Critical connection established same-day + basic data flow working + full dev begins",
-              "id": "custom-integration"
-            },
-            {
-              "name": "Storage Hardening",
-              "standard": "We install BTRFS, a Linux storage tool, on your servers. It writes a copy of your data to 2 or more disks at once. RAID1 mirrors 2 disks, so if one fails, you lose nothing. RAID10 uses 4 or more disks for both speed and safety. A built-in check finds and fixes disk errors on its own. We also review your capacity and backup plan.",
-              "priority": "BTRFS RAID1 or RAID10 configured + live balance migration started + scrub timer active within 48h",
-              "emergency": "Disks attached + RAID conversion started same-day + critical repos verified + full hardening begins",
-              "id": "storage-hardening"
+              "id": "security",
+              "name": "Security & Compliance",
+              "description": "Security reviews, hardening checklists, compliance runbooks, and incident-response retainers, scoped to your environment and audit requirements.",
+              "icon": "storage-hardening"
             }
           ]
         },
@@ -1010,92 +886,14 @@
           "items": [
             "Dedicated team of experts assigned to your project",
             "Guaranteed response times, in writing",
-            "Switch between service tiers as needed",
-            "24/7 emergency hotline for Emergency tier"
+            "Move between services as your needs change",
+            "24/7 emergency hotline for critical incidents"
           ]
         },
         "cta": {
           "heading": "Need Professional Assistance?",
-          "description": "Our experts are ready to help you succeed",
-          "button": "Schedule Consultation"
-        },
-        "access": {
-          "heading": "Professional services access by tier",
-          "description": "Your plan includes onboarding help to get started. You can add more services on top. The table below shows what's built in and what costs extra.",
-          "labels": {
-            "included": "Included",
-            "available": "Available add-ons"
-          },
-          "tiers": [
-            {
-              "planId": "community",
-              "included": ["Self-service documentation, video tutorials, and community forum"],
-              "available": [
-                "Standard Implementation ($9,999) or tiered packages (Starter $7,499 · Growth $14,999 · Scale $29,999 · Enterprise custom)",
-                "Emergency Response engagement ($29,999 on-demand)"
-              ]
-            },
-            {
-              "planId": "professional",
-              "included": [
-                "Email support",
-                "Standard onboarding session (setup call and configuration walkthrough)"
-              ],
-              "available": [
-                "Priority Implementation ($19,999)",
-                "Emergency Response engagement ($29,999 on-demand)",
-                "Custom integration projects (scoped)"
-              ]
-            },
-            {
-              "planId": "business",
-              "included": [
-                "Priority email/chat/phone support",
-                "Dedicated onboarding with configuration and runbook handoff",
-                "Standard Implementation package included ($9,999 value)",
-                "Quarterly success reviews"
-              ],
-              "available": [
-                "Priority Implementation upgrade ($19,999)",
-                "Emergency Response engagement ($29,999 on-demand)",
-                "Custom development and security architecture consulting"
-              ]
-            },
-            {
-              "planId": "enterprise",
-              "included": [
-                "24/7/365 support with a dedicated account manager",
-                "Priority Implementation included ($19,999 value)",
-                "Quarterly disaster recovery testing",
-                "Annual business continuity planning workshop",
-                "Executive escalation hotline"
-              ],
-              "available": [
-                "Custom development and advanced integrations",
-                "Security & audit architecture consulting",
-                "Emergency Response retainer ($5,000-$7,500/month)"
-              ]
-            }
-          ]
-        },
-        "retainers": {
-          "heading": "Retainer options for always-on readiness",
-          "description": "You get direct access to our engineers. One flat monthly price.",
-          "items": [
-            {
-              "title": "Emergency Response Retainer",
-              "price": "$5,000–$7,500/month",
-              "bullets": [
-                "Guaranteed 2-hour response time",
-                "Priority escalation path with war-room coordination",
-                "Quarterly readiness review and playbook updates"
-              ]
-            }
-          ]
-        },
-        "advancedDetails": {
-          "heading": "Implementation & Pricing Details",
-          "description": "Service packages, implementation tiers, pricing factors, and retainer options"
+          "description": "Every engagement is scoped to your setup. Contact us and we'll figure out the right plan together.",
+          "button": "Contact us"
         }
       },
       "faq": {
@@ -1103,7 +901,7 @@
         "items": [
           {
             "question": "Is there a free plan?",
-            "answer": "Yes. The Community plan is free. It covers up to 2 servers, 500 server setups per month, and backup restores. No credit card needed."
+            "answer": "Yes. The Community plan is free. It covers up to 2 servers, 100 server setups per month, and backup restores. No credit card needed."
           },
           {
             "question": "Can I upgrade or downgrade my plan?",
@@ -1186,7 +984,7 @@
           },
           {
             "title": "Unlimited machines. Pay only when adding new ones.",
-            "description": "A setup slot is only used when you create or copy a server. Your normal work never takes up a slot. Slots free up after 1 hour with no action. A 5-slot plan works for dozens of machines. No per-machine fees, ever."
+            "description": "A Floating license is only used when you create or copy a server. Your normal work never takes up a license. Licenses free up after 5 hours with no action. A 5-license plan works for dozens of machines. No per-machine fees, ever."
           },
           {
             "title": "40-day buffer when your server hardware changes.",
@@ -1198,11 +996,12 @@
           "noLicenseNeeded": "No license needed",
           "requiredOnlyHere": "Required only here",
           "allOperations": "All operations",
-          "slotsAutoRelease": "Setup slots free up after 1 hour of inactivity",
-          "slotsCreateFork": "Setup slots used only for new and copied servers. Daily ops are always free.",
+          "slotsAutoRelease": "Floating licenses free up after 5 hours of inactivity",
+          "slotsCreateFork": "Floating licenses used only for new and copied servers. Daily ops are always free.",
           "newMachineId": "New machine ID",
           "reposKeepRunning": "Your apps keep running throughout. No manual steps needed."
-        }
+        },
+        "corporateGuarantee": "If Rediacc doesn't work for you, we'll help you migrate back."
       },
       "ui": {
         "popular": "Most popular",
@@ -1260,7 +1059,9 @@
           "annual": "Annual",
           "annualSavings": "Save 17%, get 2 months free",
           "ariaLabel": "Billing period"
-        }
+        },
+        "contactUs": "Contact us",
+        "contactUsSub": "Custom limits & terms"
       },
       "technicalSummary": {
         "heading": "Plan comparison",
@@ -1277,13 +1078,13 @@
           },
           {
             "key": "floatingLicenses",
-            "label": "Setup Slots",
-            "tooltip": "How many machines can create or copy servers at the same time."
+            "label": "Floating Licenses",
+            "tooltip": "How many machines can create or copy servers at the same time. Each Floating license covers one machine."
           },
           {
             "key": "jobsPerMonth",
             "label": "Server setups per month",
-            "tooltip": "How many new server setups are counted in a calendar month. Creating a server or copying an existing one each counts as one."
+            "tooltip": "How many new server setups are counted in a calendar month. Creating a server or copying an existing one each counts as one. This is per-machine licensing: each setup issues 1 Floating license."
           },
           {
             "key": "usersTeams",
@@ -1292,31 +1093,31 @@
         ],
         "values": {
           "community": {
-            "jobsPerMonth": "1,000",
-            "repoSize": "20 GB",
+            "jobsPerMonth": "100",
+            "repoSize": "10 GB",
             "repositories": "Unlimited",
-            "floatingLicenses": "4",
+            "floatingLicenses": "2",
             "usersTeams": "Unlimited"
           },
           "professional": {
-            "jobsPerMonth": "5,000",
-            "repoSize": "100 GB",
+            "jobsPerMonth": "2,000+",
+            "repoSize": "50 GB",
             "repositories": "Unlimited",
-            "floatingLicenses": "5",
+            "floatingLicenses": "3",
             "usersTeams": "Unlimited"
           },
           "business": {
-            "jobsPerMonth": "20,000",
-            "repoSize": "500 GB",
+            "jobsPerMonth": "5,000+",
+            "repoSize": "200 GB",
             "repositories": "Unlimited",
-            "floatingLicenses": "20",
+            "floatingLicenses": "10",
             "usersTeams": "Unlimited"
           },
           "enterprise": {
-            "jobsPerMonth": "100,000+",
-            "repoSize": "2 TB+",
+            "jobsPerMonth": "15,000+",
+            "repoSize": "1 TB+",
             "repositories": "Unlimited",
-            "floatingLicenses": "50+",
+            "floatingLicenses": "25+",
             "usersTeams": "Unlimited"
           }
         }
@@ -1330,24 +1131,24 @@
             "rows": [
               {
                 "label": "Floating Licenses (Machines)",
-                "community": "4",
-                "professional": "5",
-                "business": "20",
-                "enterprise": "50+"
+                "community": "2",
+                "professional": "3",
+                "business": "10",
+                "enterprise": "25+"
               },
               {
-                "label": "Floating license requests",
-                "community": "1,000",
-                "professional": "5,000",
-                "business": "20,000",
-                "enterprise": "100,000+"
+                "label": "Server setups per month (1 Floating license each)",
+                "community": "100",
+                "professional": "2,000+",
+                "business": "5,000+",
+                "enterprise": "15,000+"
               },
               {
                 "label": "Repository size",
-                "community": "20 GB",
-                "professional": "100 GB",
-                "business": "500 GB",
-                "enterprise": "2 TB+"
+                "community": "10 GB",
+                "professional": "50 GB",
+                "business": "200 GB",
+                "enterprise": "1 TB+"
               }
             ]
           },
@@ -2658,8 +2459,8 @@
             "Everything in Community +",
             "Automated backup scheduling. Set it and forget it.",
             "Point-in-time recovery (24h)",
-            "Unlimited apps, 100 GB each",
-            "24-hour job timeout, 5 active/2 reserved jobs",
+            "Unlimited apps, 50 GB each",
+            "24-hour job timeout, 3 active/2 reserved jobs",
             "30-day audit log retention",
             "Email + chat support",
             "Slack & PagerDuty notifications",
@@ -2676,7 +2477,7 @@
             "Storage across 3 regions. One failure won't stop you.",
             "Continuous data protection. Near-zero data loss.",
             "4-hour recovery SLA (guaranteed)",
-            "Unlimited apps, 500 GB each",
+            "Unlimited apps, 200 GB each",
             "7 active/3 reserved jobs",
             "90-day audit log retention",
             "Role-based access control and full audit logs",
@@ -2688,13 +2489,12 @@
         "enterprise": {
           "name": "Enterprise",
           "description": "Done-for-you disaster recovery for large, complex operations.",
-          "priceNote": "*Starting at",
           "features": [
             "Everything in Business +",
             "Custom SLA (back online in 15-60 min). Your requirements, our commitment.",
             "Your own dedicated environment. Maximum security and performance.",
             "24/7/365 expert support, always on",
-            "Unlimited apps, 2 TB+ each",
+            "Unlimited apps, 1 TB+ each",
             "96+ hour job windows with 10+ active/5+ reserved jobs",
             "1 year+ audit log retention",
             "Quarterly disaster recovery drills. Know you're ready before you need to be.",
@@ -2706,22 +2506,8 @@
       },
       "psTeaser": {
         "heading": "Need Expert Help Getting Started?",
-        "subtitle": "Professional implementation and support services available for all tiers",
-        "viewDetails": "See Professional Services",
-        "packages": {
-          "standard": {
-            "name": "Standard",
-            "price": "From $7,499"
-          },
-          "priority": {
-            "name": "Priority",
-            "price": "$19,999"
-          },
-          "emergency": {
-            "name": "Emergency",
-            "price": "$29,999"
-          }
-        }
+        "subtitle": "Professional implementation and support services available for all tiers: Training, Support, Migration, Recovery, and Security & Compliance",
+        "viewDetails": "See Professional Services"
       },
       "strategy": {
         "heading": "Built for every stage",
@@ -2735,242 +2521,6 @@
         "heading": "Unusual setup? Tell us what you've got.",
         "description": "If none of the tiers above fits your situation, tell us what you're running. We'll figure it out.",
         "button": "Contact Sales"
-      },
-      "professionalServices": {
-        "header": {
-          "title": "Professional Service Packages",
-          "subtitle": "Get expert help when you need it most",
-          "badge": "Get set up faster with expert help on your side.",
-          "eligibility": "Every plan includes some level of expert help. Check the table below to see what's included in yours and what you can add on."
-        },
-        "packages": {
-          "standard": {
-            "name": "Standard",
-            "turnaround": "3-5 Business Days",
-            "description": "We handle the planning, setup, testing, and training.",
-            "benefits": [
-              "Project discovery and success plan",
-              "Environment setup and configuration",
-              "Testing checklist and team handoff"
-            ],
-            "price": "From $7,499",
-            "tiers": [
-              "Starter (1-4 servers): $7,499",
-              "Growth (5-10 servers): $14,999",
-              "Scale (11-25 servers): $29,999",
-              "Enterprise (25+ servers): Custom quote"
-            ],
-            "tierHeading": "Pricing by number of servers",
-            "tierNote": "Each server (or app) is counted as one unit. Setup covers design, configuration, testing, and training for your team."
-          },
-          "priority": {
-            "name": "Priority",
-            "turnaround": "24-48 Hours",
-            "description": "Faster delivery. Our team is available evenings and weekends to guide your launch.",
-            "benefits": [
-              "Dedicated engagement manager",
-              "Evening/weekend availability",
-              "Hands-on help when you go live"
-            ],
-            "price": "$19,999",
-            "tiers": []
-          },
-          "emergency": {
-            "name": "Emergency",
-            "turnaround": "Same Day",
-            "description": "Call us when things go wrong. We respond within 2 hours and start getting your systems back the same day.",
-            "benefits": [
-              "We're on it in under 2 hours",
-              "Forensics, containment, and recovery plan",
-              "A report on what went wrong, plus a plan to stop it happening again"
-            ],
-            "price": "$29,999",
-            "tiers": []
-          }
-        },
-        "pricingFactors": {
-          "heading": "Understanding Professional Service Pricing",
-          "intro": "Final project costs are determined by:",
-          "factors": [
-            {
-              "title": "Scope Complexity",
-              "description": "Number of systems, integrations, and dependencies involved"
-            },
-            {
-              "title": "Customization Level",
-              "description": "Off-the-shelf solutions vs. custom development requirements"
-            },
-            {
-              "title": "Team Size",
-              "description": "Single expert vs. full dedicated team of specialists"
-            }
-          ],
-          "note": "Example: A mid-sized setup (120 machines) with a security review typically runs from $14,999 to $24,999, depending on integrations and ongoing support."
-        },
-        "serviceTypes": {
-          "heading": "Available Services",
-          "intro": "Click any service to see turnaround times for each package tier",
-          "badgeLabels": {
-            "standard": "Standard",
-            "priority": "Priority",
-            "emergency": "Emergency"
-          },
-          "services": [
-            {
-              "name": "Data Migration",
-              "standard": "Complete end-to-end migration with full validation",
-              "priority": "Fast migration setup, with core data moved within 48h",
-              "emergency": "Immediate assessment + critical systems online same-day + full migration begins",
-              "id": "data-migration"
-            },
-            {
-              "name": "Ransomware Recovery",
-              "standard": "Complete recovery with forensics and hardening",
-              "priority": "Fast threat assessment, core operations back within 48h",
-              "emergency": "Immediate containment + critical systems restored same-day + full recovery begins",
-              "id": "ransomware-recovery"
-            },
-            {
-              "name": "Security Assessment",
-              "standard": "Full security audit with a clear action plan",
-              "priority": "Full vulnerability assessment + remediation plan within 48h",
-              "emergency": "Critical vulnerability scan + high-risk patches deployed same-day + full audit begins",
-              "id": "security-assessment"
-            },
-            {
-              "name": "Infrastructure Scaling",
-              "standard": "Complete infrastructure redesign with performance improvements",
-              "priority": "Fast capacity increase, with monitoring set up within 48h",
-              "emergency": "Critical resources set up same-day, auto-scaling configured, full plan begins",
-              "id": "infrastructure-scaling"
-            },
-            {
-              "name": "Team Training",
-              "standard": "Multi-day hands-on training program",
-              "priority": "Intensive hands-on workshop + key workflows covered within 2 days",
-              "emergency": "Critical procedures briefing same-day + incident response prep + full program begins",
-              "id": "team-training"
-            },
-            {
-              "name": "Performance Optimization",
-              "standard": "Deep analysis with full performance tuning",
-              "priority": "Quick profiling, high-impact improvements deployed within 48h",
-              "emergency": "Critical bottleneck found, immediate hotfix deployed same-day, full performance work begins",
-              "id": "performance-optimization"
-            },
-            {
-              "name": "Custom Integration",
-              "standard": "Complete integration with testing and documentation",
-              "priority": "Core integration functional + essential features live within 48h",
-              "emergency": "Critical connection established same-day + basic data flow working + full dev begins",
-              "id": "custom-integration"
-            },
-            {
-              "name": "Storage Hardening",
-              "standard": "We set up full BTRFS redundant storage, with RAID1 (2 mirrored drives) for standard setups or RAID10 (4+ drives) for high-traffic systems. We also handle live migration, shortcut-copy checks, auto-repair, and monitoring. Finishes with a storage plan and a backup strategy review.",
-              "priority": "BTRFS RAID1 or RAID10 set up, live migration started, auto-repair active, all within 48h",
-              "emergency": "Disks attached, RAID conversion started same-day, critical apps verified, full hardening begins",
-              "id": "storage-hardening"
-            }
-          ]
-        },
-        "benefits": {
-          "heading": "Why Professional Services?",
-          "statistics": [
-            "The average cost of a ransomware attack is $4.62 million (IBM Security, 2023)",
-            "The average downtime cost is $5,600 per minute for large businesses"
-          ],
-          "description": "Dedicated engineers on your side when your systems fail.",
-          "items": [
-            "Dedicated team of experts assigned to your project",
-            "Guaranteed response times with SLA",
-            "Switch between service tiers as needed",
-            "24/7 emergency hotline for Emergency tier"
-          ]
-        },
-        "cta": {
-          "heading": "Need Professional Assistance?",
-          "description": "Our experts are ready to help you succeed",
-          "button": "Schedule Consultation"
-        },
-        "access": {
-          "heading": "Professional services access by tier",
-          "description": "Some help comes with every plan. You can add more when you need it.",
-          "labels": {
-            "included": "Included",
-            "available": "Available add-ons"
-          },
-          "tiers": [
-            {
-              "planId": "community",
-              "included": ["Self-service documentation, video tutorials, and community forum"],
-              "available": [
-                "Standard Setup ($9,999) or tiered packages (Small $7,499 · Medium $14,999 · Large $29,999 · Enterprise custom)",
-                "Emergency Response service ($29,999 on-demand)"
-              ]
-            },
-            {
-              "planId": "professional",
-              "included": [
-                "Email support",
-                "Standard onboarding session (setup call and configuration walkthrough)"
-              ],
-              "available": [
-                "Priority Setup ($19,999)",
-                "Emergency Response service ($29,999 on-demand)",
-                "Custom integration projects (scoped)"
-              ]
-            },
-            {
-              "planId": "business",
-              "included": [
-                "Priority email/chat/phone support",
-                "Dedicated onboarding with configuration and step-by-step guide handoff",
-                "Standard Setup package included ($9,999 value)",
-                "Quarterly success reviews"
-              ],
-              "available": [
-                "Priority Setup upgrade ($19,999)",
-                "Emergency Response service ($29,999 on-demand)",
-                "Custom development and security architecture consulting"
-              ]
-            },
-            {
-              "planId": "enterprise",
-              "included": [
-                "24/7/365 hands-on expert support with a dedicated account manager",
-                "Priority Setup included ($19,999 value)",
-                "Quarterly disaster recovery testing",
-                "Annual business continuity planning workshop",
-                "Executive escalation hotline"
-              ],
-              "available": [
-                "Custom development and advanced integrations",
-                "Security and infrastructure design consulting",
-                "Monthly Emergency Response contract ($5,000-$7,500/month)"
-              ]
-            }
-          ]
-        },
-        "retainers": {
-          "heading": "Monthly plans for ongoing peace of mind",
-          "description": "You get direct access to our team. Predictable monthly pricing.",
-          "items": [
-            {
-              "title": "Emergency Response Retainer",
-              "price": "$5,000–$7,500/month",
-              "bullets": [
-                "Guaranteed 2-hour response time",
-                "Direct line to senior engineers when you need it most",
-                "Quarterly readiness review and response plan updates"
-              ]
-            }
-          ]
-        },
-        "advancedDetails": {
-          "heading": "Setup and Pricing Details",
-          "description": "Service packages, setup tiers, pricing factors, and monthly support options"
-        }
       },
       "faq": {
         "heading": "Frequently Asked Questions",
@@ -13362,7 +12912,7 @@
           "keywords": "CEO, infrastructure costs, self-hosted, data protection, vendor lock-in, predictable pricing, business continuity, SMB"
         },
         "hero": {
-          "badge": "FOR CEOs & FOUNDERS",
+          "badge": "FOR CEOs",
           "title": "One flat price per server. Your data stays yours.",
           "subtitle": "Protect your business data on hardware you own. One flat price per machine. No per-seat fees, no surprise cloud bills, no vendor holding your data hostage.",
           "primaryCta": "See Pricing",
@@ -13550,7 +13100,7 @@
         },
         "socialProof": {
           "quote": "We were spending $18,000 a month on cloud infrastructure for 47 workloads. After migrating to Rediacc on our own servers, our bill dropped to $6,800. Recovery time went from 4 hours to 3 minutes. The ROI was obvious in the first month.",
-          "author": "CEO & Founder",
+          "author": "CEO",
           "company": "SaaS startup, 45 employees",
           "impact": {
             "beforeLabel": "Monthly cost",

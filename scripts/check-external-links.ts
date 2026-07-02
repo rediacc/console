@@ -36,6 +36,7 @@ const ALLOWLISTED_DOMAINS = new Set([
   'www.iso.org',       // ISO standards - returns 403 to non-browser User-Agent (anti-scraping)
   'www.meity.gov.in',  // India MeitY - intermittent fetch failures from CI runners (Azure US-East), reachable from browsers
   'eur-lex.europa.eu', // EU EUR-Lex - returns 403 to CI runners (Cloudflare/anti-scraping), reachable from browsers
+  'www.ftc.gov',       // US FTC - returns 503/403 to CI runners (Akamai anti-bot), reachable from browsers
   // Own infrastructure -- only available after releases, not during CI
   'releases.rediacc.com',
 ]);

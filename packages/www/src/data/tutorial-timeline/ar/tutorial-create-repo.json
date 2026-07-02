@@ -1,0 +1,75 @@
+{
+  "cast": "/assets/tutorials/tutorial-create-repo.cast",
+  "language": "ar",
+  "version": 1,
+  "steps": [
+    {
+      "id": "tutorial-create-repo-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.412347,
+      "replayEndSec": 11.676359,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-01.2981de92.mp3",
+      "audioDurationSec": 17.867755,
+      "textHash": "2981de9249d22aa26ebf5f07c6e88e6307db9d1a52cf2c90055c648486847339",
+      "narrationText": "ننشئ مستودعًا مشفرًا بحجم 2 جيجابايت على الخادم. المستودع هو ملف مشفر واحد في حالة السكون. عند تحميله، يصبح مجلدًا بمحرك Docker خاص به وبيانات تطبيق خاصة به، معزول تمامًا عن أي شيء آخر على الخادم.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-01-after.7d567e11.mp3",
+      "afterAudioDurationSec": 4.205714,
+      "afterTextHash": "7d567e117985d070b0263db997d5ba1439207fa08fa91430e3261206240ad0c8"
+    },
+    {
+      "id": "tutorial-create-repo-02",
+      "markerIndex": 1,
+      "replayStartSec": 11.676359,
+      "replayEndSec": 17.041073,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-02.a21498fe.mp3",
+      "audioDurationSec": 8.515918,
+      "textHash": "a21498fe88baf469e5e87a5fdacc5421eca968119651732c7f497b3afbfeabd9",
+      "narrationText": "ندرج المستودعات على الجهاز للتأكد من تسجيل المستودع الجديد. من هنا، يمكن فتح المستودع في VS Code أو نشره أو نسخه أو نسخه احتياطيًا، كل ذلك من حاسوبك.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-02-after.c9114639.mp3",
+      "afterAudioDurationSec": 2.586122,
+      "afterTextHash": "c91146398b47482722e6685a418d948d2e70bbdca5fc85df81f34760fa7aa30b"
+    },
+    {
+      "id": "tutorial-create-repo-03",
+      "markerIndex": 2,
+      "replayStartSec": 17.041073,
+      "replayEndSec": 20.377596,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-03.3cd1fc9a.mp3",
+      "audioDurationSec": 12.355918,
+      "textHash": "3cd1fc9aa3cf2e6cb372327b5c4eaec86b990e38b349dca1b70aea04e2410f22",
+      "narrationText": "خيار مفيد: يمكنك فتح الـ repo مباشرةً في VS Code باستخدام هذا الأمر. لن نشغّل المحرر هنا، لكنه يبدأ جلسة بعيدة داخل الـ repo عبر SSH حتى تتمكن من تحرير ملفاته.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-03-after.fe26f5cd.mp3",
+      "afterAudioDurationSec": 3.866122,
+      "afterTextHash": "fe26f5cdfb45cb2f35cdd216b0dcdbe0ed7b157299333ea00b48079d58afa5f0"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/intro.d4921d84.mp3",
+      "textHash": "d4921d84022408545d2681c718d8d84a3c77dae8d3adc9c769419d656ab070a9",
+      "audioDurationSec": 8.907755,
+      "narrationText": "لننشئ مستودعك الأول! إنه ملف مشفر في حالة السكون يتحول إلى بيئة معزولة بالكامل عند تحميله."
+    },
+    {
+      "id": "file-on-disk",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/file-on-disk.5083fa24.mp3",
+      "textHash": "5083fa2473639e24068e94fe8890f45aafd8cde7de1b11ded47ff40b012a8c43",
+      "audioDurationSec": 13.714286,
+      "narrationText": "على القرص هو صورة مشفرة واحدة. عند تحميله، تحصل على محرك Docker مخصص وبيانات تطبيق داخل الحجم المشفر وعناوين IP محلية لا تتعارض مع أي شيء آخر على الخادم."
+    },
+    {
+      "id": "next-tutorial",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/next-tutorial.d5cd8215.mp3",
+      "textHash": "d5cd821513cf45ff5e7cd66fbed1374b6b9da3fd9159498a99822933f6968a2f",
+      "audioDurationSec": 5.407347,
+      "narrationText": "هذا هو مستودعك الأول وقد أصبح جاهزًا. في الدرس التالي، سننشر تطبيقًا داخله!"
+    }
+  ],
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "d8f5a0975f36151d6c851bcedf98d273171f0170b8dee4e6047bbfa6c41d0a6b"
+}

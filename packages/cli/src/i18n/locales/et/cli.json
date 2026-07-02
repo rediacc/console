@@ -959,9 +959,9 @@
         "infrastructure": "Infrastruktuur",
         "noData": "Olekuandmed pole saadaval",
         "storageHealthFragmentationNote": "Killustatus loendab iga repo copy-on-write-tõmmise ekstente, mitte selle sees olevaid faile. Kõrged väärtused on juhukirjutuse koormuste (andmebaasid, konteinerikihid) puhul oodatavad ja üksnes informatiivsed. Defragmenteerimine ei ole siin meelega toetatud: see katkestaks reflink-jagatud forkide ja varundushetktõmmiste jagamise ning paisutaks andmehoidla kasutust.",
-        "storageHealthPoolSummary": "Puul: {{used}} kasutusel, {{free}} vaba ({{percent}}% täis)",
-        "storageHealthPoolSnapshots": "Varukoopiate hetktõmmised hoiavad {{pinned}} ({{active}} aktiivset, {{stale}} aegunut; aegunud eemaldab 'rdc machine prune')",
         "storageHealthHint": "Näpunäide: Käivita koos --storage-health, et näha BTRFS-i killustatust ja reflink-i sääste repositooriumi kohta",
+        "storageHealthPoolSnapshots": "Varukoopiate hetktõmmised hoiavad {{pinned}} ({{active}} aktiivset, {{stale}} aegunut; aegunud eemaldab 'rdc machine prune')",
+        "storageHealthPoolSummary": "Puul: {{used}} kasutusel, {{free}} vaba ({{percent}}% täis)",
         "storageHealthSummary": "Salvestusruumi tõhusus: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} konteiner(it) on kaldumisläve ületanud; väljub mittenullilise koodiga",
         "syncCertsFailed": "Sertide vahemälu sünkroonimine ebaõnnestus: {{error}}"
@@ -1304,10 +1304,10 @@
         "list": {
           "completed": "Autostarti loend hangitud",
           "description": "Loetle hoidlad, millel on autostart lubatud",
-          "failed": "Autostarti hoidlate loetlemine ebaõnnestus",
-          "starting": "Autostarti hoidlate loetlemine masinal \"{{machine}}\"...",
           "empty": "Hoidlal \"{{machine}}\" pole autostart-lubatud repositooriume",
-          "service": "Autostart-teenus: installitud={{installed}}, lubatud={{enabled}}"
+          "failed": "Autostarti hoidlate loetlemine ebaõnnestus",
+          "service": "Autostart-teenus: installitud={{installed}}, lubatud={{enabled}}",
+          "starting": "Autostarti hoidlate loetlemine masinal \"{{machine}}\"..."
         }
       },
       "backup": {
@@ -1433,41 +1433,6 @@
         "sizeOption": "Hoidla uus suurus (nt 10G, 100G, 1T)",
         "starting": "Hoidla \"{{repository}}\" laiendamine suuruseni {{size}} masinal \"{{machine}}\"..."
       },
-      "trim": {
-        "description": "Vabastab andmehoidla puuli ruumi haagitud hoidlatest (võrgus, ilma seisakuta). Hoidlates kustutatud plokid tagastatakse puuli fstrim-iga. Ilma --name võtmeta trimmitakse kõik haagitud hoidlad ja andmehoidla ise. Aktiivse varukoopiaga hoidlate puhul jäetakse fstrim vahele; --docker puhastus töötab siiski",
-        "descriptionShort": "Tagasta hoidlate vaba ruum puuli",
-        "nameOption": "Trimmitav hoidla (vaikimisi: kõik haagitud hoidlad)",
-        "dockerOption": "Vabasta Dockeri ruum (seisatud konteinerid, ripakil pildid, ehitusvahemälu); töötab ka aktiivse varukoopia hetktõmmise ajal",
-        "dockerVolumesOption": "Eemalda lisaks kasutamata Dockeri köited",
-        "reportOnlyOption": "Näita discard-olekut ja taastatava ruumi hinnangut ilma trimmimata",
-        "repoNotFound": "Hoidlat ei leitud: {{name}}",
-        "noMountedRepos": "Haagitud hoidlaid ei leitud",
-        "starting": "Trimmitakse hoidlaid masinas \"{{machine}}\"...",
-        "completed": "Trim valmis: {{total}} taastatud",
-        "failed": "Trim ebaõnnestus"
-      },
-      "policy": {
-        "description": "Haldab masina salvestushooldaja rakendatavat automaatset suurusepoliitikat: kasvatab hoidla kvooti võrgus, kui see täitub (mitte üle max-quota ega siis, kui puulis on ruumi vähe), ja käivitab plaanitud trimme. Automaatset vähendamist ei ole; selleks kasuta 'repo resize'. Ilma --name võtmeta hallatakse masinaülest vaikepoliitikat",
-        "descriptionShort": "Halda automaatset suurusepoliitikat (automaatkasv, plaanitud trim)",
-        "nameOption": "Hoidla (vaikimisi: masinaülene poliitika)",
-        "repoNotFound": "Hoidlat ei leitud: {{name}}",
-        "invalidBool": "{{flag}} peab olema 'true' või 'false', saadi: {{value}}",
-        "failed": "Poliitikatoiming ebaõnnestus",
-        "set": {
-          "description": "Määrab suurusepoliitika välju. Muudetakse ainult edastatud lippe; teised salvestatud väljad säilitavad väärtused. Automaatkasvu lubamine nõuab --max-quota: lagi on sinu selgesõnaline nõusolek puuli ülejaotuseks",
-          "descriptionShort": "Määra poliitika väljad (masina vaikimisi või üks hoidla --name abil)",
-          "autoGrowOption": "Luba kvoodi automaatne võrgus kasvatamine (true/false)",
-          "maxQuotaOption": "Automaatkasvu lagi (nt 200G); automaatkasvuks kohustuslik",
-          "growThresholdOption": "Failisüsteemi täituvus %, mis käivitab kasvu (vaikimisi 85)",
-          "growStepOption": "Kasv sammu kohta: absoluutne (10G) või protsent kvoodist (20%)",
-          "autoTrimOption": "Luba plaanitud trim (true/false)",
-          "trimIntervalOption": "Vähim tundide arv automaatsete trimmide vahel (vaikimisi 24)"
-        },
-        "get": {
-          "description": "Näitab salvestatud masina vaikeväärtust, hoidla ülekirjutust (--name korral) ja hooldaja rakendatavat ühendatud kehtivat poliitikat",
-          "descriptionShort": "Näita suurusepoliitikat (masina vaikimisi, hoidla ülekirjutus, kehtiv)"
-        }
-      },
       "fork": {
         "alreadyExists": "Hoidla \"{{name}}\" on konfiguratsioonis juba olemas",
         "checkpointOption": "Loo CRIU kontrollpunkt allikal enne forkimist (jäädvusta protsessi mäluseisund forgi taastamiseks)",
@@ -1537,7 +1502,6 @@
         "checkpointing": "CRIU kontrollpunkti loomine...",
         "complete": "Migratsioon lõpetatud: {{name}} teisaldati {{from}} asukohast {{to}} asukohta",
         "deltaDone": "Delta sünkroonimine lõpetatud",
-        "phase2Stats": "Ümberlülitus (KATKESTUS): {{transferred}} {{duration}} jooksul",
         "deltaFailed": "Delta sünkroonimine ebaõnnestus",
         "deltaSync": "Delta sünkroonimine...",
         "description": "Migreerige hoidla ühelt masinalt teisele minimaalse katkestusajaga. Kahefaasiline rsync: mahtude ülekanne töötamise ajal, seejärel lühike peatamine delta-sünkroonimiseks. Toetab CRIU kontrollpunkti protsessimälu migratsiooniks ja sihtmasinate autoprovisionimist",
@@ -1554,9 +1518,10 @@
         "optionTo": "Sihtmasina nimi",
         "phase1": "1. faas: mahukate andmete ülekandmine (allikas jääb töötama)...",
         "phase1Done": "Mahukas ülekanne lõpetatud",
-        "phase1Stats": "{{transferred}} üle kantud {{duration}} jooksul — allikas jäi tööle",
         "phase1Failed": "Mahukas ülekanne ebaõnnestus",
+        "phase1Stats": "{{transferred}} üle kantud {{duration}} jooksul — allikas jäi tööle",
         "phase2": "2. faas: üleminek (lühike katkestus)...",
+        "phase2Stats": "Ümberlülitus (KATKESTUS): {{transferred}} {{duration}} jooksul",
         "phase3": "3. faas: sihtmäel käivitamine...",
         "provisioning": "Sihtmasina {{machine}} provisionimine läbi {{provider}}...",
         "sourceStopped": "Allika teenused peatatud",
@@ -1588,6 +1553,28 @@
         "starting": "Hoidla \"{{repository}}\" omandiõiguse seadistamine masinal \"{{machine}}\"...",
         "uidOption": "Omaniku UID (vaikimisi: 7111)"
       },
+      "policy": {
+        "description": "Haldab masina salvestushooldaja rakendatavat automaatset suurusepoliitikat: kasvatab hoidla kvooti võrgus, kui see täitub (mitte üle max-quota ega siis, kui puulis on ruumi vähe), ja käivitab plaanitud trimme. Automaatset vähendamist ei ole; selleks kasuta 'repo resize'. Ilma --name võtmeta hallatakse masinaülest vaikepoliitikat",
+        "descriptionShort": "Halda automaatset suurusepoliitikat (automaatkasv, plaanitud trim)",
+        "failed": "Poliitikatoiming ebaõnnestus",
+        "get": {
+          "description": "Näitab salvestatud masina vaikeväärtust, hoidla ülekirjutust (--name korral) ja hooldaja rakendatavat ühendatud kehtivat poliitikat",
+          "descriptionShort": "Näita suurusepoliitikat (masina vaikimisi, hoidla ülekirjutus, kehtiv)"
+        },
+        "invalidBool": "{{flag}} peab olema 'true' või 'false', saadi: {{value}}",
+        "nameOption": "Hoidla (vaikimisi: masinaülene poliitika)",
+        "repoNotFound": "Hoidlat ei leitud: {{name}}",
+        "set": {
+          "autoGrowOption": "Luba kvoodi automaatne võrgus kasvatamine (true/false)",
+          "autoTrimOption": "Luba plaanitud trim (true/false)",
+          "description": "Määrab suurusepoliitika välju. Muudetakse ainult edastatud lippe; teised salvestatud väljad säilitavad väärtused. Automaatkasvu lubamine nõuab --max-quota: lagi on sinu selgesõnaline nõusolek puuli ülejaotuseks",
+          "descriptionShort": "Määra poliitika väljad (masina vaikimisi või üks hoidla --name abil)",
+          "growStepOption": "Kasv sammu kohta: absoluutne (10G) või protsent kvoodist (20%)",
+          "growThresholdOption": "Failisüsteemi täituvus %, mis käivitab kasvu (vaikimisi 85)",
+          "maxQuotaOption": "Automaatkasvu lagi (nt 200G); automaatkasvuks kohustuslik",
+          "trimIntervalOption": "Vähim tundide arv automaatsete trimmide vahel (vaikimisi 24)"
+        }
+      },
       "pull": {
         "deployed": "Hoidla \"{{repo}}\" juurutatud masinal {{machine}}",
         "deployFailed": "Hoidla \"{{repo}}\" juurutamine pärast tõmbamist ebaõnnestus",
@@ -1614,16 +1601,16 @@
         "optionCheckpoint": "Loo CRIU kontrollpunkt enne varukoopiat (jäädvustab protsessi mäluseisundi otseülekandeks)",
         "optionDeltaBase": "Muutumatu baas-GUID, mis on mõlemal masinal baidihaaval identne; kanna üle ainult muutunud plokid (masinasihtkoht). Jäta välja automaatse baasi jaoks",
         "optionForce": "Sundi olemasoleva varukoopia ülekirjutamine",
+        "optionJson": "Väljasta ülekandestatistika JSON-vormingus",
         "optionProvision": "Provisioni sihtmasina automaatselt pilveteenusepakkuja kaudu, kui seda ei eksisteeri",
         "optionStrategy": "Delta-baasi kasutamisel rakendatav plokidelta strateegia: auto, physical või shared",
-        "optionJson": "Väljasta ülekandestatistika JSON-vormingus",
-        "statsDelta": "\"{{repo}}\" lükatud masinale {{machine}} — {{transferred}} üle kantud {{duration}} jooksul (delta baasi {{base}} suhtes, tõmmis {{image}})",
-        "statsFull": "\"{{repo}}\" lükatud masinale {{machine}} — {{transferred}} üle kantud {{duration}} jooksul (täielik ülekanne)",
-        "statsNoBytes": "\"{{repo}}\" lükatud masinale {{machine}} — valmis {{duration}} jooksul",
         "optionTag": "Versioonimise juurutusmärgend",
         "optionTo": "Sihtkoha masina või salvestuse nimi (tuvastatakse automaatselt konfiguratsioonist)",
         "optionUp": "Pärast pushumist haagi külge ja juuruta hoidla sihtmasinal",
-        "pushing": "Hoidla \"{{repo}}\" varukoopia lükkamine kohta {{dest}}..."
+        "pushing": "Hoidla \"{{repo}}\" varukoopia lükkamine kohta {{dest}}...",
+        "statsDelta": "\"{{repo}}\" lükatud masinale {{machine}} — {{transferred}} üle kantud {{duration}} jooksul (delta baasi {{base}} suhtes, tõmmis {{image}})",
+        "statsFull": "\"{{repo}}\" lükatud masinale {{machine}} — {{transferred}} üle kantud {{duration}} jooksul (täielik ülekanne)",
+        "statsNoBytes": "\"{{repo}}\" lükatud masinale {{machine}} — valmis {{duration}} jooksul"
       },
       "resize": {
         "completed": "Suuruse muutmine lõpetatud",
@@ -1719,6 +1706,19 @@
         },
         "starting": "Malli rakendamine hoidlale \"{{repository}}\" masinal \"{{machine}}\"..."
       },
+      "trim": {
+        "completed": "Trim valmis: {{total}} taastatud",
+        "description": "Vabastab andmehoidla puuli ruumi haagitud hoidlatest (võrgus, ilma seisakuta). Hoidlates kustutatud plokid tagastatakse puuli fstrim-iga. Ilma --name võtmeta trimmitakse kõik haagitud hoidlad ja andmehoidla ise. Aktiivse varukoopiaga hoidlate puhul jäetakse fstrim vahele; --docker puhastus töötab siiski",
+        "descriptionShort": "Tagasta hoidlate vaba ruum puuli",
+        "dockerOption": "Vabasta Dockeri ruum (seisatud konteinerid, ripakil pildid, ehitusvahemälu); töötab ka aktiivse varukoopia hetktõmmise ajal",
+        "dockerVolumesOption": "Eemalda lisaks kasutamata Dockeri köited",
+        "failed": "Trim ebaõnnestus",
+        "nameOption": "Trimmitav hoidla (vaikimisi: kõik haagitud hoidlad)",
+        "noMountedRepos": "Haagitud hoidlaid ei leitud",
+        "repoNotFound": "Hoidlat ei leitud: {{name}}",
+        "reportOnlyOption": "Näita discard-olekut ja taastatava ruumi hinnangut ilma trimmimata",
+        "starting": "Trimmitakse hoidlaid masinas \"{{machine}}\"..."
+      },
       "tunnel": {
         "active": "Tunnel aktiivne: localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
         "closed": "Tunnel suletud",
@@ -1734,10 +1734,10 @@
         "noContainers": "Hoidla \"{{repository}}\" jaoks ei leitud töötavaid konteinereid",
         "noPorts": "Konteineril \"{{container}}\" ei ole avatud porte. Määra --port",
         "noServiceIP": "Konteinerile \"{{container}}\" ei ole määratud teenuseIP-d",
-        "portInUse": "Kohalik port {{port}} on juba kasutusel. Vali teine lipuga --local",
         "notReady": "Tunnel ei muutunud valmis aadressil localhost:{{localPort}} 15 sekundi jooksul",
-        "urlOnlyOption": "Prindi ainult kohalik URL, kui tunnel on valmis (masinloetav)",
-        "portOption": "Edastatav kaugkonteineri port"
+        "portInUse": "Kohalik port {{port}} on juba kasutusel. Vali teine lipuga --local",
+        "portOption": "Edastatav kaugkonteineri port",
+        "urlOnlyOption": "Prindi ainult kohalik URL, kui tunnel on valmis (masinloetav)"
       },
       "unmount": {
         "checkpointOption": "Loo CRIU konteineri kontrollpunkt enne lahtihaakimist (jäädvusta töötavate protsesside mäluseisund hilisemaks taastamiseks)",
@@ -2211,26 +2211,26 @@
         "removedKeys": "Kõik salvestatud SSH-võtmed eemaldatud."
       },
       "connect": {
+        "browserUrl": "Ava VS Code brauseris: {{url}}",
         "configuringSSH": "SSH konfigureerimine...",
         "configuringVSCode": "VS Code seadete konfigureerimine...",
         "description": "Ühendumine masina või repositooriumiga VS Code-s",
         "detecting": "VS Code-i tuvastatakse...",
         "extensionWarning": "Hoiatus: Remote SSH-laiend ei pruugi olla installitud.\nInstalli: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
         "fetchingDetails": "Ühendusteavet laaditakse...",
+        "installingServer": "Kontrollitakse, et {{provider}} {{version}} on masinal installitud...",
         "opening": "VS Code avamine: {{connection}} -- {{path}}",
+        "openingBrowser": "Brauseri avamine...",
+        "passwordNote": "Sisselogimise parool: {{password}}",
         "persistingKey": "SSH-võtit säilitatakse...",
         "provisioningRenet": "Renet-i ettevalmistamine kaugmasinasse...",
+        "serverReused": "Taaskasutatakse juba töötavat serverit",
         "settingsWarning": "Hoiatus: VS Code seadete konfigureerimine ebaõnnestus: {{error}}",
         "settingUpEnv": "Kaugkeskkonna seadistamine...",
-        "success": "VS Code käivitati edukalt.",
-        "installingServer": "Kontrollitakse, et {{provider}} {{version}} on masinal installitud...",
         "startingServer": "{{provider}} käivitamine repositooriumi liivakastis...",
-        "serverReused": "Taaskasutatakse juba töötavat serverit",
-        "tunnelReady": "Tunnel valmis aadressil localhost:{{port}}",
-        "browserUrl": "Ava VS Code brauseris: {{url}}",
-        "passwordNote": "Sisselogimise parool: {{password}}",
-        "openingBrowser": "Brauseri avamine...",
-        "testingConnectivity": "Ühenduvuse testimine {{host}}:{{port}}..."
+        "success": "VS Code käivitati edukalt.",
+        "testingConnectivity": "Ühenduvuse testimine {{host}}:{{port}}...",
+        "tunnelReady": "Tunnel valmis aadressil localhost:{{port}}"
       },
       "description": "Avab VS Code koos Remote SSH-ga masina või repositooriumiga, koos iga repositooriumi isoleeritud keskkonnaga. Sama SSH-ühendus nagu `term`, kuid käivitab VS Code. Peamised alamkomandod: connect (või positsiooniline otsetee), list (näitab konfigureeritud ühendusi), cleanup (eemaldab SSH-konfiguratsiooni kirjed), check (kontrollib VS Code installimist).",
       "descriptionShort": "Avab VS Code Remote SSH masina või repositooriumiga",
@@ -2251,8 +2251,8 @@
         },
         "stop": {
           "description": "Peata brauseri VS Code server",
-          "stopped": "{{provider}} peatatud",
-          "notRunning": "{{provider}} ei töötanud"
+          "notRunning": "{{provider}} ei töötanud",
+          "stopped": "{{provider}} peatatud"
         }
       }
     }
@@ -2581,16 +2581,16 @@
     "vaultDataRequired": "Võlvi andmed on nõutud. Kasuta --vault <json> või anna JSON stdin kaudu.",
     "vaultVersionRequired": "Võlvi versioon on nõutud. Kasuta --vault-version <n>.",
     "vscode": {
+      "browserNeedsRepo": "vscode --browser teenindab repositooriumi liivakasti — anna --repository <nimi>",
       "cleanupRequired": "Määra --all kõigi ühenduste eemaldamiseks või --connection <name> konkreetse ühenduse jaoks.",
       "connectivityFailed": "Ei saavuta {{host}}:{{port}}. {{error}}\n\nVeaotsing:\n  - Kontrolli, kas masin on sisse lülitatud ja ühendatud võrku\n  - Veendu, et IP-aadress on masina võlvis õigesti seadistatud\n  - Veendu, et port {{port}} ei ole tulemüüriga blokeeritud\n  - Proovi masina pingimine: ping {{host}}",
       "noHostKey": "Masinal '{{machine}}' ei ole hosti võtit võlvis seadistatud",
       "noIpAddress": "Masinal '{{machine}}' ei ole IP-aadressi seadistatud",
       "noPrivateKey": "Meeskonnal '{{team}}' ei ole SSH privaatvõtit seadistatud",
       "notFound": "VS Code ei leitud.\n\nPalun installi aadressilt: https://code.visualstudio.com/\nVõi seadista REDIACC_VSCODE_PATH keskkonna muutuja.",
-      "browserNeedsRepo": "vscode --browser teenindab repositooriumi liivakasti — anna --repository <nimi>",
-      "unsupportedArch": "Brauseri VS Code jaoks pole masinarhitektuur toetatud: {{arch}}",
       "serverInstallFailed": "{{provider}} installimine ebaõnnestus: {{error}}",
-      "serverStartFailed": "{{provider}} käivitamine ebaõnnestus: {{error}}"
+      "serverStartFailed": "{{provider}} käivitamine ebaõnnestus: {{error}}",
+      "unsupportedArch": "Brauseri VS Code jaoks pole masinarhitektuur toetatud: {{arch}}"
     }
   },
   "help": {
@@ -2711,10 +2711,6 @@
     "opsParallel": "Loo virtuaalmasinad paralleelselt",
     "opsSkipOrchestration": "Jäta klastri orkestratsioon vahele",
     "opsSSHUser": "SSH-kasutajanimi VM-ühenduse jaoks",
-    "vscodeBrowser": "Serveeri brauseri VS Code-i repositooriumi liivakastist (kohalikku VS Code-i pole vaja)",
-    "vscodeNoOpen": "Prindi URL ilma kohalikku brauserit käivitamata",
-    "vscodeServerProvider": "Brauseri VS Code serveri implementatsioon (openvscode, code-server)",
-    "vscodeServerArchive": "Serveritarball-i eellavastatud tee masinal (õhust eraldatud paigaldused)",
     "organization": "Organisatsiooni nimi",
     "output": "Väljundvorming (table|json|yaml|csv). Vaikeväärtuse alistamiseks kasuta REDIACC_DEFAULT_OUTPUT.",
     "outputFormat": "Väljundvorming (json)",
@@ -2789,6 +2785,10 @@
     "vaultVersion": "Praegune hoidla versioon optimistlikuks lukustamiseks",
     "verifyChecksum": "Kontrolli faile kontrollsummade abil pärast sünkroonimist",
     "vmId": "Virtuaalmasina ID",
+    "vscodeBrowser": "Serveeri brauseri VS Code-i repositooriumi liivakastist (kohalikku VS Code-i pole vaja)",
+    "vscodeNoOpen": "Prindi URL ilma kohalikku brauserit käivitamata",
+    "vscodeServerArchive": "Serveritarball-i eellavastatud tee masinal (õhust eraldatud paigaldused)",
+    "vscodeServerProvider": "Brauseri VS Code serveri implementatsioon (openvscode, code-server)",
     "watch": "Jälgi muudatusi",
     "watchUpdates": "Jälgi uuendusi",
     "yes": "Jäta kinnitusviip vahele"

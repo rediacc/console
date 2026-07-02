@@ -557,11 +557,39 @@ www_tutorials_scaffold_locales() {
     npm run transcripts:scaffold-locales -w @rediacc/www
 }
 
+www_tutorial_audio_restore() {
+    # Best-effort: the tutorial-narration mp3 cache is synced to R2, not
+    # committed to git (see .ci/docs/r2-media-setup.md #3). Restoring it
+    # before generate/video lets tutorial_tts/cli.py's cache-hit check
+    # (keyed on the file existing locally) actually hit, instead of paying
+    # for a full TTS re-synthesis on every fresh checkout. Skips with a
+    # warning if R2 credentials aren't configured -- local iteration without
+    # them still works, just without the cache.
+    if [[ -z "${R2_MEDIA_ACCESS_KEY_ID:-}" || -z "${R2_MEDIA_SECRET_ACCESS_KEY:-}" || -z "${R2_MEDIA_ENDPOINT:-}" ]]; then
+        log_warn "R2_MEDIA_* not set — skipping tutorial-audio cache restore (will regenerate via TTS as needed)"
+        return 0
+    fi
+    log_step "Restoring tutorial-audio cache from R2..."
+    "$ROOT_DIR/.ci/scripts/deploy/sync-media-from-r2.sh" --audio-only || log_warn "Audio cache restore failed, continuing without it"
+}
+
+www_tutorial_audio_upload() {
+    # Counterpart to www_tutorial_audio_restore: backs up newly-synthesized
+    # narration so it's not lost/re-paid-for on the next fresh checkout.
+    if [[ -z "${R2_MEDIA_ACCESS_KEY_ID:-}" || -z "${R2_MEDIA_SECRET_ACCESS_KEY:-}" || -z "${R2_MEDIA_ENDPOINT:-}" ]]; then
+        log_warn "R2_MEDIA_* not set — skipping tutorial-audio cache upload"
+        return 0
+    fi
+    log_step "Backing up tutorial-audio cache to R2..."
+    "$ROOT_DIR/.ci/scripts/deploy/sync-media-to-r2.sh" --audio-only || log_warn "Audio cache upload failed"
+}
+
 www_tutorials_generate() {
     check_node_version
     ensure_generative_submodule
     ensure_python_installed
     ensure_audio_system_deps
+    www_tutorial_audio_restore
 
     local clean_venv=false
     local destroy_venv=false
@@ -592,6 +620,8 @@ www_tutorials_generate() {
     log_step "Generating tutorial audio assets..."
     npm run tutorials:tts:generate -w @rediacc/www -- "${passthrough[@]}"
 
+    www_tutorial_audio_upload
+
     if [[ "$destroy_venv" == "true" ]]; then
         log_step "Destroying generative Python environment..."
         rm -rf "$ROOT_DIR/private/generative/.venv"
@@ -602,9 +632,11 @@ www_tutorials_video() {
     check_node_version
     ensure_deps
     ensure_audio_system_deps
+    www_tutorial_audio_restore
 
     local name=""
     local lang=""
+    local jobs=1
     local passthrough=()
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -616,7 +648,15 @@ www_tutorials_video() {
                 lang="${1#*=}"
                 shift
                 ;;
-            --keep-temp)
+            --jobs)
+                jobs="$2"
+                shift 2
+                ;;
+            --jobs=*)
+                jobs="${1#*=}"
+                shift
+                ;;
+            --keep-temp | --captions-only | --debug | --refresh-browser-cache | --no-browser-cache)
                 passthrough+=("$1")
                 shift
                 ;;
@@ -626,6 +666,11 @@ www_tutorials_video() {
                 ;;
         esac
     done
+
+    if ! [[ "$jobs" =~ ^[0-9]+$ ]] || [[ "$jobs" -lt 1 ]]; then
+        log_error "--jobs must be a positive integer, got: $jobs"
+        exit 1
+    fi
 
     local tutorials_root="$ROOT_DIR/packages/www/public/assets/tutorials"
     local timeline_root="$ROOT_DIR/packages/www/src/data/tutorial-timeline"
@@ -656,33 +701,64 @@ www_tutorials_video() {
         done
     fi
 
-    log_step "Compiling tutorial videos (${#tutorials[@]} tutorial(s) × ${#langs[@]} lang(s))..."
-    local failures=()
+    # Build the candidate (tutorial, lang) pair list up front -- same
+    # timeline/audio existence pre-checks as before, just split out so the
+    # dispatch loop below doesn't need to re-check per job.
+    local pairs=()
+    for t in "${tutorials[@]}"; do
+        for l in "${langs[@]}"; do
+            if [[ ! -f "$timeline_root/$l/${t}.json" ]]; then
+                log_debug "skip $t × $l (no timeline)"
+                continue
+            fi
+            if [[ ! -d "$tutorials_root/audio/$l/$t" ]]; then
+                log_debug "skip $t × $l (no audio)"
+                continue
+            fi
+            pairs+=("$t"$'\t'"$l")
+        done
+    done
+
+    log_step "Compiling tutorial videos (${#pairs[@]} pair(s), --jobs $jobs)..."
+    local failure_prefix="/tmp/_tut_video_failures.$$"
+    rm -f "${failure_prefix}".*
+
+    # Bounded job pool: each (t, l) pair runs as its own ffmpeg-heavy
+    # compile (generate-tutorial-video.ts), independent of every other
+    # pair -- no shared temp dirs, no shared output files -- so this is
+    # safe to run with --jobs > 1. --jobs 1 (default) runs one at a time,
+    # identical order/behavior to before this flag existed. Each job
+    # writes its own failure file (not one shared file with concurrent
+    # appends) to avoid depending on single-line-append atomicity.
     (
         cd "$ROOT_DIR/packages/www"
-        for t in "${tutorials[@]}"; do
-            for l in "${langs[@]}"; do
-                if [[ ! -f "$timeline_root/$l/${t}.json" ]]; then
-                    log_debug "skip $t × $l (no timeline)"
-                    continue
-                fi
-                if [[ ! -d "$tutorials_root/audio/$l/$t" ]]; then
-                    log_debug "skip $t × $l (no audio)"
-                    continue
-                fi
+        running=0
+        idx=0
+        for pair in "${pairs[@]}"; do
+            t="${pair%%$'\t'*}"
+            l="${pair##*$'\t'}"
+            idx=$((idx + 1))
+            (
                 log_step "  → $t × $l"
                 if ! npx tsx scripts/generate-tutorial-video.ts \
                     --cast "$t" --lang "$l" "${passthrough[@]}"; then
                     log_error "  ✗ failed: $t × $l"
-                    echo "$t × $l" >>/tmp/_tut_video_failures.$$
+                    echo "$t × $l" >>"${failure_prefix}.${idx}"
                 fi
-            done
+            ) &
+            running=$((running + 1))
+            if [[ "$running" -ge "$jobs" ]]; then
+                wait -n
+                running=$((running - 1))
+            fi
         done
+        wait
     )
-    if [[ -f "/tmp/_tut_video_failures.$$" ]]; then
+
+    if compgen -G "${failure_prefix}.*" >/dev/null; then
         log_error "Failed tutorials:"
-        cat "/tmp/_tut_video_failures.$$" >&2
-        rm -f "/tmp/_tut_video_failures.$$"
+        cat "${failure_prefix}".* >&2
+        rm -f "${failure_prefix}".*
         return 1
     fi
 }
@@ -1495,7 +1571,14 @@ WWW COMMANDS:
   www tutorials extract             Sync cast markers to transcripts (preserves text)
   www tutorials scaffold-locales    Sync locale transcripts with English
   www tutorials generate [opts]     Generate TTS audio + timelines (Python venv)
-  www tutorials video [name] [--lang <code>]  Compile .mp4 from cast+storyboard+timeline+audio
+  www tutorials video [name] [--lang <code>] [--jobs N] [--captions-only]  Compile .mp4 from cast+storyboard+timeline+audio
+                                     (--jobs N runs N compiles concurrently, default 1; ffmpeg-bound,
+                                     safe to raise on a multi-core box -- e.g. --jobs 6 on 20 cores)
+                                     (--captions-only recovers scene timing analytically and re-emits
+                                     just the vtt/chapters/words.json sidecars, skipping the ffmpeg
+                                     re-encode entirely -- use after a --subtitle realignment when the
+                                     mp4 itself hasn't changed. Falls back to a full render per-tutorial
+                                     if a browser scene's silent-segment cache is cold.)
   www tutorials validate            Validate transcripts + audio integrity
   www tutorials all [opts]          Full tutorial pipeline (record -> extract -> generate -> video)
 

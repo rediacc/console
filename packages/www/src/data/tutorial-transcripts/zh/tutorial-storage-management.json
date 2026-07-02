@@ -7,7 +7,7 @@
       "id": "tutorial-storage-management-01",
       "markerIndex": 0,
       "at": 2.410441,
-      "text": "Fill the repository most of the way and check: the filesystem is getting tight.",
+      "text": "把 repository 填到快满，然后检查：文件系统已经开始吃紧了。",
       "afterText": "快满了。是时候扩容了。",
       "cardLabel": "填充数据",
       "prose": "向 repository 中填充数据，直到文件系统趋于饱和。"
@@ -16,7 +16,7 @@
       "id": "tutorial-storage-management-02",
       "markerIndex": 1,
       "at": 12.69586,
-      "text": "Grow it online. The encrypted container and the filesystem expand while the containers keep running — zero downtime, zero unmount.",
+      "text": "在线扩容。加密容器和文件系统在容器持续运行的同时一起扩展，零停机，零卸载。",
       "afterText": "现在是四 GB。没有任何重启。",
       "cardLabel": "在线扩容",
       "prose": "在线扩展 repository：LUKS 容器和文件系统在 containers 运行时同步扩容。"
@@ -25,7 +25,7 @@
       "id": "tutorial-storage-management-03",
       "markerIndex": 2,
       "at": 19.886575,
-      "text": "Verify from inside: same volume, double the room.",
+      "text": "从内部验证：还是同一个卷，空间却翻了一倍。",
       "afterText": "应用程序毫无察觉。",
       "cardLabel": "验证容量",
       "prose": "从 repo 内部检查文件系统，新容量已实时生效。"
@@ -34,7 +34,7 @@
       "id": "tutorial-storage-management-04",
       "markerIndex": 3,
       "at": 26.982758,
-      "text": "Now the other direction. Delete the big file — but watch: the pool does not get the space back yet. Deleted blocks stay reserved inside the image.",
+      "text": "现在反过来。删掉那个大文件，但要注意：pool 此时还拿不回空间。被删除的块仍然被镜像占着。",
       "afterText": "在 repo 内部已释放，但仍归镜像所有。",
       "cardLabel": "删除数据",
       "prose": "删除 repository 内的数据，注意 pool 此时尚不会缩小。"
@@ -43,7 +43,7 @@
       "id": "tutorial-storage-management-05",
       "markerIndex": 4,
       "at": 33.464064,
-      "text": "Trim hands those blocks back to the datastore pool, online. This is the step most setups forget.",
+      "text": "Trim 会把这些块在线归还给 datastore pool。这一步是大多数方案都会忘掉的。",
       "afterText": "已回收。存储池再次畅通。",
       "cardLabel": "Trim",
       "prose": "运行 repo trim，将释放的块归还给共享 pool，在线完成，零停机。"
@@ -52,7 +52,7 @@
       "id": "tutorial-storage-management-06",
       "markerIndex": 5,
       "at": 40.097562,
-      "text": "Now stop doing this by hand. The policy enables automatic growth up to a ceiling you choose, plus scheduled trims.",
+      "text": "现在别再手动做这些了。策略可以开启自动增长，上限由你设定，还能定时执行 trim。",
       "afterText": "策略已保存。接下来由机器接管。",
       "cardLabel": "设置策略",
       "prose": "设置容量策略：自动增长并指定明确上限，同时配置定时 trim。"
@@ -61,7 +61,7 @@
       "id": "tutorial-storage-management-07",
       "markerIndex": 6,
       "at": 50.538253,
-      "text": "Read it back: auto-grow on, ceiling at eight gigabytes, trim on a schedule.",
+      "text": "读回来看看：自动增长已开启，上限八 GB，trim 按计划执行。",
       "afterText": "设置一次，从此无需操心。",
       "cardLabel": "策略检查",
       "prose": "读取当前生效的策略，增长和 trim 现已自动执行。"
@@ -70,7 +70,7 @@
       "id": "tutorial-storage-management-08",
       "markerIndex": 7,
       "at": 57.423655,
-      "text": "And the view that ties it together: storage health shows every repo's usage, the pool, and how much copy-on-write sharing is saving you.",
+      "text": "最后是把一切串起来的视图：存储健康状态会显示每个 repo 的用量、pool，以及写时复制共享帮你省下了多少空间。",
       "afterText": "一个视图：使用情况、节省量和扩展空间。",
       "cardLabel": "健康视图",
       "prose": "检查机器存储健康状态：每个 repo 的使用量、pool 状态以及 CoW reflink 节省的空间。"

@@ -18,9 +18,355 @@
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/tutorial-delta-transfer-01.628283c0.mp3",
       "textHash": "628283c0de279313c694d9f45e081a4fa536b5b85ac322148a35f151e78c71c9",
       "audioDurationSec": 12.59102,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.4,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 2,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.88,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.04,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.44,
+          "startChar": 7,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.52,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.84,
+          "startChar": 10,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.08,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.72,
+          "startChar": 15,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.2,
+          "startChar": 19,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.28,
+          "startChar": 21,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.76,
+          "startChar": 22,
+          "endChar": 24
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 3.92,
+          "startChar": 24,
+          "endChar": 25
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.24,
+          "startChar": 25,
+          "endChar": 27
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.6,
+          "startChar": 28,
+          "endChar": 30
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.68,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 6.08,
+          "startChar": 31,
+          "endChar": 35
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.4,
+          "startChar": 35,
+          "endChar": 37
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.56,
+          "startChar": 37,
+          "endChar": 38
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.64,
+          "startChar": 38,
+          "endChar": 39
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 6.96,
+          "startChar": 39,
+          "endChar": 41
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 7.84,
+          "startChar": 42,
+          "endChar": 43
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.56,
+          "startChar": 43,
+          "endChar": 48
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 9.04,
+          "startChar": 48,
+          "endChar": 50
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.44,
+          "startChar": 50,
+          "endChar": 52
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.16,
+          "startChar": 57,
+          "endChar": 58
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 10.56,
+          "startChar": 58,
+          "endChar": 61
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.52,
+          "startChar": 62,
+          "endChar": 64
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.68,
+          "startChar": 64,
+          "endChar": 65
+        },
+        {
+          "startSec": 11.68,
+          "endSec": 12.32,
+          "startChar": 65,
+          "endChar": 71
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 12.48,
+          "startChar": 71,
+          "endChar": 73
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/tutorial-delta-transfer-01-after.bd6f1034.mp3",
       "afterAudioDurationSec": 9.404082,
-      "afterTextHash": "bd6f10348509fa51e8f0d17db8d03e112bacad358100a8890f9adf2798827c94"
+      "afterTextHash": "bd6f10348509fa51e8f0d17db8d03e112bacad358100a8890f9adf2798827c94",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.04,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.36,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 4,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.24,
+          "startChar": 5,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.12,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.6,
+          "startChar": 16,
+          "endChar": 19
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.88,
+          "startChar": 23,
+          "endChar": 24
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.52,
+          "startChar": 24,
+          "endChar": 26
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.68,
+          "startChar": 26,
+          "endChar": 27
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 6.08,
+          "startChar": 27,
+          "endChar": 29
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.16,
+          "startChar": 29,
+          "endChar": 30
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.48,
+          "startChar": 30,
+          "endChar": 33
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 6.56,
+          "startChar": 33,
+          "endChar": 34
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.8,
+          "startChar": 34,
+          "endChar": 36
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 6.96,
+          "startChar": 36,
+          "endChar": 37
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.12,
+          "startChar": 37,
+          "endChar": 39
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.36,
+          "startChar": 39,
+          "endChar": 40
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.08,
+          "startChar": 41,
+          "endChar": 43
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.24,
+          "startChar": 43,
+          "endChar": 44
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.64,
+          "startChar": 44,
+          "endChar": 47
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.8,
+          "startChar": 47,
+          "endChar": 48
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.04,
+          "startChar": 48,
+          "endChar": 50
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.36,
+          "startChar": 50,
+          "endChar": 52
+        }
+      ]
     },
     {
       "id": "tutorial-delta-transfer-02",
@@ -31,9 +377,133 @@
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/tutorial-delta-transfer-02.e3e1d0d6.mp3",
       "textHash": "e3e1d0d654d58cb1b7b50e0c87971cea73e332672e409037b30da6a230b08226",
       "audioDurationSec": 5.067755,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.96,
+          "startChar": 2,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.12,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.44,
+          "startChar": 6,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.0,
+          "startChar": 9,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.56,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.2,
+          "startChar": 13,
+          "endChar": 18
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.28,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.68,
+          "startChar": 19,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.16,
+          "startChar": 21,
+          "endChar": 22
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.72,
+          "startChar": 23,
+          "endChar": 28
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.04,
+          "startChar": 28,
+          "endChar": 30
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/tutorial-delta-transfer-02-after.79858b8c.mp3",
       "afterAudioDurationSec": 2.35102,
-      "afterTextHash": "79858b8cc37659972a05b4d37e968c289ac4258b7f1d434ebb825c293b1cfc18"
+      "afterTextHash": "79858b8cc37659972a05b4d37e968c289ac4258b7f1d434ebb825c293b1cfc18",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.88,
+          "startChar": 3,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 0.96,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.2,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.36,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.84,
+          "startChar": 10,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.24,
+          "startChar": 13,
+          "endChar": 15
+        }
+      ]
     },
     {
       "id": "tutorial-delta-transfer-03",
@@ -44,9 +514,379 @@
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/tutorial-delta-transfer-03.94c10c5f.mp3",
       "textHash": "94c10c5f3cb70896f52e9aec498158b5a19117546b80e7531b5bf1b3525d8c6f",
       "audioDurationSec": 16.117551,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.48,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.64,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.96,
+          "startChar": 4,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.04,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.36,
+          "startChar": 9,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.32,
+          "startChar": 12,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.72,
+          "startChar": 14,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 18,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.92,
+          "startChar": 22,
+          "endChar": 24
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.0,
+          "startChar": 24,
+          "endChar": 25
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.56,
+          "startChar": 25,
+          "endChar": 27
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.64,
+          "startChar": 27,
+          "endChar": 28
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.04,
+          "startChar": 28,
+          "endChar": 30
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.12,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.2,
+          "startChar": 31,
+          "endChar": 32
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.76,
+          "startChar": 32,
+          "endChar": 36
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.8,
+          "startChar": 37,
+          "endChar": 38
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.28,
+          "startChar": 38,
+          "endChar": 43
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.36,
+          "startChar": 43,
+          "endChar": 44
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.76,
+          "startChar": 44,
+          "endChar": 48
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 7.92,
+          "startChar": 48,
+          "endChar": 49
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.24,
+          "startChar": 49,
+          "endChar": 51
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.48,
+          "startChar": 51,
+          "endChar": 52
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.2,
+          "startChar": 52,
+          "endChar": 53
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.6,
+          "startChar": 54,
+          "endChar": 55
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 10.4,
+          "startChar": 55,
+          "endChar": 60
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.88,
+          "startChar": 60,
+          "endChar": 62
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.2,
+          "startChar": 62,
+          "endChar": 64
+        },
+        {
+          "startSec": 11.92,
+          "endSec": 12.08,
+          "startChar": 70,
+          "endChar": 71
+        },
+        {
+          "startSec": 12.08,
+          "endSec": 12.56,
+          "startChar": 71,
+          "endChar": 74
+        },
+        {
+          "startSec": 13.36,
+          "endSec": 13.76,
+          "startChar": 75,
+          "endChar": 77
+        },
+        {
+          "startSec": 13.76,
+          "endSec": 13.92,
+          "startChar": 77,
+          "endChar": 78
+        },
+        {
+          "startSec": 13.92,
+          "endSec": 14.0,
+          "startChar": 78,
+          "endChar": 79
+        },
+        {
+          "startSec": 14.0,
+          "endSec": 14.16,
+          "startChar": 79,
+          "endChar": 80
+        },
+        {
+          "startSec": 14.16,
+          "endSec": 14.56,
+          "startChar": 80,
+          "endChar": 84
+        },
+        {
+          "startSec": 14.56,
+          "endSec": 14.8,
+          "startChar": 84,
+          "endChar": 86
+        },
+        {
+          "startSec": 14.8,
+          "endSec": 14.96,
+          "startChar": 86,
+          "endChar": 87
+        },
+        {
+          "startSec": 14.96,
+          "endSec": 15.44,
+          "startChar": 87,
+          "endChar": 89
+        },
+        {
+          "startSec": 15.44,
+          "endSec": 15.52,
+          "startChar": 89,
+          "endChar": 90
+        },
+        {
+          "startSec": 15.52,
+          "endSec": 15.6,
+          "startChar": 90,
+          "endChar": 91
+        },
+        {
+          "startSec": 15.6,
+          "endSec": 15.84,
+          "startChar": 91,
+          "endChar": 93
+        },
+        {
+          "startSec": 15.84,
+          "endSec": 16.0,
+          "startChar": 93,
+          "endChar": 94
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/tutorial-delta-transfer-03-after.8295bfaa.mp3",
       "afterAudioDurationSec": 5.799184,
-      "afterTextHash": "8295bfaa80f8bddd468db4ed7dac25fc4f6de4932dcb7de84609192505668c96"
+      "afterTextHash": "8295bfaa80f8bddd468db4ed7dac25fc4f6de4932dcb7de84609192505668c96",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.88,
+          "startChar": 1,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.04,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.44,
+          "startChar": 7,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.76,
+          "startChar": 11,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.56,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.88,
+          "startChar": 15,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 2.96,
+          "startChar": 17,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.04,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.28,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.92,
+          "startChar": 20,
+          "endChar": 25
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.72,
+          "startChar": 26,
+          "endChar": 28
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 4.88,
+          "startChar": 28,
+          "endChar": 29
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.12,
+          "startChar": 29,
+          "endChar": 31
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.44,
+          "startChar": 31,
+          "endChar": 33
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.76,
+          "startChar": 33,
+          "endChar": 35
+        }
+      ]
     },
     {
       "id": "tutorial-delta-transfer-04",
@@ -57,9 +897,265 @@
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/tutorial-delta-transfer-04.b028952b.mp3",
       "textHash": "b028952b3a1a95a4002b4cda12603b108a8d491d1d0a0b40329fe179417e225d",
       "audioDurationSec": 10.266122,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.56,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.96,
+          "startChar": 3,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.28,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.6,
+          "startChar": 7,
+          "endChar": 9
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.48,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.72,
+          "startChar": 20,
+          "endChar": 22
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.96,
+          "startChar": 22,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.6,
+          "startChar": 24,
+          "endChar": 25
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.84,
+          "startChar": 25,
+          "endChar": 26
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.0,
+          "startChar": 26,
+          "endChar": 27
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.4,
+          "startChar": 27,
+          "endChar": 29
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.48,
+          "startChar": 29,
+          "endChar": 30
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.56,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.88,
+          "startChar": 31,
+          "endChar": 33
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.68,
+          "startChar": 34,
+          "endChar": 35
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 6.08,
+          "startChar": 35,
+          "endChar": 37
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.48,
+          "startChar": 37,
+          "endChar": 39
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 6.56,
+          "startChar": 39,
+          "endChar": 40
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.64,
+          "startChar": 40,
+          "endChar": 41
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 6.8,
+          "startChar": 41,
+          "endChar": 42
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.12,
+          "startChar": 42,
+          "endChar": 44
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.36,
+          "startChar": 44,
+          "endChar": 46
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.44,
+          "startChar": 46,
+          "endChar": 47
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.16,
+          "startChar": 48,
+          "endChar": 51
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.24,
+          "startChar": 51,
+          "endChar": 52
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.56,
+          "startChar": 52,
+          "endChar": 55
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.64,
+          "startChar": 55,
+          "endChar": 56
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.8,
+          "startChar": 56,
+          "endChar": 57
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.12,
+          "startChar": 57,
+          "endChar": 59
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.76,
+          "startChar": 59,
+          "endChar": 61
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.0,
+          "startChar": 61,
+          "endChar": 62
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.16,
+          "startChar": 62,
+          "endChar": 64
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/tutorial-delta-transfer-04-after.5ac1c9c4.mp3",
       "afterAudioDurationSec": 2.690612,
-      "afterTextHash": "5ac1c9c42c27fc267ae74c0744e2c986b9b4f6fe17213940d890026debc25adb"
+      "afterTextHash": "5ac1c9c42c27fc267ae74c0744e2c986b9b4f6fe17213940d890026debc25adb",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.64,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.2,
+          "startChar": 3,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.28,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.68,
+          "startChar": 10,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.84,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.16,
+          "startChar": 14,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.32,
+          "startChar": 16,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.56,
+          "startChar": 18,
+          "endChar": 20
+        }
+      ]
     }
   ],
   "narrationAudio": [
@@ -68,21 +1164,951 @@
       "textHash": "872ddb882b0399cc97a15aef4b8e0ad107a24619b9658b8056a9a510dd894d20",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/intro.872ddb88.mp3",
       "narrationText": "面白い実験をしてみましょう。1ギガバイトのデータが入ったrepositoryを別のマシンに2回プッシュします。最初のプッシュはすべてを転送し、2回目は変更された部分だけを転送します。数字に注目してください。pushコマンドは転送量を正確に表示します。",
-      "audioDurationSec": 19.147755
+      "audioDurationSec": 19.147755,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.96,
+          "startChar": 3,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.04,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.12,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.2,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.28,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.76,
+          "startChar": 9,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.72,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.28,
+          "startChar": 15,
+          "endChar": 20
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.36,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.68,
+          "startChar": 21,
+          "endChar": 24
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.84,
+          "startChar": 24,
+          "endChar": 25
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.0,
+          "startChar": 25,
+          "endChar": 27
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.24,
+          "startChar": 27,
+          "endChar": 28
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.36,
+          "startChar": 38,
+          "endChar": 39
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.84,
+          "startChar": 39,
+          "endChar": 40
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 5.92,
+          "startChar": 40,
+          "endChar": 41
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.32,
+          "startChar": 41,
+          "endChar": 44
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.48,
+          "startChar": 44,
+          "endChar": 45
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 6.64,
+          "startChar": 45,
+          "endChar": 46
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 6.88,
+          "startChar": 46,
+          "endChar": 47
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.12,
+          "startChar": 47,
+          "endChar": 51
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.28,
+          "startChar": 51,
+          "endChar": 52
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.52,
+          "startChar": 52,
+          "endChar": 54
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.4,
+          "startChar": 55,
+          "endChar": 57
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.48,
+          "startChar": 57,
+          "endChar": 58
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.8,
+          "startChar": 58,
+          "endChar": 62
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 8.96,
+          "startChar": 62,
+          "endChar": 63
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.36,
+          "startChar": 63,
+          "endChar": 66
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.44,
+          "startChar": 66,
+          "endChar": 67
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.84,
+          "startChar": 67,
+          "endChar": 69
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.08,
+          "startChar": 69,
+          "endChar": 70
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 10.72,
+          "startChar": 71,
+          "endChar": 72
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 10.96,
+          "startChar": 72,
+          "endChar": 73
+        },
+        {
+          "startSec": 10.96,
+          "endSec": 11.12,
+          "startChar": 73,
+          "endChar": 74
+        },
+        {
+          "startSec": 11.12,
+          "endSec": 11.2,
+          "startChar": 74,
+          "endChar": 75
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.6,
+          "startChar": 75,
+          "endChar": 77
+        },
+        {
+          "startSec": 11.6,
+          "endSec": 11.76,
+          "startChar": 77,
+          "endChar": 78
+        },
+        {
+          "startSec": 11.76,
+          "endSec": 11.84,
+          "startChar": 78,
+          "endChar": 79
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.0,
+          "startChar": 79,
+          "endChar": 80
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.32,
+          "startChar": 80,
+          "endChar": 82
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 12.56,
+          "startChar": 82,
+          "endChar": 84
+        },
+        {
+          "startSec": 12.56,
+          "endSec": 12.72,
+          "startChar": 84,
+          "endChar": 85
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 13.12,
+          "startChar": 85,
+          "endChar": 87
+        },
+        {
+          "startSec": 13.12,
+          "endSec": 13.2,
+          "startChar": 87,
+          "endChar": 88
+        },
+        {
+          "startSec": 13.2,
+          "endSec": 13.44,
+          "startChar": 88,
+          "endChar": 90
+        },
+        {
+          "startSec": 13.92,
+          "endSec": 14.32,
+          "startChar": 91,
+          "endChar": 93
+        },
+        {
+          "startSec": 14.32,
+          "endSec": 14.48,
+          "startChar": 93,
+          "endChar": 94
+        },
+        {
+          "startSec": 14.48,
+          "endSec": 14.88,
+          "startChar": 94,
+          "endChar": 96
+        },
+        {
+          "startSec": 14.88,
+          "endSec": 14.96,
+          "startChar": 96,
+          "endChar": 97
+        },
+        {
+          "startSec": 14.96,
+          "endSec": 15.04,
+          "startChar": 97,
+          "endChar": 98
+        },
+        {
+          "startSec": 15.04,
+          "endSec": 15.52,
+          "startChar": 98,
+          "endChar": 102
+        },
+        {
+          "startSec": 16.24,
+          "endSec": 16.64,
+          "startChar": 107,
+          "endChar": 111
+        },
+        {
+          "startSec": 16.64,
+          "endSec": 16.88,
+          "startChar": 111,
+          "endChar": 112
+        },
+        {
+          "startSec": 17.04,
+          "endSec": 17.44,
+          "startChar": 112,
+          "endChar": 114
+        },
+        {
+          "startSec": 17.44,
+          "endSec": 17.68,
+          "startChar": 114,
+          "endChar": 115
+        },
+        {
+          "startSec": 17.68,
+          "endSec": 17.76,
+          "startChar": 115,
+          "endChar": 116
+        },
+        {
+          "startSec": 17.76,
+          "endSec": 18.24,
+          "startChar": 116,
+          "endChar": 118
+        },
+        {
+          "startSec": 18.24,
+          "endSec": 18.4,
+          "startChar": 118,
+          "endChar": 119
+        },
+        {
+          "startSec": 18.4,
+          "endSec": 18.64,
+          "startChar": 119,
+          "endChar": 121
+        },
+        {
+          "startSec": 18.64,
+          "endSec": 18.8,
+          "startChar": 121,
+          "endChar": 122
+        },
+        {
+          "startSec": 18.8,
+          "endSec": 19.04,
+          "startChar": 122,
+          "endChar": 124
+        }
+      ]
     },
     {
       "id": "blocks-not-bytes",
       "textHash": "e10539044204fb6077145c7f3dcd980b0662db409ee680cf508824e69d1ab7e4",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/blocks-not-bytes.e1053904.mp3",
       "narrationText": "仕掛けはセットアップにあります。最初のプッシュの後、CLIは両方のマシンに同一の不変ベースイメージを保持します。次のプッシュはそのベースに対してブロックを比較し、差分だけを送信します。フラグも管理も不要で、同じpushコマンドです。",
-      "audioDurationSec": 20.192653
+      "audioDurationSec": 20.192653,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.64,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.28,
+          "startChar": 4,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.44,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 11,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.92,
+          "startChar": 13,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.64,
+          "startChar": 16,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.72,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.04,
+          "startChar": 19,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.2,
+          "startChar": 23,
+          "endChar": 24
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.52,
+          "startChar": 24,
+          "endChar": 25
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.72,
+          "startChar": 26,
+          "endChar": 29
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 4.96,
+          "startChar": 29,
+          "endChar": 30
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.68,
+          "startChar": 30,
+          "endChar": 32
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 5.84,
+          "startChar": 32,
+          "endChar": 33
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.24,
+          "startChar": 33,
+          "endChar": 36
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.48,
+          "startChar": 36,
+          "endChar": 37
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 7.04,
+          "startChar": 37,
+          "endChar": 39
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.2,
+          "startChar": 39,
+          "endChar": 40
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.68,
+          "startChar": 40,
+          "endChar": 42
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.0,
+          "startChar": 42,
+          "endChar": 45
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.48,
+          "startChar": 45,
+          "endChar": 49
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.56,
+          "startChar": 49,
+          "endChar": 50
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.88,
+          "startChar": 50,
+          "endChar": 52
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 8.96,
+          "startChar": 52,
+          "endChar": 53
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.28,
+          "startChar": 53,
+          "endChar": 55
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.32,
+          "startChar": 56,
+          "endChar": 57
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.4,
+          "startChar": 57,
+          "endChar": 58
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.8,
+          "startChar": 58,
+          "endChar": 62
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 11.04,
+          "startChar": 62,
+          "endChar": 63
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.52,
+          "startChar": 63,
+          "endChar": 65
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.92,
+          "startChar": 65,
+          "endChar": 68
+        },
+        {
+          "startSec": 11.92,
+          "endSec": 12.08,
+          "startChar": 68,
+          "endChar": 69
+        },
+        {
+          "startSec": 12.08,
+          "endSec": 12.4,
+          "startChar": 69,
+          "endChar": 71
+        },
+        {
+          "startSec": 12.4,
+          "endSec": 12.64,
+          "startChar": 71,
+          "endChar": 72
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 13.2,
+          "startChar": 72,
+          "endChar": 76
+        },
+        {
+          "startSec": 13.2,
+          "endSec": 13.28,
+          "startChar": 76,
+          "endChar": 77
+        },
+        {
+          "startSec": 13.28,
+          "endSec": 13.6,
+          "startChar": 77,
+          "endChar": 79
+        },
+        {
+          "startSec": 13.6,
+          "endSec": 13.92,
+          "startChar": 79,
+          "endChar": 80
+        },
+        {
+          "startSec": 14.32,
+          "endSec": 14.72,
+          "startChar": 81,
+          "endChar": 83
+        },
+        {
+          "startSec": 14.72,
+          "endSec": 14.96,
+          "startChar": 83,
+          "endChar": 85
+        },
+        {
+          "startSec": 14.96,
+          "endSec": 15.2,
+          "startChar": 85,
+          "endChar": 86
+        },
+        {
+          "startSec": 15.2,
+          "endSec": 15.68,
+          "startChar": 86,
+          "endChar": 88
+        },
+        {
+          "startSec": 15.68,
+          "endSec": 15.76,
+          "startChar": 88,
+          "endChar": 89
+        },
+        {
+          "startSec": 15.76,
+          "endSec": 16.08,
+          "startChar": 89,
+          "endChar": 91
+        },
+        {
+          "startSec": 16.72,
+          "endSec": 17.04,
+          "startChar": 92,
+          "endChar": 95
+        },
+        {
+          "startSec": 17.04,
+          "endSec": 17.2,
+          "startChar": 95,
+          "endChar": 96
+        },
+        {
+          "startSec": 17.2,
+          "endSec": 17.6,
+          "startChar": 96,
+          "endChar": 98
+        },
+        {
+          "startSec": 17.6,
+          "endSec": 17.68,
+          "startChar": 98,
+          "endChar": 99
+        },
+        {
+          "startSec": 17.68,
+          "endSec": 18.08,
+          "startChar": 99,
+          "endChar": 101
+        },
+        {
+          "startSec": 18.08,
+          "endSec": 18.32,
+          "startChar": 101,
+          "endChar": 102
+        },
+        {
+          "startSec": 18.64,
+          "endSec": 19.12,
+          "startChar": 103,
+          "endChar": 105
+        },
+        {
+          "startSec": 19.44,
+          "endSec": 19.84,
+          "startChar": 109,
+          "endChar": 113
+        },
+        {
+          "startSec": 19.84,
+          "endSec": 20.16,
+          "startChar": 113,
+          "endChar": 115
+        }
+      ]
     },
     {
       "id": "next-tutorial",
       "textHash": "7244399ab41ae74066b7e8d55d0f97b49dfd5889e6fad82e1ab9d2043c5e9be3",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/next-tutorial.7244399a.mp3",
       "narrationText": "小さな変更は小さな転送を意味します。最初の後は毎回そうです。残るチュートリアルはあと1つ、ディスクが不足しないようにする方法です。最終回でお会いしましょう！",
-      "audioDurationSec": 11.650612
+      "audioDurationSec": 11.650612,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.88,
+          "startChar": 3,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.12,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.52,
+          "startChar": 6,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.0,
+          "startChar": 9,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.08,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.24,
+          "startChar": 12,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.32,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.56,
+          "startChar": 15,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.2,
+          "startChar": 18,
+          "endChar": 20
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.36,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.52,
+          "startChar": 21,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.76,
+          "startChar": 22,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.16,
+          "startChar": 23,
+          "endChar": 25
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.32,
+          "startChar": 25,
+          "endChar": 27
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.56,
+          "startChar": 27,
+          "endChar": 29
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.44,
+          "startChar": 30,
+          "endChar": 32
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 6.08,
+          "startChar": 32,
+          "endChar": 39
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.4,
+          "startChar": 39,
+          "endChar": 40
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.56,
+          "startChar": 40,
+          "endChar": 42
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.04,
+          "startChar": 43,
+          "endChar": 44
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.6,
+          "startChar": 45,
+          "endChar": 49
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 7.76,
+          "startChar": 49,
+          "endChar": 50
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.0,
+          "startChar": 50,
+          "endChar": 52
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.16,
+          "startChar": 52,
+          "endChar": 53
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.4,
+          "startChar": 53,
+          "endChar": 55
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.48,
+          "startChar": 55,
+          "endChar": 57
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.64,
+          "startChar": 57,
+          "endChar": 58
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.88,
+          "startChar": 58,
+          "endChar": 60
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.28,
+          "startChar": 60,
+          "endChar": 62
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.52,
+          "startChar": 62,
+          "endChar": 64
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.4,
+          "startChar": 65,
+          "endChar": 67
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.56,
+          "startChar": 67,
+          "endChar": 68
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 10.8,
+          "startChar": 68,
+          "endChar": 69
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 10.88,
+          "startChar": 69,
+          "endChar": 70
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.04,
+          "startChar": 70,
+          "endChar": 72
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.2,
+          "startChar": 72,
+          "endChar": 73
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.52,
+          "startChar": 73,
+          "endChar": 77
+        }
+      ]
     }
   ]
 }

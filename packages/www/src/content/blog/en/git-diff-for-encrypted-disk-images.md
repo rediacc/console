@@ -1,7 +1,7 @@
 ---
 title: "git diff for Encrypted Disk Images: Diffing Forks Without Decrypting Them"
 description: "rdc repo diff compares encrypted images at the block level and reports A/M/D/R. No key touched. Cost tracks changed blocks, not repo size."
-author: Muhammed Fatih Bayraktar
+author: Rediacc
 publishedDate: 2026-05-28
 category: guide
 tags:

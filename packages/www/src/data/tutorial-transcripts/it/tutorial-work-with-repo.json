@@ -8,7 +8,7 @@
       "markerIndex": 0,
       "at": 2.414306,
       "text": "Prima di tutto, il comando tunnel. L'app gira sul server, non sul tuo laptop. Il comando tunnel inoltra la porta di un container via SSH cosi' puoi aprirla su localhost nel browser.",
-      "afterText": "Porta inoltrata. L'app e' ora raggiungibile su localhost.",
+      "afterText": "Porta inoltrata. L'app è ora raggiungibile su localhost.",
       "cardLabel": "Tunnel di Porta",
       "prose": "L'app gira sul server, non sul tuo laptop. Il comando tunnel inoltra una porta del container tramite SSH così puoi aprirla su localhost nel tuo browser."
     },
@@ -43,11 +43,11 @@
   "narrations": [
     {
       "id": "intro",
-      "text": "Bene! La tua app e' in esecuzione, quindi lavoriamoci davvero. Tre comandi coprono il ciclo quotidiano."
+      "text": "Bene! La tua app è in esecuzione, quindi lavoriamoci davvero. Tre comandi coprono il ciclo quotidiano."
     },
     {
       "id": "daily-three",
-      "text": "Tunnel apre la tua app nel browser, term esegue comandi dentro la sandbox e sync sposta i file dentro e fuori. Questo e' l'intero flusso di lavoro quotidiano."
+      "text": "Tunnel apre la tua app nel browser, term esegue comandi dentro la sandbox e sync sposta i file dentro e fuori. Questo è l'intero flusso di lavoro quotidiano."
     },
     {
       "id": "open-tunnel",

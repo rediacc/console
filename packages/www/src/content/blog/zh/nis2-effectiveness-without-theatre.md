@@ -1,8 +1,8 @@
 ---
-title: "年度渗透测试不过是合规表演。NIS2 Article 21(2)(f) 让这个问题无处遁形。"
-description: "持续有效性评估、让成本大幅压缩的常数时间 fork，以及没有法证级证据就无法满足的 Article 23 报告时间线。"
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-09
+title: 年度渗透测试不过是合规表演。NIS2 Article 21(2)(f) 让这个问题无处遁形。
+description: 持续有效性评估、让成本大幅压缩的常数时间 fork，以及没有法证级证据就无法满足的 Article 23 报告时间线。
+author: Rediacc
+publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
 tags:
   - nis2
@@ -12,8 +12,8 @@ tags:
   - incident-reporting
 featured: false
 language: zh
-sourceHash: "4c2768e81f0ff03a"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: 0e471ac41759e4cb
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
 

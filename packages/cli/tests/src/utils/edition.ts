@@ -7,6 +7,7 @@
 
 import { randomBytes } from 'node:crypto';
 import { expect } from '@playwright/test';
+import { PLAN_LIMITS as CANONICAL_PLAN_LIMITS } from '@rediacc/shared/subscription';
 import { CI_ACTIVATION_CODE, getApiUrl, TEST_EMAIL_DOMAIN } from '../constants';
 import { type CliResult, CliTestRunner } from './CliTestRunner';
 
@@ -191,25 +192,10 @@ export const EditionErrorPatterns = {
 
 /**
  * Subscription limits by edition for CLI edition tests.
+ * Re-exported from @rediacc/shared/subscription (the canonical source of
+ * truth) instead of a locally maintained copy, so this can't drift again.
  */
-export const PLAN_LIMITS = {
-  COMMUNITY: {
-    maxRepositorySizeGb: 10,
-    maxRepoLicenseIssuancesPerMonth: 500,
-  },
-  PROFESSIONAL: {
-    maxRepositorySizeGb: 100,
-    maxRepoLicenseIssuancesPerMonth: 5000,
-  },
-  BUSINESS: {
-    maxRepositorySizeGb: 500,
-    maxRepoLicenseIssuancesPerMonth: 20000,
-  },
-  ENTERPRISE: {
-    maxRepositorySizeGb: 1024,
-    maxRepoLicenseIssuancesPerMonth: 100000,
-  },
-} as const;
+export const PLAN_LIMITS = CANONICAL_PLAN_LIMITS;
 
 /**
  * Feature availability matrix by edition.

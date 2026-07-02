@@ -1,0 +1,15 @@
+---
+import { createTranslator } from '../i18n/utils';
+import type { Language } from '../i18n/types';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props;
+const { t } = createTranslator(lang);
+---
+
+<div class="cf-guarantee-strip">
+  <p class="cf-guarantee-text">{t('pages.pricing.trustSection.corporateGuarantee')}</p>
+</div>

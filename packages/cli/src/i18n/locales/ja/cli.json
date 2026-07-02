@@ -959,9 +959,9 @@
         "infrastructure": "インフラストラクチャ",
         "noData": "ステータスデータがありません",
         "storageHealthFragmentationNote": "断片化は各リポジトリのコピーオンライト・イメージのエクステント数を数えるものであり、その中のファイルではありません。高い値はランダム書き込みのワークロード（データベース、コンテナレイヤー）では想定内であり、参考情報にすぎません。デフラグはここでは意図的に未対応です。reflink で共有されたフォークやバックアップスナップショットの共有を解除し、データストアの使用量を膨張させてしまうためです。",
-        "storageHealthPoolSummary": "プール: 使用 {{used}}、空き {{free}}（{{percent}}% 使用中）",
-        "storageHealthPoolSnapshots": "バックアップスナップショットが {{pinned}} を保持しています（アクティブ {{active}}、失効 {{stale}}。失効分は 'rdc machine prune' で削除されます）",
         "storageHealthHint": "ヒント: --storage-health を付けて実行すると、リポジトリごとの BTRFS フラグメンテーションと reflink の節約量を確認できます",
+        "storageHealthPoolSnapshots": "バックアップスナップショットが {{pinned}} を保持しています（アクティブ {{active}}、失効 {{stale}}。失効分は 'rdc machine prune' で削除されます）",
+        "storageHealthPoolSummary": "プール: 使用 {{used}}、空き {{free}}（{{percent}}% 使用中）",
         "storageHealthSummary": "ストレージ効率: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} 個のコンテナがドリフトしきい値を超えました。ゼロ以外で終了します",
         "syncCertsFailed": "証明書キャッシュの同期に失敗しました: {{error}}"
@@ -1304,8 +1304,8 @@
         "list": {
           "completed": "自動開始リストを取得しました",
           "description": "自動開始が有効なリポジトリを一覧表示する",
-          "failed": "自動開始リポジトリの一覧取得に失敗しました",
           "empty": "\"{{machine}}\" に自動起動が有効なリポジトリはありません",
+          "failed": "自動開始リポジトリの一覧取得に失敗しました",
           "service": "自動起動サービス: インストール済み={{installed}}、有効={{enabled}}",
           "starting": "\"{{machine}}\" 上の自動開始リポジトリを一覧取得中..."
         }
@@ -1433,41 +1433,6 @@
         "sizeOption": "新しいリポジトリサイズ（例: 10G、100G、1T）",
         "starting": "\"{{machine}}\" で \"{{repository}}\" を {{size}} に拡張中..."
       },
-      "trim": {
-        "description": "マウント済みリポジトリからデータストアプールの空き領域を回収します（オンライン、停止なし）。リポジトリ内で削除されたブロックは fstrim でプールに返されます。--name を省略すると、マウント済みのすべてのリポジトリとデータストア自体をトリムします。バックアップ実行中のリポジトリでは fstrim はスキップされますが、--docker の回収は引き続き実行されます",
-        "descriptionShort": "リポジトリの空き領域をプールへ返却する",
-        "nameOption": "トリムするリポジトリ（デフォルト: マウント済みのすべて）",
-        "dockerOption": "Docker の領域を回収（停止中コンテナ、宙吊りイメージ、ビルドキャッシュ）。バックアップのスナップショットが有効な間も実行されます",
-        "dockerVolumesOption": "未使用の Docker ボリュームも削除する",
-        "reportOnlyOption": "トリムせずに discard 状態と回収可能量の見積もりを表示する",
-        "repoNotFound": "リポジトリが見つかりません: {{name}}",
-        "noMountedRepos": "マウント済みのリポジトリが見つかりません",
-        "starting": "\"{{machine}}\" のリポジトリをトリムしています...",
-        "completed": "トリム完了: {{total}} を回収しました",
-        "failed": "トリムに失敗しました"
-      },
-      "policy": {
-        "description": "マシンのストレージメンテナが適用する自動サイズポリシーを管理します。リポジトリが満杯に近づくとクォータをオンラインで拡大し（max-quota を超えず、プール残量が少ないときは拡大しません）、スケジュールされたトリムを実行します。自動縮小はありません。縮小には 'repo resize' を使ってください。--name を省略するとマシン全体のデフォルトポリシーを対象にします",
-        "descriptionShort": "自動サイズポリシーを管理（自動拡大、スケジュールトリム）",
-        "nameOption": "リポジトリ（デフォルト: マシン全体のポリシー）",
-        "repoNotFound": "リポジトリが見つかりません: {{name}}",
-        "invalidBool": "{{flag}} は 'true' または 'false' である必要があります。受け取った値: {{value}}",
-        "failed": "ポリシー操作に失敗しました",
-        "set": {
-          "description": "サイズポリシーのフィールドを設定します。渡したフラグだけが変更され、他の保存済みフィールドは値を保持します。自動拡大の有効化には --max-quota が必要です。上限はプールのオーバープロビジョニングへの明示的な同意です",
-          "descriptionShort": "ポリシーのフィールドを設定（マシンデフォルト、または --name で単一リポジトリ）",
-          "autoGrowOption": "クォータのオンライン自動拡大を有効化（true/false）",
-          "maxQuotaOption": "自動拡大の上限（例: 200G）。自動拡大には必須",
-          "growThresholdOption": "拡大を引き起こすファイルシステム使用率 %（デフォルト 85）",
-          "growStepOption": "1 ステップの拡大量: 絶対値（10G）またはクォータの割合（20%）",
-          "autoTrimOption": "スケジュールトリムを有効化（true/false）",
-          "trimIntervalOption": "自動トリムの最小間隔（時間、デフォルト 24）"
-        },
-        "get": {
-          "description": "保存されたマシンデフォルト、リポジトリの上書き（--name 指定時）、メンテナが実際に適用するマージ済みの有効ポリシーを表示します",
-          "descriptionShort": "サイズポリシーを表示（マシンデフォルト、リポジトリ上書き、有効値）"
-        }
-      },
       "fork": {
         "alreadyExists": "リポジトリ \"{{name}}\" はコンテキスト内に既に存在します",
         "checkpointOption": "fork 前にソースで CRIU checkpoint を作成する（fork 先での復元用にプロセスメモリ状態を取得）",
@@ -1537,7 +1502,6 @@
         "checkpointing": "CRIUチェックポイントを作成中...",
         "complete": "移行完了: {{name}} を {{from}} から {{to}} に移動しました",
         "deltaDone": "差分同期完了",
-        "phase2Stats": "カットオーバー（ダウンタイム）: {{duration}} で {{transferred}}",
         "deltaFailed": "差分同期に失敗しました",
         "deltaSync": "差分を同期中...",
         "description": "最小限のダウンタイムでリポジトリを別のマシンにライブマイグレーション。2フェーズrsync: 実行中にバルク転送、その後短時間停止して差分同期。CRIUチェックポイントによるプロセスメモリ移行とターゲットマシンの自動プロビジョニングに対応",
@@ -1554,9 +1518,10 @@
         "optionTo": "移行先マシン名",
         "phase1": "フェーズ1: バルクデータを転送中（ソースは実行中）...",
         "phase1Done": "バルク転送完了",
-        "phase1Stats": "{{duration}} で {{transferred}} を転送（ソースは稼働したまま）",
         "phase1Failed": "バルク転送に失敗しました",
+        "phase1Stats": "{{duration}} で {{transferred}} を転送（ソースは稼働したまま）",
         "phase2": "フェーズ2: 切り替え（短時間のダウンタイム）...",
+        "phase2Stats": "カットオーバー（ダウンタイム）: {{duration}} で {{transferred}}",
         "phase3": "フェーズ3: ターゲットで起動中...",
         "provisioning": "{{provider}} 経由でターゲットマシン {{machine}} をプロビジョニング中...",
         "sourceStopped": "ソースサービスを停止しました",
@@ -1588,6 +1553,28 @@
         "starting": "\"{{machine}}\" で \"{{repository}}\" の所有権を設定中...",
         "uidOption": "所有者UID（デフォルト: 7111）"
       },
+      "policy": {
+        "description": "マシンのストレージメンテナが適用する自動サイズポリシーを管理します。リポジトリが満杯に近づくとクォータをオンラインで拡大し（max-quota を超えず、プール残量が少ないときは拡大しません）、スケジュールされたトリムを実行します。自動縮小はありません。縮小には 'repo resize' を使ってください。--name を省略するとマシン全体のデフォルトポリシーを対象にします",
+        "descriptionShort": "自動サイズポリシーを管理（自動拡大、スケジュールトリム）",
+        "failed": "ポリシー操作に失敗しました",
+        "get": {
+          "description": "保存されたマシンデフォルト、リポジトリの上書き（--name 指定時）、メンテナが実際に適用するマージ済みの有効ポリシーを表示します",
+          "descriptionShort": "サイズポリシーを表示（マシンデフォルト、リポジトリ上書き、有効値）"
+        },
+        "invalidBool": "{{flag}} は 'true' または 'false' である必要があります。受け取った値: {{value}}",
+        "nameOption": "リポジトリ（デフォルト: マシン全体のポリシー）",
+        "repoNotFound": "リポジトリが見つかりません: {{name}}",
+        "set": {
+          "autoGrowOption": "クォータのオンライン自動拡大を有効化（true/false）",
+          "autoTrimOption": "スケジュールトリムを有効化（true/false）",
+          "description": "サイズポリシーのフィールドを設定します。渡したフラグだけが変更され、他の保存済みフィールドは値を保持します。自動拡大の有効化には --max-quota が必要です。上限はプールのオーバープロビジョニングへの明示的な同意です",
+          "descriptionShort": "ポリシーのフィールドを設定（マシンデフォルト、または --name で単一リポジトリ）",
+          "growStepOption": "1 ステップの拡大量: 絶対値（10G）またはクォータの割合（20%）",
+          "growThresholdOption": "拡大を引き起こすファイルシステム使用率 %（デフォルト 85）",
+          "maxQuotaOption": "自動拡大の上限（例: 200G）。自動拡大には必須",
+          "trimIntervalOption": "自動トリムの最小間隔（時間、デフォルト 24）"
+        }
+      },
       "pull": {
         "deployed": "リポジトリ\"{{repo}}\"が{{machine}}にデプロイされました",
         "deployFailed": "pull後の\"{{repo}}\"のデプロイに失敗しました",
@@ -1614,16 +1601,16 @@
         "optionCheckpoint": "バックアップ前にCRIUチェックポイントを作成（ライブマイグレーション用にプロセスメモリ状態をキャプチャ）",
         "optionDeltaBase": "両マシンにバイト単位で同一に存在するイミュータブルなベースGUID。変更されたブロックのみを転送（マシンターゲット）。省略すると自動ベースで手間なく処理",
         "optionForce": "既存のバックアップを強制的に上書きする",
+        "optionJson": "転送統計を JSON で出力",
         "optionProvision": "ターゲットマシンが存在しない場合、クラウドプロバイダー経由で自動プロビジョニング",
         "optionStrategy": "差分ベース使用時のブロック差分戦略: auto、physical、または shared",
-        "optionJson": "転送統計を JSON で出力",
-        "statsDelta": "\"{{repo}}\" を {{machine}} にプッシュしました: {{duration}} で {{transferred}} を転送（ベース {{base}} とのデルタ、イメージ {{image}}）",
-        "statsFull": "\"{{repo}}\" を {{machine}} にプッシュしました: {{duration}} で {{transferred}} を転送（フル転送）",
-        "statsNoBytes": "\"{{repo}}\" を {{machine}} にプッシュしました: 所要時間 {{duration}}",
         "optionTag": "バージョニング用デプロイタグ",
         "optionTo": "宛先マシンまたはストレージ名（設定から自動検出）",
         "optionUp": "プッシュ後、ターゲットマシンにリポジトリをマウントしてデプロイする",
-        "pushing": "\"{{repo}}\" のバックアップを {{dest}} にプッシュ中..."
+        "pushing": "\"{{repo}}\" のバックアップを {{dest}} にプッシュ中...",
+        "statsDelta": "\"{{repo}}\" を {{machine}} にプッシュしました: {{duration}} で {{transferred}} を転送（ベース {{base}} とのデルタ、イメージ {{image}}）",
+        "statsFull": "\"{{repo}}\" を {{machine}} にプッシュしました: {{duration}} で {{transferred}} を転送（フル転送）",
+        "statsNoBytes": "\"{{repo}}\" を {{machine}} にプッシュしました: 所要時間 {{duration}}"
       },
       "resize": {
         "completed": "リサイズが完了しました",
@@ -1719,6 +1706,19 @@
         },
         "starting": "\"{{machine}}\" で \"{{repository}}\" にテンプレートを適用中..."
       },
+      "trim": {
+        "completed": "トリム完了: {{total}} を回収しました",
+        "description": "マウント済みリポジトリからデータストアプールの空き領域を回収します（オンライン、停止なし）。リポジトリ内で削除されたブロックは fstrim でプールに返されます。--name を省略すると、マウント済みのすべてのリポジトリとデータストア自体をトリムします。バックアップ実行中のリポジトリでは fstrim はスキップされますが、--docker の回収は引き続き実行されます",
+        "descriptionShort": "リポジトリの空き領域をプールへ返却する",
+        "dockerOption": "Docker の領域を回収（停止中コンテナ、宙吊りイメージ、ビルドキャッシュ）。バックアップのスナップショットが有効な間も実行されます",
+        "dockerVolumesOption": "未使用の Docker ボリュームも削除する",
+        "failed": "トリムに失敗しました",
+        "nameOption": "トリムするリポジトリ（デフォルト: マウント済みのすべて）",
+        "noMountedRepos": "マウント済みのリポジトリが見つかりません",
+        "repoNotFound": "リポジトリが見つかりません: {{name}}",
+        "reportOnlyOption": "トリムせずに discard 状態と回収可能量の見積もりを表示する",
+        "starting": "\"{{machine}}\" のリポジトリをトリムしています..."
+      },
       "tunnel": {
         "active": "トンネル接続中: localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
         "closed": "トンネルを閉じました",
@@ -1734,9 +1734,9 @@
         "noContainers": "リポジトリ \"{{repository}}\" に実行中のコンテナが見つかりません",
         "noPorts": "コンテナ \"{{container}}\" に公開ポートが見つかりません。--port を指定してください",
         "noServiceIP": "コンテナ \"{{container}}\" にサービスIPが割り当てられていません",
-        "portOption": "転送するリモートコンテナポート",
-        "portInUse": "ローカルポート {{port}} はすでに使用中です。--local で別のポートを指定してください",
         "notReady": "localhost:{{localPort}} でトンネルが 15 秒以内に準備できませんでした",
+        "portInUse": "ローカルポート {{port}} はすでに使用中です。--local で別のポートを指定してください",
+        "portOption": "転送するリモートコンテナポート",
         "urlOnlyOption": "トンネルが準備できたらローカル URL のみを表示する（スクリプト向け）"
       },
       "unmount": {
@@ -2211,26 +2211,26 @@
         "removedKeys": "すべての永続化された SSH キーを削除しました。"
       },
       "connect": {
+        "browserUrl": "ブラウザで VS Code を開く: {{url}}",
         "configuringSSH": "SSH を設定中です...",
         "configuringVSCode": "VS Code 設定を設定中です...",
         "description": "VS Code でマシンまたはリポジトリに接続する",
         "detecting": "VS Code を検出中です...",
         "extensionWarning": "警告: Remote SSH 拡張機能がインストールされていない可能性があります。\nインストール: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
         "fetchingDetails": "接続詳細を取得中です...",
+        "installingServer": "{{provider}} {{version}} をマシンにインストールしています...",
         "opening": "VS Code を開いています: {{connection}} → {{path}}",
+        "openingBrowser": "ブラウザを開いています...",
+        "passwordNote": "ログインパスワード: {{password}}",
         "persistingKey": "SSH キーを永続化中です...",
         "provisioningRenet": "リモートサーバーにrenetをプロビジョニング中...",
+        "serverReused": "起動中のサーバーを再利用します",
         "settingsWarning": "警告: VS Code 設定を設定できませんでした: {{error}}",
         "settingUpEnv": "リモート環境をセットアップ中です...",
-        "success": "VS Code が正常に起動されました。",
-        "installingServer": "{{provider}} {{version}} をマシンにインストールしています...",
         "startingServer": "リポジトリサンドボックス内で {{provider}} を起動しています...",
-        "serverReused": "起動中のサーバーを再利用します",
-        "tunnelReady": "localhost:{{port}} でトンネルが準備できました",
-        "browserUrl": "ブラウザで VS Code を開く: {{url}}",
-        "passwordNote": "ログインパスワード: {{password}}",
-        "openingBrowser": "ブラウザを開いています...",
-        "testingConnectivity": "{{host}}:{{port}} への接続をテスト中です..."
+        "success": "VS Code が正常に起動されました。",
+        "testingConnectivity": "{{host}}:{{port}} への接続をテスト中です...",
+        "tunnelReady": "localhost:{{port}} でトンネルが準備できました"
       },
       "description": "マシンまたはリポジトリへの VS Code Remote SSH を開く",
       "descriptionShort": "マシンまたはリポジトリへの VS Code Remote SSH を開く",
@@ -2251,8 +2251,8 @@
         },
         "stop": {
           "description": "ブラウザ VS Code サーバーを停止する",
-          "stopped": "{{provider}} を停止しました",
-          "notRunning": "{{provider}} は起動していませんでした"
+          "notRunning": "{{provider}} は起動していませんでした",
+          "stopped": "{{provider}} を停止しました"
         }
       }
     }
@@ -2581,16 +2581,16 @@
     "vaultDataRequired": "ボルトデータが必要です。--vault <json> を使用するか、stdin 経由で JSON をパイプしてください。",
     "vaultVersionRequired": "ボルトバージョンが必要です。--vault-version <n> を使用してください。",
     "vscode": {
+      "browserNeedsRepo": "vscode --browser はリポジトリサンドボックスを提供します — --repository <name> を指定してください",
       "cleanupRequired": "すべての接続を削除するには --all を指定するか、特定の接続には --connection <name> を指定してください。",
       "connectivityFailed": "{{host}}:{{port}} に到達できません。{{error}}\n\nトラブルシューティング:\n  - マシンの電源が入っていてネットワークに接続されていることを確認してください\n  - マシンボルトの IP アドレスが正しいことを確認してください\n  - ポート {{port}} がファイアウォールによってブロックされていないことを確認してください\n  - マシンに ping を試してください: ping {{host}}",
       "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません",
       "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
       "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません",
       "notFound": "VS Code が見つかりません。\n\nhttps://code.visualstudio.com/ からインストールしてください\nまたは REDIACC_VSCODE_PATH 環境変数を設定してください。",
-      "browserNeedsRepo": "vscode --browser はリポジトリサンドボックスを提供します — --repository <name> を指定してください",
-      "unsupportedArch": "ブラウザ VS Code はこのマシンアーキテクチャに対応していません: {{arch}}",
       "serverInstallFailed": "{{provider}} のインストールに失敗しました: {{error}}",
-      "serverStartFailed": "{{provider}} の起動に失敗しました: {{error}}"
+      "serverStartFailed": "{{provider}} の起動に失敗しました: {{error}}",
+      "unsupportedArch": "ブラウザ VS Code はこのマシンアーキテクチャに対応していません: {{arch}}"
     }
   },
   "help": {
@@ -2711,10 +2711,6 @@
     "opsParallel": "VM を並列で作成",
     "opsSkipOrchestration": "クラスターオーケストレーションをスキップ",
     "opsSSHUser": "VM 接続用の SSH ユーザー名",
-    "vscodeBrowser": "リポジトリサンドボックスからブラウザ VS Code を提供する（ローカルの VS Code 不要）",
-    "vscodeNoOpen": "ローカルブラウザを起動せずに URL のみを表示する",
-    "vscodeServerProvider": "ブラウザ VS Code サーバー実装 (openvscode, code-server)",
-    "vscodeServerArchive": "マシン上に事前配置されたサーバー tarball のパス（エアギャップインストール用）",
     "organization": "組織名",
     "output": "出力形式 (table|json|yaml|csv)。REDIACC_DEFAULT_OUTPUT でデフォルトを上書きします。",
     "outputFormat": "出力形式 (json)",
@@ -2789,6 +2785,10 @@
     "vaultVersion": "楽観的ロック用の現在のボルトバージョン",
     "verifyChecksum": "同期後にチェックサムを使用してファイルを検証する",
     "vmId": "仮想マシン ID",
+    "vscodeBrowser": "リポジトリサンドボックスからブラウザ VS Code を提供する（ローカルの VS Code 不要）",
+    "vscodeNoOpen": "ローカルブラウザを起動せずに URL のみを表示する",
+    "vscodeServerArchive": "マシン上に事前配置されたサーバー tarball のパス（エアギャップインストール用）",
+    "vscodeServerProvider": "ブラウザ VS Code サーバー実装 (openvscode, code-server)",
     "watch": "変更を監視する",
     "watchUpdates": "更新を監視する",
     "yes": "確認プロンプトをスキップする"

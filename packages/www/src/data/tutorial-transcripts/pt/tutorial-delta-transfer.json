@@ -27,7 +27,7 @@
       "at": 21.404869,
       "text": "Faça push novamente. Mesmo comando, mas leia a saída desta vez: cerca de cinquenta megabytes transferidos, marcado como delta, em relação a uma imagem de dois gigabytes. Apenas os blocos alterados foram enviados.",
       "afterText": "Cinquenta megabytes em menos de seis segundos, de uma imagem de dois gigabytes. Os números são a prova.",
-      "cardLabel": "Delta Push",
+      "cardLabel": "Push Delta",
       "prose": "Faça push novamente com o mesmo comando: a saída reporta cerca de 50 MB transferidos como delta em relação à base compartilhada, de uma imagem de 2 GB. Apenas os blocos alterados foram enviados."
     },
     {

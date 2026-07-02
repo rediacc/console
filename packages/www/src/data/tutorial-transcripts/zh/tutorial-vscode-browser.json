@@ -7,7 +7,7 @@
       "id": "tutorial-vscode-browser-01",
       "markerIndex": 0,
       "at": 2.414862,
-      "text": "One command. The CLI installs the editor server on the machine once, starts it inside the repo sandbox, opens a tunnel, and hands you a link. No local VS Code, no extensions to set up.",
+      "text": "一条命令。CLI 会在机器上安装一次编辑器服务器，在 repo sandbox 内启动它，打开一条隧道，然后给你一个链接。本地不用装 VS Code，也不用配置任何扩展。",
       "afterText": "那个 URL 就是你的编辑器。支持任何操作系统，唯一的要求是一个浏览器。",
       "cardLabel": "连接浏览器",
       "prose": "使用 --browser 标志连接。CLI 会在机器上安装开源编辑器服务器（仅一次），在 repo sandbox 内启动，打开 SSH 隧道，并为你的浏览器打印一个链接。"
@@ -16,7 +16,7 @@
       "id": "tutorial-vscode-browser-02",
       "markerIndex": 1,
       "at": 12.531234,
-      "text": "Same repo from the plain terminal: the working directory is the repo, the files are the repo's files.",
+      "text": "从普通终端看同一个 repo：工作目录就是这个 repo，文件也就是 repo 里的文件。",
       "afterText": "终端和编辑器结果一致，这是同一个 sandbox。",
       "cardLabel": "相同视图",
       "prose": "在同一 repo 中打开终端会话：工作目录和文件与编辑器显示的内容一致。"
@@ -25,7 +25,7 @@
       "id": "tutorial-vscode-browser-03",
       "markerIndex": 2,
       "at": 19.464899,
-      "text": "And the file we created in the browser editor? Right here. Files made in VS Code are real repo files, instantly.",
+      "text": "那个我们在浏览器编辑器里创建的文件呢？就在这里。在 VS Code 里创建的文件立刻就是真实的 repo 文件。",
       "afterText": "在浏览器中创建，在终端中可读。同一个 repo，两个入口。",
       "cardLabel": "双向互通",
       "prose": "在浏览器编辑器中创建的文件是真实的 repo 文件，可从任意会话读取。"
@@ -34,7 +34,7 @@
       "id": "tutorial-vscode-browser-04",
       "markerIndex": 3,
       "at": 26.768996,
-      "text": "Now try to leave. Listing the root of the server: permission denied. The kernel scopes the editor, its terminal, and every child process to this repo.",
+      "text": "现在试着往外走。列出服务器的根目录：权限被拒绝。内核把编辑器、它的终端以及每一个子进程都限制在这个 repo 内。",
       "afterText": "被 kernel 拒绝，而非配置所限。",
       "cardLabel": "根目录拒绝",
       "prose": "尝试列出服务器的根目录：权限被拒绝。内核将会话限制在 repo 内。"
@@ -43,7 +43,7 @@
       "id": "tutorial-vscode-browser-05",
       "markerIndex": 4,
       "at": 32.439211,
-      "text": "Other users' homes? Also denied. Whatever runs inside this sandbox — editors, terminals, build tools — ends at the repo's walls.",
+      "text": "其他用户的主目录呢？同样被拒绝。凡是在这个 sandbox 里运行的东西，编辑器、终端、构建工具，都止步于 repo 的边界。",
       "afterText": "sandbox 没有例外，这正是关键所在。",
       "cardLabel": "主目录拒绝",
       "prose": "其他目录（如 /home）同样被拒绝，sandbox 对其内部启动的所有内容均有效。"

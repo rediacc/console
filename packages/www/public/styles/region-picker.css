@@ -6,7 +6,7 @@
   background-color: rgba(0, 0, 0, var(--opacity-40));
   backdrop-filter: blur(1px);
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   z-index: var(--z-toast);
   padding: var(--space-3) var(--space-2);
@@ -30,7 +30,8 @@
     0 10px 10px -5px rgba(0, 0, 0, var(--opacity-05));
   width: 100%;
   max-width: 620px;
-  margin-top: var(--space-6);
+  max-height: calc(100vh - var(--space-6));
+  overflow-y: auto;
   border: 1px solid var(--color-border);
   animation: regionSlideUp var(--transition-duration-base) ease-out;
   padding: var(--space-4);
@@ -48,19 +49,62 @@
 }
 
 .region-picker-header {
+  position: relative;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: flex-start;
-  gap: var(--space-3);
   margin-bottom: var(--space-4);
 }
 
 .region-picker-title {
+  flex: 1;
   font-size: var(--text-lg);
   font-weight: 600;
   color: var(--color-heading);
-  margin: 0 0 var(--space-1) 0;
+  margin: 0;
+  padding: 0 var(--space-6);
   text-align: center;
+}
+
+.region-picker-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.region-picker-subtitle,
+.region-picker-reassurance,
+.region-picker-footer,
+.region-picker-footer-note {
+  text-align: center;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.region-picker-subtitle {
+  font-size: var(--text-base);
+  color: var(--color-text);
+  margin-top: var(--space-3);
+}
+
+.region-picker-reassurance {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-top: var(--space-2);
+}
+
+.region-picker-footer {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--space-3);
+  opacity: 0.8;
+}
+
+.region-picker-footer-note {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+  opacity: 0.8;
 }
 
 .region-picker-close {
@@ -142,6 +186,14 @@
   color: var(--color-text-muted);
 }
 
+.region-picker-channel-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
 .region-picker-channel-switch {
   display: flex;
   justify-content: center;
@@ -150,10 +202,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   padding: 2px;
-  margin-bottom: var(--space-2);
   width: fit-content;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .region-picker-channel-option {
@@ -180,16 +229,67 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
-.region-picker-channel-hint {
+.region-picker-channel-info {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition:
+    color var(--transition-duration-fast),
+    background var(--transition-duration-fast);
+}
+
+.region-picker-channel-info:hover,
+.region-picker-channel-info:focus-visible {
+  color: var(--color-heading);
+  background: var(--color-bg-hover);
+  outline: none;
+}
+
+.region-picker-channel-tooltip {
+  position: absolute;
+  bottom: calc(100% + var(--space-2));
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: min(260px, calc(100vw - var(--space-6)));
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  text-align: center;
+  display: none;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.region-picker-channel-info:hover .region-picker-channel-tooltip,
+.region-picker-channel-info:focus-visible .region-picker-channel-tooltip {
+  display: block;
+}
+
+.region-picker-channel-hint-mobile {
+  display: none;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
   text-align: center;
-  margin: 0;
+  margin: 0 0 var(--space-2) 0;
   line-height: 1.7;
 }
 
-.region-picker-channel-hint-note {
-  opacity: 0.7;
+.region-picker-channel-hint-mobile--visible {
+  display: block;
 }
 
 /* Responsive: stack vertically on small screens */
@@ -202,5 +302,14 @@
 
   .region-picker-cards {
     grid-template-columns: 1fr;
+  }
+
+  .region-picker-subtitle,
+  .region-picker-footer {
+    display: none;
+  }
+
+  .region-picker-channel-tooltip {
+    display: none;
   }
 }

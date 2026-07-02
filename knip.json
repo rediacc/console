@@ -159,9 +159,6 @@
   ],
   "ignoreBinaries": [
     "rimraf",
-    "vite",
-    "vitest",
-    "wrangler",
     "agent-browser",
     "cmd.exe",
     "dscl",

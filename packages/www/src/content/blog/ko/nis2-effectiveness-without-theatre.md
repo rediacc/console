@@ -1,8 +1,10 @@
 ---
-title: "연간 침투 테스트는 형식적 컴플라이언스입니다. NIS2 Article 21(2)(f)가 이제 그것을 문제로 만들었습니다."
-description: "지속적인 효과성 평가, 비용을 낮추는 상수 시간 포크, 그리고 포렌식 수준의 아티팩트 없이는 충족할 수 없는 Article 23 보고 타임라인."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-09
+title: 연간 침투 테스트는 형식적 컴플라이언스입니다. NIS2 Article 21(2)(f)가 이제 그것을 문제로 만들었습니다.
+description: >-
+  지속적인 효과성 평가, 비용을 낮추는 상수 시간 포크, 그리고 포렌식 수준의 아티팩트 없이는 충족할 수 없는 Article 23 보고
+  타임라인.
+author: Rediacc
+publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
 tags:
   - nis2
@@ -12,8 +14,8 @@ tags:
   - incident-reporting
 featured: false
 language: ko
-sourceHash: "4c2768e81f0ff03a"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: 0e471ac41759e4cb
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
 

@@ -7,7 +7,7 @@
       "id": "tutorial-fork-isolation-01",
       "markerIndex": 0,
       "at": 2.412666,
-      "text": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "text": "이 앱을 소개합니다. demo-pgadmin, pgAdmin 인터페이스를 갖춘 PostgreSQL이 마운트되어 실행 중입니다.",
       "afterText": "라이브 repo 하나. 클론해 봅시다.",
       "cardLabel": "라이브 앱",
       "prose": "실행 중인 repository에서 시작합니다. 머신에서 pgAdmin과 함께 PostgreSQL 데이터베이스가 동작 중입니다."
@@ -16,7 +16,7 @@
       "id": "tutorial-fork-isolation-02",
       "markerIndex": 1,
       "at": 8.155445,
-      "text": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "text": "이 앱을 fork합니다. copy-on-write 클론은 크기와 상관없이 몇 초면 끝나고, detach는 컨테이너가 시작되자마자 반환됩니다. 그동안 헬스 체크는 백그라운드에서 계속됩니다.",
       "afterText": "Fork 완료, 시작 중입니다. 데이터는 복사된 것이 아니라 공유된 것입니다. 한쪽이 변경하기 전까지는요.",
       "cardLabel": "Fork + 실행",
       "prose": "--up --detach 옵션으로 repository를 fork합니다. CoW 클론은 거의 즉시 완료되며 fork의 서비스가 즉시 시작됩니다."
@@ -25,7 +25,7 @@
       "id": "tutorial-fork-isolation-03",
       "markerIndex": 2,
       "at": 19.24953,
-      "text": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "text": "이제 repository가 두 개입니다. 원본과 실험본이며, 각각 자체 컨테이너와 네트워크, 디스크 뷰를 가집니다.",
       "afterText": "같은 머신, 두 개의 격리된 세계.",
       "cardLabel": "나란히 보기",
       "prose": "repository 목록을 확인합니다. 원본과 fork가 완전히 격리된 채로 나란히 실행됩니다."
@@ -34,7 +34,7 @@
       "id": "tutorial-fork-isolation-04",
       "markerIndex": 3,
       "at": 24.926391,
-      "text": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "text": "실험이 끝났으면 fork를 삭제합니다. 만드는 것도 몇 초, 버리는 것도 몇 초. 원본은 그런 것이 존재했는지조차 몰랐습니다.",
       "afterText": "사라졌습니다. 원본은 그동안 계속 서비스 중이었습니다.",
       "cardLabel": "Fork 삭제",
       "prose": "작업이 끝나면 fork를 삭제합니다. 원본 repository는 그대로 유지됩니다."

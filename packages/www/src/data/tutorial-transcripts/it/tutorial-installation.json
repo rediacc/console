@@ -8,7 +8,7 @@
       "markerIndex": 0,
       "at": 1.614947,
       "text": "Prima di tutto, confermiamo che la CLI sia nel path. Eseguendo la CLI con il flag version si ottiene la versione installata e si verifica che l'installazione sia andata a buon fine.",
-      "afterText": "Installazione completata. Il binario rdc e' nel tuo path.",
+      "afterText": "Installazione completata. Il binario rdc è nel tuo path.",
       "cardLabel": "Installa CLI",
       "prose": "Incolla il comando di installazione nel tuo terminal ed eseguilo. Lo script verifica la tua piattaforma, scarica l'ultimo binary stabile e lo inserisce nella tua home directory. Nessuna installazione di sistema, nessun sudo richiesto. Una volta completato, il binary rdc è nel tuo path e può essere richiamato da qualsiasi shell."
     },

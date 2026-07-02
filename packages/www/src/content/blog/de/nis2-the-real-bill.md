@@ -1,8 +1,11 @@
 ---
-title: "Was uns Einkäufer im ersten NIS2-Prüfzyklus berichtet haben"
-description: "Der Fünf-Tool-Compliance-Stack, den mittelständische wesentliche Einrichtungen 2026 still aufbauen, was eine selbst gehostete Control Plane zusammenführt und welche Posten in jedem Fall bei Ihnen bleiben."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-09
+title: Was uns Einkäufer im ersten NIS2-Prüfzyklus berichtet haben
+description: >-
+  Der Fünf-Tool-Compliance-Stack, den mittelständische wesentliche Einrichtungen
+  2026 still aufbauen, was eine selbst gehostete Control Plane zusammenführt und
+  welche Posten in jedem Fall bei Ihnen bleiben.
+author: Rediacc
+publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
 tags:
   - nis2
@@ -12,8 +15,8 @@ tags:
   - mittelstand
 featured: false
 language: de
-sourceHash: "3fbb581ec14e3f80"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: 29fbcbffd8a304bc
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
 

@@ -18,7 +18,7 @@
       "at": 8.503611,
       "text": "Voyons maintenant les conteneurs. Cette vue liste tous les conteneurs en cours d'exécution sur tous les dépôts de la machine : nom, statut, état de santé, CPU, mémoire, plus quel dépôt possède chacun.",
       "afterText": "Tous les conteneurs de tous les repos, dans une seule vue.",
-      "cardLabel": "Containers",
+      "cardLabel": "Conteneurs",
       "prose": "La vue containers liste tous les containers en cours d'exécution dans chaque repository de la machine : nom, statut, santé, CPU, mémoire et le repo propriétaire."
     },
     {
@@ -27,7 +27,7 @@
       "at": 14.799411,
       "text": "Et les dépôts eux-mêmes. Taille, état de montage, état du daemon Docker, utilisation du disque. Tout ce que vous devez savoir sur chaque environnement isolé de la machine.",
       "afterText": "Tous les repos, tous leurs daemons, toute leur utilisation disque.",
-      "cardLabel": "Repositories",
+      "cardLabel": "Dépôts",
       "prose": "La vue repositories indique la taille, l'état du montage, l'état du Docker daemon et l'utilisation du disque pour chaque environnement isolé."
     },
     {

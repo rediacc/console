@@ -36,7 +36,7 @@
       "at": 24.76977,
       "text": "Maintenant nous lançons le vrai téléversement. La commande de synchronisation déplace les fichiers de votre ordinateur vers le dépôt via SSH, avec la compression delta de rsync. Tunnel, term, sync, trois commandes couvrent la boucle quotidienne.",
       "afterText": "Fichiers téléversés. La compression delta gère les gros arbres.",
-      "cardLabel": "Sync Upload",
+      "cardLabel": "Téléversement Sync",
       "prose": "La commande sync upload déplace des fichiers de votre ordinateur vers le repo via SSH en utilisant la compression delta rsync. Ensemble, tunnel, term et sync couvrent la boucle quotidienne."
     }
   ],

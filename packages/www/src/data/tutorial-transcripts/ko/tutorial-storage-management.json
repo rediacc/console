@@ -7,7 +7,7 @@
       "id": "tutorial-storage-management-01",
       "markerIndex": 0,
       "at": 2.410441,
-      "text": "Fill the repository most of the way and check: the filesystem is getting tight.",
+      "text": "repository를 거의 가득 채우고 확인합니다. 파일 시스템이 빠듯해지고 있습니다.",
       "afterText": "거의 꽉 찼습니다. 이제 늘릴 시간입니다.",
       "cardLabel": "채우는 중",
       "prose": "파일 시스템이 꽉 찰 때까지 repository에 데이터를 채우세요."
@@ -16,7 +16,7 @@
       "id": "tutorial-storage-management-02",
       "markerIndex": 1,
       "at": 12.69586,
-      "text": "Grow it online. The encrypted container and the filesystem expand while the containers keep running — zero downtime, zero unmount.",
+      "text": "온라인으로 확장합니다. Docker 컨테이너가 실행 중인 상태에서 암호화된 컨테이너와 파일 시스템이 함께 커집니다. 다운타임도 없고, 마운트 해제도 없습니다.",
       "afterText": "이제 4기가바이트입니다. 재시작된 것은 없습니다.",
       "cardLabel": "온라인 확장",
       "prose": "repository를 온라인으로 확장하세요. container가 실행 중인 상태에서 LUKS container와 파일 시스템이 함께 커집니다."
@@ -25,7 +25,7 @@
       "id": "tutorial-storage-management-03",
       "markerIndex": 2,
       "at": 19.886575,
-      "text": "Verify from inside: same volume, double the room.",
+      "text": "내부에서 확인합니다. 같은 볼륨인데, 공간은 두 배입니다.",
       "afterText": "앱은 전혀 눈치채지 못했습니다.",
       "cardLabel": "크기 확인",
       "prose": "repo 내부에서 파일 시스템을 확인하세요. 새 크기가 즉시 적용되어 있습니다."
@@ -34,7 +34,7 @@
       "id": "tutorial-storage-management-04",
       "markerIndex": 3,
       "at": 26.982758,
-      "text": "Now the other direction. Delete the big file — but watch: the pool does not get the space back yet. Deleted blocks stay reserved inside the image.",
+      "text": "이번엔 반대 방향입니다. 큰 파일을 삭제합니다. 그런데 보세요, pool은 아직 공간을 돌려받지 못합니다. 삭제된 블록은 이미지 안에 예약된 채로 남아 있습니다.",
       "afterText": "repo 내부에서 해제되었지만, 여전히 이미지가 소유하고 있습니다.",
       "cardLabel": "데이터 삭제",
       "prose": "repository 내부의 데이터를 삭제하세요. pool은 아직 줄어들지 않는다는 점에 유의하세요."
@@ -43,7 +43,7 @@
       "id": "tutorial-storage-management-05",
       "markerIndex": 4,
       "at": 33.464064,
-      "text": "Trim hands those blocks back to the datastore pool, online. This is the step most setups forget.",
+      "text": "Trim이 그 블록들을 datastore pool에 온라인으로 돌려줍니다. 대부분의 환경이 잊고 넘어가는 단계입니다.",
       "afterText": "회수되었습니다. 이제 pool이 다시 숨 쉴 수 있습니다.",
       "cardLabel": "Trim",
       "prose": "repo trim을 실행해 해제된 블록을 공유 pool에 반환하세요. 온라인 상태에서 다운타임 없이 진행됩니다."
@@ -52,7 +52,7 @@
       "id": "tutorial-storage-management-06",
       "markerIndex": 5,
       "at": 40.097562,
-      "text": "Now stop doing this by hand. The policy enables automatic growth up to a ceiling you choose, plus scheduled trims.",
+      "text": "이제 이 작업을 손으로 하지 않아도 됩니다. 정책을 설정하면 직접 정한 상한선까지 자동으로 확장되고, 예약된 trim도 함께 실행됩니다.",
       "afterText": "정책이 저장되었습니다. 이제부터는 기계가 알아서 합니다.",
       "cardLabel": "정책 설정",
       "prose": "크기 정책을 설정하세요. 명시적 상한선을 둔 자동 확장과 예약된 trim을 포함합니다."
@@ -61,7 +61,7 @@
       "id": "tutorial-storage-management-07",
       "markerIndex": 6,
       "at": 50.538253,
-      "text": "Read it back: auto-grow on, ceiling at eight gigabytes, trim on a schedule.",
+      "text": "다시 읽어봅니다. 자동 확장 켜짐, 상한선 8기가바이트, 예약 trim 설정됨.",
       "afterText": "한 번 설정하면, 안심하고 잊어도 됩니다.",
       "cardLabel": "정책 확인",
       "prose": "적용된 정책을 다시 읽어보세요. 확장과 trim이 이제 자동으로 처리됩니다."
@@ -70,7 +70,7 @@
       "id": "tutorial-storage-management-08",
       "markerIndex": 7,
       "at": 57.423655,
-      "text": "And the view that ties it together: storage health shows every repo's usage, the pool, and how much copy-on-write sharing is saving you.",
+      "text": "그리고 이 모든 것을 하나로 묶어 보여주는 화면입니다. 스토리지 상태는 각 repo의 사용량, pool, 그리고 copy-on-write 공유가 얼마나 절약해 주는지를 보여줍니다.",
       "afterText": "한눈에: 사용량, 절감량, 그리고 성장 여지.",
       "cardLabel": "상태 보기",
       "prose": "머신 스토리지 상태를 확인하세요. repo별 사용량, pool 상태, CoW reflink 절약량이 표시됩니다."

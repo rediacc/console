@@ -2,12 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { CATEGORY_ORDER, SOLUTION_PAGES } from '../config/solution-pages';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
+import { AccountCta } from './AccountCta';
 import { CATEGORY_ICONS } from './CategoryIcons';
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  accountUrl?: string;
+  origin?: string;
 }
 
 const normalizePath = (value: string): string => {
@@ -89,84 +90,6 @@ const useSidebarKeyboard = (
   }, [isOpen, onClose, sidebarRef]);
 };
 
-interface SidebarAccountCtaProps {
-  accountUrl?: string;
-  label: string;
-  ariaLabel: string;
-  tabbable: boolean;
-  onClose: () => void;
-}
-
-/** Account CTA — direct link when accountUrl is known, region-picker button otherwise. */
-const SidebarAccountCta: React.FC<SidebarAccountCtaProps> = ({
-  accountUrl,
-  label,
-  ariaLabel,
-  tabbable,
-  onClose,
-}) => {
-  if (accountUrl) {
-    return (
-      <a
-        href={accountUrl}
-        className="sidebar-account-cta sidebar-account-cta--secondary"
-        onClick={onClose}
-        tabIndex={tabbable ? 0 : -1}
-        aria-label={ariaLabel}
-        data-track="cta_click"
-        data-track-label="sidebar-login"
-        data-track-dest="account"
-      >
-        {label}
-      </a>
-    );
-  }
-  return (
-    <button
-      type="button"
-      className="sidebar-account-cta sidebar-account-cta--secondary"
-      onClick={() => {
-        onClose();
-        window.openRegionPicker?.('/account/');
-      }}
-      tabIndex={tabbable ? 0 : -1}
-      aria-label={ariaLabel}
-      data-track="cta_click"
-      data-track-label="sidebar-login"
-      data-track-dest="account"
-    >
-      {label}
-    </button>
-  );
-};
-
-interface SidebarInstallCtaProps {
-  href: string;
-  label: string;
-  tabbable: boolean;
-  onClose: () => void;
-}
-
-const SidebarInstallCta: React.FC<SidebarInstallCtaProps> = ({
-  href,
-  label,
-  tabbable,
-  onClose,
-}) => (
-  <a
-    href={href}
-    className="sidebar-account-cta"
-    onClick={onClose}
-    tabIndex={tabbable ? 0 : -1}
-    aria-label={label}
-    data-track="cta_click"
-    data-track-label="sidebar-install"
-    data-track-dest="install"
-  >
-    {label}
-  </a>
-);
-
 interface SidebarNavLinkProps {
   href: string;
   label: string;
@@ -200,7 +123,7 @@ const SidebarNavLink: React.FC<SidebarNavLinkProps> = ({
   </a>
 );
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, accountUrl }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, origin }) => {
   const currentLang = useLanguage();
   const { t, to } = useTranslation(currentLang);
   const sidebarRef = useRef<HTMLElement>(null);
@@ -315,19 +238,24 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, accountUrl }) => {
           </button>
         </div>
         <nav className="sidebar-nav">
-          {/* Install (primary) above Account (secondary) — install is top-of-funnel for new visitors. */}
-          <SidebarInstallCta
-            href={`/${currentLang}/install`}
-            label={t('navigation.install')}
-            tabbable={isOpen}
-            onClose={onClose}
+          {/* Get Started (primary) above Account (secondary). */}
+          <AccountCta
+            origin={origin}
+            label={t('common.buttons.getStarted')}
+            className="sidebar-account-cta"
+            ariaLabel={t('common.buttons.getStarted')}
+            tabIndex={isOpen ? 0 : -1}
+            track={{ event: 'cta_click', label: 'sidebar-get-started', dest: 'account' }}
+            onClick={onClose}
           />
-          <SidebarAccountCta
-            accountUrl={accountUrl}
-            label={t('navigation.account')}
+          <AccountCta
+            origin={origin}
+            label={t('navigation.login')}
+            className="sidebar-account-cta sidebar-account-cta--secondary"
             ariaLabel={t('navigation.login')}
-            tabbable={isOpen}
-            onClose={onClose}
+            tabIndex={isOpen ? 0 : -1}
+            track={{ event: 'cta_click', label: 'sidebar-login', dest: 'account' }}
+            onClick={onClose}
           />
           {/* Home */}
           {topNavItems.map((item) => (

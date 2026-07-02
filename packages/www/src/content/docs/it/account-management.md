@@ -1,11 +1,13 @@
 ---
 title: Gestione dell'account
-description: Organizzazioni, team, membri e abbonamenti in Rediacc. È possibile gestire l'intera struttura dell'organizzazione con pochi clic.
+description: >-
+  Organizzazioni, team, membri e abbonamenti in Rediacc. È possibile gestire
+  l'intera struttura dell'organizzazione con pochi clic.
 category: Guides
 order: 12
 language: it
-sourceHash: "974885635641ed70"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: 3887adc59fc63c26
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 ### Organizzazioni
@@ -57,14 +59,14 @@ Rediacc offre quattro piani:
 
 | Piano | Macchine | Licenze repo/mese | Validità cert delegazione predefinita / max | Funzionalità |
 |-------|----------|-------------------|---------------------------------------------|--------------|
-| COMMUNITY | 2 | 500 | 15g / 30g | Base |
-| PROFESSIONAL | 5 | 5.000 | 60g / 120g | Gruppi di permessi, registro audit, branding personalizzato, supporto prioritario |
-| BUSINESS | 20 | 20.000 | 90g / 180g | Ceph, analisi avanzate, priorità coda, coda avanzata |
-| ENTERPRISE | 50 | 100.000 | 120g / 365g | Account manager dedicato |
+| COMMUNITY | 2 | 100 | 15g / 30g | Base |
+| PROFESSIONAL | 3 | 2.000+ | 60g / 120g | Gruppi di permessi, registro audit, branding personalizzato, supporto prioritario |
+| BUSINESS | 10 | 5.000+ | 90g / 180g | Ceph, analisi avanzate, priorità coda, coda avanzata |
+| ENTERPRISE | 25+ | 15.000+ | 120g / 365g | Account manager dedicato |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 
-Tutti i piani iniziano con un periodo di grazia di 3 giorni. Gli slot macchina vengono tracciati per team e rilasciati automaticamente dopo 1 ora di inattività. Consulta [Abbonamento e licenze](/en/docs/subscription-licensing) per i dettagli.
+Tutti i piani iniziano con un periodo di grazia di 3 giorni. Gli slot macchina vengono tracciati per team e rilasciati automaticamente dopo 5 ore di inattività. Consulta [Abbonamento e licenze](/en/docs/subscription-licensing) per i dettagli.
 
 ### Fatturazione
 

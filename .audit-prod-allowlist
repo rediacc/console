@@ -266,3 +266,15 @@
 # BLOCKER: both advisories are vite DEV-SERVER + Windows-only — the launch-editor NTLMv2 UNC disclosure and the server.fs.deny alternate-path bypass only affect `vite dev` on Windows. We use vite solely at build time for astro static generation; the dev server is never shipped to prod, and CI/prod builds do not run on Windows, so neither path is reachable. Same class as the esbuild dev-server entry above. Drop once astro/vite admit vite 8.
 1120785
 1120790
+
+# astro 5.18.1 reflected-XSS / unescaped-attribute / host-header SSRF advisories
+# (GHSA-xxxx for 1120912, 1120914, 1120917). The patched versions are astro 7.0.2+, a
+# major upgrade that removes legacy content collections and requires migrating
+# src/content/config.ts to src/content.config.ts with collection loaders — a breaking
+# change across the docs site that is out of scope for this PR.
+# BLOCKER: @rediacc/www builds with astro output: 'static'; the slot-name XSS,
+# spread-attribute XSS, and prerendered error-page SSRF paths are all SSR/host-header
+# paths that do not exist in a static export. Drop once the site migrates to astro v7.
+1120912
+1120914
+1120917

@@ -7,7 +7,7 @@
       "id": "tutorial-storage-management-01",
       "markerIndex": 0,
       "at": 2.410441,
-      "text": "Fill the repository most of the way and check: the filesystem is getting tight.",
+      "text": "Täida repository peaaegu ääreni ja kontrolli: failisüsteem hakkab kitsaks jääma.",
       "afterText": "Peaaegu täis. Aeg kasvada.",
       "cardLabel": "Täitumine",
       "prose": "Täida repository andmetega, kuni failisüsteem täitub."
@@ -16,7 +16,7 @@
       "id": "tutorial-storage-management-02",
       "markerIndex": 1,
       "at": 12.69586,
-      "text": "Grow it online. The encrypted container and the filesystem expand while the containers keep running — zero downtime, zero unmount.",
+      "text": "Kasvata seda online. Krüpteeritud konteiner ja failisüsteem laienevad, samal ajal kui containers jätkavad tööd -- null seisakuaega, null unmounti.",
       "afterText": "Neli gigabaiti nüüd. Midagi ei taaskäivitunud.",
       "cardLabel": "Laienda Online",
       "prose": "Laienda repository võrgus: LUKS konteiner ja failisüsteem kasvavad konteinerite töötamise ajal."
@@ -25,7 +25,7 @@
       "id": "tutorial-storage-management-03",
       "markerIndex": 2,
       "at": 19.886575,
-      "text": "Verify from inside: same volume, double the room.",
+      "text": "Kontrolli seestpoolt: sama köide, kaks korda rohkem ruumi.",
       "afterText": "Rakendus ei märganud midagi.",
       "cardLabel": "Kontrolli Suurust",
       "prose": "Kontrolli failisüsteemi repo seest, uus suurus on aktiivne."
@@ -34,7 +34,7 @@
       "id": "tutorial-storage-management-04",
       "markerIndex": 3,
       "at": 26.982758,
-      "text": "Now the other direction. Delete the big file — but watch: the pool does not get the space back yet. Deleted blocks stay reserved inside the image.",
+      "text": "Nüüd vastupidises suunas. Kustuta suur fail -- aga jälgi: pool ei saa ruumi kohe tagasi. Kustutatud plokid jäävad image'i sees reserveerituks.",
       "afterText": "Vabastatud repo sees, kuid ikka pildi omanduses.",
       "cardLabel": "Kustuta Andmed",
       "prose": "Kustuta andmed repository seest, pane tähele, et pool ei kahane veel."
@@ -43,7 +43,7 @@
       "id": "tutorial-storage-management-05",
       "markerIndex": 4,
       "at": 33.464064,
-      "text": "Trim hands those blocks back to the datastore pool, online. This is the step most setups forget.",
+      "text": "Trim annab need plokid datastore poolile tagasi, võrgus. See on samm, mida enamik seadistusi unustab.",
       "afterText": "Tagasi saadud. Pool saab jälle hingata.",
       "cardLabel": "Trim",
       "prose": "Käivita repo trim, et tagastada vabastatud plokid ühiskasutatavasse pooli, võrgus, nullseisakuga."
@@ -52,7 +52,7 @@
       "id": "tutorial-storage-management-06",
       "markerIndex": 5,
       "at": 40.097562,
-      "text": "Now stop doing this by hand. The policy enables automatic growth up to a ceiling you choose, plus scheduled trims.",
+      "text": "Nüüd lõpeta selle käsitsi tegemine. Poliitika lubab automaatse kasvu kuni sinu valitud ülempiirini, pluss ajastatud trim'id.",
       "afterText": "Poliitika salvestatud. Masin võtab siit üle.",
       "cardLabel": "Seadista Poliitika",
       "prose": "Seadista suuruspoliitika: automaatne kasv selge ülempiiri ja ajastatud trim-iga."
@@ -61,7 +61,7 @@
       "id": "tutorial-storage-management-07",
       "markerIndex": 6,
       "at": 50.538253,
-      "text": "Read it back: auto-grow on, ceiling at eight gigabytes, trim on a schedule.",
+      "text": "Loe see tagasi: automaatne kasv sees, ülempiir kaheksa gigabaiti, trim ajakava alusel.",
       "afterText": "Seadistatud korra, unustatud turvaliselt.",
       "cardLabel": "Poliitika Kontroll",
       "prose": "Loe kehtiv poliitika välja, kasv ja trim on nüüd automaatsed."
@@ -70,7 +70,7 @@
       "id": "tutorial-storage-management-08",
       "markerIndex": 7,
       "at": 57.423655,
-      "text": "And the view that ties it together: storage health shows every repo's usage, the pool, and how much copy-on-write sharing is saving you.",
+      "text": "Ja vaade, mis kõik kokku seob: storage health näitab iga repo kasutust, pooli ennast ja kui palju copy-on-write jagamine sulle kokku hoiab.",
       "afterText": "Üks vaade: kasutus, kokkuhoid ja ruumi kasvuks.",
       "cardLabel": "Tervise Vaade",
       "prose": "Kontrolli masina salvestuse tervist: repository-põhine kasutus, pooli olek ja CoW reflink-säästud."

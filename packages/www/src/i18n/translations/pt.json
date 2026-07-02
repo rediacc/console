@@ -184,8 +184,8 @@
     },
     "organizationLinks": {
       "aboutUs": "Sobre Nós",
-      "contact": "Contacto",
-      "team": "Equipa"
+      "company": "Empresa",
+      "contact": "Contacto"
     },
     "productLinks": {
       "disasterRecovery": "Recuperação de Desastres",
@@ -494,6 +494,63 @@
         "title": "Subscrição Confirmada"
       }
     },
+    "company": {
+      "cta": {
+        "buttons": {
+          "contact": "Entre em Contacto",
+          "learnMore": "Veja Como Funciona"
+        },
+        "subtitle": "Instale a Rediacc em menos de 5 minutos. O nível Community é grátis para sempre.",
+        "title": "Experimente Grátis"
+      },
+      "hero": {
+        "subtitle": "A Rediacc é feita para equipas que executam sistemas de produção e não se podem dar ao luxo de as perder.",
+        "title": "Software de Backup e Recuperação que Você Controla"
+      },
+      "meta": {
+        "description": "A Rediacc desenvolve software self-hosted de backup e recuperação de desastres que lhe permite clonar a produção, testar em segurança e recuperar em segundos.",
+        "keywords": "empresa Rediacc, backup self-hosted, software de recuperação de desastres, fiabilidade de infraestrutura",
+        "title": "Empresa | Rediacc - Backup que Sobrevive a Ransomware"
+      },
+      "mission": {
+        "belief": "O nível Comunitário faz exatamente o mesmo que os níveis pagos. A mesma clonagem btrfs. A mesma encriptação LUKS. As mesmas cópias imutáveis. Apenas com limites menores. Nada de funcionalidades bloqueadas. Nada de ciladas.",
+        "description": "A cada 47 dias, uma IA apaga uma base de dados em produção. Anualmente, 1,71% dos discos falham. 75% do ransomware apunta às cópias de segurança. Nós trazem-te de volta online em 60 segundos.",
+        "title": "A Nossa Missão: Tornar os Desastres Impossíveis"
+      },
+      "overview": {
+        "description": "A Rediacc é software self-hosted para backup, clonagem e recuperação de desastres. Corre nos seus próprios servidores, copia sistemas de produção inteiros em segundos e coloca-o de volta online rapidamente.",
+        "title": "O Que Fazemos"
+      },
+      "values": {
+        "items": {
+          "global": {
+            "description": "9 idiomas. Os dados de utilização ficam na UE. Empresa estónia com GDPR integrado.",
+            "title": "Visão Global"
+          },
+          "innovation": {
+            "description": "Lançamos atualizações todas as semanas. Cada versão resolve um verdadeiro problema de deploy que os utilizadores reportaram.",
+            "title": "Inovação Contínua"
+          },
+          "security": {
+            "description": "Encriptação LUKS em repouso. TLS na rede. Um motor Docker isolado por aplicação. Cada camada blindada.",
+            "title": "Segurança por Conceção"
+          },
+          "simplicity": {
+            "description": "Um comando para clonar 241 GB de dados em produção. Esse é todo o nosso orçamento de complexidade.",
+            "title": "Simplicidade em Primeiro"
+          },
+          "success": {
+            "description": "Medimo-nos pelo seu tempo de recuperação, não pelo número de funcionalidades.",
+            "title": "Sucesso do Cliente"
+          },
+          "transparency": {
+            "description": "Comunicação aberta, preços honestos e documentação clara. Sem taxas ocultas, sem surpresas, sem letra pequena.",
+            "title": "Transparência"
+          }
+        },
+        "title": "Os Nossos Valores"
+      }
+    },
     "contact": {
       "breadcrumb": {
         "contact": "Contacto",
@@ -748,11 +805,11 @@
       },
       "youGet": {
         "items": [
-          "Plano BUSINESS: 500 GB por repositório, 20 utilizadores, 20.000 ativações mensais",
-          "No canal edge: Limite 2x (1 TB por repositório, 40 utilizadores, 40.000 ativações)",
+          "Plano BUSINESS: 200 GB por repositório, 10 lugares de utilizador, 10.000 ativações de lugares por mês",
+          "No canal edge: limites 2x (400 GB por repositório, 20 lugares de utilizador, 20.000 ativações de lugares)",
           "Repositórios, utilizadores e equipas ilimitados",
           "Restauração de backups, modo escuro, todos os 9 idiomas",
-          "Linha direta com o fundador para integração e suporte",
+          "Suporte de engenharia direto",
           "Garantido para sempre. Sem vencimento, sem rebaixamento, sem cartão guardado."
         ],
         "lede": "Plano BUSINESS completo. Grátis. Enquanto Rediacc existir.",
@@ -824,7 +881,7 @@
             "Armazenamento em 3 regiões. Uma falha não o interrompe.",
             "Proteção contínua de dados. Praticamente zero perda.",
             "SLA de recuperação em 4 horas (garantido)",
-            "Aplicações ilimitadas, 500 GB cada",
+            "Aplicações ilimitadas, 200 GB cada",
             "7 tarefas ativas / 3 reservadas",
             "Retenção de registos de auditoria de 90 dias",
             "Controlo de acesso por funções e registos completos",
@@ -856,7 +913,7 @@
             "SLA personalizado (de volta em 15-60 min). Os seus requisitos, nosso compromisso.",
             "Ambiente dedicado. Máxima segurança e desempenho.",
             "Suporte de especialistas 24/7/365",
-            "Aplicações ilimitadas, 2 TB+ cada",
+            "Aplicações ilimitadas, 1 TB+ cada",
             "Janelas de 96+ horas com 10+ tarefas ativas / 5+ reservadas",
             "Retenção de registos por 1 ano ou mais",
             "Simulados trimestrais. Saiba que está pronto antes de precisar.",
@@ -864,8 +921,7 @@
             "Integrações e fluxos de trabalho personalizados",
             "Suporte de documentação de auditoria e revisões de segurança"
           ],
-          "name": "Enterprise",
-          "priceNote": "*A partir de"
+          "name": "Enterprise"
         },
         "professional": {
           "description": "Recuperação de desastres profissional. Sem as complicações da empresa.",
@@ -873,8 +929,8 @@
             "Tudo do Community +",
             "Agendamento automático de backups. Configure e esqueça.",
             "Recuperação a qualquer momento (24h)",
-            "Aplicações ilimitadas, 100 GB cada",
-            "Tempo limite de 24 horas, 5 tarefas ativas / 2 reservadas",
+            "Aplicações ilimitadas, 50 GB cada",
+            "Tempo limite de 24 horas, 3 tarefas ativas / 2 reservadas",
             "Retenção de registos de auditoria de 30 dias",
             "Suporte por e-mail e chat",
             "Notificações no Slack e PagerDuty",
@@ -884,261 +940,9 @@
           "name": "Professional"
         }
       },
-      "professionalServices": {
-        "access": {
-          "description": "Todos os planos incluem ajuda. Pode adicionar mais quando precisar.",
-          "heading": "Acesso a serviços profissionais por nível",
-          "labels": {
-            "available": "Complementos disponíveis",
-            "included": "Incluído"
-          },
-          "tiers": [
-            {
-              "available": [
-                "Implementação Standard (9.999 $) ou pacotes por nível (Small 7.499 $ · Medium 14.999 $ · Large 29.999 $ · Enterprise personalizado)",
-                "Serviço de Resposta de Emergência (29.999 $ sob pedido)"
-              ],
-              "included": [
-                "Documentação de autoatendimento, tutoriais em vídeo e fórum da comunidade"
-              ],
-              "planId": "community"
-            },
-            {
-              "available": [
-                "Implementação Priority (19.999 $)",
-                "Serviço de Resposta de Emergência (29.999 $ sob pedido)",
-                "Projetos de integração personalizada (com âmbito definido)"
-              ],
-              "included": [
-                "Suporte por e-mail",
-                "Sessão de onboarding standard (chamada de configuração e guia de setup)"
-              ],
-              "planId": "professional"
-            },
-            {
-              "available": [
-                "Atualização para Implementação Priority (19.999 $)",
-                "Serviço de Resposta de Emergência (29.999 $ sob pedido)",
-                "Desenvolvimento personalizado e consultoria de arquitetura de segurança"
-              ],
-              "included": [
-                "Suporte prioritário por e-mail/chat/telefone",
-                "Onboarding dedicado com configuração e entrega de runbook",
-                "Pacote de Implementação Standard incluído (valor de 9.999 $)",
-                "Revisões trimestrais de sucesso"
-              ],
-              "planId": "business"
-            },
-            {
-              "available": [
-                "Desenvolvimento personalizado e integrações avançadas",
-                "Consultoria de arquitetura de segurança e auditoria",
-                "Retainer de Resposta de Emergência (5.000 $ a 7.500 $/mês)"
-              ],
-              "included": [
-                "Suporte especializado 24/7/365 com gestor de conta dedicado",
-                "Implementação Priority incluída (valor de 19.999 $)",
-                "Testes trimestrais de recuperação de desastres",
-                "Workshop anual de planeamento de continuidade de negócio",
-                "Linha direta de escalada para executivos"
-              ],
-              "planId": "enterprise"
-            }
-          ]
-        },
-        "advancedDetails": {
-          "description": "Pacotes de serviços, níveis de implementação, fatores de preço e opções de retainer",
-          "heading": "Detalhes de Implementação e Preços"
-        },
-        "benefits": {
-          "description": "Engenheiros dedicados ao seu lado quando a sua infraestrutura falha.",
-          "heading": "Por que Serviços Profissionais?",
-          "items": [
-            "Equipa dedicada de especialistas para o seu projeto",
-            "Tempos de resposta garantidos com SLA",
-            "Mudar entre níveis de serviço conforme necessário",
-            "Linha de emergência 24/7 para clientes Emergency"
-          ],
-          "statistics": [
-            "O custo médio de um ataque de ransomware é de 4,62 milhões de dólares (IBM Security, 2023)",
-            "O tempo de inatividade custa, em média, 5.600 dólares por minuto às grandes empresas"
-          ]
-        },
-        "cta": {
-          "button": "Agendar Consulta",
-          "description": "Os nossos especialistas estão prontos para o ajudar a ter sucesso",
-          "heading": "Precisa de Assistência Profissional?"
-        },
-        "header": {
-          "badge": "Implemente mais rápido com ajuda especializada.",
-          "eligibility": "Todos os planos incluem algum nível de ajuda profissional. Veja na tabela abaixo o que está incluído no seu e o que pode adicionar.",
-          "subtitle": "Tenha especialistas ao seu lado quando mais precisa",
-          "title": "Pacotes de Serviços Profissionais"
-        },
-        "packages": {
-          "emergency": {
-            "benefits": [
-              "Ativação em menos de 2 horas",
-              "Análise forense, contenção e plano de recuperação",
-              "Relatório sobre o que correu mal + plano para evitar repetições"
-            ],
-            "description": "Há uma emergência? Respondemos em 2 horas e iniciamos a recuperação no próprio dia.",
-            "name": "Emergência",
-            "price": "29.999 $",
-            "tiers": [],
-            "turnaround": "Mesmo dia"
-          },
-          "priority": {
-            "benefits": [
-              "Gestor de envolvimento dedicado",
-              "Disponibilidade dia e noite",
-              "Assistência prática no lançamento"
-            ],
-            "description": "Entrega mais rápida. A nossa equipa está disponível aos fins de semana e períodos nocturnos para guiar o seu lançamento.",
-            "name": "Prioritário",
-            "price": "19.999 $",
-            "tiers": [],
-            "turnaround": "24 a 48 horas"
-          },
-          "standard": {
-            "benefits": [
-              "Descoberta do projeto e plano de sucesso",
-              "Configuração e instalação do ambiente",
-              "Lista de verificação de validação e transferência de conhecimento"
-            ],
-            "description": "Cuidamos do planeamento, configuração, testes e formação.",
-            "name": "Standard",
-            "price": "A partir de 7.499 $",
-            "tierHeading": "Preços por volume de cargas de trabalho",
-            "tierNote": "Cada carga de trabalho é um processo, app ou serviço que precisa de backup e recuperação de desastres. A implementação inclui design, configuração, testes e formação da equipa.",
-            "tiers": [
-              "Starter (1 a 4 cargas de trabalho): 7.499 $",
-              "Growth (5 a 10 cargas de trabalho): 14.999 $",
-              "Scale (11 a 25 cargas de trabalho): 29.999 $",
-              "Enterprise (25+ cargas de trabalho): Orçamento personalizado"
-            ],
-            "turnaround": "3 a 5 dias úteis"
-          }
-        },
-        "pricingFactors": {
-          "factors": [
-            {
-              "description": "Número de sistemas, integrações e dependências envolvidas",
-              "title": "Complexidade do Âmbito"
-            },
-            {
-              "description": "Soluções prontas versus requisitos de desenvolvimento customizado",
-              "title": "Nível de Personalização"
-            },
-            {
-              "description": "Um especialista ou uma equipa dedicada completa",
-              "title": "Dimensão da Equipa"
-            }
-          ],
-          "heading": "Compreender os Preços dos Serviços Profissionais",
-          "intro": "Os custos finais dependem de:",
-          "note": "Exemplo: Uma implementação média (120 máquinas) com revisão de segurança custa entre 14.999 $ e 24.999 $, conforme as integrações e suporte contínuo."
-        },
-        "retainers": {
-          "description": "Obtém acesso direto aos nossos especialistas. Preços mensais previsíveis.",
-          "heading": "Planos mensais para tranquilidade permanente",
-          "items": [
-            {
-              "bullets": [
-                "Tempo de resposta garantido de 2 horas",
-                "Via de escalada direta com coordenação de war room",
-                "Revisão trimestral de preparação e atualizações de playbook"
-              ],
-              "price": "5.000 $ a 7.500 $/mês",
-              "title": "Retainer de Resposta de Emergência"
-            }
-          ]
-        },
-        "serviceTypes": {
-          "badgeLabels": {
-            "emergency": "Emergency",
-            "priority": "Priority",
-            "standard": "Standard"
-          },
-          "heading": "Serviços Disponíveis",
-          "intro": "Clique em qualquer serviço para ver os prazos de entrega de cada nível",
-          "services": [
-            {
-              "emergency": "Avaliação imediata, sistemas críticos online no mesmo dia, migração completa inicia-se",
-              "id": "data-migration",
-              "name": "Migração de Dados",
-              "priority": "Configuração rápida, dados principais transferidos em 48h",
-              "standard": "Migração completa com validação total"
-            },
-            {
-              "emergency": "Contenção imediata, sistemas críticos restaurados no mesmo dia, recuperação completa inicia-se",
-              "id": "ransomware-recovery",
-              "name": "Recuperação de Ransomware",
-              "priority": "Avaliação rápida de ameaças, operações principais restauradas em 48h",
-              "standard": "Recuperação completa com análise forense e reforço de segurança"
-            },
-            {
-              "emergency": "Scan de vulnerabilidades críticas, patches implementados no mesmo dia, auditoria completa inicia-se",
-              "id": "security-assessment",
-              "name": "Avaliação de Segurança",
-              "priority": "Avaliação completa de vulnerabilidades + plano de remediação em 48h",
-              "standard": "Auditoria de segurança completa com plano de ação"
-            },
-            {
-              "emergency": "Recursos críticos provisionados no mesmo dia, auto-scaling configurado, plano completo inicia-se",
-              "id": "infrastructure-scaling",
-              "name": "Escalabilidade de Infraestrutura",
-              "priority": "Aumento rápido de capacidade com monitorização configurada em 48h",
-              "standard": "Redesenho completo da infraestrutura com otimização de desempenho"
-            },
-            {
-              "emergency": "Briefing de procedimentos críticos no mesmo dia, preparação para resposta a incidentes, programa completo inicia-se",
-              "id": "team-training",
-              "name": "Formação de Equipas",
-              "priority": "Workshop intensivo, fluxos de trabalho essenciais em 2 dias",
-              "standard": "Programa de formação prática com múltiplos dias"
-            },
-            {
-              "emergency": "Bottleneck crítico identificado, hotfix imediato no mesmo dia, otimização completa inicia-se",
-              "id": "performance-optimization",
-              "name": "Otimização de Desempenho",
-              "priority": "Análise rápida, otimizações de alto impacto implementadas em 48h",
-              "standard": "Análise aprofundada com afinação completa de desempenho"
-            },
-            {
-              "emergency": "Ligação crítica estabelecida no mesmo dia, fluxo de dados básico em funcionamento, desenvolvimento completo inicia-se",
-              "id": "custom-integration",
-              "name": "Integração Personalizada",
-              "priority": "Integração principal funcional, funcionalidades essenciais ativas em 48h",
-              "standard": "Integração completa com testes e documentação"
-            },
-            {
-              "emergency": "Discos ligados, conversão RAID iniciada no mesmo dia, repositórios críticos verificados, reforço completo inicia-se",
-              "id": "storage-hardening",
-              "name": "Reforço de Armazenamento",
-              "priority": "BTRFS RAID1 ou RAID10 configurado, migração ao vivo iniciada, auto-reparação ativa, tudo em 48h",
-              "standard": "Configuramos armazenamento completamente redundante BTRFS, com RAID1 (2 drives espelhados) para configurações standard ou RAID10 (4+ drives) para sistemas de alto tráfego. Também tratamos migração em direto, verificações de reflink, auto-reparação e monitorização. Termina com um plano de armazenamento e revisão de estratégia de backup."
-            }
-          ]
-        }
-      },
       "psTeaser": {
         "heading": "Quer Ajuda de Especialistas para Começar?",
-        "packages": {
-          "emergency": {
-            "name": "Emergência",
-            "price": "29.999 $"
-          },
-          "priority": {
-            "name": "Prioritário",
-            "price": "19.999 $"
-          },
-          "standard": {
-            "name": "Standard",
-            "price": "A partir de 7.499 $"
-          }
-        },
-        "subtitle": "Serviços profissionais de implementação e suporte disponíveis em todos os planos",
+        "subtitle": "Serviços Profissionais de implementação e suporte disponíveis em todos os planos: Formação, Apoio, Migração, Recuperação e Segurança e Conformidade",
         "viewDetails": "Conhecer Serviços Profissionais"
       },
       "strategy": {
@@ -1828,7 +1632,7 @@
           "withTag": "Com Rediacc"
         },
         "hero": {
-          "badge": "PARA CEOs E FUNDADORES",
+          "badge": "PARA CEOs",
           "primaryCta": "Ver Preços",
           "secondaryCta": "Falar com Vendas",
           "subtitle": "Protege os dados do teu negócio em hardware que possuis. Um preço fixo por máquina – sem taxas por utilizador, sem faturas surpresa, sem fornecedores a reter-te os dados.",
@@ -1902,7 +1706,7 @@
           "title": "Partilhar com o teu CTO"
         },
         "socialProof": {
-          "author": "CEO e Fundador",
+          "author": "CEO",
           "company": "Startup SaaS, 45 colaboradores",
           "impact": {
             "afterLabel": "Com Rediacc",
@@ -2607,7 +2411,7 @@
                 "business": "✓",
                 "community": "✓",
                 "enterprise": "✓",
-                "label": "Restauros de Snapshots",
+                "label": "Restauração de Snapshots",
                 "professional": "✓"
               },
               {
@@ -2630,25 +2434,25 @@
             "label": "Infraestrutura",
             "rows": [
               {
-                "business": "20",
-                "community": "4",
-                "enterprise": "50+",
+                "business": "10",
+                "community": "2",
+                "enterprise": "25+",
                 "label": "Licenças Flutuantes (Máquinas)",
-                "professional": "5"
+                "professional": "3"
               },
               {
-                "business": "20.000",
-                "community": "1.000",
-                "enterprise": "100.000+",
-                "label": "Pedidos de licença flutuante",
-                "professional": "5.000"
+                "business": "10,000",
+                "community": "100",
+                "enterprise": "25,000+",
+                "label": "Configurações de servidor por mês (1 licença flutuante cada)",
+                "professional": "1,000"
               },
               {
-                "business": "500 GB",
-                "community": "20 GB",
-                "enterprise": "2 TB+",
-                "label": "Tamanho do repositório",
-                "professional": "100 GB"
+                "business": "200 GB",
+                "community": "10 GB",
+                "enterprise": "1 TB+",
+                "label": "Tamanho do Repositório",
+                "professional": "50 GB"
               }
             ]
           },
@@ -2699,14 +2503,14 @@
                 "business": "✓",
                 "community": "—",
                 "enterprise": "✓",
-                "label": "Suporte por Email + Chat",
+                "label": "Suporte por Email e Chat",
                 "professional": "✓"
               },
               {
                 "business": "✓",
                 "community": "—",
                 "enterprise": "✓",
-                "label": "CSM Dedicado",
+                "label": "Gestor de Conta Dedicado",
                 "professional": "—"
               },
               {
@@ -2744,7 +2548,7 @@
         "heading": "Perguntas Frequentes",
         "items": [
           {
-            "answer": "Sim. O Community é grátis. Suporta até 2 máquinas, 500 configurações de servidor por mês e restauros de backup. Sem cartão de crédito necessário.",
+            "answer": "Sim. O plano Community é grátis. Inclui até 2 servidores, 100 configurações de servidor por mês e restauros de backup. Não é necessário cartão de crédito.",
             "question": "Existe um plano grátis?"
           },
           {
@@ -2807,10 +2611,10 @@
           "description": "Configuração especializada, cópias de segurança distribuídas e restauração garantida em 4 horas.",
           "features": [
             "Tudo do Professional, e mais",
-            "20 espaços de configuração simultâneos",
+            "10 licenças flutuantes",
             "Repositórios ilimitados",
-            "20.000 infraestruturas por mês",
-            "$9.999 em suporte de implementação incluído (Oferta de Lançamento)",
+            "5 000+ configurações de servidor por mês",
+            "Apoio de implementação incluído (Oferta de Lançamento)",
             "Armazenamento com redundância geográfica (3 regiões)",
             "Proteção contínua de dados",
             "SLA de restauração em 4 horas",
@@ -2825,8 +2629,8 @@
           "features": [
             "Utilizadores e equipas sem limite",
             "Repositórios ilimitados",
-            "500 infraestruturas por mês",
-            "2 espaços de configuração simultâneos",
+            "100 configurações de servidor por mês (1 licença flutuante por configuração)",
+            "2 licenças flutuantes",
             "Restauração de backups",
             "Agendamento manual",
             "Acesso ao Slack da comunidade",
@@ -2838,9 +2642,9 @@
           "description": "Suporte dedicado e condições personalizadas para ambientes grandes e complexos.",
           "features": [
             "Tudo do Business, e mais",
-            "50+ espaços de configuração",
+            "25+ licenças flutuantes",
             "Repositórios ilimitados",
-            "Mais de 100.000 infraestruturas por mês",
+            "15 000+ configurações de servidor por mês",
             "SLA personalizado com tempos de restauração garantidos",
             "Seu próprio espaço de infraestrutura dedicado",
             "Suporte dedicado 24/7/365",
@@ -2850,16 +2654,15 @@
             "Integrações e fluxos de trabalho personalizados",
             "Suporte em documentação de auditoria e revisões de segurança"
           ],
-          "name": "Enterprise",
-          "priceNote": "*A partir de"
+          "name": "Enterprise"
         },
         "professional": {
           "description": "Automação e agendamento profissional para equipas em expansão",
           "features": [
             "Tudo do Community, e mais",
-            "5 espaços de configuração simultâneos",
+            "3 licenças flutuantes",
             "Repositórios ilimitados",
-            "5.000 infraestruturas por mês",
+            "2 000+ configurações de servidor por mês",
             "Agendamento automatizado",
             "Restauração a qualquer ponto nas últimas 24 horas",
             "Suporte por email e chat",
@@ -2871,79 +2674,14 @@
         }
       },
       "professionalServices": {
-        "access": {
-          "description": "O teu plano inclui ajuda de onboarding para começar. Podes adicionar mais serviços. A tabela abaixo mostra o que vem incluído e o que custa extra.",
-          "heading": "Acesso a serviços profissionais por nível",
-          "labels": {
-            "available": "Add-ons disponíveis",
-            "included": "Incluído"
-          },
-          "tiers": [
-            {
-              "available": [
-                "Implementação Standard ($9.999) ou pacotes por nível (Starter $7.499 · Growth $14.999 · Scale $29.999 · Enterprise personalizado)",
-                "Resposta de Emergência ($29.999 sob demanda)"
-              ],
-              "included": [
-                "Documentação de autoatendimento, tutoriais em vídeo e fórum da comunidade"
-              ],
-              "planId": "community"
-            },
-            {
-              "available": [
-                "Implementação Priority ($19.999)",
-                "Resposta de Emergência ($29.999 sob demanda)",
-                "Projetos de integração personalizada (com âmbito definido)"
-              ],
-              "included": [
-                "Suporte por email",
-                "Sessão de onboarding standard (chamada de configuração e guia prático)"
-              ],
-              "planId": "professional"
-            },
-            {
-              "available": [
-                "Upgrade para Implementação Priority ($19.999)",
-                "Resposta de Emergência ($29.999 sob demanda)",
-                "Desenvolvimento personalizado e consultoria de arquitetura de segurança"
-              ],
-              "included": [
-                "Suporte prioritário por email/chat/telefone",
-                "Onboarding dedicado com configuração e entrega de runbook",
-                "Pacote de Implementação Standard incluído (valor de $9.999)",
-                "Revisões de sucesso trimestrais"
-              ],
-              "planId": "business"
-            },
-            {
-              "available": [
-                "Desenvolvimento personalizado e integrações avançadas",
-                "Consultoria de arquitetura de segurança e auditoria",
-                "Retainer de Resposta de Emergência ($5.000 a $7.500/mês)"
-              ],
-              "included": [
-                "Suporte personalizado 24/7/365 e gestor de conta dedicado",
-                "Implementação Priority incluída (valor de $19.999)",
-                "Testes trimestrais de recuperação de desastres",
-                "Workshop anual de planeamento de continuidade de negócio",
-                "Linha de escalonamento executivo"
-              ],
-              "planId": "enterprise"
-            }
-          ]
-        },
-        "advancedDetails": {
-          "description": "Pacotes de serviços, níveis de implementação, fatores de preço e opções de retainer",
-          "heading": "Detalhes de Implementação e Preços"
-        },
         "benefits": {
           "description": "Engenheiros reais do teu lado quando a infraestrutura falha. Sem filas de tickets. Gente de verdade, no mesmo dia.",
           "heading": "Por Que Serviços Profissionais?",
           "items": [
             "Equipa dedicada de especialistas atribuída ao teu projeto",
             "Tempos de resposta garantidos em escrito",
-            "Muda entre níveis de serviço conforme necessário",
-            "Linha de emergência 24/7 para o nível Emergency"
+            "Mude entre serviços à medida que as suas necessidades evoluem",
+            "Linha de emergência 24/7 para incidentes críticos"
           ],
           "statistics": [
             "O custo médio de um ataque de ransomware é $4,62 milhões (IBM Security, 2023)",
@@ -2951,159 +2689,49 @@
           ]
         },
         "cta": {
-          "button": "Agendar Consulta",
-          "description": "Os nossos especialistas estão prontos para te ajudar a ter sucesso",
+          "button": "Contacte-nos",
+          "description": "Cada projeto é adaptado à sua infraestrutura. Contacte-nos e encontraremos juntos o plano ideal.",
           "heading": "Precisas de Assistência Profissional?"
         },
         "header": {
           "badge": "Especialistas em cada etapa",
-          "eligibility": "Todos os planos incluem acesso a serviços profissionais. Veja a tabela abaixo para saber o que vem incluído e o que pode adicionar.",
+          "eligibility": "Todos os planos têm acesso aos nossos Serviços Profissionais. Contacte-nos e definiremos o projeto adequado à sua infraestrutura.",
           "subtitle": "Assistência de especialistas quando você mais precisa",
           "title": "Serviços Profissionais"
         },
-        "packages": {
-          "emergency": {
-            "benefits": [
-              "Envolvimento imediato (em menos de 2 horas)",
-              "Análise de forense, contenção e plano de recuperação",
-              "Relatório de estabilização com roadmap de hardening"
-            ],
-            "description": "Quando algo dá errado, aparecemos no mesmo dia. Paramos a hemorragia e restauramos os sistemas críticos.",
-            "name": "Emergência",
-            "price": "$29.999",
-            "tiers": [],
-            "turnaround": "Mesmo Dia"
-          },
-          "priority": {
-            "benefits": [
-              "Gestor de projeto dedicado",
-              "Disponibilidade à noite e ao fim de semana",
-              "Suporte de go-live em produção"
-            ],
-            "description": "Entrega acelerada com suporte eventuais e fins de semana. Acompanhamos você do início até o go-live.",
-            "name": "Prioritário",
-            "price": "$19.999",
-            "tiers": [],
-            "turnaround": "24 a 48 Horas"
-          },
-          "standard": {
-            "benefits": [
-              "Descoberta do projeto e plano de sucesso",
-              "Configuração e setup do ambiente",
-              "Testes completos e transferência de conhecimento"
-            ],
-            "description": "Desenhamos a infraestrutura, fazemos o deployment, testamos e treinamos a sua equipa.",
-            "name": "Standard",
-            "price": "A partir de $7.499",
-            "tierHeading": "Preços por Número de Servidores",
-            "tierNote": "Cada servidor ou aplicação que quer proteger conta como uma unidade. A implementação inclui design de arquitetura, deployment, testes e treinamento da equipa.",
-            "tiers": [
-              "Starter (1 a 4 servidores): $7.499",
-              "Growth (5 a 10 servidores): $14.999",
-              "Scale (11 a 25 servidores): $29.999",
-              "Enterprise (25+ servidores): Orçamento personalizado"
-            ],
-            "turnaround": "3 a 5 Dias Úteis"
-          }
-        },
-        "pricingFactors": {
-          "factors": [
-            {
-              "description": "Quantidade de sistemas, integrações e dependências envolvidas",
-              "title": "Complexidade do Âmbito"
-            },
-            {
-              "description": "Soluções prontas versus desenvolvimento customizado",
-              "title": "Nível de Personalização"
-            },
-            {
-              "description": "Um especialista solo ou uma equipa dedicada completa",
-              "title": "Tamanho da Equipa"
-            }
-          ],
-          "heading": "Entender os Preços dos Serviços Profissionais",
-          "intro": "Os custos finais do projeto dependem de:",
-          "note": "Exemplo: um projeto de 120 servidores com revisão de segurança situa-se tipicamente entre $14.999 e $24.999, dependendo das integrações e cobertura de retainer."
-        },
-        "retainers": {
-          "description": "Acesso direto aos nossos engenheiros. Um preço mensal fixo.",
-          "heading": "Retainers para Prontidão Permanente",
+        "categories": {
+          "heading": "Serviços Disponíveis",
+          "intro": "Cada projeto começa com uma conversa para que possamos definir a equipa e o calendário certos para a sua infraestrutura.",
           "items": [
             {
-              "bullets": [
-                "Tempo de resposta garantido de 2 horas",
-                "Caminho prioritário de escalonamento com coordenação de war room",
-                "Revisão trimestral de prontidão e atualizações de playbook"
-              ],
-              "price": "$5.000 a $7.500/mês",
-              "title": "Retainer de Resposta de Emergência"
-            }
-          ]
-        },
-        "serviceTypes": {
-          "badgeLabels": {
-            "emergency": "Emergency",
-            "priority": "Priority",
-            "standard": "Standard"
-          },
-          "heading": "Serviços Disponíveis",
-          "intro": "Clique em qualquer serviço para ver os prazos de cada nível",
-          "services": [
-            {
-              "emergency": "Avaliação imediata + sistemas críticos online no mesmo dia + migração completa inicia-se",
-              "id": "data-migration",
-              "name": "Migração de Dados",
-              "priority": "Pipeline de migração rápida + dados principais transferidos em 48h",
-              "standard": "Migração completa de ponta a ponta com validação total"
+              "id": "training",
+              "name": "Formação",
+              "description": "Formação prática para a sua equipa, desde uma demonstração guiada de configuração até workshops de vários dias sobre fluxos de trabalho avançados e procedimentos de resposta a incidentes.",
+              "icon": "team-training"
             },
             {
-              "emergency": "Contenção imediata + sistemas críticos restaurados no mesmo dia + recuperação completa inicia-se",
-              "id": "ransomware-recovery",
-              "name": "Recuperação de Ransomware",
-              "priority": "Avaliação rápida da ameaça + operações principais restauradas em 48h",
-              "standard": "Recuperação completa com forense e hardening"
+              "id": "support",
+              "name": "Apoio",
+              "description": "Apoio contínuo de engenheiros reais, desde apoio por email durante o horário de expediente até cobertura 24/7/365 com um gestor de conta dedicado para ambientes críticos de produção.",
+              "icon": "security-assessment"
             },
             {
-              "emergency": "Scan de vulnerabilidades críticas + patches implementados no mesmo dia + auditoria completa inicia-se",
-              "id": "security-assessment",
-              "name": "Avaliação de Segurança",
-              "priority": "Avaliação total de vulnerabilidades + plano de remediação em 48h",
-              "standard": "Auditoria completa de segurança com roadmap de implementação"
+              "id": "migration",
+              "name": "Migração",
+              "description": "Migração e integração personalizada de ponta a ponta, desde uma migração de dados totalmente validada até uma transição rápida no mesmo dia quando está com pressão de tempo.",
+              "icon": "data-migration"
             },
             {
-              "emergency": "Recursos críticos provisionados no mesmo dia + auto-scaling configurado + plano completo inicia-se",
-              "id": "infrastructure-scaling",
-              "name": "Escalamento de Infraestrutura",
-              "priority": "Aumento rápido de capacidade + setup de monitorização em 48h",
-              "standard": "Redesign completo de infraestrutura com otimizações"
+              "id": "recovery",
+              "name": "Recuperação",
+              "description": "Projetos de recuperação de ransomware e de recuperação após desastre, desde forense e reforço de segurança após um incidente até à implementação de replicação contínua para sistemas críticos.",
+              "icon": "ransomware-recovery"
             },
             {
-              "emergency": "Briefing de procedimentos críticos no mesmo dia + preparação de resposta a incidentes + programa completo inicia-se",
-              "id": "team-training",
-              "name": "Formação de Equipas",
-              "priority": "Workshop intensivo + fluxos principais cobertos em 2 dias",
-              "standard": "Programa de treinamento prático de vários dias"
-            },
-            {
-              "emergency": "Gargalo crítico identificado + hotfix imediato no mesmo dia + otimização completa inicia-se",
-              "id": "performance-optimization",
-              "name": "Otimização de Desempenho",
-              "priority": "Perfilamento rápido + otimizações de alto impacto em 48h",
-              "standard": "Análise profunda com otimização completa de desempenho"
-            },
-            {
-              "emergency": "Ligação crítica estabelecida no mesmo dia + fluxo básico de dados a funcionar + desenvolvimento completo inicia-se",
-              "id": "custom-integration",
-              "name": "Integração Personalizada",
-              "priority": "Integração principal funcional + funcionalidades essenciais em produção em 48h",
-              "standard": "Integração completa com testes e documentação"
-            },
-            {
-              "emergency": "Discos ligados + conversão RAID iniciada no mesmo dia + repos críticos verificados + hardening completo inicia-se",
-              "id": "storage-hardening",
-              "name": "Hardening de Armazenamento",
-              "priority": "BTRFS RAID1 ou RAID10 configurado + migração de equilíbrio ao vivo iniciada + timer de scrub ativo em 48h",
-              "standard": "Configuração completa de armazenamento redundante BTRFS com auto-repair do scrub, migração de dados ao vivo a partir de disco único, verificação de reflink e integração de monitorização. Linux RAID1 (2 SSDs espelhados) para deployments standard ou RAID10 (4+ SSDs em stripe) para cargas críticas. O scrub repara corrupção automaticamente a partir da cópia redundante em vez de apenas detectar. Inclui planeamento de capacidade e revisão de estratégia de backup."
+              "id": "security",
+              "name": "Segurança e Conformidade",
+              "description": "Revisões de segurança, listas de verificação de reforço de segurança, manuais de conformidade e contratos de retenção para resposta a incidentes, adaptados ao seu ambiente e requisitos de auditoria.",
+              "icon": "storage-hardening"
             }
           ]
         }
@@ -3128,12 +2756,12 @@
           {
             "key": "floatingLicenses",
             "label": "Licenças Flutuantes",
-            "tooltip": "Quantas máquinas podem criar ou copiar servidores ao mesmo tempo."
+            "tooltip": "Quantas máquinas podem criar ou copiar servidores em simultâneo. Cada licença flutuante cobre uma máquina."
           },
           {
             "key": "jobsPerMonth",
             "label": "Configurações de servidor por mês",
-            "tooltip": "Quantas novas configurações de servidor são contadas num mês de calendário. Criar um servidor ou copiar um existente conta como uma."
+            "tooltip": "Quantas novas configurações de servidor são contadas num mês de calendário. Criar um servidor ou copiar um existente conta como uma. Trata-se de uma licença por máquina: cada configuração atribui 1 licença flutuante."
           },
           {
             "key": "usersTeams",
@@ -3142,31 +2770,31 @@
         ],
         "values": {
           "business": {
-            "floatingLicenses": "20",
-            "jobsPerMonth": "20.000",
+            "floatingLicenses": "10",
+            "jobsPerMonth": "10,000",
             "repositories": "Ilimitado",
-            "repoSize": "500 GB",
+            "repoSize": "200 GB",
             "usersTeams": "Ilimitado"
           },
           "community": {
-            "floatingLicenses": "4",
-            "jobsPerMonth": "1.000",
+            "floatingLicenses": "2",
+            "jobsPerMonth": "100",
             "repositories": "Ilimitado",
-            "repoSize": "20 GB",
+            "repoSize": "10 GB",
             "usersTeams": "Ilimitado"
           },
           "enterprise": {
-            "floatingLicenses": "50+",
-            "jobsPerMonth": "100.000+",
+            "floatingLicenses": "25+",
+            "jobsPerMonth": "25,000+",
             "repositories": "Ilimitado",
-            "repoSize": "2 TB+",
+            "repoSize": "1 TB+",
             "usersTeams": "Ilimitado"
           },
           "professional": {
-            "floatingLicenses": "5",
-            "jobsPerMonth": "5.000",
+            "floatingLicenses": "3",
+            "jobsPerMonth": "1,000",
             "repositories": "Ilimitado",
-            "repoSize": "100 GB",
+            "repoSize": "50 GB",
             "usersTeams": "Ilimitado"
           }
         }
@@ -3176,6 +2804,7 @@
         "items": ["Encriptação AES-256", "SLA de uptime de 99,99%"]
       },
       "trustSection": {
+        "corporateGuarantee": "Se a Rediacc não funcionar para si, ajudamo-lo a migrar de volta.",
         "heading": "Sua infraestrutura. Suas regras.",
         "rows": [
           {
@@ -3195,7 +2824,7 @@
             "title": "60 dias para expandir."
           },
           {
-            "description": "Um slot é usado só ao criar ou copiar. Trabalho normal nunca usa slots. Slots se liberam após 1 hora de inatividade. Um plano de 5 slots funciona para dezenas de máquinas. Sem taxa por máquina.",
+            "description": "Uma licença flutuante só é usada quando cria ou copia um servidor. O seu trabalho normal nunca ocupa uma licença. As licenças libertam-se após 5 horas sem atividade. Um plano de 5 licenças funciona para dezenas de máquinas. Sem taxas por máquina, nunca.",
             "title": "Máquinas ilimitadas. Pague só ao criar."
           },
           {
@@ -3211,8 +2840,8 @@
           "noLicenseRequired": "Sem licença, funciona sempre",
           "reposKeepRunning": "Suas aplicações rodam o tempo todo. Sem passos manuais.",
           "requiredOnlyHere": "Necessário só aqui",
-          "slotsAutoRelease": "Slots se liberam após 1 hora de inatividade",
-          "slotsCreateFork": "Slots usados só para criar e copiar. Operações do dia a dia são sempre gratuitas."
+          "slotsAutoRelease": "As licenças flutuantes libertam-se após 5 horas de inatividade",
+          "slotsCreateFork": "Licenças flutuantes usadas apenas para novos servidores e cópias. As operações do dia a dia são sempre gratuitas."
         }
       },
       "ui": {
@@ -3225,6 +2854,8 @@
           "monthly": "Mensal"
         },
         "contactSales": "Falar com vendas",
+        "contactUs": "Contacte-nos",
+        "contactUsSub": "Limites e termos personalizados",
         "cta": {
           "business": {
             "guarantee": "Dinheiro de volta se não gostar",
@@ -3446,8 +3077,8 @@
         "title": "Serviços Profissionais | Implementação e Suporte"
       },
       "packages": {
-        "heading": "Pacotes de Serviços Profissionais",
-        "subtitle": "Escolha o plano que se adequa à sua urgência e complexidade"
+        "heading": "Serviços Disponíveis",
+        "subtitle": "Cada projeto começa com uma conversa para que possamos definir a equipa e o calendário certos para a sua infraestrutura"
       },
       "value": {
         "description": "Implementações 75% mais rápidas. 100% de sucesso em migrações. Resposta de emergência em 2 horas. Isso é o que a nossa equipa entrega.",
@@ -6837,7 +6468,7 @@
           "label": "Fontes e Referências"
         },
         "socialProof": {
-          "author": "Chief Information Security Officer",
+          "author": "Diretor de Segurança da Informação",
           "company": "OIV francesa sujeita à obrigação SecNumCloud, 1.200 colaboradores",
           "impact": {
             "after": {
@@ -13833,83 +13464,6 @@
         }
       }
     },
-    "team": {
-      "cta": {
-        "buttons": {
-          "contact": "Fale Connosco",
-          "learnMore": "Veja Como Funciona"
-        },
-        "subtitle": "Instala o Rediacc em menos de 5 minutos. O nível Comunitário é grátis para sempre.",
-        "title": "Teste Gratuitamente"
-      },
-      "hero": {
-        "subtitle": "Engenheiros que se cansaram de alarmes de dados perdidos às 3 da manhã. E então construímos a solução.",
-        "title": "A Equipa Por Trás das Cópias que o Ransomware Não Consegue Tocar"
-      },
-      "meta": {
-        "description": "Conheça a equipa por trás do Rediacc. Cansámo-nos de acordar às 3 da manhã com perda de dados, por isso construímos cópias que o ransomware não consegue tocar.",
-        "keywords": "equipa Rediacc, engenharia de infraestrutura, especialistas em recuperação de desastres, fiabilidade de sistemas, equipa DevOps",
-        "title": "A Equipa | Rediacc - Cópias que Resistem ao Ransomware"
-      },
-      "mission": {
-        "belief": "O nível Comunitário faz exatamente o mesmo que os níveis pagos. A mesma clonagem btrfs. A mesma encriptação LUKS. As mesmas cópias imutáveis. Apenas com limites menores. Nada de funcionalidades bloqueadas. Nada de ciladas.",
-        "description": "A cada 47 dias, uma IA apaga uma base de dados em produção. Anualmente, 1,71% dos discos falham. 75% do ransomware apunta às cópias de segurança. Nós trazem-te de volta online em 60 segundos.",
-        "title": "A Nossa Missão: Tornar os Desastres Impossíveis"
-      },
-      "story": {
-        "beginning": {
-          "paragraph1": "Em 2018, larguei o meu emprego como engenheiro de software para perseguir a minha própria visão. O entusiasmo mantinha-me acordado 18 horas por dia, dormindo apenas 4 a 5 horas. Dediquei-me completamente durante 5 a 6 meses.",
-          "paragraph2": "Depois perdi acesso a toda a minha infraestrutura de desenvolvimento. Tudo desapareceu de um momento para o outro. Não tinha cópias de segurança. E mesmo que tivesse, não tinha dinheiro para novos servidores.",
-          "paragraph3": "Para pagar dívidas e ajudar a família, voltei a um emprego por salário. Demorei 20 meses para recuperar o meu trabalho. Afastei-me dos meus sonhos. Vivi em incerteza, com contas a crescer.",
-          "title": "O Início"
-        },
-        "birth": {
-          "paragraph1": "Comecei com uma camada de armazenamento portável. Depois adicionei um módulo de cópia de segurança. E aí veio a parte mais difícil: mover sistemas em funcionamento com quase nenhuma inatividade, independentemente do tamanho dos dados. Adicionei as funcionalidades de que eu realmente precisava.",
-          "paragraph2": "É assim que nasceu o Rediacc -- um produto forjado nos problemas mais duros que enfrentei. Agora está aberto para todos. Utilize-o. Não deixe que as falhas travem o seu negócio. Esteja preparado para sobreviver e crescer.",
-          "quote": "Quando perdi o acesso à minha infraestrutura, soube o que tinha de construir: um sistema que torna os desastres impossíveis.",
-          "title": "O Nascimento do Rediacc"
-        },
-        "title": "A Nossa História",
-        "turningPoint": {
-          "paragraph1": "Anos depois, continuava a pensar em como evitar que isto voltasse a acontecer. Precisava de uma ferramenta para mover os meus sistemas para qualquer lado. Ligá-los quando quisesse. Fazer cópias de segurança facilmente. Mantê-los seguros, onde quer que estivessem.",
-          "paragraph2": "Em 2021, descobri o Docker num vídeo do NetworkChuck. Fiquei chocado com o que era possível. Gostava de ter conhecido isto antes. Teria mudado tudo.",
-          "paragraph3": "Mas o Docker sozinho não era suficiente. Mover ficheiros de contentores entre máquinas era complicado. A propriedade de ficheiros quebrava. Quanto mais dados, mais lento era. E o pior: tinha de deixar os serviços offline durante a migração toda. O Docker também mal tinha segurança.",
-          "title": "O Ponto de Viragem"
-        }
-      },
-      "team": {
-        "title": "A Nossa Equipa"
-      },
-      "values": {
-        "items": {
-          "global": {
-            "description": "9 idiomas. Os dados de utilização ficam na UE. Empresa estónia com GDPR integrado.",
-            "title": "Visão Global"
-          },
-          "innovation": {
-            "description": "Lançamos atualizações todas as semanas. Cada versão resolve um verdadeiro problema de deploy que os utilizadores reportaram.",
-            "title": "Inovação Contínua"
-          },
-          "security": {
-            "description": "Encriptação LUKS em repouso. TLS na rede. Um motor Docker isolado por aplicação. Cada camada blindada.",
-            "title": "Segurança por Conceção"
-          },
-          "simplicity": {
-            "description": "Um comando para clonar 241 GB de dados em produção. Esse é todo o nosso orçamento de complexidade.",
-            "title": "Simplicidade em Primeiro"
-          },
-          "success": {
-            "description": "Medimo-nos pelo seu tempo de recuperação, não pelo número de funcionalidades.",
-            "title": "Sucesso do Cliente"
-          },
-          "transparency": {
-            "description": "Comunicação aberta, preços honestos e documentação clara. Sem taxas ocultas, sem surpresas, sem letra pequena.",
-            "title": "Transparência"
-          }
-        },
-        "title": "Os Nossos Valores"
-      }
-    },
     "telemetryPolicy": {
       "contact": {
         "description": "Se tiver dúvidas sobre as nossas práticas de telemetria ou precisar de ajuda para recusar, contacte-nos em <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>.",
@@ -14464,18 +14018,21 @@
   },
   "regionPicker": {
     "channelEdge": "Edge",
+    "channelHintLabel": "Sobre canais de lançamento",
     "channelStable": "Estável",
     "edgeHint": "Produção com implementação contínua. Limites gratuitos 2× durante o período de avaliação.",
-    "footer": "Escolha a região mais próxima de si ou onde a sua organização o exige. Não pode ser alterada após o registo.",
+    "footer": "Escolha a região mais próxima de si ou onde a sua organização o exige.",
+    "footerNote": "Não pode ser alterada após o registo.",
     "locations": {
       "asia": "Tóquio, Japão",
       "eu": "Frankfurt, Alemanha",
       "us": "Virgínia, EUA"
     },
+    "reassurance": "Os dados dos seus servidores e backups permanecem na sua própria infraestrutura.",
     "regionNote": "A região não pode ser alterada após o registo.",
     "stableHint": "Lançamentos fiáveis, promovidos a partir do edge após 7 dias de avaliação.",
-    "subtitle": "A sua conta, facturação e configurações ficam na região que escolher. Nunca saem daqui.",
-    "title": "Onde devemos guardar os seus dados?"
+    "subtitle": "A sua conta, facturação e configurações ficam na região que escolher.",
+    "title": "Escolha a região da sua conta"
   },
   "solutions": {
     "categories": {
@@ -14490,16 +14047,6 @@
     "title": "Como Garantimos a Continuidade do Seu Negócio"
   },
   "team": {
-    "founder": {
-      "contact": "Dúvidas? Contacte-me directamente",
-      "designPartner": "Faço o acompanhamento pessoal de cada Parceiro de Design. Registe-se gratuitamente e agende uma chamada de 30 minutos para falarmos sobre a sua stack.",
-      "guarantee": "Se a Rediacc não funcionar para si, envie-me um e-mail e ajudo-o a migrar de volta.",
-      "quote": "Criei a Rediacc porque a infraestrutura não deveria ser tão frágil.",
-      "story": {
-        "description": "Passei mais de uma década a gerir servidores. Vi cópias de segurança falhar durante incidentes reais. A Rediacc existe para que as suas não falhem.",
-        "headline": "Porque Criei a Rediacc"
-      }
-    },
     "video": {
       "ccLabel": "Legendas",
       "personaHeadline": "Uma mensagem para si",
@@ -14507,7 +14054,6 @@
     }
   },
   "testimonials": {
-    "fromTheFounder": "Do fundador",
     "items": [
       {
         "company": "Serviços Financeiros",

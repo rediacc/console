@@ -18,7 +18,7 @@
       "at": 8.503611,
       "text": "Agora os contentores. Esta vista lista todos os contentores em execução em todos os repositórios da máquina: nome, estado, saúde, CPU, memória e qual o repositório a que cada um pertence.",
       "afterText": "Todos os contentores em todos os repos, numa só vista.",
-      "cardLabel": "Containers",
+      "cardLabel": "Contentores",
       "prose": "A visão de containers lista todos os containers em execução em cada repository da máquina: nome, status, saúde, CPU, memória e o repo proprietário."
     },
     {
@@ -27,7 +27,7 @@
       "at": 14.799411,
       "text": "E os próprios repositórios. Tamanho, estado de montagem, estado do daemon Docker, uso do disco. Tudo o que precisamos saber sobre cada ambiente isolado.",
       "afterText": "Todos os repos, todos os seus daemons, todo o seu uso de disco.",
-      "cardLabel": "Repositories",
+      "cardLabel": "Repositórios",
       "prose": "A visão de repositories reporta tamanho, status de montagem, status do Docker daemon e uso de disco para cada ambiente isolado."
     },
     {

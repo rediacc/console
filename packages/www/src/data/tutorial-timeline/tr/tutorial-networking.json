@@ -1,0 +1,121 @@
+{
+  "cast": "/assets/tutorials/tutorial-networking.cast",
+  "language": "tr",
+  "version": 1,
+  "steps": [
+    {
+      "id": "tutorial-networking-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.410714,
+      "replayEndSec": 12.419888,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-01.f87bf913.mp3",
+      "audioDurationSec": 14.445714,
+      "textHash": "f87bf913f6e6ad781ac79d21062605b4840407b127b835f7c49165175d4be20d",
+      "narrationText": "İkinci adım. Komut satırından genel IP'yi, temel alan adını, sertifika e-postasını ve Cloudflare API token'ını giriyoruz. Sertifika e-postası ve token tüm makinelerinizde paylaşılır; yalnızca bir kez ayarlarsınız.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-01-after.abefe6e7.mp3",
+      "afterAudioDurationSec": 2.35102,
+      "afterTextHash": "abefe6e7f74d4a7d342e158c83b2a3968742b77d88a3e233579dece72b6f3943"
+    },
+    {
+      "id": "tutorial-networking-02",
+      "markerIndex": 1,
+      "replayStartSec": 12.419888,
+      "replayEndSec": 16.924002,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-02.56cdbdad.mp3",
+      "audioDurationSec": 7.88898,
+      "textHash": "56cdbdad057e31d7a4e0e37842415e6e99064c80f11b18570b9ce06a891b3bb4",
+      "narrationText": "Altyapı ayarlarının kaydedildiğini doğruluyoruz. Genel IP, temel alan adı, sertifika e-postası; hepsi yapılandırmada görünüyor.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-02-after.5e6ddb10.mp3",
+      "afterAudioDurationSec": 2.429388,
+      "afterTextHash": "5e6ddb10f0fdbdcf65b8f94fa0d7ef6b80e5aea2a61d303b0d8cbe135b1e3c3a"
+    },
+    {
+      "id": "tutorial-networking-03",
+      "markerIndex": 2,
+      "replayStartSec": 16.924002,
+      "replayEndSec": 20.590881,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-03.0d57bc64.mp3",
+      "audioDurationSec": 10.762449,
+      "textHash": "0d57bc64e126ad1817fad34f4de3432f3c53957728c451faa8cd28840e3d7c91",
+      "narrationText": "Üçüncü adım: yapılandırmayı sunucuya gönderin. Gerçek bir token ile bu, Cloudflare'deki DNS kayıtlarınızı otomatik olarak oluşturur ve proxy yapılandırmasını hazırlar.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-03-after.4bd17331.mp3",
+      "afterAudioDurationSec": 3.63102,
+      "afterTextHash": "4bd17331d0dd4dfe5271ee834e343fd6ce823a8c3bb72fa58f62f1bf728c06ef"
+    },
+    {
+      "id": "tutorial-networking-04",
+      "markerIndex": 3,
+      "replayStartSec": 20.590881,
+      "replayEndSec": 28.48077,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-04.ca25ddd2.mp3",
+      "audioDurationSec": 13.244082,
+      "textHash": "ca25ddd2f8e4ff5cb725879926e909d3cb711ea9265b4bf3eaa07034546cdfd5",
+      "narrationText": "Dördüncü adım: infra adında küçük bir repo oluşturun. Neden kendi repo'su? proxy, bu sunucudaki her uygulama için trafiği yönlendirir. Altyapı, uygulama kodunuzdan uzakta, kendi izole kutusunu hak ediyor.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-04-after.05d1b8b5.mp3",
+      "afterAudioDurationSec": 3.474286,
+      "afterTextHash": "05d1b8b5fb4f3ccb7012e340634370ecd6c03d1c3adf7f4fbfdb95ce88cade5a"
+    },
+    {
+      "id": "tutorial-networking-05",
+      "markerIndex": 4,
+      "replayStartSec": 28.48077,
+      "replayEndSec": 35.97937,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-05.240c2356.mp3",
+      "audioDurationSec": 7.810612,
+      "textHash": "240c2356a9245938aef978a4cb807a21d8f4d7cd4f61fb84e592e6b5e7e01172",
+      "narrationText": "Yerleşik proxy şablonunu uyguluyoruz. Traefik ile birlikte Let's Encrypt ve Cloudflare DNS-01 doğrulaması için yapılandırma hazır olarak geliyor.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-05-after.3144f366.mp3",
+      "afterAudioDurationSec": 1.802449,
+      "afterTextHash": "3144f36669a4dc7439ef5c27dfe2ffc54aa2980d6110b325d16c31ba2bc50824"
+    },
+    {
+      "id": "tutorial-networking-06",
+      "markerIndex": 5,
+      "replayStartSec": 35.97937,
+      "replayEndSec": 42.626799,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-06.58fd4f50.mp3",
+      "audioDurationSec": 12.042449,
+      "textHash": "58fd4f501fb8cbc53896281c60777e0d68cd9b761d555b9d3b790ca73313ba9e",
+      "narrationText": "Proxy'yi ayağa kaldırıyoruz. Traefik, container'larınızı her beş saniyede bir keşfeder. TLS sertifikaları Let's Encrypt'ten otomatik olarak gelir. Uygulamanız artık HTTPS üzerinden internetten erişilebilir.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-06-after.5a482bc4.mp3",
+      "afterAudioDurationSec": 4.04898,
+      "afterTextHash": "5a482bc4de9bee3e5c0080db1e382850501d9272f1f55f4fe74adaa65d9b2f31"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/intro.ad517ac9.mp3",
+      "textHash": "ad517ac93ee84fe2c8d2a49f5c85b69e5c961f7e1e26b2d92b7b3c22834a774e",
+      "audioDurationSec": 8.672653,
+      "narrationText": "Uygulamanız çalışıyor ama yalnızca sunucu onu görebiliyor. Ona otomatik TLS ile gerçek bir domain verelim. Dört kısa adım ve internet üzerinde."
+    },
+    {
+      "id": "four-steps",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/four-steps.428734ac.mp3",
+      "textHash": "428734acbdb09f19b6fdf3a249459b30c4bebf491c394800d74e83fa42282510",
+      "audioDurationSec": 14.367347,
+      "narrationText": "İşte yol: bir Cloudflare API token alın, altyapıyı CLI üzerinde bir kez yapılandırın, sunucuya gönderin, ardından DNS ve sertifikaları sizin için yöneten küçük bir proxy repo'su dağıtın."
+    },
+    {
+      "id": "open-cloudflare",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/open-cloudflare.ce50a187.mp3",
+      "textHash": "ce50a187e2f2a660b04c9d9f5b5924207557bb94127474e4c7b42b6d104903e2",
+      "audioDurationSec": 18.364082,
+      "narrationText": "İlk olarak, tek manuel adım. Cloudflare dashboard'unu açın, My Profile'a gidin, ardından API Tokens'a geçin ve Zone DNS Edit iznine sahip bir token oluşturun. Bu tek token, CLI'ın DNS kayıtlarınızı yönetmesini sağlar, böylece bir daha dashboard'larda tıklamak zorunda kalmazsınız."
+    },
+    {
+      "id": "next-tutorial",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/next-tutorial.d36ccf0a.mp3",
+      "textHash": "d36ccf0a69f0c997a62ab454046ead523310138490394eead8307431846b551d",
+      "audioDurationSec": 3.866122,
+      "narrationText": "Ağ tarafı halloldu! Bir sonraki bölümde görüşmek üzere."
+    }
+  ],
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "bee98d9fa84b4ea8b328ba04d4dea44bce8d2fa4f19b4d0d63344ed7a20481cf"
+}

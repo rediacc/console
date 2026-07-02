@@ -1,8 +1,12 @@
 ---
-title: "Lo que nos dijeron los compradores en el primer ciclo de auditorías NIS2"
-description: "Las cinco herramientas del stack de cumplimiento que las entidades esenciales mid-market ensamblan silenciosamente en 2026, lo que consolida un plano de control self-hosted y las partidas presupuestarias que siguen siendo tuyas de todos modos."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-09
+title: Lo que nos dijeron los compradores en el primer ciclo de auditorías NIS2
+description: >-
+  Las cinco herramientas del stack de cumplimiento que las entidades esenciales
+  mid-market ensamblan silenciosamente en 2026, lo que consolida un plano de
+  control self-hosted y las partidas presupuestarias que siguen siendo tuyas de
+  todos modos.
+author: Rediacc
+publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
 tags:
   - nis2
@@ -12,8 +16,8 @@ tags:
   - mid-market
 featured: false
 language: es
-sourceHash: "3fbb581ec14e3f80"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: 29fbcbffd8a304bc
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
 

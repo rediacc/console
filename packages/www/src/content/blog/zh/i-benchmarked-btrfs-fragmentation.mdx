@@ -1,8 +1,8 @@
 ---
-title: "你的碎片化看起来触目惊心。我测了一下这要付出什么代价。"
-description: "我们的存储健康报告将某些仓库标记为接近 20,000 个 extent/GB。我测了两个极端：读取惩罚为零。Rediacc 为何没有碎片整理命令。"
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-25
+title: 你的碎片化看起来触目惊心。我测了一下这要付出什么代价。
+description: '我们的存储健康报告将某些仓库标记为接近 20,000 个 extent/GB。我测了两个极端：读取惩罚为零。Rediacc 为何没有碎片整理命令。'
+author: Rediacc
+publishedDate: 2026-05-25T00:00:00.000Z
 category: guide
 tags:
   - storage
@@ -11,8 +11,8 @@ tags:
   - benchmarks
 featured: false
 language: zh
-sourceHash: "5245c4e48a3a7074"
-sourceCommit: "0a3e9865997659698502ad551e078be854b4b2c4"
+sourceHash: 36cb029ebe9b6edc
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
 > **太长不看。** Rediacc 的 `rdc machine query --storage-health` 会报告每个仓库的碎片化指标。在某台生产机器上，它把 GitLab 标记为约 19,650 个 extent/GB。直觉是去做碎片整理。我改为实际测了一下。

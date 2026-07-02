@@ -18,9 +18,187 @@
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-work-with-repo/tutorial-work-with-repo-01.37865221.mp3",
       "textHash": "3786522168995190c10bc0d86ed1a09acae363d0a7158c90cc0e1f437d4604ec",
       "audioDurationSec": 11.72898,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.72,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.2,
+          "startChar": 8,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.64,
+          "startChar": 24,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.12,
+          "startChar": 35,
+          "endChar": 43
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.2,
+          "startChar": 44,
+          "endChar": 46
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.76,
+          "startChar": 47,
+          "endChar": 54
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.08,
+          "startChar": 56,
+          "endChar": 57
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.24,
+          "startChar": 58,
+          "endChar": 60
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.32,
+          "startChar": 61,
+          "endChar": 63
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.96,
+          "startChar": 64,
+          "endChar": 72
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.92,
+          "startChar": 74,
+          "endChar": 81
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.24,
+          "startChar": 82,
+          "endChar": 89
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.96,
+          "startChar": 90,
+          "endChar": 102
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.28,
+          "startChar": 103,
+          "endChar": 107
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.84,
+          "startChar": 108,
+          "endChar": 118
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.08,
+          "startChar": 119,
+          "endChar": 121
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.64,
+          "startChar": 122,
+          "endChar": 125
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.2,
+          "startChar": 127,
+          "endChar": 132
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.6,
+          "startChar": 133,
+          "endChar": 140
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 9.84,
+          "startChar": 141,
+          "endChar": 144
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.0,
+          "startChar": 145,
+          "endChar": 147
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.4,
+          "startChar": 148,
+          "endChar": 154
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.12,
+          "startChar": 165,
+          "endChar": 166
+        },
+        {
+          "startSec": 11.12,
+          "endSec": 11.68,
+          "startChar": 167,
+          "endChar": 175
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-work-with-repo/tutorial-work-with-repo-01-after.73a476c8.mp3",
       "afterAudioDurationSec": 3.709388,
-      "afterTextHash": "73a476c8ec70c3c8dd18928ef6d2ab60740f1089b2babdeba79d86381e46458c"
+      "afterTextHash": "73a476c8ec70c3c8dd18928ef6d2ab60740f1089b2babdeba79d86381e46458c",
+      "afterWordTimings": [
+        {
+          "startSec": 0.32,
+          "endSec": 1.04,
+          "startChar": 5,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.92,
+          "startChar": 16,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.24,
+          "startChar": 27,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.8,
+          "startChar": 34,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.04,
+          "startChar": 43,
+          "endChar": 45
+        }
+      ]
     },
     {
       "id": "tutorial-work-with-repo-02",
@@ -31,9 +209,265 @@
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-work-with-repo/tutorial-work-with-repo-02.5ec8dde3.mp3",
       "textHash": "5ec8dde3fdbfe3c8c2ae235120838d78a59afa8155ce99bdebd40221c08678dd",
       "audioDurationSec": 18.050612,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.04,
+          "startChar": 7,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.16,
+          "startChar": 16,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.04,
+          "startChar": 22,
+          "endChar": 29
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.68,
+          "startChar": 30,
+          "endChar": 41
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.84,
+          "startChar": 42,
+          "endChar": 43
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.48,
+          "startChar": 44,
+          "endChar": 53
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 5.12,
+          "startChar": 54,
+          "endChar": 62
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.44,
+          "startChar": 63,
+          "endChar": 66
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.76,
+          "startChar": 67,
+          "endChar": 73
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.72,
+          "startChar": 74,
+          "endChar": 83
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.52,
+          "startChar": 84,
+          "endChar": 95
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.32,
+          "startChar": 98,
+          "endChar": 101
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.56,
+          "startChar": 102,
+          "endChar": 104
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 9.28,
+          "startChar": 105,
+          "endChar": 118
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.6,
+          "startChar": 119,
+          "endChar": 122
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 9.92,
+          "startChar": 124,
+          "endChar": 127
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.32,
+          "startChar": 128,
+          "endChar": 129
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.8,
+          "startChar": 132,
+          "endChar": 134
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 11.2,
+          "startChar": 135,
+          "endChar": 139
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.56,
+          "startChar": 141,
+          "endChar": 151
+        },
+        {
+          "startSec": 12.56,
+          "endSec": 12.88,
+          "startChar": 152,
+          "endChar": 157
+        },
+        {
+          "startSec": 12.88,
+          "endSec": 13.36,
+          "startChar": 158,
+          "endChar": 165
+        },
+        {
+          "startSec": 13.36,
+          "endSec": 13.84,
+          "startChar": 166,
+          "endChar": 172
+        },
+        {
+          "startSec": 13.84,
+          "endSec": 14.32,
+          "startChar": 173,
+          "endChar": 179
+        },
+        {
+          "startSec": 14.32,
+          "endSec": 14.8,
+          "startChar": 180,
+          "endChar": 186
+        },
+        {
+          "startSec": 14.88,
+          "endSec": 15.36,
+          "startChar": 187,
+          "endChar": 192
+        },
+        {
+          "startSec": 15.44,
+          "endSec": 16.24,
+          "startChar": 193,
+          "endChar": 204
+        },
+        {
+          "startSec": 16.32,
+          "endSec": 16.4,
+          "startChar": 206,
+          "endChar": 208
+        },
+        {
+          "startSec": 16.4,
+          "endSec": 16.96,
+          "startChar": 209,
+          "endChar": 215
+        },
+        {
+          "startSec": 17.04,
+          "endSec": 17.2,
+          "startChar": 216,
+          "endChar": 218
+        },
+        {
+          "startSec": 17.2,
+          "endSec": 17.92,
+          "startChar": 219,
+          "endChar": 228
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-work-with-repo/tutorial-work-with-repo-02-after.61d953d9.mp3",
       "afterAudioDurationSec": 7.967347,
-      "afterTextHash": "61d953d9072a25851d390b32eac8e2acfe0dfe33840d63a3cce103af73d2c289"
+      "afterTextHash": "61d953d9072a25851d390b32eac8e2acfe0dfe33840d63a3cce103af73d2c289",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.88,
+          "startChar": 3,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.76,
+          "startChar": 10,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.88,
+          "startChar": 20,
+          "endChar": 31
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.32,
+          "startChar": 49,
+          "endChar": 52
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.56,
+          "startChar": 53,
+          "endChar": 57
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.64,
+          "startChar": 58,
+          "endChar": 60
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.04,
+          "startChar": 61,
+          "endChar": 66
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.2,
+          "startChar": 67,
+          "endChar": 69
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.84,
+          "startChar": 70,
+          "endChar": 73
+        }
+      ]
     },
     {
       "id": "tutorial-work-with-repo-03",
@@ -44,9 +478,199 @@
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-work-with-repo/tutorial-work-with-repo-03.d29e0e39.mp3",
       "textHash": "d29e0e39ee28aa63370f936b6f78235501ccab00e7676123ccfed7debe439f8d",
       "audioDurationSec": 11.389388,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.88,
+          "startChar": 6,
+          "endChar": 15
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.36,
+          "startChar": 16,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.76,
+          "startChar": 23,
+          "endChar": 29
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.24,
+          "startChar": 30,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.32,
+          "startChar": 37,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 3.2,
+          "startChar": 39,
+          "endChar": 45
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.84,
+          "startChar": 48,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.32,
+          "startChar": 52,
+          "endChar": 55
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 4.96,
+          "startChar": 57,
+          "endChar": 59
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.44,
+          "startChar": 60,
+          "endChar": 67
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.68,
+          "startChar": 69,
+          "endChar": 72
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.16,
+          "startChar": 73,
+          "endChar": 79
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.8,
+          "startChar": 80,
+          "endChar": 89
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 6.96,
+          "startChar": 91,
+          "endChar": 94
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.68,
+          "startChar": 95,
+          "endChar": 107
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.4,
+          "startChar": 108,
+          "endChar": 119
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.44,
+          "startChar": 121,
+          "endChar": 127
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 10.0,
+          "startChar": 128,
+          "endChar": 136
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.32,
+          "startChar": 137,
+          "endChar": 143
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.64,
+          "startChar": 145,
+          "endChar": 149
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 10.72,
+          "startChar": 150,
+          "endChar": 152
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 11.28,
+          "startChar": 153,
+          "endChar": 160
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-work-with-repo/tutorial-work-with-repo-03-after.741f18b1.mp3",
       "afterAudioDurationSec": 3.709388,
-      "afterTextHash": "741f18b1c7b3e2ecdf07ee13a95113f092fd06bf85f8a20732745b8fb780461a"
+      "afterTextHash": "741f18b1c7b3e2ecdf07ee13a95113f092fd06bf85f8a20732745b8fb780461a",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.12,
+          "startChar": 7,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 15,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.16,
+          "startChar": 18,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.56,
+          "startChar": 25,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.8,
+          "startChar": 31,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 2.96,
+          "startChar": 36,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.68,
+          "startChar": 39,
+          "endChar": 49
+        }
+      ]
     },
     {
       "id": "tutorial-work-with-repo-04",
@@ -57,9 +681,181 @@
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-work-with-repo/tutorial-work-with-repo-04.14746cb4.mp3",
       "textHash": "14746cb45c0779cbaa0be1fdc55c99030749d512086bdcfab8843c28ca954ecc",
       "audioDurationSec": 12.59102,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.96,
+          "startChar": 7,
+          "endChar": 16
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.44,
+          "startChar": 17,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2.08,
+          "startChar": 26,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.64,
+          "startChar": 36,
+          "endChar": 43
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.52,
+          "startChar": 44,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 4.0,
+          "startChar": 58,
+          "endChar": 67
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.4,
+          "startChar": 68,
+          "endChar": 73
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.48,
+          "startChar": 74,
+          "endChar": 75
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 5.04,
+          "startChar": 76,
+          "endChar": 84
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.12,
+          "startChar": 85,
+          "endChar": 86
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.68,
+          "startChar": 87,
+          "endChar": 98
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 6.0,
+          "startChar": 99,
+          "endChar": 101
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.72,
+          "startChar": 102,
+          "endChar": 105
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 9.04,
+          "startChar": 129,
+          "endChar": 135
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.24,
+          "startChar": 150,
+          "endChar": 153
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.8,
+          "startChar": 154,
+          "endChar": 161
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.44,
+          "startChar": 162,
+          "endChar": 171
+        },
+        {
+          "startSec": 11.44,
+          "endSec": 11.68,
+          "startChar": 172,
+          "endChar": 176
+        },
+        {
+          "startSec": 11.68,
+          "endSec": 12.16,
+          "startChar": 177,
+          "endChar": 184
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.48,
+          "startChar": 185,
+          "endChar": 189
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-work-with-repo/tutorial-work-with-repo-04-after.39f89965.mp3",
       "afterAudioDurationSec": 4.91102,
-      "afterTextHash": "39f89965ab843ee452b341c0abfb25fafec8656d35bc08d15a30c9b83f01d666"
+      "afterTextHash": "39f89965ab843ee452b341c0abfb25fafec8656d35bc08d15a30c9b83f01d666",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 1.04,
+          "startChar": 6,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.44,
+          "startChar": 30,
+          "endChar": 41
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.6,
+          "startChar": 42,
+          "endChar": 43
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.68,
+          "startChar": 44,
+          "endChar": 45
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.24,
+          "startChar": 46,
+          "endChar": 54
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.8,
+          "startChar": 55,
+          "endChar": 64
+        }
+      ]
     }
   ],
   "narrationAudio": [
@@ -68,28 +864,456 @@
       "textHash": "ec958f9ad5bc1e0b1058ca5ea927e526ea9563a7cd3fd264c581a127c55daf6b",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-work-with-repo/intro.ec958f9a.mp3",
       "narrationText": "Итак! Ваше приложение работает — пора с ним непосредственно работать. Три команды покрывают весь рабочий цикл.",
-      "audioDurationSec": 7.88898
+      "audioDurationSec": 7.88898,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.52,
+          "startChar": 6,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.08,
+          "startChar": 11,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.72,
+          "startChar": 22,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.12,
+          "startChar": 33,
+          "endChar": 37
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.2,
+          "startChar": 38,
+          "endChar": 39
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.36,
+          "startChar": 40,
+          "endChar": 43
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 4.24,
+          "startChar": 44,
+          "endChar": 59
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.8,
+          "startChar": 60,
+          "endChar": 68
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.44,
+          "startChar": 70,
+          "endChar": 73
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 6.0,
+          "startChar": 74,
+          "endChar": 81
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.56,
+          "startChar": 82,
+          "endChar": 91
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.88,
+          "startChar": 92,
+          "endChar": 96
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.36,
+          "startChar": 97,
+          "endChar": 104
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.84,
+          "startChar": 105,
+          "endChar": 109
+        }
+      ]
     },
     {
       "id": "daily-three",
       "textHash": "339150e5ad99dc2d7d18ae039791cc72c6d1824f197d04128573130aefcaaae7",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-work-with-repo/daily-three.339150e5.mp3",
       "narrationText": "tunnel открывает приложение в браузере, term запускает команды внутри песочницы, а sync переносит файлы туда и обратно. Это весь повседневный рабочий процесс.",
-      "audioDurationSec": 11.389388
+      "audioDurationSec": 11.389388,
+      "wordTimings": [
+        {
+          "startSec": 0.56,
+          "endSec": 1.04,
+          "startChar": 7,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.68,
+          "startChar": 17,
+          "endChar": 27
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.76,
+          "startChar": 28,
+          "endChar": 29
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.32,
+          "startChar": 30,
+          "endChar": 38
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.52,
+          "startChar": 45,
+          "endChar": 54
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.84,
+          "startChar": 55,
+          "endChar": 62
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.24,
+          "startChar": 63,
+          "endChar": 69
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.96,
+          "startChar": 70,
+          "endChar": 79
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.68,
+          "startChar": 81,
+          "endChar": 82
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.72,
+          "startChar": 88,
+          "endChar": 97
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.12,
+          "startChar": 98,
+          "endChar": 103
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.52,
+          "startChar": 104,
+          "endChar": 108
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 7.92,
+          "startChar": 109,
+          "endChar": 110
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.48,
+          "startChar": 111,
+          "endChar": 118
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.36,
+          "startChar": 120,
+          "endChar": 123
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.6,
+          "startChar": 124,
+          "endChar": 128
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 10.32,
+          "startChar": 129,
+          "endChar": 141
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.72,
+          "startChar": 142,
+          "endChar": 149
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 11.28,
+          "startChar": 150,
+          "endChar": 157
+        }
+      ]
     },
     {
       "id": "open-tunnel",
       "textHash": "5264603338982edeb97e27ce1ff431866dcaeffe7a8521eb252421701b756a35",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-work-with-repo/open-tunnel.52646033.mp3",
       "narrationText": "С работающим туннелем приложение открывается прямо в вашем браузере. В этом демо мы загружаем rediacc.com – точно так же, как вы обращались бы к своему приложению, запущенному прямо из контейнера.",
-      "audioDurationSec": 13.244082
+      "audioDurationSec": 13.244082,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.8,
+          "startChar": 2,
+          "endChar": 12
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.28,
+          "startChar": 13,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.92,
+          "startChar": 22,
+          "endChar": 32
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.56,
+          "startChar": 33,
+          "endChar": 44
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.96,
+          "startChar": 45,
+          "endChar": 50
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.04,
+          "startChar": 51,
+          "endChar": 52
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.44,
+          "startChar": 53,
+          "endChar": 58
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 4.0,
+          "startChar": 59,
+          "endChar": 67
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.56,
+          "startChar": 69,
+          "endChar": 70
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.8,
+          "startChar": 71,
+          "endChar": 75
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.04,
+          "startChar": 76,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.12,
+          "startChar": 81,
+          "endChar": 83
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.68,
+          "startChar": 84,
+          "endChar": 93
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.08,
+          "startChar": 108,
+          "endChar": 113
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.32,
+          "startChar": 114,
+          "endChar": 117
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.56,
+          "startChar": 118,
+          "endChar": 120
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.04,
+          "startChar": 122,
+          "endChar": 125
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.2,
+          "startChar": 126,
+          "endChar": 128
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.76,
+          "startChar": 129,
+          "endChar": 139
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 9.92,
+          "startChar": 140,
+          "endChar": 142
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.0,
+          "startChar": 143,
+          "endChar": 144
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.4,
+          "startChar": 145,
+          "endChar": 151
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 11.12,
+          "startChar": 152,
+          "endChar": 162
+        },
+        {
+          "startSec": 11.12,
+          "endSec": 11.84,
+          "startChar": 164,
+          "endChar": 175
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.32,
+          "startChar": 176,
+          "endChar": 181
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 12.4,
+          "startChar": 182,
+          "endChar": 184
+        },
+        {
+          "startSec": 12.4,
+          "endSec": 13.12,
+          "startChar": 185,
+          "endChar": 195
+        }
+      ]
     },
     {
       "id": "next-tutorial",
       "textHash": "67291aa7ae78ac68e1f1842a75e5d638caa5392b1644215825cee652df4d5552",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-work-with-repo/next-tutorial.67291aa7.mp3",
       "narrationText": "Вот вам ежедневная тройка команд. Увидимся в следующем уроке!",
-      "audioDurationSec": 4.675918
+      "audioDurationSec": 4.675918,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.72,
+          "startChar": 4,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.52,
+          "startChar": 8,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.92,
+          "startChar": 19,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.56,
+          "startChar": 26,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.52,
+          "startChar": 34,
+          "endChar": 42
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 4.16,
+          "startChar": 45,
+          "endChar": 54
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.64,
+          "startChar": 55,
+          "endChar": 60
+        }
+      ]
     }
   ]
 }

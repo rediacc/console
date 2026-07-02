@@ -1,8 +1,10 @@
 ---
-title: "단편화가 무섭게 보입니다. 실제 비용을 직접 측정해봤습니다."
-description: "스토리지 상태 보고서에서 거의 20,000익스텐트/GB인 저장소에 플래그를 세웁니다. 양쪽 극단 모두 벤치마크했더니 읽기 패널티가 없었습니다. Rediacc에 조각 모음 명령이 없는 이유입니다."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-25
+title: 단편화가 무섭게 보입니다. 실제 비용을 직접 측정해봤습니다.
+description: >-
+  스토리지 상태 보고서에서 거의 20,000익스텐트/GB인 저장소에 플래그를 세웁니다. 양쪽 극단 모두 벤치마크했더니 읽기 패널티가
+  없었습니다. Rediacc에 조각 모음 명령이 없는 이유입니다.
+author: Rediacc
+publishedDate: 2026-05-25T00:00:00.000Z
 category: guide
 tags:
   - storage
@@ -11,8 +13,8 @@ tags:
   - benchmarks
 featured: false
 language: ko
-sourceHash: "5245c4e48a3a7074"
-sourceCommit: "0a3e9865997659698502ad551e078be854b4b2c4"
+sourceHash: 36cb029ebe9b6edc
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
 > **요약.** Rediacc의 `rdc machine query --storage-health`는 저장소별 단편화 수치를 보고합니다. 한 프로덕션 머신에서 GitLab이 기가바이트당 약 19,650개의 익스텐트로 표시됩니다. 본능적으로 조각 모음을 실행하고 싶어집니다. 저는 대신 측정해봤습니다.

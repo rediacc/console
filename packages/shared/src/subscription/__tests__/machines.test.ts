@@ -13,9 +13,9 @@ describe('PLAN_MAX_MACHINES', () => {
 
   it('should have correct machine limits', () => {
     expect(PLAN_MAX_MACHINES.COMMUNITY).toBe(2);
-    expect(PLAN_MAX_MACHINES.PROFESSIONAL).toBe(5);
-    expect(PLAN_MAX_MACHINES.BUSINESS).toBe(20);
-    expect(PLAN_MAX_MACHINES.ENTERPRISE).toBe(50);
+    expect(PLAN_MAX_MACHINES.PROFESSIONAL).toBe(3);
+    expect(PLAN_MAX_MACHINES.BUSINESS).toBe(10);
+    expect(PLAN_MAX_MACHINES.ENTERPRISE).toBe(25);
   });
 
   it('should increase with higher plans', () => {
@@ -28,9 +28,9 @@ describe('PLAN_MAX_MACHINES', () => {
 describe('getMaxMachines', () => {
   it('should return correct limit for valid plan codes', () => {
     expect(getMaxMachines('COMMUNITY')).toBe(2);
-    expect(getMaxMachines('PROFESSIONAL')).toBe(5);
-    expect(getMaxMachines('BUSINESS')).toBe(20);
-    expect(getMaxMachines('ENTERPRISE')).toBe(50);
+    expect(getMaxMachines('PROFESSIONAL')).toBe(3);
+    expect(getMaxMachines('BUSINESS')).toBe(10);
+    expect(getMaxMachines('ENTERPRISE')).toBe(25);
   });
 
   it('should return COMMUNITY limit for invalid plan codes', () => {

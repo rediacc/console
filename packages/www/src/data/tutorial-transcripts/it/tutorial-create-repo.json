@@ -7,8 +7,8 @@
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
       "at": 2.412347,
-      "text": "Creiamo un repository cifrato da 2 gigabyte sul server. Un repository e' un singolo file cifrato a riposo. Una volta montato, diventa una cartella con il proprio Docker daemon e i propri dati applicativi, completamente isolata da tutto il resto sul server.",
-      "afterText": "Repository creato. Il file cifrato e' sul server, pronto per essere montato.",
+      "text": "Creiamo un repository cifrato da 2 gigabyte sul server. Un repository è un singolo file cifrato a riposo. Una volta montato, diventa una cartella con il proprio Docker daemon e i propri dati applicativi, completamente isolata da tutto il resto sul server.",
+      "afterText": "Repository creato. Il file cifrato è sul server, pronto per essere montato.",
       "cardLabel": "Crea Repo",
       "prose": "Crea un repository cifrato da 2 GB sul server. Un repo è un singolo file cifrato a riposo. Crearlo lo monta immediatamente: una cartella con il proprio Docker daemon e dati applicativi isolati."
     },
@@ -34,11 +34,11 @@
   "narrations": [
     {
       "id": "intro",
-      "text": "Creiamo il tuo primo repository! E' un file cifrato a riposo che si trasforma in un ambiente completamente isolato quando viene montato."
+      "text": "Creiamo il tuo primo repository! È un file cifrato a riposo che si trasforma in un ambiente completamente isolato quando viene montato."
     },
     {
       "id": "file-on-disk",
-      "text": "Su disco e' una singola immagine cifrata. Quando viene montato, ottieni un Docker daemon dedicato, dati applicativi all'interno del volume cifrato e IP di loopback che non entrano in conflitto con nient'altro sul server."
+      "text": "Su disco è una singola immagine cifrata. Quando viene montato, ottieni un Docker daemon dedicato, dati applicativi all'interno del volume cifrato e IP di loopback che non entrano in conflitto con nient'altro sul server."
     },
     {
       "id": "next-tutorial",

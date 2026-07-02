@@ -296,7 +296,7 @@
         },
         {
           "startSec": 7.52,
-          "endSec": 7.84,
+          "endSec": 7.92,
           "startChar": 110,
           "endChar": 116
         },
@@ -846,18 +846,108 @@
         {
           "startSec": 7.76,
           "endSec": 8.0,
-          "startChar": 180,
-          "endChar": 183
+          "startChar": 104,
+          "endChar": 107
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.08,
+          "startChar": 108,
+          "endChar": 111
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.48,
+          "startChar": 112,
+          "endChar": 118
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.56,
+          "startChar": 119,
+          "endChar": 122
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 9.2,
+          "startChar": 123,
+          "endChar": 126
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.6,
+          "startChar": 127,
+          "endChar": 133
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 10.0,
+          "startChar": 134,
+          "endChar": 141
         },
         {
           "startSec": 10.0,
           "endSec": 10.32,
-          "startChar": 188,
-          "endChar": 190
+          "startChar": 142,
+          "endChar": 144
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.04,
+          "startChar": 146,
+          "endChar": 150
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.2,
+          "startChar": 151,
+          "endChar": 153
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.28,
+          "startChar": 154,
+          "endChar": 157
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.52,
+          "startChar": 158,
+          "endChar": 162
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 12.16,
+          "startChar": 163,
+          "endChar": 169
         },
         {
           "startSec": 12.56,
           "endSec": 12.72,
+          "startChar": 171,
+          "endChar": 175
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 13.2,
+          "startChar": 176,
+          "endChar": 183
+        },
+        {
+          "startSec": 13.28,
+          "endSec": 13.92,
+          "startChar": 187,
+          "endChar": 197
+        },
+        {
+          "startSec": 14.08,
+          "endSec": 14.32,
+          "startChar": 199,
+          "endChar": 202
+        },
+        {
+          "startSec": 14.32,
+          "endSec": 14.56,
           "startChar": 203,
           "endChar": 207
         },
@@ -1175,7 +1265,177 @@
       "textHash": "25da519a8f2beb86d6f7ed6a441b2310841503b003453e2a38335f03254137dd",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/next-tutorial.25da519a.mp3",
       "narrationText": "You can now install, configure, deploy, fork, go live, autostart, back up, and monitor. The advanced track starts next: version your repos like code, with commits and rollbacks.",
-      "audioDurationSec": 12.826122
+      "audioDurationSec": 12.826122,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.32,
+          "startChar": 4,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.56,
+          "startChar": 8,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.12,
+          "startChar": 12,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 2.0,
+          "startChar": 21,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.8,
+          "startChar": 32,
+          "endChar": 38
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.52,
+          "startChar": 40,
+          "endChar": 44
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 3.92,
+          "startChar": 46,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.48,
+          "startChar": 49,
+          "endChar": 53
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.96,
+          "startChar": 55,
+          "endChar": 59
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.36,
+          "startChar": 59,
+          "endChar": 64
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 6.0,
+          "startChar": 66,
+          "endChar": 73
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.32,
+          "startChar": 75,
+          "endChar": 78
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.96,
+          "startChar": 79,
+          "endChar": 86
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.68,
+          "startChar": 88,
+          "endChar": 91
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.08,
+          "startChar": 92,
+          "endChar": 100
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.4,
+          "startChar": 101,
+          "endChar": 106
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.8,
+          "startChar": 107,
+          "endChar": 113
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.2,
+          "startChar": 114,
+          "endChar": 118
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 9.92,
+          "startChar": 120,
+          "endChar": 127
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.08,
+          "startChar": 128,
+          "endChar": 132
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.56,
+          "startChar": 133,
+          "endChar": 138
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 10.8,
+          "startChar": 139,
+          "endChar": 143
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 11.2,
+          "startChar": 144,
+          "endChar": 148
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.52,
+          "startChar": 150,
+          "endChar": 154
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.92,
+          "startChar": 155,
+          "endChar": 162
+        },
+        {
+          "startSec": 11.92,
+          "endSec": 12.08,
+          "startChar": 163,
+          "endChar": 166
+        },
+        {
+          "startSec": 12.08,
+          "endSec": 12.72,
+          "startChar": 167,
+          "endChar": 176
+        }
+      ]
     }
   ]
 }
