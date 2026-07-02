@@ -37,43 +37,42 @@ MAX_CHAINS=25
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-    --format)
-        FORMAT="$2"
-        shift 2
-        ;;
-    --output)
-        OUTPUT="$2"
-        shift 2
-        ;;
-    --max-chains)
-        MAX_CHAINS="$2"
-        shift 2
-        ;;
-    -h | --help)
-        sed -n '2,35p' "$0" | sed 's/^# \?//'
-        exit 0
-        ;;
-    *)
-        log_error "Unknown option: $1"
-        exit 1
-        ;;
+        --format)
+            FORMAT="$2"
+            shift 2
+            ;;
+        --output)
+            OUTPUT="$2"
+            shift 2
+            ;;
+        --max-chains)
+            MAX_CHAINS="$2"
+            shift 2
+            ;;
+        -h | --help)
+            sed -n '2,35p' "$0" | sed 's/^# \?//'
+            exit 0
+            ;;
+        *)
+            log_error "Unknown option: $1"
+            exit 1
+            ;;
     esac
 done
 
 case "$FORMAT" in
-json | table) ;;
-*)
-    log_error "--format must be 'json' or 'table'"
-    exit 1
-    ;;
+    json | table) ;;
+    *)
+        log_error "--format must be 'json' or 'table'"
+        exit 1
+        ;;
 esac
 [[ "$MAX_CHAINS" =~ ^[0-9]+$ ]] || {
     log_error "--max-chains must be a non-negative integer"
     exit 1
 }
 
-require_cmd jq npm go
-[[ "$FORMAT" == "table" ]] && require_cmd column
+require_cmd jq npm go awk
 
 REPO_ROOT="$(get_repo_root)"
 
