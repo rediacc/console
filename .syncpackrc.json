@@ -64,7 +64,7 @@
       "pinVersion": "^2.8.0"
     },
     {
-      "label": "Pin i18next to web version",
+      "label": "Pin i18next for CLI",
       "packages": [
         "**"
       ],
