@@ -1,19 +1,12 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { getStateProvider } from '../providers/index.js';
 import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
-import {
-  type CreateActionOptions,
-  coerceCliParams,
-  createAction,
-  traceAction,
-  validateFunctionParams,
-} from './queue.js';
+import { coerceCliParams, validateFunctionParams } from './function-params.js';
 import { assertMachineExists } from './_validate.js';
 
 interface DatastoreRunOptions {
@@ -77,10 +70,8 @@ async function executeLocal(
 async function executeFunction(
   functionName: string,
   params: Record<string, unknown>,
-  options: DatastoreRunOptions,
-  program?: Command
+  options: DatastoreRunOptions
 ): Promise<void> {
-  const provider = await getStateProvider();
   const machineName = options.machine;
 
   if (!machineName) {
@@ -92,21 +83,7 @@ async function executeFunction(
   const coerced = coerceCliParams(functionName, params as Record<string, string>);
   validateFunctionParams(functionName, coerced);
 
-  if (provider.isCloud) {
-    const createOptions: CreateActionOptions = {
-      function: functionName,
-      machine: machineName,
-      priority: String(DEFAULTS.PRIORITY.QUEUE_PRIORITY),
-      param: Object.entries(coerced).map(([k, v]) => `${k}=${v}`),
-    };
-    const result = await createAction(createOptions);
-    if (options.watch && result.taskId && program) {
-      outputService.info(t('commands.shortcuts.run.watching'));
-      await traceAction(result.taskId, { watch: true, interval: '2000' }, program);
-    }
-  } else {
-    await executeLocal(functionName, machineName, coerced, options);
-  }
+  await executeLocal(functionName, machineName, coerced, options);
 }
 
 /** Resolve Ceph pool/image/cluster params from CLI options or machine config. */

@@ -6,16 +6,10 @@ on:
       next_version:
         type: string
         required: false
-      api_tag:
+      renet_tag:
         type: string
         required: false
-      api_exists:
-        type: string
-        required: false
-      bridge_tag:
-        type: string
-        required: false
-      bridge_exists:
+      renet_exists:
         type: string
         required: false
       plugins_tag:
@@ -55,7 +49,7 @@ jobs:
     name: CLI
     runs-on: ubuntu-slim
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Apply version bump
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
@@ -103,27 +97,6 @@ jobs:
           path: /tmp/cli-npm/
           retention-days: 3
 
-  build-web:
-    name: Web
-    runs-on: ubuntu-slim
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
-      - run: .ci/scripts/build/build-web.sh --type RELEASE
-        env:
-          VITE_APP_VERSION: ${{ inputs.web_tag || 'dev' }}
-          VITE_BASE_PATH: /console/
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        with:
-          name: build-web${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
-          path: packages/web/dist/
-          retention-days: 3
-
   build-www:
     name: WWW
     # Standard runner (not ubuntu-slim): the committed solution+tutorial videos make
@@ -131,7 +104,7 @@ jobs:
     # standard runner has the disk/network headroom to build and upload it reliably.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
@@ -157,7 +130,7 @@ jobs:
     runs-on: ubuntu-slim
     if: "!inputs.test_images_only"
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Apply version bump
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
@@ -179,7 +152,7 @@ jobs:
     timeout-minutes: 45
     if: "!inputs.test_images_only"
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Apply version bump
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
@@ -190,7 +163,7 @@ jobs:
       - name: Validate plugin images
         run: .ci/scripts/build/build-plugins.sh --dry-run
 
-      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+      - uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -216,8 +189,8 @@ jobs:
   # ghcr.io/rediacc/elite/web path; the onprem variant publishes to the
   # customer-facing ghcr.io/rediacc/server path.
   #
-  # Both consume the same pre-built artifacts: build-web (console SPA),
-  # build-www (marketing site), cli-npm (CLI tarball), and the renet-binaries
+  # Both consume the same pre-built artifacts: build-www (marketing site),
+  # cli-npm (CLI tarball), and the renet-binaries
   # artifact from ci-build-renet.yml (which embeds CRIU/rsync/rclone and
   # bakes ACCOUNT_ED25519_PUBLIC_KEY into the binary). The account server
   # bundle is built inside the Dockerfile via esbuild --bundle, with the
@@ -240,29 +213,24 @@ jobs:
     name: Server Docker (${{ matrix.variant }} amd64)
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    needs: [build-web, build-www, build-cli]
+    needs: [build-www, build-cli]
     if: inputs.web_exists != 'true'
     strategy:
       fail-fast: false
       matrix:
         variant: [cloud, onprem]
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+          repositories: console,renet,account,sql,elite,homebrew-tap
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
-        with:
-          name: build-web${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
-          path: web-assets/
 
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
@@ -299,7 +267,7 @@ jobs:
 
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
 
-      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+      - uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -338,29 +306,24 @@ jobs:
     name: Server Docker (${{ matrix.variant }} arm64)
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 45
-    needs: [build-web, build-www, build-cli]
+    needs: [build-www, build-cli]
     if: "inputs.web_exists != 'true' && !inputs.test_images_only"
     strategy:
       fail-fast: false
       matrix:
         variant: [cloud, onprem]
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+          repositories: console,renet,account,sql,elite,homebrew-tap
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
-        with:
-          name: build-web${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
-          path: web-assets/
 
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
@@ -397,7 +360,7 @@ jobs:
 
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
 
-      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+      - uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -446,11 +409,11 @@ jobs:
       matrix:
         variant: [cloud, onprem]
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
 
-      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+      - uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -490,7 +453,7 @@ jobs:
     needs: [build-cli]
     if: "!inputs.test_images_only && inputs.cli_exists != 'true'"
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
@@ -499,7 +462,7 @@ jobs:
 
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
 
-      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+      - uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -537,292 +500,7 @@ jobs:
       - run: echo "::notice::Skipping Docker build - cli:${{ inputs.cli_tag }} already exists in registry"
 
   # ============================================================
-  # MIDDLEWARE/API: Native Architecture Builds
-  # ============================================================
-
-  # Middleware (amd64): Build, test, and Docker image
-  # Tests run on amd64 only (SQL Server 2022 available)
-  build-middleware-amd64:
-    name: Middleware (amd64)
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    services:
-      mssql:
-        image: mcr.microsoft.com/mssql/server:2022-CU21-ubuntu-22.04
-        env:
-          ACCEPT_EULA: Y
-          SA_PASSWORD: TestPassword123!
-          MSSQL_PID: Express
-        ports:
-          - 1433:1433
-        options: >-
-          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P TestPassword123! -C -Q 'SELECT 1'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-          --health-start-period 60s
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-        with:
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
-
-      - name: Apply version bump
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
-
-      - uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7  # v5.2.0
-        with:
-          dotnet-version: 9.0.x
-
-      # Build
-      - name: Run middleware build
-        run: .ci/scripts/private/run-middleware.sh build
-
-      # Test
-      - name: Install sqlcmd
-        run: sudo private/middleware/scripts/install-sqlcmd.sh
-
-      - name: Run middleware tests
-        run: .ci/scripts/private/run-middleware.sh test
-
-      - name: Check API types freshness
-        run: .ci/scripts/quality/check-api-types.sh
-        env:
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
-          GITHUB_HEAD_REF: ${{ github.head_ref }}
-          GITHUB_BASE_REF: ${{ github.base_ref }}
-          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
-
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        if: always()
-        with:
-          name: build-middleware-coverage-amd64${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
-          path: private/middleware/coverage/
-          retention-days: 3
-          if-no-files-found: ignore
-
-      # Publish and obfuscate for Docker (only when image not cached)
-      - name: Publish self-contained (linux-x64)
-        if: inputs.api_exists != 'true'
-        working-directory: private/middleware
-        run: |
-          dotnet publish middleware.csproj -c Release -o ./publish \
-            --self-contained=true \
-            --runtime linux-x64 \
-            -p:PublishSingleFile=false \
-            -p:PublishTrimmed=false \
-            -p:UseAppHost=true \
-            -p:IncludeNativeLibrariesForSelfExtract=true \
-            -p:Version=${{ inputs.next_version }} \
-            -p:REDIACC_BUILD_TYPE=RELEASE
-
-      - name: Obfuscate assemblies (amd64)
-        if: inputs.api_exists != 'true'
-        working-directory: private/middleware
-        run: |
-          dotnet tool install --global Obfuscar.GlobalTool
-          export PATH="$PATH:$HOME/.dotnet/tools"
-          mkdir -p publish-final
-          cd publish
-          if obfuscar.console ../obfuscar.xml && [ -d "Obfuscated" ] && [ "$(ls -A Obfuscated)" ]; then
-            cp -r Obfuscated/* ../publish-final/
-            rm -f ../publish-final/Mapping.txt
-            # Copy non-assembly files that obfuscar doesn't process
-            for f in *.json *.so *.pdb middleware *.deps.json *.runtimeconfig.json; do
-              [ -f "$f" ] && [ ! -f "../publish-final/$f" ] && cp "$f" ../publish-final/
-            done
-            # Copy remaining .dll files that Obfuscar didn't include (runtime assemblies
-            # like System.Private.CoreLib.dll). Use -n to preserve obfuscated versions.
-            find . -maxdepth 1 -name "*.dll" -exec cp -n {} ../publish-final/ \; 2>/dev/null || true
-            find . -maxdepth 1 -type d -name "runtimes" -exec cp -r {} ../publish-final/ \; 2>/dev/null || true
-            find . -maxdepth 1 -type d -regex '\./[a-z][a-z]-[A-Z][A-Z]' -exec cp -r {} ../publish-final/ \; 2>/dev/null || true
-            [ -d "translations" ] && cp -r translations ../publish-final/
-            [ -d "AppData" ] && cp -r AppData ../publish-final/
-            find . -maxdepth 1 -name "*.so" -exec cp -n {} ../publish-final/ \; 2>/dev/null || true
-          else
-            echo "::warning::Obfuscation skipped or failed, using unobfuscated build"
-            cp -r ./* ../publish-final/
-          fi
-
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        if: inputs.api_exists != 'true'
-        with:
-          name: middleware-publish-amd64${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
-          path: private/middleware/publish-final/
-          retention-days: 3
-
-  # Middleware (arm64): Build, publish, and obfuscate (no tests)
-  # Azure SQL Edge on arm64 has TLS certificate issues - tests run on amd64 cover code behavior
-  build-middleware-arm64:
-    name: Middleware (arm64)
-    runs-on: ubuntu-24.04-arm
-    timeout-minutes: 25
-    if: "!inputs.test_images_only"
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-        with:
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
-
-      - name: Apply version bump
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
-
-      - uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7  # v5.2.0
-        with:
-          dotnet-version: 9.0.x
-
-      # Build only (no tests - SQL Server unavailable on arm64 runners)
-      - name: Run middleware build
-        run: .ci/scripts/private/run-middleware.sh build
-
-      # Publish and obfuscate for Docker (only when image not cached)
-      - name: Publish self-contained (linux-arm64)
-        if: inputs.api_exists != 'true'
-        working-directory: private/middleware
-        run: |
-          dotnet publish middleware.csproj -c Release -o ./publish \
-            --self-contained=true \
-            --runtime linux-arm64 \
-            -p:PublishSingleFile=false \
-            -p:PublishTrimmed=false \
-            -p:UseAppHost=true \
-            -p:IncludeNativeLibrariesForSelfExtract=true \
-            -p:Version=${{ inputs.next_version }} \
-            -p:REDIACC_BUILD_TYPE=RELEASE
-
-      - name: Obfuscate assemblies (arm64)
-        if: inputs.api_exists != 'true'
-        working-directory: private/middleware
-        run: |
-          dotnet tool install --global Obfuscar.GlobalTool
-          export PATH="$PATH:$HOME/.dotnet/tools"
-          mkdir -p publish-final
-          cd publish
-          if obfuscar.console ../obfuscar.xml && [ -d "Obfuscated" ] && [ "$(ls -A Obfuscated)" ]; then
-            cp -r Obfuscated/* ../publish-final/
-            rm -f ../publish-final/Mapping.txt
-            # Copy non-assembly files that obfuscar doesn't process
-            for f in *.json *.so *.pdb middleware *.deps.json *.runtimeconfig.json; do
-              [ -f "$f" ] && [ ! -f "../publish-final/$f" ] && cp "$f" ../publish-final/
-            done
-            # Copy remaining .dll files that Obfuscar didn't include (runtime assemblies
-            # like System.Private.CoreLib.dll). Use -n to preserve obfuscated versions.
-            find . -maxdepth 1 -name "*.dll" -exec cp -n {} ../publish-final/ \; 2>/dev/null || true
-            find . -maxdepth 1 -type d -name "runtimes" -exec cp -r {} ../publish-final/ \; 2>/dev/null || true
-            find . -maxdepth 1 -type d -regex '\./[a-z][a-z]-[A-Z][A-Z]' -exec cp -r {} ../publish-final/ \; 2>/dev/null || true
-            [ -d "translations" ] && cp -r translations ../publish-final/
-            [ -d "AppData" ] && cp -r AppData ../publish-final/
-            find . -maxdepth 1 -name "*.so" -exec cp -n {} ../publish-final/ \; 2>/dev/null || true
-          else
-            echo "::warning::Obfuscation skipped or failed, using unobfuscated build"
-            cp -r ./* ../publish-final/
-          fi
-
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        if: inputs.api_exists != 'true'
-        with:
-          name: middleware-publish-arm64${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
-          path: private/middleware/publish-final/
-          retention-days: 3
-
-  # API Docker: Build images from pre-built binaries on a single runner
-  # Follows the same pattern as build-renet-docker (bridge)
-  build-middleware-docker:
-    name: API Docker
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: [build-middleware-amd64, build-middleware-arm64]
-    if: >-
-      always() && inputs.api_exists != 'true' &&
-      needs.build-middleware-amd64.result == 'success' &&
-      (inputs.test_images_only || needs.build-middleware-arm64.result == 'success')
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-        with:
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
-
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
-        with:
-          name: middleware-publish-amd64${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
-          path: publish/amd64/
-
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
-        if: "!inputs.test_images_only"
-        with:
-          name: middleware-publish-arm64${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
-          path: publish/arm64/
-
-      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
-
-      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-
-      - name: Build & push API image (amd64)
-        run: |
-          docker buildx build \
-            --file private/middleware/Dockerfile.native \
-            --platform linux/amd64 \
-            --build-arg TARGETARCH=amd64 \
-            --build-arg VERSION=${{ inputs.next_version }} \
-            --tag ghcr.io/rediacc/elite/api:${{ inputs.api_tag }}-amd64 \
-            --push \
-            .
-
-      - name: Build & push API image (arm64)
-        if: "!inputs.test_images_only"
-        run: |
-          docker buildx build \
-            --file private/middleware/Dockerfile.native \
-            --platform linux/arm64 \
-            --build-arg TARGETARCH=arm64 \
-            --build-arg VERSION=${{ inputs.next_version }} \
-            --tag ghcr.io/rediacc/elite/api:${{ inputs.api_tag }}-arm64 \
-            --push \
-            .
-
-      - name: Create multi-arch manifest
-        if: "!inputs.test_images_only"
-        run: |
-          .ci/scripts/docker/create-manifest.sh \
-            --image api \
-            --tag "${{ inputs.api_tag }}"
-
-  build-middleware-docker-skip:
-    name: API Docker (cached)
-    runs-on: ubuntu-latest
-    if: "!inputs.test_images_only && inputs.api_exists == 'true'"
-    steps:
-      - run: echo "::notice::Skipping Docker build - api:${{ inputs.api_tag }} already exists in registry"
-
-  # ============================================================
-  # RENET/BRIDGE: Docker Images
+  # RENET: Docker Images
   # Note: Renet binaries (with embedded CRIU/rsync) are built by ci-build-renet.yml
   # This workflow downloads the unified artifact and builds Docker images only
   # ============================================================
@@ -832,16 +510,16 @@ jobs:
     name: Renet Docker
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: inputs.bridge_exists != 'true'
+    if: inputs.renet_exists != 'true'
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+          repositories: console,renet,account,sql,elite,homebrew-tap
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
@@ -870,30 +548,30 @@ jobs:
 
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
 
-      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+      - uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Build & push amd64 bridge image
+      - name: Build & push amd64 renet image
         run: |
           docker buildx build \
             --file private/renet/Dockerfile.native \
             --platform linux/amd64 \
             --build-arg TARGETARCH=amd64 \
-            --tag ghcr.io/rediacc/elite/bridge:${{ inputs.bridge_tag }}-amd64 \
+            --tag ghcr.io/rediacc/elite/renet:${{ inputs.renet_tag }}-amd64 \
             --push \
             .
 
-      - name: Build & push arm64 bridge image
+      - name: Build & push arm64 renet image
         if: "!inputs.test_images_only"
         run: |
           docker buildx build \
             --file private/renet/Dockerfile.native \
             --platform linux/arm64 \
             --build-arg TARGETARCH=arm64 \
-            --tag ghcr.io/rediacc/elite/bridge:${{ inputs.bridge_tag }}-arm64 \
+            --tag ghcr.io/rediacc/elite/renet:${{ inputs.renet_tag }}-arm64 \
             --push \
             .
 
@@ -901,15 +579,15 @@ jobs:
         if: "!inputs.test_images_only"
         run: |
           .ci/scripts/docker/create-manifest.sh \
-            --image bridge \
-            --tag "${{ inputs.bridge_tag }}"
+            --image renet \
+            --tag "${{ inputs.renet_tag }}"
 
   build-renet-skip:
     name: Renet (cached)
     runs-on: ubuntu-latest
-    if: inputs.bridge_exists == 'true'
+    if: inputs.renet_exists == 'true'
     steps:
-      - run: echo "::notice::Skipping Docker build - bridge:${{ inputs.bridge_tag }} already exists in registry"
+      - run: echo "::notice::Skipping Docker build - renet:${{ inputs.renet_tag }} already exists in registry"
 
   # ============================================================
   # DEVCONTAINER: Development Environment Image
@@ -921,11 +599,11 @@ jobs:
     timeout-minutes: 30
     if: "!inputs.test_images_only"
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
 
-      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+      - uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -938,7 +616,7 @@ jobs:
           echo "date_tag=${DATE_TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
-        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f  # v7.1.0
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .devcontainer/
           file: .devcontainer/Dockerfile
@@ -954,11 +632,11 @@ jobs:
     timeout-minutes: 45
     if: "!inputs.test_images_only"
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
 
-      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+      - uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -971,7 +649,7 @@ jobs:
           echo "date_tag=${DATE_TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
-        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f  # v7.1.0
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .devcontainer/
           file: .devcontainer/Dockerfile
@@ -989,7 +667,7 @@ jobs:
     steps:
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
 
-      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+      - uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

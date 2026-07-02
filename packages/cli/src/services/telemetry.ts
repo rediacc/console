@@ -15,7 +15,7 @@ import { metrics as metricsApi, type Span, SpanStatusCode, type Tracer } from '@
 import { type Logger, SeverityNumber } from '@opentelemetry/api-logs';
 import { type PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { type NodeSDK } from '@opentelemetry/sdk-node';
-import type { TelemetryConfig, TelemetryHandler, UserContext } from '@rediacc/shared/api';
+import type { TelemetryConfig, UserContext } from '@rediacc/shared/telemetry';
 import { DEFAULTS, UPDATE_DEFAULTS } from '@rediacc/shared/config';
 import {
   anonymizeArgs,
@@ -59,7 +59,7 @@ interface CommandTrackingOptions {
   args?: string[];
   options?: Record<string, unknown>;
 }
-class CliTelemetryService implements TelemetryHandler {
+class CliTelemetryService {
   private sdk: NodeSDK | null = null;
   private tracer: Tracer | null = null;
   private logger: Logger | null = null;

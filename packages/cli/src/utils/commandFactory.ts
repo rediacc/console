@@ -1,7 +1,5 @@
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { getStateProvider } from '../providers/index.js';
-import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
 import type { OutputFormat } from '../types/index.js';
@@ -17,37 +15,22 @@ import {
   extractVaultsArray,
   getParentDesc,
   getParentFlag,
-  getParentKey,
-  getParentValue,
   type ParentContextOptions,
   type ParentOptionType,
-  readVaultFromStdin,
   type VaultItem,
-  validateJsonVault,
 } from './commandFactory-helpers.js';
 import { getOutputFormat, handleError } from './errors.js';
 import { withSpinner } from './spinner.js';
 
 /**
  * Hide the parent option (--team / --region) from help output.
- * These options are only relevant for cloud adapter and clutter local help.
+ * These options are accepted for scripting compatibility but clutter help.
  */
 function hideParentOption(cmd: Command, parentFlag: string): void {
   const longFlag = /--([\w-]+)/.exec(parentFlag)?.[0];
   if (!longFlag) return;
   const opt = cmd.options.find((o) => o.long === longFlag);
   if (opt) opt.hidden = true;
-}
-
-/**
- * Mode-aware authentication helper.
- * Only requires cloud auth for cloud mode. S3/local modes authenticate differently.
- */
-async function requireAuthForMode(): Promise<void> {
-  const provider = await getStateProvider();
-  if (provider.isCloud) {
-    await authService.requireAuth();
-  }
 }
 
 export interface ResourceCommandConfig {
@@ -82,28 +65,6 @@ export interface ResourceCommandConfig {
     fetch: (params: Record<string, unknown>) => Promise<VaultItem[] | { vaults: VaultItem[] }>;
     vaultType: string;
   };
-  /** Optional: Vault update command configuration */
-  vaultUpdateConfig?: {
-    update: (payload: Record<string, unknown>) => Promise<unknown>;
-    vaultFieldName: string;
-  };
-}
-
-function createParentCheck(parentOption: 'team' | 'region' | 'none') {
-  return async (opts: ParentContextOptions): Promise<boolean> => {
-    if (parentOption === 'none') return true;
-    const provider = await getStateProvider();
-    if (!provider.isCloud) return true; // team/region not needed in local/s3
-    if (parentOption === 'team' && !opts.team) {
-      outputService.error(t('errors.teamRequired'));
-      return false;
-    }
-    if (parentOption === 'region' && !opts.region) {
-      outputService.error(t('errors.regionRequired'));
-      return false;
-    }
-    return true;
-  };
 }
 
 interface CommandContext {
@@ -111,7 +72,6 @@ interface CommandContext {
   parentOption: ParentOptionType;
   parentFlag: string;
   parentDesc: string;
-  checkParent: (opts: ParentContextOptions) => Promise<boolean>;
   nameField: string;
   resourceName: string;
   resourceNamePlural: string;
@@ -134,9 +94,7 @@ function setupListCommand(
     .option('--desc', t('options.sortDescending'));
   listCmd.action(async (options) => {
     try {
-      await requireAuthForMode();
       const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
-      if (!(await ctx.checkParent(opts))) process.exit(1);
       const params = buildListParams(ctx.hasParent, ctx.parentOption, opts);
       const response = await withSpinner(
         `Fetching ${ctx.resourceNamePlural}...`,
@@ -174,11 +132,8 @@ function setupCreateCommand(
   createOptions?.forEach((opt) => createCmd.option(opt.flags, opt.description));
   createCmd.action(async (options) => {
     try {
-      await requireAuthForMode();
       const name = options.name;
       const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
-
-      if (!(await ctx.checkParent(opts))) process.exit(1);
 
       const createCheck = checkRequiredCreateOptions(createOptions, opts);
       if (!createCheck.valid) {
@@ -222,11 +177,9 @@ function setupRenameCommand(
   }
   renameCmd.action(async (options) => {
     try {
-      await requireAuthForMode();
       const oldName = options.currentName;
       const newName = options.newName;
       const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
-      if (!(await ctx.checkParent(opts))) process.exit(1);
 
       const currentField = `current${capitalizeFirst(ctx.nameField)}`;
       const newField = `new${capitalizeFirst(ctx.nameField)}`;
@@ -266,10 +219,8 @@ function setupDeleteCommand(
     .option('--dry-run', t('options.dryRun'))
     .action(async (options) => {
       try {
-        await requireAuthForMode();
         const name = options.name;
         const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
-        if (!(await ctx.checkParent(opts))) process.exit(1);
 
         const payload: Record<string, unknown> = { [ctx.nameField]: name };
         addParentToPayload(payload, ctx.hasParent, ctx.parentOption, opts);
@@ -321,9 +272,7 @@ function setupVaultGetCommand(
   getCmd.action(async (options) => {
     const resourceItemName = options.name;
     try {
-      await requireAuthForMode();
       const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
-      if (!(await ctx.checkParent(opts))) process.exit(1);
       const params: Record<string, unknown> = { [ctx.nameField]: resourceItemName };
       addParentToPayload(params, ctx.hasParent, ctx.parentOption, opts);
 
@@ -348,79 +297,14 @@ function setupVaultGetCommand(
   });
 }
 
-function setupVaultUpdateCommand(
-  vault: Command,
-  ctx: CommandContext,
-  vaultUpdateConfig: NonNullable<ResourceCommandConfig['vaultUpdateConfig']>
-): void {
-  const updateCmd = vault
-    .command('update')
-    .description(`Update ${ctx.resourceName} vault data`)
-    .requiredOption('--name <name>', t('options.name'))
-    .option('--vault <json>', t('options.vaultJson'))
-    .option('--vault-version <n>', t('options.vaultVersion'), Number.parseInt);
-
-  if (ctx.hasParent) {
-    updateCmd.option(ctx.parentFlag, ctx.parentDesc);
-    hideParentOption(updateCmd, ctx.parentFlag);
-  }
-
-  updateCmd.action(async (options) => {
-    const resourceItemName = options.name;
-    try {
-      await requireAuthForMode();
-      const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
-
-      if (!(await ctx.checkParent(opts))) {
-        process.exit(1);
-      }
-
-      let vaultData: string = options.vault;
-      if (!vaultData && !process.stdin.isTTY) {
-        vaultData = await readVaultFromStdin();
-      }
-
-      if (!vaultData) {
-        outputService.error(t('errors.vaultDataRequired'));
-        process.exit(1);
-      }
-
-      if (options.vaultVersion === undefined || options.vaultVersion === null) {
-        outputService.error(t('errors.vaultVersionRequired'));
-        process.exit(1);
-      }
-
-      if (!validateJsonVault(vaultData)) {
-        outputService.error(t('errors.invalidJsonVault'));
-        process.exit(1);
-      }
-
-      const payload: Record<string, unknown> = {
-        [ctx.nameField]: resourceItemName,
-        [vaultUpdateConfig.vaultFieldName]: vaultData,
-        vaultVersion: options.vaultVersion,
-      };
-      addParentToPayload(payload, ctx.hasParent, ctx.parentOption, opts);
-
-      await withSpinner(
-        `Updating ${ctx.resourceName} vault...`,
-        () => vaultUpdateConfig.update(payload),
-        `${capitalizeFirst(ctx.resourceName)} vault updated`
-      );
-    } catch (error) {
-      handleError(error);
-    }
-  });
-}
-
 function setupVaultCommands(
   resource: Command,
   program: Command,
   ctx: CommandContext,
   config: ResourceCommandConfig
 ): void {
-  const { vaultConfig, vaultUpdateConfig } = config;
-  if (!vaultConfig && !vaultUpdateConfig) {
+  const { vaultConfig } = config;
+  if (!vaultConfig) {
     return;
   }
 
@@ -428,13 +312,7 @@ function setupVaultCommands(
     .command('vault')
     .description(`${capitalizeFirst(ctx.resourceName)} vault management`);
 
-  if (vaultConfig) {
-    setupVaultGetCommand(vault, program, ctx, vaultConfig);
-  }
-
-  if (vaultUpdateConfig) {
-    setupVaultUpdateCommand(vault, ctx, vaultUpdateConfig);
-  }
+  setupVaultGetCommand(vault, program, ctx, vaultConfig);
 }
 
 export function createResourceCommands(program: Command, config: ResourceCommandConfig): Command {
@@ -453,7 +331,6 @@ export function createResourceCommands(program: Command, config: ResourceCommand
     parentOption,
     parentFlag: getParentFlag(parentOption),
     parentDesc: getParentDesc(parentOption),
-    checkParent: createParentCheck(parentOption),
     nameField,
     resourceName,
     resourceNamePlural,
@@ -470,58 +347,4 @@ export function createResourceCommands(program: Command, config: ResourceCommand
   setupVaultCommands(resource, program, ctx, config);
 
   return resource;
-}
-
-/**
- * Add an assign command (e.g., assign-bridge for machines)
- */
-export function addAssignCommand(
-  resourceCommand: Command,
-  config: {
-    resourceName: string;
-    nameField: string;
-    targetName: string;
-    targetField: string;
-    parentOption: 'team' | 'region';
-    perform: (payload: Record<string, unknown>) => Promise<unknown>;
-  }
-): void {
-  const { resourceName, nameField, targetName, targetField, parentOption, perform } = config;
-  const parentFlag = getParentFlag(parentOption);
-  const parentDesc = getParentDesc(parentOption);
-  const checkParent = createParentCheck(parentOption);
-
-  const assignCmd = resourceCommand
-    .command(`assign-${targetName}`)
-    .description(`Assign ${resourceName} to a ${targetName}`)
-    .requiredOption('--name <name>', t('options.name'))
-    .requiredOption(`--target <name>`, t('options.target'))
-    .option(parentFlag, parentDesc);
-  hideParentOption(assignCmd, parentFlag);
-  assignCmd.action(async (options) => {
-    const resourceItemName = options.name;
-    const targetItemName = options.target;
-    try {
-      await requireAuthForMode();
-      const opts = await configService.applyDefaults(options);
-
-      if (!(await checkParent(opts))) {
-        process.exit(1);
-      }
-
-      const payload: Record<string, unknown> = {
-        [nameField]: resourceItemName,
-        [targetField]: targetItemName,
-        [getParentKey(parentOption)]: getParentValue(opts, parentOption),
-      };
-
-      await withSpinner(
-        `Assigning ${resourceName} "${resourceItemName}" to ${targetName} "${targetItemName}"...`,
-        () => perform(payload),
-        `${capitalizeFirst(resourceName)} assigned to ${targetName} "${targetItemName}"`
-      );
-    } catch (error) {
-      handleError(error);
-    }
-  });
 }

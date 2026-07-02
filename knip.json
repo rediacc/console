@@ -1,93 +1,41 @@
 {
   "$schema": "https://unpkg.com/knip@latest/schema.json",
-  "exclude": ["types", "duplicates", "exports", "files"],
+  "exclude": [
+    "types",
+    "duplicates",
+    "exports",
+    "files"
+  ],
   "workspaces": {
     ".": {
-      "entry": ["scripts/*.ts"],
-      "project": ["*.{js,ts}", "scripts/**/*.ts"]
-    },
-    "packages/shared": {
-      "project": ["src/**/*.ts"]
-    },
-    "packages/shared-desktop": {
-      "project": ["src/**/*.ts"]
-    },
-    "packages/cli": {
-      "entry": ["src/types/index.ts", "tests/**/*.ts"],
-      "project": ["src/**/*.ts", "tests/**/*.ts"],
-      "ignore": ["bundle.mjs"]
-    },
-    "packages/web": {
       "entry": [
-        "index.html",
-        "src/types/index.ts",
-        "src/api/queries/*.ts",
-        "src/components/common/columns/index.tsx",
-        "src/components/common/index.ts",
-        "src/utils/cacheUtils.ts",
-        "src/adapters/electronStorage.ts",
-        "src/utils/environment.ts",
-        "src/hooks/index.ts",
-        "src/hooks/terminal/index.ts",
-        "src/hooks/sftp/useSftp.ts",
-        "src/components/app/Terminal/index.ts",
-        "src/components/app/Terminal/Terminal.tsx",
-        "src/components/app/Terminal/DesktopPrompt.tsx",
-        "src/components/app/DirectFileBrowser/index.tsx",
-        "src/components/app/DirectFileBrowser/DesktopPrompt.tsx",
-        "src/utils/formatters.ts",
-        "src/services/telemetryService.ts",
-        "src/api/client.ts",
-        "src/components/layout/MainLayout/index.tsx",
-        "src/components/layout/MainLayout/components/NotificationBell/index.tsx",
-        "src/components/app/ThemedToaster/index.tsx",
-        "src/components/common/LanguageSelector/index.tsx",
-        "src/components/common/QueueItemTraceModal/QueueItemTraceModal.tsx",
-        "src/components/common/TemplatePreviewModal/index.tsx",
-        "src/features/audit/pages/AuditPage.tsx",
-        "src/features/auth/components/EndpointSelector/index.tsx",
-        "src/features/organization/components/UserSessionsTab/index.tsx",
-        "src/features/queue/pages/QueuePage.tsx",
-        "src/features/queue/hooks/useQueueExport.ts",
-        "src/i18n/config.ts",
-        "src/store/store.ts"
+        "scripts/*.ts"
       ],
-      "project": ["src/**/*.{ts,tsx}"],
-      "ignore": [
-        "src/utils/optimizedIcons.ts",
-        "src/utils/queueRenderers.tsx",
-        "src/utils/secureContext.ts",
-        "src/utils/vaultProtocol.ts",
-        "src/api/api-hooks.generated.ts",
-        "src/api/hooks-tfa.ts",
-        "src/api/hooks.config.ts",
-        "src/api/mutation-transforms.ts",
-        "src/api/queryKeys.ts",
-        "src/hooks/api/queryFactory.ts"
+      "project": [
+        "*.{js,ts}",
+        "scripts/**/*.ts"
       ]
     },
-    "packages/desktop": {
-      "entry": [
-        "src/main/index.ts",
-        "src/preload/index.ts",
-        "src/renderer/main.tsx",
-        "electron.vite.config.ts",
-        "src/main/protocol.ts",
-        "src/main/updater/autoUpdater.ts",
-        "src/main/services/telemetry.ts"
-      ],
-      "project": ["src/**/*.ts", "*.ts"]
+    "packages/shared": {
+      "project": [
+        "src/**/*.ts"
+      ]
     },
-    "packages/e2e": {
+    "packages/provisioning": {
+      "project": [
+        "src/**/*.ts"
+      ]
+    },
+    "packages/cli": {
       "entry": [
-        "tests/**/*.test.ts",
-        "tests/**/*.setup.ts",
-        "pages/**/*.ts",
-        "src/utils/report/TestReporter.ts",
-        "src/utils/data/TestDataManager.ts",
-        "src/utils/screenshot/ScreenshotManager.ts"
+        "src/types/index.ts"
       ],
-      "project": ["**/*.ts"]
+      "project": [
+        "src/**/*.ts"
+      ],
+      "ignore": [
+        "bundle.mjs"
+      ]
     },
     "packages/bridge-tests": {
       "entry": [
@@ -102,7 +50,9 @@
         "src/utils/RenetResolver.ts",
         "src/utils/renetPath.ts"
       ],
-      "project": ["**/*.ts"]
+      "project": [
+        "**/*.ts"
+      ]
     },
     "packages/www": {
       "entry": [
@@ -114,55 +64,93 @@
         "src/components/Footer.tsx",
         "src/components/Sidebar.tsx"
       ],
-      "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{js,cjs}"],
+      "project": [
+        "src/**/*.{ts,tsx}",
+        "scripts/**/*.{js,cjs}"
+      ],
       "ignore": [
         "scripts/check-translation-hashes.js",
         "scripts/generate-favicons.js",
         "scripts/generate-translation-hashes.js",
         "scripts/scale-svg-viewbox.cjs"
+      ],
+      "ignoreDependencies": [
+        "plyr"
+      ]
+    },
+    "private/account": {
+      "entry": [
+        "src/entry/*.ts",
+        "scripts/**/*.ts",
+        "tests/**/*.test.ts"
+      ],
+      "project": [
+        "src/**/*.ts",
+        "scripts/**/*.ts"
+      ],
+      "ignore": [
+        "src/db/migrations/**"
+      ],
+      "ignoreBinaries": [
+        "gh",
+        "openssl"
+      ]
+    },
+    "private/account/web": {
+      "entry": [
+        "index.html"
+      ],
+      "project": [
+        "src/**/*.{ts,tsx}"
+      ],
+      "ignoreDependencies": [
+        "react-router",
+        "tailwindcss",
+        "geist",
+        "@radix-ui/react-slot"
+      ]
+    },
+    "private/account/e2e": {
+      "entry": [
+        "tests/**/*.ts"
+      ],
+      "project": [
+        "**/*.ts"
       ]
     }
   },
-  "ignore": ["private/**"],
+  "ignore": [
+    "private/renet/**",
+    "private/middleware/**",
+    "private/elite/**",
+    "private/sql/**",
+    "private/homebrew-tap/**",
+    "private/growth/**",
+    "private/generative/**",
+    "private/bin/**"
+  ],
   "ignoreDependencies": [
-    "jsdom",
     "lockfile-lint",
-    "@aws-sdk/client-s3",
     "@types/*",
-    "@opentelemetry/instrumentation-*",
     "@pyroscope/nodejs",
-    "@opentelemetry/context-zone",
     "@opentelemetry/core",
-    "@opentelemetry/sdk-node",
-    "@opentelemetry/sdk-trace-web",
     "astro",
     "fast-xml-parser",
-
-    "@electron-toolkit/preload",
-    "node-pty",
-    "ssh2",
-    "loupe",
     "@vitest/runner",
     "@vitest/utils",
     "@vitest/coverage-v8",
     "@vitest/ui",
-    "unist-util-visit",
     "zod",
     "astro-seo",
     "glob",
-    "react-i18next",
-    "tiny-typed-emitter",
-    "plyr",
     "@resvg/resvg-js",
     "playwright",
     "vfile"
   ],
   "ignoreBinaries": [
-    "rimraf",
     "agent-browser",
     "cmd.exe",
     "dscl",
-    "duti",
     "getent",
     "gnome-terminal",
     "keyctl",
@@ -172,18 +160,15 @@
     "pdftotext",
     "powershell.exe",
     "rclone",
-    "reg",
     "security",
     "ssh-add",
     "ssh-agent",
     "ssh-keyscan",
     "systemctl",
     "terminator",
-    "update-desktop-database",
     "where",
     "which",
     "wsl.exe",
-    "xdg-mime",
     "xfce4-terminal",
     "xterm"
   ]

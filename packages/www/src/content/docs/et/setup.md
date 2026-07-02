@@ -4,7 +4,7 @@ description: "Loo konfiguratsioon, lisa masinad, häälesta serverid ja konfigur
 category: "Guides"
 order: 3
 language: et
-sourceHash: "b3c8c42db1b8d99b"
+sourceHash: "19a208e453f7d742"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -104,7 +104,7 @@ See avab masinaga SSH-ühenduse ja käivitab käsu. Kui see õnnestub, on sinu S
 rdc doctor
 ```
 
-> **Ainult pilveadapter**: käsk `rdc machine test-connection` pakub üksikasjalikku SSH-diagnostikat, kuid nõuab pilveadapterit. Kohaliku adapteri puhul kasuta otse `rdc term` või `ssh`.
+> **Vihje**: SSH-ühenduvuse kontrollimiseks käivita `rdc term connect -m <machine> -c "hostname"` või kasuta otse `ssh`.
 
 ## Infrastruktuuri konfiguratsioon
 
@@ -233,7 +233,7 @@ Seadista vaikeväärtused, et neid poleks vaja igal käsul täpsustada:
 
 ```bash
 rdc config field set --pointer /defaults/machine --new '"server-1"'   # Vaikemasin
-rdc config set --key team --value my-team                   # Vaikemeeskond (pilveadapter, eksperimentaalne)
+rdc config set --key team --value my-team                   # Vaikimisi tiim konfiguratsioonihoidla jaoks
 ```
 
 Pärast vaikemaskina seadistamist saad käskudest `-m server-1` ära jätta:

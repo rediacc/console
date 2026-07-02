@@ -9,7 +9,7 @@
 
 import net from 'node:net';
 import type { ChildProcess } from 'node:child_process';
-import { SSHConnection, spawnSSH } from '@rediacc/shared-desktop/ssh';
+import { SSHConnection, spawnSSH } from '../shared-desktop/ssh/index.js';
 import { TIMEOUT_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { t } from '../i18n/index.js';
 import type { ConnectionDetails } from './ssh-connection.js';

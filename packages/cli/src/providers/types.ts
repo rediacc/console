@@ -1,6 +1,6 @@
 /**
  * StateProvider interfaces - abstract layer for state management.
- * Three implementations: CloudStateProvider, S3StateProvider, LocalStateProvider.
+ * Single implementation: LocalStateProvider (config-file backed).
  */
 
 /** Generic mutation result */
@@ -42,22 +42,11 @@ export interface MachineProvider {
   create(params: Record<string, unknown>): Promise<MutationResult>;
   rename(params: Record<string, unknown>): Promise<MutationResult>;
   delete(params: Record<string, unknown>): Promise<MutationResult>;
-  getVault(params: Record<string, unknown>): Promise<VaultItem[] | { vaults: VaultItem[] }>;
-  updateVault(params: Record<string, unknown>): Promise<MutationResult>;
-  /** Get a single machine with vaultStatus data (for health/services/containers/repos/vault-status) */
+  /** Get a single machine with vaultStatus data (for health/services/containers/repos) */
   getWithVaultStatus(params: {
     teamName: string;
     machineName: string;
   }): Promise<MachineWithVaultStatusData | null>;
-}
-
-export interface QueueProvider {
-  list(params: { teamName: string; maxRecords?: number }): Promise<ResourceRecord[]>;
-  create(params: Record<string, unknown>): Promise<{ taskId?: string }>;
-  trace(taskId: string): Promise<ResourceRecord | null>;
-  cancel(taskId: string): Promise<void>;
-  retry(taskId: string): Promise<void>;
-  delete(taskId: string): Promise<void>;
 }
 
 export interface StorageProvider {
@@ -66,16 +55,6 @@ export interface StorageProvider {
   rename(params: Record<string, unknown>): Promise<MutationResult>;
   delete(params: Record<string, unknown>): Promise<MutationResult>;
   getVault(params: Record<string, unknown>): Promise<VaultItem[] | { vaults: VaultItem[] }>;
-  updateVault(params: Record<string, unknown>): Promise<MutationResult>;
-}
-
-export interface RepositoryProvider {
-  list(params: { teamName: string }): Promise<ResourceRecord[]>;
-  create(params: Record<string, unknown>): Promise<MutationResult>;
-  rename(params: Record<string, unknown>): Promise<MutationResult>;
-  delete(params: Record<string, unknown>): Promise<MutationResult>;
-  getVault(params: Record<string, unknown>): Promise<VaultItem[] | { vaults: VaultItem[] }>;
-  updateVault(params: Record<string, unknown>): Promise<MutationResult>;
 }
 
 export interface VaultProvider {
@@ -98,10 +77,7 @@ export interface VaultProvider {
 // ============================================================================
 
 export interface IStateProvider {
-  readonly isCloud: boolean;
   readonly machines: MachineProvider;
-  readonly queue: QueueProvider;
   readonly storage: StorageProvider;
-  readonly repositories: RepositoryProvider;
   readonly vaults: VaultProvider;
 }

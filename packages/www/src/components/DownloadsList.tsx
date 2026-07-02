@@ -3,7 +3,7 @@ import type { Platform } from '../config/install';
 import { detectPlatform, PLATFORMS } from '../config/install';
 import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
-import type { CLIFile, DownloadFile, ReleaseData } from '../utils/release-parser';
+import type { CLIFile, ReleaseData } from '../utils/release-parser';
 import { PLATFORM_ICON_MAP } from './icons/PlatformIcons';
 import PlatformTabs from './PlatformTabs';
 
@@ -12,7 +12,7 @@ interface DownloadsListProps {
   releaseData: ReleaseData | null;
 }
 
-function archLabel(t: (key: string) => string, file: DownloadFile | CLIFile): string {
+function archLabel(t: (key: string) => string, file: CLIFile): string {
   if (file.platform === 'macos') {
     return file.arch === 'arm64'
       ? t('pages.downloads.architectures.arm64_apple')
@@ -39,12 +39,7 @@ const DownloadsList: React.FC<DownloadsListProps> = ({ lang, releaseData }) => {
     );
   }
 
-  const desktopFiles = releaseData.desktopFiles.filter((f) => f.platform === activePlatform);
   const cliFiles = releaseData.cliFiles.filter((f) => f.platform === activePlatform);
-
-  const linuxAppImages = desktopFiles.filter((f) => f.type === 'AppImage');
-  const linuxDebs = desktopFiles.filter((f) => f.type === 'deb');
-  const isLinux = activePlatform === 'linux';
 
   return (
     <>
@@ -55,96 +50,7 @@ const DownloadsList: React.FC<DownloadsListProps> = ({ lang, releaseData }) => {
         ariaLabel={t('pages.install.platformFilter.label')}
       />
 
-      {/* Desktop section */}
-      <h2 className="section-heading">{t('pages.downloads.sections.desktop')}</h2>
-
-      {desktopFiles.length > 0 ? (
-        <div className="platform-section">
-          <div className="platform-header">
-            <h2>{t(`pages.downloads.platforms.${activePlatform}`)}</h2>
-          </div>
-
-          {isLinux ? (
-            <>
-              {linuxAppImages.length > 0 && (
-                <div className="linux-subsection">
-                  <h3>{t('pages.downloads.types.appimage')}</h3>
-                  <div className="download-list">
-                    {linuxAppImages.map((file) => (
-                      <div key={file.name} className="download-item">
-                        <div className="download-info">
-                          <span className="download-arch">{archLabel(t, file)}</span>
-                          <span className="download-size">{file.size}</span>
-                        </div>
-                        <a
-                          href={file.url}
-                          className="btn btn-primary download-button"
-                          data-track="cta_click"
-                          data-track-label="download-appimage"
-                          data-track-dest={file.name}
-                        >
-                          {t('pages.downloads.actions.download')}
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {linuxDebs.length > 0 && (
-                <div className="linux-subsection">
-                  <h3>{t('pages.downloads.types.deb')}</h3>
-                  <div className="download-list">
-                    {linuxDebs.map((file) => (
-                      <div key={file.name} className="download-item">
-                        <div className="download-info">
-                          <span className="download-arch">{archLabel(t, file)}</span>
-                          <span className="download-size">{file.size}</span>
-                        </div>
-                        <a
-                          href={file.url}
-                          className="btn btn-primary download-button"
-                          data-track="cta_click"
-                          data-track-label="download-deb"
-                          data-track-dest={file.name}
-                        >
-                          {t('pages.downloads.actions.download')}
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="download-list">
-              {desktopFiles.map((file) => (
-                <div key={file.name} className="download-item">
-                  <div className="download-info">
-                    <span className="download-arch">{archLabel(t, file)}</span>
-                    <span className="download-size">{file.size}</span>
-                  </div>
-                  <a
-                    href={file.url}
-                    className="btn btn-primary download-button"
-                    data-track="cta_click"
-                    data-track-label="download-desktop"
-                    data-track-dest={file.name}
-                  >
-                    {t('pages.downloads.actions.download')} .{file.type}
-                  </a>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="no-releases">
-          <p>{t('pages.downloads.noReleases')}</p>
-        </div>
-      )}
-
-      {/* CLI section */}
-      {cliFiles.length > 0 && (
+      {cliFiles.length > 0 ? (
         <>
           <h2 className="section-heading cli-section-heading">
             {t('pages.downloads.sections.cli')}
@@ -176,6 +82,10 @@ const DownloadsList: React.FC<DownloadsListProps> = ({ lang, releaseData }) => {
             </div>
           </div>
         </>
+      ) : (
+        <div className="no-releases">
+          <p>{t('pages.downloads.noReleases')}</p>
+        </div>
       )}
     </>
   );

@@ -1,18 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockExecute, mockGetStateProvider } = vi.hoisted(() => ({
+const { mockExecute } = vi.hoisted(() => ({
   mockExecute: vi.fn(),
-  mockGetStateProvider: vi.fn(),
 }));
 
 vi.mock('../local-executor.js', () => ({
   localExecutorService: {
     execute: mockExecute,
   },
-}));
-
-vi.mock('../../providers/index.js', () => ({
-  getStateProvider: mockGetStateProvider,
 }));
 
 const { assertRepoMountedOnMachine } = await import('../repo-mount-check.js');
@@ -22,20 +17,12 @@ const REPO_NAME = 'mail';
 const REPO_GUID = 'repo-guid-001';
 const MACHINE = 'host-1';
 
-function localProvider() {
-  return { isCloud: false };
-}
-function cloudProvider() {
-  return { isCloud: true };
-}
-
 function listResultStdout(repos: { name: string; mounted: boolean }[]): string {
   return JSON.stringify(repos);
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockGetStateProvider.mockResolvedValue(localProvider());
 });
 
 describe('assertRepoMountedOnMachine', () => {
@@ -109,14 +96,5 @@ describe('assertRepoMountedOnMachine', () => {
     await expect(
       assertRepoMountedOnMachine(REPO_NAME, REPO_GUID, MACHINE)
     ).resolves.toBeUndefined();
-  });
-
-  it('is a silent no-op when the cloud adapter is active', async () => {
-    mockGetStateProvider.mockResolvedValue(cloudProvider());
-
-    await expect(
-      assertRepoMountedOnMachine(REPO_NAME, REPO_GUID, MACHINE)
-    ).resolves.toBeUndefined();
-    expect(mockExecute).not.toHaveBeenCalled();
   });
 });

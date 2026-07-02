@@ -4,7 +4,7 @@ description: "Rediacc sizin altyapınızda çalışır. Verilerinizi siz kontrol
 category: "Legal"
 order: 0
 language: tr
-sourceHash: "1e36a25c724f4185"
+sourceHash: "e6044a3b067b54d5"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -32,7 +32,7 @@ Hepsi bu ortak noktada birleşiyor: bu bölümdeki her uyumluluk çerçevesi ayn
 - **Durağan halde şifreleme**: Her depo LUKS2 AES-256 ile şifrelenir. Kimlik bilgileri yalnızca operatörün yerel yapılandırmasında saklanır, asla sunucuda değil.
 - **Ağ izolasyonu**: Her depo kendi Docker daemon'ına, loopback IP alt ağına (/26) ve iptables kurallarına sahiptir. Farklı depolardan konteynerler birbirleriyle iletişim kuramaz.
 - **Copy-on-write klonlama**: `rdc repo fork` dosya sistemi reflink'lerini (`cp --reflink=always`) kullanır. Veriler herhangi bir ağ transferi olmadan aynı makinede çoğaltılır.
-- **Denetim günlüğü**: Kimlik doğrulama (giriş, 2FA, parola değişiklikleri, oturum iptali), API token yaşam döngüsü, yapılandırma deposu işlemleri, abonelik/lisans etkinliği ve CLI makine işlemleri (depo yaşam döngüsü, yedekleme, senkronizasyon, terminal oturumları) başta olmak üzere 70+ olay türü. Yönetici paneli, portal aktivite sayfası (org kapsamlı filtreleme ile) ve `rdc audit` CLI aracılığıyla erişilebilir. Makine işlemleri, derinlemesine savunma için sistem günlüklerinizde de kaydedilir.
+- **Denetim günlüğü**: Kimlik doğrulama (giriş, 2FA, parola değişiklikleri, oturum iptali), API token yaşam döngüsü, yapılandırma deposu işlemleri, abonelik/lisans etkinliği ve CLI makine işlemleri (depo yaşam döngüsü, yedekleme, senkronizasyon, terminal oturumları) başta olmak üzere 70+ olay türü. Yönetici paneli ve portal aktivite sayfası aracılığıyla erişilebilir (org kapsamlı filtreleme ve JSON dışa aktarma ile). Makine işlemleri, derinlemesine savunma için sistem günlüklerinizde de kaydedilir.
 - **Şifreli yedekleme**: `rdc repo push/pull` verileri SSH üzerinden aktarır. Yedekleme hedefi LUKS ile şifrelenmiş birimler alır.
 - **Sıfır bilgi yapılandırma deposu**: Cihazlar arası isteğe bağlı şifreli yapılandırma senkronizasyonu. Yapılandırmalar yüklenmeden önce istemci tarafında AES-256-GCM ile şifrelenir. Sunucu yalnızca opak blob'lar saklar. Sunucu SSH anahtarlarını, kimlik bilgilerini, IP adreslerini veya herhangi bir düz metin yapılandırma verisini okuyamaz. Anahtar türetme passkey PRF extension + HKDF ile alan ayırma kullanır. Üye erişimi X25519 anahtar değişimi ile yönetilir ve iptal anında gerçekleşir.
 

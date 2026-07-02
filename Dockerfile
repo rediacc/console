@@ -5,11 +5,10 @@
 #   --target onprem  -> ghcr.io/rediacc/server       (customer-facing self-hosted)
 #
 # The build CONTEXT must contain these pre-staged directories (CI populates
-# them by downloading the matching artifacts from build-web, build-www,
-# build-cli, and build-renet jobs; the local-dev wrapper at
+# them by downloading the matching artifacts from build-www, build-cli, and
+# build-renet jobs; the local-dev wrapper at
 # scripts/docker/build-server.sh stages them from local source builds):
 #
-#   ./web-assets/         packages/web/dist           (web console SPA)
 #   ./www-assets/         packages/www/dist           (marketing site)
 #   ./account-web-assets/ private/account/web/dist    (account portal SPA)
 #   ./cli-npm/            packages/cli npm tarball    (CLI release artifact)
@@ -19,7 +18,7 @@
 #
 # Why renet binaries are pre-built and not built inside this Dockerfile:
 # the renet binary embeds CRIU/rsync/rclone via go:embed assets/*. Those .gz
-# files are extracted from the rediacc/bridge image by build-renet.sh, which
+# files are extracted from the rediacc/renet image by build-renet.sh, which
 # requires running on a real Linux host with Docker available -- not possible
 # inside an in-Docker `go build` step. The previous Dockerfiles all silently
 # produced asset-less renet binaries that refused to operate at runtime.
@@ -92,8 +91,6 @@ RUN apk add --no-cache nginx coreutils
 
 # Marketing site (root)
 COPY ./www-assets/         /usr/share/nginx/html/
-# Web console SPA (/console/)
-COPY ./web-assets/         /usr/share/nginx/html/console/
 # Account portal SPA (/account/)
 COPY ./account-web-assets/ /usr/share/nginx/html/account/
 
@@ -139,7 +136,7 @@ ENTRYPOINT ["/docker-entrypoint.sh"]
 FROM runtime-base AS cloud
 LABEL com.rediacc.variant=cloud
 LABEL org.opencontainers.image.title="Rediacc Console (Cloud)"
-LABEL org.opencontainers.image.description="Rediacc cloud console - account API, web console, CLI, and renet distribution"
+LABEL org.opencontainers.image.description="Rediacc cloud console - marketing site, account API/portal, CLI, and renet distribution"
 LABEL org.opencontainers.image.source="https://github.com/rediacc/console"
 LABEL org.opencontainers.image.version="${VITE_APP_VERSION}"
 
@@ -153,7 +150,7 @@ LABEL org.opencontainers.image.version="${VITE_APP_VERSION}"
 FROM runtime-base AS onprem
 LABEL com.rediacc.variant=onprem
 LABEL org.opencontainers.image.title="Rediacc Server (Self-Hosted)"
-LABEL org.opencontainers.image.description="Self-hosted Rediacc server - account API, web console, CLI, and renet binaries"
+LABEL org.opencontainers.image.description="Self-hosted Rediacc server - marketing site, account API/portal, CLI, and renet binaries"
 LABEL org.opencontainers.image.source="https://github.com/rediacc/console"
 LABEL org.opencontainers.image.version="${VITE_APP_VERSION}"
 

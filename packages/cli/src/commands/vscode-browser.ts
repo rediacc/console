@@ -3,11 +3,11 @@
  * sandbox and tunnel it to localhost. No local VS Code install needed.
  */
 
-import { testSSHConnectivity } from '@rediacc/shared-desktop/ssh';
+import { testSSHConnectivity } from '../shared-desktop/ssh/index.js';
 import {
   getServerProvider,
   type VSCodeServerProvider,
-} from '@rediacc/shared-desktop/vscode-server';
+} from '../shared-desktop/vscode-server/index.js';
 import { t } from '../i18n/index.js';
 import { outputService } from '../services/output.js';
 import {

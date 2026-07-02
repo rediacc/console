@@ -4,7 +4,7 @@ description: "Wie die Verschlüsselungs- und Isolationsarchitektur von Rediacc d
 category: "Legal"
 order: 3
 language: de
-sourceHash: "f5fbdaa4a00491ea"
+sourceHash: "a0dd73c1923519b0"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -21,7 +21,7 @@ HIPAA erfordert administrative, technische und physische Schutzmaßnahmen. Die f
 | Anforderung | HIPAA-Referenz | Rediacc-Fähigkeit |
 |-------------|----------------|-------------------|
 | Zugriffskontrolle | [45 CFR 164.312(a)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | SSH-Schlüssel-basierte Authentifizierung. API-Tokens mit IP-Bindung und Bereichseinschränkungen. Docker-Daemon-Isolation pro Repository verhindert repositoryübergreifenden Zugriff. |
-| Audit-Kontrollen | [45 CFR 164.312(b)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Über 40 Ereignistypen auf Kontoebene für Authentifizierung, API-Tokens, Config-Operationen und Lizenzierung. Nachverfolgung pro Benutzer und Team. Export über Admin-Dashboard oder `rdc audit` CLI. |
+| Audit-Kontrollen | [45 CFR 164.312(b)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Über 40 Ereignistypen auf Kontoebene für Authentifizierung, API-Tokens, Config-Operationen und Lizenzierung. Nachverfolgung pro Benutzer und Team. Export über das Admin-Dashboard oder die Portal-Aktivitätsseite (JSON-Export verfügbar). |
 | Integritätskontrollen | [45 CFR 164.312(c)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | CoW-Snapshots bewahren Originaldaten vor Änderungen. `rdc repo validate` überprüft Repository-Integrität und Backup-Gesundheit (LUKS-Container, Dateisystemkonsistenz, Konfiguration). |
 | Verschlüsselung im Ruhezustand | [45 CFR 164.312(a)(2)(iv)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | LUKS2 AES-256-Verschlüsselung auf allen Repository-Volumes. Anmeldedaten werden nur in der lokalen Konfiguration des Operators gespeichert, nie auf dem Server. Config Store verwendet Zero-Knowledge AES-256-GCM-Verschlüsselung mit Split-Key-Ableitung. Selbst der Server kann gespeicherte Configs nicht entschlüsseln. |
 | Übertragungssicherheit | [45 CFR 164.312(e)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | Alle Remote-Operationen verwenden SSH. Backup-Transport ist Ende-zu-Ende verschlüsselt. Kein unverschlüsselter Datentransfer. |

@@ -26,14 +26,13 @@ DRY_RUN="${ARG_DRY_RUN:-false}"
 GITHUB_ORG="rediacc"
 
 # Repos to clean tags from
-TAG_REPOS=("console" "renet" "middleware")
+TAG_REPOS=("console" "renet")
 
 # GHCR packages to clean. Each entry is the full package path under
 # ghcr.io/rediacc/* (org-relative). Most images live under elite/, but the
 # customer-facing on-prem image is at ghcr.io/rediacc/server (no namespace).
 GHCR_PACKAGES=(
-    "elite/api"
-    "elite/bridge"
+    "elite/renet"
     "elite/web"
     "elite/plugin-terminal"
     "elite/plugin-browser"
@@ -45,7 +44,7 @@ GHCR_PACKAGES=(
 DEPLOYMENT_REPOS=("console")
 
 # Repos to clean stale branches from (all repos in the org)
-BRANCH_REPOS=("console" "renet" "middleware" "account" "elite" "homebrew-tap" "sql")
+BRANCH_REPOS=("console" "renet" "account" "elite" "homebrew-tap" "sql")
 BRANCH_MAX_AGE_DAYS=30
 
 # Release repo
@@ -57,8 +56,8 @@ CF_PAGES_PROJECT="rediacc"
 # R2 cleanup
 R2_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"
 R2_RETENTION_DAYS=7
-R2_FORMAT_DIRS=("cli" "desktop" "npm" "apt" "rpm" "apk" "archlinux")
-# Orphan v*/ under cli/ and desktop/ older than this are deletable. Conservative
+R2_FORMAT_DIRS=("cli" "npm" "apt" "rpm" "apk" "archlinux")
+# Orphan v*/ under cli/ older than this are deletable. Conservative
 # double of R2_RETENTION_DAYS so a real release whose tag was pruned still has
 # time to be noticed before its R2 bytes are reaped.
 R2_ORPHAN_VERSION_AGE_DAYS=14
@@ -907,7 +906,7 @@ cleanup_orphan_turnstile_widgets() {
 #     pre-fix npm/pr-N/ accumulation)
 #   - Legacy dead top-level prefixes (staging/, packages/, cli/latest/) --
 #     unconditional noop delete each run, protects against regression writes
-#   - v<semver>/ under cli/ and desktop/ that is neither in the authoritative
+#   - v<semver>/ under cli/ that is neither in the authoritative
 #     versions.json tracker nor a git tag, AND older than
 #     R2_ORPHAN_VERSION_AGE_DAYS (reaps PR-pollution such as v1.0.3/ that
 #     was never released)
@@ -1087,9 +1086,8 @@ cleanup_r2() {
     # Pre-contract floor: tags strictly older than the oldest cli sentinel
     # predate the contract (or had their sentinel scrubbed before lifecycle
     # could re-seal them) — drift on those is not actionable. We derive the
-    # floor once from cli sentinels and apply it to both cli and desktop
-    # passes below; the validator's rsv_pre_contract_floor is the single
-    # source of truth.
+    # floor from cli sentinels; the validator's rsv_pre_contract_floor is the
+    # single source of truth.
     local cli_sentinels_list pre_contract_floor
     cli_sentinels_list="$(rsv_list_sentinels cli)"
     pre_contract_floor="$(rsv_pre_contract_floor "$cli_sentinels_list")"
@@ -1098,82 +1096,81 @@ cleanup_r2() {
     else
         log_info "  8d: no cli sentinels yet; bijection contract not in effect, all versions in scope"
     fi
-    for dir in "cli" "desktop"; do
-        declare -A sentinel_set=()
-        while IFS= read -r s; do
-            [[ -n "$s" ]] && sentinel_set["$s"]=1
-        done < <(rsv_list_sentinels "$dir")
-        while IFS= read -r line; do
-            local sub
-            sub="$(echo "$line" | awk '/^[[:space:]]*PRE[[:space:]]v[0-9]+\./ {print $2}')"
-            [[ -z "$sub" ]] && continue
-            if ! deletes_budget_ok; then
-                log_warn "  Phase 8d: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining orphan versioned prefixes deferred to next run"
-                break 2
-            fi
-            local ver="${sub%/}" # v1.2.3
-            [[ "$ver" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || continue
+    local dir="cli"
+    declare -A sentinel_set=()
+    while IFS= read -r s; do
+        [[ -n "$s" ]] && sentinel_set["$s"]=1
+    done < <(rsv_list_sentinels "$dir")
+    while IFS= read -r line; do
+        local sub
+        sub="$(echo "$line" | awk '/^[[:space:]]*PRE[[:space:]]v[0-9]+\./ {print $2}')"
+        [[ -z "$sub" ]] && continue
+        if ! deletes_budget_ok; then
+            log_warn "  Phase 8d: hit MAX_DELETES_PER_RUN=$MAX_DELETES_PER_RUN; remaining orphan versioned prefixes deferred to next run"
+            break
+        fi
+        local ver="${sub%/}" # v1.2.3
+        [[ "$ver" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || continue
 
-            # In-flight short-circuit MUST run before any classification.
-            # Stage Artifacts uploads ${dir}/${ver}/ bytes minutes before
-            # finalize-release-sentinel writes the sentinel; during that
-            # window the prefix has no sentinel AND no tag, so the orphan
-            # arm below would incorrectly delete the just-uploaded bytes.
-            # The job-level needs:[finalize-release-sentinel] in ci.yml is
-            # the primary defense; this is belt-and-suspenders so any future
-            # ordering regression cannot revive the deletion race.
-            if [[ -n "${IN_FLIGHT_VERSION:-}" && "$ver" == "$IN_FLIGHT_VERSION" ]]; then
-                continue # in-flight; sentinel/tag will appear shortly
-            fi
+        # In-flight short-circuit MUST run before any classification.
+        # Stage Artifacts uploads ${dir}/${ver}/ bytes minutes before
+        # finalize-release-sentinel writes the sentinel; during that
+        # window the prefix has no sentinel AND no tag, so the orphan
+        # arm below would incorrectly delete the just-uploaded bytes.
+        # The job-level needs:[finalize-release-sentinel] in ci.yml is
+        # the primary defense; this is belt-and-suspenders so any future
+        # ordering regression cannot revive the deletion race.
+        if [[ -n "${IN_FLIGHT_VERSION:-}" && "$ver" == "$IN_FLIGHT_VERSION" ]]; then
+            continue # in-flight; sentinel/tag will appear shortly
+        fi
 
-            local has_sentinel=0 has_tag=0
-            [[ -n "${sentinel_set[$ver]:-}" ]] && has_sentinel=1
-            [[ -n "${tag_set[$ver]:-}" ]] && has_tag=1
+        local has_sentinel=0 has_tag=0
+        [[ -n "${sentinel_set[$ver]:-}" ]] && has_sentinel=1
+        [[ -n "${tag_set[$ver]:-}" ]] && has_tag=1
 
-            if ((has_sentinel && has_tag)); then
-                continue # committed release
-            fi
-            if ((!has_sentinel && !has_tag)); then
-                # Age guard: never reap a freshly-uploaded orphan. A release in
-                # flight (Stage Artifacts uploaded bytes, finalize hasn't sealed
-                # yet) is an orphan by this definition; without an age floor a
-                # nightly run that overlaps a slow/retried release would delete
-                # its just-staged binaries. Genuine orphans from cancelled runs
-                # age past the threshold and get reaped on a later night. Skip
-                # when undatable too (don't delete what we can't age).
-                local last last_epoch
-                last="$(r2_prefix_last_modified "${dir}/${ver}/")"
-                last_epoch="$(date -u -d "$last" +%s 2>/dev/null || echo 0)"
-                if [[ "$last_epoch" -eq 0 ]] || ((now_epoch - last_epoch <= orphan_ver_max_age)); then
-                    log_info "  orphan ${dir}/${ver}: skipping (younger than ${R2_ORPHAN_VERSION_AGE_DAYS}d or undatable — may be an in-flight release)"
-                    continue
-                fi
-                r2_rm_recursive "${dir}/${ver}/" "orphan ${dir}/${ver} (no .released sentinel, no git tag, >${R2_ORPHAN_VERSION_AGE_DAYS}d old)"
-                orphan_ver_deleted=$((orphan_ver_deleted + 1))
+        if ((has_sentinel && has_tag)); then
+            continue # committed release
+        fi
+        if ((!has_sentinel && !has_tag)); then
+            # Age guard: never reap a freshly-uploaded orphan. A release in
+            # flight (Stage Artifacts uploaded bytes, finalize hasn't sealed
+            # yet) is an orphan by this definition; without an age floor a
+            # nightly run that overlaps a slow/retried release would delete
+            # its just-staged binaries. Genuine orphans from cancelled runs
+            # age past the threshold and get reaped on a later night. Skip
+            # when undatable too (don't delete what we can't age).
+            local last last_epoch
+            last="$(r2_prefix_last_modified "${dir}/${ver}/")"
+            last_epoch="$(date -u -d "$last" +%s 2>/dev/null || echo 0)"
+            if [[ "$last_epoch" -eq 0 ]] || ((now_epoch - last_epoch <= orphan_ver_max_age)); then
+                log_info "  orphan ${dir}/${ver}: skipping (younger than ${R2_ORPHAN_VERSION_AGE_DAYS}d or undatable — may be an in-flight release)"
                 continue
             fi
-            # Pre-contract floor: drift on versions strictly older than the
-            # oldest cli sentinel is not actionable (contract didn't exist or
-            # the sentinel was scrubbed and artifacts are gone). Same logic as
-            # the drift gate (rsv_assert_bijection).
-            if [[ -n "$pre_contract_floor" && "$ver" != "$pre_contract_floor" ]]; then
-                local oldest
-                oldest="$(printf '%s\n%s\n' "$pre_contract_floor" "$ver" | sort -V | head -1)"
-                if [[ "$oldest" != "$pre_contract_floor" ]]; then
-                    continue # below the floor; grandfathered
-                fi
+            r2_rm_recursive "${dir}/${ver}/" "orphan ${dir}/${ver} (no .released sentinel, no git tag, >${R2_ORPHAN_VERSION_AGE_DAYS}d old)"
+            orphan_ver_deleted=$((orphan_ver_deleted + 1))
+            continue
+        fi
+        # Pre-contract floor: drift on versions strictly older than the
+        # oldest cli sentinel is not actionable (contract didn't exist or
+        # the sentinel was scrubbed and artifacts are gone). Same logic as
+        # the drift gate (rsv_assert_bijection).
+        if [[ -n "$pre_contract_floor" && "$ver" != "$pre_contract_floor" ]]; then
+            local oldest
+            oldest="$(printf '%s\n%s\n' "$pre_contract_floor" "$ver" | sort -V | head -1)"
+            if [[ "$oldest" != "$pre_contract_floor" ]]; then
+                continue # below the floor; grandfathered
             fi
-            # Drift: exactly one of sentinel/tag is present. Do not auto-heal.
-            if ((has_sentinel)); then
-                log_error "drift: ${dir}/${ver}/.released exists but git tag ${ver} missing"
-                log_error "  remediation: re-run CD to tag/release ${ver}, or scrub via scripts/dev/scrub-sentinel.sh ${ver} --execute"
-            else
-                log_error "drift: git tag ${ver} exists but ${dir}/${ver}/.released missing"
-                log_error "  remediation: re-run CI for ${ver}, or delete tag ${ver}"
-            fi
-            drift_count=$((drift_count + 1))
-        done < <(r2_ls_prefix "${dir}/")
-    done
+        fi
+        # Drift: exactly one of sentinel/tag is present. Do not auto-heal.
+        if ((has_sentinel)); then
+            log_error "drift: ${dir}/${ver}/.released exists but git tag ${ver} missing"
+            log_error "  remediation: re-run CD to tag/release ${ver}, or scrub via scripts/dev/scrub-sentinel.sh ${ver} --execute"
+        else
+            log_error "drift: git tag ${ver} exists but ${dir}/${ver}/.released missing"
+            log_error "  remediation: re-run CI for ${ver}, or delete tag ${ver}"
+        fi
+        drift_count=$((drift_count + 1))
+    done < <(r2_ls_prefix "${dir}/")
     log_info "  8d: deleted $orphan_ver_deleted orphan versioned prefix(es); found $drift_count drift finding(s)"
     if ((drift_count > 0)); then
         log_error "  8d: release-state drift detected; housekeeping refuses to auto-heal"
@@ -1190,9 +1187,8 @@ cleanup_r2() {
     #   apk/<channel>/     -> rediacc-cli-<ver>.apk
     #   archlinux/<ch>/    -> rediacc-cli-<ver>-<arch>.pkg.tar.zst
     #   npm/<channel>/     -> rediacc-cli-<ver>.tgz
-    #   desktop/<channel>/ -> rediacc-desktop-<ver>-<platform>.<ext> (+.blockmap)
     # Retention: keep if rank < R2_PACKAGE_KEEP_VERSIONS OR age < KEEP_DAYS.
-    # Special case: rediacc-desktop-0.0.0-dev-* are PR CI pollution from
+    # Special case: rediacc-cli-0.0.0-dev-* are PR CI pollution from
     # before the version-injection fix; always delete.
     # Metadata (Packages.gz, Release*, InRelease, APKINDEX.tar.gz, repodata/,
     # *.db.tar.gz, latest-*.yml, manifest.json, gpg.key, rediacc-cli-latest.tgz)
@@ -1203,7 +1199,7 @@ cleanup_r2() {
     # 0.0.0-dev files are always deleted (pre-version-injection pollution).
     log_step "  8f: channel artifact retention (keep top ${R2_PACKAGE_KEEP_VERSIONS} semvers; zap 0.0.0-dev)"
     local pkg_deleted=0
-    for fmt in apt rpm apk archlinux npm desktop; do
+    for fmt in apt rpm apk archlinux npm; do
         for channel in stable edge; do
             local channel_root="${fmt}/${channel}/"
             [[ -z "$(r2_ls_prefix "$channel_root")" ]] && continue
@@ -1218,8 +1214,8 @@ cleanup_r2() {
                 --endpoint-url "$R2_ENDPOINT" 2>/dev/null |
                 awk '{
                     n = split($4, p, "/"); fname = p[n];
-                    if (fname !~ /^rediacc-(cli|desktop)[-_]/) next
-                    rest = fname; sub(/^rediacc-(cli|desktop)[-_]/, "", rest);
+                    if (fname !~ /^rediacc-cli[-_]/) next
+                    rest = fname; sub(/^rediacc-cli[-_]/, "", rest);
                     if (match(rest, /^[0-9]+\.[0-9]+\.[0-9]+/)) {
                         semver = substr(rest, 1, RLENGTH);
                         after = substr(rest, RLENGTH + 1);
@@ -1271,7 +1267,7 @@ cleanup_r2() {
             done <<<"$listing"
         done
     done
-    log_info "  8f: deleted $pkg_deleted stale artifact(s) across apt/rpm/apk/archlinux/npm/desktop"
+    log_info "  8f: deleted $pkg_deleted stale artifact(s) across apt/rpm/apk/archlinux/npm"
 
     # 8e. Abort abandoned multipart uploads ---------------------------------
     # Successful multiparts complete in minutes; anything older than 24h is

@@ -4,7 +4,7 @@ description: "Rediacc gira sulla vostra infrastruttura. Controllate i vostri dat
 category: "Legal"
 order: 0
 language: it
-sourceHash: "1e36a25c724f4185"
+sourceHash: "e6044a3b067b54d5"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -32,7 +32,7 @@ Ogni framework di conformità in questa sezione si riconduce alle stesse proprie
 - **Cifratura a riposo**: ogni repository è cifrato con LUKS2 AES-256. Le credenziali sono archiviate solo nella configurazione locale dell'operatore, mai sul server.
 - **Isolamento di rete**: ogni repository dispone di un proprio daemon Docker, di una subnet IP loopback (/26) e di regole iptables. I container di repository diversi non possono comunicare.
 - **Clonazione copy-on-write**: `rdc repo fork` utilizza reflink del filesystem (`cp --reflink=always`). I dati vengono duplicati sulla stessa macchina senza alcun trasferimento di rete.
-- **Log di audit**: oltre 70 tipologie di eventi che coprono autenticazione (accesso, 2FA, cambio password, revoca sessione), ciclo di vita dei token API, operazioni sul config store, attività di abbonamento/licenza e operazioni CLI sulle macchine (ciclo di vita dei repository, backup, sincronizzazione, sessioni di terminale). Accessibili tramite dashboard di amministrazione, pagina attività del portale (con filtraggio per organizzazione) e CLI `rdc audit`. Le operazioni sulle macchine sono registrate anche nei log di sistema per una difesa in profondità.
+- **Log di audit**: oltre 70 tipologie di eventi che coprono autenticazione (accesso, 2FA, cambio password, revoca sessione), ciclo di vita dei token API, operazioni sul config store, attività di abbonamento/licenza e operazioni CLI sulle macchine (ciclo di vita dei repository, backup, sincronizzazione, sessioni di terminale). Accessibili tramite dashboard di amministrazione e pagina attività del portale (con filtraggio per organizzazione ed esportazione JSON). Le operazioni sulle macchine sono registrate anche nei log di sistema per una difesa in profondità.
 - **Backup cifrato**: `rdc repo push/pull` trasferisce i dati tramite SSH. La destinazione del backup riceve volumi cifrati con LUKS.
 - **Config store zero-knowledge**: sincronizzazione cifrata opzionale delle configurazioni tra dispositivi. Le configurazioni sono cifrate lato client con AES-256-GCM prima dell'upload. Il server archivia solo blob opachi. Il server non può leggere chiavi SSH, credenziali, indirizzi IP o dati di configurazione in chiaro. La derivazione della chiave utilizza l'estensione PRF della passkey e HKDF con separazione di dominio. L'accesso dei membri è gestito tramite scambio di chiavi X25519 e la revoca è immediata.
 

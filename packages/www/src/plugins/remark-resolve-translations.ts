@@ -172,7 +172,7 @@ export function remarkResolveTranslations(options: RemarkResolveTranslationsOpti
     else if (file.value && typeof file.value === 'string') {
       language = extractLanguageFromContent(file.value);
     }
-    // Method 3: From file path (e.g., /docs/tr/web-application.md)
+    // Method 3: From file path (e.g., /docs/tr/architecture.md)
     else if (file.path) {
       const pathMatch = /\/docs\/([a-z]{2})\//.exec(file.path);
       if (pathMatch) {

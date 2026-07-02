@@ -24,10 +24,7 @@ on:
         description: 'Release channel (e.g., pr-123, edge, stable)'
         type: string
         required: false
-      api_tag:
-        type: string
-        required: false
-      bridge_tag:
+      renet_tag:
         type: string
         required: false
       plugins_tag:
@@ -76,7 +73,7 @@ jobs:
     outputs:
       passed: ${{ steps.validate.outputs.passed }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
         with:
           node-version: '22'
@@ -85,12 +82,6 @@ jobs:
       # -----------------------------------------------------------------------
       # Step 1: Download all build artifacts
       # -----------------------------------------------------------------------
-      - name: Download desktop artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
-        with:
-          pattern: build-desktop-*
-          path: dist/desktop/
-          merge-multiple: true
 
       - name: Download CLI executables
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
@@ -170,12 +161,6 @@ jobs:
       - name: Build packages
         run: .ci/scripts/setup/build-packages.sh
 
-      - name: Build web for Pages (with /console/ base path)
-        run: .ci/scripts/build/build-web.sh --type RELEASE
-        env:
-          VITE_APP_VERSION: ${{ github.sha }}
-          VITE_BASE_PATH: /console/
-
       - name: Assemble pages package
         run: .ci/scripts/build/build-pages.sh --output dist/pages
 
@@ -203,7 +188,7 @@ jobs:
       # Step 5: Stage Docker images (validates existence + retag to channel)
       # -----------------------------------------------------------------------
       - name: Login to GHCR
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -218,8 +203,7 @@ jobs:
         run: |
           CHANNEL="${{ inputs.channel }}"
 
-          .ci/scripts/docker/retag-image.sh --image api --from "${{ inputs.api_tag }}" --to "$CHANNEL"
-          .ci/scripts/docker/retag-image.sh --image bridge --from "${{ inputs.bridge_tag }}" --to "$CHANNEL"
+          .ci/scripts/docker/retag-image.sh --image renet --from "${{ inputs.renet_tag }}" --to "$CHANNEL"
           .ci/scripts/docker/retag-image.sh --image plugin-terminal --from "${{ inputs.plugins_tag }}" --to "$CHANNEL"
           .ci/scripts/docker/retag-image.sh --image plugin-browser --from "${{ inputs.plugins_tag }}" --to "$CHANNEL"
           .ci/scripts/docker/retag-image.sh --image web --from "${{ inputs.web_tag }}" --to "$CHANNEL"
@@ -230,13 +214,7 @@ jobs:
           .ci/scripts/docker/retag-image.sh --image-path ghcr.io/rediacc/server --from "${{ inputs.web_tag }}" --to "$CHANNEL"
 
       # -----------------------------------------------------------------------
-      # Step 6: Clean up debug artifacts
-      # -----------------------------------------------------------------------
-      - name: Clean up debug artifacts
-        run: rm -f dist/desktop/builder-debug.yml
-
-      # -----------------------------------------------------------------------
-      # Step 7: Validate all artifacts
+      # Step 6: Validate all artifacts
       # -----------------------------------------------------------------------
       - name: Validate artifacts
         id: validate
@@ -245,7 +223,6 @@ jobs:
           echo "## ${MODE}Stage Artifacts Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          DESKTOP_COUNT=$(find dist/desktop -type f 2>/dev/null | wc -l)
           CLI_COUNT=$(find dist/cli -type f 2>/dev/null | wc -l)
           PKG_COUNT=$(find dist/packages -type f 2>/dev/null | wc -l)
           DEB_COUNT=$(find dist/packages -name "*.deb" 2>/dev/null | wc -l)
@@ -258,7 +235,6 @@ jobs:
 
           echo "| Artifact | Count/Size |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|------------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Desktop artifacts | $DESKTOP_COUNT files |" >> $GITHUB_STEP_SUMMARY
           echo "| CLI artifacts | $CLI_COUNT files |" >> $GITHUB_STEP_SUMMARY
           echo "| Linux packages | $PKG_COUNT files (deb:$DEB_COUNT rpm:$RPM_COUNT apk:$APK_COUNT arch:$ARCH_COUNT) |" >> $GITHUB_STEP_SUMMARY
           echo "| Pages bundle | $PAGES_SIZE |" >> $GITHUB_STEP_SUMMARY
@@ -270,10 +246,6 @@ jobs:
 
           FAILED=false
 
-          if [[ "$DESKTOP_COUNT" -eq 0 ]]; then
-            echo "::error::No desktop artifacts found"
-            FAILED=true
-          fi
           if [[ "$CLI_COUNT" -eq 0 ]]; then
             echo "::error::No CLI artifacts found"
             FAILED=true
@@ -344,7 +316,6 @@ jobs:
         with:
           name: release-artifacts-${{ github.sha }}
           path: |
-            dist/desktop/
             dist/cli/
             dist/packages/
           retention-days: 1
@@ -391,7 +362,7 @@ jobs:
           # cache/concepts/default-cache-behavior), so there is no stale
           # cached body to go stale. R2 origin is inside CF's network, so
           # end-user install cost is not materially different.
-          # Truly-versioned paths (cli/v<semver>/, desktop/v<semver>/,
+          # Truly-versioned paths (cli/v<semver>/,
           # npm/<channel>/rediacc-cli-<semver>.tgz) keep their 1-year
           # immutable cache; those are handled by upload-to-r2.sh.
           CC_MUTABLE="no-cache"
@@ -460,7 +431,6 @@ jobs:
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32  # v4
         with:
           subject-path: |
-            dist/desktop/**/*
             dist/cli/**/*
             dist/packages/**/*
 

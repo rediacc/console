@@ -4,7 +4,7 @@ description: "Краткая справка по rdc: конфиги, репоз
 category: Guides
 order: 3
 language: ru
-sourceHash: "bc52628ba870dfbb"
+sourceHash: "8cde2c78200d226a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -102,7 +102,6 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 | `rdc config machine setup --name <machine>` | Запустить первоначальное развертывание машины |
 | `rdc machine prune --name <machine>` | Удалить неиспользуемые ресурсы с машины |
 | `rdc machine deprovision --name <machine>` | Полностью депровизионировать машину |
-| `rdc machine vault-status --name <machine>` | Показать состояние хранилища LUKS |
 
 ## Терминал и синхронизация
 

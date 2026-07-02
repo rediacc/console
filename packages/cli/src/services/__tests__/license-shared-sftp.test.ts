@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import type { SFTPClient } from '../../shared-desktop/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
 import { readMachineActivationStatus, refreshRepoLicenseIdentity } from '../license.js';
 
@@ -16,7 +16,7 @@ const { mockExec, mockExecStreaming, mockConnect, mockClose, mockSftpConstructor
   })
 );
 
-vi.mock('@rediacc/shared-desktop/sftp', () => ({
+vi.mock('../../shared-desktop/sftp/index.js', () => ({
   SFTPClient: class MockSFTPClient {
     connect = mockConnect;
     exec = mockExec;

@@ -8,7 +8,7 @@ const { mockSftpUploadFile, mockSftpUploadPaths, mockSftpDownloadFile, mockSftpD
     mockSftpDownloadDirectory: vi.fn(() => Promise.resolve('download-dir-result')),
   }));
 
-vi.mock('@rediacc/shared-desktop/sync', async (orig) => {
+vi.mock('../../shared-desktop/sync/index.js', async (orig) => {
   const real = await orig();
   return {
     ...real,

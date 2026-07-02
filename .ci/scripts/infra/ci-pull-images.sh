@@ -9,8 +9,7 @@
 # Environment variables:
 #   GITHUB_TOKEN  - GitHub token for authentication (required)
 #   GITHUB_ACTOR  - GitHub username (required)
-#   API_TAG       - Tag for API image (default: latest)
-#   BRIDGE_TAG    - Tag for bridge image (default: latest)
+#   RENET_TAG     - Tag for renet image (default: latest)
 #   WEB_TAG       - Tag for web image (default: latest)
 #   DOCKER_REGISTRY - Registry URL (default: ghcr.io/rediacc/elite)
 
@@ -40,8 +39,7 @@ fi
 # Set defaults
 DOCKER_REGISTRY="${DOCKER_REGISTRY:-ghcr.io/rediacc/elite}"
 TAG="${TAG:-latest}"
-API_TAG="${API_TAG:-$TAG}"
-BRIDGE_TAG="${BRIDGE_TAG:-$TAG}"
+RENET_TAG="${RENET_TAG:-$TAG}"
 WEB_TAG="${WEB_TAG:-$TAG}"
 
 # Use subshell to contain credential exposure
@@ -54,11 +52,8 @@ WEB_TAG="${WEB_TAG:-$TAG}"
     log_step "Pulling web:${WEB_TAG}..."
     docker pull --quiet "${DOCKER_REGISTRY}/web:${WEB_TAG}"
 
-    log_step "Pulling api:${API_TAG}..."
-    docker pull --quiet "${DOCKER_REGISTRY}/api:${API_TAG}"
-
-    log_step "Pulling bridge:${BRIDGE_TAG}..."
-    docker pull --quiet "${DOCKER_REGISTRY}/bridge:${BRIDGE_TAG}"
+    log_step "Pulling renet:${RENET_TAG}..."
+    docker pull --quiet "${DOCKER_REGISTRY}/renet:${RENET_TAG}"
 
     log_info "All images pulled successfully"
 )

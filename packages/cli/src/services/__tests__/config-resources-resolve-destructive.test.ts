@@ -36,7 +36,7 @@ vi.mock('../config-base.js', () => ({
 
 vi.mock('../../types/index.js', async () => {
   const actual = await vi.importActual<Record<string, unknown>>('../../types/index.js');
-  return { ...actual, hasCloudCredentials: () => false };
+  return { ...actual };
 });
 
 describe('configService.resolveDestructiveTarget (issue #495)', { timeout: 30000 }, () => {

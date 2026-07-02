@@ -4,7 +4,7 @@ description: "Создание конфигурации, добавление м
 category: "Guides"
 order: 3
 language: ru
-sourceHash: "b3c8c42db1b8d99b"
+sourceHash: "19a208e453f7d742"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -104,7 +104,7 @@ rdc term connect -m server-1 -c "hostname"
 rdc doctor
 ```
 
-> **Только для облачного адаптера**: команда `rdc machine test-connection` обеспечивает детальную диагностику SSH, но требует облачного адаптера. Для локального адаптера используйте `rdc term` или `ssh` напрямую.
+> **Совет**: чтобы проверить SSH-подключение, выполните `rdc term connect -m <machine> -c "hostname"` или используйте `ssh` напрямую.
 
 ## Настройка инфраструктуры
 
@@ -233,7 +233,7 @@ rdc config provider list
 
 ```bash
 rdc config field set --pointer /defaults/machine --new '"server-1"'   # Машина по умолчанию
-rdc config set --key team --value my-team                   # Команда по умолчанию (облачный адаптер, экспериментальный)
+rdc config set --key team --value my-team                   # Команда по умолчанию для хранилища конфигурации
 ```
 
 После установки машины по умолчанию можно опускать `-m server-1` в командах:

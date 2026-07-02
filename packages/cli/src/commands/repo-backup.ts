@@ -1,7 +1,5 @@
-import { DEFAULTS } from '@rediacc/shared/config';
 import { Option, type Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { getStateProvider } from '../providers/index.js';
 import { configService } from '../services/config-resources.js';
 import { localExecutorService, type LocalExecuteResult } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
@@ -12,13 +10,7 @@ import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { resolveRemoteName } from '../utils/remote-resolve.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
-import {
-  type CreateActionOptions,
-  coerceCliParams,
-  createAction,
-  traceAction,
-  validateFunctionParams,
-} from './queue.js';
+import { coerceCliParams, validateFunctionParams } from './function-params.js';
 import {
   type BackupListEntry,
   fetchBackupList,
@@ -74,16 +66,13 @@ export async function resolveExtraMachines(
  * Returns whether the execution succeeded so callers can gate follow-up state
  * writes (e.g. recording an auto-delta base only after a successful push),
  * plus the local execution result so callers can parse machine-readable
- * stdout lines (e.g. backup push transfer stats). `local` is undefined on
- * the cloud provider path.
+ * stdout lines (e.g. backup push transfer stats).
  */
 async function executeFunction(
   functionName: string,
   params: Record<string, unknown>,
-  options: BackupRunOptions,
-  program?: Command
+  options: BackupRunOptions
 ): Promise<{ ok: boolean; local?: LocalExecuteResult }> {
-  const provider = await getStateProvider();
   const machineName = options.machine;
 
   if (!machineName) {
@@ -92,21 +81,6 @@ async function executeFunction(
 
   const coerced = coerceCliParams(functionName, params as Record<string, string>);
   validateFunctionParams(functionName, coerced);
-
-  if (provider.isCloud) {
-    const createOptions: CreateActionOptions = {
-      function: functionName,
-      machine: machineName,
-      priority: String(DEFAULTS.PRIORITY.QUEUE_PRIORITY),
-      param: Object.entries(coerced).map(([k, v]) => `${k}=${v}`),
-    };
-    const result = await createAction(createOptions);
-    if (options.watch && result.taskId && program) {
-      outputService.info(t('commands.shortcuts.run.watching'));
-      await traceAction(result.taskId, { watch: true, interval: '2000' }, program);
-    }
-    return { ok: true };
-  }
 
   outputService.info(
     t('commands.shortcuts.run.executingLocal', { function: functionName, machine: machineName })
@@ -303,11 +277,7 @@ async function preparePush(
 /**
  * Push a single repo backup.
  */
-async function pushSingleRepo(
-  repo: string,
-  options: Record<string, unknown>,
-  repoCommand: Command
-): Promise<void> {
+async function pushSingleRepo(repo: string, options: Record<string, unknown>): Promise<void> {
   await assertCommandPolicy(CMD.REPO_PUSH, repo);
   const repoConfig = await configService.getRepository(repo);
   if (!repoConfig) {
@@ -325,7 +295,7 @@ async function pushSingleRepo(
 
   // Show the human-readable target name; the dest GUID/path is renet detail.
   outputService.info(t('commands.repo.push.pushing', { repo, dest: targetName }));
-  const { ok, local } = await executeFunction('backup_push', params, options, repoCommand);
+  const { ok, local } = await executeFunction('backup_push', params, options);
   if (ok) {
     reportPushStats(repo, targetName, resolvedType, local, !!options.json);
   }
@@ -383,11 +353,7 @@ async function postPullDeploy(
 /**
  * Pull a single repo backup.
  */
-async function pullSingleRepo(
-  repo: string,
-  options: Record<string, unknown>,
-  repoCommand: Command
-): Promise<void> {
+async function pullSingleRepo(repo: string, options: Record<string, unknown>): Promise<void> {
   await assertCommandPolicy(CMD.REPO_PULL, repo);
   const params: Record<string, unknown> = { repository: repo };
 
@@ -411,7 +377,7 @@ async function pullSingleRepo(
   }
 
   outputService.info(t('commands.repo.pull.pulling', { repo }));
-  await executeFunction('backup_pull', params, options, repoCommand);
+  await executeFunction('backup_pull', params, options);
 
   if (options.up && targetMachine) {
     await postPullDeploy(repo, targetMachine, options);
@@ -453,13 +419,13 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
       try {
         const repo = options.name;
         if (repo) {
-          await pushSingleRepo(repo, options, repoCommand);
+          await pushSingleRepo(repo, options);
         } else {
           await runBatchOperation(
             'Push',
             options.machine,
             !!options.yes,
-            (name) => pushSingleRepo(name, options, repoCommand),
+            (name) => pushSingleRepo(name, options),
             options
           );
         }
@@ -492,13 +458,13 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
       try {
         const repo = options.name;
         if (repo) {
-          await pullSingleRepo(repo, options, repoCommand);
+          await pullSingleRepo(repo, options);
         } else {
           await runBatchOperation(
             'Pull',
             options.machine,
             !!options.yes,
-            (name) => pullSingleRepo(name, options, repoCommand),
+            (name) => pullSingleRepo(name, options),
             options
           );
         }

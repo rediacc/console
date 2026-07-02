@@ -42,7 +42,7 @@ const {
   mockVerifyMachineSetup: vi.fn(),
 }));
 
-vi.mock('@rediacc/shared-desktop/sftp', () => ({
+vi.mock('../../shared-desktop/sftp/index.js', () => ({
   SFTPClient: class MockSFTPClient {
     connect = mockConnect;
     close = mockClose;

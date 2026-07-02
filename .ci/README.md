@@ -27,23 +27,20 @@ This directory contains reusable CI scripts that work with both GitHub Actions a
 │   │   ├── download-url.sh     # Download tunnel URL artifact
 │   │   └── verify.sh           # Verify tunnel connectivity
 │   ├── env/
-│   │   ├── create-cli-env.sh   # Create CLI test .env
-│   │   └── create-e2e-env.sh   # Create E2E test .env
+│   │   └── create-bridge-env.sh # Create bridge test .env
 │   ├── signal/
 │   │   └── create-complete.sh  # Create completion signal files
 │   ├── test/
 │   │   ├── run-unit.sh         # Run unit tests
-│   │   ├── run-e2e.sh          # Run E2E tests
-│   │   └── run-cli.sh          # Run CLI tests
+│   │   └── run-bridge.sh       # Run bridge (renet) tests
 │   ├── docker/
 │   │   ├── build-image.sh      # Build Docker images (supports --ci-tag)
 │   │   └── retag-image.sh      # Re-tag CI images to semantic version
 │   ├── housekeeping/
 │   │   └── cleanup-versions.sh # Cleanup old releases, tags, and GHCR packages
 │   └── build/
-│       ├── build-web.sh        # Build web application
 │       ├── build-cli.sh        # Build CLI
-│       └── build-desktop.sh    # Build desktop application
+│       └── build-renet.sh      # Build renet binary
 └── README.md
 ```
 
@@ -61,8 +58,8 @@ All scripts are designed to be run from the repository root:
 # Run unit tests
 .ci/scripts/test/run-unit.sh
 
-# Run E2E tests for specific browsers
-.ci/scripts/test/run-e2e.sh --projects chromium firefox
+# Run bridge (renet) tests
+.ci/scripts/test/run-bridge.sh
 ```
 
 ## Versioning
@@ -89,7 +86,7 @@ For CI, write the computed version to an output file:
 
 Version commits use `.ci/scripts/version/commit.sh`, which includes `[skip ci]` by default to prevent CI loops.
 
-Submodule version bumps (renet/middleware) are handled via:
+Submodule version bumps (renet) are handled via:
 
 ```bash
 .ci/scripts/version/bump-submodules.sh --version 1.2.3

@@ -53,257 +53,6 @@
         }
       }
     },
-    "auth": {
-      "description": "Authentication commands",
-      "login": {
-        "authenticating": "Authenticating...",
-        "description": "Authenticate with Rediacc",
-        "success": "Login successful! Saved to config \"{{context}}\"",
-        "tfaPrompt": "Enter 2FA code:",
-        "tfaRequired": "Two-factor authentication required",
-        "tfaVerified": "2FA verified successfully",
-        "verifyingTfa": "Verifying 2FA..."
-      },
-      "logout": {
-        "description": "Clear stored credentials",
-        "loggingOut": "Logging out...",
-        "success": "Logged out successfully"
-      },
-      "status": {
-        "description": "Check current authentication status",
-        "authenticated": "Authenticated as: {{email}}",
-        "notAuthenticated": "Not authenticated. Run: rdc auth login"
-      },
-      "register": {
-        "description": "Register a new organization and user account",
-        "nextStep": "Then run: rdc auth activate -e <email> -p <password> --code <code>",
-        "registering": "Registering account...",
-        "submitted": "Registration submitted",
-        "success": "Registration successful! Check your email for the activation code."
-      },
-      "activate": {
-        "activated": "Account activated",
-        "activating": "Activating account...",
-        "description": "Activate account with verification code",
-        "success": "Account activated! You can now login with: rdc auth login"
-      },
-      "tfa": {
-        "description": "Two-factor authentication management",
-        "disable": {
-          "confirm": "Are you sure you want to disable TFA?",
-          "description": "Disable two-factor authentication",
-          "disabling": "Disabling TFA...",
-          "success": "TFA disabled successfully"
-        },
-        "enable": {
-          "addToApp": "Add this to your authenticator app",
-          "description": "Enable two-factor authentication",
-          "enabling": "Enabling TFA...",
-          "initiated": "TFA setup initiated",
-          "setupKey": "Setup key: {{key}}",
-          "success": "TFA enabled successfully"
-        },
-        "status": {
-          "description": "Check TFA status",
-          "disabled": "TFA is not enabled",
-          "enabled": "TFA is enabled"
-        }
-      },
-      "token": {
-        "description": "Token management",
-        "fork": {
-          "creating": "Creating forked token...",
-          "description": "Create a forked token for another application",
-          "success": "Token created successfully",
-          "tokenValue": "Token: {{token}}"
-        },
-        "list": {
-          "description": "List active tokens/sessions",
-          "fetching": "Fetching tokens...",
-          "noTokens": "No active tokens"
-        },
-        "revoke": {
-          "description": "Revoke a specific token",
-          "revoking": "Revoking token...",
-          "success": "Token revoked successfully"
-        }
-      }
-    },
-    "audit": {
-      "description": "Audit log commands",
-      "log": {
-        "description": "View audit logs",
-        "fetching": "Fetching audit logs...",
-        "success": "Audit logs fetched"
-      },
-      "trace": {
-        "description": "Trace audit history for an entity",
-        "fetching": "Fetching entity audit trace...",
-        "success": "Audit trace fetched"
-      },
-      "history": {
-        "description": "View entity history",
-        "fetching": "Fetching entity history...",
-        "success": "History fetched"
-      }
-    },
-    "bridge": {
-      "description": "Bridge management",
-      "list": {
-        "description": "List bridges",
-        "fetching": "Fetching bridges..."
-      },
-      "resetAuth": {
-        "description": "Reset bridge authorization token",
-        "newToken": "New token: {{token}}",
-        "resetting": "Resetting authorization for bridge \"{{name}}\"...",
-        "success": "Authorization reset"
-      }
-    },
-    "ceph": {
-      "description": "Ceph distributed storage management",
-      "cluster": {
-        "description": "Ceph cluster management",
-        "list": {
-          "description": "List Ceph clusters",
-          "fetching": "Fetching Ceph clusters...",
-          "success": "Clusters fetched"
-        },
-        "create": {
-          "description": "Create a new Ceph cluster",
-          "creating": "Creating Ceph cluster \"{{name}}\"...",
-          "success": "Ceph cluster \"{{name}}\" created"
-        },
-        "delete": {
-          "description": "Delete a Ceph cluster",
-          "confirm": "Delete Ceph cluster \"{{name}}\"?",
-          "deleting": "Deleting Ceph cluster \"{{name}}\"...",
-          "success": "Ceph cluster \"{{name}}\" deleted"
-        },
-        "machines": {
-          "description": "List machines in a Ceph cluster",
-          "fetching": "Fetching cluster machines...",
-          "success": "Cluster machines fetched"
-        },
-        "vault": {
-          "description": "Ceph cluster vault management",
-          "get": {
-            "description": "Get cluster vault data",
-            "fetching": "Fetching cluster vault...",
-            "success": "Cluster vault fetched"
-          },
-          "update": {
-            "description": "Update cluster vault data",
-            "updating": "Updating cluster vault for \"{{name}}\"...",
-            "success": "Cluster vault for \"{{name}}\" updated"
-          }
-        }
-      },
-      "pool": {
-        "description": "Ceph pool management",
-        "list": {
-          "description": "List Ceph pools",
-          "fetching": "Fetching Ceph pools...",
-          "success": "Pools fetched"
-        },
-        "create": {
-          "description": "Create a new Ceph pool",
-          "creating": "Creating Ceph pool \"{{name}}\"...",
-          "success": "Ceph pool \"{{name}}\" created"
-        },
-        "delete": {
-          "description": "Delete a Ceph pool",
-          "confirm": "Delete Ceph pool \"{{name}}\"?",
-          "deleting": "Deleting Ceph pool \"{{name}}\"...",
-          "success": "Ceph pool \"{{name}}\" deleted"
-        },
-        "vault": {
-          "description": "Ceph pool vault management",
-          "get": {
-            "description": "Get pool vault data",
-            "fetching": "Fetching pool vault...",
-            "success": "Pool vault fetched"
-          },
-          "update": {
-            "description": "Update pool vault data",
-            "updating": "Updating pool vault for \"{{name}}\"...",
-            "success": "Pool vault for \"{{name}}\" updated"
-          }
-        }
-      },
-      "image": {
-        "description": "Ceph RBD image management",
-        "list": {
-          "description": "List RBD images",
-          "fetching": "Fetching RBD images...",
-          "success": "Images fetched"
-        },
-        "create": {
-          "description": "Create a new RBD image",
-          "creating": "Creating RBD image \"{{name}}\"...",
-          "success": "RBD image \"{{name}}\" created"
-        },
-        "delete": {
-          "description": "Delete an RBD image",
-          "confirm": "Delete RBD image \"{{name}}\"?",
-          "deleting": "Deleting RBD image \"{{name}}\"...",
-          "success": "RBD image \"{{name}}\" deleted"
-        }
-      },
-      "snapshot": {
-        "description": "Ceph RBD snapshot management",
-        "list": {
-          "description": "List RBD snapshots",
-          "fetching": "Fetching RBD snapshots...",
-          "success": "Snapshots fetched"
-        },
-        "create": {
-          "description": "Create a new RBD snapshot",
-          "creating": "Creating RBD snapshot \"{{name}}\"...",
-          "success": "RBD snapshot \"{{name}}\" created"
-        },
-        "delete": {
-          "description": "Delete an RBD snapshot",
-          "confirm": "Delete RBD snapshot \"{{name}}\"?",
-          "deleting": "Deleting RBD snapshot \"{{name}}\"...",
-          "success": "RBD snapshot \"{{name}}\" deleted"
-        }
-      },
-      "clone": {
-        "description": "Ceph RBD clone management",
-        "list": {
-          "description": "List RBD clones",
-          "fetching": "Fetching RBD clones...",
-          "success": "Clones fetched"
-        },
-        "create": {
-          "description": "Create a new RBD clone from snapshot",
-          "creating": "Creating RBD clone \"{{name}}\"...",
-          "success": "RBD clone \"{{name}}\" created"
-        },
-        "delete": {
-          "description": "Delete an RBD clone",
-          "confirm": "Delete RBD clone \"{{name}}\"?",
-          "deleting": "Deleting RBD clone \"{{name}}\"...",
-          "success": "RBD clone \"{{name}}\" deleted"
-        },
-        "machines": {
-          "description": "List machines assigned to a clone",
-          "fetching": "Fetching clone machines...",
-          "success": "Clone machines fetched"
-        },
-        "assign": {
-          "description": "Assign machines to a clone",
-          "assigning": "Assigning machines to clone \"{{name}}\"...",
-          "success": "Machines assigned to clone \"{{name}}\""
-        },
-        "unassign": {
-          "description": "Remove machines from a clone",
-          "unassigning": "Removing machines from clone \"{{name}}\"...",
-          "success": "Machines removed from clone \"{{name}}\""
-        }
-      }
-    },
     "doctor": {
       "descriptionShort": "Diagnose CLI environment and renet integration",
       "description": "Run diagnostic checks on the CLI environment: Node.js version, renet binary availability, config file validity, SSH key status, and network connectivity. Outputs a structured health report with pass/fail indicators.",
@@ -797,12 +546,6 @@
         "success": "Machine \"{{name}}\" deleted",
         "confirm": "Are you sure you want to delete machine \"{{name}}\"?"
       },
-      "vault": {
-        "description": "Machine vault management (cloud adapter only)"
-      },
-      "vault-status": {
-        "description": "Show parsed vault status for a machine (cloud adapter only)"
-      },
       "health": {
         "description": "Check machine health for CI/CD pipelines",
         "fetching": "Fetching machine health...",
@@ -868,54 +611,12 @@
         "storageHealthPoolSummary": "Pool: {{used}} used, {{free}} free ({{percent}}% full)",
         "storageHealthPoolSnapshots": "Backup snapshots pin {{pinned}} ({{active}} active, {{stale}} stale; stale ones are removed by 'rdc machine prune')"
       },
-      "vaultStatus": {
-        "description": "Show parsed vault status for a machine",
-        "fetching": "Fetching machine...",
-        "fetched": "Machine fetched",
-        "header": "\nVault Status for {{name}}:",
-        "status": "  Status: {{status}}",
-        "systemSection": "\nSystem:",
-        "systemUptime": "  Uptime: {{uptime}}",
-        "systemHostname": "  Hostname: {{hostname}}",
-        "systemMemory": "  Memory: {{used}} / {{total}} ({{percent}})",
-        "systemDisk": "  Disk: {{used}} / {{total}} ({{percent}})",
-        "systemDatastore": "  Datastore: {{used}} / {{total}} ({{percent}})",
-        "totalRepos": "  Total Repositories: {{count}}",
-        "mounted": "  Mounted: {{count}}",
-        "dockerRunning": "  Docker Running: {{count}}",
-        "deployedRepos": "\nDeployed Repositories:",
-        "repoMounted": "    Mounted: {{mounted}}",
-        "repoDocker": "    Docker: {{status}}"
-      },
       "repos": {
         "description": "List deployed repositories on a machine (name, GUID, size, mount status, Docker state, container count, disk usage, modified date, Rediaccfile present). JSON nests containers and services under each repo. Use --search to filter by name or GUID",
         "descriptionShort": "List deployed repositories on a machine",
         "fetching": "Fetching machine...",
         "fetched": "Machine fetched",
         "noRepos": "No repositories deployed on this machine"
-      },
-      "testConnection": {
-        "description": "Test SSH connection to a machine and capture host key",
-        "testing": "Testing SSH connection to {{user}}@{{ip}}:{{port}}...",
-        "creating": "Creating SSH test task...",
-        "created": "Task created",
-        "taskId": "Task ID: {{taskId}}",
-        "waiting": "Waiting for SSH test result...",
-        "waitingTime": "Waiting for SSH test result... ({{seconds}}s)",
-        "testResult": "SSH test {{result}}",
-        "rawOutput": "Raw output:",
-        "error": "Error: {{error}}",
-        "timeout": "Timeout waiting for result",
-        "timeoutMessage": "Test connection timed out. Check queue trace for details.",
-        "results": "SSH Test Results:",
-        "statusResult": "  Status: {{status}}",
-        "authMethod": "  Auth Method: {{method}}",
-        "sshKeyConfigured": "  SSH Key Configured: {{status}}",
-        "publicKeyDeployed": "  Public Key Deployed: {{status}}",
-        "knownHosts": "  Known Hosts: {{entry}}",
-        "message": "  Message: {{message}}",
-        "saving": "Saving known_hosts to machine \"{{machine}}\" vault...",
-        "saved": "Known hosts saved to machine vault"
       },
       "provision": {
         "description": "Provision a new machine on a cloud provider using OpenTofu",
@@ -1012,57 +713,6 @@
         "datastorePrunedSummary": "Pruned {{count}} orphaned datastore resource(s)"
       }
     },
-    "organization": {
-      "description": "Organization management commands",
-      "info": {
-        "description": "Get organization information",
-        "fetching": "Fetching organization info...",
-        "notFound": "No organization info found",
-        "success": "Organization info fetched"
-      },
-      "dashboard": {
-        "description": "Get organization dashboard data",
-        "fetching": "Fetching dashboard...",
-        "success": "Dashboard fetched"
-      },
-      "vault": {
-        "description": "Organization vault management",
-        "get": {
-          "description": "Get organization vault data",
-          "fetching": "Fetching organization vault...",
-          "notFound": "No organization vault found",
-          "success": "Vault fetched"
-        },
-        "list": {
-          "description": "List all vault types",
-          "fetching": "Fetching vaults...",
-          "success": "Vaults fetched"
-        },
-        "update": {
-          "description": "Update organization vault data",
-          "success": "Organization vault updated",
-          "updating": "Updating organization vault..."
-        }
-      },
-      "export": {
-        "description": "Export organization data",
-        "exported": "Exported to {{path}}",
-        "exporting": "Exporting organization data...",
-        "success": "Export complete"
-      },
-      "import": {
-        "description": "Import organization data",
-        "importing": "Importing organization data...",
-        "success": "Import complete"
-      },
-      "maintenance": {
-        "description": "Enable or disable maintenance mode (blocks non-admin logins)",
-        "disabled": "Maintenance mode disabled",
-        "disabling": "Disabling maintenance mode...",
-        "enabled": "Maintenance mode enabled",
-        "enabling": "Enabling maintenance mode..."
-      }
-    },
     "ops": {
       "descriptionShort": "Experimental VM operations (provision, manage, destroy)",
       "description": "Local VM provisioning and management using KVM/QEMU/Hyper-V (platform auto-detected). Not for remote machines — use `machine` for those. Key subcommands: up (start VMs), down (stop), status (list running VMs), ssh (connect to VM), setup (install prerequisites), check (verify host readiness).",
@@ -1153,192 +803,6 @@
       "status": {
         "description": "Show datastore backend, size, usage, mount status, and cow_mode (if forked)",
         "starting": "Checking datastore status on \"{{machine}}\"..."
-      }
-    },
-    "protocol": {
-      "description": "Register and handle {{scheme}}:// protocol URLs",
-      "register": {
-        "description": "Register the protocol handler on the system",
-        "systemWide": "Registering protocol handler system-wide...",
-        "adminRequired": "Note: This may require administrator/root privileges.",
-        "currentUser": "Registering protocol handler for current user...",
-        "registering": "Registering protocol handler...",
-        "success": "\nSuccessfully registered {{scheme}}:// protocol handler.",
-        "exampleUrls": "\nYou can now open URLs like:"
-      },
-      "unregister": {
-        "description": "Unregister the protocol handler from the system",
-        "unregistering": "Unregistering protocol handler...",
-        "success": "\nSuccessfully unregistered {{scheme}}:// protocol handler."
-      },
-      "status": {
-        "description": "Show protocol handler registration status",
-        "title": "\nProtocol Handler Status",
-        "platform": "Platform:",
-        "supported": "Supported:",
-        "registered": "Registered:",
-        "userRegistration": "User Registration:",
-        "systemRegistration": "System Registration:",
-        "handlerCommand": "Handler Command:",
-        "error": "\nError: {{error}}",
-        "registerHint": "\nTo register the protocol handler, run:"
-      },
-      "open": {
-        "description": "Open a {{scheme}}:// URL and execute the action",
-        "parsedUrl": "\nParsed Protocol URL:",
-        "token": "Token:",
-        "team": "Team:",
-        "machine": "Machine:",
-        "repository": "Repository:",
-        "action": "Action:",
-        "params": "Params:",
-        "cliCommand": "\nEquivalent CLI command:",
-        "executing": "\nExecuting action...\n"
-      },
-      "build": {
-        "description": "Build a {{scheme}}:// URL from components"
-      },
-      "parse": {
-        "description": "Parse a {{scheme}}:// URL and show components",
-        "parsedUrl": "\nParsed Protocol URL:",
-        "cliCommand": "\nCLI Command:"
-      }
-    },
-    "permission": {
-      "description": "Permission management commands",
-      "group": {
-        "description": "Permission group management",
-        "list": {
-          "description": "List all permission groups",
-          "fetching": "Fetching permission groups...",
-          "success": "Permission groups fetched"
-        },
-        "create": {
-          "description": "Create a new permission group",
-          "creating": "Creating permission group \"{{name}}\"...",
-          "success": "Permission group \"{{name}}\" created"
-        },
-        "delete": {
-          "confirm": "Delete permission group \"{{name}}\"?",
-          "deleting": "Deleting permission group \"{{name}}\"...",
-          "description": "Delete a permission group",
-          "success": "Permission group \"{{name}}\" deleted"
-        },
-        "show": {
-          "description": "Show permission group details",
-          "fetching": "Fetching permission group details...",
-          "success": "Details fetched"
-        }
-      },
-      "add": {
-        "adding": "Adding permission \"{{permission}}\" to group \"{{group}}\"...",
-        "description": "Add a permission to a group",
-        "success": "Permission added"
-      },
-      "remove": {
-        "description": "Remove a permission from a group",
-        "removing": "Removing permission \"{{permission}}\" from group \"{{group}}\"...",
-        "success": "Permission removed"
-      }
-    },
-    "queue": {
-      "description": "Queue management",
-      "list": {
-        "description": "List queue items",
-        "fetching": "Fetching queue items...",
-        "success": "Queue items fetched"
-      },
-      "create": {
-        "description": "Create a queue item",
-        "buildingVault": "Building queue vault...",
-        "vaultBuilt": "Queue vault built",
-        "creating": "Creating queue item for function '{{function}}'...",
-        "success": "Queue item created",
-        "taskId": "Task ID: {{taskId}}"
-      },
-      "cancel": {
-        "description": "Cancel a queue item",
-        "cancelling": "Cancelling task {{taskId}}...",
-        "success": "Task cancelled"
-      },
-      "retry": {
-        "description": "Retry a failed queue item",
-        "retrying": "Retrying task {{taskId}}...",
-        "success": "Task queued for retry"
-      },
-      "trace": {
-        "description": "Trace queue item execution",
-        "fetching": "Fetching queue trace...",
-        "fetched": "Queue trace fetched",
-        "watching": "Watching task progress...",
-        "age": "Age",
-        "finalStatus": "Final status: {{status}}",
-        "errorDetails": "Error details:",
-        "noTrace": "No trace information available"
-      },
-      "delete": {
-        "description": "Delete a queue item",
-        "confirm": "Are you sure you want to delete task {{taskId}}?",
-        "deleting": "Deleting task {{taskId}}...",
-        "success": "Task deleted"
-      }
-    },
-    "region": {
-      "description": "Region management",
-      "list": {
-        "description": "List regions",
-        "fetching": "Fetching regions..."
-      }
-    },
-    "repository": {
-      "description": "Repository management commands",
-      "list": {
-        "description": "List repositories",
-        "fetching": "Fetching repositories...",
-        "success": "Repositories fetched"
-      },
-      "create": {
-        "description": "Create a new repository",
-        "creating": "Creating repository \"{{name}}\"...",
-        "success": "Repository \"{{name}}\" created"
-      },
-      "rename": {
-        "description": "Rename a repository",
-        "renaming": "Renaming repository \"{{oldName}}\" to \"{{newName}}\"...",
-        "success": "Repository renamed to \"{{name}}\""
-      },
-      "delete": {
-        "description": "Delete a repository",
-        "checkingRelationships": "Checking repository relationships...",
-        "relationshipsChecked": "Repository relationships checked",
-        "grandRepoWarning": "This is a grand repository (credential). Deleting it is irreversible.",
-        "confirm": "Delete repository \"{{name}}\"? This cannot be undone.",
-        "deleting": "Deleting repository \"{{name}}\"...",
-        "success": "Repository \"{{name}}\" deleted"
-      },
-      "promote": {
-        "description": "Promote a fork to grand status",
-        "checkingRelationships": "Checking repository relationships...",
-        "relationshipsChecked": "Repository relationships checked",
-        "separateInfo": "\nThis will separate \"{{name}}\" from grand repository \"{{grandName}}\"",
-        "siblingsInfo": "\n{{count}} sibling clone(s) will remain linked to the original grand:",
-        "confirmPromote": "\nProceed with promotion?",
-        "promoting": "Promoting repository \"{{name}}\"...",
-        "success": "Repository \"{{name}}\" promoted to grand status"
-      },
-      "vault": {
-        "description": "Repository vault management",
-        "get": {
-          "description": "Get repository vault data",
-          "fetching": "Fetching repository vault...",
-          "success": "Vault fetched",
-          "notFound": "No repository vault found"
-        },
-        "update": {
-          "description": "Update repository vault data",
-          "updating": "Updating repository vault...",
-          "success": "Repository vault updated"
-        }
       }
     },
     "repo": {
@@ -1465,18 +929,19 @@
         "alreadyExists": "Repository \"{{name}}\" already exists in config"
       },
       "delete": {
-        "description": "Delete a repository (destroys containers, volumes, and encrypted image). Config entry is preserved. Use --archive-config to move credentials to deletedRepositories for recovery via 'config restore-archived'. Targets <name>:<tag>; a bare --name resolves to the grand <name>:latest and is refused when multiple repos share the base name — pass :tag explicitly to target a fork.",
-        "descriptionShort": "Delete a repository from a machine",
+        "archiveHint": "To archive credentials for recovery: rerun with --archive-config",
         "archiveOption": "Move config entry to deletedRepositories for later recovery",
-        "starting": "Deleting \"{{repository}}\" on \"{{machine}}\"...",
+        "archived": "Credential for \"{{repository}}\" archived",
+        "cloudBackupHint": "Cloud backups (if any) persist after delete. Remove orphaned cloud backups with: rdc storage prune --name <storage> -m {{machine}}",
         "completed": "Repository deleted",
         "configRetained": "Config entry for \"{{repository}}\" retained (repo may exist on other machines). To remove: rdc config repository remove --name {{repository}}",
-        "archiveHint": "To archive credentials for recovery: rerun with --archive-config",
-        "archived": "Credential for \"{{repository}}\" archived",
-        "restoreHint": "Restore with: rdc config restore-archived {{guid}}",
+        "confirm": "Delete repository \"{{repository}}\" on \"{{machine}}\"? This destroys its containers, volumes, and encrypted image.",
+        "description": "Delete a repository (destroys containers, volumes, and encrypted image). Config entry is preserved. Use --archive-config to move credentials to deletedRepositories for recovery via 'config restore-archived'. Targets <name>:<tag>; a bare --name resolves to the grand <name>:latest and is refused when multiple repos share the base name — pass :tag explicitly to target a fork.",
+        "descriptionShort": "Delete a repository from a machine",
+        "examples": "\nExamples:\n  $ rdc repo delete --name app -m server-1\n  $ rdc repo delete --name app:test -m server-1\n",
         "failed": "Repository deletion failed",
-        "cloudBackupHint": "Cloud backups (if any) persist after delete. Remove orphaned cloud backups with: rdc storage prune --name <storage> -m {{machine}}",
-        "examples": "\nExamples:\n  $ rdc repo delete --name app -m server-1\n  $ rdc repo delete --name app:test -m server-1\n"
+        "restoreHint": "Restore with: rdc config restore-archived {{guid}}",
+        "starting": "Deleting \"{{repository}}\" on \"{{machine}}\"..."
       },
       "commit": {
         "descriptionShort": "Freeze a working fork into a new immutable commit",
@@ -2027,36 +1492,6 @@
         }
       }
     },
-    "team": {
-      "description": "Team management",
-      "list": {
-        "description": "List teams",
-        "fetching": "Fetching teams..."
-      },
-      "create": {
-        "description": "Create a team",
-        "creating": "Creating team...",
-        "success": "Team \"{{name}}\" created"
-      },
-      "member": {
-        "description": "Team membership management",
-        "list": {
-          "description": "List team members",
-          "fetching": "Fetching team members...",
-          "success": "Members fetched"
-        },
-        "add": {
-          "description": "Add a user to a team",
-          "adding": "Adding {{email}} to team \"{{team}}\"...",
-          "success": "User added to team \"{{team}}\""
-        },
-        "remove": {
-          "description": "Remove a user from a team",
-          "removing": "Removing {{email}} from team \"{{team}}\"...",
-          "success": "User removed from team \"{{team}}\""
-        }
-      }
-    },
     "shortcuts": {
       "run": {
         "completedLocal": "Completed in {{duration}}ms",
@@ -2201,77 +1636,6 @@
         }
       }
     },
-    "user": {
-      "description": "User management commands",
-      "list": {
-        "description": "List all users",
-        "fetching": "Fetching users...",
-        "success": "Users fetched"
-      },
-      "create": {
-        "description": "Create a new user",
-        "creating": "Creating user \"{{email}}\"...",
-        "success": "User created",
-        "activationCode": "Activation code: {{code}}"
-      },
-      "activate": {
-        "description": "Activate a user account",
-        "activating": "Activating user \"{{email}}\"...",
-        "success": "User activated"
-      },
-      "deactivate": {
-        "description": "Deactivate a user account",
-        "confirm": "Deactivate user \"{{email}}\"?",
-        "deactivating": "Deactivating user \"{{email}}\"...",
-        "success": "User deactivated"
-      },
-      "reactivate": {
-        "description": "Reactivate a deactivated user account",
-        "reactivating": "Reactivating user \"{{email}}\"...",
-        "success": "User reactivated"
-      },
-      "updateEmail": {
-        "description": "Change a user's email address",
-        "updating": "Updating email for \"{{email}}\"...",
-        "success": "Email updated to \"{{email}}\""
-      },
-      "updatePassword": {
-        "description": "Change your password",
-        "updating": "Updating password...",
-        "success": "Password updated"
-      },
-      "updateLanguage": {
-        "description": "Set current user's preferred language",
-        "updating": "Updating language preference...",
-        "success": "Language updated to \"{{language}}\""
-      },
-      "exists": {
-        "description": "Check if a user exists",
-        "exists": "User \"{{email}}\" exists",
-        "notExists": "User \"{{email}}\" does not exist"
-      },
-      "vault": {
-        "description": "User vault management",
-        "get": {
-          "description": "Get current user vault data",
-          "fetching": "Fetching user vault...",
-          "success": "Vault fetched"
-        },
-        "update": {
-          "description": "Update current user vault data",
-          "updating": "Updating user vault...",
-          "success": "User vault updated"
-        }
-      },
-      "permission": {
-        "description": "User permission management",
-        "assign": {
-          "description": "Assign a permission group to a user",
-          "assigning": "Assigning \"{{group}}\" to user \"{{email}}\"...",
-          "success": "Permission assigned"
-        }
-      }
-    },
     "snapshot": {
       "description": "Manage BTRFS snapshots on remote machines"
     }
@@ -2338,7 +1702,6 @@
     "tfaVerificationFailed": "TFA verification failed",
     "authFailed": "Authentication failed",
     "authRequired": "Authentication required. Run: rdc auth login",
-    "bridgeRequired": "Bridge name required. Use --bridge or set default with: rdc config set --key bridge --value <name>",
     "contextNotFound": "Config \"{{name}}\" not found",
     "invalidCredentials": "Invalid credentials",
     "invalidEmail": "Please enter a valid email",
@@ -2457,8 +1820,6 @@
     "tokenExpired": "Token expired. Please login again.",
     "unexpectedError": "Unexpected error: {{message}}",
     "validationError": "Validation error: {{message}}",
-    "vaultDataRequired": "Vault data required. Use --vault <json> or pipe JSON via stdin.",
-    "vaultVersionRequired": "Vault version required. Use --vault-version <n>.",
     "agent": {
       "grandGuard": "\"{{name}}\" is a grand (production) repository. Agents cannot modify grand repositories directly.\n\nGrand repositories contain production data. Use a fork instead — forks are safe, isolated sandbox copies.\n\nWorkflow:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Operate on the fork (e.g., rdc repo up --name {{name}}:<tag-name> -m <machine>)\n  3. When done, the user can promote the fork with rdc repo takeover\n\nUser: to allow direct access, set REDIACC_ALLOW_GRAND_REPO={{name}} (or * for all repos) in your terminal before starting the agent session.",
       "grandGuardOverride": "\"{{name}}\" is a grand (production) repository. Agent-initiated overrides are not accepted.\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO — only the user can authorize this before the agent starts.\n\nUse a fork instead — forks are safe, isolated sandbox copies:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Operate on the fork\n  3. When done, the user can promote the fork with rdc repo takeover",
@@ -2729,16 +2090,6 @@
       "heading": "Overview",
       "text": "The **Rediacc CLI** (`rdc`) is a command-line interface for managing self-hosted infrastructure — machines, repositories, storage, backups, and more."
     },
-    "cloudFrontmatter": {
-      "title": "CLI Application (Cloud / Experimental)",
-      "description": "Cloud-only commands for the Rediacc CLI — authentication, teams, organizations, and multi-tenant management",
-      "category": "Reference"
-    },
-    "cloudPageTitle": "Rediacc CLI Reference (Cloud / Experimental)",
-    "cloudOverview": {
-      "heading": "Overview",
-      "text": "These commands require the **cloud adapter** (experimental) — activated when a config contains `apiUrl` and `token` fields. For the main CLI reference, see [CLI Application](/en/docs/cli-application)."
-    },
     "installation": {
       "heading": "Installation",
       "text": "Download the latest binary for your platform from the [Rediacc releases page](https://www.rediacc.com) or install via your package manager:"
@@ -2765,24 +2116,12 @@
       "note": "Note"
     },
     "sectionTitles": {
-      "auth": "Authentication",
       "config": "Config Management",
-      "organization": "Organization Management",
-      "user": "User Management",
-      "team": "Team Management",
-      "permission": "Permission Management",
-      "region": "Region Management",
-      "bridge": "Bridge Management",
       "machine": "Machine Management",
-      "repository": "Repository Management",
       "repo": "Repository Lifecycle",
       "storage": "Storage Management",
-      "queue": "Queue Operations",
       "vscode": "VS Code Integration",
       "term": "SSH Terminal Access",
-      "ceph": "Ceph Storage Management",
-      "audit": "Audit and Compliance",
-      "protocol": "Protocol Handler",
       "shortcuts": "Quick Commands (Shortcuts)",
       "update": "CLI Updates",
       "doctor": "System Diagnostics",
@@ -2812,43 +2151,15 @@
       "closing": "This makes it easy to integrate Rediacc CLI into scripts, CI/CD pipelines, and automation workflows."
     },
     "supplements": {
-      "auth": {
-        "tip": "Your authentication token is stored locally in your config. Use `--save-as` to store credentials under a named config for multiple environments.",
-        "register": {
-          "afterDescription": "After registration, check your email for the activation code."
-        }
-      },
       "config": {
         "afterDescription": "Config files store connection details (API URL, credentials, default team/region/bridge) so you can switch between environments quickly.",
-        "set": {
-          "tip": "Setting defaults means you don't need to pass `--team`, `--region`, or `--bridge` with every command."
-        },
         "init": {
           "afterDescription": "You can add machines directly:"
-        }
-      },
-      "organization": {
-        "maintenance": {
-          "warning": "When maintenance mode is enabled, non-admin users cannot log in."
         }
       },
       "machine": {
         "health": {
           "afterDescription": "The health command outputs system metrics, container status, service stability, and storage information — useful for CI/CD pipeline checks."
-        },
-        "testConnection": {
-          "tip": "Use `--save` to automatically persist the host key to the machine vault after a successful test."
-        }
-      },
-      "repository": {
-        "promote": {
-          "note": "Promoting a fork separates it from its grand (parent) repository, making it independent."
-        }
-      },
-      "queue": {
-        "afterDescription": "The queue system is at the heart of Rediacc's task execution. Every operation (deploy, backup, script execution) runs through the queue.",
-        "trace": {
-          "tip": "Use `--watch` to follow the task in real-time until it completes."
         }
       }
     }

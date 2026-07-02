@@ -4,7 +4,7 @@ description: "SOC 2-ga on asi lihtne: audiitorid tahavad tõendeid, et sinu kont
 category: "Legal"
 order: 2
 language: et
-sourceHash: "27d2366f84e21d8c"
+sourceHash: "9ba8477a07292a7d"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -32,7 +32,7 @@ Rediacc logib 70+ erinevat sündmusetüüpi - kasutajatoimingud, süsteemimuutus
 - **Litsentsimine**: hoidla litsentsi väljastamine, masina pesa jälgimine, tellimuse muutused
 - **Masina toimingud**: hoidla loomine/käivitamine/peatamine/kustutamine, hargnemine, varukoopia tõukamine/tõmbamine, faili sünkroonimine, terminaliseanssid
 
-Neid logisid saad kolmel viisil: haldusarmatuurlaud kasutaja-, meeskonna- ja kuupäevafiltreerimisega, organisatsiooniadministraatoritele portaali tegevusleht tüübi- ja kuupäevafiltreerimisega, või `rdc audit` CLI programmiliseks ekspordiks. Paiguta need oma tööriistadesse, integreeri kuhu tahad. Masina toimingud logitakse ka sinu süsteemilogidesse, nii et sul on kaitses sügavus.
+Neid logisid saad kahel viisil. Haldusarmatuurlaud kasutaja-, meeskonna- ja kuupäevafiltreerimisega. Portaali tegevusleht organisatsiooniadministraatoritele tüübi- ja kuupäevafiltreerimisega, koos JSON-ekspordiga, mida saad paigutada oma tööriistadesse. Masina toimingud logitakse ka sinu süsteemilogidesse, nii et sul on kaitses sügavus.
 
 ## Muudatuste haldus
 

@@ -4,7 +4,7 @@ description: "Référence rapide des commandes rdc : configurations, dépôts, m
 category: Guides
 order: 3
 language: fr
-sourceHash: "bc52628ba870dfbb"
+sourceHash: "8cde2c78200d226a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -102,7 +102,6 @@ Identifiants de déploiement en lecture seule. `get` retourne seulement un diges
 | `rdc config machine setup --name <machine>` | Exécuter le provisionnement initial de la machine |
 | `rdc machine prune --name <machine>` | Supprimer les ressources inutilisées de la machine |
 | `rdc machine deprovision --name <machine>` | Déprovisionner complètement une machine |
-| `rdc machine vault-status --name <machine>` | Afficher l'état du vault LUKS |
 
 ## Terminal et synchronisation
 

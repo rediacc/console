@@ -29,11 +29,7 @@ const TRANSLATIONS_DIR = path.join(ROOT_DIR, 'src', 'i18n', 'translations');
 const LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh', 'et', 'ko', 'pt', 'it'];
 
 // Auto-generated docs validated separately by validate-cli-docs.js
-const EXCLUDED_DOC_SLUGS = new Set([
-  'cli-application.md',
-  'cli-application-cloud.md',
-  'web-application.md',
-]);
+const EXCLUDED_DOC_SLUGS = new Set(['cli-application.md']);
 
 // Commands that exist in the CLI but are not exported to command-tree.json
 const TREE_UNLISTED_COMMANDS = new Set(['shortcuts']);

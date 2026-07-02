@@ -4,7 +4,7 @@ description: "Kiirviide rdc käskudele: konfiguratsioonid, hoidlad, masinad, sü
 category: Guides
 order: 3
 language: et
-sourceHash: "bc52628ba870dfbb"
+sourceHash: "8cde2c78200d226a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -102,7 +102,6 @@ Ainult kirjutatavad juurutamisaegsed mandaadid. `get` tagastab ainult kontrollsu
 | `rdc config machine setup --name <machine>` | Käivita masina algne provisioneerimine |
 | `rdc machine prune --name <machine>` | Eemalda kasutamata ressursid masinalt |
 | `rdc machine deprovision --name <machine>` | Tühjenda masin täielikult |
-| `rdc machine vault-status --name <machine>` | Kuva LUKS-võlvi olek |
 
 ## Terminal ja sünkroonimine
 

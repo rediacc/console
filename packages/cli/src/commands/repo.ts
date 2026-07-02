@@ -3,7 +3,7 @@ import {
   generateConnectionName,
   removePersistedKeys,
   removeSSHConfigEntry,
-} from '@rediacc/shared-desktop/vscode';
+} from '../shared-desktop/vscode/index.js';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
@@ -203,6 +203,7 @@ async function handleRepoDelete(
   options: {
     machine: string;
     archiveConfig?: boolean;
+    yes?: boolean;
     debug?: boolean;
     skipRouterRestart?: boolean;
     dryRun?: boolean;
@@ -226,6 +227,17 @@ async function handleRepoDelete(
         getOutputFormat()
       );
       return;
+    }
+
+    if (!options.yes) {
+      const { askConfirm } = await import('../utils/prompt.js');
+      const confirmed = await askConfirm(
+        t('commands.repo.delete.confirm', { repository: target, machine: options.machine })
+      );
+      if (!confirmed) {
+        outputService.info(t('status.cancelled'));
+        return;
+      }
     }
 
     outputService.info(
@@ -381,6 +393,7 @@ export function registerRepoCommands(program: Command): void {
     .requiredOption('--name <name>', t('options.name'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--archive-config', t('commands.repo.delete.archiveOption'))
+    .option('-y, --yes', t('options.yes'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .option('--dry-run', t('options.dryRun'))

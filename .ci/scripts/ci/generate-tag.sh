@@ -55,7 +55,7 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Examples:"
             echo "  $0                                    # -> 20260120-104603"
-            echo "  $0 --submodule private/middleware     # -> fb33b0f"
+            echo "  $0 --submodule private/renet          # -> fb33b0f"
             echo "  $0 --self                             # -> c909b05"
             exit 0
             ;;

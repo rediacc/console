@@ -2,7 +2,7 @@
 # Run unit tests for all packages
 # Usage: run-unit.sh [--coverage]
 #
-# Runs unit tests for @rediacc/shared, @rediacc/shared-desktop, @rediacc/web, @rediacc/cli
+# Runs unit tests for @rediacc/shared, @rediacc/cli
 #
 # Options:
 #   --coverage  Generate coverage report
@@ -28,18 +28,6 @@ log_step "Running unit tests..."
 log_step "Testing @rediacc/shared..."
 if ! npm run test -w @rediacc/shared; then
     log_error "@rediacc/shared tests failed"
-    exit 1
-fi
-
-log_step "Testing @rediacc/shared-desktop..."
-if ! npm run test -w @rediacc/shared-desktop; then
-    log_error "@rediacc/shared-desktop tests failed"
-    exit 1
-fi
-
-log_step "Testing @rediacc/web..."
-if ! npm run test:run -w @rediacc/web; then
-    log_error "@rediacc/web tests failed"
     exit 1
 fi
 

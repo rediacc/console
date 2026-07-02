@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import type { SFTPClient } from '../../shared-desktop/sftp/index.js';
 import { downloadCertCache } from '../cert-cache.js';
 
 const { mockLeaseExec, mockRelease, mockAcquire, mockConfigService } = vi.hoisted(() => {

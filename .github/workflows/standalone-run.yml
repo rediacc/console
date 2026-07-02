@@ -17,15 +17,11 @@ on:
         description: 'Docker image version tag (required for workflow_call)'
         type: string
         required: true
-      api-tag:
-        description: 'API image tag (overrides version for API)'
-        type: string
-        default: ''
       web-tag:
         description: 'Web image tag (overrides version for Web)'
         type: string
         default: ''
-      bridge-tag:
+      renet-tag:
         description: 'Bridge image tag (overrides version for Bridge)'
         type: string
         default: ''
@@ -151,17 +147,17 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
+          repositories: console,renet,account,sql,elite,homebrew-tap
 
       - name: Checkout with Submodules
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           submodules: recursive
           token: ${{ steps.app-token.outputs.token }}
@@ -170,20 +166,17 @@ jobs:
         run: |
           # Use reusable script to derive/validate base image tag
           # --version: explicit override (empty = auto-derive)
-          # --env-file: exports TAG, API_TAG, WEB_TAG, BRIDGE_TAG to GITHUB_ENV
+          # --env-file: exports TAG, WEB_TAG, RENET_TAG to GITHUB_ENV
           .ci/scripts/ci/derive-image-tag.sh \
             ${{ inputs.version && format('--version "{0}"', inputs.version) || '' }} \
             --env-file
 
           # Override individual tags if provided (CI passes separate tags)
-          if [[ -n "${{ inputs.api-tag }}" ]]; then
-            echo "API_TAG=${{ inputs.api-tag }}" >> $GITHUB_ENV
-          fi
           if [[ -n "${{ inputs.web-tag }}" ]]; then
             echo "WEB_TAG=${{ inputs.web-tag }}" >> $GITHUB_ENV
           fi
-          if [[ -n "${{ inputs.bridge-tag }}" ]]; then
-            echo "BRIDGE_TAG=${{ inputs.bridge-tag }}" >> $GITHUB_ENV
+          if [[ -n "${{ inputs.renet-tag }}" ]]; then
+            echo "RENET_TAG=${{ inputs.renet-tag }}" >> $GITHUB_ENV
           fi
 
       - name: Free disk space
@@ -204,9 +197,6 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           TAG: ${{ env.TAG }}
         run: .ci/scripts/infra/ci-pull-images.sh
-
-      - name: Install sqlcmd (go-sqlcmd)
-        run: sudo private/middleware/scripts/install-sqlcmd.sh
 
       # When debug or desktop is enabled we will strip private/renet/ down to
       # just bin/renet so a tmate/vnc user cannot read the source. Provision
@@ -317,16 +307,6 @@ jobs:
       # 3. .git/modules/private/renet removed (no source via git history)
       # 4. ELF symbol table stripped from the renet binary
       # 5. GITHUB_TOKEN not present (images pre-pulled, no auth needed from here)
-
-      - name: Start Backend Services
-        id: backend
-        uses: ./.github/actions/start-backend
-        with:
-          keep-alive: 'true'
-          ci-mode: ${{ inputs.ci-mode && 'true' || 'false' }}
-        env:
-          TAG: ${{ env.TAG }}
-          CI_MODE: ${{ inputs.ci-mode && 'true' || 'false' }}
 
       # VM Provisioning (optional - builds renet from source and image on-demand)
       - name: Provision VMs
@@ -506,9 +486,6 @@ jobs:
           echo ""
           echo "Recent Account Server Logs (last 50 lines):"
           docker logs rediacc-account --tail=50 2>&1 || true
-          echo ""
-          echo "Recent API Logs (last 30 lines):"
-          docker logs rediacc-api --tail=30 2>&1 || true
 
       - name: Cleanup
         if: always()

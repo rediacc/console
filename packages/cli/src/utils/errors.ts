@@ -1,11 +1,8 @@
-import { ApiClientError } from '@rediacc/shared/api';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { CliApiError } from '../services/api.js';
-import { AuthError } from '../services/auth.js';
 import { outputService } from '../services/output.js';
 import { telemetryService } from '../services/telemetry.js';
 import { type CliError, ERROR_CODES, type NextAction, ValidationError } from '../types/errors.js';
-import { EXIT_CODES, httpStatusToExitCode, type OutputFormat } from '../types/index.js';
+import { EXIT_CODES, type OutputFormat } from '../types/index.js';
 
 // Global output format (set by main program before command execution)
 let currentOutputFormat: OutputFormat = 'table';
@@ -37,7 +34,7 @@ function isRetryable(error: CliError): boolean {
 function getGuidance(error: CliError): string | undefined {
   if (error.guidance) return error.guidance;
   const map: Record<number, string> = {
-    [EXIT_CODES.AUTH_REQUIRED]: 'Run "rdc auth login" to authenticate',
+    [EXIT_CODES.AUTH_REQUIRED]: 'Run "rdc subscription login" or set REDIACC_MASTER_PASSWORD',
     [EXIT_CODES.PERMISSION_DENIED]: 'Check team permissions or contact admin',
     [EXIT_CODES.NOT_FOUND]:
       'Verify the resource name with "rdc machine query" or "rdc config repositories"',
@@ -123,6 +120,18 @@ export function handleError(error: unknown): never {
 }
 
 /**
+ * Authentication/credential error (master password, subscription token).
+ */
+export class AuthError extends Error {
+  readonly exitCode: number;
+  constructor(message: string, exitCode: number = EXIT_CODES.AUTH_REQUIRED) {
+    super(message);
+    this.name = 'AuthError';
+    this.exitCode = exitCode;
+  }
+}
+
+/**
  * Validation error that carries a structured `next` action hint.
  * Use this (instead of plain ValidationError) when you can suggest
  * concrete commands the user/agent can run to resolve the failure.
@@ -143,29 +152,6 @@ export class PreconditionValidationError extends ValidationError {
  * Normalize various error types into a consistent CliError structure.
  */
 function normalizeError(error: unknown): CliError {
-  if (error instanceof CliApiError) {
-    return {
-      code: error.code,
-      message: error.message,
-      details: error.details,
-      exitCode: error.exitCode,
-    };
-  }
-
-  // Handle ApiClientError (base class) - map HTTP status to exit code
-  // This must come AFTER CliApiError check since CliApiError extends ApiClientError
-  if (error instanceof ApiClientError) {
-    // Map HTTP status code to Unix-compatible exit code
-    const httpStatus = error.response?.failure ?? 0;
-    const exitCode = httpStatus > 0 ? httpStatusToExitCode(httpStatus) : EXIT_CODES.GENERAL_ERROR;
-    return {
-      code: error.code,
-      message: error.message,
-      details: error.details,
-      exitCode,
-    };
-  }
-
   if (error instanceof AuthError) {
     return {
       code: ERROR_CODES.AUTH_REQUIRED,

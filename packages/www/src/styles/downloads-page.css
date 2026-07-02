@@ -136,21 +136,6 @@
   white-space: nowrap;
 }
 
-/* Linux Subsections */
-.linux-subsection {
-  margin-bottom: var(--space-6);
-}
-
-.linux-subsection:last-child {
-  margin-bottom: 0;
-}
-
-.linux-subsection h3 {
-  font-size: var(--font-size-lg);
-  margin-bottom: var(--space-4);
-  color: var(--color-text-secondary);
-}
-
 /* No Releases Message */
 .no-releases {
   text-align: center;

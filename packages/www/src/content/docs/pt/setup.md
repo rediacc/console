@@ -4,7 +4,7 @@ description: "Crie uma configuração, adicione máquinas, provisione servidores
 category: "Guides"
 order: 3
 language: pt
-sourceHash: "b3c8c42db1b8d99b"
+sourceHash: "19a208e453f7d742"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -104,7 +104,7 @@ Para diagnósticos mais detalhados, execute:
 rdc doctor
 ```
 
-> **Apenas adaptador cloud**: O comando `rdc machine test-connection` fornece diagnósticos SSH detalhados, mas requer o adaptador cloud. Para o adaptador local, use `rdc term` ou `ssh` diretamente.
+> **Dica**: Para verificar a conectividade SSH, execute `rdc term connect -m <machine> -c "hostname"` ou use `ssh` diretamente.
 
 ## Configuração de Infraestrutura
 
@@ -233,7 +233,7 @@ Defina valores predefinidos para não ter de os especificar em cada comando:
 
 ```bash
 rdc config field set --pointer /defaults/machine --new '"server-1"'   # Máquina padrão
-rdc config set --key team --value my-team                   # Equipa padrão (adaptador cloud, experimental)
+rdc config set --key team --value my-team                   # Equipe padrão para o armazenamento de configuração
 ```
 
 Após definir uma máquina padrão, pode omitir `-m server-1` dos comandos:

@@ -1341,16 +1341,15 @@
     "downloads": {
       "meta": {
         "title": "Download Rediacc CLI for All Platforms | Rediacc",
-        "description": "Download Rediacc Desktop and CLI for Windows, macOS, and Linux.",
-        "keywords": "Rediacc download, desktop application, CLI, Windows app, macOS app, Linux app"
+        "description": "Download the Rediacc CLI for Windows, macOS, and Linux.",
+        "keywords": "Rediacc download, CLI, command line, Windows, macOS, Linux"
       },
       "hero": {
         "title": "Download Rediacc CLI",
-        "subtitle": "Rediacc Desktop & CLI",
+        "subtitle": "Rediacc CLI",
         "released": "Released"
       },
       "sections": {
-        "desktop": "Desktop Application",
         "cli": "Command Line Interface (CLI)"
       },
       "platforms": {
@@ -1362,42 +1361,29 @@
         "x64": "x64 (64-bit)",
         "x64_intel": "Intel (x64)",
         "arm64": "ARM64",
-        "arm64_apple": "Apple Silicon (ARM64)",
-        "armv7l": "ARMv7"
-      },
-      "types": {
-        "appimage": "AppImage (portable)",
-        "deb": "Debian/Ubuntu (.deb)"
+        "arm64_apple": "Apple Silicon (ARM64)"
       },
       "actions": {
         "download": "Download"
       },
       "cli": {
-        "description": "A small, fast tool you run in a terminal window. Good for servers you manage without a screen, or for running the same command across many machines at once. Look, if that is your setup, the CLI is the right choice over the desktop app. Connect to servers, run commands, push updates. No browser needed.",
+        "description": "A small, fast tool you run in a terminal window. Good for servers you manage without a screen, or for running the same command across many machines at once. Connect to servers, run commands, push updates. No browser needed.",
         "binary": "Binary"
       },
       "noReleases": "No releases available at this time. Please check back later.",
       "autoUpdate": {
         "title": "Auto-Update Information",
-        "description": "Rediacc Desktop updates itself. After install, it checks for new versions and lets you know when one is ready. One click installs it. Allow a few minutes on a slow connection."
+        "description": "The Rediacc CLI updates itself. It checks for new versions and installs them for you, so you always run the latest release."
       },
       "installation": {
         "title": "Installation Instructions",
-        "windows": "Windows: Run the .exe installer and follow the steps on screen. It installs to your Program Files folder.",
-        "macos": "macOS: Open the .dmg. Drag Rediacc Desktop to your Applications folder. If macOS blocks it, allow it in System Preferences, under Security and Privacy.",
-        "linux_appimage": "Linux AppImage: Make the file executable with 'chmod +x filename.AppImage' and run it directly. No installation required.",
-        "linux_deb": "Linux DEB: Install with 'sudo dpkg -i filename.deb' or double-click the file in your file manager.",
         "cli": "CLI: Download the file for your system. On Linux/macOS, open a terminal and run chmod+x filename to make it runnable. Then move it to /usr/local/bin."
       },
       "requirements": {
         "title": "System Requirements",
         "windows": "Windows 10 or later (64-bit)",
         "macos": "macOS 11 (Big Sur) or later",
-        "linux": "Modern Linux distribution with glibc 2.28+",
-        "diskTitle": "Disk Space",
-        "disk": "500 MB free disk space",
-        "ramTitle": "Memory",
-        "ram": "2 GB RAM minimum, 4 GB recommended"
+        "linux": "Modern Linux distribution with glibc 2.28+"
       }
     },
     "install": {
@@ -1409,7 +1395,7 @@
       "hero": {
         "title": "Install Rediacc CLI",
         "subtitle": "Choose your preferred installation method",
-        "downloadsNote": "Looking for desktop apps or direct binaries?",
+        "downloadsNote": "Looking for direct CLI binaries?",
         "downloadsLink": "Visit the Downloads page"
       },
       "methods": {
@@ -1567,8 +1553,8 @@
             "productTelemetry": {
               "title": "2.5 Product Telemetry Data",
               "content": [
-                "Our software products (Web Application, CLI, Middleware, and Bridge) collect anonymous usage telemetry to improve product quality, performance, and reliability. Telemetry data includes technical information such as application version, operating system, browser type, performance metrics, feature usage patterns, and error reports. Personal identifiers are anonymized before collection — email addresses are reduced to domain only, user IDs are hashed and truncated, and passwords or secrets are never collected.",
-                "Telemetry is enabled by default in our Web Application and CLI, and can be disabled in all products. For complete details on what each product collects and how to opt out, see our <a href=\"telemetry-policy\">Telemetry Policy</a>."
+                "Our software products (CLI and Bridge) collect anonymous usage telemetry to improve product quality, performance, and reliability. Telemetry data includes technical information such as application version, operating system, performance metrics, feature usage patterns, and error reports. Personal identifiers are anonymized before collection: email addresses are reduced to domain only, user IDs are hashed and truncated, and passwords or secrets are never collected.",
+                "Telemetry is enabled by default in our CLI, and can be disabled in all products. For complete details on what each product collects and how to opt out, see our <a href=\"telemetry-policy\">Telemetry Policy</a>."
               ]
             },
             "cookies": {
@@ -1697,8 +1683,8 @@
             "<strong>\"Configuration\"</strong> means the local configuration files stored on your workstation that contain Machine connection details, encryption credentials, and other operational settings.",
             "<strong>\"Customer Data\"</strong> means any data, content, files, containers, configurations, and applications you deploy, store, or process on your Machines using the Services. Customer Data does not include Account information or Telemetry Data.",
             "<strong>\"Machine\"</strong> means a server or virtual machine that you own or control on which the Bridge is installed.",
-            "<strong>\"On-Premise Software\"</strong> means the software components installed on your infrastructure, including the CLI, the Bridge, and the Desktop Application.",
-            "<strong>\"Platform\"</strong> means the Rediacc web application, account portal, and any cloud-hosted services provided by Rediacc.",
+            "<strong>\"On-Premise Software\"</strong> means the software components installed on your infrastructure, including the CLI and the Bridge.",
+            "<strong>\"Platform\"</strong> means the Rediacc account portal and any cloud-hosted services provided by Rediacc.",
             "<strong>\"Repository\"</strong> means an isolated application deployment managed by the Bridge, consisting of an encrypted disk image, a dedicated Docker daemon, and associated containers.",
             "<strong>\"Services\"</strong> means, collectively, the On-Premise Software, the Platform, documentation, and any related professional services provided by Rediacc.",
             "<strong>\"Subscription\"</strong> means the plan tier you have selected (Community, Professional, Business, or Enterprise), which determines your access to features and resource limits.",
@@ -1720,8 +1706,8 @@
             "Rediacc provides an infrastructure automation platform for managing self-hosted server environments. The Services consist of:"
           ],
           "items": [
-            "<strong>On-Premise Software:</strong> The CLI (<code>rdc</code>), the Bridge (Renet), and the Desktop Application — installed on your workstations and Machines to orchestrate encrypted, isolated container deployments",
-            "<strong>Platform:</strong> The web application and account portal for subscription management, team collaboration, and (where available) cloud-based infrastructure management",
+            "<strong>On-Premise Software:</strong> The CLI (<code>rdc</code>) and the Bridge (Renet), installed on your workstations and Machines to orchestrate encrypted, isolated container deployments",
+            "<strong>Platform:</strong> The account portal for subscription management, team collaboration, and (where available) cloud-based infrastructure management",
             "<strong>Professional Services:</strong> Optional consulting, migration assistance, and implementation support, subject to separate service agreements"
           ],
           "content2": [
@@ -1786,7 +1772,7 @@
           "id": "on-premise-license",
           "title": "6. On-Premise Software License",
           "content": [
-            "Subject to these Terms and your active Subscription, Rediacc grants you a limited, non-exclusive, non-sublicensable, non-transferable, revocable license to install and use the On-Premise Software (CLI, Bridge, and Desktop Application) solely for your internal business purposes during your Subscription term."
+            "Subject to these Terms and your active Subscription, Rediacc grants you a limited, non-exclusive, non-sublicensable, non-transferable, revocable license to install and use the On-Premise Software (CLI and Bridge) solely for your internal business purposes during your Subscription term."
           ],
           "subsections": {
             "installation": {
@@ -1855,7 +1841,7 @@
           "title": "10. Telemetry and Data Collection",
           "content": [
             "The On-Premise Software and Platform collect anonymized Telemetry Data to improve product quality, diagnose errors, and understand usage patterns. Telemetry is privacy-preserving by design: personal identifiers are anonymized before transmission, and all Telemetry Data is processed on infrastructure within the European Union.",
-            "Telemetry is enabled by default in the CLI and Web Application. You may disable telemetry before any data is transmitted using the product-specific mechanisms described in our <a href=\"telemetry-policy\">Telemetry Policy</a>, which details exactly what data each product collects and how to disable collection. Telemetry is automatically disabled in CI environments and in the Desktop Application.",
+            "Telemetry is enabled by default in the CLI. You may disable telemetry before any data is transmitted using the product-specific mechanisms described in our <a href=\"telemetry-policy\">Telemetry Policy</a>, which details exactly what data each product collects and how to disable collection. Telemetry is automatically disabled in CI environments.",
             "In jurisdictions that require explicit consent for telemetry collection on terminal equipment (including under the ePrivacy Directive as implemented in your jurisdiction), you should configure your telemetry preferences before first use of the On-Premise Software. Your continued use of the Services with telemetry enabled constitutes your consent to the collection described in the <a href=\"telemetry-policy\">Telemetry Policy</a>."
           ]
         },
@@ -2018,7 +2004,7 @@
             "<strong>Fingerprinting</strong> — We do not use browser or device fingerprinting techniques"
           ],
           "content2": [
-            "Note: This Cookie Policy applies to the Rediacc marketing website. Our software products (Web Application, CLI, Middleware, Bridge) collect separate usage telemetry that does not use cookies. For details on product telemetry, see our <a href=\"telemetry-policy\">Telemetry Policy</a>."
+            "Note: This Cookie Policy applies to the Rediacc marketing website. Our software products (CLI and Bridge) collect separate usage telemetry that does not use cookies. For details on product telemetry, see our <a href=\"telemetry-policy\">Telemetry Policy</a>."
           ]
         },
         "analytics": {
@@ -2189,7 +2175,7 @@
     "telemetryPolicy": {
       "meta": {
         "title": "Telemetry Policy - Data Collection | Rediacc",
-        "description": "Details on what telemetry data Rediacc products collect, why, how it is processed, and how to opt out. Covers Web App, CLI, Middleware, and Bridge.",
+        "description": "Details on what telemetry data Rediacc products collect, why, how it is processed, and how to opt out. Covers the CLI and Bridge.",
         "keywords": "telemetry policy, data collection, OpenTelemetry, opt-out, privacy, GDPR, Rediacc"
       },
       "hero": {
@@ -2205,7 +2191,7 @@
           "title": "1. Introduction",
           "content": [
             "Rediacc software products collect anonymized usage telemetry to help us improve product quality, diagnose issues, and understand how our tools are used. This Telemetry Policy describes exactly what data is collected, why, how it is processed, and how you can opt out.",
-            "This policy covers four products: the <strong>Rediacc Web Application</strong>, the <strong>Rediacc CLI</strong>, the <strong>Rediacc Middleware</strong>, and the <strong>Rediacc Bridge (Renet)</strong>. Website analytics (Plausible) are covered separately in our <a href=\"privacy-policy\">Privacy Policy</a> and <a href=\"cookie-policy\">Cookie Policy</a>."
+            "This policy covers two products: the <strong>Rediacc CLI</strong> and the <strong>Rediacc Bridge (Renet)</strong>. Website analytics (Plausible) are covered separately in our <a href=\"privacy-policy\">Privacy Policy</a> and <a href=\"cookie-policy\">Cookie Policy</a>."
           ]
         },
         "principles": {
@@ -2225,62 +2211,19 @@
           "title": "3. Legal Basis for Collection",
           "content": [
             "Under the EU General Data Protection Regulation (GDPR) and the ePrivacy Directive, our legal basis for telemetry collection depends on the product context:",
-            "For the <strong>Web Application</strong> (browser-based): telemetry is collected under <strong>legitimate interest</strong> (GDPR Art. 6(1)(f)) for the purpose of maintaining and improving service quality. You can opt out at any time.",
-            "For the <strong>CLI, Middleware, and Bridge</strong> (installed on your infrastructure): telemetry is collected under <strong>legitimate interest</strong> with clear opt-out mechanisms provided. You can disable telemetry before any data is sent.",
+            "For the <strong>CLI and Bridge</strong> (installed on your infrastructure): telemetry is collected under <strong>legitimate interest</strong> (GDPR Art. 6(1)(f)) with clear opt-out mechanisms provided. You can disable telemetry before any data is sent.",
             "For users in jurisdictions requiring explicit consent (e.g., South Korea under PIPA), telemetry should be opted into explicitly through the product configuration before any data is transmitted."
           ]
         },
-        "webApp": {
-          "id": "web-app",
-          "title": "4. Web Application Telemetry",
-          "content": [
-            "The Rediacc Web Application uses OpenTelemetry-based distributed tracing. Telemetry is transmitted to <code>rediacc.com</code>. In production, only <strong>10% of sessions</strong> are sampled."
-          ],
-          "subsections": {
-            "webDataCollected": {
-              "title": "4.1 Data Collected",
-              "content": ["The Web Application collects the following categories of data:"],
-              "items": [
-                "<strong>Browser information:</strong> browser name and version, preferred language, platform (e.g., Windows, macOS, Linux), screen resolution, color depth, user agent string, device memory (if available), network connection type",
-                "<strong>User context:</strong> session ID (randomly generated per session), email domain only (local part is redacted, e.g., <code>***@example.com</code>), organization name, team name",
-                "<strong>Page views and navigation:</strong> pages visited within the application, route changes, referrer information",
-                "<strong>User interactions:</strong> clicks, form submissions, modal opens/closes, search queries, filter changes, tab switches, file downloads (file names are not collected)",
-                "<strong>API calls:</strong> HTTP method, URL path, response status code, request duration",
-                "<strong>Errors:</strong> error type, error message, stack trace (truncated to 1,000 characters), error source",
-                "<strong>Performance metrics:</strong> Core Web Vitals (LCP, FID, CLS, TTFB, INP), resource timing, memory usage (sampled every 30 seconds), long task detection",
-                "<strong>Component lifecycle:</strong> component mount/unmount timing, render duration"
-              ]
-            },
-            "webNotCollected": {
-              "title": "4.2 Data NOT Collected",
-              "content": ["The Web Application does not collect:"],
-              "items": [
-                "Full email addresses (local part is always redacted)",
-                "Passwords, tokens, or authentication credentials",
-                "File contents, database contents, or query results",
-                "Form field values (only the fact that a form was submitted is recorded)",
-                "Clipboard contents or keystrokes",
-                "IP addresses (not logged by our telemetry endpoint)"
-              ]
-            },
-            "webOptOut": {
-              "title": "4.3 How to Opt Out",
-              "content": [
-                "Set the <code>userConsent</code> configuration flag to <code>false</code> in your account settings. Telemetry stops immediately upon opt-out.",
-                "<strong>Desktop Application:</strong> Telemetry is completely disabled in the Desktop (Electron) application by default. No data is collected or transmitted."
-              ]
-            }
-          }
-        },
         "cli": {
           "id": "cli",
-          "title": "5. CLI Telemetry",
+          "title": "4. CLI Telemetry",
           "content": [
             "The Rediacc CLI uses the OpenTelemetry Node SDK. Telemetry is transmitted to <code>rediacc.com</code>."
           ],
           "subsections": {
             "cliDataCollected": {
-              "title": "5.1 Data Collected",
+              "title": "4.1 Data Collected",
               "content": ["The CLI collects the following categories of data:"],
               "items": [
                 "<strong>Command usage:</strong> command name, CLI version, exit code, success or failure status",
@@ -2293,7 +2236,7 @@
               ]
             },
             "cliOptOut": {
-              "title": "5.2 How to Opt Out",
+              "title": "4.2 How to Opt Out",
               "content": [
                 "You can disable CLI telemetry (including profiling) using any of these methods:"
               ],
@@ -2305,43 +2248,15 @@
             }
           }
         },
-        "middleware": {
-          "id": "middleware",
-          "title": "6. Middleware Telemetry",
-          "content": [
-            "The Rediacc Middleware collects operational telemetry. Telemetry is transmitted to <code>rediacc.com</code>."
-          ],
-          "subsections": {
-            "middlewareDataCollected": {
-              "title": "6.1 Data Collected",
-              "content": ["The Middleware collects the following categories of data:"],
-              "items": [
-                "<strong>System information:</strong> hostname, operating system version, .NET runtime version",
-                "<strong>API calls:</strong> HTTP method, endpoint path, response status code, request duration",
-                "<strong>Database operations:</strong> stored procedure name, execution duration, row count returned (no query content, parameters, or result data)",
-                "<strong>Authentication events:</strong> hashed user identifier only — user IDs are hashed with SHA-256 and a salt, then truncated to the first 12 characters. Original user IDs are never transmitted.",
-                "<strong>Health checks:</strong> service component availability status and response times",
-                "<strong>Application lifecycle:</strong> startup, shutdown, and configuration change events",
-                "<strong>Error information:</strong> error type, error message, and operational context"
-              ]
-            },
-            "middlewareOptOut": {
-              "title": "6.2 How to Opt Out",
-              "content": [
-                "Set <code>Telemetry:Enabled</code> to <code>false</code> in your Middleware configuration (appsettings.json or environment-specific configuration)."
-              ]
-            }
-          }
-        },
         "bridge": {
           "id": "bridge",
-          "title": "7. Bridge (Renet) Telemetry",
+          "title": "5. Bridge (Renet) Telemetry",
           "content": [
             "The Rediacc Bridge (Renet) uses OpenTelemetry with gzip-compressed OTLP export. Telemetry is transmitted to <code>rediacc.com</code> in batches (maximum 10 spans, flushed every 5 seconds)."
           ],
           "subsections": {
             "bridgeDataCollected": {
-              "title": "7.1 Data Collected",
+              "title": "5.1 Data Collected",
               "content": ["The Bridge collects the following categories of data:"],
               "items": [
                 "<strong>Queue operations:</strong> task ID, priority level, operation type, execution duration, success or failure status",
@@ -2353,7 +2268,7 @@
               ]
             },
             "bridgeOptOut": {
-              "title": "7.2 How to Opt Out",
+              "title": "5.2 How to Opt Out",
               "content": [
                 "Set the environment variable <code>REDIACC_TELEMETRY_DISABLED=1</code> to disable Bridge telemetry (including profiling)."
               ]
@@ -2362,7 +2277,7 @@
         },
         "dataProcessing": {
           "id": "data-processing",
-          "title": "8. Data Processing and Storage",
+          "title": "6. Data Processing and Storage",
           "content": [
             "All telemetry data is transmitted over encrypted connections (TLS 1.2+) to our telemetry endpoint. Data is processed and stored as follows:"
           ],
@@ -2376,14 +2291,14 @@
         },
         "internationalTransfers": {
           "id": "international-transfers",
-          "title": "9. International Data Transfers",
+          "title": "7. International Data Transfers",
           "content": [
             "Telemetry data is processed and stored exclusively on servers within the European Union. In the unlikely event that telemetry data needs to be transferred outside the EU/EEA (e.g., for disaster recovery), appropriate safeguards will be in place, including Standard Contractual Clauses (SCCs) as approved by the European Commission."
           ]
         },
         "yourRights": {
           "id": "your-rights",
-          "title": "10. Your Rights",
+          "title": "8. Your Rights",
           "content": [
             "Because our telemetry data is anonymized and aggregated, it generally does not constitute personal data under GDPR. However, to the extent that any telemetry data can be linked to you personally, you have the right to:"
           ],
@@ -2399,7 +2314,7 @@
         },
         "ccpa": {
           "id": "ccpa",
-          "title": "11. California Residents (CCPA/CPRA)",
+          "title": "9. California Residents (CCPA/CPRA)",
           "content": [
             "If you are a California resident, the following additional disclosures apply under the California Consumer Privacy Act (CCPA) as amended by the California Privacy Rights Act (CPRA):"
           ],
@@ -2407,12 +2322,12 @@
             "<strong>Categories of information collected:</strong> Internet or electronic network activity information (browser type, interaction data, error logs), device identifiers (anonymized), geolocation data (country-level only, derived from IP address which is not stored)",
             "<strong>Purpose:</strong> Improving and maintaining service quality, debugging, performance monitoring, and security",
             "<strong>Sale/Sharing:</strong> We do not sell or share telemetry data as defined by the CCPA/CPRA",
-            "<strong>Right to opt out:</strong> Use the product-specific opt-out mechanisms described in sections 4–7 above. We also honor the Global Privacy Control (GPC) signal in our Web Application."
+            "<strong>Right to opt out:</strong> Use the product-specific opt-out mechanisms described in sections 4 and 5 above."
           ]
         },
         "changes": {
           "id": "changes",
-          "title": "12. Changes to This Policy",
+          "title": "10. Changes to This Policy",
           "content": [
             "We may update this Telemetry Policy when we add new products, change what data is collected, or modify our processing practices. Changes will be posted on this page with an updated effective date. We will notify users of material changes through our product release notes and website."
           ]
@@ -9446,7 +9361,7 @@
           "title": "Find your weak spots before attackers do",
           "description": "Start with the free Community edition. No credit card. Run your first pentest in under 60 seconds.",
           "ctaText": "Start Free",
-          "command": "rdc audit log --limit 200"
+          "command": "rdc repo fork --parent production --tag pentest -m server-1"
         },
         "techStrip": {
           "label": "Test any app in a container",
@@ -10441,7 +10356,7 @@
           "lines": [
             {
               "type": "command",
-              "text": "rdc audit --from 2026-02-01 --to 2026-02-27"
+              "text": "jq -r '.events[]' audit-export.json"
             },
             {
               "type": "spacer"
@@ -10599,7 +10514,7 @@
             },
             {
               "title": "Report",
-              "description": "Run one command: rdc audit --from --to. You get an audit-ready report for any date range in seconds.",
+              "description": "Open the portal activity page, filter any date range, and export it as JSON. You get an audit-ready report in seconds.",
               "icon": "file-text"
             }
           ],
@@ -10767,7 +10682,7 @@
           "title": "See everything. Miss nothing.",
           "description": "Start free with the Community edition. Make your first audit report in under a minute.",
           "ctaText": "Start Free with Community",
-          "command": "rdc audit history repository production"
+          "command": "rdc repo status --name production -m server-1"
         },
         "techStrip": {
           "label": "Audit any app you run in Docker",
@@ -10911,7 +10826,7 @@
           "lines": [
             {
               "type": "command",
-              "text": "rdc audit log --limit 50"
+              "text": "jq -r '.keys[]' key-custody-report.json"
             },
             {
               "type": "spacer"
@@ -11239,7 +11154,7 @@
           "title": "Stop renting your own data back from a US-owned provider.",
           "description": "Start with the free Community edition. No credit card. Run your first key-custody check in under a minute.",
           "ctaText": "Start Free with Community",
-          "command": "rdc audit log --limit 50"
+          "command": "rdc config show"
         },
         "techStrip": {
           "label": "Self-host any app, hold every key",

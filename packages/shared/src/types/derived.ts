@@ -5,23 +5,6 @@
  * vaultContent fields and partial parameter types for filtering.
  */
 
-import type {
-  GetOrganizationDashboard_ResultSet1,
-  GetOrganizationDashboard_ResultSet2,
-  GetOrganizationDashboard_ResultSet3,
-  GetOrganizationDashboard_ResultSet4,
-  GetOrganizationDashboard_ResultSet5,
-  GetOrganizationDashboard_ResultSet6,
-  GetOrganizationDashboard_ResultSet7,
-  GetOrganizationDashboard_ResultSet8,
-  GetOrganizationDashboard_ResultSet10,
-  GetOrganizationDashboard_ResultSet11,
-  GetOrganizationDashboard_ResultSet12,
-  GetOrganizationDashboard_ResultSet13,
-  GetOrganizationDashboard_ResultSet15,
-  GetTeamQueueItemsParams,
-} from './api-schema.generated';
-
 // =============================================================================
 // UTILITY TYPES
 // =============================================================================
@@ -51,10 +34,6 @@ export interface PluginContainer {
 // =============================================================================
 // QUEUE TYPES (replaces manual QueueFilters interface)
 // =============================================================================
-
-export type QueueFilters = Partial<Omit<GetTeamQueueItemsParams, 'teamName'>> & {
-  teamName?: string;
-};
 
 // =============================================================================
 // FORM VALUE TYPES (for create operations with optional vault)
@@ -105,12 +84,6 @@ export type QueueStatus =
   | 'COMPLETED'
   | 'FAILED'
   | 'CANCELLED';
-
-/** Queue list result with items and optional statistics */
-export interface QueueListResult {
-  items: import('./api-schema.generated').GetTeamQueueItems_ResultSet1[];
-  statistics: import('./api-schema.generated').GetTeamQueueItems_ResultSet2 | null;
-}
 
 /** Queue machine stats from trace */
 export interface QueueMachineStats {
@@ -170,18 +143,6 @@ export interface QueueVaultSnapshot {
   vaultVersion?: number | null;
   vaultContent?: string | null;
   updatedAt?: string | null;
-}
-
-/** Full queue trace response */
-export interface QueueTrace {
-  summary: QueueTraceSummary | null;
-  queueDetails: import('./api-schema.generated').GetTeamQueueItems_ResultSet1 | null;
-  traceLogs: QueueTraceLog[];
-  vaultContent: QueueVaultSnapshot | null;
-  responseVaultContent: QueueVaultSnapshot | null;
-  queuePosition: QueuePositionEntry[];
-  machineStats: QueueMachineStats | null;
-  planInfo: QueuePlanInfo | null;
 }
 
 // =============================================================================
@@ -401,29 +362,6 @@ export interface OrganizationDropdownData {
   permissionGroups: DropdownOption[];
   permissions: PermissionDropdownOption[];
   subscriptionPlans: DropdownOption[];
-}
-
-// =============================================================================
-// ORGANIZATION DASHBOARD TYPES (from GetOrganizationDashboard result sets)
-// =============================================================================
-
-// Note: Use GetOrganizationDashboard_ResultSet* directly from api-schema.generated
-
-/** Full organization dashboard data - composed from result sets */
-export interface OrganizationDashboardData {
-  organizationInfo: GetOrganizationDashboard_ResultSet1 | null;
-  activeSubscription: GetOrganizationDashboard_ResultSet2 | null;
-  allActiveSubscriptions: GetOrganizationDashboard_ResultSet3[];
-  resources: GetOrganizationDashboard_ResultSet4[];
-  accountHealth: GetOrganizationDashboard_ResultSet5 | null;
-  featureAccess: GetOrganizationDashboard_ResultSet6 | null;
-  planLimits: GetOrganizationDashboard_ResultSet7 | null;
-  queueStats: GetOrganizationDashboard_ResultSet8 | null;
-  teamIssues: GetOrganizationDashboard_ResultSet10[];
-  machineIssues: GetOrganizationDashboard_ResultSet11[];
-  activeUsers: GetOrganizationDashboard_ResultSet12[];
-  cephStats: GetOrganizationDashboard_ResultSet13 | null;
-  cephTeamBreakdown: GetOrganizationDashboard_ResultSet15[];
 }
 
 /** Result from UpdateOrganizationVaults operation */

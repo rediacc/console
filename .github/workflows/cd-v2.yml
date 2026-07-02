@@ -30,7 +30,7 @@ on:
         type: boolean
         default: false
       deploy_workers_only:
-        description: 'Deploy Workers only (skip version bump, CLI, Docker, Desktop, GitHub Release)'
+        description: 'Deploy Workers only (skip version bump, CLI, Docker, GitHub Release)'
         type: boolean
         default: false
       allow_stale_ci_run_id:
@@ -68,7 +68,7 @@ jobs:
       retry_mode: ${{ steps.skip-check.outputs.retry_mode }}
       workers_only: ${{ steps.skip-check.outputs.workers_only }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
@@ -78,10 +78,10 @@ jobs:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
-          repositories: console,middleware,renet,account,homebrew-tap,elite,sql
+          repositories: console,renet,account,homebrew-tap,elite,sql
 
       # Re-checkout with submodules using app token (needed for submodule branch check)
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0  # Full history needed for merge-base --is-ancestor in submodule divergence check
           submodules: true
@@ -313,7 +313,7 @@ jobs:
       name: edge
       url: https://edge.rediacc.com
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         if: needs.init.outputs.workers_only != 'true'
 
       - uses: ./.github/actions/app-token
@@ -323,9 +323,9 @@ jobs:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
-          repositories: console,middleware,renet,account,homebrew-tap,elite,sql
+          repositories: console,renet,account,homebrew-tap,elite,sql
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         if: needs.init.outputs.workers_only != 'true'
         with:
           fetch-depth: 0
@@ -341,7 +341,7 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Login to GHCR
         if: needs.init.outputs.workers_only != 'true'
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -353,8 +353,7 @@ jobs:
           CHANNEL="${{ needs.init.outputs.channel }}"
           VERSION="${{ needs.init.outputs.next_version }}"
 
-          .ci/scripts/docker/retag-image.sh --image api --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
-          .ci/scripts/docker/retag-image.sh --image bridge --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag-image.sh --image renet --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
           .ci/scripts/docker/retag-image.sh --image plugin-terminal --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
           .ci/scripts/docker/retag-image.sh --image plugin-browser --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
           .ci/scripts/docker/retag-image.sh --image web --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
@@ -418,7 +417,7 @@ jobs:
         run: |
           echo "Verifying artifact provenance..."
           FAILED=false
-          for f in $(find dist/desktop dist/cli dist/packages -type f 2>/dev/null); do
+          for f in $(find dist/cli dist/packages -type f 2>/dev/null); do
             gh attestation verify "$f" --repo "${{ github.repository }}" 2>/dev/null || {
               echo "::warning::No attestation for $f (expected for first run after attestation is enabled)"
               FAILED=true
@@ -459,17 +458,16 @@ jobs:
           BUCKET="rediacc-releases"
 
           # Cache-Control policy: channel paths (apt/<channel>/, cli/<channel>/,
-          # desktop/<channel>/, etc.) reuse filenames across releases, so we
-          # cannot cache any of them -- a previous run's cached body under
-          # the same URL breaks APKINDEX/Release signatures. Everything
-          # goes no-cache; CF never caches, no stale body possible.
-          # Truly-versioned (cli/v<semver>/, desktop/v<semver>/,
+          # etc.) reuse filenames across releases, so we cannot cache any of
+          # them -- a previous run's cached body under the same URL breaks
+          # APKINDEX/Release signatures. Everything goes no-cache; CF never
+          # caches, no stale body possible. Truly-versioned (cli/v<semver>/,
           # npm/<channel>/rediacc-cli-<semver>.tgz) keep immutable cache
           # via upload-to-r2.sh.
           CC_MUTABLE="no-cache"
 
           PURGE_URLS=()
-          for dir in cli desktop apt rpm apk archlinux; do
+          for dir in cli apt rpm apk archlinux; do
             echo "Promoting ${dir}/edge/ -> ${dir}/stable/"
             TMP="/tmp/promote-${dir}"
             aws s3 cp "s3://${BUCKET}/${dir}/edge/" "$TMP/" $EP --recursive --quiet
@@ -519,7 +517,7 @@ jobs:
       - name: Promote Docker to stable (hotfix)
         if: needs.init.outputs.workers_only != 'true' && inputs.publish_stable == true
         run: |
-          for image in api bridge plugin-terminal plugin-browser web cli; do
+          for image in renet plugin-terminal plugin-browser web cli; do
             echo "Promoting ${image}: edge -> stable"
             docker buildx imagetools create \
               -t "ghcr.io/rediacc/elite/${image}:stable" \
@@ -553,7 +551,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
-      # Stable promotion (CLI, desktop, repos, Docker :stable) is handled by
+      # Stable promotion (CLI, repos, Docker :stable) is handled by
       # promote-stable.yml after 7-day soak. CD only publishes to edge.
 
       # -----------------------------------------------------------------------
@@ -573,8 +571,7 @@ jobs:
           echo "**Pages URL:** https://www.rediacc.com" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Docker images:**" >> $GITHUB_STEP_SUMMARY
-          echo "- ghcr.io/rediacc/elite/api:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
-          echo "- ghcr.io/rediacc/elite/bridge:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/elite/renet:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
           echo "- ghcr.io/rediacc/elite/plugin-terminal:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
           echo "- ghcr.io/rediacc/elite/plugin-browser:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
           echo "- ghcr.io/rediacc/elite/web:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
@@ -761,7 +758,7 @@ jobs:
       needs.deploy-account-edge.result == 'success' &&
       needs.init.outputs.skip_release != 'true'
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout: regions.json
           sparse-checkout-cone-mode: false
@@ -942,7 +939,7 @@ jobs:
       needs.init.outputs.retry_mode != 'true' &&
       needs.init.outputs.workers_only != 'true'
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - uses: ./.github/actions/app-token
         id: app-token
@@ -950,9 +947,9 @@ jobs:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
-          repositories: console,middleware,renet,account,homebrew-tap,elite,sql
+          repositories: console,renet,account,homebrew-tap,elite,sql
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
           submodules: true
@@ -979,7 +976,7 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${{ needs.init.outputs.next_version }}"
-          for sub in private/renet private/middleware; do
+          for sub in private/renet; do
             if [[ ! -d "$sub/.git" ]] && [[ ! -f "$sub/.git" ]]; then
               echo "::notice::Skipping $sub (not initialized)"
               continue
@@ -1066,11 +1063,11 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s globstar nullglob
-          assets=(dist/desktop/**/* dist/cli/**/* dist/packages/**/*)
+          assets=(dist/cli/**/* dist/packages/**/*)
           files=()
           for f in "${assets[@]}"; do [[ -f "$f" ]] && files+=("$f"); done
           if [[ ${#files[@]} -eq 0 ]]; then
-            echo "::error::No release assets matched dist/{desktop,cli,packages}/**/*"
+            echo "::error::No release assets matched dist/{cli,packages}/**/*"
             exit 1
           fi
           gh release create "v${VERSION}" \

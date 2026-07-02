@@ -26,9 +26,9 @@ source "$REPO_ROOT/.ci/scripts/lib/release-state-validator.sh"
 # Small helpers — rsv_assert_bijection emits drift-or-OK to stdout; we capture
 # both the exit code and the output to assert both at once.
 run_assert() {
-    local cli="$1" desk="$2" tags="$3" in_flight="${4:-}"
+    local cli="$1" tags="$2" in_flight="${3:-}"
     local out rc=0
-    out="$(rsv_assert_bijection "$cli" "$desk" "$tags" "$in_flight" 2>&1)" || rc=$?
+    out="$(rsv_assert_bijection "$cli" "$tags" "$in_flight" 2>&1)" || rc=$?
     printf '%s\n' "$out"
     return "$rc"
 }
@@ -37,7 +37,6 @@ test_all_committed_passes() {
     log_test "all-committed → OK"
     local out rc=0
     out="$(run_assert \
-        "$(printf 'v1.0.0\nv1.0.1\nv1.0.2\n')" \
         "$(printf 'v1.0.0\nv1.0.1\nv1.0.2\n')" \
         "$(printf 'v1.0.0\nv1.0.1\nv1.0.2\n')")" || rc=$?
     assert_exit_code 0 "$rc" "bijection should hold"
@@ -49,7 +48,7 @@ test_all_committed_passes() {
 test_empty_state_passes() {
     log_test "no sentinels + no tags → OK"
     local out rc=0
-    out="$(run_assert "" "" "")" || rc=$?
+    out="$(run_assert "" "")" || rc=$?
     assert_exit_code 0 "$rc" "empty state is a bijection"
     assert_contains "$out" "OK:" "positive confirmation emitted"
     log_pass "empty-state"
@@ -62,7 +61,6 @@ test_orphan_prefix_not_flagged() {
     local out rc=0
     out="$(run_assert \
         "$(printf 'v1.0.0\n')" \
-        "$(printf 'v1.0.0\n')" \
         "$(printf 'v1.0.0\n')")" || rc=$?
     assert_exit_code 0 "$rc" "orphan is not sentinel-vs-tag drift"
     log_pass "orphan-prefix"
@@ -73,7 +71,6 @@ test_sentinel_without_tag_fails() {
     local out rc=0
     out="$(run_assert \
         "$(printf 'v1.0.0\nv1.0.5\n')" \
-        "$(printf 'v1.0.0\n')" \
         "$(printf 'v1.0.0\n')")" || rc=$?
     assert_exit_code 1 "$rc" "sentinel-without-tag must fail"
     assert_contains "$out" "DRIFT v1.0.5" "names the drifted version"
@@ -87,7 +84,6 @@ test_tag_without_sentinel_fails() {
     local out rc=0
     out="$(run_assert \
         "$(printf 'v1.0.0\n')" \
-        "$(printf 'v1.0.0\n')" \
         "$(printf 'v1.0.0\nv1.0.5\n')")" || rc=$?
     assert_exit_code 1 "$rc" "tag-without-sentinel must fail"
     assert_contains "$out" "DRIFT v1.0.5" "names the drifted version"
@@ -96,36 +92,10 @@ test_tag_without_sentinel_fails() {
     log_pass "tag-without-sentinel"
 }
 
-test_desktop_without_cli_fails() {
-    log_test "desktop sentinel present without cli sentinel → DRIFT"
-    local out rc=0
-    out="$(run_assert \
-        "$(printf 'v1.0.0\n')" \
-        "$(printf 'v1.0.0\nv1.0.5\n')" \
-        "$(printf 'v1.0.0\nv1.0.5\n')")" || rc=$?
-    assert_exit_code 1 "$rc" "desktop-without-cli must fail"
-    assert_contains "$out" "DRIFT v1.0.5" "names the drifted version"
-    assert_contains "$out" "desktop sentinel present, cli sentinel missing" "identifies invariant violated"
-    log_pass "desktop-without-cli"
-}
-
-test_desktop_missing_is_fine() {
-    # Desktop is optional — a platform-skipped or cli-only release is valid.
-    log_test "cli sentinel + tag present, desktop absent → OK"
-    local out rc=0
-    out="$(run_assert \
-        "$(printf 'v1.0.0\nv1.0.5\n')" \
-        "$(printf 'v1.0.0\n')" \
-        "$(printf 'v1.0.0\nv1.0.5\n')")" || rc=$?
-    assert_exit_code 0 "$rc" "desktop absence is legitimate"
-    log_pass "desktop-optional"
-}
-
 test_in_flight_excluded() {
     log_test "in-flight version with no sentinel yet → excluded from bijection, gate passes"
     local out rc=0
     out="$(run_assert \
-        "$(printf 'v1.0.0\n')" \
         "$(printf 'v1.0.0\n')" \
         "$(printf 'v1.0.0\n')" \
         "v1.0.5")" || rc=$?
@@ -138,7 +108,6 @@ test_in_flight_does_not_mask_other_drift() {
     local out rc=0
     out="$(run_assert \
         "$(printf 'v1.0.0\nv1.0.3\n')" \
-        "" \
         "$(printf 'v1.0.0\n')" \
         "v1.0.5")" || rc=$?
     assert_exit_code 1 "$rc" "v1.0.3 drift must still fire"
@@ -154,7 +123,6 @@ test_prerelease_tags_ignored() {
     local out rc=0
     out="$(run_assert \
         "$(printf 'v1.0.0\n')" \
-        "$(printf 'v1.0.0\n')" \
         "$(printf 'v1.0.0\nv1.0.1-beta.1\n')")" || rc=$?
     assert_exit_code 0 "$rc" "pre-release tag must not trigger drift"
     log_pass "prerelease-filtered"
@@ -168,7 +136,6 @@ test_floor_excludes_pre_contract_tags() {
     # the cli list, so no override is set here.
     local out rc=0
     out="$(run_assert \
-        "$(printf 'v1.0.5\nv1.0.6\n')" \
         "$(printf 'v1.0.5\nv1.0.6\n')" \
         "$(printf 'v0.9.5\nv1.0.0\nv1.0.4\nv1.0.5\nv1.0.6\n')")" || rc=$?
     assert_exit_code 0 "$rc" "pre-contract tags must not trigger drift"
@@ -186,7 +153,6 @@ test_floor_does_not_mask_post_contract_drift() {
     local out rc=0
     out="$(run_assert \
         "$(printf 'v1.0.5\nv1.0.6\n')" \
-        "" \
         "$(printf 'v1.0.5\nv1.0.6\nv1.0.7\n')")" || rc=$?
     assert_exit_code 1 "$rc" "post-contract drift must still fire"
     assert_contains "$out" "DRIFT v1.0.7" "v1.0.7 is at-or-above floor; drift fires"
@@ -200,7 +166,6 @@ test_no_sentinels_short_circuits() {
     # tag we have. Asserting drift on every tag would be useless noise.
     local out rc=0
     out="$(run_assert \
-        "" \
         "" \
         "$(printf 'v0.9.5\nv1.0.0\nv1.0.4\n')")" || rc=$?
     assert_exit_code 0 "$rc" "no-sentinels state is a no-op"
@@ -217,7 +182,6 @@ test_explicit_override_still_works() {
     local out rc=0
     out="$(RSV_GRANDFATHER_BEFORE="v1.5.0" rsv_assert_bijection \
         "$(printf 'v1.0.5\n')" \
-        "" \
         "$(printf 'v1.0.5\nv1.0.6\n')" \
         "" 2>&1)" || rc=$?
     assert_exit_code 0 "$rc" "override pushes floor up; drift below it suppressed"
@@ -243,7 +207,6 @@ test_ratchet_lifts_floor_above_observed() {
     local out rc=0
     out="$(RSV_FLOOR_FILE="$tmpfile" rsv_assert_bijection \
         "$(printf 'v1.0.8\nv1.0.9\n')" \
-        "" \
         "$(printf 'v1.0.6\nv1.0.7\nv1.0.8\nv1.0.9\n')" \
         "" 2>&1)" || rc=$?
     assert_exit_code 0 "$rc" "ratchet < observed: observed v1.0.8 floor used"
@@ -256,7 +219,6 @@ test_ratchet_lifts_floor_above_observed() {
     rc=0
     out="$(RSV_FLOOR_FILE="$tmpfile" rsv_assert_bijection \
         "$(printf 'v1.0.8\nv1.0.10\n')" \
-        "" \
         "$(printf 'v1.0.8\nv1.0.9\nv1.0.10\n')" \
         "" 2>&1)" || rc=$?
     assert_exit_code 0 "$rc" "ratchet > observed: ratchet floor used, no drift below"
@@ -285,7 +247,6 @@ test_ratchet_protects_against_all_sentinels_scrubbed() {
     local out rc=0
     out="$(RSV_FLOOR_FILE="$tmpfile" rsv_assert_bijection \
         "" \
-        "" \
         "$(printf 'v1.0.7\nv1.0.8\nv1.0.9\n')" \
         "" 2>&1)" || rc=$?
     assert_exit_code 1 "$rc" "tags above ratchet with no cli sentinel must drift"
@@ -301,8 +262,6 @@ test_empty_state_passes
 test_orphan_prefix_not_flagged
 test_sentinel_without_tag_fails
 test_tag_without_sentinel_fails
-test_desktop_without_cli_fails
-test_desktop_missing_is_fine
 test_in_flight_excluded
 test_in_flight_does_not_mask_other_drift
 test_prerelease_tags_ignored

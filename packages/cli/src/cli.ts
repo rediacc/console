@@ -1,30 +1,18 @@
 import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 import { Command } from 'commander';
 import { registerAgentCommands } from './commands/agent.js';
-import { registerAuditCommands } from './commands/audit.js';
-import { registerAuthCommands } from './commands/auth.js';
-import { registerBridgeCommands } from './commands/bridge.js';
-import { registerCephCommands } from './commands/ceph/index.js';
 import { registerConfigCommands } from './commands/config.js';
 import { registerDatastoreCommands } from './commands/datastore.js';
 import { registerDoctorCommand } from './commands/doctor.js';
 import { registerMachineCommands } from './commands/machine/index.js';
 import { registerMcpCommands } from './commands/mcp/index.js';
 import { registerOpsCommands } from './commands/ops/index.js';
-import { registerOrganizationCommands } from './commands/organization.js';
-import { registerPermissionCommands } from './commands/permission.js';
-import { registerProtocolCommands } from './commands/protocol.js';
-import { registerQueueCommands } from './commands/queue.js';
-import { registerRegionCommands } from './commands/region.js';
 import { registerRepoCommands } from './commands/repo.js';
-import { registerRepositoryCommands } from './commands/repository.js';
 import { registerShortcuts } from './commands/shortcuts.js';
 import { registerStorageCommands } from './commands/storage.js';
 import { registerSubscriptionCommands } from './commands/subscription.js';
-import { registerTeamCommands } from './commands/team.js';
 import { registerTermCommands } from './commands/term.js';
 import { registerUpdateCommand } from './commands/update.js';
-import { registerUserCommands } from './commands/user.js';
 import { registerVSCodeCommands } from './commands/vscode.js';
 import { changeLanguage, initI18n, SUPPORTED_LANGUAGES, t } from './i18n/index.js';
 import { configService } from './services/config-resources.js';
@@ -148,6 +136,7 @@ cli
   .option('--config <name>', t('options.config'))
   .option('-l, --lang <code>', t('options.lang', { languages: SUPPORTED_LANGUAGES.join('|') }))
   .option('-q, --quiet', t('options.quiet'))
+  .option('-y, --yes', t('options.yes'))
   .option('--fields <fields>', t('options.fields'))
   .hook('preAction', async (thisCommand, actionCommand) => {
     const opts = thisCommand.opts();
@@ -235,24 +224,12 @@ cli
   });
 
 // Register all command groups
-registerAuthCommands(cli);
-registerTeamCommands(cli);
 registerMachineCommands(cli);
-registerRepositoryCommands(cli);
 registerRepoCommands(cli);
 registerStorageCommands(cli);
-registerQueueCommands(cli);
-registerRegionCommands(cli);
-registerBridgeCommands(cli);
-registerCephCommands(cli);
-registerOrganizationCommands(cli);
-registerUserCommands(cli);
 registerConfigCommands(cli);
 registerDoctorCommand(cli);
-registerPermissionCommands(cli);
-registerAuditCommands(cli);
 registerTermCommands(cli);
-registerProtocolCommands(cli);
 registerVSCodeCommands(cli);
 registerUpdateCommand(cli);
 registerOpsCommands(cli);

@@ -24,8 +24,10 @@ Create a new machine
 
 - `--name <name>` — Resource name
 - `-t, --team <name>` — Team name
-- `-b, --bridge <name>` — Bridge name
-- `--vault <json>` — Machine vault data as JSON string
+- `--ip <address>` — Machine IP address or hostname
+- `--user <name>` — SSH username
+- `--port <port>` — SSH port
+- `--datastore <path>` — Datastore path on machine
 
 > MCP excluded: Config CRUD — use config machine commands instead
 
@@ -53,37 +55,6 @@ Delete a machine
 - `--dry-run` — Show what would be done without making changes
 
 > MCP excluded: Config CRUD — use config machine commands instead
-
-### rdc machine vault get
-
-Get machine vault data
-
-**Options:**
-
-- `--name <name>` — Resource name
-- `-t, --team <name>` — Team name
-
-### rdc machine vault update
-
-Update machine vault data
-
-**Options:**
-
-- `--name <name>` — Resource name
-- `--vault <json>` — Vault content as JSON string
-- `--vault-version <n>` — Current vault version for optimistic locking
-- `-t, --team <name>` — Team name
-
-### rdc machine vault-status
-
-Show parsed vault status for a machine
-
-**Options:**
-
-- `--name <name>` — Resource name
-- `-t, --team <name>` — Team name
-
-> MCP excluded: Cloud adapter only — vault status
 
 ### rdc machine query
 
@@ -257,17 +228,6 @@ Get storage vault data
 - `--name <name>` — Resource name
 - `-t, --team <name>` — Team name
 
-### rdc storage vault update
-
-Update storage vault data
-
-**Options:**
-
-- `--name <name>` — Resource name
-- `--vault <json>` — Vault content as JSON string
-- `--vault-version <n>` — Current vault version for optimistic locking
-- `-t, --team <name>` — Team name
-
 ### rdc storage browse
 
 Browse files in a storage system
@@ -437,6 +397,7 @@ Delete a repository (destroys containers, volumes, and encrypted image). Config 
 - `--name <name>` — Resource name
 - `-m, --machine <name>` — Target machine name
 - `--archive-config` — Move config entry to deletedRepositories for later recovery
+- `-y, --yes` — Skip confirmation prompt
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 - `--dry-run` — Show what would be done without making changes
@@ -1072,7 +1033,6 @@ Create a new named config file
 - `--ssh-key <path>` — Path to SSH private key (e.g., ~/.ssh/id_rsa)
 - `--renet-path <path>` — Path to renet binary (default: renet in PATH)
 - `--master-password <password>` — Encrypt resources with a master password
-- `-u, --api-url <url>` — API URL
 - `--server <url>` — Account server URL
 
 ### rdc config list

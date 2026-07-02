@@ -4,7 +4,7 @@ description: "Kuidas Rediacc vastab PCI DSS nõuetele: muutumatud varukoopiad, a
 category: "Legal"
 order: 6
 language: et
-sourceHash: "d8391036876231a0"
+sourceHash: "05ca01c69d8bab61"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,7 +24,7 @@ Viide: [PCI Security Standards Council](https://www.pcisecuritystandards.org/doc
 | **Nõue 7**, Juurdepääsu piiramine | Piirake juurdepääsu süsteemi komponentidele ja kaardiomaniku andmetele ärivajaduse alusel | Hoidlapõhised Dockeri deemoni soklid. Juurdepääs ühele hoidlale ei anna juurdepääsu teisele. SSH-võtmepõhine autentimine. |
 | **Nõue 8**, Kasutajate tuvastamine ja autentimine | Tuvastage kasutajad ja autentida juurdepääs süsteemi komponentidele | SSH-võtme autentimine. API-tokenid IP-sidumise ja piiratud õigustega. Kahefaktoriline autentimine (TOTP). |
 | **Nõue 9**, Füüsilise juurdepääsu piiramine | Piirake füüsilist juurdepääsu kaardiomaniku andmetele | Isehallatav: füüsiline turvalisus on teie otsese kontrolli all. LUKS-krüptimine muudab varastatud draivid loetamatuks. |
-| **Nõue 10**, Logimine ja jälgimine | Logige ja jälgige kõiki juurdepääse süsteemi komponentidele ja kaardiomaniku andmetele | 70+ sündmusetüüpi (autentimine, API-tokenid, konfiguratsioon, litsentsimine, masina toimingud). Haldusarmatuurlaud ja portaal kasutaja, meeskonna, tüübi ning kuupäeva järgi filtreerimisega. `rdc audit` CLI programmiliseks ekspordiks. Masina toimingud salvestatakse ka süsteemilogidesse kaitsesügavuse eesmärgil. |
+| **Nõue 10**, Logimine ja jälgimine | Logige ja jälgige kõiki juurdepääse süsteemi komponentidele ja kaardiomaniku andmetele | 70+ sündmusetüüpi (autentimine, API-tokenid, konfiguratsioon, litsentsimine, masina toimingud). Haldusarmatuurlaud ja portaal kasutaja, meeskonna, tüübi ning kuupäeva järgi filtreerimisega, pluss JSON-eksport programmiliseks kasutamiseks. Masina toimingud salvestatakse ka süsteemilogidesse kaitsesügavuse eesmärgil. |
 | **Nõue 12**, Organisatsioonipoliitikad | Toetage infoturvet organisatsioonipoliitikate ja -programmidega | Isehallatav lahendus kõrvaldab kolmanda osapoole töötleja ulatuse (Nõue 12.8). Vähendab PCI DSS vastavuse piiri. |
 
 ## Võrgusegmenteerimine

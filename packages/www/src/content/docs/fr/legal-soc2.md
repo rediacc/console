@@ -4,7 +4,7 @@ description: "Voilà SOC 2 : les auditeurs veulent des preuves que vos contrôle
 category: "Legal"
 order: 2
 language: fr
-sourceHash: "27d2366f84e21d8c"
+sourceHash: "9ba8477a07292a7d"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -32,7 +32,7 @@ Donc Rediacc enregistre plus de 70 types d'événements différents. Les actions
 - **Licences** : émission de licences de dépôt, suivi des emplacements machine, changements d'abonnement
 - **Opérations machine** : création/démarrage/arrêt/suppression de dépôt, fork, envoi/récupération de sauvegarde, synchronisation de fichiers, sessions terminal
 
-Trois façons d'accéder à ces journaux. Tableau de bord d'administration avec filtrage par utilisateur, équipe et date. Page d'activité du portail pour les administrateurs org, avec filtrage par type et date. Ou `rdc audit` CLI pour l'export programmatique. Vous pouvez les diriger vers vos propres outils, les intégrer partout. Les opérations machine s'enregistrent également dans vos journaux système, donc vous avez une protection en profondeur.
+Deux façons d'accéder à ces journaux. Tableau de bord d'administration avec filtrage par utilisateur, équipe et date. Page d'activité du portail pour les administrateurs org, avec filtrage par type et date, et export JSON que vous pouvez diriger vers vos propres outils. Les opérations machine s'enregistrent également dans vos journaux système, donc vous avez une protection en profondeur.
 
 ## Gestion des changements
 

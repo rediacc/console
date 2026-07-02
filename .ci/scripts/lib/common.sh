@@ -5,7 +5,7 @@
 #
 # ⚠️  IMPORTANT: When adding/modifying utility functions:
 # ⚠️  1. Update this file (common.sh)
-# ⚠️  2. Test affected CI scripts (run-unit.sh, run-cli.sh, run-e2e.sh, etc.)
+# ⚠️  2. Test affected CI scripts (run-unit.sh, run-bridge.sh, etc.)
 # ⚠️  3. Update the main 'go' script if functions are used there
 
 set -euo pipefail

@@ -273,23 +273,20 @@ export function registerStorageCommands(program: Command): void {
         return provider.storage.delete(payload);
       },
     },
+    createOptions: [
+      { flags: '--vault <json>', description: t('options.vaultJson'), required: true },
+    ],
     transformCreatePayload: (name, opts) => ({
       storageName: name,
       teamName: opts.team,
+      vaultContent: opts.vault,
     }),
     vaultConfig: {
       fetch: async (params) => {
         const provider = await getStateProvider();
-        return provider.storage.getVault(params) as Promise<never>;
+        return provider.storage.getVault(params);
       },
       vaultType: 'Storage',
-    },
-    vaultUpdateConfig: {
-      update: async (payload) => {
-        const provider = await getStateProvider();
-        return provider.storage.updateVault(payload);
-      },
-      vaultFieldName: 'vaultContent',
     },
   });
   storage.summary(t('commands.storage.descriptionShort'));
