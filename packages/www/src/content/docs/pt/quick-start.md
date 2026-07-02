@@ -4,8 +4,8 @@ description: Coloque um serviço em contentor a funcionar no seu servidor em min
 category: Guides
 order: -1
 language: pt
-sourceHash: "2047fd1ce3a47944"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "afd4d22ddc8e02e1"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # Início Rápido
@@ -59,7 +59,7 @@ Todos os comandos rdc autenticam agora com esta chave. Sem senhas.
 ### 3. Adicionar o Seu Servidor
 
 ```bash
-rdc config machine add --name my-server --ip 192.168.1.100 --user muhammed
+rdc config machine add --name my-server --ip 192.168.1.100 --user admin
 rdc config machine setup --name my-server  # Provisiona o renet + cria o datastore
 ```
 

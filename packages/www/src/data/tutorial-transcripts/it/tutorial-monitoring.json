@@ -43,8 +43,8 @@
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
       "at": 26.969407,
-      "text": "E infine il controllo diagnostico per un controllo rapido sul tuo laptop. Node, chiave SSH, renet, Docker -- tutto cio' da cui dipende la CLI. Questa e' la serie completa. Dall'installazione al monitoraggio, tutto dal tuo terminale.",
-      "afterText": "Tutto verde significa che la tua CLI locale e' in salute.",
+      "text": "E infine il controllo diagnostico per un controllo rapido sul tuo laptop. Node, chiave SSH, renet, Docker -- tutto cio' da cui dipende la CLI. Questa è la serie completa. Dall'installazione al monitoraggio, tutto dal tuo terminale.",
+      "afterText": "Tutto verde significa che la tua CLI locale è in salute.",
       "cardLabel": "Doctor",
       "prose": "Esegui rdc doctor per un controllo locale sul tuo laptop. Verifica Node, la chiave SSH, renet e Docker, ogni dipendenza su cui si basa la CLI."
     }
@@ -52,7 +52,7 @@
   "narrations": [
     {
       "id": "intro",
-      "text": "Bene! La tua app e' attiva e ha un backup; ora assicuriamoci che rimanga in salute."
+      "text": "Bene! La tua app è attiva e ha un backup; ora assicuriamoci che rimanga in salute."
     },
     {
       "id": "three-checks",

@@ -8,6 +8,7 @@ import type { ImageMetadata } from 'astro';
 import illustrationEnvironmentCloning from '../assets/images/illustrations/environment-cloning.svg';
 import illustrationInfrastructureCosts from '../assets/images/illustrations/infrastructure-costs.svg';
 import illustrationRapidRecovery from '../assets/images/illustrations/rapid-recovery.svg';
+import { ACCOUNT_PATH } from './constants';
 import type { SectionType, TechItem } from './solution-pages';
 
 /** Persona-specific section types (extends base SectionType) */
@@ -46,10 +47,10 @@ export interface PersonaPageConfig {
  * Anchor-only entries (e.g. `#pricing`) target the home page; the renderer
  * concatenates them as `/${lang}${rawCtaHref}` → `/en#pricing`. */
 export const PERSONA_CTA_MAP: Record<PersonaType, string> = {
-  devops: '/install',
+  devops: ACCOUNT_PATH,
   cto: 'CONSULTATION',
   ceo: '#pricing',
-  'ai-agent': '/install',
+  'ai-agent': ACCOUNT_PATH,
 };
 
 export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {

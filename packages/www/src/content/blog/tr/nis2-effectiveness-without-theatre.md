@@ -1,8 +1,12 @@
 ---
-title: "Yıllık Sızma Testiniz Uyum Tiyatrosu. NIS2 Article 21(2)(f) Bunu Sorun Haline Getirdi."
-description: "Sürekli etkinlik değerlendirmesi, bunu ucuzlatan sabit-zamanlı fork ve adli kalitede kanıt olmadan karşılanamayacak Article 23 raporlama takvimi."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-09
+title: >-
+  Yıllık Sızma Testiniz Uyum Tiyatrosu. NIS2 Article 21(2)(f) Bunu Sorun Haline
+  Getirdi.
+description: >-
+  Sürekli etkinlik değerlendirmesi, bunu ucuzlatan sabit-zamanlı fork ve adli
+  kalitede kanıt olmadan karşılanamayacak Article 23 raporlama takvimi.
+author: Rediacc
+publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
 tags:
   - nis2
@@ -12,8 +16,8 @@ tags:
   - incident-reporting
 featured: false
 language: tr
-sourceHash: "4c2768e81f0ff03a"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: 0e471ac41759e4cb
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
 

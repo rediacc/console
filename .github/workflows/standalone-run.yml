@@ -186,6 +186,18 @@ jobs:
             echo "BRIDGE_TAG=${{ inputs.bridge-tag }}" >> $GITHUB_ENV
           fi
 
+      - name: Free disk space
+        run: |
+          echo "=== Disk usage before cleanup ==="
+          df -h / || true
+          # Aggressive cleanup: the web image contains large tutorial/solution
+          # videos and can exhaust the runner if other caches are present.
+          docker system prune -af 2>/dev/null || true
+          npm cache clean --force 2>/dev/null || true
+          sudo apt-get clean 2>/dev/null || true
+          echo "=== Disk usage after cleanup ==="
+          df -h / || true
+
       - name: Pre-pull Docker Images
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -7,7 +7,7 @@
       "id": "tutorial-fork-isolation-01",
       "markerIndex": 0,
       "at": 2.412666,
-      "text": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "text": "こちらがアプリです。demo-pgadmin、pgAdmin インターフェースを備えた PostgreSQL で、マウントされて稼働しています。",
       "afterText": "ライブの repo が1つあります。クローンしましょう。",
       "cardLabel": "ライブアプリ",
       "prose": "ライブ repository から始めます。マシン上で pgAdmin が動作している PostgreSQL データベースです。"
@@ -16,7 +16,7 @@
       "id": "tutorial-fork-isolation-02",
       "markerIndex": 1,
       "at": 8.155445,
-      "text": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "text": "fork します。コピーオンライトのクローンはサイズに関係なく数秒で完了します。detach はコンテナが起動するとすぐに戻り、ヘルスチェックはバックグラウンドで続きます。",
       "afterText": "fork 完了、起動中。データはコピーされたのではなく、どちらかが変更するまで共有されます。",
       "cardLabel": "Fork + 起動",
       "prose": "--up --detach を指定して repository を fork します。CoW クローンはほぼ瞬時に完了し、fork のサービスがすぐに起動します。"
@@ -25,7 +25,7 @@
       "id": "tutorial-fork-isolation-03",
       "markerIndex": 2,
       "at": 19.24953,
-      "text": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "text": "これで repository が2つになりました。オリジナルと実験用、それぞれが独自のコンテナ、ネットワーク、ディスクビューを持っています。",
       "afterText": "同じマシン、2つの隔離された世界。",
       "cardLabel": "並べて表示",
       "prose": "repository の一覧を確認します。オリジナルと fork が完全に隔離された状態で並列に動作しています。"
@@ -34,7 +34,7 @@
       "id": "tutorial-fork-isolation-04",
       "markerIndex": 3,
       "at": 24.926391,
-      "text": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "text": "実験は終わりましたか？fork を削除しましょう。作るのも数秒、捨てるのも数秒。オリジナルはその存在すら気づきませんでした。",
       "afterText": "削除されました。オリジナルはその間ずっとサービスを提供し続けていました。",
       "cardLabel": "Fork を削除",
       "prose": "作業が完了したら fork を削除します。元の repository はそのままです。"

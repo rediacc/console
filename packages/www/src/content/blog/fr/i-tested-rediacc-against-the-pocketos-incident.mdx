@@ -1,7 +1,7 @@
 ---
 title: "J'ai testé Rediacc face à l'incident PocketOS"
 description: "PocketOS a perdu sa base de données de production à cause d'un agent Cursor en 9 secondes. J'ai effectué le même test, chronométré chaque étape, et noté ce qui a tenu et ce qui vous appartient à corriger."
-author: Muhammed Fatih Bayraktar
+author: Rediacc
 publishedDate: 2026-04-28
 category: case-study
 tags:
@@ -11,8 +11,8 @@ tags:
   - case-study
 featured: true
 language: fr
-sourceHash: "8ccb6579c9b25ab4"
-sourceCommit: "0a3e9865997659698502ad551e078be854b4b2c4"
+sourceHash: "277ccd50e4bac37f"
+sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 ---
 
 import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
@@ -25,7 +25,7 @@ import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
 
 <YouTubeEmbed videoId="o-Bst9rO9Fk" title="J'ai testé Rediacc face à l'incident PocketOS" />
 
-> **Mise à jour. Mai 2026.** Depuis la publication de cet article, Rediacc a livré la fonctionnalité **secrets par dépôt** de première classe (`rdc repo secret`). La « lacune honnête » décrite plus bas. Les identifiants SaaS externes intégrés dans votre dépôt. Dispose maintenant d'une réponse native qui garde les secrets entièrement hors de l'image LUKS, de sorte que les forks n'en héritent par défaut d'aucun. Rendez-vous à la nouvelle section finale [Mise à jour : la lacune est désormais comblable](#mise-à-jour--la-lacune-est-désormais-comblable) pour découvrir ce qui a été livré, ce qui a changé et le risque résiduel qui subsiste.
+> **Mise à jour. Mai 2026.** Depuis la publication de cet article, Rediacc a livré des **secrets par dépôt** de première classe (`rdc repo secret`). La « lacune honnête » décrite ci-dessous (les identifiants SaaS externes intégrés dans votre dépôt) dispose désormais d'une réponse native qui garde les secrets entièrement hors de l'image LUKS, de sorte que les forks n'en héritent par défaut d'aucun. Rendez-vous à la nouvelle section finale [Mise à jour : la lacune est désormais comblable](#mise-à-jour--la-lacune-est-désormais-comblable) pour découvrir ce qui a été livré, ce qui a changé et le risque résiduel qui subsiste.
 
 Le week-end dernier, Jer Crane a publié un post-mortem de 30 heures. Un agent Cursor exécutant Claude Opus 4.6 d'Anthropic a supprimé sa base de données de production sur Railway. La suppression a tenu en un seul appel GraphQL. Cela a pris 9 secondes. Les sauvegardes de volume Railway ont disparu avec, parce que Railway les stocke dans le même volume.
 

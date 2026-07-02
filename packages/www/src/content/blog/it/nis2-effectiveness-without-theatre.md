@@ -1,8 +1,13 @@
 ---
-title: "Il tuo pen test annuale è compliance theatre. L'Article 21(2)(f) di NIS2 ha appena reso questo un problema."
-description: "La valutazione continua dell'efficacia, il fork a tempo costante che ne abbatte i costi, e la scadenza di reporting dell'Article 23 che non è rispettabile senza artefatti forensi."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-09
+title: >-
+  Il tuo pen test annuale è compliance theatre. L'Article 21(2)(f) di NIS2 ha
+  appena reso questo un problema.
+description: >-
+  La valutazione continua dell'efficacia, il fork a tempo costante che ne
+  abbatte i costi, e la scadenza di reporting dell'Article 23 che non è
+  rispettabile senza artefatti forensi.
+author: Rediacc
+publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
 tags:
   - nis2
@@ -12,8 +17,8 @@ tags:
   - incident-reporting
 featured: false
 language: it
-sourceHash: "4c2768e81f0ff03a"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: 0e471ac41759e4cb
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
 

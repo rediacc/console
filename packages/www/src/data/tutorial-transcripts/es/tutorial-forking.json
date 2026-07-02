@@ -9,7 +9,7 @@
       "at": 2.422355,
       "text": "Vamos a hacer un fork del repositorio con un único comando. Clonó todo: la app, la base de datos, los archivos de configuración. Y ocurrió en segundos, sin importar el tamaño del repo. Un gigabyte, cien gigabytes, un terabyte: el mismo tiempo, siempre.",
       "afterText": "Fork listo. El clon está activo y en ejecución, sin importar el tamaño.",
-      "cardLabel": "Fork Repo",
+      "cardLabel": "Fork del Repo",
       "prose": "Un solo comando clona el repo completo: app, base de datos y archivos de configuración. El tiempo de fork es constante sin importar el tamaño del repo, ya sea un gigabyte, cien gigabytes o un terabyte."
     },
     {

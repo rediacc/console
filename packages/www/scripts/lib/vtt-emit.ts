@@ -8,7 +8,71 @@ import type { CastNarratedDebug } from './scenes/index.ts';
 const START_HOLD_DEFAULT_SEC = 0.6;
 const MAX_WORDS_PER_CUE = 10;
 const MAX_CUE_DURATION_SEC = 2.5;
-const PUNCT_BREAK = new Set(['.', ',', ';', ':', '!', '?']);
+// Includes the fullwidth CJK forms so ja/zh narrations break cues at
+// sentence/clause boundaries just like Latin text does.
+const PUNCT_BREAK = new Set([
+  '.',
+  ',',
+  ';',
+  ':',
+  '!',
+  '?',
+  '。',
+  '、',
+  '，',
+  '；',
+  '：',
+  '！',
+  '？',
+]);
+
+// CJK-aware tokenization. ja/zh narration text has no whitespace word
+// boundaries: /\S+/g sees a whole clause as one "word", which collapses the
+// estimate fallback to a single cue-spanning token (no per-word highlight)
+// and breaks the density gate (expectedWords ~1 makes any sparse alignment
+// look like full coverage). For CJK-dominant text, segment with
+// Intl.Segmenter (word granularity, dictionary-based for ja/zh) instead.
+// Cross-reference: check-tutorial-caption-sync.ts uses the same approach to
+// count expected tokens when validating published words.json files.
+// Hiragana, katakana (+ phonetic extensions, halfwidth), CJK ideographs
+// (unified + ext A + compatibility).
+const CJK_CHAR_RE =
+  /[\u3040-\u30ff\u31f0-\u31ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f]/;
+const KANA_RE = /[\u3040-\u30ff\u31f0-\u31ff\uff66-\uff9f]/;
+
+function isCjkDominant(text: string): boolean {
+  let cjk = 0;
+  let nonSpace = 0;
+  for (const ch of text) {
+    if (/\s/.test(ch)) continue;
+    nonSpace++;
+    if (CJK_CHAR_RE.test(ch)) cjk++;
+  }
+  return nonSpace > 0 && cjk / nonSpace >= 0.25;
+}
+
+interface TokenSpan {
+  index: number;
+  length: number;
+}
+
+function tokenizeForTiming(text: string): TokenSpan[] {
+  if (!isCjkDominant(text)) {
+    return Array.from(text.matchAll(/\S+/g)).map((m) => ({
+      index: m.index ?? 0,
+      length: m[0].length,
+    }));
+  }
+  // Kana present -> Japanese dictionary; otherwise Chinese.
+  const locale = KANA_RE.test(text) ? 'ja' : 'zh';
+  const segmenter = new Intl.Segmenter(locale, { granularity: 'word' });
+  const tokens: TokenSpan[] = [];
+  for (const seg of segmenter.segment(text)) {
+    if (!seg.isWordLike) continue;
+    tokens.push({ index: seg.index, length: seg.segment.length });
+  }
+  return tokens;
+}
 
 type WordTiming = { startSec: number; endSec: number; startChar: number; endChar: number };
 
@@ -171,14 +235,14 @@ function buildCueGroupsFromWordTimings(
  * Returns timings RELATIVE to a 0 base.
  */
 function estimateRelativeWordTimings(text: string, durationSec: number): WordTiming[] {
-  const matches = Array.from(text.matchAll(/\S+/g));
-  if (matches.length === 0) return [];
-  const span = Math.max(0.2, durationSec) / matches.length;
-  return matches.map((m, i) => ({
+  const tokens = tokenizeForTiming(text);
+  if (tokens.length === 0) return [];
+  const span = Math.max(0.2, durationSec) / tokens.length;
+  return tokens.map((t, i) => ({
     startSec: i * span,
     endSec: (i + 1) * span,
-    startChar: m.index ?? 0,
-    endChar: (m.index ?? 0) + m[0].length,
+    startChar: t.index,
+    endChar: t.index + t.length,
   }));
 }
 
@@ -205,7 +269,7 @@ function cuesFromNarration(
   durationSec: number,
   wordTimings: WordTiming[] | undefined
 ): CueGroup[] {
-  const expectedWords = (text.match(/\S+/g) ?? []).length;
+  const expectedWords = tokenizeForTiming(text).length;
   const wtCoverage = wordTimings && expectedWords > 0 ? wordTimings.length / expectedWords : 0;
   const wt =
     wordTimings && wordTimings.length > 0 && wtCoverage >= MIN_WORD_TIMING_COVERAGE

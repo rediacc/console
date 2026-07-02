@@ -126,12 +126,42 @@ test_validate_accepts_substantive_reason() {
     log_pass "substantive reason passes"
 }
 
+test_validate_rejects_deferral_phrasing() {
+    # Routine-deferral phrasing is substring-matched, so it is rejected even when
+    # the reason is long and not an exact low-effort phrase. This is the guardrail
+    # against blocklisting installable routine bumps "to keep this merge focused".
+    local reason
+    local kick=(
+        "routine 5.9.0 minor bump, not security-relevant and not needed by this change; deferred to a dedicated dependency-bump PR"
+        "routine patch deferred to a dedicated dependency-bump PR to keep this merge focused"
+        "minor bump deferred to a dedicated dependency-bump PR once the guard admits the version"
+    )
+    for reason in "${kick[@]}"; do
+        if validate_blocker_quality "testid" "$reason" "testfile" >/dev/null 2>&1; then
+            log_fail "can-kicking deferral reason should be rejected but passed: \"$reason\""
+        fi
+    done
+    # Legitimate major-migration holds that mention a dedicated PR must STILL pass —
+    # they read "dedicated lint-tooling PR" / "dedicated PR that exercises the email
+    # flows", not "dedicated dependency-bump PR".
+    local legit=(
+        "v66 is a major release that adds and renames lint rules; adoption deferred to a dedicated lint-tooling PR that audits the rule-set"
+        "v9 is a major release with breaking transport changes; deferred to a dedicated PR that exercises the email flows before bumping"
+    )
+    for reason in "${legit[@]}"; do
+        if ! validate_blocker_quality "testid" "$reason" "testfile" >/dev/null 2>&1; then
+            log_fail "legitimate major-migration reason should pass but was rejected: \"$reason\""
+        fi
+    done
+    log_pass "routine-deferral phrasing rejected; legitimate major-migration holds accepted"
+}
+
 test_validate_accepts_all_current_audit_entries() {
     # Sanity check: every BLOCKER reason in the currently-shipped allowlists
     # must pass the quality gate. This catches regressions in BLOCKER_MIN_LENGTH
     # or new banned phrases that collide with legitimate reasons.
     local file
-    for file in .audit-prod-allowlist .audit-allowlist; do
+    for file in .audit-prod-allowlist .audit-allowlist .deps-upgrade-blocklist; do
         [[ ! -f "$file" ]] && continue
         declare -A ALLOWED=() BLOCKER=()
         parse_blockered_list "$file" ALLOWED BLOCKER
@@ -189,6 +219,7 @@ test_parse_inline_form_with_blocker
 test_validate_rejects_every_low_effort_phrase
 test_validate_rejects_short_reason
 test_validate_accepts_substantive_reason
+test_validate_rejects_deferral_phrasing
 test_validate_accepts_all_current_audit_entries
 test_verify_all_blockers_fails_on_missing
 test_verify_all_blockers_passes_when_good

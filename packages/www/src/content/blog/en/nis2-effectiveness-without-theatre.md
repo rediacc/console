@@ -1,7 +1,7 @@
 ---
 title: "Your Annual Pen Test is Compliance Theatre. NIS2 Article 21(2)(f) Just Made That a Problem."
 description: "Continuous effectiveness assessment, the constant-time fork that makes it cheap, and the Article 23 reporting timeline you cannot meet without forensic-grade artefacts."
-author: Muhammed Fatih Bayraktar
+author: Rediacc
 publishedDate: 2026-05-09
 category: guide
 tags:

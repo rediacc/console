@@ -45,7 +45,7 @@ done
 
 # Filter out empty URLs
 VALID_URLS=()
-for url in "${URLS[@]}"; do
+for url in "${URLS[@]+"${URLS[@]}"}"; do
     if [[ -n "$url" ]]; then
         VALID_URLS+=("$url")
     fi

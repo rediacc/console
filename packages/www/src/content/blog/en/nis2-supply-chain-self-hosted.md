@@ -1,7 +1,7 @@
 ---
 title: "Article 21(2)(d) is a Vendor Question. Self-Hosting is the Answer You Stop Owing."
 description: "Why the third-party-ICT register shrinks when the data plane never leaves your tenancy. A practical read of NIS2 Article 21(2)(d) for CISOs and procurement leads renegotiating DPAs in 2026."
-author: Muhammed Fatih Bayraktar
+author: Rediacc
 publishedDate: 2026-05-09
 category: guide
 tags:
@@ -159,6 +159,6 @@ If you are heading into a backup or DR renewal in the next twelve months and Art
 2. Run the six-question checklist above against your incumbent. Send the answers to your DPO and your auditor and ask whether the gaps are accepted. If the gaps include layer 3 (key custody) or layer 4 (sub-processors you did not enumerate), that is the wedge.
 3. Look at what an alternative supplier register would look like with a self-hosted control plane. Compare the register entries, not the licence costs. The licence costs are similar within a factor of two; the register entries are different shapes. (The companion post on [the structural cost of the NIS2 stack](/en/blog/nis2-the-real-bill) walks through what gets collapsed and what stays.)
 
-If we are the alternative on your shortlist, the offer is concrete. Send us your vendor questionnaire. We will fill it out against a deployed instance, with our actual answers to your questions, including the gaps. If you want to walk through the architecture before sending paperwork, we will book a 30-minute architecture review with the founder. The path to a defensible register entry is not a glossy brochure. It is the answers, including the uncomfortable ones.
+If we are the alternative on your shortlist, the offer is concrete. Send us your vendor questionnaire. We will fill it out against a deployed instance, with our actual answers to your questions, including the gaps. If you want to walk through the architecture before sending paperwork, we will book a 30-minute architecture review with our engineering team. The path to a defensible register entry is not a glossy brochure. It is the answers, including the uncomfortable ones.
 
 Want the per-article Rediacc map? See [NIS2 and DORA](/en/docs/legal-nis2-dora). Need the wider frame? Read [Compliance Overview](/en/docs/legal-overview). For data residency, see [Data Sovereignty](/en/docs/legal-data-sovereignty). For why self-hosted matters, see [On-Premise](/en/docs/on-premise).

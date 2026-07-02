@@ -1,11 +1,11 @@
 ---
-title: "Hesap Yönetimi"
-description: "Rediacc'ta organizasyonlar, ekipler, üyeler ve abonelikler."
+title: Hesap Yönetimi
+description: 'Rediacc''ta organizasyonlar, ekipler, üyeler ve abonelikler.'
 category: Guides
 order: 12
 language: tr
-sourceHash: "974885635641ed70"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: 3887adc59fc63c26
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 ### Organizasyonlar
@@ -57,10 +57,10 @@ Rediacc dört plan sunar:
 
 | Plan | Makineler | Depo Lisansı/ay | Delegasyon sertifikası varsayılan / maks | Özellikler |
 |------|-----------|-----------------|----------------------------------------|------------|
-| COMMUNITY | 2 | 500 | 15g / 30g | Temel |
-| PROFESSIONAL | 5 | 5.000 | 60g / 120g | İzin grupları, denetim günlüğü, özel marka, öncelikli destek |
-| BUSINESS | 20 | 20.000 | 90g / 180g | Ceph, gelişmiş analitik, kuyruk önceliği, gelişmiş kuyruk |
-| ENTERPRISE | 50 | 100.000 | 120g / 365g | Özel hesap yöneticisi |
+| COMMUNITY | 2 | 100 | 15g / 30g | Temel |
+| PROFESSIONAL | 3 | 2.000+ | 60g / 120g | İzin grupları, denetim günlüğü, özel marka, öncelikli destek |
+| BUSINESS | 10 | 5.000+ | 90g / 180g | Ceph, gelişmiş analitik, kuyruk önceliği, gelişmiş kuyruk |
+| ENTERPRISE | 25+ | 15.000+ | 120g / 365g | Özel hesap yöneticisi |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 

@@ -7,7 +7,7 @@
       "id": "tutorial-fork-isolation-01",
       "markerIndex": 0,
       "at": 2.412666,
-      "text": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "text": "Découvrez l'application : demo-pgadmin, un PostgreSQL avec une interface pgAdmin, monté et en cours d'exécution.",
       "afterText": "Un repo en direct. Clonons-le.",
       "cardLabel": "App Live",
       "prose": "Partez d'un repository en direct : une base de données PostgreSQL avec pgAdmin en cours d'exécution sur la machine."
@@ -16,7 +16,7 @@
       "id": "tutorial-fork-isolation-02",
       "markerIndex": 1,
       "at": 8.155445,
-      "text": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "text": "Forkez-le. Le clone copy-on-write prend quelques secondes, quelle que soit la taille ; le mode detach revient dès que les conteneurs démarrent, pendant que les health checks continuent en arrière-plan.",
       "afterText": "Forké et en cours de démarrage. Les données n'ont pas été copiées, elles ont été partagées, jusqu'à ce qu'un côté les modifie.",
       "cardLabel": "Fork + Up",
       "prose": "Forkez le repository avec --up --detach : le clone CoW est quasi instantané et les services du fork démarrent immédiatement."
@@ -25,7 +25,7 @@
       "id": "tutorial-fork-isolation-03",
       "markerIndex": 2,
       "at": 19.24953,
-      "text": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "text": "Deux repositories maintenant : l'original et l'expérience, chacun avec ses propres conteneurs, son réseau et sa vue disque.",
       "afterText": "Même machine, deux mondes isolés.",
       "cardLabel": "Côte à Côte",
       "prose": "Listez les repositories : l'original et le fork tournent côte à côte, complètement isolés."
@@ -34,7 +34,7 @@
       "id": "tutorial-fork-isolation-04",
       "markerIndex": 3,
       "at": 24.926391,
-      "text": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "text": "Fini d'expérimenter ? Supprimez le fork. Quelques secondes pour le créer, quelques secondes pour le jeter — l'original n'a jamais su qu'il existait.",
       "afterText": "Supprimé. L'original a continué à fonctionner tout ce temps.",
       "cardLabel": "Supprimer Fork",
       "prose": "Supprimez le fork quand vous avez terminé. Le repository original n'est pas affecté."

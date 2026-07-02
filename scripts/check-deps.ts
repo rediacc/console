@@ -349,8 +349,10 @@ const NPMRC_FILE = path.join(CONSOLE_ROOT, '.npmrc');
 
 /**
  * Read the `minimum-release-age` setting (in minutes) from .npmrc and return it
- * in milliseconds. The repo pins this to 1440 (24h) as a supply-chain defence:
- * npm refuses to install any version published more recently than this window.
+ * in milliseconds — the base freshness window for this CI gate (pinned to 1440 =
+ * 24h). NOTE: `minimum-release-age` is our CI-gate knob, NOT npm's native install
+ * guard (npm's real key is `min-release-age`, in days); see the .npmrc comment.
+ * The actual deferral rounds this up to the next UTC day (see startOfNextUtcDay).
  * Returns 0 when the setting is absent (feature disabled — no deferral).
  */
 function getMinReleaseAgeMs(): number {
@@ -412,12 +414,30 @@ async function fetchVersionPublishTime(packageName: string, version: string): Pr
 }
 
 /**
- * Split must-upgrade packages into those installable now vs those whose `latest`
- * was published within the .npmrc minimum-release-age window. npm's supply-chain
- * guard refuses to install a version younger than that window, so flagging it as
- * "must upgrade" is a false positive that no amount of `--upgrade` can clear — it
- * resolves itself once the version ages past the threshold. We defer those (no
- * failure) instead of forcing a manual blocklist entry for every fresh release.
+ * Epoch ms of 00:00:00 UTC on the day AFTER the day that contains `ms`. Used to
+ * batch freshness deferral onto a daily boundary: a version that ages past the
+ * base window on a given UTC day becomes eligible together with every other such
+ * version at the following midnight, so a day's upgrades surface as one batch
+ * instead of trickling in one-at-a-time as each crosses its own T+24h moment.
+ */
+function startOfNextUtcDay(ms: number): number {
+  const d = new Date(ms);
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1);
+}
+
+/**
+ * Split must-upgrade packages into those eligible to bump now vs those still
+ * within the freshness window. A version becomes eligible only at the next UTC
+ * midnight after it has aged the base window (minimum-release-age), so all of a
+ * day's freshly-aged versions surface together the next day rather than hourly.
+ * Deferring a still-fresh `latest` avoids churning the tree (and re-failing the
+ * gate an hour later) for a version that is only a few hours past the window.
+ *
+ * Keep this in sync with the bash twin `is_release_deferred` in
+ * .ci/scripts/lib/release-age.sh (audit + go gates).
+ *
+ * Fail-closed: a null publish time (registry hiccup) is treated as too-new/
+ * deferred, so a transient lookup failure never becomes a false "must upgrade".
  */
 async function partitionByReleaseAge(
   packages: PackageInfo[],
@@ -432,7 +452,7 @@ async function partitionByReleaseAge(
   await Promise.all(
     packages.map(async (pkg) => {
       const published = await fetchVersionPublishTime(pkg.name, pkg.latest);
-      if (published !== null && nowMs - published < minReleaseAgeMs) {
+      if (published === null || nowMs < startOfNextUtcDay(published + minReleaseAgeMs)) {
         tooNew.push(pkg);
       } else {
         installable.push(pkg);
@@ -650,9 +670,9 @@ async function checkDependencies(): Promise<void> {
     if (dirBlocked.length > 0) privateBlocked.push({ dir, name, packages: dirBlocked });
   }
 
-  // Defer packages whose `latest` is still inside the .npmrc minimum-release-age
-  // window: npm cannot install them yet, so they are not a real "must upgrade".
-  // This auto-resolves once the version ages past the threshold — no manual
+  // Defer packages whose `latest` is still inside the freshness window (aged <
+  // 24h, rounded up to the next UTC day): too fresh to be a real "must upgrade".
+  // This auto-resolves as a daily batch once the version ages out — no manual
   // blocklist churn for every freshly-published patch.
   const minReleaseAgeMs = getMinReleaseAgeMs();
   const nowMs = Date.now();
@@ -691,7 +711,7 @@ async function checkDependencies(): Promise<void> {
         for (const pkg of pkgs) printPackage(pkg, { suffix: ` (blocked, ${dirName})` });
       }
       for (const pkg of tooNew) {
-        printPackage(pkg, { suffix: ' (too new — within minimum-release-age)' });
+        printPackage(pkg, { suffix: ' (too new — deferred until next UTC day)' });
       }
       for (const { name: dirName, packages: pkgs } of privateTooNew) {
         for (const pkg of pkgs) printPackage(pkg, { suffix: ` (too new, ${dirName})` });
@@ -730,10 +750,11 @@ async function checkDependencies(): Promise<void> {
     console.log();
   }
 
-  // Too-new packages are informational, never a failure: npm's minimum-release-age
-  // guard cannot install them yet, and they clear themselves once they age out.
+  // Too-new packages are informational, never a failure: they are still within
+  // the freshness window (deferred until the next UTC day after aging 24h) and
+  // surface as a batch once eligible.
   if (totalTooNew > 0) {
-    console.log(`${YELLOW}Too new — within npm minimum-release-age, deferred (${totalTooNew}):${NC}`);
+    console.log(`${YELLOW}Too new — within freshness window, deferred until next UTC day (${totalTooNew}):${NC}`);
     console.log();
     for (const pkg of tooNew) {
       printPackage(pkg, { changelogUrls });

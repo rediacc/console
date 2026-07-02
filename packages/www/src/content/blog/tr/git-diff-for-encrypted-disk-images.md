@@ -1,8 +1,13 @@
 ---
-title: "Şifreli Disk Görüntüleri için git diff: Şifreyi Çözmeden Fork'ları Karşılaştırma"
-description: "rdc repo diff, şifrelenmiş görüntüleri blok düzeyinde karşılaştırarak A/M/D/R raporluyor. Anahtar kullanılmaz. Maliyet depo boyutuna değil, değişen bloklara göre ölçekleniyor."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-28
+title: >-
+  Şifreli Disk Görüntüleri için git diff: Şifreyi Çözmeden Fork'ları
+  Karşılaştırma
+description: >-
+  rdc repo diff, şifrelenmiş görüntüleri blok düzeyinde karşılaştırarak A/M/D/R
+  raporluyor. Anahtar kullanılmaz. Maliyet depo boyutuna değil, değişen bloklara
+  göre ölçekleniyor.
+author: Rediacc
+publishedDate: 2026-05-28T00:00:00.000Z
 category: guide
 tags:
   - luks
@@ -12,8 +17,8 @@ tags:
   - cli
 featured: false
 language: tr
-sourceHash: "516ffb7de9941f15"
-sourceCommit: "0a3e9865997659698502ad551e078be854b4b2c4"
+sourceHash: 1b08ca130594e2e4
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
 > **Özet.** `rdc repo diff`, iki fork'lu depo arasındaki dosya düzeyindeki farkı `git status --short` gramerinde (A/M/D/R) gösterir ve hiçbirinin şifresini çözmez.

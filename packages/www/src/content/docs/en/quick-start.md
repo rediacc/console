@@ -57,7 +57,7 @@ Every rdc command now authenticates with this key. No passwords.
 ### 3. Add Your Server
 
 ```bash
-rdc config machine add --name my-server --ip 192.168.1.100 --user muhammed
+rdc config machine add --name my-server --ip 192.168.1.100 --user admin
 rdc config machine setup --name my-server  # Provisions renet + creates datastore
 ```
 

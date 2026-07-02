@@ -1,8 +1,12 @@
 ---
-title: "Ce que les acheteurs nous ont appris lors du premier cycle d'audit NIS2"
-description: "La pile de cinq outils que les entités essentielles du marché intermédiaire assemblent discrètement en 2026, ce qu'un plan de contrôle auto-hébergé consolide, et les postes budgétaires qui restent à votre charge dans tous les cas."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-09
+title: Ce que les acheteurs nous ont appris lors du premier cycle d'audit NIS2
+description: >-
+  La pile de cinq outils que les entités essentielles du marché intermédiaire
+  assemblent discrètement en 2026, ce qu'un plan de contrôle auto-hébergé
+  consolide, et les postes budgétaires qui restent à votre charge dans tous les
+  cas.
+author: Rediacc
+publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
 tags:
   - nis2
@@ -12,8 +16,8 @@ tags:
   - marche-intermediaire
 featured: false
 language: fr
-sourceHash: "3fbb581ec14e3f80"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: 29fbcbffd8a304bc
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
 

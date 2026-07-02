@@ -105,6 +105,12 @@
         },
         {
           "startSec": 6.08,
+          "endSec": 6.16,
+          "startChar": 77,
+          "endChar": 80
+        },
+        {
+          "startSec": 6.16,
           "endSec": 6.56,
           "startChar": 81,
           "endChar": 87
@@ -129,9 +135,9 @@
         },
         {
           "startSec": 8.32,
-          "endSec": 8.88,
+          "endSec": 9.28,
           "startChar": 109,
-          "endChar": 113
+          "endChar": 114
         },
         {
           "startSec": 9.52,
@@ -147,7 +153,7 @@
         },
         {
           "startSec": 11.92,
-          "endSec": 12.4,
+          "endSec": 12.48,
           "startChar": 156,
           "endChar": 164
         },
@@ -1643,7 +1649,7 @@
         },
         {
           "startSec": 5.36,
-          "endSec": 5.6,
+          "endSec": 5.76,
           "startChar": 55,
           "endChar": 59
         },
@@ -2251,7 +2257,153 @@
       "textHash": "1c0080c0639e9ce66487d9c4cca3a7cd3b163654743706a9672a212652f4127d",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/next-tutorial.1c0080c0.mp3",
       "narrationText": "You just saw the commands. Next we make it visual: a real database app, forked live, edited side by side — and the original never flinches.",
-      "audioDurationSec": 12.277551
+      "audioDurationSec": 12.277551,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 4,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.04,
+          "startChar": 9,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.12,
+          "startChar": 13,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 2.0,
+          "startChar": 17,
+          "endChar": 25
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.04,
+          "startChar": 27,
+          "endChar": 31
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.36,
+          "startChar": 32,
+          "endChar": 34
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.6,
+          "startChar": 35,
+          "endChar": 39
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.68,
+          "startChar": 40,
+          "endChar": 42
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.32,
+          "startChar": 43,
+          "endChar": 50
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.44,
+          "startChar": 53,
+          "endChar": 57
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 6.0,
+          "startChar": 58,
+          "endChar": 66
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.32,
+          "startChar": 67,
+          "endChar": 70
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.2,
+          "startChar": 72,
+          "endChar": 78
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.76,
+          "startChar": 79,
+          "endChar": 83
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.48,
+          "startChar": 85,
+          "endChar": 91
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.8,
+          "startChar": 92,
+          "endChar": 96
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 8.96,
+          "startChar": 97,
+          "endChar": 99
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.44,
+          "startChar": 100,
+          "endChar": 104
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.08,
+          "startChar": 107,
+          "endChar": 110
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.24,
+          "startChar": 111,
+          "endChar": 114
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.8,
+          "startChar": 115,
+          "endChar": 123
+        },
+        {
+          "startSec": 11.12,
+          "endSec": 11.52,
+          "startChar": 124,
+          "endChar": 129
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 12.16,
+          "startChar": 130,
+          "endChar": 138
+        }
+      ]
     }
   ]
 }

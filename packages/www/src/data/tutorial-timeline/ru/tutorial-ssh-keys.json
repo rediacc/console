@@ -18,9 +18,205 @@
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-ssh-keys/tutorial-ssh-keys-01.9e29afb3.mp3",
       "textHash": "9e29afb334f970f940f13931a28c2a0a19684a141f4728cb4d123698b597fdea",
       "audioDurationSec": 15.960816,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.88,
+          "startChar": 4,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.76,
+          "startChar": 12,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.92,
+          "startChar": 19,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.64,
+          "startChar": 22,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.88,
+          "startChar": 33,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.76,
+          "startChar": 39,
+          "endChar": 47
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.28,
+          "startChar": 57,
+          "endChar": 60
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.8,
+          "startChar": 61,
+          "endChar": 72
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.36,
+          "startChar": 73,
+          "endChar": 81
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.4,
+          "startChar": 83,
+          "endChar": 93
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 9.2,
+          "startChar": 95,
+          "endChar": 102
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.84,
+          "startChar": 105,
+          "endChar": 111
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.64,
+          "startChar": 112,
+          "endChar": 126
+        },
+        {
+          "startSec": 11.76,
+          "endSec": 12.16,
+          "startChar": 128,
+          "endChar": 136
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.48,
+          "startChar": 137,
+          "endChar": 141
+        },
+        {
+          "startSec": 12.48,
+          "endSec": 12.64,
+          "startChar": 142,
+          "endChar": 145
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 12.8,
+          "startChar": 146,
+          "endChar": 149
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 13.04,
+          "startChar": 150,
+          "endChar": 154
+        },
+        {
+          "startSec": 13.04,
+          "endSec": 13.52,
+          "startChar": 155,
+          "endChar": 163
+        },
+        {
+          "startSec": 13.84,
+          "endSec": 14.08,
+          "startChar": 165,
+          "endChar": 172
+        },
+        {
+          "startSec": 14.08,
+          "endSec": 14.24,
+          "startChar": 173,
+          "endChar": 175
+        },
+        {
+          "startSec": 14.24,
+          "endSec": 14.64,
+          "startChar": 176,
+          "endChar": 186
+        },
+        {
+          "startSec": 15.44,
+          "endSec": 15.92,
+          "startChar": 187,
+          "endChar": 195
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-ssh-keys/tutorial-ssh-keys-01-after.8c491155.mp3",
       "afterAudioDurationSec": 4.127347,
-      "afterTextHash": "8c49115573e6bdec32a124123649b46da3c4fe3d8bde4a6e02d8caa3ffb69de8"
+      "afterTextHash": "8c49115573e6bdec32a124123649b46da3c4fe3d8bde4a6e02d8caa3ffb69de8",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.28,
+          "startChar": 5,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.84,
+          "startChar": 19,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.24,
+          "startChar": 22,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.32,
+          "startChar": 29,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.04,
+          "startChar": 42,
+          "endChar": 45
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.68,
+          "startChar": 46,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.0,
+          "startChar": 56,
+          "endChar": 61
+        }
+      ]
     },
     {
       "id": "tutorial-ssh-keys-02",
@@ -31,9 +227,235 @@
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-ssh-keys/tutorial-ssh-keys-02.8cbbf35e.mp3",
       "textHash": "8cbbf35ee0b48569bcc9f1c2d3280953f580ac769b4b68050c9812fbbb918e2d",
       "audioDurationSec": 14.680816,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.8,
+          "startChar": 4,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.6,
+          "startChar": 12,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.08,
+          "startChar": 21,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.4,
+          "startChar": 31,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.48,
+          "startChar": 36,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.96,
+          "startChar": 39,
+          "endChar": 45
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 3.84,
+          "startChar": 46,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.4,
+          "startChar": 48,
+          "endChar": 55
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 5.12,
+          "startChar": 56,
+          "endChar": 68
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.68,
+          "startChar": 69,
+          "endChar": 75
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.96,
+          "startChar": 76,
+          "endChar": 83
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.6,
+          "startChar": 84,
+          "endChar": 94
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 10.08,
+          "startChar": 97,
+          "endChar": 106
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.4,
+          "startChar": 107,
+          "endChar": 110
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 10.96,
+          "startChar": 112,
+          "endChar": 117
+        },
+        {
+          "startSec": 10.96,
+          "endSec": 11.28,
+          "startChar": 118,
+          "endChar": 123
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 12.4,
+          "startChar": 124,
+          "endChar": 138
+        },
+        {
+          "startSec": 12.4,
+          "endSec": 12.56,
+          "startChar": 139,
+          "endChar": 141
+        },
+        {
+          "startSec": 12.56,
+          "endSec": 12.96,
+          "startChar": 142,
+          "endChar": 148
+        },
+        {
+          "startSec": 12.96,
+          "endSec": 13.12,
+          "startChar": 149,
+          "endChar": 152
+        },
+        {
+          "startSec": 13.12,
+          "endSec": 13.36,
+          "startChar": 153,
+          "endChar": 158
+        },
+        {
+          "startSec": 13.36,
+          "endSec": 13.76,
+          "startChar": 159,
+          "endChar": 166
+        },
+        {
+          "startSec": 13.76,
+          "endSec": 14.08,
+          "startChar": 167,
+          "endChar": 173
+        },
+        {
+          "startSec": 14.08,
+          "endSec": 14.24,
+          "startChar": 174,
+          "endChar": 176
+        },
+        {
+          "startSec": 14.24,
+          "endSec": 14.56,
+          "startChar": 177,
+          "endChar": 182
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-ssh-keys/tutorial-ssh-keys-02-after.61845348.mp3",
       "afterAudioDurationSec": 5.799184,
-      "afterTextHash": "618453486496320f00c55821556fa217c5d6b5b19916b2437767a50df551fc47"
+      "afterTextHash": "618453486496320f00c55821556fa217c5d6b5b19916b2437767a50df551fc47",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 10,
+          "endChar": 13
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.2,
+          "startChar": 14,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.28,
+          "startChar": 22,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.92,
+          "startChar": 25,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.72,
+          "startChar": 35,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.52,
+          "startChar": 44,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 4.16,
+          "startChar": 54,
+          "endChar": 64
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.72,
+          "startChar": 67,
+          "endChar": 74
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.36,
+          "startChar": 75,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.68,
+          "startChar": 81,
+          "endChar": 87
+        }
+      ]
     },
     {
       "id": "tutorial-ssh-keys-03",
@@ -44,9 +466,139 @@
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-ssh-keys/tutorial-ssh-keys-03.4e249ecc.mp3",
       "textHash": "4e249ecc0b3f0aa8c3f47266492bf4cd8b7f103541dbbc2dfb5d94bc554d70ef",
       "audioDurationSec": 11.389388,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.2,
+          "startChar": 4,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.32,
+          "startChar": 12,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.64,
+          "startChar": 25,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.72,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.36,
+          "startChar": 32,
+          "endChar": 35
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.08,
+          "startChar": 37,
+          "endChar": 43
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.56,
+          "startChar": 44,
+          "endChar": 50
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.96,
+          "startChar": 51,
+          "endChar": 58
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.28,
+          "startChar": 59,
+          "endChar": 64
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 6.48,
+          "startChar": 65,
+          "endChar": 84
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 6.72,
+          "startChar": 85,
+          "endChar": 86
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.04,
+          "startChar": 87,
+          "endChar": 91
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.52,
+          "startChar": 92,
+          "endChar": 99
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.64,
+          "startChar": 100,
+          "endChar": 107
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 9.12,
+          "startChar": 108,
+          "endChar": 115
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.92,
+          "startChar": 117,
+          "endChar": 124
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.88,
+          "startChar": 125,
+          "endChar": 138
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.36,
+          "startChar": 139,
+          "endChar": 147
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-ssh-keys/tutorial-ssh-keys-03-after.4a4449ee.mp3",
       "afterAudioDurationSec": 1.880816,
-      "afterTextHash": "4a4449eea923b1098a05b3328dd93deb70180a94d5610ba86b9df537a26e026f"
+      "afterTextHash": "4a4449eea923b1098a05b3328dd93deb70180a94d5610ba86b9df537a26e026f",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 1.2,
+          "startChar": 5,
+          "endChar": 20
+        }
+      ]
     }
   ],
   "narrationAudio": [
@@ -55,21 +607,309 @@
       "textHash": "c427b3b8c6385e59578b4a46da62d3f8d9c9661e29257fd670e2233d783cd23d",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-ssh-keys/intro.c427b3b8.mp3",
       "narrationText": "Итак! Давайте настроим SSH-ключи, чтобы CLI мог подключаться к вашим серверам без паролей.",
-      "audioDurationSec": 6.60898
+      "audioDurationSec": 6.60898,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.2,
+          "startChar": 6,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.76,
+          "startChar": 14,
+          "endChar": 22
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.88,
+          "startChar": 23,
+          "endChar": 33
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.36,
+          "startChar": 34,
+          "endChar": 39
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.16,
+          "startChar": 44,
+          "endChar": 47
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.88,
+          "startChar": 48,
+          "endChar": 60
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 4.96,
+          "startChar": 61,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.28,
+          "startChar": 63,
+          "endChar": 68
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.84,
+          "startChar": 69,
+          "endChar": 77
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.08,
+          "startChar": 78,
+          "endChar": 81
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.56,
+          "startChar": 82,
+          "endChar": 89
+        }
+      ]
     },
     {
       "id": "three-steps-generate-copy-register",
       "textHash": "39967f2c749d2731bd95f706c5fff25ae60227c153e039a5105e6f469623fbe6",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-ssh-keys/three-steps-generate-copy-register.39967f2c.mp3",
       "narrationText": "Всего три шага. Сгенерировать ключ на ноутбуке, скопировать его на сервер и зарегистрировать в инструменте командной строки. Два из них вы выполняете один раз.",
-      "audioDurationSec": 11.389388
+      "audioDurationSec": 11.389388,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.72,
+          "startChar": 6,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.28,
+          "startChar": 10,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.56,
+          "startChar": 16,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.88,
+          "startChar": 30,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.04,
+          "startChar": 35,
+          "endChar": 37
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.68,
+          "startChar": 38,
+          "endChar": 46
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.8,
+          "startChar": 48,
+          "endChar": 59
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.04,
+          "startChar": 60,
+          "endChar": 63
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.12,
+          "startChar": 64,
+          "endChar": 66
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.68,
+          "startChar": 67,
+          "endChar": 73
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.16,
+          "startChar": 74,
+          "endChar": 75
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 7.04,
+          "startChar": 76,
+          "endChar": 92
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.12,
+          "startChar": 93,
+          "endChar": 94
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.76,
+          "startChar": 95,
+          "endChar": 106
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.24,
+          "startChar": 107,
+          "endChar": 116
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.72,
+          "startChar": 117,
+          "endChar": 123
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.52,
+          "startChar": 125,
+          "endChar": 128
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 9.68,
+          "startChar": 129,
+          "endChar": 131
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 9.92,
+          "startChar": 132,
+          "endChar": 135
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.08,
+          "startChar": 136,
+          "endChar": 138
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.72,
+          "startChar": 139,
+          "endChar": 149
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 11.04,
+          "startChar": 150,
+          "endChar": 154
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.28,
+          "startChar": 155,
+          "endChar": 158
+        }
+      ]
     },
     {
       "id": "next-tutorial",
       "textHash": "a4063daf7c2f38ea3644538c3348d0b1c51e208a4ae1f9b46fc2600c946a4a5f",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-ssh-keys/next-tutorial.a4063daf.mp3",
       "narrationText": "Ключ зарегистрирован, и CLI готов к работе. Дальше добавим ваш первый сервер.",
-      "audioDurationSec": 5.877551
+      "audioDurationSec": 5.877551,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.36,
+          "startChar": 5,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 1.92,
+          "startChar": 22,
+          "endChar": 23
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.8,
+          "startChar": 28,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 2.88,
+          "startChar": 34,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.36,
+          "startChar": 36,
+          "endChar": 42
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.16,
+          "startChar": 44,
+          "endChar": 50
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.64,
+          "startChar": 51,
+          "endChar": 58
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.96,
+          "startChar": 59,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.36,
+          "startChar": 63,
+          "endChar": 69
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.76,
+          "startChar": 70,
+          "endChar": 76
+        }
+      ]
     }
   ]
 }

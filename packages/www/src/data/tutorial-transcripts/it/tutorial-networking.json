@@ -51,8 +51,8 @@
       "id": "tutorial-networking-06",
       "markerIndex": 5,
       "at": 35.97937,
-      "text": "Avviamo il proxy. Traefik scopre i tuoi container ogni cinque secondi. I certificati TLS arrivano da Let's Encrypt automaticamente. La tua app e' ora raggiungibile su internet via HTTPS.",
-      "afterText": "Il proxy e' attivo. I certificati TLS arriveranno automaticamente.",
+      "text": "Avviamo il proxy. Traefik scopre i tuoi container ogni cinque secondi. I certificati TLS arrivano da Let's Encrypt automaticamente. La tua app è ora raggiungibile su internet via HTTPS.",
+      "afterText": "Il proxy è attivo. I certificati TLS arriveranno automaticamente.",
       "cardLabel": "Avvia Proxy",
       "prose": "Avvia il proxy. Traefik rileva i tuoi container automaticamente, e i certificati TLS provengono da Let's Encrypt in modo automatico. La tua app è ora raggiungibile su internet tramite HTTPS."
     }
@@ -72,7 +72,7 @@
     },
     {
       "id": "next-tutorial",
-      "text": "E con questo la rete e' sistemata! Ci vediamo nel prossimo."
+      "text": "E con questo la rete è sistemata! Ci vediamo nel prossimo."
     }
   ],
   "title": "Rete e Domini",

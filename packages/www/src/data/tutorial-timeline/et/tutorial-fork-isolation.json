@@ -11,7 +11,7 @@
       "audioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-01.a2636a4a.mp3",
       "audioDurationSec": 7.157551,
       "textHash": "a2636a4a646946bcb342235e1f3db6a628354cfa6fd108400ae9225cc7a0d078",
-      "narrationText": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "narrationText": "Tutvu rakendusega: demo-pgadmin, PostgreSQL koos pgAdmin liidesega, mounditud ja töötamas.",
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-01-after.27f00449.mp3",
       "afterAudioDurationSec": 1.880816,
       "afterTextHash": "27f00449a715807dd2e1700087f61961c2f1c785f785585889b5a92a19b81f1f"
@@ -24,7 +24,7 @@
       "audioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-02.4e3625a4.mp3",
       "audioDurationSec": 10.266122,
       "textHash": "4e3625a41e9ade01f2616bc98f77faac12642b1fd721e997c137429306b38700",
-      "narrationText": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "narrationText": "Tee sellest fork. Copy-on-write kloon võtab aega vaid mõne sekundi, olenemata suurusest; detach naaseb kohe, kui konteinerid käivituvad, samal ajal kui health checkid jätkuvad taustal.",
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-02-after.6761f936.mp3",
       "afterAudioDurationSec": 5.564082,
       "afterTextHash": "6761f9366b0a414afb5e2ef29296238c3e15c6739df99b1a0fe6460b71d09baf"
@@ -37,7 +37,7 @@
       "audioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-03.ef21da1c.mp3",
       "audioDurationSec": 6.347755,
       "textHash": "ef21da1c52e9db0870054d3b9ad5504d69be1e2bc5153b8226d37209954bb67e",
-      "narrationText": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "narrationText": "Nüüd on kaks repositooriumi: originaal ja eksperiment, kummalgi omad konteinerid, oma võrk ja oma kettavaade.",
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-03-after.7379fe76.mp3",
       "afterAudioDurationSec": 3.239184,
       "afterTextHash": "7379fe760c51bf45417d5de0e44b7a87c630d7efb5e0add9562628cec58f38c3"
@@ -50,7 +50,7 @@
       "audioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-04.5eee7a7f.mp3",
       "audioDurationSec": 9.090612,
       "textHash": "5eee7a7f529dcaea0c960477435b36d94974c2998b0af5db1f98442d6267b1e3",
-      "narrationText": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "narrationText": "Katsetamine läbi? Kustuta fork. Sekunditega loodud, sekunditega kadunud, originaal ei saanudki teada, et see üldse eksisteeris.",
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-fork-isolation/tutorial-fork-isolation-04-after.49e877ac.mp3",
       "afterAudioDurationSec": 2.76898,
       "afterTextHash": "49e877ac7400aed68db2565db34b185f01f4c2e745a717563af4494516bc2d75"

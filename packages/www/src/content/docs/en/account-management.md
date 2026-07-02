@@ -55,14 +55,14 @@ Rediacc offers four plans:
 
 | Plan | Machines | Repo Licenses/mo | Delegation cert default / max | Features |
 |------|----------|------------------|-------------------------------|----------|
-| COMMUNITY | 2 | 500 | 15d / 30d | Basic |
-| PROFESSIONAL | 5 | 5,000 | 60d / 120d | Permission groups, audit log, custom branding, priority support |
-| BUSINESS | 20 | 20,000 | 90d / 180d | Ceph, advanced analytics, queue priority, advanced queue |
-| ENTERPRISE | 50 | 100,000 | 120d / 365d | Dedicated account manager |
+| COMMUNITY | 2 | 100 | 15d / 30d | Basic |
+| PROFESSIONAL | 3 | 2,000+ | 60d / 120d | Permission groups, audit log, custom branding, priority support |
+| BUSINESS | 10 | 5,000+ | 90d / 180d | Ceph, advanced analytics, queue priority, advanced queue |
+| ENTERPRISE | 25+ | 15,000+ | 120d / 365d | Dedicated account manager |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 
-All plans start with a 3-day grace period. Machine slots are tracked per-team and auto-release after 1 hour of inactivity. See [Subscription & Licensing](/en/docs/subscription-licensing) for details.
+All plans start with a 3-day grace period. Machine slots are tracked per-team and auto-release after 5 hours of inactivity. See [Subscription & Licensing](/en/docs/subscription-licensing) for details.
 
 ### Billing
 

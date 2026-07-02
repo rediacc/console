@@ -4,6 +4,7 @@
  */
 
 import type { ImageMetadata } from 'astro';
+import { ACCOUNT_PATH } from './constants';
 // Problem section illustrations
 import illustrationAiPentesting from '../assets/images/illustrations/ai-pentesting.svg';
 import illustrationAuditTrail from '../assets/images/illustrations/audit-trail.svg';
@@ -90,7 +91,7 @@ export interface SolutionPageConfig {
 
 /** Default CTA destinations by category. Relative paths are prefixed with /{lang} at render time. */
 export const CATEGORY_CTA_MAP: Record<SolutionCategory, string> = {
-  'dev-env': '/install',
+  'dev-env': ACCOUNT_PATH,
   ransomware: '/contact?interest=threat-response',
   'multi-cloud': '/contact?interest=disaster-recovery',
   backups: '/contact?interest=disaster-recovery',

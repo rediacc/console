@@ -27,7 +27,7 @@
       "at": 21.404869,
       "text": "Tee uuesti push. Sama käsk, aga loe seekord väljundit: umbes viiskümmend megabaiti edastatud, märgitud delta, kahe gigabaidise image'i suhtes. Ainult muutunud blokid liikusid.",
       "afterText": "Viiskümmend megabaiti alla kuue sekundi, kahe gigabaidisest image'ist. Numbrid on tõend.",
-      "cardLabel": "Delta Push",
+      "cardLabel": "Deltapush",
       "prose": "Tee sama käsuga uuesti push: väljund raporteerib umbes 50 MB edastamist deltana jagatud aluse suhtes, 2 GB image'ist. Ainult muutunud blokid liikusid."
     },
     {

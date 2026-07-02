@@ -4,8 +4,8 @@ description: Ejecute un servicio en contenedores en su servidor en minutos.
 category: Guides
 order: -1
 language: es
-sourceHash: "2047fd1ce3a47944"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "afd4d22ddc8e02e1"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # Inicio rápido
@@ -59,7 +59,7 @@ Ahora todos los comandos de rdc se autentican con esta clave. Sin contraseñas.
 ### 3. Agregar su servidor
 
 ```bash
-rdc config machine add --name my-server --ip 192.168.1.100 --user muhammed
+rdc config machine add --name my-server --ip 192.168.1.100 --user admin
 rdc config machine setup --name my-server  # Aprovisiona renet + crea almacén de datos
 ```
 

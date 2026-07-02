@@ -1,11 +1,11 @@
 ---
-title: "구독 및 라이선싱"
-description: "계정, rdc, renet이 머신 슬롯, 저장소 라이선스, 요금제 제한을 어떻게 처리하는지 이해합니다."
-category: "Guides"
+title: 구독 및 라이선싱
+description: '계정, rdc, renet이 머신 슬롯, 저장소 라이선스, 요금제 제한을 어떻게 처리하는지 이해합니다.'
+category: Guides
 order: 7
 language: ko
-sourceHash: "0e18efe91c91f74c"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: 10e9f781881854be
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 # 구독 및 라이선싱
@@ -60,7 +60,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### 머신 슬롯 (서버 측)
 
-머신 슬롯 추적은 서버 측에서 적용됩니다. CLI가 저장소 라이선스를 발급할 때, 계정 서버는 구독의 머신 슬롯 할당량(예: Community의 경우 2개 머신, Professional의 경우 5개)을 확인합니다. 슬롯은 해당 머신에서 마지막 저장소 라이선스 발급 후 1시간 동안 보유되며 비활성 후 자동으로 해제됩니다. 5슬롯 요금제는 슬롯이 활발히 프로비저닝할 때만 보유되므로 시간이 지남에 따라 수십 개의 머신을 지원할 수 있습니다.
+머신 슬롯 추적은 서버 측에서 적용됩니다. CLI가 저장소 라이선스를 발급할 때, 계정 서버는 구독의 머신 슬롯 할당량(예: Community의 경우 2개 머신, Professional의 경우 3개)을 확인합니다. 슬롯은 해당 머신에서 마지막 저장소 라이선스 발급 후 5시간 동안 보유되며 비활성 후 자동으로 해제됩니다. 10슬롯 Business 요금제는 슬롯이 활발히 프로비저닝할 때만 보유되므로 시간이 지남에 따라 수십 개의 머신을 지원할 수 있습니다.
 
 머신 라이선스 파일은 머신에 저장되지 않습니다. 슬롯 적용은 서버의 발급 시간에 발생합니다.
 
@@ -91,10 +91,10 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 | Plan | Floating Licenses | Repository Size | Monthly repo license issuances | Delegation cert default / max |
 |------|-------------------|-----------------|-------------------------------|---|
-| Community | 2 | 10 GB | 500 | 15d / 30d |
-| Professional | 5 | 100 GB | 5,000 | 60d / 120d |
-| Business | 20 | 500 GB | 20,000 | 90d / 180d |
-| Enterprise | 50 | 2048 GB | 100,000 | 120d / 365d |
+| Community | 2 | 10 GB | 100 | 15d / 30d |
+| Professional | 3 | 50 GB | 2,000+ | 60d / 120d |
+| Business | 10 | 200 GB | 5,000+ | 90d / 180d |
+| Enterprise | 25+ | 1 TB+ | 15,000+ | 120d / 365d |
 
 계약별 제한은 특정 고객을 위해 이러한 값을 높이거나 낮출 수 있습니다. 위임 인증서 유효성도 `subscription.expiresAt + 3 day grace`로 하드 캡되므로 월별 청구되는 구독은 자연스럽게 청구 주기에 맞춰진 인증서를 얻습니다. 전체 규칙은 [License Chain & Delegation - Validity Policy](/en/docs/license-chain)를 참고하세요.
 
@@ -110,7 +110,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 - 수동 개입 필요 없음
 - `rdc machine query --system --licenses --name <machine>`으로 머신 ID 및 라이선스 상태 확인
 
-**Edge 채널 사용자**는 무료로 2X Community 제한을 받습니다 (20 GB 저장소, 월 1,000회 발급, 4개 머신). 유료 요금제는 Stable 채널에서만 사용할 수 있습니다. 자세한 내용은 [Release Channels](/en/docs/release-channels)를 참고하세요.
+**Edge 채널 사용자**는 무료로 2X Community 제한을 받습니다 (20 GB 저장소, 월 200회 발급, 4개 머신). 유료 요금제는 Stable 채널에서만 사용할 수 있습니다. 자세한 내용은 [Release Channels](/en/docs/release-channels)를 참고하세요.
 
 ## 저장소 생성, 시작, 중지, 재시작 중의 작동
 

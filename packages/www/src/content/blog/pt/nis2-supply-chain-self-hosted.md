@@ -1,7 +1,7 @@
 ---
 title: "Article 21(2)(d) é uma Questão de Fornecedor. O Auto-Alojamento é a Resposta que Deixa de Dever."
 description: "Porque razão o registo de fornecedores TIC de terceiros encolhe quando o plano de dados nunca sai do seu alojamento. Uma leitura prática do NIS2 Article 21(2)(d) para CISOs e responsáveis de procurement a renegociar DPAs em 2026."
-author: Muhammed Fatih Bayraktar
+author: Rediacc
 publishedDate: 2026-05-09
 category: guide
 tags:
@@ -12,8 +12,8 @@ tags:
   - conformidade
 featured: false
 language: pt
-sourceHash: "98f0b752bc5dbd4d"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "ffdb86da48dacc58"
+sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 translatedFrom: en
 ---
 
@@ -156,12 +156,12 @@ Um fornecedor que responde de forma limpa a seis em seis é invulgar. Um fornece
 
 ## O que isto significa para o próximo ciclo de renovação
 
-Se está a entrar numa renovação de cópia de segurança ou DR nos próximos doze meses e o Article 21(2)(d) está na scorecard de procurement, três medidas concretas:
+Se está a preparar uma renovação de backup ou DR nos próximos doze meses e o Article 21(2)(d) consta da sua scorecard de procurement, três passos concretos:
 
-1. Desenhe o plano de dados de quatro camadas do seu fornecedor atual num quadro branco. Se não conseguir nomear o terceiro subprocessador, tem um problema de completude do registo que é anterior ao NIS2 e a renovação é o momento certo para o resolver.
-2. Execute a lista de verificação com as seis perguntas acima contra o seu fornecedor atual. Envie as respostas ao seu DPO e ao seu auditor e pergunte se as lacunas são aceites. Se as lacunas incluírem a camada 3 (custódia de chaves) ou a camada 4 (subprocessadores que não enumerou), esse é o ponto de pressão.
-3. Veja como seria um registo de fornecedores alternativo com um plano de controlo auto-alojado. Compare as entradas do registo, não os custos de licença. Os custos de licença são semelhantes dentro de um fator de dois; as entradas do registo têm formas diferentes. (O artigo complementar sobre [o custo estrutural da pilha NIS2](/pt/blog/nis2-the-real-bill) percorre o que colapsa e o que permanece.)
+1. Desenhe num quadro branco o plano de dados de quatro camadas do seu fornecedor atual. Se não conseguir nomear o terceiro subprocessador, tem um problema de completude do registo que precede o NIS2 e a renovação é o momento certo para o resolver.
+2. Execute a lista de verificação de seis perguntas acima contra o seu fornecedor atual. Envie as respostas ao seu DPO e ao seu auditor e pergunte se as lacunas são aceitáveis. Se as lacunas incluírem a camada 3 (custódia de chaves) ou a camada 4 (subprocessadores que não enumerou), esse é o ponto de pressão.
+3. Veja como seria um registo de fornecedores alternativo com um plano de controlo auto-alojado. Compare as entradas do registo, não os custos das licenças. Os custos das licenças são semelhantes dentro de um fator de dois; as entradas do registo têm formas diferentes. (O artigo complementar sobre [o custo estrutural da pilha NIS2](/pt/blog/nis2-the-real-bill) explica o que colapsa e o que fica.)
 
-Se somos a alternativa na sua lista curta, a oferta é concreta. Envie-nos o seu questionário de fornecedor. Preenchemo-lo contra uma instância em produção, com as nossas respostas reais às suas perguntas, incluindo as lacunas. Se quiser percorrer a arquitetura antes de enviar papelada, agendamos uma revisão de arquitetura de 30 minutos com o fundador. O caminho para uma entrada de registo defensável não é uma brochura vistosa. São as respostas, incluindo as desconfortáveis.
+Se formos a alternativa na sua lista curta, a oferta é concreta. Envie-nos o seu questionário de fornecedor. Preenchemo-lo contra uma instância implementada, com as nossas respostas reais às suas perguntas, incluindo as lacunas. Se quiser percorrer a arquitetura antes de enviar documentação, marcamos uma revisão de arquitetura de 30 minutos com a nossa equipa de engenharia. O caminho para uma entrada de registo defensável não é uma brochura vistosa. São as respostas, incluindo as desconfortáveis.
 
 Quer o mapa por artigo do Rediacc? Consulte [NIS2 e DORA](/pt/docs/legal-nis2-dora). Precisa de um enquadramento mais amplo? Leia [Visão Geral de Conformidade](/pt/docs/legal-overview). Para residência de dados, consulte [Soberania de Dados](/pt/docs/legal-data-sovereignty). Para saber porque o self-hosting importa, consulte [On-Premise](/pt/docs/on-premise).

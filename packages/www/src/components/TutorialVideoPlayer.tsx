@@ -416,6 +416,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
         poster={posterSrc}
         preload="metadata"
         playsInline
+        crossOrigin="anonymous"
         data-poster={posterSrc}
       >
         <track kind="subtitles" src={subtitlesSrc} srcLang={lang} label={langLabel} default />

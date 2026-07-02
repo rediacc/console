@@ -18,9 +18,355 @@
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-installation/tutorial-installation-01.978b33a8.mp3",
       "textHash": "978b33a8e4912ae06f9c9a7ebf6fa14e84ecf8fb06bb2eb64ec8e9a108d84aa6",
       "audioDurationSec": 14.106122,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.12,
+          "startChar": 3,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.68,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.0,
+          "startChar": 8,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.16,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.56,
+          "startChar": 11,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.64,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.8,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 2.88,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.04,
+          "startChar": 16,
+          "endChar": 18
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.2,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.68,
+          "startChar": 19,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.76,
+          "startChar": 21,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.08,
+          "startChar": 22,
+          "endChar": 24
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.2,
+          "startChar": 25,
+          "endChar": 30
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.6,
+          "startChar": 30,
+          "endChar": 33
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.68,
+          "startChar": 33,
+          "endChar": 34
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.16,
+          "startChar": 36,
+          "endChar": 37
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.88,
+          "startChar": 38,
+          "endChar": 41
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 6.96,
+          "startChar": 42,
+          "endChar": 43
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.36,
+          "startChar": 43,
+          "endChar": 45
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.6,
+          "startChar": 45,
+          "endChar": 47
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 7.84,
+          "startChar": 47,
+          "endChar": 48
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.72,
+          "startChar": 49,
+          "endChar": 55
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 8.8,
+          "startChar": 55,
+          "endChar": 56
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 8.96,
+          "startChar": 56,
+          "endChar": 57
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.12,
+          "startChar": 57,
+          "endChar": 58
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.28,
+          "startChar": 58,
+          "endChar": 60
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.76,
+          "startChar": 60,
+          "endChar": 65
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 9.84,
+          "startChar": 65,
+          "endChar": 66
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.16,
+          "startChar": 66,
+          "endChar": 68
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 10.32,
+          "startChar": 68,
+          "endChar": 69
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.48,
+          "startChar": 69,
+          "endChar": 70
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.44,
+          "startChar": 71,
+          "endChar": 77
+        },
+        {
+          "startSec": 11.44,
+          "endSec": 11.52,
+          "startChar": 77,
+          "endChar": 78
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 12.0,
+          "startChar": 78,
+          "endChar": 80
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.16,
+          "startChar": 80,
+          "endChar": 81
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.64,
+          "startChar": 81,
+          "endChar": 83
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 12.72,
+          "startChar": 83,
+          "endChar": 84
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 12.8,
+          "startChar": 84,
+          "endChar": 85
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 13.12,
+          "startChar": 85,
+          "endChar": 87
+        },
+        {
+          "startSec": 13.12,
+          "endSec": 13.2,
+          "startChar": 87,
+          "endChar": 88
+        },
+        {
+          "startSec": 13.2,
+          "endSec": 13.6,
+          "startChar": 88,
+          "endChar": 90
+        },
+        {
+          "startSec": 13.6,
+          "endSec": 13.76,
+          "startChar": 90,
+          "endChar": 92
+        },
+        {
+          "startSec": 13.76,
+          "endSec": 14.08,
+          "startChar": 92,
+          "endChar": 94
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-installation/tutorial-installation-01-after.fff454cb.mp3",
       "afterAudioDurationSec": 4.284082,
-      "afterTextHash": "fff454cb373ba3e4c528b7cda93110cff13ec1bece47bdea004ddca8111d1c55"
+      "afterTextHash": "fff454cb373ba3e4c528b7cda93110cff13ec1bece47bdea004ddca8111d1c55",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.96,
+          "startChar": 6,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.2,
+          "startChar": 8,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.32,
+          "startChar": 11,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.72,
+          "startChar": 15,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.96,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.2,
+          "startChar": 20,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.36,
+          "startChar": 22,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.68,
+          "startChar": 23,
+          "endChar": 25
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.84,
+          "startChar": 25,
+          "endChar": 26
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.08,
+          "startChar": 27,
+          "endChar": 29
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.24,
+          "startChar": 29,
+          "endChar": 30
+        }
+      ]
     },
     {
       "id": "tutorial-installation-02",
@@ -31,9 +377,355 @@
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-installation/tutorial-installation-02.a64f1c35.mp3",
       "textHash": "a64f1c357e92716f9d3ddc587484d9da9ac7d229be6a9f33f6b878bea09f75c3",
       "audioDurationSec": 15.960816,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.64,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.28,
+          "startChar": 3,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.6,
+          "startChar": 7,
+          "endChar": 8
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.64,
+          "startChar": 16,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.72,
+          "startChar": 20,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.04,
+          "startChar": 21,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.2,
+          "startChar": 23,
+          "endChar": 24
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.52,
+          "startChar": 24,
+          "endChar": 26
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.44,
+          "startChar": 32,
+          "endChar": 35
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.76,
+          "startChar": 36,
+          "endChar": 38
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.56,
+          "startChar": 39,
+          "endChar": 42
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.64,
+          "startChar": 43,
+          "endChar": 44
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 7.04,
+          "startChar": 44,
+          "endChar": 46
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.12,
+          "startChar": 46,
+          "endChar": 47
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.44,
+          "startChar": 47,
+          "endChar": 49
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.76,
+          "startChar": 49,
+          "endChar": 51
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.24,
+          "startChar": 51,
+          "endChar": 53
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.32,
+          "startChar": 53,
+          "endChar": 54
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.8,
+          "startChar": 54,
+          "endChar": 56
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 8.96,
+          "startChar": 56,
+          "endChar": 57
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.28,
+          "startChar": 57,
+          "endChar": 61
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.52,
+          "startChar": 61,
+          "endChar": 62
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.16,
+          "startChar": 63,
+          "endChar": 65
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 10.24,
+          "startChar": 65,
+          "endChar": 66
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.4,
+          "startChar": 66,
+          "endChar": 67
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.48,
+          "startChar": 67,
+          "endChar": 69
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 10.8,
+          "startChar": 69,
+          "endChar": 71
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 10.88,
+          "startChar": 71,
+          "endChar": 72
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.2,
+          "startChar": 72,
+          "endChar": 74
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.36,
+          "startChar": 74,
+          "endChar": 75
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.6,
+          "startChar": 75,
+          "endChar": 77
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.56,
+          "startChar": 78,
+          "endChar": 80
+        },
+        {
+          "startSec": 12.56,
+          "endSec": 12.88,
+          "startChar": 80,
+          "endChar": 83
+        },
+        {
+          "startSec": 12.88,
+          "endSec": 13.12,
+          "startChar": 83,
+          "endChar": 84
+        },
+        {
+          "startSec": 13.44,
+          "endSec": 13.92,
+          "startChar": 84,
+          "endChar": 88
+        },
+        {
+          "startSec": 13.92,
+          "endSec": 14.08,
+          "startChar": 88,
+          "endChar": 89
+        },
+        {
+          "startSec": 14.08,
+          "endSec": 14.48,
+          "startChar": 89,
+          "endChar": 91
+        },
+        {
+          "startSec": 14.48,
+          "endSec": 14.72,
+          "startChar": 91,
+          "endChar": 93
+        },
+        {
+          "startSec": 14.72,
+          "endSec": 15.04,
+          "startChar": 93,
+          "endChar": 95
+        },
+        {
+          "startSec": 15.04,
+          "endSec": 15.12,
+          "startChar": 95,
+          "endChar": 96
+        },
+        {
+          "startSec": 15.12,
+          "endSec": 15.44,
+          "startChar": 96,
+          "endChar": 98
+        },
+        {
+          "startSec": 15.44,
+          "endSec": 15.6,
+          "startChar": 98,
+          "endChar": 99
+        },
+        {
+          "startSec": 15.6,
+          "endSec": 15.68,
+          "startChar": 99,
+          "endChar": 100
+        },
+        {
+          "startSec": 15.68,
+          "endSec": 15.92,
+          "startChar": 100,
+          "endChar": 102
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-installation/tutorial-installation-02-after.7893aa71.mp3",
       "afterAudioDurationSec": 3.317551,
-      "afterTextHash": "7893aa710e09eb4d144ef92c523371b7778e89b642196aa497e90609b16fce5c"
+      "afterTextHash": "7893aa710e09eb4d144ef92c523371b7778e89b642196aa497e90609b16fce5c",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.56,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.88,
+          "startChar": 6,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 0.96,
+          "startChar": 8,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.04,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.2,
+          "startChar": 10,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.36,
+          "startChar": 12,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.24,
+          "startChar": 14,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.32,
+          "startChar": 16,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.64,
+          "startChar": 17,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.96,
+          "startChar": 19,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.2,
+          "startChar": 21,
+          "endChar": 23
+        }
+      ]
     }
   ],
   "narrationAudio": [
@@ -42,35 +734,753 @@
       "textHash": "5c9fc6a6bc339e12920c8e61fee9a5c9654386680e981697e792926e2f7c93fc",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-installation/intro.5c9fc6a6.mp3",
       "narrationText": "それでは！ラップトップにコマンドラインツールをインストールしていきましょう。",
-      "audioDurationSec": 4.04898
+      "audioDurationSec": 4.04898,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.32,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.48,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.12,
+          "startChar": 5,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.36,
+          "startChar": 8,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.6,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.24,
+          "startChar": 12,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.56,
+          "startChar": 19,
+          "endChar": 22
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.72,
+          "startChar": 22,
+          "endChar": 23
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.2,
+          "startChar": 23,
+          "endChar": 29
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.28,
+          "startChar": 29,
+          "endChar": 30
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.36,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.52,
+          "startChar": 31,
+          "endChar": 33
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 4.0,
+          "startChar": 33,
+          "endChar": 37
+        }
+      ]
     },
     {
       "id": "three-steps",
       "textHash": "091b39ec51686abb0dda12397fc2ba24d880dd4cb7043ac93aaca2f951ac8ce1",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-installation/three-steps.091b39ec.mp3",
       "narrationText": "3ステップです。インストールページを開き、OS を選択して、コマンドをターミナルに貼り付けます。",
-      "audioDurationSec": 7.235918
+      "audioDurationSec": 7.235918,
+      "wordTimings": [
+        {
+          "startSec": 0.48,
+          "endSec": 0.72,
+          "startChar": 1,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.04,
+          "startChar": 5,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.08,
+          "startChar": 8,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.48,
+          "startChar": 14,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.56,
+          "startChar": 17,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.12,
+          "startChar": 18,
+          "endChar": 20
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.92,
+          "startChar": 21,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.0,
+          "startChar": 24,
+          "endChar": 25
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.4,
+          "startChar": 25,
+          "endChar": 27
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.56,
+          "startChar": 27,
+          "endChar": 28
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.8,
+          "startChar": 28,
+          "endChar": 29
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.68,
+          "startChar": 30,
+          "endChar": 34
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 5.76,
+          "startChar": 34,
+          "endChar": 35
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.32,
+          "startChar": 35,
+          "endChar": 40
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.4,
+          "startChar": 40,
+          "endChar": 41
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.88,
+          "startChar": 41,
+          "endChar": 45
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.2,
+          "startChar": 45,
+          "endChar": 47
+        }
+      ]
     },
     {
       "id": "open-install-page",
       "textHash": "f58394c0243ff975a07e11c0c14767af9f069021ad509b55ca4f1f2841ae794c",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-installation/open-install-page.f58394c0.mp3",
       "narrationText": "インストールページを開き、クイックインストールのセクションまでスクロールします。ご利用のプラットフォームに合った1行コマンドが生成されます。",
-      "audioDurationSec": 9.090612
+      "audioDurationSec": 9.090612,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.96,
+          "startChar": 6,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.52,
+          "startChar": 10,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 23,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.36,
+          "startChar": 24,
+          "endChar": 29
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.68,
+          "startChar": 29,
+          "endChar": 31
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.24,
+          "startChar": 31,
+          "endChar": 36
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.32,
+          "startChar": 36,
+          "endChar": 37
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.64,
+          "startChar": 37,
+          "endChar": 39
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.52,
+          "startChar": 40,
+          "endChar": 41
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.76,
+          "startChar": 41,
+          "endChar": 43
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 5.92,
+          "startChar": 43,
+          "endChar": 44
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.56,
+          "startChar": 44,
+          "endChar": 52
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.72,
+          "startChar": 52,
+          "endChar": 53
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 6.8,
+          "startChar": 53,
+          "endChar": 55
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.12,
+          "startChar": 55,
+          "endChar": 56
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 8.0,
+          "startChar": 58,
+          "endChar": 62
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.16,
+          "startChar": 62,
+          "endChar": 63
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.56,
+          "startChar": 63,
+          "endChar": 65
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.64,
+          "startChar": 65,
+          "endChar": 66
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.72,
+          "startChar": 66,
+          "endChar": 67
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 9.04,
+          "startChar": 67,
+          "endChar": 69
+        }
+      ]
     },
     {
       "id": "laptop-vs-server",
       "textHash": "d4e0c23d82ba21969181325c192a994a3b03154711843b2caac053aa0d11ae0b",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-installation/laptop-vs-server.d4e0c23d.mp3",
       "narrationText": "コマンドラインツールはラップトップ上で動きます。サーバー側では renet という別コンポーネントが動作し、CLI が SSH 経由でプロビジョニングと操作を行うため、手動でログインする必要は一切ありません。",
-      "audioDurationSec": 15.725714
+      "audioDurationSec": 15.725714,
+      "wordTimings": [
+        {
+          "startSec": 0.48,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.12,
+          "startChar": 7,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.36,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.68,
+          "startChar": 11,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.0,
+          "startChar": 14,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.24,
+          "startChar": 17,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.32,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.64,
+          "startChar": 19,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.96,
+          "startChar": 21,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 4.0,
+          "startChar": 24,
+          "endChar": 28
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.24,
+          "startChar": 28,
+          "endChar": 29
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.32,
+          "startChar": 29,
+          "endChar": 30
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.56,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.36,
+          "startChar": 38,
+          "endChar": 39
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.6,
+          "startChar": 39,
+          "endChar": 41
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.92,
+          "startChar": 41,
+          "endChar": 42
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.56,
+          "startChar": 42,
+          "endChar": 49
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.72,
+          "startChar": 49,
+          "endChar": 50
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 6.96,
+          "startChar": 50,
+          "endChar": 52
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.2,
+          "startChar": 52,
+          "endChar": 53
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.08,
+          "startChar": 54,
+          "endChar": 57
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.64,
+          "startChar": 58,
+          "endChar": 59
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.52,
+          "startChar": 60,
+          "endChar": 63
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 9.92,
+          "startChar": 64,
+          "endChar": 66
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.08,
+          "startChar": 66,
+          "endChar": 67
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 11.28,
+          "startChar": 67,
+          "endChar": 75
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 12.0,
+          "startChar": 76,
+          "endChar": 78
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.4,
+          "startChar": 79,
+          "endChar": 81
+        },
+        {
+          "startSec": 12.4,
+          "endSec": 12.72,
+          "startChar": 81,
+          "endChar": 83
+        },
+        {
+          "startSec": 13.04,
+          "endSec": 13.44,
+          "startChar": 84,
+          "endChar": 86
+        },
+        {
+          "startSec": 13.44,
+          "endSec": 13.6,
+          "startChar": 86,
+          "endChar": 87
+        },
+        {
+          "startSec": 13.6,
+          "endSec": 13.84,
+          "startChar": 87,
+          "endChar": 89
+        },
+        {
+          "startSec": 13.84,
+          "endSec": 14.0,
+          "startChar": 89,
+          "endChar": 91
+        },
+        {
+          "startSec": 14.0,
+          "endSec": 14.24,
+          "startChar": 91,
+          "endChar": 93
+        },
+        {
+          "startSec": 14.24,
+          "endSec": 14.56,
+          "startChar": 93,
+          "endChar": 95
+        },
+        {
+          "startSec": 14.56,
+          "endSec": 14.72,
+          "startChar": 95,
+          "endChar": 96
+        },
+        {
+          "startSec": 14.72,
+          "endSec": 15.12,
+          "startChar": 96,
+          "endChar": 98
+        },
+        {
+          "startSec": 15.12,
+          "endSec": 15.28,
+          "startChar": 98,
+          "endChar": 100
+        },
+        {
+          "startSec": 15.28,
+          "endSec": 15.6,
+          "startChar": 100,
+          "endChar": 102
+        },
+        {
+          "startSec": 15.6,
+          "endSec": 15.68,
+          "startChar": 102,
+          "endChar": 103
+        }
+      ]
     },
     {
       "id": "next-tutorial",
       "textHash": "862b0331f1037d212883092c3f8da15a82ac20f854daad7379e6ee438006bcd3",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-installation/next-tutorial.862b0331.mp3",
       "narrationText": "インストールはこれで完了です。次は、CLI がサーバーに接続できるよう SSH キーをセットアップしていきます。",
-      "audioDurationSec": 8.515918
+      "audioDurationSec": 8.515918,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.88,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.12,
+          "startChar": 7,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.2,
+          "startChar": 9,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.6,
+          "startChar": 10,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.92,
+          "startChar": 12,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.72,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.96,
+          "startChar": 16,
+          "endChar": 17
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.84,
+          "startChar": 18,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.0,
+          "startChar": 22,
+          "endChar": 23
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.48,
+          "startChar": 23,
+          "endChar": 27
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.64,
+          "startChar": 27,
+          "endChar": 28
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.12,
+          "startChar": 28,
+          "endChar": 30
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.44,
+          "startChar": 30,
+          "endChar": 33
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.76,
+          "startChar": 33,
+          "endChar": 35
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.4,
+          "startChar": 36,
+          "endChar": 37
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.64,
+          "startChar": 37,
+          "endChar": 38
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 6.72,
+          "startChar": 38,
+          "endChar": 39
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 6.96,
+          "startChar": 40,
+          "endChar": 42
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.2,
+          "startChar": 42,
+          "endChar": 43
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.84,
+          "startChar": 43,
+          "endChar": 49
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 7.92,
+          "startChar": 49,
+          "endChar": 50
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.0,
+          "startChar": 50,
+          "endChar": 51
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.24,
+          "startChar": 51,
+          "endChar": 53
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.4,
+          "startChar": 53,
+          "endChar": 55
+        }
+      ]
     }
   ]
 }

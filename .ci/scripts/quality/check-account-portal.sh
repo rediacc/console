@@ -52,7 +52,16 @@ if ! npx biome check private/account/web/src/; then
     log_warn "Frontend lint issues found (non-blocking)"
 fi
 
-# Phase 5: Build frontend
+# Phase 5: Generate onboarding content from canonical www tutorials
+log_step "Generating account onboarding content..."
+cd "$REPO_ROOT"
+if ! npm run build:account-onboarding; then
+    log_error "Account onboarding content generation failed!"
+    exit 1
+fi
+log_info "Account onboarding content generated"
+
+# Phase 6: Build frontend
 log_step "Building account portal frontend..."
 cd "$WEB_DIR"
 if ! npx vite build; then
@@ -61,7 +70,7 @@ if ! npx vite build; then
 fi
 log_info "Frontend build succeeded"
 
-# Phase 6: Verify output exists
+# Phase 7: Verify output exists
 OUTPUT_FILE="$REPO_ROOT/workers/account/dist/account/index.html"
 if [[ ! -f "$OUTPUT_FILE" ]]; then
     log_error "Expected build output not found: $OUTPUT_FILE"

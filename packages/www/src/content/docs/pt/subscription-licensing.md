@@ -1,11 +1,13 @@
 ---
-title: "Assinatura e Licenciamento"
-description: "Compreenda como account, rdc e renet lidam com slots de máquina, licenças de repositório e limites de plano."
-category: "Guides"
+title: Assinatura e Licenciamento
+description: >-
+  Compreenda como account, rdc e renet lidam com slots de máquina, licenças de
+  repositório e limites de plano.
+category: Guides
 order: 7
 language: pt
-sourceHash: "0e18efe91c91f74c"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: 10e9f781881854be
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 # Assinatura e Licenciamento
@@ -60,7 +62,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Slots de máquina (lado do servidor)
 
-O rastreamento de slots de máquina é aplicado pelo lado do servidor. Quando a CLI emite uma licença de repositório, o servidor de conta verifica a cota de slots de máquina da assinatura (por exemplo, 2 máquinas para Community, 5 para Professional). Um slot é mantido por 1 hora a partir da última emissão de licença de repositório naquela máquina e é liberado automaticamente após inatividade. Um plano com 5 slots pode, portanto, cobrir dezenas de máquinas ao longo do tempo, já que os slots são apenas retidos enquanto você está provisionando ativamente.
+O rastreamento de slots de máquina é aplicado pelo lado do servidor. Quando a CLI emite uma licença de repositório, o servidor de conta verifica a cota de slots de máquina da assinatura (por exemplo, 2 máquinas para Community, 3 para Professional). Um slot é mantido por 5 horas a partir da última emissão de licença de repositório naquela máquina e é liberado automaticamente após inatividade. Um plano Business com 10 slots pode, portanto, cobrir dezenas de máquinas ao longo do tempo, já que os slots são apenas retidos enquanto você está provisionando ativamente.
 
 Nenhum arquivo de licença de máquina é armazenado na máquina. A aplicação de slots acontece no momento da emissão no servidor.
 
@@ -91,10 +93,10 @@ Os limites padrão para planos pagos são:
 
 | Plan | Floating Licenses | Repository Size | Monthly repo license issuances | Delegation cert default / max |
 |------|-------------------|-----------------|-------------------------------|---|
-| Community | 2 | 10 GB | 500 | 15d / 30d |
-| Professional | 5 | 100 GB | 5,000 | 60d / 120d |
-| Business | 20 | 500 GB | 20,000 | 90d / 180d |
-| Enterprise | 50 | 2048 GB | 100,000 | 120d / 365d |
+| Community | 2 | 10 GB | 100 | 15d / 30d |
+| Professional | 3 | 50 GB | 2,000+ | 60d / 120d |
+| Business | 10 | 200 GB | 5,000+ | 90d / 180d |
+| Enterprise | 25+ | 1 TB+ | 15,000+ | 120d / 365d |
 
 Limites específicos do contrato podem aumentar ou diminuir esses valores para um cliente específico. A validade do certificado de delegação também é limitada a `subscription.expiresAt + 3 day grace`, portanto assinaturas faturadas mensalmente naturalmente obtêm certificados alinhados ao seu ciclo de faturamento. Veja [License Chain & Delegation - Validity Policy](/en/docs/license-chain) para as regras completas.
 
@@ -110,7 +112,7 @@ Na prática:
 - Nenhuma intervenção manual necessária
 - Verifique o ID da máquina e o status da licença com `rdc machine query --system --licenses --name <machine>`
 
-**Usuários do edge channel** recebem 2X dos limites Community sem custo (repositórios de 20 GB, 1.000 emissões/mês, 4 máquinas). Planos pagos estão disponíveis apenas no canal Stable. Veja [Release Channels](/en/docs/release-channels) para detalhes.
+**Usuários do edge channel** recebem 2X dos limites Community sem custo (repositórios de 20 GB, 200 emissões/mês, 4 máquinas). Planos pagos estão disponíveis apenas no canal Stable. Veja [Release Channels](/en/docs/release-channels) para detalhes.
 
 ## O que Acontece Durante Criação, Up, Down e Reinício de Repositório
 

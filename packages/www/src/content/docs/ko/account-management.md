@@ -1,11 +1,11 @@
 ---
 title: 계정 관리
-description: Rediacc의 조직, 팀, 구성원 및 구독 관리.
+description: 'Rediacc의 조직, 팀, 구성원 및 구독 관리.'
 category: Guides
 order: 12
 language: ko
-sourceHash: "974885635641ed70"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: 3887adc59fc63c26
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 ### 조직
@@ -57,14 +57,14 @@ Rediacc는 네 가지 플랜을 제공합니다:
 
 | 플랜 | 머신 수 | 월별 리포 라이선스 | 위임 인증서 기본 / 최대 | 기능 |
 |------|---------|-------------------|------------------------|------|
-| COMMUNITY | 2 | 500 | 15d / 30d | 기본 |
-| PROFESSIONAL | 5 | 5,000 | 60d / 120d | 권한 그룹, 감사 로그, 커스텀 브랜딩, 우선 지원 |
-| BUSINESS | 20 | 20,000 | 90d / 180d | Ceph, 고급 분석, 대기열 우선순위, 고급 대기열 |
-| ENTERPRISE | 50 | 100,000 | 120d / 365d | 전담 계정 매니저 |
+| COMMUNITY | 2 | 100 | 15d / 30d | 기본 |
+| PROFESSIONAL | 3 | 2,000+ | 60d / 120d | 권한 그룹, 감사 로그, 커스텀 브랜딩, 우선 지원 |
+| BUSINESS | 10 | 5,000+ | 90d / 180d | Ceph, 고급 분석, 대기열 우선순위, 고급 대기열 |
+| ENTERPRISE | 25+ | 15,000+ | 120d / 365d | 전담 계정 매니저 |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 
-모든 플랜은 3일 유예 기간으로 시작합니다. 머신 슬롯은 팀별로 추적되며 비활성 상태 1시간 후 자동으로 해제됩니다. 자세한 내용은 [구독 및 라이선싱](/en/docs/subscription-licensing)을 참조하세요.
+모든 플랜은 3일 유예 기간으로 시작합니다. 머신 슬롯은 팀별로 추적되며 비활성 상태 5시간 후 자동으로 해제됩니다. 자세한 내용은 [구독 및 라이선싱](/en/docs/subscription-licensing)을 참조하세요.
 
 ### 결제
 

@@ -1,8 +1,8 @@
 ---
-title: "第一轮 NIS2 审计周期：采购方的真实反馈"
-description: "中型市场重要实体在 2026 年悄然搭建的五工具合规技术栈、自托管控制平面可以整合哪些内容，以及无论如何都将留在你预算里的那些行项目。"
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-09
+title: 第一轮 NIS2 审计周期：采购方的真实反馈
+description: 中型市场重要实体在 2026 年悄然搭建的五工具合规技术栈、自托管控制平面可以整合哪些内容，以及无论如何都将留在你预算里的那些行项目。
+author: Rediacc
+publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
 tags:
   - nis2
@@ -12,8 +12,8 @@ tags:
   - mid-market
 featured: false
 language: zh
-sourceHash: "3fbb581ec14e3f80"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: 29fbcbffd8a304bc
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
 

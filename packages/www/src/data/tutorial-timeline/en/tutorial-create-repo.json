@@ -18,9 +18,337 @@
       "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-01.2981de92.mp3",
       "textHash": "2981de9249d22aa26ebf5f07c6e88e6307db9d1a52cf2c90055c648486847339",
       "audioDurationSec": 17.867755,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.4,
+          "startChar": 5,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 8,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 0.96,
+          "startChar": 15,
+          "endChar": 16
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.2,
+          "startChar": 17,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.68,
+          "startChar": 19,
+          "endChar": 27
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.32,
+          "startChar": 28,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 3.12,
+          "startChar": 38,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.28,
+          "startChar": 49,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.36,
+          "startChar": 52,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.76,
+          "startChar": 56,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.4,
+          "startChar": 64,
+          "endChar": 65
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 5.28,
+          "startChar": 66,
+          "endChar": 76
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.44,
+          "startChar": 77,
+          "endChar": 79
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.92,
+          "startChar": 82,
+          "endChar": 88
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.56,
+          "startChar": 89,
+          "endChar": 98
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.96,
+          "startChar": 99,
+          "endChar": 103
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.12,
+          "startChar": 104,
+          "endChar": 106
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.68,
+          "startChar": 107,
+          "endChar": 111
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.64,
+          "startChar": 113,
+          "endChar": 121
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.96,
+          "startChar": 125,
+          "endChar": 129
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.36,
+          "startChar": 130,
+          "endChar": 136
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.52,
+          "startChar": 137,
+          "endChar": 139
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.0,
+          "startChar": 141,
+          "endChar": 143
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.08,
+          "startChar": 144,
+          "endChar": 146
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.72,
+          "startChar": 147,
+          "endChar": 158
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 11.12,
+          "startChar": 159,
+          "endChar": 166
+        },
+        {
+          "startSec": 11.12,
+          "endSec": 11.2,
+          "startChar": 167,
+          "endChar": 168
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.68,
+          "startChar": 169,
+          "endChar": 175
+        },
+        {
+          "startSec": 11.68,
+          "endSec": 11.84,
+          "startChar": 176,
+          "endChar": 180
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.0,
+          "startChar": 181,
+          "endChar": 184
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.32,
+          "startChar": 185,
+          "endChar": 188
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 12.64,
+          "startChar": 189,
+          "endChar": 195
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 13.12,
+          "startChar": 196,
+          "endChar": 202
+        },
+        {
+          "startSec": 13.36,
+          "endSec": 13.52,
+          "startChar": 203,
+          "endChar": 206
+        },
+        {
+          "startSec": 13.52,
+          "endSec": 14.16,
+          "startChar": 207,
+          "endChar": 215
+        },
+        {
+          "startSec": 14.16,
+          "endSec": 14.8,
+          "startChar": 216,
+          "endChar": 227
+        },
+        {
+          "startSec": 14.8,
+          "endSec": 15.12,
+          "startChar": 228,
+          "endChar": 232
+        },
+        {
+          "startSec": 15.6,
+          "endSec": 16.32,
+          "startChar": 234,
+          "endChar": 244
+        },
+        {
+          "startSec": 16.32,
+          "endSec": 16.8,
+          "startChar": 245,
+          "endChar": 253
+        },
+        {
+          "startSec": 16.8,
+          "endSec": 17.04,
+          "startChar": 254,
+          "endChar": 258
+        },
+        {
+          "startSec": 17.04,
+          "endSec": 17.52,
+          "startChar": 259,
+          "endChar": 269
+        },
+        {
+          "startSec": 17.52,
+          "endSec": 17.84,
+          "startChar": 270,
+          "endChar": 274
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-01-after.7d567e11.mp3",
       "afterAudioDurationSec": 4.205714,
-      "afterTextHash": "7d567e117985d070b0263db997d5ba1439207fa08fa91430e3261206240ad0c8"
+      "afterTextHash": "7d567e117985d070b0263db997d5ba1439207fa08fa91430e3261206240ad0c8",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.36,
+          "startChar": 11,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.6,
+          "startChar": 19,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.0,
+          "startChar": 23,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.4,
+          "startChar": 31,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.56,
+          "startChar": 39,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.64,
+          "startChar": 42,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.12,
+          "startChar": 46,
+          "endChar": 52
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.6,
+          "startChar": 54,
+          "endChar": 59
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.68,
+          "startChar": 60,
+          "endChar": 62
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.08,
+          "startChar": 63,
+          "endChar": 66
+        }
+      ]
     },
     {
       "id": "tutorial-create-repo-02",
@@ -31,6 +359,158 @@
       "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-02.a21498fe.mp3",
       "textHash": "a21498fe88baf469e5e87a5fdacc5421eca968119651732c7f497b3afbfeabd9",
       "audioDurationSec": 8.515918,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.8,
+          "startChar": 6,
+          "endChar": 13
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.88,
+          "startChar": 14,
+          "endChar": 17
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.04,
+          "startChar": 18,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.44,
+          "startChar": 22,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 27,
+          "endChar": 29
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.24,
+          "startChar": 30,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.8,
+          "startChar": 42,
+          "endChar": 46
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.04,
+          "startChar": 47,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.12,
+          "startChar": 52,
+          "endChar": 54
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.28,
+          "startChar": 55,
+          "endChar": 58
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.36,
+          "startChar": 59,
+          "endChar": 61
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.92,
+          "startChar": 62,
+          "endChar": 70
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.64,
+          "startChar": 72,
+          "endChar": 78
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.28,
+          "startChar": 80,
+          "endChar": 86
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.52,
+          "startChar": 87,
+          "endChar": 89
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.08,
+          "startChar": 91,
+          "endChar": 93
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.4,
+          "startChar": 94,
+          "endChar": 100
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.56,
+          "startChar": 101,
+          "endChar": 103
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.64,
+          "startChar": 104,
+          "endChar": 108
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 7.04,
+          "startChar": 109,
+          "endChar": 115
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.6,
+          "startChar": 117,
+          "endChar": 120
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 7.84,
+          "startChar": 121,
+          "endChar": 125
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.0,
+          "startChar": 126,
+          "endChar": 130
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.4,
+          "startChar": 131,
+          "endChar": 137
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-02-after.c9114639.mp3",
       "afterAudioDurationSec": 2.586122,
       "afterTextHash": "c91146398b47482722e6685a418d948d2e70bbdca5fc85df81f34760fa7aa30b",
@@ -88,9 +568,301 @@
       "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-03.3cd1fc9a.mp3",
       "textHash": "3cd1fc9aa3cf2e6cb372327b5c4eaec86b990e38b349dca1b70aea04e2410f22",
       "audioDurationSec": 12.355918,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.56,
+          "startChar": 4,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.04,
+          "startChar": 10,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 18,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.68,
+          "startChar": 23,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.08,
+          "startChar": 27,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.72,
+          "startChar": 32,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 41,
+          "endChar": 43
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 44,
+          "endChar": 46
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.6,
+          "startChar": 47,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.68,
+          "startChar": 52,
+          "endChar": 56
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.84,
+          "startChar": 57,
+          "endChar": 61
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.4,
+          "startChar": 62,
+          "endChar": 69
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.28,
+          "startChar": 71,
+          "endChar": 73
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.52,
+          "startChar": 74,
+          "endChar": 79
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.84,
+          "startChar": 80,
+          "endChar": 86
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.0,
+          "startChar": 87,
+          "endChar": 90
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.24,
+          "startChar": 91,
+          "endChar": 97
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.64,
+          "startChar": 98,
+          "endChar": 102
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.12,
+          "startChar": 104,
+          "endChar": 107
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.28,
+          "startChar": 108,
+          "endChar": 110
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.68,
+          "startChar": 111,
+          "endChar": 117
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.08,
+          "startChar": 120,
+          "endChar": 126
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.64,
+          "startChar": 127,
+          "endChar": 134
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.88,
+          "startChar": 135,
+          "endChar": 139
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 8.96,
+          "startChar": 140,
+          "endChar": 143
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.44,
+          "startChar": 144,
+          "endChar": 148
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 9.76,
+          "startChar": 149,
+          "endChar": 153
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.56,
+          "startChar": 154,
+          "endChar": 157
+        },
+        {
+          "startSec": 10.96,
+          "endSec": 11.04,
+          "startChar": 158,
+          "endChar": 160
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.2,
+          "startChar": 161,
+          "endChar": 164
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.36,
+          "startChar": 165,
+          "endChar": 168
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.6,
+          "startChar": 169,
+          "endChar": 173
+        },
+        {
+          "startSec": 11.6,
+          "endSec": 11.76,
+          "startChar": 174,
+          "endChar": 177
+        },
+        {
+          "startSec": 11.76,
+          "endSec": 12.32,
+          "startChar": 178,
+          "endChar": 183
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-03-after.fe26f5cd.mp3",
       "afterAudioDurationSec": 3.866122,
-      "afterTextHash": "fe26f5cdfb45cb2f35cdd216b0dcdbe0ed7b157299333ea00b48079d58afa5f0"
+      "afterTextHash": "fe26f5cdfb45cb2f35cdd216b0dcdbe0ed7b157299333ea00b48079d58afa5f0",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.56,
+          "startChar": 4,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.72,
+          "startChar": 9,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.8,
+          "startChar": 12,
+          "endChar": 16
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.44,
+          "startChar": 17,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.6,
+          "startChar": 24,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.84,
+          "startChar": 27,
+          "endChar": 31
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 1.92,
+          "startChar": 32,
+          "endChar": 35
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.4,
+          "startChar": 36,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.88,
+          "startChar": 43,
+          "endChar": 48
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.12,
+          "startChar": 49,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.44,
+          "startChar": 52,
+          "endChar": 54
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.84,
+          "startChar": 55,
+          "endChar": 59
+        }
+      ]
     }
   ],
   "narrationAudio": [
@@ -99,14 +871,354 @@
       "textHash": "d4921d84022408545d2681c718d8d84a3c77dae8d3adc9c769419d656ab070a9",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/intro.d4921d84.mp3",
       "narrationText": "Let's create your first repository! It's an encrypted file at rest that turns into a fully isolated environment the moment you create it.",
-      "audioDurationSec": 8.907755
+      "audioDurationSec": 8.907755,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.72,
+          "startChar": 6,
+          "endChar": 12
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.88,
+          "startChar": 13,
+          "endChar": 17
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.28,
+          "startChar": 18,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 2.16,
+          "startChar": 24,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.72,
+          "startChar": 36,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.8,
+          "startChar": 41,
+          "endChar": 43
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.36,
+          "startChar": 44,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.76,
+          "startChar": 54,
+          "endChar": 58
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 3.92,
+          "startChar": 59,
+          "endChar": 61
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.32,
+          "startChar": 62,
+          "endChar": 66
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 4.96,
+          "startChar": 67,
+          "endChar": 71
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.36,
+          "startChar": 72,
+          "endChar": 77
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.68,
+          "startChar": 78,
+          "endChar": 82
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 5.76,
+          "startChar": 83,
+          "endChar": 84
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.16,
+          "startChar": 85,
+          "endChar": 90
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.8,
+          "startChar": 91,
+          "endChar": 99
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.6,
+          "startChar": 100,
+          "endChar": 111
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 7.84,
+          "startChar": 112,
+          "endChar": 115
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.24,
+          "startChar": 116,
+          "endChar": 122
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.32,
+          "startChar": 123,
+          "endChar": 126
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.72,
+          "startChar": 127,
+          "endChar": 133
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 8.8,
+          "startChar": 134,
+          "endChar": 136
+        }
+      ]
     },
     {
       "id": "file-on-disk",
       "textHash": "5083fa2473639e24068e94fe8890f45aafd8cde7de1b11ded47ff40b012a8c43",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/file-on-disk.5083fa24.mp3",
       "narrationText": "On disk it's a single encrypted image. Once mounted, you get a dedicated Docker daemon, application data inside the encrypted volume, and loopback IPs that won't collide with anything else on the server.",
-      "audioDurationSec": 13.714286
+      "audioDurationSec": 13.714286,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.8,
+          "startChar": 3,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.12,
+          "startChar": 8,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.2,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.68,
+          "startChar": 15,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.24,
+          "startChar": 22,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.72,
+          "startChar": 32,
+          "endChar": 37
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.44,
+          "startChar": 39,
+          "endChar": 43
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 4.0,
+          "startChar": 44,
+          "endChar": 51
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.48,
+          "startChar": 53,
+          "endChar": 56
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.56,
+          "startChar": 57,
+          "endChar": 60
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.64,
+          "startChar": 61,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.28,
+          "startChar": 63,
+          "endChar": 72
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.6,
+          "startChar": 73,
+          "endChar": 79
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 6.08,
+          "startChar": 80,
+          "endChar": 86
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 7.28,
+          "startChar": 88,
+          "endChar": 99
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.68,
+          "startChar": 100,
+          "endChar": 104
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.24,
+          "startChar": 105,
+          "endChar": 111
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.4,
+          "startChar": 112,
+          "endChar": 115
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.88,
+          "startChar": 116,
+          "endChar": 125
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.44,
+          "startChar": 126,
+          "endChar": 132
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 9.76,
+          "startChar": 134,
+          "endChar": 137
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.32,
+          "startChar": 138,
+          "endChar": 146
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.96,
+          "startChar": 147,
+          "endChar": 150
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.36,
+          "startChar": 151,
+          "endChar": 155
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.68,
+          "startChar": 156,
+          "endChar": 161
+        },
+        {
+          "startSec": 11.68,
+          "endSec": 12.16,
+          "startChar": 162,
+          "endChar": 169
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.32,
+          "startChar": 170,
+          "endChar": 174
+        },
+        {
+          "startSec": 12.4,
+          "endSec": 12.72,
+          "startChar": 175,
+          "endChar": 183
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 12.96,
+          "startChar": 184,
+          "endChar": 188
+        },
+        {
+          "startSec": 12.96,
+          "endSec": 13.12,
+          "startChar": 189,
+          "endChar": 191
+        },
+        {
+          "startSec": 13.12,
+          "endSec": 13.2,
+          "startChar": 192,
+          "endChar": 195
+        },
+        {
+          "startSec": 13.2,
+          "endSec": 13.6,
+          "startChar": 196,
+          "endChar": 202
+        }
+      ]
     },
     {
       "id": "next-tutorial",

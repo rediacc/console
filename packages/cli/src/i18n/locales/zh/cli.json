@@ -959,9 +959,9 @@
         "infrastructure": "基础设施",
         "noData": "无可用状态数据",
         "storageHealthFragmentationNote": "碎片化统计的是每个仓库的写时复制（copy-on-write）镜像中的区段（extent）数量，而非其中的文件。在随机写入的工作负载（数据库、容器分层）下出现较高值属正常现象，仅供参考。此处有意不支持碎片整理：它会解除通过 reflink 共享的分支（fork）和备份快照的共享，并使数据存储用量膨胀。",
-        "storageHealthPoolSummary": "存储池：已用 {{used}}，可用 {{free}}（已满 {{percent}}%）",
-        "storageHealthPoolSnapshots": "备份快照占用 {{pinned}}（{{active}} 个活动，{{stale}} 个失效；失效快照可通过 'rdc machine prune' 删除）",
         "storageHealthHint": "提示：使用 --storage-health 运行可查看每个仓库的 BTRFS 碎片化情况和 reflink 节省量",
+        "storageHealthPoolSnapshots": "备份快照占用 {{pinned}}（{{active}} 个活动，{{stale}} 个失效；失效快照可通过 'rdc machine prune' 删除）",
+        "storageHealthPoolSummary": "存储池：已用 {{used}}，可用 {{free}}（已满 {{percent}}%）",
         "storageHealthSummary": "存储效率：{{summary}}",
         "strictDriftDetected": "--strict: {{count}} 个容器超过漂移阈值；以非零状态退出",
         "syncCertsFailed": "证书缓存同步失败：{{error}}"
@@ -1304,8 +1304,8 @@
         "list": {
           "completed": "自动启动列表已获取",
           "description": "列出已启用自动启动的仓库",
-          "failed": "获取自动启动仓库列表失败",
           "empty": "\"{{machine}}\" 上没有已启用自动启动的仓库",
+          "failed": "获取自动启动仓库列表失败",
           "service": "自动启动服务：installed={{installed}}, enabled={{enabled}}",
           "starting": "正在列出 \"{{machine}}\" 上的自动启动仓库..."
         }
@@ -1433,41 +1433,6 @@
         "sizeOption": "新的仓库大小（例如 10G、100G、1T）",
         "starting": "正在 \"{{machine}}\" 上将 \"{{repository}}\" 扩展为 {{size}}..."
       },
-      "trim": {
-        "description": "从已挂载的仓库回收数据存储池空间（在线，零停机）。仓库内已删除的块通过 fstrim 归还给存储池。不带 --name 时，会修剪所有已挂载的仓库以及数据存储本身。正在备份的仓库会跳过 fstrim，但 --docker 回收仍会执行",
-        "descriptionShort": "将仓库中的可用空间归还给存储池",
-        "nameOption": "要修剪的仓库（默认：所有已挂载的仓库）",
-        "dockerOption": "回收 Docker 空间（已停止的容器、悬空镜像、构建缓存）；即使在备份快照处于活动状态时也会执行",
-        "dockerVolumesOption": "同时清理未使用的 Docker 卷",
-        "reportOnlyOption": "仅显示 discard 状态和可回收空间估算，不执行修剪",
-        "repoNotFound": "未找到仓库：{{name}}",
-        "noMountedRepos": "未找到已挂载的仓库",
-        "starting": "正在修剪 \"{{machine}}\" 上的仓库...",
-        "completed": "修剪完成：已回收 {{total}}",
-        "failed": "修剪失败"
-      },
-      "policy": {
-        "description": "管理由机器的存储维护器执行的自动大小策略：当仓库快满时在线扩大其配额（绝不超过 max-quota，存储池空间不足时不扩大），并按计划执行修剪。不存在自动缩小；如需缩小请使用 'repo resize'。不带 --name 时操作机器级默认策略",
-        "descriptionShort": "管理自动大小策略（自动扩容、计划修剪）",
-        "nameOption": "仓库（默认：机器级策略）",
-        "repoNotFound": "未找到仓库：{{name}}",
-        "invalidBool": "{{flag}} 必须为 'true' 或 'false'，收到：{{value}}",
-        "failed": "策略操作失败",
-        "set": {
-          "description": "设置大小策略字段。只更改你传入的标志；其他已保存字段保持原值。启用自动扩容必须提供 --max-quota：该上限是你对存储池超额配置的明确同意",
-          "descriptionShort": "设置策略字段（机器默认值，或用 --name 指定单个仓库）",
-          "autoGrowOption": "启用在线自动扩大配额（true/false）",
-          "maxQuotaOption": "自动扩容上限（例如 200G）；启用自动扩容时必填",
-          "growThresholdOption": "触发扩容的文件系统使用率百分比（默认 85）",
-          "growStepOption": "每次扩容量：绝对值（10G）或配额百分比（20%）",
-          "autoTrimOption": "启用计划修剪（true/false）",
-          "trimIntervalOption": "自动修剪之间的最少小时数（默认 24）"
-        },
-        "get": {
-          "description": "显示已保存的机器默认值、仓库覆盖值（使用 --name 时）以及维护器实际执行的合并后有效策略",
-          "descriptionShort": "显示大小策略（机器默认、仓库覆盖、有效值）"
-        }
-      },
       "fork": {
         "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",
         "checkpointOption": "fork 前在源上创建 CRIU checkpoint（捕获进程内存状态以便在 fork 上恢复）",
@@ -1537,7 +1502,6 @@
         "checkpointing": "正在创建 CRIU 检查点...",
         "complete": "迁移完成：{{name}} 已从 {{from}} 移动到 {{to}}",
         "deltaDone": "差异同步完成",
-        "phase2Stats": "切换（停机）：{{duration}} 内传输 {{transferred}}",
         "deltaFailed": "差异同步失败",
         "deltaSync": "正在同步差异数据...",
         "description": "以最小停机时间将仓库从一台机器实时迁移到另一台。两阶段 rsync：运行时批量传输，然后短暂停止进行差异同步。支持 CRIU 检查点用于进程内存迁移和目标机器自动配置",
@@ -1554,9 +1518,10 @@
         "optionTo": "目标机器名称",
         "phase1": "阶段 1：批量传输数据（源继续运行）...",
         "phase1Done": "批量传输完成",
-        "phase1Stats": "{{duration}} 内传输 {{transferred}}（源端保持在线）",
         "phase1Failed": "批量传输失败",
+        "phase1Stats": "{{duration}} 内传输 {{transferred}}（源端保持在线）",
         "phase2": "阶段 2：切换（短暂停机）...",
+        "phase2Stats": "切换（停机）：{{duration}} 内传输 {{transferred}}",
         "phase3": "阶段 3：在目标上启动...",
         "provisioning": "正在通过 {{provider}} 配置目标机器 {{machine}}...",
         "sourceStopped": "源服务已停止",
@@ -1588,6 +1553,28 @@
         "starting": "正在 \"{{machine}}\" 上设置 \"{{repository}}\" 的所有权...",
         "uidOption": "所有者 UID（默认: 7111）"
       },
+      "policy": {
+        "description": "管理由机器的存储维护器执行的自动大小策略：当仓库快满时在线扩大其配额（绝不超过 max-quota，存储池空间不足时不扩大），并按计划执行修剪。不存在自动缩小；如需缩小请使用 'repo resize'。不带 --name 时操作机器级默认策略",
+        "descriptionShort": "管理自动大小策略（自动扩容、计划修剪）",
+        "failed": "策略操作失败",
+        "get": {
+          "description": "显示已保存的机器默认值、仓库覆盖值（使用 --name 时）以及维护器实际执行的合并后有效策略",
+          "descriptionShort": "显示大小策略（机器默认、仓库覆盖、有效值）"
+        },
+        "invalidBool": "{{flag}} 必须为 'true' 或 'false'，收到：{{value}}",
+        "nameOption": "仓库（默认：机器级策略）",
+        "repoNotFound": "未找到仓库：{{name}}",
+        "set": {
+          "autoGrowOption": "启用在线自动扩大配额（true/false）",
+          "autoTrimOption": "启用计划修剪（true/false）",
+          "description": "设置大小策略字段。只更改你传入的标志；其他已保存字段保持原值。启用自动扩容必须提供 --max-quota：该上限是你对存储池超额配置的明确同意",
+          "descriptionShort": "设置策略字段（机器默认值，或用 --name 指定单个仓库）",
+          "growStepOption": "每次扩容量：绝对值（10G）或配额百分比（20%）",
+          "growThresholdOption": "触发扩容的文件系统使用率百分比（默认 85）",
+          "maxQuotaOption": "自动扩容上限（例如 200G）；启用自动扩容时必填",
+          "trimIntervalOption": "自动修剪之间的最少小时数（默认 24）"
+        }
+      },
       "pull": {
         "deployed": "仓库\"{{repo}}\"已部署到{{machine}}",
         "deployFailed": "pull后部署\"{{repo}}\"失败",
@@ -1614,16 +1601,16 @@
         "optionCheckpoint": "备份前创建CRIU检查点（捕获进程内存状态用于实时迁移）",
         "optionDeltaBase": "在两台机器上字节完全相同的不可变基准 GUID；仅传输已更改的块（机器目标）。省略以自动选择基准",
         "optionForce": "强制覆盖现有备份",
+        "optionJson": "以 JSON 格式输出传输统计",
         "optionProvision": "如果目标机器不存在，通过云提供商自动配置",
         "optionStrategy": "使用增量基准时的块增量策略：auto、physical 或 shared",
-        "optionJson": "以 JSON 格式输出传输统计",
-        "statsDelta": "已将 \"{{repo}}\" 推送到 {{machine}}：{{duration}} 内传输 {{transferred}}（相对基准 {{base}} 的增量，镜像 {{image}}）",
-        "statsFull": "已将 \"{{repo}}\" 推送到 {{machine}}：{{duration}} 内传输 {{transferred}}（完整传输）",
-        "statsNoBytes": "已将 \"{{repo}}\" 推送到 {{machine}}：在 {{duration}} 内完成",
         "optionTag": "用于版本控制的部署标签",
         "optionTo": "目标机器或存储名称（从配置中自动检测）",
         "optionUp": "推送后，在目标机器上挂载并部署仓库",
-        "pushing": "正在将 \"{{repo}}\" 的备份推送到 {{dest}}..."
+        "pushing": "正在将 \"{{repo}}\" 的备份推送到 {{dest}}...",
+        "statsDelta": "已将 \"{{repo}}\" 推送到 {{machine}}：{{duration}} 内传输 {{transferred}}（相对基准 {{base}} 的增量，镜像 {{image}}）",
+        "statsFull": "已将 \"{{repo}}\" 推送到 {{machine}}：{{duration}} 内传输 {{transferred}}（完整传输）",
+        "statsNoBytes": "已将 \"{{repo}}\" 推送到 {{machine}}：在 {{duration}} 内完成"
       },
       "resize": {
         "completed": "大小调整完成",
@@ -1719,6 +1706,19 @@
         },
         "starting": "正在 \"{{machine}}\" 上将模板应用到 \"{{repository}}\"..."
       },
+      "trim": {
+        "completed": "修剪完成：已回收 {{total}}",
+        "description": "从已挂载的仓库回收数据存储池空间（在线，零停机）。仓库内已删除的块通过 fstrim 归还给存储池。不带 --name 时，会修剪所有已挂载的仓库以及数据存储本身。正在备份的仓库会跳过 fstrim，但 --docker 回收仍会执行",
+        "descriptionShort": "将仓库中的可用空间归还给存储池",
+        "dockerOption": "回收 Docker 空间（已停止的容器、悬空镜像、构建缓存）；即使在备份快照处于活动状态时也会执行",
+        "dockerVolumesOption": "同时清理未使用的 Docker 卷",
+        "failed": "修剪失败",
+        "nameOption": "要修剪的仓库（默认：所有已挂载的仓库）",
+        "noMountedRepos": "未找到已挂载的仓库",
+        "repoNotFound": "未找到仓库：{{name}}",
+        "reportOnlyOption": "仅显示 discard 状态和可回收空间估算，不执行修剪",
+        "starting": "正在修剪 \"{{machine}}\" 上的仓库..."
+      },
       "tunnel": {
         "active": "隧道已激活: localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
         "closed": "隧道已关闭",
@@ -1734,10 +1734,10 @@
         "noContainers": "未找到仓库 \"{{repository}}\" 的运行中容器",
         "noPorts": "容器 \"{{container}}\" 没有暴露的端口。请指定 --port",
         "noServiceIP": "容器 \"{{container}}\" 没有分配服务 IP",
-        "portInUse": "本地端口 {{port}} 已被占用，请通过 --local 指定其他端口",
         "notReady": "隧道在 15 秒内未能在 localhost:{{localPort}} 上就绪",
-        "urlOnlyOption": "隧道就绪后只输出本地 URL（机器可读）",
-        "portOption": "要转发的远程容器端口"
+        "portInUse": "本地端口 {{port}} 已被占用，请通过 --local 指定其他端口",
+        "portOption": "要转发的远程容器端口",
+        "urlOnlyOption": "隧道就绪后只输出本地 URL（机器可读）"
       },
       "unmount": {
         "checkpointOption": "卸载前创建检查点",
@@ -2211,26 +2211,26 @@
         "removedKeys": "已移除所有保存的 SSH 密钥。"
       },
       "connect": {
+        "browserUrl": "在浏览器中打开 VS Code：{{url}}",
         "configuringSSH": "正在配置 SSH...",
         "configuringVSCode": "正在配置 VS Code 设置...",
         "description": "在 VS Code 中连接到机器或仓库",
         "detecting": "正在检测 VS Code...",
         "extensionWarning": "警告：可能未安装远程 SSH 扩展。\n从以下地址安装：https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
         "fetchingDetails": "正在获取连接详情...",
+        "installingServer": "正在确认 {{provider}} {{version}} 已安装到机器上...",
         "opening": "正在打开 VS Code：{{connection}} → {{path}}",
+        "openingBrowser": "正在打开浏览器...",
+        "passwordNote": "登录密码：{{password}}",
         "persistingKey": "正在保存 SSH 密钥...",
         "provisioningRenet": "正在向远程服务器部署 renet...",
+        "serverReused": "复用已运行的服务器",
         "settingsWarning": "警告：无法配置 VS Code 设置：{{error}}",
         "settingUpEnv": "正在设置远程环境...",
-        "success": "VS Code 已成功启动。",
-        "installingServer": "正在确认 {{provider}} {{version}} 已安装到机器上...",
         "startingServer": "正在沙盒内启动 {{provider}}...",
-        "serverReused": "复用已运行的服务器",
-        "tunnelReady": "隧道已就绪：localhost:{{port}}",
-        "browserUrl": "在浏览器中打开 VS Code：{{url}}",
-        "passwordNote": "登录密码：{{password}}",
-        "openingBrowser": "正在打开浏览器...",
-        "testingConnectivity": "正在测试与 {{host}}:{{port}} 的连接..."
+        "success": "VS Code 已成功启动。",
+        "testingConnectivity": "正在测试与 {{host}}:{{port}} 的连接...",
+        "tunnelReady": "隧道已就绪：localhost:{{port}}"
       },
       "description": "打开 VS Code Remote SSH 连接到机器或仓库",
       "descriptionShort": "打开 VS Code Remote SSH 连接到机器或仓库",
@@ -2251,8 +2251,8 @@
         },
         "stop": {
           "description": "停止浏览器 VS Code 服务器",
-          "stopped": "{{provider}} 已停止",
-          "notRunning": "{{provider}} 本来就未在运行"
+          "notRunning": "{{provider}} 本来就未在运行",
+          "stopped": "{{provider}} 已停止"
         }
       }
     }
@@ -2581,16 +2581,16 @@
     "vaultDataRequired": "需要保险箱数据。使用 --vault <json> 或通过 stdin 管道传输 JSON。",
     "vaultVersionRequired": "需要保险箱版本。使用 --vault-version <n>。",
     "vscode": {
+      "browserNeedsRepo": "vscode --browser 用于仓库沙盒 — 请传入 --repository <name>",
       "cleanupRequired": "指定 --all 以移除所有连接或指定 --connection <name> 以移除特定连接。",
       "connectivityFailed": "无法到达 {{host}}:{{port}}。{{error}}\n\n故障排除：\n  - 检查机器是否已启动并连接到网络\n  - 验证 IP 地址在机器保险箱中是否正确\n  - 确保端口 {{port}} 未被防火墙阻止\n  - 尝试 ping 机器：ping {{host}}",
       "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
       "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
       "notFound": "未找到 VS Code。\n\n请从以下地址安装：https://code.visualstudio.com/\n或设置 REDIACC_VSCODE_PATH 环境变量。",
-      "browserNeedsRepo": "vscode --browser 用于仓库沙盒 — 请传入 --repository <name>",
-      "unsupportedArch": "不支持的机器架构，无法运行浏览器 VS Code：{{arch}}",
       "serverInstallFailed": "安装 {{provider}} 失败：{{error}}",
-      "serverStartFailed": "启动 {{provider}} 失败：{{error}}"
+      "serverStartFailed": "启动 {{provider}} 失败：{{error}}",
+      "unsupportedArch": "不支持的机器架构，无法运行浏览器 VS Code：{{arch}}"
     }
   },
   "help": {
@@ -2778,10 +2778,6 @@
     "tfaCode": "用于验证的当前双因素认证代码",
     "tokenName": "令牌名称",
     "urlOnly": "打印 VS Code URI 而不是启动",
-    "vscodeBrowser": "从仓库沙盒内提供浏览器 VS Code（无需在本地安装 VS Code）",
-    "vscodeNoOpen": "输出 URL 而不启动本地浏览器",
-    "vscodeServerProvider": "浏览器 VS Code 服务器实现（openvscode、code-server）",
-    "vscodeServerArchive": "机器上预先暂存的服务器压缩包路径（离线安装）",
     "userPassword": "新用户的密码",
     "vaultContent": "保险箱内容为 JSON 字符串",
     "vaultJson": "保险箱内容为 JSON 字符串",
@@ -2789,6 +2785,10 @@
     "vaultVersion": "用于乐观锁定的当前保险箱版本",
     "verifyChecksum": "同步后使用校验和验证文件",
     "vmId": "虚拟机 ID",
+    "vscodeBrowser": "从仓库沙盒内提供浏览器 VS Code（无需在本地安装 VS Code）",
+    "vscodeNoOpen": "输出 URL 而不启动本地浏览器",
+    "vscodeServerArchive": "机器上预先暂存的服务器压缩包路径（离线安装）",
+    "vscodeServerProvider": "浏览器 VS Code 服务器实现（openvscode、code-server）",
     "watch": "监视更改",
     "watchUpdates": "监视更新",
     "yes": "跳过确认提示"
