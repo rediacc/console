@@ -11,7 +11,17 @@ const CONFIG_DIR = getConfigDir();
 const DEFAULT_CONFIG_NAME = 'rediacc';
 
 /** Files in config dir that are not config files */
-const EXCLUDED_FILES = new Set(['update-state.json']);
+const EXCLUDED_FILES = new Set(['update-state.json', 'server.json', 'api-token.json']);
+
+/**
+ * True for JSON files the CLI writes into the config dir that are NOT rdc
+ * configs: the updater state, the subscription server pick (server.json),
+ * and subscription device tokens (api-token.json / api-token-<config>.json,
+ * written by services/subscription-auth.ts).
+ */
+function isReservedFile(fileName: string): boolean {
+  return EXCLUDED_FILES.has(fileName) || fileName.startsWith('api-token-');
+}
 
 /**
  * Storage adapter for per-file CLI configuration with file locking.
@@ -235,7 +245,7 @@ export class ConfigFileStorage {
     try {
       const files = await fs.readdir(this.configDir);
       return files
-        .filter((f) => f.endsWith('.json') && !EXCLUDED_FILES.has(f))
+        .filter((f) => f.endsWith('.json') && !isReservedFile(f))
         .map((f) => basename(f, '.json'))
         .sort();
     } catch {

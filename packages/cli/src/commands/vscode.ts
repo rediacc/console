@@ -3,7 +3,7 @@
  * Opens VS Code with Remote SSH connection to machines and repositories
  */
 
-import { SSHConnection, spawnSSH } from '@rediacc/shared-desktop/ssh';
+import { SSHConnection, spawnSSH } from '../shared-desktop/ssh/index.js';
 import {
   addSSHConfigEntry,
   buildVSCodeSSHConfigEntry,
@@ -25,13 +25,11 @@ import {
   removeSSHConfigEntry,
   setHostRemotePlatform,
   setHostServerInstallPath,
-} from '@rediacc/shared-desktop/vscode';
+} from '../shared-desktop/vscode/index.js';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { connectVSCodeBrowser, verifySSHConnectivity } from './vscode-browser.js';
 import { registerVSCodeServeCommands } from './vscode-serve.js';
-import { getStateProvider } from '../providers/index.js';
-import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
 import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
@@ -271,10 +269,6 @@ async function setupRemoteEnvironment(
 async function validateVSCodeOptions(options: VSCodeConnectOptions) {
   const opts = await configService.applyDefaults(options);
 
-  const provider = await getStateProvider();
-  if (provider.isCloud && !opts.team) {
-    throw new Error(t('errors.teamRequired'));
-  }
   if (!opts.machine) {
     throw new Error(t('errors.machineRequired'));
   }
@@ -508,10 +502,6 @@ ${t('help.examples')}
     .option('--server-archive <file>', t('options.vscodeServerArchive'))
     .action(async (options: VSCodeConnectOptions) => {
       try {
-        const provider = await getStateProvider();
-        if (provider.isCloud) {
-          await authService.requireAuth();
-        }
         await connectVSCode(options);
       } catch (error) {
         handleError(error);

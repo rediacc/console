@@ -15,7 +15,6 @@ interface CommandCapability {
   arguments: { name: string; required: boolean }[];
   options: { flags: string; description: string; default?: unknown }[];
   domain?: string;
-  modes?: readonly string[];
 }
 
 /** Extract a leaf command's capability from a Commander subcommand. */
@@ -46,7 +45,6 @@ function extractLeafCapability(sub: Command, name: string, prefix: string): Comm
     options,
     ...(def && {
       domain: COMMAND_DOMAINS[def.domain],
-      modes: [...def.modes],
     }),
   };
 }
@@ -136,7 +134,6 @@ export function registerAgentCommands(program: Command): void {
         options,
         ...(def && {
           domain: COMMAND_DOMAINS[def.domain],
-          modes: [...def.modes],
         }),
         usage: `rdc ${commandPath}${args.map((a) => (a.required ? ` <${a.name}>` : ` [${a.name}]`)).join('')}`,
       };
@@ -201,16 +198,10 @@ function buildExecArgv(commandPath: string, input: Record<string, unknown>): str
   return argv;
 }
 
-/** Check whether a command targets the cloud adapter only. */
-function isCloudOnlyCommand(cmd: CommandCapability): boolean {
-  return cmd.modes?.length === 1 && cmd.modes[0] === 'cloud';
-}
-
-/** Group commands by domain, excluding cloud-only entries. */
+/** Group commands by domain. */
 function groupByDomain(commands: CommandCapability[]): Map<string, CommandCapability[]> {
   const grouped = new Map<string, CommandCapability[]>();
   for (const cmd of commands) {
-    if (isCloudOnlyCommand(cmd)) continue;
     const domain = cmd.domain ?? UNCATEGORIZED_DOMAIN;
     const bucket = grouped.get(domain);
     if (bucket) {

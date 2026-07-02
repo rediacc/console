@@ -1072,33 +1072,28 @@
       "architectures": {
         "arm64": "ARM64",
         "arm64_apple": "Apple Silicon (ARM64)",
-        "armv7l": "ARMv7",
         "x64": "x64 (64 bit)",
         "x64_intel": "Intel (x64)"
       },
       "autoUpdate": {
-        "description": "Rediacc Desktop si aggiorna da solo. Dopo l'installazione, controlla le novità e ti avvisa quando c'è una nuova versione pronta. Un clic la installa. Su connessioni lente, dai qualche minuto al completamento.",
+        "description": "Rediacc CLI si aggiorna da sola. Controlla le nuove versioni e le installa per te, così usi sempre l'ultima versione.",
         "title": "Aggiornamento automatico"
       },
       "cli": {
         "binary": "Binario",
-        "description": "Uno strumento leggero e veloce che usi direttamente dal terminale. Perfetto se gestisci server senza monitor, oppure quando devi eseguire lo stesso comando su più macchine contemporaneamente. Se è la tua situazione, la CLI è la scelta giusta rispetto all'app desktop. Connettiti ai server, esegui comandi, fai aggiornamenti. Senza bisogno di browser."
+        "description": "Uno strumento piccolo e veloce che esegui dal terminale. Perfetto per i server che gestisci senza schermo, o per eseguire lo stesso comando su tante macchine insieme. Connettiti ai server, esegui comandi, invia aggiornamenti. Non serve il browser."
       },
       "hero": {
         "released": "Disponibile",
-        "subtitle": "Rediacc Desktop e CLI",
+        "subtitle": "Rediacc CLI",
         "title": "Scarica Rediacc CLI"
       },
       "installation": {
         "cli": "CLI: scarica il file per il tuo sistema. Su Linux/macOS, apri un terminale ed esegui 'chmod +x filename' per renderlo eseguibile. Poi spostalo in /usr/local/bin.",
-        "linux_appimage": "Linux AppImage: rendi il file eseguibile con 'chmod +x filename.AppImage' e lancialo direttamente. Nessuna installazione richiesta.",
-        "linux_deb": "Linux DEB: installa con 'sudo dpkg -i filename.deb' oppure doppio clic nel gestore file.",
-        "macos": "macOS: apri il file .dmg. Trascina Rediacc Desktop nella cartella Applicazioni. Se il sistema blocca l'app, autorizzala in Preferenze di Sistema > Sicurezza e Privacy.",
-        "title": "Istruzioni di installazione",
-        "windows": "Windows: avvia il file .exe e segui i passaggi sullo schermo. Verrà installato nella cartella Programmi."
+        "title": "Istruzioni di installazione"
       },
       "meta": {
-        "description": "Scarica Rediacc Desktop e CLI per Windows, macOS e Linux.",
+        "description": "Scarica Rediacc CLI per Windows, macOS e Linux. Installazione rapida e aggiornamenti automatici.",
         "keywords": "download Rediacc, applicazione desktop, CLI, app Windows, app macOS, app Linux",
         "title": "Scarica Rediacc CLI per tutte le piattaforme | Rediacc"
       },
@@ -1109,22 +1104,13 @@
         "windows": "Windows"
       },
       "requirements": {
-        "disk": "500 MB di spazio libero su disco",
-        "diskTitle": "Spazio su disco",
         "linux": "Distribuzione Linux moderna con glibc 2.28+",
         "macos": "macOS 11 (Big Sur) o successivo",
-        "ram": "2 GB di RAM minimo, 4 GB consigliati",
-        "ramTitle": "Memoria",
         "title": "Requisiti di sistema",
         "windows": "Windows 10 o successivo (64 bit)"
       },
       "sections": {
-        "cli": "Interfaccia a riga di comando (CLI)",
-        "desktop": "Applicazione desktop"
-      },
-      "types": {
-        "appimage": "AppImage (portatile)",
-        "deb": "Debian/Ubuntu (.deb)"
+        "cli": "Interfaccia a riga di comando (CLI)"
       }
     },
     "home": {
@@ -1147,7 +1133,7 @@
       "copy": "Copia",
       "hero": {
         "downloadsLink": "Vai alla pagina Download",
-        "downloadsNote": "Preferisci app desktop o download diretto?",
+        "downloadsNote": "Cerchi i binari diretti della CLI?",
         "subtitle": "Scegli il tuo metodo preferito",
         "title": "Installa Rediacc CLI"
       },
@@ -2683,6 +2669,42 @@
             "Il costo medio del downtime è $5.600 al minuto per le aziende enterprise"
           ]
         },
+        "categories": {
+          "heading": "Servizi disponibili",
+          "intro": "Ogni incarico inizia con una conversazione, così da definire il team e la tempistica giusti per la tua configurazione.",
+          "items": [
+            {
+              "description": "Formazione pratica per il tuo team, dalla configurazione guidata passo passo a workshop di più giorni che approfondiscono flussi di lavoro avanzati e procedure di risposta agli incidenti.",
+              "icon": "team-training",
+              "id": "training",
+              "name": "Formazione"
+            },
+            {
+              "description": "Assistenza continua da parte di ingegneri reali, dal supporto via email negli orari lavorativi fino alla copertura 24/7/365 con un account manager dedicato per gli ambienti critici di produzione.",
+              "icon": "security-assessment",
+              "id": "support",
+              "name": "Assistenza"
+            },
+            {
+              "description": "Migrazione end-to-end e integrazioni personalizzate, da una migrazione dati completamente convalidata a un passaggio in produzione rapido nello stesso giorno, quando hai poco tempo.",
+              "icon": "data-migration",
+              "id": "migration",
+              "name": "Migrazione"
+            },
+            {
+              "description": "Incarichi di ripristino da ransomware e di disaster recovery, dall'analisi forense e dall'hardening successivi a un incidente all'attivazione della replica continua per i sistemi critici per l'attività.",
+              "icon": "ransomware-recovery",
+              "id": "recovery",
+              "name": "Ripristino"
+            },
+            {
+              "description": "Revisioni di sicurezza, checklist di hardening, runbook di conformità e contratti di risposta agli incidenti, personalizzati in base al tuo ambiente e ai requisiti di audit.",
+              "icon": "storage-hardening",
+              "id": "security",
+              "name": "Sicurezza e conformità"
+            }
+          ]
+        },
         "cta": {
           "button": "Contattaci",
           "description": "Ogni incarico viene definito in base alla tua configurazione. Contattaci e troveremo insieme il piano giusto.",
@@ -2693,42 +2715,6 @@
           "eligibility": "Ogni piano include l'accesso ai nostri servizi professionali. Contattaci e definiremo insieme l'incarico più adatto alla tua configurazione.",
           "subtitle": "Ottieni l'aiuto di esperti quando ne hai più bisogno",
           "title": "Servizi professionali"
-        },
-        "categories": {
-          "heading": "Servizi disponibili",
-          "intro": "Ogni incarico inizia con una conversazione, così da definire il team e la tempistica giusti per la tua configurazione.",
-          "items": [
-            {
-              "id": "training",
-              "name": "Formazione",
-              "description": "Formazione pratica per il tuo team, dalla configurazione guidata passo passo a workshop di più giorni che approfondiscono flussi di lavoro avanzati e procedure di risposta agli incidenti.",
-              "icon": "team-training"
-            },
-            {
-              "id": "support",
-              "name": "Assistenza",
-              "description": "Assistenza continua da parte di ingegneri reali, dal supporto via email negli orari lavorativi fino alla copertura 24/7/365 con un account manager dedicato per gli ambienti critici di produzione.",
-              "icon": "security-assessment"
-            },
-            {
-              "id": "migration",
-              "name": "Migrazione",
-              "description": "Migrazione end-to-end e integrazioni personalizzate, da una migrazione dati completamente convalidata a un passaggio in produzione rapido nello stesso giorno, quando hai poco tempo.",
-              "icon": "data-migration"
-            },
-            {
-              "id": "recovery",
-              "name": "Ripristino",
-              "description": "Incarichi di ripristino da ransomware e di disaster recovery, dall'analisi forense e dall'hardening successivi a un incidente all'attivazione della replica continua per i sistemi critici per l'attività.",
-              "icon": "ransomware-recovery"
-            },
-            {
-              "id": "security",
-              "name": "Sicurezza e conformità",
-              "description": "Revisioni di sicurezza, checklist di hardening, runbook di conformità e contratti di risposta agli incidenti, personalizzati in base al tuo ambiente e ai requisiti di audit.",
-              "icon": "storage-hardening"
-            }
-          ]
         }
       },
       "roiCta": {
@@ -3833,7 +3819,7 @@
           "title": "Cosa ottieni"
         },
         "bottomCta": {
-          "command": "rdc audit log --limit 200",
+          "command": "rdc repo fork --parent production --tag pentest -m server-1",
           "ctaText": "Inizia Gratis",
           "description": "Inizia con l'edizione Community gratuita. Esegui il tuo primo pentest in meno di 60 secondi.",
           "title": "Trova le vulnerabilità prima degli attaccanti"
@@ -4242,7 +4228,7 @@
           "title": "Cosa ottieni"
         },
         "bottomCta": {
-          "command": "rdc audit history repository production",
+          "command": "rdc repo status --name production -m server-1",
           "ctaText": "Inizia Gratis con Community",
           "description": "Inizia con l'edizione Community gratuita. Genera il tuo primo report di audit in meno di un minuto.",
           "title": "Vedi tutto. Non perdere nulla."
@@ -4457,7 +4443,7 @@
               "title": "Proteggi"
             },
             {
-              "description": "Esegui rdc audit --from --to. Genera report pronti per la conformità per qualsiasi periodo di tempo in pochi secondi.",
+              "description": "Apri la pagina attività del portale, filtra qualsiasi intervallo di date ed esportalo in JSON. Ottieni un report pronto per l'audit in pochi secondi.",
               "icon": "file-text",
               "title": "Segnala"
             }
@@ -4642,7 +4628,7 @@
         "terminal": {
           "lines": [
             {
-              "text": "rdc audit --from 2026-02-01 --to 2026-02-27",
+              "text": "jq -r '.events[]' audit-export.json",
               "type": "command"
             },
             {
@@ -6123,7 +6109,7 @@
           "title": "Cosa ottieni"
         },
         "bottomCta": {
-          "command": "rdc audit log --limit 50",
+          "command": "rdc config show",
           "ctaText": "Inizia Gratis con Community",
           "description": "Inizia con l'edizione Community gratuita. Esegui il tuo primo audit della custodia delle chiavi in meno di un minuto.",
           "title": "Smetti di affittare i tuoi dati da un provider soggetto alla giurisdizione USA."
@@ -6529,7 +6515,7 @@
         "terminal": {
           "lines": [
             {
-              "text": "rdc audit log --limit 50",
+              "text": "jq -r '.keys[]' key-custody-report.json",
               "type": "command"
             },
             {
@@ -13590,39 +13576,10 @@
           "content": [
             "Ai sensi del Regolamento Generale sulla Protezione dei Dati dell'UE (GDPR) e della Direttiva ePrivacy, la base giuridica per la raccolta di telemetria dipende dal contesto del prodotto:",
             "Per la <strong>Web Application</strong> (basata su browser): la telemetria viene raccolta sulla base del <strong>legittimo interesse</strong> (GDPR Art. 6(1)(f)) ai fini del mantenimento e del miglioramento della qualita' del servizio. L'utente puo' disattivarla in qualsiasi momento.",
-            "Per la <strong>CLI, il Middleware e il Bridge</strong> (installati sull'infrastruttura dell'utente): la telemetria viene raccolta sulla base del <strong>legittimo interesse</strong> con chiari meccanismi di opt-out. E' possibile disabilitare la telemetria prima che vengano trasmessi dati.",
-            "Per gli utenti in giurisdizioni che richiedono un consenso esplicito (ad es., Corea del Sud ai sensi del PIPA), la telemetria deve essere attivata esplicitamente tramite la configurazione del prodotto prima che vengano trasmessi dati."
+            "Per la <strong>CLI, il Middleware e il Bridge</strong> (installati sull'infrastruttura dell'utente): la telemetria viene raccolta sulla base del <strong>legittimo interesse</strong> con chiari meccanismi di opt-out. E' possibile disabilitare la telemetria prima che vengano trasmessi dati."
           ],
           "id": "legal-basis",
           "title": "3. Base Giuridica per la Raccolta"
-        },
-        "middleware": {
-          "content": [
-            "Il Rediacc Middleware raccoglie telemetria operativa. La telemetria viene trasmessa a <code>rediacc.com</code>."
-          ],
-          "id": "middleware",
-          "subsections": {
-            "middlewareDataCollected": {
-              "content": ["Il Middleware raccoglie le seguenti categorie di dati:"],
-              "items": [
-                "<strong>Informazioni di sistema:</strong> hostname, versione del sistema operativo, versione del runtime .NET",
-                "<strong>Chiamate API:</strong> metodo HTTP, percorso dell'endpoint, codice di stato della risposta, durata della richiesta",
-                "<strong>Operazioni sul database:</strong> nome della stored procedure, durata dell'esecuzione, numero di righe restituite (nessun contenuto della query, parametri o dati risultanti)",
-                "<strong>Eventi di autenticazione:</strong> solo identificatore utente con hashing - gli ID utente vengono sottoposti ad hashing con SHA-256 e un salt, quindi troncati ai primi 12 caratteri. Gli ID utente originali non vengono mai trasmessi.",
-                "<strong>Controlli di salute:</strong> stato di disponibilita' dei componenti del servizio e tempi di risposta",
-                "<strong>Ciclo di vita dell'applicazione:</strong> eventi di avvio, arresto e modifica della configurazione",
-                "<strong>Informazioni sugli errori:</strong> tipo di errore, messaggio di errore e contesto operativo"
-              ],
-              "title": "6.1 Dati Raccolti"
-            },
-            "middlewareOptOut": {
-              "content": [
-                "Impostare <code>Telemetry:Enabled</code> su <code>false</code> nella configurazione del Middleware (appsettings.json o configurazione specifica dell'ambiente)."
-              ],
-              "title": "6.2 Come Disattivare la Telemetria"
-            }
-          },
-          "title": "6. Telemetria del Middleware"
         },
         "principles": {
           "content": ["Tutta la raccolta di telemetria in Rediacc segue questi principi:"],
@@ -13635,48 +13592,6 @@
             "<strong>Aggregazione:</strong> i dati di telemetria vengono analizzati in forma aggregata. Non costruiamo profili individuali degli utenti a partire dalla telemetria."
           ],
           "title": "2. I Nostri Principi di Telemetria"
-        },
-        "webApp": {
-          "content": [
-            "La Rediacc Web Application utilizza il tracciamento distribuito basato su OpenTelemetry. La telemetria viene trasmessa a <code>rediacc.com</code>. In produzione, viene campionato solo il <strong>10% delle sessioni</strong>."
-          ],
-          "id": "web-app",
-          "subsections": {
-            "webDataCollected": {
-              "content": ["La Web Application raccoglie le seguenti categorie di dati:"],
-              "items": [
-                "<strong>Informazioni sul browser:</strong> nome e versione del browser, lingua preferita, piattaforma (ad es., Windows, macOS, Linux), risoluzione dello schermo, profondita' del colore, stringa dello user agent, memoria del dispositivo (se disponibile), tipo di connessione di rete",
-                "<strong>Contesto utente:</strong> ID di sessione (generato casualmente per sessione), solo il dominio dell'email (la parte locale e' oscurata, ad es., <code>***@example.com</code>), nome dell'organizzazione, nome del team",
-                "<strong>Visualizzazioni di pagina e navigazione:</strong> pagine visitate nell'applicazione, cambi di route, informazioni sul referrer",
-                "<strong>Interazioni dell'utente:</strong> clic, invii di moduli, aperture/chiusure di modal, query di ricerca, modifiche ai filtri, cambio di tab, download di file (i nomi dei file non vengono raccolti)",
-                "<strong>Chiamate API:</strong> metodo HTTP, percorso URL, codice di stato della risposta, durata della richiesta",
-                "<strong>Errori:</strong> tipo di errore, messaggio di errore, stack trace (troncato a 1.000 caratteri), sorgente dell'errore",
-                "<strong>Metriche di performance:</strong> Core Web Vitals (LCP, FID, CLS, TTFB, INP), timing delle risorse, utilizzo della memoria (campionato ogni 30 secondi), rilevamento di task lunghi",
-                "<strong>Ciclo di vita dei componenti:</strong> tempistiche di mount/unmount dei componenti, durata del rendering"
-              ],
-              "title": "4.1 Dati Raccolti"
-            },
-            "webNotCollected": {
-              "content": ["La Web Application non raccoglie:"],
-              "items": [
-                "Indirizzi email completi (la parte locale viene sempre oscurata)",
-                "Password, token o credenziali di autenticazione",
-                "Contenuti di file, contenuti di database o risultati di query",
-                "Valori dei campi dei moduli (viene registrato solo il fatto che un modulo e' stato inviato)",
-                "Contenuti degli appunti o sequenze di tasti",
-                "Indirizzi IP (non registrati dal nostro endpoint di telemetria)"
-              ],
-              "title": "4.2 Dati NON Raccolti"
-            },
-            "webOptOut": {
-              "content": [
-                "Imposti il flag di configurazione <code>userConsent</code> su <code>false</code> nelle impostazioni del proprio account. La telemetria si interrompe immediatamente alla disattivazione.",
-                "<strong>Applicazione Desktop:</strong> la telemetria e' completamente disabilitata nell'applicazione Desktop (Electron) per impostazione predefinita. Nessun dato viene raccolto o trasmesso."
-              ],
-              "title": "4.3 Come Disattivare la Telemetria"
-            }
-          },
-          "title": "4. Telemetria dell'Applicazione Web"
         },
         "yourRights": {
           "content": [

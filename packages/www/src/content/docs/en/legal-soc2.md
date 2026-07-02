@@ -30,7 +30,7 @@ So Rediacc logs 70+ different event types. User actions, system changes, configu
 - **Licensing**: repo license issuance, machine slot tracking, subscription changes
 - **Machine operations**: repository create/start/stop/delete, fork, backup push/pull, file sync, terminal sessions
 
-Three ways to get these logs. Admin dashboard with user, team, and date filtering. Portal activity page for org admins, type and date filtering. Or the `rdc audit` CLI for programmatic export. Pipe it into your own tools, integrate it wherever. Machine operations also log to your system logs, so you've got defense in depth.
+Two ways to get these logs. Admin dashboard with user, team, and date filtering. Portal activity page for org admins, type and date filtering, with JSON export you can pipe into your own tools. Machine operations also log to your system logs, so you've got defense in depth.
 
 ## Change Management
 

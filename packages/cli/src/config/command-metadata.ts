@@ -483,7 +483,6 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
 
   // ── Interactive / GUI ─────────────────────────────────────────────
   vscode: { mcpExcludeReason: 'Opens VS Code GUI — not useful for MCP agents' },
-  protocol: { mcpExcludeReason: 'URL protocol handler registration — local desktop concern' },
 
   // ── Local-only tooling ────────────────────────────────────────────
   ops: { mcpExcludeReason: 'Local VM provisioning — requires host KVM/QEMU, not remote-operable' },
@@ -497,7 +496,6 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   mcp: { mcpExcludeReason: 'The MCP server itself — cannot recurse' },
 
   // ── Sync requires local filesystem ────────────────────────────────
-  sync: { mcpExcludeReason: 'Requires local filesystem paths — MCP agents have no local FS' },
 
   // ── Covered by sub-operations ─────────────────────────────────────
   run: {
@@ -518,10 +516,8 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'storage rename': { mcpExcludeReason: 'Config CRUD — covered by config storage commands' },
   'storage delete': { mcpExcludeReason: 'Config CRUD — covered by config storage commands' },
 
-  // ── Cloud-only (not available in local adapter) ──────────────────
-  'machine vault': { mcpExcludeReason: 'Cloud adapter only — vault management' },
-  'machine vault-status': { mcpExcludeReason: 'Cloud adapter only — vault status' },
-  'storage vault': { mcpExcludeReason: 'Cloud adapter only — vault management' },
+  // storage vault still exists locally (read-only view of storage config)
+  'storage vault': { mcpExcludeReason: 'Config vault view — covered by config storage commands' },
 };
 
 /** Look up metadata for a command path. */

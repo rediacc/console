@@ -4,7 +4,7 @@ description: "Riferimento rapido per rdc: configurazioni, repository, macchine, 
 category: Guides
 order: 3
 language: it
-sourceHash: "bc52628ba870dfbb"
+sourceHash: "8cde2c78200d226a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -102,7 +102,6 @@ Credenziali di deploy accessibili solo in scrittura. `get` restituisce solo il d
 | `rdc config machine setup --name <machine>` | Esegui il provisioning iniziale della macchina |
 | `rdc machine prune --name <machine>` | Rimuove le risorse inutilizzate dalla macchina |
 | `rdc machine deprovision --name <machine>` | Esegui il deprovisioning completo di una macchina |
-| `rdc machine vault-status --name <machine>` | Mostra lo stato del vault LUKS |
 
 ## Terminale e sincronizzazione
 

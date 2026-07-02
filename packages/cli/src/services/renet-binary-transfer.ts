@@ -10,9 +10,9 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
-import type { SFTPClient, SFTPClientConfig } from '@rediacc/shared-desktop/sftp';
-import { createTempSSHKeyFile, removeTempSSHKeyFile } from '@rediacc/shared-desktop/ssh';
-import { executeRsync, getRsyncCommand } from '@rediacc/shared-desktop/sync';
+import type { SFTPClient, SFTPClientConfig } from '../shared-desktop/sftp/index.js';
+import { createTempSSHKeyFile, removeTempSSHKeyFile } from '../shared-desktop/ssh/index.js';
+import { executeRsync, getRsyncCommand } from '../shared-desktop/sync/index.js';
 import { outputService } from './output.js';
 
 /** Remote install layout needed to locate delta-sync seed binaries */

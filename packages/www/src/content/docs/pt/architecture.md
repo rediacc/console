@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: pt
-sourceHash: "6763cd925791d474"
+sourceHash: "947fcefa63eac600"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -39,27 +39,12 @@ Para uma regra prática orientada ao operador, consulte [rdc vs renet](/en/docs/
 
 Todo o estado do CLI é armazenado em ficheiros de configuração JSON planos em `~/.config/rediacc/`.
 
-### Adaptador Local (Predefinição)
-
-A predefinição para uso self-hosted. Todo o estado reside num ficheiro de configuração na sua workstation (por exemplo, `~/.config/rediacc/rediacc.json`).
+Todo o estado reside num ficheiro de configuração na sua workstation (por exemplo, `~/.config/rediacc/rediacc.json`).
 
 - Ligações SSH diretas às máquinas
 - Sem serviços externos necessários
-- Utilizador único, workstation única
 - A configuração predefinida é criada automaticamente no primeiro uso do CLI. As configurações nomeadas são criadas com `rdc config init --name <name>`
-
-### Adaptador Cloud (Experimental)
-
-Ativado automaticamente quando uma configuração contém os campos `apiUrl` e `token`. Usa a API da Rediacc para gestão de estado e colaboração em equipa.
-
-- Estado armazenado na API cloud
-- Equipas multi-utilizador com controlo de acesso baseado em funções
-- Consola web para gestão visual
-- Configurado com `rdc auth login`
-
-> **Nota:** Os comandos do adaptador cloud são experimentais. Ative-os definindo `REDIACC_EXPERIMENTAL=1`.
-
-Ambos os adaptadores usam os mesmos comandos CLI. O adaptador apenas afeta onde o estado é armazenado e como a autenticação funciona.
+- Sincronização opcional de configuração encriptada guarda o mesmo ficheiro no arquivo de configuração, com âmbito por equipa
 
 ## O Utilizador rediacc
 

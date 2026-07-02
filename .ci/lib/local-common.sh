@@ -102,23 +102,6 @@ write_stamp_hash() {
     printf '%s\n' "$stamp_hash" >"$stamp_file"
 }
 
-# Check if middleware API is available
-# Returns: 0 if available, 1 otherwise
-check_middleware() {
-    local api_url="${VITE_API_URL:-http://localhost:7322/api}"
-    local health_endpoint="${api_url}/health"
-
-    log_debug "Checking middleware availability at: $health_endpoint"
-
-    if curl -s -f --connect-timeout 2 --max-time 5 "$health_endpoint" &>/dev/null; then
-        log_debug "Middleware is available"
-        return 0
-    else
-        log_debug "Middleware is not available"
-        return 1
-    fi
-}
-
 # Smart dependency installation (only if needed)
 # Uses a hash-based stamp so npm metadata-only mtime changes do not force reinstall
 ensure_deps() {
@@ -148,9 +131,8 @@ ensure_deps() {
     fi
 
     # cpu-features (ssh2 optional dep) generates buildcheck.gypi via its npm
-    # install script. Desktop's postinstall runs electron-builder install-app-deps
-    # which calls node-gyp directly, bypassing npm lifecycle scripts — so if the
-    # gypi is missing the rebuild fails before the install script can re-run.
+    # install script. With ignore-scripts=true that script never runs, so
+    # generate the gypi here before install:natives rebuilds cpu-features.
     local cpu_features_dir="$node_modules_dir/cpu-features"
     if [[ -f "$cpu_features_dir/buildcheck.js" ]] && [[ ! -f "$cpu_features_dir/buildcheck.gypi" ]]; then
         (cd "$cpu_features_dir" && node buildcheck.js >buildcheck.gypi)
@@ -171,14 +153,12 @@ ensure_packages_built() {
     current_hash="$(
         compute_hash_for_package_dirs "$LOCAL_ROOT_DIR" \
             packages/shared \
-            packages/shared-desktop \
             packages/provisioning
     )"
 
     saved_hash="$(read_stamp_hash "$stamp_file")"
 
     if [[ -d "$LOCAL_ROOT_DIR/packages/shared/dist" ]] &&
-        [[ -d "$LOCAL_ROOT_DIR/packages/shared-desktop/dist" ]] &&
         [[ -d "$LOCAL_ROOT_DIR/packages/provisioning/dist" ]] &&
         [[ "$saved_hash" == "$current_hash" ]]; then
         log_debug "Shared packages are up-to-date (stamp matched)"

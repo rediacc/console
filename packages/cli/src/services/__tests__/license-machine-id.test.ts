@@ -7,7 +7,7 @@ const mockExecStreaming = vi.fn();
 const mockConnect = vi.fn();
 const mockClose = vi.fn();
 
-vi.mock('@rediacc/shared-desktop/sftp', () => ({
+vi.mock('../../shared-desktop/sftp/index.js', () => ({
   SFTPClient: class MockSFTPClient {
     connect = mockConnect;
     exec = mockExec;

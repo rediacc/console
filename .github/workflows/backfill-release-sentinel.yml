@@ -39,11 +39,6 @@ on:
           - edge
           - stable
         default: edge
-      include_desktop:
-        description: 'Also write the desktop sentinel.'
-        required: true
-        type: boolean
-        default: true
       dry_run:
         description: 'Dry run — print what would be written without touching R2.'
         required: true
@@ -70,7 +65,7 @@ jobs:
     steps:
       # Sparse-checkout the action source first; the local app-token action
       # cannot resolve until it exists on disk.
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout: .github/actions
 
@@ -85,7 +80,7 @@ jobs:
 
       # Full checkout with tags so we can resolve commit_sha from the version
       # tag and verify ancestry against origin/main.
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
@@ -176,7 +171,6 @@ jobs:
           VERSION: ${{ inputs.version }}
           CHANNEL: ${{ inputs.channel }}
           COMMIT_SHA: ${{ steps.resolve.outputs.commit_sha }}
-          INCLUDE_DESKTOP: ${{ inputs.include_desktop }}
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
           set -euo pipefail
@@ -187,9 +181,6 @@ jobs:
             --channel "$CHANNEL"
             --commit-sha "$COMMIT_SHA"
           )
-          if [[ "$INCLUDE_DESKTOP" == "true" ]]; then
-            ARGS+=(--desktop)
-          fi
           if [[ "$DRY_RUN" == "true" ]]; then
             echo "→ DRY RUN — would invoke:"
             printf '   .ci/scripts/deploy/write-release-sentinel.sh'
@@ -208,7 +199,6 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           VERSION: ${{ inputs.version }}
-          INCLUDE_DESKTOP: ${{ inputs.include_desktop }}
         run: |
           set -euo pipefail
           source .ci/scripts/lib/release-state-validator.sh
@@ -216,7 +206,7 @@ jobs:
           export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
           export AWS_DEFAULT_REGION=auto
           missing=0
-          for product in cli $([[ "$INCLUDE_DESKTOP" == "true" ]] && echo desktop); do
+          for product in cli; do
             if rsv_sentinel_exists "$product" "$VERSION"; then
               echo "✓ $product/$VERSION/.released present in R2"
             else

@@ -141,9 +141,6 @@ export default tseslint.config(
       '*.config.js',
       '*.config.ts',
       '*.config.cjs',
-      'packages/web/postcss.config.cjs',
-      'packages/web/tailwind.config.cjs',
-      'packages/web/vite.config.ts',
       'packages/cli/bundle.mjs',
       // Ignore .d.ts files (generated type declarations)
       '**/*.d.ts',
@@ -152,19 +149,14 @@ export default tseslint.config(
       'packages/*/src/**/*.js.map',
       'packages/*/tests/**/*.js',
       'packages/*/tests/**/*.js.map',
-      // Ignore public config files
-      'packages/web/public/**',
       // Ignore www public assets — the search-index-*.json files are large
       // generated artifacts that don't need linting and slow eslint to a crawl.
       'packages/www/public/**',
-      // Ignore desktop build output
-      'packages/desktop/out/**',
       // Ignore custom eslint rules (plain JS)
       'eslint-rules/**',
       // Ignore package-level scripts (plain JS utilities)
       'packages/*/scripts/**',
       // Ignore Playwright report artifacts (generated trace viewer files)
-      'packages/e2e/reports/**',
       'packages/bridge-tests/reports/**',
       // Ignore private submodules except account (which has i18n enforcement)
       'private/!(account)/**',
@@ -272,7 +264,6 @@ export default tseslint.config(
           allowDefaultProject: [
             'scripts/*.ts',
             'scripts/utils/*.ts',
-            'packages/desktop/electron.vite.config.js',
           ],
           maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 12,
         },
@@ -291,11 +282,8 @@ export default tseslint.config(
       'import/resolver': {
         typescript: {
           project: [
-            'packages/web/tsconfig.json',
             'packages/shared/tsconfig.json',
             'packages/cli/tsconfig.json',
-            'packages/cli/tests/tsconfig.json',
-            'packages/e2e/tsconfig.json',
           ],
           // Suppress warning about multiple tsconfig files (expected in monorepo)
           noWarnOnMultipleProjects: true,
@@ -529,26 +517,6 @@ export default tseslint.config(
     }
   },
 
-  // Web UI i18n enforcement
-  {
-    files: ['packages/web/src/**/*.{js,jsx,ts,tsx}'],
-    ignores: ['packages/web/src/**/__tests__/**'],
-    plugins: {
-      'i18n-source': i18nSourcePlugin,
-    },
-    rules: {
-      'custom/require-translation': ['error', {
-        localeDir: 'packages/web/src/i18n/locales/en',
-      }],
-      'custom/no-hardcoded-text': ['error'],
-      'i18n-source/interpolation-match': ['error', {
-        localeDir: 'packages/web/src/i18n/locales/en',
-      }],
-      // Enforce type-safe API calls - use typedApi instead of raw apiClient methods
-      'custom/no-raw-api-calls': 'error',
-    }
-  },
-
   // CLI i18n enforcement
   {
     files: ['packages/cli/src/**/*.{js,ts}'],
@@ -558,31 +526,10 @@ export default tseslint.config(
     },
     rules: {
       // Ban positional arguments -- enforce named options in Commander.js commands
-      'custom/no-positional-arguments': ['error', {
-        exemptFiles: [
-          // Experimental cloud-only commands
-          'packages/cli/src/commands/auth.ts',
-          'packages/cli/src/commands/audit.ts',
-          'packages/cli/src/commands/bridge.ts',
-          'packages/cli/src/commands/organization.ts',
-          'packages/cli/src/commands/permission.ts',
-          'packages/cli/src/commands/protocol.ts',
-          'packages/cli/src/commands/queue.ts',
-          'packages/cli/src/commands/region.ts',
-          'packages/cli/src/commands/repository.ts',
-          'packages/cli/src/commands/team.ts',
-          'packages/cli/src/commands/user.ts',
-          'packages/cli/src/commands/ceph/**',
-        ],
-      }],
+      'custom/no-positional-arguments': 'error',
       // Enforce t() for CLI-specific patterns
       'custom/no-hardcoded-cli-text': ['error'],
-      'custom/require-command-summary': ['error', {
-        excludeFromMinDescription: [
-          'auth', 'audit', 'bridge', 'ceph', 'organization', 'permission',
-          'protocol', 'queue', 'region', 'repository', 'team', 'user', 'snapshot',
-        ],
-      }],
+      'custom/require-command-summary': 'error',
       // Enforce translation keys exist in locale files
       'custom/require-translation': ['error', {
         localeDir: 'packages/cli/src/i18n/locales/en',
@@ -600,8 +547,6 @@ export default tseslint.config(
       'i18n-source/interpolation-match': ['error', {
         localeDir: 'packages/cli/src/i18n/locales/en',
       }],
-      // Enforce type-safe API calls - use typedApi instead of raw apiClient methods
-      'custom/no-raw-api-calls': 'error',
       // Ban positional CLI syntax in help text / error strings / JSX.
       // Mirrors custom/i18n/no-positional-cli-syntax but for source strings.
       'custom/no-positional-cli-syntax-source': 'error',
@@ -638,16 +583,6 @@ export default tseslint.config(
   //   1. JSON linting (all languages): sorted keys, camelCase, no duplicates
   //   2. English cross-language validation: consistency, coverage, staleness, unused keys
   //   3. Non-English validation: untranslated values, interpolation consistency
-  ...i18nLocaleConfigs({
-    localesDir: 'packages/web/src/i18n/locales',
-    sourceDir: 'packages/web/src',
-    unusedKeyIgnores: ['^errors\\.', '^messages\\.', '^validation\\.'],
-    extraUntranslatedPatterns: [
-      '^[a-zA-Z0-9!]+$',
-      '^[A-Za-z]+\\d+$',
-      '^(my|your|example|sample|test)-',
-    ],
-  }),
   ...i18nLocaleConfigs({
     localesDir: 'packages/cli/src/i18n/locales',
     sourceDir: 'packages/cli/src',
@@ -794,27 +729,16 @@ export default tseslint.config(
   // TEST FILE OVERRIDES
   // =============================================================
   // These patterns cover ALL test file locations:
-  // - E2E tests: packages/e2e/**
   // - Bridge tests: packages/bridge-tests/**
-  // - CLI Playwright: packages/cli/tests/**
-  // - CLI Unit tests: packages/cli/src/__tests__/**
-  // - Web Vitest: packages/web/src/**/__tests__/**
+  // - CLI Unit tests: packages/cli/src/**/__tests__/**
   // - Shared: packages/shared/src/**/__tests__/**
   // =============================================================
   {
     files: [
-      // Playwright/E2E test files
-      'packages/e2e/**/*.ts',
       'packages/bridge-tests/**/*.ts',
-      'packages/cli/tests/**/*.ts',
       // Unit test files (__tests__ convention)
-      'packages/web/src/**/__tests__/**/*.{ts,tsx}',
       'packages/shared/src/**/__tests__/**/*.{ts,tsx}',
       'packages/cli/src/**/__tests__/**/*.ts',
-    ],
-    ignores: [
-      // Has legitimate waitForTimeout for exponential backoff retry logic
-      'packages/e2e/src/base/BasePage.ts',
     ],
     plugins: {
       playwright: playwrightPlugin,
@@ -870,30 +794,10 @@ export default tseslint.config(
   // list as tests are filled in.
   {
     files: [
-      // E2E: real tests with missing assertions (need proper fix)
-      'packages/e2e/tests/01-auth/01-01-registration.test.ts',
-      'packages/e2e/tests/01-auth/01-02-login.test.ts',
-      // E2E: scattered stubs in mixed directories
-      'packages/e2e/tests/02-organization/01-users/02-01-02-user-permissions.test.ts',
-      'packages/e2e/tests/02-organization/02-teams/02-02-02-team-edit.test.ts',
-      'packages/e2e/tests/03-machines/02-04-02-connectivity-test.test.ts',
-      'packages/e2e/tests/03-machines/02-04-03-machine-refresh.test.ts',
-      'packages/e2e/tests/03-machines/02-04-05-machine-edit.test.ts',
-      // E2E: entire directories that are stubs
-      'packages/e2e/tests/04-repositories/**/*.ts',
-      'packages/e2e/tests/05-connection/**/*.ts',
-      'packages/e2e/tests/06-settings/**/*.ts',
-      'packages/e2e/tests/07-storage/**/*.ts',
-      'packages/e2e/tests/08-credentials/**/*.ts',
-      'packages/e2e/tests/09-queue/**/*.ts',
-      'packages/e2e/tests/10-audit/**/*.ts',
       // Bridge: tests with setup/cleanup steps lacking assertions
       'packages/bridge-tests/tests/12a-full-integration-repository.test.ts',
       'packages/bridge-tests/tests/13-postgres-fork-isolation.test.ts',
       'packages/bridge-tests/tests/18-ops-workflow.test.ts',
-      // CLI: tests with missing assertions
-      'packages/cli/tests/tests/03-operations/04-shortcuts.test.ts',
-      'packages/cli/tests/tests/08-e2e/01-local-execution.test.ts',
     ],
     rules: {
       'playwright/expect-expect': 'off',
@@ -901,12 +805,11 @@ export default tseslint.config(
   },
 
   // =============================================================
-  // WEB PACKAGE UNIT TESTS - STRICT NO SKIP POLICY
+  // UNIT TESTS - STRICT NO SKIP POLICY
   // =============================================================
   // Vitest unit tests should never be skipped - fix them
   {
     files: [
-      'packages/web/src/**/__tests__/**/*.{ts,tsx}',
       'packages/shared/src/**/__tests__/**/*.{ts,tsx}',
     ],
     rules: {
@@ -924,19 +827,6 @@ export default tseslint.config(
           message: 'describe.skip() is not allowed in unit tests. Fix the tests.',
         },
       ],
-    },
-  },
-
-  // =============================================================
-  // E2E TEST FILE NAMING CONVENTION
-  // =============================================================
-  // Enforce doc-aligned naming pattern: {XX}-{YY}[-{ZZ}]-{feature-name}[.negative].test.ts
-  {
-    files: ['packages/e2e/tests/**/*.test.ts'],
-    rules: {
-      'custom/e2e-test-naming-convention': ['error', {
-        excludeDirs: ['helpers', 'setup', 'electron'],
-      }],
     },
   },
 
@@ -1000,13 +890,13 @@ export default tseslint.config(
       'react-hooks/set-state-in-effect': 'off',
       'react-hooks/purity': 'off',
       'react-hooks/preserve-manual-memoization': 'off',
-      // --- Custom rules (packages/web specific) ---
+      // --- Custom rules (inherited from base config) ---
       'custom/require-testid': 'off',
       'custom/no-raw-api-calls': 'off',
       'custom/no-duplicate-translation-props': 'off',
       'custom/no-hardcoded-nullish-defaults': 'off',
       'custom/prefer-const-arrays': 'off',
-      // --- Import/syntax restrictions (packages/web specific) ---
+      // --- Import/syntax restrictions ---
       'no-restricted-imports': 'off',
       'no-restricted-syntax': ['error', {
         selector: "CallExpression[callee.property.name='transaction']",

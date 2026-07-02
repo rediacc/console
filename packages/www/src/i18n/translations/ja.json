@@ -1066,33 +1066,28 @@
       "architectures": {
         "arm64": "ARM64",
         "arm64_apple": "Apple Silicon（ARM64）",
-        "armv7l": "ARMv7",
         "x64": "x64（64ビット）",
         "x64_intel": "Intel（x64）"
       },
       "autoUpdate": {
-        "description": "Rediacc Desktop は自動で更新されます。インストール後、新バージョンをチェックして通知。ワンクリックでインストール完了です。遅い接続では数分かかる場合があります。",
+        "description": "Rediacc CLI は自動で更新されます。新しいバージョンを確認してインストールしてくれるので、常に最新版を使えます。",
         "title": "自動更新について"
       },
       "cli": {
         "binary": "バイナリ",
-        "description": "ターミナルで実行する軽量で高速なツール。スクリーンなしでサーバーを管理したり、複数マシンで一度にコマンド実行ができます。そのような環境ならデスクトップアプリより CLI が最適です。サーバー接続、コマンド実行、更新プッシュが可能。ブラウザは不要です。"
+        "description": "ターミナルで実行する軽量で高速なツールです。画面のないサーバーの管理や、複数のマシンで同じコマンドを一度に実行するのに向いています。サーバーへの接続、コマンドの実行、更新の配信ができ、ブラウザは不要です。"
       },
       "hero": {
         "released": "リリース",
-        "subtitle": "Rediacc Desktop と CLI",
+        "subtitle": "Rediacc CLI",
         "title": "Rediacc CLIをダウンロード"
       },
       "installation": {
         "cli": "CLI：お使いのシステム用ファイルをダウンロード。Linux/macOS ではターミナルで 'chmod +x ファイル名' を実行してから /usr/local/bin に移動してください。",
-        "linux_appimage": "Linux AppImage：'chmod +x ファイル名.AppImage' で実行可能にしてそのまま実行。インストール不要です。",
-        "linux_deb": "Linux DEB：'sudo dpkg -i ファイル名.deb' でインストールするか、ファイルマネージャーでダブルクリック。",
-        "macos": "macOS：.dmg ファイルを開いて、Rediacc Desktop を Applications フォルダにドラッグするだけ。macOS がブロックした場合は、システム環境設定 > セキュリティとプライバシーで許可してください。",
-        "title": "インストール手順",
-        "windows": "Windows：.exe インストーラーを実行して、画面の指示に従うだけ。Program Files フォルダに自動インストールされます。"
+        "title": "インストール手順"
       },
       "meta": {
-        "description": "Windows・macOS・Linux対応。Rediacc Desktop と CLI をダウンロード",
+        "description": "Windows・macOS・Linux対応の Rediacc CLI をダウンロード。すばやくインストールでき、自動で更新されます。",
         "keywords": "Rediaccダウンロード, デスクトップアプリ, CLI, Windowsアプリ, macOSアプリ, Linuxアプリ",
         "title": "Rediacc CLI を全プラットフォームでダウンロード | Rediacc"
       },
@@ -1103,22 +1098,13 @@
         "windows": "Windows"
       },
       "requirements": {
-        "disk": "500 MB の空き容量が必要",
-        "diskTitle": "ディスク容量",
         "linux": "最新Linuxディストリビューション（glibc 2.28以上）",
         "macos": "macOS 11（Big Sur）以降",
-        "ram": "最小 2 GB、推奨 4 GB RAM",
-        "ramTitle": "メモリ",
         "title": "システム要件",
         "windows": "Windows 10以降（64ビット）"
       },
       "sections": {
-        "cli": "コマンドラインインターフェース（CLI）",
-        "desktop": "デスクトップアプリ"
-      },
-      "types": {
-        "appimage": "AppImage（ポータブル）",
-        "deb": "Debian/Ubuntu（.deb）"
+        "cli": "コマンドラインインターフェース（CLI）"
       }
     },
     "home": {
@@ -1141,7 +1127,7 @@
       "copy": "コピー",
       "hero": {
         "downloadsLink": "ダウンロードページへ",
-        "downloadsNote": "デスクトップアプリやバイナリをお探しですか？",
+        "downloadsNote": "CLI のバイナリを直接お探しですか？",
         "subtitle": "お好みのインストール方法を選択",
         "title": "Rediacc CLIをインストール"
       },
@@ -2677,6 +2663,42 @@
             "大企業のダウンタイムコストは1分で5,600ドル"
           ]
         },
+        "categories": {
+          "heading": "提供サービス",
+          "intro": "すべての案件はまず対話から始まり、お客様の環境に最適なチームとスケジュールを設定します。",
+          "items": [
+            {
+              "description": "ガイド付きのセットアップ手順解説から、高度なワークフローやインシデント対応手順を網羅する数日間のワークショップまで、実践的なトレーニングをご用意しています。",
+              "icon": "team-training",
+              "id": "training",
+              "name": "トレーニング"
+            },
+            {
+              "description": "実際のエンジニアによる継続的なサポート。通常営業時間のメールサポートから、本番環境向けの専任アカウントマネージャー付き24時間365日対応まで、幅広くご用意しています。",
+              "icon": "security-assessment",
+              "id": "support",
+              "name": "サポート"
+            },
+            {
+              "description": "完全に検証済みのデータ移行から、時間に追われる際の迅速な当日切り替えまで、エンドツーエンドの移行とカスタム統合作業に対応します。",
+              "icon": "data-migration",
+              "id": "migration",
+              "name": "移行"
+            },
+            {
+              "description": "ランサムウェア復旧やディザスタリカバリの案件対応。インシデント発生後のフォレンジックや堅牢化から、ミッションクリティカルなシステムの継続的レプリケーション構築まで、幅広くサポートします。",
+              "icon": "ransomware-recovery",
+              "id": "recovery",
+              "name": "リカバリー"
+            },
+            {
+              "description": "お客様の環境や監査要件に合わせたセキュリティレビュー、堅牢化チェックリスト、コンプライアンス手順書、およびインシデント対応継続契約を提供します。",
+              "icon": "storage-hardening",
+              "id": "security",
+              "name": "セキュリティとコンプライアンス"
+            }
+          ]
+        },
         "cta": {
           "button": "お問い合わせ",
           "description": "すべての案件はお客様の環境に合わせてスコープを設定します。お問い合わせいただければ、一緒に最適なプランを考えます。",
@@ -2687,42 +2709,6 @@
           "eligibility": "どのプランでもプロフェッショナルサービスをご利用いただけます。お問い合わせいただければ、お客様の環境に最適な案件をスコープします。",
           "subtitle": "必要なときに、すぐ専門家がサポート",
           "title": "プロフェッショナルサービス"
-        },
-        "categories": {
-          "heading": "提供サービス",
-          "intro": "すべての案件はまず対話から始まり、お客様の環境に最適なチームとスケジュールを設定します。",
-          "items": [
-            {
-              "id": "training",
-              "name": "トレーニング",
-              "description": "ガイド付きのセットアップ手順解説から、高度なワークフローやインシデント対応手順を網羅する数日間のワークショップまで、実践的なトレーニングをご用意しています。",
-              "icon": "team-training"
-            },
-            {
-              "id": "support",
-              "name": "サポート",
-              "description": "実際のエンジニアによる継続的なサポート。通常営業時間のメールサポートから、本番環境向けの専任アカウントマネージャー付き24時間365日対応まで、幅広くご用意しています。",
-              "icon": "security-assessment"
-            },
-            {
-              "id": "migration",
-              "name": "移行",
-              "description": "完全に検証済みのデータ移行から、時間に追われる際の迅速な当日切り替えまで、エンドツーエンドの移行とカスタム統合作業に対応します。",
-              "icon": "data-migration"
-            },
-            {
-              "id": "recovery",
-              "name": "リカバリー",
-              "description": "ランサムウェア復旧やディザスタリカバリの案件対応。インシデント発生後のフォレンジックや堅牢化から、ミッションクリティカルなシステムの継続的レプリケーション構築まで、幅広くサポートします。",
-              "icon": "ransomware-recovery"
-            },
-            {
-              "id": "security",
-              "name": "セキュリティとコンプライアンス",
-              "description": "お客様の環境や監査要件に合わせたセキュリティレビュー、堅牢化チェックリスト、コンプライアンス手順書、およびインシデント対応継続契約を提供します。",
-              "icon": "storage-hardening"
-            }
-          ]
         }
       },
       "roiCta": {
@@ -3809,7 +3795,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc audit log --limit 200",
+          "command": "rdc repo fork --parent production --tag pentest -m server-1",
           "ctaText": "無料で始める",
           "description": "無料のCommunityエディションから始めましょう。60秒以内に最初のペンテストを実行できます。",
           "title": "攻撃者より先に脆弱性を発見"
@@ -4218,7 +4204,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc audit history repository production",
+          "command": "rdc repo status --name production -m server-1",
           "ctaText": "Communityで無料で始める",
           "description": "無料のCommunityエディションから始めましょう。1分以内に最初の監査レポートを生成できます。",
           "title": "すべてを見る。何も見逃さない。"
@@ -4433,7 +4419,7 @@
               "title": "保護"
             },
             {
-              "description": "rdc audit --from --toを実行。任意の期間のコンプライアンス対応レポートを数秒で生成。",
+              "description": "ポータルのアクティビティページを開き、任意の期間で絞り込んでJSON形式でエクスポートします。数秒で監査対応のレポートが手に入ります。",
               "icon": "file-text",
               "title": "レポート"
             }
@@ -4618,7 +4604,7 @@
         "terminal": {
           "lines": [
             {
-              "text": "rdc audit --from 2026-02-01 --to 2026-02-27",
+              "text": "jq -r '.events[]' audit-export.json",
               "type": "command"
             },
             {
@@ -6099,7 +6085,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc audit log --limit 50",
+          "command": "rdc config show",
           "ctaText": "Communityで無料で始める",
           "description": "無料のCommunityエディションから始めてください。最初の鍵管理監査を1分以内に実行できます。",
           "title": "米国司法管轄のプロバイダーからデータを借り返すのをやめましょう。"
@@ -6501,7 +6487,7 @@
         "terminal": {
           "lines": [
             {
-              "text": "rdc audit log --limit 50",
+              "text": "jq -r '.keys[]' key-custody-report.json",
               "type": "command"
             },
             {
@@ -13562,39 +13548,10 @@
           "content": [
             "EU一般データ保護規則（GDPR）およびePrivacy指令の下で、テレメトリ収集の法的根拠は製品のコンテキストに依存します：",
             "<strong>Webアプリケーション</strong>（ブラウザベース）の場合：テレメトリは、サービス品質の維持および向上を目的として、<strong>正当な利益</strong>（GDPR第6条(1)(f)）に基づいて収集されます。いつでもオプトアウトできます。",
-            "<strong>CLI、ミドルウェア、およびBridge</strong>（お客様のインフラにインストール）の場合：テレメトリは、明確なオプトアウトメカニズムが提供された<strong>正当な利益</strong>に基づいて収集されます。データが送信される前にテレメトリを無効にすることができます。",
-            "明示的な同意が必要な法域のユーザー（例：韓国のPIPA）については、データが送信される前に製品設定を通じてテレメトリに明示的にオプトインする必要があります。"
+            "<strong>CLI、ミドルウェア、およびBridge</strong>（お客様のインフラにインストール）の場合：テレメトリは、明確なオプトアウトメカニズムが提供された<strong>正当な利益</strong>に基づいて収集されます。データが送信される前にテレメトリを無効にすることができます。"
           ],
           "id": "legal-basis",
           "title": "3. 収集の法的根拠"
-        },
-        "middleware": {
-          "content": [
-            "Rediaccミドルウェアは運用テレメトリを収集します。テレメトリは<code>rediacc.com</code>に送信されます。"
-          ],
-          "id": "middleware",
-          "subsections": {
-            "middlewareDataCollected": {
-              "content": ["ミドルウェアは以下のカテゴリのデータを収集します："],
-              "items": [
-                "<strong>システム情報：</strong>ホスト名、オペレーティングシステムバージョン、.NETランタイムバージョン",
-                "<strong>API呼び出し：</strong>HTTPメソッド、エンドポイントパス、レスポンスステータスコード、リクエスト所要時間",
-                "<strong>データベース操作：</strong>ストアドプロシージャ名、実行所要時間、返却行数（クエリ内容、パラメータ、または結果データは含まれません）",
-                "<strong>認証イベント：</strong>ハッシュ化されたユーザー識別子のみ — ユーザーIDはSHA-256とソルトでハッシュ化され、最初の12文字に切り詰められます。元のユーザーIDは送信されません。",
-                "<strong>ヘルスチェック：</strong>サービスコンポーネントの可用性ステータスと応答時間",
-                "<strong>アプリケーションライフサイクル：</strong>起動、シャットダウン、および設定変更イベント",
-                "<strong>エラー情報：</strong>エラータイプ、エラーメッセージ、および運用コンテキスト"
-              ],
-              "title": "6.1 収集データ"
-            },
-            "middlewareOptOut": {
-              "content": [
-                "ミドルウェア設定（appsettings.jsonまたは環境固有の設定）で<code>Telemetry:Enabled</code>を<code>false</code>に設定してください。"
-              ],
-              "title": "6.2 オプトアウト方法"
-            }
-          },
-          "title": "6. ミドルウェア テレメトリ"
         },
         "principles": {
           "content": ["Rediaccにおけるすべてのテレメトリ収集は以下の原則に従います："],
@@ -13607,48 +13564,6 @@
             "<strong>集計：</strong>テレメトリデータは集計して分析されます。テレメトリから個々のユーザープロファイルを構築することはありません。"
           ],
           "title": "2. テレメトリの原則"
-        },
-        "webApp": {
-          "content": [
-            "Rediacc WebアプリケーションはOpenTelemetryベースの分散トレーシングを使用しています。テレメトリは<code>https://www.rediacc.com/otlp</code>に送信されます。本番環境では、<strong>セッションの10%のみ</strong>がサンプリングされます。"
-          ],
-          "id": "web-app",
-          "subsections": {
-            "webDataCollected": {
-              "content": ["Webアプリケーションは以下のカテゴリのデータを収集します："],
-              "items": [
-                "<strong>ブラウザ情報：</strong>ブラウザ名とバージョン、優先言語、プラットフォーム（例：Windows、macOS、Linux）、画面解像度、色深度、ユーザーエージェント文字列、デバイスメモリ（利用可能な場合）、ネットワーク接続タイプ",
-                "<strong>ユーザーコンテキスト：</strong>セッションID（セッションごとにランダム生成）、メールドメインのみ（ローカル部分は除去、例：<code>***@example.com</code>）、組織名、チーム名",
-                "<strong>ページビューとナビゲーション：</strong>アプリケーション内で訪問したページ、ルート変更、リファラー情報",
-                "<strong>ユーザーインタラクション：</strong>クリック、フォーム送信、モーダルの開閉、検索クエリ、フィルター変更、タブ切り替え、ファイルダウンロード（ファイル名は収集されません）",
-                "<strong>API呼び出し：</strong>HTTPメソッド、URLパス、レスポンスステータスコード、リクエスト所要時間",
-                "<strong>エラー：</strong>エラータイプ、エラーメッセージ、スタックトレース（1,000文字に切り詰め）、エラーソース",
-                "<strong>パフォーマンスメトリクス：</strong>Core Web Vitals（LCP、FID、CLS、TTFB、INP）、リソースタイミング、メモリ使用量（30秒ごとにサンプリング）、ロングタスク検出",
-                "<strong>コンポーネントライフサイクル：</strong>コンポーネントのマウント/アンマウントタイミング、レンダリング所要時間"
-              ],
-              "title": "4.1 収集データ"
-            },
-            "webNotCollected": {
-              "content": ["Webアプリケーションは以下を収集しません："],
-              "items": [
-                "完全なメールアドレス（ローカル部分は常に除去）",
-                "パスワード、トークン、または認証資格情報",
-                "ファイル内容、データベース内容、またはクエリ結果",
-                "フォームフィールドの値（フォームが送信されたという事実のみが記録されます）",
-                "クリップボードの内容またはキーストローク",
-                "IPアドレス（当社のテレメトリエンドポイントでは記録されません）"
-              ],
-              "title": "4.2 収集しないデータ"
-            },
-            "webOptOut": {
-              "content": [
-                "アカウント設定で<code>userConsent</code>設定フラグを<code>false</code>に設定してください。オプトアウト後、テレメトリは即座に停止します。",
-                "<strong>デスクトップアプリケーション：</strong>デスクトップ（Electron）アプリケーションではテレメトリはデフォルトで完全に無効化されています。データの収集や送信は行われません。"
-              ],
-              "title": "4.3 オプトアウト方法"
-            }
-          },
-          "title": "4. Webアプリケーション テレメトリ"
         },
         "yourRights": {
           "content": [

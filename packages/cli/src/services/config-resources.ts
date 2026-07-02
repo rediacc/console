@@ -12,7 +12,7 @@ import { MIN_NETWORK_ID, NETWORK_ID_INCREMENT } from '@rediacc/shared/queue-vaul
 import {
   addMachineSSHConfigEntry,
   removeMachineSSHConfigEntry,
-} from '@rediacc/shared-desktop/vscode';
+} from '../shared-desktop/vscode/index.js';
 import { configFileStorage } from '../adapters/config-file-storage.js';
 import { t } from '../i18n/index.js';
 import type {
@@ -26,7 +26,6 @@ import type {
   RepositoryConfig,
   StorageConfig,
 } from '../types/index.js';
-import { hasCloudCredentials } from '../types/index.js';
 import { ConfigServiceBase } from './config-base.js';
 import { findFreeNetworkIdSlot, pickInitialNetworkId } from './config-network-id.js';
 import {
@@ -42,14 +41,11 @@ export { AmbiguousRepoTargetError } from './config-resources-resolve.js';
 
 class ConfigService extends ConfigServiceBase {
   /**
-   * Require the current config to be in a self-hosted mode (local or S3).
+   * Load the current (or named) config, failing when none is active.
    */
   protected async requireSelfHosted(configName?: string): Promise<RdcConfig> {
     const config = configName ? await configFileStorage.load(configName) : await this.getCurrent();
     if (!config) throw new Error('No active config');
-    if (hasCloudCredentials(config)) {
-      throw new Error(`Config "${configName ?? this.getEffectiveConfigName()}" is a cloud config`);
-    }
     return config;
   }
 
@@ -298,14 +294,14 @@ class ConfigService extends ConfigServiceBase {
 
   async getRepositoryGuidMap(): Promise<Record<string, string>> {
     const config = await this.getCurrent();
-    if (!config || hasCloudCredentials(config)) return {};
+    if (!config) return {};
     const state = await this.getResourceState();
     return buildGuidMap(state.getRepositories());
   }
 
   async getRepositoryCredentials(): Promise<Record<string, string>> {
     const config = await this.getCurrent();
-    if (!config || hasCloudCredentials(config)) return {};
+    if (!config) return {};
     const state = await this.getResourceState();
     return buildCredentialsMap(state.getRepositories());
   }
@@ -316,7 +312,7 @@ class ConfigService extends ConfigServiceBase {
    */
   async getRepository(repoRef: string): Promise<RepositoryConfig | undefined> {
     const config = await this.getCurrent();
-    if (!config || hasCloudCredentials(config)) return undefined;
+    if (!config) return undefined;
     const state = await this.getResourceState();
     const repos = state.getRepositories();
     const key = resolveExactOrLatest(repos, repoRef, !repoRef.includes(':'));
@@ -329,7 +325,7 @@ class ConfigService extends ConfigServiceBase {
    */
   async getRepositoryKey(repoRef: string): Promise<string | undefined> {
     const config = await this.getCurrent();
-    if (!config || hasCloudCredentials(config)) return undefined;
+    if (!config) return undefined;
     const state = await this.getResourceState();
     return resolveExactOrLatest(state.getRepositories(), repoRef, !repoRef.includes(':'));
   }
@@ -350,8 +346,7 @@ class ConfigService extends ConfigServiceBase {
     repoRef: string
   ): Promise<{ key: string; config: RepositoryConfig }> {
     const config = await this.getCurrent();
-    if (!config || hasCloudCredentials(config))
-      throw new Error(`Repository "${repoRef}" not found in context`);
+    if (!config) throw new Error(`Repository "${repoRef}" not found in context`);
     return resolveDestructiveTargetFromRepos(
       (await this.getResourceState()).getRepositories(),
       repoRef

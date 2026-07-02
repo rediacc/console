@@ -4,7 +4,7 @@ description: "Come l'architettura self-hosted di Rediacc si mappa ai requisiti G
 category: "Legal"
 order: 1
 language: it
-sourceHash: "36a776d87c6294ff"
+sourceHash: "76d2b3a911e0d14c"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -22,7 +22,7 @@ La tabella seguente mappa gli articoli specifici del GDPR alle capacità tecnich
 | [Art. 17](https://gdpr-info.eu/art-17-gdpr/), Diritto alla cancellazione | Cancellare i dati personali su richiesta | `rdc repo delete` cancella crittograficamente il volume LUKS. L'eliminazione di un fork rimuove completamente la copia clonata. |
 | [Art. 25](https://gdpr-info.eu/art-25-gdpr/), Protezione dei dati fin dalla progettazione | Privacy per impostazione predefinita | La cifratura è obbligatoria, non opzionale. Ogni repository dispone di un daemon Docker e di una rete isolati. Nessuna condivisione di dati tra repository. Il config store utilizza la cifratura zero-knowledge: le configurazioni sono cifrate lato client con AES-256-GCM prima dell'upload, pertanto il server non può leggere alcun dato in chiaro. |
 | [Art. 28](https://gdpr-info.eu/art-28-gdpr/), Responsabile del trattamento | Obblighi di trattamento dei dati da parte di terzi | Self-hosted: Rediacc gira sulla propria infrastruttura. Nessun dato lascia la macchina durante le operazioni di fork, clone o backup. Nessun componente SaaS tratta i dati personali. |
-| [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Registro delle attività di trattamento | Tenere il registro delle attività di trattamento | Il log di audit traccia oltre 70 tipologie di eventi: autenticazione, token API, operazioni sul config store, licenze e operazioni CLI sulle macchine (ciclo di vita dei repository, backup, sincronizzazione, terminale). Esportazione tramite dashboard di amministrazione, pagina attività del portale o CLI `rdc audit`. |
+| [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Registro delle attività di trattamento | Tenere il registro delle attività di trattamento | Il log di audit traccia oltre 70 tipologie di eventi: autenticazione, token API, operazioni sul config store, licenze e operazioni CLI sulle macchine (ciclo di vita dei repository, backup, sincronizzazione, terminale). Esportazione tramite dashboard di amministrazione o pagina attività del portale (esportazione JSON disponibile). |
 | [Art. 32](https://gdpr-info.eu/art-32-gdpr/), Sicurezza del trattamento | Misure tecniche adeguate | Cifratura LUKS2 AES-256 a riposo, isolamento di rete tramite iptables e daemon Docker separati, sottoreti IP loopback (/26) per repository. Il config store utilizza la cifratura a triplo livello: chiavi SDK con finestra temporale, derivazione CEK a chiave suddivisa (passkey + segreto server) e cifratura della passphrase organizzativa. |
 | [Art. 33](https://gdpr-info.eu/art-33-gdpr/), Notifica di violazione | Notifica entro 72 ore con traccia forense | I log di audit forniscono una traccia forense di tutte le operazioni. L'architettura self-hosted limita il raggio d'impatto ai singoli repository. |
 

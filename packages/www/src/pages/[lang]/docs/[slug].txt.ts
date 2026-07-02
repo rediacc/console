@@ -4,11 +4,7 @@ import { SUPPORTED_LANGUAGES } from '../../../i18n/language-utils';
 import { getBaseSlug } from '../../../utils/slug';
 
 // Docs excluded from LLM text endpoints (cloud-specific or auto-generated references)
-const EXCLUDED_BASE_SLUGS = [
-  'cli-application',
-  'cli-application-cloud',
-  'web-application',
-] as const;
+const EXCLUDED_BASE_SLUGS = ['cli-application'] as const;
 const isExcludedBaseSlug = (slug: string) =>
   EXCLUDED_BASE_SLUGS.includes(slug as (typeof EXCLUDED_BASE_SLUGS)[number]);
 

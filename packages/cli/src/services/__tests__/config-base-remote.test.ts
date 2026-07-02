@@ -73,9 +73,9 @@ vi.mock('../resource-state.js', () => ({
   RemoteResourceState: { load: mockRemoteResourceStateLoad },
 }));
 
-// Mock auth service (required when masterPassword is set)
-vi.mock('../auth.js', () => ({
-  authService: { requireMasterPassword: vi.fn().mockResolvedValue('test-password') },
+// Mock master-password resolver (required when masterPassword is set)
+vi.mock('../master-password.js', () => ({
+  requireMasterPassword: vi.fn().mockResolvedValue('test-password'),
 }));
 
 // ─── Tests ───────────────────────────────────────────────────────────────

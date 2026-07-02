@@ -201,67 +201,6 @@ install_vscode() {
     echo "VS Code Remote SSH extension installed"
 }
 
-install_rediacc_desktop() {
-    echo "Installing Rediacc Console Desktop..."
-
-    # Get middleware URL from environment or use default
-    local base_url="${MIDDLEWARE_URL:-http://localhost}"
-
-    # Fetch cli-packages.json once and reuse
-    local cli_packages
-    cli_packages=$(curl -sf "${base_url}/cli-packages.json") || true
-
-    # Check if desktop packages are available
-    if ! echo "$cli_packages" | jq -e '.packages.desktop' >/dev/null 2>&1; then
-        echo "Desktop packages not embedded in this distribution"
-        echo "Skipping Rediacc Desktop installation"
-        return 0
-    fi
-
-    # Get AppImage filename from cached response
-    local appimage_info
-    appimage_info=$(echo "$cli_packages" | jq -r '.packages.desktop.platforms["linux-x64"].appimage // empty')
-    if [ -z "$appimage_info" ]; then
-        echo "No Linux x64 AppImage available"
-        return 0
-    fi
-
-    local filename
-    filename=$(echo "$appimage_info" | jq -r '.filename')
-    local download_url="${base_url}/desktop/${filename}"
-
-    # Install AppImage
-    local install_dir="/opt/rediacc-console"
-    sudo mkdir -p "$install_dir"
-
-    echo "  Downloading ${filename}..."
-    if ! sudo curl -sf "$download_url" -o "${install_dir}/rediacc-console.AppImage"; then
-        echo "WARNING: Failed to download Rediacc Desktop AppImage"
-        return 0
-    fi
-
-    sudo chmod +x "${install_dir}/rediacc-console.AppImage"
-
-    # Create desktop shortcut
-    mkdir -p ~/Desktop
-    cat >~/Desktop/rediacc-console-app.desktop <<EOF
-[Desktop Entry]
-Version=1.0
-Type=Application
-Name=Rediacc Console (Desktop)
-Comment=Rediacc Console Desktop Application
-Exec=${install_dir}/rediacc-console.AppImage --no-sandbox %U
-Icon=rediacc-console
-Terminal=false
-Categories=Development;
-MimeType=x-scheme-handler/rediacc;
-EOF
-    chmod +x ~/Desktop/rediacc-console-app.desktop
-    gio set ~/Desktop/rediacc-console-app.desktop metadata::trusted true 2>/dev/null || true
-
-    echo "Rediacc Desktop installed at ${install_dir}/"
-}
-
 configure_chromium() {
     echo "Configuring Chromium policies..."
     sudo mkdir -p /etc/chromium/policies/managed
@@ -430,7 +369,6 @@ install_nodejs
 install_vscode
 configure_chromium
 create_desktop_shortcut
-install_rediacc_desktop
 
 # Start display and session infrastructure
 start_xvfb

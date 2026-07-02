@@ -2,7 +2,6 @@ import { type ContainerInfo, getMachineContainers } from '@rediacc/shared/servic
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { getStateProvider } from '../../providers/index.js';
-import { authService } from '../../services/auth.js';
 import { configService } from '../../services/config-resources.js';
 import { outputService } from '../../services/output.js';
 import type { OutputFormat } from '../../types/index.js';
@@ -90,14 +89,7 @@ export function registerContainersCommand(machine: Command, program: Command): v
       try {
         const name = options.name;
         const provider = await getStateProvider();
-        if (provider.isCloud) {
-          await authService.requireAuth();
-        }
         const opts = await configService.applyDefaults(options);
-
-        if (provider.isCloud && !opts.team) {
-          throw new ValidationError(t('errors.teamRequired'));
-        }
 
         const [machine, guidMap, machineConfig] = await Promise.all([
           withSpinner(

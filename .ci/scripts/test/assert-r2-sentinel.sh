@@ -55,22 +55,21 @@ FAILED=false
 # object and would pass a naive count>0 check while every versioned install
 # 404s. rsv_binary_count excludes the sentinel; combined with rsv_sentinel_exists
 # it tells the healthy case (binaries present) apart from sealed-but-empty.
-for prefix in "cli/v${VERSION}/" "desktop/v${VERSION}/"; do
-    product="${prefix%%/*}"
-    bin_count="$(rsv_binary_count "$prefix")"
-    if [[ "$bin_count" -gt 0 ]]; then
-        log_info "s3://${BUCKET}/${prefix} contains $bin_count binary object(s)"
-    elif rsv_sentinel_exists "$product" "v${VERSION}"; then
-        log_error "SEALED-BUT-EMPTY: s3://${BUCKET}/${prefix} has a .released sentinel but NO binaries."
-        log_error "  A prior orphan-scrub deleted the bytes; every versioned install of this product will 404."
-        log_error "  Remediation: scrub the sentinel then re-run CI: scripts/dev/scrub-sentinel.sh v${VERSION} --execute"
-        FAILED=true
-    else
-        log_error "R2 versioned prefix s3://${BUCKET}/${prefix} is empty after upload (no binaries, no sentinel)."
-        log_error "  The CLI/desktop upload loop did not populate the versioned path."
-        FAILED=true
-    fi
-done
+prefix="cli/v${VERSION}/"
+product="${prefix%%/*}"
+bin_count="$(rsv_binary_count "$prefix")"
+if [[ "$bin_count" -gt 0 ]]; then
+    log_info "s3://${BUCKET}/${prefix} contains $bin_count binary object(s)"
+elif rsv_sentinel_exists "$product" "v${VERSION}"; then
+    log_error "SEALED-BUT-EMPTY: s3://${BUCKET}/${prefix} has a .released sentinel but NO binaries."
+    log_error "  A prior orphan-scrub deleted the bytes; every versioned install of this product will 404."
+    log_error "  Remediation: scrub the sentinel then re-run CI: scripts/dev/scrub-sentinel.sh v${VERSION} --execute"
+    FAILED=true
+else
+    log_error "R2 versioned prefix s3://${BUCKET}/${prefix} is empty after upload (no binaries, no sentinel)."
+    log_error "  The CLI upload loop did not populate the versioned path."
+    FAILED=true
+fi
 
 if [[ "$FAILED" == "true" ]]; then
     log_error "Versioned release prefix is not in a healthy sealed state."

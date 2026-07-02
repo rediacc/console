@@ -20,7 +20,7 @@ jobs:
       # before the local `./.github/actions/app-token` reference because
       # local composite actions are loaded from the workspace — without the
       # repo on disk first, the runner can't resolve them.
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       # Mint a GitHub App token scoped to console + account. The composite's
       # last step is `git config --global

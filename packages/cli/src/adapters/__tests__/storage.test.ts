@@ -423,6 +423,16 @@ describe('ConfigFileStorage', () => {
       expect(names).toEqual(['myconfig']);
     });
 
+    it('should exclude reserved subscription/server files', async () => {
+      await storage.init('myconfig');
+      await fs.writeFile(join(testDir, 'server.json'), '{}');
+      await fs.writeFile(join(testDir, 'api-token.json'), '{"token":"rdt_x"}');
+      await fs.writeFile(join(testDir, 'api-token-production.json'), '{"token":"rdt_y"}');
+
+      const names = await storage.list();
+      expect(names).toEqual(['myconfig']);
+    });
+
     it('should return sorted names', async () => {
       await storage.init('zulu');
       await storage.init('alpha');
@@ -533,13 +543,13 @@ describe('ConfigFileStorage', () => {
       await storage.withApiLock('test', () =>
         storage.update('test', (cfg) => ({
           ...cfg,
-          account: { ...cfg.account, token: 'new-token' },
+          account: { ...cfg.account, team: 'new-team' },
         }))
       );
 
       storage.clearCache();
       const config = await storage.load('test');
-      expect(config.account?.token).toBe('new-token');
+      expect(config.account?.team).toBe('new-team');
     });
 
     it('should handle triple-nested lock calls', async () => {

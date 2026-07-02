@@ -3,7 +3,6 @@
  * Extracted to reduce file size of commandFactory.ts
  */
 
-import type { GetOrganizationVaults_ResultSet1 } from '@rediacc/shared/types';
 import { compareValues, searchInFields } from '@rediacc/shared/utils';
 
 /**
@@ -131,7 +130,12 @@ export function addParentToPayload(
   }
 }
 
-export type VaultItem = GetOrganizationVaults_ResultSet1 & { vaultType?: string };
+export interface VaultItem {
+  vaultType?: string;
+  vaultContent?: string;
+  vaultVersion?: number;
+  [key: string]: unknown;
+}
 
 export function extractVaultsArray(response: unknown): VaultItem[] {
   if (Array.isArray(response)) {

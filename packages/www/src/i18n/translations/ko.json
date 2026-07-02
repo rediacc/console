@@ -1070,33 +1070,28 @@
       "architectures": {
         "arm64": "ARM64",
         "arm64_apple": "Apple Silicon (ARM64)",
-        "armv7l": "ARMv7",
         "x64": "x64 (64비트)",
         "x64_intel": "Intel (x64)"
       },
       "autoUpdate": {
-        "description": "Rediacc 데스크톱은 자동으로 업데이트됩니다. 설치 후 새 버전을 확인하고 준비되면 알려줍니다. 클릭 한 번으로 설치할 수 있으며 느린 연결에서는 몇 분이 소요될 수 있습니다.",
+        "description": "Rediacc CLI는 스스로 업데이트됩니다. 새 버전을 확인해서 자동으로 설치해 주므로 항상 최신 버전을 사용할 수 있습니다.",
         "title": "자동 업데이트 정보"
       },
       "cli": {
         "binary": "바이너리",
-        "description": "터미널에서 실행하는 가볍고 빠른 도구입니다. 화면 없이 관리하는 서버나 여러 머신에 동시에 명령을 실행할 때 최적입니다. 데스크톱 앱보다 CLI가 더 나은 선택입니다. 서버에 연결하고 명령을 실행하고 업데이트를 배포할 수 있으며 브라우저가 필요하지 않습니다."
+        "description": "터미널에서 실행하는 가볍고 빠른 도구입니다. 화면 없이 관리하는 서버나 여러 대의 기기에서 동시에 같은 명령을 실행할 때 유용합니다. 서버에 연결하고 명령을 실행하고 업데이트를 배포할 수 있으며, 브라우저는 필요하지 않습니다."
       },
       "hero": {
         "released": "출시됨",
-        "subtitle": "Rediacc 데스크톱과 CLI",
+        "subtitle": "Rediacc CLI",
         "title": "Rediacc CLI 다운로드"
       },
       "installation": {
         "cli": "CLI: 시스템에 맞는 파일을 다운로드하세요. Linux/macOS에서는 터미널을 열고 'chmod +x filename'을 실행한 후 /usr/local/bin으로 이동하세요.",
-        "linux_appimage": "Linux AppImage: 'chmod +x filename.AppImage' 명령으로 실행 권한을 부여한 후 직접 실행하세요. 설치가 필요하지 않습니다.",
-        "linux_deb": "Linux DEB: 'sudo dpkg -i filename.deb' 명령으로 설치하거나 파일 관리자에서 파일을 더블클릭할 수 있습니다.",
-        "macos": "macOS: .dmg 파일을 열고 Rediacc Desktop을 응용 프로그램 폴더로 드래그하세요. macOS가 차단하면 시스템 환경설정의 보안 및 개인 정보 보호에서 허용하세요.",
-        "title": "설치 안내",
-        "windows": "Windows: .exe 설치 파일을 실행하고 화면의 지시에 따르세요. Program Files 폴더에 설치됩니다."
+        "title": "설치 안내"
       },
       "meta": {
-        "description": "Windows, macOS, Linux용 Rediacc 데스크톱 및 CLI를 다운로드하세요.",
+        "description": "Windows, macOS, Linux용 Rediacc CLI를 다운로드하세요. 빠른 설치와 자동 업데이트를 지원합니다.",
         "keywords": "Rediacc 다운로드, 데스크톱 애플리케이션, CLI, Windows 앱, macOS 앱, Linux 앱",
         "title": "Rediacc CLI를 모든 플랫폼에서 완전 무료로 다운로드하세요 | Rediacc"
       },
@@ -1107,22 +1102,13 @@
         "windows": "Windows"
       },
       "requirements": {
-        "disk": "여유 디스크 공간 500MB",
-        "diskTitle": "디스크 공간",
         "linux": "glibc 2.28 이상의 최신 Linux 배포판",
         "macos": "macOS 11 (Big Sur) 이상",
-        "ram": "최소 2GB RAM, 권장 4GB RAM",
-        "ramTitle": "메모리",
         "title": "시스템 요구 사항",
         "windows": "Windows 10 이상 (64비트)"
       },
       "sections": {
-        "cli": "명령줄 인터페이스 (CLI)",
-        "desktop": "데스크톱 애플리케이션"
-      },
-      "types": {
-        "appimage": "AppImage (포터블)",
-        "deb": "Debian/Ubuntu (.deb)"
+        "cli": "명령줄 인터페이스 (CLI)"
       }
     },
     "home": {
@@ -1145,7 +1131,7 @@
       "copy": "복사",
       "hero": {
         "downloadsLink": "다운로드 페이지 보기",
-        "downloadsNote": "데스크톱 앱이나 바이너리가 필요하신가요?",
+        "downloadsNote": "CLI 바이너리를 직접 찾고 계신가요?",
         "subtitle": "원하는 설치 방법을 선택하세요",
         "title": "Rediacc CLI 설치"
       },
@@ -2681,6 +2667,42 @@
             "엔터프라이즈 다운타임의 평균 비용은 분당 $5,600입니다"
           ]
         },
+        "categories": {
+          "heading": "제공 서비스",
+          "intro": "모든 서비스는 대화로 시작하며, 고객의 환경에 맞는 적절한 팀과 일정을 함께 정합니다.",
+          "items": [
+            {
+              "description": "팀을 위한 실습 중심 교육으로, 안내식 설정 데모부터 고급 워크플로우와 장애 대응 절차를 다루는 멀티데이 워크숍까지 제공합니다.",
+              "icon": "team-training",
+              "id": "training",
+              "name": "교육"
+            },
+            {
+              "description": "실제 엔지니어가 제공하는 지속적인 지원으로, 업무 시간 이메일 지원부터 24/7/365 전담 계정 관리자가 배정되는 프로덕션 핵심 환경 커버리지까지 가능합니다.",
+              "icon": "security-assessment",
+              "id": "support",
+              "name": "기술 지원"
+            },
+            {
+              "description": "완전히 검증된 데이터 마이그레이션부터 시간이 촉박할 때의 긴급 당일 전환까지, 종단간 마이그레이션과 맞춤형 통합 작업을 수행합니다.",
+              "icon": "data-migration",
+              "id": "migration",
+              "name": "마이그레이션"
+            },
+            {
+              "description": "랜섬웨어 복구와 재난 복구 서비스로, 사고 후 포렌식 및 보안 강화부터 미션 크리티컬 시스템을 위한 지속적인 복제 구축까지 지원합니다.",
+              "icon": "ransomware-recovery",
+              "id": "recovery",
+              "name": "복구"
+            },
+            {
+              "description": "고객 환경과 감사 요건에 맞춘 보안 검토, 보안 강화 체크리스트, 컴플라이언스 런북, 그리고 장애 대응 리테이너를 제공합니다.",
+              "icon": "storage-hardening",
+              "id": "security",
+              "name": "보안 및 컴플라이언스"
+            }
+          ]
+        },
         "cta": {
           "button": "문의하기",
           "description": "모든 서비스는 고객의 환경에 맞게 범위를 조정합니다. 문의해 주시면 함께 적합한 플랜을 찾아드리겠습니다.",
@@ -2691,42 +2713,6 @@
           "eligibility": "모든 요금제에서 전문 서비스를 이용할 수 있습니다. 문의해 주시면 고객의 환경에 맞는 서비스 범위를 함께 정해드리겠습니다.",
           "subtitle": "꼭 필요한 순간에 전문가의 손길을 받으세요",
           "title": "전문 서비스"
-        },
-        "categories": {
-          "heading": "제공 서비스",
-          "intro": "모든 서비스는 대화로 시작하며, 고객의 환경에 맞는 적절한 팀과 일정을 함께 정합니다.",
-          "items": [
-            {
-              "id": "training",
-              "name": "교육",
-              "description": "팀을 위한 실습 중심 교육으로, 안내식 설정 데모부터 고급 워크플로우와 장애 대응 절차를 다루는 멀티데이 워크숍까지 제공합니다.",
-              "icon": "team-training"
-            },
-            {
-              "id": "support",
-              "name": "기술 지원",
-              "description": "실제 엔지니어가 제공하는 지속적인 지원으로, 업무 시간 이메일 지원부터 24/7/365 전담 계정 관리자가 배정되는 프로덕션 핵심 환경 커버리지까지 가능합니다.",
-              "icon": "security-assessment"
-            },
-            {
-              "id": "migration",
-              "name": "마이그레이션",
-              "description": "완전히 검증된 데이터 마이그레이션부터 시간이 촉박할 때의 긴급 당일 전환까지, 종단간 마이그레이션과 맞춤형 통합 작업을 수행합니다.",
-              "icon": "data-migration"
-            },
-            {
-              "id": "recovery",
-              "name": "복구",
-              "description": "랜섬웨어 복구와 재난 복구 서비스로, 사고 후 포렌식 및 보안 강화부터 미션 크리티컬 시스템을 위한 지속적인 복제 구축까지 지원합니다.",
-              "icon": "ransomware-recovery"
-            },
-            {
-              "id": "security",
-              "name": "보안 및 컴플라이언스",
-              "description": "고객 환경과 감사 요건에 맞춘 보안 검토, 보안 강화 체크리스트, 컴플라이언스 런북, 그리고 장애 대응 리테이너를 제공합니다.",
-              "icon": "storage-hardening"
-            }
-          ]
         }
       },
       "roiCta": {
@@ -3827,7 +3813,7 @@
           "title": "제공되는 혜택"
         },
         "bottomCta": {
-          "command": "rdc audit log --limit 200",
+          "command": "rdc repo fork --parent production --tag pentest -m server-1",
           "ctaText": "무료 시작",
           "description": "무료 Community 에디션으로 시작하세요. 60초 이내에 첫 침투 테스트를 실행하세요.",
           "title": "공격자보다 먼저 취약점을 발견하세요"
@@ -4236,7 +4222,7 @@
           "title": "제공되는 혜택"
         },
         "bottomCta": {
-          "command": "rdc audit history repository production",
+          "command": "rdc repo status --name production -m server-1",
           "ctaText": "Community로 무료 시작",
           "description": "무료 Community 에디션으로 시작하세요. 1분 이내에 첫 감사 보고서를 생성하세요.",
           "title": "모든 것을 보세요. 아무것도 놓치지 마세요."
@@ -4451,7 +4437,7 @@
               "title": "보호"
             },
             {
-              "description": "rdc audit --from --to를 실행하세요. 원하는 기간의 규정 준수 보고서를 수 초 만에 생성합니다.",
+              "description": "포털의 활동 페이지를 열고 원하는 기간을 필터링한 다음 JSON으로 내보내세요. 몇 초 만에 감사에 바로 쓸 수 있는 보고서를 받을 수 있습니다.",
               "icon": "file-text",
               "title": "보고"
             }
@@ -4636,7 +4622,7 @@
         "terminal": {
           "lines": [
             {
-              "text": "rdc audit --from 2026-02-01 --to 2026-02-27",
+              "text": "jq -r '.events[]' audit-export.json",
               "type": "command"
             },
             {
@@ -6117,7 +6103,7 @@
           "title": "귀사가 얻는 것"
         },
         "bottomCta": {
-          "command": "rdc audit log --limit 50",
+          "command": "rdc config show",
           "ctaText": "Community로 무료 시작",
           "description": "무료 Community 에디션으로 시작하세요. 1분 이내에 첫 키 보관 감사를 실행하세요.",
           "title": "미국 관할 제공업체로부터 귀사의 데이터를 임대해 오는 일을 중단하세요."
@@ -6519,7 +6505,7 @@
         "terminal": {
           "lines": [
             {
-              "text": "rdc audit log --limit 50",
+              "text": "jq -r '.keys[]' key-custody-report.json",
               "type": "command"
             },
             {
@@ -13580,39 +13566,10 @@
           "content": [
             "EU 일반 데이터 보호 규정(GDPR) 및 ePrivacy 지침에 따라, 원격 측정 데이터 수집의 법적 근거는 제품 상황에 따라 다릅니다:",
             "<strong>웹 애플리케이션</strong>(브라우저 기반)의 경우: 서비스 품질 유지 및 개선을 목적으로 <strong>정당한 이익</strong>(GDPR 제6조 제1항 f호)에 따라 원격 측정을 수집합니다. 언제든지 거부할 수 있습니다.",
-            "<strong>CLI, 미들웨어, Bridge</strong>(귀하의 인프라에 설치)의 경우: 명확한 거부 메커니즘과 함께 <strong>정당한 이익</strong>에 따라 원격 측정을 수집합니다. 데이터가 전송되기 전에 원격 측정을 비활성화할 수 있습니다.",
-            "명시적 동의가 요구되는 국가의 사용자(예: 개인정보 보호법이 적용되는 대한민국)는 데이터가 전송되기 전에 제품 구성에서 원격 측정을 명시적으로 허용해야 합니다."
+            "<strong>CLI, 미들웨어, Bridge</strong>(귀하의 인프라에 설치)의 경우: 명확한 거부 메커니즘과 함께 <strong>정당한 이익</strong>에 따라 원격 측정을 수집합니다. 데이터가 전송되기 전에 원격 측정을 비활성화할 수 있습니다."
           ],
           "id": "legal-basis",
           "title": "3. 수집의 법적 근거"
-        },
-        "middleware": {
-          "content": [
-            "Rediacc 미들웨어는 운영 원격 측정 데이터를 수집합니다. 원격 측정 데이터는 <code>rediacc.com</code>으로 전송됩니다."
-          ],
-          "id": "middleware",
-          "subsections": {
-            "middlewareDataCollected": {
-              "content": ["미들웨어가 수집하는 데이터 범주는 다음과 같습니다:"],
-              "items": [
-                "<strong>시스템 정보:</strong> 호스트명, 운영 체제 버전, .NET 런타임 버전",
-                "<strong>API 호출:</strong> HTTP 메서드, 엔드포인트 경로, 응답 상태 코드, 요청 시간",
-                "<strong>데이터베이스 작업:</strong> 저장 프로시저 이름, 실행 시간, 반환된 행 수(쿼리 내용, 매개변수, 결과 데이터는 수집하지 않음)",
-                "<strong>인증 이벤트:</strong> 해시된 사용자 식별자만 수집 - 사용자 ID는 SHA-256 및 솔트로 해시 처리 후 첫 12자로 잘립니다. 원래 사용자 ID는 전송되지 않습니다.",
-                "<strong>상태 점검:</strong> 서비스 구성 요소 가용성 상태 및 응답 시간",
-                "<strong>애플리케이션 생명 주기:</strong> 시작, 종료, 구성 변경 이벤트",
-                "<strong>오류 정보:</strong> 오류 유형, 오류 메시지, 운영 컨텍스트"
-              ],
-              "title": "6.1 수집 데이터"
-            },
-            "middlewareOptOut": {
-              "content": [
-                "미들웨어 구성(appsettings.json 또는 환경별 구성)에서 <code>Telemetry:Enabled</code>를 <code>false</code>로 설정하십시오."
-              ],
-              "title": "6.2 거부 방법"
-            }
-          },
-          "title": "6. 미들웨어 원격 측정"
         },
         "principles": {
           "content": ["Rediacc의 모든 원격 측정 데이터 수집은 다음 원칙을 따릅니다:"],
@@ -13625,48 +13582,6 @@
             "<strong>집계:</strong> 원격 측정 데이터는 집계하여 분석합니다. 당사는 원격 측정 데이터로 개인 사용자 프로필을 구성하지 않습니다."
           ],
           "title": "2. 원격 측정 원칙"
-        },
-        "webApp": {
-          "content": [
-            "Rediacc 웹 애플리케이션은 OpenTelemetry 기반 분산 추적을 사용합니다. 원격 측정 데이터는 <code>rediacc.com</code>으로 전송됩니다. 프로덕션 환경에서는 <strong>세션의 10%</strong>만 샘플링됩니다."
-          ],
-          "id": "web-app",
-          "subsections": {
-            "webDataCollected": {
-              "content": ["웹 애플리케이션이 수집하는 데이터 범주는 다음과 같습니다:"],
-              "items": [
-                "<strong>브라우저 정보:</strong> 브라우저 이름 및 버전, 기본 언어, 플랫폼(예: Windows, macOS, Linux), 화면 해상도, 색상 심도, 사용자 에이전트 문자열, 기기 메모리(이용 가능한 경우), 네트워크 연결 유형",
-                "<strong>사용자 컨텍스트:</strong> 세션 ID(세션별 무작위 생성), 이메일 도메인(로컬 부분 삭제, 예: <code>***@example.com</code>), 조직 이름, 팀 이름",
-                "<strong>페이지 뷰 및 탐색:</strong> 애플리케이션 내 방문 페이지, 라우트 변경, 리퍼러 정보",
-                "<strong>사용자 상호작용:</strong> 클릭, 양식 제출, 모달 열기/닫기, 검색 쿼리, 필터 변경, 탭 전환, 파일 다운로드(파일 이름은 수집하지 않음)",
-                "<strong>API 호출:</strong> HTTP 메서드, URL 경로, 응답 상태 코드, 요청 시간",
-                "<strong>오류:</strong> 오류 유형, 오류 메시지, 스택 추적(1,000자로 잘림), 오류 소스",
-                "<strong>성능 지표:</strong> Core Web Vitals(LCP, FID, CLS, TTFB, INP), 리소스 타이밍, 메모리 사용량(30초마다 샘플링), 긴 태스크 감지",
-                "<strong>컴포넌트 생명 주기:</strong> 컴포넌트 마운트/언마운트 타이밍, 렌더 시간"
-              ],
-              "title": "4.1 수집 데이터"
-            },
-            "webNotCollected": {
-              "content": ["웹 애플리케이션이 수집하지 않는 데이터:"],
-              "items": [
-                "전체 이메일 주소(로컬 부분은 항상 삭제됨)",
-                "비밀번호, 토큰, 또는 인증 자격증명",
-                "파일 내용, 데이터베이스 내용, 또는 쿼리 결과",
-                "양식 필드 값(양식이 제출된 사실만 기록됨)",
-                "클립보드 내용 또는 키 입력",
-                "IP 주소(당사 원격 측정 엔드포인트에서 기록하지 않음)"
-              ],
-              "title": "4.2 수집하지 않는 데이터"
-            },
-            "webOptOut": {
-              "content": [
-                "계정 설정에서 <code>userConsent</code> 구성 플래그를 <code>false</code>로 설정하십시오. 거부 즉시 원격 측정이 중단됩니다.",
-                "<strong>데스크톱 애플리케이션:</strong> 데스크톱(Electron) 애플리케이션에서는 원격 측정이 기본적으로 완전히 비활성화되어 있습니다. 데이터가 수집되거나 전송되지 않습니다."
-              ],
-              "title": "4.3 거부 방법"
-            }
-          },
-          "title": "4. 웹 애플리케이션 원격 측정"
         },
         "yourRights": {
           "content": [

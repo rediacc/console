@@ -4,7 +4,7 @@ description: "Rediacc 的加密和隔离架构如何满足 HIPAA 保护医疗信
 category: "Legal"
 order: 3
 language: zh
-sourceHash: "f5fbdaa4a00491ea"
+sourceHash: "a0dd73c1923519b0"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -21,7 +21,7 @@ HIPAA 要求管理、技术和物理保障措施。下表将其映射到 Rediacc
 | 要求 | HIPAA 参考 | Rediacc 功能 |
 |------|----------|-------------|
 | 访问控制 | [45 CFR 164.312(a)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | SSH 密钥认证。带 IP 绑定和范围限制的 API 令牌。每仓库 Docker daemon 隔离防止跨仓库访问。 |
-| 审计控制 | [45 CFR 164.312(b)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | 40 多种账户级事件类型，涵盖身份验证、API 令牌、配置操作和许可。按用户和团队追踪。通过管理面板或 `rdc audit` CLI 导出。 |
+| 审计控制 | [45 CFR 164.312(b)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | 40 多种账户级事件类型，涵盖身份验证、API 令牌、配置操作和许可。按用户和团队追踪。通过管理面板或门户活动页面导出（提供 JSON 导出）。 |
 | 完整性控制 | [45 CFR 164.312(c)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | CoW 快照在修改前保存原始数据。`rdc repo validate` 验证仓库完整性和备份健康状况（LUKS 容器、文件系统一致性、配置）。 |
 | 静态加密 | [45 CFR 164.312(a)(2)(iv)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | 所有仓库卷使用 LUKS2 AES-256 加密。凭据仅存储在操作员的本地配置中，从不在服务器上。配置存储使用分割密钥派生的零知识 AES-256-GCM 加密。即使服务器也无法解密存储的配置。 |
 | 传输安全 | [45 CFR 164.312(e)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | 所有远程操作使用 SSH。备份传输端到端加密。无未加密的数据传输。 |

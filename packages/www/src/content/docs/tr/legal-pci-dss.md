@@ -4,7 +4,7 @@ description: "Rediacc'ın PCI DSS gereksinimlerine nasıl uyum sağladığı: al
 category: "Legal"
 order: 6
 language: tr
-sourceHash: "d8391036876231a0"
+sourceHash: "05ca01c69d8bab61"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,7 +24,7 @@ Referans: [PCI Security Standards Council](https://www.pcisecuritystandards.org/
 | **Ger. 7**, Erişimi kısıtlama | İş gereksinimi temelinde sistem bileşenleri ve kart sahibi verilerine erişimi kısıtlama | Depo başına Docker daemon soketleri. Bir depoya erişim diğerine erişim sağlamaz. SSH anahtar tabanlı kimlik doğrulama. |
 | **Ger. 8**, Kullanıcı tanımlama ve doğrulama | Kullanıcıları tanımlama ve sistem bileşenlerine erişimi doğrulama | SSH anahtar kimlik doğrulaması. IP bağlama ve kapsamlı izinler ile API token'ları. İki faktörlü kimlik doğrulama (TOTP). |
 | **Ger. 9**, Fiziksel erişimi kısıtlama | Kart sahibi verilerine fiziksel erişimi kısıtlama | Kendi sunucunuzda barındırma: fiziksel güvenlik doğrudan sizin kontrolünüzde. LUKS şifreleme çalınan sürücüleri okunamaz hale getirir. |
-| **Ger. 10**, Günlük kaydı ve izleme | Tüm sistem bileşenleri ve kart sahibi verilerine erişimi kaydetme ve izleme | 70+ olay türü (kimlik doğrulama, API token'ları, yapılandırma, lisanslama, makine işlemleri). Kullanıcı, ekip, tür ve tarih bazında filtreleme ile yönetici paneli ve portal. `rdc audit` CLI ile programatik dışa aktarım. Makine işlemleri ayrıca savunma derinliği için sistem günlüklerinde de kaydedilir. |
+| **Ger. 10**, Günlük kaydı ve izleme | Tüm sistem bileşenleri ve kart sahibi verilerine erişimi kaydetme ve izleme | 70+ olay türü (kimlik doğrulama, API token'ları, yapılandırma, lisanslama, makine işlemleri). Kullanıcı, ekip, tür ve tarih bazında filtreleme ile yönetici paneli ve portal, ayrıca programatik kullanım için bir JSON dışa aktarma seçeneği. Makine işlemleri ayrıca savunma derinliği için sistem günlüklerinde de kaydedilir. |
 | **Ger. 12**, Kurumsal politikalar | Bilgi güvenliğini kurumsal politikalar ve programlarla destekleme | Kendi sunucunuzda barındırma üçüncü taraf işleyici kapsamını ortadan kaldırır (Ger. 12.8). PCI DSS uyumluluk sınırını daraltır. |
 
 ## Ağ Segmentasyonu

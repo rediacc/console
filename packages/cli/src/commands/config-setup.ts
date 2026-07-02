@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import { SFTPClient } from '../shared-desktop/sftp/index.js';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';

@@ -4,7 +4,7 @@ description: "Kuidas Rediacc'i ise majutatud arhitektuur vastab GDPR-i nõuetele
 category: "Legal"
 order: 1
 language: et
-sourceHash: "36a776d87c6294ff"
+sourceHash: "76d2b3a911e0d14c"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -22,7 +22,7 @@ Alljärgnev tabel kaardistab konkreetsed GDPR-i artiklid Rediacc'i tehniliste v�
 | [Art. 17](https://gdpr-info.eu/art-17-gdpr/), Õigus andmete kustutamisele | Kustutada isikuandmed taotluse alusel | `rdc repo delete` kustutab LUKS-mahu krüptograafiliselt. Hargi kustutamine eemaldab kloonitud koopia täielikult. |
 | [Art. 25](https://gdpr-info.eu/art-25-gdpr/), Lõimitud andmekaitse | Privaatsus vaikimisi | Krüptimine on kohustuslik, mitte vabatahtlik. Iga hoidla saab eraldatud Docker-deemoni ja võrgu. Hoidlate vahel andmeid ei jagata. Konfiguratsioonihoidla kasutab null-teadmise krüptimist: konfiguratsioonid krüptitakse kliendi poolel AES-256-GCM-iga enne üleslaadimist, seega server ei saa ühtegi avateksti lugeda. |
 | [Art. 28](https://gdpr-info.eu/art-28-gdpr/), Volitatud töötleja | Kolmanda osapoole andmetöötluse kohustused | Ise majutatud: Rediacc töötab teie infrastruktuuril. Andmed ei lahku teie masinast hargi, klooni ega varukoopia operatsioonide ajal. Ükski SaaS-komponent ei töötle isikuandmeid. |
-| [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Töötlemistegevuste register | Pidada töötlemistegevuste arvestust | Auditlogi jälgib üle 70 sündmusetüübi: autentimine, API-žetoonid, konfiguratsioonihoidla toimingud, litsentsid ja CLI-masina toimingud (hoidla elutsükkel, varukoopia, sünkroonimine, terminal). Eksport haldusarmatuurlaua, portaali tegevuslehe või `rdc audit` CLI kaudu. |
+| [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Töötlemistegevuste register | Pidada töötlemistegevuste arvestust | Auditlogi jälgib üle 70 sündmusetüübi: autentimine, API-žetoonid, konfiguratsioonihoidla toimingud, litsentsid ja CLI-masina toimingud (hoidla elutsükkel, varukoopia, sünkroonimine, terminal). Eksport haldusarmatuurlaua või portaali tegevuslehe kaudu (JSON-eksport saadaval). |
 | [Art. 32](https://gdpr-info.eu/art-32-gdpr/), Töötlemise turvalisus | Asjakohased tehnilised meetmed | LUKS2 AES-256 krüptimine puhkeolekus, võrgueraldus iptablesi ja eraldatud Docker-deemonite kaudu, loopback-IP-alamvõrgud (/26) hoidla kohta. Konfiguratsioonihoidla kasutab kolmekihilist krüptimist: ajapõhised SDK-võtmed, jagatud võtme CEK-tuletamine (pääsuvõti ja serveri saladus) ning organisatsiooni paroolilause krüptimine. |
 | [Art. 33](https://gdpr-info.eu/art-33-gdpr/), Rikkumisest teatamine | 72-tunnine teavitamine koos kohtuekspertiisi rajaga | Auditlogid pakuvad kõigi toimingute kohtuekspertiisi rada. Ise majutatud arhitektuur piirab kahjustuse ulatuse üksikute hoidlatega. |
 

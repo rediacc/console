@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: tr
-sourceHash: "f56ab0bacb657043"
+sourceHash: "e2f5d37c534fc40d"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -189,12 +189,12 @@ rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/r
 
 Sonuç aynı JSON dosyasına kaydedilir ve bir sonraki `rdc machine query --system` çağrısında hemen görünür.
 
-## Vault Durumu
+## Makine Genel Görünümü
 
 Dağıtım bilgileri dahil bir makinenin tam genel görünümünü alın:
 
 ```bash
-rdc machine vault-status --name server-1
+rdc machine query --name server-1
 ```
 
 Sağlanan bilgiler:
@@ -207,24 +207,13 @@ Makine tarafından okunabilir çıktı için `--output json` kullanın.
 
 ## Bağlantı Testi
 
-> **Yalnızca bulut adaptörü.** Yerel adaptörde, bağlantıyı doğrulamak için `rdc term connect -m server-1 -c "hostname"` kullanın.
-
 Bir makineye SSH bağlantısını doğrulayın:
 
 ```bash
-rdc machine test-connection --ip 203.0.113.50 --user deploy
+rdc term connect -m server-1 -c "hostname"
 ```
 
-Rapor içeriği:
-- Bağlantı durumu (başarılı/başarısız)
-- Kullanılan kimlik doğrulama yöntemi
-- SSH anahtar yapılandırması
-- Genel anahtar dağıtım durumu
-- Known hosts kaydı
-
-Seçenekler:
-- `--port <number>`, SSH portu (varsayılan: 22)
-- `--save -m server-1`, Doğrulanmış ana bilgisayar anahtarını makine yapılandırmasına kaydet
+Bu komut, başarılı olduğunda uzak ana bilgisayar adını yazdırır, başarısız olduğunda ise bir bağlantı hatası gösterir; böylece DNS'i, SSH portunu ve anahtar kimlik doğrulamasını tek adımda doğrulamış olursunuz.
 
 ## Tanılama (doctor)
 

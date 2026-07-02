@@ -3,7 +3,7 @@ import {
   createTempSSHKeyFile,
   removeTempKnownHostsFile,
   removeTempSSHKeyFile,
-} from '@rediacc/shared-desktop/ssh';
+} from '../shared-desktop/ssh/index.js';
 import {
   executeRsync,
   type RsyncExecutorOptions,
@@ -12,13 +12,11 @@ import {
   sftpUploadFile,
   sftpUploadPaths,
   type SftpUploadSource,
-} from '@rediacc/shared-desktop/sync';
-import type { SyncProgress } from '@rediacc/shared-desktop/types';
+} from '../shared-desktop/sync/index.js';
+import type { SyncProgress } from '../shared-desktop/types/index.js';
 import type { Command } from 'commander';
 import ora from 'ora';
 import { t } from '../i18n/index.js';
-import { getStateProvider } from '../providers/index.js';
-import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo-mount-check.js';
@@ -122,10 +120,6 @@ async function validateSyncOptions(
 ): Promise<ValidatedSyncOptions> {
   const opts = await configService.applyDefaults(options);
 
-  const provider = await getStateProvider();
-  if (provider.isCloud && !opts.team) {
-    throw new Error(t('errors.teamRequired'));
-  }
   if (!opts.machine) {
     throw new Error(t('errors.machineRequired'));
   }
@@ -485,10 +479,6 @@ ${t('help.examples')}
     .option('--dry-run', t('options.dryRun'))
     .action(async (options: SyncUploadOptions) => {
       try {
-        const provider = await getStateProvider();
-        if (provider.isCloud) {
-          await authService.requireAuth();
-        }
         await syncUpload(options);
       } catch (error) {
         handleError(error);
@@ -513,10 +503,6 @@ ${t('help.examples')}
     .option('--dry-run', t('options.dryRun'))
     .action(async (options: SyncDownloadOptions) => {
       try {
-        const provider = await getStateProvider();
-        if (provider.isCloud) {
-          await authService.requireAuth();
-        }
         await syncDownload(options);
       } catch (error) {
         handleError(error);
@@ -536,10 +522,6 @@ ${t('help.examples')}
     .option('--remote-file <path>', t('options.remoteFile'))
     .action(async (options: SyncDownloadOptions) => {
       try {
-        const provider = await getStateProvider();
-        if (provider.isCloud) {
-          await authService.requireAuth();
-        }
         await syncDownload({ ...options, dryRun: true });
       } catch (error) {
         handleError(error);

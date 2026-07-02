@@ -4,7 +4,7 @@ description: "Konfiguration erstellen, Maschinen hinzufügen, Server provisionie
 category: "Guides"
 order: 3
 language: de
-sourceHash: "b3c8c42db1b8d99b"
+sourceHash: "19a208e453f7d742"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -104,7 +104,7 @@ Für eine detailliertere Diagnose führen Sie aus:
 rdc doctor
 ```
 
-> **Nur Cloud-Adapter**: Der Befehl `rdc machine test-connection` liefert detaillierte SSH-Diagnosen, erfordert aber den Cloud-Adapter. Für den lokalen Adapter verwenden Sie `rdc term` oder direkt `ssh`.
+> **Tipp**: Um die SSH-Konnektivität zu prüfen, führen Sie `rdc term connect -m <machine> -c "hostname"` aus oder verwenden Sie direkt `ssh`.
 
 ## Infrastruktur-Konfiguration
 
@@ -233,7 +233,7 @@ Legen Sie Standardwerte fest, damit Sie sie nicht bei jedem Befehl angeben müss
 
 ```bash
 rdc config field set --pointer /defaults/machine --new '"server-1"'   # Standard-Maschine
-rdc config set --key team --value my-team                   # Standard-Team (Cloud-Adapter, experimentell)
+rdc config set --key team --value my-team                   # Standard-Team für den Config-Store
 ```
 
 Nach dem Festlegen einer Standard-Maschine können Sie `-m server-1` bei Befehlen weglassen:

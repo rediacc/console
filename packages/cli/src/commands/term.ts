@@ -1,11 +1,9 @@
 import { DEFAULTS } from '@rediacc/shared/config';
-import { generateSetupCommand, generateSourceCommand } from '@rediacc/shared-desktop/repository';
-import { SSHConnection, spawnSSH, testSSHConnectivity } from '@rediacc/shared-desktop/ssh';
-import { getDefaultTerminalType, launchTerminal } from '@rediacc/shared-desktop/terminal';
+import { generateSetupCommand, generateSourceCommand } from '../shared-desktop/repository/index.js';
+import { SSHConnection, spawnSSH, testSSHConnectivity } from '../shared-desktop/ssh/index.js';
+import { getDefaultTerminalType, launchTerminal } from '../shared-desktop/terminal/index.js';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { getStateProvider } from '../providers/index.js';
-import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
 import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
@@ -125,10 +123,6 @@ async function validateAndGetConnectionDetails(opts: {
   repository?: string;
   quiet?: boolean;
 }) {
-  const provider = await getStateProvider();
-  if (provider.isCloud && !opts.team) {
-    throw new Error(t('errors.teamRequired'));
-  }
   if (!opts.machine) {
     throw new Error(t('errors.machineRequired'));
   }
@@ -485,10 +479,6 @@ ${t('help.examples')}
     .option('--reset-home', t('options.resetHome'))
     .action(async (options: TermConnectOptions) => {
       try {
-        const provider = await getStateProvider();
-        if (provider.isCloud) {
-          await authService.requireAuth();
-        }
         await connectTerminal(options);
       } catch (error) {
         handleError(error);

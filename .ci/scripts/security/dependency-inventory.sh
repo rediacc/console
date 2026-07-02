@@ -1,6 +1,6 @@
 #!/bin/bash
-# dependency-inventory.sh - Enumerate every dependency across the six analyzed
-# Rediacc packages (www, web, cli, desktop, account, renet) for the NIS2/CRA
+# dependency-inventory.sh - Enumerate every dependency across the four analyzed
+# Rediacc packages (www, cli, account, renet) for the NIS2/CRA
 # supply-chain SBOM. Each dependency is classified by level (direct vs
 # transitive), tagged by type (dependencies/devDependencies/peer/optional for
 # npm; direct/indirect for Go), and carries its full dependency chain(s) from
@@ -81,12 +81,10 @@ REPO_ROOT="$(get_repo_root)"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
-# The six packages. Format: name|relpath|mode (workspace|standalone).
+# The four packages. Format: name|relpath|mode (workspace|standalone).
 NPM_PKGS=(
     "@rediacc/www|packages/www|workspace"
-    "@rediacc/web|packages/web|workspace"
     "@rediacc/cli|packages/cli|workspace"
-    "@rediacc/desktop|packages/desktop|workspace"
     "@rediacc/account|private/account|standalone"
 )
 

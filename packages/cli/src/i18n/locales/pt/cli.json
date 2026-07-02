@@ -19,100 +19,6 @@
         "description": "Mostrar o esquema detalhado de um comando específico"
       }
     },
-    "audit": {
-      "description": "Comandos de registo de auditoria",
-      "history": {
-        "description": "Ver histórico de entidade",
-        "fetching": "A obter histórico da entidade...",
-        "success": "Histórico obtido"
-      },
-      "log": {
-        "description": "Ver registos de auditoria",
-        "fetching": "A obter registos de auditoria...",
-        "success": "Registos de auditoria obtidos"
-      },
-      "trace": {
-        "description": "Rastrear o histórico de auditoria de uma entidade",
-        "fetching": "A obter rastreio de auditoria da entidade...",
-        "success": "Rastreio de auditoria obtido"
-      }
-    },
-    "auth": {
-      "activate": {
-        "activated": "Conta ativada",
-        "activating": "A ativar conta...",
-        "description": "Ativar conta com código de verificação",
-        "success": "Conta ativada! Pode agora iniciar sessão com: rdc auth login"
-      },
-      "description": "Comandos de autenticação",
-      "login": {
-        "authenticating": "A autenticar...",
-        "description": "Autenticar com a Rediacc",
-        "success": "Sessão iniciada com sucesso! Guardado na configuração \"{{context}}\"",
-        "tfaPrompt": "Introduza o código 2FA:",
-        "tfaRequired": "É necessária autenticação de dois fatores",
-        "tfaVerified": "2FA verificado com sucesso",
-        "verifyingTfa": "A verificar 2FA..."
-      },
-      "logout": {
-        "description": "Apagar credenciais armazenadas",
-        "loggingOut": "A terminar sessão...",
-        "success": "Sessão terminada com sucesso"
-      },
-      "register": {
-        "description": "Registar uma nova organização e conta de utilizador",
-        "nextStep": "Em seguida execute: rdc auth activate -e <email> -p <password> --code <code>",
-        "registering": "A registar conta...",
-        "submitted": "Registo submetido",
-        "success": "Registo bem-sucedido! Verifique o seu email para obter o código de ativação."
-      },
-      "status": {
-        "authenticated": "Autenticado como: {{email}}",
-        "description": "Verificar o estado atual de autenticação",
-        "notAuthenticated": "Não autenticado. Execute: rdc auth login"
-      },
-      "tfa": {
-        "description": "Gestão de autenticação de dois fatores",
-        "disable": {
-          "confirm": "Tem a certeza de que pretende desativar o 2FA?",
-          "description": "Desativar a autenticação de dois fatores",
-          "disabling": "A desativar 2FA...",
-          "success": "2FA desativado com sucesso"
-        },
-        "enable": {
-          "addToApp": "Adicione isto à sua aplicação de autenticação",
-          "description": "Ativar a autenticação de dois fatores",
-          "enabling": "A ativar 2FA...",
-          "initiated": "Configuração do 2FA iniciada",
-          "setupKey": "Chave de configuração: {{key}}",
-          "success": "2FA ativado com sucesso"
-        },
-        "status": {
-          "description": "Verificar o estado do 2FA",
-          "disabled": "O 2FA não está ativado",
-          "enabled": "O 2FA está ativado"
-        }
-      },
-      "token": {
-        "description": "Gestão de tokens",
-        "fork": {
-          "creating": "A criar token com fork...",
-          "description": "Criar um token com fork para outra aplicação",
-          "success": "Token criado com sucesso",
-          "tokenValue": "Token: {{token}}"
-        },
-        "list": {
-          "description": "Listar tokens/sessões ativas",
-          "fetching": "A obter tokens...",
-          "noTokens": "Sem tokens ativos"
-        },
-        "revoke": {
-          "description": "Revogar um token específico",
-          "revoking": "A revogar token...",
-          "success": "Token revogado com sucesso"
-        }
-      }
-    },
     "backup": {
       "description": "Enviar, receber e sincronizar cópias de segurança de repositórios entre armazenamento e máquinas",
       "schedule": {
@@ -120,163 +26,6 @@
       },
       "sync": {
         "description": "Sincronização bidirecional de cópias de segurança de repositórios entre máquinas"
-      }
-    },
-    "bridge": {
-      "description": "Gestão de bridges",
-      "list": {
-        "description": "Listar bridges",
-        "fetching": "A obter bridges..."
-      },
-      "resetAuth": {
-        "description": "Repor token de autorização da bridge",
-        "newToken": "Novo token: {{token}}",
-        "resetting": "A repor autorização da bridge \"{{name}}\"...",
-        "success": "Autorização reposta"
-      }
-    },
-    "ceph": {
-      "clone": {
-        "assign": {
-          "assigning": "A atribuir máquinas ao clone \"{{name}}\"...",
-          "description": "Atribuir máquinas a um clone",
-          "success": "Máquinas atribuídas ao clone \"{{name}}\""
-        },
-        "create": {
-          "creating": "A criar clone RBD \"{{name}}\"...",
-          "description": "Criar um novo clone RBD a partir de um snapshot",
-          "success": "Clone RBD \"{{name}}\" criado"
-        },
-        "delete": {
-          "confirm": "Eliminar clone RBD \"{{name}}\"?",
-          "deleting": "A eliminar clone RBD \"{{name}}\"...",
-          "description": "Eliminar um clone RBD",
-          "success": "Clone RBD \"{{name}}\" eliminado"
-        },
-        "description": "Gestão de clones RBD Ceph",
-        "list": {
-          "description": "Listar clones RBD",
-          "fetching": "A obter clones RBD...",
-          "success": "Clones obtidos"
-        },
-        "machines": {
-          "description": "Listar máquinas atribuídas a um clone",
-          "fetching": "A obter máquinas do clone...",
-          "success": "Máquinas do clone obtidas"
-        },
-        "unassign": {
-          "description": "Remover máquinas de um clone",
-          "success": "Máquinas removidas do clone \"{{name}}\"",
-          "unassigning": "A remover máquinas do clone \"{{name}}\"..."
-        }
-      },
-      "cluster": {
-        "create": {
-          "creating": "A criar cluster Ceph \"{{name}}\"...",
-          "description": "Criar um novo cluster Ceph",
-          "success": "Cluster Ceph \"{{name}}\" criado"
-        },
-        "delete": {
-          "confirm": "Eliminar cluster Ceph \"{{name}}\"?",
-          "deleting": "A eliminar cluster Ceph \"{{name}}\"...",
-          "description": "Eliminar um cluster Ceph",
-          "success": "Cluster Ceph \"{{name}}\" eliminado"
-        },
-        "description": "Gestão de clusters Ceph",
-        "list": {
-          "description": "Listar clusters Ceph",
-          "fetching": "A obter clusters Ceph...",
-          "success": "Clusters obtidos"
-        },
-        "machines": {
-          "description": "Listar máquinas num cluster Ceph",
-          "fetching": "A obter máquinas do cluster...",
-          "success": "Máquinas do cluster obtidas"
-        },
-        "vault": {
-          "description": "Gestão do vault do cluster Ceph",
-          "get": {
-            "description": "Obter dados do vault do cluster",
-            "fetching": "A obter vault do cluster...",
-            "success": "Vault do cluster obtido"
-          },
-          "update": {
-            "description": "Atualizar dados do vault do cluster",
-            "success": "Vault do cluster para \"{{name}}\" atualizado",
-            "updating": "A atualizar vault do cluster para \"{{name}}\"..."
-          }
-        }
-      },
-      "description": "Gestão de armazenamento distribuído Ceph",
-      "image": {
-        "create": {
-          "creating": "A criar imagem RBD \"{{name}}\"...",
-          "description": "Criar uma nova imagem RBD",
-          "success": "Imagem RBD \"{{name}}\" criada"
-        },
-        "delete": {
-          "confirm": "Eliminar imagem RBD \"{{name}}\"?",
-          "deleting": "A eliminar imagem RBD \"{{name}}\"...",
-          "description": "Eliminar uma imagem RBD",
-          "success": "Imagem RBD \"{{name}}\" eliminada"
-        },
-        "description": "Gestão de imagens RBD Ceph",
-        "list": {
-          "description": "Listar imagens RBD",
-          "fetching": "A obter imagens RBD...",
-          "success": "Imagens obtidas"
-        }
-      },
-      "pool": {
-        "create": {
-          "creating": "A criar pool Ceph \"{{name}}\"...",
-          "description": "Criar um novo pool Ceph",
-          "success": "Pool Ceph \"{{name}}\" criado"
-        },
-        "delete": {
-          "confirm": "Eliminar pool Ceph \"{{name}}\"?",
-          "deleting": "A eliminar pool Ceph \"{{name}}\"...",
-          "description": "Eliminar um pool Ceph",
-          "success": "Pool Ceph \"{{name}}\" eliminado"
-        },
-        "description": "Gestão de pools Ceph",
-        "list": {
-          "description": "Listar pools Ceph",
-          "fetching": "A obter pools Ceph...",
-          "success": "Pools obtidos"
-        },
-        "vault": {
-          "description": "Gestão do vault do pool Ceph",
-          "get": {
-            "description": "Obter dados do vault do pool",
-            "fetching": "A obter vault do pool...",
-            "success": "Vault do pool obtido"
-          },
-          "update": {
-            "description": "Atualizar dados do vault do pool",
-            "success": "Vault do pool para \"{{name}}\" atualizado",
-            "updating": "A atualizar vault do pool para \"{{name}}\"..."
-          }
-        }
-      },
-      "snapshot": {
-        "create": {
-          "creating": "A criar snapshot RBD \"{{name}}\"...",
-          "description": "Criar um novo snapshot RBD",
-          "success": "Snapshot RBD \"{{name}}\" criado"
-        },
-        "delete": {
-          "confirm": "Eliminar snapshot RBD \"{{name}}\"?",
-          "deleting": "A eliminar snapshot RBD \"{{name}}\"...",
-          "description": "Eliminar um snapshot RBD",
-          "success": "Snapshot RBD \"{{name}}\" eliminado"
-        },
-        "description": "Gestão de snapshots RBD Ceph",
-        "list": {
-          "description": "Listar snapshots RBD",
-          "fetching": "A obter snapshots RBD...",
-          "success": "Snapshots obtidos"
-        }
       }
     },
     "config": {
@@ -985,54 +734,6 @@
         "noServices": "Nenhum serviço rediacc encontrado nesta máquina",
         "stabilityCheck": "Modo de verificação de estabilidade - sai com código 2 se algum falhar/reiniciar",
         "unstableFound": "{{count}} serviço(s) instável(eis) encontrado(s)"
-      },
-      "testConnection": {
-        "authMethod": "  Método de autenticação: {{method}}",
-        "created": "Tarefa criada",
-        "creating": "A criar tarefa de teste SSH...",
-        "description": "Testar ligação SSH a uma máquina e capturar chave do anfitrião",
-        "error": "Erro: {{error}}",
-        "knownHosts": "  Anfitriões conhecidos: {{entry}}",
-        "message": "  Mensagem: {{message}}",
-        "publicKeyDeployed": "  Chave pública implementada: {{status}}",
-        "rawOutput": "Output bruto:",
-        "results": "Resultados do teste SSH:",
-        "saved": "Anfitriões conhecidos guardados no vault da máquina",
-        "saving": "A guardar known_hosts no vault da máquina \"{{machine}}\"...",
-        "sshKeyConfigured": "  Chave SSH configurada: {{status}}",
-        "statusResult": "  Estado: {{status}}",
-        "taskId": "ID da tarefa: {{taskId}}",
-        "testing": "A testar ligação SSH para {{user}}@{{ip}}:{{port}}...",
-        "testResult": "Teste SSH {{result}}",
-        "timeout": "Tempo limite excedido à espera do resultado",
-        "timeoutMessage": "Tempo limite da ligação de teste excedido. Consulte o rastreio da fila para detalhes.",
-        "waiting": "À espera do resultado do teste SSH...",
-        "waitingTime": "À espera do resultado do teste SSH... ({{seconds}}s)"
-      },
-      "vault": {
-        "description": "Gestão do vault da máquina (apenas adaptador cloud)"
-      },
-      "vault-status": {
-        "description": "Mostrar estado parsed do vault de uma máquina (apenas adaptador cloud)"
-      },
-      "vaultStatus": {
-        "deployedRepos": "\nRepositórios implementados:",
-        "description": "Mostrar estado parsed do vault de uma máquina",
-        "dockerRunning": "  Docker em execução: {{count}}",
-        "fetched": "Máquina obtida",
-        "fetching": "A obter máquina...",
-        "header": "\nEstado do Vault para {{name}}:",
-        "mounted": "  Montados: {{count}}",
-        "repoDocker": "    Docker: {{status}}",
-        "repoMounted": "    Montado: {{mounted}}",
-        "status": "  Estado: {{status}}",
-        "systemDatastore": "  Datastore: {{used}} / {{total}} ({{percent}})",
-        "systemDisk": "  Disco: {{used}} / {{total}} ({{percent}})",
-        "systemHostname": "  Nome do anfitrião: {{hostname}}",
-        "systemMemory": "  Memória: {{used}} / {{total}} ({{percent}})",
-        "systemSection": "\nSistema:",
-        "systemUptime": "  Tempo de atividade: {{uptime}}",
-        "totalRepos": "  Total de repositórios: {{count}}"
       }
     },
     "mcp": {
@@ -1092,192 +793,6 @@
         "description": "Provisionar cluster de VMs localmente",
         "failed": "Falha no provisionamento do cluster de VMs",
         "starting": "A iniciar provisionamento do cluster de VMs..."
-      }
-    },
-    "organization": {
-      "dashboard": {
-        "description": "Obter dados do painel da organização",
-        "fetching": "A obter painel...",
-        "success": "Painel obtido"
-      },
-      "description": "Comandos de gestão de organizações",
-      "export": {
-        "description": "Exportar dados da organização",
-        "exported": "Exportado para {{path}}",
-        "exporting": "A exportar dados da organização...",
-        "success": "Exportação concluída"
-      },
-      "import": {
-        "description": "Importar dados da organização",
-        "importing": "A importar dados da organização...",
-        "success": "Importação concluída"
-      },
-      "info": {
-        "description": "Obter informações da organização",
-        "fetching": "A obter informações da organização...",
-        "notFound": "Nenhuma informação da organização encontrada",
-        "success": "Informações da organização obtidas"
-      },
-      "maintenance": {
-        "description": "Ativar ou desativar o modo de manutenção (bloqueia sessões de não administradores)",
-        "disabled": "Modo de manutenção desativado",
-        "disabling": "A desativar modo de manutenção...",
-        "enabled": "Modo de manutenção ativado",
-        "enabling": "A ativar modo de manutenção..."
-      },
-      "vault": {
-        "description": "Gestão do vault da organização",
-        "get": {
-          "description": "Obter dados do vault da organização",
-          "fetching": "A obter vault da organização...",
-          "notFound": "Nenhum vault da organização encontrado",
-          "success": "Vault obtido"
-        },
-        "list": {
-          "description": "Listar todos os tipos de vault",
-          "fetching": "A obter vaults...",
-          "success": "Vaults obtidos"
-        },
-        "update": {
-          "description": "Atualizar dados do vault da organização",
-          "success": "Vault da organização atualizado",
-          "updating": "A atualizar vault da organização..."
-        }
-      }
-    },
-    "permission": {
-      "add": {
-        "adding": "A adicionar permissão \"{{permission}}\" ao grupo \"{{group}}\"...",
-        "description": "Adicionar uma permissão a um grupo",
-        "success": "Permissão adicionada"
-      },
-      "description": "Comandos de gestão de permissões",
-      "group": {
-        "create": {
-          "creating": "A criar grupo de permissões \"{{name}}\"...",
-          "description": "Criar um novo grupo de permissões",
-          "success": "Grupo de permissões \"{{name}}\" criado"
-        },
-        "delete": {
-          "confirm": "Eliminar grupo de permissões \"{{name}}\"?",
-          "deleting": "A eliminar grupo de permissões \"{{name}}\"...",
-          "description": "Eliminar um grupo de permissões",
-          "success": "Grupo de permissões \"{{name}}\" eliminado"
-        },
-        "description": "Gestão de grupos de permissões",
-        "list": {
-          "description": "Listar todos os grupos de permissões",
-          "fetching": "A obter grupos de permissões...",
-          "success": "Grupos de permissões obtidos"
-        },
-        "show": {
-          "description": "Mostrar detalhes do grupo de permissões",
-          "fetching": "A obter detalhes do grupo de permissões...",
-          "success": "Detalhes obtidos"
-        }
-      },
-      "remove": {
-        "description": "Remover uma permissão de um grupo",
-        "removing": "A remover permissão \"{{permission}}\" do grupo \"{{group}}\"...",
-        "success": "Permissão removida"
-      }
-    },
-    "protocol": {
-      "build": {
-        "description": "Construir um URL {{scheme}}:// a partir dos componentes"
-      },
-      "description": "Registar e processar URLs de protocolo {{scheme}}://",
-      "open": {
-        "action": "Ação:",
-        "cliCommand": "\nComando CLI equivalente:",
-        "description": "Abrir um URL {{scheme}}:// e executar a ação",
-        "executing": "\nA executar ação...\n",
-        "machine": "Máquina:",
-        "params": "Parâmetros:",
-        "parsedUrl": "\nURL de protocolo analisado:",
-        "repository": "Repositório:",
-        "team": "Equipa:",
-        "token": "Token:"
-      },
-      "parse": {
-        "cliCommand": "\nComando CLI:",
-        "description": "Analisar um URL {{scheme}}:// e mostrar componentes",
-        "parsedUrl": "\nURL de protocolo analisado:"
-      },
-      "register": {
-        "adminRequired": "Nota: Isto pode requerer privilégios de administrador/root.",
-        "currentUser": "A registar processador de protocolo para o utilizador atual...",
-        "description": "Registar o processador de protocolo no sistema",
-        "exampleUrls": "\nAgora pode abrir URLs como:",
-        "registering": "A registar processador de protocolo...",
-        "success": "\nProcessador de protocolo {{scheme}}:// registado com sucesso.",
-        "systemWide": "A registar processador de protocolo a nível do sistema..."
-      },
-      "status": {
-        "description": "Mostrar estado do registo do processador de protocolo",
-        "error": "\nErro: {{error}}",
-        "handlerCommand": "Comando do processador:",
-        "platform": "Plataforma:",
-        "registered": "Registado:",
-        "registerHint": "\nPara registar o processador de protocolo, execute:",
-        "supported": "Suportado:",
-        "systemRegistration": "Registo do sistema:",
-        "title": "\nEstado do Processador de Protocolo",
-        "userRegistration": "Registo de utilizador:"
-      },
-      "unregister": {
-        "description": "Remover o registo do processador de protocolo do sistema",
-        "success": "\nRegisto do processador de protocolo {{scheme}}:// removido com sucesso.",
-        "unregistering": "A remover registo do processador de protocolo..."
-      }
-    },
-    "queue": {
-      "cancel": {
-        "cancelling": "A cancelar tarefa {{taskId}}...",
-        "description": "Cancelar um item da fila",
-        "success": "Tarefa cancelada"
-      },
-      "create": {
-        "buildingVault": "A construir vault da fila...",
-        "creating": "A criar item na fila para a função '{{function}}'...",
-        "description": "Criar um item na fila",
-        "success": "Item criado na fila",
-        "taskId": "ID da tarefa: {{taskId}}",
-        "vaultBuilt": "Vault da fila construído"
-      },
-      "delete": {
-        "confirm": "Tem a certeza de que pretende eliminar a tarefa {{taskId}}?",
-        "deleting": "A eliminar tarefa {{taskId}}...",
-        "description": "Eliminar um item da fila",
-        "success": "Tarefa eliminada"
-      },
-      "description": "Gestão de filas",
-      "list": {
-        "description": "Listar itens da fila",
-        "fetching": "A obter itens da fila...",
-        "success": "Itens da fila obtidos"
-      },
-      "retry": {
-        "description": "Repetir um item falhado da fila",
-        "retrying": "A repetir tarefa {{taskId}}...",
-        "success": "Tarefa colocada em fila para repetição"
-      },
-      "trace": {
-        "age": "Idade",
-        "description": "Rastrear a execução de um item da fila",
-        "errorDetails": "Detalhes do erro:",
-        "fetched": "Rastreio da fila obtido",
-        "fetching": "A obter rastreio da fila...",
-        "finalStatus": "Estado final: {{status}}",
-        "noTrace": "Sem informação de rastreio disponível",
-        "watching": "A monitorizar progresso da tarefa..."
-      }
-    },
-    "region": {
-      "description": "Gestão de regiões",
-      "list": {
-        "description": "Listar regiões",
-        "fetching": "A obter regiões..."
       }
     },
     "repo": {
@@ -1377,12 +892,13 @@
         "starting": "A criar o repositório \"{{repository}}\" ({{size}}) em \"{{machine}}\"..."
       },
       "delete": {
-        "archived": "Credencial de \"{{repository}}\" arquivada",
         "archiveHint": "Para arquivar as credenciais para recuperação: reexecute com --archive-config",
         "archiveOption": "Mover a entrada de configuração para deletedRepositories para recuperação posterior",
+        "archived": "Credencial de \"{{repository}}\" arquivada",
         "cloudBackupHint": "Os backups na nuvem (se houver) persistem após a exclusão. Remova backups na nuvem órfãos com: rdc storage prune --name <storage> -m {{machine}}",
         "completed": "Repositório eliminado",
         "configRetained": "Entrada de configuração para \"{{repository}}\" preservada (o repositório pode existir noutras máquinas). Para remover: rdc config repository remove --name {{repository}}",
+        "confirm": "Eliminar o repositório \"{{repository}}\" em \"{{machine}}\"? Isto destrói os contentores, os volumes e a imagem cifrada.",
         "description": "Eliminar um repositório (destrói contentores, volumes e imagem encriptada). A entrada de configuração é preservada. Use --archive-config para mover as credenciais para deletedRepositories para recuperação via 'config restore-archived'.",
         "descriptionShort": "Eliminar um repositório de uma máquina",
         "examples": "\nExemplos:\n  $ rdc repo delete --name app -m server-1\n  $ rdc repo delete --name app:test -m server-1\n",
@@ -1779,57 +1295,6 @@
       },
       "yesOption": "Ignorar confirmação em operações em lote"
     },
-    "repository": {
-      "create": {
-        "creating": "A criar repositório \"{{name}}\"...",
-        "description": "Criar um novo repositório",
-        "success": "Repositório \"{{name}}\" criado"
-      },
-      "delete": {
-        "checkingRelationships": "A verificar relações do repositório...",
-        "confirm": "Eliminar repositório \"{{name}}\"? Esta operação não pode ser desfeita.",
-        "deleting": "A eliminar repositório \"{{name}}\"...",
-        "description": "Eliminar um repositório",
-        "grandRepoWarning": "Este é um repositório grand (credencial). A eliminação é irreversível.",
-        "relationshipsChecked": "Relações do repositório verificadas",
-        "success": "Repositório \"{{name}}\" eliminado"
-      },
-      "description": "Comandos de gestão de repositórios",
-      "list": {
-        "description": "Listar repositórios",
-        "fetching": "A obter repositórios...",
-        "success": "Repositórios obtidos"
-      },
-      "promote": {
-        "checkingRelationships": "A verificar relações do repositório...",
-        "confirmPromote": "\nProsseguir com a promoção?",
-        "description": "Promover um fork para estado grand",
-        "promoting": "A promover repositório \"{{name}}\"...",
-        "relationshipsChecked": "Relações do repositório verificadas",
-        "separateInfo": "\nIsto irá separar \"{{name}}\" do repositório grand \"{{grandName}}\"",
-        "siblingsInfo": "\n{{count}} clone(s) irmão(s) continuarão ligados ao grand original:",
-        "success": "Repositório \"{{name}}\" promovido para estado grand"
-      },
-      "rename": {
-        "description": "Renomear um repositório",
-        "renaming": "A renomear repositório \"{{oldName}}\" para \"{{newName}}\"...",
-        "success": "Repositório renomeado para \"{{name}}\""
-      },
-      "vault": {
-        "description": "Gestão do vault do repositório",
-        "get": {
-          "description": "Obter dados do vault do repositório",
-          "fetching": "A obter vault do repositório...",
-          "notFound": "Nenhum vault do repositório encontrado",
-          "success": "Vault obtido"
-        },
-        "update": {
-          "description": "Atualizar dados do vault do repositório",
-          "success": "Vault do repositório atualizado",
-          "updating": "A atualizar vault do repositório..."
-        }
-      }
-    },
     "shortcuts": {
       "cancel": {
         "description": "Cancelar uma tarefa (atalho para: queue cancel)"
@@ -2030,36 +1495,6 @@
         "starting": "A iniciar carregamento..."
       }
     },
-    "team": {
-      "create": {
-        "creating": "A criar equipa...",
-        "description": "Criar uma equipa",
-        "success": "Equipa \"{{name}}\" criada"
-      },
-      "description": "Gestão de equipas",
-      "list": {
-        "description": "Listar equipas",
-        "fetching": "A obter equipas..."
-      },
-      "member": {
-        "add": {
-          "adding": "A adicionar {{email}} à equipa \"{{team}}\"...",
-          "description": "Adicionar um utilizador a uma equipa",
-          "success": "Utilizador adicionado à equipa \"{{team}}\""
-        },
-        "description": "Gestão de membros de equipa",
-        "list": {
-          "description": "Listar membros da equipa",
-          "fetching": "A obter membros da equipa...",
-          "success": "Membros obtidos"
-        },
-        "remove": {
-          "description": "Remover um utilizador de uma equipa",
-          "removing": "A remover {{email}} da equipa \"{{team}}\"...",
-          "success": "Utilizador removido da equipa \"{{team}}\""
-        }
-      }
-    },
     "term": {
       "connect": {
         "description": "Ligar a uma máquina ou repositório via SSH"
@@ -2111,77 +1546,6 @@
       "success": "Atualizado de v{{from}} para v{{to}}",
       "unknownError": "Erro desconhecido",
       "upToDate": "Já está na versão mais recente (v{{version}})"
-    },
-    "user": {
-      "activate": {
-        "activating": "A ativar utilizador \"{{email}}\"...",
-        "description": "Ativar uma conta de utilizador",
-        "success": "Utilizador ativado"
-      },
-      "create": {
-        "activationCode": "Código de ativação: {{code}}",
-        "creating": "A criar utilizador \"{{email}}\"...",
-        "description": "Criar um novo utilizador",
-        "success": "Utilizador criado"
-      },
-      "deactivate": {
-        "confirm": "Desativar utilizador \"{{email}}\"?",
-        "deactivating": "A desativar utilizador \"{{email}}\"...",
-        "description": "Desativar uma conta de utilizador",
-        "success": "Utilizador desativado"
-      },
-      "description": "Comandos de gestão de utilizadores",
-      "exists": {
-        "description": "Verificar se um utilizador existe",
-        "exists": "O utilizador \"{{email}}\" existe",
-        "notExists": "O utilizador \"{{email}}\" não existe"
-      },
-      "list": {
-        "description": "Listar todos os utilizadores",
-        "fetching": "A obter utilizadores...",
-        "success": "Utilizadores obtidos"
-      },
-      "permission": {
-        "assign": {
-          "assigning": "A atribuir \"{{group}}\" ao utilizador \"{{email}}\"...",
-          "description": "Atribuir um grupo de permissões a um utilizador",
-          "success": "Permissão atribuída"
-        },
-        "description": "Gestão de permissões do utilizador"
-      },
-      "reactivate": {
-        "description": "Reativar uma conta de utilizador desativada",
-        "reactivating": "A reativar utilizador \"{{email}}\"...",
-        "success": "Utilizador reativado"
-      },
-      "updateEmail": {
-        "description": "Alterar o endereço de email de um utilizador",
-        "success": "Email atualizado para \"{{email}}\"",
-        "updating": "A atualizar email de \"{{email}}\"..."
-      },
-      "updateLanguage": {
-        "description": "Definir o idioma preferido do utilizador atual",
-        "success": "Idioma atualizado para \"{{language}}\"",
-        "updating": "A atualizar preferência de idioma..."
-      },
-      "updatePassword": {
-        "description": "Alterar a sua palavra-passe",
-        "success": "Palavra-passe atualizada",
-        "updating": "A atualizar palavra-passe..."
-      },
-      "vault": {
-        "description": "Gestão do vault do utilizador",
-        "get": {
-          "description": "Obter dados do vault do utilizador atual",
-          "fetching": "A obter vault do utilizador...",
-          "success": "Vault obtido"
-        },
-        "update": {
-          "description": "Atualizar dados do vault do utilizador atual",
-          "success": "Vault do utilizador atualizado",
-          "updating": "A atualizar vault do utilizador..."
-        }
-      }
     },
     "vscode": {
       "check": {
@@ -2274,16 +1638,6 @@
       "tip": "Dica",
       "warning": "Aviso"
     },
-    "cloudFrontmatter": {
-      "category": "Referência",
-      "description": "Comandos exclusivos da cloud para a CLI Rediacc -- autenticação, equipas, organizações e gestão multi-tenant",
-      "title": "Aplicação CLI (Cloud / Experimental)"
-    },
-    "cloudOverview": {
-      "heading": "Visão Geral",
-      "text": "Estes comandos requerem o **adaptador cloud** (experimental) -- ativado quando uma configuração contém os campos `apiUrl` e `token`. Para a referência principal da CLI, consulte [Aplicação CLI](/pt/docs/cli-application)."
-    },
-    "cloudPageTitle": "Referência da CLI Rediacc (Cloud / Experimental)",
     "errors": {
       "heading": "Mensagens de Erro Comuns",
       "intro": "Quando algo corre mal, a CLI fornece mensagens de erro claras:",
@@ -2325,72 +1679,32 @@
     "pageTitle": "Referência da CLI Rediacc",
     "sectionTitles": {
       "agent": "Utilitários de Agente",
-      "audit": "Auditoria e Conformidade",
-      "auth": "Autenticação",
       "backup": "Backup e Restauro",
-      "bridge": "Gestão de Bridges",
-      "ceph": "Gestão de Armazenamento Ceph",
       "config": "Gestão de Configurações",
       "datastore": "Gestão do Datastore",
       "doctor": "Diagnóstico do Sistema",
       "machine": "Gestão de Máquinas",
       "mcp": "Servidor MCP",
       "ops": "Operações de VM Experimentais",
-      "organization": "Gestão de Organizações",
-      "permission": "Gestão de Permissões",
-      "protocol": "Gestor de Protocolo",
-      "queue": "Operações de Fila",
-      "region": "Gestão de Regiões",
       "repo": "Ciclo de Vida do Repositório",
-      "repository": "Gestão de Repositórios",
       "shortcuts": "Comandos Rápidos (Atalhos)",
       "storage": "Gestão de Armazenamento",
       "subscription": "Gestão de Subscrições",
       "sync": "Sincronização de Ficheiros",
-      "team": "Gestão de Equipas",
       "term": "Acesso SSH por Terminal",
       "update": "Atualizações da CLI",
-      "user": "Gestão de Utilizadores",
       "vscode": "Integração com VS Code"
     },
     "supplements": {
-      "auth": {
-        "register": {
-          "afterDescription": "Após o registo, verifique o seu e-mail para obter o código de ativação."
-        },
-        "tip": "O seu token de autenticação é guardado localmente na sua configuração. Use `--save-as` para guardar credenciais numa configuração nomeada para múltiplos ambientes."
-      },
       "config": {
         "afterDescription": "Os ficheiros de configuração guardam detalhes de ligação (URL da API, credenciais, equipa/região/bridge predefinidas) para que possa alternar entre ambientes rapidamente.",
         "init": {
           "afterDescription": "Pode adicionar máquinas diretamente:"
-        },
-        "set": {
-          "tip": "Definir valores predefinidos significa que não precisa de passar `--team`, `--region` ou `--bridge` em cada comando."
         }
       },
       "machine": {
         "health": {
           "afterDescription": "O comando health produz métricas do sistema, estado dos contentores, estabilidade dos serviços e informações de armazenamento -- útil para verificações em pipelines de CI/CD."
-        },
-        "testConnection": {
-          "tip": "Use `--save` para persistir automaticamente a chave do host no vault da máquina após um teste bem-sucedido."
-        }
-      },
-      "organization": {
-        "maintenance": {
-          "warning": "Quando o modo de manutenção está ativado, os utilizadores não administradores não conseguem iniciar sessão."
-        }
-      },
-      "queue": {
-        "afterDescription": "O sistema de fila está no centro da execução de tarefas do Rediacc. Todas as operações (deploy, backup, execução de scripts) passam pela fila.",
-        "trace": {
-          "tip": "Use `--watch` para acompanhar a tarefa em tempo real até à sua conclusão."
-        }
-      },
-      "repository": {
-        "promote": {
-          "note": "Promover um fork separa-o do seu repositório grand (pai), tornando-o independente."
         }
       }
     },
@@ -2435,7 +1749,6 @@
     },
     "authFailed": "Falha na autenticação",
     "authRequired": "Autenticação necessária. Execute: rdc auth login",
-    "bridgeRequired": "Nome do bridge necessário. Use --bridge ou defina o padrão com: rdc config set --key bridge --value <name>",
     "cannotDeleteGrandRepo": "Não é possível eliminar o repositório grand: {{reason}}",
     "cannotPromote": "Não é possível promover: {{reason}}",
     "clusterNotFound": "Cluster Ceph \"{{name}}\" não encontrado",
@@ -2578,8 +1891,6 @@
     "unknownCommand": "Comando desconhecido \"{{command}}\". Comandos disponíveis: {{available}}.",
     "unknownSubcommand": "Subcomando desconhecido \"{{command}}\". Subcomandos de {{parent}} disponíveis: {{available}}.",
     "validationError": "Erro de validação: {{message}}",
-    "vaultDataRequired": "Dados do cofre necessários. Use --vault <json> ou introduza JSON via stdin.",
-    "vaultVersionRequired": "Versão do cofre necessária. Use --vault-version <n>.",
     "vscode": {
       "browserNeedsRepo": "vscode --browser serve uma sandbox de repositório — passe --repository <nome>",
       "cleanupRequired": "Especifique --all para remover todas as ligações ou --connection <name> para uma específica.",

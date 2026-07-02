@@ -44,10 +44,8 @@ jobs:
       next_version: ${{ steps.init.outputs.next_version }}
       bump_type: ${{ steps.init.outputs.bump_type }}
       channel: ${{ steps.staging.outputs.channel }}
-      api_tag: ${{ steps.init.outputs.api_tag }}
-      api_exists: ${{ steps.init.outputs.api_exists }}
-      bridge_tag: ${{ steps.init.outputs.bridge_tag }}
-      bridge_exists: ${{ steps.init.outputs.bridge_exists }}
+      renet_tag: ${{ steps.init.outputs.renet_tag }}
+      renet_exists: ${{ steps.init.outputs.renet_exists }}
       plugins_tag: ${{ steps.init.outputs.plugins_tag }}
       plugins_exists: ${{ steps.init.outputs.plugins_exists }}
       web_tag: ${{ steps.init.outputs.web_tag }}
@@ -59,7 +57,7 @@ jobs:
       # jobs (quality, standalone, elite) on push-to-main since PR already validated.
       full_suite: ${{ github.event_name != 'push' }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
           fetch-tags: true
@@ -80,7 +78,7 @@ jobs:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
+          repositories: console,renet,account,sql,elite,homebrew-tap
 
       # PR Validation (PR events only)
       - name: Validate PR
@@ -91,7 +89,7 @@ jobs:
 
       # Login to GHCR for registry cache check
       - name: Login to GHCR
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -136,8 +134,7 @@ jobs:
         if: steps.init.outputs.is_bot != 'true'
         run: |
           cat > ci-tags.txt << EOF
-          api_tag=${{ steps.init.outputs.api_tag }}
-          bridge_tag=${{ steps.init.outputs.bridge_tag }}
+          renet_tag=${{ steps.init.outputs.renet_tag }}
           plugins_tag=${{ steps.init.outputs.plugins_tag }}
           web_tag=${{ steps.init.outputs.web_tag }}
           EOF
@@ -164,7 +161,7 @@ jobs:
       needs.initialize.outputs.is_fork != 'true' &&
       needs.initialize.result == 'success'
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout: .github/actions
 
@@ -176,7 +173,7 @@ jobs:
           preset: ci
           repositories: console,account
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ steps.app-token.outputs.token }}
 
@@ -285,7 +282,7 @@ jobs:
     # Use !cancelled() so force-cancel from newer runs can stop this job
     if: ${{ !cancelled() && needs.initialize.result == 'success' }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout: |
             .ci/scripts
@@ -343,7 +340,7 @@ jobs:
     timeout-minutes: 15
     if: needs.initialize.outputs.is_bot != 'true' && github.event_name == 'pull_request' && needs.initialize.outputs.is_fork != 'true'
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout: |
             .ci/scripts
@@ -400,7 +397,7 @@ jobs:
     outputs:
       account_server_url: ${{ steps.deploy.outputs.account_server_url }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout: .github/actions
 
@@ -412,7 +409,7 @@ jobs:
           preset: ci
           repositories: console,account
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ steps.app-token.outputs.token }}
 
@@ -459,7 +456,7 @@ jobs:
 
   # ============================================================================
   # COLUMN 3: BUILD & DOCKER
-  # Jobs: build-renet (unified), build-docker, build-desktop (parallel reusable workflows)
+  # Jobs: build-renet (unified), build-docker (parallel reusable workflows)
   # Fast path (tests): initialize -> build-renet -> build-docker-fast -> tests
   # Publish path: quality + review-gate -> build-docker (full) -> stage-artifacts
   # ============================================================================
@@ -476,8 +473,8 @@ jobs:
     uses: ./.github/workflows/ci-build-renet.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
-      skip_build: ${{ needs.initialize.outputs.bridge_exists == 'true' }}
-      bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
+      skip_build: ${{ needs.initialize.outputs.renet_exists == 'true' }}
+      renet_tag: ${{ needs.initialize.outputs.renet_tag }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
@@ -485,18 +482,16 @@ jobs:
 
   build-docker:
     name: Build (Docker)
-    needs: [initialize, quality, review-gate, build-renet]
+    needs: [initialize, build-renet]
     permissions:
       contents: read
       packages: write   # GHCR push
-    if: always() && needs.initialize.result == 'success' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+    if: always() && needs.initialize.result == 'success' && needs.build-renet.result == 'success'
     uses: ./.github/workflows/ci-build-docker.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
-      api_tag: ${{ needs.initialize.outputs.api_tag }}
-      api_exists: ${{ needs.initialize.outputs.api_exists }}
-      bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
-      bridge_exists: ${{ needs.initialize.outputs.bridge_exists }}
+      renet_tag: ${{ needs.initialize.outputs.renet_tag }}
+      renet_exists: ${{ needs.initialize.outputs.renet_exists }}
       plugins_tag: ${{ needs.initialize.outputs.plugins_tag }}
       plugins_exists: ${{ needs.initialize.outputs.plugins_exists }}
       web_tag: ${{ needs.initialize.outputs.web_tag }}
@@ -517,10 +512,8 @@ jobs:
     uses: ./.github/workflows/ci-build-docker.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
-      api_tag: ${{ needs.initialize.outputs.api_tag }}
-      api_exists: ${{ needs.initialize.outputs.api_exists }}
-      bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
-      bridge_exists: ${{ needs.initialize.outputs.bridge_exists }}
+      renet_tag: ${{ needs.initialize.outputs.renet_tag }}
+      renet_exists: ${{ needs.initialize.outputs.renet_exists }}
       plugins_tag: ${{ needs.initialize.outputs.plugins_tag }}
       plugins_exists: ${{ needs.initialize.outputs.plugins_exists }}
       web_tag: ${{ needs.initialize.outputs.web_tag }}
@@ -531,19 +524,6 @@ jobs:
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
-
-  build-desktop:
-    name: Build (Desktop)
-    needs: [initialize]
-    permissions:
-      contents: read
-      packages: write   # GHCR push
-    if: always() && needs.initialize.result == 'success'
-    uses: ./.github/workflows/ci-build-desktop.yml
-    with:
-      next_version: ${{ needs.initialize.outputs.next_version }}
-    secrets:
-      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   build-cli:
     name: Build (CLI)
@@ -587,7 +567,7 @@ jobs:
     timeout-minutes: 20
     if: always() && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && needs.initialize.outputs.is_fork != 'true'
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Install packaging tools
         run: |
@@ -622,7 +602,7 @@ jobs:
       github.ref == 'refs/heads/main' &&
       (needs.initialize.outputs.channel == 'edge' || needs.initialize.outputs.channel == 'stable')
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0  # need full tag history for bijection check
       - name: Assert release-state bijection
@@ -636,7 +616,7 @@ jobs:
   # ============================================================================
   # COLUMN 3B: DEPLOY DRY-RUN
   # Jobs: stage-artifacts (reusable workflow)
-  # Dependencies: build-docker, build-desktop, build-cli, check-release-state
+  # Dependencies: build-docker, build-cli, quality, review-gate, check-release-state
   # ============================================================================
   stage-artifacts:
     name: Stage Artifacts
@@ -648,20 +628,19 @@ jobs:
     concurrency:
       group: stage-artifacts-${{ needs.initialize.outputs.channel }}-v${{ needs.initialize.outputs.next_version }}
       cancel-in-progress: false
-    needs: [initialize, build-docker, build-desktop, build-cli, stripe-sandbox, check-release-state]
+    needs: [initialize, build-docker, build-cli, quality, review-gate, check-release-state]
     permissions:
       contents: read
       packages: write      # GHCR pull for validation
       id-token: write      # OIDC token for Sigstore signing
       attestations: write  # Store attestations on GitHub
-    if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success' && needs.build-desktop.result == 'success' && needs.build-cli.result == 'success' && (needs.stripe-sandbox.result == 'success' || needs.stripe-sandbox.result == 'skipped') && (needs.check-release-state.result == 'success' || needs.check-release-state.result == 'skipped')
+    if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success' && needs.build-cli.result == 'success' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped') && (needs.check-release-state.result == 'success' || needs.check-release-state.result == 'skipped')
     uses: ./.github/workflows/cd-stage.yml
     with:
       upload_pages: ${{ github.event_name == 'pull_request' }}
       channel: ${{ needs.initialize.outputs.channel }}
       next_version: ${{ needs.initialize.outputs.next_version }}
-      api_tag: ${{ needs.initialize.outputs.api_tag }}
-      bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}
+      renet_tag: ${{ needs.initialize.outputs.renet_tag }}
       plugins_tag: ${{ needs.initialize.outputs.plugins_tag }}
       web_tag: ${{ needs.initialize.outputs.web_tag }}
       cli_tag: ${{ needs.initialize.outputs.cli_tag }}
@@ -677,7 +656,7 @@ jobs:
   # ============================================================================
   # COLUMN 4: TESTS + INFRA
   # Jobs: tests (reusable workflow)
-  # Dependencies: build-docker (tests can start without waiting for desktop builds)
+  # Dependencies: build-docker (fast path)
   # ============================================================================
   tests:
     name: Tests + Infra
@@ -685,8 +664,7 @@ jobs:
     if: always() && needs.initialize.outputs.is_fork != 'true' && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && needs.build-docker-fast.result == 'success'
     uses: ./.github/workflows/ct-tests.yml
     with:
-      api_tag: ${{ needs.initialize.outputs.api_tag }}-amd64
-      bridge_tag: ${{ needs.initialize.outputs.bridge_tag }}-amd64
+      renet_tag: ${{ needs.initialize.outputs.renet_tag }}-amd64
       web_tag: ${{ needs.initialize.outputs.web_tag }}-amd64
       e2e_browsers: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.browsers == 'all-browsers' && 'chromium firefox webkit msedge' || 'chromium' }}
       provision_vms: true
@@ -719,10 +697,9 @@ jobs:
     with:
       run-name: 'CI Validation'
       duration: '5'
-      version: ${{ needs.initialize.outputs.bridge_tag }}
-      api-tag: ${{ needs.initialize.outputs.api_tag }}-amd64
+      version: ${{ needs.initialize.outputs.renet_tag }}
       web-tag: ${{ needs.initialize.outputs.web_tag }}-amd64
-      bridge-tag: ${{ needs.initialize.outputs.bridge_tag }}-amd64
+      renet-tag: ${{ needs.initialize.outputs.renet_tag }}-amd64
       ci-mode: true
       vm-os-list: '["none", "ubuntu-24.04", "debian-13"]'
     secrets:
@@ -769,7 +746,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
@@ -779,10 +756,10 @@ jobs:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,middleware,renet,account,sql,elite,homebrew-tap
+          repositories: console,renet,account,sql,elite,homebrew-tap
 
       - name: Checkout with Submodules
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           submodules: recursive
           token: ${{ steps.app-token.outputs.token }}
@@ -794,14 +771,11 @@ jobs:
             --env-file
 
           # Override individual tags from initialize job (use -amd64 suffix for fast builds)
-          if [[ -n "${{ needs.initialize.outputs.api_tag }}" ]]; then
-            echo "API_TAG=${{ needs.initialize.outputs.api_tag }}-amd64" >> $GITHUB_ENV
-          fi
           if [[ -n "${{ needs.initialize.outputs.web_tag }}" ]]; then
             echo "WEB_TAG=${{ needs.initialize.outputs.web_tag }}-amd64" >> $GITHUB_ENV
           fi
-          if [[ -n "${{ needs.initialize.outputs.bridge_tag }}" ]]; then
-            echo "BRIDGE_TAG=${{ needs.initialize.outputs.bridge_tag }}-amd64" >> $GITHUB_ENV
+          if [[ -n "${{ needs.initialize.outputs.renet_tag }}" ]]; then
+            echo "RENET_TAG=${{ needs.initialize.outputs.renet_tag }}-amd64" >> $GITHUB_ENV
           fi
 
       - name: Pre-pull Docker Images
@@ -811,14 +785,10 @@ jobs:
           TAG: ${{ env.TAG }}
         run: .ci/scripts/infra/ci-pull-images.sh
 
-      - name: Install sqlcmd (go-sqlcmd)
-        run: sudo private/middleware/scripts/install-sqlcmd.sh
-
       - name: Start Elite Services
         env:
           TAG: ${{ env.TAG }}
           CI_MODE: 'true'
-          ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
         run: .ci/scripts/infra/ci-start-elite.sh
 
       - name: Run Health Check
@@ -829,9 +799,6 @@ jobs:
         run: |
           echo "Final Container Status:"
           docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(NAME|rediacc)" || true
-          echo ""
-          echo "Recent API Logs (last 50 lines):"
-          docker logs rediacc-api --tail=50 2>&1 || true
 
       - name: Cleanup
         if: always()
@@ -863,7 +830,7 @@ jobs:
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout: .github/actions
 
@@ -875,7 +842,7 @@ jobs:
           preset: ci
           repositories: console,account
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ steps.app-token.outputs.token }}
           submodules: false
@@ -1047,13 +1014,12 @@ jobs:
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout: |
             .github/actions
             .ci/scripts
             packages/shared
-            packages/shared-desktop
             packages/provisioning
             workers/www
             package.json
@@ -1145,7 +1111,7 @@ jobs:
     env:
       CHANNEL: ${{ needs.initialize.outputs.channel }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Simulate promotion (copy + sed-fix)
         run: |
@@ -1310,7 +1276,7 @@ jobs:
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-desktop, build-cli, package-tests, stage-artifacts, validate-install, validate-promote, tests, standalone-run-test, elite-run-test, ops-tests, migration-test, update-flow-test, deploy-preview, smoke-test-preview]
+    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-cli, package-tests, stage-artifacts, validate-install, validate-promote, tests, standalone-run-test, elite-run-test, ops-tests, migration-test, update-flow-test, deploy-preview, smoke-test-preview]
     if: always() && !cancelled()
     steps:
       - name: Check all jobs passed
@@ -1318,13 +1284,12 @@ jobs:
           FAILED=false
 
           # Hard-required jobs (must succeed, never skipped)
-          for job in initialize build-docker build-docker-fast build-desktop build-cli; do
+          for job in initialize build-docker build-docker-fast build-cli; do
             result="${{ needs[job].result }}" 2>/dev/null || result="unknown"
           done
           [[ "${{ needs.initialize.result }}" != "success" ]] && FAILED=true
           [[ "${{ needs.build-docker.result }}" != "success" ]] && FAILED=true
           [[ "${{ needs.build-docker-fast.result }}" != "success" ]] && FAILED=true
-          [[ "${{ needs.build-desktop.result }}" != "success" ]] && FAILED=true
           [[ "${{ needs.build-cli.result }}" != "success" ]] && FAILED=true
 
           # Soft-required jobs (success or skipped both OK, only failure blocks)
@@ -1352,7 +1317,6 @@ jobs:
             echo "  stripe-sandbox: ${{ needs.stripe-sandbox.result }}"
             echo "  build-docker: ${{ needs.build-docker.result }}"
             echo "  build-docker-fast: ${{ needs.build-docker-fast.result }}"
-            echo "  build-desktop: ${{ needs.build-desktop.result }}"
             echo "  build-cli: ${{ needs.build-cli.result }}"
             echo "  package-tests: ${{ needs.package-tests.result }}"
             echo "  stage-artifacts: ${{ needs.stage-artifacts.result }}"
@@ -1373,7 +1337,7 @@ jobs:
   # ============================================================================
   # FINALIZE RELEASE SENTINEL
   # Atomic commit point of the release pipeline. Writes `.released` sentinels
-  # to cli/v${V}/ and desktop/v${V}/ on R2 — only after every CI gate upstream
+  # to cli/v${V}/ on R2 — only after every CI gate upstream
   # has passed. The sentinel seals the version: from here on, write_once_guard
   # refuses to overwrite, and the drift gate requires a matching git tag.
   #
@@ -1403,7 +1367,7 @@ jobs:
       group: finalize-release-v${{ needs.initialize.outputs.next_version }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout: |
             .ci/scripts
@@ -1418,8 +1382,7 @@ jobs:
           .ci/scripts/deploy/write-release-sentinel.sh \
             --version "${{ needs.initialize.outputs.next_version }}" \
             --channel "${{ needs.initialize.outputs.channel }}" \
-            --commit-sha "${{ github.sha }}" \
-            --desktop
+            --commit-sha "${{ github.sha }}"
       # Sentinel is sealed at this point. Dispatch cd-v2 immediately so a
       # later cancellation of THIS run (e.g. auto-cancel-on-push during
       # housekeeping) cannot strand a sealed version without a tag. cd-v2
@@ -1465,7 +1428,7 @@ jobs:
     timeout-minutes: 5
     if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout: |
             .ci/scripts

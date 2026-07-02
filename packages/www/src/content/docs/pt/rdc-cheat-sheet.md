@@ -4,7 +4,7 @@ description: "Referência rápida para rdc: configs, repositórios, máquinas, s
 category: Guides
 order: 3
 language: pt
-sourceHash: "bc52628ba870dfbb"
+sourceHash: "8cde2c78200d226a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -102,7 +102,6 @@ Credenciais de implantação apenas de escrita. `get` devolve apenas o digest. O
 | `rdc config machine setup --name <machine>` | Executar o provisionamento inicial da máquina |
 | `rdc machine prune --name <machine>` | Remover recursos não utilizados da máquina |
 | `rdc machine deprovision --name <machine>` | Desprovicionar completamente uma máquina |
-| `rdc machine vault-status --name <machine>` | Mostrar estado do cofre LUKS |
 
 ## Terminal e Sincronização
 

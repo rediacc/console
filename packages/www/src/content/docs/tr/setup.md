@@ -4,7 +4,7 @@ description: "Yapılandırma oluşturma, makine ekleme, sunucuları hazırlama v
 category: "Guides"
 order: 3
 language: tr
-sourceHash: "b3c8c42db1b8d99b"
+sourceHash: "19a208e453f7d742"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -104,7 +104,7 @@ Daha ayrıntılı tanılama için şunu çalıştırın:
 rdc doctor
 ```
 
-> **Yalnızca bulut adaptörü**: `rdc machine test-connection` komutu ayrıntılı SSH tanılaması sağlar ancak bulut adaptörü gerektirir. Yerel adaptör için `rdc term` veya doğrudan `ssh` kullanın.
+> **İpucu**: SSH bağlantısını doğrulamak için `rdc term connect -m <machine> -c "hostname"` çalıştırın veya doğrudan `ssh` kullanın.
 
 ## Altyapı Yapılandırması
 
@@ -233,7 +233,7 @@ Her komutta belirtmek zorunda kalmamak için varsayılan değerler ayarlayın:
 
 ```bash
 rdc config field set --pointer /defaults/machine --new '"server-1"'   # Varsayılan makine
-rdc config set --key team --value my-team                   # Varsayılan ekip (bulut adaptörü, deneysel)
+rdc config set --key team --value my-team                   # Yapılandırma deposu için varsayılan takım
 ```
 
 Varsayılan makineyi ayarladıktan sonra komutlardan `-m server-1` ifadesini çıkarabilirsiniz:

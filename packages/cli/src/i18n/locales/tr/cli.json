@@ -19,100 +19,6 @@
         "description": "Belirli bir komut için ayrıntılı şemayı göster"
       }
     },
-    "audit": {
-      "description": "Denetim günlüğü komutları",
-      "history": {
-        "description": "Varlık geçmişini görüntüleyin",
-        "fetching": "Varlık geçmişi alınıyor...",
-        "success": "Geçmiş alındı"
-      },
-      "log": {
-        "description": "Denetim günlüklerini görüntüleyin",
-        "fetching": "Denetim günlükleri alınıyor...",
-        "success": "Denetim günlükleri alındı"
-      },
-      "trace": {
-        "description": "Bir varlık için denetim geçmişini izleyin",
-        "fetching": "Varlık denetim izi alınıyor...",
-        "success": "Denetim izi alındı"
-      }
-    },
-    "auth": {
-      "activate": {
-        "activated": "Hesap etkinleştirildi",
-        "activating": "Hesap etkinleştiriliyor...",
-        "description": "Doğrulama koduyla hesabı etkinleştirin",
-        "success": "Hesap etkinleştirildi! Şimdi şunla giriş yapabilirsiniz: rdc auth login"
-      },
-      "description": "Kimlik doğrulama komutları",
-      "login": {
-        "authenticating": "Kimlik doğrulanıyor...",
-        "description": "Rediacc ile kimlik doğrulaması yapın",
-        "success": "Giriş başarılı! \"{{context}}\" bağlamına kaydedildi",
-        "tfaPrompt": "2FA kodunu girin:",
-        "tfaRequired": "İki faktörlü kimlik doğrulama gerekli",
-        "tfaVerified": "2FA başarıyla doğrulandı",
-        "verifyingTfa": "2FA doğrulanıyor..."
-      },
-      "logout": {
-        "description": "Depolanan kimlik bilgilerini temizleyin",
-        "loggingOut": "Çıkış yapılıyor...",
-        "success": "Başarıyla çıkış yapıldı"
-      },
-      "register": {
-        "description": "Yeni bir kuruluş ve kullanıcı hesabı kaydedin",
-        "nextStep": "Ardından çalıştırın: rdc auth activate -e <email> -p <password> --code <code>",
-        "registering": "Hesap kaydediliyor...",
-        "submitted": "Kayıt gönderildi",
-        "success": "Kayıt başarılı! Etkinleştirme kodu için e-postanızı kontrol edin."
-      },
-      "status": {
-        "authenticated": "Kimlik doğrulaması yapılmış: {{email}}",
-        "description": "Güncel kimlik doğrulama durumunu kontrol edin",
-        "notAuthenticated": "Kimlik doğrulaması yapılmamış. Çalıştırın: rdc auth login"
-      },
-      "tfa": {
-        "description": "İki faktörlü kimlik doğrulama yönetimi",
-        "disable": {
-          "confirm": "2FA'yı devre dışı bırakmak istediğinizden emin misiniz?",
-          "description": "İki faktörlü kimlik doğrulamayı devre dışı bırakın",
-          "disabling": "2FA devre dışı bırakılıyor...",
-          "success": "2FA başarıyla devre dışı bırakıldı"
-        },
-        "enable": {
-          "addToApp": "Bunu kimlik doğrulama uygulamanıza ekleyin",
-          "description": "İki faktörlü kimlik doğrulamayı etkinleştirin",
-          "enabling": "2FA etkinleştiriliyor...",
-          "initiated": "2FA kurulumu başlatıldı",
-          "setupKey": "Kurulum anahtarı: {{key}}",
-          "success": "2FA başarıyla etkinleştirildi"
-        },
-        "status": {
-          "description": "2FA durumunu kontrol edin",
-          "disabled": "2FA etkinleştirilmedi",
-          "enabled": "2FA etkinleştirildi"
-        }
-      },
-      "token": {
-        "description": "Token yönetimi",
-        "fork": {
-          "creating": "Çatallanmış token oluşturuluyor...",
-          "description": "Başka bir uygulama için çatallanmış token oluşturun",
-          "success": "Token başarıyla oluşturuldu",
-          "tokenValue": "Token değeri: {{token}}"
-        },
-        "list": {
-          "description": "Etkin tokenları/oturumları listeleyin",
-          "fetching": "Tokenlar alınıyor...",
-          "noTokens": "Etkin token yok"
-        },
-        "revoke": {
-          "description": "Belirli bir tokeni iptal edin",
-          "revoking": "Token iptal ediliyor...",
-          "success": "Token başarıyla iptal edildi"
-        }
-      }
-    },
     "backup": {
       "description": "Depo yedeklerini depolama ve makineler arasında gönderme, çekme ve senkronize etme",
       "schedule": {
@@ -120,163 +26,6 @@
       },
       "sync": {
         "description": "Makineler arası yedeklerin çift yönlü senkronizasyonu"
-      }
-    },
-    "bridge": {
-      "description": "Köprü yönetimi",
-      "list": {
-        "description": "Köprüleri listeleyin",
-        "fetching": "Köprüler alınıyor..."
-      },
-      "resetAuth": {
-        "description": "Köprü yetkilendirme tokenini sıfırlayın",
-        "newToken": "Yeni token: {{token}}",
-        "resetting": "\"{{name}}\" köprüsü için yetkilendirme sıfırlanıyor...",
-        "success": "Yetkilendirme sıfırlandı"
-      }
-    },
-    "ceph": {
-      "clone": {
-        "assign": {
-          "assigning": "\"{{name}}\" klonuna makineler atanıyor...",
-          "description": "Bir klona makine ata",
-          "success": "\"{{name}}\" klonuna makineler atandı"
-        },
-        "create": {
-          "creating": "RBD klonu \"{{name}}\" oluşturuluyor...",
-          "description": "Anlık görüntüden yeni bir RBD klonu oluştur",
-          "success": "RBD klonu \"{{name}}\" oluşturuldu"
-        },
-        "delete": {
-          "confirm": "RBD klonu \"{{name}}\" silinsin mi?",
-          "deleting": "RBD klonu \"{{name}}\" siliniyor...",
-          "description": "Bir RBD klonunu sil",
-          "success": "RBD klonu \"{{name}}\" silindi"
-        },
-        "description": "Ceph RBD klon yönetimi",
-        "list": {
-          "description": "RBD klonlarını listele",
-          "fetching": "RBD klonları getiriliyor...",
-          "success": "Klonlar getirildi"
-        },
-        "machines": {
-          "description": "Bir klona atanan makineleri listele",
-          "fetching": "Klon makineleri getiriliyor...",
-          "success": "Klon makineleri getirildi"
-        },
-        "unassign": {
-          "description": "Bir klondan makineleri kaldır",
-          "success": "\"{{name}}\" klonundan makineler kaldırıldı",
-          "unassigning": "\"{{name}}\" klonundan makineler kaldırılıyor..."
-        }
-      },
-      "cluster": {
-        "create": {
-          "creating": "Ceph kümesi \"{{name}}\" oluşturuluyor...",
-          "description": "Yeni bir Ceph kümesi oluştur",
-          "success": "Ceph kümesi \"{{name}}\" oluşturuldu"
-        },
-        "delete": {
-          "confirm": "Ceph kümesi \"{{name}}\" silinsin mi?",
-          "deleting": "Ceph kümesi \"{{name}}\" siliniyor...",
-          "description": "Bir Ceph kümesini sil",
-          "success": "Ceph kümesi \"{{name}}\" silindi"
-        },
-        "description": "Ceph küme yönetimi",
-        "list": {
-          "description": "Ceph kümelerini listele",
-          "fetching": "Ceph kümeleri getiriliyor...",
-          "success": "Kümeler getirildi"
-        },
-        "machines": {
-          "description": "Bir Ceph kümesindeki makineleri listele",
-          "fetching": "Küme makineleri getiriliyor...",
-          "success": "Küme makineleri getirildi"
-        },
-        "vault": {
-          "description": "Ceph küme kasası yönetimi",
-          "get": {
-            "description": "Küme kasası verilerini al",
-            "fetching": "Küme kasası getiriliyor...",
-            "success": "Küme kasası getirildi"
-          },
-          "update": {
-            "description": "Küme kasası verilerini güncelle",
-            "success": "\"{{name}}\" için küme kasası güncellendi",
-            "updating": "\"{{name}}\" için küme kasası güncelleniyor..."
-          }
-        }
-      },
-      "description": "Ceph dağıtık depolama yönetimi",
-      "image": {
-        "create": {
-          "creating": "RBD imajı \"{{name}}\" oluşturuluyor...",
-          "description": "Yeni bir RBD imajı oluştur",
-          "success": "RBD imajı \"{{name}}\" oluşturuldu"
-        },
-        "delete": {
-          "confirm": "RBD imajı \"{{name}}\" silinsin mi?",
-          "deleting": "RBD imajı \"{{name}}\" siliniyor...",
-          "description": "Bir RBD imajını sil",
-          "success": "RBD imajı \"{{name}}\" silindi"
-        },
-        "description": "Ceph RBD imaj yönetimi",
-        "list": {
-          "description": "RBD imajlarını listele",
-          "fetching": "RBD imajları getiriliyor...",
-          "success": "İmajlar getirildi"
-        }
-      },
-      "pool": {
-        "create": {
-          "creating": "Ceph havuzu \"{{name}}\" oluşturuluyor...",
-          "description": "Yeni bir Ceph havuzu oluştur",
-          "success": "Ceph havuzu \"{{name}}\" oluşturuldu"
-        },
-        "delete": {
-          "confirm": "Ceph havuzu \"{{name}}\" silinsin mi?",
-          "deleting": "Ceph havuzu \"{{name}}\" siliniyor...",
-          "description": "Bir Ceph havuzunu sil",
-          "success": "Ceph havuzu \"{{name}}\" silindi"
-        },
-        "description": "Ceph havuz yönetimi",
-        "list": {
-          "description": "Ceph havuzlarını listele",
-          "fetching": "Ceph havuzları getiriliyor...",
-          "success": "Havuzlar getirildi"
-        },
-        "vault": {
-          "description": "Ceph havuz kasası yönetimi",
-          "get": {
-            "description": "Havuz kasası verilerini al",
-            "fetching": "Havuz kasası getiriliyor...",
-            "success": "Havuz kasası getirildi"
-          },
-          "update": {
-            "description": "Havuz kasası verilerini güncelle",
-            "success": "\"{{name}}\" için havuz kasası güncellendi",
-            "updating": "\"{{name}}\" için havuz kasası güncelleniyor..."
-          }
-        }
-      },
-      "snapshot": {
-        "create": {
-          "creating": "RBD anlık görüntüsü \"{{name}}\" oluşturuluyor...",
-          "description": "Yeni bir RBD anlık görüntüsü oluştur",
-          "success": "RBD anlık görüntüsü \"{{name}}\" oluşturuldu"
-        },
-        "delete": {
-          "confirm": "RBD anlık görüntüsü \"{{name}}\" silinsin mi?",
-          "deleting": "RBD anlık görüntüsü \"{{name}}\" siliniyor...",
-          "description": "Bir RBD anlık görüntüsünü sil",
-          "success": "RBD anlık görüntüsü \"{{name}}\" silindi"
-        },
-        "description": "Ceph RBD anlık görüntü yönetimi",
-        "list": {
-          "description": "RBD anlık görüntülerini listele",
-          "fetching": "RBD anlık görüntüleri getiriliyor...",
-          "success": "Anlık görüntüler getirildi"
-        }
       }
     },
     "config": {
@@ -985,54 +734,6 @@
         "noServices": "Bu makinede rediacc servisi bulunamadı",
         "stabilityCheck": "Kararlılık kontrolü modu - başarısız/yeniden başlayan varsa kod 2 ile çıkar",
         "unstableFound": "{{count}} kararsız servis bulundu"
-      },
-      "testConnection": {
-        "authMethod": "  Kimlik Doğrulama Yöntemi: {{method}}",
-        "created": "Görev oluşturuldu",
-        "creating": "SSH test görevi oluşturuluyor...",
-        "description": "Bir makineyle SSH bağlantısını test edin ve ana bilgisayar anahtarını yakalayın",
-        "error": "Hata: {{error}}",
-        "knownHosts": "  Ana Bilgisayar Girişi: {{entry}}",
-        "message": "  İleti: {{message}}",
-        "publicKeyDeployed": "  Genel Anahtar Başlatıldı: {{status}}",
-        "rawOutput": "Ham çıkış:",
-        "results": "SSH Test Sonuçları:",
-        "saved": "Ana bilgisayar girişi makine kasasına kaydedildi",
-        "saving": "known_hosts \"{{machine}}\" makinesi kasasına kaydediliyor...",
-        "sshKeyConfigured": "  SSH Anahtarı Yapılandırıldı: {{status}}",
-        "statusResult": "  Durum: {{status}}",
-        "taskId": "Görev Kimliği: {{taskId}}",
-        "testing": "SSH bağlantısı {{user}}@{{ip}}:{{port}} adresine test ediliyor...",
-        "testResult": "SSH bağlantı testi {{result}}",
-        "timeout": "Sonuç bekleme zaman aşımı",
-        "timeoutMessage": "Test bağlantısı zaman aşımına uğradı. Ayrıntılar için sıra izini kontrol edin.",
-        "waiting": "SSH test sonucu bekleniyor...",
-        "waitingTime": "SSH test sonucu bekleniyor... ({{seconds}}s)"
-      },
-      "vault": {
-        "description": "Makine kasası yönetimi (yalnızca bulut adaptörü)"
-      },
-      "vault-status": {
-        "description": "Bir makinenin ayrıştırılmış kasa durumunu göster (yalnızca bulut adaptörü)"
-      },
-      "vaultStatus": {
-        "deployedRepos": "\nBaşlatılan Depolar:",
-        "description": "Bir makinenin ayrıştırılmış kasa durumunu gösterin",
-        "dockerRunning": "  Docker Çalışıyor: {{count}}",
-        "fetched": "Makine alındı",
-        "fetching": "Makine alınıyor...",
-        "header": "\n{{name}} için Kasa Durumu:",
-        "mounted": "  Bağlı: {{count}}",
-        "repoDocker": "    Docker durumu: {{status}}",
-        "repoMounted": "    Bağlı: {{mounted}}",
-        "status": "  Durum: {{status}}",
-        "systemDatastore": "  Veri deposu: {{used}} / {{total}} ({{percent}})",
-        "systemDisk": "  Disk alanı: {{used}} / {{total}} ({{percent}})",
-        "systemHostname": "  Ana bilgisayar adı: {{hostname}}",
-        "systemMemory": "  Bellek: {{used}} / {{total}} ({{percent}})",
-        "systemSection": "\nSistem:",
-        "systemUptime": "  Çalışma süresi: {{uptime}}",
-        "totalRepos": "  Toplam Depo: {{count}}"
       }
     },
     "mcp": {
@@ -1092,192 +793,6 @@
         "description": "VM kümesini yerel olarak oluştur",
         "failed": "VM kümesi oluşturma başarısız oldu",
         "starting": "VM kümesi oluşturma başlatılıyor..."
-      }
-    },
-    "organization": {
-      "dashboard": {
-        "description": "Kuruluş pano verilerini alın",
-        "fetching": "Pano alınıyor...",
-        "success": "Pano alındı"
-      },
-      "description": "Kuruluş yönetimi komutları",
-      "export": {
-        "description": "Kuruluş verilerini dışa aktarın",
-        "exported": "{{path}} adresine dışa aktarıldı",
-        "exporting": "Kuruluş verileri dışa aktarılıyor...",
-        "success": "Dışa aktarma tamamlandı"
-      },
-      "import": {
-        "description": "Kuruluş verilerini içe aktarın",
-        "importing": "Kuruluş verileri içe aktarılıyor...",
-        "success": "İçe aktarma tamamlandı"
-      },
-      "info": {
-        "description": "Kuruluş bilgisini alın",
-        "fetching": "Kuruluş bilgisi alınıyor...",
-        "notFound": "Kuruluş bilgisi bulunamadı",
-        "success": "Kuruluş bilgisi alındı"
-      },
-      "maintenance": {
-        "description": "Bakım modunu etkinleştirin veya devre dışı bırakın (yönetici olmayan girişleri engeller)",
-        "disabled": "Bakım modu devre dışı bırakıldı",
-        "disabling": "Bakım modu devre dışı bırakılıyor...",
-        "enabled": "Bakım modu etkinleştirildi",
-        "enabling": "Bakım modu etkinleştiriliyor..."
-      },
-      "vault": {
-        "description": "Kuruluş kasası yönetimi",
-        "get": {
-          "description": "Kuruluş kasası verilerini alın",
-          "fetching": "Kuruluş kasası alınıyor...",
-          "notFound": "Kuruluş kasası bulunamadı",
-          "success": "Kasa alındı"
-        },
-        "list": {
-          "description": "Tüm kasa türlerini listeleyin",
-          "fetching": "Kasalar alınıyor...",
-          "success": "Kasalar alındı"
-        },
-        "update": {
-          "description": "Kuruluş kasası verilerini güncelleyin",
-          "success": "Kuruluş kasası güncellendi",
-          "updating": "Kuruluş kasası güncelleniyor..."
-        }
-      }
-    },
-    "permission": {
-      "add": {
-        "adding": "\"{{permission}}\" izni \"{{group}}\" grubuna ekleniyor...",
-        "description": "Bir izni bir gruba ekleyin",
-        "success": "İzin eklendi"
-      },
-      "description": "İzin yönetimi komutları",
-      "group": {
-        "create": {
-          "creating": "\"{{name}}\" izin grubu oluşturuluyor...",
-          "description": "Yeni bir izin grubu oluşturun",
-          "success": "\"{{name}}\" izin grubu oluşturuldu"
-        },
-        "delete": {
-          "confirm": "\"{{name}}\" izin grubu silinsin mi?",
-          "deleting": "\"{{name}}\" izin grubu siliniyor...",
-          "description": "Bir izin grubunu silin",
-          "success": "\"{{name}}\" izin grubu silindi"
-        },
-        "description": "İzin grubu yönetimi",
-        "list": {
-          "description": "Tüm izin gruplarını listeleyin",
-          "fetching": "İzin grupları alınıyor...",
-          "success": "İzin grupları alındı"
-        },
-        "show": {
-          "description": "İzin grubu ayrıntılarını gösterin",
-          "fetching": "İzin grubu ayrıntıları alınıyor...",
-          "success": "Ayrıntılar alındı"
-        }
-      },
-      "remove": {
-        "description": "Bir izni bir gruptan kaldırın",
-        "removing": "\"{{permission}}\" izni \"{{group}}\" grubundan kaldırılıyor...",
-        "success": "İzin kaldırıldı"
-      }
-    },
-    "protocol": {
-      "build": {
-        "description": "Bileşenlerden bir {{scheme}}:// URL oluşturun"
-      },
-      "description": "{{scheme}}:// protokol URL'lerini kaydedin ve işleyin",
-      "open": {
-        "action": "İşlem:",
-        "cliCommand": "\nEşdeğer CLI komutu:",
-        "description": "Bir {{scheme}}:// URL'sini açın ve işlemi yürütün",
-        "executing": "\nİşlem yürütülüyor...\n",
-        "machine": "Makine:",
-        "params": "Parametreler:",
-        "parsedUrl": "\nAyrıştırılmış Protokol URL'si:",
-        "repository": "Depo:",
-        "team": "Takım:",
-        "token": "Token değeri:"
-      },
-      "parse": {
-        "cliCommand": "\nCLI Komutu:",
-        "description": "Bir {{scheme}}:// URL'sini ayrıştırın ve bileşenleri gösterin",
-        "parsedUrl": "\nAyrıştırılmış Protokol URL'si:"
-      },
-      "register": {
-        "adminRequired": "Not: Bu, yönetici/root ayrıcalıkları gerektirebilir.",
-        "currentUser": "Protokol işleyicisi güncel kullanıcı için kaydediliyor...",
-        "description": "Protokol işleyicisini sistem üzerinde kaydedin",
-        "exampleUrls": "\nŞimdi şu gibi URL'leri açabilirsiniz:",
-        "registering": "Protokol işleyicisi kaydediliyor...",
-        "success": "\n{{scheme}}:// protokol işleyicisi başarıyla kaydedildi.",
-        "systemWide": "Protokol işleyicisi sistem genelinde kaydediliyor..."
-      },
-      "status": {
-        "description": "Protokol işleyicisi kayıt durumunu gösterin",
-        "error": "\nHata: {{error}}",
-        "handlerCommand": "İşleyici Komutu:",
-        "platform": "Platform bilgisi:",
-        "registered": "Kayıtlı:",
-        "registerHint": "\nProtokol işleyicisini kaydetmek için şu komutu çalıştırın:",
-        "supported": "Desteklenen:",
-        "systemRegistration": "Sistem Kaydı:",
-        "title": "\nProtokol İşleyicisi Durumu",
-        "userRegistration": "Kullanıcı Kaydı:"
-      },
-      "unregister": {
-        "description": "Protokol işleyicisinin kaydını sistemden kaldırın",
-        "success": "\n{{scheme}}:// protokol işleyicisinin kaydı başarıyla kaldırıldı.",
-        "unregistering": "Protokol işleyicisinin kaydı kaldırılıyor..."
-      }
-    },
-    "queue": {
-      "cancel": {
-        "cancelling": "{{taskId}} görevi iptal ediliyor...",
-        "description": "Bir sıra öğesini iptal edin",
-        "success": "Görev iptal edildi"
-      },
-      "create": {
-        "buildingVault": "Sıra kasası oluşturuluyor...",
-        "creating": "'{{function}}' işlevi için sıra öğesi oluşturuluyor...",
-        "description": "Bir sıra öğesi oluşturun",
-        "success": "Sıra öğesi oluşturuldu",
-        "taskId": "Görev Kimliği: {{taskId}}",
-        "vaultBuilt": "Sıra kasası oluşturuldu"
-      },
-      "delete": {
-        "confirm": "{{taskId}} görevini silmek istediğinizden emin misiniz?",
-        "deleting": "{{taskId}} görevi siliniyor...",
-        "description": "Bir sıra öğesini silin",
-        "success": "Görev silindi"
-      },
-      "description": "Sıra yönetimi",
-      "list": {
-        "description": "Sıra öğelerini listeleyin",
-        "fetching": "Sıra öğeleri alınıyor...",
-        "success": "Sıra öğeleri alındı"
-      },
-      "retry": {
-        "description": "Başarısız bir sıra öğesini yeniden deneyin",
-        "retrying": "{{taskId}} görevi yeniden deneniyor...",
-        "success": "Görev yeniden deneme için sıraya alındı"
-      },
-      "trace": {
-        "age": "Yaş",
-        "description": "Sıra öğesi yürütmesini izleyin",
-        "errorDetails": "Hata ayrıntıları:",
-        "fetched": "Sıra izi alındı",
-        "fetching": "Sıra izi alınıyor...",
-        "finalStatus": "Son durum: {{status}}",
-        "noTrace": "Hiç iz bilgisi yok",
-        "watching": "Görev ilerlemesi izleniyor..."
-      }
-    },
-    "region": {
-      "description": "Bölge yönetimi",
-      "list": {
-        "description": "Bölgeleri listeleyin",
-        "fetching": "Bölgeler alınıyor..."
       }
     },
     "repo": {
@@ -1377,12 +892,13 @@
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" ({{size}}) deposu oluşturuluyor..."
       },
       "delete": {
-        "archived": "\"{{repository}}\" kimlik bilgisi arşivlendi",
         "archiveHint": "Kurtarma için kimlik bilgilerini arşivlemek üzere: --archive-config ile tekrar çalıştırın",
         "archiveOption": "Yapılandırma girdisini daha sonra kurtarmak için deletedRepositories'e taşı",
+        "archived": "\"{{repository}}\" kimlik bilgisi arşivlendi",
         "cloudBackupHint": "Bulut yedekleri (varsa) silmeden sonra kalır. Sahipsiz bulut yedeklerini şu komutla kaldırın: rdc storage prune --name <storage> -m {{machine}}",
         "completed": "Depo silindi",
         "configRetained": "\"{{repository}}\" yapılandırma girişi korundu (depo başka makinelerde mevcut olabilir). Kaldırmak için: rdc config repository remove --name {{repository}}",
+        "confirm": "\"{{machine}}\" üzerindeki \"{{repository}}\" deposu silinsin mi? Bu işlem konteynerleri, volümleri ve şifreli imajı yok eder.",
         "description": "Bir depoyu sil (konteynerleri, birimleri ve şifreli imajı yok eder). Yapılandırma girdisi korunur. Kimlik bilgilerini deletedRepositories'e taşımak için --archive-config kullanın, 'config restore-archived' ile kurtarılabilir",
         "descriptionShort": "Bir makineden depoyu sil",
         "examples": "\nÖrnekler:\n  $ rdc repo delete --name app -m server-1\n  $ rdc repo delete --name app:test -m server-1\n",
@@ -1779,57 +1295,6 @@
       },
       "yesOption": "Toplu işlemler için onayı atla"
     },
-    "repository": {
-      "create": {
-        "creating": "\"{{name}}\" deposu oluşturuluyor...",
-        "description": "Yeni bir depo oluşturun",
-        "success": "\"{{name}}\" deposu oluşturuldu"
-      },
-      "delete": {
-        "checkingRelationships": "Depo ilişkileri kontrol ediliyor...",
-        "confirm": "\"{{name}}\" deposu silinsin mi? Bu yapılamaz.",
-        "deleting": "\"{{name}}\" deposu siliniyor...",
-        "description": "Bir depoyu silin",
-        "grandRepoWarning": "Bu ana depo (kimlik bilgisi). Silmek geri alınamaz.",
-        "relationshipsChecked": "Depo ilişkileri kontrol edildi",
-        "success": "\"{{name}}\" deposu silindi"
-      },
-      "description": "Depo yönetimi komutları",
-      "list": {
-        "description": "Depoları listeleyin",
-        "fetching": "Depolar alınıyor...",
-        "success": "Depolar alındı"
-      },
-      "promote": {
-        "checkingRelationships": "Depo ilişkileri kontrol ediliyor...",
-        "confirmPromote": "\nYükseltme işlemine devam edilsin mi?",
-        "description": "Bir çataldamayı ana durumuna yükseltin",
-        "promoting": "\"{{name}}\" deposu yükseltiliyor...",
-        "relationshipsChecked": "Depo ilişkileri kontrol edildi",
-        "separateInfo": "\nBu işlem \"{{name}}\" deposunu ana depo \"{{grandName}}\" deposundan ayıracaktır",
-        "siblingsInfo": "\n{{count}} kardeş klon(lar) orijinal ana'ya bağlı kalacaktır:",
-        "success": "\"{{name}}\" deposu ana durumuna yükseltildi"
-      },
-      "rename": {
-        "description": "Bir depoyu yeniden adlandırın",
-        "renaming": "\"{{oldName}}\" deposu \"{{newName}}\" adına yeniden adlandırılıyor...",
-        "success": "Depo \"{{name}}\" adına yeniden adlandırıldı"
-      },
-      "vault": {
-        "description": "Depo kasası yönetimi",
-        "get": {
-          "description": "Depo kasası verilerini alın",
-          "fetching": "Depo kasası alınıyor...",
-          "notFound": "Depo kasası bulunamadı",
-          "success": "Kasa alındı"
-        },
-        "update": {
-          "description": "Depo kasası verilerini güncelleyin",
-          "success": "Depo kasası güncellendi",
-          "updating": "Depo kasası güncelleniyor..."
-        }
-      }
-    },
     "shortcuts": {
       "cancel": {
         "description": "Bir görevi iptal et (kısayol: queue cancel)"
@@ -2030,36 +1495,6 @@
         "starting": "Yükleme başlatılıyor..."
       }
     },
-    "team": {
-      "create": {
-        "creating": "Takım oluşturuluyor...",
-        "description": "Bir takım oluşturun",
-        "success": "\"{{name}}\" takımı oluşturuldu"
-      },
-      "description": "Takım yönetimi",
-      "list": {
-        "description": "Takımları listeleyin",
-        "fetching": "Takımlar alınıyor..."
-      },
-      "member": {
-        "add": {
-          "adding": "{{email}} \"{{team}}\" takımına ekleniyor...",
-          "description": "Bir kullanıcıyı bir takıma ekleyin",
-          "success": "Kullanıcı \"{{team}}\" takımına eklendi"
-        },
-        "description": "Takım üyeliği yönetimi",
-        "list": {
-          "description": "Takım üyelerini listeleyin",
-          "fetching": "Takım üyeleri alınıyor...",
-          "success": "Üyeler alındı"
-        },
-        "remove": {
-          "description": "Bir kullanıcıyı bir takımdan kaldırın",
-          "removing": "{{email}} \"{{team}}\" takımından kaldırılıyor...",
-          "success": "Kullanıcı \"{{team}}\" takımından kaldırıldı"
-        }
-      }
-    },
     "term": {
       "connect": {
         "description": "SSH aracılığıyla bir makineye veya depoya bağlanın"
@@ -2111,77 +1546,6 @@
       "success": "v{{from}} sürümünden v{{to}} sürümüne güncellendi",
       "unknownError": "Bilinmeyen hata",
       "upToDate": "Zaten güncel (v{{version}})"
-    },
-    "user": {
-      "activate": {
-        "activating": "\"{{email}}\" kullanıcısı etkinleştiriliyor...",
-        "description": "Bir kullanıcı hesabını etkinleştirin",
-        "success": "Kullanıcı etkinleştirildi"
-      },
-      "create": {
-        "activationCode": "Etkinleştirme kodu: {{code}}",
-        "creating": "\"{{email}}\" kullanıcısı oluşturuluyor...",
-        "description": "Yeni bir kullanıcı oluşturun",
-        "success": "Kullanıcı oluşturuldu"
-      },
-      "deactivate": {
-        "confirm": "\"{{email}}\" kullanıcısı devre dışı bırakılsın mı?",
-        "deactivating": "\"{{email}}\" kullanıcısı devre dışı bırakılıyor...",
-        "description": "Bir kullanıcı hesabını devre dışı bırakın",
-        "success": "Kullanıcı devre dışı bırakıldı"
-      },
-      "description": "Kullanıcı yönetimi komutları",
-      "exists": {
-        "description": "Bir kullanıcının var olup olmadığını kontrol edin",
-        "exists": "\"{{email}}\" kullanıcısı var",
-        "notExists": "\"{{email}}\" kullanıcısı yok"
-      },
-      "list": {
-        "description": "Tüm kullanıcıları listeleyin",
-        "fetching": "Kullanıcılar alınıyor...",
-        "success": "Kullanıcılar alındı"
-      },
-      "permission": {
-        "assign": {
-          "assigning": "\"{{group}}\" \"{{email}}\" kullanıcısına atanıyor...",
-          "description": "Bir izin grubunu bir kullanıcıya atayın",
-          "success": "İzin atandı"
-        },
-        "description": "Kullanıcı izin yönetimi"
-      },
-      "reactivate": {
-        "description": "Devre dışı bırakılmış bir kullanıcı hesabını yeniden etkinleştirin",
-        "reactivating": "\"{{email}}\" kullanıcısı yeniden etkinleştiriliyor...",
-        "success": "Kullanıcı yeniden etkinleştirildi"
-      },
-      "updateEmail": {
-        "description": "Bir kullanıcının e-posta adresini değiştirin",
-        "success": "E-posta \"{{email}}\" adına güncellendi",
-        "updating": "\"{{email}}\" için e-posta güncelleniyor..."
-      },
-      "updateLanguage": {
-        "description": "Güncel kullanıcının tercih edilen dilini ayarlayın",
-        "success": "Dil \"{{language}}\" adına güncellendi",
-        "updating": "Dil tercihi güncelleniyor..."
-      },
-      "updatePassword": {
-        "description": "Parolanızı değiştirin",
-        "success": "Parola güncellendi",
-        "updating": "Parola güncelleniyor..."
-      },
-      "vault": {
-        "description": "Kullanıcı kasası yönetimi",
-        "get": {
-          "description": "Güncel kullanıcı kasası verilerini alın",
-          "fetching": "Kullanıcı kasası alınıyor...",
-          "success": "Kasa alındı"
-        },
-        "update": {
-          "description": "Güncel kullanıcı kasası verilerini güncelleyin",
-          "success": "Kullanıcı kasası güncellendi",
-          "updating": "Kullanıcı kasası güncelleniyor..."
-        }
-      }
     },
     "vscode": {
       "check": {
@@ -2274,16 +1638,6 @@
       "tip": "İpucu",
       "warning": "Uyarı"
     },
-    "cloudFrontmatter": {
-      "category": "Başvuru",
-      "description": "Rediacc CLI için bulut özel komutları — kimlik doğrulama, ekipler, organizasyonlar ve çok kiracılı yönetim",
-      "title": "CLI Uygulaması (Bulut / Deneysel)"
-    },
-    "cloudOverview": {
-      "heading": "Genel Bakış",
-      "text": "Bu komutlar **bulut adaptörünü** (deneysel) gerektirir — bir yapılandırma `apiUrl` ve `token` alanları içerdiğinde etkinleştirilir. Ana CLI referansı için [CLI Uygulaması](/tr/docs/cli-application) sayfasına bakın."
-    },
-    "cloudPageTitle": "Rediacc CLI Referansı (Bulut / Deneysel)",
     "errors": {
       "heading": "Yaygın Hata Mesajları",
       "intro": "Bir şeyler ters gittiğinde, CLI net hata mesajları sağlar:",
@@ -2325,72 +1679,32 @@
     "pageTitle": "Rediacc CLI Referansı",
     "sectionTitles": {
       "agent": "Ajan araçları",
-      "audit": "Denetim ve Uyumluluk",
-      "auth": "Kimlik Doğrulama",
       "backup": "Yedekleme ve Geri Yükleme",
-      "bridge": "Bridge Yönetimi",
-      "ceph": "Ceph Depolama Yönetimi",
       "config": "Yapılandırma Yönetimi",
       "datastore": "Veri deposu yönetimi",
       "doctor": "Sistem Tanılama",
       "machine": "Makine Yönetimi",
       "mcp": "MCP Sunucusu",
       "ops": "Deneysel VM Islemleri",
-      "organization": "Organizasyon Yönetimi",
-      "permission": "İzin Yönetimi",
-      "protocol": "Protokol İşleyici",
-      "queue": "Kuyruk İşlemleri",
-      "region": "Bölge Yönetimi",
       "repo": "Depo Yaşam Döngüsü",
-      "repository": "Depo Yönetimi",
       "shortcuts": "Hızlı Komutlar (Kısayollar)",
       "storage": "Depolama Yönetimi",
       "subscription": "Abonelik Yönetimi",
       "sync": "Dosya Senkronizasyonu",
-      "team": "Takım Yönetimi",
       "term": "SSH Terminal Erişimi",
       "update": "CLI Güncellemeleri",
-      "user": "Kullanıcı Yönetimi",
       "vscode": "VS Code Entegrasyonu"
     },
     "supplements": {
-      "auth": {
-        "register": {
-          "afterDescription": "Kayıt sonrasında aktivasyon kodu için e-postanızı kontrol edin."
-        },
-        "tip": "Kimlik doğrulama jetonunuz bağlamınızda yerel olarak saklanır. Birden fazla ortam için kimlik bilgilerini adlandırılmış bir bağlam altında saklamak üzere `--save-as` kullanın."
-      },
       "config": {
         "afterDescription": "Yapılandırma dosyaları bağlantı ayrıntılarını (API URL'si, kimlik bilgileri, varsayılan takım/bölge/köprü) saklar; böylece ortamlar arasında hızlıca geçiş yapabilirsiniz.",
         "init": {
           "afterDescription": "Yerel modda makineleri doğrudan ekleyebilirsiniz:"
-        },
-        "set": {
-          "tip": "Varsayılanları ayarlamak, her komutta `--team`, `--region` veya `--bridge` belirtmenizi gereksiz kılar."
         }
       },
       "machine": {
         "health": {
           "afterDescription": "Health komutu sistem metriklerini, konteyner durumunu, servis kararlılığını ve depolama bilgilerini çıktılar — CI/CD hattı kontrolleri için kullanışlıdır."
-        },
-        "testConnection": {
-          "tip": "Başarılı bir testten sonra ana bilgisayar anahtarını makine kasasına otomatik olarak kaydetmek için `--save` kullanın."
-        }
-      },
-      "organization": {
-        "maintenance": {
-          "warning": "Bakım modu etkinleştirildiğinde, yönetici olmayan kullanıcılar giriş yapamaz."
-        }
-      },
-      "queue": {
-        "afterDescription": "Kuyruk sistemi, Rediacc görev yürütmesinin merkezindedir. Her işlem (dağıtım, yedekleme, betik yürütme) kuyruk üzerinden çalışır.",
-        "trace": {
-          "tip": "Görevi tamamlanana kadar gerçek zamanlı olarak takip etmek için `--watch` kullanın."
-        }
-      },
-      "repository": {
-        "promote": {
-          "note": "Bir fork'u yükseltmek, onu üst (ana) deposundan ayırarak bağımsız hale getirir."
         }
       }
     },
@@ -2435,7 +1749,6 @@
     },
     "authFailed": "Kimlik doğrulama başarısız",
     "authRequired": "Kimlik doğrulama gerekli. Çalıştırın: rdc auth login",
-    "bridgeRequired": "Köprü adı gerekli. --bridge kullanın veya bağlamı ayarlayın.",
     "cannotDeleteGrandRepo": "Ana depo silinemiyor: {{reason}}",
     "cannotPromote": "Yükseltilemez: {{reason}}",
     "clusterNotFound": "Ceph kümesi \"{{name}}\" bulunamadı",
@@ -2578,8 +1891,6 @@
     "unknownCommand": "Bilinmeyen komut \"{{command}}\". Kullanılabilir komutlar: {{available}}.",
     "unknownSubcommand": "Bilinmeyen alt komut \"{{command}}\". Kullanılabilir {{parent}} alt komutları: {{available}}.",
     "validationError": "Doğrulama hatası: {{message}}",
-    "vaultDataRequired": "Kasa verileri gerekli. --vault <json> kullanın veya JSON'u stdin aracılığıyla yönlendirin.",
-    "vaultVersionRequired": "Kasa sürümü gerekli. --vault-version <n> kullanın.",
     "vscode": {
       "browserNeedsRepo": "vscode --browser bir depo sandbox'ı sunar — --repository <name> ile depo belirtin",
       "cleanupRequired": "Tüm bağlantıları kaldırmak için --all veya belirli bir bağlantı için --connection <name> belirtin.",

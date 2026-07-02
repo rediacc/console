@@ -1068,33 +1068,28 @@
       "architectures": {
         "arm64": "ARM64",
         "arm64_apple": "Apple Silicon (ARM64)",
-        "armv7l": "ARMv7",
         "x64": "x64 (64 bits)",
         "x64_intel": "Intel (x64)"
       },
       "autoUpdate": {
-        "description": "Rediacc Desktop se actualiza solo. Una vez instalado, verifica si hay nuevas versiones y te avisa cuando estén listas. Un clic instala la actualización. En conexiones lentas, dale unos minutos.",
+        "description": "La Rediacc CLI se actualiza sola. Revisa si hay versiones nuevas y las instala por ti, así siempre usas la última versión.",
         "title": "Información sobre actualizaciones automáticas"
       },
       "cli": {
         "binary": "Binario",
-        "description": "Herramienta pequeña y rápida que ejecutas en la terminal. Ideal para servidores sin interfaz gráfica o cuando necesitas correr el mismo comando en múltiples máquinas a la vez. Aquí va lo importante: si ese es tu flujo de trabajo, la CLI es definitivamente tu mejor opción frente a la app de escritorio. Conecta a servidores, ejecuta comandos, impulsa actualizaciones. Sin navegador."
+        "description": "Una herramienta pequeña y rápida que ejecutas en una ventana de terminal. Ideal para servidores que administras sin pantalla o para ejecutar el mismo comando en muchas máquinas a la vez. Conéctate a servidores, ejecuta comandos, envía actualizaciones. No necesitas navegador."
       },
       "hero": {
         "released": "Lanzado",
-        "subtitle": "Rediacc: Desktop y CLI",
+        "subtitle": "Rediacc CLI",
         "title": "Descarga Rediacc CLI"
       },
       "installation": {
         "cli": "CLI: Descarga el binario para tu sistema. En Linux/macOS, abre la terminal, ejecuta 'chmod +x nombre-archivo' y muévelo a /usr/local/bin.",
-        "linux_appimage": "Linux AppImage: Hazlo ejecutable con 'chmod +x nombre-archivo.AppImage' y ejecútalo. No necesita instalación.",
-        "linux_deb": "Linux DEB: Instálalo con 'sudo dpkg -i nombre-archivo.deb' o haz doble clic en tu gestor de archivos.",
-        "macos": "macOS: Abre el .dmg y arrastra Rediacc Desktop a tu carpeta Aplicaciones. Si macOS lo bloquea, ve a Preferencias del Sistema > Seguridad y Privacidad y permite la app.",
-        "title": "Instrucciones de instalación",
-        "windows": "Windows: Ejecuta el instalador .exe y sigue los pasos en pantalla. Se instalará en tu carpeta Archivos de programa."
+        "title": "Instrucciones de instalación"
       },
       "meta": {
-        "description": "Obtén Rediacc Desktop y CLI para Windows, macOS y Linux.",
+        "description": "Descarga la Rediacc CLI para Windows, macOS y Linux.",
         "keywords": "Descarga Rediacc, aplicación de escritorio, CLI, app Windows, app macOS, app Linux",
         "title": "Descarga Rediacc CLI para Todos los Sistemas | Rediacc"
       },
@@ -1105,22 +1100,13 @@
         "windows": "Windows"
       },
       "requirements": {
-        "disk": "500 MB de espacio libre en disco",
-        "diskTitle": "Espacio en disco",
         "linux": "Distribución Linux moderna con glibc 2.28+",
         "macos": "macOS 11 (Big Sur) o posterior",
-        "ram": "2 GB de RAM mínimo, 4 GB recomendado",
-        "ramTitle": "Memoria",
         "title": "Requisitos del sistema",
         "windows": "Windows 10 o posterior (64 bits)"
       },
       "sections": {
-        "cli": "Interfaz de línea de comandos (CLI)",
-        "desktop": "Aplicación de escritorio"
-      },
-      "types": {
-        "appimage": "AppImage (portátil)",
-        "deb": "Debian/Ubuntu (.deb)"
+        "cli": "Interfaz de línea de comandos (CLI)"
       }
     },
     "home": {
@@ -1143,7 +1129,7 @@
       "copy": "Copiar",
       "hero": {
         "downloadsLink": "Visita la página de descargas",
-        "downloadsNote": "¿Buscas aplicaciones de escritorio o binarios?",
+        "downloadsNote": "¿Buscas los binarios directos de la CLI?",
         "subtitle": "Elige tu método de instalación",
         "title": "Instala Rediacc CLI"
       },
@@ -2679,6 +2665,42 @@
             "El costo promedio del tiempo de inactividad es $5.600 por minuto para empresas grandes"
           ]
         },
+        "categories": {
+          "heading": "Servicios disponibles",
+          "intro": "Cada servicio comienza con una conversación para que podamos definir el equipo y el cronograma adecuados para tu configuración.",
+          "items": [
+            {
+              "description": "Capacitación práctica para tu equipo, desde un recorrido guiado por la configuración hasta talleres de varios días que cubren flujos de trabajo avanzados y procedimientos de respuesta ante incidentes.",
+              "icon": "team-training",
+              "id": "training",
+              "name": "Capacitación"
+            },
+            {
+              "description": "Ayuda continua de ingenieros reales, desde soporte por correo electrónico en horario comercial hasta cobertura 24/7/365 con un gerente de cuenta dedicado para entornos críticos de producción.",
+              "icon": "security-assessment",
+              "id": "support",
+              "name": "Soporte"
+            },
+            {
+              "description": "Migraciones de extremo a extremo e integraciones personalizadas, desde una migración de datos completamente validada hasta una transición rápida el mismo día cuando el tiempo aprieta.",
+              "icon": "data-migration",
+              "id": "migration",
+              "name": "Migración"
+            },
+            {
+              "description": "Servicios de recuperación ante ransomware y desastres, desde análisis forense y endurecimiento posterior a un incidente hasta la puesta en marcha de replicación continua para sistemas críticos.",
+              "icon": "ransomware-recovery",
+              "id": "recovery",
+              "name": "Recuperación"
+            },
+            {
+              "description": "Revisiones de seguridad, listas de verificación de endurecimiento, manuales de cumplimiento y contratos de retención para respuesta ante incidentes, adaptados a tu entorno y requisitos de auditoría.",
+              "icon": "storage-hardening",
+              "id": "security",
+              "name": "Seguridad y cumplimiento"
+            }
+          ]
+        },
         "cta": {
           "button": "Contáctanos",
           "description": "Cada servicio se adapta a tu configuración. Contáctanos y juntos encontraremos el plan adecuado.",
@@ -2689,42 +2711,6 @@
           "eligibility": "Todos los planes tienen acceso a nuestros servicios profesionales. Contáctanos y definiremos el servicio adecuado para tu configuración.",
           "subtitle": "Asistencia experta cuando más la necesitas",
           "title": "Servicios profesionales"
-        },
-        "categories": {
-          "heading": "Servicios disponibles",
-          "intro": "Cada servicio comienza con una conversación para que podamos definir el equipo y el cronograma adecuados para tu configuración.",
-          "items": [
-            {
-              "id": "training",
-              "name": "Capacitación",
-              "description": "Capacitación práctica para tu equipo, desde un recorrido guiado por la configuración hasta talleres de varios días que cubren flujos de trabajo avanzados y procedimientos de respuesta ante incidentes.",
-              "icon": "team-training"
-            },
-            {
-              "id": "support",
-              "name": "Soporte",
-              "description": "Ayuda continua de ingenieros reales, desde soporte por correo electrónico en horario comercial hasta cobertura 24/7/365 con un gerente de cuenta dedicado para entornos críticos de producción.",
-              "icon": "security-assessment"
-            },
-            {
-              "id": "migration",
-              "name": "Migración",
-              "description": "Migraciones de extremo a extremo e integraciones personalizadas, desde una migración de datos completamente validada hasta una transición rápida el mismo día cuando el tiempo aprieta.",
-              "icon": "data-migration"
-            },
-            {
-              "id": "recovery",
-              "name": "Recuperación",
-              "description": "Servicios de recuperación ante ransomware y desastres, desde análisis forense y endurecimiento posterior a un incidente hasta la puesta en marcha de replicación continua para sistemas críticos.",
-              "icon": "ransomware-recovery"
-            },
-            {
-              "id": "security",
-              "name": "Seguridad y cumplimiento",
-              "description": "Revisiones de seguridad, listas de verificación de endurecimiento, manuales de cumplimiento y contratos de retención para respuesta ante incidentes, adaptados a tu entorno y requisitos de auditoría.",
-              "icon": "storage-hardening"
-            }
-          ]
         }
       },
       "roiCta": {
@@ -3813,7 +3799,7 @@
           "title": "Lo que obtienes"
         },
         "bottomCta": {
-          "command": "rdc audit log --limit 200",
+          "command": "rdc repo fork --parent production --tag pentest -m server-1",
           "ctaText": "Empieza gratis",
           "description": "Comienza con la edición Community gratuita. Ejecuta tu primer pentesting en menos de 60 segundos.",
           "title": "Encuentra vulnerabilidades antes que los atacantes"
@@ -4222,7 +4208,7 @@
           "title": "Lo que obtienes"
         },
         "bottomCta": {
-          "command": "rdc audit history repository production",
+          "command": "rdc repo status --name production -m server-1",
           "ctaText": "Empieza gratis con Community",
           "description": "Comienza con la edición Community gratuita. Genera tu primer informe de auditoría en menos de un minuto.",
           "title": "Velo todo. No te pierdas nada."
@@ -4437,7 +4423,7 @@
               "title": "Proteger"
             },
             {
-              "description": "Ejecute rdc audit --from --to. Genere informes listos para cumplimiento para cualquier período de tiempo en segundos.",
+              "description": "Abra la página de actividad del portal, filtre cualquier período y expórtelo como JSON. Obtendrá un informe listo para auditoría en segundos.",
               "icon": "file-text",
               "title": "Informar"
             }
@@ -4622,7 +4608,7 @@
         "terminal": {
           "lines": [
             {
-              "text": "rdc audit --from 2026-02-01 --to 2026-02-27",
+              "text": "jq -r '.events[]' audit-export.json",
               "type": "command"
             },
             {
@@ -6103,7 +6089,7 @@
           "title": "Lo que obtiene"
         },
         "bottomCta": {
-          "command": "rdc audit log --limit 50",
+          "command": "rdc config show",
           "ctaText": "Empieza gratis con Community",
           "description": "Comience con la edición Community gratuita. Realice su primera auditoría de custodia de claves en menos de un minuto.",
           "title": "Deje de alquilar sus datos a un proveedor bajo jurisdicción estadounidense."
@@ -6509,7 +6495,7 @@
         "terminal": {
           "lines": [
             {
-              "text": "rdc audit log --limit 50",
+              "text": "jq -r '.keys[]' key-custody-report.json",
               "type": "command"
             },
             {
@@ -13570,39 +13556,10 @@
           "content": [
             "Según el Reglamento General de Protección de Datos (RGPD) de la UE y la Directiva de privacidad electrónica, nuestra base legal para la recopilación de telemetría depende del contexto del producto:",
             "Para la <strong>aplicación web</strong> (basada en navegador): la telemetría se recopila bajo <strong>interés legítimo</strong> (RGPD Art. 6(1)(f)) con el fin de mantener y mejorar la calidad del servicio. Puede darse de baja en cualquier momento.",
-            "Para la <strong>CLI, Middleware y Bridge</strong> (instalados en su infraestructura): la telemetría se recopila bajo <strong>interés legítimo</strong> con mecanismos claros de exclusión proporcionados. Puede desactivar la telemetría antes de que se envíe cualquier dato.",
-            "Para usuarios en jurisdicciones que requieren consentimiento explícito (por ejemplo, Corea del Sur bajo PIPA), la telemetría debe activarse explícitamente a través de la configuración del producto antes de que se transmitan datos."
+            "Para la <strong>CLI, Middleware y Bridge</strong> (instalados en su infraestructura): la telemetría se recopila bajo <strong>interés legítimo</strong> con mecanismos claros de exclusión proporcionados. Puede desactivar la telemetría antes de que se envíe cualquier dato."
           ],
           "id": "legal-basis",
           "title": "3. Base legal para la recopilación"
-        },
-        "middleware": {
-          "content": [
-            "El Middleware de Rediacc recopila telemetría operativa. La telemetría se transmite a <code>rediacc.com</code>."
-          ],
-          "id": "middleware",
-          "subsections": {
-            "middlewareDataCollected": {
-              "content": ["El Middleware recopila las siguientes categorías de datos:"],
-              "items": [
-                "<strong>Información del sistema:</strong> nombre del host, versión del sistema operativo, versión del entorno de ejecución .NET",
-                "<strong>Llamadas API:</strong> método HTTP, ruta del endpoint, código de estado de respuesta, duración de la solicitud",
-                "<strong>Operaciones de base de datos:</strong> nombre del procedimiento almacenado, duración de la ejecución, recuento de filas devueltas (sin contenido de consultas, parámetros ni datos de resultados)",
-                "<strong>Eventos de autenticación:</strong> solo identificador de usuario cifrado con hash — los ID de usuario se cifran con SHA-256 y una sal, luego se truncan a los primeros 12 caracteres. Los ID de usuario originales nunca se transmiten.",
-                "<strong>Verificaciones de estado:</strong> estado de disponibilidad de los componentes del servicio y tiempos de respuesta",
-                "<strong>Ciclo de vida de la aplicación:</strong> eventos de inicio, cierre y cambios de configuración",
-                "<strong>Información de errores:</strong> tipo de error, mensaje de error y contexto operativo"
-              ],
-              "title": "6.1 Datos recopilados"
-            },
-            "middlewareOptOut": {
-              "content": [
-                "Establezca <code>Telemetry:Enabled</code> en <code>false</code> en la configuración de su Middleware (appsettings.json o configuración específica del entorno)."
-              ],
-              "title": "6.2 Cómo darse de baja"
-            }
-          },
-          "title": "6. Telemetría del Middleware"
         },
         "principles": {
           "content": ["Toda la recopilación de telemetría en Rediacc sigue estos principios:"],
@@ -13615,48 +13572,6 @@
             "<strong>Agregación:</strong> Los datos de telemetría se analizan de forma agregada. No creamos perfiles de usuarios individuales a partir de la telemetría."
           ],
           "title": "2. Nuestros principios de telemetría"
-        },
-        "webApp": {
-          "content": [
-            "La aplicación web de Rediacc utiliza rastreo distribuido basado en OpenTelemetry. La telemetría se transmite a <code>https://www.rediacc.com/otlp</code>. En producción, solo se muestrea el <strong>10% de las sesiones</strong>."
-          ],
-          "id": "web-app",
-          "subsections": {
-            "webDataCollected": {
-              "content": ["La aplicación web recopila las siguientes categorías de datos:"],
-              "items": [
-                "<strong>Información del navegador:</strong> nombre y versión del navegador, idioma preferido, plataforma (por ejemplo, Windows, macOS, Linux), resolución de pantalla, profundidad de color, cadena de agente de usuario, memoria del dispositivo (si está disponible), tipo de conexión de red",
-                "<strong>Contexto del usuario:</strong> ID de sesión (generado aleatoriamente por sesión), solo dominio de correo electrónico (la parte local se redacta, por ejemplo, <code>***@example.com</code>), nombre de la organización, nombre del equipo",
-                "<strong>Vistas de página y navegación:</strong> páginas visitadas dentro de la aplicación, cambios de ruta, información de referencia",
-                "<strong>Interacciones del usuario:</strong> clics, envíos de formularios, apertura/cierre de modales, consultas de búsqueda, cambios de filtro, cambios de pestaña, descargas de archivos (los nombres de archivo no se recopilan)",
-                "<strong>Llamadas API:</strong> método HTTP, ruta URL, código de estado de respuesta, duración de la solicitud",
-                "<strong>Errores:</strong> tipo de error, mensaje de error, traza de pila (truncada a 1.000 caracteres), origen del error",
-                "<strong>Métricas de rendimiento:</strong> Core Web Vitals (LCP, FID, CLS, TTFB, INP), tiempos de recursos, uso de memoria (muestreado cada 30 segundos), detección de tareas largas",
-                "<strong>Ciclo de vida del componente:</strong> tiempos de montaje/desmontaje del componente, duración del renderizado"
-              ],
-              "title": "4.1 Datos recopilados"
-            },
-            "webNotCollected": {
-              "content": ["La aplicación web no recopila:"],
-              "items": [
-                "Direcciones de correo electrónico completas (la parte local siempre se redacta)",
-                "Contraseñas, tokens o credenciales de autenticación",
-                "Contenido de archivos, contenido de bases de datos o resultados de consultas",
-                "Valores de campos de formulario (solo se registra el hecho de que se envió un formulario)",
-                "Contenido del portapapeles o pulsaciones de teclas",
-                "Direcciones IP (no registradas por nuestro punto de telemetría)"
-              ],
-              "title": "4.2 Datos NO recopilados"
-            },
-            "webOptOut": {
-              "content": [
-                "Establezca el indicador de configuración <code>userConsent</code> en <code>false</code> en la configuración de su cuenta. La telemetría se detiene inmediatamente al darse de baja.",
-                "<strong>Aplicación de escritorio:</strong> La telemetría está completamente deshabilitada en la aplicación de escritorio (Electron) de forma predeterminada. No se recopilan ni transmiten datos."
-              ],
-              "title": "4.3 Cómo darse de baja"
-            }
-          },
-          "title": "4. Telemetría de la aplicación web"
         },
         "yourRights": {
           "content": [

@@ -4,7 +4,7 @@
  */
 
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
-import { repoTagFromName } from '@rediacc/shared-desktop/repository';
+import { repoTagFromName } from '../shared-desktop/repository/index.js';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { debugLog } from '../utils/debug.js';

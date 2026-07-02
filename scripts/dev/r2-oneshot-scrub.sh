@@ -421,6 +421,21 @@ stage3() {
     done
 }
 
+# Stage 4 - Desktop retirement: delete the ENTIRE desktop/ prefix ---------
+# The Electron desktop app was retired (middleware/cloud teardown). The
+# desktop/ prefix only ever served the electron-updater feed and the
+# versioned artifact archive; with the app gone there are no consumers.
+# This removes: desktop/{stable,edge}/, desktop/pr-*/, desktop/dryrun-*/,
+# every desktop/v*/ (installers + .released sentinels), desktop/versions.json
+# and any remaining stray keys. The CLI-only release-state bijection in
+# .ci/scripts/lib/release-state-validator.sh no longer reads desktop
+# sentinels, so deleting them is not drift.
+
+stage4_desktop_retirement() {
+    log_step "Stage 4: desktop retirement - delete ENTIRE desktop/ prefix"
+    rm_prefix "desktop/" "desktop app retired; updater feed + archive have no consumers"
+}
+
 # Main -------------------------------------------------------------------
 
 log_step "R2 one-shot scrub on s3://${BUCKET}/"
@@ -442,5 +457,7 @@ echo ""
 stage2d
 echo ""
 stage3
+echo ""
+stage4_desktop_retirement
 echo ""
 log_info "Done."

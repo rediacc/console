@@ -66,12 +66,11 @@ sync_submodule_branch() {
 }
 
 # Check if submodules are already initialized
-if [[ -f "private/middleware/.ci/ci.sh" ]] && [[ -f "private/renet/.ci/ci.sh" ]]; then
+if [[ -f "private/renet/.ci/ci.sh" ]]; then
     CURRENT_BRANCH="$(get_current_branch)"
     log_info "Private submodules are available, syncing to branch: $CURRENT_BRANCH"
 
     # Sync each submodule to matching branch
-    sync_submodule_branch "private/middleware" "$CURRENT_BRANCH"
     sync_submodule_branch "private/renet" "$CURRENT_BRANCH"
     sync_submodule_branch "private/account" "$CURRENT_BRANCH"
 
@@ -95,12 +94,11 @@ if [[ -d "private" ]] || [[ -f ".gitmodules" ]]; then
 
     if git submodule update --init --recursive private/ 2>/dev/null; then
         # Verify initialization
-        if [[ -f "private/middleware/.ci/ci.sh" ]] && [[ -f "private/renet/.ci/ci.sh" ]]; then
+        if [[ -f "private/renet/.ci/ci.sh" ]]; then
             CURRENT_BRANCH="$(get_current_branch)"
             log_info "Submodules initialized, syncing to branch: $CURRENT_BRANCH"
 
             # Sync each submodule to matching branch
-            sync_submodule_branch "private/middleware" "$CURRENT_BRANCH"
             sync_submodule_branch "private/renet" "$CURRENT_BRANCH"
             sync_submodule_branch "private/account" "$CURRENT_BRANCH"
 

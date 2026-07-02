@@ -1,18 +1,11 @@
 /**
- * Command Registry — single source of truth for command mode support and domain grouping.
- *
- * Mode tags and runtime guards are auto-generated from this registry.
- * To change which modes a command supports, update its entry here.
+ * Command Registry — single source of truth for domain grouping and
+ * experimental gating. Help tags and runtime guards are auto-generated
+ * from this registry.
  *
  * Commands marked `experimental: true` are hidden by default.
  * Enable with REDIACC_EXPERIMENTAL=1 env var.
  */
-export type CommandCategory = 'cloud' | 'local';
-export type ModeSet = readonly CommandCategory[];
-
-export const ALL_MODES: ModeSet = ['cloud', 'local'] as const;
-export const SELF_HOSTED_MODES: ModeSet = ['local'] as const;
-
 export const COMMAND_DOMAINS = {
   INFRASTRUCTURE: 'Infrastructure',
   REPOSITORIES: 'Repositories',
@@ -24,13 +17,11 @@ export const COMMAND_DOMAINS = {
 export type CommandDomain = keyof typeof COMMAND_DOMAINS;
 
 export interface SubcommandDef {
-  modes: ModeSet;
   experimental?: boolean;
 }
 
 export interface CommandDef {
   name: string;
-  modes: ModeSet;
   domain: CommandDomain;
   experimental?: boolean;
   subcommands?: Record<string, SubcommandDef>;
@@ -40,110 +31,35 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
   // ── Infrastructure ──────────────────────────────────────────────────
   {
     name: 'machine',
-    modes: ALL_MODES,
     domain: 'INFRASTRUCTURE',
     subcommands: {
-      list: { modes: ALL_MODES },
-      create: { modes: ALL_MODES },
-      rename: { modes: ALL_MODES },
-      delete: { modes: ALL_MODES },
-      vault: { modes: ['cloud'] },
-      'vault-status': { modes: ['cloud'] },
-      'assign-bridge': { modes: ['cloud'], experimental: true },
-      'test-connection': { modes: ['cloud'], experimental: true },
-      query: { modes: SELF_HOSTED_MODES },
-      containers: { modes: ALL_MODES, experimental: true },
-      services: { modes: ALL_MODES, experimental: true },
-      repos: { modes: ALL_MODES, experimental: true },
-      health: { modes: ALL_MODES, experimental: true },
-      prune: { modes: SELF_HOSTED_MODES },
-      provision: { modes: SELF_HOSTED_MODES },
-      deprovision: { modes: SELF_HOSTED_MODES },
-      backup: { modes: SELF_HOSTED_MODES },
+      containers: { experimental: true },
+      services: { experimental: true },
+      repos: { experimental: true },
+      health: { experimental: true },
     },
   },
-  {
-    name: 'storage',
-    modes: ALL_MODES,
-    domain: 'INFRASTRUCTURE',
-    subcommands: {
-      list: { modes: ALL_MODES },
-      create: { modes: ALL_MODES },
-      rename: { modes: ALL_MODES },
-      delete: { modes: ALL_MODES },
-      vault: { modes: ['cloud'] },
-      browse: { modes: SELF_HOSTED_MODES },
-      prune: { modes: SELF_HOSTED_MODES },
-    },
-  },
-  { name: 'region', modes: ['cloud'], domain: 'INFRASTRUCTURE', experimental: true },
-  { name: 'bridge', modes: ['cloud'], domain: 'INFRASTRUCTURE', experimental: true },
-  { name: 'ops', modes: SELF_HOSTED_MODES, domain: 'INFRASTRUCTURE' },
-  { name: 'datastore', modes: SELF_HOSTED_MODES, domain: 'INFRASTRUCTURE' },
+  { name: 'storage', domain: 'INFRASTRUCTURE' },
+  { name: 'ops', domain: 'INFRASTRUCTURE' },
+  { name: 'datastore', domain: 'INFRASTRUCTURE' },
 
   // ── Repositories ────────────────────────────────────────────────────
-  { name: 'repository', modes: ['cloud'], domain: 'REPOSITORIES', experimental: true },
-  {
-    name: 'repo',
-    modes: SELF_HOSTED_MODES,
-    domain: 'REPOSITORIES',
-    subcommands: {
-      create: { modes: SELF_HOSTED_MODES },
-      delete: { modes: SELF_HOSTED_MODES },
-      up: { modes: SELF_HOSTED_MODES },
-      down: { modes: SELF_HOSTED_MODES },
-      status: { modes: SELF_HOSTED_MODES },
-      list: { modes: SELF_HOSTED_MODES },
-      fork: { modes: SELF_HOSTED_MODES },
-      branch: { modes: SELF_HOSTED_MODES },
-      resize: { modes: SELF_HOSTED_MODES },
-      expand: { modes: SELF_HOSTED_MODES },
-      trim: { modes: SELF_HOSTED_MODES },
-      policy: { modes: SELF_HOSTED_MODES },
-      validate: { modes: SELF_HOSTED_MODES },
-      autostart: { modes: SELF_HOSTED_MODES },
-      ownership: { modes: SELF_HOSTED_MODES },
-      template: { modes: SELF_HOSTED_MODES },
-      tunnel: { modes: SELF_HOSTED_MODES },
-      secret: { modes: SELF_HOSTED_MODES },
-    },
-  },
+  { name: 'repo', domain: 'REPOSITORIES' },
 
   // ── Execution ───────────────────────────────────────────────────────
-  { name: 'run', modes: ALL_MODES, domain: 'EXECUTION' },
-  { name: 'queue', modes: ['cloud'], domain: 'EXECUTION', experimental: true },
-  { name: 'sync', modes: ALL_MODES, domain: 'EXECUTION' },
-  { name: 'term', modes: ALL_MODES, domain: 'EXECUTION' },
-  // ── Organization ────────────────────────────────────────────────────
-  { name: 'auth', modes: ['cloud'], domain: 'ORGANIZATION', experimental: true },
-  { name: 'team', modes: ['cloud'], domain: 'ORGANIZATION', experimental: true },
-  { name: 'organization', modes: ['cloud'], domain: 'ORGANIZATION', experimental: true },
-  { name: 'user', modes: ['cloud'], domain: 'ORGANIZATION', experimental: true },
-  { name: 'permission', modes: ['cloud'], domain: 'ORGANIZATION', experimental: true },
-  { name: 'audit', modes: ['cloud'], domain: 'ORGANIZATION', experimental: true },
-  { name: 'ceph', modes: ['cloud'], domain: 'ORGANIZATION', experimental: true },
+  { name: 'run', domain: 'EXECUTION' },
+  { name: 'term', domain: 'EXECUTION' },
 
   // ── Licensing ──────────────────────────────────────────────────────
-  { name: 'subscription', modes: SELF_HOSTED_MODES, domain: 'TOOLS' },
+  { name: 'subscription', domain: 'TOOLS' },
 
   // ── Tools ───────────────────────────────────────────────────────────
-  {
-    name: 'config',
-    modes: ALL_MODES,
-    domain: 'TOOLS',
-    subcommands: {
-      set: { modes: ['cloud'] },
-      clear: { modes: ['cloud'] },
-      ssh: { modes: ALL_MODES },
-      remote: { modes: SELF_HOSTED_MODES },
-    },
-  },
-  { name: 'doctor', modes: ALL_MODES, domain: 'TOOLS' },
-  { name: 'update', modes: ALL_MODES, domain: 'TOOLS' },
-  { name: 'protocol', modes: ['cloud'], domain: 'TOOLS', experimental: true },
-  { name: 'vscode', modes: ALL_MODES, domain: 'TOOLS' },
-  { name: 'agent', modes: ALL_MODES, domain: 'TOOLS' },
-  { name: 'mcp', modes: ALL_MODES, domain: 'TOOLS' },
+  { name: 'config', domain: 'TOOLS' },
+  { name: 'doctor', domain: 'TOOLS' },
+  { name: 'update', domain: 'TOOLS' },
+  { name: 'vscode', domain: 'TOOLS' },
+  { name: 'agent', domain: 'TOOLS' },
+  { name: 'mcp', domain: 'TOOLS' },
 ] as const;
 
 /** Lookup a command definition by name. */
@@ -158,7 +74,7 @@ export function getCommandDef(commandName: string): CommandDef | undefined {
  * env var, agents never see experimental commands (hidden from help, guard
  * reports "unknown command"), but an explicit REDIACC_EXPERIMENTAL=1 opt-in is
  * honored even in agent environments so test harnesses spawned by agents can
- * exercise cloud commands. The actual security guards (machine access, repo
+ * exercise hidden commands. The actual security guards (machine access, repo
  * create, config edit) remain ancestry-verified in agent-guard.ts.
  */
 export function isExperimentalEnabled(): boolean {

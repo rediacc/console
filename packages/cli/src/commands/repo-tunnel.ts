@@ -3,12 +3,10 @@ import type {
   ListResult,
 } from '@rediacc/shared/queue-vault/data/list-types.generated';
 import { getContainers } from '@rediacc/shared/queue-vault/data/list-types.generated';
-import { testSSHConnectivity } from '@rediacc/shared-desktop/ssh';
+import { testSSHConnectivity } from '../shared-desktop/ssh/index.js';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { getStateProvider } from '../providers/index.js';
 import { outputService } from '../services/output.js';
-import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { fetchMachineStatus } from '../services/machine-status.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
@@ -163,11 +161,6 @@ async function tunnelConnect(options: TunnelOptions): Promise<void> {
     throw new Error(t('errors.repositoryNotFound', { name: '' }));
   }
 
-  const provider = await getStateProvider();
-  if (provider.isCloud && !opts.team) {
-    throw new Error(t('errors.teamRequired'));
-  }
-
   await assertCommandPolicy(CMD.REPO_TUNNEL, opts.repository);
 
   const machineName = opts.machine;
@@ -307,10 +300,6 @@ ${t('help.examples')}
         if (!options.machine) {
           cmd.help();
           return;
-        }
-        const provider = await getStateProvider();
-        if (provider.isCloud) {
-          await authService.requireAuth();
         }
         await tunnelConnect(options);
       } catch (error) {

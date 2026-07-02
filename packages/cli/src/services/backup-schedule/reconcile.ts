@@ -7,7 +7,7 @@
  */
 
 import { buildRcloneArgs } from '@rediacc/shared/queue-vault';
-import type { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import type { SFTPClient } from '../../shared-desktop/sftp/index.js';
 import type { BackupStrategyConfig } from '../../types/index.js';
 import { generateEnvFile } from '../backup-env-file.js';
 import { configService } from '../config-resources.js';

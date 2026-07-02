@@ -7,7 +7,7 @@
  * picks them up natively via its RCLONE_<OPTION> env-var convention.
  */
 
-import type { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import type { SFTPClient } from '../shared-desktop/sftp/index.js';
 
 export interface EnvFileWriteOptions {
   debug?: boolean;

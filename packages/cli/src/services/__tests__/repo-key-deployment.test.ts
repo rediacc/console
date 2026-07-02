@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import type { SFTPClient } from '../../shared-desktop/sftp/index.js';
 import { REMOTE_RENET_PATH } from '../renet-provisioner.js';
 import {
   buildKeyDeploymentScript,
