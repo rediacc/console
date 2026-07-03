@@ -648,10 +648,11 @@ account_seed_demo() {
     local url="http://127.0.0.1:${port}/account/api/v1/test/seed-demo-partner"
     log_step "Seeding demo partner '${email}' via ${url}"
 
-    local body http_code curl_exit
+    local body http_code curl_exit json_payload
+    json_payload=$(jq -n --arg email "$email" '{email: $email}')
     body=$(curl -sS -m 60 -w $'\n%{http_code}' \
         -H 'Content-Type: application/json' \
-        -d "{\"email\":\"${email}\"}" \
+        -d "$json_payload" \
         "$url")
     curl_exit=$?
     http_code="${body##*$'\n'}"

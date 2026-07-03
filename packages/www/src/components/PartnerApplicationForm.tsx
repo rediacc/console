@@ -1,7 +1,7 @@
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import React, { useRef, useState } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
-import { Turnstile } from '@marsidev/react-turnstile';
 
 /**
  * Public application form for The Rediacc Partner 1st Program. Mirrors
@@ -126,6 +126,7 @@ const PartnerApplicationForm: React.FC = () => {
   const phoneRef = useRef<HTMLInputElement>(null);
   const messageRef = useRef<HTMLTextAreaElement>(null);
   const honeypotRef = useRef<HTMLInputElement>(null);
+  const turnstileRef = useRef<TurnstileInstance>(undefined);
   const hasFiredStart = useRef(false);
 
   const togglePartnerType = (value: PartnerType) => {
@@ -203,6 +204,10 @@ const PartnerApplicationForm: React.FC = () => {
     } catch (err) {
       setState('error');
       setErrorMsg(err instanceof Error ? err.message : t(`${NS}.errors.generic`));
+      // Turnstile tokens are single-use: the failed request consumed this one,
+      // so reset the widget or every retry would fail captcha until a reload.
+      setTurnstileToken(null);
+      turnstileRef.current?.reset();
     }
   };
 
@@ -417,6 +422,7 @@ const PartnerApplicationForm: React.FC = () => {
 
       {captchaEnabled && (
         <Turnstile
+          ref={turnstileRef}
           siteKey={turnstileSiteKey}
           options={{ action: 'partner_apply' }}
           onSuccess={setTurnstileToken}

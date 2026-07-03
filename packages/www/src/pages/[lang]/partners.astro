@@ -3,15 +3,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PartnerApplicationForm from '../../components/PartnerApplicationForm';
 import { createTranslator } from '../../i18n/utils';
 import type { Language } from '../../i18n/types';
+import { getLanguagePaths } from '../../i18n/language-utils';
 
-// EN-only for now — the pages.partners block lives in en.json only, and the
-// translator does not fall back across locales (returns the raw key path on
-// miss). When the Sonnet naturalization wave lands the other 12 locale JSONs,
-// switch to `import { getLanguagePaths } from '../../i18n/language-utils'` and
-// `export const getStaticPaths = getLanguagePaths;`.
-export function getStaticPaths() {
-  return [{ params: { lang: 'en' } }];
-}
+export const getStaticPaths = getLanguagePaths;
 
 const { lang } = Astro.params as { lang: Language };
 const { t, ta } = createTranslator(lang);
