@@ -401,6 +401,19 @@ jobs:
       - name: Add renet to PATH
         run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
+      # VM base-image cache shared with the OPS Provision jobs (same default
+      # amd64 Ubuntu image, same monthly key). Restored before any sudo step
+      # touches $RUNNER_TEMP/renet so extraction happens as the runner user.
+      - name: Compute VM image cache key
+        id: vm-image-key
+        run: echo "key=vm-base-image-ubuntu-24.04-minimal-cloudimg-amd64-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - name: Restore VM base image cache
+        id: vm-image-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks/ubuntu-24.04-minimal-cloudimg-amd64.img
+          key: ${{ steps.vm-image-key.outputs.key }}
+
       - name: Setup KVM Host
         run: sudo $RENET_BINARY ops host setup
       - name: Generate SSH keypair
@@ -467,6 +480,17 @@ jobs:
             ${{ runner.temp }}/complete.txt
           retention-days: 3
           if-no-files-found: ignore
+
+      - name: Fix VM image ownership for cache save
+        if: always()
+        run: sudo chown -R "$(whoami)" "$RUNNER_TEMP/renet/disks" 2>/dev/null || true
+
+      - name: Save VM base image cache
+        if: always() && steps.vm-image-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks/ubuntu-24.04-minimal-cloudimg-amd64.img
+          key: ${{ steps.vm-image-key.outputs.key }}
 
   test-renet:
     name: Renet
@@ -647,6 +671,19 @@ jobs:
       - name: Install renet
         run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
+      # VM base-image cache shared with the OPS Provision jobs (same default
+      # amd64 Ubuntu image, same monthly key). Restored before any sudo step
+      # touches $RUNNER_TEMP/renet so extraction happens as the runner user.
+      - name: Compute VM image cache key
+        id: vm-image-key
+        run: echo "key=vm-base-image-ubuntu-24.04-minimal-cloudimg-amd64-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - name: Restore VM base image cache
+        id: vm-image-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks/ubuntu-24.04-minimal-cloudimg-amd64.img
+          key: ${{ steps.vm-image-key.outputs.key }}
+
       # Provision 3 VMs
       - name: Setup KVM Host
         run: sudo $RENET_BINARY ops host setup
@@ -690,6 +727,17 @@ jobs:
       - name: Cleanup VMs
         if: always()
         run: sudo -E $RENET_BINARY ops down || true
+
+      - name: Fix VM image ownership for cache save
+        if: always()
+        run: sudo chown -R "$(whoami)" "$RUNNER_TEMP/renet/disks" 2>/dev/null || true
+
+      - name: Save VM base image cache
+        if: always() && steps.vm-image-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks/ubuntu-24.04-minimal-cloudimg-amd64.img
+          key: ${{ steps.vm-image-key.outputs.key }}
 
   # ============================================================================
   # ACCOUNT E2E: Full Playwright E2E tests for the account portal
