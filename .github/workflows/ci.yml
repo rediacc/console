@@ -76,7 +76,7 @@ jobs:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,renet,account,sql,elite,homebrew-tap
+          repositories: console,renet,account,elite,homebrew-tap
 
       # PR Validation (PR events only)
       - name: Validate PR
@@ -754,7 +754,7 @@ jobs:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,renet,account,sql,elite,homebrew-tap
+          repositories: console,renet,account,elite,homebrew-tap
 
       - name: Checkout with Submodules
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0

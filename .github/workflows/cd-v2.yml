@@ -78,7 +78,7 @@ jobs:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
-          repositories: console,renet,account,homebrew-tap,elite,sql
+          repositories: console,renet,account,homebrew-tap,elite
 
       # Re-checkout with submodules using app token (needed for submodule branch check)
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -323,7 +323,7 @@ jobs:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
-          repositories: console,renet,account,homebrew-tap,elite,sql
+          repositories: console,renet,account,homebrew-tap,elite
 
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         if: needs.init.outputs.workers_only != 'true'
@@ -947,7 +947,7 @@ jobs:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: cd
-          repositories: console,renet,account,homebrew-tap,elite,sql
+          repositories: console,renet,account,homebrew-tap,elite
 
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
