@@ -89,6 +89,7 @@
     "forDevops": "For DevOps Engineers",
     "forCtos": "For CTOs",
     "forCeos": "For CEOs",
+    "partners": "Partners",
     "personas": {
       "devops": {
         "tagline": "Ship faster. Recover instantly. Sleep better.",
@@ -128,6 +129,7 @@
       "overview": "Overview",
       "pricing": "Pricing",
       "professionalServices": "Professional Services",
+      "partners": "Partner Program",
       "disasterRecovery": "Disaster Recovery"
     },
     "organizationLinks": {
@@ -723,6 +725,180 @@
         "subtitle": "One signup. No credit card. Lifetime BUSINESS plan, locked in.",
         "button": "Claim my BUSINESS plan",
         "note": "We will email you to set up an onboarding call within a day or two."
+      }
+    },
+    "partners": {
+      "meta": {
+        "title": "Rediacc Partner 1st Program for Resellers",
+        "description": "Join The Rediacc Partner 1st Program. Register deals to protect your margin, earn free certification, and give customers trial licenses you control."
+      },
+      "hero": {
+        "eyebrow": "Partner Program",
+        "title": "Partner with Rediacc and keep your margin",
+        "subtitle": "The Rediacc Partner 1st Program is built for resellers, managed service providers, and consultants. Register your deals, get your team certified for free, and give customers trial licenses you control.",
+        "primaryCta": "Become a Partner",
+        "secondaryCta": "Partner Login",
+        "note": "Free to join. Every application is reviewed by a person."
+      },
+      "benefits": {
+        "title": "Why partner with us",
+        "lede": "Three things make the Partner 1st Program worth your time.",
+        "items": [
+          {
+            "title": "Register deals, protect your margin",
+            "body": "When you bring us a customer, register the deal. Once we approve it, the discount is yours to hold for the length of the protection window. Another partner cannot register the same customer and undercut your price."
+          },
+          {
+            "title": "Certify your team for free",
+            "body": "We have two short tracks, one for sales and one for technical staff. Your people study in the partner portal and take the exam at no cost. Passing moves your team up the ladder and deepens your discounts."
+          },
+          {
+            "title": "Hand out trial licenses you control",
+            "body": "Give a customer a working trial without waiting on us. You choose who gets one and when it starts. Each trial is time-boxed, so nothing runs on forever."
+          }
+        ]
+      },
+      "tiers": {
+        "title": "The partner ladder",
+        "lede": "You join as a Registered partner the day we approve you. As your team certifies and your business grows, you climb the ladder and your registered-deal discount grows with you.",
+        "requirementsLabel": "How you get here",
+        "benefitsLabel": "What you get",
+        "cards": [
+          {
+            "name": "Registered",
+            "tagline": "Where every partner starts",
+            "requirements": ["Apply and get approved"],
+            "benefits": [
+              "Access to the partner portal",
+              "Deal registration with margin protection",
+              "Free sales and technical certification",
+              "Trial licenses for your customers"
+            ]
+          },
+          {
+            "name": "Silver",
+            "tagline": "Certified and selling",
+            "requirements": [
+              "Everything a Registered partner does",
+              "Two valid certificates held across your team",
+              "Certificates stay valid for 6 months"
+            ],
+            "benefits": ["Everything in Registered", "A deeper discount on registered deals"]
+          },
+          {
+            "name": "Gold",
+            "tagline": "Growing with us",
+            "requirements": [
+              "Everything a Silver partner does",
+              "Earned as your business with us grows"
+            ],
+            "benefits": ["Everything in Silver", "A higher discount tier"]
+          },
+          {
+            "name": "Platinum",
+            "tagline": "Our closest partners",
+            "requirements": [
+              "Everything a Gold partner does",
+              "Reserved for our most active partners"
+            ],
+            "benefits": ["Everything in Gold", "Our best partner discount"]
+          }
+        ]
+      },
+      "how": {
+        "title": "How it works",
+        "steps": [
+          {
+            "title": "Apply",
+            "body": "Fill in the short form below and tell us how you sell and who you serve."
+          },
+          {
+            "title": "Get approved",
+            "body": "We review each application by hand. Once you are in, you get a login and access to the partner portal."
+          },
+          {
+            "title": "Study and certify",
+            "body": "Work through the sales and technical tracks at your own pace, then pass the exam to earn your certificates."
+          },
+          {
+            "title": "Register deals and sell",
+            "body": "Register your customer deals, share trial licenses, and sell Rediacc with your margin protected."
+          }
+        ]
+      },
+      "certification": {
+        "title": "Free certification, two tracks",
+        "lede": "Every partner can certify at no cost. Pick the track that fits the person: sales or technical. The study program lives in the portal, so your team can prepare before they sit the exam.",
+        "facts": [
+          "Two tracks: one for sales, one for technical staff",
+          "A study program built into the partner portal",
+          "20 questions per exam, drawn from a larger bank",
+          "30 minutes to finish",
+          "Pass with 17 correct or more",
+          "Certificates stay valid for 6 months",
+          "Always free to take"
+        ]
+      },
+      "apply": {
+        "title": "Apply to the Partner 1st Program",
+        "lede": "Tell us about your business. We read every application and reply by email."
+      },
+      "form": {
+        "fields": {
+          "contactName": "Your name",
+          "contactNamePlaceholder": "First and last name",
+          "jobTitle": "Job title",
+          "jobTitlePlaceholder": "Your role",
+          "email": "Work email",
+          "emailPlaceholder": "you@company.com",
+          "phone": "Phone",
+          "phonePlaceholder": "Optional",
+          "company": "Company name",
+          "companyPlaceholder": "Your company",
+          "website": "Website",
+          "websitePlaceholder": "https://example.com",
+          "country": "Country",
+          "countryPlaceholder": "Select your country",
+          "partnerTypes": "How do you sell? Pick all that apply.",
+          "isDistributor": "We work as a distributor and resell through other partners.",
+          "howHeard": "How did you hear about us?",
+          "message": "Anything else?",
+          "messagePlaceholder": "Tell us about your business and the customers you serve.",
+          "consent": "I agree to be contacted about the Rediacc partner program."
+        },
+        "partnerTypeOptions": {
+          "reseller": "Reseller",
+          "msp": "Managed service provider",
+          "consultant": "Consultant",
+          "distributor": "Distributor",
+          "referral": "Referral partner"
+        },
+        "howHeardOptions": {
+          "search": "Search engine",
+          "referral": "A colleague or friend",
+          "event": "An event or webinar",
+          "socialMedia": "Social media",
+          "blog": "Blog or article",
+          "other": "Something else"
+        },
+        "submit": "Submit application",
+        "sending": "Sending...",
+        "success": {
+          "title": "Application received",
+          "body": "Thanks for your interest. We read every application and will reply by email soon."
+        },
+        "errors": {
+          "requiredFields": "Please fill in your name, work email, company, country, and at least one way you sell.",
+          "consent": "Please agree to be contacted so we can reply to your application.",
+          "captcha": "Please complete the captcha to continue.",
+          "generic": "Something went wrong. Please try again."
+        }
+      },
+      "finalCta": {
+        "title": "Ready to sell Rediacc?",
+        "subtitle": "Join the Partner 1st Program and start protecting your deals.",
+        "button": "Become a Partner",
+        "note": "Already approved? Log in to the partner portal."
       }
     },
     "professionalServices": {

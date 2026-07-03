@@ -190,6 +190,7 @@
     "productLinks": {
       "disasterRecovery": "Recuperación ante desastres",
       "overview": "Descripción general",
+      "partners": "Programa de Partners",
       "pricing": "Precios",
       "professionalServices": "Servicios profesionales",
       "solutions": "Soluciones"
@@ -361,6 +362,7 @@
     "install": "Instalar",
     "languageSelectionMenu": "Menú de selección de idioma",
     "login": "Acceso",
+    "partners": "Socios",
     "personas": {
       "ai-agent": {
         "cta": "Ver la documentación",
@@ -1281,6 +1283,183 @@
         "title": "Qué puedes hacer:"
       },
       "title": "Página no encontrada"
+    },
+    "partners": {
+      "meta": {
+        "title": "Partner 1st Program de Rediacc para revendedores",
+        "description": "Únete al Partner 1st Program de Rediacc. Registra tus operaciones para proteger tu margen, certifícate gratis y ofrece a tus clientes licencias de prueba que tú controlas."
+      },
+      "hero": {
+        "eyebrow": "Programa de Partners",
+        "title": "Conviértete en partner de Rediacc y conserva tu margen",
+        "subtitle": "El Partner 1st Program de Rediacc está pensado para revendedores, proveedores de servicios gestionados y consultores. Registra tus operaciones, certifica a tu equipo gratis y ofrece a tus clientes licencias de prueba que tú controlas.",
+        "primaryCta": "Conviértete en Partner",
+        "secondaryCta": "Acceso Partners",
+        "note": "Unirte es gratis. Cada solicitud la revisa una persona real."
+      },
+      "benefits": {
+        "title": "Por qué ser partner nuestro",
+        "lede": "Tres razones por las que merece la pena unirte al Partner 1st Program.",
+        "items": [
+          {
+            "title": "Registra operaciones y protege tu margen",
+            "body": "Cuando traigas un cliente, registra la operación. En cuanto la aprobemos, el descuento es tuyo durante todo el periodo de protección. Ningún otro partner puede registrar al mismo cliente para ofrecer un precio más bajo."
+          },
+          {
+            "title": "Certifica a tu equipo gratis",
+            "body": "Tenemos dos itinerarios breves, uno para ventas y otro para el equipo técnico. Tu gente estudia en el portal de partners y hace el examen sin coste. Aprobarlo sube a tu equipo de nivel y aumenta tus descuentos."
+          },
+          {
+            "title": "Reparte licencias de prueba que tú controlas",
+            "body": "Da a un cliente una prueba funcional sin esperar a que nosotros la activemos. Tú decides quién la recibe y cuándo empieza. Cada prueba tiene una fecha de caducidad, así que nada se alarga para siempre."
+          }
+        ]
+      },
+      "tiers": {
+        "title": "Los niveles de partner",
+        "lede": "Entras como partner Registrado el día que te aprobamos. A medida que tu equipo se certifica y tu negocio crece, subes de nivel y tu descuento en operaciones registradas crece contigo.",
+        "requirementsLabel": "Cómo se consigue",
+        "benefitsLabel": "Qué obtienes",
+        "cards": [
+          {
+            "name": "Registrado",
+            "tagline": "El punto de partida de cualquier partner",
+            "requirements": ["Solicítalo y consigue la aprobación"],
+            "benefits": [
+              "Acceso al portal de partners",
+              "Registro de operaciones con protección de margen",
+              "Certificación gratuita de ventas y técnica",
+              "Licencias de prueba para tus clientes"
+            ]
+          },
+          {
+            "name": "Plata",
+            "tagline": "Certificado y vendiendo",
+            "requirements": [
+              "Todo lo que hace un partner Registrado",
+              "Dos certificados vigentes en tu equipo",
+              "Los certificados son válidos durante 6 meses"
+            ],
+            "benefits": [
+              "Todo lo del nivel Registrado",
+              "Un descuento mayor en las operaciones registradas"
+            ]
+          },
+          {
+            "name": "Oro",
+            "tagline": "Creciendo con nosotros",
+            "requirements": [
+              "Todo lo que hace un partner Plata",
+              "Se consigue a medida que crece tu negocio con nosotros"
+            ],
+            "benefits": ["Todo lo del nivel Plata", "Un nivel de descuento más alto"]
+          },
+          {
+            "name": "Platino",
+            "tagline": "Nuestros partners más cercanos",
+            "requirements": [
+              "Todo lo que hace un partner Oro",
+              "Reservado para nuestros partners más activos"
+            ],
+            "benefits": ["Todo lo del nivel Oro", "Nuestro mejor descuento para partners"]
+          }
+        ]
+      },
+      "how": {
+        "title": "Cómo funciona",
+        "steps": [
+          {
+            "title": "Solicítalo",
+            "body": "Rellena el formulario breve de abajo y cuéntanos cómo vendes y a quién atiendes."
+          },
+          {
+            "title": "Consigue la aprobación",
+            "body": "Revisamos cada solicitud a mano. En cuanto entras, recibes un acceso y entras al portal de partners."
+          },
+          {
+            "title": "Estudia y certifícate",
+            "body": "Avanza por los itinerarios de ventas y técnico a tu ritmo, y aprueba el examen para conseguir tus certificados."
+          },
+          {
+            "title": "Registra operaciones y vende",
+            "body": "Registra las operaciones de tus clientes, comparte licencias de prueba y vende Rediacc con tu margen protegido."
+          }
+        ]
+      },
+      "certification": {
+        "title": "Certificación gratuita, dos itinerarios",
+        "lede": "Cualquier partner puede certificarse sin coste. Elige el itinerario que encaje con cada persona: ventas o técnico. El programa de estudio está en el portal, así que tu equipo puede prepararse antes de hacer el examen.",
+        "facts": [
+          "Dos itinerarios: uno de ventas y otro técnico",
+          "Un programa de estudio integrado en el portal de partners",
+          "20 preguntas por examen, sacadas de un banco más amplio",
+          "30 minutos para completarlo",
+          "Apruebas con 17 aciertos o más",
+          "Los certificados son válidos durante 6 meses",
+          "Siempre gratis"
+        ]
+      },
+      "apply": {
+        "title": "Solicita tu entrada al Partner 1st Program",
+        "lede": "Cuéntanos sobre tu negocio. Leemos todas las solicitudes y respondemos por email."
+      },
+      "form": {
+        "fields": {
+          "contactName": "Tu nombre",
+          "contactNamePlaceholder": "Nombre y apellidos",
+          "jobTitle": "Cargo",
+          "jobTitlePlaceholder": "Tu puesto",
+          "email": "Email de trabajo",
+          "emailPlaceholder": "tu@empresa.com",
+          "phone": "Teléfono",
+          "phonePlaceholder": "Opcional",
+          "company": "Nombre de la empresa",
+          "companyPlaceholder": "Tu empresa",
+          "website": "Sitio web",
+          "websitePlaceholder": "https://ejemplo.com",
+          "country": "País",
+          "countryPlaceholder": "Selecciona tu país",
+          "partnerTypes": "¿Cómo vendes? Marca todo lo que corresponda.",
+          "isDistributor": "Trabajamos como distribuidor y revendemos a través de otros partners.",
+          "howHeard": "¿Cómo nos conociste?",
+          "message": "¿Algo más?",
+          "messagePlaceholder": "Cuéntanos sobre tu negocio y los clientes a los que atiendes.",
+          "consent": "Acepto que me contacten sobre el programa de partners de Rediacc."
+        },
+        "partnerTypeOptions": {
+          "reseller": "Revendedor",
+          "msp": "Proveedor de servicios gestionados",
+          "consultant": "Consultor",
+          "distributor": "Distribuidor",
+          "referral": "Partner de referidos"
+        },
+        "howHeardOptions": {
+          "search": "Buscador",
+          "referral": "Un colega o amigo",
+          "event": "Un evento o webinar",
+          "socialMedia": "Redes sociales",
+          "blog": "Blog o artículo",
+          "other": "Otra cosa"
+        },
+        "submit": "Enviar solicitud",
+        "sending": "Enviando...",
+        "success": {
+          "title": "Solicitud recibida",
+          "body": "Gracias por tu interés. Leemos todas las solicitudes y te responderemos por email pronto."
+        },
+        "errors": {
+          "requiredFields": "Rellena tu nombre, email de trabajo, empresa, país y al menos una forma de venta.",
+          "consent": "Acepta que te contactemos para poder responder a tu solicitud.",
+          "captcha": "Completa el captcha para continuar.",
+          "generic": "Algo salió mal. Inténtalo de nuevo."
+        }
+      },
+      "finalCta": {
+        "title": "¿Listo para vender Rediacc?",
+        "subtitle": "Únete al Partner 1st Program y empieza a proteger tus operaciones.",
+        "button": "Conviértete en Partner",
+        "note": "¿Ya estás aprobado? Accede al portal de partners."
+      }
     },
     "personaPages": {
       "forAiAgents": {

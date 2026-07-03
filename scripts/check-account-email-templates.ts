@@ -9,7 +9,7 @@ const ROOT_DIR = path.join(__dirname, '..');
 const TEMPLATE_DIR = path.join(ROOT_DIR, 'private/account/src/email/templates');
 const LOCALES_DIR = path.join(ROOT_DIR, 'private/account/src/i18n/locales');
 const LANGUAGES = ['en', 'ar', 'de', 'es', 'fr', 'ja', 'ru', 'tr', 'zh', 'et', 'ko', 'pt', 'it'] as const;
-const TEMPLATE_FILES = ['auth.ts', 'billing.ts', 'contact.ts', 'newsletter.ts', 'organization.ts', 'security.ts'];
+const TEMPLATE_FILES = ['auth.ts', 'billing.ts', 'contact.ts', 'newsletter.ts', 'organization.ts', 'partner.ts', 'partner-certification.ts', 'partner-deals.ts', 'partner-eval.ts', 'partner-license.ts', 'security.ts'];
 function flattenKeys(input: unknown, prefix = ''): string[] {
   if (typeof input === 'string') {
     return [prefix];

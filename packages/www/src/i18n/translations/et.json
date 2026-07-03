@@ -190,6 +190,7 @@
     "productLinks": {
       "disasterRecovery": "Avariitaaste",
       "overview": "Ülevaade",
+      "partners": "Partnerprogramm",
       "pricing": "Hinnad",
       "professionalServices": "Professionaalsed teenused",
       "solutions": "Lahendused"
@@ -361,6 +362,7 @@
     "install": "Installi",
     "languageSelectionMenu": "Keele valimise menüü",
     "login": "Logi sisse",
+    "partners": "Partnerid",
     "personas": {
       "ai-agent": {
         "cta": "Vaata dokumentatsiooni",
@@ -1283,6 +1285,183 @@
         "title": "Mida teha:"
       },
       "title": "Lehte ei leitud"
+    },
+    "partners": {
+      "meta": {
+        "title": "Rediacc Partner 1st programm edasimüüjatele",
+        "description": "Liitu Rediacc Partner 1st programmiga. Kaitse marginaali tehingute registreerimisega, teeni tasuta sertifikaat ja anna klientidele litsentse, mida ise juhid."
+      },
+      "hero": {
+        "eyebrow": "Partnerprogramm",
+        "title": "Tee Rediacciga koostööd ja hoia oma marginaal",
+        "subtitle": "Rediacc Partner 1st programm on loodud edasimüüjatele, hallatud teenuste pakkujatele ja konsultantidele. Registreeri oma tehingud, sertifitseeri oma meeskond tasuta ja anna klientidele prooviperioodi litsentsid, mida sina kontrollid.",
+        "primaryCta": "Saa partneriks",
+        "secondaryCta": "Partneri sisselogimine",
+        "note": "Liitumine on tasuta. Iga taotluse vaatab läbi päris inimene."
+      },
+      "benefits": {
+        "title": "Miks meiega partnerlust sõlmida",
+        "lede": "Kolm asja teevad Partner 1st programmi sinu aja väärt.",
+        "items": [
+          {
+            "title": "Registreeri tehingud, kaitse oma marginaali",
+            "body": "Kui tood meile kliendi, registreeri tehing. Kui me selle heaks kiidame, jääb allahindlus sulle kogu kaitseakna kestuse ajaks. Teine partner ei saa sama klienti registreerida ega sinu hinda alla lüüa."
+          },
+          {
+            "title": "Sertifitseeri oma meeskond tasuta",
+            "body": "Meil on kaks lühikest õpperada, üks müügile ja üks tehnilisele personalile. Sinu inimesed õpivad partneriportaalis ja teevad eksami tasuta. Läbimine viib sinu meeskonna astme võrra edasi ja süvendab sinu allahindlusi."
+          },
+          {
+            "title": "Anna kliendile prooviperioodi litsentse, mida sina kontrollid",
+            "body": "Anna kliendile töötav prooviperiood, ilma et peaksid meid ootama. Sina otsustad, kes selle saab ja millal see algab. Iga prooviperiood on ajaliselt piiratud, nii et miski ei kesta lõputult."
+          }
+        ]
+      },
+      "tiers": {
+        "title": "Partneriastmed",
+        "lede": "Liitud registreeritud partnerina päeval, mil me su heaks kiidame. Kui su meeskond sertifitseerub ja äri kasvab, liigud astmeid mööda üles ning sinu registreeritud tehingu allahindlus kasvab koos sinuga.",
+        "requirementsLabel": "Kuidas siia jõuad",
+        "benefitsLabel": "Mida saad",
+        "cards": [
+          {
+            "name": "Registreeritud",
+            "tagline": "Siit alustab iga partner",
+            "requirements": ["Esita taotlus ja saa heakskiit"],
+            "benefits": [
+              "Ligipääs partneriportaalile",
+              "Tehingute registreerimine marginaalikaitsega",
+              "Tasuta müügi- ja tehniline sertifikaat",
+              "Prooviperioodi litsentsid sinu klientidele"
+            ]
+          },
+          {
+            "name": "Hõbe",
+            "tagline": "Sertifitseeritud ja müümas",
+            "requirements": [
+              "Kõik, mida teeb registreeritud partner",
+              "Kaks kehtivat sertifikaati kogu meeskonnas",
+              "Sertifikaadid kehtivad 6 kuud"
+            ],
+            "benefits": [
+              "Kõik, mis registreeritud astmel",
+              "Suurem allahindlus registreeritud tehingutele"
+            ]
+          },
+          {
+            "name": "Kuld",
+            "tagline": "Kasvame koos",
+            "requirements": [
+              "Kõik, mida teeb hõbeastme partner",
+              "Teenitud, kui su äri meiega kasvab"
+            ],
+            "benefits": ["Kõik, mis hõbeastmel", "Kõrgem allahindlustase"]
+          },
+          {
+            "name": "Plaatina",
+            "tagline": "Meie lähimad partnerid",
+            "requirements": [
+              "Kõik, mida teeb kuldastme partner",
+              "Reserveeritud meie aktiivseimatele partneritele"
+            ],
+            "benefits": ["Kõik, mis kuldastmel", "Meie parim partneriallahindlus"]
+          }
+        ]
+      },
+      "how": {
+        "title": "Kuidas see toimib",
+        "steps": [
+          {
+            "title": "Taotle",
+            "body": "Täida allolev lühike vorm ja räägi, kuidas müüd ja keda teenindad."
+          },
+          {
+            "title": "Saa heakskiit",
+            "body": "Vaatame iga taotluse käsitsi läbi. Kui oled sees, saad sisselogimisandmed ja ligipääsu partneriportaalile."
+          },
+          {
+            "title": "Õpi ja sertifitseeru",
+            "body": "Läbi müügi- ja tehniline õpperada omas tempos ning soorita eksam, et teenida oma sertifikaadid."
+          },
+          {
+            "title": "Registreeri tehinguid ja müü",
+            "body": "Registreeri kliendi tehinguid, jaga prooviperioodi litsentse ja müü Rediacci, teades, et su marginaal on kaitstud."
+          }
+        ]
+      },
+      "certification": {
+        "title": "Tasuta sertifikaat, kaks õpperada",
+        "lede": "Iga partner saab end tasuta sertifitseerida. Vali inimesele sobiv rada: müük või tehniline. Õppeprogramm asub portaalis, nii et sinu meeskond saab enne eksamile minekut valmistuda.",
+        "facts": [
+          "Kaks õpperada: üks müügile, üks tehnilisele personalile",
+          "Õppeprogramm otse partneriportaalis",
+          "20 küsimust eksami kohta, suuremast küsimustepangast",
+          "30 minutit aega",
+          "Läbid 17 õige vastusega või rohkemaga",
+          "Sertifikaadid kehtivad 6 kuud",
+          "Alati tasuta"
+        ]
+      },
+      "apply": {
+        "title": "Taotle liitumist Partner 1st programmiga",
+        "lede": "Räägi meile oma ettevõttest. Loeme iga taotluse läbi ja vastame e-kirjaga."
+      },
+      "form": {
+        "fields": {
+          "contactName": "Sinu nimi",
+          "contactNamePlaceholder": "Ees- ja perekonnanimi",
+          "jobTitle": "Ametinimetus",
+          "jobTitlePlaceholder": "Sinu roll",
+          "email": "Töö e-post",
+          "emailPlaceholder": "sina@ettevote.com",
+          "phone": "Telefon",
+          "phonePlaceholder": "Valikuline",
+          "company": "Ettevõtte nimi",
+          "companyPlaceholder": "Sinu ettevõte",
+          "website": "Veebileht",
+          "websitePlaceholder": "https://example.com",
+          "country": "Riik",
+          "countryPlaceholder": "Vali oma riik",
+          "partnerTypes": "Kuidas müüd? Vali kõik, mis sobivad.",
+          "isDistributor": "Töötame turustajana ja müüme edasi teiste partnerite kaudu.",
+          "howHeard": "Kust sa meist kuulsid?",
+          "message": "Kas veel midagi?",
+          "messagePlaceholder": "Räägi meile oma ettevõttest ja klientidest, keda teenindad.",
+          "consent": "Nõustun, et minuga võetakse Rediacc partnerprogrammi asjus ühendust."
+        },
+        "partnerTypeOptions": {
+          "reseller": "Edasimüüja",
+          "msp": "Hallatud teenuste pakkuja",
+          "consultant": "Konsultant",
+          "distributor": "Turustaja",
+          "referral": "Soovituspartner"
+        },
+        "howHeardOptions": {
+          "search": "Otsingumootor",
+          "referral": "Kolleeg või sõber",
+          "event": "Üritus või veebiseminar",
+          "socialMedia": "Sotsiaalmeedia",
+          "blog": "Blogi või artikkel",
+          "other": "Midagi muud"
+        },
+        "submit": "Saada taotlus",
+        "sending": "Saadame...",
+        "success": {
+          "title": "Taotlus on vastu võetud",
+          "body": "Täname huvi eest. Loeme iga taotluse läbi ja vastame peagi e-kirjaga."
+        },
+        "errors": {
+          "requiredFields": "Palun täida oma nimi, töö e-post, ettevõte, riik ja vähemalt üks müügiviis.",
+          "consent": "Palun nõustu, et sinuga võetakse ühendust, et saaksime taotlusele vastata.",
+          "captcha": "Palun lahenda captcha, et jätkata.",
+          "generic": "Midagi läks valesti. Palun proovi uuesti."
+        }
+      },
+      "finalCta": {
+        "title": "Kas oled valmis Rediacci müüma?",
+        "subtitle": "Liitu Partner 1st programmiga ja hakka oma tehinguid kaitsma.",
+        "button": "Saa partneriks",
+        "note": "Juba heaks kiidetud? Logi sisse partneriportaali."
+      }
     },
     "personaPages": {
       "forAiAgents": {
