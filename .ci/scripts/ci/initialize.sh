@@ -160,9 +160,10 @@ NEXT_VERSION=$(.ci/scripts/version/resolve-version.sh --bump-type "$BUMP_TYPE")
 write_output "next_version" "$NEXT_VERSION"
 log_info "Next version: $NEXT_VERSION (from tag: $(.ci/scripts/version/resolve-version.sh --current))"
 
-# On push-to-main, append version to ALL image tags to invalidate CI/merge-queue cache.
-# CI builds (merge_group event) don't embed version, CD builds (push event) do —
-# different tags ensure cache miss and rebuild with correct version.
+# On push-to-main, append version to ALL image tags to invalidate CI cache.
+# CI builds (pull_request/schedule events) don't embed version, CD builds
+# (push event) do — different tags ensure cache miss and rebuild with correct
+# version.
 if [[ "${GITHUB_EVENT_NAME:-}" == "push" ]]; then
     local_tags=("RENET" "PLUGINS" "WEB" "CLI")
     log_parts=()
