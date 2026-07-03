@@ -190,6 +190,7 @@
     "productLinks": {
       "disasterRecovery": "灾难恢复",
       "overview": "概述",
+      "partners": "合作伙伴计划",
       "pricing": "定价",
       "professionalServices": "专业服务",
       "solutions": "解决方案"
@@ -356,6 +357,7 @@
     "install": "安装",
     "languageSelectionMenu": "语言选择菜单",
     "login": "登录",
+    "partners": "合作伙伴",
     "personas": {
       "ai-agent": {
         "cta": "查看文档",
@@ -1272,6 +1274,174 @@
         "title": "你可以做什么："
       },
       "title": "找不到页面"
+    },
+    "partners": {
+      "apply": {
+        "lede": "告诉我们您的业务情况，我们会逐一查看每份申请并通过邮件回复。",
+        "title": "申请加入 Partner 1st 合作伙伴计划"
+      },
+      "benefits": {
+        "items": [
+          {
+            "body": "带来客户后，先报备商机。审核通过后，折扣在整个保护期内都归您所有，其他合作伙伴不能抢注同一个客户压价。",
+            "title": "报备商机，保护利润"
+          },
+          {
+            "body": "我们提供两个简短的认证方向，销售和技术各一个。您的团队在合作伙伴门户学习，考试完全免费。通过考试就能在等级阶梯上晋级，享受更大折扣。",
+            "title": "免费认证您的团队"
+          },
+          {
+            "body": "无需等待我们审批，直接给客户开通可用的试用。您决定发给谁、何时开始。每次试用都有明确期限，不会无限期运行。",
+            "title": "自主发放试用许可证"
+          }
+        ],
+        "lede": "三个理由，让 Partner 1st 合作伙伴计划值得您加入。",
+        "title": "为什么要和我们合作"
+      },
+      "certification": {
+        "facts": [
+          "两个方向：销售和技术各一个",
+          "学习课程内置于合作伙伴门户",
+          "每场考试 20 道题，从题库中随机抽取",
+          "限时 30 分钟",
+          "答对 17 题及以上即可通过",
+          "证书有效期为 6 个月",
+          "始终免费"
+        ],
+        "lede": "每位合作伙伴都能免费认证。根据人员情况选择方向：销售或技术。学习课程就在门户里，团队可以在考试前充分准备。",
+        "title": "免费认证，两个方向"
+      },
+      "finalCta": {
+        "button": "成为合作伙伴",
+        "note": "已经通过审核？登录合作伙伴门户。",
+        "subtitle": "加入 Partner 1st 合作伙伴计划，让您的商机从此受到保护。",
+        "title": "准备好销售 Rediacc 了吗？"
+      },
+      "form": {
+        "errors": {
+          "captcha": "请完成验证码后继续。",
+          "consent": "请同意接收联系，以便我们回复您的申请。",
+          "generic": "出了点问题，请重试。",
+          "requiredFields": "请填写姓名、工作邮箱、公司、国家/地区，并至少选择一种销售方式。"
+        },
+        "fields": {
+          "company": "公司名称",
+          "companyPlaceholder": "您的公司",
+          "consent": "我同意接收有关 Rediacc 合作伙伴计划的联系。",
+          "contactName": "您的姓名",
+          "contactNamePlaceholder": "姓和名",
+          "country": "国家/地区",
+          "countryPlaceholder": "选择您的国家/地区",
+          "email": "工作邮箱",
+          "emailPlaceholder": "you@company.com",
+          "howHeard": "您是如何了解到我们的？",
+          "isDistributor": "我们是分销商，通过其他合作伙伴转售。",
+          "jobTitle": "职位",
+          "jobTitlePlaceholder": "您的职务",
+          "message": "还有什么想告诉我们的？",
+          "messagePlaceholder": "介绍一下您的业务和您服务的客户。",
+          "partnerTypes": "您如何销售？可多选。",
+          "phone": "电话",
+          "phonePlaceholder": "选填",
+          "website": "网站",
+          "websitePlaceholder": "https://example.com"
+        },
+        "howHeardOptions": {
+          "blog": "博客或文章",
+          "event": "活动或网络研讨会",
+          "other": "其他",
+          "referral": "同事或朋友介绍",
+          "search": "搜索引擎",
+          "socialMedia": "社交媒体"
+        },
+        "partnerTypeOptions": {
+          "consultant": "顾问",
+          "distributor": "分销商",
+          "msp": "托管服务提供商",
+          "referral": "推荐合作伙伴",
+          "reseller": "经销商"
+        },
+        "sending": "发送中...",
+        "submit": "提交申请",
+        "success": {
+          "body": "感谢您的关注。我们会仔细查看每份申请，并尽快通过邮件回复。",
+          "title": "申请已收到"
+        }
+      },
+      "hero": {
+        "eyebrow": "合作伙伴计划",
+        "note": "免费加入，每份申请都有专人审核。",
+        "primaryCta": "成为合作伙伴",
+        "secondaryCta": "合作伙伴登录",
+        "subtitle": "Rediacc Partner 1st 合作伙伴计划专为经销商、托管服务提供商和顾问打造。报备商机、免费认证团队，还能自主向客户发放试用许可证。",
+        "title": "与 Rediacc 合作，利润稳稳到手"
+      },
+      "how": {
+        "steps": [
+          {
+            "body": "填写下方的简短表单，告诉我们您的销售方式和服务对象。",
+            "title": "提交申请"
+          },
+          {
+            "body": "我们会逐一人工审核每份申请。通过后，您将获得登录账号和合作伙伴门户的使用权限。",
+            "title": "获得批准"
+          },
+          {
+            "body": "按自己的节奏学完销售和技术方向的课程，通过考试即可获得证书。",
+            "title": "学习并认证"
+          },
+          {
+            "body": "报备客户商机，分享试用许可证，在利润受保护的情况下销售 Rediacc。",
+            "title": "报备商机，开始销售"
+          }
+        ],
+        "title": "运作方式"
+      },
+      "meta": {
+        "description": "加入 Rediacc Partner 1st 合作伙伴计划。报备商机保护您的利润，免费获得认证，还能自主向客户发放试用许可证。",
+        "title": "面向经销商的 Rediacc Partner 1st 合作伙伴计划"
+      },
+      "tiers": {
+        "benefitsLabel": "您能获得什么",
+        "cards": [
+          {
+            "benefits": [
+              "使用合作伙伴门户",
+              "商机报备，保护利润",
+              "免费销售与技术认证",
+              "为客户开通试用许可证"
+            ],
+            "name": "Registered",
+            "requirements": ["提交申请并通过审核"],
+            "tagline": "每位合作伙伴的起点"
+          },
+          {
+            "benefits": ["Registered 等级的所有权益", "报备商机享受更大折扣"],
+            "name": "Silver",
+            "requirements": [
+              "拥有 Registered 合作伙伴的所有权益",
+              "团队持有两张有效证书",
+              "证书有效期为 6 个月"
+            ],
+            "tagline": "已认证，正在开单"
+          },
+          {
+            "benefits": ["Silver 等级的所有权益", "更高一档的折扣"],
+            "name": "Gold",
+            "requirements": ["拥有 Silver 合作伙伴的所有权益", "随着与我们的业务增长自动获得"],
+            "tagline": "与我们共同成长"
+          },
+          {
+            "benefits": ["Gold 等级的所有权益", "我们最优的合作伙伴折扣"],
+            "name": "Platinum",
+            "requirements": ["拥有 Gold 合作伙伴的所有权益", "专为最活跃的合作伙伴保留"],
+            "tagline": "我们最紧密的合作伙伴"
+          }
+        ],
+        "lede": "审核通过当天，您就是 Registered 合作伙伴。随着团队获得认证、业务不断增长，您会在阶梯上不断晋级，报备商机的折扣也会随之提高。",
+        "requirementsLabel": "如何达到",
+        "title": "合作伙伴等级阶梯"
+      }
     },
     "personaPages": {
       "forAiAgents": {

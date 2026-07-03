@@ -598,6 +598,83 @@ account_reset() {
     log_info "Start dev server with: ./run.sh account dev"
 }
 
+# Populate a demo partner org end-to-end against the running dev gateway.
+# Usage: ./run.sh account seed-demo <email> [--port N]
+# The port defaults to the running dev gateway's port (from the state file),
+# then falls back to the preferred dev port.
+account_seed_demo() {
+    local email="" port=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --port)
+                port="$2"
+                shift 2
+                ;;
+            --port=*)
+                port="${1#*=}"
+                shift
+                ;;
+            -*)
+                log_error "Unknown option: $1"
+                echo "Usage: ./run.sh account seed-demo <email> [--port N]"
+                exit 1
+                ;;
+            *)
+                if [[ -z "$email" ]]; then
+                    email="$1"
+                else
+                    log_error "Unexpected argument: $1"
+                    echo "Usage: ./run.sh account seed-demo <email> [--port N]"
+                    exit 1
+                fi
+                shift
+                ;;
+        esac
+    done
+
+    if [[ -z "$email" ]]; then
+        log_error "Missing email"
+        echo "Usage: ./run.sh account seed-demo <email> [--port N]"
+        exit 1
+    fi
+
+    # Resolve the gateway port: explicit --port wins, else the running dev
+    # gateway's port from the state file, else the preferred default.
+    if [[ -z "$port" && -f "$ACCOUNT_STATE_FILE" ]]; then
+        port=$(grep "^gateway_port=" "$ACCOUNT_STATE_FILE" 2>/dev/null | cut -d= -f2)
+    fi
+    port="${port:-$ACCOUNT_DEV_PORT_PREFERRED}"
+
+    local url="http://127.0.0.1:${port}/account/api/v1/test/seed-demo-partner"
+    log_step "Seeding demo partner '${email}' via ${url}"
+
+    local body http_code curl_exit json_payload
+    json_payload=$(jq -n --arg email "$email" '{email: $email}')
+    body=$(curl -sS -m 60 -w $'\n%{http_code}' \
+        -H 'Content-Type: application/json' \
+        -d "$json_payload" \
+        "$url")
+    curl_exit=$?
+    http_code="${body##*$'\n'}"
+    body="${body%$'\n'*}"
+
+    if [[ $curl_exit -ne 0 ]]; then
+        log_error "Could not reach the account gateway on port ${port}"
+        log_info "Is the dev gateway running? Start it with: ./run.sh account dev"
+        exit 1
+    fi
+
+    if [[ "$http_code" != "200" ]]; then
+        log_error "Seed failed (HTTP ${http_code})"
+        echo "$body" | jq . 2>/dev/null || echo "$body"
+        log_info "Is the dev gateway running? Start it with: ./run.sh account dev"
+        exit 1
+    fi
+
+    log_info "Demo partner seeded"
+    echo "$body" | jq . 2>/dev/null || echo "$body"
+}
+
 # =============================================================================
 # ROTATION (secret rotation lifecycle for AWS IAM, CF tokens, CF Turnstile)
 # =============================================================================

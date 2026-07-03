@@ -200,6 +200,15 @@ const Navigation: React.FC<NavigationProps> = ({ origin }) => {
             >
               {t('navigation.blog')}
             </a>
+            <a
+              href={`/${currentLang}/partners`}
+              className="nav-link"
+              data-track="cta_click"
+              data-track-label="nav-link"
+              data-track-dest="partners"
+            >
+              {t('navigation.partners')}
+            </a>
           </div>
           <div className="nav-right">
             <div className="nav-utilities nav-translate">

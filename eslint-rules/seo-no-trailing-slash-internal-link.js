@@ -41,6 +41,10 @@ const EXEMPT_PREFIXES = [
   '/usr/',
   '/etc/',
   '/tmp/',
+  // Marketing shortlink redirected by the Worker to the partner portal
+  // (/partner1st -> /account/partner/). Not an Astro page, so a trailing
+  // slash on the memorable URL is fine and must not be flagged.
+  '/partner1st',
 ];
 
 /** Attribute names that hold internal URLs in JSX. */

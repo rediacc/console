@@ -1522,10 +1522,14 @@ main() {
                     ;;
                 stop) account_stop ;;
                 reset) account_reset ;;
+                seed-demo)
+                    shift
+                    account_seed_demo "$@"
+                    ;;
                 *)
                     log_error "Unknown account command: ${1:-}"
                     echo ""
-                    echo "Usage: ./run.sh account [dev|test|stop|reset]"
+                    echo "Usage: ./run.sh account [dev|test|stop|reset|seed-demo]"
                     exit 1
                     ;;
             esac

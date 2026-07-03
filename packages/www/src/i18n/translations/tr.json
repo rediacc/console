@@ -190,6 +190,7 @@
     "productLinks": {
       "disasterRecovery": "Afet Kurtarma",
       "overview": "Genel Bakış",
+      "partners": "Ortaklık Programı",
       "pricing": "Fiyatlar",
       "professionalServices": "Profesyonel Hizmetler",
       "solutions": "Çözümler"
@@ -361,6 +362,7 @@
     "install": "Yükle",
     "languageSelectionMenu": "Dil seçim menüsü",
     "login": "Giriş",
+    "partners": "Ortaklar",
     "personas": {
       "ai-agent": {
         "cta": "Belgeleri Görün",
@@ -1279,6 +1281,180 @@
         "title": "Ne yapabilirsiniz:"
       },
       "title": "Sayfa Bulunamadı"
+    },
+    "partners": {
+      "apply": {
+        "lede": "Bize işletmenizden bahsedin. Her başvuruyu okuruz ve e-posta ile yanıtlarız.",
+        "title": "Partner 1st Programı'na Başvurun"
+      },
+      "benefits": {
+        "items": [
+          {
+            "body": "Bize bir müşteri getirdiğinizde anlaşmayı kaydedin. Onayladığımız anda indirim, koruma süresi boyunca sizindir. Başka bir ortak aynı müşteriyi kaydedip fiyatınızı kıramaz.",
+            "title": "Anlaşmaları Kaydedin, Kârınızı Koruyun"
+          },
+          {
+            "body": "Biri satış, biri teknik ekip için olmak üzere iki kısa program sunuyoruz. Ekibiniz ortak portalında çalışır ve sınava ücretsiz girer. Sınavı geçmek ekibinizi bir üst kademeye taşır ve indiriminizi büyütür.",
+            "title": "Ekibinizi Ücretsiz Sertifikalandırın"
+          },
+          {
+            "body": "Bizi beklemeden müşterinize çalışan bir deneme sürümü verin. Kime ve ne zaman vereceğinize siz karar verirsiniz. Her deneme süreli olduğu için sonsuza kadar sürmez.",
+            "title": "Kontrolü Sizde Olan Deneme Lisansları Dağıtın"
+          }
+        ],
+        "lede": "Partner 1st Programı'nı değerli kılan üç şey var.",
+        "title": "Neden Rediacc ile Ortak Olmalısınız"
+      },
+      "certification": {
+        "facts": [
+          "İki program: biri satış, biri teknik ekip için",
+          "Ortak portalına yerleşik bir çalışma programı",
+          "Daha büyük bir soru bankasından seçilen, sınav başına 20 soru",
+          "Tamamlamak için 30 dakika",
+          "17 veya daha fazla doğruyla geçin",
+          "Sertifikalar 6 ay geçerlidir",
+          "Girmek her zaman ücretsiz"
+        ],
+        "lede": "Her ortak ücretsiz sertifika alabilir. Kişiye uygun programı seçin: satış ya da teknik. Çalışma materyalleri portalda yer alır, böylece ekibiniz sınava girmeden önce hazırlanabilir.",
+        "title": "Ücretsiz Sertifika, İki Program"
+      },
+      "finalCta": {
+        "button": "Ortak Olun",
+        "note": "Zaten onaylandınız mı? Ortak portalına giriş yapın.",
+        "subtitle": "Partner 1st Programı'na katılın, anlaşmalarınızı korumaya başlayın.",
+        "title": "Rediacc Satmaya Hazır mısınız?"
+      },
+      "form": {
+        "errors": {
+          "captcha": "Devam etmek için lütfen captcha'yı tamamlayın.",
+          "consent": "Başvurunuza yanıt verebilmemiz için lütfen iletişime geçilmesini kabul edin.",
+          "generic": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
+          "requiredFields": "Lütfen adınızı, iş e-postanızı, şirketinizi, ülkenizi ve en az bir satış yönteminizi girin."
+        },
+        "fields": {
+          "company": "Şirket adı",
+          "companyPlaceholder": "Şirketiniz",
+          "consent": "Rediacc ortaklık programı hakkında benimle iletişime geçilmesini kabul ediyorum.",
+          "contactName": "Adınız",
+          "contactNamePlaceholder": "Ad ve soyad",
+          "country": "Ülke",
+          "countryPlaceholder": "Ülkenizi seçin",
+          "email": "İş e-postası",
+          "emailPlaceholder": "siz@sirket.com",
+          "howHeard": "Bizi nereden duydunuz?",
+          "isDistributor": "Distribütör olarak çalışıyoruz ve diğer ortaklar aracılığıyla yeniden satış yapıyoruz.",
+          "jobTitle": "Unvan",
+          "jobTitlePlaceholder": "Göreviniz",
+          "message": "Eklemek istediğiniz bir şey var mı?",
+          "messagePlaceholder": "İşletmenizden ve hizmet verdiğiniz müşterilerden bahsedin.",
+          "partnerTypes": "Nasıl satış yapıyorsunuz? Uygun olanların hepsini seçin.",
+          "phone": "Telefon",
+          "phonePlaceholder": "İsteğe bağlı",
+          "website": "Web sitesi",
+          "websitePlaceholder": "https://example.com"
+        },
+        "howHeardOptions": {
+          "blog": "Blog veya makale",
+          "event": "Bir etkinlik veya webinar",
+          "other": "Başka bir şey",
+          "referral": "Bir meslektaş veya arkadaş",
+          "search": "Arama motoru",
+          "socialMedia": "Sosyal medya"
+        },
+        "partnerTypeOptions": {
+          "consultant": "Danışman",
+          "distributor": "Distribütör",
+          "msp": "Yönetilen hizmet sağlayıcı",
+          "referral": "Yönlendirme ortağı",
+          "reseller": "Bayi"
+        },
+        "sending": "Gönderiliyor...",
+        "submit": "Başvuruyu Gönder",
+        "success": {
+          "body": "İlginiz için teşekkürler. Her başvuruyu okuyoruz ve yakında e-posta ile yanıt vereceğiz.",
+          "title": "Başvurunuz Alındı"
+        }
+      },
+      "hero": {
+        "eyebrow": "Ortaklık Programı",
+        "note": "Katılım ücretsiz. Her başvuruyu bir kişi inceler.",
+        "primaryCta": "Ortak Olun",
+        "secondaryCta": "Ortak Girişi",
+        "subtitle": "Rediacc Partner 1st Programı bayiler, yönetilen hizmet sağlayıcılar ve danışmanlar için tasarlandı. Anlaşmalarınızı kaydedin, ekibinizi ücretsiz sertifikalandırın ve müşterilerinize kendi kontrolünüzdeki deneme lisanslarını verin.",
+        "title": "Rediacc ile Ortak Olun, Kârınızı Koruyun"
+      },
+      "how": {
+        "steps": [
+          {
+            "body": "Aşağıdaki kısa formu doldurun, nasıl sattığınızı ve kime hizmet verdiğinizi anlatın.",
+            "title": "Başvurun"
+          },
+          {
+            "body": "Her başvuruyu elle inceleriz. Kabul edildiğinizde bir giriş bilgisi ve ortak portalına erişim alırsınız.",
+            "title": "Onaylanın"
+          },
+          {
+            "body": "Satış ve teknik programları kendi hızınızda tamamlayın, ardından sınavı geçip sertifikanızı kazanın.",
+            "title": "Çalışın ve Sertifika Alın"
+          },
+          {
+            "body": "Müşteri anlaşmalarınızı kaydedin, deneme lisansları paylaşın ve kârınız korunurken Rediacc satın.",
+            "title": "Anlaşma Kaydedin ve Satın"
+          }
+        ],
+        "title": "Nasıl Çalışır"
+      },
+      "meta": {
+        "description": "Rediacc Partner 1st Programı'na katılın. Anlaşmalarınızı kaydedip kârınızı koruyun, ücretsiz sertifika kazanın, müşterilerinize deneme lisansı verin.",
+        "title": "Rediacc Partner 1st Programı | Bayiler İçin"
+      },
+      "tiers": {
+        "benefitsLabel": "Neler Kazanırsınız",
+        "cards": [
+          {
+            "benefits": [
+              "Ortak portalına erişim",
+              "Kâr korumalı anlaşma kaydı",
+              "Ücretsiz satış ve teknik sertifika",
+              "Müşterileriniz için deneme lisansları"
+            ],
+            "name": "Registered",
+            "requirements": ["Başvurun ve onaylanın"],
+            "tagline": "Her ortağın başladığı yer"
+          },
+          {
+            "benefits": [
+              "Registered kademesindeki her şey",
+              "Kayıtlı anlaşmalarda daha yüksek indirim"
+            ],
+            "name": "Silver",
+            "requirements": [
+              "Registered ortağın yaptığı her şey",
+              "Ekibinizde geçerli iki sertifika",
+              "Sertifikalar 6 ay geçerlidir"
+            ],
+            "tagline": "Sertifikalı ve satışta"
+          },
+          {
+            "benefits": ["Silver kademesindeki her şey", "Daha yüksek bir indirim kademesi"],
+            "name": "Gold",
+            "requirements": [
+              "Silver ortağın yaptığı her şey",
+              "İşiniz bizimle büyüdükçe kazanılır"
+            ],
+            "tagline": "Bizimle büyüyor"
+          },
+          {
+            "benefits": ["Gold kademesindeki her şey", "En iyi ortak indirimimiz"],
+            "name": "Platinum",
+            "requirements": ["Gold ortağın yaptığı her şey", "En aktif ortaklarımıza ayrılmıştır"],
+            "tagline": "En yakın ortaklarımız"
+          }
+        ],
+        "lede": "Sizi onayladığımız gün Registered ortak olarak katılırsınız. Ekibiniz sertifika aldıkça ve işiniz büyüdükçe kademelerde yükselirsiniz, kayıtlı anlaşma indiriminiz de sizinle birlikte büyür.",
+        "requirementsLabel": "Nasıl Ulaşırsınız",
+        "title": "Ortaklık Kademeleri"
+      }
     },
     "personaPages": {
       "forAiAgents": {

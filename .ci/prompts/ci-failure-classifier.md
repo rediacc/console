@@ -24,6 +24,7 @@ Infrastructure or flaky failures that pass on retry:
 - "Encountered an error while trying to determine feature enablement: HttpError: Requires authentication" (or other GitHub API 401s inside first-party actions like CodeQL) — GitHub-side token-service blip, never caused by repository code.
 - "Failed to pull $image $platform" messages followed by manual retry wrapping — the retry script failed but image is correct.
 - Intermittent download verification failures ("checksum mismatch", "digest mismatch", "ERR_NETWORK_CHANGED") when the download URL is the same one that worked in previous runs.
+- A missing platform-specific optional native binary at runtime right after a successful dependency install: 'The package "@esbuild/<platform>" could not be found, and is needed by esbuild', "Cannot find module @rollup/rollup-<platform>", missing "lightningcss.<platform>.node", "@biomejs/cli-<platform>", "@img/sharp-<platform>". npm treats optionalDependencies whose download/extract fails as non-fatal and silently skips them, so `npm ci` exits 0 with a hole in node_modules; a retry reinstalls cleanly. Only classify as code-change if the log also shows the lockfile itself rejected the package ("Missing: ... from lock file" during `npm ci`), which is a real lockfile drift.
 
 ## code-change (retry will NOT help)
 
@@ -34,7 +35,7 @@ Failures caused by the code under test:
 - HTTP 404 errors in install/deploy steps (artifact never uploaded or URL path wrong) — but only if 404, not 5xx
 - Missing environment variables or configuration errors
 - Shell syntax errors
-- Import/module resolution errors (Cannot find module)
+- Import/module resolution errors (Cannot find module) — EXCEPT missing platform-specific optional native binaries (see the transient list), which are npm install flakes, not code
 - Build failures due to missing dependencies the code should declare
 - Schema/migration validation failures
 - Go `undefined:` / `cannot use ... as ...` / `not enough return values` — compile errors

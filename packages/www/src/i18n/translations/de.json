@@ -190,6 +190,7 @@
     "productLinks": {
       "disasterRecovery": "Notfallwiederherstellung",
       "overview": "Überblick",
+      "partners": "Partnerprogramm",
       "pricing": "Preise",
       "professionalServices": "Professionelle Dienstleistungen",
       "solutions": "Lösungen"
@@ -361,6 +362,7 @@
     "install": "Installieren",
     "languageSelectionMenu": "Sprachauswahlmenü",
     "login": "Einloggen",
+    "partners": "Partner",
     "personas": {
       "ai-agent": {
         "cta": "Zur Dokumentation",
@@ -1281,6 +1283,183 @@
         "title": "Was Sie tun können:"
       },
       "title": "Seite nicht gefunden"
+    },
+    "partners": {
+      "apply": {
+        "lede": "Erzählen Sie uns von Ihrem Unternehmen. Wir lesen jede Bewerbung und antworten per E-Mail.",
+        "title": "Jetzt für das Partner 1st Program bewerben"
+      },
+      "benefits": {
+        "items": [
+          {
+            "body": "Wenn Sie uns einen Kunden bringen, registrieren Sie den Deal. Sobald wir ihn genehmigen, gehört Ihnen der Rabatt für die gesamte Schutzfrist. Kein anderer Partner kann denselben Kunden registrieren und Sie preislich unterbieten.",
+            "title": "Deals registrieren, Marge schützen"
+          },
+          {
+            "body": "Es gibt zwei kurze Tracks: einen für den Vertrieb und einen für technisches Personal. Ihr Team lernt im Partnerportal und legt die Prüfung kostenlos ab. Wer besteht, bringt Ihr Team eine Stufe weiter nach oben und sichert höhere Rabatte.",
+            "title": "Ihr Team kostenlos zertifizieren"
+          },
+          {
+            "body": "Geben Sie Kunden einen voll funktionsfähigen Test, ohne auf uns zu warten. Sie entscheiden, wer eine Lizenz bekommt und wann sie startet. Jede Testphase ist zeitlich begrenzt, sodass nichts endlos weiterläuft.",
+            "title": "Testlizenzen vergeben, die Sie selbst steuern"
+          }
+        ],
+        "lede": "Drei Gründe, warum sich das Partner 1st Program für Sie lohnt.",
+        "title": "Warum mit uns zusammenarbeiten"
+      },
+      "certification": {
+        "facts": [
+          "Zwei Tracks: einer für den Vertrieb, einer für technisches Personal",
+          "Ein Lernprogramm direkt im Partnerportal",
+          "20 Fragen pro Prüfung, aus einem größeren Fragenpool",
+          "30 Minuten Bearbeitungszeit",
+          "Bestanden ab 17 richtigen Antworten",
+          "Zertifikate bleiben 6 Monate gültig",
+          "Immer kostenlos"
+        ],
+        "lede": "Jeder Partner kann sich kostenlos zertifizieren. Wählen Sie den passenden Track: Vertrieb oder Technik. Das Lernprogramm liegt im Portal, sodass sich Ihr Team vor der Prüfung vorbereiten kann.",
+        "title": "Kostenlose Zertifizierung, zwei Tracks"
+      },
+      "finalCta": {
+        "button": "Partner werden",
+        "note": "Bereits freigeschaltet? Melden Sie sich im Partnerportal an.",
+        "subtitle": "Werden Sie Teil des Partner 1st Program und schützen Sie ab sofort Ihre Deals.",
+        "title": "Bereit, Rediacc zu verkaufen?"
+      },
+      "form": {
+        "errors": {
+          "captcha": "Bitte lösen Sie das Captcha, um fortzufahren.",
+          "consent": "Bitte stimmen Sie der Kontaktaufnahme zu, damit wir auf Ihre Bewerbung antworten können.",
+          "generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+          "requiredFields": "Bitte geben Sie Ihren Namen, Ihre geschäftliche E-Mail-Adresse, Ihr Unternehmen, Ihr Land und mindestens eine Vertriebsart an."
+        },
+        "fields": {
+          "company": "Firmenname",
+          "companyPlaceholder": "Ihr Unternehmen",
+          "consent": "Ich bin damit einverstanden, zum Rediacc-Partnerprogramm kontaktiert zu werden.",
+          "contactName": "Ihr Name",
+          "contactNamePlaceholder": "Vor- und Nachname",
+          "country": "Land",
+          "countryPlaceholder": "Land auswählen",
+          "email": "Geschäftliche E-Mail",
+          "emailPlaceholder": "you@company.com",
+          "howHeard": "Wie sind Sie auf uns aufmerksam geworden?",
+          "isDistributor": "Wir arbeiten als Distributor und verkaufen über andere Partner weiter.",
+          "jobTitle": "Position",
+          "jobTitlePlaceholder": "Ihre Rolle",
+          "message": "Möchten Sie uns noch etwas mitteilen?",
+          "messagePlaceholder": "Erzählen Sie uns von Ihrem Unternehmen und den Kunden, die Sie betreuen.",
+          "partnerTypes": "Wie verkaufen Sie? Wählen Sie alles Zutreffende aus.",
+          "phone": "Telefon",
+          "phonePlaceholder": "Freiwillig",
+          "website": "Webseite",
+          "websitePlaceholder": "https://example.com"
+        },
+        "howHeardOptions": {
+          "blog": "Blog oder Artikel",
+          "event": "Eine Veranstaltung oder ein Webinar",
+          "other": "Etwas anderes",
+          "referral": "Ein Kollege oder Freund",
+          "search": "Suchmaschine",
+          "socialMedia": "Soziale Medien"
+        },
+        "partnerTypeOptions": {
+          "consultant": "Berater",
+          "distributor": "Vertriebshändler",
+          "msp": "Managed-Service-Provider",
+          "referral": "Empfehlungspartner",
+          "reseller": "Wiederverkäufer"
+        },
+        "sending": "Wird gesendet...",
+        "submit": "Bewerbung absenden",
+        "success": {
+          "body": "Danke für Ihr Interesse. Wir lesen jede Bewerbung und melden uns bald per E-Mail.",
+          "title": "Bewerbung erhalten"
+        }
+      },
+      "hero": {
+        "eyebrow": "Partnerprogramm",
+        "note": "Kostenlos. Jede Bewerbung wird persönlich geprüft.",
+        "primaryCta": "Partner werden",
+        "secondaryCta": "Partner-Login",
+        "subtitle": "Das Rediacc Partner 1st Program wurde für Reseller, Managed-Service-Provider und Berater entwickelt. Registrieren Sie Ihre Deals, lassen Sie Ihr Team kostenlos zertifizieren und vergeben Sie Testlizenzen, die Sie selbst steuern.",
+        "title": "Werden Sie Partner von Rediacc und behalten Sie Ihre Marge"
+      },
+      "how": {
+        "steps": [
+          {
+            "body": "Füllen Sie das kurze Formular unten aus und erzählen Sie uns, wie Sie verkaufen und wen Sie betreuen.",
+            "title": "Bewerben"
+          },
+          {
+            "body": "Wir prüfen jede Bewerbung persönlich. Sobald Sie dabei sind, erhalten Sie einen Login und Zugang zum Partnerportal.",
+            "title": "Freigabe erhalten"
+          },
+          {
+            "body": "Arbeiten Sie die Vertriebs- und Technik-Tracks in Ihrem eigenen Tempo durch und bestehen Sie die Prüfung für Ihre Zertifikate.",
+            "title": "Lernen und zertifizieren"
+          },
+          {
+            "body": "Registrieren Sie Ihre Kunden-Deals, vergeben Sie Testlizenzen und verkaufen Sie Rediacc bei geschützter Marge.",
+            "title": "Deals registrieren und verkaufen"
+          }
+        ],
+        "title": "So funktioniert's"
+      },
+      "meta": {
+        "description": "Treten Sie dem Rediacc Partner 1st Program bei: Deals registrieren und Marge schützen, kostenlos zertifizieren, eigene Testlizenzen an Kunden vergeben.",
+        "title": "Rediacc Partner 1st Program für Reseller"
+      },
+      "tiers": {
+        "benefitsLabel": "Das bekommen Sie",
+        "cards": [
+          {
+            "benefits": [
+              "Zugang zum Partnerportal",
+              "Deal-Registrierung mit Margenschutz",
+              "Kostenlose Vertriebs- und Technik-Zertifizierung",
+              "Testlizenzen für Ihre Kunden"
+            ],
+            "name": "Registriert",
+            "requirements": ["Bewerben und freigeschaltet werden"],
+            "tagline": "Hier startet jeder Partner"
+          },
+          {
+            "benefits": [
+              "Alles aus der Stufe Registriert",
+              "Ein höherer Rabatt auf registrierte Deals"
+            ],
+            "name": "Silber",
+            "requirements": [
+              "Alles, was ein Registriert-Partner tut",
+              "Zwei gültige Zertifikate in Ihrem Team",
+              "Zertifikate bleiben 6 Monate gültig"
+            ],
+            "tagline": "Zertifiziert und im Verkauf"
+          },
+          {
+            "benefits": ["Alles aus der Stufe Silber", "Eine höhere Rabattstufe"],
+            "name": "Gold",
+            "requirements": [
+              "Alles, was ein Silber-Partner tut",
+              "Erreicht, wenn Ihr Geschäft mit uns wächst"
+            ],
+            "tagline": "Wachstum mit uns"
+          },
+          {
+            "benefits": ["Alles aus der Stufe Gold", "Unser bester Partnerrabatt"],
+            "name": "Platin",
+            "requirements": [
+              "Alles, was ein Gold-Partner tut",
+              "Reserviert für unsere aktivsten Partner"
+            ],
+            "tagline": "Unsere engsten Partner"
+          }
+        ],
+        "lede": "Am Tag Ihrer Freigabe starten Sie auf der Stufe „Registriert“. Je mehr sich Ihr Team zertifiziert und Ihr Geschäft mit uns wächst, desto weiter klettern Sie die Stufen hoch und desto höher wird Ihr Rabatt auf registrierte Deals.",
+        "requirementsLabel": "So erreichen Sie diese Stufe",
+        "title": "Die Partner-Stufen"
+      }
     },
     "personaPages": {
       "forAiAgents": {
