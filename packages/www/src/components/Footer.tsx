@@ -148,6 +148,17 @@ const Footer: React.FC = () => {
                   {t('footer.productLinks.professionalServices')}
                 </a>
               </li>
+              <li>
+                <a
+                  href={`/${currentLang}/partners`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-product"
+                  data-track-dest="partners"
+                >
+                  {t('footer.productLinks.partners')}
+                </a>
+              </li>
             </ul>
           </nav>
 

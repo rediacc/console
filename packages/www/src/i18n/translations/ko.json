@@ -190,6 +190,7 @@
     "productLinks": {
       "disasterRecovery": "재해 복구",
       "overview": "개요",
+      "partners": "파트너 프로그램",
       "pricing": "요금제",
       "professionalServices": "전문 서비스",
       "solutions": "솔루션"
@@ -361,6 +362,7 @@
     "install": "설치",
     "languageSelectionMenu": "언어 선택 메뉴",
     "login": "로그인",
+    "partners": "파트너",
     "personas": {
       "ai-agent": {
         "cta": "문서 보기",
@@ -1283,6 +1285,180 @@
         "title": "다음을 시도해 보세요:"
       },
       "title": "페이지를 찾을 수 없습니다"
+    },
+    "partners": {
+      "meta": {
+        "title": "리셀러를 위한 Rediacc Partner 1st Program",
+        "description": "Rediacc Partner 1st Program에 참여하세요. 딜을 등록해 마진을 보호하고, 무료 인증을 취득하고, 고객에게 직접 관리하는 체험 라이선스를 제공하세요."
+      },
+      "hero": {
+        "eyebrow": "파트너 프로그램",
+        "title": "Rediacc와 파트너가 되고 마진을 지키세요",
+        "subtitle": "Rediacc Partner 1st Program은 리셀러, 매니지드 서비스 제공업체, 컨설턴트를 위해 만들어졌습니다. 딜을 등록하고, 팀원을 무료로 인증하고, 고객에게 직접 관리하는 체험 라이선스를 제공하세요.",
+        "primaryCta": "파트너 신청하기",
+        "secondaryCta": "파트너 로그인",
+        "note": "가입은 무료입니다. 모든 신청서는 담당자가 직접 검토합니다."
+      },
+      "benefits": {
+        "title": "우리와 파트너가 되어야 하는 이유",
+        "lede": "Partner 1st Program이 가치 있는 이유는 세 가지입니다.",
+        "items": [
+          {
+            "title": "딜을 등록하고 마진을 보호하세요",
+            "body": "고객을 소개하실 때 딜을 등록해 주세요. 승인되면 보호 기간 동안 할인 혜택은 온전히 파트너님의 것입니다. 다른 파트너가 같은 고객을 등록해 가격을 낮출 수 없습니다."
+          },
+          {
+            "title": "팀원을 무료로 인증하세요",
+            "body": "영업 트랙과 기술 트랙, 두 가지 단기 과정을 제공합니다. 팀원은 파트너 포털에서 학습하고 무료로 시험을 치를 수 있습니다. 합격하면 등급이 올라가고 할인 폭도 커집니다."
+          },
+          {
+            "title": "직접 관리하는 체험 라이선스를 제공하세요",
+            "body": "저희를 기다릴 필요 없이 고객에게 바로 작동하는 체험판을 제공하세요. 누구에게 언제 시작할지는 파트너님이 직접 정합니다. 모든 체험판에는 기간 제한이 있어 무한정 지속되지 않습니다."
+          }
+        ]
+      },
+      "tiers": {
+        "title": "파트너 등급 체계",
+        "lede": "승인을 받는 날 등록 등급 파트너로 시작합니다. 팀이 인증을 취득하고 비즈니스가 성장할수록 등급이 올라가며, 등록 딜 할인율도 함께 커집니다.",
+        "requirementsLabel": "달성 조건",
+        "benefitsLabel": "제공 혜택",
+        "cards": [
+          {
+            "name": "등록",
+            "tagline": "모든 파트너의 시작점",
+            "requirements": ["신청 후 승인받기"],
+            "benefits": [
+              "파트너 포털 이용",
+              "마진이 보호되는 딜 등록",
+              "무료 영업·기술 인증",
+              "고객용 체험 라이선스"
+            ]
+          },
+          {
+            "name": "실버",
+            "tagline": "인증받고 판매 중",
+            "requirements": [
+              "등록 등급 파트너의 모든 혜택",
+              "팀 전체에 유효한 인증서 2개 보유",
+              "인증서 유효 기간은 6개월"
+            ],
+            "benefits": ["등록 등급의 모든 혜택", "등록 딜에 대한 더 큰 할인"]
+          },
+          {
+            "name": "골드",
+            "tagline": "함께 성장하기",
+            "requirements": [
+              "실버 등급 파트너의 모든 조건 충족",
+              "Rediacc와의 비즈니스 성장에 따라 달성"
+            ],
+            "benefits": ["실버 등급의 모든 혜택", "더 높은 할인 등급"]
+          },
+          {
+            "name": "플래티넘",
+            "tagline": "가장 긴밀한 파트너",
+            "requirements": [
+              "골드 등급 파트너의 모든 조건 충족",
+              "가장 활발하게 활동하는 파트너에게만 제공"
+            ],
+            "benefits": ["골드 등급의 모든 혜택", "최고 수준의 파트너 할인"]
+          }
+        ]
+      },
+      "how": {
+        "title": "이용 방법",
+        "steps": [
+          {
+            "title": "신청",
+            "body": "아래 간단한 양식을 작성해 판매 방식과 고객층을 알려주세요."
+          },
+          {
+            "title": "승인",
+            "body": "모든 신청서는 담당자가 직접 검토합니다. 승인되면 로그인 정보와 파트너 포털 접근 권한을 받습니다."
+          },
+          {
+            "title": "학습 및 인증",
+            "body": "본인의 속도에 맞춰 영업·기술 트랙을 학습한 후 시험에 합격해 인증서를 취득하세요."
+          },
+          {
+            "title": "딜 등록 및 판매",
+            "body": "고객 딜을 등록하고, 체험 라이선스를 공유하고, 마진을 보호받으며 Rediacc를 판매하세요."
+          }
+        ]
+      },
+      "certification": {
+        "title": "무료 인증, 두 가지 트랙",
+        "lede": "모든 파트너는 무료로 인증을 취득할 수 있습니다. 담당자에게 맞는 트랙을 선택하세요: 영업 또는 기술. 학습 프로그램은 포털에 있어 팀원이 시험을 치르기 전에 미리 준비할 수 있습니다.",
+        "facts": [
+          "영업 트랙과 기술 트랙, 총 두 가지",
+          "파트너 포털에 내장된 학습 프로그램",
+          "더 큰 문제 은행에서 출제되는 시험당 20문제",
+          "소요 시간 30분",
+          "17문제 이상 정답 시 합격",
+          "인증서 유효 기간 6개월",
+          "항상 무료로 응시 가능"
+        ]
+      },
+      "apply": {
+        "title": "Partner 1st Program 신청하기",
+        "lede": "귀사에 대해 알려주세요. 모든 신청서를 검토한 후 이메일로 답변드립니다."
+      },
+      "form": {
+        "fields": {
+          "contactName": "이름",
+          "contactNamePlaceholder": "성과 이름",
+          "jobTitle": "직함",
+          "jobTitlePlaceholder": "담당 업무",
+          "email": "업무용 이메일",
+          "emailPlaceholder": "you@company.com",
+          "phone": "전화번호",
+          "phonePlaceholder": "선택 사항",
+          "company": "회사명",
+          "companyPlaceholder": "회사명을 입력하세요",
+          "website": "웹사이트",
+          "websitePlaceholder": "https://example.com",
+          "country": "국가",
+          "countryPlaceholder": "국가를 선택하세요",
+          "partnerTypes": "어떤 방식으로 판매하시나요? 해당하는 항목을 모두 선택하세요.",
+          "isDistributor": "당사는 유통업체로서 다른 파트너를 통해 재판매합니다.",
+          "howHeard": "저희를 어떻게 알게 되셨나요?",
+          "message": "추가로 전달할 내용이 있나요?",
+          "messagePlaceholder": "귀사와 담당 고객층에 대해 알려주세요.",
+          "consent": "Rediacc 파트너 프로그램 관련 연락에 동의합니다."
+        },
+        "partnerTypeOptions": {
+          "reseller": "리셀러",
+          "msp": "매니지드 서비스 제공업체",
+          "consultant": "컨설턴트",
+          "distributor": "유통업체",
+          "referral": "리퍼럴 파트너"
+        },
+        "howHeardOptions": {
+          "search": "검색 엔진",
+          "referral": "동료 또는 지인",
+          "event": "행사 또는 웨비나",
+          "socialMedia": "소셜 미디어",
+          "blog": "블로그 또는 기사",
+          "other": "기타"
+        },
+        "submit": "신청서 제출",
+        "sending": "전송 중...",
+        "success": {
+          "title": "신청이 접수되었습니다",
+          "body": "관심 가져주셔서 감사합니다. 모든 신청서를 검토한 후 곧 이메일로 답변드리겠습니다."
+        },
+        "errors": {
+          "requiredFields": "이름, 업무용 이메일, 회사명, 국가, 판매 방식을 최소 한 가지 이상 입력해 주세요.",
+          "consent": "신청서에 답변드릴 수 있도록 연락 수신에 동의해 주세요.",
+          "captcha": "계속하려면 캡차를 완료해 주세요.",
+          "generic": "문제가 발생했습니다. 다시 시도해 주세요."
+        }
+      },
+      "finalCta": {
+        "title": "Rediacc 판매를 시작할 준비가 되셨나요?",
+        "subtitle": "Partner 1st Program에 가입하고 딜 보호를 시작하세요.",
+        "button": "파트너 신청하기",
+        "note": "이미 승인받으셨나요? 파트너 포털에 로그인하세요."
+      }
     },
     "personaPages": {
       "forAiAgents": {

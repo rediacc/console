@@ -1,0 +1,651 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PartnerApplicationForm from '../../components/PartnerApplicationForm';
+import { createTranslator } from '../../i18n/utils';
+import type { Language } from '../../i18n/types';
+import { getLanguagePaths } from '../../i18n/language-utils';
+
+export const getStaticPaths = getLanguagePaths;
+
+const { lang } = Astro.params as { lang: Language };
+const { t, ta } = createTranslator(lang);
+
+const ns = 'pages.partners';
+const benefitItems = ta(`${ns}.benefits.items`);
+const tierCards = ta(`${ns}.tiers.cards`);
+const howSteps = ta(`${ns}.how.steps`);
+const certFacts = ta(`${ns}.certification.facts`);
+
+const tierSlugs = ['registered', 'silver', 'gold', 'platinum'];
+---
+
+<BaseLayout
+  lang={lang}
+  title={t(`${ns}.meta.title`)}
+  description={t(`${ns}.meta.description`)}
+  ogType="website"
+  structuredDataType="organization"
+>
+  <article class="pt-page">
+    <!-- Hero -->
+    <section class="pt-hero">
+      <div class="container">
+        <span class="pt-eyebrow">{t(`${ns}.hero.eyebrow`)}</span>
+        <h1>{t(`${ns}.hero.title`)}</h1>
+        <p class="pt-hero-sub">{t(`${ns}.hero.subtitle`)}</p>
+        <div class="pt-cta-row">
+          <a href="#partner-application" class="pt-btn-primary">
+            {t(`${ns}.hero.primaryCta`)} &rarr;
+          </a>
+          <a href="/account/" class="pt-btn-secondary">
+            {t(`${ns}.hero.secondaryCta`)}
+          </a>
+        </div>
+        <p class="pt-hero-note">{t(`${ns}.hero.note`)}</p>
+      </div>
+    </section>
+
+    <!-- Why partner -->
+    <section class="pt-section">
+      <div class="container">
+        <h2>{t(`${ns}.benefits.title`)}</h2>
+        <p class="pt-section-lede">{t(`${ns}.benefits.lede`)}</p>
+        <div class="pt-card-grid">
+          {benefitItems.map((item: any) => (
+            <div class="pt-card">
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Tier ladder -->
+    <section class="pt-section pt-section--alt">
+      <div class="container">
+        <h2>{t(`${ns}.tiers.title`)}</h2>
+        <p class="pt-section-lede">{t(`${ns}.tiers.lede`)}</p>
+        <div class="pt-tier-grid">
+          {tierCards.map((card: any, i: number) => (
+            <div class={`pt-tier-card pt-tier-card--${tierSlugs[i] ?? 'registered'}`}>
+              <span class="pt-tier-badge">{card.name}</span>
+              <p class="pt-tier-tagline">{card.tagline}</p>
+              <div class="pt-tier-block">
+                <span class="pt-tier-label">{t(`${ns}.tiers.requirementsLabel`)}</span>
+                <ul class="pt-tier-list">
+                  {card.requirements.map((req: string) => (
+                    <li>{req}</li>
+                  ))}
+                </ul>
+              </div>
+              <div class="pt-tier-block">
+                <span class="pt-tier-label">{t(`${ns}.tiers.benefitsLabel`)}</span>
+                <ul class="pt-tier-list">
+                  {card.benefits.map((benefit: string) => (
+                    <li>{benefit}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="pt-section">
+      <div class="container">
+        <h2>{t(`${ns}.how.title`)}</h2>
+        <ol class="pt-steps">
+          {howSteps.map((step: any, i: number) => (
+            <li class="pt-step">
+              <span class="pt-step-num">{i + 1}</span>
+              <div>
+                <h3>{step.title}</h3>
+                <p>{step.body}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    <!-- Certification strip -->
+    <section class="pt-section pt-section--alt">
+      <div class="container">
+        <h2>{t(`${ns}.certification.title`)}</h2>
+        <p class="pt-section-lede">{t(`${ns}.certification.lede`)}</p>
+        <ul class="pt-fact-list">
+          {certFacts.map((fact: string) => (
+            <li>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M5 10l3 3 7-7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span>{fact}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- Application form -->
+    <section class="pt-apply" id="partner-application">
+      <div class="container">
+        <div class="pt-apply-head">
+          <h2>{t(`${ns}.apply.title`)}</h2>
+          <p>{t(`${ns}.apply.lede`)}</p>
+        </div>
+        <div class="pt-apply-card">
+          <PartnerApplicationForm client:load />
+        </div>
+      </div>
+    </section>
+
+    <!-- Closing CTA -->
+    <section class="pt-final-cta">
+      <div class="container">
+        <h2>{t(`${ns}.finalCta.title`)}</h2>
+        <p>{t(`${ns}.finalCta.subtitle`)}</p>
+        <a href="#partner-application" class="pt-btn-primary pt-btn-large">
+          {t(`${ns}.finalCta.button`)} &rarr;
+        </a>
+        <p class="pt-final-cta-note">{t(`${ns}.finalCta.note`)}</p>
+      </div>
+    </section>
+  </article>
+</BaseLayout>
+
+<style>
+  .pt-page {
+    color: var(--color-text);
+  }
+
+  .pt-hero {
+    padding: calc(var(--nav-top-offset, 3.5rem) + var(--space-12)) 0 var(--space-16);
+    text-align: center;
+    background: linear-gradient(180deg, var(--color-bg-alt) 0%, var(--color-bg) 100%);
+  }
+
+  .pt-eyebrow {
+    display: inline-block;
+    background: var(--color-brand-primary);
+    color: white;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: var(--space-4);
+  }
+
+  .pt-hero h1 {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: var(--font-weight-bold);
+    line-height: 1.1;
+    max-width: 880px;
+    margin: 0 auto var(--space-4);
+  }
+
+  .pt-hero-sub {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-secondary);
+    max-width: 720px;
+    margin: 0 auto var(--space-8);
+  }
+
+  .pt-cta-row {
+    display: flex;
+    gap: var(--space-4);
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: var(--space-4);
+  }
+
+  .pt-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-6);
+    background: var(--color-brand-primary);
+    color: white;
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    font-weight: var(--font-weight-semibold);
+    transition: opacity 0.15s ease;
+  }
+
+  .pt-btn-primary:hover { opacity: 0.92; }
+
+  .pt-btn-large {
+    padding: var(--space-4) var(--space-8);
+    font-size: var(--font-size-lg);
+  }
+
+  .pt-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-3) var(--space-6);
+    background: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .pt-btn-secondary:hover { background: var(--color-bg-alt); }
+
+  .pt-hero-note {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+
+  .pt-section {
+    padding: var(--space-16) 0;
+  }
+
+  .pt-section--alt {
+    background: var(--color-bg-alt);
+  }
+
+  .pt-section h2 {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    text-align: center;
+    margin-bottom: var(--space-4);
+  }
+
+  .pt-section-lede {
+    text-align: center;
+    color: var(--color-text-secondary);
+    max-width: 720px;
+    margin: 0 auto var(--space-12);
+  }
+
+  .pt-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: var(--space-6);
+    margin-top: var(--space-8);
+  }
+
+  .pt-card {
+    background: var(--color-bg-alt);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-6);
+  }
+
+  .pt-section--alt .pt-card {
+    background: var(--color-bg);
+  }
+
+  .pt-card h3 {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    margin: 0 0 var(--space-3);
+  }
+
+  .pt-card p {
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+
+  /* Tier ladder */
+  .pt-tier-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--space-6);
+    margin-top: var(--space-8);
+  }
+
+  .pt-tier-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-top: 4px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .pt-tier-card--registered { border-top-color: #64748b; }
+  .pt-tier-card--silver { border-top-color: #9ca3af; }
+  .pt-tier-card--gold { border-top-color: #d4a13a; }
+  .pt-tier-card--platinum { border-top-color: #6366f1; }
+
+  .pt-tier-badge {
+    align-self: flex-start;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+  }
+
+  .pt-tier-tagline {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    margin: calc(var(--space-3) * -1) 0 0;
+  }
+
+  .pt-tier-label {
+    display: block;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-2);
+  }
+
+  .pt-tier-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .pt-tier-list li {
+    position: relative;
+    padding-left: var(--space-5);
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+    line-height: var(--leading-relaxed);
+  }
+
+  .pt-tier-list li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: var(--color-brand-primary);
+  }
+
+  /* How it works */
+  .pt-steps {
+    list-style: none;
+    padding: 0;
+    max-width: 720px;
+    margin: var(--space-8) auto 0;
+    display: grid;
+    gap: var(--space-6);
+    counter-reset: pt-step;
+  }
+
+  .pt-step {
+    display: flex;
+    gap: var(--space-4);
+    align-items: flex-start;
+  }
+
+  .pt-step-num {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--radius-full);
+    background: var(--color-brand-primary);
+    color: white;
+    font-weight: var(--font-weight-bold);
+  }
+
+  .pt-step h3 {
+    margin: 0 0 var(--space-1);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .pt-step p {
+    margin: 0;
+    color: var(--color-text-secondary);
+  }
+
+  /* Certification facts */
+  .pt-fact-list {
+    list-style: none;
+    padding: 0;
+    max-width: 640px;
+    margin: var(--space-8) auto 0;
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .pt-fact-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    color: var(--color-text);
+  }
+
+  .pt-fact-list svg {
+    color: var(--color-brand-primary);
+    flex: 0 0 auto;
+    margin-top: 2px;
+  }
+
+  /* Application */
+  .pt-apply {
+    padding: var(--space-16) 0;
+    scroll-margin-top: 6rem;
+  }
+
+  .pt-apply-head {
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto var(--space-8);
+  }
+
+  .pt-apply-head h2 {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    margin-bottom: var(--space-3);
+  }
+
+  .pt-apply-head p {
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+
+  .pt-apply-card {
+    max-width: 720px;
+    margin: 0 auto;
+    background: var(--color-bg-alt);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-8);
+  }
+
+  /* Closing CTA */
+  .pt-final-cta {
+    padding: var(--space-20) 0;
+    text-align: center;
+    background: var(--color-brand-primary);
+    color: white;
+  }
+
+  .pt-final-cta h2 {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    color: white;
+    margin-bottom: var(--space-4);
+  }
+
+  .pt-final-cta p {
+    color: white;
+    opacity: 0.9;
+    margin-bottom: var(--space-8);
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .pt-final-cta .pt-btn-primary {
+    background: white;
+    color: var(--color-brand-primary);
+  }
+
+  .pt-final-cta-note {
+    margin-top: var(--space-4);
+    font-size: var(--font-size-sm);
+    opacity: 0.85;
+  }
+
+  @media (max-width: 48rem) {
+    .pt-hero {
+      padding: calc(var(--nav-top-offset, 3.5rem) + var(--space-8)) 0 var(--space-12);
+    }
+  }
+</style>
+
+<!-- Form styles are global: the React island renders client-side, so Astro's
+     scoped-style hash never reaches its DOM. Class names are namespaced under
+     `partner-form` to avoid collisions. -->
+<style is:global>
+  .partner-form {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .partner-form-honeypot {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .partner-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+  }
+
+  .partner-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .partner-form-field label,
+  .partner-form-fieldset legend {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text);
+  }
+
+  .partner-form-field input,
+  .partner-form-field select,
+  .partner-form-field textarea {
+    width: 100%;
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font: inherit;
+  }
+
+  .partner-form-field input:focus-visible,
+  .partner-form-field select:focus-visible,
+  .partner-form-field textarea:focus-visible,
+  .partner-form-checkbox input:focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 1px;
+  }
+
+  .partner-form-field textarea {
+    resize: vertical;
+  }
+
+  .partner-form-fieldset {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    margin: 0;
+  }
+
+  .partner-form-fieldset legend {
+    padding: 0 var(--space-2);
+  }
+
+  .partner-form-checkboxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+  }
+
+  .partner-form-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+    cursor: pointer;
+  }
+
+  .partner-form-checkbox input {
+    margin-top: 0.15em;
+    flex: 0 0 auto;
+  }
+
+  .partner-form-checkbox--block {
+    padding: var(--space-1) 0;
+  }
+
+  .partner-form-error {
+    color: var(--color-error, #dc2626);
+    font-size: var(--font-size-sm);
+    margin: 0;
+  }
+
+  .partner-form-submit {
+    padding: var(--space-3) var(--space-6);
+    background: var(--color-brand-primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-base);
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+  }
+
+  .partner-form-submit:hover:not(:disabled) { opacity: 0.92; }
+  .partner-form-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .partner-form-success {
+    text-align: center;
+    padding: var(--space-6) 0;
+  }
+
+  .partner-form-success-icon {
+    color: var(--color-brand-primary);
+    margin-bottom: var(--space-4);
+  }
+
+  .partner-form-success h3 {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    margin: 0 0 var(--space-2);
+  }
+
+  .partner-form-success p {
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+
+  @media (max-width: 40rem) {
+    .partner-form-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

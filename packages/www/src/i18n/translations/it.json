@@ -190,6 +190,7 @@
     "productLinks": {
       "disasterRecovery": "Ripristino d'emergenza",
       "overview": "Panoramica",
+      "partners": "Programma Partner",
       "pricing": "Prezzi",
       "professionalServices": "Servizi professionali",
       "solutions": "Soluzioni"
@@ -361,6 +362,7 @@
     "install": "Installa",
     "languageSelectionMenu": "Menu di selezione della lingua",
     "login": "Accedi",
+    "partners": "Partner",
     "personas": {
       "ai-agent": {
         "cta": "Vedi la documentazione",
@@ -1285,6 +1287,183 @@
         "title": "Cosa puoi fare:"
       },
       "title": "Pagina non trovata"
+    },
+    "partners": {
+      "apply": {
+        "lede": "Raccontaci del tuo business. Leggiamo ogni richiesta e rispondiamo via email.",
+        "title": "Fai domanda per il Programma Partner 1st"
+      },
+      "benefits": {
+        "items": [
+          {
+            "body": "Quando porti un cliente, registra la trattativa. Una volta approvata, lo sconto è tuo per tutta la durata della protezione. Nessun altro partner può registrare lo stesso cliente e abbassare il tuo prezzo.",
+            "title": "Registra le trattative, proteggi il margine"
+          },
+          {
+            "body": "Abbiamo due percorsi brevi, uno per le vendite e uno per il personale tecnico. Il tuo team studia nel portale partner e sostiene l'esame senza costi. Superarlo fa salire il tuo team di livello e aumenta gli sconti.",
+            "title": "Certifica il tuo team gratis"
+          },
+          {
+            "body": "Offri ai clienti una prova funzionante senza aspettare noi. Scegli tu chi la riceve e quando parte. Ogni prova ha una durata limitata, quindi nulla resta attivo per sempre.",
+            "title": "Distribuisci licenze di prova che controlli tu"
+          }
+        ],
+        "lede": "Tre motivi per cui vale la pena entrare nel Programma Partner 1st.",
+        "title": "Perché collaborare con noi"
+      },
+      "certification": {
+        "facts": [
+          "Due percorsi: uno per le vendite, uno per il personale tecnico",
+          "Un programma di studio integrato nel portale partner",
+          "20 domande per esame, estratte da un archivio più ampio",
+          "30 minuti per completarlo",
+          "Si supera con 17 risposte corrette o più",
+          "I certificati restano validi per 6 mesi",
+          "Sempre gratuito"
+        ],
+        "lede": "Ogni partner può certificarsi senza costi. Scegli il percorso più adatto: vendite o tecnico. Il programma di studio si trova nel portale, così il tuo team può prepararsi prima dell'esame.",
+        "title": "Certificazione gratuita, due percorsi"
+      },
+      "finalCta": {
+        "button": "Diventa Partner",
+        "note": "Sei già approvato? Accedi al portale partner.",
+        "subtitle": "Entra nel Programma Partner 1st e inizia a proteggere le tue trattative.",
+        "title": "Pronto a vendere Rediacc?"
+      },
+      "form": {
+        "errors": {
+          "captcha": "Completa il captcha per continuare.",
+          "consent": "Acconsenti a essere contattato per permetterci di rispondere alla tua richiesta.",
+          "generic": "Qualcosa è andato storto. Riprova.",
+          "requiredFields": "Compila nome, email di lavoro, azienda, paese e almeno una modalità di vendita."
+        },
+        "fields": {
+          "company": "Nome azienda",
+          "companyPlaceholder": "La tua azienda",
+          "consent": "Acconsento a essere contattato per il programma partner di Rediacc.",
+          "contactName": "Il tuo nome",
+          "contactNamePlaceholder": "Nome e cognome",
+          "country": "Paese",
+          "countryPlaceholder": "Seleziona il tuo paese",
+          "email": "Email di lavoro",
+          "emailPlaceholder": "tu@azienda.com",
+          "howHeard": "Come ci hai conosciuto?",
+          "isDistributor": "Lavoriamo come distributori e rivendiamo tramite altri partner.",
+          "jobTitle": "Ruolo",
+          "jobTitlePlaceholder": "Il tuo ruolo",
+          "message": "Altro da aggiungere?",
+          "messagePlaceholder": "Raccontaci del tuo business e dei clienti che servi.",
+          "partnerTypes": "Come vendi? Seleziona tutte le opzioni valide.",
+          "phone": "Telefono",
+          "phonePlaceholder": "Facoltativo",
+          "website": "Sito web",
+          "websitePlaceholder": "https://esempio.com"
+        },
+        "howHeardOptions": {
+          "blog": "Blog o articolo",
+          "event": "Un evento o webinar",
+          "other": "Qualcos'altro",
+          "referral": "Un collega o un amico",
+          "search": "Motore di ricerca",
+          "socialMedia": "Social network"
+        },
+        "partnerTypeOptions": {
+          "consultant": "Consulente",
+          "distributor": "Distributore",
+          "msp": "Fornitore di servizi gestiti",
+          "referral": "Partner di segnalazione",
+          "reseller": "Rivenditore"
+        },
+        "sending": "Invio in corso...",
+        "submit": "Invia la richiesta",
+        "success": {
+          "body": "Grazie per l'interesse. Leggiamo ogni richiesta e ti risponderemo presto via email.",
+          "title": "Richiesta ricevuta"
+        }
+      },
+      "hero": {
+        "eyebrow": "Programma Partner",
+        "note": "Iscrizione gratuita. Ogni richiesta viene esaminata da una persona vera.",
+        "primaryCta": "Diventa Partner",
+        "secondaryCta": "Accesso Partner",
+        "subtitle": "Il Programma Rediacc Partner 1st è pensato per rivenditori, fornitori di servizi gestiti e consulenti. Registra le tue trattative, certifica il tuo team gratis e offri ai clienti licenze di prova che controlli tu.",
+        "title": "Diventa partner di Rediacc e proteggi il tuo margine"
+      },
+      "how": {
+        "steps": [
+          {
+            "body": "Compila il modulo breve qui sotto e raccontaci come vendi e chi sono i tuoi clienti.",
+            "title": "Fai domanda"
+          },
+          {
+            "body": "Esaminiamo ogni richiesta a mano. Una volta dentro, ricevi le credenziali e l'accesso al portale partner.",
+            "title": "Ottieni l'approvazione"
+          },
+          {
+            "body": "Segui i percorsi vendite e tecnico con i tuoi tempi, poi supera l'esame per ottenere i certificati.",
+            "title": "Studia e certificati"
+          },
+          {
+            "body": "Registra le trattative con i clienti, condividi le licenze di prova e vendi Rediacc con il margine protetto.",
+            "title": "Registra le trattative e vendi"
+          }
+        ],
+        "title": "Come funziona"
+      },
+      "meta": {
+        "description": "Entra nel Programma Rediacc Partner 1st: registra le trattative, certificati gratis e offri ai clienti licenze di prova che controlli tu.",
+        "title": "Programma Rediacc Partner 1st per Rivenditori"
+      },
+      "tiers": {
+        "benefitsLabel": "Cosa ottieni",
+        "cards": [
+          {
+            "benefits": [
+              "Accesso al portale partner",
+              "Registrazione delle trattative con protezione del margine",
+              "Certificazione gratuita vendite e tecnica",
+              "Licenze di prova per i tuoi clienti"
+            ],
+            "name": "Registered",
+            "requirements": ["Fai domanda e ottieni l'approvazione"],
+            "tagline": "Il punto di partenza per tutti"
+          },
+          {
+            "benefits": [
+              "Tutto il livello Registered",
+              "Uno sconto maggiore sulle trattative registrate"
+            ],
+            "name": "Silver",
+            "requirements": [
+              "Tutto quello che fa un partner Registered",
+              "Due certificati validi nel team",
+              "I certificati restano validi per 6 mesi"
+            ],
+            "tagline": "Certificato e già in vendita"
+          },
+          {
+            "benefits": ["Tutto il livello Silver", "Uno sconto più alto"],
+            "name": "Gold",
+            "requirements": [
+              "Tutto quello che fa un partner Silver",
+              "Si ottiene man mano che il tuo business con noi cresce"
+            ],
+            "tagline": "In crescita con noi"
+          },
+          {
+            "benefits": ["Tutto il livello Gold", "Il nostro sconto partner più alto"],
+            "name": "Platinum",
+            "requirements": [
+              "Tutto quello che fa un partner Gold",
+              "Riservato ai nostri partner più attivi"
+            ],
+            "tagline": "I nostri partner più stretti"
+          }
+        ],
+        "lede": "Entri come partner Registered il giorno in cui ti approviamo. Man mano che il tuo team si certifica e il tuo business cresce, sali di livello e lo sconto sulle trattative registrate cresce con te.",
+        "requirementsLabel": "Come arrivarci",
+        "title": "I livelli partner"
+      }
     },
     "personaPages": {
       "forAiAgents": {

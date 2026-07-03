@@ -166,6 +166,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, origin }) => {
     { href: `/${currentLang}/pricing`, label: t('navigation.pricing') },
     { href: `/${currentLang}/roi-calculator`, label: t('navigation.roiCalculator') },
     { href: `/${currentLang}/disaster-recovery`, label: t('navigation.disasterRecovery') },
+    { href: `/${currentLang}/partners`, label: t('navigation.partners') },
     { href: `/${currentLang}/blog`, label: t('navigation.blog') },
     { href: `/${currentLang}/docs/quick-start`, label: t('navigation.docs') },
     { href: `/${currentLang}/contact`, label: t('navigation.contact') },

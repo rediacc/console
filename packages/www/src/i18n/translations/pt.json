@@ -190,6 +190,7 @@
     "productLinks": {
       "disasterRecovery": "Recuperação de Desastres",
       "overview": "Visão Geral",
+      "partners": "Programa de Parceiros",
       "pricing": "Preços",
       "professionalServices": "Serviços Profissionais",
       "solutions": "Soluções"
@@ -368,6 +369,7 @@
     "install": "Instalar",
     "languageSelectionMenu": "Menu de selecção de idioma",
     "login": "Iniciar sessão",
+    "partners": "Parceiros",
     "personas": {
       "ai-agent": {
         "cta": "Ver a Documentação",
@@ -1290,6 +1292,189 @@
         "title": "O que pode fazer:"
       },
       "title": "Página Não Encontrada"
+    },
+    "partners": {
+      "apply": {
+        "lede": "Conte-nos sobre o seu negócio. Lemos todas as candidaturas e respondemos por e-mail.",
+        "title": "Candidate-se ao Programa Partner 1st"
+      },
+      "benefits": {
+        "items": [
+          {
+            "body": "Quando traz um cliente, registe o negócio. Assim que aprovamos, o desconto é seu durante todo o período de proteção. Nenhum outro parceiro pode registar o mesmo cliente e baixar o seu preço.",
+            "title": "Registe negócios, proteja a sua margem"
+          },
+          {
+            "body": "Temos dois percursos curtos, um para vendas e outro para a equipa técnica. As suas pessoas estudam no portal de parceiros e fazem o exame sem qualquer custo. Ao passar, a sua equipa sobe de nível e os descontos aumentam.",
+            "title": "Certifique a sua equipa gratuitamente"
+          },
+          {
+            "body": "Dê a um cliente um teste totalmente funcional sem esperar por nós. Você escolhe quem recebe e quando começa. Cada teste tem uma data de fim, por isso nada continua para sempre.",
+            "title": "Distribua licenças de teste sob o seu controlo"
+          }
+        ],
+        "lede": "Três razões fazem o Programa Partner 1st valer a pena.",
+        "title": "Por que ser nosso parceiro"
+      },
+      "certification": {
+        "facts": [
+          "Dois percursos: um para vendas, outro para a equipa técnica",
+          "Um programa de estudo integrado no portal de parceiros",
+          "20 perguntas por exame, escolhidas de um banco maior",
+          "30 minutos para terminar",
+          "Aprovação com 17 respostas certas ou mais",
+          "As certificações mantêm-se válidas durante 6 meses",
+          "Sempre gratuito"
+        ],
+        "lede": "Qualquer parceiro pode certificar-se sem qualquer custo. Escolha o percurso certo para cada pessoa: vendas ou técnico. O programa de estudo está no portal, para que a sua equipa se possa preparar antes do exame.",
+        "title": "Certificação gratuita, dois percursos"
+      },
+      "finalCta": {
+        "button": "Tornar-se parceiro",
+        "note": "Já foi aprovado? Inicie sessão no portal de parceiros.",
+        "subtitle": "Junte-se ao Programa Partner 1st e comece a proteger os seus negócios.",
+        "title": "Pronto para vender Rediacc?"
+      },
+      "form": {
+        "errors": {
+          "captcha": "Complete o captcha para continuar.",
+          "consent": "Aceite ser contactado para podermos responder à sua candidatura.",
+          "generic": "Ocorreu um erro. Tente novamente.",
+          "requiredFields": "Preencha o seu nome, e-mail profissional, empresa, país e pelo menos uma forma de venda."
+        },
+        "fields": {
+          "company": "Nome da empresa",
+          "companyPlaceholder": "A sua empresa",
+          "consent": "Concordo ser contactado sobre o programa de parceiros da Rediacc.",
+          "contactName": "O seu nome",
+          "contactNamePlaceholder": "Nome e apelido",
+          "country": "País",
+          "countryPlaceholder": "Selecione o seu país",
+          "email": "E-mail profissional",
+          "emailPlaceholder": "nome@empresa.com",
+          "howHeard": "Como soube de nós?",
+          "isDistributor": "Trabalhamos como distribuidor e revendemos através de outros parceiros.",
+          "jobTitle": "Cargo",
+          "jobTitlePlaceholder": "A sua função",
+          "message": "Mais alguma coisa?",
+          "messagePlaceholder": "Conte-nos sobre o seu negócio e os clientes que serve.",
+          "partnerTypes": "Como vende? Selecione todas as opções aplicáveis.",
+          "phone": "Telefone",
+          "phonePlaceholder": "Opcional",
+          "website": "Sítio web",
+          "websitePlaceholder": "https://exemplo.com"
+        },
+        "howHeardOptions": {
+          "blog": "Blogue ou artigo",
+          "event": "Um evento ou webinar",
+          "other": "Outra coisa",
+          "referral": "Um colega ou amigo",
+          "search": "Motor de busca",
+          "socialMedia": "Redes sociais"
+        },
+        "partnerTypeOptions": {
+          "consultant": "Consultor",
+          "distributor": "Distribuidor",
+          "msp": "Prestador de serviços geridos",
+          "referral": "Parceiro de indicação",
+          "reseller": "Revendedor"
+        },
+        "sending": "A enviar...",
+        "submit": "Enviar candidatura",
+        "success": {
+          "body": "Obrigado pelo seu interesse. Lemos todas as candidaturas e responderemos por e-mail em breve.",
+          "title": "Candidatura recebida"
+        }
+      },
+      "hero": {
+        "eyebrow": "Programa de Parceiros",
+        "note": "Grátis para aderir. Todas as candidaturas são revistas por uma pessoa.",
+        "primaryCta": "Tornar-se parceiro",
+        "secondaryCta": "Acesso de parceiros",
+        "subtitle": "O Programa Rediacc Partner 1st foi feito para revendedores, prestadores de serviços geridos e consultores. Registe os seus negócios, certifique a sua equipa gratuitamente e ofereça aos clientes licenças de teste que controla.",
+        "title": "Seja parceiro da Rediacc e mantenha a sua margem"
+      },
+      "how": {
+        "steps": [
+          {
+            "body": "Preencha o formulário breve abaixo e conte-nos como vende e quem são os seus clientes.",
+            "title": "Candidate-se"
+          },
+          {
+            "body": "Revemos cada candidatura pessoalmente. Assim que é aceite, recebe acesso e entra no portal de parceiros.",
+            "title": "Seja aprovado"
+          },
+          {
+            "body": "Avance pelos percursos de vendas e técnico ao seu ritmo e depois passe no exame para obter as suas certificações.",
+            "title": "Estude e certifique-se"
+          },
+          {
+            "body": "Registe os negócios dos seus clientes, partilhe licenças de teste e venda Rediacc com a sua margem protegida.",
+            "title": "Registe negócios e venda"
+          }
+        ],
+        "title": "Como funciona"
+      },
+      "meta": {
+        "description": "Junte-se ao Programa Rediacc Partner 1st. Registe negócios, ganhe certificação gratuita e ofereça licenças de teste aos seus clientes.",
+        "title": "Programa Rediacc Partner 1st para Revendedores"
+      },
+      "tiers": {
+        "benefitsLabel": "O que recebe",
+        "cards": [
+          {
+            "benefits": [
+              "Acesso ao portal de parceiros",
+              "Registo de negócios com proteção de margem",
+              "Certificação gratuita em vendas e técnica",
+              "Licenças de teste para os seus clientes"
+            ],
+            "name": "Registered",
+            "requirements": ["Candidate-se e seja aprovado"],
+            "tagline": "Onde todos os parceiros começam"
+          },
+          {
+            "benefits": [
+              "Tudo o que está incluído no nível Registered",
+              "Um desconto maior nos negócios registados"
+            ],
+            "name": "Silver",
+            "requirements": [
+              "Tudo o que um parceiro Registered faz",
+              "Duas certificações válidas na sua equipa",
+              "As certificações mantêm-se válidas durante 6 meses"
+            ],
+            "tagline": "Certificado e a vender"
+          },
+          {
+            "benefits": [
+              "Tudo o que está incluído no nível Silver",
+              "Um nível de desconto mais alto"
+            ],
+            "name": "Gold",
+            "requirements": [
+              "Tudo o que um parceiro Silver faz",
+              "Conquistado à medida que o seu negócio connosco cresce"
+            ],
+            "tagline": "A crescer connosco"
+          },
+          {
+            "benefits": [
+              "Tudo o que está incluído no nível Gold",
+              "O nosso melhor desconto para parceiros"
+            ],
+            "name": "Platinum",
+            "requirements": [
+              "Tudo o que um parceiro Gold faz",
+              "Reservado para os parceiros mais ativos"
+            ],
+            "tagline": "Os nossos parceiros mais próximos"
+          }
+        ],
+        "lede": "Torna-se parceiro Registered no dia em que aprovamos a sua candidatura. À medida que a sua equipa se certifica e o seu negócio cresce, sobe de nível e o desconto nos negócios registados cresce consigo.",
+        "requirementsLabel": "Como chegar aqui",
+        "title": "Os níveis de parceiro"
+      }
     },
     "personaPages": {
       "forAiAgents": {

@@ -715,6 +715,11 @@
       "status": 410,
       "rationale": "OTLP traces ingest endpoint, not a web content page; no live content heir exists."
     },
+    "/partner1st": {
+      "to": "/account/partner/",
+      "status": 301,
+      "rationale": "Memorable marketing shortlink for The Rediacc Partner 1st Program; forwards to the partner portal, which the account Worker serves as an SPA route (not in the www route manifest)."
+    },
     "/partnerships": {
       "to": null,
       "status": 410,
@@ -924,6 +929,7 @@
   ],
   "allowed_non_manifest_targets": [
     "/account",
+    "/account/partner/",
     "/checkout/success",
     "/downloads",
     "/install",
