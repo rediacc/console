@@ -5,8 +5,6 @@ on:
     branches: [main]
   pull_request:
     types: [opened, synchronize]
-  merge_group:
-    types: [checks_requested]
   schedule:
     - cron: '0 1 * * *'  # Nightly at 1:00 UTC (2:00 CET)
   # workflow_dispatch removed: manual triggers don't satisfy PR checks and waste CI budget.
@@ -53,7 +51,7 @@ jobs:
       cli_tag: ${{ steps.init.outputs.cli_tag }}
       cli_exists: ${{ steps.init.outputs.cli_exists }}
       image_tag: ${{ steps.init.outputs.image_tag }}
-      # full_suite: run all jobs on PR, merge queue, and nightly. Skip expensive
+      # full_suite: run all jobs on PR and nightly. Skip expensive
       # jobs (quality, standalone, elite) on push-to-main since PR already validated.
       full_suite: ${{ github.event_name != 'push' }}
     steps:
@@ -78,7 +76,7 @@ jobs:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,renet,account,sql,elite,homebrew-tap
+          repositories: console,renet,account,elite,homebrew-tap
 
       # PR Validation (PR events only)
       - name: Validate PR
@@ -110,11 +108,11 @@ jobs:
       - name: Generate channel context
         id: staging
         run: |
-          # Only push and pull_request events write to R2. merge_group (merge
-          # queue) and schedule (nightly) get empty channel -> stage-artifacts
-          # still runs for validation but every R2/GHCR upload step self-gates
-          # on channel != ''. Prior design set dryrun-<sha> here and produced
-          # ~5 GB of orphan R2 bytes per merge-queue check and per nightly run.
+          # Only push and pull_request events write to R2. schedule (nightly)
+          # gets empty channel -> stage-artifacts still runs for validation
+          # but every R2/GHCR upload step self-gates on channel != ''. Prior
+          # design set dryrun-<sha> here and produced ~5 GB of orphan R2
+          # bytes per nightly run (and per merge-queue check, since removed).
           if [[ "${{ github.event_name }}" == "push" ]]; then
             CHANNEL="edge"
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
@@ -126,7 +124,7 @@ jobs:
 
       - name: Assert channel matches event
         # Guard against someone reintroducing a dryrun-<sha> fallthrough
-        # for merge_group/schedule events.
+        # for schedule events.
         run: .ci/scripts/ci/assert-channel-for-event.sh "${{ github.event_name }}" "${{ steps.staging.outputs.channel }}"
 
       # Upload CI tags as artifact for debugging
@@ -756,7 +754,7 @@ jobs:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,renet,account,sql,elite,homebrew-tap
+          repositories: console,renet,account,elite,homebrew-tap
 
       - name: Checkout with Submodules
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -1270,7 +1268,7 @@ jobs:
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
 
   # ============================================================================
-  # CI COMPLETE - Gate for merge queue
+  # CI COMPLETE - required status check for branch protection
   # This job only succeeds if ALL CI jobs pass
   # ============================================================================
   ci-complete:
