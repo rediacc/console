@@ -9,7 +9,7 @@
  * - Commands with `grandGuard`/`forkBlocked` are enforced by assertCommandPolicy().
  */
 
-export interface McpMeta {
+interface McpMeta {
   destructive: boolean;
   idempotent: boolean;
   timeout: 'read' | 'write';
@@ -515,21 +515,11 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'storage create': { mcpExcludeReason: 'Config CRUD — covered by config storage commands' },
   'storage rename': { mcpExcludeReason: 'Config CRUD — covered by config storage commands' },
   'storage delete': { mcpExcludeReason: 'Config CRUD — covered by config storage commands' },
-
-  // storage vault still exists locally (read-only view of storage config)
-  'storage vault': { mcpExcludeReason: 'Config vault view — covered by config storage commands' },
 };
 
 /** Look up metadata for a command path. */
 export function getCommandMeta(commandPath: string): CommandMeta | undefined {
   return COMMAND_METADATA[commandPath];
-}
-
-/** Get all command paths that have MCP tool metadata. */
-export function getMcpCommandPaths(): string[] {
-  return Object.entries(COMMAND_METADATA)
-    .filter(([, meta]) => meta.mcp)
-    .map(([path]) => path);
 }
 
 /** Get all MCP exclusion reasons. */

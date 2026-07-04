@@ -1,15 +1,5 @@
 import { readFileSync } from 'node:fs';
 
-export type SceneType =
-  | 'title'
-  | 'slide'
-  | 'outro'
-  | 'cast'
-  | 'cast-freeze'
-  | 'cast-narrated'
-  | 'browser'
-  | 'browser-split';
-
 export interface TitleScene {
   id: string;
   type: 'title';

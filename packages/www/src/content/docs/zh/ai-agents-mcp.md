@@ -4,8 +4,8 @@ description: 使用模型上下文协议 (MCP) 服务器将 AI 代理连接到 R
 category: Guides
 order: 33
 language: zh
-sourceHash: "4483eb3da34a6c03"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d515d5491751e1fe"
+sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
 ## 概述
@@ -159,5 +159,4 @@ MCP 服务器是无状态的。每次工具调用都会将 `rdc` 作为独立的
 
 - 工具调用之间不会发生状态泄漏
 - 使用您现有的 `rdc` 配置和 SSH 密钥
-- 同时支持本地和云端适配器
 - 一个命令中的错误不会影响其他命令

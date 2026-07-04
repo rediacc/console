@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
+import { configService } from '../services/config/config-resources.js';
 import { assertCommandPolicy, CMD, type CommandPath } from '../utils/command-policy.js';
 import { handleError } from '../utils/errors.js';
 import { confirmBatch } from './repo-batch-utils.js';

@@ -20,7 +20,7 @@ const {
   mockFromBase64: vi.fn(),
 }));
 
-vi.mock('../../services/config-server-client.js', () => ({
+vi.mock('../../services/config/config-server-client.js', () => ({
   configServerFetch: mockConfigServerFetch,
   ConfigServerError: class ConfigServerError extends Error {
     status: number;
@@ -203,7 +203,7 @@ describe('RemoteConfigAdapter', () => {
     });
 
     it('should throw RemoteTokenExpiredError on 401', async () => {
-      const { ConfigServerError } = await import('../../services/config-server-client.js');
+      const { ConfigServerError } = await import('../../services/config/config-server-client.js');
       mockConfigServerFetch.mockRejectedValueOnce(new ConfigServerError('Unauthorized', 401));
 
       await expect(adapter.pull()).rejects.toThrow(RemoteTokenExpiredError);

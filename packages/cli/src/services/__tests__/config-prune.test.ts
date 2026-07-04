@@ -1,7 +1,11 @@
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import type { ArchivedRepository, RdcConfig } from '../../schema/schemas.js';
-import { buildConfigAnchors, classifyArchives, pruneCertCacheBuckets } from '../config-prune.js';
+import {
+  buildConfigAnchors,
+  classifyArchives,
+  pruneCertCacheBuckets,
+} from '../config/config-prune.js';
 
 /** Build the same compressed-base64 shape the cert-cache writer uses. */
 function packAcme(acme: object): string {

@@ -157,5 +157,4 @@ The MCP server is stateless. Each tool call spawns `rdc` as an isolated child pr
 
 - No state leaks between tool calls
 - Uses your existing `rdc` configuration and SSH keys
-- Works with both local and cloud adapters
 - Errors in one command don't affect others

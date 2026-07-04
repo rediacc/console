@@ -4,7 +4,7 @@ description: إنشاء مجموعات أجهزة افتراضية محلية ل
 category: Concepts
 order: 2
 language: ar
-sourceHash: df01dc35c82beb81
+sourceHash: aafca00c006ded0b
 ---
 
 # الأجهزة الافتراضية التجريبية
@@ -13,7 +13,7 @@ sourceHash: df01dc35c82beb81
 
 ## المتطلبات
 
-يتطلب `rdc ops` **المحوّل المحلي**. غير متاح مع محوّل السحابة.
+يعمل `rdc ops` عبر **المحوّل المحلي**.
 
 ```bash
 rdc ops check

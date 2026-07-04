@@ -8,17 +8,17 @@ vi.mock('../../i18n/index.js', () => ({
 
 const mockGetSubscriptionTokenState = vi.hoisted(() => vi.fn());
 
-vi.mock('../../services/subscription-auth.js', () => ({
+vi.mock('../account/subscription-auth.js', () => ({
   getSubscriptionTokenState: mockGetSubscriptionTokenState,
 }));
 
 const mockExecute = vi.hoisted(() => vi.fn());
-vi.mock('../../services/local-executor.js', () => ({
+vi.mock('../executor/local-executor.js', () => ({
   localExecutorService: { execute: mockExecute },
 }));
 
 const mockError = vi.hoisted(() => vi.fn());
-vi.mock('../../services/output.js', () => ({
+vi.mock('../core/output.js', () => ({
   outputService: {
     info: vi.fn(),
     success: vi.fn(),
@@ -27,7 +27,7 @@ vi.mock('../../services/output.js', () => ({
   },
 }));
 
-vi.mock('../../services/repo-key-deployment.js', () => ({
+vi.mock('../repo/repo-key-deployment.js', () => ({
   deployRepoKeyIfNeeded: vi.fn().mockResolvedValue(undefined),
 }));
 

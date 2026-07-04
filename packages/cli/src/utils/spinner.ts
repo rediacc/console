@@ -1,5 +1,16 @@
-import ora, { Ora } from 'ora';
+import type { Ora } from 'ora';
 import { getOutputFormat } from './errors.js';
+
+// esbuild bundles this literal `require` and defers ora's module init
+// (chalk / cli-cursor / string-width setup) to the first interactive
+// spinner. Spinners only run in a TTY, so piped/CI/JSON-output runs —
+// including --version/--help — never pay ora's startup cost.
+declare const require: NodeJS.Require;
+let oraFactory: typeof import('ora')['default'] | undefined;
+function loadOra(): typeof import('ora')['default'] {
+  oraFactory ??= (require('ora') as typeof import('ora')).default;
+  return oraFactory;
+}
 
 let currentSpinner: Ora | null = null;
 
@@ -19,6 +30,7 @@ export function startSpinner(text: string): Ora | null {
   if (currentSpinner) {
     currentSpinner.stop();
   }
+  const ora = loadOra();
   currentSpinner = ora({ text, stream: process.stderr }).start();
   return currentSpinner;
 }

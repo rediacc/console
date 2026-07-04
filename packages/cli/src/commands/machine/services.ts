@@ -1,9 +1,9 @@
 import { getMachineServices, type ServiceInfo } from '@rediacc/shared/services/machine';
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
-import { getStateProvider } from '../../providers/index.js';
-import { configService } from '../../services/config-resources.js';
-import { outputService } from '../../services/output.js';
+import { getStateProvider } from '../../services/state.js';
+import { configService } from '../../services/config/config-resources.js';
+import { outputService } from '../../services/core/output.js';
 import type { OutputFormat } from '../../types/index.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 import { createGuidResolver, loadGuidMap, resolveGuids } from '../../utils/guid-resolver.js';
@@ -73,7 +73,7 @@ export function registerServicesCommand(machine: Command, program: Command): voi
     .action(async (options: { name: string; team?: string; stabilityCheck?: boolean }) => {
       try {
         const name = options.name;
-        const provider = await getStateProvider();
+        const provider = getStateProvider();
         const opts = await configService.applyDefaults(options);
 
         const [machine, guidMap] = await Promise.all([

@@ -4,8 +4,8 @@ description: "rdc を使う場面と renet を使う場面。"
 category: "Concepts"
 order: 1
 language: ja
-sourceHash: "2ccc8590bc6f67c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "ea6ff6dd3b8f5d5b"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # rdc vs renet
@@ -75,7 +75,7 @@ rdc ops ssh --vm-id 1 -c hostname  # ブリッジVM上でコマンドを実行
 rdc ops down               # クラスターを破棄
 ```
 
-> ローカルアダプターが必要です。クラウドアダプターでは利用できません。
+> ローカルアダプター経由で動作します。
 
 これらのコマンドは`renet`をローカルで実行します（SSH経由ではありません）。完全なドキュメントについては、[実験的VM](/ja/docs/experimental-vms)を参照してください。
 

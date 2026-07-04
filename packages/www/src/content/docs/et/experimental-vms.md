@@ -4,6 +4,8 @@ description: "Valmistage ette kohalikud VM-klastrid arenduseks ja testimiseks rd
 category: "Concepts"
 order: 2
 language: et
+sourceHash: "aafca00c006ded0b"
+sourceCommit: "6cf65c4fe8617378da6a6dd21cce2feecff7ca9f"
 ---
 
 # Eksperimentaalsed VM-id
@@ -12,7 +14,7 @@ Valmistage ette kohalikud VM-klastrid oma tööjaamas arenduseks ja testimiseks,
 
 ## Nõuded
 
-`rdc ops` nõuab **kohalikku adapterit**. See ei ole pilvadapteriga saadaval.
+`rdc ops` töötab **kohaliku adapteri** kaudu.
 
 ```bash
 rdc ops check

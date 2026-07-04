@@ -3,4 +3,4 @@
  *
  * Re-exports from @rediacc/provisioning for backward compatibility.
  */
-export { getRenetResolver, type RenetResolution, RenetResolver } from '@rediacc/provisioning/renet';
+export { getRenetResolver, RenetResolver } from '@rediacc/provisioning/renet';

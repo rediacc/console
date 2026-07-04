@@ -45,7 +45,7 @@ export const DESIGN_PARTNER_GRANTED_PLAN = 'business';
  * Community is redundant (everything's free for partners anyway) and
  * Professional is below the granted tier so it adds noise.
  */
-export const DESIGN_PARTNER_HIDDEN_PLANS = new Set(['community', 'professional']);
+const DESIGN_PARTNER_HIDDEN_PLANS = new Set(['community', 'professional']);
 
 /**
  * Apply the program's plan filter to a list of plans. When the program is

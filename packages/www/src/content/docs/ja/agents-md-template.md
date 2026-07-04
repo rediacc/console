@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 50
 language: ja
-sourceHash: "468f701c500856c6"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "bbdbb7bd6ac12d9a"
+sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 ---
 
 問題はこうです：AIコーディングアシスタント（Claude Code、Cursor、Cline、Windsurf）は存在しない `rdc` フラグを作り出し続け、どの Rediacc リポジトリ名がどの GUID に対応するかを毎回あなたに尋ねずにはいられません。このテンプレートがそれを解決します。以下のブロックをプロジェクトの `CLAUDE.md`、`.cursorrules`、またはあなたのツールが使用するエージェント設定ファイルに貼り付けてください。
@@ -74,10 +74,10 @@ rdc agent schema --command "machine query"
 ### Architecture
 - **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
 - **Config**: CLI config at ~/.config/rediacc/rediacc.json. Auto-created on first use.
-- Two adapters: **local** (default, SSH-based) and **cloud** (experimental, API-based)
+- One adapter: **local** (SSH-based)
 
 ### Rules
-- Use "local adapter" / "cloud adapter", never say "modes"
+- Say "local adapter", never "local mode"
 - S3 is a resource state backend, not a separate adapter
 - Default config is created automatically on first use, do not tell users to run `rdc config init`
 - Always use `--output json` when parsing output programmatically

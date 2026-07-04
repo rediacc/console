@@ -3,12 +3,12 @@ import type {
   ListResult,
   StorageHealthResult,
   SystemInfo,
-} from '@rediacc/shared/queue-vault/data/list-types.generated';
+} from '@rediacc/shared/renet-contract/data/list-types.generated';
 
 // status.ts pulls in i18n/config/output at import time; stub the side-effectful
 // ones so we can exercise the pure helpers in isolation.
-vi.mock('../../services/output.js', () => ({ outputService: { info: vi.fn() } }));
-vi.mock('../../services/config-resources.js', () => ({ configService: {} }));
+vi.mock('../../services/core/output.js', () => ({ outputService: { info: vi.fn() } }));
+vi.mock('../../services/config/config-resources.js', () => ({ configService: {} }));
 vi.mock('../../i18n/index.js', () => ({ t: (k: string) => k }));
 
 import { createRepoNameResolver } from '../../utils/guid-resolver.js';

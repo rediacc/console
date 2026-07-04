@@ -46,9 +46,7 @@ export async function cekHandoffEncrypt(
 ): Promise<CekHandoffBlob> {
   await requireX25519();
   // Generate ephemeral X25519 key pair
-  const ephKeyPair = (await crypto.subtle.generateKey({ name: 'X25519' }, true, [
-    'deriveBits',
-  ])) as unknown as { publicKey: CryptoKey; privateKey: CryptoKey };
+  const ephKeyPair = await crypto.subtle.generateKey({ name: 'X25519' }, true, ['deriveBits']);
 
   // Export ephemeral public key
   const ephPublicSpki = new Uint8Array(await crypto.subtle.exportKey('spki', ephKeyPair.publicKey));

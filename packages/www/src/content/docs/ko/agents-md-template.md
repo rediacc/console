@@ -4,8 +4,8 @@ description: Claude Code, Cursor 및 기타 AI 코딩 어시스턴트를 Rediacc
 category: Reference
 order: 50
 language: ko
-sourceHash: "468f701c500856c6"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "bbdbb7bd6ac12d9a"
+sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 ---
 
 문제는 이것입니다. AI 코딩 어시스턴트(Claude Code, Cursor, Cline, Windsurf)가 존재하지 않는 `rdc` 플래그를 계속 만들어 내고, 매번 물어보지 않으면 어떤 Rediacc 저장소 이름이 어떤 GUID에 매핑되는지 알 수 없습니다. 이 템플릿이 그 문제를 해결합니다. 아래 블록을 프로젝트의 `CLAUDE.md`, `.cursorrules`, 또는 도구가 사용하는 에이전트 설정 파일에 붙여넣으세요.
@@ -73,10 +73,10 @@ rdc agent schema --command "machine query"
 ### Architecture
 - **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
 - **Config**: CLI config at ~/.config/rediacc/rediacc.json. Auto-created on first use.
-- Two adapters: **local** (default, SSH-based) and **cloud** (experimental, API-based)
+- One adapter: **local** (SSH-based)
 
 ### Rules
-- Use "local adapter" / "cloud adapter", never say "modes"
+- Say "local adapter", never "local mode"
 - S3 is a resource state backend, not a separate adapter
 - Default config is created automatically on first use, do not tell users to run `rdc config init`
 - Always use `--output json` when parsing output programmatically

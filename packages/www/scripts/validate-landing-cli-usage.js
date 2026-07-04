@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CLOUD_GROUPS, parseRdcCommand, parseShellTokens } from './lib/cli-reference-catalog.js';
+import { parseRdcCommand } from './lib/cli-reference-catalog.js';
 import {
   getAllLandingTerminalCommandsForLanguage,
   getAllLanguages,
@@ -22,7 +22,6 @@ const colors = {
 };
 
 const MAP_STATUSES = new Set(['supported', 'partial', 'unsupported']);
-const EXPERIMENTAL_ROOT_COMMANDS = new Set(CLOUD_GROUPS);
 
 function loadCapabilityMap() {
   if (!fs.existsSync(MAP_PATH)) return { entries: [] };
@@ -61,26 +60,7 @@ function validateMapEntryShape(entry) {
   return true;
 }
 
-function extractRootCommand(commandText, parsed) {
-  if (parsed && typeof parsed.commandPath === 'string' && parsed.commandPath.length > 0) {
-    return parsed.commandPath.split(' ')[0];
-  }
-
-  const tokens = parseShellTokens(String(commandText || ''));
-  if (tokens[0] !== 'rdc') return null;
-  for (let i = 1; i < tokens.length; i += 1) {
-    const token = tokens[i];
-    if (!token.startsWith('-')) return token;
-  }
-  return null;
-}
-
-function isExperimentalCommand(commandText, parsed) {
-  const root = extractRootCommand(commandText, parsed);
-  return typeof root === 'string' && EXPERIMENTAL_ROOT_COMMANDS.has(root);
-}
-
-function validateEnglishCommands(errors, capabilityMap, stats) {
+function validateEnglishCommands(errors, capabilityMap) {
   const commands = getAllLandingTerminalCommandsForLanguage('en');
   const seenSourceIds = new Set();
 
@@ -102,11 +82,6 @@ function validateEnglishCommands(errors, capabilityMap, stats) {
     if (!item.isRdcCommand) continue;
 
     const parsed = parseRdcCommand(item.commandText);
-    if (isExperimentalCommand(item.commandText, parsed)) {
-      stats.experimentalSkipped += 1;
-      continue;
-    }
-
     if (parsed.ok) continue;
 
     // Landing page demos use simplified commands for visual appeal.
@@ -157,11 +132,6 @@ function validateEnglishCommands(errors, capabilityMap, stats) {
   }
 
   for (const [sourceId, entry] of capabilityMap.entries()) {
-    if (isExperimentalCommand(entry.simulatedCommand, null)) {
-      stats.experimentalMapEntries += 1;
-      continue;
-    }
-
     if (!seenSourceIds.has(sourceId)) {
       addError(
         errors,
@@ -227,14 +197,10 @@ function summarize(entries) {
   return summary;
 }
 
-function printMappings(mapEntries, includeExperimental = true) {
+function printMappings(mapEntries) {
   if (!Array.isArray(mapEntries) || mapEntries.length === 0) return;
 
-  const filtered = includeExperimental
-    ? [...mapEntries]
-    : mapEntries.filter((entry) => !isExperimentalCommand(entry.simulatedCommand, null));
-
-  const sorted = filtered.sort((a, b) => {
+  const sorted = [...mapEntries].sort((a, b) => {
     if (a.status === b.status) return a.sourceId.localeCompare(b.sourceId);
     const rank = { supported: 0, partial: 1, unsupported: 2 };
     return rank[a.status] - rank[b.status];
@@ -245,34 +211,23 @@ function printMappings(mapEntries, includeExperimental = true) {
   for (const entry of sorted) {
     const lead = `[${entry.status}] ${entry.sourceId}`;
     const nearest = Array.isArray(entry.closestMatches) ? entry.closestMatches.join(' | ') : '';
-    const exp = isExperimentalCommand(entry.simulatedCommand, null) ? ' (experimental)' : '';
-    console.log(colors.cyan(`  ${lead}${exp}`));
+    console.log(colors.cyan(`  ${lead}`));
     console.log(colors.dim(`    sim: ${entry.simulatedCommand}`));
     if (nearest) console.log(colors.dim(`    closest: ${nearest}`));
   }
 }
 
-function printSummary(errors, mapEntries, strictMode, stats) {
+function printSummary(errors, mapEntries, strictMode) {
   console.log(colors.bold('Landing CLI Usage Validation'));
   console.log('='.repeat(60));
 
-  const nonExperimentalEntries = mapEntries.filter(
-    (entry) => !isExperimentalCommand(entry.simulatedCommand, null)
-  );
-  const s = summarize(nonExperimentalEntries);
+  const s = summarize(mapEntries);
   console.log(
     colors.dim(
-      `Capability map summary (non-experimental): supported=${s.supported}, partial=${s.partial}, unsupported=${s.unsupported}`
+      `Capability map summary: supported=${s.supported}, partial=${s.partial}, unsupported=${s.unsupported}`
     )
   );
-  if (stats.experimentalMapEntries > 0 || stats.experimentalSkipped > 0) {
-    console.log(
-      colors.dim(
-        `Experimental commands excluded from enforcement: mapEntries=${stats.experimentalMapEntries}, terminalRows=${stats.experimentalSkipped}`
-      )
-    );
-  }
-  printMappings(mapEntries, true);
+  printMappings(mapEntries);
 
   if (strictMode && (s.partial > 0 || s.unsupported > 0)) {
     errors.push({
@@ -320,15 +275,11 @@ function main() {
   const { entries } = loadCapabilityMap();
   const capabilityMap = mapBySourceId(entries);
   const strictMode = true;
-  const stats = {
-    experimentalSkipped: 0,
-    experimentalMapEntries: 0,
-  };
 
-  validateEnglishCommands(errors, capabilityMap, stats);
+  validateEnglishCommands(errors, capabilityMap);
   validateLocaleParity(errors);
 
-  process.exit(printSummary(errors, entries, strictMode, stats));
+  process.exit(printSummary(errors, entries, strictMode));
 }
 
 main();

@@ -2,12 +2,12 @@ import readline from 'node:readline';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { getMachineContainers } from '@rediacc/shared/services/machine';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
-import { localExecutorService } from '../services/local-executor.js';
-import type { MachineConnectionLease } from '../services/machine-connection.js';
-import { outputService } from '../services/output.js';
-import { deployAllRepoKeys } from '../services/repo-key-deployment.js';
-import { telemetryService } from '../services/telemetry.js';
+import { configService } from '../services/config/config-resources.js';
+import { localExecutorService } from '../services/executor/local-executor.js';
+import type { MachineConnectionLease } from '../services/machine/machine-connection.js';
+import { outputService } from '../services/core/output.js';
+import { deployAllRepoKeys } from '../services/repo/repo-key-deployment.js';
+import { telemetryService } from '../services/telemetry/telemetry.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 import { createRepoNameResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
@@ -44,7 +44,7 @@ export async function ensureDns(
     const baseDomain = machineConfig.infra?.baseDomain;
     if (baseDomain && machineConfig.infra) {
       const localConfig = await configService.getLocalConfig();
-      const { ensureRepoDnsRecords } = await import('../services/infra-provision.js');
+      const { ensureRepoDnsRecords } = await import('../services/provision/infra-provision.js');
       await ensureRepoDnsRecords(machineName, repoName, machineConfig.infra, localConfig);
     }
     return baseDomain;
@@ -68,7 +68,9 @@ async function maybeSyncCertCache(
   lease?: MachineConnectionLease
 ): Promise<void> {
   try {
-    const { isCertCacheStale, downloadCertCache } = await import('../services/cert-cache.js');
+    const { isCertCacheStale, downloadCertCache } = await import(
+      '../services/account/cert-cache.js'
+    );
     const current = await configService.getCurrent().catch(() => undefined);
     const entry = current?.infra?.acmeCertCache?.[baseDomain];
     if (!isCertCacheStale(entry?.updatedAt)) return;
@@ -230,7 +232,7 @@ export async function printResolvedServiceUrls(
     // Lease-aware status fetch: machineConnections pools by host, so when the
     // caller holds a lease on this machine the SSH session is reused. Only
     // the containers section is needed to resolve service URLs.
-    const { fetchMachineStatus } = await import('../services/machine-status.js');
+    const { fetchMachineStatus } = await import('../services/machine/machine-status.js');
     const listResult = await fetchMachineStatus(machineName, { sections: ['containers'] });
     const machine = { machineName, vaultStatus: JSON.stringify(listResult) };
 
@@ -333,7 +335,7 @@ class Semaphore {
   }
 }
 
-export async function runBatchParallel(
+async function runBatchParallel(
   repos: { name: string }[],
   concurrency: number,
   action: string,

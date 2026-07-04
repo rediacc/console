@@ -1,8 +1,8 @@
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
-import { localExecutorService } from '../services/local-executor.js';
-import { outputService } from '../services/output.js';
+import { configService } from '../services/config/config-resources.js';
+import { localExecutorService } from '../services/executor/local-executor.js';
+import { outputService } from '../services/core/output.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';

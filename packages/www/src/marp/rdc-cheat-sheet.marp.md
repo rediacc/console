@@ -345,7 +345,7 @@ rdc repo snapshot delete --name <snapshot-name> -m <machine>
 |------|-----------|---------|
 | `-m, --machine <name>` | most commands | Target machine alias |
 | `-r, --repository <name>` | sync, term | Repository name |
-| `-t, --team <name>` | cloud adapter | Team name |
+| `-t, --team <name>` | resource commands | Team name |
 | `-l, --local <path>` | sync | Local directory path |
 | `--output <fmt>` | list / get | `table` `json` `yaml` `csv` |
 | `--dry-run` | sync, repo up | Preview without changes |

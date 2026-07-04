@@ -1,15 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../account-client.js', () => ({
+vi.mock('../account/account-client.js', () => ({
   accountServerFetch: vi.fn(),
 }));
 
-import { accountServerFetch } from '../account-client.js';
+import { accountServerFetch } from '../account/account-client.js';
 import {
   credentialsToBasicAuthToken,
   fetchOtlpCredentials,
   resetOtlpCredentialsCache,
-} from '../otlp-credentials.js';
+} from '../telemetry/otlp-credentials.js';
 
 const mockedFetch = vi.mocked(accountServerFetch);
 

@@ -10,7 +10,7 @@ declare global {
   }
 }
 
-export interface LeadMagnetOpenOpts {
+interface LeadMagnetOpenOpts {
   /** Slug from the account worker registry (e.g. "ransomware-survival-cto"). */
   magnetName: string;
   /** Source tag for analytics / lead-attribution. */

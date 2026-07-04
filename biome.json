@@ -76,7 +76,7 @@
       "!**/*.min.js",
       "!**/*.min.css",
       "!**/*.generated.ts",
-      "!**/queue-vault/data/*.schema.ts",
+      "!**/renet-contract/data/*.schema.ts",
       "!**/search-index.json",
       "!**/search-index-*.json",
       "!**/*.astro",

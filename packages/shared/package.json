@@ -14,11 +14,11 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/node": "^22.10.2",
+    "@types/node": "^22.20.0",
     "@vitest/runner": "^4.0.18",
     "@vitest/utils": "^4.0.18",
     "rimraf": "^6.1.2",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
     "vitest": "^4.0.16"
   },
   "exports": {
@@ -37,14 +37,6 @@
     "./subscription/*": {
       "types": "./dist/subscription/*.d.ts",
       "default": "./dist/subscription/*.js"
-    },
-    "./queue": {
-      "types": "./dist/queue/index.d.ts",
-      "default": "./dist/queue/index.js"
-    },
-    "./queue/*": {
-      "types": "./dist/queue/*.d.ts",
-      "default": "./dist/queue/*.js"
     },
     "./types": {
       "types": "./dist/types/index.d.ts",
@@ -70,25 +62,17 @@
       "types": "./dist/formatters/*.d.ts",
       "default": "./dist/formatters/*.js"
     },
-    "./queue-vault": {
-      "types": "./dist/queue-vault/index.d.ts",
-      "default": "./dist/queue-vault/index.js"
+    "./renet-contract": {
+      "types": "./dist/renet-contract/index.d.ts",
+      "default": "./dist/renet-contract/index.js"
     },
-    "./queue-vault/storage-browser": {
-      "types": "./dist/queue-vault/storage-browser/index.d.ts",
-      "default": "./dist/queue-vault/storage-browser/index.js"
+    "./renet-contract/*": {
+      "types": "./dist/renet-contract/*.d.ts",
+      "default": "./dist/renet-contract/*.js"
     },
-    "./queue-vault/*": {
-      "types": "./dist/queue-vault/*.d.ts",
-      "default": "./dist/queue-vault/*.js"
-    },
-    "./endpoints": {
-      "types": "./dist/endpoints/index.d.ts",
-      "default": "./dist/endpoints/index.js"
-    },
-    "./endpoints/*": {
-      "types": "./dist/endpoints/*.d.ts",
-      "default": "./dist/endpoints/*.js"
+    "./storage-browser": {
+      "types": "./dist/storage-browser/index.d.ts",
+      "default": "./dist/storage-browser/index.js"
     },
     "./encryption": {
       "types": "./dist/encryption/index.d.ts",
@@ -137,14 +121,6 @@
     "./services/repository/*": {
       "types": "./dist/services/repository/*.d.ts",
       "default": "./dist/services/repository/*.js"
-    },
-    "./services/queue": {
-      "types": "./dist/services/queue/index.d.ts",
-      "default": "./dist/services/queue/index.js"
-    },
-    "./services/queue/*": {
-      "types": "./dist/services/queue/*.d.ts",
-      "default": "./dist/services/queue/*.js"
     },
     "./services/machine": {
       "types": "./dist/services/machine/index.d.ts",

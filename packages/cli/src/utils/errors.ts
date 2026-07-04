@@ -1,6 +1,6 @@
 import { DEFAULTS } from '@rediacc/shared/config';
-import { outputService } from '../services/output.js';
-import { telemetryService } from '../services/telemetry.js';
+import { outputService } from '../services/core/output.js';
+import { telemetryService } from '../services/telemetry/telemetry.js';
 import { type CliError, ERROR_CODES, type NextAction, ValidationError } from '../types/errors.js';
 import { EXIT_CODES, type OutputFormat } from '../types/index.js';
 

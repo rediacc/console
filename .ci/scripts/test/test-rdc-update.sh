@@ -234,7 +234,7 @@ run_rdc() {
         HOME="$home_dir" \
         REDIACC_RELEASES_URL="http://127.0.0.1:$FIXTURE_PORT" \
         RDC_DISABLE_AUTOUPDATE="0" \
-        RDC_DISABLE_TELEMETRY=1 \
+        REDIACC_TELEMETRY_DISABLED=1 \
         "$home_dir/.local/bin/rdc" "$@"
 }
 

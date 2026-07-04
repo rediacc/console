@@ -3,14 +3,14 @@
  * VS Code server started by `rdc vscode connect --browser`.
  */
 
-import { getServerProvider } from '../shared-desktop/vscode-server/index.js';
+import { getServerProvider } from '../remote/vscode-server/index.js';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
-import { outputService } from '../services/output.js';
-import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
-import { getSSHConnectionDetails } from '../services/ssh-connection.js';
-import { serverStatus, stopServer } from '../services/vscode-server-remote.js';
+import { configService } from '../services/config/config-resources.js';
+import { outputService } from '../services/core/output.js';
+import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import { getSSHConnectionDetails } from '../services/machine/ssh-connection.js';
+import { serverStatus, stopServer } from '../services/core/vscode-server-remote.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError } from '../utils/errors.js';
 

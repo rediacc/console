@@ -2,7 +2,7 @@ import {
   isLicensedRenetFunction,
   parseRenetLicenseFailure,
   RENET_LICENSE_REQUIRED_CODE,
-} from '../renet-license-contract.js';
+} from '../renet/renet-license-contract.js';
 
 describe('renet-license-contract', () => {
   it('classifies repository and backup bridge functions as licensed', () => {

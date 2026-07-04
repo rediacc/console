@@ -16,7 +16,7 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
 let mockRepos: Record<string, Record<string, unknown>> = {};
 let mockDeleted: Record<string, unknown>[] = [];
 
-vi.mock('../config-base.js', () => ({
+vi.mock('../config/config-base.js', () => ({
   ConfigServiceBase: class {
     getEffectiveConfigName() {
       return 'test';
@@ -47,7 +47,7 @@ vi.mock('../../types/index.js', async () => {
   return { ...actual };
 });
 
-const { configService } = await import('../config-resources.js');
+const { configService } = await import('../config/config-resources.js');
 
 describe('archiveRepository — scrubs secrets', () => {
   beforeEach(() => {

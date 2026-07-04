@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { getCommandMeta, type CommandMeta } from '../config/command-metadata.js';
 import { COMMAND_DOMAINS, getCommandDef } from '../config/command-registry.js';
 import { t } from '../i18n/index.js';
-import { outputService } from '../services/output.js';
+import { outputService } from '../services/core/output.js';
 import { VERSION } from '../version.js';
 
 /** Fallback domain label for commands without a registry entry */

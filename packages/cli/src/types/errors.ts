@@ -37,7 +37,7 @@ export const ERROR_CODES = {
  * "What to do:" bulleted list). Agents should relay `run` verbatim to the
  * human rather than synthesizing their own command.
  */
-export interface NextActionOption {
+interface NextActionOption {
   /** Human-readable: "Re-read current digest, then retry with --current" */
   description: string;
   /** Canonical command the user pastes: "rdc repo secret get --name X --key Y" */

@@ -15,7 +15,7 @@ import {
   type ListResult,
   type ServiceInfo,
   type SystemInfo,
-} from '../../queue-vault/data/list-types.generated';
+} from '../../renet-contract/data/list-types.generated';
 import { type MachineWithVaultStatus, parseListResult } from './parsing-types';
 
 /**

@@ -18,16 +18,16 @@ import { isatty } from 'node:tty';
 import type { Command } from 'commander';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
-import { configService } from '../../services/config-resources.js';
-import { auditLog, type AuditEventDraft } from '../../services/audit-log.js';
+import { configService } from '../../services/config/config-resources.js';
+import { auditLog, type AuditEventDraft } from '../../services/core/audit-log.js';
 import { t } from '../../i18n/index.js';
 import { isAgentEnvironment } from '../../utils/agent-guard.js';
 import {
   evaluateMutations,
   PreconditionMismatchError,
   type MutationEntry,
-} from '../../services/mutation-gate.js';
-import { outputService } from '../../services/output.js';
+} from '../../services/core/mutation-gate.js';
+import { outputService } from '../../services/core/output.js';
 import {
   canonicalJson,
   digestForPointer,

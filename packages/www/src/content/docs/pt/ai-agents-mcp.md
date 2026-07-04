@@ -4,8 +4,8 @@ description: Ligue agentes de IA à infraestrutura Rediacc usando o servidor Mod
 category: Guides
 order: 33
 language: pt
-sourceHash: "4483eb3da34a6c03"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d515d5491751e1fe"
+sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
 ## Visão Geral
@@ -159,5 +159,4 @@ O servidor MCP é sem estado. Cada chamada de ferramenta lança o `rdc` como pro
 
 - Não há fugas de estado entre chamadas de ferramentas
 - Usa a sua configuração `rdc` e chaves SSH existentes
-- Funciona com os adaptadores local e cloud
 - Os erros num comando não afetam os outros

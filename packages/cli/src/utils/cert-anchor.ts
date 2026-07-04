@@ -23,7 +23,7 @@
 
 const GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-export type CertAnchorKind =
+type CertAnchorKind =
   | 'guid' // *.<GUID>.<machine>.<baseDomain>
   | 'repo-name' // *.<repoName>.<machine>.<baseDomain>
   | 'machine' // *.<machine>.<baseDomain>

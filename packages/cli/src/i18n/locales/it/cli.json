@@ -445,6 +445,10 @@
         "remove": {
           "description": "Rimuovi uno storage dalla configurazione corrente",
           "success": "Storage \"{{name}}\" rimosso"
+        },
+        "show": {
+          "description": "Mostra il provider e la configurazione di uno storage",
+          "optionReveal": "Mostra la configurazione dello storage in chiaro (solo TTY interattivo; registrato)"
         }
       }
     },
@@ -1331,7 +1335,7 @@
       "delete": {
         "description": "Elimina un provider di storage"
       },
-      "description": "Gestisci i provider di storage per il backup remoto (S3, compatibile con rclone). Operazioni CRUD (list, create, rename, delete), configurazione vault, navigazione dei file remoti e pulizia dei backup orfani.",
+      "description": "Gestisci i provider di storage per il backup remoto (S3, compatibile con rclone). Operazioni CRUD (list, create, rename, delete), navigazione dei file remoti e pulizia dei backup orfani.",
       "descriptionShort": "Gestisci i provider di storage e naviga i file remoti",
       "list": {
         "description": "Elenca i provider di storage",
@@ -1350,9 +1354,6 @@
       },
       "rename": {
         "description": "Rinomina un provider di storage"
-      },
-      "vault": {
-        "description": "Gestione del vault dello storage (solo adapter cloud)"
       }
     },
     "subscription": {

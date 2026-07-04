@@ -14,7 +14,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { accessSync } from 'node:fs';
-import { extractRenetToLocalSync, isSEA } from '../services/embedded-assets.js';
+import { extractRenetToLocalSync, isSEA } from '../services/core/embedded-assets.js';
 
 const HELPER_TIMEOUT_MS = 5000;
 

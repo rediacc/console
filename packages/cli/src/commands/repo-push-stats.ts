@@ -8,8 +8,8 @@
  */
 
 import { t } from '../i18n/index.js';
-import type { LocalExecuteResult } from '../services/local-executor.js';
-import { outputService } from '../services/output.js';
+import type { LocalExecuteResult } from '../services/executor/local-executor.js';
+import { outputService } from '../services/core/output.js';
 import { formatBytes, formatDuration } from '../utils/format.js';
 
 /** Stats emitted by `renet backup push` as the `push_result` stdout line. */

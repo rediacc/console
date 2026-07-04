@@ -3,13 +3,13 @@ import {
   generateConnectionName,
   removePersistedKeys,
   removeSSHConfigEntry,
-} from '../shared-desktop/vscode/index.js';
+} from '../remote/vscode/index.js';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
-import { localExecutorService } from '../services/local-executor.js';
-import { outputService } from '../services/output.js';
-import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
+import { configService } from '../services/config/config-resources.js';
+import { localExecutorService } from '../services/executor/local-executor.js';
+import { outputService } from '../services/core/output.js';
+import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertAgentRepoCreate, isAgentEnvironment } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD, type CommandPath } from '../utils/command-policy.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
@@ -69,7 +69,7 @@ async function rollbackCreateRepo(name: string): Promise<void> {
 /** Render the create result: timeline/success on success, rollback + failure otherwise. */
 async function renderCreateResult(
   name: string,
-  result: import('../services/local-executor.js').LocalExecuteResult
+  result: import('../services/executor/local-executor.js').LocalExecuteResult
 ): Promise<void> {
   if (result.success) {
     if (result.allSteps && result.allSteps.length > 0) {
@@ -169,7 +169,7 @@ async function handleDeleteSuccess(
   machineName: string,
   repoConfig: { repositoryGuid: string },
   archiveConfig: boolean,
-  result: import('../services/local-executor.js').LocalExecuteResult,
+  result: import('../services/executor/local-executor.js').LocalExecuteResult,
   originalRef?: string
 ): Promise<void> {
   await cleanupDeletedRepoSSH(machineName, name).catch(() => {});

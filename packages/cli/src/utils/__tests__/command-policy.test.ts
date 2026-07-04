@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../services/config-resources.js', () => ({
+vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getRepository: vi.fn(),
   },
@@ -22,7 +22,7 @@ vi.mock('../../i18n/index.js', () => ({
   },
 }));
 
-import { configService } from '../../services/config-resources.js';
+import { configService } from '../../services/config/config-resources.js';
 import type { RepositoryConfig } from '../../types/index.js';
 import { isAgentEnvironment } from '../agent-guard.js';
 import {

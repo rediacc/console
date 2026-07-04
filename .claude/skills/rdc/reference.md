@@ -191,6 +191,7 @@ Create a new storage
 
 - `--name <name>` — Resource name
 - `-t, --team <name>` — Team name
+- `--vault <json>` — Vault content as JSON string
 
 > MCP excluded: Config CRUD — covered by config storage commands
 
@@ -218,15 +219,6 @@ Delete a storage
 - `--dry-run` — Show what would be done without making changes
 
 > MCP excluded: Config CRUD — covered by config storage commands
-
-### rdc storage vault get
-
-Get storage vault data
-
-**Options:**
-
-- `--name <name>` — Resource name
-- `-t, --team <name>` — Team name
 
 ### rdc storage browse
 
@@ -1299,6 +1291,15 @@ Remove a storage from the current config
 ### rdc config storage list
 
 List storages in the current config
+
+### rdc config storage show
+
+Show a storage's provider and configuration
+
+**Options:**
+
+- `--name <name>` — Resource name
+- `--reveal` — Reveal the storage configuration in plaintext (interactive TTY only; audited)
 
 ### rdc config infra set
 

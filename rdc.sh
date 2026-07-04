@@ -86,19 +86,40 @@ if [[ "${1:-}" == "--override-local" ]]; then
     # the auto-update housekeeping in packages/cli/src/utils/platform.ts
     # expects the backup at <base>.old<ext> (rdc.old / rdc.old.exe).
     case "$(uname -s)" in
-        Linux)  _ovr_platform="linux"; _ovr_exe="" ;;
-        Darwin) _ovr_platform="mac"; _ovr_exe="" ;;
-        MINGW*|MSYS*|CYGWIN*) _ovr_platform="win"; _ovr_exe=".exe" ;;
-        *) log_error "Unsupported platform $(uname -s) for --override-local"; exit 1 ;;
+        Linux)
+            _ovr_platform="linux"
+            _ovr_exe=""
+            ;;
+        Darwin)
+            _ovr_platform="mac"
+            _ovr_exe=""
+            ;;
+        MINGW* | MSYS* | CYGWIN*)
+            _ovr_platform="win"
+            _ovr_exe=".exe"
+            ;;
+        *)
+            log_error "Unsupported platform $(uname -s) for --override-local"
+            exit 1
+            ;;
     esac
     case "$(uname -m)" in
-        x86_64|amd64) _ovr_arch="x64"; _ovr_goarch="amd64" ;;
-        aarch64|arm64) _ovr_arch="arm64"; _ovr_goarch="arm64" ;;
-        *) log_error "Unsupported arch $(uname -m) for --override-local"; exit 1 ;;
+        x86_64 | amd64)
+            _ovr_arch="x64"
+            _ovr_goarch="amd64"
+            ;;
+        aarch64 | arm64)
+            _ovr_arch="arm64"
+            _ovr_goarch="arm64"
+            ;;
+        *)
+            log_error "Unsupported arch $(uname -m) for --override-local"
+            exit 1
+            ;;
     esac
     # The SEA bundler resolves shared / provisioning through their published
-    # dist/ outputs (shared-desktop's SSH/SFTP/sync code now lives inside
-    # packages/cli). Without rebuilding them first, edits to those packages
+    # dist/ outputs (the SSH/SFTP/sync code now lives inside packages/cli
+    # under src/remote). Without rebuilding them first, edits to those packages
     # get silently dropped from the bundle.
     check_node_version "$NODE_VERSION_MIN"
     ensure_deps
@@ -110,7 +131,7 @@ if [[ "${1:-}" == "--override-local" ]]; then
     _ovr_embed_renet="$ROOT_DIR/private/bin/renet-linux-${_ovr_goarch}"
     log_step "Cross-building renet → $_ovr_embed_renet"
     mkdir -p "$ROOT_DIR/private/bin"
-    (cd "$ROOT_DIR/private/renet" && \
+    (cd "$ROOT_DIR/private/renet" &&
         CGO_ENABLED=0 GOOS=linux GOARCH="$_ovr_goarch" go build \
             -tags nolicense \
             -ldflags="-s -w -X main.Version=0.0.0-dev" \
@@ -181,7 +202,7 @@ cli_dist="$ROOT_DIR/packages/cli/dist/cli-bundle.cjs"
 if [[ ! -f "$ref_file" ]] || [[ "$cli_dist" -nt "$ref_file" ]]; then
     log_step "Regenerating skill reference"
     ref_tmp="$(mktemp)"
-    if node "$cli_dist" agent generate-reference > "$ref_tmp" 2>/dev/null && grep -q "^#" "$ref_tmp"; then
+    if node "$cli_dist" agent generate-reference >"$ref_tmp" 2>/dev/null && grep -q "^#" "$ref_tmp"; then
         mv "$ref_tmp" "$ref_file"
     else
         rm -f "$ref_tmp"
@@ -193,9 +214,14 @@ fi
 renet_bin_dir="$ROOT_DIR/private/renet/bin"
 export PATH="$renet_bin_dir:$PATH"
 
-# Three modes, mutually exclusive:
-#   default       → local dev gateway on http://localhost:4812 (REDIACC_ENVIRONMENT=development)
-#   RDC_PROD=1    → user's real config in ~/.config/rediacc (production servers)
+# Production is the default; two explicit opt-in modes on top:
+#   default       → user's real config in ~/.config/rediacc. The CLI's own
+#                   resolution applies (server.json → eu.rediacc.com), same as
+#                   an installed rdc binary.
+#   RDC_DEV=1     → local dev gateway (REDIACC_ENVIRONMENT=development, token
+#     (or --dev)    under .rdc-dev/, gateway URL sourced from
+#                   private/account/.env). Requires a running dev gateway:
+#                   ./run.sh account dev (default port 4800).
 #   RDC_BENCH=1   → bench.rediacc.com, our internal real-D1 test environment.
 #                   Uses a separate token file under .rdc-bench/ so it never
 #                   collides with the local-dev or production token state.
@@ -208,6 +234,10 @@ export PATH="$renet_bin_dir:$PATH"
 #                         (e.g. rediacc/console#482) without a release cycle.
 #                         When set, also export ACCOUNT_ED25519_PUBLIC_KEY to
 #                         the production key to validate prod-issued licenses.
+if [[ "${1:-}" == "--dev" ]]; then
+    RDC_DEV=1
+    shift
+fi
 if [[ "${RDC_BENCH:-0}" == "1" ]]; then
     export REDIACC_SUBSCRIPTION_TOKEN_FILE="$ROOT_DIR/.rdc-bench/api-token.json"
     export REDIACC_ACCOUNT_SERVER="https://bench.rediacc.com"
@@ -215,10 +245,7 @@ if [[ "${RDC_BENCH:-0}" == "1" ]]; then
     mkdir -p "$ROOT_DIR/.rdc-bench"
     log_info "Renet available at: $renet_bin_dir/renet"
     log_step "Starting CLI (bench config — bench.rediacc.com)"
-elif [[ "${RDC_PROD:-0}" == "1" ]]; then
-    log_info "Renet available at: $renet_bin_dir/renet"
-    log_step "Starting CLI (prod config)"
-else
+elif [[ "${RDC_DEV:-0}" == "1" ]]; then
     export REDIACC_ENVIRONMENT=development
     export REDIACC_SUBSCRIPTION_TOKEN_FILE="$ROOT_DIR/.rdc-dev/api-token.json"
 
@@ -226,17 +253,28 @@ else
         log_info "Renet available at: $renet_bin_dir/renet"
     fi
 
-    # Load account env if available (provides REDIACC_ACCOUNT_SERVER for subscription commands)
+    # The dev gateway writes its URL into private/account/.env as
+    # REDIACC_ACCOUNT_SERVER. Fail fast when it is absent — a half-configured
+    # dev mode would otherwise surface as a confusing CLI error later.
     account_env="$ROOT_DIR/private/account/.env"
     if [[ -f "$account_env" ]]; then
         set -a
+        # shellcheck source=/dev/null
         source "$account_env"
         set +a
     fi
+    if [[ -z "${REDIACC_ACCOUNT_SERVER:-}" ]]; then
+        log_error "RDC_DEV=1 but no dev gateway configured (private/account/.env missing REDIACC_ACCOUNT_SERVER)."
+        log_error "Start it first: ./run.sh account dev"
+        exit 1
+    fi
 
     if [[ "${REDIACC_SKIP_MACHINE_ACTIVATION:-0}" != "1" ]]; then
-        log_step "Starting CLI (dev mode)"
+        log_step "Starting CLI (dev mode — $REDIACC_ACCOUNT_SERVER)"
     fi
+else
+    log_info "Renet available at: $renet_bin_dir/renet"
+    log_step "Starting CLI (production config)"
 fi
 
 # Run the compiled CLI bundle, passing through all arguments

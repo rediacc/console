@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
-import { outputService } from '../services/output.js';
+import { configService } from '../services/config/config-resources.js';
+import { outputService } from '../services/core/output.js';
 import type { OutputFormat } from '../types/index.js';
 import {
   addParentToPayload,
@@ -12,12 +12,10 @@ import {
   capitalizeFirst,
   checkRequiredCreateOptions,
   extractItemsFromResponse,
-  extractVaultsArray,
   getParentDesc,
   getParentFlag,
   type ParentContextOptions,
   type ParentOptionType,
-  type VaultItem,
 } from './commandFactory-helpers.js';
 import { getOutputFormat, handleError } from './errors.js';
 import { withSpinner } from './spinner.js';
@@ -60,11 +58,6 @@ export interface ResourceCommandConfig {
     name: string,
     opts: ParentContextOptions & Record<string, unknown>
   ) => Record<string, unknown>;
-  /** Optional: Vault command configuration */
-  vaultConfig?: {
-    fetch: (params: Record<string, unknown>) => Promise<VaultItem[] | { vaults: VaultItem[] }>;
-    vaultType: string;
-  };
 }
 
 interface CommandContext {
@@ -255,66 +248,6 @@ function setupDeleteCommand(
     });
 }
 
-function setupVaultGetCommand(
-  vault: Command,
-  program: Command,
-  ctx: CommandContext,
-  vaultConfig: NonNullable<ResourceCommandConfig['vaultConfig']>
-): void {
-  const getCmd = vault
-    .command('get')
-    .description(`Get ${ctx.resourceName} vault data`)
-    .requiredOption('--name <name>', t('options.name'));
-  if (ctx.hasParent) {
-    getCmd.option(ctx.parentFlag, ctx.parentDesc);
-    hideParentOption(getCmd, ctx.parentFlag);
-  }
-  getCmd.action(async (options) => {
-    const resourceItemName = options.name;
-    try {
-      const opts = ctx.hasParent ? await configService.applyDefaults(options) : options;
-      const params: Record<string, unknown> = { [ctx.nameField]: resourceItemName };
-      addParentToPayload(params, ctx.hasParent, ctx.parentOption, opts);
-
-      const response = await withSpinner(
-        `Fetching ${ctx.resourceName} vault...`,
-        () => vaultConfig.fetch(params),
-        'Vault fetched'
-      );
-
-      const vaultsArray = extractVaultsArray(response);
-      const targetVault = vaultsArray.find((v) => v.vaultType === vaultConfig.vaultType);
-      const format = program.opts().output as OutputFormat;
-
-      if (targetVault) {
-        outputService.print(targetVault, format);
-      } else {
-        outputService.info(`No ${ctx.resourceName} vault found`);
-      }
-    } catch (error) {
-      handleError(error);
-    }
-  });
-}
-
-function setupVaultCommands(
-  resource: Command,
-  program: Command,
-  ctx: CommandContext,
-  config: ResourceCommandConfig
-): void {
-  const { vaultConfig } = config;
-  if (!vaultConfig) {
-    return;
-  }
-
-  const vault = resource
-    .command('vault')
-    .description(`${capitalizeFirst(ctx.resourceName)} vault management`);
-
-  setupVaultGetCommand(vault, program, ctx, vaultConfig);
-}
-
 export function createResourceCommands(program: Command, config: ResourceCommandConfig): Command {
   const {
     resourceName,
@@ -344,7 +277,6 @@ export function createResourceCommands(program: Command, config: ResourceCommand
   setupCreateCommand(resource, ctx, operations, createOptions, transformCreatePayload);
   setupRenameCommand(resource, ctx, operations);
   setupDeleteCommand(resource, ctx, operations);
-  setupVaultCommands(resource, program, ctx, config);
 
   return resource;
 }

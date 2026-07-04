@@ -1,6 +1,9 @@
 import { t } from '../i18n/index.js';
-import type { MachineActivationStatus, RepoBatchRefreshResult } from '../services/license.js';
-import { outputService } from '../services/output.js';
+import type {
+  MachineActivationStatus,
+  RepoBatchRefreshResult,
+} from '../services/account/license.js';
+import { outputService } from '../services/core/output.js';
 
 export function outputSubscriptionScope(input: {
   orgName?: string;
@@ -55,24 +58,6 @@ export function renderMachineActivationStatus(
     return;
   }
   outputService.warn(t('commands.subscription.activation.status.inactive'));
-}
-
-export function getRepoLicenseFreshness(entry: {
-  expiresAt?: string;
-  refreshRecommendedAt?: string;
-  hardExpiresAt?: string;
-}): 'unknown' | 'hardExpired' | 'refreshRecommended' | 'valid' {
-  const effectiveHardExpiry = entry.hardExpiresAt ?? entry.expiresAt;
-  if (!effectiveHardExpiry) {
-    return 'unknown';
-  }
-  if (new Date(effectiveHardExpiry) <= new Date()) {
-    return 'hardExpired';
-  }
-  if (entry.refreshRecommendedAt && new Date(entry.refreshRecommendedAt) <= new Date()) {
-    return 'refreshRecommended';
-  }
-  return 'valid';
 }
 
 export function formatRuntimeRepoLicenseStatus(entry: {

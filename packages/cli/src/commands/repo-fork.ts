@@ -14,15 +14,18 @@
  */
 import { randomUUID } from 'node:crypto';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
+import { configService } from '../services/config/config-resources.js';
 import {
   type LocalExecuteResult,
   localExecutorService,
   type RenetEvent,
-} from '../services/local-executor.js';
-import { type MachineConnectionLease, machineConnections } from '../services/machine-connection.js';
-import { outputService } from '../services/output.js';
-import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
+} from '../services/executor/local-executor.js';
+import {
+  type MachineConnectionLease,
+  machineConnections,
+} from '../services/machine/machine-connection.js';
+import { outputService } from '../services/core/output.js';
+import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';

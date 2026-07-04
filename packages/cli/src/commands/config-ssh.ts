@@ -1,7 +1,7 @@
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
-import { outputService } from '../services/output.js';
+import { configService } from '../services/config/config-resources.js';
+import { outputService } from '../services/core/output.js';
 import type { OutputFormat } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 
@@ -21,7 +21,9 @@ export function registerSSHCommands(config: Command, program: Command): void {
     .action(async (options) => {
       try {
         const keyPath: string = options.key;
-        const { readSSHKey, readOptionalSSHKey } = await import('../services/renet-execution.js');
+        const { readSSHKey, readOptionalSSHKey } = await import(
+          '../services/renet/renet-execution.js'
+        );
 
         let privateKey: string;
         try {
@@ -30,7 +32,7 @@ export function registerSSHCommands(config: Command, program: Command): void {
           throw new ValidationError(t('commands.config.ssh.set.keyNotFound', { path: keyPath }));
         }
 
-        const { isValidSSHKey } = await import('../shared-desktop/ssh/index.js');
+        const { isValidSSHKey } = await import('../remote/ssh/index.js');
         if (!isValidSSHKey(privateKey)) {
           throw new ValidationError(t('commands.config.ssh.set.invalidKey'));
         }

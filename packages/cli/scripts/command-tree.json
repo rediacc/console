@@ -2828,34 +2828,6 @@
           "subcommands": []
         },
         {
-          "name": "vault",
-          "descriptionKey": null,
-          "options": [],
-          "arguments": [],
-          "subcommands": [
-            {
-              "name": "get",
-              "descriptionKey": null,
-              "options": [
-                {
-                  "flags": "--name <name>",
-                  "descriptionKey": "options.name",
-                  "mandatory": true,
-                  "defaultValue": null
-                },
-                {
-                  "flags": "-t, --team <name>",
-                  "descriptionKey": "options.team",
-                  "mandatory": false,
-                  "defaultValue": null
-                }
-              ],
-              "arguments": [],
-              "subcommands": []
-            }
-          ]
-        },
-        {
           "name": "browse",
           "descriptionKey": "commands.storage.browse.description",
           "options": [
@@ -3668,6 +3640,26 @@
               "name": "list",
               "descriptionKey": "commands.config.storage.list.description",
               "options": [],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "show",
+              "descriptionKey": "commands.config.storage.show.description",
+              "options": [
+                {
+                  "flags": "--name <name>",
+                  "descriptionKey": "options.name",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--reveal",
+                  "descriptionKey": "commands.config.storage.show.optionReveal",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
               "arguments": [],
               "subcommands": []
             }

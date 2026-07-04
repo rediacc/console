@@ -1,9 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
-import { type LocalExecuteResult, localExecutorService } from '../services/local-executor.js';
-import { outputService } from '../services/output.js';
+import { configService } from '../services/config/config-resources.js';
+import {
+  type LocalExecuteResult,
+  localExecutorService,
+} from '../services/executor/local-executor.js';
+import { outputService } from '../services/core/output.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { compositeKey, parseRepoRef } from '../utils/config-schema.js';
 import { handleError, ValidationError } from '../utils/errors.js';

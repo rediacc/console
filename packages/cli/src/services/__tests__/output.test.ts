@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { outputService } from '../output.js';
+import { outputService } from '../core/output.js';
 
 /**
  * Regression guard for rediacc/console#490 bug #2 ("--output json polluted by

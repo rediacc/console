@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SFTPClient } from '../../shared-desktop/sftp/index.js';
-import { downloadCertCache } from '../cert-cache.js';
+import type { SFTPClient } from '../../remote/sftp/index.js';
+import { downloadCertCache } from '../account/cert-cache.js';
 
 const { mockLeaseExec, mockRelease, mockAcquire, mockConfigService } = vi.hoisted(() => {
   const mockLeaseExec = vi.fn();
@@ -25,11 +25,11 @@ const { mockLeaseExec, mockRelease, mockAcquire, mockConfigService } = vi.hoiste
   };
 });
 
-vi.mock('../machine-connection.js', () => ({
+vi.mock('../machine/machine-connection.js', () => ({
   machineConnections: { acquire: mockAcquire },
 }));
 
-vi.mock('../config-resources.js', () => ({
+vi.mock('../config/config-resources.js', () => ({
   configService: mockConfigService,
 }));
 

@@ -12,7 +12,7 @@ Provision local VM clusters on your workstation for development and testing, no 
 
 ## Requirements
 
-`rdc ops` requires the **local adapter**. It is not available with the cloud adapter.
+`rdc ops` runs through the **local adapter**.
 
 ```bash
 rdc ops check

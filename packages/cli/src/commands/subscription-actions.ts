@@ -10,14 +10,14 @@ import {
   readMachineActivationStatus,
   readRuntimeRepoLicenseStatuses,
   refreshRepoLicensesBatch,
-} from '../services/license.js';
-import { outputService } from '../services/output.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
-import { configService } from '../services/config-resources.js';
+} from '../services/account/license.js';
+import { outputService } from '../services/core/output.js';
+import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import { configService } from '../services/config/config-resources.js';
 import {
   getSubscriptionScopeMismatch,
   getSubscriptionTokenState,
-} from '../services/subscription-auth.js';
+} from '../services/account/subscription-auth.js';
 import { ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import {
@@ -27,13 +27,13 @@ import {
   renderRepoBatchRefreshSummary,
 } from './subscription-output.js';
 
-export interface SubscriptionCommandContext {
+interface SubscriptionCommandContext {
   machine: Awaited<ReturnType<typeof configService.getLocalMachine>>;
   sshPrivateKey: string;
   remoteRenetPath: string;
 }
 
-export function handleSubscriptionTokenState(
+function handleSubscriptionTokenState(
   tokenState: ReturnType<typeof getSubscriptionTokenState>
 ): boolean {
   if (tokenState.kind === 'missing') {
@@ -62,7 +62,7 @@ async function assertSubscriptionScopeMatchesConfig(tokenState: {
   }
 }
 
-export async function resolveSubscriptionCommandContext(
+async function resolveSubscriptionCommandContext(
   machineName: string
 ): Promise<SubscriptionCommandContext> {
   const tokenState = getSubscriptionTokenState();
@@ -101,9 +101,7 @@ export async function executeSubscriptionStatus(): Promise<void> {
   }
 }
 
-export function outputRemoteStatus(
-  status: Awaited<ReturnType<typeof fetchSubscriptionLicenseReport>>
-) {
+function outputRemoteStatus(status: Awaited<ReturnType<typeof fetchSubscriptionLicenseReport>>) {
   if (!status) return;
   outputService.info(t('commands.subscription.status.remote'));
   outputSubscriptionScope({
@@ -202,7 +200,7 @@ export async function executeActivationStatus(machineName: string): Promise<void
   }
 }
 
-export async function runRepoBatchRefresh(
+async function runRepoBatchRefresh(
   context: SubscriptionCommandContext
 ): Promise<RepoBatchRefreshResult> {
   return withSpinner(

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MachineConfig } from '../../types/index.js';
-import { refreshRepoLicensesBatch } from '../license.js';
+import { refreshRepoLicensesBatch } from '../account/license.js';
 
 const { mockGetSubscriptionTokenState } = vi.hoisted(() => ({
   mockGetSubscriptionTokenState: vi.fn(() => ({
@@ -20,7 +20,7 @@ const { mockExec, mockExecStreaming, mockConnect, mockClose, mockListRepositorie
   })
 );
 
-vi.mock('../../shared-desktop/sftp/index.js', () => ({
+vi.mock('../../remote/sftp/index.js', () => ({
   SFTPClient: class MockSFTPClient {
     connect = mockConnect;
     exec = mockExec;
@@ -33,18 +33,18 @@ vi.mock('node:fs/promises', () => ({
   readFile: vi.fn().mockResolvedValue('client-machine-001\n'),
 }));
 
-vi.mock('../subscription-auth.js', () => ({
+vi.mock('../account/subscription-auth.js', () => ({
   getSubscriptionTokenState: mockGetSubscriptionTokenState,
 }));
 
-vi.mock('../config-resources.js', () => ({
+vi.mock('../config/config-resources.js', () => ({
   configService: {
     listRepositories: mockListRepositories,
   },
 }));
 
 const mockAccountServerFetch = vi.fn();
-vi.mock('../account-client.js', () => ({
+vi.mock('../account/account-client.js', () => ({
   accountServerFetch: (...args: unknown[]) => mockAccountServerFetch(...args),
 }));
 

@@ -80,7 +80,7 @@ Each repo has its own SSH key. All repo-level connections (term, VS Code, sync) 
 
 ## Terminology
 
-- "local adapter" / "cloud adapter" — never "modes"
+- Say "local adapter", never "local mode" or "modes"
 - "Repository" = isolated application with its own Docker daemon and encrypted storage
 - The CLI tool is `rdc`, not `rediacc`
 

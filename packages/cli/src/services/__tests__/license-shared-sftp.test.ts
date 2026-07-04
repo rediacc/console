@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SFTPClient } from '../../shared-desktop/sftp/index.js';
+import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
-import { readMachineActivationStatus, refreshRepoLicenseIdentity } from '../license.js';
+import { readMachineActivationStatus, refreshRepoLicenseIdentity } from '../account/license.js';
 
 const MACHINE_ID = '3a62c0cf8d150bed7ca40e9d6de237eb26b96dee26d7a20eb866e09bd1aca09b';
 const REPO_GUID = '550e8400-e29b-41d4-a716-446655440000';
@@ -16,7 +16,7 @@ const { mockExec, mockExecStreaming, mockConnect, mockClose, mockSftpConstructor
   })
 );
 
-vi.mock('../../shared-desktop/sftp/index.js', () => ({
+vi.mock('../../remote/sftp/index.js', () => ({
   SFTPClient: class MockSFTPClient {
     connect = mockConnect;
     exec = mockExec;
@@ -33,7 +33,7 @@ vi.mock('node:fs/promises', () => ({
   readFile: vi.fn().mockResolvedValue('client-machine-001\n'),
 }));
 
-vi.mock('../subscription-auth.js', () => ({
+vi.mock('../account/subscription-auth.js', () => ({
   getSubscriptionTokenState: vi.fn(() => ({
     kind: 'ready',
     serverUrl: 'http://localhost:4800',
@@ -42,11 +42,11 @@ vi.mock('../subscription-auth.js', () => ({
 }));
 
 const mockAccountServerFetch = vi.fn();
-vi.mock('../account-client.js', () => ({
+vi.mock('../account/account-client.js', () => ({
   accountServerFetch: (...args: unknown[]) => mockAccountServerFetch(...args),
 }));
 
-vi.mock('../telemetry.js', () => ({
+vi.mock('../telemetry/telemetry.js', () => ({
   telemetryService: {
     setUserContext: vi.fn(),
     trackError: vi.fn(),

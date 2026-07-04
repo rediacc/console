@@ -1,4 +1,4 @@
-import { configService } from '../services/config-resources.js';
+import { configService } from '../services/config/config-resources.js';
 
 /**
  * Build a resolver that maps repository GUIDs to friendly names.

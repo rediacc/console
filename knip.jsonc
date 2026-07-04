@@ -1,0 +1,168 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema-jsonc.json",
+  // Fully strict: files, exports, types, duplicates, dependencies all enforced.
+  // Every entry in an ignore* array below needs a `// BLOCKER:` comment per the
+  // repo convention (CLAUDE.md); one BLOCKER covers the entries after it until a
+  // blank line. Gate: scripts/check-knip-blockers.ts (+ knip's own
+  // --treat-config-hints-as-errors catches ignores that stop matching anything).
+  // In-code exceptions use `/** @public BLOCKER: <reason> */` JSDoc tags.
+  "workspaces": {
+    ".": {
+      "entry": [
+        "scripts/*.ts"
+      ],
+      "project": [
+        "*.{js,ts}",
+        "scripts/**/*.ts"
+      ]
+    },
+    "packages/shared": {
+      "project": [
+        "src/**/*.ts"
+      ]
+    },
+    "packages/provisioning": {
+      "project": [
+        "src/**/*.ts"
+      ]
+    },
+    "packages/json": {
+      "ignore": [
+        // BLOCKER: templates/** are Rediacc repo payloads deployed to machines (Rediaccfile, compose, app runtime files like heartbeat.mjs); they execute inside deployed repos, never imported by console code
+        "templates/**"
+      ]
+    },
+    "packages/cli": {
+      "entry": [
+        "src/types/index.ts"
+      ],
+      "project": [
+        "src/**/*.ts"
+      ],
+      "ignore": [
+        // BLOCKER: esbuild bundling script invoked by `npm run build:bundle`; it imports the root-hoisted transitive esbuild (rebuilt by install:natives), intentionally undeclared in this workspace to avoid pinning a second esbuild version
+        "bundle.mjs"
+      ]
+    },
+    "packages/bridge-tests": {
+      "entry": [
+        "playwright*.config.ts",
+        "tests/**/*.test.ts",
+        "src/base/*.ts",
+        "src/reporters/*.ts"
+      ],
+      "project": [
+        "**/*.ts"
+      ]
+    },
+    "packages/www": {
+      "entry": [
+        "src/pages/**/*.astro",
+        "src/layouts/**/*.astro",
+        "scripts/generate-search-index.js",
+        "scripts/generate-json.js",
+        "scripts/generate-route-manifest.js",
+        "scripts/generate-tutorial-video.ts",
+        "src/scripts/*.ts",
+        "src/components/Navigation.tsx",
+        "src/components/Footer.tsx",
+        "src/components/Sidebar.tsx"
+      ],
+      "project": [
+        "src/**/*.{ts,tsx,astro}",
+        "scripts/**/*.{js,cjs,mjs,ts}"
+      ]
+    },
+    "private/account": {
+      "entry": [
+        "src/entry/*.ts",
+        "scripts/**/*.ts",
+        "tests/**/*.test.ts"
+      ],
+      "project": [
+        "src/**/*.ts",
+        "scripts/**/*.ts"
+      ],
+      "ignoreBinaries": [
+        // BLOCKER: rotation CLI shells out to the authenticated gh binary for GitHub org-secret pushes and to openssl for key generation; host tools, not npm deps
+        "gh",
+        "openssl"
+      ]
+    },
+    "private/account/web": {
+      "entry": [
+        "index.html"
+      ],
+      "project": [
+        "src/**/*.{ts,tsx}"
+      ],
+      "ignoreDependencies": [
+        // BLOCKER: ui components import { Slot } from the radix-ui meta-package; this pins the underlying Slot implementation the meta resolves — no direct import ever appears
+        "@radix-ui/react-slot",
+        // BLOCKER: code imports react-router-dom (a thin re-export of react-router); both are declared so syncpack sameRange holds the pair to one version
+        "react-router",
+        // BLOCKER: referenced via `@import 'tailwindcss'` in src/styles/app.css and as peer of @tailwindcss/vite; CSS references are invisible to knip
+        "tailwindcss"
+      ]
+    },
+    "private/account/e2e": {
+      "entry": [
+        "tests/**/*.ts"
+      ],
+      "project": [
+        "**/*.ts"
+      ]
+    }
+  },
+  "ignoreDependencies": [
+    // BLOCKER: npx-invoked by .ci/scripts/quality/check-lockfile.sh; declared at root so the pinned version resolves from the workspace tree instead of a network fetch — no JS import exists for knip to see
+    "lockfile-lint",
+    // BLOCKER: TypeScript ambient type packages are compile-time inputs resolved by tsc, never imported as runtime modules
+    "@types/*",
+    // BLOCKER: lazy-loaded via createRequire in packages/cli/src/services/profiling.ts only when profiling is enabled; knip cannot trace the createRequire call
+    "@pyroscope/nodejs",
+    // BLOCKER: declared in packages/cli to hold the OTel family to the .syncpackrc-pinned version set; resolved transitively by the sdk packages, never imported directly
+    "@opentelemetry/core",
+
+    // BLOCKER: the @vitest/* family and zod are declared across workspaces (cli, shared, www, json, bridge-tests) purely as version pins so syncpack sameRange + the root zod override keep one physical copy; vitest/consumers resolve them transitively
+    "@vitest/coverage-v8",
+    "@vitest/runner",
+    "@vitest/ui",
+    "@vitest/utils",
+    "zod",
+
+    // BLOCKER: declared in packages/www to carry the 5.9.3 security override pin for the @astrojs/rss transitive chain (see _overridesReasons.fast-xml-parser); www code never imports it directly
+    "fast-xml-parser"
+  ],
+  "ignoreBinaries": [
+    // BLOCKER: platform/system tools spawned via child_process at runtime by the CLI (user lookups, keyrings, service control, Windows/macOS shells); host binaries, never npm-managed
+    "cmd.exe",
+    "dscl",
+    "getent",
+    "keyctl",
+    "osascript",
+    "powershell.exe",
+    "security",
+    "systemctl",
+    "wsl.exe",
+
+    // BLOCKER: terminal emulators probed by the CLI terminal launcher (the remote/ terminal detector tries each candidate); presence is optional per host
+    "gnome-terminal",
+    "konsole",
+    "mate-terminal",
+    "terminator",
+    "xfce4-terminal",
+    "xterm",
+
+    // BLOCKER: ssh-agent tooling spawned for key management in the CLI ssh stack; provided by the host OpenSSH installation
+    "ssh-add",
+    "ssh-agent",
+    "ssh-keyscan",
+
+    // BLOCKER: external tools invoked by www build/tutorial scripts (ffmpeg muxing, pdftotext content checks, agent-browser session capture) and by the CLI backup stack (rclone); installed on dev/CI hosts, not npm deps
+    "agent-browser",
+    "ffmpeg",
+    "pdftotext",
+    "rclone"
+  ]
+}

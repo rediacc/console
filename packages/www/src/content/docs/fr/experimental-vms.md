@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 2
 language: fr
-sourceHash: df01dc35c82beb81
+sourceHash: aafca00c006ded0b
 ---
 
 # Experimental VMs
@@ -15,7 +15,7 @@ Provisionnez des clusters de VM locaux sur votre poste de travail pour le dével
 
 ## Prérequis
 
-`rdc ops` nécessite l'**adaptateur local**. Il n'est pas disponible avec l'adaptateur cloud.
+`rdc ops` fonctionne via l'**adaptateur local**.
 
 ```bash
 rdc ops check

@@ -35,12 +35,12 @@ import { createInterface } from 'node:readline';
 import { isatty } from 'node:tty';
 import type { Command } from 'commander';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
-import { configService } from '../../services/config-resources.js';
-import { auditLog } from '../../services/audit-log.js';
+import { configService } from '../../services/config/config-resources.js';
+import { auditLog } from '../../services/core/audit-log.js';
 import { t } from '../../i18n/index.js';
 import { configEditOverrideScope, isAgentEnvironment } from '../../utils/agent-guard.js';
 import { openEditor, EditorError } from '../../utils/editor-launcher.js';
-import { outputService } from '../../services/output.js';
+import { outputService } from '../../services/core/output.js';
 import { redactClone, shortFingerprint, walkSensitive, getByPointer } from '../../schema/walker.js';
 import {
   parseConfig,

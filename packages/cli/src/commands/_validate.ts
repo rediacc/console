@@ -3,7 +3,7 @@
  * Call these at the start of any action that dispatches to renet
  * to surface clear "not found" errors before an opaque renet failure.
  */
-import { configService } from '../services/config-resources.js';
+import { configService } from '../services/config/config-resources.js';
 
 /**
  * Assert that a machine exists in the current config.

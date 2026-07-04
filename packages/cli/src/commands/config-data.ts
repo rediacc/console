@@ -2,11 +2,11 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { validateNetworkId } from '@rediacc/shared/queue-vault';
+import { validateNetworkId } from '@rediacc/shared/renet-contract';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
-import { outputService } from '../services/output.js';
+import { configService } from '../services/config/config-resources.js';
+import { outputService } from '../services/core/output.js';
 import type { OutputFormat } from '../types/index.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { assertResourceName, parseConfig, RepositoryConfigSchema } from '../utils/config-schema.js';
@@ -182,6 +182,48 @@ export function registerRepositoryCommands(config: Command, program: Command): v
     });
 }
 
+/**
+ * Gate `config storage show --reveal`: refuse agents and non-TTY sinks, and
+ * audit every grant. Mirrors the reveal gate on `config show` / `config field
+ * get` so a storage vault secret is never piped to an agent or a file.
+ */
+async function applyStorageRevealGate(storageName: string): Promise<void> {
+  const { isAgentEnvironment } = await import('../utils/agent-guard.js');
+  const { auditLog } = await import('../services/core/audit-log.js');
+  const { isatty } = await import('node:tty');
+  const xdg = process.env.XDG_CONFIG_HOME ?? `${process.env.HOME ?? ''}/.config`;
+  const auditDir = `${xdg}/rediacc`;
+  const pointer = `/resources/storages/${storageName}/vaultContent`;
+
+  if (isAgentEnvironment()) {
+    try {
+      auditLog(auditDir, {
+        command: 'config storage show --reveal',
+        paths: [pointer],
+        outcome: 'refused',
+        reason: 'agent environment',
+      });
+    } catch {
+      /* best-effort */
+    }
+    throw new ValidationError(t('errors.agent.showReveal'));
+  }
+
+  if (!isatty(process.stdout.fd)) {
+    throw new ValidationError(t('errors.agent.showRevealRequiresTty'));
+  }
+
+  try {
+    auditLog(auditDir, {
+      command: 'config storage show --reveal',
+      paths: [pointer],
+      outcome: 'reveal_granted',
+    });
+  } catch {
+    /* best-effort */
+  }
+}
+
 export function registerStorageCommands(config: Command, program: Command): void {
   const storage = config.command('storage').description(t('commands.config.storage.description'));
 
@@ -195,7 +237,7 @@ export function registerStorageCommands(config: Command, program: Command): void
       try {
         const file = options.file;
         const { parseRcloneConfig, mapRcloneToStorageProvider, PROVIDER_MAPPING } = await import(
-          '@rediacc/shared/queue-vault'
+          '@rediacc/shared/renet-contract'
         );
 
         const filePath = file.startsWith('~') ? path.join(os.homedir(), file.slice(1)) : file;
@@ -286,6 +328,39 @@ export function registerStorageCommands(config: Command, program: Command): void
         }));
 
         outputService.print(displayData, format);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // config storage show — display one storage's provider + vaultContent.
+  // vaultContent is redacted by default (sensitivity map marks it `secret`);
+  // --reveal prints it in the clear for a human at an interactive terminal.
+  storage
+    .command('show')
+    .description(t('commands.config.storage.show.description'))
+    .requiredOption('--name <name>', t('options.name'))
+    .option('--reveal', t('commands.config.storage.show.optionReveal'))
+    .action(async (options: { name: string; reveal?: boolean }) => {
+      try {
+        const storageConfig = await configService.getStorage(options.name);
+        const format = program.opts().output as OutputFormat;
+
+        let vaultContent: unknown = storageConfig.vaultContent;
+        if (options.reveal) {
+          await applyStorageRevealGate(options.name);
+        } else {
+          const { redactClone } = await import('../schema/walker.js');
+          const redacted = redactClone({
+            resources: { storages: { [options.name]: storageConfig } },
+          }) as { resources: { storages: Record<string, { vaultContent: unknown }> } };
+          vaultContent = redacted.resources.storages[options.name].vaultContent;
+        }
+
+        outputService.print(
+          { name: options.name, provider: storageConfig.provider, vaultContent },
+          format
+        );
       } catch (error) {
         handleError(error);
       }

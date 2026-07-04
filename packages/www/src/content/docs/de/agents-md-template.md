@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 50
 language: de
-sourceHash: "468f701c500856c6"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "bbdbb7bd6ac12d9a"
+sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 ---
 
 Das Problem: KI-Coding-Assistenten (Claude Code, Cursor, Cline, Windsurf) erfinden immer wieder `rdc`-Flags, die nicht existieren, und können nicht zuordnen, welcher Rediacc-Repository-Name welcher GUID entspricht, ohne Sie jedes Mal zu fragen. Diese Vorlage behebt das. Fügen Sie den folgenden Block in Ihre `CLAUDE.md`, `.cursorrules` oder die Agenten-Konfigurationsdatei Ihres Tools ein.
@@ -74,10 +74,10 @@ rdc agent schema --command "machine query"
 ### Architecture
 - **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
 - **Config**: CLI config at ~/.config/rediacc/rediacc.json. Auto-created on first use.
-- Two adapters: **local** (default, SSH-based) and **cloud** (experimental, API-based)
+- One adapter: **local** (SSH-based)
 
 ### Rules
-- Use "local adapter" / "cloud adapter", never say "modes"
+- Say "local adapter", never "local mode"
 - S3 is a resource state backend, not a separate adapter
 - Default config is created automatically on first use, do not tell users to run `rdc config init`
 - Always use `--output json` when parsing output programmatically

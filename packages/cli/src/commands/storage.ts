@@ -1,15 +1,12 @@
-import {
-  formatSizeBytes,
-  type RemoteFile,
-  resolveGuidFileNames,
-} from '@rediacc/shared/queue-vault';
+import { formatSizeBytes } from '@rediacc/shared/renet-contract';
+import { type RemoteFile, resolveGuidFileNames } from '@rediacc/shared/storage-browser';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { getStateProvider } from '../providers/index.js';
-import { configService } from '../services/config-resources.js';
-import { localExecutorService } from '../services/local-executor.js';
-import { outputService } from '../services/output.js';
-import { storageBrowserService } from '../services/storage-browser.js';
+import { getStateProvider } from '../services/state.js';
+import { configService } from '../services/config/config-resources.js';
+import { localExecutorService } from '../services/executor/local-executor.js';
+import { outputService } from '../services/core/output.js';
+import { storageBrowserService } from '../services/repo/storage-browser.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
@@ -219,7 +216,7 @@ async function executeStoragePrune(
   options: StoragePruneOptions
 ): Promise<void> {
   const { analyzePrune, printPruneAnalysis, purgeExpiredArchives } = await import(
-    '../services/prune.js'
+    '../services/repo/prune.js'
   );
 
   outputService.info(t('commands.storage.prune.listing', { storage: storageName }));
@@ -257,19 +254,19 @@ export function registerStorageCommands(program: Command): void {
     parentOption: 'team',
     operations: {
       list: async (params) => {
-        const provider = await getStateProvider();
+        const provider = getStateProvider();
         return provider.storage.list({ teamName: params?.teamName as string });
       },
       create: async (payload) => {
-        const provider = await getStateProvider();
+        const provider = getStateProvider();
         return provider.storage.create(payload);
       },
       rename: async (payload) => {
-        const provider = await getStateProvider();
+        const provider = getStateProvider();
         return provider.storage.rename(payload);
       },
       delete: async (payload) => {
-        const provider = await getStateProvider();
+        const provider = getStateProvider();
         return provider.storage.delete(payload);
       },
     },
@@ -281,13 +278,6 @@ export function registerStorageCommands(program: Command): void {
       teamName: opts.team,
       vaultContent: opts.vault,
     }),
-    vaultConfig: {
-      fetch: async (params) => {
-        const provider = await getStateProvider();
-        return provider.storage.getVault(params);
-      },
-      vaultType: 'Storage',
-    },
   });
   storage.summary(t('commands.storage.descriptionShort'));
 

@@ -445,6 +445,10 @@
         "remove": {
           "description": "从当前配置中移除存储",
           "success": "已移除存储 \"{{name}}\""
+        },
+        "show": {
+          "description": "显示存储的提供商和配置",
+          "optionReveal": "以明文显示存储配置(仅限交互式 TTY;记入审计日志)"
         }
       }
     },
@@ -1350,9 +1354,6 @@
       },
       "rename": {
         "description": "重命名存储提供商"
-      },
-      "vault": {
-        "description": "存储保险库管理 (仅限云适配器)"
       }
     },
     "subscription": {

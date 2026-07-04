@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { RepositoryConfig } from '../schema/schemas.js';
-import { configService } from '../services/config-resources.js';
-import { localExecutorService } from '../services/local-executor.js';
+import { configService } from '../services/config/config-resources.js';
+import { localExecutorService } from '../services/executor/local-executor.js';
 
 /**
  * Resolve a hands-free delta base for pushing `repoConfig` to `machine`.
@@ -12,7 +12,7 @@ import { localExecutorService } from '../services/local-executor.js';
  * The renet delta path independently re-verifies the base exists byte-identical
  * on both ends, so a stale hint here can only cost a fallback, never correctness.
  */
-export async function resolveAutoDeltaBase(
+async function resolveAutoDeltaBase(
   repoConfig: RepositoryConfig,
   machine: string
 ): Promise<string | undefined> {
@@ -116,7 +116,7 @@ async function syncCommitMetaToTarget(
  * the next push of this repo (or a descendant) auto-deltas with no operator
  * flag. Best-effort: a config write failure must not fail the completed push.
  */
-export async function recordPushBase(
+async function recordPushBase(
   repo: string,
   machine: string,
   method: 'rsync' | 'delta',

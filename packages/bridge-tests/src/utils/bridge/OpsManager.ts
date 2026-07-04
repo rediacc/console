@@ -2,16 +2,10 @@ import {
   OpsManager as BaseOpsManager,
   loadConfigFromEnv,
   type ProvisioningConfig,
-  type VMNetworkConfig,
 } from '@rediacc/provisioning';
 import { DEFAULT_DATASTORE_PATH } from '../../constants';
 import { OpsCephManager } from './OpsCephManager';
 import { OpsRustFSManager } from './OpsRustFSManager';
-
-/**
- * Re-export VMNetworkConfig for backward compatibility
- */
-export type { VMNetworkConfig };
 
 /**
  * OpsManager - Extended manager for bridge tests

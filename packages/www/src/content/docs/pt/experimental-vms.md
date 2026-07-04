@@ -4,6 +4,8 @@ description: "Provisione clusters de VMs locais para desenvolvimento e testes co
 category: "Concepts"
 order: 2
 language: pt
+sourceHash: "aafca00c006ded0b"
+sourceCommit: "6cf65c4fe8617378da6a6dd21cce2feecff7ca9f"
 ---
 
 # VMs Experimentais
@@ -12,7 +14,7 @@ Provisione clusters de VMs locais na sua estação de trabalho para desenvolvime
 
 ## Requisitos
 
-`rdc ops` requer o **adaptador local**. Não está disponível com o adaptador cloud.
+`rdc ops` funciona através do **adaptador local**.
 
 ```bash
 rdc ops check

@@ -27,12 +27,6 @@ export const PLATFORMS: {
   { key: 'windows', iconId: 'windows', labelKey: 'hero.install.tabs.windows' },
 ];
 
-export const QUICK_INSTALL_COMMANDS: Record<Platform, string> = {
-  linux: `curl -fsSL ${SITE_URL}/install.sh | bash`,
-  macos: 'brew install rediacc/tap/rediacc-cli',
-  windows: `irm ${SITE_URL}/install.ps1 | iex`,
-};
-
 export const QUICK_INSTALL_UNIX = `# Linux / macOS\ncurl -fsSL ${SITE_URL}/install.sh | bash`;
 export const QUICK_INSTALL_WIN = `# Windows (PowerShell)\nirm ${SITE_URL}/install.ps1 | iex`;
 
@@ -94,8 +88,6 @@ Server = ${RELEASES_URL}/archlinux/${CHANNEL}/\\$arch" | sudo tee -a /etc/pacman
 sudo pacman -Sy rediacc-cli`;
 
 export const HOMEBREW_COMMAND = 'brew install rediacc/tap/rediacc-cli';
-
-export const NPM_COMMANDS = `npm install -g ${RELEASES_URL}/npm/${CHANNEL}/rediacc-cli-latest.tgz`;
 
 export interface MethodMeta {
   id: InstallMethod;

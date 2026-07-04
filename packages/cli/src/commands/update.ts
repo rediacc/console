@@ -5,12 +5,12 @@ import { STATUS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { isCooldownExpired } from '@rediacc/shared/update';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { applyPendingUpdate, getAppliedAtStartup } from '../services/background-updater.js';
-import { outputService } from '../services/output.js';
-import { getSubscriptionServerUrl } from '../services/subscription-auth.js';
-import { resolveChannel } from '../services/updater.js';
-import { readUpdateState, writeUpdateState } from '../services/update-state.js';
-import { checkForUpdate, compareVersions, performUpdate } from '../services/updater.js';
+import { applyPendingUpdate, getAppliedAtStartup } from '../services/update/background-updater.js';
+import { outputService } from '../services/core/output.js';
+import { getSubscriptionServerUrl } from '../services/account/subscription-auth.js';
+import { resolveChannel } from '../services/update/updater.js';
+import { readUpdateState, writeUpdateState } from '../services/update/update-state.js';
+import { checkForUpdate, compareVersions, performUpdate } from '../services/update/updater.js';
 import { handleError } from '../utils/errors.js';
 import {
   getInstallMethod,
@@ -31,7 +31,9 @@ export async function handleChannelSwitch(
     outputService.error(t('commands.update.invalidChannel', { channel }));
     process.exit(1);
   }
-  const { loadServerConfig, saveServerConfig } = await import('../services/subscription-auth.js');
+  const { loadServerConfig, saveServerConfig } = await import(
+    '../services/account/subscription-auth.js'
+  );
   const config = loadServerConfig() ?? { accountServer: 'https://www.rediacc.com' };
   saveServerConfig({ ...config, updateChannel: channel });
   outputService.success(t('commands.update.channelSet', { channel }));

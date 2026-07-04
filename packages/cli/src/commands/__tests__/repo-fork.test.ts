@@ -17,7 +17,7 @@ const mockGetLocalMachine = vi.hoisted(() =>
   vi.fn().mockResolvedValue({ ip: '127.0.0.1', user: 'root' })
 );
 
-vi.mock('../../services/config-resources.js', () => ({
+vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getRepository: mockGetRepository,
     addRepository: mockAddRepository,
@@ -32,19 +32,19 @@ const mockExecute = vi.hoisted(() =>
   vi.fn().mockResolvedValue({ success: true, allSteps: [], steps: [] })
 );
 const mockRefreshIdentityFor = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
-vi.mock('../../services/local-executor.js', () => ({
+vi.mock('../../services/executor/local-executor.js', () => ({
   localExecutorService: { execute: mockExecute, refreshIdentityFor: mockRefreshIdentityFor },
 }));
 
 // Machine connection pool — outer lease taken by handleForkAction
 const mockLeaseRelease = vi.hoisted(() => vi.fn());
 const mockAcquire = vi.hoisted(() => vi.fn());
-vi.mock('../../services/machine-connection.js', () => ({
+vi.mock('../../services/machine/machine-connection.js', () => ({
   machineConnections: { acquire: mockAcquire },
 }));
 
 // Repo-key deployment — no-op
-vi.mock('../../services/repo-key-deployment.js', () => ({
+vi.mock('../../services/repo/repo-key-deployment.js', () => ({
   deployRepoKeyIfNeeded: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -62,7 +62,7 @@ vi.mock('../../utils/ssh-keygen.js', () => ({
 }));
 
 // Output / errors / local-execution-failure — silence
-vi.mock('../../services/output.js', () => ({
+vi.mock('../../services/core/output.js', () => ({
   outputService: {
     info: vi.fn(),
     success: vi.fn(),

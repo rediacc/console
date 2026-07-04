@@ -1,8 +1,8 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
-import { outputService } from '../services/output.js';
+import { configService } from '../services/config/config-resources.js';
+import { outputService } from '../services/core/output.js';
 import type { OutputFormat, RdcConfig } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { registerBackupStrategyCommands } from './config-backup-strategy.js';
@@ -80,7 +80,7 @@ async function handleMasterPasswordSetup(options: {
 export async function readSshKeyForInit(
   keyPath: string
 ): Promise<{ privateKey: string; publicKey?: string }> {
-  const { readSSHKey, readOptionalSSHKey } = await import('../services/renet-execution.js');
+  const { readSSHKey, readOptionalSSHKey } = await import('../services/renet/renet-execution.js');
   const privateKey = (await readSSHKey(keyPath)).trim();
   const publicKey = (await readOptionalSSHKey(`${keyPath}.pub`)).trim() || undefined;
   return { privateKey, publicKey };
@@ -133,7 +133,7 @@ function hasInitFlags(options: {
 /** Gate --reveal: refuse agents and non-TTY; emit audit log. */
 async function applyRevealGate(cfg: RdcConfig): Promise<void> {
   const { isAgentEnvironment } = await import('../utils/agent-guard.js');
-  const { auditLog } = await import('../services/audit-log.js');
+  const { auditLog } = await import('../services/core/audit-log.js');
   const xdg = process.env.XDG_CONFIG_HOME ?? `${process.env.HOME ?? ''}/.config`;
   const auditDir = `${xdg}/rediacc`;
 

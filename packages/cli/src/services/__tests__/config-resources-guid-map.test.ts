@@ -18,7 +18,7 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
 // are controllable from the test.
 let mockRepos: Record<string, { repositoryGuid: string; tag?: string }> = {};
 
-vi.mock('../config-base.js', () => ({
+vi.mock('../config/config-base.js', () => ({
   ConfigServiceBase: class {
     getEffectiveConfigName() {
       return 'test';
@@ -35,7 +35,7 @@ vi.mock('../config-base.js', () => ({
   },
 }));
 
-// Bump default 5s timeout — the per-test `await import('../config-resources.js')`
+// Bump default 5s timeout — the per-test `await import('../config/config-resources.js')`
 // triggers a cold load of the full module graph (commitments/canonical/walker/
 // config-base) which can exceed 5s on slower CI runners. A timeout on the
 // first test then cascade-fails the remaining five (configService undefined).
@@ -49,7 +49,7 @@ describe('getRepositoryGuidMap', { timeout: 30000 }, () => {
     mockRepos = {
       erpnext: { repositoryGuid: 'guid-erp', tag: 'latest' },
     };
-    const { configService } = await import('../config-resources.js');
+    const { configService } = await import('../config/config-resources.js');
     const map = await configService.getRepositoryGuidMap();
     expect(map['guid-erp']).toBe('erpnext:latest');
   });
@@ -58,7 +58,7 @@ describe('getRepositoryGuidMap', { timeout: 30000 }, () => {
     mockRepos = {
       'demo-heartbeat:latest': { repositoryGuid: 'guid-hb', tag: 'latest' },
     };
-    const { configService } = await import('../config-resources.js');
+    const { configService } = await import('../config/config-resources.js');
     const map = await configService.getRepositoryGuidMap();
     expect(map['guid-hb']).toBe('demo-heartbeat:latest');
     expect(map['guid-hb']).not.toContain(':latest:latest');
@@ -71,7 +71,7 @@ describe('getRepositoryGuidMap', { timeout: 30000 }, () => {
         tag: 'isolation-final',
       },
     };
-    const { configService } = await import('../config-resources.js');
+    const { configService } = await import('../config/config-resources.js');
     const map = await configService.getRepositoryGuidMap();
     expect(map['guid-fork']).toBe('demo-stackoverflow:isolation-final');
   });
@@ -82,7 +82,7 @@ describe('getRepositoryGuidMap', { timeout: 30000 }, () => {
     mockRepos = {
       'myapp:stale-tag': { repositoryGuid: 'guid-myapp', tag: 'current-tag' },
     };
-    const { configService } = await import('../config-resources.js');
+    const { configService } = await import('../config/config-resources.js');
     const map = await configService.getRepositoryGuidMap();
     expect(map['guid-myapp']).toBe('myapp:current-tag');
   });
@@ -93,7 +93,7 @@ describe('getRepositoryGuidMap', { timeout: 30000 }, () => {
       'demo-heartbeat:latest': { repositoryGuid: 'guid-hb', tag: 'latest' },
       'demo-stackoverflow:v1': { repositoryGuid: 'guid-v1', tag: 'v1' },
     };
-    const { configService } = await import('../config-resources.js');
+    const { configService } = await import('../config/config-resources.js');
     const map = await configService.getRepositoryGuidMap();
     expect(map['guid-erp']).toBe('erpnext:latest');
     expect(map['guid-hb']).toBe('demo-heartbeat:latest');
@@ -104,7 +104,7 @@ describe('getRepositoryGuidMap', { timeout: 30000 }, () => {
     mockRepos = {
       marketing: { repositoryGuid: 'guid-mkt' },
     };
-    const { configService } = await import('../config-resources.js');
+    const { configService } = await import('../config/config-resources.js');
     const map = await configService.getRepositoryGuidMap();
     expect(map['guid-mkt']).toBe('marketing:latest');
   });

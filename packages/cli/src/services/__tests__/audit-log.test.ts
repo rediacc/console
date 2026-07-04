@@ -6,7 +6,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { auditLog, readAuditLog, verifyChain } from '../audit-log.js';
+import { auditLog, readAuditLog, verifyChain } from '../core/audit-log.js';
 import { _resetCache as resetAgentCache } from '../../utils/agent-guard.js';
 
 describe('auditLog', () => {
