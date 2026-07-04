@@ -7,7 +7,7 @@ const mockListRepositories = vi.hoisted(() => vi.fn());
 const mockGetRepository = vi.hoisted(() => vi.fn());
 const mockGetRepositoryGuidMap = vi.hoisted(() => vi.fn());
 
-vi.mock('../../services/config-resources.js', () => ({
+vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getLocalMachine: mockGetLocalMachine,
     getStorage: mockGetStorage,

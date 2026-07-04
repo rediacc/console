@@ -4,8 +4,8 @@ description: Model Context Protocol (MCP) 서버를 사용하여 AI 에이전트
 category: Guides
 order: 33
 language: ko
-sourceHash: "4483eb3da34a6c03"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d515d5491751e1fe"
+sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
 ## 개요
@@ -159,5 +159,4 @@ MCP 서버는 상태가 없습니다. 각 도구 호출은 `--output json --yes 
 
 - 도구 호출 간 상태 누출 없음
 - 기존 `rdc` 설정 및 SSH 키 사용
-- 로컬 어댑터와 클라우드 어댑터 모두에서 작동
 - 한 명령의 오류가 다른 명령에 영향을 주지 않음

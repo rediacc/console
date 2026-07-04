@@ -4,7 +4,7 @@ description: rdc ops ile geliştirme ve test için yerel VM kümeleri oluşturma
 category: Concepts
 order: 2
 language: tr
-sourceHash: df01dc35c82beb81
+sourceHash: aafca00c006ded0b
 ---
 
 # Deneysel VM'ler
@@ -13,7 +13,7 @@ sourceHash: df01dc35c82beb81
 
 ## Gereksinimler
 
-`rdc ops` **yerel adaptör** gerektirir. Bulut adaptörüyle kullanılamaz.
+`rdc ops`, **yerel adaptör** üzerinden çalışır.
 
 ```bash
 rdc ops check

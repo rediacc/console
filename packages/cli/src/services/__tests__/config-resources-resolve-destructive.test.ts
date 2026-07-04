@@ -17,7 +17,7 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
   },
 }));
 
-vi.mock('../config-base.js', () => ({
+vi.mock('../config/config-base.js', () => ({
   ConfigServiceBase: class {
     getEffectiveConfigName() {
       return 'test';
@@ -50,7 +50,9 @@ describe('configService.resolveDestructiveTarget (issue #495)', { timeout: 30000
       app: { repositoryGuid: 'g-bare', tag: 'latest' },
       'app:latest': { repositoryGuid: 'g-latest', tag: 'latest' },
     };
-    const { configService, AmbiguousRepoTargetError } = await import('../config-resources.js');
+    const { configService, AmbiguousRepoTargetError } = await import(
+      '../config/config-resources.js'
+    );
     await expect(configService.resolveDestructiveTarget('app')).rejects.toBeInstanceOf(
       AmbiguousRepoTargetError
     );
@@ -61,7 +63,9 @@ describe('configService.resolveDestructiveTarget (issue #495)', { timeout: 30000
       'app:latest': { repositoryGuid: 'g-grand', tag: 'latest' },
       'app:fork-x': { repositoryGuid: 'g-fork', tag: 'fork-x', grandGuid: 'g-grand' },
     };
-    const { configService, AmbiguousRepoTargetError } = await import('../config-resources.js');
+    const { configService, AmbiguousRepoTargetError } = await import(
+      '../config/config-resources.js'
+    );
     await expect(configService.resolveDestructiveTarget('app')).rejects.toBeInstanceOf(
       AmbiguousRepoTargetError
     );
@@ -79,13 +83,13 @@ describe('configService.resolveDestructiveTarget (issue #495)', { timeout: 30000
     mockRepos = {
       'app:test': { repositoryGuid: 'g-fork', tag: 'test', grandGuid: 'g-grand-elsewhere' },
     };
-    const { configService } = await import('../config-resources.js');
+    const { configService } = await import('../config/config-resources.js');
     await expect(configService.resolveDestructiveTarget('app')).rejects.toThrow(/app:test/);
   });
 
   it('(d) single grand at name:latest → bare ref resolves cleanly', async () => {
     mockRepos = { 'app:latest': { repositoryGuid: 'g-grand', tag: 'latest' } };
-    const { configService } = await import('../config-resources.js');
+    const { configService } = await import('../config/config-resources.js');
     const r = await configService.resolveDestructiveTarget('app');
     expect(r.key).toBe('app:latest');
     expect(r.config.repositoryGuid).toBe('g-grand');
@@ -93,7 +97,7 @@ describe('configService.resolveDestructiveTarget (issue #495)', { timeout: 30000
 
   it('(e) single legacy bare grand → bare ref resolves cleanly', async () => {
     mockRepos = { app: { repositoryGuid: 'g-bare', tag: 'latest' } };
-    const { configService } = await import('../config-resources.js');
+    const { configService } = await import('../config/config-resources.js');
     const r = await configService.resolveDestructiveTarget('app');
     expect(r.key).toBe('app');
   });
@@ -102,7 +106,9 @@ describe('configService.resolveDestructiveTarget (issue #495)', { timeout: 30000
     mockRepos = {
       'app:latest': { repositoryGuid: 'g-fork', tag: 'latest', grandGuid: 'g-grand-elsewhere' },
     };
-    const { configService, AmbiguousRepoTargetError } = await import('../config-resources.js');
+    const { configService, AmbiguousRepoTargetError } = await import(
+      '../config/config-resources.js'
+    );
     await expect(configService.resolveDestructiveTarget('app')).rejects.toBeInstanceOf(
       AmbiguousRepoTargetError
     );
@@ -110,7 +116,7 @@ describe('configService.resolveDestructiveTarget (issue #495)', { timeout: 30000
 
   it('unknown ref throws plain not-found', async () => {
     mockRepos = { 'app:latest': { repositoryGuid: 'g-grand', tag: 'latest' } };
-    const { configService } = await import('../config-resources.js');
+    const { configService } = await import('../config/config-resources.js');
     await expect(configService.resolveDestructiveTarget('other')).rejects.toThrow(/not found/);
   });
 });

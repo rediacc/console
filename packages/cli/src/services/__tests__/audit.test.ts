@@ -5,11 +5,11 @@ const { mockAccountServerFetch, mockGetSubscriptionTokenState } = vi.hoisted(() 
   mockGetSubscriptionTokenState: vi.fn(),
 }));
 
-vi.mock('../account-client.js', () => ({
+vi.mock('../account/account-client.js', () => ({
   accountServerFetch: mockAccountServerFetch,
 }));
 
-vi.mock('../subscription-auth.js', () => ({
+vi.mock('../account/subscription-auth.js', () => ({
   getSubscriptionTokenState: mockGetSubscriptionTokenState,
 }));
 
@@ -17,7 +17,7 @@ vi.mock('../../version.js', () => ({
   VERSION: '1.0.0-test',
 }));
 
-const { auditService, functionNameToEventType } = await import('../audit.js');
+const { auditService, functionNameToEventType } = await import('../core/audit.js');
 
 describe('functionNameToEventType', () => {
   it('maps repository_ prefix to cli.repo.*', () => {

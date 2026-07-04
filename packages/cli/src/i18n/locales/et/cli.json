@@ -445,6 +445,10 @@
         "remove": {
           "description": "Eemalda salvestus praegusest konfiguratsioonist",
           "success": "Salvestus \"{{name}}\" eemaldatud"
+        },
+        "show": {
+          "description": "Kuva salvestuse pakkuja ja konfiguratsioon",
+          "optionReveal": "Kuva salvestuse konfiguratsioon lihttekstina (ainult interaktiivne TTY; auditeeritakse)"
         }
       }
     },
@@ -1331,7 +1335,7 @@
       "delete": {
         "description": "Kustutab salvestusteenuse"
       },
-      "description": "Haldab kaugvarunduse salvestusteenuseid (S3, rclone-ühilduv). CRUD-toimingud (loetlemine, loomine, ümbernimetamine, kustutamine), vault-i konfiguratsioon, kaugfailide sirvimine ja orvu varukoopiaid koristamine.",
+      "description": "Haldab kaugvarunduse salvestusteenuseid (S3, rclone-ühilduv). CRUD-toimingud (loetlemine, loomine, ümbernimetamine, kustutamine), kaugfailide sirvimine ja orvu varukoopiaid koristamine.",
       "descriptionShort": "Haldab salvestusteenuseid ja sirvib kaugfaile",
       "list": {
         "description": "Loetleb salvestusteenuseid",
@@ -1350,9 +1354,6 @@
       },
       "rename": {
         "description": "Nimetab salvestusteenuse ümber"
-      },
-      "vault": {
-        "description": "Salvestuse vault-i haldamine (ainult pilveadapteri jaoks)"
       }
     },
     "subscription": {

@@ -3,10 +3,10 @@
  * Used by push/pull commands to unify --to/--from flags.
  */
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
+import { configService } from '../services/config/config-resources.js';
 import { ValidationError } from './errors.js';
 
-export type RemoteType = 'machine' | 'storage';
+type RemoteType = 'machine' | 'storage';
 
 export interface ResolvedRemote {
   type: RemoteType;

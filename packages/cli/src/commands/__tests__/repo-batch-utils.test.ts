@@ -20,7 +20,7 @@ const {
   mockDownloadCertCache: vi.fn(),
 }));
 
-vi.mock('../../services/output.js', () => ({
+vi.mock('../../services/core/output.js', () => ({
   outputService: {
     info: mockInfo,
     warn: vi.fn(),
@@ -29,11 +29,11 @@ vi.mock('../../services/output.js', () => ({
 }));
 
 // Lease-aware machine-status path used by printResolvedServiceUrls
-vi.mock('../../services/machine-status.js', () => ({
+vi.mock('../../services/machine/machine-status.js', () => ({
   fetchMachineStatus: mockFetchMachineStatus,
 }));
 
-vi.mock('../../services/config-resources.js', () => ({
+vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getLocalMachine: mockGetLocalMachine,
     getLocalConfig: vi.fn().mockResolvedValue({}),
@@ -41,11 +41,11 @@ vi.mock('../../services/config-resources.js', () => ({
   },
 }));
 
-vi.mock('../../services/infra-provision.js', () => ({
+vi.mock('../../services/provision/infra-provision.js', () => ({
   ensureRepoDnsRecords: mockEnsureRepoDnsRecords,
 }));
 
-vi.mock('../../services/cert-cache.js', () => ({
+vi.mock('../../services/account/cert-cache.js', () => ({
   isCertCacheStale: mockIsCertCacheStale,
   downloadCertCache: mockDownloadCertCache,
 }));

@@ -2,13 +2,13 @@ import {
   getContainers,
   getServices,
   type RepositoryInfo,
-} from '@rediacc/shared/queue-vault/data/list-types.generated';
+} from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { parseListResult } from '@rediacc/shared/services/machine';
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
-import { getStateProvider } from '../../providers/index.js';
-import { configService } from '../../services/config-resources.js';
-import { outputService } from '../../services/output.js';
+import { getStateProvider } from '../../services/state.js';
+import { configService } from '../../services/config/config-resources.js';
+import { outputService } from '../../services/core/output.js';
 import type { OutputFormat } from '../../types/index.js';
 import { extractAutoRoute, extractCustomDomain } from '../../utils/domain-helpers.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
@@ -56,7 +56,7 @@ export function registerRepositoriesCommand(machine: Command, program: Command):
     .action(async (options: { name: string; team?: string; search?: string }) => {
       try {
         const name = options.name;
-        const provider = await getStateProvider();
+        const provider = getStateProvider();
         const opts = await configService.applyDefaults(options);
 
         const [machine, guidMap, machineConfig] = await Promise.all([

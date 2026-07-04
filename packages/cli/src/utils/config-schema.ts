@@ -7,43 +7,9 @@
 import { isIP } from 'node:net';
 import { z } from 'zod';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
+import { configService } from '../services/config/config-resources.js';
 import type { RdcConfig } from '../types/index.js';
 import { ValidationError } from './errors.js';
-
-// ── Cron validation ───────────────────────────────────────────────
-
-const CRON_RANGES: [number, number][] = [
-  [0, 59], // minute
-  [0, 23], // hour
-  [1, 31], // day of month
-  [1, 12], // month
-  [0, 7], // day of week (0 and 7 = Sunday)
-];
-
-function isValidCronField(field: string, min: number, max: number): boolean {
-  if (field === '*') return true;
-  if (field.startsWith('*/')) {
-    const step = Number.parseInt(field.slice(2), 10);
-    return Number.isInteger(step) && step >= 1 && step <= max;
-  }
-  return field.split(',').every((part) => {
-    const rangeMatch = /^(\d+)-(\d+)$/.exec(part);
-    if (rangeMatch) {
-      const lo = Number.parseInt(rangeMatch[1], 10);
-      const hi = Number.parseInt(rangeMatch[2], 10);
-      return lo >= min && hi <= max && lo <= hi;
-    }
-    const num = Number.parseInt(part, 10);
-    return Number.isInteger(num) && num >= min && num <= max;
-  });
-}
-
-export function isValidCron(expr: string): boolean {
-  const parts = expr.trim().split(/\s+/);
-  if (parts.length !== 5) return false;
-  return parts.every((field, i) => isValidCronField(field, CRON_RANGES[i][0], CRON_RANGES[i][1]));
-}
 
 // ── Reusable refinements ──────────────────────────────────────────
 
@@ -320,7 +286,7 @@ const CONFIG_KEY_ORDER = [
  * JSON.stringify replacer that sorts object keys in a deterministic order.
  * Top-level RdcConfig keys follow CONFIG_KEY_ORDER; all other object keys are alphabetical.
  */
-export function orderedReplacer(this: unknown, _key: string, value: unknown): unknown {
+function orderedReplacer(this: unknown, _key: string, value: unknown): unknown {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return value;
   }

@@ -3,9 +3,4 @@
  *
  * Re-exports from @rediacc/provisioning for backward compatibility.
  */
-export {
-  getSSHExecutor,
-  type SSHConfig,
-  SSHExecutor,
-  type SSHResult,
-} from '@rediacc/provisioning/ssh';
+export { getSSHExecutor, SSHExecutor } from '@rediacc/provisioning/ssh';

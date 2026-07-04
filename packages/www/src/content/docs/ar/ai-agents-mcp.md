@@ -4,8 +4,8 @@ description: ربط وكلاء الذكاء الاصطناعي بالبنية ا
 category: Guides
 order: 33
 language: ar
-sourceHash: "4483eb3da34a6c03"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d515d5491751e1fe"
+sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
 ## نظرة عامة
@@ -159,5 +159,4 @@ claude   # أو cursor أو gemini إلخ
 
 - لا تسرب للحالة بين استدعاءات الأدوات
 - يستخدم تكوين `rdc` الحالي ومفاتيح SSH الخاصة بك
-- يعمل مع كل من المحول المحلي والسحابي
 - الأخطاء في أمر واحد لا تؤثر على الأوامر الأخرى

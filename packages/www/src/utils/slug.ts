@@ -13,22 +13,6 @@ export function stringToSlug(str: string): string {
 }
 
 /**
- * Generate an anchor ID for a problem section
- * @param pageSlug - The page slug (e.g., 'system-portability', 'disaster-recovery')
- * @param sectionNumber - The section number (1, 2, 3, etc.)
- * @param sectionTitle - The section title
- * @returns A unique anchor ID
- */
-export function generateSectionAnchorId(
-  pageSlug: string,
-  sectionNumber: number,
-  sectionTitle: string
-): string {
-  const titleSlug = stringToSlug(sectionTitle);
-  return `${pageSlug}-${sectionNumber}-${titleSlug}`;
-}
-
-/**
  * Extract base slug from a content collection slug (removes language prefix)
  * @param slug - The full slug (e.g., 'en/getting-started' or 'getting-started')
  * @returns The base slug without language prefix

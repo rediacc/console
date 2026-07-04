@@ -4,15 +4,10 @@
  * Shows both production and edge channel options.
  */
 
-import inquirer from 'inquirer';
-
-const { createPromptModule, Separator } = inquirer;
 import type { RegionInfo } from '@rediacc/shared/regions';
 import { t } from '../i18n/index.js';
-import { detectLikelyRegion } from '../services/region-discovery.js';
+import { detectLikelyRegion } from '../services/provision/region-discovery.js';
 import { EXIT_CODES } from '../types/index.js';
-
-const prompt = createPromptModule();
 
 export interface RegionSelection {
   region: RegionInfo;
@@ -25,6 +20,14 @@ export async function promptRegionSelection(regions: RegionInfo[]): Promise<Regi
     console.error(t('errors.regionSelectionRequiresTTY'));
     process.exit(EXIT_CODES.INVALID_ARGUMENTS);
   }
+
+  // Lazy-load inquirer (rxjs + prompt graph) only when the region picker
+  // is actually shown during interactive login. `Separator` lives on the
+  // default export; `createPromptModule` is a named export.
+  const inquirer = await import('inquirer');
+  const { createPromptModule } = inquirer;
+  const { Separator } = inquirer.default;
+  const prompt = createPromptModule();
 
   const likely = detectLikelyRegion(regions);
 

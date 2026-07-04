@@ -4,8 +4,8 @@ description: Verknüpfen Sie KI-Agenten über den Model Context Protocol (MCP) S
 category: Guides
 order: 33
 language: de
-sourceHash: "4483eb3da34a6c03"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d515d5491751e1fe"
+sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
 ## Überblick
@@ -159,5 +159,4 @@ Der MCP-Server ist zustandslos. Jeder Tool-Aufruf startet `rdc` als isolierten K
 
 - Kein Zustandsüberlauf zwischen Tool-Aufrufen
 - Verwendet Ihre bestehende `rdc`-Konfiguration und SSH-Schlüssel
-- Funktioniert sowohl mit dem lokalen als auch dem Cloud-Adapter
 - Fehler in einem Befehl beeinflussen andere nicht

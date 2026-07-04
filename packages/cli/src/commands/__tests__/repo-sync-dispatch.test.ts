@@ -8,7 +8,7 @@ const { mockSftpUploadFile, mockSftpUploadPaths, mockSftpDownloadFile, mockSftpD
     mockSftpDownloadDirectory: vi.fn(() => Promise.resolve('download-dir-result')),
   }));
 
-vi.mock('../../shared-desktop/sync/index.js', async (orig) => {
+vi.mock('../../remote/sync/index.js', async (orig) => {
   const real = await orig();
   return {
     ...real,
@@ -19,7 +19,7 @@ vi.mock('../../shared-desktop/sync/index.js', async (orig) => {
   };
 });
 
-import type { ConnectionDetails } from '../../services/ssh-connection.js';
+import type { ConnectionDetails } from '../../services/machine/ssh-connection.js';
 import {
   sftpDownloadTransfer,
   sftpUploadTransfer,

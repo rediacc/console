@@ -1,9 +1,9 @@
 import { BACKUP_DEFAULTS, DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { Command } from 'commander';
 import { t } from '../../i18n/index.js';
-import { configService } from '../../services/config-resources.js';
-import { outputService } from '../../services/output.js';
-import { provisionRenetToRemote, readSSHKey } from '../../services/renet-execution.js';
+import { configService } from '../../services/config/config-resources.js';
+import { outputService } from '../../services/core/output.js';
+import { provisionRenetToRemote, readSSHKey } from '../../services/renet/renet-execution.js';
 import { handleError } from '../../utils/errors.js';
 
 /** Build backup list rows for a single machine. */
@@ -82,7 +82,7 @@ export function registerDeployBackupCommand(machine: Command): void {
     .action(async (options) => {
       try {
         const machineName = options.machine;
-        const { pushBackupSchedule } = await import('../../services/backup-schedule.js');
+        const { pushBackupSchedule } = await import('../../services/backup/backup-schedule.js');
         await pushBackupSchedule(machineName, {
           debug: options.debug,
           dryRun: options.dryRun,
@@ -158,7 +158,7 @@ function resolveStrategyNames(
 
 /** Trigger a deployed systemd backup service. */
 async function triggerDeployedUnit(
-  sftp: InstanceType<typeof import('../../shared-desktop/sftp/index.js').SFTPClient>,
+  sftp: InstanceType<typeof import('../../remote/sftp/index.js').SFTPClient>,
   serviceName: string,
   debug?: boolean
 ): Promise<void> {
@@ -180,7 +180,7 @@ async function triggerDeployedUnit(
 
 /** Run an ad-hoc backup via systemd-run when no deployed unit exists. */
 async function triggerAdhocBackup(
-  sftp: InstanceType<typeof import('../../shared-desktop/sftp/index.js').SFTPClient>,
+  sftp: InstanceType<typeof import('../../remote/sftp/index.js').SFTPClient>,
   name: string,
   config: import('../../types/index.js').BackupStrategyConfig,
   datastore: string,
@@ -188,8 +188,8 @@ async function triggerAdhocBackup(
   debug?: boolean
 ): Promise<void> {
   outputService.info(`No deployed unit for "${name}", running ad-hoc...`);
-  const { buildRcloneArgs } = await import('@rediacc/shared/queue-vault');
-  const { _testing } = await import('../../services/backup-schedule.js');
+  const { buildRcloneArgs } = await import('@rediacc/shared/storage-browser');
+  const { _testing } = await import('../../services/backup/backup-schedule.js');
 
   const enabledDests = config.destinations.filter((d) => d.enabled !== false);
   const rcloneArgsByDest = new Map<string, { remote: string; params: string[] }>();
@@ -220,7 +220,7 @@ async function triggerAdhocBackup(
   const systemdRunCmd = `sudo systemd-run --unit=${adhocUnit} ${setenvPart}--remain-after-exit /bin/bash -c '${fullCmd.replaceAll("'", "'\\''")}'`;
 
   if (debug) {
-    const { sanitizeBackupOutput } = await import('../../services/backup-schedule.js');
+    const { sanitizeBackupOutput } = await import('../../services/backup/backup-schedule.js');
     outputService.info(`Running: ${sanitizeBackupOutput(systemdRunCmd)}`);
   }
 
@@ -284,7 +284,7 @@ async function triggerBackupNow(
     { debug }
   );
 
-  const { SFTPClient } = await import('../../shared-desktop/sftp/index.js');
+  const { SFTPClient } = await import('../../remote/sftp/index.js');
   const sftp = new SFTPClient({
     host: machine.ip,
     port: machine.port ?? DEFAULTS.SSH.PORT,
@@ -319,7 +319,7 @@ async function triggerBackupNow(
 
 /** Try to cancel a single systemd unit if active. Returns true if cancelled. */
 async function tryCancelUnit(
-  sftp: InstanceType<typeof import('../../shared-desktop/sftp/index.js').SFTPClient>,
+  sftp: InstanceType<typeof import('../../remote/sftp/index.js').SFTPClient>,
   unit: string,
   debug?: boolean
 ): Promise<boolean> {
@@ -362,7 +362,7 @@ async function cancelBackup(
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
-  const { SFTPClient } = await import('../../shared-desktop/sftp/index.js');
+  const { SFTPClient } = await import('../../remote/sftp/index.js');
   const sftp = new SFTPClient({
     host: machine.ip,
     port: machine.port ?? DEFAULTS.SSH.PORT,
@@ -382,7 +382,7 @@ async function cancelBackup(
 
 /** Try to cancel both scheduled and ad-hoc units for a strategy. */
 async function cancelStrategyUnits(
-  sftp: InstanceType<typeof import('../../shared-desktop/sftp/index.js').SFTPClient>,
+  sftp: InstanceType<typeof import('../../remote/sftp/index.js').SFTPClient>,
   name: string,
   debug?: boolean
 ): Promise<void> {
@@ -398,7 +398,7 @@ async function cancelStrategyUnits(
 
 /** Check systemd service active status via SSH. */
 async function checkServiceActive(
-  sftp: InstanceType<typeof import('../../shared-desktop/sftp/index.js').SFTPClient>,
+  sftp: InstanceType<typeof import('../../remote/sftp/index.js').SFTPClient>,
   serviceName: string
 ): Promise<boolean> {
   let statusText = '';
@@ -414,7 +414,7 @@ async function checkServiceActive(
 
 /** Build status row for a single backup strategy. */
 async function buildStatusRow(
-  sftp: InstanceType<typeof import('../../shared-desktop/sftp/index.js').SFTPClient>,
+  sftp: InstanceType<typeof import('../../remote/sftp/index.js').SFTPClient>,
   name: string
 ): Promise<Record<string, string>> {
   const serviceName = `rediacc-backup-${name}.service`;
@@ -448,7 +448,7 @@ async function showBackupStatus(
     debug,
   });
 
-  const { SFTPClient } = await import('../../shared-desktop/sftp/index.js');
+  const { SFTPClient } = await import('../../remote/sftp/index.js');
   const sftp = new SFTPClient({
     host: machine.ip,
     port: machine.port ?? DEFAULTS.SSH.PORT,

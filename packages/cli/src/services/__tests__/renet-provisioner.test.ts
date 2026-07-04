@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { VERSION } from '../../version.js';
-import { compareVersions } from '../updater.js';
+import { compareVersions } from '../update/updater.js';
 
 const readFileMock = vi.fn();
 const writeFileMock = vi.fn();
@@ -56,22 +56,22 @@ vi.mock('node:fs/promises', () => ({
   stat: statMock,
 }));
 
-vi.mock('../../shared-desktop/sftp/index.js', () => ({
+vi.mock('../../remote/sftp/index.js', () => ({
   SFTPClient: MockSFTPClient,
 }));
 
-vi.mock('../embedded-assets.js', () => ({
+vi.mock('../core/embedded-assets.js', () => ({
   isSEA: () => false,
   getEmbeddedRenetBinary: vi.fn(),
   computeSha256: computeSha256Mock,
 }));
 
-vi.mock('../../shared-desktop/sync/index.js', () => ({
+vi.mock('../../remote/sync/index.js', () => ({
   executeRsync: executeRsyncMock,
   getRsyncCommand: getRsyncCommandMock,
 }));
 
-vi.mock('../../shared-desktop/ssh/index.js', () => ({
+vi.mock('../../remote/ssh/index.js', () => ({
   createTempSSHKeyFile: createTempSSHKeyFileMock,
   removeTempSSHKeyFile: removeTempSSHKeyFileMock,
 }));
@@ -242,7 +242,7 @@ describe('RenetProvisionerService', () => {
   });
 
   it('coalesces concurrent provisioning calls for the same host', async () => {
-    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
     const firstConnectGate = Promise.withResolvers<void>();
     let connectCalls = 0;
     connectDelegate.mockImplementation(async () => {
@@ -274,7 +274,7 @@ describe('RenetProvisionerService', () => {
   });
 
   it('allows different hosts to provision in parallel with distinct staging paths', async () => {
-    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
     const firstConnectGate = Promise.withResolvers<void>();
     const secondConnectGate = Promise.withResolvers<void>();
     let connectCalls = 0;
@@ -314,7 +314,7 @@ describe('RenetProvisionerService', () => {
   });
 
   it('returns verified when the lock-holder recheck sees the binary already updated', async () => {
-    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
     const connectGate = Promise.withResolvers<void>();
     connectDelegate.mockImplementation(async () => {
       await connectGate.promise;
@@ -339,7 +339,7 @@ describe('RenetProvisionerService', () => {
   });
 
   it('uses delta sync from the current slot when rsync is available', async () => {
-    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
     const connectGate = Promise.withResolvers<void>();
     connectDelegate.mockImplementation(async () => {
       await connectGate.promise;
@@ -374,7 +374,7 @@ describe('RenetProvisionerService', () => {
   });
 
   it('uses the current slot as delta seed even when it matches the target path', async () => {
-    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
     const connectGate = Promise.withResolvers<void>();
     connectDelegate.mockImplementation(async () => {
       await connectGate.promise;
@@ -405,7 +405,7 @@ describe('RenetProvisionerService', () => {
   });
 
   it('updates current to the newly activated slot for mixed-version installs', async () => {
-    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
     const remoteInstallPathNext = '/usr/lib/rediacc/renet/0.6.1/renet';
     const command = (
       renetProvisioner as unknown as {
@@ -426,7 +426,7 @@ describe('RenetProvisionerService', () => {
 
   it('falls back to SFTP upload when delta sync is unavailable', async () => {
     getRsyncCommandMock.mockRejectedValue(new Error('rsync missing'));
-    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
     const connectGate = Promise.withResolvers<void>();
     connectDelegate.mockImplementation(async () => {
       await connectGate.promise;
@@ -455,7 +455,7 @@ describe('RenetProvisionerService', () => {
   });
 
   it('prefers embedded remote rsync when system rsync is missing', async () => {
-    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
     const connectGate = Promise.withResolvers<void>();
     connectDelegate.mockImplementation(async () => {
       await connectGate.promise;
@@ -487,7 +487,7 @@ describe('RenetProvisionerService', () => {
   });
 
   it('surfaces a clear error when flock is unavailable remotely', async () => {
-    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
     const connectGate = Promise.withResolvers<void>();
     connectDelegate.mockImplementation(async () => {
       await connectGate.promise;
@@ -517,7 +517,7 @@ describe('RenetProvisionerService', () => {
   });
 
   it('builds a lock command that is safe for POSIX sh', async () => {
-    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
     const command = (
       renetProvisioner as unknown as {
         buildLockedInstallCommand: (
@@ -535,7 +535,7 @@ describe('RenetProvisionerService', () => {
   });
 
   it('marks verified when only the current pointer changes', async () => {
-    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
     const connectGate = Promise.withResolvers<void>();
     connectDelegate.mockImplementation(async () => {
       await connectGate.promise;
@@ -558,7 +558,7 @@ describe('RenetProvisionerService', () => {
   });
 
   it('serves repeat provisions from cache with no connection, execs, or local reads', async () => {
-    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
     const config = { host: 'hostinger', username: 'muhammed', privateKey: 'key' };
 
     const first = await renetProvisioner.provision(config, { localBinaryPath: '/tmp/renet' });
@@ -582,7 +582,7 @@ describe('RenetProvisionerService', () => {
   });
 
   it('memoizes the local binary hash and invalidates the memo on mtime change', async () => {
-    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
 
     await renetProvisioner.provision(
       { host: 'host-1', username: 'muhammed', privateKey: 'key' },
@@ -607,7 +607,7 @@ describe('RenetProvisionerService', () => {
   });
 
   it('reuses the detected arch when the provision cache entry expires', async () => {
-    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
     const config = { host: 'hostinger', username: 'muhammed', privateKey: 'key' };
 
     const first = await renetProvisioner.provision(config, { localBinaryPath: '/tmp/renet' });

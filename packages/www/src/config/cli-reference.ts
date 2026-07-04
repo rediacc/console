@@ -30,7 +30,7 @@ export const JSON_ENVELOPE =
   '{"success": true, "command": "...", "data": ..., "errors": null, "warnings": [], "metrics": {"duration_ms": N}}';
 
 export const TERMINOLOGY = [
-  '"local adapter" / "cloud adapter" — never "modes"',
+  'Say "local adapter", never "local mode" or "modes"',
   '"Repository" = isolated application with its own Docker daemon and encrypted storage',
 ] as const;
 

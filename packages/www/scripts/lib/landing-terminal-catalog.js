@@ -100,7 +100,7 @@ function extractField(objText, key) {
   return match ? match[1] : '';
 }
 
-export function getHomepageTerminalCommands() {
+function getHomepageTerminalCommands() {
   const src = fs.readFileSync(INDEX_PAGE_PATH, 'utf-8');
   const arrayMatch = src.match(/const\s+heroTerminalLines\s*=\s*\[(.*?)\];/s);
   if (!arrayMatch) return [];

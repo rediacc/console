@@ -2,7 +2,7 @@ import path from 'node:path';
 import * as test from '@playwright/test';
 import dotenv from 'dotenv';
 
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: path.resolve(__dirname, '.env'), quiet: true });
 
 /**
  * Playwright configuration for Ceph-specific bridge/renet tests.

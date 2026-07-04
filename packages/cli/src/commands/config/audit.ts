@@ -7,8 +7,8 @@ import { createReadStream, watchFile, unwatchFile, existsSync, statSync } from '
 import { createInterface } from 'node:readline';
 import type { Command } from 'commander';
 import { t } from '../../i18n/index.js';
-import { outputService } from '../../services/output.js';
-import { readAuditLog, verifyChain, type AuditEntry } from '../../services/audit-log.js';
+import { outputService } from '../../services/core/output.js';
+import { readAuditLog, verifyChain, type AuditEntry } from '../../services/core/audit-log.js';
 import { handleError } from '../../utils/errors.js';
 
 function auditLogPath(): string {

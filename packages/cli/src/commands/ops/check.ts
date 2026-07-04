@@ -3,8 +3,8 @@ import { existsSync } from 'node:fs';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
-import { opsExecutorService } from '../../services/ops-executor.js';
-import { outputService } from '../../services/output.js';
+import { opsExecutorService } from '../../services/executor/ops-executor.js';
+import { outputService } from '../../services/core/output.js';
 import type { OutputFormat } from '../../types/index.js';
 import { handleError } from '../../utils/errors.js';
 

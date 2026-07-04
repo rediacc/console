@@ -91,8 +91,3 @@ function resolveKnownProvider(config: CloudProviderConfig): ProviderMapping {
     defaults,
   };
 }
-
-/** List all known provider sources from the built-in registry. */
-export function listKnownProviders(): string[] {
-  return Object.keys(loadRegistry());
-}

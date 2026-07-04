@@ -3,7 +3,7 @@
  * Opens VS Code with Remote SSH connection to machines and repositories
  */
 
-import { SSHConnection, spawnSSH } from '../shared-desktop/ssh/index.js';
+import { SSHConnection, spawnSSH } from '../remote/ssh/index.js';
 import {
   addSSHConfigEntry,
   buildVSCodeSSHConfigEntry,
@@ -25,16 +25,19 @@ import {
   removeSSHConfigEntry,
   setHostRemotePlatform,
   setHostServerInstallPath,
-} from '../shared-desktop/vscode/index.js';
+} from '../remote/vscode/index.js';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { connectVSCodeBrowser, verifySSHConnectivity } from './vscode-browser.js';
 import { registerVSCodeServeCommands } from './vscode-serve.js';
-import { configService } from '../services/config-resources.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
-import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
-import { assertRepoMountedOnMachine } from '../services/repo-mount-check.js';
-import { type ConnectionDetails, getSSHConnectionDetails } from '../services/ssh-connection.js';
+import { configService } from '../services/config/config-resources.js';
+import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
+import {
+  type ConnectionDetails,
+  getSSHConnectionDetails,
+} from '../services/machine/ssh-connection.js';
 import { assertAgentMachineAccess } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';

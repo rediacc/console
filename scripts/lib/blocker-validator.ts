@@ -11,7 +11,7 @@
 
 import * as fs from 'node:fs';
 
-export const LOW_EFFORT_BLOCKER_PATTERNS: readonly string[] = [
+const LOW_EFFORT_BLOCKER_PATTERNS: readonly string[] = [
   // npm-audit ack-tier phrases
   'no fix', 'no fix available', 'no fix yet', 'no upstream fix', 'no fix published',
   'no patch', 'no patch yet', 'no patch available',
@@ -37,7 +37,7 @@ export const LOW_EFFORT_BLOCKER_PATTERNS: readonly string[] = [
 // convenience — take the bump. Legitimate major-migration holds read differently
 // (e.g. "dedicated lint-tooling PR", "dedicated PR that exercises the email flows")
 // and are NOT matched here.
-export const LOW_EFFORT_BLOCKER_SUBSTRINGS: readonly string[] = [
+const LOW_EFFORT_BLOCKER_SUBSTRINGS: readonly string[] = [
   'deferred to a dedicated dependency-bump pr',
   'not needed by this change',
   'not needed in this change',
@@ -47,7 +47,7 @@ export const LOW_EFFORT_BLOCKER_SUBSTRINGS: readonly string[] = [
   'to keep this pr focused',
 ];
 
-export const BLOCKER_MIN_LENGTH = 30;
+const BLOCKER_MIN_LENGTH = 30;
 
 function normalize(reason: string): string {
   return reason

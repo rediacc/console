@@ -44,22 +44,8 @@ export const EXTERNAL_LINKS = {
 } as const;
 
 /**
- * Default account origin for the primary region (EU).
- * The marketing site links and proxies target this origin.
- */
-export const DEFAULT_ACCOUNT_ORIGIN = 'https://eu.rediacc.com';
-
-/**
  * Local path to the account portal SPA.
  * On marketing hosts this path is intercepted by BaseLayout and opens the
  * region picker; on portal/on-prem hosts it navigates directly.
  */
 export const ACCOUNT_PATH = '/account/';
-
-/**
- * Get the account URL.
- * Returns the EU account portal URL. Users can switch regions from the portal.
- */
-export function getAccountUrl(_origin?: string): string {
-  return `${DEFAULT_ACCOUNT_ORIGIN}${ACCOUNT_PATH}`;
-}

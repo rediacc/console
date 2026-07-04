@@ -27,14 +27,11 @@ export function getParentDesc(parentOption: ParentOptionType): string {
   return '';
 }
 
-export function getParentKey(parentOption: ParentOptionType): string {
+function getParentKey(parentOption: ParentOptionType): string {
   return parentOption === 'team' ? 'teamName' : 'regionName';
 }
 
-export function getParentValue(
-  opts: ParentContextOptions,
-  parentOption: ParentOptionType
-): unknown {
+function getParentValue(opts: ParentContextOptions, parentOption: ParentOptionType): unknown {
   return parentOption === 'team' ? opts.team : opts.region;
 }
 
@@ -71,23 +68,6 @@ export function applySorting(
     const result = compareValues(a[sortField], b[sortField]);
     return descending ? -result : result;
   });
-}
-
-export async function readVaultFromStdin(): Promise<string> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of process.stdin) {
-    chunks.push(chunk);
-  }
-  return Buffer.concat(chunks).toString('utf-8').trim();
-}
-
-export function validateJsonVault(vaultData: string): boolean {
-  try {
-    JSON.parse(vaultData);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 export function buildListParams(
@@ -128,23 +108,6 @@ export function addParentToPayload(
   if (hasParent) {
     payload[getParentKey(parentOption)] = getParentValue(opts, parentOption);
   }
-}
-
-export interface VaultItem {
-  vaultType?: string;
-  vaultContent?: string;
-  vaultVersion?: number;
-  [key: string]: unknown;
-}
-
-export function extractVaultsArray(response: unknown): VaultItem[] {
-  if (Array.isArray(response)) {
-    return response as VaultItem[];
-  }
-  if (Array.isArray((response as { vaults?: VaultItem[] }).vaults)) {
-    return (response as { vaults: VaultItem[] }).vaults;
-  }
-  return [];
 }
 
 export interface CreateOption {

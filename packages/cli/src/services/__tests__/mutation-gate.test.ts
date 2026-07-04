@@ -27,7 +27,7 @@ import {
   evaluateMutations,
   PreconditionMismatchError,
   type MutationEntry,
-} from '../mutation-gate.js';
+} from '../core/mutation-gate.js';
 import { digestForPointer } from '../../schema/walker.js';
 
 const v2Config = {

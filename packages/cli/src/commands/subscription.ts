@@ -2,11 +2,11 @@ import { SUBSCRIPTION_DEFAULTS } from '@rediacc/shared/config';
 import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { accountServerFetch, fetchServerInfo } from '../services/account-client.js';
-import { configService } from '../services/config-resources.js';
-import { refreshRepoLicenseIdentity } from '../services/license.js';
-import { outputService } from '../services/output.js';
-import { readSSHKey } from '../services/renet-execution.js';
+import { accountServerFetch, fetchServerInfo } from '../services/account/account-client.js';
+import { configService } from '../services/config/config-resources.js';
+import { refreshRepoLicenseIdentity } from '../services/account/license.js';
+import { outputService } from '../services/core/output.js';
+import { readSSHKey } from '../services/renet/renet-execution.js';
 import {
   deleteServerConfig,
   deleteStoredSubscriptionToken,
@@ -17,11 +17,11 @@ import {
   normalizeServerUrl,
   saveServerConfig,
   saveStoredSubscriptionToken,
-} from '../services/subscription-auth.js';
-import { authorizeSubscriptionViaDeviceCode } from '../services/subscription-device-auth.js';
-import { discoverRegions } from '../services/region-discovery.js';
+} from '../services/account/subscription-auth.js';
+import { authorizeSubscriptionViaDeviceCode } from '../services/account/subscription-device-auth.js';
+import { discoverRegions } from '../services/provision/region-discovery.js';
 import { promptRegionSelection } from '../utils/region-prompt.js';
-import { telemetryService } from '../services/telemetry.js';
+import { telemetryService } from '../services/telemetry/telemetry.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import { outputSubscriptionScope } from './subscription-output.js';
@@ -407,9 +407,4 @@ export {
   executeRepoStatus,
   executeSubscriptionRefresh,
   executeSubscriptionStatus,
-  handleSubscriptionTokenState,
-  outputRemoteStatus,
-  resolveSubscriptionCommandContext,
-  runRepoBatchRefresh,
-  type SubscriptionCommandContext,
 } from './subscription-actions.js';

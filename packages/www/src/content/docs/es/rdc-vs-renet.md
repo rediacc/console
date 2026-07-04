@@ -4,8 +4,8 @@ description: "Cuándo usar rdc y cuándo usar renet."
 category: "Concepts"
 order: 1
 language: es
-sourceHash: "2ccc8590bc6f67c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "ea6ff6dd3b8f5d5b"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # rdc vs renet
@@ -75,7 +75,7 @@ rdc ops ssh --vm-id 1 -c hostname  # Ejecutar un comando en la VM puente
 rdc ops down               # Destruir el clúster
 ```
 
-> Requiere el adaptador local. No disponible con el adaptador cloud.
+> Funciona a través del adaptador local.
 
 Estos comandos ejecutan `renet` localmente (no mediante SSH). Consulte [VMs Experimentales](/es/docs/experimental-vms) para la documentación completa.
 

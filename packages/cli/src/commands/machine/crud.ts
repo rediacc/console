@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
-import { getStateProvider } from '../../providers/index.js';
+import { getStateProvider } from '../../services/state.js';
 import { createResourceCommands } from '../../utils/commandFactory.js';
 
 export function registerCrudCommands(parentCommand: Command): Command {
@@ -12,19 +12,19 @@ export function registerCrudCommands(parentCommand: Command): Command {
     parentOption: 'team',
     operations: {
       list: async (params) => {
-        const provider = await getStateProvider();
+        const provider = getStateProvider();
         return provider.machines.list({ teamName: params?.teamName as string });
       },
       create: async (payload) => {
-        const provider = await getStateProvider();
+        const provider = getStateProvider();
         return provider.machines.create(payload);
       },
       rename: async (payload) => {
-        const provider = await getStateProvider();
+        const provider = getStateProvider();
         return provider.machines.rename(payload);
       },
       delete: async (payload) => {
-        const provider = await getStateProvider();
+        const provider = getStateProvider();
         return provider.machines.delete(payload);
       },
     },

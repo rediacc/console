@@ -445,6 +445,10 @@
         "remove": {
           "description": "Supprimer un stockage de la configuration actuelle",
           "success": "Stockage \"{{name}}\" supprimé"
+        },
+        "show": {
+          "description": "Afficher le fournisseur et la configuration d'un stockage",
+          "optionReveal": "Afficher la configuration du stockage en clair (TTY interactif uniquement ; audité)"
         }
       }
     },
@@ -1350,9 +1354,6 @@
       },
       "rename": {
         "description": "Renommer un fournisseur de stockage"
-      },
-      "vault": {
-        "description": "Gestion du coffre-fort de stockage (adaptateur cloud uniquement)"
       }
     },
     "subscription": {

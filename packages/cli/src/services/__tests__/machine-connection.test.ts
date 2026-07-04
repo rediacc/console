@@ -45,18 +45,18 @@ const { MockSFTPClient, mockGetLocalConfig, mockGetLocalMachine, mockReadSSHKey 
   }
 );
 
-vi.mock('../../shared-desktop/sftp/index.js', () => ({ SFTPClient: MockSFTPClient }));
+vi.mock('../../remote/sftp/index.js', () => ({ SFTPClient: MockSFTPClient }));
 
-vi.mock('../config-resources.js', () => ({
+vi.mock('../config/config-resources.js', () => ({
   configService: {
     getLocalConfig: mockGetLocalConfig,
     getLocalMachine: mockGetLocalMachine,
   },
 }));
 
-vi.mock('../renet-execution.js', () => ({ readSSHKey: mockReadSSHKey }));
+vi.mock('../renet/renet-execution.js', () => ({ readSSHKey: mockReadSSHKey }));
 
-const { machineConnections } = await import('../machine-connection.js');
+const { machineConnections } = await import('../machine/machine-connection.js');
 
 // The manager is a module singleton, so every test uses a unique machine to
 // get an isolated pool entry.

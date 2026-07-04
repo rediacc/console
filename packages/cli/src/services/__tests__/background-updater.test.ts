@@ -4,7 +4,7 @@ import {
   applyPendingUpdate,
   maybeSpawnBackgroundUpdate,
   runBackgroundUpdateWorker,
-} from '../background-updater.js';
+} from '../update/background-updater.js';
 
 // ============================================================================
 // Hoisted mocks (vi.hoisted + vi.mock are hoisted by vitest's transform)
@@ -79,7 +79,7 @@ const mockUpdateState = vi.hoisted(() => ({
   cleanupStaleStagedFiles: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('../update-state.js', () => mockUpdateState);
+vi.mock('../update/update-state.js', () => mockUpdateState);
 
 const mockUpdater = vi.hoisted(() => ({
   fetchManifest: vi.fn(),
@@ -90,7 +90,7 @@ const mockUpdater = vi.hoisted(() => ({
   performUpdate: vi.fn(),
 }));
 
-vi.mock('../updater.js', () => mockUpdater);
+vi.mock('../update/updater.js', () => mockUpdater);
 
 const mockTelemetry = vi.hoisted(() => ({
   telemetryService: {
@@ -98,7 +98,7 @@ const mockTelemetry = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('../telemetry.js', () => mockTelemetry);
+vi.mock('../telemetry/telemetry.js', () => mockTelemetry);
 
 function makeState(overrides: Partial<CliUpdateState> = {}): CliUpdateState {
   return {

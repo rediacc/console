@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { RdcConfig } from '../../schema/schemas.js';
-import { pruneDanglingRefs } from '../config-refs-prune.js';
+import { pruneDanglingRefs } from '../config/config-refs-prune.js';
 
 function baseConfig(): RdcConfig {
   return {

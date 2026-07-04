@@ -1,0 +1,133 @@
+/**
+ * Environment Composition for VS Code Remote SSH
+ * Ported from desktop/src/cli/core/env_bootstrap.py and repository_env.py
+ */
+
+import { repoTagFromName } from '../repository/repo-name.js';
+
+/**
+ * Formats a dictionary of environment variables as bash export statements
+ *
+ * @param envVars - Environment variables to format
+ * @returns Bash export statements
+ */
+export function formatBashExports(envVars: Record<string, string>): string {
+  const lines: string[] = [];
+
+  for (const [key, value] of Object.entries(envVars)) {
+    // Escape single quotes in the value for bash
+    const strValue = String(value);
+    const escapedValue = strValue.replaceAll("'", "'\\''");
+    lines.push(`export ${key}='${escapedValue}'`);
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Builds repository environment variables
+ * Matching Python CLI's get_repository_environment()
+ *
+ * @param options - Repository configuration options
+ * @returns Environment variables dictionary
+ */
+export function buildRepositoryEnvironment(options: {
+  teamName: string;
+  machineName: string;
+  repositoryName: string;
+  datastore: string;
+  repositoryPath: string;
+  universalUser: string;
+  universalUserId?: string;
+  networkId?: string;
+  networkMode?: string;
+  tag?: string;
+  immovable?: boolean;
+  dockerHost?: string;
+  dockerSocket?: string;
+  additionalEnv?: Record<string, string>;
+}): Record<string, string> {
+  const {
+    teamName,
+    machineName,
+    repositoryName,
+    datastore,
+    repositoryPath,
+    universalUser,
+    universalUserId = '1000',
+    networkId = '',
+    networkMode = 'bridge',
+    tag,
+    immovable = false,
+    dockerHost,
+    dockerSocket,
+    additionalEnv = {},
+  } = options;
+
+  // Derive Docker socket from networkId (per-repo isolated daemon)
+  const resolvedSocket =
+    dockerSocket ??
+    (networkId ? `/var/run/rediacc/docker-${networkId}.sock` : '/var/run/docker.sock');
+  const resolvedHost = dockerHost ?? `unix://${resolvedSocket}`;
+
+  const fullRepoPath = `${datastore}${repositoryPath}`;
+
+  // For fork composite names like "gitlab:1", derive the tag from the suffix
+  // so REDIACC_REPO_TAG matches what renet writes into .envrc on the machine.
+  const resolvedTag = tag ?? repoTagFromName(repositoryName, 'latest');
+
+  return {
+    REDIACC_TEAM: teamName,
+    REDIACC_MACHINE: machineName,
+    REDIACC_REPOSITORY: repositoryName,
+    REDIACC_WORKING_DIR: repositoryPath,
+    REDIACC_NETWORK_ID: networkId,
+    REDIACC_NETWORK_MODE: networkMode,
+    REDIACC_REPO_TAG: resolvedTag,
+    REDIACC_DATASTORE: datastore,
+    REDIACC_DATASTORE_USER: universalUser,
+    REDIACC_IMMOVABLE: immovable ? 'true' : 'false',
+    DOCKER_DATA: fullRepoPath,
+    DOCKER_HOST: resolvedHost,
+    DOCKER_SOCKET: resolvedSocket,
+    UNIVERSAL_USER_ID: universalUserId,
+    ...additionalEnv,
+  };
+}
+
+/**
+ * Builds machine-only environment variables
+ * For connections without a repository context
+ *
+ * @param options - Machine configuration options
+ * @returns Environment variables dictionary
+ */
+export function buildMachineEnvironment(options: {
+  teamName: string;
+  machineName: string;
+  datastore: string;
+  universalUser: string;
+}): Record<string, string> {
+  const { teamName, machineName, datastore, universalUser } = options;
+
+  return {
+    REDIACC_TEAM: teamName,
+    REDIACC_MACHINE: machineName,
+    REDIACC_DATASTORE: datastore,
+    REDIACC_DATASTORE_USER: universalUser,
+  };
+}
+
+/**
+ * Determines if user switching is needed
+ *
+ * @param sshUser - Current SSH user
+ * @param universalUser - Target universal user
+ * @returns True if user switching is required
+ */
+export function needsUserSwitch(sshUser: string, universalUser?: string): boolean {
+  if (!universalUser?.trim()) {
+    return false;
+  }
+  return universalUser !== sshUser;
+}

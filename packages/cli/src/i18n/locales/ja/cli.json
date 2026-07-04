@@ -445,6 +445,10 @@
         "remove": {
           "description": "現在の設定からストレージを削除する",
           "success": "ストレージ \"{{name}}\" を削除しました"
+        },
+        "show": {
+          "description": "ストレージのプロバイダーと構成を表示する",
+          "optionReveal": "ストレージ構成を平文で表示する(対話型 TTY のみ、監査ログに記録)"
         }
       }
     },
@@ -1350,9 +1354,6 @@
       },
       "rename": {
         "description": "ストレージプロバイダーの名前を変更"
-      },
-      "vault": {
-        "description": "ストレージ Vault 管理 (クラウドアダプターのみ)"
       }
     },
     "subscription": {

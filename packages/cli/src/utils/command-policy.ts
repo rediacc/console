@@ -7,7 +7,7 @@
 import path from 'node:path';
 import { COMMAND_METADATA } from '../config/command-metadata.js';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
+import { configService } from '../services/config/config-resources.js';
 import { isAgentEnvironment } from './agent-guard.js';
 import { ValidationError } from './errors.js';
 import { isRepoAllowedByGrandEnv } from './grand-env.js';

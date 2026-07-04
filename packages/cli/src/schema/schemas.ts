@@ -24,13 +24,6 @@ import { isIP } from 'node:net';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { ValidationError } from '@rediacc/shared/errors';
-import { t } from '../i18n/index.js';
-
-// ValidationError comes from a zero-dep shared package.
-// t() comes from the CLI's i18n module, which does NOT import back through
-// types/index.ts (it only imports i18next + JSON locale files + shared/i18n).
-// These two imports together sidestep the schema ↔ utils/errors ↔ types/index
-// cycle that previously forced us to inline stubs.
 
 // =============================================================================
 // Primitive validators
@@ -62,13 +55,13 @@ function isValidCronField(field: string, min: number, max: number): boolean {
   });
 }
 
-export function isValidCron(expr: string): boolean {
+function isValidCron(expr: string): boolean {
   const parts = expr.trim().split(/\s+/);
   if (parts.length !== 5) return false;
   return parts.every((field, i) => isValidCronField(field, CRON_RANGES[i][0], CRON_RANGES[i][1]));
 }
 
-export const resourceName = z
+const resourceName = z
   .string()
   .min(1, 'Name cannot be empty')
   .max(63, 'Name must be 63 characters or fewer')
@@ -99,22 +92,6 @@ const port = z
   .max(65535, 'Port maximum is 65535');
 
 const uuid = z.uuid('Must be a valid UUID');
-
-// =============================================================================
-// Repository reference parsing (name:tag)
-// =============================================================================
-
-const DEFAULT_TAG = 'latest';
-
-export function parseRepoRef(ref: string): { name: string; tag: string } {
-  const colonIndex = ref.indexOf(':');
-  if (colonIndex === -1) return { name: ref, tag: DEFAULT_TAG };
-  return { name: ref.slice(0, colonIndex), tag: ref.slice(colonIndex + 1) };
-}
-
-export function compositeKey(name: string, tag: string): string {
-  return `${name}:${tag}`;
-}
 
 // =============================================================================
 // Encrypted-field blob (per-field encryption-at-rest)
@@ -160,7 +137,7 @@ const CloudProviderConfigSchema = z.object({
 // Storage
 // =============================================================================
 
-export const StorageConfigSchema = z.object({
+const StorageConfigSchema = z.object({
   provider: z.string(),
   vaultContent: z.record(z.string(), z.unknown()),
 });
@@ -177,7 +154,7 @@ export const StorageConfigSchema = z.object({
 const SECRET_KEY_REGEX = /^[A-Z][A-Z0-9_]*$/;
 const SECRET_VALUE_MAX_BYTES = 10 * 1024 * 1024;
 
-export const SecretEntrySchema = z.object({
+const SecretEntrySchema = z.object({
   mode: z.enum(['env', 'file']),
   value: z
     .string()
@@ -185,13 +162,13 @@ export const SecretEntrySchema = z.object({
     .max(SECRET_VALUE_MAX_BYTES, 'Secret value exceeds 10 MB cap'),
 });
 
-export const SecretKeySchema = z
+const SecretKeySchema = z
   .string()
   .min(1)
   .max(64, 'Secret key must be 64 characters or fewer')
   .regex(SECRET_KEY_REGEX, 'Secret key must be UPPER_SNAKE_CASE');
 
-export const RepositoryConfigSchema = z.object({
+const RepositoryConfigSchema = z.object({
   repositoryGuid: uuid,
   tag: z.string().optional(),
   credential: z.string().optional(),
@@ -246,7 +223,7 @@ export const RepositoryConfigSchema = z.object({
 });
 
 // Archives intentionally OMIT secrets — archiveRepository scrubs them.
-export const ArchivedRepositorySchema = RepositoryConfigSchema.omit({ secrets: true }).extend({
+const ArchivedRepositorySchema = RepositoryConfigSchema.omit({ secrets: true }).extend({
   name: z.string(),
   deletedAt: z.string(),
 });
@@ -261,7 +238,7 @@ const CephConfigSchema = z.object({
   clusterName: z.string().optional(),
 });
 
-export const InfraConfigSchema = z.object({
+const InfraConfigSchema = z.object({
   publicIPv4: z
     .string()
     .refine((v) => isIP(v) === 4, 'Must be a valid IPv4 address')
@@ -275,7 +252,7 @@ export const InfraConfigSchema = z.object({
   udpPorts: z.array(port).optional(),
 });
 
-export const MachineConfigSchema = z.object({
+const MachineConfigSchema = z.object({
   ip: ipOrHostname,
   user: z.string().min(1, 'SSH user cannot be empty'),
   port: port.optional(),
@@ -290,7 +267,7 @@ export const MachineConfigSchema = z.object({
 // Backup strategy
 // =============================================================================
 
-export const BackupDestinationSchema = z.object({
+const BackupDestinationSchema = z.object({
   name: z.string().min(1, 'Destination name cannot be empty'),
   storage: z.string().min(1, 'Storage name cannot be empty'),
   enabled: z.boolean().optional(),
@@ -469,62 +446,6 @@ export function parseConfig<T>(schema: z.ZodType<T>, data: unknown, context: str
   throw new ValidationError(`Invalid ${context}:\n${issues}`);
 }
 
-export function assertResourceName(name: string): void {
-  const result = resourceName.safeParse(name);
-  if (!result.success) {
-    const msg = result.error.issues.map((i) => i.message).join('; ');
-    throw new ValidationError(`Invalid resource name "${name}": ${msg}`);
-  }
-}
-
-export async function assertStorageExists(storageName: string): Promise<void> {
-  const { configService } = await import('../services/config-resources.js');
-  const storages = await configService.listStorages();
-  const names = storages.map((s) => s.name);
-  if (!names.includes(storageName)) {
-    throw new ValidationError(
-      t('errors.config.storageNotFound', {
-        name: storageName,
-        available: names.length > 0 ? names.join(', ') : '(none)',
-      })
-    );
-  }
-}
-
-export async function assertMachineExists(machineName: string): Promise<void> {
-  const { configService } = await import('../services/config-resources.js');
-  const machines = await configService.listMachines();
-  const names = machines.map((m) => m.name);
-  if (!names.includes(machineName)) {
-    throw new ValidationError(
-      t('errors.config.machineNotFound', {
-        name: machineName,
-        available: names.length > 0 ? names.join(', ') : '(none)',
-      })
-    );
-  }
-}
-
-// =============================================================================
-// Input normalization
-// =============================================================================
-
-export function normalizeIp(value: string): string {
-  return value.trim();
-}
-
-export function normalizeDomain(value: string): string {
-  return value.trim().toLowerCase();
-}
-
-export function normalizeEmail(value: string): string {
-  return value.trim().toLowerCase();
-}
-
-export function normalizePath(value: string): string {
-  return value.trim().replace(/\/+$/, '') || '/';
-}
-
 // =============================================================================
 // Deterministic JSON key ordering for v2 config
 // =============================================================================
@@ -543,7 +464,7 @@ const CONFIG_KEY_ORDER_V2 = [
   'renetPath',
 ] as const;
 
-export function orderedReplacer(this: unknown, _key: string, value: unknown): unknown {
+function orderedReplacer(this: unknown, _key: string, value: unknown): unknown {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return value;
   const obj = value as Record<string, unknown>;
   const keys = Object.keys(obj);
@@ -569,5 +490,3 @@ export function orderedReplacer(this: unknown, _key: string, value: unknown): un
 export function stringifyConfig(config: RdcConfig): string {
   return JSON.stringify(config, orderedReplacer, 2);
 }
-
-export const CertEmailSchema = z.email('Must be a valid email address');

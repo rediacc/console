@@ -6,7 +6,7 @@ order: 2
 language: ar
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ar/cli.json
-sourceHash: "73650f4ed88f7c56"
+sourceHash: "b5d50cc12123f235"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -582,6 +582,21 @@ rdc config storage remove [options]
 ```bash
 rdc config storage list
 ```
+
+<a id="cli-local-config-storage-show"></a>
+#### show
+
+{{t:cli.commands.config.storage.show.description}}
+
+```bash
+rdc config storage show [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--reveal` | {{t:cli.commands.config.storage.show.optionReveal}} | {{t:cli.docs.optionLabels.no}} | - |
+
 
 <a id="cli-local-config-infra"></a>
 ### 2.15 infra
@@ -2260,17 +2275,8 @@ rdc storage delete [options]
 | `--dry-run` | {{t:cli.options.dryRun}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-<a id="cli-local-storage-vault"></a>
-### 7.5 vault
-
-{{t:cli.commands.storage.vault.description}}
-
-```bash
-rdc storage vault
-```
-
 <a id="cli-local-storage-browse"></a>
-### 7.6 browse
+### 7.5 browse
 
 {{t:cli.commands.storage.browse.description}}
 
@@ -2285,7 +2291,7 @@ rdc storage browse [options]
 
 
 <a id="cli-local-storage-prune"></a>
-### 7.7 prune
+### 7.6 prune
 
 {{t:cli.commands.storage.prune.description}}
 

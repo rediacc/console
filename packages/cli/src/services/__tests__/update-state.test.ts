@@ -6,7 +6,7 @@ import {
   getStagedBinaryPath,
   readUpdateState,
   writeUpdateState,
-} from '../update-state.js';
+} from '../update/update-state.js';
 
 const mockFs = vi.hoisted(() => ({
   readFile: vi.fn(),

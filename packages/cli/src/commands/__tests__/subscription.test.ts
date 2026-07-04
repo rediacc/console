@@ -61,7 +61,7 @@ vi.mock('../../i18n/index.js', () => ({
   },
 }));
 
-vi.mock('../../services/subscription-auth.js', () => ({
+vi.mock('../../services/account/subscription-auth.js', () => ({
   getSubscriptionTokenState: mockGetSubscriptionTokenState,
   getSubscriptionServerUrl: mockGetSubscriptionServerUrl,
   getSubscriptionScopeMismatch: mockGetSubscriptionScopeMismatch,
@@ -71,7 +71,7 @@ vi.mock('../../services/subscription-auth.js', () => ({
   saveServerConfig: mockSaveServerConfig,
 }));
 
-vi.mock('../../services/region-discovery.js', () => ({
+vi.mock('../../services/provision/region-discovery.js', () => ({
   discoverRegions: mockDiscoverRegions,
 }));
 
@@ -79,18 +79,18 @@ vi.mock('../../utils/region-prompt.js', () => ({
   promptRegionSelection: mockPromptRegionSelection,
 }));
 
-vi.mock('../../services/license.js', () => ({
+vi.mock('../../services/account/license.js', () => ({
   fetchSubscriptionLicenseReport: mockFetchSubscriptionLicenseReport,
   readMachineActivationStatus: mockReadMachineActivationStatus,
   readRuntimeRepoLicenseStatuses: mockReadRuntimeRepoLicenseStatuses,
   refreshRepoLicensesBatch: mockRefreshRepoLicensesBatch,
 }));
 
-vi.mock('../../services/subscription-device-auth.js', () => ({
+vi.mock('../../services/account/subscription-device-auth.js', () => ({
   authorizeSubscriptionViaDeviceCode: mockAuthorizeSubscriptionViaDeviceCode,
 }));
 
-vi.mock('../../services/config-resources.js', () => ({
+vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getLocalConfig: mockGetLocalConfig,
     getLocalMachine: mockGetLocalMachine,
@@ -98,12 +98,12 @@ vi.mock('../../services/config-resources.js', () => ({
   },
 }));
 
-vi.mock('../../services/renet-execution.js', () => ({
+vi.mock('../../services/renet/renet-execution.js', () => ({
   readSSHKey: mockReadSSHKey,
   provisionRenetToRemote: mockProvisionRenetToRemote,
 }));
 
-vi.mock('../../services/output.js', () => ({
+vi.mock('../../services/core/output.js', () => ({
   outputService: {
     info: mockOutputInfo,
     warn: mockOutputWarn,

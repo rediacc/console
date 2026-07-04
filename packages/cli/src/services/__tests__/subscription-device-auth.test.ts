@@ -27,14 +27,14 @@ vi.mock('../../i18n/index.js', () => ({
   t: (key: string) => key,
 }));
 
-vi.mock('../output.js', () => ({
+vi.mock('../core/output.js', () => ({
   outputService: {
     info: mockOutputInfo,
     warn: mockOutputWarn,
   },
 }));
 
-vi.mock('../subscription-auth.js', () => ({
+vi.mock('../account/subscription-auth.js', () => ({
   getSubscriptionServerUrl: mockGetSubscriptionServerUrl,
   saveStoredSubscriptionToken: mockSaveStoredSubscriptionToken,
   getSubscriptionScopeMismatch: mockGetSubscriptionScopeMismatch,
@@ -44,11 +44,13 @@ vi.mock('node:child_process', () => ({
   execFile: mockExecFile,
 }));
 
-vi.mock('../account-client.js', () => ({
+vi.mock('../account/account-client.js', () => ({
   accountServerFetch: mockAccountServerFetch,
 }));
 
-const { authorizeSubscriptionViaDeviceCode } = await import('../subscription-device-auth.js');
+const { authorizeSubscriptionViaDeviceCode } = await import(
+  '../account/subscription-device-auth.js'
+);
 
 describe('authorizeSubscriptionViaDeviceCode', () => {
   beforeEach(() => {

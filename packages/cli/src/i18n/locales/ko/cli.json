@@ -445,6 +445,10 @@
         "remove": {
           "description": "현재 설정에서 스토리지를 제거합니다",
           "success": "스토리지 \"{{name}}\" 제거 완료"
+        },
+        "show": {
+          "description": "스토리지의 제공자와 구성을 표시합니다",
+          "optionReveal": "스토리지 구성을 평문으로 표시합니다 (대화형 TTY 전용; 감사 기록됨)"
         }
       }
     },
@@ -1331,7 +1335,7 @@
       "delete": {
         "description": "스토리지 제공자를 삭제합니다"
       },
-      "description": "원격 백업 스토리지 제공자 관리 (S3, rclone 호환). CRUD 작업 (목록, 생성, 이름 변경, 삭제), 볼트 설정, 원격 파일 탐색, 고아 백업 정리.",
+      "description": "원격 백업 스토리지 제공자 관리 (S3, rclone 호환). CRUD 작업 (목록, 생성, 이름 변경, 삭제), 원격 파일 탐색, 고아 백업 정리.",
       "descriptionShort": "스토리지 제공자 관리 및 원격 파일 탐색",
       "list": {
         "description": "스토리지 제공자 목록을 나열합니다",
@@ -1350,9 +1354,6 @@
       },
       "rename": {
         "description": "스토리지 제공자 이름을 변경합니다"
-      },
-      "vault": {
-        "description": "스토리지 볼트 관리 (클라우드 어댑터 전용)"
       }
     },
     "subscription": {

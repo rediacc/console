@@ -1,8 +1,8 @@
 import { spawn } from 'node:child_process';
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
-import { opsExecutorService } from '../../services/ops-executor.js';
-import { outputService } from '../../services/output.js';
+import { opsExecutorService } from '../../services/executor/ops-executor.js';
+import { outputService } from '../../services/core/output.js';
 import { handleError } from '../../utils/errors.js';
 
 function spawnInteractive(command: string, args: string[]): Promise<number> {

@@ -1,8 +1,8 @@
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
-import { localExecutorService } from '../services/local-executor.js';
-import { outputService } from '../services/output.js';
+import { configService } from '../services/config/config-resources.js';
+import { localExecutorService } from '../services/executor/local-executor.js';
+import { outputService } from '../services/core/output.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { assertMachineExists } from './_validate.js';
@@ -81,7 +81,7 @@ async function renderPolicyResult(parsed: Record<string, unknown>): Promise<void
     return;
   }
 
-  const { formatSizeBytes } = await import('@rediacc/shared/queue-vault');
+  const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
   const effective = (parsed.effective ?? {}) as PolicyFields;
   const override = parsed.repo_override as PolicyFields | null | undefined;
   const machineDefault = parsed.machine_default as PolicyFields | null | undefined;

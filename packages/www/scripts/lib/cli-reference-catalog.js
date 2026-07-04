@@ -21,10 +21,6 @@ const LOCAL_GROUPS = [
   'ops',
 ];
 
-// The experimental cloud command set was removed with the middleware
-// retirement; kept as an (empty) export for validator imports.
-const CLOUD_GROUPS = [];
-
 const TARGET_DOC_CATEGORIES = new Set([
   'Guides',
   'Tutorials',
@@ -61,7 +57,7 @@ let cachedTree = null;
 let cachedCatalog = null;
 let cachedDocumentedPaths = null;
 
-export function getCommandTree() {
+function getCommandTree() {
   if (cachedTree) return cachedTree;
   cachedTree = JSON.parse(fs.readFileSync(COMMAND_TREE_PATH, 'utf-8'));
   return cachedTree;
@@ -92,7 +88,7 @@ function getDocumentedReferencePaths() {
   const cliJson = JSON.parse(fs.readFileSync(CLI_JSON_PATH, 'utf-8'));
   const documented = new Set();
 
-  for (const group of [...LOCAL_GROUPS, ...CLOUD_GROUPS]) {
+  for (const group of LOCAL_GROUPS) {
     documented.add(group);
     collectDocumentedPaths(cliJson?.commands?.[group], [group], documented);
   }
@@ -101,14 +97,12 @@ function getDocumentedReferencePaths() {
   return documented;
 }
 
-export function getGroupScope(group) {
-  if (LOCAL_GROUPS.includes(group)) return 'local';
-  if (CLOUD_GROUPS.includes(group)) return 'cloud';
+function getGroupScope() {
   return 'local';
 }
 
-export function getReferenceSlug(scope) {
-  return scope === 'cloud' ? 'cli-application-cloud' : 'cli-application';
+function getReferenceSlug() {
+  return 'cli-application';
 }
 
 export function toAnchorId(scope, commandPath) {
@@ -148,7 +142,7 @@ function walkCommands(node, pathParts, out) {
   const commandPath = pathParts.join(' ');
   if (commandPath) {
     const group = pathParts[0];
-    const scope = getGroupScope(group);
+    const scope = getGroupScope();
     const rootOptionDefs = getCommandTree().options || [];
     const commandOptionDefs = node.options || [];
     const allowedFlags = new Set([...GLOBAL_ALWAYS_VALID]);
@@ -164,7 +158,7 @@ function walkCommands(node, pathParts, out) {
       commandPath,
       group,
       scope,
-      slug: getReferenceSlug(scope),
+      slug: getReferenceSlug(),
       anchorId: toAnchorId(scope, commandPath),
       node,
       rootOptionDefs,
@@ -179,7 +173,7 @@ function walkCommands(node, pathParts, out) {
   }
 }
 
-export function getCliReferenceCatalog() {
+function getCliReferenceCatalog() {
   if (cachedCatalog) return cachedCatalog;
   const map = new Map();
   const documentedPaths = getDocumentedReferencePaths();
@@ -213,7 +207,7 @@ function findCommand(tokensAfterRoot) {
   };
 }
 
-export function parseShellTokens(text) {
+function parseShellTokens(text) {
   const tokens = [];
   let current = '';
   let quote = null;
@@ -461,10 +455,4 @@ export function mergeContinuationLines(lines, startIndex) {
   return { command, endIndex };
 }
 
-export {
-  CLOUD_GROUPS,
-  GLOBAL_ALWAYS_VALID,
-  LOCAL_GROUPS,
-  SHELL_FENCE_LANGS,
-  TARGET_DOC_CATEGORIES,
-};
+export { LOCAL_GROUPS, SHELL_FENCE_LANGS, TARGET_DOC_CATEGORIES };

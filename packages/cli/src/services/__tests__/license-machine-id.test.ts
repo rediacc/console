@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MachineConfig } from '../../types/index.js';
-import { fetchSubscriptionLicenseReport, readMachineActivationStatus } from '../license.js';
+import { fetchSubscriptionLicenseReport, readMachineActivationStatus } from '../account/license.js';
 
 const mockExec = vi.fn();
 const mockExecStreaming = vi.fn();
 const mockConnect = vi.fn();
 const mockClose = vi.fn();
 
-vi.mock('../../shared-desktop/sftp/index.js', () => ({
+vi.mock('../../remote/sftp/index.js', () => ({
   SFTPClient: class MockSFTPClient {
     connect = mockConnect;
     exec = mockExec;
@@ -16,7 +16,7 @@ vi.mock('../../shared-desktop/sftp/index.js', () => ({
   },
 }));
 
-vi.mock('../subscription-auth.js', () => ({
+vi.mock('../account/subscription-auth.js', () => ({
   getSubscriptionTokenState: vi.fn(() => ({
     kind: 'ready',
     serverUrl: 'http://localhost:4800',
@@ -25,11 +25,11 @@ vi.mock('../subscription-auth.js', () => ({
 }));
 
 const mockAccountServerFetch = vi.fn();
-vi.mock('../account-client.js', () => ({
+vi.mock('../account/account-client.js', () => ({
   accountServerFetch: (...args: unknown[]) => mockAccountServerFetch(...args),
 }));
 
-vi.mock('../telemetry.js', () => ({
+vi.mock('../telemetry/telemetry.js', () => ({
   telemetryService: {
     setUserContext: vi.fn(),
     trackError: vi.fn(),

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
-export interface NarrationEntry {
+interface NarrationEntry {
   id: string;
   audioSrc: string;
   audioDurationSec?: number;
@@ -20,7 +20,7 @@ interface Timeline {
   narrationAudio?: NarrationEntry[];
 }
 
-export interface AfterAudioEntry {
+interface AfterAudioEntry {
   audioSrc: string;
   audioDurationSec: number;
 }

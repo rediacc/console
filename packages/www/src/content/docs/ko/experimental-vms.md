@@ -4,6 +4,8 @@ description: "rdc ops를 사용하여 개발 및 테스트를 위한 로컬 VM �
 category: "Concepts"
 order: 2
 language: ko
+sourceHash: "aafca00c006ded0b"
+sourceCommit: "6cf65c4fe8617378da6a6dd21cce2feecff7ca9f"
 ---
 
 # 실험적 VM
@@ -12,7 +14,7 @@ language: ko
 
 ## 요구 사항
 
-`rdc ops`는 **로컬 어댑터**가 필요합니다. 클라우드 어댑터에서는 사용할 수 없습니다.
+`rdc ops`는 **로컬 어댑터**를 통해 동작합니다.
 
 ```bash
 rdc ops check

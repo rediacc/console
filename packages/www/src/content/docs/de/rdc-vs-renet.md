@@ -4,8 +4,8 @@ description: "Wann Sie rdc verwenden und wann Sie renet einsetzen."
 category: "Concepts"
 order: 1
 language: de
-sourceHash: "2ccc8590bc6f67c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "ea6ff6dd3b8f5d5b"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # rdc vs renet
@@ -75,7 +75,7 @@ rdc ops ssh --vm-id 1 -c hostname  # Einen Befehl auf der Bridge-VM ausführen
 rdc ops down               # Cluster zerstören
 ```
 
-> Erfordert den lokalen Adapter. Nicht mit dem Cloud-Adapter verfügbar.
+> Läuft über den lokalen Adapter.
 
 Diese Befehle führen `renet` lokal aus (nicht über SSH). Siehe [Experimentelle VMs](/de/docs/experimental-vms) für die vollständige Dokumentation.
 

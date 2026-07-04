@@ -31,24 +31,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('background-updater: applyPendingUpdate signal API', () => {
   beforeEach(async () => {
-    const mod = await import('../background-updater.js');
+    const mod = await import('../update/background-updater.js');
     mod.resetAppliedAtStartupForTests();
   });
 
   afterEach(async () => {
-    const mod = await import('../background-updater.js');
+    const mod = await import('../update/background-updater.js');
     mod.resetAppliedAtStartupForTests();
     vi.restoreAllMocks();
   });
 
   it('getAppliedAtStartup() returns null when nothing has been applied', async () => {
-    const { getAppliedAtStartup } = await import('../background-updater.js');
+    const { getAppliedAtStartup } = await import('../update/background-updater.js');
     expect(getAppliedAtStartup()).toBeNull();
   });
 
   it('resetAppliedAtStartupForTests() clears the signal between tests', async () => {
     const { getAppliedAtStartup, resetAppliedAtStartupForTests } = await import(
-      '../background-updater.js'
+      '../update/background-updater.js'
     );
     resetAppliedAtStartupForTests();
     expect(getAppliedAtStartup()).toBeNull();
@@ -110,17 +110,17 @@ describe('handleUpdate short-circuit on appliedAtStartup', () => {
       error: vi.fn(),
     };
 
-    vi.doMock('../updater.js', () => updaterMocks);
-    vi.doMock('../background-updater.js', () => bgMocks);
-    vi.doMock('../update-state.js', () => ({
+    vi.doMock('../update/updater.js', () => updaterMocks);
+    vi.doMock('../update/background-updater.js', () => bgMocks);
+    vi.doMock('../update/update-state.js', () => ({
       readUpdateState: vi.fn().mockResolvedValue({
         pendingUpdate: null,
         lastCheckAt: '2026-01-01T00:00:00.000Z',
       }),
       writeUpdateState: vi.fn().mockResolvedValue(undefined),
     }));
-    vi.doMock('../output.js', () => ({ outputService: outputMocks }));
-    vi.doMock('../subscription-auth.js', () => ({
+    vi.doMock('../core/output.js', () => ({ outputService: outputMocks }));
+    vi.doMock('../account/subscription-auth.js', () => ({
       getSubscriptionServerUrl: vi.fn().mockReturnValue('https://example.invalid'),
     }));
     vi.doMock('../../i18n/index.js', () => ({

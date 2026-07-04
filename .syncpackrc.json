@@ -31,7 +31,7 @@
       "dependencies": [
         "@types/node"
       ],
-      "pinVersion": "^22.10.2"
+      "pinVersion": "^22.20.0"
     },
     {
       "label": "Pin OpenTelemetry exporter-trace to the sdk-node 0.219 line",
@@ -71,7 +71,7 @@
       "dependencies": [
         "i18next"
       ],
-      "pinVersion": "^25.7.2"
+      "pinVersion": "^26.3.4"
     },
     {
       "label": "Pin vite-tsconfig-paths to latest",

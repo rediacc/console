@@ -4,7 +4,7 @@ description: Aprovisione clústeres de VMs locales para desarrollo y pruebas con
 category: Concepts
 order: 2
 language: es
-sourceHash: df01dc35c82beb81
+sourceHash: aafca00c006ded0b
 ---
 
 # VMs Experimentales
@@ -13,7 +13,7 @@ Aprovisione clústeres de VMs locales en su estación de trabajo para desarrollo
 
 ## Requisitos
 
-`rdc ops` requiere el **adaptador local**. No está disponible con el adaptador cloud.
+`rdc ops` funciona a través del **adaptador local**.
 
 ```bash
 rdc ops check

@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SFTPClient } from '../../shared-desktop/sftp/index.js';
-import { REMOTE_RENET_PATH } from '../renet-provisioner.js';
+import type { SFTPClient } from '../../remote/sftp/index.js';
+import { REMOTE_RENET_PATH } from '../renet/renet-provisioner.js';
 import {
   buildKeyDeploymentScript,
   deployAllRepoKeys,
   deployRepoKey,
   deployRepoKeyIfNeeded,
-} from '../repo-key-deployment.js';
+} from '../repo/repo-key-deployment.js';
 
 const { mockExec, mockRelease, mockAcquire, mockConfigService } = vi.hoisted(() => {
   const mockExec = vi.fn().mockResolvedValue('');
@@ -31,11 +31,11 @@ const { mockExec, mockRelease, mockAcquire, mockConfigService } = vi.hoisted(() 
   };
 });
 
-vi.mock('../machine-connection.js', () => ({
+vi.mock('../machine/machine-connection.js', () => ({
   machineConnections: { acquire: mockAcquire },
 }));
 
-vi.mock('../config-resources.js', () => ({
+vi.mock('../config/config-resources.js', () => ({
   configService: mockConfigService,
 }));
 

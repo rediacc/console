@@ -5,13 +5,13 @@ const { mockEnsureRecord } = vi.hoisted(() => ({
   mockEnsureRecord: vi.fn().mockResolvedValue('unchanged' as const),
 }));
 
-vi.mock('../cloudflare-dns.js', () => ({
+vi.mock('../provision/cloudflare-dns.js', () => ({
   CloudflareDnsClient: class MockCloudflareDnsClient {
     ensureRecord = mockEnsureRecord;
   },
 }));
 
-vi.mock('../output.js', () => ({
+vi.mock('../core/output.js', () => ({
   outputService: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -19,7 +19,7 @@ vi.mock('../output.js', () => ({
   },
 }));
 
-vi.mock('../config-resources.js', () => ({
+vi.mock('../config/config-resources.js', () => ({
   configService: {
     updateConfigFields: vi.fn(),
     applyDefaults: vi.fn().mockResolvedValue({ team: undefined }),
@@ -31,7 +31,7 @@ vi.mock('../../i18n/index.js', () => ({
     params ? `${key}:${JSON.stringify(params)}` : key,
 }));
 
-import { buildInfraPayload, ensureRepoDnsRecords } from '../infra-provision.js';
+import { buildInfraPayload, ensureRepoDnsRecords } from '../provision/infra-provision.js';
 
 const baseInfra: InfraConfig = {
   baseDomain: 'rediacc.io',

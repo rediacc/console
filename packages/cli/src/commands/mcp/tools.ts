@@ -68,7 +68,7 @@ async function getRepoInfo(
   configName?: string
 ): Promise<{ repositoryGuid: string; grandGuid?: string } | null> {
   try {
-    const { configService } = await import('../../services/config-resources.js');
+    const { configService } = await import('../../services/config/config-resources.js');
     if (configName) {
       configService.setRuntimeConfig(configName);
     }

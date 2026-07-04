@@ -1,7 +1,7 @@
-// Import queue-vault types from shared package
+// Import renet-contract types from shared package
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import type { QueueVaultV2 } from '@rediacc/shared/queue-vault';
+import type { QueueVaultV2 } from '@rediacc/shared/renet-contract';
 // Re-export for convenience
 
 /**

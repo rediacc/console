@@ -15,12 +15,12 @@ import { registerTermCommands } from './commands/term.js';
 import { registerUpdateCommand } from './commands/update.js';
 import { registerVSCodeCommands } from './commands/vscode.js';
 import { changeLanguage, initI18n, SUPPORTED_LANGUAGES, t } from './i18n/index.js';
-import { configService } from './services/config-resources.js';
-import { outputService } from './services/output.js';
-import { getSubscriptionTokenState } from './services/subscription-auth.js';
-import { auditService } from './services/audit.js';
-import { fetchOtlpCredentials } from './services/otlp-credentials.js';
-import { isTelemetryDisabled, telemetryService } from './services/telemetry.js';
+import { configService } from './services/config/config-resources.js';
+import { outputService } from './services/core/output.js';
+import { getSubscriptionTokenState } from './services/account/subscription-auth.js';
+import { auditService } from './services/core/audit.js';
+import { fetchOtlpCredentials } from './services/telemetry/otlp-credentials.js';
+import { isTelemetryDisabled, telemetryService } from './services/telemetry/telemetry.js';
 import type { OutputFormat } from './types/index.js';
 import { isAgentEnvironment } from './utils/agent-guard.js';
 import { setOutputFormat } from './utils/errors.js';
@@ -181,7 +181,7 @@ cli
         // and telemetry disabled. Never blocks the actual command.
       }
     }
-    telemetryService.initialize({ serviceVersion: VERSION });
+    await telemetryService.initialize({ serviceVersion: VERSION });
 
     // Start telemetry tracking for the command
     const commandName = getFullCommandName(actionCommand);

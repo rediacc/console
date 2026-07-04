@@ -64,7 +64,7 @@ export function isValidActivationCode(code: string, minLength = 6): boolean {
   return alphanumericPattern.test(code);
 }
 
-// Re-export network/SSH validators from queue-vault for convenience
+// Re-export network/SSH validators from renet-contract for convenience
 export {
   formatSizeBytes,
   isValidHost,
@@ -76,9 +76,7 @@ export {
   isValidPort,
   isValidSSHPrivateKey,
   parseSize,
-  validateMachineVault,
   validateNetworkId,
   validateSize,
-  validateSSHConnection,
   validateSSHPrivateKey,
-} from '../queue-vault/utils/validation';
+} from '../renet-contract/utils/validation';

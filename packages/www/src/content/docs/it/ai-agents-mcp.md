@@ -4,8 +4,8 @@ description: Collega gli agenti AI all'infrastruttura Rediacc usando il server M
 category: Guides
 order: 33
 language: it
-sourceHash: "4483eb3da34a6c03"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d515d5491751e1fe"
+sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
 ## Panoramica
@@ -159,5 +159,4 @@ Il server MCP è stateless. Ogni chiamata a uno strumento avvia `rdc` come proce
 
 - Nessuna perdita di stato tra le chiamate agli strumenti
 - Utilizza la configurazione `rdc` e le chiavi SSH esistenti
-- Funziona con entrambi gli adapter: local e cloud
 - Gli errori in un comando non influenzano gli altri

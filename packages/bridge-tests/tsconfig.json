@@ -12,11 +12,11 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "baseUrl": ".",
+    "types": ["node"],
     "paths": {
-      "@/*": ["src/*"],
-      "@/base/*": ["src/base/*"],
-      "@/utils/*": ["src/utils/*"]
+      "@/*": ["./src/*"],
+      "@/base/*": ["./src/base/*"],
+      "@/utils/*": ["./src/utils/*"]
     }
   },
   "include": ["src/**/*", "tests/**/*"],

@@ -18,7 +18,7 @@ import type { SensitivityMeta, PointerTemplate } from './sensitivity.js';
 import { SENSITIVITY_REGISTRY } from './sensitivity.js';
 
 /** RFC 6901 escape for a single JSON Pointer segment. */
-export function escapePointerSegment(segment: string): string {
+function escapePointerSegment(segment: string): string {
   return segment.replaceAll('~', '~0').replaceAll('/', '~1');
 }
 

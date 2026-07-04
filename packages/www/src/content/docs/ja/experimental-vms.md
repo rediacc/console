@@ -4,7 +4,7 @@ description: rdc opsを使用して、開発およびテスト用のローカル
 category: Concepts
 order: 2
 language: ja
-sourceHash: df01dc35c82beb81
+sourceHash: aafca00c006ded0b
 ---
 
 # 実験的VM
@@ -13,7 +13,7 @@ sourceHash: df01dc35c82beb81
 
 ## 前提条件
 
-`rdc ops` は**ローカルアダプター**が必要です。クラウドアダプターでは利用できません。
+`rdc ops` は**ローカルアダプター**経由で動作します。
 
 ```bash
 rdc ops check

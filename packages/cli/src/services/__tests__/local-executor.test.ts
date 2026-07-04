@@ -42,7 +42,7 @@ const {
   mockVerifyMachineSetup: vi.fn(),
 }));
 
-vi.mock('../../shared-desktop/sftp/index.js', () => ({
+vi.mock('../../remote/sftp/index.js', () => ({
   SFTPClient: class MockSFTPClient {
     connect = mockConnect;
     close = mockClose;
@@ -52,7 +52,7 @@ vi.mock('../../shared-desktop/sftp/index.js', () => ({
   },
 }));
 
-vi.mock('../config-resources.js', () => ({
+vi.mock('../config/config-resources.js', () => ({
   configService: {
     getLocalConfig: mockGetLocalConfig,
     getLocalMachine: mockGetLocalMachine,
@@ -62,17 +62,17 @@ vi.mock('../config-resources.js', () => ({
   },
 }));
 
-vi.mock('../license.js', () => ({
+vi.mock('../account/license.js', () => ({
   refreshRepoLicensesBatch: mockRefreshRepoLicensesBatch,
   issueRepoLicense: mockIssueRepoLicense,
   refreshRepoLicenseIdentity: mockRefreshRepoLicenseIdentity,
 }));
 
-vi.mock('../subscription-device-auth.js', () => ({
+vi.mock('../account/subscription-device-auth.js', () => ({
   authorizeSubscriptionViaDeviceCode: mockAuthorizeSubscriptionViaDeviceCode,
 }));
 
-vi.mock('../subscription-auth.js', () => ({
+vi.mock('../account/subscription-auth.js', () => ({
   getSubscriptionTokenState: mockGetSubscriptionTokenState,
 }));
 
@@ -80,7 +80,7 @@ vi.mock('../../utils/agent-guard.js', () => ({
   isAgentEnvironment: vi.fn().mockReturnValue(false),
 }));
 
-vi.mock('../renet-execution.js', () => ({
+vi.mock('../renet/renet-execution.js', () => ({
   buildLocalVault: mockBuildLocalVault,
   provisionRenetToRemote: mockProvisionRenetToRemote,
   readSSHKey: mockReadSSHKey,
@@ -89,7 +89,7 @@ vi.mock('../renet-execution.js', () => ({
   getLocalRenetPath: vi.fn(),
 }));
 
-const { localExecutorService } = await import('../local-executor.js');
+const { localExecutorService } = await import('../executor/local-executor.js');
 
 describe('localExecutorService first-use onboarding', () => {
   const savedSkipActivation = process.env.REDIACC_SKIP_MACHINE_ACTIVATION;

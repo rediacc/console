@@ -12,7 +12,7 @@ import { ACCOUNT_PATH } from './constants';
 import type { SectionType, TechItem } from './solution-pages';
 
 /** Persona-specific section types (extends base SectionType) */
-export type PersonaSectionType = SectionType | 'relatedSolutions' | 'shareWithTeam' | 'teamVideo';
+type PersonaSectionType = SectionType | 'relatedSolutions' | 'shareWithTeam' | 'teamVideo';
 
 export type PersonaType = 'devops' | 'cto' | 'ceo' | 'ai-agent';
 
@@ -142,5 +142,3 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
     relatedSolutions: ['environment-cloning', 'production-parity', 'integrations'],
   },
 };
-
-export const PERSONA_PAGE_SLUGS = Object.keys(PERSONA_PAGES);

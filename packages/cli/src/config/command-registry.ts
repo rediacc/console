@@ -14,7 +14,7 @@ export const COMMAND_DOMAINS = {
   TOOLS: 'Tools',
 } as const;
 
-export type CommandDomain = keyof typeof COMMAND_DOMAINS;
+type CommandDomain = keyof typeof COMMAND_DOMAINS;
 
 export interface SubcommandDef {
   experimental?: boolean;

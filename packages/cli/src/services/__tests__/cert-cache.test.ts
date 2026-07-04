@@ -7,7 +7,7 @@ import {
   mergeAcmeJson,
   pruneExpiredCerts,
   pruneStaleAcmeCerts,
-} from '../cert-cache.js';
+} from '../account/cert-cache.js';
 
 /**
  * Build a minimal acme.json-shaped fixture.

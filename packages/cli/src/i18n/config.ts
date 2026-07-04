@@ -86,8 +86,7 @@ void i18n.init({
   interpolation: {
     escapeValue: false, // Not needed for CLI output
   },
-  initImmediate: false, // Synchronous initialization
-  showSupportNotice: false, // Suppress locize promotional message (breaks JSON output)
+  initAsync: false, // Synchronous initialization
 });
 
 /**

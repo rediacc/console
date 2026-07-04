@@ -31,7 +31,7 @@ vi.mock('@rediacc/shared/regions', () => ({
   verifySignedRegions: mockVerifySignedRegions,
 }));
 
-import { discoverRegions, detectLikelyRegion } from '../region-discovery.js';
+import { discoverRegions, detectLikelyRegion } from '../provision/region-discovery.js';
 
 const FETCHED_REGIONS = [
   {

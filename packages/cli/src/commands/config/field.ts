@@ -14,20 +14,19 @@
  */
 
 import { createHash } from 'node:crypto';
-import { isatty } from 'node:tty';
 import type { Command } from 'commander';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
-import { configService } from '../../services/config-resources.js';
-import { auditLog, type AuditEventDraft } from '../../services/audit-log.js';
+import { configService } from '../../services/config/config-resources.js';
+import { auditLog, type AuditEventDraft } from '../../services/core/audit-log.js';
 import { t } from '../../i18n/index.js';
 import { isAgentEnvironment } from '../../utils/agent-guard.js';
 import {
   evaluateMutations,
   PreconditionMismatchError,
   type MutationEntry,
-} from '../../services/mutation-gate.js';
-import { outputService } from '../../services/output.js';
+} from '../../services/core/mutation-gate.js';
+import { outputService } from '../../services/core/output.js';
 import {
   canonicalJson,
   digestForPointer,
@@ -91,7 +90,9 @@ function checkFieldReveal(pointer: string): void {
     });
     throw new ValidationError(t('errors.agent.fieldReveal', { pointer }));
   }
-  if (!isatty(process.stdout.fd)) {
+  // Use process.stdout.isTTY, not isatty(fd): the fd can be undefined in
+  // worker threads or stream wrappers, where isatty() would throw a TypeError.
+  if (!process.stdout.isTTY) {
     throw new ValidationError(t('errors.agent.revealRequiresTty'));
   }
   emit({ command: 'config field get', paths: [pointer], outcome: 'reveal_granted' });
@@ -283,7 +284,7 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
         const config = await configService.getCurrent();
         if (!config) throw new ValidationError(t('errors.config.noActiveConfig'));
 
-        if (!isatty(process.stdin.fd)) {
+        if (!process.stdin.isTTY) {
           throw new ValidationError(t('errors.agent.rotateRequiresTty'));
         }
 

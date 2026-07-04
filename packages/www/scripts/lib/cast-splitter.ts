@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
-export interface CastHeader {
+interface CastHeader {
   version: 2;
   width: number;
   height: number;
@@ -8,7 +8,7 @@ export interface CastHeader {
   env?: Record<string, string>;
 }
 
-export type CastEvent = [time: number, kind: string, data: string];
+type CastEvent = [time: number, kind: string, data: string];
 
 export interface ParsedCast {
   header: CastHeader;
@@ -111,19 +111,6 @@ export function writeRestreamedSegment(
   }
   writeFileSync(outCast, `${out.join('\n')}\n`);
   return clock;
-}
-
-/**
- * Compute anim segments from marker timestamps. Returns N+1 windows where N
- * = number of markers: [0..m0], [m0..m1], ..., [mN-1..end].
- */
-export function animWindows(markers: number[], castEndSec: number): SegmentSpec[] {
-  const points = [0, ...markers, castEndSec];
-  const out: SegmentSpec[] = [];
-  for (let i = 0; i < points.length - 1; i++) {
-    out.push({ startSec: points[i], endSec: points[i + 1] });
-  }
-  return out;
 }
 
 export function castDurationSec(cast: ParsedCast): number {

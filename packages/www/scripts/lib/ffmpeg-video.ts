@@ -8,9 +8,6 @@ const FFPROBE_BIN = process.env.FFPROBE_BIN ?? 'ffprobe';
 export const VIDEO_W = 1920;
 export const VIDEO_H = 1080;
 export const FPS = 30;
-// Right-aligns the input within a 1920x1080 frame on a black background.
-// Used for terminal/cast scenes so the left strip is free for future overlays.
-export const PAD_FILTER_RIGHT = `scale=${VIDEO_W}:${VIDEO_H}:force_original_aspect_ratio=decrease,pad=${VIDEO_W}:${VIDEO_H}:ow-iw:(oh-ih)/2:color=black,setsar=1,fps=${FPS}`;
 // Full-frame fit for title/slide/outro/browser scenes (no padding shift).
 export const PAD_FILTER_CENTER = `scale=${VIDEO_W}:${VIDEO_H}:force_original_aspect_ratio=decrease,pad=${VIDEO_W}:${VIDEO_H}:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,fps=${FPS}`;
 const PAD_FILTER = PAD_FILTER_CENTER;
@@ -248,10 +245,6 @@ export function extractLastFrame(mp4Path: string, pngPath: string): void {
   ]);
 }
 
-export function extractFirstFrame(mp4Path: string, pngPath: string): void {
-  run(FFMPEG_BIN, ['-y', '-i', mp4Path, '-update', '1', '-frames:v', '1', pngPath]);
-}
-
 export function makeFreezeMp4(
   pngPath: string,
   audioPath: string,
@@ -328,43 +321,6 @@ export function concatMp4(inputs: string[], outPath: string, listPath: string): 
     '-movflags',
     '+faststart',
     outPath,
-  ]);
-}
-
-export function muxVideoWithAudio(
-  videoPath: string,
-  audioPath: string,
-  durationSec: number,
-  mp4Path: string,
-  padFilter: string = PAD_FILTER_CENTER
-): void {
-  // `apad` extends a shorter narration with trailing silence so `-t` (the
-  // scene duration) governs the output length. Without it, `-shortest`
-  // truncates the video to the narration length and cuts scripted browser
-  // actions mid-flight.
-  run(FFMPEG_BIN, [
-    '-y',
-    '-i',
-    videoPath,
-    '-i',
-    audioPath,
-    '-t',
-    durationSec.toFixed(3),
-    '-af',
-    'apad',
-    '-vf',
-    padFilter,
-    ...videoCodecArgs(),
-    '-c:a',
-    'aac',
-    '-b:a',
-    '128k',
-    '-ar',
-    '44100',
-    '-ac',
-    '2',
-    '-shortest',
-    mp4Path,
   ]);
 }
 

@@ -67,7 +67,7 @@ const FREEFORM_ARG_COMMAND_PATHS = new Set<string>([
 // positional subcommands. Mirrors eslint.config.js `exemptCommandPrefixes`.
 // ---------------------------------------------------------------------------
 
-export const EXEMPT_COMMAND_PREFIXES = [
+const EXEMPT_COMMAND_PREFIXES = [
   'rdc auth',
   'rdc audit',
   'rdc bridge',
@@ -90,7 +90,7 @@ let cachedTree: CommandNode | null = null;
 let cachedZeroPositional: Set<string> | null = null;
 let cachedAllPaths: Set<string> | null = null;
 
-export function getCommandTree(): CommandNode {
+function getCommandTree(): CommandNode {
   if (cachedTree) return cachedTree;
   const raw = fs.readFileSync(COMMAND_TREE_PATH, 'utf-8');
   cachedTree = JSON.parse(raw) as CommandNode;
@@ -102,7 +102,7 @@ export function getCommandTree(): CommandNode {
  * zero positional arguments. For these, ANY non-flag token after the path
  * is a violation — including literals like `prod-1` or `hostinger`.
  */
-export function getZeroPositionalCommands(): Set<string> {
+function getZeroPositionalCommands(): Set<string> {
   if (cachedZeroPositional) return cachedZeroPositional;
   const tree = getCommandTree();
   const out = new Set<string>();
@@ -135,7 +135,7 @@ export function getZeroPositionalCommands(): Set<string> {
  * subcommand name as its next token; a `<placeholder>` or `{{interp}}`
  * can never be a subcommand name, so any such pattern is a violation.
  */
-export function getAllCommandPaths(): Set<string> {
+function getAllCommandPaths(): Set<string> {
   if (cachedAllPaths) return cachedAllPaths;
   const tree = getCommandTree();
   const out = new Set<string>();
@@ -155,13 +155,6 @@ export function getAllCommandPaths(): Set<string> {
   walk(tree, []);
   cachedAllPaths = out;
   return out;
-}
-
-/** Reset the module cache. */
-export function resetCache(): void {
-  cachedTree = null;
-  cachedZeroPositional = null;
-  cachedAllPaths = null;
 }
 
 // ---------------------------------------------------------------------------
@@ -185,7 +178,7 @@ const escapeRegex = (str: string): string =>
  * Never matches `rdc machine query --name X` (flag follows command path)
  * or `rdc machine query` (no positional at all).
  */
-export function buildDetectionRegex(commandPath: string): RegExp {
+function buildDetectionRegex(commandPath: string): RegExp {
   const segments = commandPath.trim().split(/\s+/).map(escapeRegex).join('\\s+');
   // After the command path + whitespace, the next token must start with one
   // of these characters to count as "positional":
@@ -204,7 +197,7 @@ export function buildDetectionRegex(commandPath: string): RegExp {
  * is never a valid subcommand name, so any such pattern teaches wrong
  * syntax.
  */
-export function buildPlaceholderOnlyRegex(commandPath: string): RegExp {
+function buildPlaceholderOnlyRegex(commandPath: string): RegExp {
   const segments = commandPath.trim().split(/\s+/).map(escapeRegex).join('\\s+');
   return new RegExp(
     `(?:^|[\\s\`($:'"])(?:rdc\\s+)${segments}\\s+(?=<[a-zA-Z_][\\w-]*>|\\{\\{[a-zA-Z_]\\w*\\}\\})`
@@ -313,20 +306,4 @@ export function scanText(text: string, opts: ScanOptions = {}): Violation[] {
   }
 
   return violations;
-}
-
-/**
- * Convenience: scan a text blob and throw on first violation.
- */
-export function assertNoPositional(
-  text: string,
-  context: string,
-  opts?: ScanOptions
-): void {
-  const violations = scanText(text, opts);
-  if (violations.length === 0) return;
-  const first = violations[0];
-  throw new Error(
-    `${context}:${first.line}:${first.column} - positional syntax for '${first.commandPath}' (which requires named options): "${first.match}"`
-  );
 }

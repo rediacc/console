@@ -15,7 +15,7 @@ source "$SCRIPT_DIR/../lib/common.sh"
 
 REPO_ROOT="$(get_repo_root)"
 RENET_DIR="$REPO_ROOT/private/renet"
-OUTPUT_DIR="$REPO_ROOT/packages/shared/src/queue-vault/data"
+OUTPUT_DIR="$REPO_ROOT/packages/shared/src/renet-contract/data"
 
 cd "$REPO_ROOT"
 

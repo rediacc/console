@@ -35,7 +35,7 @@ import { resolvePageSource, runActions } from './browser.ts';
 /** Idle enforced before each boundary mark — the cut-precision safety margin. */
 const SETTLE_MS = 400;
 
-export type SessionWidth = 'full' | 'half';
+type SessionWidth = 'full' | 'half';
 
 interface SceneMarks {
   startMs: number;

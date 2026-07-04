@@ -18,7 +18,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { buildRemoteRenetCommand } from '../local-executor.js';
+import { buildRemoteRenetCommand } from '../executor/local-executor.js';
 
 const RENET = '/usr/bin/renet';
 const CREDS = { user: 'otlp-eu-abc123', pass: 'base64url-pass_-_' };

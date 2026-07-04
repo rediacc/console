@@ -3,7 +3,7 @@ import {
   createTempSSHKeyFile,
   removeTempKnownHostsFile,
   removeTempSSHKeyFile,
-} from '../shared-desktop/ssh/index.js';
+} from '../remote/ssh/index.js';
 import {
   executeRsync,
   type RsyncExecutorOptions,
@@ -12,18 +12,18 @@ import {
   sftpUploadFile,
   sftpUploadPaths,
   type SftpUploadSource,
-} from '../shared-desktop/sync/index.js';
-import type { SyncProgress } from '../shared-desktop/types/index.js';
+} from '../remote/sync/index.js';
+import type { SyncProgress } from '../remote/types/index.js';
 import type { Command } from 'commander';
 import ora from 'ora';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
-import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
-import { assertRepoMountedOnMachine } from '../services/repo-mount-check.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
-import { getSSHConnectionDetails } from '../services/ssh-connection.js';
+import { configService } from '../services/config/config-resources.js';
+import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
+import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import { getSSHConnectionDetails } from '../services/machine/ssh-connection.js';
 import { assertCommandPolicy, CMD, validateRemotePath } from '../utils/command-policy.js';
-import { auditService } from '../services/audit.js';
+import { auditService } from '../services/core/audit.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import {
@@ -37,9 +37,6 @@ import {
   validateUploadOptions,
   withTrailingSlash,
 } from './repo-sync-helpers.js';
-
-export { resolveUploadLocalPaths } from './repo-sync-helpers.js';
-export type { ResolvedLocalSource } from './repo-sync-helpers.js';
 
 async function ensureRenetProvisioned(machineName: string): Promise<void> {
   try {
@@ -149,19 +146,30 @@ async function prepareSyncConnection(
   await ensureRenetProvisioned(validated.machine);
 
   const repoConfig = await configService.getRepository(validated.repository);
-  if (repoConfig) {
-    await assertRepoMountedOnMachine(
-      validated.repository,
-      repoConfig.repositoryGuid,
-      validated.machine
-    );
-  }
 
-  await deployRepoKeyIfNeeded(validated.repository, validated.machine);
-
-  const details = await withSpinner(t('commands.sync.fetchingDetails'), () =>
-    getSSHConnectionDetails(validated.team!, validated.machine, validated.repository)
-  );
+  // Provisioning (above) must precede any renet use, so it stays a barrier.
+  // After it, these three steps are independent of one another: the mount
+  // check is a renet call over SSH, the repo-key deployment is an SFTP
+  // write, and the connection-detail lookup is a local config read. Run
+  // them concurrently instead of as three serial round-trips. The machine
+  // connection pool is refcounted and shares one SSH session across these
+  // leases, and each renet/SFTP exec opens its own ssh2 channel, so
+  // concurrent execution is safe. deployRepoKeyIfNeeded swallows its own
+  // errors (non-fatal); a failed mount check still aborts the whole setup
+  // because Promise.all rejects.
+  const [details] = await Promise.all([
+    withSpinner(t('commands.sync.fetchingDetails'), () =>
+      getSSHConnectionDetails(validated.team!, validated.machine, validated.repository)
+    ),
+    repoConfig
+      ? assertRepoMountedOnMachine(
+          validated.repository,
+          repoConfig.repositoryGuid,
+          validated.machine
+        )
+      : Promise.resolve(),
+    deployRepoKeyIfNeeded(validated.repository, validated.machine),
+  ]);
 
   const baseRemotePath =
     details.workingDirectory ?? `${details.datastore}/mounts/${validated.repository}`;

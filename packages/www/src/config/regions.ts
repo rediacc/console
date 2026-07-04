@@ -15,5 +15,3 @@ export const REGIONS: Region[] = regionsData.regions.map((r) => ({
   edgeDomain: r.edgeDomain,
   default: r.default,
 }));
-
-export const DEFAULT_REGION = REGIONS.find((r) => r.default) ?? REGIONS[0];
