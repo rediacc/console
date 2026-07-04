@@ -51,7 +51,15 @@ const grpcProtoStubPlugin = {
         module.exports = new Proxy(
           {},
           {
-            get() {
+            get(target, prop) {
+              // Thenable/symbol introspection (a loader probing '.then', or
+              // Symbol.toStringTag / inspect) must not receive the throwing
+              // class, or it gets called as a function and crashes at load.
+              // Real exporter classes are string-named exports, which still
+              // throw on construction.
+              if (prop === 'then' || typeof prop === 'symbol') {
+                return undefined;
+              }
               return class {
                 constructor() {
                   throw new Error(message);

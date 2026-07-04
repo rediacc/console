@@ -190,7 +190,6 @@ export function registerRepositoryCommands(config: Command, program: Command): v
 async function applyStorageRevealGate(storageName: string): Promise<void> {
   const { isAgentEnvironment } = await import('../utils/agent-guard.js');
   const { auditLog } = await import('../services/core/audit-log.js');
-  const { isatty } = await import('node:tty');
   const xdg = process.env.XDG_CONFIG_HOME ?? `${process.env.HOME ?? ''}/.config`;
   const auditDir = `${xdg}/rediacc`;
   const pointer = `/resources/storages/${storageName}/vaultContent`;
@@ -209,7 +208,9 @@ async function applyStorageRevealGate(storageName: string): Promise<void> {
     throw new ValidationError(t('errors.agent.showReveal'));
   }
 
-  if (!isatty(process.stdout.fd)) {
+  // Use process.stdout.isTTY, not isatty(fd): the fd can be undefined in
+  // worker threads or stream wrappers, where isatty() would throw a TypeError.
+  if (!process.stdout.isTTY) {
     throw new ValidationError(t('errors.agent.showRevealRequiresTty'));
   }
 
