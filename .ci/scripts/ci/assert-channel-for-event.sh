@@ -1,9 +1,9 @@
 #!/bin/bash
 # Assert that the resolved CHANNEL matches the GitHub event type.
 #
-# Guards against reintroducing the dryrun-<sha> fallthrough for merge_group
-# and schedule events (finding G). Any non-empty channel on those events
-# would resume producing ~5 GB of orphan R2 bytes per trigger.
+# Guards against reintroducing the dryrun-<sha> fallthrough for schedule
+# events (finding G). Any non-empty channel on those events would resume
+# producing ~5 GB of orphan R2 bytes per trigger.
 #
 # Usage: assert-channel-for-event.sh <event_name> <channel>
 
@@ -21,10 +21,10 @@ if [[ -z "$EVENT" ]]; then
 fi
 
 case "$EVENT" in
-    merge_group | schedule)
+    schedule)
         if [[ -n "$CHANNEL" ]]; then
             log_error "Channel must be empty for $EVENT events (got: $CHANNEL)."
-            log_error "  merge_group + schedule must not produce R2 uploads."
+            log_error "  schedule must not produce R2 uploads."
             exit 1
         fi
         ;;

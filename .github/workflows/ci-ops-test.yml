@@ -34,7 +34,7 @@ jobs:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           preset: ci
-          repositories: console,renet,account,sql,elite,homebrew-tap
+          repositories: console,renet,account,elite,homebrew-tap
 
       - name: Checkout with Submodules
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -108,6 +108,22 @@ jobs:
             '{id:"00000000-0000-0000-0000-000000000000",version:1,renetPath:$renet}' \
             > "$CONFIG_DIR/rediacc.json"
 
+      # VM base-image cache: warm runs restore the Ubuntu cloud image into the
+      # renet disks dir so `ops up` skips the network download entirely; the
+      # bounded downloader in renet is the cold-path fallback. The key rotates
+      # monthly because the noble/release URL is a moving pointer. The filename
+      # is hardcoded (pkg/infra/config/images.go, GetKVMImages[0]) because the
+      # macos leg has no submodule checkout for hashFiles() to read.
+      - name: Compute VM image cache key
+        id: vm-image-key
+        run: echo "key=vm-base-image-ubuntu-24.04-minimal-cloudimg-amd64-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - name: Restore VM base image cache
+        id: vm-image-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks/ubuntu-24.04-minimal-cloudimg-amd64.img
+          key: ${{ steps.vm-image-key.outputs.key }}
+
       - name: "Test: rdc ops setup"
         run: node packages/cli/dist/cli-bundle.cjs ops setup
 
@@ -157,6 +173,20 @@ jobs:
         run: |
           STATUS=$(sudo -E node packages/cli/dist/cli-bundle.cjs ops status -o json 2>/dev/null || echo '{"data":{"vms":[]}}')
           echo "$STATUS" | jq -e '.data.vms | length == 0' || echo "Warning: VMs still present after cleanup"
+
+      # `ops up` ran via sudo, so the downloaded image is root-owned; chown it
+      # so the (unprivileged) cache save can read it even when provisioning
+      # failed after the download.
+      - name: Fix VM image ownership for cache save
+        if: always()
+        run: sudo chown -R "$(whoami)" "$RUNNER_TEMP/renet/disks" 2>/dev/null || true
+
+      - name: Save VM base image cache
+        if: always() && steps.vm-image-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks/ubuntu-24.04-minimal-cloudimg-amd64.img
+          key: ${{ steps.vm-image-key.outputs.key }}
 
   # ── Full VM provisioning test (QEMU + HVF on macOS Intel) ────
   # macOS Intel runners support HVF (Hypervisor Framework), enabling
@@ -224,6 +254,18 @@ jobs:
           ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -q
           echo "SSH keypair generated for QEMU cloud-init injection"
 
+      # Same VM base-image cache as the linux leg (same amd64 image + key).
+      - name: Compute VM image cache key
+        id: vm-image-key
+        shell: bash
+        run: echo "key=vm-base-image-ubuntu-24.04-minimal-cloudimg-amd64-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - name: Restore VM base image cache
+        id: vm-image-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks/ubuntu-24.04-minimal-cloudimg-amd64.img
+          key: ${{ steps.vm-image-key.outputs.key }}
+
       - name: "Test: rdc ops check"
         shell: bash
         run: node packages/cli/dist/cli-bundle.cjs ops check -o json
@@ -285,6 +327,14 @@ jobs:
         run: |
           STATUS=$(node packages/cli/dist/cli-bundle.cjs ops status -o json 2>/dev/null || echo '{"data":{"vms":[]}}')
           echo "$STATUS" | jq -e '.data.vms | length == 0' || echo "Warning: VMs still present after cleanup"
+
+      # No chown needed: this leg runs ops up unprivileged.
+      - name: Save VM base image cache
+        if: always() && steps.vm-image-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks/ubuntu-24.04-minimal-cloudimg-amd64.img
+          key: ${{ steps.vm-image-key.outputs.key }}
 
   # ── Platform validation (no hardware acceleration, check only) ─
   # Downloads pre-built renet binaries from the build-renet job artifact.

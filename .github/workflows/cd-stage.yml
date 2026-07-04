@@ -3,9 +3,8 @@ name: CD - Stage Artifacts (Reusable)
 # Reusable workflow that stages release artifacts to production R2 + GHCR
 # and validates them pre-publish. Called from ci.yml for every event that
 # resolves to a non-empty channel (push -> edge, pull_request -> pr-N).
-# merge_group and schedule events get an empty channel and skip all upload
-# + GHCR retag steps; the builds + validation still run for merge-queue
-# coverage.
+# schedule events get an empty channel and skip all upload + GHCR retag
+# steps; the builds + validation still run for nightly coverage.
 # - Downloads all build artifacts
 # - Builds Linux packages (DEB/RPM) ONCE
 # - Generates CLI manifest ONCE
@@ -195,7 +194,7 @@ jobs:
           password: ${{ github.token }}
 
       - name: Stage Docker images
-        # Skip on empty channel (merge_group / schedule events). retag-image.sh
+        # Skip on empty channel (schedule events). retag-image.sh
         # uses `set -euo pipefail` and would fail loudly on an empty target
         # tag; gating here is cheaper than erroring the job for validation-
         # only runs that deliberately don't publish.
