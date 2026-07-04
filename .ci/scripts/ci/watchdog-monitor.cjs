@@ -263,11 +263,25 @@ module.exports = async ({ github, context, core }) => {
     core.setFailed('PIPELINE CANCELLED: ' + failureMsg);
   }
 
-  // Check for skip-cancellation and skip-auto-retry labels
+  // Check for skip-cancellation and skip-auto-retry labels.
+  // Labels are fetched LIVE from the API: the event payload's label list is
+  // frozen at the event that created the run, so a label added afterwards
+  // (e.g. no-cancel-failure added right before rerunning failed jobs) would
+  // be invisible in context.payload and silently ignored.
   let skipCancellationOnFailure = false;
   let skipAutoRetry = false;
   if (context.payload.pull_request) {
-    const labels = context.payload.pull_request.labels.map(l => l.name);
+    let labels = context.payload.pull_request.labels.map(l => l.name);
+    try {
+      const liveLabels = await github.rest.issues.listLabelsOnIssue({
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        issue_number: context.payload.pull_request.number
+      });
+      labels = liveLabels.data.map(l => l.name);
+    } catch (e) {
+      console.log(`Could not fetch live PR labels (${e.message}) - falling back to event payload labels`);
+    }
     skipCancellationOnFailure = labels.includes('no-cancel-failure');
     if (skipCancellationOnFailure) {
       console.log('Label "no-cancel-failure" detected - will not cancel on job failures');
