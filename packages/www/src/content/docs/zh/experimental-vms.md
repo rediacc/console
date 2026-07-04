@@ -4,7 +4,7 @@ description: 使用 rdc ops 在工作站上配置本地 VM 集群，用于开发
 category: Concepts
 order: 2
 language: zh
-sourceHash: df01dc35c82beb81
+sourceHash: aafca00c006ded0b
 ---
 
 # 实验性虚拟机
@@ -13,7 +13,7 @@ sourceHash: df01dc35c82beb81
 
 ## 前提条件
 
-`rdc ops` 需要**本地适配器**。云适配器不支持此功能。
+`rdc ops` 通过**本地适配器**运行。
 
 ```bash
 rdc ops check

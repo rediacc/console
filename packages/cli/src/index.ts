@@ -5,8 +5,8 @@ import {
   applyPendingUpdate,
   maybeSpawnBackgroundUpdate,
   runBackgroundUpdateWorker,
-} from './services/background-updater.js';
-import { telemetryService } from './services/telemetry.js';
+} from './services/update/background-updater.js';
+import { telemetryService } from './services/telemetry/telemetry.js';
 import { handleError } from './utils/errors.js';
 import { runWarmup } from './warmup.js';
 

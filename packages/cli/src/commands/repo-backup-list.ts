@@ -1,6 +1,6 @@
 import { t } from '../i18n/index.js';
-import { localExecutorService } from '../services/local-executor.js';
-import { outputService } from '../services/output.js';
+import { localExecutorService } from '../services/executor/local-executor.js';
+import { outputService } from '../services/core/output.js';
 import { ValidationError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
@@ -136,7 +136,7 @@ function formatModified(iso: string | undefined): string {
 }
 
 export async function renderBackupList(entries: TaggedBackupEntry[]): Promise<void> {
-  const { formatSizeBytes } = await import('@rediacc/shared/queue-vault');
+  const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
   const resolve = createGuidResolver(await loadGuidMap());
 
   const rows = entries

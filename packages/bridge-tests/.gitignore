@@ -2,6 +2,14 @@
 reports/
 test-results/
 
+# Accidental tsc emit into the source tree (sources are .ts only)
+src/**/*.js
+src/**/*.d.ts
+src/**/*.map
+tests/**/*.js
+tests/**/*.d.ts
+tests/**/*.map
+
 # Environment
 .env
 

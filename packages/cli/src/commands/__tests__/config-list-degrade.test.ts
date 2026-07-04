@@ -10,7 +10,7 @@ const { mockList, mockLoad, mockPrint, mockError } = vi.hoisted(() => ({
   mockError: vi.fn(),
 }));
 
-vi.mock('../../services/config-resources.js', () => ({
+vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     list: mockList,
     getCurrentName: () => 'good',
@@ -23,7 +23,7 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
   },
 }));
 
-vi.mock('../../services/output.js', () => ({
+vi.mock('../../services/core/output.js', () => ({
   outputService: {
     print: mockPrint,
     info: vi.fn(),

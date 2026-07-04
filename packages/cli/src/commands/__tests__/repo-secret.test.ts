@@ -12,7 +12,7 @@ const mockGetRepositoryKey = vi.hoisted(() => vi.fn());
 const mockGetCurrent = vi.hoisted(() => vi.fn());
 const mockGetResourceState = vi.hoisted(() => vi.fn());
 
-vi.mock('../../services/config-resources.js', () => ({
+vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getRepository: mockGetRepository,
     getRepositoryKey: mockGetRepositoryKey,
@@ -29,7 +29,7 @@ const mockListRepositorySecretKeyModes = vi.hoisted(() => vi.fn());
 const mockWriteRepositorySecret = vi.hoisted(() => vi.fn());
 const mockDeleteRepositorySecret = vi.hoisted(() => vi.fn());
 
-vi.mock('../../services/repo-secrets-store.js', () => ({
+vi.mock('../../services/repo/repo-secrets-store.js', () => ({
   readRepositorySecret: mockReadRepositorySecret,
   listRepositorySecretKeyModes: mockListRepositorySecretKeyModes,
   writeRepositorySecret: mockWriteRepositorySecret,
@@ -39,12 +39,12 @@ vi.mock('../../services/repo-secrets-store.js', () => ({
 // Capture outputService.print and success calls for assertion
 const mockPrint = vi.hoisted(() => vi.fn());
 const mockSuccess = vi.hoisted(() => vi.fn());
-vi.mock('../../services/output.js', () => ({
+vi.mock('../../services/core/output.js', () => ({
   outputService: { print: mockPrint, info: vi.fn(), warn: vi.fn(), success: mockSuccess },
 }));
 
 // Audit log: silence
-vi.mock('../../services/audit-log.js', () => ({
+vi.mock('../../services/core/audit-log.js', () => ({
   auditLog: vi.fn(),
 }));
 

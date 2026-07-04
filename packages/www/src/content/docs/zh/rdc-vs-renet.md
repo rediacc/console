@@ -4,8 +4,8 @@ description: "何时使用 rdc，何时使用 renet。"
 category: "Concepts"
 order: 1
 language: zh
-sourceHash: "2ccc8590bc6f67c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "ea6ff6dd3b8f5d5b"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # rdc vs renet
@@ -75,7 +75,7 @@ rdc ops ssh --vm-id 1 -c hostname  # 在 bridge VM 上执行命令
 rdc ops down               # 销毁集群
 ```
 
-> 需要本地适配器。云适配器不支持此功能。
+> 通过本地适配器运行。
 
 这些命令在本地运行 `renet`（不通过 SSH）。完整文档请参阅[实验性虚拟机](/zh/docs/experimental-vms)。
 

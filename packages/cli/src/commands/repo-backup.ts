@@ -1,11 +1,14 @@
 import { Option, type Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
-import { localExecutorService, type LocalExecuteResult } from '../services/local-executor.js';
-import { outputService } from '../services/output.js';
-import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
-import { probeRepoMounted } from '../services/repo-mount-check.js';
-import { getSubscriptionTokenState } from '../services/subscription-auth.js';
+import { configService } from '../services/config/config-resources.js';
+import {
+  localExecutorService,
+  type LocalExecuteResult,
+} from '../services/executor/local-executor.js';
+import { outputService } from '../services/core/output.js';
+import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import { probeRepoMounted } from '../services/repo/repo-mount-check.js';
+import { getSubscriptionTokenState } from '../services/account/subscription-auth.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { resolveRemoteName } from '../utils/remote-resolve.js';
@@ -211,7 +214,7 @@ export async function postPushDeploy(
 }
 
 /** Attach CoW seed lineage to params if available. */
-export function attachSeedLineage(
+function attachSeedLineage(
   params: Record<string, unknown>,
   repoConfig: { parentGuid?: string; grandGuid?: string }
 ): void {
@@ -551,7 +554,7 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
       }) => {
         try {
           const machine = options.machine;
-          const { pushBackupSchedule } = await import('../services/backup-schedule.js');
+          const { pushBackupSchedule } = await import('../services/backup/backup-schedule.js');
           await pushBackupSchedule(machine, {
             debug: options.debug,
             dryRun: options.dryRun,

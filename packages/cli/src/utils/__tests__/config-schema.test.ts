@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../services/config-resources.js', () => ({
+vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     listStorages: vi.fn(),
     listMachines: vi.fn(),
@@ -14,7 +14,7 @@ vi.mock('../../i18n/index.js', () => ({
   },
 }));
 
-import { configService } from '../../services/config-resources.js';
+import { configService } from '../../services/config/config-resources.js';
 import type { RdcConfig } from '../../types/index.js';
 import {
   assertMachineExists,

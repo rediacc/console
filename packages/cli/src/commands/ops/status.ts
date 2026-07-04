@@ -1,8 +1,8 @@
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
-import type { OpsBackend } from '../../services/ops-executor.js';
-import { opsExecutorService } from '../../services/ops-executor.js';
-import { outputService } from '../../services/output.js';
+import type { OpsBackend } from '../../services/executor/ops-executor.js';
+import { opsExecutorService } from '../../services/executor/ops-executor.js';
+import { outputService } from '../../services/core/output.js';
 import type { OutputFormat } from '../../types/index.js';
 import { handleError } from '../../utils/errors.js';
 

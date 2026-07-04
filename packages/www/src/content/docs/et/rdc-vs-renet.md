@@ -4,8 +4,8 @@ description: "Millal kasutada rdc-d ja millal renet'i."
 category: "Concepts"
 order: 1
 language: et
-sourceHash: "2ccc8590bc6f67c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "ea6ff6dd3b8f5d5b"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # rdc vs renet
@@ -75,7 +75,7 @@ rdc ops ssh --vm-id 1 -c hostname  # Käivita käsk silla VM-is
 rdc ops down               # Hävita klaster
 ```
 
-> Nõuab lokaalset adapterit. Pilveadapteriga pole saadaval.
+> Töötab lokaalse adapteri kaudu.
 
 Need käsud käivitavad `renet`'i lokaalselt (mitte üle SSH). Täieliku dokumentatsiooni leiad [Eksperimentaalsete VM-ide](/et/docs/experimental-vms) lehelt.
 

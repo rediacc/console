@@ -7,18 +7,18 @@
  * top-level object that parses. Field names match the Go `json:` tags.
  */
 
-export interface IptablesChain {
+interface IptablesChain {
   name: string;
   table: string;
   network_id: number;
 }
-export interface AuthKey {
+interface AuthKey {
   path: string;
   home_user: string;
   repo_name: string;
   line_num: number;
 }
-export interface StaleUnit {
+interface StaleUnit {
   path: string;
   network_id: number;
 }

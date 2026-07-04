@@ -68,20 +68,20 @@ const { mockLocalResourceStateLoad, mockRemoteResourceStateLoad } = vi.hoisted((
   mockRemoteResourceStateLoad: vi.fn(),
 }));
 
-vi.mock('../resource-state.js', () => ({
+vi.mock('../config/resource-state.js', () => ({
   LocalResourceState: { load: mockLocalResourceStateLoad },
   RemoteResourceState: { load: mockRemoteResourceStateLoad },
 }));
 
 // Mock master-password resolver (required when masterPassword is set)
-vi.mock('../master-password.js', () => ({
+vi.mock('../core/master-password.js', () => ({
   requireMasterPassword: vi.fn().mockResolvedValue('test-password'),
 }));
 
 // ─── Tests ───────────────────────────────────────────────────────────────
 
 describe('ConfigServiceBase remote integration', () => {
-  let ConfigServiceBase: typeof import('../config-base.js').ConfigServiceBase;
+  let ConfigServiceBase: typeof import('../config/config-base.js').ConfigServiceBase;
   let service: InstanceType<typeof ConfigServiceBase>;
 
   const localConfig = {
@@ -120,7 +120,7 @@ describe('ConfigServiceBase remote integration', () => {
     vi.clearAllMocks();
 
     // Fresh import each test to reset module-level state
-    const mod = await import('../config-base.js');
+    const mod = await import('../config/config-base.js');
     ConfigServiceBase = mod.ConfigServiceBase;
     service = new ConfigServiceBase();
 

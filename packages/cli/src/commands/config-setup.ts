@@ -1,13 +1,13 @@
 import { execFileSync } from 'node:child_process';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
-import { SFTPClient } from '../shared-desktop/sftp/index.js';
+import { SFTPClient } from '../remote/sftp/index.js';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
-import { pushInfraConfig } from '../services/infra-provision.js';
-import { outputService } from '../services/output.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
-import { deployAllRepoKeys } from '../services/repo-key-deployment.js';
+import { configService } from '../services/config/config-resources.js';
+import { pushInfraConfig } from '../services/provision/infra-provision.js';
+import { outputService } from '../services/core/output.js';
+import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import { deployAllRepoKeys } from '../services/repo/repo-key-deployment.js';
 import type {
   CloudProviderConfig,
   MachineConfig,

@@ -13,10 +13,10 @@ import {
   getReleasesBaseUrl,
   performUpdate,
   resolveChannel,
-} from '../updater.js';
-import { loadServerConfig } from '../subscription-auth.js';
+} from '../update/updater.js';
+import { loadServerConfig } from '../account/subscription-auth.js';
 
-vi.mock('../subscription-auth.js', () => ({
+vi.mock('../account/subscription-auth.js', () => ({
   loadServerConfig: vi.fn(),
 }));
 
@@ -31,7 +31,7 @@ vi.mock('../../utils/platform.js', () => ({
   STAGED_UPDATE_DIR: '/home/testuser/.cache/rediacc/staged-update',
 }));
 
-vi.mock('../update-state.js', () => ({
+vi.mock('../update/update-state.js', () => ({
   getStagedBinaryPath: vi
     .fn()
     .mockReturnValue('/home/testuser/.cache/rediacc/staged-update/rdc-0.5.0'),
@@ -83,7 +83,7 @@ const mockTelemetry = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('../telemetry.js', () => mockTelemetry);
+vi.mock('../telemetry/telemetry.js', () => mockTelemetry);
 
 type EventHandler = (...args: unknown[]) => void;
 

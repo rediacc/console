@@ -445,6 +445,10 @@
         "remove": {
           "description": "Mevcut yapılandırmadan depolamayı kaldır",
           "success": "\"{{name}}\" depolama alanı kaldırıldı"
+        },
+        "show": {
+          "description": "Bir depolamanın sağlayıcısını ve yapılandırmasını göster",
+          "optionReveal": "Depolama yapılandırmasını açık metin olarak göster (yalnızca etkileşimli TTY; denetlenir)"
         }
       }
     },
@@ -1350,9 +1354,6 @@
       },
       "rename": {
         "description": "Bir depolama sağlayıcısını yeniden adlandır"
-      },
-      "vault": {
-        "description": "Depolama kasası yönetimi (yalnızca bulut adaptörü)"
       }
     },
     "subscription": {

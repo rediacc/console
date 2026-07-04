@@ -19,19 +19,19 @@
 
 import { createHash } from 'node:crypto';
 import type { Command } from 'commander';
-import { auditLog, type AuditEventDraft } from '../services/audit-log.js';
-import { configService } from '../services/config-resources.js';
+import { auditLog, type AuditEventDraft } from '../services/core/audit-log.js';
+import { configService } from '../services/config/config-resources.js';
 import {
   evaluateMutations,
   PreconditionMismatchError,
   type MutationEntry,
-} from '../services/mutation-gate.js';
+} from '../services/core/mutation-gate.js';
 import {
   deleteRepositorySecret,
   listRepositorySecretKeyModes,
   readRepositorySecret,
   writeRepositorySecret,
-} from '../services/repo-secrets-store.js';
+} from '../services/repo/repo-secrets-store.js';
 import { canonicalJson, shortFingerprint } from '../schema/walker.js';
 import {
   getOutputFormat,
@@ -39,7 +39,7 @@ import {
   PreconditionValidationError,
   ValidationError,
 } from '../utils/errors.js';
-import { outputService } from '../services/output.js';
+import { outputService } from '../services/core/output.js';
 import { t } from '../i18n/index.js';
 import type { NextAction } from '../types/errors.js';
 import type { SecretMode } from '../types/index.js';

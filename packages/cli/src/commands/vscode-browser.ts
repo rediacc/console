@@ -3,32 +3,32 @@
  * sandbox and tunnel it to localhost. No local VS Code install needed.
  */
 
-import { testSSHConnectivity } from '../shared-desktop/ssh/index.js';
-import {
-  getServerProvider,
-  type VSCodeServerProvider,
-} from '../shared-desktop/vscode-server/index.js';
+import { testSSHConnectivity } from '../remote/ssh/index.js';
+import { getServerProvider, type VSCodeServerProvider } from '../remote/vscode-server/index.js';
 import { t } from '../i18n/index.js';
-import { outputService } from '../services/output.js';
+import { outputService } from '../services/core/output.js';
 import {
   findFreeLocalPort,
   openRepoTunnel,
   type TunnelHandle,
-} from '../services/repo-ssh-tunnel.js';
+} from '../services/repo/repo-ssh-tunnel.js';
 import {
   detectServerPlatform,
   ensureServerInstalled,
   launchServer,
   type ServerLaunchResult,
   waitForHttpReady,
-} from '../services/vscode-server-remote.js';
+} from '../services/core/vscode-server-remote.js';
 import { ValidationError } from '../types/errors.js';
 import { openBrowser } from '../utils/open-browser.js';
-import { configService } from '../services/config-resources.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
-import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
-import { assertRepoMountedOnMachine } from '../services/repo-mount-check.js';
-import { type ConnectionDetails, getSSHConnectionDetails } from '../services/ssh-connection.js';
+import { configService } from '../services/config/config-resources.js';
+import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
+import {
+  type ConnectionDetails,
+  getSSHConnectionDetails,
+} from '../services/machine/ssh-connection.js';
 import { withSpinner } from '../utils/spinner.js';
 
 export interface VSCodeBrowserOptions {

@@ -65,7 +65,7 @@ interface OptionDef {
  * Convert a Commander option long name to a Zod schema key.
  * --dry-run → dry_run, --machine → machine, --to-machine → to_machine
  */
-export function flagToSchemaKey(long: string): string {
+function flagToSchemaKey(long: string): string {
   return long.replace(/^--/, '').replaceAll('-', '_');
 }
 

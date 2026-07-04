@@ -341,6 +341,10 @@
         "list": {
           "description": "List storages in the current config",
           "noStorages": "No storages configured. Import with: rdc config storage import --file <path>"
+        },
+        "show": {
+          "description": "Show a storage's provider and configuration",
+          "optionReveal": "Reveal the storage configuration in plaintext (interactive TTY only; audited)"
         }
       },
       "infra": {
@@ -1316,7 +1320,7 @@
     },
     "storage": {
       "descriptionShort": "Manage storage providers and browse remote files",
-      "description": "Manage remote backup storage providers (S3, rclone-compatible). CRUD operations (list, create, rename, delete), vault configuration, browse remote files, and prune orphaned backups.",
+      "description": "Manage remote backup storage providers (S3, rclone-compatible). CRUD operations (list, create, rename, delete), browse remote files, and prune orphaned backups.",
       "list": {
         "description": "List storage providers",
         "fetching": "Fetching storage providers..."
@@ -1329,9 +1333,6 @@
       },
       "delete": {
         "description": "Delete a storage provider"
-      },
-      "vault": {
-        "description": "Storage vault management (cloud adapter only)"
       },
       "browse": {
         "description": "Browse files in a storage system",

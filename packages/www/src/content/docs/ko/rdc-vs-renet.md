@@ -4,8 +4,8 @@ description: "rdc와 renet을 언제 사용할지 알아봅니다."
 category: "Concepts"
 order: 1
 language: ko
-sourceHash: "2ccc8590bc6f67c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "ea6ff6dd3b8f5d5b"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # rdc vs renet
@@ -75,7 +75,7 @@ rdc ops ssh --vm-id 1 -c hostname  # 브리지 VM에서 명령 실행
 rdc ops down               # 클러스터 삭제
 ```
 
-> 로컬 어댑터가 필요합니다. 클라우드 어댑터에서는 사용할 수 없습니다.
+> 로컬 어댑터를 통해 동작합니다.
 
 이 명령들은 `renet`을 SSH가 아닌 로컬에서 실행합니다. 전체 문서는 [실험적 VM](/ko/docs/experimental-vms)을 참조하세요.
 

@@ -1,6 +1,6 @@
 import React from 'react';
 
-export interface PlatformTab<T extends string> {
+interface PlatformTab<T extends string> {
   key: T;
   label: string;
   icon?: React.FC;

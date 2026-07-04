@@ -31,7 +31,7 @@ const VIDEO_CDN_BASE_URL = process.env.PUBLIC_VIDEO_CDN_BASE_URL ?? '';
  */
 export const VIDEO_LANGS = ['en', 'de', 'es', 'fr', 'it', 'pt', 'ru', 'ja', 'ko', 'zh'] as const;
 
-export type VideoLang = (typeof VIDEO_LANGS)[number];
+type VideoLang = (typeof VIDEO_LANGS)[number];
 
 export interface SolutionVideo {
   landscape: string;

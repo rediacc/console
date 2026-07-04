@@ -2,12 +2,12 @@ import {
   listSSHConfigEntries,
   removePersistedKeys,
   removeSSHConfigEntry,
-} from '../../shared-desktop/vscode/index.js';
+} from '../../remote/vscode/index.js';
 import type { Command } from 'commander';
 import { t } from '../../i18n/index.js';
-import { configService } from '../../services/config-resources.js';
-import { localExecutorService } from '../../services/local-executor.js';
-import { outputService } from '../../services/output.js';
+import { configService } from '../../services/config/config-resources.js';
+import { localExecutorService } from '../../services/executor/local-executor.js';
+import { outputService } from '../../services/core/output.js';
 import { getOutputFormat, handleError } from '../../utils/errors.js';
 import { renderLocalExecutionFailure } from '../../utils/local-execution-failures.js';
 import { assertMachineExists } from '../_validate.js';
@@ -192,7 +192,7 @@ function filterMountedReposForDeletion<T extends MountableRepo>(
  * archive grace period).
  */
 async function pruneUnknownRepos(machineName: string, options: PruneOptions): Promise<void> {
-  const { fetchMachineStatus } = await import('../../services/machine-status.js');
+  const { fetchMachineStatus } = await import('../../services/machine/machine-status.js');
   const { classifyRepoType } = await import('../../utils/repo-classify.js');
 
   outputService.info(t('commands.machine.prune.unknownStarting', { machine: machineName }));
@@ -256,10 +256,12 @@ async function pruneUnknownRepos(machineName: string, options: PruneOptions): Pr
 /** Phase 2: Prune orphaned repos not in any config. */
 async function pruneOrphanedRepos(machineName: string, options: PruneOptions): Promise<void> {
   const { analyzePrune, printPruneAnalysis, purgeExpiredArchives } = await import(
-    '../../services/prune.js'
+    '../../services/repo/prune.js'
   );
-  const { fetchMachineStatus } = await import('../../services/machine-status.js');
-  const { getRepositories } = await import('@rediacc/shared/queue-vault/data/list-types.generated');
+  const { fetchMachineStatus } = await import('../../services/machine/machine-status.js');
+  const { getRepositories } = await import(
+    '@rediacc/shared/renet-contract/data/list-types.generated'
+  );
 
   outputService.info(t('commands.machine.prune.orphanedReposStarting', { machine: machineName }));
 

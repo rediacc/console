@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1642,
+    "keyCount": 1643,
     "sourceCommit": "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
   },
   "hashes": {
@@ -306,6 +306,8 @@
     "commands.config.storage.list.noStorages": "c4d8ea9c",
     "commands.config.storage.remove.description": "6f6b61f9",
     "commands.config.storage.remove.success": "3da30aaa",
+    "commands.config.storage.show.description": "573fcab9",
+    "commands.config.storage.show.optionReveal": "9f8b7510",
     "commands.datastore.description": "41f0d47e",
     "commands.datastore.descriptionShort": "7b85db71",
     "commands.datastore.fork.completed": "d56413f1",
@@ -986,7 +988,7 @@
     "commands.storage.browse.pathOption": "e8e82f3a",
     "commands.storage.create.description": "e969100a",
     "commands.storage.delete.description": "5b4efd4a",
-    "commands.storage.description": "4968a981",
+    "commands.storage.description": "363fa236",
     "commands.storage.descriptionShort": "972e3e53",
     "commands.storage.list.description": "369c2340",
     "commands.storage.list.fetching": "adff3143",
@@ -1000,7 +1002,6 @@
     "commands.storage.prune.machineOption": "e6721e06",
     "commands.storage.prune.noBackups": "38474651",
     "commands.storage.rename.description": "28796e6f",
-    "commands.storage.vault.description": "fd0be82f",
     "commands.subscription.activation.description": "192e58ac",
     "commands.subscription.activation.status.activations": "f14b27a7",
     "commands.subscription.activation.status.active": "da191e37",

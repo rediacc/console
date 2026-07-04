@@ -1,19 +1,19 @@
 import type {
   ContainerInfo,
   ListResult,
-} from '@rediacc/shared/queue-vault/data/list-types.generated';
-import { getContainers } from '@rediacc/shared/queue-vault/data/list-types.generated';
-import { testSSHConnectivity } from '../shared-desktop/ssh/index.js';
+} from '@rediacc/shared/renet-contract/data/list-types.generated';
+import { getContainers } from '@rediacc/shared/renet-contract/data/list-types.generated';
+import { testSSHConnectivity } from '../remote/ssh/index.js';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { outputService } from '../services/output.js';
-import { configService } from '../services/config-resources.js';
-import { fetchMachineStatus } from '../services/machine-status.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
-import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
-import { assertRepoMountedOnMachine } from '../services/repo-mount-check.js';
-import { openRepoTunnel } from '../services/repo-ssh-tunnel.js';
-import { getSSHConnectionDetails } from '../services/ssh-connection.js';
+import { outputService } from '../services/core/output.js';
+import { configService } from '../services/config/config-resources.js';
+import { fetchMachineStatus } from '../services/machine/machine-status.js';
+import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
+import { openRepoTunnel } from '../services/repo/repo-ssh-tunnel.js';
+import { getSSHConnectionDetails } from '../services/machine/ssh-connection.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';

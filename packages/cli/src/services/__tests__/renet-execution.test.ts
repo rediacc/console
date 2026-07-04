@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildLocalVault } from '../renet-execution.js';
+import { buildLocalVault } from '../renet/renet-execution.js';
 
 /**
  * Creates a minimal set of options for buildLocalVault.

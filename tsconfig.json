@@ -14,10 +14,10 @@
     "sourceMap": true,
     "composite": true,
     "incremental": true,
-    "baseUrl": ".",
+    "types": ["node"],
     "paths": {
-      "@rediacc/shared": ["packages/shared/src/index"],
-      "@rediacc/shared/*": ["packages/shared/src/*"]
+      "@rediacc/shared": ["./packages/shared/src/index"],
+      "@rediacc/shared/*": ["./packages/shared/src/*"]
     }
   },
   "references": [

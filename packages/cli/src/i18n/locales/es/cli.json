@@ -445,6 +445,10 @@
         "remove": {
           "description": "Eliminar un almacenamiento de la configuración actual",
           "success": "Almacenamiento \"{{name}}\" eliminado"
+        },
+        "show": {
+          "description": "Mostrar el proveedor y la configuración de un almacenamiento",
+          "optionReveal": "Mostrar la configuración de almacenamiento en texto claro (solo TTY interactivo; auditado)"
         }
       }
     },
@@ -1350,9 +1354,6 @@
       },
       "rename": {
         "description": "Renombrar un proveedor de almacenamiento"
-      },
-      "vault": {
-        "description": "Gestión del almacén de almacenamiento (solo adaptador cloud)"
       }
     },
     "subscription": {

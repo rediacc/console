@@ -73,7 +73,7 @@ rdc ops ssh --vm-id 1 -c hostname  # Run a command on bridge VM
 rdc ops down               # Destroy cluster
 ```
 
-> Requires the local adapter. Not available with the cloud adapter.
+> Runs through the local adapter.
 
 These commands run `renet` locally (not over SSH). See [Experimental VMs](/en/docs/experimental-vms) for full documentation.
 

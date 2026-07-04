@@ -71,10 +71,10 @@ rdc agent schema --command "machine query"
 ### Architecture
 - **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
 - **Config**: CLI config at ~/.config/rediacc/rediacc.json. Auto-created on first use.
-- Two adapters: **local** (default, SSH-based) and **cloud** (experimental, API-based)
+- One adapter: **local** (SSH-based)
 
 ### Rules
-- Use "local adapter" / "cloud adapter", never say "modes"
+- Say "local adapter", never "local mode"
 - S3 is a resource state backend, not a separate adapter
 - Default config is created automatically on first use, do not tell users to run `rdc config init`
 - Always use `--output json` when parsing output programmatically

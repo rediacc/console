@@ -445,6 +445,10 @@
         "remove": {
           "description": "Remover um armazenamento da configuração actual",
           "success": "Armazenamento \"{{name}}\" removido"
+        },
+        "show": {
+          "description": "Mostrar o fornecedor e a configuração de um armazenamento",
+          "optionReveal": "Mostrar a configuração de armazenamento em texto simples (apenas TTY interactivo; auditado)"
         }
       }
     },
@@ -1331,7 +1335,7 @@
       "delete": {
         "description": "Eliminar um fornecedor de armazenamento"
       },
-      "description": "Gerir fornecedores de armazenamento de cópia de segurança remota (S3, compatíveis com rclone). Operações CRUD (listar, criar, renomear, eliminar), configuração do vault, navegação em ficheiros remotos e limpeza de cópias de segurança órfãs.",
+      "description": "Gerir fornecedores de armazenamento de cópia de segurança remota (S3, compatíveis com rclone). Operações CRUD (listar, criar, renomear, eliminar), navegação em ficheiros remotos e limpeza de cópias de segurança órfãs.",
       "descriptionShort": "Gerir fornecedores de armazenamento e navegar em ficheiros remotos",
       "list": {
         "description": "Listar fornecedores de armazenamento",
@@ -1350,9 +1354,6 @@
       },
       "rename": {
         "description": "Renomear um fornecedor de armazenamento"
-      },
-      "vault": {
-        "description": "Gestão do vault de armazenamento (apenas adaptador cloud)"
       }
     },
     "subscription": {

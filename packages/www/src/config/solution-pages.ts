@@ -480,6 +480,3 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     ],
   },
 };
-
-export type SolutionPageSlug = keyof typeof SOLUTION_PAGES;
-export const SOLUTION_PAGE_SLUGS = Object.keys(SOLUTION_PAGES);

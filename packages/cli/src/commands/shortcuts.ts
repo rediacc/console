@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { localExecutorService } from '../services/local-executor.js';
-import { outputService } from '../services/output.js';
+import { localExecutorService } from '../services/executor/local-executor.js';
+import { outputService } from '../services/core/output.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
@@ -16,7 +16,7 @@ interface RunLocalOptions {
   skipRouterRestart?: boolean;
 }
 
-/** Resolve machine name and parse+validate function params (shared by local and S3 modes). */
+/** Resolve machine name and parse+validate function params (shared by the run-local helpers). */
 function resolveRunParams(
   functionName: string,
   options: RunLocalOptions

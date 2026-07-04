@@ -2,8 +2,8 @@ import {
   getValidationErrors,
   isBridgeFunction,
   safeValidateFunctionParams,
-} from '@rediacc/shared/queue-vault';
-import { FUNCTION_DEFINITIONS } from '@rediacc/shared/queue-vault/data/definitions';
+} from '@rediacc/shared/renet-contract';
+import { FUNCTION_DEFINITIONS } from '@rediacc/shared/renet-contract/data/definitions';
 import { t } from '../i18n/index.js';
 import { ValidationError } from '../utils/errors.js';
 

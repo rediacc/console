@@ -4,7 +4,7 @@ description: Lokale VM-Cluster für Entwicklung und Tests mit rdc ops bereitstel
 category: Concepts
 order: 2
 language: de
-sourceHash: df01dc35c82beb81
+sourceHash: aafca00c006ded0b
 ---
 
 # Experimentelle VMs
@@ -13,7 +13,7 @@ Lokale VM-Cluster auf Ihrer Workstation für Entwicklung und Tests bereitstellen
 
 ## Voraussetzungen
 
-`rdc ops` erfordert den **lokalen Adapter**. Es ist nicht mit dem Cloud-Adapter verfügbar.
+`rdc ops` läuft über den **lokalen Adapter**.
 
 ```bash
 rdc ops check

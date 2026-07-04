@@ -19,7 +19,7 @@
  * walker expands them against live config values at lookup time.
  */
 
-export type SensitivityKind =
+type SensitivityKind =
   | 'secret' // tokens, API keys, passwords — encrypt-at-rest
   | 'credential' // SSH keys, passphrases, certificates — encrypt-at-rest
   | 'pii' // emails, IPs, usernames — redact but don't encrypt

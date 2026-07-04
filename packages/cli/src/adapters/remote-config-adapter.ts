@@ -21,7 +21,7 @@ import {
 } from '@rediacc/shared/config-crypto';
 import type { RemoteConfig, RdcConfig } from '../types/index.js';
 import type { SecureStorage } from '../utils/secure-storage.js';
-import { configServerFetch, ConfigServerError } from '../services/config-server-client.js';
+import { configServerFetch, ConfigServerError } from '../services/config/config-server-client.js';
 import { t } from '../i18n/index.js';
 import type { RemoteTokenStorage } from './remote-token-storage.js';
 
@@ -57,7 +57,7 @@ export class RemoteTokenExpiredError extends Error {
   }
 }
 
-export class RemoteVersionConflictError extends Error {
+class RemoteVersionConflictError extends Error {
   constructor(serverVersion: number) {
     super(
       `Remote config updated by another device (v${serverVersion}). ` +

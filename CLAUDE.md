@@ -91,21 +91,28 @@ rdc --config production machine query --name prod-1  # Use specific config
 ```
 packages/cli/src/
 ├── commands/           # Command implementations
-│   ├── machine/        # machine subcommands (query with --system/--containers/--repositories/--services filters)
+│   ├── machine/        # machine subcommands (query filters, provision.ts = OpenTofu VM provision/destroy)
 │   ├── config.ts        # Config management (replaces context)
 │   ├── term.ts          # SSH terminal
 │   ├── sync.ts          # File sync via rsync
 │   ├── vscode.ts        # VS Code Remote SSH
 │   └── repo.ts          # Repository management
-├── providers/          # State provider (local, config-file backed)
-│   ├── index.ts        # Factory - getStateProvider()
-│   └── local-state-provider.ts
-├── shared-desktop/     # SSH, SFTP, rsync, terminal, VS Code server modules
-├── services/           # Business logic
-│   ├── config-base.ts      # Config service base
-│   ├── config-resources.ts # Config resource CRUD
-│   ├── machine-status.ts   # SSH + renet list all
-│   └── renet-execution.ts  # Remote renet provisioning
+├── remote/             # SSH, SFTP, rsync, terminal, VS Code server modules (was shared-desktop/)
+├── services/           # Business logic, grouped by domain (concrete modules, no barrels)
+│   ├── state.ts          # getStateProvider() - local, config-file-backed state provider
+│   ├── account/          # account-client, license, cert-cache, subscription-{auth,device-auth}
+│   ├── backup/           # backup-schedule{,-execute,-reconcile,-unit-generator}, backup-env-file
+│   ├── config/           # config-base, config-resources{,-resolve}, config-{prune,refs-prune,network-id,server-client}, resource-state
+│   ├── core/             # cross-cutting: audit{,-log}, output, mutation-gate, master-password, file-lock, embedded-assets, context-language, vscode-server-remote
+│   ├── executor/         # local-executor, ops-executor
+│   ├── machine/          # machine-connection, machine-status, ssh-connection
+│   ├── provision/        # infra-provision, cloudflare-dns, region-discovery
+│   ├── renet/            # renet-execution, renet-provisioner, renet-binary-transfer, renet-license-contract
+│   ├── repo/             # repo-{key-deployment,mount-check,secrets-store,ssh-tunnel}, prune, storage-browser
+│   ├── telemetry/        # telemetry{,-attrs,-setup}, otlp-credentials, profiling
+│   ├── tofu/             # OpenTofu cloud-VM provisioning engine
+│   ├── update/           # updater, background-updater, update-state
+│   └── __tests__/        # unit tests (central, mirrors commands/__tests__)
 └── utils/
     └── commandFactory.ts  # Generic CRUD command builder
 ```
@@ -149,7 +156,7 @@ translation.** Key rules:
 
 **This monorepo uses npm, not pnpm.**
 
-`.npmrc` enforces supply-chain hardening: `ignore-scripts=true`, `allow-git=none`, `minimum-release-age=1440`. The `ignore-scripts` flag blocks all dependency lifecycle scripts; after every `npm install` or `npm ci`, run `npm run install:natives` to compile the four packages that genuinely need scripts (node-pty, ssh2, cpu-features, esbuild). The script passes `--ignore-scripts=false` explicitly because `npm rebuild` otherwise silently respects the global flag and does nothing. Source of truth: `.ci/scripts/quality/check-npmrc.sh`.
+`.npmrc` enforces supply-chain hardening: `ignore-scripts=true`, `allow-git=none`, `minimum-release-age=1440`. The `ignore-scripts` flag blocks all dependency lifecycle scripts; after every `npm install` or `npm ci`, run `npm run install:natives` to compile the three packages that genuinely need scripts (ssh2, cpu-features, esbuild). The script passes `--ignore-scripts=false` explicitly because `npm rebuild` otherwise silently respects the global flag and does nothing. Source of truth: `.ci/scripts/quality/check-npmrc.sh`.
 
 ```bash
 # Install dependencies
@@ -171,6 +178,17 @@ cd packages/www && npm run build
 cd packages/www && npm run dev
 ```
 
+### `./rdc.sh` targets production by default (`RDC_DEV=1` for local dev)
+
+Bare `./rdc.sh` behaves like an installed `rdc`: real config and token in
+`~/.config/rediacc`, account server via `server.json` → `eu.rediacc.com`. Local
+development against the dev gateway is an explicit opt-in — `RDC_DEV=1 ./rdc.sh …`
+(or `./rdc.sh --dev …`), which uses the `.rdc-dev/` token file and the gateway URL
+from `private/account/.env`, and fails fast if `./run.sh account dev` isn't
+running. `RDC_BENCH=1` targets bench.rediacc.com as before. There is no
+`RDC_PROD` any more. The renet build stays `--nolicense` in all wrapper modes;
+`RDC_RENET_LICENSE=1` is the independent enforcement opt-in (below).
+
 ### Iterating on a local SEA (`./rdc.sh --override-local`)
 
 `./rdc.sh --override-local` rebuilds the CLI SEA from local source and installs it over `~/.local/share/rediacc/bin/rdc`. Use it when iterating on SEA-only behaviors (embedded renet, auto-update gating) that the dev-mode `cli-bundle.cjs` path doesn't exercise.
@@ -188,7 +206,7 @@ To reproduce license-enforcement issues locally, set:
 ```bash
 ACCOUNT_ED25519_PUBLIC_KEY="$(curl -s https://www.rediacc.com/api/public/account-key)" \
 RDC_RENET_LICENSE=1 \
-RDC_PROD=1 ./rdc.sh --config <prod-config> repo push --name <repo> -m <src> --to <fresh-machine> --up
+./rdc.sh --config <prod-config> repo push --name <repo> -m <src> --to <fresh-machine> --up
 ```
 
 `RDC_RENET_LICENSE=1` drops the `--nolicense` build flag. `ACCOUNT_ED25519_PUBLIC_KEY` must match the account server that issued the licenses on your test machines — for production licenses that's the prod ed25519 public key. The build flow wires this into `private/renet/pkg/license/keys.ProductionPublicKey` via ldflags. Without it, prod-signed licenses fail validation as `invalid_signature`.
@@ -338,9 +356,9 @@ Auth: `SES_AK_ID`/`SES_AK_SECRET` for AWS IAM admin, `CLOUDFLARE_API_TOKEN` (or 
 | `check:ci-renet` | `cd private/renet && go fmt ./...`, then fix golangci-lint issues. After signature changes also sweep tag-gated files: `go vet -tags "root ebpf_e2e" ./...` (plain `go vet ./...` skips them; OPS CI compiles them) |
 | `Quality / Shell` | `shfmt -w -i 4 <file>` after any shell edit (gate = `npm run check:ci-shell-format`) |
 | `lint` / `check:lint` | Fix ESLint errors properly (never suppress with comments). **Never revert a dev-dep bump (or pin it in `.deps-upgrade-blocklist`) just to silence new rules a plugin surfaces.** When `eslint-plugin-react-hooks` 7.x flags `react-hooks/set-state-in-effect` / `refs-in-render` / `immutability` / `preserve-manual-memoization` across existing files, fix each site per React 19 idioms: move ref writes into a dependency-less `useEffect`, derive state via the "previous value" pattern (`const [prev, setPrev] = useState(value); if (prev !== value) { setPrev(value); setDerived(...); }`), wrap effect-only side effects in `useEffectEvent` (from `react`, available in 19+), defer problematic setState with `queueMicrotask`, use `window.location.assign(url)` instead of direct `window.location.href = url` assignments, and initialize state lazily with `useState(() => ...)` instead of a post-mount effect. Downgrade is not a fix. |
-| `lint:unused` | Add to `ignoreDependencies` in `knip.json` if it's a transitive/runtime dep |
+| `lint:unused` | Add to `ignoreDependencies` in `knip.jsonc` with a `// BLOCKER:` reason if it's a transitive/runtime dep |
 | `check:ci-e2e-coverage` | Add coverage for new renet bridge functions in `packages/bridge-tests` (the gate greps bridge-tests for each generated function name) |
-| `check:ci-renet` (types) | `private/renet/bin/renet bridge generate-types --output packages/shared/src/queue-vault/data --version dev` |
+| `check:ci-renet` (types) | `private/renet/bin/renet bridge generate-types --output packages/shared/src/renet-contract/data --version dev` |
 | `Initialize` (PR title) | PR title must follow Conventional Commits (`type(scope): summary` or `type: summary`). Fix with `gh pr edit <N> --title "fix: ..."`. |
 | `Quality / PR Description` (stale) | Description's `updatedAt` is older than 30 min and there are new commits. Run `gh pr edit <N> --body "..."` **immediately before pushing the next commit** so the fresh timestamp is visible to the next CI run (editing alone does not trigger CI). **The body must actually change** — an edit with identical content does NOT bump `updatedAt`; summarize the new commits instead of re-sending the same text. Stale-only failure: refresh + `gh run rerun <id> --failed`, no commit needed. |
 
@@ -421,6 +439,7 @@ Every escape hatch in the repo (allowlists, blocklists, overrides, ignore lists)
 | npm dep upgrade blocklist | `.deps-upgrade-blocklist` | `scripts/check-deps.ts` |
 | Go dep upgrade blocklist | `.go-deps-upgrade-blocklist` | `.ci/scripts/quality/check-go-deps.sh` |
 | `package.json` overrides | `package.json`: `overrides` + `_overridesReasons` | `scripts/check-overrides-reasons.ts` |
+| knip suppressions (`ignore*` arrays) | `knip.jsonc` (inline `// BLOCKER:` comments) | `scripts/check-knip-blockers.ts` |
 
 ### Format
 
@@ -435,6 +454,11 @@ A blank line resets the tracked BLOCKER, so a single BLOCKER covers a grouped li
 ```
 package-name  # BLOCKER: <reason>
 ```
+
+**JSONC files** (knip.jsonc) use real `// BLOCKER: <reason>` comments with the same
+group semantics as shell files: one BLOCKER covers the entries after it until a blank
+line or the end of the array. Staleness of knip ignore entries is enforced by knip
+itself (`--treat-config-hints-as-errors`), not by the BLOCKER validator.
 
 **JSON files** (no comment support) use a parallel `_reasons` object with identical keys:
 ```jsonc

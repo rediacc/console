@@ -3,7 +3,7 @@ import type {
   ListResult,
   StorageHealthResult,
   SystemInfo,
-} from '@rediacc/shared/queue-vault/data/list-types.generated';
+} from '@rediacc/shared/renet-contract/data/list-types.generated';
 import {
   getBlockDevices,
   getContainers,
@@ -13,11 +13,11 @@ import {
   getRepositories,
   getServices,
   getSystemContainers,
-} from '@rediacc/shared/queue-vault/data/list-types.generated';
+} from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
-import { configService } from '../../services/config-resources.js';
-import { outputService } from '../../services/output.js';
+import { configService } from '../../services/config/config-resources.js';
+import { outputService } from '../../services/core/output.js';
 import type { InfraConfig, MachineConfig, OutputFormat } from '../../types/index.js';
 import { extractAutoRoute, extractCustomDomain } from '../../utils/domain-helpers.js';
 import { handleError } from '../../utils/errors.js';
@@ -527,7 +527,7 @@ export function registerQueryCommand(machine: Command, program: Command): void {
 
         const sections = collectSections(options);
 
-        const { fetchMachineStatus } = await import('../../services/machine-status.js');
+        const { fetchMachineStatus } = await import('../../services/machine/machine-status.js');
 
         const [listResult, guidMap, machineConfig] = await Promise.all([
           withSpinner(
@@ -592,7 +592,7 @@ export function registerQueryCommand(machine: Command, program: Command): void {
 // side effect would surprise operators who don't expect it.
 async function runOptInCertSync(machineName: string): Promise<void> {
   try {
-    const { downloadCertCache } = await import('../../services/cert-cache.js');
+    const { downloadCertCache } = await import('../../services/account/cert-cache.js');
     await downloadCertCache(machineName, { silent: false });
   } catch (err) {
     outputService.warn(

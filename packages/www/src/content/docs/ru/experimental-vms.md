@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 2
 language: ru
-sourceHash: df01dc35c82beb81
+sourceHash: aafca00c006ded0b
 ---
 
 # Экспериментальные VM
@@ -15,7 +15,7 @@ sourceHash: df01dc35c82beb81
 
 ## Требования
 
-`rdc ops` требует **локального адаптера**. Недоступен с облачным адаптером.
+`rdc ops` работает через **локальный адаптер**.
 
 ```bash
 rdc ops check

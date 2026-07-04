@@ -28,7 +28,7 @@ vi.mock('../agent-guard.js', () => ({
   isAgentEnvironment: mockIsAgent,
 }));
 
-vi.mock('../../services/output.js', () => ({
+vi.mock('../../services/core/output.js', () => ({
   outputService: {
     error: mockOutputError,
     getCommandName: mockGetCommandName,

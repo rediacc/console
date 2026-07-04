@@ -4,7 +4,7 @@
  */
 
 import { t } from '../i18n/index.js';
-import { outputService } from '../services/output.js';
+import { outputService } from '../services/core/output.js';
 
 export interface VSCodeInstallationInfo {
   path: string;

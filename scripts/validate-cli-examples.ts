@@ -435,8 +435,7 @@ function validateCommand(
   rawCommand: string,
   filePath: string,
   line: number,
-  violations: Violation[],
-  contextLines?: string[]
+  violations: Violation[]
 ): void {
   const normalised = normalisePlaceholders(rawCommand);
 
@@ -456,54 +455,6 @@ function validateCommand(
   // Hidden or planned commands not yet in command-tree.json -- skip
   if (/^rdc\s+run\s/.test(command)) return;
   if (/^rdc\s+repo\s+snapshot\s/.test(command)) return;
-
-  // Cloud-adapter-only commands should not appear in general docs without
-  // qualification. Flag them in files that target local-adapter users.
-  // Commands that require cloud adapter (authService.requireAuth() or provider.isCloud guard).
-  // provision/deprovision use OpenTofu with local config -- NOT cloud-only.
-  const CLOUD_ONLY_PATTERNS = [
-    /^rdc\s+auth\s/,
-    /^rdc\s+machine\s+test-connection\b/,
-    /^rdc\s+machine\s+assign-bridge\b/,
-    /^rdc\s+organization\s/,
-    /^rdc\s+user\s/,
-    /^rdc\s+team\s/,
-    /^rdc\s+permission\s/,
-    /^rdc\s+region\s/,
-    /^rdc\s+bridge\s/,
-    /^rdc\s+queue\s/,
-    /^rdc\s+ceph\s/,
-    /^rdc\s+audit\s/,
-  ];
-  // Files that are general-purpose (not cloud-specific docs). Cloud-only
-  // commands in these files are flagged.
-  const GENERAL_AUDIENCE_PATTERNS = [
-    /CLAUDE\.md$/,
-    /skills\/rdc\//,
-    /AGENTS\.md$/,
-    /cheat-sheet/,
-    /templates\//,
-  ];
-  const isGeneralFile = GENERAL_AUDIENCE_PATTERNS.some((p) => p.test(filePath));
-  if (isGeneralFile) {
-    const cloudMatch = CLOUD_ONLY_PATTERNS.find((p) => p.test(command));
-    if (cloudMatch) {
-      // Allow cloud-only commands if the surrounding context marks them as cloud
-      const hasCloudContext = (contextLines ?? []).some((l: string) =>
-        /cloud|Cloud|CLOUD/.test(l)
-      );
-      if (!hasCloudContext) {
-        violations.push({
-          file: filePath,
-          line,
-          command: rawCommand,
-          reason: 'cloud-only-in-general-docs',
-          detail: `Cloud-adapter-only command in general-audience file`,
-        });
-        return;
-      }
-    }
-  }
 
   const parsed = parseRdcCommand(command);
   if (parsed.ok) return;

@@ -1,8 +1,8 @@
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
-import { outputService } from '../services/output.js';
+import { configService } from '../services/config/config-resources.js';
+import { outputService } from '../services/core/output.js';
 import type { BackupStrategyConfig } from '../types/index.js';
 import {
   assertStorageExists,

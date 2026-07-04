@@ -300,9 +300,9 @@ describe('HMAC', () => {
 describe('CEK Handoff', () => {
   it('encrypt → decrypt round-trip', async () => {
     // Recipient generates X25519 key pair
-    const recipientKeyPair = (await crypto.subtle.generateKey({ name: 'X25519' }, true, [
+    const recipientKeyPair = await crypto.subtle.generateKey({ name: 'X25519' }, true, [
       'deriveBits',
-    ])) as unknown as { publicKey: CryptoKey; privateKey: CryptoKey };
+    ]);
 
     const cek = await generateCek();
     const cekRaw = await exportAesKey(cek);
@@ -316,12 +316,10 @@ describe('CEK Handoff', () => {
   });
 
   it('decrypt with wrong private key throws', async () => {
-    const recipientKeyPair = (await crypto.subtle.generateKey({ name: 'X25519' }, true, [
+    const recipientKeyPair = await crypto.subtle.generateKey({ name: 'X25519' }, true, [
       'deriveBits',
-    ])) as unknown as { publicKey: CryptoKey; privateKey: CryptoKey };
-    const wrongKeyPair = (await crypto.subtle.generateKey({ name: 'X25519' }, true, [
-      'deriveBits',
-    ])) as unknown as { publicKey: CryptoKey; privateKey: CryptoKey };
+    ]);
+    const wrongKeyPair = await crypto.subtle.generateKey({ name: 'X25519' }, true, ['deriveBits']);
 
     const cekRaw = randomBytes(32);
     const blob = await cekHandoffEncrypt(cekRaw, recipientKeyPair.publicKey);
@@ -562,9 +560,7 @@ describe('Full Lifecycle', () => {
     const cekRaw = await exportAesKey(cek);
 
     // New member generates X25519 key pair
-    const memberKeyPair = (await crypto.subtle.generateKey({ name: 'X25519' }, true, [
-      'deriveBits',
-    ])) as unknown as { publicKey: CryptoKey; privateKey: CryptoKey };
+    const memberKeyPair = await crypto.subtle.generateKey({ name: 'X25519' }, true, ['deriveBits']);
 
     // Admin encrypts CEK for new member
     const handoff = await cekHandoffEncrypt(cekRaw, memberKeyPair.publicKey);

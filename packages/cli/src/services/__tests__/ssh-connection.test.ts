@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockGetConnectionVaults = vi.fn();
 
-vi.mock('../../providers/index.js', () => ({
+vi.mock('../state.js', () => ({
   getStateProvider: vi.fn(() => ({
     vaults: {
       getConnectionVaults: mockGetConnectionVaults,
@@ -10,7 +10,7 @@ vi.mock('../../providers/index.js', () => ({
   })),
 }));
 
-vi.mock('../config-resources.js', () => ({
+vi.mock('../config/config-resources.js', () => ({
   configService: {
     getRepository: vi.fn().mockResolvedValue(undefined),
   },
@@ -29,7 +29,7 @@ vi.mock('../../i18n/index.js', () => ({
   },
 }));
 
-import { getSSHConnectionDetails } from '../ssh-connection.js';
+import { getSSHConnectionDetails } from '../machine/ssh-connection.js';
 
 const baseMachineVault = {
   ip: '10.0.0.1',

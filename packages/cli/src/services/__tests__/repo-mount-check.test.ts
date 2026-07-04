@@ -4,13 +4,13 @@ const { mockExecute } = vi.hoisted(() => ({
   mockExecute: vi.fn(),
 }));
 
-vi.mock('../local-executor.js', () => ({
+vi.mock('../executor/local-executor.js', () => ({
   localExecutorService: {
     execute: mockExecute,
   },
 }));
 
-const { assertRepoMountedOnMachine } = await import('../repo-mount-check.js');
+const { assertRepoMountedOnMachine } = await import('../repo/repo-mount-check.js');
 const { ValidationError } = await import('../../utils/errors.js');
 
 const REPO_NAME = 'mail';

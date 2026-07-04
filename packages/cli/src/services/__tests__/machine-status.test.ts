@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildListCommand, fetchMachineStatus } from '../machine-status.js';
+import { buildListCommand, fetchMachineStatus } from '../machine/machine-status.js';
 
 const { mockExecStreaming, mockRelease, mockAcquire, mockConfigService, mockProvision } =
   vi.hoisted(() => {
@@ -24,27 +24,27 @@ const { mockExecStreaming, mockRelease, mockAcquire, mockConfigService, mockProv
     };
   });
 
-vi.mock('../machine-connection.js', () => ({
+vi.mock('../machine/machine-connection.js', () => ({
   machineConnections: { acquire: mockAcquire },
 }));
 
-vi.mock('../config-resources.js', () => ({
+vi.mock('../config/config-resources.js', () => ({
   configService: mockConfigService,
 }));
 
-vi.mock('../renet-execution.js', () => ({
+vi.mock('../renet/renet-execution.js', () => ({
   provisionRenetToRemote: mockProvision,
 }));
 
-vi.mock('../local-executor.js', () => ({
+vi.mock('../executor/local-executor.js', () => ({
   buildRenetEnvPrefix: vi.fn().mockReturnValue(''),
 }));
 
-vi.mock('../otlp-credentials.js', () => ({
+vi.mock('../telemetry/otlp-credentials.js', () => ({
   fetchOtlpCredentials: vi.fn().mockResolvedValue(null),
 }));
 
-vi.mock('../telemetry.js', () => ({
+vi.mock('../telemetry/telemetry.js', () => ({
   isTelemetryDisabled: vi.fn().mockReturnValue(true),
 }));
 

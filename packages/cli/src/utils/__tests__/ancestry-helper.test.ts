@@ -16,7 +16,7 @@ vi.mock('node:fs', async (importOriginal) => ({
   accessSync: mockAccessSync,
 }));
 
-vi.mock('../../services/embedded-assets.js', () => ({
+vi.mock('../../services/core/embedded-assets.js', () => ({
   isSEA: mockIsSEA,
   extractRenetToLocalSync: mockExtractSync,
 }));

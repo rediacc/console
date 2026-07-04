@@ -11,8 +11,8 @@ import {
   applyConfigPrune,
   type ConfigPruneAnalysis,
   type ConfigPruneOptions,
-} from '../services/config-prune.js';
-import { outputService } from '../services/output.js';
+} from '../services/config/config-prune.js';
+import { outputService } from '../services/core/output.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 
 interface PruneCommandOptions extends ConfigPruneOptions {

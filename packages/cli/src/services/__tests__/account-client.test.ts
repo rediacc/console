@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../subscription-auth.js', () => ({
+vi.mock('../account/subscription-auth.js', () => ({
   normalizeServerUrl: (url: string) => url.replace(/\/+$/, ''),
   loadServerConfig: vi.fn().mockReturnValue(null),
   saveServerConfig: vi.fn(),
@@ -8,7 +8,7 @@ vi.mock('../subscription-auth.js', () => ({
   getSubscriptionTokenState: vi.fn().mockReturnValue({ kind: 'missing' }),
 }));
 
-vi.mock('../updater.js', () => ({
+vi.mock('../update/updater.js', () => ({
   resolveChannel: vi.fn().mockReturnValue('stable'),
 }));
 
@@ -16,7 +16,7 @@ vi.mock('../../version.js', () => ({
   VERSION: '0.9.0',
 }));
 
-import { fetchServerInfo } from '../account-client.js';
+import { fetchServerInfo } from '../account/account-client.js';
 
 describe('fetchServerInfo', () => {
   const originalFetch = globalThis.fetch;

@@ -37,9 +37,7 @@ export async function generateEphemeralKeyPair(): Promise<{
   publicKey: CryptoKey;
   publicKeyRaw: Uint8Array;
 }> {
-  const keyPair = (await crypto.subtle.generateKey({ name: 'X25519' }, true, [
-    'deriveBits',
-  ])) as unknown as { publicKey: CryptoKey; privateKey: CryptoKey };
+  const keyPair = await crypto.subtle.generateKey({ name: 'X25519' }, true, ['deriveBits']);
 
   // Extract raw 32-byte public key from SPKI export
   const spkiBuffer = await crypto.subtle.exportKey('spki', keyPair.publicKey);

@@ -28,7 +28,7 @@ source "$SCRIPT_DIR/../lib/common.sh"
 
 REPO_ROOT="$(get_repo_root)"
 
-FUNCTIONS_FILE="$REPO_ROOT/packages/shared/src/queue-vault/data/functions.generated.ts"
+FUNCTIONS_FILE="$REPO_ROOT/packages/shared/src/renet-contract/data/functions.generated.ts"
 BRIDGE_TESTS_DIR="$REPO_ROOT/packages/bridge-tests"
 
 # BLOCKER: legacy renet bridge functions that predate the bridge-tests suite and

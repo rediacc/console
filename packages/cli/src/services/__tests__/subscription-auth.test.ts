@@ -10,7 +10,7 @@ import {
   loadEnvSubscriptionToken,
   normalizeServerUrl,
   saveStoredSubscriptionToken,
-} from '../subscription-auth.js';
+} from '../account/subscription-auth.js';
 
 describe('subscription-auth', () => {
   const envBackup = { ...process.env };

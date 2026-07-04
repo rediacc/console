@@ -12,7 +12,7 @@ const mockOutputService = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('../../services/output.js', () => mockOutputService);
+vi.mock('../../services/core/output.js', () => mockOutputService);
 
 // Route the CLI's getConfigDir() to a scratch directory so we can assert on the
 // actual file we write, using the production saveServerConfig/loadServerConfig.

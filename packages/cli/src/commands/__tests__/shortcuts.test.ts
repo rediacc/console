@@ -21,7 +21,7 @@ vi.mock('../../i18n/index.js', () => ({
     vars && 'duration' in vars ? `${key}:${vars.duration}` : key,
 }));
 
-vi.mock('../../services/output.js', () => ({
+vi.mock('../../services/core/output.js', () => ({
   outputService: {
     success: mockOutputSuccess,
     error: mockOutputError,
@@ -39,15 +39,15 @@ vi.mock('../../utils/errors.js', async () => {
   };
 });
 
-vi.mock('../../providers/index.js', () => ({
+vi.mock('../../services/state.js', () => ({
   getStateProvider: vi.fn(),
 }));
 
-vi.mock('../../services/config-resources.js', () => ({
+vi.mock('../../services/config/config-resources.js', () => ({
   configService: {},
 }));
 
-vi.mock('../../services/local-executor.js', () => ({
+vi.mock('../../services/executor/local-executor.js', () => ({
   localExecutorService: {},
 }));
 

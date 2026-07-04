@@ -24,8 +24,8 @@ source "$SCRIPT_DIR/../lib/common.sh"
 REPO_ROOT="$(get_repo_root)"
 
 CLI_SRC="$REPO_ROOT/packages/cli/src"
-LOCAL_EXECUTOR="$CLI_SRC/services/local-executor.ts"
-AUDIT_SERVICE="$CLI_SRC/services/audit.ts"
+LOCAL_EXECUTOR="$CLI_SRC/services/executor/local-executor.ts"
+AUDIT_SERVICE="$CLI_SRC/services/core/audit.ts"
 
 ERRORS=0
 
@@ -209,7 +209,7 @@ if [[ $ERRORS -gt 0 ]]; then
     log_error "To fix:"
     log_error "  1. Ensure auditService.recordOperation() is called in local-executor.ts execute()"
     log_error "  2. Ensure edge-case files (sync, term) have explicit audit calls"
-    log_error "  3. See packages/cli/src/services/audit.ts for the audit service API"
+    log_error "  3. See packages/cli/src/services/core/audit.ts for the audit service API"
     exit 1
 fi
 

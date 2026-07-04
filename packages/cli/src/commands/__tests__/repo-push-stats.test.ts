@@ -7,7 +7,7 @@ vi.mock('../../i18n/index.js', () => ({
 }));
 
 const mockSuccess = vi.hoisted(() => vi.fn());
-vi.mock('../../services/output.js', () => ({
+vi.mock('../../services/core/output.js', () => ({
   outputService: { success: mockSuccess, info: vi.fn(), print: vi.fn() },
 }));
 

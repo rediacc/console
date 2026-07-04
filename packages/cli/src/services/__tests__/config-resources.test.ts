@@ -15,11 +15,11 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
   },
 }));
 
-// Mock the shared-desktop SSH helper — spied per test.
+// Mock the remote/ SSH helper — spied per test.
 const mockAddMachineSSHConfigEntry = vi.fn();
 const mockRemoveMachineSSHConfigEntry = vi.fn();
 
-vi.mock('../../shared-desktop/vscode/index.js', () => ({
+vi.mock('../../remote/vscode/index.js', () => ({
   addMachineSSHConfigEntry: (...args: unknown[]) => mockAddMachineSSHConfigEntry(...args),
   removeMachineSSHConfigEntry: (...args: unknown[]) => mockRemoveMachineSSHConfigEntry(...args),
 }));
@@ -28,7 +28,7 @@ vi.mock('../../shared-desktop/vscode/index.js', () => ({
 const mockOutputInfo = vi.fn();
 const mockOutputWarn = vi.fn();
 
-vi.mock('../output.js', () => ({
+vi.mock('../core/output.js', () => ({
   outputService: {
     info: (...args: unknown[]) => mockOutputInfo(...args),
     warn: (...args: unknown[]) => mockOutputWarn(...args),
@@ -43,7 +43,7 @@ vi.mock('../../i18n/index.js', () => ({
 // Mock the base class.
 let mockMachines: Record<string, unknown> = {};
 
-vi.mock('../config-base.js', () => ({
+vi.mock('../config/config-base.js', () => ({
   ConfigServiceBase: class {
     getEffectiveConfigName() {
       return 'test';
@@ -90,7 +90,7 @@ describe('configService.addMachine — SSH config side effect', { timeout: 30000
   });
 
   it('addMachine writes an SSH config entry', async () => {
-    const { configService } = await import('../config-resources.js');
+    const { configService } = await import('../config/config-resources.js');
     await configService.addMachine('m1', { ip: '1.2.3.4', user: 'u1', port: 22 });
     expect(mockAddMachineSSHConfigEntry).toHaveBeenCalledOnce();
     expect(mockAddMachineSSHConfigEntry).toHaveBeenCalledWith(
@@ -108,7 +108,7 @@ describe('configService.addMachine — SSH config side effect', { timeout: 30000
     mockAddMachineSSHConfigEntry.mockImplementationOnce(() => {
       throw new Error('disk full');
     });
-    const { configService } = await import('../config-resources.js');
+    const { configService } = await import('../config/config-resources.js');
     await expect(
       configService.addMachine('m2', { ip: '5.6.7.8', user: 'u2', port: 22 })
     ).resolves.toBeUndefined();
@@ -117,7 +117,7 @@ describe('configService.addMachine — SSH config side effect', { timeout: 30000
 
   it('removeMachine removes the SSH entry', async () => {
     mockMachines = { m3: { ip: '9.9.9.9', user: 'u3', port: 22 } };
-    const { configService } = await import('../config-resources.js');
+    const { configService } = await import('../config/config-resources.js');
     await configService.removeMachine('m3');
     expect(mockRemoveMachineSSHConfigEntry).toHaveBeenCalledOnce();
     expect(mockRemoveMachineSSHConfigEntry).toHaveBeenCalledWith('m3');

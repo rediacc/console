@@ -6,7 +6,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 // `await import` calls that follow then hit vitest's module cache and return
 // instantly. Cheaper than bumping every individual test's timeout.
 beforeAll(async () => {
-  await import('../backup-schedule.js');
+  await import('../backup/backup-schedule.js');
 }, 30000);
 
 const mockExecStreaming = vi.fn();
@@ -28,7 +28,7 @@ const mockGetStorage = vi.fn();
 const mockOutputInfo = vi.fn();
 const mockOutputWarn = vi.fn();
 
-vi.mock('../../shared-desktop/sftp/index.js', () => ({
+vi.mock('../../remote/sftp/index.js', () => ({
   SFTPClient: vi.fn(
     class MockSFTPClient {
       connect = mockConnect;
@@ -38,20 +38,20 @@ vi.mock('../../shared-desktop/sftp/index.js', () => ({
   ),
 }));
 
-vi.mock('@rediacc/shared/queue-vault', () => ({
+vi.mock('@rediacc/shared/storage-browser', () => ({
   buildRcloneArgs: mockBuildRcloneArgs,
 }));
 
-vi.mock('../renet-execution.js', () => ({
+vi.mock('../renet/renet-execution.js', () => ({
   provisionRenetToRemote: mockProvisionRenetToRemote,
   readSSHKey: mockReadSSHKey,
 }));
 
-vi.mock('../license.js', () => ({
+vi.mock('../account/license.js', () => ({
   refreshRepoLicensesBatch: mockRefreshRepoLicensesBatch,
 }));
 
-vi.mock('../config-resources.js', () => ({
+vi.mock('../config/config-resources.js', () => ({
   configService: {
     getBackupStrategy: mockGetBackupStrategy,
     listBackupStrategies: mockListBackupStrategies,
@@ -60,7 +60,7 @@ vi.mock('../config-resources.js', () => ({
   },
 }));
 
-vi.mock('../output.js', () => ({
+vi.mock('../core/output.js', () => ({
   outputService: {
     info: mockOutputInfo,
     warn: mockOutputWarn,
@@ -148,7 +148,7 @@ async function desiredContentFor(
   datastore = '/mnt/rediacc',
   remoteRenetPath = '/usr/bin/renet'
 ) {
-  const { _testing } = await import('../backup-schedule.js');
+  const { _testing } = await import('../backup/backup-schedule.js');
   const { serviceContent, envVars } = _testing.generateServiceUnit(
     strategyName,
     strategy,
@@ -206,7 +206,7 @@ const DEFAULT_RCLONE_ARGS = {
 
 describe('generateServiceUnit', () => {
   it('keeps bwlimit on argv (per-destination) and emits EnvironmentFile=', async () => {
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     const { serviceContent, envVars } = _testing.generateServiceUnit(
       'hourly-hot',
       { schedule: '0 * * * *', mode: 'hot', bandwidthLimit: '6M', destinations: [] },
@@ -222,7 +222,7 @@ describe('generateServiceUnit', () => {
   });
 
   it('moves rclone credential params to envVars as RCLONE_<KEY> and keeps them out of ExecStart', async () => {
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     const tokenJson = '{"access_token":"abc","refresh_token":"xyz"}';
     const { serviceContent, envVars } = _testing.generateServiceUnit(
       'nightly-cold',
@@ -255,7 +255,7 @@ describe('generateServiceUnit', () => {
   });
 
   it('emits TimeoutStartSec=infinity so long uploads are never killed by systemd', async () => {
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     const { serviceContent } = _testing.generateServiceUnit(
       'nightly-cold',
       { schedule: '0 3 * * *', mode: 'cold', destinations: [] },
@@ -274,7 +274,7 @@ describe('generateServiceUnit', () => {
   });
 
   it('throws on conflicting env vars across destinations', async () => {
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     const call = () =>
       _testing.generateServiceUnit(
         'mixed',
@@ -296,7 +296,7 @@ describe('generateServiceUnit', () => {
 
 describe('sanitizeBackupOutput', () => {
   it('redacts --rclone-param values for sensitive keys', async () => {
-    const { sanitizeBackupOutput } = await import('../backup-schedule.js');
+    const { sanitizeBackupOutput } = await import('../backup/backup-schedule.js');
     const input =
       'backup sync push --rclone-param \'onedrive-token={"access_token":"x"}\' --rclone-param \'bwlimit=6M\'';
     const out = sanitizeBackupOutput(input);
@@ -305,7 +305,7 @@ describe('sanitizeBackupOutput', () => {
   });
 
   it('redacts --setenv values for sensitive RCLONE_ keys', async () => {
-    const { sanitizeBackupOutput } = await import('../backup-schedule.js');
+    const { sanitizeBackupOutput } = await import('../backup/backup-schedule.js');
     const input =
       'systemd-run --setenv=RCLONE_ONEDRIVE_TOKEN=\'{"access_token":"abc"}\' --setenv=RCLONE_BWLIMIT=\'6M\' --remain-after-exit';
     const out = sanitizeBackupOutput(input);
@@ -316,7 +316,7 @@ describe('sanitizeBackupOutput', () => {
 
 describe('generateEnvFile', () => {
   it('quotes values and escapes backslashes and double quotes', async () => {
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     const tokenJson = '{"access_token":"ab\\c","refresh_token":"x\\"y"}';
     const content = _testing.generateEnvFile({ RCLONE_ONEDRIVE_TOKEN: tokenJson });
     expect(content).toBe(
@@ -325,7 +325,7 @@ describe('generateEnvFile', () => {
   });
 
   it('returns empty string for an empty map', async () => {
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     expect(_testing.generateEnvFile({})).toBe('');
   });
 });
@@ -335,7 +335,7 @@ describe('cronToOnCalendar', () => {
   // (double-dot, not hyphen). Single-dash output trips systemd's parser and
   // renders the timer unit "bad-setting", silently disabling the schedule.
   it('converts hyphen ranges and comma-lists to systemd ..-ranges', async () => {
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     expect(_testing.cronToOnCalendar('0 0-2,4-23 * * *')).toBe('*-*-* 00..02,04..23:00:00');
     expect(_testing.cronToOnCalendar('0 */6 * * *')).toBe('*-*-* 00/6:00:00');
     expect(_testing.cronToOnCalendar('15 3 * * *')).toBe('*-*-* 03:15:00');
@@ -345,7 +345,7 @@ describe('cronToOnCalendar', () => {
 
 describe('sha256Hex', () => {
   it('is deterministic for the same UTF-8 input', async () => {
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     expect(_testing.sha256Hex('hello')).toBe(_testing.sha256Hex('hello'));
     // Pinned against a known expected value — guards against an accidental
     // encoding flip (bytes vs hex) that would silently turn every reconcile
@@ -358,7 +358,7 @@ describe('sha256Hex', () => {
 
 describe('parseSystemctlShow', () => {
   it('parses multiple records anchored on Id=', async () => {
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     const out =
       'Id=unit-a.service\nLoadState=loaded\nActiveState=active\n\n' +
       'Id=unit-b.timer\nLoadState=loaded\nActiveState=inactive\n\n';
@@ -370,7 +370,7 @@ describe('parseSystemctlShow', () => {
 
 describe('parseStrategyFromPath', () => {
   it('extracts strategy name from service/timer/env paths', async () => {
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     expect(
       _testing.parseStrategyFromPath('/etc/systemd/system/rediacc-backup-hourly-hot.service')
     ).toEqual({ strategy: 'hourly-hot', type: 'service' });
@@ -387,14 +387,14 @@ describe('parseStrategyFromPath', () => {
     // `-adhoc` units belong to the on-demand backup path (`machine backup now`)
     // and must not be reconciled as scheduled strategies — otherwise the
     // reconciler would try to remove them as orphans on every run.
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     expect(
       _testing.parseStrategyFromPath('/etc/systemd/system/rediacc-backup-foo-adhoc.service')
     ).toBeNull();
   });
 
   it('returns null for unrelated files', async () => {
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     expect(_testing.parseStrategyFromPath('/etc/systemd/system/sshd.service')).toBeNull();
   });
 });
@@ -440,7 +440,7 @@ describe('computeReconcilePlan', () => {
   }
 
   it('classifies fresh strategy as created', async () => {
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     const desired = new Map([['x', makeUnit('x')]]);
     const plan = _testing.computeReconcilePlan(desired, new Map());
     expect(plan.toCreate).toHaveLength(1);
@@ -452,7 +452,7 @@ describe('computeReconcilePlan', () => {
   });
 
   it('classifies all-matching hashes as unchanged (no daemon-reload needed)', async () => {
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     const unit = makeUnit('x', 'svc', 'tim');
     const desired = new Map([['x', unit]]);
     const remote = new Map([
@@ -472,7 +472,7 @@ describe('computeReconcilePlan', () => {
   });
 
   it('classifies differing timer hash as updated with changedFiles=[timer]', async () => {
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     const unit = makeUnit('x', 'svc', 'tim');
     const desired = new Map([['x', unit]]);
     const remote = new Map([
@@ -491,7 +491,7 @@ describe('computeReconcilePlan', () => {
   });
 
   it('classifies strategies not in desired as removed', async () => {
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     const desired = new Map();
     const remote = new Map([
       [
@@ -509,7 +509,7 @@ describe('computeReconcilePlan', () => {
   });
 
   it('handles env file removal when desired no longer needs credentials', async () => {
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     const unit = makeUnit('x', 'svc', 'tim', '');
     const desired = new Map([['x', unit]]);
     const remote = new Map([
@@ -528,7 +528,7 @@ describe('computeReconcilePlan', () => {
   });
 
   it('treats new env desire as part of fresh create', async () => {
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     const unit = makeUnit('x', 's', 't', 'creds');
     const desired = new Map([['x', unit]]);
     const plan = _testing.computeReconcilePlan(desired, new Map());
@@ -562,7 +562,7 @@ describe('applyInFlightGate', () => {
   }
 
   it('throws with backup cancel hint when a scheduled service is running', async () => {
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     const plan = planWithActiveUpdate('service');
     expect(() => _testing.applyInFlightGate(plan, false)).toThrow(
       /rediacc-backup-x\.service is currently running/
@@ -572,7 +572,7 @@ describe('applyInFlightGate', () => {
   it('throws when an adhoc service is running', async () => {
     // Adhoc backups are tracked by a distinct `-adhoc` unit; we must not
     // clobber unit files that belong to an in-flight on-demand backup.
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     const plan = planWithActiveUpdate('adhoc');
     expect(() => _testing.applyInFlightGate(plan, false)).toThrow(
       /rediacc-backup-x-adhoc\.service is currently running/
@@ -580,7 +580,7 @@ describe('applyInFlightGate', () => {
   });
 
   it('with force=true, emits a warning and does not throw', async () => {
-    const { _testing } = await import('../backup-schedule.js');
+    const { _testing } = await import('../backup/backup-schedule.js');
     const plan = planWithActiveUpdate('service');
     expect(() => _testing.applyInFlightGate(plan, true)).not.toThrow();
     expect(mockOutputWarn).toHaveBeenCalledWith(
@@ -629,7 +629,7 @@ describe('pushBackupSchedule (reconcile)', () => {
       },
     ]);
 
-    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
     await pushBackupSchedule('hostinger');
 
     const cmds = recordedCommands();
@@ -685,7 +685,7 @@ describe('pushBackupSchedule (reconcile)', () => {
       },
     ]);
 
-    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
     await pushBackupSchedule('hostinger');
 
     const cmds = recordedCommands();
@@ -731,7 +731,7 @@ describe('pushBackupSchedule (reconcile)', () => {
       },
     ]);
 
-    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
     await pushBackupSchedule('hostinger');
 
     const cmds = recordedCommands();
@@ -784,7 +784,7 @@ describe('pushBackupSchedule (reconcile)', () => {
       },
     ]);
 
-    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
     await pushBackupSchedule('hostinger');
 
     const cmds = recordedCommands();
@@ -830,7 +830,7 @@ describe('pushBackupSchedule (reconcile)', () => {
       },
     ]);
 
-    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
     await expect(pushBackupSchedule('hostinger')).rejects.toThrow(
       /rediacc-backup-hourly-hot\.service is currently running/
     );
@@ -871,7 +871,7 @@ describe('pushBackupSchedule (reconcile)', () => {
       },
     ]);
 
-    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
     await pushBackupSchedule('hostinger', { force: true });
 
     expect(mockOutputWarn).toHaveBeenCalledWith(
@@ -903,7 +903,7 @@ describe('pushBackupSchedule (reconcile)', () => {
       },
     ]);
 
-    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
     await expect(pushBackupSchedule('hostinger')).rejects.toThrow(
       /rediacc-backup-hourly-hot\.timer.*ActiveState=inactive/s
     );
@@ -922,7 +922,7 @@ describe('pushBackupSchedule (reconcile)', () => {
       },
     ]);
 
-    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
     await pushBackupSchedule('hostinger', { resetFailed: true });
 
     const cmds = recordedCommands();
@@ -938,7 +938,7 @@ describe('pushBackupSchedule (reconcile)', () => {
       },
     ]);
 
-    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
     await pushBackupSchedule('hostinger', { dryRun: true });
 
     const cmds = recordedCommands();
@@ -960,7 +960,7 @@ describe('pushBackupSchedule (reconcile)', () => {
       machines: { hostinger: { ip: '1.2.3.4', user: 'test' } },
     });
 
-    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
     await expect(pushBackupSchedule('hostinger')).rejects.toThrow('No backup strategies bound');
   });
 
@@ -975,7 +975,7 @@ describe('pushBackupSchedule (reconcile)', () => {
       failures: [],
     });
 
-    const { pushBackupSchedule } = await import('../backup-schedule.js');
+    const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
     await expect(pushBackupSchedule('hostinger')).rejects.toThrow('no valid repo licenses');
   });
 });

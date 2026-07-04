@@ -1,8 +1,8 @@
 import { isValidEmail } from '@rediacc/shared/validation';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
-import { outputService } from '../services/output.js';
+import { configService } from '../services/config/config-resources.js';
+import { outputService } from '../services/core/output.js';
 import type { InfraConfig, OutputFormat } from '../types/index.js';
 import {
   InfraConfigSchema,
@@ -151,7 +151,7 @@ export function registerInfraCommands(config: Command, program: Command): void {
     .action(async (options) => {
       try {
         const machineName = options.machine;
-        const { pushInfraConfig } = await import('../services/infra-provision.js');
+        const { pushInfraConfig } = await import('../services/provision/infra-provision.js');
         await pushInfraConfig(machineName, { debug: options.debug });
         outputService.success(t('commands.config.infra.push.success', { name: machineName }));
       } catch (error) {
@@ -176,7 +176,7 @@ export function registerInfraCommands(config: Command, program: Command): void {
     .action(async (options) => {
       try {
         const machineName = options.machine;
-        const { downloadCertCache } = await import('../services/cert-cache.js');
+        const { downloadCertCache } = await import('../services/account/cert-cache.js');
         await downloadCertCache(machineName, {
           noPrune: options.prune === false,
           debug: options.debug,
@@ -194,7 +194,7 @@ export function registerInfraCommands(config: Command, program: Command): void {
     .action(async (options) => {
       try {
         const machineName = options.machine;
-        const { uploadCertCache } = await import('../services/cert-cache.js');
+        const { uploadCertCache } = await import('../services/account/cert-cache.js');
         await uploadCertCache(machineName, {
           debug: options.debug,
         });
@@ -208,7 +208,7 @@ export function registerInfraCommands(config: Command, program: Command): void {
     .description(t('commands.config.certCache.status.description'))
     .action(async () => {
       try {
-        const { getCertStatus } = await import('../services/cert-cache.js');
+        const { getCertStatus } = await import('../services/account/cert-cache.js');
         const entries = await getCertStatus();
         const format = program.opts().output as OutputFormat;
 
@@ -260,7 +260,7 @@ export function registerInfraCommands(config: Command, program: Command): void {
     .description(t('commands.config.certCache.clear.description'))
     .action(async () => {
       try {
-        const { clearCertCache } = await import('../services/cert-cache.js');
+        const { clearCertCache } = await import('../services/account/cert-cache.js');
         const cleared = await clearCertCache();
         if (cleared) {
           outputService.success(t('commands.config.certCache.clear.cleared'));

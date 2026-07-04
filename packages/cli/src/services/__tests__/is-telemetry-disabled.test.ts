@@ -14,7 +14,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { isTelemetryDisabled } from '../telemetry.js';
+import { isTelemetryDisabled } from '../telemetry/telemetry.js';
 
 describe('isTelemetryDisabled', () => {
   const savedCI = process.env.CI;

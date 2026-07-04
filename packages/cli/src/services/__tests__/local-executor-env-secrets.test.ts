@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildRemoteRenetCommand, buildRenetEnvPrefix } from '../local-executor.js';
+import { buildRemoteRenetCommand, buildRenetEnvPrefix } from '../executor/local-executor.js';
 
 describe('buildRenetEnvPrefix — envSecrets', () => {
   it('emits no prefix when nothing is needed', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { MIN_NETWORK_ID, NETWORK_ID_INCREMENT } from '@rediacc/shared/queue-vault';
+import { MIN_NETWORK_ID, NETWORK_ID_INCREMENT } from '@rediacc/shared/renet-contract';
 
 // Mock configFileStorage to control the config state
 let mockConfig: Record<string, unknown> = {};
@@ -16,7 +16,7 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
 }));
 
 // Mock the base class methods
-vi.mock('../config-base.js', () => ({
+vi.mock('../config/config-base.js', () => ({
   ConfigServiceBase: class {
     getEffectiveConfigName() {
       return 'test';
@@ -31,7 +31,7 @@ describe('allocateNetworkId', { timeout: 30_000 }, () => {
   });
 
   it('starts at MIN_NETWORK_ID for empty config', async () => {
-    const { configService } = await import('../config-resources.js');
+    const { configService } = await import('../config/config-resources.js');
     const id = await configService.allocateNetworkId();
     expect(id).toBe(MIN_NETWORK_ID);
     expect((mockConfig.defaults as { nextNetworkId?: number }).nextNetworkId).toBe(
@@ -40,7 +40,7 @@ describe('allocateNetworkId', { timeout: 30_000 }, () => {
   });
 
   it('increments sequentially', async () => {
-    const { configService } = await import('../config-resources.js');
+    const { configService } = await import('../config/config-resources.js');
     const id1 = await configService.allocateNetworkId();
     const id2 = await configService.allocateNetworkId();
     expect(id2).toBe(id1 + NETWORK_ID_INCREMENT);
@@ -48,7 +48,7 @@ describe('allocateNetworkId', { timeout: 30_000 }, () => {
 
   it('continues from nextNetworkId if set', async () => {
     mockConfig = { defaults: { nextNetworkId: 5000 } };
-    const { configService } = await import('../config-resources.js');
+    const { configService } = await import('../config/config-resources.js');
     const id = await configService.allocateNetworkId();
     expect(id).toBe(5000);
     expect((mockConfig.defaults as { nextNetworkId?: number }).nextNetworkId).toBe(
@@ -65,7 +65,7 @@ describe('allocateNetworkId', { timeout: 30_000 }, () => {
         },
       },
     };
-    const { configService } = await import('../config-resources.js');
+    const { configService } = await import('../config/config-resources.js');
     const id = await configService.allocateNetworkId();
     expect(id).toBe(6000 + NETWORK_ID_INCREMENT);
   });
@@ -81,7 +81,7 @@ describe('allocateNetworkId', { timeout: 30_000 }, () => {
         },
       },
     };
-    const { configService } = await import('../config-resources.js');
+    const { configService } = await import('../config/config-resources.js');
     const id = await configService.allocateNetworkId();
     expect(id).toBe(MIN_NETWORK_ID);
   });
@@ -100,7 +100,7 @@ describe('allocateNetworkId', { timeout: 30_000 }, () => {
       defaults: { nextNetworkId: MAX_NETWORK_ID + NETWORK_ID_INCREMENT },
       resources: { repositories: usedRepos },
     };
-    const { configService } = await import('../config-resources.js');
+    const { configService } = await import('../config/config-resources.js');
     // This should find a gap at MIN_NETWORK_ID + 11 * INCREMENT (past the dense block)
     // but not throw because the dense block is tiny
     const id = await configService.allocateNetworkId();
@@ -113,7 +113,7 @@ describe('allocateNetworkId', { timeout: 30_000 }, () => {
   });
 
   it('IDs are always multiples of INCREMENT from MIN', async () => {
-    const { configService } = await import('../config-resources.js');
+    const { configService } = await import('../config/config-resources.js');
     for (let i = 0; i < 5; i++) {
       const id = await configService.allocateNetworkId();
       expect((id - MIN_NETWORK_ID) % NETWORK_ID_INCREMENT).toBe(0);

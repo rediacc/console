@@ -1,5 +1,5 @@
 /** Resolve a short domain name (no dots) to FQDN using baseDomain. */
-export function resolveDomain(domain: string, baseDomain?: string): string {
+function resolveDomain(domain: string, baseDomain?: string): string {
   if (!domain || domain.includes('.')) return domain;
   return baseDomain ? `${domain}.${baseDomain}` : domain;
 }

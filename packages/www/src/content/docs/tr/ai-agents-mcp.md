@@ -4,8 +4,8 @@ description: Model Context Protocol (MCP) sunucusunu kullanarak yapay zeka ajanl
 category: Guides
 order: 33
 language: tr
-sourceHash: "4483eb3da34a6c03"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d515d5491751e1fe"
+sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
 ## Genel Bakış
@@ -159,5 +159,4 @@ MCP sunucusu durumsuz (stateless) çalışır. Her araç çağrısı, `rdc`'yi `
 
 - Araç çağrıları arasında durum sızıntısı olmaz
 - Mevcut `rdc` yapılandırmanızı ve SSH anahtarlarınızı kullanır
-- Hem yerel hem de bulut adaptörleriyle çalışır
 - Bir komuttaki hatalar diğerlerini etkilemez

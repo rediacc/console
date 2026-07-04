@@ -19,7 +19,7 @@ import { migrateV1ToV2 } from './v1-to-v2.js';
 
 export const CURRENT_SCHEMA_VERSION = 2;
 
-export interface Migration {
+interface Migration {
   readonly fromVersion: number;
   readonly toVersion: number;
   readonly migrate: (raw: Record<string, unknown>) => Record<string, unknown>;

@@ -12,7 +12,7 @@ import {
   type SubcommandDef,
 } from '../config/command-registry.js';
 import { t } from '../i18n/index.js';
-import { outputService } from '../services/output.js';
+import { outputService } from '../services/core/output.js';
 import { isAgentEnvironment } from './agent-guard.js';
 
 /** Whether to show extended (full) help descriptions instead of summaries. */
@@ -141,7 +141,8 @@ function buildInlineSubcommandDetails(parentCmd: Command): string {
 
 /** Recursively apply the help config to a command and all its descendants. */
 function applyHelpConfig(cmd: Command): void {
-  // Hide cloud-only options (--team, --region) from help — they're still functional if passed
+  // Hide the legacy parent-scoping options (--team, --region) from help — they're
+  // accepted for scripting compatibility but carry no meaning for the local adapter.
   for (const opt of cmd.options) {
     if (opt.long === '--team' || opt.long === '--region') {
       (opt as { hidden?: boolean }).hidden = true;

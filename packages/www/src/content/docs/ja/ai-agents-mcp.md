@@ -4,8 +4,8 @@ description: Model Context Protocol（MCP）サーバーを使用して、AIエ�
 category: Guides
 order: 33
 language: ja
-sourceHash: "4483eb3da34a6c03"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d515d5491751e1fe"
+sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
 ## 概要
@@ -159,5 +159,4 @@ MCPサーバーはステートレスです。各ツール呼び出しは `--outp
 
 - ツール呼び出し間で状態が漏洩しない
 - 既存の `rdc` 設定とSSH鍵を使用
-- ローカルアダプターとクラウドアダプターの両方で動作
 - 1つのコマンドのエラーが他に影響しない

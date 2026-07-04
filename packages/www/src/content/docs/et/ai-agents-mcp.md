@@ -4,8 +4,8 @@ description: Ühendage AI-agendid Rediacc infrastruktuuriga Model Context Protoc
 category: Guides
 order: 33
 language: et
-sourceHash: "4483eb3da34a6c03"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d515d5491751e1fe"
+sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
 ## Ülevaade
@@ -159,5 +159,4 @@ MCP server on olekuta. Iga tööriistakutse käivitab `rdc` isoleeritud alamprot
 
 - Olekut ei leki tööriistakutsete vahel
 - Kasutab teie olemasolevat `rdc` konfiguratsiooni ja SSH-võtmeid
-- Töötab nii lokaalse kui pilvepõhise adapteriga
 - Ühe käsu vead ei mõjuta teisi

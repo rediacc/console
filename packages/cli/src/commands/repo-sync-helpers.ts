@@ -6,7 +6,7 @@ import {
   getRsyncPreview,
   type RsyncChanges,
   type RsyncExecutorOptions,
-} from '../shared-desktop/sync/index.js';
+} from '../remote/sync/index.js';
 import chalk from 'chalk';
 import { t } from '../i18n/index.js';
 
@@ -155,7 +155,7 @@ export function formatBytes(bytes: number): string {
   return `${Number.parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
 }
 
-export function hasNoChanges(changes: RsyncChanges): boolean {
+function hasNoChanges(changes: RsyncChanges): boolean {
   return (
     changes.newFiles.length === 0 &&
     changes.modifiedFiles.length === 0 &&
@@ -163,7 +163,7 @@ export function hasNoChanges(changes: RsyncChanges): boolean {
   );
 }
 
-export async function interactiveConfirmation(changes: RsyncChanges): Promise<boolean> {
+async function interactiveConfirmation(changes: RsyncChanges): Promise<boolean> {
   const readline = await import('node:readline');
   process.stdout.write(`${formatChangesSummary(changes)}\n`);
 

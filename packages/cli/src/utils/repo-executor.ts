@@ -3,9 +3,12 @@
  * Validates repo, executes via localExecutorService, renders unified timeline.
  */
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config-resources.js';
-import { localExecutorService, type LocalExecuteResult } from '../services/local-executor.js';
-import { outputService } from '../services/output.js';
+import { configService } from '../services/config/config-resources.js';
+import {
+  localExecutorService,
+  type LocalExecuteResult,
+} from '../services/executor/local-executor.js';
+import { outputService } from '../services/core/output.js';
 import { renderLocalExecutionFailure } from './local-execution-failures.js';
 import { formatStepDuration } from './timeline.js';
 

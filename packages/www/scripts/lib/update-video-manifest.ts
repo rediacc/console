@@ -29,10 +29,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-export const MANIFEST_PATH = path.join(__dirname, '../../src/data/video-manifest.json');
-export const CDN_BASE_URL = 'https://media.rediacc.com';
+const MANIFEST_PATH = path.join(__dirname, '../../src/data/video-manifest.json');
+const CDN_BASE_URL = 'https://media.rediacc.com';
 
-export type MediaKind = 'tutorials' | 'solutions';
+type MediaKind = 'tutorials' | 'solutions';
 
 export interface ManifestAsset {
   path: string;
@@ -71,7 +71,7 @@ export function saveManifest(manifest: VideoManifest): void {
  * write, no batching required for the volumes involved here (a few hundred
  * KB of JSON total).
  */
-export function setManifestEntry(
+function setManifestEntry(
   kind: MediaKind,
   key: string,
   lang: string,

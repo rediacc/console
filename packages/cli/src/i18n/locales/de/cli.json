@@ -445,6 +445,10 @@
         "remove": {
           "description": "Speicher aus der aktuellen Konfiguration entfernen",
           "success": "Speicher \"{{name}}\" entfernt"
+        },
+        "show": {
+          "description": "Anbieter und Konfiguration eines Speichers anzeigen",
+          "optionReveal": "Speicherkonfiguration im Klartext anzeigen (nur interaktives TTY; Audit-Log)"
         }
       }
     },
@@ -1350,9 +1354,6 @@
       },
       "rename": {
         "description": "Einen Speicheranbieter umbenennen"
-      },
-      "vault": {
-        "description": "Speicher-Tresor-Verwaltung (nur Cloud-Adapter)"
       }
     },
     "subscription": {

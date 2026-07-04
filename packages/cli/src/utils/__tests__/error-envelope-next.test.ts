@@ -14,10 +14,10 @@ const mockOutputService = {
   }),
 };
 
-vi.mock('../../services/output.js', () => ({ outputService: mockOutputService }));
+vi.mock('../../services/core/output.js', () => ({ outputService: mockOutputService }));
 
 // Telemetry is a no-op in tests (the real service awaits flushes that hang).
-vi.mock('../../services/telemetry.js', () => ({
+vi.mock('../../services/telemetry/telemetry.js', () => ({
   telemetryService: {
     trackError: vi.fn(),
     shutdown: vi.fn().mockResolvedValue(undefined),

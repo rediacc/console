@@ -15,7 +15,7 @@ import {
   type NetworkInterface,
   type ServiceInfo,
   type SystemInfo,
-} from '../../queue-vault/data/list-types.generated';
+} from '../../renet-contract/data/list-types.generated';
 import { isValidGuid } from '../../validation';
 import {
   isEncryptedVaultData,

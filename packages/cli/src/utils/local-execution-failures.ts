@@ -1,6 +1,6 @@
 import { DEFAULTS } from '@rediacc/shared/config';
-import type { LocalExecuteResult } from '../services/local-executor.js';
-import { outputService } from '../services/output.js';
+import type { LocalExecuteResult } from '../services/executor/local-executor.js';
+import { outputService } from '../services/core/output.js';
 import { isAgentEnvironment } from './agent-guard.js';
 import { getOutputFormat } from './errors.js';
 
