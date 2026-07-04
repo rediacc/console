@@ -176,6 +176,22 @@ jobs:
           echo "=== Disk usage after cleanup ==="
           df -h / || true
 
+      # VM base-image cache, one entry per matrix distro. The disks dir is
+      # cached whole because every leg also downloads the Ubuntu default image
+      # (prepareDriver runs EnsureBaseImage unconditionally) in addition to the
+      # VM_IMAGE distro. Monthly key: several of these URLs are moving
+      # pointers. Restored before any sudo step touches $RUNNER_TEMP/renet so
+      # extraction happens as the runner user.
+      - name: Compute VM image cache key
+        id: vm-image-key
+        run: echo "key=vm-base-image-bridge-${{ matrix.os-image }}-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - name: Restore VM base image cache
+        id: vm-image-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}
+
       - name: Setup KVM Host
         run: sudo $RENET_BINARY ops host setup
 
@@ -198,6 +214,20 @@ jobs:
             packages/bridge-tests/reports/bridge-logs/
           retention-days: 3
           if-no-files-found: ignore
+
+      # ops up runs unprivileged here (the harness spawns renet directly), so
+      # the chown is normally a no-op — kept for parity with the other cached
+      # jobs and as a guard should the harness ever run under sudo.
+      - name: Fix VM image ownership for cache save
+        if: always()
+        run: sudo chown -R "$(whoami)" "$RUNNER_TEMP/renet/disks" 2>/dev/null || true
+
+      - name: Save VM base image cache
+        if: always() && steps.vm-image-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}
 
   test-bridge-ceph:
     name: Bridge Ceph
@@ -287,6 +317,19 @@ jobs:
       - name: Install renet
         run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
+      # Same VM base-image cache as the Bridge Workers ubuntu leg: this job
+      # sets no VM_IMAGE, so it downloads only the Ubuntu default image and
+      # can share that cache entry (same key, same disks-dir path).
+      - name: Compute VM image cache key
+        id: vm-image-key
+        run: echo "key=vm-base-image-bridge-ubuntu-24.04-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - name: Restore VM base image cache
+        id: vm-image-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}
+
       - name: Setup KVM Host
         run: sudo $RENET_BINARY ops host setup
 
@@ -309,6 +352,17 @@ jobs:
             packages/bridge-tests/reports/bridge-logs/
           retention-days: 3
           if-no-files-found: ignore
+
+      - name: Fix VM image ownership for cache save
+        if: always()
+        run: sudo chown -R "$(whoami)" "$RUNNER_TEMP/renet/disks" 2>/dev/null || true
+
+      - name: Save VM base image cache
+        if: always() && steps.vm-image-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}
 
   test-fork-isolation:
     name: Concurrent Fork Isolation
