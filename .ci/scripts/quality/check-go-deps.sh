@@ -134,6 +134,8 @@ for dir in "${GO_DIRS[@]}"; do
                 ;;
             blocked)
                 ALL_BLOCKED+=("  $name: $path $current -> $latest (blocked)")
+                # Surface the BLOCKER reason like the npm deps gate does.
+                ALL_BLOCKED+=("    Reason: ${BLOCKED_MODULE_REASONS[$path]:-}")
                 ;;
             toofresh)
                 ALL_TOOFRESH+=("  $name: $path $current -> $latest (too new)")
