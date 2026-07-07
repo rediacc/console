@@ -10,7 +10,7 @@
 FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04
 
 ARG NODE_VERSION=22
-ARG GO_VERSION=1.24.12
+ARG GO_VERSION=1.26.4
 
 # Align the vscode user with the Rediacc universal UID/GID (7111). This matches
 # common.RediaccUID in renet and the host-side ownership of /mnt/rediacc/...
@@ -165,6 +165,11 @@ ENV PATH="$NVM_DIR/current/bin:$PATH"
 # =============================================================================
 ENV GOROOT=/usr/local/go
 ENV GOPATH=/go
+# Never auto-download a different toolchain: tool installs below must build
+# with the pinned GO_VERSION. Without this, a tool's `go` directive can pull
+# a same-day toolchain whose sumdb entry is not published yet (gopls v0.22.0
+# resolved the never-published go1.26.5 and 404'd the whole image build).
+ENV GOTOOLCHAIN=local
 ARG TARGETARCH
 
 RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz" \
