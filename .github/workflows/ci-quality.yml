@@ -560,6 +560,11 @@ jobs:
       - name: Check subscription schema consistency
         run: .ci/scripts/quality/check-subscription-schema.sh
 
+      # Needs the renet submodule (Dockerfile ARGs + pkg/embed sources), so it
+      # runs here rather than in quality-security (submodule-less checkout).
+      - name: Check embed credits consistency
+        run: npm run check:ci-embed-credits
+
   quality-account:
     name: Account Server
     runs-on: ubuntu-latest

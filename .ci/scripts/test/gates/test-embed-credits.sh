@@ -15,6 +15,14 @@ source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
 VALIDATOR="$REPO_ROOT/scripts/check-embed-credits.ts"
 
+# Every assertion (including the fixture-override ones) reads the real
+# Dockerfile + embed.go from the submodule; without it there is nothing to
+# test. The gate itself runs in the Renet quality job, which has submodules.
+if [[ ! -f "$REPO_ROOT/private/renet/Dockerfile" ]]; then
+    echo "renet submodule not present -- skipping embed-credits gate test"
+    exit 0
+fi
+
 FIXTURE_DIR=""
 setup_fixtures() {
     FIXTURE_DIR="$(mktemp -d)"
