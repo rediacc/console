@@ -242,7 +242,6 @@ const CONFIG_KEY_ORDER = [
   'userEmail',
   'team',
   'region',
-  'bridge',
 
   // Defaults
   'machine',

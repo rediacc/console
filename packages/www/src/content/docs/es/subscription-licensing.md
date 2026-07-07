@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: es
-sourceHash: 10e9f781881854be
-sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
+sourceHash: de3bcbe1022db82f
+sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
 # Suscripciones y Licencias
@@ -62,7 +62,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Ranuras de máquina (lado del servidor)
 
-El seguimiento de ranura de máquina se aplica del lado del servidor. Cuando la CLI emite una licencia de repositorio, el servidor de cuenta verifica la cuota de ranura de máquina de la suscripción (por ejemplo, 2 máquinas para Community, 3 para Professional). Se mantiene una ranura durante 5 horas desde la última emisión de licencia de repositorio en esa máquina y se libera automáticamente después de la inactividad. Un plan Business de 10 ranuras puede cubrir docenas de máquinas a lo largo del tiempo, ya que las ranuras solo se mantienen mientras aprovisionas activamente.
+El seguimiento de ranura de máquina se aplica del lado del servidor. Cuando la CLI emite una licencia de repositorio, el servidor de cuenta verifica la cuota de ranura de máquina de la suscripción. Todos los planes de autoservicio (Community, Professional, Business) incluyen una ranura de máquina; las implementaciones multi-máquina son una configuración Enterprise dimensionada junto con nuestros partners. Se mantiene una ranura durante 5 horas desde la última emisión de licencia de repositorio en esa máquina y se libera automáticamente después de la inactividad. Como una ranura solo se mantiene mientras aprovisionas activamente, una sola ranura puede seguir cubriendo varias máquinas a lo largo de un mes.
 
 No se almacena ningún archivo de licencia de máquina en la máquina. La aplicación de ranura ocurre en el momento de la issuance en el servidor.
 
@@ -93,12 +93,20 @@ Los límites predeterminados de planes pagados son:
 
 | Plan | Licencias Flotantes | Tamaño de Repositorio | Issuances de licencia de repositorio mensuales | Delegación cert predeterminado / máximo |
 |------|-------------------|-----------------|-------------------------------|---|
-| Community | 2 | 10 GB | 100 | 15d / 30d |
-| Professional | 3 | 50 GB | 2,000+ | 60d / 120d |
-| Business | 10 | 200 GB | 5,000+ | 90d / 180d |
-| Enterprise | 25+ | 1 TB+ | 15,000+ | 120d / 365d |
+| Community | 1 | 10 GB | 100 | 15d / 30d |
+| Professional | 1 | 100 GB | 2,000+ | 60d / 120d |
+| Business | 1 | 500 GB | 5,000+ | 90d / 180d |
+| Enterprise | Personalizado | 1 TB+ | 15,000+ | 120d / 365d |
 
 Los límites específicos del contrato pueden aumentar o disminuir estos valores para un cliente específico. La validez del certificado de delegación también tiene un límite máximo de `subscription.expiresAt + 3 day grace`, por lo que las suscripciones facturadas mensualmente obtienen naturalmente certificados alineados con su ciclo de facturación. Consulta [Cadena de Licencias y Delegación - Política de Validez](/es/docs/license-chain) para conocer todas las reglas.
+
+## Prueba Gratuita y el Plan de Respaldo Community
+
+Los nuevos registros comienzan una prueba gratuita de 14 días en Professional o Business. Se solicita una tarjeta de crédito al registrarte, y el primer cobro se realiza solo cuando termina la prueba, así que cancelar antes no tiene ningún costo. Hay una prueba disponible por cliente.
+
+Community es el nivel gratuito permanente. Ya no es una opción de registro directo para cuentas nuevas; en su lugar, una cuenta pasa a Community cuando termina una suscripción: al cancelar durante la prueba, al cancelar más tarde un plan pagado, o por un pago fallido. En el respaldo de Community conservas una máquina con 10 GB por repositorio y 100 setups al mes. Las cuentas creadas antes del lanzamiento del modelo basado en prueba conservan su acceso Community existente.
+
+La aplicación de límites se mantiene flexible. Los repositorios en ejecución siguen funcionando incluso después de que termina una suscripción; solo las operaciones nuevas (crear, hacer fork, redimensionar y renovar la licencia) requieren un derecho activo.
 
 ## Período de Gracia de Migración de VM
 
@@ -112,7 +120,7 @@ En la práctica:
 - No se requiere intervención manual
 - Verifica el ID de máquina y el estado de la licencia con `rdc machine query --system --licenses --name <machine>`
 
-**Usuarios del canal Edge** reciben 2X los límites de Community sin costo alguno (repositorios de 20 GB, 200 issuances/mes, 4 máquinas). Los planes pagados solo están disponibles en el canal Stable. Consulta [Canales de Release](/es/docs/release-channels) para más detalles.
+**Las cuentas del canal Edge** se ejecutan en el plan Community con el doble de los límites (repositorios de 20 GB, 200 setups/mes, 2 máquinas). Los planes pagados solo están disponibles en el canal Stable. Consulta [Canales de Release](/es/docs/release-channels) para más detalles.
 
 ## Qué sucede durante Repo Create, Up, Down y Restart
 

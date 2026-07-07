@@ -156,7 +156,6 @@ function stripSensitiveFields(config: RdcConfig): RdcConfig {
       ? {
           team: config.account.team,
           region: config.account.region,
-          bridge: config.account.bridge,
           accountServer: config.account.accountServer,
         }
       : undefined,

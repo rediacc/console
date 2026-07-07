@@ -35,7 +35,6 @@ describe('MCP tool definitions', () => {
       expect(names).toContain('machine_services');
       expect(names).toContain('machine_repos');
       expect(names).toContain('machine_health');
-      expect(names).toContain('agent_capabilities');
     });
 
     it('are not marked as destructive', () => {
@@ -99,11 +98,6 @@ describe('MCP tool definitions', () => {
         'staging',
         '--containers',
       ]);
-    });
-
-    it('agent_capabilities builds correct argv', () => {
-      const tool = TOOLS.find((t) => t.name === 'agent_capabilities')!;
-      expect(tool.command({})).toEqual(['agent', 'capabilities']);
     });
 
     it('repo_create builds correct argv', () => {

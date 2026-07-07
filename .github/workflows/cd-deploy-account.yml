@@ -214,6 +214,27 @@ jobs:
           echo "domain=$DOMAIN" >> "$GITHUB_OUTPUT"
           echo "sandbox=$SANDBOX" >> "$GITHUB_OUTPUT"
 
+      # Preflight: the production price catalog is only updated by a manual
+      # stripe-sync run per regional Stripe account. Fail the deploy if the
+      # target account's lookup keys drift from shared PLAN_PRICING, so code
+      # expecting new prices can never ship before the sync ran.
+      - name: Verify Stripe prices match shared constants (${{ matrix.id }})
+        working-directory: private/account
+        env:
+          STRIPE_KEY_EU: ${{ secrets.STRIPE_SECRET_KEY_EU }}
+          STRIPE_KEY_US: ${{ secrets.STRIPE_SECRET_KEY_US }}
+          STRIPE_KEY_ASIA: ${{ secrets.STRIPE_SECRET_KEY_ASIA }}
+          STRIPE_SANDBOX_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+          SUFFIX: ${{ steps.config.outputs.suffix }}
+        run: |
+          if [[ "${{ inputs.target }}" == "stable" ]]; then
+            key_var="STRIPE_KEY_${SUFFIX}"
+            export STRIPE_SECRET_KEY="${!key_var}"
+          else
+            export STRIPE_SECRET_KEY="${STRIPE_SANDBOX_KEY}"
+          fi
+          npx tsx scripts/check-live-prices.ts
+
       - name: Deploy account Worker (${{ matrix.id }})
         run: .ci/scripts/deploy/deploy-account.sh --region ${{ steps.config.outputs.region }} --target ${{ inputs.target }}
         env:

@@ -20,6 +20,7 @@ import illustrationInfrastructureCosts from '../assets/images/illustrations/infr
 import illustrationInstantRecovery from '../assets/images/illustrations/instant-recovery.svg';
 import illustrationInstantRecoveryMobile from '../assets/images/illustrations/instant-recovery.mobile.svg';
 import illustrationIntegrations from '../assets/images/illustrations/integrations.svg';
+import illustrationKubernetesClusterMobility from '../assets/images/illustrations/kubernetes-cluster-mobility.svg';
 import illustrationMigrationSafety from '../assets/images/illustrations/migration-safety.svg';
 import illustrationProductionParity from '../assets/images/illustrations/production-parity.svg';
 import illustrationRapidRecovery from '../assets/images/illustrations/rapid-recovery.svg';
@@ -459,6 +460,37 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
       { name: 'Keycloak', kind: 'auth' },
       { name: 'Vaultwarden', kind: 'storage' },
       { name: 'MinIO', kind: 'storage' },
+    ],
+  },
+  'kubernetes-cluster-mobility': {
+    contentKey: 'kubernetesClusterMobility',
+    category: 'multi-cloud',
+    illustration: illustrationKubernetesClusterMobility,
+    sections: [
+      'hero',
+      'stats',
+      'problem',
+      'howItWorks',
+      'techDiff',
+      'benefits',
+      'downloadGated',
+      'competitorComparison',
+      'bottomCta',
+      'downloadShort',
+      'techStrip',
+      'exploreSolutions',
+      'references',
+    ],
+    competitors: ['Velero', 'Kasten K10', 'Cluster API', 'RBD Mirroring'],
+    techStrip: [
+      { name: 'GitLab', kind: 'devops' },
+      { name: 'Nextcloud', kind: 'collab' },
+      { name: 'WordPress', kind: 'cms' },
+      { name: 'MariaDB', kind: 'data' },
+      { name: 'Grafana', kind: 'monitor' },
+      { name: 'Keycloak', kind: 'auth' },
+      { name: 'MinIO', kind: 'storage' },
+      { name: 'Gitea', kind: 'devops' },
     ],
   },
   'vendor-lock-in': {

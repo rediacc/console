@@ -3,6 +3,7 @@ import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { assertCommandPolicy, CMD, type CommandPath } from '../utils/command-policy.js';
 import { handleError } from '../utils/errors.js';
+import { resolveRepoTarget } from '../utils/repo-target.js';
 import { confirmBatch } from './repo-batch-utils.js';
 
 type ExecOptions = {
@@ -10,11 +11,13 @@ type ExecOptions = {
   skipRouterRestart?: boolean;
   parallel?: boolean;
   concurrency?: string;
+  kubeCluster?: string;
 };
 type Messages = { starting: string; completed: string; failed: string };
 
 type MountOptions = ExecOptions & {
-  machine: string;
+  machine?: string;
+  cluster?: string;
   checkpoint?: boolean;
   noDocker?: boolean;
   yes?: boolean;
@@ -47,6 +50,7 @@ async function executeMountAction(
     meta: { action: string }
   ) => Promise<void>
 ): Promise<void> {
+  const { machineName, kubeCluster } = await resolveRepoTarget(options);
   if (name) {
     await assertCommandPolicy(CMD.REPO_MOUNT, name);
     const mountParams = buildMountParams(options);
@@ -55,22 +59,29 @@ async function executeMountAction(
     if (repo?.grandGuid && repo.grandGuid !== repo.repositoryGuid) {
       mountParams.grand = repo.grandGuid;
     }
-    await executeRepoFunction('repository_mount', name, options.machine, mountParams, options, {
-      starting: t('commands.repo.mount.starting', { repository: name, machine: options.machine }),
-      completed: t('commands.repo.mount.completed'),
-      failed: t('commands.repo.mount.failed'),
-    });
+    await executeRepoFunction(
+      'repository_mount',
+      name,
+      machineName,
+      mountParams,
+      { ...options, kubeCluster },
+      {
+        starting: t('commands.repo.mount.starting', { repository: name, machine: machineName }),
+        completed: t('commands.repo.mount.completed'),
+        failed: t('commands.repo.mount.failed'),
+      }
+    );
   } else {
     const repos = await configService.listRepositories();
-    if (!options.yes && !(await confirmBatch('Mount', repos.length, options.machine))) {
+    if (!options.yes && !(await confirmBatch('Mount', repos.length, machineName))) {
       return;
     }
     await iterateAllRepos(
       'repository_mount',
-      options.machine,
+      machineName,
       CMD.REPO_MOUNT,
       buildMountParams(options),
-      options,
+      { ...options, kubeCluster },
       {
         action: 'Mount',
       }
@@ -103,7 +114,8 @@ export function registerRepoVolumeCommands(
     .summary(t('commands.repo.mount.descriptionShort'))
     .description(t('commands.repo.mount.description'))
     .option('--name <name>', t('options.name'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('--checkpoint', t('commands.repo.mount.checkpointOption'))
     .option('--no-docker', t('commands.repo.mount.noDockerOption'))
     .option('--parallel', t('commands.repo.upAll.parallelOption'))
@@ -126,7 +138,8 @@ export function registerRepoVolumeCommands(
     .summary(t('commands.repo.unmount.descriptionShort'))
     .description(t('commands.repo.unmount.description'))
     .option('--name <name>', t('options.name'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('--checkpoint', t('commands.repo.unmount.checkpointOption'))
     .option('--parallel', t('commands.repo.upAll.parallelOption'))
     .option('--concurrency <n>', t('commands.repo.upAll.concurrencyOption'), '3')
@@ -136,7 +149,8 @@ export function registerRepoVolumeCommands(
     .action(
       async (options: {
         name?: string;
-        machine: string;
+        machine?: string;
+        cluster?: string;
         checkpoint?: boolean;
         parallel?: boolean;
         concurrency?: string;
@@ -145,6 +159,7 @@ export function registerRepoVolumeCommands(
         skipRouterRestart?: boolean;
       }) => {
         try {
+          const { machineName, kubeCluster } = await resolveRepoTarget(options);
           const name = options.name;
           if (name) {
             await assertCommandPolicy(CMD.REPO_UNMOUNT, name);
@@ -155,13 +170,13 @@ export function registerRepoVolumeCommands(
             await executeRepoFunction(
               'repository_unmount',
               name,
-              options.machine,
+              machineName,
               params,
-              options,
+              { ...options, kubeCluster },
               {
                 starting: t('commands.repo.unmount.starting', {
                   repository: name,
-                  machine: options.machine,
+                  machine: machineName,
                 }),
                 completed: t('commands.repo.unmount.completed'),
                 failed: t('commands.repo.unmount.failed'),
@@ -169,17 +184,17 @@ export function registerRepoVolumeCommands(
             );
           } else {
             const repos = await configService.listRepositories();
-            if (!options.yes && !(await confirmBatch('Unmount', repos.length, options.machine))) {
+            if (!options.yes && !(await confirmBatch('Unmount', repos.length, machineName))) {
               return;
             }
             const params: Record<string, unknown> = {};
             if (options.checkpoint) params.checkpoint = true;
             await iterateAllRepos(
               'repository_unmount',
-              options.machine,
+              machineName,
               CMD.REPO_UNMOUNT,
               params,
-              options,
+              { ...options, kubeCluster },
               { action: 'Unmount' }
             );
           }

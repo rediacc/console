@@ -27,11 +27,14 @@ import {
   detectFileWriteCommand,
   detectRepoContextCommand,
 } from '../utils/repo-context-guard.js';
+import { applyClusterConnectionContext } from '../services/cluster/cluster-target.js';
+import { resolveRepoTarget } from '../utils/repo-target.js';
 import { withSpinner } from '../utils/spinner.js';
 
 interface TermConnectOptions {
   team?: string;
   machine?: string;
+  cluster?: string;
   repository?: string;
   command?: string;
   container?: string;
@@ -64,7 +67,7 @@ const containerCommandBuilders: Record<
     `docker exec -it ${containerId} ${options.command ?? DEFAULTS.SHELL.BASH}`,
 };
 
-function buildEnvPrefix(connectionDetails?: ConnectionDetails): string {
+export function buildEnvPrefix(connectionDetails?: ConnectionDetails): string {
   const parts: string[] = [];
 
   if (connectionDetails?.environment) {
@@ -72,6 +75,15 @@ function buildEnvPrefix(connectionDetails?: ConnectionDetails): string {
       const escaped = String(value).replaceAll("'", "'\\''");
       parts.push(`export ${key}='${escaped}'`);
     }
+  }
+
+  // Pin the kubectl current-context to the repo's namespace for a --cluster -r
+  // session (the k8s analog of the repo `cd` above). KUBECONFIG is already
+  // exported by the loop, so this runs against the cluster's kubeconfig; the
+  // `|| true` keeps a shell open even if kubectl is momentarily unavailable.
+  if (connectionDetails?.kubeNamespace) {
+    const ns = connectionDetails.kubeNamespace.replaceAll("'", "'\\''");
+    parts.push(`kubectl config set-context --current --namespace='${ns}' >/dev/null 2>&1 || true`);
   }
 
   if (connectionDetails?.workingDirectory) {
@@ -191,7 +203,7 @@ function enforceFileWriteGuard(command: string): void {
   );
 }
 
-async function enforceTermPolicy(opts: TermConnectOptions): Promise<void> {
+async function enforceTermPolicy(opts: TermConnectOptions, isCluster: boolean): Promise<void> {
   if (opts.command && detectDockerComposeCommand(opts.command)) {
     throw new ValidationError(t('errors.term.dockerComposeForbidden'));
   }
@@ -214,7 +226,10 @@ async function enforceTermPolicy(opts: TermConnectOptions): Promise<void> {
     enforceFileWriteGuard(opts.command);
   }
 
-  if (opts.repository) {
+  // A cluster's `-r` is a namespace, not a docker repo, so the repo command
+  // policy (which resolves a repo GUID) does not apply; gate on control-node
+  // access instead. opts.machine is already the resolved control node here.
+  if (opts.repository && !isCluster) {
     await assertCommandPolicy(CMD.TERM_REPO, opts.repository);
   } else {
     assertAgentMachineAccess(opts.machine ?? DEFAULTS.CLOUD.MACHINE_PLACEHOLDER);
@@ -281,15 +296,80 @@ export function resolveTermOutputMode(opts: TermConnectOptions): {
   return { quietOutput, noTTY };
 }
 
+interface TermTarget {
+  /** Effective SSH machine — the control node for a cluster target. */
+  targetMachine: string;
+  /** Set when the target is a cluster; threaded into KUBECONFIG injection. */
+  kubeCluster?: string;
+  isCluster: boolean;
+  /** `-r` as a docker repo (machine target); undefined for a cluster target. */
+  dockerRepo?: string;
+  /** `-r` as a k8s namespace (cluster target); undefined for a machine target. */
+  kubeNamespace?: string;
+  /** Session-title label: cluster name for a cluster, else the machine name. */
+  sessionLabel: string;
+  /** Session-title scope: namespace for a cluster, else the docker repo. */
+  sessionScope?: string;
+}
+
+/**
+ * Resolve -m/--cluster to a concrete SSH target and split the meaning of `-r`.
+ * A cluster resolves to its control node; `-r` is a docker repo for a machine
+ * target but a k8s namespace for a cluster target (design D14). container-exec
+ * has no v1 cluster wiring, so refuse it here rather than run a bogus
+ * `docker exec` on the control node.
+ */
+async function resolveTermTarget(opts: TermConnectOptions): Promise<TermTarget> {
+  const { machineName: targetMachine, kubeCluster } = await resolveRepoTarget({
+    machine: opts.machine,
+    cluster: opts.cluster,
+  });
+  const isCluster = Boolean(kubeCluster);
+
+  if (isCluster && opts.container) {
+    throw new ValidationError(
+      t('errors.cluster.featureUnsupportedV1', {
+        feature: '--container',
+        hint: 'use -c "kubectl exec <pod> -- <cmd>" instead',
+      })
+    );
+  }
+
+  return {
+    targetMachine,
+    kubeCluster,
+    isCluster,
+    dockerRepo: isCluster ? undefined : opts.repository,
+    kubeNamespace: isCluster ? opts.repository : undefined,
+    sessionLabel: isCluster ? (kubeCluster as string) : targetMachine,
+    // Same underlying `-r` value in both roles (docker repo or namespace).
+    sessionScope: opts.repository,
+  };
+}
+
 async function connectTerminal(options: TermConnectOptions): Promise<void> {
   const startTime = Date.now();
   const opts = await configService.applyDefaults(options);
-  await enforceTermPolicy(opts);
+
+  const target = await resolveTermTarget(opts);
+  opts.machine = target.targetMachine;
+
+  await enforceTermPolicy(opts, target.isCluster);
 
   const { quietOutput, noTTY } = resolveTermOutputMode(opts);
 
   const { connectionDetails, teamName, machineName, repositoryName } =
-    await validateAndGetConnectionDetails({ ...opts, quiet: quietOutput });
+    await validateAndGetConnectionDetails({
+      team: opts.team,
+      machine: target.targetMachine,
+      repository: target.dockerRepo,
+      quiet: quietOutput,
+    });
+
+  if (target.kubeCluster) {
+    applyClusterConnectionContext(connectionDetails, target.kubeCluster, target.kubeNamespace);
+  }
+
   const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
@@ -318,9 +398,11 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
   try {
     await sshConnection.setup();
 
-    const title = repositoryName
-      ? `Rediacc - ${teamName}/${machineName}/${repositoryName}`
-      : `Rediacc - ${teamName}/${machineName}`;
+    // For a cluster target the session label shows cluster/namespace; the docker
+    // repositoryName is undefined there (it is a namespace, carried separately).
+    const title = target.sessionScope
+      ? `Rediacc - ${teamName}/${target.sessionLabel}/${target.sessionScope}`
+      : `Rediacc - ${teamName}/${target.sessionLabel}`;
 
     const destination = `${connectionDetails.user}@${connectionDetails.host}`;
     const remoteCommand = buildRemoteCommand(options, connectionDetails);
@@ -343,7 +425,7 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
     auditService.recordOperation({
       functionName: 'term_connect',
       machineName,
-      repoName: repositoryName,
+      repoName: target.sessionScope,
       success,
       exitCode: success ? 0 : 1,
       durationMs: Date.now() - startTime,
@@ -462,6 +544,7 @@ ${t('help.examples')}
   $ rdc term connect -m server-1                  ${t('help.term.machine')}
   $ rdc term connect -m server-1 -r my-app        ${t('help.term.repo')}
   $ rdc term connect -m server-1 -c "uptime"      ${t('help.term.command')}
+  $ rdc term connect --cluster prod -r shop       ${t('help.term.cluster')}
 
   ${t('help.term.syncHint')}
 `
@@ -472,6 +555,7 @@ ${t('help.examples')}
     .description(t('commands.term.connect.description'))
     .option('-t, --team <name>', t('options.team'))
     .option('-m, --machine <name>', t('options.machine'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('-r, --repository <name>', t('options.repository'))
     .option('-c, --command <cmd>', t('options.command'))
     .option('--container <id>', t('options.container'))

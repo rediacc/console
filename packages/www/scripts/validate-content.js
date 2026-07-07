@@ -50,6 +50,7 @@ const EXCLUSIONS = {
   ],
   blog: [
     'git-diff-for-encrypted-disk-images.md', // pending translation; remove after the 12 langs land
+    'fork-a-running-kubernetes-cluster.md', // pending translation; remove after the 12 langs land
   ],
 };
 

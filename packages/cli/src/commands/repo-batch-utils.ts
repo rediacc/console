@@ -12,6 +12,7 @@ import { getOutputFormat, handleError } from '../utils/errors.js';
 import { createRepoNameResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { recordTimelineStep, type TimelineStep } from '../utils/timeline.js';
+import { resolveRepoTarget } from '../utils/repo-target.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
 
 /** Prompt the user for batch confirmation. Returns true if confirmed. */
@@ -272,7 +273,8 @@ export function printServiceUrlPattern(repoName: string, machineDomain: string):
 }
 
 export async function handleUpAll(options: {
-  machine: string;
+  machine?: string;
+  cluster?: string;
   includeForks?: boolean;
   mountOnly?: boolean;
   parallel?: boolean;
@@ -281,7 +283,9 @@ export async function handleUpAll(options: {
   skipRouterRestart?: boolean;
   dryRun?: boolean;
 }): Promise<void> {
-  await deployAllRepoKeys(options.machine);
+  const { machineName, kubeCluster } = await resolveRepoTarget(options);
+
+  await deployAllRepoKeys(machineName);
 
   const params: Record<string, unknown> = {};
   if (options.includeForks) params.include_forks = true;
@@ -292,11 +296,12 @@ export async function handleUpAll(options: {
     params.concurrency = Number.parseInt(options.concurrency, 10);
   }
 
-  outputService.info(t('commands.repo.upAll.starting', { machine: options.machine }));
+  outputService.info(t('commands.repo.upAll.starting', { machine: machineName }));
 
   const result = await localExecutorService.execute({
     functionName: 'repository_up_all',
-    machineName: options.machine,
+    machineName,
+    kubeCluster,
     params,
     debug: options.debug,
     skipRouterRestart: options.skipRouterRestart,
@@ -412,30 +417,34 @@ export async function runBatchOperation(
 }
 
 export async function handleDownAll(options: {
-  machine: string;
+  machine?: string;
+  cluster?: string;
   yes?: boolean;
   debug?: boolean;
   skipRouterRestart?: boolean;
   dryRun?: boolean;
 }): Promise<void> {
+  const { machineName, kubeCluster } = await resolveRepoTarget(options);
+
   if (options.dryRun) {
     outputService.print(
-      { dryRun: true, action: 'down-all', machine: options.machine },
+      { dryRun: true, action: 'down-all', machine: machineName },
       getOutputFormat()
     );
     return;
   }
 
   const repos = await configService.listRepositories();
-  if (!options.yes && !(await confirmBatch('Down', repos.length, options.machine))) {
+  if (!options.yes && !(await confirmBatch('Down', repos.length, machineName))) {
     return;
   }
 
-  outputService.info(t('commands.repo.down.allStarting', { machine: options.machine }));
+  outputService.info(t('commands.repo.down.allStarting', { machine: machineName }));
 
   const result = await localExecutorService.execute({
     functionName: 'repository_down_all',
-    machineName: options.machine,
+    machineName,
+    kubeCluster,
     params: {},
     debug: options.debug,
     skipRouterRestart: options.skipRouterRestart,
@@ -488,16 +497,19 @@ async function printRepoListTable(resolved: Record<string, unknown>[]): Promise<
 }
 
 export async function handleRepoList(options: {
-  machine: string;
+  machine?: string;
+  cluster?: string;
   debug?: boolean;
   skipRouterRestart?: boolean;
 }): Promise<void> {
   try {
-    outputService.info(t('commands.repo.list.starting', { machine: options.machine }));
+    const { machineName, kubeCluster } = await resolveRepoTarget(options);
+    outputService.info(t('commands.repo.list.starting', { machine: machineName }));
     const format = getOutputFormat();
     const result = await localExecutorService.execute({
       functionName: 'repository_list',
-      machineName: options.machine,
+      machineName,
+      kubeCluster,
       params: {},
       debug: options.debug,
       captureOutput: true,

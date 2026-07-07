@@ -5,8 +5,8 @@ description: >-
 category: Concepts
 order: 0
 language: ko
-sourceHash: "947fcefa63eac600"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "83f6a9a2b0c8bae2"
+sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
 # 아키텍처
@@ -117,6 +117,25 @@ Docker 데이터와 설정은 레포지토리 마운트 내부에 저장되어 �
 3. 접근 시 `cryptsetup`을 통해 마운트됩니다.
 
 자격 증명은 설정 파일에 저장되지만 서버에는 **절대** 저장되지 않습니다. 자격 증명 없이는 레포지토리 데이터를 읽을 수 없습니다. 자동 시작이 활성화된 경우 부팅 시 자동 마운트를 위해 보조 LUKS 키파일이 서버에 저장됩니다.
+
+## 스토리지 백엔드
+
+데이터스토어는 저장소 이미지를 보관하는 머신별 스토리지 풀입니다. `datastore init` 시점에 선택하는 두 가지 백엔드가 있습니다.
+
+- **로컬(기본값)**: 머신 자체 디스크의 루프 장치 기반 BTRFS 파일시스템입니다. 저장소 이미지는 그 내부의 LUKS 암호화 파일이며, 포크는 단순히 `cp --reflink=always` 한 번입니다. 모든 단일 머신 배포가 사용하는 백엔드이며 서버 디스크 외에는 아무것도 필요하지 않습니다.
+- **Ceph RBD**: 데이터스토어는 외부 Ceph 클러스터에서 매핑된 RBD 이미지 위에 있으며, 그 위에 순수한 BTRFS가 얹힙니다(Ceph 노드는 LUKS를 전혀 열지 않으므로 이 계층에는 LUKS가 없습니다). 포크와 읽기 전용 다중 클라이언트 아키텍처는 RBD 자체의 copy-on-write 기본 기능(snapshot, protect, clone)과 테넌트별 격리를 위한 RADOS 네임스페이스를 사용합니다.
+
+두 백엔드 모두 그 위의 모든 것에 동일한 저장소 모델을 제공하므로 `repo` 명령, 백업, 포크가 동일하게 작동합니다. 차이는 바이트가 어디에 있는지와 포크가 어떤 copy-on-write 메커니즘을 사용하는지(BTRFS reflink 대 RBD clone)입니다. 각 백엔드를 초기화하는 방법은 [머신 설정](/en/docs/setup)을, renet 수준의 데이터스토어 명령은 [서버 레퍼런스](/en/docs/server-reference)를 참조하세요.
+
+## Kubernetes 저장소
+
+Docker 저장소와 더불어 머신은 **클러스터**를 호스팅할 수 있습니다. Rediacc는 일반적인 객체 모델을 뒤집어 저장소 사고방식을 유지합니다. 클러스터가 컨테이너이고, Kubernetes 저장소는 그 안의 네임스페이스입니다.
+
+- 클러스터 상태(노드별 k3s 데이터 디렉터리)는 데이터스토어 기반 copy-on-write 이미지 파일로 노드마다 존재하므로, 클러스터는 이미지 집합으로서 포크되고 마이그레이션됩니다.
+- Kubernetes 저장소는 네임스페이스 `<repo>`와 그 볼륨입니다. 퍼시스턴트 볼륨은 **별도의** copy-on-write 단위(Ceph의 RBD 이미지, 또는 로컬 PV 프로비저너를 통한 작은 데이터스토어 이미지 파일)이며, 하나의 불투명한 클러스터 이미지 내부의 디렉터리가 되는 일은 없습니다. 이 분리 덕분에 저장소별 포크가 각각 독립적으로 copy-on-write될 수 있습니다.
+- `KUBECONFIG`는 `DOCKER_HOST`에 상응하는 것으로 주입되며, `renet kube` 래퍼는 `renet compose`가 Docker를 실행하는 방식과 동일하게 `up()`에서 매니페스트를 적용합니다.
+
+클러스터 전체의 복제와 재배치는 `rdc cluster fork`와 `rdc cluster migrate`에 있습니다. 이것이 차별화된 기능입니다. 실행 중인 클러스터를 데이터까지 포함해 짧은 컷오버로 다른 머신이나 데이터센터로 포크하거나 이동할 수 있습니다. 전체 모델, 명령, 측정된 컷오버 수치는 [Kubernetes](/en/docs/kubernetes) 가이드를 참조하세요.
 
 ## 설정 구조
 

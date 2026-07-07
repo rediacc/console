@@ -4,8 +4,8 @@ description: "원격 서버의 디렉터리 구조, renet 명령, systemd 서비
 category: "Concepts"
 order: 3
 language: ko
-sourceHash: "4fb53bb4cb1512f6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "af2e8fc3da708d9a"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # 서버 레퍼런스
@@ -227,6 +227,38 @@ renet datastore validate    # 파일시스템 무결성 확인
 renet datastore expand      # 온라인으로 데이터스토어 확장
 ```
 
+### 데이터스토어 백엔드 (Ceph RBD)
+
+데이터스토어는 로컬(머신 디스크의 루프 장치 기반 BTRFS, 기본값)이거나 RBD 이미지를 통해 외부 Ceph 클러스터를 백엔드로 사용합니다. 백엔드는 초기화 시점에 선택됩니다.
+
+```bash
+# 로컬 백엔드 (기본값)
+renet datastore init --size 50G
+
+# Ceph RBD 백엔드: 외부 Ceph 클러스터에서 매핑된 RBD 이미지 위의 BTRFS
+renet datastore init --backend ceph --pool rbd --image {name} --cluster ceph
+```
+
+Ceph 백엔드에서는 fork와 unfork가 BTRFS reflink 대신 RBD 자체의 copy-on-write 기본 기능을 사용합니다.
+
+```bash
+renet datastore fork   --source {image} --target {new-image}   # RBD 스냅샷 -> protect -> clone
+renet datastore unfork --image {image}                         # 의존성 순서대로 클론을 해체
+```
+
+Ceph 노드는 LUKS를 전혀 열지 않으므로(이 백엔드에는 이미지별 LUKS 계층이 없음), 메모리 사용량은 KDF 연산이 아니라 Ceph 데몬 튜닝(`osd_memory_target`)을 따릅니다. 두 번째 클라이언트는 동일한 RBD 이미지를 로컬 copy-on-write 오버레이와 함께 읽기 전용으로 매핑할 수 있으며, 이것이 읽기 위주의 스케일 아웃 경로입니다.
+
+### Kubernetes (renet kube)
+
+클러스터 노드에서 renet은 Docker를 감싸는 방식과 동일하게 k3s를 감쌉니다. `renet kube`는 compose에 해당하며, `KUBECONFIG`를 주입하고 Rediaccfile의 `up()`에서 매니페스트나 Helm 차트를 적용합니다.
+
+```bash
+sudo renet kube apply -f manifests/     # 저장소의 네임스페이스에 적용
+sudo renet kube -- get pods             # 고정된 네임스페이스의 kubectl로 전달
+```
+
+클러스터 상태는 데이터스토어 기반 copy-on-write 이미지에 있으며(k3s의 `--data-dir`가 이미지 마운트 내부에 바인딩됨), 이 덕분에 클러스터 전체가 포크되고 마이그레이션될 수 있습니다. 퍼시스턴트 볼륨은 별도의 copy-on-write 단위입니다: Ceph의 RBD 이미지(클러스터 인스턴스 및 포크마다 하나의 RADOS 네임스페이스), 또는 로컬 백엔드에서는 로컬 PV 프로비저너를 통한 작은 데이터스토어 이미지 파일입니다. 사용자 대상 워크플로는 [Kubernetes](/ko/docs/kubernetes) 가이드에 있습니다. CLI는 `rdc cluster` 및 클러스터를 인식하는 `rdc repo` 명령을 통해 이러한 경로를 구동합니다.
+
 ## Systemd 서비스
 
 각 저장소는 다음 systemd 유닛을 생성합니다:
@@ -236,6 +268,7 @@ renet datastore expand      # 온라인으로 데이터스토어 확장
 | `rediacc-docker-{id}.service` | 격리된 Docker 데몬 |
 | `rediacc-docker-{id}.socket` | Docker API 소켓 활성화 |
 | `rediacc-loopback-{id}.service` | 루프백 IP 별칭 설정 |
+| `rediacc-k3s-{id}.service` | 클러스터별 k3s 노드 (클러스터 호스트 전용) |
 
 모든 저장소에서 공유되는 전역 서비스:
 

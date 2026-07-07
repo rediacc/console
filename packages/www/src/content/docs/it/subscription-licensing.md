@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: it
-sourceHash: 10e9f781881854be
-sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
+sourceHash: de3bcbe1022db82f
+sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
 # Abbonamento e licenze
@@ -62,7 +62,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Slot macchina (lato server)
 
-Il tracciamento degli slot macchina è applicato lato server. Quando la CLI emette una licenza repo, il server account verifica la quota degli slot macchina dell'abbonamento (ad esempio, 2 macchine per Community, 3 per Professional). Uno slot viene occupato per 5 ore dall'ultima emissione di licenza repo su quella macchina e viene rilasciato automaticamente dopo un periodo di inattività. Un piano Business da 10 slot può quindi coprire dozzine di macchine nel tempo, poiché gli slot vengono occupati solo durante il provisioning attivo.
+Il tracciamento degli slot macchina è applicato lato server. Quando la CLI emette una licenza repo, il server account verifica la quota di slot macchina dell'abbonamento. Ogni piano self-service (Community, Professional, Business) include uno slot macchina; i deployment multi-macchina sono una configurazione Enterprise dimensionata insieme ai nostri partner. Uno slot viene occupato per 5 ore dall'ultima emissione di licenza repo su quella macchina e viene rilasciato automaticamente dopo un periodo di inattività. Poiché uno slot viene occupato solo mentre stai eseguendo provisioning attivamente, un singolo slot può comunque coprire più macchine nel corso di un mese.
 
 Nessun file di licenza macchina viene memorizzato sulla macchina. L'applicazione degli slot avviene al momento dell'emissione sul server.
 
@@ -93,12 +93,20 @@ I limiti predefiniti dei piani a pagamento sono:
 
 | Piano | Licenze floating | Dimensione repository | Emissioni di licenze repo al mese | Validità certificato delega predefinita / massima |
 |-------|------------------|-----------------------|-------------------------------------|---------------------------------------------------|
-| Community | 2 | 10 GB | 100 | 15g / 30g |
-| Professional | 3 | 50 GB | 2.000+ | 60g / 120g |
-| Business | 10 | 200 GB | 5.000+ | 90g / 180g |
-| Enterprise | 25+ | 1 TB+ | 15.000+ | 120g / 365g |
+| Community | 1 | 10 GB | 100 | 15g / 30g |
+| Professional | 1 | 100 GB | 2.000+ | 60g / 120g |
+| Business | 1 | 500 GB | 5.000+ | 90g / 180g |
+| Enterprise | Personalizzato | 1 TB+ | 15.000+ | 120g / 365g |
 
 I limiti specifici del contratto possono aumentare o ridurre questi valori per un cliente specifico. La validità del certificato di delega è anche limitata a `subscription.expiresAt + 3 giorno di grazia`, quindi gli abbonamenti con fatturazione mensile ottengono naturalmente certificati allineati al loro ciclo di fatturazione. Consulta [Catena di licenze e delega - Policy di validità](/it/docs/license-chain) per le regole complete.
+
+## Prova gratuita e ripiego su Community
+
+Le nuove registrazioni iniziano con una prova gratuita di 14 giorni sul piano Professional o Business. La carta di credito viene richiesta al momento della registrazione, ma il primo addebito avviene solo alla fine del periodo di prova, quindi disdire prima di allora non comporta alcun costo. È disponibile una sola prova gratuita per cliente.
+
+Community resta il piano gratuito di base permanente. Non è più selezionabile direttamente in fase di registrazione per i nuovi account; un account passa a Community ogni volta che un abbonamento termina: disdetta durante la prova, disdetta successiva di un piano a pagamento, oppure un pagamento non riuscito. Nel piano Community di riserva mantieni una macchina con 10 GB per repository e 100 configurazioni al mese. Gli account creati prima del lancio del modello basato su prova gratuita mantengono il loro accesso a Community esistente.
+
+L'applicazione resta permissiva. I repository in esecuzione continuano a funzionare anche dopo la fine di un abbonamento; solo le nuove operazioni (creazione, fork, ridimensionamento e aggiornamento della licenza) richiedono un diritto attivo.
 
 ## Periodo di grazia per migrazione VM
 
@@ -112,7 +120,7 @@ In pratica:
 - Nessun intervento manuale richiesto
 - Verifica l'ID macchina e lo stato della licenza con `rdc machine query --system --licenses --name <machine>`
 
-**Gli utenti del canale edge** ricevono 2X i limiti Community senza costi aggiuntivi (repository da 20 GB, 200 emissioni/mese, 4 macchine). I piani a pagamento sono disponibili solo sul canale Stable. Consulta [Canali di rilascio](/it/docs/release-channels) per i dettagli.
+**Gli account sul canale Edge** operano sul piano Community con il doppio dei limiti (repository da 20 GB, 200 configurazioni/mese, 2 macchine). I piani a pagamento sono disponibili solo sul canale Stable. Consulta [Canali di rilascio](/it/docs/release-channels) per i dettagli.
 
 ## Cosa succede durante la creazione, l'avvio, l'arresto e il riavvio di un repository
 

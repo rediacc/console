@@ -3,22 +3,6 @@
     "description": "SSH üzerinden makineleri, depoları ve dağıtımları yönetin"
   },
   "commands": {
-    "agent": {
-      "capabilities": {
-        "description": "Tüm kullanılabilir komutları argümanları ve seçenekleriyle listele"
-      },
-      "description": "Yapay zeka kodlama asistanları için agent dostu araçlar",
-      "descriptionShort": "Yapay zeka kodlama asistanları için agent dostu araçlar",
-      "exec": {
-        "description": "stdin üzerinden JSON girdisiyle bir komut çalıştır"
-      },
-      "generateReference": {
-        "description": "Claude becerileri için komut referansı Markdown dosyası oluştur"
-      },
-      "schema": {
-        "description": "Belirli bir komut için ayrıntılı şemayı göster"
-      }
-    },
     "backup": {
       "description": "Depo yedeklerini depolama ve makineler arasında gönderme, çekme ve senkronize etme",
       "schedule": {
@@ -26,6 +10,62 @@
       },
       "sync": {
         "description": "Makineler arası yedeklerin çift yönlü senkronizasyonu"
+      }
+    },
+    "cluster": {
+      "create": {
+        "baseDomainOption": "Kümenin genel DNS'i için temel alan adı (aksi takdirde bir kardeş makineden devralınır)",
+        "description": "'rdc config cluster add' ile tanımlanmış bir kümenin havuz üyelerini hazırlar, her birinde renet'i başlatır ve bileşenleri kurar (önce ceph). Bulut sağlayıcılar OpenTofu üzerinden hazırlanır; KVM daha sonraki bir dalgada gelecektir.",
+        "descriptionShort": "Yapılandırılmış bir kümeyi hazırla",
+        "nameOption": "Küme adı",
+        "sshUserOption": "Hazırlanan üyeler için SSH kullanıcısı"
+      },
+      "description": "Kümeleri hazırla ve yönet: özel bir ağ üzerinde adlandırılmış düğüm havuzu kümeleri (ceph, k8s-server, k8s-agent, hyperconverged). Havuz üyeleri makinelere dönüşür, bu nedenle her -m komutu bunlar üzerinde çalışır.",
+      "descriptionShort": "Küme oluştur ve yönet (özel bir LAN üzerinde düğüm havuzları)",
+      "destroy": {
+        "aborted": "İptal edildi.",
+        "confirm": "\"{{name}}\" kümesi ve tüm üyeleri yok edilsin mi?",
+        "description": "Hazırlanmış üyeleri kaldırır ve kümeyi ile makinelerini yapılandırmadan çıkarır.",
+        "descriptionShort": "Bir kümeyi ve üyelerini yok et",
+        "forceOption": "Onayı atla ve kaldırma hatalarına rağmen devam et",
+        "nameOption": "Küme adı"
+      },
+      "fork": {
+        "clusterOption": "Fork'lanacak mevcut hedef küme (farklı makinelerde olmalıdır)",
+        "description": "Depolarının verileri dahil olmak üzere tüm bir kümeyi yeni bir kümeye klonlar: küme ve PV imajlarının koordineli copy-on-write'ı, ardından fork'un yeni adreslerde ayağa kalkması için düğüm kimliğinin yeniden yazılması. Ebeveyn çalışmaya devam eder.",
+        "descriptionShort": "Kümenin tamamını klonla (verilerle birlikte)",
+        "nameOption": "Küme adı",
+        "tagOption": "Fork etiketi"
+      },
+      "install": {
+        "description": "Zaten hazırlanmış üyelere küme bileşenlerini kurar (önce ceph, sonra k8s).",
+        "descriptionShort": "Hazırlanmış bir kümeye bileşenler kur",
+        "nameOption": "Küme adı"
+      },
+      "kubeconfig": {
+        "cached": "Kubeconfig {{path}} konumunda önbelleğe alındı",
+        "description": "Kubeconfig'i küme kontrol düğümünden SSH üzerinden alır ve kubectl için yerel olarak (0600) önbelleğe kaydeder.",
+        "descriptionShort": "Bir küme kubeconfig'ini al ve önbelleğe kaydet",
+        "nameOption": "Küme adı"
+      },
+      "migrate": {
+        "description": "Depolarının verileri dahil olmak üzere tüm bir kümeyi, kısa bir kesinti süresiyle (sıcak ön kopya, ardından hedefte durdur-ve-yeniden-başlat) başka bir makineye veya veri merkezine taşır.",
+        "descriptionShort": "Kümenin tamamını başka bir yere taşı",
+        "nameOption": "Küme adı",
+        "toOption": "Hedef"
+      },
+      "scale": {
+        "countOption": "İstenen üye sayısı",
+        "description": "Bir havuzun üye sayısını değiştirir (makine ekler/kaldırır ve düğümleri katılır/boşaltır). k8s-agent havuzları yerinde ölçeklenir; ceph havuzunun büyümesi doğrudan cephadm aracılığıyla yapılır.",
+        "descriptionShort": "Bir küme havuzunu büyüt veya küçült",
+        "nameOption": "Küme adı",
+        "poolOption": "Havuz adı"
+      },
+      "status": {
+        "description": "Tüm kümeleri listeler veya --name ile bir kümenin tam yapılandırmasını gösterir.",
+        "descriptionShort": "Kümeleri ve havuzlarını göster",
+        "nameOption": "Tek bir kümeyi göster",
+        "none": "Yapılandırılmış küme yok. Şununla bir tane ekleyin: rdc config cluster add"
       }
     },
     "config": {
@@ -121,6 +161,32 @@
         "allCleared": "Tüm varsayılanlar temizlendi",
         "description": "Varsayılanları temizleyin (tümü veya belirli bir anahtar)",
         "keyCleared": "\"{{key}}\" temizlendi"
+      },
+      "cluster": {
+        "add": {
+          "description": "Bir veya daha fazla havuzla yeni bir küme tanımla"
+        },
+        "added": "\"{{name}}\" kümesi eklendi",
+        "addPool": {
+          "description": "Mevcut bir kümeye havuz ekle"
+        },
+        "cidrOption": "Özel ağ CIDR'i (ör. 10.0.0.0/24)",
+        "controlNodeOption": "Açık kontrol düğümü makinesi (varsayılan: ilk k8s-server üyesi)",
+        "description": "Kümeleri ve düğüm havuzlarını yapılandırmada tanımlayın. 'rdc cluster create' ile hazırlayın.",
+        "descriptionShort": "Kümeleri tanımla ve düzenle",
+        "list": {
+          "description": "Yapılandırılmış kümeleri listele"
+        },
+        "nameOption": "Küme adı",
+        "none": "Yapılandırılmış küme yok",
+        "poolAdded": "\"{{pool}}\" havuzu \"{{name}}\" kümesine eklendi",
+        "poolOption": "Havuz belirtimi ad:rol:sayı[:boyut] (rol: ceph|k8s-server|k8s-agent|hyperconverged)",
+        "primitiveOption": "Ağ ilkeli (ör. vlan, vpc, network)",
+        "providerOption": "Sağlayıcı: bir cloudProviders anahtarı veya 'kvm'",
+        "remove": {
+          "description": "Yapılandırmadan bir kümeyi kaldır"
+        },
+        "removed": "\"{{name}}\" kümesi kaldırıldı"
       },
       "delete": {
         "description": "Bir yapılandırma dosyasını silin",
@@ -451,6 +517,15 @@
           "optionReveal": "Depolama yapılandırmasını açık metin olarak göster (yalnızca etkileşimli TTY; denetlenir)"
         }
       }
+    },
+    "credits": {
+      "bundledTitle": "Çalışma zamanı ve paketlenmiş bağımlılıklar:",
+      "description": "rdc ile birlikte paketlenen üçüncü taraf bileşenleri yazdırır: renet'in gömdüğü ve taşıdığı ikili dosyalar (CRIU, rsync, rclone), gömülü Node.js çalışma zamanı ve paketlenmiş npm bağımlılıkları. Sürümleri, SPDX lisans tanımlayıcılarını ve GPL uyumluluğu için gereken tam sürüm kaynak arşivi URL'lerini gösterir. Sürüm derlemeleriyle paketlenen tam THIRD_PARTY_LICENSES metnini yazdırmak için --licenses kullanın.",
+      "descriptionShort": "Üçüncü taraf atıflarını ve lisans uyumluluğu bilgilerini göster",
+      "embeddedTitle": "Gömülü ikili dosyalar (renet tarafından taşınır):",
+      "gplHeader": "GPL kaynak kodu erişilebilirliği:",
+      "header": "Rediacc, Rediacc lisansı altında dağıtılan özel mülk yazılımdır; aşağıdaki üçüncü taraf bileşenler kendi lisansları altında onunla birlikte dağıtılır.\n\nrdc ile birlikte paketlenen üçüncü taraf bileşenler:",
+      "licensesUnavailable": "Tam THIRD_PARTY_LICENSES metni derleme sırasında üretilir ve yalnızca sürüm derlemeleriyle paketlenir. Geliştirme modunda, üretmek için CLI derlemesini çalıştırın veya bileşen başına atıfları şununla görüntüleyin: rdc credits"
     },
     "datastore": {
       "description": "Ceph RBD veri deposu yaşam döngüsünü yönet (init, fork, unfork, status)",
@@ -875,6 +950,8 @@
         "refOption": "Çıkış yapılacak commit GUID'i (veya --from ile dal adı)",
         "tagOption": "Yeni yazılabilir çalışan fork için ad"
       },
+      "clusterDone": "\"{{cluster}}\" kümesinde \"{{repository}}\" ad alanı {{verb}}",
+      "clusterOption": "Hedef Kubernetes kümesi (-m ile karşılıklı dışlayıcı); KUBECONFIG enjekte edilmiş şekilde kümenin kontrol düğümüne yönlendirir",
       "commit": {
         "authorOption": "Commit yazarı",
         "completed": "Commit edildi {{commit}}: {{message}}",
@@ -886,6 +963,7 @@
       },
       "create": {
         "alreadyExists": "\"{{name}}\" deposu bağlamda zaten mevcut",
+        "clusterResolved": "Kubernetes deposu \"{{repository}}\", \"{{cluster}}\" kümesini hedefliyor (kontrol düğümü {{controlNode}})",
         "completed": "Depo oluşturuldu",
         "description": "Yeni şifreli depo oluştur",
         "failed": "Depo oluşturma başarısız",
@@ -896,9 +974,9 @@
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" ({{size}}) deposu oluşturuluyor..."
       },
       "delete": {
+        "archived": "\"{{repository}}\" kimlik bilgisi arşivlendi",
         "archiveHint": "Kurtarma için kimlik bilgilerini arşivlemek üzere: --archive-config ile tekrar çalıştırın",
         "archiveOption": "Yapılandırma girdisini daha sonra kurtarmak için deletedRepositories'e taşı",
-        "archived": "\"{{repository}}\" kimlik bilgisi arşivlendi",
         "cloudBackupHint": "Bulut yedekleri (varsa) silmeden sonra kalır. Sahipsiz bulut yedeklerini şu komutla kaldırın: rdc storage prune --name <storage> -m {{machine}}",
         "completed": "Depo silindi",
         "configRetained": "\"{{repository}}\" yapılandırma girişi korundu (depo başka makinelerde mevcut olabilir). Kaldırmak için: rdc config repository remove --name {{repository}}",
@@ -956,6 +1034,7 @@
       "fork": {
         "alreadyExists": "\"{{name}}\" deposu bağlamda zaten mevcut",
         "checkpointOption": "fork öncesinde kaynakta CRIU checkpoint oluştur (fork üzerinde geri yükleme için işlem bellek durumunu yakala)",
+        "clusterResolved": "\"{{parent}}\", \"{{cluster}}\" kümesinde \"{{parent}}-{{tag}}\" ad alanı olarak fork'lanıyor (kontrol düğümü {{controlNode}})",
         "completed": "Fork oluşturuldu. Yerel olarak dağıt: repo up {{repository}} -m {{machine}}. Fork'u başka bir makineye taşımak için: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "Bir deponun CoW (Copy-on-Write) çatalını oluştur",
         "descriptionShort": "Deponun CoW çatalını oluştur (yeni GUID, networkId, IP aralığı)",
@@ -965,12 +1044,16 @@
         "failed": "Çatal oluşturma başarısız",
         "immutableOption": "Çatalı salt okunur olarak işaretler: bağlanmayı reddeder ve görüntüsünü kalıcı olarak bayt düzeyinde sabit tutar (makineler arası delta push için dondurulmuş bir commit/temel)",
         "immutableUpConflict": "repo fork: --immutable ve --up birlikte kullanılamaz. Değişmez bir çatal bağlanmayı reddeder, bu nedenle başlatılamaz. --up seçeneğini kaldırın veya normal bir çatal dağıtmak için --immutable seçeneğini kaldırın.",
+        "providerOption": "Yeni bir küme hazırla (kaynağın havuz şeklini yansıtarak) ve içine fork'la",
+        "providerPending": "\"{{parent}}\", yeni bir {{provider}} kümesine \"{{parent}}-{{tag}}\" olarak fork'lanıyor",
+        "provisioning": "Fork'lamadan önce \"{{cluster}}\" kümesi {{provider}} üzerinde hazırlanıyor...",
         "registered": "Çatal \"{{repository}}\" kaydedildi ({{guid}}, ağ {{networkId}})",
         "rollback": "\"{{repository}}\" yapılandırması geri alındı",
         "starting": "\"{{machine}}\" üzerinde \"{{parent}}\" deposunun \"{{repository}}\" olarak çatallanıyor...",
         "tagOption": "Çatal için etiket (isim:etiket oluşturur)",
         "tagRequired": "Çatal için etiket gereklidir. Kullanım: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "tagReservedLatest": "repo fork: \"latest\" etiketi ana (üretim) depo için ayrılmıştır — farklı bir --tag seçin (örn. \"test\", \"staging\", \"<feature>\")",
+        "toClusterOption": "Başka bir mevcut Kubernetes kümesine fork'la (kümeler arası ad alanı forku)",
         "upOption": "Fork sonrası bağlayıp servisleri başlat (fork + mount + up tek komutta)"
       },
       "fsck": {
@@ -1679,9 +1762,10 @@
     },
     "pageTitle": "Rediacc CLI Referansı",
     "sectionTitles": {
-      "agent": "Ajan araçları",
       "backup": "Yedekleme ve Geri Yükleme",
+      "cluster": "Küme Yönetimi",
       "config": "Yapılandırma Yönetimi",
+      "credits": "Üçüncü Taraf Katkıları",
       "datastore": "Veri deposu yönetimi",
       "doctor": "Sistem Tanılama",
       "machine": "Makine Yönetimi",
@@ -1722,7 +1806,8 @@
     "activationFailed": "Etkinleştirme başarısız",
     "affectedChildClones": ". Etkilenen alt klonlar: {{clones}}. Önce alt klonları silin veya yükseltin.",
     "agent": {
-      "commandBlocked": "\"{{command}}\" komutu ajan modunda kullanilabilir degil.\n\nBu komut, guvenlik korumalari olmadan rastgele dusuk seviyeli islevler calistirir. Bunun yerine tipli CLI komutlari veya MCP araclari kullanin.\n\nAlternatifler:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - Tum kullanilabilir komutlari gormek icin \"rdc agent capabilities\" calistirin\n\nDogrudan erisime ihtiyaciniz varsa, kullanicidan komutu dogrudan calistirmasini isteyin.",
+      "clusterOpBlocked": "\"{{command}}\" küme komutu ajan modunda engellenmiştir. Küme işlemleri gerçek altyapıyı sağlar veya kaldırır, bu yüzden bir ajan bunları kendisi yetkilendiremez. Kullanıcı: buna izin vermek için ajan oturumunu başlatmadan ÖNCE terminalinizde REDIACC_ALLOW_CLUSTER_OPS=<küme-adı> (veya tüm kümeler için *) ayarlayın — ajanın içinden ayarlanan bir geçersiz kılma kabul edilmez.",
+      "commandBlocked": "\"{{command}}\" komutu ajan modunda kullanilabilir degil.\n\nBu komut, guvenlik korumalari olmadan rastgele dusuk seviyeli islevler calistirir. Bunun yerine tipli CLI komutlari veya MCP araclari kullanin.\n\nAlternatifler:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - Tum kullanilabilir komutlari gormek icin \"rdc --help\" calistirin\n\nDogrudan erisime ihtiyaciniz varsa, kullanicidan komutu dogrudan calistirmasini isteyin.",
       "configEdit": "Etkileşimli editör, ajan ortamlarında engellenir.\n\nAlternatifler:\n  • rdc config edit --dump > config.jsonc    (güvenli redakte inceleme)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nGeçersiz kılmak için ajanı başlatmadan ÖNCE üst shell'de\nREDIACC_ALLOW_CONFIG_EDIT=<scope-glob> tanımlayın (ajan proses ataları arasında görünmelidir).",
       "configEditAncestry": "Etkileşimli editör, ajan ortamlarında engellendi (REDIACC_ALLOW_CONFIG_EDIT ayarlandı ancak ata doğrulaması başarısız oldu — geçersiz kılma ajanınız tarafından değil kabuğunuz tarafından ayarlanmalıdır).\n\nAlternatifler:\n  • rdc config edit --dump > config.jsonc    (güvenli redakte inceleme)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nAjanı başlatmadan ÖNCE üst shell'de REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> tanımlayın.",
       "createGuard": "Ajan modunda yeni bir grand depo \"{{name}}\" oluşturulamaz.\n\nAjanlar yalnızca fork modunda çalışır. Grand depolar, oluşturulduktan sonra ajanların erişemeyeceği üretim ortamlarıdır.\n\nBunun yerine mevcut bir depodan fork oluşturun:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nKullanıcı: depo oluşturmaya izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO=* (veya belirli bir depo adı) ayarlayın.",
@@ -1752,6 +1837,14 @@
     "authRequired": "Kimlik doğrulama gerekli. Çalıştırın: rdc auth login",
     "cannotDeleteGrandRepo": "Ana depo silinemiyor: {{reason}}",
     "cannotPromote": "Yükseltilemez: {{reason}}",
+    "cluster": {
+      "countInvalid": "--count negatif olmayan bir tam sayı olmalıdır",
+      "dockerOnlyVerb": "\"repo {{verb}}\" yalnızca Docker depolarını hedefler ve bir --cluster'a karşı çalıştırılamaz; v1'de Kubernetes karşılığı yoktur",
+      "featureUnsupportedV1": "{{feature}}, v1'de --cluster ile desteklenmiyor (kontrol düğümü görünümü); {{hint}}",
+      "pendingContractRegen": "Bir kümede \"repo {{verb}}\", renet kube sözleşmesinin yeniden üretilmesini (dalga 5) bekleyen {{fn}}'yi tetikler. Küme + ad alanı çözümlendi; sözleşme tamamlandığında yeniden çalıştırın.",
+      "targetExclusive": "Yalnızca -m/--machine veya --cluster'dan birini belirtin, ikisini birden değil",
+      "targetRequired": "Bir hedef makine (-m) veya küme (--cluster) gereklidir"
+    },
     "clusterNotFound": "Ceph kümesi \"{{name}}\" bulunamadı",
     "config": {
       "invalidEmail": "Geçersiz e-posta adresi: \"{{value}}\".",
@@ -1832,7 +1925,7 @@
     },
     "regionRequired": "Bölge adı gerekli. --region kullanın veya bağlamı ayarlayın.",
     "registrationFailed": "Kayıt başarısız",
-    "remoteNotFound": "\"{{name}}\" bilinen bir makine veya depolama değil. Makineler: {{machines}}. Depolamalar: {{storages}}",
+    "remoteNotFound": "\"{{name}}\" bilinen bir makine, depolama veya küme değil. Makineler: {{machines}}. Depolamalar: {{storages}}. Kümeler: {{clusters}}",
     "repo": {
       "secret": {
         "badMode": "Geçersiz --mode \"{{mode}}\". İzin verilen: env, file.",
@@ -1950,6 +2043,7 @@
       "upload": "Yerel dosyaları depoya yükle"
     },
     "term": {
+      "cluster": "Küme kontrol düğümüne SSH ile bağlan (KUBECONFIG otomatik ayarlanır, kubectl ad alanı sabitlenir)",
       "command": "Etkileşimli kabuk olmadan komut çalıştır",
       "machine": "Makineye SSH bağlantısı",
       "repo": "Depoya SSH bağlantısı (DOCKER_HOST otomatik)",
@@ -1957,6 +2051,7 @@
     },
     "useHelpAll": "Genişletilmiş açıklamalar için --help-all kullanın",
     "vscode": {
+      "cluster": "Küme kontrol düğümünü VS Code'da aç (KUBECONFIG otomatik ayarlanır)",
       "machine": "Makineyi VS Code'da aç",
       "repo": "Depoyu VS Code'da aç"
     }
@@ -1999,6 +2094,7 @@
     "importMode": "İçe aktarma modu (birleştir veya değiştir)",
     "insiders": "VS Code Insiders ayarlarını kullanın",
     "lang": "Dil geçersiz kılması ({{languages}})",
+    "licenses": "Sürüm derlemeleriyle paketlenen tam THIRD_PARTY_LICENSES metnini yazdır",
     "limit": "Maksimum sonuç sayısı",
     "localPath": "Yerel dizin yolu (varsayılan: güncel dizin)",
     "localPaths": "Bir veya daha fazla yerel dosya veya dizin yolu (varsayılan: geçerli dizin)",

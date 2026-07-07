@@ -3,22 +3,6 @@
     "description": "Gestionar máquinas, repositorios y despliegues por SSH"
   },
   "commands": {
-    "agent": {
-      "capabilities": {
-        "description": "Listar todos los comandos disponibles con argumentos y opciones"
-      },
-      "description": "Utilidades para asistentes de codificación con IA",
-      "descriptionShort": "Utilidades para asistentes de codificación con IA",
-      "exec": {
-        "description": "Ejecutar un comando con entrada JSON desde stdin"
-      },
-      "generateReference": {
-        "description": "Generar referencia de comandos en Markdown para habilidades de Claude"
-      },
-      "schema": {
-        "description": "Mostrar esquema detallado de un comando específico"
-      }
-    },
     "backup": {
       "description": "Enviar, recibir y sincronizar copias de seguridad de repositorios entre almacenamiento y máquinas",
       "schedule": {
@@ -26,6 +10,62 @@
       },
       "sync": {
         "description": "Sincronización bidireccional de copias de seguridad entre máquinas"
+      }
+    },
+    "cluster": {
+      "create": {
+        "baseDomainOption": "Dominio base para el DNS público del clúster (si no, heredado de una máquina hermana)",
+        "description": "Aprovisionar los miembros del pool de un clúster definido con 'rdc config cluster add', arrancar renet en cada uno e instalar componentes (ceph primero). Los proveedores de nube aprovisionan mediante OpenTofu; KVM llega en una ola posterior.",
+        "descriptionShort": "Aprovisionar un clúster configurado",
+        "nameOption": "Nombre del clúster",
+        "sshUserOption": "Usuario SSH para los miembros aprovisionados"
+      },
+      "description": "Aprovisionar y gestionar clústeres: conjuntos con nombre de pools de nodos (ceph, k8s-server, k8s-agent, hyperconverged) en una red privada. Los miembros del pool se materializan en máquinas, de modo que cada comando -m funciona con ellos.",
+      "descriptionShort": "Crear y gestionar clústeres (pools de nodos en una LAN privada)",
+      "destroy": {
+        "aborted": "Abortado.",
+        "confirm": "¿Destruir el clúster \"{{name}}\" y todos sus miembros?",
+        "description": "Desmontar los miembros aprovisionados y eliminar el clúster y sus máquinas de la configuración.",
+        "descriptionShort": "Destruir un clúster y sus miembros",
+        "forceOption": "Omitir la confirmación y continuar a pesar de errores de desmontaje",
+        "nameOption": "Nombre del clúster"
+      },
+      "fork": {
+        "clusterOption": "Clúster de destino existente al que bifurcar (debe estar en máquinas distintas)",
+        "description": "Clonar un clúster completo, incluidos los datos de sus repos, en un clúster nuevo: copy-on-write coordinado de las imágenes del clúster y de los PV, y luego reescritura de la identidad de nodo para que el fork arranque en nuevas direcciones. El original sigue en ejecución.",
+        "descriptionShort": "Clonar un clúster completo (con datos)",
+        "nameOption": "Nombre del clúster",
+        "tagOption": "Etiqueta del fork"
+      },
+      "install": {
+        "description": "Instalar los componentes del clúster (ceph primero, luego k8s) en miembros ya aprovisionados.",
+        "descriptionShort": "Instalar componentes en un clúster aprovisionado",
+        "nameOption": "Nombre del clúster"
+      },
+      "kubeconfig": {
+        "cached": "Kubeconfig cacheado en {{path}}",
+        "description": "Obtener el kubeconfig del nodo de control del clúster por SSH y cachearlo localmente (0600) para kubectl.",
+        "descriptionShort": "Obtener y cachear un kubeconfig de clúster",
+        "nameOption": "Nombre del clúster"
+      },
+      "migrate": {
+        "description": "Mover un clúster completo, incluidos los datos de sus repos, a otra máquina o centro de datos con un cutover corto (precopia en caliente, luego detener y reiniciar en el destino).",
+        "descriptionShort": "Mover un clúster completo a otro lugar",
+        "nameOption": "Nombre del clúster",
+        "toOption": "Destino"
+      },
+      "scale": {
+        "countOption": "Número de miembros deseado",
+        "description": "Cambiar el número de miembros de un pool (agrega/elimina máquinas y une/drena nodos). Los pools k8s-agent escalan en el sitio; el crecimiento del pool ceph se hace directamente mediante cephadm.",
+        "descriptionShort": "Aumentar o reducir un pool de clúster",
+        "nameOption": "Nombre del clúster",
+        "poolOption": "Nombre del pool"
+      },
+      "status": {
+        "description": "Listar todos los clústeres, o mostrar la configuración completa de un clúster con --name.",
+        "descriptionShort": "Mostrar clústeres y sus pools",
+        "nameOption": "Mostrar un único clúster",
+        "none": "No hay clústeres configurados. Agrega uno con: rdc config cluster add"
       }
     },
     "config": {
@@ -121,6 +161,32 @@
         "allCleared": "Todos los valores predeterminados borrados",
         "description": "Borrar valores predeterminados (todos o uno específico)",
         "keyCleared": "\"{{key}}\" borrado"
+      },
+      "cluster": {
+        "add": {
+          "description": "Declarar un nuevo clúster con uno o más pools"
+        },
+        "added": "Clúster \"{{name}}\" agregado",
+        "addPool": {
+          "description": "Agregar un pool a un clúster existente"
+        },
+        "cidrOption": "CIDR de la red privada (p. ej. 10.0.0.0/24)",
+        "controlNodeOption": "Máquina de nodo de control explícita (predeterminado: primer miembro k8s-server)",
+        "description": "Declarar clústeres y sus pools de nodos en la configuración. Aprovisiónalos con 'rdc cluster create'.",
+        "descriptionShort": "Declarar y editar clústeres",
+        "list": {
+          "description": "Listar clústeres configurados"
+        },
+        "nameOption": "Nombre del clúster",
+        "none": "No hay clústeres configurados",
+        "poolAdded": "Pool \"{{pool}}\" agregado al clúster \"{{name}}\"",
+        "poolOption": "Especificación de pool nombre:rol:cantidad[:tamaño] (rol: ceph|k8s-server|k8s-agent|hyperconverged)",
+        "primitiveOption": "Primitiva de red (p. ej. vlan, vpc, network)",
+        "providerOption": "Proveedor: una clave de cloudProviders, o 'kvm'",
+        "remove": {
+          "description": "Eliminar un clúster de la configuración"
+        },
+        "removed": "Clúster \"{{name}}\" eliminado"
       },
       "delete": {
         "description": "Eliminar un archivo de configuración",
@@ -451,6 +517,15 @@
           "optionReveal": "Mostrar la configuración de almacenamiento en texto claro (solo TTY interactivo; auditado)"
         }
       }
+    },
+    "credits": {
+      "bundledTitle": "Runtime y dependencias incluidas:",
+      "description": "Imprimir los componentes de terceros incluidos con rdc: los binarios que renet integra y transporta (CRIU, rsync, rclone), el runtime de Node.js integrado y las dependencias npm incluidas. Muestra versiones, identificadores de licencia SPDX y las URLs de archivo fuente de versión exacta requeridas para el cumplimiento de GPL. Usa --licenses para imprimir el texto completo de THIRD_PARTY_LICENSES incluido con las compilaciones de lanzamiento.",
+      "descriptionShort": "Mostrar atribuciones de terceros e información de cumplimiento de licencias",
+      "embeddedTitle": "Binarios integrados (transportados por renet):",
+      "gplHeader": "Disponibilidad de fuente GPL:",
+      "header": "Rediacc es software propietario distribuido bajo la licencia de Rediacc; los siguientes componentes de terceros se distribuyen junto con él bajo sus propias licencias.\n\nComponentes de terceros incluidos con rdc:",
+      "licensesUnavailable": "El texto completo de THIRD_PARTY_LICENSES se genera en el momento de la compilación y solo se incluye con las compilaciones de lanzamiento. En modo de desarrollo, ejecuta la compilación de la CLI para generarlo, o consulta las atribuciones por componente con: rdc credits"
     },
     "datastore": {
       "description": "Gestionar el ciclo de vida del almacén de datos Ceph RBD (init, fork, unfork, status)",
@@ -875,6 +950,8 @@
         "refOption": "GUID del commit (o nombre de rama con --from) para extraer",
         "tagOption": "Nombre para el nuevo fork de trabajo editable"
       },
+      "clusterDone": "{{verb}} namespace \"{{repository}}\" en el clúster \"{{cluster}}\"",
+      "clusterOption": "Clúster de Kubernetes de destino (mutuamente excluyente con -m); enruta al nodo de control del clúster con KUBECONFIG inyectado",
       "commit": {
         "authorOption": "Autor del commit",
         "completed": "Commit realizado {{commit}}: {{message}}",
@@ -886,6 +963,7 @@
       },
       "create": {
         "alreadyExists": "El repositorio \"{{name}}\" ya existe en el contexto",
+        "clusterResolved": "El repo de Kubernetes \"{{repository}}\" apunta al clúster \"{{cluster}}\" (nodo de control {{controlNode}})",
         "completed": "Repositorio creado",
         "description": "Crear un nuevo repositorio cifrado",
         "failed": "Error al crear el repositorio",
@@ -896,9 +974,9 @@
         "starting": "Creando repositorio \"{{repository}}\" ({{size}}) en \"{{machine}}\"..."
       },
       "delete": {
+        "archived": "Credencial de \"{{repository}}\" archivada",
         "archiveHint": "Para archivar las credenciales para recuperación: vuelva a ejecutar con --archive-config",
         "archiveOption": "Mover entrada de configuración a deletedRepositories para recuperación posterior",
-        "archived": "Credencial de \"{{repository}}\" archivada",
         "cloudBackupHint": "Las copias de seguridad en la nube (si las hay) persisten tras la eliminación. Elimina las copias huérfanas con: rdc storage prune --name <storage> -m {{machine}}",
         "completed": "Repositorio eliminado",
         "configRetained": "Entrada de configuración para \"{{repository}}\" retenida (el repositorio puede existir en otras máquinas). Para eliminar: rdc config repository remove --name {{repository}}",
@@ -956,6 +1034,7 @@
       "fork": {
         "alreadyExists": "El repositorio \"{{name}}\" ya existe en el contexto",
         "checkpointOption": "Crear checkpoint CRIU en el origen antes de fork (capturar estado de memoria de procesos para restaurar en el fork)",
+        "clusterResolved": "Bifurcando \"{{parent}}\" como namespace \"{{parent}}-{{tag}}\" en el clúster \"{{cluster}}\" (nodo de control {{controlNode}})",
         "completed": "Fork creado. Desplegar localmente: repo up {{repository}} -m {{machine}}. Para migrar el fork a otra máquina: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "Crear un fork CoW (Copy-on-Write) de un repositorio",
         "descriptionShort": "Crear un fork CoW de un repositorio (nuevo GUID, networkId, rango IP)",
@@ -965,12 +1044,16 @@
         "failed": "Error al crear el fork",
         "immutableOption": "Marca el fork como solo lectura: rechaza el montaje y mantiene su imagen estable a nivel de bytes para siempre (un commit/base congelado para el delta push entre máquinas)",
         "immutableUpConflict": "repo fork: --immutable y --up son mutuamente excluyentes. Un fork inmutable rechaza el montaje, por lo que no se puede iniciar. Omite --up, u omite --immutable para desplegar un fork normal.",
+        "providerOption": "Aprovisionar un nuevo clúster (reflejando la forma de pool del origen) y bifurcar hacia él",
+        "providerPending": "Bifurcando \"{{parent}}\" como \"{{parent}}-{{tag}}\" en un nuevo clúster {{provider}}",
+        "provisioning": "Aprovisionando el clúster \"{{cluster}}\" en {{provider}} antes de bifurcar...",
         "registered": "Fork \"{{repository}}\" registrado ({{guid}}, red {{networkId}})",
         "rollback": "Configuración revertida para \"{{repository}}\"",
         "starting": "Creando fork de \"{{parent}}\" como \"{{repository}}\" en \"{{machine}}\"...",
         "tagOption": "Etiqueta para el fork (crea nombre:etiqueta)",
         "tagRequired": "La etiqueta es obligatoria para fork. Uso: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "tagReservedLatest": "repo fork: la etiqueta \"latest\" está reservada para el repositorio principal (producción) — elija un --tag distinto (p. ej. \"test\", \"staging\", \"<feature>\")",
+        "toClusterOption": "Bifurcar hacia otro clúster de Kubernetes existente (bifurcación de namespace entre clústeres)",
         "upOption": "Montar e iniciar servicios después de fork (fork + mount + up en un solo comando)"
       },
       "fsck": {
@@ -1679,9 +1762,10 @@
     },
     "pageTitle": "Referencia de la CLI de Rediacc",
     "sectionTitles": {
-      "agent": "Utilidades del agente",
       "backup": "Copia de seguridad y restauración",
+      "cluster": "Gestión de Clústeres",
       "config": "Gestión de Configuración",
+      "credits": "Créditos de Terceros",
       "datastore": "Gestión de almacenamiento de datos",
       "doctor": "Diagnóstico del sistema",
       "machine": "Gestión de Máquinas",
@@ -1722,7 +1806,8 @@
     "activationFailed": "Error en la activación",
     "affectedChildClones": ". Clones secundarios afectados: {{clones}}. Primero elimine o promueva clones secundarios.",
     "agent": {
-      "commandBlocked": "El comando \"{{command}}\" no esta disponible en modo agente.\n\nEste comando ejecuta funciones arbitrarias de bajo nivel sin protecciones de seguridad. Use comandos CLI tipados o herramientas MCP en su lugar.\n\nAlternativas:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - Ejecute \"rdc agent capabilities\" para ver todos los comandos disponibles\n\nSi necesita acceso directo, pida al usuario que ejecute el comando directamente.",
+      "clusterOpBlocked": "El comando de clúster \"{{command}}\" está bloqueado en modo agente. Las operaciones de clúster crean o desmantelan infraestructura real, por lo que un agente no puede autorizarlas por sí mismo. Usuario: para permitir esto, establezca REDIACC_ALLOW_CLUSTER_OPS=<nombre-del-clúster> (o * para todos los clústeres) en su terminal ANTES de iniciar la sesión del agente — no se acepta una anulación establecida desde dentro del agente.",
+      "commandBlocked": "El comando \"{{command}}\" no esta disponible en modo agente.\n\nEste comando ejecuta funciones arbitrarias de bajo nivel sin protecciones de seguridad. Use comandos CLI tipados o herramientas MCP en su lugar.\n\nAlternativas:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - Ejecute \"rdc --help\" para ver todos los comandos disponibles\n\nSi necesita acceso directo, pida al usuario que ejecute el comando directamente.",
       "configEdit": "El editor interactivo está bloqueado en entornos de agente.\n\nAlternativas:\n  • rdc config edit --dump > config.jsonc    (inspección segura redactada)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nPara anularlo, define REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> en el shell padre\nANTES de iniciar el agente (debe aparecer en la ascendencia del proceso).",
       "configEditAncestry": "El editor interactivo está bloqueado en entornos de agente (REDIACC_ALLOW_CONFIG_EDIT se estableció pero falló la verificación de ascendencia — el override debe venir del shell, no del agente).\n\nAlternativas:\n  • rdc config edit --dump > config.jsonc    (inspección segura redactada)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nDefine REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> en el shell padre ANTES de iniciar el agente.",
       "createGuard": "No se puede crear un nuevo repositorio grand \"{{name}}\" en modo agente.\n\nLos agentes operan en modo solo-fork. Los repositorios grand son entornos de producción a los que los agentes no pueden acceder después de la creación.\n\nEn su lugar, cree un fork de un repositorio existente:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nUsuario: para permitir la creación de repositorios, establezca REDIACC_ALLOW_GRAND_REPO=* (o un nombre de repositorio específico) en su terminal antes de iniciar la sesión del agente.",
@@ -1752,6 +1837,14 @@
     "authRequired": "Se requiere autenticación. Ejecute: rdc auth login",
     "cannotDeleteGrandRepo": "No se puede eliminar repositorio maestro: {{reason}}",
     "cannotPromote": "No se puede promover: {{reason}}",
+    "cluster": {
+      "countInvalid": "--count debe ser un entero no negativo",
+      "dockerOnlyVerb": "\"repo {{verb}}\" solo se dirige a repositorios Docker y no puede ejecutarse contra un --cluster; no tiene equivalente en Kubernetes en v1",
+      "featureUnsupportedV1": "{{feature}} no es compatible con --cluster en v1 (vista de nodo de control); {{hint}}",
+      "pendingContractRegen": "\"repo {{verb}}\" en un clúster despacha {{fn}}, que está pendiente de la regeneración del contrato renet kube (ola 5). El clúster y el namespace se resolvieron; vuelve a ejecutarlo cuando el contrato esté disponible.",
+      "targetExclusive": "Especifica solo uno de -m/--machine o --cluster, no ambos",
+      "targetRequired": "Se requiere una máquina de destino (-m) o un clúster (--cluster)"
+    },
     "clusterNotFound": "Clúster Ceph \"{{name}}\" no encontrado",
     "config": {
       "invalidEmail": "Dirección de correo electrónico no válida: \"{{value}}\".",
@@ -1832,7 +1925,7 @@
     },
     "regionRequired": "Nombre de región requerido. Use --region o establezca contexto.",
     "registrationFailed": "Falló el registro",
-    "remoteNotFound": "\"{{name}}\" no es una máquina o almacenamiento conocido. Máquinas: {{machines}}. Almacenamientos: {{storages}}",
+    "remoteNotFound": "\"{{name}}\" no es una máquina, almacenamiento o clúster conocido. Máquinas: {{machines}}. Almacenamientos: {{storages}}. Clústeres: {{clusters}}",
     "repo": {
       "secret": {
         "badMode": "--mode inválido \"{{mode}}\". Permitidos: env, file.",
@@ -1950,6 +2043,7 @@
       "upload": "Subir archivos locales al repositorio"
     },
     "term": {
+      "cluster": "SSH al nodo de control del clúster (KUBECONFIG configurado automáticamente, namespace de kubectl fijado)",
       "command": "Ejecutar comando sin shell interactivo",
       "machine": "SSH a la máquina",
       "repo": "SSH al repositorio (DOCKER_HOST automático)",
@@ -1957,6 +2051,7 @@
     },
     "useHelpAll": "Use --help-all para descripciones extendidas",
     "vscode": {
+      "cluster": "Abrir el nodo de control del clúster en VS Code (KUBECONFIG configurado automáticamente)",
       "machine": "Abrir máquina en VS Code",
       "repo": "Abrir repositorio en VS Code"
     }
@@ -1999,6 +2094,7 @@
     "importMode": "Modo de importación (merge o replace)",
     "insiders": "Usar configuración de VS Code Insiders",
     "lang": "Anulación de idioma ({{languages}})",
+    "licenses": "Imprimir el texto completo de THIRD_PARTY_LICENSES incluido con las compilaciones de lanzamiento",
     "limit": "Número máximo de resultados",
     "localPath": "Ruta de directorio local (predeterminado: directorio actual)",
     "localPaths": "Una o más rutas locales de archivo o directorio (predeterminado: directorio actual)",

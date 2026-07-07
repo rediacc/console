@@ -40,6 +40,15 @@ const ALLOWED_IDENTICAL = new Set([
   'Professional',
   // Common loanwords used identically in many languages
   'Newsletter',
+  // Partner-program tier badge names. Several locales (it/ja/pt/ru/zh/tr)
+  // keep these in English because their existing cross-reference copy
+  // embeds the English names ("livello Registered", "Silver ortağın...");
+  // 'Gold' is already exempt via MIN_STRING_LENGTH. Locales that fully
+  // localized the tier vocabulary (ar/de/es/et/fr/ko) translate them and
+  // are unaffected by this allowlist.
+  'Registered',
+  'Silver',
+  'Platinum',
   // Pure-formatting strings (bullet prefix + JSON-Pointer placeholder) —
   // the rendered pointer is the meaningful content, not the bullet glyph.
   '  • {{pointer}}',
@@ -71,6 +80,7 @@ const ALLOWED_IDENTICAL = new Set([
   'MULTI-CLOUD',
   'Failover',
   'Backup',
+  'Clustering',
   'Standard',
   'Priority',
   'General',

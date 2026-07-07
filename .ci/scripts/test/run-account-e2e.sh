@@ -156,6 +156,10 @@ if [[ "$SKIP_SETUP" != "true" ]]; then
         "DATABASE_PATH=e2e-account.db"
         "PUBLIC_SITE_URL=http://localhost:$E2E_PORT"
         "PORT=$ACCOUNT_API_PORT"
+        # E2E runs node.ts with ENVIRONMENT=production (for billing coverage), so
+        # TEST_MODE is the only opener for the /test/* seed + email-capture routes
+        # the Playwright suite depends on. Deployed Workers never set this.
+        "TEST_MODE=true"
     )
     if [[ -n "${STRIPE_LISTEN_WEBHOOK_SECRET:-}" ]]; then
         ACCOUNT_ENV+=("STRIPE_WEBHOOK_SECRET=$STRIPE_LISTEN_WEBHOOK_SECRET")

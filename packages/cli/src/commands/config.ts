@@ -10,6 +10,7 @@ import { registerPruneCommand as registerConfigPruneCommand } from './config-pru
 import { registerAuditCommands } from './config/audit.js';
 import { registerEditCommands } from './config/edit.js';
 import { registerFieldCommands } from './config/field.js';
+import { registerClusterConfigCommands } from './config-cluster.js';
 import { registerRepositoryCommands, registerStorageCommands } from './config-data.js';
 import { registerInfraCommands } from './config-infra.js';
 import { registerMachineCommands, registerProviderCommands } from './config-setup.js';
@@ -345,11 +346,11 @@ ${t('help.examples')}
     .action(async (options) => {
       try {
         const { key, value } = options;
-        const validKeys = ['team', 'region', 'bridge'];
+        const validKeys = ['team', 'region'];
         if (!validKeys.includes(key)) {
           throw new ValidationError(t('errors.invalidKey', { keys: validKeys.join(', ') }));
         }
-        await configService.set(key as 'team' | 'region' | 'bridge', value);
+        await configService.set(key as 'team' | 'region', value);
         outputService.success(t('commands.config.set.success', { key, value }));
       } catch (error) {
         handleError(error);
@@ -365,11 +366,11 @@ ${t('help.examples')}
       try {
         const key = options.key;
         if (key) {
-          const validKeys = ['team', 'region', 'bridge'];
+          const validKeys = ['team', 'region'];
           if (!validKeys.includes(key)) {
             throw new ValidationError(t('errors.invalidKey', { keys: validKeys.join(', ') }));
           }
-          await configService.remove(key as 'team' | 'region' | 'bridge');
+          await configService.remove(key as 'team' | 'region');
           outputService.success(t('commands.config.clear.keyCleared', { key }));
         } else {
           await configService.clearDefaults();
@@ -445,6 +446,7 @@ ${t('help.examples')}
   registerProviderCommands(config, program);
   registerRepositoryCommands(config, program);
   registerStorageCommands(config, program);
+  registerClusterConfigCommands(config);
   registerInfraCommands(config, program);
   registerSSHCommands(config, program);
   registerRemoteCommands(config);

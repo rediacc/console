@@ -4,8 +4,8 @@ description: "Kataloogipaigutus, renet-käsud, systemd-teenused ja tööprotsess
 category: "Concepts"
 order: 3
 language: et
-sourceHash: "4fb53bb4cb1512f6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "af2e8fc3da708d9a"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 # Serveri viide
@@ -227,6 +227,38 @@ renet datastore validate    # Failisüsteemi tervikluse kontroll
 renet datastore expand      # Laienda andmesalve veebis
 ```
 
+### Andmesalvestuse taustasüsteemid (Ceph RBD)
+
+Andmesalv on kas kohalik (silmus-toetatud BTRFS masina kettal, vaikimisi) või toetatud välisest Ceph-klastrist RBD-pildi kaudu. Taustasüsteem valitakse `init` ajal:
+
+```bash
+# Kohalik taustasüsteem (vaikimisi)
+renet datastore init --size 50G
+
+# Ceph RBD taustasüsteem: BTRFS RBD-pildil, mis on kaardistatud välisest Ceph-klastrist
+renet datastore init --backend ceph --pool rbd --image {name} --cluster ceph
+```
+
+Ceph-taustasüsteemil kasutavad fork ja unfork BTRFS-reflinkide asemel RBD enda copy-on-write primitiive:
+
+```bash
+renet datastore fork   --source {image} --target {new-image}   # RBD hetktõmmis -> kaitse -> kloon
+renet datastore unfork --image {image}                         # lammuta kloon sõltuvuste järjekorras
+```
+
+Ceph-sõlmed ei ava kunagi LUKS-i (sellel taustasüsteemil pole pildipõhist LUKS-kihti), nii et nende mälujälg järgib Ceph-deemoni häälestust (`osd_memory_target`), mitte KDF-matemaatikat. Teine klient saab kaardistada sama RBD-pildi kirjutuskaitstult koos kohaliku copy-on-write ülekattega, mis on kirjutuskaitse-valdav horisontaalse skaleerumise tee.
+
+### Kubernetes (renet kube)
+
+Klastri sõlmes ümbritseb renet k3s-i samamoodi nagu Dockerit. `renet kube` on compose analoog: see süstib `KUBECONFIG` ja rakendab manifeste või Helm-charte Rediaccfile'i `up()`-ist.
+
+```bash
+sudo renet kube apply -f manifests/     # rakenda repo nimeruumi
+sudo renet kube -- get pods             # edasta kubectl-ile kinnitatud nimeruumis
+```
+
+Klastri olek elab andmesalve-toetatud copy-on-write piltides (k3s-i `--data-dir` seotakse pildi ühenduspunkti sees), mis lubab tervel klastril forkida ja migreeruda. Püsivad köited on eraldi copy-on-write üksused: RBD-pildid Cephis (üks RADOS-nimeruum klastri eksemplari ja fork'i kohta) või väikesed andmesalve pildifailid kohaliku PV-provisioneerija kaudu kohalikul taustasüsteemil. Kasutajapoolne töövoog on juhendis [Kubernetes](/et/docs/kubernetes); CLI juhib neid teid `rdc cluster` ja klastriteadlike `rdc repo` käskude kaudu.
+
 ## Systemd-teenused
 
 Iga repositoorium loob need systemd-üksused:
@@ -236,6 +268,7 @@ Iga repositoorium loob need systemd-üksused:
 | `rediacc-docker-{id}.service` | Isoleeritud Dockeri deemon |
 | `rediacc-docker-{id}.socket` | Dockeri API pesa aktiveerimine |
 | `rediacc-loopback-{id}.service` | Loopback-IP aliase seadistus |
+| `rediacc-k3s-{id}.service` | Klastripõhine k3s-sõlm (ainult klastri hostidel) |
 
 Globaalsed teenused, mis on jagatud kõigile repositooriumitele:
 

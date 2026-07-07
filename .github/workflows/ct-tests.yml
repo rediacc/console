@@ -47,7 +47,8 @@ env:
 jobs:
   # ============================================================================
   # COLUMN 4: TESTS + INFRA
-  # Jobs: test-unit, test-bridge-workers, test-bridge-ceph,
+  # Jobs: test-unit, test-e2e-workers, test-e2e-ceph, test-e2e-ceph-workers,
+  #       test-e2e-k8s, test-e2e-k8s-ceph, test-e2e-k8s-multinode, test-e2e-migrate,
   #       test-fork-isolation, test-renet, test-account-e2e
   # ============================================================================
   test-unit:
@@ -63,8 +64,8 @@ jobs:
       - run: .ci/scripts/setup/build-packages.sh
       - run: .ci/scripts/test/run-unit.sh --coverage
 
-  test-bridge-workers:
-    name: Bridge Workers (${{ matrix.os-image }})
+  test-e2e-workers:
+    name: E2E Workers (${{ matrix.os-image }})
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
@@ -184,7 +185,7 @@ jobs:
       # extraction happens as the runner user.
       - name: Compute VM image cache key
         id: vm-image-key
-        run: echo "key=vm-base-image-bridge-${{ matrix.os-image }}-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+        run: echo "key=vm-base-image-e2e-${{ matrix.os-image }}-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
       - name: Restore VM base image cache
         id: vm-image-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -195,23 +196,23 @@ jobs:
       - name: Setup KVM Host
         run: sudo $RENET_BINARY ops host setup
 
-      - name: Create Bridge Test Environment
-        run: .ci/scripts/env/create-bridge-env.sh --renet-path /usr/bin/renet --output packages/bridge-tests/.env
+      - name: Create E2E Test Environment
+        run: .ci/scripts/env/create-e2e-env.sh --renet-path /usr/bin/renet --output packages/e2e-tests/.env
 
-      - name: Run Bridge Tests (Workers)
-        run: .ci/scripts/test/run-bridge.sh --workers 1
+      - name: Run E2E Tests (Workers)
+        run: .ci/scripts/test/run-e2e.sh --workers 1
 
       - if: always()
-        run: .ci/scripts/signal/create-complete.sh --name "bridge-workers-${{ matrix.os-image }}" --status ${{ job.status }}
+        run: .ci/scripts/signal/create-complete.sh --name "e2e-workers-${{ matrix.os-image }}" --status ${{ job.status }}
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
-          name: test-bridge-workers-${{ matrix.os-image }}-${{ github.sha }}
+          name: test-e2e-workers-${{ matrix.os-image }}-${{ github.sha }}
           path: |
             ${{ runner.temp }}/complete.txt
-            packages/bridge-tests/reports/bridge/
-            packages/bridge-tests/reports/bridge-logs/
+            packages/e2e-tests/reports/bridge/
+            packages/e2e-tests/reports/bridge-logs/
           retention-days: 3
           if-no-files-found: ignore
 
@@ -229,8 +230,8 @@ jobs:
           path: ${{ runner.temp }}/renet/disks
           key: ${{ steps.vm-image-key.outputs.key }}
 
-  test-bridge-ceph:
-    name: Bridge Ceph
+  test-e2e-ceph:
+    name: E2E Ceph
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -317,12 +318,12 @@ jobs:
       - name: Install renet
         run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
-      # Same VM base-image cache as the Bridge Workers ubuntu leg: this job
+      # Same VM base-image cache as the E2E Workers ubuntu leg: this job
       # sets no VM_IMAGE, so it downloads only the Ubuntu default image and
       # can share that cache entry (same key, same disks-dir path).
       - name: Compute VM image cache key
         id: vm-image-key
-        run: echo "key=vm-base-image-bridge-ubuntu-24.04-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+        run: echo "key=vm-base-image-e2e-ubuntu-24.04-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
       - name: Restore VM base image cache
         id: vm-image-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -333,23 +334,784 @@ jobs:
       - name: Setup KVM Host
         run: sudo $RENET_BINARY ops host setup
 
-      - name: Create Bridge Test Environment
-        run: .ci/scripts/env/create-bridge-env.sh --ceph --renet-path /usr/bin/renet --output packages/bridge-tests/.env
+      - name: Create E2E Test Environment
+        run: .ci/scripts/env/create-e2e-env.sh --ceph --renet-path /usr/bin/renet --output packages/e2e-tests/.env
 
-      - name: Run Bridge Tests (Ceph)
-        run: .ci/scripts/test/run-bridge.sh --workers 1 --config playwright.ceph.config.ts
+      - name: Run E2E Tests (Ceph)
+        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.ceph.config.ts
 
       - if: always()
-        run: .ci/scripts/signal/create-complete.sh --name "bridge-ceph" --status ${{ job.status }}
+        run: .ci/scripts/signal/create-complete.sh --name "e2e-ceph" --status ${{ job.status }}
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
-          name: test-bridge-ceph-${{ github.sha }}
+          name: test-e2e-ceph-${{ github.sha }}
           path: |
             ${{ runner.temp }}/complete.txt
-            packages/bridge-tests/reports/bridge-ceph/
-            packages/bridge-tests/reports/bridge-logs/
+            packages/e2e-tests/reports/bridge-ceph/
+            packages/e2e-tests/reports/bridge-logs/
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - name: Fix VM image ownership for cache save
+        if: always()
+        run: sudo chown -R "$(whoami)" "$RUNNER_TEMP/renet/disks" 2>/dev/null || true
+
+      - name: Save VM base image cache
+        if: always() && steps.vm-image-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}
+
+  # Combined workers + Ceph topology: a worker consuming a Ceph RBD datastore
+  # (suite 13) and multi-client read-only RBD + per-client COW (suite 14). Fits
+  # a 16 GB runner via per-role RAM (bridge 1024 + 2x2560 worker + 3x2560 ceph =
+  # 13.5 GB) and a lowered osd_memory_target (~1.6 GB, PBKDF2/FastKDF since
+  # renet #78 removed the old 4 GB LUKS-unlock floor).
+  test-e2e-ceph-workers:
+    name: E2E Ceph Workers
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CI: 'true'
+      BRIDGE_TIMEOUT: 240000
+      VM_BRIDGE: '1'
+      VM_WORKERS: '11 12'
+      VM_CEPH_NODES: '21 22 23'
+      CEPH_MODE: 'true'
+      VM_RAM_WORKER: '2560'
+      VM_RAM_CEPH: '2560'
+      CEPH_OSD_MEMORY_TARGET: '1717986918'
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Login to GHCR
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Propagate Docker Hub credentials to root
+        run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Free Disk Space
+        run: |
+          echo "=== Disk usage before cleanup ==="
+          df -h / || true
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
+          docker system prune -af 2>/dev/null || true
+          npm cache clean --force 2>/dev/null || true
+          echo "=== Disk usage after cleanup ==="
+          df -h / || true
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+      - run: .ci/scripts/build/build-cli.sh
+      - name: Install CLI Globally
+        run: .ci/scripts/setup/install-cli-global.sh
+
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: |
+          pull_with_retry() {
+            local image="$1"
+            local platform="${2:-}"
+            local args=""
+            [ -n "$platform" ] && args="--platform $platform"
+            for i in 1 2 3; do
+              if docker pull $args "$image"; then
+                return 0
+              fi
+              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
+              sleep $((i * 30))
+            done
+            echo "Failed to pull $image $platform after 3 attempts"
+            return 1
+          }
+          pull_with_retry debian:bookworm linux/amd64
+          pull_with_retry debian:bookworm-slim linux/arm64
+          pull_with_retry ubuntu:24.04 linux/amd64
+          pull_with_retry ubuntu:24.04 linux/arm64
+      - name: Build renet
+        run: .ci/scripts/infra/build-renet.sh --nolicense
+      - name: Install renet
+        run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
+
+      # Same VM base-image cache as the E2E Workers ubuntu leg: this job sets
+      # no VM_IMAGE, so it downloads only the Ubuntu default image and can share
+      # that cache entry (same key, same disks-dir path).
+      - name: Compute VM image cache key
+        id: vm-image-key
+        run: echo "key=vm-base-image-e2e-ubuntu-24.04-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - name: Restore VM base image cache
+        id: vm-image-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}
+
+      - name: Setup KVM Host
+        run: sudo $RENET_BINARY ops host setup
+
+      # Explicit --vm-workers AND --vm-ceph-nodes (NOT --ceph, which zeroes
+      # workers). Per-role RAM + osd_memory_target are passed through so the
+      # combined topology fits the runner.
+      - name: Create E2E Test Environment
+        run: |
+          .ci/scripts/env/create-e2e-env.sh \
+            --renet-path /usr/bin/renet \
+            --output packages/e2e-tests/.env \
+            --vm-workers "11 12" \
+            --vm-ceph-nodes "21 22 23" \
+            --vm-ram-worker "$VM_RAM_WORKER" \
+            --vm-ram-ceph "$VM_RAM_CEPH" \
+            --ceph-osd-memory-target "$CEPH_OSD_MEMORY_TARGET"
+
+      - name: Run E2E Tests (Ceph Workers)
+        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.ceph-workers.config.ts
+
+      - if: always()
+        run: .ci/scripts/signal/create-complete.sh --name "e2e-ceph-workers" --status ${{ job.status }}
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: always()
+        with:
+          name: test-e2e-ceph-workers-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/complete.txt
+            packages/e2e-tests/reports/bridge-ceph-workers/
+            packages/e2e-tests/reports/bridge-ceph-workers-logs/
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - name: Fix VM image ownership for cache save
+        if: always()
+        run: sudo chown -R "$(whoami)" "$RUNNER_TEMP/renet/disks" 2>/dev/null || true
+
+      - name: Save VM base image cache
+        if: always() && steps.vm-image-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}
+
+  test-e2e-k8s:
+    name: E2E K8s
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: 'true'
+      BRIDGE_TIMEOUT: 240000
+      VM_BRIDGE: '1'
+      VM_WORKERS: '11'
+      VM_CEPH_NODES: ''
+      K8S_MODE: '1'
+      VM_RAM_WORKER: '4096'
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Login to GHCR
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Propagate Docker Hub credentials to root
+        run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Free Disk Space
+        run: |
+          echo "=== Disk usage before cleanup ==="
+          df -h / || true
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
+          docker system prune -af 2>/dev/null || true
+          npm cache clean --force 2>/dev/null || true
+          echo "=== Disk usage after cleanup ==="
+          df -h / || true
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+      - run: .ci/scripts/build/build-cli.sh
+      - name: Install CLI Globally
+        run: .ci/scripts/setup/install-cli-global.sh
+
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: |
+          pull_with_retry() {
+            local image="$1"
+            local platform="${2:-}"
+            local args=""
+            [ -n "$platform" ] && args="--platform $platform"
+            for i in 1 2 3; do
+              if docker pull $args "$image"; then
+                return 0
+              fi
+              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
+              sleep $((i * 30))
+            done
+            echo "Failed to pull $image $platform after 3 attempts"
+            return 1
+          }
+          pull_with_retry debian:bookworm linux/amd64
+          pull_with_retry debian:bookworm-slim linux/arm64
+          pull_with_retry ubuntu:24.04 linux/amd64
+          pull_with_retry ubuntu:24.04 linux/arm64
+      - name: Build renet
+        run: .ci/scripts/infra/build-renet.sh --nolicense
+      - name: Install renet
+        run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
+
+      # Same Ubuntu VM base-image cache as the E2E Workers ubuntu leg (no
+      # VM_IMAGE set -> Ubuntu default image, same key + disks-dir path).
+      - name: Compute VM image cache key
+        id: vm-image-key
+        run: echo "key=vm-base-image-e2e-ubuntu-24.04-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - name: Restore VM base image cache
+        id: vm-image-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}
+
+      - name: Setup KVM Host
+        run: sudo $RENET_BINARY ops host setup
+
+      # Single worker, no Ceph: a k8s repo runs a self-contained k3s inside a
+      # datastore-backed image. VM_RAM_WORKER=4096 gives k3s + a workload pod room.
+      - name: Create E2E Test Environment
+        run: |
+          .ci/scripts/env/create-e2e-env.sh \
+            --renet-path /usr/bin/renet \
+            --output packages/e2e-tests/.env \
+            --vm-workers "11" \
+            --vm-ram-worker "$VM_RAM_WORKER"
+
+      - name: Run E2E Tests (K8s)
+        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.k8s.config.ts
+
+      - if: always()
+        run: .ci/scripts/signal/create-complete.sh --name "e2e-k8s" --status ${{ job.status }}
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: always()
+        with:
+          name: test-e2e-k8s-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/complete.txt
+            packages/e2e-tests/reports/bridge-k8s/
+            packages/e2e-tests/reports/bridge-k8s-logs/
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - name: Fix VM image ownership for cache save
+        if: always()
+        run: sudo chown -R "$(whoami)" "$RUNNER_TEMP/renet/disks" 2>/dev/null || true
+
+      - name: Save VM base image cache
+        if: always() && steps.vm-image-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}
+
+  test-e2e-k8s-ceph:
+    name: E2E K8s Ceph
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CI: 'true'
+      BRIDGE_TIMEOUT: 240000
+      VM_BRIDGE: '1'
+      VM_WORKERS: '11 12'
+      VM_CEPH_NODES: '21 22 23'
+      K8S_MODE: '1'
+      VM_RAM_WORKER: '3072'
+      VM_RAM_CEPH: '2560'
+      CEPH_OSD_MEMORY_TARGET: '1717986918'
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Login to GHCR
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Propagate Docker Hub credentials to root
+        run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Free Disk Space
+        run: |
+          echo "=== Disk usage before cleanup ==="
+          df -h / || true
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
+          docker system prune -af 2>/dev/null || true
+          npm cache clean --force 2>/dev/null || true
+          echo "=== Disk usage after cleanup ==="
+          df -h / || true
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+      - run: .ci/scripts/build/build-cli.sh
+      - name: Install CLI Globally
+        run: .ci/scripts/setup/install-cli-global.sh
+
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: |
+          pull_with_retry() {
+            local image="$1"
+            local platform="${2:-}"
+            local args=""
+            [ -n "$platform" ] && args="--platform $platform"
+            for i in 1 2 3; do
+              if docker pull $args "$image"; then
+                return 0
+              fi
+              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
+              sleep $((i * 30))
+            done
+            echo "Failed to pull $image $platform after 3 attempts"
+            return 1
+          }
+          pull_with_retry debian:bookworm linux/amd64
+          pull_with_retry debian:bookworm-slim linux/arm64
+          pull_with_retry ubuntu:24.04 linux/amd64
+          pull_with_retry ubuntu:24.04 linux/arm64
+      - name: Build renet
+        run: .ci/scripts/infra/build-renet.sh --nolicense
+      - name: Install renet
+        run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
+
+      # Same Ubuntu VM base-image cache as the E2E Workers ubuntu leg (no
+      # VM_IMAGE set -> Ubuntu default image, same key + disks-dir path).
+      - name: Compute VM image cache key
+        id: vm-image-key
+        run: echo "key=vm-base-image-e2e-ubuntu-24.04-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - name: Restore VM base image cache
+        id: vm-image-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}
+
+      - name: Setup KVM Host
+        run: sudo $RENET_BINARY ops host setup
+
+      # Combined k8s + Ceph topology (2 k3s workers + 3 ceph nodes). Explicit
+      # --vm-workers AND --vm-ceph-nodes (NOT --ceph, which zeroes workers);
+      # per-role RAM + osd_memory_target keep the 14.5G fleet inside the runner.
+      - name: Create E2E Test Environment
+        run: |
+          .ci/scripts/env/create-e2e-env.sh \
+            --renet-path /usr/bin/renet \
+            --output packages/e2e-tests/.env \
+            --vm-workers "11 12" \
+            --vm-ceph-nodes "21 22 23" \
+            --vm-ram-worker "$VM_RAM_WORKER" \
+            --vm-ram-ceph "$VM_RAM_CEPH" \
+            --ceph-osd-memory-target "$CEPH_OSD_MEMORY_TARGET"
+
+      - name: Run E2E Tests (K8s Ceph)
+        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.k8s-ceph.config.ts
+
+      - if: always()
+        run: .ci/scripts/signal/create-complete.sh --name "e2e-k8s-ceph" --status ${{ job.status }}
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: always()
+        with:
+          name: test-e2e-k8s-ceph-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/complete.txt
+            packages/e2e-tests/reports/bridge-k8s-ceph/
+            packages/e2e-tests/reports/bridge-k8s-ceph-logs/
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - name: Fix VM image ownership for cache save
+        if: always()
+        run: sudo chown -R "$(whoami)" "$RUNNER_TEMP/renet/disks" 2>/dev/null || true
+
+      - name: Save VM base image cache
+        if: always() && steps.vm-image-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}
+
+  test-e2e-k8s-multinode:
+    name: E2E K8s Multinode
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CI: 'true'
+      BRIDGE_TIMEOUT: 240000
+      VM_BRIDGE: '1'
+      VM_WORKERS: '11 12'
+      VM_CEPH_NODES: '21 22 23'
+      K8S_MODE: '1'
+      VM_RAM_WORKER: '3072'
+      VM_RAM_CEPH: '2560'
+      CEPH_OSD_MEMORY_TARGET: '1717986918'
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Login to GHCR
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Propagate Docker Hub credentials to root
+        run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Free Disk Space
+        run: |
+          echo "=== Disk usage before cleanup ==="
+          df -h / || true
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
+          docker system prune -af 2>/dev/null || true
+          npm cache clean --force 2>/dev/null || true
+          echo "=== Disk usage after cleanup ==="
+          df -h / || true
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+      - run: .ci/scripts/build/build-cli.sh
+      - name: Install CLI Globally
+        run: .ci/scripts/setup/install-cli-global.sh
+
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: |
+          pull_with_retry() {
+            local image="$1"
+            local platform="${2:-}"
+            local args=""
+            [ -n "$platform" ] && args="--platform $platform"
+            for i in 1 2 3; do
+              if docker pull $args "$image"; then
+                return 0
+              fi
+              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
+              sleep $((i * 30))
+            done
+            echo "Failed to pull $image $platform after 3 attempts"
+            return 1
+          }
+          pull_with_retry debian:bookworm linux/amd64
+          pull_with_retry debian:bookworm-slim linux/arm64
+          pull_with_retry ubuntu:24.04 linux/amd64
+          pull_with_retry ubuntu:24.04 linux/arm64
+      - name: Build renet
+        run: .ci/scripts/infra/build-renet.sh --nolicense
+      - name: Install renet
+        run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
+
+      # Same Ubuntu VM base-image cache as the E2E Workers ubuntu leg (no
+      # VM_IMAGE set -> Ubuntu default image, same key + disks-dir path).
+      - name: Compute VM image cache key
+        id: vm-image-key
+        run: echo "key=vm-base-image-e2e-ubuntu-24.04-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - name: Restore VM base image cache
+        id: vm-image-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}
+
+      - name: Setup KVM Host
+        run: sudo $RENET_BINARY ops host setup
+
+      # Multi-node k8s topology (2 k3s workers = server + agent, 3 ceph nodes).
+      # Explicit
+      # --vm-workers AND --vm-ceph-nodes (NOT --ceph, which zeroes workers);
+      # per-role RAM + osd_memory_target keep the 14.5G fleet inside the runner.
+      - name: Create E2E Test Environment
+        run: |
+          .ci/scripts/env/create-e2e-env.sh \
+            --renet-path /usr/bin/renet \
+            --output packages/e2e-tests/.env \
+            --vm-workers "11 12" \
+            --vm-ceph-nodes "21 22 23" \
+            --vm-ram-worker "$VM_RAM_WORKER" \
+            --vm-ram-ceph "$VM_RAM_CEPH" \
+            --ceph-osd-memory-target "$CEPH_OSD_MEMORY_TARGET"
+
+      - name: Run E2E Tests (K8s Multinode)
+        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.k8s-multinode.config.ts
+
+      - if: always()
+        run: .ci/scripts/signal/create-complete.sh --name "e2e-k8s-multinode" --status ${{ job.status }}
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: always()
+        with:
+          name: test-e2e-k8s-multinode-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/complete.txt
+            packages/e2e-tests/reports/bridge-k8s-multinode/
+            packages/e2e-tests/reports/bridge-k8s-multinode-logs/
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - name: Fix VM image ownership for cache save
+        if: always()
+        run: sudo chown -R "$(whoami)" "$RUNNER_TEMP/renet/disks" 2>/dev/null || true
+
+      - name: Save VM base image cache
+        if: always() && steps.vm-image-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}
+
+  test-e2e-migrate:
+    name: E2E Migrate
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: 'true'
+      BRIDGE_TIMEOUT: 240000
+      # Group A (source) — minimal: 1 control + 1 k3s worker, no Ceph.
+      VM_BRIDGE: '1'
+      VM_WORKERS: '11'
+      VM_CEPH_NODES: ''
+      K8S_MODE: '1'
+      DUAL_GROUP: '1'
+      VM_RAM_WORKER: '4096'
+      # Group B (destination) — a second concurrent group on renet12 with
+      # disjoint VM IDs. Both fleets fit in ~10G (2x [1024 bridge + 4096 worker]).
+      GROUP_B_NET: 'renet12'
+      GROUP_B_NET_BASE: '192.168.112'
+      GROUP_B_BRIDGE: '5'
+      GROUP_B_WORKER: '51'
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Login to GHCR
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Propagate Docker Hub credentials to root
+        run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Free Disk Space
+        run: |
+          echo "=== Disk usage before cleanup ==="
+          df -h / || true
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
+          docker system prune -af 2>/dev/null || true
+          npm cache clean --force 2>/dev/null || true
+          echo "=== Disk usage after cleanup ==="
+          df -h / || true
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: .ci/scripts/setup/build-packages.sh
+      - run: .ci/scripts/build/build-cli.sh
+      - name: Install CLI Globally
+        run: .ci/scripts/setup/install-cli-global.sh
+
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: |
+          pull_with_retry() {
+            local image="$1"
+            local platform="${2:-}"
+            local args=""
+            [ -n "$platform" ] && args="--platform $platform"
+            for i in 1 2 3; do
+              if docker pull $args "$image"; then
+                return 0
+              fi
+              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
+              sleep $((i * 30))
+            done
+            echo "Failed to pull $image $platform after 3 attempts"
+            return 1
+          }
+          pull_with_retry ubuntu:24.04 linux/amd64
+          pull_with_retry ubuntu:24.04 linux/arm64
+      - name: Build renet
+        run: .ci/scripts/infra/build-renet.sh --nolicense
+      - name: Install renet
+        run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
+
+      # Same Ubuntu VM base-image cache as the other E2E legs.
+      - name: Compute VM image cache key
+        id: vm-image-key
+        run: echo "key=vm-base-image-e2e-ubuntu-24.04-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - name: Restore VM base image cache
+        id: vm-image-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}
+
+      - name: Setup KVM Host
+        run: sudo $RENET_BINARY ops host setup
+
+      # Group A .env drives the harness global setup (source fleet). Group B is
+      # booted separately below; both auto-detect the same RENET_DATA_DIR
+      # ($RUNNER_TEMP/renet) so the mesh keypair is shared and a cross-group
+      # migrate can authenticate A worker -> B worker.
+      - name: Create E2E Test Environment (group A)
+        run: |
+          .ci/scripts/env/create-e2e-env.sh \
+            --renet-path /usr/bin/renet \
+            --output packages/e2e-tests/.env \
+            --vm-workers "11" \
+            --vm-ram-worker "$VM_RAM_WORKER" \
+            --k8s
+
+      # Boot the SECOND KVM group (renet12 / 192.168.112, disjoint IDs 5+51).
+      # DOCKER_REGISTRY is intentionally unset: renet derives 192.168.112.5:5000
+      # from the group's bridge IP (the wave-8 opsconfig fix).
+      - name: Boot second KVM group (B)
+        env:
+          VM_NET: 'renet12'
+          VM_NET_BASE: '192.168.112'
+          VM_NET_OFFSET: '0'
+          VM_BRIDGE: '5'
+          VM_WORKERS: '51'
+          VM_CEPH_NODES: ''
+          VM_RAM_WORKER: '4096'
+          PROVISION_CEPH_CLUSTER: 'false'
+        run: "$RENET_BINARY ops up --force --parallel"
+
+      # Suite 18 boots nothing itself: the migrate config's global setup resets
+      # group A, then the suite's beforeAll opens the cross-LAN route (host routes
+      # between the two private LANs), peers the fleets, and migrates A -> B.
+      - name: Run E2E Tests (Dual-group migrate)
+        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.migrate.config.ts
+
+      - if: always()
+        run: .ci/scripts/signal/create-complete.sh --name "e2e-migrate" --status ${{ job.status }}
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: always()
+        with:
+          name: test-e2e-migrate-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/complete.txt
+            packages/e2e-tests/reports/bridge-migrate/
+            packages/e2e-tests/reports/bridge-migrate-logs/
           retention-days: 3
           if-no-files-found: ignore
 

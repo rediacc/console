@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 51
 language: ru
-sourceHash: "9f8d61df26b59757"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "4da1be4753fa62bf"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Все команды `rdc` выводят структурированный JSON. Результат можно передать в скрипт или напрямую в агент.
@@ -26,9 +26,8 @@ rdc machine query --name prod-1 -o json
 Когда `rdc` запускается в не-TTY среде (конвейер, подоболочка или запуск AI-агентом), вывод автоматически переключается на JSON. Флаг не требуется.
 
 ```bash
-# These all produce JSON automatically
+# Produces JSON automatically
 result=$(rdc machine query --name prod-1)
-echo '{}' | rdc agent exec "machine query"
 ```
 
 ## JSON-конверт
@@ -175,56 +174,6 @@ rdc repo delete --name mail -m prod-1 --dry-run -o json
 ```
 
 Команды с поддержкой `--dry-run`: `repo up`, `repo down`, `repo delete`, `snapshot delete`, `sync upload`, `sync download`.
-
-## Команды обнаружения агентов
-
-Подкоманда `rdc agent` предоставляет AI-агентам структурированный способ обнаружения доступных операций во время выполнения.
-
-### Список всех команд
-
-```bash
-rdc agent capabilities
-```
-
-Возвращает полное дерево команд с аргументами, опциями и описаниями:
-
-```json
-{
-  "success": true,
-  "command": "agent capabilities",
-  "data": {
-    "version": "1.0.0",
-    "commands": [
-      {
-        "name": "machine query",
-        "description": "Show machine status",
-        "arguments": [
-          { "name": "machine", "description": "Machine name", "required": true }
-        ],
-        "options": [
-          { "flags": "-o, --output <format>", "description": "Output format" }
-        ]
-      }
-    ]
-  }
-}
-```
-
-### Получение схемы команды
-
-```bash
-rdc agent schema --command "machine query"
-```
-
-Возвращает полную схему для отдельной команды: каждый аргумент и опцию с типом и значением по умолчанию.
-
-### Выполнение через JSON
-
-```bash
-echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
-```
-
-Принимает JSON на stdin, сопоставляет ключи с аргументами и опциями команды и выполняет её с принудительным JSON-выводом. Удобно, когда не хочется вручную формировать строки shell-команд для вызовов агент--CLI.
 
 ## Примеры парсинга
 

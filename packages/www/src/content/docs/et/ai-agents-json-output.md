@@ -4,8 +4,8 @@ description: Täielik viide rdc CLI JSON-väljundi formaadi, ümbriku skeemi, ve
 category: Reference
 order: 51
 language: et
-sourceHash: "9f8d61df26b59757"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "4da1be4753fa62bf"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Kõik `rdc` käsud väljustavad struktureeritud JSON-i. Suunake see skripti või edastage otse agendile.
@@ -24,9 +24,8 @@ rdc machine query --name prod-1 -o json
 Kui `rdc` töötab mitte-TTY-keskkonnas (torustatud, alamkest või AI-agendi poolt käivitatud), lülitub väljund automaatselt JSON-ile. Lippu pole vaja.
 
 ```bash
-# Need kõik toodavad automaatselt JSON-i
+# Toodab automaatselt JSON-i
 result=$(rdc machine query --name prod-1)
-echo '{}' | rdc agent exec "machine query"
 ```
 
 ## JSON-ümbrik
@@ -173,56 +172,6 @@ rdc repo delete --name mail -m prod-1 --dry-run -o json
 ```
 
 Käsud koos `--dry-run` toetusega: `repo up`, `repo down`, `repo delete`, `snapshot delete`, `sync upload`, `sync download`.
-
-## Agendi avastamiskäsud
-
-Alamkäsk `rdc agent` pakub AI-agentidele struktureeritud viisi saadaolevate toimingute avastamiseks käitusajal.
-
-### Kõigi käskude loetlemine
-
-```bash
-rdc agent capabilities
-```
-
-Tagastab täieliku käskude puu koos argumentide, valikute ja kirjeldustega:
-
-```json
-{
-  "success": true,
-  "command": "agent capabilities",
-  "data": {
-    "version": "1.0.0",
-    "commands": [
-      {
-        "name": "machine query",
-        "description": "Show machine status",
-        "arguments": [
-          { "name": "machine", "description": "Machine name", "required": true }
-        ],
-        "options": [
-          { "flags": "-o, --output <format>", "description": "Output format" }
-        ]
-      }
-    ]
-  }
-}
-```
-
-### Käsu skeemi hankimine
-
-```bash
-rdc agent schema --command "machine query"
-```
-
-Tagastab üksiku käsu täieliku skeemi: kõik argumendid ja valikud koos nende tüüpide ja vaikeväärtustega.
-
-### Täitmine JSON kaudu
-
-```bash
-echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
-```
-
-Aktsepteerib stdin-i JSON-i, kaardistab võtmed käsu argumentide ja valikutega ning täidab käsu JSON-väljund sunnitud olekus. Kasulik siis, kui eelistate vältida kesta käsustringide koostamist agent-CLI päringute jaoks.
 
 ## Sõelumise näited
 

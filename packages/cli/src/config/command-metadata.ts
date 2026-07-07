@@ -89,15 +89,6 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
 
-  'agent capabilities': {
-    mcp: {
-      destructive: false,
-      idempotent: true,
-      timeout: 'read',
-      descriptionOverride: 'List all available rdc CLI commands with their arguments and options',
-    },
-  },
-
   // ══════════════════════════════════════════════════════════════════════
   // Auto-derived MCP tools (write)
   // ══════════════════════════════════════════════════════════════════════
@@ -515,6 +506,43 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'storage create': { mcpExcludeReason: 'Config CRUD — covered by config storage commands' },
   'storage rename': { mcpExcludeReason: 'Config CRUD — covered by config storage commands' },
   'storage delete': { mcpExcludeReason: 'Config CRUD — covered by config storage commands' },
+
+  // ── Cluster group ──────────────────────────────────────────────────────
+  'cluster status': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  'cluster kubeconfig': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  // Provisioning/teardown are host-mutating and long-running; keep them out of
+  // agent hands by default. Unlike `run`, this family is NOT an absolute block:
+  // the operator can deliberately unlock specific clusters (or all, via `*`)
+  // with REDIACC_ALLOW_CLUSTER_OPS, ancestry-verified exactly like
+  // REDIACC_ALLOW_GRAND_REPO — enforced in command-policy.ts, not here.
+  'cluster create': {
+    agentBlocked: true,
+    mcpExcludeReason: 'Provisions cloud/VM infrastructure — not an agent operation',
+  },
+  'cluster destroy': {
+    agentBlocked: true,
+    mcpExcludeReason: 'Destroys cloud/VM infrastructure — not an agent operation',
+  },
+  'cluster scale': {
+    agentBlocked: true,
+    mcpExcludeReason: 'Mutates cluster node pools — not an agent operation',
+  },
+  'cluster install': {
+    agentBlocked: true,
+    mcpExcludeReason: 'Installs cluster components — not an agent operation',
+  },
+  'cluster fork': {
+    agentBlocked: true,
+    mcpExcludeReason: 'Clones a whole cluster — not an agent operation',
+  },
+  'cluster migrate': {
+    agentBlocked: true,
+    mcpExcludeReason: 'Moves a whole cluster — not an agent operation',
+  },
 };
 
 /** Look up metadata for a command path. */

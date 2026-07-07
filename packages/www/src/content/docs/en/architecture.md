@@ -117,6 +117,25 @@ Repositories are LUKS-encrypted disk images stored on the server's datastore (de
 
 The credential is stored in your config file but **never** on the server. Without the credential, the repository data cannot be read. When autostart is enabled, a secondary LUKS keyfile is stored on the server to allow automatic mounting on boot.
 
+## Storage Backends
+
+A datastore is a per-machine storage pool that holds repository images. It has two backends, chosen at `datastore init` time:
+
+- **Local (default)**: a loop-backed BTRFS filesystem on the machine's own disk. Repository images are LUKS-encrypted files inside it; fork is one `cp --reflink=always`. This is the backend every single-machine deployment uses, and it needs nothing beyond the server's disk.
+- **Ceph RBD**: the datastore lives on an RBD image mapped from an external Ceph cluster, with plain BTRFS on top (no LUKS at this layer, since Ceph nodes never open LUKS). Fork and the read-only multi-client architecture use RBD's own copy-on-write primitives (snapshot, protect, clone) and RADOS namespaces for per-tenant isolation.
+
+Both backends present the same repository model to everything above them, so `repo` commands, backups, and forks work identically. The difference is where the bytes live and which copy-on-write mechanism a fork uses (BTRFS reflink versus RBD clone). See [Machine Setup](/en/docs/setup) for how to initialize each backend and [Server Reference](/en/docs/server-reference) for the renet-level datastore commands.
+
+## Kubernetes Repositories
+
+Alongside Docker repos, a machine can host **clusters**. Rediacc keeps the repo mentality by inverting the usual object model: the cluster is the container, and a Kubernetes repo is a namespace inside it.
+
+- Cluster state (the k3s data directory per node) lives in datastore-backed copy-on-write image files, one per node, so a cluster forks and migrates as a set of images.
+- A Kubernetes repo is the namespace `<repo>` plus its volumes. Persistent volumes are **separate** copy-on-write units (RBD images on Ceph, or small datastore image files via a local PV provisioner), never directories inside one opaque cluster image. That separation is what makes per-repo forks independently copy-on-write.
+- `KUBECONFIG` is injected as the analog of `DOCKER_HOST`, and a `renet kube` wrapper applies manifests from `up()` the way `renet compose` runs Docker.
+
+Whole-cluster clone and relocation live at `rdc cluster fork` and `rdc cluster migrate`. This is the differentiating capability: fork or move a running cluster, including its data, to another machine or datacenter with a short cutover. See the [Kubernetes](/en/docs/kubernetes) guide for the full model, commands, and measured cutover numbers.
+
 ## Configuration Structure
 
 Each config is a JSON file stored in `~/.config/rediacc/`. The default config is `rediacc.json`; named configs use the name as the filename (e.g., `production.json`). Fields are bucketed by purpose: `resources` holds deployments, `credentials` holds secrets, `account` holds cloud defaults, `infra` holds TLS/DNS, and `encryption` holds per-field at-rest state. The top-level `schemaVersion: 2` discriminator anchors forward compatibility.

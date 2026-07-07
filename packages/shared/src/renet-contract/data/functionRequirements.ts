@@ -1,6 +1,6 @@
 // Re-export from generated file - type-safe function requirements from renet
 export {
-  type BridgeFunctionName,
+  type RenetFunctionName,
   FUNCTION_REQUIREMENTS,
-  isBridgeFunction,
+  isRenetFunction,
 } from './functions.generated';

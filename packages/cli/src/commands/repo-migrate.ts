@@ -21,6 +21,8 @@ import { outputService } from '../services/core/output.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
+import { resolveRemoteName } from '../utils/remote-resolve.js';
+import { resolveExecutionTarget } from '../services/cluster/cluster-target.js';
 import { withSpinner } from '../utils/spinner.js';
 import { formatStepDuration } from '../utils/timeline.js';
 import { autoProvisionTarget, buildPushParams, resolveExtraMachines } from './repo-backup.js';
@@ -283,9 +285,29 @@ async function executePhase3(
   }
 }
 
+/**
+ * Resolve a migrate endpoint (`--from`/`--to`) to a machine name. A cluster name
+ * resolves to its control-node machine (design D14: the whole repo-verb funnel
+ * maps a cluster to its control node), so migrate works machine<->machine,
+ * machine<->cluster, and cluster<->cluster. The data plane (CoW images +
+ * rsync/FIEMAP) is runtime-agnostic, so no per-endpoint special-casing beyond
+ * this name resolution is needed before buildPushParams.
+ */
+async function resolveMigrateEndpoint(name: string): Promise<string> {
+  const resolved = await resolveRemoteName(name);
+  if (resolved.type === 'cluster') {
+    const { machineName } = await resolveExecutionTarget({ cluster: name });
+    return machineName;
+  }
+  return name;
+}
+
 async function migrateRepo(options: MigrateOptions): Promise<void> {
-  const { name, from, to, provision, bwlimit, checkpoint, deltaBase, strategy, skipDns, debug } =
-    options;
+  const { name, provision, bwlimit, checkpoint, deltaBase, strategy, skipDns, debug } = options;
+  const from = await resolveMigrateEndpoint(options.from);
+  // With --provision the target machine is created below, so it is not yet a
+  // known machine/cluster name to resolve; use it verbatim.
+  const to = provision ? options.to : await resolveMigrateEndpoint(options.to);
   const migrationStart = Date.now();
 
   await assertCommandPolicy(CMD.REPO_PUSH, name);

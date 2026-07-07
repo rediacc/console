@@ -4,8 +4,8 @@ description: Konfigureerige Cursor IDE töötama Rediacc infrastruktuuriga .curs
 category: Guides
 order: 32
 language: et
-sourceHash: "b5e835461de00400"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "66821f514bc7a8bd"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Lühiversioon: `.cursorrules` laadib Rediacc konteksti Cursori AI-sse; terminal võimaldab käivitada `rdc` käske otse sinu tegelike masinate vastu.
@@ -75,5 +75,5 @@ Meeskonna projektide jaoks lisage Rediacc-spetsiifilised Cursori seaded faili `.
 
 - Cursori Composer-režiim sobib hästi mitmeetapiliste infrastruktuuriülesannete jaoks
 - Kasutage Cursori vestluses `@terminal`, et viidata hiljutisele terminaliväljundile
-- Käsk `rdc agent capabilities` annab Cursorile täieliku käsuviite
+- Käsk `rdc --help-all` annab Cursorile täieliku käsuviite
 - Kombineerige `.cursorrules` failiga `CLAUDE.md` maksimaalse ühilduvuse tagamiseks eri AI-tööriistade vahel

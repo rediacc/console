@@ -246,6 +246,8 @@ export interface PlanMetadata {
   description: string;
   paid: boolean;
   featured: boolean;
+  /** Purchasable via self-serve checkout. False = fallback-only (COMMUNITY) or partner-only (ENTERPRISE). */
+  selfServe: boolean;
 }
 
 /**

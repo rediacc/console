@@ -22,6 +22,13 @@ export interface ConnectionDetails {
   repositoryPath?: string;
   networkId?: string;
   repositoryGuid?: string;
+  /**
+   * Kubernetes namespace to pin the kubectl current-context to for a
+   * `--cluster -r <repo>` session (design D14). Set by
+   * applyClusterConnectionContext; consumed by the term/vscode preambles to run
+   * `kubectl config set-context --current --namespace=<ns>`.
+   */
+  kubeNamespace?: string;
 }
 
 interface BaseConnectionInfo {

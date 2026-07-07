@@ -25,6 +25,7 @@ import { getSSHConnectionDetails } from '../services/machine/ssh-connection.js';
 import { assertCommandPolicy, CMD, validateRemotePath } from '../utils/command-policy.js';
 import { auditService } from '../services/core/audit.js';
 import { handleError } from '../utils/errors.js';
+import { resolveRepoTarget } from '../utils/repo-target.js';
 import { withSpinner } from '../utils/spinner.js';
 import {
   buildSyncRemotePaths,
@@ -117,18 +118,25 @@ async function validateSyncOptions(
 ): Promise<ValidatedSyncOptions> {
   const opts = await configService.applyDefaults(options);
 
-  if (!opts.machine) {
-    throw new Error(t('errors.machineRequired'));
-  }
   if (!opts.repository) {
     throw new Error(t('errors.repositoryRequired'));
   }
+
+  // Sync is a plain SSH/rsync/SFTP transfer against a machine's filesystem
+  // (no renet function call, so there's no localExecutorService/executeRepoFunction
+  // sink to thread a kubeCluster/KUBECONFIG marker into). A --cluster target
+  // just resolves to its control-node machine for the SSH connection, same as
+  // the ~35 other SSH-exec repo commands (see cluster-target.ts).
+  const { machineName } = await resolveRepoTarget({
+    machine: opts.machine,
+    cluster: options.cluster as string | undefined,
+  });
 
   await assertCommandPolicy(command, opts.repository);
   if (options.remote) validateRemotePath(options.remote);
   if (options.remoteFile) validateRemotePath(options.remoteFile);
 
-  return { team: opts.team, machine: opts.machine, repository: opts.repository };
+  return { team: opts.team, machine: machineName, repository: opts.repository };
 }
 
 export interface SyncConnectionContext {
@@ -475,7 +483,8 @@ ${t('help.examples')}
     .summary(t('commands.sync.upload.descriptionShort'))
     .description(t('commands.sync.upload.description'))
     .option('-t, --team <name>', t('options.team'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
+    .option('-m, --machine <name>', t('options.machine'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('-r, --repository <name>', t('options.repository'))
     .option('--local <paths...>', t('options.localPaths'))
     .option('--remote <path>', t('options.remotePath'))
@@ -499,7 +508,8 @@ ${t('help.examples')}
     .summary(t('commands.sync.download.descriptionShort'))
     .description(t('commands.sync.download.description'))
     .option('-t, --team <name>', t('options.team'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
+    .option('-m, --machine <name>', t('options.machine'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('-r, --repository <name>', t('options.repository'))
     .option('--local <path>', t('options.localPath'))
     .option('--remote <path>', t('options.remotePath'))
@@ -523,7 +533,8 @@ ${t('help.examples')}
     .summary(t('commands.sync.status.descriptionShort'))
     .description(t('commands.sync.status.description'))
     .option('-t, --team <name>', t('options.team'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
+    .option('-m, --machine <name>', t('options.machine'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('-r, --repository <name>', t('options.repository'))
     .option('--local <path>', t('options.localPath'))
     .option('--remote <path>', t('options.remotePath'))

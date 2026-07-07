@@ -4,8 +4,8 @@ description: "远程服务器的目录布局、renet 命令、systemd 服务和�
 category: "Concepts"
 order: 3
 language: zh
-sourceHash: "4fb53bb4cb1512f6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "af2e8fc3da708d9a"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # 服务器参考
@@ -227,6 +227,38 @@ renet datastore validate    # Filesystem integrity check
 renet datastore expand      # Expand the datastore online
 ```
 
+### 数据存储后端（Ceph RBD）
+
+数据存储要么是本地的（机器磁盘上基于 loop 设备的 BTRFS，默认），要么通过 RBD 镜像由外部 Ceph 集群支持。后端在初始化时选择：
+
+```bash
+# 本地后端（默认）
+renet datastore init --size 50G
+
+# Ceph RBD 后端：BTRFS 建立在从外部 Ceph 集群映射的 RBD 镜像之上
+renet datastore init --backend ceph --pool rbd --image {name} --cluster ceph
+```
+
+在 Ceph 后端上，fork 和 unfork 使用 RBD 自身的写时复制原语，而不是 BTRFS reflink：
+
+```bash
+renet datastore fork   --source {image} --target {new-image}   # RBD snapshot -> protect -> clone
+renet datastore unfork --image {image}                         # 按依赖顺序拆解克隆
+```
+
+Ceph 节点从不打开 LUKS（此后端没有按镜像的 LUKS 层），因此它们的内存占用取决于 Ceph 守护进程的调优（`osd_memory_target`），而非 KDF 的计算。第二个客户端可以以只读方式映射同一个 RBD 镜像，并叠加一个本地写时复制覆盖层，这就是以读为主的横向扩展路径。
+
+### Kubernetes（renet kube）
+
+在集群节点上，renet 以包装 Docker 的方式包装 k3s。`renet kube` 是 compose 的类比：它注入 `KUBECONFIG`，并从 Rediaccfile 的 `up()` 中应用清单或 Helm chart。
+
+```bash
+sudo renet kube apply -f manifests/     # 应用到仓库的命名空间
+sudo renet kube -- get pods             # 透传到固定命名空间中的 kubectl
+```
+
+集群状态存储在由数据存储支持的写时复制镜像中（k3s 的 `--data-dir` 绑定在镜像挂载点内部），这正是整个集群能够 fork 和迁移的原因。持久卷是独立的写时复制单元：Ceph 上的 RBD 镜像（每个集群实例和每次 fork 各有一个 RADOS 命名空间），或在本地后端通过本地 PV 供应器提供的小型数据存储镜像文件。面向用户的工作流在 [Kubernetes](/en/docs/kubernetes) 指南中；CLI 通过 `rdc cluster` 和支持集群的 `rdc repo` 命令驱动这些路径。
+
 ## Systemd 服务
 
 每个仓库会创建以下 systemd 单元：
@@ -236,6 +268,7 @@ renet datastore expand      # Expand the datastore online
 | `rediacc-docker-{id}.service` | 隔离的 Docker 守护进程 |
 | `rediacc-docker-{id}.socket` | Docker API 套接字激活 |
 | `rediacc-loopback-{id}.service` | 回环 IP 别名设置 |
+| `rediacc-k3s-{id}.service` | 每集群 k3s 节点（仅限集群主机） |
 
 所有仓库共享的全局服务：
 

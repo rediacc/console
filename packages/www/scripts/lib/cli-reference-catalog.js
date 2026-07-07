@@ -5,10 +5,10 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const LOCAL_GROUPS = [
-  'agent',
   'config',
   'datastore',
   'machine',
+  'cluster',
   'mcp',
   'repo',
   'storage',
@@ -17,6 +17,7 @@ const LOCAL_GROUPS = [
   'shortcuts',
   'subscription',
   'update',
+  'credits',
   'doctor',
   'ops',
 ];
@@ -33,6 +34,7 @@ const SHELL_FENCE_LANGS = new Set(['bash', 'sh', 'shell', 'zsh', 'powershell', '
 // but registered globally by the CLI framework (output formatting, confirmations, etc.)
 const GLOBAL_ALWAYS_VALID = new Set([
   '--help',
+  '--help-all',
   '-h',
   '--version',
   '-V',

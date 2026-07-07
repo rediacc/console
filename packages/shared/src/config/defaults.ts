@@ -121,6 +121,9 @@ export const CEPH_DEFAULTS = {
 
   /** Default Ceph cluster name */
   CLUSTER: 'ceph',
+
+  /** Default OSD block device when a ceph pool disk spec omits the path */
+  OSD_DEVICE: '/dev/sdb',
 } as const;
 
 /**

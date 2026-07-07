@@ -3,8 +3,6 @@
  * These types define the structure of the common translations.
  */
 
-import type { TranslationKey } from './translation-keys.generated';
-
 /**
  * Type-safe translation function options.
  * Supports interpolation variables and pluralization.
@@ -19,39 +17,6 @@ export interface TranslationOptions {
   /** Default value if key is missing */
   defaultValue?: string;
 }
-
-/**
- * Type-safe translation function.
- * Use this instead of TFunction from i18next for compile-time validation.
- *
- * @example
- * ```typescript
- * interface Props {
- *   t: TypedTFunction;
- * }
- *
- * // TypeScript will error if key doesn't exist:
- * t('auth:login.email')        // Valid
- * t('auth:login.typo')         // Error: not a valid key
- * t('common:status.pending')   // Valid with namespace
- * t('status.pending')          // Valid without namespace (common keys)
- * ```
- */
-export type TypedTFunction = {
-  (key: TranslationKey, options?: TranslationOptions): string;
-  /**
-   * Use this overload for dynamically constructed keys.
-   * Add `as TranslationKey` to assert the key is valid.
-   * @example t(`${namespace}:${key}` as TranslationKey)
-   */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (key: any, options?: TranslationOptions): string;
-};
-
-/**
- * Re-export TranslationKey for convenience
- */
-export type { TranslationKey };
 
 /**
  * Supported languages in the application.

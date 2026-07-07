@@ -177,11 +177,33 @@ printf '%b' "$BINARY_LINES" | jq -Rn \
 log_info "Metadata written to $CLI_ASSETS_DIR/renet-metadata.json"
 log_info "  Version: $VERSION"
 
+# Prepare third-party attribution assets (credits inventory + license texts).
+# The inventory is the committed source of truth (also read in dev); THIRD_PARTY_LICENSES
+# is generated here so `rdc credits --licenses` can print it from the SEA build.
+log_step "Preparing third-party credits assets..."
+cp "$CLI_DIR/src/data/third-party-credits.json" "$CLI_ASSETS_DIR/third-party-credits.json"
+log_info "Copied third-party-credits.json"
+
+# THIRD_PARTY_LICENSES generation is best-effort and non-fatal: the Go-dependency
+# section needs network, so a networked release build carries the full report while
+# an offline build carries a clearly-marked placeholder (see the generator).
+if npx tsx "$REPO_ROOT/scripts/generate-third-party-licenses.ts" \
+    --repo-root "$REPO_ROOT" \
+    --output "$CLI_ASSETS_DIR/THIRD_PARTY_LICENSES"; then
+    log_info "Generated THIRD_PARTY_LICENSES"
+else
+    log_warn "THIRD_PARTY_LICENSES generation failed; writing placeholder"
+    printf '%s\n' "THIRD_PARTY_LICENSES generation failed at build time. Regenerate with: npx tsx scripts/generate-third-party-licenses.ts" \
+        >"$CLI_ASSETS_DIR/THIRD_PARTY_LICENSES"
+fi
+
 # Generate platform-specific sea-config.json
 log_step "Generating platform-specific sea-config..."
 
 # Build asset entries as newline-separated key=value pairs, then construct JSON in a single jq call
 ASSET_LINES="renet-metadata.json\tdist/assets/renet-metadata.json"
+ASSET_LINES="${ASSET_LINES}\nthird-party-credits.json\tdist/assets/third-party-credits.json"
+ASSET_LINES="${ASSET_LINES}\nTHIRD_PARTY_LICENSES\tdist/assets/THIRD_PARTY_LICENSES"
 for binary_name in $REQUIRED_BINARIES; do
     ASSET_LINES="${ASSET_LINES}\nrenet-$binary_name\tdist/assets/renet-$binary_name"
 done

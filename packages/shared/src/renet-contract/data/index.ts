@@ -13,14 +13,14 @@ export { FUNCTION_REQUIREMENTS } from './functionRequirements';
 // Note: FUNCTION_VISIBILITY and FunctionVisibility removed - visibility validation
 // is now handled server-side by renet. All functions in this file are public.
 export {
-  BRIDGE_FUNCTIONS,
-  BRIDGE_FUNCTIONS_VERSION,
-  type BridgeFunctionName,
+  RENET_FUNCTIONS,
+  RENET_FUNCTIONS_VERSION,
+  type RenetFunctionName,
   createFunctionPayload,
   type FunctionParamsMap,
   getTypedParams,
-  isBridgeFunction,
-  isPublicBridgeFunction,
+  isRenetFunction,
+  isPublicRenetFunction,
   type QueueFunctionsType,
   queueFunctions,
   type TypedFunctionPayload,
@@ -64,13 +64,13 @@ export {
   type ServicesResult,
   type SystemInfo,
 } from './list-types.generated';
-// Vault types - auto-generated from renet/pkg/bridge/vault/
+// Vault types - auto-generated from renet/pkg/functions/vault/
 export {
-  assertQueueVaultV2,
+  assertRenetVault,
   type ContextSection,
-  isQueueVaultV2,
+  isRenetVault,
   type MachineSection,
-  type QueueVaultV2,
+  type RenetVault,
   type RepositoryInfo,
   type SSHSection,
   type StorageSection,
@@ -78,17 +78,17 @@ export {
   VAULT_SCHEMA,
   VAULT_VERSION,
 } from './vault.generated';
-// Vault Zod schemas - auto-generated from renet/pkg/bridge/vault/
+// Vault Zod schemas - auto-generated from renet/pkg/functions/vault/
 export {
   ContextSectionSchema,
   getVaultValidationErrors,
   MachineSectionSchema,
-  parseQueueVault,
-  QueueVaultV2Schema,
-  type QueueVaultV2Type,
+  parseRenetVault,
+  RenetVaultSchema,
+  type RenetVaultType,
   RepositoryInfoSchema,
   SSHSectionSchema,
   StorageSectionSchema,
   TaskSectionSchema,
-  validateQueueVault,
+  validateRenetVault,
 } from './vault.schema';

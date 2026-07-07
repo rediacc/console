@@ -9,6 +9,7 @@ import {
 import { outputService } from '../services/core/output.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { resolveRepoTarget } from '../utils/repo-target.js';
 
 interface DiffEntry {
   status: 'A' | 'M' | 'D' | 'R';
@@ -58,7 +59,8 @@ interface ContentDiffResult {
 interface DiffOptions {
   name: string;
   base?: string;
-  machine: string;
+  machine?: string;
+  cluster?: string;
   nameOnly?: boolean;
   stat?: boolean;
   content?: string | boolean;
@@ -262,6 +264,7 @@ async function runDiff(options: DiffOptions): Promise<void> {
     throw new ValidationError(t('commands.repo.diff.sameRepo'));
   }
   await configService.ensureRepositoryNetworkId(options.name);
+  const { machineName, kubeCluster } = await resolveRepoTarget(options);
 
   const params: Record<string, unknown> = { base: baseGuid, target: targetGuid };
   if (options.fast) params.fast = true;
@@ -271,13 +274,14 @@ async function runDiff(options: DiffOptions): Promise<void> {
     t('commands.repo.diff.starting', {
       base: baseGuid,
       target: targetGuid,
-      machine: options.machine,
+      machine: machineName,
     })
   );
 
   const result: LocalExecuteResult = await localExecutorService.execute({
     functionName: 'repository_diff',
-    machineName: options.machine,
+    machineName,
+    kubeCluster,
     params: { repository: options.name, ...params },
     debug: options.debug,
     skipRouterRestart: options.skipRouterRestart,
@@ -318,7 +322,8 @@ export function registerRepoDiffCommand(repo: Command): void {
     .description(t('commands.repo.diff.description'))
     .requiredOption('--name <name>', t('commands.repo.diff.nameOption'))
     .option('--base <name>', t('commands.repo.diff.baseOption'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('--name-only', t('commands.repo.diff.nameOnlyOption'))
     .option('--stat', t('commands.repo.diff.statOption'))
     .option('--content [path]', t('commands.repo.diff.contentOption'))

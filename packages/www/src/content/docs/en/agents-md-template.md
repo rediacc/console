@@ -62,11 +62,8 @@ rdc term connect -m <machine> -c "command"
 rdc repo sync upload -m <machine> -r <repo> --local ./local-path
 rdc repo sync download -m <machine> -r <repo> --local ./local-path
 
-# List all available commands with schemas
-rdc agent capabilities
-
-# Show schema for a specific command
-rdc agent schema --command "machine query"
+# List all available commands
+rdc --help-all
 
 ### Architecture
 - **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
@@ -96,7 +93,7 @@ rdc machine query --name <machine-name>
 rdc config repository list
 
 # Check what commands are available
-rdc agent capabilities
+rdc --help-all
 ```
 
 ## Per-Agent Setup

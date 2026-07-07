@@ -4,8 +4,8 @@ description: "Come Claude Code, Cursor e Cline gestiscono l'infrastruttura Redia
 category: Guides
 order: 30
 language: it
-sourceHash: "0aa0c975030d4856"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "27ea21c36250d4a9"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 A dirla tutta, `rdc` è progettato con piena consapevolezza degli agenti. Claude Code, Cursor, Cline: qualsiasi assistente AI che invoca `rdc` in una subshell ottiene output JSON strutturato, errori leggibili dalla macchina e i guardrail che ti aspetteresti per la gestione autonoma dell'infrastruttura Rediacc. Ecco come funziona l'integrazione.
@@ -59,21 +59,6 @@ Le risposte di errore includono i campi `retryable` e `guidance`:
     "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
   }]
 }
-```
-
-### 3. Rilevamento delle capacità dell'agente
-
-Il sottocomando `rdc agent` fornisce introspezione strutturata:
-
-```bash
-# Elenca tutti i comandi con argomenti e opzioni
-rdc agent capabilities
-
-# Mostra lo schema dettagliato per un comando specifico
-rdc agent schema --command "machine query"
-
-# Esegui un comando con stdin JSON
-echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 ```
 
 ## Flag chiave per gli agenti

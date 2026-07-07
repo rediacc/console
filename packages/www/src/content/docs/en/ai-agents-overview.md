@@ -59,21 +59,6 @@ Error responses include `retryable` and `guidance` fields:
 }
 ```
 
-### 3. Agent Capabilities Discovery
-
-The `rdc agent` subcommand provides structured introspection:
-
-```bash
-# List all commands with arguments and options
-rdc agent capabilities
-
-# Show detailed schema for a specific command
-rdc agent schema --command "machine query"
-
-# Execute a command with JSON stdin
-echo '{"name": "prod-1"}' | rdc agent exec "machine query"
-```
-
 ## Key Flags for Agents
 
 | Flag | Purpose |

@@ -23,7 +23,7 @@ export const CLI_COMMANDS = {
   containers: `${CLI_TOOL} machine containers <machine> -o json`,
   ssh: `${CLI_TOOL} term <machine> [repo]`,
   health: `${CLI_TOOL} machine health <machine> -o json`,
-  capabilities: `${CLI_TOOL} agent capabilities`,
+  discover: `${CLI_TOOL} --help-all`,
 } as const;
 
 export const JSON_ENVELOPE =

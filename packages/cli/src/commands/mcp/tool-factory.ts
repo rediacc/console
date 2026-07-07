@@ -146,6 +146,16 @@ function deriveSchema(
     if (!argNames.has(key)) schema[key] = deriveOptionType(opt);
   }
 
+  // Mutually-exclusive target pair (design D14): -m XOR --cluster. When a repo
+  // verb exposes both, make BOTH optional MCP fields — a value-taking option
+  // otherwise derives to a REQUIRED field, so exposing both would demand both.
+  // The auto-deriver can't express "exactly one", so the runtime
+  // (resolveRepoTarget) enforces it and returns a clear error for neither/both.
+  if ('machine' in schema && 'cluster' in schema) {
+    schema.machine = (schema.machine as z.ZodType).optional();
+    schema.cluster = (schema.cluster as z.ZodType).optional();
+  }
+
   return schema;
 }
 

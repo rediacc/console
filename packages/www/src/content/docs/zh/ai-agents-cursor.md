@@ -4,8 +4,8 @@ description: 使用 .cursorrules 和终端集成配置 Cursor IDE 以使用 Redi
 category: Guides
 order: 32
 language: zh
-sourceHash: "b5e835461de00400"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "66821f514bc7a8bd"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 简而言之：`.cursorrules` 将 Rediacc 上下文加载到 Cursor 的 AI 中；终端则让它能够对实际机器运行 `rdc` 命令。
@@ -75,5 +75,5 @@ rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
 
 - Cursor 的 Composer 模式非常适合多步骤基础设施任务
 - 在 Cursor 聊天中使用 `@terminal` 引用最近的终端输出
-- `rdc agent capabilities` 命令为 Cursor 提供完整的命令参考
+- `rdc --help-all` 命令为 Cursor 提供完整的命令参考
 - 将 `.cursorrules` 与 `CLAUDE.md` 文件结合使用，以实现跨 AI 工具的最大兼容性

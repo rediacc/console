@@ -4,8 +4,8 @@ description: "Wie Claude Code, Cursor und Cline die Rediacc-Infrastruktur über 
 category: Guides
 order: 30
 language: de
-sourceHash: "0aa0c975030d4856"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "27ea21c36250d4a9"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Ehrlich gesagt ist `rdc` von Grund auf agentenkompatibel entworfen. Claude Code, Cursor, Cline: Jeder KI-Assistent, der `rdc` in einer Subshell aufruft, erhält strukturierte JSON-Ausgabe, maschinenlesbare Fehlermeldungen und die Sicherheitsmechanismen, die man für die autonome Verwaltung der Rediacc-Infrastruktur erwartet. So funktioniert die Integration.
@@ -59,21 +59,6 @@ Fehlerantworten enthalten die Felder `retryable` und `guidance`:
     "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
   }]
 }
-```
-
-### 3. Agenten-Fähigkeitserkennung
-
-Der `rdc agent`-Unterbefehl bietet strukturierte Introspektion:
-
-```bash
-# List all commands with arguments and options
-rdc agent capabilities
-
-# Show detailed schema for a specific command
-rdc agent schema --command "machine query"
-
-# Execute a command with JSON stdin
-echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 ```
 
 ## Wichtige Flags für Agenten

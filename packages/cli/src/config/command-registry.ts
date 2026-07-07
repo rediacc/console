@@ -58,7 +58,6 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
   { name: 'doctor', domain: 'TOOLS' },
   { name: 'update', domain: 'TOOLS' },
   { name: 'vscode', domain: 'TOOLS' },
-  { name: 'agent', domain: 'TOOLS' },
   { name: 'mcp', domain: 'TOOLS' },
 ] as const;
 

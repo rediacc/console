@@ -2,12 +2,6 @@ import React from 'react';
 import { ACCOUNT_PATH } from '../config/constants';
 import { getLocalAccountUrl } from '../utils/account-url';
 
-declare global {
-  interface Window {
-    openRegionPicker?: (targetPath: string) => void;
-  }
-}
-
 export interface AccountCtaProps {
   origin?: string;
   label: string;

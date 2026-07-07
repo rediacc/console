@@ -1,23 +1,13 @@
-import { randomBytes, randomUUID } from 'node:crypto';
-import {
-  generateConnectionName,
-  removePersistedKeys,
-  removeSSHConfigEntry,
-} from '../remote/vscode/index.js';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
-import { localExecutorService } from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
-import { assertAgentRepoCreate, isAgentEnvironment } from '../utils/agent-guard.js';
+import { isAgentEnvironment } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD, type CommandPath } from '../utils/command-policy.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
-import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
-import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
-import { formatStepDuration } from '../utils/timeline.js';
-import { assertMachineExists } from './_validate.js';
+import { resolveRepoTarget } from '../utils/repo-target.js';
 import { registerRepoBackupCommands } from './repo-backup.js';
 import {
   handleDownAll,
@@ -29,250 +19,20 @@ import {
 import { registerRepoBranchingCommands } from './repo-branching.js';
 import { registerRepoMaintenanceCommands } from './repo-maintenance.js';
 import { registerRepoCatCommand } from './repo-cat.js';
+import { registerRepoCreateDeleteCommands } from './repo-create-delete.js';
 import { registerRepoDiffCommand } from './repo-diff.js';
 import { registerRepoSecretCommands } from './repo-secret.js';
-
-/** Clean up local VS Code SSH artifacts after a repo delete. Non-fatal. */
-async function cleanupDeletedRepoSSH(machineName: string, repoName: string): Promise<void> {
-  const teamName = (await configService.applyDefaults({})).team ?? '';
-  const connectionName = generateConnectionName(teamName, machineName, repoName);
-  removeSSHConfigEntry(connectionName);
-  removePersistedKeys(teamName, machineName, repoName);
-}
-
 import { registerExtendedRepoCommands } from './repo-extended.js';
 import { registerRepoMigrateCommand } from './repo-migrate.js';
 import { registerRepoSyncCommands } from './repo-sync.js';
 import { registerRepoTunnelCommand } from './repo-tunnel.js';
 import { registerRepoVolumeCommands } from './repo-volume.js';
 
-function generateCredential(): string {
-  return randomBytes(24).toString('base64');
-}
-
-/** Log total step duration and mark timeline as rendered. */
-function renderTimelineTotal(steps: { duration_ms: number }[]): void {
-  const totalMs = steps.reduce((sum, s) => sum + s.duration_ms, 0);
-  process.stdout.write(`\nTotal: ${formatStepDuration(totalMs)}\n`);
-  outputService.setTimelineRendered();
-}
-
-/** Rollback a created repo registration if it exists. */
-async function rollbackCreateRepo(name: string): Promise<void> {
-  const exists = await configService.getRepository(name);
-  if (exists) {
-    await configService.removeRepository(name);
-    outputService.warn(t('commands.repo.create.rollback', { repository: name }));
-  }
-}
-
-/** Render the create result: timeline/success on success, rollback + failure otherwise. */
-async function renderCreateResult(
-  name: string,
-  result: import('../services/executor/local-executor.js').LocalExecuteResult
-): Promise<void> {
-  if (result.success) {
-    if (result.allSteps && result.allSteps.length > 0) {
-      renderTimelineTotal(result.allSteps);
-    } else {
-      outputService.success(t('commands.repo.create.completed'));
-    }
-  } else {
-    await rollbackCreateRepo(name);
-    renderLocalExecutionFailure(result, t('commands.repo.create.failed'));
-  }
-}
-
-/** Handle the repo create action body. */
-async function handleRepoCreate(
-  name: string,
-  options: {
-    machine: string;
-    size: string;
-    noDocker?: boolean;
-    debug?: boolean;
-    skipRouterRestart?: boolean;
-  }
-): Promise<void> {
-  // Rollback must only ever remove the row THIS invocation registered —
-  // a catch-all rollback would delete a pre-existing repo's config row
-  // (credential included) when create fails with "already exists".
-  let registered = false;
-  try {
-    assertAgentRepoCreate(name);
-
-    await assertMachineExists(options.machine);
-
-    const existing = await configService.getRepository(name);
-    if (existing) {
-      throw new Error(t('commands.repo.create.alreadyExists', { name }));
-    }
-
-    const repositoryGuid = randomUUID();
-    const credential = generateCredential();
-    const networkId = await configService.allocateNetworkId();
-    const { privateKey: sshPrivateKey, publicKey: sshPublicKey } = generateSSHKeyPair();
-
-    const { compositeKey } = await import('../utils/config-schema.js');
-    const repoKey = compositeKey(name, 'latest');
-    await configService.addRepository(repoKey, {
-      repositoryGuid,
-      tag: 'latest',
-      credential,
-      networkId,
-      sshPrivateKey,
-      sshPublicKey,
-    });
-    registered = true;
-
-    outputService.info(
-      t('commands.repo.create.registered', {
-        repository: name,
-        guid: repositoryGuid.slice(0, 8),
-        networkId,
-      })
-    );
-    outputService.info(
-      t('commands.repo.create.starting', {
-        repository: name,
-        size: options.size,
-        machine: options.machine,
-      })
-    );
-
-    const result = await localExecutorService.execute({
-      functionName: 'repository_create',
-      machineName: options.machine,
-      params: {
-        repository: name,
-        size: options.size,
-        guid: repositoryGuid,
-        network_id: networkId,
-        ...(options.noDocker ? { start_docker: false } : {}),
-      },
-      debug: options.debug,
-      skipRouterRestart: options.skipRouterRestart,
-    });
-
-    await renderCreateResult(name, result);
-  } catch (error) {
-    if (registered) {
-      await rollbackCreateRepo(name);
-    }
-    handleError(error);
-  }
-}
-
-/** Handle post-delete success: cleanup, archiving, timeline, hints. */
-async function handleDeleteSuccess(
-  name: string,
-  machineName: string,
-  repoConfig: { repositoryGuid: string },
-  archiveConfig: boolean,
-  result: import('../services/executor/local-executor.js').LocalExecuteResult,
-  originalRef?: string
-): Promise<void> {
-  await cleanupDeletedRepoSSH(machineName, name).catch(() => {});
-  // When the user invoked `repo delete --name app` and the resolver returned
-  // `app:latest`, VS Code SSH artifacts persisted under the original bare
-  // alias survive the cleanup above. Sweep that name too.
-  if (originalRef && originalRef !== name) {
-    await cleanupDeletedRepoSSH(machineName, originalRef).catch(() => {});
-  }
-
-  if (archiveConfig) {
-    await configService.archiveRepository(name);
-    outputService.info(t('commands.repo.delete.archived', { repository: name }));
-    outputService.info(t('commands.repo.delete.restoreHint', { guid: repoConfig.repositoryGuid }));
-  }
-  if (result.allSteps && result.allSteps.length > 0) {
-    renderTimelineTotal(result.allSteps);
-  } else {
-    outputService.success(t('commands.repo.delete.completed'));
-  }
-  outputService.info(t('commands.repo.delete.configRetained', { repository: name }));
-  if (!archiveConfig) {
-    outputService.info(t('commands.repo.delete.archiveHint', { repository: name }));
-  }
-  outputService.info(t('commands.repo.delete.cloudBackupHint', { machine: machineName }));
-}
-
-/** Handle the repo delete action body. */
-async function handleRepoDelete(
-  name: string,
-  options: {
-    machine: string;
-    archiveConfig?: boolean;
-    yes?: boolean;
-    debug?: boolean;
-    skipRouterRestart?: boolean;
-    dryRun?: boolean;
-  }
-): Promise<void> {
-  try {
-    const { key: target, config: repoConfig } = await configService.resolveDestructiveTarget(name);
-    await assertCommandPolicy(CMD.REPO_DELETE, target);
-
-    await configService.ensureRepositoryNetworkId(target);
-
-    if (options.dryRun) {
-      outputService.print(
-        {
-          dryRun: true,
-          repository: target,
-          machine: options.machine,
-          guid: repoConfig.repositoryGuid,
-          archiveConfig: !!options.archiveConfig,
-        },
-        getOutputFormat()
-      );
-      return;
-    }
-
-    if (!options.yes) {
-      const { askConfirm } = await import('../utils/prompt.js');
-      const confirmed = await askConfirm(
-        t('commands.repo.delete.confirm', { repository: target, machine: options.machine })
-      );
-      if (!confirmed) {
-        outputService.info(t('status.cancelled'));
-        return;
-      }
-    }
-
-    outputService.info(
-      t('commands.repo.delete.starting', { repository: target, machine: options.machine })
-    );
-
-    const result = await localExecutorService.execute({
-      functionName: 'repository_delete',
-      machineName: options.machine,
-      params: { repository: target },
-      debug: options.debug,
-      skipRouterRestart: options.skipRouterRestart,
-    });
-
-    if (result.success) {
-      await handleDeleteSuccess(
-        target,
-        options.machine,
-        repoConfig,
-        !!options.archiveConfig,
-        result,
-        name
-      );
-    } else {
-      renderLocalExecutionFailure(result, t('commands.repo.delete.failed'));
-    }
-  } catch (error) {
-    handleError(error);
-  }
-}
-
 async function handleSingleRepoUp(
   name: string,
   options: {
-    machine: string;
+    machine?: string;
+    cluster?: string;
     skipCheckpoint?: boolean;
     tls?: boolean;
     detach?: boolean;
@@ -282,6 +42,7 @@ async function handleSingleRepoUp(
   }
 ): Promise<void> {
   await assertCommandPolicy(CMD.REPO_UP, name);
+  const { machineName, kubeCluster } = await resolveRepoTarget(options);
 
   const params: Record<string, unknown> = {};
   if (options.skipCheckpoint) params.skip_checkpoint = true;
@@ -302,7 +63,7 @@ async function handleSingleRepoUp(
       {
         dryRun: true,
         repository: name,
-        machine: options.machine,
+        machine: machineName,
         guid: repo?.repositoryGuid,
         params,
       },
@@ -311,13 +72,27 @@ async function handleSingleRepoUp(
     return;
   }
 
-  await deployRepoKeyIfNeeded(name, options.machine);
-  await executeRepoFunction('repository_up', name, options.machine, params, options, {
-    starting: t('commands.repo.up.starting', { repository: name, machine: options.machine }),
-    completed: t('commands.repo.up.completed'),
-    failed: t('commands.repo.up.failed'),
-  });
-  await postRepoUpTasks(name, options.machine);
+  // deployRepoKeyIfNeeded + postRepoUpTasks (per-repo SSH key + DNS) are
+  // docker-repo concepts; a cluster repo deploys through the renet dual-runtime
+  // path (KUBECONFIG injected) and routes DNS via the cluster wildcard.
+  if (!kubeCluster) {
+    await deployRepoKeyIfNeeded(name, machineName);
+  }
+  await executeRepoFunction(
+    'repository_up',
+    name,
+    machineName,
+    params,
+    { ...options, kubeCluster },
+    {
+      starting: t('commands.repo.up.starting', { repository: name, machine: machineName }),
+      completed: t('commands.repo.up.completed'),
+      failed: t('commands.repo.up.failed'),
+    }
+  );
+  if (!kubeCluster) {
+    await postRepoUpTasks(name, machineName);
+  }
 }
 
 /**
@@ -370,38 +145,7 @@ export function registerRepoCommands(program: Command): void {
     repo.addHelpText('after', t('help.repo.keyConcepts'));
   }
 
-  // repo create --name <name>
-  repo
-    .command('create')
-    .description(t('commands.repo.create.description'))
-    .requiredOption('--name <name>', t('options.name'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
-    .requiredOption('--size <size>', t('commands.repo.create.sizeOption'))
-    .option('--no-docker', t('commands.repo.create.noDockerOption'))
-    .option('--debug', t('options.debug'))
-    .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (options) => {
-      const name = options.name;
-      await handleRepoCreate(name, options);
-    });
-
-  // repo delete --name <name>
-  const deleteCmd = repo
-    .command('delete')
-    .summary(t('commands.repo.delete.descriptionShort'))
-    .description(t('commands.repo.delete.description'))
-    .requiredOption('--name <name>', t('options.name'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--archive-config', t('commands.repo.delete.archiveOption'))
-    .option('-y, --yes', t('options.yes'))
-    .option('--debug', t('options.debug'))
-    .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .option('--dry-run', t('options.dryRun'))
-    .action(async (options) => {
-      const name = options.name;
-      await handleRepoDelete(name, options);
-    });
-  deleteCmd.addHelpText('after', t('commands.repo.delete.examples'));
+  registerRepoCreateDeleteCommands(repo);
 
   registerRepoVolumeCommands(repo, executeRepoFunction, iterateAllRepos);
 
@@ -411,7 +155,8 @@ export function registerRepoCommands(program: Command): void {
     .summary(t('commands.repo.up.descriptionShort'))
     .description(t('commands.repo.up.description'))
     .option('--name <name>', t('options.name'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('--skip-checkpoint', t('commands.repo.up.skipCheckpointOption'))
     .option('--tls', t('commands.repo.up.tlsOption'))
     .option('--detach', t('commands.repo.up.detachOption'))
@@ -458,7 +203,8 @@ export function registerRepoCommands(program: Command): void {
     .summary(t('commands.repo.down.descriptionShort'))
     .description(t('commands.repo.down.description'))
     .option('--name <name>', t('options.name'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('--unmount', t('commands.repo.down.unmountOption'))
     .option('--checkpoint', t('commands.repo.down.checkpointOption'))
     .option('-y, --yes', t('commands.repo.yesOption'))
@@ -468,7 +214,8 @@ export function registerRepoCommands(program: Command): void {
     .action(
       async (options: {
         name?: string;
-        machine: string;
+        machine?: string;
+        cluster?: string;
         unmount?: boolean;
         checkpoint?: boolean;
         yes?: boolean;
@@ -481,6 +228,7 @@ export function registerRepoCommands(program: Command): void {
           if (name) {
             // Single-repo down
             await assertCommandPolicy(CMD.REPO_DOWN, name);
+            const { machineName, kubeCluster } = await resolveRepoTarget(options);
 
             const params: Record<string, unknown> = {};
             if (options.unmount) params.unmount = true;
@@ -492,7 +240,7 @@ export function registerRepoCommands(program: Command): void {
                 {
                   dryRun: true,
                   repository: name,
-                  machine: options.machine,
+                  machine: machineName,
                   guid: repo?.repositoryGuid,
                   params,
                 },
@@ -501,14 +249,21 @@ export function registerRepoCommands(program: Command): void {
               return;
             }
 
-            await executeRepoFunction('repository_down', name, options.machine, params, options, {
-              starting: t('commands.repo.down.starting', {
-                repository: name,
-                machine: options.machine,
-              }),
-              completed: t('commands.repo.down.completed'),
-              failed: t('commands.repo.down.failed'),
-            });
+            await executeRepoFunction(
+              'repository_down',
+              name,
+              machineName,
+              params,
+              { ...options, kubeCluster },
+              {
+                starting: t('commands.repo.down.starting', {
+                  repository: name,
+                  machine: machineName,
+                }),
+                completed: t('commands.repo.down.completed'),
+                failed: t('commands.repo.down.failed'),
+              }
+            );
           } else {
             await handleDownAll(options);
           }
@@ -523,26 +278,36 @@ export function registerRepoCommands(program: Command): void {
     .command('status')
     .description(t('commands.repo.status.description'))
     .requiredOption('--name <name>', t('options.name'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
       async (options: {
         name: string;
-        machine: string;
+        machine?: string;
+        cluster?: string;
         debug?: boolean;
         skipRouterRestart?: boolean;
       }) => {
         try {
           const name = options.name;
-          await executeRepoFunction('repository_status', name, options.machine, {}, options, {
-            starting: t('commands.repo.status.starting', {
-              repository: name,
-              machine: options.machine,
-            }),
-            completed: t('commands.repo.status.completed'),
-            failed: t('commands.repo.status.failed'),
-          });
+          const { machineName, kubeCluster } = await resolveRepoTarget(options);
+          await executeRepoFunction(
+            'repository_status',
+            name,
+            machineName,
+            {},
+            { ...options, kubeCluster },
+            {
+              starting: t('commands.repo.status.starting', {
+                repository: name,
+                machine: machineName,
+              }),
+              completed: t('commands.repo.status.completed'),
+              failed: t('commands.repo.status.failed'),
+            }
+          );
         } catch (error) {
           handleError(error);
         }
@@ -553,7 +318,8 @@ export function registerRepoCommands(program: Command): void {
   repo
     .command('list')
     .description(t('commands.repo.list.description'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(handleRepoList);

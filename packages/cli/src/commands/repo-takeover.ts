@@ -6,6 +6,7 @@ import { outputService } from '../services/core/output.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { assertDockerOnly } from '../utils/repo-target.js';
 
 export function registerRepoTakeoverCommand(repo: Command): void {
   const takeoverCmd = repo
@@ -14,6 +15,7 @@ export function registerRepoTakeoverCommand(repo: Command): void {
     .description(t('commands.repo.takeover.description'))
     .requiredOption('--name <name>', t('options.name'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('--force', t('commands.repo.takeover.forceOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
@@ -21,11 +23,13 @@ export function registerRepoTakeoverCommand(repo: Command): void {
       async (options: {
         name: string;
         machine: string;
+        cluster?: string;
         force?: boolean;
         debug?: boolean;
         skipRouterRestart?: boolean;
       }) => {
         try {
+          assertDockerOnly('takeover', options);
           const { key: forkRef, config: forkConfig } = await configService.resolveDestructiveTarget(
             options.name
           );

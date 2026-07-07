@@ -1,0 +1,77 @@
+{
+  "_comment": "Third-party attribution inventory for rdc. Mirrors private/renet/pkg/embed/credits.go for the embedded-binary entries (asset/name/version MUST match; enforced by scripts/check-embed-credits.ts against private/renet/Dockerfile ARGs) and additionally records the SEA-bundled Node.js runtime and the bundled npm dependencies. Source of truth read in dev; embedded as a SEA asset for release builds.",
+  "gplWrittenOffer": "This distribution conveys GPL-licensed binaries (CRIU, rsync). The exact corresponding source for each is retrievable at the source URL listed for that component. Rediacc will additionally mirror each exact-version source archive at the recorded releases.rediacc.com path. Written requests for source may be sent to legal@rediacc.com.",
+  "components": [
+    {
+      "kind": "embedded-binary",
+      "asset": "criu",
+      "name": "CRIU",
+      "version": "4.2",
+      "spdx": "GPL-2.0-only",
+      "license": "GNU General Public License, version 2 (some libraries LGPL-2.1); conveyed as an unmodified binary, invoked via exec.",
+      "upstreamSourceUrl": "https://github.com/checkpoint-restore/criu/archive/v4.2/criu-4.2.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/criu-4.2.tar.gz"
+    },
+    {
+      "kind": "embedded-binary",
+      "asset": "rsync",
+      "name": "rsync",
+      "version": "3.4.1",
+      "spdx": "GPL-3.0-or-later",
+      "license": "GNU General Public License, version 3 or later; conveyed as a binary, invoked via exec.",
+      "upstreamSourceUrl": "https://download.samba.org/pub/rsync/src/rsync-3.4.1.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/rsync-3.4.1.tar.gz",
+      "notes": "Built with the LinuxFromScratch rsync-3.4.1-security_fix-2.patch. The build is a modified version, so the mirrored corresponding source must include that patch (GPLv3 s6)."
+    },
+    {
+      "kind": "embedded-binary",
+      "asset": "rclone",
+      "name": "rclone",
+      "version": "1.73.0",
+      "spdx": "MIT",
+      "license": "MIT License (Copyright (C) 2012 by Nick Craig-Wood); conveyed as a binary.",
+      "upstreamSourceUrl": "https://github.com/rclone/rclone/archive/v1.73.0/rclone-1.73.0.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/rclone-1.73.0.tar.gz"
+    },
+    {
+      "kind": "embedded-binary",
+      "asset": "zot",
+      "name": "zot",
+      "version": "2.1.18",
+      "spdx": "Apache-2.0",
+      "license": "Apache License 2.0 (Copyright The Zot Authors); conveyed as an unmodified upstream binary (full build, with the sync extension), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
+      "upstreamSourceUrl": "https://github.com/project-zot/zot/archive/v2.1.18/zot-2.1.18.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/zot-2.1.18.tar.gz",
+      "notes": "This is the FULL zot build (zot-linux-<arch>), NOT the -minimal variant. Do not 'optimize' to the minimal build: the pull-through cache depends on the sync extension (sync.onDemand), and zot compiles extensions ONLY into the full binary. The minimal build is distribution-spec-only and cannot mirror upstreams, which defeats the entire purpose (D8)."
+    },
+    {
+      "kind": "embedded-binary",
+      "asset": "k3s",
+      "name": "k3s",
+      "version": "1.36.2+k3s1",
+      "spdx": "Apache-2.0",
+      "license": "Apache License 2.0 (Copyright The k3s Authors / SUSE); conveyed as an unmodified upstream binary (the single static k3s release binary, not the airgap images tarball), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
+      "upstreamSourceUrl": "https://github.com/k3s-io/k3s/archive/v1.36.2+k3s1/k3s-1.36.2+k3s1.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/k3s-1.36.2+k3s1.tar.gz",
+      "notes": "k3s ships no top-level NOTICE file in its release archive as of this version; the Apache-2.0 LICENSE and this attribution satisfy s4. The binary vendors third-party components (containerd, runc, CoreDNS, etc.) under their own licenses, catalogued in the k3s source tree."
+    },
+    {
+      "kind": "runtime",
+      "name": "Node.js",
+      "version": "22.x",
+      "spdx": "MIT",
+      "license": "MIT License, plus the licenses of its bundled components (V8, OpenSSL, and others). The rdc release binary is a Node.js Single Executable Application: the Node.js runtime is embedded.",
+      "upstreamSourceUrl": "https://nodejs.org/dist/",
+      "plannedMirrorUrl": ""
+    },
+    {
+      "kind": "bundled-deps",
+      "name": "npm dependencies (bundled)",
+      "version": "see THIRD_PARTY_LICENSES",
+      "spdx": "various",
+      "license": "The rdc JavaScript bundle links its production npm dependencies. Their individual licenses and versions are enumerated in the THIRD_PARTY_LICENSES file bundled with release builds (rdc credits --licenses).",
+      "upstreamSourceUrl": "",
+      "plannedMirrorUrl": ""
+    }
+  ]
+}

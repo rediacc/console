@@ -21,6 +21,7 @@ import { OpsVMLifecycle } from './OpsVMLifecycle';
  */
 export class OpsManager {
   private readonly config: VMNetworkConfig;
+  private readonly groupEnv: Record<string, string>;
   private readonly vmExecutor: OpsVMExecutor;
   private readonly commandRunner: OpsCommandRunner;
   private readonly vmLifecycle: OpsVMLifecycle;
@@ -33,6 +34,9 @@ export class OpsManager {
    */
   constructor(provisioningConfig: ProvisioningConfig, vmExecutor?: OpsVMExecutor) {
     this.config = provisioningConfig.network;
+    // Env threaded into every `renet ops` subprocess so a second KVM group's
+    // commands never inherit the ambient group's VM_NET/DOCKER_REGISTRY.
+    this.groupEnv = provisioningConfig.groupEnv ?? {};
 
     // Initialize helper modules
     this.commandRunner = new OpsCommandRunner(
@@ -45,8 +49,16 @@ export class OpsManager {
       this.vmExecutor,
       this.getAllVMIps.bind(this),
       this.getWorkerVMIps.bind(this),
-      this.getCephVMIps.bind(this)
+      this.getCephVMIps.bind(this),
+      this.groupEnv
     );
+  }
+
+  /**
+   * Get the per-group environment overrides threaded into ops subprocesses.
+   */
+  getGroupEnv(): Record<string, string> {
+    return { ...this.groupEnv };
   }
 
   /**
@@ -178,11 +190,12 @@ export class OpsManager {
     args: string[] = [],
     timeoutMs = 300000
   ): Promise<CommandResult> {
-    return this.commandRunner.run(subcommands, args, timeoutMs);
+    return this.commandRunner.runWithEnv(subcommands, args, this.groupEnv, timeoutMs);
   }
 
   /**
-   * Run a renet ops command with additional environment variables
+   * Run a renet ops command with additional environment variables.
+   * The manager's group env is applied first; the caller's extraEnv overrides it.
    */
   async runOpsCommandWithEnv(
     subcommands: string[],
@@ -190,7 +203,12 @@ export class OpsManager {
     extraEnv: Record<string, string> = {},
     timeoutMs = 300000
   ): Promise<CommandResult> {
-    return this.commandRunner.runWithEnv(subcommands, args, extraEnv, timeoutMs);
+    return this.commandRunner.runWithEnv(
+      subcommands,
+      args,
+      { ...this.groupEnv, ...extraEnv },
+      timeoutMs
+    );
   }
 
   /**

@@ -4,8 +4,8 @@ description: "Was Edge und Stable unterscheidet und welchen Kanal man nutzen sol
 category: "Concepts"
 order: 2
 language: de
-sourceHash: "5fdcb0e8944f5d60"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "6669b5b089f94a39"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Rediacc liefert Updates über zwei Kanäle: **Stable** und **Edge**. Sie laufen auf separater Infrastruktur und tragen unterschiedliche Kompromisse.
@@ -25,7 +25,7 @@ Edge nimmt jede Änderung in dem Moment auf, in dem sie in den Hauptzweig eingef
 
 - Neueste Funktionen und Fixes, bei jedem Merge bereitgestellt
 - Doppelte Community-Plan-Limits (siehe Tabelle unten)
-- Dauerhaft kostenlos. Keine kostenpflichtigen Pläne auf Edge verfügbar.
+- Keine kostenpflichtigen Pläne auf Edge verfügbar; Konten laufen auf dem Community-Plan.
 - Separate Konten von Stable. Daten werden nicht zwischen Kanälen übertragen.
 - Domains: `edge-eu.rediacc.com`, `edge-us.rediacc.com`, `edge-asia.rediacc.com`
 
@@ -35,20 +35,20 @@ Edge nimmt jede Änderung in dem Moment auf, in dem sie in den Hauptzweig eingef
 |---|---|---|
 | **Bereitstellungsrhythmus** | Nach 7-tägiger Einlaufphase | Bei jedem Merge in main |
 | **Stabilität** | 7 Tage getestet | Neuester Code, weniger Einlaufzeit |
-| **Community-Plan-Limits** | 10 GB Repos, 500 Ausstellungen/Monat, 2 Maschinen | 20 GB Repos, 1.000 Ausstellungen/Monat, 4 Maschinen |
+| **Community-Plan-Limits** | 10 GB Repos, 100 Setups/Monat, 1 Maschine | 20 GB Repos, 200 Setups/Monat, 2 Maschinen |
 | **Kostenpflichtige Pläne** | Verfügbar (Professional, Business, Enterprise) | Nicht verfügbar |
 | **Konten** | Unabhängig | Unabhängig (von Stable getrennt) |
 | **Geeignet für** | Produktion, kostenpflichtige Workloads | Tests, Evaluierung, Nebenprojekte, Early Access |
 
 ## Edge-Doppellimits
 
-Nutzen Sie Edge im Community-Plan und Ihre Ressourcenlimits verdoppeln sich, ohne zusätzliche Kosten:
+Nutzen Sie Edge im Community-Plan und Ihre Ressourcenlimits verdoppeln sich:
 
 | Ressource | Stable Community | Edge Community |
 |---|---|---|
 | Repository-Größe | 10 GB | 20 GB |
-| Lizenzausstellungen pro Monat | 500 | 1.000 |
-| Maschinenaktivierungen | 2 | 4 |
+| Lizenzausstellungen pro Monat | 100 | 200 |
+| Maschinenaktivierungen | 1 | 2 |
 
 Höhere Limits oder kostenpflichtige Funktionen benötigt? Erstellen Sie Ihr Konto auf Stable und upgraden Sie dort.
 

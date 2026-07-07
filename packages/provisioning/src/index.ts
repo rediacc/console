@@ -2,6 +2,7 @@
 
 // Factory functions
 export {
+  buildGroupEnv,
   createOpsManagerFromEnv,
   getOpsManager,
   loadConfigFromEnv,

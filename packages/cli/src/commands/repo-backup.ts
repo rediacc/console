@@ -1,6 +1,7 @@
 import { Option, type Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
+import { resolveControlNode } from '../services/config/config-cluster-ops.js';
 import {
   localExecutorService,
   type LocalExecuteResult,
@@ -11,7 +12,8 @@ import { probeRepoMounted } from '../services/repo/repo-mount-check.js';
 import { getSubscriptionTokenState } from '../services/account/subscription-auth.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
-import { resolveRemoteName } from '../utils/remote-resolve.js';
+import { type ResolvedRemote, resolveRemoteName } from '../utils/remote-resolve.js';
+import { resolveRepoTarget } from '../utils/repo-target.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { coerceCliParams, validateFunctionParams } from './function-params.js';
 import {
@@ -26,6 +28,8 @@ import { reportPushStats } from './repo-push-stats.js';
 
 interface BackupRunOptions {
   machine?: string;
+  cluster?: string;
+  kubeCluster?: string;
   debug?: boolean;
   watch?: boolean;
   skipRouterRestart?: boolean;
@@ -92,6 +96,7 @@ async function executeFunction(
   const result = await localExecutorService.execute({
     functionName,
     machineName,
+    kubeCluster: options.kubeCluster,
     params: coerced,
     extraMachines,
     debug: options.debug,
@@ -173,6 +178,21 @@ export async function autoProvisionTarget(
   });
 }
 
+/**
+ * Backup targets ride the data plane (CoW images + rsync/FIEMAP), which is
+ * runtime-agnostic, so a cluster target resolves to its control-node machine.
+ * The `--up` deploy gating (dual-runtime) lands in wave 5; the transfer itself
+ * is unchanged.
+ */
+async function narrowRemoteToDataPlane(
+  resolved: ResolvedRemote
+): Promise<{ type: 'machine' | 'storage'; name: string }> {
+  if (resolved.type === 'cluster') {
+    return { type: 'machine', name: await resolveControlNode(resolved.name) };
+  }
+  return { type: resolved.type, name: resolved.name };
+}
+
 /** Resolve backup target from CLI options. */
 async function resolvePushTarget(
   options: Record<string, unknown>
@@ -181,7 +201,7 @@ async function resolvePushTarget(
     return { type: 'machine', name: options.toMachine as string };
   }
   if (options.to) {
-    return resolveRemoteName(options.to as string);
+    return narrowRemoteToDataPlane(await resolveRemoteName(options.to as string));
   }
   throw new ValidationError(t('commands.repo.push.destRequired'));
 }
@@ -287,10 +307,16 @@ async function pushSingleRepo(repo: string, options: Record<string, unknown>): P
     throw new ValidationError(t('errors.repositoryNotFound', { name: repo }));
   }
 
-  const { type: resolvedType, name: targetName } = await resolvePushTarget(options);
+  // -m/--cluster select the SOURCE (executor): the machine (or cluster control
+  // node) the repo currently lives on. --to/--from-side destination resolution
+  // (resolvePushTarget) is untouched.
+  const { machineName, kubeCluster } = await resolveRepoTarget(options);
+  const execOptions: Record<string, unknown> = { ...options, machine: machineName, kubeCluster };
+
+  const { type: resolvedType, name: targetName } = await resolvePushTarget(execOptions);
   const { params, retainBase } = await preparePush(
     repo,
-    options,
+    execOptions,
     repoConfig,
     resolvedType,
     targetName
@@ -298,18 +324,25 @@ async function pushSingleRepo(repo: string, options: Record<string, unknown>): P
 
   // Show the human-readable target name; the dest GUID/path is renet detail.
   outputService.info(t('commands.repo.push.pushing', { repo, dest: targetName }));
-  const { ok, local } = await executeFunction('backup_push', params, options);
+  const { ok, local } = await executeFunction('backup_push', params, execOptions);
   if (ok) {
-    reportPushStats(repo, targetName, resolvedType, local, !!options.json);
+    reportPushStats(repo, targetName, resolvedType, local, !!execOptions.json);
   }
   // retainBase is set only for machine targets; finalizePush also syncs commit
   // metadata to the target when the pushed object is an immutable commit.
   if (ok && resolvedType === 'machine') {
-    await finalizePush(repo, repoConfig, targetName, params, retainBase, options.debug as boolean);
+    await finalizePush(
+      repo,
+      repoConfig,
+      targetName,
+      params,
+      retainBase,
+      execOptions.debug as boolean
+    );
   }
 
-  if (options.up && resolvedType === 'machine') {
-    await postPushDeploy(repo, targetName, options);
+  if (execOptions.up && resolvedType === 'machine') {
+    await postPushDeploy(repo, targetName, execOptions);
   }
 }
 
@@ -321,7 +354,7 @@ async function resolvePullSource(
     return { type: 'machine', name: options.fromMachine as string };
   }
   if (options.from) {
-    return resolveRemoteName(options.from as string);
+    return narrowRemoteToDataPlane(await resolveRemoteName(options.from as string));
   }
   throw new ValidationError(t('commands.repo.pull.sourceRequired'));
 }
@@ -360,30 +393,34 @@ async function pullSingleRepo(repo: string, options: Record<string, unknown>): P
   await assertCommandPolicy(CMD.REPO_PULL, repo);
   const params: Record<string, unknown> = { repository: repo };
 
-  const { type: resolvedType, name: sourceName } = await resolvePullSource(options);
+  // -m/--cluster select the SOURCE (executor): the machine (or cluster control
+  // node) the pull lands on and deploys to. --from-side resolution
+  // (resolvePullSource) is untouched.
+  const { machineName, kubeCluster } = await resolveRepoTarget(options);
+  const execOptions: Record<string, unknown> = { ...options, machine: machineName, kubeCluster };
+
+  const { type: resolvedType, name: sourceName } = await resolvePullSource(execOptions);
 
   params.sourceType = resolvedType;
   params.from = sourceName;
-  if (options.force) params.force = true;
-  if (options.bwlimit) params.bwlimit = options.bwlimit;
+  if (execOptions.force) params.force = true;
+  if (execOptions.bwlimit) params.bwlimit = execOptions.bwlimit;
   // Delta pull is machine-source only (rclone/storage has no FIEMAP base).
-  if (resolvedType === 'machine') applyPullDeltaParams(params, options);
+  if (resolvedType === 'machine') applyPullDeltaParams(params, execOptions);
 
   const repoConfig = await configService.getRepository(repo);
   if (repoConfig) {
     attachSeedLineage(params, repoConfig);
   }
 
-  const targetMachine = options.machine as string | undefined;
-  if (targetMachine) {
-    await deployRepoKeyIfNeeded(repo, targetMachine);
-  }
+  const targetMachine = machineName;
+  await deployRepoKeyIfNeeded(repo, targetMachine);
 
   outputService.info(t('commands.repo.pull.pulling', { repo }));
-  await executeFunction('backup_pull', params, options);
+  await executeFunction('backup_pull', params, execOptions);
 
-  if (options.up && targetMachine) {
-    await postPullDeploy(repo, targetMachine, options);
+  if (execOptions.up) {
+    await postPullDeploy(repo, targetMachine, execOptions);
   }
 }
 
@@ -407,7 +444,8 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .option('--force', t('commands.repo.push.optionForce'))
     .option('--up', t('commands.repo.push.optionUp'))
     .option('--tag <tag>', t('commands.repo.push.optionTag'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
+    .option('-m, --machine <name>', t('options.machine'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('-w, --watch', t('options.watch'))
     .option('--parallel', t('commands.repo.upAll.parallelOption'))
     .option('--concurrency <n>', t('commands.repo.upAll.concurrencyOption'), '3')
@@ -420,13 +458,16 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (options) => {
       try {
+        // Resolve early so batch display + the mutual-exclusion check happen
+        // before any per-repo work starts; pushSingleRepo re-resolves per repo.
+        const { machineName } = await resolveRepoTarget(options);
         const repo = options.name;
         if (repo) {
           await pushSingleRepo(repo, options);
         } else {
           await runBatchOperation(
             'Push',
-            options.machine,
+            machineName,
             !!options.yes,
             (name) => pushSingleRepo(name, options),
             options
@@ -447,7 +488,8 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .addOption(new Option('--from-machine <machine>').hideHelp())
     .option('--force', t('commands.repo.pull.optionForce'))
     .option('--up', t('commands.repo.pull.optionUp'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
+    .option('-m, --machine <name>', t('options.machine'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('-w, --watch', t('options.watch'))
     .option('--parallel', t('commands.repo.upAll.parallelOption'))
     .option('--concurrency <n>', t('commands.repo.upAll.concurrencyOption'), '3')
@@ -459,13 +501,16 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (options) => {
       try {
+        // Resolve early so batch display + the mutual-exclusion check happen
+        // before any per-repo work starts; pullSingleRepo re-resolves per repo.
+        const { machineName } = await resolveRepoTarget(options);
         const repo = options.name;
         if (repo) {
           await pullSingleRepo(repo, options);
         } else {
           await runBatchOperation(
             'Pull',
-            options.machine,
+            machineName,
             !!options.yes,
             (name) => pullSingleRepo(name, options),
             options
@@ -498,7 +543,9 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
           baseParams.sourceType = 'machine';
           baseParams.from = options.fromMachine;
         } else if (options.from) {
-          const resolved = await resolveRemoteName(options.from as string);
+          const resolved = await narrowRemoteToDataPlane(
+            await resolveRemoteName(options.from as string)
+          );
           baseParams.sourceType = resolved.type;
           baseParams.from = resolved.name;
         } else {

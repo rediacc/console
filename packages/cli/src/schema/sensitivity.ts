@@ -79,6 +79,29 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/resources/machines/*/ceph/pool': { kind: 'identifier' },
   '/resources/machines/*/ceph/image': { kind: 'identifier' },
   '/resources/machines/*/ceph/clusterName': { kind: 'identifier' },
+  // Cluster backref on materialized pool members — non-secret inventory.
+  '/resources/machines/*/cluster/cluster': { kind: 'public' },
+  '/resources/machines/*/cluster/pool': { kind: 'public' },
+
+  // ── Clusters (SSH-reachable inventory; no live credentials by design, D15) ──
+  '/resources/clusters/*/provider': { kind: 'public' },
+  '/resources/clusters/*/network/primitive': { kind: 'public' },
+  '/resources/clusters/*/network/cidr': { kind: 'public' },
+  '/resources/clusters/*/network/mtu': { kind: 'public' },
+  '/resources/clusters/*/pools/*/name': { kind: 'public' },
+  '/resources/clusters/*/pools/*/role': { kind: 'public' },
+  '/resources/clusters/*/pools/*/count': { kind: 'public' },
+  '/resources/clusters/*/pools/*/size': { kind: 'public' },
+  '/resources/clusters/*/pools/*/disks/*/purpose': { kind: 'public' },
+  '/resources/clusters/*/pools/*/disks/*/size': { kind: 'public' },
+  '/resources/clusters/*/pools/*/disks/*/count': { kind: 'public' },
+  '/resources/clusters/*/pools/*/labels/*': { kind: 'public' },
+  '/resources/clusters/*/kubernetes/distro': { kind: 'public' },
+  '/resources/clusters/*/kubernetes/version': { kind: 'public' },
+  '/resources/clusters/*/registry/enabled': { kind: 'public' },
+  '/resources/clusters/*/registry/upstreams/*': { kind: 'public' },
+  '/resources/clusters/*/ceph/pool': { kind: 'public' },
+  '/resources/clusters/*/controlNode': { kind: 'public' },
 
   // ── Storages ─────────────────────────────────────────────────────────────
   '/resources/storages/*/vaultContent': { kind: 'secret' },

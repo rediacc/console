@@ -3,22 +3,6 @@
     "description": "通过 SSH 管理机器、仓库和部署"
   },
   "commands": {
-    "agent": {
-      "capabilities": {
-        "description": "列出所有可用命令及其参数和选项"
-      },
-      "description": "适用于 AI 编程助手的代理工具",
-      "descriptionShort": "适用于 AI 编程助手的代理工具",
-      "exec": {
-        "description": "通过 stdin 接收 JSON 输入并执行命令"
-      },
-      "generateReference": {
-        "description": "为 Claude 技能生成命令参考 Markdown"
-      },
-      "schema": {
-        "description": "显示特定命令的详细模式信息"
-      }
-    },
     "backup": {
       "description": "在存储和机器之间推送、拉取和同步仓库备份",
       "schedule": {
@@ -26,6 +10,62 @@
       },
       "sync": {
         "description": "跨机器双向同步备份"
+      }
+    },
+    "cluster": {
+      "create": {
+        "baseDomainOption": "集群公共 DNS 的基础域名（否则从同级机器继承）",
+        "description": "配置使用 'rdc config cluster add' 定义的集群的池成员，在每个成员上引导 renet，并安装组件（先安装 ceph）。云服务提供商通过 OpenTofu 配置；KVM 将在后续版本中支持。",
+        "descriptionShort": "配置一个已定义的集群",
+        "nameOption": "集群名称",
+        "sshUserOption": "已配置成员使用的 SSH 用户"
+      },
+      "description": "配置和管理集群：私有网络上命名的节点池集合（ceph、k8s-server、k8s-agent、hyperconverged）。池成员会具体化为机器，因此每个 -m 命令都能在它们上面使用。",
+      "descriptionShort": "创建和管理集群（私有局域网上的节点池）",
+      "destroy": {
+        "aborted": "已中止。",
+        "confirm": "销毁集群 \"{{name}}\" 及其所有成员？",
+        "description": "拆除已配置的成员，并将集群及其机器从配置中移除。",
+        "descriptionShort": "销毁集群及其成员",
+        "forceOption": "跳过确认，并在拆除出错时继续执行",
+        "nameOption": "集群名称"
+      },
+      "fork": {
+        "clusterOption": "要 fork 到的现有目标集群（必须位于不同的机器上）",
+        "description": "将整个集群（包括其仓库的数据）克隆到一个新集群：协调对集群镜像和 PV 镜像的写时复制，然后重写节点身份，使 fork 能在新地址上启动。父集群保持运行。",
+        "descriptionShort": "克隆整个集群（含数据）",
+        "nameOption": "集群名称",
+        "tagOption": "fork 标签"
+      },
+      "install": {
+        "description": "在已配置的成员上安装集群组件（先安装 ceph，再安装 k8s）。",
+        "descriptionShort": "在已配置的集群上安装组件",
+        "nameOption": "集群名称"
+      },
+      "kubeconfig": {
+        "cached": "Kubeconfig 已缓存至 {{path}}",
+        "description": "通过 SSH 从集群控制节点获取 kubeconfig，并以 0600 权限在本地为 kubectl 缓存。",
+        "descriptionShort": "获取并缓存集群的 kubeconfig",
+        "nameOption": "集群名称"
+      },
+      "migrate": {
+        "description": "以较短的切换时间（热预拷贝，然后在目标端停止并重启），将整个集群（包括其仓库的数据）迁移到另一台机器或数据中心。",
+        "descriptionShort": "将整个集群迁移到另一处",
+        "nameOption": "集群名称",
+        "toOption": "目标位置"
+      },
+      "scale": {
+        "countOption": "期望的成员数量",
+        "description": "更改节点池的成员数量（添加/移除机器，加入/清空节点）。k8s-agent 节点池原地扩缩容；ceph 节点池的扩容直接通过 cephadm 完成。",
+        "descriptionShort": "扩容或缩容集群节点池",
+        "nameOption": "集群名称",
+        "poolOption": "节点池名称"
+      },
+      "status": {
+        "description": "列出所有集群，或使用 --name 显示单个集群的完整配置。",
+        "descriptionShort": "显示集群及其节点池",
+        "nameOption": "显示单个集群",
+        "none": "尚未配置集群。使用以下命令添加：rdc config cluster add"
       }
     },
     "config": {
@@ -121,6 +161,32 @@
         "allCleared": "已清除所有默认值",
         "description": "清除默认值（全部或特定键）",
         "keyCleared": "已清除 \"{{key}}\""
+      },
+      "cluster": {
+        "add": {
+          "description": "声明一个包含一个或多个节点池的新集群"
+        },
+        "added": "集群 \"{{name}}\" 已添加",
+        "addPool": {
+          "description": "为现有集群添加一个节点池"
+        },
+        "cidrOption": "私有网络 CIDR（例如 10.0.0.0/24）",
+        "controlNodeOption": "显式指定控制节点机器（默认为第一个 k8s-server 成员）",
+        "description": "在配置中声明集群及其节点池。使用 'rdc cluster create' 对其进行配置。",
+        "descriptionShort": "声明和编辑集群",
+        "list": {
+          "description": "列出已配置的集群"
+        },
+        "nameOption": "集群名称",
+        "none": "尚未配置集群",
+        "poolAdded": "节点池 \"{{pool}}\" 已添加到集群 \"{{name}}\"",
+        "poolOption": "节点池规格 名称:角色:数量[:大小]（角色：ceph|k8s-server|k8s-agent|hyperconverged）",
+        "primitiveOption": "网络基元（例如 vlan、vpc、network）",
+        "providerOption": "服务提供商：一个 cloudProviders 键，或 'kvm'",
+        "remove": {
+          "description": "从配置中移除一个集群"
+        },
+        "removed": "集群 \"{{name}}\" 已移除"
       },
       "delete": {
         "description": "删除配置文件",
@@ -451,6 +517,15 @@
           "optionReveal": "以明文显示存储配置(仅限交互式 TTY;记入审计日志)"
         }
       }
+    },
+    "credits": {
+      "bundledTitle": "运行时及打包依赖项：",
+      "description": "打印随 rdc 一起分发的第三方组件：renet 内嵌并传递的二进制文件（CRIU、rsync、rclone）、内嵌的 Node.js 运行时，以及打包的 npm 依赖项。显示版本号、SPDX 许可证标识符，以及 GPL 合规所需的精确版本源码归档 URL。使用 --licenses 打印随发行版打包的完整 THIRD_PARTY_LICENSES 文本。",
+      "descriptionShort": "显示第三方归属信息和许可证合规信息",
+      "embeddedTitle": "内嵌二进制文件（由 renet 传递）：",
+      "gplHeader": "GPL 源码可获取性：",
+      "header": "Rediacc 是根据 Rediacc 许可分发的专有软件；以下第三方组件依据其各自的许可证与之一同分发。\n\n随 rdc 打包的第三方组件：",
+      "licensesUnavailable": "完整的 THIRD_PARTY_LICENSES 文本在构建时生成，仅随发行版打包。在开发模式下，运行 CLI 构建即可生成该文本，或使用以下命令查看各组件的归属信息：rdc credits"
     },
     "datastore": {
       "description": "管理Ceph RBD数据存储生命周期（init、fork、unfork、status）",
@@ -875,6 +950,8 @@
         "refOption": "要检出的提交 GUID（或使用 --from 的分支名称）",
         "tagOption": "新的可写工作 fork 的名称"
       },
+      "clusterDone": "已在集群 \"{{cluster}}\" 中{{verb}}命名空间 \"{{repository}}\"",
+      "clusterOption": "目标 Kubernetes 集群（与 -m 互斥）；路由到集群的控制节点并注入 KUBECONFIG",
       "commit": {
         "authorOption": "Commit 作者",
         "completed": "已提交 {{commit}}：{{message}}",
@@ -886,6 +963,7 @@
       },
       "create": {
         "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",
+        "clusterResolved": "Kubernetes 仓库 \"{{repository}}\" 的目标为集群 \"{{cluster}}\"（控制节点 {{controlNode}}）",
         "completed": "仓库已创建",
         "description": "创建新的加密仓库",
         "failed": "仓库创建失败",
@@ -896,9 +974,9 @@
         "starting": "正在 \"{{machine}}\" 上创建仓库 \"{{repository}}\"（{{size}}）..."
       },
       "delete": {
+        "archived": "\"{{repository}}\" 的凭据已归档",
         "archiveHint": "要归档凭据以便恢复: 使用 --archive-config 重新运行",
         "archiveOption": "将配置条目移至 deletedRepositories 以便后续恢复",
-        "archived": "\"{{repository}}\" 的凭据已归档",
         "cloudBackupHint": "云备份（如有）在删除后仍会保留。使用以下命令删除孤立的云备份：rdc storage prune --name <storage> -m {{machine}}",
         "completed": "仓库已删除",
         "configRetained": "\"{{repository}}\" 的配置条目已保留 (仓库可能存在于其他机器上)。要移除: rdc config repository remove --name {{repository}}",
@@ -956,6 +1034,7 @@
       "fork": {
         "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",
         "checkpointOption": "fork 前在源上创建 CRIU checkpoint（捕获进程内存状态以便在 fork 上恢复）",
+        "clusterResolved": "正在将 \"{{parent}}\" fork 为集群 \"{{cluster}}\" 中的命名空间 \"{{parent}}-{{tag}}\"（控制节点 {{controlNode}}）",
         "completed": "Fork已创建。本地部署: repo up {{repository}} -m {{machine}}。将fork迁移到另一台机器: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "创建仓库的 CoW（写时复制）分支",
         "descriptionShort": "创建仓库的 CoW 分支（新 GUID、networkId、IP 范围）",
@@ -965,12 +1044,16 @@
         "failed": "分支创建失败",
         "immutableOption": "将分叉标记为只读：它会拒绝挂载，使其镜像永久保持字节级稳定（用于跨机器增量推送的冻结提交/基线）",
         "immutableUpConflict": "repo fork：--immutable 与 --up 互斥。不可变分叉会拒绝挂载，因此无法启动。请去掉 --up，或去掉 --immutable 以部署普通分叉。",
+        "providerOption": "配置一个新集群（镜像源集群的节点池形态）并 fork 到其中",
+        "providerPending": "正在将 \"{{parent}}\" 作为 \"{{parent}}-{{tag}}\" fork 到新的 {{provider}} 集群",
+        "provisioning": "正在 fork 之前于 {{provider}} 上配置集群 \"{{cluster}}\"……",
         "registered": "已注册分支 \"{{repository}}\"（{{guid}}，网络 {{networkId}}）",
         "rollback": "已回滚 \"{{repository}}\" 的配置",
         "starting": "正在 \"{{machine}}\" 上将 \"{{parent}}\" 分支为 \"{{repository}}\"...",
         "tagOption": "分支的标签（创建 名称:标签）",
         "tagRequired": "分支需要标签。用法：rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "tagReservedLatest": "repo fork: 标签 \"latest\" 保留给主 (生产) 仓库 — 请选择其他 --tag (例如 \"test\"、\"staging\"、\"<feature>\")",
+        "toClusterOption": "fork 到另一个现有的 Kubernetes 集群（跨集群命名空间 fork）",
         "upOption": "fork后挂载并启动服务（fork + mount + up 一条命令完成）"
       },
       "fsck": {
@@ -1679,9 +1762,10 @@
     },
     "pageTitle": "Rediacc CLI 参考",
     "sectionTitles": {
-      "agent": "代理工具",
       "backup": "备份与恢复",
+      "cluster": "集群管理",
       "config": "配置管理",
+      "credits": "第三方致谢",
       "datastore": "数据存储管理",
       "doctor": "系统诊断",
       "machine": "机器管理",
@@ -1722,7 +1806,8 @@
     "activationFailed": "激活失败",
     "affectedChildClones": "。受影响的子克隆：{{clones}}。请先删除或提升子克隆。",
     "agent": {
-      "commandBlocked": "\"{{command}}\" 命令在代理模式下不可用。\n\n此命令在没有安全防护的情况下执行任意低级函数。请改用类型化的 CLI 命令或 MCP 工具。\n\n替代方案：\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - 运行 \"rdc agent capabilities\" 查看所有可用命令\n\n如果需要直接访问，请让用户直接运行该命令。",
+      "clusterOpBlocked": "集群命令 \"{{command}}\" 在代理模式下被阻止。集群操作会创建或销毁真实的基础设施，因此代理无法自行授权这些操作。用户：要允许此操作，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_CLUSTER_OPS=<cluster-name>（或 * 表示所有集群）——从代理内部设置的覆盖不被接受。",
+      "commandBlocked": "\"{{command}}\" 命令在代理模式下不可用。\n\n此命令在没有安全防护的情况下执行任意低级函数。请改用类型化的 CLI 命令或 MCP 工具。\n\n替代方案：\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - 运行 \"rdc --help\" 查看所有可用命令\n\n如果需要直接访问，请让用户直接运行该命令。",
       "configEdit": "交互式编辑器在代理环境中被阻止。\n\n替代方案:\n  • rdc config edit --dump > config.jsonc    (安全的脱敏查看)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\n如需覆盖,请在启动代理之前,在父 shell 中\n设置 REDIACC_ALLOW_CONFIG_EDIT=<scope-glob>(必须出现在代理进程祖先链中)。",
       "configEditAncestry": "交互式编辑器在代理环境中被阻止(REDIACC_ALLOW_CONFIG_EDIT 已设置但祖先验证失败 — 该覆盖必须由您的 shell 而不是代理设置)。\n\n替代方案:\n  • rdc config edit --dump > config.jsonc    (安全的脱敏查看)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\n在启动代理之前在父 shell 中设置 REDIACC_ALLOW_CONFIG_EDIT=<scope-glob>。",
       "createGuard": "在代理模式下无法创建新的 grand 仓库 \"{{name}}\"。\n\n代理在仅 fork 模式下运行。Grand 仓库是生产环境，代理在创建后无法访问。\n\n请改为 fork 现有仓库：\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\n用户提示：要允许创建仓库，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO=*（或特定仓库名称）。",
@@ -1752,6 +1837,14 @@
     "authRequired": "需要身份验证。运行：rdc auth login",
     "cannotDeleteGrandRepo": "无法删除主仓库：{{reason}}",
     "cannotPromote": "无法提升：{{reason}}",
+    "cluster": {
+      "countInvalid": "--count 必须是非负整数",
+      "dockerOnlyVerb": "\"repo {{verb}}\" 仅面向 Docker 仓库，不能针对 --cluster 运行；在 v1 中没有对应的 Kubernetes 等价操作",
+      "featureUnsupportedV1": "{{feature}} 在 v1 中不支持 --cluster（控制节点视图）；{{hint}}",
+      "pendingContractRegen": "在集群上执行 \"repo {{verb}}\" 会调度 {{fn}}，该功能有待 renet kube 契约重新生成（第 5 波）。集群和命名空间已解析；待契约就绪后重新运行。",
+      "targetExclusive": "只能指定 -m/--machine 或 --cluster 之一，不能同时指定",
+      "targetRequired": "需要目标机器（-m）或集群（--cluster）"
+    },
     "clusterNotFound": "Ceph 集群 \"{{name}}\" 未找到",
     "config": {
       "invalidEmail": "无效的电子邮件地址: \"{{value}}\"。",
@@ -1832,7 +1925,7 @@
     },
     "regionRequired": "需要区域名称。使用 --region 或设置上下文。",
     "registrationFailed": "注册失败",
-    "remoteNotFound": "\"{{name}}\"不是已知的机器或存储。机器: {{machines}}。存储: {{storages}}",
+    "remoteNotFound": "\"{{name}}\"不是已知的机器、存储或集群。机器: {{machines}}。存储: {{storages}}。集群: {{clusters}}",
     "repo": {
       "secret": {
         "badMode": "无效的 --mode \"{{mode}}\"。允许：env、file。",
@@ -1950,6 +2043,7 @@
       "upload": "上传本地文件到仓库"
     },
     "term": {
+      "cluster": "通过 SSH 连接到集群控制节点（自动设置 KUBECONFIG，固定 kubectl 命名空间）",
       "command": "无交互式 shell 执行命令",
       "machine": "SSH 连接到机器",
       "repo": "SSH 连接到仓库（自动设置 DOCKER_HOST）",
@@ -1957,6 +2051,7 @@
     },
     "useHelpAll": "使用 --help-all 查看详细说明",
     "vscode": {
+      "cluster": "在 VS Code 中打开集群控制节点（自动设置 KUBECONFIG）",
       "machine": "在 VS Code 中打开机器",
       "repo": "在 VS Code 中打开仓库"
     }
@@ -1999,6 +2094,7 @@
     "importMode": "导入模式（merge 或 replace）",
     "insiders": "使用 VS Code Insiders 设置",
     "lang": "语言覆盖（{{languages}}）",
+    "licenses": "打印随发行版打包的完整 THIRD_PARTY_LICENSES 文本",
     "limit": "最大结果数",
     "localPath": "本地目录路径（默认：当前目录）",
     "localPaths": "一个或多个本地文件或目录路径（默认：当前目录）",

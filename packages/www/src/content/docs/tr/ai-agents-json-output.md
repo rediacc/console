@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 51
 language: tr
-sourceHash: "9f8d61df26b59757"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "4da1be4753fa62bf"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Tüm `rdc` komutları yapılandırılmış JSON çıktısı üretir. Bir betiğe pipe edin ya da doğrudan bir ajana besleyin.
@@ -26,9 +26,8 @@ rdc machine query --name prod-1 -o json
 `rdc` TTY olmayan bir ortamda (boru hattı, alt kabuk veya AI ajanı tarafından başlatılmış) çalıştığında, çıktı otomatik olarak JSON'a geçer. Bayrak gerekmez.
 
 ```bash
-# These all produce JSON automatically
+# Produces JSON automatically
 result=$(rdc machine query --name prod-1)
-echo '{}' | rdc agent exec "machine query"
 ```
 
 ## JSON Zarfı
@@ -175,56 +174,6 @@ rdc repo delete --name mail -m prod-1 --dry-run -o json
 ```
 
 `--dry-run` desteği olan komutlar: `repo up`, `repo down`, `repo delete`, `snapshot delete`, `sync upload`, `sync download`.
-
-## Ajan Keşif Komutları
-
-`rdc agent` alt komutu, AI ajanlarına çalışma zamanında mevcut işlemleri keşfetmek için yapılandırılmış bir yol sunar.
-
-### Tüm Komutları Listele
-
-```bash
-rdc agent capabilities
-```
-
-Argümanlar, seçenekler ve açıklamalarla birlikte tam komut ağacını döndürür:
-
-```json
-{
-  "success": true,
-  "command": "agent capabilities",
-  "data": {
-    "version": "1.0.0",
-    "commands": [
-      {
-        "name": "machine query",
-        "description": "Show machine status",
-        "arguments": [
-          { "name": "machine", "description": "Machine name", "required": true }
-        ],
-        "options": [
-          { "flags": "-o, --output <format>", "description": "Output format" }
-        ]
-      }
-    ]
-  }
-}
-```
-
-### Komut Şemasını Al
-
-```bash
-rdc agent schema --command "machine query"
-```
-
-Tek bir komut için tüm argümanlar ve seçeneklerin türleri ve varsayılanlarıyla birlikte eksiksiz şemayı döndürür.
-
-### JSON ile Çalıştır
-
-```bash
-echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
-```
-
-Stdin üzerinden JSON kabul eder, anahtarları komut argümanlarına ve seçeneklerine eşler ve JSON çıktısı zorunlu olarak komutu çalıştırır. Ajan-CLI çağrıları için kabuk komut dizileri oluşturmak istemediğinizde kullanın.
 
 ## Ayrıştırma Örnekleri
 

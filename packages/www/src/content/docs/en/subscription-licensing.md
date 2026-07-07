@@ -58,7 +58,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Machine slots (server-side)
 
-Machine slot tracking is enforced server-side. When the CLI issues a repo license, the account server checks the subscription's machine slot quota (e.g., 2 machines for Community, 3 for Professional). A slot is held for 5 hours from the last repo license issuance on that machine and auto-releases after inactivity. A 10-slot Business plan can therefore cover dozens of machines over time, since slots are only held while you are actively provisioning.
+Machine slot tracking is enforced server-side. When the CLI issues a repo license, the account server checks the subscription's machine slot quota. Every self-serve plan (Community, Professional, Business) includes one machine slot; multi-machine deployments are an Enterprise setup sized with our partners. A slot is held for 5 hours from the last repo license issuance on that machine and auto-releases after inactivity. Because a slot is only held while you are actively provisioning, a single slot can still cover several machines over the course of a month.
 
 No machine license file is stored on the machine. Slot enforcement happens at issuance time on the server.
 
@@ -89,12 +89,20 @@ Default paid-plan limits are:
 
 | Plan | Floating Licenses | Repository Size | Monthly repo license issuances | Delegation cert default / max |
 |------|-------------------|-----------------|-------------------------------|---|
-| Community | 2 | 10 GB | 100 | 15d / 30d |
-| Professional | 3 | 50 GB | 2,000+ | 60d / 120d |
-| Business | 10 | 200 GB | 5,000+ | 90d / 180d |
-| Enterprise | 25+ | 1 TB+ | 15,000+ | 120d / 365d |
+| Community | 1 | 10 GB | 100 | 15d / 30d |
+| Professional | 1 | 100 GB | 2,000+ | 60d / 120d |
+| Business | 1 | 500 GB | 5,000+ | 90d / 180d |
+| Enterprise | Custom | 1 TB+ | 15,000+ | 120d / 365d |
 
 Contract-specific limits can raise or lower these values for a specific customer. Delegation cert validity is also hard-capped at `subscription.expiresAt + 3 day grace`, so monthly-billed subscriptions naturally get certs aligned to their billing cycle. See [License Chain & Delegation - Validity Policy](/en/docs/license-chain) for the full rules.
+
+## Free Trial and the Community Fallback
+
+New signups start a 14-day free trial on Professional or Business. A credit card is collected at signup, and the first charge only lands when the trial ends, so cancelling before then costs nothing. One trial is available per customer.
+
+Community is the standing free floor. It is no longer a direct signup option for new accounts; instead, an account lands on Community whenever a subscription ends: cancelling during the trial, cancelling a paid plan later, or a failed payment. On the Community fallback you keep one machine with 10 GB per repository and 100 setups a month. Accounts created before the trial-based model launched keep their existing Community access.
+
+Enforcement stays soft. Running repositories keep working even after a subscription ends; only new work (create, fork, resize, and license refresh) is gated by an active entitlement.
 
 ## VM Migration Grace Period
 
@@ -108,7 +116,7 @@ In practice:
 - No manual intervention required
 - Check machine ID and license status with `rdc machine query --system --licenses --name <machine>`
 
-**Edge channel users** receive 2X Community limits at no cost (20 GB repos, 200 issuances/month, 4 machines). Paid plans are only available on the Stable channel. See [Release Channels](/en/docs/release-channels) for details.
+**Edge channel accounts** run on the Community plan with 2X the limits (20 GB repos, 200 setups/month, 2 machines). Paid plans are only available on the Stable channel. See [Release Channels](/en/docs/release-channels) for details.
 
 ## What Happens During Repo Create, Up, Down, and Restart
 

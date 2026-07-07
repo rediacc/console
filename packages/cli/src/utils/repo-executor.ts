@@ -27,7 +27,7 @@ export async function executeRepoFunction(
   repoName: string,
   machineName: string,
   params: Record<string, unknown>,
-  options: { debug?: boolean; skipRouterRestart?: boolean },
+  options: { debug?: boolean; skipRouterRestart?: boolean; kubeCluster?: string },
   messages: RepoFunctionMessages
 ): Promise<LocalExecuteResult> {
   // Validate repository exists in context
@@ -47,6 +47,7 @@ export async function executeRepoFunction(
   const result = await localExecutorService.execute({
     functionName,
     machineName,
+    kubeCluster: options.kubeCluster,
     params: { repository: repoName, ...params },
     debug: options.debug,
     skipRouterRestart: options.skipRouterRestart,

@@ -3,22 +3,6 @@
     "description": "SSH 経由でマシン、リポジトリ、デプロイを管理する"
   },
   "commands": {
-    "agent": {
-      "capabilities": {
-        "description": "利用可能なすべてのコマンドと引数・オプションをリスト表示する"
-      },
-      "description": "AIコーディングアシスタント向けのエージェントユーティリティ",
-      "descriptionShort": "AIコーディングアシスタント向けのエージェントユーティリティ",
-      "exec": {
-        "description": "stdin からの JSON 入力でコマンドを実行する"
-      },
-      "generateReference": {
-        "description": "Claude スキル用のコマンドリファレンス Markdown を生成"
-      },
-      "schema": {
-        "description": "特定のコマンドの詳細なスキーマを表示する"
-      }
-    },
     "backup": {
       "description": "ストレージやマシン間でリポジトリバックアップのプッシュ、プル、同期を行う",
       "schedule": {
@@ -26,6 +10,62 @@
       },
       "sync": {
         "description": "マシン間のバックアップの双方向同期"
+      }
+    },
+    "cluster": {
+      "create": {
+        "baseDomainOption": "クラスターの公開 DNS 用ベースドメイン（未指定の場合は兄弟マシンから継承）",
+        "description": "'rdc config cluster add' で定義したクラスターのプールメンバーをプロビジョニングし、各ノードに renet をブートストラップして、コンポーネント（まず ceph）をインストールする。クラウドプロバイダーは OpenTofu 経由でプロビジョニングされる。KVM 対応は今後のウェーブで追加予定。",
+        "descriptionShort": "設定済みのクラスターをプロビジョニングする",
+        "nameOption": "クラスター名",
+        "sshUserOption": "プロビジョニングされたメンバー用の SSH ユーザー"
+      },
+      "description": "クラスターをプロビジョニングして管理する: プライベートネットワーク上のノードプール（ceph、k8s-server、k8s-agent、hyperconverged）の名前付きセットです。プールのメンバーはマシンとして実体化するため、あらゆる -m コマンドがそのまま使えます。",
+      "descriptionShort": "クラスターを作成・管理する（プライベート LAN 上のノードプール）",
+      "destroy": {
+        "aborted": "中止しました。",
+        "confirm": "クラスター \"{{name}}\" とそのすべてのメンバーを破棄しますか？",
+        "description": "プロビジョニング済みのメンバーを解体し、クラスターとそのマシンを設定から削除する。",
+        "descriptionShort": "クラスターとそのメンバーを破棄する",
+        "forceOption": "確認をスキップし、解体中のエラーが出ても続行する",
+        "nameOption": "クラスター名"
+      },
+      "fork": {
+        "clusterOption": "フォーク先の既存クラスター（別々のマシン上にある必要がある）",
+        "description": "クラスター全体を、その配下のリポジトリのデータごと新しいクラスターへクローンする: クラスターイメージと PV イメージの copy-on-write を協調させたのち、ノードの identity を書き換えてフォークが新しいアドレスで起動する。複製元は動作を継続する。",
+        "descriptionShort": "クラスター全体をクローンする（データを含む）",
+        "nameOption": "クラスター名",
+        "tagOption": "フォークのタグ"
+      },
+      "install": {
+        "description": "既にプロビジョニング済みのメンバーにクラスターコンポーネント（まず ceph、次に k8s）をインストールする。",
+        "descriptionShort": "プロビジョニング済みクラスターにコンポーネントをインストールする",
+        "nameOption": "クラスター名"
+      },
+      "kubeconfig": {
+        "cached": "Kubeconfig を {{path}} にキャッシュしました",
+        "description": "クラスターのコントロールノードから SSH 経由で kubeconfig を取得し、kubectl 用にローカルへキャッシュする（0600）。",
+        "descriptionShort": "クラスターの kubeconfig を取得してキャッシュする",
+        "nameOption": "クラスター名"
+      },
+      "migrate": {
+        "description": "クラスター全体を、その配下のリポジトリのデータごと、別のマシンまたはデータセンターへ短いカットオーバーで移動する（実行中にホットプリコピーを行い、移動先で停止・再起動する）。",
+        "descriptionShort": "クラスター全体を別の場所へ移動する",
+        "nameOption": "クラスター名",
+        "toOption": "移動先"
+      },
+      "scale": {
+        "countOption": "希望するメンバー数",
+        "description": "プールのメンバー数を変更する（マシンの追加・削除、ノードの参加・排出）。k8s-agent プールはその場でスケールされ、ceph プールの拡張は cephadm 経由で直接行う。",
+        "descriptionShort": "クラスターのプールをスケールアップ・ダウンする",
+        "nameOption": "クラスター名",
+        "poolOption": "プール名"
+      },
+      "status": {
+        "description": "すべてのクラスターを一覧表示、または --name で特定クラスターの全設定を表示する。",
+        "descriptionShort": "クラスターとそのプールを表示する",
+        "nameOption": "単一のクラスターを表示",
+        "none": "クラスターが設定されていません。次のコマンドで追加してください: rdc config cluster add"
       }
     },
     "config": {
@@ -121,6 +161,32 @@
         "allCleared": "すべてのデフォルトをクリアしました",
         "description": "デフォルト値をクリアする（すべてまたは特定のキー）",
         "keyCleared": "\"{{key}}\" をクリアしました"
+      },
+      "cluster": {
+        "add": {
+          "description": "1つ以上のプールを持つ新しいクラスターを宣言する"
+        },
+        "added": "クラスター \"{{name}}\" を追加しました",
+        "addPool": {
+          "description": "既存のクラスターにプールを追加する"
+        },
+        "cidrOption": "プライベートネットワークの CIDR（例: 10.0.0.0/24）",
+        "controlNodeOption": "コントロールノードとする明示的なマシン（デフォルト: 最初の k8s-server メンバー）",
+        "description": "設定内にクラスターとそのノードプールを宣言する。'rdc cluster create' でプロビジョニングする。",
+        "descriptionShort": "クラスターを宣言・編集する",
+        "list": {
+          "description": "設定済みのクラスターを一覧表示する"
+        },
+        "nameOption": "クラスター名",
+        "none": "クラスターが設定されていません",
+        "poolAdded": "プール \"{{pool}}\" をクラスター \"{{name}}\" に追加しました",
+        "poolOption": "プール指定 name:role:count[:size]（role: ceph|k8s-server|k8s-agent|hyperconverged）",
+        "primitiveOption": "ネットワークプリミティブ（例: vlan、vpc、network）",
+        "providerOption": "プロバイダー: cloudProviders のキー、または 'kvm'",
+        "remove": {
+          "description": "設定からクラスターを削除する"
+        },
+        "removed": "クラスター \"{{name}}\" を削除しました"
       },
       "delete": {
         "description": "設定ファイルを削除する",
@@ -451,6 +517,15 @@
           "optionReveal": "ストレージ構成を平文で表示する(対話型 TTY のみ、監査ログに記録)"
         }
       }
+    },
+    "credits": {
+      "bundledTitle": "ランタイムと同梱の依存関係:",
+      "description": "rdc に同梱されているサードパーティコンポーネントを表示する: renet が組み込み・配布するバイナリ（CRIU、rsync、rclone）、組み込みの Node.js ランタイム、同梱の npm 依存関係。バージョン、SPDX ライセンス識別子、GPL コンプライアンスに必要な正確なバージョンのソースアーカイブ URL を表示する。--licenses を指定するとリリースビルドに同梱される THIRD_PARTY_LICENSES の全文を表示する。",
+      "descriptionShort": "サードパーティのクレジットとライセンスコンプライアンス情報を表示する",
+      "embeddedTitle": "組み込みバイナリ（renet が配布）:",
+      "gplHeader": "GPL ソースの入手方法:",
+      "header": "Rediacc は Rediacc ライセンスの下で配布されるプロプライエタリソフトウェアです。以下のサードパーティコンポーネントは、それぞれ独自のライセンスの下で同梱配布されています。\n\nrdc に同梱されているサードパーティコンポーネント:",
+      "licensesUnavailable": "THIRD_PARTY_LICENSES の全文はビルド時に生成され、リリースビルドにのみ同梱されます。開発モードでは、CLI のビルドを実行して生成するか、次のコマンドでコンポーネントごとのクレジットを表示してください: rdc credits"
     },
     "datastore": {
       "description": "Ceph RBDデータストアのライフサイクルを管理（init、fork、unfork、status）",
@@ -875,6 +950,8 @@
         "refOption": "チェックアウトする commit の GUID（または --from でブランチ名）",
         "tagOption": "新しい書き込み可能な作業 fork の名前"
       },
+      "clusterDone": "クラスター \"{{cluster}}\" 内の namespace \"{{repository}}\" を{{verb}}",
+      "clusterOption": "対象の Kubernetes クラスター（-m とは併用不可）。KUBECONFIG を注入してクラスターのコントロールノードへ振り分ける",
       "commit": {
         "authorOption": "commit の作成者",
         "completed": "commit しました {{commit}}: {{message}}",
@@ -886,6 +963,7 @@
       },
       "create": {
         "alreadyExists": "リポジトリ \"{{name}}\" はコンテキスト内に既に存在します",
+        "clusterResolved": "Kubernetes リポジトリ \"{{repository}}\" はクラスター \"{{cluster}}\" を対象としています（コントロールノード {{controlNode}}）",
         "completed": "リポジトリを作成しました",
         "description": "新しい暗号化リポジトリを作成する",
         "failed": "リポジトリの作成に失敗しました",
@@ -896,9 +974,9 @@
         "starting": "\"{{machine}}\" でリポジトリ \"{{repository}}\"（{{size}}）を作成中..."
       },
       "delete": {
+        "archived": "\"{{repository}}\" の資格情報をアーカイブしました",
         "archiveHint": "リカバリ用に認証情報をアーカイブするには: --archive-config を付けて再実行",
         "archiveOption": "設定エントリを deletedRepositories に移動して後から復元可能にする",
-        "archived": "\"{{repository}}\" の資格情報をアーカイブしました",
         "cloudBackupHint": "クラウドバックアップ（存在する場合）は削除後も残ります。孤立したクラウドバックアップを削除するには: rdc storage prune --name <storage> -m {{machine}}",
         "completed": "リポジトリを削除しました",
         "configRetained": "\"{{repository}}\" の設定エントリを保持 (リポジトリは他のマシンに存在する可能性があります)。削除するには: rdc config repository remove --name {{repository}}",
@@ -956,6 +1034,7 @@
       "fork": {
         "alreadyExists": "リポジトリ \"{{name}}\" はコンテキスト内に既に存在します",
         "checkpointOption": "fork 前にソースで CRIU checkpoint を作成する（fork 先での復元用にプロセスメモリ状態を取得）",
+        "clusterResolved": "\"{{parent}}\" をクラスター \"{{cluster}}\" 内の namespace \"{{parent}}-{{tag}}\" としてフォーク中（コントロールノード {{controlNode}}）",
         "completed": "Forkが作成されました。ローカルでデプロイ: repo up {{repository}} -m {{machine}}。別のマシンにforkを移行: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "リポジトリのCoW（コピーオンライト）フォークを作成する",
         "descriptionShort": "リポジトリの CoW フォークを作成する（新規 GUID、networkId、IP 範囲）",
@@ -965,12 +1044,16 @@
         "failed": "フォークの作成に失敗しました",
         "immutableOption": "フォークを読み取り専用にします。マウントを拒否し、イメージをバイト単位で永続的に安定させます（マシン間デルタプッシュのための凍結されたコミット/ベース）",
         "immutableUpConflict": "repo fork: --immutable と --up は同時に指定できません。イミュータブルなフォークはマウントを拒否するため、起動できません。--up を外すか、通常のフォークをデプロイするには --immutable を外してください。",
+        "providerOption": "新しいクラスターをプロビジョニングして（フォーク元のプール構成を踏襲）、そこへフォークする",
+        "providerPending": "\"{{parent}}\" を新しい {{provider}} クラスター内へ \"{{parent}}-{{tag}}\" としてフォーク中",
+        "provisioning": "フォークの前にクラスター \"{{cluster}}\" を {{provider}} 上にプロビジョニング中...",
         "registered": "フォーク \"{{repository}}\" を登録しました（{{guid}}、ネットワーク {{networkId}}）",
         "rollback": "\"{{repository}}\" の設定をロールバックしました",
         "starting": "\"{{machine}}\" で \"{{parent}}\" を \"{{repository}}\" としてフォーク中...",
         "tagOption": "フォークのタグ（名前:タグを作成）",
         "tagRequired": "フォークにはタグが必要です。使用法: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "tagReservedLatest": "repo fork: タグ \"latest\" はグランド (本番) リポジトリ用に予約されています — 別の --tag を選んでください (例: \"test\"、\"staging\"、\"<feature>\")",
+        "toClusterOption": "既存の別の Kubernetes クラスターへフォークする（クラスター間の namespace フォーク）",
         "upOption": "fork後にマウントしてサービスを開始（fork + mount + upを1コマンドで）"
       },
       "fsck": {
@@ -1679,9 +1762,10 @@
     },
     "pageTitle": "Rediacc CLIリファレンス",
     "sectionTitles": {
-      "agent": "エージェントユーティリティ",
       "backup": "バックアップと復元",
+      "cluster": "クラスター管理",
       "config": "設定管理",
+      "credits": "サードパーティクレジット",
       "datastore": "データストア管理",
       "doctor": "システム診断",
       "machine": "マシン管理",
@@ -1722,7 +1806,8 @@
     "activationFailed": "有効化に失敗しました",
     "affectedChildClones": "。影響を受ける子クローン: {{clones}}。子クローンを最初に削除するか昇格させてください。",
     "agent": {
-      "commandBlocked": "\"{{command}}\" コマンドはエージェントモードでは使用できません。\n\nこのコマンドは安全ガードなしに任意の低レベル関数を実行します。代わりに型付きCLIコマンドまたはMCPツールを使用してください。\n\n代替手段:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - 利用可能なすべてのコマンドを表示するには \"rdc agent capabilities\" を実行してください\n\n直接アクセスが必要な場合は、ユーザーにコマンドを直接実行するよう依頼してください。",
+      "clusterOpBlocked": "クラスターコマンド \"{{command}}\" はエージェントモードではブロックされています。クラスター操作は実際のインフラを構築または破棄するため、エージェント自身が承認することはできません。ユーザーへ: これを許可するには、エージェントセッションを開始する前にターミナルで REDIACC_ALLOW_CLUSTER_OPS=<cluster-name>（またはすべてのクラスターに対して *）を設定してください。エージェント内部から設定されたオーバーライドは受け入れられません。",
+      "commandBlocked": "\"{{command}}\" コマンドはエージェントモードでは使用できません。\n\nこのコマンドは安全ガードなしに任意の低レベル関数を実行します。代わりに型付きCLIコマンドまたはMCPツールを使用してください。\n\n代替手段:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - 利用可能なすべてのコマンドを表示するには \"rdc --help\" を実行してください\n\n直接アクセスが必要な場合は、ユーザーにコマンドを直接実行するよう依頼してください。",
       "configEdit": "対話型エディタはエージェント環境ではブロックされます。\n\n代替手段:\n  • rdc config edit --dump > config.jsonc    (安全な秘匿表示)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nオーバーライドするには、エージェントを起動する前に親シェルで\nREDIACC_ALLOW_CONFIG_EDIT=<scope-glob> を設定してください(エージェントの祖先プロセス内に存在する必要があります)。",
       "configEditAncestry": "対話型エディタはエージェント環境ではブロックされます(REDIACC_ALLOW_CONFIG_EDIT は設定されましたが祖先検証に失敗 — オーバーライドはエージェントではなく親シェルから設定する必要があります)。\n\n代替手段:\n  • rdc config edit --dump > config.jsonc    (安全な秘匿表示)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nエージェントを起動する前に親シェルで REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> を設定してください。",
       "createGuard": "エージェントモードでは新しいgrandリポジトリ \"{{name}}\" を作成できません。\n\nエージェントはfork専用モードで動作します。grandリポジトリは本番環境であり、作成後にエージェントがアクセスすることはできません。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nユーザーへ: リポジトリの作成を許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO=*（または特定のリポジトリ名）を設定してください。",
@@ -1752,6 +1837,14 @@
     "authRequired": "認証が必要です。実行してください: rdc auth login",
     "cannotDeleteGrandRepo": "グランドリポジトリを削除できません: {{reason}}",
     "cannotPromote": "昇格できません: {{reason}}",
+    "cluster": {
+      "countInvalid": "--count は 0 以上の整数を指定してください",
+      "dockerOnlyVerb": "\"repo {{verb}}\" は Docker リポジトリのみを対象としており、--cluster に対しては実行できません。v1 では Kubernetes 版の同等コマンドはありません",
+      "featureUnsupportedV1": "{{feature}} は v1 の --cluster では未対応です（コントロールノードのビュー）。{{hint}}",
+      "pendingContractRegen": "クラスター上での \"repo {{verb}}\" は {{fn}} を呼び出しますが、これは renet kube のコントラクト再生成（wave 5）待ちです。クラスターと namespace の解決は完了しているので、コントラクトの反映後に再実行してください。",
+      "targetExclusive": "-m/--machine と --cluster はどちらか一方のみ指定してください（両方同時には指定不可）",
+      "targetRequired": "対象のマシン（-m）またはクラスター（--cluster）のいずれかが必要です"
+    },
     "clusterNotFound": "Ceph クラスター \"{{name}}\" が見つかりません",
     "config": {
       "invalidEmail": "無効なメールアドレス: \"{{value}}\"。",
@@ -1832,7 +1925,7 @@
     },
     "regionRequired": "リージョン名が必要です。--region を使用するか、コンテキストを設定してください。",
     "registrationFailed": "登録に失敗しました",
-    "remoteNotFound": "\"{{name}}\"は既知のマシンまたはストレージではありません。マシン: {{machines}}。ストレージ: {{storages}}",
+    "remoteNotFound": "\"{{name}}\"は既知のマシン、ストレージ、またはクラスターではありません。マシン: {{machines}}。ストレージ: {{storages}}。クラスター: {{clusters}}",
     "repo": {
       "secret": {
         "badMode": "無効な --mode \"{{mode}}\"。許可: env、file。",
@@ -1950,6 +2043,7 @@
       "upload": "ローカルファイルをリポジトリにアップロード"
     },
     "term": {
+      "cluster": "クラスターのコントロールノードにSSH接続（KUBECONFIG自動設定、kubectl の namespace 固定）",
       "command": "対話シェルなしでコマンドを実行",
       "machine": "マシンにSSH接続",
       "repo": "リポジトリにSSH接続（DOCKER_HOST自動設定）",
@@ -1957,6 +2051,7 @@
     },
     "useHelpAll": "拡張説明を表示するには --help-all を使用してください",
     "vscode": {
+      "cluster": "クラスターのコントロールノードをVS Codeで開く（KUBECONFIG自動設定）",
       "machine": "VS Codeでマシンを開く",
       "repo": "VS Codeでリポジトリを開く"
     }
@@ -1999,6 +2094,7 @@
     "importMode": "インポートモード (merge または replace)",
     "insiders": "VS Code Insiders 設定を使用する",
     "lang": "言語オーバーライド ({{languages}})",
+    "licenses": "リリースビルドに同梱される THIRD_PARTY_LICENSES の全文を表示する",
     "limit": "結果の最大数",
     "localPath": "ローカルディレクトリパス (デフォルト: 現在のディレクトリ)",
     "localPaths": "1 つ以上のローカルファイルまたはディレクトリのパス（既定: カレントディレクトリ）",

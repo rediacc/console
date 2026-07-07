@@ -59,7 +59,7 @@ export const GET: APIRoute = async () => {
     containers: 'Containers',
     ssh: 'SSH',
     health: 'Health',
-    capabilities: 'Capabilities',
+    discover: 'Discover commands',
   };
   const commandLines = Object.entries(CLI_COMMANDS)
     .map(([key, cmd]) => `- ${COMMAND_LABELS[key] ?? key}: \`${cmd}\``)

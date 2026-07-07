@@ -11,6 +11,8 @@
     "renet-darwin-arm64": "dist/assets/renet-darwin-arm64",
     "renet-windows-amd64": "dist/assets/renet-windows-amd64",
     "renet-windows-arm64": "dist/assets/renet-windows-arm64",
-    "renet-metadata.json": "dist/assets/renet-metadata.json"
+    "renet-metadata.json": "dist/assets/renet-metadata.json",
+    "third-party-credits.json": "dist/assets/third-party-credits.json",
+    "THIRD_PARTY_LICENSES": "dist/assets/THIRD_PARTY_LICENSES"
   }
 }

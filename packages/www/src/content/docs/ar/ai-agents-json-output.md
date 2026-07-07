@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 51
 language: ar
-sourceHash: "9f8d61df26b59757"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "4da1be4753fa62bf"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 تُخرج جميع أوامر `rdc` بيانات JSON منظمة. مرِّرها إلى نص برمجي أو أرسلها مباشرة إلى وكيل.
@@ -26,9 +26,8 @@ rdc machine query --name prod-1 -o json
 عندما يعمل `rdc` في بيئة non-TTY (عبر أنبوب، أو صدفة فرعية، أو يُشغَّل بواسطة وكيل ذكاء اصطناعي)، تتحول المخرجات تلقائيًا إلى JSON. لا حاجة لأي علم.
 
 ```bash
-# These all produce JSON automatically
+# Produces JSON automatically
 result=$(rdc machine query --name prod-1)
-echo '{}' | rdc agent exec "machine query"
 ```
 
 ## غلاف JSON
@@ -175,56 +174,6 @@ rdc repo delete --name mail -m prod-1 --dry-run -o json
 ```
 
 الأوامر التي تدعم `--dry-run`: `repo up`، `repo down`، `repo delete`، `snapshot delete`، `sync upload`، `sync download`.
-
-## أوامر اكتشاف الوكيل
-
-يوفر الأمر الفرعي `rdc agent` طريقة منظمة لوكلاء الذكاء الاصطناعي لاكتشاف العمليات المتاحة في وقت التشغيل.
-
-### عرض جميع الأوامر
-
-```bash
-rdc agent capabilities
-```
-
-يُعيد شجرة الأوامر الكاملة مع الوسائط والخيارات والأوصاف:
-
-```json
-{
-  "success": true,
-  "command": "agent capabilities",
-  "data": {
-    "version": "1.0.0",
-    "commands": [
-      {
-        "name": "machine query",
-        "description": "Show machine status",
-        "arguments": [
-          { "name": "machine", "description": "Machine name", "required": true }
-        ],
-        "options": [
-          { "flags": "-o, --output <format>", "description": "Output format" }
-        ]
-      }
-    ]
-  }
-}
-```
-
-### الحصول على مخطط الأمر
-
-```bash
-rdc agent schema --command "machine query"
-```
-
-يُعيد المخطط الكامل لأمر واحد: كل وسيطة وخيار مع نوعه وقيمته الافتراضية.
-
-### التنفيذ عبر JSON
-
-```bash
-echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
-```
-
-يقبل JSON عبر stdin، ويربط المفاتيح بوسائط وخيارات الأمر، ويُنفَّذ مع فرض مخرجات JSON. استخدم هذا حين تفضل عدم بناء سلاسل أوامر shell في استدعاءات الوكيل إلى CLI.
 
 ## أمثلة التحليل
 

@@ -11,6 +11,7 @@ import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { compositeKey, parseRepoRef } from '../utils/config-schema.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { resolveRepoTarget } from '../utils/repo-target.js';
 import { handleForkAction } from './repo-fork.js';
 import { assertMachineExists } from './_validate.js';
 
@@ -46,18 +47,20 @@ async function handleCommit(options: {
   name: string;
   message: string;
   author?: string;
-  machine: string;
+  machine?: string;
+  cluster?: string;
   debug?: boolean;
 }): Promise<void> {
   try {
     await assertCommandPolicy(CMD.REPO_COMMIT, options.name);
-    await assertMachineExists(options.machine);
+    const { machineName, kubeCluster } = await resolveRepoTarget(options);
+    await assertMachineExists(machineName);
 
     const cfg = await configService.getRepository(options.name);
     if (!cfg) throw new ValidationError(`Repository "${options.name}" not found in context`);
     if (cfg.immutable) {
       throw new ValidationError(
-        `"${options.name}" is an immutable commit, not a working fork. Check it out first: rdc repo checkout ${options.name} --tag <name> -m ${options.machine}`
+        `"${options.name}" is an immutable commit, not a working fork. Check it out first: rdc repo checkout ${options.name} --tag <name> -m ${machineName}`
       );
     }
 
@@ -66,7 +69,8 @@ async function handleCommit(options: {
 
     const result: LocalExecuteResult = await localExecutorService.execute({
       functionName: 'repository_commit',
-      machineName: options.machine,
+      machineName,
+      kubeCluster,
       params: {
         repository: options.name,
         tag: commitGuid,
@@ -132,12 +136,13 @@ async function handleBranch(branchName: string, options: { name: string }): Prom
   }
 }
 
-/** repo checkout <commit|branch> --tag <newWorking> -m <machine> */
+/** repo checkout <commit|branch> --tag <newWorking> -m <machine>|--cluster <name> */
 async function handleCheckout(
   target: string,
   options: {
     tag: string;
-    machine: string;
+    machine?: string;
+    cluster?: string;
     from?: string;
     debug?: boolean;
     skipRouterRestart?: boolean;
@@ -145,7 +150,12 @@ async function handleCheckout(
 ): Promise<void> {
   try {
     await assertCommandPolicy(CMD.REPO_CHECKOUT, target);
-    await assertMachineExists(options.machine);
+    // handleForkAction (repo-fork.ts, out of scope here) only accepts a plain
+    // machine name — no kubeCluster/KUBECONFIG threading yet — so a --cluster
+    // target resolves to its control-node machine and forks there like any
+    // other machine target.
+    const { machineName } = await resolveRepoTarget(options);
+    await assertMachineExists(machineName);
 
     // Resolve target to a commit GUID: a branch name on --from's working fork,
     // or a direct commit reference.
@@ -167,7 +177,7 @@ async function handleCheckout(
     // the commit's key as base (the caller addressed it by GUID anyway).
     const baseName = parseRepoRef(options.from ?? commitRef).name;
     await handleForkAction(commitRef, options.tag, {
-      machine: options.machine,
+      machine: machineName,
       debug: options.debug,
       skipRouterRestart: options.skipRouterRestart,
       forkBaseName: baseName,
@@ -190,12 +200,14 @@ async function handleCheckout(
 /** repo log --name <workingFork|commit> -m <machine> */
 async function handleLog(options: {
   name: string;
-  machine: string;
+  machine?: string;
+  cluster?: string;
   json?: boolean;
   debug?: boolean;
 }): Promise<void> {
   try {
-    await assertMachineExists(options.machine);
+    const { machineName, kubeCluster } = await resolveRepoTarget(options);
+    await assertMachineExists(machineName);
     const cfg = await configService.getRepository(options.name);
     if (!cfg) throw new ValidationError(`Repository "${options.name}" not found in context`);
     const tip = cfg.headCommit ?? (cfg.immutable ? cfg.repositoryGuid : undefined);
@@ -205,7 +217,8 @@ async function handleLog(options: {
 
     const result: LocalExecuteResult = await localExecutorService.execute({
       functionName: 'repository_log',
-      machineName: options.machine,
+      machineName,
+      kubeCluster,
       params: { repository: tip },
       debug: options.debug,
     });
@@ -255,7 +268,8 @@ function deriveMergeBase(
 async function handleMerge(options: {
   name: string;
   from: string;
-  machine: string;
+  machine?: string;
+  cluster?: string;
   force?: boolean;
   resolve?: string;
   base?: string;
@@ -263,7 +277,8 @@ async function handleMerge(options: {
 }): Promise<void> {
   try {
     await assertCommandPolicy(CMD.REPO_MERGE, options.name);
-    await assertMachineExists(options.machine);
+    const { machineName, kubeCluster } = await resolveRepoTarget(options);
+    await assertMachineExists(machineName);
 
     const targetCfg = await configService.getRepository(options.name);
     if (!targetCfg) throw new ValidationError(`Repository "${options.name}" not found in context`);
@@ -279,7 +294,8 @@ async function handleMerge(options: {
 
     const result: LocalExecuteResult = await localExecutorService.execute({
       functionName: 'repository_merge',
-      machineName: options.machine,
+      machineName,
+      kubeCluster,
       params: {
         repository: options.name,
         from: sourceCfg.repositoryGuid,
@@ -316,7 +332,8 @@ export function registerRepoBranchingCommands(repo: Command): void {
     .requiredOption('--name <name>', t('commands.repo.commit.nameOption'))
     .requiredOption('--message <msg>', t('commands.repo.commit.messageOption'))
     .option('--author <author>', t('commands.repo.commit.authorOption'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('--debug', t('options.debug'))
     .action(handleCommit);
 
@@ -334,7 +351,8 @@ export function registerRepoBranchingCommands(repo: Command): void {
     .description(t('commands.repo.checkout.description'))
     .requiredOption('--ref <commit|branch>', t('commands.repo.checkout.refOption'))
     .requiredOption('--tag <name>', t('commands.repo.checkout.tagOption'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('--from <workingFork>', t('commands.repo.checkout.fromOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
@@ -342,7 +360,8 @@ export function registerRepoBranchingCommands(repo: Command): void {
       (options: {
         ref: string;
         tag: string;
-        machine: string;
+        machine?: string;
+        cluster?: string;
         from?: string;
         debug?: boolean;
         skipRouterRestart?: boolean;
@@ -354,7 +373,8 @@ export function registerRepoBranchingCommands(repo: Command): void {
     .summary(t('commands.repo.log.descriptionShort'))
     .description(t('commands.repo.log.description'))
     .requiredOption('--name <name>', t('commands.repo.log.nameOption'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('--json', t('commands.repo.log.jsonOption'))
     .option('--debug', t('options.debug'))
     .action(handleLog);
@@ -365,7 +385,8 @@ export function registerRepoBranchingCommands(repo: Command): void {
     .description(t('commands.repo.merge.description'))
     .requiredOption('--name <name>', t('commands.repo.merge.nameOption'))
     .requiredOption('--from <source>', t('commands.repo.merge.fromOption'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('--force', t('commands.repo.merge.forceOption'))
     .option('--resolve <ours|theirs>', t('commands.repo.merge.resolveOption'))
     .option('--base <guid>', t('commands.repo.merge.baseOption'))

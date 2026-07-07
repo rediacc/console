@@ -16,6 +16,7 @@ import {
   isAgentByAncestry,
   isAncestryVerificationAvailable,
   isOverrideLegitimate,
+  OVERRIDE_VAR_CLUSTER,
   OVERRIDE_VAR_CONFIG_EDIT,
   readProcEnviron,
   walkAncestors,
@@ -210,6 +211,24 @@ describe.each(['darwin', 'win32'])('helper-based ancestry on %s', (platform) => 
     ]);
     expect(isOverrideLegitimate(OVERRIDE_VAR_CONFIG_EDIT)).toBe(true);
     expect(isOverrideLegitimate()).toBe(false); // grand override was NOT at the boundary
+  });
+
+  it('witnesses the cluster-ops override independently at the agent boundary', () => {
+    mockRunAncestryHelper.mockReturnValue([
+      { pid: 100, env: { CLAUDECODE: '1' } }, // rdc child
+      { pid: 50, env: { CLAUDECODE: '1', REDIACC_ALLOW_CLUSTER_OPS: '*' } }, // boundary
+    ]);
+    expect(isOverrideLegitimate(OVERRIDE_VAR_CLUSTER)).toBe(true);
+    // The grand override was NOT at the boundary — it must not ride on cluster's.
+    expect(isOverrideLegitimate()).toBe(false);
+  });
+
+  it('rejects a cluster-ops override injected below the agent boundary', () => {
+    mockRunAncestryHelper.mockReturnValue([
+      { pid: 100, env: { CLAUDECODE: '1', REDIACC_ALLOW_CLUSTER_OPS: '*' } }, // injected
+      { pid: 50, env: { CLAUDECODE: '1' } }, // agent boundary — no override
+    ]);
+    expect(isOverrideLegitimate(OVERRIDE_VAR_CLUSTER)).toBe(false);
   });
 
   it('fails closed when the helper is unavailable', () => {

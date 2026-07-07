@@ -5,6 +5,7 @@ import { localExecutorService } from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { resolveRepoTarget } from '../utils/repo-target.js';
 import { assertMachineExists } from './_validate.js';
 import { parseDatastorePruneOutput } from './datastore-prune-parser.js';
 
@@ -30,7 +31,8 @@ interface TrimResult {
 }
 
 interface TrimOptions {
-  machine: string;
+  machine?: string;
+  cluster?: string;
   name?: string;
   docker?: boolean;
   dockerVolumes?: boolean;
@@ -60,7 +62,8 @@ function trimRepoStatus(repo: TrimRepoResult, reportOnly: boolean): string {
 
 /** Run repository_trim on a machine, optionally scoped to one repo. */
 async function handleTrimAction(options: TrimOptions): Promise<void> {
-  await assertMachineExists(options.machine);
+  const { machineName, kubeCluster } = await resolveRepoTarget(options);
+  await assertMachineExists(machineName);
 
   const params: Record<string, unknown> = {};
   if (options.name) {
@@ -74,11 +77,12 @@ async function handleTrimAction(options: TrimOptions): Promise<void> {
   if (options.dockerVolumes) params.docker_volumes = true;
   if (options.reportOnly) params.report_only = true;
 
-  outputService.info(t('commands.repo.trim.starting', { machine: options.machine }));
+  outputService.info(t('commands.repo.trim.starting', { machine: machineName }));
 
   const result = await localExecutorService.execute({
     functionName: 'repository_trim',
-    machineName: options.machine,
+    machineName,
+    kubeCluster,
     params,
     debug: options.debug,
     captureOutput: true,
@@ -137,7 +141,8 @@ export function registerRepoTrimCommand(repo: Command): void {
     .command('trim')
     .summary(t('commands.repo.trim.descriptionShort'))
     .description(t('commands.repo.trim.description'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('--name <name>', t('commands.repo.trim.nameOption'))
     .option('--docker', t('commands.repo.trim.dockerOption'))
     .option('--docker-volumes', t('commands.repo.trim.dockerVolumesOption'))

@@ -44,7 +44,14 @@
         "bundle.mjs"
       ]
     },
-    "packages/bridge-tests": {
+    "packages/e2e-tests": {
+      // BLOCKER: the playwright plugin EXECUTES every matched config; with two
+      // configs in one workspace (playwright.config.ts + playwright.ceph.config.ts)
+      // the second `require('@playwright/test')` in the same process throws
+      // "Requiring @playwright/test second time" (knip known-issue). The configs
+      // and tests are already declared as static entries below, so plugin
+      // discovery adds nothing here.
+      "playwright": false,
       "entry": [
         "playwright*.config.ts",
         "tests/**/*.test.ts",
@@ -163,6 +170,9 @@
     "agent-browser",
     "ffmpeg",
     "pdftotext",
-    "rclone"
+    "rclone",
+
+    // BLOCKER: go toolchain spawned by scripts/generate-third-party-licenses.ts to run go-licenses for the renet Go-dependency section of THIRD_PARTY_LICENSES; host toolchain, not an npm dependency
+    "go"
   ]
 }

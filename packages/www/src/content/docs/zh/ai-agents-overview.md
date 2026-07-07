@@ -4,8 +4,8 @@ description: "Claude Code、Cursor 和 Cline 如何通过 rdc 管理 Rediacc 基
 category: Guides
 order: 30
 language: zh
-sourceHash: "0aa0c975030d4856"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "27ea21c36250d4a9"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 说真的，`rdc` 从设计之初就考虑到了代理场景。Claude Code、Cursor、Cline：任何在子 shell 中调用 `rdc` 的 AI 助手，都能获得结构化 JSON 输出、机器可读的错误信息，以及自主管理 Rediacc 基础设施所需的安全防护机制。下面介绍集成的具体方式。
@@ -59,21 +59,6 @@ Rediacc 的架构天然适合代理使用：
     "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
   }]
 }
-```
-
-### 3. 代理能力发现
-
-`rdc agent` 子命令提供结构化内省功能：
-
-```bash
-# List all commands with arguments and options
-rdc agent capabilities
-
-# Show detailed schema for a specific command
-rdc agent schema --command "machine query"
-
-# Execute a command with JSON stdin
-echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 ```
 
 ## 代理的关键标志

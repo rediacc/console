@@ -82,7 +82,7 @@ runs:
         VM_BRIDGE: ${{ inputs.vm-bridge }}
         VM_WORKERS: ${{ inputs.vm-workers }}
       run: |
-        ${{ github.action_path }}/../../../.ci/scripts/env/create-bridge-env.sh \
+        ${{ github.action_path }}/../../../.ci/scripts/env/create-e2e-env.sh \
           --output "${{ inputs.bridge-env-output }}" \
           --vm-net-base "$VM_NET_BASE" \
           --vm-net-offset "$VM_NET_OFFSET" \

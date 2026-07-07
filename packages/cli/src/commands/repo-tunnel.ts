@@ -13,6 +13,7 @@ import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-exec
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
 import { openRepoTunnel } from '../services/repo/repo-ssh-tunnel.js';
+import { assertDockerOnly } from '../utils/repo-target.js';
 import { getSSHConnectionDetails } from '../services/machine/ssh-connection.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError } from '../utils/errors.js';
@@ -22,6 +23,7 @@ import { withSpinner } from '../utils/spinner.js';
 interface TunnelOptions {
   team?: string;
   machine?: string;
+  cluster?: string;
   repository?: string;
   container?: string;
   port?: string;
@@ -290,6 +292,7 @@ ${t('help.examples')}
   // rdc repo tunnel -m <machine> -r <repo>
   tunnel
     .option('-m, --machine <name>', t('options.machine'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('-r, --repository <name>', t('options.repository'))
     .option('-c, --container <name>', t('commands.repo.tunnel.containerOption'))
     .option('--port <port>', t('commands.repo.tunnel.portOption'))
@@ -297,6 +300,7 @@ ${t('help.examples')}
     .option('--url-only', t('commands.repo.tunnel.urlOnlyOption'))
     .action(async (options: TunnelOptions, cmd: Command) => {
       try {
+        assertDockerOnly('tunnel', options);
         if (!options.machine) {
           cmd.help();
           return;

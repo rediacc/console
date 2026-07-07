@@ -643,7 +643,13 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -687,7 +693,13 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -737,7 +749,13 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -799,7 +817,13 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -855,7 +879,13 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -941,7 +971,13 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -997,7 +1033,13 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -1023,7 +1065,13 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -1055,7 +1103,13 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -1135,7 +1189,13 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -1209,7 +1269,13 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -1261,7 +1327,13 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -1299,7 +1371,13 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -1337,7 +1415,13 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -1421,13 +1505,31 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
               "flags": "--tag <name>",
               "descriptionKey": "commands.repo.fork.tagOption",
               "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--to-cluster <name>",
+              "descriptionKey": "commands.repo.fork.toClusterOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--provider <name>",
+              "descriptionKey": "commands.repo.fork.providerOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -1487,6 +1589,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--force",
               "descriptionKey": "commands.repo.takeover.forceOption",
               "mandatory": false,
@@ -1521,7 +1629,13 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -1591,7 +1705,13 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.repo.machineOption",
-              "mandatory": true,
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -1779,6 +1899,12 @@
                   "defaultValue": null
                 },
                 {
+                  "flags": "--cluster <name>",
+                  "descriptionKey": "commands.repo.clusterOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--debug",
                   "descriptionKey": "options.debug",
                   "mandatory": false,
@@ -1811,6 +1937,12 @@
                   "defaultValue": null
                 },
                 {
+                  "flags": "--cluster <name>",
+                  "descriptionKey": "commands.repo.clusterOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--debug",
                   "descriptionKey": "options.debug",
                   "mandatory": false,
@@ -1834,6 +1966,12 @@
                   "flags": "-m, --machine <name>",
                   "descriptionKey": "commands.repo.machineOption",
                   "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--cluster <name>",
+                  "descriptionKey": "commands.repo.clusterOption",
+                  "mandatory": false,
                   "defaultValue": null
                 },
                 {
@@ -2012,7 +2150,13 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "options.machine",
-              "mandatory": true,
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -2116,7 +2260,13 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "options.machine",
-              "mandatory": true,
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {
@@ -2360,7 +2510,13 @@
                 {
                   "flags": "-m, --machine <name>",
                   "descriptionKey": "options.machine",
-                  "mandatory": true,
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--cluster <name>",
+                  "descriptionKey": "commands.repo.clusterOption",
+                  "mandatory": false,
                   "defaultValue": null
                 },
                 {
@@ -2434,7 +2590,13 @@
                 {
                   "flags": "-m, --machine <name>",
                   "descriptionKey": "options.machine",
-                  "mandatory": true,
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--cluster <name>",
+                  "descriptionKey": "commands.repo.clusterOption",
+                  "mandatory": false,
                   "defaultValue": null
                 },
                 {
@@ -2508,7 +2670,13 @@
                 {
                   "flags": "-m, --machine <name>",
                   "descriptionKey": "options.machine",
-                  "mandatory": true,
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--cluster <name>",
+                  "descriptionKey": "commands.repo.clusterOption",
+                  "mandatory": false,
                   "defaultValue": null
                 },
                 {
@@ -2548,6 +2716,12 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "options.machine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
               "mandatory": false,
               "defaultValue": null
             },
@@ -3666,6 +3840,99 @@
           ]
         },
         {
+          "name": "cluster",
+          "descriptionKey": "commands.config.cluster.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "add",
+              "descriptionKey": "commands.config.cluster.add.description",
+              "options": [
+                {
+                  "flags": "--name <name>",
+                  "descriptionKey": "commands.cluster.create.nameOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--provider <provider>",
+                  "descriptionKey": "commands.config.cluster.providerOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--pool <spec...>",
+                  "descriptionKey": "commands.config.cluster.poolOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--network-cidr <cidr>",
+                  "descriptionKey": "commands.config.cluster.cidrOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--network-primitive <primitive>",
+                  "descriptionKey": "commands.config.cluster.primitiveOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--control-node <machine>",
+                  "descriptionKey": "commands.config.cluster.controlNodeOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "add-pool",
+              "descriptionKey": "commands.config.cluster.addPool.description",
+              "options": [
+                {
+                  "flags": "--name <name>",
+                  "descriptionKey": "commands.cluster.create.nameOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--pool <spec>",
+                  "descriptionKey": "commands.config.cluster.poolOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "list",
+              "descriptionKey": "commands.config.cluster.list.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "remove",
+              "descriptionKey": "commands.config.cluster.remove.description",
+              "options": [
+                {
+                  "flags": "--name <name>",
+                  "descriptionKey": "commands.cluster.create.nameOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            }
+          ]
+        },
+        {
           "name": "infra",
           "descriptionKey": "commands.config.infra.description",
           "options": [],
@@ -4132,6 +4399,218 @@
       "subcommands": []
     },
     {
+      "name": "credits",
+      "descriptionKey": "commands.credits.description",
+      "options": [
+        {
+          "flags": "--licenses",
+          "descriptionKey": "options.licenses",
+          "mandatory": false,
+          "defaultValue": null
+        }
+      ],
+      "arguments": [],
+      "subcommands": []
+    },
+    {
+      "name": "cluster",
+      "descriptionKey": "commands.cluster.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "create",
+          "descriptionKey": "commands.cluster.create.description",
+          "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "commands.cluster.create.nameOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--ssh-user <user>",
+              "descriptionKey": "commands.cluster.create.sshUserOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--base-domain <domain>",
+              "descriptionKey": "commands.cluster.create.baseDomainOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "status",
+          "descriptionKey": "commands.cluster.status.description",
+          "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "commands.cluster.status.nameOption",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "scale",
+          "descriptionKey": "commands.cluster.scale.description",
+          "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "commands.cluster.create.nameOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--pool <pool>",
+              "descriptionKey": "commands.cluster.scale.poolOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--count <n>",
+              "descriptionKey": "commands.cluster.scale.countOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "install",
+          "descriptionKey": "commands.cluster.install.description",
+          "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "commands.cluster.create.nameOption",
+              "mandatory": true,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "destroy",
+          "descriptionKey": "commands.cluster.destroy.description",
+          "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "commands.cluster.create.nameOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--force",
+              "descriptionKey": "commands.cluster.destroy.forceOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "kubeconfig",
+          "descriptionKey": "commands.cluster.kubeconfig.description",
+          "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "commands.cluster.create.nameOption",
+              "mandatory": true,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "fork",
+          "descriptionKey": "commands.cluster.fork.description",
+          "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "commands.cluster.create.nameOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tag <tag>",
+              "descriptionKey": "commands.cluster.fork.tagOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <dest>",
+              "descriptionKey": "commands.cluster.fork.clusterOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "migrate",
+          "descriptionKey": "commands.cluster.migrate.description",
+          "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "commands.cluster.create.nameOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--to <dest>",
+              "descriptionKey": "commands.cluster.migrate.toOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        }
+      ]
+    },
+    {
       "name": "term",
       "descriptionKey": "commands.term.description",
       "options": [],
@@ -4150,6 +4629,12 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "options.machine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
               "mandatory": false,
               "defaultValue": null
             },
@@ -4226,6 +4711,12 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "options.machine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
               "mandatory": false,
               "defaultValue": null
             },
@@ -4947,56 +5438,6 @@
               "subcommands": []
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "agent",
-      "descriptionKey": "commands.agent.description",
-      "options": [],
-      "arguments": [],
-      "subcommands": [
-        {
-          "name": "capabilities",
-          "descriptionKey": "commands.agent.capabilities.description",
-          "options": [],
-          "arguments": [],
-          "subcommands": []
-        },
-        {
-          "name": "schema",
-          "descriptionKey": "commands.agent.schema.description",
-          "options": [
-            {
-              "flags": "--command <path>",
-              "descriptionKey": "options.command",
-              "mandatory": true,
-              "defaultValue": null
-            }
-          ],
-          "arguments": [],
-          "subcommands": []
-        },
-        {
-          "name": "exec",
-          "descriptionKey": "commands.agent.exec.description",
-          "options": [
-            {
-              "flags": "--command <path>",
-              "descriptionKey": "options.command",
-              "mandatory": true,
-              "defaultValue": null
-            }
-          ],
-          "arguments": [],
-          "subcommands": []
-        },
-        {
-          "name": "generate-reference",
-          "descriptionKey": "commands.agent.generateReference.description",
-          "options": [],
-          "arguments": [],
-          "subcommands": []
         }
       ]
     },

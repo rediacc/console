@@ -1,49 +1,59 @@
 # Renet Telemetry
 
+Renet is not a long-running daemon. The console CLI invokes it as a
+short-lived subprocess over SSH for each operation: `renet execute` runs a
+single task (repo up, fork, backup, and the other Rediaccfile functions) and
+`renet list` reports machine status. Each invocation starts its own
+OpenTelemetry collector, emits spans, metrics, and logs for that one
+operation, flushes, and exits.
+
 ## Service Names
 
-| Service Name     | Context                                         |
-|------------------|--------------------------------------------------|
-| `renet-bridge`   | Middleware-triggered queue processor              |
-| `renet-execute`  | CLI-triggered direct execution (`rdc run`, `rdc repo up`) |
+| Service Name    | Context                                                          |
+|-----------------|------------------------------------------------------------------|
+| `renet-execute` | Task execution (`renet execute`), run over SSH by the CLI for `rdc repo up`, forks, backups, etc. |
+| `renet-list`    | Machine status (`renet list all`), run over SSH for `rdc machine query` |
 
 ## Resource Attributes
 
-| Attribute              | Value / Source                          |
-|------------------------|----------------------------------------|
-| `service.name`         | `renet-bridge` or `renet-execute`      |
-| `service.version`      | Injected at build time via ldflags     |
-| `deployment.environment` | Build-time                           |
-| `host.name`            | Machine hostname                       |
-| `host.arch`            | CPU architecture                       |
-| `os.type`              | Operating system                       |
-| `runtime.name`         | `go`                                   |
-| `runtime.version`      | Go version                             |
+| Attribute                | Value / Source                          |
+|--------------------------|-----------------------------------------|
+| `service.name`           | `renet-execute` or `renet-list`         |
+| `service.version`        | Injected at build time via ldflags      |
+| `deployment.environment` | Build-time                              |
+| `host.name`              | Machine hostname                        |
+| `host.arch`              | CPU architecture                        |
+| `os.type`                | Operating system                        |
+| `runtime.name`           | `go`                                    |
+| `runtime.version`        | Go version                              |
 
-## Span Types
+## Spans
 
-| Tracker Function       | Span Type | What It Traces                      |
-|------------------------|-----------|--------------------------------------|
-| `TrackQueueOperation`  | `queue`   | Task queue processing                |
-| `TrackSSHOperation`    | `ssh`     | SSH command execution                |
-| `TrackAPICall`         | `api`     | Outbound API requests                |
-| `TrackVaultOperation`  | `vault`   | Vault secret operations              |
-| `TrackBridgeEvent`     | `bridge`  | Bridge lifecycle events              |
+Spans are created with `Collector.StartSpan(ctx, name, kind)` and closed when
+the operation returns; errors are attached via `RecordError`.
+
+| Span name      | Kind     | What it traces                             |
+|----------------|----------|--------------------------------------------|
+| `execute.task` | `bridge` | A single task run by the local executor    |
+| `list.all`     | `bridge` | A `renet list all` machine-status snapshot |
+
+The `bridge` span-kind constant is a legacy label left over from the removed
+middleware queue processor. Renaming it rides along with the wider
+`pkg/bridge` to `pkg/functions` cleanup and does not change the emitted data.
 
 ### Common Span Attributes
 
-| Attribute                 | Description                     |
-|---------------------------|---------------------------------|
-| `task.id`                 | Unique task identifier          |
-| `machine.name`            | Target machine                  |
-| `team.name`               | Team context                    |
-| `function.name`           | Rediaccfile function being called |
-| `priority`                | Task priority                   |
-| `executor.type`           | `bridge` or `execute`           |
-| `repository.guid`         | Target repository GUID          |
-| `subscription.id`         | Subscription identifier         |
-| `subscription.plan_code`  | Plan code                       |
-| `subscription.status`     | Subscription status             |
+| Attribute                | Description                                   |
+|--------------------------|-----------------------------------------------|
+| `task.id`                | Unique task identifier                        |
+| `machine.name`           | Target machine                                |
+| `team.name`              | Team context                                  |
+| `function.name`          | Rediaccfile function being called             |
+| `executor.type`          | Executor that ran the task (`local`, `ssh`)   |
+| `repository.guid`        | Target repository GUID (repo-scoped tasks)    |
+| `subscription.id`        | Subscription identifier (from the repo license) |
+| `subscription.plan_code` | Plan code (from the repo license)             |
+| `subscription.status`    | Subscription status (from the repo license)   |
 
 ## Metrics
 
@@ -56,13 +66,8 @@
 
 ## Error Handling
 
-- Errors are recorded on spans via `RecordError()`
-- `ErrorCount` metric is incremented on each error
-- Auth failures tracked with a consecutive counter — after 5 consecutive auth failures, the bridge shuts down
-
-### Panic Recovery
-
-Worker goroutines in `pkg/bridge/worker.go` use `defer`/`recover`. Panics are logged with full stack traces and do not crash the process.
+- Errors are recorded on spans via `RecordError()`.
+- The `renet.error.count` metric is incremented on each error.
 
 ## Profiling
 
@@ -74,14 +79,14 @@ Pyroscope continuous profiling at `profiles.rediacc.io`:
 ## Logs
 
 Dual logging setup:
-- **OTLP structured logs** via `EmitLog()` — sent to Loki through the collector
-- **logrus** — console output for local debugging
+- **OTLP structured logs** via `EmitLog()`, sent to Loki through the collector.
+- **logrus**, console output for local debugging.
 
 ## Key Code Files
 
-- `private/renet/pkg/telemetry/telemetry.go` — OTel SDK initialization and shutdown
-- `private/renet/pkg/telemetry/profiling.go` — Pyroscope integration
-- `private/renet/pkg/telemetry/attributes.go` — attribute definitions and span helpers
-- `private/renet/pkg/bridge/bridge.go` — bridge lifecycle and task dispatch
-- `private/renet/pkg/bridge/worker.go` — worker goroutines with panic recovery
-- `private/renet/cmd/renet/execute_command.go` — CLI-triggered execution entry point
+- `private/renet/pkg/telemetry/telemetry.go`: OTel SDK init, span/metric helpers, shutdown
+- `private/renet/pkg/telemetry/profiling.go`: Pyroscope integration
+- `private/renet/pkg/telemetry/attributes.go`: attribute definitions and span helpers
+- `private/renet/pkg/bridge/executor_bridge.go`: in-process task executor behind `renet execute`
+- `private/renet/cmd/renet/execute_command.go`: `renet execute` entry point
+- `private/renet/cmd/renet/list_commands.go`: `renet list` entry point

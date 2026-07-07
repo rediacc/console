@@ -22,21 +22,70 @@
     "licenseSignatureRefreshFailed": "{{count}} repo license(s) have invalid signatures after renet update. Run: rdc subscription refresh -m <machine>"
   },
   "commands": {
-    "agent": {
-      "descriptionShort": "Agent-friendly utilities for AI coding assistants",
-      "description": "Introspection commands for AI agents. Key subcommands: capabilities (list all commands with args/options as JSON), schema (detailed schema for a single command), exec (execute a command with JSON input from stdin, always returns JSON).",
-      "capabilities": {
-        "description": "List all available commands with arguments and options"
+    "cluster": {
+      "descriptionShort": "Create and manage clusters (node pools on a private LAN)",
+      "description": "Provision and manage clusters: named sets of node pools (ceph, k8s-server, k8s-agent, hyperconverged) on a private network. Pool members materialize into machines, so every -m command works on them.",
+      "create": {
+        "descriptionShort": "Provision a configured cluster",
+        "description": "Provision the pool members of a cluster defined with 'rdc config cluster add', bootstrap renet on each, and install components (ceph first). Cloud providers provision via OpenTofu; KVM lands in a later wave.",
+        "sshUserOption": "SSH user for provisioned members",
+        "nameOption": "Cluster name",
+        "baseDomainOption": "Base domain for cluster public DNS (else inherited from a sibling machine)"
       },
-      "schema": {
-        "description": "Show detailed schema for a specific command"
+      "status": {
+        "descriptionShort": "Show clusters and their pools",
+        "description": "List all clusters, or show one cluster's full config with --name.",
+        "nameOption": "Show a single cluster",
+        "none": "No clusters configured. Add one with: rdc config cluster add"
       },
-      "exec": {
-        "description": "Execute a command with JSON input from stdin"
+      "scale": {
+        "descriptionShort": "Scale a cluster pool up or down",
+        "description": "Change a pool's member count (adds/removes machines and joins/drains nodes). k8s-agent pools scale in place; ceph pool growth is done via cephadm directly.",
+        "nameOption": "Cluster name",
+        "poolOption": "Pool name",
+        "countOption": "Desired member count"
       },
-      "generateReference": {
-        "description": "Generate command reference markdown for Claude skills"
+      "install": {
+        "descriptionShort": "Install components on a provisioned cluster",
+        "description": "Install cluster components (ceph first, then k8s) on already-provisioned members.",
+        "nameOption": "Cluster name"
+      },
+      "destroy": {
+        "descriptionShort": "Destroy a cluster and its members",
+        "description": "Tear down the provisioned members and remove the cluster and its machines from config.",
+        "forceOption": "Skip confirmation and continue past teardown errors",
+        "confirm": "Destroy cluster \"{{name}}\" and all its members?",
+        "aborted": "Aborted.",
+        "nameOption": "Cluster name"
+      },
+      "kubeconfig": {
+        "descriptionShort": "Fetch and cache a cluster kubeconfig",
+        "description": "Fetch the kubeconfig from the cluster control node over SSH and cache it locally (0600) for kubectl.",
+        "cached": "Kubeconfig cached at {{path}}",
+        "nameOption": "Cluster name"
+      },
+      "fork": {
+        "descriptionShort": "Clone a whole cluster (with data)",
+        "description": "Clone an entire cluster, including its repos' data, into a new cluster: coordinated copy-on-write of the cluster and PV images, then node-identity rewrite so the fork comes up on new addresses. The parent keeps running.",
+        "tagOption": "Fork tag",
+        "nameOption": "Cluster name",
+        "clusterOption": "Existing destination cluster to fork onto (must be on distinct machines)"
+      },
+      "migrate": {
+        "descriptionShort": "Move a whole cluster to another place",
+        "description": "Move an entire cluster, including its repos' data, to another machine or datacenter with a short cutover (hot pre-copy, then stop-and-restart on the destination).",
+        "toOption": "Destination",
+        "nameOption": "Cluster name"
       }
+    },
+    "credits": {
+      "descriptionShort": "Show third-party attributions and license compliance info",
+      "description": "Print the third-party components bundled with rdc: the binaries renet embeds and conveys (CRIU, rsync, rclone), the embedded Node.js runtime, and the bundled npm dependencies. Shows versions, SPDX license identifiers, and the exact-version source archive URLs required for GPL compliance. Use --licenses to print the full THIRD_PARTY_LICENSES text bundled with release builds.",
+      "header": "Rediacc is proprietary software distributed under the Rediacc license; the following third-party components are distributed alongside it under their own licenses.\n\nThird-party components bundled with rdc:",
+      "embeddedTitle": "Embedded binaries (conveyed by renet):",
+      "bundledTitle": "Runtime and bundled dependencies:",
+      "gplHeader": "GPL source availability:",
+      "licensesUnavailable": "The full THIRD_PARTY_LICENSES text is generated at build time and is only bundled with release builds. In dev mode, run the CLI build to generate it, or view the per-component attributions with: rdc credits"
     },
     "mcp": {
       "descriptionShort": "Model Context Protocol server for AI agents",
@@ -108,6 +157,32 @@
     "config": {
       "descriptionShort": "Manage config files, machines, and SSH connections",
       "description": "Manage CLI configuration files stored at ~/.config/rediacc/. CRUD operations for machines, repositories, storage backends, and SSH keys within a config. Key subcommands: init (create named config), show, list, ssh (manage keys), recover (from backup), prune (sweep stale leftovers). Nested groups: config machine, config repository, config storage, config infra.",
+      "cluster": {
+        "descriptionShort": "Declare and edit clusters",
+        "description": "Declare clusters and their node pools in config. Provision them with 'rdc cluster create'.",
+        "providerOption": "Provider: a cloudProviders key, or 'kvm'",
+        "poolOption": "Pool spec name:role:count[:size] (role: ceph|k8s-server|k8s-agent|hyperconverged)",
+        "cidrOption": "Private network CIDR (e.g. 10.0.0.0/24)",
+        "primitiveOption": "Network primitive (e.g. vlan, vpc, network)",
+        "controlNodeOption": "Explicit control-node machine (default: first k8s-server member)",
+        "added": "Cluster \"{{name}}\" added",
+        "removed": "Cluster \"{{name}}\" removed",
+        "poolAdded": "Pool \"{{pool}}\" added to cluster \"{{name}}\"",
+        "none": "No clusters configured",
+        "add": {
+          "description": "Declare a new cluster with one or more pools"
+        },
+        "addPool": {
+          "description": "Add a pool to an existing cluster"
+        },
+        "list": {
+          "description": "List configured clusters"
+        },
+        "remove": {
+          "description": "Remove a cluster from config"
+        },
+        "nameOption": "Cluster name"
+      },
       "prune": {
         "descriptionShort": "Sweep stale leftovers from the local config file",
         "description": "Remove dead weight from the local config file at ~/.config/rediacc/<config>.json. Three buckets are cleaned, all pure-local (no SSH/renet calls): (1) ACME cert-cache entries whose anchor GUID/repo/machine is no longer in the active config; (2) archived repositories whose grace period has expired (default 7 days, see defaults.pruneGraceDays); (3) dangling cross-references (machine→strategy, strategy→repo). Resources still in use, credentials, storage tokens, and known-hosts are never touched. Default behavior is to apply changes; pass --dry-run to preview only.",
@@ -813,6 +888,8 @@
       "description": "Deploy and manage encrypted repositories on machines. Key subcommands: create, up (deploy), down (stop), fork (instant CoW clone), delete, push/pull (backup), sync (file transfer). Lifecycle: repo create → repo up → repo down. See Key Concepts in rdc --help for architecture, routing, and environment variable details.",
       "descriptionShort": "Deploy and manage encrypted repositories on machines",
       "machineOption": "Target machine name",
+      "clusterOption": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected",
+      "clusterDone": "{{verb}} namespace \"{{repository}}\" in cluster \"{{cluster}}\"",
       "yesOption": "Skip confirmation for batch operations",
       "batchConfirm": "{{action}} all {{count}} repos on \"{{machine}}\"? [y/N]",
       "batchStarting": "{{action}}: \"{{repo}}\"...",
@@ -927,6 +1004,7 @@
         "noDockerOption": "Skip starting Docker daemon after creation",
         "starting": "Creating repository \"{{repository}}\" ({{size}}) on \"{{machine}}\"...",
         "registered": "Registered \"{{repository}}\" ({{guid}}, network {{networkId}})",
+        "clusterResolved": "Kubernetes repo \"{{repository}}\" targets cluster \"{{cluster}}\" (control node {{controlNode}})",
         "completed": "Repository created",
         "failed": "Repository creation failed",
         "rollback": "Rolled back config for \"{{repository}}\"",
@@ -1015,6 +1093,10 @@
         "immutableOption": "Mark the fork read-only: it refuses to mount, keeping its image byte-stable forever (a frozen commit/base for cross-machine delta push)",
         "immutableUpConflict": "repo fork: --immutable and --up are mutually exclusive. An immutable fork refuses to mount, so it cannot be brought up. Drop --up, or drop --immutable to deploy a normal fork.",
         "upOption": "Mount and start services after forking (fork + mount + up in one command)",
+        "toClusterOption": "Fork into another existing Kubernetes cluster (cross-cluster namespace fork)",
+        "providerOption": "Provision a new cluster (mirroring the source's pool shape) and fork into it",
+        "clusterResolved": "Forking \"{{parent}}\" as namespace \"{{parent}}-{{tag}}\" in cluster \"{{cluster}}\" (control node {{controlNode}})",
+        "providerPending": "Forking \"{{parent}}\" as \"{{parent}}-{{tag}}\" into a new {{provider}} cluster",
         "tagRequired": "Tag is required for fork. Usage: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "starting": "Forking \"{{parent}}\" as \"{{repository}}\" on \"{{machine}}\"...",
         "registered": "Registered fork \"{{repository}}\" ({{guid}}, network {{networkId}})",
@@ -1025,7 +1107,8 @@
         "tagReservedLatest": "repo fork: tag \"latest\" is reserved for the grand (production) repository — pick a different --tag (e.g. \"test\", \"staging\", \"<feature>\")",
         "examples": "\nExamples:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "detachOption": "With --up: return once containers are started; health checks continue in the background (ideal for throwaway forks)",
-        "detachedHint": "Services are starting in the background — check status with: rdc machine query --containers --name {{machine}}"
+        "detachedHint": "Services are starting in the background — check status with: rdc machine query --containers --name {{machine}}",
+        "provisioning": "Provisioning cluster \"{{cluster}}\" on {{provider}} before forking..."
       },
       "takeover": {
         "description": "Replace grand repo's data with a fork's data. The grand keeps its identity (GUID, networkId, domains, autostart, backup chain) but gets the fork's upgraded data. The old production data is preserved as a backup fork. Use for: test upgrade on fork → verify → takeover to production. Pass an explicit <name>:<tag> for the fork — a bare --name resolves to the grand and is rejected with \"not a fork\".",
@@ -1643,7 +1726,7 @@
   },
   "help": {
     "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REDIACC_WORKING_DIR}/... — never Docker named volumes (excluded from forks/backups)\n    • eBPF bind rewriting handles IP isolation: apps bind to 0.0.0.0 and the kernel rewrites to the correct loopback IP\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n    • HTTPS: automatic Let's Encrypt wildcard certs via Cloudflare DNS-01 — requires --cf-dns-token configured via 'rdc config infra set'. Without it, HTTP works but HTTPS certs are not provisioned\n    • Grand repos get *.{repo}.{machine}.{baseDomain} — provisioned automatically by Traefik on first repo up\n    • Forks reuse the parent repo's wildcard cert (already provisioned, zero rate limit impact)\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REDIACC_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • rdc repo fork --parent <name> — instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
-    "agentMode": "\n  Agent Mode\n    • Fork-only: create a fork before making changes to any repository\n    • Grand (non-fork) repositories are read-only for agents\n    • Workflow: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> → term <machine> <fork>\n    • JSON output is automatic — all commands return { success, data, errors, metrics }\n    • Always parse full JSON — never use tail/head/grep on JSON output\n    • Use filter flags (e.g., --repositories, --containers) to reduce response size\n    • Discover command schema: rdc agent schema \"<command>\"\n",
+    "agentMode": "\n  Agent Mode\n    • Fork-only: create a fork before making changes to any repository\n    • Grand (non-fork) repositories are read-only for agents\n    • Workflow: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> → term <machine> <fork>\n    • JSON output is automatic — all commands return { success, data, errors, metrics }\n    • Always parse full JSON — never use tail/head/grep on JSON output\n    • Use filter flags (e.g., --repositories, --containers) to reduce response size\n",
     "examples": "Examples:",
     "cli": {
       "machineQuery": "Show machine status",
@@ -1678,11 +1761,13 @@
       "machine": "SSH into machine",
       "repo": "SSH into repo (DOCKER_HOST auto-set)",
       "command": "Run command without interactive shell",
+      "cluster": "SSH into cluster control node (KUBECONFIG auto-set, kubectl namespace pinned)",
       "syncHint": "For file transfer, use: rdc repo sync upload/download"
     },
     "vscode": {
       "machine": "Open machine in VS Code",
-      "repo": "Open repository in VS Code"
+      "repo": "Open repository in VS Code",
+      "cluster": "Open cluster control node in VS Code (KUBECONFIG auto-set)"
     },
     "config": {
       "init": "Create named config with SSH key",
@@ -1698,7 +1783,15 @@
     "useHelpAll": "Use --help-all for extended descriptions"
   },
   "errors": {
-    "remoteNotFound": "\"{{name}}\" is not a known machine or storage. Machines: {{machines}}. Storages: {{storages}}",
+    "remoteNotFound": "\"{{name}}\" is not a known machine, storage, or cluster. Machines: {{machines}}. Storages: {{storages}}. Clusters: {{clusters}}",
+    "cluster": {
+      "targetExclusive": "Specify only one of -m/--machine or --cluster, not both",
+      "targetRequired": "A target machine (-m) or cluster (--cluster) is required",
+      "countInvalid": "--count must be a non-negative integer",
+      "dockerOnlyVerb": "\"repo {{verb}}\" targets Docker repositories only and cannot run against a --cluster; it has no Kubernetes equivalent in v1",
+      "pendingContractRegen": "\"repo {{verb}}\" on a cluster dispatches {{fn}}, which is pending the renet kube contract regeneration (wave 5). The cluster + namespace were resolved; re-run once the contract lands.",
+      "featureUnsupportedV1": "{{feature}} is not supported with --cluster in v1 (control-node view); {{hint}}"
+    },
     "activationFailed": "Activation failed",
     "tfaVerificationFailed": "TFA verification failed",
     "authFailed": "Authentication failed",
@@ -1838,7 +1931,8 @@
       "createGuardOverrideNonLinux": "Cannot create a new grand repository \"{{name}}\". REDIACC_ALLOW_GRAND_REPO is set, but its origin could not be verified on {{platform}} (the ancestry verification helper is unavailable or failed).\n\nInstead, fork an existing repository:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nUser: verification works on Linux, macOS, and Windows with an intact rdc installation. Reinstall rdc if this persists, and set the variable in your terminal before starting the agent.",
       "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" is a grand (production) repository. The REDIACC_ALLOW_GRAND_REPO override could not be verified on {{platform}} (the ancestry verification helper is unavailable or failed) and is not accepted.\n\nUse repo_fork to create a safe, isolated sandbox copy, then operate on the fork.",
       "mcpMachineGuardOverrideNonLinux": "Direct machine access override could not be verified on {{platform}} (the ancestry verification helper is unavailable or failed) and is not accepted.\n\nUse repo_fork to create a fork, then connect to it.",
-      "commandBlocked": "The \"{{command}}\" command is not available in agent mode.\n\nThis command executes arbitrary low-level functions without safety guards. Use typed CLI commands or MCP tools instead.\n\nAlternatives:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - Run \"rdc agent capabilities\" to see all available commands\n\nIf you need raw access, ask the user to run the command directly.",
+      "commandBlocked": "The \"{{command}}\" command is not available in agent mode.\n\nThis command executes arbitrary low-level functions without safety guards. Use typed CLI commands or MCP tools instead.\n\nAlternatives:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - Run \"rdc --help\" to see all available commands\n\nIf you need raw access, ask the user to run the command directly.",
+      "clusterOpBlocked": "Cluster command \"{{command}}\" is blocked in agent mode. Cluster operations provision or tear down real infrastructure, so an agent cannot authorize them itself. User: to allow this, set REDIACC_ALLOW_CLUSTER_OPS=<cluster-name> (or * for all clusters) in your terminal BEFORE starting the agent session — an override set from inside the agent is not accepted.",
       "configEdit": "Interactive editor is blocked in agent environments.\n\nAlternatives:\n  • rdc config edit --dump > config.jsonc    (safe redacted inspection)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nTo override, set REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> in the parent shell\nBEFORE starting your agent (it must appear in the agent's process ancestry).",
       "configEditAncestry": "Interactive editor is blocked in agent environments (REDIACC_ALLOW_CONFIG_EDIT was set but ancestry verification failed — the override must be set by your shell, not by an agent).\n\nAlternatives:\n  • rdc config edit --dump > config.jsonc    (safe redacted inspection)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nSet REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> in the parent shell BEFORE starting your agent.",
       "fieldReveal": "--reveal for sensitive field {{pointer}} is blocked in agent environments. Agents should use --digest. A real user at an interactive terminal can --reveal.",
@@ -2011,6 +2105,7 @@
     "protocolForce": "Force re-registration even if already registered",
     "protocolSystemUnregister": "Unregister system-wide registration (requires admin privileges)",
     "outputFormat": "Output format (json)",
+    "licenses": "Print the full THIRD_PARTY_LICENSES text bundled with release builds",
     "protocolToken": "Authentication token",
     "protocolAction": "Action ({{actions}})",
     "protocolParams": "Additional parameters",
@@ -2119,16 +2214,17 @@
     "sectionTitles": {
       "config": "Config Management",
       "machine": "Machine Management",
+      "cluster": "Cluster Management",
       "repo": "Repository Lifecycle",
       "storage": "Storage Management",
       "vscode": "VS Code Integration",
       "term": "SSH Terminal Access",
       "shortcuts": "Quick Commands (Shortcuts)",
       "update": "CLI Updates",
+      "credits": "Third-Party Credits",
       "doctor": "System Diagnostics",
       "ops": "Experimental VM Operations",
       "subscription": "Subscription Management",
-      "agent": "Agent Utilities",
       "mcp": "MCP Server",
       "datastore": "Datastore Management",
       "sync": "File Sync",

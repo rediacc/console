@@ -37,6 +37,12 @@ if ! npm run test:unit -w @rediacc/cli; then
     exit 1
 fi
 
+log_step "Testing @rediacc/provisioning..."
+if ! npm run test -w @rediacc/provisioning; then
+    log_error "@rediacc/provisioning tests failed"
+    exit 1
+fi
+
 # Generate coverage report if requested
 if [[ "$COVERAGE" == "true" ]]; then
     log_step "Generating coverage report..."

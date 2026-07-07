@@ -3,22 +3,6 @@
     "description": "Halda masinaid, hoidlaid ja käitusi üle SSH"
   },
   "commands": {
-    "agent": {
-      "capabilities": {
-        "description": "Loetleb kõik saadaolevad komandod koos argumentide ja valikutega"
-      },
-      "description": "Introspektsioonikomandod AI agentidele. Peamised alamkomandod: capabilities (loetleb kõik komandod koos argumentide/valikutega JSON-ina), schema (üksikasjalik skeem ühe komando jaoks), exec (käivitab komando JSON-sisendiga stdin-ist, tagastab alati JSON-i).",
-      "descriptionShort": "Agendisõbralikud utiliidid AI kodeerimisassistentidele",
-      "exec": {
-        "description": "Käivitab komando JSON-sisendiga stdin-ist"
-      },
-      "generateReference": {
-        "description": "Genereerib komandoviite markdown-i Claude oskuste jaoks"
-      },
-      "schema": {
-        "description": "Näitab konkreetse komando üksikasjalikku skeemi"
-      }
-    },
     "backup": {
       "description": "Lüka, tõmba ja sünkroniseeri repositooriumi varukoopiaid üle salvestuste ja masinate",
       "schedule": {
@@ -26,6 +10,62 @@
       },
       "sync": {
         "description": "Repositooriumi varukoopiaid kahesuunaline sünkroniseerimine masinate vahel"
+      }
+    },
+    "cluster": {
+      "create": {
+        "baseDomainOption": "Klastri avaliku DNS-i alusdomeen (muidu päritud kõrvalmasinast)",
+        "description": "Valmista ette käsuga 'rdc config cluster add' defineeritud klastri pesa liikmed, käivita renet igaühel ja paigalda komponendid (ceph esimesena). Pilvepakkujad valmistavad ette OpenTofu kaudu; KVM saabub hilisemas laines.",
+        "descriptionShort": "Valmista ette konfigureeritud klaster",
+        "nameOption": "Klastri nimi",
+        "sshUserOption": "SSH-kasutaja ette valmistatud liikmete jaoks"
+      },
+      "description": "Valmista ette ja halda klastreid: nimega sõlmepesade kogumeid (ceph, k8s-server, k8s-agent, hyperconverged) privaatvõrgus. Pesa liikmed materialiseeruvad masinateks, nii et iga -m käsk töötab nendega.",
+      "descriptionShort": "Loo ja halda klastreid (sõlmepesad privaatses LAN-is)",
+      "destroy": {
+        "aborted": "Katkestatud.",
+        "confirm": "Hävitada klaster \"{{name}}\" ja kõik selle liikmed?",
+        "description": "Lammuta ette valmistatud liikmed ja eemalda klaster ning selle masinad konfiguratsioonist.",
+        "descriptionShort": "Hävita klaster ja selle liikmed",
+        "forceOption": "Jäta kinnitus vahele ja jätka hoolimata lammutamise vigadest",
+        "nameOption": "Klastri nimi"
+      },
+      "fork": {
+        "clusterOption": "Olemasolev sihtklaster, kuhu forkida (peab olema eraldi masinatel)",
+        "description": "Kloonida terve klaster, sealhulgas selle repode andmed, uude klastrisse: klastri- ja PV-piltide koordineeritud copy-on-write, seejärel sõlme identiteedi ümberkirjutamine, nii et fork tõuseb uutel aadressidel. Originaal jätkab töötamist.",
+        "descriptionShort": "Kloonida terve klaster (koos andmetega)",
+        "nameOption": "Klastri nimi",
+        "tagOption": "Fork'i silt"
+      },
+      "install": {
+        "description": "Paigalda klastri komponendid (ceph esimesena, siis k8s) juba ette valmistatud liikmetele.",
+        "descriptionShort": "Paigalda komponendid ette valmistatud klastrile",
+        "nameOption": "Klastri nimi"
+      },
+      "kubeconfig": {
+        "cached": "Kubeconfig puhverdatud asukohta {{path}}",
+        "description": "Too kubeconfig klastri juhtsõlmest SSH kaudu ja puhverda see kohalikult (0600) kubectl jaoks.",
+        "descriptionShort": "Too ja puhverda klastri kubeconfig",
+        "nameOption": "Klastri nimi"
+      },
+      "migrate": {
+        "description": "Liiguta terve klaster, sealhulgas selle repode andmed, teise masinasse või andmekeskusesse lühikese ülemineku ajaga (kuum eelkoopia, seejärel peata-ja-taaskäivita sihtkohas).",
+        "descriptionShort": "Liiguta terve klaster teise kohta",
+        "nameOption": "Klastri nimi",
+        "toOption": "Sihtkoht"
+      },
+      "scale": {
+        "countOption": "Soovitud liikmete arv",
+        "description": "Muuda pesa liikmete arvu (lisab/eemaldab masinaid ning ühendab/tühjendab sõlmi). k8s-agent pesad skaleeruvad kohapeal; ceph pesa kasv toimub otse cephadm kaudu.",
+        "descriptionShort": "Kasvata või kahanda klastri pesa",
+        "nameOption": "Klastri nimi",
+        "poolOption": "Pesa nimi"
+      },
+      "status": {
+        "description": "Loetle kõik klastrid või kuva ühe klastri täielik konfiguratsioon lipuga --name.",
+        "descriptionShort": "Kuva klastrid ja nende pesad",
+        "nameOption": "Kuva üks klaster",
+        "none": "Ühtegi klastrit pole seadistatud. Lisa üks käsuga: rdc config cluster add"
       }
     },
     "config": {
@@ -121,6 +161,32 @@
         "allCleared": "Kõik vaikeväärtused tühjendatud",
         "description": "Tühjenda vaikeväärtused (kõik või konkreetne võti)",
         "keyCleared": "\"{{key}}\" tühjendatud"
+      },
+      "cluster": {
+        "add": {
+          "description": "Deklareeri uus klaster ühe või mitme pesaga"
+        },
+        "added": "Klaster \"{{name}}\" lisatud",
+        "addPool": {
+          "description": "Lisa pesa olemasolevale klastrile"
+        },
+        "cidrOption": "Privaatvõrgu CIDR (nt 10.0.0.0/24)",
+        "controlNodeOption": "Selgesõnaline juhtsõlme masin (vaikimisi: esimene k8s-server liige)",
+        "description": "Deklareeri klastrid ja nende sõlmepesad konfiguratsioonis. Valmista need ette käsuga 'rdc cluster create'.",
+        "descriptionShort": "Deklareeri ja muuda klastreid",
+        "list": {
+          "description": "Loetle seadistatud klastrid"
+        },
+        "nameOption": "Klastri nimi",
+        "none": "Ühtegi klastrit pole seadistatud",
+        "poolAdded": "Pesa \"{{pool}}\" lisatud klastrisse \"{{name}}\"",
+        "poolOption": "Pesa spetsifikatsioon nimi:roll:arv[:suurus] (roll: ceph|k8s-server|k8s-agent|hyperconverged)",
+        "primitiveOption": "Võrgu primitiiv (nt vlan, vpc, network)",
+        "providerOption": "Pakkuja: cloudProviders-i võti või 'kvm'",
+        "remove": {
+          "description": "Eemalda klaster konfiguratsioonist"
+        },
+        "removed": "Klaster \"{{name}}\" eemaldatud"
       },
       "delete": {
         "description": "Kustuta konfiguratsioonifail",
@@ -451,6 +517,15 @@
           "optionReveal": "Kuva salvestuse konfiguratsioon lihttekstina (ainult interaktiivne TTY; auditeeritakse)"
         }
       }
+    },
+    "credits": {
+      "bundledTitle": "Käitusaeg ja kaasas olevad sõltuvused:",
+      "description": "Prindi rdc-ga kaasas olevad kolmandate osapoolte komponendid: renet-i põimitud ja edastatud binaarid (CRIU, rsync, rclone), põimitud Node.js käitusaeg ja kaasas olevad npm-sõltuvused. Näitab versioone, SPDX litsentsi identifikaatoreid ja GPL-vastavuseks nõutavaid täpse versiooni lähtearhiivi URL-e. Kasuta lippu --licenses, et printida väljalaske ehitistega kaasas olev täielik THIRD_PARTY_LICENSES tekst.",
+      "descriptionShort": "Kuva kolmandate osapoolte autorlus ja litsentsi vastavuse teave",
+      "embeddedTitle": "Põimitud binaarid (renet-i poolt edastatud):",
+      "gplHeader": "GPL lähtekoodi saadavus:",
+      "header": "Rediacc on omandiõiguslik tarkvara, mida levitatakse Rediacci litsentsi alusel; järgmised kolmandate osapoolte komponendid levitatakse koos sellega nende endi litsentside alusel.\n\nrdc-ga kaasas olevad kolmandate osapoolte komponendid:",
+      "licensesUnavailable": "Täielik THIRD_PARTY_LICENSES tekst genereeritakse ehitusajal ja see on kaasas ainult väljalaske ehitistega. Arendusrežiimis käivita selle genereerimiseks CLI ehitus või vaata komponendipõhist autorlust käsuga: rdc credits"
     },
     "datastore": {
       "description": "Madala taseme plokksalvestuse haldamine masina andmesalvede jaoks (Ceph RBD või kohalik BTRFS). Tavaliselt vajalik ainult esmase masina seadistamise või masinate vahelise migratsiooni ajal. Peamised alamkomandod: init (loob andmesalve), status (seisund/kasutus), fork (kloonib andmesalve teisele masinale), unfork (taastab hetktõmmisest).",
@@ -875,6 +950,8 @@
         "refOption": "Commiti GUID (või haru nimi koos --from) väljavõtmiseks",
         "tagOption": "Uue kirjutatava töötava forki nimi"
       },
+      "clusterDone": "{{verb}} nimeruum \"{{repository}}\" klastris \"{{cluster}}\"",
+      "clusterOption": "Sihtklaster Kubernetes (välistab vastastikku -m); suunab klastri juhtsõlme, KUBECONFIG süstituna",
       "commit": {
         "authorOption": "Commit'i autor",
         "completed": "Commit'itud {{commit}}: {{message}}",
@@ -886,6 +963,7 @@
       },
       "create": {
         "alreadyExists": "Hoidla \"{{name}}\" on konfiguratsioonis juba olemas",
+        "clusterResolved": "Kubernetese repo \"{{repository}}\" sihib klastrit \"{{cluster}}\" (juhtsõlm {{controlNode}})",
         "completed": "Hoidla loodud",
         "description": "Loo uus krüpteeritud hoidla",
         "failed": "Hoidla loomine ebaõnnestus",
@@ -896,9 +974,9 @@
         "starting": "Hoidla \"{{repository}}\" ({{size}}) loomine masinal \"{{machine}}\"..."
       },
       "delete": {
+        "archived": "Hoidla \"{{repository}}\" mandaat arhiveeritud",
         "archiveHint": "Mandaatide arhiveerimiseks taastamise tarbeks: käivita uuesti lipuga --archive-config",
         "archiveOption": "Teisalda konfiguratsioonikirje deletedRepositories-i hilisemaks taastamiseks",
-        "archived": "Hoidla \"{{repository}}\" mandaat arhiveeritud",
         "cloudBackupHint": "Pilvevarukoopiad (kui neid on) säilivad pärast kustutamist. Eemalda orvuks jäänud pilvevarukoopiad käsuga: rdc storage prune --name <storage> -m {{machine}}",
         "completed": "Hoidla kustutatud",
         "configRetained": "Hoidla \"{{repository}}\" konfiguratsioonikirje säilitati (hoidla võib eksisteerida teistel masinatel). Eemaldamiseks käivita: rdc config repository remove --name {{repository}}",
@@ -956,6 +1034,7 @@
       "fork": {
         "alreadyExists": "Hoidla \"{{name}}\" on konfiguratsioonis juba olemas",
         "checkpointOption": "Loo CRIU kontrollpunkt allikal enne forkimist (jäädvusta protsessi mäluseisund forgi taastamiseks)",
+        "clusterResolved": "Forgitakse \"{{parent}}\" nimeruumina \"{{parent}}-{{tag}}\" klastris \"{{cluster}}\" (juhtsõlm {{controlNode}})",
         "completed": "Fork loodud. Juuruta kohalikult: repo up {{repository}} -m {{machine}}. Forgi teisaldamiseks teisele masinale: repo push {{repository}} -m {{machine}} --to <siht> --up",
         "description": "Loo hoidla CoW (Copy-on-Write) fork. FORK ON PEAAEGU HETKELINE JA KONSTANTSE AJAGA sõltumata hoidla suurusest -- BTRFS reflink kloonib alusel oleva kujutise nii, et 100 GB hoidla ja 1 GB hoidla forkitakse sama ~mõne sekundiga. Fork saab uue GUID-i, networkId, IP-vahemiku ja automaatse marsruudi domeeni ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) ning on täiesti iseseisev koopia. Onlainforkimine on toetatud, vanem võib jääda töötavaks. Fork pärib vanema krüpteerimismandaadid automaatselt. Kasuta --checkpoint, et jäädvustada CRIU protsessiseisund enne forkimist -- fork taastab selle automaatselt esimesel käsul 'repo up' (mäluseisund säilitatakse). RISTMASINA FORK: Teise masinasse forkimiseks forki kõigepealt kohalikult, seejärel kanna üle: (1) repo fork --parent <vanem> -m <allikas> --tag <nimi>, (2) backup push <nimi> -m <allikas> --to-machine <siht>, (3) repo up <nimi> -m <siht>. HOIATUS: Ära kasuta forkimiseks ainult käsku 'backup push' -- see loob sama GUID-iga toorkoopiata iseseisva fork. Forki alati kõigepealt uue identiteedi saamiseks. Automarsruudid kasutavad hoidla nime, nii et iga fork saab automaatselt kordumatu domeeni.",
         "descriptionShort": "Peaaegu hetkeline CoW-fork hoidlast (uus GUID, networkId, IP-vahemik)",
@@ -965,12 +1044,16 @@
         "failed": "Forgi loomine ebaõnnestus",
         "immutableOption": "Märgib kahvli kirjutuskaitstuks: see keeldub haakimisest ja hoiab oma tõmmist jäädavalt baidi tasemel stabiilsena (külmutatud commit/alus masinatevaheliseks delta-tõukeks)",
         "immutableUpConflict": "repo fork: --immutable ja --up välistavad teineteise. Muutumatu kahvel keeldub haakimisest, seega ei saa seda käivitada. Eemalda --up või eemalda --immutable, et juurutada tavaline kahvel.",
+        "providerOption": "Valmista ette uus klaster (peegeldades lähte pesade kuju) ja forgi sinna",
+        "providerPending": "Forgitakse \"{{parent}}\" kui \"{{parent}}-{{tag}}\" uude {{provider}} klastrisse",
+        "provisioning": "Klaster \"{{cluster}}\" valmistatakse ette {{provider}} peal enne forkimist...",
         "registered": "Fork \"{{repository}}\" registreeritud ({{guid}}, võrk {{networkId}})",
         "rollback": "Konfiguratsiooni muudatused tühistati hoidla \"{{repository}}\" jaoks",
         "starting": "Forkimine: \"{{parent}}\" nimega \"{{repository}}\" masinal \"{{machine}}\"...",
         "tagOption": "Forki silt (loob nime:silt)",
         "tagRequired": "Silt on forki jaoks kohustuslik. Kasutus: rdc repo fork --parent <vanem> --tag <silt> -m <masin>",
         "tagReservedLatest": "repo fork: silt \"latest\" on reserveeritud peamise (toodangu) hoidla jaoks — vali teine --tag (nt \"test\", \"staging\", \"<feature>\")",
+        "toClusterOption": "Fork teise olemasolevasse Kubernetese klastrisse (klastritevaheline nimeruumi fork)",
         "upOption": "Haagi külge ja käivita teenused pärast forkimist (fork + mount + up ühes käsus)"
       },
       "fsck": {
@@ -1679,9 +1762,10 @@
     },
     "pageTitle": "Rediacc CLI viide",
     "sectionTitles": {
-      "agent": "Agendi utiliidid",
       "backup": "Varundamine ja taastamine",
+      "cluster": "Klastrite haldus",
       "config": "Konfiguratsiooni haldus",
+      "credits": "Kolmandate osapoolte autorlus",
       "datastore": "Andmehoidla haldus",
       "doctor": "Süsteemi diagnostika",
       "machine": "Masina haldus",
@@ -1722,7 +1806,8 @@
     "activationFailed": "Aktiveerimine ebaõnnestus",
     "affectedChildClones": ". Mõjutatud alamkloonid: {{clones}}. Kustuta või tõsta esmalt alamkloonid üles.",
     "agent": {
-      "commandBlocked": "Käsk \"{{command}}\" ei ole agendi režiimis saadaval.\n\nSee käsk täidab suvalisi madaltaseme funktsioone ilma turvakontrollideta. Kasuta selle asemel tüüpilisi CLI käske või MCP tööriistu.\n\nAlternatiivid:\n  - MCP tööriistad: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI käsud: rdc repo up, rdc repo down, rdc term connect\n  - Käivita \"rdc agent capabilities\", et näha kõiki saadaval olevaid käske\n\nKui vajad tooreset ligipääsu, palu kasutajal käivitada käsk otse.",
+      "clusterOpBlocked": "Klastri käsk \"{{command}}\" on agendi režiimis blokeeritud. Klastri toimingud loovad või lammutavad reaalset taristut, seega ei saa agent neid ise volitada. Kasutaja: selle lubamiseks seadista REDIACC_ALLOW_CLUSTER_OPS=<klastri-nimi> (või * kõigi klastrite jaoks) oma terminalis ENNE agendi seansi käivitamist — agendi seest seatud ülekirjutust ei aktsepteerita.",
+      "commandBlocked": "Käsk \"{{command}}\" ei ole agendi režiimis saadaval.\n\nSee käsk täidab suvalisi madaltaseme funktsioone ilma turvakontrollideta. Kasuta selle asemel tüüpilisi CLI käske või MCP tööriistu.\n\nAlternatiivid:\n  - MCP tööriistad: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI käsud: rdc repo up, rdc repo down, rdc term connect\n  - Käivita \"rdc --help\", et näha kõiki saadaval olevaid käske\n\nKui vajad tooreset ligipääsu, palu kasutajal käivitada käsk otse.",
       "configEdit": "Interaktiivne redaktor on agendikeskkondades blokeeritud.\n\nAlternatiivid:\n  • rdc config edit --dump > config.jsonc    (turvaline varjatud ülevaatus)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nÜlekirjutamiseks seadista REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> vanemas shellis\nENNE oma agendi käivitamist (see peab olema nähtav agendi protsessipuus).",
       "configEditAncestry": "Interaktiivne redaktor on agendikeskkondades blokeeritud (REDIACC_ALLOW_CONFIG_EDIT oli seadistatud, kuid esivanema kontroll ebaõnnestus - ülekiri peab olema seadistatud sinu shelli poolt, mitte agendi poolt).\n\nAlternatiivid:\n  • rdc config edit --dump > config.jsonc    (turvaline varjatud ülevaatus)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nSeadista REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> vanemas shellis ENNE oma agendi käivitamist.",
       "createGuard": "Uut grand-repositooriumi \"{{name}}\" ei saa agendi režiimis luua.\n\nAgendid töötavad fork-only režiimis. Grand-repositooriumid on tootmiskeskkonnad, millele agendid ei saa pärast loomist ligi.\n\nSelle asemel forki olemasolev repositoorium:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nKasutaja: repositooriumi loomise lubamiseks seadista REDIACC_ALLOW_GRAND_REPO=* (või konkreetne repositooriumi nimi) oma terminalis enne agendi seansi käivitamist.",
@@ -1752,6 +1837,14 @@
     "authRequired": "Autentimine on nõutud. Käivita: rdc auth login",
     "cannotDeleteGrandRepo": "Grand-repositooriumi ei saa kustutada: {{reason}}",
     "cannotPromote": "Ülendamine ei õnnestu: {{reason}}",
+    "cluster": {
+      "countInvalid": "--count peab olema mittenegatiivne täisarv",
+      "dockerOnlyVerb": "\"repo {{verb}}\" on suunatud ainult Dockeri repositooriumitele ega saa töötada --cluster'i vastu; sellel pole v1-s Kubernetese vastet",
+      "featureUnsupportedV1": "{{feature}} ei ole --cluster'iga v1-s toetatud (juhtsõlme vaade); {{hint}}",
+      "pendingContractRegen": "\"repo {{verb}}\" klastril saadab {{fn}}, mis ootab renet kube lepingu taasgenereerimist (laine 5). Klaster ja nimeruum lahendati; käivita uuesti, kui leping saabub.",
+      "targetExclusive": "Määra ainult üks: -m/--machine või --cluster, mitte mõlemad",
+      "targetRequired": "Vajalik on sihtmasin (-m) või klaster (--cluster)"
+    },
     "clusterNotFound": "Ceph-klastrit \"{{name}}\" ei leitud",
     "config": {
       "invalidEmail": "Vigane e-posti aadress: \"{{value}}\".",
@@ -1832,7 +1925,7 @@
     },
     "regionRequired": "Regiooni nimi on nõutud. Kasuta --region või määra vaikimisi väärtus käsuga: rdc config set --key region --value <name>",
     "registrationFailed": "Registreerimine ebaõnnestus",
-    "remoteNotFound": "\"{{name}}\" ei ole tuntud masin ega salvestusruum. Masinad: {{machines}}. Salvestusruumid: {{storages}}",
+    "remoteNotFound": "\"{{name}}\" ei ole tuntud masin, salvestusruum ega klaster. Masinad: {{machines}}. Salvestusruumid: {{storages}}. Klastrid: {{clusters}}",
     "repo": {
       "secret": {
         "badMode": "Vigane --mode \"{{mode}}\". Lubatud: env, file.",
@@ -1906,7 +1999,7 @@
     }
   },
   "help": {
-    "agentMode": "\n  Agendirežiim\n    • Ainult forkimine: loo fork enne muudatuste tegemist mis tahes repositooriumis\n    • Pearepos (mitte-forkid) on agentidele kirjutuskaitstud\n    • Töövoog: repo fork --parent <name> -m <machine> -> repo up <fork> -m <machine> -> term <machine> <fork>\n    • JSON-väljund on automaatne -- kõik käsud tagastavad { success, data, errors, metrics }\n    • Parsi alati täielikku JSON-i -- ära kasuta tail/head/grep JSON-väljundil\n    • Kasuta filtrilipukesi (nt --repositories, --containers) vastuse mahu vähendamiseks\n    • Avasta käsuskeeme: rdc agent schema \"<command>\"\n",
+    "agentMode": "\n  Agendirežiim\n    • Ainult forkimine: loo fork enne muudatuste tegemist mis tahes repositooriumis\n    • Pearepos (mitte-forkid) on agentidele kirjutuskaitstud\n    • Töövoog: repo fork --parent <name> -m <machine> -> repo up <fork> -m <machine> -> term <machine> <fork>\n    • JSON-väljund on automaatne -- kõik käsud tagastavad { success, data, errors, metrics }\n    • Parsi alati täielikku JSON-i -- ära kasuta tail/head/grep JSON-väljundil\n    • Kasuta filtrilipukesi (nt --repositories, --containers) vastuse mahu vähendamiseks\n",
     "cli": {
       "machineQuery": "Kuva masina olek",
       "repoUp": "Juuruta repositooriumi teenused",
@@ -1950,6 +2043,7 @@
       "upload": "Laadi lokaalsed failid repositooriumisse üles"
     },
     "term": {
+      "cluster": "SSH klastri juhtsõlme (KUBECONFIG seatakse automaatselt, kubectl nimeruum kinnitatud)",
       "command": "Käivita käsk ilma interaktiivse kestata",
       "machine": "SSH masinasse",
       "repo": "SSH repositooriumisse (DOCKER_HOST seadistatakse automaatselt)",
@@ -1957,6 +2051,7 @@
     },
     "useHelpAll": "Kasuta --help-all laiendatud kirjelduste jaoks",
     "vscode": {
+      "cluster": "Ava klastri juhtsõlm VS Code'is (KUBECONFIG seatakse automaatselt)",
       "machine": "Ava masin VS Code'is",
       "repo": "Ava repositoorium VS Code'is"
     }
@@ -1999,6 +2094,7 @@
     "importMode": "Importimisrežiim (merge või replace)",
     "insiders": "Kasuta VS Code Insidersi seadeid",
     "lang": "Keele alistamine ({{languages}})",
+    "licenses": "Prindi väljalaske ehitistega kaasas olev täielik THIRD_PARTY_LICENSES tekst",
     "limit": "Tulemuste maksimaalne arv",
     "localPath": "Lokaalne kaustatee (vaikimisi: praegune kaust)",
     "localPaths": "Üks või mitu lokaalset faili- või kaustateed (vaikimisi: praegune kaust)",

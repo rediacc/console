@@ -4,8 +4,8 @@ description: "Kuidas Claude Code, Cursor ja Cline haldavad Rediacc infrastruktuu
 category: Guides
 order: 30
 language: et
-sourceHash: "0aa0c975030d4856"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "27ea21c36250d4a9"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 `rdc` on agenditega arvestav juba põhimõtteliselt. Claude Code, Cursor, Cline: iga AI-assistent, mis kutsub `rdc` alamshell'is, saab struktureeritud JSON-väljundi, masintöötlemiseks sobivad veateated ja turvamehhanismid, mida autonoomseks Rediacc infrastruktuuri haldamiseks vajatakse. Nii integreerimine toimib.
@@ -59,21 +59,6 @@ Veastavused sisaldavad välju `retryable` ja `guidance`:
     "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
   }]
 }
-```
-
-### 3. Agendi võimaluste avastamine
-
-Alamkäsk `rdc agent` pakub struktureeritud introspektsiooni:
-
-```bash
-# Loetleb kõik käsud argumentide ja valikutega
-rdc agent capabilities
-
-# Näitab konkreetse käsu üksikasjalikku skeemi
-rdc agent schema --command "machine query"
-
-# Täidab käsu JSON-sisendiga
-echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 ```
 
 ## Agentidele mõeldud põhilipud

@@ -9,7 +9,7 @@ import type { ProvisioningConfig, VMNetworkConfig } from './types';
  * Required environment variables:
  * - VM_NET_BASE: Network prefix (e.g., "192.168.111")
  * - VM_NET_OFFSET: Offset added to VM ID
- * - VM_BRIDGE: Bridge VM ID
+ * - VM_CONTROL: Control-node VM ID (VM_BRIDGE is a kept alias)
  * - VM_WORKERS: Space-separated worker VM IDs (can be empty in Ceph-only mode)
  * - VM_CEPH_NODES: Space-separated Ceph node IDs (optional)
  *
@@ -27,9 +27,10 @@ export function loadNetworkConfigFromEnv(): VMNetworkConfig {
   }
   const netOffset = Number.parseInt(netOffsetStr, 10);
 
-  const bridgeIdStr = process.env.VM_BRIDGE;
+  // VM_CONTROL is canonical; VM_BRIDGE stays as a kept alias.
+  const bridgeIdStr = process.env.VM_CONTROL ?? process.env.VM_BRIDGE;
   if (!bridgeIdStr) {
-    throw new Error('VM_BRIDGE environment variable is required');
+    throw new Error('VM_CONTROL (or VM_BRIDGE) environment variable is required');
   }
   const bridgeId = Number.parseInt(bridgeIdStr, 10);
 
@@ -54,7 +55,42 @@ export function loadNetworkConfigFromEnv(): VMNetworkConfig {
     );
   }
 
-  return { netBase, netOffset, bridgeId, workerIds, cephIds };
+  // VM_NET / DOCKER_REGISTRY are optional. An empty or absent value is treated as
+  // "unset" downstream (buildGroupEnv only emits them when truthy), so renet
+  // applies its own default / bridge-IP derivation.
+  return {
+    netBase,
+    netOffset,
+    bridgeId,
+    workerIds,
+    cephIds,
+    netName: process.env.VM_NET,
+    dockerRegistry: process.env.DOCKER_REGISTRY,
+  };
+}
+
+/**
+ * Build the `renet ops` environment for a VM group from its network config.
+ *
+ * A second concurrent KVM group must not inherit the ambient group's VM_NET /
+ * DOCKER_REGISTRY: passing this map as {@link ProvisioningConfig.groupEnv} makes
+ * every ops subprocess this group spawns see its own network, disjoint VM IDs,
+ * and (optionally) its own registry. VM_NET / DOCKER_REGISTRY are only emitted
+ * when the config carries them, so a single-group caller keeps ambient defaults.
+ */
+export function buildGroupEnv(network: VMNetworkConfig): Record<string, string> {
+  const env: Record<string, string> = {
+    VM_NET_BASE: network.netBase,
+    VM_NET_OFFSET: String(network.netOffset),
+    // Emit canonical VM_CONTROL plus the kept VM_BRIDGE alias.
+    VM_CONTROL: String(network.bridgeId),
+    VM_BRIDGE: String(network.bridgeId),
+    VM_WORKERS: network.workerIds.join(' '),
+    VM_CEPH_NODES: network.cephIds.join(' '),
+  };
+  if (network.netName) env.VM_NET = network.netName;
+  if (network.dockerRegistry) env.DOCKER_REGISTRY = network.dockerRegistry;
+  return env;
 }
 
 /**

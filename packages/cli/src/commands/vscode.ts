@@ -41,7 +41,9 @@ import {
 import { assertAgentMachineAccess } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
-import { handleError } from '../utils/errors.js';
+import { handleError, ValidationError } from '../utils/errors.js';
+import { applyClusterConnectionContext } from '../services/cluster/cluster-target.js';
+import { resolveRepoTarget } from '../utils/repo-target.js';
 import { withSpinner } from '../utils/spinner.js';
 import {
   displayActiveConnections,
@@ -52,6 +54,7 @@ import {
 interface VSCodeConnectOptions {
   team?: string;
   machine?: string;
+  cluster?: string;
   repository?: string;
   folder?: string;
   urlOnly?: boolean;
@@ -162,7 +165,8 @@ async function configureVSCodeAndSettings(
 async function provisionAndPrepare(
   machineName: string,
   repositoryName: string | undefined,
-  connectionDetails: ConnectionDetails
+  connectionDetails: ConnectionDetails,
+  kubeNamespace?: string
 ): Promise<void> {
   const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
@@ -176,6 +180,13 @@ async function provisionAndPrepare(
 
   if (repositoryName && connectionDetails.datastore && connectionDetails.repositoryGuid) {
     await preparePerRepoVSCodeServer(connectionDetails, teamKey);
+  }
+
+  // Pin the kubectl current-context to the repo's namespace on the control node
+  // so the integrated terminal lands in the right namespace (design D14, the
+  // k8s analog of the per-repo working directory for docker targets).
+  if (kubeNamespace) {
+    await pinClusterNamespace(connectionDetails, kubeNamespace);
   }
 }
 
@@ -214,6 +225,49 @@ async function preparePerRepoVSCodeServer(
       child.on('exit', () => resolve());
       child.on('error', () => resolve());
     });
+  } finally {
+    await sshConn.cleanup();
+  }
+}
+
+/**
+ * Pins the kubectl current-context to a namespace on the cluster's control node
+ * for a `vscode connect --cluster -r <repo>` session (design D14). The
+ * KUBECONFIG path travels from connectionDetails.environment (set by
+ * applyClusterConnectionContext). Best-effort: a failure must not abort the VS
+ * Code launch, so errors are swallowed after a debug note.
+ */
+async function pinClusterNamespace(
+  connectionDetails: ConnectionDetails,
+  namespace: string
+): Promise<void> {
+  const kubeconfig = connectionDetails.environment?.KUBECONFIG;
+  if (!kubeconfig) return;
+
+  const sshConn = new SSHConnection(connectionDetails.privateKey, connectionDetails.known_hosts, {
+    port: connectionDetails.port,
+  });
+  const ns = namespace.replaceAll("'", "'\\''");
+  const kc = kubeconfig.replaceAll("'", "'\\''");
+  const cmd = `KUBECONFIG='${kc}' kubectl config set-context --current --namespace='${ns}' >/dev/null 2>&1 || true`;
+
+  try {
+    await sshConn.setup();
+    const dest = `${connectionDetails.user}@${connectionDetails.host}`;
+    const child = spawnSSH(dest, sshConn.sshOptions, cmd, {
+      env: process.env,
+      stdio: 'pipe',
+      agentSocketPath: sshConn.agentSocketPath,
+    });
+
+    await new Promise<void>((resolve) => {
+      child.on('exit', () => resolve());
+      child.on('error', () => resolve());
+    });
+  } catch (error) {
+    debugLog(
+      `Kube namespace pin skipped: ${error instanceof Error ? error.message : String(error)}`
+    );
   } finally {
     await sshConn.cleanup();
   }
@@ -272,26 +326,52 @@ async function setupRemoteEnvironment(
 async function validateVSCodeOptions(options: VSCodeConnectOptions) {
   const opts = await configService.applyDefaults(options);
 
-  if (!opts.machine) {
-    throw new Error(t('errors.machineRequired'));
+  // Resolve -m/--cluster to a concrete SSH target. A cluster resolves to its
+  // control node; KUBECONFIG + a namespace pin are layered on downstream (D14).
+  const { machineName, kubeCluster } = await resolveRepoTarget({
+    machine: opts.machine,
+    cluster: opts.cluster,
+  });
+  const isCluster = Boolean(kubeCluster);
+
+  // `-r` is a docker repo for a machine target but a namespace for a cluster
+  // target; keep the roles separate so docker-repo machinery (mount check, key
+  // deploy, per-repo server) never runs against a k8s namespace.
+  const repositoryName = isCluster ? undefined : opts.repository;
+  const kubeNamespace = isCluster ? opts.repository : undefined;
+
+  // The in-browser code-server path has no cluster wiring in v1; refuse rather
+  // than open a machine-level browser session that ignores KUBECONFIG.
+  if (isCluster && opts.browser) {
+    throw new ValidationError(
+      t('errors.cluster.featureUnsupportedV1', {
+        feature: '--browser',
+        hint: 'use the desktop VS Code flow (omit --browser)',
+      })
+    );
   }
 
-  const teamName = opts.team ?? '';
-  const machineName = opts.machine;
-  const repositoryName = opts.repository;
-
-  // Agent guard: enforce fork-only mode for repo access, block machine-level access
+  // Agent guard: enforce fork-only mode for docker-repo access; a cluster's `-r`
+  // is a namespace, so gate on control-node access instead.
   if (repositoryName) {
     await assertCommandPolicy(CMD.VSCODE_REPO, repositoryName);
   } else {
     assertAgentMachineAccess(machineName);
   }
 
-  return { teamName, machineName, repositoryName, opts };
+  return {
+    teamName: opts.team ?? '',
+    machineName,
+    repositoryName,
+    kubeCluster,
+    kubeNamespace,
+    opts,
+  };
 }
 
 async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
-  const { teamName, machineName, repositoryName } = await validateVSCodeOptions(options);
+  const { teamName, machineName, repositoryName, kubeCluster, kubeNamespace } =
+    await validateVSCodeOptions(options);
 
   if (options.browser) {
     await connectVSCodeBrowser(options, { teamName, machineName, repositoryName });
@@ -310,6 +390,13 @@ async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
     getSSHConnectionDetails(teamName, machineName, repositoryName)
   );
 
+  // For a cluster target, layer KUBECONFIG onto the control-node connection so
+  // the integrated terminal has kubectl ready (design D14). The namespace is
+  // pinned on the control node in provisionAndPrepare below.
+  if (kubeCluster) {
+    applyClusterConnectionContext(connectionDetails, kubeCluster, kubeNamespace);
+  }
+
   await verifySSHConnectivity(connectionDetails);
 
   // Deploy per-repo SSH public key to remote authorized_keys (uses team key)
@@ -321,8 +408,9 @@ async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
     await deployRepoKeyIfNeeded(repositoryName, machineName);
   }
 
-  // Provision renet and prepare per-repo VS Code server
-  await provisionAndPrepare(machineName, repositoryName, connectionDetails);
+  // Provision renet, prepare the per-repo VS Code server, and (for a cluster
+  // target) pin the kubectl namespace on the control node.
+  await provisionAndPrepare(machineName, repositoryName, connectionDetails, kubeNamespace);
 
   const { connectionName, identityFile, knownHostsFile } = await setupSSHConfig(
     teamName,
@@ -483,6 +571,7 @@ export function registerVSCodeCommands(program: Command): void {
 ${t('help.examples')}
   $ rdc vscode connect -m server-1              ${t('help.vscode.machine')}
   $ rdc vscode connect -m server-1 -r my-app    ${t('help.vscode.repo')}
+  $ rdc vscode connect --cluster prod -r shop   ${t('help.vscode.cluster')}
 `
   );
 
@@ -492,6 +581,7 @@ ${t('help.examples')}
     .description(t('commands.vscode.connect.description'))
     .option('-t, --team <name>', t('options.team'))
     .option('-m, --machine <name>', t('options.machine'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('-r, --repository <name>', t('options.repository'))
     .option('-f, --folder <path>', t('options.folder'))
     .option('--url-only', t('options.urlOnly'))

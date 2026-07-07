@@ -4,8 +4,8 @@ description: 'Organisatsioonid, meeskonnad, liikmed ja tellimused Rediaccis ühe
 category: Guides
 order: 12
 language: et
-sourceHash: 3887adc59fc63c26
-sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
+sourceHash: 9d77ef9087375fbc
+sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
 ### Organisatsioonid
@@ -16,7 +16,7 @@ Konto registreerimisel loob Rediacc teile automaatselt organisatsiooni. See org 
 
 Igal organisatsioonil on:
 - Unikaalne nimi (vaikimisi teie e-posti aadress)
-- Tellimisplaan (algab COMMUNITY-ga)
+- Tellimisplaan (uued kontod alustavad 14-päevase tasuta prooviperioodiga Professionali või Businessi plaanil; vaata allpool jaotist Tellimused ja plaanid)
 - Vaikemeeskond (kõik liikmed liituvad automaatselt)
 
 ### Liikmed ja rollid
@@ -57,21 +57,21 @@ Rediacc pakub nelja plaani:
 
 | Plaan | Masinad | Repo-litsentsid/kuu | Delegeerimissert vaikimisi / max | Funktsioonid |
 |-------|---------|---------------------|----------------------------------|--------------|
-| COMMUNITY | 2 | 100 | 15p / 30p | Põhiline |
-| PROFESSIONAL | 3 | 2 000+ | 60p / 120p | Loagrupid, auditilogi, kohandatud bränding, prioriteettugi |
-| BUSINESS | 10 | 5 000+ | 90p / 180p | Ceph, täiustatud analüütika, järjekorra prioriteet, täiustatud järjekord |
-| ENTERPRISE | 25+ | 15 000+ | 120p / 365p | Pühendatud kontohaldur |
+| COMMUNITY | 1 | 100 | 15p / 30p | Põhiline |
+| PROFESSIONAL | 1 | 2 000+ | 60p / 120p | Loagrupid, auditilogi, kohandatud bränding, prioriteettugi |
+| BUSINESS | 1 | 5 000+ | 90p / 180p | Ceph, täiustatud analüütika, järjekorra prioriteet, täiustatud järjekord |
+| ENTERPRISE | Kohandatud | 15 000+ | 120p / 365p | Pühendatud kontohaldur |
 
 ![Tellimise voog](/img/account-subscription-flow.svg)
 
-Kõik plaanid algavad 3-päevase puhverperioodiga. Masinakohti jälgitakse meeskonna kaupa ja need vabastatakse automaatselt pärast 5-tunnist tegevusetust. Vaadake üksikasju jaotisest [Tellimus ja litsentsid](/et/docs/subscription-licensing).
+Professional ja Business on iseteenindusplaanid ning kumbki sisaldab ühte masinat; mitme masinaga Enterprise müüakse meie partnerite kaudu. Uued kasutajad alustavad 14-päevase tasuta prooviperioodiga Professionali või Businessi plaanil, kusjuures krediitkaart võetakse registreerimisel ja esimene arve esitatakse alles prooviperioodi lõppedes. Tühistamine prooviperioodi ajal, tasulise plaani hilisem tühistamine või makse ebaõnnestumine langetab konto tasuta Community plaanile (üks masin, 10 GB repositooriumi kohta, 100 seadistust kuus). Kõik plaanid algavad 3-päevase puhverperioodiga. Masinakohti jälgitakse meeskonna kaupa ja need vabastatakse automaatselt pärast 5-tunnist tegevusetust. Vaadake üksikasju jaotisest [Tellimus ja litsentsid](/et/docs/subscription-licensing).
 
 ### Arveldamine
 
 Ainult organisatsiooni **omanik** saab arveldamist hallata:
-- Plaani uuendamiseks Stripe'i kassaseansi loomine
+- Stripe'i kassaseansi loomine plaani alustamiseks või uuendamiseks
 - Stripe'i arvelduportaalile juurdepääs makseviiside muutmiseks
-- Iseteeninduse tagasimaksenõuded (14 päeva jooksul, 30-päevase jahtumisajaga)
+- Plaani tühistamine või muutmine arvelduportaalist; tühistamine langetab konto tagasi tasuta Community plaanile
 
 ### Andmeregioon
 

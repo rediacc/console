@@ -4,8 +4,8 @@ description: 'Organizaciones, equipos, miembros y suscripciones en Rediacc.'
 category: Guides
 order: 12
 language: es
-sourceHash: 3887adc59fc63c26
-sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
+sourceHash: 9d77ef9087375fbc
+sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
 ### Organizaciones
@@ -16,7 +16,7 @@ Registra una cuenta y Rediacc crea automáticamente una organización para ti. E
 
 Cada organización tiene:
 - Un nombre único (por defecto tu correo electrónico)
-- Un plan de suscripción (comienza con COMMUNITY)
+- Un plan de suscripción (las cuentas nuevas comienzan una prueba gratuita de 14 días en Professional o Business; consulta Suscripciones y Planes más abajo)
 - Un equipo predeterminado (todos los miembros se unen automáticamente)
 
 ### Miembros y Roles
@@ -57,21 +57,21 @@ Rediacc ofrece cuatro planes:
 
 | Plan | Máquinas | Licencias de repo/mes | Validez cert. delegación pred. / máx. | Características |
 |------|----------|------------------------|---------------------------------------|-----------------|
-| COMMUNITY | 2 | 100 | 15d / 30d | Básico |
-| PROFESSIONAL | 3 | 2.000+ | 60d / 120d | Grupos de permisos, registro de auditoría, marca personalizada, soporte prioritario |
-| BUSINESS | 10 | 5.000+ | 90d / 180d | Ceph, analíticas avanzadas, prioridad de cola, cola avanzada |
-| ENTERPRISE | 25+ | 15.000+ | 120d / 365d | Gestor de cuenta dedicado |
+| COMMUNITY | 1 | 100 | 15d / 30d | Básico |
+| PROFESSIONAL | 1 | 2.000+ | 60d / 120d | Grupos de permisos, registro de auditoría, marca personalizada, soporte prioritario |
+| BUSINESS | 1 | 5.000+ | 90d / 180d | Ceph, analíticas avanzadas, prioridad de cola, cola avanzada |
+| ENTERPRISE | Personalizado | 15.000+ | 120d / 365d | Gestor de cuenta dedicado |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 
-Todos los planes comienzan con un período de gracia de 3 días. Las activaciones de máquinas se registran por equipo y se liberan automáticamente tras la inactividad. Consulta [Suscripción y licencias](/es/docs/subscription-licensing) para el modelo completo de licencias de máquina frente a licencias de repositorio.
+Professional y Business son planes de autoservicio e incluyen cada uno una máquina; Enterprise multi-máquina se vende a través de nuestros partners. Los registros nuevos comienzan una prueba gratuita de 14 días en Professional o Business, con una tarjeta de crédito registrada al momento del alta y el primer cobro efectuado solo cuando termina la prueba. Si cancelas durante la prueba, cancelas más tarde un plan pagado, o hay un pago fallido, la cuenta vuelve al plan Community gratuito (una máquina, 10 GB por repositorio, 100 setups al mes). Todos los planes comienzan con un período de gracia de 3 días. Las activaciones de máquinas se registran por equipo y se liberan automáticamente tras la inactividad. Consulta [Suscripción y licencias](/es/docs/subscription-licensing) para el modelo completo de licencias de máquina frente a licencias de repositorio.
 
 ### Facturación
 
 Solo el **Owner** de la organización puede gestionar la facturación:
-- Crear una sesión de pago en Stripe para mejoras de plan
+- Crear una sesión de pago en Stripe para iniciar un plan o mejorarlo
 - Acceder al portal de facturación de Stripe para cambiar el método de pago
-- Solicitar reembolsos de autoservicio (dentro de 14 días, con un período de espera de 30 días)
+- Cancelar o cambiar el plan desde el portal de facturación; cancelar hace que la cuenta vuelva al plan Community gratuito
 
 ### Región de datos
 

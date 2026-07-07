@@ -4,8 +4,8 @@ description: "Yapılandırma oluşturma, makine ekleme, sunucuları hazırlama v
 category: "Guides"
 order: 3
 language: tr
-sourceHash: "19a208e453f7d742"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "730a353fc046b7cc"
+sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
 # Makine Kurulumu
@@ -77,6 +77,34 @@ Bu komut:
 | `--debug` | Hayır | `false` | Sorun giderme için ayrıntılı çıktıyı etkinleştirir |
 
 > Hazırlık her makine için yalnızca bir kez çalıştırılmalıdır. Gerektiğinde tekrar çalıştırmak güvenlidir.
+
+## Veri Deposu Arka Uçları
+
+Veri deposu, şifrelenmiş depo imajlarını tutan makine başına depolama havuzudur. `machine setup`, varsayılan olarak **yerel** bir veri deposu oluşturur: sunucunun kendi diskinde loop-destekli bir BTRFS dosya sistemi, `--datastore-size` ile boyutlandırılır (varsayılan olarak kullanılabilir diskin `%95`'i). Bu, neredeyse her tek makineli dağıtım için doğru arka uçtur ve sunucudan başka hiçbir şeye ihtiyaç duymaz.
+
+### Veri deposu boyutlandırması
+
+`--datastore-size`, bir yüzde (`95%`) veya mutlak bir boyut (`50G`, `1T`) kabul eder. Veri deposu daha sonra çevrimiçi olarak büyütülebilir:
+
+```bash
+rdc datastore resize -m server-1 --size 200G
+```
+
+Veri deposu içindeki depolar, `repo create` sırasında bağımsız olarak boyutlandırılır ve çalışırken genişletilebilir, bu nedenle veri deposunu önceden fazla büyük ayırmanıza gerek yoktur.
+
+### Ceph RBD arka ucu
+
+Paylaşılan, yatay ölçeklenen veya Kubernetes'i destekleyen depolama için, veri deposunu bunun yerine harici bir Ceph kümesinde başlatın. Veri deposu böylece bir RBD imajında yaşar (üzerinde BTRFS, imaj başına LUKS katmanı yoktur) ve forklar, BTRFS reflink'leri yerine RBD copy-on-write klonlarını kullanır.
+
+```bash
+# 1. Makinenin Ceph referansını kaydedin (havuz + RBD imajı, gizli olmayan)
+rdc config machine set-ceph -m server-1 --pool rbd --image datastore-server1
+
+# 2. Veri deposunu Ceph arka ucunda başlatın
+rdc datastore init -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
+```
+
+Ceph anahtarlıkları makinelerde kalır; yapılandırma dosyası yalnızca gizli olmayan havuz ve imaj referanslarını tutar. Ceph, aynı zamanda Kubernetes kümelerinin ceph-csi aracılığıyla tükettiği depolama katmanıdır. Kümeler ve kalıcı birimler için [Kubernetes](/en/docs/kubernetes) kılavuzuna, iki arka ucun nasıl karşılaştırıldığı için [Mimari](/en/docs/architecture) sayfasına bakın.
 
 ## Host Anahtarı Yönetimi
 

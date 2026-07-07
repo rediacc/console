@@ -6,8 +6,8 @@ description: >-
 category: Concepts
 order: 0
 language: pt
-sourceHash: "947fcefa63eac600"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "83f6a9a2b0c8bae2"
+sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
 # Arquitetura
@@ -118,6 +118,25 @@ Os repositórios são imagens de disco encriptadas com LUKS armazenadas no datas
 3. É montado via `cryptsetup` quando acedido
 
 A credencial é armazenada no seu ficheiro de configuração mas **nunca** no servidor. Sem a credencial, os dados do repositório não podem ser lidos. Quando o autostart está ativado, um keyfile LUKS secundário é armazenado no servidor para permitir a montagem automática no arranque.
+
+## Backends de Armazenamento
+
+Um datastore é um pool de armazenamento por máquina que contém as imagens dos repositórios. Tem dois backends, escolhidos no momento do `datastore init`:
+
+- **Local (predefinição)**: um sistema de ficheiros BTRFS assente num loop device no próprio disco da máquina. As imagens dos repositórios são ficheiros encriptados com LUKS dentro dele; o fork é um único `cp --reflink=always`. É o backend usado por todas as implementações de máquina única, e não precisa de nada além do disco do servidor.
+- **Ceph RBD**: o datastore reside numa imagem RBD mapeada a partir de um cluster Ceph externo, com BTRFS simples por cima (sem LUKS nesta camada, já que os nós Ceph nunca abrem LUKS). O fork e a arquitetura multi-cliente só de leitura usam as primitivas nativas de copy-on-write do RBD (snapshot, protect, clone) e namespaces RADOS para isolamento por inquilino.
+
+Ambos os backends apresentam o mesmo modelo de repositório a tudo o que está acima deles, pelo que os comandos `repo`, os backups e os forks funcionam de forma idêntica. A diferença está em onde vivem os bytes e em qual mecanismo de copy-on-write um fork usa (reflink BTRFS versus clone RBD). Consulte [Configuração da Máquina](/en/docs/setup) para saber como inicializar cada backend e [Referência do Servidor](/en/docs/server-reference) para os comandos de datastore ao nível do renet.
+
+## Repositórios Kubernetes
+
+Além dos repositórios Docker, uma máquina pode alojar **clusters**. A Rediacc mantém a mentalidade de repositório invertendo o modelo de objetos habitual: o cluster é o contentor, e um repositório Kubernetes é um namespace dentro dele.
+
+- O estado do cluster (o diretório de dados do k3s por nó) vive em ficheiros de imagem copy-on-write suportados pelo datastore, um por nó, pelo que um cluster faz fork e migra como um conjunto de imagens.
+- Um repositório Kubernetes é o namespace `<repo>` mais os seus volumes. Os volumes persistentes são unidades copy-on-write **separadas** (imagens RBD no Ceph, ou pequenos ficheiros de imagem do datastore através de um provisionador de PV local), nunca diretórios dentro de uma única imagem de cluster opaca. Essa separação é o que torna os forks por repositório independentemente copy-on-write.
+- O `KUBECONFIG` é injetado como o análogo do `DOCKER_HOST`, e um wrapper `renet kube` aplica manifestos a partir de `up()` da mesma forma que o `renet compose` executa o Docker.
+
+A clonagem e a relocalização de um cluster inteiro residem em `rdc cluster fork` e `rdc cluster migrate`. Esta é a capacidade diferenciadora: fazer fork ou mover um cluster em execução, incluindo os seus dados, para outra máquina ou centro de dados com um curto período de corte. Consulte o guia [Kubernetes](/en/docs/kubernetes) para o modelo completo, os comandos e os números de corte medidos.
 
 ## Estrutura de Configuração
 

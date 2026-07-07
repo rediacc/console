@@ -327,7 +327,9 @@ account_dev() {
             for offset in 0 1 2; do
                 local port=$((old_gateway + offset))
                 local port_pids
-                port_pids=$(lsof -ti:"$port" 2>/dev/null)
+                # `|| true`: lsof exits 1 when nothing listens (e.g. a stale
+                # state file from a dead session), which would abort under set -e.
+                port_pids=$(lsof -ti:"$port" 2>/dev/null || true)
                 if [[ -n "$port_pids" ]]; then
                     echo "$port_pids" | xargs kill -9 2>/dev/null || true
                 fi
@@ -415,8 +417,9 @@ account_dev() {
     ACCOUNT_PIDS+=($!)
 
     # Wait for both to be ready
-    account_wait_port "$ASTRO_PORT" "Astro" 30 || exit 1
-    account_wait_port "$VITE_PORT" "Vite" 30 || exit 1
+    # Cold caches are slow: Astro's first content sync alone can take ~30s.
+    account_wait_port "$ASTRO_PORT" "Astro" 90 || exit 1
+    account_wait_port "$VITE_PORT" "Vite" 60 || exit 1
 
     # Auto-setup Stripe if key is configured
     account_stripe_auto
@@ -429,6 +432,9 @@ account_dev() {
         echo "started=$(date +%s)"
     } >"$ACCOUNT_STATE_FILE"
 
+    # Provision + print dev login credentials once the gateway is healthy
+    account_dev_credentials "$GATEWAY_PORT" &
+
     # Start gateway (foreground — keeps terminal alive)
     log_step "Starting dev gateway on :${GATEWAY_PORT}..."
     (cd "$ACCOUNT_DIR" &&
@@ -440,6 +446,72 @@ account_dev() {
             CONFIG_R2_ACCESS_KEY_ID="${CONFIG_R2_ACCESS_KEY_ID:-}" \
             CONFIG_R2_SECRET_ACCESS_KEY="${CONFIG_R2_SECRET_ACCESS_KEY:-}" \
             npx tsx src/entry/dev-gateway.ts)
+}
+
+# Provision three dev logins (root / customer / partner) with fresh random
+# passwords, seed the partner org with demo data, and print a credentials
+# block. Runs in the background from account_dev: waits for the gateway
+# health endpoint, then drives the dev-only /test routes (unmounted in
+# production). Passwords rotate on every start by design.
+account_dev_credentials() {
+    local gateway_port="$1"
+    local base="http://127.0.0.1:${gateway_port}/account/api/v1"
+
+    local i healthy=0
+    for i in $(seq 1 60); do
+        if curl -sf -m 2 "http://127.0.0.1:${gateway_port}/health" >/dev/null 2>&1; then
+            healthy=1
+            break
+        fi
+        sleep 2
+    done
+    if [[ $healthy -ne 1 ]]; then
+        log_warn "Gateway not healthy after 120s; skipped dev login provisioning"
+        return 0
+    fi
+
+    local root_email="${ROOT_EMAIL:-root@rediacc.dev}"
+    local user_email="dev-user@rediacc.io"
+    local partner_email="dev-partner@rediacc.io"
+    local root_pw user_pw partner_pw
+    root_pw=$(openssl rand -hex 8)
+    user_pw=$(openssl rand -hex 8)
+    partner_pw=$(openssl rand -hex 8)
+
+    local ok=1
+    curl -sf -X POST "$base/test/ensure-login" -H 'Content-Type: application/json' \
+        -d "{\"email\":\"$root_email\",\"password\":\"$root_pw\"}" >/dev/null 2>&1 || ok=0
+    curl -sf -X POST "$base/test/ensure-login" -H 'Content-Type: application/json' \
+        -d "{\"email\":\"$user_email\",\"password\":\"$user_pw\"}" >/dev/null 2>&1 || ok=0
+    curl -sf -X POST "$base/test/ensure-login" -H 'Content-Type: application/json' \
+        -d "{\"email\":\"$partner_email\",\"password\":\"$partner_pw\"}" >/dev/null 2>&1 || ok=0
+    # Partner demo data (idempotent; re-runs append a fresh batch)
+    curl -sf -X POST "$base/test/seed-demo-partner" -H 'Content-Type: application/json' \
+        -d "{\"email\":\"$partner_email\"}" >/dev/null 2>&1 || ok=0
+
+    if [[ $ok -ne 1 ]]; then
+        log_warn "Dev login provisioning failed (see gateway log); logins may be stale"
+        return 0
+    fi
+
+    echo ""
+    echo "  ┌─────────────────────────────────────────────────────────────────┐"
+    echo "  │  Dev logins (fresh passwords each start)                        │"
+    echo "  ├─────────────────────────────────────────────────────────────────┤"
+    printf "  │  root     %-32s %-16s  │\n" "$root_email" "$root_pw"
+    printf "  │  user     %-32s %-16s  │\n" "$user_email" "$user_pw"
+    printf "  │  partner  %-32s %-16s  │\n" "$partner_email" "$partner_pw"
+    echo "  ├─────────────────────────────────────────────────────────────────┤"
+    echo "  │  Portal:  http://127.0.0.1:${gateway_port}/account/login        │"
+    local lan_ip
+    lan_ip=$(hostname -I 2>/dev/null | awk '{print $1}')
+    if [[ -n "$lan_ip" ]]; then
+        printf "  │  Network: http://%s:%s/account/login%*s│\n" \
+            "$lan_ip" "$gateway_port" $((22 - ${#lan_ip} - ${#gateway_port})) ""
+    fi
+    echo "  │  root → /account/admin   partner → /account/partner (seeded)    │"
+    echo "  └─────────────────────────────────────────────────────────────────┘"
+    echo ""
 }
 
 account_stop() {

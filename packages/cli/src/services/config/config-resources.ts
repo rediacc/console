@@ -8,7 +8,6 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { MIN_NETWORK_ID, NETWORK_ID_INCREMENT } from '@rediacc/shared/renet-contract';
 import {
   addMachineSSHConfigEntry,
   removeMachineSSHConfigEntry,
@@ -20,6 +19,7 @@ import type {
   BackupStrategyConfig,
   BackupStrategyDestination,
   CloudProviderConfig,
+  ClusterConfig,
   InfraConfig,
   MachineConfig,
   RdcConfig,
@@ -27,7 +27,15 @@ import type {
   StorageConfig,
 } from '../../types/index.js';
 import { ConfigServiceBase } from './config-base.js';
-import { findFreeNetworkIdSlot, pickInitialNetworkId } from './config-network-id.js';
+import {
+  assertClusterMembersUnique,
+  assertUniqueName,
+  listClustersFromConfig,
+  removeClusterFromStore,
+  updateClusterInStore,
+  writeClusterToStore,
+} from './config-cluster-logic.js';
+import { allocateNetworkIdInStore } from './config-network-id.js';
 import {
   assertRestoredForkKeyIsExplicit,
   buildCredentialsMap,
@@ -127,6 +135,23 @@ class ConfigService extends ConfigServiceBase {
 
   async addMachine(machineName: string, config: MachineConfig): Promise<void> {
     await this.requireSelfHosted();
+    assertUniqueName(await this.getCurrent(), machineName);
+    await this.writeMachine(machineName, config);
+  }
+
+  /** Public writer for materialized cluster members (see config-cluster-ops). */
+  async writeClusterMember(machineName: string, config: MachineConfig): Promise<void> {
+    await this.requireSelfHosted();
+    await this.writeMachine(machineName, config);
+  }
+
+  /**
+   * Low-level machine write (resource state + SSH config), WITHOUT the
+   * cross-resource uniqueness check. Used by addMachine (after the check) and by
+   * materializeClusterMachines (whose member names legitimately match their own
+   * cluster's projection, so they must not trip the check).
+   */
+  private async writeMachine(machineName: string, config: MachineConfig): Promise<void> {
     const state = await this.getResourceState();
     const machines = state.getMachines();
     machines[machineName] = config;
@@ -572,49 +597,42 @@ class ConfigService extends ConfigServiceBase {
   }
 
   // ============================================================================
+  // Cluster CRUD (non-secret SSH-reachable inventory; members materialize into
+  // resources.machines). Cluster records are non-secret so they live in the
+  // plain config like cloudProviders, not the encrypted resource state.
+  // ============================================================================
+
+  async addCluster(name: string, config: ClusterConfig): Promise<void> {
+    const configName = this.getEffectiveConfigName();
+    await this.requireSelfHosted(configName);
+    const current = await this.getCurrent();
+    assertUniqueName(current, name);
+    assertClusterMembersUnique(current, name, config);
+    await writeClusterToStore(configName, name, config);
+  }
+
+  async listClusters(): Promise<{ name: string; config: ClusterConfig }[]> {
+    return listClustersFromConfig(await this.getCurrent());
+  }
+
+  async updateCluster(name: string, updates: Partial<ClusterConfig>): Promise<void> {
+    const configName = this.getEffectiveConfigName();
+    await this.requireSelfHosted(configName);
+    await updateClusterInStore(configName, name, updates);
+  }
+
+  async removeCluster(name: string): Promise<void> {
+    const configName = this.getEffectiveConfigName();
+    await this.requireSelfHosted(configName);
+    await removeClusterFromStore(configName, name);
+  }
+
+  // ============================================================================
   // Network ID Allocation (per config file)
   // ============================================================================
 
-  private scanUsedNetworkIds(config: RdcConfig): Set<number> {
-    const usedIds = new Set<number>();
-    const repos = config.resources?.repositories;
-    if (repos) {
-      for (const repo of Object.values(repos)) {
-        if (repo.networkId !== undefined && repo.networkId > 0) {
-          usedIds.add(repo.networkId);
-        }
-      }
-    }
-    return usedIds;
-  }
-
   async allocateNetworkId(): Promise<number> {
-    // Network ID space: 2816 to ~16,777,152, step 64 → ~261,944 possible IDs.
-    const MAX_NETWORK_ID = 16_711_680;
-
-    const name = this.getEffectiveConfigName();
-    let allocated = 0;
-    await configFileStorage.update(name, (config) => {
-      const usedIds = this.scanUsedNetworkIds(config);
-      let nextId = config.defaults?.nextNetworkId;
-
-      if (nextId === undefined || nextId < MIN_NETWORK_ID) {
-        nextId = pickInitialNetworkId(usedIds);
-      }
-
-      // If the forward counter is approaching the limit, scan for freed gaps.
-      // This handles long-running systems where many repos have been created and deleted.
-      if (nextId > MAX_NETWORK_ID) {
-        nextId = findFreeNetworkIdSlot(usedIds, MAX_NETWORK_ID);
-      }
-
-      allocated = nextId;
-      return {
-        ...config,
-        defaults: { ...(config.defaults ?? {}), nextNetworkId: nextId + NETWORK_ID_INCREMENT },
-      };
-    });
-    return allocated;
+    return allocateNetworkIdInStore(this.getEffectiveConfigName());
   }
 
   async ensureRepositoryNetworkId(repoRef: string): Promise<number> {

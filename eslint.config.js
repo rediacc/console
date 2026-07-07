@@ -157,7 +157,7 @@ export default tseslint.config(
       // Ignore package-level scripts (plain JS utilities)
       'packages/*/scripts/**',
       // Ignore Playwright report artifacts (generated trace viewer files)
-      'packages/bridge-tests/reports/**',
+      'packages/e2e-tests/reports/**',
       // Ignore private submodules except account (which has i18n enforcement)
       'private/!(account)/**',
       'private/account/node_modules/**',
@@ -646,8 +646,18 @@ export default tseslint.config(
       '^N/A$',
       '^Sandbox$',
       '^S3 ID$',
+      // Certificate-number format example (public verify page placeholder) —
+      // a literal ID format, identical in every locale by design
+      '^CERT-\\d{4}-\\d{4}$',
       // Plan tier proper names (product names used as-is internationally)
       '^(Business|Community|Enterprise|Professional)$',
+      // Certificate level designation ("Pro" certificate): a product-level
+      // label kept as the word "Pro" in every locale by design
+      '^Pro$',
+      // Clustering track label: an IT anglicism retained by several locales
+      // (de/es/fr/it/pt); mirrors ALLOWED_IDENTICAL in
+      // scripts/check-translation-completeness.ts
+      '^Clustering$',
       // Words that are legitimately identical in many target languages
       // (borrowed/shared vocabulary across European languages and international tech terms)
       '^(Plan|Type|Newsletter|Name|Limit|Source|Admin|Total|Team|Status|Magnet|Machines|Code|Permissions|General|Description|Date|Dashboard|Contact|Activations|Actions)$',
@@ -711,7 +721,14 @@ export default tseslint.config(
 
   // Disable rules for auto-generated files
   {
-    files: ['**/*.generated.ts', '**/*.generated.tsx', '**/api-schema.zod.ts'],
+    files: [
+      '**/*.generated.ts',
+      '**/*.generated.tsx',
+      '**/api-schema.zod.ts',
+      // renet contract Zod schemas emitted by `renet functions generate-types`
+      // (DO NOT EDIT headers); they grow past max-lines as functions are added.
+      '**/renet-contract/data/*.schema.ts',
+    ],
     rules: {
       'max-lines': 'off',
       '@typescript-eslint/no-unnecessary-condition': 'off',
@@ -729,13 +746,13 @@ export default tseslint.config(
   // TEST FILE OVERRIDES
   // =============================================================
   // These patterns cover ALL test file locations:
-  // - Bridge tests: packages/bridge-tests/**
+  // - E2E tests: packages/e2e-tests/**
   // - CLI Unit tests: packages/cli/src/**/__tests__/**
   // - Shared: packages/shared/src/**/__tests__/**
   // =============================================================
   {
     files: [
-      'packages/bridge-tests/**/*.ts',
+      'packages/e2e-tests/**/*.ts',
       // Unit test files (__tests__ convention)
       'packages/shared/src/**/__tests__/**/*.{ts,tsx}',
       'packages/cli/src/**/__tests__/**/*.ts',
@@ -794,10 +811,10 @@ export default tseslint.config(
   // list as tests are filled in.
   {
     files: [
-      // Bridge: tests with setup/cleanup steps lacking assertions
-      'packages/bridge-tests/tests/12a-full-integration-repository.test.ts',
-      'packages/bridge-tests/tests/13-postgres-fork-isolation.test.ts',
-      'packages/bridge-tests/tests/18-ops-workflow.test.ts',
+      // E2E: tests with setup/cleanup steps lacking assertions
+      'packages/e2e-tests/tests/12a-full-integration-repository.test.ts',
+      'packages/e2e-tests/tests/13-postgres-fork-isolation.test.ts',
+      'packages/e2e-tests/tests/18-ops-workflow.test.ts',
     ],
     rules: {
       'playwright/expect-expect': 'off',

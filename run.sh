@@ -975,8 +975,8 @@ test_bridge() {
     check_node_version
     ensure_packages_built
 
-    log_step "Running bridge tests"
-    "$ROOT_DIR/.ci/scripts/test/run-bridge.sh" "$@"
+    log_step "Running E2E tests"
+    "$ROOT_DIR/.ci/scripts/test/run-e2e.sh" "$@"
 }
 
 test_all() {

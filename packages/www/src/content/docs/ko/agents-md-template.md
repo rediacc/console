@@ -4,8 +4,8 @@ description: Claude Code, Cursor 및 기타 AI 코딩 어시스턴트를 Rediacc
 category: Reference
 order: 50
 language: ko
-sourceHash: "bbdbb7bd6ac12d9a"
-sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
+sourceHash: "7290c90fe7218ea4"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 문제는 이것입니다. AI 코딩 어시스턴트(Claude Code, Cursor, Cline, Windsurf)가 존재하지 않는 `rdc` 플래그를 계속 만들어 내고, 매번 물어보지 않으면 어떤 Rediacc 저장소 이름이 어떤 GUID에 매핑되는지 알 수 없습니다. 이 템플릿이 그 문제를 해결합니다. 아래 블록을 프로젝트의 `CLAUDE.md`, `.cursorrules`, 또는 도구가 사용하는 에이전트 설정 파일에 붙여넣으세요.
@@ -64,11 +64,8 @@ rdc term connect -m <machine> -c "command"
 rdc repo sync upload -m <machine> -r <repo> --local ./local-path
 rdc repo sync download -m <machine> -r <repo> --local ./local-path
 
-# List all available commands with schemas
-rdc agent capabilities
-
-# Show schema for a specific command
-rdc agent schema --command "machine query"
+# List all available commands
+rdc --help-all
 
 ### Architecture
 - **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
@@ -98,7 +95,7 @@ rdc machine query --name <machine-name>
 rdc config repository list
 
 # 사용 가능한 명령어 확인
-rdc agent capabilities
+rdc --help-all
 ```
 
 ## 에이전트별 설정

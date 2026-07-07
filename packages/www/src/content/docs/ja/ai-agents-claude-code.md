@@ -4,7 +4,8 @@ description: Claude CodeをRediaccインフラストラクチャの自律管理�
 category: Guides
 order: 31
 language: ja
-sourceHash: "1cb28ab2dc3ac39f"
+sourceHash: "0a4b93dedcf18e6d"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Claude Codeは `rdc` CLIを通じてRediaccとネイティブに連携します。このガイドでは、セットアップ、権限、一般的なワークフローについて説明します。
@@ -97,6 +98,5 @@ Claude Code runs: rdc repo sync upload -m prod-1 -r mail -l ./config
 ## ヒント
 
 - Claude Codeは非TTYを自動検出してJSON出力に切り替えます, ほとんどの場合 `-o json` の指定は不要です
-- `rdc agent capabilities` を使用すると、Claude Codeが利用可能なすべてのコマンドを発見できます
-- `rdc agent schema "command name"` で引数やオプションの詳細情報を取得できます
+- `rdc --help-all` を使用すると、Claude Codeが利用可能なすべてのコマンドを発見できます
 - `--fields` フラグを使用すると、特定のデータのみが必要な場合にコンテキストウィンドウの使用量を抑えられます

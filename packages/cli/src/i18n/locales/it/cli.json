@@ -3,22 +3,6 @@
     "description": "Gestisci macchine, repository e deployment via SSH"
   },
   "commands": {
-    "agent": {
-      "capabilities": {
-        "description": "Elenca tutti i comandi disponibili con argomenti e opzioni"
-      },
-      "description": "Comandi di introspezione per agenti AI. Sottocomandi principali: capabilities (elenca tutti i comandi con argomenti/opzioni come JSON), schema (schema dettagliato per un singolo comando), exec (esegui un comando con input JSON da stdin, restituisce sempre JSON).",
-      "descriptionShort": "Strumenti per assistenti di codifica AI",
-      "exec": {
-        "description": "Esegui un comando con input JSON da stdin"
-      },
-      "generateReference": {
-        "description": "Genera la documentazione di riferimento dei comandi in markdown per le skill di Claude"
-      },
-      "schema": {
-        "description": "Mostra lo schema dettagliato per un comando specifico"
-      }
-    },
     "backup": {
       "description": "Invia, ricevi e sincronizza i backup dei repository tra storage e macchine",
       "schedule": {
@@ -26,6 +10,62 @@
       },
       "sync": {
         "description": "Sincronizzazione bidirezionale dei backup dei repository tra macchine"
+      }
+    },
+    "cluster": {
+      "create": {
+        "baseDomainOption": "Dominio base per il DNS pubblico del cluster (altrimenti ereditato da un macchinario dello stesso gruppo)",
+        "description": "Esegue il provisioning dei membri dei pool di un cluster definito con 'rdc config cluster add', avvia renet su ciascuno e installa i componenti (prima ceph). I provider cloud eseguono il provisioning tramite OpenTofu; il supporto KVM arriverà in una release successiva.",
+        "descriptionShort": "Esegui il provisioning di un cluster configurato",
+        "nameOption": "Nome del cluster",
+        "sshUserOption": "Utente SSH per i membri sottoposti a provisioning"
+      },
+      "description": "Esegue il provisioning e gestisce i cluster: insiemi denominati di pool di nodi (ceph, k8s-server, k8s-agent, hyperconverged) su una rete privata. I membri di un pool diventano macchinari a tutti gli effetti, quindi ogni comando -m funziona su di essi.",
+      "descriptionShort": "Creare e gestire cluster (pool di nodi su una LAN privata)",
+      "destroy": {
+        "aborted": "Operazione annullata.",
+        "confirm": "Distruggere il cluster \"{{name}}\" e tutti i suoi membri?",
+        "description": "Smantella i membri sottoposti a provisioning e rimuove il cluster e i suoi macchinari dalla configurazione.",
+        "descriptionShort": "Distruggere un cluster e i suoi membri",
+        "forceOption": "Salta la conferma e continua anche in caso di errori di smantellamento",
+        "nameOption": "Nome del cluster"
+      },
+      "fork": {
+        "clusterOption": "Cluster di destinazione esistente su cui eseguire il fork (deve trovarsi su macchinari distinti)",
+        "description": "Clona un intero cluster, compresi i dati dei suoi repository, in un nuovo cluster: copy-on-write coordinato delle immagini del cluster e dei PV, seguito dalla riscrittura dell'identità dei nodi affinché il fork si avvii con nuovi indirizzi. Il cluster di origine continua a funzionare.",
+        "descriptionShort": "Clonare un intero cluster (con i dati)",
+        "nameOption": "Nome del cluster",
+        "tagOption": "Tag del fork"
+      },
+      "install": {
+        "description": "Installa i componenti del cluster (prima ceph, poi k8s) sui membri già sottoposti a provisioning.",
+        "descriptionShort": "Installa i componenti su un cluster sottoposto a provisioning",
+        "nameOption": "Nome del cluster"
+      },
+      "kubeconfig": {
+        "cached": "Kubeconfig messo in cache in {{path}}",
+        "description": "Recupera il kubeconfig dal nodo di controllo del cluster via SSH e lo mette in cache localmente (0600) per kubectl.",
+        "descriptionShort": "Recupera e mette in cache il kubeconfig di un cluster",
+        "nameOption": "Nome del cluster"
+      },
+      "migrate": {
+        "description": "Sposta un intero cluster, compresi i dati dei suoi repository, su un altro macchinario o datacenter con un breve cutover (pre-copia a caldo, poi arresto e riavvio sulla destinazione).",
+        "descriptionShort": "Spostare un intero cluster altrove",
+        "nameOption": "Nome del cluster",
+        "toOption": "Destinazione"
+      },
+      "scale": {
+        "countOption": "Numero di membri desiderato",
+        "description": "Modifica il numero di membri di un pool (aggiunge/rimuove macchinari e fa entrare/uscire nodi). I pool k8s-agent vengono scalati sul posto; la crescita del pool ceph avviene direttamente tramite cephadm.",
+        "descriptionShort": "Scala un pool di cluster in aumento o in diminuzione",
+        "nameOption": "Nome del cluster",
+        "poolOption": "Nome del pool"
+      },
+      "status": {
+        "description": "Elenca tutti i cluster, oppure mostra la configurazione completa di un cluster con --name.",
+        "descriptionShort": "Mostra i cluster e i loro pool",
+        "nameOption": "Mostra un singolo cluster",
+        "none": "Nessun cluster configurato. Aggiungine uno con: rdc config cluster add"
       }
     },
     "config": {
@@ -121,6 +161,32 @@
         "allCleared": "Tutti i valori predefiniti cancellati",
         "description": "Cancella i valori predefiniti (tutti o una chiave specifica)",
         "keyCleared": "\"{{key}}\" cancellato"
+      },
+      "cluster": {
+        "add": {
+          "description": "Dichiara un nuovo cluster con uno o più pool"
+        },
+        "added": "Cluster \"{{name}}\" aggiunto",
+        "addPool": {
+          "description": "Aggiungi un pool a un cluster esistente"
+        },
+        "cidrOption": "CIDR della rete privata (es. 10.0.0.0/24)",
+        "controlNodeOption": "Macchinario esplicito per il nodo di controllo (predefinito: primo membro k8s-server)",
+        "description": "Dichiara i cluster e i loro pool di nodi nella configurazione. Esegui il provisioning con 'rdc cluster create'.",
+        "descriptionShort": "Dichiarare e modificare cluster",
+        "list": {
+          "description": "Elenca i cluster configurati"
+        },
+        "nameOption": "Nome del cluster",
+        "none": "Nessun cluster configurato",
+        "poolAdded": "Pool \"{{pool}}\" aggiunto al cluster \"{{name}}\"",
+        "poolOption": "Specifica del pool name:role:count[:size] (role: ceph|k8s-server|k8s-agent|hyperconverged)",
+        "primitiveOption": "Primitiva di rete (es. vlan, vpc, network)",
+        "providerOption": "Provider: una chiave cloudProviders, oppure 'kvm'",
+        "remove": {
+          "description": "Rimuovi un cluster dalla configurazione"
+        },
+        "removed": "Cluster \"{{name}}\" rimosso"
       },
       "delete": {
         "description": "Elimina un file di configurazione",
@@ -451,6 +517,15 @@
           "optionReveal": "Mostra la configurazione dello storage in chiaro (solo TTY interattivo; registrato)"
         }
       }
+    },
+    "credits": {
+      "bundledTitle": "Runtime e dipendenze incluse:",
+      "description": "Stampa i componenti di terze parti inclusi in rdc: i binari che renet incorpora e distribuisce (CRIU, rsync, rclone), il runtime Node.js incorporato e le dipendenze npm incluse. Mostra versioni, identificatori di licenza SPDX e gli URL degli archivi sorgente a versione esatta richiesti per la conformità GPL. Usa --licenses per stampare il testo completo THIRD_PARTY_LICENSES incluso nelle build di release.",
+      "descriptionShort": "Mostra le attribuzioni di terze parti e le informazioni sulla conformità delle licenze",
+      "embeddedTitle": "Binari incorporati (distribuiti da renet):",
+      "gplHeader": "Disponibilità dei sorgenti GPL:",
+      "header": "Rediacc è un software proprietario distribuito sotto la licenza Rediacc; i seguenti componenti di terze parti sono distribuiti insieme ad esso secondo le rispettive licenze.\n\nComponenti di terze parti inclusi in rdc:",
+      "licensesUnavailable": "Il testo completo THIRD_PARTY_LICENSES viene generato in fase di build ed è incluso solo nelle build di release. In modalità sviluppo, esegui la build del CLI per generarlo, oppure visualizza le attribuzioni per singolo componente con: rdc credits"
     },
     "datastore": {
       "description": "Gestione a basso livello del block storage per i datastore delle macchine (Ceph RBD o BTRFS locale). Necessario in genere solo durante la configurazione iniziale della macchina o la migrazione cross-machine. Sottocomandi principali: init (crea datastore), status (salute/utilizzo), fork (clona il datastore su un'altra macchina), unfork (ripristina da snapshot).",
@@ -875,6 +950,8 @@
         "refOption": "GUID del commit (o nome del ramo con --from) di cui fare il checkout",
         "tagOption": "Nome per il nuovo fork di lavoro scrivibile"
       },
+      "clusterDone": "{{verb}} il namespace \"{{repository}}\" nel cluster \"{{cluster}}\"",
+      "clusterOption": "Cluster Kubernetes di destinazione (mutuamente esclusivo con -m); instrada verso il nodo di controllo del cluster con KUBECONFIG iniettato",
       "commit": {
         "authorOption": "Autore del commit",
         "completed": "Commit eseguito {{commit}}: {{message}}",
@@ -886,6 +963,7 @@
       },
       "create": {
         "alreadyExists": "Il repository \"{{name}}\" esiste già nella configurazione",
+        "clusterResolved": "Il repository Kubernetes \"{{repository}}\" ha come destinazione il cluster \"{{cluster}}\" (nodo di controllo {{controlNode}})",
         "completed": "Repository creato",
         "description": "Crea un nuovo repository cifrato",
         "failed": "Creazione del repository non riuscita",
@@ -896,9 +974,9 @@
         "starting": "Creazione del repository \"{{repository}}\" ({{size}}) su \"{{machine}}\"..."
       },
       "delete": {
+        "archived": "Credenziale per \"{{repository}}\" archiviata",
         "archiveHint": "Per archiviare le credenziali e consentire il recupero: riesegui con --archive-config",
         "archiveOption": "Sposta la voce di configurazione in deletedRepositories per un recupero successivo",
-        "archived": "Credenziale per \"{{repository}}\" archiviata",
         "cloudBackupHint": "I backup cloud (se presenti) persistono dopo l'eliminazione. Rimuovi i backup cloud orfani con: rdc storage prune --name <storage> -m {{machine}}",
         "completed": "Repository eliminato",
         "configRetained": "La voce di configurazione per \"{{repository}}\" è stata conservata (il repo potrebbe esistere su altri macchinari). Per rimuoverla: rdc config repository remove --name {{repository}}",
@@ -956,6 +1034,7 @@
       "fork": {
         "alreadyExists": "Il repository \"{{name}}\" esiste già nella configurazione",
         "checkpointOption": "Crea un checkpoint CRIU sulla sorgente prima del fork (cattura lo stato in memoria dei processi per il ripristino sul fork)",
+        "clusterResolved": "Fork di \"{{parent}}\" come namespace \"{{parent}}-{{tag}}\" nel cluster \"{{cluster}}\" (nodo di controllo {{controlNode}})",
         "completed": "Fork creato. Distribuisci in locale: repo up {{repository}} -m {{machine}}. Per migrare il fork su un altro macchinario: repo push {{repository}} -m {{machine}} --to <destinazione> --up",
         "description": "Crea un fork CoW (Copy-on-Write) di un repository. IL FORK È QUASI ISTANTANEO E A TEMPO COSTANTE indipendentemente dalla dimensione del repo: il reflink BTRFS clona l'immagine sottostante, quindi un repo da 100 GB e uno da 1 GB vengono forked nello stesso tempo (~secondi). Il fork ottiene un NUOVO GUID, networkId, intervallo IP e dominio di auto-route ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) ed è una copia completamente indipendente. Il fork online è supportato: il genitore può rimanere in esecuzione. Il fork eredita automaticamente le credenziali di cifratura del genitore. Usa --checkpoint per catturare lo stato del processo CRIU prima del fork: il fork si ripristina automaticamente al primo 'repo up' (stato in memoria preservato). FORK SU MACCHINARIO DIVERSO: per fare il fork su un altro macchinario, prima fai il fork in locale, poi trasferisci: (1) repo fork --parent <genitore> -m <sorgente> --tag <nome>, (2) backup push <nome> -m <sorgente> --to-machine <destinazione>, (3) repo up <nome> -m <destinazione>. AVVISO: NON usare 'backup push' da solo per il fork: crea una copia grezza con lo STESSO GUID (non un fork indipendente). Esegui sempre prima il fork per ottenere una nuova identità. Le auto-route usano il nome del repo, quindi ogni fork ottiene un dominio univoco automaticamente.",
         "descriptionShort": "Fork CoW quasi istantaneo di un repository (nuovo GUID, networkId, intervallo IP)",
@@ -965,12 +1044,16 @@
         "failed": "Creazione del fork non riuscita",
         "immutableOption": "Contrassegna il fork come di sola lettura: rifiuta il mount e mantiene la sua immagine stabile a livello di byte per sempre (un commit/una base congelato per il delta push tra macchine)",
         "immutableUpConflict": "repo fork: --immutable e --up si escludono a vicenda. Un fork immutabile rifiuta il mount, quindi non può essere avviato. Rimuovi --up, oppure rimuovi --immutable per distribuire un fork normale.",
+        "providerOption": "Esegui il provisioning di un nuovo cluster (rispecchiando la forma dei pool dell'origine) ed esegui il fork al suo interno",
+        "providerPending": "Fork di \"{{parent}}\" come \"{{parent}}-{{tag}}\" in un nuovo cluster {{provider}}",
+        "provisioning": "Provisioning del cluster \"{{cluster}}\" su {{provider}} prima del fork...",
         "registered": "Fork \"{{repository}}\" registrato ({{guid}}, rete {{networkId}})",
         "rollback": "Rollback della configurazione per \"{{repository}}\" eseguito",
         "starting": "Fork di \"{{parent}}\" come \"{{repository}}\" su \"{{machine}}\"...",
         "tagOption": "Tag per il fork (crea nome:tag)",
         "tagRequired": "Il tag è obbligatorio per il fork. Uso: rdc repo fork --parent <genitore> --tag <tag> -m <macchinario>",
         "tagReservedLatest": "repo fork: il tag \"latest\" è riservato al repository principale (produzione) — scegli un --tag diverso (es. \"test\", \"staging\", \"<feature>\")",
+        "toClusterOption": "Esegui il fork verso un altro cluster Kubernetes esistente (fork di namespace cross-cluster)",
         "upOption": "Monta e avvia i servizi dopo il fork (fork + mount + up in un unico comando)"
       },
       "fsck": {
@@ -1679,9 +1762,10 @@
     },
     "pageTitle": "Riferimento CLI Rediacc",
     "sectionTitles": {
-      "agent": "Utilità agente",
       "backup": "Backup e ripristino",
+      "cluster": "Gestione cluster",
       "config": "Gestione della config",
+      "credits": "Crediti di terze parti",
       "datastore": "Gestione del datastore",
       "doctor": "Diagnostica di sistema",
       "machine": "Gestione delle macchine",
@@ -1722,7 +1806,8 @@
     "activationFailed": "Attivazione non riuscita",
     "affectedChildClones": ". Clone figlio interessati: {{clones}}. Elimina o promuovi i clone figlio prima.",
     "agent": {
-      "commandBlocked": "Il comando \"{{command}}\" non è disponibile in modalità agente.\n\nQuesto comando esegue funzioni di basso livello arbitrarie senza protezioni di sicurezza. Usa invece i comandi CLI tipizzati o gli strumenti MCP.\n\nAlternative:\n  - Strumenti MCP: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - Comandi CLI: rdc repo up, rdc repo down, rdc term connect\n  - Esegui \"rdc agent capabilities\" per vedere tutti i comandi disponibili\n\nSe hai bisogno di accesso diretto, chiedi all'utente di eseguire il comando.",
+      "clusterOpBlocked": "Il comando cluster \"{{command}}\" è bloccato in modalità agente. Le operazioni sui cluster creano o smantellano infrastruttura reale, quindi un agente non può autorizzarle da solo. Utente: per consentirlo, imposta REDIACC_ALLOW_CLUSTER_OPS=<nome-cluster> (o * per tutti i cluster) nel terminale PRIMA di avviare la sessione dell'agente — un override impostato dall'interno dell'agente non è accettato.",
+      "commandBlocked": "Il comando \"{{command}}\" non è disponibile in modalità agente.\n\nQuesto comando esegue funzioni di basso livello arbitrarie senza protezioni di sicurezza. Usa invece i comandi CLI tipizzati o gli strumenti MCP.\n\nAlternative:\n  - Strumenti MCP: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - Comandi CLI: rdc repo up, rdc repo down, rdc term connect\n  - Esegui \"rdc --help\" per vedere tutti i comandi disponibili\n\nSe hai bisogno di accesso diretto, chiedi all'utente di eseguire il comando.",
       "configEdit": "L'editor interattivo è bloccato negli ambienti agente.\n\nAlternative:\n  • rdc config edit --dump > config.jsonc    (ispezione sicura con redazione)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nPer ignorare il blocco, imposta REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> nella shell padre\nPRIMA di avviare il tuo agente (deve essere visibile nella catena di processi antenati dell'agente).",
       "configEditAncestry": "L'editor interattivo è bloccato negli ambienti agente (REDIACC_ALLOW_CONFIG_EDIT era impostato ma la verifica degli antenati ha fallito: l'override deve essere impostata dalla tua shell, non da un agente).\n\nAlternative:\n  • rdc config edit --dump > config.jsonc    (ispezione sicura con redazione)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nImposta REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> nella shell padre PRIMA di avviare il tuo agente.",
       "createGuard": "Impossibile creare un nuovo repository grand \"{{name}}\" in modalità agente.\n\nGli agenti operano in modalità solo-fork. I repository grand sono ambienti di produzione a cui gli agenti non possono accedere dopo la creazione.\n\nIn alternativa, crea un fork di un repository esistente:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nUtente: per consentire la creazione di repository, imposta REDIACC_ALLOW_GRAND_REPO=* (o il nome di un repo specifico) nel terminale prima di avviare la sessione dell'agente.",
@@ -1752,6 +1837,14 @@
     "authRequired": "Autenticazione richiesta. Esegui: rdc auth login",
     "cannotDeleteGrandRepo": "Impossibile eliminare il repository grand: {{reason}}",
     "cannotPromote": "Impossibile promuovere: {{reason}}",
+    "cluster": {
+      "countInvalid": "--count deve essere un intero non negativo",
+      "dockerOnlyVerb": "\"repo {{verb}}\" ha come destinazione solo i repository Docker e non può essere eseguito contro un --cluster; non ha un equivalente Kubernetes nella v1",
+      "featureUnsupportedV1": "{{feature}} non è supportato con --cluster nella v1 (vista nodo di controllo); {{hint}}",
+      "pendingContractRegen": "\"repo {{verb}}\" su un cluster invoca {{fn}}, in attesa della rigenerazione del contratto renet kube (wave 5). Il cluster e il namespace sono stati risolti; riesegui il comando quando il contratto sarà disponibile.",
+      "targetExclusive": "Specifica solo uno tra -m/--machine e --cluster, non entrambi",
+      "targetRequired": "È richiesto un macchinario di destinazione (-m) o un cluster (--cluster)"
+    },
     "clusterNotFound": "Cluster Ceph \"{{name}}\" non trovato",
     "config": {
       "invalidEmail": "Indirizzo email non valido: \"{{value}}\".",
@@ -1906,7 +1999,7 @@
     }
   },
   "help": {
-    "agentMode": "\n  Modalità Agente\n    • Solo fork: crea un fork prima di apportare modifiche a qualsiasi repository\n    • I repository grand (non fork) sono in sola lettura per gli agenti\n    • Flusso di lavoro: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> → term <machine> <fork>\n    • L'output JSON è automatico - tutti i comandi restituiscono { success, data, errors, metrics }\n    • Analizza sempre il JSON completo - non usare tail/head/grep sull'output JSON\n    • Usa i flag di filtro (es. --repositories, --containers) per ridurre la dimensione della risposta\n    • Scopri lo schema dei comandi: rdc agent schema \"<command>\"\n",
+    "agentMode": "\n  Modalità Agente\n    • Solo fork: crea un fork prima di apportare modifiche a qualsiasi repository\n    • I repository grand (non fork) sono in sola lettura per gli agenti\n    • Flusso di lavoro: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> → term <machine> <fork>\n    • L'output JSON è automatico - tutti i comandi restituiscono { success, data, errors, metrics }\n    • Analizza sempre il JSON completo - non usare tail/head/grep sull'output JSON\n    • Usa i flag di filtro (es. --repositories, --containers) per ridurre la dimensione della risposta\n",
     "cli": {
       "machineQuery": "Mostra lo stato della macchina",
       "repoUp": "Deploy dei servizi del repository",
@@ -1950,6 +2043,7 @@
       "upload": "Carica file locali nel repository"
     },
     "term": {
+      "cluster": "Connessione SSH al nodo di controllo del cluster (KUBECONFIG impostato automaticamente, namespace kubectl fissato)",
       "command": "Esegui un comando senza shell interattiva",
       "machine": "Connessione SSH alla macchina",
       "repo": "Connessione SSH al repo (DOCKER_HOST impostato automaticamente)",
@@ -1957,6 +2051,7 @@
     },
     "useHelpAll": "Usa --help-all per le descrizioni estese",
     "vscode": {
+      "cluster": "Apri il nodo di controllo del cluster in VS Code (KUBECONFIG impostato automaticamente)",
       "machine": "Apri la macchina in VS Code",
       "repo": "Apri il repository in VS Code"
     }
@@ -1999,6 +2094,7 @@
     "importMode": "Modalità di importazione (merge o replace)",
     "insiders": "Usa le impostazioni di VS Code Insiders",
     "lang": "Override della lingua ({{languages}})",
+    "licenses": "Stampa il testo completo THIRD_PARTY_LICENSES incluso nelle build di release",
     "limit": "Numero massimo di risultati",
     "localPath": "Percorso locale della directory (predefinito: directory corrente)",
     "localPaths": "Uno o più percorsi locali di file o directory (predefinito: directory corrente)",

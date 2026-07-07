@@ -6,8 +6,8 @@ description: >-
 category: Concepts
 order: 0
 language: es
-sourceHash: "947fcefa63eac600"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "83f6a9a2b0c8bae2"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 # Arquitectura
@@ -118,6 +118,25 @@ Los repositorios son imágenes de disco cifradas con LUKS almacenadas en el data
 3. Se monta mediante `cryptsetup` cuando se accede
 
 La credencial se almacena en tu archivo de configuración pero **nunca** en el servidor. Sin la credencial, los datos del repositorio no pueden leerse. Cuando el inicio automático está habilitado, se almacena un archivo de clave LUKS secundario en el servidor para permitir el montaje automático al arrancar.
+
+## Backends de Almacenamiento
+
+Un datastore es un pool de almacenamiento por máquina que contiene las imágenes de los repositorios. Tiene dos backends, elegidos en el momento de `datastore init`:
+
+- **Local (predeterminado)**: un sistema de archivos BTRFS respaldado por loop en el disco propio de la máquina. Las imágenes de los repositorios son archivos cifrados con LUKS dentro de él; una bifurcación es un único `cp --reflink=always`. Este es el backend que usa cualquier despliegue de una sola máquina, y no necesita nada más allá del disco del servidor.
+- **Ceph RBD**: el datastore vive en una imagen RBD mapeada desde un clúster Ceph externo, con BTRFS simple encima (sin capa LUKS en esta capa, ya que los nodos Ceph nunca abren LUKS). La bifurcación y la arquitectura multi-cliente de solo lectura usan las propias primitivas de copy-on-write de RBD (snapshot, protect, clone) y espacios de nombres RADOS para el aislamiento por inquilino.
+
+Ambos backends presentan el mismo modelo de repositorio a todo lo que está por encima, de modo que los comandos `repo`, las copias de seguridad y las bifurcaciones funcionan de forma idéntica. La diferencia está en dónde viven los bytes y qué mecanismo de copy-on-write usa una bifurcación (reflink de BTRFS frente a clon de RBD). Consulta [Configuración de Máquinas](/es/docs/setup) para saber cómo inicializar cada backend y [Referencia del Servidor](/es/docs/server-reference) para los comandos de datastore a nivel de renet.
+
+## Repositorios de Kubernetes
+
+Junto a los repos Docker, una máquina puede alojar **clústeres**. Rediacc mantiene la mentalidad de repo invirtiendo el modelo de objetos habitual: el clúster es el contenedor, y un repo de Kubernetes es un namespace dentro de él.
+
+- El estado del clúster (el directorio de datos de k3s por nodo) vive en archivos de imagen copy-on-write respaldados por el datastore, uno por nodo, de modo que un clúster se bifurca y migra como un conjunto de imágenes.
+- Un repo de Kubernetes es el namespace `<repo>` más sus volúmenes. Los volúmenes persistentes son unidades copy-on-write **separadas** (imágenes RBD en Ceph, o pequeños archivos de imagen del datastore mediante un aprovisionador de PV local), nunca directorios dentro de una imagen de clúster opaca. Esa separación es lo que hace que las bifurcaciones por repo sean copy-on-write de forma independiente.
+- `KUBECONFIG` se inyecta como el análogo de `DOCKER_HOST`, y un wrapper `renet kube` aplica los manifiestos desde `up()` de la misma forma que `renet compose` ejecuta Docker.
+
+La clonación y reubicación de un clúster completo residen en `rdc cluster fork` y `rdc cluster migrate`. Esta es la capacidad diferenciadora: bifurcar o mover un clúster en ejecución, incluidos sus datos, a otra máquina o centro de datos con un cutover corto. Consulta la guía [Kubernetes](/es/docs/kubernetes) para el modelo completo, los comandos y las cifras de cutover medidas.
 
 ## Estructura de Configuración
 

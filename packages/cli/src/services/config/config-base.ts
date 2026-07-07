@@ -216,7 +216,7 @@ export class ConfigServiceBase {
   }
 
   // ============================================================================
-  // Config Defaults (team, region, bridge, machine)
+  // Config Defaults (team, region, machine)
   // ============================================================================
 
   async getTeam(): Promise<string | undefined> {
@@ -231,13 +231,7 @@ export class ConfigServiceBase {
     return config?.account?.region;
   }
 
-  async getBridge(): Promise<string | undefined> {
-    if (process.env.REDIACC_BRIDGE) return process.env.REDIACC_BRIDGE;
-    const config = await this.getCurrent();
-    return config?.account?.bridge;
-  }
-
-  async set(key: 'team' | 'region' | 'bridge', value: string): Promise<void> {
+  async set(key: 'team' | 'region', value: string): Promise<void> {
     const name = this.getEffectiveConfigName();
     await configFileStorage.update(name, (cfg) => ({
       ...cfg,
@@ -245,7 +239,7 @@ export class ConfigServiceBase {
     }));
   }
 
-  async remove(key: 'team' | 'region' | 'bridge'): Promise<void> {
+  async remove(key: 'team' | 'region'): Promise<void> {
     const name = this.getEffectiveConfigName();
     await configFileStorage.update(name, (cfg) => ({
       ...cfg,
@@ -257,9 +251,7 @@ export class ConfigServiceBase {
     const name = this.getEffectiveConfigName();
     await configFileStorage.update(name, (cfg) => ({
       ...cfg,
-      account: cfg.account
-        ? { ...cfg.account, team: undefined, region: undefined, bridge: undefined }
-        : undefined,
+      account: cfg.account ? { ...cfg.account, team: undefined, region: undefined } : undefined,
     }));
   }
 
@@ -290,18 +282,16 @@ export class ConfigServiceBase {
 
   async applyDefaults<T extends object>(
     options: T
-  ): Promise<T & { team?: string; region?: string; bridge?: string; machine?: string }> {
+  ): Promise<T & { team?: string; region?: string; machine?: string }> {
     type Result = T & {
       team?: string;
       region?: string;
-      bridge?: string;
       machine?: string;
     };
     const base = { ...options };
     const result = base as Result;
     result.team ??= await this.getTeam();
     result.region ??= await this.getRegion();
-    result.bridge ??= await this.getBridge();
     return result;
   }
 }

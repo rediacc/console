@@ -3,22 +3,6 @@
     "description": "إدارة الأجهزة والمستودعات والنشر عبر SSH"
   },
   "commands": {
-    "agent": {
-      "capabilities": {
-        "description": "عرض جميع الأوامر المتاحة مع المعاملات والخيارات"
-      },
-      "description": "أدوات مساعدة لوكلاء البرمجة بالذكاء الاصطناعي",
-      "descriptionShort": "أدوات مساعدة لوكلاء البرمجة بالذكاء الاصطناعي",
-      "exec": {
-        "description": "تنفيذ أمر بمدخلات JSON من stdin"
-      },
-      "generateReference": {
-        "description": "إنشاء مرجع الأوامر بتنسيق Markdown لمهارات Claude"
-      },
-      "schema": {
-        "description": "عرض المخطط التفصيلي لأمر معين"
-      }
-    },
     "backup": {
       "description": "دفع واسترجاع ومزامنة النسخ الاحتياطية للمستودعات عبر التخزين والأجهزة",
       "schedule": {
@@ -26,6 +10,62 @@
       },
       "sync": {
         "description": "مزامنة ثنائية الاتجاه للنسخ الاحتياطية عبر الأجهزة"
+      }
+    },
+    "cluster": {
+      "create": {
+        "baseDomainOption": "النطاق الأساسي لـ DNS العام للعنقود (وإلا يُورَث من جهاز شقيق)",
+        "description": "تجهيز أعضاء تجمع عنقود مُعرَّف بـ 'rdc config cluster add'، وإقلاع renet على كل منها، وتثبيت المكونات (ceph أولاً). تُجهِّز مزودات السحابة عبر OpenTofu؛ يصل KVM في موجة لاحقة.",
+        "descriptionShort": "تجهيز عنقود مُعرَّف",
+        "nameOption": "اسم العنقود",
+        "sshUserOption": "مستخدم SSH للأعضاء المجهزين"
+      },
+      "description": "تجهيز وإدارة العناقيد: مجموعات مسمّاة من تجمعات العقد (ceph وk8s-server وk8s-agent وhyperconverged) على شبكة خاصة. تتجسد أعضاء التجمع كأجهزة، بحيث يعمل كل أمر -m عليها.",
+      "descriptionShort": "إنشاء وإدارة العناقيد (تجمعات عقد في شبكة محلية خاصة)",
+      "destroy": {
+        "aborted": "تم الإلغاء.",
+        "confirm": "تدمير العنقود \"{{name}}\" وجميع أعضائه؟",
+        "description": "تفكيك الأعضاء المجهزين وإزالة العنقود وأجهزته من الإعداد.",
+        "descriptionShort": "تدمير عنقود وأعضائه",
+        "forceOption": "تخطي التأكيد والمتابعة رغم أخطاء التفكيك",
+        "nameOption": "اسم العنقود"
+      },
+      "fork": {
+        "clusterOption": "عنقود وجهة موجود يُفرَّع إليه (يجب أن يكون على أجهزة مختلفة)",
+        "description": "استنساخ عنقود كامل، بما في ذلك بيانات مستودعاته، إلى عنقود جديد: نسخ عند الكتابة منسّق لصور العنقود وPV، ثم إعادة كتابة هوية العقدة بحيث يقلع التفريع على عناوين جديدة. يستمر الأصل في العمل.",
+        "descriptionShort": "استنساخ عنقود كامل (مع البيانات)",
+        "nameOption": "اسم العنقود",
+        "tagOption": "وسم التفريع"
+      },
+      "install": {
+        "description": "تثبيت مكونات العنقود (ceph أولاً، ثم k8s) على أعضاء مجهزين بالفعل.",
+        "descriptionShort": "تثبيت مكونات على عنقود مجهَّز",
+        "nameOption": "اسم العنقود"
+      },
+      "kubeconfig": {
+        "cached": "تم تخزين kubeconfig مؤقتاً في {{path}}",
+        "description": "جلب kubeconfig من عقدة تحكم العنقود عبر SSH وتخزينه مؤقتاً محلياً (0600) لـ kubectl.",
+        "descriptionShort": "جلب وتخزين kubeconfig للعنقود مؤقتاً",
+        "nameOption": "اسم العنقود"
+      },
+      "migrate": {
+        "description": "نقل عنقود كامل، بما في ذلك بيانات مستودعاته، إلى جهاز أو مركز بيانات آخر بفترة انتقال قصيرة (نسخ مسبق ساخن، ثم إيقاف وإعادة تشغيل في الوجهة).",
+        "descriptionShort": "نقل عنقود كامل إلى مكان آخر",
+        "nameOption": "اسم العنقود",
+        "toOption": "الوجهة"
+      },
+      "scale": {
+        "countOption": "عدد الأعضاء المطلوب",
+        "description": "تغيير عدد أعضاء تجمع (إضافة/إزالة أجهزة وضم/تفريغ عقد). تجمعات k8s-agent تتوسع في مكانها؛ يتم نمو تجمع ceph عبر cephadm مباشرة.",
+        "descriptionShort": "تكبير أو تصغير تجمع عنقود",
+        "nameOption": "اسم العنقود",
+        "poolOption": "اسم التجمع"
+      },
+      "status": {
+        "description": "سرد جميع العناقيد، أو عرض الإعداد الكامل لعنقود واحد باستخدام --name.",
+        "descriptionShort": "عرض العناقيد وتجمعاتها",
+        "nameOption": "عرض عنقود واحد",
+        "none": "لا توجد عناقيد مُعدَّة. أضف واحداً بـ: rdc config cluster add"
       }
     },
     "config": {
@@ -121,6 +161,32 @@
         "allCleared": "تم مسح جميع القيم الافتراضية",
         "description": "مسح القيم الافتراضية (الكل أو مفتاح معين)",
         "keyCleared": "تم مسح \"{{key}}\""
+      },
+      "cluster": {
+        "add": {
+          "description": "تعريف عنقود جديد بتجمع واحد أو أكثر"
+        },
+        "added": "تمت إضافة العنقود \"{{name}}\"",
+        "addPool": {
+          "description": "إضافة تجمع إلى عنقود موجود"
+        },
+        "cidrOption": "CIDR الشبكة الخاصة (مثلاً 10.0.0.0/24)",
+        "controlNodeOption": "جهاز عقدة تحكم صريح (الافتراضي: أول عضو k8s-server)",
+        "description": "تعريف العناقيد وتجمعات عقدها في الإعداد. جهّزها بـ 'rdc cluster create'.",
+        "descriptionShort": "تعريف العناقيد وتحريرها",
+        "list": {
+          "description": "سرد العناقيد المُعدَّة"
+        },
+        "nameOption": "اسم العنقود",
+        "none": "لا توجد عناقيد مُعدَّة",
+        "poolAdded": "تمت إضافة التجمع \"{{pool}}\" إلى العنقود \"{{name}}\"",
+        "poolOption": "مواصفات التجمع name:role:count[:size] (الدور: ceph|k8s-server|k8s-agent|hyperconverged)",
+        "primitiveOption": "أولية الشبكة (مثلاً vlan وvpc وnetwork)",
+        "providerOption": "المزود: مفتاح cloudProviders، أو 'kvm'",
+        "remove": {
+          "description": "إزالة عنقود من الإعداد"
+        },
+        "removed": "تمت إزالة العنقود \"{{name}}\""
       },
       "delete": {
         "description": "حذف ملف إعدادات",
@@ -451,6 +517,15 @@
           "optionReveal": "إظهار إعدادات التخزين كنص صريح (طرفية تفاعلية فقط؛ يُسجَّل في التدقيق)"
         }
       }
+    },
+    "credits": {
+      "bundledTitle": "بيئة التشغيل والتبعيات المرفقة:",
+      "description": "طباعة مكونات الأطراف الثالثة المرفقة مع rdc: الملفات التنفيذية التي يضمّنها renet وينقلها (CRIU وrsync وrclone)، وبيئة تشغيل Node.js المضمّنة، وتبعيات npm المرفقة. يعرض الإصدارات ومعرّفات ترخيص SPDX وعناوين URL لأرشيف المصدر بالإصدار الدقيق المطلوبة للامتثال لـ GPL. استخدم --licenses لطباعة نص THIRD_PARTY_LICENSES الكامل المرفق مع إصدارات الإطلاق.",
+      "descriptionShort": "عرض إسنادات الأطراف الثالثة ومعلومات الامتثال للترخيص",
+      "embeddedTitle": "الملفات التنفيذية المضمّنة (ينقلها renet):",
+      "gplHeader": "توفر مصدر GPL:",
+      "header": "Rediacc برنامج مملوك يُوزَّع بموجب ترخيص Rediacc؛ تُوزَّع مكونات الأطراف الثالثة التالية معه بموجب تراخيصها الخاصة.\n\nمكونات الأطراف الثالثة المرفقة مع rdc:",
+      "licensesUnavailable": "يُولَّد نص THIRD_PARTY_LICENSES الكامل وقت البناء ويُرفق فقط مع إصدارات الإطلاق. في وضع التطوير، شغّل بناء CLI لتوليده، أو اطّلع على الإسنادات لكل مكون عبر: rdc credits"
     },
     "datastore": {
       "description": "إدارة دورة حياة مخزن بيانات Ceph RBD (تهيئة، تفريع، إلغاء تفريع، حالة)",
@@ -875,6 +950,8 @@
         "refOption": "GUID للـ commit (أو اسم الفرع مع --from) المراد سحبه",
         "tagOption": "اسم فرع العمل (fork) الجديد القابل للكتابة"
       },
+      "clusterDone": "{{verb}} فضاء الأسماء \"{{repository}}\" في العنقود \"{{cluster}}\"",
+      "clusterOption": "عنقود Kubernetes الهدف (يستبعد -m بشكل متبادل)؛ يوجّه إلى عقدة تحكم العنقود مع حقن KUBECONFIG",
       "commit": {
         "authorOption": "مؤلّف الـ commit",
         "completed": "تم عمل commit للـ {{commit}}: {{message}}",
@@ -886,6 +963,7 @@
       },
       "create": {
         "alreadyExists": "المستودع \"{{name}}\" موجود بالفعل في السياق",
+        "clusterResolved": "مستودع Kubernetes \"{{repository}}\" يستهدف العنقود \"{{cluster}}\" (عقدة التحكم {{controlNode}})",
         "completed": "تم إنشاء المستودع",
         "description": "إنشاء مستودع مشفر جديد",
         "failed": "فشل إنشاء المستودع",
@@ -896,9 +974,9 @@
         "starting": "جارٍ إنشاء المستودع \"{{repository}}\" ({{size}}) على \"{{machine}}\"..."
       },
       "delete": {
+        "archived": "تم أرشفة بيانات اعتماد \"{{repository}}\"",
         "archiveHint": "لأرشفة بيانات الاعتماد للاسترداد: أعد التشغيل باستخدام --archive-config",
         "archiveOption": "نقل إدخال الإعدادات إلى deletedRepositories للاستعادة لاحقاً",
-        "archived": "تم أرشفة بيانات اعتماد \"{{repository}}\"",
         "cloudBackupHint": "تظل النسخ الاحتياطية السحابية (إن وجدت) بعد الحذف. أزِل النسخ الاحتياطية السحابية المعزولة باستخدام: rdc storage prune --name <storage> -m {{machine}}",
         "completed": "تم حذف المستودع",
         "configRetained": "تم الاحتفاظ بإعداد \"{{repository}}\" (قد يكون المستودع موجودًا على أجهزة أخرى). للإزالة: rdc config repository remove --name {{repository}}",
@@ -956,6 +1034,7 @@
       "fork": {
         "alreadyExists": "المستودع \"{{name}}\" موجود بالفعل في السياق",
         "checkpointOption": "إنشاء نقطة تفتيش CRIU على المصدر قبل التفريع (التقاط حالة ذاكرة العمليات للاستعادة عند fork)",
+        "clusterResolved": "تفريع \"{{parent}}\" كفضاء أسماء \"{{parent}}-{{tag}}\" في العنقود \"{{cluster}}\" (عقدة التحكم {{controlNode}})",
         "completed": "تم إنشاء النسخة. للنشر محلياً: repo up {{repository}} -m {{machine}}. لترحيل النسخة إلى جهاز آخر: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "إنشاء نسخة CoW (نسخ عند الكتابة) من مستودع",
         "descriptionShort": "إنشاء نسخة CoW من مستودع (GUID جديد، networkId، نطاق IP)",
@@ -965,12 +1044,16 @@
         "failed": "فشل إنشاء النسخة",
         "immutableOption": "يضع علامة على الفرع كقراءة فقط: يرفض التحميل ويُبقي صورته مستقرة على مستوى البايت إلى الأبد (التزام/أساس مجمَّد للدفع التزايدي بين الأجهزة)",
         "immutableUpConflict": "repo fork: لا يمكن استخدام --immutable و --up معًا. الفرع غير القابل للتغيير يرفض التحميل، لذلك لا يمكن تشغيله. أزِل --up، أو أزِل --immutable لنشر فرع عادي.",
+        "providerOption": "تجهيز عنقود جديد (يعكس شكل تجمع المصدر) والتفريع إليه",
+        "providerPending": "تفريع \"{{parent}}\" كـ \"{{parent}}-{{tag}}\" إلى عنقود {{provider}} جديد",
+        "provisioning": "جارٍ تجهيز العنقود \"{{cluster}}\" على {{provider}} قبل التفريع...",
         "registered": "تم تسجيل النسخة \"{{repository}}\" ({{guid}}، شبكة {{networkId}})",
         "rollback": "تم التراجع عن تكوين \"{{repository}}\"",
         "starting": "جارٍ إنشاء نسخة من \"{{parent}}\" باسم \"{{repository}}\" على \"{{machine}}\"...",
         "tagOption": "وسم النسخة (ينشئ اسم:وسم)",
         "tagRequired": "الوسم مطلوب للنسخة. الاستخدام: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "tagReservedLatest": "repo fork: الوسم \"latest\" محجوز للمستودع الرئيسي (الإنتاج) — اختر --tag مختلفًا (مثل \"test\" أو \"staging\" أو \"<feature>\")",
+        "toClusterOption": "التفريع إلى عنقود Kubernetes موجود آخر (تفريع فضاء أسماء عبر العناقيد)",
         "upOption": "تركيب وبدء الخدمات بعد التفريع (fork + mount + up في أمر واحد)"
       },
       "fsck": {
@@ -1679,9 +1762,10 @@
     },
     "pageTitle": "مرجع سطر أوامر Rediacc",
     "sectionTitles": {
-      "agent": "أدوات الوكيل",
       "backup": "النسخ الاحتياطي والاستعادة",
+      "cluster": "إدارة العناقيد",
       "config": "إدارة الإعدادات",
+      "credits": "إسنادات الأطراف الثالثة",
       "datastore": "إدارة مخزن البيانات",
       "doctor": "تشخيص النظام",
       "machine": "إدارة الأجهزة",
@@ -1722,7 +1806,8 @@
     "activationFailed": "فشل التفعيل",
     "affectedChildClones": ". النسخ المتأثرة: {{clones}}. احذف أو ارقِ النسخ الفرعية أولاً.",
     "agent": {
-      "commandBlocked": "الامر \"{{command}}\" غير متاح في وضع الوكيل.\n\nهذا الامر ينفذ وظائف منخفضة المستوى بشكل اعتباطي دون ضمانات السلامة. استخدم اوامر CLI المكتوبة او ادوات MCP بدلا من ذلك.\n\nالبدائل:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - نفذ \"rdc agent capabilities\" لعرض جميع الاوامر المتاحة\n\nاذا كنت بحاجة الى وصول مباشر، اطلب من المستخدم تشغيل الامر مباشرة.",
+      "clusterOpBlocked": "أمر الكتلة \"{{command}}\" محظور في وضع الوكيل. عمليات الكتلة تُنشئ أو تزيل بنية تحتية حقيقية، لذا لا يمكن للوكيل أن يصرّح بها بنفسه. للمستخدم: للسماح بذلك، عيّن REDIACC_ALLOW_CLUSTER_OPS=<cluster-name> (أو * لجميع الكتل) في الطرفية قبل بدء جلسة الوكيل — لا يُقبل أي تجاوز يُعيَّن من داخل الوكيل.",
+      "commandBlocked": "الامر \"{{command}}\" غير متاح في وضع الوكيل.\n\nهذا الامر ينفذ وظائف منخفضة المستوى بشكل اعتباطي دون ضمانات السلامة. استخدم اوامر CLI المكتوبة او ادوات MCP بدلا من ذلك.\n\nالبدائل:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - نفذ \"rdc --help\" لعرض جميع الاوامر المتاحة\n\nاذا كنت بحاجة الى وصول مباشر، اطلب من المستخدم تشغيل الامر مباشرة.",
       "configEdit": "المحرر التفاعلي محظور في بيئات العملاء.\n\nالبدائل:\n  • rdc config edit --dump > config.jsonc    (فحص مُخفى آمن)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nللتجاوز، حدد REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> في الصدفة الأبوية\nقبل بدء العميل (يجب أن يظهر في سلالة العميل).",
       "configEditAncestry": "المحرر التفاعلي محظور في بيئات العملاء (تم تعيين REDIACC_ALLOW_CONFIG_EDIT لكن فشل التحقق من السلالة — يجب تعيين التجاوز من الصدفة وليس من العميل).\n\nالبدائل:\n  • rdc config edit --dump > config.jsonc    (فحص مُخفى آمن)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nحدد REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> في الصدفة الأبوية قبل بدء العميل.",
       "createGuard": "لا يمكن إنشاء مستودع رئيسي جديد \"{{name}}\" في وضع الوكيل.\n\nالوكلاء يعملون في وضع fork فقط. المستودعات الرئيسية هي بيئات إنتاجية لا يمكن للوكلاء الوصول إليها بعد الإنشاء.\n\nبدلاً من ذلك، أنشئ fork من مستودع موجود:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nللمستخدم: للسماح بإنشاء المستودع، عيّن REDIACC_ALLOW_GRAND_REPO=* (أو اسم مستودع محدد) في الطرفية قبل بدء جلسة الوكيل.",
@@ -1752,6 +1837,14 @@
     "authRequired": "المصادقة مطلوبة. قم بتشغيل: rdc auth login",
     "cannotDeleteGrandRepo": "لا يمكن حذف المستودع الرئيسي: {{reason}}",
     "cannotPromote": "لا يمكن الترقية: {{reason}}",
+    "cluster": {
+      "countInvalid": "يجب أن يكون --count عدداً صحيحاً غير سالب",
+      "dockerOnlyVerb": "\"repo {{verb}}\" يستهدف مستودعات Docker فقط ولا يمكن تشغيله ضد --cluster؛ ليس له مكافئ في Kubernetes في v1",
+      "featureUnsupportedV1": "{{feature}} غير مدعوم مع --cluster في v1 (عرض عقدة التحكم)؛ {{hint}}",
+      "pendingContractRegen": "\"repo {{verb}}\" على عنقود يُرسِل {{fn}}، وهو بانتظار إعادة توليد عقد renet kube (الموجة 5). تم حل العنقود وفضاء الأسماء؛ أعد التشغيل بمجرد توفر العقد.",
+      "targetExclusive": "حدّد واحداً فقط من -m/--machine أو --cluster، وليس كليهما",
+      "targetRequired": "مطلوب جهاز هدف (-m) أو عنقود (--cluster)"
+    },
     "clusterNotFound": "مجموعة Ceph \"{{name}}\" غير موجودة",
     "config": {
       "invalidEmail": "عنوان بريد إلكتروني غير صالح: \"{{value}}\".",
@@ -1832,7 +1925,7 @@
     },
     "regionRequired": "اسم المنطقة مطلوب. استخدم --region أو اضبط السياق.",
     "registrationFailed": "فشل التسجيل",
-    "remoteNotFound": "\"{{name}}\" ليس جهازاً أو تخزيناً معروفاً. الأجهزة: {{machines}}. التخزينات: {{storages}}",
+    "remoteNotFound": "\"{{name}}\" ليس جهازاً أو تخزيناً أو عنقوداً معروفاً. الأجهزة: {{machines}}. التخزينات: {{storages}}. العناقيد: {{clusters}}",
     "repo": {
       "secret": {
         "badMode": "--mode غير صالح \"{{mode}}\". المسموح: env، file.",
@@ -1950,6 +2043,7 @@
       "upload": "رفع الملفات المحلية إلى المستودع"
     },
     "term": {
+      "cluster": "SSH إلى عقدة تحكم العنقود (KUBECONFIG يُضبط تلقائياً، فضاء أسماء kubectl مثبَّت)",
       "command": "تنفيذ أمر بدون shell تفاعلي",
       "machine": "SSH إلى الجهاز",
       "repo": "SSH إلى المستودع (DOCKER_HOST تلقائي)",
@@ -1957,6 +2051,7 @@
     },
     "useHelpAll": "استخدم --help-all لعرض الأوصاف الموسعة",
     "vscode": {
+      "cluster": "فتح عقدة تحكم العنقود في VS Code (KUBECONFIG يُضبط تلقائياً)",
       "machine": "فتح الجهاز في VS Code",
       "repo": "فتح المستودع في VS Code"
     }
@@ -1999,6 +2094,7 @@
     "importMode": "وضع الاستيراد (دمج أو استبدال)",
     "insiders": "استخدام إعدادات VS Code Insiders",
     "lang": "تجاوز اللغة ({{languages}})",
+    "licenses": "طباعة نص THIRD_PARTY_LICENSES الكامل المرفق مع إصدارات الإطلاق",
     "limit": "الحد الأقصى لعدد النتائج",
     "localPath": "مسار المجلد المحلي (افتراضي: المجلد الحالي)",
     "localPaths": "مسار واحد أو أكثر لملف أو مجلد محلي (الافتراضي: المجلد الحالي)",

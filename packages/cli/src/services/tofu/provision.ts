@@ -6,18 +6,15 @@
  * bootstrap pipeline (add-machine → scan-keys → setup-machine → push-infra).
  */
 
-import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { setTimeout as sleep } from 'node:timers/promises';
-import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
-import { SFTPClient } from '../../remote/sftp/index.js';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../../i18n/index.js';
 import { configService } from '../config/config-resources.js';
 import { pushInfraConfig, removeMachineDnsRecords } from '../provision/infra-provision.js';
 import { outputService } from '../core/output.js';
-import { provisionRenetToRemote, readSSHKey } from '../renet/renet-execution.js';
+import { bootstrapMachine, scanHostKeys, waitForSSH } from '../renet/machine-bootstrap.js';
 import { TofuExecutor } from './executor.js';
 import { resolveProviderMapping } from './provider-resolver.js';
 import { generateTfJson } from './tf-generator.js';
@@ -44,77 +41,6 @@ interface DestroyOptions {
 
 function getTofuDir(machineName: string): string {
   return join(TOFU_BASE_DIR, machineName);
-}
-
-function scanHostKeys(ip: string, port: number): string {
-  try {
-    return execFileSync('ssh-keyscan', ['-p', String(port), ip], {
-      encoding: 'utf-8',
-      timeout: 10_000,
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim();
-  } catch {
-    return '';
-  }
-}
-
-async function waitForSSH(ip: string, port: number, timeoutMs = 120_000): Promise<void> {
-  const start = Date.now();
-  const interval = 5_000;
-
-  while (Date.now() - start < timeoutMs) {
-    try {
-      const keys = scanHostKeys(ip, port);
-      if (keys) return;
-    } catch {
-      // ignore
-    }
-    await sleep(interval);
-  }
-
-  throw new Error(`SSH not reachable at ${ip}:${port} after ${timeoutMs / 1000}s`);
-}
-
-/**
- * Bootstrap a machine via SSH: provision renet, run setup.
- */
-async function bootstrapMachine(machineName: string, options: { debug?: boolean }): Promise<void> {
-  const updatedConfig = await configService.getLocalConfig();
-  const machine = updatedConfig.machines[machineName]!;
-  const sshPrivateKey =
-    updatedConfig.sshPrivateKey ?? (await readSSHKey(updatedConfig.ssh.privateKeyPath));
-
-  const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
-    updatedConfig,
-    machine,
-    sshPrivateKey,
-    { debug: options.debug }
-  );
-
-  const sftp = new SFTPClient({
-    host: machine.ip,
-    port: machine.port ?? DEFAULTS.SSH.PORT,
-    username: machine.user,
-    privateKey: sshPrivateKey,
-  });
-  await sftp.connect();
-
-  try {
-    const datastorePath = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
-    const datastoreSize = updatedConfig.datastoreSize ?? NETWORK_DEFAULTS.DATASTORE_SIZE;
-    const cmd = `sudo ${remoteRenetPath} setup --auto --datastore ${datastorePath} --datastore-size ${datastoreSize}`;
-    const exitCode = await sftp.execStreaming(cmd, {
-      onStdout: (data) => {
-        if (options.debug) process.stdout.write(data);
-      },
-      onStderr: (data) => process.stderr.write(data),
-    });
-    if (exitCode !== 0) {
-      outputService.warn(`Machine setup exited with code ${exitCode}`);
-    }
-  } finally {
-    sftp.close();
-  }
 }
 
 /**

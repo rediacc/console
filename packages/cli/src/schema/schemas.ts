@@ -252,6 +252,14 @@ const InfraConfigSchema = z.object({
   udpPorts: z.array(port).optional(),
 });
 
+// Backref stamped on machines that are cluster pool members. Names which
+// cluster and pool a materialized `<cluster>-<pool>-<n>` machine belongs to, so
+// scale/destroy can find members and every existing `-m` command still works.
+const MachineClusterRefSchema = z.object({
+  cluster: resourceName,
+  pool: resourceName,
+});
+
 const MachineConfigSchema = z.object({
   ip: ipOrHostname,
   user: z.string().min(1, 'SSH user cannot be empty'),
@@ -261,6 +269,58 @@ const MachineConfigSchema = z.object({
   infra: InfraConfigSchema.optional(),
   ceph: CephConfigSchema.optional(),
   backupStrategies: z.array(z.string()).optional(),
+  cluster: MachineClusterRefSchema.optional(),
+});
+
+// =============================================================================
+// Cluster (a named set of node pools; members materialize into resources.machines)
+// =============================================================================
+
+const ClusterPoolDiskSchema = z.object({
+  purpose: z.string().min(1),
+  size: z.string().min(1),
+  count: z.number().int().min(1).optional(),
+});
+
+const ClusterPoolSchema = z.object({
+  name: resourceName,
+  role: z.enum(['ceph', 'k8s-server', 'k8s-agent', 'hyperconverged']),
+  count: z.number().int().min(1),
+  size: z.string().optional(),
+  disks: z.array(ClusterPoolDiskSchema).optional(),
+  labels: z.record(z.string(), z.string()).optional(),
+});
+
+const ClusterNetworkSchema = z.object({
+  primitive: z.string().min(1),
+  cidr: z.string().optional(),
+  mtu: z.number().int().optional(),
+});
+
+const ClusterKubernetesSchema = z.object({
+  distro: z.enum(['k3s', 'external']).optional(),
+  version: z.string().optional(),
+});
+
+const ClusterRegistrySchema = z.object({
+  enabled: z.boolean().optional(),
+  upstreams: z.array(z.string()).optional(),
+});
+
+// Non-secret Ceph reference: only the pool name. Keyrings + mon hosts stay
+// server-side (derived from ceph-pool members' private IPs), never in config.
+const ClusterCephRefSchema = z.object({
+  pool: z.string().optional(),
+});
+
+const ClusterConfigSchema = z.object({
+  provider: z.string().min(1),
+  network: ClusterNetworkSchema.optional(),
+  pools: z.array(ClusterPoolSchema).min(1, 'A cluster needs at least one pool'),
+  kubernetes: ClusterKubernetesSchema.optional(),
+  registry: ClusterRegistrySchema.optional(),
+  ceph: ClusterCephRefSchema.optional(),
+  controlNode: resourceName.optional(),
 });
 
 // =============================================================================
@@ -307,7 +367,6 @@ const AccountSchema = z.object({
   userEmail: z.string().optional(),
   team: z.string().optional(),
   region: z.string().optional(),
-  bridge: z.string().optional(),
   accountServer: z.string().optional(),
 });
 
@@ -339,6 +398,7 @@ const ResourcesSchema = z.object({
   deletedRepositories: z.array(ArchivedRepositorySchema).optional(),
   backupStrategies: z.record(resourceName, BackupStrategyConfigSchema).optional(),
   cloudProviders: z.record(resourceName, CloudProviderConfigSchema).optional(),
+  clusters: z.record(resourceName, ClusterConfigSchema).optional(),
 });
 
 const InfraTopSchema = z.object({
@@ -401,6 +461,9 @@ export type InfraConfig = z.infer<typeof InfraConfigSchema>;
 export type BackupDestination = z.infer<typeof BackupDestinationSchema>;
 export type BackupStrategyConfig = z.infer<typeof BackupStrategyConfigSchema>;
 export type CloudProviderConfig = z.infer<typeof CloudProviderConfigSchema>;
+export type ClusterConfig = z.infer<typeof ClusterConfigSchema>;
+export type ClusterPool = z.infer<typeof ClusterPoolSchema>;
+export type ClusterPoolRole = ClusterPool['role'];
 export type AcmeCertCache = z.infer<typeof AcmeCertCacheSchema>;
 export type RemoteConfig = z.infer<typeof RemoteConfigSchema>;
 export type EncryptedBlob = z.infer<typeof EncryptedBlobSchema>;

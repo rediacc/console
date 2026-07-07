@@ -25,7 +25,7 @@ describe('parseDatastorePruneOutput', () => {
     expect(obj.stale_backup_snapshots).toEqual(['.backup-A', '.backup-B']);
   });
 
-  it('strips the renet bridge "[repository_prune] " line prefix and parses', () => {
+  it('strips the renet "[repository_prune] " line prefix and parses', () => {
     // Mirror how the bridge relays multi-line indented JSON + a leading log line.
     const pretty = JSON.stringify(JSON.parse(RESOURCES_JSON), null, 2);
     const relayed = [

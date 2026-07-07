@@ -13,6 +13,7 @@
  * - "Total:" is printed once, at the true end, as wall time since entry.
  */
 import { randomUUID } from 'node:crypto';
+import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import {
@@ -26,8 +27,11 @@ import {
 } from '../services/machine/machine-connection.js';
 import { outputService } from '../services/core/output.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import { clusterMountRemotePath } from '../services/cluster/cluster-target.js';
+import { createCluster } from '../services/cluster/cluster-provision.js';
 import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { resolveRepoTarget } from '../utils/repo-target.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import {
   buildTimingSummary,
@@ -510,6 +514,68 @@ export async function handleForkAction(
     if (registered) {
       await rollbackFork(forkKey);
     }
+    handleError(error);
+  }
+}
+
+/**
+ * K8s namespace fork (design D13). `repo fork` into a cluster forks the
+ * namespace (`<repo>-<tag>`, PVs CoW-cloned) via kube_namespace_fork:
+ *   - `--cluster <name>` / `--to-cluster <name>`: fork into that existing
+ *     cluster (destination; --to-cluster wins if both are given).
+ *   - `--provider <p>`: provision the destination cluster (declared via
+ *     `rdc config cluster add`) with createCluster before forking into it. Full
+ *     auto-declare + source-shape mirroring (--cluster-name/--pool) stays wave 7.
+ */
+export async function handleClusterForkSeam(
+  parent: string,
+  tag: string,
+  options: { cluster?: string; toCluster?: string; provider?: string; debug?: boolean }
+): Promise<void> {
+  try {
+    const destCluster = options.toCluster ?? options.cluster;
+    if (!destCluster) {
+      handleError(new Error(t('errors.cluster.targetRequired')));
+      return;
+    }
+    if (options.provider) {
+      // Provision the (declared) destination cluster, then fork into it.
+      outputService.info(
+        t('commands.repo.fork.provisioning', { cluster: destCluster, provider: options.provider })
+      );
+      await createCluster(destCluster, { debug: options.debug });
+    }
+    const { machineName, kubeCluster } = await resolveRepoTarget({ cluster: destCluster });
+    const cluster = kubeCluster ?? destCluster;
+    outputService.info(
+      t('commands.repo.fork.clusterResolved', { parent, tag, cluster, controlNode: machineName })
+    );
+    const result = await localExecutorService.execute({
+      functionName: 'kube_namespace_fork',
+      machineName,
+      kubeCluster,
+      params: {
+        namespace: parent,
+        tag,
+        // 'auto' lets renet resolve rbd vs datastore from the source
+        // namespace's persisted PV-backend marker; ceph_pool is intentionally
+        // omitted (rbd is resolved server-side, not passed from the client).
+        pv_backend: 'auto',
+        cluster,
+        // The rbd fork path needs a datastore root to resolve the pool image.
+        datastore: NETWORK_DEFAULTS.DATASTORE_PATH,
+        mount_path: clusterMountRemotePath(cluster),
+      },
+      debug: options.debug,
+    });
+    if (result.success) {
+      outputService.success(
+        t('commands.repo.clusterDone', { verb: 'Forked', repository: `${parent}-${tag}`, cluster })
+      );
+    } else {
+      renderLocalExecutionFailure(result, t('commands.repo.fork.failed'));
+    }
+  } catch (error) {
     handleError(error);
   }
 }

@@ -19,7 +19,9 @@ export {
   getPlanPricing,
   getStripeLookupKey,
   hasFeature,
+  isCommunityUsable,
   isValidPlanCode,
+  COMMUNITY_LEGACY_CUTOFF_ISO,
   DELEGATION_CERT_CREATE_RATE_LIMIT,
   DELEGATION_RENEW_PATH,
   MACHINE_AUTO_RELEASE_HOURS,
@@ -36,6 +38,7 @@ export {
   PROGRESSIVE_LIMIT_KEYS,
   RENEWAL_MANIFEST_MAX_AGE_MS,
   SUBSCRIPTION_CONFIG,
+  TRIAL_PERIOD_DAYS,
 } from './constants';
 // Air-gapped renewal manifest
 export {

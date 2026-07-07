@@ -8,17 +8,28 @@ import path from 'node:path';
 import { COMMAND_METADATA } from '../config/command-metadata.js';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
+import { auditLog } from '../services/core/audit-log.js';
 import { isAgentEnvironment } from './agent-guard.js';
+import { isClusterAllowedByEnv } from './cluster-env.js';
 import { ValidationError } from './errors.js';
 import { isRepoAllowedByGrandEnv } from './grand-env.js';
-import { isAncestryVerificationAvailable, isOverrideLegitimate } from './process-ancestry.js';
+import {
+  isAncestryVerificationAvailable,
+  isOverrideLegitimate,
+  OVERRIDE_VAR_CLUSTER,
+} from './process-ancestry.js';
 
 export interface CommandPolicy {
   /** Block grand (non-fork) repos in agent mode. Override: REDIACC_ALLOW_GRAND_REPO */
   grandGuard: boolean;
   /** Block fork repos — command is nonsensical on interim fork environments */
   forkBlocked: boolean;
-  /** Absolute block — command is fundamentally incompatible with agent usage. No override. */
+  /**
+   * Block in agent mode. Absolute for most commands (run, mcp — no override).
+   * The `cluster <verb>` family is the one exception: it can be deliberately
+   * unlocked per cluster by the operator via REDIACC_ALLOW_CLUSTER_OPS,
+   * ancestry-verified exactly like REDIACC_ALLOW_GRAND_REPO.
+   */
   agentBlocked: boolean;
 }
 
@@ -57,6 +68,12 @@ export const CMD = {
   VSCODE_REPO: 'vscode repo',
   RUN: 'run',
   CONFIG_REPOSITORY_REMOVE: 'config repository remove',
+  CLUSTER_CREATE: 'cluster create',
+  CLUSTER_DESTROY: 'cluster destroy',
+  CLUSTER_SCALE: 'cluster scale',
+  CLUSTER_INSTALL: 'cluster install',
+  CLUSTER_FORK: 'cluster fork',
+  CLUSTER_MIGRATE: 'cluster migrate',
 } as const;
 
 export type CommandPath = (typeof CMD)[keyof typeof CMD];
@@ -123,6 +140,60 @@ function enforceGrandGuard(repoName: string): void {
   }
 }
 
+function checkClusterOverride(clusterName: string): OverrideResult {
+  if (!isClusterAllowedByEnv(clusterName)) return 'not-set';
+
+  // Verify the override was set by the operator (pre-agent), not the agent.
+  return isOverrideLegitimate(OVERRIDE_VAR_CLUSTER) ? 'allowed' : 'agent-injected';
+}
+
+/**
+ * Record that an agent ran a cluster op through a legitimate operator override.
+ * actor.kind is stamped `agent` automatically by auditLog. Best-effort: an
+ * audit-log failure must never block the allowed operation.
+ */
+function auditClusterOverride(commandPath: string, clusterName: string): void {
+  try {
+    const xdg = process.env.XDG_CONFIG_HOME ?? `${process.env.HOME ?? ''}/.config`;
+    auditLog(`${xdg}/rediacc`, {
+      command: commandPath,
+      paths: clusterName ? [clusterName] : [],
+      outcome: 'ok',
+      reason: `${OVERRIDE_VAR_CLUSTER} override honored`,
+    });
+  } catch {
+    /* audit-log failure must never block the operation */
+  }
+}
+
+/**
+ * Enforce the cluster-ops guard: cluster verbs are blocked in agent mode unless
+ * the operator set REDIACC_ALLOW_CLUSTER_OPS before the agent started. Both a
+ * missing override and an agent-injected (self-set) one fail closed — only the
+ * operator can authorize this, and never from inside the agent.
+ */
+function enforceClusterGuard(commandPath: string, clusterName: string | undefined): void {
+  const name = clusterName ?? '';
+  if (checkClusterOverride(name) === 'allowed') {
+    auditClusterOverride(commandPath, name);
+    return;
+  }
+  throw new ValidationError(t('errors.agent.clusterOpBlocked', { command: commandPath }));
+}
+
+/**
+ * Enforce an agentBlocked policy. Cluster verbs are the one family an operator
+ * can unlock via REDIACC_ALLOW_CLUSTER_OPS (ancestry-verified); every other
+ * agentBlocked command (run, mcp) stays an absolute block.
+ */
+function enforceAgentBlock(commandPath: string, clusterName: string | undefined): void {
+  if (commandPath.startsWith('cluster ')) {
+    enforceClusterGuard(commandPath, clusterName);
+    return;
+  }
+  throw new ValidationError(t('errors.agent.commandBlocked', { command: commandPath }));
+}
+
 /**
  * Unified command policy enforcement.
  *
@@ -131,16 +202,17 @@ function enforceGrandGuard(repoName: string): void {
  */
 export async function assertCommandPolicy(
   commandPath: CommandPath,
-  repoName?: string
+  repoName?: string,
+  clusterName?: string
 ): Promise<void> {
   if (!isAgentEnvironment()) return;
 
   const policy = getPolicy(commandPath);
   if (!policy) return;
 
-  // Absolute block — no override, no repo check needed
   if (policy.agentBlocked) {
-    throw new ValidationError(t('errors.agent.commandBlocked', { command: commandPath }));
+    enforceAgentBlock(commandPath, clusterName);
+    return;
   }
 
   if (!repoName) return;

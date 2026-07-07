@@ -9,9 +9,10 @@ import { getOutputFormat, handleError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
+import { assertDockerOnly, resolveRepoTarget } from '../utils/repo-target.js';
 import { assertMachineExists } from './_validate.js';
 import { parseDatastorePruneOutput } from './datastore-prune-parser.js';
-import { handleForkAction } from './repo-fork.js';
+import { handleClusterForkSeam, handleForkAction } from './repo-fork.js';
 import { registerRepoPolicyCommand } from './repo-policy.js';
 import { registerRepoTakeoverCommand } from './repo-takeover.js';
 import { registerRepoTrimCommand } from './repo-trim.js';
@@ -46,12 +47,15 @@ interface AutostartListPayload {
   repositories?: { name: string; enabled: boolean; on_disk: boolean }[] | null;
 }
 
-/** `repo autostart list` — fetch the renet payload and render it. */
-async function handleAutostartList(options: {
+interface AutostartListOptions {
   machine: string;
+  cluster?: string;
   debug?: boolean;
   skipRouterRestart?: boolean;
-}): Promise<void> {
+}
+
+/** `repo autostart list` — fetch the renet payload and render it. */
+async function handleAutostartList(options: AutostartListOptions): Promise<void> {
   await assertMachineExists(options.machine);
   outputService.info(t('commands.repo.autostart.list.starting', { machine: options.machine }));
 
@@ -110,8 +114,11 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .summary(t('commands.repo.fork.descriptionShort'))
     .description(t('commands.repo.fork.description'))
     .requiredOption('--parent <name>', t('options.name'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .requiredOption('--tag <name>', t('commands.repo.fork.tagOption'))
+    .option('--to-cluster <name>', t('commands.repo.fork.toClusterOption'))
+    .option('--provider <name>', t('commands.repo.fork.providerOption'))
     .option('--checkpoint', t('commands.repo.fork.checkpointOption'))
     .option('--immutable', t('commands.repo.fork.immutableOption'))
     .option('--up', t('commands.repo.fork.upOption'))
@@ -121,8 +128,11 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .action(
       async (options: {
         parent: string;
-        machine: string;
+        machine?: string;
+        cluster?: string;
         tag: string;
+        toCluster?: string;
+        provider?: string;
         checkpoint?: boolean;
         immutable?: boolean;
         up?: boolean;
@@ -132,7 +142,17 @@ export function registerExtendedRepoCommands(repo: Command): void {
       }) => {
         const parent = options.parent;
         const tagName = options.tag;
-        await handleForkAction(parent, tagName, options);
+        // K8s fork (D13): --cluster/--to-cluster/--provider route to the
+        // namespace-fork seam; a plain -m keeps the existing docker fork.
+        if (options.cluster || options.toCluster || options.provider) {
+          await handleClusterForkSeam(parent, tagName, options);
+          return;
+        }
+        if (!options.machine) {
+          handleError(new Error(t('errors.cluster.targetRequired')));
+          return;
+        }
+        await handleForkAction(parent, tagName, { ...options, machine: options.machine });
       }
     );
   forkCmd.addHelpText('after', t('commands.repo.fork.examples'));
@@ -145,14 +165,16 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .summary(t('commands.repo.resize.descriptionShort'))
     .description(t('commands.repo.resize.description'))
     .requiredOption('--name <name>', t('options.name'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .requiredOption('--size <size>', t('commands.repo.resize.sizeOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
       async (options: {
         name: string;
-        machine: string;
+        machine?: string;
+        cluster?: string;
         size: string;
         debug?: boolean;
         skipRouterRestart?: boolean;
@@ -160,17 +182,18 @@ export function registerExtendedRepoCommands(repo: Command): void {
         try {
           const name = options.name;
           await assertCommandPolicy(CMD.REPO_RESIZE, name);
+          const { machineName, kubeCluster } = await resolveRepoTarget(options);
           await executeRepoFunction(
             'repository_resize',
             name,
-            options.machine,
+            machineName,
             { size: options.size },
-            options,
+            { ...options, kubeCluster },
             {
               starting: t('commands.repo.resize.starting', {
                 repository: name,
                 size: options.size,
-                machine: options.machine,
+                machine: machineName,
               }),
               completed: t('commands.repo.resize.completed'),
               failed: t('commands.repo.resize.failed'),
@@ -272,16 +295,19 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .description(t('commands.repo.autostart.enable.description'))
     .option('--name <name>', t('options.name'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
       async (options: {
         name?: string;
         machine: string;
+        cluster?: string;
         debug?: boolean;
         skipRouterRestart?: boolean;
       }) => {
         try {
+          assertDockerOnly('autostart', options);
           const name = options.name;
           if (name) {
             await assertCommandPolicy(CMD.REPO_AUTOSTART_ENABLE, name);
@@ -321,16 +347,19 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .description(t('commands.repo.autostart.disable.description'))
     .option('--name <name>', t('options.name'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
       async (options: {
         name?: string;
         machine: string;
+        cluster?: string;
         debug?: boolean;
         skipRouterRestart?: boolean;
       }) => {
         try {
+          assertDockerOnly('autostart', options);
           const name = options.name;
           if (name) {
             await assertCommandPolicy(CMD.REPO_AUTOSTART_DISABLE, name);
@@ -369,10 +398,12 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .command('list')
     .description(t('commands.repo.autostart.list.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }) => {
+    .action(async (options: AutostartListOptions) => {
       try {
+        assertDockerOnly('autostart', options);
         await handleAutostartList(options);
       } catch (error) {
         handleError(error);

@@ -1,0 +1,125 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { CATEGORY_ICONS } from '../../../components/CategoryIcons';
+import { CATEGORY_ORDER, SOLUTION_PAGES } from '../../../config/solution-pages';
+import { SUPPORTED_LANGUAGES } from '../../../i18n/language-utils';
+import type { Language } from '../../../i18n/types';
+import { createTranslator } from '../../../i18n/utils';
+import '../../../styles/solution-pages.css';
+
+export function getStaticPaths() {
+  return SUPPORTED_LANGUAGES.map((lang) => ({
+    params: { lang },
+    props: { lang },
+  }));
+}
+
+const { lang } = Astro.props as { lang: Language };
+const { t, to } = createTranslator(lang);
+
+const categories = to('solutions.categories') as Record<string, string>;
+const slugs = Object.keys(SOLUTION_PAGES);
+
+const groups = CATEGORY_ORDER.map((cat) => ({
+  category: cat,
+  label: categories[cat] ?? cat,
+  icon: CATEGORY_ICONS[cat],
+  items: slugs
+    .filter((slug) => SOLUTION_PAGES[slug].category === cat)
+    .map((slug) => {
+      const content = to(`pages.solutionPages.${SOLUTION_PAGES[slug].contentKey}`) as
+        | { hero?: { title?: string; subtitle?: string } }
+        | undefined;
+      return {
+        slug,
+        href: `/${lang}/solutions/${slug}`,
+        title: content?.hero?.title ?? slug,
+        description: content?.hero?.subtitle ?? '',
+      };
+    }),
+})).filter((group) => group.items.length > 0);
+---
+
+<BaseLayout
+  title={t('pages.solutionsIndex.meta.title')}
+  description={t('pages.solutionsIndex.meta.description')}
+  keywords={t('pages.solutionsIndex.meta.keywords')}
+  lang={lang}
+>
+  <main class="solutions-index" id="solutions">
+    <header class="solutions-index-header">
+      <h1>{t('solutions.title')}</h1>
+      <p>{t('solutions.subtitle')}</p>
+    </header>
+
+    {groups.map((group) => {
+      const Icon = group.icon;
+      return (
+        <section class="solutions-index-category" aria-label={group.label}>
+          <h2 class="solutions-index-category-label">
+            <Icon size={18} className="solutions-index-category-icon" />
+            {group.label}
+          </h2>
+          <div class="sp-explore-grid">
+            {group.items.map((item) => (
+              <a href={item.href} class="sp-explore-card" data-category={group.category}>
+                <span class="sp-explore-card-category">{group.category.replace('-', ' ')}</span>
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+                <span class="sp-explore-card-arrow">&rarr;</span>
+              </a>
+            ))}
+          </div>
+        </section>
+      );
+    })}
+  </main>
+</BaseLayout>
+
+<style>
+  .solutions-index {
+    max-width: var(--sp-page-max, 1200px);
+    margin: 0 auto;
+    padding: 64px 48px 96px;
+  }
+  .solutions-index-header {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+  .solutions-index-header h1 {
+    font-size: 40px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin: 0 0 12px;
+  }
+  .solutions-index-header p {
+    font-size: 18px;
+    line-height: 1.5;
+    opacity: 0.75;
+    margin: 0 auto;
+    max-width: 560px;
+  }
+  .solutions-index-category {
+    margin-bottom: 48px;
+  }
+  .solutions-index-category-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.8;
+    margin: 0 0 16px;
+  }
+  @media (max-width: 900px) {
+    .solutions-index {
+      padding: 48px 24px 64px;
+    }
+    .solutions-index-header h1 {
+      font-size: 30px;
+    }
+  }
+</style>

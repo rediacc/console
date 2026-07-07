@@ -4,8 +4,8 @@ description: rdc CLI JSON 输出格式、信封模式、错误处理和代理发
 category: Reference
 order: 51
 language: zh
-sourceHash: "9f8d61df26b59757"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "4da1be4753fa62bf"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 所有 `rdc` 命令均输出结构化 JSON，可直接传入脚本或 AI 代理。
@@ -24,9 +24,8 @@ rdc machine query --name prod-1 -o json
 当 `rdc` 在非 TTY 环境中运行（管道、子 shell 或由 AI 代理启动）时，输出会自动切换为 JSON。无需标志。
 
 ```bash
-# These all produce JSON automatically
+# Produces JSON automatically
 result=$(rdc machine query --name prod-1)
-echo '{}' | rdc agent exec "machine query"
 ```
 
 ## JSON 信封
@@ -173,56 +172,6 @@ rdc repo delete --name mail -m prod-1 --dry-run -o json
 ```
 
 支持 `--dry-run` 的命令：`repo up`、`repo down`、`repo delete`、`snapshot delete`、`sync upload`、`sync download`。
-
-## 代理发现命令
-
-`rdc agent` 子命令为 AI 代理提供结构化的方式，在运行时发现可用操作。
-
-### 列出所有命令
-
-```bash
-rdc agent capabilities
-```
-
-返回包含参数、选项和描述的完整命令树：
-
-```json
-{
-  "success": true,
-  "command": "agent capabilities",
-  "data": {
-    "version": "1.0.0",
-    "commands": [
-      {
-        "name": "machine query",
-        "description": "Show machine status",
-        "arguments": [
-          { "name": "machine", "description": "Machine name", "required": true }
-        ],
-        "options": [
-          { "flags": "-o, --output <format>", "description": "Output format" }
-        ]
-      }
-    ]
-  }
-}
-```
-
-### 获取命令模式
-
-```bash
-rdc agent schema --command "machine query"
-```
-
-返回单个命令的完整模式，包括每个参数和选项的类型与默认值。
-
-### 通过 JSON 执行
-
-```bash
-echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
-```
-
-通过 stdin 接受 JSON，将键映射到命令参数和选项，并强制以 JSON 输出执行。当你不想为代理到 CLI 调用构建 shell 命令字符串时，使用此方式更为便捷。
 
 ## 解析示例
 

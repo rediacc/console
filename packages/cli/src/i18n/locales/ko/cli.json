@@ -3,22 +3,6 @@
     "description": "SSH를 통해 머신, 저장소 및 배포를 관리합니다"
   },
   "commands": {
-    "agent": {
-      "capabilities": {
-        "description": "인수 및 옵션과 함께 사용 가능한 모든 명령어를 나열합니다"
-      },
-      "description": "AI 에이전트를 위한 인트로스펙션 명령어입니다. 주요 하위 명령어: capabilities (모든 명령어와 인수/옵션을 JSON으로 나열), schema (단일 명령어의 상세 스키마), exec (stdin의 JSON 입력으로 명령어 실행, 항상 JSON 반환).",
-      "descriptionShort": "AI 코딩 어시스턴트를 위한 에이전트 친화적 유틸리티",
-      "exec": {
-        "description": "stdin의 JSON 입력으로 명령어를 실행합니다"
-      },
-      "generateReference": {
-        "description": "Claude 스킬을 위한 명령어 참조 마크다운을 생성합니다"
-      },
-      "schema": {
-        "description": "특정 명령어의 상세 스키마를 표시합니다"
-      }
-    },
     "backup": {
       "description": "스토리지 및 머신 간 저장소 백업 푸시, 풀, 동기화",
       "schedule": {
@@ -26,6 +10,62 @@
       },
       "sync": {
         "description": "머신 간 저장소 백업의 양방향 동기화"
+      }
+    },
+    "cluster": {
+      "create": {
+        "baseDomainOption": "클러스터 공개 DNS용 기본 도메인 (지정하지 않으면 형제 머신에서 상속)",
+        "description": "'rdc config cluster add'로 정의한 클러스터의 풀 멤버를 프로비저닝하고, 각 멤버에 renet을 부트스트랩한 뒤 구성 요소(ceph 먼저)를 설치합니다. 클라우드 공급자는 OpenTofu를 통해 프로비저닝됩니다. KVM 지원은 이후 웨이브에서 제공될 예정입니다.",
+        "descriptionShort": "설정된 클러스터를 프로비저닝합니다",
+        "nameOption": "클러스터 이름",
+        "sshUserOption": "프로비저닝된 멤버의 SSH 사용자"
+      },
+      "description": "클러스터를 프로비저닝하고 관리합니다: 프라이빗 네트워크상의 노드 풀(ceph, k8s-server, k8s-agent, hyperconverged)로 이루어진 이름 있는 집합입니다. 풀 멤버는 실제 머신으로 구체화되므로 모든 -m 명령이 그대로 작동합니다.",
+      "descriptionShort": "클러스터 생성 및 관리 (프라이빗 LAN의 노드 풀)",
+      "destroy": {
+        "aborted": "취소되었습니다.",
+        "confirm": "클러스터 \"{{name}}\"와 모든 멤버를 폐기하시겠습니까?",
+        "description": "프로비저닝된 멤버를 해체하고 클러스터와 그 머신을 설정에서 제거합니다.",
+        "descriptionShort": "클러스터와 그 멤버를 폐기합니다",
+        "forceOption": "확인을 건너뛰고 해체 중 오류가 발생해도 계속 진행합니다",
+        "nameOption": "클러스터 이름"
+      },
+      "fork": {
+        "clusterOption": "포크할 기존 대상 클러스터(반드시 별도의 머신에 있어야 함)",
+        "description": "클러스터 전체를 하위 저장소의 데이터까지 포함해 새 클러스터로 복제합니다: 클러스터 이미지와 PV 이미지의 copy-on-write를 조율한 뒤 노드 identity를 다시 써서 포크가 새 주소로 기동하도록 합니다. 원본 클러스터는 계속 실행됩니다.",
+        "descriptionShort": "클러스터 전체를 복제합니다(데이터 포함)",
+        "nameOption": "클러스터 이름",
+        "tagOption": "포크 태그"
+      },
+      "install": {
+        "description": "이미 프로비저닝된 멤버에 클러스터 구성 요소(ceph 먼저, 그다음 k8s)를 설치합니다.",
+        "descriptionShort": "프로비저닝된 클러스터에 구성 요소를 설치합니다",
+        "nameOption": "클러스터 이름"
+      },
+      "kubeconfig": {
+        "cached": "Kubeconfig가 {{path}}에 캐시되었습니다",
+        "description": "SSH를 통해 클러스터 컨트롤 노드에서 kubeconfig를 가져와 kubectl용으로 로컬에 캐시합니다(0600).",
+        "descriptionShort": "클러스터 kubeconfig를 가져와 캐시합니다",
+        "nameOption": "클러스터 이름"
+      },
+      "migrate": {
+        "description": "클러스터 전체를 하위 저장소의 데이터까지 포함해 다른 머신이나 데이터센터로 짧은 컷오버로 이동합니다(실행 중 핫 프리카피 후 대상에서 정지 및 재시작).",
+        "descriptionShort": "클러스터 전체를 다른 위치로 이동합니다",
+        "nameOption": "클러스터 이름",
+        "toOption": "대상"
+      },
+      "scale": {
+        "countOption": "원하는 멤버 수",
+        "description": "풀의 멤버 수를 변경합니다(머신 추가/제거, 노드 조인/드레인). k8s-agent 풀은 제자리에서 크기가 조정되며, ceph 풀 확장은 cephadm을 통해 직접 수행합니다.",
+        "descriptionShort": "클러스터 풀을 확장하거나 축소합니다",
+        "nameOption": "클러스터 이름",
+        "poolOption": "풀 이름"
+      },
+      "status": {
+        "description": "모든 클러스터를 나열하거나, --name으로 특정 클러스터의 전체 설정을 표시합니다.",
+        "descriptionShort": "클러스터와 그 풀을 표시합니다",
+        "nameOption": "단일 클러스터 표시",
+        "none": "설정된 클러스터가 없습니다. 다음으로 추가하십시오: rdc config cluster add"
       }
     },
     "config": {
@@ -121,6 +161,32 @@
         "allCleared": "모든 기본값이 지워졌습니다",
         "description": "기본값을 지웁니다 (전체 또는 특정 키)",
         "keyCleared": "\"{{key}}\" 지워짐"
+      },
+      "cluster": {
+        "add": {
+          "description": "하나 이상의 풀로 새 클러스터를 선언합니다"
+        },
+        "added": "클러스터 \"{{name}}\" 추가됨",
+        "addPool": {
+          "description": "기존 클러스터에 풀을 추가합니다"
+        },
+        "cidrOption": "프라이빗 네트워크 CIDR (예: 10.0.0.0/24)",
+        "controlNodeOption": "명시적 컨트롤 노드 머신 (기본값: 첫 번째 k8s-server 멤버)",
+        "description": "설정에 클러스터와 그 노드 풀을 선언합니다. 'rdc cluster create'로 프로비저닝하십시오.",
+        "descriptionShort": "클러스터 선언 및 편집",
+        "list": {
+          "description": "설정된 클러스터를 나열합니다"
+        },
+        "nameOption": "클러스터 이름",
+        "none": "설정된 클러스터가 없습니다",
+        "poolAdded": "풀 \"{{pool}}\"이(가) 클러스터 \"{{name}}\"에 추가됨",
+        "poolOption": "풀 사양 name:role:count[:size] (role: ceph|k8s-server|k8s-agent|hyperconverged)",
+        "primitiveOption": "네트워크 프리미티브 (예: vlan, vpc, network)",
+        "providerOption": "공급자: cloudProviders 키 또는 'kvm'",
+        "remove": {
+          "description": "설정에서 클러스터를 제거합니다"
+        },
+        "removed": "클러스터 \"{{name}}\" 제거됨"
       },
       "delete": {
         "description": "설정 파일을 삭제합니다",
@@ -451,6 +517,15 @@
           "optionReveal": "스토리지 구성을 평문으로 표시합니다 (대화형 TTY 전용; 감사 기록됨)"
         }
       }
+    },
+    "credits": {
+      "bundledTitle": "런타임 및 번들 의존성:",
+      "description": "rdc에 번들된 서드파티 구성 요소를 출력합니다: renet이 내장하고 전달하는 바이너리(CRIU, rsync, rclone), 내장된 Node.js 런타임, 번들된 npm 의존성입니다. 버전, SPDX 라이선스 식별자, GPL 준수에 필요한 정확한 버전의 소스 아카이브 URL을 표시합니다. 릴리스 빌드에 포함된 THIRD_PARTY_LICENSES 전문을 출력하려면 --licenses를 사용하십시오.",
+      "descriptionShort": "서드파티 크레딧과 라이선스 준수 정보를 표시합니다",
+      "embeddedTitle": "내장 바이너리 (renet이 전달):",
+      "gplHeader": "GPL 소스 제공:",
+      "header": "Rediacc는 Rediacc 라이선스 하에 배포되는 독점 소프트웨어이며, 다음 서드파티 구성 요소는 각자의 라이선스에 따라 함께 배포됩니다.\n\nrdc에 번들된 서드파티 구성 요소:",
+      "licensesUnavailable": "THIRD_PARTY_LICENSES 전문은 빌드 시점에 생성되며 릴리스 빌드에만 포함됩니다. 개발 모드에서는 CLI 빌드를 실행해 생성하거나, 다음 명령으로 구성 요소별 크레딧을 확인하십시오: rdc credits"
     },
     "datastore": {
       "description": "머신 데이터스토어를 위한 저수준 블록 스토리지 관리 (Ceph RBD 또는 로컬 BTRFS). 일반적으로 초기 머신 설정 또는 머신 간 마이그레이션 시에만 필요합니다. 주요 하위 명령어: init (데이터스토어 생성), status (상태/사용량), fork (다른 머신에 데이터스토어 복제), unfork (스냅샷에서 복원).",
@@ -875,6 +950,8 @@
         "refOption": "체크아웃할 commit GUID(또는 --from과 함께 브랜치 이름)",
         "tagOption": "새 쓰기 가능한 작업 fork의 이름"
       },
+      "clusterDone": "클러스터 \"{{cluster}}\"의 네임스페이스 \"{{repository}}\"를 {{verb}}",
+      "clusterOption": "대상 Kubernetes 클러스터 (-m과는 함께 사용할 수 없음); KUBECONFIG를 주입해 클러스터의 컨트롤 노드로 라우팅합니다",
       "commit": {
         "authorOption": "commit 작성자",
         "completed": "{{commit}} commit됨: {{message}}",
@@ -886,6 +963,7 @@
       },
       "create": {
         "alreadyExists": "저장소 \"{{name}}\"이 이미 설정에 존재합니다",
+        "clusterResolved": "Kubernetes 저장소 \"{{repository}}\"는 클러스터 \"{{cluster}}\"를 대상으로 합니다 (컨트롤 노드 {{controlNode}})",
         "completed": "저장소 생성 완료",
         "description": "새 암호화된 저장소를 생성합니다",
         "failed": "저장소 생성 실패",
@@ -896,9 +974,9 @@
         "starting": "\"{{machine}}\"에서 저장소 \"{{repository}}\" ({{size}})를 생성하는 중..."
       },
       "delete": {
+        "archived": "\"{{repository}}\"의 자격증명이 보관되었습니다",
         "archiveHint": "복구를 위해 자격증명을 보관하려면 --archive-config를 추가하여 다시 실행하십시오",
         "archiveOption": "설정 항목을 나중에 복구할 수 있도록 deletedRepositories로 이동합니다",
-        "archived": "\"{{repository}}\"의 자격증명이 보관되었습니다",
         "cloudBackupHint": "클라우드 백업(있는 경우)은 삭제 후에도 유지됩니다. 고아 클라우드 백업을 제거하려면: rdc storage prune --name <storage> -m {{machine}}",
         "completed": "저장소 삭제 완료",
         "configRetained": "\"{{repository}}\"의 설정 항목이 유지되었습니다 (저장소가 다른 머신에 존재할 수 있습니다). 제거하려면: rdc config repository remove --name {{repository}}",
@@ -956,6 +1034,7 @@
       "fork": {
         "alreadyExists": "저장소 \"{{name}}\"이 이미 설정에 존재합니다",
         "checkpointOption": "포크 전 소스에서 CRIU 체크포인트를 생성합니다 (포크에서 복원을 위해 프로세스 메모리 상태를 캡처합니다)",
+        "clusterResolved": "\"{{parent}}\"를 클러스터 \"{{cluster}}\"의 네임스페이스 \"{{parent}}-{{tag}}\"로 포크하는 중 (컨트롤 노드 {{controlNode}})",
         "completed": "포크 생성 완료. 로컬 배포: repo up {{repository}} -m {{machine}}. 다른 머신으로 포크 마이그레이션: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "저장소의 CoW (Copy-on-Write) 포크를 생성합니다. 포크는 저장소 크기에 관계없이 즉시 완료되며 일정한 시간이 소요됩니다. BTRFS reflink이 기반 이미지를 복제하므로 100 GB 저장소와 1 GB 저장소의 포크가 동일한 시간(약 몇 초)이 걸립니다. 포크는 새 GUID, networkId, IP 범위, 자동 경로 도메인 ({service}-fork-{tag}.{repo}.{machine}.{baseDomain})을 갖으며 완전히 독립적인 복사본입니다. 온라인 포크가 지원되므로 상위 저장소는 계속 실행될 수 있습니다. 포크는 상위의 암호화 자격증명을 자동으로 상속합니다. --checkpoint를 사용하면 포크 전에 CRIU 프로세스 상태를 캡처하며, 포크는 첫 번째 'repo up' 시 자동으로 복원됩니다 (메모리 내 상태가 보존됩니다). 다른 머신으로 포크: (1) repo fork --parent <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target>. 경고: 포크를 위해 'backup push'만 단독으로 사용하지 마십시오. 동일한 GUID를 가진 원시 복사본이 생성됩니다 (독립적인 포크가 아닙니다). 항상 먼저 포크하여 새 식별자를 얻으십시오. 자동 경로는 저장소 이름을 사용하므로 각 포크는 고유한 도메인을 자동으로 얻습니다.",
         "descriptionShort": "저장소의 즉각적인 CoW 포크 (새 GUID, networkId, IP 범위)",
@@ -965,12 +1044,16 @@
         "failed": "포크 생성 실패",
         "immutableOption": "포크를 읽기 전용으로 표시합니다. 마운트를 거부하고 이미지를 영구적으로 바이트 수준에서 안정적으로 유지합니다(머신 간 델타 푸시를 위한 고정된 커밋/베이스)",
         "immutableUpConflict": "repo fork: --immutable과 --up은 함께 사용할 수 없습니다. 불변 포크는 마운트를 거부하므로 시작할 수 없습니다. --up을 제거하거나 일반 포크를 배포하려면 --immutable을 제거하세요.",
+        "providerOption": "새 클러스터를 프로비저닝하여(원본의 풀 구성을 그대로 반영) 그곳으로 포크합니다",
+        "providerPending": "\"{{parent}}\"를 새 {{provider}} 클러스터에 \"{{parent}}-{{tag}}\"로 포크하는 중",
+        "provisioning": "포크 전에 {{provider}}에 클러스터 \"{{cluster}}\"를 프로비저닝하는 중...",
         "registered": "포크 \"{{repository}}\" 등록 완료 ({{guid}}, 네트워크 {{networkId}})",
         "rollback": "\"{{repository}}\"의 설정을 롤백했습니다",
         "starting": "\"{{machine}}\"에서 \"{{parent}}\"를 \"{{repository}}\"로 포크하는 중...",
         "tagOption": "포크의 태그 (name:tag 형태로 생성)",
         "tagRequired": "포크에는 태그가 필요합니다. 사용법: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "tagReservedLatest": "repo fork: 태그 \"latest\"는 그랜드(프로덕션) 저장소용으로 예약되어 있습니다 — 다른 --tag을 선택하세요 (예: \"test\", \"staging\", \"<feature>\")",
+        "toClusterOption": "다른 기존 Kubernetes 클러스터로 포크합니다(클러스터 간 네임스페이스 포크)",
         "upOption": "포크 후 서비스를 마운트하고 시작합니다 (fork + mount + up을 하나의 명령으로)"
       },
       "fsck": {
@@ -1679,9 +1762,10 @@
     },
     "pageTitle": "Rediacc CLI 참조",
     "sectionTitles": {
-      "agent": "에이전트 유틸리티",
       "backup": "백업 및 복원",
+      "cluster": "클러스터 관리",
       "config": "구성 관리",
+      "credits": "서드파티 크레딧",
       "datastore": "데이터스토어 관리",
       "doctor": "시스템 진단",
       "machine": "머신 관리",
@@ -1722,7 +1806,8 @@
     "activationFailed": "활성화에 실패했습니다",
     "affectedChildClones": ". 영향을 받는 하위 클론: {{clones}}. 하위 클론을 먼저 삭제하거나 승격시키세요.",
     "agent": {
-      "commandBlocked": "\"{{command}}\" 명령은 에이전트 모드에서 사용할 수 없습니다.\n\n이 명령은 안전 가드 없이 임의의 저수준 함수를 실행합니다. 대신 타입이 지정된 CLI 명령 또는 MCP 도구를 사용하세요.\n\n대안:\n  - MCP 도구: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI 명령: rdc repo up, rdc repo down, rdc term connect\n  - 사용 가능한 명령을 보려면 \"rdc agent capabilities\"를 실행하세요\n\n원시 접근이 필요하다면 사용자에게 해당 명령을 직접 실행하도록 요청하세요.",
+      "clusterOpBlocked": "클러스터 명령 \"{{command}}\"은(는) 에이전트 모드에서 차단됩니다. 클러스터 작업은 실제 인프라를 프로비저닝하거나 해체하므로 에이전트가 스스로 승인할 수 없습니다. 사용자: 이를 허용하려면 에이전트 세션을 시작하기 전에 터미널에서 REDIACC_ALLOW_CLUSTER_OPS=<cluster-name>(또는 모든 클러스터의 경우 *)을 설정하세요 — 에이전트 내부에서 설정한 재정의는 허용되지 않습니다.",
+      "commandBlocked": "\"{{command}}\" 명령은 에이전트 모드에서 사용할 수 없습니다.\n\n이 명령은 안전 가드 없이 임의의 저수준 함수를 실행합니다. 대신 타입이 지정된 CLI 명령 또는 MCP 도구를 사용하세요.\n\n대안:\n  - MCP 도구: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI 명령: rdc repo up, rdc repo down, rdc term connect\n  - 사용 가능한 명령을 보려면 \"rdc --help\"를 실행하세요\n\n원시 접근이 필요하다면 사용자에게 해당 명령을 직접 실행하도록 요청하세요.",
       "configEdit": "에이전트 환경에서는 대화형 편집기가 차단됩니다.\n\n대안:\n  • rdc config edit --dump > config.jsonc    (안전한 검열된 검사)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\n재정의하려면 에이전트를 시작하기 전에 부모 셸에서\nREDIACC_ALLOW_CONFIG_EDIT=<scope-glob>을 설정하세요 (에이전트의 프로세스 계보에 있어야 합니다).",
       "configEditAncestry": "에이전트 환경에서는 대화형 편집기가 차단됩니다 (REDIACC_ALLOW_CONFIG_EDIT가 설정되었지만 계보 검증에 실패했습니다. 재정의는 에이전트가 아닌 셸에서 설정해야 합니다).\n\n대안:\n  • rdc config edit --dump > config.jsonc    (안전한 검열된 검사)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\n에이전트를 시작하기 전에 부모 셸에서 REDIACC_ALLOW_CONFIG_EDIT=<scope-glob>을 설정하세요.",
       "createGuard": "에이전트 모드에서는 새 그랜드 리포지토리 \"{{name}}\"을(를) 생성할 수 없습니다.\n\n에이전트는 포크 전용 모드에서 작동합니다. 그랜드 리포지토리는 생성 후 에이전트가 접근할 수 없는 프로덕션 환경입니다.\n\n대신 기존 리포지토리를 포크하세요:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\n사용자: 리포지토리 생성을 허용하려면 에이전트 세션을 시작하기 전에 터미널에서 REDIACC_ALLOW_GRAND_REPO=*(또는 특정 리포지토리 이름)을 설정하세요.",
@@ -1752,6 +1837,14 @@
     "authRequired": "인증이 필요합니다. 실행: rdc auth login",
     "cannotDeleteGrandRepo": "그랜드 리포지토리를 삭제할 수 없습니다: {{reason}}",
     "cannotPromote": "승격할 수 없습니다: {{reason}}",
+    "cluster": {
+      "countInvalid": "--count는 음수가 아닌 정수여야 합니다",
+      "dockerOnlyVerb": "\"repo {{verb}}\"는 Docker 저장소만 대상으로 하며 --cluster에 대해서는 실행할 수 없습니다. v1에는 이에 상응하는 Kubernetes 기능이 없습니다",
+      "featureUnsupportedV1": "{{feature}}은(는) v1의 --cluster에서 지원되지 않습니다(컨트롤 노드 뷰); {{hint}}",
+      "pendingContractRegen": "클러스터에서의 \"repo {{verb}}\"는 {{fn}}을 호출하지만, 이는 renet kube 계약 재생성(wave 5)을 기다리는 중입니다. 클러스터와 네임스페이스는 이미 해석되었으므로 계약이 반영되면 다시 실행하십시오.",
+      "targetExclusive": "-m/--machine 또는 --cluster 중 하나만 지정하십시오. 둘 다 지정할 수 없습니다",
+      "targetRequired": "대상 머신(-m) 또는 클러스터(--cluster)가 필요합니다"
+    },
     "clusterNotFound": "Ceph 클러스터 \"{{name}}\"을(를) 찾을 수 없습니다",
     "config": {
       "invalidEmail": "유효하지 않은 이메일 주소: \"{{value}}\".",
@@ -1906,7 +1999,7 @@
     }
   },
   "help": {
-    "agentMode": "\n  에이전트 모드\n    • 포크 전용: 저장소에 변경을 가하기 전에 반드시 포크를 생성하세요\n    • Grand (비포크) 저장소는 에이전트에게 읽기 전용입니다\n    • 워크플로: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> → term <machine> <fork>\n    • JSON 출력이 자동으로 활성화됨 -- 모든 명령이 { success, data, errors, metrics }를 반환\n    • 전체 JSON을 파싱하세요 -- JSON 출력에 tail/head/grep 사용 금지\n    • 응답 크기를 줄이려면 필터 플래그 사용 (예: --repositories, --containers)\n    • 명령 스키마 확인: rdc agent schema \"<command>\"\n",
+    "agentMode": "\n  에이전트 모드\n    • 포크 전용: 저장소에 변경을 가하기 전에 반드시 포크를 생성하세요\n    • Grand (비포크) 저장소는 에이전트에게 읽기 전용입니다\n    • 워크플로: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> → term <machine> <fork>\n    • JSON 출력이 자동으로 활성화됨 -- 모든 명령이 { success, data, errors, metrics }를 반환\n    • 전체 JSON을 파싱하세요 -- JSON 출력에 tail/head/grep 사용 금지\n    • 응답 크기를 줄이려면 필터 플래그 사용 (예: --repositories, --containers)\n",
     "cli": {
       "machineQuery": "머신 상태 표시",
       "repoUp": "저장소 서비스 배포",
@@ -1950,6 +2043,7 @@
       "upload": "로컬 파일을 저장소로 업로드"
     },
     "term": {
+      "cluster": "클러스터 컨트롤 노드로 SSH 접속 (KUBECONFIG 자동 설정, kubectl 네임스페이스 고정)",
       "command": "대화형 셸 없이 명령 실행",
       "machine": "머신으로 SSH 접속",
       "repo": "저장소로 SSH 접속 (DOCKER_HOST 자동 설정)",
@@ -1957,6 +2051,7 @@
     },
     "useHelpAll": "확장 설명을 보려면 --help-all을 사용하세요",
     "vscode": {
+      "cluster": "VS Code에서 클러스터 컨트롤 노드 열기 (KUBECONFIG 자동 설정)",
       "machine": "VS Code에서 머신 열기",
       "repo": "VS Code에서 저장소 열기"
     }
@@ -1999,6 +2094,7 @@
     "importMode": "가져오기 모드 (merge 또는 replace)",
     "insiders": "VS Code Insiders 설정 사용",
     "lang": "언어 재정의 ({{languages}})",
+    "licenses": "릴리스 빌드에 포함된 THIRD_PARTY_LICENSES 전문을 출력합니다",
     "limit": "최대 결과 수",
     "localPath": "로컬 디렉터리 경로 (기본값: 현재 디렉터리)",
     "localPaths": "하나 이상의 로컬 파일 또는 디렉터리 경로 (기본값: 현재 디렉터리)",

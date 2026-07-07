@@ -1,8 +1,8 @@
 /* eslint-disable max-lines */
 /**
- * LocalExecutorService - Direct task execution via the renet bridge.
+ * LocalExecutorService - Direct task execution via renet.
  *
- * This service enables the CLI to work directly with the renet bridge
+ * This service enables the CLI to work directly with renet
  * over SSH, without any intermediate API.
  *
  * Uses direct SSH to the target machine and runs `renet execute --executor local`
@@ -25,6 +25,7 @@ import { formatDuration } from '../../utils/format.js';
 import { startSpinner, stopSpinner } from '../../utils/spinner.js';
 import { auditService } from '../core/audit.js';
 import { configService } from '../config/config-resources.js';
+import { clusterKubeconfigRemotePath, resolveExecutionTarget } from '../cluster/cluster-target.js';
 import { machineConnections } from '../machine/machine-connection.js';
 import {
   issueRepoLicense,
@@ -82,6 +83,13 @@ interface LocalExecuteOptions {
   functionName: string;
   /** Target machine name (must exist in local context) */
   machineName: string;
+  /**
+   * Target a cluster instead of a machine. When set, execution routes to the
+   * cluster's control node and KUBECONFIG is injected into the renet env (the
+   * analog of DOCKER_HOST on a machine). Mutually exclusive with a machine
+   * target; the repo commands wire this in wave 5.
+   */
+  kubeCluster?: string;
   /** Parameters to pass to the function */
   params?: Record<string, unknown>;
   /** Extra machines for multi-machine operations (e.g. backup) */
@@ -576,11 +584,19 @@ export function buildRenetEnvPrefix(params: {
    * `${REDIACC_SECRET_*}` references in the user's compose YAML.
    */
   envSecrets?: Record<string, string>;
+  /**
+   * Remote KUBECONFIG path when the target is a cluster — the k8s analog of
+   * DOCKER_HOST. The `renet kube` wrapper reads it to talk to the cluster.
+   */
+  kubeconfig?: string;
 }): string {
-  const { isDevelopment, telemetryDisabled, otlpCreds, envSecrets } = params;
+  const { isDevelopment, telemetryDisabled, otlpCreds, envSecrets, kubeconfig } = params;
   const envParts: string[] = [];
   if (isDevelopment) {
     envParts.push('REDIACC_ENVIRONMENT=development');
+  }
+  if (kubeconfig) {
+    envParts.push(`KUBECONFIG=${shellQuote(kubeconfig)}`);
   }
   if (telemetryDisabled) {
     // Propagate the opt-out to renet. When set, renet skips its OTel SDK
@@ -620,6 +636,7 @@ export function buildRemoteRenetCommand(params: {
   telemetryDisabled: boolean;
   otlpCreds?: { user: string; pass: string } | null;
   envSecrets?: Record<string, string>;
+  kubeconfig?: string;
 }): string {
   const { remoteRenetPath, eventsMode, ...envParams } = params;
   const eventsFlag = eventsMode ? ' --events' : '';
@@ -1093,7 +1110,8 @@ class LocalExecutorService {
     remoteRenetPath: string,
     eventsMode?: boolean,
     otlpCreds?: { user: string; pass: string } | null,
-    envSecrets?: Record<string, string>
+    envSecrets?: Record<string, string>,
+    kubeconfig?: string
   ): string {
     return buildRemoteRenetCommand({
       remoteRenetPath,
@@ -1102,6 +1120,7 @@ class LocalExecutorService {
       telemetryDisabled: isTelemetryDisabled(),
       otlpCreds,
       envSecrets,
+      kubeconfig,
     });
   }
 
@@ -1144,11 +1163,15 @@ class LocalExecutorService {
     const repoRef =
       typeof options.params?.repository === 'string' ? options.params.repository : undefined;
     const envSecrets = await this.resolveEnvSecrets(repoRef);
+    const kubeconfig = options.kubeCluster
+      ? clusterKubeconfigRemotePath(options.kubeCluster)
+      : undefined;
     const command = this.buildRemoteCommand(
       remoteRenetPath,
       options.eventsMode,
       otlpCreds,
-      envSecrets
+      envSecrets,
+      kubeconfig
     );
     let stdout = '';
     let stderr = '';
@@ -1376,6 +1399,14 @@ class LocalExecutorService {
   }
 
   async execute(options: LocalExecuteOptions): Promise<LocalExecuteResult> {
+    // Target-resolution funnel: a cluster target routes to its control node so
+    // both getLocalMachine call sites downstream resolve the control-node
+    // machine; KUBECONFIG is injected from options.kubeCluster in
+    // runRemoteExecution (the k8s analog of DOCKER_HOST).
+    if (options.kubeCluster) {
+      const target = await resolveExecutionTarget({ cluster: options.kubeCluster });
+      options = { ...options, machineName: target.machineName };
+    }
     const startTime = Date.now();
     const configSpinner = options.quietSpinners ? null : startSpinner(t('timing.step.loading'));
     const cliSteps: { name: string; duration_ms: number; startedAtMs?: number }[] = [];

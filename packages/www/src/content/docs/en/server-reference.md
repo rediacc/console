@@ -225,6 +225,38 @@ renet datastore validate    # Filesystem integrity check
 renet datastore expand      # Expand the datastore online
 ```
 
+### Datastore Backends (Ceph RBD)
+
+A datastore is either local (loop-backed BTRFS on the machine's disk, the default) or backed by an external Ceph cluster via an RBD image. The backend is chosen at init time:
+
+```bash
+# Local backend (default)
+renet datastore init --size 50G
+
+# Ceph RBD backend: BTRFS on an RBD image mapped from an external Ceph cluster
+renet datastore init --backend ceph --pool rbd --image {name} --cluster ceph
+```
+
+On the Ceph backend, fork and unfork use RBD's own copy-on-write primitives instead of BTRFS reflinks:
+
+```bash
+renet datastore fork   --source {image} --target {new-image}   # RBD snapshot -> protect -> clone
+renet datastore unfork --image {image}                         # tear down a clone in dependency order
+```
+
+Ceph nodes never open LUKS (there is no per-image LUKS layer on this backend), so their memory footprint follows Ceph daemon tuning (`osd_memory_target`), not KDF math. A second client can map the same RBD image read-only with a local copy-on-write overlay, which is the read-mostly scale-out path.
+
+### Kubernetes (renet kube)
+
+On a cluster node, renet wraps k3s the way it wraps Docker. `renet kube` is the compose-analog: it injects `KUBECONFIG` and applies manifests or Helm charts from a Rediaccfile's `up()`.
+
+```bash
+sudo renet kube apply -f manifests/     # apply into the repo's namespace
+sudo renet kube -- get pods             # pass through to kubectl in the pinned namespace
+```
+
+Cluster state lives in datastore-backed copy-on-write images (the k3s `--data-dir` binds inside the image mount), which is what lets a whole cluster fork and migrate. Persistent volumes are separate copy-on-write units: RBD images on Ceph (one RADOS namespace per cluster instance and per fork), or small datastore image files via a local PV provisioner on the local backend. The user-facing workflow is in the [Kubernetes](/en/docs/kubernetes) guide; the CLI drives these paths through `rdc cluster` and the cluster-aware `rdc repo` commands.
+
 ## Systemd Services
 
 Each repository creates these systemd units:
@@ -234,6 +266,7 @@ Each repository creates these systemd units:
 | `rediacc-docker-{id}.service` | Isolated Docker daemon |
 | `rediacc-docker-{id}.socket` | Docker API socket activation |
 | `rediacc-loopback-{id}.service` | Loopback IP alias setup |
+| `rediacc-k3s-{id}.service` | Per-cluster k3s node (cluster hosts only) |
 
 Global services shared across all repositories:
 

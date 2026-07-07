@@ -27,12 +27,12 @@ This directory contains reusable CI scripts that work with both GitHub Actions a
 │   │   ├── download-url.sh     # Download tunnel URL artifact
 │   │   └── verify.sh           # Verify tunnel connectivity
 │   ├── env/
-│   │   └── create-bridge-env.sh # Create bridge test .env
+│   │   └── create-e2e-env.sh   # Create E2E test .env
 │   ├── signal/
 │   │   └── create-complete.sh  # Create completion signal files
 │   ├── test/
 │   │   ├── run-unit.sh         # Run unit tests
-│   │   └── run-bridge.sh       # Run bridge (renet) tests
+│   │   └── run-e2e.sh          # Run E2E (renet) tests
 │   ├── docker/
 │   │   ├── build-image.sh      # Build Docker images (supports --ci-tag)
 │   │   └── retag-image.sh      # Re-tag CI images to semantic version
@@ -58,8 +58,8 @@ All scripts are designed to be run from the repository root:
 # Run unit tests
 .ci/scripts/test/run-unit.sh
 
-# Run bridge (renet) tests
-.ci/scripts/test/run-bridge.sh
+# Run E2E (renet) tests
+.ci/scripts/test/run-e2e.sh
 ```
 
 ## Versioning

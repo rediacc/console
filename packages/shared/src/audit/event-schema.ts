@@ -3,7 +3,7 @@
  * (packages/cli/src/services/audit.ts) and the account-server ingest
  * route (private/account/src/routes/license.ts).
  *
- * The event-type union is closed: every renet bridge function the CLI
+ * The event-type union is closed: every renet function the CLI
  * may invoke through localExecutorService, plus three explicit
  * non-bridge events (sync.upload, sync.download, term.session). New
  * event types must be added here AND covered by a Sigma rule stub —
@@ -82,6 +82,20 @@ const datastoreEventTypes = [
 
 const explicitEventTypes = ['cli.sync.upload', 'cli.sync.download', 'cli.term.session'] as const;
 
+// Cluster + k8s-namespace lifecycle ops. functionNameToEventType has no
+// cluster_/kube_ prefix rule, so these map through the `cli.${functionName}`
+// fall-through (underscores preserved), unlike the dotted machine/repo groups.
+const clusterEventTypes = [
+  'cli.cluster_create',
+  'cli.cluster_destroy',
+  'cli.cluster_fork',
+  'cli.cluster_migrate',
+  'cli.cluster_scale',
+  'cli.kube_namespace_create',
+  'cli.kube_namespace_delete',
+  'cli.kube_namespace_fork',
+] as const;
+
 export const MACHINE_OP_EVENT_TYPES = [
   ...machineEventTypes,
   ...repoEventTypes,
@@ -89,7 +103,11 @@ export const MACHINE_OP_EVENT_TYPES = [
   ...datastoreEventTypes,
 ] as const;
 
-export const ALL_EVENT_TYPES = [...MACHINE_OP_EVENT_TYPES, ...explicitEventTypes] as const;
+export const ALL_EVENT_TYPES = [
+  ...MACHINE_OP_EVENT_TYPES,
+  ...clusterEventTypes,
+  ...explicitEventTypes,
+] as const;
 
 export const auditEventTypeEnum = z.enum(ALL_EVENT_TYPES);
 export type AuditEventType = z.infer<typeof auditEventTypeEnum>;
@@ -105,8 +123,13 @@ const baseData = z.object({
   error: z.string().max(500).optional(),
 });
 
+// Machine/repo/backup/datastore ops AND cluster/k8s-namespace ops all carry the
+// same plain baseData, so they share one discriminated-union branch. Kept as one
+// branch (not two) because the audit.ts fall-through assigns a union-typed `type`
+// that TypeScript can only resolve against a single branch.
+const baseOpEventTypes = [...MACHINE_OP_EVENT_TYPES, ...clusterEventTypes] as const;
 const machineOpEvent = z.object({
-  type: z.enum(MACHINE_OP_EVENT_TYPES),
+  type: z.enum(baseOpEventTypes),
   data: baseData,
 });
 
@@ -143,7 +166,7 @@ export const AuditEventsResponseSchema = z.object({
 export type AuditEventsResponse = z.infer<typeof AuditEventsResponseSchema>;
 
 /**
- * Map a renet bridge function name to its canonical event type.
+ * Map a renet function name to its canonical event type.
  * Returns `null` if the function isn't in the closed union — callers
  * should drop the event rather than emit an unrecognized type that
  * would fail server-side validation.

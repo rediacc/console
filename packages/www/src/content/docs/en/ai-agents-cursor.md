@@ -73,5 +73,5 @@ For team projects, add Rediacc-specific Cursor settings to `.cursor/settings.jso
 
 - Cursor's Composer mode works well for multi-step infrastructure tasks
 - Use `@terminal` in Cursor chat to reference recent terminal output
-- The `rdc agent capabilities` command gives Cursor a complete command reference
+- The `rdc --help-all` command gives Cursor a complete command reference
 - Combine `.cursorrules` with a `CLAUDE.md` file for maximum compatibility across AI tools

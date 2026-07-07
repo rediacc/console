@@ -1696,35 +1696,6 @@
   color: white;
 }
 
-/* ===== Design Partner Program overlay =====
-   Active when announcement.enabled is true in src/i18n/translations/en.json.
-   Replaces the per-plan badge with a unified promo pill, displays the
-   original price as struck-through above a big "FREE" headline, and
-   funnels every CTA to /account/. See utils/design-partner-program.ts.
-*/
-.cf-badge-design-partner {
-  background: var(--color-brand-primary);
-  border-color: var(--color-brand-primary);
-  color: white;
-  letter-spacing: 0.02em;
-}
-
-.cf-dp-original .cf-price,
-.cf-dp-original .cf-price-period {
-  text-decoration: line-through;
-  text-decoration-thickness: 2px;
-  opacity: 0.55;
-  font-size: 1.25rem;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-}
-
-.cf-price.cf-dp-free {
-  color: var(--color-brand-primary);
-  letter-spacing: -0.01em;
-  margin-top: var(--space-1);
-}
-
 .cf-annual-note {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);

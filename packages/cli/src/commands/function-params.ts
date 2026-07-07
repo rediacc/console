@@ -1,6 +1,6 @@
 import {
   getValidationErrors,
-  isBridgeFunction,
+  isRenetFunction,
   safeValidateFunctionParams,
 } from '@rediacc/shared/renet-contract';
 import { FUNCTION_DEFINITIONS } from '@rediacc/shared/renet-contract/data/definitions';
@@ -25,7 +25,7 @@ export function coerceCliParams(
   functionName: string,
   params: Record<string, string | boolean | number>
 ): Record<string, unknown> {
-  if (!isBridgeFunction(functionName)) return params;
+  if (!isRenetFunction(functionName)) return params;
   const def = FUNCTION_DEFINITIONS[functionName];
 
   const result: Record<string, unknown> = {};
@@ -53,7 +53,7 @@ export function validateFunctionParams(
   functionName: string,
   params: Record<string, unknown>
 ): void {
-  if (!isBridgeFunction(functionName)) return;
+  if (!isRenetFunction(functionName)) return;
   const validationResult = safeValidateFunctionParams(functionName, params);
   if (!validationResult.success) {
     throw new ValidationError(

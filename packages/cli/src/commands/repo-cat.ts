@@ -8,6 +8,7 @@ import {
 import { outputService } from '../services/core/output.js';
 import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { resolveRepoTarget } from '../utils/repo-target.js';
 
 /** Surface renet's specific error reason from a failed repository_cat result. */
 function renderCatFailure(result: LocalExecuteResult): void {
@@ -52,7 +53,8 @@ export function registerRepoCatCommand(repo: Command): void {
     .command('cat')
     .description(t('commands.repo.cat.description'))
     .requiredOption('--name <name>', t('options.name'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--cluster <name>', t('commands.repo.clusterOption'))
     .requiredOption('--remote-file <path>', t('commands.repo.cat.remoteFileOption'))
     .option('--max-bytes <n>', t('commands.repo.cat.maxBytesOption'))
     .option('--offset <n>', t('commands.repo.cat.offsetOption'))
@@ -65,7 +67,8 @@ export function registerRepoCatCommand(repo: Command): void {
     .action(
       async (options: {
         name: string;
-        machine: string;
+        machine?: string;
+        cluster?: string;
         remoteFile: string;
         maxBytes?: string;
         offset?: string;
@@ -83,6 +86,7 @@ export function registerRepoCatCommand(repo: Command): void {
             throw new Error(`Repository "${name}" not found in context`);
           }
           await configService.ensureRepositoryNetworkId(name);
+          const { machineName, kubeCluster } = await resolveRepoTarget(options);
 
           const params: Record<string, unknown> = { path: options.remoteFile };
           if (options.maxBytes) params.max_bytes = Number.parseInt(options.maxBytes, 10);
@@ -96,14 +100,15 @@ export function registerRepoCatCommand(repo: Command): void {
           outputService.info(
             t('commands.repo.cat.starting', {
               repository: name,
-              machine: options.machine,
+              machine: machineName,
               path: options.remoteFile,
             })
           );
 
           const result = await localExecutorService.execute({
             functionName: 'repository_cat',
-            machineName: options.machine,
+            machineName,
+            kubeCluster,
             params: { repository: name, ...params },
             debug: options.debug,
             skipRouterRestart: options.skipRouterRestart,

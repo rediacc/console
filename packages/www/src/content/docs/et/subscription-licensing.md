@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: et
-sourceHash: 10e9f781881854be
-sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
+sourceHash: de3bcbe1022db82f
+sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
 # Tellimus ja litsentsid
@@ -62,7 +62,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Masina kohad (serveri pool)
 
-Masina kohtade jälgimine toimub serveri poolel. Kui CLI väljastab repositooriumilitsentsi, kontrollib account-server tellimuse masina kohtade kvooti (nt 2 masinat Community jaoks, 3 Professional jaoks). Koht hoitakse 5 tundi alates sellel masinal viimase repositooriumilitsentsi väljastamisest ja vabaneb automaatselt pärast tegevusetust. 10-kohaga Business plaan saab seega aja jooksul katta kümneid masinaid, kuna kohti hoitakse ainult aktiivse ettevalmistamise ajal.
+Masina kohtade jälgimine toimub serveri poolel. Kui CLI väljastab repositooriumilitsentsi, kontrollib account-server tellimuse masina kohtade kvooti. Iga iseteenindusplaan (Community, Professional, Business) sisaldab ühte masina kohta; mitme masinaga juurutused on Enterprise'i lahendus, mille suuruse lepime kokku koos meie partneritega. Koht hoitakse 5 tundi alates sellel masinal viimase repositooriumilitsentsi väljastamisest ja vabaneb automaatselt pärast tegevusetust. Kuna kohta hoitakse ainult aktiivse ettevalmistamise ajal, saab üks koht ikkagi katta mitut masinat kuu jooksul.
 
 Masinas ei salvestata ühtegi masina litsentsi faili. Koha jõustamine toimub väljastamise ajal serveris.
 
@@ -93,12 +93,20 @@ Vaikimisi tasuliste plaanide piirangud on:
 
 | Plaan | Hõljuvad litsentsid | Repositooriumi suurus | Igakuised repositooriumilitsentside väljastamised | Delegeerimissertifikaadi vaikimisi/max |
 |------|-------------------|-----------------|-------------------------------|---|
-| Community | 2 | 10 GB | 100 | 15d / 30d |
-| Professional | 3 | 50 GB | 2,000+ | 60d / 120d |
-| Business | 10 | 200 GB | 5,000+ | 90d / 180d |
-| Enterprise | 25+ | 1 TB+ | 15,000+ | 120d / 365d |
+| Community | 1 | 10 GB | 100 | 15d / 30d |
+| Professional | 1 | 100 GB | 2,000+ | 60d / 120d |
+| Business | 1 | 500 GB | 5,000+ | 90d / 180d |
+| Enterprise | Kohandatud | 1 TB+ | 15,000+ | 120d / 365d |
 
 Lepingupõhised piirangud võivad konkreetse kliendi puhul neid väärtusi tõsta või langetada. Delegeerimissertifikaadi kehtivus on ka kõvasti piiratud väärtusega `subscription.expiresAt + 3 day grace`, nii et igakuise arveldusega tellimused saavad sertifikaadid, mis on joondatud nende arveldustsükliga. Täielikke reegleid vaata jaotisest [Litsentsiahel ja delegeerimine - kehtivuspoliitika](/en/docs/license-chain).
+
+## Tasuta prooviperiood ja Community tagasilangus
+
+Uued kasutajad alustavad 14-päevase tasuta prooviperioodiga Professionali või Businessi plaanil. Krediitkaart võetakse registreerimisel, kuid esimene arve esitatakse alles siis, kui prooviperiood lõpeb, seega ei maksa tühistamine enne seda midagi. Iga klient saab ühe prooviperioodi.
+
+Community on püsiv tasuta baastase. See ei ole enam uutele kontodele otsene registreerimisvõimalus; selle asemel langeb konto Community peale iga kord, kui tellimus lõpeb: tühistamine prooviperioodi ajal, tasulise plaani hilisem tühistamine või ebaõnnestunud makse. Community tagasilanguse puhul jääb alles üks masin, 10 GB repositooriumi kohta ja 100 seadistust kuus. Kontod, mis loodi enne prooviperioodil põhineva mudeli käivitamist, säilitavad oma senise Community juurdepääsu.
+
+Jõustamine jääb pehmeks. Töötavad repositooriumid jätkavad tööd ka pärast tellimuse lõppemist; ainult uus töö (loomine, kahveldamine, suuruse muutmine ja litsentsi uuendamine) nõuab aktiivset õigust.
 
 ## VM-i migratsiooni tähtajaperiood
 
@@ -112,7 +120,7 @@ Praktikas:
 - Käsitsi sekkumist ei ole vaja
 - Kontrolli masina ID-d ja litsentsi olekut käsuga `rdc machine query --system --licenses --name <machine>`
 
-**Edge-kanali kasutajad** saavad 2-kordsed Community piirangud tasuta (20 GB repositooriumid, 200 väljastamist/kuus, 4 masinat). Tasulised plaanid on saadaval ainult Stable-kanalil. Üksikasju vaata jaotisest [Väljalaskekanalid](/en/docs/release-channels).
+**Edge-kanali kontod** töötavad Community plaanil 2-kordsete piirangutega (20 GB repositooriumid, 200 seadistust/kuus, 2 masinat). Tasulised plaanid on saadaval ainult Stable-kanalil. Üksikasju vaata jaotisest [Väljalaskekanalid](/en/docs/release-channels).
 
 ## Mis juhtub repositooriumi loomisel, käivitamisel, peatamisel ja taaskäivitamisel
 

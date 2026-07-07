@@ -9,7 +9,7 @@ import * as fsSync from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS, NETWORK_DEFAULTS, PROCESS_DEFAULTS } from '@rediacc/shared/config';
-import type { BridgeFunctionName } from '@rediacc/shared/renet-contract/data/functions.generated';
+import type { RenetFunctionName } from '@rediacc/shared/renet-contract/data/functions.generated';
 import { FUNCTION_REQUIREMENTS } from '@rediacc/shared/renet-contract/data/functions.generated';
 import { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
@@ -161,7 +161,7 @@ export async function provisionRenetToRemote(
 /** Check whether a bridge function requires the BTRFS datastore. */
 function functionRequiresDatastore(functionName: string): boolean {
   if (!(functionName in FUNCTION_REQUIREMENTS)) return false;
-  const reqs = FUNCTION_REQUIREMENTS[functionName as BridgeFunctionName];
+  const reqs = FUNCTION_REQUIREMENTS[functionName as RenetFunctionName];
   return reqs.requirements.repository === true;
 }
 
@@ -391,7 +391,7 @@ function buildRepositories(
 }
 
 /**
- * Build QueueVaultV2 structure for local/s3 execution.
+ * Build RenetVault structure for local/s3 execution.
  */
 export function buildLocalVault(opts: BuildLocalVaultOptions): string {
   const extraMachines = buildExtraMachines(
