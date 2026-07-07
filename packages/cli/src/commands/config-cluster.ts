@@ -36,7 +36,8 @@ function parsePoolSpec(spec: string): ClusterPool {
   if (!ROLES.includes(role as ClusterPoolRole)) {
     throw new ValidationError(`Pool role "${role}" must be one of: ${ROLES.join(', ')}`);
   }
-  const count = Number.parseInt(countRaw, 10);
+  // Number() (not parseInt) so "3abc" and "1.5" are rejected, not truncated.
+  const count = Number(countRaw);
   if (!Number.isInteger(count) || count < 1) {
     throw new ValidationError(`Pool count "${countRaw}" must be a positive integer`);
   }

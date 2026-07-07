@@ -81,7 +81,8 @@ function registerScale(cluster: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (options: { name: string; pool: string; count: string } & DebugOpt) => {
       await assertCommandPolicy(CMD.CLUSTER_SCALE, undefined, options.name);
-      const count = Number.parseInt(options.count, 10);
+      // Number() (not parseInt) so "3abc" and "1.5" are rejected, not truncated.
+      const count = Number(options.count);
       if (!Number.isInteger(count) || count < 0) {
         throw new ValidationError(t('errors.cluster.countInvalid'));
       }

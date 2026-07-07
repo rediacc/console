@@ -234,6 +234,10 @@ async function handleDeleteSuccess(
 /** Handle `repo delete --cluster <name>`: dispatch kube_namespace_delete on the cluster's control node (see handleRepoCreateCluster). */
 async function handleRepoDeleteCluster(name: string, options: { cluster: string }): Promise<void> {
   try {
+    // Cluster repos have no local-config entry (D15: explicit targeting, no
+    // stored home binding), but the destructive-command policy gate applies
+    // to them exactly like the Docker path.
+    await assertCommandPolicy(CMD.REPO_DELETE, name);
     const { machineName, kubeCluster } = await resolveRepoTarget({ cluster: options.cluster });
     const cluster = kubeCluster ?? options.cluster;
     outputService.info(

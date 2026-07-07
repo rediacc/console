@@ -494,12 +494,19 @@ export async function scaleCluster(
   // Materialize new member machine records before joining (scale-up), or leave
   // records for the operator to prune after draining (scale-down).
   if (targetCount > currentCount) {
+    if (cluster.provider !== 'kvm') {
+      // Refuse clearly instead of failing later on an empty member IP.
+      throw new Error(
+        `Scaling UP a "${cluster.provider}" pool needs the new instances provisioned first ` +
+          `(cloud scale-up provisioning is a follow-up; scale-down and KVM pools work today).`
+      );
+    }
     await materializeClusterMachines(
       clusterName,
       Array.from({ length: targetCount - currentCount }, (_, k) => ({
         pool: pool.name,
         index: currentCount + k + 1,
-        ip: '', // filled by provisioning in a full cloud flow; KVM members pre-exist
+        ip: '', // placeholder for a pre-existing KVM VM (kvm-only path).
         user: DEFAULTS.CLOUD.SSH_USER,
       }))
     );
