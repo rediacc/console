@@ -144,15 +144,18 @@ test.describe
       return res.stdout.trim();
     };
 
-    const rbdImageCount = async (radosNs: string): Promise<number> => {
+    const rbdImages = async (radosNs: string): Promise<string[] | null> => {
       const res = await rbd(`ls ${POOL} --namespace ${radosNs} --format json`);
-      if (res.code !== 0) return -1;
+      if (res.code !== 0) return null;
       try {
-        return (JSON.parse(res.stdout.trim() || '[]') as string[]).length;
+        return JSON.parse(res.stdout.trim() || '[]') as string[];
       } catch {
-        return -1;
+        return null;
       }
     };
+
+    const rbdImageCount = async (radosNs: string): Promise<number> =>
+      (await rbdImages(radosNs))?.length ?? -1;
 
     const radosNamespaceExists = async (radosNs: string): Promise<boolean> => {
       const res = await rbd(`namespace ls ${POOL} --format json`);
@@ -328,8 +331,28 @@ test.describe
       expect(await poll(() => podRunning(NS), 180_000)).toBe(true);
       expect(await marker(NS)).toBe('original-data');
 
-      // The RBD image appears in the repo's RADOS namespace.
-      expect(await rbdImageCount(NS)).toBe(1);
+      // The bound PV's backing image lives in the repo's RADOS namespace.
+      // Not an exact-count check: under slow IO the external-provisioner's
+      // CreateVolume retries can journal-orphan an extra csi-vol image
+      // (observed on CI: PVC Pending ~80s, then bound + one orphan). The fork
+      // clones only PVC-backed images, and teardown reaps whole namespaces,
+      // so step 6's end-state no-orphan assertion is the real gate.
+      const volumeName = (
+        await kubectl(`-n ${NS} get pvc data-web-0 -o jsonpath="{.spec.volumeName}"`)
+      ).stdout.trim();
+      const imageName = (
+        await kubectl(`get pv ${volumeName} -o jsonpath="{.spec.csi.volumeAttributes.imageName}"`)
+      ).stdout.trim();
+      expect(imageName, `PV ${volumeName} has no csi imageName`).not.toBe('');
+      const images = await rbdImages(NS);
+      expect(images, 'rbd ls failed').not.toBeNull();
+      expect(images).toContain(imageName);
+      if (images && images.length !== 1) {
+        process.stdout.write(
+          `[suite16] provisioner retry left ${images.length - 1} orphan image(s): ` +
+            `${images.filter((i) => i !== imageName).join(', ')} (teardown must reap them)\n`
+        );
+      }
     });
 
     test('5. RBD namespace fork: images CoW-clone into a NEW RADOS namespace, data diverges, parent untouched', async () => {
