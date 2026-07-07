@@ -49,7 +49,7 @@ TEMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
 VERSION=$(cd "$REPO_ROOT" && git describe --tags --always 2>/dev/null || echo "dev")
-"$RENET_DIR/bin/renet" bridge generate-types --output "$TEMP_DIR" --version "$VERSION"
+"$RENET_DIR/bin/renet" functions generate-types --output "$TEMP_DIR" --version "$VERSION"
 
 STALE=()
 for file in "${FILES[@]}"; do
