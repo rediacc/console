@@ -399,7 +399,10 @@ test.describe
           })
         )
       ).toBe(true);
-      expect(await poll(() => radosNamespaceExists(NS).then((e) => !e), 90_000, 3_000)).toBe(true);
+      // The base namespace clears only after ceph-csi's async reclaim of the
+      // dynamic RBD image completes (reclaimPolicy Delete); on a loaded CI
+      // runner that reclaim alone can eat the old 90s budget.
+      expect(await poll(() => radosNamespaceExists(NS).then((e) => !e), 180_000, 3_000)).toBe(true);
 
       // No orphan RADOS namespaces remain on the pool.
       const nsList = await rbd(`namespace ls ${POOL} --format json`);

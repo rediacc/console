@@ -275,10 +275,12 @@ export class InfrastructureManager {
       const installDir = VM_RENET_INSTALL_PATH.substring(0, VM_RENET_INSTALL_PATH.lastIndexOf('/'));
       const installRoot = installDir.substring(0, installDir.lastIndexOf('/'));
       const currentDir = `${installRoot}/current`;
+      // install(1) copies the ~100MB binary; on an IO-starved CI runner right
+      // after a VM reset that can exceed 10s, so give it real headroom.
       const moveResult = await this.sshExecutor.execute(
         ip,
         `sudo mkdir -p ${installDir} ${currentDir} && sudo install -m 755 /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo ln -sf ${VM_RENET_INSTALL_PATH} ${currentDir}/renet && sudo ln -sf ${VM_RENET_INSTALL_PATH} /usr/bin/renet`,
-        { execTimeout: 10000 }
+        { execTimeout: 60000 }
       );
 
       if (!moveResult.success) {
