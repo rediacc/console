@@ -219,6 +219,12 @@ export class KubeMethods {
       networkId: opts.networkId,
       cluster: opts.cluster,
       datastore: opts.datastore,
+      // Must be forwarded: the first delete removes the persisted ceph
+      // marker with the manifests dir, so a REDRIVEN delete can only find
+      // the RADOS namespace through the explicit flag - without it the
+      // ceph teardown is silently skipped (a ~250ms no-op).
+      cephPool: opts.cephPool,
+      cephCluster: opts.cephCluster,
     });
   }
 
