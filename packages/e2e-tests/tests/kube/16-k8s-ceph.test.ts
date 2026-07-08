@@ -410,22 +410,32 @@ test.describe
 
       // Delete the base namespace: ceph-csi reclaims the dynamic RBD image (SC
       // reclaimPolicy Delete), then the RADOS namespace is removed.
-      expect(
-        w1.isSuccess(
-          await w1.kubeNamespaceDelete({
-            mountPath: MOUNT,
-            networkId: NETWORK_ID,
-            namespace: NS,
-            cluster: CLUSTER,
-            datastore: DATASTORE,
-            cephPool: POOL,
-          })
-        )
-      ).toBe(true);
-      // The base namespace clears only after ceph-csi's async reclaim of the
-      // dynamic RBD image completes (reclaimPolicy Delete); on a loaded CI
-      // runner that reclaim alone can eat the old 90s budget.
-      expect(await poll(() => radosNamespaceExists(NS).then((e) => !e), 180_000, 3_000)).toBe(true);
+      // Redriven: ceph-csi finishes DeleteVolume via an async ceph-mgr trash
+      // task that can outlive one delete call's internal retry budget on a
+      // loaded runner (the image sits in the namespace's trash, unpurgeable,
+      // until the mgr task lets go). kube_namespace_delete is idempotent, so
+      // re-invoking it re-runs the unmap/image/trash sweep and the namespace
+      // remove once the reclaim has settled.
+      const deleteBase = async () =>
+        w1.kubeNamespaceDelete({
+          mountPath: MOUNT,
+          networkId: NETWORK_ID,
+          namespace: NS,
+          cluster: CLUSTER,
+          datastore: DATASTORE,
+          cephPool: POOL,
+        });
+      expect(w1.isSuccess(await deleteBase())).toBe(true);
+      const baseGone = () => radosNamespaceExists(NS).then((e) => !e);
+      let cleared = await poll(baseGone, 60_000, 3_000);
+      for (let redrive = 0; !cleared && redrive < 3; redrive++) {
+        process.stdout.write(
+          `[suite16] base namespace still present; redriving delete (#${redrive + 1})\n`
+        );
+        await deleteBase();
+        cleared = await poll(baseGone, 60_000, 3_000);
+      }
+      expect(cleared).toBe(true);
 
       // No orphan RADOS namespaces remain on the pool.
       const nsList = await rbd(`namespace ls ${POOL} --format json`);
