@@ -145,6 +145,16 @@ export class OpsVMLifecycle {
         return { success: false, duration: Date.now() - startTime };
       }
 
+      // An orchestration failure (registry/docker/ceph provisioning) leaves
+      // SSH-reachable but unusable VMs: the readiness probe below would pass
+      // and the suite would then spin its whole ceph-health budget on a
+      // cluster that was never provisioned. Fail fast with renet's error.
+      if (combinedOutput.includes('orchestration failed')) {
+        console.error('[OpsVMLifecycle] ops up orchestration failed - failing the reset');
+        console.error('[OpsVMLifecycle] Error output:', combinedOutput.slice(-1000));
+        return { success: false, duration: Date.now() - startTime };
+      }
+
       // Note: The command may return non-zero if middleware auth fails (rdc not found),
       // but VMs may still be successfully created. We verify actual VM readiness below.
       console.warn(
