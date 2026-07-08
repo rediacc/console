@@ -283,9 +283,14 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Install shfmt
+        # `curl | sh` exits 0 on an empty body (webi.sh outage), so the miss
+        # only surfaced later as a bare "shfmt is not installed" the watchdog
+        # cannot classify as network. Verify the binary here so an install
+        # failure is loud in the step that owns it.
         run: |
           curl -sS https://webi.sh/shfmt | sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+          "$HOME/.local/bin/shfmt" --version
       - run: .ci/scripts/security/shellcheck.sh
       - run: .ci/scripts/security/shfmt.sh
       - run: .ci/scripts/security/check-commands.sh
