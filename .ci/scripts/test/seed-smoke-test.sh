@@ -92,8 +92,8 @@ VALUES ('${TEAM_ID}', '${ORG_ID}', 'Default', 'default', 1, '${NOW}', '${NOW}');
 INSERT OR IGNORE INTO team_memberships (id, team_id, user_id, role, joined_at)
 VALUES ('${TEAM_MEMBERSHIP_ID}', '${TEAM_ID}', '${USER_ID}', 'member', '${NOW}');
 
-INSERT OR IGNORE INTO subscriptions (id, customer_id, customer_email, type, status, max_activations, plan_code, created_at, updated_at, org_id, repo_license_issuances_usage_adjustment)
-VALUES ('${SUB_ID}', '${CUSTOMER_ID}', '${EMAIL}', 'subscription', 'active', 2, 'COMMUNITY', '${NOW}', '${NOW}', '${ORG_ID}', 0);
+INSERT OR IGNORE INTO subscriptions (id, customer_id, customer_email, type, status, max_activations, plan_code, created_at, updated_at, org_id, repo_license_issuances_usage_adjustment, metadata)
+VALUES ('${SUB_ID}', '${CUSTOMER_ID}', '${EMAIL}', 'subscription', 'active', 2, 'COMMUNITY', '${NOW}', '${NOW}', '${ORG_ID}', 0, '{\"trialUsedAt\":\"${NOW}\"}');
 
 INSERT OR IGNORE INTO api_tokens (id, name, token_hash, subscription_id, team_id, scopes, created_at, created_by_user_id)
 VALUES ('${TOKEN_ID}', 'Smoke Test Token', '${TOKEN_HASH}', '${SUB_ID}', '${TEAM_ID}', '[\"license:activate\",\"license:read\"]', '${NOW}', '${USER_ID}');
