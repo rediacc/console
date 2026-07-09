@@ -40,3 +40,5 @@ playwright  # BLOCKER: a playwright version bump changes the bundled browser rev
 # ESLint v10 core — same constraint as @eslint/js: plugin ecosystem lacks v10 support
 eslint  # BLOCKER: v10 requires typescript-eslint/import/react plugin majors that have no eslint v10 peer support yet; take together with @eslint/js in a dedicated lint-tooling PR
 
+# wrangler — npm latest currently points BEHIND our version (4.107.1 hotfix published after 4.108.0)
+wrangler  # BLOCKER: private/account pins wrangler 4.108.0 whose peerOptional workers-types is ^5, matching our @cloudflare/workers-types ^5 pair; npm's latest dist-tag moved back to the 4.107.1 hotfix whose peer range is ^4, so "upgrading" to latest would recreate the npm ci ERESOLVE this pair fixed - drop this entry once latest advances past 4.108.0

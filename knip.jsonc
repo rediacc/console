@@ -94,6 +94,10 @@
         // BLOCKER: rotation CLI shells out to the authenticated gh binary for GitHub org-secret pushes and to openssl for key generation; host tools, not npm deps
         "gh",
         "openssl"
+      ],
+      "ignoreUnresolved": [
+        // BLOCKER: knip 6.25's script parser reads the execSync('./rdc.sh ...') command strings in the rotation tool as an import specifier; it is the monorepo wrapper script invoked at its resolved repo root, not a module
+        "./rdc.sh"
       ]
     },
     "private/account/web": {
@@ -142,15 +146,18 @@
     "fast-xml-parser"
   ],
   "ignoreBinaries": [
-    // BLOCKER: platform/system tools spawned via child_process at runtime by the CLI (user lookups, keyrings, service control, Windows/macOS shells); host binaries, never npm-managed
+    // BLOCKER: platform/system tools spawned via child_process at runtime by the CLI (user lookups, keyrings, service control, Windows/macOS shells); host binaries, never npm-managed. knip 6.25 additionally resolves bare `which` (doctor PATH probes), `powershell` (secure-storage fallback beside powershell.exe), and `qemu-img` (e2e VM image inspection on the KVM host)
     "cmd.exe",
     "dscl",
     "getent",
     "keyctl",
     "osascript",
+    "powershell",
     "powershell.exe",
+    "qemu-img",
     "security",
     "systemctl",
+    "which",
     "wsl.exe",
 
     // BLOCKER: terminal emulators probed by the CLI terminal launcher (the remote/ terminal detector tries each candidate); presence is optional per host
