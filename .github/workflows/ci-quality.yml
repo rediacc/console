@@ -678,6 +678,11 @@ jobs:
       - run: .ci/scripts/setup/install-deps.sh
       - name: Build shared package
         run: npm run build --workspace=@rediacc/shared
+      # The cluster services import @rediacc/provisioning at runtime (OpsManager),
+      # which resolves through its dist/. Without this the suites that pull in
+      # cluster-provision fail with "Failed to resolve entry for package".
+      - name: Build provisioning package
+        run: npm run build --workspace=@rediacc/provisioning
       - name: Run CLI unit tests
         run: npm run test:unit --workspace=@rediacc/cli
 

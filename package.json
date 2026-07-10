@@ -122,7 +122,7 @@
     "proper-lockfile": "^4.1.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.2",
+    "@biomejs/biome": "^2.5.3",
     "@eslint/js": "^9.39.2",
     "@eslint/json": "^2.0.1",
     "@types/node": "^22.20.0",
