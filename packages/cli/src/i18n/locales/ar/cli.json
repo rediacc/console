@@ -171,13 +171,18 @@
           "description": "إضافة تجمع إلى عنقود موجود"
         },
         "cidrOption": "CIDR الشبكة الخاصة (مثلاً 10.0.0.0/24)",
+        "controlIdOption": "KVM: VM id لعقدة التحكم والسجل (الافتراضي: 1)",
         "controlNodeOption": "جهاز عقدة تحكم صريح (الافتراضي: أول عضو k8s-server)",
         "description": "تعريف العناقيد وتجمعات عقدها في الإعداد. جهّزها بـ 'rdc cluster create'.",
         "descriptionShort": "تعريف العناقيد وتحريرها",
+        "dockerRegistryOption": "KVM: نقطة نهاية سجل Docker داخل VM لهذا العنقود",
         "list": {
           "description": "سرد العناقيد المُعدَّة"
         },
         "nameOption": "اسم العنقود",
+        "netBaseOption": "KVM: بادئة الشبكة، الأوكتيتات الثلاثة الأولى (مثلاً 192.168.112)",
+        "netNameOption": "KVM: شبكة libvirt لهذا العنقود (مثلاً renet12)",
+        "netOffsetOption": "KVM: الإزاحة المضافة إلى VM id عند اشتقاق العنوان",
         "none": "لا توجد عناقيد مُعدَّة",
         "poolAdded": "تمت إضافة التجمع \"{{pool}}\" إلى العنقود \"{{name}}\"",
         "poolOption": "مواصفات التجمع name:role:count[:size] (الدور: ceph|k8s-server|k8s-agent|hyperconverged)",

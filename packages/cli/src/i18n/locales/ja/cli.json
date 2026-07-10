@@ -171,13 +171,18 @@
           "description": "既存のクラスターにプールを追加する"
         },
         "cidrOption": "プライベートネットワークの CIDR（例: 10.0.0.0/24）",
+        "controlIdOption": "KVM: コントロールおよびレジストリノードの VM id（デフォルト: 1）",
         "controlNodeOption": "コントロールノードとする明示的なマシン（デフォルト: 最初の k8s-server メンバー）",
         "description": "設定内にクラスターとそのノードプールを宣言する。'rdc cluster create' でプロビジョニングする。",
         "descriptionShort": "クラスターを宣言・編集する",
+        "dockerRegistryOption": "KVM: このクラスターの VM 内 Docker レジストリのエンドポイント",
         "list": {
           "description": "設定済みのクラスターを一覧表示する"
         },
         "nameOption": "クラスター名",
+        "netBaseOption": "KVM: ネットワークプレフィックス、最初の3オクテット（例: 192.168.112）",
+        "netNameOption": "KVM: このクラスターの libvirt ネットワーク（例: renet12）",
+        "netOffsetOption": "KVM: アドレスを導出する際に各 VM id に加算されるオフセット",
         "none": "クラスターが設定されていません",
         "poolAdded": "プール \"{{pool}}\" をクラスター \"{{name}}\" に追加しました",
         "poolOption": "プール指定 name:role:count[:size]（role: ceph|k8s-server|k8s-agent|hyperconverged）",

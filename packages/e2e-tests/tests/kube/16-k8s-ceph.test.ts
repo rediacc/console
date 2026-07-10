@@ -37,6 +37,21 @@ const FORK_NS = `${NS}-joseph`;
 const KC = `${MOUNT}/.rediacc/k3s/kubeconfig.yaml`;
 const POOL = `k8srbd${Date.now().toString(36)}`;
 
+// The image + protected snapshot used to wedge a RADOS namespace on purpose in
+// the teardown test, so the leak-reporting path runs deterministically.
+const WEDGE_IMAGE = 'e2e-wedge';
+const WEDGE_SNAP = 'pin';
+
+// The `leaked` payload of kube_namespace_delete (renet NamespaceTeardownLeak).
+interface NamespaceTeardownLeak {
+  radosNamespace: string;
+  /** Absent for a datastore-backed namespace, which has no ceph state to leak. */
+  pool?: string;
+  images?: string[];
+  pvImageDir?: string;
+  reason: string;
+}
+
 // A Ceph-backed k8s app: an annotated ClusterIP Service (routable) plus a
 // StatefulSet whose volumeClaimTemplate requests the per-namespace RBD
 // StorageClass (rediacc-rbd-<ns>). The pod writes a marker into the RBD volume so
@@ -169,6 +184,95 @@ test.describe
       }
     };
 
+    // The ceph marker renet persists beside the rendered manifests; it records
+    // which pool backs the namespace so a later delete or `auto` fork finds it.
+    const markerExists = async (radosNs: string): Promise<boolean> => {
+      const path = `${DATASTORE}/manifests/${CLUSTER}/${radosNs}/.rbd-backend.json`;
+      const res = await w1.executeViaBridge(`sudo test -f ${path}`);
+      return res.code === 0;
+    };
+
+    // wedgeNamespace pins an image in the RADOS namespace so no sweep can clear
+    // it: `rbd rm` refuses while a snapshot exists, and `rbd snap rm` refuses
+    // while that snapshot is protected. Deterministic, unlike the reclaim race.
+    const wedgeNamespace = async (radosNs: string): Promise<void> => {
+      const ns = `--pool ${POOL} --namespace ${radosNs}`;
+      expect((await rbd(`create ${ns} --size 8 ${WEDGE_IMAGE}`)).code).toBe(0);
+      expect((await rbd(`snap create ${ns} ${WEDGE_IMAGE}@${WEDGE_SNAP}`)).code).toBe(0);
+      expect((await rbd(`snap protect ${ns} ${WEDGE_IMAGE}@${WEDGE_SNAP}`)).code).toBe(0);
+    };
+
+    // Best-effort inverse of wedgeNamespace. Safe to call when nothing is wedged:
+    // every step tolerates an already-absent object, so it doubles as the cleanup
+    // net for a test that failed midway (a protected snapshot left behind would
+    // wedge the namespace for every later run against a reused pool).
+    const unwedgeNamespace = async (radosNs: string): Promise<void> => {
+      const ns = `--pool ${POOL} --namespace ${radosNs}`;
+      await rbd(`snap unprotect ${ns} ${WEDGE_IMAGE}@${WEDGE_SNAP}`);
+      await rbd(`snap rm ${ns} ${WEDGE_IMAGE}@${WEDGE_SNAP}`);
+      await rbd(`rm ${ns} ${WEDGE_IMAGE}`);
+    };
+
+    // `renet functions once` re-emits each line of the child command's stdout as
+    // a logfmt record: `time=... level=info msg="[kube_namespace_delete] <line>"`.
+    // Recover the child's own stdout by pulling each msg value (logfmt quotes it
+    // exactly like a JSON string) and stripping the function-name prefix.
+    const unwrapFunctionOutput = (stdout: string): string => {
+      const lines: string[] = [];
+      for (const record of stdout.split('\n')) {
+        const quoted = /\bmsg="((?:[^"\\]|\\.)*)"/.exec(record);
+        if (!quoted) continue;
+        let msg: string;
+        try {
+          msg = JSON.parse(`"${quoted[1]}"`) as string;
+        } catch {
+          continue;
+        }
+        const inner = /^\[[a-z_]+\] ([\s\S]*)$/.exec(msg);
+        if (inner) lines.push(inner[1]);
+      }
+      return lines.length > 0 ? lines.join('\n') : stdout;
+    };
+
+    // kube_namespace_delete emits a pretty-printed `{namespace, leaked?}` object.
+    // json.MarshalIndent puts the outer braces at column 0 and indents everything
+    // nested, so a line-anchored match isolates the object once unwrapped.
+    //
+    // Read both streams: renet's logger writes the re-emitted child output to
+    // stderr, so the payload never appears on stdout.
+    const parseLeak = (res: ExecResult): NamespaceTeardownLeak | null => {
+      const stdout = unwrapFunctionOutput(`${res.stdout}\n${res.stderr}`);
+      const objects = [...stdout.matchAll(/^\{[\s\S]*?^\}/gm)].map((m) => m[0]);
+      for (const raw of objects.reverse()) {
+        try {
+          const obj = JSON.parse(raw) as { namespace?: string; leaked?: NamespaceTeardownLeak };
+          if (obj.namespace !== undefined) return obj.leaked ?? null;
+        } catch {
+          // Not the delete payload; keep looking.
+        }
+      }
+      return null;
+    };
+
+    // kube_namespace_delete takes no --ceph-pool: it recovers the pool from the
+    // persisted ceph marker, which a leaked teardown now leaves in place.
+    //
+    // A wedged namespace cannot drain, so the delete spends its whole internal
+    // retry budget (2 minutes) before it can report the leak. That is longer
+    // than the default BRIDGE_TIMEOUT of 120s locally, so the wedged call needs
+    // its own timeout or the harness kills it before it prints the payload.
+    const deleteBase = async (timeout?: number): Promise<ExecResult> =>
+      w1.kubeNamespaceDelete({
+        mountPath: MOUNT,
+        networkId: NETWORK_ID,
+        namespace: NS,
+        cluster: CLUSTER,
+        datastore: DATASTORE,
+        timeout,
+      });
+
+    const WEDGED_DELETE_TIMEOUT_MS = 300_000;
+
     const teardownNode = async (): Promise<void> => {
       await w1.executeViaBridge(
         `sudo renet kube uninstall --mount-path ${MOUNT} --network-id ${NETWORK_ID}`
@@ -197,6 +301,9 @@ test.describe
       // failure so the live state can be inspected (provisioner logs, PVC events).
       if (process.env.KEEP_CLUSTER === '1') return;
       // Best-effort namespace/backend cleanup, then node teardown + pool drop.
+      // The wedge is dropped first: a protected snapshot blocks every sweep, so
+      // a test that failed while wedged would otherwise stall this teardown.
+      await unwedgeNamespace(NS).catch(() => undefined);
       await w1
         .kubeNamespaceDelete({
           mountPath: MOUNT,
@@ -204,7 +311,6 @@ test.describe
           namespace: FORK_NS,
           cluster: CLUSTER,
           datastore: DATASTORE,
-          cephPool: POOL,
         })
         .catch(() => undefined);
       await w1
@@ -214,7 +320,6 @@ test.describe
           namespace: NS,
           cluster: CLUSTER,
           datastore: DATASTORE,
-          cephPool: POOL,
         })
         .catch(() => undefined);
       await teardownNode();
@@ -400,7 +505,6 @@ test.describe
             namespace: FORK_NS,
             cluster: CLUSTER,
             datastore: DATASTORE,
-            cephPool: POOL,
           })
         )
       ).toBe(true);
@@ -408,25 +512,43 @@ test.describe
         true
       );
 
-      // Delete the base namespace: ceph-csi reclaims the dynamic RBD image (SC
-      // reclaimPolicy Delete), then the RADOS namespace is removed.
-      // Redriven: ceph-csi finishes DeleteVolume via an async ceph-mgr trash
-      // task that can outlive one delete call's internal retry budget on a
-      // loaded runner (the image sits in the namespace's trash, unpurgeable,
-      // until the mgr task lets go). kube_namespace_delete is idempotent, so
-      // re-invoking it re-runs the unmap/image/trash sweep and the namespace
-      // remove once the reclaim has settled.
-      const deleteBase = async () =>
-        w1.kubeNamespaceDelete({
-          mountPath: MOUNT,
-          networkId: NETWORK_ID,
-          namespace: NS,
-          cluster: CLUSTER,
-          datastore: DATASTORE,
-          cephPool: POOL,
-        });
-      expect(w1.isSuccess(await deleteBase())).toBe(true);
+      // A protected snapshot makes `rbd snap rm` (and so the whole namespace
+      // sweep) fail for as long as it exists. That wedges the base namespace on
+      // purpose, which is the only way to exercise the leak path deterministically:
+      // the real trigger is an async ceph-mgr trash task outliving the delete's
+      // retry budget on a loaded runner, and that races rather than reproduces.
+      await wedgeNamespace(NS);
+      try {
+        // The wedged delete SUCCEEDS (the k8s namespace is gone; there is nothing
+        // the caller can retry differently) but must report exactly what it leaked
+        // rather than swallowing it into a log line.
+        const wedged = await deleteBase(WEDGED_DELETE_TIMEOUT_MS);
+        expect(w1.isSuccess(wedged), `wedged delete: ${wedged.stderr || wedged.stdout}`).toBe(true);
+        const leaked = parseLeak(wedged);
+        expect(
+          leaked,
+          `delete must report the leak; output=${wedged.stdout}${wedged.stderr}`
+        ).not.toBeNull();
+        expect(leaked?.radosNamespace).toBe(NS);
+        expect(leaked?.images).toContain(WEDGE_IMAGE);
+        expect(await radosNamespaceExists(NS)).toBe(true);
+
+        // The ceph marker names the pool backing this namespace. A leaked teardown
+        // that deleted it would strand the surviving RADOS namespace, since the
+        // next delete could no longer resolve the pool.
+        expect(await markerExists(NS), 'ceph marker must survive a leaked teardown').toBe(true);
+      } finally {
+        await unwedgeNamespace(NS);
+      }
+
+      // Redrive: the surviving marker is what lets this delete rediscover the
+      // pool. ceph-csi can still be finishing DeleteVolume through an async
+      // ceph-mgr trash task, so the idempotent delete is re-invoked until the
+      // RADOS namespace clears.
       const baseGone = () => radosNamespaceExists(NS).then((e) => !e);
+      const redriven = await deleteBase();
+      expect(w1.isSuccess(redriven)).toBe(true);
+      expect(parseLeak(redriven), 'an unwedged teardown must report no leak').toBeNull();
       let cleared = await poll(baseGone, 60_000, 3_000);
       for (let redrive = 0; !cleared && redrive < 3; redrive++) {
         process.stdout.write(
@@ -436,6 +558,9 @@ test.describe
         cleared = await poll(baseGone, 60_000, 3_000);
       }
       expect(cleared).toBe(true);
+
+      // A clean teardown reports no leak and drops the marker with the namespace.
+      expect(await markerExists(NS)).toBe(false);
 
       // No orphan RADOS namespaces remain on the pool.
       const nsList = await rbd(`namespace ls ${POOL} --format json`);

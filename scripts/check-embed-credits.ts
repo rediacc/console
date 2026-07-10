@@ -29,7 +29,8 @@
  *   EMBED_CREDITS_CREDITS_GO, EMBED_CREDITS_JSON
  *
  * Exit codes:
- *   0 - inventories are consistent with the Dockerfile + embed asset list
+ *   0 - inventories are consistent with the Dockerfile + embed asset list, or
+ *       the renet submodule is not checked out (nothing to attribute)
  *   1 - a missing or mismatched attribution was found
  */
 
@@ -164,6 +165,13 @@ function parseJsonCredits(src: string): JsonCredit[] {
 }
 
 function main(): void {
+  // The renet submodule is optional in a public checkout; skip like the sibling
+  // gates (.ci/scripts/private/run-renet.sh) rather than failing the ci chain.
+  if (!fs.existsSync(DOCKERFILE)) {
+    console.log(`${YELLOW}Renet submodule not available, skipping${NC}`);
+    return;
+  }
+
   const dockerVersions = parseDockerfileVersions(read(DOCKERFILE));
   const embedSrc = read(EMBED_GO);
   const embeddedBases = parseEmbeddedBases(embedSrc);

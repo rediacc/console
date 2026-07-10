@@ -58,13 +58,53 @@ interface AddOptions {
   networkCidr?: string;
   networkPrimitive?: string;
   controlNode?: string;
+  netName?: string;
+  netBase?: string;
+  netOffset?: string;
+  controlId?: string;
+  dockerRegistry?: string;
+}
+
+const DEFAULT_KVM_CONTROL_ID = 1;
+
+/**
+ * A KVM cluster boots on a libvirt network addressed by numeric VM id. Two
+ * clusters sharing a host must not share a network, so the topology is required
+ * rather than defaulted: a silent default would collide with the ops harness's
+ * own fleet on renet11 / 192.168.111.
+ */
+function buildKvmConfig(options: AddOptions): ClusterConfig['kvm'] {
+  if (!options.netName || !options.netBase) {
+    throw new ValidationError(
+      'A kvm cluster needs --net-name and --net-base (e.g. --net-name renet12 --net-base 192.168.112). ' +
+        'Pick a network distinct from any other cluster or ops fleet on this host.'
+    );
+  }
+  const controlId = options.controlId ? Number(options.controlId) : DEFAULT_KVM_CONTROL_ID;
+  if (!Number.isInteger(controlId) || controlId < 1) {
+    throw new ValidationError(`--control-id "${options.controlId}" must be a positive integer`);
+  }
+  const netOffset = options.netOffset ? Number(options.netOffset) : undefined;
+  const netOffsetValid = netOffset === undefined || (Number.isInteger(netOffset) && netOffset >= 0);
+  if (!netOffsetValid) {
+    throw new ValidationError(`--net-offset "${options.netOffset}" must be a non-negative integer`);
+  }
+  return {
+    netName: options.netName,
+    netBase: options.netBase,
+    controlId,
+    ...(netOffset === undefined ? {} : { netOffset }),
+    ...(options.dockerRegistry ? { dockerRegistry: options.dockerRegistry } : {}),
+  };
 }
 
 function buildClusterConfig(options: AddOptions): ClusterConfig {
   const pools = options.pool.map(parsePoolSpec);
   const hasNetwork = Boolean(options.networkCidr ?? options.networkPrimitive);
+  const isKvm = options.provider === 'kvm';
   return {
     provider: options.provider,
+    ...(isKvm ? { kvm: buildKvmConfig(options) } : {}),
     pools,
     ...(options.controlNode ? { controlNode: options.controlNode } : {}),
     ...(hasNetwork
@@ -93,6 +133,11 @@ export function registerClusterConfigCommands(config: Command): void {
     .option('--network-cidr <cidr>', t('commands.config.cluster.cidrOption'))
     .option('--network-primitive <primitive>', t('commands.config.cluster.primitiveOption'))
     .option('--control-node <machine>', t('commands.config.cluster.controlNodeOption'))
+    .option('--net-name <name>', t('commands.config.cluster.netNameOption'))
+    .option('--net-base <prefix>', t('commands.config.cluster.netBaseOption'))
+    .option('--net-offset <n>', t('commands.config.cluster.netOffsetOption'))
+    .option('--control-id <n>', t('commands.config.cluster.controlIdOption'))
+    .option('--docker-registry <endpoint>', t('commands.config.cluster.dockerRegistryOption'))
     .action(async (options: AddOptions) => {
       await configService.addCluster(options.name, buildClusterConfig(options));
       outputService.success(t('commands.config.cluster.added', { name: options.name }));

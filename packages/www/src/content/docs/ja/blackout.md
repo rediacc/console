@@ -5,6 +5,7 @@ category: Use Cases
 order: 6
 language: ja
 sourceHash: "51a38f7f8567e63e"
+sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 
 > **明かりが消えても、ビジネスは継続します。**

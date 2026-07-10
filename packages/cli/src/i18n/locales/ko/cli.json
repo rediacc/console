@@ -171,13 +171,18 @@
           "description": "기존 클러스터에 풀을 추가합니다"
         },
         "cidrOption": "프라이빗 네트워크 CIDR (예: 10.0.0.0/24)",
+        "controlIdOption": "KVM: 컨트롤 및 레지스트리 노드의 VM id (기본값: 1)",
         "controlNodeOption": "명시적 컨트롤 노드 머신 (기본값: 첫 번째 k8s-server 멤버)",
         "description": "설정에 클러스터와 그 노드 풀을 선언합니다. 'rdc cluster create'로 프로비저닝하십시오.",
         "descriptionShort": "클러스터 선언 및 편집",
+        "dockerRegistryOption": "KVM: 이 클러스터의 VM 내 Docker 레지스트리 엔드포인트",
         "list": {
           "description": "설정된 클러스터를 나열합니다"
         },
         "nameOption": "클러스터 이름",
+        "netBaseOption": "KVM: 네트워크 접두사, 처음 세 옥텟 (예: 192.168.112)",
+        "netNameOption": "KVM: 이 클러스터의 libvirt 네트워크 (예: renet12)",
+        "netOffsetOption": "KVM: 주소를 도출할 때 각 VM id에 더해지는 오프셋",
         "none": "설정된 클러스터가 없습니다",
         "poolAdded": "풀 \"{{pool}}\"이(가) 클러스터 \"{{name}}\"에 추가됨",
         "poolOption": "풀 사양 name:role:count[:size] (role: ceph|k8s-server|k8s-agent|hyperconverged)",

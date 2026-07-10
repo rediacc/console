@@ -171,13 +171,18 @@
           "description": "Aggiungi un pool a un cluster esistente"
         },
         "cidrOption": "CIDR della rete privata (es. 10.0.0.0/24)",
+        "controlIdOption": "KVM: id della VM del nodo di controllo e registry (predefinito: 1)",
         "controlNodeOption": "Macchinario esplicito per il nodo di controllo (predefinito: primo membro k8s-server)",
         "description": "Dichiara i cluster e i loro pool di nodi nella configurazione. Esegui il provisioning con 'rdc cluster create'.",
         "descriptionShort": "Dichiarare e modificare cluster",
+        "dockerRegistryOption": "KVM: endpoint del registry Docker dentro la VM per questo cluster",
         "list": {
           "description": "Elenca i cluster configurati"
         },
         "nameOption": "Nome del cluster",
+        "netBaseOption": "KVM: prefisso di rete, i primi tre ottetti (es. 192.168.112)",
+        "netNameOption": "KVM: rete libvirt per questo cluster (es. renet12)",
+        "netOffsetOption": "KVM: offset aggiunto all'id di ogni VM nel derivarne l'indirizzo",
         "none": "Nessun cluster configurato",
         "poolAdded": "Pool \"{{pool}}\" aggiunto al cluster \"{{name}}\"",
         "poolOption": "Specifica del pool name:role:count[:size] (role: ceph|k8s-server|k8s-agent|hyperconverged)",

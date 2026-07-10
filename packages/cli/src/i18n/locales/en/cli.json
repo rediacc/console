@@ -181,7 +181,12 @@
         "remove": {
           "description": "Remove a cluster from config"
         },
-        "nameOption": "Cluster name"
+        "nameOption": "Cluster name",
+        "netNameOption": "KVM: libvirt network for this cluster (e.g. renet12)",
+        "netBaseOption": "KVM: network prefix, the first three octets (e.g. 192.168.112)",
+        "netOffsetOption": "KVM: offset added to each VM id when deriving its address",
+        "controlIdOption": "KVM: VM id of the control and registry node (default: 1)",
+        "dockerRegistryOption": "KVM: in-VM Docker registry endpoint for this cluster"
       },
       "prune": {
         "descriptionShort": "Sweep stale leftovers from the local config file",

@@ -313,6 +313,20 @@ const ClusterCephRefSchema = z.object({
   pool: z.string().optional(),
 });
 
+// Local KVM topology. `renet ops` addresses VMs by numeric id within a libvirt
+// network, and `ops down` keys teardown off the same ids, so the allocation is
+// persisted here at create time rather than recomputed: a pool whose count later
+// changes must not renumber the VMs already booted.
+const ClusterKvmSchema = z.object({
+  netName: z.string().min(1),
+  netBase: z.string().min(1),
+  netOffset: z.number().int().min(0).optional(),
+  controlId: z.number().int().min(1),
+  dockerRegistry: z.string().optional(),
+  /** pool name -> the VM ids booted for it, in member order. */
+  memberIds: z.record(z.string(), z.array(z.number().int().min(1))).optional(),
+});
+
 const ClusterConfigSchema = z.object({
   provider: z.string().min(1),
   network: ClusterNetworkSchema.optional(),
@@ -321,6 +335,7 @@ const ClusterConfigSchema = z.object({
   registry: ClusterRegistrySchema.optional(),
   ceph: ClusterCephRefSchema.optional(),
   controlNode: resourceName.optional(),
+  kvm: ClusterKvmSchema.optional(),
 });
 
 // =============================================================================
@@ -463,6 +478,7 @@ export type BackupStrategyConfig = z.infer<typeof BackupStrategyConfigSchema>;
 export type CloudProviderConfig = z.infer<typeof CloudProviderConfigSchema>;
 export type ClusterConfig = z.infer<typeof ClusterConfigSchema>;
 export type ClusterPool = z.infer<typeof ClusterPoolSchema>;
+export type ClusterKvm = z.infer<typeof ClusterKvmSchema>;
 export type ClusterPoolRole = ClusterPool['role'];
 export type AcmeCertCache = z.infer<typeof AcmeCertCacheSchema>;
 export type RemoteConfig = z.infer<typeof RemoteConfigSchema>;

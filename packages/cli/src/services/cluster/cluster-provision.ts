@@ -2,11 +2,10 @@
  * Cluster provisioning lifecycle.
  *
  * createCluster mirrors createCloudMachine but for a set of pool members on a
- * private LAN. The cloud (OpenTofu) path is complete; KVM routes to the
- * wave-8 ops seam. Component install (ceph/k8s) and scale are gated seams: the
- * renet contract functions they dispatch land in later waves (see the
- * per-callsite TODOs). Members materialize into resources.machines so every
- * existing `-m` command works on them.
+ * private LAN. The cloud path provisions via OpenTofu; KVM boots VMs through
+ * `renet ops`. Ceph pool growth remains a seam (grow it via cephadm directly).
+ * Members materialize into resources.machines so every existing `-m` command
+ * works on them.
  */
 
 import { homedir } from 'node:os';
@@ -33,7 +32,7 @@ import { bootstrapMachine, scanHostKeys, waitForSSH } from '../renet/machine-boo
 import { TofuExecutor } from '../tofu/executor.js';
 import { isKvmProvider, resolveProviderMapping } from '../tofu/provider-resolver.js';
 import { generateClusterTfJson } from '../tofu/cluster-tf-generator.js';
-import { provisionKvmCluster } from './kvm-provisioner.js';
+import { provisionKvmCluster, teardownKvmCluster } from './kvm-provisioner.js';
 
 const TOFU_CLUSTER_DIR = join(homedir(), '.config', 'rediacc', 'tofu', 'clusters');
 
@@ -66,6 +65,38 @@ async function loadSSHPublicKey(): Promise<string> {
     );
   }
   return sshPublicKey;
+}
+
+/**
+ * Boot the new members of a growing pool and record them. Booting first is what
+ * keeps kube_join from binding to an empty address: a materialized member with no
+ * IP is worse than a refusal.
+ */
+async function growPool(
+  clusterName: string,
+  cluster: ClusterConfig,
+  pool: ClusterPool,
+  targetCount: number,
+  currentCount: number
+): Promise<void> {
+  if (!isKvmProvider(cluster.provider)) {
+    throw new Error(
+      `Scaling UP a "${cluster.provider}" pool needs the new instances provisioned first ` +
+        `(cloud scale-up provisioning is a follow-up; scale-down works today).`
+    );
+  }
+  const grown: ClusterConfig = {
+    ...cluster,
+    pools: cluster.pools.map((p) => (p.name === pool.name ? { ...p, count: targetCount } : p)),
+  };
+  const provisioned = await provisionKvmCluster(clusterName, grown);
+  await configService.updateCluster(clusterName, { kvm: provisioned.kvm });
+  await materializeClusterMachines(
+    clusterName,
+    provisioned.members
+      .filter((m) => m.pool === pool.name && m.index > currentCount)
+      .map((m) => ({ pool: m.pool, index: m.index, ip: m.ip, user: DEFAULTS.CLOUD.SSH_USER }))
+  );
 }
 
 /** Provision pool members on a cloud provider via OpenTofu; return their IPs. */
@@ -356,9 +387,18 @@ export async function createCluster(
   const cluster = await getCluster(clusterName);
   const sshUser = options.sshUser ?? DEFAULTS.CLOUD.SSH_USER;
 
-  const members = isKvmProvider(cluster.provider)
-    ? (await provisionKvmCluster(clusterName, cluster)).members
-    : await provisionCloud(clusterName, cluster, options.debug);
+  let members: ResolvedMember[];
+  if (isKvmProvider(cluster.provider)) {
+    const provisioned = await provisionKvmCluster(clusterName, cluster);
+    members = provisioned.members;
+    // Persist the id allocation before anything else can fail: destroy and scale
+    // address these VMs by id, so losing it strands them.
+    await configService.updateCluster(clusterName, {
+      kvm: provisioned.kvm,
+    });
+  } else {
+    members = await provisionCloud(clusterName, cluster, options.debug);
+  }
 
   await materializeClusterMachines(
     clusterName,
@@ -386,31 +426,32 @@ export interface DestroyClusterOptions {
   debug?: boolean;
 }
 
-/** Tear down provisioned infrastructure for a cluster (cloud via tofu; KVM = wave 8). */
-async function teardownInfra(
-  clusterName: string,
-  cluster: ClusterConfig,
-  options: DestroyClusterOptions
-): Promise<void> {
-  if (isKvmProvider(cluster.provider)) {
-    if (!options.force) {
-      throw new Error(
-        `KVM cluster teardown is wired in wave 8. Re-run with --force to only remove the config records.`
-      );
-    }
-    return;
-  }
-  const executor = new TofuExecutor(clusterTofuDir(clusterName));
+/** Run a destroy step, letting --force downgrade its failure to a warning. */
+async function destroyStep(step: () => Promise<void>, force: boolean | undefined): Promise<void> {
   try {
-    await executor.destroy({ debug: options.debug });
+    await step();
   } catch (error) {
-    if (!options.force) throw error;
+    if (!force) throw error;
     outputService.warn(
       `Cluster destroy failed but continuing (--force): ${
         error instanceof Error ? error.message : String(error)
       }`
     );
   }
+}
+
+/** Tear down provisioned infrastructure for a cluster (cloud via tofu, KVM via renet ops). */
+async function teardownInfra(
+  clusterName: string,
+  cluster: ClusterConfig,
+  options: DestroyClusterOptions
+): Promise<void> {
+  if (isKvmProvider(cluster.provider)) {
+    await destroyStep(() => teardownKvmCluster(clusterName, cluster), options.force);
+    return;
+  }
+  const executor = new TofuExecutor(clusterTofuDir(clusterName));
+  await destroyStep(() => executor.destroy({ debug: options.debug }), options.force);
   await executor.cleanup();
 }
 
@@ -494,22 +535,7 @@ export async function scaleCluster(
   // Materialize new member machine records before joining (scale-up), or leave
   // records for the operator to prune after draining (scale-down).
   if (targetCount > currentCount) {
-    if (cluster.provider !== 'kvm') {
-      // Refuse clearly instead of failing later on an empty member IP.
-      throw new Error(
-        `Scaling UP a "${cluster.provider}" pool needs the new instances provisioned first ` +
-          `(cloud scale-up provisioning is a follow-up; scale-down and KVM pools work today).`
-      );
-    }
-    await materializeClusterMachines(
-      clusterName,
-      Array.from({ length: targetCount - currentCount }, (_, k) => ({
-        pool: pool.name,
-        index: currentCount + k + 1,
-        ip: '', // placeholder for a pre-existing KVM VM (kvm-only path).
-        user: DEFAULTS.CLOUD.SSH_USER,
-      }))
-    );
+    await growPool(clusterName, cluster, pool, targetCount, currentCount);
   }
   await scaleK8sPool(clusterName, pool, targetCount, currentCount, options.debug);
 

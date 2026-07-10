@@ -26,9 +26,6 @@ astro  # BLOCKER: www is built on the astro 5 line; v6/v7 are breaking majors co
 # glob is pinned by the root overrides entry (see package.json _overridesReasons.glob)
 glob  # BLOCKER: root overrides force glob ^11 tree-wide and npm EOVERRIDE requires the declared devDep range to equal the override, so the v13 major cannot be taken until the override family is re-evaluated
 
-# Cloudflare workers-types — held at v4 to match wrangler's peer floor; the v5 line runs ahead of wrangler
-@cloudflare/workers-types  # BLOCKER: wrangler@4.107.0 peerDependencies pin @cloudflare/workers-types@^4.20260701.1, but the npm latest tag is the v5 line (5.202607xx) which runs ahead of wrangler's runtime; hold at v4 until wrangler publishes a v5 peer floor
-
 # @types/node major must match Node engine version (22.x)
 @types/node  # BLOCKER: v25+ targets Node 25 APIs; our engines field and CI runners are on Node 22
 
@@ -39,6 +36,3 @@ eslint-plugin-unicorn  # BLOCKER: v66 is a major release that adds and renames l
 playwright  # BLOCKER: a playwright version bump changes the bundled browser revisions, so it is never a drop-in dependency bump — the pinned browsers must be re-downloaded (npx playwright install) and the E2E/bridge suites re-validated against the new revisions in the same change; take any future bump together with that test-infra revalidation
 # ESLint v10 core — same constraint as @eslint/js: plugin ecosystem lacks v10 support
 eslint  # BLOCKER: v10 requires typescript-eslint/import/react plugin majors that have no eslint v10 peer support yet; take together with @eslint/js in a dedicated lint-tooling PR
-
-# wrangler — npm latest currently points BEHIND our version (4.107.1 hotfix published after 4.108.0)
-wrangler  # BLOCKER: private/account pins wrangler 4.108.0 whose peerOptional workers-types is ^5, matching our @cloudflare/workers-types ^5 pair; npm's latest dist-tag moved back to the 4.107.1 hotfix whose peer range is ^4, so "upgrading" to latest would recreate the npm ci ERESOLVE this pair fixed - drop this entry once latest advances past 4.108.0

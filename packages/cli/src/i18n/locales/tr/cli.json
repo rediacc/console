@@ -171,13 +171,18 @@
           "description": "Mevcut bir kümeye havuz ekle"
         },
         "cidrOption": "Özel ağ CIDR'i (ör. 10.0.0.0/24)",
+        "controlIdOption": "KVM: kontrol ve registry düğümünün VM id'si (varsayılan: 1)",
         "controlNodeOption": "Açık kontrol düğümü makinesi (varsayılan: ilk k8s-server üyesi)",
         "description": "Kümeleri ve düğüm havuzlarını yapılandırmada tanımlayın. 'rdc cluster create' ile hazırlayın.",
         "descriptionShort": "Kümeleri tanımla ve düzenle",
+        "dockerRegistryOption": "KVM: bu küme için VM içindeki Docker registry uç noktası",
         "list": {
           "description": "Yapılandırılmış kümeleri listele"
         },
         "nameOption": "Küme adı",
+        "netBaseOption": "KVM: ağ öneki, ilk üç oktet (ör. 192.168.112)",
+        "netNameOption": "KVM: bu küme için libvirt ağı (ör. renet12)",
+        "netOffsetOption": "KVM: adresini türetirken her VM id'sine eklenen ofset",
         "none": "Yapılandırılmış küme yok",
         "poolAdded": "\"{{pool}}\" havuzu \"{{name}}\" kümesine eklendi",
         "poolOption": "Havuz belirtimi ad:rol:sayı[:boyut] (rol: ceph|k8s-server|k8s-agent|hyperconverged)",

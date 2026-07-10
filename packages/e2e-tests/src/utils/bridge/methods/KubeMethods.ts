@@ -57,6 +57,12 @@ export interface KubeNamespaceOptions {
   cephPool?: string;
   /** Ceph cluster name for the ceph/rbd CLI (default: ceph). */
   cephCluster?: string;
+  /**
+   * Override BRIDGE_TIMEOUT for this call. A ceph teardown that cannot drain
+   * spends its full internal retry budget before reporting the leak, which
+   * outlasts the default timeout.
+   */
+  timeout?: number;
 }
 
 export interface KubeNamespaceForkOptions extends KubeNamespaceOptions {
@@ -219,12 +225,7 @@ export class KubeMethods {
       networkId: opts.networkId,
       cluster: opts.cluster,
       datastore: opts.datastore,
-      // Must be forwarded: the first delete removes the persisted ceph
-      // marker with the manifests dir, so a REDRIVEN delete can only find
-      // the RADOS namespace through the explicit flag - without it the
-      // ceph teardown is silently skipped (a ~250ms no-op).
-      cephPool: opts.cephPool,
-      cephCluster: opts.cephCluster,
+      timeout: opts.timeout,
     });
   }
 

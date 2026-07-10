@@ -25,6 +25,7 @@ export type {
   ClusterConfig,
   ClusterPool,
   ClusterPoolRole,
+  ClusterKvm,
   AcmeCertCache,
   RemoteConfig,
   EncryptedBlob,

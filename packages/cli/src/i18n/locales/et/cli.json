@@ -171,13 +171,18 @@
           "description": "Lisa pesa olemasolevale klastrile"
         },
         "cidrOption": "Privaatvõrgu CIDR (nt 10.0.0.0/24)",
+        "controlIdOption": "KVM: juht- ja registrisõlme VM id (vaikimisi: 1)",
         "controlNodeOption": "Selgesõnaline juhtsõlme masin (vaikimisi: esimene k8s-server liige)",
         "description": "Deklareeri klastrid ja nende sõlmepesad konfiguratsioonis. Valmista need ette käsuga 'rdc cluster create'.",
         "descriptionShort": "Deklareeri ja muuda klastreid",
+        "dockerRegistryOption": "KVM: selle klastri Docker registri lõpp-punkt VM-i sees",
         "list": {
           "description": "Loetle seadistatud klastrid"
         },
         "nameOption": "Klastri nimi",
+        "netBaseOption": "KVM: võrgu prefiks, esimesed kolm oktetti (nt 192.168.112)",
+        "netNameOption": "KVM: selle klastri libvirt-võrk (nt renet12)",
+        "netOffsetOption": "KVM: nihe, mis lisatakse iga VM id-le aadressi tuletamisel",
         "none": "Ühtegi klastrit pole seadistatud",
         "poolAdded": "Pesa \"{{pool}}\" lisatud klastrisse \"{{name}}\"",
         "poolOption": "Pesa spetsifikatsioon nimi:roll:arv[:suurus] (roll: ceph|k8s-server|k8s-agent|hyperconverged)",

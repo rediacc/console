@@ -5,6 +5,7 @@ category: "Guides"
 order: 6
 language: ja
 sourceHash: "56e1f177e8f4ef41"
+sourceCommit: "4401262fffbf29b9480dee8ecd209013e4b87f60"
 ---
 
 # Kubernetes

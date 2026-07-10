@@ -171,13 +171,18 @@
           "description": "为现有集群添加一个节点池"
         },
         "cidrOption": "私有网络 CIDR（例如 10.0.0.0/24）",
+        "controlIdOption": "KVM：控制与镜像仓库节点的 VM id（默认：1）",
         "controlNodeOption": "显式指定控制节点机器（默认为第一个 k8s-server 成员）",
         "description": "在配置中声明集群及其节点池。使用 'rdc cluster create' 对其进行配置。",
         "descriptionShort": "声明和编辑集群",
+        "dockerRegistryOption": "KVM：此集群中 VM 内的 Docker 镜像仓库端点",
         "list": {
           "description": "列出已配置的集群"
         },
         "nameOption": "集群名称",
+        "netBaseOption": "KVM：网络前缀，即前三段（例如 192.168.112）",
+        "netNameOption": "KVM：此集群的 libvirt 网络（例如 renet12）",
+        "netOffsetOption": "KVM：派生地址时加到每个 VM id 上的偏移量",
         "none": "尚未配置集群",
         "poolAdded": "节点池 \"{{pool}}\" 已添加到集群 \"{{name}}\"",
         "poolOption": "节点池规格 名称:角色:数量[:大小]（角色：ceph|k8s-server|k8s-agent|hyperconverged）",

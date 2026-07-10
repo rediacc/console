@@ -5,6 +5,7 @@ category: "Legal"
 order: 7
 language: fr
 sourceHash: "dba51d5d6dcf8197"
+sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 
 De nombreux pays exigent que les données personnelles de leurs citoyens soient stockées et traitées dans les frontières nationales. L'architecture auto-hébergée de Rediacc satisfait ces exigences par conception : les données restent sur votre machine, dans votre centre de données, dans votre juridiction. Aucune donnée ne quitte la machine pendant le clonage, et aucun SaaS tiers ne traite vos données.
