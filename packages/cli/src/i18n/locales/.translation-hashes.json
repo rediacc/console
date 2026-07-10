@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1717,
-    "sourceCommit": "23543669cd22bce3f14d69a0886bac8a12061412"
+    "keyCount": 1722,
+    "sourceCommit": "973763d30e89ca6bcde8e7d9e0e509103087c7dc"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -115,11 +115,16 @@
     "commands.config.cluster.added": "7d255205",
     "commands.config.cluster.addPool.description": "b172a14e",
     "commands.config.cluster.cidrOption": "4c7c998b",
+    "commands.config.cluster.controlIdOption": "3f4a3216",
     "commands.config.cluster.controlNodeOption": "fc9bbb72",
     "commands.config.cluster.description": "e1bde617",
     "commands.config.cluster.descriptionShort": "b17f6db7",
+    "commands.config.cluster.dockerRegistryOption": "2f84464c",
     "commands.config.cluster.list.description": "91395414",
     "commands.config.cluster.nameOption": "b670c8a0",
+    "commands.config.cluster.netBaseOption": "efe8d164",
+    "commands.config.cluster.netNameOption": "39ec8e1d",
+    "commands.config.cluster.netOffsetOption": "716a4e71",
     "commands.config.cluster.none": "8bd2834b",
     "commands.config.cluster.poolAdded": "697d23dd",
     "commands.config.cluster.poolOption": "369d14e5",
