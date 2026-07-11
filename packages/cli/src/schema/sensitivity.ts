@@ -67,7 +67,11 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/credentials/ssh/privateKey': { kind: 'credential' },
   '/credentials/ssh/knownHosts': { kind: 'pii' },
   '/credentials/cfDnsApiToken': { kind: 'secret' },
-  '/credentials/masterPasswordVerifier': { kind: 'secret' },
+  // The verifier is what the CLI uses to CHECK the master password BEFORE any
+  // decryption can happen. Encrypting it under the password it verifies is a
+  // bootstrapping deadlock, so it is stored in the clear by explicit override
+  // (spec 04 §2.3 [P0-DECIDED]). It is a verifier, not a recoverable secret.
+  '/credentials/masterPasswordVerifier': { kind: 'secret', encryptAtRest: false },
 
   // ── Machines ─────────────────────────────────────────────────────────────
   '/resources/machines/*/ip': { kind: 'pii' },
@@ -76,12 +80,20 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/resources/machines/*/knownHosts': { kind: 'pii' },
   '/resources/machines/*/infra/publicIPv4': { kind: 'pii' },
   '/resources/machines/*/infra/publicIPv6': { kind: 'pii' },
-  '/resources/machines/*/ceph/pool': { kind: 'identifier' },
-  '/resources/machines/*/ceph/image': { kind: 'identifier' },
-  '/resources/machines/*/ceph/clusterName': { kind: 'identifier' },
   // Cluster backref on materialized pool members — non-secret inventory.
   '/resources/machines/*/cluster/cluster': { kind: 'public' },
   '/resources/machines/*/cluster/pool': { kind: 'public' },
+
+  // ── Datastores (named local/rbd registry; unencrypted by design, 02 §5) ────
+  '/resources/datastores/*/backend/kind': { kind: 'public' },
+  '/resources/datastores/*/backend/machine': { kind: 'public' },
+  '/resources/datastores/*/backend/path': { kind: 'public' },
+  '/resources/datastores/*/backend/pool': { kind: 'public' },
+  '/resources/datastores/*/backend/image': { kind: 'public' },
+  '/resources/datastores/*/cluster': { kind: 'public' },
+  '/resources/datastores/*/size': { kind: 'public' },
+  '/resources/datastores/*/parent/datastore': { kind: 'public' },
+  '/resources/datastores/*/parent/snapshot': { kind: 'public' },
 
   // ── Clusters (SSH-reachable inventory; no live credentials by design, D15) ──
   '/resources/clusters/*/provider': { kind: 'public' },
@@ -106,15 +118,19 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   // ── Storages ─────────────────────────────────────────────────────────────
   '/resources/storages/*/vaultContent': { kind: 'secret' },
 
-  // ── Repositories ─────────────────────────────────────────────────────────
-  '/resources/repositories/*/repositoryGuid': { kind: 'identifier' },
-  '/resources/repositories/*/credential': { kind: 'credential' },
-  '/resources/repositories/*/grandGuid': { kind: 'identifier' },
-  '/resources/repositories/*/parentGuid': { kind: 'identifier' },
-  '/resources/repositories/*/sshPrivateKey': { kind: 'credential' },
-  '/resources/repositories/*/sshPublicKey': { kind: 'public' },
-  '/resources/repositories/*/secrets/*/value': { kind: 'secret' },
-  '/resources/repositories/*/secrets/*/mode': { kind: 'public' },
+  // ── Repositories (structural tags: name -> tags -> tag -> record) ──────────
+  '/resources/repositories/*/grand': { kind: 'public' },
+  '/resources/repositories/*/placement/datastore': { kind: 'public' },
+  '/resources/repositories/*/placement/machine': { kind: 'public' },
+  '/resources/repositories/*/tags/*/repositoryGuid': { kind: 'identifier' },
+  '/resources/repositories/*/tags/*/credential': { kind: 'credential' },
+  '/resources/repositories/*/tags/*/grandGuid': { kind: 'identifier' },
+  '/resources/repositories/*/tags/*/parentGuid': { kind: 'identifier' },
+  '/resources/repositories/*/tags/*/immutable': { kind: 'public' },
+  '/resources/repositories/*/tags/*/sshPrivateKey': { kind: 'credential' },
+  '/resources/repositories/*/tags/*/sshPublicKey': { kind: 'public' },
+  '/resources/repositories/*/tags/*/secrets/*/value': { kind: 'secret' },
+  '/resources/repositories/*/tags/*/secrets/*/mode': { kind: 'public' },
 
   // ── Deleted (archived) repositories ──────────────────────────────────────
   '/resources/deletedRepositories/*/repositoryGuid': { kind: 'identifier' },
@@ -131,7 +147,11 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   // ── Infra ────────────────────────────────────────────────────────────────
   '/infra/certEmail': { kind: 'pii' },
   '/infra/cfDnsZoneId': { kind: 'identifier' },
-  '/infra/acmeCertCache/*/data': { kind: 'credential' },
+
+  // ── State (runtime status half; never pushed) ──────────────────────────────
+  // ACME cert cache moved from /infra/acmeCertCache. `commit:false` because
+  // state never enters the server envelope.
+  '/state/certCache/*/data': { kind: 'credential', commit: false },
 
   // ── Remote (config store pointer) ────────────────────────────────────────
   '/remote/apiUrl': { kind: 'identifier' },

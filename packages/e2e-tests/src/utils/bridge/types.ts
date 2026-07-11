@@ -26,6 +26,10 @@ export interface TestFunctionOptions {
   keepCow?: boolean;
   container?: string;
   command?: string;
+  // repository_logs / repository_promote (runtime-generic verbs) parameters
+  lines?: string;
+  parent?: string;
+  fork?: string;
   checkpointName?: string;
   sourceMachine?: string;
   destMachine?: string;
@@ -66,7 +70,9 @@ export interface TestFunctionOptions {
   // kube_* (Kubernetes distribution lifecycle) parameters
   mountPath?: string;
   distro?: string;
-  role?: 'server' | 'agent';
+  // kube_install/join node role (server|agent) OR the identity-rewrite fork-arm
+  // effect-isolation role for the ROLE ConfigMap (fork|rehearsal).
+  role?: 'server' | 'agent' | 'fork' | 'rehearsal';
   version?: string;
   apiPort?: number;
   airgapBundle?: string;
@@ -74,16 +80,26 @@ export interface TestFunctionOptions {
   token?: string;
   node?: string;
   namespace?: string;
-  // kube namespace/PV lifecycle (wave 5a) parameters
+  // kube repo dispatch (runtime-generic repository_up kube arm) parameters
   datastore?: string;
-  pvc?: string;
-  pvBackend?: string;
-  backend?: string;
-  srcPv?: string;
-  dstNamespace?: string;
-  pv?: string;
   cephPool?: string;
   cephCluster?: string;
+  // datastore_* (named datastore lifecycle: create/attach/detach/fork/snapshot) params
+  name?: string;
+  backend?: 'local' | 'ceph';
+  writes?: 'local' | 'ceph';
+  noAuto?: boolean;
+  discard?: boolean;
+  group?: string;
+  // kube_identity_rewrite / kube_prep_fork / kube_node_label (cluster fork/migrate) params
+  operation?: 'fork' | 'migrate';
+  mode?: 'server' | 'agent';
+  newNodeIp?: string;
+  newNetworkId?: string;
+  bindIp?: string;
+  keepThirdParty?: boolean;
+  server?: string;
+  removeLabel?: boolean;
 }
 
 /**

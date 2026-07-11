@@ -162,10 +162,10 @@ describe('ConfigFileStorage', () => {
 
     it('should load config from file', async () => {
       const initial: RdcConfig = {
-        schemaVersion: 2,
+        schemaVersion: 3,
         id: '550e8400-e29b-41d4-a716-446655440000',
         version: 1,
-        defaults: { machine: 'prod-1' },
+        defaults: { language: 'en' },
         resources: {
           machines: {
             'prod-1': { ip: '10.0.0.1', user: 'admin' },
@@ -179,7 +179,7 @@ describe('ConfigFileStorage', () => {
 
       expect(config.id).toBe('550e8400-e29b-41d4-a716-446655440000');
       expect(config.version).toBe(1);
-      expect(config.defaults?.machine).toBe('prod-1');
+      expect(config.defaults?.language).toBe('en');
       expect(config.resources?.machines?.['prod-1']?.ip).toBe('10.0.0.1');
     });
 

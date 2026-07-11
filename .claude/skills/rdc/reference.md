@@ -925,6 +925,71 @@ Live-migrate a repository from one machine to another with minimal downtime. Two
 - `--skip-dns` — Skip DNS record switching after migration
 - `--debug` — Enable debug output
 
+### rdc repo replicate status
+
+Show managed replica sets: replicas, hosting nodes, fork datastores, snapshot, and refresh timestamps.
+
+**Options:**
+
+- `--name <set>` — Show one replica set by name
+
+> MCP excluded: Replica-set state view — pending live validation of the replicate family
+
+### rdc repo replicate remove
+
+Remove a replica set: delete its generated k8s objects (label-scoped), discard its fork datastores, drop its snapshot, and forget the state. Infra steps are best-effort so removal converges even on a partially-gone cluster.
+
+**Options:**
+
+- `--name <set>` — Replica set to remove
+- `--debug` — Enable debug output
+
+> MCP excluded: Tears down replica datastores + overlay — pending live validation
+
+### rdc repo replicate refresh
+
+Roll every replica onto a fresh point-in-time snapshot, ONE at a time: bounce the replica pod, discard and re-fork its datastore under the same path, and let readiness re-admit it. N-1 replicas keep serving throughout.
+
+**Options:**
+
+- `--name <set>` — Replica set to refresh
+- `--debug` — Enable debug output
+
+> MCP excluded: Rolling replica re-clone — pending live validation
+
+### rdc repo canary status
+
+Show managed canary sets: weight, images, stable service, and the latest release-undo snapshot.
+
+**Options:**
+
+- `--name <set>` — Show one canary set by name
+
+> MCP excluded: Canary-set state view — pending live validation of the canary family
+
+### rdc repo canary weight
+
+Change the percent of traffic routed to a canary. Takes a fresh release-undo group snapshot first, then re-applies the overlay; the proxy picks up the new split on its refresh tick. Weight 100 sends all traffic to the new version (the blue/green flip).
+
+**Options:**
+
+- `--name <set>` — Canary set to adjust
+- `--weight <percent>` — Percent of traffic routed to the canary (integer 0-100; 0 = dark, 100 = full flip)
+- `--debug` — Enable debug output
+
+> MCP excluded: Shifts live traffic between versions — pending live validation
+
+### rdc repo canary remove
+
+Remove a canary's Deployment and Service (label-scoped); the stable Service serves 100% again. Release-undo snapshots are retained; prune them with the datastore snapshot commands.
+
+**Options:**
+
+- `--name <set>` — Canary set to remove
+- `--debug` — Enable debug output
+
+> MCP excluded: Tears down the canary overlay — pending live validation
+
 ### rdc repo sync upload
 
 Upload files to a repository via rsync over SSH (delta transfer). Use --mirror to delete extra remote files, --dry-run to preview, --exclude to skip patterns
@@ -1342,6 +1407,11 @@ Declare a new cluster with one or more pools
 - `--network-cidr <cidr>` — Private network CIDR (e.g. 10.0.0.0/24)
 - `--network-primitive <primitive>` — Network primitive (e.g. vlan, vpc, network)
 - `--control-node <machine>` — Explicit control-node machine (default: first k8s-server member)
+- `--net-name <name>` — KVM: libvirt network for this cluster (e.g. renet12)
+- `--net-base <prefix>` — KVM: network prefix, the first three octets (e.g. 192.168.112)
+- `--net-offset <n>` — KVM: offset added to each VM id when deriving its address
+- `--control-id <n>` — KVM: VM id of the control and registry node (default: 1)
+- `--docker-registry <endpoint>` — KVM: in-VM Docker registry endpoint for this cluster
 
 ### rdc config cluster add-pool
 
@@ -1715,6 +1785,9 @@ Provision the pool members of a cluster defined with 'rdc config cluster add', b
 - `--name <name>` — Cluster name
 - `--ssh-user <user>` — SSH user for provisioned members
 - `--base-domain <domain>` — Base domain for cluster public DNS (else inherited from a sibling machine)
+- `--control-ds-size <size>` — Anchor control datastore size (default 10G)
+- `--control-ds-backend <backend>` — Anchor control datastore backend: local | ceph (default: ceph if the cluster has ceph, else local)
+- `--control-ds-pool <pool>` — Ceph rbd pool for the anchor control datastore (ceph backend)
 - `--debug` — Enable debug output
 
 > agent: BLOCKED | MCP excluded: Provisions cloud/VM infrastructure — not an agent operation
@@ -1784,6 +1857,8 @@ Clone an entire cluster, including its repos' data, into a new cluster: coordina
 - `--name <name>` — Cluster name
 - `--tag <tag>` — Fork tag
 - `--cluster <dest>` — Existing destination cluster to fork onto (must be on distinct machines)
+- `--writes <disposition>` — Fork write disposition: local (ephemeral dm-COW overlay, zero Ceph footprint) | ceph (durable clone). Default local
+- `--up` — Bring the forked repos up and gate on cluster health after the fork boots
 - `--debug` — Enable debug output
 
 > agent: BLOCKED | MCP excluded: Clones a whole cluster — not an agent operation
@@ -1799,6 +1874,41 @@ Move an entire cluster, including its repos' data, to another machine or datacen
 - `--debug` — Enable debug output
 
 > agent: BLOCKED | MCP excluded: Moves a whole cluster — not an agent operation
+
+### rdc cluster rehearse
+
+Rehearse a release/upgrade: fork the cluster onto a destination as an ephemeral throwaway (writes=local, secretless role=rehearsal), bring it up, gate on health, then discard it. The parent is never touched.
+
+**Options:**
+
+- `--name <name>` — Source cluster to rehearse
+- `--cluster <dest>` — Destination cluster whose nodes host the throwaway rehearsal fork
+- `--tag <tag>` — Optional tag for the rehearsal fork (default: timestamped)
+- `--debug` — Enable debug output
+
+### rdc cluster join
+
+Adopt an existing registered machine as a Kubernetes agent node of a cluster, using the same CA-derived join token as anchor and rejoin.
+
+**Options:**
+
+- `--machine <name>` — Registered machine to adopt
+- `--cluster <name>` — Cluster to join the machine to
+- `--debug` — Enable debug output
+
+> agent: BLOCKED | MCP excluded: Cluster membership mutation — not an agent operation
+
+### rdc cluster evict
+
+Drain the node, delete its Node object, and clear its cluster membership. The cluster is derived from the machine; a machine that still mounts a datastore is refused.
+
+**Options:**
+
+- `--machine <name>` — Machine to evict
+- `--force` — Skip the drain when the node is already dead
+- `--debug` — Enable debug output
+
+> agent: BLOCKED | MCP excluded: Cluster membership mutation — not an agent operation
 
 ## Execution
 

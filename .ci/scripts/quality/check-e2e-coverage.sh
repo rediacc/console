@@ -57,7 +57,6 @@ ALLOWLIST=(
     repository_policy_get
     repository_policy_set
     repository_prune
-    repository_takeover
     repository_template_apply
     repository_trim
     repository_up_all

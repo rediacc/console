@@ -1,21 +1,26 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { MIN_NETWORK_ID, NETWORK_ID_INCREMENT } from '@rediacc/shared/renet-contract';
 
-// Mock configFileStorage to control the config state
+// Mock configFileStorage to control the config state. In v3 the network-id
+// counter and the used-id inventory live in the `state` half, written via
+// `updateState` (no version bump).
 let mockConfig: Record<string, unknown> = {};
+
+const stateMutator = (
+  _name: string,
+  fn: (cfg: Record<string, unknown>) => Record<string, unknown>
+) => {
+  mockConfig = fn(mockConfig);
+};
 
 vi.mock('../../adapters/config-file-storage.js', () => ({
   configFileStorage: {
-    update: vi.fn(
-      (_name: string, fn: (cfg: Record<string, unknown>) => Record<string, unknown>) => {
-        mockConfig = fn(mockConfig);
-      }
-    ),
+    update: vi.fn(stateMutator),
+    updateState: vi.fn(stateMutator),
     read: vi.fn(() => mockConfig),
   },
 }));
 
-// Mock the base class methods
 vi.mock('../config/config-base.js', () => ({
   ConfigServiceBase: class {
     getEffectiveConfigName() {
@@ -24,6 +29,17 @@ vi.mock('../config/config-base.js', () => ({
     requireSelfHosted() {}
   },
 }));
+
+function next(): number | undefined {
+  return (mockConfig.state as { networkIds?: { next?: number } } | undefined)?.networkIds?.next;
+}
+
+/** Build a state.repos map assigning one networkId per repo under tag `main`. */
+function reposState(ids: Record<string, number>): Record<string, unknown> {
+  const repos: Record<string, unknown> = {};
+  for (const [name, networkId] of Object.entries(ids)) repos[name] = { main: { networkId } };
+  return { repos };
+}
 
 describe('allocateNetworkId', { timeout: 30_000 }, () => {
   beforeEach(() => {
@@ -34,9 +50,7 @@ describe('allocateNetworkId', { timeout: 30_000 }, () => {
     const { configService } = await import('../config/config-resources.js');
     const id = await configService.allocateNetworkId();
     expect(id).toBe(MIN_NETWORK_ID);
-    expect((mockConfig.defaults as { nextNetworkId?: number }).nextNetworkId).toBe(
-      MIN_NETWORK_ID + NETWORK_ID_INCREMENT
-    );
+    expect(next()).toBe(MIN_NETWORK_ID + NETWORK_ID_INCREMENT);
   });
 
   it('increments sequentially', async () => {
@@ -46,25 +60,16 @@ describe('allocateNetworkId', { timeout: 30_000 }, () => {
     expect(id2).toBe(id1 + NETWORK_ID_INCREMENT);
   });
 
-  it('continues from nextNetworkId if set', async () => {
-    mockConfig = { defaults: { nextNetworkId: 5000 } };
+  it('continues from state.networkIds.next if set', async () => {
+    mockConfig = { state: { networkIds: { next: 5000 } } };
     const { configService } = await import('../config/config-resources.js');
     const id = await configService.allocateNetworkId();
     expect(id).toBe(5000);
-    expect((mockConfig.defaults as { nextNetworkId?: number }).nextNetworkId).toBe(
-      5000 + NETWORK_ID_INCREMENT
-    );
+    expect(next()).toBe(5000 + NETWORK_ID_INCREMENT);
   });
 
-  it('scans for max used ID when nextNetworkId is missing', async () => {
-    mockConfig = {
-      resources: {
-        repositories: {
-          'repo-a': { networkId: 4000 },
-          'repo-b': { networkId: 6000 },
-        },
-      },
-    };
+  it('scans for max used ID when the counter is missing', async () => {
+    mockConfig = { state: reposState({ 'repo-a': 4000, 'repo-b': 6000 }) };
     const { configService } = await import('../config/config-resources.js');
     const id = await configService.allocateNetworkId();
     expect(id).toBe(6000 + NETWORK_ID_INCREMENT);
@@ -73,12 +78,12 @@ describe('allocateNetworkId', { timeout: 30_000 }, () => {
   it('fills gaps when forward counter exceeds max', async () => {
     const MAX_NETWORK_ID = 16_711_680;
     mockConfig = {
-      defaults: { nextNetworkId: MAX_NETWORK_ID + NETWORK_ID_INCREMENT },
-      resources: {
-        repositories: {
-          'repo-a': { networkId: MIN_NETWORK_ID + NETWORK_ID_INCREMENT },
-          'repo-b': { networkId: MIN_NETWORK_ID + 2 * NETWORK_ID_INCREMENT },
-        },
+      state: {
+        networkIds: { next: MAX_NETWORK_ID + NETWORK_ID_INCREMENT },
+        ...reposState({
+          'repo-a': MIN_NETWORK_ID + NETWORK_ID_INCREMENT,
+          'repo-b': MIN_NETWORK_ID + 2 * NETWORK_ID_INCREMENT,
+        }),
       },
     };
     const { configService } = await import('../config/config-resources.js');
@@ -86,23 +91,20 @@ describe('allocateNetworkId', { timeout: 30_000 }, () => {
     expect(id).toBe(MIN_NETWORK_ID);
   });
 
-  it('throws when all slots are exhausted', async () => {
+  it('finds the first gap past a dense block', async () => {
     const MAX_NETWORK_ID = 16_711_680;
-    const usedRepos: Record<string, { networkId: number }> = {};
+    const used: Record<string, number> = {};
     for (
       let id = MIN_NETWORK_ID;
       id <= MIN_NETWORK_ID + 10 * NETWORK_ID_INCREMENT;
       id += NETWORK_ID_INCREMENT
     ) {
-      usedRepos[`repo-${id}`] = { networkId: id };
+      used[`repo-${id}`] = id;
     }
     mockConfig = {
-      defaults: { nextNetworkId: MAX_NETWORK_ID + NETWORK_ID_INCREMENT },
-      resources: { repositories: usedRepos },
+      state: { networkIds: { next: MAX_NETWORK_ID + NETWORK_ID_INCREMENT }, ...reposState(used) },
     };
     const { configService } = await import('../config/config-resources.js');
-    // This should find a gap at MIN_NETWORK_ID + 11 * INCREMENT (past the dense block)
-    // but not throw because the dense block is tiny
     const id = await configService.allocateNetworkId();
     expect(id).toBe(MIN_NETWORK_ID + 11 * NETWORK_ID_INCREMENT);
   });

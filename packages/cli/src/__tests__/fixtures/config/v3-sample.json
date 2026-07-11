@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 3,
+  "id": "9e0f3a1b-4c5d-4e6f-8a71-3c4d5e6f7081",
+  "version": 3,
+  "defaults": { "language": "en", "datastoreSize": "95%" },
+  "credentials": {
+    "ssh": { "privateKey": "-----BEGIN OPENSSH PRIVATE KEY-----\nABC\n-----END OPENSSH PRIVATE KEY-----" }
+  },
+  "resources": {
+    "machines": {
+      "web-1": { "ip": "10.0.0.1", "user": "deploy" }
+    },
+    "datastores": {
+      "fast": {
+        "backend": { "kind": "local", "machine": "web-1", "path": "/mnt/rediacc-fast" }
+      },
+      "shared": {
+        "backend": { "kind": "rbd", "pool": "rbd", "image": "shared-img" },
+        "cluster": "c1"
+      }
+    },
+    "repositories": {
+      "shop": {
+        "placement": { "datastore": "fast" },
+        "grand": "main",
+        "tags": {
+          "main": {
+            "repositoryGuid": "22222222-2222-4222-8222-222222222222",
+            "credential": "luks-shop"
+          },
+          "test": {
+            "repositoryGuid": "33333333-3333-4333-8333-333333333333",
+            "grandGuid": "22222222-2222-4222-8222-222222222222"
+          }
+        }
+      }
+    },
+    "clusters": {
+      "c1": {
+        "provider": "kvm",
+        "pools": [{ "name": "server", "role": "k8s-server", "count": 1 }]
+      }
+    }
+  },
+  "encryption": { "mode": "plaintext" },
+  "state": {
+    "repos": {
+      "shop": {
+        "main": { "networkId": 2880, "registryPort": 21000 },
+        "test": { "networkId": 2944 }
+      }
+    },
+    "datastores": {
+      "shared": { "attachedTo": "web-1", "mounted": true, "writes": "ceph" }
+    },
+    "networkIds": { "next": 3008 },
+    "reconciledAt": "2026-07-10T00:00:00Z"
+  }
+}

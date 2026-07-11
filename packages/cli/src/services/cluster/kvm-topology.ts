@@ -42,6 +42,28 @@ export function vmIp(netBase: string, netOffset: number, vmId: number): string {
   return `${netBase}.${netOffset + vmId}`;
 }
 
+/**
+ * Reduce a cluster name to a libvirt-domain- and filename-safe group token.
+ * The token namespaces both the libvirt domain names (rediacc-<group>-<id>) and
+ * renet's per-group disk scratch dir, so a cluster's VMs can never collide with
+ * the ops fleet's bare rediacc<id> domains or another cluster's id space, the
+ * fix for the KVM-cluster incident that reimaged the ops fleet.
+ *
+ * Mirrors SanitizeVMGroup in renet's opsconfig/config.go; keep the two in sync.
+ */
+export function clusterGroupToken(clusterName: string): string {
+  const token = clusterName
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, '-')
+    .replaceAll(/^-+|-+$/g, '');
+  if (token === '') {
+    throw new Error(
+      `Cluster name "${clusterName}" has no letters or digits to build a KVM group token from.`
+    );
+  }
+  return token;
+}
+
 function isCephPool(pool: ClusterPool): boolean {
   return pool.role === 'ceph';
 }
@@ -51,8 +73,14 @@ function isCephPool(pool: ClusterPool): boolean {
  * running cluster keeps its addresses. Ceph pools draw from the ceph id space,
  * every other supported role from the worker one.
  */
-function allocateIds(cluster: ClusterConfig): Record<string, number[]> {
-  const persisted = cluster.kvm?.memberIds ?? {};
+function allocateIds(
+  cluster: ClusterConfig,
+  persisted: Record<string, number[]>
+): Record<string, number[]> {
+  // The booted-VM id ledger lives in state.clusters[*].memberIds (v3, R2-F2 /
+  // Carry-in 5), threaded in by the caller. Reusing it means a pool-count
+  // change never renumbers the VMs already running (which `ops down` addresses
+  // by id); a fresh cluster passes `{}` and allocation is deterministic.
   const allocation: Record<string, number[]> = {};
 
   const used = new Set<number>([cluster.kvm?.controlId ?? CONTROL_ID]);
@@ -81,7 +109,11 @@ function allocateIds(cluster: ClusterConfig): Record<string, number[]> {
  * Resolve the full topology. Throws when the cluster cannot be expressed in the
  * ops model, rather than booting something that does not match the config.
  */
-export function resolveKvmTopology(clusterName: string, cluster: ClusterConfig): KvmTopology {
+export function resolveKvmTopology(
+  clusterName: string,
+  cluster: ClusterConfig,
+  persisted: Record<string, number[]> = {}
+): KvmTopology {
   if (!cluster.kvm) {
     throw new Error(
       `Cluster "${clusterName}" has no kvm topology. Add one with ` +
@@ -100,7 +132,7 @@ export function resolveKvmTopology(clusterName: string, cluster: ClusterConfig):
 
   const { netName, netBase, controlId, dockerRegistry } = cluster.kvm;
   const netOffset = cluster.kvm.netOffset ?? 0;
-  const memberIds = allocateIds(cluster);
+  const memberIds = allocateIds(cluster, persisted);
 
   const workerIds: number[] = [];
   const cephIds: number[] = [];
@@ -126,6 +158,7 @@ export function resolveKvmTopology(clusterName: string, cluster: ClusterConfig):
       bridgeId: controlId,
       workerIds,
       cephIds,
+      group: clusterGroupToken(clusterName),
       netName,
       dockerRegistry,
     },

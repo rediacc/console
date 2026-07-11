@@ -11,6 +11,8 @@ import { TestHelpers } from './helpers/TestHelpers';
 import { BackupMethods } from './methods/BackupMethods';
 import { CephMethods } from './methods/CephMethods';
 import { ContainerMethods } from './methods/ContainerMethods';
+import type { CsiTemplateOptions } from './methods/CsiMethods';
+import { CsiMethods } from './methods/CsiMethods';
 import { DaemonMethods } from './methods/DaemonMethods';
 import type {
   CephForkOptions,
@@ -18,17 +20,20 @@ import type {
   CephUnforkOptions,
 } from './methods/DatastoreCephMethods';
 import { DatastoreCephMethods } from './methods/DatastoreCephMethods';
-import { DatastoreMethods } from './methods/DatastoreMethods';
-import type { CsiTemplateOptions } from './methods/CsiMethods';
-import { CsiMethods } from './methods/CsiMethods';
 import type {
+  DatastoreAttachOptions,
+  DatastoreCreateOptions,
+  DatastoreForkOptions,
+  DatastoreSnapshotOptions,
+} from './methods/DatastoreMethods';
+import { DatastoreMethods } from './methods/DatastoreMethods';
+import type {
+  KubeIdentityRewriteOptions,
   KubeInstallOptions,
   KubeJoinOptions,
-  KubeNamespaceForkOptions,
-  KubeNamespaceOptions,
+  KubeNodeLabelOptions,
   KubeNodeRemoveOptions,
-  KubePVCloneOptions,
-  KubePVProvisionOptions,
+  KubePrepForkOptions,
   KubeTargetOptions,
   KubeUpgradeOptions,
 } from './methods/KubeMethods';
@@ -530,6 +535,15 @@ export class BridgeTestRunner {
     if (opts.command) {
       flags += ` --command '${opts.command}'`;
     }
+    if (opts.lines) {
+      flags += ` --lines ${opts.lines}`;
+    }
+    if (opts.parent) {
+      flags += ` --parent ${opts.parent}`;
+    }
+    if (opts.fork) {
+      flags += ` --fork ${opts.fork}`;
+    }
     if (opts.checkpointName) {
       flags += ` --checkpoint-name ${opts.checkpointName}`;
     }
@@ -628,12 +642,6 @@ export class BridgeTestRunner {
     add('--namespace', opts.namespace);
     add('--datastore', opts.datastore);
     add('--tag', opts.tag);
-    add('--pv-backend', opts.pvBackend);
-    add('--pvc', opts.pvc);
-    add('--backend', opts.backend);
-    add('--src-pv', opts.srcPv);
-    add('--dst-namespace', opts.dstNamespace);
-    add('--pv', opts.pv);
     add('--role', opts.role);
     add('--distro', opts.distro);
     add('--version', opts.version);
@@ -644,6 +652,21 @@ export class BridgeTestRunner {
     add('--token', opts.token);
     add('--ceph-pool', opts.cephPool);
     add('--ceph-cluster', opts.cephCluster);
+    // datastore_* + cluster fork/migrate (identity-rewrite / node-label) params.
+    add('--name', opts.name);
+    add('--backend', opts.backend);
+    add('--writes', opts.writes);
+    add('--group', opts.group);
+    add('--operation', opts.operation);
+    add('--mode', opts.mode);
+    add('--new-node-ip', opts.newNodeIp);
+    add('--new-network-id', opts.newNetworkId);
+    add('--bind-ip', opts.bindIp);
+    add('--server', opts.server);
+    if (opts.noAuto) flags += ' --no-auto';
+    if (opts.discard) flags += ' --discard';
+    if (opts.keepThirdParty) flags += ' --keep-third-party-secrets';
+    if (opts.removeLabel) flags += ' --remove';
     return flags;
   }
 
@@ -915,6 +938,17 @@ export class BridgeTestRunner {
   datastoreValidate = (datastorePath?: string) =>
     this.datastoreMethods.datastoreValidate(datastorePath);
 
+  // Named-datastore lifecycle (datastore_create/attach/detach/fork/snapshot/delete/list)
+  datastoreCreate = (opts: DatastoreCreateOptions) => this.datastoreMethods.datastoreCreate(opts);
+  datastoreAttach = (opts: DatastoreAttachOptions) => this.datastoreMethods.datastoreAttach(opts);
+  datastoreDetach = (name: string, discard?: boolean) =>
+    this.datastoreMethods.datastoreDetach(name, discard);
+  datastoreDelete = (name: string) => this.datastoreMethods.datastoreDelete(name);
+  datastoreList = () => this.datastoreMethods.datastoreList();
+  datastoreFork = (opts: DatastoreForkOptions) => this.datastoreMethods.datastoreFork(opts);
+  datastoreSnapshotCreate = (opts: DatastoreSnapshotOptions) =>
+    this.datastoreMethods.datastoreSnapshotCreate(opts);
+
   // Ceph Datastore Methods (datastore_ceph_init / _fork / _unfork)
   datastoreCephInit = (opts: CephInitOptions) => this.datastoreCephMethods.datastoreCephInit(opts);
   datastoreCephFork = (opts: CephForkOptions) => this.datastoreCephMethods.datastoreCephFork(opts);
@@ -938,14 +972,14 @@ export class BridgeTestRunner {
   kubeKubeconfig = (opts: KubeTargetOptions) => this.kubeMethods.kubeKubeconfig(opts);
   kubeHealth = (opts: KubeTargetOptions) => this.kubeMethods.kubeHealth(opts);
 
-  // Kube namespace + PV lifecycle (wave 5a: kube_namespace_* / kube_pv_*)
-  kubeNamespaceCreate = (opts: KubeNamespaceOptions) => this.kubeMethods.kubeNamespaceCreate(opts);
-  kubeDeploy = (opts: KubeNamespaceOptions) => this.kubeMethods.kubeDeploy(opts);
-  kubeNamespaceFork = (opts: KubeNamespaceForkOptions) => this.kubeMethods.kubeNamespaceFork(opts);
-  kubeNamespaceDelete = (opts: KubeNamespaceOptions) => this.kubeMethods.kubeNamespaceDelete(opts);
-  kubePvProvision = (opts: KubePVProvisionOptions) => this.kubeMethods.kubePvProvision(opts);
-  kubePvClone = (opts: KubePVCloneOptions) => this.kubeMethods.kubePvClone(opts);
-  kubePvDelete = (pv: string) => this.kubeMethods.kubePvDelete(pv);
+  // Whole-cluster fork/migrate primitives (kube_prep_fork / kube_identity_rewrite)
+  // + local-PV topology label (kube_node_label). The per-namespace kube verbs
+  // (kube_namespace_*/kube_pv_*/kube_deploy) are DELETED — kube repo lifecycle
+  // now rides the runtime-generic repository_* verbs via the datastore dispatch.
+  kubePrepFork = (opts: KubePrepForkOptions) => this.kubeMethods.kubePrepFork(opts);
+  kubeIdentityRewrite = (opts: KubeIdentityRewriteOptions) =>
+    this.kubeMethods.kubeIdentityRewrite(opts);
+  kubeNodeLabel = (opts: KubeNodeLabelOptions) => this.kubeMethods.kubeNodeLabel(opts);
 
   // Repository Methods
   repositoryNew = (name: string, size: string, password?: string, datastorePath?: string) =>
@@ -971,6 +1005,19 @@ export class BridgeTestRunner {
     this.repositoryMethods.repositoryValidate(name, datastorePath);
   repositoryGrow = (name: string, newSize: string, password?: string, datastorePath?: string) =>
     this.repositoryMethods.repositoryGrow(name, newSize, password, datastorePath);
+  repositoryHealth = (name: string, datastorePath?: string) =>
+    this.repositoryMethods.repositoryHealth(name, datastorePath);
+  repositoryLogs = (
+    name: string,
+    opts?: { container?: string; lines?: string; datastorePath?: string }
+  ) => this.repositoryMethods.repositoryLogs(name, opts);
+  repositoryExec = (
+    name: string,
+    command: string,
+    opts?: { container?: string; datastorePath?: string }
+  ) => this.repositoryMethods.repositoryExec(name, command, opts);
+  repositoryPromote = (parent: string, fork: string, datastorePath?: string) =>
+    this.repositoryMethods.repositoryPromote(parent, fork, datastorePath);
 
   // Ceph Methods
   cephHealth = () => this.cephMethods.cephHealth();

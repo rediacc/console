@@ -436,22 +436,6 @@ export interface ContainerUnpauseParams {
   container: string;
 }
 
-/** Re-apply the persisted manifest for a namespace */
-export interface KubeDeployParams {
-  /** Repo/cluster image mount path */
-  mountPath: string;
-  /** Namespace to redeploy */
-  namespace: string;
-  /** Cluster name */
-  cluster?: string;
-  /** Datastore root */
-  datastore?: string;
-  /** Ceph RBD pool (routes PVCs to ceph-csi; empty = local datastore) */
-  cephPool?: string;
-  /** Ceph cluster name for the ceph/rbd CLI (default: ceph) */
-  cephCluster?: string;
-}
-
 /** Check whether the API server is ready */
 export interface KubeHealthParams {
   /** Repo/cluster image mount path */
@@ -462,88 +446,6 @@ export interface KubeHealthParams {
 export interface KubeKubeconfigParams {
   /** Repo/cluster image mount path */
   mountPath: string;
-}
-
-/** Create a Kubernetes repo namespace */
-export interface KubeNamespaceCreateParams {
-  /** Repo/cluster image mount path */
-  mountPath: string;
-  /** Namespace to create */
-  namespace: string;
-  /** Cluster name */
-  cluster?: string;
-  /** Datastore root */
-  datastore?: string;
-  /** Ceph RBD pool (routes PVCs to ceph-csi; empty = local datastore) */
-  cephPool?: string;
-  /** Ceph cluster name for the ceph/rbd CLI (default: ceph) */
-  cephCluster?: string;
-}
-
-/** Delete a namespace and its local PV images */
-export interface KubeNamespaceDeleteParams {
-  /** Repo/cluster image mount path */
-  mountPath: string;
-  /** Namespace to delete */
-  namespace: string;
-  /** Cluster name */
-  cluster?: string;
-  /** Datastore root */
-  datastore?: string;
-}
-
-/** Fork a namespace (always-CoW PV clone into <namespace>-<tag>) */
-export interface KubeNamespaceForkParams {
-  /** Repo/cluster image mount path */
-  mountPath: string;
-  /** Source namespace */
-  namespace: string;
-  /** Fork tag; fork namespace is <namespace>-<tag> */
-  tag: string;
-  /** PV backend: datastore | rbd | auto */
-  pvBackend?: string;
-  /** Cluster name */
-  cluster?: string;
-  /** Datastore root */
-  datastore?: string;
-  /** Ceph RBD pool for the rbd backend (else read from the source marker) */
-  cephPool?: string;
-  /** Ceph cluster name for the ceph/rbd CLI (default: ceph) */
-  cephCluster?: string;
-}
-
-/** Reflink-clone a PV image into a destination namespace */
-export interface KubePvCloneParams {
-  /** Datastore root */
-  datastore: string;
-  /** Cluster name */
-  cluster: string;
-  /** Source PV image path */
-  srcPv: string;
-  /** Destination namespace */
-  dstNamespace: string;
-}
-
-/** Delete a PV image (unmount + detach loop + remove) */
-export interface KubePvDeleteParams {
-  /** PV image path */
-  pv: string;
-}
-
-/** Provision a datastore-backed PV image */
-export interface KubePvProvisionParams {
-  /** Datastore root */
-  datastore: string;
-  /** Cluster name */
-  cluster: string;
-  /** Namespace */
-  namespace: string;
-  /** PVC name (image basename) */
-  pvc: string;
-  /** PV size */
-  size: string;
-  /** PV backend: datastore | rbd */
-  backend?: string;
 }
 
 /** Test SSH connectivity */
@@ -663,6 +565,14 @@ export interface RepositoryDownAllParams {
   unmount?: boolean;
 }
 
+/** Run a command inside a repository (runtime-generic: docker / kube) */
+export interface RepositoryExecParams {
+  /** Container (docker) or pod[/container] (kube); empty = repo default */
+  container?: string;
+  /** Command to execute */
+  command: string;
+}
+
 /** Expand a repository */
 export interface RepositoryExpandParams {
   /** Size to add */
@@ -676,6 +586,9 @@ export interface RepositoryForkParams {
   /** Mark the fork read-only (refuses to mount; frozen commit/base) */
   immutable?: boolean;
 }
+
+/** Evaluate the repository health gate once (JSON HealthReport) */
+export interface RepositoryHealthParams {}
 
 /** Get repository information */
 export interface RepositoryInfoParams {}
@@ -692,6 +605,14 @@ export interface RepositoryListParams {
 
 /** Walk the commit DAG from a starting commit (reads out-of-volume mirror) */
 export interface RepositoryLogParams {}
+
+/** Tail repository logs (runtime-generic: docker container / kube pod) */
+export interface RepositoryLogsParams {
+  /** Container (docker) or pod[/container] (kube); empty = repo default */
+  container?: string;
+  /** Number of trailing lines */
+  lines?: string;
+}
 
 /** Lifecycle-safe merge of a source into a target working fork (atomic swap) */
 export interface RepositoryMergeParams {
@@ -743,6 +664,14 @@ export interface RepositoryPolicySetParams {
   trimInterval?: string;
 }
 
+/** Promote a fork over its grand repo (swap their data) */
+export interface RepositoryPromoteParams {
+  /** Grand repository GUID */
+  parent: string;
+  /** Fork repository GUID */
+  fork: string;
+}
+
 /** Remove orphaned datastore resources (empty mounts, stale locks) */
 export interface RepositoryPruneParams {
   /** Preview only, no changes */
@@ -757,14 +686,6 @@ export interface RepositoryResizeParams {
 
 /** Get repository status */
 export interface RepositoryStatusParams {}
-
-/** Swap data between grand repo and fork */
-export interface RepositoryTakeoverParams {
-  /** Grand repository GUID */
-  parent: string;
-  /** Fork repository GUID */
-  fork: string;
-}
 
 /** Apply template to repository */
 export interface RepositoryTemplateApplyParams {
@@ -883,15 +804,8 @@ export const RENET_FUNCTIONS = [
   'container_stats',
   'container_stop',
   'container_unpause',
-  'kube_deploy',
   'kube_health',
   'kube_kubeconfig',
-  'kube_namespace_create',
-  'kube_namespace_delete',
-  'kube_namespace_fork',
-  'kube_pv_clone',
-  'kube_pv_delete',
-  'kube_pv_provision',
   'machine_ping',
   'machine_ssh_test',
   'machine_uninstall',
@@ -909,20 +823,23 @@ export const RENET_FUNCTIONS = [
   'repository_diff',
   'repository_down',
   'repository_down_all',
+  'repository_exec',
   'repository_expand',
   'repository_fork',
+  'repository_health',
   'repository_info',
   'repository_list',
   'repository_log',
+  'repository_logs',
   'repository_merge',
   'repository_mount',
   'repository_ownership',
   'repository_policy_get',
   'repository_policy_set',
+  'repository_promote',
   'repository_prune',
   'repository_resize',
   'repository_status',
-  'repository_takeover',
   'repository_template_apply',
   'repository_trim',
   'repository_unmount',
@@ -975,15 +892,8 @@ export type FunctionParamsMap = {
   container_stats: ContainerStatsParams;
   container_stop: ContainerStopParams;
   container_unpause: ContainerUnpauseParams;
-  kube_deploy: KubeDeployParams;
   kube_health: KubeHealthParams;
   kube_kubeconfig: KubeKubeconfigParams;
-  kube_namespace_create: KubeNamespaceCreateParams;
-  kube_namespace_delete: KubeNamespaceDeleteParams;
-  kube_namespace_fork: KubeNamespaceForkParams;
-  kube_pv_clone: KubePvCloneParams;
-  kube_pv_delete: KubePvDeleteParams;
-  kube_pv_provision: KubePvProvisionParams;
   machine_ping: MachinePingParams;
   machine_ssh_test: MachineSshTestParams;
   machine_uninstall: MachineUninstallParams;
@@ -1001,20 +911,23 @@ export type FunctionParamsMap = {
   repository_diff: RepositoryDiffParams;
   repository_down: RepositoryDownParams;
   repository_down_all: RepositoryDownAllParams;
+  repository_exec: RepositoryExecParams;
   repository_expand: RepositoryExpandParams;
   repository_fork: RepositoryForkParams;
+  repository_health: RepositoryHealthParams;
   repository_info: RepositoryInfoParams;
   repository_list: RepositoryListParams;
   repository_log: RepositoryLogParams;
+  repository_logs: RepositoryLogsParams;
   repository_merge: RepositoryMergeParams;
   repository_mount: RepositoryMountParams;
   repository_ownership: RepositoryOwnershipParams;
   repository_policy_get: RepositoryPolicyGetParams;
   repository_policy_set: RepositoryPolicySetParams;
+  repository_promote: RepositoryPromoteParams;
   repository_prune: RepositoryPruneParams;
   repository_resize: RepositoryResizeParams;
   repository_status: RepositoryStatusParams;
-  repository_takeover: RepositoryTakeoverParams;
   repository_template_apply: RepositoryTemplateApplyParams;
   repository_trim: RepositoryTrimParams;
   repository_unmount: RepositoryUnmountParams;
@@ -1139,31 +1052,10 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
   'container_unpause': {
     requirements: { machine: true, team: true, repository: true, network_id: true },
   },
-  'kube_deploy': {
-    requirements: { machine: true, team: true },
-  },
   'kube_health': {
     requirements: { machine: true, team: true },
   },
   'kube_kubeconfig': {
-    requirements: { machine: true, team: true },
-  },
-  'kube_namespace_create': {
-    requirements: { machine: true, team: true },
-  },
-  'kube_namespace_delete': {
-    requirements: { machine: true, team: true },
-  },
-  'kube_namespace_fork': {
-    requirements: { machine: true, team: true },
-  },
-  'kube_pv_clone': {
-    requirements: { machine: true, team: true },
-  },
-  'kube_pv_delete': {
-    requirements: { machine: true, team: true },
-  },
-  'kube_pv_provision': {
     requirements: { machine: true, team: true },
   },
   'machine_ping': {
@@ -1217,10 +1109,16 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
   'repository_down_all': {
     requirements: { machine: true },
   },
+  'repository_exec': {
+    requirements: { machine: true, team: true, repository: true },
+  },
   'repository_expand': {
     requirements: { machine: true, team: true, repository: true },
   },
   'repository_fork': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_health': {
     requirements: { machine: true, team: true, repository: true },
   },
   'repository_info': {
@@ -1230,6 +1128,9 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
     requirements: { machine: true, team: true, organization: true },
   },
   'repository_log': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_logs': {
     requirements: { machine: true, team: true, repository: true },
   },
   'repository_merge': {
@@ -1247,6 +1148,9 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
   'repository_policy_set': {
     requirements: { machine: true },
   },
+  'repository_promote': {
+    requirements: { machine: true },
+  },
   'repository_prune': {
     requirements: { machine: true },
   },
@@ -1255,9 +1159,6 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
   },
   'repository_status': {
     requirements: { machine: true, team: true, repository: true },
-  },
-  'repository_takeover': {
-    requirements: { machine: true },
   },
   'repository_template_apply': {
     requirements: { machine: true, team: true, repository: true },
@@ -2348,40 +2249,6 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
     },
   },
-  'kube_deploy': {
-    name: 'kube_deploy',
-    category: 'kube',
-    showInMenu: false,
-    requirements: { machine: true, team: true },
-    params: {
-      mountPath: {
-        type: 'string',
-        required: true,
-        help: 'Repo/cluster image mount path',
-      },
-      namespace: {
-        type: 'string',
-        required: true,
-        help: 'Namespace to redeploy',
-      },
-      cluster: {
-        type: 'string',
-        help: 'Cluster name',
-      },
-      datastore: {
-        type: 'string',
-        help: 'Datastore root',
-      },
-      cephPool: {
-        type: 'string',
-        help: 'Ceph RBD pool (routes PVCs to ceph-csi; empty = local datastore)',
-      },
-      cephCluster: {
-        type: 'string',
-        help: 'Ceph cluster name for the ceph/rbd CLI (default: ceph)',
-      },
-    },
-  },
   'kube_health': {
     name: 'kube_health',
     category: 'kube',
@@ -2405,190 +2272,6 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         type: 'string',
         required: true,
         help: 'Repo/cluster image mount path',
-      },
-    },
-  },
-  'kube_namespace_create': {
-    name: 'kube_namespace_create',
-    category: 'kube',
-    showInMenu: false,
-    requirements: { machine: true, team: true },
-    params: {
-      mountPath: {
-        type: 'string',
-        required: true,
-        help: 'Repo/cluster image mount path',
-      },
-      namespace: {
-        type: 'string',
-        required: true,
-        help: 'Namespace to create',
-      },
-      cluster: {
-        type: 'string',
-        help: 'Cluster name',
-      },
-      datastore: {
-        type: 'string',
-        help: 'Datastore root',
-      },
-      cephPool: {
-        type: 'string',
-        help: 'Ceph RBD pool (routes PVCs to ceph-csi; empty = local datastore)',
-      },
-      cephCluster: {
-        type: 'string',
-        help: 'Ceph cluster name for the ceph/rbd CLI (default: ceph)',
-      },
-    },
-  },
-  'kube_namespace_delete': {
-    name: 'kube_namespace_delete',
-    category: 'kube',
-    showInMenu: false,
-    requirements: { machine: true, team: true },
-    params: {
-      mountPath: {
-        type: 'string',
-        required: true,
-        help: 'Repo/cluster image mount path',
-      },
-      namespace: {
-        type: 'string',
-        required: true,
-        help: 'Namespace to delete',
-      },
-      cluster: {
-        type: 'string',
-        help: 'Cluster name',
-      },
-      datastore: {
-        type: 'string',
-        help: 'Datastore root',
-      },
-    },
-  },
-  'kube_namespace_fork': {
-    name: 'kube_namespace_fork',
-    category: 'kube',
-    showInMenu: false,
-    requirements: { machine: true, team: true },
-    params: {
-      mountPath: {
-        type: 'string',
-        required: true,
-        help: 'Repo/cluster image mount path',
-      },
-      namespace: {
-        type: 'string',
-        required: true,
-        help: 'Source namespace',
-      },
-      tag: {
-        type: 'string',
-        required: true,
-        help: 'Fork tag; fork namespace is <namespace>-<tag>',
-      },
-      pvBackend: {
-        type: 'string',
-        default: 'auto',
-        help: 'PV backend: datastore | rbd | auto',
-      },
-      cluster: {
-        type: 'string',
-        help: 'Cluster name',
-      },
-      datastore: {
-        type: 'string',
-        help: 'Datastore root',
-      },
-      cephPool: {
-        type: 'string',
-        help: 'Ceph RBD pool for the rbd backend (else read from the source marker)',
-      },
-      cephCluster: {
-        type: 'string',
-        help: 'Ceph cluster name for the ceph/rbd CLI (default: ceph)',
-      },
-    },
-  },
-  'kube_pv_clone': {
-    name: 'kube_pv_clone',
-    category: 'kube',
-    showInMenu: false,
-    requirements: { machine: true, team: true },
-    params: {
-      datastore: {
-        type: 'string',
-        required: true,
-        help: 'Datastore root',
-      },
-      cluster: {
-        type: 'string',
-        required: true,
-        help: 'Cluster name',
-      },
-      srcPv: {
-        type: 'string',
-        required: true,
-        help: 'Source PV image path',
-      },
-      dstNamespace: {
-        type: 'string',
-        required: true,
-        help: 'Destination namespace',
-      },
-    },
-  },
-  'kube_pv_delete': {
-    name: 'kube_pv_delete',
-    category: 'kube',
-    showInMenu: false,
-    requirements: { machine: true, team: true },
-    params: {
-      pv: {
-        type: 'string',
-        required: true,
-        help: 'PV image path',
-      },
-    },
-  },
-  'kube_pv_provision': {
-    name: 'kube_pv_provision',
-    category: 'kube',
-    showInMenu: false,
-    requirements: { machine: true, team: true },
-    params: {
-      datastore: {
-        type: 'string',
-        required: true,
-        help: 'Datastore root',
-      },
-      cluster: {
-        type: 'string',
-        required: true,
-        help: 'Cluster name',
-      },
-      namespace: {
-        type: 'string',
-        required: true,
-        help: 'Namespace',
-      },
-      pvc: {
-        type: 'string',
-        required: true,
-        help: 'PVC name (image basename)',
-      },
-      size: {
-        type: 'string',
-        required: true,
-        help: 'PV size',
-        format: 'size',
-      },
-      backend: {
-        type: 'string',
-        default: 'datastore',
-        help: 'PV backend: datastore | rbd',
       },
     },
   },
@@ -2860,6 +2543,23 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
     },
   },
+  'repository_exec': {
+    name: 'repository_exec',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      container: {
+        type: 'string',
+        help: 'Container (docker) or pod[/container] (kube); empty = repo default',
+      },
+      command: {
+        type: 'string',
+        required: true,
+        help: 'Command to execute',
+      },
+    },
+  },
   'repository_expand': {
     name: 'repository_expand',
     category: 'repository',
@@ -2892,6 +2592,14 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         help: 'Mark the fork read-only (refuses to mount; frozen commit/base)',
         options: ['true', 'false'],
       },
+    },
+  },
+  'repository_health': {
+    name: 'repository_health',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
     },
   },
   'repository_info': {
@@ -2930,6 +2638,22 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
     showInMenu: false,
     requirements: { machine: true, team: true, repository: true },
     params: {
+    },
+  },
+  'repository_logs': {
+    name: 'repository_logs',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      container: {
+        type: 'string',
+        help: 'Container (docker) or pod[/container] (kube); empty = repo default',
+      },
+      lines: {
+        type: 'string',
+        help: 'Number of trailing lines',
+      },
     },
   },
   'repository_merge': {
@@ -3039,6 +2763,24 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
     },
   },
+  'repository_promote': {
+    name: 'repository_promote',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true },
+    params: {
+      parent: {
+        type: 'string',
+        required: true,
+        help: 'Grand repository GUID',
+      },
+      fork: {
+        type: 'string',
+        required: true,
+        help: 'Fork repository GUID',
+      },
+    },
+  },
   'repository_prune': {
     name: 'repository_prune',
     category: 'repository',
@@ -3073,24 +2815,6 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
     showInMenu: false,
     requirements: { machine: true, team: true, repository: true },
     params: {
-    },
-  },
-  'repository_takeover': {
-    name: 'repository_takeover',
-    category: 'repository',
-    showInMenu: false,
-    requirements: { machine: true },
-    params: {
-      parent: {
-        type: 'string',
-        required: true,
-        help: 'Grand repository GUID',
-      },
-      fork: {
-        type: 'string',
-        required: true,
-        help: 'Fork repository GUID',
-      },
     },
   },
   'repository_template_apply': {
@@ -3346,15 +3070,8 @@ export const queueFunctions: QueueFunctionsType = {
   container_stats: (params) => ({ functionName: 'container_stats', params }),
   container_stop: (params) => ({ functionName: 'container_stop', params }),
   container_unpause: (params) => ({ functionName: 'container_unpause', params }),
-  kube_deploy: (params) => ({ functionName: 'kube_deploy', params }),
   kube_health: (params) => ({ functionName: 'kube_health', params }),
   kube_kubeconfig: (params) => ({ functionName: 'kube_kubeconfig', params }),
-  kube_namespace_create: (params) => ({ functionName: 'kube_namespace_create', params }),
-  kube_namespace_delete: (params) => ({ functionName: 'kube_namespace_delete', params }),
-  kube_namespace_fork: (params) => ({ functionName: 'kube_namespace_fork', params }),
-  kube_pv_clone: (params) => ({ functionName: 'kube_pv_clone', params }),
-  kube_pv_delete: (params) => ({ functionName: 'kube_pv_delete', params }),
-  kube_pv_provision: (params) => ({ functionName: 'kube_pv_provision', params }),
   machine_ping: (params) => ({ functionName: 'machine_ping', params }),
   machine_ssh_test: (params) => ({ functionName: 'machine_ssh_test', params }),
   machine_uninstall: (params) => ({ functionName: 'machine_uninstall', params }),
@@ -3372,20 +3089,23 @@ export const queueFunctions: QueueFunctionsType = {
   repository_diff: (params) => ({ functionName: 'repository_diff', params }),
   repository_down: (params) => ({ functionName: 'repository_down', params }),
   repository_down_all: (params) => ({ functionName: 'repository_down_all', params }),
+  repository_exec: (params) => ({ functionName: 'repository_exec', params }),
   repository_expand: (params) => ({ functionName: 'repository_expand', params }),
   repository_fork: (params) => ({ functionName: 'repository_fork', params }),
+  repository_health: (params) => ({ functionName: 'repository_health', params }),
   repository_info: (params) => ({ functionName: 'repository_info', params }),
   repository_list: (params) => ({ functionName: 'repository_list', params }),
   repository_log: (params) => ({ functionName: 'repository_log', params }),
+  repository_logs: (params) => ({ functionName: 'repository_logs', params }),
   repository_merge: (params) => ({ functionName: 'repository_merge', params }),
   repository_mount: (params) => ({ functionName: 'repository_mount', params }),
   repository_ownership: (params) => ({ functionName: 'repository_ownership', params }),
   repository_policy_get: (params) => ({ functionName: 'repository_policy_get', params }),
   repository_policy_set: (params) => ({ functionName: 'repository_policy_set', params }),
+  repository_promote: (params) => ({ functionName: 'repository_promote', params }),
   repository_prune: (params) => ({ functionName: 'repository_prune', params }),
   repository_resize: (params) => ({ functionName: 'repository_resize', params }),
   repository_status: (params) => ({ functionName: 'repository_status', params }),
-  repository_takeover: (params) => ({ functionName: 'repository_takeover', params }),
   repository_template_apply: (params) => ({ functionName: 'repository_template_apply', params }),
   repository_trim: (params) => ({ functionName: 'repository_trim', params }),
   repository_unmount: (params) => ({ functionName: 'repository_unmount', params }),

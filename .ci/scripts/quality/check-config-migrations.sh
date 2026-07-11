@@ -72,24 +72,38 @@ import { RdcConfigSchema } from './src/schema/schemas.js';
 
 const fixturesDir = 'src/__tests__/fixtures/config';
 const fixtures = readdirSync(fixturesDir).filter((f) => /^v\d+-sample\.json$/.test(f));
-let failed = 0;
-for (const f of fixtures) {
-  const raw = JSON.parse(readFileSync(join(fixturesDir, f), 'utf8'));
-  try {
-    const migrated = runMigrations(raw);
-    const parsed = RdcConfigSchema.safeParse(migrated.config);
-    if (!parsed.success) {
-      console.error(`FAIL ${f}: ${JSON.stringify(parsed.error.issues)}`);
+
+// Committed fixtures are plaintext; a fixture needing a master password (an
+// encrypted-blob v2 config) cannot be gate-checked without one and is covered
+// in vitest instead, so the context's getMasterPassword throws.
+const ctx = {
+  getMasterPassword: async () => {
+    throw new Error('gate fixtures must be plaintext (no /resources blob)');
+  },
+};
+
+async function main() {
+  let failed = 0;
+  for (const f of fixtures) {
+    const raw = JSON.parse(readFileSync(join(fixturesDir, f), 'utf8'));
+    try {
+      const migrated = await runMigrations(raw, ctx);
+      const parsed = RdcConfigSchema.safeParse(migrated.config);
+      if (!parsed.success) {
+        console.error(`FAIL ${f}: ${JSON.stringify(parsed.error.issues)}`);
+        failed++;
+        continue;
+      }
+      console.log(`PASS ${f} (from=${migrated.fromVersion}, to=${migrated.toVersion}, migrated=${migrated.migrated})`);
+    } catch (err) {
+      console.error(`FAIL ${f}: ${(err as Error).message}`);
       failed++;
-      continue;
     }
-    console.log(`PASS ${f} (from=${migrated.fromVersion}, to=${migrated.toVersion}, migrated=${migrated.migrated})`);
-  } catch (err) {
-    console.error(`FAIL ${f}: ${(err as Error).message}`);
-    failed++;
   }
+  process.exit(failed > 0 ? 1 : 0);
 }
-process.exit(failed > 0 ? 1 : 0);
+
+void main();
 TSX
         if ! result=$(cd "$REPO_ROOT/packages/cli" && npx --no-install tsx "$(basename "$tmpscript")" 2>&1); then
             log_error "Fixture round-trip failed:"

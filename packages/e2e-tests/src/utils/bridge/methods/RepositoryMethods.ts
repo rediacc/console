@@ -136,4 +136,59 @@ export class RepositoryMethods {
       datastorePath,
     });
   }
+
+  // Runtime-generic verbs (spec 01 §4.3 / 03 §5.4): the same function dispatches
+  // to the docker per-repo dockerd or the kube namespace based on the repo's
+  // datastore placement. Exercised on docker repos here; the kube arm rides the
+  // cluster suite live-run.
+
+  async repositoryHealth(name: string, datastorePath?: string): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_health',
+      repository: name,
+      datastorePath,
+    });
+  }
+
+  async repositoryLogs(
+    name: string,
+    opts: { container?: string; lines?: string; datastorePath?: string } = {}
+  ): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_logs',
+      repository: name,
+      container: opts.container,
+      lines: opts.lines,
+      datastorePath: opts.datastorePath,
+    });
+  }
+
+  async repositoryExec(
+    name: string,
+    command: string,
+    opts: { container?: string; datastorePath?: string } = {}
+  ): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_exec',
+      repository: name,
+      command,
+      container: opts.container,
+      datastorePath: opts.datastorePath,
+    });
+  }
+
+  // repository_promote (formerly repository_takeover): swap a fork's LUKS image
+  // over its grand so the fork's data becomes the grand's (spec 06 §2).
+  async repositoryPromote(
+    parent: string,
+    fork: string,
+    datastorePath?: string
+  ): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_promote',
+      parent,
+      fork,
+      datastorePath,
+    });
+  }
 }

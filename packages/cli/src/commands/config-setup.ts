@@ -335,25 +335,16 @@ export function registerMachineCommands(config: Command, program: Command): void
     .requiredOption('--pool <name>', t('commands.config.machine.setCeph.optionPool'))
     .requiredOption('--image <name>', t('commands.config.machine.setCeph.optionImage'))
     .option('--cluster <name>', t('commands.config.machine.setCeph.optionCluster'), 'ceph')
-    .action(async (options: { machine: string; pool: string; image: string; cluster: string }) => {
-      try {
-        await configService.updateMachine(options.machine, {
-          ceph: {
-            pool: options.pool,
-            image: options.image,
-            clusterName: options.cluster === 'ceph' ? undefined : options.cluster,
-          },
-        });
-        outputService.success(
-          t('commands.config.machine.setCeph.success', {
-            name: options.machine,
-            pool: options.pool,
-            image: options.image,
-          })
-        );
-      } catch (error) {
-        handleError(error);
-      }
+    .action((options: { machine: string; pool: string; image: string; cluster: string }) => {
+      // The per-machine ceph pointer was retired in config v3: Ceph is now a
+      // datastore backend, not a machine property (spec 04 §1.2.2). The full
+      // command reshape lands in P4; until then this surface refuses instead of
+      // writing a field the schema no longer carries.
+      handleError(
+        new Error(
+          `machine set-ceph is retired. Declare the Ceph pool as a datastore instead: rdc datastore create <name> --cluster <c> --pool ${options.pool}`
+        )
+      );
     });
 }
 

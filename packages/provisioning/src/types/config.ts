@@ -14,6 +14,13 @@ export interface VMNetworkConfig {
   /** Ceph node IDs (optional) */
   cephIds: number[];
   /**
+   * Cluster group token (renet VM_GROUP) that namespaces this group's libvirt
+   * domain names (rediacc-<group>-<id>) and disk scratch paths. Must be a
+   * libvirt-domain- and filename-safe token. Optional: the plain ops fleet
+   * leaves it unset and keeps its historical bare rediacc<id> domain names.
+   */
+  group?: string;
+  /**
    * libvirt network / host-bridge name for this VM group (renet VM_NET).
    * Distinct groups must use distinct networks (e.g. "renet11" vs "renet12").
    * Optional: single-group callers inherit renet's default from ambient env.

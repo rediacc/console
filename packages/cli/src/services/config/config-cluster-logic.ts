@@ -6,7 +6,7 @@
  */
 
 import { configFileStorage } from '../../adapters/config-file-storage.js';
-import type { ClusterConfig, RdcConfig } from '../../types/index.js';
+import type { CloudProviderConfig, ClusterConfig, RdcConfig } from '../../types/index.js';
 
 /** Projected `<cluster>-<pool>-<n>` names across all clusters -> owning cluster. */
 function projectedMemberNames(config: RdcConfig | null): Map<string, string> {
@@ -118,11 +118,64 @@ export async function updateClusterInStore(
   });
 }
 
+/**
+ * Read the persisted KVM member-id ledger (v3 `state.clusters[name].memberIds`,
+ * R2-F2 / Carry-in 5). Empty when the cluster has never booted.
+ */
+export function getClusterMemberIdsFromConfig(
+  config: RdcConfig | null,
+  name: string
+): Record<string, number[]> {
+  return config?.state?.clusters?.[name]?.memberIds ?? {};
+}
+
+/**
+ * Persist the KVM member-id ledger via `updateState` (no version bump) so a
+ * later pool-count change never renumbers the VMs already running.
+ */
+export async function setClusterMemberIdsInStore(
+  configName: string,
+  name: string,
+  memberIds: Record<string, number[]>
+): Promise<void> {
+  await configFileStorage.updateState(configName, (cfg) => {
+    const clusters = { ...(cfg.state?.clusters ?? {}) };
+    clusters[name] = { ...(clusters[name] ?? {}), memberIds };
+    return { ...cfg, state: { ...(cfg.state ?? {}), clusters } };
+  });
+}
+
 export async function removeClusterFromStore(configName: string, name: string): Promise<void> {
   await configFileStorage.update(configName, (cfg) => {
     const clusters = { ...(cfg.resources?.clusters ?? {}) };
     if (!(name in clusters)) throw new Error(`Cluster "${name}" not found`);
     delete clusters[name];
     return { ...cfg, resources: { ...(cfg.resources ?? {}), clusters } };
+  });
+}
+
+export async function writeCloudProviderToStore(
+  configName: string,
+  name: string,
+  config: CloudProviderConfig
+): Promise<void> {
+  await configFileStorage.update(configName, (cfg) => ({
+    ...cfg,
+    resources: {
+      ...(cfg.resources ?? {}),
+      cloudProviders: { ...(cfg.resources?.cloudProviders ?? {}), [name]: config },
+    },
+  }));
+}
+
+export async function removeCloudProviderFromStore(
+  configName: string,
+  name: string
+): Promise<void> {
+  await configFileStorage.update(configName, (cfg) => {
+    const providers = { ...(cfg.resources?.cloudProviders ?? {}) };
+    if (!(name in providers)) throw new Error(`Cloud provider "${name}" not found`);
+    delete providers[name];
+    return { ...cfg, resources: { ...(cfg.resources ?? {}), cloudProviders: providers } };
   });
 }

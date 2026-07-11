@@ -195,7 +195,7 @@ function writeAtLeaf(
  * Set a value at a JSON Pointer within a deep-cloned tree. Returns the cloned root.
  * Intermediate objects/arrays are created as needed; missing paths are a no-op on the clone.
  */
-function setByPointer(root: unknown, pointer: string, newValue: unknown): unknown {
+export function setByPointer(root: unknown, pointer: string, newValue: unknown): unknown {
   if (pointer === '') return newValue;
   const segments = pointer
     .split('/')

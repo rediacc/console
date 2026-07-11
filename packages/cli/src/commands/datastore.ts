@@ -1,4 +1,3 @@
-import { DEFAULTS } from '@rediacc/shared/config';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
@@ -86,23 +85,16 @@ async function executeFunction(
   await executeLocal(functionName, machineName, coerced, options);
 }
 
-/** Resolve Ceph pool/image/cluster params from CLI options or machine config. */
-async function resolveCephInitParams(
+/** Resolve Ceph pool/image params from CLI options. */
+function resolveCephInitParams(
   params: Record<string, unknown>,
   options: { machine?: string; image?: string; pool: string; cluster: string }
-): Promise<void> {
-  let image = options.image;
-  let pool = options.pool;
-  if (!image) {
-    const machineName = options.machine;
-    if (machineName) {
-      const machine = await configService.getLocalMachine(machineName);
-      if (machine.ceph) {
-        image = machine.ceph.image;
-        pool = machine.ceph.pool;
-      }
-    }
-  }
+): void {
+  const image = options.image;
+  const pool = options.pool;
+  // The per-machine ceph pointer was retired in config v3 (Ceph is a datastore
+  // backend now). Explicit --image/--pool are required until the datastore
+  // registry supplies them (P4).
   if (!image) {
     throw new ValidationError(t('commands.datastore.init.imageRequired'));
   }
@@ -148,7 +140,7 @@ export function registerDatastoreCommands(program: Command): void {
           };
 
           if (options.backend === 'ceph') {
-            await resolveCephInitParams(params, options);
+            resolveCephInitParams(params, options);
           }
 
           if (options.force) {
@@ -219,33 +211,13 @@ export function registerDatastoreCommands(program: Command): void {
             throw new ValidationError(t('errors.machineRequiredLocal'));
           }
 
-          const machine = await configService.getLocalMachine(machineName);
-          if (!machine.ceph) {
-            throw new ValidationError(
-              `Machine "${machineName}" does not have Ceph configuration. Run: rdc config machine set-ceph -m ${machineName} --pool <pool> --image <image>`
-            );
-          }
-
-          const destImage = `${machine.ceph.image}-fork-${options.to}`;
-
-          const params: Record<string, unknown> = {
-            source: machine.ceph.image,
-            dest: destImage,
-            pool: machine.ceph.pool,
-            cluster: machine.ceph.clusterName ?? DEFAULTS.CEPH.CLUSTER,
-          };
-
-          if (options.cowSize) {
-            params.cow_size = options.cowSize;
-          }
-
-          outputService.info(
-            t('commands.datastore.fork.starting', {
-              source: machineName,
-              target: options.to,
-            })
+          await configService.getLocalMachine(machineName);
+          // The per-machine ceph pointer was retired in config v3. This legacy
+          // fork path is superseded by the datastore registry (`rdc datastore
+          // fork`, P1/P4); it no longer has a machine-side Ceph image to read.
+          throw new ValidationError(
+            `Ceph fork on "${machineName}" is retired: Ceph is now a datastore backend. Fork the named datastore instead (rdc datastore --help).`
           );
-          await executeFunction('datastore_ceph_fork', params, options);
         } catch (error) {
           handleError(error);
         }
@@ -281,27 +253,15 @@ export function registerDatastoreCommands(program: Command): void {
             throw new ValidationError(t('errors.machineRequiredLocal'));
           }
 
-          // Read machine's ceph config for defaults
-          const machine = await configService.getLocalMachine(machineName);
-          const pool = options.pool ?? machine.ceph?.pool ?? DEFAULTS.CEPH.POOL;
-
-          const params: Record<string, unknown> = {
-            source: options.source,
-            dest: options.dest,
-            snapshot: options.snapshot,
-            pool,
-          };
-
-          if (options.mountPoint) {
-            params.mount_point = options.mountPoint;
-          }
-
-          if (options.force) {
-            params.force = 'true';
-          }
-
-          outputService.info(t('commands.datastore.unfork.starting', { machine: machineName }));
-          await executeFunction('datastore_ceph_unfork', params, options);
+          await configService.getLocalMachine(machineName);
+          // datastore_ceph_unfork was deleted with the ceph-below-the-repo
+          // redesign (delete ledger, 02 §6): unforking a datastore is now
+          // `datastore detach --discard`, which tears the fork's clone + owned
+          // snapshot down through the registry's ordered hygiene sequence.
+          throw new ValidationError(
+            `Ceph unfork on "${machineName}" is retired: discard a datastore fork with ` +
+              `\`rdc datastore detach <name>:<tag> --discard\` (P4 porcelain).`
+          );
         } catch (error) {
           handleError(error);
         }

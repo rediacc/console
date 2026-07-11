@@ -320,16 +320,6 @@ export const ContainerUnpauseParamsSchema = z.object({
   container: z.string().min(1).describe('Container name'),
 });
 
-/** Re-apply the persisted manifest for a namespace */
-export const KubeDeployParamsSchema = z.object({
-  mountPath: z.string().min(1).describe('Repo/cluster image mount path'),
-  namespace: z.string().min(1).describe('Namespace to redeploy'),
-  cluster: z.string().optional().describe('Cluster name'),
-  datastore: z.string().optional().describe('Datastore root'),
-  cephPool: z.string().optional().describe('Ceph RBD pool (routes PVCs to ceph-csi; empty = local datastore)'),
-  cephCluster: z.string().optional().describe('Ceph cluster name for the ceph/rbd CLI (default: ceph)'),
-});
-
 /** Check whether the API server is ready */
 export const KubeHealthParamsSchema = z.object({
   mountPath: z.string().min(1).describe('Repo/cluster image mount path'),
@@ -338,59 +328,6 @@ export const KubeHealthParamsSchema = z.object({
 /** Print a reachable kubeconfig */
 export const KubeKubeconfigParamsSchema = z.object({
   mountPath: z.string().min(1).describe('Repo/cluster image mount path'),
-});
-
-/** Create a Kubernetes repo namespace */
-export const KubeNamespaceCreateParamsSchema = z.object({
-  mountPath: z.string().min(1).describe('Repo/cluster image mount path'),
-  namespace: z.string().min(1).describe('Namespace to create'),
-  cluster: z.string().optional().describe('Cluster name'),
-  datastore: z.string().optional().describe('Datastore root'),
-  cephPool: z.string().optional().describe('Ceph RBD pool (routes PVCs to ceph-csi; empty = local datastore)'),
-  cephCluster: z.string().optional().describe('Ceph cluster name for the ceph/rbd CLI (default: ceph)'),
-});
-
-/** Delete a namespace and its local PV images */
-export const KubeNamespaceDeleteParamsSchema = z.object({
-  mountPath: z.string().min(1).describe('Repo/cluster image mount path'),
-  namespace: z.string().min(1).describe('Namespace to delete'),
-  cluster: z.string().optional().describe('Cluster name'),
-  datastore: z.string().optional().describe('Datastore root'),
-});
-
-/** Fork a namespace (always-CoW PV clone into <namespace>-<tag>) */
-export const KubeNamespaceForkParamsSchema = z.object({
-  mountPath: z.string().min(1).describe('Repo/cluster image mount path'),
-  namespace: z.string().min(1).describe('Source namespace'),
-  tag: z.string().min(1).describe('Fork tag; fork namespace is <namespace>-<tag>'),
-  pvBackend: z.string().default('auto').optional().describe('PV backend: datastore | rbd | auto'),
-  cluster: z.string().optional().describe('Cluster name'),
-  datastore: z.string().optional().describe('Datastore root'),
-  cephPool: z.string().optional().describe('Ceph RBD pool for the rbd backend (else read from the source marker)'),
-  cephCluster: z.string().optional().describe('Ceph cluster name for the ceph/rbd CLI (default: ceph)'),
-});
-
-/** Reflink-clone a PV image into a destination namespace */
-export const KubePvCloneParamsSchema = z.object({
-  datastore: z.string().min(1).describe('Datastore root'),
-  cluster: z.string().min(1).describe('Cluster name'),
-  srcPv: z.string().min(1).describe('Source PV image path'),
-  dstNamespace: z.string().min(1).describe('Destination namespace'),
-});
-
-/** Delete a PV image (unmount + detach loop + remove) */
-export const KubePvDeleteParamsSchema = z.object({
-  pv: z.string().min(1).describe('PV image path'),
-});
-
-/** Provision a datastore-backed PV image */
-export const KubePvProvisionParamsSchema = z.object({
-  datastore: z.string().min(1).describe('Datastore root'),
-  cluster: z.string().min(1).describe('Cluster name'),
-  namespace: z.string().min(1).describe('Namespace'),
-  pvc: z.string().min(1).describe('PVC name (image basename)'),
-  size: z.string().min(1).describe('PV size'),
-  backend: z.string().default('datastore').optional().describe('PV backend: datastore | rbd'),
 });
 
 /** Test SSH connectivity */
@@ -481,6 +418,12 @@ export const RepositoryDownAllParamsSchema = z.object({
   unmount: z.boolean().optional().describe('Also unmount after stopping'),
 });
 
+/** Run a command inside a repository (runtime-generic: docker / kube) */
+export const RepositoryExecParamsSchema = z.object({
+  container: z.string().optional().describe('Container (docker) or pod[/container] (kube); empty = repo default'),
+  command: z.string().min(1).describe('Command to execute'),
+});
+
 /** Expand a repository */
 export const RepositoryExpandParamsSchema = z.object({
   size: z.string().min(1).describe('Size to add'),
@@ -491,6 +434,9 @@ export const RepositoryForkParamsSchema = z.object({
   tag: z.string().min(1).describe('Fork repository name'),
   immutable: z.boolean().default(false).optional().describe('Mark the fork read-only (refuses to mount; frozen commit/base)'),
 });
+
+/** Evaluate the repository health gate once (JSON HealthReport) */
+export const RepositoryHealthParamsSchema = z.object({});
 
 /** Get repository information */
 export const RepositoryInfoParamsSchema = z.object({});
@@ -504,6 +450,12 @@ export const RepositoryListParamsSchema = z.object({
 
 /** Walk the commit DAG from a starting commit (reads out-of-volume mirror) */
 export const RepositoryLogParamsSchema = z.object({});
+
+/** Tail repository logs (runtime-generic: docker container / kube pod) */
+export const RepositoryLogsParamsSchema = z.object({
+  container: z.string().optional().describe('Container (docker) or pod[/container] (kube); empty = repo default'),
+  lines: z.string().optional().describe('Number of trailing lines'),
+});
 
 /** Lifecycle-safe merge of a source into a target working fork (atomic swap) */
 export const RepositoryMergeParamsSchema = z.object({
@@ -540,6 +492,12 @@ export const RepositoryPolicySetParamsSchema = z.object({
   trimInterval: z.string().optional().describe('Minimum hours between automatic trims'),
 });
 
+/** Promote a fork over its grand repo (swap their data) */
+export const RepositoryPromoteParamsSchema = z.object({
+  parent: z.string().min(1).describe('Grand repository GUID'),
+  fork: z.string().min(1).describe('Fork repository GUID'),
+});
+
 /** Remove orphaned datastore resources (empty mounts, stale locks) */
 export const RepositoryPruneParamsSchema = z.object({
   dryRun: z.boolean().optional().describe('Preview only, no changes'),
@@ -552,12 +510,6 @@ export const RepositoryResizeParamsSchema = z.object({
 
 /** Get repository status */
 export const RepositoryStatusParamsSchema = z.object({});
-
-/** Swap data between grand repo and fork */
-export const RepositoryTakeoverParamsSchema = z.object({
-  parent: z.string().min(1).describe('Grand repository GUID'),
-  fork: z.string().min(1).describe('Fork repository GUID'),
-});
 
 /** Apply template to repository */
 export const RepositoryTemplateApplyParamsSchema = z.object({
@@ -676,15 +628,8 @@ export const FUNCTION_SCHEMAS = {
   container_stats: ContainerStatsParamsSchema,
   container_stop: ContainerStopParamsSchema,
   container_unpause: ContainerUnpauseParamsSchema,
-  kube_deploy: KubeDeployParamsSchema,
   kube_health: KubeHealthParamsSchema,
   kube_kubeconfig: KubeKubeconfigParamsSchema,
-  kube_namespace_create: KubeNamespaceCreateParamsSchema,
-  kube_namespace_delete: KubeNamespaceDeleteParamsSchema,
-  kube_namespace_fork: KubeNamespaceForkParamsSchema,
-  kube_pv_clone: KubePvCloneParamsSchema,
-  kube_pv_delete: KubePvDeleteParamsSchema,
-  kube_pv_provision: KubePvProvisionParamsSchema,
   machine_ping: MachinePingParamsSchema,
   machine_ssh_test: MachineSshTestParamsSchema,
   machine_uninstall: MachineUninstallParamsSchema,
@@ -702,20 +647,23 @@ export const FUNCTION_SCHEMAS = {
   repository_diff: RepositoryDiffParamsSchema,
   repository_down: RepositoryDownParamsSchema,
   repository_down_all: RepositoryDownAllParamsSchema,
+  repository_exec: RepositoryExecParamsSchema,
   repository_expand: RepositoryExpandParamsSchema,
   repository_fork: RepositoryForkParamsSchema,
+  repository_health: RepositoryHealthParamsSchema,
   repository_info: RepositoryInfoParamsSchema,
   repository_list: RepositoryListParamsSchema,
   repository_log: RepositoryLogParamsSchema,
+  repository_logs: RepositoryLogsParamsSchema,
   repository_merge: RepositoryMergeParamsSchema,
   repository_mount: RepositoryMountParamsSchema,
   repository_ownership: RepositoryOwnershipParamsSchema,
   repository_policy_get: RepositoryPolicyGetParamsSchema,
   repository_policy_set: RepositoryPolicySetParamsSchema,
+  repository_promote: RepositoryPromoteParamsSchema,
   repository_prune: RepositoryPruneParamsSchema,
   repository_resize: RepositoryResizeParamsSchema,
   repository_status: RepositoryStatusParamsSchema,
-  repository_takeover: RepositoryTakeoverParamsSchema,
   repository_template_apply: RepositoryTemplateApplyParamsSchema,
   repository_trim: RepositoryTrimParamsSchema,
   repository_unmount: RepositoryUnmountParamsSchema,

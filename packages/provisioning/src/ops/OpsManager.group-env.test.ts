@@ -47,6 +47,7 @@ const GROUP_B: VMNetworkConfig = {
   bridgeId: 5,
   workerIds: [51],
   cephIds: [],
+  group: 'edge',
   netName: 'renet12',
   dockerRegistry: '192.168.112.5:5000',
 };
@@ -75,15 +76,18 @@ describe('buildGroupEnv', () => {
       VM_BRIDGE: '5',
       VM_WORKERS: '51',
       VM_CEPH_NODES: '',
+      VM_GROUP: 'edge',
       VM_NET: 'renet12',
       DOCKER_REGISTRY: '192.168.112.5:5000',
     });
   });
 
-  it('omits VM_NET/DOCKER_REGISTRY for a group that does not pin them', () => {
+  it('omits VM_NET/DOCKER_REGISTRY/VM_GROUP for a group that does not pin them', () => {
     const env = buildGroupEnv(GROUP_A);
     expect(env.VM_NET).toBeUndefined();
     expect(env.DOCKER_REGISTRY).toBeUndefined();
+    // No group token -> renet keeps the fleet's bare rediacc<id> domain names.
+    expect(env.VM_GROUP).toBeUndefined();
     expect(env.VM_WORKERS).toBe('11 12');
     expect(env.VM_CEPH_NODES).toBe('21 22 23');
   });
@@ -102,6 +106,8 @@ describe('OpsManager threads groupEnv into ops subprocesses', () => {
     expect(call.env.VM_BRIDGE).toBe('5');
     expect(call.env.VM_WORKERS).toBe('51');
     expect(call.env.DOCKER_REGISTRY).toBe('192.168.112.5:5000');
+    // VM_GROUP namespaces the domain names so group B's ids never address group A's.
+    expect(call.env.VM_GROUP).toBe('edge');
   });
 
   it('stopVMs for group B spawns `ops down` with the group B env (disjoint IDs)', async () => {
@@ -110,10 +116,12 @@ describe('OpsManager threads groupEnv into ops subprocesses', () => {
 
     const call = lastSpawn();
     expect(call.args.slice(0, 2)).toEqual(['ops', 'down']);
-    // `ops down` keys VM destruction off VM_WORKERS/VM_BRIDGE — group B's must
-    // be its own disjoint IDs so it never tears down group A's VMs.
+    // `ops down` keys VM destruction off VM_WORKERS/VM_BRIDGE + VM_GROUP: group B's
+    // must be its own disjoint IDs under its own group so it never tears down the
+    // ops fleet's or group A's VMs.
     expect(call.env.VM_WORKERS).toBe('51');
     expect(call.env.VM_BRIDGE).toBe('5');
+    expect(call.env.VM_GROUP).toBe('edge');
     expect(call.env.VM_NET).toBe('renet12');
   });
 

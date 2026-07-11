@@ -11,6 +11,7 @@
 
 import { t } from '../../i18n/index.js';
 import { resolveControlNode } from '../config/config-cluster-ops.js';
+import { controlDatastoreMount } from './cluster-kube.js';
 import { ValidationError } from '../../utils/errors.js';
 
 export interface ExecutionTarget {
@@ -35,21 +36,23 @@ export function clusterMountRemotePath(cluster: string): string {
 }
 
 /**
- * Remote path of a cluster's kubeconfig on its control node. The k3s distro
- * backend writes it at <mount>/.rediacc/k3s/kubeconfig.yaml (pkg/kube/distro's
- * DistroDir; fixed by pkg/router/kube.go's DefaultKubeconfigPattern
- * `/mnt/rediacc/mounts/&#42;/.rediacc/k3s/kubeconfig.yaml`). This is the exact
- * file `term`/`vscode connect --cluster` export as KUBECONFIG (the user's
- * kubectl reads it directly) and that `rdc cluster kubeconfig` `sudo cat`s to
- * seed the local cache, so it MUST match the on-disk layout.
+ * Remote path of a cluster's kubeconfig on its control node. Under the
+ * datastore-centric model the control-plane data-dir lives INSIDE the anchor
+ * control datastore (`ds-control-<cluster>`), so the k3s distro backend writes
+ * the kubeconfig at
+ * `/mnt/rediacc-ds/ds-control-<cluster>/.rediacc/k3s/kubeconfig.yaml` — NOT the
+ * legacy per-node repo mount `/mnt/rediacc/mounts/<cluster>/…` (that mount is
+ * the disposable agent image, which never holds the CP kubeconfig). Deriving it
+ * from the control-datastore mount is the P3-w7 fix for finding #11: reading the
+ * stale path made `rdc cluster kubeconfig` (and `term`/`vscode connect
+ * --cluster`) report "Is the cluster installed?" on a healthy cluster.
  *
- * Derived from clusterMountRemotePath so the two stay unified (single-node
- * cluster). The repo-verb funnel also injects this as KUBECONFIG, though its
- * kube functions rely on the explicit mount-path param instead (sudo strips the
- * env), so the value is only load-bearing on the term/vscode/kubeconfig paths.
+ * This is the exact file `term`/`vscode connect --cluster` export as KUBECONFIG
+ * (the user's kubectl reads it directly) and that `rdc cluster kubeconfig`
+ * `sudo cat`s to seed the local cache, so it MUST match the on-disk layout.
  */
 export function clusterKubeconfigRemotePath(cluster: string): string {
-  return `${clusterMountRemotePath(cluster)}/.rediacc/k3s/kubeconfig.yaml`;
+  return `${controlDatastoreMount(cluster)}/.rediacc/k3s/kubeconfig.yaml`;
 }
 
 /**

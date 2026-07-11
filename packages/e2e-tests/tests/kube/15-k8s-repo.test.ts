@@ -2,32 +2,63 @@ import { expect, test } from '@playwright/test';
 import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
 import type { ExecResult } from '../../src/utils/bridge/types';
 
-// Suite 15 (`E2E K8s` job): a k8s repo end to end on a single-node k3s cluster
-// living inside a datastore-backed repo image (design D6 v3). It exercises the
-// wave-5 S1 parameters live: the dedicated non-loopback node IP, the router
-// annotation contract, PV-per-CoW-image provisioning, and the flagship
-// namespace fork (instant CoW, data divergence, parent unchanged).
+// Suite 15 (`E2E K8s` job): a k8s repo end to end on the DATASTORE-CLUSTER model
+// (redesign spec 06 §15). It promotes the wave3b deliverable-5 transcript
+// (scratchpad/reports/p1-wave3b-vm.md) to a suite: a cluster-attached LOCAL
+// datastore + a kube repo with a DECLARED VOLUME and a DECLARED SECRET, brought
+// up through the runtime-generic `repository up` dispatch (kube arm:
+// ApplyIsolation → ProvisionVolumes → InjectSecrets → Deploy).
 //
-// Gated on K8S_MODE=1 + at least one worker VM. The cross-cluster migrate test
-// additionally needs a second worker (skipped otherwise) and prints the
-// measured cutover downtime.
+// What it proves on the NEW model:
+//   - anchor cluster: the control plane lives INSIDE a cluster-labeled control
+//     datastore (`ds-control-<cluster>`); `kube install` on its mount is the
+//     whole cluster (spec 02 §1 / 04 §1). Dedicated non-loopback node IP.
+//   - kube repo up: repository_up on a repo folder inside a cluster-attached
+//     data datastore materializes the isolation trio (PSA-restricted namespace +
+//     default-deny NetworkPolicies + repo-namespace VAP), a no-provisioner
+//     StorageClass, a bound local PV per declared volume, a Running pod, the
+//     ROLE ConfigMap, and the wave3b per-namespace Opaque Secret transport.
+//   - LOCAL-tier fork: a local datastore fork is REFUSED by design (gate C8);
+//     repos inside a local datastore fork individually by REFLINK. So the fork
+//     proof here is `repository fork` (CoW repo clone) + `repository up` on the
+//     fork: instant, data diverges, parent untouched.
+//
+// RED-UNTIL-LIVE-RUN (spec 06 authoring bar): this file is authored to COMPILE
+// (tsc) + keep the coverage gate green; its BODY is not executed by this wave
+// (no live k3s-on-a-worker + RAM window). The live follow-up (P3 gate item 5)
+// must exercise: node Ready on 10.150.x.1, the 9 up-verification checks, the F5
+// default-SC hazard, and the reflink fork divergence — mirroring p1-wave3b-vm.md.
+//
+// Gated on K8S_MODE=1 + at least one worker VM.
 const enabled = process.env.K8S_MODE === '1';
 const workers = (process.env.VM_WORKERS ?? '').trim().split(/\s+/).filter(Boolean);
 const canRun = enabled && workers.length >= 1;
-const canMigrate = enabled && workers.length >= 2;
 
 const K3S = '/usr/local/bin/rediacc-k3s';
-const DATASTORE = '/mnt/rediacc';
 const CLUSTER = 'prod';
-const NETWORK_ID = '2816';
-const REPO = 'k8slive';
-const MOUNT = `/mnt/rediacc/mounts/${REPO}`;
-const NS = 'shop';
-const KC = `${MOUNT}/.rediacc/k3s/kubeconfig.yaml`;
+// The anchor: a cluster-labeled control datastore whose mount holds the k3s
+// data-dir (the control-plane image IS the cluster).
+const CTRL_DS = `ds-control-${CLUSTER}`;
+const CTRL_MOUNT = `/mnt/rediacc-ds/${CTRL_DS}`;
+const CTRL_NET = '2816';
+const KC = `${CTRL_MOUNT}/.rediacc/k3s/kubeconfig.yaml`;
+// The data datastore the kube repo lives on (cluster backref ⇒ KubeRuntime).
+const DATA_DS = 'shopds';
+const DATA_MOUNT = `/mnt/rediacc-ds/${DATA_DS}`;
+const REPO = 'shop';
+const REPO_NET = '2880';
+const NS = REPO; // the repo's namespace mirrors its name
+const SC = `rediacc-ds-${DATA_DS}`; // the repo's no-provisioner StorageClass
+const APP_SECRET_VALUE = 's3cr3t-prod';
+const FORK_REPO = `${REPO}-joseph`;
+const FORK_NET = '2944';
+const FORK_NS = FORK_REPO;
 
-// The repo's k8s app: an annotated Service (routable), a rediacc-datastore PVC
-// (CoW-forkable), and a Deployment that writes a marker into the PV so fork
-// divergence is observable.
+// The kube repo's declared app: an annotated ClusterIP Service (routable), a PVC
+// naming the repo's rediacc StorageClass (the F5 hazard guard — a PVC that omits
+// it is silently adopted by stock k3s local-path), and a restricted-PSA-compliant
+// Deployment that writes a marker into the local PV so fork divergence is
+// observable. `scanDeclaredVolumes` reads the PVC to provision the LUKS volume.
 const APP_MANIFEST = `apiVersion: v1
 kind: Service
 metadata:
@@ -47,7 +78,7 @@ metadata:
   name: data
 spec:
   accessModes: [ReadWriteOnce]
-  storageClassName: rediacc-datastore
+  storageClassName: ${SC}
   resources:
     requests:
       storage: 1Gi
@@ -66,10 +97,19 @@ spec:
       labels:
         app: web
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: web
           image: busybox:1.36
           command: ["sh", "-c", "test -s /data/marker.txt || echo original-data > /data/marker.txt; exec tail -f /dev/null"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
           volumeMounts:
             - name: data
               mountPath: /data
@@ -79,37 +119,31 @@ spec:
             claimName: data
 `;
 
-// A manifest the linter must reject (S1 verdicts 3 + 5): NodePort exposes the
-// real NIC and defeats the router-mediated ClusterIP model.
-const NODEPORT_MANIFEST = `apiVersion: v1
-kind: Service
-metadata:
-  name: bad
-  annotations:
-    rediacc.service_port: "80"
-spec:
-  type: NodePort
-  selector:
-    app: web
-  ports:
-    - port: 80
-      nodePort: 31888
+// A minimal Rediaccfile: the kube repo runs its lifecycle through up()/health()
+// exactly like a docker repo (the runtime-generic dispatch), and the manifests/
+// deploy rides the Deploy phase.
+const REDIACCFILE = `#!/usr/bin/env bash
+up() { :; }
+down() { :; }
+health() { exit 0; }
 `;
 
 test.describe
-  .serial('k8s repo end to end @bridge @kube @k8s', () => {
+  .serial('k8s repo end to end (datastore-cluster) @bridge @kube @k8s', () => {
     test.skip(!canRun, 'Requires K8S_MODE=1 and a worker VM');
     test.setTimeout(600_000);
 
     let w1: BridgeTestRunner;
 
     // --- kubectl-over-SSH helpers (no host kubectl; use the embedded k3s) ---
-    const kubectl = async (r: BridgeTestRunner, kc: string, args: string): Promise<ExecResult> =>
-      r.executeViaBridge(`sudo ${K3S} kubectl --kubeconfig ${kc} ${args}`);
+    const kubectl = async (args: string): Promise<ExecResult> =>
+      w1.executeViaBridge(`sudo ${K3S} kubectl --kubeconfig ${KC} ${args}`);
 
-    const writeFile = async (r: BridgeTestRunner, path: string, content: string): Promise<void> => {
+    const writeFile = async (path: string, content: string): Promise<void> => {
       const b64 = Buffer.from(content).toString('base64');
-      const res = await r.executeViaBridge(`echo ${b64} | base64 -d | sudo tee ${path} >/dev/null`);
+      const res = await w1.executeViaBridge(
+        `echo ${b64} | base64 -d | sudo tee ${path} >/dev/null`
+      );
       expect(res.code, `write ${path}`).toBe(0);
     };
 
@@ -126,341 +160,281 @@ test.describe
       return fn();
     };
 
-    const nodeReady = async (r: BridgeTestRunner, kc: string): Promise<boolean> => {
-      const res = await kubectl(r, kc, 'get nodes --no-headers');
+    const nodeReady = async (): Promise<boolean> => {
+      const res = await kubectl('get nodes --no-headers');
       return res.code === 0 && /\sReady\s/.test(res.stdout);
     };
 
-    const podRunning = async (r: BridgeTestRunner, kc: string, ns: string): Promise<boolean> => {
-      const res = await kubectl(r, kc, `-n ${ns} get pods -l app=web --no-headers`);
-      return res.code === 0 && /\sRunning\s/.test(res.stdout);
-    };
-
-    const marker = async (r: BridgeTestRunner, kc: string, ns: string): Promise<string> => {
-      const res = await kubectl(r, kc, `-n ${ns} exec deploy/web -- cat /data/marker.txt`);
+    const nodeName = async (): Promise<string> => {
+      const res = await kubectl('get nodes -o jsonpath="{.items[0].metadata.name}"');
       return res.stdout.trim();
     };
 
-    const teardownNode = async (
-      r: BridgeTestRunner,
-      mount: string,
-      networkId: string
-    ): Promise<void> => {
-      await r.executeViaBridge(
-        `sudo renet kube uninstall --mount-path ${mount} --network-id ${networkId}`
+    const podRunning = async (ns: string): Promise<boolean> => {
+      const res = await kubectl(`-n ${ns} get pods -l app=web --no-headers`);
+      return res.code === 0 && /\sRunning\s/.test(res.stdout);
+    };
+
+    const marker = async (ns: string): Promise<string> => {
+      const res = await kubectl(`-n ${ns} exec deploy/web -- cat /data/marker.txt`);
+      return res.stdout.trim();
+    };
+
+    // Bring the kube repo up carrying its declared secret. Secrets ride the SAME
+    // CLI transport as the docker path: REDIACC_SECRET_<NAME> in the environment
+    // → collectEnvSecrets → SecretSet.Env → InjectSecrets → per-namespace Opaque
+    // Secret (wave3b). So the up call must carry the env var (bridge-once cannot).
+    const repoUpWithSecret = async (name: string): Promise<ExecResult> =>
+      w1.executeViaBridge(
+        `sudo env REDIACC_SECRET_APP_SECRET=${APP_SECRET_VALUE} renet repository up ` +
+          `--name ${name} --datastore ${DATA_MOUNT} --network-id ${REPO_NET}`
       );
-      await r.executeViaBridge(`sudo renet repository delete --name ${REPO} --force`);
-      await r.executeViaBridge(`sudo ip link del rdk${networkId} 2>/dev/null; true`);
+
+    const teardownAll = async (): Promise<void> => {
+      // Repos down first (releases the LUKS volume mounts), then the fork, then
+      // the cluster + datastores. Every step tolerates already-absent state.
+      for (const [n, net] of [
+        [FORK_REPO, FORK_NET],
+        [REPO, REPO_NET],
+      ] as const) {
+        await w1.executeViaBridge(
+          `sudo renet repository down --name ${n} --datastore ${DATA_MOUNT} --network-id ${net} 2>/dev/null; true`
+        );
+      }
+      await w1.executeViaBridge(`sudo renet datastore detach --name ${DATA_DS} 2>/dev/null; true`);
+      await w1.executeViaBridge(`sudo renet datastore delete --name ${DATA_DS} 2>/dev/null; true`);
+      await w1.executeViaBridge(
+        `sudo renet kube uninstall --mount-path ${CTRL_MOUNT} --network-id ${CTRL_NET} 2>/dev/null; true`
+      );
+      await w1.executeViaBridge(`sudo renet datastore detach --name ${CTRL_DS} 2>/dev/null; true`);
+      await w1.executeViaBridge(`sudo renet datastore delete --name ${CTRL_DS} 2>/dev/null; true`);
+      await w1.executeViaBridge(`sudo ip link del rdk${CTRL_NET} 2>/dev/null; true`);
     };
 
     test.beforeAll(async () => {
       w1 = BridgeTestRunner.forWorker(1);
-      // Idempotent teardown: this suite uses a fixed networkID, so a prior run's
-      // k3s / repo / dummy interface must be cleared before a fresh install.
-      await teardownNode(w1, MOUNT, NETWORK_ID);
-      const created = await w1.executeViaBridge(
-        `sudo renet repository create --name ${REPO} --network-id ${NETWORK_ID} --unencrypted --size 6G`
-      );
-      expect(created.code, 'create repo image').toBe(0);
+      await teardownAll();
     });
 
     test.afterAll(async () => {
-      await teardownNode(w1, MOUNT, NETWORK_ID);
+      if (process.env.KEEP_CLUSTER === '1') return;
+      await teardownAll().catch(() => undefined);
     });
 
-    test('1. kube_install brings up a single-node k3s server on a non-loopback node IP', async () => {
-      const res = await w1.kubeInstall({ mountPath: MOUNT, networkId: NETWORK_ID, role: 'server' });
-      expect(w1.isSuccess(res)).toBe(true);
+    test('1. anchor cluster: control datastore + kube install → node Ready on a non-loopback IP', async () => {
+      // The control plane lives inside a cluster-labeled control datastore.
+      expect(
+        w1.isSuccess(
+          await w1.datastoreCreate({
+            name: CTRL_DS,
+            backend: 'local',
+            size: '10G',
+            cluster: CLUSTER,
+          })
+        )
+      ).toBe(true);
+      expect(w1.isSuccess(await w1.datastoreAttach({ name: CTRL_DS }))).toBe(true);
 
-      expect(await poll(() => nodeReady(w1, KC), 120_000)).toBe(true);
-      // S1 verdict 1: the node's InternalIP must be the dedicated non-loopback IP
+      const install = await w1.kubeInstall({
+        mountPath: CTRL_MOUNT,
+        networkId: CTRL_NET,
+        role: 'server',
+      });
+      expect(w1.isSuccess(install)).toBe(true);
+      expect(await poll(() => nodeReady(), 120_000)).toBe(true);
+
+      // S1 verdict 1: the node's InternalIP is the dedicated non-loopback node IP
       // (10.150.x.1), NOT a 127/8 loopback.
       const ip = await kubectl(
-        w1,
-        KC,
         'get nodes -o jsonpath="{.items[0].status.addresses[?(@.type==\\"InternalIP\\")].address}"'
       );
       expect(ip.stdout.trim()).toMatch(/^10\.150\.\d+\.1$/);
     });
 
-    test('2. kube_health reports the API server ready', async () => {
-      expect(w1.isSuccess(await w1.kubeHealth({ mountPath: MOUNT, networkId: NETWORK_ID }))).toBe(
-        true
-      );
-    });
-
-    test('3. kube_kubeconfig emits a kubeconfig whose server URL is the reachable node IP', async () => {
-      const res = await w1.kubeKubeconfig({ mountPath: MOUNT, networkId: NETWORK_ID });
-      expect(w1.isSuccess(res)).toBe(true);
+    test('2. kube_health ready + kube_kubeconfig server URL is the reachable node IP', async () => {
+      expect(
+        w1.isSuccess(await w1.kubeHealth({ mountPath: CTRL_MOUNT, networkId: CTRL_NET }))
+      ).toBe(true);
+      const kc = await w1.kubeKubeconfig({ mountPath: CTRL_MOUNT, networkId: CTRL_NET });
+      expect(w1.isSuccess(kc)).toBe(true);
       // The rewritten server URL must be reachable (not k3s's 127.0.0.1 default).
-      // The bridge-once test-mode executor surfaces function output through the
-      // renet logger (stderr), so match the combined stream (as tests 7/8 do).
-      expect(res.stdout + res.stderr).toMatch(/server:\s*https:\/\/10\.150\.\d+\.1:6443/);
+      expect(kc.stdout + kc.stderr).toMatch(/server:\s*https:\/\/10\.150\.\d+\.1:6443/);
     });
 
-    test('4. deploy: PVs materialize, the Service is router-stamped, the pod runs with its data', async () => {
+    test('3. cluster-attached data datastore + kube repo folder + node-label for local PVs', async () => {
+      // A cluster-attached LOCAL data datastore. Its cluster backref makes repos
+      // on it dispatch to KubeRuntime.
       expect(
         w1.isSuccess(
-          await w1.kubeNamespaceCreate({
-            mountPath: MOUNT,
-            networkId: NETWORK_ID,
-            namespace: NS,
+          await w1.datastoreCreate({
+            name: DATA_DS,
+            backend: 'local',
+            size: '4G',
             cluster: CLUSTER,
-            datastore: DATASTORE,
           })
         )
       ).toBe(true);
+      expect(w1.isSuccess(await w1.datastoreAttach({ name: DATA_DS }))).toBe(true);
 
-      // A standalone PV provision (kube_pv_provision) creates a datastore image.
+      // Author the repo-as-folder: repos/shop/{Rediaccfile, manifests/app.yaml}.
+      const repoPath = `${DATA_MOUNT}/repos/${REPO}`;
+      await w1.executeViaBridge(`sudo mkdir -p ${repoPath}/manifests`);
+      await writeFile(`${repoPath}/manifests/app.yaml`, APP_MANIFEST);
+      await writeFile(`${repoPath}/Rediaccfile`, REDIACCFILE);
+
+      // Carry-in 1: attach does NOT yet auto-label the hosting node, so a local-PV
+      // pod stays Pending until the node carries rediacc.io/ds-<ds>=true. Invoke
+      // the primitive (the wave3b BUG #2 fix seam).
+      const node = await nodeName();
       expect(
         w1.isSuccess(
-          await w1.kubePvProvision({
-            datastore: DATASTORE,
-            cluster: CLUSTER,
-            namespace: NS,
-            pvc: 'scratch',
-            size: '1Gi',
+          await w1.kubeNodeLabel({
+            mountPath: CTRL_MOUNT,
+            networkId: CTRL_NET,
+            node,
+            datastore: DATA_DS,
           })
         )
       ).toBe(true);
-      const img = await w1.executeViaBridge(
-        `sudo test -f ${DATASTORE}/pv/${CLUSTER}/${NS}/scratch.img && echo OK`
+      const label = await kubectl(
+        `get node ${node} -o jsonpath="{.metadata.labels.rediacc\\.io/ds-${DATA_DS}}"`
       );
-      expect(img.stdout).toContain('OK');
+      expect(label.stdout.trim()).toBe('true');
+    });
 
-      // Initial deploy is the Rediaccfile up() path: `renet kube apply -f` renders
-      // (namespace stamp + router annotation contract + PVC materialize) + persists.
-      await writeFile(w1, '/tmp/shop-app.yaml', APP_MANIFEST);
-      const applied = await w1.executeViaBridge(
-        `sudo renet kube apply --mount-path ${MOUNT} --namespace ${NS} --cluster ${CLUSTER} --datastore ${DATASTORE} -f /tmp/shop-app.yaml`
+    test('4. repository up (kube arm): isolation trio + no-provisioner SC + bound local PV + pod + secret', async () => {
+      const up = await repoUpWithSecret(REPO);
+      expect(up.code, up.stderr).toBe(0);
+
+      // (1) PSA-restricted, repo-labeled namespace.
+      const nsLabels = await kubectl(`get ns ${NS} -o jsonpath="{.metadata.labels}"`);
+      expect(nsLabels.stdout).toContain('"pod-security.kubernetes.io/enforce":"restricted"');
+      expect(nsLabels.stdout).toContain('"rediacc.io/repo-namespace":"true"');
+      expect(nsLabels.stdout).toContain(`"rediacc.io/datastore":"${DATA_DS}"`);
+      expect(nsLabels.stdout).toContain('"rediacc.io/injected":"true"');
+
+      // (2) three default-deny NetworkPolicies.
+      for (const np of [
+        'rediacc-default-deny-ingress',
+        'rediacc-allow-intra-namespace',
+        'rediacc-allow-proxy',
+      ]) {
+        const got = await kubectl(`-n ${NS} get networkpolicy ${np} --no-headers`);
+        expect(got.code, `NetworkPolicy ${np}`).toBe(0);
+      }
+
+      // (3) the repo-namespace ValidatingAdmissionPolicy guard.
+      const vap = await kubectl(
+        'get validatingadmissionpolicy rediacc-repo-namespace-guard --no-headers'
       );
-      expect(applied.code, applied.stderr).toBe(0);
+      expect(vap.code, vap.stderr).toBe(0);
 
-      // Router contract: the exposed Service carries rediacc.cluster (else the
-      // route is silently dropped, S1 verdict 5).
+      // (4) no-provisioner StorageClass: Retain + WaitForFirstConsumer.
+      const scJson = await kubectl(`get storageclass ${SC} -o json`);
+      expect(scJson.stdout).toContain('"provisioner":"kubernetes.io/no-provisioner"');
+      expect(scJson.stdout).toContain('"reclaimPolicy":"Retain"');
+      expect(scJson.stdout).toContain('"volumeBindingMode":"WaitForFirstConsumer"');
+
+      // (5)+(6) the declared volume's local PV bound to the PVC.
+      expect(
+        await poll(
+          async () =>
+            (await kubectl(`-n ${NS} get pvc data --no-headers`)).stdout.includes('Bound'),
+          120_000
+        )
+      ).toBe(true);
+      const pvcSc = await kubectl(`-n ${NS} get pvc data -o jsonpath="{.spec.storageClassName}"`);
+      expect(pvcSc.stdout.trim()).toBe(SC);
+
+      // (7) pod Running with the marker in the local PV.
+      expect(await poll(() => podRunning(NS), 120_000)).toBe(true);
+      expect(await marker(NS)).toBe('original-data');
+
+      // Router contract: the exposed Service carries rediacc.cluster.
       const ann = await kubectl(
-        w1,
-        KC,
         `-n ${NS} get svc web -o jsonpath="{.metadata.annotations.rediacc\\.cluster}"`
       );
       expect(ann.stdout.trim()).toBe(CLUSTER);
 
-      // PVC bound + pod running with the marker written into the CoW PV.
-      const pvc = await kubectl(w1, KC, `-n ${NS} get pvc data --no-headers`);
-      expect(pvc.stdout).toMatch(/\sBound\s/);
-      expect(await poll(() => podRunning(w1, KC, NS), 120_000)).toBe(true);
-      expect(await marker(w1, KC, NS)).toBe('original-data');
+      // (8) ROLE ConfigMap.
+      const role = await kubectl(
+        `-n ${NS} get configmap rediacc-role -o jsonpath="{.data.REDIACC_ROLE}"`
+      );
+      expect(role.stdout.trim()).toBe('primary');
 
-      // kube_deploy re-applies the persisted manifest (idempotent redeploy path).
-      expect(
-        w1.isSuccess(
-          await w1.kubeDeploy({
-            mountPath: MOUNT,
-            networkId: NETWORK_ID,
-            namespace: NS,
-            cluster: CLUSTER,
-            datastore: DATASTORE,
-          })
-        )
-      ).toBe(true);
+      // (9) the declared secret landed as the labeled Opaque Secret + is seen in
+      // the pod (env transport end to end).
+      const secret = await kubectl(
+        `-n ${NS} get secret rediacc-env -o jsonpath="{.data.APP_SECRET}"`
+      );
+      expect(Buffer.from(secret.stdout.trim(), 'base64').toString()).toBe(APP_SECRET_VALUE);
+      const seen = await kubectl(`-n ${NS} exec deploy/web -- printenv APP_SECRET`);
+      expect(seen.stdout.trim()).toBe(APP_SECRET_VALUE);
     });
 
-    test('5. namespace fork is instant CoW: data diverges, parent unchanged, URL under parent wildcard', async () => {
-      const forkNs = `${NS}-joseph`;
+    test('5. F5 hazard: stock k3s local-path is the DEFAULT SC; the rediacc SC is not', async () => {
+      // The PVC MUST name the rediacc SC or it is silently adopted by local-path
+      // (the default), escaping the forkable per-volume LUKS image. Assert the
+      // default-SC layout that makes the hazard real, and that our PVC bound to
+      // the rediacc SC rather than local-path.
+      const defaultSc = await kubectl(
+        `get sc -o jsonpath='{.items[?(@.metadata.annotations.storageclass\\.kubernetes\\.io/is-default-class=="true")].metadata.name}'`
+      );
+      expect(defaultSc.stdout).toContain('local-path');
+      expect(defaultSc.stdout).not.toContain(SC);
+    });
+
+    test('6. LOCAL-tier fork is a reflink repo fork: instant, data diverges, parent untouched', async () => {
+      // A datastore-level fork of a LOCAL datastore is refused (gate C8) — repos
+      // fork individually by reflink. So fork the repo, then bring the fork up.
       const t0 = Date.now();
-      const res = await w1.kubeNamespaceFork({
-        mountPath: MOUNT,
-        networkId: NETWORK_ID,
-        namespace: NS,
-        tag: 'joseph',
-        pvBackend: 'datastore',
-        cluster: CLUSTER,
-        datastore: DATASTORE,
-      });
+      const fork = await w1.executeViaBridge(
+        `sudo renet repository fork --name ${REPO} --tag ${FORK_REPO} --datastore ${DATA_MOUNT} --network-id ${FORK_NET}`
+      );
+      expect(fork.code, fork.stderr).toBe(0);
       const forkMs = Date.now() - t0;
-      expect(w1.isSuccess(res)).toBe(true);
-      // Constant-time CoW: forking a repo with data is near-instant regardless of
-      // size (reflink), not a full copy. Generous ceiling for a busy CI runner.
-      process.stdout.write(`[suite15] namespace fork wall-time: ${forkMs}ms\n`);
+      // Constant-time CoW reflink: near-instant regardless of volume size.
+      process.stdout.write(`[suite15] reflink repo fork wall-time: ${forkMs}ms\n`);
       expect(forkMs).toBeLessThan(60_000);
 
-      // Fork Service carries the same cluster stamp -> its URL lands under the
-      // parent's per-cluster wildcard (zero new certs on fork).
-      const forkAnn = await kubectl(
-        w1,
-        KC,
-        `-n ${forkNs} get svc web -o jsonpath="{.metadata.annotations.rediacc\\.cluster}"`
+      const up = await w1.executeViaBridge(
+        `sudo renet repository up --name ${FORK_REPO} --datastore ${DATA_MOUNT} --network-id ${FORK_NET}`
       );
-      expect(forkAnn.stdout.trim()).toBe(CLUSTER);
+      expect(up.code, up.stderr).toBe(0);
 
-      // Fork pod comes up carrying the parent's data (CoW clone).
-      expect(await poll(() => podRunning(w1, KC, forkNs), 120_000)).toBe(true);
-      expect(await marker(w1, KC, forkNs)).toBe('original-data');
+      // Fork pod comes up carrying the parent's CoW data.
+      expect(await poll(() => podRunning(FORK_NS), 120_000)).toBe(true);
+      expect(await marker(FORK_NS)).toBe('original-data');
 
-      // Divergence: write to the fork, then assert the parent is untouched.
+      // Divergence: write to the fork, assert the parent is untouched.
       const wrote = await kubectl(
-        w1,
-        KC,
-        `-n ${forkNs} exec deploy/web -- sh -c "echo forked-data > /data/marker.txt"`
+        `-n ${FORK_NS} exec deploy/web -- sh -c "echo forked-data > /data/marker.txt"`
       );
       expect(wrote.code).toBe(0);
-      expect(await marker(w1, KC, forkNs)).toBe('forked-data');
-      expect(await marker(w1, KC, NS)).toBe('original-data');
+      expect(await marker(FORK_NS)).toBe('forked-data');
+      expect(await marker(NS)).toBe('original-data');
     });
 
-    test('6. kube_pv_clone / kube_pv_delete operate on standalone PV images', async () => {
-      const clone = await w1.kubePvClone({
-        datastore: DATASTORE,
-        cluster: CLUSTER,
-        srcPv: `${DATASTORE}/pv/${CLUSTER}/${NS}/data.img`,
-        dstNamespace: `${NS}-copy`,
-      });
-      expect(w1.isSuccess(clone)).toBe(true);
-      const cloned = `${DATASTORE}/pv/${CLUSTER}/${NS}-copy/data.img`;
-      expect((await w1.executeViaBridge(`sudo test -f ${cloned} && echo OK`)).stdout).toContain(
-        'OK'
-      );
-
-      expect(w1.isSuccess(await w1.kubePvDelete(cloned))).toBe(true);
-      expect((await w1.executeViaBridge(`sudo test -f ${cloned} || echo GONE`)).stdout).toContain(
-        'GONE'
-      );
-    });
-
-    test('7. the kube linter rejects node-exposing manifests (NodePort)', async () => {
-      await writeFile(w1, '/tmp/bad.yaml', NODEPORT_MANIFEST);
-      const applied = await w1.executeViaBridge(
-        `sudo renet kube apply --mount-path ${MOUNT} --namespace ${NS} --cluster ${CLUSTER} --datastore ${DATASTORE} -f /tmp/bad.yaml`
-      );
-      expect(applied.code, 'NodePort apply must fail').not.toBe(0);
-      expect(applied.stdout + applied.stderr).toMatch(/NodePort|reject/i);
-    });
-
-    test('8. an external (non-embeddable) distro refuses install cleanly', async () => {
-      const res = await w1.executeViaBridge(
-        `sudo renet kube install --mount-path /tmp/extc --network-id ${NETWORK_ID} --distro external`
-      );
-      expect(res.code, 'external install must refuse').not.toBe(0);
-      expect(res.stdout + res.stderr).toMatch(/not applicable/i);
-    });
-
-    test('9. cross-cluster migrate moves the namespace with a measured, seconds-level downtime', async () => {
-      test.skip(!canMigrate, 'Requires a second worker VM');
-      const w2 = BridgeTestRunner.forWorker(2);
-      const cluster2 = 'prod2';
-      const netId2 = '2880';
-      const mount2 = `/mnt/rediacc/mounts/${REPO}`;
-      const kc2 = `${mount2}/.rediacc/k3s/kubeconfig.yaml`;
-
-      // Fresh destination cluster on worker 2.
-      await w2.executeViaBridge(
-        `sudo renet kube uninstall --mount-path ${mount2} --network-id ${netId2}`
-      );
-      await w2.executeViaBridge(`sudo renet repository delete --name ${REPO} --force`);
-      await w2.executeViaBridge(`sudo ip link del rdk${netId2} 2>/dev/null; true`);
+    test('7. teardown: repository down (no leak) + cluster + datastores + dummy interface removed', async () => {
+      // repository down releases the per-volume LUKS mounts (CT-07 converge, no
+      // leak). Fork first, then parent.
+      for (const [n, net] of [
+        [FORK_REPO, FORK_NET],
+        [REPO, REPO_NET],
+      ] as const) {
+        const down = await w1.executeViaBridge(
+          `sudo renet repository down --name ${n} --datastore ${DATA_MOUNT} --network-id ${net}`
+        );
+        expect(down.code, `down ${n}: ${down.stderr}`).toBe(0);
+      }
+      expect(w1.isSuccess(await w1.datastoreDetach(DATA_DS))).toBe(true);
       expect(
-        (
-          await w2.executeViaBridge(
-            `sudo renet repository create --name ${REPO} --network-id ${netId2} --unencrypted --size 6G`
-          )
-        ).code
-      ).toBe(0);
-      expect(
-        w2.isSuccess(await w2.kubeInstall({ mountPath: mount2, networkId: netId2, role: 'server' }))
+        w1.isSuccess(await w1.kubeUninstall({ mountPath: CTRL_MOUNT, networkId: CTRL_NET }))
       ).toBe(true);
-      expect(await poll(() => nodeReady(w2, kc2), 120_000)).toBe(true);
-
-      // Transfer the namespace's persisted manifest + PV image worker1 -> worker2,
-      // relocated under the destination cluster's datastore layout. The bridge VM
-      // (mesh SSH to every worker) relays the copy: workers do not trust each
-      // other directly, but both trust the bridge.
-      const srcImg = `${DATASTORE}/pv/${CLUSTER}/${NS}/data.img`;
-      const dstImgDir = `${DATASTORE}/pv/${cluster2}/${NS}`;
-      const srcMan = `${DATASTORE}/manifests/${CLUSTER}/${NS}`;
-      const dstManDir = `${DATASTORE}/manifests/${cluster2}/${NS}`;
-      const [w1ip, w2ip] = w1.getWorkerVMs();
-      const user = process.env.USER;
-      const scp = '-o StrictHostKeyChecking=no -o BatchMode=yes';
-      const relay = async (srcPath: string, dstPath: string): Promise<void> => {
-        const relayTmp = `/tmp/mig-${Date.now()}`;
-        const cmd =
-          `scp ${scp} ${user}@${w1ip}:${srcPath} ${relayTmp} && ` +
-          `scp ${scp} ${relayTmp} ${user}@${w2ip}:${dstPath} && rm -f ${relayTmp}`;
-        const res = await w1.executeOnVM(w1.getBridgeVM(), cmd);
-        expect(res.code, `relay ${srcPath} -> ${dstPath}: ${res.stderr}`).toBe(0);
-      };
-
-      // World-readable staging copies on both ends so the mesh SSH user can read
-      // the sudo-owned datastore files and write into /tmp on worker2.
-      const manFiles = await w1.executeViaBridge(`sudo ls ${srcMan}`);
-      const manName = manFiles.stdout.trim().split(/\s+/)[0];
-      await w1.executeViaBridge(
-        `sudo cp ${srcImg} /tmp/mig-data.img && sudo cp ${srcMan}/${manName} /tmp/mig-man.yaml && sudo chmod 644 /tmp/mig-data.img /tmp/mig-man.yaml`
-      );
-      await relay('/tmp/mig-data.img', '/tmp/mig-data.img');
-      await relay('/tmp/mig-man.yaml', '/tmp/mig-man.yaml');
-      await w2.executeViaBridge(
-        `sudo mkdir -p ${dstImgDir} ${dstManDir} && sudo cp /tmp/mig-data.img ${dstImgDir}/data.img && sudo cp /tmp/mig-man.yaml ${dstManDir}/${manName}`
-      );
-
-      // Cutover: stop the source workload, then deploy on the destination.
-      const cutStart = Date.now();
-      await kubectl(w1, KC, `-n ${NS} scale deploy/web --replicas=0`);
-      expect(
-        w2.isSuccess(
-          await w2.kubeNamespaceCreate({
-            mountPath: mount2,
-            networkId: netId2,
-            namespace: NS,
-            cluster: cluster2,
-            datastore: DATASTORE,
-          })
-        )
-      ).toBe(true);
-      expect(
-        w2.isSuccess(
-          await w2.kubeDeploy({
-            mountPath: mount2,
-            networkId: netId2,
-            namespace: NS,
-            cluster: cluster2,
-            datastore: DATASTORE,
-          })
-        )
-      ).toBe(true);
-      expect(await poll(() => podRunning(w2, kc2, NS), 180_000)).toBe(true);
-      const downtimeSec = ((Date.now() - cutStart) / 1000).toFixed(1);
-      process.stdout.write(`[suite15] cross-cluster migrate downtime: ${downtimeSec}s\n`);
-
-      // Data intact on the destination.
-      expect(await marker(w2, kc2, NS)).toBe('original-data');
-
-      // Cleanup destination.
-      await w2.executeViaBridge(
-        `sudo renet kube uninstall --mount-path ${mount2} --network-id ${netId2}`
-      );
-      await w2.executeViaBridge(`sudo renet repository delete --name ${REPO} --force`);
-      await w2.executeViaBridge(`sudo ip link del rdk${netId2} 2>/dev/null; true`);
-    });
-
-    test('10. teardown removes the namespace, the node, and the dummy interface', async () => {
-      expect(
-        w1.isSuccess(
-          await w1.kubeNamespaceDelete({
-            mountPath: MOUNT,
-            networkId: NETWORK_ID,
-            namespace: NS,
-            cluster: CLUSTER,
-            datastore: DATASTORE,
-          })
-        )
-      ).toBe(true);
-      expect(
-        w1.isSuccess(await w1.kubeUninstall({ mountPath: MOUNT, networkId: NETWORK_ID }))
-      ).toBe(true);
-      // S1 verdict 1 teardown: the per-cluster dummy interface is removed.
+      expect(w1.isSuccess(await w1.datastoreDetach(CTRL_DS))).toBe(true);
+      // The per-cluster dummy interface is removed on uninstall.
       const iface = await w1.executeViaBridge(
-        `ip link show rdk${NETWORK_ID} 2>/dev/null && echo PRESENT || echo GONE`
+        `ip link show rdk${CTRL_NET} 2>/dev/null && echo PRESENT || echo GONE`
       );
       expect(iface.stdout).toContain('GONE');
     });

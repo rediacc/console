@@ -127,6 +127,17 @@ export const CEPH_DEFAULTS = {
 } as const;
 
 /**
+ * Whole-cluster fork/rehearse defaults (docs/design/04-cluster-fork-migrate.md).
+ */
+export const CLUSTER_DEFAULTS = {
+  /** Default effect-isolation ROLE for a cluster fork (02 §4): fork | rehearsal. */
+  FORK_ROLE: 'fork',
+
+  /** Default write disposition for a cluster fork's datastores (04 §2): local | ceph. */
+  FORK_WRITES: 'local',
+} as const;
+
+/**
  * Cloud provider defaults (OpenTofu / custom provider config)
  */
 export const CLOUD_DEFAULTS = {
@@ -471,6 +482,7 @@ export const DEFAULTS = {
   CLI_TEST: CLI_TEST_DEFAULTS,
   SORT: SORT_DEFAULTS,
   CEPH: CEPH_DEFAULTS,
+  CLUSTER: CLUSTER_DEFAULTS,
   CLOUD: CLOUD_DEFAULTS,
 } as const;
 

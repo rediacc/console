@@ -5,21 +5,28 @@ import type { RdcConfig } from '../../types/index.js';
 // Network ID space: 2816 to ~16,777,152, step 64 → ~261,944 possible IDs.
 const MAX_NETWORK_ID = 16_711_680;
 
-/** Collect network IDs already assigned to repositories in a config. */
+/** Collect network IDs already assigned to repositories (v3: state.repos). */
 function scanUsedNetworkIds(config: RdcConfig): Set<number> {
   const usedIds = new Set<number>();
-  for (const repo of Object.values(config.resources?.repositories ?? {})) {
-    if (repo.networkId !== undefined && repo.networkId > 0) usedIds.add(repo.networkId);
+  for (const tags of Object.values(config.state?.repos ?? {})) {
+    for (const runtime of Object.values(tags)) {
+      if (runtime.networkId !== undefined && runtime.networkId > 0) usedIds.add(runtime.networkId);
+    }
   }
   return usedIds;
 }
 
-/** Allocate the next network ID in a named config, advancing the forward counter. */
+/**
+ * Allocate the next network ID in a named config, advancing the forward
+ * counter. The counter lives in `state.networkIds.next` (status half) and is
+ * written via `updateState` so allocation churn never bumps the version
+ * counter (R2-F2).
+ */
 export async function allocateNetworkIdInStore(configName: string): Promise<number> {
   let allocated = 0;
-  await configFileStorage.update(configName, (config) => {
+  await configFileStorage.updateState(configName, (config) => {
     const usedIds = scanUsedNetworkIds(config);
-    let nextId = config.defaults?.nextNetworkId;
+    let nextId = config.state?.networkIds?.next;
     if (nextId === undefined || nextId < MIN_NETWORK_ID) nextId = pickInitialNetworkId(usedIds);
     // If the forward counter is approaching the limit, scan for freed gaps
     // (handles long-lived systems where many repos have been created + deleted).
@@ -27,7 +34,10 @@ export async function allocateNetworkIdInStore(configName: string): Promise<numb
     allocated = nextId;
     return {
       ...config,
-      defaults: { ...(config.defaults ?? {}), nextNetworkId: nextId + NETWORK_ID_INCREMENT },
+      state: {
+        ...(config.state ?? {}),
+        networkIds: { next: nextId + NETWORK_ID_INCREMENT },
+      },
     };
   });
   return allocated;

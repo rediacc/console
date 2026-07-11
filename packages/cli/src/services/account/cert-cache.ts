@@ -512,8 +512,8 @@ async function mergeWithLocalCache(
   baseDomain: string,
   silent?: boolean
 ): Promise<void> {
-  const currentConfig = await configService.getCurrent();
-  const existingCache = currentConfig?.infra?.acmeCertCache?.[baseDomain];
+  const currentConfig = await configService.getDecryptedConfig();
+  const existingCache = currentConfig?.state?.certCache?.[baseDomain];
   if (!existingCache) return;
 
   try {
@@ -580,11 +580,11 @@ export async function downloadCertCache(
     const remoteAcme = pruneAndParse(raw, options);
     await mergeWithLocalCache(remoteAcme, baseDomain, options.silent);
 
-    const currentConfig = await configService.getCurrent();
-    const acmeCertCache = currentConfig?.infra?.acmeCertCache ?? {};
+    const currentConfig = await configService.getDecryptedConfig();
+    const acmeCertCache = { ...(currentConfig?.state?.certCache ?? {}) };
     const { entry, compressedSize } = buildCacheEntry(remoteAcme, baseDomain, machineName);
     acmeCertCache[baseDomain] = entry;
-    await configService.updateConfigFields({ acmeCertCache });
+    await configService.setStateBucket('certCache', acmeCertCache);
 
     if (!options.silent) {
       outputService.success(
@@ -617,8 +617,8 @@ export async function uploadCertCacheViaConnection(
   baseDomain: string,
   options: UploadCertCacheOptions = {}
 ): Promise<boolean> {
-  const currentConfig = await configService.getCurrent();
-  const cache = currentConfig?.infra?.acmeCertCache?.[baseDomain];
+  const currentConfig = await configService.getDecryptedConfig();
+  const cache = currentConfig?.state?.certCache?.[baseDomain];
   if (!cache) {
     if (options.debug)
       outputService.info(t('commands.config.certCache.noCacheForDomain', { domain: baseDomain }));
@@ -660,8 +660,8 @@ export async function uploadCertCache(
       return false;
     }
 
-    const currentConfig = await configService.getCurrent();
-    const cache = currentConfig?.infra?.acmeCertCache?.[baseDomain];
+    const currentConfig = await configService.getDecryptedConfig();
+    const cache = currentConfig?.state?.certCache?.[baseDomain];
     if (!cache) {
       outputService.warn(t('commands.config.certCache.push.noCache'));
       return false;
@@ -725,8 +725,8 @@ export async function getCertStatus(): Promise<
     certs: Record<string, string>;
   }[]
 > {
-  const currentConfig = await configService.getCurrent();
-  const cacheMap = currentConfig?.infra?.acmeCertCache;
+  const currentConfig = await configService.getDecryptedConfig();
+  const cacheMap = currentConfig?.state?.certCache;
   if (!cacheMap) return [];
 
   return Object.values(cacheMap).map((cache) => {
@@ -750,18 +750,19 @@ export async function getCertStatus(): Promise<
  * Clear certificate cache from config.
  */
 export async function clearCertCache(baseDomain?: string): Promise<boolean> {
-  const currentConfig = await configService.getCurrent();
-  const cacheMap = currentConfig?.infra?.acmeCertCache;
-  if (!cacheMap || Object.keys(cacheMap).length === 0) return false;
+  const currentConfig = await configService.getDecryptedConfig();
+  const cacheMap = { ...(currentConfig?.state?.certCache ?? {}) };
+  if (Object.keys(cacheMap).length === 0) return false;
 
   if (baseDomain) {
     if (!(baseDomain in cacheMap)) return false;
     delete cacheMap[baseDomain];
-    await configService.updateConfigFields({
-      acmeCertCache: Object.keys(cacheMap).length > 0 ? cacheMap : undefined,
-    });
+    await configService.setStateBucket(
+      'certCache',
+      Object.keys(cacheMap).length > 0 ? cacheMap : undefined
+    );
   } else {
-    await configService.updateConfigFields({ acmeCertCache: undefined });
+    await configService.setStateBucket('certCache', undefined);
   }
   return true;
 }

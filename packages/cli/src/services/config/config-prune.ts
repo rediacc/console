@@ -74,15 +74,26 @@ export interface ConfigPruneAnalysis {
  *
  * Exported for test access; the apply path also uses it via the closure.
  */
+/** Collect every declared repository GUID + base name from the live families. */
+function collectLiveRepoAnchors(
+  config: RdcConfig,
+  guids: Set<string>,
+  repoNames: Set<string>
+): void {
+  for (const [name, family] of Object.entries(config.resources?.repositories ?? {})) {
+    for (const record of Object.values(family.tags)) {
+      if (record.repositoryGuid) guids.add(record.repositoryGuid);
+    }
+    repoNames.add(name);
+  }
+}
+
 export function buildConfigAnchors(config: RdcConfig): ConfigAnchors {
   const guids = new Set<string>();
   const repoNames = new Set<string>();
   const machines = new Set<string>();
 
-  for (const [name, repo] of Object.entries(config.resources?.repositories ?? {})) {
-    if (repo.repositoryGuid) guids.add(repo.repositoryGuid);
-    repoNames.add(parseRepoRef(name).name);
-  }
+  collectLiveRepoAnchors(config, guids, repoNames);
   for (const archived of config.resources?.deletedRepositories ?? []) {
     if (archived.repositoryGuid) guids.add(archived.repositoryGuid);
     if (archived.name) repoNames.add(parseRepoRef(archived.name).name);
@@ -157,7 +168,7 @@ function rebuildCertsMap(
 
 export function pruneCertCacheBuckets(config: RdcConfig, anchors: ConfigAnchors): CertPruneEntry[] {
   const removed: CertPruneEntry[] = [];
-  const cache = config.infra?.acmeCertCache;
+  const cache = config.state?.certCache;
   if (!cache) return removed;
 
   for (const [baseDomain, bucket] of Object.entries(cache)) {

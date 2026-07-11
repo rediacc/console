@@ -451,6 +451,47 @@ function buildRenetExitError(exitCode: number, stderr: string, stdout: string): 
   return reason ? `${base}: ${capReason(reason)}` : base;
 }
 
+/**
+ * Parse a JSON payload out of a captured bridge stdout. A bridge function that
+ * SHELLS OUT to a sub-`renet` command (e.g. datastore_list ->
+ * `renet datastore list --json`, ceph_client_config_export ->
+ * `renet ceph client config export --json`) has its sub-process stdout RELAYED
+ * by `renet functions once` with a `[function] ` line prefix, so the captured
+ * `result.stdout` is `[datastore_list] [ ... ]`, not raw JSON — a plain
+ * `JSON.parse` dies with `Unexpected token '['/'{'`. Strip the relay prefix per
+ * line, then extract the JSON object/array payload (first `{`/`[` to its matching
+ * last `}`/`]`), tolerating interleaved logrus lines outside the payload.
+ * `cleanOutputLines` cannot be reused here — it deliberately DROPS JSON lines.
+ *
+ * The prefix strip matches ONLY a bridge-function relay prefix — `[<name>] ` with
+ * `<name>` a snake_case identifier — never a JSON array. An earlier `[^\]]+`
+ * strip ate a whole single-line array payload `[{...},{...}]` (whose only `]` is
+ * the closing bracket), turning a valid `datastore list --json` capture into "no
+ * JSON payload"; anchoring to an identifier fixes that (a JSON array's first char
+ * after `[` is never an identifier char).
+ */
+export function parseCapturedJson<T>(stdout: string | undefined): T {
+  const stripped = (stdout ?? '')
+    .split('\n')
+    .map((line) => line.replace(/^\s*\[[A-Za-z_][A-Za-z0-9_]*\]\s?/, ''))
+    // Drop renet logrus lines (`time="..." level=... msg="..."`) BEFORE the
+    // payload scan: their messages carry stray brackets (e.g. a "[detached]"
+    // fork message) that would otherwise be mistaken for the start of a JSON
+    // array. The JSON payload itself never matches this shape.
+    .filter((line) => !/\blevel=(?:info|warn|warning|error|debug|fatal|trace)\b/.test(line))
+    .join('\n');
+  const start = stripped.search(/[[{]/);
+  if (start === -1) {
+    throw new Error(`no JSON payload in captured output: ${(stdout ?? '').slice(0, 160)}`);
+  }
+  const close = stripped[start] === '{' ? '}' : ']';
+  const end = stripped.lastIndexOf(close);
+  if (end < start) {
+    throw new Error(`unterminated JSON payload in captured output: ${stripped.slice(start, 160)}`);
+  }
+  return JSON.parse(stripped.slice(start, end + 1)) as T;
+}
+
 /** Strip bridge `[function] ` prefixes and drop empty lines and JSON
  * fragments (multi-line JSON yields lines starting with braces, brackets, or
  * quoted keys). */

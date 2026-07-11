@@ -37,8 +37,9 @@ afterEach(() => {
 });
 
 describe('handleClusterForkSeam dispatch + destination selection (D13)', () => {
-  it('forks into the source cluster via kube_namespace_fork on its control node', async () => {
+  it('forks into the source cluster via the runtime-generic repository_fork on its control node', async () => {
     vi.spyOn(configService, 'getCurrent').mockResolvedValue(buildConfig());
+    vi.spyOn(configService, 'allocateNetworkId').mockResolvedValue(21001);
     vi.spyOn(outputService, 'info').mockReturnValue(undefined);
     vi.spyOn(outputService, 'success').mockReturnValue(undefined);
     const exec = vi
@@ -49,25 +50,27 @@ describe('handleClusterForkSeam dispatch + destination selection (D13)', () => {
 
     expect(exec).toHaveBeenCalledTimes(1);
     const arg = exec.mock.calls[0][0];
-    expect(arg.functionName).toBe('kube_namespace_fork');
+    // Rewired off the deleted kube_namespace_fork onto the runtime-generic fork;
+    // the RepoRuntime detects kube from the datastore descriptor server-side.
+    expect(arg.functionName).toBe('repository_fork');
     expect(arg.machineName).toBe('prod-k8s-1');
     expect(arg.kubeCluster).toBe('prod');
-    // Same-cluster ceph fork: pv_backend 'auto' lets renet pick the CoW RBD
-    // clone server-side, and the rbd path needs a datastore root.
     expect(arg.params).toMatchObject({
-      namespace: 'shop',
+      repository: 'shop',
       tag: 'joseph',
       cluster: 'prod',
-      pv_backend: 'auto',
+      network_id: 21001,
     });
     expect(arg.params?.datastore).toBeTruthy();
-    // ceph_pool is resolved server-side from the source namespace marker.
+    // pv_backend/ceph_pool are gone: rbd-vs-datastore is resolved server-side.
+    expect(arg.params).not.toHaveProperty('pv_backend');
     expect(arg.params).not.toHaveProperty('ceph_pool');
     expect(String(arg.params?.mount_path)).toContain('prod');
   });
 
   it('--to-cluster wins over --cluster as the fork destination', async () => {
     vi.spyOn(configService, 'getCurrent').mockResolvedValue(buildConfig());
+    vi.spyOn(configService, 'allocateNetworkId').mockResolvedValue(21001);
     vi.spyOn(outputService, 'info').mockReturnValue(undefined);
     vi.spyOn(outputService, 'success').mockReturnValue(undefined);
     const exec = vi
@@ -84,6 +87,7 @@ describe('handleClusterForkSeam dispatch + destination selection (D13)', () => {
 
   it('--provider provisions the destination cluster with createCluster, then forks into it', async () => {
     vi.spyOn(configService, 'getCurrent').mockResolvedValue(buildConfig());
+    vi.spyOn(configService, 'allocateNetworkId').mockResolvedValue(21001);
     vi.spyOn(outputService, 'info').mockReturnValue(undefined);
     vi.spyOn(outputService, 'success').mockReturnValue(undefined);
     const exec = vi
@@ -94,7 +98,7 @@ describe('handleClusterForkSeam dispatch + destination selection (D13)', () => {
 
     expect(vi.mocked(createCluster)).toHaveBeenCalledWith('prod', expect.anything());
     const arg = exec.mock.calls[0][0];
-    expect(arg.functionName).toBe('kube_namespace_fork');
+    expect(arg.functionName).toBe('repository_fork');
     expect(arg.kubeCluster).toBe('prod');
     // createCluster must provision the destination BEFORE the fork dispatch.
     const createOrder = vi.mocked(createCluster).mock.invocationCallOrder[0];

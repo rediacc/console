@@ -134,9 +134,9 @@ export function registerRepositoryCommands(config: Command, program: Command): v
 
         const displayData = archived.map((r) => ({
           name: r.name,
+          tag: r.tag,
           guid: r.repositoryGuid,
           credential: r.credential ? 'set' : '-',
-          networkId: r.networkId ?? '-',
           deletedAt: r.deletedAt,
         }));
 

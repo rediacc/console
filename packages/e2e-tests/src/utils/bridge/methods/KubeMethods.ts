@@ -3,15 +3,21 @@ import type { ExecResult, TestFunctionOptions } from '../types';
 /**
  * Kubernetes distribution lifecycle methods for BridgeTestRunner.
  *
- * These dispatch the `kube_*` bridge functions by literal name, so the
- * e2e-coverage gate (which greps bridge-tests for each generated function name)
- * sees them once the lead regenerates the renet contract. Suite 15 (`E2E K8s`,
- * env-gated on K8S_MODE, wave 5+) exercises them against a live k3s-on-a-worker
- * VM:
+ * These dispatch the `kube_*` bridge functions by literal name. The kube suites
+ * (15/16/17, env-gated on K8S_MODE) exercise them against live k3s-on-a-worker
+ * VMs on the datastore-cluster model:
  *   - kube_install / kube_uninstall / kube_upgrade: node lifecycle
- *   - kube_join_token / kube_join: multi-node join
- *   - kube_node_remove: drain + delete a node
+ *   - kube_join_token / kube_join: multi-node join (real-NIC bind for a cluster)
+ *   - kube_node_remove / kube_node_label: node membership + local-PV topology label
  *   - kube_kubeconfig / kube_health: read-only access (public functions)
+ *   - kube_prep_fork / kube_identity_rewrite: the whole-cluster fork/migrate
+ *     primitives (drain + F1-F8 PKI re-mint; operation=fork re-mints the CA and
+ *     scrubs secrets, operation=migrate preserves the CA).
+ *
+ * The per-namespace kube model (kube_namespace_x / kube_pv_x / kube_deploy) is
+ * DELETED — the datastore-cluster redesign routes kube repo lifecycle through
+ * the runtime-generic `repository_up`/`down`/`status` verbs (RepositoryMethods)
+ * dispatched by the repo's datastore placement.
  */
 export interface KubeInstallOptions {
   mountPath: string;
@@ -22,6 +28,8 @@ export interface KubeInstallOptions {
   apiPort?: number;
   airgapBundle?: string;
   disableComponents?: string;
+  /** Real private NIC to bind/advertise on (multi-node cluster); default: dummy IP. */
+  bindIp?: string;
 }
 
 export interface KubeJoinOptions {
@@ -30,6 +38,8 @@ export interface KubeJoinOptions {
   role?: 'server' | 'agent';
   token: string;
   endpoint: string;
+  /** Real private NIC to bind/advertise on (multi-node cluster). */
+  bindIp?: string;
 }
 
 export interface KubeNodeRemoveOptions {
@@ -47,43 +57,45 @@ export interface KubeUpgradeOptions extends KubeTargetOptions {
   version?: string;
 }
 
-export interface KubeNamespaceOptions {
+export interface KubePrepForkOptions {
   mountPath: string;
-  namespace: string;
   networkId?: string;
-  cluster?: string;
+  /** Node name to drain (empty = skip drain, just stop + sweep). */
+  node?: string;
+}
+
+export interface KubeIdentityRewriteOptions {
+  mountPath: string;
+  networkId?: string;
+  /** REQUIRED: fork re-mints the CA + scrubs secrets + ROLE=fork; migrate preserves the CA. */
+  operation: 'fork' | 'migrate';
+  mode?: 'server' | 'agent';
+  newNodeIp?: string;
+  /** Retag the image to a new networkID (fork case; omit = keep). */
+  newNetworkId?: string;
+  /** Fork arm: repo effect-isolation role for the ROLE ConfigMap. */
+  role?: 'fork' | 'rehearsal';
+  /** Fork arm: fork-attach write disposition (local|ceph) for the ROLE ConfigMap. */
+  writes?: 'local' | 'ceph';
+  /** Fork arm: skip the scrub-all of third-party Secrets (re-opens F2). */
+  keepThirdParty?: boolean;
+  /** Agent mode: new control-plane URL (https://ip:port). */
+  server?: string;
+  /** Agent mode: CA-derived join token to reuse. */
+  token?: string;
+}
+
+export interface KubeNodeLabelOptions {
+  mountPath: string;
+  networkId?: string;
+  /** Node name to (un)label. */
+  node?: string;
+  /** Resolve the node by its InternalIP (alternative to node). */
+  newNodeIp?: string;
+  /** Datastore name; stamps rediacc.io/ds-<name>=true (local-PV topology). */
   datastore?: string;
-  /** Ceph RBD pool: routes PVCs to ceph-csi (empty = local datastore backend). */
-  cephPool?: string;
-  /** Ceph cluster name for the ceph/rbd CLI (default: ceph). */
-  cephCluster?: string;
-  /**
-   * Override BRIDGE_TIMEOUT for this call. A ceph teardown that cannot drain
-   * spends its full internal retry budget before reporting the leak, which
-   * outlasts the default timeout.
-   */
-  timeout?: number;
-}
-
-export interface KubeNamespaceForkOptions extends KubeNamespaceOptions {
-  tag: string;
-  pvBackend?: string;
-}
-
-export interface KubePVProvisionOptions {
-  datastore: string;
-  cluster: string;
-  namespace: string;
-  pvc: string;
-  size: string;
-  backend?: string;
-}
-
-export interface KubePVCloneOptions {
-  datastore: string;
-  cluster: string;
-  srcPv: string;
-  dstNamespace: string;
+  /** Remove the label instead of adding it. */
+  remove?: boolean;
 }
 
 export class KubeMethods {
@@ -101,6 +113,7 @@ export class KubeMethods {
       apiPort: opts.apiPort,
       airgapBundle: opts.airgapBundle,
       disableComponents: opts.disableComponents,
+      bindIp: opts.bindIp,
     });
   }
 
@@ -122,6 +135,7 @@ export class KubeMethods {
       role: opts.role,
       token: opts.token,
       endpoint: opts.endpoint,
+      bindIp: opts.bindIp,
     });
   }
 
@@ -172,89 +186,61 @@ export class KubeMethods {
     });
   }
 
-  /** Create a repo namespace (kube_namespace_create). */
-  async kubeNamespaceCreate(opts: KubeNamespaceOptions): Promise<ExecResult> {
+  /**
+   * Install the package prerequisites (ceph-common/rbd + sqlite3) a bare machine
+   * needs to host a whole-cluster fork of a DIFFERENT cluster (kube_fork_dest_prep).
+   * Takes no params — it installs the fixed fork-dest package set.
+   */
+  async kubeForkDestPrep(): Promise<ExecResult> {
+    return this.testFunction({ function: 'kube_fork_dest_prep' });
+  }
+
+  /** Drain + stop a node so its image is fork/migrate-consistent (kube_prep_fork). */
+  async kubePrepFork(opts: KubePrepForkOptions): Promise<ExecResult> {
     return this.testFunction({
-      function: 'kube_namespace_create',
+      function: 'kube_prep_fork',
       mountPath: opts.mountPath,
-      namespace: opts.namespace,
       networkId: opts.networkId,
-      cluster: opts.cluster,
-      datastore: opts.datastore,
-      cephPool: opts.cephPool,
-      cephCluster: opts.cephCluster,
+      node: opts.node,
     });
   }
 
-  /** Re-apply the persisted manifest for a namespace (kube_deploy). */
-  async kubeDeploy(opts: KubeNamespaceOptions): Promise<ExecResult> {
+  /**
+   * Rewrite a forked/migrated node's identity (kube_identity_rewrite):
+   * operation=fork runs the F1-F8 PKI re-mint (fresh CA) + secret scrub + ROLE
+   * rewrite; operation=migrate preserves the CA and regenerates only the leaf.
+   */
+  async kubeIdentityRewrite(opts: KubeIdentityRewriteOptions): Promise<ExecResult> {
     return this.testFunction({
-      function: 'kube_deploy',
+      function: 'kube_identity_rewrite',
       mountPath: opts.mountPath,
-      namespace: opts.namespace,
       networkId: opts.networkId,
-      cluster: opts.cluster,
-      datastore: opts.datastore,
-      cephPool: opts.cephPool,
-      cephCluster: opts.cephCluster,
+      operation: opts.operation,
+      mode: opts.mode,
+      newNodeIp: opts.newNodeIp,
+      newNetworkId: opts.newNetworkId,
+      role: opts.role,
+      writes: opts.writes,
+      keepThirdParty: opts.keepThirdParty,
+      server: opts.server,
+      token: opts.token,
     });
   }
 
-  /** Fork a namespace, CoW-cloning its PVs (kube_namespace_fork). */
-  async kubeNamespaceFork(opts: KubeNamespaceForkOptions): Promise<ExecResult> {
+  /**
+   * Add/remove the rediacc.io/ds-<datastore>=true node label (kube_node_label)
+   * so local-PV pods on a cluster-attached datastore schedule (carry-in 1: not
+   * yet auto-wired at attach time, so the suites invoke the primitive).
+   */
+  async kubeNodeLabel(opts: KubeNodeLabelOptions): Promise<ExecResult> {
     return this.testFunction({
-      function: 'kube_namespace_fork',
+      function: 'kube_node_label',
       mountPath: opts.mountPath,
-      namespace: opts.namespace,
-      tag: opts.tag,
-      pvBackend: opts.pvBackend,
       networkId: opts.networkId,
-      cluster: opts.cluster,
+      node: opts.node,
+      newNodeIp: opts.newNodeIp,
       datastore: opts.datastore,
-      cephPool: opts.cephPool,
-      cephCluster: opts.cephCluster,
+      removeLabel: opts.remove,
     });
-  }
-
-  /** Delete a namespace and its local PV images (kube_namespace_delete). */
-  async kubeNamespaceDelete(opts: KubeNamespaceOptions): Promise<ExecResult> {
-    return this.testFunction({
-      function: 'kube_namespace_delete',
-      mountPath: opts.mountPath,
-      namespace: opts.namespace,
-      networkId: opts.networkId,
-      cluster: opts.cluster,
-      datastore: opts.datastore,
-      timeout: opts.timeout,
-    });
-  }
-
-  /** Provision a datastore-backed PV image (kube_pv_provision). */
-  async kubePvProvision(opts: KubePVProvisionOptions): Promise<ExecResult> {
-    return this.testFunction({
-      function: 'kube_pv_provision',
-      datastore: opts.datastore,
-      cluster: opts.cluster,
-      namespace: opts.namespace,
-      pvc: opts.pvc,
-      size: opts.size,
-      backend: opts.backend,
-    });
-  }
-
-  /** Reflink-clone a PV image into a namespace (kube_pv_clone). */
-  async kubePvClone(opts: KubePVCloneOptions): Promise<ExecResult> {
-    return this.testFunction({
-      function: 'kube_pv_clone',
-      datastore: opts.datastore,
-      cluster: opts.cluster,
-      srcPv: opts.srcPv,
-      dstNamespace: opts.dstNamespace,
-    });
-  }
-
-  /** Delete a PV image (kube_pv_delete). */
-  async kubePvDelete(pv: string): Promise<ExecResult> {
-    return this.testFunction({ function: 'kube_pv_delete', pv });
   }
 }

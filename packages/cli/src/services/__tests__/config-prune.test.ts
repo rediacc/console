@@ -30,17 +30,21 @@ function fakeAcme(domains: string[]): object {
 describe('buildConfigAnchors', () => {
   it('includes both live and archived repository GUIDs', () => {
     const cfg: RdcConfig = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       id: '00000000-0000-0000-0000-000000000000',
       version: 1,
       resources: {
         machines: { hostinger: { ip: '1.2.3.4', user: 'root' } },
         repositories: {
-          'gitlab:latest': { repositoryGuid: '11111111-1111-1111-1111-111111111111' },
+          gitlab: {
+            grand: 'latest',
+            tags: { latest: { repositoryGuid: '11111111-1111-1111-1111-111111111111' } },
+          },
         },
         deletedRepositories: [
           {
-            name: 'mail:latest',
+            name: 'mail',
+            tag: 'latest',
             repositoryGuid: '22222222-2222-2222-2222-222222222222',
             deletedAt: new Date().toISOString(),
           },
@@ -104,15 +108,17 @@ describe('pruneCertCacheBuckets — round-trip through gzip/base64', () => {
 
   function buildConfigWithCacheBucket(domains: string[]): RdcConfig {
     return {
-      schemaVersion: 2,
+      schemaVersion: 3,
       id: '00000000-0000-0000-0000-000000000000',
       version: 1,
       resources: {
         machines: { hostinger: { ip: '1.2.3.4', user: 'root' } },
-        repositories: { 'gitlab:latest': { repositoryGuid: liveGuid } },
+        repositories: {
+          gitlab: { grand: 'latest', tags: { latest: { repositoryGuid: liveGuid } } },
+        },
       },
-      infra: {
-        acmeCertCache: {
+      state: {
+        certCache: {
           'rediacc.io': {
             baseDomain: 'rediacc.io',
             updatedAt: '2026-01-01T00:00:00Z',
@@ -143,7 +149,7 @@ describe('pruneCertCacheBuckets — round-trip through gzip/base64', () => {
       [`*.${deadGuid}.hostinger.rediacc.io`, '*.unknown-machine.rediacc.io'].sort()
     );
 
-    const bucket = cfg.infra!.acmeCertCache!['rediacc.io'];
+    const bucket = cfg.state!.certCache!['rediacc.io'];
     // Derived metadata must follow the cert filtering.
     expect(bucket.certCount).toBe(3);
     expect(Object.keys(bucket.certs).sort()).toEqual(
@@ -169,20 +175,20 @@ describe('pruneCertCacheBuckets — round-trip through gzip/base64', () => {
       `*.${liveGuid}.hostinger.rediacc.io`,
       '*.hostinger.rediacc.io',
     ]);
-    const beforeData = cfg.infra!.acmeCertCache!['rediacc.io'].data;
+    const beforeData = cfg.state!.certCache!['rediacc.io'].data;
     const before = JSON.stringify(cfg);
 
     const removed = pruneCertCacheBuckets(cfg, buildConfigAnchors(cfg));
     expect(removed).toHaveLength(0);
 
     // Bucket left untouched (data, certs, certCount all unchanged).
-    expect(cfg.infra!.acmeCertCache!['rediacc.io'].data).toBe(beforeData);
+    expect(cfg.state!.certCache!['rediacc.io'].data).toBe(beforeData);
     expect(JSON.stringify(cfg)).toBe(before);
   });
 
   it('skips a bucket whose data field is corrupt rather than throwing', () => {
     const cfg = buildConfigWithCacheBucket([`*.${deadGuid}.hostinger.rediacc.io`]);
-    cfg.infra!.acmeCertCache!['rediacc.io'].data = 'not-real-base64-or-gzip';
+    cfg.state!.certCache!['rediacc.io'].data = 'not-real-base64-or-gzip';
     const before = JSON.stringify(cfg);
 
     const removed = pruneCertCacheBuckets(cfg, buildConfigAnchors(cfg));

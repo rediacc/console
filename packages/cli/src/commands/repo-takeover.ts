@@ -54,7 +54,7 @@ export function registerRepoTakeoverCommand(repo: Command): void {
           );
 
           const result = await localExecutorService.execute({
-            functionName: 'repository_takeover',
+            functionName: 'repository_promote',
             machineName: options.machine,
             params: {
               parent: grandEntry.config.repositoryGuid,

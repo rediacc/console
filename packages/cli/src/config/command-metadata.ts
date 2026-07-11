@@ -507,6 +507,39 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'storage rename': { mcpExcludeReason: 'Config CRUD — covered by config storage commands' },
   'storage delete': { mcpExcludeReason: 'Config CRUD — covered by config storage commands' },
 
+  // ── Repo replicate group (spec 05 §1 read replicas) ───────────────────
+  // Kept out of MCP until the flow has live-cluster validation; like `repo
+  // fork` it CREATES copies (no grandGuard — the primary is never mutated).
+  'repo replicate': {
+    mcpExcludeReason: 'Provisions replica datastores + a k8s overlay — pending live validation',
+  },
+  'repo replicate status': {
+    mcpExcludeReason: 'Replica-set state view — pending live validation of the replicate family',
+  },
+  'repo replicate remove': {
+    mcpExcludeReason: 'Tears down replica datastores + overlay — pending live validation',
+  },
+  'repo replicate refresh': {
+    mcpExcludeReason: 'Rolling replica re-clone — pending live validation',
+  },
+
+  // ── Repo canary group (spec 05 §2 release ladder rung 2) ──────────────
+  // Same posture as replicate: out of MCP pending live validation; creates an
+  // overlay on shared data (rung-0 snapshot gives the undo), never mutates the
+  // stable Deployment.
+  'repo canary': {
+    mcpExcludeReason: 'Applies a canary overlay + traffic split — pending live validation',
+  },
+  'repo canary status': {
+    mcpExcludeReason: 'Canary-set state view — pending live validation of the canary family',
+  },
+  'repo canary weight': {
+    mcpExcludeReason: 'Shifts live traffic between versions — pending live validation',
+  },
+  'repo canary remove': {
+    mcpExcludeReason: 'Tears down the canary overlay — pending live validation',
+  },
+
   // ── Cluster group ──────────────────────────────────────────────────────
   'cluster status': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
@@ -542,6 +575,14 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'cluster migrate': {
     agentBlocked: true,
     mcpExcludeReason: 'Moves a whole cluster — not an agent operation',
+  },
+  'cluster join': {
+    agentBlocked: true,
+    mcpExcludeReason: 'Cluster membership mutation — not an agent operation',
+  },
+  'cluster evict': {
+    agentBlocked: true,
+    mcpExcludeReason: 'Cluster membership mutation — not an agent operation',
   },
 };
 

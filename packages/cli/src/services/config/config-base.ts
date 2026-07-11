@@ -60,14 +60,12 @@ export class ConfigServiceBase {
       return this._resourceState;
     }
 
-    let masterPassword: string | null = null;
-    if (config.credentials?.masterPasswordVerifier) {
-      const { requireMasterPassword } = await import('../core/master-password.js');
-      masterPassword = await requireMasterPassword();
-    }
-
+    // Encryption-at-rest is a storage-layer transform in v3: loadDecrypted
+    // resolves the master password (env / prompt) only when the config is
+    // encrypted and materializes every encrypted leaf into plaintext.
+    const decrypted = await configFileStorage.loadDecrypted(configName);
     const { LocalResourceState } = await import('./resource-state.js');
-    this._resourceState = await LocalResourceState.load(config, configName, masterPassword);
+    this._resourceState = LocalResourceState.load(decrypted, configName);
 
     return this._resourceState;
   }
@@ -115,6 +113,19 @@ export class ConfigServiceBase {
     }
 
     return config;
+  }
+
+  /**
+   * Get the current config with every encrypted-at-rest leaf materialized into
+   * plaintext. Prompts for the master password when the local config is
+   * encrypted; remote configs arrive already decrypted from the pull. Use where
+   * a sensitive field (cfDnsApiToken, cert-cache data, …) is actually read.
+   */
+  async getDecryptedConfig(): Promise<RdcConfig | null> {
+    const config = await this.getCurrent();
+    if (!config) return null;
+    if (hasRemoteConfig(config)) return config;
+    return configFileStorage.loadDecrypted(this.getEffectiveConfigName());
   }
 
   /**

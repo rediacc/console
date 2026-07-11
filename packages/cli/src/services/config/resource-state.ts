@@ -1,38 +1,163 @@
 /**
- * ResourceState interface and LocalResourceState implementation.
+ * ResourceState interface and implementations.
  *
- * ResourceState abstracts access to machines, storages, repositories, and SSH keys.
- * Storage shape (v2): resources are nested under `config.resources.*` and SSH is
- * at `config.credentials.ssh`. Encryption-at-rest is per-field (see Step 13) —
- * when `config.encryption.mode === 'master-password'` is set, sensitive values
- * are replaced by encrypted blob pointers in `config.encryption.encryptedFields`.
+ * ResourceState abstracts access to machines, storages, repositories, and SSH
+ * keys. It presents repositories as a FLAT map keyed by the legacy composite
+ * `name` / `name:tag` string, with the on-disk v3 spec record (RepoRecord under
+ * `resources.repositories[name].tags[tag]`) merged with its runtime status
+ * (`state.repos[name][tag]`). Command consumers therefore compile unchanged;
+ * the structural-tag command reshape is P4.
+ *
+ * Encryption-at-rest is NOT handled here in v3 — it is a storage-layer transform
+ * (adapters/config-field-crypto.ts, applied by ConfigFileStorage). LocalResource
+ * State is a typed view that reads a decrypted config and persists plaintext
+ * through the single `configFileStorage.update()` chokepoint, which re-encrypts
+ * per field. This is what makes the R2-F3 compound-blob data-loss impossible.
  */
 
 import { DEFAULTS } from '@rediacc/shared/config';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
-import { nodeCryptoProvider } from '../../adapters/crypto.js';
+import { stripStateForPush } from '../../adapters/config-field-crypto.js';
 import type { RemoteConfigAdapter } from '../../adapters/remote-config-adapter.js';
+import type { Placement, RdcConfig, RepoFamily, RepoRecord } from '../../schema/schemas.js';
 import type {
   ArchivedRepository,
   MachineConfig,
-  RdcConfig,
   RepositoryConfig,
   SSHContent,
   StorageConfig,
 } from '../../types/index.js';
 
 // =============================================================================
-// Encryption Helpers
+// Flatten / decompose: v3 families + state.repos  <->  flat composite view
 // =============================================================================
 
-async function encryptSection(data: unknown, password: string): Promise<string> {
-  const json = JSON.stringify(data);
-  return nodeCryptoProvider.encrypt(json, password);
+type RepoRuntime = NonNullable<NonNullable<RdcConfig['state']>['repos']>[string][string];
+
+const REPO_RECORD_KEYS = [
+  'repositoryGuid',
+  'credential',
+  'grandGuid',
+  'parentGuid',
+  'immutable',
+  'sshPrivateKey',
+  'sshPublicKey',
+  'secrets',
+] as const;
+
+const REPO_RUNTIME_KEYS = [
+  'networkId',
+  'registryPort',
+  'pushState',
+  'headCommit',
+  'commitMessage',
+  'commitAuthor',
+  'commitParent',
+  'head',
+  'branches',
+  'reflog',
+] as const;
+
+function splitKey(key: string): { base: string; tag?: string } {
+  const idx = key.indexOf(':');
+  if (idx === -1) return { base: key };
+  return { base: key.slice(0, idx), tag: key.slice(idx + 1) };
 }
 
-async function decryptSection<T>(encrypted: string, password: string): Promise<T> {
-  const json = await nodeCryptoProvider.decrypt(encrypted, password);
-  return JSON.parse(json) as T;
+function pickKeys<T extends object>(source: Record<string, unknown>, keys: readonly string[]): T {
+  const out: Record<string, unknown> = {};
+  for (const k of keys) {
+    if (source[k] !== undefined) out[k] = source[k];
+  }
+  return out as T;
+}
+
+/** Build the flat `Record<'base:tag', RepositoryConfig>` view from the config. */
+function flattenRepositories(
+  families: Record<string, RepoFamily> | undefined,
+  stateRepos: Record<string, Record<string, RepoRuntime>> | undefined
+): Record<string, RepositoryConfig> {
+  const flat: Record<string, RepositoryConfig> = {};
+  for (const [base, family] of Object.entries(families ?? {})) {
+    for (const [tag, record] of Object.entries(family.tags)) {
+      const key = `${base}:${tag}`;
+      const runtime = stateRepos?.[base]?.[tag] ?? {};
+      flat[key] = {
+        ...record,
+        tag,
+        ...(family.placement ? { placement: family.placement } : {}),
+        ...runtime,
+      };
+    }
+  }
+  return flat;
+}
+
+/** Which tag is the production (grand) line: grandGuid unset or self-referential. */
+function deriveGrand(tags: Record<string, RepoRecord>): string {
+  const keys = Object.keys(tags).sort();
+  const grands = keys.filter((t) => {
+    const g = tags[t].grandGuid;
+    return !g || g === tags[t].repositoryGuid;
+  });
+  if (grands.includes('latest')) return 'latest';
+  return grands[0] ?? keys[0];
+}
+
+interface FamilyGroup {
+  tags: Record<string, RepoRecord>;
+  runtime: Record<string, RepoRuntime>;
+  placement?: Placement;
+}
+
+/** Group flat composite-keyed records by base name into (tags, runtime). */
+function groupFlatRepos(flat: Record<string, RepositoryConfig>): Map<string, FamilyGroup> {
+  const grouped = new Map<string, FamilyGroup>();
+  for (const [key, cfg] of Object.entries(flat)) {
+    const { base, tag: keyTag } = splitKey(key);
+    const tag = cfg.tag ?? keyTag ?? DEFAULTS.REPOSITORY.TAG;
+    const group = grouped.get(base) ?? { tags: {}, runtime: {} };
+    group.tags[tag] = pickKeys<RepoRecord>(cfg, REPO_RECORD_KEYS);
+    const runtime = pickKeys<RepoRuntime>(cfg, REPO_RUNTIME_KEYS);
+    if (Object.keys(runtime).length > 0) group.runtime[tag] = runtime;
+    if (cfg.placement && !group.placement) group.placement = cfg.placement;
+    grouped.set(base, group);
+  }
+  return grouped;
+}
+
+/** Decompose the flat view back into v3 families + state.repos. */
+function decomposeRepositories(flat: Record<string, RepositoryConfig>): {
+  families: Record<string, RepoFamily>;
+  stateRepos: Record<string, Record<string, RepoRuntime>>;
+} {
+  const grouped = groupFlatRepos(flat);
+  const families: Record<string, RepoFamily> = {};
+  const stateRepos: Record<string, Record<string, RepoRuntime>> = {};
+  for (const [base, group] of grouped) {
+    families[base] = {
+      grand: deriveGrand(group.tags),
+      tags: group.tags,
+      ...(group.placement ? { placement: group.placement } : {}),
+    };
+    if (Object.keys(group.runtime).length > 0) stateRepos[base] = group.runtime;
+  }
+  return { families, stateRepos };
+}
+
+function sshContentFrom(config: RdcConfig): SSHContent | null {
+  const sshCred = config.credentials?.ssh;
+  return sshCred
+    ? {
+        privateKey: sshCred.privateKey,
+        publicKey: sshCred.publicKey,
+        knownHosts: sshCred.knownHosts,
+      }
+    : null;
+}
+
+function nonEmpty<T extends object>(rec: T): T | undefined {
+  return Object.keys(rec).length > 0 ? rec : undefined;
 }
 
 // =============================================================================
@@ -52,10 +177,6 @@ export interface ResourceState {
   setSSH(ssh: SSHContent): Promise<void>;
 }
 
-// =============================================================================
-// LocalResourceState
-// =============================================================================
-
 interface LocalState {
   machines: Record<string, MachineConfig>;
   storages: Record<string, StorageConfig>;
@@ -64,77 +185,67 @@ interface LocalState {
   sshContent: SSHContent | null;
 }
 
-/**
- * Blob used when encryption-at-rest is active. The `encrypted` field holds the
- * AES-GCM ciphertext of the JSON-serialized combined resources (machines,
- * storages, repositories, sshContent). On v2, this lives under
- * `config.encryption.encryptedFields['/resources']` as a single compound blob
- * for simplicity; per-individual-field encryption is a future evolution.
- */
-const RESOURCES_BLOB_POINTER = '/resources';
+function loadLocalState(config: RdcConfig): LocalState {
+  return {
+    machines: config.resources?.machines ?? {},
+    storages: config.resources?.storages ?? {},
+    repositories: flattenRepositories(config.resources?.repositories, config.state?.repos),
+    deletedRepositories: config.resources?.deletedRepositories ?? [],
+    sshContent: sshContentFrom(config),
+  };
+}
+
+/** Build the resources/credentials/state buckets a persist writes, from state. */
+function persistPatch(state: LocalState, cfg: RdcConfig): RdcConfig {
+  const { families, stateRepos } = decomposeRepositories(state.repositories);
+  const sshContent = state.sshContent;
+  return {
+    ...cfg,
+    resources: {
+      ...(cfg.resources ?? {}),
+      machines: nonEmpty(state.machines),
+      storages: nonEmpty(state.storages),
+      repositories: nonEmpty(families),
+      deletedRepositories:
+        state.deletedRepositories.length > 0 ? state.deletedRepositories : undefined,
+    },
+    credentials: {
+      ...(cfg.credentials ?? {}),
+      ssh: sshContent
+        ? {
+            privateKey: sshContent.privateKey,
+            publicKey: sshContent.publicKey,
+            knownHosts: sshContent.knownHosts,
+          }
+        : undefined,
+    },
+    state: {
+      ...(cfg.state ?? {}),
+      repos: nonEmpty(stateRepos),
+    },
+  };
+}
+
+// =============================================================================
+// LocalResourceState
+// =============================================================================
 
 export class LocalResourceState implements ResourceState {
   private readonly configName: string;
-  private readonly masterPassword: string | null;
   private readonly state: LocalState;
 
-  private constructor(configName: string, masterPassword: string | null, state: LocalState) {
+  private constructor(configName: string, state: LocalState) {
     this.configName = configName;
-    this.masterPassword = masterPassword;
     this.state = state;
   }
 
-  static async load(
-    config: RdcConfig,
-    configName: string,
-    masterPassword: string | null
-  ): Promise<LocalResourceState> {
-    let state: LocalState;
-
-    const encryptionMode = config.encryption?.mode ?? DEFAULTS.CONTEXT.CONFIG_KIND;
-    const encryptedBlob =
-      encryptionMode === 'master-password'
-        ? config.encryption?.encryptedFields?.[RESOURCES_BLOB_POINTER]
-        : undefined;
-
-    if (encryptedBlob && masterPassword) {
-      // Encrypted mode: decrypt the combined resources blob
-      // (ciphertext+nonce+tag concatenation format matches aes.ts helpers)
-      const serialized = `${encryptedBlob.nonce}:${encryptedBlob.tag}:${encryptedBlob.ciphertext}`;
-      const decrypted = await decryptSection<{
-        machines: Record<string, MachineConfig>;
-        storages: Record<string, StorageConfig>;
-        repositories: Record<string, RepositoryConfig>;
-        deletedRepositories?: ArchivedRepository[];
-        sshContent?: SSHContent | null;
-      }>(serialized, masterPassword);
-
-      state = {
-        machines: decrypted.machines,
-        storages: decrypted.storages,
-        repositories: decrypted.repositories,
-        deletedRepositories: decrypted.deletedRepositories ?? [],
-        sshContent: decrypted.sshContent ?? null,
-      };
-    } else {
-      // Plaintext mode: read from config.resources and config.credentials
-      const sshCred = config.credentials?.ssh;
-      state = {
-        machines: config.resources?.machines ?? {},
-        storages: config.resources?.storages ?? {},
-        repositories: config.resources?.repositories ?? {},
-        deletedRepositories: config.resources?.deletedRepositories ?? [],
-        sshContent: sshCred
-          ? {
-              privateKey: sshCred.privateKey,
-              publicKey: sshCred.publicKey,
-              knownHosts: sshCred.knownHosts,
-            }
-          : null,
-      };
-    }
-
-    return new LocalResourceState(configName, masterPassword, state);
+  /**
+   * @param config a DECRYPTED config (encrypted leaves already materialized).
+   *   Config-base resolves the master password and hands us plaintext; we never
+   *   touch ciphertext ourselves.
+   */
+  static load(config: RdcConfig, configName: string): LocalResourceState {
+    return new LocalResourceState(configName, loadLocalState(config));
   }
 
   getMachines(): Record<string, MachineConfig> {
@@ -182,62 +293,14 @@ export class LocalResourceState implements ResourceState {
     await this.persist();
   }
 
+  /**
+   * Single persist path (R2-F3). Writes the whole state view through
+   * `configFileStorage.update`, spreading the loaded config so sibling buckets
+   * (clusters, cloudProviders, backupStrategies, datastores, and other
+   * `state.*`) survive untouched. The storage layer re-encrypts per field.
+   */
   private async persist(): Promise<void> {
-    const configName = this.configName;
-    const sshContent = this.state.sshContent;
-
-    if (this.masterPassword) {
-      const serialized = await encryptSection(
-        {
-          machines: this.state.machines,
-          storages: this.state.storages,
-          repositories: this.state.repositories,
-          deletedRepositories: this.state.deletedRepositories,
-          sshContent: this.state.sshContent,
-        },
-        this.masterPassword
-      );
-      // nodeCryptoProvider.encrypt returns nonce:tag:ciphertext format.
-      const [nonce, tag, ciphertext] = serialized.split(':');
-
-      await configFileStorage.update(configName, (cfg) => ({
-        ...cfg,
-        encryption: {
-          mode: 'master-password',
-          encryptedFields: {
-            ...(cfg.encryption?.encryptedFields ?? {}),
-            [RESOURCES_BLOB_POINTER]: { nonce, tag, ciphertext },
-          },
-        },
-        resources: undefined,
-        credentials: cfg.credentials ? { ...cfg.credentials, ssh: undefined } : cfg.credentials,
-      }));
-    } else {
-      await configFileStorage.update(configName, (cfg) => ({
-        ...cfg,
-        resources: {
-          ...(cfg.resources ?? {}),
-          machines: Object.keys(this.state.machines).length > 0 ? this.state.machines : undefined,
-          storages: Object.keys(this.state.storages).length > 0 ? this.state.storages : undefined,
-          repositories:
-            Object.keys(this.state.repositories).length > 0 ? this.state.repositories : undefined,
-          deletedRepositories:
-            this.state.deletedRepositories.length > 0 ? this.state.deletedRepositories : undefined,
-        },
-        credentials: {
-          ...(cfg.credentials ?? {}),
-          ssh: sshContent
-            ? {
-                privateKey: sshContent.privateKey,
-                publicKey: sshContent.publicKey,
-                knownHosts: sshContent.knownHosts,
-              }
-            : undefined,
-        },
-        encryption:
-          cfg.encryption?.mode === 'master-password' ? { mode: 'plaintext' } : cfg.encryption,
-      }));
-    }
+    await configFileStorage.update(this.configName, (cfg) => persistPatch(this.state, cfg));
   }
 }
 
@@ -246,31 +309,26 @@ export class LocalResourceState implements ResourceState {
 // =============================================================================
 
 /**
- * ResourceState implementation backed by remote encrypted config storage.
- * Mutations trigger an encrypted push to the account server via RemoteConfigAdapter.
+ * ResourceState backed by the remote encrypted config store. Mutations push the
+ * REAL on-disk config with `state` stripped (spec 04 §1.3) — never a
+ * reconstructed subset, so no bucket can be dropped.
  */
 export class RemoteResourceState implements ResourceState {
   private readonly adapter: RemoteConfigAdapter;
   private readonly configName: string;
   private version: number;
-  private readonly sdkEpoch: number;
   private readonly state: LocalState;
-  private readonly configId: string;
 
   private constructor(
     adapter: RemoteConfigAdapter,
     configName: string,
     version: number,
-    sdkEpoch: number,
-    state: LocalState,
-    configId: string
+    state: LocalState
   ) {
     this.adapter = adapter;
     this.configName = configName;
     this.version = version;
-    this.sdkEpoch = sdkEpoch;
     this.state = state;
-    this.configId = configId;
   }
 
   static load(
@@ -278,23 +336,9 @@ export class RemoteResourceState implements ResourceState {
     configName: string,
     adapter: RemoteConfigAdapter,
     version: number,
-    sdkEpoch: number
+    _sdkEpoch: number
   ): RemoteResourceState {
-    const sshCred = config.credentials?.ssh;
-    const state: LocalState = {
-      machines: config.resources?.machines ?? {},
-      storages: config.resources?.storages ?? {},
-      repositories: config.resources?.repositories ?? {},
-      deletedRepositories: config.resources?.deletedRepositories ?? [],
-      sshContent: sshCred
-        ? {
-            privateKey: sshCred.privateKey,
-            publicKey: sshCred.publicKey,
-            knownHosts: sshCred.knownHosts,
-          }
-        : null,
-    };
-    return new RemoteResourceState(adapter, configName, version, sdkEpoch, state, config.id);
+    return new RemoteResourceState(adapter, configName, version, loadLocalState(config));
   }
 
   getMachines(): Record<string, MachineConfig> {
@@ -343,31 +387,10 @@ export class RemoteResourceState implements ResourceState {
   }
 
   private async persist(): Promise<void> {
-    const sshContent = this.state.sshContent;
-    const fullConfig: RdcConfig = {
-      schemaVersion: 2,
-      id: this.configId,
-      version: this.version,
-      resources: {
-        machines: this.state.machines,
-        storages: this.state.storages,
-        repositories: this.state.repositories,
-        deletedRepositories:
-          this.state.deletedRepositories.length > 0 ? this.state.deletedRepositories : undefined,
-      },
-      credentials: sshContent
-        ? {
-            ssh: {
-              privateKey: sshContent.privateKey,
-              publicKey: sshContent.publicKey,
-              knownHosts: sshContent.knownHosts,
-            },
-          }
-        : undefined,
-      encryption: { mode: 'plaintext' },
-    };
-
-    const result = await this.adapter.push(fullConfig, this.version);
+    const base = await configFileStorage.loadDecrypted(this.configName);
+    const merged = persistPatch(this.state, base);
+    const pushDoc = stripStateForPush(merged);
+    const result = await this.adapter.push(pushDoc, this.version);
     this.version = result.version;
   }
 }

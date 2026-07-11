@@ -73,7 +73,7 @@ async function maybeSyncCertCache(
       '../services/account/cert-cache.js'
     );
     const current = await configService.getCurrent().catch(() => undefined);
-    const entry = current?.infra?.acmeCertCache?.[baseDomain];
+    const entry = current?.state?.certCache?.[baseDomain];
     if (!isCertCacheStale(entry?.updatedAt)) return;
     const before = entry?.certCount ?? 0;
     const result = await downloadCertCache(machineName, { silent: true }, lease?.sftp);

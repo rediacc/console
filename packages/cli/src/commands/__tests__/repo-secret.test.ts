@@ -17,6 +17,9 @@ vi.mock('../../services/config/config-resources.js', () => ({
     getRepository: mockGetRepository,
     getRepositoryKey: mockGetRepositoryKey,
     getCurrent: mockGetCurrent,
+    // v3: the precondition gate reads the decrypted config; alias it to the same
+    // mock so `mockGetCurrent.mockResolvedValue(...)` drives both.
+    getDecryptedConfig: mockGetCurrent,
     getResourceState: mockGetResourceState,
   },
 }));
@@ -261,38 +264,30 @@ describe('rdc repo secret get/list', () => {
 
   // ── set / unset (mutation gate) ────────────────────────────────
 
-  function configWithSecret(value: string): Record<string, unknown> {
+  // v3 family config: places `record` under repositories.app.tags[tag].
+  function familyConfig(tag: string, record: Record<string, unknown>): Record<string, unknown> {
     return {
-      schemaVersion: 2,
+      schemaVersion: 3,
       id: '00000000-0000-0000-0000-000000000001',
       version: 1,
-      resources: {
-        repositories: {
-          'app:latest': {
-            repositoryGuid: GRAND_GUID,
-            secrets: { STRIPE: { mode: 'env', value } },
-          },
-        },
-      },
+      resources: { repositories: { app: { grand: 'latest', tags: { [tag]: record } } } },
     };
   }
 
+  function configWithSecret(value: string): Record<string, unknown> {
+    return familyConfig('latest', {
+      repositoryGuid: GRAND_GUID,
+      secrets: { STRIPE: { mode: 'env', value } },
+    });
+  }
+
   function configWithFork(value: string): Record<string, unknown> {
-    return {
-      schemaVersion: 2,
-      id: '00000000-0000-0000-0000-000000000001',
-      version: 1,
-      resources: {
-        repositories: {
-          'app:dev': {
-            repositoryGuid: FORK_GUID,
-            parentGuid: GRAND_GUID,
-            grandGuid: GRAND_GUID,
-            secrets: { STRIPE: { mode: 'env', value } },
-          },
-        },
-      },
-    };
+    return familyConfig('dev', {
+      repositoryGuid: FORK_GUID,
+      parentGuid: GRAND_GUID,
+      grandGuid: GRAND_GUID,
+      secrets: { STRIPE: { mode: 'env', value } },
+    });
   }
 
   describe('set on a fork (agent context)', () => {
@@ -307,12 +302,7 @@ describe('rdc repo secret get/list', () => {
       // under agent context, even on first-write. Agents must always be
       // intentional about secrets, even new ones.
       mockReadRepositorySecret.mockReturnValue(undefined);
-      mockGetCurrent.mockResolvedValue({
-        schemaVersion: 2,
-        id: '00000000-0000-0000-0000-000000000001',
-        version: 1,
-        resources: { repositories: { 'app:dev': forkRepo } },
-      });
+      mockGetCurrent.mockResolvedValue(familyConfig('dev', forkRepo));
 
       await expect(
         run(['repo', 'secret', 'set', '--name', 'app:dev', '--key', 'NEW', '--value', 'v'])
@@ -322,12 +312,7 @@ describe('rdc repo secret get/list', () => {
 
     it('first-write with --current "" passes the new-field branch', async () => {
       mockReadRepositorySecret.mockReturnValue(undefined);
-      mockGetCurrent.mockResolvedValue({
-        schemaVersion: 2,
-        id: '00000000-0000-0000-0000-000000000001',
-        version: 1,
-        resources: { repositories: { 'app:dev': forkRepo } },
-      });
+      mockGetCurrent.mockResolvedValue(familyConfig('dev', forkRepo));
 
       await run([
         'repo',
@@ -412,7 +397,7 @@ describe('rdc repo secret get/list', () => {
     });
 
     it('REDIACC_ALLOW_CONFIG_EDIT scope match bypasses --current requirement', async () => {
-      process.env.REDIACC_ALLOW_CONFIG_EDIT = '/resources/repositories/*/secrets/*/value';
+      process.env.REDIACC_ALLOW_CONFIG_EDIT = '/resources/repositories/*/tags/*/secrets/*/value';
       mockReadRepositorySecret.mockReturnValue({ mode: 'env', value: 'old' });
       mockGetCurrent.mockResolvedValue(configWithFork('old'));
 
@@ -432,12 +417,7 @@ describe('rdc repo secret get/list', () => {
 
     it('rejects --mode foo', async () => {
       mockReadRepositorySecret.mockReturnValue(undefined);
-      mockGetCurrent.mockResolvedValue({
-        schemaVersion: 2,
-        id: 'x',
-        version: 1,
-        resources: { repositories: {} },
-      });
+      mockGetCurrent.mockResolvedValue(familyConfig('latest', grandRepo));
       await expect(
         run([
           'repo',
@@ -465,12 +445,7 @@ describe('rdc repo secret get/list', () => {
 
     it('write to a NEW key on grand requires --current "" (mutation-gate symmetric)', async () => {
       mockReadRepositorySecret.mockReturnValue(undefined);
-      mockGetCurrent.mockResolvedValue({
-        schemaVersion: 2,
-        id: 'x',
-        version: 1,
-        resources: { repositories: { 'app:latest': grandRepo } },
-      });
+      mockGetCurrent.mockResolvedValue(familyConfig('latest', grandRepo));
       // Without any precondition flag, mutation-gate refuses (was previously
       // blocked by the now-removed grandGuard policy layer).
       await expect(
@@ -481,12 +456,7 @@ describe('rdc repo secret get/list', () => {
 
     it('write to grand succeeds with --rotate-secret (audited as rotation)', async () => {
       mockReadRepositorySecret.mockReturnValue(undefined);
-      mockGetCurrent.mockResolvedValue({
-        schemaVersion: 2,
-        id: 'x',
-        version: 1,
-        resources: { repositories: { 'app:latest': grandRepo } },
-      });
+      mockGetCurrent.mockResolvedValue(familyConfig('latest', grandRepo));
       await run([
         'repo',
         'secret',

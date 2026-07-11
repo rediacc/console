@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ClusterConfig } from '../../../types/index.js';
-import { resolveKvmTopology, vmIp } from '../kvm-topology.js';
+import { clusterGroupToken, resolveKvmTopology, vmIp } from '../kvm-topology.js';
 
 const kvm = { netName: 'renet12', netBase: '192.168.112', controlId: 1 };
 
@@ -24,6 +24,19 @@ describe('vmIp', () => {
   });
 });
 
+describe('clusterGroupToken', () => {
+  it('lowercases and collapses unsafe chars into a libvirt/filename-safe token', () => {
+    expect(clusterGroupToken('Prod')).toBe('prod');
+    expect(clusterGroupToken('My Cluster')).toBe('my-cluster');
+    expect(clusterGroupToken('a.b_c')).toBe('a-b-c');
+    expect(clusterGroupToken('--edge--')).toBe('edge');
+  });
+
+  it('throws when a name has no usable characters', () => {
+    expect(() => clusterGroupToken('***')).toThrow(/no letters or digits/);
+  });
+});
+
 describe('resolveKvmTopology', () => {
   it('routes ceph pools to the ceph id space and everything else to workers', () => {
     const t = resolveKvmTopology('c', cluster());
@@ -31,6 +44,10 @@ describe('resolveKvmTopology', () => {
     expect(t.network.cephIds).toEqual([21, 22, 23]);
     expect(t.network.bridgeId).toBe(1);
     expect(t.network.netName).toBe('renet12');
+  });
+
+  it('threads a group token derived from the cluster name for domain namespacing', () => {
+    expect(resolveKvmTopology('Edge One', cluster()).network.group).toBe('edge-one');
   });
 
   it('numbers members 1-based per pool, matching materializeClusterMachines', () => {
@@ -48,20 +65,18 @@ describe('resolveKvmTopology', () => {
   // ops down tears VMs down by id, so a pool that grows must keep the ids its
   // running members already hold.
   it('reuses persisted ids and only allocates for the new members', () => {
-    const existing = cluster({
-      pools: [{ name: 'agents', role: 'k8s-agent', count: 3 }],
-      kvm: { ...kvm, memberIds: { agents: [11, 12] } },
-    });
-    const t = resolveKvmTopology('c', existing);
+    // The ledger now comes from state.clusters[*].memberIds (Carry-in 5),
+    // threaded in as the third argument, not the spec kvm block.
+    const existing = cluster({ pools: [{ name: 'agents', role: 'k8s-agent', count: 3 }] });
+    const t = resolveKvmTopology('c', existing, { agents: [11, 12] });
     expect(t.memberIds.agents).toEqual([11, 12, 13]);
   });
 
   it('keeps ids stable when a pool shrinks', () => {
-    const shrunk = cluster({
-      pools: [{ name: 'agents', role: 'k8s-agent', count: 1 }],
-      kvm: { ...kvm, memberIds: { agents: [11, 12, 13] } },
-    });
-    expect(resolveKvmTopology('c', shrunk).memberIds.agents).toEqual([11]);
+    const shrunk = cluster({ pools: [{ name: 'agents', role: 'k8s-agent', count: 1 }] });
+    expect(resolveKvmTopology('c', shrunk, { agents: [11, 12, 13] }).memberIds.agents).toEqual([
+      11,
+    ]);
   });
 
   it('refuses a cluster with no kvm topology', () => {

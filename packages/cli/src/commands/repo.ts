@@ -24,6 +24,10 @@ import { registerRepoDiffCommand } from './repo-diff.js';
 import { registerRepoSecretCommands } from './repo-secret.js';
 import { registerExtendedRepoCommands } from './repo-extended.js';
 import { registerRepoMigrateCommand } from './repo-migrate.js';
+import { registerRepoReplicateCommands } from './repo-replicate.js';
+import { registerRepoCanaryCommands } from './repo-canary.js';
+import { listReplicaSets } from '../services/cluster/repo-replicate.js';
+import { listCanaries } from '../services/cluster/repo-release.js';
 import { registerRepoSyncCommands } from './repo-sync.js';
 import { registerRepoTunnelCommand } from './repo-tunnel.js';
 import { registerRepoVolumeCommands } from './repo-volume.js';
@@ -308,6 +312,29 @@ export function registerRepoCommands(program: Command): void {
               failed: t('commands.repo.status.failed'),
             }
           );
+          // Managed replica sets are CRUD-from-birth state (R2-F17): surface
+          // any set built on this repo alongside its status.
+          const replicaSets = Object.entries(await listReplicaSets()).filter(
+            ([, set]) => set.repo === name
+          );
+          for (const [setName, set] of replicaSets) {
+            const freshness = set.refreshedAt
+              ? `refreshed ${set.refreshedAt}`
+              : `created ${set.createdAt}`;
+            outputService.info(
+              `Replica set "${setName}": ${set.replicas.length} replica(s) on ` +
+                `${set.replicas.map((r) => r.node).join(', ')} (${freshness})`
+            );
+          }
+          const canaries = Object.entries(await listCanaries()).filter(
+            ([, set]) => set.repo === name
+          );
+          for (const [setName, set] of canaries) {
+            outputService.info(
+              `Canary "${setName}": ${set.weight}% -> ${set.image} ` +
+                `(stable service ${set.service}, undo snapshot ${set.undoSnapshot})`
+            );
+          }
         } catch (error) {
           handleError(error);
         }
@@ -330,6 +357,8 @@ export function registerRepoCommands(program: Command): void {
   registerExtendedRepoCommands(repo);
   registerRepoBackupCommands(repo);
   registerRepoMigrateCommand(repo);
+  registerRepoReplicateCommands(repo);
+  registerRepoCanaryCommands(repo);
   registerRepoSyncCommands(repo);
   registerRepoTunnelCommand(repo);
   registerRepoSecretCommands(repo);

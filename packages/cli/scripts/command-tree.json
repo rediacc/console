@@ -2492,6 +2492,258 @@
           "subcommands": []
         },
         {
+          "name": "replicate",
+          "descriptionKey": "commands.repo.replicate.description",
+          "options": [
+            {
+              "flags": "--name <repo>",
+              "descriptionKey": "commands.repo.replicate.nameOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--replicas <n>",
+              "descriptionKey": "commands.repo.replicate.replicasOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--datastore <name>",
+              "descriptionKey": "commands.repo.replicate.datastoreOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--set <name>",
+              "descriptionKey": "commands.repo.replicate.setOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--image <image>",
+              "descriptionKey": "commands.repo.replicate.imageOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--port <port>",
+              "descriptionKey": "commands.repo.replicate.portOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--pvc <name>",
+              "descriptionKey": "commands.repo.replicate.pvcOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--primary-app <label>",
+              "descriptionKey": "commands.repo.replicate.primaryAppOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--headless",
+              "descriptionKey": "commands.repo.replicate.headlessOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--refresh <interval>",
+              "descriptionKey": "commands.repo.replicate.refreshOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "status",
+              "descriptionKey": "commands.repo.replicate.status.description",
+              "options": [
+                {
+                  "flags": "--name <set>",
+                  "descriptionKey": "commands.repo.replicate.status.nameOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "remove",
+              "descriptionKey": "commands.repo.replicate.remove.description",
+              "options": [
+                {
+                  "flags": "--name <set>",
+                  "descriptionKey": "commands.repo.replicate.remove.nameOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "refresh",
+              "descriptionKey": "commands.repo.replicate.refresh.description",
+              "options": [
+                {
+                  "flags": "--name <set>",
+                  "descriptionKey": "commands.repo.replicate.refresh.nameOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            }
+          ]
+        },
+        {
+          "name": "canary",
+          "descriptionKey": "commands.repo.canary.description",
+          "options": [
+            {
+              "flags": "--name <repo>",
+              "descriptionKey": "commands.repo.canary.nameOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.repo.clusterOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--image <image>",
+              "descriptionKey": "commands.repo.canary.imageOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--port <port>",
+              "descriptionKey": "commands.repo.canary.portOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--weight <percent>",
+              "descriptionKey": "commands.repo.canary.weightOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--service <name>",
+              "descriptionKey": "commands.repo.canary.serviceOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--replicas <n>",
+              "descriptionKey": "commands.repo.canary.replicasOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "status",
+              "descriptionKey": "commands.repo.canary.status.description",
+              "options": [
+                {
+                  "flags": "--name <set>",
+                  "descriptionKey": "commands.repo.canary.status.nameOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "weight",
+              "descriptionKey": "commands.repo.canary.weight.description",
+              "options": [
+                {
+                  "flags": "--name <set>",
+                  "descriptionKey": "commands.repo.canary.weight.nameOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--weight <percent>",
+                  "descriptionKey": "commands.repo.canary.weightOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "remove",
+              "descriptionKey": "commands.repo.canary.remove.description",
+              "options": [
+                {
+                  "flags": "--name <set>",
+                  "descriptionKey": "commands.repo.canary.remove.nameOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            }
+          ]
+        },
+        {
           "name": "sync",
           "descriptionKey": "commands.repo.sync.description",
           "options": [],
@@ -3884,6 +4136,36 @@
                   "descriptionKey": "commands.config.cluster.controlNodeOption",
                   "mandatory": false,
                   "defaultValue": null
+                },
+                {
+                  "flags": "--net-name <name>",
+                  "descriptionKey": "commands.config.cluster.netNameOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--net-base <prefix>",
+                  "descriptionKey": "commands.config.cluster.netBaseOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--net-offset <n>",
+                  "descriptionKey": "commands.config.cluster.netOffsetOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--control-id <n>",
+                  "descriptionKey": "commands.config.cluster.controlIdOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--docker-registry <endpoint>",
+                  "descriptionKey": "commands.config.cluster.dockerRegistryOption",
+                  "mandatory": false,
+                  "defaultValue": null
                 }
               ],
               "arguments": [],
@@ -4441,6 +4723,24 @@
               "defaultValue": null
             },
             {
+              "flags": "--control-ds-size <size>",
+              "descriptionKey": "commands.cluster.create.controlDsSizeOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--control-ds-backend <backend>",
+              "descriptionKey": "commands.cluster.create.controlDsBackendOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--control-ds-pool <pool>",
+              "descriptionKey": "commands.cluster.create.controlDsPoolOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -4573,6 +4873,18 @@
               "defaultValue": null
             },
             {
+              "flags": "--writes <disposition>",
+              "descriptionKey": "commands.cluster.fork.writesOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--up",
+              "descriptionKey": "commands.cluster.fork.upOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -4596,6 +4908,90 @@
               "flags": "--to <dest>",
               "descriptionKey": "commands.cluster.migrate.toOption",
               "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "rehearse",
+          "descriptionKey": "commands.cluster.rehearse.description",
+          "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "commands.cluster.rehearse.nameOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <dest>",
+              "descriptionKey": "commands.cluster.rehearse.clusterOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tag <tag>",
+              "descriptionKey": "commands.cluster.rehearse.tagOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "join",
+          "descriptionKey": "commands.cluster.join.description",
+          "options": [
+            {
+              "flags": "--machine <name>",
+              "descriptionKey": "commands.cluster.join.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cluster <name>",
+              "descriptionKey": "commands.cluster.join.clusterOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "evict",
+          "descriptionKey": "commands.cluster.evict.description",
+          "options": [
+            {
+              "flags": "--machine <name>",
+              "descriptionKey": "commands.cluster.evict.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--force",
+              "descriptionKey": "commands.cluster.evict.forceOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {

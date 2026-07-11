@@ -30,7 +30,10 @@
         "description": "Provision the pool members of a cluster defined with 'rdc config cluster add', bootstrap renet on each, and install components (ceph first). Cloud providers provision via OpenTofu; KVM lands in a later wave.",
         "sshUserOption": "SSH user for provisioned members",
         "nameOption": "Cluster name",
-        "baseDomainOption": "Base domain for cluster public DNS (else inherited from a sibling machine)"
+        "baseDomainOption": "Base domain for cluster public DNS (else inherited from a sibling machine)",
+        "controlDsSizeOption": "Anchor control datastore size (default 10G)",
+        "controlDsBackendOption": "Anchor control datastore backend: local | ceph (default: ceph if the cluster has ceph, else local)",
+        "controlDsPoolOption": "Ceph rbd pool for the anchor control datastore (ceph backend)"
       },
       "status": {
         "descriptionShort": "Show clusters and their pools",
@@ -69,13 +72,34 @@
         "description": "Clone an entire cluster, including its repos' data, into a new cluster: coordinated copy-on-write of the cluster and PV images, then node-identity rewrite so the fork comes up on new addresses. The parent keeps running.",
         "tagOption": "Fork tag",
         "nameOption": "Cluster name",
-        "clusterOption": "Existing destination cluster to fork onto (must be on distinct machines)"
+        "clusterOption": "Existing destination cluster to fork onto (must be on distinct machines)",
+        "writesOption": "Fork write disposition: local (ephemeral dm-COW overlay, zero Ceph footprint) | ceph (durable clone). Default local",
+        "upOption": "Bring the forked repos up and gate on cluster health after the fork boots"
       },
       "migrate": {
         "descriptionShort": "Move a whole cluster to another place",
         "description": "Move an entire cluster, including its repos' data, to another machine or datacenter with a short cutover (hot pre-copy, then stop-and-restart on the destination).",
         "toOption": "Destination",
         "nameOption": "Cluster name"
+      },
+      "join": {
+        "descriptionShort": "Add a machine to a cluster as an agent",
+        "description": "Adopt an existing registered machine as a Kubernetes agent node of a cluster, using the same CA-derived join token as anchor and rejoin.",
+        "machineOption": "Registered machine to adopt",
+        "clusterOption": "Cluster to join the machine to"
+      },
+      "evict": {
+        "descriptionShort": "Remove a node from its cluster",
+        "description": "Drain the node, delete its Node object, and clear its cluster membership. The cluster is derived from the machine; a machine that still mounts a datastore is refused.",
+        "machineOption": "Machine to evict",
+        "forceOption": "Skip the drain when the node is already dead"
+      },
+      "rehearse": {
+        "descriptionShort": "Boot an ephemeral throwaway fork, health-gate it, then discard",
+        "description": "Rehearse a release/upgrade: fork the cluster onto a destination as an ephemeral throwaway (writes=local, secretless role=rehearsal), bring it up, gate on health, then discard it. The parent is never touched.",
+        "nameOption": "Source cluster to rehearse",
+        "clusterOption": "Destination cluster whose nodes host the throwaway rehearsal fork",
+        "tagOption": "Optional tag for the rehearsal fork (default: timestamped)"
       }
     },
     "credits": {
@@ -1115,6 +1139,60 @@
         "detachedHint": "Services are starting in the background — check status with: rdc machine query --containers --name {{machine}}",
         "provisioning": "Provisioning cluster \"{{cluster}}\" on {{provider}} before forking..."
       },
+      "replicate": {
+        "descriptionShort": "Instant read replicas from datastore forks",
+        "description": "Create N read replicas of a repository in seconds, regardless of database size. Takes ONE datastore snapshot, then makes N constant-time fork-attaches (copy-on-write, throwaway local writes) spread across the cluster's nodes, and applies a generated overlay: one pinned PersistentVolume per replica, a StatefulSet, and two Services ({repo}-rw to the primary, {repo}-ro across the replicas). Replicas are POINT-IN-TIME copies: no replication stream, no read-your-writes; each replica runs one crash-recovery pass before serving. Refresh them with 'repo replicate refresh'. Replica sets are managed state: see 'repo replicate status' and remove with 'repo replicate remove'.",
+        "nameOption": "Repository to replicate (its namespace + service base name)",
+        "replicasOption": "Number of read replicas to create",
+        "datastoreOption": "Data datastore holding the repository (default: the cluster's single data datastore)",
+        "setOption": "Replica-set name (default: <repo>-replicas)",
+        "imageOption": "Engine image the replicas run (same engine as the primary)",
+        "portOption": "Port the engine serves on",
+        "pvcOption": "Volume name the engine mounts as its data dir (default: data)",
+        "primaryAppOption": "The primary pod's 'app' label value the -rw Service targets (default: the repo name)",
+        "headlessOption": "Make the -ro Service headless: DNS returns every replica pod IP for driver-side balancing (long-lived DB connections skew a normal Service's per-connection balancing)",
+        "refreshOption": "Intended refresh interval recorded on the set (e.g. 1h); run 'repo replicate refresh' to roll it",
+        "status": {
+          "descriptionShort": "Show managed replica sets",
+          "description": "Show managed replica sets: replicas, hosting nodes, fork datastores, snapshot, and refresh timestamps.",
+          "nameOption": "Show one replica set by name"
+        },
+        "remove": {
+          "descriptionShort": "Tear down a replica set",
+          "description": "Remove a replica set: delete its generated k8s objects (label-scoped), discard its fork datastores, drop its snapshot, and forget the state. Infra steps are best-effort so removal converges even on a partially-gone cluster.",
+          "nameOption": "Replica set to remove"
+        },
+        "refresh": {
+          "descriptionShort": "Roll replicas onto a fresh snapshot",
+          "description": "Roll every replica onto a fresh point-in-time snapshot, ONE at a time: bounce the replica pod, discard and re-fork its datastore under the same path, and let readiness re-admit it. N-1 replicas keep serving throughout.",
+          "nameOption": "Replica set to refresh"
+        }
+      },
+      "canary": {
+        "descriptionShort": "Canary release: weighted traffic split on shared data",
+        "description": "Run a NEW image next to the stable one and split live traffic between them by percentage (release ladder rung 2). Creates one canary Deployment + Service on the SAME live data (no fork: canary users on forked data would read stale data and write into a doomed copy) and tells the Rediacc proxy to route the given percent of the stable hostname's traffic to it. Weight 0 keeps the canary dark; weight 100 is the blue/green flip. Before every canary change, an automatic group snapshot of the cluster's datastores is taken (release ladder rung 0) as the universal undo. Schema compatibility between the two versions (expand-contract) is the application's responsibility. For schema-BREAKING releases, use blue/green instead: fork the repo (instant, includes data), point the fork's Service here with weight 100, and roll back by restarting the untouched parent; writes made after the flip exist only in the new copy, so the rollback window is a policy decision.",
+        "nameOption": "Repository the canary belongs to (its namespace)",
+        "imageOption": "New image the canary Deployment runs (against shared live data)",
+        "portOption": "Port the app serves on (must match the stable Service)",
+        "weightOption": "Percent of traffic routed to the canary (integer 0-100; 0 = dark, 100 = full flip)",
+        "serviceOption": "Stable Service to split traffic with (default: the repo name)",
+        "replicasOption": "Canary Deployment replica count (default: 1)",
+        "status": {
+          "descriptionShort": "Show managed canary sets",
+          "description": "Show managed canary sets: weight, images, stable service, and the latest release-undo snapshot.",
+          "nameOption": "Show one canary set by name"
+        },
+        "weight": {
+          "descriptionShort": "Change a canary's traffic percentage",
+          "description": "Change the percent of traffic routed to a canary. Takes a fresh release-undo group snapshot first, then re-applies the overlay; the proxy picks up the new split on its refresh tick. Weight 100 sends all traffic to the new version (the blue/green flip).",
+          "nameOption": "Canary set to adjust"
+        },
+        "remove": {
+          "descriptionShort": "Tear down a canary",
+          "description": "Remove a canary's Deployment and Service (label-scoped); the stable Service serves 100% again. Release-undo snapshots are retained; prune them with the datastore snapshot commands.",
+          "nameOption": "Canary set to remove"
+        }
+      },
       "takeover": {
         "description": "Replace grand repo's data with a fork's data. The grand keeps its identity (GUID, networkId, domains, autostart, backup chain) but gets the fork's upgraded data. The old production data is preserved as a backup fork. Use for: test upgrade on fork → verify → takeover to production. Pass an explicit <name>:<tag> for the fork — a bare --name resolves to the grand and is rejected with \"not a fork\".",
         "descriptionShort": "Replace production data with fork data",
@@ -1795,7 +1873,9 @@
       "countInvalid": "--count must be a non-negative integer",
       "dockerOnlyVerb": "\"repo {{verb}}\" targets Docker repositories only and cannot run against a --cluster; it has no Kubernetes equivalent in v1",
       "pendingContractRegen": "\"repo {{verb}}\" on a cluster dispatches {{fn}}, which is pending the renet kube contract regeneration (wave 5). The cluster + namespace were resolved; re-run once the contract lands.",
-      "featureUnsupportedV1": "{{feature}} is not supported with --cluster in v1 (control-node view); {{hint}}"
+      "featureUnsupportedV1": "{{feature}} is not supported with --cluster in v1 (control-node view); {{hint}}",
+      "controlDsBackendInvalid": "--control-ds-backend must be local or ceph",
+      "forkWritesInvalid": "--writes must be local or ceph"
     },
     "activationFailed": "Activation failed",
     "tfaVerificationFailed": "TFA verification failed",

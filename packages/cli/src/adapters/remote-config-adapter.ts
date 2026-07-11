@@ -137,7 +137,7 @@ export class RemoteConfigAdapter {
     // Map decrypted FullConfig to RdcConfig (v2 shape).
     const sshRaw = decrypted.ssh;
     const config: RdcConfig = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       id: decrypted.id,
       version: decrypted.version,
       resources: {

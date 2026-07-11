@@ -8,8 +8,14 @@
  */
 
 import { dirname } from 'node:path';
+import { DEFAULTS } from '@rediacc/shared/config';
 import { OpsManager, buildGroupEnv } from '@rediacc/provisioning';
 import type { ClusterConfig, ClusterKvm } from '../../types/index.js';
+import {
+  getClusterMemberIdsFromConfig,
+  setClusterMemberIdsInStore,
+} from '../config/config-cluster-logic.js';
+import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { opsExecutorService } from '../executor/ops-executor.js';
 import { type KvmTopology, resolveKvmTopology } from './kvm-topology.js';
@@ -39,13 +45,30 @@ function failureDetail(result: { stdout: string; stderr: string }): string {
  * own resolver walks up from __dirname, which is meaningless once the CLI is a
  * bundled single-file executable.
  */
-async function opsManagerFor(topology: KvmTopology): Promise<OpsManager> {
+async function opsManagerFor(topology: KvmTopology, cephPool?: string): Promise<OpsManager> {
   const binaryPath = await opsExecutorService.getRenetPath();
+  const groupEnv = buildGroupEnv(topology.network);
+  // Finding #17: make the ops phase create the SAME pool the cluster/datastore
+  // path uses (default `rbd`) instead of its own `rediacc_rbd_pool`. Otherwise
+  // ops makes `rediacc_rbd_pool` and installCeph makes `rbd` — a non-idempotent
+  // double pool that also blows the pg budget on small topologies. One pool named
+  // what downstream references keeps create/install idempotent and pg-safe.
+  if (cephPool) groupEnv.CEPH_POOL_NAME = cephPool;
   return new OpsManager({
     network: topology.network,
     renet: { binaryPath, rootPath: dirname(binaryPath) },
-    groupEnv: buildGroupEnv(topology.network),
+    groupEnv,
   });
+}
+
+/**
+ * The ceph pool a cluster's ops phase should create — the cluster's own pool
+ * (default `rbd`, what the datastore/fork path references), so ops and install
+ * converge ONE pool. Undefined for a cluster with no ceph pool (nothing to name).
+ */
+export function clusterCephPool(config: ClusterConfig): string | undefined {
+  if (!config.pools.some((p) => p.role === 'ceph')) return undefined;
+  return config.ceph?.pool ?? DEFAULTS.CEPH.POOL;
 }
 
 /**
@@ -55,8 +78,10 @@ export async function provisionKvmCluster(
   clusterName: string,
   config: ClusterConfig
 ): Promise<KvmProvisionResult> {
-  const topology = resolveKvmTopology(clusterName, config);
-  const ops = await opsManagerFor(topology);
+  // Reuse the persisted id ledger so growing a pool never renumbers running VMs.
+  const persisted = getClusterMemberIdsFromConfig(await configService.getCurrent(), clusterName);
+  const topology = resolveKvmTopology(clusterName, config, persisted);
+  const ops = await opsManagerFor(topology, clusterCephPool(config));
 
   outputService.info(
     `Provisioning ${topology.members.length} KVM VM(s) for "${clusterName}" on ${topology.network.netName}...`
@@ -72,9 +97,17 @@ export async function provisionKvmCluster(
     );
   }
 
+  // Persist the id ledger to state.clusters[*].memberIds (Carry-in 5) so
+  // `ops down` and later scale-ups address the SAME VMs.
+  await setClusterMemberIdsInStore(
+    configService.getEffectiveConfigName(),
+    clusterName,
+    topology.memberIds
+  );
+
   return {
     members: topology.members.map((m) => ({ pool: m.pool, index: m.index, ip: m.ip })),
-    kvm: { ...topology.kvm, memberIds: topology.memberIds },
+    kvm: topology.kvm,
   };
 }
 
@@ -86,7 +119,8 @@ export async function teardownKvmCluster(
   clusterName: string,
   config: ClusterConfig
 ): Promise<void> {
-  const topology = resolveKvmTopology(clusterName, config);
+  const persisted = getClusterMemberIdsFromConfig(await configService.getCurrent(), clusterName);
+  const topology = resolveKvmTopology(clusterName, config, persisted);
   const ops = await opsManagerFor(topology);
 
   const stopped = await ops.stopVMs();

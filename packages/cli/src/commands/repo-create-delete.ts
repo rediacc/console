@@ -74,6 +74,9 @@ async function handleRepoCreateCluster(
   name: string,
   options: { cluster: string; size: string; debug?: boolean }
 ): Promise<void> {
+  // Rollback must only remove the row THIS invocation registered (mirrors the
+  // machine path): a catch-all would delete a pre-existing repo's config row.
+  let registered = false;
   try {
     assertAgentRepoCreate(name);
     const { machineName, kubeCluster } = await resolveRepoTarget({ cluster: options.cluster });
@@ -85,11 +88,46 @@ async function handleRepoCreateCluster(
         controlNode: machineName,
       })
     );
+    // The per-namespace kube_namespace_create bridge fn was deleted with the
+    // datastore-centric redesign; a k8s repo is now a folder in a cluster
+    // datastore created through the runtime-generic repository_create (the
+    // RepoRuntime detects kube from the datastore descriptor). Final --datastore
+    // porcelain + placement resolution is P4; here we dispatch the real function.
+    const repositoryGuid = randomUUID();
+    const networkId = await configService.allocateNetworkId();
+
+    // Register the cluster repo in config so `repo up/down/list --cluster`
+    // resolve it (finding #12: create dispatched repository_create but never
+    // called addRepository, so `repo up --cluster` failed "not found in
+    // context"). A cluster repo keeps NO home binding (D15: targeting stays
+    // explicit via --cluster); this row only records the repo's identity so the
+    // repo-verb funnel's getRepository lookup succeeds.
+    const existing = await configService.getRepository(name);
+    if (existing) {
+      throw new Error(t('commands.repo.create.alreadyExists', { name }));
+    }
+    const { compositeKey } = await import('../utils/config-schema.js');
+    await configService.addRepository(compositeKey(name, 'latest'), {
+      repositoryGuid,
+      tag: 'latest',
+      credential: generateCredential(),
+      networkId,
+    });
+    registered = true;
+
     const result = await localExecutorService.execute({
-      functionName: 'kube_namespace_create',
+      functionName: 'repository_create',
       machineName,
       kubeCluster,
-      params: { namespace: name, cluster, mount_path: clusterMountRemotePath(cluster) },
+      params: {
+        repository: name,
+        size: options.size,
+        guid: repositoryGuid,
+        network_id: networkId,
+        start_docker: false,
+        cluster,
+        mount_path: clusterMountRemotePath(cluster),
+      },
       debug: options.debug,
     });
     if (result.success) {
@@ -97,15 +135,19 @@ async function handleRepoCreateCluster(
         t('commands.repo.clusterDone', { verb: 'Created', repository: name, cluster })
       );
     } else {
+      await rollbackCreateRepo(name);
       renderLocalExecutionFailure(result, t('commands.repo.create.failed'));
     }
   } catch (error) {
+    if (registered) {
+      await rollbackCreateRepo(name);
+    }
     handleError(error);
   }
 }
 
 /** Handle the repo create action body. */
-async function handleRepoCreate(
+export async function handleRepoCreate(
   name: string,
   options: {
     machine?: string;
@@ -247,13 +289,21 @@ async function handleRepoDeleteCluster(name: string, options: { cluster: string 
         controlNode: machineName,
       })
     );
+    // kube_namespace_delete was deleted with the redesign; a k8s repo is deleted
+    // through the runtime-generic repository_delete (kube detected from the
+    // datastore descriptor). Final placement porcelain is P4.
     const result = await localExecutorService.execute({
-      functionName: 'kube_namespace_delete',
+      functionName: 'repository_delete',
       machineName,
       kubeCluster,
-      params: { namespace: name, cluster, mount_path: clusterMountRemotePath(cluster) },
+      params: { repository: name, cluster, mount_path: clusterMountRemotePath(cluster) },
     });
     if (result.success) {
+      // Unregister the config row that `repo create --cluster` now records
+      // (finding #12), so `repo list` stays consistent. Best-effort: a cluster
+      // repo created before this fix has no row.
+      const key = await configService.getRepositoryKey(name);
+      if (key) await configService.removeRepository(key);
       outputService.success(
         t('commands.repo.clusterDone', { verb: 'Deleted', repository: name, cluster })
       );

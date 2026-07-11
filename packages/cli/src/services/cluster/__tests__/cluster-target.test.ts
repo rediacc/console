@@ -80,7 +80,9 @@ describe('cluster target resolution matrix', () => {
     const target = await resolveExecutionTarget({ cluster: 'prod' });
     expect(target.machineName).toBe('prod-k8s-1');
     expect(target.cluster).toBe('prod');
-    expect(target.kubeconfig).toContain('prod');
+    // #11: the kubeconfig lives inside the anchor CONTROL DATASTORE mount, NOT
+    // the legacy per-node repo mount (/mnt/rediacc/mounts/<cluster>/…).
+    expect(target.kubeconfig).toBe('/mnt/rediacc-ds/ds-control-prod/.rediacc/k3s/kubeconfig.yaml');
   });
 
   it('resolveExecutionTarget enforces mutual exclusion and a required target', async () => {

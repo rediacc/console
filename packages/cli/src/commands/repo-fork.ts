@@ -550,19 +550,21 @@ export async function handleClusterForkSeam(
     outputService.info(
       t('commands.repo.fork.clusterResolved', { parent, tag, cluster, controlNode: machineName })
     );
+    // kube_namespace_fork was deleted with the datastore-centric redesign: a k8s
+    // repo forks copy-on-write inside its datastore via the runtime-generic
+    // repository_fork (the RepoRuntime detects kube from the datastore
+    // descriptor and re-mints identity + scrubs secrets per contract). Final
+    // --datastore placement porcelain is P4; here we dispatch the real function.
+    const forkNet = await configService.allocateNetworkId();
     const result = await localExecutorService.execute({
-      functionName: 'kube_namespace_fork',
+      functionName: 'repository_fork',
       machineName,
       kubeCluster,
       params: {
-        namespace: parent,
+        repository: parent,
         tag,
-        // 'auto' lets renet resolve rbd vs datastore from the source
-        // namespace's persisted PV-backend marker; ceph_pool is intentionally
-        // omitted (rbd is resolved server-side, not passed from the client).
-        pv_backend: 'auto',
+        network_id: forkNet,
         cluster,
-        // The rbd fork path needs a datastore root to resolve the pool image.
         datastore: NETWORK_DEFAULTS.DATASTORE_PATH,
         mount_path: clusterMountRemotePath(cluster),
       },

@@ -15,6 +15,9 @@
     "cluster": {
       "create": {
         "baseDomainOption": "클러스터 공개 DNS용 기본 도메인 (지정하지 않으면 형제 머신에서 상속)",
+        "controlDsBackendOption": "Anchor control datastore backend: local | ceph (default: ceph if the cluster has ceph, else local)",
+        "controlDsPoolOption": "Ceph rbd pool for the anchor control datastore (ceph backend)",
+        "controlDsSizeOption": "Anchor control datastore size (default 10G)",
         "description": "'rdc config cluster add'로 정의한 클러스터의 풀 멤버를 프로비저닝하고, 각 멤버에 renet을 부트스트랩한 뒤 구성 요소(ceph 먼저)를 설치합니다. 클라우드 공급자는 OpenTofu를 통해 프로비저닝됩니다. KVM 지원은 이후 웨이브에서 제공될 예정입니다.",
         "descriptionShort": "설정된 클러스터를 프로비저닝합니다",
         "nameOption": "클러스터 이름",
@@ -30,17 +33,31 @@
         "forceOption": "확인을 건너뛰고 해체 중 오류가 발생해도 계속 진행합니다",
         "nameOption": "클러스터 이름"
       },
+      "evict": {
+        "description": "Drain the node, delete its Node object, and clear its cluster membership. The cluster is derived from the machine; a machine that still mounts a datastore is refused.",
+        "descriptionShort": "Remove a node from its cluster",
+        "forceOption": "Skip the drain when the node is already dead",
+        "machineOption": "Machine to evict"
+      },
       "fork": {
         "clusterOption": "포크할 기존 대상 클러스터(반드시 별도의 머신에 있어야 함)",
         "description": "클러스터 전체를 하위 저장소의 데이터까지 포함해 새 클러스터로 복제합니다: 클러스터 이미지와 PV 이미지의 copy-on-write를 조율한 뒤 노드 identity를 다시 써서 포크가 새 주소로 기동하도록 합니다. 원본 클러스터는 계속 실행됩니다.",
         "descriptionShort": "클러스터 전체를 복제합니다(데이터 포함)",
         "nameOption": "클러스터 이름",
-        "tagOption": "포크 태그"
+        "tagOption": "포크 태그",
+        "upOption": "Bring the forked repos up and gate on cluster health after the fork boots",
+        "writesOption": "Fork write disposition: local (ephemeral dm-COW overlay, zero Ceph footprint) | ceph (durable clone). Default local"
       },
       "install": {
         "description": "이미 프로비저닝된 멤버에 클러스터 구성 요소(ceph 먼저, 그다음 k8s)를 설치합니다.",
         "descriptionShort": "프로비저닝된 클러스터에 구성 요소를 설치합니다",
         "nameOption": "클러스터 이름"
+      },
+      "join": {
+        "clusterOption": "Cluster to join the machine to",
+        "description": "Adopt an existing registered machine as a Kubernetes agent node of a cluster, using the same CA-derived join token as anchor and rejoin.",
+        "descriptionShort": "Add a machine to a cluster as an agent",
+        "machineOption": "Registered machine to adopt"
       },
       "kubeconfig": {
         "cached": "Kubeconfig가 {{path}}에 캐시되었습니다",
@@ -53,6 +70,13 @@
         "descriptionShort": "클러스터 전체를 다른 위치로 이동합니다",
         "nameOption": "클러스터 이름",
         "toOption": "대상"
+      },
+      "rehearse": {
+        "clusterOption": "Destination cluster whose nodes host the throwaway rehearsal fork",
+        "description": "Rehearse a release/upgrade: fork the cluster onto a destination as an ephemeral throwaway (writes=local, secretless role=rehearsal), bring it up, gate on health, then discard it. The parent is never touched.",
+        "descriptionShort": "Boot an ephemeral throwaway fork, health-gate it, then discard",
+        "nameOption": "Source cluster to rehearse",
+        "tagOption": "Optional tag for the rehearsal fork (default: timestamped)"
       },
       "scale": {
         "countOption": "원하는 멤버 수",
@@ -933,6 +957,31 @@
         "descriptionShort": "현재 commit을 가리키는 branch 참조를 생성합니다",
         "workingOption": "branch가 가리킬 현재 commit의 작업 fork"
       },
+      "canary": {
+        "description": "Run a NEW image next to the stable one and split live traffic between them by percentage (release ladder rung 2). Creates one canary Deployment + Service on the SAME live data (no fork: canary users on forked data would read stale data and write into a doomed copy) and tells the Rediacc proxy to route the given percent of the stable hostname's traffic to it. Weight 0 keeps the canary dark; weight 100 is the blue/green flip. Before every canary change, an automatic group snapshot of the cluster's datastores is taken (release ladder rung 0) as the universal undo. Schema compatibility between the two versions (expand-contract) is the application's responsibility. For schema-BREAKING releases, use blue/green instead: fork the repo (instant, includes data), point the fork's Service here with weight 100, and roll back by restarting the untouched parent; writes made after the flip exist only in the new copy, so the rollback window is a policy decision.",
+        "descriptionShort": "Canary release: weighted traffic split on shared data",
+        "imageOption": "New image the canary Deployment runs (against shared live data)",
+        "nameOption": "Repository the canary belongs to (its namespace)",
+        "portOption": "Port the app serves on (must match the stable Service)",
+        "remove": {
+          "description": "Remove a canary's Deployment and Service (label-scoped); the stable Service serves 100% again. Release-undo snapshots are retained; prune them with the datastore snapshot commands.",
+          "descriptionShort": "Tear down a canary",
+          "nameOption": "Canary set to remove"
+        },
+        "replicasOption": "Canary Deployment replica count (default: 1)",
+        "serviceOption": "Stable Service to split traffic with (default: the repo name)",
+        "status": {
+          "description": "Show managed canary sets: weight, images, stable service, and the latest release-undo snapshot.",
+          "descriptionShort": "Show managed canary sets",
+          "nameOption": "Show one canary set by name"
+        },
+        "weight": {
+          "description": "Change the percent of traffic routed to a canary. Takes a fresh release-undo group snapshot first, then re-applies the overlay; the proxy picks up the new split on its refresh tick. Weight 100 sends all traffic to the new version (the blue/green flip).",
+          "descriptionShort": "Change a canary's traffic percentage",
+          "nameOption": "Canary set to adjust"
+        },
+        "weightOption": "Percent of traffic routed to the canary (integer 0-100; 0 = dark, 100 = full flip)"
+      },
       "cat": {
         "description": "저장소 내 파일의 제한된 범위를 읽어 stdout에 씁니다 (서버 측에서 범위 제한; 진단 정보는 stderr로 출력)",
         "failed": "읽기 실패",
@@ -1219,6 +1268,35 @@
         "statsDelta": "\"{{repo}}\"을(를) {{machine}}에 푸시 완료: {{duration}} 동안 {{transferred}} 전송 (베이스 {{base}} 대비 델타, 이미지 {{image}})",
         "statsFull": "\"{{repo}}\"을(를) {{machine}}에 푸시 완료: {{duration}} 동안 {{transferred}} 전송 (전체 전송)",
         "statsNoBytes": "\"{{repo}}\"을(를) {{machine}}에 푸시 완료: {{duration}} 소요"
+      },
+      "replicate": {
+        "datastoreOption": "Data datastore holding the repository (default: the cluster's single data datastore)",
+        "description": "Create N read replicas of a repository in seconds, regardless of database size. Takes ONE datastore snapshot, then makes N constant-time fork-attaches (copy-on-write, throwaway local writes) spread across the cluster's nodes, and applies a generated overlay: one pinned PersistentVolume per replica, a StatefulSet, and two Services ({repo}-rw to the primary, {repo}-ro across the replicas). Replicas are POINT-IN-TIME copies: no replication stream, no read-your-writes; each replica runs one crash-recovery pass before serving. Refresh them with 'repo replicate refresh'. Replica sets are managed state: see 'repo replicate status' and remove with 'repo replicate remove'.",
+        "descriptionShort": "Instant read replicas from datastore forks",
+        "headlessOption": "Make the -ro Service headless: DNS returns every replica pod IP for driver-side balancing (long-lived DB connections skew a normal Service's per-connection balancing)",
+        "imageOption": "Engine image the replicas run (same engine as the primary)",
+        "nameOption": "Repository to replicate (its namespace + service base name)",
+        "portOption": "Port the engine serves on",
+        "primaryAppOption": "The primary pod's 'app' label value the -rw Service targets (default: the repo name)",
+        "pvcOption": "Volume name the engine mounts as its data dir (default: data)",
+        "refresh": {
+          "description": "Roll every replica onto a fresh point-in-time snapshot, ONE at a time: bounce the replica pod, discard and re-fork its datastore under the same path, and let readiness re-admit it. N-1 replicas keep serving throughout.",
+          "descriptionShort": "Roll replicas onto a fresh snapshot",
+          "nameOption": "Replica set to refresh"
+        },
+        "refreshOption": "Intended refresh interval recorded on the set (e.g. 1h); run 'repo replicate refresh' to roll it",
+        "remove": {
+          "description": "Remove a replica set: delete its generated k8s objects (label-scoped), discard its fork datastores, drop its snapshot, and forget the state. Infra steps are best-effort so removal converges even on a partially-gone cluster.",
+          "descriptionShort": "Tear down a replica set",
+          "nameOption": "Replica set to remove"
+        },
+        "replicasOption": "Number of read replicas to create",
+        "setOption": "Replica-set name (default: <repo>-replicas)",
+        "status": {
+          "description": "Show managed replica sets: replicas, hosting nodes, fork datastores, snapshot, and refresh timestamps.",
+          "descriptionShort": "Show managed replica sets",
+          "nameOption": "Show one replica set by name"
+        }
       },
       "resize": {
         "completed": "크기 조정 완료",
@@ -1843,9 +1921,11 @@
     "cannotDeleteGrandRepo": "그랜드 리포지토리를 삭제할 수 없습니다: {{reason}}",
     "cannotPromote": "승격할 수 없습니다: {{reason}}",
     "cluster": {
+      "controlDsBackendInvalid": "--control-ds-backend must be local or ceph",
       "countInvalid": "--count는 음수가 아닌 정수여야 합니다",
       "dockerOnlyVerb": "\"repo {{verb}}\"는 Docker 저장소만 대상으로 하며 --cluster에 대해서는 실행할 수 없습니다. v1에는 이에 상응하는 Kubernetes 기능이 없습니다",
       "featureUnsupportedV1": "{{feature}}은(는) v1의 --cluster에서 지원되지 않습니다(컨트롤 노드 뷰); {{hint}}",
+      "forkWritesInvalid": "--writes must be local or ceph",
       "pendingContractRegen": "클러스터에서의 \"repo {{verb}}\"는 {{fn}}을 호출하지만, 이는 renet kube 계약 재생성(wave 5)을 기다리는 중입니다. 클러스터와 네임스페이스는 이미 해석되었으므로 계약이 반영되면 다시 실행하십시오.",
       "targetExclusive": "-m/--machine 또는 --cluster 중 하나만 지정하십시오. 둘 다 지정할 수 없습니다",
       "targetRequired": "대상 머신(-m) 또는 클러스터(--cluster)가 필요합니다"

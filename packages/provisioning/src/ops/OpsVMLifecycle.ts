@@ -66,7 +66,10 @@ export class OpsVMLifecycle {
     if (options.parallel) args.push('--parallel');
 
     console.warn('[OpsVMLifecycle] Starting VMs...');
-    const result = await this.commandRunner.runWithEnv(['up'], args, this.groupEnv, 600000); // 10 minute timeout
+    // 30 minutes: a ceph-pool topology bootstraps cephadm (mon+mgr+OSDs) inside `ops up`,
+    // which exceeds 10 minutes on loaded hosts — and startVMs({force}) recreates the VMs
+    // on every attempt, so a shorter cap makes ceph clusters unprovisionable rather than slow.
+    const result = await this.commandRunner.runWithEnv(['up'], args, this.groupEnv, 1_800_000);
 
     return {
       success: result.code === 0,

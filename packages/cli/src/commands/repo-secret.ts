@@ -93,10 +93,14 @@ function hashValue(s: string): string {
 }
 
 function buildSecretPointer(repoKey: string, secretKey: string): string {
-  // RFC 6901: escape `~` → `~0`, `/` → `~1` in segment values
-  const escapedRepo = repoKey.replaceAll('~', '~0').replaceAll('/', '~1');
-  const escapedSecret = secretKey.replaceAll('~', '~0').replaceAll('/', '~1');
-  return `/resources/repositories/${escapedRepo}/secrets/${escapedSecret}/value`;
+  // RFC 6901: escape `~` → `~0`, `/` → `~1` in segment values. v3 keys
+  // repositories by name into families of structural tags, so the composite
+  // `name:tag` key splits into the `<name>/tags/<tag>` path.
+  const escape = (s: string) => s.replaceAll('~', '~0').replaceAll('/', '~1');
+  const colon = repoKey.indexOf(':');
+  const base = colon === -1 ? repoKey : repoKey.slice(0, colon);
+  const tag = colon === -1 ? 'latest' : repoKey.slice(colon + 1);
+  return `/resources/repositories/${escape(base)}/tags/${escape(tag)}/secrets/${escape(secretKey)}/value`;
 }
 
 /**
@@ -234,7 +238,9 @@ async function handleSecretSet(options: SecretSetOptions): Promise<void> {
     await configService.getRepository(repoKey),
     options.key
   );
-  const config = await configService.getCurrent();
+  // Secret values are encrypted at rest (v3); the precondition gate needs the
+  // decrypted config so digestForPointer sees the real stored value.
+  const config = await configService.getDecryptedConfig();
   if (!config) throw new ValidationError(t('errors.config.noActiveConfig'));
 
   runMutationGate(
@@ -287,7 +293,7 @@ async function handleSecretUnset(options: SecretUnsetOptions): Promise<void> {
   }
 
   const pointer = buildSecretPointer(repoKey, options.key);
-  const config = await configService.getCurrent();
+  const config = await configService.getDecryptedConfig();
   if (!config) throw new ValidationError(t('errors.config.noActiveConfig'));
 
   runMutationGate(

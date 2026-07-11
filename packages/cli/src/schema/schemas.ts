@@ -1,29 +1,26 @@
 /**
- * Rediacc CLI config schema (v2).
+ * Rediacc CLI config schema (v3).
  *
  * Zod is the single source of truth for structure and validation. Sensitivity
  * annotations live in sensitivity.ts as a declarative registry keyed by JSON
  * Pointer template; the two must be kept in sync manually (CI gate
- * `check:ci-schema-coverage` — Step 15 — enforces this).
+ * `check:ci-schema-coverage`).
  *
- * Structure (top-level bucketing):
- *   schemaVersion (literal 2 discriminator)
- *   id, version (metadata)
- *   account?      — cloud/experimental credentials
- *   defaults?     — language, counters, user settings
- *   credentials?  — SSH keys, CF DNS token, master password verifier
- *   resources?    — machines, storages, repositories, deletedRepositories,
- *                   backupStrategies, cloudProviders
- *   infra?        — TLS email, DNS zone, ACME cert cache
- *   encryption?   — mode + per-field encryption-at-rest blobs
- *   remote?       — config store pointer
- *   renetPath?    — local binary override
+ * v3 splits the document into a SPEC half (declared intent — machines,
+ * datastores, repositories-as-families, clusters, providers, strategies) and a
+ * STATE half (`state`, runtime observations that must not bump the version
+ * counter or push to a remote store). Repositories are keyed by name into
+ * families of structural tags; per-field encryption-at-rest replaces the v2
+ * compound `/resources` blob (see services/config/resource-state.ts and
+ * adapters/config-field-crypto.ts).
  */
 
 import { isIP } from 'node:net';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { ValidationError } from '@rediacc/shared/errors';
+import { StateSchema } from './state-schema.js';
+import type { RdcState, AcmeCertCache, ReflogEntry, RepoRuntimeState } from './state-schema.js';
 
 // =============================================================================
 // Primitive validators
@@ -70,6 +67,17 @@ const resourceName = z
     'Must be lowercase alphanumeric with hyphens, starting and ending with alphanumeric'
   );
 
+/**
+ * Structural repository tag. ':' and '@' are structurally impossible in a key
+ * that matches this regex, which is the create-time validation for the tag
+ * position (06 §6.4) — composite `name:tag` keys can no longer exist.
+ */
+const TagName = z
+  .string()
+  .min(1)
+  .max(63)
+  .regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/, 'Tag must be lowercase alphanumeric with hyphens');
+
 const ipOrHostname = z
   .string()
   .min(1, 'IP address or hostname cannot be empty')
@@ -97,10 +105,14 @@ const uuid = z.uuid('Must be a valid UUID');
 // Encrypted-field blob (per-field encryption-at-rest)
 // =============================================================================
 
+/**
+ * A single AES-GCM ciphertext. `data` is the base64 of salt+iv+ciphertext+tag
+ * as produced by `nodeCryptoProvider.encrypt` (adapters/crypto.ts). v2 stored a
+ * single compound blob under the `/resources` pointer with a broken
+ * `nonce:tag:ciphertext` split; v3 stores one entry per concrete leaf pointer.
+ */
 const EncryptedBlobSchema = z.object({
-  ciphertext: z.string().min(1),
-  nonce: z.string().min(1),
-  tag: z.string().min(1),
+  data: z.string().min(1),
 });
 
 // =============================================================================
@@ -134,7 +146,7 @@ const CloudProviderConfigSchema = z.object({
 });
 
 // =============================================================================
-// Storage
+// Storage (rclone backup targets — disjoint from the `datastores` registry)
 // =============================================================================
 
 const StorageConfigSchema = z.object({
@@ -143,7 +155,7 @@ const StorageConfigSchema = z.object({
 });
 
 // =============================================================================
-// Repository (and archived repository)
+// Repository (families of structural tags) + per-repo secrets
 // =============================================================================
 
 // Per-repo secrets. Two delivery modes:
@@ -152,91 +164,134 @@ const StorageConfigSchema = z.object({
 //          target machine, referenced by Docker compose `secrets:` block.
 // Fork isolation: registerFork does NOT copy `secrets`; a fork's map is empty.
 const SECRET_KEY_REGEX = /^[A-Z][A-Z0-9_]*$/;
-const SECRET_VALUE_MAX_BYTES = 10 * 1024 * 1024;
 
-const SecretEntrySchema = z.object({
-  mode: z.enum(['env', 'file']),
-  value: z
-    .string()
-    .min(1, 'Secret value cannot be empty')
-    .max(SECRET_VALUE_MAX_BYTES, 'Secret value exceeds 10 MB cap'),
-});
+// Size caps (gate C11, merged with spec 05). The config file is atomically
+// rewritten and remote-pushed WHOLE on every mutation, and each mode
+// materializes as one k8s Secret object per repo namespace (~1 MiB apiserver
+// cap), so anything larger is a file the data plane should carry.
+export const SECRET_ENV_VALUE_MAX_BYTES = 32 * 1024; // 32 KiB per env value
+export const SECRET_FILE_VALUE_MAX_BYTES = 256 * 1024; // 256 KiB per file value
+export const SECRET_AGGREGATE_MAX_BYTES = 512 * 1024; // 512 KiB per repo per mode
 
-const SecretKeySchema = z
+export const SecretEntrySchema = z
+  .object({
+    mode: z.enum(['env', 'file']),
+    value: z.string().min(1, 'Secret value cannot be empty'),
+  })
+  .superRefine((entry, ctx) => {
+    const bytes = Buffer.byteLength(entry.value, 'utf8');
+    const cap = entry.mode === 'env' ? SECRET_ENV_VALUE_MAX_BYTES : SECRET_FILE_VALUE_MAX_BYTES;
+    if (bytes > cap) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['value'],
+        message: `Secret value is ${bytes} bytes; the ${entry.mode}-mode cap is ${cap} bytes. Carry larger payloads on the data plane, not in config.`,
+      });
+    }
+  });
+
+export const SecretKeySchema = z
   .string()
   .min(1)
   .max(64, 'Secret key must be 64 characters or fewer')
-  .regex(SECRET_KEY_REGEX, 'Secret key must be UPPER_SNAKE_CASE');
+  .regex(SECRET_KEY_REGEX, 'Secret key must be UPPER_SNAKE_CASE (uppercase letter then [A-Z0-9_])');
 
-const RepositoryConfigSchema = z.object({
+const SecretsRecordSchema = z.record(SecretKeySchema, SecretEntrySchema).superRefine((rec, ctx) => {
+  let envTotal = 0;
+  let fileTotal = 0;
+  for (const entry of Object.values(rec)) {
+    const bytes = Buffer.byteLength(entry.value, 'utf8');
+    if (entry.mode === 'env') envTotal += bytes;
+    else fileTotal += bytes;
+  }
+  if (envTotal > SECRET_AGGREGATE_MAX_BYTES) {
+    ctx.addIssue({
+      code: 'custom',
+      message: `env-mode secrets total ${envTotal} bytes; the per-repo aggregate cap is ${SECRET_AGGREGATE_MAX_BYTES} bytes.`,
+    });
+  }
+  if (fileTotal > SECRET_AGGREGATE_MAX_BYTES) {
+    ctx.addIssue({
+      code: 'custom',
+      message: `file-mode secrets total ${fileTotal} bytes; the per-repo aggregate cap is ${SECRET_AGGREGATE_MAX_BYTES} bytes.`,
+    });
+  }
+});
+
+/**
+ * On-disk repository record — one per structural tag. Runtime status
+ * (networkId, pushState, branching refs) has moved to `state.repos`; this
+ * record is the operator's declared intent only.
+ */
+const RepoRecordSchema = z.object({
   repositoryGuid: uuid,
-  tag: z.string().optional(),
   credential: z.string().optional(),
-  networkId: z.number().int().optional(),
   grandGuid: z.string().optional(),
   parentGuid: z.string().optional(),
   // Marks a fork read-only (refuses to mount on the machine). Producer:
-  // `repo fork --immutable` (and `repo commit` in Phase 2). The machine-side
-  // mirror is authoritative for enforcement; this is the config-side record.
+  // `repo fork --immutable`. The machine-side mirror is authoritative.
   immutable: z.boolean().optional(),
-  // Git-like branching (Phase 2). On a working fork, `headCommit` is the commit
-  // it currently sits on (its tip). Commit metadata is recorded for immutable
-  // commit entries. `branches` maps branch name -> tip commit GUID and
-  // `reflog` records tip moves; both are the config-side ref store (machine =
-  // object store, config = ref store).
-  headCommit: z.string().optional(),
-  commitMessage: z.string().optional(),
-  commitAuthor: z.string().optional(),
-  commitParent: z.string().optional(),
-  branches: z.record(z.string(), z.string()).optional(),
-  head: z.string().optional(),
-  reflog: z
-    .array(
-      z.object({
-        ref: z.string(),
-        from: z.string().optional(),
-        to: z.string(),
-        at: z.string(),
-        message: z.string().optional(),
-      })
-    )
-    .optional(),
   sshPrivateKey: z.string().optional(),
   sshPublicKey: z.string().optional(),
-  secrets: z.record(SecretKeySchema, SecretEntrySchema).optional(),
-  // Hands-free CoW-delta push tracking (Phase 3). Per destination machine, the
-  // GUID of an immutable image proven to live byte-identical on both ends (so a
-  // later push of a descendant can ship only changed extents with no operator
-  // flag), the last push time, and how the last push transferred. `verifiedBase`
-  // is set only for an immutable push, whose image stays byte-stable and is
-  // therefore a safe delta base; a mutable push records method/time only.
-  pushState: z
-    .record(
-      z.string(),
-      z.object({
-        verifiedBase: z.string().optional(),
-        lastPushAt: z.string(),
-        method: z.enum(['rsync', 'delta']),
-      })
-    )
-    .optional(),
+  secrets: SecretsRecordSchema.optional(),
 });
 
-// Archives intentionally OMIT secrets — archiveRepository scrubs them.
-const ArchivedRepositorySchema = RepositoryConfigSchema.omit({ secrets: true }).extend({
+// Placement (R2-F1): the two `repo create` flags, one-to-one.
+const PlacementSchema = z.union([
+  z.object({ datastore: resourceName }), // a NAMED datastore (registry entry)
+  z.object({ machine: resourceName }), // that machine's IMPLICIT default datastore
+]);
+
+const RepoFamilySchema = z.object({
+  // Optional ONLY for migrated configs; every derived-machine op REQUIRES it.
+  placement: PlacementSchema.optional(),
+  grand: TagName, // which tag key is the production line
+  tags: z.record(TagName, RepoRecordSchema),
+});
+
+// Archives OMIT secrets — archiveRepository scrubs them. `tag` splits out of
+// the v2 composite `name` string (migration transform 9).
+const ArchivedRepositorySchema = RepoRecordSchema.omit({ secrets: true }).extend({
   name: z.string(),
+  tag: z.string(),
   deletedAt: z.string(),
 });
 
 // =============================================================================
-// Machine (SSH + infra + ceph)
+// Datastore registry (NEW — named local/rbd pools; implicit defaults not here)
 // =============================================================================
 
-const CephConfigSchema = z.object({
-  pool: z.string(),
-  image: z.string(),
-  clusterName: z.string().optional(),
+const DatastoreBackendSchema = z.union([
+  z.object({
+    kind: z.literal('local'),
+    machine: resourceName, // the anchor; local datastores do not move
+    path: absolutePath,
+  }),
+  z.object({
+    kind: z.literal('rbd'), // RBD image; mobile among machines that reach its Ceph
+    pool: z.string().min(1),
+    image: z.string().min(1),
+  }),
+]);
+
+const DatastoreConfigSchema = z.object({
+  backend: DatastoreBackendSchema,
+  // Cluster backref (gate C7): top-level, orthogonal to the backend union.
+  // Set at `datastore create --cluster <name>`, immutable thereafter. Set =>
+  // kubernetes-world datastore; unset => docker-world datastore.
+  cluster: resourceName.optional(),
+  size: z.string().optional(),
+  parent: z
+    .object({
+      datastore: resourceName,
+      snapshot: z.string().optional(),
+    })
+    .optional(),
 });
+
+// =============================================================================
+// Machine (SSH + infra) — v2 `ceph` retired (Ceph is now a datastore backend)
+// =============================================================================
 
 const InfraConfigSchema = z.object({
   publicIPv4: z
@@ -252,9 +307,6 @@ const InfraConfigSchema = z.object({
   udpPorts: z.array(port).optional(),
 });
 
-// Backref stamped on machines that are cluster pool members. Names which
-// cluster and pool a materialized `<cluster>-<pool>-<n>` machine belongs to, so
-// scale/destroy can find members and every existing `-m` command still works.
 const MachineClusterRefSchema = z.object({
   cluster: resourceName,
   pool: resourceName,
@@ -264,10 +316,9 @@ const MachineConfigSchema = z.object({
   ip: ipOrHostname,
   user: z.string().min(1, 'SSH user cannot be empty'),
   port: port.optional(),
-  datastore: absolutePath.optional(),
+  datastore: absolutePath.optional(), // implicit default datastore mount path
   knownHosts: z.string().optional(),
   infra: InfraConfigSchema.optional(),
-  ceph: CephConfigSchema.optional(),
   backupStrategies: z.array(z.string()).optional(),
   cluster: MachineClusterRefSchema.optional(),
 });
@@ -307,24 +358,19 @@ const ClusterRegistrySchema = z.object({
   upstreams: z.array(z.string()).optional(),
 });
 
-// Non-secret Ceph reference: only the pool name. Keyrings + mon hosts stay
-// server-side (derived from ceph-pool members' private IPs), never in config.
 const ClusterCephRefSchema = z.object({
   pool: z.string().optional(),
 });
 
-// Local KVM topology. `renet ops` addresses VMs by numeric id within a libvirt
-// network, and `ops down` keys teardown off the same ids, so the allocation is
-// persisted here at create time rather than recomputed: a pool whose count later
-// changes must not renumber the VMs already booted.
+// Local KVM topology. `renet ops` addresses VMs by numeric id; `memberIds` (the
+// booted-VM allocation ledger) has moved to `state.clusters[*].memberIds` (R2-F2)
+// so per-boot allocation churn no longer bumps the version counter.
 const ClusterKvmSchema = z.object({
   netName: z.string().min(1),
   netBase: z.string().min(1),
   netOffset: z.number().int().min(0).optional(),
   controlId: z.number().int().min(1),
   dockerRegistry: z.string().optional(),
-  /** pool name -> the VM ids booted for it, in member order. */
-  memberIds: z.record(z.string(), z.array(z.number().int().min(1))).optional(),
 });
 
 const ClusterConfigSchema = z.object({
@@ -361,37 +407,26 @@ const BackupStrategyConfigSchema = z.object({
 });
 
 // =============================================================================
-// ACME cert cache
-// =============================================================================
-
-const AcmeCertCacheSchema = z.object({
-  baseDomain: z.string(),
-  updatedAt: z.string(),
-  sourceMachine: z.string(),
-  certCount: z.number().int(),
-  certs: z.record(z.string(), z.string()),
-  data: z.union([z.string(), z.array(z.string())]),
-  rawSize: z.number().int(),
-});
-
-// =============================================================================
-// Top-level buckets
+// Top-level buckets (spec half)
 // =============================================================================
 
 const AccountSchema = z.object({
   userEmail: z.string().optional(),
+  accountServer: z.string().optional(),
+  // team/region are retired cloud-adapter residue (R2-F9). The v2→v3 migration
+  // strips them and nothing repopulates them; kept optional only so the dead
+  // `config set/clear team|region` command surface compiles until P4 removes it.
   team: z.string().optional(),
   region: z.string().optional(),
-  accountServer: z.string().optional(),
 });
 
 const DefaultsSchema = z.object({
   language: z.string().optional(),
-  machine: z.string().optional(),
   universalUser: z.string().optional(),
   datastoreSize: z.string().optional(),
   pruneGraceDays: z.number().int().optional(),
-  nextNetworkId: z.number().int().optional(),
+  // Retired residue (R2-F9); see AccountSchema note. Migration strips it.
+  machine: z.string().optional(),
 });
 
 const SSHCredentialsSchema = z.object({
@@ -408,8 +443,9 @@ const CredentialsSchema = z.object({
 
 const ResourcesSchema = z.object({
   machines: z.record(resourceName, MachineConfigSchema).optional(),
+  datastores: z.record(resourceName, DatastoreConfigSchema).optional(),
   storages: z.record(resourceName, StorageConfigSchema).optional(),
-  repositories: z.record(z.string(), RepositoryConfigSchema).optional(),
+  repositories: z.record(resourceName, RepoFamilySchema).optional(),
   deletedRepositories: z.array(ArchivedRepositorySchema).optional(),
   backupStrategies: z.record(resourceName, BackupStrategyConfigSchema).optional(),
   cloudProviders: z.record(resourceName, CloudProviderConfigSchema).optional(),
@@ -419,7 +455,6 @@ const ResourcesSchema = z.object({
 const InfraTopSchema = z.object({
   certEmail: z.email().optional(),
   cfDnsZoneId: z.string().optional(),
-  acmeCertCache: z.record(z.string(), AcmeCertCacheSchema).optional(),
 });
 
 const EncryptionSchema = z.object({
@@ -437,21 +472,16 @@ const RemoteConfigSchema = z.object({
 });
 
 // =============================================================================
-// Top-level RdcConfig v2
+// Top-level RdcConfig v3
 // =============================================================================
 
 /**
- * Top-level RdcConfig (v2).
- *
- * `.loose()` preserves unknown top-level keys instead of stripping them.
- * This is forward-compatible — a newer CLI may add fields that this CLI
- * doesn't understand, and we don't want to silently drop them when an
- * older CLI loads and re-saves the config. Per-field validation still
- * applies to every declared key; unknown keys round-trip untouched.
+ * `.loose()` preserves unknown top-level keys instead of stripping them, so a
+ * newer CLI's additions round-trip through an older CLI untouched.
  */
 export const RdcConfigSchema = z
   .object({
-    schemaVersion: z.literal(2),
+    schemaVersion: z.literal(3),
     id: uuid,
     version: z.number().int().min(1),
     account: AccountSchema.optional(),
@@ -462,14 +492,20 @@ export const RdcConfigSchema = z
     encryption: EncryptionSchema.optional(),
     remote: RemoteConfigSchema.optional(),
     renetPath: z.string().optional(),
+    state: StateSchema.optional(),
   })
   .loose();
+
+// =============================================================================
+// Types
+// =============================================================================
 
 export type RdcConfig = z.infer<typeof RdcConfigSchema>;
 export type MachineConfig = z.infer<typeof MachineConfigSchema>;
 export type StorageConfig = z.infer<typeof StorageConfigSchema>;
-export type RepositoryConfig = z.infer<typeof RepositoryConfigSchema>;
-export type ArchivedRepository = z.infer<typeof ArchivedRepositorySchema>;
+export type Placement = z.infer<typeof PlacementSchema>;
+export type RepoRecord = z.infer<typeof RepoRecordSchema>;
+export type RepoFamily = z.infer<typeof RepoFamilySchema>;
 export type SecretEntry = z.infer<typeof SecretEntrySchema>;
 export type SecretMode = SecretEntry['mode'];
 export type InfraConfig = z.infer<typeof InfraConfigSchema>;
@@ -480,18 +516,42 @@ export type ClusterConfig = z.infer<typeof ClusterConfigSchema>;
 export type ClusterPool = z.infer<typeof ClusterPoolSchema>;
 export type ClusterKvm = z.infer<typeof ClusterKvmSchema>;
 export type ClusterPoolRole = ClusterPool['role'];
-export type AcmeCertCache = z.infer<typeof AcmeCertCacheSchema>;
 export type RemoteConfig = z.infer<typeof RemoteConfigSchema>;
 export type EncryptedBlob = z.infer<typeof EncryptedBlobSchema>;
 export type EncryptionState = z.infer<typeof EncryptionSchema>;
+export type { RdcState, AcmeCertCache };
+
+/**
+ * Flattened in-memory repository view. `ResourceState` presents repositories to
+ * the command layer keyed by the legacy composite `name` / `name:tag` string
+ * with spec (RepoRecord) and status (state.repos) fields merged, so command
+ * consumers compile unchanged while the on-disk shape is v3 families + state.
+ * The command layer's own reshape to the structural view is P4.
+ */
+export type RepositoryConfig = RepoRecord & {
+  tag?: string;
+  placement?: Placement;
+  networkId?: number;
+  registryPort?: number;
+  pushState?: RepoRuntimeState['pushState'];
+  headCommit?: string;
+  commitMessage?: string;
+  commitAuthor?: string;
+  commitParent?: string;
+  head?: string;
+  branches?: Record<string, string>;
+  reflog?: ReflogEntry[];
+};
+
+export type ArchivedRepository = z.infer<typeof ArchivedRepositorySchema>;
 
 // =============================================================================
-// Create an empty v2 config
+// Create an empty v3 config
 // =============================================================================
 
 export function createEmptyRdcConfig(): RdcConfig {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     id: randomUUID(),
     version: 1,
     defaults: { language: 'en', datastoreSize: '95%' },
@@ -526,10 +586,11 @@ export function parseConfig<T>(schema: z.ZodType<T>, data: unknown, context: str
 }
 
 // =============================================================================
-// Deterministic JSON key ordering for v2 config
+// Deterministic JSON key ordering for v3 config
 // =============================================================================
 
-const CONFIG_KEY_ORDER_V2 = [
+// Spec half first, `state` last (R2-F8: diffs read spec-first).
+const CONFIG_KEY_ORDER_V3 = [
   'schemaVersion',
   'id',
   'version',
@@ -541,6 +602,7 @@ const CONFIG_KEY_ORDER_V2 = [
   'encryption',
   'remote',
   'renetPath',
+  'state',
 ] as const;
 
 function orderedReplacer(this: unknown, _key: string, value: unknown): unknown {
@@ -550,7 +612,7 @@ function orderedReplacer(this: unknown, _key: string, value: unknown): unknown {
   const isRootConfig = 'schemaVersion' in obj && 'id' in obj && 'version' in obj;
   let sortedKeys: string[];
   if (isRootConfig) {
-    const orderMap = new Map<string, number>(CONFIG_KEY_ORDER_V2.map((k, i) => [k, i]));
+    const orderMap = new Map<string, number>(CONFIG_KEY_ORDER_V3.map((k, i) => [k, i]));
     const inOrder = keys
       .filter((k) => orderMap.has(k))
       .sort((a, b) => orderMap.get(a)! - orderMap.get(b)!);

@@ -17,7 +17,7 @@ import { listSensitivityTemplates, SENSITIVITY_REGISTRY } from '../sensitivity.j
 
 describe('walker', () => {
   const sampleConfig = {
-    schemaVersion: 2 as const,
+    schemaVersion: 3 as const,
     id: '00000000-0000-0000-0000-000000000001',
     version: 1,
     account: {
@@ -44,12 +44,17 @@ describe('walker', () => {
         },
       },
       repositories: {
-        'app:latest': {
-          repositoryGuid: '00000000-0000-0000-0000-aaaaaaaaaaaa',
-          credential: 'luks-passphrase',
-          secrets: {
-            STRIPE_KEY: { mode: 'env' as const, value: 'sk_live_xxx' },
-            DKIM_PRIVATE: { mode: 'file' as const, value: '-----BEGIN KEY-----\nABC\n' },
+        app: {
+          grand: 'latest',
+          tags: {
+            latest: {
+              repositoryGuid: '00000000-0000-0000-0000-aaaaaaaaaaaa',
+              credential: 'luks-passphrase',
+              secrets: {
+                STRIPE_KEY: { mode: 'env' as const, value: 'sk_live_xxx' },
+                DKIM_PRIVATE: { mode: 'file' as const, value: '-----BEGIN KEY-----\nABC\n' },
+              },
+            },
           },
         },
       },
@@ -75,8 +80,8 @@ describe('walker', () => {
     expect(pointers).toContain('/resources/machines/web-1/user');
     expect(pointers).toContain('/resources/machines/web-2/ip');
     expect(pointers).toContain('/resources/storages/s3-prod/vaultContent');
-    expect(pointers).toContain('/resources/repositories/app:latest/credential');
-    expect(pointers).toContain('/resources/repositories/app:latest/repositoryGuid');
+    expect(pointers).toContain('/resources/repositories/app/tags/latest/credential');
+    expect(pointers).toContain('/resources/repositories/app/tags/latest/repositoryGuid');
   });
 
   it('redactClone replaces sensitive values with stubs', () => {
@@ -86,7 +91,7 @@ describe('walker', () => {
     expect(redacted.account.token).toMatch(/^<redacted:secret>:[0-9a-f]{8}$/);
     expect(redacted.resources.machines['web-1'].ip).toMatch(/^<redacted:pii>:[0-9a-f]{8}$/);
     // Public fields remain as-is.
-    expect(redacted.schemaVersion).toBe(2);
+    expect(redacted.schemaVersion).toBe(3);
     expect(redacted.version).toBe(1);
     expect(redacted.resources.machines['web-1'].port).toBe(22);
   });
@@ -171,10 +176,10 @@ describe('walker', () => {
   it('per-repo secret values walk as kind=secret; modes walk as kind=public', () => {
     const entries = Array.from(walkSensitive(sampleConfig));
     const stripeValue = entries.find(
-      (e) => e.pointer === '/resources/repositories/app:latest/secrets/STRIPE_KEY/value'
+      (e) => e.pointer === '/resources/repositories/app/tags/latest/secrets/STRIPE_KEY/value'
     );
     const stripeMode = entries.find(
-      (e) => e.pointer === '/resources/repositories/app:latest/secrets/STRIPE_KEY/mode'
+      (e) => e.pointer === '/resources/repositories/app/tags/latest/secrets/STRIPE_KEY/mode'
     );
     expect(stripeValue?.meta.kind).toBe('secret');
     expect(stripeMode?.meta.kind).toBe('public');
@@ -182,7 +187,7 @@ describe('walker', () => {
 
   it('redactClone redacts secret values but leaves modes plaintext', () => {
     const redacted = redactClone(sampleConfig);
-    const repo = redacted.resources.repositories['app:latest'];
+    const repo = redacted.resources.repositories.app.tags.latest;
     expect(repo.secrets.STRIPE_KEY.value).toMatch(/^<redacted:secret>:[0-9a-f]{8}$/);
     expect(repo.secrets.STRIPE_KEY.mode).toBe('env');
     expect(repo.secrets.DKIM_PRIVATE.value).toMatch(/^<redacted:secret>:[0-9a-f]{8}$/);
@@ -191,24 +196,24 @@ describe('walker', () => {
 
   it('pathsToCommit includes secret values, excludes modes (public)', () => {
     const paths = pathsToCommit(sampleConfig);
-    expect(paths).toContain('/resources/repositories/app:latest/secrets/STRIPE_KEY/value');
-    expect(paths).not.toContain('/resources/repositories/app:latest/secrets/STRIPE_KEY/mode');
+    expect(paths).toContain('/resources/repositories/app/tags/latest/secrets/STRIPE_KEY/value');
+    expect(paths).not.toContain('/resources/repositories/app/tags/latest/secrets/STRIPE_KEY/mode');
   });
 
   it('digestForPointer is stable for nested secret pointers', () => {
     const a = digestForPointer(
       sampleConfig,
-      '/resources/repositories/app:latest/secrets/STRIPE_KEY/value'
+      '/resources/repositories/app/tags/latest/secrets/STRIPE_KEY/value'
     );
     const b = digestForPointer(
       sampleConfig,
-      '/resources/repositories/app:latest/secrets/STRIPE_KEY/value'
+      '/resources/repositories/app/tags/latest/secrets/STRIPE_KEY/value'
     );
     expect(a).toBe(b);
     expect(a).toMatch(/^[0-9a-f]{64}$/);
     const other = digestForPointer(
       sampleConfig,
-      '/resources/repositories/app:latest/secrets/DKIM_PRIVATE/value'
+      '/resources/repositories/app/tags/latest/secrets/DKIM_PRIVATE/value'
     );
     expect(a).not.toBe(other);
   });

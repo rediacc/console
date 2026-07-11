@@ -14,6 +14,7 @@ import {
 } from '../../remote/vscode/index.js';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
+import type { RdcState } from '../../schema/state-schema.js';
 import type {
   ArchivedRepository,
   BackupStrategyConfig,
@@ -32,8 +33,10 @@ import {
   assertUniqueName,
   listClustersFromConfig,
   removeClusterFromStore,
+  removeCloudProviderFromStore,
   updateClusterInStore,
   writeClusterToStore,
+  writeCloudProviderToStore,
 } from './config-cluster-logic.js';
 import { allocateNetworkIdInStore } from './config-network-id.js';
 import {
@@ -73,6 +76,8 @@ class ConfigService extends ConfigServiceBase {
     datastoreSize?: string;
   }> {
     const config = await this.requireSelfHosted();
+    // cfDnsApiToken is encrypted at rest (v3); read it from a decrypted view.
+    const decrypted = (await this.getDecryptedConfig()) ?? config;
     const state = await this.getResourceState();
     const machines = state.getMachines();
     const configName = this.getEffectiveConfigName();
@@ -112,7 +117,7 @@ class ConfigService extends ConfigServiceBase {
       sshPrivateKey,
       sshPublicKey,
       renetPath: config.renetPath ?? DEFAULTS.CONTEXT.RENET_BINARY,
-      cfDnsApiToken: config.credentials?.cfDnsApiToken,
+      cfDnsApiToken: decrypted.credentials?.cfDnsApiToken,
       cfDnsZoneId: config.infra?.cfDnsZoneId,
       certEmail: config.infra?.certEmail,
       datastoreSize: config.defaults?.datastoreSize,
@@ -214,6 +219,21 @@ class ConfigService extends ConfigServiceBase {
     await state.setMachines(machines);
   }
 
+  /**
+   * Write one key of the v3 `state` bucket (the STATUS half). All writers flow
+   * through `updateState`, which never bumps the version counter (R2-F2), so a
+   * cert refresh / replica-set record / canary record never dirties the
+   * remote-push document.
+   */
+  async setStateBucket<K extends keyof RdcState>(key: K, value: RdcState[K]): Promise<void> {
+    const name = this.getEffectiveConfigName();
+    await this.requireSelfHosted(name);
+    await configFileStorage.updateState(name, (cfg) => ({
+      ...cfg,
+      state: { ...(cfg.state ?? {}), [key]: value },
+    }));
+  }
+
   async setRenetPath(renetPath: string): Promise<void> {
     const name = this.getEffectiveConfigName();
     await this.requireSelfHosted(name);
@@ -224,11 +244,6 @@ class ConfigService extends ConfigServiceBase {
     cfDnsApiToken?: string;
     cfDnsZoneId?: string;
     certEmail?: string;
-    acmeCertCache?: RdcConfig['infra'] extends infer I
-      ? I extends { acmeCertCache?: infer A }
-        ? A
-        : never
-      : never;
   }): Promise<void> {
     const name = this.getEffectiveConfigName();
     await this.requireSelfHosted(name);
@@ -242,7 +257,6 @@ class ConfigService extends ConfigServiceBase {
         ...(cfg.infra ?? {}),
         ...('cfDnsZoneId' in updates ? { cfDnsZoneId: updates.cfDnsZoneId } : {}),
         ...('certEmail' in updates ? { certEmail: updates.certEmail } : {}),
-        ...('acmeCertCache' in updates ? { acmeCertCache: updates.acmeCertCache } : {}),
       },
     }));
   }
@@ -407,11 +421,19 @@ class ConfigService extends ConfigServiceBase {
     // deploy-time secrets are out of scope and would otherwise survive a
     // delete-then-restore cycle. ArchivedRepositorySchema.omit({secrets})
     // mirrors this at the schema layer.
-    const scrubbed = { ...repos[repoName] };
-    delete scrubbed.secrets;
+    // v3 archives are RepoRecord (minus secrets) plus {name, tag, deletedAt}.
+    // Runtime status riding along is harmless (stripped by the archive schema on
+    // reload); `secrets` is scrubbed here so it never survives delete-restore.
+    const rec = repos[repoName];
+    const colon = repoName.indexOf(':');
+    const base = colon === -1 ? repoName : repoName.slice(0, colon);
+    const tag = rec.tag ?? (colon === -1 ? DEFAULTS.REPOSITORY.TAG : repoName.slice(colon + 1));
+    const { secrets: _secrets, ...record } = rec;
+    void _secrets;
     const archived: ArchivedRepository = {
-      ...scrubbed,
-      name: repoName,
+      ...record,
+      name: base,
+      tag,
       deletedAt: new Date().toISOString(),
     };
 
@@ -568,24 +590,13 @@ class ConfigService extends ConfigServiceBase {
   async addCloudProvider(name: string, config: CloudProviderConfig): Promise<void> {
     const configName = this.getEffectiveConfigName();
     await this.requireSelfHosted(configName);
-    await configFileStorage.update(configName, (cfg) => ({
-      ...cfg,
-      resources: {
-        ...(cfg.resources ?? {}),
-        cloudProviders: { ...(cfg.resources?.cloudProviders ?? {}), [name]: config },
-      },
-    }));
+    await writeCloudProviderToStore(configName, name, config);
   }
 
   async removeCloudProvider(name: string): Promise<void> {
     const configName = this.getEffectiveConfigName();
     await this.requireSelfHosted(configName);
-    await configFileStorage.update(configName, (cfg) => {
-      const providers = { ...(cfg.resources?.cloudProviders ?? {}) };
-      if (!(name in providers)) throw new Error(`Cloud provider "${name}" not found`);
-      delete providers[name];
-      return { ...cfg, resources: { ...(cfg.resources ?? {}), cloudProviders: providers } };
-    });
+    await removeCloudProviderFromStore(configName, name);
   }
 
   async listCloudProviders(): Promise<{ name: string; config: CloudProviderConfig }[]> {

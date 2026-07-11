@@ -74,6 +74,8 @@ export const CMD = {
   CLUSTER_INSTALL: 'cluster install',
   CLUSTER_FORK: 'cluster fork',
   CLUSTER_MIGRATE: 'cluster migrate',
+  CLUSTER_JOIN: 'cluster join',
+  CLUSTER_EVICT: 'cluster evict',
 } as const;
 
 export type CommandPath = (typeof CMD)[keyof typeof CMD];

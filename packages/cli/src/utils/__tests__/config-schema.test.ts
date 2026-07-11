@@ -236,14 +236,20 @@ describe('config-schema', () => {
       expect(SecretEntrySchema.safeParse({ mode: 'env', value: '' }).success).toBe(false);
     });
 
-    it('rejects value over 10 MB', () => {
-      const tooBig = 'a'.repeat(10 * 1024 * 1024 + 1);
+    it('rejects an env value over the 32 KiB env cap', () => {
+      const tooBig = 'a'.repeat(32 * 1024 + 1);
       expect(SecretEntrySchema.safeParse({ mode: 'env', value: tooBig }).success).toBe(false);
     });
 
-    it('accepts value of exactly 10 MB', () => {
-      const atCap = 'a'.repeat(10 * 1024 * 1024);
+    it('accepts an env value at exactly the 32 KiB env cap', () => {
+      const atCap = 'a'.repeat(32 * 1024);
       expect(SecretEntrySchema.safeParse({ mode: 'env', value: atCap }).success).toBe(true);
+    });
+
+    it('accepts a larger file value up to the 256 KiB file cap', () => {
+      const fileValue = 'a'.repeat(200 * 1024);
+      expect(SecretEntrySchema.safeParse({ mode: 'file', value: fileValue }).success).toBe(true);
+      expect(SecretEntrySchema.safeParse({ mode: 'env', value: fileValue }).success).toBe(false);
     });
   });
 

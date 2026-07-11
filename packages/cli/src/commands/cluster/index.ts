@@ -8,7 +8,12 @@ import {
   installCluster,
   scaleCluster,
 } from '../../services/cluster/cluster-provision.js';
-import { forkCluster, migrateCluster } from '../../services/cluster/cluster-kube.js';
+import {
+  forkCluster,
+  migrateCluster,
+  rehearseCluster,
+} from '../../services/cluster/cluster-kube.js';
+import { evictCluster, joinCluster } from '../../services/cluster/cluster-membership.js';
 import {
   fetchAndCacheKubeconfig,
   kubeconfigCachePath,
@@ -30,15 +35,41 @@ function registerCreate(cluster: Command): void {
     .requiredOption('--name <name>', t('commands.cluster.create.nameOption'))
     .option('--ssh-user <user>', t('commands.cluster.create.sshUserOption'))
     .option('--base-domain <domain>', t('commands.cluster.create.baseDomainOption'))
+    .option('--control-ds-size <size>', t('commands.cluster.create.controlDsSizeOption'))
+    .option('--control-ds-backend <backend>', t('commands.cluster.create.controlDsBackendOption'))
+    .option('--control-ds-pool <pool>', t('commands.cluster.create.controlDsPoolOption'))
     .option('--debug', t('options.debug'))
-    .action(async (options: { name: string; sshUser?: string; baseDomain?: string } & DebugOpt) => {
-      await assertCommandPolicy(CMD.CLUSTER_CREATE, undefined, options.name);
-      await createCluster(options.name, {
-        sshUser: options.sshUser,
-        baseDomain: options.baseDomain,
-        debug: options.debug,
-      });
-    });
+    .action(
+      async (
+        options: {
+          name: string;
+          sshUser?: string;
+          baseDomain?: string;
+          controlDsSize?: string;
+          controlDsBackend?: string;
+          controlDsPool?: string;
+        } & DebugOpt
+      ) => {
+        await assertCommandPolicy(CMD.CLUSTER_CREATE, undefined, options.name);
+        if (
+          options.controlDsBackend &&
+          options.controlDsBackend !== 'local' &&
+          options.controlDsBackend !== 'ceph'
+        ) {
+          throw new ValidationError(t('errors.cluster.controlDsBackendInvalid'));
+        }
+        await createCluster(options.name, {
+          sshUser: options.sshUser,
+          baseDomain: options.baseDomain,
+          controlDs: {
+            size: options.controlDsSize,
+            backend: options.controlDsBackend as 'local' | 'ceph' | undefined,
+            pool: options.controlDsPool,
+          },
+          debug: options.debug,
+        });
+      }
+    );
 }
 
 function registerStatus(cluster: Command): void {
@@ -146,15 +177,32 @@ function registerForkMigrate(cluster: Command): void {
     .requiredOption('--name <name>', t('commands.cluster.fork.nameOption'))
     .requiredOption('--tag <tag>', t('commands.cluster.fork.tagOption'))
     .option('--cluster <dest>', t('commands.cluster.fork.clusterOption'))
+    .option('--writes <disposition>', t('commands.cluster.fork.writesOption'))
+    .option('--up', t('commands.cluster.fork.upOption'))
     .option('--debug', t('options.debug'))
-    .action(async (options: { name: string; tag: string; cluster?: string } & DebugOpt) => {
-      await assertCommandPolicy(CMD.CLUSTER_FORK, undefined, options.name);
-      await forkCluster(options.name, {
-        tag: options.tag,
-        cluster: options.cluster,
-        debug: options.debug,
-      });
-    });
+    .action(
+      async (
+        options: {
+          name: string;
+          tag: string;
+          cluster?: string;
+          writes?: string;
+          up?: boolean;
+        } & DebugOpt
+      ) => {
+        await assertCommandPolicy(CMD.CLUSTER_FORK, undefined, options.name);
+        if (options.writes && options.writes !== 'local' && options.writes !== 'ceph') {
+          throw new ValidationError(t('errors.cluster.forkWritesInvalid'));
+        }
+        await forkCluster(options.name, {
+          tag: options.tag,
+          cluster: options.cluster,
+          writes: options.writes as 'local' | 'ceph' | undefined,
+          up: options.up,
+          debug: options.debug,
+        });
+      }
+    );
 
   cluster
     .command('migrate')
@@ -166,6 +214,51 @@ function registerForkMigrate(cluster: Command): void {
     .action(async (options: { name: string; to: string } & DebugOpt) => {
       await assertCommandPolicy(CMD.CLUSTER_MIGRATE, undefined, options.name);
       await migrateCluster(options.name, { to: options.to, debug: options.debug });
+    });
+
+  cluster
+    .command('rehearse')
+    .summary(t('commands.cluster.rehearse.descriptionShort'))
+    .description(t('commands.cluster.rehearse.description'))
+    .requiredOption('--name <name>', t('commands.cluster.rehearse.nameOption'))
+    .requiredOption('--cluster <dest>', t('commands.cluster.rehearse.clusterOption'))
+    .option('--tag <tag>', t('commands.cluster.rehearse.tagOption'))
+    .option('--debug', t('options.debug'))
+    .action(async (options: { name: string; cluster: string; tag?: string } & DebugOpt) => {
+      // Rehearse composes a fork; gate it under the same policy as cluster fork.
+      await assertCommandPolicy(CMD.CLUSTER_FORK, undefined, options.name);
+      await rehearseCluster(options.name, {
+        cluster: options.cluster,
+        tag: options.tag,
+        debug: options.debug,
+      });
+    });
+}
+
+function registerMembership(cluster: Command): void {
+  cluster
+    .command('join')
+    .summary(t('commands.cluster.join.descriptionShort'))
+    .description(t('commands.cluster.join.description'))
+    .requiredOption('--machine <name>', t('commands.cluster.join.machineOption'))
+    .requiredOption('--cluster <name>', t('commands.cluster.join.clusterOption'))
+    .option('--debug', t('options.debug'))
+    .action(async (options: { machine: string; cluster: string } & DebugOpt) => {
+      await assertCommandPolicy(CMD.CLUSTER_JOIN, undefined, options.cluster);
+      await joinCluster(options.machine, { cluster: options.cluster, debug: options.debug });
+    });
+
+  cluster
+    .command('evict')
+    .summary(t('commands.cluster.evict.descriptionShort'))
+    .description(t('commands.cluster.evict.description'))
+    .requiredOption('--machine <name>', t('commands.cluster.evict.machineOption'))
+    .option('--force', t('commands.cluster.evict.forceOption'))
+    .option('--debug', t('options.debug'))
+    .action(async (options: { machine: string; force?: boolean } & DebugOpt) => {
+      const target = await configService.getLocalMachine(options.machine);
+      await assertCommandPolicy(CMD.CLUSTER_EVICT, undefined, target.cluster?.cluster);
+      await evictCluster(options.machine, { force: options.force, debug: options.debug });
     });
 }
 
@@ -182,4 +275,5 @@ export function registerClusterCommands(program: Command): void {
   registerDestroy(cluster);
   registerKubeconfig(cluster);
   registerForkMigrate(cluster);
+  registerMembership(cluster);
 }
