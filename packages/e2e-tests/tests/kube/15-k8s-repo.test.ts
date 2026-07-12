@@ -52,7 +52,6 @@ const SC = `rediacc-ds-${DATA_DS}`; // the repo's no-provisioner StorageClass
 const APP_SECRET_VALUE = 's3cr3t-prod';
 const FORK_REPO = `${REPO}-joseph`;
 const FORK_NET = '2944';
-const FORK_NS = FORK_REPO;
 
 // The kube repo's declared app: an annotated ClusterIP Service (routable), a PVC
 // naming the repo's rediacc StorageClass (the F5 hazard guard — a PVC that omits
@@ -100,12 +99,18 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
         seccompProfile:
           type: RuntimeDefault
       containers:
         - name: web
           image: busybox:1.36
           command: ["sh", "-c", "test -s /data/marker.txt || echo original-data > /data/marker.txt; exec tail -f /dev/null"]
+          envFrom:
+            - secretRef:
+                name: rediacc-env
+                optional: true
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -190,7 +195,50 @@ test.describe
           `--name ${name} --datastore ${DATA_MOUNT} --network-id ${REPO_NET}`
       );
 
+    // A stopped k3s node leaves KERNEL mounts behind in TWO places: submounts UNDER
+    // the datastore mount (kubelet pod volumes) and containerd overlays mounted at
+    // /run/k3s/containerd/... whose lowerdir/upperdir point INTO the datastore (they
+    // hold it busy from OUTSIDE its path). `kube uninstall` (cgroup-kill) unwinds
+    // neither, so the datastore release is then CORRECTLY refused by the
+    // no-lazy-success guard (spec 03 §2b, "target is busy"). The suite unwinds what
+    // it created; the missing product porcelain is gate finding #20 (4 witnesses).
+    //
+    // Shell form: executeViaBridge relays through THREE shells and escapeForNestedSSH
+    // does NOT escape `$`, so this stays variable-free (a `$(...)` would be expanded
+    // on the LOCAL host). Excluding `^<root>/` from the outside-holder branch keeps a
+    // SIBLING datastore (a prefix match) out of the list.
+    const unwindSubmounts = async (runner: BridgeTestRunner, mount: string): Promise<void> => {
+      const root = mount.replace(/\/[^/]+$/, '');
+      const select =
+        `{ cut -d" " -f2 /proc/mounts | grep "^${mount}/"; ` +
+        `grep -F "${mount}" /proc/mounts | cut -d" " -f2 | grep -v "^${root}/"; } | sort -ru`;
+      const res = await runner.executeViaBridge(
+        `sudo bash -c 'for i in 1 2 3; do ${select} | xargs -r -n1 umount 2>/dev/null; ${select} | xargs -r -n1 umount -l 2>/dev/null; sleep 1; done; udevadm settle 2>/dev/null; ` +
+          `sync; echo REMAINING_HOLDERS:; ${select}'; true`
+      );
+      process.stdout.write(`[suite15 unwind ${mount}] ${res.stdout.trim().replace(/\n/g, ' | ')}\n`);
+    };
+
+    // Every mountpoint the PRODUCT owns under the repo folder (the per-volume LUKS
+    // mounts). `repository down` must leave none (CT-07 converge, no leak).
+    const repoVolumeMounts = async (): Promise<string[]> => {
+      const res = await w1.executeViaBridge(
+        `grep -F "${DATA_MOUNT}/repos/" /proc/mounts | cut -d" " -f2 || true`
+      );
+      return res.stdout.split('\n').map((l) => l.trim()).filter(Boolean);
+    };
+
+    // `renet kube install` auto-starts the node CSI units (rediacc-csi / -provisioner
+    // / -snapshotter) as HOST daemons whose socket + state live INSIDE the datastore,
+    // and NO verb ever stops them (`renet kube csi-node-down` exists with zero
+    // callers) → every storage release hits EBUSY with no mount holder to find. Gate
+    // finding #26. The suite stops what the product started.
+    const csiNodeDown = async (runner: BridgeTestRunner): Promise<void> => {
+      await runner.executeViaBridge('sudo renet kube csi-node-down 2>/dev/null; true');
+    };
+
     const teardownAll = async (): Promise<void> => {
+      await csiNodeDown(w1);
       // Repos down first (releases the LUKS volume mounts), then the fork, then
       // the cluster + datastores. Every step tolerates already-absent state.
       for (const [n, net] of [
@@ -329,11 +377,15 @@ test.describe
       );
       expect(vap.code, vap.stderr).toBe(0);
 
-      // (4) no-provisioner StorageClass: Retain + WaitForFirstConsumer.
-      const scJson = await kubectl(`get storageclass ${SC} -o json`);
-      expect(scJson.stdout).toContain('"provisioner":"kubernetes.io/no-provisioner"');
-      expect(scJson.stdout).toContain('"reclaimPolicy":"Retain"');
-      expect(scJson.stdout).toContain('"volumeBindingMode":"WaitForFirstConsumer"');
+      // (4) no-provisioner StorageClass: Retain + WaitForFirstConsumer. Read each
+      // field via jsonpath (compact, exact) — `-o json` pretty-prints with `": "`
+      // so a compact `"key":"value"` substring never matches.
+      const scProvisioner = await kubectl(`get storageclass ${SC} -o jsonpath="{.provisioner}"`);
+      expect(scProvisioner.stdout.trim()).toBe('kubernetes.io/no-provisioner');
+      const scReclaim = await kubectl(`get storageclass ${SC} -o jsonpath="{.reclaimPolicy}"`);
+      expect(scReclaim.stdout.trim()).toBe('Retain');
+      const scVbm = await kubectl(`get storageclass ${SC} -o jsonpath="{.volumeBindingMode}"`);
+      expect(scVbm.stdout.trim()).toBe('WaitForFirstConsumer');
 
       // (5)+(6) the declared volume's local PV bound to the PVC.
       expect(
@@ -384,53 +436,47 @@ test.describe
       expect(defaultSc.stdout).not.toContain(SC);
     });
 
-    test('6. LOCAL-tier fork is a reflink repo fork: instant, data diverges, parent untouched', async () => {
-      // A datastore-level fork of a LOCAL datastore is refused (gate C8) — repos
-      // fork individually by reflink. So fork the repo, then bring the fork up.
-      const t0 = Date.now();
+    test('6. `repository fork` on a kube repo is REFUSED (CT-11 wrong-runtime guard)', async () => {
+      // TODAY'S contract (F1 gate ruling → P4 work item): a kube repo (on a
+      // cluster-attached datastore) has NO `repository fork` path. The docker
+      // reflink+identity-rewrite fork would skip the kube fork-hygiene pipeline
+      // (secret scrub, ROLE rewrite, manifest re-render — the F1/F2 blockers), so
+      // the CT-11 guard refuses it fail-loud. Kube-repo/cluster fork DIVERGENCE is
+      // proven in suites 16/17 via the datastore/cluster group-snap fork path.
+      // When P4 implements the kube arm of `repo fork` per design 06 §3 (clone the
+      // repo folder + volumes + re-render manifests), this flips back to a
+      // positive divergence proof.
       const fork = await w1.executeViaBridge(
         `sudo renet repository fork --name ${REPO} --tag ${FORK_REPO} --datastore ${DATA_MOUNT} --network-id ${FORK_NET}`
       );
-      expect(fork.code, fork.stderr).toBe(0);
-      const forkMs = Date.now() - t0;
-      // Constant-time CoW reflink: near-instant regardless of volume size.
-      process.stdout.write(`[suite15] reflink repo fork wall-time: ${forkMs}ms\n`);
-      expect(forkMs).toBeLessThan(60_000);
-
-      const up = await w1.executeViaBridge(
-        `sudo renet repository up --name ${FORK_REPO} --datastore ${DATA_MOUNT} --network-id ${FORK_NET}`
-      );
-      expect(up.code, up.stderr).toBe(0);
-
-      // Fork pod comes up carrying the parent's CoW data.
-      expect(await poll(() => podRunning(FORK_NS), 120_000)).toBe(true);
-      expect(await marker(FORK_NS)).toBe('original-data');
-
-      // Divergence: write to the fork, assert the parent is untouched.
-      const wrote = await kubectl(
-        `-n ${FORK_NS} exec deploy/web -- sh -c "echo forked-data > /data/marker.txt"`
-      );
-      expect(wrote.code).toBe(0);
-      expect(await marker(FORK_NS)).toBe('forked-data');
+      expect(fork.code, `expected CT-11 refusal, got success: ${fork.stdout}`).not.toBe(0);
+      expect(fork.stderr + fork.stdout).toContain('cluster-attached datastore');
+      // Parent is untouched by the refused fork.
       expect(await marker(NS)).toBe('original-data');
     });
 
     test('7. teardown: repository down (no leak) + cluster + datastores + dummy interface removed', async () => {
       // repository down releases the per-volume LUKS mounts (CT-07 converge, no
-      // leak). Fork first, then parent.
-      for (const [n, net] of [
-        [FORK_REPO, FORK_NET],
-        [REPO, REPO_NET],
-      ] as const) {
-        const down = await w1.executeViaBridge(
-          `sudo renet repository down --name ${n} --datastore ${DATA_MOUNT} --network-id ${net}`
-        );
-        expect(down.code, `down ${n}: ${down.stderr}`).toBe(0);
-      }
+      // leak). Only the parent exists — the kube repo has no `repository fork`
+      // path (test 6), so there is no fork to tear down.
+      const down = await w1.executeViaBridge(
+        `sudo renet repository down --name ${REPO} --datastore ${DATA_MOUNT} --network-id ${REPO_NET}`
+      );
+      expect(down.code, `down ${REPO}: ${down.stderr}`).toBe(0);
+      // CT-07 no-leak, asserted DIRECTLY: `repository down` released every per-volume
+      // LUKS mount the product owns under the repo folder.
+      expect(await repoVolumeMounts(), 'LUKS volume mounts leaked by repository down').toEqual([]);
+
+      // What still holds the datastores is node-side residue no lifecycle verb clears:
+      // the CSI daemons the product itself started (#26 — the holder that actually
+      // blocks the release) and k3s's leftover containerd/kubelet kernel mounts (#20).
+      await csiNodeDown(w1);
+      await unwindSubmounts(w1, DATA_MOUNT);
       expect(w1.isSuccess(await w1.datastoreDetach(DATA_DS))).toBe(true);
       expect(
         w1.isSuccess(await w1.kubeUninstall({ mountPath: CTRL_MOUNT, networkId: CTRL_NET }))
       ).toBe(true);
+      await unwindSubmounts(w1, CTRL_MOUNT);
       expect(w1.isSuccess(await w1.datastoreDetach(CTRL_DS))).toBe(true);
       // The per-cluster dummy interface is removed on uninstall.
       const iface = await w1.executeViaBridge(

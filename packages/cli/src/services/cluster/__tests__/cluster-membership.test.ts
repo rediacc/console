@@ -44,7 +44,7 @@ function stub(
   );
   vi.spyOn(configService, 'getLocalMachine').mockImplementation((name: string) => {
     const m = machines[name] ?? { ip: machineIps[name] ?? '10.0.0.1', user: 'root' };
-    return Promise.resolve(m as MachineConfig);
+    return Promise.resolve(m);
   });
   vi.spyOn(configService, 'allocateNetworkId').mockResolvedValue(4096);
 }

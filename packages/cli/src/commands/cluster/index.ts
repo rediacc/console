@@ -12,7 +12,7 @@ import {
   forkCluster,
   migrateCluster,
   rehearseCluster,
-} from '../../services/cluster/cluster-kube.js';
+} from '../../services/cluster/cluster-fork.js';
 import { evictCluster, joinCluster } from '../../services/cluster/cluster-membership.js';
 import {
   fetchAndCacheKubeconfig,

@@ -9,10 +9,10 @@ import {
   __setHealthGateClock,
   __setHealthGateDelay,
   forkCluster,
-  installK8s,
   migrateCluster,
   rehearseCluster,
-} from '../cluster-kube.js';
+} from '../cluster-fork.js';
+import { installK8s } from '../cluster-kube.js';
 
 // A 2-node k8s cluster: server on prod-cp-1, agent on prod-w-1.
 const k8sCluster: ClusterConfig = {
@@ -276,9 +276,9 @@ describe('forkCluster (P3 anchor+rejoin orchestrator)', () => {
       .map((c) => c[0])
       .filter((c) => c.functionName === 'ceph_client_config_install');
     expect(installs.map((c) => c.machineName)).toEqual(['dest-cp-1', 'dest-w-1']);
-    expect(
-      installs.every((c) => c.params.conf === 'Y29uZg==' && c.params.keyring === 'a2V5')
-    ).toBe(true);
+    expect(installs.every((c) => c.params.conf === 'Y29uZg==' && c.params.keyring === 'a2V5')).toBe(
+      true
+    );
   });
 
   it('group-snaps, clones each datastore, attaches --writes, forks the CP, rejoins agents', async () => {
@@ -381,7 +381,7 @@ describe('forkCluster (P3 anchor+rejoin orchestrator)', () => {
 });
 
 describe('migrateCluster (P3 in-Ceph fenced remap, zero-copy)', () => {
-  it('down → detach → fenced attach → identity-rewrite migrate → health gate', async () => {
+  it('adopt+verify (before down) → down → detach → fenced attach → rewrite → gate → forget', async () => {
     stubOutput();
     stubConfig({ prod: cephCluster });
     const exec = execMock('prod');
@@ -389,15 +389,40 @@ describe('migrateCluster (P3 in-Ceph fenced remap, zero-copy)', () => {
     await migrateCluster('prod', { to: 'relocate-target' });
 
     const calls = exec.mock.calls.map((c) => c[0]);
-    expect(calls.map((c) => c.functionName)).toEqual([
-      'kube_prep_fork', // down() the source CP
+    const names = calls.map((c) => c.functionName);
+    expect(names).toEqual([
+      'ceph_client_config_export', // #19 seed dest with source ceph (export from mon)
+      'kube_fork_dest_prep', // #19 dest prereqs (rbd + sqlite3)
+      'ceph_client_config_install', // #19 dest /etc/ceph client config
+      'datastore_list', // capture the source control-datastore record (#18)
+      'datastore_adopt', // adopt the plain record on the DEST — BEFORE anything destructive
+      'datastore_list', // verify the dest now registers it
+      'kube_prep_fork', // down() the source CP (cutover clock starts here)
       'datastore_detach', // release the source lock
       'datastore_attach', // fenced attach on dest
       'kube_identity_rewrite', // operation=migrate (CA preserved)
       'kube_health', // gate the destination
+      'datastore_forget', // drop the stale source record (single-mounter invariant)
     ]);
     // Zero data copy: no backup_push / repository transfer.
     expect(calls.some((c) => c.functionName === 'backup_push')).toBe(false);
+
+    // #19: the dest is seeded with the SOURCE cluster's ceph client config BEFORE
+    // anything destructive (a bare dest cannot map the shared rbd image otherwise).
+    const install = calls.find((c) => c.functionName === 'ceph_client_config_install');
+    expect(install?.machineName).toBe('relocate-target');
+    expect(names.indexOf('ceph_client_config_install')).toBeLessThan(
+      names.indexOf('datastore_attach')
+    );
+
+    // The record is adopted PLAIN on the dest, and the adopt precedes the down —
+    // finding #18's failure mode (registry miss after the source is down) is
+    // excluded by construction.
+    const adopt = calls.find((c) => c.functionName === 'datastore_adopt');
+    expect(adopt?.machineName).toBe('relocate-target');
+    expect(adopt?.params).toMatchObject({ name: 'ds-control-prod', plain: true });
+    expect(typeof adopt?.params?.record_b64).toBe('string');
+    expect(names.indexOf('datastore_adopt')).toBeLessThan(names.indexOf('kube_prep_fork'));
 
     const detach = calls.find((c) => c.functionName === 'datastore_detach');
     expect(detach?.params).toMatchObject({ name: 'ds-control-prod' });
@@ -410,6 +435,78 @@ describe('migrateCluster (P3 in-Ceph fenced remap, zero-copy)', () => {
     expect(rewrite?.params).toMatchObject({ operation: 'migrate', mode: 'server' });
     // networkID KEPT — migrate never mints a new one.
     expect(rewrite?.params?.new_network_id).toBeUndefined();
+
+    // Single-mounter invariant: forget runs on the SOURCE, after the gate.
+    const forget = calls.find((c) => c.functionName === 'datastore_forget');
+    expect(forget?.machineName).toBe('prod-cp-1');
+    expect(forget?.params).toMatchObject({ name: 'ds-control-prod' });
+    expect(names.indexOf('datastore_forget')).toBeGreaterThan(names.indexOf('kube_health'));
+  });
+
+  it('aborts with the source untouched when the dest adopt does not register (verify gate)', async () => {
+    stubOutput();
+    stubConfig({ prod: cephCluster });
+    // datastore_list on the DEST omits the control record → the verify gate fails.
+    const exec = vi.spyOn(localExecutorService, 'execute').mockImplementation((opts) => {
+      if (opts.functionName === 'ceph_client_config_export') {
+        return Promise.resolve({ success: true, stdout: cephConfigExportJson() } as never);
+      }
+      if (opts.functionName === 'datastore_list') {
+        const onDest = opts.machineName === 'relocate-target';
+        const arr = JSON.stringify(
+          onDest
+            ? [{ name: 'default', backend: 'local', implicit: true }]
+            : [{ name: 'ds-control-prod', backend: 'ceph', cluster: 'prod' }]
+        );
+        return Promise.resolve({ success: true, stdout: `[datastore_list] ${arr}` } as never);
+      }
+      return Promise.resolve({ success: true } as never);
+    });
+
+    await expect(migrateCluster('prod', { to: 'relocate-target' })).rejects.toThrow(
+      /Refusing to down the source/
+    );
+    // Nothing destructive ran — the source is never downed or detached.
+    const names = exec.mock.calls.map((c) => c[0].functionName);
+    expect(names).not.toContain('kube_prep_fork');
+    expect(names).not.toContain('datastore_detach');
+  });
+
+  it('rolls back to the source (re-attach + restart CP) when the dest attach fails', async () => {
+    stubOutput();
+    stubConfig({ prod: cephCluster });
+    const exec = vi.spyOn(localExecutorService, 'execute').mockImplementation((opts) => {
+      if (opts.functionName === 'ceph_client_config_export') {
+        return Promise.resolve({ success: true, stdout: cephConfigExportJson() } as never);
+      }
+      if (opts.functionName === 'datastore_list') {
+        return Promise.resolve({ success: true, stdout: datastoreListJson('prod') } as never);
+      }
+      // The DEST fenced attach fails; the SOURCE re-attach (rollback) succeeds.
+      if (opts.functionName === 'datastore_attach' && opts.machineName === 'relocate-target') {
+        return Promise.resolve({ success: false, error: 'rbd map: image busy' } as never);
+      }
+      return Promise.resolve({ success: true } as never);
+    });
+
+    await expect(migrateCluster('prod', { to: 'relocate-target' })).rejects.toThrow(/ROLLED BACK/);
+
+    const calls = exec.mock.calls.map((c) => c[0]);
+    // Rollback re-attaches on the SOURCE (force) and restarts its CP via a
+    // migrate-to-self identity rewrite bound to the source's own IP.
+    const srcReattach = calls.find(
+      (c) => c.functionName === 'datastore_attach' && c.machineName === 'prod-cp-1'
+    );
+    expect(srcReattach?.params).toMatchObject({ name: 'ds-control-prod', force: true });
+    const srcRestart = calls.find(
+      (c) => c.functionName === 'kube_identity_rewrite' && c.machineName === 'prod-cp-1'
+    );
+    expect(srcRestart?.params).toMatchObject({
+      operation: 'migrate',
+      new_node_ip: '192.168.111.11',
+    });
+    // The stale source record is NOT forgotten on a failed/rolled-back migrate.
+    expect(calls.some((c) => c.functionName === 'datastore_forget')).toBe(false);
   });
 
   it('refuses a non-ceph cluster (cross-site datastore transfer is a follow-up)', async () => {

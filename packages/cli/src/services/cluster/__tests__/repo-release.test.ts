@@ -13,7 +13,7 @@ import {
 } from '../repo-release.js';
 
 vi.mock('../cluster-target.js', () => ({
-  resolveExecutionTarget: vi.fn(async () => ({ machineName: 'cp1', cluster: 'prod' })),
+  resolveExecutionTarget: vi.fn(() => Promise.resolve({ machineName: 'cp1', cluster: 'prod' })),
 }));
 
 let stored: Record<string, CanarySet> | undefined;

@@ -980,6 +980,7 @@ export class BridgeTestRunner {
   kubeIdentityRewrite = (opts: KubeIdentityRewriteOptions) =>
     this.kubeMethods.kubeIdentityRewrite(opts);
   kubeNodeLabel = (opts: KubeNodeLabelOptions) => this.kubeMethods.kubeNodeLabel(opts);
+  kubeForkDestPrep = () => this.kubeMethods.kubeForkDestPrep();
 
   // Repository Methods
   repositoryNew = (name: string, size: string, password?: string, datastorePath?: string) =>

@@ -140,7 +140,67 @@ test.describe
       await runner.executeViaBridge('sudo modprobe rbd || true');
     };
 
+    // A k3s node leaves containerd/kubelet KERNEL submounts under the datastore
+    // mount it ran on. `kube uninstall` removes the unit (cgroup-kill), but those
+    // submounts survive, so the datastore release is then CORRECTLY refused by the
+    // no-lazy-success guard (spec 03 §2b) with "target is busy" — the product
+    // behaving right, not failing. The suite owns cleanup of what it created, so it
+    // unwinds them itself. The missing product-side porcelain (a shared node-side
+    // teardown that unwinds BEFORE any release verb) is gate finding #20; this is
+    // its third witness (after FU#2 evict and the suite-15 reused-fleet mounts).
+    // Shell form: executeViaBridge relays through THREE shells and escapeForNestedSSH
+    // does NOT escape `$`, so the selection stays variable-free (a `$(...)` here would
+    // be expanded on the LOCAL host). Holders = mountpoints strictly UNDER our mount
+    // (kubelet pod volumes) + mountpoints OUTSIDE the datastore root whose line
+    // references our mount (the /run/k3s containerd overlays, which hold it busy from
+    // outside its path). Excluding `^<root>/` keeps a SIBLING datastore (the fork's
+    // `<mount>-f1`, a prefix match) out of the list. Deepest-first, repeat 3×.
+    const unwindSubmounts = async (runner: BridgeTestRunner, mount: string): Promise<void> => {
+      const root = mount.replace(/\/[^/]+$/, '');
+      const select =
+        `{ cut -d" " -f2 /proc/mounts | grep "^${mount}/"; ` +
+        `grep -F "${mount}" /proc/mounts | cut -d" " -f2 | grep -v "^${root}/"; } | sort -ru`;
+      const res = await runner.executeViaBridge(
+        `sudo bash -c 'for i in 1 2 3; do ${select} | xargs -r -n1 umount 2>/dev/null; ${select} | xargs -r -n1 umount -l 2>/dev/null; sleep 1; done; udevadm settle 2>/dev/null; ` +
+          `sync; echo REMAINING_HOLDERS:; ${select}'; true`
+      );
+      process.stdout.write(`[suite16 unwind ${mount}] ${res.stdout.trim().replace(/\n/g, ' | ')}\n`);
+    };
+
+    // `renet kube install` auto-starts the node CSI units (rediacc-csi / -provisioner
+    // / -snapshotter) as HOST daemons whose socket + state live INSIDE the datastore,
+    // and NO verb ever stops them (`renet kube csi-node-down` exists with zero
+    // callers) → every storage release hits EBUSY with no mount holder to find. Gate
+    // finding #26. The suite stops what the product started.
+    const csiNodeDown = async (runner: BridgeTestRunner): Promise<void> => {
+      await runner.executeViaBridge('sudo renet kube csi-node-down 2>/dev/null; true');
+    };
+
+    // Names whatever still holds a datastore when the mount-level unwind reports
+    // clean: the dm device's OPEN COUNT, any loop device backed by a file on the
+    // datastore (the per-volume LUKS stack), leftover container-runtime processes,
+    // and — the one /proc/mounts cannot see — a mount of it inside ANOTHER MOUNT
+    // NAMESPACE, found by scanning every process's mountinfo. Variable-free shell
+    // (executeViaBridge relays through three shells and does not escape `$`).
+    const deepHolders = async (
+      runner: BridgeTestRunner,
+      mount: string,
+      dmName: string
+    ): Promise<void> => {
+      const res = await runner.executeViaBridge(
+        `sudo bash -c 'echo "DM_INFO:"; dmsetup info -c ${dmName} 2>/dev/null || echo none; ` +
+          `echo "LOOPS:"; losetup -a | grep -F "${mount}" || echo none; ` +
+          `echo "PROCS:"; ps -eo pid,args | grep -E "containerd-shim|csi-serve|csi-provisioner|csi-snapshotter|k3s" | grep -v grep || echo none; ` +
+          `echo "MOUNTINFO_NS:"; grep -l -F "${mount}" /proc/[0-9]*/mountinfo 2>/dev/null || echo none'; true`
+      );
+      process.stdout.write(
+        `[suite16 deepHolders ${mount}] ${res.stdout.trim().replace(/\n/g, ' | ')}\n`
+      );
+    };
+
     const teardownAll = async (): Promise<void> => {
+      await csiNodeDown(w1);
+      await csiNodeDown(w2);
       // Fork first (on the dest): discard the fork records + uninstall its k3s.
       await w2.executeViaBridge(
         `sudo renet kube uninstall --mount-path ${FORK_CTRL_MOUNT} --network-id ${FORK_NET} 2>/dev/null; true`
@@ -272,6 +332,13 @@ test.describe
 
       parentCaFingerprint = await caFingerprintOn(w1, CTRL_MOUNT);
       expect(parentCaFingerprint).toMatch(/Fingerprint=/);
+
+      // Flush the control node's kine SQLite (on the ceph control datastore mount)
+      // to the RBD image BEFORE the crash-consistent group snapshot (test 4). The
+      // snapshot never stops the parent, so a just-seeded-but-unsynced kine write
+      // (the `shop` namespace + configmaps) would not ride the clone — a test race,
+      // not a product gap (a real fork accepts the crash-consistent point-in-time).
+      await w1.executeViaBridge('sync');
     });
 
     test('4. GROUP snapshot atomic across the cluster ceph datastores; parent never stopped', async () => {
@@ -305,10 +372,36 @@ test.describe
     });
 
     test('6. attach the clones on the dest with --writes local (ephemeral dm-COW overlay)', async () => {
+      // Prep the fork DEST (w2) with the package set a fork of a DIFFERENT cluster
+      // needs: ceph-common (`rbd`, which `datastore attach` shells) + sqlite3 (the
+      // fork's `kube identity-rewrite` F2 kine-scrub shells `sqlite3`). The CLI
+      // cluster-fork seeds this via prepareForkDest → kube_fork_dest_prep; the raw
+      // primitive path must too, or identity-rewrite (test 7) fails "sqlite3 not
+      // found on PATH".
+      expect(w2.isSuccess(await w2.kubeForkDestPrep()), 'kube_fork_dest_prep on w2').toBe(true);
+
       // Free the dest host netns for the fork server: stop any k3s already on w2.
       await w2.executeViaBridge(
         `for u in $(systemctl list-units 'rediacc-k3s-*.service' --no-legend --plain 2>/dev/null | awk '{print $1}'); do sudo systemctl stop "$u" || true; done`
       );
+
+      // Cross-node fork attach requires the fork's registry RECORD on the dest
+      // first. datastore_fork registered each fork on w1 (the source) only; the
+      // CLI cluster-fork ferries `datastore list --json` → base64 → datastore_adopt
+      // on the dest before attaching (cluster-fork.ts). Replicate that here: w2's
+      // registry has no `<parent>:f1` row until we adopt the ferried record.
+      const listRes = await w1.executeViaBridge('sudo renet datastore list --json');
+      const records = JSON.parse(listRes.stdout) as Array<{ name: string }>;
+      for (const parent of [CTRL_DS, DATA_DS]) {
+        const forkName = `${parent}:${FORK_TAG}`;
+        const rec = records.find((r) => r.name === forkName);
+        expect(rec, `fork record ${forkName} on w1: ${listRes.stdout}`).toBeTruthy();
+        const b64 = Buffer.from(JSON.stringify(rec)).toString('base64');
+        const adopt = await w2.executeViaBridge(
+          `sudo renet datastore adopt --name ${forkName} --record-b64 ${b64}`
+        );
+        expect(adopt.code, `adopt ${forkName} on w2: ${adopt.stderr}`).toBe(0);
+      }
 
       // --writes local: the fork's writes land in a local dm-COW overlay over the
       // RO clone (the ephemeral disposition — the new axis vs --writes ceph).
@@ -419,12 +512,47 @@ test.describe
       expect(
         w2.isSuccess(await w2.kubeUninstall({ mountPath: FORK_CTRL_MOUNT, networkId: FORK_NET }))
       ).toBe(true);
+      // Unwind the fork k3s's leftover containerd/kubelet submounts before release
+      // (see unwindSubmounts / gate finding #20) — and the node CSI daemons the
+      // product started and never stops (#26), which are the holder that actually
+      // blocks the release.
+      await csiNodeDown(w2);
+      await unwindSubmounts(w2, FORK_CTRL_MOUNT);
+      await unwindSubmounts(w2, FORK_DATA_MOUNT);
+      // The fork's dm-COW device has been refusing `dmsetup remove` with EBUSY even
+      // after the mounts are unwound, the CSI units are stopped and the retry (#27)
+      // has run — so the holder is neither a host mount nor a known process. Name it:
+      // the dm OPEN COUNT says whether anything still has the device open, and a scan
+      // of EVERY process's mountinfo finds a mount of it inside another mount
+      // NAMESPACE (a leftover container's private namespace is invisible in
+      // /proc/mounts).
+      //
+      // The probe BEFORE the release is only a baseline — the datastore is still
+      // ATTACHED here, so its mount is live and Open=1 means nothing. The probe that
+      // matters runs AFTER a FAILED detach (below), when the product has unmounted the
+      // filesystem and the dm removal has just been refused: whatever holds the device
+      // THEN is the real holder of gate finding #29.
+      await deepHolders(w2, FORK_CTRL_MOUNT, `${CTRL_DS}-${FORK_TAG}-cow`);
       // --discard removes the fork record (forks only).
-      expect(w2.isSuccess(await w2.datastoreDetach(`${CTRL_DS}:${FORK_TAG}`, true))).toBe(true);
+      const forkDetach = await w2.datastoreDetach(`${CTRL_DS}:${FORK_TAG}`, true);
+      if (!w2.isSuccess(forkDetach)) {
+        // Post-mortem, captured at the only moment it is meaningful (fs unmounted, dm
+        // removal just refused) so the next run of this suite — by CI or by whoever
+        // picks up #29 — arrives with the holder named instead of another blind cycle.
+        await deepHolders(w2, FORK_CTRL_MOUNT, `${CTRL_DS}-${FORK_TAG}-cow`);
+      }
+      expect(
+        w2.isSuccess(forkDetach),
+        `fork discard (#29): ${(forkDetach.stdout + forkDetach.stderr).slice(-400)}`
+      ).toBe(true);
       expect(w2.isSuccess(await w2.datastoreDetach(`${DATA_DS}:${FORK_TAG}`, true))).toBe(true);
       expect(
         w1.isSuccess(await w1.kubeUninstall({ mountPath: CTRL_MOUNT, networkId: CTRL_NET }))
       ).toBe(true);
+      // The parent node leaves the same two holders on its own datastore mounts.
+      await csiNodeDown(w1);
+      await unwindSubmounts(w1, CTRL_MOUNT);
+      await unwindSubmounts(w1, DATA_MOUNT);
       expect(w1.isSuccess(await w1.datastoreDetach(DATA_DS))).toBe(true);
       expect(w1.isSuccess(await w1.datastoreDelete(DATA_DS))).toBe(true);
       expect(w1.isSuccess(await w1.datastoreDetach(CTRL_DS))).toBe(true);

@@ -744,6 +744,32 @@ registered) — read-only additions; exact CLI shape belongs to the P4 reshape
    guidance rather than forcing `fsGroupPolicy: None` (which would break
    non-root charts under PSA restricted).
 
+### As-built deviations and residuals (live-validation window, 2026-07-11)
+
+These three items are settled AS-BUILT: surfaced by the prescribed csi-sanity suite
+(§12) on a live KVM cluster and ruled by the lead. csi-sanity result at close:
+**48/50 specs** (the 2 non-passes are exactly the two documented deviations below;
+the 1 Pending is `ListVolumes`, out of v1 by design).
+
+10-11. **CSI-DEVIATION-1 and CSI-DEVIATION-2 are RULED, not open.** Both were
+    settled at the P3 live gate and are documented once, in **§16 (As-built
+    deviations)**. They are listed here only to keep this section's numbering
+    stable; a ruled deviation is by definition no longer an OPEN item. Do not
+    re-document them here.
+
+12. **Automatic CSI enablement — agent-node datastore-attach is a deferred residual.**
+    Enablement is folded in two halves (§9/§13): cluster install
+    (`runKubeInstall` → `deployCSIControlPlane`: CRDs + CSIDriver + RBAC + VSClass +
+    snapshot-controller + CP node units) and datastore attach
+    (`datastore attach` → `deployCSIForAttachedDatastore`: per-ds StorageClass +
+    node units + sidecar-kubeconfig rotation). The attach half derives everything
+    from the node's LOCAL k3s admin kubeconfig, so it covers hyperconverged /
+    server nodes and cleanly no-ops elsewhere. A **pure agent / data-only node** has
+    no local admin kubeconfig, so its attach-time CSI wiring needs cluster-connection
+    context that is not mount-derivable — DEFERRED (no CLI touch, no fabricated
+    node→CP channel). It rides the multi-node worker-attach design item (P4-or-later).
+    Live proof of the covered halves is carried by the next fresh cluster create.
+
 ## 15. Sources (research pass dated 2026-07-11)
 
 1. kubernetes-csi.github.io — external-provisioner page
@@ -797,3 +823,40 @@ registered) — read-only additions; exact CLI shape belongs to the P4 reshape
     behavior; fsGroupPolicy value semantics).
 12. github.com/kubernetes-csi/csi-test releases: csi-sanity ships in csi-test
     **v5.5.0 (2024-07-06)**, usable as a Go library (`pkg/sanity`) or CLI.
+
+## 16. As-built deviations (from live validation, csi-sanity)
+
+**This section is the single home for the two ruled CSI deviations.** (§14 items
+10-11 formerly restated them; that duplication was merged here at the P3 gate.
+See `spec/10-p3-gate-review.md`.)
+
+Two csi-sanity conformance cases are documented deviations, ruled acceptable at the
+P3 live gate rather than reshaping load-bearing design choices. csi-sanity result:
+**48/50** — the 2 non-passes are exactly the two deviations below; the 1 Pending is
+`ListVolumes`, out of v1 by design.
+
+- **CSI-DEVIATION-1 — maximum-length volume names.** A CSI `name` at the 128-byte
+  max makes the path-derived `volume_id` (`repos/<ns>/volumes/<name>.img`) and the
+  `rediacc-vol-<repo>-<vol>` dm-mapper name exceed the 128-byte CSI id bound /
+  kernel `DM_NAME_LEN`. `CreateVolume` refuses such a name up front with a clean
+  `INVALID_ARGUMENT` naming the limit and the wrapper overhead (not a deep
+  cryptsetup "Name too long").
+  The path-derived `volume_id` is **[CSI-DECIDED]** (§4) precisely because it buys
+  zero-PV-rewrite cluster forks; the length ceiling is the price of that choice.
+  The alternative, hashed volume ids, was **rejected**: it would break the
+  path-probe fork resolution that the whole fork story rests on.
+  Real dynamic PVCs use a 40-char `pvc-<uuid>` name and never approach the limit.
+  csi-sanity's "create with maximum-length name" spec expects success, so it
+  **stays red by design** — the documented price, not a bug.
+  Enforced by `TestCreateVolumeRejectsOverlongName`.
+- **CSI-DEVIATION-2 — snapshot same-name/different-source idempotency.**
+  `CreateSnapshot` distinguishes an existing snapshot's source by IMAGE SIZE, so
+  two DIFFERENT sources of the SAME size + SAME snapshot name return `OK` (reusing
+  the existing snapshot) instead of `ALREADY_EXISTS`. Accepted: a real provenance
+  sidecar beside the snapshot image would have to ride the reflink repo fork and
+  carry its own delete-ledger cleanup, which is worse for fork hygiene (§6) than
+  the deviation itself.
+  Mitigation in practice: external-snapshotter mints unique `snapshot-<uuid>`
+  content names in the dynamic flow, so two distinct VolumeSnapshots never collide
+  on a name; the collision only arises under a hand-crafted duplicate name, as in
+  the sanity suite.

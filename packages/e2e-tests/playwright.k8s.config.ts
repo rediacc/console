@@ -4,6 +4,17 @@ import dotenv from 'dotenv';
 
 dotenv.config({ path: path.resolve(__dirname, '.env'), quiet: true });
 
+// The k3s lifecycle primitives this suite drives legitimately run for MINUTES:
+// `kube identity-rewrite` performs the full F1-F8 control-plane PKI re-mint (~120s),
+// and `repository down` must wait out every pod's termination grace period before it
+// can release the volumes. The generic 120s bridge bound TRUNCATES them: the re-mint
+// was completing at 117-120s (passing on a coin flip) and was then SIGKILLed at
+// exactly 120.0s. Raise the floor in the suite's own config so CI does not depend on
+// a local .env value.
+if (Number(process.env.BRIDGE_TIMEOUT ?? 0) < 360_000) {
+  process.env.BRIDGE_TIMEOUT = '360000';
+}
+
 /**
  * Playwright configuration for the k8s repo topology (suite 15, `E2E K8s` job).
  *

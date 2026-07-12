@@ -12,10 +12,10 @@ import {
 } from '../repo-replicate-ops.js';
 
 vi.mock('../cluster-target.js', () => ({
-  resolveExecutionTarget: vi.fn(async () => ({ machineName: 'cp1', cluster: 'prod' })),
+  resolveExecutionTarget: vi.fn(() => Promise.resolve({ machineName: 'cp1', cluster: 'prod' })),
 }));
 vi.mock('../../config/config-cluster-ops.js', () => ({
-  getCluster: vi.fn(async () => ({
+  getCluster: vi.fn(() => Promise.resolve({
     provider: 'kvm',
     pools: [{ name: 'w', role: 'hyperconverged', count: 2 }],
   })),
@@ -39,9 +39,9 @@ function mockState(initial?: Record<string, ReplicaSet>): void {
 }
 
 function mockExec() {
-  return vi.spyOn(localExecutorService, 'execute').mockImplementation(async ({ functionName }) => {
+  return vi.spyOn(localExecutorService, 'execute').mockImplementation(({ functionName }) => {
     if (functionName === 'datastore_list') {
-      return {
+      return Promise.resolve({
         success: true,
         stdout: JSON.stringify([
           { name: 'ds-control-prod', cluster: 'prod' },
@@ -49,9 +49,9 @@ function mockExec() {
           { name: 'ds-data:other-r1', cluster: 'prod', fork: {} },
           { name: 'default', implicit: true },
         ]),
-      } as never;
+      }) as never;
     }
-    return { success: true } as never;
+    return Promise.resolve({ success: true }) as never;
   });
 }
 
@@ -244,11 +244,11 @@ describe('refreshReplicaSet (rolling one-at-a-time)', () => {
       'sqldb-replicas': { ...seededSet, replicas: [seededSet.replicas[0]] },
     });
     let detachAttempts = 0;
-    vi.spyOn(localExecutorService, 'execute').mockImplementation(async ({ functionName }) => {
+    vi.spyOn(localExecutorService, 'execute').mockImplementation(({ functionName }) => {
       if (functionName === 'datastore_detach' && ++detachAttempts < 3) {
-        return { success: false, error: 'busy' } as never;
+        return Promise.resolve({ success: false, error: 'busy' }) as never;
       }
-      return { success: true } as never;
+      return Promise.resolve({ success: true }) as never;
     });
     const delays: number[] = [];
     __setReplicateDelay((ms) => {
