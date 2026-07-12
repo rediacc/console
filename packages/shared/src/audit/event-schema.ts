@@ -1,6 +1,6 @@
 /**
  * Audit event contract shared between the CLI emitter
- * (packages/cli/src/services/audit.ts) and the account-server ingest
+ * (packages/cli/src/services/core/audit.ts) and the account-server ingest
  * route (private/account/src/routes/license.ts).
  *
  * The event-type union is closed: every renet function the CLI
@@ -123,6 +123,25 @@ const baseData = z.object({
   error: z.string().max(500).optional(),
 });
 
+/**
+ * Envelope carried by every event, independent of its type.
+ *
+ * `idempotencyKey` is minted per event by the emitter and is the server-side
+ * dedup key: the ingest route inserts under a unique index, so replaying a
+ * batch (a retried flush, a proxy re-delivery) stores each event exactly once
+ * and the reported `accepted` count reflects rows actually written.
+ *
+ * `onBehalfOfTokenId` names the API token whose user actually performed the
+ * operation, for events relayed by a broker (rdc serve) that authenticates to
+ * the account server with its OWN token. The ingest route verifies the named
+ * token lives in the same organization as the authenticating token before
+ * attributing the event to it, so a caller can never forge attribution.
+ */
+const eventEnvelope = {
+  idempotencyKey: z.string().uuid(),
+  onBehalfOfTokenId: z.string().uuid().optional(),
+};
+
 // Machine/repo/backup/datastore ops AND cluster/k8s-namespace ops all carry the
 // same plain baseData, so they share one discriminated-union branch. Kept as one
 // branch (not two) because the audit.ts fall-through assigns a union-typed `type`
@@ -131,6 +150,7 @@ const baseOpEventTypes = [...MACHINE_OP_EVENT_TYPES, ...clusterEventTypes] as co
 const machineOpEvent = z.object({
   type: z.enum(baseOpEventTypes),
   data: baseData,
+  ...eventEnvelope,
 });
 
 const syncEvent = z.object({
@@ -139,6 +159,7 @@ const syncEvent = z.object({
     filesTransferred: z.number().int().min(0).optional(),
     bytesTransferred: z.number().int().min(0).optional(),
   }),
+  ...eventEnvelope,
 });
 
 const termEvent = z.object({
@@ -146,6 +167,7 @@ const termEvent = z.object({
   data: baseData.extend({
     sessionDurationMs: z.number().int().min(0).optional(),
   }),
+  ...eventEnvelope,
 });
 
 export const AuditEventSchema = z.discriminatedUnion('type', [

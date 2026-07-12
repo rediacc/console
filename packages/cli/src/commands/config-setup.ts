@@ -1,11 +1,11 @@
 import { execFileSync } from 'node:child_process';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
-import { SFTPClient } from '../remote/sftp/index.js';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
-import { pushInfraConfig } from '../services/provision/infra-provision.js';
 import { outputService } from '../services/core/output.js';
+import { machineConnections } from '../services/machine/machine-connection.js';
+import { pushInfraConfig } from '../services/provision/infra-provision.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
 import { deployAllRepoKeys } from '../services/repo/repo-key-deployment.js';
 import type {
@@ -283,13 +283,7 @@ export function registerMachineCommands(config: Command, program: Command): void
           }
         );
 
-        const sftp = new SFTPClient({
-          host: machineObj.ip,
-          port: machineObj.port ?? DEFAULTS.SSH.PORT,
-          username: machineObj.user,
-          privateKey: sshPrivateKey,
-        });
-        await sftp.connect();
+        const lease = await machineConnections.acquireFor(machineObj, sshPrivateKey);
 
         try {
           const datastoreSize =
@@ -302,7 +296,7 @@ export function registerMachineCommands(config: Command, program: Command): void
             outputService.info(`[setup] Running: ${cmd}`);
           }
 
-          const exitCode = await sftp.execStreaming(cmd, {
+          const exitCode = await lease.sftp.execStreaming(cmd, {
             onStdout: (data) => process.stdout.write(data),
             onStderr: (data) => process.stderr.write(data),
           });
@@ -320,7 +314,7 @@ export function registerMachineCommands(config: Command, program: Command): void
             process.exitCode = exitCode;
           }
         } finally {
-          sftp.close();
+          lease.release();
         }
       } catch (error) {
         handleError(error);

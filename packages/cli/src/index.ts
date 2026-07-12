@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
 import { cli } from './cli.js';
+import { telemetryService } from './services/telemetry/telemetry.js';
 import {
   applyPendingUpdate,
   maybeSpawnBackgroundUpdate,
   runBackgroundUpdateWorker,
 } from './services/update/background-updater.js';
-import { telemetryService } from './services/telemetry/telemetry.js';
 import { handleError } from './utils/errors.js';
 import { runWarmup } from './warmup.js';
 

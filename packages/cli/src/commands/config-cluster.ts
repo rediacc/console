@@ -1,9 +1,9 @@
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config/config-resources.js';
 import { getCluster } from '../services/config/config-cluster-ops.js';
-import type { ClusterConfig, ClusterPool, ClusterPoolRole } from '../types/index.js';
+import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import type { ClusterConfig, ClusterPool, ClusterPoolRole } from '../types/index.js';
 import { ValidationError } from '../utils/errors.js';
 
 const ROLES = ['ceph', 'k8s-server', 'k8s-agent', 'hyperconverged'] as const;

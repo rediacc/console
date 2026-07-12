@@ -5,16 +5,16 @@ import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import type { OutputFormat, RdcConfig } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
-import { registerBackupStrategyCommands } from './config-backup-strategy.js';
-import { registerPruneCommand as registerConfigPruneCommand } from './config-prune-cmd.js';
 import { registerAuditCommands } from './config/audit.js';
 import { registerEditCommands } from './config/edit.js';
 import { registerFieldCommands } from './config/field.js';
+import { registerBackupStrategyCommands } from './config-backup-strategy.js';
 import { registerClusterConfigCommands } from './config-cluster.js';
 import { registerRepositoryCommands, registerStorageCommands } from './config-data.js';
 import { registerInfraCommands } from './config-infra.js';
-import { registerMachineCommands, registerProviderCommands } from './config-setup.js';
+import { registerPruneCommand as registerConfigPruneCommand } from './config-prune-cmd.js';
 import { registerRemoteCommands } from './config-remote.js';
+import { registerMachineCommands, registerProviderCommands } from './config-setup.js';
 import { registerSSHCommands } from './config-ssh.js';
 
 /** Build display data for a self-hosted config. */
@@ -304,11 +304,11 @@ ${t('help.examples')}
         }
 
         // Default: redact sensitive values. --reveal opts in (humans only).
-        // The redactor is schema-driven (packages/cli/src/schema/walker.ts).
+        // The redactor is schema-driven (packages/shared/src/config-schema/walker.ts).
         if (options.reveal) {
           await applyRevealGate(cfg);
         } else {
-          const { redactClone } = await import('../schema/walker.js');
+          const { redactClone } = await import('../schema/fingerprint.js');
           const redacted = redactClone(cfg);
           Object.assign(cfg as Record<string, unknown>, redacted);
         }

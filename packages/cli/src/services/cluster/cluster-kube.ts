@@ -21,7 +21,7 @@ import type { ClusterConfig, ClusterPool } from '../../types/index.js';
 import { getCluster } from '../config/config-cluster-ops.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
-import { type LocalExecuteResult, localExecutorService } from '../executor/local-executor.js';
+import { type ExecuteResult, getExecutor } from '../executor/executor-factory.js';
 import { dispatchCeph, exportCephClientConfig, resolveCephMembers } from './cluster-ceph.js';
 
 const MOUNT_BASE = '/mnt/rediacc/mounts';
@@ -138,7 +138,7 @@ export async function assertDestNotRunningOwnK3s(
   debug?: boolean
 ): Promise<void> {
   const ownMount = controlDatastoreMount(destCluster);
-  const res = await localExecutorService.execute({
+  const res = await getExecutor().execute({
     functionName: 'kube_health',
     machineName: dstControlName,
     params: { mount_path: ownMount },
@@ -240,8 +240,8 @@ export async function dispatch(
   machineName: string,
   params: Record<string, unknown>,
   opts: { debug?: boolean; capture?: boolean } = {}
-): Promise<LocalExecuteResult> {
-  const result = await localExecutorService.execute({
+): Promise<ExecuteResult> {
+  const result = await getExecutor().execute({
     functionName,
     machineName,
     params,

@@ -5,6 +5,7 @@ import {
   isSEA,
   isUpdateDisabled,
 } from '../../utils/platform.js';
+import { loadServerConfig } from '../account/subscription-auth.js';
 // Note: startupUpdateCheck was removed — replaced by background-updater
 import {
   checkForUpdate,
@@ -14,7 +15,6 @@ import {
   performUpdate,
   resolveChannel,
 } from '../update/updater.js';
-import { loadServerConfig } from '../account/subscription-auth.js';
 
 vi.mock('../account/subscription-auth.js', () => ({
   loadServerConfig: vi.fn(),

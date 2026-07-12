@@ -10,11 +10,8 @@
 import { promises as fs } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { DEFAULTS } from '@rediacc/shared/config';
-import { SFTPClient } from '../../remote/sftp/index.js';
-import { configService } from '../config/config-resources.js';
-import { readSSHKey } from '../renet/renet-execution.js';
 import { resolveControlNode } from '../config/config-cluster-ops.js';
+import { machineConnections } from '../machine/machine-connection.js';
 import { clusterKubeconfigRemotePath } from './cluster-target.js';
 
 const KUBE_CACHE_DIR = join(homedir(), '.config', 'rediacc', 'kube');
@@ -31,22 +28,12 @@ export function kubeconfigCachePath(cluster: string): string {
  */
 export async function fetchAndCacheKubeconfig(cluster: string): Promise<string> {
   const controlNode = await resolveControlNode(cluster);
-  const machine = await configService.getLocalMachine(controlNode);
-  const config = await configService.getLocalConfig();
-  const sshPrivateKey = config.sshPrivateKey ?? (await readSSHKey(config.ssh.privateKeyPath));
-
-  const sftp = new SFTPClient({
-    host: machine.ip,
-    port: machine.port ?? DEFAULTS.SSH.PORT,
-    username: machine.user,
-    privateKey: sshPrivateKey,
-  });
-  await sftp.connect();
+  const lease = await machineConnections.acquire(controlNode);
 
   let contents = '';
   try {
     const remotePath = clusterKubeconfigRemotePath(cluster);
-    const exitCode = await sftp.execStreaming(`sudo cat ${remotePath}`, {
+    const exitCode = await lease.sftp.execStreaming(`sudo cat ${remotePath}`, {
       onStdout: (data) => {
         contents += data;
       },
@@ -58,7 +45,7 @@ export async function fetchAndCacheKubeconfig(cluster: string): Promise<string> 
       );
     }
   } finally {
-    sftp.close();
+    lease.release();
   }
 
   await fs.mkdir(KUBE_CACHE_DIR, { recursive: true, mode: 0o700 });

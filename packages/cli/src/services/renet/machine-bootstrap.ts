@@ -8,10 +8,10 @@
 
 import { execFileSync } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
-import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
-import { SFTPClient } from '../../remote/sftp/index.js';
+import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
+import { machineConnections } from '../machine/machine-connection.js';
 import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
 
 /** ssh-keyscan the host, returning its known_hosts lines (empty on failure). */
@@ -65,19 +65,13 @@ export async function bootstrapMachine(
     { debug: options.debug }
   );
 
-  const sftp = new SFTPClient({
-    host: machine.ip,
-    port: machine.port ?? DEFAULTS.SSH.PORT,
-    username: machine.user,
-    privateKey: sshPrivateKey,
-  });
-  await sftp.connect();
+  const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
 
   try {
     const datastorePath = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
     const datastoreSize = updatedConfig.datastoreSize ?? NETWORK_DEFAULTS.DATASTORE_SIZE;
     const cmd = `sudo ${remoteRenetPath} setup --auto --datastore ${datastorePath} --datastore-size ${datastoreSize}`;
-    const exitCode = await sftp.execStreaming(cmd, {
+    const exitCode = await lease.sftp.execStreaming(cmd, {
       onStdout: (data) => {
         if (options.debug) process.stdout.write(data);
       },
@@ -87,6 +81,6 @@ export async function bootstrapMachine(
       outputService.warn(`Machine setup exited with code ${exitCode}`);
     }
   } finally {
-    sftp.close();
+    lease.release();
   }
 }

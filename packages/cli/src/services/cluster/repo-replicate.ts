@@ -27,10 +27,10 @@
  */
 
 import { DEFAULTS } from '@rediacc/shared/config';
-import type { ReplicaSet } from '../../schema/state-schema.js';
+import type { ReplicaSet } from '@rediacc/shared/config-schema';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
-import { localExecutorService } from '../executor/local-executor.js';
+import { getExecutor } from '../executor/executor-factory.js';
 
 /** Labels every replicate-generated object carries, for enumerate + teardown. */
 const REPLICA_LABEL = 'rediacc.io/replica-set';
@@ -153,7 +153,7 @@ function replicaForkMount(datastore: string, tag: string): string {
 export async function discardReplicaDatastores(set: ReplicaSet, debug?: boolean): Promise<void> {
   for (const r of set.replicas) {
     try {
-      await localExecutorService.execute({
+      await getExecutor().execute({
         functionName: 'datastore_detach',
         machineName: r.node,
         params: { name: r.fork, discard: true },
@@ -174,7 +174,7 @@ export async function dispatch(
   params: Record<string, unknown>,
   debug?: boolean
 ): Promise<void> {
-  const res = await localExecutorService.execute({ functionName, machineName, params, debug });
+  const res = await getExecutor().execute({ functionName, machineName, params, debug });
   if (!res.success) {
     throw new Error(
       `Replica step "${functionName}" failed on ${machineName}: ${res.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR}`

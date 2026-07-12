@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { exitProcess } from '../services/core/request-context.js';
 import type { OutputFormat } from '../types/index.js';
 import {
   addParentToPayload,
@@ -131,7 +132,7 @@ function setupCreateCommand(
       const createCheck = checkRequiredCreateOptions(createOptions, opts);
       if (!createCheck.valid) {
         outputService.error(createCheck.errorMessage!);
-        process.exit(1);
+        exitProcess(1);
       }
 
       const payload = buildCreatePayload(

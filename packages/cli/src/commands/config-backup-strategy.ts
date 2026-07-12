@@ -1,5 +1,5 @@
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
-import type { Command } from 'commander';
+import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
@@ -150,7 +150,12 @@ export function registerBackupStrategyCommands(config: Command): void {
     .option('--destination <name>', t('commands.config.backupStrategy.set.optionDestination'))
     .option('--storage <name>', t('commands.config.backupStrategy.set.optionStorage'))
     .option('--cron <expression>', t('commands.config.backupStrategy.set.optionCron'))
-    .option('--mode <mode>', t('commands.config.backupStrategy.set.optionMode'))
+    .addOption(
+      new Option('--mode <mode>', t('commands.config.backupStrategy.set.optionMode')).choices([
+        'hot',
+        'cold',
+      ])
+    )
     .option('--bwlimit <limit>', t('commands.config.backupStrategy.set.optionBwlimit'))
     .option('--include <repos>', t('commands.config.backupStrategy.set.optionInclude'))
     .option('--exclude <repos>', t('commands.config.backupStrategy.set.optionExclude'))

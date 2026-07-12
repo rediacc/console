@@ -1,5 +1,5 @@
+import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { describe, expect, it } from 'vitest';
-import type { RdcConfig } from '../../schema/schemas.js';
 import { pruneDanglingRefs } from '../config/config-refs-prune.js';
 
 function baseConfig(): RdcConfig {

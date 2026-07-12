@@ -96,6 +96,8 @@ describe('auditService.record', () => {
           events: [
             {
               type: 'cli.repo.up',
+              // Minted by record(), never supplied by the caller.
+              idempotencyKey: expect.any(String),
               data: expect.objectContaining({
                 functionName: 'repository_up',
                 machineName: 'prod-1',
@@ -195,6 +197,7 @@ describe('auditService.recordOperation', () => {
           events: [
             {
               type: 'cli.backup.push',
+              idempotencyKey: expect.any(String),
               data: {
                 functionName: 'backup_push',
                 machineName: 'server-1',
@@ -328,6 +331,90 @@ describe('auditService.flush', () => {
 
     // Should not throw
     await expect(auditService.flush()).resolves.toBeUndefined();
+  });
+
+  it('retries a failed send exactly once, replaying the same idempotency keys', async () => {
+    mockGetSubscriptionTokenState.mockReturnValue({
+      kind: 'ready',
+      token: { token: 'test' },
+      serverUrl: 'http://localhost',
+    });
+    mockAccountServerFetch
+      .mockRejectedValueOnce(new Error('network error'))
+      .mockResolvedValueOnce({ accepted: 1 });
+
+    auditService.recordOperation({
+      functionName: 'repository_up',
+      machineName: 'server-1',
+      success: true,
+      exitCode: 0,
+      durationMs: 100,
+    });
+
+    await auditService.flush();
+
+    expect(mockAccountServerFetch).toHaveBeenCalledTimes(2);
+    // The retry must carry the SAME key as the failed attempt, otherwise the
+    // server's dedup cannot recognise it as a replay and would double-store.
+    const [first, second] = mockAccountServerFetch.mock.calls.map(
+      (call) => call[1].body.events[0].idempotencyKey
+    );
+    expect(first).toBe(second);
+  });
+
+  it('gives up after the single retry rather than looping', async () => {
+    mockGetSubscriptionTokenState.mockReturnValue({
+      kind: 'ready',
+      token: { token: 'test' },
+      serverUrl: 'http://localhost',
+    });
+    mockAccountServerFetch.mockRejectedValue(new Error('network error'));
+
+    auditService.recordOperation({
+      functionName: 'repository_up',
+      machineName: 'server-1',
+      success: true,
+      exitCode: 0,
+      durationMs: 100,
+    });
+
+    await auditService.flush();
+    expect(mockAccountServerFetch).toHaveBeenCalledTimes(2);
+
+    // Queue is drained even after a losing send: this runs at process exit and
+    // must not resurrect the batch on a later flush.
+    await auditService.flush();
+    expect(mockAccountServerFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('mints a distinct idempotency key per event', async () => {
+    mockGetSubscriptionTokenState.mockReturnValue({
+      kind: 'ready',
+      token: { token: 'test' },
+      serverUrl: 'http://localhost',
+    });
+    mockAccountServerFetch.mockResolvedValue({ accepted: 2 });
+
+    auditService.recordOperation({
+      functionName: 'repository_up',
+      machineName: 'server-1',
+      success: true,
+      exitCode: 0,
+      durationMs: 100,
+    });
+    auditService.recordOperation({
+      functionName: 'repository_up',
+      machineName: 'server-1',
+      success: true,
+      exitCode: 0,
+      durationMs: 100,
+    });
+
+    await auditService.flush();
+
+    const { events } = mockAccountServerFetch.mock.calls[0][1].body;
+    // Two identical operations are still two distinct events.
+    expect(events[0].idempotencyKey).not.toBe(events[1].idempotencyKey);
   });
 
   it('sends multiple events in a single batch', async () => {

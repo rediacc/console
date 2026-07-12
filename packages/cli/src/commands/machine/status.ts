@@ -34,6 +34,7 @@ type RepoNameResolver = (
   guid: string,
   serverRepoName?: string
 ) => { name: string; source: RepoNameSource };
+
 import { withSpinner } from '../../utils/spinner.js';
 
 /** Parse size strings like "71.9G", "180.3G" into GB numbers. */

@@ -9,8 +9,8 @@ import {
   getReplicaSet,
   listReplicaSets,
   provisionReplicaDatastores,
-  recordReplicaSet,
   type ReplicaRenderInput,
+  recordReplicaSet,
   renderReplicaSet,
 } from '../repo-replicate.js';
 

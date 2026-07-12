@@ -1,20 +1,28 @@
 /**
- * Schema-driven config walker.
+ * Schema-driven config walker (structural half).
  *
  * Consumes SENSITIVITY_REGISTRY (populated by schema construction) to:
  *   - enumerate every sensitive leaf in a live config (walkSensitive)
- *   - produce a redacted deep-clone for agent output (redactClone)
+ *   - read and write values by JSON Pointer (getByPointer / setByPointer)
  *   - list concrete pointers that need field-commitment hashes (pathsToCommit)
- *   - compute a short SHA-256 fingerprint for a specific pointer (digestForPointer)
+ *   - canonicalize a value for hashing (canonicalJson)
  *
- * Fingerprints produced here are UNKEYED SHA-256 — safe for UX stubs like
- * `<redacted:sha256:abc12345>` because SHA-256 preimage resistance holds.
+ * Everything here is dependency-free and runs unchanged on Node, Cloudflare
+ * Workers, and browsers, so the CLI, the executor, and the web console share
+ * one implementation.
+ *
+ * The SHA-256 fingerprint helpers (shortFingerprint, digestForPointer,
+ * redactClone) deliberately stay in packages/cli/src/schema/fingerprint.ts:
+ * they need a SYNCHRONOUS hash and Web Crypto only offers an async one. Both
+ * of their consumers, CLI redaction output and the MutationGate knowledge
+ * check, run host-side. The browser never needs them because it holds the CEK
+ * and edits real values.
+ *
  * The server-side FCK-keyed HMAC commitments live in
  * `packages/shared/src/config-crypto/commitments.ts`; do not conflate.
  */
 
-import { createHash } from 'node:crypto';
-import type { SensitivityMeta, PointerTemplate } from './sensitivity.js';
+import type { PointerTemplate, SensitivityMeta } from './sensitivity.js';
 import { SENSITIVITY_REGISTRY } from './sensitivity.js';
 
 /** RFC 6901 escape for a single JSON Pointer segment. */
@@ -91,34 +99,6 @@ function* walkInternal(value: unknown, path: string[]): Generator<WalkEntry> {
       yield* walkInternal(child, [...path, key]);
     }
   }
-}
-
-/**
- * Short fingerprint used in redaction stubs (`<redacted:sha256:abc12345>`).
- *
- * Uses the first 8 hex chars of SHA-256 over the canonical JSON of the value.
- * `null` and missing values produce distinct fingerprints so redaction stubs
- * don't collide across those two states.
- */
-export function shortFingerprint(value: unknown): string {
-  const json = canonicalJson(value);
-  const hash = createHash('sha256').update(json).digest('hex');
-  return hash.slice(0, 8);
-}
-
-/**
- * Full SHA-256 digest of the value at a specific pointer. Returns undefined if
- * the pointer does not exist in the config.
- *
- * Used by MutationGate for the client-side knowledge check: the `--current`
- * value the agent supplied is canonicalized and hashed, then compared against
- * the digest of the currently-stored value at that pointer. Comparison is
- * constant-time irrelevant here since both sides originate on the same host.
- */
-export function digestForPointer(root: unknown, pointer: string): string | undefined {
-  const value = getByPointer(root, pointer);
-  if (value === undefined) return undefined;
-  return createHash('sha256').update(canonicalJson(value)).digest('hex');
 }
 
 /**
@@ -213,25 +193,6 @@ export function setByPointer(root: unknown, pointer: string, newValue: unknown):
 }
 
 /**
- * Produce a deep-cloned config with every sensitive leaf replaced by its
- * redaction stub. Public fields are passed through unchanged. Unregistered
- * leaves are passed through (fail-open for display); the CI gate
- * check:ci-schema-coverage catches missing annotations before they ship.
- */
-export function redactClone<T>(config: T): T {
-  let result: unknown = deepClone(config);
-  for (const { pointer, value, meta } of walkSensitive(config)) {
-    if (meta.kind === 'public') continue;
-    const stub =
-      value === null || value === undefined
-        ? null
-        : `${meta.redactAs ?? `<redacted:${meta.kind}>`}:${shortFingerprint(value)}`;
-    result = setByPointer(result, pointer, stub);
-  }
-  return result as T;
-}
-
-/**
  * List concrete pointers whose values should be included in the field-commitment
  * envelope (server-side precondition enforcement). Excludes `public` fields.
  */
@@ -279,7 +240,11 @@ export function canonicalJson(value: unknown): string {
   return String(value);
 }
 
-function deepClone<T>(v: T): T {
+/**
+ * Structural deep clone (plain JSON values only). Exported because the CLI's
+ * fingerprint module builds redacted clones on top of it.
+ */
+export function deepClone<T>(v: T): T {
   if (v === null || typeof v !== 'object') return v;
   if (Array.isArray(v)) return v.map(deepClone) as unknown as T;
   const out: Record<string, unknown> = {};

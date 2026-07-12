@@ -2,11 +2,11 @@ import { formatSizeBytes } from '@rediacc/shared/renet-contract';
 import { type RemoteFile, resolveGuidFileNames } from '@rediacc/shared/storage-browser';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { getStateProvider } from '../services/state.js';
 import { configService } from '../services/config/config-resources.js';
-import { localExecutorService } from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
+import { getExecutor } from '../services/executor/executor-factory.js';
 import { storageBrowserService } from '../services/repo/storage-browser.js';
+import { getStateProvider } from '../services/state.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
@@ -39,7 +39,7 @@ interface StoragePruneOptions {
 /** Build a set of GUIDs that are currently live (mounted or running) on the
  *  machine. Used as a safety preflight before deleting cloud backups. */
 async function fetchLiveGuids(options: StoragePruneOptions): Promise<Set<string>> {
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName: 'repository_list',
     machineName: options.machine,
     params: {},
@@ -99,7 +99,7 @@ async function listGuidsAtPath(
   subpath: StorageMode,
   options: StoragePruneOptions
 ): Promise<string[]> {
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName: 'backup_list',
     machineName: options.machine,
     params: { sourceType: 'storage', from: storageName, path: subpath },
@@ -188,7 +188,7 @@ async function deleteOrphansByMode(
   let firstCall = true;
   for (const [mode, guids] of byMode) {
     outputService.info(`Deleting ${guids.length} orphan(s) from ${mode}/`);
-    const deleteResult = await localExecutorService.execute({
+    const deleteResult = await getExecutor().execute({
       functionName: 'backup_delete',
       machineName: options.machine,
       params: {

@@ -1,13 +1,5 @@
-import type { Command } from 'commander';
+import { type Command, Option } from 'commander';
 import { t } from '../../i18n/index.js';
-import { configService } from '../../services/config/config-resources.js';
-import { getCluster } from '../../services/config/config-cluster-ops.js';
-import {
-  createCluster,
-  destroyCluster,
-  installCluster,
-  scaleCluster,
-} from '../../services/cluster/cluster-provision.js';
 import {
   forkCluster,
   migrateCluster,
@@ -15,9 +7,17 @@ import {
 } from '../../services/cluster/cluster-fork.js';
 import { evictCluster, joinCluster } from '../../services/cluster/cluster-membership.js';
 import {
+  createCluster,
+  destroyCluster,
+  installCluster,
+  scaleCluster,
+} from '../../services/cluster/cluster-provision.js';
+import {
   fetchAndCacheKubeconfig,
   kubeconfigCachePath,
 } from '../../services/cluster/kubeconfig-cache.js';
+import { getCluster } from '../../services/config/config-cluster-ops.js';
+import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
 import { assertCommandPolicy, CMD } from '../../utils/command-policy.js';
 import { ValidationError } from '../../utils/errors.js';
@@ -36,7 +36,12 @@ function registerCreate(cluster: Command): void {
     .option('--ssh-user <user>', t('commands.cluster.create.sshUserOption'))
     .option('--base-domain <domain>', t('commands.cluster.create.baseDomainOption'))
     .option('--control-ds-size <size>', t('commands.cluster.create.controlDsSizeOption'))
-    .option('--control-ds-backend <backend>', t('commands.cluster.create.controlDsBackendOption'))
+    .addOption(
+      new Option(
+        '--control-ds-backend <backend>',
+        t('commands.cluster.create.controlDsBackendOption')
+      ).choices(['local', 'ceph'])
+    )
     .option('--control-ds-pool <pool>', t('commands.cluster.create.controlDsPoolOption'))
     .option('--debug', t('options.debug'))
     .action(
@@ -177,7 +182,12 @@ function registerForkMigrate(cluster: Command): void {
     .requiredOption('--name <name>', t('commands.cluster.fork.nameOption'))
     .requiredOption('--tag <tag>', t('commands.cluster.fork.tagOption'))
     .option('--cluster <dest>', t('commands.cluster.fork.clusterOption'))
-    .option('--writes <disposition>', t('commands.cluster.fork.writesOption'))
+    .addOption(
+      new Option('--writes <disposition>', t('commands.cluster.fork.writesOption')).choices([
+        'local',
+        'ceph',
+      ])
+    )
     .option('--up', t('commands.cluster.fork.upOption'))
     .option('--debug', t('options.debug'))
     .action(

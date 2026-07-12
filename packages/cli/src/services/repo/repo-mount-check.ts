@@ -1,7 +1,7 @@
+import { parseRepositoryListOutput } from '../../commands/repo-list-parser.js';
 import { t } from '../../i18n/index.js';
 import { ValidationError } from '../../utils/errors.js';
-import { parseRepositoryListOutput } from '../../commands/repo-list-parser.js';
-import { localExecutorService } from '../executor/local-executor.js';
+import { getExecutor } from '../executor/executor-factory.js';
 
 /**
  * Throw a ValidationError if `repoGuid` is not currently mounted on `machineName`.
@@ -34,7 +34,7 @@ export async function probeRepoMounted(
   machineName: string,
   options: { debug?: boolean } = {}
 ): Promise<boolean | undefined> {
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName: 'repository_list',
     machineName,
     params: {},

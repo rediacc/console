@@ -7,9 +7,9 @@
 //
 
 import {
+  isRenetFunction,
   RENET_FUNCTIONS_VERSION,
   type RenetFunctionName,
-  isRenetFunction,
 } from '../data/functions.generated';
 
 // Re-export type guards from generated types

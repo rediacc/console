@@ -7,7 +7,10 @@
 
 // Constants
 export {
+  COMMUNITY_LEGACY_CUTOFF_ISO,
   comparePlans,
+  DELEGATION_CERT_CREATE_RATE_LIMIT,
+  DELEGATION_RENEW_PATH,
   exceedsLimit,
   getDisplayPrice,
   getMaxMachines,
@@ -21,9 +24,6 @@ export {
   hasFeature,
   isCommunityUsable,
   isValidPlanCode,
-  COMMUNITY_LEGACY_CUTOFF_ISO,
-  DELEGATION_CERT_CREATE_RATE_LIMIT,
-  DELEGATION_RENEW_PATH,
   MACHINE_AUTO_RELEASE_HOURS,
   MACHINE_AUTO_RELEASE_MS,
   MAX_ACTIVE_DELEGATION_CERTS_PER_SUBSCRIPTION,
@@ -40,31 +40,6 @@ export {
   SUBSCRIPTION_CONFIG,
   TRIAL_PERIOD_DAYS,
 } from './constants';
-// Air-gapped renewal manifest
-export {
-  canonicalManifestBytes,
-  isManifestExpired,
-  RENEWAL_MANIFEST_SCHEMA_VERSION,
-  verifyManifestSignature,
-} from './renewal-manifest';
-export type {
-  RenewalRequestManifest,
-  SignedRenewalRequestManifest,
-} from './renewal-manifest';
-// Delegation cert validity policy
-export {
-  computeDelegationCertValidity,
-  computeRenewalThresholdDays,
-  SubscriptionExpiredForDelegationError,
-} from './delegation-cert-policy';
-export type {
-  ComputedValidity,
-  ComputeValidityInput,
-  ValidityClampReason,
-} from './delegation-cert-policy';
-// Signing keys (Ed25519 public keys for signature verification)
-export { CURRENT_SIGNING_KEY, SIGNING_KEYS } from './signing-keys';
-export type { SigningKey } from './signing-keys';
 // Crypto (Ed25519 signature verification)
 export {
   clearPublicKeys,
@@ -79,6 +54,31 @@ export {
   verifyAndDecodeSubscription,
   verifySignature,
 } from './crypto';
+export type {
+  ComputedValidity,
+  ComputeValidityInput,
+  ValidityClampReason,
+} from './delegation-cert-policy';
+// Delegation cert validity policy
+export {
+  computeDelegationCertValidity,
+  computeRenewalThresholdDays,
+  SubscriptionExpiredForDelegationError,
+} from './delegation-cert-policy';
+export type {
+  RenewalRequestManifest,
+  SignedRenewalRequestManifest,
+} from './renewal-manifest';
+// Air-gapped renewal manifest
+export {
+  canonicalManifestBytes,
+  isManifestExpired,
+  RENEWAL_MANIFEST_SCHEMA_VERSION,
+  verifyManifestSignature,
+} from './renewal-manifest';
+export type { SigningKey } from './signing-keys';
+// Signing keys (Ed25519 public keys for signature verification)
+export { CURRENT_SIGNING_KEY, SIGNING_KEYS } from './signing-keys';
 // Types
 export type {
   ApiToken,

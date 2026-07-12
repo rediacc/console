@@ -4,10 +4,10 @@
  */
 
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
-import { repoTagFromName } from '../../remote/repository/index.js';
 import { t } from '../../i18n/index.js';
-import { getStateProvider } from '../state.js';
+import { repoTagFromName } from '../../remote/repository/index.js';
 import { debugLog } from '../../utils/debug.js';
+import { getStateProvider } from '../state.js';
 
 export interface ConnectionDetails {
   host: string;

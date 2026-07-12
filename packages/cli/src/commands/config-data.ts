@@ -351,7 +351,7 @@ export function registerStorageCommands(config: Command, program: Command): void
         if (options.reveal) {
           await applyStorageRevealGate(options.name);
         } else {
-          const { redactClone } = await import('../schema/walker.js');
+          const { redactClone } = await import('../schema/fingerprint.js');
           const redacted = redactClone({
             resources: { storages: { [options.name]: storageConfig } },
           }) as { resources: { storages: Record<string, { vaultContent: unknown }> } };

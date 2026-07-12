@@ -1,3 +1,4 @@
+import { exitProcess } from '../services/core/request-context.js';
 import { EXIT_CODES } from '../types/index.js';
 
 // Lazy-load inquirer (pulls in rxjs and the whole prompt graph) only when
@@ -12,7 +13,7 @@ async function getPrompt(): Promise<ReturnType<typeof import('inquirer')['create
 function requireInteractive(context: string): void {
   if (process.stdin.isTTY !== true) {
     console.error(`Error: ${context} required but stdin is not a TTY. Use --yes to auto-confirm.`);
-    process.exit(EXIT_CODES.INVALID_ARGUMENTS);
+    exitProcess(EXIT_CODES.INVALID_ARGUMENTS);
   }
 }
 

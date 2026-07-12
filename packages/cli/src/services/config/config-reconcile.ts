@@ -18,8 +18,8 @@
  * message that names both sides and the fix.
  */
 
+import type { Placement, RdcConfig, RdcState, RepoFamily } from '@rediacc/shared/config-schema';
 import type { ListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
-import type { Placement, RdcConfig, RdcState, RepoFamily } from '../../schema/schemas.js';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { configService } from './config-resources.js';
 

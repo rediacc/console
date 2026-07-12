@@ -1,19 +1,16 @@
 import { randomUUID } from 'node:crypto';
-import type { Command } from 'commander';
+import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
-import {
-  type LocalExecuteResult,
-  localExecutorService,
-} from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
+import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { compositeKey, parseRepoRef } from '../utils/config-schema.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { resolveRepoTarget } from '../utils/repo-target.js';
-import { handleForkAction } from './repo-fork.js';
 import { assertMachineExists } from './_validate.js';
+import { handleForkAction } from './repo-fork.js';
 
 function tryParse<T>(s: string): T | undefined {
   try {
@@ -67,7 +64,7 @@ async function handleCommit(options: {
     const parent = cfg.headCommit ?? '';
     const commitGuid = randomUUID();
 
-    const result: LocalExecuteResult = await localExecutorService.execute({
+    const result: ExecuteResult = await getExecutor().execute({
       functionName: 'repository_commit',
       machineName,
       kubeCluster,
@@ -215,7 +212,7 @@ async function handleLog(options: {
       throw new ValidationError(`"${options.name}" has no commits yet`);
     }
 
-    const result: LocalExecuteResult = await localExecutorService.execute({
+    const result: ExecuteResult = await getExecutor().execute({
       functionName: 'repository_log',
       machineName,
       kubeCluster,
@@ -292,7 +289,7 @@ async function handleMerge(options: {
       ? (options.base ?? deriveMergeBase(options.resolve, options.from, sourceCfg, targetCfg))
       : undefined;
 
-    const result: LocalExecuteResult = await localExecutorService.execute({
+    const result: ExecuteResult = await getExecutor().execute({
       functionName: 'repository_merge',
       machineName,
       kubeCluster,
@@ -388,7 +385,12 @@ export function registerRepoBranchingCommands(repo: Command): void {
     .option('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--cluster <name>', t('commands.repo.clusterOption'))
     .option('--force', t('commands.repo.merge.forceOption'))
-    .option('--resolve <ours|theirs>', t('commands.repo.merge.resolveOption'))
+    .addOption(
+      new Option('--resolve <ours|theirs>', t('commands.repo.merge.resolveOption')).choices([
+        'ours',
+        'theirs',
+      ])
+    )
     .option('--base <guid>', t('commands.repo.merge.baseOption'))
     .option('--debug', t('options.debug'))
     .action(handleMerge);

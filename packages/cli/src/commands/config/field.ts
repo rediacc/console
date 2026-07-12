@@ -14,28 +14,27 @@
  */
 
 import { createHash } from 'node:crypto';
-import type { Command } from 'commander';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { configFileStorage } from '../../adapters/config-file-storage.js';
-import { configService } from '../../services/config/config-resources.js';
-import { auditLog, type AuditEventDraft } from '../../services/core/audit-log.js';
-import { t } from '../../i18n/index.js';
-import { isAgentEnvironment } from '../../utils/agent-guard.js';
-import {
-  evaluateMutations,
-  PreconditionMismatchError,
-  type MutationEntry,
-} from '../../services/core/mutation-gate.js';
-import { outputService } from '../../services/core/output.js';
 import {
   canonicalJson,
-  digestForPointer,
   getByPointer,
+  listSensitivityTemplates,
   metaForPointer,
-  redactClone,
-  shortFingerprint,
-} from '../../schema/walker.js';
-import { listSensitivityTemplates, SENSITIVITY_REGISTRY } from '../../schema/sensitivity.js';
+  SENSITIVITY_REGISTRY,
+} from '@rediacc/shared/config-schema';
+import type { Command } from 'commander';
+import { configFileStorage } from '../../adapters/config-file-storage.js';
+import { t } from '../../i18n/index.js';
+import { digestForPointer, redactClone, shortFingerprint } from '../../schema/fingerprint.js';
+import { configService } from '../../services/config/config-resources.js';
+import { type AuditEventDraft, auditLog } from '../../services/core/audit-log.js';
+import {
+  evaluateMutations,
+  type MutationEntry,
+  PreconditionMismatchError,
+} from '../../services/core/mutation-gate.js';
+import { outputService } from '../../services/core/output.js';
+import { isAgentEnvironment } from '../../utils/agent-guard.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 
 function configDir(): string {

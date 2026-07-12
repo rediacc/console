@@ -15,16 +15,40 @@
  * adapters/config-field-crypto.ts).
  */
 
-import { isIP } from 'node:net';
-import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { ValidationError } from '@rediacc/shared/errors';
+import { ValidationError } from '../errors/index.js';
+import { PolicyDocumentSchema } from '../policy/schema.js';
+import type { AcmeCertCache, RdcState, ReflogEntry, RepoRuntimeState } from './state-schema.js';
 import { StateSchema } from './state-schema.js';
-import type { RdcState, AcmeCertCache, ReflogEntry, RepoRuntimeState } from './state-schema.js';
 
 // =============================================================================
 // Primitive validators
 // =============================================================================
+
+/**
+ * Portable replacement for node:net's `isIP`, so this module runs unchanged on
+ * Node, Cloudflare Workers, and browsers. Same contract: 4, 6, or 0 for
+ * "not an IP address". Backed by zod's own IP validators rather than a
+ * hand-rolled regex.
+ */
+const ipv4Check = z.ipv4();
+const ipv6Check = z.ipv6();
+
+function ipVersion(value: string): 0 | 4 | 6 {
+  if (ipv4Check.safeParse(value).success) return 4;
+  if (ipv6Check.safeParse(value).success) return 6;
+  return 0;
+}
+
+/**
+ * Byte length of a UTF-8 string without Node's Buffer, so the secret size caps
+ * below evaluate identically in the browser and in Workers.
+ */
+const utf8Encoder = new TextEncoder();
+
+export function utf8ByteLength(value: string): number {
+  return utf8Encoder.encode(value).length;
+}
 
 const CRON_RANGES: [number, number][] = [
   [0, 59],
@@ -82,7 +106,7 @@ const ipOrHostname = z
   .string()
   .min(1, 'IP address or hostname cannot be empty')
   .refine(
-    (v) => isIP(v) !== 0 || /^[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?$/.test(v),
+    (v) => ipVersion(v) !== 0 || /^[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?$/.test(v),
     'Must be a valid IP address or hostname'
   );
 
@@ -179,7 +203,7 @@ export const SecretEntrySchema = z
     value: z.string().min(1, 'Secret value cannot be empty'),
   })
   .superRefine((entry, ctx) => {
-    const bytes = Buffer.byteLength(entry.value, 'utf8');
+    const bytes = utf8ByteLength(entry.value);
     const cap = entry.mode === 'env' ? SECRET_ENV_VALUE_MAX_BYTES : SECRET_FILE_VALUE_MAX_BYTES;
     if (bytes > cap) {
       ctx.addIssue({
@@ -200,7 +224,7 @@ const SecretsRecordSchema = z.record(SecretKeySchema, SecretEntrySchema).superRe
   let envTotal = 0;
   let fileTotal = 0;
   for (const entry of Object.values(rec)) {
-    const bytes = Buffer.byteLength(entry.value, 'utf8');
+    const bytes = utf8ByteLength(entry.value);
     if (entry.mode === 'env') envTotal += bytes;
     else fileTotal += bytes;
   }
@@ -296,11 +320,11 @@ const DatastoreConfigSchema = z.object({
 const InfraConfigSchema = z.object({
   publicIPv4: z
     .string()
-    .refine((v) => isIP(v) === 4, 'Must be a valid IPv4 address')
+    .refine((v) => ipVersion(v) === 4, 'Must be a valid IPv4 address')
     .optional(),
   publicIPv6: z
     .string()
-    .refine((v) => isIP(v) === 6, 'Must be a valid IPv6 address')
+    .refine((v) => ipVersion(v) === 6, 'Must be a valid IPv6 address')
     .optional(),
   baseDomain: domain.optional(),
   tcpPorts: z.array(port).optional(),
@@ -493,6 +517,17 @@ export const RdcConfigSchema = z
     remote: RemoteConfigSchema.optional(),
     renetPath: z.string().optional(),
     state: StateSchema.optional(),
+    /**
+     * Authorization rules the EXECUTOR enforces (`rdc serve`).
+     *
+     * It lives inside the config, which means it lives inside the encrypted
+     * blob, which means Rediacc cannot read an organization's rules. It is also
+     * field-committed (see sensitivity.ts '/policy'), so the server rejects a
+     * push that rewrites it without knowing the current value. That matters more
+     * than secrecy here: the threat is not someone READING the rules, it is
+     * someone quietly REWRITING them to grant themselves access.
+     */
+    policy: PolicyDocumentSchema.optional(),
   })
   .loose();
 
@@ -519,7 +554,7 @@ export type ClusterPoolRole = ClusterPool['role'];
 export type RemoteConfig = z.infer<typeof RemoteConfigSchema>;
 export type EncryptedBlob = z.infer<typeof EncryptedBlobSchema>;
 export type EncryptionState = z.infer<typeof EncryptionSchema>;
-export type { RdcState, AcmeCertCache };
+export type { AcmeCertCache, RdcState };
 
 /**
  * Flattened in-memory repository view. `ResourceState` presents repositories to
@@ -552,7 +587,7 @@ export type ArchivedRepository = z.infer<typeof ArchivedRepositorySchema>;
 export function createEmptyRdcConfig(): RdcConfig {
   return {
     schemaVersion: 3,
-    id: randomUUID(),
+    id: globalThis.crypto.randomUUID(),
     version: 1,
     defaults: { language: 'en', datastoreSize: '95%' },
     encryption: { mode: 'plaintext' },

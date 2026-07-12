@@ -17,8 +17,10 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import { getCluster } from '../config/config-cluster-ops.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
-import { localExecutorService, parseCapturedJson } from '../executor/local-executor.js';
+import { getExecutor } from '../executor/executor-factory.js';
+import { parseCapturedJson } from '../executor/local-executor.js';
 import { controlDatastore, controlDatastoreMount } from './cluster-kube.js';
+import { resolveExecutionTarget } from './cluster-target.js';
 import {
   discardReplicaDatastores,
   dispatch,
@@ -26,12 +28,11 @@ import {
   getReplicaSet,
   provisionOneReplica,
   provisionReplicaDatastores,
+  type ReplicaNode,
   recordReplicaSet,
   renderReplicaSet,
-  type ReplicaNode,
   replicaSnapshotName,
 } from './repo-replicate.js';
-import { resolveExecutionTarget } from './cluster-target.js';
 
 const NAMED_DS_BASE = '/mnt/rediacc-ds';
 /** Conventional data-volume name repos declare (spec 05 templates). */
@@ -301,7 +302,7 @@ async function inferClusterDatastore(
   cluster: string,
   debug?: boolean
 ): Promise<string> {
-  const res = await localExecutorService.execute({
+  const res = await getExecutor().execute({
     functionName: 'datastore_list',
     machineName: control,
     params: {},

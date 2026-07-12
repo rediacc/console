@@ -11,9 +11,9 @@ C7 (cluster backref lifted out of the backend union), C11 (merged secret caps),
 C14 (holders gain `volumes`), C15 (set-placement ghost verb removed), G3 (registryPort).
 
 Code studied:
-- `packages/cli/src/schema/schemas.ts` (v2 Zod schema, `CONFIG_KEY_ORDER_V2`, `stringifyConfig`)
-- `packages/cli/src/schema/sensitivity.ts` (pointer-template registry) + `schema/walker.ts`
-- `packages/cli/src/schema/migrations/{index.ts,v1-to-v2.ts,__tests__/migrations.test.ts}`
+- `packages/shared/src/config-schema/schemas.ts` (v2 Zod schema, `CONFIG_KEY_ORDER_V2`, `stringifyConfig`)
+- `packages/shared/src/config-schema/sensitivity.ts` (pointer-template registry) + `schema/walker.ts`
+- `packages/shared/src/config-schema/migrations/{index.ts,v1-to-v2.ts} + packages/cli/src/schema/__tests__/migrations.test.ts`
 - `packages/cli/src/services/config/resource-state.ts` (THE bug), `config-resources.ts`,
   `config-cluster-logic.ts`, `config-network-id.ts`, `config-resources-resolve.ts`
 - `packages/cli/src/adapters/config-file-storage.ts` (atomic save, unconditional version bump)
@@ -513,7 +513,7 @@ stubbing `services/core/master-password.ts#requireMasterPassword`):
 ## 3. The v2→v3 migration (R2-F6)
 
 Exactly ONE migration, no v2 tolerance afterward. Built on the real machinery:
-`packages/cli/src/schema/migrations/` (registered in `index.ts` `MIGRATIONS`, pattern =
+`packages/shared/src/config-schema/migrations/` (registered in `index.ts` `MIGRATIONS`, pattern =
 `v1-to-v2.ts` + `__tests__/migrations.test.ts`), fixtures at
 `packages/cli/src/__tests__/fixtures/config/v*-sample.json`, gate =
 `.ci/scripts/quality/check-config-migrations.sh` (round-trips every fixture through
@@ -743,7 +743,7 @@ bucket. Contract: stale state must degrade to a CLEAR ERROR, never a wrong-host 
 ## 6. Reality deltas (spec-suite / code mismatches found while writing this)
 
 1. **02 §11 cites `services/config/migrations/`**; the machinery actually lives at
-   `packages/cli/src/schema/migrations/`. This spec uses the real path.
+   `packages/shared/src/config-schema/migrations/`. This spec uses the real path.
 2. **`migrations/index.ts:14` comment says fixtures live at
    `packages/cli/tests/fixtures/config/`**; the gate script and the actual files use
    `packages/cli/src/__tests__/fixtures/config/`. Fix the comment in P1.

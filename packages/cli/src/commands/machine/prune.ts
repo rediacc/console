@@ -1,13 +1,13 @@
+import type { Command } from 'commander';
+import { t } from '../../i18n/index.js';
 import {
   listSSHConfigEntries,
   removePersistedKeys,
   removeSSHConfigEntry,
 } from '../../remote/vscode/index.js';
-import type { Command } from 'commander';
-import { t } from '../../i18n/index.js';
 import { configService } from '../../services/config/config-resources.js';
-import { localExecutorService } from '../../services/executor/local-executor.js';
 import { outputService } from '../../services/core/output.js';
+import { getExecutor } from '../../services/executor/executor-factory.js';
 import { getOutputFormat, handleError } from '../../utils/errors.js';
 import { renderLocalExecutionFailure } from '../../utils/local-execution-failures.js';
 import { assertMachineExists } from '../_validate.js';
@@ -34,7 +34,7 @@ async function pruneDatastore(machineName: string, options: PruneOptions): Promi
 
   outputService.info(t('commands.machine.prune.startingDatastore', { machine: machineName }));
 
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName: 'repository_prune',
     machineName,
     params,
@@ -109,7 +109,7 @@ async function deleteOrphanedItems(
   let firstCall = true;
   for (const item of orphaned) {
     outputService.info(`Deleting ${item.guid.slice(0, 8)}…`);
-    const deleteResult = await localExecutorService.execute({
+    const deleteResult = await getExecutor().execute({
       functionName: 'repository_delete',
       machineName,
       params: { repository: item.guid },

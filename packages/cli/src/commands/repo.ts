@@ -1,5 +1,7 @@
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
+import { listCanaries } from '../services/cluster/repo-release.js';
+import { listReplicaSets } from '../services/cluster/repo-replicate.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
@@ -17,17 +19,15 @@ import {
   runBatchOperation,
 } from './repo-batch-utils.js';
 import { registerRepoBranchingCommands } from './repo-branching.js';
-import { registerRepoMaintenanceCommands } from './repo-maintenance.js';
+import { registerRepoCanaryCommands } from './repo-canary.js';
 import { registerRepoCatCommand } from './repo-cat.js';
 import { registerRepoCreateDeleteCommands } from './repo-create-delete.js';
 import { registerRepoDiffCommand } from './repo-diff.js';
-import { registerRepoSecretCommands } from './repo-secret.js';
 import { registerExtendedRepoCommands } from './repo-extended.js';
+import { registerRepoMaintenanceCommands } from './repo-maintenance.js';
 import { registerRepoMigrateCommand } from './repo-migrate.js';
 import { registerRepoReplicateCommands } from './repo-replicate.js';
-import { registerRepoCanaryCommands } from './repo-canary.js';
-import { listReplicaSets } from '../services/cluster/repo-replicate.js';
-import { listCanaries } from '../services/cluster/repo-release.js';
+import { registerRepoSecretCommands } from './repo-secret.js';
 import { registerRepoSyncCommands } from './repo-sync.js';
 import { registerRepoTunnelCommand } from './repo-tunnel.js';
 import { registerRepoVolumeCommands } from './repo-volume.js';

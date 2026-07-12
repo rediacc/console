@@ -1,20 +1,22 @@
 import { promises as fs } from 'node:fs';
 import { basename, join } from 'node:path';
+import {
+  createEmptyRdcConfig,
+  type MigrationContext,
+  parseConfig,
+  type RdcConfig,
+  RdcConfigSchema,
+  runMigrations,
+  stringifyConfig,
+} from '@rediacc/shared/config-schema';
 import { getConfigDir } from '@rediacc/shared/paths';
 import lockfile from 'proper-lockfile';
-import { runMigrations, type MigrationContext } from '../schema/migrations/index.js';
 import {
-  RdcConfigSchema,
-  parseConfig,
-  stringifyConfig,
-  createEmptyRdcConfig,
-  type RdcConfig,
-} from '../schema/schemas.js';
-import {
-  encryptConfigFields,
   decryptConfigFields,
+  encryptConfigFields,
   injectEncryptedStubs,
 } from './config-field-crypto.js';
+import { nodeCryptoProvider } from './crypto.js';
 
 const CONFIG_DIR = getConfigDir();
 const DEFAULT_CONFIG_NAME = 'rediacc';
@@ -166,7 +168,12 @@ export class ConfigFileStorage {
   }
 
   private migrationContext(): MigrationContext {
-    return { getMasterPassword: () => this.requirePassword() };
+    return {
+      getMasterPassword: () => this.requirePassword(),
+      // The v2 compound-blob unpack needs AES-GCM. The schema package is
+      // runtime-portable and carries no crypto provider, so the host injects one.
+      decryptLegacyBlob: (data, password) => nodeCryptoProvider.decrypt(data, password),
+    };
   }
 
   private async loadUnlocked(name: string): Promise<RdcConfig> {

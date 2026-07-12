@@ -16,8 +16,8 @@
       "create": {
         "baseDomainOption": "Domínio base para o DNS público do cluster (caso contrário, herdado de uma máquina irmã)",
         "controlDsBackendOption": "Anchor control datastore backend: local | ceph (default: ceph if the cluster has ceph, else local)",
-        "controlDsPoolOption": "Ceph rbd pool for the anchor control datastore (ceph backend)",
-        "controlDsSizeOption": "Anchor control datastore size (default 10G)",
+        "controlDsPoolOption": "Pool RBD do Ceph para o datastore de controlo âncora (backend ceph)",
+        "controlDsSizeOption": "Tamanho do datastore de controlo âncora (predefinição: 10G)",
         "description": "Provisionar os membros dos pools de um cluster definido com 'rdc config cluster add', inicializar o renet em cada um, e instalar os componentes (ceph primeiro). Os fornecedores de nuvem provisionam via OpenTofu; o KVM chega numa fase posterior.",
         "descriptionShort": "Provisionar um cluster configurado",
         "nameOption": "Nome do cluster",
@@ -35,9 +35,9 @@
       },
       "evict": {
         "description": "Drain the node, delete its Node object, and clear its cluster membership. The cluster is derived from the machine; a machine that still mounts a datastore is refused.",
-        "descriptionShort": "Remove a node from its cluster",
-        "forceOption": "Skip the drain when the node is already dead",
-        "machineOption": "Machine to evict"
+        "descriptionShort": "Remover um nó do seu cluster",
+        "forceOption": "Ignorar a drenagem quando o nó já está morto",
+        "machineOption": "Máquina a remover do cluster"
       },
       "fork": {
         "clusterOption": "Cluster de destino existente para onde fazer fork (deve estar em máquinas distintas)",
@@ -45,7 +45,7 @@
         "descriptionShort": "Clonar um cluster inteiro (com dados)",
         "nameOption": "Nome do cluster",
         "tagOption": "Etiqueta do fork",
-        "upOption": "Bring the forked repos up and gate on cluster health after the fork boots",
+        "upOption": "Colocar os repositórios do fork em funcionamento e validar a saúde do cluster depois de o fork arrancar",
         "writesOption": "Fork write disposition: local (ephemeral dm-COW overlay, zero Ceph footprint) | ceph (durable clone). Default local"
       },
       "install": {
@@ -54,10 +54,10 @@
         "nameOption": "Nome do cluster"
       },
       "join": {
-        "clusterOption": "Cluster to join the machine to",
+        "clusterOption": "Cluster ao qual juntar a máquina",
         "description": "Adopt an existing registered machine as a Kubernetes agent node of a cluster, using the same CA-derived join token as anchor and rejoin.",
-        "descriptionShort": "Add a machine to a cluster as an agent",
-        "machineOption": "Registered machine to adopt"
+        "descriptionShort": "Adicionar uma máquina a um cluster como agente",
+        "machineOption": "Máquina registada a adotar"
       },
       "kubeconfig": {
         "cached": "Kubeconfig colocado em cache em {{path}}",
@@ -72,10 +72,10 @@
         "toOption": "Destino"
       },
       "rehearse": {
-        "clusterOption": "Destination cluster whose nodes host the throwaway rehearsal fork",
+        "clusterOption": "Cluster de destino cujos nós alojam o fork de ensaio descartável",
         "description": "Rehearse a release/upgrade: fork the cluster onto a destination as an ephemeral throwaway (writes=local, secretless role=rehearsal), bring it up, gate on health, then discard it. The parent is never touched.",
-        "descriptionShort": "Boot an ephemeral throwaway fork, health-gate it, then discard",
-        "nameOption": "Source cluster to rehearse",
+        "descriptionShort": "Arrancar um fork efémero e descartável, validar a sua saúde e depois eliminá-lo",
+        "nameOption": "Cluster de origem a ensaiar",
         "tagOption": "Optional tag for the rehearsal fork (default: timestamped)"
       },
       "scale": {
@@ -960,13 +960,13 @@
       "canary": {
         "description": "Run a NEW image next to the stable one and split live traffic between them by percentage (release ladder rung 2). Creates one canary Deployment + Service on the SAME live data (no fork: canary users on forked data would read stale data and write into a doomed copy) and tells the Rediacc proxy to route the given percent of the stable hostname's traffic to it. Weight 0 keeps the canary dark; weight 100 is the blue/green flip. Before every canary change, an automatic group snapshot of the cluster's datastores is taken (release ladder rung 0) as the universal undo. Schema compatibility between the two versions (expand-contract) is the application's responsibility. For schema-BREAKING releases, use blue/green instead: fork the repo (instant, includes data), point the fork's Service here with weight 100, and roll back by restarting the untouched parent; writes made after the flip exist only in the new copy, so the rollback window is a policy decision.",
         "descriptionShort": "Canary release: weighted traffic split on shared data",
-        "imageOption": "New image the canary Deployment runs (against shared live data)",
-        "nameOption": "Repository the canary belongs to (its namespace)",
-        "portOption": "Port the app serves on (must match the stable Service)",
+        "imageOption": "Nova imagem executada pelo Deployment do canary (sobre os dados em produção partilhados)",
+        "nameOption": "Repositório a que o canary pertence (o seu namespace)",
+        "portOption": "Porta em que a aplicação escuta (deve corresponder ao Service estável)",
         "remove": {
           "description": "Remove a canary's Deployment and Service (label-scoped); the stable Service serves 100% again. Release-undo snapshots are retained; prune them with the datastore snapshot commands.",
-          "descriptionShort": "Tear down a canary",
-          "nameOption": "Canary set to remove"
+          "descriptionShort": "Remover um canary",
+          "nameOption": "Conjunto de canary a remover"
         },
         "replicasOption": "Canary Deployment replica count (default: 1)",
         "serviceOption": "Stable Service to split traffic with (default: the repo name)",
@@ -977,10 +977,10 @@
         },
         "weight": {
           "description": "Change the percent of traffic routed to a canary. Takes a fresh release-undo group snapshot first, then re-applies the overlay; the proxy picks up the new split on its refresh tick. Weight 100 sends all traffic to the new version (the blue/green flip).",
-          "descriptionShort": "Change a canary's traffic percentage",
-          "nameOption": "Canary set to adjust"
+          "descriptionShort": "Alterar a percentagem de tráfego de um canary",
+          "nameOption": "Conjunto de canary a ajustar"
         },
-        "weightOption": "Percent of traffic routed to the canary (integer 0-100; 0 = dark, 100 = full flip)"
+        "weightOption": "Percentagem de tráfego encaminhado para o canary (inteiro 0-100; 0 = oculto, 100 = troca total)"
       },
       "cat": {
         "description": "Ler uma janela delimitada de um ficheiro dentro de um repositório e escrevê-la para stdout (delimitado no servidor; os diagnósticos vão para stderr)",
@@ -1272,25 +1272,25 @@
       "replicate": {
         "datastoreOption": "Data datastore holding the repository (default: the cluster's single data datastore)",
         "description": "Create N read replicas of a repository in seconds, regardless of database size. Takes ONE datastore snapshot, then makes N constant-time fork-attaches (copy-on-write, throwaway local writes) spread across the cluster's nodes, and applies a generated overlay: one pinned PersistentVolume per replica, a StatefulSet, and two Services ({repo}-rw to the primary, {repo}-ro across the replicas). Replicas are POINT-IN-TIME copies: no replication stream, no read-your-writes; each replica runs one crash-recovery pass before serving. Refresh them with 'repo replicate refresh'. Replica sets are managed state: see 'repo replicate status' and remove with 'repo replicate remove'.",
-        "descriptionShort": "Instant read replicas from datastore forks",
+        "descriptionShort": "Réplicas de leitura instantâneas a partir de forks de datastore",
         "headlessOption": "Make the -ro Service headless: DNS returns every replica pod IP for driver-side balancing (long-lived DB connections skew a normal Service's per-connection balancing)",
-        "imageOption": "Engine image the replicas run (same engine as the primary)",
-        "nameOption": "Repository to replicate (its namespace + service base name)",
-        "portOption": "Port the engine serves on",
+        "imageOption": "Imagem do motor executada pelas réplicas (o mesmo motor do primário)",
+        "nameOption": "Repositório a replicar (o seu namespace + nome base do serviço)",
+        "portOption": "Porta em que o motor escuta",
         "primaryAppOption": "The primary pod's 'app' label value the -rw Service targets (default: the repo name)",
         "pvcOption": "Volume name the engine mounts as its data dir (default: data)",
         "refresh": {
           "description": "Roll every replica onto a fresh point-in-time snapshot, ONE at a time: bounce the replica pod, discard and re-fork its datastore under the same path, and let readiness re-admit it. N-1 replicas keep serving throughout.",
-          "descriptionShort": "Roll replicas onto a fresh snapshot",
-          "nameOption": "Replica set to refresh"
+          "descriptionShort": "Atualizar as réplicas para um novo snapshot",
+          "nameOption": "Conjunto de réplicas a atualizar"
         },
         "refreshOption": "Intended refresh interval recorded on the set (e.g. 1h); run 'repo replicate refresh' to roll it",
         "remove": {
           "description": "Remove a replica set: delete its generated k8s objects (label-scoped), discard its fork datastores, drop its snapshot, and forget the state. Infra steps are best-effort so removal converges even on a partially-gone cluster.",
-          "descriptionShort": "Tear down a replica set",
-          "nameOption": "Replica set to remove"
+          "descriptionShort": "Remover um conjunto de réplicas",
+          "nameOption": "Conjunto de réplicas a remover"
         },
-        "replicasOption": "Number of read replicas to create",
+        "replicasOption": "Número de réplicas de leitura a criar",
         "setOption": "Replica-set name (default: <repo>-replicas)",
         "status": {
           "description": "Show managed replica sets: replicas, hosting nodes, fork datastores, snapshot, and refresh timestamps.",
@@ -1486,6 +1486,16 @@
     },
     "snapshot": {
       "description": "Gerir snapshots BTRFS em máquinas remotas"
+    },
+    "serve": {
+      "description": "Executa este processo como executor para que os clientes possam executar comandos através dele em vez de se conectarem eles próprios via SSH",
+      "optionPort": "Porta para escutar",
+      "optionHost": "Endereço ao qual vincular",
+      "optionMode": "Posicionamento: daemon (host do cliente) ou container",
+      "summary": "Executar como executor para clientes remotos",
+      "listening": "Executor escutando em http://{{host}}:{{port}} (modo: {{mode}})",
+      "hint": "Aponte um cliente para ele com: rdc --proxy <url> <command>",
+      "draining": "Finalizando os comandos em andamento antes do desligamento."
     },
     "storage": {
       "browse": {
@@ -1785,6 +1795,43 @@
           "notRunning": "{{provider}} não estava em execução",
           "stopped": "{{provider}} parado"
         }
+      }
+    },
+    "job": {
+      "description": "Gerencia jobs desanexados em uma máquina: liste-os, verifique o status, reproduza ou acompanhe seus logs de eventos, cancele um deles ou remova os finalizados (garbage collection). Um job desanexado é executado sob o systemd na máquina, portanto sobrevive a uma queda de conexão e pode ser reconectado depois.",
+      "summary": "Gerencia jobs desanexados em uma máquina",
+      "machineOption": "Nome da máquina de destino",
+      "idOption": "ID do job",
+      "list": {
+        "description": "Lista os jobs desanexados em uma máquina, do mais recente ao mais antigo",
+        "empty": "Nenhum job em {{machine}}."
+      },
+      "status": {
+        "description": "Mostra o status de um job desanexado"
+      },
+      "logs": {
+        "description": "Reproduz ou acompanha o log de eventos de um job desanexado",
+        "followOption": "Transmite continuamente até o job terminar",
+        "sinceLineOption": "Retoma após esta quantidade de linhas (a contagem que você já recebeu)",
+        "invalidSinceLine": "--since-line deve ser uma contagem de linhas (recebido \"{{value}}\")",
+        "detached": "Desconectado do job {{jobId}}. Ele ainda está em execução em {{machine}} e NÃO foi cancelado. Reconecte-se com: rdc job logs -m {{machine}} --id {{jobId}} --follow"
+      },
+      "cancel": {
+        "description": "Cancela um job desanexado em execução",
+        "confirm": "Cancelar o job {{jobId}} ({{function}}) em {{machine}}? A operação será interrompida.",
+        "requested": "Cancelamento solicitado para o job {{jobId}}.",
+        "alreadyFinished": "O job {{jobId}} já está {{state}}; nada a cancelar."
+      },
+      "gc": {
+        "description": "Remove jobs finalizados e seus logs",
+        "olderThanOption": "Coleta jobs finalizados há mais tempo que isso, em horas (padrão: 168)",
+        "invalidOlderThan": "--older-than deve ser um número de horas, por exemplo 168 ou 168h (recebido \"{{value}}\")",
+        "confirm": "Remover jobs em {{machine}} finalizados há mais de {{hours}}h? Os logs deles serão excluídos.",
+        "removed": "{{count}} job(s) removido(s)."
+      },
+      "finished": {
+        "succeeded": "O job {{jobId}} foi concluído com sucesso.",
+        "other": "Job {{jobId}} {{state}}. {{error}}"
       }
     }
   },

@@ -14,21 +14,21 @@ import { randomUUID } from 'node:crypto';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
+import { resolveExecutionTarget } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
-import { localExecutorService } from '../services/executor/local-executor.js';
-import { parseRepositoryListOutput } from './repo-list-parser.js';
 import { outputService } from '../services/core/output.js';
+import { getExecutor } from '../services/executor/executor-factory.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
+import { formatBytes } from '../utils/format.js';
 import { resolveRemoteName } from '../utils/remote-resolve.js';
-import { resolveExecutionTarget } from '../services/cluster/cluster-target.js';
 import { withSpinner } from '../utils/spinner.js';
 import { formatStepDuration } from '../utils/timeline.js';
-import { autoProvisionTarget, buildPushParams, resolveExtraMachines } from './repo-backup.js';
+import { autoProvisionTarget, buildPushParams } from './repo-backup.js';
 import { postRepoUpTasks } from './repo-batch-utils.js';
+import { parseRepositoryListOutput } from './repo-list-parser.js';
 import { extractPushResult, type PushResultStats } from './repo-push-stats.js';
-import { formatBytes } from '../utils/format.js';
 
 export function registerRepoMigrateCommand(repoCommand: Command): void {
   repoCommand
@@ -76,12 +76,10 @@ async function executePush(
   debug?: boolean
 ): Promise<PushResultStats | undefined> {
   await configService.ensureRepositoryNetworkId(repoName);
-  const extraMachines = await resolveExtraMachines(params);
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName: 'backup_push',
     machineName,
     params: { repository: repoName, ...params },
-    extraMachines,
     debug,
     quietSpinners: true,
   });
@@ -100,7 +98,7 @@ async function executeQuiet(
   debug?: boolean
 ): Promise<void> {
   await configService.ensureRepositoryNetworkId(repoName);
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName,
     machineName,
     params: { repository: repoName, ...params },
@@ -118,7 +116,7 @@ async function assertNotMountedOnTarget(
   repoGuid: string,
   targetMachine: string
 ): Promise<void> {
-  const targetCheck = await localExecutorService.execute({
+  const targetCheck = await getExecutor().execute({
     functionName: 'repository_list',
     machineName: targetMachine,
     params: {},

@@ -3,21 +3,21 @@ import type {
   ListResult,
 } from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { getContainers } from '@rediacc/shared/renet-contract/data/list-types.generated';
-import { testSSHConnectivity } from '../remote/ssh/index.js';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { outputService } from '../services/core/output.js';
+import { testSSHConnectivity } from '../remote/ssh/index.js';
 import { configService } from '../services/config/config-resources.js';
+import { outputService } from '../services/core/output.js';
 import { fetchMachineStatus } from '../services/machine/machine-status.js';
+import { getSSHConnectionDetails } from '../services/machine/ssh-connection.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
 import { openRepoTunnel } from '../services/repo/repo-ssh-tunnel.js';
-import { assertDockerOnly } from '../utils/repo-target.js';
-import { getSSHConnectionDetails } from '../services/machine/ssh-connection.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
+import { assertDockerOnly } from '../utils/repo-target.js';
 import { withSpinner } from '../utils/spinner.js';
 
 interface TunnelOptions {

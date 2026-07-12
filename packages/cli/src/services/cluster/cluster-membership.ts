@@ -19,7 +19,7 @@ import { getCluster } from '../config/config-cluster-ops.js';
 import { configService } from '../config/config-resources.js';
 import { auditService } from '../core/audit.js';
 import { outputService } from '../core/output.js';
-import { type LocalExecuteResult, localExecutorService } from '../executor/local-executor.js';
+import { type ExecuteResult, getExecutor } from '../executor/executor-factory.js';
 
 const MOUNT_BASE = '/mnt/rediacc/mounts';
 const NAMED_DS_BASE = '/mnt/rediacc-ds';
@@ -47,8 +47,8 @@ async function dispatch(
   machineName: string,
   params: Record<string, unknown>,
   opts: { debug?: boolean; capture?: boolean } = {}
-): Promise<LocalExecuteResult> {
-  const result = await localExecutorService.execute({
+): Promise<ExecuteResult> {
+  const result = await getExecutor().execute({
     functionName,
     machineName,
     params,

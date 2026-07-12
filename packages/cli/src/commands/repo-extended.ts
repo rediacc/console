@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
-import { localExecutorService } from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
+import { getExecutor } from '../services/executor/executor-factory.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
@@ -26,7 +26,7 @@ async function executeMachineFunction(
   await assertMachineExists(options.machine);
   outputService.info(messages.starting);
 
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName,
     machineName: options.machine,
     params: {},
@@ -59,7 +59,7 @@ async function handleAutostartList(options: AutostartListOptions): Promise<void>
   await assertMachineExists(options.machine);
   outputService.info(t('commands.repo.autostart.list.starting', { machine: options.machine }));
 
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName: 'repository_autostart_list',
     machineName: options.machine,
     params: {},

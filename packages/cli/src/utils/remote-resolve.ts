@@ -3,8 +3,8 @@
  * Used by push/pull commands to unify --to/--from flags.
  */
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config/config-resources.js';
 import { getCluster } from '../services/config/config-cluster-ops.js';
+import { configService } from '../services/config/config-resources.js';
 import { ValidationError } from './errors.js';
 
 type RemoteType = 'machine' | 'storage' | 'cluster';

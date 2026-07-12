@@ -1805,6 +1805,53 @@
     },
     "snapshot": {
       "description": "Manage BTRFS snapshots on remote machines"
+    },
+    "serve": {
+      "description": "Run this process as an executor so clients can run commands through it instead of connecting over SSH themselves",
+      "optionPort": "Port to listen on",
+      "optionHost": "Address to bind",
+      "optionMode": "Placement: daemon (customer host) or container",
+      "summary": "Run as an executor for remote clients",
+      "listening": "Executor listening on http://{{host}}:{{port}} (mode: {{mode}})",
+      "hint": "Point a client at it with: rdc --proxy <url> <command>",
+      "draining": "Draining in-flight commands before shutdown."
+    },
+    "job": {
+      "description": "Manage detached jobs on a machine: list them, check status, replay or follow their event logs, cancel one, or garbage-collect finished ones. A detached job runs under systemd on the machine, so it survives a dropped connection and can be re-attached to later.",
+      "summary": "Manage detached jobs on a machine",
+      "machineOption": "Target machine name",
+      "idOption": "Job ID",
+      "list": {
+        "description": "List detached jobs on a machine, newest first",
+        "empty": "No jobs on {{machine}}."
+      },
+      "status": {
+        "description": "Show a detached job's status"
+      },
+      "logs": {
+        "description": "Replay or follow a detached job's event log",
+        "followOption": "Stream until the job finishes",
+        "sinceLineOption": "Resume after this many lines (the count you already received)",
+        "invalidSinceLine": "--since-line must be a line count (got \"{{value}}\")",
+        "detached": "Detached from job {{jobId}}. It is still running on {{machine}} and was NOT cancelled. Re-attach with: rdc job logs -m {{machine}} --id {{jobId}} --follow"
+      },
+      "cancel": {
+        "description": "Cancel a running detached job",
+        "confirm": "Cancel job {{jobId}} ({{function}}) on {{machine}}? The operation will be stopped.",
+        "requested": "Cancel requested for job {{jobId}}.",
+        "alreadyFinished": "Job {{jobId}} already {{state}}; nothing to cancel."
+      },
+      "gc": {
+        "description": "Remove finished jobs and their logs",
+        "olderThanOption": "Collect jobs that finished longer ago than this, in hours (default: 168)",
+        "invalidOlderThan": "--older-than must be a number of hours, e.g. 168 or 168h (got \"{{value}}\")",
+        "confirm": "Remove jobs on {{machine}} that finished more than {{hours}}h ago? Their logs are deleted.",
+        "removed": "Removed {{count}} job(s)."
+      },
+      "finished": {
+        "succeeded": "Job {{jobId}} succeeded.",
+        "other": "Job {{jobId}} {{state}}. {{error}}"
+      }
     }
   },
   "help": {

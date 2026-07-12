@@ -18,8 +18,8 @@
  * Those are reported as warnings so the operator can fix manually.
  */
 
+import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { parseRepoRef } from '../../utils/config-schema.js';
-import type { RdcConfig } from '../../schema/schemas.js';
 
 export interface DroppedRef {
   path: string;

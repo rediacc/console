@@ -8,37 +8,37 @@
  * works on them.
  */
 
+import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { readFile } from 'node:fs/promises';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { ClusterConfig, ClusterPool } from '../../types/index.js';
+import {
+  getCluster,
+  materializeClusterMachines,
+  resolveControlNode,
+} from '../config/config-cluster-ops.js';
 import { configService } from '../config/config-resources.js';
-import { localExecutorService } from '../executor/local-executor.js';
+import { auditService } from '../core/audit.js';
+import { outputService } from '../core/output.js';
+import { getExecutor } from '../executor/executor-factory.js';
+import {
+  ensureClusterDnsRecords,
+  pushInfraConfig,
+  removeClusterDnsRecords,
+} from '../provision/infra-provision.js';
+import { bootstrapMachine, scanHostKeys, waitForSSH } from '../renet/machine-bootstrap.js';
+import { generateClusterTfJson } from '../tofu/cluster-tf-generator.js';
+import { TofuExecutor } from '../tofu/executor.js';
+import { isKvmProvider, resolveProviderMapping } from '../tofu/provider-resolver.js';
 import {
   CEPH_CLUSTER_NAME,
   dispatchCeph,
   exportCephClientConfig,
   resolveCephMembers,
 } from './cluster-ceph.js';
-import {
-  getCluster,
-  materializeClusterMachines,
-  resolveControlNode,
-} from '../config/config-cluster-ops.js';
-import { outputService } from '../core/output.js';
-import { auditService } from '../core/audit.js';
-import {
-  ensureClusterDnsRecords,
-  pushInfraConfig,
-  removeClusterDnsRecords,
-} from '../provision/infra-provision.js';
 import type { ControlDatastoreOptions } from './cluster-kube.js';
 import { installK8s, scaleK8sPool } from './cluster-kube.js';
-import { bootstrapMachine, scanHostKeys, waitForSSH } from '../renet/machine-bootstrap.js';
-import { TofuExecutor } from '../tofu/executor.js';
-import { isKvmProvider, resolveProviderMapping } from '../tofu/provider-resolver.js';
-import { generateClusterTfJson } from '../tofu/cluster-tf-generator.js';
 import { provisionKvmCluster, teardownKvmCluster } from './kvm-provisioner.js';
 
 const TOFU_CLUSTER_DIR = join(homedir(), '.config', 'rediacc', 'tofu', 'clusters');
@@ -193,7 +193,7 @@ async function bootstrapMembers(
  */
 async function cephIsBootstrapped(machineName: string, debug?: boolean): Promise<boolean> {
   try {
-    const res = await localExecutorService.execute({
+    const res = await getExecutor().execute({
       functionName: 'ceph_health',
       machineName,
       params: { cluster: CEPH_CLUSTER_NAME },

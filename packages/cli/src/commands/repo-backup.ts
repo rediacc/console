@@ -1,20 +1,17 @@
-import { Option, type Command } from 'commander';
+import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config/config-resources.js';
+import { getSubscriptionTokenState } from '../services/account/subscription-auth.js';
 import { resolveControlNode } from '../services/config/config-cluster-ops.js';
-import {
-  localExecutorService,
-  type LocalExecuteResult,
-} from '../services/executor/local-executor.js';
+import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { probeRepoMounted } from '../services/repo/repo-mount-check.js';
-import { getSubscriptionTokenState } from '../services/account/subscription-auth.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
+import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { type ResolvedRemote, resolveRemoteName } from '../utils/remote-resolve.js';
 import { resolveRepoTarget } from '../utils/repo-target.js';
-import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { coerceCliParams, validateFunctionParams } from './function-params.js';
 import {
   type BackupListEntry,
@@ -35,39 +32,9 @@ interface BackupRunOptions {
   skipRouterRestart?: boolean;
 }
 
-type RepoConfig = import('../schema/schemas.js').RepositoryConfig;
+type RepoConfig = import('@rediacc/shared/config-schema').RepositoryConfig;
 
 /** Resolve extra machines needed for multi-machine operations (e.g., backup push --to-machine). */
-export async function resolveExtraMachines(
-  params: Record<string, unknown>
-): Promise<
-  Record<string, { ip: string; port?: number; user: string; datastore?: string }> | undefined
-> {
-  if (params.destinationType === 'machine' && typeof params.to === 'string') {
-    const machine = await configService.getLocalMachine(params.to);
-    return {
-      [params.to]: {
-        ip: machine.ip,
-        port: machine.port,
-        user: machine.user,
-        datastore: machine.datastore,
-      },
-    };
-  }
-  if (params.sourceType === 'machine' && typeof params.from === 'string') {
-    const machine = await configService.getLocalMachine(params.from);
-    return {
-      [params.from]: {
-        ip: machine.ip,
-        port: machine.port,
-        user: machine.user,
-        datastore: machine.datastore,
-      },
-    };
-  }
-  return undefined;
-}
-
 /**
  * Execute a bridge function in the appropriate mode (local/s3/cloud).
  * Returns whether the execution succeeded so callers can gate follow-up state
@@ -79,7 +46,7 @@ async function executeFunction(
   functionName: string,
   params: Record<string, unknown>,
   options: BackupRunOptions
-): Promise<{ ok: boolean; local?: LocalExecuteResult }> {
+): Promise<{ ok: boolean; local?: ExecuteResult }> {
   const machineName = options.machine;
 
   if (!machineName) {
@@ -92,13 +59,11 @@ async function executeFunction(
   outputService.info(
     t('commands.shortcuts.run.executingLocal', { function: functionName, machine: machineName })
   );
-  const extraMachines = await resolveExtraMachines(coerced);
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName,
     machineName,
     kubeCluster: options.kubeCluster,
     params: coerced,
-    extraMachines,
     debug: options.debug,
     skipRouterRestart: options.skipRouterRestart,
   });
@@ -220,7 +185,7 @@ export async function postPushDeploy(
   }
   outputService.info(t('commands.repo.push.deploying', { repo, machine: targetName }));
   await deployRepoKeyIfNeeded(repo, targetName);
-  const upResult = await localExecutorService.execute({
+  const upResult = await getExecutor().execute({
     functionName: 'repository_up',
     machineName: targetName,
     params: { repository: repo, mount: true },
@@ -373,7 +338,7 @@ async function postPullDeploy(
   }
   outputService.info(t('commands.repo.pull.deploying', { repo, machine: targetMachine }));
   await deployRepoKeyIfNeeded(repo, targetMachine);
-  const upResult = await localExecutorService.execute({
+  const upResult = await getExecutor().execute({
     functionName: 'repository_up',
     machineName: targetMachine,
     params: { repository: repo, mount: true },

@@ -1,36 +1,17 @@
-import type { Command } from 'commander';
+import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
-import { localExecutorService } from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
+import { getExecutor } from '../services/executor/executor-factory.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
-import { coerceCliParams, validateFunctionParams } from './function-params.js';
 import { assertMachineExists } from './_validate.js';
+import { coerceCliParams, validateFunctionParams } from './function-params.js';
 
 interface DatastoreRunOptions {
   machine?: string;
   debug?: boolean;
   watch?: boolean;
-}
-
-/** Resolve extra machines for fork operations. */
-async function resolveExtraMachines(
-  coerced: Record<string, unknown>
-): Promise<
-  Record<string, { ip: string; port?: number; user: string; datastore?: string }> | undefined
-> {
-  if (!coerced.to || typeof coerced.to !== 'string') return undefined;
-  const toValue = coerced.to;
-  const targetMachine = await configService.getLocalMachine(toValue);
-  return {
-    [toValue]: {
-      ip: targetMachine.ip,
-      port: targetMachine.port,
-      user: targetMachine.user,
-      datastore: targetMachine.datastore,
-    },
-  };
 }
 
 /** Execute a function locally via direct SSH. */
@@ -44,12 +25,10 @@ async function executeLocal(
     t('commands.shortcuts.run.executingLocal', { function: functionName, machine: machineName })
   );
 
-  const extraMachines = await resolveExtraMachines(coerced);
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName,
     machineName,
     params: coerced,
-    extraMachines,
     debug: options.debug,
   });
 
@@ -115,7 +94,11 @@ export function registerDatastoreCommands(program: Command): void {
     .description(t('commands.datastore.init.description'))
     .requiredOption('-m, --machine <name>', t('commands.datastore.machineOption'))
     .requiredOption('--size <size>', t('commands.datastore.init.sizeOption'))
-    .option('--backend <type>', t('commands.datastore.init.backendOption'), 'local')
+    .addOption(
+      new Option('--backend <type>', t('commands.datastore.init.backendOption'))
+        .choices(['local', 'ceph'])
+        .default('local')
+    )
     .option('--pool <name>', t('commands.datastore.init.poolOption'), 'rbd')
     .option('--image <name>', t('commands.datastore.init.imageOption'))
     .option('--cluster <name>', t('commands.datastore.init.clusterOption'), 'ceph')

@@ -404,7 +404,7 @@ probe, which the health gate reports honestly.
 Re-running `up()` re-applies both Secrets idempotently: that IS the rotation story
 (02 §11.5). Size honesty for config v3: the apiserver caps a Secret object at
 1 MiB, so the caps drop from today's 10 MiB per value
-(`packages/cli/src/schema/schemas.ts:155`) to the C11 merged contract
+(`packages/shared/src/config-schema/schemas.ts:155`) to the C11 merged contract
 [P0-DECIDED, gate-ruled]: **env 32 KiB per value, file 256 KiB per value,
 512 KiB aggregate per repo per mode** (spec 04's `SecretEntrySchema` enforces the
 per-value caps, a family-level refine enforces the aggregate; base64/metadata
@@ -450,7 +450,7 @@ inside it would either break the reflink or be traversed as a foreign filesystem
 - Format: LUKS2, one keyslot. Passphrase = the repo's existing per-repo
   `credential` (05 §3: "per-repo credential as passphrase"; the same credential the
   docker world's repo image uses, carried in config,
-  `packages/cli/src/schema/schemas.ts` RepositoryConfigSchema `credential`).
+  `packages/shared/src/config-schema/schemas.ts` RepositoryConfigSchema `credential`).
 - Mapper name: `rediacc-vol-<repo>-<pvc>` (device `/dev/mapper/rediacc-vol-...`).
 - Inner filesystem: ext4 (keeps the current provisioner default,
   `pkg/kube/pv/provisioner.go:32`); fixed-size = the PVC's declared size, which is
@@ -934,7 +934,7 @@ verified against the current tree with file:line.
 ### Storage (CLI config)
 
 - Shape: `RepositoryConfig.secrets: Record<KEY, {mode, value}>` inside the flat
-  config JSON. Schema: `packages/cli/src/schema/schemas.ts:145-170`
+  config JSON. Schema: `packages/shared/src/config-schema/schemas.ts:145-170`
   (`SecretEntrySchema`: `mode: 'env'|'file'`, value 1 byte..10 MiB;
   `SecretKeySchema`: `/^[A-Z][A-Z0-9_]*$/`, max 64 chars, UPPER_SNAKE_CASE).
   Duplicate schema in `packages/cli/src/utils/config-schema.ts:63-83`.

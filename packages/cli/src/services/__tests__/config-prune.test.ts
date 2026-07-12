@@ -1,6 +1,6 @@
 import { gunzipSync, gzipSync } from 'node:zlib';
+import type { ArchivedRepository, RdcConfig } from '@rediacc/shared/config-schema';
 import { describe, expect, it } from 'vitest';
-import type { ArchivedRepository, RdcConfig } from '../../schema/schemas.js';
 import {
   buildConfigAnchors,
   classifyArchives,

@@ -3,16 +3,16 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import { getMachineContainers } from '@rediacc/shared/services/machine';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
-import { localExecutorService } from '../services/executor/local-executor.js';
-import type { MachineConnectionLease } from '../services/machine/machine-connection.js';
 import { outputService } from '../services/core/output.js';
+import { getExecutor } from '../services/executor/executor-factory.js';
+import type { MachineConnectionLease } from '../services/machine/machine-connection.js';
 import { deployAllRepoKeys } from '../services/repo/repo-key-deployment.js';
 import { telemetryService } from '../services/telemetry/telemetry.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 import { createRepoNameResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
-import { recordTimelineStep, type TimelineStep } from '../utils/timeline.js';
 import { resolveRepoTarget } from '../utils/repo-target.js';
+import { recordTimelineStep, type TimelineStep } from '../utils/timeline.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
 
 /** Prompt the user for batch confirmation. Returns true if confirmed. */
@@ -298,7 +298,7 @@ export async function handleUpAll(options: {
 
   outputService.info(t('commands.repo.upAll.starting', { machine: machineName }));
 
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName: 'repository_up_all',
     machineName,
     kubeCluster,
@@ -441,7 +441,7 @@ export async function handleDownAll(options: {
 
   outputService.info(t('commands.repo.down.allStarting', { machine: machineName }));
 
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName: 'repository_down_all',
     machineName,
     kubeCluster,
@@ -506,7 +506,7 @@ export async function handleRepoList(options: {
     const { machineName, kubeCluster } = await resolveRepoTarget(options);
     outputService.info(t('commands.repo.list.starting', { machine: machineName }));
     const format = getOutputFormat();
-    const result = await localExecutorService.execute({
+    const result = await getExecutor().execute({
       functionName: 'repository_list',
       machineName,
       kubeCluster,

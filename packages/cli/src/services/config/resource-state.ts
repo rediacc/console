@@ -16,10 +16,10 @@
  */
 
 import { DEFAULTS } from '@rediacc/shared/config';
-import { configFileStorage } from '../../adapters/config-file-storage.js';
+import type { Placement, RdcConfig, RepoFamily, RepoRecord } from '@rediacc/shared/config-schema';
 import { stripStateForPush } from '../../adapters/config-field-crypto.js';
+import { configFileStorage } from '../../adapters/config-file-storage.js';
 import type { RemoteConfigAdapter } from '../../adapters/remote-config-adapter.js';
-import type { Placement, RdcConfig, RepoFamily, RepoRecord } from '../../schema/schemas.js';
 import type {
   ArchivedRepository,
   MachineConfig,

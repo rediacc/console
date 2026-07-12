@@ -4,31 +4,21 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockConnect, mockClose, mockExec, mockExecStreaming } = vi.hoisted(() => ({
-  mockConnect: vi.fn(),
-  mockClose: vi.fn(),
+const { mockExec, mockExecStreaming } = vi.hoisted(() => ({
   mockExec: vi.fn(),
   mockExecStreaming: vi.fn(),
 }));
 
-vi.mock('../../sftp/client.js', () => ({
-  SFTPClient: class MockSFTPClient {
-    connected = false;
-    connect = mockConnect;
-    close = mockClose;
-    exec = mockExec;
-    execStreaming = mockExecStreaming;
-  },
-}));
-
+import type { SFTPClient } from '../../sftp/client.js';
 import { isExcluded, sftpUploadFile, sftpUploadPaths } from '../sftp-fallback.js';
 
-const config = {
-  host: '127.0.0.1',
-  port: 22,
-  username: 'tester',
-  privateKey: 'KEY',
-} as const;
+// The transfer functions take an already-connected client: the caller leases it
+// from the pool (services/machine/machine-connection.ts), so nothing here opens
+// or closes a session.
+const sftp = {
+  exec: mockExec,
+  execStreaming: mockExecStreaming,
+} as unknown as SFTPClient;
 
 function execText(_cmd: string): string {
   // Default success behavior: exec returns empty stdout for mkdir/chmod/chown/ln
@@ -36,12 +26,8 @@ function execText(_cmd: string): string {
 }
 
 beforeEach(() => {
-  mockConnect.mockReset();
-  mockClose.mockReset();
   mockExec.mockReset();
   mockExecStreaming.mockReset();
-  mockConnect.mockResolvedValue(undefined);
-  mockClose.mockReturnValue(undefined);
   mockExec.mockImplementation((cmd: string) => Promise.resolve(execText(cmd)));
   mockExecStreaming.mockResolvedValue(0);
 });
@@ -120,17 +106,17 @@ describe('sftpUploadFile', () => {
     rmSync(workDir, { recursive: true, force: true });
   });
 
-  it('dryRun returns 1 file + size, never connects', async () => {
-    const r = await sftpUploadFile(localFile, 'remote/x.bin', config, { dryRun: true });
+  it('dryRun returns 1 file + size, never touches the remote', async () => {
+    const r = await sftpUploadFile(localFile, 'remote/x.bin', sftp, { dryRun: true });
     expect(r.success).toBe(true);
     expect(r.filesTransferred).toBe(1);
     expect(r.bytesTransferred).toBe(11);
-    expect(mockConnect).not.toHaveBeenCalled();
+    expect(mockExec).not.toHaveBeenCalled();
     expect(mockExecStreaming).not.toHaveBeenCalled();
   });
 
   it('happy-path: mkdir -p parent, base64 -d > target, chmod, no chown', async () => {
-    const r = await sftpUploadFile(localFile, 'a/b/c.bin', config);
+    const r = await sftpUploadFile(localFile, 'a/b/c.bin', sftp);
     expect(r.success).toBe(true);
     expect(r.filesTransferred).toBe(1);
     expect(r.bytesTransferred).toBe(11);
@@ -147,7 +133,7 @@ describe('sftpUploadFile', () => {
   });
 
   it('applies sudo chown -h when universalUser is set (no symlink dereference)', async () => {
-    await sftpUploadFile(localFile, 'a/b.bin', config, { universalUser: 'svc' });
+    await sftpUploadFile(localFile, 'a/b.bin', sftp, { universalUser: 'svc' });
     const cmds = mockExec.mock.calls.map(([cmd]) => cmd as string);
     // -h prevents chown from following symlinks: uploading a symlink like
     // `link -> /etc/passwd` must NOT change ownership of the target.
@@ -156,7 +142,7 @@ describe('sftpUploadFile', () => {
 
   it('non-zero exit code -> success false, error message includes code', async () => {
     mockExecStreaming.mockResolvedValueOnce(7);
-    const r = await sftpUploadFile(localFile, 'x.bin', config);
+    const r = await sftpUploadFile(localFile, 'x.bin', sftp);
     expect(r.success).toBe(false);
     expect(r.errors.some((e) => e.includes('exit code 7'))).toBe(true);
     expect(r.filesTransferred).toBe(0);
@@ -165,7 +151,7 @@ describe('sftpUploadFile', () => {
   it('empty file round-trips correctly', async () => {
     const empty = join(workDir, 'empty.bin');
     writeFileSync(empty, '');
-    const r = await sftpUploadFile(empty, 'e.bin', config);
+    const r = await sftpUploadFile(empty, 'e.bin', sftp);
     expect(r.success).toBe(true);
     expect(r.bytesTransferred).toBe(0);
     expect(mockExecStreaming.mock.calls[0][1].stdin).toBe('');
@@ -177,7 +163,7 @@ describe('sftpUploadFile', () => {
       if (cmd.startsWith('sha256sum')) return Promise.resolve(`${expected}  remote/x.bin\n`);
       return Promise.resolve('');
     });
-    const r = await sftpUploadFile(localFile, 'remote/x.bin', config, { verify: true });
+    const r = await sftpUploadFile(localFile, 'remote/x.bin', sftp, { verify: true });
     expect(r.success).toBe(true);
     expect(r.verifyFailures).toBe(0);
   });
@@ -187,7 +173,7 @@ describe('sftpUploadFile', () => {
       if (cmd.startsWith('sha256sum')) return Promise.resolve(`0000  remote/x.bin\n`);
       return Promise.resolve('');
     });
-    const r = await sftpUploadFile(localFile, 'remote/x.bin', config, { verify: true });
+    const r = await sftpUploadFile(localFile, 'remote/x.bin', sftp, { verify: true });
     expect(r.success).toBe(false);
     expect(r.verifyFailures).toBe(1);
     expect(r.errors.some((e) => e.includes('verify mismatch'))).toBe(true);
@@ -197,17 +183,16 @@ describe('sftpUploadFile', () => {
     const exe = join(workDir, 'run.sh');
     writeFileSync(exe, '#!/bin/sh\necho hi\n');
     chmodSync(exe, 0o755);
-    await sftpUploadFile(exe, 'bin/run.sh', config);
+    await sftpUploadFile(exe, 'bin/run.sh', sftp);
     const cmds = mockExec.mock.calls.map(([c]) => c as string);
     expect(cmds.some((c) => c === `chmod 755 'bin/run.sh'`)).toBe(true);
   });
 
-  it('connects and closes even on errors', async () => {
+  it('captures a transfer error in the result instead of throwing', async () => {
     mockExecStreaming.mockRejectedValueOnce(new Error('boom'));
-    const r = await sftpUploadFile(localFile, 'x.bin', config);
+    const r = await sftpUploadFile(localFile, 'x.bin', sftp);
     expect(r.success).toBe(false);
-    expect(mockConnect).toHaveBeenCalled();
-    expect(mockClose).toHaveBeenCalled();
+    expect(r.errors.some((e) => e.includes('boom'))).toBe(true);
   });
 });
 
@@ -232,7 +217,7 @@ describe('sftpUploadPaths', () => {
     chmodSync(exe, 0o755);
     chmodSync(txt, 0o644);
 
-    await sftpUploadPaths([{ path: dir, isFile: false }], 'dest', config);
+    await sftpUploadPaths([{ path: dir, isFile: false }], 'dest', sftp);
 
     const cmds = mockExec.mock.calls.map(([c]) => c as string);
     expect(cmds.some((c) => c === `chmod 755 'dest/run.sh'`)).toBe(true);
@@ -245,7 +230,7 @@ describe('sftpUploadPaths', () => {
     writeFileSync(join(dir, 'real.txt'), 'real');
     symlinkSync('real.txt', join(dir, 'link.txt'));
 
-    await sftpUploadPaths([{ path: dir, isFile: false }], 'dest', config);
+    await sftpUploadPaths([{ path: dir, isFile: false }], 'dest', sftp);
 
     const cmds = mockExec.mock.calls.map(([c]) => c as string);
     expect(cmds.some((c) => c === `ln -sfn 'real.txt' 'dest/link.txt'`)).toBe(true);
@@ -266,7 +251,7 @@ describe('sftpUploadPaths', () => {
       return Promise.resolve('');
     });
 
-    const r = await sftpUploadPaths([{ path: dir, isFile: false }], 'dest', config);
+    const r = await sftpUploadPaths([{ path: dir, isFile: false }], 'dest', sftp);
     // Both files attempted; the failing dir reported in errors.
     expect(r.errors.some((e) => e.includes('mkdir dest/a'))).toBe(true);
     // mkdir for dest/b still attempted:
@@ -280,7 +265,7 @@ describe('sftpUploadPaths', () => {
     writeFileSync(join(dir, 'a.txt'), 'a');
     writeFileSync(join(dir, 'b.txt'), 'b');
 
-    await sftpUploadPaths([{ path: dir, isFile: false }], 'dest', config, { universalUser: 'svc' });
+    await sftpUploadPaths([{ path: dir, isFile: false }], 'dest', sftp, { universalUser: 'svc' });
     const cmds = mockExec.mock.calls.map(([c]) => c as string);
     const chownCalls = cmds.filter((c) => c.startsWith('sudo chown'));
     expect(chownCalls.length).toBeGreaterThanOrEqual(1);
@@ -297,7 +282,7 @@ describe('sftpUploadPaths', () => {
     writeFileSync(join(dir, 'b.log'), 'b');
     writeFileSync(join(dir, 'sub', 'c.log'), 'c');
 
-    const r = await sftpUploadPaths([{ path: dir, isFile: false }], 'dest', config, {
+    const r = await sftpUploadPaths([{ path: dir, isFile: false }], 'dest', sftp, {
       exclude: ['*.log'],
     });
     // Only a.txt should have been transferred.
@@ -316,7 +301,7 @@ describe('sftpUploadPaths', () => {
       if (cmd.startsWith('sha256sum')) return Promise.resolve(`0000  dest/one.bin\n`);
       return Promise.resolve('');
     });
-    const r = await sftpUploadPaths([{ path: f, isFile: true }], 'dest', config, { verify: true });
+    const r = await sftpUploadPaths([{ path: f, isFile: true }], 'dest', sftp, { verify: true });
     expect(r.verifyFailures).toBe(1);
     expect(r.success).toBe(false);
     expect(r.errors.some((e) => e.includes('verify mismatch'))).toBe(true);
@@ -328,12 +313,12 @@ describe('sftpUploadPaths', () => {
     writeFileSync(join(dir, 'a.txt'), 'aa');
     writeFileSync(join(dir, 'b.txt'), 'bbb');
 
-    const r = await sftpUploadPaths([{ path: dir, isFile: false }], 'dest', config, {
+    const r = await sftpUploadPaths([{ path: dir, isFile: false }], 'dest', sftp, {
       dryRun: true,
     });
     expect(r.filesTransferred).toBe(2);
     expect(r.bytesTransferred).toBe(5);
-    expect(mockConnect).not.toHaveBeenCalled();
+    expect(mockExec).not.toHaveBeenCalled();
     expect(mockExecStreaming).not.toHaveBeenCalled();
   });
 });

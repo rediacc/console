@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { ProviderMapping } from '../../../types/index.js';
 import {
-  clusterMemberName,
   type ClusterTfOptions,
+  clusterMemberName,
   generateClusterTfJson,
 } from '../cluster-tf-generator.js';
 

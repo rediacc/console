@@ -5,9 +5,10 @@
  * path that has MCP metadata in COMMAND_METADATA. Zod schemas, command builders,
  * and annotations are all derived automatically.
  */
+
+import type { ZodRawShapeCompat } from '@modelcontextprotocol/sdk/server/zod-compat.js';
 import type { Command } from 'commander';
 import { z } from 'zod';
-import type { ZodRawShapeCompat } from '@modelcontextprotocol/sdk/server/zod-compat.js';
 import {
   COMMAND_METADATA,
   type CommandMeta,

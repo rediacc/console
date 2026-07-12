@@ -4,7 +4,9 @@
   "version": 3,
   "defaults": { "language": "en", "datastoreSize": "95%" },
   "credentials": {
-    "ssh": { "privateKey": "-----BEGIN OPENSSH PRIVATE KEY-----\nABC\n-----END OPENSSH PRIVATE KEY-----" }
+    "ssh": {
+      "privateKey": "-----BEGIN OPENSSH PRIVATE KEY-----\nABC\n-----END OPENSSH PRIVATE KEY-----"
+    }
   },
   "resources": {
     "machines": {

@@ -7,12 +7,12 @@
 
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
+import { listReplicaSets } from '../services/cluster/repo-replicate.js';
 import {
   refreshReplicaSet,
   removeReplicaSet,
   replicateRepo,
 } from '../services/cluster/repo-replicate-ops.js';
-import { listReplicaSets } from '../services/cluster/repo-replicate.js';
 import { outputService } from '../services/core/output.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 

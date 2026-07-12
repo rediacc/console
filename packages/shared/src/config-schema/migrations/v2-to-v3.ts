@@ -12,11 +12,11 @@
  * repo keys) leaves the on-disk file untouched and is re-runnable.
  */
 
-import { nodeCryptoProvider } from '../../adapters/crypto.js';
 import {
   SECRET_AGGREGATE_MAX_BYTES,
   SECRET_ENV_VALUE_MAX_BYTES,
   SECRET_FILE_VALUE_MAX_BYTES,
+  utf8ByteLength,
 } from '../schemas.js';
 import type { MigrationContext } from './index.js';
 
@@ -52,7 +52,9 @@ function isObj(v: unknown): v is Obj {
 }
 
 function warn(message: string): void {
-  process.stderr.write(`rdc config migration (v2→v3): ${message}\n`);
+  // console.warn goes to stderr on Node and is the one warn channel that also
+  // exists in Workers and browsers, so this module stays runtime-portable.
+  console.warn(`rdc config migration (v2→v3): ${message}`);
 }
 
 /** Split a v2 composite repo key on the first ':' (bare → tag 'latest'). */
@@ -98,7 +100,7 @@ async function unpackCompoundBlob(cfg: Obj, ctx: MigrationContext): Promise<void
 
   const password = await ctx.getMasterPassword();
   // Throws on a wrong password → migration aborts, file untouched, re-runnable.
-  const json = await nodeCryptoProvider.decrypt(combined, password);
+  const json = await ctx.decryptLegacyBlob(combined, password);
   layDecrypted(cfg, JSON.parse(json) as Obj);
   delete fields['/resources'];
 }
@@ -161,7 +163,7 @@ function secretValueBytes(
   entry: Obj
 ): { env: number; file: number } {
   if (typeof entry.value !== 'string') return { env: 0, file: 0 };
-  const bytes = Buffer.byteLength(entry.value, 'utf8');
+  const bytes = utf8ByteLength(entry.value);
   const cap = entry.mode === 'env' ? SECRET_ENV_VALUE_MAX_BYTES : SECRET_FILE_VALUE_MAX_BYTES;
   if (bytes > cap) {
     throw new Error(

@@ -7,32 +7,32 @@ import type { PlatformKey } from '../utils/platform.js';
 // Config types (derived from Zod v2 schema — single source of truth)
 // ============================================================================
 
-import type { RdcConfig } from '../schema/schemas.js';
+import type { RdcConfig } from '@rediacc/shared/config-schema';
 
 export type {
-  RdcConfig,
-  MachineConfig,
-  StorageConfig,
-  RepositoryConfig,
+  AcmeCertCache,
   ArchivedRepository,
-  SecretEntry,
-  SecretMode,
-  InfraConfig,
   BackupDestination,
   BackupDestination as BackupStrategyDestination,
   BackupStrategyConfig,
   CloudProviderConfig,
   ClusterConfig,
+  ClusterKvm,
   ClusterPool,
   ClusterPoolRole,
-  ClusterKvm,
-  AcmeCertCache,
-  RemoteConfig,
   EncryptedBlob,
   EncryptionState,
-} from '../schema/schemas.js';
+  InfraConfig,
+  MachineConfig,
+  RdcConfig,
+  RemoteConfig,
+  RepositoryConfig,
+  SecretEntry,
+  SecretMode,
+  StorageConfig,
+} from '@rediacc/shared/config-schema';
 
-export { createEmptyRdcConfig, hasRemoteConfig } from '../schema/schemas.js';
+export { createEmptyRdcConfig, hasRemoteConfig } from '@rediacc/shared/config-schema';
 
 /**
  * SSH credentials — derived from the Zod schema's `credentials.ssh` so that

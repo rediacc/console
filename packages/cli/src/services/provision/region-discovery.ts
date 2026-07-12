@@ -5,8 +5,8 @@
  * Ed25519 signature, and falls back to baked-in regions on failure.
  */
 
-import { BAKED_IN_REGIONS, verifySignedRegions, type RegionInfo } from '@rediacc/shared/regions';
 import { PROTOCOL_DEFAULTS } from '@rediacc/shared/config/defaults';
+import { BAKED_IN_REGIONS, type RegionInfo, verifySignedRegions } from '@rediacc/shared/regions';
 
 const REGIONS_URL = `${PROTOCOL_DEFAULTS.SITE_URL}/regions.json`;
 const FETCH_TIMEOUT_MS = 5000;

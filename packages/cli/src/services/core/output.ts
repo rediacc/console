@@ -7,6 +7,7 @@ import chalk from 'chalk';
 import type CliTable3 from 'cli-table3';
 import { stringify as yamlStringify } from 'yaml';
 import type { OutputFormat } from '../../types/index.js';
+import { createOutputState, currentRequestContext, type OutputState } from './request-context.js';
 
 // esbuild statically bundles this literal `require` and wraps cli-table3
 // (→ string-width → chardet, ~16 ms of module init) in a lazy CJS
@@ -29,67 +30,95 @@ interface TableColumn {
 }
 
 class OutputService {
-  private readonly colorEnabled: boolean;
-  private _quiet = false;
-  private _fields: string[] | null = null;
-  private _commandName: string | null = null;
-  private _startTime: number | null = null;
-  private _warnings: string[] = [];
-  private _operationDurationMs: number | null = null;
-  private _timelineRendered = false;
+  private readonly ttyColor: boolean;
+  /** Used when no request context is active: the CLI, one command per process. */
+  private readonly processState: OutputState = createOutputState();
 
   constructor() {
-    this.colorEnabled = !process.env.REDIACC_NO_COLOR && process.stdout.isTTY !== false;
+    this.ttyColor = !process.env.REDIACC_NO_COLOR && process.stdout.isTTY !== false;
+  }
+
+  /**
+   * The state of the command being run right now.
+   *
+   * Inside an executor dispatch that is the request's own state, so two tenants'
+   * commands cannot overwrite each other's command name, warnings or timings on
+   * the way into the JSON envelope. On a laptop it is the process's.
+   */
+  private get state(): OutputState {
+    return currentRequestContext()?.output ?? this.processState;
+  }
+
+  /** Captured output is read by a machine, so it never carries ANSI colour. */
+  private get colorEnabled(): boolean {
+    return currentRequestContext() ? false : this.ttyColor;
+  }
+
+  /** Data output: the terminal, or this request's stdout buffer. */
+  private writeOut(text: string): void {
+    const context = currentRequestContext();
+    if (context) context.stdout.push(text);
+    else console.log(text);
+  }
+
+  /** Human output: the terminal's stderr, or this request's stderr buffer. */
+  private writeErr(text: string): void {
+    const context = currentRequestContext();
+    if (context) context.stderr.push(text);
+    else console.error(text);
   }
 
   setQuiet(quiet: boolean): void {
-    this._quiet = quiet;
+    this.state.quiet = quiet;
   }
 
   setFields(fields: string): void {
-    this._fields = fields.split(',').map((f) => f.trim());
+    this.state.fields = fields.split(',').map((f) => f.trim());
   }
 
   setCommandContext(name: string, startTime: number): void {
-    this._commandName = name;
-    this._startTime = startTime;
-    this._warnings = [];
+    const state = this.state;
+    state.commandName = name;
+    state.startTime = startTime;
+    state.warnings = [];
   }
 
   getCommandName(): string | null {
-    return this._commandName;
+    return this.state.commandName;
   }
 
   getWarnings(): string[] {
-    return this._warnings;
+    return this.state.warnings;
   }
 
   getDurationMs(): number {
-    return this._startTime ? Date.now() - this._startTime : 0;
+    const startTime = this.state.startTime;
+    return startTime ? Date.now() - startTime : 0;
   }
 
   setOperationDuration(ms: number): void {
-    this._operationDurationMs = ms;
+    this.state.operationDurationMs = ms;
   }
 
   getOperationDurationMs(): number | null {
-    return this._operationDurationMs;
+    return this.state.operationDurationMs;
   }
 
   /** Mark that a timeline was rendered — suppresses the postAction "Completed" line */
   setTimelineRendered(): void {
-    this._timelineRendered = true;
+    this.state.timelineRendered = true;
   }
 
   isTimelineRendered(): boolean {
-    return this._timelineRendered;
+    return this.state.timelineRendered;
   }
 
   private applyFieldFilter<T extends Record<string, unknown>>(data: T | T[]): T | T[] {
-    if (!this._fields) return data;
+    const fields = this.state.fields;
+    if (!fields) return data;
     const pick = (obj: T): T => {
       const result: Record<string, unknown> = {};
-      for (const field of this._fields!) {
+      for (const field of fields) {
         if (field in obj) result[field] = obj[field];
       }
       return result as T;
@@ -117,16 +146,17 @@ class OutputService {
   }
 
   formatJson<T>(data: T): string {
+    const state = this.state;
     const envelope = {
       success: true,
-      command: this._commandName ?? DEFAULTS.TELEMETRY.UNKNOWN,
+      command: state.commandName ?? DEFAULTS.TELEMETRY.UNKNOWN,
       data,
       errors: null,
-      warnings: this._warnings,
+      warnings: state.warnings,
       metrics: {
         duration_ms: this.getDurationMs(),
-        ...(this._operationDurationMs != null && {
-          operation_duration_ms: this._operationDurationMs,
+        ...(state.operationDurationMs != null && {
+          operation_duration_ms: state.operationDurationMs,
         }),
       },
     };
@@ -197,27 +227,27 @@ class OutputService {
 
   // Convenience methods for colored output (stderr to avoid polluting data output)
   success(message: string): void {
-    if (this._quiet) return;
-    console.error(this.colorEnabled ? chalk.green(message) : message);
+    if (this.state.quiet) return;
+    this.writeErr(this.colorEnabled ? chalk.green(message) : message);
   }
 
   error(message: string): void {
-    console.error(this.colorEnabled ? chalk.red(message) : message);
+    this.writeErr(this.colorEnabled ? chalk.red(message) : message);
   }
 
   warn(message: string): void {
-    this._warnings.push(message);
-    if (this._quiet) return;
-    console.error(this.colorEnabled ? chalk.yellow(message) : message);
+    this.state.warnings.push(message);
+    if (this.state.quiet) return;
+    this.writeErr(this.colorEnabled ? chalk.yellow(message) : message);
   }
 
   info(message: string): void {
-    if (this._quiet) return;
+    if (this.state.quiet) return;
     // chalk.blueBright (ANSI 12) reads cleanly on both light and dark
     // terminal backgrounds. The default chalk.blue (ANSI 4) renders as a
     // dark navy on standard 16-color palettes and was reported unreadable
     // against black backgrounds (see `rdc repo template list` output).
-    console.error(this.colorEnabled ? chalk.blueBright(message) : message);
+    this.writeErr(this.colorEnabled ? chalk.blueBright(message) : message);
   }
 
   dim(text: string): string {
@@ -230,12 +260,12 @@ class OutputService {
 
   print(data: unknown, format: OutputFormat = 'table'): void {
     if (typeof data === 'string') {
-      console.log(data);
+      this.writeOut(data);
       return;
     }
 
     const output = this.format(data as Record<string, unknown> | Record<string, unknown>[], format);
-    console.log(output);
+    this.writeOut(output);
   }
 
   private detectColumns<T extends Record<string, unknown>>(items: T[]): TableColumn[] {

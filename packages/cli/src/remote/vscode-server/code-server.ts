@@ -1,9 +1,9 @@
 import {
   baseSeedSettings,
-  VSCODE_SERVER_INSTALL_ROOT,
   type SeededFile,
   type ServerArtifact,
   type ServerPlatform,
+  VSCODE_SERVER_INSTALL_ROOT,
   type VSCodeServerProvider,
 } from './types.js';
 

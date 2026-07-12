@@ -1,7 +1,7 @@
+import { createEmptyRdcConfig } from '@rediacc/shared/config-schema';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createEmptyRdcConfig } from '../../schema/schemas.js';
-import type { ClusterConfig, RdcConfig } from '../../types/index.js';
 import { configService } from '../../services/config/config-resources.js';
+import type { ClusterConfig, RdcConfig } from '../../types/index.js';
 import { assertDockerOnly, resolveRepoTarget } from '../repo-target.js';
 
 // Minimal config: a standalone machine, a materialized k8s member, and cluster

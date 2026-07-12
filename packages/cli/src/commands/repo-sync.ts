@@ -1,3 +1,7 @@
+import type { Command } from 'commander';
+import ora from 'ora';
+import { t } from '../i18n/index.js';
+import type { SFTPClientConfig } from '../remote/sftp/index.js';
 import {
   createTempKnownHostsFile,
   createTempSSHKeyFile,
@@ -7,23 +11,21 @@ import {
 import {
   executeRsync,
   type RsyncExecutorOptions,
+  type SftpUploadSource,
   sftpDownloadDirectory,
   sftpDownloadFile,
   sftpUploadFile,
   sftpUploadPaths,
-  type SftpUploadSource,
 } from '../remote/sync/index.js';
 import type { SyncProgress } from '../remote/types/index.js';
-import type { Command } from 'commander';
-import ora from 'ora';
-import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
+import { auditService } from '../services/core/audit.js';
+import { withPooledSftp } from '../services/machine/machine-connection.js';
+import { getSSHConnectionDetails } from '../services/machine/ssh-connection.js';
+import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
-import { getSSHConnectionDetails } from '../services/machine/ssh-connection.js';
 import { assertCommandPolicy, CMD, validateRemotePath } from '../utils/command-policy.js';
-import { auditService } from '../services/core/audit.js';
 import { handleError } from '../utils/errors.js';
 import { resolveRepoTarget } from '../utils/repo-target.js';
 import { withSpinner } from '../utils/spinner.js';
@@ -143,7 +145,8 @@ export interface SyncConnectionContext {
   details: Awaited<ReturnType<typeof getSSHConnectionDetails>>;
   remotePath: string;
   sftpRemotePath: string;
-  sftpConfig: { host: string; port: number; username: string; privateKey: string };
+  /** Connect options for the SFTP fallback; leased from the pool when rsync is absent. */
+  sftpConfig: SFTPClientConfig;
 }
 
 async function prepareSyncConnection(
@@ -277,6 +280,7 @@ async function executeSyncWithSftpFallback(
 
 /**
  * Dispatch single-file vs multi-source upload via SFTP. Exported for tests.
+ * The transfer runs on a pooled connection held only for its duration.
  */
 export function sftpUploadTransfer(
   isFileMode: boolean,
@@ -284,9 +288,11 @@ export function sftpUploadTransfer(
   ctx: SyncConnectionContext,
   sftpOptions: Parameters<typeof sftpUploadPaths>[3]
 ): ReturnType<typeof sftpUploadPaths> {
-  return isFileMode
-    ? sftpUploadFile(sftpSources[0].path, ctx.sftpRemotePath, ctx.sftpConfig, sftpOptions)
-    : sftpUploadPaths(sftpSources, ctx.sftpRemotePath, ctx.sftpConfig, sftpOptions);
+  return withPooledSftp(ctx.sftpConfig, (sftp) =>
+    isFileMode
+      ? sftpUploadFile(sftpSources[0].path, ctx.sftpRemotePath, sftp, sftpOptions)
+      : sftpUploadPaths(sftpSources, ctx.sftpRemotePath, sftp, sftpOptions)
+  );
 }
 
 async function syncUpload(options: SyncUploadOptions): Promise<void> {
@@ -375,6 +381,7 @@ async function syncUpload(options: SyncUploadOptions): Promise<void> {
 
 /**
  * Dispatch single-file vs directory download via SFTP. Exported for tests.
+ * The transfer runs on a pooled connection held only for its duration.
  */
 export function sftpDownloadTransfer(
   isFileMode: boolean,
@@ -382,9 +389,11 @@ export function sftpDownloadTransfer(
   localPath: string,
   sftpOptions: Parameters<typeof sftpDownloadDirectory>[3]
 ): ReturnType<typeof sftpDownloadDirectory> {
-  return isFileMode
-    ? sftpDownloadFile(ctx.sftpRemotePath, localPath, ctx.sftpConfig, sftpOptions)
-    : sftpDownloadDirectory(ctx.sftpRemotePath, localPath, ctx.sftpConfig, sftpOptions);
+  return withPooledSftp(ctx.sftpConfig, (sftp) =>
+    isFileMode
+      ? sftpDownloadFile(ctx.sftpRemotePath, localPath, sftp, sftpOptions)
+      : sftpDownloadDirectory(ctx.sftpRemotePath, localPath, sftp, sftpOptions)
+  );
 }
 
 async function syncDownload(options: SyncDownloadOptions): Promise<void> {

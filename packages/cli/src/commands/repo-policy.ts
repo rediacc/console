@@ -1,8 +1,8 @@
-import type { Command } from 'commander';
+import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
-import { localExecutorService } from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
+import { getExecutor } from '../services/executor/executor-factory.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { assertMachineExists } from './_validate.js';
@@ -47,7 +47,7 @@ async function runPolicyFunction(
 ): Promise<void> {
   await assertMachineExists(machine);
 
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName,
     machineName: machine,
     params,
@@ -142,11 +142,21 @@ export function registerRepoPolicyCommand(repo: Command): void {
     .description(t('commands.repo.policy.set.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--name <name>', t('commands.repo.policy.nameOption'))
-    .option('--auto-grow <bool>', t('commands.repo.policy.set.autoGrowOption'))
+    .addOption(
+      new Option('--auto-grow <bool>', t('commands.repo.policy.set.autoGrowOption')).choices([
+        'true',
+        'false',
+      ])
+    )
     .option('--max-quota <size>', t('commands.repo.policy.set.maxQuotaOption'))
     .option('--grow-threshold <percent>', t('commands.repo.policy.set.growThresholdOption'))
     .option('--grow-step <step>', t('commands.repo.policy.set.growStepOption'))
-    .option('--auto-trim <bool>', t('commands.repo.policy.set.autoTrimOption'))
+    .addOption(
+      new Option('--auto-trim <bool>', t('commands.repo.policy.set.autoTrimOption')).choices([
+        'true',
+        'false',
+      ])
+    )
     .option('--trim-interval <hours>', t('commands.repo.policy.set.trimIntervalOption'))
     .option('--debug', t('options.debug'))
     .action(async (options: PolicySetOptions) => {

@@ -1,8 +1,8 @@
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
-import { localExecutorService } from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
+import { getExecutor } from '../services/executor/executor-factory.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { resolveRepoTarget } from '../utils/repo-target.js';
@@ -79,7 +79,7 @@ async function handleTrimAction(options: TrimOptions): Promise<void> {
 
   outputService.info(t('commands.repo.trim.starting', { machine: machineName }));
 
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName: 'repository_trim',
     machineName,
     kubeCluster,

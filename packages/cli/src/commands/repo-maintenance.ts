@@ -1,9 +1,9 @@
+import type { RepositoryConfig } from '@rediacc/shared/config-schema';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import type { RepositoryConfig } from '../schema/schemas.js';
 import { configService } from '../services/config/config-resources.js';
-import { localExecutorService } from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
+import { getExecutor } from '../services/executor/executor-factory.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
 
@@ -52,7 +52,7 @@ function reachableCommits(repos: RepoEntry[]): Set<string> {
 
 /** GUIDs of objects physically present on the machine, with mount state. */
 async function machineObjects(machine: string): Promise<Map<string, { mounted: boolean }>> {
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName: 'repository_list',
     machineName: machine,
     params: {},
@@ -109,7 +109,7 @@ async function handleGc(options: {
     let deleted = 0;
     for (const c of candidates) {
       const guid = c.config.repositoryGuid;
-      const result = await localExecutorService.execute({
+      const result = await getExecutor().execute({
         functionName: 'repository_delete',
         machineName: options.machine,
         params: { repository: guid },

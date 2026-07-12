@@ -1,16 +1,25 @@
-import { describe, expect, it } from 'vitest';
-import { RdcConfigSchema } from '../../schemas.js';
-import { nodeCryptoProvider } from '../../../adapters/crypto.js';
 import {
   CURRENT_SCHEMA_VERSION,
+  type MigrationContext,
   migrateV1ToV2,
   migrateV2ToV3,
+  RdcConfigSchema,
   runMigrations,
-  type MigrationContext,
-} from '../index.js';
+} from '@rediacc/shared/config-schema';
+import { describe, expect, it } from 'vitest';
+import { nodeCryptoProvider } from '../../adapters/crypto.js';
+
+/**
+ * The schema package is runtime-portable and holds no crypto provider, so the
+ * host injects one (see ConfigFileStorage.migrationContext). These tests inject
+ * the same Node provider the CLI uses in production.
+ */
+const decryptLegacyBlob = (data: string, password: string): Promise<string> =>
+  nodeCryptoProvider.decrypt(data, password);
 
 const throwingCtx: MigrationContext = {
   getMasterPassword: () => Promise.reject(new Error('no password')),
+  decryptLegacyBlob,
 };
 
 function makeV1Sample(): Record<string, unknown> {
@@ -226,7 +235,10 @@ describe('migrateV2ToV3 transforms', () => {
       },
     };
 
-    const ctx: MigrationContext = { getMasterPassword: () => Promise.resolve(password) };
+    const ctx: MigrationContext = {
+      getMasterPassword: () => Promise.resolve(password),
+      decryptLegacyBlob,
+    };
     const out = (await migrateV2ToV3(v2, ctx)) as any;
     expect(out.resources.repositories.secret.grand).toBe('latest');
     expect(out.resources.repositories.secret.tags.latest.credential).toBe('luks-secret');
@@ -245,7 +257,10 @@ describe('migrateV2ToV3 transforms', () => {
         encryptedFields: { '/resources': { data: combined } },
       },
     };
-    const ctx: MigrationContext = { getMasterPassword: () => Promise.resolve('wrong-pw') };
+    const ctx: MigrationContext = {
+      getMasterPassword: () => Promise.resolve('wrong-pw'),
+      decryptLegacyBlob,
+    };
     await expect(migrateV2ToV3(v2, ctx)).rejects.toThrow();
   });
 });

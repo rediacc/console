@@ -10,6 +10,7 @@
     "clean": "rimraf dist",
     "dev": "tsx src/index.ts",
     "export:command-tree": "tsx scripts/export-command-tree.ts",
+    "generate:cli-contract": "tsx scripts/generate-cli-contract.ts",
     "generate:skill-reference": "tsx scripts/generate-skill-reference.ts",
     "lint": "eslint src --ext .ts",
     "prepublishOnly": "npm run build && npm run build:bundle",
@@ -24,6 +25,7 @@
     "rdc": "./dist/cli-bundle.cjs"
   },
   "dependencies": {
+    "@hono/node-server": "^2.0.8",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@opentelemetry/api-logs": "^0.220.0",
     "@opentelemetry/core": "^2.9.0",
@@ -35,6 +37,7 @@
     "@vitest/runner": "^4.0.18",
     "@vitest/ui": "^4.0.18",
     "@vitest/utils": "^4.0.18",
+    "hono": "^4.12.29",
     "inquirer": "^14.0.2",
     "ssh2": "^1.17.0",
     "zod": "^4.3.6"
@@ -45,8 +48,8 @@
     "@opentelemetry/exporter-trace-otlp-http": "^0.220.0",
     "@opentelemetry/resources": "^2.9.0",
     "@opentelemetry/sdk-node": "^0.220.0",
-    "@opentelemetry/semantic-conventions": "^1.42.0",
-    "@pyroscope/nodejs": "^0.5.0",
+    "@opentelemetry/semantic-conventions": "^1.43.0",
+    "@pyroscope/nodejs": "^0.6.0",
     "@rediacc/provisioning": "*",
     "@rediacc/shared": "*",
     "@types/inquirer": "^9.0.10",

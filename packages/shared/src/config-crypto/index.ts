@@ -22,32 +22,13 @@ export {
   randomBytes,
   toBase64,
 } from './aes.js';
-
-// HKDF key derivation
-export { hkdfDeriveKey, hkdfDeriveRaw } from './hkdf.js';
-
-// SDK time-windowed derivation
-export { generateSdkMaster, sdkDerive, sdkGetEpoch } from './sdk.js';
+export type { CommitmentValueKind } from './canonical.js';
+// Canonical serialization for field-commitment HMACs
+export { canonicalize, valueKind } from './canonical.js';
 
 // CEK management
 export { cekUnwrap, cekWrap, deriveWrappingKey, generateCek, generateServerSecret } from './cek.js';
-
-// Triple-layer encryption
-export { configDecrypt, configEncrypt, orgDecrypt, orgEncrypt } from './layers.js';
-
-// HMAC tamper detection
-export { hmacCompute, hmacVerify } from './hmac.js';
-
-// X25519 CEK handoff
-export { cekHandoffDecrypt, cekHandoffEncrypt } from './handoff.js';
-
-// Selective encryption
-export { selectiveDecrypt, selectiveEncrypt } from './selective.js';
-
-// Canonical serialization for field-commitment HMACs
-export { canonicalize, valueKind } from './canonical.js';
-export type { CommitmentValueKind } from './canonical.js';
-
+export type { FieldCommitment, FieldCommitments } from './commitments.js';
 // Field commitments (server-side precondition enforcement)
 export {
   commitField,
@@ -56,8 +37,6 @@ export {
   generateFckSalt,
   verifyCommitment,
 } from './commitments.js';
-export type { FieldCommitment, FieldCommitments } from './commitments.js';
-
 // Constants
 export {
   ENVELOPE_FIELDS,
@@ -66,6 +45,18 @@ export {
   SDK_WINDOW_SECONDS,
   SENSITIVE_FIELDS,
 } from './constants.js';
+// X25519 CEK handoff
+export { cekHandoffDecrypt, cekHandoffEncrypt } from './handoff.js';
+// HKDF key derivation
+export { hkdfDeriveKey, hkdfDeriveRaw } from './hkdf.js';
+// HMAC tamper detection
+export { hmacCompute, hmacVerify } from './hmac.js';
+// Triple-layer encryption
+export { configDecrypt, configEncrypt, orgDecrypt, orgEncrypt } from './layers.js';
+// SDK time-windowed derivation
+export { generateSdkMaster, sdkDerive, sdkGetEpoch } from './sdk.js';
+// Selective encryption
+export { selectiveDecrypt, selectiveEncrypt } from './selective.js';
 
 // Types
 export type {

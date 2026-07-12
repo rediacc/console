@@ -13,7 +13,7 @@
  * Adding a new migration:
  *   1. Bump RdcConfigSchema.schemaVersion's z.literal in ../schemas.ts.
  *   2. Bump CURRENT_SCHEMA_VERSION below.
- *   3. Add packages/cli/src/schema/migrations/v<N>-to-v<N+1>.ts.
+ *   3. Add packages/shared/src/config-schema/migrations/v<N>-to-v<N+1>.ts.
  *   4. Register it in the MIGRATIONS array below.
  *   5. Drop a fixture at packages/cli/src/__tests__/fixtures/config/v<N>-sample.json.
  *   6. CI gate `check:ci-config-migrations` will round-trip the fixture.
@@ -28,6 +28,14 @@ export const CURRENT_SCHEMA_VERSION = 3;
 export interface MigrationContext {
   /** Resolve the master password (prompts / env), for decrypting v2 blobs. */
   getMasterPassword: () => Promise<string>;
+  /**
+   * Decrypt a legacy v2 compound `/resources` blob.
+   *
+   * Injected rather than imported: the AES-GCM provider is a host adapter
+   * (node:crypto in the CLI, Web Crypto in a browser), and this package must
+   * stay runtime-portable. The CLI passes `nodeCryptoProvider.decrypt`.
+   */
+  decryptLegacyBlob: (data: string, password: string) => Promise<string>;
 }
 
 interface Migration {

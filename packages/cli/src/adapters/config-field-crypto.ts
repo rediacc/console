@@ -22,8 +22,8 @@
  * replaces the stubs with real values when a sensitive field is actually read.
  */
 
-import { walkSensitive, setByPointer, getByPointer } from '../schema/walker.js';
-import type { RdcConfig } from '../schema/schemas.js';
+import type { RdcConfig } from '@rediacc/shared/config-schema';
+import { getByPointer, setByPointer, walkSensitive } from '@rediacc/shared/config-schema';
 import { nodeCryptoProvider } from './crypto.js';
 
 const STUB_PREFIX = '<encrypted:';

@@ -18,31 +18,32 @@
  */
 
 import { createHash } from 'node:crypto';
-import type { Command } from 'commander';
-import { auditLog, type AuditEventDraft } from '../services/core/audit-log.js';
+import { canonicalJson } from '@rediacc/shared/config-schema';
+import { type Command, Option } from 'commander';
+import { t } from '../i18n/index.js';
+import { shortFingerprint } from '../schema/fingerprint.js';
 import { configService } from '../services/config/config-resources.js';
+import { type AuditEventDraft, auditLog } from '../services/core/audit-log.js';
 import {
   evaluateMutations,
-  PreconditionMismatchError,
   type MutationEntry,
+  PreconditionMismatchError,
 } from '../services/core/mutation-gate.js';
+import { outputService } from '../services/core/output.js';
 import {
   deleteRepositorySecret,
   listRepositorySecretKeyModes,
   readRepositorySecret,
   writeRepositorySecret,
 } from '../services/repo/repo-secrets-store.js';
-import { canonicalJson, shortFingerprint } from '../schema/walker.js';
+import type { NextAction } from '../types/errors.js';
+import type { SecretMode } from '../types/index.js';
 import {
   getOutputFormat,
   handleError,
   PreconditionValidationError,
   ValidationError,
 } from '../utils/errors.js';
-import { outputService } from '../services/core/output.js';
-import { t } from '../i18n/index.js';
-import type { NextAction } from '../types/errors.js';
-import type { SecretMode } from '../types/index.js';
 
 function emit(draft: AuditEventDraft): void {
   try {
@@ -365,7 +366,11 @@ export function registerRepoSecretCommands(repoCommand: Command): void {
     .requiredOption('--name <repository>', t('commands.repo.secret.nameOption'))
     .requiredOption('--key <KEY>', t('commands.repo.secret.keyOption'))
     .requiredOption('--value <value>', t('commands.repo.secret.valueOption'))
-    .option('--mode <mode>', t('commands.repo.secret.modeOption'), 'file')
+    .addOption(
+      new Option('--mode <mode>', t('commands.repo.secret.modeOption'))
+        .choices(['env', 'file'])
+        .default('file')
+    )
     .option('--current <value>', t('commands.repo.secret.currentOption'))
     .option('--rotate-secret', t('commands.repo.secret.rotateOption'))
     .action(async (options: SecretSetOptions) => {

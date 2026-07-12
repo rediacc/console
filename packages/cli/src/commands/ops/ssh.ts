@@ -1,10 +1,10 @@
 import { spawn } from 'node:child_process';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { Command } from 'commander';
+import { Command, Option } from 'commander';
 import { t } from '../../i18n/index.js';
+import { outputService } from '../../services/core/output.js';
 import type { OpsBackend } from '../../services/executor/ops-executor.js';
 import { opsExecutorService } from '../../services/executor/ops-executor.js';
-import { outputService } from '../../services/core/output.js';
 import { handleError } from '../../utils/errors.js';
 
 interface VMInfo {
@@ -25,7 +25,7 @@ export function registerOpsSSHCommand(ops: Command, _program: Command): void {
     .description(t('commands.ops.ssh.description'))
     .requiredOption('--vm-id <id>', t('options.vmId'))
     .option('-c, --command <cmd>', t('options.command'))
-    .option('--backend <backend>', t('options.opsBackend'))
+    .addOption(new Option('--backend <backend>', t('options.opsBackend')).choices(['kvm', 'qemu']))
     .option('--user <user>', t('options.opsSSHUser'))
     .action(
       async (options: { vmId: string; command?: string; backend?: string; user?: string }) => {

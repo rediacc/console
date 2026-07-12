@@ -13,16 +13,16 @@ export { FUNCTION_REQUIREMENTS } from './functionRequirements';
 // Note: FUNCTION_VISIBILITY and FunctionVisibility removed - visibility validation
 // is now handled server-side by renet. All functions in this file are public.
 export {
-  RENET_FUNCTIONS,
-  RENET_FUNCTIONS_VERSION,
-  type RenetFunctionName,
   createFunctionPayload,
   type FunctionParamsMap,
   getTypedParams,
-  isRenetFunction,
   isPublicRenetFunction,
+  isRenetFunction,
   type QueueFunctionsType,
   queueFunctions,
+  RENET_FUNCTIONS,
+  RENET_FUNCTIONS_VERSION,
+  type RenetFunctionName,
   type TypedFunctionPayload,
 } from './functions.generated';
 

@@ -19,7 +19,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
 
 REPO_ROOT="$(get_repo_root)"
-MIGRATIONS_DIR="$REPO_ROOT/packages/cli/src/schema/migrations"
+# The schema and its migrations live in packages/shared so the CLI, the executor,
+# and the web console all consume one definition. The fixtures stay with the CLI,
+# which is the only consumer that loads a config file from disk.
+MIGRATIONS_DIR="$REPO_ROOT/packages/shared/src/config-schema/migrations"
 FIXTURES_DIR="$REPO_ROOT/packages/cli/src/__tests__/fixtures/config"
 RUNNER="$MIGRATIONS_DIR/index.ts"
 
@@ -67,17 +70,19 @@ else
         cat >"$tmpscript" <<'TSX'
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { runMigrations } from './src/schema/migrations/index.js';
-import { RdcConfigSchema } from './src/schema/schemas.js';
+import { runMigrations, RdcConfigSchema } from '@rediacc/shared/config-schema';
 
 const fixturesDir = 'src/__tests__/fixtures/config';
 const fixtures = readdirSync(fixturesDir).filter((f) => /^v\d+-sample\.json$/.test(f));
 
 // Committed fixtures are plaintext; a fixture needing a master password (an
 // encrypted-blob v2 config) cannot be gate-checked without one and is covered
-// in vitest instead, so the context's getMasterPassword throws.
+// in vitest instead, so both crypto hooks throw here.
 const ctx = {
   getMasterPassword: async () => {
+    throw new Error('gate fixtures must be plaintext (no /resources blob)');
+  },
+  decryptLegacyBlob: async () => {
     throw new Error('gate fixtures must be plaintext (no /resources blob)');
   },
 };

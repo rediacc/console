@@ -1,10 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import type { RdcConfig } from '@rediacc/shared/config-schema';
 import type { ListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
-import type { RdcConfig } from '../../schema/schemas.js';
+import { describe, expect, it } from 'vitest';
 import {
+  type ReconcileDeps,
   reconcileState,
   verifyRoutingHint,
-  type ReconcileDeps,
 } from '../config/config-reconcile.js';
 
 const GRAND = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';

@@ -1,5 +1,5 @@
+import { createEmptyRdcConfig } from '@rediacc/shared/config-schema';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createEmptyRdcConfig } from '../../../schema/schemas.js';
 import type { ClusterConfig, MachineConfig, RdcConfig } from '../../../types/index.js';
 import { configService } from '../../config/config-resources.js';
 import { outputService } from '../../core/output.js';

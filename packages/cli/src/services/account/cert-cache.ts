@@ -12,13 +12,13 @@
 
 import { X509Certificate } from 'node:crypto';
 import { gunzipSync, gzipSync } from 'node:zlib';
-import type { SFTPClient } from '../../remote/sftp/index.js';
 import { t } from '../../i18n/index.js';
+import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { AcmeCertCache } from '../../types/index.js';
 import { parseCertAnchor } from '../../utils/cert-anchor.js';
 import { configService } from '../config/config-resources.js';
-import { machineConnections } from '../machine/machine-connection.js';
 import { outputService } from '../core/output.js';
+import { machineConnections } from '../machine/machine-connection.js';
 
 /** Remote path to Traefik's acme.json. */
 const ACME_JSON_PATH = '/opt/rediacc/proxy/letsencrypt/acme.json';

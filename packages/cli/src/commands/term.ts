@@ -1,17 +1,19 @@
 import { DEFAULTS } from '@rediacc/shared/config';
+import { Command } from 'commander';
+import { t } from '../i18n/index.js';
 import { generateSetupCommand, generateSourceCommand } from '../remote/repository/index.js';
 import { SSHConnection, spawnSSH, testSSHConnectivity } from '../remote/ssh/index.js';
 import { getDefaultTerminalType, launchTerminal } from '../remote/terminal/index.js';
-import { Command } from 'commander';
-import { t } from '../i18n/index.js';
+import { applyClusterConnectionContext } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
-import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
-import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
+import { auditService } from '../services/core/audit.js';
 import {
   type ConnectionDetails,
   getSSHConnectionDetails,
 } from '../services/machine/ssh-connection.js';
+import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
 import {
   assertAgentMachineAccess,
   isAgentEnvironment,
@@ -19,7 +21,6 @@ import {
 } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
-import { auditService } from '../services/core/audit.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import {
   detectDirectRenetCommand,
@@ -27,7 +28,6 @@ import {
   detectFileWriteCommand,
   detectRepoContextCommand,
 } from '../utils/repo-context-guard.js';
-import { applyClusterConnectionContext } from '../services/cluster/cluster-target.js';
 import { resolveRepoTarget } from '../utils/repo-target.js';
 import { withSpinner } from '../utils/spinner.js';
 

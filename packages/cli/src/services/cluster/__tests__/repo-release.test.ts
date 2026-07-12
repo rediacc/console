@@ -1,5 +1,5 @@
+import type { CanarySet } from '@rediacc/shared/config-schema';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CanarySet } from '../../../schema/state-schema.js';
 import { configService } from '../../config/config-resources.js';
 import { outputService } from '../../core/output.js';
 import { localExecutorService } from '../../executor/local-executor.js';

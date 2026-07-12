@@ -46,6 +46,33 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   // Auto-derived MCP tools (read)
   // ══════════════════════════════════════════════════════════════════════
 
+  // ── Detached jobs (they survive the connection that started them) ──────
+  // Reading a job's spool is safe. Cancelling stops real work and gc destroys
+  // logs, so both are destructive and both auto-confirm via --yes.
+  // `job logs --follow` only ends when the job does, which an agent cannot
+  // usefully block on, so it is hidden: an agent polls `job status` instead.
+
+  'job list': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  'job status': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  'job logs': {
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'read',
+      excludeOptions: ['follow', 'debug'],
+    },
+  },
+  'job cancel': {
+    mcp: { destructive: true, idempotent: true, timeout: 'write', appendArgs: ['--yes'] },
+  },
+  'job gc': {
+    mcp: { destructive: true, idempotent: true, timeout: 'write', appendArgs: ['--yes'] },
+  },
+
   'machine query': {
     mcp: {
       destructive: false,

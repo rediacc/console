@@ -1,12 +1,11 @@
 import { t } from '../i18n/index.js';
-import { localExecutorService } from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
+import { getExecutor } from '../services/executor/executor-factory.js';
 import { ValidationError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
-import { coerceCliParams, validateFunctionParams } from './function-params.js';
-import { resolveExtraMachines } from './repo-backup.js';
 import { assertMachineExists, assertStorageExists } from './_validate.js';
+import { coerceCliParams, validateFunctionParams } from './function-params.js';
 
 export interface BackupListEntry {
   name: string;
@@ -104,13 +103,10 @@ export async function fetchBackupList(
     await assertBackupFromExists(fromName, coerced.sourceType);
   }
 
-  const extraMachines = await resolveExtraMachines(coerced);
-
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName: 'backup_list',
     machineName,
     params: coerced,
-    extraMachines,
     debug: options.debug,
     skipRouterRestart: options.skipRouterRestart,
     captureOutput: true,

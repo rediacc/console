@@ -13,9 +13,9 @@
 
 import { randomBytes } from 'node:crypto';
 import http from 'node:http';
-import { SSHConnection, spawnSSH } from '../../remote/ssh/index.js';
-import type { VSCodeServerProvider, ServerPlatform } from '../../remote/vscode-server/index.js';
 import { t } from '../../i18n/index.js';
+import { SSHConnection, spawnSSH } from '../../remote/ssh/index.js';
+import type { ServerPlatform, VSCodeServerProvider } from '../../remote/vscode-server/index.js';
 import { ValidationError } from '../../types/errors.js';
 import { debugLog } from '../../utils/debug.js';
 import type { ConnectionDetails } from '../machine/ssh-connection.js';

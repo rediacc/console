@@ -13,7 +13,8 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { ClusterPool } from '../../types/index.js';
 import { configService } from '../config/config-resources.js';
-import { localExecutorService, parseCapturedJson } from '../executor/local-executor.js';
+import { getExecutor } from '../executor/executor-factory.js';
+import { parseCapturedJson } from '../executor/local-executor.js';
 
 /**
  * The Ceph cluster name is a fixed identity ("ceph") that is distinct from the
@@ -39,7 +40,7 @@ export async function dispatchCeph(
   params: Record<string, unknown>,
   debug?: boolean
 ): Promise<void> {
-  const result = await localExecutorService.execute({ functionName, machineName, params, debug });
+  const result = await getExecutor().execute({ functionName, machineName, params, debug });
   if (!result.success) {
     throw new Error(
       `Ceph install step "${functionName}" failed on ${machineName}: ${
@@ -76,7 +77,7 @@ export async function exportCephClientConfig(
   monMachine: string,
   debug?: boolean
 ): Promise<{ conf: string; keyring: string }> {
-  const exported = await localExecutorService.execute({
+  const exported = await getExecutor().execute({
     functionName: 'ceph_client_config_export',
     machineName: monMachine,
     params: {},

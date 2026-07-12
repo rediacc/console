@@ -9,8 +9,8 @@
  */
 
 import type { SFTPClient } from '../../remote/sftp/index.js';
-import { envFilePath } from './backup-env-file.js';
 import { outputService } from '../core/output.js';
+import { envFilePath } from './backup-env-file.js';
 import type {
   ReconcileOptions,
   ReconcilePlan,

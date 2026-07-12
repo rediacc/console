@@ -8,13 +8,13 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
+import type { RdcState } from '@rediacc/shared/config-schema';
+import { configFileStorage } from '../../adapters/config-file-storage.js';
+import { t } from '../../i18n/index.js';
 import {
   addMachineSSHConfigEntry,
   removeMachineSSHConfigEntry,
 } from '../../remote/vscode/index.js';
-import { configFileStorage } from '../../adapters/config-file-storage.js';
-import { t } from '../../i18n/index.js';
-import type { RdcState } from '../../schema/state-schema.js';
 import type {
   ArchivedRepository,
   BackupStrategyConfig,
@@ -27,16 +27,17 @@ import type {
   RepositoryConfig,
   StorageConfig,
 } from '../../types/index.js';
+import { outputService } from '../core/output.js';
 import { ConfigServiceBase } from './config-base.js';
 import {
   assertClusterMembersUnique,
   assertUniqueName,
   listClustersFromConfig,
-  removeClusterFromStore,
   removeCloudProviderFromStore,
+  removeClusterFromStore,
   updateClusterInStore,
-  writeClusterToStore,
   writeCloudProviderToStore,
+  writeClusterToStore,
 } from './config-cluster-logic.js';
 import { allocateNetworkIdInStore } from './config-network-id.js';
 import {
@@ -46,7 +47,6 @@ import {
   resolveDestructiveTargetFromRepos,
   resolveExactOrLatest,
 } from './config-resources-resolve.js';
-import { outputService } from '../core/output.js';
 
 export { AmbiguousRepoTargetError } from './config-resources-resolve.js';
 

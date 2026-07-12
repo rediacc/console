@@ -11,13 +11,13 @@ import {
   readRuntimeRepoLicenseStatuses,
   refreshRepoLicensesBatch,
 } from '../services/account/license.js';
-import { outputService } from '../services/core/output.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
-import { configService } from '../services/config/config-resources.js';
 import {
   getSubscriptionScopeMismatch,
   getSubscriptionTokenState,
 } from '../services/account/subscription-auth.js';
+import { configService } from '../services/config/config-resources.js';
+import { outputService } from '../services/core/output.js';
+import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
 import { ValidationError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import {

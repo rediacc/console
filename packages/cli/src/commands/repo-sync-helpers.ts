@@ -1,5 +1,7 @@
 import { existsSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
+import chalk from 'chalk';
+import { t } from '../i18n/index.js';
 import {
   formatChangesSummary,
   formatDetailedChanges,
@@ -7,8 +9,6 @@ import {
   type RsyncChanges,
   type RsyncExecutorOptions,
 } from '../remote/sync/index.js';
-import chalk from 'chalk';
-import { t } from '../i18n/index.js';
 
 export interface SyncUploadOptions {
   team?: string;

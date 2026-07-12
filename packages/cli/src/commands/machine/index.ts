@@ -1,11 +1,11 @@
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { isAgentEnvironment } from '../../utils/agent-guard.js';
-import { registerCloudCommands } from './provision.js';
 import { registerContainersCommand } from './containers.js';
 import { registerCrudCommands } from './crud.js';
 import { registerDeployBackupCommand } from './deploy-backup.js';
 import { registerHealthCommand } from './health.js';
+import { registerCloudCommands } from './provision.js';
 import { registerPruneCommand } from './prune.js';
 import { registerRepositoriesCommand } from './repositories.js';
 import { registerServicesCommand } from './services.js';

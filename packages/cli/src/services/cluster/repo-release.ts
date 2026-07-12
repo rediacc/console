@@ -33,7 +33,7 @@
  * v1 — the primitives compose.
  */
 
-import type { CanarySet } from '../../schema/state-schema.js';
+import type { CanarySet } from '@rediacc/shared/config-schema';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { controlDatastoreMount } from './cluster-kube.js';

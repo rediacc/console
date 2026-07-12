@@ -15,20 +15,21 @@
 import { randomUUID } from 'node:crypto';
 import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../i18n/index.js';
+import { createCluster } from '../services/cluster/cluster-provision.js';
+import { clusterMountRemotePath } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
+import { outputService } from '../services/core/output.js';
 import {
-  type LocalExecuteResult,
-  localExecutorService,
+  type ExecuteResult,
+  getExecutor,
   type RenetEvent,
-} from '../services/executor/local-executor.js';
+} from '../services/executor/executor-factory.js';
+import { localExecutorService } from '../services/executor/local-executor.js';
 import {
   type MachineConnectionLease,
   machineConnections,
 } from '../services/machine/machine-connection.js';
-import { outputService } from '../services/core/output.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
-import { clusterMountRemotePath } from '../services/cluster/cluster-target.js';
-import { createCluster } from '../services/cluster/cluster-provision.js';
 import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { resolveRepoTarget } from '../utils/repo-target.js';
@@ -228,8 +229,8 @@ function executeForkLeg(
   plan: ForkPlan,
   params: Record<string, unknown>,
   renetSteps: TimelineStep[]
-): Promise<LocalExecuteResult> {
-  return localExecutorService.execute({
+): Promise<ExecuteResult> {
+  return getExecutor().execute({
     functionName: 'repository_fork',
     machineName: plan.options.machine,
     params,
@@ -243,13 +244,13 @@ function executeForkLeg(
 }
 
 /** Whether a failed compound fork indicates the remote renet predates --up. */
-function isUpFlagUnsupported(result: LocalExecuteResult): boolean {
+function isUpFlagUnsupported(result: ExecuteResult): boolean {
   const text = `${result.error ?? ''}\n${result.stderr ?? ''}`;
   return /unknown (flag|shorthand flag|command)/i.test(text) && text.includes('--up');
 }
 
 /** Whether the compound fork actually ran the up phase remotely. */
-function compoundUpRan(result: LocalExecuteResult, renetSteps: TimelineStep[]): boolean {
+function compoundUpRan(result: ExecuteResult, renetSteps: TimelineStep[]): boolean {
   const steps = result.steps && result.steps.length > 0 ? result.steps : renetSteps;
   return steps.some((s) => UP_PHASE_STEP_NAMES.has(s.name));
 }
@@ -277,11 +278,8 @@ function startIdentityRefresh(
 }
 
 /** Legacy second leg: mount + up after a plain fork. */
-async function executeUpLeg(
-  plan: ForkPlan,
-  renetSteps: TimelineStep[]
-): Promise<LocalExecuteResult> {
-  const upResult = await localExecutorService.execute({
+async function executeUpLeg(plan: ForkPlan, renetSteps: TimelineStep[]): Promise<ExecuteResult> {
+  const upResult = await getExecutor().execute({
     functionName: 'repository_up',
     machineName: plan.options.machine,
     params: {
@@ -325,7 +323,7 @@ function finishTimeline(
   plan: ForkPlan,
   orchestrated: TimelineStep[],
   renetSteps: TimelineStep[],
-  results: (LocalExecuteResult | undefined)[]
+  results: (ExecuteResult | undefined)[]
 ): void {
   const cliSteps = results.flatMap((r) => r?.cliSteps ?? []);
   for (const step of cliSteps) {
@@ -355,7 +353,7 @@ function finishTimeline(
 async function runForkLeg(
   plan: ForkPlan,
   renetSteps: TimelineStep[]
-): Promise<{ result: LocalExecuteResult; forkParams: Record<string, unknown>; compound: boolean }> {
+): Promise<{ result: ExecuteResult; forkParams: Record<string, unknown>; compound: boolean }> {
   // PRIMARY: one compound `renet repository fork --up`. The legacy two-leg
   // path remains for --checkpoint (restore-on-first-up semantics).
   let compound = Boolean(plan.options.up && !plan.options.checkpoint);
@@ -384,7 +382,7 @@ async function runForkLeg(
  */
 async function handleForkLegFailure(
   plan: ForkPlan,
-  result: LocalExecuteResult,
+  result: ExecuteResult,
   orchestrated: TimelineStep[],
   renetSteps: TimelineStep[],
   dnsPromise: Promise<unknown> | undefined
@@ -433,7 +431,7 @@ async function orchestrateFork(plan: ForkPlan): Promise<void> {
   // with the up portion and the post-up tasks.
   const identityPromise = startIdentityRefresh(orchestrated, options, forkParams);
 
-  let upResult: LocalExecuteResult | undefined;
+  let upResult: ExecuteResult | undefined;
   if (options.up && !(compound && compoundUpRan(result, renetSteps))) {
     // Legacy/fallback up leg: --checkpoint flows, or a remote renet that
     // silently ignored the compound --up params.
@@ -556,7 +554,7 @@ export async function handleClusterForkSeam(
     // descriptor and re-mints identity + scrubs secrets per contract). Final
     // --datastore placement porcelain is P4; here we dispatch the real function.
     const forkNet = await configService.allocateNetworkId();
-    const result = await localExecutorService.execute({
+    const result = await getExecutor().execute({
       functionName: 'repository_fork',
       machineName,
       kubeCluster,

@@ -28,6 +28,7 @@ import { seoRequireImgAlt } from './eslint-rules/seo-require-img-alt.js';
 import { seoNoHashBreadcrumbUrl } from './eslint-rules/seo-no-hash-breadcrumb-url.js';
 import { seoNoTrailingSlashInternalLink } from './eslint-rules/seo-no-trailing-slash-internal-link.js';
 import { noUnawaitedDrizzleTerminator } from './eslint-rules/no-unawaited-drizzle-terminator.js';
+import { noDirectSftpClient } from './eslint-rules/no-direct-sftp-client.js';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import { i18nJsonPlugin, i18nSourcePlugin } from './eslint-rules/i18n/index.js';
 
@@ -249,6 +250,7 @@ export default tseslint.config(
           'seo-no-hash-breadcrumb-url': seoNoHashBreadcrumbUrl,
           'seo-no-trailing-slash-internal-link': seoNoTrailingSlashInternalLink,
           'no-unawaited-drizzle-terminator': noUnawaitedDrizzleTerminator,
+          'no-direct-sftp-client': noDirectSftpClient,
         },
       },
     },
@@ -550,6 +552,12 @@ export default tseslint.config(
       // Ban positional CLI syntax in help text / error strings / JSX.
       // Mirrors custom/i18n/no-positional-cli-syntax but for source strings.
       'custom/no-positional-cli-syntax-source': 'error',
+      // Every SSH/SFTP session must come from the refcounted pool. A direct
+      // `new SFTPClient(...)` is unpooled and skips host-key verification.
+      // The pool module itself is the single exception.
+      'custom/no-direct-sftp-client': ['error', {
+        allow: ['src/services/machine/machine-connection.ts'],
+      }],
     }
   },
 

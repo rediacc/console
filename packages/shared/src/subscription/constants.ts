@@ -379,6 +379,7 @@ export const PLAN_METADATA: Record<PlanCode, PlanMetadata> = {
     paid: false,
     featured: false,
     selfServe: false,
+    webConsole: false,
   },
   PROFESSIONAL: {
     displayName: 'Professional',
@@ -386,6 +387,7 @@ export const PLAN_METADATA: Record<PlanCode, PlanMetadata> = {
     paid: true,
     featured: true,
     selfServe: true,
+    webConsole: true,
   },
   BUSINESS: {
     displayName: 'Business',
@@ -393,6 +395,7 @@ export const PLAN_METADATA: Record<PlanCode, PlanMetadata> = {
     paid: true,
     featured: false,
     selfServe: true,
+    webConsole: true,
   },
   ENTERPRISE: {
     displayName: 'Enterprise',
@@ -400,6 +403,7 @@ export const PLAN_METADATA: Record<PlanCode, PlanMetadata> = {
     paid: true,
     featured: false,
     selfServe: false,
+    webConsole: true,
   },
 } as const;
 

@@ -117,12 +117,23 @@ const forkRepo = {
   grandGuid: GRAND_GUID, // points to a different repo → isFork
 };
 
+/**
+ * Throw instead of process.exit so tests can assert.
+ *
+ * Applied to the whole tree, not just the root: a parse error (an out-of-set
+ * --mode, say) is raised by the subcommand that owns the option, and a root-only
+ * exitOverride leaves that subcommand still calling process.exit.
+ */
+function applyExitOverride(cmd: Command): void {
+  cmd.exitOverride();
+  for (const sub of cmd.commands) applyExitOverride(sub);
+}
+
 function buildProgram() {
   const program = new Command();
   const repo = program.command('repo');
   registerRepoSecretCommands(repo);
-  // Throw instead of process.exit so tests can assert
-  program.exitOverride();
+  applyExitOverride(program);
   return program;
 }
 
@@ -415,6 +426,9 @@ describe('rdc repo secret get/list', () => {
       expect(mockWriteRepositorySecret).toHaveBeenCalled();
     });
 
+    // --mode declares .choices(['env', 'file']), so Commander rejects an
+    // out-of-set value at parse time, before the handler runs. The handler's own
+    // badMode check still guards non-CLI callers.
     it('rejects --mode foo', async () => {
       mockReadRepositorySecret.mockReturnValue(undefined);
       mockGetCurrent.mockResolvedValue(familyConfig('latest', grandRepo));
@@ -432,7 +446,8 @@ describe('rdc repo secret get/list', () => {
           '--mode',
           'foo',
         ])
-      ).rejects.toThrow(/badMode|errors\.repo\.secret\.badMode/);
+      ).rejects.toThrow(/Allowed choices are env, file/);
+      expect(mockWriteRepositorySecret).not.toHaveBeenCalled();
     });
   });
 

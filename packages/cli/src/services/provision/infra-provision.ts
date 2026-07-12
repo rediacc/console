@@ -7,15 +7,15 @@
  * Also ensures Cloudflare DNS records for the machine subdomain.
  */
 
-import { DEFAULTS } from '@rediacc/shared/config';
-import { parentRepoName } from '../../remote/repository/index.js';
-import { SFTPClient } from '../../remote/sftp/index.js';
 import { t } from '../../i18n/index.js';
+import { parentRepoName } from '../../remote/repository/index.js';
+import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { InfraConfig } from '../../types/index.js';
-import { CloudflareDnsClient, type DnsAction } from './cloudflare-dns.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
+import { machineConnections } from '../machine/machine-connection.js';
 import { provisionRenetToRemote, readSSHKey } from '../renet/renet-execution.js';
+import { CloudflareDnsClient, type DnsAction } from './cloudflare-dns.js';
 
 interface PushInfraOptions {
   debug?: boolean;
@@ -382,18 +382,18 @@ export async function pushInfraConfig(
     team,
   });
 
-  const sftp = new SFTPClient({
-    host: machine.ip,
-    port: machine.port ?? DEFAULTS.SSH.PORT,
-    username: machine.user,
-    privateKey: sshPrivateKey,
-  });
-  await sftp.connect();
+  const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
 
   try {
-    await executeProxySetup(sftp, infraJSON, machine.infra.baseDomain, remoteRenetPath, options);
+    await executeProxySetup(
+      lease.sftp,
+      infraJSON,
+      machine.infra.baseDomain,
+      remoteRenetPath,
+      options
+    );
   } finally {
-    sftp.close();
+    lease.release();
   }
 
   await ensureMachineDnsRecords(machineName, machine.infra, localConfig, options);

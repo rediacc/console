@@ -17,12 +17,12 @@
  */
 
 import { gunzipSync, gzipSync } from 'node:zlib';
+import type { ArchivedRepository, RdcConfig } from '@rediacc/shared/config-schema';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
-import type { ArchivedRepository, RdcConfig } from '../../schema/schemas.js';
 import { parseRepoRef } from '../../utils/config-schema.js';
-import { configService } from './config-resources.js';
 import { type ConfigAnchors, pruneCertsByAnchor } from '../account/cert-cache.js';
-import { pruneDanglingRefs, type DroppedRef } from './config-refs-prune.js';
+import { type DroppedRef, pruneDanglingRefs } from './config-refs-prune.js';
+import { configService } from './config-resources.js';
 
 /** Default archive grace period if not set in config. Mirrors `prune.ts`. */
 const DEFAULT_GRACE_DAYS = 7;

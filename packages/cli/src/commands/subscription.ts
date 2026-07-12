@@ -3,10 +3,7 @@ import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { accountServerFetch, fetchServerInfo } from '../services/account/account-client.js';
-import { configService } from '../services/config/config-resources.js';
 import { refreshRepoLicenseIdentity } from '../services/account/license.js';
-import { outputService } from '../services/core/output.js';
-import { readSSHKey } from '../services/renet/renet-execution.js';
 import {
   deleteServerConfig,
   deleteStoredSubscriptionToken,
@@ -19,12 +16,14 @@ import {
   saveStoredSubscriptionToken,
 } from '../services/account/subscription-auth.js';
 import { authorizeSubscriptionViaDeviceCode } from '../services/account/subscription-device-auth.js';
+import { configService } from '../services/config/config-resources.js';
+import { outputService } from '../services/core/output.js';
 import { discoverRegions } from '../services/provision/region-discovery.js';
-import { promptRegionSelection } from '../utils/region-prompt.js';
+import { readSSHKey } from '../services/renet/renet-execution.js';
 import { telemetryService } from '../services/telemetry/telemetry.js';
 import { handleError, ValidationError } from '../utils/errors.js';
+import { promptRegionSelection } from '../utils/region-prompt.js';
 import { withSpinner } from '../utils/spinner.js';
-import { outputSubscriptionScope } from './subscription-output.js';
 import {
   executeActivationRefresh,
   executeActivationStatus,
@@ -33,6 +32,7 @@ import {
   executeSubscriptionRefresh,
   executeSubscriptionStatus,
 } from './subscription-actions.js';
+import { outputSubscriptionScope } from './subscription-output.js';
 
 /** Clear session and notify when the server URL has changed. */
 function handleServerChange(currentServer: string | undefined, newServer: string): void {

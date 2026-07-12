@@ -4,11 +4,8 @@
  */
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
-import {
-  localExecutorService,
-  type LocalExecuteResult,
-} from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
+import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
 import { renderLocalExecutionFailure } from './local-execution-failures.js';
 import { formatStepDuration } from './timeline.js';
 
@@ -29,7 +26,7 @@ export async function executeRepoFunction(
   params: Record<string, unknown>,
   options: { debug?: boolean; skipRouterRestart?: boolean; kubeCluster?: string },
   messages: RepoFunctionMessages
-): Promise<LocalExecuteResult> {
+): Promise<ExecuteResult> {
   // Validate repository exists in context
   const repo = await configService.getRepository(repoName);
   if (!repo) {
@@ -44,7 +41,7 @@ export async function executeRepoFunction(
 
   outputService.info(messages.starting);
 
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName,
     machineName,
     kubeCluster: options.kubeCluster,

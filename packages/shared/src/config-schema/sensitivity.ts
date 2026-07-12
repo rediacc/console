@@ -6,7 +6,7 @@
  * Template segments may be `*` to match any record key or array index.
  *
  * Consumed by:
- *   - packages/cli/src/schema/walker.ts — walkSensitive, redactClone, pathsToCommit, digestForPointer
+ *   - packages/cli/src/config-schema/walker.ts (walkSensitive, pathsToCommit) + packages/cli/src/schema/fingerprint.ts (redactClone, digestForPointer)
  *   - packages/cli/src/services/mutation-gate.ts — which paths require --current knowledge
  *   - packages/cli/src/services/resource-state.ts — which paths encrypt at rest
  *   - packages/shared/src/config-crypto/commitments.ts — which paths commit to the server envelope
@@ -67,11 +67,32 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/credentials/ssh/privateKey': { kind: 'credential' },
   '/credentials/ssh/knownHosts': { kind: 'pii' },
   '/credentials/cfDnsApiToken': { kind: 'secret' },
+
+  // ── Authorization policy (executor-enforced) ─────────────────────────────
+  // Registered as a single leaf: the whole document is one committed value, so
+  // ANY edit to ANY rule changes the commitment and a push that rewrites the
+  // rules without knowing the current value is rejected by the server.
+  //
+  // Not 'public' (public fields are excluded from pathsToCommit, which would
+  // leave the rules tamper-able) and not 'secret' either: the threat here is not
+  // someone reading the rules, it is someone quietly rewriting them.
+  '/policy': { kind: 'identifier' },
   // The verifier is what the CLI uses to CHECK the master password BEFORE any
   // decryption can happen. Encrypting it under the password it verifies is a
   // bootstrapping deadlock, so it is stored in the clear by explicit override
   // (spec 04 §2.3 [P0-DECIDED]). It is a verifier, not a recoverable secret.
-  '/credentials/masterPasswordVerifier': { kind: 'secret', encryptAtRest: false },
+  //
+  // commit:false because it is HOST-LOCAL to the master-password at-rest mode and
+  // must never enter the remote config envelope. A remote config is stored under
+  // the CEK, not a master password, so the verifier is meaningless there — and
+  // committing it (without also syncing it, which we must not) would drop a
+  // committed pointer on every push/rotation round trip and brick the re-push.
+  // Not synced, therefore not committed: the two must agree.
+  '/credentials/masterPasswordVerifier': {
+    kind: 'secret',
+    encryptAtRest: false,
+    commit: false,
+  },
 
   // ── Machines ─────────────────────────────────────────────────────────────
   '/resources/machines/*/ip': { kind: 'pii' },

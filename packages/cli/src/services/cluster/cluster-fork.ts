@@ -14,7 +14,8 @@ import { getCluster } from '../config/config-cluster-ops.js';
 import { configService } from '../config/config-resources.js';
 import { auditService } from '../core/audit.js';
 import { outputService } from '../core/output.js';
-import { localExecutorService, parseCapturedJson } from '../executor/local-executor.js';
+import { getExecutor } from '../executor/executor-factory.js';
+import { parseCapturedJson } from '../executor/local-executor.js';
 import {
   assertDestNotRunningOwnK3s,
   clusterMount,
@@ -22,8 +23,8 @@ import {
   controlDatastoreMount,
   createNodeImage,
   dispatch,
-  type K8sMember,
   K8S_SERVER_ROLES,
+  type K8sMember,
   k8sPoolsOf,
   NAMED_DS_BASE,
   poolSize,
@@ -332,7 +333,7 @@ async function clusterHealthGate(
   const deadline = gateNow() + HEALTH_GATE_WINDOW_MS;
   let lastErr = '';
   while (gateNow() < deadline) {
-    const res = await localExecutorService.execute({
+    const res = await getExecutor().execute({
       functionName: 'kube_health',
       machineName,
       params: { mount_path: mountPath },
@@ -452,7 +453,7 @@ async function tryDispatch(
   debug?: boolean
 ): Promise<void> {
   try {
-    await localExecutorService.execute({ functionName, machineName, params, debug });
+    await getExecutor().execute({ functionName, machineName, params, debug });
   } catch (err) {
     outputService.warn(`  discard: ${functionName} on ${machineName} failed (continuing): ${err}`);
   }

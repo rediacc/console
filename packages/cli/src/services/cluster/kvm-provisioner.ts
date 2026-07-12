@@ -8,8 +8,8 @@
  */
 
 import { dirname } from 'node:path';
+import { buildGroupEnv, OpsManager } from '@rediacc/provisioning';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { OpsManager, buildGroupEnv } from '@rediacc/provisioning';
 import type { ClusterConfig, ClusterKvm } from '../../types/index.js';
 import {
   getClusterMemberIdsFromConfig,

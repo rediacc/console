@@ -1,14 +1,14 @@
 // IMPORTANT: temp-config-env MUST be the first import so it redirects the
 // config dir before config-file-storage captures getConfigDir().
-import { TEST_CONFIG_HOME } from './helpers/temp-config-env.js';
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
-import { RemoteResourceState } from '../config/resource-state.js';
-import { configService } from '../config/config-resources.js';
 import type { RdcConfig } from '../../types/index.js';
+import { configService } from '../config/config-resources.js';
+import { RemoteResourceState } from '../config/resource-state.js';
+import { TEST_CONFIG_HOME } from './helpers/temp-config-env.js';
 
 const CONFIG_NAME = 'rediacc';
 const GUID = 'a1111111-1111-4111-8111-111111111111';

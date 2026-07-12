@@ -2,11 +2,8 @@ import chalk from 'chalk';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
-import {
-  type LocalExecuteResult,
-  localExecutorService,
-} from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
+import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { resolveRepoTarget } from '../utils/repo-target.js';
@@ -278,7 +275,7 @@ async function runDiff(options: DiffOptions): Promise<void> {
     })
   );
 
-  const result: LocalExecuteResult = await localExecutorService.execute({
+  const result: ExecuteResult = await getExecutor().execute({
     functionName: 'repository_diff',
     machineName,
     kubeCluster,

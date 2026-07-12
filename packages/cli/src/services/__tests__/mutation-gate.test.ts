@@ -23,12 +23,12 @@ vi.mock('../../utils/agent-guard.js', async () => {
   };
 });
 
+import { digestForPointer } from '../../schema/fingerprint.js';
 import {
   evaluateMutations,
-  PreconditionMismatchError,
   type MutationEntry,
+  PreconditionMismatchError,
 } from '../core/mutation-gate.js';
-import { digestForPointer } from '../../schema/walker.js';
 
 const v2Config = {
   schemaVersion: 2 as const,

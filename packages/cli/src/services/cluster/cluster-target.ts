@@ -10,9 +10,9 @@
  */
 
 import { t } from '../../i18n/index.js';
+import { ValidationError } from '../../utils/errors.js';
 import { resolveControlNode } from '../config/config-cluster-ops.js';
 import { controlDatastoreMount } from './cluster-kube.js';
-import { ValidationError } from '../../utils/errors.js';
 
 export interface ExecutionTarget {
   /** Effective machine to SSH to — the control node when the target is a cluster. */

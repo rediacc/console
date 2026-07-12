@@ -1,15 +1,15 @@
 import { randomBytes, randomUUID } from 'node:crypto';
+import type { Command } from 'commander';
+import { t } from '../i18n/index.js';
 import {
   generateConnectionName,
   removePersistedKeys,
   removeSSHConfigEntry,
 } from '../remote/vscode/index.js';
-import type { Command } from 'commander';
-import { t } from '../i18n/index.js';
 import { clusterMountRemotePath } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
-import { localExecutorService } from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
+import { getExecutor } from '../services/executor/executor-factory.js';
 import { assertAgentRepoCreate } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
@@ -50,7 +50,7 @@ async function rollbackCreateRepo(name: string): Promise<void> {
 /** Render the create result: timeline/success on success, rollback + failure otherwise. */
 async function renderCreateResult(
   name: string,
-  result: import('../services/executor/local-executor.js').LocalExecuteResult
+  result: import('../services/executor/local-executor.js').ExecuteResult
 ): Promise<void> {
   if (result.success) {
     if (result.allSteps && result.allSteps.length > 0) {
@@ -115,7 +115,7 @@ async function handleRepoCreateCluster(
     });
     registered = true;
 
-    const result = await localExecutorService.execute({
+    const result = await getExecutor().execute({
       functionName: 'repository_create',
       machineName,
       kubeCluster,
@@ -216,7 +216,7 @@ export async function handleRepoCreate(
       })
     );
 
-    const result = await localExecutorService.execute({
+    const result = await getExecutor().execute({
       functionName: 'repository_create',
       machineName: machineTarget,
       params: {
@@ -245,7 +245,7 @@ async function handleDeleteSuccess(
   machineName: string,
   repoConfig: { repositoryGuid: string },
   archiveConfig: boolean,
-  result: import('../services/executor/local-executor.js').LocalExecuteResult,
+  result: import('../services/executor/local-executor.js').ExecuteResult,
   originalRef?: string
 ): Promise<void> {
   await cleanupDeletedRepoSSH(machineName, name).catch(() => {});
@@ -292,7 +292,7 @@ async function handleRepoDeleteCluster(name: string, options: { cluster: string 
     // kube_namespace_delete was deleted with the redesign; a k8s repo is deleted
     // through the runtime-generic repository_delete (kube detected from the
     // datastore descriptor). Final placement porcelain is P4.
-    const result = await localExecutorService.execute({
+    const result = await getExecutor().execute({
       functionName: 'repository_delete',
       machineName,
       kubeCluster,
@@ -371,7 +371,7 @@ async function handleRepoDelete(
       t('commands.repo.delete.starting', { repository: target, machine: machineTarget })
     );
 
-    const result = await localExecutorService.execute({
+    const result = await getExecutor().execute({
       functionName: 'repository_delete',
       machineName: machineTarget,
       params: { repository: target },

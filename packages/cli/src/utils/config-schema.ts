@@ -55,10 +55,11 @@ export const MachineConfigSchema = z.object({
 // ── Per-repo secrets ──────────────────────────────────────────────
 //
 // Single source of truth for the secret schemas + size caps is
-// schema/schemas.ts (spec 04 §5.1: the caps must live in one place). Imported
+// config-schema/schemas.ts in packages/shared (spec 04 §5.1: the caps must live in one place). Imported
 // and re-exported here so the flat `RepositoryConfigSchema` below (used by
 // `config repository add` validation) and existing importers keep working.
-import { SecretEntrySchema, SecretKeySchema } from '../schema/schemas.js';
+import { SecretEntrySchema, SecretKeySchema } from '@rediacc/shared/config-schema';
+
 export { SecretEntrySchema, SecretKeySchema };
 
 export const RepositoryConfigSchema = z.object({

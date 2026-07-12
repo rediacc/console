@@ -7,13 +7,13 @@
  * port-forward channels — sessions stay sandboxed, forwarding works.
  */
 
-import net from 'node:net';
 import type { ChildProcess } from 'node:child_process';
-import { SSHConnection, spawnSSH } from '../../remote/ssh/index.js';
+import net from 'node:net';
 import { TIMEOUT_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { t } from '../../i18n/index.js';
-import type { ConnectionDetails } from '../machine/ssh-connection.js';
+import { SSHConnection, spawnSSH } from '../../remote/ssh/index.js';
 import { ValidationError } from '../../types/errors.js';
+import type { ConnectionDetails } from '../machine/ssh-connection.js';
 
 export interface TunnelSpec {
   connectionDetails: ConnectionDetails;

@@ -38,6 +38,18 @@ export interface ConfigSensitiveData {
   repositories?: Record<string, unknown>;
   storages?: Record<string, unknown>;
   ssh?: Record<string, unknown>;
+  /** Cloud provider credentials (apiToken, sshUser). Committed, so must travel. */
+  cloudProviders?: Record<string, unknown>;
+  /** Cloudflare DNS API token — an org secret, committed, so must travel. */
+  cfDnsApiToken?: unknown;
+  /**
+   * The authorization rules the executor enforces.
+   *
+   * Typed `unknown` on purpose: config-crypto is a generic crypto library and
+   * must not learn the shape of a Rediacc policy document. The config-schema
+   * layer owns that shape and validates it on both sides of the wire.
+   */
+  policy?: unknown;
 }
 
 /** Result of selective encryption: plaintext envelope + encrypted blob */

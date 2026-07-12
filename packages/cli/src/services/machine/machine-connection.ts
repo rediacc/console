@@ -1,53 +1,97 @@
 /**
  * MachineConnectionManager - refcounted SSH/SFTP connection pool.
  *
- * Connections are keyed by host:port:user and shared across concurrent
- * callers via leases. The first acquire opens the connection, subsequent
- * acquires reuse it (concurrent connects are deduped on a shared promise),
- * and the last release() closes it. Dead sessions are evicted and replaced
- * with a fresh SFTPClient instance — an ended ssh2 client is never reused.
+ * This is the only module in the CLI allowed to construct an SFTPClient; the
+ * `custom/no-direct-sftp-client` ESLint rule enforces that. Everything else takes
+ * a lease:
+ *
+ *   const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
+ *   try { ... lease.sftp ... } finally { lease.release(); }
+ *
+ * Connections are keyed by host:port:user plus a fingerprint of the credentials
+ * they were opened with, and are shared across concurrent callers via leases. The
+ * first acquire opens the connection, subsequent acquires reuse it (concurrent
+ * connects are deduped on a shared promise), and the last release() closes it.
+ * Dead sessions are evicted and replaced with a fresh SFTPClient instance, because
+ * an ended ssh2 client is never reused.
  */
 
+import { createHash } from 'node:crypto';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { SFTPClient } from '../../remote/sftp/index.js';
+import { SFTPClient, type SFTPClientConfig } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
 import { configService } from '../config/config-resources.js';
-import { readSSHKey } from '../renet/renet-execution.js';
+import { readSSHKey } from './ssh-key.js';
 
-/** A refcounted handle on a shared machine connection. */
-export interface MachineConnectionLease {
+/**
+ * A refcounted handle on a shared SSH/SFTP connection, acquired from raw connect
+ * options. Internal: config-based callers go through withPooledSftp, which owns
+ * the lease for them. Machine-based callers get a MachineConnectionLease.
+ */
+interface SftpConnectionLease {
   /** Live SFTP client (replaced transparently after a dead-session evict). */
   readonly sftp: SFTPClient;
-  readonly machine: MachineConfig;
-  readonly sshPrivateKey: string;
   /** Re-check liveness, reconnecting if the session died. Returns the live client. */
   ensure(): Promise<SFTPClient>;
   /** Drop this lease's reference. The last release closes the connection. */
   release(): void;
 }
 
+/** A lease acquired for a configured machine, carrying the resolved machine and key. */
+export interface MachineConnectionLease {
+  /** Live SFTP client (replaced transparently after a dead-session evict). */
+  readonly sftp: SFTPClient;
+  /** Re-check liveness, reconnecting if the session died. Returns the live client. */
+  ensure(): Promise<SFTPClient>;
+  /** Drop this lease's reference. The last release closes the connection. */
+  release(): void;
+  readonly machine: MachineConfig;
+  readonly sshPrivateKey: string;
+}
+
 interface ConnectionEntry {
   key: string;
-  machine: MachineConfig;
-  sshPrivateKey: string;
+  clientConfig: SFTPClientConfig;
   sftp: SFTPClient;
   refCount: number;
   /** In-flight connect/reconnect, shared so concurrent acquires dedupe. */
   connectPromise: Promise<void> | null;
 }
 
-function connectionKey(machine: MachineConfig): string {
-  return `${machine.ip}:${machine.port ?? DEFAULTS.SSH.PORT}:${machine.user}`;
+/**
+ * Sessions to the same host:port:user opened with different credentials are not
+ * interchangeable: a per-repo key (which the remote authorizes with a `command=`
+ * sandbox) must never be served out of a session opened with the team key, and a
+ * session opened without host-key pinning must not satisfy a caller that asked
+ * for it. Fold the credentials into the pool key so those are separate entries.
+ */
+function credentialFingerprint(config: SFTPClientConfig): string {
+  // JSON encoding keeps the three fields unambiguously separated.
+  const material = JSON.stringify([
+    config.privateKey,
+    config.passphrase ?? '',
+    config.knownHosts ?? '',
+  ]);
+  return createHash('sha256').update(material).digest('hex').slice(0, 16);
 }
 
-function createClient(machine: MachineConfig, sshPrivateKey: string): SFTPClient {
-  return new SFTPClient({
+function connectionKey(config: SFTPClientConfig): string {
+  const port = config.port ?? DEFAULTS.SSH.PORT;
+  return `${config.host}:${port}:${config.username}:${credentialFingerprint(config)}`;
+}
+
+/** The canonical SFTP connect options for a configured machine. */
+export function sftpConfigForMachine(
+  machine: MachineConfig,
+  sshPrivateKey: string
+): SFTPClientConfig {
+  return {
     host: machine.ip,
     port: machine.port ?? DEFAULTS.SSH.PORT,
     username: machine.user,
     privateKey: sshPrivateKey,
     ...(machine.knownHosts ? { knownHosts: machine.knownHosts } : {}),
-  });
+  };
 }
 
 class MachineConnectionManager {
@@ -71,16 +115,40 @@ class MachineConnectionManager {
 
   /** Acquire a pooled connection lease for an already-resolved machine. */
   async acquireFor(machine: MachineConfig, sshPrivateKey: string): Promise<MachineConnectionLease> {
-    const key = connectionKey(machine);
+    const entry = await this.acquireEntry(sftpConfigForMachine(machine, sshPrivateKey));
+    const lease = this.createLease(entry);
+    return {
+      get sftp() {
+        return lease.sftp;
+      },
+      machine,
+      sshPrivateKey,
+      ensure: lease.ensure,
+      release: lease.release,
+    };
+  }
+
+  /**
+   * Acquire a pooled connection lease from raw connect options, for callers that
+   * hold connection details rather than a MachineConfig (repo sync resolves a
+   * per-repo key and host keys from the vault, renet provisioning takes a config).
+   */
+  async acquireForConfig(config: SFTPClientConfig): Promise<SftpConnectionLease> {
+    return this.createLease(await this.acquireEntry(config));
+  }
+
+  /** Reserve a reference on the (possibly new) entry for these connect options. */
+  private async acquireEntry(config: SFTPClientConfig): Promise<ConnectionEntry> {
+    const key = connectionKey(config);
     let entry = this.entries.get(key);
     if (!entry) {
-      entry = this.createEntry(key, machine, sshPrivateKey);
+      entry = this.createEntry(key, config);
       this.entries.set(key, entry);
     }
     // Reserve the lease BEFORE awaiting the shared connect: with two
     // concurrent first acquires, the early waiter could otherwise acquire,
     // release, and close the entry while the late waiter is still awaiting
-    // connectPromise — handing the late waiter a closed session.
+    // connectPromise, handing the late waiter a closed session.
     entry.refCount += 1;
     try {
       await this.ensureLive(entry);
@@ -92,15 +160,14 @@ class MachineConnectionManager {
       }
       throw error;
     }
-    return this.createLease(entry);
+    return entry;
   }
 
-  private createEntry(key: string, machine: MachineConfig, sshPrivateKey: string): ConnectionEntry {
+  private createEntry(key: string, clientConfig: SFTPClientConfig): ConnectionEntry {
     const entry: ConnectionEntry = {
       key,
-      machine,
-      sshPrivateKey,
-      sftp: createClient(machine, sshPrivateKey),
+      clientConfig,
+      sftp: new SFTPClient(clientConfig),
       refCount: 0,
       connectPromise: null,
     };
@@ -121,9 +188,9 @@ class MachineConnectionManager {
     try {
       entry.sftp.close();
     } catch {
-      // Best effort — the session is already dead.
+      // Best effort: the session is already dead.
     }
-    const fresh = createClient(entry.machine, entry.sshPrivateKey);
+    const fresh = new SFTPClient(entry.clientConfig);
     entry.sftp = fresh;
     entry.connectPromise = Promise.resolve(fresh.connect()).finally(() => {
       entry.connectPromise = null;
@@ -131,7 +198,7 @@ class MachineConnectionManager {
     return entry.connectPromise;
   }
 
-  private createLease(entry: ConnectionEntry): MachineConnectionLease {
+  private createLease(entry: ConnectionEntry): SftpConnectionLease {
     let released = false;
     const release = () => {
       if (released) return;
@@ -149,8 +216,6 @@ class MachineConnectionManager {
       get sftp() {
         return entry.sftp;
       },
-      machine: entry.machine,
-      sshPrivateKey: entry.sshPrivateKey,
       ensure,
       release,
     };
@@ -165,9 +230,36 @@ class MachineConnectionManager {
     try {
       entry.sftp.close();
     } catch {
-      // Best effort — closing a dead session is fine.
+      // Best effort: closing a dead session is fine.
     }
   }
 }
 
 export const machineConnections = new MachineConnectionManager();
+
+/** Borrow a pooled connection for the duration of `fn`, releasing it afterwards. */
+export async function withPooledSftp<T>(
+  config: SFTPClientConfig,
+  fn: (sftp: SFTPClient) => Promise<T>
+): Promise<T> {
+  const lease = await machineConnections.acquireForConfig(config);
+  try {
+    return await fn(lease.sftp);
+  } finally {
+    lease.release();
+  }
+}
+
+/**
+ * Run `fn` on a caller-supplied client when there is one, else on a pooled
+ * connection held only for the duration of the call. Callers that already hold a
+ * lease pass `lease.sftp` and keep owning its lifetime.
+ */
+export async function withSharedOrPooledSftp<T>(
+  sharedSftp: SFTPClient | undefined,
+  config: SFTPClientConfig,
+  fn: (sftp: SFTPClient) => Promise<T>
+): Promise<T> {
+  if (sharedSftp) return fn(sharedSftp);
+  return withPooledSftp(config, fn);
+}

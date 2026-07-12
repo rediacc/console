@@ -5,12 +5,16 @@ import { STATUS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { isCooldownExpired } from '@rediacc/shared/update';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { applyPendingUpdate, getAppliedAtStartup } from '../services/update/background-updater.js';
-import { outputService } from '../services/core/output.js';
 import { getSubscriptionServerUrl } from '../services/account/subscription-auth.js';
-import { resolveChannel } from '../services/update/updater.js';
+import { outputService } from '../services/core/output.js';
+import { applyPendingUpdate, getAppliedAtStartup } from '../services/update/background-updater.js';
 import { readUpdateState, writeUpdateState } from '../services/update/update-state.js';
-import { checkForUpdate, compareVersions, performUpdate } from '../services/update/updater.js';
+import {
+  checkForUpdate,
+  compareVersions,
+  performUpdate,
+  resolveChannel,
+} from '../services/update/updater.js';
 import { handleError } from '../utils/errors.js';
 import {
   getInstallMethod,

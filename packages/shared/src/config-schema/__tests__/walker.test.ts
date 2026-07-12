@@ -1,19 +1,20 @@
 /**
- * Walker + redaction tests for the v2 schema registry.
+ * Structural walker tests (registry, pointer traversal, commit paths).
+ *
+ * The SHA-256 fingerprint half of the old walker (redactClone, digestForPointer,
+ * shortFingerprint) now lives in the CLI, and so do its tests:
+ * packages/cli/src/schema/__tests__/fingerprint.test.ts.
  */
 
 import { describe, expect, it } from 'vitest';
+import { listSensitivityTemplates, SENSITIVITY_REGISTRY } from '../sensitivity.js';
 import {
   buildPointer,
   canonicalJson,
-  digestForPointer,
   getByPointer,
   pathsToCommit,
-  redactClone,
-  shortFingerprint,
   walkSensitive,
 } from '../walker.js';
-import { listSensitivityTemplates, SENSITIVITY_REGISTRY } from '../sensitivity.js';
 
 describe('walker', () => {
   const sampleConfig = {
@@ -84,40 +85,6 @@ describe('walker', () => {
     expect(pointers).toContain('/resources/repositories/app/tags/latest/repositoryGuid');
   });
 
-  it('redactClone replaces sensitive values with stubs', () => {
-    const redacted = redactClone(sampleConfig);
-    expect(redacted.credentials.ssh.privateKey).toMatch(/^<redacted:credential>:[0-9a-f]{8}$/);
-    expect(redacted.credentials.cfDnsApiToken).toMatch(/^<redacted:secret>:[0-9a-f]{8}$/);
-    expect(redacted.account.token).toMatch(/^<redacted:secret>:[0-9a-f]{8}$/);
-    expect(redacted.resources.machines['web-1'].ip).toMatch(/^<redacted:pii>:[0-9a-f]{8}$/);
-    // Public fields remain as-is.
-    expect(redacted.schemaVersion).toBe(3);
-    expect(redacted.version).toBe(1);
-    expect(redacted.resources.machines['web-1'].port).toBe(22);
-  });
-
-  it('redactClone preserves identical fingerprints for identical values', () => {
-    const redacted = redactClone(sampleConfig);
-    const web1Ip = redacted.resources.machines['web-1'].ip;
-    const web2Ip = redacted.resources.machines['web-2'].ip;
-    // Different IPs → different fingerprints.
-    expect(web1Ip).not.toBe(web2Ip);
-    // Same fingerprint within the redaction stub when values match.
-    const alt = redactClone({
-      ...sampleConfig,
-      resources: {
-        ...sampleConfig.resources,
-        machines: {
-          'web-1': sampleConfig.resources.machines['web-1'],
-          'web-clone': sampleConfig.resources.machines['web-1'],
-        },
-      },
-    });
-    const original = alt.resources.machines['web-1'].ip;
-    const clone = alt.resources.machines['web-clone'].ip;
-    expect(original).toBe(clone);
-  });
-
   it('pathsToCommit excludes public fields and returns sorted pointers', () => {
     const paths = pathsToCommit(sampleConfig);
     expect(paths).toEqual([...paths].sort()); // sorted
@@ -125,16 +92,6 @@ describe('walker', () => {
     expect(paths).not.toContain('/version');
     expect(paths).toContain('/resources/machines/web-1/ip');
     expect(paths).toContain('/credentials/ssh/privateKey');
-  });
-
-  it('digestForPointer returns stable SHA-256 hex for existing pointers', () => {
-    const a = digestForPointer(sampleConfig, '/resources/machines/web-1/ip');
-    const b = digestForPointer(sampleConfig, '/resources/machines/web-1/ip');
-    expect(a).toBe(b);
-    expect(a).toMatch(/^[0-9a-f]{64}$/);
-    const different = digestForPointer(sampleConfig, '/resources/machines/web-2/ip');
-    expect(a).not.toBe(different);
-    expect(digestForPointer(sampleConfig, '/does/not/exist')).toBeUndefined();
   });
 
   it('getByPointer handles RFC 6901 escapes and array indices', () => {
@@ -152,19 +109,16 @@ describe('walker', () => {
     expect(getByPointer(withSlash, '/a~1b/x')).toBe(1);
   });
 
-  it('shortFingerprint distinguishes null from missing via canonicalJson', () => {
-    const nullFp = shortFingerprint(null);
-    const strFp = shortFingerprint('');
-    const undFp = shortFingerprint(undefined);
-    expect(nullFp).not.toBe(strFp);
-    expect(nullFp).not.toBe(undFp);
-    expect(strFp).not.toBe(undFp);
-  });
-
   it('canonicalJson is stable across key-insertion-order differences', () => {
     const a = canonicalJson({ x: 1, y: 2, z: 3 });
     const b = canonicalJson({ z: 3, y: 2, x: 1 });
     expect(a).toBe(b);
+  });
+
+  it('canonicalJson distinguishes null, undefined, and empty string', () => {
+    expect(canonicalJson(null)).not.toBe(canonicalJson(undefined));
+    expect(canonicalJson(null)).not.toBe(canonicalJson(''));
+    expect(canonicalJson(undefined)).not.toBe(canonicalJson(''));
   });
 
   it('buildPointer escapes segments correctly', () => {
@@ -185,36 +139,9 @@ describe('walker', () => {
     expect(stripeMode?.meta.kind).toBe('public');
   });
 
-  it('redactClone redacts secret values but leaves modes plaintext', () => {
-    const redacted = redactClone(sampleConfig);
-    const repo = redacted.resources.repositories.app.tags.latest;
-    expect(repo.secrets.STRIPE_KEY.value).toMatch(/^<redacted:secret>:[0-9a-f]{8}$/);
-    expect(repo.secrets.STRIPE_KEY.mode).toBe('env');
-    expect(repo.secrets.DKIM_PRIVATE.value).toMatch(/^<redacted:secret>:[0-9a-f]{8}$/);
-    expect(repo.secrets.DKIM_PRIVATE.mode).toBe('file');
-  });
-
   it('pathsToCommit includes secret values, excludes modes (public)', () => {
     const paths = pathsToCommit(sampleConfig);
     expect(paths).toContain('/resources/repositories/app/tags/latest/secrets/STRIPE_KEY/value');
     expect(paths).not.toContain('/resources/repositories/app/tags/latest/secrets/STRIPE_KEY/mode');
-  });
-
-  it('digestForPointer is stable for nested secret pointers', () => {
-    const a = digestForPointer(
-      sampleConfig,
-      '/resources/repositories/app/tags/latest/secrets/STRIPE_KEY/value'
-    );
-    const b = digestForPointer(
-      sampleConfig,
-      '/resources/repositories/app/tags/latest/secrets/STRIPE_KEY/value'
-    );
-    expect(a).toBe(b);
-    expect(a).toMatch(/^[0-9a-f]{64}$/);
-    const other = digestForPointer(
-      sampleConfig,
-      '/resources/repositories/app/tags/latest/secrets/DKIM_PRIVATE/value'
-    );
-    expect(a).not.toBe(other);
   });
 });

@@ -1,17 +1,14 @@
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
-import {
-  type LocalExecuteResult,
-  localExecutorService,
-} from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
+import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
 import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { resolveRepoTarget } from '../utils/repo-target.js';
 
 /** Surface renet's specific error reason from a failed repository_cat result. */
-function renderCatFailure(result: LocalExecuteResult): void {
+function renderCatFailure(result: ExecuteResult): void {
   const detail = (result.stderr ?? '')
     .split('\n')
     .map((l) => l.replace(/^\[[a-z0-9_]+\]\s?/i, '').trim())
@@ -105,7 +102,7 @@ export function registerRepoCatCommand(repo: Command): void {
             })
           );
 
-          const result = await localExecutorService.execute({
+          const result = await getExecutor().execute({
             functionName: 'repository_cat',
             machineName,
             kubeCluster,

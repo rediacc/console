@@ -14,15 +14,25 @@
  * validation anyway, and dropping locally keeps the queue clean.
  */
 
+import { randomUUID } from 'node:crypto';
 import { type AuditEvent, AuditEventSchema, functionNameToEventType } from '@rediacc/shared';
-import { getSubscriptionTokenState } from '../account/subscription-auth.js';
-import { accountServerFetch } from '../account/account-client.js';
 import { VERSION } from '../../version.js';
+import { accountServerFetch } from '../account/account-client.js';
+import { getSubscriptionTokenState } from '../account/subscription-auth.js';
 
 export { functionNameToEventType };
 
 const FLUSH_TIMEOUT_MS = 5_000;
 const AUDIT_ENDPOINT = '/account/api/v1/licenses/audit-events';
+
+type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never;
+
+/**
+ * An event as callers supply it. The wire envelope's `idempotencyKey` is minted
+ * by record(), never passed in, so no caller can reuse a key and suppress its
+ * own event server-side.
+ */
+export type AuditEventDraft = DistributiveOmit<AuditEvent, 'idempotencyKey'>;
 
 class AuditService {
   private queue: AuditEvent[] = [];
@@ -37,12 +47,13 @@ class AuditService {
 
   /**
    * Queue an audit event. Synchronous, never blocks.
-   * Event is validated against the shared schema; failures drop silently
-   * (an unrecognized type would be rejected by the server anyway).
+   * Stamps the idempotency key the server dedups on, then validates against the
+   * shared schema; failures drop silently (an unrecognized type would be
+   * rejected by the server anyway).
    */
-  record(event: AuditEvent): void {
+  record(event: AuditEventDraft): void {
     if (!this.hasToken()) return;
-    const parsed = AuditEventSchema.safeParse(event);
+    const parsed = AuditEventSchema.safeParse({ ...event, idempotencyKey: randomUUID() });
     if (!parsed.success) return;
     this.queue.push(parsed.data);
   }
@@ -74,7 +85,7 @@ class AuditService {
       error: opts.error?.slice(0, 500),
     };
 
-    let event: AuditEvent;
+    let event: AuditEventDraft;
     if (type === 'cli.sync.upload' || type === 'cli.sync.download') {
       event = {
         type,
@@ -99,7 +110,15 @@ class AuditService {
     this.record(event);
   }
 
-  /** Flush queued events to the account server. Timeout-bounded, swallows errors. */
+  /**
+   * Flush queued events to the account server. Timeout-bounded, swallows errors.
+   *
+   * A failed attempt is retried exactly once. Every event carries an idempotency
+   * key the server dedups on, so a retry can only ever store what the first
+   * attempt missed — it can never double-count. The retry is bounded to one
+   * extra attempt because this runs at process exit: a losing network must not
+   * hold the command open indefinitely.
+   */
   async flush(): Promise<void> {
     if (this.queue.length === 0) return;
     if (!this.hasToken()) {
@@ -108,11 +127,25 @@ class AuditService {
     }
 
     const events = this.queue.splice(0);
+    if (!(await this.send(events))) {
+      await this.send(events);
+    }
+  }
+
+  /** POST one batch. Resolves true when the server accepted it. */
+  private async send(events: AuditEvent[]): Promise<boolean> {
     let timer: NodeJS.Timeout | undefined;
     try {
       const request = accountServerFetch(AUDIT_ENDPOINT, {
         method: 'POST',
-        body: { events: events.map((e) => ({ type: e.type, data: e.data })) },
+        body: {
+          events: events.map((e) => ({
+            type: e.type,
+            data: e.data,
+            idempotencyKey: e.idempotencyKey,
+            ...(e.onBehalfOfTokenId ? { onBehalfOfTokenId: e.onBehalfOfTokenId } : {}),
+          })),
+        },
       });
       const timeout = new Promise<never>((_, reject) => {
         timer = setTimeout(() => reject(new Error('audit flush timeout')), FLUSH_TIMEOUT_MS);
@@ -121,8 +154,10 @@ class AuditService {
         timer.unref();
       });
       await Promise.race([request, timeout]);
+      return true;
     } catch {
       // Fire-and-forget: audit failures must never block CLI operations
+      return false;
     } finally {
       if (timer !== undefined) clearTimeout(timer);
     }

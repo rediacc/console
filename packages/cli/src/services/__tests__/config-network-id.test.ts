@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { MIN_NETWORK_ID, NETWORK_ID_INCREMENT } from '@rediacc/shared/renet-contract';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock configFileStorage to control the config state. In v3 the network-id
 // counter and the used-id inventory live in the `state` half, written via

@@ -25,10 +25,148 @@
       "descriptionKey": "options.fields",
       "mandatory": false,
       "defaultValue": null
+    },
+    {
+      "flags": "--proxy <url>",
+      "descriptionKey": null,
+      "mandatory": false,
+      "defaultValue": null
     }
   ],
   "arguments": [],
   "subcommands": [
+    {
+      "name": "job",
+      "descriptionKey": "commands.job.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "list",
+          "descriptionKey": "commands.job.list.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "status",
+          "descriptionKey": "commands.job.status.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--id <jobId>",
+              "descriptionKey": "commands.job.idOption",
+              "mandatory": true,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "logs",
+          "descriptionKey": "commands.job.logs.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--id <jobId>",
+              "descriptionKey": "commands.job.idOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "-f, --follow",
+              "descriptionKey": "commands.job.logs.followOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--since-line <n>",
+              "descriptionKey": "commands.job.logs.sinceLineOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "cancel",
+          "descriptionKey": "commands.job.cancel.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--id <jobId>",
+              "descriptionKey": "commands.job.idOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "-y, --yes",
+              "descriptionKey": "options.yes",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "gc",
+          "descriptionKey": "commands.job.gc.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--older-than <duration>",
+              "descriptionKey": "commands.job.gc.olderThanOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-y, --yes",
+              "descriptionKey": "options.yes",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        }
+      ]
+    },
     {
       "name": "machine",
       "descriptionKey": "commands.machine.description",
@@ -4472,6 +4610,20 @@
           ]
         },
         {
+          "name": "rotate-cek",
+          "descriptionKey": null,
+          "options": [
+            {
+              "flags": "--api-url <url>",
+              "descriptionKey": null,
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
           "name": "field",
           "descriptionKey": "commands.config.field.description",
           "options": [],
@@ -5864,6 +6016,32 @@
           "subcommands": []
         }
       ]
+    },
+    {
+      "name": "serve",
+      "descriptionKey": "commands.serve.description",
+      "options": [
+        {
+          "flags": "-p, --port <port>",
+          "descriptionKey": "commands.serve.optionPort",
+          "mandatory": false,
+          "defaultValue": "8080"
+        },
+        {
+          "flags": "--host <host>",
+          "descriptionKey": "commands.serve.optionHost",
+          "mandatory": false,
+          "defaultValue": "0.0.0.0"
+        },
+        {
+          "flags": "--mode <mode>",
+          "descriptionKey": "commands.serve.optionMode",
+          "mandatory": false,
+          "defaultValue": "daemon"
+        }
+      ],
+      "arguments": [],
+      "subcommands": []
     }
   ]
 }

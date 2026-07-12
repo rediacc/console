@@ -9,12 +9,12 @@ import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { ListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { isListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { configService } from '../config/config-resources.js';
-import { buildRenetEnvPrefix } from '../executor/local-executor.js';
-import { machineConnections } from './machine-connection.js';
-import { fetchOtlpCredentials } from '../telemetry/otlp-credentials.js';
 import { outputService } from '../core/output.js';
+import { buildRenetEnvPrefix } from '../executor/local-executor.js';
 import { provisionRenetToRemote } from '../renet/renet-execution.js';
+import { fetchOtlpCredentials } from '../telemetry/otlp-credentials.js';
 import { isTelemetryDisabled } from '../telemetry/telemetry.js';
+import { machineConnections } from './machine-connection.js';
 
 interface FetchStatusOptions {
   debug?: boolean;

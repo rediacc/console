@@ -8,9 +8,9 @@
  * epoch = floor(timestamp / windowSeconds)
  */
 
+import { randomBytes } from './aes.js';
 import { HKDF_INFO, SDK_WINDOW_SECONDS } from './constants.js';
 import { hkdfDeriveKey } from './hkdf.js';
-import { randomBytes } from './aes.js';
 
 /**
  * Get the current SDK epoch number.
