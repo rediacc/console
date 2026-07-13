@@ -89,7 +89,8 @@ async function resolveDatastorePlacement(datastore: string): Promise<DatastorePl
   if (!ds) {
     throw notFound(t('commands.repo.create.datastoreNotFound', { datastore }));
   }
-  const attachedTo = config?.state?.datastores?.[datastore]?.attachedTo;
+  // `ds` above proves the chain did not short-circuit, so `config` is non-null here.
+  const attachedTo = config.state?.datastores?.[datastore]?.attachedTo;
   if (!attachedTo) {
     throw stateMismatch(t('commands.repo.create.datastoreNotAttached', { datastore }));
   }

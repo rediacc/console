@@ -25,7 +25,7 @@ import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { configService } from './config-resources.js';
 
 type DatastoreConfig = NonNullable<NonNullable<RdcConfig['resources']>['datastores']>[string];
-type DatastoreState = NonNullable<NonNullable<RdcConfig['state']>['datastores']>[string];
+export type DatastoreState = NonNullable<NonNullable<RdcConfig['state']>['datastores']>[string];
 
 /** Names reserved for the cluster control plane (spec §5.5: `cluster create` owns them). */
 const CONTROL_DS_PREFIX = 'ds-control-';
@@ -71,10 +71,21 @@ export async function listDatastoreState(): Promise<Record<string, DatastoreStat
   return cfg?.state?.datastores ?? {};
 }
 
+/**
+ * `map[key]` lies: the repo does not enable `noUncheckedIndexedAccess`, so a missing
+ * key is typed as present while yielding undefined at runtime. Every absence check in
+ * this file guards a real runtime case, and going through this helper is what keeps
+ * them type-legal — annotating the variable is not enough, because TypeScript narrows
+ * a const back to the initializer's (lying) type.
+ */
+export function at<T>(map: Record<string, T>, key: string): T | undefined {
+  return map[key];
+}
+
 /** One datastore's record, or exit 5 naming what IS registered. */
 export async function getDatastore(ref: string): Promise<DatastoreConfig> {
   const all = await listDatastores();
-  const record = all[ref];
+  const record = at(all, ref);
   if (!record) {
     const known = Object.keys(all).sort();
     throw notFound(`datastore "${ref}" is not in this config.`, {
@@ -89,7 +100,7 @@ export async function getDatastore(ref: string): Promise<DatastoreConfig> {
 
 /** The machine a datastore is currently attached to, per the routing hint. */
 async function datastoreHost(ref: string): Promise<string | undefined> {
-  return (await listDatastoreState())[ref]?.attachedTo;
+  return at(await listDatastoreState(), ref)?.attachedTo;
 }
 
 /**
@@ -152,7 +163,7 @@ export async function reposInDatastore(ref: string): Promise<string[]> {
     // operator sees exactly what a --force delete would take with it.
     const placement = family.placement;
     if (!placement || !('datastore' in placement) || placement.datastore !== ref) continue;
-    for (const tag of Object.keys(family.tags ?? {})) {
+    for (const tag of Object.keys(family.tags)) {
       found.push(tag === family.grand ? name : `${name}:${tag}`);
     }
   }

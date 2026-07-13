@@ -107,8 +107,9 @@ describe('MCP tool coverage', () => {
     const missing = walkLeafPaths().filter((path) => {
       if (experimentalPrefixes.has(path.split(' ')[0])) return false;
       if (isExcluded(path)) return false;
-      const meta = COMMAND_METADATA[path];
-      return !meta?.mcp;
+      // A path with no metadata entry at all is exactly what this test hunts for.
+      if (!Object.hasOwn(COMMAND_METADATA, path)) return true;
+      return !COMMAND_METADATA[path].mcp;
     });
 
     if (missing.length > 0) {

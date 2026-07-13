@@ -29,12 +29,12 @@ import { resolveRepoRef } from '../utils/repo-target.js';
  * because picking one for the operator is how you read the wrong log or run a
  * command in the wrong process (§5.4 ambiguity rule).
  */
-async function resolveContainer(
+function resolveContainer(
   repoKey: string,
   machineName: string,
   kubeCluster: string | undefined,
   requested: string | undefined
-): Promise<string | undefined> {
+): string | undefined {
   // An explicit choice is always honored; renet reports a bad name itself, and its
   // error names the containers that DO exist, which is the message we would write.
   if (requested) return requested;
@@ -73,7 +73,7 @@ export function registerRepoContainerCommands(repo: Command): void {
           const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref, {
             readOnly: true,
           });
-          const container = await resolveContainer(
+          const container = resolveContainer(
             repoKey,
             machineName,
             kubeCluster,
@@ -132,7 +132,7 @@ export function registerRepoContainerCommands(repo: Command): void {
         try {
           const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
           await assertCommandPolicy(CMD.REPO_EXEC, repoKey);
-          const container = await resolveContainer(
+          const container = resolveContainer(
             repoKey,
             machineName,
             kubeCluster,

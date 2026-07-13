@@ -9,7 +9,6 @@
  * repo verb resolves through here and passes { machineName, kubeCluster } down
  * to executeRepoFunction / localExecutorService.execute.
  */
-import { t } from '../i18n/index.js';
 import { termConnectCollisionError } from '../services/addressing/place-rules.js';
 import { parseRef } from '../services/addressing/ref-parser.js';
 import {
@@ -21,7 +20,6 @@ import {
 import { resolveExecutionTarget } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
 import { ambiguous, notFound } from './cli-exit-error.js';
-import { ValidationError } from './errors.js';
 
 export interface RepoTarget {
   /** Effective machine to SSH to — the cluster's control node for a cluster target. */

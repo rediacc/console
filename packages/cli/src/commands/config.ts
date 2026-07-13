@@ -131,15 +131,17 @@ const DEFAULT_KEYS: Record<string, 'language' | 'datastoreSize' | 'pruneGraceDay
 const RETIRED_KEYS = new Set(['team', 'region', 'machine']);
 
 function resolveDefaultKey(key: string): 'language' | 'datastoreSize' | 'pruneGraceDays' {
-  const field = DEFAULT_KEYS[key];
-  if (!field) {
+  // hasOwn, not a truthiness check on the lookup: index access is typed as always
+  // present (no noUncheckedIndexedAccess), so `if (!DEFAULT_KEYS[key])` reads as dead
+  // code to the type system even though an unknown key is exactly what it catches.
+  if (!Object.hasOwn(DEFAULT_KEYS, key)) {
     const valid = Object.keys(DEFAULT_KEYS).join(', ');
     if (RETIRED_KEYS.has(key)) {
       throw new ValidationError(t('errors.config.retiredKey', { key, keys: valid }));
     }
     throw new ValidationError(t('errors.invalidKey', { keys: valid }));
   }
-  return field;
+  return DEFAULT_KEYS[key];
 }
 
 /** Check whether the user passed any config-init flags beyond --name. */

@@ -24,7 +24,6 @@ import { type ExecuteResult, getExecutor } from '../executor/executor-factory.js
 const MOUNT_BASE = '/mnt/rediacc/mounts';
 const NAMED_DS_BASE = '/mnt/rediacc-ds';
 const API_PORT = 6443;
-const DEFAULT_NODE_SIZE = '20G';
 
 /**
  * The agent's per-node k3s image (a disposable repo) is mounted here; the

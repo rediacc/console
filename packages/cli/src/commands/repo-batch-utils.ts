@@ -1,5 +1,4 @@
 import readline from 'node:readline';
-import { DEFAULTS } from '@rediacc/shared/config';
 import { getMachineContainers } from '@rediacc/shared/services/machine';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';

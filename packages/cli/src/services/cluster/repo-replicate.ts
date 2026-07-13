@@ -73,7 +73,7 @@ export function replicaSnapshotName(setName: string, suffix?: string): string {
  * but a k8s object name and a datastore fork tag both reject `:`.
  */
 export function repoKeySlug(repoKey: string): string {
-  return repoKey.replace(/:/g, '-');
+  return repoKey.replaceAll(':', '-');
 }
 
 /**

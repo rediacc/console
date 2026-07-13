@@ -27,7 +27,6 @@ import {
   type K8sMember,
   k8sPoolsOf,
   NAMED_DS_BASE,
-  poolSize,
   prepareForkDest,
   prepareMigrateDest,
   resolveControlDsBackend,

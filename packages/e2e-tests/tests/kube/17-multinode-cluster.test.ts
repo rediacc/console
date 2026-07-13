@@ -368,7 +368,7 @@ test.describe
         const pgs = await cephNode.executeViaBridge('sudo ceph pg stat');
         return (
           pgs.code === 0 &&
-          /active\+clean/.test(pgs.stdout) &&
+          pgs.stdout.includes('active+clean') &&
           !/peering|degraded|stale/.test(pgs.stdout)
         );
       };

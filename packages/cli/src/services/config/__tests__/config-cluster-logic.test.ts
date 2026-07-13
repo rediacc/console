@@ -31,8 +31,9 @@ function configWith(name: string): RdcConfig {
 describe('removeClusterFromStore (#22)', () => {
   it('clears both resources.clusters AND state.clusters for the named cluster', async () => {
     let mutated: RdcConfig | undefined;
-    update.mockImplementation(async (_name, fn) => {
+    update.mockImplementation((_name, fn) => {
       mutated = fn(configWith('b1src'));
+      return Promise.resolve();
     });
 
     await removeClusterFromStore('cfg', 'b1src');
@@ -46,8 +47,9 @@ describe('removeClusterFromStore (#22)', () => {
   });
 
   it('throws when the cluster is not declared', async () => {
-    update.mockImplementation(async (_name, fn) => {
+    update.mockImplementation((_name, fn) => {
       fn(configWith('b1src'));
+      return Promise.resolve();
     });
     await expect(removeClusterFromStore('cfg', 'ghost')).rejects.toThrow(/not found/);
   });

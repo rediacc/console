@@ -16,6 +16,7 @@ import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
 import {
   assertCreatableName,
+  at,
   forgetDatastore,
   getDatastore,
   listDatastores,
@@ -150,15 +151,18 @@ function registerReads(datastore: Command): void {
         const records = await listDatastores();
         const state = await listDatastoreState();
         const rows = await Promise.all(
-          Object.entries(records).map(async ([name, record]) => ({
-            name,
-            backend: record.backend.kind,
-            size: record.size,
-            cluster: record.cluster,
-            attachedTo: state[name]?.attachedTo,
-            writes: state[name]?.writes,
-            repos: (await reposInDatastore(name)).length,
-          }))
+          Object.entries(records).map(async ([name, record]) => {
+            const entry = at(state, name);
+            return {
+              name,
+              backend: record.backend.kind,
+              size: record.size,
+              cluster: record.cluster,
+              attachedTo: entry?.attachedTo,
+              writes: entry?.writes,
+              repos: (await reposInDatastore(name)).length,
+            };
+          })
         );
         // A place narrows to one cluster (its backref) or one machine (its holder).
         const filtered = place
@@ -179,7 +183,8 @@ function registerReads(datastore: Command): void {
     .action(async (ref: string, options: DebugOpt) => {
       try {
         const record = await getDatastore(ref);
-        const host = (await listDatastoreState())[ref]?.attachedTo;
+        const entry = at(await listDatastoreState(), ref);
+        const host = entry?.attachedTo;
         // A detached datastore still HAS a status (its record); reads never exit
         // 12, so report the unverified state instead of refusing (spec §5.3).
         if (!host) {
@@ -250,8 +255,9 @@ function registerAttach(datastore: Command): void {
           }
 
           const state = await listDatastoreState();
-          const current = state[ref]?.attachedTo;
-          if (current === options.to && state[ref]?.writes === options.writes) {
+          const entry = at(state, ref);
+          const current = entry?.attachedTo;
+          if (current === options.to && entry?.writes === options.writes) {
             outputService.success(
               t('commands.datastore.attach.noop', { ref, machine: options.to })
             );
@@ -306,10 +312,11 @@ function registerAttach(datastore: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (ref: string, options: { discard?: boolean; yes?: boolean } & DebugOpt) => {
       try {
-        const record = await getDatastore(ref);
+        await getDatastore(ref);
         await assertCommandPolicy(CMD.DATASTORE_DETACH, undefined, ref);
         const state = await listDatastoreState();
-        const host = state[ref]?.attachedTo;
+        const entry = at(state, ref);
+        const host = entry?.attachedTo;
         if (!host) {
           outputService.success(t('commands.datastore.detach.noop', { ref }));
           return;
@@ -317,7 +324,8 @@ function registerAttach(datastore: Command): void {
         // A `--writes local` fork's overlay is ephemeral BY CONSTRUCTION: there is
         // nowhere for it to be written back to. Detaching it destroys it, so say so
         // and make the operator say --discard (spec §5.3).
-        if (state[ref]?.writes === 'local' && !options.discard) {
+        // The `!host` return above proves `entry` is present.
+        if (entry.writes === 'local' && !options.discard) {
           throw new ValidationError(t('errors.datastore.localForkNeedsDiscard', { ref }));
         }
         if (options.discard && !options.yes) {
@@ -458,9 +466,9 @@ function registerSnapshot(datastore: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (ref: string, options: { snapshot?: string } & DebugOpt) => {
       try {
-        const record = await getDatastore(ref);
+        await getDatastore(ref);
         await assertCommandPolicy(CMD.DATASTORE_SNAPSHOT_CREATE, undefined, ref);
-        const label = options.snapshot ?? new Date().toISOString().replace(/[:.]/g, '-');
+        const label = options.snapshot ?? new Date().toISOString().replaceAll(/[:.]/g, '-');
         const host = await requireDatastoreHost(ref);
         await dispatch(
           'datastore_snapshot_create',
@@ -533,7 +541,7 @@ function registerMutators(datastore: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (ref: string, options: { yes?: boolean; force?: boolean } & DebugOpt) => {
       try {
-        const record = await getDatastore(ref);
+        await getDatastore(ref);
         await assertCommandPolicy(CMD.DATASTORE_DELETE, undefined, ref);
 
         // Detach-before-unlink (03 hygiene rule 1): a datastore with repo records
@@ -552,7 +560,8 @@ function registerMutators(datastore: Command): void {
           }
         }
 
-        const host = (await listDatastoreState())[ref]?.attachedTo;
+        const deleteState = at(await listDatastoreState(), ref);
+        const host = deleteState?.attachedTo;
         if (host) {
           // A failed detach fails the delete: never unlink a record whose pool is
           // still mounted somewhere (03 rule 1).

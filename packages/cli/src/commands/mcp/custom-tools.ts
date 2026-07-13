@@ -6,7 +6,7 @@
  * - Have completely custom schema/builder logic
  */
 import { z } from 'zod';
-import { READ_TIMEOUT, WRITE_TIMEOUT } from '../../config/command-metadata.js';
+import { READ_TIMEOUT } from '../../config/command-metadata.js';
 import type { ToolDef } from './tool-factory.js';
 
 /**

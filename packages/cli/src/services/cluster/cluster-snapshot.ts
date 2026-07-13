@@ -66,7 +66,7 @@ export async function createClusterSnapshot(
   clusterName: string,
   options: ClusterSnapshotOptions = {}
 ): Promise<void> {
-  const snapshot = options.snapshot ?? new Date().toISOString().replace(/[:.]/g, '-');
+  const snapshot = options.snapshot ?? new Date().toISOString().replaceAll(/[:.]/g, '-');
   const control = await controlMachine(clusterName);
   const { inInstant, outsideInstant } = await clusterDatastores(
     control,

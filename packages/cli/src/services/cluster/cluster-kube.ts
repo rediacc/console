@@ -15,7 +15,6 @@
  *     operation=migrate, CA preserved, IP-only, zero data copy) + a health gate.
  */
 
-import { randomUUID } from 'node:crypto';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { ClusterConfig, ClusterPool } from '../../types/index.js';
 import { getCluster } from '../config/config-cluster-ops.js';
