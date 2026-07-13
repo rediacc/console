@@ -14,6 +14,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createDescriptionResolver,
+  EXCLUDED_TOP_LEVEL,
   loadLocale,
   walkContractCommands,
 } from '../../../scripts/lib/command-tree-lib.js';
@@ -63,6 +64,20 @@ describe('command plane coverage', () => {
   });
 
   /**
+   * A held-out top level is invisible to every consumer of the contract — this
+   * gate, MCP coverage, console coverage, the docs checks. So a stale entry fails
+   * OPEN: it names a command that does not exist, and the day someone adds that
+   * command it is silently exempt from all of them. P4 found five stale entries
+   * (`login`, `logout`, `trace`, `cancel`, `retry`) sitting in the list.
+   */
+  it('holds out only commands that actually exist', () => {
+    const topLevel = new Set(cli.commands.map((c) => c.name()));
+    const stale = [...EXCLUDED_TOP_LEVEL].filter((name) => !topLevel.has(name));
+
+    expect(stale).toEqual([]);
+  });
+
+  /**
    * A count snapshot, so that moving a command between planes is a deliberate,
    * reviewable edit rather than a silent side effect. Update the numbers when
    * you add a command, and say why in the commit.
@@ -71,10 +86,58 @@ describe('command plane coverage', () => {
     const counts = { config: 0, machine: 0, other: 0 };
     for (const cmd of COMMANDS) counts[getCommandPlane(cmd.pathKey)]++;
 
-    // +5 machine: the `rdc job` verbs (list/status/logs/cancel/gc). Each SSHes
-    // to a machine to drive `renet job ...` against its detached-job spool.
-    expect(COMMANDS.length).toBe(182);
-    expect(counts).toEqual({ config: 68, machine: 94, other: 20 });
+    // Post-P4-w2a totals (the config exodus consolidated ~20 leaves: config
+    // machine/provider/infra/cert-cache/storage/repository/cluster/backup-strategy
+    // all moved onto their resource nouns, and the new `backup` noun + `config
+    // reconcile` were added), minus the hidden `_refprobe run` P4 task-zero probe
+    // retired by w2b (its `repo cat` acceptance vehicle is now a real leaf), minus
+    // `repo mount`/`repo unmount` folded into `repo up --no-start` / `repo down
+    // --unmount` by w2b (both machine-plane, so 93 -> 91). Still includes the +5
+    // `rdc job` verbs.
+    //
+    // 160 -> 162 (machine 91 -> 93) in the w2b cluster batch: `repo canary`'s
+    // actionable parent became the real leaf `repo canary create` (net 0), and the
+    // two NEW `cluster snapshot create|list` leaves landed (R2-F13). Both reach a
+    // machine (the control node's group-snapshot bridge verbs), so both are
+    // machine-plane.
+    //
+    // 162 -> 157 in the w2b subscription flatten (§5.11): `activation status`,
+    // `repo status`, `refresh activation`, `refresh repos`, `refresh repo` (5
+    // leaves) collapse into `status [-m]` and `refresh [-m] [--repo]`. Their two
+    // parent nouns go with them. `subscription status` becomes machine-plane (its
+    // -m form SSHes), which is why machine only drops 93 -> 89 and other 21 -> 20.
+    //
+    // 157 -> 162 (machine 89 -> 94) in the w2b datastore batch (#34): the family
+    // was a facade (init dispatched a renet verb that does not exist; fork/unfork
+    // were leaves whose whole body was a throw). It becomes the real 10-leaf
+    // surface over P1's named registry: create/list/status/attach/detach/fork/
+    // snapshot create|list/resize/delete. All machine-plane: every one dispatches
+    // a datastore_* bridge verb at the machine holding the pool.
+    //
+    // 162 -> 164 (machine 94 -> 96): the two NEW leaves `repo logs` and `repo exec`
+    // (R2-F14). They are what let `term connect` drop its container side door
+    // (--container/--log-lines/--follow) and be honestly excluded from MCP: an agent
+    // asks for a log line or a command run, not for a shell to type into.
+    //
+    //
+    // The `repo admin` subtree move (§5.4) relocated validate/fsck/ownership/
+    // autostart/template. The counts are UNCHANGED by it, and that is the point: the
+    // COMMAND_PLANES exception moved WITH the command (`repo template list` ->
+    // `repo admin template list`, the one `other`-plane leaf, which prints the
+    // compiled-in catalog). Had the plane entry been left behind, the leaf would have
+    // silently inherited repo's `machine` default and claimed to reach a machine it
+    // never touches — the §4.10 staleness hazard, made real.
+    //
+    // machine 96 -> 93, config 48 -> 51: `repo admin archive {list,restore,purge}` are
+    // config-plane. That hazard had ALREADY struck them and nobody noticed: they came
+    // from `config repository *-archived` (config-plane by their old domain's default),
+    // the relocation into `repo` handed them repo's MACHINE default, and no entry was
+    // written. They import no executor and no SSH — they only read and write the
+    // config's archive map — so the machine plane was a false claim, and it made them
+    // proxy-capable: a proxied `archive purge` would have permanently deleted the
+    // PROXY HOST's archived records rather than the caller's (§4.9).
+    expect(COMMANDS.length).toBe(164);
+    expect(counts).toEqual({ config: 51, machine: 93, other: 20 });
   });
 
   it('records the interactive commands', () => {
@@ -113,7 +176,20 @@ describe('command plane coverage', () => {
     // stdout and ends on its own when the job finishes, so none of them needs a
     // TTY and a headless executor can drive all five.
     expect(machineNonInteractive).toContain('job logs');
-    expect(machineNonInteractive.length).toBe(90);
+    // The hidden `_refprobe run` P4 task-zero probe was retired by w2b (90 -> 89),
+    // then `repo mount`/`repo unmount` folded into `repo up`/`repo down` (89 -> 87),
+    // then the w2b cluster batch added `cluster snapshot create|list` (87 -> 89),
+    // then the subscription flatten collapsed 5 machine-plane leaves into 2 (89 -> 85),
+    // then the datastore family went from 5 facade leaves to 10 real ones (85 -> 90),
+    // then `repo logs` + `repo exec` landed (90 -> 92). The `repo admin` subtree move
+    // changes no count: the plane exceptions moved with their commands.
+    //
+    // 92 -> 89: `repo admin archive {list,restore,purge}` are config-plane, so a remote
+    // executor can no longer be handed them. They were never machine commands — the
+    // relocation out of the `config` noun silently gave them repo's machine default,
+    // and this list is exactly the set the proxy will run remotely, which is why an
+    // archive verb appearing in it was a wrong-target data-loss bug (§4.9).
+    expect(machineNonInteractive.length).toBe(89);
   });
 
   it('plane and interactive entries all point at real commands', () => {

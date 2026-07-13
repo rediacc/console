@@ -4,6 +4,7 @@ import { exitProcess } from '../services/core/request-context.js';
 import { telemetryService } from '../services/telemetry/telemetry.js';
 import { type CliError, ERROR_CODES, type NextAction, ValidationError } from '../types/errors.js';
 import { EXIT_CODES, type OutputFormat } from '../types/index.js';
+import { CliExitError } from './cli-exit-error.js';
 
 // Global output format (set by main program before command execution)
 let currentOutputFormat: OutputFormat = 'table';
@@ -155,6 +156,20 @@ export class PreconditionValidationError extends ValidationError {
  * Normalize various error types into a consistent CliError structure.
  */
 function normalizeError(error: unknown): CliError {
+  // CliExitError already carries its code, exit code, and any next-action hint;
+  // pass them through unchanged so the P4 refusal classes (AMBIGUOUS,
+  // STATE_MISMATCH, ...) surface with the exit code they were thrown with.
+  if (error instanceof CliExitError) {
+    return {
+      code: error.code,
+      message: error.message,
+      exitCode: error.exitCode,
+      ...(error.details?.length && { details: error.details }),
+      ...(error.retryable !== undefined && { retryable: error.retryable }),
+      ...(error.next && { next: error.next }),
+    };
+  }
+
   if (error instanceof AuthError) {
     return {
       code: ERROR_CODES.AUTH_REQUIRED,

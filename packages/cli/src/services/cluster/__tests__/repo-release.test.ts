@@ -80,11 +80,11 @@ describe('renderCanaryOverlay (rung 2 templating)', () => {
     });
     // Deployment: new image, canary role, overlay-set label for teardown.
     expect(yaml).toContain('kind: Deployment');
-    expect(yaml).toContain('name: web-canary');
+    expect(yaml).toContain('name: shop-canary');
     expect(yaml).toContain('image: shop:v2');
     expect(yaml).toContain('replicas: 2');
     expect(yaml).toContain('value: canary');
-    expect(yaml).toContain('rediacc.io/replica-set: web-canary');
+    expect(yaml).toContain('rediacc.io/replica-set: shop-canary');
     // Service: the annotations the renet router's canary rewrite consumes.
     expect(yaml).toContain('rediacc.canary_of: web');
     expect(yaml).toContain('rediacc.weight: "20"');
@@ -117,12 +117,12 @@ describe('createCanary (create orchestrator)', () => {
       params: {
         mount_path: '/mnt/rediacc-ds/ds-control-prod',
         namespace: 'shop',
-        name: 'canary-web-canary.yaml',
+        name: 'canary-shop-canary.yaml',
         cluster: 'prod',
       },
     });
     expect(calls[1].params?.manifest).toContain('rediacc.canary_of: web');
-    expect(stored?.['web-canary']).toMatchObject({
+    expect(stored?.['shop-canary']).toMatchObject({
       repo: 'shop',
       service: 'web',
       weight: 10,
@@ -140,7 +140,7 @@ describe('createCanary (create orchestrator)', () => {
   });
 
   it('refuses a duplicate canary and an out-of-range weight', async () => {
-    mockState({ 'web-canary': seededCanary });
+    mockState({ 'shop-canary': seededCanary });
     execMock();
     await expect(
       createCanary({
@@ -151,7 +151,7 @@ describe('createCanary (create orchestrator)', () => {
         weight: 10,
         service: 'web',
       })
-    ).rejects.toThrow(/already exists/);
+    ).rejects.toThrow(/already has a canary/);
     await expect(
       createCanary({ repo: 'shop', cluster: 'prod', image: 'i', port: 80, weight: 101 })
     ).rejects.toThrow(/0\.\.100/);
@@ -160,15 +160,15 @@ describe('createCanary (create orchestrator)', () => {
 
 describe('setCanaryWeight (the nudge / the rung-3 flip)', () => {
   it('takes a FRESH undo snapshot, re-applies with the new weight, updates state', async () => {
-    mockState({ 'web-canary': seededCanary });
+    mockState({ 'shop-canary': seededCanary });
     const exec = execMock();
 
-    await setCanaryWeight('web-canary', 100);
+    await setCanaryWeight('shop', 100);
 
     const calls = exec.mock.calls.map((c) => c[0]);
     expect(calls.map((c) => c.functionName)).toEqual(['datastore_snapshot_create', 'kube_apply']);
     expect(calls[1].params?.manifest).toContain('rediacc.weight: "100"');
-    expect(stored?.['web-canary']).toMatchObject({
+    expect(stored?.['shop-canary']).toMatchObject({
       weight: 100,
       undoSnapshot: 'release-undo-1800000000000',
       updatedAt: new Date(1_800_000_000_000).toISOString(),
@@ -178,30 +178,30 @@ describe('setCanaryWeight (the nudge / the rung-3 flip)', () => {
   it('refuses an unknown set', async () => {
     mockState();
     execMock();
-    await expect(setCanaryWeight('nope', 50)).rejects.toThrow(/not found/);
+    await expect(setCanaryWeight('nope', 50)).rejects.toThrow(/has no canary/);
   });
 });
 
 describe('removeCanary (teardown)', () => {
   it('deletes the label-scoped overlay and forgets state (NO datastores touched)', async () => {
-    mockState({ 'web-canary': seededCanary });
+    mockState({ 'shop-canary': seededCanary });
     const exec = execMock();
 
-    await removeCanary('web-canary');
+    await removeCanary('shop');
 
     const calls = exec.mock.calls.map((c) => c[0]);
     expect(calls.map((c) => c.functionName)).toEqual(['kube_delete']);
-    expect(calls[0].params).toMatchObject({ namespace: 'shop', replica_set: 'web-canary' });
+    expect(calls[0].params).toMatchObject({ namespace: 'shop', replica_set: 'shop-canary' });
     expect(stored).toEqual({});
   });
 
   it('forgets state even when the overlay delete fails (converges)', async () => {
-    mockState({ 'web-canary': seededCanary });
+    mockState({ 'shop-canary': seededCanary });
     vi.spyOn(localExecutorService, 'execute').mockResolvedValue({
       success: false,
       error: 'cluster gone',
     } as never);
-    await removeCanary('web-canary');
+    await removeCanary('shop');
     expect(stored).toEqual({});
   });
 });

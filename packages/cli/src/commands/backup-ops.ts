@@ -1,151 +1,12 @@
 import { BACKUP_DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { Command } from 'commander';
-import { t } from '../../i18n/index.js';
-import type { SFTPClient } from '../../remote/sftp/index.js';
-import { configService } from '../../services/config/config-resources.js';
-import { outputService } from '../../services/core/output.js';
-import { machineConnections } from '../../services/machine/machine-connection.js';
-import { provisionRenetToRemote, readSSHKey } from '../../services/renet/renet-execution.js';
-import { handleError } from '../../utils/errors.js';
-
-/** Build backup list rows for a single machine. */
-function buildBackupListRows(
-  machineName: string,
-  backupStrategies: string[],
-  strategies: Record<string, import('../../types/index.js').BackupStrategyConfig>
-): Record<string, string>[] {
-  if (backupStrategies.length === 0) {
-    return [{ machine: machineName, strategy: '-', schedule: '-', mode: '-', destinations: '-' }];
-  }
-  return backupStrategies.map((stratName) => {
-    const strat = strategies[stratName] as
-      | import('../../types/index.js').BackupStrategyConfig
-      | undefined;
-    if (!strat) {
-      return {
-        machine: machineName,
-        strategy: stratName,
-        schedule: '?',
-        mode: '?',
-        destinations: 'missing from config',
-      };
-    }
-    return {
-      machine: machineName,
-      strategy: stratName,
-      schedule: strat.schedule,
-      mode: strat.mode ?? BACKUP_DEFAULTS.MODE,
-      destinations: strat.destinations.map((d: { name: string }) => d.name).join(', '),
-    };
-  });
-}
-
-export function registerDeployBackupCommand(machine: Command): void {
-  const backup = machine.command('backup').description(t('commands.machine.backup.description'));
-
-  // machine backup list
-  backup
-    .command('list')
-    .description(t('commands.machine.backup.list.description'))
-    .action(async () => {
-      try {
-        const localConfig = await configService.getLocalConfig();
-        const strategies = await configService.listBackupStrategies();
-        const machines = localConfig.machines;
-        const machineNames = Object.keys(machines);
-
-        if (machineNames.length === 0) {
-          outputService.info(t('commands.machine.backup.list.noMachines'));
-          return;
-        }
-
-        const rows: Record<string, string>[] = [];
-        for (const machineName of machineNames) {
-          const machine = machines[machineName]!;
-          const bound = machine.backupStrategies ?? [];
-          rows.push(...buildBackupListRows(machineName, bound, strategies));
-        }
-
-        outputService.print(rows, 'table');
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // machine backup schedule
-  backup
-    .command('schedule')
-    .description(t('commands.machine.backup.schedule.description'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
-    .option('--dry-run', t('commands.machine.backup.schedule.optionDryRun'))
-    .option('--force', t('commands.machine.backup.schedule.optionForce'))
-    .option('--reset-failed', t('commands.machine.backup.schedule.optionResetFailed'))
-    .option('--debug', t('options.debug'))
-    .action(async (options) => {
-      try {
-        const machineName = options.machine;
-        const { pushBackupSchedule } = await import('../../services/backup/backup-schedule.js');
-        await pushBackupSchedule(machineName, {
-          debug: options.debug,
-          dryRun: options.dryRun,
-          force: options.force,
-          resetFailed: options.resetFailed,
-        });
-        if (!options.dryRun) {
-          outputService.success(
-            t('commands.machine.backup.schedule.success', { machine: machineName })
-          );
-        }
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // machine backup now
-  backup
-    .command('now')
-    .description(t('commands.machine.backup.now.description'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
-    .option('--strategy <name>', t('commands.machine.backup.now.optionStrategy'))
-    .option('--debug', t('options.debug'))
-    .action(async (options) => {
-      try {
-        await triggerBackupNow(options.machine, options.strategy, options.debug);
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // machine backup status
-  backup
-    .command('status')
-    .description(t('commands.machine.backup.status.description'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
-    .option('--strategy <name>', t('commands.machine.backup.status.optionStrategy'))
-    .option('--debug', t('options.debug'))
-    .action(async (options) => {
-      try {
-        await showBackupStatus(options.machine, options.strategy, options.debug);
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // machine backup cancel
-  backup
-    .command('cancel')
-    .description(t('commands.machine.backup.cancel.description'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
-    .option('--strategy <name>', t('commands.machine.backup.cancel.optionStrategy'))
-    .option('--debug', t('options.debug'))
-    .action(async (options) => {
-      try {
-        await cancelBackup(options.machine, options.strategy, options.debug);
-      } catch (error) {
-        handleError(error);
-      }
-    });
-}
+import { t } from '../i18n/index.js';
+import type { SFTPClient } from '../remote/sftp/index.js';
+import { configService } from '../services/config/config-resources.js';
+import { outputService } from '../services/core/output.js';
+import { machineConnections } from '../services/machine/machine-connection.js';
+import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import { handleError } from '../utils/errors.js';
 
 /** Resolve which strategy names to trigger. */
 function resolveStrategyNames(
@@ -184,14 +45,14 @@ async function triggerDeployedUnit(
 async function triggerAdhocBackup(
   sftp: SFTPClient,
   name: string,
-  config: import('../../types/index.js').BackupStrategyConfig,
+  config: import('../types/index.js').BackupStrategyConfig,
   datastore: string,
   remoteRenetPath: string,
   debug?: boolean
 ): Promise<void> {
   outputService.info(`No deployed unit for "${name}", running ad-hoc...`);
   const { buildRcloneArgs } = await import('@rediacc/shared/storage-browser');
-  const { _testing } = await import('../../services/backup/backup-schedule.js');
+  const { _testing } = await import('../services/backup/backup-schedule.js');
 
   const enabledDests = config.destinations.filter((d) => d.enabled !== false);
   const rcloneArgsByDest = new Map<string, { remote: string; params: string[] }>();
@@ -222,7 +83,7 @@ async function triggerAdhocBackup(
   const systemdRunCmd = `sudo systemd-run --unit=${adhocUnit} ${setenvPart}--remain-after-exit /bin/bash -c '${fullCmd.replaceAll("'", "'\\''")}'`;
 
   if (debug) {
-    const { sanitizeBackupOutput } = await import('../../services/backup/backup-schedule.js');
+    const { sanitizeBackupOutput } = await import('../services/backup/backup-schedule.js');
     outputService.info(`Running: ${sanitizeBackupOutput(systemdRunCmd)}`);
   }
 
@@ -242,7 +103,7 @@ async function triggerAdhocBackup(
   }
 }
 
-async function triggerBackupNow(
+async function runBackupNow(
   machineName: string,
   strategyFilter?: string,
   debug?: boolean
@@ -260,7 +121,7 @@ async function triggerBackupNow(
 
   if (toTrigger.length === 0) {
     throw new Error(
-      'No backup strategies found. Create one with: rdc config backup-strategy set --name <name> --cron "..."'
+      'No backup strategies found. Create one with: rdc backup strategy set <name> --cron "..."'
     );
   }
 
@@ -317,7 +178,7 @@ async function triggerBackupNow(
 async function tryCancelUnit(sftp: SFTPClient, unit: string, debug?: boolean): Promise<boolean> {
   const isActive = await checkServiceActive(sftp, unit);
   if (!isActive) return false;
-  outputService.info(t('commands.machine.backup.cancel.cancelling', { name: unit }));
+  outputService.info(t('commands.backup.cancel.cancelling', { name: unit }));
   const exitCode = await sftp.execStreaming(`sudo systemctl stop ${unit}`, {
     onStdout: (data) => {
       if (debug) process.stdout.write(data);
@@ -327,7 +188,7 @@ async function tryCancelUnit(sftp: SFTPClient, unit: string, debug?: boolean): P
     },
   });
   if (exitCode === 0) {
-    outputService.success(t('commands.machine.backup.cancel.cancelled', { name: unit }));
+    outputService.success(t('commands.backup.cancel.cancelled', { name: unit }));
     return true;
   }
   return false;
@@ -373,7 +234,7 @@ async function cancelStrategyUnits(sftp: SFTPClient, name: string, debug?: boole
     if (await tryCancelUnit(sftp, unit, debug)) cancelled = true;
   }
   if (!cancelled) {
-    outputService.info(t('commands.machine.backup.cancel.notRunning', { name }));
+    outputService.info(t('commands.backup.cancel.notRunning', { name }));
   }
 }
 
@@ -453,4 +314,76 @@ async function showBackupStatus(
   } finally {
     lease.release();
   }
+}
+
+/** Register the machine-scoped backup ops: schedule, run, status, cancel. */
+export function registerBackupOpsCommands(backup: Command): void {
+  backup
+    .command('schedule')
+    .description(t('commands.backup.schedule.description'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
+    .option('--dry-run', t('commands.backup.schedule.optionDryRun'))
+    .option('--force', t('commands.backup.schedule.optionForce'))
+    .option('--reset-failed', t('commands.backup.schedule.optionResetFailed'))
+    .option('--debug', t('options.debug'))
+    .action(async (options) => {
+      try {
+        const machineName = options.machine;
+        const { pushBackupSchedule } = await import('../services/backup/backup-schedule.js');
+        await pushBackupSchedule(machineName, {
+          debug: options.debug,
+          dryRun: options.dryRun,
+          force: options.force,
+          resetFailed: options.resetFailed,
+        });
+        if (!options.dryRun) {
+          outputService.success(t('commands.backup.schedule.success', { machine: machineName }));
+        }
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  backup
+    .command('run')
+    .argument('[strategy]', t('options.strategyName'))
+    .description(t('commands.backup.run.description'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
+    .option('-w, --watch', t('options.watch'))
+    .option('--debug', t('options.debug'))
+    .action(async (strategy: string | undefined, options) => {
+      try {
+        await runBackupNow(options.machine, strategy, options.debug);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  backup
+    .command('status')
+    .argument('[strategy]', t('options.strategyName'))
+    .description(t('commands.backup.status.description'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
+    .option('--debug', t('options.debug'))
+    .action(async (strategy: string | undefined, options) => {
+      try {
+        await showBackupStatus(options.machine, strategy, options.debug);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  backup
+    .command('cancel')
+    .argument('[strategy]', t('options.strategyName'))
+    .description(t('commands.backup.cancel.description'))
+    .requiredOption('-m, --machine <name>', t('options.machine'))
+    .option('--debug', t('options.debug'))
+    .action(async (strategy: string | undefined, options) => {
+      try {
+        await cancelBackup(options.machine, strategy, options.debug);
+      } catch (error) {
+        handleError(error);
+      }
+    });
 }

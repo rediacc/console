@@ -214,7 +214,20 @@ function buildCommandFactory(
 }
 
 /**
- * Recursively walk the Commander tree and collect leaf commands with their full paths.
+ * Walk the Commander tree and collect every RUNNABLE command with its full path.
+ *
+ * ★ "Runnable" is not the same as "leaf", and the difference was a silent hole. This used to
+ * recurse into any command with subcommands and NEVER EMIT THE PARENT ITSELF — so an
+ * ACTIONABLE PARENT (a command that has subcommands AND its own action handler) could never
+ * become an MCP tool, no matter what COMMAND_METADATA said about it.
+ *
+ * There is exactly one such command, and it is precisely the one the spec authorizes for MCP:
+ * `repo replicate <ref>` keeps its bare create form (spec/03 §5.4) alongside
+ * `replicate status|remove|refresh`. Giving it an `mcp` block produced NO TOOL, the
+ * mcp-coverage gate was satisfied (an `mcp` entry exists), the tool count silently did not
+ * include it, and nothing anywhere said the metadata was inert. A declaration that does
+ * nothing, with no gate to notice — the same disease as a plane that defaults and a deny glob
+ * that matches nothing.
  */
 function walkCommandTree(cmd: Command, prefix: string): { path: string; command: Command }[] {
   const results: { path: string; command: Command }[] = [];
@@ -225,12 +238,13 @@ function walkCommandTree(cmd: Command, prefix: string): { path: string; command:
     if ((sub as Command & { _hidden?: boolean })._hidden) continue;
 
     const name = prefix ? `${prefix} ${sub.name()}` : sub.name();
+    const hasSubcommands = sub.commands.some((child) => child.name() !== 'help');
+    const isRunnable =
+      !hasSubcommands ||
+      typeof (sub as Command & { _actionHandler?: unknown })._actionHandler === 'function';
 
-    if (sub.commands.length > 0) {
-      results.push(...walkCommandTree(sub, name));
-    } else {
-      results.push({ path: name, command: sub });
-    }
+    if (isRunnable) results.push({ path: name, command: sub });
+    if (hasSubcommands) results.push(...walkCommandTree(sub, name));
   }
 
   return results;

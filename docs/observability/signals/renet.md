@@ -12,7 +12,7 @@ operation, flushes, and exits.
 | Service Name    | Context                                                          |
 |-----------------|------------------------------------------------------------------|
 | `renet-execute` | Task execution (`renet execute`), run over SSH by the CLI for `rdc repo up`, forks, backups, etc. |
-| `renet-list`    | Machine status (`renet list all`), run over SSH for `rdc machine query` |
+| `renet-list`    | Machine status (`renet list all`), run over SSH for `rdc machine status` |
 
 ## Resource Attributes
 

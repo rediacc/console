@@ -8,19 +8,16 @@ import { getExecutor } from '../services/executor/executor-factory.js';
 import type { MachineConnectionLease } from '../services/machine/machine-connection.js';
 import { deployAllRepoKeys } from '../services/repo/repo-key-deployment.js';
 import { telemetryService } from '../services/telemetry/telemetry.js';
-import { getOutputFormat, handleError } from '../utils/errors.js';
+import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { createRepoNameResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { getDatastore, requireDatastoreHost } from '../services/config/config-datastores.js';
 import { resolveRepoTarget } from '../utils/repo-target.js';
 import { recordTimelineStep, type TimelineStep } from '../utils/timeline.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
 
 /** Prompt the user for batch confirmation. Returns true if confirmed. */
-export async function confirmBatch(
-  action: string,
-  count: number,
-  machine: string
-): Promise<boolean> {
+async function confirmBatch(action: string, count: number, machine: string): Promise<boolean> {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   return new Promise((resolve) => {
     rl.question(`${t('commands.repo.batchConfirm', { action, count, machine })} `, (answer) => {
@@ -274,22 +271,22 @@ export function printServiceUrlPattern(repoName: string, machineDomain: string):
 
 export async function handleUpAll(options: {
   machine?: string;
-  cluster?: string;
+  /** Commander sets this false when `--no-start` is passed (mount-only batch). */
+  start?: boolean;
   includeForks?: boolean;
-  mountOnly?: boolean;
   parallel?: boolean;
   concurrency?: string;
   debug?: boolean;
   skipRouterRestart?: boolean;
   dryRun?: boolean;
 }): Promise<void> {
-  const { machineName, kubeCluster } = await resolveRepoTarget(options);
+  const { machineName } = await resolveRepoTarget({ machine: options.machine });
 
   await deployAllRepoKeys(machineName);
 
   const params: Record<string, unknown> = {};
   if (options.includeForks) params.include_forks = true;
-  if (options.mountOnly) params.mount_only = true;
+  if (options.start === false) params.mount_only = true;
   if (options.dryRun) params.dry_run = true;
   if (options.parallel) params.parallel = true;
   if (options.parallel && options.concurrency) {
@@ -301,7 +298,6 @@ export async function handleUpAll(options: {
   const result = await getExecutor().execute({
     functionName: 'repository_up_all',
     machineName,
-    kubeCluster,
     params,
     debug: options.debug,
     skipRouterRestart: options.skipRouterRestart,
@@ -373,58 +369,16 @@ async function runBatchParallel(
   outputService.info(t('commands.repo.batchResult', { action, succeeded, total: repos.length }));
 }
 
-export async function runBatchOperation(
-  action: string,
-  machine: string,
-  skipConfirm: boolean,
-  fn: (repoName: string) => Promise<void>,
-  options?: { parallel?: boolean; concurrency?: string }
-): Promise<void> {
-  const repos = await configService.listRepositories();
-  if (!skipConfirm && !(await confirmBatch(action, repos.length, machine))) {
-    return;
-  }
-
-  if (options?.parallel) {
-    const concurrency = Number.parseInt(
-      options.concurrency ?? String(DEFAULTS.BATCH.CONCURRENCY),
-      10
-    );
-    await runBatchParallel(repos, concurrency, action, fn);
-    return;
-  }
-
-  let succeeded = 0;
-  for (let i = 0; i < repos.length; i++) {
-    const { name } = repos[i];
-    outputService.info(
-      t('commands.repo.batchIterating', { action, current: i + 1, total: repos.length, repo: name })
-    );
-    try {
-      await fn(name);
-      succeeded++;
-    } catch (error) {
-      outputService.warn(
-        t('commands.repo.batchFailed', {
-          action,
-          repo: name,
-          error: error instanceof Error ? error.message : String(error),
-        })
-      );
-    }
-  }
-  outputService.info(t('commands.repo.batchResult', { action, succeeded, total: repos.length }));
-}
-
 export async function handleDownAll(options: {
   machine?: string;
-  cluster?: string;
+  parallel?: boolean;
+  concurrency?: string;
   yes?: boolean;
   debug?: boolean;
   skipRouterRestart?: boolean;
   dryRun?: boolean;
 }): Promise<void> {
-  const { machineName, kubeCluster } = await resolveRepoTarget(options);
+  const { machineName } = await resolveRepoTarget({ machine: options.machine });
 
   if (options.dryRun) {
     outputService.print(
@@ -444,7 +398,6 @@ export async function handleDownAll(options: {
   const result = await getExecutor().execute({
     functionName: 'repository_down_all',
     machineName,
-    kubeCluster,
     params: {},
     debug: options.debug,
     skipRouterRestart: options.skipRouterRestart,
@@ -498,12 +451,24 @@ async function printRepoListTable(resolved: Record<string, unknown>[]): Promise<
 
 export async function handleRepoList(options: {
   machine?: string;
-  cluster?: string;
+  datastore?: string;
   debug?: boolean;
   skipRouterRestart?: boolean;
 }): Promise<void> {
   try {
-    const { machineName, kubeCluster } = await resolveRepoTarget(options);
+    if (options.machine && options.datastore) {
+      throw new ValidationError(t('errors.repo.listTargetExclusive'));
+    }
+    // A datastore names WHERE the repos live; the machine holding it right now is a
+    // fact about the datastore, not something the operator should have to know. So
+    // --datastore resolves to its holder, and a detached datastore says so rather
+    // than dispatching at nothing.
+    const { machineName, kubeCluster } = options.datastore
+      ? {
+          machineName: await requireDatastoreHost(options.datastore),
+          kubeCluster: (await getDatastore(options.datastore)).cluster,
+        }
+      : await resolveRepoTarget(options);
     outputService.info(t('commands.repo.list.starting', { machine: machineName }));
     const format = getOutputFormat();
     const result = await getExecutor().execute({

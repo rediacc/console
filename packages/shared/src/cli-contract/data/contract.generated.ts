@@ -26,26 +26,849 @@ export const CLI_CONTRACT: CliContract = {
   "commands": [
     {
       "path": [
+        "backup",
+        "cancel"
+      ],
+      "pathKey": "backup cancel",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.backup.cancel.description",
+      "label": "Cancel a running backup on a remote machine",
+      "options": [
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "strategy",
+          "kind": "strategy",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.strategyName",
+          "label": "Backup strategy name"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "backup",
+        "list"
+      ],
+      "pathKey": "backup list",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.backup.list.description",
+      "label": "List backup artifacts on a machine or storage.",
+      "options": [
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        },
+        {
+          "flags": "--storage <name>",
+          "long": "storage",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.backup.list.optionStorage",
+          "label": "List artifacts on this storage endpoint"
+        },
+        {
+          "flags": "--path <subdir>",
+          "long": "path",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.backup.list.optionPath",
+          "label": "Subdirectory within the storage root. When omitted, hot/ and cold/ are listed and merged."
+        },
+        {
+          "flags": "-w, --watch",
+          "long": "watch",
+          "short": "w",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.watch",
+          "label": "Watch for changes"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "artifact-ref",
+          "kind": "artifact-ref",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.artifactRef",
+          "label": "Backup artifact reference (repo[:tag][@place])"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "backup",
+        "restore"
+      ],
+      "pathKey": "backup restore",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.backup.restore.description",
+      "label": "Turn a backup artifact into a live repository. Placement is stated here.",
+      "options": [
+        {
+          "flags": "--as <name>",
+          "long": "as",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.backup.restore.optionAs",
+          "label": "Name for the restored repository (defaults to the artifact name)"
+        },
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        },
+        {
+          "flags": "--datastore <name>",
+          "long": "datastore",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.backup.restore.optionDatastore",
+          "label": "Restore into this named datastore (its attached machine hosts it)"
+        },
+        {
+          "flags": "--up",
+          "long": "up",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.backup.restore.optionUp",
+          "label": "Deploy the restored repository after the transfer"
+        },
+        {
+          "flags": "--health-window <seconds>",
+          "long": "health-window",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.healthWindow",
+          "label": "Total health-gate window in seconds (default 300)"
+        },
+        {
+          "flags": "--health-timeout <seconds>",
+          "long": "health-timeout",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.healthTimeout",
+          "label": "Per-attempt health-check timeout in seconds (default 30)"
+        },
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.yes",
+          "label": "Skip confirmation prompt"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "artifact-ref",
+          "kind": "artifact-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.artifactRef",
+          "label": "Backup artifact reference (repo[:tag][@place])"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": true,
+      "idempotent": false,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "grandGuard": true,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "backup",
+        "run"
+      ],
+      "pathKey": "backup run",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.backup.run.description",
+      "label": "Run a backup now.",
+      "options": [
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        },
+        {
+          "flags": "-w, --watch",
+          "long": "watch",
+          "short": "w",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.watch",
+          "label": "Watch for changes"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "strategy",
+          "kind": "strategy",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.strategyName",
+          "label": "Backup strategy name"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": false,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "backup",
+        "schedule"
+      ],
+      "pathKey": "backup schedule",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.backup.schedule.description",
+      "label": "Deploy backup schedule to a remote machine (systemd timers)",
+      "options": [
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        },
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.backup.schedule.optionDryRun",
+          "label": "Preview generated units without deploying"
+        },
+        {
+          "flags": "--force",
+          "long": "force",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.backup.schedule.optionForce",
+          "label": "Proceed even if a backup is currently running (new unit applies on next tick; running invocation keeps its old unit)"
+        },
+        {
+          "flags": "--reset-failed",
+          "long": "reset-failed",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.backup.schedule.optionResetFailed",
+          "label": "Clear failed state on touched services after a successful deploy (off by default, preserves failure signal)"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Installs systemd backup timers on a machine; use CLI directly.",
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "backup",
+        "status"
+      ],
+      "pathKey": "backup status",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.backup.status.description",
+      "label": "Show backup status and timer state on a remote machine",
+      "options": [
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "strategy",
+          "kind": "strategy",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.strategyName",
+          "label": "Backup strategy name"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "backup",
+        "strategy",
+        "list"
+      ],
+      "pathKey": "backup strategy list",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "config",
+      "descriptionKey": "commands.backup.strategy.list.description",
+      "label": "List all backup strategies",
+      "options": [],
+      "positionals": [],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "backup",
+        "strategy",
+        "remove"
+      ],
+      "pathKey": "backup strategy remove",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "config",
+      "descriptionKey": "commands.backup.strategy.remove.description",
+      "label": "Remove a backup strategy or destination",
+      "options": [
+        {
+          "flags": "--destination <name>",
+          "long": "destination",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.backup.strategy.remove.optionDestination",
+          "label": "Remove only this destination (keeps other destinations)"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "strategy",
+          "kind": "strategy",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.strategyName",
+          "label": "Backup strategy name"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Backup policy mutation; use CLI directly.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "backup",
+        "strategy",
+        "set"
+      ],
+      "pathKey": "backup strategy set",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "config",
+      "descriptionKey": "commands.backup.strategy.set.description",
+      "label": "Create or update a backup strategy",
+      "options": [
+        {
+          "flags": "--destination <name>",
+          "long": "destination",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.backup.strategy.set.optionDestination",
+          "label": "Destination name within the strategy"
+        },
+        {
+          "flags": "--storage <name>",
+          "long": "storage",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.backup.strategy.set.optionStorage",
+          "label": "Storage config name (rclone credentials)"
+        },
+        {
+          "flags": "--cron <expression>",
+          "long": "cron",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.backup.strategy.set.optionCron",
+          "label": "Cron schedule (e.g., \"0 * * * *\" for hourly)"
+        },
+        {
+          "flags": "--mode <mode>",
+          "long": "mode",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "choices": [
+            "hot",
+            "cold"
+          ],
+          "descriptionKey": "commands.backup.strategy.set.optionMode",
+          "label": "Backup mode: \"hot\" (zero downtime) or \"cold\" (stop, snapshot, restart)"
+        },
+        {
+          "flags": "--bwlimit <limit>",
+          "long": "bwlimit",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.backup.strategy.set.optionBwlimit",
+          "label": "Rclone bandwidth limit (e.g., \"6M\", \"10M:off\", \"08:00,3M;22:00,10M\")"
+        },
+        {
+          "flags": "--include <repos>",
+          "long": "include",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.backup.strategy.set.optionInclude",
+          "label": "Only back up these repos (comma-separated names)"
+        },
+        {
+          "flags": "--exclude <repos>",
+          "long": "exclude",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.backup.strategy.set.optionExclude",
+          "label": "Exclude these repos from backup (comma-separated names)"
+        },
+        {
+          "flags": "--folder <path>",
+          "long": "folder",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.backup.strategy.set.optionFolder",
+          "label": "Subfolder under the storage bucket for this destination (e.g. hot, cold)"
+        },
+        {
+          "flags": "--enable",
+          "long": "enable",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.backup.strategy.set.optionEnable",
+          "label": "Enable the strategy or destination"
+        },
+        {
+          "flags": "--disable",
+          "long": "disable",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.backup.strategy.set.optionDisable",
+          "label": "Disable the strategy or destination"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "strategy",
+          "kind": "strategy",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.strategyName",
+          "label": "Backup strategy name"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Backup policy mutation; use CLI directly.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "backup",
+        "strategy",
+        "show"
+      ],
+      "pathKey": "backup strategy show",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "config",
+      "descriptionKey": "commands.backup.strategy.show.description",
+      "label": "Show backup strategy details",
+      "options": [],
+      "positionals": [
+        {
+          "name": "strategy",
+          "kind": "strategy",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.strategyName",
+          "label": "Backup strategy name"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
         "cluster",
         "create"
       ],
       "pathKey": "cluster create",
       "domain": "cluster",
-      "group": null,
+      "group": "INFRASTRUCTURE",
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.cluster.create.description",
-      "label": "Provision the pool members of a cluster defined with 'rdc config cluster add', bootstrap renet on each, and install components (ceph first). Cloud providers provision via OpenTofu; KVM lands in a later wave.",
+      "label": "Declare and provision a cluster: machines, Ceph pools, and Kubernetes. Pass --provider and --pool to declare in one step; a bare create provisions a cluster already declared.",
       "options": [
         {
-          "flags": "--name <name>",
-          "long": "name",
+          "flags": "--provider <provider>",
+          "long": "provider",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": true,
+          "mandatory": false,
           "defaultValue": null,
-          "descriptionKey": "commands.cluster.create.nameOption",
-          "label": "Cluster name"
+          "descriptionKey": "commands.cluster.create.providerOption",
+          "label": "Provider: a cloudProviders key, or 'kvm'"
+        },
+        {
+          "flags": "--pool <spec...>",
+          "long": "pool",
+          "valueTaking": true,
+          "variadic": true,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.cluster.create.poolOption",
+          "label": "Pool spec name:role:count[:size] (role: ceph|k8s-server|k8s-agent|hyperconverged)"
+        },
+        {
+          "flags": "--declare-only",
+          "long": "declare-only",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.cluster.create.declareOnlyOption",
+          "label": "Record the cluster in config without provisioning it"
+        },
+        {
+          "flags": "--network-cidr <cidr>",
+          "long": "network-cidr",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.cluster.create.cidrOption",
+          "label": "Private network CIDR (e.g. 10.0.0.0/24)"
+        },
+        {
+          "flags": "--network-primitive <primitive>",
+          "long": "network-primitive",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.cluster.create.primitiveOption",
+          "label": "Network primitive (e.g. vlan, vpc, network)"
+        },
+        {
+          "flags": "--control-node <machine>",
+          "long": "control-node",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.cluster.create.controlNodeOption",
+          "label": "Explicit control-node machine (default: first k8s-server member)"
+        },
+        {
+          "flags": "--net-name <name>",
+          "long": "net-name",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.cluster.create.netNameOption",
+          "label": "KVM: libvirt network for this cluster (e.g. renet12)"
+        },
+        {
+          "flags": "--net-base <prefix>",
+          "long": "net-base",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.cluster.create.netBaseOption",
+          "label": "KVM: network prefix, the first three octets (e.g. 192.168.112)"
+        },
+        {
+          "flags": "--net-offset <n>",
+          "long": "net-offset",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.cluster.create.netOffsetOption",
+          "label": "KVM: offset added to each VM id when deriving its address"
+        },
+        {
+          "flags": "--control-id <n>",
+          "long": "control-id",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.cluster.create.controlIdOption",
+          "label": "KVM: VM id of the control and registry node (default: 1)"
+        },
+        {
+          "flags": "--docker-registry <endpoint>",
+          "long": "docker-registry",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.cluster.create.dockerRegistryOption",
+          "label": "KVM: in-VM Docker registry endpoint for this cluster"
         },
         {
           "flags": "--ssh-user <user>",
@@ -112,13 +935,26 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "cluster",
+          "kind": "cluster",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.clusterName",
+          "label": "Cluster name"
+        }
+      ],
       "hasSubcommands": false,
       "agentBlocked": true,
       "mcpExcludeReason": "Provisions cloud/VM infrastructure — not an agent operation",
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -127,22 +963,12 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "pathKey": "cluster destroy",
       "domain": "cluster",
-      "group": null,
+      "group": "INFRASTRUCTURE",
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.cluster.destroy.description",
       "label": "Tear down the provisioned members and remove the cluster and its machines from config.",
       "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.cluster.create.nameOption",
-          "label": "Cluster name"
-        },
         {
           "flags": "--force",
           "long": "force",
@@ -164,13 +990,26 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "cluster",
+          "kind": "cluster",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.clusterName",
+          "label": "Cluster name"
+        }
+      ],
       "hasSubcommands": false,
       "agentBlocked": true,
       "mcpExcludeReason": "Destroys cloud/VM infrastructure — not an agent operation",
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -179,22 +1018,12 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "pathKey": "cluster evict",
       "domain": "cluster",
-      "group": null,
+      "group": "INFRASTRUCTURE",
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.cluster.evict.description",
       "label": "Drain the node, delete its Node object, and clear its cluster membership. The cluster is derived from the machine; a machine that still mounts a datastore is refused.",
       "options": [
-        {
-          "flags": "--machine <name>",
-          "long": "machine",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.cluster.evict.machineOption",
-          "label": "Machine to evict"
-        },
         {
           "flags": "--force",
           "long": "force",
@@ -216,13 +1045,26 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "machine",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        }
+      ],
       "hasSubcommands": false,
       "agentBlocked": true,
       "mcpExcludeReason": "Cluster membership mutation — not an agent operation",
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "machine",
+      "repoPositional": null
     },
     {
       "path": [
@@ -231,22 +1073,12 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "pathKey": "cluster fork",
       "domain": "cluster",
-      "group": null,
+      "group": "INFRASTRUCTURE",
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.cluster.fork.description",
       "label": "Clone an entire cluster, including its repos' data, into a new cluster: coordinated copy-on-write of the cluster and PV images, then node-identity rewrite so the fork comes up on new addresses. The parent keeps running.",
       "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.cluster.create.nameOption",
-          "label": "Cluster name"
-        },
         {
           "flags": "--tag <tag>",
           "long": "tag",
@@ -258,14 +1090,14 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Fork tag"
         },
         {
-          "flags": "--cluster <dest>",
-          "long": "cluster",
+          "flags": "--to <dest-cluster>",
+          "long": "to",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": false,
+          "mandatory": true,
           "defaultValue": null,
-          "descriptionKey": "commands.cluster.fork.clusterOption",
-          "label": "Existing destination cluster to fork onto (must be on distinct machines)"
+          "descriptionKey": "commands.cluster.fork.toOption",
+          "label": "Destination cluster whose nodes host the fork (its control node and agents; a cluster cannot fork onto its own machines, since two k3s cannot share a host network namespace)"
         },
         {
           "flags": "--writes <disposition>",
@@ -302,45 +1134,26 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
-      "hasSubcommands": false,
-      "agentBlocked": true,
-      "mcpExcludeReason": "Clones a whole cluster — not an agent operation",
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "cluster",
-        "install"
-      ],
-      "pathKey": "cluster install",
-      "domain": "cluster",
-      "group": null,
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.cluster.install.description",
-      "label": "Install cluster components (ceph first, then k8s) on already-provisioned members.",
-      "options": [
+      "positionals": [
         {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
+          "name": "cluster",
+          "kind": "cluster",
+          "required": true,
           "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.cluster.create.nameOption",
+          "descriptionKey": "options.clusterName",
           "label": "Cluster name"
         }
       ],
       "hasSubcommands": false,
       "agentBlocked": true,
-      "mcpExcludeReason": "Installs cluster components — not an agent operation",
+      "mcpExcludeReason": "Clones a whole cluster — not an agent operation",
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -349,22 +1162,12 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "pathKey": "cluster join",
       "domain": "cluster",
-      "group": null,
+      "group": "INFRASTRUCTURE",
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.cluster.join.description",
       "label": "Adopt an existing registered machine as a Kubernetes agent node of a cluster, using the same CA-derived join token as anchor and rejoin.",
       "options": [
-        {
-          "flags": "--machine <name>",
-          "long": "machine",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.cluster.join.machineOption",
-          "label": "Registered machine to adopt"
-        },
         {
           "flags": "--cluster <name>",
           "long": "cluster",
@@ -386,13 +1189,26 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "machine",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        }
+      ],
       "hasSubcommands": false,
       "agentBlocked": true,
       "mcpExcludeReason": "Cluster membership mutation — not an agent operation",
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "machine",
+      "repoPositional": null
     },
     {
       "path": [
@@ -401,20 +1217,19 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "pathKey": "cluster kubeconfig",
       "domain": "cluster",
-      "group": null,
+      "group": "INFRASTRUCTURE",
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.cluster.kubeconfig.description",
       "label": "Fetch the kubeconfig from the cluster control node over SSH and cache it locally (0600) for kubectl.",
-      "options": [
+      "options": [],
+      "positionals": [
         {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
+          "name": "cluster",
+          "kind": "cluster",
+          "required": true,
           "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.cluster.create.nameOption",
+          "descriptionKey": "options.clusterName",
           "label": "Cluster name"
         }
       ],
@@ -426,8 +1241,11 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Caches the kubeconfig to a local 0600 file and prints that path; a remote executor would write the file onto its own disk. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -436,24 +1254,14 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "pathKey": "cluster migrate",
       "domain": "cluster",
-      "group": null,
+      "group": "INFRASTRUCTURE",
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.cluster.migrate.description",
       "label": "Move an entire cluster, including its repos' data, to another machine or datacenter with a short cutover (hot pre-copy, then stop-and-restart on the destination).",
       "options": [
         {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.cluster.create.nameOption",
-          "label": "Cluster name"
-        },
-        {
-          "flags": "--to <dest>",
+          "flags": "--to <dest-cluster>",
           "long": "to",
           "valueTaking": true,
           "variadic": false,
@@ -473,13 +1281,26 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "cluster",
+          "kind": "cluster",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.clusterName",
+          "label": "Cluster name"
+        }
+      ],
       "hasSubcommands": false,
       "agentBlocked": true,
       "mcpExcludeReason": "Moves a whole cluster — not an agent operation",
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -488,31 +1309,21 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "pathKey": "cluster rehearse",
       "domain": "cluster",
-      "group": null,
+      "group": "INFRASTRUCTURE",
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.cluster.rehearse.description",
       "label": "Rehearse a release/upgrade: fork the cluster onto a destination as an ephemeral throwaway (writes=local, secretless role=rehearsal), bring it up, gate on health, then discard it. The parent is never touched.",
       "options": [
         {
-          "flags": "--name <name>",
-          "long": "name",
+          "flags": "--on <dest-cluster>",
+          "long": "on",
           "valueTaking": true,
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
-          "descriptionKey": "commands.cluster.rehearse.nameOption",
-          "label": "Source cluster to rehearse"
-        },
-        {
-          "flags": "--cluster <dest>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.cluster.rehearse.clusterOption",
-          "label": "Destination cluster whose nodes host the throwaway rehearsal fork"
+          "descriptionKey": "commands.cluster.rehearse.onOption",
+          "label": "Destination cluster to boot the throwaway rehearsal on"
         },
         {
           "flags": "--tag <tag>",
@@ -535,11 +1346,25 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "cluster",
+          "kind": "cluster",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.clusterName",
+          "label": "Cluster name"
+        }
+      ],
       "hasSubcommands": false,
+      "mcpExcludeReason": "Boots an entire throwaway k3s control plane to dry-run a migration; expensive, and gated behind REDIACC_ALLOW_CLUSTER_OPS.",
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -548,22 +1373,12 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "pathKey": "cluster scale",
       "domain": "cluster",
-      "group": null,
+      "group": "INFRASTRUCTURE",
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.cluster.scale.description",
       "label": "Change a pool's member count (adds/removes machines and joins/drains nodes). k8s-agent pools scale in place; ceph pool growth is done via cephadm directly.",
       "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.cluster.create.nameOption",
-          "label": "Cluster name"
-        },
         {
           "flags": "--pool <pool>",
           "long": "pool",
@@ -595,13 +1410,130 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "cluster",
+          "kind": "cluster",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.clusterName",
+          "label": "Cluster name"
+        }
+      ],
       "hasSubcommands": false,
       "agentBlocked": true,
       "mcpExcludeReason": "Mutates cluster node pools — not an agent operation",
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "cluster",
+        "snapshot",
+        "create"
+      ],
+      "pathKey": "cluster snapshot create",
+      "domain": "cluster",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.cluster.snapshot.create.description",
+      "label": "Snapshot every rbd-backed datastore in the cluster at ONE instant. Nothing is stopped. Any local-backend datastore in the cluster is listed as outside the instant: it is not part of the snapshot.",
+      "options": [
+        {
+          "flags": "--snapshot <label>",
+          "long": "snapshot",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.cluster.snapshot.create.labelOption",
+          "label": "Snapshot label (default: a UTC timestamp)"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "cluster",
+          "kind": "cluster",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.clusterName",
+          "label": "Cluster name"
+        }
+      ],
+      "hasSubcommands": false,
+      "agentBlocked": true,
+      "mcpExcludeReason": "Infrastructure snapshot — operator unlock only",
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "cluster",
+        "snapshot",
+        "list"
+      ],
+      "pathKey": "cluster snapshot list",
+      "domain": "cluster",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.cluster.snapshot.list.description",
+      "label": "List the cluster's group snapshots.",
+      "options": [
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "cluster",
+          "kind": "cluster",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.clusterName",
+          "label": "Cluster name"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -610,21 +1542,20 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "pathKey": "cluster status",
       "domain": "cluster",
-      "group": null,
+      "group": "INFRASTRUCTURE",
       "experimental": false,
       "plane": "config",
       "descriptionKey": "commands.cluster.status.description",
       "label": "List all clusters, or show one cluster's full config with --name.",
-      "options": [
+      "options": [],
+      "positionals": [
         {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
+          "name": "cluster",
+          "kind": "cluster",
+          "required": false,
           "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.cluster.status.nameOption",
-          "label": "Show a single cluster"
+          "descriptionKey": "options.clusterName",
+          "label": "Cluster name"
         }
       ],
       "hasSubcommands": false,
@@ -635,8 +1566,11 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -687,12 +1621,20 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Filter by actor kind (human|agent)"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -708,12 +1650,17 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.config.audit.tail.description",
       "label": "Stream new audit entries as they are written (Ctrl+C to stop)",
       "options": [],
+      "positionals": [],
       "hasSubcommands": false,
+      "mcpExcludeReason": "Follows the audit log until Ctrl+C; it never returns on its own.",
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -729,380 +1676,20 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.config.audit.verify.description",
       "label": "Verify the integrity of the SHA-256 hash chain across all audit entries",
       "options": [],
+      "positionals": [],
       "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "backup-strategy",
-        "list"
-      ],
-      "pathKey": "config backup-strategy list",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.backupStrategy.list.description",
-      "label": "List all backup strategies",
-      "options": [],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "backup-strategy",
-        "remove"
-      ],
-      "pathKey": "config backup-strategy remove",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.backupStrategy.remove.description",
-      "label": "Remove a backup strategy or destination",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.backupStrategy.set.optionName",
-          "label": "Strategy name (required)"
-        },
-        {
-          "flags": "--destination <name>",
-          "long": "destination",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.backupStrategy.remove.optionDestination",
-          "label": "Remove only this destination (keeps other destinations)"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "backup-strategy",
-        "set"
-      ],
-      "pathKey": "config backup-strategy set",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.backupStrategy.set.description",
-      "label": "Create or update a backup strategy",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.backupStrategy.set.optionName",
-          "label": "Strategy name (required)"
-        },
-        {
-          "flags": "--destination <name>",
-          "long": "destination",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.backupStrategy.set.optionDestination",
-          "label": "Destination name within the strategy"
-        },
-        {
-          "flags": "--storage <name>",
-          "long": "storage",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.backupStrategy.set.optionStorage",
-          "label": "Storage config name (rclone credentials)"
-        },
-        {
-          "flags": "--cron <expression>",
-          "long": "cron",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.backupStrategy.set.optionCron",
-          "label": "Cron schedule (e.g., \"0 * * * *\" for hourly)"
-        },
-        {
-          "flags": "--mode <mode>",
-          "long": "mode",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "choices": [
-            "hot",
-            "cold"
-          ],
-          "descriptionKey": "commands.config.backupStrategy.set.optionMode",
-          "label": "Backup mode: \"hot\" (zero downtime) or \"cold\" (stop, snapshot, restart)"
-        },
-        {
-          "flags": "--bwlimit <limit>",
-          "long": "bwlimit",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.backupStrategy.set.optionBwlimit",
-          "label": "Rclone bandwidth limit (e.g., \"6M\", \"10M:off\", \"08:00,3M;22:00,10M\")"
-        },
-        {
-          "flags": "--include <repos>",
-          "long": "include",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.backupStrategy.set.optionInclude",
-          "label": "Only back up these repos (comma-separated names)"
-        },
-        {
-          "flags": "--exclude <repos>",
-          "long": "exclude",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.backupStrategy.set.optionExclude",
-          "label": "Exclude these repos from backup (comma-separated names)"
-        },
-        {
-          "flags": "--folder <path>",
-          "long": "folder",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.backupStrategy.set.optionFolder",
-          "label": "Subfolder under the storage bucket for this destination (e.g. hot, cold)"
-        },
-        {
-          "flags": "--enable",
-          "long": "enable",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.backupStrategy.set.optionEnable",
-          "label": "Enable the strategy or destination"
-        },
-        {
-          "flags": "--disable",
-          "long": "disable",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.backupStrategy.set.optionDisable",
-          "label": "Disable the strategy or destination"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "backup-strategy",
-        "show"
-      ],
-      "pathKey": "config backup-strategy show",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.backupStrategy.show.description",
-      "label": "Show backup strategy details",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.backupStrategy.show.optionName",
-          "label": "Strategy name (shows all if omitted)"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "cert-cache",
-        "clear"
-      ],
-      "pathKey": "config cert-cache clear",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.certCache.clear.description",
-      "label": "Remove the certificate cache",
-      "options": [],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "cert-cache",
-        "pull"
-      ],
-      "pathKey": "config cert-cache pull",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.config.certCache.pull.description",
-      "label": "Download and cache TLS certificates from a machine",
-      "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "--no-prune",
-          "long": "no-prune",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.certCache.pull.optionNoPrune",
-          "label": "Skip pruning stale network-ID certificates"
-        },
-        {
-          "flags": "--debug",
-          "long": "debug",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.debug",
-          "label": "Enable debug output"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Its effect is writing the machine's acme.json into the caller's local config; a remote executor would write it into its own. Run it without --proxy.",
-      "machineOption": "machine",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "cert-cache",
-        "push"
-      ],
-      "pathKey": "config cert-cache push",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.config.certCache.push.description",
-      "label": "Upload cached TLS certificates to a machine",
-      "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "--debug",
-          "long": "debug",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.debug",
-          "label": "Enable debug output"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "cert-cache",
-        "status"
-      ],
-      "pathKey": "config cert-cache status",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.certCache.status.description",
-      "label": "Show cached certificate inventory",
-      "options": [],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -1116,14 +1703,13 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.config.clear.description",
       "label": "Clear defaults (all or specific key)",
-      "options": [
+      "options": [],
+      "positionals": [
         {
-          "flags": "--key <key>",
-          "long": "key",
-          "valueTaking": true,
+          "name": "key",
+          "kind": "plain",
+          "required": false,
           "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
           "descriptionKey": "options.configKey",
           "label": "Configuration key"
         }
@@ -1133,235 +1719,11 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "cluster",
-        "add"
-      ],
-      "pathKey": "config cluster add",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.cluster.add.description",
-      "label": "Declare a new cluster with one or more pools",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.cluster.create.nameOption",
-          "label": "Cluster name"
-        },
-        {
-          "flags": "--provider <provider>",
-          "long": "provider",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.cluster.providerOption",
-          "label": "Provider: a cloudProviders key, or 'kvm'"
-        },
-        {
-          "flags": "--pool <spec...>",
-          "long": "pool",
-          "valueTaking": true,
-          "variadic": true,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.cluster.poolOption",
-          "label": "Pool spec name:role:count[:size] (role: ceph|k8s-server|k8s-agent|hyperconverged)"
-        },
-        {
-          "flags": "--network-cidr <cidr>",
-          "long": "network-cidr",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.cluster.cidrOption",
-          "label": "Private network CIDR (e.g. 10.0.0.0/24)"
-        },
-        {
-          "flags": "--network-primitive <primitive>",
-          "long": "network-primitive",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.cluster.primitiveOption",
-          "label": "Network primitive (e.g. vlan, vpc, network)"
-        },
-        {
-          "flags": "--control-node <machine>",
-          "long": "control-node",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.cluster.controlNodeOption",
-          "label": "Explicit control-node machine (default: first k8s-server member)"
-        },
-        {
-          "flags": "--net-name <name>",
-          "long": "net-name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.cluster.netNameOption",
-          "label": "KVM: libvirt network for this cluster (e.g. renet12)"
-        },
-        {
-          "flags": "--net-base <prefix>",
-          "long": "net-base",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.cluster.netBaseOption",
-          "label": "KVM: network prefix, the first three octets (e.g. 192.168.112)"
-        },
-        {
-          "flags": "--net-offset <n>",
-          "long": "net-offset",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.cluster.netOffsetOption",
-          "label": "KVM: offset added to each VM id when deriving its address"
-        },
-        {
-          "flags": "--control-id <n>",
-          "long": "control-id",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.cluster.controlIdOption",
-          "label": "KVM: VM id of the control and registry node (default: 1)"
-        },
-        {
-          "flags": "--docker-registry <endpoint>",
-          "long": "docker-registry",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.cluster.dockerRegistryOption",
-          "label": "KVM: in-VM Docker registry endpoint for this cluster"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "cluster",
-        "add-pool"
-      ],
-      "pathKey": "config cluster add-pool",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.cluster.addPool.description",
-      "label": "Add a pool to an existing cluster",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.cluster.create.nameOption",
-          "label": "Cluster name"
-        },
-        {
-          "flags": "--pool <spec>",
-          "long": "pool",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.cluster.poolOption",
-          "label": "Pool spec name:role:count[:size] (role: ceph|k8s-server|k8s-agent|hyperconverged)"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "cluster",
-        "list"
-      ],
-      "pathKey": "config cluster list",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.cluster.list.description",
-      "label": "List configured clusters",
-      "options": [],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "cluster",
-        "remove"
-      ],
-      "pathKey": "config cluster remove",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.cluster.remove.description",
-      "label": "Remove a cluster from config",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.cluster.create.nameOption",
-          "label": "Cluster name"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -1375,24 +1737,27 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.config.delete.description",
       "label": "Delete a config file",
-      "options": [
+      "options": [],
+      "positionals": [
         {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
+          "name": "name",
+          "kind": "plain",
+          "required": true,
           "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
           "descriptionKey": "options.name",
           "label": "Resource name"
         }
       ],
       "hasSubcommands": false,
+      "mcpExcludeReason": "Deletes a whole config file, credentials and all. Human decision.",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -1458,12 +1823,17 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Editor command override (follows git precedence: flag > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
+      "mcpExcludeReason": "Opens $EDITOR on the decrypted config; it needs a TTY.",
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -1510,12 +1880,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Print the SHA-256 digest instead of the value (safe to share with agents)"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -1542,12 +1916,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Show only sensitive (non-public) templates"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -1584,12 +1962,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "New value"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -1636,12 +2018,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Current plaintext value — required for sensitive-path mutations (knowledge-gate proof)"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -1678,194 +2064,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Current plaintext value — required for sensitive-path deletions"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "infra",
-        "push"
-      ],
-      "pathKey": "config infra push",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.config.infra.push.description",
-      "label": "Push infrastructure config to machine (Traefik proxy, router, Cloudflare DNS). Run 'config infra set <machine>' first",
-      "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "--debug",
-          "long": "debug",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.debug",
-          "label": "Enable debug output"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "infra",
-        "set"
-      ],
-      "pathKey": "config infra set",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.infra.set.description",
-      "label": "Set infrastructure configuration for a machine (machine-specific: IPs, domain, ports; shared: cert email, CF DNS token)",
-      "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "--public-ipv4 <ip>",
-          "long": "public-ipv4",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.infra.set.optionPublicIPv4",
-          "label": "Public IPv4 address (per-machine)"
-        },
-        {
-          "flags": "--public-ipv6 <ip>",
-          "long": "public-ipv6",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.infra.set.optionPublicIPv6",
-          "label": "Public IPv6 address (per-machine)"
-        },
-        {
-          "flags": "--base-domain <domain>",
-          "long": "base-domain",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.infra.set.optionBaseDomain",
-          "label": "Base domain for applications (per-machine)"
-        },
-        {
-          "flags": "--cert-email <email>",
-          "long": "cert-email",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.infra.set.optionCertEmail",
-          "label": "Email for TLS certificate notifications (shared across machines)"
-        },
-        {
-          "flags": "--cf-dns-token <token>",
-          "long": "cf-dns-token",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.infra.set.optionCfDnsToken",
-          "label": "Cloudflare DNS API token for ACME DNS-01 challenge (shared across machines)"
-        },
-        {
-          "flags": "--tcp-ports <ports>",
-          "long": "tcp-ports",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.infra.set.optionTcpPorts",
-          "label": "TCP ports to forward (comma-separated, e.g., 25,143,465)"
-        },
-        {
-          "flags": "--udp-ports <ports>",
-          "long": "udp-ports",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.infra.set.optionUdpPorts",
-          "label": "UDP ports to forward (comma-separated, e.g., 53)"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": "machine",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "infra",
-        "show"
-      ],
-      "pathKey": "config infra show",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.infra.show.description",
-      "label": "Show infrastructure configuration for a machine",
-      "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        }
-      ],
-      "hasSubcommands": false,
-      "destructive": false,
-      "idempotent": true,
-      "timeout": "read",
-      "timeoutMs": 120000,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": "machine",
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -1880,16 +2088,6 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.config.init.description",
       "label": "Create a new named config file",
       "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
         {
           "flags": "--ssh-key <path>",
           "long": "ssh-key",
@@ -1931,12 +2129,26 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Account server URL"
         }
       ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "plain",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
       "hasSubcommands": false,
+      "mcpExcludeReason": "Creates a named config file — the operator decides what configs exist.",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -1951,514 +2163,7 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.config.list.description",
       "label": "List all config files",
       "options": [],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "machine",
-        "add"
-      ],
-      "pathKey": "config machine add",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.machine.add.description",
-      "label": "Add a machine to the current config. Auto-scans SSH host keys. After adding, run: config machine setup <name>",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "--ip <address>",
-          "long": "ip",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.machineIp",
-          "label": "Machine IP address or hostname"
-        },
-        {
-          "flags": "--user <username>",
-          "long": "user",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.sshUser",
-          "label": "SSH username"
-        },
-        {
-          "flags": "--port <port>",
-          "long": "port",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": "22",
-          "descriptionKey": "options.sshPort",
-          "label": "SSH port"
-        },
-        {
-          "flags": "--datastore <path>",
-          "long": "datastore",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": "/mnt/rediacc",
-          "descriptionKey": "options.datastore",
-          "label": "Datastore path on machine"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "machine",
-        "list"
-      ],
-      "pathKey": "config machine list",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.machine.list.description",
-      "label": "List machines in the current config",
-      "options": [],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "machine",
-        "remove"
-      ],
-      "pathKey": "config machine remove",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.machine.remove.description",
-      "label": "Remove a machine from the current config",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "machine",
-        "scan-keys"
-      ],
-      "pathKey": "config machine scan-keys",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.config.machine.scanKeys.description",
-      "label": "Scan SSH host keys for machines in the current config",
-      "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs ssh-keyscan from the caller's network position and stores knownHosts in the caller's local config; a remote executor would scan from its own and keep the result. Run it without --proxy.",
-      "machineOption": "machine",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "machine",
-        "set-ceph"
-      ],
-      "pathKey": "config machine set-ceph",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.config.machine.setCeph.description",
-      "label": "Set Ceph RBD configuration for a machine",
-      "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "--pool <name>",
-          "long": "pool",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.machine.setCeph.optionPool",
-          "label": "Ceph pool name (e.g., rbd)"
-        },
-        {
-          "flags": "--image <name>",
-          "long": "image",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.machine.setCeph.optionImage",
-          "label": "RBD image name (e.g., datastore-prod1)"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": "ceph",
-          "descriptionKey": "options.cluster",
-          "label": "Ceph cluster name"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "machine",
-        "setup"
-      ],
-      "pathKey": "config machine setup",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.config.machine.setup.description",
-      "label": "Provision a remote machine for repositories (installs renet, configures Docker, BTRFS datastore). Idempotent. Required after 'config machine add' and before 'repo create'",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "--datastore <path>",
-          "long": "datastore",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": "/mnt/rediacc",
-          "descriptionKey": "commands.config.machine.setup.datastoreOption",
-          "label": "Datastore path on remote machine"
-        },
-        {
-          "flags": "--datastore-size <size>",
-          "long": "datastore-size",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": "95%",
-          "descriptionKey": "commands.config.machine.setup.datastoreSizeOption",
-          "label": "Datastore size (e.g., 95%, 100G)"
-        },
-        {
-          "flags": "--debug",
-          "long": "debug",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.debug",
-          "label": "Enable debug output"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "provider",
-        "add"
-      ],
-      "pathKey": "config provider add",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.provider.add.description",
-      "label": "Add a cloud provider",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "--provider <source>",
-          "long": "provider",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.provider.add.optionProvider",
-          "label": "Known provider source (e.g., linode/linode, hetznercloud/hcloud)"
-        },
-        {
-          "flags": "--source <source>",
-          "long": "source",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.provider.add.optionSource",
-          "label": "Custom OpenTofu provider source (e.g., vultr/vultr)"
-        },
-        {
-          "flags": "--token <token>",
-          "long": "token",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.provider.add.optionToken",
-          "label": "API token for the cloud provider"
-        },
-        {
-          "flags": "--region <region>",
-          "long": "region",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.provider.add.optionRegion",
-          "label": "Default region for new machines"
-        },
-        {
-          "flags": "--type <type>",
-          "long": "type",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.provider.add.optionInstanceType",
-          "label": "Default instance type/size"
-        },
-        {
-          "flags": "--image <image>",
-          "long": "image",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.provider.add.optionImage",
-          "label": "Default OS image"
-        },
-        {
-          "flags": "--ssh-user <user>",
-          "long": "ssh-user",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.provider.add.optionSshUser",
-          "label": "SSH username for new VMs (default: root)"
-        },
-        {
-          "flags": "--resource <type>",
-          "long": "resource",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.provider.add.optionResource",
-          "label": "Custom: OpenTofu resource type for VM"
-        },
-        {
-          "flags": "--label-attr <attr>",
-          "long": "label-attr",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.provider.add.optionLabelAttr",
-          "label": "Custom: attribute name for VM label"
-        },
-        {
-          "flags": "--region-attr <attr>",
-          "long": "region-attr",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.provider.add.optionRegionAttr",
-          "label": "Custom: attribute name for region"
-        },
-        {
-          "flags": "--size-attr <attr>",
-          "long": "size-attr",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.provider.add.optionSizeAttr",
-          "label": "Custom: attribute name for instance type"
-        },
-        {
-          "flags": "--image-attr <attr>",
-          "long": "image-attr",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.provider.add.optionImageAttr",
-          "label": "Custom: attribute name for OS image"
-        },
-        {
-          "flags": "--ipv4-output <attr>",
-          "long": "ipv4-output",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.provider.add.optionIpv4Output",
-          "label": "Custom: output attribute for IPv4 address"
-        },
-        {
-          "flags": "--ipv6-output <attr>",
-          "long": "ipv6-output",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.provider.add.optionIpv6Output",
-          "label": "Custom: output attribute for IPv6 address"
-        },
-        {
-          "flags": "--ssh-key-attr <attr>",
-          "long": "ssh-key-attr",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.provider.add.optionSshKeyAttr",
-          "label": "Custom: attribute name for SSH keys"
-        },
-        {
-          "flags": "--ssh-key-format <format>",
-          "long": "ssh-key-format",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.provider.add.optionSshKeyFormat",
-          "label": "Custom: SSH key format (inline_list or resource_id)"
-        },
-        {
-          "flags": "--ssh-key-resource <type>",
-          "long": "ssh-key-resource",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.provider.add.optionSshKeyResource",
-          "label": "Custom: OpenTofu resource type for SSH keys"
-        }
-      ],
-      "hasSubcommands": false,
-      "destructive": false,
-      "idempotent": true,
-      "timeout": "write",
-      "timeoutMs": 300000,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "provider",
-        "list"
-      ],
-      "pathKey": "config provider list",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.provider.list.description",
-      "label": "List configured cloud providers",
-      "options": [],
+      "positionals": [],
       "hasSubcommands": false,
       "destructive": false,
       "idempotent": true,
@@ -2467,44 +2172,11 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "provider",
-        "remove"
-      ],
-      "pathKey": "config provider remove",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.provider.remove.description",
-      "label": "Remove a cloud provider configuration",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        }
-      ],
-      "hasSubcommands": false,
-      "destructive": true,
-      "idempotent": true,
-      "timeout": "write",
-      "timeoutMs": 300000,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -2567,7 +2239,7 @@ export const CLI_CONTRACT: CliContract = {
           "mandatory": false,
           "defaultValue": null,
           "descriptionKey": "commands.config.prune.purgeArchivedOption",
-          "label": "Drop ALL archived repositories regardless of age, not just those past grace. Equivalent to running 'rdc config repository purge-archived'. Use only when you're sure you don't need any of the stashed credentials for restore."
+          "label": "Drop ALL archived repositories regardless of age, not just those past grace. Equivalent to running 'rdc repo admin archive purge' for every archived repo. Use only when you're sure you don't need any of the stashed credentials for restore."
         },
         {
           "flags": "--grace-days <days>",
@@ -2580,12 +2252,69 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Override the archive grace window (in days) for this invocation. Falls back to defaults.pruneGraceDays in the config, then to 7 if neither is set."
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "write",
+      "timeoutMs": 300000,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "config",
+        "reconcile"
+      ],
+      "pathKey": "config reconcile",
+      "domain": "config",
+      "group": "TOOLS",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.config.reconcile.description",
+      "label": "Rebuild runtime state from machine truth. Fixes stale attach and routing data.",
+      "options": [
+        {
+          "flags": "--machine <m...>",
+          "long": "machine",
+          "valueTaking": true,
+          "variadic": true,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.config.reconcile.optionMachine",
+          "label": "Limit the reconcile to these machines"
+        },
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.dryRun",
+          "label": "Show what would be done without making changes"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "It queries every machine but writes the result into the CALLER's local state bucket; a remote executor would rebuild its own state and the caller would be none the wiser. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -2622,12 +2351,17 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip confirmation prompt"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
+      "mcpExcludeReason": "Rewrites a damaged config from backup; the operator must see what changed.",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -2643,12 +2377,16 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.config.remote.disable.description",
       "label": "Disconnect from remote storage and save config locally",
       "options": [],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -2685,12 +2423,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Account server URL"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -2706,12 +2448,16 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.config.remote.refresh.description",
       "label": "Force re-fetch config from remote storage",
       "options": [],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -2727,226 +2473,16 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.config.remote.status.description",
       "label": "Show remote connection status",
       "options": [],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "repository",
-        "add"
-      ],
-      "pathKey": "config repository add",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.repository.add.description",
-      "label": "Add a repository GUID mapping to the current config",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "--guid <guid>",
-          "long": "guid",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.repository.add.optionGuid",
-          "label": "Repository GUID (UUID from storage backup filenames)"
-        },
-        {
-          "flags": "--tag <tag>",
-          "long": "tag",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": "latest",
-          "descriptionKey": "options.repositoryTag",
-          "label": "Repository tag"
-        },
-        {
-          "flags": "--credential <credential>",
-          "long": "credential",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.repository.add.optionCredential",
-          "label": "Repository credential (encryption passphrase)"
-        },
-        {
-          "flags": "--network-id <id>",
-          "long": "network-id",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.repository.add.optionNetworkId",
-          "label": "Network ID for Docker isolation (2816, 2880, ...). Auto-assigned if omitted"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "repository",
-        "list"
-      ],
-      "pathKey": "config repository list",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.repository.list.description",
-      "label": "List repository GUID mappings in the current config",
-      "options": [],
-      "hasSubcommands": false,
-      "destructive": false,
-      "idempotent": true,
-      "timeout": "read",
-      "timeoutMs": 120000,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "repository",
-        "list-archived"
-      ],
-      "pathKey": "config repository list-archived",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.repository.listArchived.description",
-      "label": "List archived repository credentials",
-      "options": [],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "repository",
-        "purge-archived"
-      ],
-      "pathKey": "config repository purge-archived",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.repository.purgeArchived.description",
-      "label": "Permanently delete all archived credentials",
-      "options": [],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "repository",
-        "remove"
-      ],
-      "pathKey": "config repository remove",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.repository.remove.description",
-      "label": "Remove a repository mapping from the current config. Targets <name>:<tag>; a bare --name resolves to the grand <name>:latest and is refused when multiple repos share the base name — pass :tag explicitly to target a fork.",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        }
-      ],
-      "hasSubcommands": false,
-      "grandGuard": true,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "repository",
-        "restore-archived"
-      ],
-      "pathKey": "config repository restore-archived",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.repository.restoreArchived.description",
-      "label": "Restore an archived repository credential",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "--new-name <name>",
-          "long": "new-name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.newName",
-          "label": "New resource name"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -2957,9 +2493,9 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "experimental": false,
-      "plane": "config",
-      "descriptionKey": null,
-      "label": "commands.config.rotateCek.description",
+      "plane": "other",
+      "descriptionKey": "commands.config.rotateCek.description",
+      "label": "Rotate the organization config-encryption key",
       "options": [
         {
           "flags": "--api-url <url>",
@@ -2968,16 +2504,21 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
-          "descriptionKey": null,
-          "label": "commands.config.rotateCek.optionApiUrl"
+          "descriptionKey": "options.serverUrl",
+          "label": "Account server URL"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
+      "mcpExcludeReason": "Rotates the org config-encryption key; destructive and human-driven (portal wizard).",
       "interactive": false,
       "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -2991,24 +2532,21 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.config.set.description",
       "label": "Set a default value (team, region, bridge)",
-      "options": [
+      "options": [],
+      "positionals": [
         {
-          "flags": "--key <key>",
-          "long": "key",
-          "valueTaking": true,
+          "name": "key",
+          "kind": "plain",
+          "required": true,
           "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
           "descriptionKey": "options.configKey",
           "label": "Configuration key"
         },
         {
-          "flags": "--value <value>",
-          "long": "value",
-          "valueTaking": true,
+          "name": "value",
+          "kind": "plain",
+          "required": true,
           "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
           "descriptionKey": "options.configValue",
           "label": "Configuration value"
         }
@@ -3018,8 +2556,11 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -3045,12 +2586,20 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Show plaintext for sensitive values (interactive only)"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -3066,12 +2615,16 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.config.ssh.remove.description",
       "label": "Remove SSH key from the current config",
       "options": [],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -3108,12 +2661,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Embed key content in config instead of storing path"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -3129,149 +2686,16 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.config.ssh.show.description",
       "label": "Show current SSH key configuration",
       "options": [],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "storage",
-        "import"
-      ],
-      "pathKey": "config storage import",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.storage.import.description",
-      "label": "Import storages from an rclone config file",
-      "options": [
-        {
-          "flags": "--file <path>",
-          "long": "file",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.file",
-          "label": "Path to file"
-        },
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.storage.import.optionName",
-          "label": "Import only this named section"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "storage",
-        "list"
-      ],
-      "pathKey": "config storage list",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.storage.list.description",
-      "label": "List storages in the current config",
-      "options": [],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "storage",
-        "remove"
-      ],
-      "pathKey": "config storage remove",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.storage.remove.description",
-      "label": "Remove a storage from the current config",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "config",
-        "storage",
-        "show"
-      ],
-      "pathKey": "config storage show",
-      "domain": "config",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.config.storage.show.description",
-      "label": "Show a storage's provider and configuration",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "--reveal",
-          "long": "reveal",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.config.storage.show.optionReveal",
-          "label": "Reveal the storage configuration in plaintext (interactive TTY only; audited)"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -3279,7 +2703,7 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "pathKey": "credits",
       "domain": "credits",
-      "group": null,
+      "group": "TOOLS",
       "experimental": false,
       "plane": "other",
       "descriptionKey": "commands.credits.description",
@@ -3296,12 +2720,361 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Print the full THIRD_PARTY_LICENSES text bundled with release builds"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "datastore",
+        "attach"
+      ],
+      "pathKey": "datastore attach",
+      "domain": "datastore",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.datastore.attach.description",
+      "label": "Attach a datastore to a machine. Exactly one machine holds a datastore at a time, so attaching it somewhere else moves it: the old holder gives it up first, and a failed hand-off leaves the original attachment intact. A fork must say where its writes go.",
+      "options": [
+        {
+          "flags": "--to <machine>",
+          "long": "to",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "descriptionKey": "commands.datastore.attach.toOption",
+          "label": "Machine to attach the datastore to"
+        },
+        {
+          "flags": "--writes <disposition>",
+          "long": "writes",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "choices": [
+            "local",
+            "ceph"
+          ],
+          "descriptionKey": "commands.datastore.attach.writesOption",
+          "label": "Where a fork's writes go: local (instant, ephemeral, lost on detach) or ceph (durable clone in the pool). Required for a fork."
+        },
+        {
+          "flags": "--cow-size <size>",
+          "long": "cow-size",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.datastore.fork.cowSizeOption",
+          "label": "Overlay size for --writes local"
+        },
+        {
+          "flags": "--no-auto",
+          "long": "no-auto",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.datastore.attach.noAutoOption",
+          "label": "Do not re-attach this datastore automatically on boot"
+        },
+        {
+          "flags": "--force",
+          "long": "force",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.datastore.attach.forceOption",
+          "label": "Fence a stale holder that did not give the datastore up cleanly"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "datastore",
+          "kind": "datastore-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.datastoreRef",
+          "label": "Datastore ref: name, or name:tag for a fork (for example ds-data or ds-data:exp)"
+        }
+      ],
+      "hasSubcommands": false,
+      "agentBlocked": true,
+      "mcpExcludeReason": "Moves every repository in the pool; operator unlock only.",
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "datastore",
+        "create"
+      ],
+      "pathKey": "datastore create",
+      "domain": "datastore",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.datastore.create.description",
+      "label": "Create an additional named datastore on a machine. A local backend is a file-backed pool on that machine and stays there. An rbd backend lives in Ceph, so it can move to any machine that reaches the same cluster. Pass --cluster to make it a kubernetes-world datastore; that backref is fixed at creation.",
+      "options": [
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "descriptionKey": "commands.datastore.create.machineOption",
+          "label": "Machine to create the datastore on"
+        },
+        {
+          "flags": "--size <size>",
+          "long": "size",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "descriptionKey": "commands.datastore.create.sizeOption",
+          "label": "Datastore size (for example 100G)"
+        },
+        {
+          "flags": "--backend <type>",
+          "long": "backend",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": "local",
+          "choices": [
+            "local",
+            "rbd"
+          ],
+          "descriptionKey": "commands.datastore.create.backendOption",
+          "label": "Storage backend: local (file-backed, stays on this machine) or rbd (Ceph, movable)"
+        },
+        {
+          "flags": "--pool <name>",
+          "long": "pool",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.datastore.create.poolOption",
+          "label": "Ceph pool for the rbd backend (default: rbd)"
+        },
+        {
+          "flags": "--image <name>",
+          "long": "image",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.datastore.create.imageOption",
+          "label": "RBD image name for the rbd backend (default: the datastore name)"
+        },
+        {
+          "flags": "--cluster <name>",
+          "long": "cluster",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.datastore.create.clusterOption",
+          "label": "Kubernetes cluster this datastore belongs to. Set means kubernetes repositories only; unset means docker repositories only. Fixed at creation."
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "datastore",
+          "kind": "datastore-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.datastoreRef",
+          "label": "Datastore ref: name, or name:tag for a fork (for example ds-data or ds-data:exp)"
+        }
+      ],
+      "hasSubcommands": false,
+      "agentBlocked": true,
+      "mcpExcludeReason": "Infrastructure storage provisioning; operator unlock only.",
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "datastore",
+        "delete"
+      ],
+      "pathKey": "datastore delete",
+      "domain": "datastore",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.datastore.delete.description",
+      "label": "Destroy a datastore and everything in it. It detaches first; if it will not detach cleanly, the delete fails rather than orphaning a mounted pool.",
+      "options": [
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.yes",
+          "label": "Skip confirmation prompt"
+        },
+        {
+          "flags": "--force",
+          "long": "force",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.datastore.delete.forceOption",
+          "label": "Delete even though repositories still point at it. Their data goes with it."
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "datastore",
+          "kind": "datastore-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.datastoreRef",
+          "label": "Datastore ref: name, or name:tag for a fork (for example ds-data or ds-data:exp)"
+        }
+      ],
+      "hasSubcommands": false,
+      "agentBlocked": true,
+      "mcpExcludeReason": "Destroys a storage pool.",
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "datastore",
+        "detach"
+      ],
+      "pathKey": "datastore detach",
+      "domain": "datastore",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.datastore.detach.description",
+      "label": "Detach a datastore from its machine. Repositories inside it stop first. A fork attached with --writes local has nowhere to write its overlay back to, so detaching it throws the overlay away and needs --discard.",
+      "options": [
+        {
+          "flags": "--discard",
+          "long": "discard",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.datastore.detach.discardOption",
+          "label": "Throw away a local-writes fork and its overlay. The data is not recoverable."
+        },
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.yes",
+          "label": "Skip confirmation prompt"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "datastore",
+          "kind": "datastore-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.datastoreRef",
+          "label": "Datastore ref: name, or name:tag for a fork (for example ds-data or ds-data:exp)"
+        }
+      ],
+      "hasSubcommands": false,
+      "agentBlocked": true,
+      "mcpExcludeReason": "Stops every repository in the pool; operator unlock only.",
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -3314,28 +3087,41 @@ export const CLI_CONTRACT: CliContract = {
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.datastore.fork.description",
-      "label": "Create a local COW copy of a Ceph datastore via RBD snapshot + clone (< 2s). Save snapshot/clone names from output for unfork. Only one fork per target name; unfork before re-forking",
+      "label": "Fork a datastore copy-on-write. The fork is instant and its cost does not grow with the size of the pool. Needs the rbd backend: a local datastore has no block-level clone, so repositories inside it fork one at a time by reflink instead (rdc repo fork).",
       "options": [
         {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
+          "flags": "--tag <tag>",
+          "long": "tag",
           "valueTaking": true,
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
-          "descriptionKey": "commands.datastore.machineOption",
-          "label": "Machine name (where the Ceph datastore is hosted)"
+          "descriptionKey": "commands.datastore.fork.tagOption",
+          "label": "Tag for the fork (the result is name:tag)"
         },
         {
-          "flags": "--to <name>",
-          "long": "to",
+          "flags": "--attach-to <machine>",
+          "long": "attach-to",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": true,
+          "mandatory": false,
           "defaultValue": null,
-          "descriptionKey": "commands.datastore.fork.toOption",
-          "label": "Clone suffix (creates clone named <image>-fork-<name>). The fork stays on the source machine"
+          "descriptionKey": "commands.datastore.fork.attachToOption",
+          "label": "Attach the fork to this machine right away (needs --writes)"
+        },
+        {
+          "flags": "--writes <disposition>",
+          "long": "writes",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "choices": [
+            "local",
+            "ceph"
+          ],
+          "descriptionKey": "commands.datastore.fork.writesOption",
+          "label": "Where the fork's writes go: local (instant, ephemeral) or ceph (durable clone)"
         },
         {
           "flags": "--cow-size <size>",
@@ -3345,7 +3131,7 @@ export const CLI_CONTRACT: CliContract = {
           "mandatory": false,
           "defaultValue": null,
           "descriptionKey": "commands.datastore.fork.cowSizeOption",
-          "label": "COW backing file size (default: auto, grows on demand)"
+          "label": "Overlay size for --writes local"
         },
         {
           "flags": "--debug",
@@ -3358,116 +3144,62 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "datastore",
+          "kind": "datastore-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.datastoreRef",
+          "label": "Datastore ref: name, or name:tag for a fork (for example ds-data or ds-data:exp)"
+        }
+      ],
       "hasSubcommands": false,
+      "agentBlocked": true,
+      "mcpExcludeReason": "Infrastructure storage operation; operator unlock only.",
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
         "datastore",
-        "init"
+        "list"
       ],
-      "pathKey": "datastore init",
+      "pathKey": "datastore list",
       "domain": "datastore",
       "group": "INFRASTRUCTURE",
       "experimental": false,
       "plane": "machine",
-      "descriptionKey": "commands.datastore.init.description",
-      "label": "Initialize datastore on a machine (local loop-backed or Ceph RBD)",
-      "options": [
+      "descriptionKey": "commands.datastore.list.description",
+      "label": "List named datastores, where they are attached, and what they hold.",
+      "options": [],
+      "positionals": [
         {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
+          "name": "place",
+          "kind": "plain",
+          "required": false,
           "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.datastore.machineOption",
-          "label": "Machine name (where the Ceph datastore is hosted)"
-        },
-        {
-          "flags": "--size <size>",
-          "long": "size",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.datastore.init.sizeOption",
-          "label": "Datastore size (e.g., 5G, 50G, 100G)"
-        },
-        {
-          "flags": "--backend <type>",
-          "long": "backend",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": "local",
-          "choices": [
-            "local",
-            "ceph"
-          ],
-          "descriptionKey": "commands.datastore.init.backendOption",
-          "label": "Backend type: local (default) or ceph"
-        },
-        {
-          "flags": "--pool <name>",
-          "long": "pool",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": "rbd",
-          "descriptionKey": "commands.datastore.init.poolOption",
-          "label": "Ceph pool name (default: from machine config, or rbd)"
-        },
-        {
-          "flags": "--image <name>",
-          "long": "image",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.datastore.init.imageOption",
-          "label": "Ceph RBD image name (default: from machine config via set-ceph)"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": "ceph",
-          "descriptionKey": "commands.datastore.init.clusterOption",
-          "label": "Ceph cluster name (default: ceph)"
-        },
-        {
-          "flags": "--force",
-          "long": "force",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.datastore.init.forceOption",
-          "label": "Force initialization even if datastore already exists (WARNING: reformats storage)"
-        },
-        {
-          "flags": "--debug",
-          "long": "debug",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.debug",
-          "label": "Enable debug output"
+          "descriptionKey": "commands.datastore.list.placeArgument",
+          "label": "Narrow to one cluster or one machine"
         }
       ],
       "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -3480,19 +3212,8 @@ export const CLI_CONTRACT: CliContract = {
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.datastore.resize.description",
-      "label": "Resize a machine's datastore pool offline (grow or shrink); unmount all repositories first.",
+      "label": "Grow or shrink a datastore. This is an offline operation: the repositories inside it must be stopped.",
       "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.datastore.machineOption",
-          "label": "Machine name (where the Ceph datastore is hosted)"
-        },
         {
           "flags": "--size <size>",
           "long": "size",
@@ -3501,7 +3222,7 @@ export const CLI_CONTRACT: CliContract = {
           "mandatory": true,
           "defaultValue": null,
           "descriptionKey": "commands.datastore.resize.sizeOption",
-          "label": "New datastore size (e.g., 100G, 95%)"
+          "label": "New size (for example 200G)"
         },
         {
           "flags": "--debug",
@@ -3514,11 +3235,130 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "datastore",
+          "kind": "datastore-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.datastoreRef",
+          "label": "Datastore ref: name, or name:tag for a fork (for example ds-data or ds-data:exp)"
+        }
+      ],
       "hasSubcommands": false,
+      "agentBlocked": true,
+      "mcpExcludeReason": "Destructive storage geometry change.",
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "datastore",
+        "snapshot",
+        "create"
+      ],
+      "pathKey": "datastore snapshot create",
+      "domain": "datastore",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.datastore.snapshot.create.description",
+      "label": "Take a point-in-time snapshot of a datastore. Nothing stops.",
+      "options": [
+        {
+          "flags": "--snapshot <label>",
+          "long": "snapshot",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.cluster.snapshot.create.labelOption",
+          "label": "Snapshot label (default: a UTC timestamp)"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "datastore",
+          "kind": "datastore-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.datastoreRef",
+          "label": "Datastore ref: name, or name:tag for a fork (for example ds-data or ds-data:exp)"
+        }
+      ],
+      "hasSubcommands": false,
+      "agentBlocked": true,
+      "mcpExcludeReason": "Infrastructure snapshot; operator unlock only.",
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "datastore",
+        "snapshot",
+        "list"
+      ],
+      "pathKey": "datastore snapshot list",
+      "domain": "datastore",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.datastore.snapshot.list.description",
+      "label": "List a datastore's snapshots.",
+      "options": [
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "datastore",
+          "kind": "datastore-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.datastoreRef",
+          "label": "Datastore ref: name, or name:tag for a fork (for example ds-data or ds-data:exp)"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -3531,19 +3371,8 @@ export const CLI_CONTRACT: CliContract = {
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.datastore.status.description",
-      "label": "Show datastore backend, size, usage, mount status, and cow_mode (if forked)",
+      "label": "Show one datastore: its backend, attachment, usage, repositories and snapshots. A detached datastore still reports its record.",
       "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.datastore.machineOption",
-          "label": "Machine name (where the Ceph datastore is hosted)"
-        },
         {
           "flags": "--debug",
           "long": "debug",
@@ -3555,112 +3384,28 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "datastore",
-        "unfork"
-      ],
-      "pathKey": "datastore unfork",
-      "domain": "datastore",
-      "group": "INFRASTRUCTURE",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.datastore.unfork.description",
-      "label": "Clean up a fork: unmount COW, remove clone, remove snapshot",
-      "options": [
+      "positionals": [
         {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
+          "name": "datastore",
+          "kind": "datastore-ref",
+          "required": true,
           "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.datastore.machineOption",
-          "label": "Machine name (where the Ceph datastore is hosted)"
-        },
-        {
-          "flags": "--source <image>",
-          "long": "source",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.datastore.unfork.sourceOption",
-          "label": "Original RBD image that was forked (from config set-ceph --image, e.g. ds-prod)"
-        },
-        {
-          "flags": "--snapshot <name>",
-          "long": "snapshot",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.datastore.unfork.snapshotOption",
-          "label": "Snapshot to remove (the \"Snapshot:\" value from fork output, e.g. fork-<timestamp>)"
-        },
-        {
-          "flags": "--dest <image>",
-          "long": "dest",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.datastore.unfork.destOption",
-          "label": "Clone image to remove (the \"Clone:\" value from fork output, e.g. ds-prod-fork-<machine>)"
-        },
-        {
-          "flags": "--pool <name>",
-          "long": "pool",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.datastore.unfork.poolOption",
-          "label": "Ceph pool name (default: from machine config)"
-        },
-        {
-          "flags": "--mount-point <path>",
-          "long": "mount-point",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.datastore.unfork.mountPointOption",
-          "label": "Fork mount point to unmount (default: /mnt/rediacc)"
-        },
-        {
-          "flags": "--force",
-          "long": "force",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.datastore.unfork.forceOption",
-          "label": "Continue cleanup even if individual steps fail (e.g. unmount, snapshot removal)"
-        },
-        {
-          "flags": "--debug",
-          "long": "debug",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.debug",
-          "label": "Enable debug output"
+          "descriptionKey": "options.datastoreRef",
+          "label": "Datastore ref: name, or name:tag for a fork (for example ds-data or ds-data:exp)"
         }
       ],
       "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -3674,13 +3419,17 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.doctor.description",
       "label": "Run diagnostic checks on the CLI environment: Node.js version, renet binary availability, config file validity, SSH key status, and network connectivity. Outputs a structured health report with pass/fail indicators.",
       "options": [],
+      "positionals": [],
       "hasSubcommands": false,
       "mcpExcludeReason": "Diagnoses local CLI installation — not a remote operation",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -3689,7 +3438,7 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "pathKey": "job cancel",
       "domain": "job",
-      "group": null,
+      "group": "EXECUTION",
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.job.cancel.description",
@@ -3728,6 +3477,7 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip confirmation prompt"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": true,
@@ -3735,8 +3485,11 @@ export const CLI_CONTRACT: CliContract = {
       "timeoutMs": 300000,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": false,
       "machineOption": "machine",
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -3745,7 +3498,7 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "pathKey": "job gc",
       "domain": "job",
-      "group": null,
+      "group": "EXECUTION",
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.job.gc.description",
@@ -3784,6 +3537,7 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip confirmation prompt"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": true,
@@ -3791,8 +3545,11 @@ export const CLI_CONTRACT: CliContract = {
       "timeoutMs": 300000,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": false,
       "machineOption": "machine",
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -3801,7 +3558,7 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "pathKey": "job list",
       "domain": "job",
-      "group": null,
+      "group": "EXECUTION",
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.job.list.description",
@@ -3819,6 +3576,7 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Target machine name"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "destructive": false,
       "idempotent": true,
@@ -3826,8 +3584,11 @@ export const CLI_CONTRACT: CliContract = {
       "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": false,
       "machineOption": "machine",
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -3836,7 +3597,7 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "pathKey": "job logs",
       "domain": "job",
-      "group": null,
+      "group": "EXECUTION",
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.job.logs.description",
@@ -3852,16 +3613,6 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "descriptionKey": "commands.repo.machineOption",
           "label": "Target machine name"
-        },
-        {
-          "flags": "--id <jobId>",
-          "long": "id",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.job.idOption",
-          "label": "Job ID"
         },
         {
           "flags": "-f, --follow",
@@ -3895,6 +3646,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "job-id",
+          "kind": "job-id",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.job.idOption",
+          "label": "Job ID"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": false,
       "idempotent": true,
@@ -3902,8 +3663,11 @@ export const CLI_CONTRACT: CliContract = {
       "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": false,
       "machineOption": "machine",
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -3912,7 +3676,7 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "pathKey": "job status",
       "domain": "job",
-      "group": null,
+      "group": "EXECUTION",
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.job.status.description",
@@ -3928,14 +3692,14 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "descriptionKey": "commands.repo.machineOption",
           "label": "Target machine name"
-        },
+        }
+      ],
+      "positionals": [
         {
-          "flags": "--id <jobId>",
-          "long": "id",
-          "valueTaking": true,
+          "name": "job-id",
+          "kind": "job-id",
+          "required": true,
           "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
           "descriptionKey": "commands.job.idOption",
           "label": "Job ID"
         }
@@ -3947,359 +3711,41 @@ export const CLI_CONTRACT: CliContract = {
       "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": false,
       "machineOption": "machine",
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
         "machine",
-        "backup",
-        "cancel"
+        "add"
       ],
-      "pathKey": "machine backup cancel",
-      "domain": "machine",
-      "group": "INFRASTRUCTURE",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.machine.backup.cancel.description",
-      "label": "Cancel a running backup on a remote machine",
-      "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "--strategy <name>",
-          "long": "strategy",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.machine.backup.cancel.optionStrategy",
-          "label": "Strategy name (cancels all if omitted)"
-        },
-        {
-          "flags": "--debug",
-          "long": "debug",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.debug",
-          "label": "Enable debug output"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "machine",
-        "backup",
-        "list"
-      ],
-      "pathKey": "machine backup list",
+      "pathKey": "machine add",
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "experimental": false,
       "plane": "config",
-      "descriptionKey": "commands.machine.backup.list.description",
-      "label": "List backup strategies bound to all machines",
-      "options": [],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "machine",
-        "backup",
-        "now"
-      ],
-      "pathKey": "machine backup now",
-      "domain": "machine",
-      "group": "INFRASTRUCTURE",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.machine.backup.now.description",
-      "label": "Trigger a backup immediately on a remote machine",
+      "descriptionKey": "commands.machine.add.description",
+      "label": "Register an existing machine you can reach over SSH.",
       "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "--strategy <name>",
-          "long": "strategy",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.machine.backup.now.optionStrategy",
-          "label": "Strategy name (triggers all if omitted)"
-        },
-        {
-          "flags": "--debug",
-          "long": "debug",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.debug",
-          "label": "Enable debug output"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "machine",
-        "backup",
-        "schedule"
-      ],
-      "pathKey": "machine backup schedule",
-      "domain": "machine",
-      "group": "INFRASTRUCTURE",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.machine.backup.schedule.description",
-      "label": "Deploy backup schedule to a remote machine (systemd timers)",
-      "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "--dry-run",
-          "long": "dry-run",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.machine.backup.schedule.optionDryRun",
-          "label": "Preview generated units without deploying"
-        },
-        {
-          "flags": "--force",
-          "long": "force",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.machine.backup.schedule.optionForce",
-          "label": "Proceed even if a backup is currently running (new unit applies on next tick; running invocation keeps its old unit)"
-        },
-        {
-          "flags": "--reset-failed",
-          "long": "reset-failed",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.machine.backup.schedule.optionResetFailed",
-          "label": "Clear failed state on touched services after a successful deploy (off by default, preserves failure signal)"
-        },
-        {
-          "flags": "--debug",
-          "long": "debug",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.debug",
-          "label": "Enable debug output"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "machine",
-        "backup",
-        "status"
-      ],
-      "pathKey": "machine backup status",
-      "domain": "machine",
-      "group": "INFRASTRUCTURE",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.machine.backup.status.description",
-      "label": "Show backup status and timer state on a remote machine",
-      "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "--strategy <name>",
-          "long": "strategy",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.machine.backup.status.optionStrategy",
-          "label": "Show details for a specific strategy"
-        },
-        {
-          "flags": "--debug",
-          "long": "debug",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.debug",
-          "label": "Enable debug output"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "machine",
-        "containers"
-      ],
-      "pathKey": "machine containers",
-      "domain": "machine",
-      "group": "INFRASTRUCTURE",
-      "experimental": true,
-      "plane": "machine",
-      "descriptionKey": "commands.machine.containers.description",
-      "label": "List containers on a machine with status, health, and domain routing. JSON includes full container details with repository resolved to name (original in repository_guid), domain, and autoRoute",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "-t, --team <name>",
-          "long": "team",
-          "short": "t",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.team",
-          "label": "Team name"
-        },
-        {
-          "flags": "--health-check",
-          "long": "health-check",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.machine.containers.healthCheck",
-          "label": "Health check mode - exits with code 2 if any unhealthy"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "name",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "machine",
-        "create"
-      ],
-      "pathKey": "machine create",
-      "domain": "machine",
-      "group": "INFRASTRUCTURE",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.machine.create.description",
-      "label": "Create a new machine",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "-t, --team <name>",
-          "long": "team",
-          "short": "t",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.team",
-          "label": "Team name"
-        },
         {
           "flags": "--ip <address>",
           "long": "ip",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": false,
+          "mandatory": true,
           "defaultValue": null,
           "descriptionKey": "options.machineIp",
           "label": "Machine IP address or hostname"
         },
         {
-          "flags": "--user <name>",
+          "flags": "--user <username>",
           "long": "user",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": false,
+          "mandatory": true,
           "defaultValue": null,
           "descriptionKey": "options.sshUser",
           "label": "SSH username"
@@ -4310,92 +3756,34 @@ export const CLI_CONTRACT: CliContract = {
           "valueTaking": true,
           "variadic": false,
           "mandatory": false,
-          "defaultValue": null,
+          "defaultValue": "22",
           "descriptionKey": "options.sshPort",
           "label": "SSH port"
-        },
-        {
-          "flags": "--datastore <path>",
-          "long": "datastore",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.datastore",
-          "label": "Datastore path on machine"
         }
       ],
-      "hasSubcommands": false,
-      "mcpExcludeReason": "Config CRUD — use config machine commands instead",
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": "name",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "machine",
-        "delete"
-      ],
-      "pathKey": "machine delete",
-      "domain": "machine",
-      "group": "INFRASTRUCTURE",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.machine.delete.description",
-      "label": "Delete a machine",
-      "options": [
+      "positionals": [
         {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
+          "name": "name",
+          "kind": "plain",
+          "required": true,
           "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
           "descriptionKey": "options.name",
           "label": "Resource name"
-        },
-        {
-          "flags": "-t, --team <name>",
-          "long": "team",
-          "short": "t",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.team",
-          "label": "Team name"
-        },
-        {
-          "flags": "-f, --force",
-          "long": "force",
-          "short": "f",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.force",
-          "label": "Skip confirmation prompts"
-        },
-        {
-          "flags": "--dry-run",
-          "long": "dry-run",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.dryRun",
-          "label": "Show what would be done without making changes"
         }
       ],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Config CRUD — use config machine commands instead",
+      "destructive": false,
+      "idempotent": false,
+      "timeout": "write",
+      "timeoutMs": 300000,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": "name",
-      "repoOption": null
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -4441,6 +3829,7 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": false,
@@ -4448,8 +3837,11 @@ export const CLI_CONTRACT: CliContract = {
       "timeoutMs": 300000,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": "name",
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -4486,11 +3878,364 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Team name"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": "name",
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "infra",
+        "cert",
+        "clear"
+      ],
+      "pathKey": "machine infra cert clear",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "config",
+      "descriptionKey": "commands.machine.infra.cert.clear.description",
+      "label": "Remove the certificate cache",
+      "options": [],
+      "positionals": [],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Destroys cached TLS key material. Irreversible, and it is key material.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "infra",
+        "cert",
+        "pull"
+      ],
+      "pathKey": "machine infra cert pull",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.machine.infra.cert.pull.description",
+      "label": "Download and cache TLS certificates from a machine",
+      "options": [
+        {
+          "flags": "--no-prune",
+          "long": "no-prune",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.infra.cert.pull.optionNoPrune",
+          "label": "Skip pruning stale network-ID certificates"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "machine",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Moves TLS key material into the local cert cache. Key material is not agent surface.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Its effect is writing the machine's acme.json into the caller's local config; a remote executor would write it into its own. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "machine",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "infra",
+        "cert",
+        "push"
+      ],
+      "pathKey": "machine infra cert push",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.machine.infra.cert.push.description",
+      "label": "Upload cached TLS certificates to a machine",
+      "options": [
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "machine",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Moves TLS key material onto the machine. Key material is not agent surface.",
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "machine",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "infra",
+        "cert",
+        "status"
+      ],
+      "pathKey": "machine infra cert status",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "config",
+      "descriptionKey": "commands.machine.infra.cert.status.description",
+      "label": "Show cached certificate inventory",
+      "options": [],
+      "positionals": [],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "infra",
+        "push"
+      ],
+      "pathKey": "machine infra push",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.machine.infra.push.description",
+      "label": "Push infrastructure config to machine (Traefik proxy, router, Cloudflare DNS). Run 'config infra set <machine>' first",
+      "options": [
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "machine",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Applies the infra block to the machine: provisions cloud resources, public DNS and TLS. It spends real money and changes what the world can reach.",
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "machine",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "infra",
+        "set"
+      ],
+      "pathKey": "machine infra set",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "config",
+      "descriptionKey": "commands.machine.infra.set.description",
+      "label": "Set infrastructure configuration for a machine (machine-specific: IPs, domain, ports; shared: cert email, CF DNS token)",
+      "options": [
+        {
+          "flags": "--public-ipv4 <ip>",
+          "long": "public-ipv4",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.infra.set.optionPublicIPv4",
+          "label": "Public IPv4 address (per-machine)"
+        },
+        {
+          "flags": "--public-ipv6 <ip>",
+          "long": "public-ipv6",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.infra.set.optionPublicIPv6",
+          "label": "Public IPv6 address (per-machine)"
+        },
+        {
+          "flags": "--base-domain <domain>",
+          "long": "base-domain",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.infra.set.optionBaseDomain",
+          "label": "Base domain for applications (per-machine)"
+        },
+        {
+          "flags": "--cert-email <email>",
+          "long": "cert-email",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.infra.set.optionCertEmail",
+          "label": "Email for TLS certificate notifications (shared across machines)"
+        },
+        {
+          "flags": "--cf-dns-token <token>",
+          "long": "cf-dns-token",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.infra.set.optionCfDnsToken",
+          "label": "Cloudflare DNS API token for ACME DNS-01 challenge (shared across machines)"
+        },
+        {
+          "flags": "--tcp-ports <ports>",
+          "long": "tcp-ports",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.infra.set.optionTcpPorts",
+          "label": "TCP ports to forward (comma-separated, e.g., 25,143,465)"
+        },
+        {
+          "flags": "--udp-ports <ports>",
+          "long": "udp-ports",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.infra.set.optionUdpPorts",
+          "label": "UDP ports to forward (comma-separated, e.g., 53)"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "machine",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Sets the infra block that `machine infra push` then acts on, which provisions cloud resources and spends real money. Arming and firing are both operator decisions.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "machine",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "infra",
+        "show"
+      ],
+      "pathKey": "machine infra show",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "config",
+      "descriptionKey": "commands.machine.infra.show.description",
+      "label": "Show infrastructure configuration for a machine",
+      "options": [],
+      "positionals": [
+        {
+          "name": "machine",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "machine",
+      "repoPositional": null
     },
     {
       "path": [
@@ -4506,17 +4251,6 @@ export const CLI_CONTRACT: CliContract = {
       "label": "List machines",
       "options": [
         {
-          "flags": "-t, --team <name>",
-          "long": "team",
-          "short": "t",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.team",
-          "label": "Team name"
-        },
-        {
           "flags": "--search <text>",
           "long": "search",
           "valueTaking": true,
@@ -4524,7 +4258,7 @@ export const CLI_CONTRACT: CliContract = {
           "mandatory": false,
           "defaultValue": null,
           "descriptionKey": "options.searchInField",
-          "label": "Search in machineName"
+          "label": "Search in name"
         },
         {
           "flags": "--sort <field>",
@@ -4547,6 +4281,7 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Sort in descending order"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "destructive": false,
       "idempotent": true,
@@ -4555,8 +4290,287 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "provider",
+        "add"
+      ],
+      "pathKey": "machine provider add",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "config",
+      "descriptionKey": "commands.machine.provider.add.description",
+      "label": "Add a cloud provider",
+      "options": [
+        {
+          "flags": "--provider <source>",
+          "long": "provider",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.provider.add.optionProvider",
+          "label": "Known provider source (e.g., linode/linode, hetznercloud/hcloud)"
+        },
+        {
+          "flags": "--source <source>",
+          "long": "source",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.provider.add.optionSource",
+          "label": "Custom OpenTofu provider source (e.g., vultr/vultr)"
+        },
+        {
+          "flags": "--token <token>",
+          "long": "token",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.provider.add.optionToken",
+          "label": "API token for the cloud provider"
+        },
+        {
+          "flags": "--region <region>",
+          "long": "region",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.provider.add.optionRegion",
+          "label": "Default region for new machines"
+        },
+        {
+          "flags": "--type <type>",
+          "long": "type",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.provider.add.optionInstanceType",
+          "label": "Default instance type/size"
+        },
+        {
+          "flags": "--image <image>",
+          "long": "image",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.provider.add.optionImage",
+          "label": "Default OS image"
+        },
+        {
+          "flags": "--ssh-user <user>",
+          "long": "ssh-user",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.provider.add.optionSshUser",
+          "label": "SSH username for new VMs (default: root)"
+        },
+        {
+          "flags": "--resource <type>",
+          "long": "resource",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.provider.add.optionResource",
+          "label": "Custom: OpenTofu resource type for VM"
+        },
+        {
+          "flags": "--label-attr <attr>",
+          "long": "label-attr",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.provider.add.optionLabelAttr",
+          "label": "Custom: attribute name for VM label"
+        },
+        {
+          "flags": "--region-attr <attr>",
+          "long": "region-attr",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.provider.add.optionRegionAttr",
+          "label": "Custom: attribute name for region"
+        },
+        {
+          "flags": "--size-attr <attr>",
+          "long": "size-attr",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.provider.add.optionSizeAttr",
+          "label": "Custom: attribute name for instance type"
+        },
+        {
+          "flags": "--image-attr <attr>",
+          "long": "image-attr",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.provider.add.optionImageAttr",
+          "label": "Custom: attribute name for OS image"
+        },
+        {
+          "flags": "--ipv4-output <attr>",
+          "long": "ipv4-output",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.provider.add.optionIpv4Output",
+          "label": "Custom: output attribute for IPv4 address"
+        },
+        {
+          "flags": "--ipv6-output <attr>",
+          "long": "ipv6-output",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.provider.add.optionIpv6Output",
+          "label": "Custom: output attribute for IPv6 address"
+        },
+        {
+          "flags": "--ssh-key-attr <attr>",
+          "long": "ssh-key-attr",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.provider.add.optionSshKeyAttr",
+          "label": "Custom: attribute name for SSH keys"
+        },
+        {
+          "flags": "--ssh-key-format <format>",
+          "long": "ssh-key-format",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.provider.add.optionSshKeyFormat",
+          "label": "Custom: SSH key format (inline_list or resource_id)"
+        },
+        {
+          "flags": "--ssh-key-resource <type>",
+          "long": "ssh-key-resource",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.provider.add.optionSshKeyResource",
+          "label": "Custom: OpenTofu resource type for SSH keys"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "provider",
+        "list"
+      ],
+      "pathKey": "machine provider list",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "config",
+      "descriptionKey": "commands.machine.provider.list.description",
+      "label": "List configured cloud providers",
+      "options": [],
+      "positionals": [],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "provider",
+        "remove"
+      ],
+      "pathKey": "machine provider remove",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "config",
+      "descriptionKey": "commands.machine.provider.remove.description",
+      "label": "Remove a cloud provider configuration",
+      "options": [],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": true,
+      "idempotent": true,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -4662,6 +4676,7 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": false,
@@ -4669,8 +4684,11 @@ export const CLI_CONTRACT: CliContract = {
       "timeoutMs": 300000,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": "name",
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -4766,6 +4784,7 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": true,
@@ -4773,32 +4792,178 @@ export const CLI_CONTRACT: CliContract = {
       "timeoutMs": 300000,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": "name",
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
         "machine",
-        "query"
+        "remove"
       ],
-      "pathKey": "machine query",
+      "pathKey": "machine remove",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "config",
+      "descriptionKey": "commands.machine.remove.description",
+      "label": "Remove a machine from the config. Does not touch the machine itself.",
+      "options": [
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.yes",
+          "label": "Skip confirmation prompt"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": true,
+      "idempotent": false,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "scan-keys"
+      ],
+      "pathKey": "machine scan-keys",
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "experimental": false,
       "plane": "machine",
-      "descriptionKey": "commands.machine.query.description",
-      "label": "Show full machine status (infra, system, repos with name/guid, containers with repository/repository_guid/domain/autoRoute, services with repository/repository_guid)",
-      "options": [
+      "descriptionKey": "commands.machine.scanKeys.description",
+      "label": "Scan SSH host keys for machines in the current config",
+      "options": [],
+      "positionals": [
         {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
+          "name": "name",
+          "kind": "plain",
+          "required": false,
           "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
           "descriptionKey": "options.name",
           "label": "Resource name"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs ssh-keyscan from the caller's network position and stores knownHosts in the caller's local config; a remote executor would scan from its own and keep the result. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "setup"
+      ],
+      "pathKey": "machine setup",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.machine.setup.description",
+      "label": "Install renet and prepare a registered machine for repositories.",
+      "options": [
+        {
+          "flags": "--datastore-path <path>",
+          "long": "datastore-path",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": "/mnt/rediacc",
+          "descriptionKey": "commands.machine.setup.datastoreOption",
+          "label": "Datastore path on remote machine"
         },
+        {
+          "flags": "--datastore-size <size>",
+          "long": "datastore-size",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": "95%",
+          "descriptionKey": "commands.machine.setup.datastoreSizeOption",
+          "label": "Datastore size (e.g., 95%, 100G)"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
+        "status"
+      ],
+      "pathKey": "machine status",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.machine.status.description",
+      "label": "Show a machine's system, repositories, containers, and services.",
+      "options": [
         {
           "flags": "--debug",
           "long": "debug",
@@ -4890,6 +5055,46 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Show BTRFS reflink savings and (informational) image fragmentation per repository"
         },
         {
+          "flags": "--datastores",
+          "long": "datastores",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.queryDatastores",
+          "label": "Show attached datastores (mount, attach, usage)"
+        },
+        {
+          "flags": "--health-check",
+          "long": "health-check",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.status.healthCheck",
+          "label": "Health check mode - exits with code 2 if any unhealthy"
+        },
+        {
+          "flags": "--stability-check",
+          "long": "stability-check",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.status.stabilityCheck",
+          "label": "Stability check mode - exits with code 2 if any failed/restarting"
+        },
+        {
+          "flags": "--search <text>",
+          "long": "search",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.searchRepos",
+          "label": "Filter repositories by name"
+        },
+        {
           "flags": "--sync-certs",
           "long": "sync-certs",
           "valueTaking": false,
@@ -4910,6 +5115,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Exit non-zero (code 2) if any container has crossed the health-drift threshold"
         }
       ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "plain",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": false,
       "idempotent": true,
@@ -4917,163 +5132,11 @@ export const CLI_CONTRACT: CliContract = {
       "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "name",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "machine",
-        "rename"
-      ],
-      "pathKey": "machine rename",
-      "domain": "machine",
-      "group": "INFRASTRUCTURE",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": "commands.machine.rename.description",
-      "label": "Rename a machine",
-      "options": [
-        {
-          "flags": "--current-name <name>",
-          "long": "current-name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.currentName",
-          "label": "Current resource name"
-        },
-        {
-          "flags": "--new-name <name>",
-          "long": "new-name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.newName",
-          "label": "New resource name"
-        },
-        {
-          "flags": "-t, --team <name>",
-          "long": "team",
-          "short": "t",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.team",
-          "label": "Team name"
-        }
-      ],
-      "hasSubcommands": false,
-      "mcpExcludeReason": "Config CRUD — use config machine commands instead",
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": true,
       "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "machine",
-        "repos"
-      ],
-      "pathKey": "machine repos",
-      "domain": "machine",
-      "group": "INFRASTRUCTURE",
-      "experimental": true,
-      "plane": "machine",
-      "descriptionKey": "commands.machine.repos.description",
-      "label": "List deployed repositories on a machine (name, GUID, size, mount status, Docker state, container count, disk usage, modified date, Rediaccfile present). JSON nests containers and services under each repo. Use --search to filter by name or GUID",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "-t, --team <name>",
-          "long": "team",
-          "short": "t",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.team",
-          "label": "Team name"
-        },
-        {
-          "flags": "--search <text>",
-          "long": "search",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.searchRepos",
-          "label": "Filter repositories by name"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "name",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "machine",
-        "services"
-      ],
-      "pathKey": "machine services",
-      "domain": "machine",
-      "group": "INFRASTRUCTURE",
-      "experimental": true,
-      "plane": "machine",
-      "descriptionKey": "commands.machine.services.description",
-      "label": "List rediacc-managed systemd services on a machine (name, state, sub-state, restart count, memory, repository resolved to name with original in repository_guid). Use --stability-check to exit with code 2 if any failed or restarting (for CI/CD)",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "-t, --team <name>",
-          "long": "team",
-          "short": "t",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.team",
-          "label": "Team name"
-        },
-        {
-          "flags": "--stability-check",
-          "long": "stability-check",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.machine.services.stabilityCheck",
-          "label": "Stability check mode - exits with code 2 if any failed/restarting"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "name",
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -5109,12 +5172,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Default command timeout in milliseconds"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -5129,12 +5196,16 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.ops.check.description",
       "label": "Verify virtualization prerequisites",
       "options": [],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -5174,12 +5245,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -5205,12 +5280,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -5271,12 +5350,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "SSH username for VM connection"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -5306,12 +5389,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Virtualization backend (kvm|qemu, auto-detected)"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -5411,57 +5498,161 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
         "repo",
+        "admin",
+        "archive",
+        "list"
+      ],
+      "pathKey": "repo admin archive list",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "experimental": false,
+      "plane": "config",
+      "descriptionKey": "commands.repo.admin.archive.list.description",
+      "label": "List archived repository records.",
+      "options": [],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "repo",
+        "admin",
+        "archive",
+        "purge"
+      ],
+      "pathKey": "repo admin archive purge",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "experimental": false,
+      "plane": "config",
+      "descriptionKey": "commands.repo.admin.archive.purge.description",
+      "label": "Permanently delete archived records.",
+      "options": [
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.yes",
+          "label": "Skip confirmation prompt"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "plain",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "repo",
+        "admin",
+        "archive",
+        "restore"
+      ],
+      "pathKey": "repo admin archive restore",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "experimental": false,
+      "plane": "config",
+      "descriptionKey": "commands.repo.admin.archive.restore.description",
+      "label": "Restore an archived record into the config.",
+      "options": [
+        {
+          "flags": "--new-name <name>",
+          "long": "new-name",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.newName",
+          "label": "New resource name"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "repo",
+        "admin",
         "autostart",
         "disable"
       ],
-      "pathKey": "repo autostart disable",
+      "pathKey": "repo admin autostart disable",
       "domain": "repo",
       "group": "REPOSITORIES",
       "experimental": false,
       "plane": "machine",
-      "descriptionKey": "commands.repo.autostart.disable.description",
+      "descriptionKey": "commands.repo.admin.autostart.disable.description",
       "label": "Disable autostart for a repository (omit name to disable all)",
       "options": [
         {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
           "flags": "-m, --machine <name>",
           "long": "machine",
           "short": "m",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": true,
+          "mandatory": false,
           "defaultValue": null,
           "descriptionKey": "commands.repo.machineOption",
           "label": "Target machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
         },
         {
           "flags": "--debug",
@@ -5484,58 +5675,52 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip restarting the route server after binary update"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "grandGuard": true,
       "forkBlocked": true,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": "machine",
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
         "repo",
+        "admin",
         "autostart",
         "enable"
       ],
-      "pathKey": "repo autostart enable",
+      "pathKey": "repo admin autostart enable",
       "domain": "repo",
       "group": "REPOSITORIES",
       "experimental": false,
       "plane": "machine",
-      "descriptionKey": "commands.repo.autostart.enable.description",
+      "descriptionKey": "commands.repo.admin.autostart.enable.description",
       "label": "Enable autostart for a repository (omit name to enable all)",
       "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
         {
           "flags": "-m, --machine <name>",
           "long": "machine",
           "short": "m",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": true,
+          "mandatory": false,
           "defaultValue": null,
           "descriptionKey": "commands.repo.machineOption",
           "label": "Target machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
         },
         {
           "flags": "--debug",
@@ -5558,26 +5743,40 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip restarting the route server after binary update"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "grandGuard": true,
       "forkBlocked": true,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": "machine",
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
         "repo",
+        "admin",
         "autostart",
         "list"
       ],
-      "pathKey": "repo autostart list",
+      "pathKey": "repo admin autostart list",
       "domain": "repo",
       "group": "REPOSITORIES",
       "experimental": false,
       "plane": "machine",
-      "descriptionKey": "commands.repo.autostart.list.description",
+      "descriptionKey": "commands.repo.admin.autostart.list.description",
       "label": "List repositories with autostart enabled",
       "options": [
         {
@@ -5592,14 +5791,99 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Target machine name"
         },
         {
-          "flags": "--cluster <name>",
-          "long": "cluster",
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        },
+        {
+          "flags": "--skip-router-restart",
+          "long": "skip-router-restart",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.skipRouterRestart",
+          "label": "Skip restarting the route server after binary update"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "repo",
+        "admin",
+        "fsck"
+      ],
+      "pathKey": "repo admin fsck",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.repo.admin.fsck.description",
+      "label": "Validate the CLI config refs (branches, HEAD) against the objects actually present on a machine. Reports dangling refs (a ref pointing at a missing object) and orphan commits (an immutable commit no ref reaches). Read-only.",
+      "options": [
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "descriptionKey": "commands.repo.machineOption",
+          "label": "Target machine name"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "repo",
+        "admin",
+        "ownership"
+      ],
+      "pathKey": "repo admin ownership",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.repo.admin.ownership.description",
+      "label": "Change repository directory ownership UID on the mounted volume (default: 7111). Use when containers need a specific UID to access repo files",
+      "options": [
+        {
+          "flags": "--uid <uid>",
+          "long": "uid",
           "valueTaking": true,
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
+          "descriptionKey": "commands.repo.admin.ownership.uidOption",
+          "label": "Owner UID (default: 7111)"
         },
         {
           "flags": "--debug",
@@ -5622,78 +5906,154 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip restarting the route server after binary update"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
+      "grandGuard": true,
+      "mcpExcludeReason": "Destructive ownership transfer.",
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
         "repo",
-        "backup",
+        "admin",
+        "template",
+        "apply"
+      ],
+      "pathKey": "repo admin template apply",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.repo.admin.template.apply.description",
+      "label": "Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. Rediaccfile lifecycle: up() starts containers (pull images, generate configs here), down() stops. Minimal Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose': 'docker compose' is rejected. ENV VARS: two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. APP_IP), ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REDIACC_NETWORK_ID env vars. eBPF bind rewriting handles IP isolation transparently, so apps can bind to 0.0.0.0 and the kernel rewrites it to the correct loopback IP. Health checks can use localhost. network_mode:host is injected and ports: are ignored. STORAGE: Both ${REDIACC_WORKING_DIR}/... bind mounts and Docker named volumes are safe: Docker data-root is inside the encrypted LUKS mount. RESTART POLICY: Restart policies are safe: renet auto-strips them for CRIU compatibility and the watchdog handles recovery. Compose: do NOT add network_mode or rediacc.* labels (renet injects them). Multi-project: place each sub-project in its own subdirectory with its own Rediaccfile: renet auto-discovers and runs them in order. HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain}. Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 / rediacc.udp_ports=53",
+      "options": [
+        {
+          "flags": "--template <name>",
+          "long": "template",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "descriptionKey": "commands.repo.admin.template.apply.templateOption",
+          "label": "Template to apply"
+        },
+        {
+          "flags": "--file <path>",
+          "long": "file",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.repo.admin.template.fileOption",
+          "label": "Path to custom template JSON file ({\"version\":\"2\",\"files\":{\"Rediaccfile\":\"...\",\"docker-compose.yml\":\"...\"}}): overrides the built-in template name"
+        },
+        {
+          "flags": "--grand <name>",
+          "long": "grand",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.repo.up.grandOption",
+          "label": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        },
+        {
+          "flags": "--skip-router-restart",
+          "long": "skip-router-restart",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.skipRouterRestart",
+          "label": "Skip restarting the route server after binary update"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "grandGuard": true,
+      "mcpExcludeReason": "Requires file upload; use CLI directly.",
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "repo",
+        "admin",
+        "template",
         "list"
       ],
-      "pathKey": "repo backup list",
+      "pathKey": "repo admin template list",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "experimental": false,
+      "plane": "other",
+      "descriptionKey": "commands.repo.admin.template.list.description",
+      "label": "List all embedded deployment templates shipped with the CLI",
+      "options": [],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "repo",
+        "admin",
+        "validate"
+      ],
+      "pathKey": "repo admin validate",
       "domain": "repo",
       "group": "REPOSITORIES",
       "experimental": false,
       "plane": "machine",
-      "descriptionKey": "commands.repo.backup.list.description",
-      "label": "List available backups on a remote (machine or storage). Without --path, hot/ and cold/ subfolders are merged into a single table with a Mode column.",
+      "descriptionKey": "commands.repo.admin.validate.description",
+      "label": "Validate repository integrity (LUKS container, filesystem consistency, configuration). Use after unexpected shutdowns or to verify backup health",
       "options": [
-        {
-          "flags": "--from <remote>",
-          "long": "from",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.pull.optionFrom",
-          "label": "Source machine or storage name (auto-detected from config)"
-        },
-        {
-          "flags": "--from-machine <machine>",
-          "long": "from-machine",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": null,
-          "label": ""
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "--path <subdir>",
-          "long": "path",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.backup.list.optionPath",
-          "label": "Subdirectory within the storage root. When omitted, both hot/ and cold/ are listed and merged."
-        },
-        {
-          "flags": "-w, --watch",
-          "long": "watch",
-          "short": "w",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.watch",
-          "label": "Watch for changes"
-        },
         {
           "flags": "--debug",
           "long": "debug",
@@ -5715,83 +6075,26 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip restarting the route server after binary update"
         }
       ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "repo",
-        "backup",
-        "schedule"
-      ],
-      "pathKey": "repo backup schedule",
-      "domain": "repo",
-      "group": "REPOSITORIES",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.backup.schedule.description",
-      "label": "Deploy backup schedules to remote machines",
-      "options": [
+      "positionals": [
         {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
           "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "--dry-run",
-          "long": "dry-run",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.machine.backup.schedule.optionDryRun",
-          "label": "Preview generated units without deploying"
-        },
-        {
-          "flags": "--force",
-          "long": "force",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.machine.backup.schedule.optionForce",
-          "label": "Proceed even if a backup is currently running (new unit applies on next tick; running invocation keeps its old unit)"
-        },
-        {
-          "flags": "--reset-failed",
-          "long": "reset-failed",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.machine.backup.schedule.optionResetFailed",
-          "label": "Clear failed state on touched services after a successful deploy (off by default, preserves failure signal)"
-        },
-        {
-          "flags": "--debug",
-          "long": "debug",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.debug",
-          "label": "Enable debug output"
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
         }
       ],
       "hasSubcommands": false,
+      "grandGuard": true,
+      "mcpExcludeReason": "Use repo status for MCP.",
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -5815,16 +6118,16 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "descriptionKey": "commands.repo.branch.branchOption",
           "label": "Name of the new branch"
-        },
+        }
+      ],
+      "positionals": [
         {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
           "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.branch.workingOption",
-          "label": "Working fork whose current commit the branch points at"
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
         }
       ],
       "hasSubcommands": false,
@@ -5833,48 +6136,32 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
         "repo",
-        "canary"
+        "canary",
+        "create"
       ],
-      "pathKey": "repo canary",
+      "pathKey": "repo canary create",
       "domain": "repo",
       "group": "REPOSITORIES",
       "experimental": false,
       "plane": "machine",
-      "descriptionKey": "commands.repo.canary.description",
-      "label": "Run a NEW image next to the stable one and split live traffic between them by percentage (release ladder rung 2). Creates one canary Deployment + Service on the SAME live data (no fork: canary users on forked data would read stale data and write into a doomed copy) and tells the Rediacc proxy to route the given percent of the stable hostname's traffic to it. Weight 0 keeps the canary dark; weight 100 is the blue/green flip. Before every canary change, an automatic group snapshot of the cluster's datastores is taken (release ladder rung 0) as the universal undo. Schema compatibility between the two versions (expand-contract) is the application's responsibility. For schema-BREAKING releases, use blue/green instead: fork the repo (instant, includes data), point the fork's Service here with weight 100, and roll back by restarting the untouched parent; writes made after the flip exist only in the new copy, so the rollback window is a policy decision.",
+      "descriptionKey": "commands.repo.canary.create.description",
+      "label": "Run a NEW image next to the stable one and send it a percentage of live traffic. The canary shares the repository's live data (no fork), so schema compatibility between the two versions is the application's responsibility. A group snapshot of the cluster's datastores is taken first, as the undo.",
       "options": [
-        {
-          "flags": "--name <repo>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.canary.nameOption",
-          "label": "Repository the canary belongs to (its namespace)"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
         {
           "flags": "--image <image>",
           "long": "image",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": false,
+          "mandatory": true,
           "defaultValue": null,
           "descriptionKey": "commands.repo.canary.imageOption",
           "label": "New image the canary Deployment runs (against shared live data)"
@@ -5884,7 +6171,7 @@ export const CLI_CONTRACT: CliContract = {
           "long": "port",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": false,
+          "mandatory": true,
           "defaultValue": null,
           "descriptionKey": "commands.repo.canary.portOption",
           "label": "Port the app serves on (must match the stable Service)"
@@ -5894,7 +6181,7 @@ export const CLI_CONTRACT: CliContract = {
           "long": "weight",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": false,
+          "mandatory": true,
           "defaultValue": null,
           "descriptionKey": "commands.repo.canary.weightOption",
           "label": "Percent of traffic routed to the canary (integer 0-100; 0 = dark, 100 = full flip)"
@@ -5930,12 +6217,26 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
-      "hasSubcommands": true,
-      "mcpExcludeReason": "Applies a canary overlay + traffic split — pending live validation",
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "grandGuard": true,
+      "mcpExcludeReason": "Runs a new image against the primary's SHARED LIVE DATA. The replicate probe validates a different mechanism and says nothing about this one.",
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": null,
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -5952,16 +6253,6 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Remove a canary's Deployment and Service (label-scoped); the stable Service serves 100% again. Release-undo snapshots are retained; prune them with the datastore snapshot commands.",
       "options": [
         {
-          "flags": "--name <set>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.canary.remove.nameOption",
-          "label": "Canary set to remove"
-        },
-        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,
@@ -5972,12 +6263,26 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Tears down the canary overlay — pending live validation",
+      "grandGuard": true,
+      "mcpExcludeReason": "Tears down a canary that is taking live traffic. Excluded with the family it belongs to.",
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": null,
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -5992,25 +6297,27 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.repo.canary.status.description",
       "label": "Show managed canary sets: weight, images, stable service, and the latest release-undo snapshot.",
-      "options": [
+      "options": [],
+      "positionals": [
         {
-          "flags": "--name <set>",
-          "long": "name",
-          "valueTaking": true,
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
           "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.canary.status.nameOption",
-          "label": "Show one canary set by name"
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
         }
       ],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Canary-set state view — pending live validation of the canary family",
+      "mcpExcludeReason": "Excluded with the rest of the canary family: exposing only the read half invites an agent to drive a release it cannot safely complete.",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -6026,16 +6333,6 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.repo.canary.weight.description",
       "label": "Change the percent of traffic routed to a canary. Takes a fresh release-undo group snapshot first, then re-applies the overlay; the proxy picks up the new split on its refresh tick. Weight 100 sends all traffic to the new version (the blue/green flip).",
       "options": [
-        {
-          "flags": "--name <set>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.canary.weight.nameOption",
-          "label": "Canary set to adjust"
-        },
         {
           "flags": "--weight <percent>",
           "long": "weight",
@@ -6057,12 +6354,26 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Shifts live traffic between versions — pending live validation",
+      "grandGuard": true,
+      "mcpExcludeReason": "Shifts REAL PRODUCTION TRAFFIC between versions. A release decision belongs to the operator, and the weighted split has never been observed working on a live machine (bug #42 made it inert until today).",
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": null,
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -6077,37 +6388,6 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.repo.cat.description",
       "label": "Read a bounded window of a file in a repository to stdout (diagnostics go to stderr).",
       "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
         {
           "flags": "--remote-file <path>",
           "long": "remote-file",
@@ -6199,11 +6479,29 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip restarting the route server after binary update"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "repoArg": "ref",
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": "name"
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -6219,16 +6517,6 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Reflink-clone an immutable commit (or a branch tip) into a fresh writable working fork and point HEAD at it. Near-instant and constant-time (BTRFS reflink).",
       "options": [
         {
-          "flags": "--ref <commit|branch>",
-          "long": "ref",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.checkout.refOption",
-          "label": "Commit GUID (or branch name with --from) to check out"
-        },
-        {
           "flags": "--tag <name>",
           "long": "tag",
           "valueTaking": true,
@@ -6239,27 +6527,6 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Name for the new writable working fork"
         },
         {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
-        {
           "flags": "--from <workingFork>",
           "long": "from",
           "valueTaking": true,
@@ -6267,7 +6534,7 @@ export const CLI_CONTRACT: CliContract = {
           "mandatory": false,
           "defaultValue": null,
           "descriptionKey": "commands.repo.checkout.fromOption",
-          "label": "Resolve --ref as a branch name on this working fork"
+          "label": "Resolve the positional <commit-or-branch-ref> as a branch name on this working fork"
         },
         {
           "flags": "--debug",
@@ -6290,16 +6557,30 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip restarting the route server after binary update"
         }
       ],
+      "positionals": [
+        {
+          "name": "commit-or-branch-ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": false,
       "timeout": "write",
       "timeoutMs": 300000,
+      "repoArg": "commit-or-branch-ref",
       "grandGuard": true,
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "commit-or-branch-ref"
     },
     {
       "path": [
@@ -6314,16 +6595,6 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.repo.commit.description",
       "label": "Freeze the current state of a mounted working fork into a new immutable commit (git-like). The commit records its message, author, timestamp, and parent in-volume (so it travels on push) and is marked read-only — it refuses to mount. The working fork continues unchanged, like git leaving the working tree intact. Check a commit out with 'rdc repo checkout' to get a writable copy.",
       "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.commit.nameOption",
-          "label": "Working fork to commit (must be mounted)"
-        },
         {
           "flags": "--message <msg>",
           "long": "message",
@@ -6345,27 +6616,6 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Commit author"
         },
         {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
-        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,
@@ -6376,17 +6626,30 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": false,
       "timeout": "write",
       "timeoutMs": 300000,
-      "repoArg": "name",
+      "repoArg": "ref",
       "grandGuard": true,
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": "name"
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -6399,18 +6662,8 @@ export const CLI_CONTRACT: CliContract = {
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.repo.create.description",
-      "label": "Create a new encrypted repository",
+      "label": "Create a new repository. State its home once: a machine or a datastore.",
       "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
         {
           "flags": "-m, --machine <name>",
           "long": "machine",
@@ -6423,21 +6676,21 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Target machine name"
         },
         {
-          "flags": "--cluster <name>",
-          "long": "cluster",
+          "flags": "--datastore <name>",
+          "long": "datastore",
           "valueTaking": true,
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
+          "descriptionKey": "commands.repo.create.datastoreOption",
+          "label": "Named datastore that holds the repo (docker tiering, or the cluster form)"
         },
         {
           "flags": "--size <size>",
           "long": "size",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": true,
+          "mandatory": false,
           "defaultValue": null,
           "descriptionKey": "commands.repo.create.sizeOption",
           "label": "Repository size (e.g., 10G, 100G, 1T)"
@@ -6473,6 +6726,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip restarting the route server after binary update"
         }
       ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": false,
@@ -6480,8 +6743,11 @@ export const CLI_CONTRACT: CliContract = {
       "timeoutMs": 300000,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": "machine",
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -6494,39 +6760,8 @@ export const CLI_CONTRACT: CliContract = {
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.repo.delete.description",
-      "label": "Delete a repository (destroys containers, volumes, and encrypted image). Config entry is preserved. Use --archive-config to move credentials to deletedRepositories for recovery via 'config restore-archived'. Targets <name>:<tag>; a bare --name resolves to the grand <name>:latest and is refused when multiple repos share the base name — pass :tag explicitly to target a fork.",
+      "label": "Delete a repository and its data. Config entry is preserved; use --archive-config to move credentials to deletedRepositories for recovery via 'repo admin archive restore'. Takes a positional <ref>; a bare name resolves to the grand line and is refused when several repos share the base name, so pass name:tag to target a fork.",
       "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
         {
           "flags": "--archive-config",
           "long": "archive-config",
@@ -6579,17 +6814,30 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Show what would be done without making changes"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": false,
       "timeout": "write",
       "timeoutMs": 300000,
-      "repoArg": "name",
+      "repoArg": "ref",
       "grandGuard": true,
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": "name"
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -6605,17 +6853,7 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Git-style file-level diff between two copy-on-write forked repositories. Reports Added, Modified, Deleted, and Renamed files. Diffs the repository given by --name (the target / new side) against its parent, resolved from local config, or against an explicit --base repository (the base / old side). Metadata-only and size-independent: it diffs the encrypted LUKS images at the block level without decrypting them, so a 1 GB repo and a 100 GB repo diff in the same milliseconds.",
       "options": [
         {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.diff.nameOption",
-          "label": "Repository to inspect (the target / new side)"
-        },
-        {
-          "flags": "--base <name>",
+          "flags": "--base <ref>",
           "long": "base",
           "valueTaking": true,
           "variadic": false,
@@ -6623,27 +6861,6 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "descriptionKey": "commands.repo.diff.baseOption",
           "label": "Repository to diff against (the base / old side); defaults to the parent of --name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
         },
         {
           "flags": "--name-only",
@@ -6676,16 +6893,6 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Show a unified text diff for a single file (requires a file path)"
         },
         {
-          "flags": "--json",
-          "long": "json",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.diff.jsonOption",
-          "label": "Output the structured diff result in the JSON envelope"
-        },
-        {
           "flags": "--fast",
           "long": "fast",
           "valueTaking": false,
@@ -6716,16 +6923,29 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip restarting the route server after binary update"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": false,
       "idempotent": true,
       "timeout": "read",
       "timeoutMs": 120000,
-      "repoArg": "name",
+      "repoArg": "ref",
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": "name"
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -6738,39 +6958,8 @@ export const CLI_CONTRACT: CliContract = {
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.repo.down.description",
-      "label": "Stop repository Docker containers (runs Rediaccfile down via renet compose). Does NOT unmount the encrypted volume -- the repo stays mounted and can be restarted with 'repo up'. Use --unmount to also close the LUKS container after stopping. Use --checkpoint to save CRIU process state before stopping (next 'repo up' auto-restores). Omit name to stop all repos on the machine",
+      "label": "Stop repository Docker containers (runs Rediaccfile down via renet compose). The machine is derived from the ref placement. Does NOT unmount the encrypted volume -- the repo stays mounted and can be restarted with 'repo up'. Use --unmount to also close the LUKS container after stopping (folds the retired 'repo unmount'). Use --checkpoint to save CRIU process state before stopping (next 'repo up' auto-restores). Use --all --machine <m> to stop every repository on a machine.",
       "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
         {
           "flags": "--unmount",
           "long": "unmount",
@@ -6779,7 +6968,7 @@ export const CLI_CONTRACT: CliContract = {
           "mandatory": false,
           "defaultValue": null,
           "descriptionKey": "commands.repo.down.unmountOption",
-          "label": "Also unmount (close LUKS container) after stopping. Equivalent to 'repo down' then 'repo unmount'. Required before 'repo resize' or to fully secure the volume"
+          "label": "Also unmount (close the LUKS container) after stopping. Required before 'repo resize' or to fully secure the volume"
         },
         {
           "flags": "--checkpoint",
@@ -6790,6 +6979,47 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "descriptionKey": "commands.repo.down.checkpointOption",
           "label": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')"
+        },
+        {
+          "flags": "--all",
+          "long": "all",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.repo.down.allOption",
+          "label": "Stop every repository whose home is --machine (batch form)"
+        },
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.repo.batchMachineOption",
+          "label": "With --all: the machine whose repositories to run the batch against"
+        },
+        {
+          "flags": "--parallel",
+          "long": "parallel",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.repo.upAll.parallelOption",
+          "label": "Start repositories concurrently"
+        },
+        {
+          "flags": "--concurrency <n>",
+          "long": "concurrency",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": "3",
+          "descriptionKey": "commands.repo.upAll.concurrencyOption",
+          "label": "Max concurrent repositories (default: 3)"
         },
         {
           "flags": "-y, --yes",
@@ -6833,17 +7063,120 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Show what would be done without making changes"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": true,
       "timeout": "write",
       "timeoutMs": 300000,
-      "repoArg": "name",
+      "repoArg": "ref",
       "grandGuard": true,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": "machine",
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "repo",
+        "exec"
+      ],
+      "pathKey": "repo exec",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.repo.exec.description",
+      "label": "Run a command inside a repository container. The command's own exit code is passed straight through, so this works in scripts and conditionals. Docker repositories run it through the repository's Docker daemon; kubernetes repositories run it in the repository's namespace.",
+      "options": [
+        {
+          "flags": "-c, --container <name>",
+          "long": "container",
+          "short": "c",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.repo.exec.containerOption",
+          "label": "Container to run in (only needed when the repository runs more than one)"
+        },
+        {
+          "flags": "-i, --interactive",
+          "long": "interactive",
+          "short": "i",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.repo.exec.interactiveOption",
+          "label": "Allocate a terminal (for a command that expects one)"
+        },
+        {
+          "flags": "-u, --user <user>",
+          "long": "user",
+          "short": "u",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.repo.exec.userOption",
+          "label": "User to run the command as"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        {
+          "name": "cmd",
+          "kind": "plain",
+          "required": true,
+          "variadic": true,
+          "descriptionKey": "commands.repo.exec.cmdArgument",
+          "label": "Command to run, after --"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": true,
+      "idempotent": false,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "repoArg": "ref",
+      "grandGuard": true,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -6858,27 +7191,6 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.repo.expand.description",
       "label": "Expand a mounted repository online (zero downtime, grow-only). Grows the LUKS container and filesystem while containers keep running. Cannot shrink -- use 'repo resize' for that (requires unmount)",
       "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
         {
           "flags": "--size <size>",
           "long": "size",
@@ -6910,14 +7222,27 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip restarting the route server after binary update"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "grandGuard": true,
       "forkBlocked": true,
       "mcpExcludeReason": "Storage expansion — destructive infrastructure operation, use CLI directly",
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": "name"
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -6930,39 +7255,8 @@ export const CLI_CONTRACT: CliContract = {
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.repo.fork.description",
-      "label": "Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork --parent <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target>. WARNING: Do NOT use 'backup push' alone for forking, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically.",
+      "label": "Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: fork locally first, then transfer: (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine> --up. WARNING: do NOT use \"repo push\" alone to fork, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name, so each fork gets a unique domain automatically.",
       "options": [
-        {
-          "flags": "--parent <name>",
-          "long": "parent",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
         {
           "flags": "--tag <name>",
           "long": "tag",
@@ -6972,26 +7266,6 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "descriptionKey": "commands.repo.fork.tagOption",
           "label": "Tag for the fork (creates name:tag)"
-        },
-        {
-          "flags": "--to-cluster <name>",
-          "long": "to-cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.fork.toClusterOption",
-          "label": "Fork into another existing Kubernetes cluster (cross-cluster namespace fork)"
-        },
-        {
-          "flags": "--provider <name>",
-          "long": "provider",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.fork.providerOption",
-          "label": "Provision a new cluster (mirroring the source's pool shape) and fork into it"
         },
         {
           "flags": "--checkpoint",
@@ -7024,8 +7298,8 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Mount and start services after forking (fork + mount + up in one command)"
         },
         {
-          "flags": "--detach",
-          "long": "detach",
+          "flags": "--no-wait",
+          "long": "no-wait",
           "valueTaking": false,
           "variadic": false,
           "mandatory": false,
@@ -7054,50 +7328,29 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip restarting the route server after binary update"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": false,
       "timeout": "write",
       "timeoutMs": 300000,
+      "repoArg": "ref",
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "repo",
-        "fsck"
-      ],
-      "pathKey": "repo fsck",
-      "domain": "repo",
-      "group": "REPOSITORIES",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.repo.fsck.description",
-      "label": "Validate the CLI config refs (branches, HEAD) against the objects actually present on a machine. Reports dangling refs (a ref pointing at a missing object) and orphan commits (an immutable commit no ref reaches). Read-only.",
-      "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        }
-      ],
-      "hasSubcommands": false,
-      "destructive": false,
-      "idempotent": true,
-      "timeout": "read",
-      "timeoutMs": 120000,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -7144,6 +7397,7 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": false,
@@ -7151,8 +7405,11 @@ export const CLI_CONTRACT: CliContract = {
       "timeoutMs": 300000,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": "machine",
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -7179,14 +7436,14 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Target machine name"
         },
         {
-          "flags": "--cluster <name>",
-          "long": "cluster",
+          "flags": "--datastore <name>",
+          "long": "datastore",
           "valueTaking": true,
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
+          "descriptionKey": "commands.repo.list.datastoreOption",
+          "label": "List the repositories in this datastore (resolved to whichever machine currently holds it)"
         },
         {
           "flags": "--debug",
@@ -7209,6 +7466,7 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip restarting the route server after binary update"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "destructive": false,
       "idempotent": true,
@@ -7216,8 +7474,11 @@ export const CLI_CONTRACT: CliContract = {
       "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": "machine",
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -7233,45 +7494,94 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Print the commit history reachable from a working fork's current commit (or a commit reference), walking the parent chain recorded by 'rdc repo commit'. Reads the out-of-volume mirror, so no commit is unlocked.",
       "options": [
         {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.log.nameOption",
-          "label": "Working fork or commit to start the history walk from"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
-        {
-          "flags": "--json",
-          "long": "json",
+          "flags": "--debug",
+          "long": "debug",
           "valueTaking": false,
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
-          "descriptionKey": "commands.repo.log.jsonOption",
-          "label": "Output the commit history as JSON"
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "repoArg": "ref",
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "repo",
+        "logs"
+      ],
+      "pathKey": "repo logs",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.repo.logs.description",
+      "label": "Show application logs from a repository's containers. Docker repositories read from the repository's own Docker daemon; kubernetes repositories read the pod logs in the repository's namespace. If the repository runs more than one container, name the one you want with --container.",
+      "options": [
+        {
+          "flags": "-c, --container <name>",
+          "long": "container",
+          "short": "c",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.repo.logs.containerOption",
+          "label": "Container to read (only needed when the repository runs more than one)"
+        },
+        {
+          "flags": "-f, --follow",
+          "long": "follow",
+          "short": "f",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.repo.logs.followOption",
+          "label": "Keep streaming new lines until interrupted"
+        },
+        {
+          "flags": "--lines <n>",
+          "long": "lines",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": "100",
+          "descriptionKey": "commands.repo.logs.linesOption",
+          "label": "How many lines of history to show (default: 100)"
+        },
+        {
+          "flags": "--timestamps",
+          "long": "timestamps",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.repo.logs.timestampsOption",
+          "label": "Prefix each line with its timestamp"
         },
         {
           "flags": "--debug",
@@ -7284,16 +7594,29 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": false,
       "idempotent": true,
       "timeout": "read",
       "timeoutMs": 120000,
-      "repoArg": "name",
+      "repoArg": "ref",
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": "name"
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -7309,16 +7632,6 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Merge a source commit or fork into a target working fork. The live target is never mutated in place: the result is built in a reflink clone and atomically swapped in. A mounted or running target is refused unless --force, which cleanly quiesces it first. Without --resolve it is a whole-image take-theirs (the target becomes the source); with --resolve ours|theirs it is a per-file three-way merge against the common ancestor, taking each side's unique changes and resolving two-sided conflicts per the flag.",
       "options": [
         {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.merge.nameOption",
-          "label": "Target working fork to merge into"
-        },
-        {
           "flags": "--from <source>",
           "long": "from",
           "valueTaking": true,
@@ -7327,27 +7640,6 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "descriptionKey": "commands.repo.merge.fromOption",
           "label": "Source commit or fork to merge from"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
         },
         {
           "flags": "--force",
@@ -7394,17 +7686,30 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": false,
       "timeout": "write",
       "timeoutMs": 300000,
-      "repoArg": "name",
+      "repoArg": "ref",
       "grandGuard": true,
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": "name"
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -7420,34 +7725,14 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Live-migrate a repository from one machine to another with minimal downtime. Two-phase rsync: bulk transfer while running, then brief stop for delta sync. Supports CRIU checkpoint for process memory migration and auto-provisioning of target machines",
       "options": [
         {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "--from <machine>",
-          "long": "from",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.migrate.optionFrom",
-          "label": "Source machine name"
-        },
-        {
-          "flags": "--to <machine>",
+          "flags": "--to <place>",
           "long": "to",
           "valueTaking": true,
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
+          "descriptionKey": "commands.repo.migrate.optionTo",
+          "label": "Destination machine or cluster"
         },
         {
           "flags": "--provision <provider>",
@@ -7520,207 +7805,30 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
+      "destructive": true,
+      "idempotent": false,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "repoArg": "ref",
+      "grandGuard": true,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": null,
-      "repoOption": "name"
-    },
-    {
-      "path": [
-        "repo",
-        "mount"
-      ],
-      "pathKey": "repo mount",
-      "domain": "repo",
-      "group": "REPOSITORIES",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.repo.mount.description",
-      "label": "Mount a repository (decrypt and open the LUKS container, making the filesystem accessible). Needed on first deploy, after 'repo push' to a new machine, or after 'repo unmount'. Can also be done via 'repo up'. The volume stays mounted until explicitly unmounted. Omit name to mount all repos on the machine",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
-        {
-          "flags": "--checkpoint",
-          "long": "checkpoint",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.mount.checkpointOption",
-          "label": "Restore CRIU container checkpoint after mount (resume processes from saved memory state). Used after 'repo push --checkpoint' for live migration"
-        },
-        {
-          "flags": "--no-docker",
-          "long": "no-docker",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.mount.noDockerOption",
-          "label": "Skip starting Docker daemon after mount"
-        },
-        {
-          "flags": "--parallel",
-          "long": "parallel",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.upAll.parallelOption",
-          "label": "Start repositories concurrently"
-        },
-        {
-          "flags": "--concurrency <n>",
-          "long": "concurrency",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": "3",
-          "descriptionKey": "commands.repo.upAll.concurrencyOption",
-          "label": "Max concurrent repositories (default: 3)"
-        },
-        {
-          "flags": "-y, --yes",
-          "long": "yes",
-          "short": "y",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.yesOption",
-          "label": "Skip confirmation for batch operations"
-        },
-        {
-          "flags": "--debug",
-          "long": "debug",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.debug",
-          "label": "Enable debug output"
-        },
-        {
-          "flags": "--skip-router-restart",
-          "long": "skip-router-restart",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.skipRouterRestart",
-          "label": "Skip restarting the route server after binary update"
-        }
-      ],
-      "hasSubcommands": false,
-      "grandGuard": true,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": "name"
-    },
-    {
-      "path": [
-        "repo",
-        "ownership"
-      ],
-      "pathKey": "repo ownership",
-      "domain": "repo",
-      "group": "REPOSITORIES",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.repo.ownership.description",
-      "label": "Change repository directory ownership UID on the mounted volume (default: 7111). Use when containers need a specific UID to access repo files",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
-          "flags": "--uid <uid>",
-          "long": "uid",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.ownership.uidOption",
-          "label": "Owner UID (default: 7111)"
-        },
-        {
-          "flags": "--debug",
-          "long": "debug",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.debug",
-          "label": "Enable debug output"
-        },
-        {
-          "flags": "--skip-router-restart",
-          "long": "skip-router-restart",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.skipRouterRestart",
-          "label": "Skip restarting the route server after binary update"
-        }
-      ],
-      "hasSubcommands": false,
-      "grandGuard": true,
-      "mcpExcludeReason": "Ownership transfer — destructive operation, use CLI directly",
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -7734,7 +7842,7 @@ export const CLI_CONTRACT: CliContract = {
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.repo.policy.get.description",
-      "label": "Show the stored machine default, the repository override (with --name), and the effective merged policy the maintainer acts on",
+      "label": "Show the stored machine default, the repository override (with a ref), and the effective merged policy the maintainer acts on",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -7742,20 +7850,10 @@ export const CLI_CONTRACT: CliContract = {
           "short": "m",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": true,
+          "mandatory": false,
           "defaultValue": null,
           "descriptionKey": "commands.repo.machineOption",
           "label": "Target machine name"
-        },
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.policy.nameOption",
-          "label": "Repository (default: machine-wide policy)"
         },
         {
           "flags": "--debug",
@@ -7768,11 +7866,24 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": "machine",
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -7788,27 +7899,6 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.repo.policy.set.description",
       "label": "Set size policy fields. Only the flags you pass are changed; other stored fields keep their values. Enabling auto-grow requires --max-quota: the ceiling is your explicit consent to over-provision the pool",
       "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.policy.nameOption",
-          "label": "Repository (default: machine-wide policy)"
-        },
         {
           "flags": "--auto-grow <bool>",
           "long": "auto-grow",
@@ -7878,6 +7968,17 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Minimum hours between automatic trims (default 24)"
         },
         {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.repo.machineOption",
+          "label": "Target machine name"
+        },
+        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,
@@ -7888,11 +7989,90 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": "machine",
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "repo",
+        "promote"
+      ],
+      "pathKey": "repo promote",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "experimental": false,
+      "plane": "machine",
+      "descriptionKey": "commands.repo.promote.description",
+      "label": "Make a validated fork the production repository under its parent name. The parent keeps its identity (GUID, networkId, domains, autostart, backup chain) and receives the fork's data; the old production data is preserved as a backup fork. Use it to test an upgrade on a fork, verify it, then promote. Pass an explicit <name>:<tag> for the fork; a bare ref resolves to the parent and is rejected with \"not a fork\". Promote never fetches bytes: use 'repo push' or 'backup restore' for that.",
+      "options": [
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.yes",
+          "label": "Skip confirmation prompt"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        },
+        {
+          "flags": "--skip-router-restart",
+          "long": "skip-router-restart",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.skipRouterRestart",
+          "label": "Skip restarting the route server after binary update"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "fork-ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "grandGuard": true,
+      "mcpExcludeReason": "Production swap; human decision.",
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "fork-ref"
     },
     {
       "path": [
@@ -7907,16 +8087,6 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.repo.pull.description",
       "label": "Pull repository from a remote (machine or storage). Omit name to pull all repos. The source type is auto-detected from config. Use --up to deploy after pull",
       "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
         {
           "flags": "--from <remote>",
           "long": "from",
@@ -7958,27 +8128,6 @@ export const CLI_CONTRACT: CliContract = {
           "label": "After pull, mount and deploy repository on this machine"
         },
         {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
-        {
           "flags": "-w, --watch",
           "long": "watch",
           "short": "w",
@@ -7988,37 +8137,6 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "descriptionKey": "options.watch",
           "label": "Watch for changes"
-        },
-        {
-          "flags": "--parallel",
-          "long": "parallel",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.upAll.parallelOption",
-          "label": "Start repositories concurrently"
-        },
-        {
-          "flags": "--concurrency <n>",
-          "long": "concurrency",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": "3",
-          "descriptionKey": "commands.repo.upAll.concurrencyOption",
-          "label": "Max concurrent repositories (default: 3)"
-        },
-        {
-          "flags": "-y, --yes",
-          "long": "yes",
-          "short": "y",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.yesOption",
-          "label": "Skip confirmation for batch operations"
         },
         {
           "flags": "--bwlimit <limit>",
@@ -8071,17 +8189,30 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip restarting the route server after binary update"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": true,
       "timeout": "write",
       "timeoutMs": 300000,
-      "repoArg": "repo",
+      "repoArg": "ref",
       "grandGuard": true,
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": "name"
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -8096,16 +8227,6 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.repo.push.description",
       "label": "Push repository to a remote (machine or storage). Omit name to push all repos. The target type is auto-detected from config. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. Use --up to deploy after push",
       "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
         {
           "flags": "--to <remote>",
           "long": "to",
@@ -8157,47 +8278,6 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Force overwrite existing backup"
         },
         {
-          "flags": "--up",
-          "long": "up",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.push.optionUp",
-          "label": "After push, mount and deploy repository on target machine"
-        },
-        {
-          "flags": "--tag <tag>",
-          "long": "tag",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.push.optionTag",
-          "label": "Deployment tag for versioning"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
-        {
           "flags": "-w, --watch",
           "long": "watch",
           "short": "w",
@@ -8207,37 +8287,6 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "descriptionKey": "options.watch",
           "label": "Watch for changes"
-        },
-        {
-          "flags": "--parallel",
-          "long": "parallel",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.upAll.parallelOption",
-          "label": "Start repositories concurrently"
-        },
-        {
-          "flags": "--concurrency <n>",
-          "long": "concurrency",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": "3",
-          "descriptionKey": "commands.repo.upAll.concurrencyOption",
-          "label": "Max concurrent repositories (default: 3)"
-        },
-        {
-          "flags": "-y, --yes",
-          "long": "yes",
-          "short": "y",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.yesOption",
-          "label": "Skip confirmation for batch operations"
         },
         {
           "flags": "--bwlimit <limit>",
@@ -8270,16 +8319,6 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Block-delta strategy when using a delta base: auto, physical, or shared"
         },
         {
-          "flags": "--json",
-          "long": "json",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.push.optionJson",
-          "label": "Output transfer statistics as JSON"
-        },
-        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,
@@ -8300,17 +8339,30 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip restarting the route server after binary update"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": true,
       "timeout": "write",
       "timeoutMs": 300000,
-      "repoArg": "repo",
+      "repoArg": "ref",
       "grandGuard": true,
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": "name"
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -8326,26 +8378,6 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Create N read replicas of a repository in seconds, regardless of database size. Takes ONE datastore snapshot, then makes N constant-time fork-attaches (copy-on-write, throwaway local writes) spread across the cluster's nodes, and applies a generated overlay: one pinned PersistentVolume per replica, a StatefulSet, and two Services ({repo}-rw to the primary, {repo}-ro across the replicas). Replicas are POINT-IN-TIME copies: no replication stream, no read-your-writes; each replica runs one crash-recovery pass before serving. Refresh them with 'repo replicate refresh'. Replica sets are managed state: see 'repo replicate status' and remove with 'repo replicate remove'.",
       "options": [
         {
-          "flags": "--name <repo>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.replicate.nameOption",
-          "label": "Repository to replicate (its namespace + service base name)"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
-        {
           "flags": "--replicas <n>",
           "long": "replicas",
           "valueTaking": true,
@@ -8354,26 +8386,6 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "descriptionKey": "commands.repo.replicate.replicasOption",
           "label": "Number of read replicas to create"
-        },
-        {
-          "flags": "--datastore <name>",
-          "long": "datastore",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.replicate.datastoreOption",
-          "label": "Data datastore holding the repository (default: the cluster's single data datastore)"
-        },
-        {
-          "flags": "--set <name>",
-          "long": "set",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.replicate.setOption",
-          "label": "Replica-set name (default: <repo>-replicas)"
         },
         {
           "flags": "--image <image>",
@@ -8446,12 +8458,30 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": true,
-      "mcpExcludeReason": "Provisions replica datastores + a k8s overlay — pending live validation",
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "repoArg": "ref",
+      "grandGuard": true,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": null,
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -8468,16 +8498,6 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Roll every replica onto a fresh point-in-time snapshot, ONE at a time: bounce the replica pod, discard and re-fork its datastore under the same path, and let readiness re-admit it. N-1 replicas keep serving throughout.",
       "options": [
         {
-          "flags": "--name <set>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.replicate.refresh.nameOption",
-          "label": "Replica set to refresh"
-        },
-        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,
@@ -8488,12 +8508,26 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Rolling replica re-clone — pending live validation",
+      "grandGuard": true,
+      "mcpExcludeReason": "Rolling replica re-clone. The re-fork path is where a missing LUKS re-open would empty the whole replica set (bug #49), and it has never been exercised on a live cluster.",
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": null,
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -8510,16 +8544,6 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Remove a replica set: delete its generated k8s objects (label-scoped), discard its fork datastores, drop its snapshot, and forget the state. Infra steps are best-effort so removal converges even on a partially-gone cluster.",
       "options": [
         {
-          "flags": "--name <set>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.replicate.remove.nameOption",
-          "label": "Replica set to remove"
-        },
-        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,
@@ -8530,12 +8554,30 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Tears down replica datastores + overlay — pending live validation",
+      "destructive": true,
+      "idempotent": true,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "repoArg": "ref",
+      "grandGuard": true,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": null,
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -8550,25 +8592,31 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.repo.replicate.status.description",
       "label": "Show managed replica sets: replicas, hosting nodes, fork datastores, snapshot, and refresh timestamps.",
-      "options": [
+      "options": [],
+      "positionals": [
         {
-          "flags": "--name <set>",
-          "long": "name",
-          "valueTaking": true,
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
           "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.replicate.status.nameOption",
-          "label": "Show one replica set by name"
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
         }
       ],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Replica-set state view — pending live validation of the replicate family",
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "repoArg": "ref",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -8583,37 +8631,6 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.repo.resize.description",
       "label": "Resize a repository offline (supports both grow and shrink). Repo must be unmounted first ('repo down --unmount'). For zero-downtime growth without stopping, use 'repo expand' instead",
       "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
         {
           "flags": "--size <size>",
           "long": "size",
@@ -8645,14 +8662,27 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip restarting the route server after binary update"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "grandGuard": true,
       "forkBlocked": true,
       "mcpExcludeReason": "Disk resize — destructive infrastructure operation, use CLI directly",
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": "name"
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -8669,16 +8699,6 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Show the SHA-256 digest of a secret. The plaintext value is never returned by design (write-only). Use --current on a subsequent set/unset to verify a value you already know, or rotate via `set --rotate-secret`.",
       "options": [
         {
-          "flags": "--name <repository>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.secret.nameOption",
-          "label": "Repository name (e.g. mail, mail:staging). Without a tag, defaults to :latest."
-        },
-        {
           "flags": "--key <KEY>",
           "long": "key",
           "valueTaking": true,
@@ -8689,16 +8709,30 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Secret key in UPPER_SNAKE_CASE (max 64 chars). Will be exposed as REDIACC_SECRET_<KEY> for env-mode or /run/secrets/<key> in containers for file-mode."
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": false,
       "idempotent": true,
       "timeout": "read",
       "timeoutMs": 120000,
+      "repoArg": "ref",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -8713,16 +8747,15 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.repo.secret.list.description",
       "label": "List secret keys and modes (never values, never digests).",
-      "options": [
+      "options": [],
+      "positionals": [
         {
-          "flags": "--name <repository>",
-          "long": "name",
-          "valueTaking": true,
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
           "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.secret.nameOption",
-          "label": "Repository name (e.g. mail, mail:staging). Without a tag, defaults to :latest."
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
         }
       ],
       "hasSubcommands": false,
@@ -8730,11 +8763,15 @@ export const CLI_CONTRACT: CliContract = {
       "idempotent": true,
       "timeout": "read",
       "timeoutMs": 120000,
+      "repoArg": "ref",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -8750,16 +8787,6 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.repo.secret.set.description",
       "label": "Set or overwrite a secret. Forks do not inherit; set on the fork explicitly. Under agent context, requires --current digest match (passwd-style).",
       "options": [
-        {
-          "flags": "--name <repository>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.secret.nameOption",
-          "label": "Repository name (e.g. mail, mail:staging). Without a tag, defaults to :latest."
-        },
         {
           "flags": "--key <KEY>",
           "long": "key",
@@ -8815,12 +8842,25 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Acknowledge rotation; skip --current precondition (audited as rotation). Use when intentionally rotating without verifying the prior value."
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -8836,16 +8876,6 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.repo.secret.unset.description",
       "label": "Delete a secret. Under agent context, requires --current digest match.",
       "options": [
-        {
-          "flags": "--name <repository>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.secret.nameOption",
-          "label": "Repository name (e.g. mail, mail:staging). Without a tag, defaults to :latest."
-        },
         {
           "flags": "--key <KEY>",
           "long": "key",
@@ -8877,12 +8907,25 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Acknowledge rotation; skip --current precondition (audited as rotation). Use when intentionally rotating without verifying the prior value."
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -8897,37 +8940,6 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.repo.status.description",
       "label": "Get repository status (mount state, Docker daemon running, container count, disk usage)",
       "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
         {
           "flags": "--debug",
           "long": "debug",
@@ -8949,16 +8961,29 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip restarting the route server after binary update"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": false,
       "idempotent": true,
       "timeout": "read",
       "timeoutMs": 120000,
-      "repoArg": "repo",
+      "repoArg": "ref",
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": "name"
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -8974,49 +8999,6 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.repo.sync.download.description",
       "label": "Download files from a repository via rsync over SSH (delta transfer). Use --mirror to delete extra local files, --dry-run to preview, --exclude to skip patterns",
       "options": [
-        {
-          "flags": "-t, --team <name>",
-          "long": "team",
-          "short": "t",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.team",
-          "label": "Team name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
-        {
-          "flags": "-r, --repository <name>",
-          "long": "repository",
-          "short": "r",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.repository",
-          "label": "Repository name (connects to repository environment)"
-        },
         {
           "flags": "--local <path>",
           "long": "local",
@@ -9098,13 +9080,27 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Show what would be done without making changes"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "grandGuard": true,
+      "mcpExcludeReason": "Requires local filesystem paths on the MCP host. Run it from the CLI.",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Downloads to the local filesystem with rsync/SFTP; a remote executor would write the files onto its own disk. Run it without --proxy.",
-      "machineOption": "machine",
-      "repoOption": null
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -9120,49 +9116,6 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.repo.sync.status.description",
       "label": "Dry-run comparison of local and remote files (shows what would be transferred without actually transferring)",
       "options": [
-        {
-          "flags": "-t, --team <name>",
-          "long": "team",
-          "short": "t",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.team",
-          "label": "Team name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
-        {
-          "flags": "-r, --repository <name>",
-          "long": "repository",
-          "short": "r",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.repository",
-          "label": "Repository name (connects to repository environment)"
-        },
         {
           "flags": "--local <path>",
           "long": "local",
@@ -9194,12 +9147,26 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Remote file path within repository (alternative to --remote for single-file transfers)"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
+      "mcpExcludeReason": "Requires local filesystem paths on the MCP host. Run it from the CLI.",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Diffs the machine against the local filesystem with a client-side rsync; a remote executor has no copy of the local tree. Run it without --proxy.",
-      "machineOption": "machine",
-      "repoOption": null
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -9215,49 +9182,6 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.repo.sync.upload.description",
       "label": "Upload files to a repository via rsync over SSH (delta transfer). Use --mirror to delete extra remote files, --dry-run to preview, --exclude to skip patterns",
       "options": [
-        {
-          "flags": "-t, --team <name>",
-          "long": "team",
-          "short": "t",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.team",
-          "label": "Team name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
-        {
-          "flags": "-r, --repository <name>",
-          "long": "repository",
-          "short": "r",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.repository",
-          "label": "Repository name (connects to repository environment)"
-        },
         {
           "flags": "--local <paths...>",
           "long": "local",
@@ -9339,209 +9263,27 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Show what would be done without making changes"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "grandGuard": true,
+      "mcpExcludeReason": "Requires local filesystem paths on the MCP host. Run it from the CLI.",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Uploads from the local filesystem with rsync/SFTP; a remote executor cannot see the source paths. Run it without --proxy.",
-      "machineOption": "machine",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "repo",
-        "takeover"
-      ],
-      "pathKey": "repo takeover",
-      "domain": "repo",
-      "group": "REPOSITORIES",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.repo.takeover.description",
-      "label": "Replace grand repo's data with a fork's data. The grand keeps its identity (GUID, networkId, domains, autostart, backup chain) but gets the fork's upgraded data. The old production data is preserved as a backup fork. Use for: test upgrade on fork → verify → takeover to production. Pass an explicit <name>:<tag> for the fork — a bare --name resolves to the grand and is rejected with \"not a fork\".",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
-        {
-          "flags": "--force",
-          "long": "force",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.takeover.forceOption",
-          "label": "Skip modification warnings"
-        },
-        {
-          "flags": "--debug",
-          "long": "debug",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.debug",
-          "label": "Enable debug output"
-        },
-        {
-          "flags": "--skip-router-restart",
-          "long": "skip-router-restart",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.skipRouterRestart",
-          "label": "Skip restarting the route server after binary update"
-        }
-      ],
-      "hasSubcommands": false,
-      "grandGuard": true,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": "name"
-    },
-    {
-      "path": [
-        "repo",
-        "template",
-        "apply"
-      ],
-      "pathKey": "repo template apply",
-      "domain": "repo",
-      "group": "REPOSITORIES",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.repo.template.apply.description",
-      "label": "Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. Rediaccfile lifecycle: up() starts containers (pull images, generate configs here), down() stops. Minimal Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose' — 'docker compose' is rejected. ENV VARS — two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. APP_IP), ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REDIACC_NETWORK_ID env vars. eBPF bind rewriting handles IP isolation transparently, so apps can bind to 0.0.0.0 and the kernel rewrites it to the correct loopback IP. Health checks can use localhost. network_mode:host is injected and ports: are ignored. STORAGE: Both ${REDIACC_WORKING_DIR}/... bind mounts and Docker named volumes are safe — Docker data-root is inside the encrypted LUKS mount. RESTART POLICY: Restart policies are safe — renet auto-strips them for CRIU compatibility and the watchdog handles recovery. Compose: do NOT add network_mode or rediacc.* labels (renet injects them). Multi-project: place each sub-project in its own subdirectory with its own Rediaccfile — renet auto-discovers and runs them in order. HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain}. Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 / rediacc.udp_ports=53",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
-          "flags": "-r, --repository <name>",
-          "long": "repository",
-          "short": "r",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.repository",
-          "label": "Repository name (connects to repository environment)"
-        },
-        {
-          "flags": "--file <path>",
-          "long": "file",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.template.fileOption",
-          "label": "Path to custom template JSON file ({\"version\":\"2\",\"files\":{\"Rediaccfile\":\"...\",\"docker-compose.yml\":\"...\"}}) — overrides the built-in template name"
-        },
-        {
-          "flags": "--grand <name>",
-          "long": "grand",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.up.grandOption",
-          "label": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent"
-        },
-        {
-          "flags": "--debug",
-          "long": "debug",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.debug",
-          "label": "Enable debug output"
-        },
-        {
-          "flags": "--skip-router-restart",
-          "long": "skip-router-restart",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.skipRouterRestart",
-          "label": "Skip restarting the route server after binary update"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": "name"
-    },
-    {
-      "path": [
-        "repo",
-        "template",
-        "list"
-      ],
-      "pathKey": "repo template list",
-      "domain": "repo",
-      "group": "REPOSITORIES",
-      "experimental": false,
-      "plane": "other",
-      "descriptionKey": "commands.repo.template.list.description",
-      "label": "List all embedded deployment templates shipped with the CLI",
-      "options": [],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -9554,39 +9296,8 @@ export const CLI_CONTRACT: CliContract = {
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.repo.trim.description",
-      "label": "Reclaim datastore pool space from mounted repositories (online, zero downtime). Frees blocks deleted inside repositories back to the pool via fstrim. Without --name, trims every mounted repository plus the datastore itself. fstrim is skipped for repositories under an active backup; --docker reclaim still runs",
+      "label": "Reclaim datastore pool space from mounted repositories (online, zero downtime). Frees blocks deleted inside repositories back to the pool via fstrim. Without a ref, trims every mounted repository on -m plus the datastore itself. fstrim is skipped for repositories under an active backup; --docker reclaim still runs",
       "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.trim.nameOption",
-          "label": "Repository to trim (default: all mounted repositories)"
-        },
         {
           "flags": "--docker",
           "long": "docker",
@@ -9618,6 +9329,17 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Show discard state and reclaimable estimate without trimming"
         },
         {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.repo.machineOption",
+          "label": "Target machine name"
+        },
+        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,
@@ -9628,15 +9350,29 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": false,
       "idempotent": true,
       "timeout": "write",
       "timeoutMs": 300000,
+      "repoArg": "ref",
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": "machine",
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -9651,38 +9387,6 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.repo.tunnel.description",
       "label": "Create an SSH port-forward tunnel to a container's port on a remote machine. Auto-detects container and port when unambiguous. The tunnel stays open until you press Ctrl+C",
       "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
-        {
-          "flags": "-r, --repository <name>",
-          "long": "repository",
-          "short": "r",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.repository",
-          "label": "Repository name (connects to repository environment)"
-        },
         {
           "flags": "-c, --container <name>",
           "long": "container",
@@ -9725,127 +9429,27 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Print only the local URL once the tunnel is ready (machine-readable)"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "grandGuard": true,
       "mcpExcludeReason": "Interactive SSH tunnel — blocks until Ctrl+C",
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
-      "machineOption": "machine",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "repo",
-        "unmount"
-      ],
-      "pathKey": "repo unmount",
-      "domain": "repo",
-      "group": "REPOSITORIES",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.repo.unmount.description",
-      "label": "Unmount a repository (close the LUKS container, detaching the encrypted filesystem). Services must be stopped first ('repo down'). After unmount, repo data is inaccessible until remounted. Required before 'repo resize'. Omit name to unmount all repos on the machine",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
-        {
-          "flags": "--checkpoint",
-          "long": "checkpoint",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.unmount.checkpointOption",
-          "label": "Create CRIU container checkpoint before unmount (capture running process memory state for later restore)"
-        },
-        {
-          "flags": "--parallel",
-          "long": "parallel",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.upAll.parallelOption",
-          "label": "Start repositories concurrently"
-        },
-        {
-          "flags": "--concurrency <n>",
-          "long": "concurrency",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": "3",
-          "descriptionKey": "commands.repo.upAll.concurrencyOption",
-          "label": "Max concurrent repositories (default: 3)"
-        },
-        {
-          "flags": "-y, --yes",
-          "long": "yes",
-          "short": "y",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.yesOption",
-          "label": "Skip confirmation for batch operations"
-        },
-        {
-          "flags": "--debug",
-          "long": "debug",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.debug",
-          "label": "Enable debug output"
-        },
-        {
-          "flags": "--skip-router-restart",
-          "long": "skip-router-restart",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.skipRouterRestart",
-          "label": "Skip restarting the route server after binary update"
-        }
-      ],
-      "hasSubcommands": false,
-      "grandGuard": true,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": "name"
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -9858,38 +9462,17 @@ export const CLI_CONTRACT: CliContract = {
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.repo.up.description",
-      "label": "Deploy or update a repository (mount, run Rediaccfile up which calls renet compose). Proxy routes take ~3s to become active after deploy. Prints the URL pattern for HTTP-exposed services (rediacc.service_port label) on completion. First deploy and forks are mounted automatically. CRIU checkpoint restore is auto-detected — use --skip-checkpoint to force fresh start. Omit name to deploy all repos on the machine",
+      "label": "Deploy or update a repository (mount, run Rediaccfile up which calls renet compose). The machine is derived from the ref placement. Proxy routes take ~3s to become active after deploy. Prints the URL pattern for HTTP-exposed services (rediacc.service_port label) on completion. First deploy and forks are mounted automatically. CRIU checkpoint restore is auto-detected; use --skip-checkpoint to force fresh start. Use --all --machine <m> to deploy every repository on a machine.",
       "options": [
         {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
+          "flags": "--no-start",
+          "long": "no-start",
+          "valueTaking": false,
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
+          "descriptionKey": "commands.repo.up.noStartOption",
+          "label": "Mount and prepare the repository without running its up() steps (folds the retired 'repo mount'; LUKS open and, for cluster repos, PV generation)."
         },
         {
           "flags": "--skip-checkpoint",
@@ -9912,14 +9495,35 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Request dedicated TLS cert for this repo (forks use shared machine cert by default)"
         },
         {
-          "flags": "--detach",
-          "long": "detach",
+          "flags": "--no-wait",
+          "long": "no-wait",
           "valueTaking": false,
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
-          "descriptionKey": "commands.repo.up.detachOption",
+          "descriptionKey": "commands.repo.up.noWaitOption",
           "label": "Return once containers are started; health checks continue in the background"
+        },
+        {
+          "flags": "--all",
+          "long": "all",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.repo.up.allOption",
+          "label": "Deploy every repository whose home is --machine (batch form)"
+        },
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.repo.batchMachineOption",
+          "label": "With --all: the machine whose repositories to run the batch against"
         },
         {
           "flags": "--include-forks",
@@ -9930,16 +9534,6 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "descriptionKey": "commands.repo.upAll.includeForksOption",
           "label": "Also mount/start forked repositories"
-        },
-        {
-          "flags": "--mount-only",
-          "long": "mount-only",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.upAll.mountOnlyOption",
-          "label": "Only mount, don't start services"
         },
         {
           "flags": "--parallel",
@@ -10003,80 +9597,30 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Show what would be done without making changes"
         }
       ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": true,
       "timeout": "write",
       "timeoutMs": 300000,
-      "repoArg": "name",
+      "repoArg": "ref",
       "grandGuard": true,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": "machine",
-      "repoOption": "name"
-    },
-    {
-      "path": [
-        "repo",
-        "validate"
-      ],
-      "pathKey": "repo validate",
-      "domain": "repo",
-      "group": "REPOSITORIES",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.repo.validate.description",
-      "label": "Validate repository integrity (LUKS container, filesystem consistency, configuration). Use after unexpected shutdowns or to verify backup health",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
-          "flags": "--debug",
-          "long": "debug",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.debug",
-          "label": "Enable debug output"
-        },
-        {
-          "flags": "--skip-router-restart",
-          "long": "skip-router-restart",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.skipRouterRestart",
-          "label": "Skip restarting the route server after binary update"
-        }
-      ],
-      "hasSubcommands": false,
-      "grandGuard": true,
-      "mcpExcludeReason": "Validation runs on remote machine — use repo status for MCP",
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": "name"
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -10084,7 +9628,7 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "pathKey": "serve",
       "domain": "serve",
-      "group": null,
+      "group": "TOOLS",
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.serve.description",
@@ -10126,12 +9670,65 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Placement: daemon (customer host) or container"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
+      "mcpExcludeReason": "Runs the executor daemon in the foreground until SIGINT; it never returns.",
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "storage",
+        "add"
+      ],
+      "pathKey": "storage add",
+      "domain": "storage",
+      "group": "INFRASTRUCTURE",
+      "experimental": false,
+      "plane": "config",
+      "descriptionKey": "commands.storage.add.description",
+      "label": "Register a storage endpoint.",
+      "options": [
+        {
+          "flags": "--vault <json>",
+          "long": "vault",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "descriptionKey": "options.vaultContent",
+          "label": "Vault content as JSON string"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": false,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -10167,130 +9764,62 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Subdirectory path to list"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "mcpExcludeReason": "Interactive file browser — requires TTY",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
         "storage",
-        "create"
+        "import"
       ],
-      "pathKey": "storage create",
+      "pathKey": "storage import",
       "domain": "storage",
       "group": "INFRASTRUCTURE",
       "experimental": false,
       "plane": "config",
-      "descriptionKey": null,
-      "label": "Create a new storage",
+      "descriptionKey": "commands.storage.import.description",
+      "label": "Import a storage endpoint from a definition file.",
       "options": [
         {
           "flags": "--name <name>",
           "long": "name",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "-t, --team <name>",
-          "long": "team",
-          "short": "t",
-          "valueTaking": true,
-          "variadic": false,
           "mandatory": false,
           "defaultValue": null,
-          "descriptionKey": "options.team",
-          "label": "Team name"
-        },
+          "descriptionKey": "commands.storage.import.optionName",
+          "label": "Import only this named section"
+        }
+      ],
+      "positionals": [
         {
-          "flags": "--vault <json>",
-          "long": "vault",
-          "valueTaking": true,
+          "name": "file",
+          "kind": "file",
+          "required": true,
           "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.vaultContent",
-          "label": "Vault content as JSON string"
+          "descriptionKey": "options.file",
+          "label": "Path to file"
         }
       ],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Config CRUD — covered by config storage commands",
+      "mcpExcludeReason": "Reads a local rclone definition file; use CLI directly.",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "storage",
-        "delete"
-      ],
-      "pathKey": "storage delete",
-      "domain": "storage",
-      "group": "INFRASTRUCTURE",
-      "experimental": false,
-      "plane": "config",
-      "descriptionKey": null,
-      "label": "Delete a storage",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
-          "flags": "-t, --team <name>",
-          "long": "team",
-          "short": "t",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.team",
-          "label": "Team name"
-        },
-        {
-          "flags": "-f, --force",
-          "long": "force",
-          "short": "f",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.force",
-          "label": "Skip confirmation prompts"
-        },
-        {
-          "flags": "--dry-run",
-          "long": "dry-run",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.dryRun",
-          "label": "Show what would be done without making changes"
-        }
-      ],
-      "hasSubcommands": false,
-      "mcpExcludeReason": "Config CRUD — covered by config storage commands",
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -10302,58 +9831,43 @@ export const CLI_CONTRACT: CliContract = {
       "group": "INFRASTRUCTURE",
       "experimental": false,
       "plane": "config",
-      "descriptionKey": null,
-      "label": "List storage systems",
+      "descriptionKey": "commands.storage.list.description",
+      "label": "List storage endpoints. Give a name for full detail.",
       "options": [
         {
-          "flags": "-t, --team <name>",
-          "long": "team",
-          "short": "t",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.team",
-          "label": "Team name"
-        },
-        {
-          "flags": "--search <text>",
-          "long": "search",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.searchInField",
-          "label": "Search in storageName"
-        },
-        {
-          "flags": "--sort <field>",
-          "long": "sort",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.sortByField",
-          "label": "Sort by field"
-        },
-        {
-          "flags": "--desc",
-          "long": "desc",
+          "flags": "--reveal",
+          "long": "reveal",
           "valueTaking": false,
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
-          "descriptionKey": "options.sortDescending",
-          "label": "Sort in descending order"
+          "descriptionKey": "commands.storage.list.optionReveal",
+          "label": "Reveal the storage configuration in plaintext (interactive TTY only; audited)"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "plain",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
         }
       ],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Config CRUD — covered by config storage commands",
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -10450,6 +9964,7 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip restarting the route server after binary update"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": true,
@@ -10457,93 +9972,70 @@ export const CLI_CONTRACT: CliContract = {
       "timeoutMs": 300000,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": "machine",
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
         "storage",
-        "rename"
+        "remove"
       ],
-      "pathKey": "storage rename",
+      "pathKey": "storage remove",
       "domain": "storage",
       "group": "INFRASTRUCTURE",
       "experimental": false,
       "plane": "config",
-      "descriptionKey": null,
-      "label": "Rename a storage",
+      "descriptionKey": "commands.storage.remove.description",
+      "label": "Remove a storage endpoint from the config.",
       "options": [
         {
-          "flags": "--current-name <name>",
-          "long": "current-name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.currentName",
-          "label": "Current resource name"
-        },
-        {
-          "flags": "--new-name <name>",
-          "long": "new-name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.newName",
-          "label": "New resource name"
-        },
-        {
-          "flags": "-t, --team <name>",
-          "long": "team",
-          "short": "t",
-          "valueTaking": true,
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
-          "descriptionKey": "options.team",
-          "label": "Team name"
+          "descriptionKey": "options.yes",
+          "label": "Skip confirmation prompt"
+        },
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.dryRun",
+          "label": "Show what would be done without making changes"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
         }
       ],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Config CRUD — covered by config storage commands",
+      "destructive": true,
+      "idempotent": false,
+      "timeout": "write",
+      "timeoutMs": 300000,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
-    },
-    {
-      "path": [
-        "subscription",
-        "activation",
-        "status"
-      ],
-      "pathKey": "subscription activation status",
-      "domain": "subscription",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.subscription.activation.status.description",
-      "label": "Show machine slot status for one machine",
-      "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -10580,12 +10072,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Account server URL"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -10600,12 +10096,16 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.subscription.logout.description",
       "label": "Clear stored subscription token",
       "options": [],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -10618,7 +10118,7 @@ export const CLI_CONTRACT: CliContract = {
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.subscription.refresh.description",
-      "label": "Refresh repo licenses on a remote machine",
+      "label": "Refresh licenses from the account server.",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -10626,155 +10126,31 @@ export const CLI_CONTRACT: CliContract = {
           "short": "m",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": true,
+          "mandatory": false,
           "defaultValue": null,
           "descriptionKey": "options.machine",
           "label": "Machine name"
-        }
-      ],
-      "hasSubcommands": true,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "subscription",
-        "refresh",
-        "activation"
-      ],
-      "pathKey": "subscription refresh activation",
-      "domain": "subscription",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.subscription.refresh.description",
-      "label": "Refresh repo licenses on a remote machine",
-      "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "subscription",
-        "refresh",
-        "repo"
-      ],
-      "pathKey": "subscription refresh repo",
-      "domain": "subscription",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.subscription.refresh.repo.description",
-      "label": "Refresh the repo license for a specific repository",
-      "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
         },
         {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
+          "flags": "--repo <ref>",
+          "long": "repo",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": true,
+          "mandatory": false,
           "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": true,
+      "detachable": true,
       "machineOption": "machine",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "subscription",
-        "refresh",
-        "repos"
-      ],
-      "pathKey": "subscription refresh repos",
-      "domain": "subscription",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.subscription.refresh.repos.description",
-      "label": "Batch-refresh repo licenses on a remote machine",
-      "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
-    },
-    {
-      "path": [
-        "subscription",
-        "repo",
-        "status"
-      ],
-      "pathKey": "subscription repo status",
-      "domain": "subscription",
-      "group": "TOOLS",
-      "experimental": false,
-      "plane": "machine",
-      "descriptionKey": "commands.subscription.repo.status.description",
-      "label": "Show installed repo licenses on a machine",
-      "options": [
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        }
-      ],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
+      "repoOption": "repo",
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -10785,16 +10161,31 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "subscription",
       "group": "TOOLS",
       "experimental": false,
-      "plane": "other",
+      "plane": "machine",
       "descriptionKey": "commands.subscription.status.description",
-      "label": "Show subscription, machine slots, and repo license status",
-      "options": [],
+      "label": "Show subscription, and license state for a machine.",
+      "options": [
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        }
+      ],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "machineOption": null,
-      "repoOption": null
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -10807,51 +10198,8 @@ export const CLI_CONTRACT: CliContract = {
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.term.connect.description",
-      "label": "Connect to a machine or repository via SSH",
+      "label": "Open a shell on a machine, or inside a repository with its Docker set up.",
       "options": [
-        {
-          "flags": "-t, --team <name>",
-          "long": "team",
-          "short": "t",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.team",
-          "label": "Team name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
-        {
-          "flags": "-r, --repository <name>",
-          "long": "repository",
-          "short": "r",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.repository",
-          "label": "Repository name (connects to repository environment)"
-        },
         {
           "flags": "-c, --command <cmd>",
           "long": "command",
@@ -10862,46 +10210,6 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "descriptionKey": "options.command",
           "label": "Execute a command instead of interactive shell"
-        },
-        {
-          "flags": "--container <id>",
-          "long": "container",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.container",
-          "label": "Connect to a specific Docker container"
-        },
-        {
-          "flags": "--container-action <action>",
-          "long": "container-action",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.containerAction",
-          "label": "Container action: terminal, logs, stats, exec"
-        },
-        {
-          "flags": "--log-lines <lines>",
-          "long": "log-lines",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.logLines",
-          "label": "Number of log lines to show (default: 50)"
-        },
-        {
-          "flags": "--follow",
-          "long": "follow",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.follow",
-          "label": "Follow logs output"
         },
         {
           "flags": "--external",
@@ -10924,12 +10232,26 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Reset per-repo home overlay for a fresh start"
         }
       ],
+      "positionals": [
+        {
+          "name": "target",
+          "kind": "target",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.connectTarget",
+          "label": "Target: a machine or cluster name for a shell on it, or a repository ref (name, name:tag, optionally @machine) for a shell inside it"
+        }
+      ],
       "hasSubcommands": false,
+      "grandGuard": true,
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
-      "machineOption": "machine",
-      "repoOption": null
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -10994,13 +10316,17 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Set release channel (stable or edge)"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "mcpExcludeReason": "CLI self-update — not a remote operation",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -11026,12 +10352,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Use VS Code Insiders settings"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -11068,12 +10398,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Remove specific connection"
         }
       ],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -11086,51 +10420,8 @@ export const CLI_CONTRACT: CliContract = {
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.vscode.connect.description",
-      "label": "Connect to a machine or repository in VS Code",
+      "label": "Open VS Code on a machine or inside a repository.",
       "options": [
-        {
-          "flags": "-t, --team <name>",
-          "long": "team",
-          "short": "t",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.team",
-          "label": "Team name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "--cluster <name>",
-          "long": "cluster",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.clusterOption",
-          "label": "Target Kubernetes cluster (mutually exclusive with -m); routes to the cluster's control node with KUBECONFIG injected"
-        },
-        {
-          "flags": "-r, --repository <name>",
-          "long": "repository",
-          "short": "r",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.repository",
-          "label": "Repository name (connects to repository environment)"
-        },
         {
           "flags": "-f, --folder <path>",
           "long": "folder",
@@ -11234,12 +10525,26 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Pre-staged server tarball path on the machine (airgapped installs)"
         }
       ],
+      "positionals": [
+        {
+          "name": "target",
+          "kind": "target",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.connectTarget",
+          "label": "Target: a machine or cluster name for a shell on it, or a repository ref (name, name:tag, optionally @machine) for a shell inside it"
+        }
+      ],
       "hasSubcommands": false,
+      "grandGuard": true,
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
-      "machineOption": "machine",
-      "repoOption": null
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -11254,12 +10559,16 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.vscode.list.description",
       "label": "List configured VS Code SSH connections",
       "options": [],
+      "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
       "machineOption": null,
-      "repoOption": null
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -11276,39 +10585,6 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Show whether the browser VS Code server is running",
       "options": [
         {
-          "flags": "-t, --team <name>",
-          "long": "team",
-          "short": "t",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.team",
-          "label": "Team name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "-r, --repository <name>",
-          "long": "repository",
-          "short": "r",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.repository",
-          "label": "Repository name (connects to repository environment)"
-        },
-        {
           "flags": "--server-provider <id>",
           "long": "server-provider",
           "valueTaking": true,
@@ -11319,11 +10595,24 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Browser VS Code server implementation (openvscode, code-server)"
         }
       ],
+      "positionals": [
+        {
+          "name": "target",
+          "kind": "target",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     },
     {
       "path": [
@@ -11340,39 +10629,6 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Stop the browser VS Code server",
       "options": [
         {
-          "flags": "-t, --team <name>",
-          "long": "team",
-          "short": "t",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.team",
-          "label": "Team name"
-        },
-        {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.machine",
-          "label": "Machine name"
-        },
-        {
-          "flags": "-r, --repository <name>",
-          "long": "repository",
-          "short": "r",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.repository",
-          "label": "Repository name (connects to repository environment)"
-        },
-        {
           "flags": "--server-provider <id>",
           "long": "server-provider",
           "valueTaking": true,
@@ -11383,11 +10639,24 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Browser VS Code server implementation (openvscode, code-server)"
         }
       ],
+      "positionals": [
+        {
+          "name": "target",
+          "kind": "target",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": true,
-      "machineOption": "machine",
-      "repoOption": null
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
     }
   ]
 };

@@ -62,7 +62,7 @@ describe('assertStorageExists', () => {
       { name: 'myapp:latest', config: { repositoryGuid: 'guid-1', tag: 'latest' } },
     ]);
     await expect(assertStorageExists('myapp')).rejects.toThrow(
-      '"myapp" is a repository, not a storage. To delete a repository image use: rdc repository delete --name myapp'
+      '"myapp" is a repository, not a storage. To delete a repository image use: rdc repo delete myapp'
     );
   });
 
@@ -74,7 +74,7 @@ describe('assertStorageExists', () => {
       { name: 'myapp:latest', config: { repositoryGuid: 'guid-1', tag: 'latest' } },
     ]);
     await expect(assertStorageExists('myapp:latest')).rejects.toThrow(
-      '"myapp:latest" is a repository, not a storage. To delete a repository image use: rdc repository delete --name myapp'
+      '"myapp:latest" is a repository, not a storage. To delete a repository image use: rdc repo delete myapp'
     );
   });
 });

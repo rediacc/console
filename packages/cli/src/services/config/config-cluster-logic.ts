@@ -150,7 +150,18 @@ export async function removeClusterFromStore(configName: string, name: string): 
     const clusters = { ...(cfg.resources?.clusters ?? {}) };
     if (!(name in clusters)) throw new Error(`Cluster "${name}" not found`);
     delete clusters[name];
-    return { ...cfg, resources: { ...(cfg.resources ?? {}), clusters } };
+    // BUG #22: also drop the parallel state.clusters entry. Leaving it stranded a
+    // dead cluster in state after destroy (B1 witnessed b1src/rdst twice), and —
+    // worse — a same-name recreate would inherit the old memberIds ledger and
+    // renumber onto the wrong VM ids. State is observation; when the cluster is
+    // gone, its state goes with it.
+    const stateClusters = { ...(cfg.state?.clusters ?? {}) };
+    delete stateClusters[name];
+    return {
+      ...cfg,
+      resources: { ...(cfg.resources ?? {}), clusters },
+      state: { ...(cfg.state ?? {}), clusters: stateClusters },
+    };
   });
 }
 

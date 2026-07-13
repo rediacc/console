@@ -61,7 +61,7 @@ function execMock() {
 afterEach(() => vi.restoreAllMocks());
 
 describe('joinCluster', () => {
-  it('reads the token from the anchor datastore, creates the agent image, joins, and sets the backref', async () => {
+  it('reads the token from the anchor datastore, joins with NO per-node repo, and sets the backref', async () => {
     stub({ adopted: { ip: '192.168.111.50', user: 'root' } });
     const exec = execMock();
     const update = vi.spyOn(configService, 'updateMachine').mockResolvedValue(undefined);
@@ -69,18 +69,17 @@ describe('joinCluster', () => {
     await joinCluster('adopted', { cluster: 'prod' });
 
     const calls = exec.mock.calls.map((c) => c[0]);
-    expect(calls.map((c) => c.functionName)).toEqual([
-      'kube_join_token',
-      'repository_create',
-      'kube_join',
-    ]);
+    // ★ #25: no repository_create. An agent's k3s state is a disposable cache and
+    // `renet kube join` MkdirAll's its own data-dir, so the per-node "cluster image"
+    // repo bought nothing and cost a LUKS volume + GUID + config record per node.
+    expect(calls.map((c) => c.functionName)).toEqual(['kube_join_token', 'kube_join']);
     // Token read from the control plane's anchor datastore mount.
     expect(calls[0]).toMatchObject({
       machineName: 'prod-cp-1',
       params: { mount_path: '/mnt/rediacc-ds/ds-control-prod' },
     });
-    // Agent joins on its own per-node image mount, bound to its real NIC.
-    expect(calls[2]).toMatchObject({
+    // Agent joins on the cluster mount path (a plain dir now), bound to its real NIC.
+    expect(calls[1]).toMatchObject({
       machineName: 'adopted',
       params: {
         mount_path: '/mnt/rediacc/mounts/prod',
@@ -112,7 +111,7 @@ describe('joinCluster', () => {
 });
 
 describe('evictCluster', () => {
-  it('drains + deletes the node by IP and clears the backref', async () => {
+  it('drains + deletes the node by IP, uninstalls node-side k3s (#20), and clears the backref', async () => {
     stub({
       adopted: { ip: '192.168.111.50', user: 'root', cluster: { cluster: 'prod', pool: 'w' } },
     });
@@ -122,10 +121,18 @@ describe('evictCluster', () => {
     await evictCluster('adopted', {});
 
     const calls = exec.mock.calls.map((c) => c[0]);
-    expect(calls.map((c) => c.functionName)).toEqual(['kube_node_remove']);
+    // ★ #20: the control plane forgetting the Node is only HALF an eviction. The
+    // evicted machine must also stop running its own k3s agent, or it keeps a
+    // stale kubelet alive and blocks a later re-adopt.
+    expect(calls.map((c) => c.functionName)).toEqual(['kube_node_remove', 'kube_uninstall']);
     expect(calls[0]).toMatchObject({
       machineName: 'prod-cp-1',
       params: { mount_path: '/mnt/rediacc-ds/ds-control-prod', node_ip: '192.168.111.50' },
+    });
+    // The uninstall runs ON THE EVICTED MACHINE, against its own cluster mount.
+    expect(calls[1]).toMatchObject({
+      machineName: 'adopted',
+      params: { mount_path: '/mnt/rediacc/mounts/prod' },
     });
     expect(update).toHaveBeenCalledWith('adopted', { cluster: undefined });
   });

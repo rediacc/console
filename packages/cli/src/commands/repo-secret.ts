@@ -15,6 +15,14 @@
  * **No `grandGuard`.** With write-only there's no plaintext read attack to
  * gate. Mutation-gate is the actual safety property; the fork-isolation
  * invariant from V1 (registerFork doesn't copy `secrets`) is unchanged.
+ *
+ * **Addressing (reshape P4).** Every verb takes a positional `<ref>` and
+ * resolves the repo through `resolveRepoRefLocal`. Secret ops are config-local
+ * (no remote round-trip, no machine dispatch), so they resolve the family/tag
+ * WITHOUT deriving a placement machine — that keeps them working on a repo whose
+ * datastore is detached or whose placement is not yet reconciled. The composite
+ * `name:tag` key the flat-view store indexes by is rebuilt from the resolved
+ * `name` + `tag` (the flattened repositories map is always keyed that way).
  */
 
 import { createHash } from 'node:crypto';
@@ -44,6 +52,7 @@ import {
   PreconditionValidationError,
   ValidationError,
 } from '../utils/errors.js';
+import { resolveRepoRefLocal } from '../utils/repo-target.js';
 
 function emit(draft: AuditEventDraft): void {
   try {
@@ -55,16 +64,10 @@ function emit(draft: AuditEventDraft): void {
 }
 
 interface SecretGetOptions {
-  name: string;
   key: string;
 }
 
-interface SecretListOptions {
-  name: string;
-}
-
 interface SecretSetOptions {
-  name: string;
   key: string;
   value: string;
   mode?: SecretMode;
@@ -73,7 +76,6 @@ interface SecretSetOptions {
 }
 
 interface SecretUnsetOptions {
-  name: string;
   key: string;
   current?: string;
   rotateSecret?: boolean;
@@ -105,6 +107,21 @@ function buildSecretPointer(repoKey: string, secretKey: string): string {
 }
 
 /**
+ * The flat-view store key (`name:tag`) for a resolved ref. The flattened
+ * repositories map is always composite-keyed (`${base}:${tag}`), and the
+ * store helpers index it directly, so a bare ref must be rebuilt with its
+ * resolved tag before it can touch the map.
+ */
+async function resolveSecretRepoKey(ref: string): Promise<{ name: string; repoKey: string }> {
+  // Config-local: secret ops read/write the config only (secrets are injected at
+  // up() time, never set on a machine), so resolve the family/tag WITHOUT deriving
+  // a placement machine. This keeps secret get/list/set/unset working on a repo
+  // whose datastore is detached or whose placement is not yet reconciled.
+  const { name, tag } = await resolveRepoRefLocal(ref);
+  return { name, repoKey: `${name}:${tag}` };
+}
+
+/**
  * Build the structured next-action hint for a precondition failure.
  * Two options: re-read the digest and retry with --current, or skip the
  * precondition via --rotate-secret. The original argv is reconstructed
@@ -127,18 +144,14 @@ function buildPreconditionNext(repoKey: string, key: string, originalArgs: strin
   };
 }
 
-async function handleSecretGet(options: SecretGetOptions): Promise<void> {
-  const repoKey = await configService.getRepositoryKey(options.name);
-  if (!repoKey) {
-    throw new ValidationError(
-      t('commands.repo.secret.get.repoNotFound', { repository: options.name })
-    );
-  }
+async function handleSecretGet(ref: string, options: SecretGetOptions): Promise<void> {
+  // Read-only: derive the machine, skip step 5's remote round-trip.
+  const { name, repoKey } = await resolveSecretRepoKey(ref);
 
   const entry = readRepositorySecret(await configService.getRepository(repoKey), options.key);
   if (!entry) {
     throw new ValidationError(
-      t('commands.repo.secret.get.notFound', { key: options.key, repository: options.name })
+      t('commands.repo.secret.get.notFound', { key: options.key, repository: name })
     );
   }
 
@@ -156,13 +169,9 @@ async function handleSecretGet(options: SecretGetOptions): Promise<void> {
   emit({ command: 'repo secret get', paths: [pointer], outcome: 'ok' });
 }
 
-async function handleSecretList(options: SecretListOptions): Promise<void> {
-  const repoKey = await configService.getRepositoryKey(options.name);
-  if (!repoKey) {
-    throw new ValidationError(
-      t('commands.repo.secret.get.repoNotFound', { repository: options.name })
-    );
-  }
+async function handleSecretList(ref: string): Promise<void> {
+  // Read-only + config-local: derive the key, no remote round-trip.
+  const { repoKey } = await resolveSecretRepoKey(ref);
 
   const entries = listRepositorySecretKeyModes(await configService.getRepository(repoKey));
   const format = getOutputFormat();
@@ -177,18 +186,10 @@ async function handleSecretList(options: SecretListOptions): Promise<void> {
   outputService.print(entries, 'table');
 }
 
-async function resolveRepoKeyOrThrow(name: string): Promise<string> {
-  const repoKey = await configService.getRepositoryKey(name);
-  if (!repoKey) {
-    throw new ValidationError(t('commands.repo.secret.get.repoNotFound', { repository: name }));
-  }
-  return repoKey;
-}
-
 function runMutationGate(
   command: string,
   entry: MutationEntry,
-  options: { current?: string; rotateSecret?: boolean; name: string; key: string },
+  options: { current?: string; rotateSecret?: boolean; key: string },
   repoKey: string,
   config: NonNullable<Awaited<ReturnType<typeof configService.getCurrent>>>,
   originalArgs: string[]
@@ -222,12 +223,13 @@ function runMutationGate(
   }
 }
 
-async function handleSecretSet(options: SecretSetOptions): Promise<void> {
+async function handleSecretSet(ref: string, options: SecretSetOptions): Promise<void> {
   if (options.current !== undefined && options.rotateSecret) {
     throw new ValidationError(t('errors.repo.secret.mutuallyExclusive'));
   }
 
-  const repoKey = await resolveRepoKeyOrThrow(options.name);
+  // Mutating verb: resolve through the addressing model without readOnly.
+  const { repoKey } = await resolveSecretRepoKey(ref);
   const value = options.value === '-' ? await readValueFromStdin() : options.value;
   if (value.length === 0) {
     throw new ValidationError(t('errors.repo.secret.emptyValue'));
@@ -252,7 +254,7 @@ async function handleSecretSet(options: SecretSetOptions): Promise<void> {
     config,
     [
       'rdc repo secret set',
-      `--name ${options.name}`,
+      repoKey,
       `--key ${options.key}`,
       `--value <new-value>`,
       `--mode ${mode}`,
@@ -277,19 +279,20 @@ async function handleSecretSet(options: SecretSetOptions): Promise<void> {
   );
 }
 
-async function handleSecretUnset(options: SecretUnsetOptions): Promise<void> {
+async function handleSecretUnset(ref: string, options: SecretUnsetOptions): Promise<void> {
   if (options.current !== undefined && options.rotateSecret) {
     throw new ValidationError(t('errors.repo.secret.mutuallyExclusive'));
   }
 
-  const repoKey = await resolveRepoKeyOrThrow(options.name);
+  // Mutating verb: resolve through the addressing model without readOnly.
+  const { name, repoKey } = await resolveSecretRepoKey(ref);
   const previousEntry = readRepositorySecret(
     await configService.getRepository(repoKey),
     options.key
   );
   if (!previousEntry) {
     throw new ValidationError(
-      t('commands.repo.secret.get.notFound', { key: options.key, repository: options.name })
+      t('commands.repo.secret.get.notFound', { key: options.key, repository: name })
     );
   }
 
@@ -303,15 +306,10 @@ async function handleSecretUnset(options: SecretUnsetOptions): Promise<void> {
     options,
     repoKey,
     config,
-    ['rdc repo secret unset', `--name ${options.name}`, `--key ${options.key}`]
+    ['rdc repo secret unset', repoKey, `--key ${options.key}`]
   );
 
-  await deleteRepositorySecret(
-    await configService.getResourceState(),
-    options.name,
-    repoKey,
-    options.key
-  );
+  await deleteRepositorySecret(await configService.getResourceState(), name, repoKey, options.key);
 
   emit({
     command: 'repo secret unset',
@@ -336,11 +334,11 @@ export function registerRepoSecretCommands(repoCommand: Command): void {
     .command('get')
     .summary(t('commands.repo.secret.get.descriptionShort'))
     .description(t('commands.repo.secret.get.description'))
-    .requiredOption('--name <repository>', t('commands.repo.secret.nameOption'))
+    .argument('<ref>', t('options.repoRef'))
     .requiredOption('--key <KEY>', t('commands.repo.secret.keyOption'))
-    .action(async (options: SecretGetOptions) => {
+    .action(async (ref: string, options: SecretGetOptions) => {
       try {
-        await handleSecretGet(options);
+        await handleSecretGet(ref, options);
       } catch (error) {
         handleError(error);
       }
@@ -350,10 +348,10 @@ export function registerRepoSecretCommands(repoCommand: Command): void {
     .command('list')
     .summary(t('commands.repo.secret.list.descriptionShort'))
     .description(t('commands.repo.secret.list.description'))
-    .requiredOption('--name <repository>', t('commands.repo.secret.nameOption'))
-    .action(async (options: SecretListOptions) => {
+    .argument('<ref>', t('options.repoRef'))
+    .action(async (ref: string) => {
       try {
-        await handleSecretList(options);
+        await handleSecretList(ref);
       } catch (error) {
         handleError(error);
       }
@@ -363,7 +361,7 @@ export function registerRepoSecretCommands(repoCommand: Command): void {
     .command('set')
     .summary(t('commands.repo.secret.set.descriptionShort'))
     .description(t('commands.repo.secret.set.description'))
-    .requiredOption('--name <repository>', t('commands.repo.secret.nameOption'))
+    .argument('<ref>', t('options.repoRef'))
     .requiredOption('--key <KEY>', t('commands.repo.secret.keyOption'))
     .requiredOption('--value <value>', t('commands.repo.secret.valueOption'))
     .addOption(
@@ -373,13 +371,13 @@ export function registerRepoSecretCommands(repoCommand: Command): void {
     )
     .option('--current <value>', t('commands.repo.secret.currentOption'))
     .option('--rotate-secret', t('commands.repo.secret.rotateOption'))
-    .action(async (options: SecretSetOptions) => {
+    .action(async (ref: string, options: SecretSetOptions) => {
       try {
         const m = options.mode as string;
         if (m !== 'env' && m !== 'file') {
           throw new ValidationError(t('errors.repo.secret.badMode', { mode: m }));
         }
-        await handleSecretSet(options);
+        await handleSecretSet(ref, options);
       } catch (error) {
         handleError(error);
       }
@@ -389,13 +387,13 @@ export function registerRepoSecretCommands(repoCommand: Command): void {
     .command('unset')
     .summary(t('commands.repo.secret.unset.descriptionShort'))
     .description(t('commands.repo.secret.unset.description'))
-    .requiredOption('--name <repository>', t('commands.repo.secret.nameOption'))
+    .argument('<ref>', t('options.repoRef'))
     .requiredOption('--key <KEY>', t('commands.repo.secret.keyOption'))
     .option('--current <value>', t('commands.repo.secret.currentOption'))
     .option('--rotate-secret', t('commands.repo.secret.rotateOption'))
-    .action(async (options: SecretUnsetOptions) => {
+    .action(async (ref: string, options: SecretUnsetOptions) => {
       try {
-        await handleSecretUnset(options);
+        await handleSecretUnset(ref, options);
       } catch (error) {
         handleError(error);
       }

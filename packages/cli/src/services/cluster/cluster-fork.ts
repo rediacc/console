@@ -21,7 +21,7 @@ import {
   clusterMount,
   controlDatastore,
   controlDatastoreMount,
-  createNodeImage,
+  allocateAgentNetworkId,
   dispatch,
   K8S_SERVER_ROLES,
   type K8sMember,
@@ -267,12 +267,7 @@ export async function forkCluster(
   const forkEndpoint = serverUrl(dstControl.ip);
   for (const agent of dstAgents) {
     outputService.info(`  fresh agent join ${agent.name} (${agent.ip})...`);
-    const agentNet = await createNodeImage(
-      agent,
-      options.cluster,
-      poolSize(k8sPoolsOf(dest), agent.pool),
-      options.debug
-    );
+    const agentNet = await allocateAgentNetworkId();
     await dispatch(
       'kube_join',
       agent.name,
@@ -382,16 +377,30 @@ export async function rehearseCluster(
   clusterName: string,
   options: RehearseClusterOptions
 ): Promise<void> {
+  if (!options.cluster) {
+    throw new Error(
+      `A rehearsal boots a whole throwaway control plane, so it needs a destination cluster ` +
+        `to run on. Pass --on <dest-cluster>.`
+    );
+  }
+  const destCluster = options.cluster;
   const tag = options.tag ?? `rehearse-${Date.now()}`;
-  outputService.info(
-    `Rehearse "${clusterName}" [${tag}] on "${options.cluster}" (ephemeral fork)...`
-  );
+  outputService.info(`Rehearse "${clusterName}" [${tag}] on "${destCluster}" (ephemeral fork)...`);
+
+  // ★ BUG #44: resolve the destination CONTROL MACHINE up front. The failure path
+  // below needs it, and `options.cluster` is a CLUSTER name, not a machine — the
+  // catch used to pass it straight into discardRehearsal's `destControl` (machine)
+  // parameter, so every teardown step dispatched at a machine that does not exist.
+  // tryDispatch is best-effort, so it swallowed the errors and a FAILED rehearsal
+  // silently left its whole fork behind: the exact residue rehearse promises never
+  // to leave.
+  const destControl = await resolveDestControl(destCluster);
 
   let result: ForkResult;
   try {
     result = await forkCluster(clusterName, {
       tag,
-      cluster: options.cluster,
+      cluster: destCluster,
       writes: 'local',
       role: 'rehearsal',
       up: true,
@@ -399,7 +408,7 @@ export async function rehearseCluster(
     });
   } catch (err) {
     // A failed fork/gate still tries to discard whatever partial state exists.
-    await discardRehearsal(options.cluster, clusterName, tag, options.debug);
+    await discardRehearsal(destControl, clusterName, tag, options.debug);
     throw err;
   }
 
@@ -408,6 +417,16 @@ export async function rehearseCluster(
   );
   await discardRehearsal(result.destControl, clusterName, tag, options.debug, result);
   outputService.success(`Rehearsal "${clusterName}" [${tag}] discarded — no residue.`);
+}
+
+/**
+ * The destination cluster's control-plane MACHINE (the host every teardown step
+ * dispatches at). Resolved before the fork so the failure path has it too (#44).
+ */
+async function resolveDestControl(destCluster: string): Promise<string | undefined> {
+  const dest = await getCluster(destCluster);
+  const members = await resolveK8sMembers(destCluster, k8sPoolsOf(dest));
+  return members.find((m) => K8S_SERVER_ROLES.has(m.role))?.name;
 }
 
 /**

@@ -19,7 +19,9 @@ export type {
   CommandPlane,
   ContractCommand,
   ContractOption,
+  ContractPositional,
   ContractStrings,
+  PositionalKind,
   TimeoutClass,
 } from './types';
 export {
@@ -28,9 +30,11 @@ export {
   CommandPlaneSchema,
   ContractCommandSchema,
   ContractOptionSchema,
+  ContractPositionalSchema,
   ContractStringsSchema,
   checkContractInvariants,
   parseCliContract,
+  PositionalKindSchema,
   safeParseCliContract,
   TimeoutClassSchema,
 } from './validation';
@@ -62,17 +66,22 @@ export function commandsByDomain(): Map<string, ContractCommand[]> {
  * Commands that can act on the given resources — the set a UI should offer
  * once the operator has selected a machine, a repository, or both.
  *
- * The binding is read from `machineOption` / `repoOption`, which the generator
- * resolves per command (see ContractCommand). Passing no context returns every
- * command.
+ * The binding is read from the FLAG bindings (`machineOption` / `repoOption`)
+ * OR the POSITIONAL bindings (`machinePositional` / `repoPositional`), so a
+ * command that names its machine or repo positionally still lights up on the
+ * matching resource page. Passing no context returns every command.
  */
 export function commandsForContext(context: {
   machine?: boolean;
   repo?: boolean;
 }): ContractCommand[] {
   return CLI_CONTRACT.commands.filter((cmd) => {
-    if (context.machine === true && cmd.machineOption === null) return false;
-    if (context.repo === true && cmd.repoOption === null) return false;
+    if (context.machine === true && cmd.machineOption === null && cmd.machinePositional === null) {
+      return false;
+    }
+    if (context.repo === true && cmd.repoOption === null && cmd.repoPositional === null) {
+      return false;
+    }
     return true;
   });
 }

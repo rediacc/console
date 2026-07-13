@@ -12,7 +12,7 @@
  * A command path is the CLI invocation with its arguments stripped, segments
  * separated by SINGLE SPACES, exactly as the user types it:
  *
- *     "repo fork"      "machine query"      "cluster destroy"
+ *     "repo fork"      "machine status"      "cluster destroy"
  *
  * Not dotted ("repo.fork") and not hyphenated. One format, everywhere: the
  * executor derives it from the command it is about to run, and the policy author

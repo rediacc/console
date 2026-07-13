@@ -185,6 +185,38 @@ export function extractArgument(arg: Argument): ArgumentNode {
   };
 }
 
+/**
+ * A positional argument, serialised for the CONTRACT walker.
+ *
+ * Separate from ArgumentNode (which the docs command-tree export must keep
+ * byte-identical): this one resolves the description back to its i18n key,
+ * exactly as options do, so a consumer can translate a positional's help text.
+ * The `kind` classification is the generator's job, not the walker's, because
+ * only the generator knows the per-noun kind table.
+ */
+export interface WalkedPositional {
+  name: string;
+  required: boolean;
+  variadic: boolean;
+  descriptionKey: string | null;
+  /** English description, always present (may be empty). */
+  label: string;
+}
+
+export function extractContractPositional(
+  arg: Argument,
+  resolver: DescriptionResolver
+): WalkedPositional {
+  const description = (arg as Argument & { description?: string }).description ?? '';
+  return {
+    name: arg.name(),
+    required: arg.required,
+    variadic: arg.variadic,
+    descriptionKey: description ? resolver.findDescriptionKey(description) : null,
+    label: description,
+  };
+}
+
 // ---------- Tree walker ----------
 
 /** Global options that appear on every command and are excluded per-command. */
@@ -196,8 +228,22 @@ export const GLOBAL_OPTION_LONGS = new Set([
   '--help',
 ]);
 
-/** Top-level shortcut aliases that duplicate real commands — excluded from the tree. */
-export const EXCLUDED_TOP_LEVEL = new Set(['login', 'logout', 'run', 'trace', 'cancel', 'retry']);
+/**
+ * Top-level commands held out of the generated contract.
+ *
+ * An entry here is invisible to EVERY consumer of the contract: the plane gate,
+ * MCP coverage, console coverage and the docs checks all walk this tree. So a
+ * stale entry fails OPEN — name a command that does not exist yet, and the day
+ * someone adds it, it is silently exempt from all of them. `contract-surface`
+ * (plane-coverage.test.ts) therefore asserts every entry is a live command.
+ *
+ * `run` is the deliberate one: the Rediaccfile-function escape hatch, an absolute
+ * agent block, and not a shape the contract can describe.
+ *
+ * Pruned in P4: `login`/`logout` (now `subscription login`/`logout`), and
+ * `trace`/`cancel`/`retry`, none of which are commands.
+ */
+export const EXCLUDED_TOP_LEVEL = new Set(['run']);
 
 export function walkCommand(cmd: Command, resolver: DescriptionResolver): CommandNode | null {
   const name = cmd.name();
@@ -228,7 +274,7 @@ export function walkCommand(cmd: Command, resolver: DescriptionResolver): Comman
 /**
  * A command that gets its own contract entry: every leaf, plus any group that
  * carries its own action handler (e.g. `repo replicate`, `repo canary`,
- * `subscription refresh` are runnable AND have subcommands).
+ * `repo replicate` are runnable AND have subcommands).
  */
 export interface WalkedCommand {
   path: string[];
@@ -236,6 +282,8 @@ export interface WalkedCommand {
   pathKey: string;
   descriptionKey: string | null;
   options: OptionNode[];
+  /** Positional arguments in declared order, [] for the options-only leaves. */
+  positionals: WalkedPositional[];
   hasSubcommands: boolean;
 }
 
@@ -248,10 +296,10 @@ function hasActionHandler(cmd: Command): boolean {
  * Walk the live tree and collect every command that is directly runnable:
  * leaves, plus groups that also registered an action handler.
  *
- * Throws if any command registers a positional argument. The CLI is
- * options-only today and the contract's argv serialisation (options in,
- * options out) depends on that; a new positional needs a serialisation rule
- * in the contract consumers first.
+ * Positional arguments are serialised into `positionals` (they used to throw:
+ * the contract was options-only, and every consumer serialised a command as
+ * flags alone). The ref concept added the serialisation rule the throw guarded,
+ * so a positional now travels as a bare token before the flags.
  */
 export function walkContractCommands(
   root: Command,
@@ -267,17 +315,6 @@ export function walkContractCommands(
     const commandPath = [...prefix, name];
     const pathKey = commandPath.join(' ');
 
-    if (cmd.registeredArguments.length > 0) {
-      const names = cmd.registeredArguments.map((a) => a.name()).join(', ');
-      throw new Error(
-        `Command "${pathKey}" registers positional argument(s): ${names}.\n` +
-          'The CLI contract is options-only: every contract consumer (web console, ' +
-          '--proxy thin client, executor) serialises a command as flags alone.\n' +
-          'Add a positional-argument serialisation rule to the contract (types.ts ' +
-          'ContractCommand + generate-cli-contract.ts) before registering positionals.'
-      );
-    }
-
     const subcommands = cmd.commands.filter((c) => c.name() !== 'help');
     const runnable = subcommands.length === 0 || hasActionHandler(cmd);
 
@@ -288,11 +325,15 @@ export function walkContractCommands(
         if (GLOBAL_OPTION_LONGS.has(opt.long ?? '')) continue;
         options.push(extractOption(opt, resolver));
       }
+      const positionals = cmd.registeredArguments.map((arg) =>
+        extractContractPositional(arg, resolver)
+      );
       result.push({
         path: commandPath,
         pathKey,
         descriptionKey: rawDesc ? resolver.findDescriptionKey(rawDesc) : null,
         options,
+        positionals,
         hasSubcommands: subcommands.length > 0,
       });
     }

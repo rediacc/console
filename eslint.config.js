@@ -19,7 +19,7 @@ import { noRawApiCalls } from './eslint-rules/no-raw-api-calls.js';
 import { noDuplicateTranslationProps } from './eslint-rules/no-duplicate-translation-props.js';
 import { preferConstArrays } from './eslint-rules/prefer-const-arrays.js';
 import { noHardcodedNullishDefaults } from './eslint-rules/no-hardcoded-nullish-defaults.js';
-import { noPositionalArguments } from './eslint-rules/no-positional-arguments.js';
+import { EXEMPT_COMMAND_PREFIXES } from './eslint-rules/lib/cli-exempt-lists.js';
 import { noPositionalCliSyntaxSource } from './eslint-rules/no-positional-cli-syntax-source.js';
 import { e2eTestNamingConvention } from './eslint-rules/e2e-test-naming-convention.js';
 import { requireDataTrack } from './eslint-rules/require-data-track.js';
@@ -243,7 +243,6 @@ export default tseslint.config(
           'no-hardcoded-nullish-defaults': noHardcodedNullishDefaults,
           'e2e-test-naming-convention': e2eTestNamingConvention,
           'require-data-track': requireDataTrack,
-          'no-positional-arguments': noPositionalArguments,
           'no-positional-cli-syntax-source': noPositionalCliSyntaxSource,
           'seo-no-vague-anchor-text': seoNoVagueAnchorText,
           'seo-require-img-alt': seoRequireImgAlt,
@@ -522,13 +521,32 @@ export default tseslint.config(
   // CLI i18n enforcement
   {
     files: ['packages/cli/src/**/*.{js,ts}'],
-    ignores: ['packages/cli/src/__tests__/**'],
+    ignores: [
+      'packages/cli/src/__tests__/**',
+      // P4 task-zero throwaway probe (commands/refprobe.ts): it deliberately
+      // uses hardcoded English and a positional <ref>, and w1 deletes it, so it
+      // is exempt from the CLI i18n + positional rules rather than churning 13
+      // locales for a leaf that will not survive.
+      'packages/cli/src/commands/refprobe.ts',
+    ],
     plugins: {
       'i18n-source': i18nSourcePlugin,
     },
     rules: {
-      // Ban positional arguments -- enforce named options in Commander.js commands
-      'custom/no-positional-arguments': 'error',
+      // `custom/no-positional-arguments` used to live here, banning positional
+      // arguments in Commander registrations and requiring named options. P4's
+      // ref concept (spec 03 §2.2, operator ruling R-P4-1) INVERTS that: a noun's
+      // primary name is now a positional (`rdc repo up shop`), which is the whole
+      // addressing grammar the phase is built on. A rule that reds on every
+      // converted leaf is not a rule that needs a longer exempt list, it is a rule
+      // that is backwards, so it was deleted along with eslint-rules/
+      // no-positional-arguments.js.
+      //
+      // The DOCS side is still guarded, and correctly: `i18n/no-positional-cli-syntax`
+      // and `custom/no-positional-cli-syntax-source` autoDerive their denylist from
+      // command-tree.json, so they flag a positional example only for a command that
+      // genuinely takes no positional. They follow the tree instead of fighting it.
+
       // Enforce t() for CLI-specific patterns
       'custom/no-hardcoded-cli-text': ['error'],
       'custom/require-command-summary': 'error',
@@ -610,22 +628,19 @@ export default tseslint.config(
     ],
     // Ban documentation/help strings that teach positional syntax for
     // commands that actually require named options (see issue #446).
-    // Complements custom/no-positional-arguments which enforces the
-    // Commander API side in source files.
     //
     // autoDerive reads packages/cli/scripts/command-tree.json and builds
     // the denylist from every leaf command with zero positional arguments.
     // Keeps the rule in sync with Commander source with zero hand-editing.
     cliSyntax: {
       autoDerive: true,
-      // Legacy / cloud-adapter command groups that use positional
-      // subcommands legitimately. Skips a line if its trimmed start
-      // matches any prefix.
-      exemptCommandPrefixes: [
-        'rdc auth', 'rdc audit', 'rdc bridge', 'rdc organization',
-        'rdc permission', 'rdc protocol', 'rdc queue', 'rdc region',
-        'rdc repository', 'rdc team', 'rdc user', 'rdc ceph',
-      ],
+      // IMPORTED, not re-listed — this was a FOURTH copy of a list that also lived in
+      // scripts/lib/positional-cli-detector.ts and both ESLint rules. All four named
+      // the same twelve cloud-adapter commands (`rdc auth`, `rdc organization`, …),
+      // and all twelve were DELETED WITH THE CLOUD ADAPTER. The list exempted nothing
+      // that exists, in four places, and would have silently exempted any of those
+      // names the day one came back.
+      exemptCommandPrefixes: EXEMPT_COMMAND_PREFIXES,
     },
     // Ban help/description prose that references a `--flag` not registered on any
     // rdc command (see issue #489 — `repo up --mount` did not exist). Derives the

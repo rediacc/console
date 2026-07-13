@@ -1,3 +1,10 @@
+/**
+ * `term connect` output mode. With the container side door retired (spec §5.8:
+ * `--container`, `--container-action`, `--log-lines`, `--follow` are deleted in
+ * favour of `repo logs` / `repo exec`), the only axis left is whether the
+ * invocation is a one-shot `-c` command or an interactive shell.
+ */
+
 import { describe, expect, it } from 'vitest';
 import { resolveTermOutputMode } from '../term.js';
 
@@ -6,55 +13,16 @@ describe('resolveTermOutputMode', () => {
     expect(resolveTermOutputMode({})).toEqual({ quietOutput: false, noTTY: false });
   });
 
-  it('plain command: silence chatter and drop TTY', () => {
+  it('one-shot command: silence chatter and drop TTY so stdout stays pipeable', () => {
     expect(resolveTermOutputMode({ command: 'echo HELLO' })).toEqual({
       quietOutput: true,
       noTTY: true,
     });
   });
 
-  it('container exec with command: silence chatter but keep TTY for docker exec -it', () => {
-    expect(
-      resolveTermOutputMode({
-        command: 'bash',
-        container: 'web',
-        containerAction: 'exec',
-      })
-    ).toEqual({ quietOutput: true, noTTY: false });
-  });
-
-  it('container terminal with command: same TTY exception as exec', () => {
-    expect(
-      resolveTermOutputMode({
-        command: 'bash',
-        container: 'web',
-        containerAction: 'terminal',
-      })
-    ).toEqual({ quietOutput: true, noTTY: false });
-  });
-
-  it('container without explicit action: defaults to terminal mode, keep TTY', () => {
-    expect(
-      resolveTermOutputMode({
-        command: 'bash',
-        container: 'web',
-      })
-    ).toEqual({ quietOutput: true, noTTY: false });
-  });
-
-  it('container logs with command: NOT interactive, drop TTY', () => {
-    expect(
-      resolveTermOutputMode({
-        command: 'irrelevant',
-        container: 'web',
-        containerAction: 'logs',
-      })
-    ).toEqual({ quietOutput: true, noTTY: true });
-  });
-
-  it('container without command: silence chatter, keep TTY (interactive default)', () => {
-    expect(resolveTermOutputMode({ container: 'web' })).toEqual({
-      quietOutput: true,
+  it('--external alone does not change the output mode', () => {
+    expect(resolveTermOutputMode({ external: true })).toEqual({
+      quietOutput: false,
       noTTY: false,
     });
   });

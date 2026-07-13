@@ -1,17 +1,17 @@
 import { isValidEmail } from '@rediacc/shared/validation';
 import type { Command } from 'commander';
-import { t } from '../i18n/index.js';
-import { configService } from '../services/config/config-resources.js';
-import { outputService } from '../services/core/output.js';
-import type { InfraConfig, OutputFormat } from '../types/index.js';
+import { t } from '../../i18n/index.js';
+import { configService } from '../../services/config/config-resources.js';
+import { outputService } from '../../services/core/output.js';
+import type { InfraConfig, OutputFormat } from '../../types/index.js';
 import {
   InfraConfigSchema,
   normalizeDomain,
   normalizeEmail,
   normalizeIp,
   parseConfig,
-} from '../utils/config-schema.js';
-import { handleError, ValidationError } from '../utils/errors.js';
+} from '../../utils/config-schema.js';
+import { handleError, ValidationError } from '../../utils/errors.js';
 
 interface ParsedInfraOptions {
   infra: Partial<InfraConfig>;
@@ -43,29 +43,26 @@ function parseInfraOptions(options: Record<string, string>): ParsedInfraOptions 
   return { infra, configLevel };
 }
 
-export function registerInfraCommands(config: Command, program: Command): void {
-  const infra = config.command('infra').description(t('commands.config.infra.description'));
-
-  // config infra set
+/** `machine infra set|show|push <machine>`. */
+function registerInfraCore(infra: Command, program: Command): void {
   infra
     .command('set')
-    .summary(t('commands.config.infra.set.descriptionShort'))
-    .description(t('commands.config.infra.set.description'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
-    .option('--public-ipv4 <ip>', t('commands.config.infra.set.optionPublicIPv4'))
-    .option('--public-ipv6 <ip>', t('commands.config.infra.set.optionPublicIPv6'))
-    .option('--base-domain <domain>', t('commands.config.infra.set.optionBaseDomain'))
-    .option('--cert-email <email>', t('commands.config.infra.set.optionCertEmail'))
-    .option('--cf-dns-token <token>', t('commands.config.infra.set.optionCfDnsToken'))
-    .option('--tcp-ports <ports>', t('commands.config.infra.set.optionTcpPorts'))
-    .option('--udp-ports <ports>', t('commands.config.infra.set.optionUdpPorts'))
-    .action(async (options) => {
-      const machineName = options.machine;
+    .argument('<machine>', t('options.machine'))
+    .summary(t('commands.machine.infra.set.descriptionShort'))
+    .description(t('commands.machine.infra.set.description'))
+    .option('--public-ipv4 <ip>', t('commands.machine.infra.set.optionPublicIPv4'))
+    .option('--public-ipv6 <ip>', t('commands.machine.infra.set.optionPublicIPv6'))
+    .option('--base-domain <domain>', t('commands.machine.infra.set.optionBaseDomain'))
+    .option('--cert-email <email>', t('commands.machine.infra.set.optionCertEmail'))
+    .option('--cf-dns-token <token>', t('commands.machine.infra.set.optionCfDnsToken'))
+    .option('--tcp-ports <ports>', t('commands.machine.infra.set.optionTcpPorts'))
+    .option('--udp-ports <ports>', t('commands.machine.infra.set.optionUdpPorts'))
+    .action(async (machineName: string, options) => {
       try {
         const { infra: infraOpts, configLevel } = parseInfraOptions(options);
 
         if (Object.keys(infraOpts).length === 0 && Object.keys(configLevel).length === 0) {
-          outputService.warn(t('commands.config.infra.set.noOptions'));
+          outputService.warn(t('commands.machine.infra.set.noOptions'));
           return;
         }
 
@@ -87,26 +84,24 @@ export function registerInfraCommands(config: Command, program: Command): void {
           await configService.updateConfigFields(configLevel);
         }
 
-        outputService.success(t('commands.config.infra.set.success', { name: machineName }));
+        outputService.success(t('commands.machine.infra.set.success', { name: machineName }));
       } catch (error) {
         handleError(error);
       }
     });
 
-  // config infra show
   infra
     .command('show')
-    .description(t('commands.config.infra.show.description'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
-    .action(async (options) => {
+    .argument('<machine>', t('options.machine'))
+    .description(t('commands.machine.infra.show.description'))
+    .action(async (machineName: string) => {
       try {
-        const machineName = options.machine;
         const machine = await configService.getLocalMachine(machineName);
         const localConfig = await configService.getLocalConfig();
         const format = program.opts().output as OutputFormat;
 
         if (!machine.infra) {
-          outputService.info(t('commands.config.infra.show.noInfra', { name: machineName }));
+          outputService.info(t('commands.machine.infra.show.noInfra', { name: machineName }));
           return;
         }
 
@@ -141,42 +136,36 @@ export function registerInfraCommands(config: Command, program: Command): void {
       }
     });
 
-  // config infra push
   infra
     .command('push')
-    .summary(t('commands.config.infra.push.descriptionShort'))
-    .description(t('commands.config.infra.push.description'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
+    .argument('<machine>', t('options.machine'))
+    .summary(t('commands.machine.infra.push.descriptionShort'))
+    .description(t('commands.machine.infra.push.description'))
     .option('--debug', t('options.debug'))
-    .action(async (options) => {
+    .action(async (machineName: string, options) => {
       try {
-        const machineName = options.machine;
-        const { pushInfraConfig } = await import('../services/provision/infra-provision.js');
+        const { pushInfraConfig } = await import('../../services/provision/infra-provision.js');
         await pushInfraConfig(machineName, { debug: options.debug });
-        outputService.success(t('commands.config.infra.push.success', { name: machineName }));
+        outputService.success(t('commands.machine.infra.push.success', { name: machineName }));
       } catch (error) {
         handleError(error);
       }
     });
+}
 
-  // ============================================================================
-  // cert-cache subcommands (already nested — keep as-is)
-  // ============================================================================
+/** `machine infra cert pull|push|status|clear`. */
+function registerCertCache(infra: Command, program: Command): void {
+  const cert = infra.command('cert').description(t('commands.machine.infra.cert.description'));
 
-  const certCache = config
-    .command('cert-cache')
-    .description(t('commands.config.certCache.description'));
-
-  certCache
+  cert
     .command('pull')
-    .description(t('commands.config.certCache.pull.description'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
-    .option('--no-prune', t('commands.config.certCache.pull.optionNoPrune'))
+    .argument('<machine>', t('options.machine'))
+    .description(t('commands.machine.infra.cert.pull.description'))
+    .option('--no-prune', t('commands.machine.infra.cert.pull.optionNoPrune'))
     .option('--debug', t('options.debug'))
-    .action(async (options) => {
+    .action(async (machineName: string, options) => {
       try {
-        const machineName = options.machine;
-        const { downloadCertCache } = await import('../services/account/cert-cache.js');
+        const { downloadCertCache } = await import('../../services/account/cert-cache.js');
         await downloadCertCache(machineName, {
           noPrune: options.prune === false,
           debug: options.debug,
@@ -186,49 +175,46 @@ export function registerInfraCommands(config: Command, program: Command): void {
       }
     });
 
-  certCache
+  cert
     .command('push')
-    .description(t('commands.config.certCache.push.description'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
+    .argument('<machine>', t('options.machine'))
+    .description(t('commands.machine.infra.cert.push.description'))
     .option('--debug', t('options.debug'))
-    .action(async (options) => {
+    .action(async (machineName: string, options) => {
       try {
-        const machineName = options.machine;
-        const { uploadCertCache } = await import('../services/account/cert-cache.js');
-        await uploadCertCache(machineName, {
-          debug: options.debug,
-        });
+        const { uploadCertCache } = await import('../../services/account/cert-cache.js');
+        await uploadCertCache(machineName, { debug: options.debug });
       } catch (error) {
         handleError(error);
       }
     });
 
-  certCache
+  cert
     .command('status')
-    .description(t('commands.config.certCache.status.description'))
+    .description(t('commands.machine.infra.cert.status.description'))
     .action(async () => {
       try {
-        const { getCertStatus } = await import('../services/account/cert-cache.js');
+        const { getCertStatus } = await import('../../services/account/cert-cache.js');
         const entries = await getCertStatus();
         const format = program.opts().output as OutputFormat;
 
         if (entries.length === 0) {
-          outputService.info(t('commands.config.certCache.status.noCache'));
+          outputService.info(t('commands.machine.infra.cert.status.noCache'));
           return;
         }
 
         for (const entry of entries) {
           outputService.info(
-            t('commands.config.certCache.status.header', { baseDomain: entry.baseDomain })
+            t('commands.machine.infra.cert.status.header', { baseDomain: entry.baseDomain })
           );
           outputService.info(
-            t('commands.config.certCache.status.updatedAt', {
+            t('commands.machine.infra.cert.status.updatedAt', {
               date: new Date(entry.updatedAt).toLocaleString(),
               machine: entry.sourceMachine,
             })
           );
           outputService.info(
-            t('commands.config.certCache.status.certCount', {
+            t('commands.machine.infra.cert.status.certCount', {
               count: entry.certCount,
               size: entry.compressedSize,
             })
@@ -255,20 +241,27 @@ export function registerInfraCommands(config: Command, program: Command): void {
       }
     });
 
-  certCache
+  cert
     .command('clear')
-    .description(t('commands.config.certCache.clear.description'))
+    .description(t('commands.machine.infra.cert.clear.description'))
     .action(async () => {
       try {
-        const { clearCertCache } = await import('../services/account/cert-cache.js');
+        const { clearCertCache } = await import('../../services/account/cert-cache.js');
         const cleared = await clearCertCache();
         if (cleared) {
-          outputService.success(t('commands.config.certCache.clear.cleared'));
+          outputService.success(t('commands.machine.infra.cert.clear.cleared'));
         } else {
-          outputService.info(t('commands.config.certCache.clear.noCache'));
+          outputService.info(t('commands.machine.infra.cert.clear.noCache'));
         }
       } catch (error) {
         handleError(error);
       }
     });
+}
+
+/** Register `machine infra {set,show,push}` + `machine infra cert {pull,push,status,clear}`. */
+export function registerInfraCommands(machine: Command, program: Command): void {
+  const infra = machine.command('infra').description(t('commands.machine.infra.description'));
+  registerInfraCore(infra, program);
+  registerCertCache(infra, program);
 }

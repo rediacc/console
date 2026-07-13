@@ -58,6 +58,23 @@ export interface ExecuteOptions {
    * target.
    */
   kubeCluster?: string;
+  /**
+   * The resolved placement's datastore mount path, overriding the machine's
+   * default datastore FOR THIS DISPATCH (#74).
+   *
+   * renet reads the datastore from the MACHINE VAULT (`p.Datastore()` ->
+   * `machineDatastore`, set only by `WithMachineVault`), which the CLI builds from
+   * the config machine record. A `datastore` PARAM is not a channel to it: the
+   * kube_* verbs happen to read `p.Export("datastore")`, but `repository_create`
+   * calls `AddDatastore`, which reads the vault. So a repo living on a NAMED
+   * datastore had no way to say so, and every dispatch silently used the machine's
+   * default docker datastore instead of the datastore the repo was created on.
+   *
+   * This is that channel. It does not change the default — a machine with no named
+   * datastore still falls back exactly as before; it lets a caller that KNOWS the
+   * placement stop staying silent about it.
+   */
+  datastore?: string;
   /** Parameters to pass to the function */
   params?: Record<string, unknown>;
   /**
@@ -81,8 +98,14 @@ export interface ExecuteOptions {
   captureOutput?: boolean;
   /** Enable NDJSON events mode: renet emits structured events instead of text */
   eventsMode?: boolean;
-  /** Callback for handling NDJSON events in real time. Never crosses the wire. */
-  onEvent?: (event: RenetEvent) => void;
+  /**
+   * Callback for handling NDJSON events in real time. Never crosses the wire.
+   *
+   * The optional second argument is the event's 1-based spool-line ordinal,
+   * present only on a detached job's replayed stream, where it lets a
+   * re-attaching client dedupe on resume. A synchronous stream omits it.
+   */
+  onEvent?: (event: RenetEvent, line?: number) => void;
   /** Suppress CLI step spinners (steps still recorded for the timeline) */
   quietSpinners?: boolean;
   /**
@@ -95,9 +118,23 @@ export interface ExecuteOptions {
    * connection cannot be assumed to outlive the work.
    *
    * Off by default: an operator watching a command in their own terminal wants
-   * the synchronous path. The proxy executor turns it on.
+   * the synchronous path. Nothing sets it yet; the serve dispatch turns it on
+   * for proxied commands, where the connection cannot outlive the work.
    */
   detached?: boolean;
+  /**
+   * Whether a detached run FOLLOWS the job to completion (the default) or returns
+   * the moment the job starts. `--background` turns this off: the CLI prints the
+   * job id and a resume hint and exits, leaving the work running on the machine.
+   * Only meaningful together with `detached`.
+   */
+  follow?: boolean;
+  /**
+   * Called once with the job id the instant a detached run starts, before any
+   * event is streamed. The serve route uses it to emit its `kind:'job'` line so a
+   * client can re-attach even if the connection drops before the first event.
+   */
+  onJobStarted?: (jobId: string) => void;
   /**
    * Skip the post-success repo-identity license refresh for create/fork.
    * Callers that defer must invoke refreshIdentityFor() themselves once the
@@ -133,6 +170,8 @@ export interface ExecuteResult {
    * (non-capture failure path), so failure renderers must not repeat it.
    */
   outputEchoed?: boolean;
+  /** The detached job id, set when a run started one but did not follow it (--background). */
+  jobId?: string;
   /** Step timing from renet (parsed from JSON output) */
   steps?: { name: string; duration_ms: number; detail?: string }[];
   /** CLI-side step timing (config, SSH connect, provision, verify, license) */

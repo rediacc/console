@@ -92,11 +92,32 @@ describe('CLI contract', () => {
     }
 
     // A pinned count is a deliberate drift alarm: it fires when the proxy-capable
-    // surface changes so the change is noticed rather than silent. 84 = the
-    // machine-plane, non-interactive, non-direct-SFTP, non-local-effect commands,
-    // including the five `rdc job` verbs added in the detached-job work. Update
-    // this only when the surface genuinely changes, and know why it moved.
-    expect(proxyCapableCommands().length).toBe(84);
+    // surface changes so the change is noticed rather than silent. 80 = the
+    // machine-plane, non-interactive, non-direct-SFTP, non-local-effect commands
+    // after the P4-w2a config exodus, the w2b retirement of the hidden
+    // `_refprobe run` P4 task-zero probe (its `repo cat` acceptance vehicle is a
+    // real, already-counted leaf), and the w2b fold of `repo mount`/`repo unmount`
+    // into `repo up`/`repo down` (both were proxy-capable, so 82 -> 80), including
+    // the five `rdc job` verbs.
+    //
+    // 80 -> 85 across the rest of w2b: `repo canary create` replaced the actionable
+    // parent (net 0), `cluster snapshot create|list` (+2), the subscription flatten
+    // collapsed 5 machine-plane leaves into 2 (-3), the datastore family went from a
+    // 5-leaf facade to 10 real leaves (+5), and `repo logs` + `repo exec` landed
+    // (+2). The `repo admin` subtree move is net 0: every relocated verb kept the
+    // plane it already had, `repo template list` included, because its COMMAND_PLANES
+    // entry moved with it.
+    //
+    // 85 -> 82: `repo admin archive {list,restore,purge}` are now config-plane. They
+    // had been machine-plane and PROXY-CAPABLE purely by inheritance — the §5.4
+    // relocation carried them out of the `config` noun (config-plane by default) into
+    // `repo` (machine-plane by default) and no plane entry was written. Their effect
+    // is entirely on the caller's config file, so offering them for remote execution
+    // was a §4.9 wrong-target bug: a proxied `archive purge` would have permanently
+    // deleted the PROXY HOST's archived records. The plane gate checks domains, not
+    // leaves, so it could not see this.
+    // Update this only when the surface genuinely changes.
+    expect(proxyCapableCommands().length).toBe(82);
   });
 
   it('every refusal carries a reason, and every proxyable command carries none', () => {
@@ -119,9 +140,10 @@ describe('CLI contract', () => {
       'repo sync upload',
       'repo sync download',
       'repo sync status',
-      'config cert-cache pull',
+      'machine infra cert pull',
       'cluster kubeconfig',
-      'config machine scan-keys',
+      'machine scan-keys',
+      'config reconcile',
     ];
 
     for (const pathKey of excluded) {
@@ -142,7 +164,7 @@ describe('CLI contract', () => {
 
     // Reads a local file but ships the bytes inside the renet params, which
     // crosses the wire fine — param building, not a transfer.
-    expect(getCommand('repo template apply')?.proxyCapable).toBe(true);
+    expect(getCommand('repo admin template apply')?.proxyCapable).toBe(true);
   });
 
   it('looks a command up by path key', () => {
@@ -161,12 +183,19 @@ describe('CLI contract', () => {
   });
 
   it('filters to the commands a selected resource can drive', () => {
+    // A command drives a resource through EITHER binding: the flag or the
+    // positional. `repo cat` binds its repo positionally (repoOption is null,
+    // repoPositional is "ref"), so a repoOption-only filter would drop it.
     const forMachine = commandsForContext({ machine: true });
-    expect(forMachine.every((c) => c.machineOption !== null)).toBe(true);
+    expect(forMachine.every((c) => c.machineOption !== null || c.machinePositional !== null)).toBe(
+      true
+    );
     expect(forMachine.map((c) => c.pathKey)).toContain('repo up');
 
     const forRepo = commandsForContext({ repo: true });
-    expect(forRepo.every((c) => c.repoOption !== null)).toBe(true);
+    expect(forRepo.every((c) => c.repoOption !== null || c.repoPositional !== null)).toBe(true);
+    // `repo cat` binds its repo positionally, and still shows up on a repo page.
+    expect(forRepo.map((c) => c.pathKey)).toContain('repo cat');
 
     // No context means no filtering.
     expect(commandsForContext({}).length).toBe(CLI_CONTRACT.commands.length);
@@ -182,11 +211,16 @@ describe('CLI contract', () => {
       .sort();
 
     expect(enums).toEqual([
+      'backup strategy set --mode=hot|cold',
       'cluster create --control-ds-backend=local|ceph',
       'cluster fork --writes=local|ceph',
       'config audit log --actor=human|agent',
-      'config backup-strategy set --mode=hot|cold',
-      'datastore init --backend=local|ceph',
+      // #34: `datastore init` dispatched a renet verb that does not exist. The real
+      // named-registry surface replaces it, and `--backend` names the two BACKENDS
+      // the schema actually has (local file-backed vs rbd), not the old local|ceph.
+      'datastore attach --writes=local|ceph',
+      'datastore create --backend=local|rbd',
+      'datastore fork --writes=local|ceph',
       'ops down --backend=kvm|qemu',
       'ops ssh --backend=kvm|qemu',
       'ops status --backend=kvm|qemu',
@@ -211,14 +245,54 @@ describe('CLI contract', () => {
     }
   });
 
-  it('has no positional arguments to serialise', () => {
-    // The contract is options-only. The generator refuses to emit a command
-    // that registers a positional, so nothing here should carry one — this
-    // just pins the assumption the consumers' argv serialisation depends on.
+  it('serialises positional arguments, and binds a repo-ref positional to repoPositional', () => {
+    // The contract used to be options-only (this test used to assert zero
+    // positionals). The ref concept added the serialisation rule, so positionals
+    // now travel — and a repo-ref positional MUST surface as repoPositional, or
+    // the console picker and the executor's policy scope silently degrade.
+    const cat = getCommand('repo cat');
+    expect(cat?.positionals).toEqual([
+      {
+        name: 'ref',
+        kind: 'repo-ref',
+        required: true,
+        variadic: false,
+        descriptionKey: 'options.repoRef',
+        label:
+          'Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)',
+      },
+    ]);
+    expect(cat?.repoPositional).toBe('ref');
+    expect(cat?.machinePositional).toBeNull();
+
+    // job status/logs name the job positionally (kind job-id, no picker binding).
+    for (const pathKey of ['job status', 'job logs']) {
+      const cmd = getCommand(pathKey);
+      expect(
+        cmd?.positionals.map((p) => p.kind),
+        pathKey
+      ).toEqual(['job-id']);
+      expect(cmd?.repoPositional, pathKey).toBeNull();
+      expect(cmd?.machinePositional, pathKey).toBeNull();
+    }
+
+    // Every positional a command declares has a non-empty name, so a consumer
+    // can key a form field or a positionals-bag entry off it.
     for (const cmd of CLI_CONTRACT.commands) {
-      for (const opt of cmd.options) {
-        expect(opt.long.length, `${cmd.pathKey}`).toBeGreaterThan(0);
+      for (const positional of cmd.positionals) {
+        expect(positional.name.length, `${cmd.pathKey}`).toBeGreaterThan(0);
       }
+    }
+  });
+
+  it('marks a proxyable non-job command detachable, and never a job command', () => {
+    // detachable = proxyCapable && domain !== 'job'. It is the field --background
+    // and the serve dispatch read to decide whether to start a detached job.
+    expect(getCommand('repo up')?.detachable).toBe(true);
+    expect(getCommand('repo cat')?.detachable).toBe(true);
+    for (const cmd of CLI_CONTRACT.commands) {
+      if (cmd.domain === 'job') expect(cmd.detachable, cmd.pathKey).toBe(false);
+      if (cmd.detachable) expect(cmd.proxyCapable, cmd.pathKey).toBe(true);
     }
   });
 });

@@ -174,6 +174,21 @@ export function resumeHint(jobId: string, machineName: string): string {
   ].join('\n');
 }
 
+/**
+ * The message shown when a job is started in the background (`--background`).
+ *
+ * Fire-and-forget: the CLI does not wait, so it must hand back the job id and
+ * the commands to catch up with it. Plain hardcoded English, like resumeHint.
+ */
+export function backgroundStartedHint(jobId: string, machineName: string): string {
+  return [
+    `Started job ${jobId} on '${machineName}'. It keeps running in the background.`,
+    ``,
+    `  Follow it:        rdc job logs -m ${machineName} --id ${jobId} --follow`,
+    `  Check the result: rdc job status -m ${machineName} --id ${jobId}`,
+  ].join('\n');
+}
+
 /** The warning shown when a machine's renet is too old to run detached jobs. */
 export function versionSkewWarning(machineName: string): string {
   return (
@@ -353,9 +368,11 @@ export function buildJobGcCommand(params: {
  * resumed stream would corrupt it.
  */
 export function createEventLineReader(
-  onEvent: (event: RenetEvent) => void
+  onEvent: (event: RenetEvent, line?: number) => void,
+  startLine = 0
 ): (chunk: Buffer) => void {
   let buffered = '';
+  let lineNumber = startLine;
 
   return (chunk: Buffer) => {
     buffered += chunk.toString();
@@ -363,15 +380,100 @@ export function createEventLineReader(
     buffered = lines.pop() ?? '';
 
     for (const line of lines) {
+      // Advance for EVERY complete line, blank or not, so the ordinal tracks the
+      // same newline count JobLogCursor does. The two must stay in lockstep for a
+      // resume to dedupe against the right line.
+      lineNumber += 1;
       const trimmed = line.trim();
       if (!trimmed) continue;
 
       try {
-        onEvent(JSON.parse(trimmed) as RenetEvent);
+        onEvent(JSON.parse(trimmed) as RenetEvent, lineNumber);
       } catch {
         process.stdout.write(`${line}\n`);
       }
     }
+  };
+}
+
+/**
+ * Accumulates a detached job's event stream back into the stdout, stderr, and
+ * step timings a synchronous run would have produced.
+ *
+ * This exists because a detached job's spool is ALWAYS NDJSON (`job run` forces
+ * events mode, cmd/renet/job_commands.go), so a status-to-result mapping has no
+ * captured text to hand back unless it is reconstructed here. The reconstruction
+ * is byte-faithful: renet emits the exact same string either as an `output`
+ * event or as a `Println` on the synchronous path
+ * (cmd/renet/execute_command.go), so concatenating `output` messages
+ * newline-terminated reproduces the non-events stdout, bridge relay prefixes and
+ * all. That is precisely what `parseCapturedJson` expects.
+ *
+ * Kept dependency-free and separate from rendering on purpose: capturing the
+ * output must not depend on whether, or how, the caller wants it drawn.
+ */
+export interface JobOutputCollector {
+  /** Fold one decoded event into the accumulated output. */
+  consume(event: RenetEvent): void;
+  /** The reconstructed stdout, byte-faithful with a synchronous run. */
+  readonly stdout: string;
+  /** The reconstructed stderr (error and warning log lines). */
+  readonly stderr: string;
+  /** Step timings recovered from `step_done` events. */
+  readonly steps: { name: string; duration_ms: number; detail?: string }[];
+}
+
+/**
+ * The text an `output` event contributes to reconstructed stdout, or ''.
+ *
+ * renet's non-events path prints each line with Println, which always appends
+ * exactly one newline; mirror that byte-for-byte so the reconstruction matches.
+ */
+function outputEventText(event: RenetEvent): string {
+  return event.type === 'output' && event.msg != null ? `${event.msg}\n` : '';
+}
+
+/** The text an error/warning `log` event contributes to reconstructed stderr, or ''. */
+function logEventText(event: RenetEvent): string {
+  const isProblem = event.level === 'error' || event.level === 'warning';
+  return event.type === 'log' && isProblem && event.msg != null ? `${event.msg}\n` : '';
+}
+
+/** The step timing a `step_done` event contributes, or null when incomplete. */
+function stepDoneEntry(
+  event: RenetEvent
+): { name: string; duration_ms: number; detail?: string } | null {
+  if (event.type !== 'step_done' || !event.name || typeof event.duration_ms !== 'number') {
+    return null;
+  }
+  return {
+    name: event.name,
+    duration_ms: event.duration_ms,
+    ...(event.detail ? { detail: event.detail } : {}),
+  };
+}
+
+export function createJobOutputCollector(): JobOutputCollector {
+  let stdout = '';
+  let stderr = '';
+  const steps: { name: string; duration_ms: number; detail?: string }[] = [];
+
+  return {
+    consume(event: RenetEvent): void {
+      stdout += outputEventText(event);
+      stderr += logEventText(event);
+      const step = stepDoneEntry(event);
+      if (step) steps.push(step);
+    },
+    get stdout() {
+      return stdout;
+    },
+    get stderr() {
+      return stderr;
+    },
+    get steps() {
+      return steps;
+    },
   };
 }
 
@@ -414,7 +516,11 @@ function extractJsonValue(stdout: string): string {
  * the one the operator cares about is how long the WORK took. `wallMs` is only
  * a fallback for a malformed status.
  */
-export function jobStatusToExecuteResult(status: JobStatus, wallMs: number): ExecuteResult {
+export function jobStatusToExecuteResult(
+  status: JobStatus,
+  wallMs: number,
+  output?: Pick<JobOutputCollector, 'stdout' | 'stderr' | 'steps'>
+): ExecuteResult {
   const success = status.state === 'succeeded';
   const operationDurationMs = jobDurationMs(status) ?? wallMs;
 
@@ -424,6 +530,16 @@ export function jobStatusToExecuteResult(status: JobStatus, wallMs: number): Exe
     error: success ? undefined : (status.error ?? `job ${status.state}`),
     durationMs: wallMs,
     operationDurationMs,
+    // A detached run reconstructs its output from the event stream (the spool is
+    // always NDJSON), so every parseCapturedJson caller sees the same stdout a
+    // synchronous run would have handed back.
+    ...(output
+      ? {
+          stdout: output.stdout,
+          stderr: output.stderr,
+          ...(output.steps.length > 0 ? { steps: output.steps } : {}),
+        }
+      : {}),
   };
 }
 

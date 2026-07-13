@@ -441,29 +441,98 @@ test.describe
       expect(defaultSc.stdout).not.toContain(SC);
     });
 
-    test('6. `repository fork` on a kube repo is REFUSED (CT-11 wrong-runtime guard)', async () => {
-      // TODAY'S contract (F1 gate ruling → P4 work item): a kube repo (on a
-      // cluster-attached datastore) has NO `repository fork` path. The docker
-      // reflink+identity-rewrite fork would skip the kube fork-hygiene pipeline
-      // (secret scrub, ROLE rewrite, manifest re-render — the F1/F2 blockers), so
-      // the CT-11 guard refuses it fail-loud. Kube-repo/cluster fork DIVERGENCE is
-      // proven in suites 16/17 via the datastore/cluster group-snap fork path.
-      // When P4 implements the kube arm of `repo fork` per design 06 §3 (clone the
-      // repo folder + volumes + re-render manifests), this flips back to a
-      // positive divergence proof.
-      const fork = await w1.executeViaBridge(
-        `sudo renet repository fork --name ${REPO} --tag ${FORK_REPO} --datastore ${DATA_MOUNT} --network-id ${FORK_NET}`
+    test('6. `repository fork` on a kube repo: folder+volumes cloned, own namespace, ROLE=fork, secrets scrubbed (F1, design 06 §3)', async () => {
+      // F1 (P4): the kube arm of `repo fork`, which RETIRES the old CT-11 refusal.
+      // The parent's PLACEMENT selects the engine — there is no runtime flag. ONE
+      // reflink of the repo folder clones the manifests AND every per-volume LUKS
+      // image (repos/<repo>/volumes/<pvc>.img is kept mount-boundary-free precisely
+      // so the folder forks as a single unit = one snapshot spanning the repo's
+      // volumes). The fork then deploys as its OWN repo: its own name → its own
+      // namespace, manifests re-rendered to it, ROLE=fork, and its namespace scrubbed
+      // fork-empty (F6 at namespace scope, via KubeRuntime.Fork).
+      // SEED a value only the PARENT could have written. This is what makes the clone
+      // PROVABLE: the app's entrypoint writes 'original-data' whenever the marker file
+      // is empty, so a fork whose volume was freshly provisioned (rather than carrying
+      // the parent's cloned LUKS image) would ALSO read 'original-data' — the two are
+      // indistinguishable. A unique value the fork's own pod would never write is the
+      // only assertion that proves the DATA rode the reflink. (Live-caught: the first
+      // version of this test could not tell a clone from a fresh volume, and passed
+      // while the parent's writes were in fact never reaching the clone.)
+      const seeded = `parent-data-${Date.now()}`;
+      const seed = await kubectl(
+        `-n ${NS} exec deploy/web -- sh -c "echo ${seeded} > /data/marker.txt"`
       );
-      expect(fork.code, `expected CT-11 refusal, got success: ${fork.stdout}`).not.toBe(0);
-      expect(fork.stderr + fork.stdout).toContain('cluster-attached datastore');
-      // Parent is untouched by the refused fork.
-      expect(await marker(NS)).toBe('original-data');
+      expect(seed.code, `seed parent marker: ${seed.stderr}`).toBe(0);
+      expect(await marker(NS)).toBe(seeded);
+
+      const fork = await w1.executeViaBridge(
+        `sudo renet repository fork --name ${REPO} --tag ${FORK_REPO} --datastore ${DATA_MOUNT} --network-id ${FORK_NET} --up`
+      );
+      expect(fork.code, `kube repo fork failed: ${(fork.stderr + fork.stdout).slice(-700)}`).toBe(
+        0
+      );
+
+      // The fork is its OWN repo → its own namespace.
+      const forkNs = await kubectl(`get ns ${FORK_REPO} -o jsonpath="{.metadata.name}"`);
+      expect(forkNs.stdout.trim()).toBe(FORK_REPO);
+
+      // The DATA rode the reflink: the fork's volume carries the PARENT'S SEEDED value,
+      // which the fork's own entrypoint would never write. Wait for the pod to be
+      // exec-able first (Running is set before the entrypoint's first read completes).
+      expect(await poll(() => podRunning(FORK_REPO))).toBe(true);
+      expect(await poll(async () => (await marker(FORK_REPO)).length > 0)).toBe(true);
+      expect(await marker(FORK_REPO)).toBe(seeded);
+
+      // ROLE=fork — a fork must never boot claiming primary (02 §1.2 effect isolation).
+      const role = await kubectl(
+        `-n ${FORK_REPO} get configmap rediacc-role -o jsonpath="{.data.REDIACC_ROLE}"`
+      );
+      expect(role.stdout.trim()).toBe('fork');
+
+      // F6 at NAMESPACE scope — asserted so it can actually FAIL for the right reason.
+      // A bare "the fork's secret is empty" check is unfalsifiable: it also passes when
+      // the kubectl call simply fails (missing namespace, broken exec), and it never
+      // shows the fork's WORKLOAD is free of the parent's material. So prove absence
+      // END TO END, on a channel already proven live: the marker read above establishes
+      // that exec into the fork's pod WORKS, so an empty APP_SECRET here is a real
+      // absence rather than a failed command. The parent's pod DOES see this value
+      // (test 4), which is what makes the fork's not seeing it meaningful.
+      const forkEnvVar = await kubectl(`-n ${FORK_REPO} exec deploy/web -- printenv APP_SECRET`);
+      expect(forkEnvVar.stdout.trim()).not.toBe(APP_SECRET_VALUE);
+      expect(forkEnvVar.stdout.trim()).toBe('');
+      // ...and the Secret object itself carries none of the parent's material.
+      const forkSecret = await kubectl(
+        `-n ${FORK_REPO} get secret rediacc-env -o jsonpath="{.data.APP_SECRET}"`
+      );
+      expect(forkSecret.stdout.trim()).toBe('');
+
+      // The PARENT is untouched: its seeded data, its secret, AND its role survive.
+      // The parent staying `primary` is what makes the fork's `fork` above a real
+      // distinction rather than a value that happens to be written everywhere.
+      expect(await marker(NS)).toBe(seeded);
+      const parentSecret = await kubectl(
+        `-n ${NS} get secret rediacc-env -o jsonpath="{.data.APP_SECRET}"`
+      );
+      expect(Buffer.from(parentSecret.stdout.trim(), 'base64').toString()).toBe(APP_SECRET_VALUE);
+      const parentRole = await kubectl(
+        `-n ${NS} get configmap rediacc-role -o jsonpath="{.data.REDIACC_ROLE}"`
+      );
+      expect(parentRole.stdout.trim()).toBe('primary');
     });
 
     test('7. teardown: repository down (no leak) + cluster + datastores + dummy interface removed', async () => {
-      // repository down releases the per-volume LUKS mounts (CT-07 converge, no
-      // leak). Only the parent exists — the kube repo has no `repository fork`
-      // path (test 6), so there is no fork to tear down.
+      // BOTH repos come down: the FORK first, then the parent. Since F1 landed, test 6
+      // creates a real fork — its own namespace with a RUNNING pod holding its own
+      // cloned per-volume LUKS mounts. Those are live holders of the data datastore,
+      // and a DATA-datastore release must never kill node processes, so the product
+      // (correctly) refuses the detach while they exist: the workload has to be
+      // stopped before its storage is released. `repository down` on the fork deletes
+      // its namespace and releases its volumes; then the parent's does the same.
+      // `repository down` releases the per-volume LUKS mounts (CT-07 converge, no leak).
+      const downFork = await w1.executeViaBridge(
+        `sudo renet repository down --name ${FORK_REPO} --datastore ${DATA_MOUNT} --network-id ${FORK_NET}`
+      );
+      expect(downFork.code, `down ${FORK_REPO}: ${downFork.stderr}`).toBe(0);
       const down = await w1.executeViaBridge(
         `sudo renet repository down --name ${REPO} --datastore ${DATA_MOUNT} --network-id ${REPO_NET}`
       );

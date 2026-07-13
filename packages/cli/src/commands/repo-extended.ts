@@ -5,17 +5,42 @@ import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
-import { getOutputFormat, handleError } from '../utils/errors.js';
+import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
-import { assertDockerOnly, resolveRepoTarget } from '../utils/repo-target.js';
+import { resolveRepoRef } from '../utils/repo-target.js';
 import { assertMachineExists } from './_validate.js';
 import { parseDatastorePruneOutput } from './datastore-prune-parser.js';
-import { handleClusterForkSeam, handleForkAction } from './repo-fork.js';
 import { registerRepoPolicyCommand } from './repo-policy.js';
-import { registerRepoTakeoverCommand } from './repo-takeover.js';
+import { registerRepoPromoteCommand } from './repo-promote.js';
 import { registerRepoTrimCommand } from './repo-trim.js';
+
+/**
+ * Autostart is a DOCKER-only verb: it installs a systemd unit that mounts the repo
+ * and runs its compose on boot. A kubernetes repo's workload is the cluster's job,
+ * not systemd's, so refuse a cluster-placed ref with the reason. This inlines what
+ * `assertDockerOnly` used to do from the (now dead) `--cluster` flag; the ref tells
+ * us the placement, so the refusal is now based on what the repo IS rather than on
+ * what the operator typed.
+ */
+async function resolveAutostartRef(
+  ref: string
+): Promise<{ name: string; repoKey: string; machineName: string }> {
+  const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
+  if (kubeCluster) {
+    throw new ValidationError(t('errors.cluster.dockerOnlyVerb', { verb: 'autostart' }));
+  }
+  return { name, repoKey, machineName };
+}
+
+/** The all-repos form has no ref to derive from, so -m is how it names its target. */
+function requireMachine(machine: string | undefined): string {
+  if (!machine) {
+    throw new ValidationError(t('errors.machineRequiredLocal'));
+  }
+  return machine;
+}
 
 /** Execute a machine-level function (no repository context needed). */
 async function executeMachineFunction(
@@ -57,7 +82,9 @@ interface AutostartListOptions {
 /** `repo autostart list` — fetch the renet payload and render it. */
 async function handleAutostartList(options: AutostartListOptions): Promise<void> {
   await assertMachineExists(options.machine);
-  outputService.info(t('commands.repo.autostart.list.starting', { machine: options.machine }));
+  outputService.info(
+    t('commands.repo.admin.autostart.list.starting', { machine: options.machine })
+  );
 
   const result = await getExecutor().execute({
     functionName: 'repository_autostart_list',
@@ -69,7 +96,10 @@ async function handleAutostartList(options: AutostartListOptions): Promise<void>
   });
 
   if (!result.success) {
-    renderLocalExecutionFailure(result, result.error ?? t('commands.repo.autostart.list.failed'));
+    renderLocalExecutionFailure(
+      result,
+      result.error ?? t('commands.repo.admin.autostart.list.failed')
+    );
     return;
   }
 
@@ -91,12 +121,12 @@ async function handleAutostartList(options: AutostartListOptions): Promise<void>
   }));
 
   if (rows.length === 0) {
-    outputService.info(t('commands.repo.autostart.list.empty', { machine: options.machine }));
+    outputService.info(t('commands.repo.admin.autostart.list.empty', { machine: options.machine }));
   } else {
     outputService.print(rows, 'table');
   }
   outputService.info(
-    t('commands.repo.autostart.list.service', {
+    t('commands.repo.admin.autostart.list.service', {
       installed: payload.service_installed ? 'yes' : 'no',
       enabled: payload.service_enabled ? 'yes' : 'no',
     })
@@ -107,88 +137,39 @@ async function handleAutostartList(options: AutostartListOptions): Promise<void>
  * Register extended repo commands: fork, resize, expand, validate,
  * autostart, ownership, and template.
  */
-export function registerExtendedRepoCommands(repo: Command): void {
-  // repo fork --parent <name> --tag <name>
-  const forkCmd = repo
-    .command('fork')
-    .summary(t('commands.repo.fork.descriptionShort'))
-    .description(t('commands.repo.fork.description'))
-    .requiredOption('--parent <name>', t('options.name'))
-    .option('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--cluster <name>', t('commands.repo.clusterOption'))
-    .requiredOption('--tag <name>', t('commands.repo.fork.tagOption'))
-    .option('--to-cluster <name>', t('commands.repo.fork.toClusterOption'))
-    .option('--provider <name>', t('commands.repo.fork.providerOption'))
-    .option('--checkpoint', t('commands.repo.fork.checkpointOption'))
-    .option('--immutable', t('commands.repo.fork.immutableOption'))
-    .option('--up', t('commands.repo.fork.upOption'))
-    .option('--detach', t('commands.repo.fork.detachOption'))
-    .option('--debug', t('options.debug'))
-    .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(
-      async (options: {
-        parent: string;
-        machine?: string;
-        cluster?: string;
-        tag: string;
-        toCluster?: string;
-        provider?: string;
-        checkpoint?: boolean;
-        immutable?: boolean;
-        up?: boolean;
-        detach?: boolean;
-        debug?: boolean;
-        skipRouterRestart?: boolean;
-      }) => {
-        const parent = options.parent;
-        const tagName = options.tag;
-        // K8s fork (D13): --cluster/--to-cluster/--provider route to the
-        // namespace-fork seam; a plain -m keeps the existing docker fork.
-        if (options.cluster || options.toCluster || options.provider) {
-          await handleClusterForkSeam(parent, tagName, options);
-          return;
-        }
-        if (!options.machine) {
-          handleError(new Error(t('errors.cluster.targetRequired')));
-          return;
-        }
-        await handleForkAction(parent, tagName, { ...options, machine: options.machine });
-      }
-    );
-  forkCmd.addHelpText('after', t('commands.repo.fork.examples'));
+export function registerExtendedRepoCommands(repo: Command, admin: Command): void {
+  // `repo fork <parent-ref>` is registered by registerRepoForkCommand (repo-fork.ts),
+  // wired in repo.ts alongside the other register* calls after the §2.3 reshape.
+  registerRepoPromoteCommand(repo);
 
-  registerRepoTakeoverCommand(repo);
-
-  // repo resize --name <name>
+  // repo resize <ref> — offline grow/shrink. Stays on the DAILY surface (§5.4):
+  // it is a volume-geometry verb an operator reaches for, not admin plumbing.
   repo
     .command('resize')
     .summary(t('commands.repo.resize.descriptionShort'))
     .description(t('commands.repo.resize.description'))
-    .requiredOption('--name <name>', t('options.name'))
-    .option('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--cluster <name>', t('commands.repo.clusterOption'))
+    .argument('<ref>', t('options.repoRef'))
     .requiredOption('--size <size>', t('commands.repo.resize.sizeOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
-      async (options: {
-        name: string;
-        machine?: string;
-        cluster?: string;
-        size: string;
-        debug?: boolean;
-        skipRouterRestart?: boolean;
-      }) => {
+      async (
+        ref: string,
+        options: {
+          size: string;
+          debug?: boolean;
+          skipRouterRestart?: boolean;
+        }
+      ) => {
         try {
-          const name = options.name;
-          await assertCommandPolicy(CMD.REPO_RESIZE, name);
-          const { machineName, kubeCluster } = await resolveRepoTarget(options);
+          const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
+          await assertCommandPolicy(CMD.REPO_RESIZE, repoKey);
           await executeRepoFunction(
             'repository_resize',
-            name,
+            repoKey,
             machineName,
             { size: options.size },
-            { ...options, kubeCluster },
+            { ...options, ...(kubeCluster !== undefined && { kubeCluster }) },
             {
               starting: t('commands.repo.resize.starting', {
                 repository: name,
@@ -205,38 +186,38 @@ export function registerExtendedRepoCommands(repo: Command): void {
       }
     );
 
-  // repo expand --name <name>
+  // repo expand <ref> — online grow-only (the deliberate counterpart to resize).
   repo
     .command('expand')
     .summary(t('commands.repo.expand.descriptionShort'))
     .description(t('commands.repo.expand.description'))
-    .requiredOption('--name <name>', t('options.name'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .argument('<ref>', t('options.repoRef'))
     .requiredOption('--size <size>', t('commands.repo.expand.sizeOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
-      async (options: {
-        name: string;
-        machine: string;
-        size: string;
-        debug?: boolean;
-        skipRouterRestart?: boolean;
-      }) => {
+      async (
+        ref: string,
+        options: {
+          size: string;
+          debug?: boolean;
+          skipRouterRestart?: boolean;
+        }
+      ) => {
         try {
-          const name = options.name;
-          await assertCommandPolicy(CMD.REPO_EXPAND, name);
+          const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
+          await assertCommandPolicy(CMD.REPO_EXPAND, repoKey);
           await executeRepoFunction(
             'repository_expand',
-            name,
-            options.machine,
+            repoKey,
+            machineName,
             { size: options.size },
-            options,
+            { ...options, ...(kubeCluster !== undefined && { kubeCluster }) },
             {
               starting: t('commands.repo.expand.starting', {
                 repository: name,
                 size: options.size,
-                machine: options.machine,
+                machine: machineName,
               }),
               completed: t('commands.repo.expand.completed'),
               failed: t('commands.repo.expand.failed'),
@@ -248,205 +229,47 @@ export function registerExtendedRepoCommands(repo: Command): void {
       }
     );
 
-  // repo trim [--name <name>] -m <machine>
+  // repo trim [ref] (no ref = machine-wide, on -m)
   registerRepoTrimCommand(repo);
 
-  // repo policy set|get
+  // repo policy set|get [ref] (no ref = machine-wide default, on -m)
   registerRepoPolicyCommand(repo);
 
-  // repo validate --name <name>
-  repo
+  // ── repo admin subtree (§5.4): the niche plumbing verbs move OFF the daily
+  // surface. Same behavior, addressed by ref, one level down.
+
+  // repo admin validate <ref>
+  admin
     .command('validate')
-    .summary(t('commands.repo.validate.descriptionShort'))
-    .description(t('commands.repo.validate.description'))
-    .requiredOption('--name <name>', t('options.name'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .summary(t('commands.repo.admin.validate.descriptionShort'))
+    .description(t('commands.repo.admin.validate.description'))
+    .argument('<ref>', t('options.repoRef'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
-      async (options: {
-        name: string;
-        machine: string;
-        debug?: boolean;
-        skipRouterRestart?: boolean;
-      }) => {
-        try {
-          const name = options.name;
-          await executeRepoFunction('repository_validate', name, options.machine, {}, options, {
-            starting: t('commands.repo.validate.starting', {
-              repository: name,
-              machine: options.machine,
-            }),
-            completed: t('commands.repo.validate.completed'),
-            failed: t('commands.repo.validate.failed'),
-          });
-        } catch (error) {
-          handleError(error);
+      async (
+        ref: string,
+        options: {
+          debug?: boolean;
+          skipRouterRestart?: boolean;
         }
-      }
-    );
-
-  // repo autostart (parent command with subcommands)
-  const autostart = repo.command('autostart').description(t('commands.repo.autostart.description'));
-
-  // repo autostart enable [--name <name>] — per-repo if name given, all repos if omitted
-  autostart
-    .command('enable')
-    .description(t('commands.repo.autostart.enable.description'))
-    .option('--name <name>', t('options.name'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--cluster <name>', t('commands.repo.clusterOption'))
-    .option('--debug', t('options.debug'))
-    .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(
-      async (options: {
-        name?: string;
-        machine: string;
-        cluster?: string;
-        debug?: boolean;
-        skipRouterRestart?: boolean;
-      }) => {
+      ) => {
         try {
-          assertDockerOnly('autostart', options);
-          const name = options.name;
-          if (name) {
-            await assertCommandPolicy(CMD.REPO_AUTOSTART_ENABLE, name);
-            await executeRepoFunction(
-              'repository_autostart_enable',
-              name,
-              options.machine,
-              {},
-              options,
-              {
-                starting: t('commands.repo.autostart.enable.starting', {
-                  repository: name,
-                  machine: options.machine,
-                }),
-                completed: t('commands.repo.autostart.enable.completed'),
-                failed: t('commands.repo.autostart.enable.failed'),
-              }
-            );
-          } else {
-            await executeMachineFunction('repository_autostart_enable_all', options, {
-              starting: t('commands.repo.autostart.enable.startingAll', {
-                machine: options.machine,
-              }),
-              completed: t('commands.repo.autostart.enable.completedAll'),
-              failed: t('commands.repo.autostart.enable.failedAll'),
-            });
-          }
-        } catch (error) {
-          handleError(error);
-        }
-      }
-    );
-
-  // repo autostart disable [--name <name>] — per-repo if name given, all repos if omitted
-  autostart
-    .command('disable')
-    .description(t('commands.repo.autostart.disable.description'))
-    .option('--name <name>', t('options.name'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--cluster <name>', t('commands.repo.clusterOption'))
-    .option('--debug', t('options.debug'))
-    .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(
-      async (options: {
-        name?: string;
-        machine: string;
-        cluster?: string;
-        debug?: boolean;
-        skipRouterRestart?: boolean;
-      }) => {
-        try {
-          assertDockerOnly('autostart', options);
-          const name = options.name;
-          if (name) {
-            await assertCommandPolicy(CMD.REPO_AUTOSTART_DISABLE, name);
-            await executeRepoFunction(
-              'repository_autostart_disable',
-              name,
-              options.machine,
-              {},
-              options,
-              {
-                starting: t('commands.repo.autostart.disable.starting', {
-                  repository: name,
-                  machine: options.machine,
-                }),
-                completed: t('commands.repo.autostart.disable.completed'),
-                failed: t('commands.repo.autostart.disable.failed'),
-              }
-            );
-          } else {
-            await executeMachineFunction('repository_autostart_disable_all', options, {
-              starting: t('commands.repo.autostart.disable.startingAll', {
-                machine: options.machine,
-              }),
-              completed: t('commands.repo.autostart.disable.completedAll'),
-              failed: t('commands.repo.autostart.disable.failedAll'),
-            });
-          }
-        } catch (error) {
-          handleError(error);
-        }
-      }
-    );
-
-  // repo autostart list
-  autostart
-    .command('list')
-    .description(t('commands.repo.autostart.list.description'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--cluster <name>', t('commands.repo.clusterOption'))
-    .option('--debug', t('options.debug'))
-    .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (options: AutostartListOptions) => {
-      try {
-        assertDockerOnly('autostart', options);
-        await handleAutostartList(options);
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // repo ownership --name <name>
-  repo
-    .command('ownership')
-    .summary(t('commands.repo.ownership.descriptionShort'))
-    .description(t('commands.repo.ownership.description'))
-    .requiredOption('--name <name>', t('options.name'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--uid <uid>', t('commands.repo.ownership.uidOption'))
-    .option('--debug', t('options.debug'))
-    .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(
-      async (options: {
-        name: string;
-        machine: string;
-        uid?: string;
-        debug?: boolean;
-        skipRouterRestart?: boolean;
-      }) => {
-        try {
-          const name = options.name;
-          await assertCommandPolicy(CMD.REPO_OWNERSHIP, name);
-          const params: Record<string, unknown> = {};
-          if (options.uid) params.owner_uid = options.uid;
-
+          const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
+          await assertCommandPolicy(CMD.REPO_ADMIN_VALIDATE, repoKey);
           await executeRepoFunction(
-            'repository_ownership',
-            name,
-            options.machine,
-            params,
-            options,
+            'repository_validate',
+            repoKey,
+            machineName,
+            {},
+            { ...options, ...(kubeCluster !== undefined && { kubeCluster }) },
             {
-              starting: t('commands.repo.ownership.starting', {
+              starting: t('commands.repo.admin.validate.starting', {
                 repository: name,
-                machine: options.machine,
+                machine: machineName,
               }),
-              completed: t('commands.repo.ownership.completed'),
-              failed: t('commands.repo.ownership.failed'),
+              completed: t('commands.repo.admin.validate.completed'),
+              failed: t('commands.repo.admin.validate.failed'),
             }
           );
         } catch (error) {
@@ -455,23 +278,203 @@ export function registerExtendedRepoCommands(repo: Command): void {
       }
     );
 
-  // repo template (parent command with list + apply subcommands)
-  const template = repo
+  // repo admin autostart enable|disable|list
+  const autostart = admin
+    .command('autostart')
+    .description(t('commands.repo.admin.autostart.description'));
+
+  // repo autostart enable [--name <name>] — per-repo if name given, all repos if omitted
+  // A ref targets ONE repo; -m with no ref targets every repo on the machine.
+  // Autostart is docker-only by nature (it installs a systemd unit that mounts the
+  // repo and runs its compose on boot); a kubernetes repo's workload is the
+  // cluster's job, not systemd's, so a cluster-placed ref is refused with the
+  // reason rather than silently doing nothing.
+  autostart
+    .command('enable')
+    .description(t('commands.repo.admin.autostart.enable.description'))
+    .argument('[ref]', t('options.repoRef'))
+    .option('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--debug', t('options.debug'))
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(
+      async (
+        ref: string | undefined,
+        options: {
+          machine?: string;
+          debug?: boolean;
+          skipRouterRestart?: boolean;
+        }
+      ) => {
+        try {
+          if (ref) {
+            const { name, repoKey, machineName } = await resolveAutostartRef(ref);
+            await assertCommandPolicy(CMD.REPO_ADMIN_AUTOSTART_ENABLE, repoKey);
+            await executeRepoFunction(
+              'repository_autostart_enable',
+              repoKey,
+              machineName,
+              {},
+              options,
+              {
+                starting: t('commands.repo.admin.autostart.enable.starting', {
+                  repository: name,
+                  machine: machineName,
+                }),
+                completed: t('commands.repo.admin.autostart.enable.completed'),
+                failed: t('commands.repo.admin.autostart.enable.failed'),
+              }
+            );
+          } else {
+            const machine = requireMachine(options.machine);
+            await executeMachineFunction(
+              'repository_autostart_enable_all',
+              { ...options, machine },
+              {
+                starting: t('commands.repo.admin.autostart.enable.startingAll', {
+                  machine,
+                }),
+                completed: t('commands.repo.admin.autostart.enable.completedAll'),
+                failed: t('commands.repo.admin.autostart.enable.failedAll'),
+              }
+            );
+          }
+        } catch (error) {
+          handleError(error);
+        }
+      }
+    );
+
+  autostart
+    .command('disable')
+    .description(t('commands.repo.admin.autostart.disable.description'))
+    .argument('[ref]', t('options.repoRef'))
+    .option('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--debug', t('options.debug'))
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(
+      async (
+        ref: string | undefined,
+        options: {
+          machine?: string;
+          debug?: boolean;
+          skipRouterRestart?: boolean;
+        }
+      ) => {
+        try {
+          if (ref) {
+            const { name, repoKey, machineName } = await resolveAutostartRef(ref);
+            await assertCommandPolicy(CMD.REPO_ADMIN_AUTOSTART_DISABLE, repoKey);
+            await executeRepoFunction(
+              'repository_autostart_disable',
+              repoKey,
+              machineName,
+              {},
+              options,
+              {
+                starting: t('commands.repo.admin.autostart.disable.starting', {
+                  repository: name,
+                  machine: machineName,
+                }),
+                completed: t('commands.repo.admin.autostart.disable.completed'),
+                failed: t('commands.repo.admin.autostart.disable.failed'),
+              }
+            );
+          } else {
+            const machine = requireMachine(options.machine);
+            await executeMachineFunction(
+              'repository_autostart_disable_all',
+              { ...options, machine },
+              {
+                starting: t('commands.repo.admin.autostart.disable.startingAll', {
+                  machine,
+                }),
+                completed: t('commands.repo.admin.autostart.disable.completedAll'),
+                failed: t('commands.repo.admin.autostart.disable.failedAll'),
+              }
+            );
+          }
+        } catch (error) {
+          handleError(error);
+        }
+      }
+    );
+
+  autostart
+    .command('list')
+    .description(t('commands.repo.admin.autostart.list.description'))
+    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .option('--debug', t('options.debug'))
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(async (options: AutostartListOptions) => {
+      try {
+        await handleAutostartList(options);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // repo admin ownership <ref>
+  admin
+    .command('ownership')
+    .summary(t('commands.repo.admin.ownership.descriptionShort'))
+    .description(t('commands.repo.admin.ownership.description'))
+    .argument('<ref>', t('options.repoRef'))
+    .option('--uid <uid>', t('commands.repo.admin.ownership.uidOption'))
+    .option('--debug', t('options.debug'))
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(
+      async (
+        ref: string,
+        options: {
+          uid?: string;
+          debug?: boolean;
+          skipRouterRestart?: boolean;
+        }
+      ) => {
+        try {
+          const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
+          await assertCommandPolicy(CMD.REPO_ADMIN_OWNERSHIP, repoKey);
+          const params: Record<string, unknown> = {};
+          if (options.uid) params.owner_uid = options.uid;
+
+          await executeRepoFunction(
+            'repository_ownership',
+            repoKey,
+            machineName,
+            params,
+            { ...options, ...(kubeCluster !== undefined && { kubeCluster }) },
+            {
+              starting: t('commands.repo.admin.ownership.starting', {
+                repository: name,
+                machine: machineName,
+              }),
+              completed: t('commands.repo.admin.ownership.completed'),
+              failed: t('commands.repo.admin.ownership.failed'),
+            }
+          );
+        } catch (error) {
+          handleError(error);
+        }
+      }
+    );
+
+  // repo admin template list|apply
+  const template = admin
     .command('template')
-    .summary(t('commands.repo.template.descriptionShort'))
-    .description(t('commands.repo.template.description'));
+    .summary(t('commands.repo.admin.template.descriptionShort'))
+    .description(t('commands.repo.admin.template.description'));
 
   // repo template list
   template
     .command('list')
-    .summary(t('commands.repo.template.list.descriptionShort'))
-    .description(t('commands.repo.template.list.description'))
+    .summary(t('commands.repo.admin.template.list.descriptionShort'))
+    .description(t('commands.repo.admin.template.list.description'))
     .action(async () => {
       try {
         const { TEMPLATES } = await import('../templates/embedded.generated.js');
         const entries = Object.values(TEMPLATES);
         if (entries.length === 0) {
-          outputService.info(t('commands.repo.template.list.empty'));
+          outputService.info(t('commands.repo.admin.template.list.empty'));
           return;
         }
         for (const tmpl of entries) {
@@ -482,31 +485,35 @@ export function registerExtendedRepoCommands(repo: Command): void {
       }
     });
 
-  // repo template apply --name <template> -m <machine> -r <repo>
+  // repo admin template apply <ref> --template <name>. The old `-r/--repository`
+  // collapses into the positional ref, and the old `--name` (which meant the
+  // TEMPLATE, not the repo, on a tree where --name means the repo everywhere else)
+  // becomes the honest `--template`.
   template
     .command('apply')
-    .summary(t('commands.repo.template.apply.descriptionShort'))
-    .description(t('commands.repo.template.apply.description'))
-    .requiredOption('--name <name>', t('options.name'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
-    .requiredOption('-r, --repository <name>', t('options.repository'))
-    .option('--file <path>', t('commands.repo.template.fileOption'))
-    .option('--grand <name>', t('commands.repo.template.grandOption'))
+    .summary(t('commands.repo.admin.template.apply.descriptionShort'))
+    .description(t('commands.repo.admin.template.apply.description'))
+    .argument('<ref>', t('options.repoRef'))
+    .requiredOption('--template <name>', t('commands.repo.admin.template.apply.templateOption'))
+    .option('--file <path>', t('commands.repo.admin.template.fileOption'))
+    .option('--grand <name>', t('commands.repo.admin.template.grandOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
-      async (options: {
-        name: string;
-        machine: string;
-        repository: string;
-        file?: string;
-        grand?: string;
-        debug?: boolean;
-        skipRouterRestart?: boolean;
-      }) => {
+      async (
+        ref: string,
+        options: {
+          template: string;
+          file?: string;
+          grand?: string;
+          debug?: boolean;
+          skipRouterRestart?: boolean;
+        }
+      ) => {
         try {
-          const templateName = options.name;
-          await assertCommandPolicy(CMD.REPO_TEMPLATE, options.repository);
+          const templateName = options.template;
+          const resolved = await resolveRepoRef(ref);
+          await assertCommandPolicy(CMD.REPO_ADMIN_TEMPLATE, resolved.repoKey);
 
           let tmplBase64: string;
 
@@ -516,7 +523,9 @@ export function registerExtendedRepoCommands(repo: Command): void {
             try {
               fileContent = readFileSync(options.file, 'utf-8');
             } catch {
-              throw new Error(t('commands.repo.template.fileNotFound', { path: options.file }));
+              throw new Error(
+                t('commands.repo.admin.template.fileNotFound', { path: options.file })
+              );
             }
             tmplBase64 = Buffer.from(fileContent).toString('base64');
           } else {
@@ -526,7 +535,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
             if (!embedded) {
               const available = Object.keys(TEMPLATES).join(', ');
               throw new Error(
-                t('commands.repo.template.apply.notFound', {
+                t('commands.repo.admin.template.apply.notFound', {
                   name: templateName,
                   available,
                 })
@@ -546,17 +555,20 @@ export function registerExtendedRepoCommands(repo: Command): void {
 
           await executeRepoFunction(
             'repository_template_apply',
-            options.repository,
-            options.machine,
+            resolved.repoKey,
+            resolved.machineName,
             params,
-            options,
             {
-              starting: t('commands.repo.template.starting', {
-                repository: options.repository,
-                machine: options.machine,
+              ...options,
+              ...(resolved.kubeCluster !== undefined && { kubeCluster: resolved.kubeCluster }),
+            },
+            {
+              starting: t('commands.repo.admin.template.starting', {
+                repository: resolved.name,
+                machine: resolved.machineName,
               }),
-              completed: t('commands.repo.template.completed'),
-              failed: t('commands.repo.template.failed'),
+              completed: t('commands.repo.admin.template.completed'),
+              failed: t('commands.repo.admin.template.failed'),
             }
           );
         } catch (error) {

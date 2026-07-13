@@ -20,6 +20,29 @@ export const CommandGroupSchema = z.enum([
   'TOOLS',
 ]);
 
+export const PositionalKindSchema = z.enum([
+  'repo-ref',
+  'machine',
+  'datastore-ref',
+  'cluster',
+  'storage',
+  'strategy',
+  'artifact-ref',
+  'job-id',
+  'target',
+  'file',
+  'plain',
+]);
+
+export const ContractPositionalSchema = z.object({
+  name: z.string().min(1),
+  kind: PositionalKindSchema,
+  required: z.boolean(),
+  variadic: z.boolean(),
+  descriptionKey: z.string().nullable(),
+  label: z.string(),
+});
+
 export const ContractOptionSchema = z.object({
   flags: z.string().min(1),
   long: z.string().min(1),
@@ -43,6 +66,7 @@ export const ContractCommandSchema = z.object({
   descriptionKey: z.string().nullable(),
   label: z.string(),
   options: z.array(ContractOptionSchema),
+  positionals: z.array(ContractPositionalSchema),
   hasSubcommands: z.boolean(),
 
   destructive: z.boolean().optional(),
@@ -58,9 +82,12 @@ export const ContractCommandSchema = z.object({
   interactive: z.boolean(),
   proxyCapable: z.boolean(),
   proxyBlockedReason: z.string().min(1).optional(),
+  detachable: z.boolean(),
 
   machineOption: z.string().nullable(),
   repoOption: z.string().nullable(),
+  machinePositional: z.string().nullable(),
+  repoPositional: z.string().nullable(),
 });
 
 export const CliContractSchema = z.object({
@@ -144,6 +171,53 @@ function checkOptionChoices(cmd: ContractCommand): string[] {
 }
 
 /**
+ * Positional bindings must be self-consistent, and this is where the §2.0
+ * fail-open trap is caught. A `repo-ref` positional MUST surface as
+ * `repoPositional`, and a `machine` positional as `machinePositional`; without
+ * that, the console's picker and the executor's policy scope both bind to a null
+ * and silently degrade: a text box where a picker belongs, an unscoped policy
+ * rule where a machine-scoped one was meant. Every named binding must point at a
+ * real positional of the right kind.
+ */
+function checkPositionalBindings(cmd: ContractCommand): string[] {
+  const problems: string[] = [];
+  const byName = new Map(cmd.positionals.map((p) => [p.name, p]));
+
+  const repoRef = cmd.positionals.find((p) => p.kind === 'repo-ref');
+  if (repoRef && cmd.repoPositional !== repoRef.name) {
+    problems.push(
+      `${cmd.pathKey}: has a repo-ref positional "${repoRef.name}" but repoPositional is ${JSON.stringify(cmd.repoPositional)}`
+    );
+  }
+  const machineRef = cmd.positionals.find((p) => p.kind === 'machine');
+  if (machineRef && cmd.machinePositional !== machineRef.name) {
+    problems.push(
+      `${cmd.pathKey}: has a machine positional "${machineRef.name}" but machinePositional is ${JSON.stringify(cmd.machinePositional)}`
+    );
+  }
+  if (cmd.repoPositional !== null && byName.get(cmd.repoPositional)?.kind !== 'repo-ref') {
+    problems.push(
+      `${cmd.pathKey}: repoPositional "${cmd.repoPositional}" is not a repo-ref positional`
+    );
+  }
+  if (cmd.machinePositional !== null && byName.get(cmd.machinePositional)?.kind !== 'machine') {
+    problems.push(
+      `${cmd.pathKey}: machinePositional "${cmd.machinePositional}" is not a machine positional`
+    );
+  }
+
+  return problems;
+}
+
+/** detachable is derived from proxyCapable, so it can never be set on a command that is not. */
+function checkDetachable(cmd: ContractCommand): string[] {
+  if (cmd.detachable && !cmd.proxyCapable) {
+    return [`${cmd.pathKey}: detachable but not proxyCapable`];
+  }
+  return [];
+}
+
+/**
  * Invariants the schema alone cannot express. Returns a list of human-readable
  * violations; empty means the contract is self-consistent.
  */
@@ -152,7 +226,13 @@ export function checkContractInvariants(contract: CliContract): string[] {
   const seen = new Set<string>();
 
   for (const cmd of contract.commands) {
-    problems.push(...checkIdentity(cmd), ...checkProxyCapability(cmd), ...checkOptionChoices(cmd));
+    problems.push(
+      ...checkIdentity(cmd),
+      ...checkProxyCapability(cmd),
+      ...checkOptionChoices(cmd),
+      ...checkPositionalBindings(cmd),
+      ...checkDetachable(cmd)
+    );
     if (seen.has(cmd.pathKey)) problems.push(`${cmd.pathKey}: duplicate entry`);
     seen.add(cmd.pathKey);
   }

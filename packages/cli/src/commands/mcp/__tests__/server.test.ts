@@ -77,7 +77,7 @@ describe('MCP server', () => {
     await containerHandler!({ name: 'staging' });
 
     expect(executeRdcCommand).toHaveBeenCalledWith(
-      ['machine', 'query', '--name', 'staging', '--containers'],
+      ['machine', 'status', 'staging', '--containers'],
       expect.objectContaining({ defaultTimeoutMs: 120_000 })
     );
   });
@@ -140,7 +140,7 @@ describe('MCP server', () => {
     registerAllTools(mockServer as never, cli, { defaultTimeoutMs: 120_000, program: cli });
 
     // Read tools: readOnly, not destructive, idempotent
-    for (const name of ['machine_query', 'machine_list']) {
+    for (const name of ['machine_status', 'machine_list']) {
       const { annotations } = configs.get(name)!;
       expect(annotations.readOnlyHint, `${name} readOnlyHint`).toBe(true);
       expect(annotations.destructiveHint, `${name} destructiveHint`).toBe(false);
@@ -155,8 +155,8 @@ describe('MCP server', () => {
       expect(annotations.idempotentHint, `${name} idempotentHint`).toBe(true);
     }
 
-    // term_exec: destructive, NOT idempotent
-    const termAnnotations = configs.get('term_exec')!.annotations;
+    // repo_exec: destructive, NOT idempotent (it replaced term_exec in w2b)
+    const termAnnotations = configs.get('repo_exec')!.annotations;
     expect(termAnnotations.readOnlyHint).toBe(false);
     expect(termAnnotations.destructiveHint).toBe(true);
     expect(termAnnotations.idempotentHint).toBe(false);

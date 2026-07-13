@@ -41,7 +41,7 @@ import { assertAgentMachineAccess } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
 import { handleError, ValidationError } from '../utils/errors.js';
-import { resolveRepoTarget } from '../utils/repo-target.js';
+import { resolveConnectTarget } from '../utils/repo-target.js';
 import { withSpinner } from '../utils/spinner.js';
 import { connectVSCodeBrowser, verifySSHConnectivity } from './vscode-browser.js';
 import { registerVSCodeServeCommands } from './vscode-serve.js';
@@ -51,11 +51,13 @@ import {
   displayVSCodeInstallation,
 } from './vscode-utils.js';
 
+/**
+ * `vscode connect <target>` (spec/03 §5.9). The target grammar is `term
+ * connect`'s: a place (machine or cluster) or a repo ref. `-m`, `-r`,
+ * `--cluster` and `-t/--team` are gone; the machine, the cluster and the repo
+ * are all derived from the one positional.
+ */
 interface VSCodeConnectOptions {
-  team?: string;
-  machine?: string;
-  cluster?: string;
-  repository?: string;
   folder?: string;
   urlOnly?: boolean;
   newWindow?: boolean;
@@ -83,12 +85,20 @@ async function detectVSCode() {
   });
 }
 
+/**
+ * The `team` slot in the persisted VS Code SSH entries. Teams are retired
+ * vocabulary (`-t` is deleted in P4), but the SSH-config/key-persistence helpers
+ * still key their names on a team segment, so the reshaped commands pass the
+ * empty team the local adapter has always defaulted to.
+ */
+const NO_TEAM = '';
+
 async function setupSSHConfig(
-  teamName: string,
   machineName: string,
   repositoryName: string | undefined,
   connectionDetails: ConnectionDetails
 ): Promise<{ connectionName: string; identityFile: string; knownHostsFile: string }> {
+  const teamName = NO_TEAM;
   const identityFile = await withSpinner(t('commands.vscode.connect.persistingKey'), () => {
     return Promise.resolve(
       persistSSHKey(teamName, machineName, repositoryName, connectionDetails.privateKey)
@@ -321,28 +331,26 @@ async function setupRemoteEnvironment(
 }
 
 /**
- * Connects to a machine or repository via VS Code Remote SSH
+ * Resolve the `<target>` positional and gate it (spec §5.9). The repo form is
+ * class B (grandGuard on the addressed repo, including a cluster-placed one);
+ * the place form is class A plus the agent machine-access check.
+ *
+ * A repo has exactly one of the two roles the downstream machinery keeps apart:
+ * a DOCKER repo (mount check, per-repo key, per-repo server, DOCKER_HOST) or a
+ * KUBERNETES namespace (KUBECONFIG plus a kubectl context pin). Which one is
+ * derived from the repo's placement, not from a flag.
  */
-async function validateVSCodeOptions(options: VSCodeConnectOptions) {
-  const opts = await configService.applyDefaults(options);
+async function resolveVSCodeTarget(target: string, options: VSCodeConnectOptions) {
+  const resolved = await resolveConnectTarget(target);
+  const isCluster = Boolean(resolved.kubeCluster);
+  const isRepo = resolved.kind === 'repo';
 
-  // Resolve -m/--cluster to a concrete SSH target. A cluster resolves to its
-  // control node; KUBECONFIG + a namespace pin are layered on downstream (D14).
-  const { machineName, kubeCluster } = await resolveRepoTarget({
-    machine: opts.machine,
-    cluster: opts.cluster,
-  });
-  const isCluster = Boolean(kubeCluster);
-
-  // `-r` is a docker repo for a machine target but a namespace for a cluster
-  // target; keep the roles separate so docker-repo machinery (mount check, key
-  // deploy, per-repo server) never runs against a k8s namespace.
-  const repositoryName = isCluster ? undefined : opts.repository;
-  const kubeNamespace = isCluster ? opts.repository : undefined;
+  const repositoryName = isRepo && !isCluster ? resolved.repoKey : undefined;
+  const kubeNamespace = isRepo && isCluster ? resolved.repoKey : undefined;
 
   // The in-browser code-server path has no cluster wiring in v1; refuse rather
   // than open a machine-level browser session that ignores KUBECONFIG.
-  if (isCluster && opts.browser) {
+  if (isCluster && options.browser) {
     throw new ValidationError(
       t('errors.cluster.featureUnsupportedV1', {
         feature: '--browser',
@@ -351,30 +359,29 @@ async function validateVSCodeOptions(options: VSCodeConnectOptions) {
     );
   }
 
-  // Agent guard: enforce fork-only mode for docker-repo access; a cluster's `-r`
-  // is a namespace, so gate on control-node access instead.
-  if (repositoryName) {
-    await assertCommandPolicy(CMD.VSCODE_REPO, repositoryName);
+  if (resolved.kind === 'repo') {
+    // Gate B on the repo arm only; the place arm below is a machine shell (class A).
+    await assertCommandPolicy(CMD.VSCODE_CONNECT, resolved.repoKey);
   } else {
-    assertAgentMachineAccess(machineName);
+    assertAgentMachineAccess(resolved.machineName);
   }
 
   return {
-    teamName: opts.team ?? '',
-    machineName,
+    machineName: resolved.machineName,
     repositoryName,
-    kubeCluster,
+    kubeCluster: resolved.kubeCluster,
     kubeNamespace,
-    opts,
   };
 }
 
-async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
-  const { teamName, machineName, repositoryName, kubeCluster, kubeNamespace } =
-    await validateVSCodeOptions(options);
+async function connectVSCode(target: string, options: VSCodeConnectOptions): Promise<void> {
+  const { machineName, repositoryName, kubeCluster, kubeNamespace } = await resolveVSCodeTarget(
+    target,
+    options
+  );
 
   if (options.browser) {
-    await connectVSCodeBrowser(options, { teamName, machineName, repositoryName });
+    await connectVSCodeBrowser(options, { machineName, repositoryName });
     return;
   }
 
@@ -387,7 +394,7 @@ async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
   }
 
   const connectionDetails = await withSpinner(t('commands.vscode.connect.fetchingDetails'), () =>
-    getSSHConnectionDetails(teamName, machineName, repositoryName)
+    getSSHConnectionDetails(NO_TEAM, machineName, repositoryName)
   );
 
   // For a cluster target, layer KUBECONFIG onto the control-node connection so
@@ -413,7 +420,6 @@ async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
   await provisionAndPrepare(machineName, repositoryName, connectionDetails, kubeNamespace);
 
   const { connectionName, identityFile, knownHostsFile } = await setupSSHConfig(
-    teamName,
     machineName,
     repositoryName,
     connectionDetails
@@ -569,9 +575,10 @@ export function registerVSCodeCommands(program: Command): void {
     'after',
     `
 ${t('help.examples')}
-  $ rdc vscode connect -m server-1              ${t('help.vscode.machine')}
-  $ rdc vscode connect -m server-1 -r my-app    ${t('help.vscode.repo')}
-  $ rdc vscode connect --cluster prod -r shop   ${t('help.vscode.cluster')}
+  $ rdc vscode connect server-1                 ${t('help.vscode.machine')}
+  $ rdc vscode connect my-app                   ${t('help.vscode.repo')}
+  $ rdc vscode connect my-app:test              ${t('help.vscode.fork')}
+  $ rdc vscode connect prod                     ${t('help.vscode.cluster')}
 `
   );
 
@@ -579,10 +586,7 @@ ${t('help.examples')}
   vscode
     .command('connect')
     .description(t('commands.vscode.connect.description'))
-    .option('-t, --team <name>', t('options.team'))
-    .option('-m, --machine <name>', t('options.machine'))
-    .option('--cluster <name>', t('commands.repo.clusterOption'))
-    .option('-r, --repository <name>', t('options.repository'))
+    .argument('<target>', t('options.connectTarget'))
     .option('-f, --folder <path>', t('options.folder'))
     .option('--url-only', t('options.urlOnly'))
     .option('-n, --new-window', t('options.newWindow'))
@@ -593,9 +597,9 @@ ${t('help.examples')}
     .option('--local <port>', t('commands.repo.tunnel.localOption'))
     .option('--server-provider <id>', t('options.vscodeServerProvider'))
     .option('--server-archive <file>', t('options.vscodeServerArchive'))
-    .action(async (options: VSCodeConnectOptions) => {
+    .action(async (target: string, options: VSCodeConnectOptions) => {
       try {
-        await connectVSCode(options);
+        await connectVSCode(target, options);
       } catch (error) {
         handleError(error);
       }

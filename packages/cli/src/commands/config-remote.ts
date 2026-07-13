@@ -448,7 +448,7 @@ async function refreshRemote(configName: string): Promise<void> {
  *      device's wrapped CEK. Without step 2 the local config still holds the OLD
  *      key and every subsequent pull would fail to decrypt.
  */
-async function rotateCek(configName: string, apiUrl: string): Promise<void> {
+export async function rotateCek(configName: string, apiUrl: string): Promise<void> {
   const { configFileStorage } = await import('../adapters/config-file-storage.js');
   const config = await configFileStorage.load(configName);
 
@@ -598,22 +598,6 @@ export function registerRemoteCommands(configCommand: Command): void {
       try {
         const configName = configService.getEffectiveConfigName();
         await refreshRemote(configName);
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // config rotate-cek — destructive, org-wide. Sits on `config`, not `config
-  // remote`, because it rotates the ORGANIZATION's key, not this device's link.
-  configCommand
-    .command('rotate-cek')
-    .description(t('commands.config.rotateCek.description'))
-    .option('--api-url <url>', t('commands.config.rotateCek.optionApiUrl'))
-    .action(async (options) => {
-      try {
-        const configName = configService.getEffectiveConfigName();
-        const apiUrl = (options.apiUrl as string | undefined) ?? getSubscriptionServerUrl();
-        await rotateCek(configName, apiUrl);
       } catch (error) {
         handleError(error);
       }

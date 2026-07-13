@@ -3,7 +3,6 @@ import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { accountServerFetch, fetchServerInfo } from '../services/account/account-client.js';
-import { refreshRepoLicenseIdentity } from '../services/account/license.js';
 import {
   deleteServerConfig,
   deleteStoredSubscriptionToken,
@@ -19,17 +18,15 @@ import { authorizeSubscriptionViaDeviceCode } from '../services/account/subscrip
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { discoverRegions } from '../services/provision/region-discovery.js';
-import { readSSHKey } from '../services/renet/renet-execution.js';
 import { telemetryService } from '../services/telemetry/telemetry.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { promptRegionSelection } from '../utils/region-prompt.js';
 import { withSpinner } from '../utils/spinner.js';
 import {
-  executeActivationRefresh,
-  executeActivationStatus,
-  executeRepoRefresh,
-  executeRepoStatus,
-  executeSubscriptionRefresh,
+  executeAccountRefresh,
+  executeMachineRefresh,
+  executeMachineStatus,
+  executeRepoLicenseRefresh,
   executeSubscriptionStatus,
 } from './subscription-actions.js';
 import { outputSubscriptionScope } from './subscription-output.js';
@@ -274,125 +271,53 @@ export function registerSubscriptionCommands(program: Command): void {
       }
     });
 
-  // subscription status
+  // subscription status [-m <machine>]
+  // No -m = the account view. With -m = that machine's activation state plus its
+  // per-repo license table (what `activation status` and `repo status` used to be).
   sub
     .command('status')
     .description(t('commands.subscription.status.description'))
-    .action(async () => {
+    .option('-m, --machine <name>', t('options.machine'))
+    .action(async (options) => {
       try {
+        if (options.machine) {
+          await executeMachineStatus(options.machine);
+          return;
+        }
         await executeSubscriptionStatus();
       } catch (error) {
         handleError(error);
       }
     });
 
-  // subscription activation (subgroup)
-  const activation = sub
-    .command('activation')
-    .description(t('commands.subscription.activation.description'));
-
-  activation
-    .command('status')
-    .description(t('commands.subscription.activation.status.description'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
-    .action(async (options) => {
-      try {
-        await executeActivationStatus(options.machine);
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // subscription repo (subgroup)
-  const repo = sub.command('repo').description(t('commands.subscription.repo.description'));
-
-  repo
-    .command('status')
-    .description(t('commands.subscription.repo.status.description'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
-    .action(async (options) => {
-      try {
-        await executeRepoStatus(options.machine);
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  // subscription refresh (subgroup — no subcommand = refresh all)
-  const refresh = sub
+  // subscription refresh [-m <machine>] [--repo <ref>]
+  //
+  // A PLAIN LEAF: it carries an .action() and MUST NOT grow subcommands. It used
+  // to be an actionable parent (an .action() plus `activation`/`repos`/`repo`
+  // children) with a .requiredOption('-m'), and Commander walks the parent chain
+  // in _checkForMissingMandatoryOptions(), so that required flag fired for every
+  // child too and bound to the parent even when typed after the subcommand.
+  // Scope is chosen by flags now: none = account, -m = machine, --repo = one repo.
+  sub
     .command('refresh')
     .description(t('commands.subscription.refresh.description'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
+    .option('-m, --machine <name>', t('options.machine'))
+    .option('--repo <ref>', t('options.repoRef'))
     .action(async (options) => {
       try {
-        await executeSubscriptionRefresh(options.machine);
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  refresh
-    .command('activation')
-    .description(t('commands.subscription.refresh.activation.description'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
-    .action(async (options) => {
-      try {
-        await executeActivationRefresh(options.machine);
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  refresh
-    .command('repos')
-    .description(t('commands.subscription.refresh.repos.description'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
-    .action(async (options) => {
-      try {
-        await executeRepoRefresh(options.machine);
-      } catch (error) {
-        handleError(error);
-      }
-    });
-
-  refresh
-    .command('repo')
-    .description(t('commands.subscription.refresh.repo.description'))
-    .requiredOption('--name <name>', t('options.name'))
-    .requiredOption('-m, --machine <name>', t('options.machine'))
-    .action(async (options) => {
-      try {
-        const repoName = options.name;
-        await withSpinner(
-          t('commands.subscription.refresh.repo.refreshing'),
-          async () => {
-            const localConfig = await configService.getLocalConfig();
-            const machine = await configService.getLocalMachine(options.machine);
-            const repoConfig = await configService.getRepository(repoName);
-            if (!repoConfig) {
-              throw new ValidationError(
-                t('commands.subscription.refresh.repo.notFound', { repoName })
-              );
-            }
-            const sshPrivateKey =
-              localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-
-            const refreshed = await refreshRepoLicenseIdentity(machine, sshPrivateKey, {
-              repositoryGuid: repoConfig.repositoryGuid,
-              grandGuid: repoConfig.grandGuid,
-              kind:
-                repoConfig.grandGuid && repoConfig.grandGuid !== repoConfig.repositoryGuid
-                  ? 'fork'
-                  : 'grand',
-            });
-            if (!refreshed) {
-              throw new ValidationError(t('commands.subscription.refresh.repo.failed'));
-            }
-          },
-          t('commands.subscription.refresh.repo.refreshed')
-        );
-
-        outputService.success(t('commands.subscription.refresh.repo.success', { repoName }));
+        if (options.machine && options.repo) {
+          throw new ValidationError(t('commands.subscription.refresh.targetExclusive'));
+        }
+        if (options.repo) {
+          // --repo derives its own machine from the ref, so it never needs -m.
+          await executeRepoLicenseRefresh(options.repo);
+          return;
+        }
+        if (options.machine) {
+          await executeMachineRefresh(options.machine);
+          return;
+        }
+        await executeAccountRefresh();
       } catch (error) {
         handleError(error);
       }
@@ -401,10 +326,9 @@ export function registerSubscriptionCommands(program: Command): void {
 
 // Re-export execution functions so existing consumers (tests) continue to work
 export {
-  executeActivationRefresh,
-  executeActivationStatus,
-  executeRepoRefresh,
-  executeRepoStatus,
-  executeSubscriptionRefresh,
+  executeAccountRefresh,
+  executeMachineRefresh,
+  executeMachineStatus,
+  executeRepoLicenseRefresh,
   executeSubscriptionStatus,
 } from './subscription-actions.js';

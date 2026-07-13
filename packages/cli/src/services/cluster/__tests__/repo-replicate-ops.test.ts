@@ -53,6 +53,14 @@ function mockExec() {
         ]),
       }) as never;
     }
+    // datastore_fork is captured (--json) so the record can be adopted onto an
+    // off-control replica node before attach (finding #36).
+    if (functionName === 'datastore_fork') {
+      return Promise.resolve({
+        success: true,
+        stdout: '{"fork":{"cloneImage":"clone"}}',
+      }) as never;
+    }
     return Promise.resolve({ success: true }) as never;
   });
 }
@@ -79,13 +87,14 @@ const seededSet: ReplicaSet = {
 };
 
 describe('replicateRepo (create orchestrator)', () => {
-  it('infers the datastore, provisions, applies the overlay, records state', async () => {
+  it('provisions from the ref-supplied datastore, applies the overlay, records state', async () => {
     mockState();
     const exec = mockExec();
 
     await replicateRepo({
       repo: 'sqldb',
       cluster: 'prod',
+      datastore: 'ds-data',
       replicas: 2,
       image: 'postgres:16',
       port: 5432,
@@ -94,15 +103,30 @@ describe('replicateRepo (create orchestrator)', () => {
 
     const calls = exec.mock.calls.map((c) => c[0]);
     const names = calls.map((c) => c.functionName);
-    // datastore inference -> ONE snapshot -> (fork, attach, label) x2 -> apply.
+    // The REF supplies the datastore (spec §2.3), so there is no datastore_list
+    // inference round-trip any more: ONE snapshot -> (fork, attach, OPEN, label) x2
+    // -> apply. Replicas land on off-control nodes (prod-w-1/2), so each fork's
+    // record is adopted onto the hosting node before the attach (finding #36).
+    //
+    // datastore_volumes_open is bug #49's fix and its position is load-bearing: it
+    // must follow the attach (there is no mount to open the image on before that)
+    // and precede kube_node_label (the label is the PV's nodeAffinity key, i.e. the
+    // scheduling gate, so opening first means no pod can ever be scheduled onto a
+    // volume that is not yet mounted). Without it the replica bind-mounts the empty
+    // directory the block clone carried and comes up healthy, Ready, and EMPTY.
     expect(names).toEqual([
-      'datastore_list',
       'datastore_snapshot_create',
       'datastore_fork',
+      'datastore_adopt',
       'datastore_attach',
+      'datastore_forget',
+      'datastore_volumes_open',
       'kube_node_label',
       'datastore_fork',
+      'datastore_adopt',
       'datastore_attach',
+      'datastore_forget',
+      'datastore_volumes_open',
       'kube_node_label',
       'kube_apply',
     ]);
@@ -135,26 +159,39 @@ describe('replicateRepo (create orchestrator)', () => {
     });
   });
 
-  it('refuses a duplicate set name', async () => {
+  it('refuses a second replica set for the same repo (ONE set per repo, §4.4)', async () => {
     mockState({ 'sqldb-replicas': seededSet });
     mockExec();
     await expect(
-      replicateRepo({ repo: 'sqldb', cluster: 'prod', replicas: 2, image: 'x', port: 1 })
-    ).rejects.toThrow(/already exists/);
+      replicateRepo({
+        repo: 'sqldb',
+        cluster: 'prod',
+        datastore: 'ds-data',
+        replicas: 2,
+        image: 'x',
+        port: 1,
+      })
+    ).rejects.toThrow(/already has a replica set/);
   });
 
-  it('refuses an ambiguous datastore instead of guessing', async () => {
+  it('derives the set name from the repo ref, colon and all', async () => {
     mockState();
-    vi.spyOn(localExecutorService, 'execute').mockResolvedValue({
-      success: true,
-      stdout: JSON.stringify([
-        { name: 'ds-a', cluster: 'prod' },
-        { name: 'ds-b', cluster: 'prod' },
-      ]),
-    } as never);
-    await expect(
-      replicateRepo({ repo: 'sqldb', cluster: 'prod', replicas: 1, image: 'x', port: 1 })
-    ).rejects.toThrow(/2 data datastores \(ds-a, ds-b\)/);
+    const exec = mockExec();
+    await replicateRepo({
+      repo: 'sqldb:test',
+      cluster: 'prod',
+      datastore: 'ds-data',
+      replicas: 1,
+      image: 'x',
+      port: 1,
+    });
+    // A k8s object name and a datastore fork tag both reject `:`, so the ref is
+    // slugged for every derived name; the state key follows the same rule.
+    expect(Object.keys(stored ?? {})).toEqual(['sqldb-test-replicas']);
+    const forks = exec.mock.calls
+      .map((c) => c[0])
+      .filter((c) => c.functionName === 'datastore_fork');
+    expect(forks[0].params?.tag).toBe('sqldb-test-replicas-r1');
   });
 });
 
@@ -163,14 +200,19 @@ describe('removeReplicaSet (teardown orchestrator)', () => {
     mockState({ 'sqldb-replicas': seededSet });
     const exec = mockExec();
 
-    await removeReplicaSet('sqldb-replicas');
+    await removeReplicaSet('sqldb');
 
     const calls = exec.mock.calls.map((c) => c[0]);
+    // Each fork's per-volume LUKS images are closed BEFORE its discard-detach (bug
+    // #49's mirror): a fork holding a live LUKS mapping and its loop device is BUSY,
+    // so a detach that skipped the close would simply fail.
     expect(calls.map((c) => c.functionName)).toEqual([
       'kube_delete',
       'kube_node_label',
       'kube_node_label',
+      'datastore_volumes_close',
       'datastore_detach',
+      'datastore_volumes_close',
       'datastore_detach',
       'datastore_snapshot_delete',
     ]);
@@ -183,7 +225,7 @@ describe('removeReplicaSet (teardown orchestrator)', () => {
     // Labels are stripped per fork (mount-style datastore name).
     expect(calls[1].params).toMatchObject({ datastore: 'ds-data-sqldb-replicas-r1', remove: true });
     // The set's snapshot is dropped after the clones are discarded.
-    expect(calls[5].params).toMatchObject({
+    expect(calls.at(-1)?.params).toMatchObject({
       name: 'ds-data',
       snapshot: 'replicate-sqldb-replicas',
     });
@@ -196,34 +238,63 @@ describe('removeReplicaSet (teardown orchestrator)', () => {
       success: false,
       error: 'cluster gone',
     } as never);
-    await removeReplicaSet('sqldb-replicas');
+    await removeReplicaSet('sqldb');
     expect(stored).toEqual({});
   });
 });
 
 describe('refreshReplicaSet (rolling one-at-a-time)', () => {
-  it('snapshots once, then per replica: pod bounce -> discard -> re-fork -> re-attach -> label', async () => {
+  it('snapshots once, then per replica: HOLD -> bounce -> discard -> re-fork -> re-open', async () => {
     mockState({ 'sqldb-replicas': seededSet });
     const exec = mockExec();
 
-    await refreshReplicaSet('sqldb-replicas');
+    await refreshReplicaSet('sqldb');
 
     const calls = exec.mock.calls.map((c) => c[0]);
     expect(calls.map((c) => c.functionName)).toEqual([
       'datastore_snapshot_create',
-      // replica 1 fully, then replica 2 (N-1 keep serving).
-      'kube_delete',
-      'datastore_detach',
-      'datastore_fork',
-      'datastore_attach',
+      // Replica 1 fully, then replica 2 (N-1 keep serving). ★ BUG #41: the node
+      // label is STRIPPED FIRST (kube_node_label remove) so the bounced pod is
+      // unschedulable and cannot re-mount the OLD fork before the discard-detach
+      // wins; provisionOneReplica's trailing kube_node_label re-opens the gate.
+      // Each re-fork's record is re-adopted onto the off-control node (#36).
+      // ★ BUG #49: the OLD fork's volumes are closed before its discard-detach (a
+      // live LUKS mapping makes the fork BUSY, so the detach would burn its retries
+      // and throw), and the NEW fork's volumes are opened after its attach and
+      // before the label re-opens the scheduling gate. A refresh that re-forked
+      // without re-opening would roll the whole set to EMPTY replicas.
       'kube_node_label',
       'kube_delete',
+      'datastore_volumes_close',
       'datastore_detach',
       'datastore_fork',
+      'datastore_adopt',
       'datastore_attach',
+      'datastore_forget',
+      'datastore_volumes_open',
+      'kube_node_label',
+      'kube_node_label',
+      'kube_delete',
+      'datastore_volumes_close',
+      'datastore_detach',
+      'datastore_fork',
+      'datastore_adopt',
+      'datastore_attach',
+      'datastore_forget',
+      'datastore_volumes_open',
       'kube_node_label',
       'datastore_snapshot_delete',
     ]);
+    // The hold: strip BEFORE the bounce, re-stamp AFTER the re-attach.
+    const holds = calls.filter((c) => c.functionName === 'kube_node_label');
+    expect(holds[0].params).toMatchObject({
+      datastore: 'ds-data-sqldb-replicas-r1',
+      remove: true,
+    });
+    expect(holds[1].params?.remove).toBeUndefined();
+    expect(calls.indexOf(holds[0])).toBeLessThan(
+      calls.findIndex((c) => c.functionName === 'kube_delete')
+    );
     // Pod bounce targets the 0-based ordinal of each replica index.
     const bounces = calls.filter((c) => c.functionName === 'kube_delete');
     expect(bounces.map((c) => c.params?.pod_ordinal)).toEqual([0, 1]);
@@ -250,6 +321,9 @@ describe('refreshReplicaSet (rolling one-at-a-time)', () => {
       if (functionName === 'datastore_detach' && ++detachAttempts < 3) {
         return Promise.resolve({ success: false, error: 'busy' }) as never;
       }
+      if (functionName === 'datastore_fork') {
+        return Promise.resolve({ success: true, stdout: '{"fork":{}}' }) as never;
+      }
       return Promise.resolve({ success: true }) as never;
     });
     const delays: number[] = [];
@@ -258,7 +332,7 @@ describe('refreshReplicaSet (rolling one-at-a-time)', () => {
       return Promise.resolve();
     });
 
-    await refreshReplicaSet('sqldb-replicas');
+    await refreshReplicaSet('sqldb');
 
     expect(detachAttempts).toBe(3);
     expect(delays).toEqual([2000, 2000]);

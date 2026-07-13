@@ -7,6 +7,7 @@
  * different config sources without either one growing a mode flag.
  */
 
+import type { ContractCommand } from '@rediacc/shared/cli-contract';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import type { PolicyDecision } from '@rediacc/shared/policy';
 import type { Executor } from '../executor/types.js';
@@ -52,4 +53,11 @@ export interface ServeDeps {
   authorize: (args: AuthorizeArgs) => PolicyDecision;
   /** Ships one audit event per command. Awaited, so a killed process cannot lose it. */
   audit?: (event: ExecutorAuditEvent) => Promise<void>;
+  /**
+   * Whether a command's machine work runs detached. Defaults to the contract's
+   * `detachable` when absent. Injectable so a deployment (or a test) can force
+   * synchronous execution — a daemon that never wants detach, or a loopback
+   * harness whose fake executor does not implement the job spool.
+   */
+  detach?: (entry: ContractCommand) => boolean;
 }

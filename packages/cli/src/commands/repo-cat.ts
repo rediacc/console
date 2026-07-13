@@ -5,7 +5,7 @@ import { outputService } from '../services/core/output.js';
 import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
 import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
-import { resolveRepoTarget } from '../utils/repo-target.js';
+import { resolveRepoRef } from '../utils/repo-target.js';
 
 /** Surface renet's specific error reason from a failed repository_cat result. */
 function renderCatFailure(result: ExecuteResult): void {
@@ -49,9 +49,7 @@ export function registerRepoCatCommand(repo: Command): void {
   repo
     .command('cat')
     .description(t('commands.repo.cat.description'))
-    .requiredOption('--name <name>', t('options.name'))
-    .option('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--cluster <name>', t('commands.repo.clusterOption'))
+    .argument('<ref>', t('options.repoRef'))
     .requiredOption('--remote-file <path>', t('commands.repo.cat.remoteFileOption'))
     .option('--max-bytes <n>', t('commands.repo.cat.maxBytesOption'))
     .option('--offset <n>', t('commands.repo.cat.offsetOption'))
@@ -62,28 +60,31 @@ export function registerRepoCatCommand(repo: Command): void {
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
-      async (options: {
-        name: string;
-        machine?: string;
-        cluster?: string;
-        remoteFile: string;
-        maxBytes?: string;
-        offset?: string;
-        head?: string;
-        tail?: string;
-        stat?: boolean;
-        forceBinary?: boolean;
-        debug?: boolean;
-        skipRouterRestart?: boolean;
-      }) => {
+      async (
+        ref: string,
+        options: {
+          remoteFile: string;
+          maxBytes?: string;
+          offset?: string;
+          head?: string;
+          tail?: string;
+          stat?: boolean;
+          forceBinary?: boolean;
+          debug?: boolean;
+          skipRouterRestart?: boolean;
+        }
+      ) => {
         try {
-          const name = options.name;
-          const repoEntry = await configService.getRepository(name);
+          // Read-only verb: derive the machine from the ref, skipping step 5's
+          // remote round-trip (spec/03 §2.3 tail — the cat itself is the check).
+          const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref, {
+            readOnly: true,
+          });
+          const repoEntry = await configService.getRepository(repoKey);
           if (!repoEntry) {
             throw new Error(`Repository "${name}" not found in context`);
           }
-          await configService.ensureRepositoryNetworkId(name);
-          const { machineName, kubeCluster } = await resolveRepoTarget(options);
+          await configService.ensureRepositoryNetworkId(repoKey);
 
           const params: Record<string, unknown> = { path: options.remoteFile };
           if (options.maxBytes) params.max_bytes = Number.parseInt(options.maxBytes, 10);
@@ -106,7 +107,7 @@ export function registerRepoCatCommand(repo: Command): void {
             functionName: 'repository_cat',
             machineName,
             kubeCluster,
-            params: { repository: name, ...params },
+            params: { repository: repoKey, ...params },
             debug: options.debug,
             skipRouterRestart: options.skipRouterRestart,
             captureOutput: true,

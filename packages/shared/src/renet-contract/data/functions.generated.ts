@@ -721,6 +721,8 @@ export interface RepositoryUpParams {
   grand?: string;
   /** Request dedicated TLS cert */
   tls?: boolean;
+  /** Declared runtime (kube|docker) */
+  runtime?: string;
 }
 
 /** Start all repository services */
@@ -2898,6 +2900,11 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       tls: {
         type: 'bool',
         help: 'Request dedicated TLS cert',
+      },
+      runtime: {
+        type: 'string',
+        help: 'Declared runtime (kube|docker)',
+        options: ['kube', 'docker'],
       },
     },
   },

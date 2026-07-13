@@ -3,6 +3,24 @@
 User decision 2026-07-10: the feature layer ships IN this program (not deferred), gated
 behind the core (P3 cannot start before the P2 gate).
 
+## Status (as-built, 2026-07-13)
+
+| Feature | State |
+|---|---|
+| **CSI driver** (§3b) | **BUILT and PROVEN LIVE.** csi-sanity 48/50, dynamic PVC, VolumeSnapshot, point-in-time restore, independent clone, auto-enabled. Spec and as-built record: `spec/09-csi-driver.md`. |
+| **PV LUKS** (§3) | **BUILT in P1** as the volume FORMAT (per-volume LUKS images). Honest `df` verified live. |
+| `repo replicate` (§1) | **BUILT, NEVER RUN.** Real, complete, wired, unit-tested (13 tests). Zero live executions, zero e2e coverage. |
+| `cluster rehearse` (§2 rung 1) | **BUILT, NEVER RUN.** Delegates to the heavily-proven `forkCluster` with `role: rehearsal`, and discards on both the success and failure paths. Its own role/discard semantics have never executed. |
+| Release ladder rung 0 + canary (§2) | **BUILT, NEVER RUN.** Undo snapshot and canary weight templating; the renet router's weighted-service backend is real and has a production caller. Zero live executions. |
+
+**The three never-run features are EXIT-BLOCKING as B1** (see 09 §2). This is not
+bookkeeping pedantry. P3's single most important empirical result is that **unit-green
+predicted nothing about live behavior in this codebase**: four feature-breaking product bugs
+survived unit tests and two live campaigns and fell only to end-to-end execution. Three
+features that have never been run once are, on this codebase's demonstrated base rate, the
+likeliest place for exactly that class of defect. B1 discharges inside one bounded live
+window.
+
 ## 1. `rdc repo replicate` — instant read replicas (the flagship demo)
 
 ```
@@ -53,9 +71,13 @@ rdc repo replicate --name sqldb --replicas 10 --refresh 1h [--headless]
 - CANARY deliberately does NOT use forks (canary users on forked data would read stale data
   and write into a doomed copy). Canary = two Deployments behind one Service with proxy
   weights; the expand-contract schema discipline is the application's burden — say so.
-- v1 implementation: rung 0 (auto-snapshot before release verbs) + rung 1 (`cluster
-  rehearse`) + canary weight templating. No heavy `release` orchestrator verb yet; the
-  primitives compose; `rdc repo release --strategy` can come later.
+- v1 implementation (BUILT, but see the B1 note above): rung 0 (auto-snapshot before release
+  verbs) + rung 1 (`cluster rehearse`) + canary weight templating. No heavy `release`
+  orchestrator verb; the primitives compose, and rung 3 (blue/green) composes from them with
+  no dedicated verb in v1. As-built, the canary overlay emits `rediacc.canary_of` and
+  `rediacc.weight` annotations, and renet's router turns them into a Traefik **weighted
+  service** splitting stable and canary; that backend is real and has a production caller.
+  What has never happened is an end-to-end weight flip against a live cluster.
 
 ## 3. PV LUKS (per-repo encryption for k8s data) — DECIDED: per-volume LUKS images
 
@@ -70,34 +92,62 @@ rdc repo replicate --name sqldb --replicas 10 --refresh 1h [--headless]
 - Complements: secrets-from-config (02 §4) + optional k3s `--secrets-encryption` close the
   kine plaintext exposure.
 
-## 3b. Thin node-local CSI driver (review F6, adopted — P3; spec: spec/09-csi-driver.md)
+## 3b. Thin node-local CSI driver: BUILT (spec + as-built record: `spec/09-csi-driver.md`)
 
 What the redesign deletes is ceph-csi + RADOS namespaces (the wrong-layer integration),
-NOT the CSI interface. A thin, node-local CSI driver (`csi.rediacc.io`) over the identical
-layout recovers the k8s ecosystem surface at modest cost:
-- provision = create a per-volume LUKS image inside `<ds-mount>/repos/<repo>/volumes/`
-- topology = the existing `rediacc.io/ds-<name>` node label (no RBD/RADOS/external anything)
-- snapshot = reflink; clone = reflink — exposed through the STANDARD VolumeSnapshot /
-  `dataSourceRef` APIs, so velero, operator-integrated backups (CNPG volumeSnapshot), and
-  dynamic PVCs work again, and forks get a k8s-native API surface (the best demo surface).
-- Research correction (2026-07-11): no novel sidecar is needed — the snapshot path is the
-  STOCK external-snapshotter in its distributed (`--node-deployment`) mode, same for
-  external-provisioner; the only new code is one gRPC server (~8 real RPCs) over the
-  existing `pkg/kubevolume` LUKS primitives. Precedent for the shape: rancher
-  local-path-provisioner (size), csi-driver-host-path distributed deployment (mechanics).
-- Deployment shape (spec 09 §1): EVERYTHING runs host-side under systemd (driver = a renet
-  subcommand; provisioner/snapshotter/snapshot-controller = embedded upstream binaries
-  with `--kubeconfig`) — zero container images, so no privileged/hostPath system pods and
-  no fork-time ImagePullBackOff. k3s ships NO snapshot machinery: renet installs the
-  VolumeSnapshot v1 CRDs + snapshot-controller at cluster install.
-- Volume expansion is explicitly OUT of v1 (`allowVolumeExpansion: false`; external-resizer
-  has no distributed mode). LUKS keys stay in the datastore-side keyfile model — never in
-  k8s Secrets, so the fork scrub can never orphan a volume.
-Staging (adopted middle path): static `local` PVs remain the v1 FLOOR (P1); P1 designs the
-volume path/naming layout to be CSI-adoptable WITHOUT migration; the driver itself ships in
-P3 as a feature-layer citizen (a better one than the release ladder). Ceph stays strictly
-below throughout — CSI is only the interface. Cost ~3-5 weeks of Go; the alternative is
-permanently telling k8s users their charts and backup tooling do not work here.
+NOT the CSI interface. The thin node-local CSI driver `csi.rediacc.io` recovers the k8s
+ecosystem surface over the identical layout. **It shipped in P3 and is proven live.**
+`spec/09-csi-driver.md` is the authority; this is the summary.
+
+- provision = create a per-volume LUKS image at `<ds-mount>/repos/<repo>/volumes/<pvc>.img`
+  (mounted outside the repo folder, per the C1 layout in 02 §1)
+- topology = the existing `rediacc.io/ds-<name>` node label (no RBD, no RADOS, nothing external)
+- snapshot and clone = reflink, exposed through the STANDARD VolumeSnapshot and
+  `dataSourceRef` APIs, so velero, operator-integrated backups, and dynamic PVCs work again.
+- No novel sidecar was needed: the snapshot and provision paths are the STOCK
+  external-snapshotter and external-provisioner in their distributed (`--node-deployment`)
+  mode. The only new code is one gRPC server over the existing `pkg/kubevolume` LUKS
+  primitives.
+- **Deployment shape: EVERYTHING runs host-side under systemd.** The driver is a renet
+  subcommand (`renet kube csi-serve`); the provisioner, snapshotter, and snapshot-controller
+  are embedded upstream binaries driven with `--kubeconfig`. **Zero container images**, so no
+  privileged hostPath system pods and no fork-time ImagePullBackOff. The driver
+  **self-registers** with no node-driver-registrar. k3s ships no snapshot machinery, so renet
+  installs the VolumeSnapshot v1 CRDs and the snapshot-controller at cluster install.
+- **Enablement is automatic and symmetric.** It folds INTO `kube install` (cluster objects)
+  and `datastore attach` (node units plus the per-datastore StorageClass), and OUT of
+  `datastore detach` and `kube uninstall`. Zero manual steps: a cluster create logs
+  "CSI driver enabled" and the driver is there.
+- LUKS keys stay in the datastore-side keyfile model, **never in k8s Secrets**, so the fork
+  secret scrub can never orphan a volume.
+- Volume EXPANSION remains out of v1 (`allowVolumeExpansion: false`; the external-resizer has
+  no distributed mode).
+
+**Conformance: csi-sanity 48/50**, with the two residuals ruled as documented deviations:
+
+- **CSI-DEVIATION-1**: an over-long volume name is **cleanly rejected**, not truncated. The
+  kernel caps device-mapper names at 128 characters and CSI permits 128-character volume
+  names, so the two cannot both be honoured. A loud reject beats a silent truncation
+  collision. The relevant csi-sanity spec stays red **by design**; that is the documented
+  price, not a bug.
+- **CSI-DEVIATION-2**: CreateSnapshot idempotency is a size proxy rather than true
+  provenance. Accepted with its mitigation documented.
+
+**Live battery**: dynamic PVC bound in roughly 20 seconds to a LUKS image, pod wrote and read;
+VolumeSnapshot reached `readyToUse`; restore proven **point-in-time** (state A restored while
+the original had moved on to state B); clone proven **independent**. Three live-only bugs were
+caught and fixed in that window (a provisioner NAMESPACE env, an ExtractSidecar ETXTBSY race
+fixed with an atomic rename, and an immutable-CSR delete-before-create).
+
+**Two residuals, open:**
+1. **Multi-node worker attach** (spec/09 §14 item 12): worker nodes currently no-op on the
+   auto-enable fold. P4.
+2. **B2: no stock Helm chart has ever been installed against the driver.** The dynamic-PVC
+   capability is genuinely proven, but by hand-rolled manifests. A stock chart is what
+   exercises a **StatefulSet's `volumeClaimTemplates`** (generated PVC names, ordinal pods)
+   against WaitForFirstConsumer and `storageCapacity`, which is materially different plumbing
+   and is the entire F6 ecosystem-compatibility claim that justified building CSI. This is
+   EXIT-blocking (09 §2).
 
 ## 4. RWX shared volumes (researched 2026-07-10; keep out of v1)
 

@@ -21,6 +21,7 @@ import type { SFTPClient } from '../../remote/sftp/index.js';
 import { formatStepDuration, getActiveLabel, getDoneLabel } from '../../utils/timeline.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
+import { writeStderr, writeStdout } from '../core/request-context.js';
 import { type MachineConnectionLease, machineConnections } from '../machine/machine-connection.js';
 import { provisionRenetToRemote } from '../renet/renet-execution.js';
 import {
@@ -57,9 +58,16 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** How a caller wants a job's log stream rendered and reported. */
 export interface JobFollowOptions {
-  /** Where events go. */
-  onEvent: (event: RenetEvent) => void;
+  /** Where events go. The optional second arg is the event's spool-line ordinal. */
+  onEvent: (event: RenetEvent, line?: number) => void;
   debug?: boolean;
+  /**
+   * Aborts the follow WITHOUT cancelling the job (detach, not cancel). The serve
+   * layer passes the request's signal, so a client disconnect detaches with one
+   * listener for the whole follow. When omitted, a CLI follow falls back to
+   * detaching on SIGINT, unchanged from before.
+   */
+  signal?: AbortSignal;
 }
 
 /** One attempt at tailing a job's logs. */
@@ -228,20 +236,15 @@ async function followJobLogsOnce(
 
   // A fresh reader per attempt: it buffers a partial line internally, and
   // carrying that stale fragment across a reconnect would glue it onto the
-  // first line of the resumed stream and corrupt it.
-  const read = createEventLineReader(options.onEvent);
+  // first line of the resumed stream and corrupt it. Seed its ordinal from the
+  // cursor so a resumed line keeps the spool-line number it had before the drop.
+  const read = createEventLineReader(options.onEvent, cursor.sinceLine);
 
   let stopped = false;
-  let onSigint: (() => void) | undefined;
-
-  const interrupted = new Promise<FollowOutcome>((resolve) => {
-    onSigint = () => {
-      // Stop rendering immediately: the remote tail keeps streaming until this
-      // process exits, and events arriving after the resume hint would bury it.
-      stopped = true;
-      resolve({ kind: 'interrupted' });
-    };
-    process.once('SIGINT', onSigint);
+  const interrupt = watchForInterrupt(options.signal, () => {
+    // Stop rendering immediately: the remote tail keeps streaming until this
+    // process exits, and events arriving after the resume hint would bury it.
+    stopped = true;
   });
 
   const streaming = (async (): Promise<FollowOutcome> => {
@@ -278,10 +281,44 @@ async function followJobLogsOnce(
   })();
 
   try {
-    return await Promise.race([streaming, interrupted]);
+    return await Promise.race([streaming, interrupt.promise]);
   } finally {
-    if (onSigint) process.removeListener('SIGINT', onSigint);
+    interrupt.dispose();
   }
+}
+
+/**
+ * A promise that resolves `interrupted` when the caller asks to detach.
+ *
+ * The signal is preferred so a server can hang the follow off the request
+ * lifetime (client disconnect = detach) with ONE listener for the whole follow,
+ * not one per reconnect attempt. With no signal, a CLI follow keeps the historical
+ * behaviour: Ctrl-C (SIGINT) detaches. Either way `dispose` removes the listener
+ * so a completed attempt leaks nothing.
+ */
+function watchForInterrupt(
+  signal: AbortSignal | undefined,
+  onInterrupt: () => void
+): { promise: Promise<FollowOutcome>; dispose: () => void } {
+  let dispose = () => {};
+  const promise = new Promise<FollowOutcome>((resolve) => {
+    const fire = () => {
+      onInterrupt();
+      resolve({ kind: 'interrupted' });
+    };
+    if (signal) {
+      if (signal.aborted) {
+        fire();
+        return;
+      }
+      signal.addEventListener('abort', fire, { once: true });
+      dispose = () => signal.removeEventListener('abort', fire);
+    } else {
+      process.once('SIGINT', fire);
+      dispose = () => process.removeListener('SIGINT', fire);
+    }
+  });
+  return { promise, dispose };
 }
 
 /** Replay a job's logs without following. Returns the lines delivered. */
@@ -298,7 +335,7 @@ export async function replayJobLogs(
     follow: false,
   });
 
-  const read = createEventLineReader(options.onEvent);
+  const read = createEventLineReader(options.onEvent, cursor.sinceLine);
   const sftp = await conn.lease.ensure();
 
   let stderr = '';
@@ -331,12 +368,14 @@ export function renderJobEvent(event: RenetEvent): void {
   const line = jobEventLine(event);
   if (!line) return;
 
+  // Route through the request context so a served follow writes into the
+  // request's buffer, not the container's terminal. On a laptop this is stdout.
   if (line.stream === 'err') {
-    process.stderr.write(line.text);
+    writeStderr(line.text);
     return;
   }
 
-  process.stdout.write(line.text);
+  writeStdout(line.text);
 }
 
 /** What one event renders to, or null if it renders to nothing. */

@@ -51,6 +51,9 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   job: { plane: 'machine' },
   datastore: { plane: 'machine' },
   vscode: { plane: 'machine' },
+  // schedule/run/status/cancel/list/restore all reach a machine (systemd timers,
+  // renet, SSH). Only the `strategy` subgroup is config-only (see below).
+  backup: { plane: 'machine' },
   config: { plane: 'config' },
   // Mostly CRUD over the local storage list; only `prune` reaches a machine and
   // only `browse` shells out to a local rclone.
@@ -65,13 +68,27 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   update: { plane: 'other' },
   mcp: { plane: 'other' },
 
-  // ── machine: the CRUD four only touch the config file ──────────────────
+  // ── machine: config-CRUD leaves only touch the config file ─────────────
+  // add/remove/list write or read the config record; provider add/remove/list
+  // register cloud-provider credentials in the config; `infra set`/`show` edit
+  // the machine's infra block in the config; `infra cert status`/`clear` read
+  // and clear the LOCAL cert cache. All would produce the CALLER's answer, so
+  // they must stay config-plane inside a machine-default domain (spec/03 §4.9).
+  // `setup`, `scan-keys`, `infra push`, `infra cert pull`/`push`, provision,
+  // deprovision, prune, health, status all reach the machine via the default.
   'machine list': { plane: 'config' },
-  'machine create': { plane: 'config' },
-  'machine rename': { plane: 'config' },
-  'machine delete': { plane: 'config' },
-  // Renders machine.backupStrategies straight out of the config.
-  'machine backup list': { plane: 'config' },
+  'machine add': { plane: 'config' },
+  'machine remove': { plane: 'config' },
+  'machine provider': { plane: 'config' },
+  'machine infra set': { plane: 'config' },
+  'machine infra show': { plane: 'config' },
+  'machine infra cert status': { plane: 'config' },
+  'machine infra cert clear': { plane: 'config' },
+
+  // ── backup: named strategy records are config-only; the rest reach a machine ─
+  // `backup strategy set/remove/list/show` edit strategy records in the config
+  // (backup-strategy.ts imports no executor or SSH).
+  'backup strategy': { plane: 'config' },
 
   // ── repo: config-side ref and secret ops, and the local template catalog ─
   // The one git-like ref op that never leaves the config: it rewrites the
@@ -84,9 +101,20 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   // Resource-state reads; the rest of both families dispatch to the machine.
   'repo replicate status': { plane: 'config' },
   'repo canary status': { plane: 'config' },
-  // Prints the compiled-in catalog (templates/embedded.generated.ts). No
-  // config, no machine. `repo template apply` inherits repo's machine default.
-  'repo template list': { plane: 'other' },
+  // Archived-record bookkeeping: list/restore/purge read and write the config's
+  // archive map and nothing else (repo-admin.ts imports no executor or SSH). These
+  // leaves were `config repository {list,restore,purge}-archived` — config-plane by
+  // their old domain's default — and the §5.4 relocation into `repo` silently
+  // flipped them to repo's MACHINE default, which made them proxyCapable. Through
+  // the proxy that is a wrong-target bug in the §4.9 sense: the effect is the
+  // CALLER's config, so a remote `archive purge` would permanently delete the proxy
+  // host's archived records instead. The plane gate cannot see this — it checks
+  // domains, not leaves, and `repo` plainly reaches machines.
+  'repo admin archive': { plane: 'config' },
+  // Prints the compiled-in catalog (templates/embedded.generated.ts). No config, no
+  // machine. `repo admin template apply` inherits repo's machine default. Moved under
+  // `repo admin` with its command in w2b (§5.4).
+  'repo admin template list': { plane: 'other' },
   // Holds an SSH tunnel open until Ctrl+C.
   'repo tunnel': { interactive: true },
 
@@ -101,21 +129,16 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   // query the live cluster, so it is the one config-plane leaf in the domain.
   'cluster status': { plane: 'config' },
 
-  // ── config: the leaves that DO reach a machine ────────────────────────
-  // scan-keys shells out to `ssh-keyscan` against the host; setup SFTPs the
-  // renet binary over and runs `renet setup`; set-ceph is a retired stub that
-  // always throws, but is nominally a machine op.
-  'config machine scan-keys': { plane: 'machine' },
-  'config machine setup': { plane: 'machine' },
-  'config machine set-ceph': { plane: 'machine' },
-  // `config infra push` runs `renet proxy configure` on the machine. `config
-  // infra set`/`show` only read and write the machine's infra block in the
-  // local config — their -m flag is a config key, not a connection.
-  'config infra push': { plane: 'machine' },
-  // pull/push move Traefik's acme.json to and from the machine over SSH;
-  // status/clear only touch the local cache.
-  'config cert-cache pull': { plane: 'machine' },
-  'config cert-cache push': { plane: 'machine' },
+  // ── config: machine/provider/infra/cert-cache moved to the `machine` noun ─
+  // (their planes now live under `machine …` above).
+  // `config reconcile` reaches every machine (renet list all) to rebuild state,
+  // so it is honestly machine-plane — and it is config's ONLY machine leaf, which
+  // keeps Rule 2 satisfied now that the machine/infra leaves left. It is barred
+  // from the proxy (PROXY_EXCLUSIONS) because its effect is the CALLER's state.
+  'config reconcile': { plane: 'machine' },
+  // Rotates the ORGANIZATION's config-encryption key via the account server
+  // (HTTPS), not a machine.
+  'config rotate-cek': { plane: 'other' },
   // The zero-knowledge config store on the account server (HTTPS), not a machine.
   'config remote': { plane: 'other' },
   // Opens a browser and blocks on a localhost callback (unless --headless).
@@ -142,11 +165,13 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   // invocation is an interactive `ssh -tt` with stdio inherited.
   'term connect': { interactive: true },
 
-  // ── subscription: the -m subcommands push license contracts over SSH ───
+  // ── subscription: the -m forms push license contracts over SSH ─────────
   // Each SFTPs renet to the machine and runs `renet repository license-*` on
   // it, so they are machine-plane even though the domain default is `other`.
-  'subscription activation': { plane: 'machine' },
-  'subscription repo': { plane: 'machine' },
+  // w2b flattened `activation status` / `repo status` into `status -m`, and
+  // `refresh {activation,repos,repo}` into `refresh [-m] [--repo]`, so `status`
+  // is now a machine-plane exception too (the account-only form was not).
+  'subscription status': { plane: 'machine' },
   'subscription refresh': { plane: 'machine' },
 
   // ── ops ───────────────────────────────────────────────────────────────

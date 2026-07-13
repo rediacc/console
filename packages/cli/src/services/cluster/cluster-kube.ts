@@ -256,27 +256,27 @@ export async function dispatch(
   return result;
 }
 
-/** Create the node's (unencrypted) cluster image with a fresh networkID. */
-export async function createNodeImage(
-  member: K8sMember,
-  clusterName: string,
-  size: string,
-  debug?: boolean
-): Promise<number> {
-  const networkId = await configService.allocateNetworkId();
-  await dispatch(
-    'repository_create',
-    member.name,
-    {
-      repository: clusterRepo(clusterName),
-      size,
-      guid: randomUUID(),
-      network_id: networkId,
-      start_docker: false,
-    },
-    { debug }
-  );
-  return networkId;
+/**
+ * The networkID an agent node's k3s unit runs under (`rediacc-k3s-<networkID>`
+ * plus its dedicated node interface). Allocation only: no repo, no volume.
+ *
+ * ★ #25: agent nodes used to get a per-node "cluster image" repo here, sized from
+ * the pool, purely to own this mount path. It bought nothing. An agent's k3s state
+ * is kubelet + containerd + pod scratch, which is a DISPOSABLE CACHE: the cluster's
+ * real state lives in the control plane's anchor datastore (`ds-control-<cluster>`,
+ * spec 02 §1), and a lost agent is replaced by rejoining a fresh one, never by
+ * restoring its disk. The repo also bought no encryption worth having, since the
+ * agent's secrets arrive from the API server at runtime either way. Meanwhile it
+ * cost a LUKS volume, a GUID, a config record and a size decision per node.
+ *
+ * `renet kube join` MkdirAll's its own data-dir under the mount path
+ * (`K3sDistro.Install`), so the join contract is UNCHANGED by dropping the repo:
+ * the agent simply gets a plain directory instead of a LUKS mount. The networkID
+ * is still allocated (it names the systemd unit and the node interface), and the
+ * allocator's forward counter is persistent, so no id is ever handed out twice.
+ */
+export async function allocateAgentNetworkId(): Promise<number> {
+  return configService.allocateNetworkId();
 }
 
 export function poolSize(pools: ClusterPool[], poolName: string): string {
@@ -375,12 +375,7 @@ export async function installK8s(
 
   for (const agent of agents) {
     outputService.info(`  joining agent ${agent.name} (${agent.ip})...`);
-    const agentNet = await createNodeImage(
-      agent,
-      clusterName,
-      poolSize(k8sPools, agent.pool),
-      debug
-    );
+    const agentNet = await allocateAgentNetworkId();
     await dispatch(
       'kube_join',
       agent.name,
@@ -429,19 +424,7 @@ export async function scaleK8sPool(
     for (let i = currentCount + 1; i <= targetCount; i++) {
       const name = `${clusterName}-${pool.name}-${i}`;
       const machine = await configService.getLocalMachine(name);
-      const net = await configService.allocateNetworkId();
-      await dispatch(
-        'repository_create',
-        name,
-        {
-          repository: clusterRepo(clusterName),
-          size: pool.size ?? DEFAULT_NODE_SIZE,
-          guid: randomUUID(),
-          network_id: net,
-          start_docker: false,
-        },
-        { debug }
-      );
+      const net = await allocateAgentNetworkId();
       await dispatch(
         'kube_join',
         name,

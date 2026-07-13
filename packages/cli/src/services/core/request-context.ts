@@ -68,8 +68,15 @@ export interface CommandRequestContext {
   stdout: string[];
   /** Everything the command wrote to stderr (info, warnings, errors). */
   stderr: string[];
-  /** Renet events, teed as they stream so the route can forward them live. */
-  onEvent?: (event: RenetEvent) => void;
+  /**
+   * Renet events, teed as they stream so the route can forward them live.
+   *
+   * The optional second argument is the event's 1-based spool-line ordinal,
+   * present only on a detached job's replayed stream (where the serve route
+   * forwards it so a re-attaching client can dedupe). A synchronous stream omits
+   * it, exactly as ExecuteOptions.onEvent does.
+   */
+  onEvent?: (event: RenetEvent, line?: number) => void;
   /**
    * The executor this request's commands must use, overriding the process
    * default. The serve layer injects the one from its deps, which is how the

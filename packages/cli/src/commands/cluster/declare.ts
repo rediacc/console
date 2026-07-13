@@ -1,13 +1,9 @@
-import type { Command } from 'commander';
-import { t } from '../i18n/index.js';
-import { getCluster } from '../services/config/config-cluster-ops.js';
-import { configService } from '../services/config/config-resources.js';
-import { outputService } from '../services/core/output.js';
-import type { ClusterConfig, ClusterPool, ClusterPoolRole } from '../types/index.js';
-import { ValidationError } from '../utils/errors.js';
+import type { ClusterConfig, ClusterPool, ClusterPoolRole } from '../../types/index.js';
+import { ValidationError } from '../../utils/errors.js';
 
 const ROLES = ['ceph', 'k8s-server', 'k8s-agent', 'hyperconverged'] as const;
 const DEFAULT_NETWORK_PRIMITIVE = 'vlan';
+const DEFAULT_KVM_CONTROL_ID = 1;
 
 /** Parse a `devicePath@sizeGB` disk spec (e.g. /dev/sdc@40) for OSD/data volumes. */
 function parseDiskSpec(spec: string): { purpose: string; size: string } {
@@ -51,8 +47,7 @@ function parsePoolSpec(spec: string): ClusterPool {
   };
 }
 
-interface AddOptions {
-  name: string;
+export interface DeclareOptions {
   provider: string;
   pool: string[];
   networkCidr?: string;
@@ -65,15 +60,13 @@ interface AddOptions {
   dockerRegistry?: string;
 }
 
-const DEFAULT_KVM_CONTROL_ID = 1;
-
 /**
  * A KVM cluster boots on a libvirt network addressed by numeric VM id. Two
  * clusters sharing a host must not share a network, so the topology is required
  * rather than defaulted: a silent default would collide with the ops harness's
  * own fleet on renet11 / 192.168.111.
  */
-function buildKvmConfig(options: AddOptions): ClusterConfig['kvm'] {
+function buildKvmConfig(options: DeclareOptions): ClusterConfig['kvm'] {
   if (!options.netName || !options.netBase) {
     throw new ValidationError(
       'A kvm cluster needs --net-name and --net-base (e.g. --net-name renet12 --net-base 192.168.112). ' +
@@ -98,7 +91,8 @@ function buildKvmConfig(options: AddOptions): ClusterConfig['kvm'] {
   };
 }
 
-function buildClusterConfig(options: AddOptions): ClusterConfig {
+/** Build the declared ClusterConfig from `cluster create` flags. */
+export function buildClusterConfig(options: DeclareOptions): ClusterConfig {
   const pools = options.pool.map(parsePoolSpec);
   const hasNetwork = Boolean(options.networkCidr ?? options.networkPrimitive);
   const isKvm = options.provider === 'kvm';
@@ -116,74 +110,4 @@ function buildClusterConfig(options: AddOptions): ClusterConfig {
         }
       : {}),
   };
-}
-
-export function registerClusterConfigCommands(config: Command): void {
-  const cluster = config
-    .command('cluster')
-    .summary(t('commands.config.cluster.descriptionShort'))
-    .description(t('commands.config.cluster.description'));
-
-  cluster
-    .command('add')
-    .description(t('commands.config.cluster.add.description'))
-    .requiredOption('--name <name>', t('commands.config.cluster.nameOption'))
-    .requiredOption('--provider <provider>', t('commands.config.cluster.providerOption'))
-    .requiredOption('--pool <spec...>', t('commands.config.cluster.poolOption'))
-    .option('--network-cidr <cidr>', t('commands.config.cluster.cidrOption'))
-    .option('--network-primitive <primitive>', t('commands.config.cluster.primitiveOption'))
-    .option('--control-node <machine>', t('commands.config.cluster.controlNodeOption'))
-    .option('--net-name <name>', t('commands.config.cluster.netNameOption'))
-    .option('--net-base <prefix>', t('commands.config.cluster.netBaseOption'))
-    .option('--net-offset <n>', t('commands.config.cluster.netOffsetOption'))
-    .option('--control-id <n>', t('commands.config.cluster.controlIdOption'))
-    .option('--docker-registry <endpoint>', t('commands.config.cluster.dockerRegistryOption'))
-    .action(async (options: AddOptions) => {
-      await configService.addCluster(options.name, buildClusterConfig(options));
-      outputService.success(t('commands.config.cluster.added', { name: options.name }));
-    });
-
-  cluster
-    .command('add-pool')
-    .description(t('commands.config.cluster.addPool.description'))
-    .requiredOption('--name <name>', t('commands.config.cluster.nameOption'))
-    .requiredOption('--pool <spec>', t('commands.config.cluster.poolOption'))
-    .action(async (options: { name: string; pool: string }) => {
-      const existing = await getCluster(options.name);
-      const pool = parsePoolSpec(options.pool);
-      if (existing.pools.some((p) => p.name === pool.name)) {
-        throw new ValidationError(
-          `Cluster "${options.name}" already has a pool named "${pool.name}"`
-        );
-      }
-      await configService.updateCluster(options.name, { pools: [...existing.pools, pool] });
-      outputService.success(
-        t('commands.config.cluster.poolAdded', { pool: pool.name, name: options.name })
-      );
-    });
-
-  cluster
-    .command('list')
-    .description(t('commands.config.cluster.list.description'))
-    .action(async () => {
-      const clusters = await configService.listClusters();
-      if (clusters.length === 0) {
-        outputService.info(t('commands.config.cluster.none'));
-        return;
-      }
-      for (const c of clusters) {
-        outputService.print(
-          `${c.name}  [${c.config.provider}]  pools: ${c.config.pools.map((p) => p.name).join(', ')}`
-        );
-      }
-    });
-
-  cluster
-    .command('remove')
-    .description(t('commands.config.cluster.remove.description'))
-    .requiredOption('--name <name>', t('commands.config.cluster.nameOption'))
-    .action(async (options: { name: string }) => {
-      await configService.removeCluster(options.name);
-      outputService.success(t('commands.config.cluster.removed', { name: options.name }));
-    });
 }

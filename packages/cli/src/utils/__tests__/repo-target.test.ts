@@ -2,7 +2,7 @@ import { createEmptyRdcConfig } from '@rediacc/shared/config-schema';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { configService } from '../../services/config/config-resources.js';
 import type { ClusterConfig, RdcConfig } from '../../types/index.js';
-import { assertDockerOnly, resolveRepoTarget } from '../repo-target.js';
+import { resolveRepoTarget } from '../repo-target.js';
 
 // Minimal config: a standalone machine, a materialized k8s member, and cluster
 // "prod" whose first k8s-server member (prod-k8s-1) is the control node.
@@ -48,18 +48,5 @@ describe('resolveRepoTarget (repo-verb funnel entry)', () => {
 
   it('rejects specifying neither -m nor --cluster', async () => {
     await expect(resolveRepoTarget({})).rejects.toThrow(/required/);
-  });
-});
-
-describe('assertDockerOnly (docker-only verb refusal)', () => {
-  it('throws a clear docker-only error when --cluster is given', () => {
-    expect(() => assertDockerOnly('takeover', { cluster: 'prod' })).toThrow(
-      /Docker repositories only/
-    );
-  });
-
-  it('is a no-op for a machine target', () => {
-    expect(() => assertDockerOnly('takeover', {})).not.toThrow();
-    expect(() => assertDockerOnly('tunnel', { cluster: undefined })).not.toThrow();
   });
 });

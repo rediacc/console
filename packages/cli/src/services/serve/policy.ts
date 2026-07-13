@@ -13,16 +13,21 @@
  * remain, but they are UX; this is the enforcement.
  */
 
-import { getCommand } from '@rediacc/shared/cli-contract';
+import { CLI_CONTRACT, getCommand } from '@rediacc/shared/cli-contract';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import {
   evaluatePolicy,
+  findStaleCommandGlobs,
   MISSING_POLICY_DEFAULT,
   type PolicyDecision,
   type PolicyDocument,
   PolicyDocumentSchema,
+  staleDenyRefusal,
 } from '@rediacc/shared/policy';
 import type { SessionPrincipal } from './sessions.js';
+
+/** Every command this binary actually has, for checking policy globs against. */
+const LIVE_COMMANDS: readonly string[] = CLI_CONTRACT.commands.map((c) => c.pathKey);
 
 /** Raised when policy refuses a command. Carries the reason for CLI and audit. */
 export class PolicyDenied extends Error {
@@ -39,6 +44,13 @@ export class PolicyDenied extends Error {
  * default. Someone who wrote rules and got the shape wrong must hear about it;
  * quietly ignoring them would be the worst possible failure, since it would look
  * like the rules were in force.
+ *
+ * A document with a STALE DENY GLOB is that same failure, one level subtler: it
+ * is well-formed, it parses, and its deny rule protects NOTHING because the
+ * command it names does not exist. That is how a rename fails open — the command
+ * an organization explicitly forbade becomes permitted, silently. It is refused
+ * here for the reason stated above, and the reason names the glob so the author
+ * can re-key it (a rename is the likeliest cause, and a re-key the likeliest fix).
  */
 function readPolicyDocument(config: RdcConfig): PolicyDocument | undefined {
   const raw = config.policy;
@@ -57,6 +69,10 @@ function readPolicyDocument(config: RdcConfig): PolicyDocument | undefined {
           .join('; ')}`
     );
   }
+
+  const stale = findStaleCommandGlobs(parsed.data, LIVE_COMMANDS);
+  if (stale.deny.length > 0) throw new Error(staleDenyRefusal(stale.deny));
+
   return parsed.data;
 }
 

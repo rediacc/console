@@ -370,9 +370,9 @@ class ConfigService extends ConfigServiceBase {
   }
 
   /**
-   * Strict resolver for destructive commands (repo delete, repo takeover,
+   * Strict resolver for destructive commands (repo delete, repo promote,
    * config repository remove, datastore unfork). Fails closed on ambiguity
-   * so a bare `--name` cannot silently hit the wrong repo. See issue #495.
+   * so a bare ref cannot silently hit the wrong repo. See issue #495.
    *
    * - Exact-key match wins (same as `getRepositoryKey`).
    * - For a bare ref, refuses when more than one config key shares the base

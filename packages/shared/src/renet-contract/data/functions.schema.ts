@@ -535,6 +535,7 @@ export const RepositoryUpParamsSchema = z.object({
   option: z.string().optional().describe('Startup options'),
   grand: z.string().optional().describe('Grand repository GUID'),
   tls: z.boolean().optional().describe('Request dedicated TLS cert'),
+  runtime: z.string().optional().describe('Declared runtime (kube|docker)'),
 });
 
 /** Start all repository services */

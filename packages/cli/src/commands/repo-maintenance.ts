@@ -160,18 +160,18 @@ async function handleFsck(options: { machine: string }): Promise<void> {
       .map((r) => r.config.repositoryGuid);
 
     if (dangling.length === 0 && orphans.length === 0) {
-      outputService.success(t('commands.repo.fsck.clean', { machine: options.machine }));
+      outputService.success(t('commands.repo.admin.fsck.clean', { machine: options.machine }));
       return;
     }
     if (dangling.length > 0) {
-      outputService.error(t('commands.repo.fsck.danglingHeader', { count: dangling.length }));
+      outputService.error(t('commands.repo.admin.fsck.danglingHeader', { count: dangling.length }));
       for (const d of dangling)
         outputService.info(`  ${d.ref} -> ${d.guid.slice(0, 12)} (missing)`);
     }
     if (orphans.length > 0) {
-      outputService.info(t('commands.repo.fsck.orphanHeader', { count: orphans.length }));
+      outputService.info(t('commands.repo.admin.fsck.orphanHeader', { count: orphans.length }));
       for (const g of orphans) outputService.info(`  ${g.slice(0, 12)}`);
-      outputService.info(t('commands.repo.fsck.orphanHint'));
+      outputService.info(t('commands.repo.admin.fsck.orphanHint'));
     }
     process.exitCode = 1;
   } catch (error) {
@@ -180,7 +180,7 @@ async function handleFsck(options: { machine: string }): Promise<void> {
 }
 
 /** Register repo maintenance commands (issue #75 §12 lifecycle). */
-export function registerRepoMaintenanceCommands(repo: Command): void {
+export function registerRepoMaintenanceCommands(repo: Command, admin: Command): void {
   repo
     .command('gc')
     .summary(t('commands.repo.gc.descriptionShort'))
@@ -193,10 +193,12 @@ export function registerRepoMaintenanceCommands(repo: Command): void {
       return handleGc(options);
     });
 
-  repo
+  // repo admin fsck --machine <m>: a machine-scoped scan of config refs against the
+  // commits actually present. No repo to derive from, so -m stays (§5.4).
+  admin
     .command('fsck')
-    .summary(t('commands.repo.fsck.descriptionShort'))
-    .description(t('commands.repo.fsck.description'))
+    .summary(t('commands.repo.admin.fsck.descriptionShort'))
+    .description(t('commands.repo.admin.fsck.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .action((options: { machine: string }) => {
       if (!options.machine) throw new ValidationError(t('errors.machineRequiredLocal'));

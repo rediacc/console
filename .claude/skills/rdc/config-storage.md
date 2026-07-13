@@ -2,11 +2,26 @@
 
 Zero-knowledge encrypted config sync via the Rediacc account server.
 
+## CLI commands
+
+The CLI surface is `rdc config remote`:
+
+| Command | Purpose |
+|---------|---------|
+| `rdc config remote enable` | Link this config to remote encrypted storage (add `--headless` for a device-code flow on a server with no browser) |
+| `rdc config remote disable` | Disconnect from remote storage and save the config locally |
+| `rdc config remote status` | Show remote connection status |
+| `rdc config remote refresh` | Force a re-fetch of the config from remote storage |
+| `rdc config rotate-cek` | Rotate the client-controlled encryption key |
+
+Uploads are implicit: once remote is enabled, config writes go to the store. There is no
+separate push command.
+
 ## Agent Limitations
 
-- **Setup**: Requires browser (passkey + PRF ceremony) — not available to agents
+- **Setup**: `config remote enable` needs a browser (passkey + PRF ceremony) or an approved
+  device-code handoff, so it is not available to agents unattended
 - **Member management**: Requires web portal (elevated + 2FA) — not available to agents
-- **Push/pull**: CLI commands not yet implemented — future work
 - Agents can read config storage status via the account web API but cannot modify
 
 ## Architecture

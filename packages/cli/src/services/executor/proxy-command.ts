@@ -59,6 +59,34 @@ export function assertProxyCapable(
 }
 
 /**
+ * Refuse `--background` for a command that cannot become a detached job.
+ *
+ * Mirrors assertProxyCapable and derives its message from the same
+ * `proxyBlockedReason`, because `detachable` is `proxyCapable` minus jobs: a
+ * command that cannot be proxied cannot be detached for the same reasons (it
+ * needs a terminal, or transfers local files, or writes the caller's own
+ * config), and a `rdc job *` command manages jobs rather than doing machine
+ * work, so backgrounding one is circular. No new validation invariant: the
+ * message is composed here from fields the contract already carries.
+ */
+export function assertDetachable(commandPath: string, entry: ContractCommand | undefined): void {
+  if (entry?.detachable) return;
+
+  if (entry?.domain === 'job') {
+    throw new Error(
+      `"rdc ${commandPath}" manages detached jobs, so it cannot itself run in the background. ` +
+        `Follow a job you started with "rdc job logs".`
+    );
+  }
+
+  throw new Error(
+    entry?.proxyBlockedReason ??
+      `"rdc ${commandPath}" cannot run in the background: --background starts the work as a ` +
+        `detached job, which only machine-plane commands that survive a dropped connection support.`
+  );
+}
+
+/**
  * Commander camelCases a long flag when it stores the value: `--skip-router-restart`
  * is read back as `skipRouterRestart`. The wire speaks long flags, because that
  * is what the contract declares and what the executor validates against.
@@ -95,6 +123,49 @@ export function paramsFromCommand(
   }
 
   return params;
+}
+
+/**
+ * The positional values the operator gave, keyed by positional NAME.
+ *
+ * Read off the parsed command's `processedArgs`, which Commander fills in the
+ * exact order it registered its arguments, the same order the generator emitted
+ * `entry.positionals`, so index i is positional i. Only DECLARED positionals
+ * travel: nothing here can carry a token the contract did not describe.
+ */
+export function positionalsFromCommand(
+  entry: ContractCommand,
+  actionCommand: Command
+): Record<string, unknown> {
+  // Commander fills processedArgs at parse time, aligned with registeredArguments.
+  const args = actionCommand.processedArgs as unknown[];
+  const positionals: Record<string, unknown> = {};
+
+  entry.positionals.forEach((positional, index) => {
+    const value = args[index];
+    if (value == null || (Array.isArray(value) && value.length === 0)) return;
+    positionals[positional.name] = value;
+  });
+
+  return positionals;
+}
+
+/**
+ * The machine this command targets, read from whichever binding the operator
+ * used: the FLAG (`machineOption`, in params) or the POSITIONAL
+ * (`machinePositional`, in positionals). Undefined when the command names no
+ * machine (a cluster op), in which case a dropped stream cannot be re-attached
+ * and the client surfaces the truncation as before.
+ */
+function targetMachine(
+  entry: ContractCommand,
+  params: Record<string, unknown>,
+  positionals: Record<string, unknown>
+): string | undefined {
+  const fromFlag = entry.machineOption ? params[entry.machineOption] : undefined;
+  if (typeof fromFlag === 'string') return fromFlag;
+  const fromPositional = entry.machinePositional ? positionals[entry.machinePositional] : undefined;
+  return typeof fromPositional === 'string' ? fromPositional : undefined;
 }
 
 /**
@@ -160,10 +231,16 @@ export async function runCommandThroughProxy(
     ...(context.fetchImpl ? { fetchImpl: context.fetchImpl } : {}),
   });
 
+  const params = paramsFromCommand(entry, actionCommand);
+  const positionals = positionalsFromCommand(entry, actionCommand);
+  const machine = targetMachine(entry, params, positionals);
+
   const outcome = await client.run(
     commandPath,
-    paramsFromCommand(entry, actionCommand),
-    renderEvent
+    params,
+    positionals,
+    renderEvent,
+    machine ? { machine } : undefined
   );
 
   // Whatever the command printed at the executor is printed here, verbatim, so

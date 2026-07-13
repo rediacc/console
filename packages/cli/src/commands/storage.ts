@@ -6,12 +6,11 @@ import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { storageBrowserService } from '../services/repo/storage-browser.js';
-import { getStateProvider } from '../services/state.js';
-import { createResourceCommands } from '../utils/commandFactory.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import { assertStorageExists } from './_validate.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
+import { registerStorageEndpointCommands } from './storage-endpoints.js';
 
 function formatFileName(f: RemoteFile): string {
   if (f.isDirectory) return `${f.name}/`;
@@ -247,39 +246,13 @@ async function executeStoragePrune(
 }
 
 export function registerStorageCommands(program: Command): void {
-  const storage = createResourceCommands(program, {
-    resourceName: 'storage',
-    resourceNamePlural: 'storage systems',
-    nameField: 'storageName',
-    parentOption: 'team',
-    operations: {
-      list: async (params) => {
-        const provider = getStateProvider();
-        return provider.storage.list({ teamName: params?.teamName as string });
-      },
-      create: async (payload) => {
-        const provider = getStateProvider();
-        return provider.storage.create(payload);
-      },
-      rename: async (payload) => {
-        const provider = getStateProvider();
-        return provider.storage.rename(payload);
-      },
-      delete: async (payload) => {
-        const provider = getStateProvider();
-        return provider.storage.delete(payload);
-      },
-    },
-    createOptions: [
-      { flags: '--vault <json>', description: t('options.vaultJson'), required: true },
-    ],
-    transformCreatePayload: (name, opts) => ({
-      storageName: name,
-      teamName: opts.team,
-      vaultContent: opts.vault,
-    }),
-  });
-  storage.summary(t('commands.storage.descriptionShort'));
+  const storage = program
+    .command('storage')
+    .summary(t('commands.storage.descriptionShort'))
+    .description(t('commands.storage.description'));
+
+  // add/remove/list/import — the endpoint registry (absorbs config storage *).
+  registerStorageEndpointCommands(storage, program);
 
   // Add browse subcommand for listing files in a storage system
   storage

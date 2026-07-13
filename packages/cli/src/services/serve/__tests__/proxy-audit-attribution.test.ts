@@ -47,7 +47,17 @@ vi.mock('../../config/config-resources.js', () => ({
     getLocalMachine: vi.fn((name: string) =>
       Promise.resolve({ ip: '10.0.0.1', user: 'root', name })
     ),
-    getCurrent: vi.fn(() => Promise.resolve({ state: {} })),
+    // `demo` placed on `prod-1` so `repo status demo` derives its machine (§2.3).
+    getCurrent: vi.fn(() =>
+      Promise.resolve({
+        state: {},
+        resources: {
+          repositories: {
+            demo: { grand: 'base', tags: { base: {} }, placement: { machine: 'prod-1' } },
+          },
+        },
+      })
+    ),
   },
 }));
 process.env.REDIACC_TELEMETRY_DISABLED = '1';
@@ -174,7 +184,7 @@ describe('proxy audit attribution', () => {
       body: JSON.stringify({
         contractVersion: CLI_CONTRACT_VERSION,
         pathKey: 'repo status',
-        params: { name: 'demo', machine: 'prod-1' },
+        positionals: { ref: 'demo' },
       }),
     });
   }

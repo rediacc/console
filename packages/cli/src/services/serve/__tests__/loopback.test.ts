@@ -52,7 +52,23 @@ vi.mock('../../config/config-resources.js', () => ({
     getLocalMachine: vi.fn((name: string) =>
       Promise.resolve({ ip: '10.0.0.1', user: 'root', name })
     ),
-    getCurrent: vi.fn(() => Promise.resolve({ state: {} })),
+    // `shop` is placed on `hostinger` so a derived-machine repo verb (`repo cat`,
+    // the positional-ref acceptance vehicle after `_refprobe` retired) resolves
+    // its execution machine from placement (spec/03 §2.3), not from a dead `-m`.
+    getCurrent: vi.fn(() =>
+      Promise.resolve({
+        state: {},
+        resources: {
+          repositories: {
+            shop: { grand: 'base', tags: { base: {} }, placement: { machine: 'hostinger' } },
+            demo: { grand: 'base', tags: { base: {} }, placement: { machine: 'hostinger' } },
+            // Distinct placements so the concurrency test derives distinct machines.
+            alpha: { grand: 'base', tags: { base: {} }, placement: { machine: 'm1' } },
+            beta: { grand: 'base', tags: { base: {} }, placement: { machine: 'm2' } },
+          },
+        },
+      })
+    ),
   },
 }));
 
@@ -243,14 +259,7 @@ describe('proxy loopback', () => {
     ]);
     boot({ executor });
 
-    const { exitCode, stdout } = await runCli([
-      'repo',
-      'status',
-      '--name',
-      'demo',
-      '-m',
-      'hostinger',
-    ]);
+    const { exitCode, stdout } = await runCli(['repo', 'status', 'demo']);
 
     expect(exitCode).toBe(0);
 
@@ -276,7 +285,7 @@ describe('proxy loopback', () => {
     const { executor } = fakeExecutor([], { stdout: 'the whole answer' });
     boot({ executor });
 
-    const { stdout } = await runCli(['repo', 'status', '--name', 'demo', '-m', 'hostinger']);
+    const { stdout } = await runCli(['repo', 'status', 'demo']);
 
     expect(stdout).toContain('the whole answer');
     expect(stdout.match(/the whole answer/g)).toHaveLength(1);
@@ -290,14 +299,7 @@ describe('proxy loopback', () => {
     });
     boot({ executor });
 
-    const { exitCode, stdout, stderr } = await runCli([
-      'repo',
-      'status',
-      '--name',
-      'demo',
-      '-m',
-      'hostinger',
-    ]);
+    const { exitCode, stdout, stderr } = await runCli(['repo', 'status', 'demo']);
 
     // The exit code an operator scripts against is the one the command chose,
     // carried back across the wire rather than invented by the client.
@@ -311,7 +313,7 @@ describe('proxy loopback', () => {
 
     // --skip-router-restart is stored by Commander as `skipRouterRestart`; the
     // wire speaks the contract's long flags, so it has to be turned back.
-    await runCli(['repo', 'status', '--name', 'demo', '-m', 'hostinger', '--skip-router-restart']);
+    await runCli(['repo', 'status', 'demo', '--skip-router-restart']);
 
     expect(calls).toHaveLength(1);
     // The executor received it as a real flag: the command it ran had it set.
@@ -325,7 +327,7 @@ describe('proxy loopback', () => {
     const { executor } = fakeExecutor([]);
     boot({ executor });
 
-    await runCli(['repo', 'status', '--name', 'demo', '-m', 'hostinger']);
+    await runCli(['repo', 'status', 'demo']);
 
     expect(audited).toHaveLength(1);
     expect(audited[0]).toMatchObject({
@@ -342,9 +344,7 @@ describe('proxy loopback', () => {
 
     // `term connect` needs the operator's terminal. The contract says so, and the
     // CLI refuses before a request is ever made.
-    await expect(runCli(['term', 'connect', '-m', 'hostinger'])).rejects.toThrow(
-      /terminal|--proxy/i
-    );
+    await expect(runCli(['term', 'connect', 'hostinger'])).rejects.toThrow(/terminal|--proxy/i);
     expect(calls).toHaveLength(0);
   });
 
@@ -352,18 +352,18 @@ describe('proxy loopback', () => {
     const { executor } = fakeExecutor([]);
     boot({ executor });
 
-    await expect(
-      runCli(['repo', 'status', '--name', 'demo', '-m', 'hostinger'], 'rdt_nope')
-    ).rejects.toThrow(/not valid for the executor|401/i);
+    await expect(runCli(['repo', 'status', 'demo'], 'rdt_nope')).rejects.toThrow(
+      /not valid for the executor|401/i
+    );
   });
 
   it('denies a member when the org has no policy document, and never runs the command', async () => {
     const { executor, calls } = fakeExecutor([]);
     boot({ executor });
 
-    await expect(
-      runCli(['repo', 'status', '--name', 'demo', '-m', 'hostinger'], MEMBER_TOKEN)
-    ).rejects.toThrow(/only owners and admins/i);
+    await expect(runCli(['repo', 'status', 'demo'], MEMBER_TOKEN)).rejects.toThrow(
+      /only owners and admins/i
+    );
 
     // Policy is enforced BEFORE execution, not after.
     expect(calls).toHaveLength(0);
@@ -382,7 +382,7 @@ describe('proxy loopback', () => {
         ),
     });
 
-    await expect(runCli(['repo', 'status', '--name', 'demo', '-m', 'hostinger'])).rejects.toThrow();
+    await expect(runCli(['repo', 'status', 'demo'])).rejects.toThrow();
     expect(calls).toHaveLength(0);
   });
 
@@ -396,7 +396,9 @@ describe('proxy loopback', () => {
       contractVersion: 'contract-from-last-year',
     });
 
-    await expect(stale.run('repo status', { name: 'demo' }, () => {})).rejects.toThrow(/contract/i);
+    await expect(stale.run('repo status', { name: 'demo' }, {}, () => {})).rejects.toThrow(
+      /contract/i
+    );
   });
 
   it('grants a CEK over real X25519 and holds it in memory only', async () => {
@@ -500,7 +502,16 @@ describe('proxy loopback', () => {
   async function postCommand(
     body: Record<string, unknown>,
     token = OWNER_TOKEN
-  ): Promise<{ status: number; events: RenetEvent[]; results: unknown[]; error?: string }> {
+  ): Promise<{
+    status: number;
+    events: RenetEvent[];
+    results: unknown[];
+    /** The `kind:'job'` announcements, in arrival order. */
+    jobs: { jobId: string; sinceLine: number }[];
+    /** Every parsed stream line, in order, with its kind intact. */
+    lines: { kind: string; line?: number; event?: RenetEvent }[];
+    error?: string;
+  }> {
     const response = await fetch(`${baseUrl}/v1/command`, {
       method: 'POST',
       headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
@@ -509,7 +520,14 @@ describe('proxy loopback', () => {
 
     if (!response.ok) {
       const failure = (await response.json()) as { error?: string };
-      return { status: response.status, events: [], results: [], error: failure.error };
+      return {
+        status: response.status,
+        events: [],
+        results: [],
+        jobs: [],
+        lines: [],
+        error: failure.error,
+      };
     }
 
     const text = await response.text();
@@ -521,6 +539,10 @@ describe('proxy loopback', () => {
       status: response.status,
       events: lines.filter((l) => l.kind === 'event').map((l) => l.event as RenetEvent),
       results: lines.filter((l) => l.kind === 'result').map((l) => l.result),
+      jobs: lines
+        .filter((l) => l.kind === 'job')
+        .map((l) => ({ jobId: l.jobId, sinceLine: l.sinceLine })),
+      lines,
     };
   }
 
@@ -530,7 +552,7 @@ describe('proxy loopback', () => {
 
     const { status, results } = await postCommand({
       pathKey: 'repo status',
-      params: { name: 'demo', machine: 'hostinger' },
+      positionals: { ref: 'demo' },
     });
 
     expect(status).toBe(200);
@@ -553,7 +575,7 @@ describe('proxy loopback', () => {
 
     const { events, results } = await postCommand({
       pathKey: 'repo status',
-      params: { name: 'demo', machine: 'hostinger' },
+      positionals: { ref: 'demo' },
     });
 
     expect(events.map((e) => e.type)).toEqual(['step_start', 'step_done']);
@@ -566,7 +588,7 @@ describe('proxy loopback', () => {
     const { executor } = fakeExecutor([]);
     boot({ executor });
 
-    await postCommand({ pathKey: 'repo status', params: { name: 'demo', machine: 'hostinger' } });
+    await postCommand({ pathKey: 'repo status', positionals: { ref: 'demo' } });
 
     expect(audited).toHaveLength(1);
     expect(audited[0]).toMatchObject({
@@ -593,7 +615,7 @@ describe('proxy loopback', () => {
 
     const { status } = await postCommand({
       pathKey: 'repo status',
-      params: { name: 'demo', machine: 'hostinger' },
+      positionals: { ref: 'demo' },
     });
 
     expect(status).toBe(403);
@@ -606,7 +628,8 @@ describe('proxy loopback', () => {
 
     const { status, error } = await postCommand({
       pathKey: 'repo status',
-      params: { name: 'demo', machine: 'hostinger', 'not-an-option': 'x' },
+      positionals: { ref: 'demo' },
+      params: { 'not-an-option': 'x' },
     });
 
     expect(status).toBe(400);
@@ -658,8 +681,8 @@ describe('proxy loopback', () => {
     boot({ executor });
 
     const [alpha, beta] = await Promise.all([
-      postCommand({ pathKey: 'repo status', params: { name: 'alpha', machine: 'm1' } }),
-      postCommand({ pathKey: 'repo status', params: { name: 'beta', machine: 'm2' } }),
+      postCommand({ pathKey: 'repo status', positionals: { ref: 'alpha' } }),
+      postCommand({ pathKey: 'repo status', positionals: { ref: 'beta' } }),
     ]);
 
     // Each command reached the executor with its OWN params.
@@ -679,5 +702,159 @@ describe('proxy loopback', () => {
     expect(beta.results).toHaveLength(1);
     expect((alpha.results[0] as ExecuteResult).stdout).toBe('stdout-for-alpha');
     expect((beta.results[0] as ExecuteResult).stdout).toBe('stdout-for-beta');
+  });
+
+  // ─── The ref concept: a positional round-trips over the proxy ──────────────
+  //
+  // `repo cat <ref>` is the acceptance vehicle after `_refprobe` retired (spec/03
+  // §10): the first REAL positional-carrying leaf that calls getExecutor().execute,
+  // so the fake observes the round-trip. Its machine is DERIVED from placement
+  // (§2.3), which is exactly what a positional ref buys us: the client never sends
+  // a machine, the executor resolves `shop` -> `hostinger` from its own config.
+
+  it('carries a positional ref through the real CLI over --proxy', async () => {
+    // repo cat decodes an `RDC_CAT_B64:` marker from the executor's stdout; give
+    // it one so the read succeeds and the exit code stays 0.
+    const { executor, calls } = fakeExecutor([], { stdout: 'RDC_CAT_B64:c2hvcA==' });
+    boot({ executor });
+
+    const { exitCode } = await runCli(['repo', 'cat', 'shop', '--remote-file', '/etc/hostname']);
+    expect(exitCode).toBe(0);
+
+    // The CLI serialised <ref> into the positionals bag; the executor ran the real
+    // command, whose action body derived the machine and dispatched repository_cat
+    // through getExecutor(). None of that happened on the client — the fake saw the
+    // call because the command ran server-side, machine derived from placement.
+    expect(calls).toHaveLength(1);
+    expect(calls[0].functionName).toBe('repository_cat');
+    expect(calls[0].machineName).toBe('hostinger');
+    expect(calls[0].params).toMatchObject({ repository: 'shop', path: '/etc/hostname' });
+  });
+
+  it('accepts the positionals bag at /v1/command and refuses an undeclared positional', async () => {
+    const { executor, calls } = fakeExecutor([], { stdout: 'RDC_CAT_B64:c2hvcA==' });
+    boot({ executor });
+
+    const ok = await postCommand({
+      pathKey: 'repo cat',
+      params: { 'remote-file': '/etc/hostname' },
+      positionals: { ref: 'shop' },
+    });
+    expect(ok.status).toBe(200);
+    expect(calls[0]?.params).toMatchObject({ repository: 'shop', path: '/etc/hostname' });
+
+    // A positional the contract did not declare is argv injection, so it is a 400.
+    const bad = await postCommand({
+      pathKey: 'repo cat',
+      params: { 'remote-file': '/etc/hostname' },
+      positionals: { ref: 'shop', sneaky: 'x' },
+    });
+    expect(bad.status).toBe(400);
+    expect(bad.error).toMatch(/has no sneaky positional/i);
+  });
+
+  it('scopes policy on a positional-addressed repo, not just a flag (fail-open risk #1)', async () => {
+    const { executor, calls } = fakeExecutor([], { stdout: 'RDC_CAT_B64:c2hvcA==' });
+    boot({
+      executor,
+      loadConfig: () =>
+        Promise.resolve(
+          baseConfig({
+            version: 1,
+            defaults: { commands: { allow: ['repo *'] }, repos: ['locked-*'] },
+          })
+        ),
+    });
+
+    // repo cat names its repo POSITIONALLY ('shop'), which is not in the repos
+    // allowlist. Before targetFrom read the positionals bag, this resolved
+    // undefined and the repo-scoped rule silently stopped matching — the command
+    // ran unscoped. Now it is denied, and the executor is never called.
+    const { status } = await postCommand({
+      pathKey: 'repo cat',
+      params: { 'remote-file': '/etc/hostname' },
+      positionals: { ref: 'shop' },
+    });
+    expect(status).toBe(403);
+    expect(calls).toHaveLength(0);
+  });
+
+  // ─── Detach: the kind:'job' line and the re-attach route ───────────────────
+
+  it('emits a kind:job line before the events when the executor detaches', async () => {
+    // A fake that detaches: it announces the job, then streams ordinal-tagged
+    // events exactly as LocalExecutorService replays a detached job's spool.
+    const executor = {
+      execute(options: ExecuteOptions): Promise<ExecuteResult> {
+        options.onJobStarted?.('j18c1c04dd251ce26-0ccf9fe5');
+        options.onEvent?.({ type: 'step_start', name: 'snapshot' }, 1);
+        options.onEvent?.({ type: 'step_done', name: 'snapshot', duration_ms: 5 }, 2);
+        return Promise.resolve({ success: true, exitCode: 0, durationMs: 9 });
+      },
+    };
+    boot({ executor });
+
+    const { jobs, lines, results } = await postCommand({
+      pathKey: 'repo status',
+      positionals: { ref: 'demo' },
+    });
+
+    // The job announcement leads, before the first event, so a client can
+    // re-attach even if the connection drops before any event arrives.
+    expect(jobs).toEqual([{ jobId: 'j18c1c04dd251ce26-0ccf9fe5', sinceLine: 0 }]);
+    const kinds = lines.map((l) => l.kind);
+    expect(kinds[0]).toBe('job');
+    expect(kinds.indexOf('job')).toBeLessThan(kinds.indexOf('event'));
+
+    // Exactly one result, last.
+    expect(results).toHaveLength(1);
+    expect(kinds[kinds.length - 1]).toBe('result');
+
+    // The event lines carry their spool-line ordinals, for exactly-once re-attach.
+    expect(lines.filter((l) => l.kind === 'event').map((l) => l.line)).toEqual([1, 2]);
+  });
+
+  it('re-attach route rejects a job id renet could not have minted, before any SSH', async () => {
+    const { executor } = fakeExecutor([]);
+    boot({ executor });
+
+    // A bad id would be interpolated into a remote shell command, so assertJobId
+    // runs before anything reaches a machine: this is a 400, not a stream.
+    const res = await fetch(`${baseUrl}/v1/jobs/not-a-real-id/events?machine=hostinger`, {
+      headers: { authorization: `Bearer ${OWNER_TOKEN}` },
+    });
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error?: string }).error).toMatch(/job id/i);
+  });
+
+  it('re-attach route needs a token and a machine', async () => {
+    const { executor } = fakeExecutor([]);
+    boot({ executor });
+    const id = 'j18c1c04dd251ce26-0ccf9fe5';
+
+    const noToken = await fetch(`${baseUrl}/v1/jobs/${id}/events?machine=hostinger`);
+    expect(noToken.status).toBe(401);
+
+    const noMachine = await fetch(`${baseUrl}/v1/jobs/${id}/events`, {
+      headers: { authorization: `Bearer ${OWNER_TOKEN}` },
+    });
+    expect(noMachine.status).toBe(400);
+  });
+
+  it('re-attach route denies on the job logs policy, scoped to the machine', async () => {
+    const { executor } = fakeExecutor([]);
+    boot({
+      executor,
+      // An allowlist that does not include `job *`, so re-attaching (which the
+      // route authorizes as `job logs`) is denied.
+      loadConfig: () =>
+        Promise.resolve(baseConfig({ version: 1, defaults: { commands: { allow: ['repo *'] } } })),
+    });
+
+    const res = await fetch(
+      `${baseUrl}/v1/jobs/j18c1c04dd251ce26-0ccf9fe5/events?machine=hostinger`,
+      { headers: { authorization: `Bearer ${OWNER_TOKEN}` } }
+    );
+    expect(res.status).toBe(403);
   });
 });

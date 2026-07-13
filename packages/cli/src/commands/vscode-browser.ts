@@ -64,11 +64,12 @@ export async function verifySSHConnectivity(connectionDetails: ConnectionDetails
  * check, mount check, per-repo key deployment, and renet provisioning.
  */
 async function prepareBrowserConnection(
-  teamName: string,
   machineName: string,
   repositoryName: string
 ): Promise<{ connectionDetails: ConnectionDetails; teamKey: string }> {
-  const connectionDetails = await getSSHConnectionDetails(teamName, machineName, repositoryName);
+  // Teams are retired vocabulary (`-t` is deleted in P4); the SSH-connection
+  // layer still takes the segment, so the local adapter's empty team is passed.
+  const connectionDetails = await getSSHConnectionDetails('', machineName, repositoryName);
   await verifySSHConnectivity(connectionDetails);
 
   const repoConfig = await configService.getRepository(repositoryName);
@@ -139,16 +140,15 @@ async function holdTunnelOpen(tunnel: TunnelHandle): Promise<void> {
  */
 export async function connectVSCodeBrowser(
   options: VSCodeBrowserOptions,
-  parsed: { teamName: string; machineName: string; repositoryName?: string }
+  parsed: { machineName: string; repositoryName?: string }
 ): Promise<void> {
-  const { teamName, machineName, repositoryName } = parsed;
+  const { machineName, repositoryName } = parsed;
   if (!repositoryName) {
     throw new ValidationError(t('errors.vscode.browserNeedsRepo'));
   }
 
   const serverProvider = getServerProvider(options.serverProvider);
   const { connectionDetails, teamKey } = await prepareBrowserConnection(
-    teamName,
     machineName,
     repositoryName
   );

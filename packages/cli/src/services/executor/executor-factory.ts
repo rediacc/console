@@ -19,6 +19,7 @@
  * this file is once again about one thing: which executor runs the work.
  */
 
+import { currentRequestContext } from '../core/request-context.js';
 import { requestExecutor, tapExecutor } from './event-tap.js';
 import { localExecutorService } from './local-executor.js';
 import type { Executor } from './types.js';
@@ -28,13 +29,53 @@ import type { Executor } from './types.js';
 export type { ExecuteResult, Executor, RenetEvent } from './types.js';
 
 /**
+ * Process-global set by `--background` / `-b` in the root preAction hook.
+ *
+ * A process global, not a threaded parameter, because there are ~35 hand-rolled
+ * execute() call sites and threading a flag through all of them (and every
+ * command body between the hook and the seam) is exactly the churn the executor
+ * seam exists to avoid. The decorator below reads it once, at the seam.
+ */
+let backgroundRequested = false;
+
+/** Called by the root preAction hook when `--background` is present. */
+export function setBackgroundRequested(value: boolean): void {
+  backgroundRequested = value;
+}
+
+/** Whether this invocation asked to fire-and-forget its machine work. */
+export function isBackgroundRequested(): boolean {
+  return backgroundRequested;
+}
+
+/**
+ * Turn a `--background` invocation's machine work into a fire-and-forget
+ * detached job: start it and return the instant it starts, leaving it running.
+ *
+ * Two guards keep this from misfiring. It only acts when the global is set, so
+ * an ordinary run is untouched. And it is a NO-OP inside a serve request context
+ * (`currentRequestContext()` present): the process global would otherwise leak
+ * across concurrent in-flight requests, and inside a dispatch the dispatch owns
+ * the detach decision (via `deps.detach`), not a client's flag.
+ */
+export function backgroundDecorator(inner: Executor): Executor {
+  if (!backgroundRequested || currentRequestContext()) return inner;
+  return {
+    execute(options) {
+      return inner.execute({ ...options, detached: true, follow: false });
+    },
+  };
+}
+
+/**
  * The executor for the current invocation.
  *
  * An in-process dispatch (the executor serving a command) pins its own executor
  * on the request context, so that wins. Outside a dispatch there is no context
  * and this is the local executor, which is the only one there has ever been on a
- * laptop.
+ * laptop. `--background` composes over whichever it is, and is inert inside a
+ * dispatch.
  */
 export function getExecutor(): Executor {
-  return tapExecutor(requestExecutor() ?? localExecutorService);
+  return tapExecutor(backgroundDecorator(requestExecutor() ?? localExecutorService));
 }

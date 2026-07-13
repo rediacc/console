@@ -31,6 +31,7 @@ import type { ReplicaSet } from '@rediacc/shared/config-schema';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { getExecutor } from '../executor/executor-factory.js';
+import { parseCapturedJson } from '../executor/local-executor.js';
 
 /** Labels every replicate-generated object carries, for enumerate + teardown. */
 const REPLICA_LABEL = 'rediacc.io/replica-set';
@@ -65,6 +66,30 @@ export interface ProvisionReplicasInput {
 /** The snapshot a replica set's forks clone from (refresh cycles the suffix). */
 export function replicaSnapshotName(setName: string, suffix?: string): string {
   return suffix ? `replicate-${setName}-${suffix}` : `replicate-${setName}`;
+}
+
+/**
+ * A repo ref's k8s/datastore-safe stem. A repo key may carry a tag (`shop:test`),
+ * but a k8s object name and a datastore fork tag both reject `:`.
+ */
+export function repoKeySlug(repoKey: string): string {
+  return repoKey.replace(/:/g, '-');
+}
+
+/**
+ * The managed replica set's name for a repo (spec §4.4): there is exactly ONE
+ * set per repo, so the set is a property OF the repo rather than an
+ * independently named object, and its name is DERIVED from the ref instead of
+ * being passed in. For an untagged repo this is the same `<repo>-replicas` the
+ * old `--set` flag defaulted to, so recorded state keys are unchanged.
+ */
+export function replicaSetNameFor(repoKey: string): string {
+  return `${repoKeySlug(repoKey)}-replicas`;
+}
+
+/** The repo's managed replica set, or undefined when it has none. */
+export async function getReplicaSetForRepo(repoKey: string): Promise<ReplicaSet | undefined> {
+  return getReplicaSet(replicaSetNameFor(repoKey));
 }
 
 /**
@@ -111,24 +136,71 @@ export async function provisionReplicaDatastores(
 export async function provisionOneReplica(
   input: Pick<
     ProvisionReplicasInput,
-    'setName' | 'datastore' | 'snapshot' | 'controlMachine' | 'controlMount' | 'debug'
+    'repo' | 'setName' | 'datastore' | 'snapshot' | 'controlMachine' | 'controlMount' | 'debug'
   >,
   index: number,
   node: ReplicaNode
 ): Promise<void> {
   const tag = replicaTag(input.setName, index);
+  const forkName = `${input.datastore}:${tag}`;
   // Clone the datastore from the snapshot (constant-time, DB-size-independent).
-  await dispatch(
-    'datastore_fork',
-    input.controlMachine,
-    { parent: input.datastore, tag, snapshot: input.snapshot },
-    input.debug
-  );
+  // datastore_fork registers the fork record ONLY in the control machine's
+  // registry; when the replica lands on a DIFFERENT node, its registry has no
+  // such record, so we ferry the record (the `datastore fork --json` output)
+  // there via datastore_adopt before attaching (finding #36; mirrors the
+  // cluster-fork cross-machine path, cluster-fork.ts:203-218 / finding #14).
+  const forkRes = await getExecutor().execute({
+    functionName: 'datastore_fork',
+    machineName: input.controlMachine,
+    params: { parent: input.datastore, tag, snapshot: input.snapshot },
+    debug: input.debug,
+    captureOutput: true,
+  });
+  if (!forkRes.success) {
+    throw new Error(
+      `Replica step "datastore_fork" failed on ${input.controlMachine}: ${forkRes.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR}`
+    );
+  }
+  if (node.machine !== input.controlMachine) {
+    const record = parseCapturedJson<unknown>(forkRes.stdout);
+    const recordB64 = Buffer.from(JSON.stringify(record)).toString('base64');
+    await dispatch(
+      'datastore_adopt',
+      node.machine,
+      { name: forkName, record_b64: recordB64 },
+      input.debug
+    );
+  }
   // Attach --writes local on the target node (ephemeral dm-COW overlay).
   await dispatch(
     'datastore_attach',
     node.machine,
-    { name: `${input.datastore}:${tag}`, writes: 'local' },
+    { name: forkName, writes: 'local' },
+    input.debug
+  );
+  if (node.machine !== input.controlMachine) {
+    // The fork record now lives on the replica node and is attached there; the
+    // control's copy (from datastore_fork) is vestigial. Forget it on control
+    // (registry-only; the fork is DETACHED there and the clone is owned by the
+    // node's record) so a later re-fork of the SAME tag — `repo replicate
+    // refresh`, which discards on the node then re-forks on control — does not
+    // collide with a stale control record (finding #40).
+    await dispatch('datastore_forget', input.controlMachine, { name: forkName }, input.debug);
+  }
+  // Open the repo's per-volume LUKS images on the fork (bug #49). The fork is a
+  // BLOCK-layer clone, so it carries the ciphertext `<fork>/repos/<repo>/volumes/
+  // <pvc>.img` AND the empty directory that image was mounted over. The replica's
+  // PV points at that directory. Without this step the image is never opened, the
+  // pod bind-mounts the empty dir, and the replica comes up healthy, Ready, and
+  // EMPTY — no FailedMount, no event, no symptom except missing data.
+  //
+  // It MUST precede kube_node_label: the label is the scheduling gate (the PV's
+  // nodeAffinity key), so opening first means a pod can never be scheduled onto a
+  // volume that is not yet mounted.
+  await dispatch(
+    'datastore_volumes_open',
+    node.machine,
+    { name: forkName, repo: input.repo },
     input.debug
   );
   // Stamp the fork's datastore label on the hosting node (PV nodeAffinity key).
@@ -152,6 +224,24 @@ function replicaForkMount(datastore: string, tag: string): string {
 /** Discard a replica set's datastores: detach --discard each fork (best-effort). */
 export async function discardReplicaDatastores(set: ReplicaSet, debug?: boolean): Promise<void> {
   for (const r of set.replicas) {
+    try {
+      // Close the per-volume LUKS images FIRST (bug #49's mirror). Anything the
+      // provision path opens, the discard path must close: a fork carrying a live
+      // LUKS mapping and its loop device is BUSY, and `datastore_detach --discard`
+      // would fail on it. Best-effort like the detach itself — a replica whose
+      // volumes are already closed (or that never opened any) is a no-op, and a
+      // node that cannot answer must not strand the rest of the teardown.
+      await getExecutor().execute({
+        functionName: 'datastore_volumes_close',
+        machineName: r.node,
+        params: { name: r.fork, repo: set.repo },
+        debug,
+      });
+    } catch (err) {
+      outputService.warn(
+        `  discard: datastore_volumes_close ${r.fork} on ${r.node} failed (continuing): ${err}`
+      );
+    }
     try {
       await getExecutor().execute({
         functionName: 'datastore_detach',

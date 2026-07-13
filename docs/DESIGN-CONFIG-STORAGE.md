@@ -858,11 +858,16 @@ Implements the same `StoreAdapter` interface as S3, Bitwarden, Git, etc. Registe
 - `/account/config-storage/members` — Member management (add via CLI, remove via portal)
 - `/account/admin/config-storage` — Admin overview
 
-### CLI (Daily Operations — Future)
-Push/pull commands will be added under `rdc config storage`:
-- `rdc config storage push` — encrypt and upload config
-- `rdc config storage pull` — download and decrypt config
-- `rdc config storage status` — show store info
+### CLI (Daily Operations)
+Shipped under `rdc config remote`:
+- `rdc config remote enable`: link this config to the store (`--headless` for a device-code flow)
+- `rdc config remote disable`: disconnect and write the config back to disk
+- `rdc config remote refresh`: download and decrypt the latest config
+- `rdc config remote status`: show store info
+- `rdc config rotate-cek`: rotate the client-controlled encryption key
+
+Uploads are implicit: once remote is enabled, config writes are encrypted and pushed to the
+store, so there is no separate push command.
 
 These require passkey_secret in OS keyring (set during web portal setup).
 

@@ -1,6 +1,7 @@
 import { CLI_CONTRACT_VERSION, getCommand } from '@rediacc/shared/cli-contract';
 import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 import { Command } from 'commander';
+import { registerBackupCommands } from './commands/backup.js';
 import { registerClusterCommands } from './commands/cluster/index.js';
 import { registerConfigCommands } from './commands/config.js';
 import { registerCreditsCommand } from './commands/credits.js';
@@ -24,7 +25,12 @@ import { configService } from './services/config/config-resources.js';
 import { auditService } from './services/core/audit.js';
 import { outputService } from './services/core/output.js';
 import { exitProcess } from './services/core/request-context.js';
-import { assertProxyCapable, runCommandThroughProxy } from './services/executor/proxy-command.js';
+import { setBackgroundRequested } from './services/executor/executor-factory.js';
+import {
+  assertDetachable,
+  assertProxyCapable,
+  runCommandThroughProxy,
+} from './services/executor/proxy-command.js';
 import { fetchOtlpCredentials } from './services/telemetry/otlp-credentials.js';
 import { isTelemetryDisabled, telemetryService } from './services/telemetry/telemetry.js';
 import type { OutputFormat } from './types/index.js';
@@ -171,6 +177,7 @@ export function createCli(): Command {
     .option('-y, --yes', t('options.yes'))
     .option('--fields <fields>', t('options.fields'))
     .option('--proxy <url>', t('options.proxy'))
+    .option('-b, --background', t('options.background'))
     .hook('preAction', async (thisCommand, actionCommand) => {
       const opts = thisCommand.opts();
       const effectiveFormat = resolveOutputFormat(
@@ -199,6 +206,17 @@ export function createCli(): Command {
       // Initialize or update i18n language. Before the proxy branch: a proxied
       // run still renders here, so it needs its strings.
       await ensureI18n(opts.lang ?? (await configService.getLanguage()), opts.lang);
+
+      // Fire-and-forget: start the machine work as a detached job and return the
+      // instant it starts, leaving it running (finding #2 of the detach handoff).
+      // Refuse it up front for a command that cannot become a job, so the
+      // operator gets a clear message rather than a flag that silently did
+      // nothing. Set before the proxy branch, which never returns.
+      if (opts.background) {
+        const commandPath = commandPathOf(actionCommand);
+        assertDetachable(commandPath, getCommand(commandPath));
+        setBackgroundRequested(true);
+      }
 
       // Run the command at a remote executor instead of here. Explicit opt-in
       // only: an inferred mode was what made the retired cloud adapter leak
@@ -297,6 +315,7 @@ export function createCli(): Command {
   // Register all command groups
   registerJobCommands(cli);
   registerMachineCommands(cli);
+  registerBackupCommands(cli);
   registerRepoCommands(cli);
   registerStorageCommands(cli);
   registerConfigCommands(cli);

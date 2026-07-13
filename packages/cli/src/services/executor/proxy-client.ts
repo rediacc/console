@@ -93,6 +93,14 @@ export interface ProxyCommandOutcome {
   renderedLiveOutput: boolean;
 }
 
+/** Where to re-attach a dropped stream: the machine the command ran on. */
+export interface ReattachTarget {
+  machine: string;
+}
+
+/** How many times a dropped proxy stream is re-attached before giving up. */
+const MAX_REATTACHES = 5;
+
 /** Build the outcome from a result line. renderedLiveOutput is filled in by the reader. */
 function toOutcome(line: Extract<StreamLine, { kind: 'result' }>): ProxyCommandOutcome {
   return {
@@ -104,6 +112,18 @@ function toOutcome(line: Extract<StreamLine, { kind: 'result' }>): ProxyCommandO
     renetStdout: line.result.stdout ?? '',
     renderedLiveOutput: false,
   };
+}
+
+/** What a stream read so far, carried across a re-attach so a resume dedupes correctly. */
+interface StreamState {
+  eventsSeen: number;
+  renderedLiveOutput: boolean;
+  /** The detached job the executor handed the work to, once it announced one. */
+  jobId?: string;
+  /** The highest spool-line ordinal delivered, so a resume skips what it already has. */
+  highestLine: number;
+  /** The terminal result, once it lands. */
+  outcome?: ProxyCommandOutcome;
 }
 
 export class ProxyClient {
@@ -129,12 +149,15 @@ export class ProxyClient {
   async run(
     pathKey: string,
     params: Record<string, unknown>,
-    onEvent: (event: RenetEvent) => void
+    positionals: Record<string, unknown>,
+    onEvent: (event: RenetEvent) => void,
+    reattach?: ReattachTarget
   ): Promise<ProxyCommandOutcome> {
     const request: CommandRequest = {
       contractVersion: this.contractVersion,
       pathKey,
       params,
+      positionals,
     };
 
     const response = await this.post(PROXY_ROUTES.command, request);
@@ -149,7 +172,17 @@ export class ProxyClient {
       throw new ProxyStreamTruncatedError(0);
     }
 
-    return this.consumeStream(response.body, onEvent);
+    const state: StreamState = { eventsSeen: 0, renderedLiveOutput: false, highestLine: 0 };
+    try {
+      await this.pumpStream(response.body, onEvent, state);
+    } catch (error) {
+      // A transport error mid-stream is exactly what re-attach exists to
+      // recover. Fall through when the executor announced a job and we know the
+      // machine; otherwise the failure is genuine and propagates.
+      if (!(state.jobId && reattach)) throw error;
+    }
+
+    return this.finishOrReattach(onEvent, state, reattach);
   }
 
   /** Probe the executor. Used by `--proxy` startup checks and the loopback harness. */
@@ -164,17 +197,49 @@ export class ProxyClient {
   }
 
   /**
-   * Read the NDJSON response: forward every renet event as it arrives, and
-   * return the terminal result.
+   * Return the outcome, or re-attach to the detached job and resume.
+   *
+   * A stream that ended with a result line is done. One that ended WITHOUT a
+   * result but that announced a job (`kind:'job'`) means the connection dropped
+   * before the work finished; if we know the machine, we re-attach to the job's
+   * spool and resume from the last complete line rather than reporting a failure
+   * for work that is still running. Only when there is nothing to resume to is
+   * the truncation surfaced, exactly as before.
    */
-  private async consumeStream(
-    body: ReadableStream<Uint8Array>,
-    onEvent: (event: RenetEvent) => void
+  private async finishOrReattach(
+    onEvent: (event: RenetEvent) => void,
+    state: StreamState,
+    reattach: ReattachTarget | undefined
   ): Promise<ProxyCommandOutcome> {
-    let outcome: ProxyCommandOutcome | undefined;
-    let eventsSeen = 0;
-    let renderedLiveOutput = false;
+    if (state.outcome) {
+      state.outcome.renderedLiveOutput = state.renderedLiveOutput;
+      return state.outcome;
+    }
 
+    if (state.jobId && reattach) {
+      const resumed = await this.reattachToJob(reattach.machine, state.jobId, onEvent, state);
+      if (resumed) {
+        resumed.renderedLiveOutput = state.renderedLiveOutput;
+        return resumed;
+      }
+    }
+
+    throw new ProxyStreamTruncatedError(state.eventsSeen);
+  }
+
+  /**
+   * Read one NDJSON stream into `state`, forwarding every renet event.
+   *
+   * Dedupes on the per-event spool-line ordinal: a resume re-sends the boundary
+   * line renet only half-delivered, and skipping any ordinal already seen keeps
+   * the reconstruction exactly-once. A `kind:'job'` line records where to
+   * re-attach and the offset to resume from.
+   */
+  private async pumpStream(
+    body: ReadableStream<Uint8Array>,
+    onEvent: (event: RenetEvent) => void,
+    state: StreamState
+  ): Promise<void> {
     for await (const raw of readNdjson<unknown>(body, (line) => {
       // Renet occasionally writes unstructured output to the same stream. A
       // stray line must not kill a healthy operation, so surface it as a log
@@ -182,27 +247,71 @@ export class ProxyClient {
       onEvent({ type: 'log', level: 'debug', msg: line });
     })) {
       const parsed = StreamLineSchema.safeParse(raw);
-      if (!parsed.success) continue;
+      if (parsed.success) this.foldStreamLine(parsed.data, onEvent, state);
+    }
+  }
 
-      const line: StreamLine = parsed.data;
-      if (line.kind === 'event') {
-        eventsSeen += 1;
-        if (line.event.type === 'output') renderedLiveOutput = true;
-        // No cast needed: the wire event and RenetEvent are the same shape by
-        // construction, which is the point of forwarding renet's events verbatim.
-        onEvent(line.event);
-      } else if (line.kind === 'result') {
-        outcome = toOutcome(line);
+  /** Fold one parsed stream line into `state`, forwarding an event to `onEvent`. */
+  private foldStreamLine(
+    line: StreamLine,
+    onEvent: (event: RenetEvent) => void,
+    state: StreamState
+  ): void {
+    if (line.kind === 'job') {
+      state.jobId = line.jobId;
+      if (line.sinceLine > state.highestLine) state.highestLine = line.sinceLine;
+      return;
+    }
+    if (line.kind === 'result') {
+      state.outcome = toOutcome(line);
+      return;
+    }
+    // An event. Dedupe on the spool-line ordinal so a resumed boundary line
+    // renders exactly once.
+    if (line.line != null && line.line <= state.highestLine) return;
+    if (line.line != null) state.highestLine = line.line;
+    state.eventsSeen += 1;
+    if (line.event.type === 'output') state.renderedLiveOutput = true;
+    // No cast needed: the wire event and RenetEvent are the same shape by
+    // construction, which is the point of forwarding renet's events verbatim.
+    onEvent(line.event);
+  }
+
+  /**
+   * Re-attach to a detached job and resume its stream from the last line seen.
+   *
+   * Reconnecting is cheap and safe: the job runs on the machine regardless, so a
+   * resume only changes what we can SEE of it. Each attempt resumes from the
+   * current high-water line, so a stream that drops again simply reconnects
+   * without losing or repeating a line. Returns undefined when every attempt is
+   * exhausted, leaving the caller to surface the truncation.
+   */
+  private async reattachToJob(
+    machine: string,
+    jobId: string,
+    onEvent: (event: RenetEvent) => void,
+    state: StreamState
+  ): Promise<ProxyCommandOutcome | undefined> {
+    for (let attempt = 0; attempt < MAX_REATTACHES; attempt++) {
+      const query = `machine=${encodeURIComponent(machine)}&sinceLine=${state.highestLine}`;
+      const url = `${this.baseUrl}${PROXY_ROUTES.jobEvents(jobId)}?${query}`;
+
+      let response: Response;
+      try {
+        response = await this.fetchImpl(url, { headers: await this.headers() });
+      } catch {
+        continue; // network blip; resume from the same offset
       }
-    }
+      if (!response.ok || !response.body) continue;
 
-    if (!outcome) {
-      throw new ProxyStreamTruncatedError(eventsSeen);
+      try {
+        await this.pumpStream(response.body, onEvent, state);
+      } catch {
+        continue; // stream dropped again; the loop resumes from highestLine
+      }
+      if (state.outcome) return state.outcome;
     }
-    // Set last: whether output was rendered live is only known once the whole
-    // stream has been read.
-    outcome.renderedLiveOutput = renderedLiveOutput;
-    return outcome;
+    return undefined;
   }
 
   private async post(path: string, body: unknown): Promise<Response> {

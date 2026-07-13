@@ -15,6 +15,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   assertJobId,
+  backgroundStartedHint,
+  createEventLineReader,
+  createJobOutputCollector,
   InvalidJobIdError,
   isJobCommandUnsupported,
   JobLogCursor,
@@ -100,6 +103,82 @@ describe('JobLogCursor', () => {
     cursor.consume('');
     cursor.consume(Buffer.alloc(0));
     expect(cursor.sinceLine).toBe(0);
+  });
+});
+
+describe('createEventLineReader spool-line ordinals', () => {
+  it('tags each event with its 1-based spool ordinal', () => {
+    const seen: (number | undefined)[] = [];
+    const read = createEventLineReader((_event, line) => seen.push(line));
+    read(Buffer.from('{"type":"log"}\n{"type":"output","msg":"x"}\n'));
+    expect(seen).toEqual([1, 2]);
+  });
+
+  it('resumes ordinals from a starting line after a reconnect', () => {
+    const seen: (number | undefined)[] = [];
+    const read = createEventLineReader((_event, line) => seen.push(line), 5);
+    read(Buffer.from('{"type":"log"}\n{"type":"log"}\n'));
+    expect(seen).toEqual([6, 7]);
+  });
+
+  /**
+   * The ordinal and JobLogCursor MUST stay in lockstep across a dropped
+   * connection, or a resume dedupes against the wrong line. Both count complete
+   * newlines, so a half-delivered line advances neither, and a fresh reader
+   * seeded from the cursor renumbers the resent line to exactly what it was.
+   */
+  it('keeps its ordinal in lockstep with JobLogCursor across a mid-line drop', () => {
+    const cursor = new JobLogCursor();
+
+    // Attempt 1 dies after 2 complete lines and half of line 3.
+    const seen1: (number | undefined)[] = [];
+    const read1 = createEventLineReader((_event, line) => seen1.push(line), cursor.sinceLine);
+    const chunk1 = '{"type":"log","msg":"1"}\n{"type":"log","msg":"2"}\n{"type":"log","msg":"3';
+    read1(Buffer.from(chunk1));
+    cursor.consume(chunk1);
+    expect(seen1).toEqual([1, 2]);
+    expect(cursor.sinceLine).toBe(2);
+
+    // renet resumes at --since-line 2, re-sending line 3 in full. A fresh reader
+    // seeded from the cursor must number that resent line 3, not 1.
+    const seen2: (number | undefined)[] = [];
+    const read2 = createEventLineReader((_event, line) => seen2.push(line), cursor.sinceLine);
+    const chunk2 = '{"type":"log","msg":"3"}\n{"type":"log","msg":"4"}\n';
+    read2(Buffer.from(chunk2));
+    cursor.consume(chunk2);
+    expect(seen2).toEqual([3, 4]);
+    expect(cursor.sinceLine).toBe(4);
+  });
+});
+
+describe('createJobOutputCollector', () => {
+  it('reconstructs stdout from output events, newline-terminated', () => {
+    const collector = createJobOutputCollector();
+    collector.consume({ type: 'output', msg: '[repository_list] [{"name":"mail"}]' });
+    collector.consume({ type: 'output', msg: 'second line' });
+    expect(collector.stdout).toBe('[repository_list] [{"name":"mail"}]\nsecond line\n');
+  });
+
+  it('captures error and warning logs into stderr, ignoring info', () => {
+    const collector = createJobOutputCollector();
+    collector.consume({ type: 'log', level: 'info', msg: 'noise' });
+    collector.consume({ type: 'log', level: 'warning', msg: 'careful' });
+    collector.consume({ type: 'log', level: 'error', msg: 'boom' });
+    expect(collector.stderr).toBe('careful\nboom\n');
+  });
+
+  it('collects step_done timings and skips incomplete ones', () => {
+    const collector = createJobOutputCollector();
+    collector.consume({ type: 'step_done', name: 'mount', duration_ms: 12, detail: 'ok' });
+    collector.consume({ type: 'step_start', name: 'up' });
+    collector.consume({ type: 'step_done', name: 'up' }); // no duration -> skipped
+    expect(collector.steps).toEqual([{ name: 'mount', duration_ms: 12, detail: 'ok' }]);
+  });
+
+  it('ignores an output event with no message', () => {
+    const collector = createJobOutputCollector();
+    collector.consume({ type: 'output' });
+    expect(collector.stdout).toBe('');
   });
 });
 
@@ -273,6 +352,52 @@ describe('parseJobStatus + jobStatusToExecuteResult', () => {
       })
     );
     expect(jobDurationMs(status)).toBeNull();
+  });
+
+  it('carries reconstructed stdout, stderr and steps from a collector', () => {
+    const status = parseJobStatus(
+      JSON.stringify({
+        ...base,
+        state: 'succeeded',
+        exit_code: 0,
+        finished_at: '2026-07-12T16:58:12.500Z',
+      })
+    );
+    const collector = createJobOutputCollector();
+    collector.consume({ type: 'output', msg: '[{"name":"mail"}]' });
+    collector.consume({ type: 'log', level: 'error', msg: 'a warning slipped through' });
+    collector.consume({ type: 'step_done', name: 'list', duration_ms: 5 });
+
+    const result = jobStatusToExecuteResult(status, 9999, collector);
+
+    expect(result.stdout).toBe('[{"name":"mail"}]\n');
+    expect(result.stderr).toBe('a warning slipped through\n');
+    expect(result.steps).toEqual([{ name: 'list', duration_ms: 5 }]);
+  });
+
+  it('omits steps when the collector recorded none but still carries stdout', () => {
+    const status = parseJobStatus(JSON.stringify({ ...base, state: 'succeeded', exit_code: 0 }));
+    const result = jobStatusToExecuteResult(status, 10, createJobOutputCollector());
+    expect(result.steps).toBeUndefined();
+    expect(result.stdout).toBe('');
+  });
+
+  it('leaves stdout undefined when no output is supplied (the 2-arg call)', () => {
+    const status = parseJobStatus(JSON.stringify({ ...base, state: 'succeeded', exit_code: 0 }));
+    const result = jobStatusToExecuteResult(status, 10);
+    expect(result.stdout).toBeUndefined();
+  });
+});
+
+describe('backgroundStartedHint', () => {
+  it('hands back the job id and the commands to catch up with it', () => {
+    const hint = backgroundStartedHint(JOB_ID, 'prod-1');
+
+    expect(hint).toContain('Started job');
+    expect(hint).toContain('keeps running in the background');
+    expect(hint).toContain(JOB_ID);
+    expect(hint).toContain(`rdc job logs -m prod-1 --id ${JOB_ID} --follow`);
+    expect(hint).toContain(`rdc job status -m prod-1 --id ${JOB_ID}`);
   });
 });
 

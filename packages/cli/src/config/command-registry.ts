@@ -42,6 +42,8 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
   { name: 'storage', domain: 'INFRASTRUCTURE' },
   { name: 'ops', domain: 'INFRASTRUCTURE' },
   { name: 'datastore', domain: 'INFRASTRUCTURE' },
+  { name: 'backup', domain: 'INFRASTRUCTURE' },
+  { name: 'cluster', domain: 'INFRASTRUCTURE' },
 
   // ── Repositories ────────────────────────────────────────────────────
   { name: 'repo', domain: 'REPOSITORIES' },
@@ -49,6 +51,8 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
   // ── Execution ───────────────────────────────────────────────────────
   { name: 'run', domain: 'EXECUTION' },
   { name: 'term', domain: 'EXECUTION' },
+  // Detached jobs: started by any long command, outlive the connection.
+  { name: 'job', domain: 'EXECUTION' },
 
   // ── Licensing ──────────────────────────────────────────────────────
   { name: 'subscription', domain: 'TOOLS' },
@@ -59,6 +63,9 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
   { name: 'update', domain: 'TOOLS' },
   { name: 'vscode', domain: 'TOOLS' },
   { name: 'mcp', domain: 'TOOLS' },
+  { name: 'credits', domain: 'TOOLS' },
+  // The enterprise proxy executor daemon.
+  { name: 'serve', domain: 'TOOLS' },
 ] as const;
 
 /** Lookup a command definition by name. */

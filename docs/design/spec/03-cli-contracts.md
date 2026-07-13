@@ -23,13 +23,48 @@ Verified code anchors used throughout:
   (`-o/--output`, `--config`, `-l/--lang`, `-q/--quiet`, `-y/--yes`, `--fields`) plus the
   output-format precedence rule (`REDIACC_DEFAULT_OUTPUT` env, auto-JSON for non-TTY/agent).
 
-Leaf count (RESOLVED by gate ruling R2, `00-gate-review.md`): the tree-as-drawn is the
-contract. Enumerating 06 §1 exactly (plus the `machine infra` subtree that 06 §2 moves
-but §1 forgot to draw — finding U1) yields **153 target leaves**, accepted as the P4
-contract; the "~90" prose figure is retired as wrong arithmetic (README/06 drop it in
-the as-built pass). The honest simplification claim: 162 current → 153 target with the
-DAILY surface consolidated (config 57 → 25, repo plumbing under `repo admin`, five
-backup surfaces unified).
+## 0. The leaf count is NOT the contract. The mapping is. (AMENDED 2026-07-13)
+
+Gate ruling R2 retired the "~90" prose figure as wrong arithmetic and put **153 target
+leaves** in its place, derived from a **162-leaf** current baseline. Both of those numbers
+have now failed, in exactly the way "~90" failed:
+
+1. **The 162 baseline is arithmetically wrong.** §6's mapping tables enumerate **163** rows
+   (machine 17, storage 6, ops 6, datastore 5, repo 44, run+term 2, subscription 8, config
+   57, singles 10, cluster 8). The 162 comes from §6.7's header, which says
+   "subscription (7)" while the table beneath it lists 8 rows. The published baseline was
+   off by one on the day it was published. (§6.7's header is corrected below; the tables
+   were right, the header was not.)
+2. **It went stale within days.** Operator commits landed 19 invokable commands after this
+   spec was written, including an entire new noun. Measured 2026-07-13 by walking the live
+   Commander tree: **179 leaves in `command-tree.json`, plus 3 actionable parents
+   (`repo replicate`, `repo canary`, `subscription refresh`, each carrying an `.action()`
+   AND subcommands), plus the hidden `run` = 183 invokable commands.**
+   `walkContractCommands()` reports 182 of those (it excludes `run`); a naive leaf-walk of
+   the JSON reports 179 and silently drops the three actionable parents. Any P4 tooling
+   that counts must use the walker, not a subcommand-empty test.
+3. Both figures also ignore actionable parents entirely. At spec time there was one
+   (uncounted); today there are three.
+
+**RULING (extends R2 one step): the mapping is the contract; the count is descriptive.**
+A figure its author could not compute correctly, and that every merge invalidates, is not
+serving as a contract; a P4 that treats "153" as a pass/fail gate will spend its budget
+arguing with merges instead of shipping the reshape. What P4 is held to is **§6: every
+command in the live tree carries a disposition row, and every disposition row resolves to
+a real command.** Both halves are mechanically checkable now that `command-tree.json`
+exists and both new gates walk the live tree, and unlike a number they cannot be satisfied
+by accident. Make that the CI gate.
+
+Descriptive figures, for orientation only, with no contractual force: ~183 invokable
+commands today; the reshape lands at **165** (163 if the two foldable leaves in §9 fold).
+The honest simplification claim is unchanged and does not depend on a number: the DAILY
+surface consolidates (config 57 to 25, repo plumbing under `repo admin`, five backup
+surfaces unified).
+
+The program plan's P4 task is reworded accordingly: "full CLI reshape **per the §6 disposition
+table**", never "153 leaves". The two gate reviews that still quote the old figure
+(`spec/00-gate-review.md` R2, `spec/10-p3-gate-review.md` carry-in 16) carry a superseded
+note; they are historical records and are annotated, not rewritten.
 
 ---
 
@@ -60,11 +95,19 @@ meanings of 4, 6, 14.
 | 14 | `INFRA_FAILED` | The remote operation ran and failed: renet non-zero (other than 10), OpenTofu/provisioning failure, fencing failure, transfer failure. Distinct from 6 (never reached) and 13 (infra fine, app unhealthy). | no |
 | 15 | `BUSY` | The operation conflicts with one already running: `backup run` while a run is active (payload carries the running id — R2-F15's worked example), a held file lock, a concurrent migrate on the same subject. | after the blocker finishes |
 
+| 130 | `DETACHED` | **[AMENDED 2026-07-13]** The operator pressed Ctrl-C while following a running detached job (`job logs --follow`), or a followed job ended nonzero. NOT a failure of the CLI: the job is running under systemd, not under this terminal, and a user stopping a scrolling log is not asking to destroy a half-finished migration. 130 is the SIGINT convention (128+2) and is deliberately outside the 0-15 block, so a script can tell "you detached" from "the operation failed". Already implemented as `EXIT_DETACHED` in `packages/cli/src/commands/job.ts:42`; this table is catching up to the code. | n/a |
+
 Deviations (exhaustive; every other leaf uses the table as-is):
 
 - `rdc run` (hidden), `rdc repo exec`, `rdc term connect -c` — propagate the REMOTE
   command's exit code verbatim (ssh semantics). The table applies only to failures that
   happen before the remote command runs.
+- **`rdc job logs --follow` [AMENDED 2026-07-13]** — two deviations, both live in
+  `commands/job.ts`. Ctrl-C during a follow exits **130** (above), and a follow that runs
+  to a FAILED job's completion propagates **the job's own `exit_code`** verbatim
+  (`job.ts:248`), which is a remote renet code, not a code from this table. Same rationale
+  as `repo exec`: the CLI is a viewport onto a remote process, and remapping its exit code
+  would destroy the only thing the operator asked for.
 - `rdc doctor` — exits 1 if any check fails (diagnostic convention; payload has per-check detail).
 - `rdc update --check-only` — always exits 0 when the check itself succeeds; availability
   is data, not an error.
@@ -101,6 +144,136 @@ with the new names and maps them in `httpStatusToExitCode`'s sibling
 ---
 
 ## 2. Addressing grammar: `repo[:tag][@place]`, positional names, derived machine
+
+### 2.0 PREREQUISITE: the contract is options-only, and it hard-throws on positionals (BLOCKER, 2026-07-13)
+
+**P4's first deliverable is a positional-argument serialisation rule in the contract layer.
+It is not a command rename. Nothing in §2.2 can land before it.**
+
+The CLI has **zero** positional arguments today (verified by walking the live Commander
+tree). That is not an accident of style: it is load-bearing. Every consumer of the
+generated CLI contract serialises a command as **flags alone**, and the shared tree walker
+enforces it. `walkContractCommands()`
+(`packages/cli/scripts/lib/command-tree-lib.ts:270-279`) throws on the first command that
+registers one:
+
+> `Command "repo up" registers positional argument(s): ref.`
+> `The CLI contract is options-only: every contract consumer (web console, --proxy thin
+> client, executor) serialises a command as flags alone.`
+> `Add a positional-argument serialisation rule to the contract (types.ts ContractCommand
+> + generate-cli-contract.ts) before registering positionals.`
+
+That walker is shared by the contract generator, the plane gate and the plane-coverage
+test, so **the first leaf P4 converts to a positional takes down `check:ci-cli-contract`,
+`check:ci-command-planes` and `plane-coverage.test.ts` simultaneously**, and the failure is
+a thrown exception in a build script, not a diff. The error message is the work order.
+
+This is not a cosmetic gate. The wire format really is options-only:
+
+| Consumer | Code | What a positional does today |
+|---|---|---|
+| `--proxy` thin client | `paramsFromCommand`, `packages/cli/src/services/executor/proxy-command.ts:81-96` | iterates `entry.options` only. A positional **silently does not travel**: the executor runs the command with the name argument simply missing |
+| Executor daemon | `buildFlags`, `packages/cli/src/services/serve/command-dispatch.ts:137-150` | reconstructs argv from `entry.options` only, and REFUSES anything undeclared as argv-injection defence |
+| Web console | `fieldDescriptors`, `private/account/web/src/lib/contract-form.ts:114-115` | is `entry.options.map(...)`. A positional **gets no form control at all**, and the render gate (`check:ci-console-coverage`, which requires one labeled control per field) passes while the form is unusable |
+
+**Scope of the prerequisite** (cross-repo: console + the account submodule):
+
+1. `packages/shared/src/cli-contract/types.ts`: `ContractCommand` grows a positional
+   descriptor (name, required, variadic, and the ref-kind so a consumer knows to render a
+   repo/machine picker; see the `machineOption`/`repoOption` trap below).
+2. `packages/cli/scripts/generate-cli-contract.ts`: emit it. `walkContractCommands` already
+   collects `registeredArguments`; today it throws instead of serialising them. Lift the
+   throw, emit the descriptor.
+3. `packages/cli/src/services/executor/proxy-command.ts`: put positionals on the wire.
+4. `packages/cli/src/services/serve/command-dispatch.ts`: rebuild argv WITH positionals,
+   in order, before the flags, keeping the refuse-the-undeclared property.
+5. `private/account/web/src/lib/contract-form.ts`: render a control per positional.
+
+**Trap that comes with it, and must be solved in the same change.**
+`resolveMachineOption` (`generate-cli-contract.ts:183-187`) returns `'machine'` if a
+`--machine` option exists, else `'name'` on the `machine` domain, else `null`.
+`resolveRepoOption` (lines 194-203) mirrors it with `repoArg` / `--repo` / `--name` on the
+`repo` domain. §2.2 kills `--name` tree-wide and §2.3 removes `-m/--machine` from every
+repo verb, so **both resolvers return `null` for most of the reshaped tree** and the web
+console's machine and repo PICKERS (`contract-form.ts:128-129`, keyed on
+`entry.machineOption` / `entry.repoOption`) silently degrade to plain text inputs or vanish.
+The contract needs a positional-ref concept that these resolvers can bind to. No gate
+catches this: the console still renders, it just renders a worse form.
+
+### OPERATOR RULING R-P4-1 (2026-07-13): BUILD THE REF CONCEPT. This is P4 task zero.
+
+The options were:
+
+| Option | Cost | Consequence |
+|---|---|---|
+| **A. Build the serialisation rule** | Real work in 5 modules across 2 repos, before a single command is renamed. It is a contract-shape change, so it also re-emits `contract.generated.ts` + `contract.json` + 13 i18n bundles and touches the account submodule's render gate. | §2.2 ships as designed. `rdc repo up shop` is the CLI the whole redesign is written around |
+| B. Abandon positional names | Zero prerequisite work | Keeps `--name` tree-wide and `-m` on repo verbs. §2.2, §2.3, §3 (`@place` on the positional ref) and most of §5's help text are rewritten in flag terms. The addressing model 06 §6 was built to fix survives only in the derived-machine half |
+
+**RULED: A.** The positional name is not decoration; it is what makes the
+`repo[:tag][@place]` ref a single addressable token that verbs share, and it is the reason
+`-m` can disappear. Option B would keep the CLI's central ergonomic defect and leave 06 §6
+half-implemented. Nothing in §2.2 may land before this does.
+
+#### What "a ref concept" means, precisely (the deliverable)
+
+The naive reading of option A — "let the walker emit positionals" — is **not sufficient**,
+and shipping only that would quietly break the operator's dynamic-GUI guarantee. A
+positional is not just another field on the wire; for most leaves it is *the field the
+console binds its resource pickers and its action buttons to*. Concretely, the deliverable
+has two halves:
+
+**Half 1 — serialisation (the wire).** `ContractCommand` grows a positional descriptor and
+every consumer learns to carry it:
+
+```ts
+positionals: [{ name: 'ref', kind: 'repo-ref', required: true, variadic: false }]
+```
+
+`kind` is the load-bearing field: `repo-ref` | `machine` | `datastore-ref` | `cluster` |
+`storage` | `strategy` | `artifact-ref` | `job-id` | `target` | `file` | `plain`. It is what
+lets a consumer know that this token names a repo without having to guess from the flag name.
+
+**Half 2 — rebinding (the pickers).** Today the console resolves its machine and repo
+pickers from `machineOption` / `repoOption`, i.e. from the *flags* `--machine` and
+`--name` — the exact flags §2.2/§2.3 delete. `resolveMachineOption`/`resolveRepoOption`
+(`generate-cli-contract.ts:183-203`) would return `null` across most of the reshaped tree,
+and two things silently degrade:
+
+- `fieldDescriptors` (`private/account/web/src/lib/contract-form.ts:114-115`) renders a
+  plain text box where a resource picker belongs;
+- **`ActionBar.tsx` empties.** Its own header states the invariant: *"The list is computed
+  from the contract, never written down... There is no array of command names in this file,
+  and there must never be."* A repo page's buttons are every command whose binding matches
+  the context. Kill the binding and the buttons vanish — and because the commands are then
+  no longer context-bound *at all*, the coverage gate can pass while the pages sit empty.
+
+So the contract must expose the binding on the **ref**, not only on the flag:
+`repoPositional` / `machinePositional` (or a single resolved `refBinding`) alongside the
+existing `repoOption` / `machineOption`, and `prefillFor` / `fieldDescriptors` /
+`ActionBar` bind to whichever is present. **The GUI guarantee is the acceptance test for
+task zero**: after the reshape, `rdc repo up shop` must render as one repo picker, and the
+repo page's action bar must still compute its buttons.
+
+The five modules, in dependency order:
+
+1. `packages/shared/src/cli-contract/types.ts` — `ContractCommand.positionals[]` + the ref
+   bindings.
+2. `packages/cli/scripts/generate-cli-contract.ts` — emit them; extend
+   `resolveMachineOption`/`resolveRepoOption` to resolve through positionals; **re-key
+   `PROXY_EXCLUSIONS`** in the same pass.
+3. `packages/cli/scripts/lib/command-tree-lib.ts` — `walkContractCommands()` currently
+   *throws* on `registeredArguments` (:270-279). Lift the throw, serialise instead.
+4. `packages/cli/src/services/executor/proxy-command.ts` (`paramsFromCommand`) and
+   `packages/cli/src/services/serve/command-dispatch.ts` (`buildArgv`) — put positionals on
+   the wire and rebuild argv **positionals first, then flags**, preserving the
+   refuse-the-undeclared property (it is argv-injection defence, not incidental strictness).
+5. `private/account/web/src/lib/contract-form.ts` (+ `ActionBar` / `prefillFor`) — a control
+   per positional, and the picker/action bindings moved onto the ref.
+
+**Acceptance for task zero** (before any leaf is renamed): a temporary leaf carrying a
+positional walks the contract, round-trips over `--proxy` to a local `rdc serve`, renders in
+the console with a resource picker, and `check:ci-console-coverage` + `check:ci-cli-contract`
++ `check:ci-command-planes` + `plane-coverage.test.ts` are all green.
 
 ### 2.1 Grammar
 
@@ -140,6 +313,9 @@ label      := /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/
 
 ### 2.2 Positional primary name (per-noun migration)
 
+**Blocked on §2.0.** The first leaf that registers one of the positionals below throws in
+`walkContractCommands()` and reds three gates at once. Read §2.0 before writing any of this.
+
 The first positional argument of every leaf is the noun's primary name; `--name` dies
 tree-wide (06 §6.1). Concretely:
 
@@ -158,7 +334,9 @@ MCP/agent schemas stay named-parameter (06 §6.4): the MCP tool factory maps its
 (or `repoArg`) field onto the positional; nothing in the MCP surface changes shape.
 
 The docs validators `positional-cli-detector` and `validate-cli-examples` flip to the new
-grammar in P4 (06 §6.6).
+grammar in P4 (06 §6.6). **[AMENDED 2026-07-13]** They are the SMALL half. This spec
+originally named only the docs validators as the things that treat positional syntax as
+invalid; the load-bearing one is the CONTRACT walker (§2.0), which does not warn, it throws.
 
 ### 2.3 Derived-machine resolution algorithm (R2-F2) — normative
 
@@ -354,7 +532,9 @@ it is a success no-op.
 Every leaf below states its class (A-E) and its MCP disposition (`mcp(...)` or
 `exclude: <reason>`), which together are the P4 re-annotation of
 `command-metadata.ts` and the seed classification for the P4 MCP alignment gate
-(06 §8; `mcp` XOR `mcpExcludeReason` per leaf).
+(06 §8; `mcp` XOR `mcpExcludeReason` per leaf). **[AMENDED 2026-07-13]** Gate class and MCP
+disposition are two of THREE per-leaf classifications P4 owes. The third, the execution
+plane, did not exist when this spec was written. See §4.9 and §4.10.
 
 ### 4.8 Common flags (stated once)
 
@@ -369,6 +549,227 @@ Every leaf below states its class (A-E) and its MCP disposition (`mcp(...)` or
   positional ref = all repos on `-m`... which no longer exists; `[P0-DECIDED]` batch form
   becomes `rdc repo up --all --machine <m>` — `--all` is the explicit "every repo whose
   derived machine is m" selector; a bare `repo up` with no ref is exit 2, never a batch).
+
+### 4.9 Command planes: where a command RUNS, and the silent-flip hazard (NEW 2026-07-13)
+
+Commit `c3dc6bf44` (enterprise proxy executor + dynamic web console) introduced a
+per-command **plane**, and it constrains the reshape more sharply than anything else in
+this document, because **the gates cannot catch the dangerous half of a mistake.**
+
+**What a plane is.** A declared claim about where a command's code actually runs:
+
+- `machine`: it reaches a customer machine (renet execute via
+  `services/executor/local-executor`, `services/machine/*`, `remote/ssh`, `remote/sftp`,
+  or `services/tofu`).
+- `config`: it only reads or writes the local CLI config and resource state.
+- `other`: neither of those. Local tooling (self-update, diagnostics, local KVM dev VMs,
+  the MCP server), or an account-server HTTPS call. **An account-server call is NOT
+  `machine`.**
+
+It is a security-relevant trust label, not a cosmetic one. The generated contract turns
+`plane === 'machine'` into `proxyCapable`, and both `rdc --proxy` and the web console use
+that flag to decide whether a command may be shipped to a remote executor and run on the
+operator's behalf (`packages/cli/src/config/command-planes.ts:1-25`).
+
+**How it is decided: purely from the PATH STRING.** The data lives in exactly one
+hand-maintained table, `COMMAND_PLANES` (`command-planes.ts:42-163`), keyed by the
+space-joined command path (`"repo secret list"`). Resolution is longest-prefix ancestor
+inheritance (`command-planes.ts:169-207`): `getCommandPlane("repo secret list")` tries
+`"repo secret list"`, then `"repo secret"`, then `"repo"`. **A domain entry supplies the
+default; every other entry is an exception.** Today's domain defaults:
+
+| default `machine` | default `config` | default `other` |
+|---|---|---|
+| `machine`, `repo`, `cluster`, `term`, `job`, `datastore`, `vscode`, `serve` | `config`, `storage` | `subscription`, `ops`, `doctor`, `credits`, `update`, `mcp` |
+
+`getCommandPlane` THROWS on an unresolvable path, so a command can never reach the contract
+unclassified. A second, orthogonal flag rides in the same table and inherits the same way:
+`interactive` (needs a TTY, or never returns). It kills proxyability independently of plane.
+
+`proxyCapable` is **derived, never declared** (`generate-cli-contract.ts:229`):
+
+```ts
+const proxyCapable = plane === 'machine' && !interactive && !(w.pathKey in PROXY_EXCLUSIONS);
+```
+
+**Nothing derives the plane from the implementation.** The import-graph gate only
+cross-checks it, and only at TOP-LEVEL DOMAIN granularity
+(`packages/cli/scripts/check-command-planes.ts:157`, `const domain = cmd.path[0]`), with two
+coarse rules: an isolated domain must declare zero machine leaves (Rule 1), and a
+machine-reaching domain must declare at least one (Rule 2).
+
+#### THE RULE FOR P4: every move is an implicit plane re-declaration
+
+A command's plane is a pure function of its path string. **The reshape is therefore
+completely free to move verbs between nouns, and the plane system will never block a move.
+But it will not follow the verb either.** A moved verb silently adopts its new domain's
+default, and the import-graph gate stays green because it only checks domain-level
+reachability. The two cases behave differently, and the difference is the whole hazard:
+
+**Case 1, LOUD and safe: `config machine set-ceph` becomes `datastore create --backend rbd`.**
+`'config machine set-ceph': { plane: 'machine' }` is an EXPLICIT entry
+(`command-planes.ts:110`). Deleting the leaf makes that key stale, and
+`plane-coverage.test.ts:119-129` fails with `COMMAND_PLANES entries that are not commands in
+the CLI tree: config machine set-ceph`. You cannot miss it. The new home inherits
+`datastore: { plane: 'machine' }`: same plane, correct answer, arrived at honestly.
+
+**Case 2, SILENT and dangerous: `config repository list` becomes `repo list`.**
+`config repository list` has NO explicit entry; it inherits `config: { plane: 'config' }`.
+Its contract entry today is `proxyCapable: false`. Move it under `repo` and it inherits
+`repo: { plane: 'machine' }`, so **`proxyCapable` flips to `true`**. The web console now
+offers it for remote execution, and `rdc --proxy repo list` now ships it to the executor,
+**which reads the EXECUTOR's config file, not the caller's, and returns the executor's
+repositories.** That is precisely the "local effect" class `PROXY_EXCLUSIONS` exists to
+catch (`generate-cli-contract.ts:72-79`: *"the command reaches a machine, but its whole
+point is to write what it found back into the CALLER's config... A remote executor would
+write it into its own, and the caller would be none the wiser."*).
+
+**And every gate stays green.** Rule 1 does not fire (the `repo` domain CAN reach a
+machine). Rule 2 does not fire (`repo` has ~40 other machine leaves). The stale-entry test
+does not fire (there was no explicit entry to go stale). The contract regenerates cleanly.
+The only thing that changes is a `true` where a `false` used to be, buried in a 182-entry
+generated JSON. This case is not hypothetical: **`repo list` already exists** as a
+machine-plane command (`commands/repo.ts:346-352`, `-m/--machine`, queries live repos on a
+machine), so §6.8 merges a config-plane lister and a machine-plane lister onto one pathKey.
+Whichever implementation wins, the plane must be re-declared deliberately.
+
+> **Plane classification is a FIRST-CLASS PER-LEAF DELIVERABLE of the reshape, reviewed leaf
+> by leaf, not a regeneration afterthought.** For every leaf P4 moves into a machine-default
+> domain, ask: *"would running this at a remote executor produce the CALLER's answer?"* If
+> no, it needs either an explicit `plane: 'config'` entry in `COMMAND_PLANES` or an entry in
+> `PROXY_EXCLUSIONS` with a user-facing refusal reason. **No gate will ask this for you.**
+
+#### The loud traps, for completeness
+
+- **Rule 2 fires when `config` loses its last machine leaf.** P4 moves
+  `config machine scan-keys|setup|set-ceph`, `config infra push` and
+  `config cert-cache pull|push` out of `config`. Those are ALL FIVE of `config`'s
+  machine-plane leaves (`command-planes.ts:104-118`). If `config` ends with zero machine
+  leaves while `commands/config.ts` still transitively imports `remote/ssh` or
+  `services/machine/*`, Rule 2 fires. The CORRECT fix is to remove the now-dead machine
+  imports from the config command module. The TEMPTING WRONG fix is an `OVERRIDES` entry,
+  and the file warns against exactly that (`check-command-planes.ts:82`: *"Every entry here
+  is a rule this gate stops enforcing"*). Do not paper over it.
+- **A stale contract makes a renamed command fail-CLOSED under `--proxy`, which reads as a
+  bug.** `cli.ts:213-221` does `assertProxyCapable(commandPath, entry?.proxyCapable ?? false)`.
+  A rename with an unregenerated contract means `getCommand` misses and the `?? false`
+  refuses the command with a generic "cannot be proxied" message. Safe, but it does not look
+  like staleness. Regenerate the contract before testing any proxy path.
+- **i18n key moves break `descriptionKey` silently.** The key is recovered by matching the
+  RENDERED ENGLISH STRING back to `en/cli.json` (`command-tree-lib.ts:127-159`, first-wins,
+  `options.*` deliberately ordered before `commands.*`). Give two commands the same English
+  description, or move a key without moving its value, and `descriptionKey` goes `null`:
+  the web console and `--lang` lose the translation with NO gate failing. **Keep English
+  description strings unique per leaf.**
+
+### 4.10 The three per-leaf classification systems (NEW 2026-07-13)
+
+P4 must classify every reshaped leaf in all THREE. They are independent lookups that never
+consult each other, and they are all keyed by the same space-joined path string, so a rename
+must be applied to all three in the same commit.
+
+| System | File | Keyed by | Inheritance | Stale-entry gate |
+|---|---|---|---|---|
+| **Plane** (`plane`, `interactive`) | `config/command-planes.ts` | full path | **yes**, ancestor | LOUD: `plane-coverage.test.ts` + `check-command-planes.ts` |
+| **MCP** (`mcp`, `mcpExcludeReason`) | `config/command-metadata.ts` | full path | no, exact | LOUD: `mcp-coverage.test.ts` (checks exclusions against the live tree) |
+| **Guardrails** (`grandGuard`, `forkBlocked`, `agentBlocked`) | `config/command-metadata.ts` | full path | no, exact | **NONE** |
+
+They meet in exactly one place, `generate-cli-contract.ts:234-261`, which flattens all three
+onto the same `ContractCommand`. Two couplings worth knowing:
+
+- `resolveRepoOption` (`generate-cli-contract.ts:194-203`) reads the **MCP** `repoArg`
+  annotation to decide which option the WEB CONSOLE renders as a repo picker. An MCP
+  annotation therefore has a UI consequence.
+- The MCP coverage test iterates `COMMAND_REGISTRY` at TOP-LEVEL DOMAIN granularity, so a
+  new domain needs a registry entry AND either an MCP tool or an `mcpExcludeReason`.
+  **Verified 2026-07-13: `COMMAND_REGISTRY` holds 13 domains while the live tree has 16.
+  `job`, `cluster`, `credits` and `serve` are in no registry entry, so they are not
+  MCP-checked at all** (which is how `serve` and `config rotate-cek` reached main with no
+  `COMMAND_METADATA` entry of any kind, and it is the same hole 06 §8's 56-drifted-commands
+  finding describes). `ContractCommand.group` is `null` for all four; the type's own comment
+  saying "today: cluster and credits" is itself stale.
+
+**The guardrail row is the one to fear: it has no stale-entry gate at all.**
+`utils/command-policy.ts` looks up `COMMAND_METADATA[path]`, and a missed rename means
+`grandGuard` simply **stops being enforced** on that command, quietly. The plane goes stale
+loudly, the MCP entry goes stale loudly, the guardrail goes stale silent. Verify guardrails
+per-leaf during P4; do not trust the gates to find them.
+
+### 4.11 The policy layer: a FOURTH classification system, and the only one that fails OPEN (NEW 2026-07-13)
+
+Not in any design document until now. The enterprise-proxy work (W8, commit `c3dc6bf44`)
+landed a permission-policy layer — `packages/shared/src/policy/{schema,evaluate}.ts`,
+`packages/cli/src/services/serve/policy.ts`, and the console's `PolicyRuleEditor.tsx` — and
+**it is keyed by the command path string, exactly like the other three.**
+
+A policy document is authored per organization, stored **inside the encrypted config**, and
+evaluated by **both** the executor and the console UI (so the decision the console shows is
+the decision the executor makes). Its rules carry command **globs**:
+
+```ts
+commands: {
+  allow: ['repo *', 'machine status'],   // whitelist: a command must match at least one
+  deny:  ['repo delete', 'cluster *'],   // deny outranks any allow, at any tier
+}
+```
+
+Globs match the whole path, `*` spans segments (`schema.ts`). Two more couplings: `machines`
+and `repos` globs scope a rule to resource names, and `evaluate.ts:55` **derives the
+cluster-ops classification from the path prefix** (a leading `cluster` or `kube`), so moving
+a verb across nouns can change its policy class as a side effect.
+
+**Why this is the dangerous one.** P4 renames essentially every path. The two halves of a
+policy fail in opposite directions:
+
+| Stale glob | Failure direction | Result |
+|---|---|---|
+| `allow: ['repo takeover']` | **CLOSED** | the command is refused. Loud, safe, a user reports it |
+| `deny: ['repo takeover']` | ⚠ **OPEN** | the moment the leaf becomes `repo promote`, the deny **silently stops denying**. The command the org explicitly forbade is now permitted, and nothing anywhere says so |
+
+This is a security-relevant regression with **no gate**, in a document a customer authored
+and reasonably expects to keep holding. The other three systems are, in comparison, safe:
+plane and MCP go stale loudly; the guardrail goes stale silent but only *removes* an
+unlock's requirement on a command the operator already had to unlock deliberately. The
+policy deny-glob is the only one where staleness *grants* a permission that was explicitly
+withheld.
+
+**P4 owes three things here:**
+
+1. **Re-key every authored glob** in lockstep with the rename, including the presets and
+   fixtures in `PolicyRuleEditor.tsx`, `policy/__tests__/evaluate.test.ts`, and any policy
+   document in the operator's own configs (sole operator, so this is bounded; there is no
+   migration to write — per the no-backcompat rule, the rename is applied, not shimmed).
+2. **A stale-glob gate.** Every glob in a policy document must match at least one command in
+   the live tree, and the gate must be loudest on the `deny` side: a `deny` glob that matches
+   nothing is a **failure**, not a warning, because its only possible meanings are "typo" or
+   "the command it forbade was renamed out from under it".
+3. **Re-verify the derived cluster-ops prefix rule** (`evaluate.ts:55`) against the reshaped
+   tree: the reshape keeps `cluster` as a noun, so the prefix survives, but any verb moving
+   INTO or OUT OF `cluster` changes its policy class silently.
+4. **The detach coupling (found by the parallel detached-jobs pass):** an org with
+   `allow: ['repo *'], deny: ['job *']` can *start* a detached command through the proxy but
+   never reattach to it or read its outcome. Once the executor detaches by default (R-P4-2v2),
+   enabling proxy execution effectively implies allowing `job status`/`job logs`; the policy
+   evaluator or its documentation must say so, and the reattach route anchors its policy
+   check on the real `job logs` contract command rather than inventing new vocabulary.
+5. **A SECOND fail-open, found and fixed in task zero (w0-B, 2026-07-13): `targetFrom` read
+   only the flag bag.** `services/serve/server.ts:targetFrom` resolved a command's policy
+   target as `params[machineOption]` / `params[repoOption]` — the FLAG bags only. The moment
+   §2.2 moves a noun's primary name onto a positional (`repo up shop` instead of
+   `repo up --name shop`), the value lives in the `positionals` bag, so a machine- or
+   repo-scoped rule resolves `undefined` and **silently stops matching** — the command runs
+   unscoped, exactly the deny-side fail-open above but reached through the addressing change
+   rather than a rename. This is a hard prerequisite of the ref concept, not a follow-up:
+   landing positionals without it would ship the fail-open. **Fixed in task zero**:
+   `targetFrom` now reads BOTH bags (`params[machineOption]` OR `positionals[machinePositional]`,
+   and likewise for repo), and the loopback suite carries a positional-addressed deny test
+   (`_refprobe run shop` against a `repos: ['locked-*']` allowlist → 403). The `*Positional`
+   bindings the fix depends on are a distinct contract field from the `*Option` flag bindings
+   precisely so this read cannot regress to one bag.
+
+**The per-leaf checklist is therefore FIVE systems, not three** (§8.3): plane, MCP,
+guardrails, policy globs, and the ref binding (§2.0) that the console's pickers and action
+bars resolve through.
 
 ---
 
@@ -735,8 +1136,12 @@ Daily verbs keep today's semantics (06 §5) with the addressing migration: posit
 - Help: `Deploy or update a repository. Runs its Rediaccfile up steps.`
 - Flags: `--no-start` (NEW: mount/prepare only — replaces `repo mount`; LUKS open and,
   for k8s, PV generation happen without running `up()`), `--skip-checkpoint`, `--tls`,
-  `--detach`, `--all --machine <m>` batch form (§4.8), `--parallel`,
-  `--concurrency <n>`, `--include-forks`, `-y`, `--dry-run`.
+  **`--no-wait`** (RENAMED from `--detach` by ruling R-P4-2v2, §9 Q5: it means "return once
+  the containers are started, health checks continue in the background", which is what
+  `--no-wait` says and what `--detach` did not; after the rename the word "detach" no longer
+  exists as a flag anywhere in the tree), `--all --machine <m>` batch form (§4.8),
+  `--parallel`, `--concurrency <n>`, `--include-forks`, `-y`, `--dry-run`. Detached-job runs
+  use the GLOBAL `--background`/`-b` (§5.13), not a per-verb flag.
 - Errors: derived-routing per §2.3 (5/11/12); deploy failure → 14; k8s manifests with
   cluster-scoped kinds → warning (02 §2), not an error; renet license → 10.
 - Idempotency: converges; re-run on running repo redeploys (0).
@@ -772,7 +1177,10 @@ Daily verbs keep today's semantics (06 §5) with the addressing migration: posit
 #### `repo fork <parent-ref> --tag <tag>`
 - Help: `Fork a repository copy-on-write. Instant at any size. New identity, empty secrets.`
 - Flags: `--tag <tag>` required; `--up` (deploy after fork); `--checkpoint` (CRIU);
-  `--immutable` (create as immutable commit object); `--detach`. DELETED: `--cluster`,
+  `--immutable` (create as immutable commit object); **`--no-wait`** (RENAMED from
+  `--detach`, ruling R-P4-2v2 — this REOPENS AND SUPERSEDES U6, which had kept `--detach`
+  here with the old meaning; detached-job runs use the global `--background`, §5.13).
+  DELETED: `--cluster`,
   `--to-cluster`, `--provider` (06 §3: no runtime flag at all — the parent's placement
   decides docker-vs-k8s and `RepoRuntime` dispatches; cross-machine = fork + push).
 - Errors: tag exists → 2; `--tag base` → 2 (§2.1); cross-datastore fork request → 2
@@ -1287,16 +1695,204 @@ collapse into `status`/`refresh` with scope flags.
   required, `--param k=v...`, `-w/--watch`. Exit: renet passthrough incl. 10.
   Gate: E (absolute agentBlocked). MCP: exclude: `Escape hatch; agents use typed
   tools.` (as today)
+- **`serve` [NEW-SINCE-SPEC, 2026-07-13]** — `rdc serve --mode <daemon|container>`,
+  `-p/--port`, `--host`. The executor daemon: it runs machine operations on a caller's
+  behalf, and it is the other end of the `--proxy` global flag. This section enumerated 5
+  singles and did not know about it. Plane: `machine` + `interactive` (honest on both
+  counts: running machine operations IS its job, and it listens until SIGINT, which is also
+  what keeps it out of the proxy, since forwarding `rdc serve` to an executor would ask the
+  executor to start another one). Gate and MCP disposition are UNSET in
+  `COMMAND_METADATA` today, because the MCP coverage test never sees it (§4.10).
+  **RULED (§9 Q4): `serve` STAYS a top-level single, and `--proxy` is contract-frozen.**
+  They are the two ends of one wire; burying either would hide the mechanism that makes the
+  generated contract load-bearing. P4 owes it a `COMMAND_METADATA` entry (Gate: E, absolute
+  agentBlocked — an agent must never start an executor; MCP: exclude: `The executor daemon
+  itself.`) and a `COMMAND_REGISTRY` entry so the MCP gate can finally see it.
+
+**Global flags [AMENDED 2026-07-13].** The anchor at the top of this file
+(`cli.ts:136-141`: `-o/--output`, `--config`, `-l/--lang`, `-q/--quiet`, `-y/--yes`,
+`--fields`) predates **`--proxy <url>`** (`cli.ts:173`). It needs a contract row of its own:
+`--proxy` is the thin-client entry point that makes the entire generated CLI contract
+load-bearing rather than decorative, and it is why §2.0's positional blocker exists at all.
+`REDIACC_PROXY_URL` is its env equivalent (`cli.ts:213`).
+
+**P4 adds one more global: `--background`/`-b`** (R-P4-2v2, §5.13) — run the command as a
+detached job, print the id and a resume hint, exit 0. Guarded by `assertDetachable` in the
+same preAction hook that guards `--proxy`, BEFORE the `--proxy` branch; refusal on a
+non-detachable command names the reason from `DETACH_EXCLUSIONS`, mirroring
+`assertProxyCapable`.
+
+### 5.13 `rdc job` (5 leaves) — NEW-SINCE-SPEC (2026-07-13)
+
+Management surface over renet's detached-job spool: work runs under a transient systemd
+unit on the machine, so it survives a dropped SSH channel, a closed laptop, or a Ctrl-C on
+the log tail (`packages/cli/src/commands/job.ts`; renet's
+`cmd/renet/job_commands.go`). Kept as a noun by 06 §9: a job is a real addressable resource
+on the machine (an id, a state machine, logs, a lifecycle), and folding `job list` into
+`machine jobs` would put one resource's CRUD on another resource's noun, which is exactly
+what the reshape is undoing everywhere else. The noun deliberately has **no create verb**:
+a job is born as a side effect of another verb.
+
+**Nothing can fill the spool today.** `LocalExecutorService.tryDetachedExecution()` returns
+`null` unless `ExecuteOptions.detached` is set, and no CLI command sets it
+(`services/executor/local-executor.ts:1236`; the comment at :1225 says so outright, and a
+grep across `commands/` and `services/serve/` confirms it). `rdc job` manages a spool no
+`rdc` command can create an entry in.
+
+#### OPERATOR RULING R-P4-2v2 (2026-07-13, §9 Q5+Q7, twice-ruled and MERGED): a job is EXECUTOR-BORN, plus a global `--background`/`-b`
+
+The operator ruled this question in two sessions: this one chose a per-verb `--detach`; a
+parallel session — which had additionally found that Commander resolves a root-level and a
+subcommand flag of the same name **by position**, making any reuse of the word a silent trap
+(`rdc --detach repo up` vs `rdc repo up --detach`) — chose a **global `--background`/`-b`**
+with fire-and-forget semantics. The operator confirmed the MERGE (2026-07-13): the
+better-informed flag decision wins, and this session's `--no-wait` rename survives, so the
+word "detach" disappears from flags entirely. The parallel session's full findings are
+preserved at `~/.claude/projects/-home-muhammed-monorepo-console/reports/handoff-detached-jobs.md`
+(every claim file:line-anchored; the four load-bearing ones re-verified against this tree).
+
+**Two producers, and the executor is the important one:**
+
+1. **The executor births jobs automatically.** When a *detachable* command (see the contract
+   annotation below) arrives through `rdc serve` (from the web console or a `--proxy` thin
+   client), the dispatch layer sets `ExecuteOptions.detached` **itself and keeps following
+   the live stream**. This is structural, not a convenience: the container tier is a warm
+   Cloudflare Container that **sleeps after 2 to 5 minutes idle**, and you cannot know in
+   advance which `repo up` takes 3 seconds and which takes 40 minutes. Client disconnect
+   means **detach, not cancel** (an `AbortSignal` on the follow, from `c.req.raw.signal`).
+   Version skew is already safe: on an old renet, `startJob` returns `null` and the run
+   falls back to synchronous silently.
+2. **Direct CLI stays synchronous; the global `--background`/`-b` is the opt-in, and it is
+   FIRE-AND-FORGET**: start the job, print the job id plus a resume hint, exit 0. The user
+   watches later via `rdc job logs <job-id> -m <machine>`. ⚠ This needs a **no-follow mode
+   that does not exist**: today's `runDetachedExecution` (`local-executor.ts:1271`) always
+   tails the job to completion. An `ExecuteOptions` follow bit (default true) that
+   `--background` clears; the serve path keeps following.
+
+`rdc job start -- <cmd>` was **rejected**: it re-creates the `run` escape hatch and defeats
+typed commands.
+
+**The word "detach" survives only as the `datastore detach` verb.** The flag table:
+
+| Was | Now | Meaning |
+|---|---|---|
+| `repo up --detach` / `repo fork --detach` | **`--no-wait`** | return once containers start; health checks continue (renet `repository_up.go:30`) |
+| (nothing) | **`--background` / `-b`, GLOBAL** | run the whole operation as a detached job; print id + hint; exit 0 |
+| `datastore detach` | unchanged | unmount a datastore (a verb on a noun; docker and kubectl live with this overload) |
+
+⚠ **This REOPENS AND SUPERSEDES gate finding U6** (§7), which explicitly kept `--detach` on
+`repo fork` with the old meaning. Deliberate reversal: when U6 was written the `job` noun did
+not exist, so there was no collision to see.
+
+**`detachable` becomes a contract annotation**, derived next to `proxyCapable` in
+`generate-cli-contract.ts` via a `DETACH_EXCLUSIONS` table beside `PROXY_EXCLUSIONS`
+(proposed rule: `detachable = proxyCapable && domain !== 'job'` — the classes `proxyCapable`
+already excludes are exactly the ones that break under detach, and detaching a `job` command
+is circular). Enforced by an `assertDetachable` mirroring `assertProxyCapable`, in the
+`cli.ts` preAction hook before the `--proxy` branch. **P4 keys `DETACH_EXCLUSIONS` by the NEW
+tree's paths from birth** — it is one more path-keyed table (§8.3), and there is no reason to
+key it by paths the same phase deletes.
+
+**Two silent-corruption constraints, verified in this tree, that MUST land before anything
+sets `detached`** (they are invisible until a producer exists, which is exactly what this
+ruling creates):
+
+- **The detached path discards stdout.** `jobStatusToExecuteResult` (`job-client.ts:417`)
+  returns no `stdout`/`stderr`/`steps`, and under `captureOutput: true` the event handler is
+  a no-op (`local-executor.ts:1296`) — so every `parseCapturedJson` caller (`cluster-fork.ts`
+  ×4, `repo-replicate-ops.ts`, `cluster-ceph.ts`) breaks under detach. The fix is
+  reconstruction from the spool's `output` events, and it is provably byte-exact (renet's
+  `execute_command.go:215-224` feeds the same string to the event writer or to `Println`).
+  **The same accumulator fixes bug #31**: the serve tap forces `eventsMode + captureOutput`
+  and `runRemoteExecution` (`local-executor.ts:1176`) accumulates raw NDJSON into `stdout`,
+  so `--proxy cluster fork` is broken TODAY, before any detach work.
+- **The detached path bypasses license recovery and identity refresh.** `tryDetachedExecution`
+  returns at `local-executor.ts:738`, above the `needsLicenseRecovery` block and
+  `maybeRefreshRepoIdentity`. A detached exit-10 is never retried (safe to retry: renet
+  refuses before doing work) and a detached `repo create`/`repo fork` never refreshes its
+  repo identity.
+
+**The reattach half is declared but dead, and the console is already waiting**: `wire.ts`
+carries a `StreamLine kind:'job'` variant and a `PROXY_ROUTES.jobEvents` route that nothing
+emits or implements — while `useCommand.ts:63` in the account console **already handles
+`kind:'job'`**. P4 wires: the dispatch emits `{kind:'job', jobId, machine, sinceLine}` before
+any event line; a `GET /v1/jobs/:id/events?machine&sinceLine` route (authenticated like
+`/v1/command`, `assertJobId` FIRST — on this route the id arrives from an untrusted HTTP
+client and is interpolated into a remote shell command); exactly-once reattach via per-event
+spool line ordinals (chunk-granular resume would duplicate `output` events and corrupt the
+reconstructed stdout). Known limitation, documented rather than hidden: a reattached stream
+replays renet's spool; the Commander action body's own rendered envelope is gone with the
+process that ran it.
+
+`-m/--machine` REMAINS on this noun, on the same grounds as `backup` (§5.6): a job id has no
+config record, so its machine cannot be derived from anything. Plane: `machine` for all five
+(each SSHes to the machine to drive `renet job ...`), and **none is `interactive`** — even
+`logs --follow` streams to stdout and ends on its own when the job finishes, so a headless
+executor can drive all five. All five are therefore `proxyCapable`.
+
+#### `job list --machine <m>`
+- Help: `List detached jobs on a machine.`
+- Gate: A. MCP: mcp(read).
+
+#### `job status <job-id> --machine <m>`
+- Help: `Show one job's state, timing, and outcome.`
+- Args: **RULED (§9 Q9)** `job-id` positional (today `--id <jobId>`, a required option),
+  `-m` explicit. Positional per §2.2; `-m` stays because a job id has no config record, so
+  its machine cannot be derived from anything (the `backup` precedent, §5.6). Positional
+  `kind: 'job-id'` (§2.0).
+- Errors: unknown id → 5.
+- Gate: A. MCP: mcp(read).
+
+#### `job logs <job-id> --machine <m>`
+- Help: `Show a job's log. Follow it live with -f.`
+- Flags: `-f/--follow`, `--since-line <n>` (line-based offsets: the CLI can leave and come
+  back without losing or repeating a line).
+- Exit: RAW STREAM. Two §1 deviations: Ctrl-C during a follow exits **130** (detach, not
+  cancel), and a follow that reaches a failed job's completion propagates the **job's own
+  exit code** (`job.ts:248`).
+- Gate: A. MCP: mcp(read; excludeOptions: follow).
+
+#### `job cancel <job-id> --machine <m>`
+- Help: `Stop a running job.`
+- Flags: `-y`. Idempotency: cancelling a finished job is a no-op 0 (`job.ts:260`, and it
+  does not even prompt: never ask an operator to confirm something that will not happen).
+- Gate: A. MCP: mcp(write, destructive, idempotent).
+
+#### `job gc --machine <m>`
+- Help: `Remove finished jobs and their logs. Dry-run unless --apply.`
+- Flags: `--older-than <duration>` (default 168h, matching renet), `--apply`, `-y`. Running
+  jobs are never collected.
+- **RULED (§9 Q6)**: today `job gc` destroys immediately with `-y` to skip the prompt, while
+  §5.4's `repo gc` is **dry-run unless `--apply`**. Both verbs mean "reclaim unreferenced
+  things", so principle 2 says they must agree, and the safer default wins: `job gc` adopts
+  dry-run + `--apply`.
+- Gate: A. MCP: mcp(write, destructive).
 
 ---
 
 ## 6. Mapping table: CURRENT tree → TARGET (for mechanical P4 execution)
 
-The current tree below was enumerated from code (`packages/cli/src/commands/**`,
-including the `commandFactory.ts` CRUD for machine/storage and the hidden `run` in
-`shortcuts.ts`), not from memory: **162 current leaves**. Dispositions: `kept` (same
-path, contract per §5), `renamed`, `moved`, `merged-into`, `replaced-by`, `deleted`.
-Every row's target contract is in §5; flag-level deltas are stated there.
+**THIS TABLE IS THE CONTRACT (§0).** Every command in the live tree carries a row here, and
+every row resolves to a real command. That pair is what P4 is held to, and it is
+mechanically checkable against `packages/cli/scripts/command-tree.json`. The leaf counts in
+the sub-headings below are descriptive and were correct when written; do not gate on them.
+
+The current tree was enumerated from code (`packages/cli/src/commands/**`, including the
+`commandFactory.ts` CRUD for machine/storage and the hidden `run` in `shortcuts.ts`).
+Dispositions: `kept` (same path, contract per §5), `renamed`, `moved`, `merged-into`,
+`replaced-by`, `deleted`. Every row's target contract is in §5; flag-level deltas are
+stated there.
+
+**[AMENDED 2026-07-13] Two disposition classes were added when the tree moved under this
+document:**
+
+- **EARLY-BUILT** — this spec calls it "new with no current ancestor", but an operator
+  commit has since built it. **P4 recontracts it; it does not create it.** Seven commands:
+  `cluster join`, `cluster evict`, `cluster rehearse`, `config edit`,
+  `repo replicate` (+ `status`, `remove`).
+- **NEW-SINCE-SPEC** — it exists in the live tree and this document has never seen it.
+  Twelve commands, in §6.11 and §6.12. **All twelve are now dispositioned** by the 2026-07-13
+  rulings (§9); none is left open.
 
 ### 6.1 `machine` (17)
 
@@ -1397,8 +1993,10 @@ New with no current ancestor: `datastore list`, `datastore attach`, `datastore d
 | `repo policy set` | kept | `repo policy set [ref]` |
 | `repo policy get` | kept | `repo policy get [ref]` |
 
-New with no current ancestor: `repo logs`, `repo exec`, `repo replicate` (+`status`,
-`remove`), `repo admin archive list|restore|purge` (from config, below).
+New with no current ancestor: `repo logs`, `repo exec`, `repo admin archive
+list|restore|purge` (from config, below).
+**EARLY-BUILT** (recontract, do not create): `repo replicate` (+`status`, `remove`).
+**NEW-SINCE-SPEC and unmapped here**: `repo canary` ×4, `repo replicate refresh` (§6.12).
 
 ### 6.6 `run`, `term` (2)
 
@@ -1407,7 +2005,12 @@ New with no current ancestor: `repo logs`, `repo exec`, `repo replicate` (+`stat
 | `run` (hidden) | kept | unchanged; absolute agent block |
 | `term connect` | kept (recontract) | `term connect <target>` (`-m`/`-r`/`-t` → positional; container flags die — U4) |
 
-### 6.7 `subscription` (7)
+### 6.7 `subscription` (8 leaves + 1 actionable parent)
+
+**[CORRECTED 2026-07-13]** This header said "(7)" while the table below it listed 8 rows.
+That one-character slip is the entire origin of the "162 current leaves" figure §0 retires.
+`subscription refresh` is additionally an ACTIONABLE PARENT (it carries an `.action()` AND
+subcommands), which no count in this document ever included.
 
 | Current | Disposition | Target |
 |---|---|---|
@@ -1471,7 +2074,9 @@ New with no current ancestor: `repo logs`, `repo exec`, `repo replicate` (+`stat
 | `config field get/set/unset/rotate/list` | kept ×5 | positional pointers (§5.1) |
 | `config audit log/tail/verify` | kept ×3 | unchanged |
 
-New with no current ancestor: `config edit`, `config reconcile`.
+New with no current ancestor: `config reconcile`.
+**EARLY-BUILT** (recontract, do not create): `config edit`.
+**NEW-SINCE-SPEC and unmapped here**: `config rotate-cek` (§6.12).
 
 ### 6.9 `doctor`, `update`, `credits`, `vscode`, `mcp` (10)
 
@@ -1495,20 +2100,84 @@ New with no current ancestor: `config edit`, `config reconcile`.
 | `cluster fork` | kept (recontract) | `cluster fork <name> --tag --to [--writes] [--up]` (06 §3) |
 | `cluster migrate` | kept (recontract) | `cluster migrate <name> --to` (transport disclosure + gate) |
 
-New with no current ancestor: `cluster join`, `cluster evict`,
-`cluster snapshot create|list`, `cluster rehearse`.
+New with no current ancestor: `cluster snapshot create|list`.
+**EARLY-BUILT** (this spec called them new; they exist, so recontract only):
+`cluster join`, `cluster evict`, `cluster rehearse`.
 
-Tally: 162 current leaves — every one carries a disposition above; 25 new leaves have no
-ancestor (marked "new" per noun). Nothing in `packages/cli/src/commands/**` is
-unaccounted for as a COMMAND; the residual findings below are contract-level, not
-missing rows.
+### 6.11 `job` (5) — NEW-SINCE-SPEC (2026-07-13)
+
+| Current | Disposition | Target |
+|---|---|---|
+| `job list` | NEW-SINCE-SPEC | `job list --machine <m>` (§5.13) |
+| `job status` | NEW-SINCE-SPEC | `job status <job-id> --machine <m>` (positional id, Q9) |
+| `job logs` | NEW-SINCE-SPEC | `job logs <job-id> --machine <m>` (raw stream; exit 130 on detach) |
+| `job cancel` | NEW-SINCE-SPEC | `job cancel <job-id> --machine <m>` |
+| `job gc` | NEW-SINCE-SPEC | `job gc --machine <m> [--apply]` (aligned to `repo gc`, Q6) |
+
+The noun SURVIVES (06 §9), and its producer is now ruled: **executor-born + the global
+`--background`/`-b`** (R-P4-2v2, §5.13). Every `job` leaf keeps `-m` (a job id has no config
+record).
+
+### 6.12 The rest of the NEW-SINCE-SPEC surface (2026-07-13, ALL RULED)
+
+Seven more commands and one global flag exist that this document had never mapped. All are
+dispositioned by the §9 rulings.
+
+| Current | Disposition | Target |
+|---|---|---|
+| `repo replicate` (actionable parent) | EARLY-BUILT; **bug #37 carry-fix (w0-B, 2026-07-13)** | `repo replicate <ref> --replicas <n>` (§5.4). INTERIM: its bare-form option `--name <repo>` was renamed to `--repo <repo>` because, as an actionable parent, `--name` collided with its subcommands' own `--name <set>` and Commander bound it to the parent (bug #37 — `replicate refresh/remove/status --name` never worked). The parent option dies entirely at w2b when §2.2 makes the primary name a positional `<ref>`; the rename is that removal, early, for the colliding flag only |
+| `repo replicate status` | EARLY-BUILT | `repo replicate status <ref>` |
+| `repo replicate remove` | EARLY-BUILT | `repo replicate remove <ref>` |
+| `repo replicate refresh` | **RESOLVED (Q2): KEEP** (w0-B, 2026-07-13) | Implementation read: `refreshReplicaSet` (`services/cluster/repo-replicate-ops.ts:204-255`) does a rolling **force re-fork** — a fresh datastore snapshot, then per replica it discards + re-forks + re-attaches the fork datastore under the unchanged PV path (`:199-242`). That is a genuinely distinct verb, not a reconcile, so it is KEPT. w2b recontracts it as `repo replicate refresh <ref>` and its help must say "re-fork replicas from a fresh snapshot now", not "refresh" |
+| `repo canary` (actionable parent) | **RULED (Q1): KEEP under `repo`**; **bug #37 carry-fix (w0-B, 2026-07-13)** | `repo canary create <ref> --tag <t> --weight <n>`. INTERIM: as an actionable parent it collided with its subcommands on TWO flags, so its bare-form options were renamed `--name <repo>` → `--repo <repo>` and `--weight <percent>` → `--initial-weight <percent>` (the latter collided with `canary weight`'s required `--weight`, which the `--name` fix uncovered). Both revert to their natural names at w2b when `canary create` becomes a real subcommand (§2.2) and the collision dies |
+| `repo canary status` | **RULED (Q1)** | `repo canary status <ref>` |
+| `repo canary weight` | **RULED (Q1)** | `repo canary weight <ref> --weight <n>` |
+| `repo canary remove` | **RULED (Q1)** | `repo canary remove <ref>` |
+| `config rotate-cek` | **RULED (Q3): stays TOP-LEVEL** | `config rotate-cek`. NOT folded under `config field rotate --cek`: §5.1's `config field rotate <pointer>` rotates a sensitive field VALUE, while the CEK is the key the whole config is encrypted under. It is org-wide and destructive, and burying it under the field verb would make it look routine. It also already has a portal surface (`RotateCekWizard.tsx`), so the two must agree. P4 moves its registration from `commands/config-remote.ts:609` into `config.ts` |
+| `serve` | **RULED (Q4): stays top-level** | `rdc serve --mode daemon\|container` (§5.12) |
+| `--proxy <url>` (global) | **RULED (Q4): contract-frozen** | It is what makes the generated contract load-bearing (§5.12) |
+
+`repo canary` was the largest unmapped block in the tree: four invokable commands
+implementing a weighted traffic split on shared data (`packages/cli/src/commands/repo-canary.ts`,
+backed by `repo-release.ts`'s rung-0 + canary ladder and renet's `pkg/router/canary.go`).
+**It stays under `repo`**: it is the same subject (a repo's traffic), and a new top-level
+noun for four leaves is not earned. P4 recontracts it in place with a positional ref and the
+full five-system classification (§8.3). Note for the as-built pass: it must be ADDED to the
+06 §1 tree, which never listed it.
+
+### 6.13 Tally, and what "complete" means
+
+**[REPLACED 2026-07-13]** The old tally read: *"162 current leaves, every one carries a
+disposition above; 25 new leaves have no ancestor."* The first number was wrong (§0), and
+the sentence has been overtaken by 19 commands that landed after it was written.
+
+The completeness claim, restated so it survives the next merge:
+
+> Every command in `command-tree.json` (plus the three actionable parents and the hidden
+> `run`, which the JSON's shape hides) carries a disposition row in §6. Every disposition
+> row in §6 resolves to a command that exists, or is explicitly marked NEW (P4 creates it).
+
+That is the gate. Today it holds: **183 invokable commands, all dispositioned**, of which
+**12 are NEW-SINCE-SPEC** (5 job, 4 canary, `repo replicate refresh`, `config rotate-cek`,
+`serve`) and **7 are EARLY-BUILT**. P4 creates 12 leaves from nothing (`repo logs`,
+`repo exec`, `config reconcile`, `datastore list/attach/detach/delete`,
+`datastore snapshot create/list`, `cluster snapshot create/list`, `backup restore`), plus
+the `backup` noun's 10 leaves and `machine infra`'s 7, which are relocations rather than
+inventions. Nothing in `packages/cli/src/commands/**` is unaccounted for as a COMMAND; the
+residual findings below are contract-level, not missing rows.
 
 ---
 
 ## 7. Gate findings U1-U8 — dispositions after the P0 gate review
 
 Original findings kept for the record; each now carries its ruling from
-`docs/design/spec/00-gate-review.md`. Nothing here remains open for P4.
+`docs/design/spec/00-gate-review.md`. Nothing in THIS SECTION remains open for P4.
+
+**[AMENDED 2026-07-13]** That sentence used to read "nothing here remains open for P4" and
+was true of the gate findings. It is no longer true of the document: the tree moved, the
+proxy/contract/plane system landed, and ten new choices are open. They are in **§9**, which
+did not exist when this line was written. U5 (leaf count) and U6 (`--detach` on `repo fork`)
+are both REOPENED there.
 
 - **U1 — `machine infra` missing from the 06 §1 tree.** RESOLVED (accepted with R2's
   tree-as-drawn ruling): this spec includes the subtree (§5.2, 7 leaves, `cert` nesting
@@ -1525,8 +2194,13 @@ Original findings kept for the record; each now carries its ruling from
   (R2-F14). Stands as specced; no gate objection recorded.
 - **U5 — leaf count.** RESOLVED by ruling R2: 153 leaves is the contract; "~90" retired
   as wrong arithmetic (see §0 note). No scope cut.
-- **U6 — `repo fork --to-cluster/--provider` deleted, `--detach` kept.** Stands as
-  specced; no gate objection recorded.
+- **U6 — `repo fork --to-cluster/--provider` deleted, `--detach` kept.** ⚠ **REOPENED AND
+  SUPERSEDED 2026-07-13 by ruling R-P4-2v2 (§9 Q5).** The deletions stand. The `--detach`
+  half does NOT: the flag is renamed **`--no-wait`** on `repo up`/`repo fork` (which is what
+  it always meant), and the job producer is the GLOBAL `--background`/`-b` — the word
+  "detach" leaves the flag vocabulary entirely (only the `datastore detach` verb keeps it).
+  Recorded as a deliberate reversal of a gate disposition, with its reason: when U6 was
+  written the `job` noun did not exist, so there was no collision to see.
 - **U7 — MCP surface promotions/demotions** (`repo cat` gains a tool; `repo promote`
   loses one; `machine deprovision` loses `appendArgs: ['--force']`; `repo sync *`
   explicit exclude; `credits` annotated). Stand as the P4 MCP-gate seed classification,
@@ -1536,11 +2210,1382 @@ Original findings kept for the record; each now carries its ruling from
   keeps all 9 `backup_*`/`checkpoint_*` bridge functions unchanged; §5.6's model is
   today's proven shape.
 
-## 8. P4 execution checklist hooks (cross-references, no new obligations)
+## 8. P4 execution checklist (AMENDED 2026-07-13: the obligations are no longer "no new")
 
-Regeneration obligations are 06 §8 verbatim (cli-docs, skill reference,
-validate-cli-examples, command-metadata re-annotation from §4.7/§5, CLI i18n en + 12
-locales, renet-contract types + e2e-coverage, MCP tree-walk gate with this file's §5 MCP
-fields as the starter classification). The §1 exit-code names land in
-`packages/cli/src/types/index.ts` (`EXIT_CODES` 11-15) and `types/errors.ts`
-(`ERROR_CODES`) in the same phase.
+The original obligations still hold: cli-docs, skill reference, `validate-cli-examples`,
+`command-metadata` re-annotation from §4.7/§5, CLI i18n (en + 12 locales), renet-contract
+types + e2e-coverage, and the MCP tree-walk gate with this file's §5 MCP fields as the
+starter classification. The §1 exit-code names land in `packages/cli/src/types/index.ts`
+(`EXIT_CODES` 11-15) and `types/errors.ts` (`ERROR_CODES`) in the same phase, **plus the
+ruling on 130** (§1).
+
+**This section said "no new obligations". That is now false.** Five artifacts and their
+gates were built after it was written, and they are the heaviest part of the reshape.
+
+### 8.1 The five new regeneration obligations
+
+1. **`packages/cli/scripts/command-tree.json`** (committed). Consumed by
+   `scripts/check-cli-docs.ts`, the www doc generators, and two ESLint rules. Nothing diffs
+   it against the live tree directly, but `validate:cli-docs` regenerates `cli-application.md`
+   from it in memory and diffs against disk for all 13 languages, so a stale tree surfaces
+   there.
+   Regen: `npm run export:command-tree -w @rediacc/cli`.
+
+2. **The generated CLI contract** (`packages/shared/src/cli-contract/data/`):
+   `contract.generated.ts`, `contract.json`, and **`i18n/<lang>.json` for all 13 locales**.
+   Gated by **`check:ci-cli-contract`**, which is a **regenerate-and-diff, not a hash**
+   (`.ci/scripts/quality/check-cli-contract.sh`): ANY rename, move, added flag or changed
+   help string turns it red. **This is the heaviest new obligation.** Every CLI i18n change
+   re-emits 13 files, and the contract drives the web console, the `--proxy` thin client and
+   the executor, so a stale contract means those three disagree with the CLI they are
+   driving.
+   Regen: `npm run generate:cli-contract -w @rediacc/cli`.
+
+3. **`packages/cli/src/config/command-planes.ts`.** Every new, renamed or moved leaf needs a
+   plane (§4.9). Gated TWICE: `check:ci-command-planes` (import-graph cross-check) and
+   `plane-coverage.test.ts`, which fails both on a command that resolves no plane **and on
+   stale map entries that no longer match a real command**. Every rename in the reshape
+   strands an entry and fails the gate until fixed. `plane-coverage.test.ts` also carries
+   **hand-maintained snapshots** P4 must update: the command count, the plane distribution,
+   the exact nine-entry interactive list, and the proxyable count. They are deliberate
+   tripwires, not incidental assertions. **As of task zero (w0-B) these read 183 /
+   `{config: 68, machine: 95, other: 20}` / proxyable 91** — the +1 over the pre-P4 baseline
+   (182 / machine 94 / proxyable 90) is the hidden `_refprobe run` acceptance vehicle (§8.1a),
+   and the shared `proxyCapableCommands().length` snapshot is 85 (was 84) for the same reason.
+   w1 removes the probe and reverts all four numbers.
+
+4. **`DOMAIN_MODULES` in `packages/cli/scripts/check-command-planes.ts:48`.**
+   ⚠ **A NEW TOP-LEVEL NOUN WITH NO ENTRY HARD-FAILS THE GATE** ("Domain X has no entry in
+   DOMAIN_MODULES"). **The reshape introduces `backup`, so it must register
+   `commands/backup.ts` there.** The gate's Rule 1 / Rule 2 verdicts can also flip when
+   `repo admin` and the moved `config` subtrees change the import graph; expect to revisit
+   `OVERRIDES`, and read §4.9's warning before adding one.
+
+5. **`PROXY_EXCLUSIONS` in `packages/cli/scripts/generate-cli-contract.ts:61.`** The
+   machine-plane commands a remote executor must never run for the caller, keyed by command
+   path (today: `repo sync upload|download|status`, `config cert-cache pull`,
+   `cluster kubeconfig`, `config machine scan-keys`). **Every rename silently breaks a key**
+   (the key just stops matching, and the command becomes proxyable), and every NEW
+   machine-plane leaf needs a proxy verdict plus a user-facing refusal reason: the CLI prints
+   it verbatim when `--proxy` refuses.
+
+Two more that are not new but are easy to miss:
+
+6. **`command-help-coverage.test.ts`** (`packages/cli/src/config/__tests__/`): every registry
+   command needs a non-empty English description, plus an `I18N_KEY_OVERRIDES` entry where
+   the key does not follow the default convention.
+7. **`COMMAND_REGISTRY`** (`packages/cli/src/config/command-registry.ts`): domain grouping and
+   experimental gating. It feeds the contract generator (`group`) and the MCP coverage gate.
+   **It is missing 4 of the 16 live domains today** (`job`, `cluster`, `credits`, `serve`),
+   which is why they are MCP-unchecked (§4.10). Any new noun P4 adds needs an entry, or its
+   `group` is `null` and the MCP gate has nothing to iterate.
+
+### 8.1a The task-zero acceptance vehicle: `_refprobe` (w0-B, temporary)
+
+Task zero built the ref concept (§2.0) but nothing in the real tree may carry a positional
+until w1 renames the nouns. To prove the machinery end-to-end **before** the first rename, w0-B
+added one hidden throwaway leaf, `rdc _refprobe run <ref>` (`packages/cli/src/commands/refprobe.ts`):
+
+- `<ref>` is kind `repo-ref`, so it exercises positional serialisation, the generator's
+  `repoPositional` resolution, `detachable` derivation, the `--proxy` wire round-trip through
+  the loopback fake executor, and the console rendering it as a repo picker. It is the first
+  and only positional-carrying leaf that also calls `getExecutor().execute` — the seam the
+  `job` leaves deliberately bypass (they drive `job-remote` directly), which is why a `job`
+  leaf could not serve as the round-trip vehicle.
+- It is hidden (Commander `{ hidden: true }` + the `_` prefix), so it stays out of `--help`
+  and the skill reference (`generate-skill-reference.ts` filters `_hidden`). It is NOT in
+  `COMMAND_REGISTRY`, so its `group` is `null` and `experimental` is `false`, like `cluster`
+  and `credits`. Its plane is declared in `command-planes.ts` and `check-command-planes.ts`
+  (`DOMAIN_MODULES._refprobe`), both of which w1 reverts.
+- It is the ONLY new positional the walker actually serialises besides the two real `job`
+  conversions (`job status <job-id>` / `job logs <job-id>`, kept `-m`, kind `job-id`, zero
+  plane-count churn — the first REAL positional leaves).
+
+**w1's removal list** (do all together, so no snapshot is left stale): delete
+`commands/refprobe.ts` and its `cli.ts` registration; drop `_refprobe` from `command-planes.ts`
+and `check-command-planes.ts`; regenerate the contract; revert the four hand-maintained
+snapshots (`plane-coverage.test.ts` 183→182, machine 95→94, proxyable 91→90; `contract.test.ts`
+`proxyCapableCommands().length` 85→84). The generic contract-invariant tests
+(`contract.test.ts`, `command-dispatch.test.ts` positionals block, `contract-form.test.ts`'s
+synthetic repo-ref entry) keep the machinery under test after the probe is gone.
+
+### 8.2 Regeneration order
+
+```bash
+npm run build:packages                            # shared + provisioning: the contract's consumers
+npm run generate:cli-contract -w @rediacc/cli     # contract.generated.ts + contract.json + i18n/*.json
+npm run export:command-tree -w @rediacc/cli       # packages/cli/scripts/command-tree.json
+npm run generate:cli-docs -w @rediacc/www         # re-exports the tree, regenerates cli-application.md
+npm run generate:skill-reference -w @rediacc/cli  # .claude/skills/rdc reference
+# then HAND-UPDATE the snapshots in:
+#   packages/cli/src/config/__tests__/plane-coverage.test.ts  (counts + interactive list + proxyable count)
+npm run check:ci-command-planes
+npm run check:ci-cli-contract
+npm run check:cli-docs
+npm run check:cli-examples
+npm run check:test-cli
+npm run check:ci-console-coverage                 # account submodule: mounts a form for EVERY contract entry
+```
+
+`check:ci-console-coverage` runs in the account submodule
+(`private/account/web/src/components/console/__tests__/contract-coverage.test.tsx`) and mounts
+`CommandForm` for **every** entry in `CLI_CONTRACT`, failing if any cannot render. Its
+`EXCLUSIONS` list is empty and may only ever contain `interactive` commands. It consumes
+`@rediacc/shared/cli-contract`, so it needs a **rebuilt shared package** after the contract
+regen, and it is the gate that a positional (§2.0) would pass while rendering an unusable
+form.
+
+### 8.3 The per-leaf checklist (every leaf P4 renames, moves, adds or deletes)
+
+**FIVE classification systems, all keyed by the same space-joined path string.** Ranked by
+how a mistake fails, worst first, because that is the order in which they will hurt you:
+
+1. ⚠ **POLICY GLOBS** (§4.11) — `commands.allow` / `commands.deny` in every authored policy
+   document, plus the `PolicyRuleEditor` presets and the `evaluate.test.ts` fixtures. **A
+   stale `deny` glob FAILS OPEN**: it silently stops denying the command it was written to
+   forbid. No gate exists today; P4 builds one. This is the only system whose staleness
+   *grants* a permission.
+2. ⚠ **`COMMAND_METADATA` guardrails** (`grandGuard` / `forkBlocked` / `agentBlocked`) — move
+   the entry to the new pathKey. **No stale-entry gate**: a missed rename silently stops
+   enforcing `grandGuard` (§4.10).
+3. **`COMMAND_PLANES`** — delete the old pathKey if it had an explicit entry (else the
+   stale-entry test fails), and **explicitly re-declare the plane at the new path if the new
+   domain's default is wrong for it**. Loud on the half it catches; **silent on a move into a
+   machine-default noun**, which flips `proxyCapable` to `true` (§4.9). Ask per leaf: *would
+   running this at a remote executor produce the CALLER's answer?*
+4. **`COMMAND_METADATA` MCP** (`mcp` XOR `mcpExcludeReason`) — exact-keyed; stale entries are
+   caught loudly by `mcp-coverage.test.ts`.
+5. **The ref binding** (§2.0) — `repoPositional` / `machinePositional`. Silent: if a leaf's
+   ref carries no binding, the console renders a text box instead of a resource picker and
+   the resource page's **action bar loses the button** for that command.
+
+Plus the four registration/regeneration duties:
+
+6. **`COMMAND_REGISTRY`** — any new top-level domain needs an entry (`serve` needs one now).
+7. **`DOMAIN_MODULES`** — any new top-level domain needs an entry, or the plane gate hard-fails.
+8. **`PROXY_EXCLUSIONS`** — re-key it (every rename silently breaks a key and makes the
+   command proxyable), and give every new machine-plane leaf a proxy verdict plus a
+   user-facing refusal reason. **`DETACH_EXCLUSIONS` (R-P4-2v2) is its sibling with the same
+   failure mode** — key it by the NEW tree's paths from birth; a stale key silently makes a
+   command detachable.
+9. **i18n** (`packages/cli/src/i18n/locales/*/cli.json`) — a moved command whose key moves in
+   `en/cli.json` needs all 13 locales moved in lockstep, or `descriptionKey` silently goes
+   `null` (§4.9). Keep English descriptions unique per leaf.
+
+### 8.4 Housekeeping found in passing
+
+**`EXCLUDED_TOP_LEVEL` in `command-tree-lib.ts:200` is stale.** It lists
+`login, logout, run, trace, cancel, retry`, but only `run` still exists; the rest are residue
+from the retired middleware era. Harmless today, but it would silently erase any future
+top-level command with one of those names. Prune it in P4.
+
+---
+
+## 9. OPERATOR RULINGS for P4 (DECIDED 2026-07-13)
+
+All eleven questions are answered. Nothing in this document is open. The rulings are
+recorded with their reasons, because two of them (Q0, Q5) cost real work and one (Q5)
+deliberately reverses an earlier gate disposition.
+
+| # | Question | RULING |
+|---|---|---|
+| **Q0** | **Positionals (§2.0): build the contract serialisation rule, or abandon positional names?** | ★ **BUILD IT (R-P4-1). P4 task zero, before any rename.** And "it" is bigger than the walker: the deliverable is a **ref concept** — positional descriptors WITH a `kind`, plus `repoPositional`/`machinePositional` bindings, because the console's pickers and its computed action bars currently bind to `--name`/`--machine`, the very flags §2.2/§2.3 delete. Serialisation alone would ship a CLI that works and a GUI that quietly empties. Full deliverable + acceptance test in §2.0 |
+| **Q1** | **Does `repo canary` survive, and where?** | **KEEP under `repo` (R-P4-3).** Same subject (a repo's traffic); a new top-level noun for 4 leaves is not earned. Recontract in place; ADD it to the 06 §1 tree, which never listed it |
+| **Q2** | **Is `repo replicate refresh` redundant?** | **RESOLVED: KEEP** (w0-B, 2026-07-13). The code was read: `refreshReplicaSet` (`services/cluster/repo-replicate-ops.ts:204-255`) force re-forks — fresh snapshot, then per replica discard + re-fork + re-attach — so it is not a reconcile and not a second spelling of create. w2b recontracts it as `repo replicate refresh <ref>` with help that says "re-fork replicas from a fresh snapshot now" |
+| **Q3** | **`config rotate-cek`: top-level, or under `config field rotate`?** | **TOP-LEVEL.** The CEK is the key the whole config is encrypted under, not a field value; it is org-wide and destructive, and it already has a portal wizard (`RotateCekWizard.tsx`) that must agree with it. Move its registration into `config.ts` |
+| **Q4** | **`rdc serve` stays top-level? Is `--proxy` contract-frozen?** | **Yes to both.** They are the two ends of one wire. `serve` gets Gate E + an MCP exclusion + a `COMMAND_REGISTRY` entry (it has none today, which is why the MCP gate never saw it) |
+| **Q5** | **The `--detach` triple meaning** (06 §7.8) | ★ **RENAME the health-check flag to `--no-wait`** on `repo up`/`repo fork`, and the job producer is the global `--background`/`-b` — after P4 the word "detach" exists only as the `datastore detach` verb (R-P4-2v2). The parallel session's finding sealed the name question: Commander resolves a root-level and a subcommand flag of the same name BY POSITION, so reusing `--detach` for jobs would make `rdc --detach repo up` and `rdc repo up --detach` silently mean different things. ⚠ **This REOPENS AND SUPERSEDES U6** (§7). Deliberate: when U6 was written the `job` noun did not exist |
+| **Q6** | **`job gc` vs `repo gc` flag contract** | **Align `job gc` to dry-run + `--apply`.** Same verb, same meaning (principle 2); the safer default wins |
+| **Q7** | **How is a job BORN?** | ★ **EXECUTOR-BORN, plus a global `--background`/`-b` (R-P4-2v2, twice-ruled and MERGED).** The dispatch layer sets `detached` **itself** for detachable commands and keeps following (the container tier sleeps after 2-5 min idle; client disconnect = detach, not cancel). Direct CLI stays synchronous; `--background` is FIRE-AND-FORGET (job id + resume hint, exit 0) and needs a no-follow mode that does not exist yet. `detachable` becomes a contract annotation derived beside `proxyCapable` (`DETACH_EXCLUSIONS`, keyed by NEW paths from birth). Two silent-corruption bugs MUST land before anything sets `detached` (stdout discard = #32, license/identity bypass = #33): §5.13. `rdc job start -- <cmd>` REJECTED (re-creates the `run` escape hatch) |
+| **Q8** | **Exit code 130** (job detach) | **ADMITTED** to the §1 table. 130 is the SIGINT convention; a script must be able to tell "you detached" from "it failed" |
+| **Q9** | **Does `job` take a positional id?** | **Positional id + explicit `-m`.** A job id has no config record, so its machine cannot be derived (the `backup` precedent, §5.6) |
+| **Q10** | **Is the leaf count still a contract?** | **No.** §0 retires it. The §6 disposition table is the contract, gated mechanically ("every live command carries a row; every row resolves to a real command") |
+
+### 9.1 What these rulings ADD to P4's scope (be honest about the cost)
+
+Three of them are not free, and a P4 plan that budgets only "rename commands" will be wrong:
+
+1. **Task zero (Q0)** — the ref concept across 5 modules in 2 repos, with a green
+   `check:ci-console-coverage` as its acceptance test. Nothing else in P4 may start first.
+2. **The detached-jobs completion (Q5+Q7, R-P4-2v2)** — this is a WORKSTREAM, not a flag.
+   The parallel session's handoff (`reports/handoff-detached-jobs.md`, verified) supplies the
+   design and an 8-step ordering whose first five steps are runtime no-ops: the output
+   collector + byte-exact stdout reconstruction (fixes #32 AND live bug #31, the broken
+   `--proxy cluster fork`), the license-recovery/identity-refresh restructure (#33), the
+   `AbortSignal` follow, the `detachable` contract annotation, THEN the global
+   `--background` + no-follow mode, and finally the serve/wire/reattach half
+   (`kind:'job'` emission, the `jobEvents` route, exactly-once line ordinals). Steps 1-4
+   touch only executor/job files (zero overlap with task zero); steps 5-8 touch the same
+   contract files as task zero and fold into it as ONE contract-shape change.
+3. **The policy re-key + its new gate (§4.11)** — every authored command glob, and a gate
+   that fails loudly on a `deny` glob matching nothing.
+
+---
+
+## 10. As-built delta — w1 (2026-07-13): the addressing machinery
+
+w1 landed the **pure machinery** of §1/§2.1/§2.3/§3 as unit-tested services and utils, with
+**no command-tree or contract changes**. `check:ci-cli-contract`, `check:ci-command-planes`,
+and the console coverage gate are therefore untouched; tsc is 0/0 across `shared` and `cli`;
+the cli vitest suite is green at 1731 (1665 baseline + 66 new). eslint / biome / knip clean.
+
+Implemented (file → what):
+
+- **§1 exit-code table is live.** `packages/cli/src/types/index.ts` — `EXIT_CODES` gains
+  `AMBIGUOUS` 11, `STATE_MISMATCH` 12, `HEALTH_GATE_FAILED` 13, `INFRA_FAILED` 14, `BUSY` 15,
+  and `DETACHED` 130 (0-10 unchanged, not renumbered). `packages/cli/src/types/errors.ts` —
+  the matching `ERROR_CODES` names plus `errorToExitCode(code)`, the sibling of
+  `httpStatusToExitCode`, so `errors[].code` mirrors the exit-code name (§1). New
+  `packages/cli/src/utils/cli-exit-error.ts` — the `CliExitError` class (derives its exit
+  code from its code) + `ambiguous`/`stateMismatch`/`notFound` helpers; `utils/errors.ts`
+  `normalizeError` passes it through (code + exit code + details + next). Tests:
+  `utils/__tests__/cli-exit-error.test.ts` (9).
+- **§2.1 grammar parser.** `packages/cli/src/services/addressing/ref-parser.ts` — `parseRef`
+  (`repo[:tag][@place]` → struct), `validateLabel` (RFC-1123, offending-char-named exit-2
+  texts), `validateTag` (refuses reserved `base`), `isValidLabel`, `RESERVED_TAG`,
+  `LABEL_MAX_LENGTH`. Tests: `__tests__/ref-parser.test.ts` (26).
+- **§2.3 derived-machine resolution.** `packages/cli/src/services/addressing/resolve-machine.ts`
+  — the six steps exactly (parse → family/tag lookup with candidates → placement tagged
+  union → `@place` redundant-accept vs §3.2 conflict → injected `verifyMount` seam →
+  execute), read-only-skip as a parameter. Pure over a `PlacementView`; `placementViewFromConfig`
+  bridges the config service. Tests: `__tests__/resolve-machine.test.ts` (18).
+- **§3 `@place` rules.** `packages/cli/src/services/addressing/place-rules.ts` — the §3.1
+  acceptance table as data (`placeAcceptance`, `REPO_VERBS_ACCEPTING_PLACE`,
+  `assertPlaceAccepted`), and the §3.2 conflict + §3.3 term-connect collision error builders
+  reproducing the canonical texts verbatim. Tests: `__tests__/place-rules.test.ts` (13).
+
+**Scope boundary — §2.2's first real positional conversion and `_refprobe` retirement move to
+w2b (ruling, not a gap).** w1's brief allowed converting `repo cat` to a positional as the
+probe's replacement "if convenient." Two findings made it not convenient in w1, and the lead
+ruled it reassigned to w2b:
+
+1. **Placement is null in every live config.** The `repo create` placement porcelain is w2b's
+   (`commands/repo-create-delete.ts` marks it "Final placement porcelain is P4"), so a
+   spec-clean derived `repo cat` (§2.3, `-m` removed) would exit 12 (no placement) on *every*
+   real repo until w2b lands the porcelain or the operator runs `config reconcile` — a live
+   regression on the running campaign's own config tree.
+2. **Retiring `_refprobe` retargets task zero's acceptance battery.** Deleting it breaks three
+   `serve/__tests__/loopback.test.ts` round-trip tests, four assertions in
+   `shared/cli-contract/__tests__/contract.test.ts`, and two account-submodule tests
+   (`web/src/lib/__tests__/contract-{context,form}.test.ts`), all keyed by `_refprobe run`.
+
+w2b owns both the repo-family recontract and the placement porcelain that `repo cat`'s
+derivation needs, so it converts `repo cat` (or the safest repo leaf) to `<ref>`, deletes
+`commands/refprobe.ts` + its cli.ts registration + its eslint/i18n exemptions, and reverts the
+four probe snapshot bumps (plane-coverage 183→182, machine 95→94, proxyable 91→90; shared
+`proxyCapableCommands().length` 85→84) — retiring the probe alongside a leaf whose end-to-end
+story is real. Until then the probe stays hidden and harmless.
+
+---
+
+## 11. As-built delta — w2a (2026-07-13): the config exodus + backup noun
+
+w2a landed the whole config exodus and the `backup` noun. tsc is **0/0** across `shared` and
+`cli`; cli vitest **1731 passed** (128 files); shared vitest **525 passed**;
+`check:ci-cli-contract` **up-to-date**; `check:ci-command-planes` **green** (18 domains, 163
+commands: 94 machine / 48 config / 21 other); `check:ci-console-coverage` **190 passed** (every
+one of the 163 contract entries renders a usable form, so every positional/ref binding
+resolves). The live tree went **183 → 163 invokable commands** (the exodus consolidated ~20
+config leaves back onto their resource nouns).
+
+**⚠ The `_refprobe` revert targets in §10 are now stale.** The reshape moved the baseline the
+probe rides on. When w2b removes `_refprobe` the new reverts are **plane-coverage 163→162,
+machine 94→93, `machineNonInteractive` 90→89; shared `proxyCapableCommands().length` 83→82**
+(the plane-coverage.test.ts / contract.test.ts comments already carry these).
+
+### §6 disposition rows flipped to DONE
+
+- **§6.1 machine (17):** `machine create/delete`→`add/remove` (positional `<name>`);
+  `machine query`→`machine status [name]` with the section commands folded in as flags
+  (`--containers --health-check`, `--services --stability-check`, `--repositories --search`,
+  plus new `--datastores`); `machine containers|services|repos` **deleted**; `machine backup *`
+  ×5 → `backup *`.
+- **§6.2 storage (6):** `storage create/delete`→`add/remove`; `storage rename` deleted;
+  `storage list [name] --reveal` absorbs `config storage show`; `storage import <file>` from
+  `config storage import`.
+- **§6.5 repo (archive only):** new `repo admin` parent carries `admin archive {list,restore,purge}`
+  from `config repository {list,restore,purge}-archived`; `config repository add/remove/list`
+  **deleted** (GUID mapping internal). *(w2b adds validate/fsck/ownership/autostart/template
+  under the same `admin` parent.)*
+- **§6.7/§5.11 subscription:** untouched (w2b).
+- **§6.8 config (57 → 26 leaves, zero resource subgroups):** the +1 over §5.1's 25 is
+  `config rotate-cek` — the §6.12/Q3 NEW-SINCE-SPEC leaf §5.1 predated (count is descriptive
+  per §0). machine/provider/infra/cert-cache →
+  `machine …`; storage → `storage …`; repository archive → `repo admin archive`; cluster →
+  `cluster …`; backup-strategy → `backup strategy …`; `config machine set-ceph` and
+  `config cluster add-pool` **deleted**. `config set/clear` take positionals over the v3
+  `DefaultsSchema` (team/region/machine keys retired, R2-F9); `config init [name]` /
+  `config delete <name>` positional; **`config reconcile` NEW** (wired to the existing
+  `reconcileState` service); **`config rotate-cek`** registration moved into `config.ts`.
+- **§6.10 cluster (create/status/destroy):** `cluster create` is one-step — `--provider/--pool`
+  (+ KVM topology + `--declare-only`) absorbed from `config cluster add`; a bare create
+  provisions an already-declared cluster (resume). `cluster install` **folded/deleted**;
+  `config cluster {add,add-pool,list,remove}` removed. fork/migrate/rehearse/scale/join/evict/
+  kubeconfig/snapshot untouched (w2b + `services/cluster/*` off-limits).
+- **§5.6 backup (10) NEW noun:** `strategy {set,remove,list,show}` (config-plane), `schedule`,
+  `run` (←`machine backup now`), `status`, `cancel`, `list` (artifact lister), `restore` (NEW).
+  Registered in `DOMAIN_MODULES`, `COMMAND_REGISTRY`, `COMMAND_PLANES` (domain `machine`,
+  `backup strategy` = `config`). `-m` stays on the noun.
+
+### Deviations (worth knowing)
+
+1. **`backup restore` is built by composition, not new renet.** It parses the artifact ref
+   (`repo[:tag]@place`, `@place` required), looks the source repo up for its GUID, registers a
+   fresh live record under `--as`, `backup_pull`s the bytes to the placement machine, and
+   optionally `repo up`s with the health-window/timeout flags. The `--machine` (docker) arm is
+   complete; `--datastore` resolves the datastore's `state.datastores[d].attachedTo`. k8s
+   up-richness rides w2b/w3.
+2. **`backup list` executor for `--storage`.** §5.6 pins `--machine XOR --storage` but does not
+   say which machine runs rclone for a storage listing. As-built: `--machine` is the executor;
+   `--storage` uses the ref's `@place`, else the sole registered machine, else **exit 11**
+   (AMBIGUOUS) asking to qualify.
+3. **`config set/clear` scope.** They now write the v3 `DefaultsSchema`
+   (`language`/`datastore-size`/`prune-grace-days`) via new `configService.setDefault/clearDefault/
+   clearDefaults`. `team`/`region`/`machine` give the R2-F9 retired-key error. The
+   `AccountSchema.team/region` **fields still exist in the shared schema** (v2→v3 migration path);
+   only the CLI surface stopped exposing them. Full schema-field removal is a follow-up.
+4. **`machine infra set/show` and `machine infra cert status/clear` are declared `plane: config`**
+   inside the machine-default domain (§4.9 Case 2): their effect is the caller's local config /
+   cert cache, so they must not become proxyable. `machine infra push` / `infra cert pull|push` /
+   `scan-keys` / `setup` reach the machine and stay machine-plane. `config reconcile` is
+   `plane: machine` (config's ONLY machine leaf, which keeps Rule 2 satisfied) **plus a
+   `PROXY_EXCLUSIONS` entry** because its effect lands in the caller's state bucket.
+5. **PROXY_EXCLUSIONS re-key:** `config cert-cache pull`→`machine infra cert pull`,
+   `config machine scan-keys`→`machine scan-keys`, **+`config reconcile`**. Policy fixtures
+   re-keyed: `machine query`→`machine status` (`policy/schema.ts` doc, `policy-round-trip.test.ts`,
+   account `policy-rule-editor.test.tsx`).
+
+### Declared debt (allowed-red per the wave brief; for w4)
+
+- **`check:cli-docs` / `validate-cli-examples`: 171 stale doc snippets** across `packages/www`
+  content and `CLAUDE.md` (e.g. `rdc config backup-strategy …`, `rdc config cert-cache …`,
+  `rdc config infra …`, `rdc cluster install`, `rdc machine containers`). The **generated**
+  `cli-application.md` (13 locales) regenerated clean and stale i18n *keys* are **0**; only
+  hand-written example prose is stale.
+- **`check:i18n` completeness: 49 new English keys** (`backup.list/restore.*`,
+  `machine.status.ambiguous`, `storage.add.*`, `config.reconcile.*`, `cluster.create.declared`,
+  …) carry English only; the 12 locales fall back to English until w4/P7 re-naturalizes. All
+  **moved** keys travelled in lockstep across all 13 locales (byte-identical round-trip verified).
+
+---
+
+## 12. As-built delta — w2b (2026-07-13, LANDED): the repo-family recontract
+
+w2b is the repo-family/datastore/cluster/subscription recontract. This section records what
+has LANDED so far (each batch fully gated) and enumerates the remaining scope, so a
+continuation (w2b resumed, w4, or the gate review) has an exact picture. Everything below is
+uncommitted and green: tsc 0/0 (shared+cli), `check:ci-cli-contract` up-to-date,
+`check:ci-command-planes` (162 cmds, 93 machine), `check:ci-console-coverage` 189, full cli
+vitest 1738, shared contract 18.
+
+### The reusable seam (built once, used by every converted repo verb)
+
+`packages/cli/src/utils/repo-target.ts::resolveRepoRef(ref, {readOnly?, verifyMount?})` — the
+reshape-era funnel that replaces `resolveRepoTarget` as `-m`/`--cluster` come off the repo
+verbs. It parses the ref, builds a `PlacementView` from the live config, runs w1's six-step
+`resolveMachine`, and returns `{name, repoKey, machineName, kubeCluster, datastore, tag,
+place}`. `repoKey` (= the ref minus `@place`, `name[:tag]`) is what `getRepository` and renet's
+`repository:` param consume; `kubeCluster` is the datastore's cluster backref (k8s arm).
+**verifyMount (step 5) is DEFERRED for mutating verbs** — omitted means step 5 is skipped,
+which is parity with today's `resolveRepoTarget` (it also never verified), NOT a regression;
+wiring a real renet mount check is a tracked follow-up.
+
+### Landed leaves
+
+- **`repo cat <ref>`** (§10 handoff): first real positional conversion (read-only). Retired
+  `_refprobe` entirely (file, cli.ts reg, command-planes, check-command-planes DOMAIN_MODULES)
+  and retargeted its 9 acceptance tests onto `repo cat` (loopback ×3, shared contract ×4,
+  account contract-context ×2). Reverted the four probe snapshots: plane-coverage 163→162,
+  machine 94→93, machineNonInteractive 90→89, shared `proxyCapableCommands().length` 83→82.
+  New shared i18n key `options.repoRef` (the positional-arg help every repo verb reuses).
+- **`repo create <name>`** (§5.4 placement union = **#38 fix**): positional `<name>`,
+  `--machine` XOR `--datastore`, `--size` conditional (docker requires it, a k8s datastore →
+  exit 2 "sized from PVC declarations"); `--cluster`/`--name` deleted. The birth record now
+  carries the declared `placement: {machine}|{datastore}` — the field every derived-machine op
+  resolves through, composing with w2a's `config reconcile` (which fills MISSING placement and
+  never overwrites declared). **#38**: a cluster (k8s) datastore repo lands on its DATA
+  datastore mount `/mnt/rediacc-ds/<D>` with the kube arm, not the control datastore
+  `replicate` excludes. New helper `namedDatastoreMount` (cluster-target.ts). Teaching errors:
+  placementRequired, machineInCluster (R2-F12), sizeOnK8s, sizeRequiredDocker, datastore
+  not-found (5) / not-attached (12). Test `repo-create-placement.test.ts` (8).
+- **`repo status <ref>`** (read-only derived-machine) and **`repo delete <ref>`** (derives the
+  machine, then `resolveDestructiveTarget` for the strict fail-closed key #495; the `--cluster`
+  delete path is gone). Metadata `repoArg` name/repo → `ref` for both.
+- **Serve-layer fix exposed by derived-machine:** the `/v1/command` audit sourced `machineName`
+  from the request via `targetFrom`, but a derived-machine verb has no machine in the request —
+  it is resolved from placement inside the action body — so the audit recorded `undefined`.
+  Now the dispatch taps the executor's actual `machineName` the way it already taps
+  `functionName` (`command-dispatch.ts` `DispatchOutcome.machineName` + the recordingExecutor
+  tap; `server.ts` uses `observed ?? targetFrom(...)`, so machine-declared verbs (backup, job)
+  are unchanged). The serve test suite (loopback, proxy-command, command-dispatch,
+  container-config, proxy-audit-attribution) moved off the `repo status --name -m` example onto
+  the positional+placed-config form; pure flag-mechanics tests repointed to `repo list`/`repo
+  cat`, which retain flags.
+
+### Remaining scope (NOT yet done — for the continuation)
+
+repo up/down (batch `--all --machine` form + fold `repo mount`/`unmount` into `--no-start`/
+`--unmount` + `--detach`→`--no-wait` + **#39** empty-manifests-cluster-repo-must-error), repo
+list (`--datastore` filter), the ~20 satellites (fork/push/pull/migrate/promote(←takeover)/
+secret/sync[+ kube-arm target + PROXY_EXCLUSIONS re-key]/diff[del `--json`]/logs NEW/exec NEW/
+tunnel/commit/branch/checkout/log/merge/gc/resize/expand/trim/policy), the `repo admin` subtree
+move (validate/fsck/ownership/autostart/template under the existing admin parent), canary +
+replicate recontract (the **#37** carry-fix reverts `--repo`/`--initial-weight` → natural names,
+plus **#41** refresh evict-and-hold), the datastore family (**#34** init→create + list/attach/
+detach/snapshot/delete + unfork→detach), cluster verbs recontract + snapshot + **#44**
+(rehearseCluster catch destControl), subscription flatten, term/vscode targets, singles,
+**#42** (renet `runRouter` KubeconfigPattern — coordinate with w3), the **★ LUKS live replicate
+probe** (gated on lead GO + a serialized live window), and the walker-truth i18n/policy-glob
+per-leaf sweeps for the leaves above.
+
+### Landed since (fan-out batch + B7 smalls)
+
+- **`repo fork <ref>`** (bounded 2-agent fan-out): positional, derived-machine, `--detach` →
+  `--no-wait`, `--tag base`/already-exists → exit 2. Its registration moved out of the inline
+  block in `repo-extended.ts` into `registerRepoForkCommand` (repo-fork.ts), wired in repo.ts;
+  the dead k8s `handleClusterForkSeam` + `--cluster`/`--to-cluster`/`--provider` were deleted
+  (k8s forking now runs through placement + the runtime-generic `repository_fork`, the #38
+  substrate), and the stale `repo-fork-cluster.test.ts` retired.
+- **`repo migrate <ref>`**: positional, source derived, `--to <place>`, `--from` deleted,
+  same-home no-op added. New `command-metadata` entry (was absent) with `grandGuard` + MCP.
+- The generator's positional-kind table gained the repo-ref role aliases `parent-ref` /
+  `fork-ref` / `commit-or-branch-ref` / `source-ref` so role-named ref positionals still bind
+  the console's repo picker.
+- **#22** (config-side): `removeClusterFromStore` now clears `state.clusters` as well as
+  `resources.clusters` (was orphaning state after destroy and poisoning same-name recreate with
+  a stale memberIds ledger). Test added.
+- **SKIP_MACHINE_ACTIVATION teaching error**: the license-issuance/activation failure message
+  now names `REDIACC_SKIP_MACHINE_ACTIVATION=1` as the dev/test escape.
+
+### Declared debt added by w2b so far
+
+- i18n: `options.repoRef` + 8 `commands.repo.create.*` keys + `commands.repo.fork.noWaitOption`
+  + 3 `commands.repo.migrate.*` (optionHealthWindow/optionHealthTimeout/noOpSameHome) +
+  `errors.license.skipActivationHint` carry English only (w4/P7 naturalizes). Several
+  descriptions/examples rewritten in English.
+- **`repo migrate` health-gate + exit 13/14 = spec §5.4 behaviors that have NEVER existed**: the
+  current migrate is a two-phase rsync with no post-cutover health-gate path and no structured
+  exit codes (it uses exit 1). Per the batch-4 ruling, the `--health-window`/`--health-timeout`
+  flags are NOT registered (registered-but-inert flags mislead the console into rendering dead
+  fields); they return when the gate is wired. Recorded as a conscious deviation; disposition =
+  post-P4 hardening item alongside verifyMount (both need renet-side plumbing).
+- **verifyMount (spec §2.3 step 5) DEFERRED** for mutating verbs — lead-accepted conscious
+  deviation, parity with the old resolveRepoTarget; post-P4 hardening item.
+- **Continuation handoff**: batches 1-5 landed; task #7 stays in_progress. The CURRENT handoff
+  (per-verb recipe, real remaining inventory, the executor-reroute trap, gotchas) is
+  `~/.claude/projects/-home-muhammed-monorepo-console/reports/w2b2-handoff.md`, which SUPERSEDES
+  the earlier `w2b-handoff.md`.
+- skill-reference / cli-docs regen batched to the end of w2b (tree exports clean).
+
+### As-built — w2b-2 continuation (2026-07-13): batches A-D
+
+Gate state at the w2b-2 checkpoint: tsc **0/0**; `check:ci-cli-contract` **up-to-date**
+(**160** commands, config=48 / machine=91 / other=21, proxyCapable **80**, interactive 9;
+options 619 → **560** as the dead flags came off); `check:ci-command-planes` **green** (17
+domains); `check:ci-console-coverage` **188**; cli vitest **1737**; shared vitest (contract +
+policy + audit) **62**; biome clean across `packages/cli/src` + `packages/shared/src`.
+
+**Batch A — repo up / down.** Positional `[ref]` (single) or `--all --machine <m>` (batch);
+a bare `up`/`down` with neither is exit 2. `repo mount` folds into **`repo up --no-start`**
+(dispatches `repository_mount`) and `repo unmount` into **`repo down --unmount`**;
+`commands/repo-volume.ts`, `CMD.REPO_MOUNT/UNMOUNT` and both metadata entries are deleted.
+`--detach` → **`--no-wait`** (Commander negated option: read `options.wait === false`; the
+`--no-start` twin reads `options.start === false`). Snapshot reverts: plane-coverage 162→**160**,
+machine 93→**91**, machineNonInteractive 89→**87**, shared `proxyCapableCommands().length`
+82→**80**.
+
+**Batch B — the config-local resolver (a NEW seam) + branching/tunnel/diff.**
+`resolveRefLocal` (`services/addressing/resolve-machine.ts`) + `resolveRepoRefLocal`
+(`utils/repo-target.ts`) do §2.3 steps 1-2 ONLY (parse + family/tag; exit 2 / exit 5) with **no
+placement or machine derivation, so they never exit 12**. `repo secret {get,list,set,unset}` and
+`repo branch` route through it. Rationale (a correctness fix, not a style choice): those verbs
+read/write the CONFIG only and never dispatch to a machine, so forcing the full derived-machine
+resolution would refuse them on a repo whose datastore is merely **detached** or not yet
+reconciled. `repo checkout` also fixed: its `<commit-or-branch-ref>` positional is NOT a repo
+family, so the machine now derives from the **source family** (`--from`, else the commit's base),
+not from the positional. Also converted: `repo commit`/`log`(`--json` deleted)/`merge`,
+`repo tunnel` (refuses a k8s-placed repo: no kubernetes tunnel in v1), `repo diff`
+(`--json` deleted, `--base <ref>` kept).
+
+**Batch C — sync / trim / policy, and the B2 unblock.** `repo sync {upload,download,status}
+<ref>`; `repo trim [ref]` and `repo policy {set,get} [ref]` keep `-m` as the machine-wide
+selector (ref + `-m` together = exit 2, new key `commands.repo.refMachineConflict`).
+★ **The kube-arm sync target is IN** (unblocks B2 / task #3): a kubernetes-placed repo now syncs
+to `<named-datastore-mount>/repos/<name>/` on the machine that HOLDS the datastore, instead of the
+docker per-repo GUID mount — that misroute is exactly why B1's anchor manifest never reached where
+`repo up` reads it. The kube arm also skips the docker-only mount-check and per-repo SSH-key
+deploy (a k8s repo has neither; the mount check would fail a healthy repo).
+
+**Batch D — push / pull, and `takeover` → `promote`.** `repo push <ref>` / `repo pull <ref>`;
+push loses `--up` (a pushed copy is a backup artifact; `backup restore --up` boots it), `--tag`
+(rides the ref) and `--json` (§4.6). **`repo takeover` → `repo promote <fork-ref>`**, a full
+re-key: file + symbol (`repo-promote.ts` / `registerRepoPromoteCommand`), `CMD.REPO_PROMOTE`,
+the `command-metadata.ts` entry (now `mcpExcludeReason: 'Production swap; human decision.'` per
+§5.4 `[P0-DECIDED]`), the dead `cli.repo.takeover` audit type, and the
+`commands.repo.takeover.*` → `commands.repo.promote.*` i18n subtree **moved across all 13 locales
+in lockstep**. Policy globs were grepped hard: **no authored `repo takeover` glob exists in-repo**
+(the residual fail-open risk is the operator's own encrypted policy document, which is exactly
+what §4.11's stale-glob gate is for). `repo gc` / `repo fsck` were reviewed and deliberately LEFT
+machine-scoped: they scan a machine's object store across all repos, so they have no subject repo.
+
+### GUARDRAIL FINDINGS (w2b-2) — §4.10's silent-staleness hazard, made real
+
+§4.10 ranks the guardrail row as **the one to fear: it has no stale-entry gate at all**. Both of
+the following are that hazard in the wild. Neither is a shipped-product bug (they live on the P4
+surface), so neither takes a ledger number — but both were LIVE on `main` before this wave, and
+neither would ever have been caught by a gate.
+
+1. **`grandGuard` was silently a no-op on `repo push` and `repo pull`.** Both declared
+   `repoArg: 'repo'` in `COMMAND_METADATA`, but **no `repo` field existed in the derived MCP
+   schema** (the schema carried `name`). `applyGrandRepoGuard` resolves the subject as
+   `args[tool.repoArgField]`, so it read `undefined` and the grand-repo guard **never fired** —
+   an agent could push or pull a production grand with no unlock. Nothing failed loudly: the MCP
+   coverage test checks that an entry EXISTS, not that its `repoArg` names a field the schema
+   actually has. Fixed by binding `repoArg: 'ref'` to the real positional, which is what finally
+   enables Gate B on the MCP path for both verbs. **The generalizable lesson: `repoArg` must name
+   a field that EXISTS. A gate asserting `repoArg ∈ schema.fields` for every MCP tool would have
+   caught this and is cheap — recommended for w4.**
+2. **`repo trim`'s machine-wide form was agent-reachable and unguarded.** With no `repoArg` and
+   `machine` exposed to MCP, an agent could omit the ref entirely and trim EVERY mounted repository
+   on a machine — across grands — with nothing to guard on (the guard keys off `repoArg`). Fixed by
+   `repoArg: 'ref'` + `requiredArgs: ['ref']` + excluding `machine`: the machine-wide trim is now
+   CLI-only, and the per-repo form is properly guarded.
+
+Both were found by fan-out sub-agents reading their own file's metadata against the derived schema,
+which is an argument for keeping that step in the per-leaf checklist rather than trusting the gates.
+
+**#39 (CLI half done, renet half pending).** For a kubeCluster-placed repo the CLI now sends
+`runtime=kube` on `repository_up` AND `repository_mount` (param name agreed with w3). renet will
+honor it as an ASSERTION: if the caller says kube but the on-datastore descriptor resolves docker,
+it errors instead of the silent docker fallback B1 caught. w3 owns the renet dispatch half
+(`reporuntime_dispatch.go`) and lands it after its live leg. **#39 is NOT closed end-to-end yet.**
+
+### BUG #46 — the executor's silent control-node reroute (FOUND, RULED, FIXED in w2b-2)
+
+**Was:** `local-executor.execute()` OVERRODE `machineName` with the cluster's CONTROL NODE
+whenever `kubeCluster` was set. Defensible while `kubeCluster` could only come from an explicit
+`--cluster` flag ("run this against the cluster"), but the reshape DERIVES it from placement, so
+the override silently sent EVERY verb on a k8s-placed repo to the control node — including
+volume-level operations (trim, diff, commit, merge, and `repo up`'s LUKS-mount step) that must run
+on the machine which actually MOUNTS the datastore (`state.datastores[D].attachedTo`). Masked in
+practice only because current topologies attach control-node datastores; #38's DATA-datastore
+placement is exactly the topology that unmasks it.
+
+**RULING (operator, 2026-07-13): option (a) — inject KUBECONFIG WITHOUT rerouting the machine.**
+KUBECONFIG is the k8s analog of DOCKER_HOST, and DOCKER_HOST never reroutes the machine either;
+the target machine must remain the derived one. A verb that genuinely must run FROM the control
+node resolves that machine EXPLICITLY at its call site — explicit, not ambient.
+
+**As-built:** the `machineName` override is deleted from `execute()`; the KUBECONFIG injection in
+`runRemoteExecution` (and the job-start path) is untouched and still keys off `options.kubeCluster`.
+Audited every `kubeCluster`-passing call site: the cluster-scoped ops in `services/cluster/*`
+(`repo-replicate-ops.ts`, `repo-release.ts`, `repo-replicate.ts`) ALREADY resolved the control node
+explicitly via `resolveExecutionTarget({ cluster })` → `machineName: control`, so they were
+unaffected — confirming the override was redundant there and harmful only for the derived-machine
+repo verbs. Three regression tests in `services/__tests__/local-executor.test.ts` pin the contract:
+a datastore attached to a NON-control node routes there; KUBECONFIG is still injected while running
+on that machine; a cluster-scoped op still reaches the control node because its call site says so.
+
+#### ⚠ OPEN GATE QUESTION (surfaced by the #46 fix; NOT a regression, NOT a P4 blocker)
+
+**The cluster kubeconfig is control-node-local.** `clusterKubeconfigRemotePath(c)` =
+`${controlDatastoreMount(c)}/.rediacc/k3s/kubeconfig.yaml`, so it exists ONLY where
+`ds-control-<cluster>` is attached. In the very topology #46 unmasks (a repo's DATA datastore
+attached to a worker), the repo's manifests sit on one host and the kubeconfig on another. With the
+override gone, a kubectl-needing verb therefore fails LOUDLY with a missing kubeconfig instead of
+silently misrouting. That is strictly better — and every volume-level verb is now correct — but the
+unmasked topology still needs an operator decision:
+
+| Option | What it means |
+|---|---|
+| (i) | Stage/distribute the kubeconfig to the executing machine |
+| **(ii)** | **Require cluster datastores to be attached to the control node** — makes `attachedTo == control node`, which moots the entire class |
+| (iii) | Split `repository_up`'s kube arm (volume work on the attach host, kubectl work on control) |
+
+**Lead's lean: (ii)** — it dissolves the problem rather than managing it. Recorded as a lean only;
+the choice is the operator's design call, to be made at the gate review. Nothing in P4 depends on it.
+
+### Declared debt added by w2b-2
+
+- **`repo push`/`repo pull` batch form NOT implemented.** §4.8 lists them as batch-capable, but
+  the pre-reshape batch keyed off the removed `-m` + an omitted `--name`. Rather than ship
+  `--parallel`/`--concurrency`/`-y` as registered-but-inert flags (the batch-4 inert-flag ruling:
+  a dead flag is a user-facing lie the console renders as a dead form field), those three are
+  REMOVED from push/pull. Restoring an `--all --machine <m>` arm (mirroring `repo up`/`down`) is
+  a tracked follow-up.
+- **`repo promote --force` REMOVED** (same ruling). It was declared but the action body never read
+  it and the generated bridge type `RepositoryPromoteParams` exposes only `parent`+`fork`, so it
+  has ALWAYS been a no-op even though renet's `repository_takeover.go` honors a force. It returns
+  when `force` is added to the bridge param map (renet/shared).
+- **`postPushDeploy` is now dead in src** (push lost `--up`); only its unit test imports it. Its 3
+  i18n keys (`push.deploying`/`.deployed`/`.deployFailed`) are orphaned. Cleanup = w4/knip.
+- i18n en-only NEW keys (w4/P7 naturalizes): `commands.repo.up.{noStartOption,noWaitOption,allOption}`,
+  `commands.repo.down.allOption`, `commands.repo.{batchMachineOption,batchRefConflict,
+  batchNeedRefOrAll,batchAllNeedsMachine,refMachineConflict}`, `commands.repo.promote.confirm`.
+  English VALUES changed on up/down/push/pull/trim/policy/promote descriptions, so the 12 locales
+  are stale there (they still translate the old text; et/it/ko/pt even keep the loanword
+  "takeover" inside translated promote prose). No `rdc repo takeover` COMMAND NAME survives in any
+  locale.
+- Stale prose still teaching the retired syntax (`--parent`, `-m`, `--name`) in
+  `help.repo.keyConcepts` and the three `errors.agent.grandGuard*` strings: part of w4's existing
+  171-snippet stale-example debt, not newly created here, but now more visibly wrong.
+- Orphaned i18n keys from the deleted flags/verbs: `commands.repo.{mount,unmount}.*`,
+  `up.detachOption`, `up.mountOption`, `push.{optionUp,optionTag,optionJson}`, `log.jsonOption`,
+  `diff.jsonOption`, `diff.nameOption`, `trim.nameOption`, `policy.nameOption`,
+  `secret.nameOption`, `secret.get.repoNotFound`, plus the branching `*.nameOption` set.
+
+### As-built — w2b-3 continuation (2026-07-13): the tail of the repo-family recontract
+
+Certified: tsc 0/0; contract up-to-date at **164 commands** (config 48 / machine 96 / other 20,
+proxyCapable 85); planes green; console-coverage 193; cli vitest 1750; shared vitest 525.
+
+#### §6 disposition rows flipped to DONE
+
+- **canary + replicate RE-KEYED to the repo ref** (§6.12, the ruled item). `repo replicate <ref>
+  --replicas N` keeps the bare create form (§5.4); `replicate status|remove|refresh <ref>`;
+  `repo canary create|status|weight|remove <ref>` (the actionable parent becomes a pure group).
+  `--repo`/`--cluster`/`--set`/`--name`/`--datastore` die to the ref; `--initial-weight` reverts to
+  `--weight`. Set names are DERIVED (`<repo>-replicas`, `<repo>-canary`), so recorded state maps 1:1
+  and there is no migration. A tagged ref is slugged, because a k8s object name and a datastore fork
+  tag both reject a colon. Gate class B (grandGuard) added to both families: they had NO policy entry
+  before, so an agent could replicate or canary a grand repo unguarded.
+- **cluster** (§6.10): positionals on every leaf; `cluster status`'s private `--output` deleted;
+  `fork --cluster` → `--to`, `rehearse --cluster` → `--on`; NEW `cluster snapshot create|list`
+  (R2-F13), which reports local-backend datastores as OUTSIDE the group instant rather than omitting
+  them.
+- **subscription** (§6.7): flattened 8 leaves + 1 actionable parent to 4.
+- **datastore** (§6.4, #34): the facade is replaced by the real 10-leaf surface over P1's named
+  registry, plus a config-side registry service maintaining `resources.datastores` (the spec) and
+  `state.datastores` (the routing hint derived-machine resolution reads).
+- **term / vscode** (§5.8/§5.9): `<target>` = a place or a repo ref; the §3.3 collision rule lives in
+  exactly one place (`resolveConnectTarget`).
+- **NEW `repo logs` / `repo exec`** (§5.4, R2-F14).
+
+#### Bugs fixed, with what each one taught
+
+- **#41 (replicate refresh)** — fixed with NO renet change. The evict-and-hold primitive already
+  existed: a replica's PV pins via `nodeAffinity` to the `rediacc.io/ds-<fork>` node label, so
+  stripping that label BEFORE bouncing the ordinal pod leaves the recreated pod unschedulable
+  (volume node affinity conflict). It cannot re-mount the old fork, the discard-detach wins
+  deterministically, and `provisionOneReplica`'s trailing re-stamp re-opens the gate onto the new
+  fork. The fix is an ordering change.
+- **#44 (rehearse teardown)** — the failure path passed the destination CLUSTER name into
+  `discardRehearsal`'s `destControl` (a MACHINE param), so every teardown step was aimed at a machine
+  that does not exist; `tryDispatch` is best-effort, so it swallowed the errors and a FAILED rehearsal
+  silently left its entire fork behind. ★ The existing test PASSED despite the bug because it asserted
+  only that the teardown calls happened, never WHERE they landed. Asserting the target, not just the
+  action, is the lesson.
+- **#25 (vestigial agent repo)** — `kube_join`'s contract is unchanged by dropping it, because
+  `K3sDistro.Install` MkdirAll's its own data-dir. FOUR sites did the identical vestigial thing (not
+  the two the brief named): initial join, scale-up, fork agents, and `cluster join`. All four now
+  allocate a networkID without minting a LUKS volume per agent.
+- **#20 (evict)** — `evictCluster` now dispatches `kube_uninstall` at the EVICTED machine, so the
+  control plane forgetting the Node is no longer half an eviction.
+- **#34 (datastore)** — worse than the row implied: `datastore init` dispatched
+  `datastore_init`/`datastore_ceph_init`, **which do not exist in renet**, and `fork`/`unfork` were
+  leaves whose entire body was a `throw`.
+- **Gate class D was unreachable for datastore.** §4.7 makes the family class D, but
+  `enforceAgentBlock` only routed `cluster ` paths to the unlockable guard, so datastore verbs would
+  have hit the ABSOLUTE block with no possible override. Per ruling R6 the per-name unlock matches the
+  SUBJECT's name, so a datastore verb unlocks on the DATASTORE name. Both wired.
+- **`term_exec` (MCP) had invalid argv and no gate caught it.** It built `term connect -m <machine>
+  -c <cmd>`; when `-m` died the tool broke and the suite stayed green, because the MCP tests assert
+  the argv a tool BUILDS, never that the CLI ACCEPTS it. Retired; `repo exec` replaces the repo case.
+
+#### Declared debt added by w2b-3
+
+1. `--reset-home` on `term connect` is DEAD CODE and always has been (the real switch is renet-side;
+   the CLI has no channel to set it). §5.8 says keep the flag, so it was kept: it is a flag that lies.
+2. A k8s repo's namespace is passed verbatim, so a TAGGED ref yields an ILLEGAL namespace (a colon).
+   It fails silently (`kubectl config set-context … || true`). Pre-existing and shared with renet
+   (`h.Namespace = name`). The fork-to-namespace mapping needs a decision, and it must match renet's.
+3. `subscription refresh -m` does not refresh an activation: there is no activation-refresh action
+   anywhere in the family (activation is issued inside `local-executor` during `execute`). All three
+   old refresh leaves called the same repo-batch refresh under three different success strings.
+   §5.11's "-m = machine activation + repos" cannot be honored literally.
+4. `cluster rehearse --on` takes a destination CLUSTER, not a machine (§5.5 says machine): a rehearsal
+   boots a whole k3s control plane plus agents. The spec's flag NAME is kept; the help states the truth.
+5. The `term_exec` MCP capability (an arbitrary command on a bare machine) is removed, deliberately:
+   that is the escape hatch `run` already is, and `run` is an absolute agent block.
+6. The old cluster form of `term connect` was never repo-gated, so an agent could open a shell on a
+   grand cluster repo without `REDIACC_ALLOW_GRAND_REPO`. The recontract closes it.
+7. §6.9 says `vscode serve status|stop` are unchanged while §5.9 gives them `<target>`. §5.9 followed.
+8. MCP tests assert the argv a tool BUILDS, never the argv the CLI ACCEPTS, so any MCP tool can rot
+   silently. Worth a real gate in w4.
+
+#### Still open in task #7
+
+`repo admin` subtree move (+ killing `assertDockerOnly`), `repo resize`/`expand`, `repo list
+--datastore`, **#42** (needs the w3 announce), and the **LUKS live probe** (GO granted, window
+serialized). ★ Highest-severity carry-out: **14 executable scripts under `.ci/tutorials/` still call
+`rdc term connect --machine … --repository …`, so they now fail at RUNTIME**, not merely read wrong.
+
+### As-built — w2b-4 (2026-07-13): task #7 closed out
+
+Certified: tsc 0/0; contract up-to-date at **164 commands** (config 51 / machine 93 / other 20,
+proxyCapable **82**); planes green; console-coverage 193; cli vitest 1748; shared vitest 525; biome
+clean. renet: gofmt clean, `go build ./...`, `go vet`, `go test ./cmd/renet ./pkg/router`, and
+golangci-lint (0 issues) all green.
+
+#### §6 disposition rows flipped to DONE
+
+- **`repo admin` subtree** (§5.4): `validate`, `fsck`, `ownership`, `autostart`, `template` relocated
+  under the `admin` parent alongside `archive`. The parent is created once and handed to the files
+  that own the verbs' implementations, so `repo gc` (which the spec keeps on the daily surface) stays
+  next to `fsck`'s shared ref-graph walk. `assertDockerOnly` is DELETED: its last caller was
+  autostart, which now refuses a cluster-placed repo based on the REF's derived placement instead of
+  on a `--cluster` flag the user typed, which is the honest test.
+- **`repo resize` / `repo expand`** (§5.4): positional `<ref>`, staying on the daily surface.
+- **`repo list --datastore`** (§5.4): a datastore is the honest filter unit, because a repo lives in a
+  datastore and the machine is wherever that datastore happens to be attached today. `-m` and
+  `--datastore` are mutually exclusive.
+- **`repo admin template apply <ref> --template <name>`**: the old `--name` meant the TEMPLATE, on a
+  tree where `--name` means the repo everywhere else.
+
+#### Bugs fixed, with what each one taught
+
+- **#42 (router discovery wiring, renet)** — and it was worse than the ledger said. `runRouter` built
+  `router.Config` as a BARE STRUCT LITERAL listing only the flag-backed fields, so every field with no
+  flag behind it silently took its zero value. That is TWO fields, not one: `KubeconfigPattern` (empty,
+  so `generateAllKubeRoutesWithExec` early-returns and no kube route is ever generated, which is why
+  the canary weighted split was inert on every real machine) and `K3sBinary` (empty, so even with the
+  pattern set, route generation would exec `""` instead of kubectl at `pkg/router/kube.go:153`).
+  **Fixing only the pattern would have left it broken one step later while looking fixed.**
+  `routerConfigFromFlags` now starts from `router.DefaultConfig()` and overrides only what the flags
+  cover, which kills the bug CLASS: a field added to `Config` in future reaches production without
+  anyone remembering to extend the function.
+  ★ The test is the point. The old unit suite was green because the ONLY path that set the field was
+  the test-only `DefaultConfig()`, which production never called: **a test that cannot observe the
+  production wiring cannot prove it.** The new test drives the REAL cobra flag set through the REAL
+  config builder, and it was verified to FAIL against the old implementation before being kept.
+- **`repo admin archive` was PROXY-CAPABLE (found in-wave, data-loss class)** — §4.9's silent-flip
+  hazard, already struck, unnoticed. `archive {list,restore,purge}` are pure config bookkeeping
+  (`repo-admin.ts` imports no executor and no SSH; they only read and write the config's archive map).
+  They were `config repository {list,restore,purge}-archived`, config-plane by their old domain's
+  default. The §5.4 relocation carried them into `repo`, they inherited repo's MACHINE default, and no
+  plane entry was written, which also made them `proxyCapable`. Through the enterprise proxy that is a
+  wrong-target bug: the effect is entirely on the CALLER's config file, so a proxied
+  `repo admin archive purge` would have **permanently deleted the PROXY HOST's archived records**.
+  Fixed with `'repo admin archive': { plane: 'config' }`.
+  ★ **GATE HOLE, still open (w4).** `check-command-planes` works at DOMAIN granularity (Rule 1: a
+  domain that cannot reach a machine declares no machine-plane leaf; Rule 2: one that can must declare
+  at least one). `repo` plainly reaches machines, so a single config-only LEAF inheriting the machine
+  default is invisible to it, and its docstring admits the coarseness. A per-leaf check (does the
+  module that REGISTERS this leaf import a machine marker at all?) would have caught this on the day
+  it was introduced. Every other config-only leaf (`repo secret`, `repo branch`, `backup strategy`,
+  `repo replicate|canary status`) already carries its entry; archive was the one relocation that lost
+  it.
+
+#### ★ THE LUKS REPLICATE VERDICT: EMPTY-BY-CONSTRUCTION (settled statically; live confirmation pending)
+
+The #38 acceptance question ("do kube-repo replicas SERVE the data, or come up EMPTY?") is answered by
+the code, ahead of the live probe. **Replicas are empty by construction.** The chain, every link cited:
+
+1. **Write path.** `repo up` on a kube repo (`kubeArmUp` → `KubeRuntime.ProvisionVolumes`,
+   `pkg/reporuntime/kube.go`) calls `kubevolume.Provisioner.Provision`
+   (`pkg/kubevolume/provisioner.go`), which per PVC creates a LUKS image at
+   `<ds>/repos/<repo>/volumes/<pvc>.img`, luksFormats/luksOpens/mkfs's it, and MOUNTS the decrypted
+   ext4 at `<ds>/mounts/volumes/<repo>/<pvc>`. Critically it `MkdirAll`s that mountpoint ON the
+   datastore filesystem BEFORE overmounting, so the directory underneath the mount exists and stays
+   EMPTY; all pod data goes into the `.img`.
+2. **Replica read path.** `renderReplicaPV` (`services/cluster/repo-replicate.ts`) renders a static
+   `local` PV whose path is `<forkMount>/mounts/volumes/<repo>/<pvc>`: the same relative path, rooted
+   at the FORK's mount.
+3. **The gap.** `provisionOneReplica` is exactly four bridge verbs (`datastore_fork`,
+   `datastore_adopt`, `datastore_attach{writes:local}`, `kube_node_label`). NOTHING re-opens LUKS.
+   There is zero cryptsetup/LUKS reference anywhere in `pkg/datastore/*.go` (only RBD and dm-thin), and
+   the only callers of the LUKS-open primitives are the `repo up` / `repo fork` arms and the CSI node
+   driver. It is even documented as deliberate, without the consequence being noticed
+   (`pkg/functions/commands/kube.go`: "overlays never ProvisionVolumes; their PVs point into fork
+   datastores the feature orchestrator attached").
+4. **What the replica gets.** The RBD block clone faithfully carries BOTH the ciphertext `.img` AND the
+   empty mountpoint directory from step 1, so the PV path resolves to a real, valid, EMPTY directory
+   and kubelet bind-mounts it happily.
+
+**`repo fork` gets this right** (it calls `ProvisionVolumes` on the fork, which takes the adopt branch
+and re-opens the reflinked image with the shared grand key), which is what proves replicate's omission
+is an oversight and not a design.
+
+★ **Why the probe's methodology is load-bearing.** A broken replica does NOT crashloop. It schedules,
+mounts, and comes up **healthy and Ready**, serving nothing. Every assertion weaker than a
+parent-only nonce ("pod Running", "PVC Bound", "the app responds") PASSES against the broken
+implementation. That is exactly the failure that made an earlier "live proof" worthless. The probe
+therefore seeds a random nonce, generated at probe time, through the primary's pod, and asserts the
+REPLICA returns that exact value: no default image, no empty volume and no fresh LUKS format can
+produce it.
+
+**The fix — LANDED (source-only; the live red/green probe is a separate leg).** The primitive already
+existed and was exactly the right shape: `kubevolume`'s path-keyed `ResolveKeyForRepoDir` +
+`OpenAndMount` / `TeardownVolume` (`pkg/kubevolume/csi.go`), built for the CSI driver. Both inputs it
+needs (`.rediacc/repo.json` and `.credentials/volkeys/<grandGUID>.key`) ride the clone already.
+
+- NEW bridge verbs `datastore_volumes_open` / `datastore_volumes_close` (`cmd/renet/datastore_volumes.go`,
+  registered in `pkg/functions/commands/datastore.go`): enumerate `<forkMount>/repos/<repo>/volumes/*.img`
+  and open (or close) each through those primitives.
+- The CLI dispatches the open in `provisionOneReplica` between `datastore_attach` and `kube_node_label`.
+  That ORDER is the safety property, not a detail: the label is the PV's nodeAffinity key and therefore
+  the scheduling gate, so opening first means a pod can never be scheduled onto a volume that is not yet
+  mounted.
+- **TRAP 1, fork-scoped dm name.** `kubevolume.MapperName` is `rediacc-vol-<repo>-<vol>`, derived from
+  the repo ALONE — and a replica keeps its parent's repo name, because the fork is of the DATASTORE, not
+  the repo. `resolveReplicaNodes` round-robins replicas over every node INCLUDING the primary's, so a
+  parent-derived name collides with the primary's live mapping ("device already mapped"), and two forks
+  of one parent on one node collide with each other. The replica path therefore uses a FORK-SCOPED name
+  (`rediacc-vol-<ds>-<tag>-<repo>-<vol>`), built on `ImageRef.MapperName` so `kubevolume`'s shared helper
+  (which CSI's path-derived volume id depends on) is left alone. Bounded against the 128-byte DM_NAME_LEN
+  and refused cleanly when over.
+- **TRAP 2, teardown symmetry.** Anything the provision path opens, the discard path must close: a fork
+  holding a live LUKS mapping and loop device is BUSY, so `detach --discard` would simply fail. The close
+  now precedes the discard in BOTH teardown paths — `discardReplicaDatastores`, and the refresh loop
+  before `detachWithRetry` (which the type-checker surfaced: refresh re-forks, so it needs both halves).
+- Pinned by tests, not by comments: the full dispatch sequences for create / remove / refresh assert the
+  open-after-attach-before-label and close-before-detach orderings, and the fork-scoped mapper name is
+  asserted to differ from both the primary's and a sibling fork's. A comment cannot fail; an ordering
+  assertion can.
+
+##### ★ THE ORDER IS THE INVARIANT (state it, do not bury it in a code comment)
+
+Two orderings in the replicate path are safety properties, not implementation detail:
+
+1. **Open BEFORE label.** The node label is the PV's `nodeAffinity` key, which means it is the
+   SCHEDULING GATE. Opening the LUKS volume before stamping the label makes it impossible for a pod to
+   be scheduled onto a volume that is not yet mounted. Label-first would open a window in which kubelet
+   can bind a pod to an empty directory.
+2. **Close BEFORE detach.** Anything the provision path opens, the discard path must close. A fork
+   holding a live LUKS mapping and its loop device is BUSY, so a discard-detach that skipped the close
+   does not "mostly work" — it fails.
+
+##### ★★ A TIGHTER TYPE FOUND A BUG NO TEST WAS LOOKING FOR
+
+The scoped fix was "wire the close into `discardReplicaDatastores`". That is what the diagnosis called
+for, and it was incomplete. Threading the repo through `provisionOneReplica` required adding `repo` to
+its input type — and the TYPE-CHECKER immediately failed the OTHER caller: `refreshReplicaSet`.
+
+That second site matters more than the first. Refresh re-forks each replica and goes straight to
+`detachWithRetry`. Post-fix, that fork holds a live LUKS mapping, so refresh would have burned all five
+retries against a BUSY datastore and thrown. And a refresh that re-forked WITHOUT re-opening would have
+rolled the ENTIRE replica set to empty — #49 reintroducing itself through the back door, on the one
+command whose entire purpose is to refresh data.
+
+No test was looking for it. No reviewer had listed it. A looser signature (an optional field, an `any`,
+a `Partial<>`) would have compiled and shipped the hole silently. **The precise type was the thing that
+found it.** That is the concrete argument in this program for paying the cost of exact signatures, and
+it generalizes: when a fix threads a new value through a call graph, TIGHTEN THE TYPE FIRST and let the
+compiler enumerate the call sites — it knows all of them, and a human enumerating them from memory does
+not.
+
+#### Declared debt added by w2b-4
+
+1. **The plane gate is domain-granular** and cannot see a config-only leaf inheriting a machine-plane
+   domain default. It let a data-destructive proxy misclassification through. A per-leaf import-marker
+   check belongs in w4.
+2. **#49's fix is SOURCE-ONLY until the live probe runs.** The code, the two traps, and the ordering are
+   landed and unit-pinned, but `repo replicate` has still never been executed live end-to-end. The unit
+   suite cannot see the one thing that matters (whether the replica serves the parent's bytes), which is
+   precisely how the bug survived 13 green tests in the first place. The verdict is not in until the
+   red-then-green nonce probe reports.
+3. **`repo admin autostart enable|disable` keep an `--all -m <machine>` batch form** (the §4.8 shape)
+   because the retired name-less invocation meant "every repo on the machine". §5.4 states only
+   `<ref>`; dropping the batch form would have deleted a real capability (`repository_autostart_*_all`).
+
+---
+
+## 13. As-built delta — w4 (2026-07-13, LANDED): surface closure
+
+The last implementation wave. Its job was to close the surfaces the reshape had invalidated
+(MCP, policy globs, snippets, i18n, docs) and to build the two gates §4.9 and §4.11 said were
+missing. It did that, and in the process it found that **four of the repo's own validators were
+themselves wrong** — three of them wrong in the direction that lets a defect through, and one
+wrong in the direction that forbids correct work.
+
+### 13.0 THE FINDING ABOVE ALL THE OTHERS: every gate that failed measured something ADJACENT to the truth
+
+Six gates failed in this phase. Not one of them was measuring nothing — every one was measuring
+something *correlated* with the property it was supposed to guarantee. **That correlation is
+precisely why nobody noticed it was not the property.**
+
+| The gate | What it measured | What it was supposed to measure |
+|---|---|---|
+| Command planes | the DOMAIN's reachability | whether **this leaf** can reach a machine |
+| MCP coverage | the **leaves** of the tree | every **runnable** command (an actionable parent is runnable) |
+| Docs scanner | `rdc` preceded by one of five DELIMITERS | `rdc` at a **word boundary** |
+| Flag checker | does this flag exist **anywhere** | is it valid **on the command it is written on** |
+| Command parity | unresolved **prose words**, compared across languages | **commands**, which are never translated |
+| Untranslated values | whether a key is **present** | whether it is **translated** |
+
+Each substitution is reasonable. Each is nearly always right. And each is wrong exactly where it
+matters: at the leaf that moved, the parent that runs, the quoted invocation, the renamed flag, the
+translated sentence, the English-filled fallback.
+
+> ★★ **A MEASUREMENT CORRELATED WITH THE TRUTH IS THE MOST DANGEROUS KIND OF WRONG, BECAUSE IT
+> AGREES WITH THE TRUTH EVERYWHERE YOU HAPPEN TO LOOK.** A gate that measured nothing would be
+> caught in a day. A gate that measures *almost* the right thing survives for years, and is trusted
+> the whole time.
+
+The remedy is the one this whole section keeps arriving at from different directions: **ask the
+thing that actually decides.** Not the metadata — `buildAllTools`. Not the domain — the module that
+registers the leaf. Not the count — the raw output. Not the work order — the code. And when you
+narrow a check to quiet its false alarms, ask what TRUE alarm the narrowing also silences, because
+an exclusion written against noise fails open exactly like every other exclusion.
+
+### ★ The seventh instance, and why it is the strongest argument this section can make
+
+The six above were found by hunting them. **The seventh was found by accident, in this phase's own
+tooling, by the agent writing this section, at the last minute of the last sweep.**
+
+`check-cli-docs.ts` carried a comment saying — in as many words — that `docs/design/**` is excluded
+from the scan, because the design record deliberately quotes dead commands while ARGUING about
+them. (This very section cites `rdc auth login`, `repo takeover` and `machine query` precisely
+because they are the bugs it documents.)
+
+**The exclusion was never implemented.** The comment asserted a behavior the code did not have, and
+the gate spent the whole phase flagging 34 correct citations as defects — the bug report reported
+for containing the bug.
+
+> ★★★ **IF THE PEOPLE WHO SPENT A NIGHT HUNTING THIS EXACT BUG STILL SHIPPED ONE, THEN "BE MORE
+> CAREFUL" WAS NEVER THE REMEDY.** Diligence does not scale, does not persist, and does not survive
+> the people who had it. Only the gate does. That is the entire argument of this section, and it
+> was proved on its own author.
+
+A COMMENT CANNOT FAIL. Nothing you write in prose — including every line of this document —
+enforces anything. The exclusion is now code, and it is asserted in both directions: a dead command
+inside `docs/design/**` is ignored; a dead command in any other doc is still caught.
+
+Everything below is an instance of this.
+
+### 13.1 The two new gates (both proven RED before being trusted)
+
+**Per-leaf plane rule (Rule 3)** — `packages/cli/scripts/lib/plane-rules.ts`, wired into
+`check-command-planes.ts`, pinned by `src/config/__tests__/plane-leaf-rule.test.ts`.
+
+§4.9 predicted the hazard and §4.10 said no gate would ask the question for you. Bug #51 then
+happened exactly as written: `repo admin archive {list,restore,purge}` moved out of `config`,
+inherited `repo`'s machine default, became `proxyCapable`, and a proxied `archive purge` would
+have permanently deleted the PROXY HOST's archived records instead of the caller's. The domain
+gate cannot see it (the `repo` domain really does reach machines; it has dozens of other machine
+leaves), and there was no explicit entry to go stale.
+
+The rule: **a leaf claiming plane `machine` must be registered by a module that can actually
+reach a machine.** Commander does not record where a leaf was registered, so the gate patches
+`Command.prototype.command`/`.action` before importing the CLI and keeps the innermost stack
+frame under `src/`. That frame is the module where the leaf's action handler is written, which
+is exactly the module whose imports decide what the leaf can touch. 165 leaves, zero
+unattributable — and **an unattributable leaf is a hard failure, not a skip**, because a leaf
+the rule cannot judge is the leaf #51 hid in.
+
+Verified by reconstructing #51 (deleting its plane entry): the gate names all three archive
+leaves, names `commands/repo-admin.ts`, and exits 1. The old gate is green in that same state.
+
+**Stale policy globs** — `packages/shared/src/policy/stale-globs.ts`, enforced at the executor
+in `services/serve/policy.ts`, pinned by `policy/__tests__/stale-globs.test.ts` and
+`serve/__tests__/policy-stale-deny.test.ts`.
+
+§4.11 called the deny glob the only classification that fails OPEN. That is now demonstrated
+against the real evaluator rather than asserted: a document reading
+`{ allow: ['repo *'], deny: ['repo takeover'] }` refuses `repo takeover` before P4 and
+**permits `repo promote` after it** — the same operation, the organization's rule silently dead.
+`takeover` -> `promote` is this phase's own rename (§5.4), so that document is not hypothetical.
+
+`readPolicyDocument` already refused a MALFORMED document, and its comment gave the reason:
+*"quietly ignoring them would be the worst possible failure, since it would look like the rules
+were in force."* A stale deny is that failure exactly, one level subtler — well-formed, parsing,
+and not in force. It is now refused on the same grounds, naming the glob and saying a rename is
+the likely cause, so the author re-keys rather than deletes.
+
+**Deliberate asymmetry:** a stale DENY is fatal; a stale ALLOW is not. An allow glob matching
+nothing already fails CLOSED (the command is refused, a user reports it). Making it fatal would
+convert a safe, self-announcing condition into a total executor outage. The asymmetry is pinned
+in a test, not a comment.
+
+### 13.2 Four validators that were wrong, and the shape they share
+
+| Validator | Was | Consequence |
+|---|---|---|
+| `EXCLUDED_TOP_LEVEL` (`command-tree-lib.ts`) | 5 of 6 entries named commands that do not exist (`login`, `logout`, `trace`, `cancel`, `retry`) | An entry here is invisible to the plane gate, MCP coverage, console coverage AND the docs checks. Add a top-level `cancel` tomorrow and it is silently exempt from all of them. Pruned to `run`; every remaining entry is now asserted to be a live command. |
+| `scripts/check-cli-docs.ts` | hand-copied that same list, and registered every name as a VALID arg-accepting command | The gate whose job is catching stale docs would have BLESSED `rdc login --whatever`. Fixed by IMPORTING the list, so divergence is impossible rather than merely corrected. |
+| `scripts/check-cli-docs.ts` (extractor + globs) | markdown-only, non-recursive, and blind to a quote before `rdc` | `.ci/tutorials/` holds ~14 EXECUTABLE scripts making 337 `rdc` calls. They were in no glob, and even once globbed the scanner read no `.sh` line and no `run_cmd "rdc …"` wrapper. Adding the glob ALONE would have been a false fix: 337 calls "covered" by a scanner reading none of them. Fixed all three; 174 real violations surfaced and were fixed. |
+| `scripts/check-cli-docs.ts` (`--fix` RENAMES) | pointed `machine status` -> `machine query`, the OPPOSITE of this phase's rename | `--fix` would have rewritten CORRECT docs into broken ones. The repair tool would have been the thing introducing the staleness. Re-keyed, and the script now hard-fails if any RENAMES target is not a live command. |
+| `positional-cli-detector.ts` (+ its 2 ESLint copies) | its placeholder pass ran over EVERY command path | Its own docstring always said "used for PARENT commands"; only the code said "all". Harmless until P4 gave leaves positional refs — at which point it flagged `rdc datastore create <name>`, the CORRECT form, and told the author the command "accepts zero positional arguments", which is false. It forbade the grammar the phase is built on. Scoped to parents-with-no-positional; pinned by `.ci/scripts/test/gates/test-positional-detector.sh`, proven red on the old logic. |
+
+**The shape they share, and it is the phase's thesis one level up:** a validator's blind spot is
+indistinguishable from a passing check. Three of these were green because they were not looking;
+the fourth was red because it was looking at the wrong thing. Coverage of a file is not coverage
+of its contents, and a rule that has only ever been observed to pass is not a control.
+
+### 13.3 MCP
+
+The coverage check iterated `COMMAND_REGISTRY`, which declares only TOP-LEVEL domains, so every
+leaf under an undeclared domain was **unchecked, not merely ungrouped** — which is how `serve`
+reached main carrying no command metadata of any kind. Replaced with a real Commander leaf-walk
+(the parked `mcp-coverage-gate.patch`), which immediately surfaced **32 unclassified leaves**.
+All 32 now carry `mcp` XOR `mcpExcludeReason`. The registry gained its 4 missing domains
+(`cluster`, `credits`, `job`, `serve`) and a both-ways assertion that it names every top-level
+command and only real ones.
+
+**And the argv gate (§4.10's missing row).** MCP tests asserted the argv a tool BUILDS and never
+that the CLI ACCEPTS it, which is why `term_exec` kept emitting `term connect -m … -r …` after
+those flags were deleted while the whole suite stayed green. `mcp/__tests__/argv-acceptance.test.ts`
+now populates every field of every tool's schema, builds the argv, and resolves it against the
+REAL Commander tree: the path must exist, every flag must be registered, positionals must fit.
+Proven red by reintroducing term_exec's disease (`unknown flag "-m"`). `repoArg` is likewise
+asserted to name a field that exists in the tool's schema — one that does not makes the
+grand-repo guard read `undefined` and scope nothing, on the very tool whose annotation exists
+because it touches a repo.
+
+### 13.3a An inference is not a disposition: five leaves shipped against an explicit [P0-DECIDED] ruling
+
+The tree-walk gate surfaced 32 unclassified leaves, and they were classified by INFERRING from
+the posture of the surrounding file rather than by reading §5. Fourteen of the inferences happened
+to match §5. Five contradicted it, and one was needlessly stricter than it.
+
+| Leaf | §5 says | What was shipped |
+|---|---|---|
+| `repo sync upload` / `download` / `status` | **MCP: exclude (all three)** — "Requires local filesystem paths on the MCP host." `[P0-DECIDED]` | all three exposed as MCP TOOLS |
+| `repo admin archive list` / `restore` | **MCP: exclude (group)** — "Config archive bookkeeping." | both exposed as MCP TOOLS |
+| `config prune` | **mcp(write, idempotent; excludeOptions: purge-archived)** | excluded entirely |
+
+**The sync case is the instructive one, because the spec does not merely overrule the inference —
+it refutes its premise.** The argument for exposing sync was: "client-side transfer is fine over
+MCP, because MCP runs locally as the operator." §5 denies exactly that. **The MCP host is not
+necessarily the caller.** The paths belong to the caller's filesystem; the MCP server need not be
+sitting on it. The reasoning was plausible, confident, and wrong, and it would have handed an agent
+a file-transfer primitive pointed at the wrong disk.
+
+**The fourteen that happened to be right are not a defence.** They were reached by the same method
+as the five that were wrong. Had §5 ruled differently on `machine setup` or `config audit tail`,
+those would have shipped wrong too. The method did not look; the outcome was luck.
+
+> **AN UNMAPPED LEAF IS AN OPEN QUESTION, NOT A DEFAULT.** Every silent-inheritance defect in this
+> phase — #51's plane, #42's zero-valued struct fields, the guardrail that goes stale in silence,
+> and this — is something taking a default that nobody chose. When the spec is silent the answer is
+> "ask", not "do what the neighbours do". And when the spec is NOT silent, read it.
+
+All six corrected to §5, verified against `buildAllTools(cli)` (the thing that actually builds what
+an agent sees) rather than against the metadata that had just been written — with `repo up` and
+`machine status` as negative controls, because a check that only ever confirms exclusions cannot
+tell you it is working.
+
+### 13.3a-ii A declaration that does nothing: the MCP tool factory could not see an actionable parent
+
+The #49 probe came back green and the flip was authorized: `repo replicate`, `replicate status`,
+`replicate remove` become MCP tools (§5.4). The metadata was written, `tsc` passed, and the
+mcp-coverage gate was satisfied.
+
+**And `repo replicate` was not a tool.**
+
+`walkCommandTree` (tool-factory.ts) recursed into any command with subcommands and NEVER EMITTED
+THE PARENT ITSELF. So an ACTIONABLE PARENT — a command with subcommands AND its own action
+handler — could never become an MCP tool, whatever COMMAND_METADATA said. There is exactly one
+such command in the tree, and it is exactly the one the spec authorizes: `repo replicate <ref>`
+keeps its bare create form alongside `replicate status|remove|refresh`.
+
+**Every signal said the flip had worked.** The `mcp` block existed. The coverage gate (which also
+walked leaves only) was satisfied by its presence. `tsc` was clean. The tool count moved, because
+five OTHER leaves were being excluded in the same edit. Nothing anywhere reported that the
+declaration was inert — and the operator would have been told `repo replicate` was exposed to
+agents when it was not.
+
+It was caught only because the verification asked the REAL ORACLE: not "does the metadata say
+tool?" but `buildAllTools(cli)` — the function that actually builds what an agent sees — with
+negative controls (`repo up`, `machine status` must still be tools, so a check that merely refuses
+everything cannot pass). ASK THE THING THAT DECIDES, AND PROVE IT CAN STILL SAY YES.
+
+Both walkers now treat "runnable" (leaf OR has an action handler) rather than "leaf" as the unit,
+so an actionable parent must be classified and can be built.
+
+### 13.3b The hand-copy sweep: if two places must agree and neither imports the other, they already disagree
+
+An operator rule, applied to the whole contract surface after `check-cli-docs.ts` was found
+re-listing `EXCLUDED_TOP_LEVEL` by hand. It paid out twice more.
+
+**`PROXY_EXCLUSIONS` had no stale-key gate, and it is the table whose entire job is to stop a
+command being shipped to a remote executor.** `proxyCapable` is
+`plane === 'machine' && !interactive && !(pathKey in PROXY_EXCLUSIONS)`. A key that goes stale
+through a rename therefore does not fail loudly. The lookup simply misses, the exclusion STOPS
+EXCLUDING, and the command silently becomes proxyCapable.
+
+Concretely: `machine scan-keys` is excluded because it runs ssh-keyscan from the CALLER's network
+position and stores the result in the CALLER's config. Rename it and forget this table, and a
+remote executor starts scanning from its own network and keeping the answer, with nothing anywhere
+saying so. That is bug #51's failure mode occurring INSIDE the mechanism built to prevent #51.
+Its sibling `COMMAND_PLANES` has had this protection all along (`plane-coverage.test.ts` reds on a
+stale entry); the proxy table did not. All seven keys were live when the gate was added, by luck
+rather than by control. The generator now hard-fails on a stale key in either exclusion table,
+proven red by renaming one.
+
+**The positional-checker's exemption lists were hand-copied FOUR times, and every entry was dead.**
+`scripts/lib/positional-cli-detector.ts`, both ESLint rules, and a fourth paste in
+`eslint.config.js` each carried `EXEMPT_COMMAND_PREFIXES` = `rdc auth`, `audit`, `bridge`,
+`organization`, `permission`, `protocol`, `queue`, `region`, `repository`, `team`, `user`, `ceph`
+— all twelve deleted with the cloud adapter — plus `FREEFORM_ARG_COMMAND_PATHS` naming the removed
+`agent` noun and three `mcp` leaves that no longer exist. A blanket prefix exemption for a command
+that does not exist is not inert: it is a fail-open that arms itself the day someone reuses the
+name. All four now import `eslint-rules/lib/cli-exempt-lists.js` (plain ESM, because an ESLint rule
+cannot import a `.ts` module — which is exactly why the copies existed). The prefix list is now
+empty, and that is the correct value.
+
+### 13.3c A diff-based delta cannot see a string that became wrong without being edited
+
+The CLI i18n delta was computed as (keys added since HEAD) + (keys whose English VALUE CHANGED
+since HEAD). That is a correct TRANSLATION delta and a dangerously incomplete CORRECTNESS one.
+
+Eighteen English strings name a flag the reshape DELETED — `--parent` ten times (the guard messages
+the CLI prints to an AI agent, telling it to pass a flag that now fails with "unknown option
+'--parent'", because `repo fork --parent` became a positional), `--repository` three times, plus
+`--json` and `--ref`. **Their English is byte-identical to HEAD.** The reshape invalidated them by
+deleting the flag they NAME, not by touching the string, so no diff of any kind can see them — and
+their existing translations, in all twelve locales, were being preserved as correct.
+
+Only a SEMANTIC check sees this: `i18n/no-undefined-cli-flags` resolves every `--flag` in every
+locale string against the live command tree. Run it directly on the file; do not infer its verdict
+from an aggregate lint summary (that mistake is how the strings were reported clean in the first
+place).
+
+**The rule this yields, and it generalises past i18n:** when a rename removes a symbol, every
+string that NAMES the symbol is invalidated whether or not it was edited. Diffing finds what
+changed. It cannot find what CHANGED MEANING. Those need a check that resolves the reference.
+
+### 13.4 Declared debt
+
+1. **`validate-docs-cli-usage` is SANCTIONED-RED at the P4 gate.** 309 violations remain under
+   `packages/www/src/content/docs/**`. Operator ruling: www content is rewritten wholesale in
+   P7, and editing 60 English files plus 772 locale files twice is waste. Precedent: the P3 i18n
+   deferral. Everything else the validator covers is at zero.
+2. **CLI i18n: 225 keys need translation, PLUS 18 English strings need repair** (see §13.3c — they
+   name flags the reshape deleted, and no diff can see them). The 225 breaks down as (185 missing in all 12 locales, 40 whose English
+   was reworded so the existing translation is present but stale). English is FINAL and has zero
+   i18n lint errors. The delta is exact; the translation itself is dispatched separately, because
+   the model policy reserves naturalization for Sonnet/kimi and the operator's `i18n_pipeline`
+   has no `cli` surface (a known gap).
+3. **OPERATOR-VISIBLE: every policy document written before P4 will now HARD-FAIL AT LOAD until
+   it is re-keyed.** That is the intended behavior — refusing loudly beats permitting silently, and
+   §13.1 shows what "permitting silently" actually costs — but it is a real consequence of this
+   phase and it will look like a regression to whoever hits it first. The refusal names the offending
+   glob and says a rename is the likely cause, precisely so the author RE-KEYS the rule rather than
+   deleting it. Deleting it would complete the downgrade the rename started.
+4. **`repo replicate` / `repo canary` remain MCP-excluded.** §5.4 wants them exposed; the flip is
+   held until bug #49's live verdict is in. We do not advertise a command to an AI agent while
+   its data path is unproven.
+5. **★ THE RESHAPED CLI HAS NO PATH TO ADOPT EXISTING INFRASTRUCTURE (#68, P5 design item).**
+   `datastore list <machine>` returns an EMPTY ARRAY against a machine whose renet registry holds
+   four datastores. The CLI treats its own config as the sole source of truth and never asks the
+   machine what is actually there. **An operator who loses their config cannot recover a live
+   deployment.** `config reconcile` rebuilds state from machines, but there is no verb that
+   ADOPTS resources the config has never heard of. The datastore-centric model made the machine
+   the authority on storage; the CLI has not caught up.
+6. **The CLI told users to run commands that do not exist.** Not docs: runtime strings. After a
+   successful `repo delete` it printed *"To remove: rdc config repository remove --name X"*, a
+   command the reshape deleted; `config prune`'s help named `rdc config repository purge-archived`;
+   `term connect`'s description advertised `--container` actions it no longer has; `repo fork`'s
+   description taught the retired `--parent`/`-m` form. All rewritten. Worth remembering that no
+   gate catches a command name embedded in a sentence — the two stale KEYS
+   (`commands.repo.mount`, `commands.repo.unmount`) were caught mechanically; these four were
+   found by a human reading the strings.
+
+### 13.4b A green vitest does not prove the package compiles (a REPORTING hole, not a CI one)
+
+Vitest resolves SOURCE, not `dist`. Invalid test fixtures in this wave passed the entire
+`packages/shared` vitest run and were caught only when the package was COMPILED — the type error
+was real, and the suite could not see it, because running a test never type-checks the file.
+
+**Stated precisely, because the tempting conclusion is wrong.** CI already catches this:
+`check:types` runs `tsc -b packages/shared`, shared's tsconfig includes `src/**/*.ts` (tests
+included), and `check:types` is in `npm run ci`. There is no missing gate. The hole is in what
+AGENTS REPORT: several waves this phase, this one included, declared "all green" on a vitest run
+alone, which cannot fail for a type error and therefore cannot be evidence of one.
+
+The rule is about the claim, not the pipeline: **tsc, build and vitest each answer a different
+question, and none of them is a proxy for another.** A green suite is evidence the code behaves;
+it is not evidence the code compiles. Say which check you ran.
+
+### 13.4c The placeholder gate: nothing checked what a translation INTERPOLATES
+
+`cross-language-consistency` checks that a KEY EXISTS in every locale. Nothing checked that a
+locale's `{{placeholders}}` match English's. So a translation could DROP one — or INVENT one that
+never interpolates and renders to the user as the literal text `{{regions}}` — and every gate
+stayed green. A missing key is loud. A mangled interpolation is silent.
+
+It had already happened: `errors.remoteNotFound` in pt, it and ko dropped `{{clusters}}`, so the
+error whose entire job is to LIST THE VALID NAMES never listed the clusters, in exactly the case
+where the name you typed was meant to be one. Byte-identical to HEAD, never in any delta: §13.3c's
+disease, one layer deeper — not a stale VALUE but a stale STRUCTURE.
+
+`scripts/check-i18n-placeholders.ts` (gate: `check:ci-i18n-placeholders`) compares placeholder SETS
+per key, both directions, across every locale. Written BEFORE the fix so the red was real: it found
+exactly those three and nothing else across 22,056 comparisons. **It then caught its own author** —
+two of the English repairs in §13.4 had themselves dropped a `{{machine}}`, which would have
+committed the very bug being fixed. That is the argument for gates over habits, in one line.
+
+### 13.4c-ii "Present" is not "translated": the fallback satisfies the gate
+
+A missing locale key is filled by the sync/regen with THE ENGLISH TEXT, so the key is PRESENT.
+Every check we owned was then satisfied by that fallback:
+
+| Check | Asks | Verdict on an English-filled key |
+|---|---|---|
+| `cross-language-consistency` | is the KEY present? | green |
+| `check-i18n-placeholders` | do the PLACEHOLDERS match? | green — identical text has identical placeholders |
+| the translation delta | is the key NEW or REWORDED? | blind — it is neither |
+
+**★ AN ENGLISH-FILLED PLACEHOLDER IS INDISTINGUISHABLE FROM A TRANSLATION, TO EVERY GATE WE OWN.**
+Four keys shipped English in every locale, and one of them is `commands.repo.promote.confirm` —
+**the confirmation prompt for promoting a fork into production.** Users in twelve languages were
+asked to confirm a destructive production cutover in English.
+
+This is §13.3c's rule from the other side. A diff cannot see a string that became wrong without
+being edited; a PRESENCE check cannot see a string that was never translated at all. Both measure
+a proxy (changed / present) for the property that matters (correct / translated).
+
+`scripts/check-i18n-untranslated.ts` (gate: `check:ci-i18n-untranslated`) fails a locale value that
+is byte-identical to English above a length threshold. ★ The threshold was MEASURED, not guessed:
+bucketing every identical value by length showed the shortest real defect at 38 characters
+(`repo.promote.revertHint`) and every legitimate one (`OK`, `ID`, product names) below 30. A
+threshold of 61 — the "obviously long" cutoff — would have MISSED a real defect. The allowlist
+carries a reason per entry and is itself gated against the live key set, because an allowlist that
+outlives its keys is the fail-open this repo has now found five times over (§13.3b).
+
+### 13.4c-iii The flag check asked whether a flag exists ANYWHERE, not whether it is valid HERE
+
+`i18n/no-undefined-cli-flags` builds ONE GLOBAL SET of every flag on every command and asks "does
+this flag exist?" So `rdc repo secret get --name {{repository}} --key {{key}}` PASSED — `--name`
+exists, just not on that command. And nothing at all validated the SUBCOMMAND PATH inside a locale
+value, so `rdc auth login` (the `auth` noun was deleted with the cloud adapter), `rdc config machine
+add`, `rdc repo takeover`, `rdc machine query` and `rdc config set --key` all shipped as
+instructions the CLI prints to users.
+
+**25 such examples, across 23 keys, in every language.** `errors.precondition.next.options.confirm.run`
+is the sharpest: it is the NEXT-STEP HINT after a precondition failure, so when something had
+already gone wrong the CLI handed the user a command that fails too.
+
+The fix reuses `validateInvocation` — the per-command resolver `check-cli-docs` already had — and
+points it at the locale VALUES. ★ CHECKING THAT A TOKEN EXISTS SOMEWHERE IS NOT CHECKING THAT IT IS
+VALID WHERE IT IS WRITTEN. That is `term_exec`'s disease (§13.3), stated for flags instead of argv.
+
+### 13.4c-iv A locale can invent product behavior, and nothing can diff prose
+
+Recorded as a known limitation rather than a gate. A pass-2 translator found that Turkish's
+`help.keyConcepts` was not merely untranslated: it contained **a bullet that does not exist in the
+English source at all** ("Containers must bind to SERVICE_IP…") and was missing several that do.
+The translation said something the product never said.
+
+That is content drift in the opposite direction from a dropped placeholder — a locale INVENTING
+behavior. Placeholders and flags can be checked mechanically because they are tokens; prose cannot.
+The i18n surface can therefore assert things about the product that no gate will ever contradict.
+P7 review item.
+
+### 13.4c-v Command parity: a command name is never translated
+
+The sibling of placeholder parity, and the gate that replaced a worthless piece of bookkeeping.
+
+Asked "which locale strings are stale?", the obvious method is to diff the English keys you edited
+against the keys you sent to translators. **That answer is worthless.** It tells you what went
+through your process; it cannot tell you what is wrong on a user's screen. Run against this tree it
+reported 239 uncovered keys, nearly all of which were fine (earlier waves had translated them
+directly), while MISSING keys that were genuinely broken.
+
+The semantic question is answerable, because of one invariant: **a command name is never
+translated.** `repo up` is `repo up` in every language, and so is `--name`. So for any key, the
+command paths and flags a LOCALE names must be a SUBSET of what ENGLISH names.
+
+- Naming FEWER is a translator's stylistic choice (mentioning a command once where English mentions
+  it twice). Tolerated.
+- Naming something ELSE is staleness or invention. Always a bug.
+
+★ Subset, not equality — and that distinction is what makes it usable. An ABSOLUTE check on a
+locale is hopeless: a locale value is prose with commands embedded, and the prose is translated, so
+`rdc repo sync en su lugar:` puts a Spanish preposition in command position. The first attempt
+produced ten "defects" that were all Spanish, German and Arabic function words. No list of English
+stopwords fixes that, and no one should maintain a list of twelve languages' stopwords. Under the
+parity rule the translated prose simply ends the path, identically in every language, and vanishes
+from the comparison.
+
+It found 29 keys — including several the diff-based method could not see: keys pass-1 had
+translated BEFORE English changed again, and keys that were never in any delta at all.
+
+### 13.4c-v-b A false-positive filter can blind a gate to the very case it exists to catch
+
+The command-parity gate had to survive twelve languages of prose. `rdc para usar la versión
+anterior` puts a Spanish preposition in command position, so the rule became: ignore any invocation
+whose head token is not a LIVE top-level command.
+
+★ That rule ignores `rdc auth login`.
+
+`auth` WAS a live top-level command until the cloud adapter was deleted. It is the single worst
+string in the catalogue — the CLI telling a user, in twelve languages, to run a noun that no longer
+exists — and the filter written to keep the gate quiet made it *silent on exactly that*. A gate
+tuned not to cry wolf had been tuned into not seeing the wolf.
+
+**The fix is a discriminator, not a bigger stoplist.** Record the unresolved head, and let ENGLISH
+decide: if English names a REAL command for that key and the locale's head names nothing, the locale
+is stale — because prose does not REPLACE a command, but a dead noun does. If English names no
+command either, it is prose on both sides and ignored.
+
+Verified in both directions, which is the only way this can be trusted: `rdc auth login` is now
+flagged in all twelve locales, and the three prose false positives it was built to suppress stay
+green.
+
+> ★ When you narrow a check to silence false alarms, ask what TRUE alarm the narrowing also
+> silences. An exclusion written against noise is still an exclusion, and it fails open exactly like
+> every other one in this document (§13.3b).
+
+### 13.4c-vi A half-applied fix is a new blind spot wearing the old fix's green
+
+The docs scanner matched `rdc` only when preceded by whitespace, a backtick or a paren, so
+`run_cmd "rdc ..."` — how most of `.ci/tutorials` is written — was invisible. The MATCH class was
+widened to accept a quote. **The STRIP that removes the leading delimiter was not.**
+
+So a quoted invocation was matched, kept its leading quote, failed `startsWith('rdc')`, and was
+SILENTLY DISCARDED. The scanner then reported ZERO for `.ci/tutorials` and ZERO for the English
+locale, and that zero was reported upward as evidence.
+
+★★ THE SCANNER REPORTED ZERO AND HAD LOOKED AT NOTHING. It is the same shape as the crashed lint
+run that "found 1 error", and the replica that comes up Ready and serves nothing. Behind it sat four
+more dead commands in English (`rdc config cert-cache pull`, `rdc config infra set|push`, `rdc config
+repository restore-archived`) — every one inside a single-quoted example, every one invisible.
+
+> ★ A HALF-APPLIED FIX IS NOT A PARTIAL IMPROVEMENT. It is a fresh blind spot, and it is wearing the
+> green of the fix it half-applied. When a tool goes quiet somewhere it used to be noisy, that is not
+> success — that is the first thing to explain.
+
+### 13.4d An aggregate hides the thing that moved
+
+Three separate near-misses in this wave shared one shape, and it is worth stating as a rule rather
+than as three anecdotes.
+
+- **The lint count collapsed from 2379 to 1.** It looked like a triumph. ESLint had CRASHED. A
+  detector fix cannot delete 2244 cross-language errors, so the number was read as a question and
+  the RAW OUTPUT was opened. ★ An error count that COLLAPSES is as suspicious as one that rises —
+  and more dangerous, because nobody audits a victory.
+- **"English has zero i18n errors"** rested on a grep of AGGREGATE lint output. English had 22.
+  Running ESLint DIRECTLY ON THE FILE gave the truth.
+- **A test total could not be reconciled** because only the SUM had ever been recorded. The answer
+  came from an A/B run diffing PER FILE.
+
+> ★ **A TOTAL IS NOT A RECONCILABLE ARTIFACT; A BREAKDOWN IS.** An aggregate answers "how much",
+> which is never the question. The question is always "which one moved", and a sum has thrown that
+> away before you read it. Snapshot the breakdown. Read the raw output. And when a number improves,
+> ask why with the same suspicion you would give a number that got worse.
+
+This is the same failure as trusting a checker that cannot fail for the right reason, one level up:
+the aggregate IS a checker, and its blind spot is indistinguishable from a passing check.
+
+### 13.4e The teardown was tested in both directions, and the product now refuses loudly
+
+Worth recording because it is the doctrine landing as SHIPPED BEHAVIOR rather than as review
+standard. The #49 fix adds a LUKS close on the discard path. w3 tested its ABSENCE as well as its
+presence: discard WITHOUT the close produces an HONEST REFUSAL — *"failed to unmount thin overlay
+(holders still present) ... target is busy"* — rather than a silent success.
+
+So the close is genuinely necessary (its absence is observable), and the failure mode of forgetting
+it is a REFUSAL, not a quiet corruption. That is the same shape as `datastore.detach_residue`: the
+software declining to claim a success it cannot substantiate. A fix validated only in the direction
+where it works has not been validated.
+
+### 13.5 The doc gate
+
+`docs/design/06-cli-reshape.md` §1 is no longer a target tree; it is a transcript, and
+`scripts/check-design-tree.ts` checks it against the shipped CLI **in both directions** — no
+phantom commands, no omitted ones. It found four real omissions the moment it was written
+(`machine infra *` had been unlisted for the whole phase). A design doc that describes a tree the
+code no longer has is worse than no doc: the next reader trusts it, and all five path-keyed
+classification systems are keyed by the exact command path it gets wrong.

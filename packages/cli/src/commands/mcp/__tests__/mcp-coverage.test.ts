@@ -53,50 +53,72 @@ function getMcpPrefixes(paths: Set<string>): Set<string> {
   return prefixes;
 }
 
+/**
+ * Walk the REAL Commander tree to leaf command paths (same skip rules as
+ * tool-factory: no help, no hidden). The registry is NOT the ground truth for
+ * coverage — it only declares top-level domains, so registry-keyed checks let
+ * unregistered leaves drift out of MCP silently.
+ */
+function walkLeafPaths(): string[] {
+  const leaves: string[] = [];
+  function walk(cmd: (typeof cli.commands)[number], prefix: string): void {
+    const path = prefix ? `${prefix} ${cmd.name()}` : cmd.name();
+    const visible = cmd.commands.filter(
+      (sub) =>
+        sub.name() !== 'help' &&
+        !(sub as (typeof cli.commands)[number] & { _hidden?: boolean })._hidden
+    );
+    // ★ An ACTIONABLE PARENT is runnable and therefore must be classified too. `repo replicate
+    // <ref>` has subcommands AND its own action (spec/03 §5.4 keeps its bare create form). A
+    // leaves-only walk cannot see it, which is how it carried an `mcp` block that produced no
+    // tool at all: the gate was satisfied by a declaration that did nothing.
+    const runnable =
+      visible.length === 0 ||
+      typeof (cmd as (typeof cli.commands)[number] & { _actionHandler?: unknown })
+        ._actionHandler === 'function';
+    if (runnable) leaves.push(path);
+    for (const sub of visible) walk(sub, path);
+  }
+  for (const cmd of cli.commands) {
+    if (cmd.name() === 'help') continue;
+    if ((cmd as (typeof cli.commands)[number] & { _hidden?: boolean })._hidden) continue;
+    walk(cmd, '');
+  }
+  return leaves;
+}
+
+/** A path is excluded if it or ANY ancestor prefix carries mcpExcludeReason. */
+function isExcluded(path: string): boolean {
+  const parts = path.split(' ');
+  for (let i = parts.length; i >= 1; i--) {
+    if (parts.slice(0, i).join(' ') in MCP_EXCLUDED) return true;
+  }
+  return false;
+}
+
 describe('MCP tool coverage', () => {
   const mcpPaths = getMcpCommandPaths();
   const mcpPrefixes = getMcpPrefixes(mcpPaths);
-  const nonExperimental = COMMAND_REGISTRY.filter((c) => !c.experimental);
+  const experimentalPrefixes = new Set(
+    COMMAND_REGISTRY.filter((c) => c.experimental).map((c) => c.name)
+  );
 
-  it('every non-experimental command is either in MCP tools or explicitly excluded', () => {
-    const missing: string[] = [];
-
-    for (const cmd of nonExperimental) {
-      const hasMcpTool = mcpPrefixes.has(cmd.name);
-      const isExcluded = cmd.name in MCP_EXCLUDED;
-
-      if (!hasMcpTool && !isExcluded) {
-        missing.push(cmd.name);
-      }
-    }
-
-    if (missing.length > 0) {
-      const hint = missing
-        .map(
-          (name) => `  - "${name}": add MCP metadata in command-metadata.ts OR add mcpExcludeReason`
-        )
-        .join('\n');
-      expect.fail(`${missing.length} non-experimental command(s) missing from MCP tools:\n${hint}`);
-    }
-  });
-
-  it('every non-experimental subcommand is covered by MCP or explicitly excluded', () => {
-    const missing = nonExperimental.flatMap((cmd) => {
-      if (!cmd.subcommands || cmd.name in MCP_EXCLUDED) return [];
-      return Object.entries(cmd.subcommands)
-        .filter(([, subDef]) => !subDef.experimental)
-        .map(([subName]) => `${cmd.name} ${subName}`)
-        .filter((fullPath) => !mcpPaths.has(fullPath) && !(fullPath in MCP_EXCLUDED));
+  it('every visible leaf command has MCP metadata or an explicit exclusion (tree-walk)', () => {
+    const missing = walkLeafPaths().filter((path) => {
+      if (experimentalPrefixes.has(path.split(' ')[0])) return false;
+      if (isExcluded(path)) return false;
+      const meta = COMMAND_METADATA[path];
+      return !meta?.mcp;
     });
 
     if (missing.length > 0) {
       const hint = missing
         .map(
-          (name) => `  - "${name}": add MCP metadata in command-metadata.ts OR add mcpExcludeReason`
+          (path) => `  - "${path}": add MCP metadata in command-metadata.ts OR add mcpExcludeReason`
         )
         .join('\n');
       expect.fail(
-        `${missing.length} non-experimental subcommand(s) missing from MCP tools:\n${hint}`
+        `${missing.length} visible leaf command(s) missing from MCP (drift — new commands must opt in or out):\n${hint}`
       );
     }
   });

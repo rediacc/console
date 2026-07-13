@@ -38,7 +38,7 @@ import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { controlDatastoreMount } from './cluster-kube.js';
 import { resolveExecutionTarget } from './cluster-target.js';
-import { dispatch } from './repo-replicate.js';
+import { dispatch, repoKeySlug } from './repo-replicate.js';
 
 /** Overlay-set label (shared with replicate; kube_delete scopes to it). */
 const REPLICA_LABEL = 'rediacc.io/replica-set';
@@ -67,7 +67,9 @@ export async function releaseUndoSnapshot(
 }
 
 export interface CanaryOptions {
+  /** The repo's config/renet key (`name` or `name:tag`) — the canary's identity. */
   repo: string;
+  /** The repo's cluster, derived from its datastore's backref (spec §2.3). */
   cluster: string;
   /** New engine image the canary Deployment runs (against SHARED live data). */
   image: string;
@@ -81,9 +83,20 @@ export interface CanaryOptions {
   debug?: boolean;
 }
 
-/** The canary set name (and Deployment/Service name) for a stable service. */
-function canarySetName(service: string): string {
-  return `${service}-canary`;
+/**
+ * The canary set name (and Deployment/Service name) for a repo. There is exactly
+ * ONE canary per repo (spec §4.4), so the name is DERIVED from the ref, not
+ * passed in: `--service` chooses which stable Service the canary splits traffic
+ * with, it does not name the canary. For an untagged repo splitting its own
+ * Service this is the same `<repo>-canary` key the old default produced.
+ */
+export function canarySetNameFor(repoKey: string): string {
+  return `${repoKeySlug(repoKey)}-canary`;
+}
+
+/** The repo's managed canary set, or undefined when it has none. */
+export async function getCanaryForRepo(repoKey: string): Promise<CanarySet | undefined> {
+  return getCanary(canarySetNameFor(repoKey));
 }
 
 /**
@@ -99,7 +112,7 @@ export function renderCanaryOverlay(input: {
   weight: number;
   replicas: number;
 }): string {
-  const name = canarySetName(input.service);
+  const name = canarySetNameFor(input.repo);
   return `apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -154,12 +167,12 @@ spec:
  */
 export async function createCanary(options: CanaryOptions): Promise<void> {
   const service = options.service ?? options.repo;
-  const setName = canarySetName(service);
+  const setName = canarySetNameFor(options.repo);
   assertWeight(options.weight);
   if (await getCanary(setName)) {
     throw new Error(
-      `Canary "${setName}" already exists. Change its split with "rdc repo canary weight ` +
-        `--name ${setName} --weight <n>" or remove it first.`
+      `Repository "${options.repo}" already has a canary. Change its split with ` +
+        `"rdc repo canary weight ${options.repo} --weight <n>", or remove it first.`
     );
   }
   const { machineName: control } = await resolveExecutionTarget({ cluster: options.cluster });
@@ -179,7 +192,7 @@ export async function createCanary(options: CanaryOptions): Promise<void> {
   await recordCanary(setName, set);
   outputService.success(
     `Canary "${setName}" live at ${options.weight}% on SHARED data (expand-contract schema ` +
-      `discipline is the app's burden). Flip: "rdc repo canary weight --name ${setName} ` +
+      `discipline is the app's burden). Flip: "rdc repo canary weight ${options.repo} ` +
       `--weight <n>"; undo snapshot: ${undoSnapshot}.`
   );
 }
@@ -190,14 +203,17 @@ export async function createCanary(options: CanaryOptions): Promise<void> {
  * updates the set. The router applies the new split on its refresh tick.
  */
 export async function setCanaryWeight(
-  setName: string,
+  repoKey: string,
   weight: number,
   debug?: boolean
 ): Promise<void> {
   assertWeight(weight);
+  const setName = canarySetNameFor(repoKey);
   const set = await getCanary(setName);
   if (!set) {
-    throw new Error(`Canary "${setName}" not found. See "rdc repo canary status".`);
+    throw new Error(
+      `Repository "${repoKey}" has no canary. See "rdc repo canary status ${repoKey}".`
+    );
   }
   const { machineName: control } = await resolveExecutionTarget({ cluster: set.cluster });
   const undoSnapshot = await releaseUndoSnapshot(set.cluster, control, debug);
@@ -219,10 +235,12 @@ export async function setCanaryWeight(
  * datastores to discard — a canary shares the live data. Undo snapshots are
  * retained (operator policy; prune via "rdc datastore snapshot list/delete").
  */
-export async function removeCanary(setName: string, debug?: boolean): Promise<void> {
+export async function removeCanary(repoKey: string, debug?: boolean): Promise<void> {
+  const setName = canarySetNameFor(repoKey);
   const set = await getCanary(setName);
   if (!set) {
-    throw new Error(`Canary "${setName}" not found. See "rdc repo canary status".`);
+    outputService.success(`Repository "${repoKey}" has no canary; nothing to remove.`);
+    return;
   }
   const { machineName: control } = await resolveExecutionTarget({ cluster: set.cluster });
   try {

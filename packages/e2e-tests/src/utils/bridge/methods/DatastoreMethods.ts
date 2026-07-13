@@ -184,4 +184,18 @@ export class DatastoreMethods {
       snapshot: opts.snapshot,
     });
   }
+
+  /**
+   * Delete a datastore snapshot; --group deletes a cluster's GROUP snapshot
+   * (refuses while it still has live fork clones — discard those first)
+   * (datastore_snapshot_delete).
+   */
+  async datastoreSnapshotDelete(opts: DatastoreSnapshotOptions): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'datastore_snapshot_delete',
+      name: opts.name,
+      group: opts.group,
+      snapshot: opts.snapshot,
+    });
+  }
 }

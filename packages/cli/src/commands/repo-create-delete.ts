@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto';
+import type { Placement } from '@rediacc/shared/config-schema';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import {
@@ -6,15 +7,16 @@ import {
   removePersistedKeys,
   removeSSHConfigEntry,
 } from '../remote/vscode/index.js';
-import { clusterMountRemotePath } from '../services/cluster/cluster-target.js';
+import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { assertAgentRepoCreate } from '../utils/agent-guard.js';
+import { notFound, stateMismatch } from '../utils/cli-exit-error.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
-import { getOutputFormat, handleError } from '../utils/errors.js';
+import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
-import { resolveRepoTarget } from '../utils/repo-target.js';
+import { resolveRepoRef } from '../utils/repo-target.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import { formatStepDuration } from '../utils/timeline.js';
 import { assertMachineExists } from './_validate.js';
@@ -64,141 +66,105 @@ async function renderCreateResult(
   }
 }
 
-/**
- * Handle `repo create --cluster <name>`: a Kubernetes repo is namespace
- * `<repo>` plus its storage in the cluster (design D14). Resolves the cluster's
- * control node and dispatches kube_namespace_create with KUBECONFIG injected
- * (kubeCluster routes through the wave-1 target funnel).
- */
-async function handleRepoCreateCluster(
-  name: string,
-  options: { cluster: string; size: string; debug?: boolean }
-): Promise<void> {
-  // Rollback must only remove the row THIS invocation registered (mirrors the
-  // machine path): a catch-all would delete a pre-existing repo's config row.
-  let registered = false;
-  try {
-    assertAgentRepoCreate(name);
-    const { machineName, kubeCluster } = await resolveRepoTarget({ cluster: options.cluster });
-    const cluster = kubeCluster ?? options.cluster;
-    outputService.info(
-      t('commands.repo.create.clusterResolved', {
-        repository: name,
-        cluster,
-        controlNode: machineName,
-      })
-    );
-    // The per-namespace kube_namespace_create bridge fn was deleted with the
-    // datastore-centric redesign; a k8s repo is now a folder in a cluster
-    // datastore created through the runtime-generic repository_create (the
-    // RepoRuntime detects kube from the datastore descriptor). Final --datastore
-    // porcelain + placement resolution is P4; here we dispatch the real function.
-    const repositoryGuid = randomUUID();
-    const networkId = await configService.allocateNetworkId();
-
-    // Register the cluster repo in config so `repo up/down/list --cluster`
-    // resolve it (finding #12: create dispatched repository_create but never
-    // called addRepository, so `repo up --cluster` failed "not found in
-    // context"). A cluster repo keeps NO home binding (D15: targeting stays
-    // explicit via --cluster); this row only records the repo's identity so the
-    // repo-verb funnel's getRepository lookup succeeds.
-    const existing = await configService.getRepository(name);
-    if (existing) {
-      throw new Error(t('commands.repo.create.alreadyExists', { name }));
-    }
-    const { compositeKey } = await import('../utils/config-schema.js');
-    await configService.addRepository(compositeKey(name, 'latest'), {
-      repositoryGuid,
-      tag: 'latest',
-      credential: generateCredential(),
-      networkId,
-    });
-    registered = true;
-
-    const result = await getExecutor().execute({
-      functionName: 'repository_create',
-      machineName,
-      kubeCluster,
-      params: {
-        repository: name,
-        size: options.size,
-        guid: repositoryGuid,
-        network_id: networkId,
-        start_docker: false,
-        cluster,
-        mount_path: clusterMountRemotePath(cluster),
-      },
-      debug: options.debug,
-    });
-    if (result.success) {
-      outputService.success(
-        t('commands.repo.clusterDone', { verb: 'Created', repository: name, cluster })
-      );
-    } else {
-      await rollbackCreateRepo(name);
-      renderLocalExecutionFailure(result, t('commands.repo.create.failed'));
-    }
-  } catch (error) {
-    if (registered) {
-      await rollbackCreateRepo(name);
-    }
-    handleError(error);
-  }
+/** A resolved named-datastore placement: where the repo's data lives + how to reach it. */
+interface DatastorePlacement {
+  /** The machine that attaches the datastore (the SSH exec target). */
+  machine: string;
+  /** The datastore's cluster backref; set => a kubernetes-world datastore. */
+  kubeCluster?: string;
+  /** Remote mount path of the datastore on its machine. */
+  mountPath: string;
 }
 
-/** Handle the repo create action body. */
-export async function handleRepoCreate(
+/**
+ * Resolve a named datastore to its attach machine and world (spec 03 §5.4 / #38).
+ * A datastore with a cluster backref is the kubernetes DATA datastore a cluster
+ * repo lands on (the one `repo replicate` can fork); without a backref it is a
+ * docker-tiering datastore. Exit 5 if the datastore is unknown, exit 12 if it is
+ * not attached to any machine.
+ */
+async function resolveDatastorePlacement(datastore: string): Promise<DatastorePlacement> {
+  const config = await configService.getCurrent();
+  const ds = config?.resources?.datastores?.[datastore];
+  if (!ds) {
+    throw notFound(t('commands.repo.create.datastoreNotFound', { datastore }));
+  }
+  const attachedTo = config?.state?.datastores?.[datastore]?.attachedTo;
+  if (!attachedTo) {
+    throw stateMismatch(t('commands.repo.create.datastoreNotAttached', { datastore }));
+  }
+  return {
+    machine: attachedTo,
+    ...(ds.cluster !== undefined && { kubeCluster: ds.cluster }),
+    mountPath: namedDatastoreMount(datastore),
+  };
+}
+
+/**
+ * Register the birth record of a new repo, carrying its declared placement
+ * (spec 03 §2.3: the R2-F1 tagged union derived-machine ops resolve through).
+ * Throws if a repo of this name already exists.
+ */
+async function registerNewRepo(
+  name: string,
+  placement: Placement,
+  extra: { sshPrivateKey?: string; sshPublicKey?: string }
+): Promise<{ repositoryGuid: string; networkId: number }> {
+  const existing = await configService.getRepository(name);
+  if (existing) {
+    throw new Error(t('commands.repo.create.alreadyExists', { name }));
+  }
+  const repositoryGuid = randomUUID();
+  const networkId = await configService.allocateNetworkId();
+  const { compositeKey } = await import('../utils/config-schema.js');
+  await configService.addRepository(compositeKey(name, 'latest'), {
+    repositoryGuid,
+    tag: 'latest',
+    credential: generateCredential(),
+    networkId,
+    placement,
+    ...extra,
+  });
+  return { repositoryGuid, networkId };
+}
+
+/** `repo create <name> --machine <m>`: a docker repo on the machine's default datastore. */
+async function handleRepoCreateOnMachine(
   name: string,
   options: {
-    machine?: string;
-    cluster?: string;
-    size: string;
+    machine: string;
+    size?: string;
     noDocker?: boolean;
     debug?: boolean;
     skipRouterRestart?: boolean;
   }
 ): Promise<void> {
-  if (options.cluster) {
-    return handleRepoCreateCluster(name, {
-      cluster: options.cluster,
-      size: options.size,
-      debug: options.debug,
-    });
-  }
-  if (!options.machine) {
-    handleError(new Error(t('errors.cluster.targetRequired')));
-    return;
-  }
-  const machineTarget = options.machine;
-  // Rollback must only ever remove the row THIS invocation registered —
-  // a catch-all rollback would delete a pre-existing repo's config row
-  // (credential included) when create fails with "already exists".
   let registered = false;
   try {
     assertAgentRepoCreate(name);
+    await assertMachineExists(options.machine);
 
-    await assertMachineExists(machineTarget);
-
-    const existing = await configService.getRepository(name);
-    if (existing) {
-      throw new Error(t('commands.repo.create.alreadyExists', { name }));
+    // R2-F12: a repo on a cluster machine needs a datastore, not --machine.
+    const config = await configService.getCurrent();
+    const membership = config?.resources?.machines?.[options.machine]?.cluster;
+    if (membership) {
+      throw new ValidationError(
+        t('commands.repo.create.machineInCluster', {
+          machine: options.machine,
+          cluster: membership.cluster,
+        })
+      );
+    }
+    if (!options.size) {
+      throw new ValidationError(t('commands.repo.create.sizeRequiredDocker'));
     }
 
-    const repositoryGuid = randomUUID();
-    const credential = generateCredential();
-    const networkId = await configService.allocateNetworkId();
     const { privateKey: sshPrivateKey, publicKey: sshPublicKey } = generateSSHKeyPair();
-
-    const { compositeKey } = await import('../utils/config-schema.js');
-    const repoKey = compositeKey(name, 'latest');
-    await configService.addRepository(repoKey, {
-      repositoryGuid,
-      tag: 'latest',
-      credential,
-      networkId,
-      sshPrivateKey,
-      sshPublicKey,
-    });
+    const { repositoryGuid, networkId } = await registerNewRepo(
+      name,
+      { machine: options.machine },
+      { sshPrivateKey, sshPublicKey }
+    );
     registered = true;
 
     outputService.info(
@@ -212,13 +178,13 @@ export async function handleRepoCreate(
       t('commands.repo.create.starting', {
         repository: name,
         size: options.size,
-        machine: machineTarget,
+        machine: options.machine,
       })
     );
 
     const result = await getExecutor().execute({
       functionName: 'repository_create',
-      machineName: machineTarget,
+      machineName: options.machine,
       params: {
         repository: name,
         size: options.size,
@@ -232,11 +198,141 @@ export async function handleRepoCreate(
 
     await renderCreateResult(name, result);
   } catch (error) {
-    if (registered) {
-      await rollbackCreateRepo(name);
-    }
+    if (registered) await rollbackCreateRepo(name);
     handleError(error);
   }
+}
+
+/**
+ * `repo create <name> --datastore <d>`: a repo on a NAMED datastore — docker
+ * tiering (backref unset) or the kubernetes cluster form (backref set). The #38
+ * fix: a cluster repo lands on its DATA datastore, the one `repo replicate` forks.
+ */
+async function handleRepoCreateOnDatastore(
+  name: string,
+  options: {
+    datastore: string;
+    size?: string;
+    noDocker?: boolean;
+    debug?: boolean;
+    skipRouterRestart?: boolean;
+  }
+): Promise<void> {
+  let registered = false;
+  try {
+    assertAgentRepoCreate(name);
+    const placement = await resolveDatastorePlacement(options.datastore);
+    const isK8s = placement.kubeCluster !== undefined;
+
+    if (isK8s && options.size) {
+      throw new ValidationError(t('commands.repo.create.sizeOnK8s'));
+    }
+    if (!isK8s && !options.size) {
+      throw new ValidationError(t('commands.repo.create.sizeRequiredDocker'));
+    }
+
+    const { repositoryGuid, networkId } = await registerNewRepo(
+      name,
+      { datastore: options.datastore },
+      {}
+    );
+    registered = true;
+
+    outputService.info(
+      t('commands.repo.create.registered', {
+        repository: name,
+        guid: repositoryGuid.slice(0, 8),
+        networkId,
+      })
+    );
+    outputService.info(
+      t('commands.repo.create.startingDatastore', {
+        repository: name,
+        datastore: options.datastore,
+        machine: placement.machine,
+      })
+    );
+
+    const result = await getExecutor().execute({
+      functionName: 'repository_create',
+      machineName: placement.machine,
+      ...(placement.kubeCluster !== undefined && { kubeCluster: placement.kubeCluster }),
+      // #74: DISPATCH AGAINST THE DATASTORE WE JUST RECORDED. We resolved this
+      // placement above and then said nothing about it, so renet fell back to the
+      // machine's default docker datastore: the placement written to the config and
+      // the placement sent to the machine were two different things, silently. This
+      // is the executor's vault channel (ExecuteOptions.datastore), NOT a param —
+      // `repository_create` reads its datastore from the machine vault.
+      datastore: placement.mountPath,
+      params: {
+        repository: name,
+        guid: repositoryGuid,
+        network_id: networkId,
+        mount_path: placement.mountPath,
+        // #67: DECLARE the runtime for a cluster-placed repo, exactly as `repo up`
+        // does (the #39 assertion channel: renet honors `runtime` as an assertion and
+        // errors on a disagreement rather than silently falling to the docker arm).
+        //
+        // Without it, this dispatch was incoherent with the validation eight lines
+        // above: the CLI knew the repo was kubernetes-placed, refused `--size` on
+        // exactly that ground, and then sent the DOCKER create — which requires a
+        // size. With --size the CLI refused; without it renet refused. No value of
+        // the flag worked, and `repo create` was unusable on the cluster path.
+        // The declaration is what lets renet size the volumes from the PVCs instead.
+        ...(isK8s ? { runtime: 'kube', cluster: placement.kubeCluster, start_docker: false } : {}),
+        ...(options.size ? { size: options.size } : {}),
+        ...(options.noDocker && !isK8s ? { start_docker: false } : {}),
+      },
+      debug: options.debug,
+      skipRouterRestart: options.skipRouterRestart,
+    });
+
+    await renderCreateResult(name, result);
+  } catch (error) {
+    if (registered) await rollbackCreateRepo(name);
+    handleError(error);
+  }
+}
+
+/**
+ * Handle the repo create action body: the R2-F1 placement union (spec 03 §5.4).
+ * Exactly one of `--machine` (docker, implicit default datastore) or
+ * `--datastore` (named datastore — docker tiering, or the only kubernetes form).
+ */
+export async function handleRepoCreate(
+  name: string,
+  options: {
+    machine?: string;
+    datastore?: string;
+    size?: string;
+    noDocker?: boolean;
+    debug?: boolean;
+    skipRouterRestart?: boolean;
+  }
+): Promise<void> {
+  const hasMachine = !!options.machine;
+  const hasDatastore = !!options.datastore;
+  if (hasMachine === hasDatastore) {
+    // Both, or neither — the same teaching error either way (spec 02 §7).
+    handleError(new ValidationError(t('commands.repo.create.placementRequired')));
+    return;
+  }
+  if (options.machine) {
+    return handleRepoCreateOnMachine(name, {
+      machine: options.machine,
+      size: options.size,
+      noDocker: options.noDocker,
+      debug: options.debug,
+      skipRouterRestart: options.skipRouterRestart,
+    });
+  }
+  return handleRepoCreateOnDatastore(name, {
+    datastore: options.datastore as string,
+    size: options.size,
+    noDocker: options.noDocker,
+    debug: options.debug,
+    skipRouterRestart: options.skipRouterRestart,
+  });
 }
 
 /** Handle post-delete success: cleanup, archiving, timeline, hints. */
@@ -273,54 +369,14 @@ async function handleDeleteSuccess(
   outputService.info(t('commands.repo.delete.cloudBackupHint', { machine: machineName }));
 }
 
-/** Handle `repo delete --cluster <name>`: dispatch kube_namespace_delete on the cluster's control node (see handleRepoCreateCluster). */
-async function handleRepoDeleteCluster(name: string, options: { cluster: string }): Promise<void> {
-  try {
-    // Cluster repos have no local-config entry (D15: explicit targeting, no
-    // stored home binding), but the destructive-command policy gate applies
-    // to them exactly like the Docker path.
-    await assertCommandPolicy(CMD.REPO_DELETE, name);
-    const { machineName, kubeCluster } = await resolveRepoTarget({ cluster: options.cluster });
-    const cluster = kubeCluster ?? options.cluster;
-    outputService.info(
-      t('commands.repo.create.clusterResolved', {
-        repository: name,
-        cluster,
-        controlNode: machineName,
-      })
-    );
-    // kube_namespace_delete was deleted with the redesign; a k8s repo is deleted
-    // through the runtime-generic repository_delete (kube detected from the
-    // datastore descriptor). Final placement porcelain is P4.
-    const result = await getExecutor().execute({
-      functionName: 'repository_delete',
-      machineName,
-      kubeCluster,
-      params: { repository: name, cluster, mount_path: clusterMountRemotePath(cluster) },
-    });
-    if (result.success) {
-      // Unregister the config row that `repo create --cluster` now records
-      // (finding #12), so `repo list` stays consistent. Best-effort: a cluster
-      // repo created before this fix has no row.
-      const key = await configService.getRepositoryKey(name);
-      if (key) await configService.removeRepository(key);
-      outputService.success(
-        t('commands.repo.clusterDone', { verb: 'Deleted', repository: name, cluster })
-      );
-    } else {
-      renderLocalExecutionFailure(result, t('commands.repo.delete.failed'));
-    }
-  } catch (error) {
-    handleError(error);
-  }
-}
-
-/** Handle the repo delete action body. */
+/**
+ * Handle the repo delete action body (spec 03 §5.4): derive the machine (and the
+ * kube arm) from the ref's placement, then resolve the STRICT destructive key so
+ * a bare ambiguous ref fails closed (#495) rather than deleting the wrong repo.
+ */
 async function handleRepoDelete(
-  name: string,
+  ref: string,
   options: {
-    machine?: string;
-    cluster?: string;
     archiveConfig?: boolean;
     yes?: boolean;
     debug?: boolean;
@@ -328,16 +384,10 @@ async function handleRepoDelete(
     dryRun?: boolean;
   }
 ): Promise<void> {
-  if (options.cluster) {
-    return handleRepoDeleteCluster(name, { cluster: options.cluster });
-  }
-  if (!options.machine) {
-    handleError(new Error(t('errors.cluster.targetRequired')));
-    return;
-  }
-  const machineTarget = options.machine;
   try {
-    const { key: target, config: repoConfig } = await configService.resolveDestructiveTarget(name);
+    const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
+    const { key: target, config: repoConfig } =
+      await configService.resolveDestructiveTarget(repoKey);
     await assertCommandPolicy(CMD.REPO_DELETE, target);
 
     await configService.ensureRepositoryNetworkId(target);
@@ -347,7 +397,7 @@ async function handleRepoDelete(
         {
           dryRun: true,
           repository: target,
-          machine: machineTarget,
+          machine: machineName,
           guid: repoConfig.repositoryGuid,
           archiveConfig: !!options.archiveConfig,
         },
@@ -359,7 +409,7 @@ async function handleRepoDelete(
     if (!options.yes) {
       const { askConfirm } = await import('../utils/prompt.js');
       const confirmed = await askConfirm(
-        t('commands.repo.delete.confirm', { repository: target, machine: machineTarget })
+        t('commands.repo.delete.confirm', { repository: target, machine: machineName })
       );
       if (!confirmed) {
         outputService.info(t('status.cancelled'));
@@ -368,12 +418,13 @@ async function handleRepoDelete(
     }
 
     outputService.info(
-      t('commands.repo.delete.starting', { repository: target, machine: machineTarget })
+      t('commands.repo.delete.starting', { repository: target, machine: machineName })
     );
 
     const result = await getExecutor().execute({
       functionName: 'repository_delete',
-      machineName: machineTarget,
+      machineName,
+      ...(kubeCluster !== undefined && { kubeCluster }),
       params: { repository: target },
       debug: options.debug,
       skipRouterRestart: options.skipRouterRestart,
@@ -382,7 +433,7 @@ async function handleRepoDelete(
     if (result.success) {
       await handleDeleteSuccess(
         target,
-        machineTarget,
+        machineName,
         repoConfig,
         !!options.archiveConfig,
         result,
@@ -398,38 +449,34 @@ async function handleRepoDelete(
 
 /** Register `repo create` and `repo delete` subcommands. */
 export function registerRepoCreateDeleteCommands(repo: Command): void {
-  // repo create --name <name>
+  // repo create <name> --machine <m> | --datastore <d>  (placement union, spec §5.4)
   repo
     .command('create')
     .description(t('commands.repo.create.description'))
-    .requiredOption('--name <name>', t('options.name'))
+    .argument('<name>', t('options.name'))
     .option('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--cluster <name>', t('commands.repo.clusterOption'))
-    .requiredOption('--size <size>', t('commands.repo.create.sizeOption'))
+    .option('--datastore <name>', t('commands.repo.create.datastoreOption'))
+    .option('--size <size>', t('commands.repo.create.sizeOption'))
     .option('--no-docker', t('commands.repo.create.noDockerOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (options) => {
-      const name = options.name;
+    .action(async (name: string, options) => {
       await handleRepoCreate(name, options);
     });
 
-  // repo delete --name <name>
+  // repo delete <ref>
   const deleteCmd = repo
     .command('delete')
     .summary(t('commands.repo.delete.descriptionShort'))
     .description(t('commands.repo.delete.description'))
-    .requiredOption('--name <name>', t('options.name'))
-    .option('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--cluster <name>', t('commands.repo.clusterOption'))
+    .argument('<ref>', t('options.repoRef'))
     .option('--archive-config', t('commands.repo.delete.archiveOption'))
     .option('-y, --yes', t('options.yes'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .option('--dry-run', t('options.dryRun'))
-    .action(async (options) => {
-      const name = options.name;
-      await handleRepoDelete(name, options);
+    .action(async (ref: string, options) => {
+      await handleRepoDelete(ref, options);
     });
   deleteCmd.addHelpText('after', t('commands.repo.delete.examples'));
 }

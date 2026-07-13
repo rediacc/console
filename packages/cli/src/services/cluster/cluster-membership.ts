@@ -12,9 +12,9 @@
  * is P4; the command shapes here follow current conventions.
  */
 
-import { randomUUID } from 'node:crypto';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { ClusterConfig, ClusterPool } from '../../types/index.js';
+import { allocateAgentNetworkId } from './cluster-kube.js';
 import { getCluster } from '../config/config-cluster-ops.js';
 import { configService } from '../config/config-resources.js';
 import { auditService } from '../core/audit.js';
@@ -139,20 +139,11 @@ export async function joinCluster(machineName: string, options: JoinClusterOptio
     throw new Error(`Could not read the k3s join token from ${control.name}.`);
   }
 
-  // The adopted machine needs its own (unencrypted) cluster image + k3s data-dir.
-  const net = await configService.allocateNetworkId();
-  await dispatch(
-    'repository_create',
-    machineName,
-    {
-      repository: options.cluster,
-      size: pool.size ?? DEFAULT_NODE_SIZE,
-      guid: randomUUID(),
-      network_id: net,
-      start_docker: false,
-    },
-    { debug: options.debug }
-  );
+  // ★ #25: no per-node repo. An adopted agent's k3s state is a disposable cache;
+  // `renet kube join` creates its own data-dir under the mount path. Only the
+  // networkID (its systemd unit + node interface) is allocated. See
+  // allocateAgentNetworkId in cluster-kube.ts for the full reasoning.
+  const net = await allocateAgentNetworkId();
   await dispatch(
     'kube_join',
     machineName,
@@ -247,6 +238,29 @@ export async function evictCluster(
     { mount_path: controlMount, node_ip: machine.ip },
     { debug: options.debug }
   );
+
+  // ★ #20: the control plane forgetting the Node is only HALF an eviction. The
+  // evicted machine still runs its own k3s agent (systemd unit, kubelet, its
+  // containers) against a cluster that no longer knows it, and it would try to
+  // rejoin on reboot. Uninstall the node-side k3s ON THE EVICTED MACHINE, against
+  // its own cluster image mount. Best-effort: a DEAD node cannot be reached, and
+  // refusing to finish the eviction because the corpse will not answer is exactly
+  // the failure --force exists for. The control-plane half already succeeded, so
+  // the machine is out of the cluster either way.
+  try {
+    await dispatch(
+      'kube_uninstall',
+      machineName,
+      { mount_path: clusterMount(clusterName) },
+      { debug: options.debug }
+    );
+  } catch (err) {
+    outputService.warn(
+      `Node-side k3s uninstall on "${machineName}" failed (continuing): ${err}. ` +
+        `The node is out of the cluster, but it may still run a stale k3s agent; ` +
+        `re-adopting it with "rdc cluster join" needs that cleaned up first.`
+    );
+  }
 
   // Deregister: clear the membership backref.
   await configService.updateMachine(machineName, { cluster: undefined });

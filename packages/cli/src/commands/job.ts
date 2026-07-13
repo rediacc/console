@@ -132,12 +132,12 @@ export function registerJobCommands(program: Command): void {
   job
     .command('status')
     .description(t('commands.job.status.description'))
+    .argument('<job-id>', t('commands.job.idOption'))
     .requiredOption('-m, --machine <name>', t('commands.job.machineOption'))
-    .requiredOption('--id <jobId>', t('commands.job.idOption'))
-    .action(async (options: JobCommandOptions) => {
+    .action(async (jobId: string, options: JobCommandOptions) => {
       try {
         const status = await withJobConnection(options.machine, (conn) =>
-          readJobStatus(conn.lease.sftp, conn.remoteRenetPath, options.id as string)
+          readJobStatus(conn.lease.sftp, conn.remoteRenetPath, jobId)
         );
 
         outputService.print(status, getOutputFormat());
@@ -149,14 +149,14 @@ export function registerJobCommands(program: Command): void {
   job
     .command('logs')
     .description(t('commands.job.logs.description'))
+    .argument('<job-id>', t('commands.job.idOption'))
     .requiredOption('-m, --machine <name>', t('commands.job.machineOption'))
-    .requiredOption('--id <jobId>', t('commands.job.idOption'))
     .option('-f, --follow', t('commands.job.logs.followOption'))
     .option('--since-line <n>', t('commands.job.logs.sinceLineOption'))
     .option('--debug', t('options.debug'))
-    .action(async (options: JobCommandOptions) => {
+    .action(async (jobId: string, options: JobCommandOptions) => {
       try {
-        await runJobLogs(options);
+        await runJobLogs(jobId, options);
       } catch (error) {
         handleError(error);
       }
@@ -198,8 +198,7 @@ export function registerJobCommands(program: Command): void {
  * systemd, not under this terminal, and a user stopping a scrolling log is not
  * asking to destroy a half-finished migration.
  */
-async function runJobLogs(options: JobCommandOptions): Promise<void> {
-  const jobId = options.id as string;
+async function runJobLogs(jobId: string, options: JobCommandOptions): Promise<void> {
   const cursor = new JobLogCursor(parseSinceLine(options.sinceLine));
 
   await withJobConnection(options.machine, async (conn) => {

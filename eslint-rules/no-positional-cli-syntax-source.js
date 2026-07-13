@@ -19,6 +19,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  EXEMPT_COMMAND_PREFIXES as SHARED_EXEMPT_PREFIXES,
+  FREEFORM_ARG_COMMAND_PATHS as SHARED_FREEFORM,
+} from './lib/cli-exempt-lists.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const COMMAND_TREE_PATH = path.resolve(
@@ -26,29 +30,9 @@ const COMMAND_TREE_PATH = path.resolve(
   '../packages/cli/scripts/command-tree.json'
 );
 
-const FREEFORM_ARG_COMMAND_PATHS = new Set([
-  'agent schema',
-  'agent exec',
-  'mcp capabilities',
-  'mcp schema',
-  'mcp exec',
-  'run',
-]);
+const FREEFORM_ARG_COMMAND_PATHS = new Set(SHARED_FREEFORM);
 
-const DEFAULT_EXEMPT_PREFIXES = [
-  'rdc auth',
-  'rdc audit',
-  'rdc bridge',
-  'rdc organization',
-  'rdc permission',
-  'rdc protocol',
-  'rdc queue',
-  'rdc region',
-  'rdc repository',
-  'rdc team',
-  'rdc user',
-  'rdc ceph',
-];
+const DEFAULT_EXEMPT_PREFIXES = SHARED_EXEMPT_PREFIXES;
 
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -67,33 +51,36 @@ const buildPlaceholderOnlyRegex = (commandPath) => {
 };
 
 let cachedLeafPaths = null;
-let cachedAllPaths = null;
+let cachedParentPaths = null;
 
 const loadPathsFromTree = () => {
-  if (cachedLeafPaths && cachedAllPaths) {
-    return { leaves: cachedLeafPaths, all: cachedAllPaths };
+  if (cachedLeafPaths && cachedParentPaths) {
+    return { leaves: cachedLeafPaths, parents: cachedParentPaths };
   }
   const raw = fs.readFileSync(COMMAND_TREE_PATH, 'utf-8');
   const tree = JSON.parse(raw);
   const leaves = new Set();
-  const all = new Set();
+  const parents = new Set();
   const walk = (node, parts) => {
     if (parts.length > 0) {
       const commandPath = parts.join(' ');
       if (!FREEFORM_ARG_COMMAND_PATHS.has(commandPath)) {
-        all.add(commandPath);
         const isLeaf = (node.subcommands ?? []).length === 0;
-        if (isLeaf && (node.arguments ?? []).length === 0) {
-          leaves.add(commandPath);
-        }
+        const takesPositional = (node.arguments ?? []).length > 0;
+        // A command that takes a positional belongs in NEITHER pass: after P4
+        // `rdc repo up <repo-ref>` is the syntax we want taught. This set used to
+        // be every path, which flagged the correct form and claimed the command
+        // "accepts zero positional arguments" — false, and it blocked the reshape.
+        if (isLeaf && !takesPositional) leaves.add(commandPath);
+        if (!isLeaf && !takesPositional) parents.add(commandPath);
       }
     }
     for (const sub of node.subcommands ?? []) walk(sub, [...parts, sub.name]);
   };
   walk(tree, []);
   cachedLeafPaths = leaves;
-  cachedAllPaths = all;
-  return { leaves, all };
+  cachedParentPaths = parents;
+  return { leaves, parents };
 };
 
 /** @type {import('eslint').Rule.RuleModule} */
@@ -130,16 +117,16 @@ export const noPositionalCliSyntaxSource = {
       ...(options.exemptCommandPrefixes || []),
     ];
 
-    const { leaves, all } = loadPathsFromTree();
+    const { leaves, parents } = loadPathsFromTree();
     const leafEntries = [...leaves].sort((a, b) => b.length - a.length).map((p) => ({
       path: p,
       regex: buildCommandRegex(p),
     }));
-    const allEntries = [...all]
+    const parentEntries = [...parents]
       .sort((a, b) => b.length - a.length)
       .map((p) => ({ path: p, regex: buildPlaceholderOnlyRegex(p) }));
 
-    if (leafEntries.length === 0 && allEntries.length === 0) return {};
+    if (leafEntries.length === 0 && parentEntries.length === 0) return {};
 
     const checkStringValue = (node, strValue) => {
       if (typeof strValue !== 'string') return;
@@ -179,7 +166,7 @@ export const noPositionalCliSyntaxSource = {
           });
         };
         for (const entry of leafEntries) tryReport(entry);
-        for (const entry of allEntries) tryReport(entry);
+        for (const entry of parentEntries) tryReport(entry);
       }
     };
 

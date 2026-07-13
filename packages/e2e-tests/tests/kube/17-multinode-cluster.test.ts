@@ -352,6 +352,31 @@ test.describe
 
     test('1. Ceph healthy, a dedicated pool, and rbd client staged on both workers', async () => {
       expect(cephNode.isSuccess(await cephNode.cephHealth())).toBe(true);
+
+      // ...but "healthy" is not the same as "usable", and this is the gate that
+      // matters. For the first minutes after bootstrap Ceph reports HEALTH_WARN
+      // "slow operations in BlueStore" while the OSDs settle. cephHealth() passes
+      // in that state; the very next step does not. A ceph datastore create ends by
+      // unmounting the fresh btrfs, and that flush goes through those same OSDs: it
+      // blocked past the bridge's 30s exec budget and killed the run. The identical
+      // create took 7s once the cluster settled, so nothing was broken except the
+      // moment we asked. Wait for a responsive write path (no slow ops, every PG
+      // active+clean) rather than for the word "healthy".
+      const writePathReady = async (): Promise<boolean> => {
+        const detail = await cephNode.executeViaBridge('sudo ceph health detail');
+        if (detail.code !== 0 || /slow op|slow request|SLOW_OPS/i.test(detail.stdout)) return false;
+        const pgs = await cephNode.executeViaBridge('sudo ceph pg stat');
+        return (
+          pgs.code === 0 &&
+          /active\+clean/.test(pgs.stdout) &&
+          !/peering|degraded|stale/.test(pgs.stdout)
+        );
+      };
+      expect(
+        await poll(writePathReady, 300_000, 5_000),
+        'ceph never reached a responsive write path (slow BlueStore ops or PGs not active+clean)'
+      ).toBe(true);
+
       expect(cephNode.isSuccess(await cephNode.cephPoolCreate(POOL))).toBe(true);
       const init = await cephNode.executeViaBridge(`sudo rbd pool init ${POOL}`);
       expect(init.code, init.stderr).toBe(0);

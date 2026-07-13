@@ -15,21 +15,16 @@ import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
 import { openRepoTunnel } from '../services/repo/repo-ssh-tunnel.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
-import { handleError } from '../utils/errors.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
-import { assertDockerOnly } from '../utils/repo-target.js';
+import { resolveRepoRef } from '../utils/repo-target.js';
 import { withSpinner } from '../utils/spinner.js';
 
 interface TunnelOptions {
-  team?: string;
-  machine?: string;
-  cluster?: string;
-  repository?: string;
   container?: string;
   port?: string;
   local?: string;
   urlOnly?: boolean;
-  [key: string]: unknown;
 }
 
 interface TunnelTarget {
@@ -153,21 +148,18 @@ function resolveContainerTarget(
   return { containerName: container.name, remoteIP, remotePort, localPort };
 }
 
-async function tunnelConnect(options: TunnelOptions): Promise<void> {
-  const opts = await configService.applyDefaults(options);
-
-  if (!opts.machine) {
-    throw new Error(t('errors.machineRequired'));
-  }
-  if (!opts.repository) {
-    throw new Error(t('errors.repositoryNotFound', { name: '' }));
+async function tunnelConnect(ref: string, options: TunnelOptions): Promise<void> {
+  const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
+  // Tunnelling uses per-container docker service IPs (rediacc.service_ip labels);
+  // there is no kubernetes tunnel in v1, so refuse a cluster-placed repo early.
+  if (kubeCluster) {
+    throw new ValidationError(t('errors.cluster.dockerOnlyVerb', { verb: 'tunnel' }));
   }
 
-  await assertCommandPolicy(CMD.REPO_TUNNEL, opts.repository);
+  await assertCommandPolicy(CMD.REPO_TUNNEL, repoKey);
 
-  const machineName = opts.machine;
-  const repoName = opts.repository;
-  const teamName = opts.team ?? '';
+  const repoName = repoKey;
+  const teamName = '';
 
   // Resolve repo name → GUID (configService handles fork name:tag correctly)
   const repoConfig = await configService.getRepository(repoName);
@@ -187,9 +179,9 @@ async function tunnelConnect(options: TunnelOptions): Promise<void> {
 
   // Find the target container, IP, and port
   const target = resolveContainerTarget(listResult, repoName, guidMap, repoGuidOverride, {
-    container: opts.container,
-    port: opts.port,
-    local: opts.local,
+    container: options.container,
+    port: options.port,
+    local: options.local,
   });
 
   // Get SSH connection details
@@ -283,29 +275,22 @@ export function registerRepoTunnelCommand(repoCommand: Command): void {
     'after',
     `
 ${t('help.examples')}
-  $ rdc repo tunnel -m hostinger -r sonarqube -c sonarqube-database --port 5432
-  $ rdc repo tunnel -m hostinger -r sonarqube                    # auto-detect container & port
-  $ rdc repo tunnel -m hostinger -r sonarqube --port 5432 --local 15432
+  $ rdc repo tunnel sonarqube -c sonarqube-database --port 5432
+  $ rdc repo tunnel sonarqube                    # auto-detect container & port
+  $ rdc repo tunnel sonarqube --port 5432 --local 15432
 `
   );
 
-  // rdc repo tunnel -m <machine> -r <repo>
+  // rdc repo tunnel <ref>
   tunnel
-    .option('-m, --machine <name>', t('options.machine'))
-    .option('--cluster <name>', t('commands.repo.clusterOption'))
-    .option('-r, --repository <name>', t('options.repository'))
+    .argument('<ref>', t('options.repoRef'))
     .option('-c, --container <name>', t('commands.repo.tunnel.containerOption'))
     .option('--port <port>', t('commands.repo.tunnel.portOption'))
     .option('--local <port>', t('commands.repo.tunnel.localOption'))
     .option('--url-only', t('commands.repo.tunnel.urlOnlyOption'))
-    .action(async (options: TunnelOptions, cmd: Command) => {
+    .action(async (ref: string, options: TunnelOptions) => {
       try {
-        assertDockerOnly('tunnel', options);
-        if (!options.machine) {
-          cmd.help();
-          return;
-        }
-        await tunnelConnect(options);
+        await tunnelConnect(ref, options);
       } catch (error) {
         handleError(error);
       }

@@ -43,6 +43,14 @@ survives the sibling scheme. Consequence: spec 05 must update its `<ds-mount>` e
 files 02/04 get the one-line edit in the as-built pass.
 
 **R2 — U5 leaf count (153 vs "~90"): the tree-as-drawn is the contract.**
+> **[SUPERSEDED 2026-07-13 by spec/03 §0 + ruling Q10.]** R2 correctly retired "~90" as bad
+> arithmetic, but its own replacement figures then failed the same way: the 162 baseline was
+> off by one (spec/03 §6.7's header contradicted its own table) and operator commits moved the
+> live tree by 19 commands within days. **The count is retired entirely. The MAPPING is the
+> contract** (spec/03 §6): every live command carries a disposition row, every row resolves to
+> a real command, checked mechanically against `command-tree.json`. R2's substance survives
+> unchanged: no unnamed scope cuts, and the simplification claim restated honestly.
+
 Spec 03's enumeration (153 target leaves incl. the U1 `machine infra` subtree 06 §1
 forgot to draw; 162 current leaves all mapped) is accepted as the P4 contract. The
 "~90" prose figure is retired as wrong arithmetic, not a target to hit by cutting

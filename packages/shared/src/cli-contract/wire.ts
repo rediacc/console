@@ -50,8 +50,9 @@ export const CONTRACT_VERSION_HEADER = 'x-rdc-contract-version';
  * authorized is what executes, because the executor derived one from the other.
  *
  * `params` are keyed by the command's LONG FLAG ("parent", "tag", "machine").
- * The executor rejects any key that is not a declared option of that command, so
- * a caller cannot smuggle argv through it.
+ * `positionals` are keyed by the command's POSITIONAL name ("ref", "job-id").
+ * The executor rejects any key that is not a declared option or positional of
+ * that command, so a caller cannot smuggle argv through either bag.
  */
 export const CommandRequestSchema = z.object({
   /** Contract version the client built this request from. Mismatch is a 409. */
@@ -60,6 +61,12 @@ export const CommandRequestSchema = z.object({
   pathKey: z.string().min(1),
   /** Option values keyed by long flag. Booleans are switches; arrays are variadic. */
   params: z.record(z.string(), z.unknown()).default({}),
+  /**
+   * Positional values keyed by positional name. A string, or a string[] for a
+   * variadic positional. Kept SEPARATE from params: a positional is emitted bare
+   * (before the flags), and mixing the two bags would lose that ordering.
+   */
+  positionals: z.record(z.string(), z.unknown()).default({}),
 });
 
 export type CommandRequest = z.infer<typeof CommandRequestSchema>;
@@ -124,7 +131,17 @@ export type WireResult = z.infer<typeof WireResultSchema>;
  * failure rather than as success with no output.
  */
 export const StreamLineSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('event'), event: WireEventSchema }),
+  z.object({
+    kind: z.literal('event'),
+    event: WireEventSchema,
+    /**
+     * The event's 1-based spool-line ordinal, present only on a detached job's
+     * replayed stream. A re-attaching client dedupes on it, so a resume that
+     * re-sends a boundary line renders it exactly once. Absent on a synchronous
+     * stream, where there is no spool to resume from.
+     */
+    line: z.number().int().positive().optional(),
+  }),
   z.object({
     kind: z.literal('result'),
     result: WireResultSchema,
@@ -181,5 +198,8 @@ export const PROXY_ROUTES = {
   sessionCek: (sessionId: string) => `/v1/session/${sessionId}/cek`,
   /** The same route as a server-side pattern, so the two cannot drift apart. */
   sessionCekPattern: '/v1/session/:id/cek',
+  /** Re-attach to a detached job's event stream: `?machine=<m>&sinceLine=<n>`. */
   jobEvents: (jobId: string) => `/v1/jobs/${jobId}/events`,
+  /** The same route as a server-side pattern, so client and server cannot drift. */
+  jobEventsPattern: '/v1/jobs/:id/events',
 } as const;

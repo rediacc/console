@@ -242,28 +242,36 @@ export class ConfigServiceBase {
     return config?.account?.region;
   }
 
-  async set(key: 'team' | 'region', value: string): Promise<void> {
+  /**
+   * Set one v3 `defaults` field (spec/03 §5.1). The retired `team`/`region`
+   * keys (R2-F9) are refused at the command layer, so this only ever writes a
+   * real DefaultsSchema field.
+   */
+  async setDefault(
+    key: 'language' | 'datastoreSize' | 'pruneGraceDays',
+    value: string
+  ): Promise<void> {
     const name = this.getEffectiveConfigName();
+    const typed: string | number = key === 'pruneGraceDays' ? Number(value) : value;
     await configFileStorage.update(name, (cfg) => ({
       ...cfg,
-      account: { ...(cfg.account ?? {}), [key]: value },
+      defaults: { ...(cfg.defaults ?? {}), [key]: typed },
     }));
   }
 
-  async remove(key: 'team' | 'region'): Promise<void> {
+  /** Clear one v3 `defaults` field. */
+  async clearDefault(key: 'language' | 'datastoreSize' | 'pruneGraceDays'): Promise<void> {
     const name = this.getEffectiveConfigName();
     await configFileStorage.update(name, (cfg) => ({
       ...cfg,
-      account: cfg.account ? { ...cfg.account, [key]: undefined } : undefined,
+      defaults: cfg.defaults ? { ...cfg.defaults, [key]: undefined } : undefined,
     }));
   }
 
+  /** Clear the whole v3 `defaults` bucket. */
   async clearDefaults(): Promise<void> {
     const name = this.getEffectiveConfigName();
-    await configFileStorage.update(name, (cfg) => ({
-      ...cfg,
-      account: cfg.account ? { ...cfg.account, team: undefined, region: undefined } : undefined,
-    }));
+    await configFileStorage.update(name, (cfg) => ({ ...cfg, defaults: undefined }));
   }
 
   // --- Language Settings ---

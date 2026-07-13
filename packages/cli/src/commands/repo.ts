@@ -6,69 +6,77 @@ import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { isAgentEnvironment } from '../utils/agent-guard.js';
-import { assertCommandPolicy, CMD, type CommandPath } from '../utils/command-policy.js';
-import { getOutputFormat, handleError } from '../utils/errors.js';
+import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
+import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
-import { resolveRepoTarget } from '../utils/repo-target.js';
+import { resolveRepoRef } from '../utils/repo-target.js';
 import { registerRepoBackupCommands } from './repo-backup.js';
-import {
-  handleDownAll,
-  handleRepoList,
-  handleUpAll,
-  postRepoUpTasks,
-  runBatchOperation,
-} from './repo-batch-utils.js';
+import { handleDownAll, handleRepoList, handleUpAll, postRepoUpTasks } from './repo-batch-utils.js';
 import { registerRepoBranchingCommands } from './repo-branching.js';
 import { registerRepoCanaryCommands } from './repo-canary.js';
 import { registerRepoCatCommand } from './repo-cat.js';
+import { registerRepoForkCommand } from './repo-fork.js';
 import { registerRepoCreateDeleteCommands } from './repo-create-delete.js';
 import { registerRepoDiffCommand } from './repo-diff.js';
 import { registerExtendedRepoCommands } from './repo-extended.js';
+import { createRepoAdminCommand } from './repo-admin.js';
 import { registerRepoMaintenanceCommands } from './repo-maintenance.js';
 import { registerRepoMigrateCommand } from './repo-migrate.js';
 import { registerRepoReplicateCommands } from './repo-replicate.js';
 import { registerRepoSecretCommands } from './repo-secret.js';
 import { registerRepoSyncCommands } from './repo-sync.js';
+import { registerRepoContainerCommands } from './repo-container.js';
 import { registerRepoTunnelCommand } from './repo-tunnel.js';
-import { registerRepoVolumeCommands } from './repo-volume.js';
 
-async function handleSingleRepoUp(
-  name: string,
-  options: {
-    machine?: string;
-    cluster?: string;
-    skipCheckpoint?: boolean;
-    tls?: boolean;
-    detach?: boolean;
-    dryRun?: boolean;
-    debug?: boolean;
-    skipRouterRestart?: boolean;
-  }
-): Promise<void> {
-  await assertCommandPolicy(CMD.REPO_UP, name);
-  const { machineName, kubeCluster } = await resolveRepoTarget(options);
+interface RepoUpSingleOptions {
+  /** Commander sets this false when `--no-start` is passed (mount/prepare only). */
+  start?: boolean;
+  skipCheckpoint?: boolean;
+  tls?: boolean;
+  /** Commander sets this false when `--no-wait` is passed. */
+  wait?: boolean;
+  dryRun?: boolean;
+  debug?: boolean;
+  skipRouterRestart?: boolean;
+}
+
+async function handleSingleRepoUp(ref: string, options: RepoUpSingleOptions): Promise<void> {
+  const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
+  await assertCommandPolicy(CMD.REPO_UP, repoKey);
+
+  // `--no-start` folds the retired `repo mount`: LUKS open / PV generation
+  // without running the Rediaccfile up() steps.
+  const noStart = options.start === false;
 
   const params: Record<string, unknown> = {};
   if (options.skipCheckpoint) params.skip_checkpoint = true;
   if (options.tls) params.tls = true;
-  if (options.detach) params.detach = true;
+  if (options.wait === false) params.detach = true;
+
+  // #39: tell renet the runtime explicitly for a cluster-placed repo. renet
+  // honors `runtime` as an assertion (values kube|docker): if the caller says
+  // kube but the on-datastore descriptor resolves docker, it errors instead of
+  // silently falling to the docker arm (the empty-manifests bug B1 caught). The
+  // runtime is derived from placement, so a k8s repo can never guess wrong.
+  if (kubeCluster) params.runtime = 'kube';
 
   // Pass grandGuid so renet can mark forks after mount
   {
-    const repo = await configService.getRepository(name);
+    const repo = await configService.getRepository(repoKey);
     if (repo?.grandGuid && repo.grandGuid !== repo.repositoryGuid) {
       params.grand = repo.grandGuid;
     }
   }
 
   if (options.dryRun) {
-    const repo = await configService.getRepository(name);
+    const repo = await configService.getRepository(repoKey);
     outputService.print(
       {
         dryRun: true,
         repository: name,
         machine: machineName,
         guid: repo?.repositoryGuid,
+        action: noStart ? 'mount' : 'up',
         params,
       },
       getOutputFormat()
@@ -76,60 +84,38 @@ async function handleSingleRepoUp(
     return;
   }
 
+  const functionName = noStart ? 'repository_mount' : 'repository_up';
+  const messages = noStart
+    ? {
+        starting: t('commands.repo.mount.starting', { repository: name, machine: machineName }),
+        completed: t('commands.repo.mount.completed'),
+        failed: t('commands.repo.mount.failed'),
+      }
+    : {
+        starting: t('commands.repo.up.starting', { repository: name, machine: machineName }),
+        completed: t('commands.repo.up.completed'),
+        failed: t('commands.repo.up.failed'),
+      };
+
   // deployRepoKeyIfNeeded + postRepoUpTasks (per-repo SSH key + DNS) are
-  // docker-repo concepts; a cluster repo deploys through the renet dual-runtime
-  // path (KUBECONFIG injected) and routes DNS via the cluster wildcard.
-  if (!kubeCluster) {
-    await deployRepoKeyIfNeeded(name, machineName);
+  // docker up() concepts: skip them for a mount-only (--no-start) run and for
+  // cluster repos (which route DNS via the cluster wildcard and inject
+  // KUBECONFIG through the renet dual-runtime path).
+  const dockerUp = !kubeCluster && !noStart;
+  if (dockerUp) {
+    await deployRepoKeyIfNeeded(repoKey, machineName);
   }
   await executeRepoFunction(
-    'repository_up',
-    name,
+    functionName,
+    repoKey,
     machineName,
     params,
     { ...options, kubeCluster },
-    {
-      starting: t('commands.repo.up.starting', { repository: name, machine: machineName }),
-      completed: t('commands.repo.up.completed'),
-      failed: t('commands.repo.up.failed'),
-    }
+    messages
   );
-  if (!kubeCluster) {
-    await postRepoUpTasks(name, machineName);
+  if (dockerUp) {
+    await postRepoUpTasks(repoKey, machineName);
   }
-}
-
-/**
- * Iterate a repo function across all repos in config.
- * Runs assertCommandPolicy per repo, logs progress, and collects results.
- */
-async function iterateAllRepos(
-  functionName: string,
-  machineName: string,
-  cmd: CommandPath,
-  params: Record<string, unknown>,
-  options: {
-    debug?: boolean;
-    skipRouterRestart?: boolean;
-    parallel?: boolean;
-    concurrency?: string;
-  },
-  messages: { action: string }
-): Promise<void> {
-  await runBatchOperation(
-    messages.action,
-    machineName,
-    true,
-    async (name) => {
-      await assertCommandPolicy(cmd, name);
-      await executeRepoFunction(functionName, name, machineName, params, options, {
-        starting: '',
-        completed: '',
-        failed: '',
-      });
-    },
-    options
-  );
 }
 
 // executeRepoFunction imported from ../utils/repo-executor.js
@@ -142,7 +128,7 @@ export function registerRepoCommands(program: Command): void {
 
   repo.addHelpText(
     'after',
-    `\n${t('help.examples')}\n  $ rdc repo create --name my-app -m server-1 --size 5G   ${t('help.repo.create')}\n  $ rdc repo up --name my-app -m server-1                   ${t('help.repo.up')}\n  $ rdc repo down --name my-app -m server-1                ${t('help.repo.down')}\n  $ rdc repo fork --parent my-app --tag test -m server-1   ${t('help.repo.fork')}\n`
+    `\n${t('help.examples')}\n  $ rdc repo create my-app --machine server-1 --size 5G   ${t('help.repo.create')}\n  $ rdc repo up my-app                                      ${t('help.repo.up')}\n  $ rdc repo down my-app                                    ${t('help.repo.down')}\n  $ rdc repo fork my-app --tag test                        ${t('help.repo.fork')}\n`
   );
 
   if (isAgentEnvironment() || process.argv.includes('--help-all')) {
@@ -151,21 +137,19 @@ export function registerRepoCommands(program: Command): void {
 
   registerRepoCreateDeleteCommands(repo);
 
-  registerRepoVolumeCommands(repo, executeRepoFunction, iterateAllRepos);
-
-  // repo up [--name <name>]
+  // repo up [ref]  — positional ref (single), or --all --machine <m> (batch).
   repo
     .command('up')
     .summary(t('commands.repo.up.descriptionShort'))
     .description(t('commands.repo.up.description'))
-    .option('--name <name>', t('options.name'))
-    .option('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--cluster <name>', t('commands.repo.clusterOption'))
+    .argument('[ref]', t('options.repoRef'))
+    .option('--no-start', t('commands.repo.up.noStartOption'))
     .option('--skip-checkpoint', t('commands.repo.up.skipCheckpointOption'))
     .option('--tls', t('commands.repo.up.tlsOption'))
-    .option('--detach', t('commands.repo.up.detachOption'))
+    .option('--no-wait', t('commands.repo.up.noWaitOption'))
+    .option('--all', t('commands.repo.up.allOption'))
+    .option('-m, --machine <name>', t('commands.repo.batchMachineOption'))
     .option('--include-forks', t('commands.repo.upAll.includeForksOption'))
-    .option('--mount-only', t('commands.repo.upAll.mountOnlyOption'))
     .option('--parallel', t('commands.repo.upAll.parallelOption'))
     .option('--concurrency <n>', t('commands.repo.upAll.concurrencyOption'), '3')
     .option('-y, --yes', t('commands.repo.yesOption'))
@@ -173,26 +157,30 @@ export function registerRepoCommands(program: Command): void {
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .option('--dry-run', t('options.dryRun'))
     .action(
-      async (options: {
-        name?: string;
-        machine: string;
-        mount?: boolean;
-        skipCheckpoint?: boolean;
-        tls?: boolean;
-        includeForks?: boolean;
-        mountOnly?: boolean;
-        parallel?: boolean;
-        concurrency?: string;
-        yes?: boolean;
-        debug?: boolean;
-        skipRouterRestart?: boolean;
-        dryRun?: boolean;
-      }) => {
+      async (
+        ref: string | undefined,
+        options: RepoUpSingleOptions & {
+          all?: boolean;
+          machine?: string;
+          includeForks?: boolean;
+          parallel?: boolean;
+          concurrency?: string;
+          yes?: boolean;
+        }
+      ) => {
         try {
-          const name = options.name;
-          if (name) {
-            await handleSingleRepoUp(name, options);
+          if (ref) {
+            if (options.all || options.machine) {
+              throw new ValidationError(t('commands.repo.batchRefConflict', { verb: 'up' }));
+            }
+            await handleSingleRepoUp(ref, options);
           } else {
+            if (!options.all) {
+              throw new ValidationError(t('commands.repo.batchNeedRefOrAll', { verb: 'up' }));
+            }
+            if (!options.machine) {
+              throw new ValidationError(t('commands.repo.batchAllNeedsMachine', { verb: 'up' }));
+            }
             await handleUpAll(options);
           }
         } catch (error) {
@@ -201,45 +189,52 @@ export function registerRepoCommands(program: Command): void {
       }
     );
 
-  // repo down [--name <name>]
+  // repo down [ref]  — positional ref (single), or --all --machine <m> (batch).
   repo
     .command('down')
     .summary(t('commands.repo.down.descriptionShort'))
     .description(t('commands.repo.down.description'))
-    .option('--name <name>', t('options.name'))
-    .option('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--cluster <name>', t('commands.repo.clusterOption'))
+    .argument('[ref]', t('options.repoRef'))
     .option('--unmount', t('commands.repo.down.unmountOption'))
     .option('--checkpoint', t('commands.repo.down.checkpointOption'))
+    .option('--all', t('commands.repo.down.allOption'))
+    .option('-m, --machine <name>', t('commands.repo.batchMachineOption'))
+    .option('--parallel', t('commands.repo.upAll.parallelOption'))
+    .option('--concurrency <n>', t('commands.repo.upAll.concurrencyOption'), '3')
     .option('-y, --yes', t('commands.repo.yesOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .option('--dry-run', t('options.dryRun'))
     .action(
-      async (options: {
-        name?: string;
-        machine?: string;
-        cluster?: string;
-        unmount?: boolean;
-        checkpoint?: boolean;
-        yes?: boolean;
-        debug?: boolean;
-        skipRouterRestart?: boolean;
-        dryRun?: boolean;
-      }) => {
+      async (
+        ref: string | undefined,
+        options: {
+          unmount?: boolean;
+          checkpoint?: boolean;
+          all?: boolean;
+          machine?: string;
+          parallel?: boolean;
+          concurrency?: string;
+          yes?: boolean;
+          debug?: boolean;
+          skipRouterRestart?: boolean;
+          dryRun?: boolean;
+        }
+      ) => {
         try {
-          const name = options.name;
-          if (name) {
-            // Single-repo down
-            await assertCommandPolicy(CMD.REPO_DOWN, name);
-            const { machineName, kubeCluster } = await resolveRepoTarget(options);
+          if (ref) {
+            if (options.all || options.machine) {
+              throw new ValidationError(t('commands.repo.batchRefConflict', { verb: 'down' }));
+            }
+            const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
+            await assertCommandPolicy(CMD.REPO_DOWN, repoKey);
 
             const params: Record<string, unknown> = {};
             if (options.unmount) params.unmount = true;
             if (options.checkpoint) params.checkpoint = true;
 
             if (options.dryRun) {
-              const repo = await configService.getRepository(name);
+              const repo = await configService.getRepository(repoKey);
               outputService.print(
                 {
                   dryRun: true,
@@ -255,7 +250,7 @@ export function registerRepoCommands(program: Command): void {
 
             await executeRepoFunction(
               'repository_down',
-              name,
+              repoKey,
               machineName,
               params,
               { ...options, kubeCluster },
@@ -269,6 +264,12 @@ export function registerRepoCommands(program: Command): void {
               }
             );
           } else {
+            if (!options.all) {
+              throw new ValidationError(t('commands.repo.batchNeedRefOrAll', { verb: 'down' }));
+            }
+            if (!options.machine) {
+              throw new ValidationError(t('commands.repo.batchAllNeedsMachine', { verb: 'down' }));
+            }
             await handleDownAll(options);
           }
         } catch (error) {
@@ -277,29 +278,29 @@ export function registerRepoCommands(program: Command): void {
       }
     );
 
-  // repo status --name <name>
+  // repo status <ref>
   repo
     .command('status')
     .description(t('commands.repo.status.description'))
-    .requiredOption('--name <name>', t('options.name'))
-    .option('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--cluster <name>', t('commands.repo.clusterOption'))
+    .argument('<ref>', t('options.repoRef'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
-      async (options: {
-        name: string;
-        machine?: string;
-        cluster?: string;
-        debug?: boolean;
-        skipRouterRestart?: boolean;
-      }) => {
+      async (
+        ref: string,
+        options: {
+          debug?: boolean;
+          skipRouterRestart?: boolean;
+        }
+      ) => {
         try {
-          const name = options.name;
-          const { machineName, kubeCluster } = await resolveRepoTarget(options);
+          // Read-only: derive the machine, skip step 5's remote round-trip.
+          const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref, {
+            readOnly: true,
+          });
           await executeRepoFunction(
             'repository_status',
-            name,
+            repoKey,
             machineName,
             {},
             { ...options, kubeCluster },
@@ -341,25 +342,32 @@ export function registerRepoCommands(program: Command): void {
       }
     );
 
-  // repo list (no positional arg — lists all repos on the machine)
+  // repo list — the whole config's repos, narrowed by where they LIVE. A datastore
+  // is the honest unit now (a repo lives in a datastore; the machine is wherever
+  // that datastore happens to be attached today), so --datastore joins --machine.
   repo
     .command('list')
     .description(t('commands.repo.list.description'))
     .option('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--cluster <name>', t('commands.repo.clusterOption'))
+    .option('--datastore <name>', t('commands.repo.list.datastoreOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(handleRepoList);
   registerRepoCatCommand(repo);
+  registerRepoForkCommand(repo);
   registerRepoDiffCommand(repo);
   registerRepoBranchingCommands(repo);
-  registerRepoMaintenanceCommands(repo);
-  registerExtendedRepoCommands(repo);
+  // The `repo admin` parent is created ONCE and handed to every registrar that
+  // hangs a leaf off it (§5.4's plumbing subtree spans two files).
+  const admin = createRepoAdminCommand(repo, program);
+  registerRepoMaintenanceCommands(repo, admin);
+  registerExtendedRepoCommands(repo, admin);
   registerRepoBackupCommands(repo);
   registerRepoMigrateCommand(repo);
   registerRepoReplicateCommands(repo);
   registerRepoCanaryCommands(repo);
   registerRepoSyncCommands(repo);
+  registerRepoContainerCommands(repo);
   registerRepoTunnelCommand(repo);
   registerRepoSecretCommands(repo);
 }

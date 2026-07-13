@@ -26,7 +26,7 @@ clear_screen
 section "Step 1: Register the server"
 # No `config init` needed — the config file is created automatically on first
 # use, and rdc falls back to your ~/.ssh/id_rsa key.
-run_cmd "rdc config machine add --name $M --ip $TUTORIAL_MACHINE_IP --user $TUTORIAL_MACHINE_USER"
+run_cmd "rdc machine add $M --ip $TUTORIAL_MACHINE_IP --user $TUTORIAL_MACHINE_USER"
 
 pause 2
 
@@ -38,7 +38,7 @@ for i in $(seq 1 30); do
 done
 
 section "Step 2: Provision the server"
-run_cmd "rdc config machine setup --name $M"
+run_cmd "rdc machine setup $M"
 
 pause 2
 

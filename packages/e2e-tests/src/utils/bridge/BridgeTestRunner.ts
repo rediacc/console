@@ -948,6 +948,8 @@ export class BridgeTestRunner {
   datastoreFork = (opts: DatastoreForkOptions) => this.datastoreMethods.datastoreFork(opts);
   datastoreSnapshotCreate = (opts: DatastoreSnapshotOptions) =>
     this.datastoreMethods.datastoreSnapshotCreate(opts);
+  datastoreSnapshotDelete = (opts: DatastoreSnapshotOptions) =>
+    this.datastoreMethods.datastoreSnapshotDelete(opts);
 
   // Ceph Datastore Methods (datastore_ceph_init / _fork / _unfork)
   datastoreCephInit = (opts: CephInitOptions) => this.datastoreCephMethods.datastoreCephInit(opts);

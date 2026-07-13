@@ -35,6 +35,52 @@ export type CommandGroup =
   | 'ORGANIZATION'
   | 'TOOLS';
 
+/**
+ * What a positional token names, so a consumer can bind a picker to it without
+ * guessing from the argument's spelling.
+ *
+ * This is the load-bearing field of a positional. `repo-ref` means "this token
+ * is a repository reference", which is what lets the console render a repo
+ * picker for `rdc repo up <ref>` exactly as it renders one for `--repo`. The
+ * generator derives it from the argument's name against the per-noun table in
+ * the addressing grammar (docs/design/spec/03-cli-contracts.md §2.2); anything
+ * it cannot classify is `plain`, an ordinary text token.
+ */
+export type PositionalKind =
+  | 'repo-ref'
+  | 'machine'
+  | 'datastore-ref'
+  | 'cluster'
+  | 'storage'
+  | 'strategy'
+  | 'artifact-ref'
+  | 'job-id'
+  | 'target'
+  | 'file'
+  | 'plain';
+
+/**
+ * A positional argument of a command, e.g. the `<ref>` in `rdc repo up <ref>`.
+ *
+ * Positionals are serialised in DECLARED order (variadic last), between the
+ * command path and its flags. A consumer rebuilds the argv a laptop would have
+ * typed by emitting each value bare, in this order.
+ */
+export interface ContractPositional {
+  /** Argument.name(), e.g. "ref". The form field key and the positionals-bag key. */
+  name: string;
+  /** What the token names, so a consumer can bind a picker without guessing. */
+  kind: PositionalKind;
+  /** `<ref>` (required) vs `[ref]` (optional). */
+  required: boolean;
+  /** `<refs...>`: collects the remaining tokens. */
+  variadic: boolean;
+  /** i18n key for the description, or null (see ContractOption.descriptionKey). */
+  descriptionKey: string | null;
+  /** English description, always present (may be empty). */
+  label: string;
+}
+
 export interface ContractOption {
   /** Raw Commander flags string, e.g. "-m, --machine <machine>". */
   flags: string;
@@ -89,6 +135,12 @@ export interface ContractCommand {
   label: string;
   options: ContractOption[];
   /**
+   * Positional arguments, in declared order. Empty for the options-only leaves
+   * that make up most of the surface. A consumer serialises these bare, before
+   * the flags, to rebuild the argv a laptop would have typed.
+   */
+  positionals: ContractPositional[];
+  /**
    * True when this command also has subcommands — a runnable group such as
    * `repo replicate`. Its subcommands are separate entries.
    */
@@ -134,6 +186,17 @@ export interface ContractCommand {
    * exactly when `proxyCapable` is false, so a refusal always has a message.
    */
   proxyBlockedReason?: string;
+  /**
+   * Safe to run as a DETACHED renet job: start it under a transient unit and
+   * follow its spool, so a dropped connection does not lose the work.
+   *
+   * Derived as `proxyCapable && domain !== 'job'` (minus a small exclusion
+   * table): the classes proxyCapable already rules out are exactly the ones that
+   * break under detach, and `rdc job *` manages jobs rather than doing machine
+   * work, so detaching one is circular. The serve dispatch turns detach on for a
+   * proxied command; `--background` turns it on for a local one.
+   */
+  detachable: boolean;
 
   // ── Resource binding (how a caller targets this command) ────────────────
   /**
@@ -148,6 +211,20 @@ export interface ContractCommand {
    * present; otherwise `--name` on the `repo` domain.
    */
   repoOption: string | null;
+  /**
+   * Name of the POSITIONAL that names the target machine, or null. The flag
+   * binding (`machineOption`) and the positional binding are kept distinct so a
+   * policy check can scope on whichever the caller actually used: a positional
+   * value lives in the positionals bag, not in params, and reading only the flag
+   * would silently unscope a positional-addressed command (a fail-open).
+   */
+  machinePositional: string | null;
+  /**
+   * Name of the POSITIONAL that names the target repository (a `repo-ref`
+   * positional), or null. Kept distinct from `repoOption` for the same reason as
+   * `machinePositional`.
+   */
+  repoPositional: string | null;
 }
 
 export interface CliContract {

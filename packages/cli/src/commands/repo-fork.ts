@@ -13,10 +13,9 @@
  * - "Total:" is printed once, at the true end, as wall time since entry.
  */
 import { randomUUID } from 'node:crypto';
-import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { createCluster } from '../services/cluster/cluster-provision.js';
-import { clusterMountRemotePath } from '../services/cluster/cluster-target.js';
+import { validateTag } from '../services/addressing/ref-parser.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import {
@@ -30,9 +29,9 @@ import {
   machineConnections,
 } from '../services/machine/machine-connection.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
-import { handleError } from '../utils/errors.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
-import { resolveRepoTarget } from '../utils/repo-target.js';
+import { resolveRepoRef } from '../utils/repo-target.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import {
   buildTimingSummary,
@@ -47,6 +46,13 @@ import { ensureDns, postRepoUpTasks } from './repo-batch-utils.js';
 
 interface ForkActionOptions {
   machine: string;
+  /**
+   * The datastore's cluster backref, set when the parent ref resolves to a
+   * kubernetes-world repo. Threaded into the executor so it injects KUBECONFIG;
+   * a docker parent leaves it unset and the fork runs against the machine's
+   * Docker daemon exactly as before.
+   */
+  kubeCluster?: string;
   checkpoint?: boolean;
   immutable?: boolean;
   up?: boolean;
@@ -160,7 +166,8 @@ async function registerFork(
 ): Promise<{ repositoryGuid: string; networkId: number }> {
   const existing = await configService.getRepository(forkKey);
   if (existing) {
-    throw new Error(t('commands.repo.fork.alreadyExists', { name: forkKey }));
+    // Exit 2 (INVALID_ARGUMENTS): the requested fork tag is already taken.
+    throw new ValidationError(t('commands.repo.fork.alreadyExists', { name: forkKey }));
   }
 
   const repositoryGuid = randomUUID();
@@ -233,6 +240,7 @@ function executeForkLeg(
   return getExecutor().execute({
     functionName: 'repository_fork',
     machineName: plan.options.machine,
+    ...(plan.options.kubeCluster !== undefined && { kubeCluster: plan.options.kubeCluster }),
     params,
     debug: plan.options.debug,
     skipRouterRestart: plan.options.skipRouterRestart,
@@ -282,6 +290,7 @@ async function executeUpLeg(plan: ForkPlan, renetSteps: TimelineStep[]): Promise
   const upResult = await getExecutor().execute({
     functionName: 'repository_up',
     machineName: plan.options.machine,
+    ...(plan.options.kubeCluster !== undefined && { kubeCluster: plan.options.kubeCluster }),
     params: {
       repository: plan.forkKey,
       mount: true,
@@ -470,6 +479,10 @@ export async function handleForkAction(
   // (credential included) when registerFork fails with "already exists".
   let registered = false;
   try {
+    // Refuse the reserved birth tag `base` (exit 2) and enforce the fork-tag
+    // label grammar before any config mutation; `latest` stays reserved as the
+    // grand pointer that a fork must not clobber (#495).
+    validateTag(tagName);
     assertNonLatestForkTag(tagName, t('commands.repo.fork.tagReservedLatest'));
     assertForkOptions(options);
     forkKey = compositeKey(options.forkBaseName ?? parseRepoRef(parent).name, tagName);
@@ -517,65 +530,62 @@ export async function handleForkAction(
 }
 
 /**
- * K8s namespace fork (design D13). `repo fork` into a cluster forks the
- * namespace (`<repo>-<tag>`, PVs CoW-cloned) via kube_namespace_fork:
- *   - `--cluster <name>` / `--to-cluster <name>`: fork into that existing
- *     cluster (destination; --to-cluster wins if both are given).
- *   - `--provider <p>`: provision the destination cluster (declared via
- *     `rdc config cluster add`) with createCluster before forking into it. Full
- *     auto-declare + source-shape mirroring (--cluster-name/--pool) stays wave 7.
+ * Register `repo fork <ref>` (spec/03 §5.4). The parent repo is the positional
+ * ref; its config placement derives the execution machine and, for a
+ * kubernetes-world parent, the datastore's cluster backref (KUBECONFIG). There
+ * is no `-m`/`--cluster`/`--parent`: cross-machine forking is `fork` then
+ * `push`. Boolean flags are forwarded to the shared fork orchestration, which
+ * also drives `repo checkout`.
  */
-export async function handleClusterForkSeam(
-  parent: string,
-  tag: string,
-  options: { cluster?: string; toCluster?: string; provider?: string; debug?: boolean }
-): Promise<void> {
-  try {
-    const destCluster = options.toCluster ?? options.cluster;
-    if (!destCluster) {
-      handleError(new Error(t('errors.cluster.targetRequired')));
-      return;
-    }
-    if (options.provider) {
-      // Provision the (declared) destination cluster, then fork into it.
-      outputService.info(
-        t('commands.repo.fork.provisioning', { cluster: destCluster, provider: options.provider })
-      );
-      await createCluster(destCluster, { debug: options.debug });
-    }
-    const { machineName, kubeCluster } = await resolveRepoTarget({ cluster: destCluster });
-    const cluster = kubeCluster ?? destCluster;
-    outputService.info(
-      t('commands.repo.fork.clusterResolved', { parent, tag, cluster, controlNode: machineName })
+export function registerRepoForkCommand(repo: Command): void {
+  const forkCmd = repo
+    .command('fork')
+    .summary(t('commands.repo.fork.descriptionShort'))
+    .description(t('commands.repo.fork.description'))
+    .argument('<ref>', t('options.repoRef'))
+    .requiredOption('--tag <name>', t('commands.repo.fork.tagOption'))
+    .option('--checkpoint', t('commands.repo.fork.checkpointOption'))
+    .option('--immutable', t('commands.repo.fork.immutableOption'))
+    .option('--up', t('commands.repo.fork.upOption'))
+    .option('--no-wait', t('commands.repo.fork.noWaitOption'))
+    .option('--debug', t('options.debug'))
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(
+      async (
+        ref: string,
+        options: {
+          tag: string;
+          checkpoint?: boolean;
+          immutable?: boolean;
+          up?: boolean;
+          // `--no-wait` sets `wait` to false (Commander negated-flag default true).
+          wait?: boolean;
+          debug?: boolean;
+          skipRouterRestart?: boolean;
+        }
+      ) => {
+        try {
+          // Mutating verb: derive the execution machine from the parent ref's
+          // placement (spec/03 §2.3). No resolve options => step-5 mount
+          // verification is skipped, matching the pre-reshape fork behavior.
+          const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
+          await configService.ensureRepositoryNetworkId(repoKey);
+          await handleForkAction(repoKey, options.tag, {
+            machine: machineName,
+            ...(kubeCluster !== undefined && { kubeCluster }),
+            ...(options.checkpoint && { checkpoint: true }),
+            ...(options.immutable && { immutable: true }),
+            ...(options.up && { up: true }),
+            // `--no-wait` maps to the unchanged `detach` wire param: return once
+            // containers start, do not block on the health check.
+            ...(options.wait === false && { detach: true }),
+            ...(options.debug && { debug: true }),
+            ...(options.skipRouterRestart && { skipRouterRestart: true }),
+          });
+        } catch (error) {
+          handleError(error);
+        }
+      }
     );
-    // kube_namespace_fork was deleted with the datastore-centric redesign: a k8s
-    // repo forks copy-on-write inside its datastore via the runtime-generic
-    // repository_fork (the RepoRuntime detects kube from the datastore
-    // descriptor and re-mints identity + scrubs secrets per contract). Final
-    // --datastore placement porcelain is P4; here we dispatch the real function.
-    const forkNet = await configService.allocateNetworkId();
-    const result = await getExecutor().execute({
-      functionName: 'repository_fork',
-      machineName,
-      kubeCluster,
-      params: {
-        repository: parent,
-        tag,
-        network_id: forkNet,
-        cluster,
-        datastore: NETWORK_DEFAULTS.DATASTORE_PATH,
-        mount_path: clusterMountRemotePath(cluster),
-      },
-      debug: options.debug,
-    });
-    if (result.success) {
-      outputService.success(
-        t('commands.repo.clusterDone', { verb: 'Forked', repository: `${parent}-${tag}`, cluster })
-      );
-    } else {
-      renderLocalExecutionFailure(result, t('commands.repo.fork.failed'));
-    }
-  } catch (error) {
-    handleError(error);
-  }
+  forkCmd.addHelpText('after', t('commands.repo.fork.examples'));
 }

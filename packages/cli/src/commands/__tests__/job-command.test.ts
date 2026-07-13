@@ -64,15 +64,33 @@ describe('rdc job command surface', () => {
     }
   });
 
-  /** The three id-addressed verbs require --id; the two spool-wide ones do not. */
-  it('requires --id exactly where a single job is addressed', () => {
-    for (const verb of ['status', 'logs', 'cancel']) {
+  /**
+   * A single job is addressed by name, the whole spool is not. `status` and
+   * `logs` name the job with a required POSITIONAL `<job-id>` (the first real
+   * positional conversion of P4's ref work); `cancel` still uses `--id`; `list`
+   * and `gc` act on the whole spool, so they take neither.
+   */
+  it('addresses a single job by name exactly where one job is meant', () => {
+    for (const verb of ['status', 'logs']) {
+      const args = jobCommand(program, verb).registeredArguments;
+      expect(
+        args.map((a) => a.name()),
+        `job ${verb} positionals`
+      ).toEqual(['job-id']);
+      expect(args[0].required, `job ${verb} <job-id> should be required`).toBe(true);
+      // ...and no leftover --id flag.
       const id = jobCommand(program, verb).options.find((o) => o.long === '--id');
-      expect(id, `job ${verb} is missing --id`).toBeDefined();
-      expect(id?.mandatory, `job ${verb} --id should be required`).toBe(true);
+      expect(id, `job ${verb} should not also carry --id`).toBeUndefined();
     }
 
+    const cancelId = jobCommand(program, 'cancel').options.find((o) => o.long === '--id');
+    expect(cancelId, 'job cancel is missing --id').toBeDefined();
+    expect(cancelId?.mandatory, 'job cancel --id should be required').toBe(true);
+
     for (const verb of ['list', 'gc']) {
+      expect(jobCommand(program, verb).registeredArguments, `job ${verb} positionals`).toHaveLength(
+        0
+      );
       const id = jobCommand(program, verb).options.find((o) => o.long === '--id');
       expect(id, `job ${verb} should not take --id`).toBeUndefined();
     }

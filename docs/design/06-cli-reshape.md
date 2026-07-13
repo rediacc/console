@@ -1,8 +1,20 @@
 # 06 — Full CLI Reshape: Command-by-Command Mapping
 
-User decision 2026-07-10: the FULL reshape ships in this program (~150 → ~90 leaves), not
-just the redesign-required verbs. No backward compatibility, no aliases, no deprecation
-windows (sole operator, clean break).
+User decision 2026-07-10: the FULL reshape ships in this program, not just the
+redesign-required verbs. No backward compatibility, no aliases, no deprecation windows
+(sole operator, clean break).
+
+**THE MAPPING IS THE CONTRACT, NOT THE LEAF COUNT.** The "~90 leaves" this file once
+promised was retired by gate ruling R2 as bad arithmetic; spec/03's replacement figure
+("162 current, 153 target") has now failed the same way (its own §6.7 header contradicts
+the table under it, and operator commits moved the live tree by 19 commands within days of
+the spec being written). A number that its author miscomputed and that drifts with every
+merge cannot gate anything. What P4 is held to is the **disposition table in spec/03 §6**:
+every command in the live tree carries a row, and every row resolves to a real command.
+That is mechanically checkable now that `packages/cli/scripts/command-tree.json` exists,
+and unlike a number it cannot be satisfied by accident. For orientation only, and with no
+contractual force: the tree is ~183 invokable commands today and the reshape lands around
+165.
 
 Design principles:
 1. Nouns mirror the physical layers: `machine` → `datastore` → `repo`, plus `cluster`
@@ -16,33 +28,66 @@ Design principles:
 5. Gating carries over by verb class (grandGuard on mutating repo verbs; cluster family
    behind `REDIACC_ALLOW_CLUSTER_OPS`; hidden `run` unchanged, absolutely agent-blocked).
 
-## 1. The target tree (~90 leaves)
+## 1. The tree — AS BUILT (verified against the live CLI, 2026-07-13)
+
+This is no longer a target. It is a transcript of the shipped tree, generated from
+`packages/cli/scripts/command-tree.json` and checked in BOTH directions: every leaf below
+exists in the CLI, and every leaf in the CLI appears below. **164 contract commands**
+(93 machine-plane, 51 config-plane, 20 other; 82 proxyCapable). `run` is hidden and held
+out of the contract.
 
 ```
-rdc config      init list show delete set clear recover prune edit reconcile
+rdc config      init list show delete set clear recover prune edit reconcile rotate-cek
                 field {get set unset rotate list}    audit {log tail verify}
                 remote {enable disable status refresh}    ssh {set show remove}
 rdc machine     add remove list status setup scan-keys health prune
-                provision deprovision      (absorbs config machine + provider CRUD)
+                provision deprovision
                 provider {add remove list}
+                infra {set show push  cert {pull push status clear}}
 rdc datastore   create list status attach detach fork snapshot {create list} resize delete
 rdc repo        create up down status list delete fork push pull migrate promote
                 secret {get list set unset}    sync {upload download status}
-                cat diff logs exec tunnel    replicate {status remove}
+                cat diff logs exec tunnel
+                replicate {status remove refresh}          (the parent also runs: `replicate <ref>`)
                 commit branch checkout log merge gc
                 resize expand trim policy {set get}
                 admin {validate fsck ownership autostart {enable disable list}
                        template {list apply}  archive {list restore purge}}
-rdc cluster     create scale join evict destroy status kubeconfig snapshot
+                canary {create status weight remove}
+rdc cluster     create scale join evict destroy status kubeconfig snapshot {create list}
                 fork migrate rehearse
 rdc backup      strategy {set remove list show}  schedule  run  status  cancel  list  restore
-rdc storage     list create delete browse prune  import
+rdc storage     add remove list import browse prune
 rdc term        connect
 rdc vscode      connect list cleanup check serve {status stop}
 rdc ops         up down status ssh setup check
 rdc subscription login logout status refresh
-rdc doctor | credits | update | mcp serve | run (hidden)
+rdc job         list status logs cancel gc          (see §9)
+rdc doctor | credits | update | serve | mcp serve | run (hidden)
 ```
+
+### 1.1 Where the shipped tree differs from the tree this section used to draw
+
+Five differences. Each is deliberate and each is traceable to a ruling; none is drift.
+
+| Was drawn as | Shipped as | Why |
+|---|---|---|
+| `storage create \| delete` | `storage add \| remove` | Gate ruling R3, and spec/03 §4.1's own rule: a storage entry REGISTERS an existing external endpoint (an S3 bucket, an rsync target), it does not create one. §4.1 explicitly deferred the rename here to this as-built pass. |
+| `machine` with no `infra` | `machine infra {set show push}` + `machine infra cert {pull push status clear}` | The config exodus (§5.2 / w2a) moved `config infra *` and `config cert-cache *` onto the machine noun. Seven leaves this section simply never listed. |
+| `repo replicate {status remove}` | `repo replicate <ref>` (actionable parent) + `{status remove refresh}` | `refresh` was a CONDITIONAL in the table below: delete it if it only reconciles, keep it if it forces a re-fork. It forces a re-fork, so it stays, and its help says so. The parent keeps its bare create form (spec §5.4), which makes it an actionable parent — that is load-bearing, see §7's Commander note. |
+| `cluster snapshot` | `cluster snapshot {create list}` | R2-F13 landed it as a group, matching `datastore snapshot`. |
+| `machine query` | `machine status` | §5.2. Recorded here because the `--fix` map in `scripts/check-cli-docs.ts` had the rename pointing the WRONG WAY and would have rewritten correct docs into broken ones. |
+
+Four families were built by operator commits AFTER this tree was drawn. They exist in the
+live CLI today, so P4 recontracts them; it does not invent them. **All four were ruled on
+2026-07-13** (spec/03 §9) and are folded into the §1 tree above:
+
+| Family | Leaves | RULING |
+|---|---|---|
+| `job {list,status,logs,cancel,gc}` | 5 | **KEEP as a noun** (reasoning in §9). A job is **EXECUTOR-BORN**: `rdc serve` sets `detached` itself for detachable commands (the container tier sleeps after 2-5 min idle), plus a global **`--background`/`-b`** fire-and-forget for direct CLI use (R-P4-2v2, merged from two operator rulings — spec/03 §5.13) |
+| `repo canary {create,status,weight,remove}` | 4 | **KEEP under `repo`.** Same subject (a repo's traffic); a new noun for 4 leaves is not earned |
+| `repo replicate refresh` | 1 | **Conditional:** DELETE if it only reconciles (the create form is already the declarative surface, spec/03 §4.4); KEEP if it forces a re-fork now, and say so in its help |
+| `config rotate-cek`, `serve` | 2 | **Both stay top-level.** The CEK is the key the config is encrypted under (not a field value) and has a portal wizard; `serve` is the other end of `--proxy`, and the two are one wire |
 
 ## 2. ELIMINATED commands (deleted with their machinery)
 
@@ -164,6 +209,23 @@ the machine DERIVABLE. On top of that:
    (ceremony). Note the repo's docs validators (`positional-cli-detector`,
    `validate-cli-examples`) currently treat positional syntax as INVALID — both flip to
    parsing the new grammar in P4.
+7. **BLOCKER (found 2026-07-13), now RULED: the CLI contract is options-only and HARD-THROWS
+   on the first positional.** `walkContractCommands()`
+   (`packages/cli/scripts/lib/command-tree-lib.ts:270-279`), the shared walker behind the
+   contract generator, the plane gate and the plane-coverage test, raises on any command that
+   registers a positional, because every contract consumer (web console, `--proxy` thin
+   client, executor) serialises a command as flags alone. Today's CLI has ZERO positionals,
+   so the first leaf P4 converts takes down `check:ci-cli-contract`,
+   `check:ci-command-planes` and `plane-coverage.test.ts` at once.
+   **OPERATOR RULING R-P4-1: BUILD IT. P4's first deliverable is the ref concept, not a
+   rename.** And it is more than serialisation: the console binds its resource pickers AND
+   its computed action-bar buttons to `machineOption`/`repoOption`, i.e. to `--name` and
+   `--machine` — the exact flags item 1 and 06 §6.2 delete. Emit positionals without moving
+   those bindings onto the ref and you ship a CLI that works and a GUI that quietly empties
+   (`ActionBar.tsx`: *"There is no array of command names in this file, and there must never
+   be"*). The full deliverable, the five modules, and the acceptance test (a positional leaf
+   that walks the contract, crosses the `--proxy` wire, and renders as a resource picker with
+   `check:ci-console-coverage` green) are in spec/03 §2.0.
 
 ## 7. CLI conventions (review round 2, adopted)
 
@@ -196,6 +258,33 @@ the machine DERIVABLE. On top of that:
    `datastore attach --to`; permanent removal is `cluster evict`; pod-level drains belong
    to kubectl via `cluster kubeconfig`. No `machine maintenance`/`node drain` verbs:
    forgettable manual steps are exactly what the mechanism exists to remove.
+7. **Every move is an implicit plane re-declaration (2026-07-13).** A command's execution
+   plane (`machine` | `config` | `other`, i.e. where its code RUNS) is a pure function of
+   its PATH STRING: a longest-prefix lookup in the hand-maintained `COMMAND_PLANES` table
+   (`packages/cli/src/config/command-planes.ts:42-163`), where a domain entry is the
+   default and everything else is an exception. The plane system will never block a move,
+   and it will never follow the verb either: a moved verb silently adopts its new domain's
+   default. Because the contract turns `plane === 'machine'` into `proxyCapable`, a move
+   into a machine-default noun can silently make a local read remotely executable against
+   the WRONG config. **Plane classification is therefore a first-class per-leaf deliverable
+   of the reshape, reviewed leaf by leaf, not a regeneration afterthought.** The gates
+   catch only the loud half. Full mechanism, both worked hazard cases and the review rule:
+   spec/03 §4.9.
+8. **`--detach` had three meanings, two of them flags (2026-07-13). RULED.**
+   `repo up --detach` / `repo fork --detach` meant "return once containers start, health
+   checks continue" (renet `repository_up.go:30`); a detached JOB means "the whole operation
+   runs under transient systemd and survives SSH loss"; `datastore detach` means "unmount a
+   datastore". The third is a verb on a noun and is tolerable (docker and kubectl live with
+   the same overload). The first two were flags on the SAME commands and directly violated
+   principle 2. **OPERATOR RULING R-P4-2v2 (twice-ruled, merged): the health-check flag is
+   renamed `--no-wait`** (which is what it always meant) **and the job producer is the GLOBAL
+   `--background`/`-b`** — so after P4 the word "detach" survives only as the `datastore
+   detach` verb. The parallel detached-jobs session settled the name: Commander resolves a
+   root-level and a subcommand flag of the same name BY POSITION, so reusing `--detach` for
+   jobs would make `rdc --detach repo up` and `rdc repo up --detach` silently mean different
+   things. ⚠ This **REOPENS AND SUPERSEDES spec/03 U6**, which explicitly kept `--detach` on
+   `repo fork`; the reversal is deliberate, and its reason is that when U6 was written the
+   `job` noun did not exist, so there was no collision to see.
 
 ## 8. Regeneration obligations (part of the reshape's definition of done)
 
@@ -209,11 +298,106 @@ the machine DERIVABLE. On top of that:
 - Renet bridge functions renamed/added/deleted → `renet functions generate-types --output
   packages/shared/src/renet-contract/data`; every generated function name must appear in
   packages/e2e-tests sources or `check:ci-e2e-coverage` fails.
-- **MCP alignment gate (P4 closing step)**: the existing `mcp-coverage.test.ts` is
-  registry-keyed and misses unregistered leaves — verified 2026-07-10: a tree-walking
-  version found **56 drifted commands** with neither `mcp` nor `mcpExcludeReason`.
-  After the reshape lands, apply the parked patch (strengthened tree-walk test + a
-  starter classification; session scratchpad `parked/mcp-coverage-gate.patch`) and
+- **MCP alignment gate (P4 closing step)**: the existing `mcp-coverage.test.ts`
+  (`packages/cli/src/commands/mcp/__tests__/`) is registry-keyed and misses unregistered
+  leaves — verified 2026-07-10: a tree-walking version found **56 drifted commands** with
+  neither `mcp` nor `mcpExcludeReason`. Confirmed still true 2026-07-13 and now worse: it
+  iterates `COMMAND_REGISTRY` (13 domains) while the live tree has 16, so the `job`,
+  `cluster`, `credits` and `serve` domains are not checked for MCP coverage AT ALL, which
+  is how `serve` and `config rotate-cek` reached main with no `COMMAND_METADATA` entry of
+  any kind. After the reshape lands, apply the parked patch (strengthened tree-walk test +
+  a starter classification; session scratchpad `parked/mcp-coverage-gate.patch`) and
   classify every leaf of the NEW tree. Deliberately deferred to post-reshape (user
   decision): classifying the old tree first would be throwaway work. The test runs under
   `check:test-cli`, already in the `npm run ci` chain — no new CI wiring needed.
+
+**Five artifacts and gates created after this list was written (2026-07-13).** They are
+now the heaviest part of the reshape's definition of done. Exact commands and the
+per-leaf checklist are spec/03 §8; the short version:
+
+- `packages/cli/scripts/command-tree.json`: committed, regenerated by
+  `npm run export:command-tree -w @rediacc/cli`.
+- The **generated CLI contract** (`packages/shared/src/cli-contract/data/`:
+  `contract.generated.ts` + `contract.json` + **13 per-locale i18n bundles**), regenerated
+  by `npm run generate:cli-contract -w @rediacc/cli`. Gated by `check:ci-cli-contract`,
+  which is a regenerate-and-diff, not a hash: ANY rename, move, added flag or changed help
+  string turns it red. This contract drives the web console, the `--proxy` thin client and
+  the executor, so a stale one means those three disagree with the CLI they are driving.
+- `packages/cli/src/config/command-planes.ts`: every new, renamed or moved leaf needs a
+  plane. Gated twice (`check:ci-command-planes` + `plane-coverage.test.ts`, which also
+  fails on STALE entries, so every rename strands one).
+- `DOMAIN_MODULES` in `packages/cli/scripts/check-command-planes.ts:48`: **a new
+  top-level noun with no entry HARD-FAILS the gate.** The reshape introduces `backup`, so
+  it must register `commands/backup.ts` there.
+- `PROXY_EXCLUSIONS` in `packages/cli/scripts/generate-cli-contract.ts:61`: the
+  machine-plane commands a remote executor must never run for the caller, keyed by command
+  path. Every rename silently breaks a key, and every new machine-plane leaf needs a proxy
+  verdict plus a user-facing refusal reason.
+
+**Two more systems, found 2026-07-13, that no version of this list has ever named.** Both are
+keyed by the command path, like everything else, and between them they carry the reshape's
+worst failure modes. Full statements: spec/03 §4.11 and §2.0.
+
+- ⚠ **The PERMISSION-POLICY globs** (`packages/shared/src/policy/`, `services/serve/policy.ts`,
+  the console's `PolicyRuleEditor`). Org policy documents allow and deny commands by **glob on
+  the path string** (`"repo *"`, `"repo delete"`), live inside the encrypted config, and are
+  evaluated by both the executor and the console. P4 renames every path. A stale `allow` fails
+  CLOSED (safe, loud). **A stale `deny` FAILS OPEN**: `deny: ["repo takeover"]` silently stops
+  denying the moment the leaf becomes `repo promote`. It is the only classification system in
+  the tree whose staleness *grants* a permission that was explicitly withheld, and it has no
+  gate. P4 re-keys every glob AND builds the gate (a `deny` glob matching no live command is a
+  hard failure, not a warning).
+- **The console's REF BINDINGS.** Resource pages compute their action buttons from the
+  contract (`ActionBar.tsx`: *"There is no array of command names in this file, and there must
+  never be"*), binding through `machineOption`/`repoOption` — the flags this reshape deletes.
+  The bindings must move onto the positional ref in the same change, or the pages render
+  empty while every gate stays green.
+
+## 9. The `job` noun (built 2026-07-12, unmapped by this file)
+
+`rdc job {list,status,logs,cancel,gc}` (`packages/cli/src/commands/job.ts`) manages renet's
+detached-job spool: work runs under a transient systemd unit on the machine, so it survives
+a dropped SSH channel. Every verb requires `-m/--machine`; `status`, `logs` and `cancel`
+also require `--id`. It exposes no `start` and no `run`.
+
+**Keep it as a noun.** Tested against this file's principles: it is a real addressable
+resource on the machine (an id, a state machine, logs, a lifecycle), and folding `job list`
+into `machine jobs` would put one resource's CRUD on another resource's noun, which is
+precisely what the reshape is undoing everywhere else (`config machine *` to `machine *`,
+`machine backup *` to `backup *`). Principle 3 decides it. The noun deliberately has no
+create verb, which is correct: a job is born as a side effect of another verb.
+
+**But nothing can fill the spool.** The producer,
+`LocalExecutorService.tryDetachedExecution()`, returns `null` immediately unless
+`options.detached` is set, and **no CLI command sets it**
+(`packages/cli/src/services/executor/local-executor.ts:1236`; the comment at :1225 says so
+outright, and a grep across `commands/` and `services/serve/` confirms no caller passes it).
+
+**OPERATOR RULING R-P4-2v2 (twice-ruled, MERGED): a job is EXECUTOR-BORN, plus a global
+`--background`/`-b`.** The operator ruled this in two sessions (this suite's pass chose a
+per-verb `--detach`; the parallel detached-jobs pass, better-informed on the Commander
+positional-resolution hazard, chose a global `--background` with fire-and-forget semantics)
+and confirmed the merge on 2026-07-13. Full contract and the verified findings behind it:
+spec/03 §5.13 and `~/.claude/projects/-home-muhammed-monorepo-console/reports/handoff-detached-jobs.md`.
+
+1. **The executor births jobs by itself, and keeps following.** When a *detachable* command
+   arrives through `rdc serve` (from the web console or a `--proxy` thin client), the
+   dispatch layer sets `ExecuteOptions.detached`. This is structural, not a convenience: the
+   container tier is a warm Cloudflare Container that **sleeps after 2 to 5 minutes idle**,
+   and you cannot know in advance which `repo up` takes 3 seconds and which takes 40 minutes.
+   Client disconnect = detach, not cancel. The console's Jobs surface already handles the
+   `kind:'job'` wire line that nothing emits yet.
+2. **Direct CLI stays synchronous; the global `--background`/`-b` is fire-and-forget**: start
+   the job, print its id and a resume hint, exit 0. Watch later with `rdc job logs`. Needs a
+   no-follow mode that does not exist yet (today's detached path always tails to completion).
+
+`rdc job start -- <cmd>` was **rejected**: it re-creates the `run` escape hatch and defeats
+typed commands. The flag collision is resolved in §7.8 (`--no-wait`; "detach" leaves the flag
+vocabulary entirely).
+
+**Scope warning for P4:** the flag is the easy half. Before anything sets `detached`, two
+verified silent-corruption bugs must land — the detached path discards stdout (breaking every
+`parseCapturedJson` caller; the same fix repairs the ALREADY-BROKEN `--proxy cluster fork`,
+bug #31) and bypasses license recovery + identity refresh. Then the dead reattach half
+(`kind:'job'` emission, the `jobEvents` route, exactly-once line ordinals) makes the console's
+Jobs page real. Contract: spec/03 §5.13.

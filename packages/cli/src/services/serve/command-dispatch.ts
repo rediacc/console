@@ -66,8 +66,26 @@ export interface DispatchArgs {
   prepared: PreparedCommand;
   /** The executor the command's machine work must run through. */
   executor: Executor;
-  /** Called for every renet event the command streams. */
-  onEvent: (event: RenetEvent) => void;
+  /**
+   * Called for every renet event the command streams. The optional second
+   * argument is the event's spool-line ordinal, present only when the machine
+   * work ran detached (the executor replays its spool with ordinals), so the
+   * route can forward it for exactly-once re-attach dedup.
+   */
+  onEvent: (event: RenetEvent, line?: number) => void;
+  /**
+   * Whether the command's machine work runs as a DETACHED job. Defaults to the
+   * contract's `detachable`; the serve route computes it (its `deps.detach` can
+   * override) and passes it here, so a proxied long command survives a dropped
+   * connection.
+   */
+  detached?: boolean;
+  /**
+   * Called once with the job id the instant a detached run starts, before any
+   * event. The route uses it to emit its `kind:'job'` line so a client can
+   * re-attach even if the connection drops before the first event.
+   */
+  onJobStarted?: (jobId: string) => void;
 }
 
 export interface DispatchOutcome {
@@ -83,6 +101,14 @@ export interface DispatchOutcome {
    * touched no machine.
    */
   functionName?: string;
+  /**
+   * The machine the command actually reached, observed the same way as
+   * `functionName`. This is the ONLY reliable source under the §2.3 reshape: a
+   * derived-machine repo verb (`repo status <ref>`) resolves its machine from
+   * config placement inside the action body, so it never appears in the request
+   * — the audit would otherwise record `undefined` for it.
+   */
+  machineName?: string;
 }
 
 /**
@@ -173,6 +199,48 @@ function valueFlag(option: ContractOption, value: unknown): string[] {
 }
 
 /**
+ * Turn the positionals bag into the bare tokens the command declares, in
+ * DECLARED order (which is what makes a variadic-last reconstruction correct).
+ *
+ * The same refuse-the-undeclared defence as buildFlags, and for the same reason:
+ * an undeclared positional name is argv injection into the executor's own CLI,
+ * not a harmless extra. A required positional the caller omitted is refused here
+ * too, so the failure is a clean 400 rather than a confusing Commander error
+ * deeper in.
+ */
+export function buildPositionals(
+  entry: ContractCommand,
+  positionals: Record<string, unknown>
+): string[] {
+  const declared = new Map(entry.positionals.map((p) => [p.name, p]));
+
+  for (const key of Object.keys(positionals)) {
+    if (!declared.has(key)) {
+      const names = entry.positionals.map((p) => `<${p.name}>`).join(', ') || '(none)';
+      throw new CommandRejected(
+        `"rdc ${entry.pathKey}" has no ${key} positional. It takes: ${names}.`
+      );
+    }
+  }
+
+  return entry.positionals.flatMap((p) => {
+    const value = positionals[p.name];
+    if (value === undefined || value === null) {
+      if (p.required) throw new CommandRejected(`"rdc ${entry.pathKey}" needs <${p.name}>.`);
+      return [];
+    }
+    const values = Array.isArray(value) ? value : [value];
+    if (!p.variadic && values.length > 1) {
+      throw new CommandRejected(`<${p.name}> takes a single value.`);
+    }
+    return values.map((item) => {
+      if (typeof item === 'object') throw new CommandRejected(`<${p.name}> takes a text value.`);
+      return String(item);
+    });
+  });
+}
+
+/**
  * The argv a local `rdc` would have been given.
  *
  * `--output json` and `--yes` are forced, never taken from the caller: the
@@ -180,9 +248,23 @@ function valueFlag(option: ContractOption, value: unknown): string[] {
  * at a confirmation prompt that nobody will ever answer. Both are root options,
  * so they lead, exactly as `rdc --output json --yes repo fork ...` does on a
  * laptop (the same shape services/../commands/mcp/executor.ts shells out with).
+ *
+ * Positionals sit between the path and the flags, bare, so real Commander parses
+ * them exactly as a laptop's shell would have handed them over.
  */
-export function buildArgv(entry: ContractCommand, params: Record<string, unknown>): string[] {
-  return ['--output', 'json', '--yes', ...entry.path, ...buildFlags(entry, params)];
+export function buildArgv(
+  entry: ContractCommand,
+  params: Record<string, unknown>,
+  positionals: Record<string, unknown> = {}
+): string[] {
+  return [
+    '--output',
+    'json',
+    '--yes',
+    ...entry.path,
+    ...buildPositionals(entry, positionals),
+    ...buildFlags(entry, params),
+  ];
 }
 
 /**
@@ -216,17 +298,21 @@ function inertResult(durationMs: number): ExecuteResult {
  * console sees exactly what the CLI would have shown. A command that touched no
  * machine (a config-plane read) still succeeds, with its answer in stdout.
  */
-export function prepareCommand(pathKey: string, params: Record<string, unknown>): PreparedCommand {
+export function prepareCommand(
+  pathKey: string,
+  params: Record<string, unknown>,
+  positionals: Record<string, unknown> = {}
+): PreparedCommand {
   const entry = getCommand(pathKey);
   if (!entry) {
     throw new CommandRejected(`There is no "rdc ${pathKey}" command.`);
   }
   assertDispatchable(entry);
-  return { entry, argv: buildArgv(entry, params) };
+  return { entry, argv: buildArgv(entry, params, positionals) };
 }
 
 export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutcome> {
-  const { argv } = args.prepared;
+  const { argv, entry } = args.prepared;
   const started = Date.now();
 
   // The result of the LAST machine call the command made. A command can make
@@ -234,10 +320,25 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
   // ended, which is the final one, or a failure at any point.
   let lastResult: ExecuteResult | undefined;
   let functionName: string | undefined;
+  let machineName: string | undefined;
+
+  // Every machine call a served command makes runs detached and is FOLLOWED to
+  // completion: the executor cannot assume the client's connection outlives the
+  // work, so it starts a job that survives a drop and streams its spool back.
+  // `onJobStarted` fires once per job so the route can announce a re-attach
+  // point. The detach decision defaults to the contract's `detachable` and is
+  // overridden by the route when it must (deps.detach).
+  const detached = args.detached ?? entry.detachable;
   const recordingExecutor: Executor = {
     async execute(options) {
       functionName = options.functionName;
-      const result = await args.executor.execute(options);
+      machineName = options.machineName;
+      const result = await args.executor.execute({
+        ...options,
+        detached,
+        follow: true,
+        ...(args.onJobStarted ? { onJobStarted: args.onJobStarted } : {}),
+      });
       lastResult = result;
       return result;
     },
@@ -271,11 +372,12 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
       stdout,
       stderr,
       functionName,
+      machineName,
     };
   }
 
   const failure = toFailure(outcome.error, lastResult, Date.now() - started, stderr);
-  return { result: failure, stdout, stderr, functionName };
+  return { result: failure, stdout, stderr, functionName, machineName };
 }
 
 /**

@@ -12,7 +12,19 @@
 import { t } from '../../i18n/index.js';
 import { ValidationError } from '../../utils/errors.js';
 import { resolveControlNode } from '../config/config-cluster-ops.js';
-import { controlDatastoreMount } from './cluster-kube.js';
+import { controlDatastoreMount, NAMED_DS_BASE } from './cluster-kube.js';
+
+/**
+ * Remote mount path of a NAMED datastore on the machine that attaches it —
+ * `/mnt/rediacc-ds/<datastore>` (spec 02 §1). This is where a repo placed on a
+ * named datastore lives (`repo create --datastore <d>`, the R2-F1 placement
+ * union), whether it is a docker-tiering datastore or the k8s data datastore a
+ * cluster repo is forked from (the #38 fix: a cluster repo lands on its DATA
+ * datastore, not the control datastore replicate excludes).
+ */
+export function namedDatastoreMount(datastore: string): string {
+  return `${NAMED_DS_BASE}/${datastore}`;
+}
 
 export interface ExecutionTarget {
   /** Effective machine to SSH to — the control node when the target is a cluster. */
@@ -31,10 +43,6 @@ export interface ExecutionTarget {
  * single-node cluster's state lives under mounts/<cluster>, matching the
  * router's kubeconfig glob (mounts/&#42;/.rediacc/k3s/kubeconfig.yaml).
  */
-export function clusterMountRemotePath(cluster: string): string {
-  return `/mnt/rediacc/mounts/${cluster}`;
-}
-
 /**
  * Remote path of a cluster's kubeconfig on its control node. Under the
  * datastore-centric model the control-plane data-dir lives INSIDE the anchor

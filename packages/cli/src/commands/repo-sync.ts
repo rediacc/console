@@ -18,6 +18,7 @@ import {
   sftpUploadPaths,
 } from '../remote/sync/index.js';
 import type { SyncProgress } from '../remote/types/index.js';
+import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
 import { auditService } from '../services/core/audit.js';
 import { withPooledSftp } from '../services/machine/machine-connection.js';
@@ -27,7 +28,7 @@ import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
 import { assertCommandPolicy, CMD, validateRemotePath } from '../utils/command-policy.js';
 import { handleError } from '../utils/errors.js';
-import { resolveRepoTarget } from '../utils/repo-target.js';
+import { resolveRepoRef } from '../utils/repo-target.js';
 import { withSpinner } from '../utils/spinner.js';
 import {
   buildSyncRemotePaths,
@@ -109,36 +110,47 @@ async function executeSyncWithProgress(
 }
 
 interface ValidatedSyncOptions {
-  team: string | undefined;
   machine: string;
+  /** The config/renet identifier (name[:tag]) derived from the positional ref. */
   repository: string;
+  /** The repo family name (no tag) — the kube arm's on-datastore folder name. */
+  repoName: string;
+  /**
+   * Set ONLY for a kubernetes-placed repo: the named DATA datastore backing it.
+   * Its presence selects the kube sync arm (files land in the repo's folder on
+   * the datastore, not in a docker per-repo GUID mount, which a k8s repo has
+   * none of).
+   */
+  kubeDatastore?: string;
 }
 
 async function validateSyncOptions(
+  ref: string,
   options: SyncUploadOptions | SyncDownloadOptions,
-  command: typeof CMD.REPO_SYNC_UPLOAD | typeof CMD.REPO_SYNC_DOWNLOAD
+  command: typeof CMD.REPO_SYNC_UPLOAD | typeof CMD.REPO_SYNC_DOWNLOAD,
+  resolveOptions: Parameters<typeof resolveRepoRef>[1] = {}
 ): Promise<ValidatedSyncOptions> {
-  const opts = await configService.applyDefaults(options);
+  // Sync is a plain SSH/rsync/SFTP transfer against a machine's filesystem: no
+  // renet function call, so there is no executor sink to thread a kubeCluster
+  // marker into (and no control-node rerouting — the executor's kubeCluster
+  // override does not apply here). resolveRepoRef derives the machine that
+  // actually HOLDS the data (the datastore's attach machine), which is exactly
+  // the host these bytes must land on for either runtime.
+  const { name, repoKey, machineName, kubeCluster, datastore } = await resolveRepoRef(
+    ref,
+    resolveOptions
+  );
 
-  if (!opts.repository) {
-    throw new Error(t('errors.repositoryRequired'));
-  }
-
-  // Sync is a plain SSH/rsync/SFTP transfer against a machine's filesystem
-  // (no renet function call, so there's no localExecutorService/executeRepoFunction
-  // sink to thread a kubeCluster/KUBECONFIG marker into). A --cluster target
-  // just resolves to its control-node machine for the SSH connection, same as
-  // the ~35 other SSH-exec repo commands (see cluster-target.ts).
-  const { machineName } = await resolveRepoTarget({
-    machine: opts.machine,
-    cluster: options.cluster as string | undefined,
-  });
-
-  await assertCommandPolicy(command, opts.repository);
+  await assertCommandPolicy(command, repoKey);
   if (options.remote) validateRemotePath(options.remote);
   if (options.remoteFile) validateRemotePath(options.remoteFile);
 
-  return { team: opts.team, machine: machineName, repository: opts.repository };
+  return {
+    machine: machineName,
+    repository: repoKey,
+    repoName: name,
+    ...(kubeCluster !== undefined && datastore !== undefined && { kubeDatastore: datastore }),
+  };
 }
 
 export interface SyncConnectionContext {
@@ -158,32 +170,42 @@ async function prepareSyncConnection(
 
   const repoConfig = await configService.getRepository(validated.repository);
 
+  // The docker per-repo GUID mount check and the per-repo SSH key deployment are
+  // BOTH docker-world concepts: a kubernetes repo has no per-repo dockerd and no
+  // GUID mount, its files live in a plain folder on the named datastore. Running
+  // them on the kube arm would fail the mount check on a perfectly healthy repo.
+  const kubeArm = validated.kubeDatastore !== undefined;
+
   // Provisioning (above) must precede any renet use, so it stays a barrier.
-  // After it, these three steps are independent of one another: the mount
-  // check is a renet call over SSH, the repo-key deployment is an SFTP
-  // write, and the connection-detail lookup is a local config read. Run
-  // them concurrently instead of as three serial round-trips. The machine
-  // connection pool is refcounted and shares one SSH session across these
-  // leases, and each renet/SFTP exec opens its own ssh2 channel, so
-  // concurrent execution is safe. deployRepoKeyIfNeeded swallows its own
-  // errors (non-fatal); a failed mount check still aborts the whole setup
-  // because Promise.all rejects.
+  // After it, these steps are independent of one another: the mount check is a
+  // renet call over SSH, the repo-key deployment is an SFTP write, and the
+  // connection-detail lookup is a local config read. Run them concurrently
+  // instead of serial round-trips. The machine connection pool is refcounted and
+  // shares one SSH session across these leases, and each renet/SFTP exec opens
+  // its own ssh2 channel, so concurrent execution is safe. deployRepoKeyIfNeeded
+  // swallows its own errors (non-fatal); a failed mount check still aborts the
+  // whole setup because Promise.all rejects.
   const [details] = await Promise.all([
     withSpinner(t('commands.sync.fetchingDetails'), () =>
-      getSSHConnectionDetails(validated.team!, validated.machine, validated.repository)
+      getSSHConnectionDetails('', validated.machine, validated.repository)
     ),
-    repoConfig
+    repoConfig && !kubeArm
       ? assertRepoMountedOnMachine(
           validated.repository,
           repoConfig.repositoryGuid,
           validated.machine
         )
       : Promise.resolve(),
-    deployRepoKeyIfNeeded(validated.repository, validated.machine),
+    kubeArm ? Promise.resolve() : deployRepoKeyIfNeeded(validated.repository, validated.machine),
   ]);
 
-  const baseRemotePath =
-    details.workingDirectory ?? `${details.datastore}/mounts/${validated.repository}`;
+  // Kube arm: a cluster repo's files (its manifests, and anything else it keeps)
+  // live at <named-datastore-mount>/repos/<name>/ on the machine that holds the
+  // datastore, NOT in a docker GUID mount. Targeting the GUID mount is what made
+  // an anchor manifest never reach where `repo up` reads it (bug B1 hit).
+  const baseRemotePath = validated.kubeDatastore
+    ? `${namedDatastoreMount(validated.kubeDatastore)}/repos/${validated.repoName}`
+    : (details.workingDirectory ?? `${details.datastore}/mounts/${validated.repository}`);
 
   const { remotePath, sftpRemotePath } = buildSyncRemotePaths(
     baseRemotePath,
@@ -295,9 +317,9 @@ export function sftpUploadTransfer(
   );
 }
 
-async function syncUpload(options: SyncUploadOptions): Promise<void> {
+async function syncUpload(ref: string, options: SyncUploadOptions): Promise<void> {
   const startTime = Date.now();
-  const validated = await validateSyncOptions(options, CMD.REPO_SYNC_UPLOAD);
+  const validated = await validateSyncOptions(ref, options, CMD.REPO_SYNC_UPLOAD);
   const { isFileMode, sources } = validateUploadOptions(options);
   const ctx = await prepareSyncConnection(validated, options.remoteFile ?? options.remote, {
     isFile: isFileMode,
@@ -396,9 +418,13 @@ export function sftpDownloadTransfer(
   );
 }
 
-async function syncDownload(options: SyncDownloadOptions): Promise<void> {
+async function syncDownload(
+  ref: string,
+  options: SyncDownloadOptions,
+  resolveOptions: Parameters<typeof resolveRepoRef>[1] = {}
+): Promise<void> {
   const startTime = Date.now();
-  const validated = await validateSyncOptions(options, CMD.REPO_SYNC_DOWNLOAD);
+  const validated = await validateSyncOptions(ref, options, CMD.REPO_SYNC_DOWNLOAD, resolveOptions);
   const { localPath, isFileMode } = validateDownloadOptions(options);
   const ctx = await prepareSyncConnection(validated, options.remoteFile ?? options.remote, {
     isFile: isFileMode,
@@ -479,10 +505,10 @@ export function registerRepoSyncCommands(repoCommand: Command): void {
     'after',
     `
 ${t('help.examples')}
-  $ rdc repo sync upload -m server-1 -r my-app --local ./src  ${t('help.sync.upload')}
-  $ rdc repo sync upload -m server-1 -r my-app --local ./config.toml --remote-file etc/config.toml
-  $ rdc repo sync download -m server-1 -r my-app --local ./data  ${t('help.sync.download')}
-  $ rdc repo sync download -m server-1 -r my-app --local ./out --remote-file etc/config.toml
+  $ rdc repo sync upload my-app --local ./src  ${t('help.sync.upload')}
+  $ rdc repo sync upload my-app --local ./config.toml --remote-file etc/config.toml
+  $ rdc repo sync download my-app --local ./data  ${t('help.sync.download')}
+  $ rdc repo sync download my-app --local ./out --remote-file etc/config.toml
 `
   );
 
@@ -491,10 +517,7 @@ ${t('help.examples')}
     .command('upload')
     .summary(t('commands.sync.upload.descriptionShort'))
     .description(t('commands.sync.upload.description'))
-    .option('-t, --team <name>', t('options.team'))
-    .option('-m, --machine <name>', t('options.machine'))
-    .option('--cluster <name>', t('commands.repo.clusterOption'))
-    .option('-r, --repository <name>', t('options.repository'))
+    .argument('<ref>', t('options.repoRef'))
     .option('--local <paths...>', t('options.localPaths'))
     .option('--remote <path>', t('options.remotePath'))
     .option('--remote-file <path>', t('options.remoteFileUpload'))
@@ -503,9 +526,9 @@ ${t('help.examples')}
     .option('--confirm', t('options.confirmSync'))
     .option('--exclude <patterns...>', t('options.excludePatterns'))
     .option('--dry-run', t('options.dryRun'))
-    .action(async (options: SyncUploadOptions) => {
+    .action(async (ref: string, options: SyncUploadOptions) => {
       try {
-        await syncUpload(options);
+        await syncUpload(ref, options);
       } catch (error) {
         handleError(error);
       }
@@ -516,10 +539,7 @@ ${t('help.examples')}
     .command('download')
     .summary(t('commands.sync.download.descriptionShort'))
     .description(t('commands.sync.download.description'))
-    .option('-t, --team <name>', t('options.team'))
-    .option('-m, --machine <name>', t('options.machine'))
-    .option('--cluster <name>', t('commands.repo.clusterOption'))
-    .option('-r, --repository <name>', t('options.repository'))
+    .argument('<ref>', t('options.repoRef'))
     .option('--local <path>', t('options.localPath'))
     .option('--remote <path>', t('options.remotePath'))
     .option('--remote-file <path>', t('options.remoteFile'))
@@ -528,9 +548,9 @@ ${t('help.examples')}
     .option('--confirm', t('options.confirmSync'))
     .option('--exclude <patterns...>', t('options.excludePatterns'))
     .option('--dry-run', t('options.dryRun'))
-    .action(async (options: SyncDownloadOptions) => {
+    .action(async (ref: string, options: SyncDownloadOptions) => {
       try {
-        await syncDownload(options);
+        await syncDownload(ref, options);
       } catch (error) {
         handleError(error);
       }
@@ -541,16 +561,14 @@ ${t('help.examples')}
     .command('status')
     .summary(t('commands.sync.status.descriptionShort'))
     .description(t('commands.sync.status.description'))
-    .option('-t, --team <name>', t('options.team'))
-    .option('-m, --machine <name>', t('options.machine'))
-    .option('--cluster <name>', t('commands.repo.clusterOption'))
-    .option('-r, --repository <name>', t('options.repository'))
+    .argument('<ref>', t('options.repoRef'))
     .option('--local <path>', t('options.localPath'))
     .option('--remote <path>', t('options.remotePath'))
     .option('--remote-file <path>', t('options.remoteFile'))
-    .action(async (options: SyncDownloadOptions) => {
+    .action(async (ref: string, options: SyncDownloadOptions) => {
       try {
-        await syncDownload({ ...options, dryRun: true });
+        // Read-only: derive the machine, skip the mutating remote round-trip.
+        await syncDownload(ref, { ...options, dryRun: true }, { readOnly: true });
       } catch (error) {
         handleError(error);
       }

@@ -2,22 +2,53 @@
 /**
  * Command-plane import-graph validator.
  *
- * A `plane` in COMMAND_METADATA is a claim about where a command runs, and the
- * web console and the proxy trust it: a machine-plane command is offered for
- * remote execution, a config-plane command is not. A wrong plane is therefore a
+ * A `plane` in COMMAND_PLANES is a claim about where a command runs, and the web
+ * console and the proxy trust it: a machine-plane command is offered for remote
+ * execution, a config-plane command is not. A wrong plane is therefore a
  * security-relevant mistake, and nothing about it is checked by the type system.
  *
- * This gate cross-checks those claims against the import graph. For each
- * top-level domain it walks the module tree from the domain's registering
- * module and asks whether the domain can reach a machine at all — the
- * machine-plane services (renet execute, SSH, SFTP, cloud provisioning).
+ * This gate cross-checks those claims against the import graph, at two
+ * granularities.
+ *
+ * DOMAIN rules (the original gate). For each top-level domain, walk the module
+ * tree from the domain's registering module and ask whether the domain can reach
+ * a machine at all — the machine-plane services (renet execute, SSH, SFTP, cloud
+ * provisioning).
  *
  *   Rule 1  A domain that cannot reach a machine must declare no machine-plane
- *           command. (The load-bearing rule: it catches a command claiming to
- *           be remote when its code provably never leaves the laptop.)
+ *           command.
  *   Rule 2  A domain that can reach a machine must declare at least one
  *           machine-plane command, so a whole domain cannot be silently
  *           mislabelled config.
+ *
+ * LEAF rule (Rule 3). The domain rules are blind to the single most likely
+ * mistake this codebase makes, and it has already been made: a config-only leaf
+ * RELOCATED into a machine-reaching noun silently inherits that noun's `machine`
+ * default and becomes proxyCapable. Rule 1 does not fire (the noun really does
+ * reach machines) and Rule 2 does not fire (the noun has dozens of other machine
+ * leaves), so nothing anywhere says a word.
+ *
+ * That is not hypothetical. `repo admin archive {list,restore,purge}` is pure
+ * config bookkeeping — it reads and writes the caller's archive map and imports
+ * neither an executor nor SSH. It used to be `config repository *-archived`;
+ * moving it under `repo` handed it repo's machine default, and a proxied
+ * `archive purge` would therefore have permanently deleted the PROXY HOST's
+ * archived records instead of the caller's. It was caught by a human noticing a
+ * count had moved, which is not a control.
+ *
+ *   Rule 3  A leaf that claims plane `machine` must be registered by a module
+ *           that can actually reach a machine. If the module that defines the
+ *           leaf's action handler imports no machine seam, transitively, then
+ *           the leaf provably cannot touch a machine and the claim is false.
+ *
+ * Rule 3 needs to know which module registers each leaf, and Commander does not
+ * record that. So this gate patches `Command.prototype.command`/`.action` to
+ * capture a stack at registration time BEFORE importing the CLI, and keeps the
+ * innermost frame under src/ — the module where the leaf's `.action(...)` is
+ * written, which is exactly the module whose imports decide what the leaf can
+ * reach. A leaf whose module cannot be attributed is a hard failure: an
+ * unattributable leaf is one Rule 3 cannot judge, and silently not judging it is
+ * how #51 happened in the first place.
  *
  * The graph is module-granular, so a domain that merely touches a module which
  * *also* contains machine code reads as machine-touching. Where that coarseness
@@ -29,16 +60,27 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cli } from '../src/cli.js';
-import { getCommandPlane } from '../src/config/command-planes.js';
 import {
-  createDescriptionResolver,
-  loadLocale,
-  walkContractCommands,
-} from './lib/command-tree-lib.js';
+  createReachability,
+  evaluateLeafPlanes,
+  instrumentRegistration,
+  leafModules,
+  MACHINE_MARKERS,
+  type Reach,
+} from './lib/plane-rules.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SRC = path.resolve(__dirname, '../src');
+
+// Must patch Commander BEFORE the CLI module registers anything, so the imports
+// below are dynamic on purpose: a static import would be hoisted above this call.
+const registeredIn = instrumentRegistration(SRC);
+
+const { cli } = await import('../src/cli.js');
+const { getCommandPlane } = await import('../src/config/command-planes.js');
+const { createDescriptionResolver, loadLocale, walkContractCommands } = await import(
+  './lib/command-tree-lib.js'
+);
 
 /**
  * The module that registers each top-level domain, mirroring the imports in
@@ -46,6 +88,7 @@ const SRC = path.resolve(__dirname, '../src');
  * must state where it is registered so its plane claims can be checked.
  */
 const DOMAIN_MODULES: Record<string, string> = {
+  backup: 'commands/backup.ts',
   cluster: 'commands/cluster/index.ts',
   config: 'commands/config.ts',
   credits: 'commands/credits.ts',
@@ -63,15 +106,6 @@ const DOMAIN_MODULES: Record<string, string> = {
   update: 'commands/update.ts',
   vscode: 'commands/vscode.ts',
 };
-
-/** Reaching any of these means the code can talk to a customer machine. */
-const MACHINE_MARKERS = [
-  'services/executor/local-executor',
-  'services/machine/',
-  'remote/sftp',
-  'remote/ssh',
-  'services/tofu',
-];
 
 /**
  * Domains whose import-graph verdict is wrong because the graph is
@@ -94,59 +128,10 @@ const OVERRIDES: Record<string, { expectMachineTouching: boolean; reason: string
   },
 };
 
-// ---------- Import graph ----------
-
-const IMPORT_RE = /(?:from\s+|import\s*\(\s*)['"]([^'"]+)['"]/g;
-
-/** Resolve a relative specifier (ESM .js) to a real .ts file under src/. */
-function resolveSpecifier(fromFile: string, spec: string): string | null {
-  if (!spec.startsWith('.')) return null;
-  const base = path.resolve(path.dirname(fromFile), spec);
-  const candidates = [
-    base.replace(/\.js$/, '.ts'),
-    base.replace(/\.js$/, '.tsx'),
-    `${base}.ts`,
-    path.join(base, 'index.ts'),
-  ];
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
-  }
-  return null;
-}
-
-interface Reach {
-  machineTouching: boolean;
-  /** The import chain that first hit a marker, for the report. */
-  via: string[];
-}
-
-function reachability(entry: string): Reach {
-  const seen = new Set<string>();
-  const queue: { file: string; chain: string[] }[] = [{ file: entry, chain: [] }];
-
-  while (queue.length > 0) {
-    const { file, chain } = queue.shift()!;
-    if (seen.has(file)) continue;
-    seen.add(file);
-
-    const rel = path.relative(SRC, file).replace(/\\/g, '/');
-    const nextChain = [...chain, rel];
-
-    if (MACHINE_MARKERS.some((m) => rel.includes(m))) {
-      return { machineTouching: true, via: nextChain };
-    }
-
-    const source = fs.readFileSync(file, 'utf-8');
-    for (const match of source.matchAll(IMPORT_RE)) {
-      const resolved = resolveSpecifier(file, match[1]);
-      if (resolved && !seen.has(resolved)) queue.push({ file: resolved, chain: nextChain });
-    }
-  }
-
-  return { machineTouching: false, via: [] };
-}
-
 // ---------- Check ----------
+
+const reachOf = createReachability(SRC);
+const reachability = (entry: string): Reach => reachOf(path.relative(SRC, entry));
 
 const report = process.argv.includes('--report');
 
@@ -214,6 +199,42 @@ for (const [domain, paths] of [...byDomain].sort()) {
         'machine-plane command.\n  Either a command is mislabelled config/other in ' +
         'command-metadata.ts, or the reachability is an artefact of module granularity — in ' +
         'which case add an OVERRIDES entry in check-command-planes.ts explaining why.'
+    );
+  }
+}
+
+// ---------- Rule 3: per-leaf, the one the domain rules are blind to ----------
+
+const modules = leafModules(cli, registeredIn);
+
+violations.push(
+  ...evaluateLeafPlanes(
+    commands.map((cmd) => ({
+      pathKey: cmd.pathKey,
+      plane: getCommandPlane(cmd.pathKey),
+      module: modules.get(cmd.pathKey) ?? null,
+    })),
+    reachOf
+  )
+);
+
+/** module -> its leaves, for the report. */
+const leavesByModule = new Map<string, string[]>();
+for (const cmd of commands) {
+  const moduleRel = modules.get(cmd.pathKey);
+  if (!moduleRel) continue;
+  const bucket = leavesByModule.get(moduleRel) ?? [];
+  bucket.push(cmd.pathKey);
+  leavesByModule.set(moduleRel, bucket);
+}
+
+if (report) {
+  console.log('\n--- per-leaf (Rule 3): modules registering machine-plane leaves ---');
+  for (const [moduleRel, paths] of [...leavesByModule].sort()) {
+    const machineLeaves = paths.filter((p) => getCommandPlane(p) === 'machine');
+    const flag = reachOf(moduleRel).machineTouching ? 'machine-touching' : 'isolated';
+    console.log(
+      `${moduleRel.padEnd(38)} ${flag.padEnd(16)} ${machineLeaves.length}/${paths.length} machine leaves`
     );
   }
 }

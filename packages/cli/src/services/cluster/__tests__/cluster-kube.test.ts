@@ -154,7 +154,6 @@ describe('installK8s (anchor-model multi-node bring-up)', () => {
       'datastore_attach', // mount it at /mnt/rediacc-ds/ds-control-prod
       'kube_install', // embedded k3s server, --data-dir inside the anchor datastore
       'kube_join_token', // read token
-      'repository_create', // agent image (disposable per-node repo)
       'kube_join', // agent
     ]);
 
@@ -311,7 +310,6 @@ describe('forkCluster (P3 anchor+rejoin orchestrator)', () => {
       'datastore_attach', // shop:joseph
       'kube_identity_rewrite',
       'kube_join_token',
-      'repository_create', // dest agent per-node image
       'kube_join',
     ]);
 
@@ -591,9 +589,23 @@ describe('rehearseCluster (P3 ephemeral throwaway fork → gate → discard)', (
       /health gate/
     );
     // Even on failure, the fork clones are torn down.
-    const discards = exec.mock.calls
-      .map((c) => c[0])
-      .filter((c) => c.functionName === 'datastore_detach' && c.params?.discard === true);
+    const calls = exec.mock.calls.map((c) => c[0]);
+    const discards = calls.filter(
+      (c) => c.functionName === 'datastore_detach' && c.params?.discard === true
+    );
     expect(discards.length).toBeGreaterThan(0);
+
+    // ★ BUG #44: the teardown must dispatch at the destination control MACHINE.
+    // The failure path used to pass the destination CLUSTER name ("dest") into
+    // discardRehearsal's `destControl` machine parameter, so every teardown step
+    // was aimed at a machine that does not exist. tryDispatch is best-effort, so
+    // it swallowed the errors and the failed rehearsal silently left its entire
+    // fork behind. Asserting only that the calls HAPPENED is what let that hide:
+    // assert WHERE they land.
+    const uninstall = calls.find((c) => c.functionName === 'kube_uninstall');
+    expect(uninstall?.machineName).toBe('dest-cp-1');
+    for (const d of discards) {
+      expect(d.machineName).toBe('dest-cp-1');
+    }
   });
 });

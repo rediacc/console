@@ -1,5 +1,7 @@
 # 07 — Examples Catalog and CI Enhancement
 
+**Status: §7 (the kube e2e suites) is AS-BUILT. Everything else is forward-looking (P5/P6).**
+
 Purpose: the `rdc` surface has ZERO CI e2e coverage today (e2e drives `renet` over bridge
 SSH; grep confirms no cli-bundle/rdc invocation in packages/e2e-tests). The examples suite
 is simultaneously (a) user-facing copy-pasteable documentation-as-code, (b) the local
@@ -119,3 +121,64 @@ set before splitting jobs (every leg re-pays ~15 min setup).
 `REDIACC_ALLOW_*` ancestry verification triggers only in agent environments; a CI shell has
 no agent ancestor, so plain `env:` exports are expected to pass. Residual risk confirmed on
 the first real CI run.
+
+## 7. The kube e2e suites (AS-BUILT): P6's CI candidates
+
+The three kube e2e suites were rewritten on the new model in P3 and **now exist and pass
+functionally**. They are the strongest asset P6 inherits: between them they prove the entire
+datastore-cluster model end to end, and they are resettable, which is what makes them CI
+candidates rather than hand batteries.
+
+| Suite | Result | What it proves |
+|---|---|---|
+| **15** k8s-repo (single node, local datastore) | **7/7 GREEN, exit 0** | A kube repo end to end through the runtime-generic `repository up` dispatch: the isolation trio, a no-provisioner StorageClass, a bound local PV, a Running pod, secret env-transport, router annotations, the security lint, and a clean teardown with zero leaked LUKS mounts or loop devices |
+| **16** datastore-cluster (ceph group-snap fork) | **11/12**, the entire functional battery green, three independent times | Atomic group snapshot with the parent never stopped, clone-format-2, cross-node adopt and attach, the F1-F8 PKI re-mint, fork carries a fresh CA with no parent secret material and ROLE=fork, the parent's admin cert 401s on the fork and 200s on the parent, parent continuity, and a CA-preserving migrate |
+| **17** multinode (fork + migrate) | **6/7**, the entire functional battery green | A real 2-node cluster with a NIC-joined agent; **whole-cluster fork** (one atomic group snapshot, clone, identity-rewrite, a FRESH agent joining the fork's NEW CA, kine diverging from the parent); the parent untouched afterwards; and **cluster migrate** with a measured cutover |
+
+### The two known reds (teardown only)
+
+Both are `#29` and `#30` from the bug ledger, both are teardown-only, **no functional proof
+depends on either**, and both have post-failure probes already wired so the next run names the
+cause rather than costing a blind cycle.
+
+- **Suite 16 test 12 (#29)**: after a clean unmount, `dmsetup remove <fork>-cow` returns EBUSY
+  for 27 seconds of retries. Not a mount, not a process, not a loop, and not btrfs's
+  scanned-device cache (refuted by controlled experiment). Unexplained.
+- **Suite 17 test 7 (#30)**: after a cluster **migrate**, the repo namespace refuses to
+  terminate, while the identical `down` on a never-migrated cluster finishes in seconds (suite
+  15 is green). Migrate-specific, distinct from #28.
+
+**P6 should expect these two reds until the P4 work lands**, and must not paper over them by
+loosening the assertions.
+
+### Test-side workarounds P6 must handle
+
+- **DROP suite 16's test-side `csiNodeDown` call.** It was a workaround for #26 (the product
+  started CSI daemons it never stopped). #26 is fixed: the product now stops them on detach and
+  on `kube uninstall`. Suite 17 already carries **zero** test-side CSI teardown, and that is
+  precisely what proves the fix, so keeping the workaround in 16 would hide a regression.
+- **KEEP the deepest-first submount unwind helper** for now (it matches the mount string
+  anywhere in the `/proc/mounts` line, not just mountpoints under the datastore). It becomes
+  redundant once P4 lands the shared node-side teardown primitive over the holder taxonomy
+  (02 §3), and should be dropped in the same change.
+
+### Harness lessons (these cost real time; do not re-learn them)
+
+- **The BRIDGE test timeout must exceed 120 seconds.** It was 120,000ms while the F1-F8 PKI
+  re-mint takes 117.9 to 120.0 seconds. The harness was **SIGKILLing the product** at exactly
+  the moment it was about to succeed, and the re-mint had been passing on a coin flip for the
+  entire campaign. Raised to 360s in **each suite's own playwright config** (not in a local
+  `.env`, so CI inherits it). Generalized rule: when a test harness kills a product operation,
+  suspect the harness bound before suspecting the product.
+- **The test-mode dispatcher's flags drift from the bridge ParamDefs.** `functions once
+  --test-mode` hand-lists its flags, and it lagged every redesigned verb. Three separate
+  harness bugs (H1, H2, H3) were all this one class. The fix, which is on the P4 carry-in
+  list, is to **derive the dispatcher flags from the bridge `ParamDef` registry** so they
+  cannot drift.
+- **A `; true` in a shell assertion makes the assertion vacuous.** `expect(down.code).toBe(0)`
+  could never fail, and it hid a failing `repository down` for the entire campaign. All three
+  suites were swept; no other instance was found. Worth a lint rule.
+- **Mid-suite kube failures wedge k3s containerd mounts**, and only `ops up --force` clears
+  them, so every failed iteration pays the roughly 13-minute reset. Teardown resilience for
+  partially-failed kube suites is a real candidate improvement (it relates to the convergent-init
+  contract in 03 §2b).

@@ -6,16 +6,16 @@ vi.mock('../../i18n/index.js', () => ({
     params ? `${key}:${JSON.stringify(params)}` : key,
 }));
 
-// configService used by both the command handlers and assertCommandPolicy
+// configService used by the command handlers. `resolveRepoRefLocal` (the
+// config-local ref resolver the secret verbs use) reads `getCurrent()`; the
+// mutation gate reads the decrypted config (aliased to the same mock).
 const mockGetRepository = vi.hoisted(() => vi.fn());
-const mockGetRepositoryKey = vi.hoisted(() => vi.fn());
 const mockGetCurrent = vi.hoisted(() => vi.fn());
 const mockGetResourceState = vi.hoisted(() => vi.fn());
 
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getRepository: mockGetRepository,
-    getRepositoryKey: mockGetRepositoryKey,
     getCurrent: mockGetCurrent,
     // v3: the precondition gate reads the decrypted config; alias it to the same
     // mock so `mockGetCurrent.mockResolvedValue(...)` drives both.
@@ -117,6 +117,17 @@ const forkRepo = {
   grandGuid: GRAND_GUID, // points to a different repo → isFork
 };
 
+// Config-local resolution (resolveRepoRefLocal → resolveRefLocal) reads
+// config.resources.repositories to map a ref to its family/tag WITHOUT any
+// placement. Read verbs (get/list) drive this real path, so their configs must
+// carry the `app` family. Both tags present so bare `app` (→ grand 'latest')
+// and `app:dev` both resolve.
+const readConfig = {
+  resources: {
+    repositories: { app: { grand: 'latest', tags: { latest: grandRepo, dev: forkRepo } } },
+  },
+};
+
 /**
  * Throw instead of process.exit so tests can assert.
  *
@@ -166,19 +177,19 @@ describe('rdc repo secret get/list', () => {
     beforeEach(() => {
       process.env.REDIACC_AGENT = '1';
       mockGetRepository.mockResolvedValue(grandRepo);
-      mockGetRepositoryKey.mockResolvedValue('app:latest');
+      mockGetCurrent.mockResolvedValue(readConfig);
     });
 
     it('list works without REDIACC_ALLOW_GRAND_REPO (no grandGuard in V2)', async () => {
       mockListRepositorySecretKeyModes.mockReturnValue([{ key: 'X', mode: 'env' }]);
-      await run(['repo', 'secret', 'list', '--name', 'app']);
+      await run(['repo', 'secret', 'list', 'app']);
       // Table format prints the entry rows directly.
       expect(mockPrint.mock.calls[0]?.[0]).toEqual([{ key: 'X', mode: 'env' }]);
     });
 
     it('get returns digest only — never the value', async () => {
       mockReadRepositorySecret.mockReturnValue({ mode: 'env', value: 'sk_live_XYZ' });
-      await run(['repo', 'secret', 'get', '--name', 'app', '--key', 'STRIPE']);
+      await run(['repo', 'secret', 'get', 'app', '--key', 'STRIPE']);
 
       const call = mockPrint.mock.calls[0]?.[0][0];
       expect(call).toMatchObject({ key: 'STRIPE', mode: 'env' });
@@ -193,12 +204,12 @@ describe('rdc repo secret get/list', () => {
     beforeEach(() => {
       process.env.REDIACC_AGENT = '1';
       mockGetRepository.mockResolvedValue(forkRepo);
-      mockGetRepositoryKey.mockResolvedValue('app:dev');
+      mockGetCurrent.mockResolvedValue(readConfig);
     });
 
     it('get returns digest only on a fork too', async () => {
       mockReadRepositorySecret.mockReturnValue({ mode: 'file', value: 'pem-content' });
-      await run(['repo', 'secret', 'get', '--name', 'app:dev', '--key', 'KEY']);
+      await run(['repo', 'secret', 'get', 'app:dev', '--key', 'KEY']);
       const call = mockPrint.mock.calls[0]?.[0][0];
       expect(call).toMatchObject({ key: 'KEY', mode: 'file' });
       expect(call.digest).toMatch(/^[0-9a-f]{8}$/);
@@ -211,7 +222,7 @@ describe('rdc repo secret get/list', () => {
         { key: 'A', mode: 'env' },
         { key: 'B', mode: 'file' },
       ]);
-      await run(['repo', 'secret', 'list', '--name', 'app:dev']);
+      await run(['repo', 'secret', 'list', 'app:dev']);
       const call = mockPrint.mock.calls[0]?.[0];
       expect(call).toEqual([
         { key: 'A', mode: 'env' },
@@ -226,12 +237,12 @@ describe('rdc repo secret get/list', () => {
   describe('human (no agent env) — also gets digest-only on get (V2 symmetric)', () => {
     beforeEach(() => {
       mockGetRepository.mockResolvedValue(grandRepo);
-      mockGetRepositoryKey.mockResolvedValue('app:latest');
+      mockGetCurrent.mockResolvedValue(readConfig);
     });
 
     it('get returns digest only — humans no longer see plaintext (write-only)', async () => {
       mockReadRepositorySecret.mockReturnValue({ mode: 'env', value: 'plaintext-secret' });
-      await run(['repo', 'secret', 'get', '--name', 'app', '--key', 'X']);
+      await run(['repo', 'secret', 'get', 'app', '--key', 'X']);
       const call = mockPrint.mock.calls[0]?.[0][0];
       expect(call).toMatchObject({ key: 'X', mode: 'env' });
       expect(call.digest).toMatch(/^[0-9a-f]{8}$/);
@@ -241,15 +252,15 @@ describe('rdc repo secret get/list', () => {
 
     it('throws if secret key not found', async () => {
       mockReadRepositorySecret.mockReturnValue(undefined);
-      await expect(run(['repo', 'secret', 'get', '--name', 'app', '--key', 'X'])).rejects.toThrow(
+      await expect(run(['repo', 'secret', 'get', 'app', '--key', 'X'])).rejects.toThrow(
         /commands\.repo\.secret\.get\.notFound/
       );
     });
 
     it('throws if repo not found', async () => {
-      mockGetRepositoryKey.mockResolvedValue(undefined);
-      await expect(run(['repo', 'secret', 'get', '--name', 'app', '--key', 'X'])).rejects.toThrow(
-        /commands\.repo\.secret\.get\.repoNotFound/
+      // The family is absent from config → resolveRepoRefLocal throws notFound (exit 5).
+      await expect(run(['repo', 'secret', 'get', 'ghost', '--key', 'X'])).rejects.toThrow(
+        /is not in this config/
       );
     });
 
@@ -258,7 +269,7 @@ describe('rdc repo secret get/list', () => {
         { key: 'AAA', mode: 'env' },
         { key: 'BBB', mode: 'file' },
       ]);
-      await run(['repo', 'secret', 'list', '--name', 'app']);
+      await run(['repo', 'secret', 'list', 'app']);
       const call = mockPrint.mock.calls[0]?.[0];
       expect(call).toEqual([
         { key: 'AAA', mode: 'env' },
@@ -268,7 +279,7 @@ describe('rdc repo secret get/list', () => {
 
     it('list prints nothing tabular when no secrets (info line instead)', async () => {
       mockListRepositorySecretKeyModes.mockReturnValue([]);
-      await run(['repo', 'secret', 'list', '--name', 'app']);
+      await run(['repo', 'secret', 'list', 'app']);
       expect(mockPrint).not.toHaveBeenCalled();
     });
   });
@@ -305,7 +316,6 @@ describe('rdc repo secret get/list', () => {
     beforeEach(() => {
       process.env.REDIACC_AGENT = '1';
       mockGetRepository.mockResolvedValue(forkRepo);
-      mockGetRepositoryKey.mockResolvedValue('app:dev');
     });
 
     it('first-write of a new key still requires --current under agent (existing precedent)', async () => {
@@ -316,7 +326,7 @@ describe('rdc repo secret get/list', () => {
       mockGetCurrent.mockResolvedValue(familyConfig('dev', forkRepo));
 
       await expect(
-        run(['repo', 'secret', 'set', '--name', 'app:dev', '--key', 'NEW', '--value', 'v'])
+        run(['repo', 'secret', 'set', 'app:dev', '--key', 'NEW', '--value', 'v'])
       ).rejects.toThrow(/sensitive path requires --current/);
       expect(mockWriteRepositorySecret).not.toHaveBeenCalled();
     });
@@ -329,7 +339,6 @@ describe('rdc repo secret get/list', () => {
         'repo',
         'secret',
         'set',
-        '--name',
         'app:dev',
         '--key',
         'NEW',
@@ -349,7 +358,7 @@ describe('rdc repo secret get/list', () => {
       mockGetCurrent.mockResolvedValue(configWithFork('old'));
 
       await expect(
-        run(['repo', 'secret', 'set', '--name', 'app:dev', '--key', 'STRIPE', '--value', 'new'])
+        run(['repo', 'secret', 'set', 'app:dev', '--key', 'STRIPE', '--value', 'new'])
       ).rejects.toThrow();
       expect(mockWriteRepositorySecret).not.toHaveBeenCalled();
     });
@@ -362,7 +371,6 @@ describe('rdc repo secret get/list', () => {
         'repo',
         'secret',
         'set',
-        '--name',
         'app:dev',
         '--key',
         'STRIPE',
@@ -394,7 +402,6 @@ describe('rdc repo secret get/list', () => {
           'repo',
           'secret',
           'set',
-          '--name',
           'app:dev',
           '--key',
           'STRIPE',
@@ -412,17 +419,7 @@ describe('rdc repo secret get/list', () => {
       mockReadRepositorySecret.mockReturnValue({ mode: 'env', value: 'old' });
       mockGetCurrent.mockResolvedValue(configWithFork('old'));
 
-      await run([
-        'repo',
-        'secret',
-        'set',
-        '--name',
-        'app:dev',
-        '--key',
-        'STRIPE',
-        '--value',
-        'new',
-      ]);
+      await run(['repo', 'secret', 'set', 'app:dev', '--key', 'STRIPE', '--value', 'new']);
       expect(mockWriteRepositorySecret).toHaveBeenCalled();
     });
 
@@ -433,19 +430,7 @@ describe('rdc repo secret get/list', () => {
       mockReadRepositorySecret.mockReturnValue(undefined);
       mockGetCurrent.mockResolvedValue(familyConfig('latest', grandRepo));
       await expect(
-        run([
-          'repo',
-          'secret',
-          'set',
-          '--name',
-          'app:dev',
-          '--key',
-          'X',
-          '--value',
-          'v',
-          '--mode',
-          'foo',
-        ])
+        run(['repo', 'secret', 'set', 'app:dev', '--key', 'X', '--value', 'v', '--mode', 'foo'])
       ).rejects.toThrow(/Allowed choices are env, file/);
       expect(mockWriteRepositorySecret).not.toHaveBeenCalled();
     });
@@ -455,7 +440,6 @@ describe('rdc repo secret get/list', () => {
     beforeEach(() => {
       process.env.REDIACC_AGENT = '1';
       mockGetRepository.mockResolvedValue(grandRepo);
-      mockGetRepositoryKey.mockResolvedValue('app:latest');
     });
 
     it('write to a NEW key on grand requires --current "" (mutation-gate symmetric)', async () => {
@@ -464,7 +448,7 @@ describe('rdc repo secret get/list', () => {
       // Without any precondition flag, mutation-gate refuses (was previously
       // blocked by the now-removed grandGuard policy layer).
       await expect(
-        run(['repo', 'secret', 'set', '--name', 'app', '--key', 'X', '--value', 'v'])
+        run(['repo', 'secret', 'set', 'app', '--key', 'X', '--value', 'v'])
       ).rejects.toThrow(/sensitive path requires --current/);
       expect(mockWriteRepositorySecret).not.toHaveBeenCalled();
     });
@@ -472,18 +456,7 @@ describe('rdc repo secret get/list', () => {
     it('write to grand succeeds with --rotate-secret (audited as rotation)', async () => {
       mockReadRepositorySecret.mockReturnValue(undefined);
       mockGetCurrent.mockResolvedValue(familyConfig('latest', grandRepo));
-      await run([
-        'repo',
-        'secret',
-        'set',
-        '--name',
-        'app',
-        '--key',
-        'X',
-        '--value',
-        'v',
-        '--rotate-secret',
-      ]);
+      await run(['repo', 'secret', 'set', 'app', '--key', 'X', '--value', 'v', '--rotate-secret']);
       expect(mockWriteRepositorySecret).toHaveBeenCalled();
     });
   });
@@ -492,14 +465,15 @@ describe('rdc repo secret get/list', () => {
     beforeEach(() => {
       process.env.REDIACC_AGENT = '1';
       mockGetRepository.mockResolvedValue(forkRepo);
-      mockGetRepositoryKey.mockResolvedValue('app:dev');
     });
 
     it('throws when key not found', async () => {
       mockReadRepositorySecret.mockReturnValue(undefined);
-      await expect(
-        run(['repo', 'secret', 'unset', '--name', 'app:dev', '--key', 'X'])
-      ).rejects.toThrow(/notFound/);
+      // Ref must resolve so the flow reaches the key-not-found check.
+      mockGetCurrent.mockResolvedValue(configWithFork('old'));
+      await expect(run(['repo', 'secret', 'unset', 'app:dev', '--key', 'X'])).rejects.toThrow(
+        /notFound/
+      );
       expect(mockDeleteRepositorySecret).not.toHaveBeenCalled();
     });
 
@@ -507,7 +481,7 @@ describe('rdc repo secret get/list', () => {
       mockReadRepositorySecret.mockReturnValue({ mode: 'env', value: 'old' });
       mockGetCurrent.mockResolvedValue(configWithFork('old'));
       await expect(
-        run(['repo', 'secret', 'unset', '--name', 'app:dev', '--key', 'STRIPE'])
+        run(['repo', 'secret', 'unset', 'app:dev', '--key', 'STRIPE'])
       ).rejects.toThrow();
       expect(mockDeleteRepositorySecret).not.toHaveBeenCalled();
     });
@@ -515,20 +489,10 @@ describe('rdc repo secret get/list', () => {
     it('with correct --current → succeeds', async () => {
       mockReadRepositorySecret.mockReturnValue({ mode: 'env', value: 'old' });
       mockGetCurrent.mockResolvedValue(configWithFork('old'));
-      await run([
-        'repo',
-        'secret',
-        'unset',
-        '--name',
-        'app:dev',
-        '--key',
-        'STRIPE',
-        '--current',
-        'old',
-      ]);
+      await run(['repo', 'secret', 'unset', 'app:dev', '--key', 'STRIPE', '--current', 'old']);
       expect(mockDeleteRepositorySecret).toHaveBeenCalledWith(
         expect.anything(),
-        'app:dev', // repoRef
+        'app', // repoRef (parsed base name)
         'app:dev', // resolved repoKey
         'STRIPE' // secret name
       );
@@ -538,25 +502,12 @@ describe('rdc repo secret get/list', () => {
   describe('human (no agent env) write paths — symmetric with agents in V2', () => {
     beforeEach(() => {
       mockGetRepository.mockResolvedValue(grandRepo);
-      mockGetRepositoryKey.mockResolvedValue('app:latest');
     });
 
     it('first-write of a new key requires --current "" (symmetric with agent)', async () => {
       mockReadRepositorySecret.mockReturnValue(undefined);
       mockGetCurrent.mockResolvedValue(configWithSecret('old'));
-      await run([
-        'repo',
-        'secret',
-        'set',
-        '--name',
-        'app',
-        '--key',
-        'NEW',
-        '--value',
-        'v',
-        '--current',
-        '',
-      ]);
+      await run(['repo', 'secret', 'set', 'app', '--key', 'NEW', '--value', 'v', '--current', '']);
       expect(mockWriteRepositorySecret).toHaveBeenCalled();
     });
 
@@ -564,7 +515,7 @@ describe('rdc repo secret get/list', () => {
       mockReadRepositorySecret.mockReturnValue({ mode: 'env', value: 'old' });
       mockGetCurrent.mockResolvedValue(configWithSecret('old'));
       await expect(
-        run(['repo', 'secret', 'set', '--name', 'app', '--key', 'STRIPE', '--value', 'new'])
+        run(['repo', 'secret', 'set', 'app', '--key', 'STRIPE', '--value', 'new'])
       ).rejects.toThrow();
       expect(mockWriteRepositorySecret).not.toHaveBeenCalled();
     });
@@ -572,7 +523,7 @@ describe('rdc repo secret get/list', () => {
     it('unset with correct --current succeeds for human', async () => {
       mockReadRepositorySecret.mockReturnValue({ mode: 'env', value: 'v' });
       mockGetCurrent.mockResolvedValue(configWithSecret('v'));
-      await run(['repo', 'secret', 'unset', '--name', 'app', '--key', 'STRIPE', '--current', 'v']);
+      await run(['repo', 'secret', 'unset', 'app', '--key', 'STRIPE', '--current', 'v']);
       expect(mockDeleteRepositorySecret).toHaveBeenCalledWith(
         expect.anything(),
         'app',
@@ -586,7 +537,6 @@ describe('rdc repo secret get/list', () => {
   describe('V2 rotate-secret + structured next', () => {
     beforeEach(() => {
       mockGetRepository.mockResolvedValue(grandRepo);
-      mockGetRepositoryKey.mockResolvedValue('app:latest');
     });
 
     it('--current and --rotate-secret are mutually exclusive', async () => {
@@ -597,7 +547,6 @@ describe('rdc repo secret get/list', () => {
           'repo',
           'secret',
           'set',
-          '--name',
           'app',
           '--key',
           'STRIPE',
@@ -618,7 +567,6 @@ describe('rdc repo secret get/list', () => {
         'repo',
         'secret',
         'set',
-        '--name',
         'app',
         '--key',
         'STRIPE',
@@ -638,7 +586,6 @@ describe('rdc repo secret get/list', () => {
           'repo',
           'secret',
           'set',
-          '--name',
           'app',
           '--key',
           'STRIPE',

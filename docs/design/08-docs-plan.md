@@ -1,9 +1,33 @@
 # 08 — Docs Plan (rewrite for the new architecture)
 
+**Status: forward-looking (P7).** The plan below is unchanged, but the ground under it has
+moved: the claims the current docs make falsely are now TRUE and PROVEN, so P7 is a rewrite
+against measured evidence rather than against a design.
+
 User decision 2026-07-10: with the redesign implemented in the same program, the public
 docs are REWRITTEN for the new architecture (the interim "falsehood patch" of current docs
 is skipped as dead work). Docs land in the program's final phase, AFTER code passes the
 examples suite, so every claim is backed by something that ran.
+
+## 0. What P7 must use for numbers
+
+**Use the measured figures from the README's "What is proven live" table, and nothing else.**
+Do not recycle the pre-program numbers in 01 §6 (namespace fork 1-5s, 2-node cluster fork
+~46s, migrate ~16s cutover): those measured the OLD architecture and are not comparable. Do
+not estimate. The hard rule from 05 §5 stands: **all numbers measured live, no fabricated
+benchmarks.**
+
+The honest framings available to P7, each with a transcript behind it: whole-cluster fork at
+roughly 85 seconds (single-node dest) or 125 to 161 seconds (multinode, including a fresh
+agent rejoin); in-Ceph migrate cutover at 21.6 seconds by the orchestrator's own clock, or 53
+to 56 seconds when the node-side teardown is counted inside the window (quote the larger one
+and say why); group snapshot in 1.2 to 8.7 seconds; datastore fork in 0.3 to 10.5 seconds; and
+the parent serving 4941 of 4943 liveness samples across an 82-minute window during which it
+was forked repeatedly.
+
+The storage half of a fork is constant-time in the size of the data. The PKI re-mint (roughly
+120 seconds) dominates the wall clock, and that is worth saying plainly rather than hiding: a
+fork is slow because it is being made **safe**, not because it is copying anything.
 
 ## 1. Current falsehoods (why the rewrite is also an honesty fix)
 
@@ -20,7 +44,19 @@ spots verified 2026-07-10):
   (real: `--name/--tag`). Check lines 181-193 (backup flags) against the current CLI while
   in there.
 Under the new architecture these claims become TRUE by construction (data included in
-cluster fork), which is the cleanest fix of all.
+cluster fork), which is the cleanest fix of all. **As of P3 they are also PROVEN**: e2e suite
+17 forks a running multinode cluster and the fork's app data marker is present in the clone,
+because the data never left the datastore that was snapshotted. The page that overstated the
+old implementation can now understate the new one.
+
+Two things the rewrite must ADD, because they are new true claims rather than corrected false
+ones:
+- **A fork is not a parent-admin credential.** Every fork re-mints the cluster PKI, so the
+  parent's admin certificate is rejected by the fork (401) while remaining valid on the parent
+  (200), and injected plus third-party Secrets are scrubbed from the fork. This is the F1 fix
+  and it is the single most important security property of the feature.
+- **The parent never stops.** The group snapshot is hot. Measured: zero gaps at the API across
+  hundreds of samples, and 4941 of 4943 across an 82-minute window.
 
 ## 2. Target docs structure
 
@@ -59,6 +95,10 @@ files. New plugin, following the established pattern:
   covers en.json-style trees (www translations, CLI locales, account). The CLI reshape's
   new/renamed command strings flow HERE → re-naturalize via `private/growth/i18n_pipeline`
   (ledger-driven delta; Sonnet).
+  **P7 owns a deferred debt here**: 12 locales x 58 untranslated CLI-surface strings, carried
+  since P1 by standing ruling because P4 reshapes exactly that surface and naturalizing before
+  the reshape would be throwaway work. P4 must NOT try to clear it. P7 must. Re-check the
+  count after P4 lands, since the reshape will change which keys exist.
 - **Docs/blog frontmatter `sourceHash`+`sourceCommit`**
   (`packages/www/scripts/validate-translation-freshness.js`): en docs change → all 12 locale
   twins must be updated + `sourceHash` restamped (16-hex sha256 of

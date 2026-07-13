@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildStrategyUpdate, parseRepoFilter } from '../config-backup-strategy.js';
+import { buildStrategyUpdate, parseRepoFilter } from '../backup-strategy.js';
 
 describe('parseRepoFilter', () => {
   it('parses a comma-separated list, trimming and dropping empties', () => {

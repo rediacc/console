@@ -83,6 +83,17 @@ export const EXIT_CODES = {
   API_ERROR: 7,
   PAYMENT_REQUIRED: 8,
   RATE_LIMITED: 9,
+  // 10 (LICENSE_REQUIRED) is the renet precedent; it lives with the recovery
+  // framework (services/renet/renet-license-contract.ts) and is propagated
+  // verbatim, never remapped, so it is intentionally not duplicated here.
+  // 11-15 are the P4 refusal classes (spec/03 §1), one per class the redesign
+  // introduces. 130 is the SIGINT convention (128+2) for a detached follow.
+  AMBIGUOUS: 11,
+  STATE_MISMATCH: 12,
+  HEALTH_GATE_FAILED: 13,
+  INFRA_FAILED: 14,
+  BUSY: 15,
+  DETACHED: 130,
 } as const;
 
 export function httpStatusToExitCode(httpStatus: number): number {

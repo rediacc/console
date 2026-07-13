@@ -110,7 +110,7 @@ describe('policy survives the encrypted round trip', () => {
     const cases: PolicyContext[] = [
       ctx({ commandPath: 'repo up' }),
       ctx({ commandPath: 'repo delete' }), // denied by the explicit deny
-      ctx({ commandPath: 'machine query' }), // outside the defaults allow-list
+      ctx({ commandPath: 'machine status' }), // outside the defaults allow-list
       ctx({ commandPath: 'cluster scale', teamSlug: 'platform' }),
       ctx({ commandPath: 'repo up', teamSlug: 'platform' }),
       ctx({ commandPath: 'repo up', machineName: 'staging-1' }),

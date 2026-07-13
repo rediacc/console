@@ -57,7 +57,6 @@ const repoEventTypes = [
   'cli.repo.prune',
   'cli.repo.resize',
   'cli.repo.status',
-  'cli.repo.takeover',
   'cli.repo.template_apply',
   'cli.repo.trim',
   'cli.repo.unmount',

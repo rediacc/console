@@ -20,20 +20,20 @@ M="$TUTORIAL_MACHINE_NAME"
 # Pre-recording setup
 rm -f ~/.config/rediacc/rediacc.json 2>/dev/null || true
 rdc config init --ssh-key "$TUTORIAL_SSH_KEY"
-rdc config machine add --name "$M" --ip "$TUTORIAL_MACHINE_IP" --user "$TUTORIAL_MACHINE_USER"
+rdc machine add "$M" --ip "$TUTORIAL_MACHINE_IP" --user "$TUTORIAL_MACHINE_USER"
 for i in $(seq 1 30); do
     ssh -i "$TUTORIAL_SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=2 \
         "$TUTORIAL_MACHINE_USER@$TUTORIAL_MACHINE_IP" true 2>/dev/null && break
     sleep 2
 done
-rdc config machine setup --name "$M"
+rdc machine setup "$M"
 # Reap any orphaned repo state from previous tutorial runs.
 rdc machine prune --name "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 
-rdc repo delete --name my-app --machine "$M" 2>/dev/null || true
-rdc repo create --name my-app --machine "$M" --size 2G
-rdc repo template apply --name app-postgres --machine "$M" --repository my-app
-rdc repo up --name my-app --machine "$M"
+rdc repo delete my-app 2>/dev/null || true
+rdc repo create my-app --machine "$M" --size 2G
+rdc repo admin template apply my-app --template app-postgres
+rdc repo up my-app
 
 mkdir -p /tmp/tutorial-src && echo "<h1>Hello</h1>" >/tmp/tutorial-src/index.html
 mkdir -p /tmp/tutorial-backup
@@ -46,21 +46,21 @@ clear_screen
 section "Tunnel — open the app in your browser"
 # Tunnel is long-running: let it serve for a few seconds, then Ctrl+C it
 # exactly like a user would.
-run_cmd_interrupt "rdc repo tunnel --machine $M --repository my-app --container app" 4
+run_cmd_interrupt "rdc repo tunnel my-app --container app" 4
 
 pause 2
 
 section "Term — run a command inside the repo"
-run_cmd "rdc term connect --machine $M --repository my-app --command 'docker ps'"
+run_cmd "rdc term connect my-app -c 'docker ps'"
 
 pause 2
 
 section "Sync — preview, then upload"
-run_cmd "rdc repo sync upload --machine $M --repository my-app --local /tmp/tutorial-src --dry-run"
+run_cmd "rdc repo sync upload my-app --local /tmp/tutorial-src --dry-run"
 
 pause 1
 
-run_cmd "rdc repo sync upload --machine $M --repository my-app --local /tmp/tutorial-src"
+run_cmd "rdc repo sync upload my-app --local /tmp/tutorial-src"
 
 pause 2
 
@@ -68,6 +68,6 @@ pause 2
 end_recording
 # Clean up
 rm -rf /tmp/tutorial-src /tmp/tutorial-backup
-rdc repo down --name my-app --machine "$M" 2>/dev/null || true
-rdc repo down --name my-app --machine "$M" --unmount 2>/dev/null || true
-rdc repo delete --name my-app --machine "$M" 2>/dev/null || true
+rdc repo down my-app 2>/dev/null || true
+rdc repo down my-app --unmount 2>/dev/null || true
+rdc repo delete my-app 2>/dev/null || true

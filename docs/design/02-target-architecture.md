@@ -1,5 +1,8 @@
 # 02 — Target Architecture: the Datastore-Centric Model
 
+**Status: AS-BUILT.** This model is implemented and proven live (P1-P3). Where the build
+corrected the design, the corrected version is stated here and the original is noted.
+
 Decision (user, 2026-07-10): rebuild the Kubernetes storage layer around the datastore, the
 same way the docker world already works. Push Ceph back BELOW the repo layer. One storage
 philosophy for both worlds.
@@ -13,16 +16,44 @@ machine  →  DATASTORE (named, mobile, single-mounter)  →  repos
 - **Datastore** = a self-contained pool: BTRFS inside ONE RBD image (Ceph backend) or a
   local device/loop file (local backend). Exactly ONE node mounts a datastore at a time.
   A machine can mount SEVERAL datastores (tiering: local-NVMe ds next to an RBD ds).
+- **A named datastore mounts at `/mnt/rediacc-ds/<name>`** (P0 gate ruling R1). The original
+  design said `/mnt/rediacc/ds-<name>`, which nests every named mountpoint inside the DEFAULT
+  datastore's own BTRFS mount: named attaches would then require the default mounted,
+  `detach default` would hit EBUSY under any named mount, and exhausting the default pool
+  would break named attach. That is exactly the blast-radius coupling `ds-control` exists to
+  avoid. The sibling scheme keeps every property the design wanted (deterministic from the
+  name, identical across machines so kine PV specs never need rewriting, per-machine collision
+  refusal).
 - **Repos are placed IN a datastore**, not on a node. A repo's home node = whoever currently
   mounts its datastore. Docker repos stay exactly as today (LUKS image file in the
-  datastore). K8s repos become **folders in the datastore**:
-  `<ds-mount>/repos/<repo>/volumes/<pvc>/` (one subdir per declared PVC).
+  datastore). K8s repos become **folders in the datastore**, one per-volume LUKS image per
+  declared PVC:
+
+  ```
+  <ds-mount>/repos/<repo>/volumes/<pvc>.img      the image (inside the forked unit)
+  <ds-mount>/mounts/volumes/<repo>/<pvc>/        where it is mounted (OUTSIDE it)
+  ```
+
+  **The mounts live OUTSIDE the repo folder** (P0 gate ruling C1). The fork unit is ONE
+  reflink of `repos/<repo>`; a live ext4 mountpoint inside that tree makes
+  `cp --archive --reflink=always` either fail (reflink cannot cross filesystems) or, under any
+  fallback, byte-copy decrypted plaintext into the fork. The invariant is: **no mountpoints
+  inside `repos/<repo>/`**. This mirrors the docker world exactly (image files in the pool, a
+  `mounts/` tree outside the snapshotted unit) and keeps PV objects stable across cluster
+  fork and migrate, since they reference the deterministic mount path.
 - **The cluster control-plane's k3s data-dir lives INSIDE a datastore too** — in a
   dedicated `ds-control` **by default** (review F8: if the CP shares a data pool, any repo
   filling its datastore takes the control plane down with it). Agent node dirs are demoted to
   **disposable local cache**: never forked, never transferred, never backed up; agents
-  REJOIN after fork/migrate using the CA-derived token (which identity-rewrite already
-  preserves).
+  REJOIN after fork/migrate using the CA-derived token (fork mints a fresh one from the NEW
+  CA; migrate reuses the preserved one).
+
+  **As-built inconsistency, open for P4 (bug #25).** `cluster create` still builds a per-node
+  agent repo (`createNodeImage`) and then passes the CONTROL datastore's mount to that node's
+  `kube_join`, so the repo goes unused and the agent's data-dir lands on the root filesystem,
+  contradicting its own comment. `cluster join` meanwhile uses the per-node repo. Two join
+  paths, two behaviours, dead state. Given that agents ARE a disposable cache, the resolution
+  P4 should consider first is **deleting the vestigial repo**, not fixing the mount.
 
 ```
 CEPH POOL
@@ -42,8 +73,14 @@ K8S CLUSTER
   hostPath but allows binding admin-created PVs).
 - Renet statically generates **upstream `local`-type PVs** (which REQUIRE nodeAffinity —
   built exactly for node-attached storage) pointing at
-  `<ds-mount>/repos/<repo>/volumes/<pvc>`, with affinity to a node label
-  `rediacc.io/ds-<name>` that renet stamps on the mounting node at attach time.
+  `<ds-mount>/mounts/volumes/<repo>/<pvc>`, with affinity to a node label
+  `rediacc.io/ds-<name>`.
+  **As-built gap, open for P4 (carry-in 6):** `datastore attach` does NOT stamp that label
+  today, so a node-pinned PV will not bind until something else does. The e2e suites had to
+  call `kube_node_label` by hand. The fix belongs folded into renet's `datastore attach`
+  (mirroring the CSI symmetric fold), with detach stripping it. Not CLI porcelain, which P4's
+  reshape would throw away. Do not defer past P4: the failure mode is silent, with pods
+  sitting Pending forever and no error naming the missing label.
 - Pod placement is automatic: volume-claiming pods pin to the datastore's node via
   volume-topology-aware scheduling; stateless pods float and reach state via Services
   (that IS "write forwarding" — no feature needed).
@@ -59,20 +96,34 @@ K8S CLUSTER
   kubelet statfs (a folder on shared BTRFS reports the whole datastore's size to every PVC
   and lets one pod fill the pool for all repos). This also resolves the 05 §3 encryption
   decision in the same stroke.
-- **Chart-compatibility honesty (review F5/F13)**: plain Deployment+PVC apps work;
-  StatefulSet `volumeClaimTemplates` work only with name-coupled pre-created PVCs
-  (`<template>-<sts>-<ordinal>`) and break past the declared count; runtime-provisioning
-  operators (CNPG, Strimzi, Elastic) do NOT fit the static model, and cluster-scoped
-  resources (CRDs, webhooks, ClusterRoles) live outside the namespace-repo boundary —
-  documented compatibility matrix is a P7 deliverable; `repo up` warns on cluster-scoped
-  kinds in manifests.
-- **CSI path (review F6, adopted with staging)**: static PVs are the v1 floor, but P1's
-  path/naming layout is designed CSI-ADOPTABLE, and a **thin node-local CSI driver** ships
-  in P3 (05 §6): provision = create a LUKS volume image in the repo folder; topology = the
-  `rediacc.io/ds-<name>` label; snapshot/clone = reflink, exposed through the standard
-  VolumeSnapshot/dataSourceRef APIs. This recovers dynamic PVCs, operator workloads, and
-  velero-style tooling while keeping Ceph strictly below — what got deleted was ceph-csi
-  and RADOS namespaces, not the CSI interface.
+- **Chart-compatibility honesty (review F5/F13), REVISED by the CSI build**: the original
+  limits below described the STATIC-ONLY model, and the CSI driver (P3) lifts most of them.
+  Stating both, because the exact boundary is what a chart author needs:
+  - *Static PVs alone*: plain Deployment+PVC apps work; StatefulSet `volumeClaimTemplates`
+    work only with name-coupled pre-created PVCs (`<template>-<sts>-<ordinal>`) and break past
+    the declared count; runtime-provisioning operators (CNPG, Strimzi, Elastic) do NOT fit.
+  - *With the CSI driver*: dynamic provisioning, VolumeSnapshot, and clone-from-PVC all work,
+    so operator workloads and velero-style tooling come back. That is the entire F6 rationale
+    and it is why CSI was built.
+  - **Still unproven (B2)**: no stock Helm chart has ever been installed against the driver.
+    The StatefulSet `volumeClaimTemplates` path specifically (generated PVC names, ordinal
+    pods, interacting with WaitForFirstConsumer and `storageCapacity`) is the one that a
+    hand-rolled manifest cannot demonstrate by construction. Until B2 runs, treat
+    chart-compatibility as expected-but-unverified rather than proven.
+  - Unchanged either way: cluster-scoped resources (CRDs, webhooks, ClusterRoles) live outside
+    the namespace-repo boundary, and `repo up` warns on cluster-scoped kinds in manifests. The
+    documented compatibility matrix remains a P7 deliverable, and it should be written from
+    B2's results.
+- **CSI path (review F6): BUILT in P3.** Static PVs remain the v1 floor, and the thin
+  node-local CSI driver `csi.rediacc.io` now ships alongside them: provision = create a
+  per-volume LUKS image in the repo folder; topology = the `rediacc.io/ds-<name>` label;
+  snapshot and clone = reflink, exposed through the standard VolumeSnapshot and
+  `dataSourceRef` APIs. This recovers dynamic PVCs, operator workloads, and velero-style
+  tooling while keeping Ceph strictly below. What got deleted was ceph-csi and RADOS
+  namespaces, not the CSI interface. Spec and as-built record: `spec/09-csi-driver.md`;
+  summary in 05 §3b. Enablement is automatic (it folds into `kube install` and
+  `datastore attach`), and the driver is conformance-tested (csi-sanity 48/50, two ruled
+  deviations).
 
 ## 3. Datastore mobility = the multi-node story
 
@@ -94,6 +145,39 @@ K8S CLUSTER
   RWO mobility as the product's multi-node answer for stateful workloads (SAN-LUN model).
   Enable `exclusive-lock` (+`layering`) on datastore RBD images so the storage self-defends
   (today's per-PVC images have layering only).
+- **THE HOLDER TAXONOMY (as-built; the P3 campaign's cleanest conceptual result).** The
+  design assumed releasing a datastore was a matter of unmounting it. It is not. **Four
+  distinct classes of thing can hold a datastore open**, each invisible to the others'
+  diagnostics, each needing a different remedy. A shared node-side teardown primitive must
+  handle all of them, **in this order**, and every storage-releasing verb (`cluster evict`,
+  `datastore detach`, `cluster migrate`, `kube uninstall`, `repository down`) must route
+  through it. Building that primitive is P4 work; today the handling is scattered.
+
+  1. **Kernel submounts.** And note the trap that cost this program a full diagnostic cycle:
+     k3s containerd overlays live at `/run/k3s/...`, **OUTSIDE the datastore path**, and hold
+     it busy through their `lowerdir` OPTIONS. A filter that unmounts "everything under
+     `<mount>`" misses them entirely, because the busy holder has no mountpoint under the
+     datastore at all. Match the mount string **anywhere in the `/proc/mounts` line**, and
+     unwind deepest-first.
+  2. **Host processes.** The CSI trio (driver, provisioner, snapshotter), whose socket and
+     `--kubelet-root` live INSIDE the datastore. This was **bug #26**, and it is the one that
+     actually blocked the releases: `kube install` started those units and **nothing ever
+     stopped them** (`RemoveNodeUnits` existed with zero callers), so every storage-releasing
+     verb was correctly refused by the no-lazy-success guard, with no mount holder to find.
+     Fixed by a symmetric fold (detach and `kube uninstall` now stop them), but the primitive
+     must own it rather than leaving it in two call sites.
+  3. **Device stacks.** A per-volume LUKS loop plus dm-crypt left open, with **no mountpoint
+     to find**. Its CAUSE was **bug #28**: `repository down` was dying at the namespace delete
+     and never getting as far as releasing the stack. #28 is the cause; this class is the
+     symptom.
+  4. **An open dm device with no userspace owner**: open-count above zero after a successful
+     unmount, with no mount, no loop, and no process. This is **bug #29**, still unexplained
+     (btrfs's scanned-device cache was the leading hypothesis and was refuted by controlled
+     experiment). A post-failure probe is wired, so the next occurrence names the holder.
+
+  The lesson generalizes past storage: a release path that reports "target is busy" without
+  naming the holder is a diagnostic dead end. Make failing diagnostics print what they found.
+
 - Repos in one datastore move/fail over/snapshot TOGETHER (placement = a real decision;
   more, smaller datastores mitigate). Cross-datastore repo moves = `repo push` (copy),
   same rule as cross-machine today.
@@ -172,14 +256,23 @@ KEEP:
   the Rediacc proxy/routing model, guardrails (grandGuard/agentBlocked + ancestry-verified
   overrides).
 
-NEW:
+NEW (all of the following are BUILT):
 - Named multi-datastore registry (config + on-machine state), datastore
   create/attach/detach/fork/snapshot verbs with the `--writes` contract (03),
   RBD group snapshots (03), anchor+rejoin cluster fork/migrate (04), lifecycle health gate
   (04), role-env injection, secrets-to-k8s injection, `repo replicate`, `cluster rehearse`,
-  release helpers, PV LUKS (05), an image-into-cluster build/load step (gap #7 in 01 —
-  minimal viable: build on the machine + `ctr images import` wrapped in a verb or in the
-  deploy flow; full registry-push flow optional).
+  release helpers, PV LUKS (05), a datastore-backed registry so locally built images ride the
+  datastore rather than the disposable agent cache (04 §7b), and the thin node-local CSI
+  driver (05 §3b, spec/09).
+- **`datastore adopt` and `datastore forget` (not in the original design; discovered by the
+  build).** The design assumed a cloned datastore was reachable from any machine that can
+  reach Ceph. It is not: the datastore RECORD lives in the SOURCE machine's registry, so a
+  cross-machine `datastore attach` on the destination failed with "not registered on this
+  machine" even though the rbd clone sat in shared Ceph (bug #14, the architectural blocker
+  that stopped the first live fork). `adopt` registers a record ferried from the source (two
+  shapes: a fork record, and a `--plain` arm for migrate); `forget` removes a registry record
+  without deleting data, and refuses while the datastore is attached. Together they are what
+  makes the single-mounter invariant hold across a fork or a migrate.
 
 ## 7. Default datastore: implicit for docker, EXPLICIT for kubernetes
 
@@ -288,7 +381,10 @@ pattern in `pkg/kube/distro` is the precedent) implements the same contract.
 
 - RWX shared volumes: out of scope (see 05 for the CephFS/JuiceFS research verdict).
 - Pod-level cross-node mobility for stateful pods: replaced by datastore-level mobility.
-- Dynamic PVC provisioning: static declared-PVC model stays (CSI optional later).
+- ~~Dynamic PVC provisioning: static declared-PVC model stays~~ **RECOVERED**: the CSI driver
+  shipped in P3, so dynamic PVCs, VolumeSnapshot, and clone-from-PVC all work. Static local PVs
+  remain as the floor. Volume EXPANSION is still out (`allowVolumeExpansion: false`; the
+  external-resizer has no distributed mode).
 - Post-flip write loss on blue/green rollback is a policy window, not magic (05).
 
 ## 10b. Distro requirements: the `repoEmbeddable` gate survives, with a sharper contract

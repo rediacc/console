@@ -30,10 +30,11 @@ import {
   refreshRepoLicenseIdentity,
   refreshRepoLicensesBatch,
 } from '../account/license.js';
-import { clusterKubeconfigRemotePath, resolveExecutionTarget } from '../cluster/cluster-target.js';
+import { clusterKubeconfigRemotePath } from '../cluster/cluster-target.js';
 import { configService } from '../config/config-resources.js';
 import { auditService } from '../core/audit.js';
 import { outputService } from '../core/output.js';
+import { writeStderr, writeStdout } from '../core/request-context.js';
 import { machineConnections } from '../machine/machine-connection.js';
 import {
   buildLocalVault,
@@ -77,9 +78,12 @@ async function timedStep<T>(
 import { getSubscriptionTokenState } from '../account/subscription-auth.js';
 import { resolveExtraMachines } from './extra-machines.js';
 import {
+  backgroundStartedHint,
   buildJobStartCommand,
+  createJobOutputCollector,
   isJobCommandUnsupported,
   JobLogCursor,
+  type JobOutputCollector,
   JobStartFailedError,
   jobStatusToExecuteResult,
   parseJobHandle,
@@ -385,6 +389,21 @@ function buildRenetExitError(exitCode: number, stderr: string, stdout: string): 
 }
 
 /**
+ * Echo renet's full output to stderr on a non-capture failure, so the operator
+ * sees the real reason rather than a bare exit code. Returns whether it echoed,
+ * so failure renderers downstream do not repeat what was already printed.
+ */
+function echoRenetFailure(exitCode: number, combined: string, options: ExecuteOptions): boolean {
+  if (exitCode === 0 || options.debug || options.captureOutput) return false;
+  const output = combined.trim();
+  if (!output) return false;
+  process.stderr.write(`\n--- renet output (exit code ${exitCode}) ---\n`);
+  process.stderr.write(`${output}\n`);
+  process.stderr.write('---\n\n');
+  return true;
+}
+
+/**
  * Parse a JSON payload out of a captured bridge stdout. A bridge function that
  * SHELLS OUT to a sub-`renet` command (e.g. datastore_list ->
  * `renet datastore list --json`, ceph_client_config_export ->
@@ -514,9 +533,19 @@ function handleStepDetectionStdout(): StdoutHandler {
 }
 
 /** Create the appropriate stdout handler based on execution options. */
-function createStdoutHandler(options: ExecuteOptions): StdoutHandler {
-  if (options.eventsMode && options.onEvent) {
-    return handleEventsStdout(options.onEvent);
+function createStdoutHandler(
+  options: ExecuteOptions,
+  collector?: JobOutputCollector
+): StdoutHandler {
+  if (collector) {
+    // Events mode: parse the NDJSON, feed the collector so result.stdout is the
+    // reconstructed text (not raw events) that parseCapturedJson expects, and
+    // still forward each event to the caller's renderer when it set one.
+    const render = options.onEvent;
+    return handleEventsStdout((event) => {
+      collector.consume(event);
+      render?.(event);
+    });
   }
   if (options.captureOutput) {
     return () => {};
@@ -626,7 +655,7 @@ const EXIT_DETACHED = 130;
  * refused for want of a repo license, and the caller has not opted out of
  * machine activation.
  */
-function needsLicenseRecovery(result: ExecuteResult): boolean {
+export function needsLicenseRecovery(result: ExecuteResult): boolean {
   return (
     !result.success &&
     result.exitCode === RENET_LICENSE_REQUIRED_EXIT_CODE &&
@@ -727,17 +756,14 @@ class LocalExecutorService {
     sshPrivateKey: string,
     startTime: number
   ): Promise<ExecuteResult> {
-    const detached = await this.tryDetachedExecution(
+    let result = await this.runOperation(
+      sftp,
       options,
       remoteRenetPath,
       vault,
       machine,
-      sshPrivateKey,
-      startTime
+      sshPrivateKey
     );
-    if (detached) return detached;
-
-    let result = await this.runRemoteExecution(sftp, remoteRenetPath, vault, options);
     const failure: RenetLicenseFailure | null = needsLicenseRecovery(result)
       ? parseRenetLicenseFailure(result.stderr, result.stdout)
       : null;
@@ -753,7 +779,17 @@ class LocalExecutorService {
         startTime
       );
       if (recovered === null) {
-        result = await this.runRemoteExecution(sftp, remoteRenetPath, vault, options);
+        // Recovery issued a license. Re-run: exit 10 means renet refused BEFORE
+        // doing any work, so a second run cannot double-execute even a detached
+        // job (a strictly weaker claim than startJob's version-skew fallback).
+        result = await this.runOperation(
+          sftp,
+          options,
+          remoteRenetPath,
+          vault,
+          machine,
+          sshPrivateKey
+        );
       } else {
         return recovered;
       }
@@ -763,12 +799,41 @@ class LocalExecutorService {
       await this.maybeRefreshRepoIdentity(options, machine, sshPrivateKey, remoteRenetPath, sftp);
     }
 
-    const operationDurationMs = result.durationMs;
+    const operationDurationMs = result.operationDurationMs ?? result.durationMs;
     return {
       ...result,
       durationMs: Date.now() - startTime,
       operationDurationMs,
     };
+  }
+
+  /**
+   * Run the operation once, detached when the caller asked for it and the
+   * machine supports it, else synchronously. Both variants flow back through the
+   * shared recovery, identity-refresh, and duration tail in
+   * executeWithConnectedSftp, so a detached run is no longer a second code path
+   * that silently skips license recovery (finding #33).
+   */
+  private async runOperation(
+    sftp: SFTPClient,
+    options: ExecuteOptions,
+    remoteRenetPath: string,
+    vault: string,
+    machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
+    sshPrivateKey: string
+  ): Promise<ExecuteResult> {
+    if (options.detached) {
+      const detached = await this.runDetachedExecution(
+        remoteRenetPath,
+        vault,
+        options,
+        machine,
+        sshPrivateKey
+      );
+      // null means the machine's renet has no `job` command: fall back to sync.
+      if (detached !== null) return detached;
+    }
+    return this.runRemoteExecution(sftp, remoteRenetPath, vault, options);
   }
 
   private async maybeIssueLicense(
@@ -944,24 +1009,30 @@ class LocalExecutorService {
     outcome: { failureMode: RepoBatchRecoveryFailureMode; serverErrorSample?: string } | undefined,
     machineName: string
   ): string {
-    switch (outcome?.failureMode) {
-      case 'token_not_ready':
-        return t('errors.license.recoveryFailedTokenNotReady');
-      case 'no_known_repos':
-        return t('errors.license.recoveryFailedNoKnownRepos', { machine: machineName });
-      case 'server_rejected_all': {
-        const errorDetail = outcome.serverErrorSample ?? '';
-        return t('errors.license.recoveryFailedServerRejected', {
-          error: errorDetail,
-          machine: machineName,
-        });
+    const base = ((): string => {
+      switch (outcome?.failureMode) {
+        case 'token_not_ready':
+          return t('errors.license.recoveryFailedTokenNotReady');
+        case 'no_known_repos':
+          return t('errors.license.recoveryFailedNoKnownRepos', { machine: machineName });
+        case 'server_rejected_all': {
+          const errorDetail = outcome.serverErrorSample ?? '';
+          return t('errors.license.recoveryFailedServerRejected', {
+            error: errorDetail,
+            machine: machineName,
+          });
+        }
+        default:
+          return (
+            `A repo license is required for this operation, and automatic issuance did not succeed. ` +
+            `Run: rdc subscription refresh -m ${machineName}`
+          );
       }
-      default:
-        return (
-          `A repo license is required for this operation, and automatic issuance did not succeed. ` +
-          `Run: rdc subscription refresh -m ${machineName}`
-        );
-    }
+    })();
+    // Name the dev/test escape here (read by needsLicenseRecovery): it has bitten
+    // three agents who hit a license wall on a throwaway machine and did not know
+    // they could bypass activation entirely.
+    return `${base} ${t('errors.license.skipActivationHint')}`;
   }
 
   private resolveLicenseRecoveryGuidance(
@@ -1168,42 +1239,36 @@ class LocalExecutorService {
       envSecrets,
       kubeconfig
     );
+    // Events mode streams NDJSON, not text. Reconstruct the real stdout from the
+    // events (below) instead of accumulating the raw stream: handing an event
+    // stream straight to parseCapturedJson is the pre-existing --proxy bug (#31).
+    const collector = options.eventsMode ? createJobOutputCollector() : undefined;
     let stdout = '';
     let stderr = '';
-    const stdoutHandler = createStdoutHandler(options);
+    const stdoutHandler = createStdoutHandler(options, collector);
+    const echoStderrLive = Boolean(options.debug && !options.captureOutput && !options.eventsMode);
     const execStart = Date.now();
     const exitCode = await sftp.execStreaming(command, {
       stdin: vault,
       onStdout: (data) => {
-        stdout += data;
+        // Events mode reconstructs stdout from the parsed events (below), so the
+        // raw NDJSON is only fed to the handler, never accumulated as text.
+        if (!collector) stdout += data;
         stdoutHandler(data);
       },
       onStderr: (data) => {
         stderr += data;
-        if (options.debug && !options.captureOutput && !options.eventsMode) {
-          process.stderr.write(data);
-        }
+        if (echoStderrLive) process.stderr.write(data);
       },
     });
+
+    if (collector) stdout = collector.stdout;
 
     const combined = stdout + stderr;
     const renetDurationMatch = /operation completed.*?duration_ms=(\d+)/.exec(combined);
     const operationMs = renetDurationMatch
       ? Number.parseInt(renetDurationMatch[1], 10)
       : Date.now() - execStart;
-
-    const steps = extractStepsFromOutput(combined);
-
-    let outputEchoed = false;
-    if (exitCode !== 0 && !options.debug && !options.captureOutput) {
-      const output = combined.trim();
-      if (output) {
-        process.stderr.write(`\n--- renet output (exit code ${exitCode}) ---\n`);
-        process.stderr.write(`${output}\n`);
-        process.stderr.write('---\n\n');
-        outputEchoed = true;
-      }
-    }
 
     return {
       success: exitCode === 0,
@@ -1212,45 +1277,8 @@ class LocalExecutorService {
       durationMs: operationMs,
       stdout,
       stderr,
-      outputEchoed,
-      steps,
-    };
-  }
-
-  /**
-   * Run the operation detached, if the caller asked for it and the machine can.
-   *
-   * Returns null when the run should proceed synchronously instead: either the
-   * caller never asked to detach, or the machine's renet is too old to know the
-   * `job` command. Nothing sets `detached` by default today; an interactive run
-   * stays synchronous.
-   */
-  private async tryDetachedExecution(
-    options: ExecuteOptions,
-    remoteRenetPath: string,
-    vault: string,
-    machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
-    sshPrivateKey: string,
-    startTime: number
-  ): Promise<ExecuteResult | null> {
-    if (!options.detached) return null;
-
-    const result = await this.runDetachedExecution(
-      remoteRenetPath,
-      vault,
-      options,
-      machine,
-      sshPrivateKey
-    );
-    if (result === null) return null; // version skew: fall back to synchronous
-
-    // Keep the job's OWN elapsed time as the operation duration. For a detached
-    // run that is a different number from how long the CLI watched it, and the
-    // one the operator cares about is how long the WORK took.
-    return {
-      ...result,
-      durationMs: Date.now() - startTime,
-      operationDurationMs: result.operationDurationMs ?? result.durationMs,
+      outputEchoed: echoRenetFailure(exitCode, combined, options),
+      steps: extractStepsFromOutput(combined),
     };
   }
 
@@ -1261,7 +1289,9 @@ class LocalExecutorService {
    * (reconnecting and resuming if the network drops), then read its terminal
    * status and map that onto the same ExecuteResult a synchronous run produces.
    * The render path is byte-for-byte the same one `runRemoteExecution` uses, so
-   * spinners and the step timeline behave identically.
+   * spinners and the step timeline behave identically. Under `follow: false`
+   * (`--background`) it returns the moment the job starts, leaving the work
+   * running on the machine.
    *
    * Returns null in exactly one case: the renet deployed on the machine is too
    * old to know the `job` command. That is a version-skew signal for the caller
@@ -1284,16 +1314,40 @@ class LocalExecutorService {
       const handle = await this.startJob(await lease.ensure(), remoteRenetPath, vault, options);
       if (handle === null) return null; // version skew: caller falls back
 
-      // Follow through the SAME implementation `rdc job logs` uses, so a
-      // detached run and a re-attached one render identically and share one
-      // reconnect-and-resume path rather than two that can drift apart.
+      // Announce the job the instant it exists, before any event, so a serve
+      // route can emit its kind:'job' line and a client can re-attach even if
+      // the connection drops before the first event arrives.
+      options.onJobStarted?.(handle.job_id);
+
+      if (options.follow === false) {
+        // Fire-and-forget (--background): hand back the id and how to catch up,
+        // and return success without waiting for the job to finish.
+        writeStdout(`${backgroundStartedHint(handle.job_id, options.machineName)}\n`);
+        return {
+          success: true,
+          exitCode: 0,
+          durationMs: Date.now() - startedAt,
+          jobId: handle.job_id,
+        };
+      }
+
+      // Follow through the SAME implementation `rdc job logs` uses, so a detached
+      // run and a re-attached one render identically and share one
+      // reconnect-and-resume path rather than two that can drift apart. The
+      // collector captures the output unconditionally (the spool is always
+      // NDJSON), independent of whether the caller wants it rendered.
       const cursor = new JobLogCursor();
+      const collector = createJobOutputCollector();
+      const render = options.onEvent ?? (options.captureOutput ? undefined : renderJobEvent);
       const interrupted = await followJobLogs(
         lease,
         remoteRenetPath,
         handle.job_id,
         {
-          onEvent: options.onEvent ?? (options.captureOutput ? () => {} : renderJobEvent),
+          onEvent: (event, line) => {
+            collector.consume(event);
+            render?.(event, line);
+          },
           debug: options.debug,
         },
         cursor
@@ -1304,7 +1358,7 @@ class LocalExecutorService {
         // would destroy a half-finished migration because someone hit Ctrl-C on
         // a scrolling log, which is the opposite of what a detached job is for.
         const hint = resumeHint(handle.job_id, options.machineName);
-        process.stderr.write(`\n${hint}\n`);
+        writeStderr(`\n${hint}\n`);
         return {
           success: false,
           exitCode: EXIT_DETACHED,
@@ -1315,7 +1369,7 @@ class LocalExecutorService {
       }
 
       const status = await readJobStatus(await lease.ensure(), remoteRenetPath, handle.job_id);
-      return jobStatusToExecuteResult(status, Date.now() - startedAt);
+      return jobStatusToExecuteResult(status, Date.now() - startedAt, collector);
     } finally {
       lease.release();
     }
@@ -1498,7 +1552,14 @@ class LocalExecutorService {
     const vault = buildLocalVault({
       functionName: options.functionName,
       machineName: options.machineName,
-      machine,
+      // #74: a caller that KNOWS the repo's placement declares its datastore here,
+      // and it must land in the MACHINE VAULT — that is the only datastore renet
+      // ever reads (`p.Datastore()` -> `machineDatastore`, set by WithMachineVault).
+      // A `datastore` PARAM would not do it: `repository_create` resolves the
+      // datastore through AddDatastore, which reads the vault, not the params bag.
+      // The fallback below is untouched and still correct: a machine with no named
+      // datastore keeps its own default. This only lets a caller stop staying silent.
+      machine: options.datastore ? { ...machine, datastore: options.datastore } : machine,
       sshPrivateKey,
       sshPublicKey,
       sshKnownHosts,
@@ -1568,14 +1629,22 @@ class LocalExecutorService {
   }
 
   async execute(options: ExecuteOptions): Promise<ExecuteResult> {
-    // Target-resolution funnel: a cluster target routes to its control node so
-    // both getLocalMachine call sites downstream resolve the control-node
-    // machine; KUBECONFIG is injected from options.kubeCluster in
-    // runRemoteExecution (the k8s analog of DOCKER_HOST).
-    if (options.kubeCluster) {
-      const target = await resolveExecutionTarget({ cluster: options.kubeCluster });
-      options = { ...options, machineName: target.machineName };
-    }
+    // BUG #46 (ruling: the executor injects KUBECONFIG WITHOUT rerouting the
+    // machine). `kubeCluster` used to ALSO overwrite `machineName` with the
+    // cluster's control node here. That was defensible while kubeCluster could
+    // only come from an explicit `--cluster` flag ("run this against the
+    // cluster"), but the reshape DERIVES it from placement, so the override
+    // silently sent every verb on a k8s-placed repo to the control node -
+    // including volume-level operations (trim, diff, commit, merge, and repo
+    // up's LUKS mount) that MUST run on the machine which actually mounts the
+    // datastore (state.datastores[D].attachedTo).
+    //
+    // KUBECONFIG is the k8s analog of DOCKER_HOST, and DOCKER_HOST never
+    // reroutes the machine either: it is still injected from options.kubeCluster
+    // in runRemoteExecution. The caller's derived machineName now stands, and a
+    // verb that genuinely must run FROM the control node resolves that machine
+    // explicitly at its call site (resolveExecutionTarget({ cluster })) rather
+    // than relying on an ambient rewrite.
     const startTime = Date.now();
     const configSpinner = options.quietSpinners ? null : startSpinner(t('timing.step.loading'));
     const cliSteps: { name: string; duration_ms: number; startedAtMs?: number }[] = [];

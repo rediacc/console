@@ -3,14 +3,14 @@ import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
-import { getOutputFormat, handleError } from '../utils/errors.js';
+import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { resolveRepoRef, resolveRepoTarget } from '../utils/repo-target.js';
 import { assertMachineExists } from './_validate.js';
 import { parseDatastorePruneOutput } from './datastore-prune-parser.js';
 
 interface PolicySetOptions {
-  machine: string;
-  name?: string;
+  machine?: string;
   autoGrow?: string;
   maxQuota?: string;
   growThreshold?: string;
@@ -18,6 +18,54 @@ interface PolicySetOptions {
   autoTrim?: string;
   trimInterval?: string;
   debug?: boolean;
+}
+
+/**
+ * The resolved policy target: the execution machine plus the renet scope param.
+ *
+ * There is deliberately NO kubeCluster here. Size policy (auto-grow / auto-trim)
+ * is a property of the VOLUME in a datastore, not of a container runtime: there is
+ * no kubectl in this path, so there is nothing for a KUBECONFIG to do. The derived
+ * machine is already the datastore's attach host, which is exactly where the policy
+ * must be applied, for either runtime.
+ */
+interface PolicyTarget {
+  machineName: string;
+  /** `{ name: <guid> }` for a single-repo ref, `{}` for the machine-wide form. */
+  params: Record<string, unknown>;
+}
+
+/**
+ * Resolve a policy verb's target. A positional `<ref>` scopes to one repo and
+ * derives its own machine (so `-m` alongside a ref is contradictory); no ref
+ * addresses the machine-wide default policy on `-m`. Read-only verbs (get) pass
+ * `readOnly` to skip the derived-machine remote check.
+ */
+async function resolvePolicyTarget(
+  ref: string | undefined,
+  machine: string | undefined,
+  verb: string,
+  readOnly: boolean
+): Promise<PolicyTarget> {
+  if (ref) {
+    if (machine) {
+      throw new ValidationError(t('commands.repo.refMachineConflict', { verb }));
+    }
+    const resolved = await resolveRepoRef(ref, { readOnly });
+    const repo = await configService.getRepository(resolved.repoKey);
+    if (!repo) {
+      throw new Error(t('commands.repo.policy.repoNotFound', { name: resolved.name }));
+    }
+    return {
+      machineName: resolved.machineName,
+      params: { name: repo.repositoryGuid },
+    };
+  }
+
+  // Machine-wide form: address the machine's default policy on -m (errors when
+  // -m is also absent, as before).
+  const target = await resolveRepoTarget({ machine });
+  return { machineName: target.machineName, params: {} };
 }
 
 /** Validate a tri-state boolean option value ('true' | 'false'). */
@@ -29,28 +77,17 @@ function parseBoolOption(flag: string, value: string | undefined): string | unde
   return value;
 }
 
-/** Resolve an optional repo name to its GUID param. */
-async function repoGuidParam(name: string | undefined): Promise<Record<string, unknown>> {
-  if (!name) return {};
-  const repo = await configService.getRepository(name);
-  if (!repo) {
-    throw new Error(t('commands.repo.policy.repoNotFound', { name }));
-  }
-  return { name: repo.repositoryGuid };
-}
-
 async function runPolicyFunction(
   functionName: 'repository_policy_set' | 'repository_policy_get',
-  machine: string,
-  params: Record<string, unknown>,
+  target: PolicyTarget,
   debug: boolean | undefined
 ): Promise<void> {
-  await assertMachineExists(machine);
+  await assertMachineExists(target.machineName);
 
   const result = await getExecutor().execute({
     functionName,
-    machineName: machine,
-    params,
+    machineName: target.machineName,
+    params: target.params,
     debug,
     captureOutput: true,
   });
@@ -110,8 +147,10 @@ async function renderPolicyResult(parsed: Record<string, unknown>): Promise<void
   outputService.print(rows, 'table');
 }
 
-async function handlePolicySet(options: PolicySetOptions): Promise<void> {
-  const params = await repoGuidParam(options.name);
+async function handlePolicySet(ref: string | undefined, options: PolicySetOptions): Promise<void> {
+  // set is mutating, so resolve without readOnly (like `repo up`).
+  const target = await resolvePolicyTarget(ref, options.machine, 'policy set', false);
+  const params = target.params;
 
   // Tri-state booleans: 'true' | 'false' | absent (leave the stored value).
   const autoGrow = parseBoolOption('--auto-grow', options.autoGrow);
@@ -123,7 +162,7 @@ async function handlePolicySet(options: PolicySetOptions): Promise<void> {
   if (options.growStep) params.grow_step = options.growStep;
   if (options.trimInterval) params.trim_interval = options.trimInterval;
 
-  await runPolicyFunction('repository_policy_set', options.machine, params, options.debug);
+  await runPolicyFunction('repository_policy_set', target, options.debug);
 }
 
 /** Register `repo policy set|get` — automatic size management policy
@@ -140,8 +179,7 @@ export function registerRepoPolicyCommand(repo: Command): void {
     .command('set')
     .summary(t('commands.repo.policy.set.descriptionShort'))
     .description(t('commands.repo.policy.set.description'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--name <name>', t('commands.repo.policy.nameOption'))
+    .argument('[ref]', t('options.repoRef'))
     .addOption(
       new Option('--auto-grow <bool>', t('commands.repo.policy.set.autoGrowOption')).choices([
         'true',
@@ -158,10 +196,11 @@ export function registerRepoPolicyCommand(repo: Command): void {
       ])
     )
     .option('--trim-interval <hours>', t('commands.repo.policy.set.trimIntervalOption'))
+    .option('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
-    .action(async (options: PolicySetOptions) => {
+    .action(async (ref: string | undefined, options: PolicySetOptions) => {
       try {
-        await handlePolicySet(options);
+        await handlePolicySet(ref, options);
       } catch (error) {
         handleError(error);
       }
@@ -171,13 +210,14 @@ export function registerRepoPolicyCommand(repo: Command): void {
     .command('get')
     .summary(t('commands.repo.policy.get.descriptionShort'))
     .description(t('commands.repo.policy.get.description'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--name <name>', t('commands.repo.policy.nameOption'))
+    .argument('[ref]', t('options.repoRef'))
+    .option('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
-    .action(async (options: { machine: string; name?: string; debug?: boolean }) => {
+    .action(async (ref: string | undefined, options: { machine?: string; debug?: boolean }) => {
       try {
-        const params = await repoGuidParam(options.name);
-        await runPolicyFunction('repository_policy_get', options.machine, params, options.debug);
+        // get is read-only: skip the derived-machine remote round-trip.
+        const target = await resolvePolicyTarget(ref, options.machine, 'policy get', true);
+        await runPolicyFunction('repository_policy_get', target, options.debug);
       } catch (error) {
         handleError(error);
       }

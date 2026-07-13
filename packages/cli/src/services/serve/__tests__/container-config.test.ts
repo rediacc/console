@@ -60,7 +60,18 @@ vi.mock('../../config/config-resources.js', () => ({
     getLocalMachine: vi.fn((name: string) =>
       Promise.resolve({ ip: '10.0.0.1', user: 'root', name })
     ),
-    getCurrent: vi.fn(() => Promise.resolve({ state: {} })),
+    // `demo` is placed on `prod-1` so the dispatched `repo status demo` derives
+    // its machine from placement (spec/03 §2.3), the reshape's addressing.
+    getCurrent: vi.fn(() =>
+      Promise.resolve({
+        state: {},
+        resources: {
+          repositories: {
+            demo: { grand: 'base', tags: { base: {} }, placement: { machine: 'prod-1' } },
+          },
+        },
+      })
+    ),
   },
 }));
 
@@ -270,7 +281,7 @@ describe('container-tier config loading', () => {
       body: JSON.stringify({
         contractVersion: CLI_CONTRACT_VERSION,
         pathKey: COMMAND_PATH,
-        params: { name: 'demo', machine: 'prod-1' },
+        positionals: { ref: 'demo' },
       }),
     });
   }

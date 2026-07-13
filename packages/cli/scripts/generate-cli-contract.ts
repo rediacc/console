@@ -24,6 +24,8 @@ import type {
   CommandGroup,
   ContractCommand,
   ContractOption,
+  ContractPositional,
+  PositionalKind,
 } from '../../shared/src/cli-contract/types.js';
 import { cli } from '../src/cli.js';
 import { COMMAND_METADATA, READ_TIMEOUT, WRITE_TIMEOUT } from '../src/config/command-metadata.js';
@@ -70,13 +72,68 @@ const PROXY_EXCLUSIONS: Record<string, string> = {
     'Diffs the machine against the local filesystem with a client-side rsync; a remote executor has no copy of the local tree. Run it without --proxy.',
 
   // ── Local effect ──────────────────────────────────────────────────────
-  'config cert-cache pull':
+  'machine infra cert pull':
     "Its effect is writing the machine's acme.json into the caller's local config; a remote executor would write it into its own. Run it without --proxy.",
   'cluster kubeconfig':
     'Caches the kubeconfig to a local 0600 file and prints that path; a remote executor would write the file onto its own disk. Run it without --proxy.',
-  'config machine scan-keys':
+  'machine scan-keys':
     "Runs ssh-keyscan from the caller's network position and stores knownHosts in the caller's local config; a remote executor would scan from its own and keep the result. Run it without --proxy.",
+  'config reconcile':
+    "It queries every machine but writes the result into the CALLER's local state bucket; a remote executor would rebuild its own state and the caller would be none the wiser. Run it without --proxy.",
 };
+
+/**
+ * Machine-plane commands that are proxyable but must NOT be detached, keyed by
+ * command path, with the reason.
+ *
+ * Empty for now: `detachable = proxyCapable && domain !== 'job'` already covers
+ * every current case (the classes proxyCapable excludes are exactly the ones
+ * that break under detach, and `rdc job *` manages jobs rather than doing
+ * machine work). This table exists as the escape hatch for a proxyable,
+ * non-job command that a future reshape must keep synchronous: the analog of
+ * PROXY_EXCLUSIONS one layer up.
+ */
+const DETACH_EXCLUSIONS: Record<string, string> = {};
+
+/**
+ * What a positional token names, keyed by its argument name.
+ *
+ * The addressing grammar (docs/design/spec/03-cli-contracts.md §2.2) names each
+ * noun's positional so that the NAME already signals the kind: a repo verb's
+ * `<repo-ref>`, a datastore verb's `<datastore-ref>`, `storage import`'s
+ * `<file>`. So the classifier keys on the argument name, with a couple of
+ * domain refinements where the same bare name means different things.
+ */
+const POSITIONAL_KIND_BY_NAME: Record<string, PositionalKind> = {
+  ref: 'repo-ref',
+  'repo-ref': 'repo-ref',
+  // Repo-ref aliases: some repo verbs name their positional by role for clarity
+  // (`repo fork <parent-ref>`, `repo promote <fork-ref>`, `repo checkout
+  // <commit-or-branch-ref>`, `repo merge --from <source-ref>`). They all name a
+  // repo, so they bind the console's repo picker exactly like `<ref>`.
+  'parent-ref': 'repo-ref',
+  'fork-ref': 'repo-ref',
+  'commit-or-branch-ref': 'repo-ref',
+  'source-ref': 'repo-ref',
+  machine: 'machine',
+  datastore: 'datastore-ref',
+  'datastore-ref': 'datastore-ref',
+  cluster: 'cluster',
+  strategy: 'strategy',
+  artifact: 'artifact-ref',
+  'artifact-ref': 'artifact-ref',
+  storage: 'storage',
+  file: 'file',
+  target: 'target',
+  'job-id': 'job-id',
+};
+
+function classifyPositional(domain: string, name: string): PositionalKind {
+  // `rdc job status <job-id>` and `rdc job logs <job-id>` name the job; an `id`
+  // argument on the `job` domain is the same thing under an older spelling.
+  if (domain === 'job' && (name === 'id' || name === 'job-id')) return 'job-id';
+  return POSITIONAL_KIND_BY_NAME[name] ?? 'plain';
+}
 
 /** Why a command that reaches a machine still cannot be proxied. */
 function proxyBlockedReason(
@@ -202,10 +259,62 @@ function resolveRepoOption(
   return null;
 }
 
+/**
+ * Which POSITIONAL names the target machine / repository, kept distinct from the
+ * FLAG bindings above. A `machine`-kind positional names a machine; a
+ * `repo-ref`-kind positional names a repo. This is what lets `targetFrom` scope
+ * policy on a positional-addressed command, and the console bind its pickers to
+ * the ref rather than to a flag that no longer exists.
+ */
+function resolveMachinePositional(positionals: ContractPositional[]): string | null {
+  return positionals.find((p) => p.kind === 'machine')?.name ?? null;
+}
+
+function resolveRepoPositional(positionals: ContractPositional[]): string | null {
+  return positionals.find((p) => p.kind === 'repo-ref')?.name ?? null;
+}
+
 // ---------- Build ----------
 
 const resolver = createDescriptionResolver(loadLocale('en'));
 const walked = walkContractCommands(cli, resolver);
+
+/**
+ * Every PROXY_EXCLUSIONS / DETACH_EXCLUSIONS key must name a command that exists.
+ *
+ * ★ This is the table whose ENTIRE JOB is to stop a command being shipped to a
+ * remote executor, and until now nothing checked its keys. `proxyCapable` is
+ * `plane === 'machine' && !interactive && !(pathKey in PROXY_EXCLUSIONS)`, so a key
+ * that goes stale through a rename does not fail loudly — the lookup simply misses,
+ * the exclusion STOPS EXCLUDING, and the command silently becomes proxyCapable.
+ *
+ * That is bug #51's exact failure mode occurring inside the mechanism built to
+ * prevent it: `machine scan-keys` is excluded because it scans from the CALLER's
+ * network position and stores the result in the CALLER's config. Rename it, forget
+ * this key, and a remote executor starts scanning from its own network and keeping
+ * the answer — with no gate anywhere saying so.
+ *
+ * COMMAND_PLANES already has this protection (plane-coverage.test.ts fails on a stale
+ * entry). Its sibling did not. It does now.
+ */
+const livePathKeys = new Set(walked.map((w) => w.pathKey));
+const staleExclusions = [
+  ...Object.keys(PROXY_EXCLUSIONS).map((k) => [k, 'PROXY_EXCLUSIONS'] as const),
+  ...Object.keys(DETACH_EXCLUSIONS).map((k) => [k, 'DETACH_EXCLUSIONS'] as const),
+].filter(([pathKey]) => !livePathKeys.has(pathKey));
+
+if (staleExclusions.length > 0) {
+  console.error('\x1b[31m✗ Stale exclusion keys — these commands do not exist\x1b[0m\n');
+  for (const [pathKey, table] of staleExclusions) {
+    console.error(`  ${table}["${pathKey}"]`);
+  }
+  console.error(
+    '\n  A stale key does not fail loudly: the lookup misses, the exclusion stops applying,\n' +
+      '  and the command silently becomes proxyCapable (or detachable). Re-key it to the\n' +
+      "  command's current name, or delete it deliberately.\n"
+  );
+  process.exit(1);
+}
 
 const commands: ContractCommand[] = walked.map((w) => {
   const domain = w.path[0];
@@ -226,10 +335,24 @@ const commands: ContractCommand[] = walked.map((w) => {
     .filter((o) => !GLOBAL_OPTION_LONGS.has(o.long ?? ''))
     .map((o) => toContractOption(o, resolver));
 
+  const positionals: ContractPositional[] = w.positionals.map((p) => ({
+    name: p.name,
+    kind: classifyPositional(domain, p.name),
+    required: p.required,
+    variadic: p.variadic,
+    descriptionKey: p.descriptionKey,
+    label: p.label,
+  }));
+
   const proxyCapable = plane === 'machine' && !interactive && !(w.pathKey in PROXY_EXCLUSIONS);
   const blockedReason = proxyCapable
     ? undefined
     : proxyBlockedReason(w.pathKey, plane, interactive);
+
+  // Detach is the same predicate as proxy, minus jobs (they manage jobs, not
+  // machine work) and an escape-hatch table. The serve dispatch turns it on for
+  // a proxied command; `--background` turns it on for a local one.
+  const detachable = proxyCapable && domain !== 'job' && !(w.pathKey in DETACH_EXCLUSIONS);
 
   return {
     path: w.path,
@@ -241,6 +364,7 @@ const commands: ContractCommand[] = walked.map((w) => {
     descriptionKey: w.descriptionKey,
     label: liveCommand.description(),
     options,
+    positionals,
     hasSubcommands: w.hasSubcommands,
 
     ...(mcp ? { destructive: mcp.destructive, idempotent: mcp.idempotent } : {}),
@@ -255,9 +379,12 @@ const commands: ContractCommand[] = walked.map((w) => {
     interactive,
     proxyCapable,
     ...(blockedReason ? { proxyBlockedReason: blockedReason } : {}),
+    detachable,
 
     machineOption: resolveMachineOption(domain, options),
     repoOption: resolveRepoOption(domain, options, mcp?.repoArg),
+    machinePositional: resolveMachinePositional(positionals),
+    repoPositional: resolveRepoPositional(positionals),
   };
 });
 

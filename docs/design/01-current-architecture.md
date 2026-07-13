@@ -1,5 +1,10 @@
 # 01 — Current Architecture (the "before" picture)
 
+**Status: HISTORICAL RECORD, frozen.** This file describes the system as it stood on
+2026-07-10, BEFORE the redesign. It is deliberately not updated: it is the "before" half of
+the comparison, and the motivating evidence for the delete ledger in 02 §6. For what exists
+now, read 02 through 05.
+
 Everything below was verified against code on 2026-07-10 (console `973763d30`,
 renet `8478420`). Line numbers drift; identifiers are the stable reference.
 
@@ -73,6 +78,20 @@ the same feature: the file IS the LUKS container; unencrypted repos degrade to d
 
 ## 5. Known gaps and complexity evidence (why the redesign)
 
+**Disposition as of 2026-07-13** (each gap below, and where it went):
+
+| Gap | Outcome |
+|---|---|
+| 1. Whole-cluster fork does not clone PV data | **CLOSED by construction.** Repo data lives inside the datastore that gets group-snapshotted, so the fork carries it. Proven live: the app-data marker rides the clone on every fork run |
+| 2. Namespace-fork RBD snapshots are per-image, not atomic | **CLOSED by construction.** One repo = one folder = one snapshot moment. The multi-PV inconsistency cannot occur |
+| 3. Cross-machine cluster-fork image transfer is a marked follow-up | **CLOSED.** The clone lives in shared Ceph; the destination adopts a ferried record (`datastore adopt`, 04 §2 step 2b). No image transfer at all |
+| 4. Agent-count constraint (`dstAgents >= srcAgents`) | **CLOSED.** The anchor model moves the control plane and lets agents rejoin fresh. Destination node count is free |
+| 5. Teardown-leak machinery (~400 lines) | **DELETED** along with the objects it existed to protect |
+| 6. hostPath datastore PVs are node-local with no affinity | **CLOSED.** Upstream `local`-type PVs with real nodeAffinity, behind a WaitForFirstConsumer StorageClass |
+| 7. No first-class path for a locally built image into a cluster | **CLOSED.** A datastore-backed registry, so images survive fork and migrate by construction (04 §7b) |
+| 8. `rdc` surface untested | **PARTLY CLOSED.** The three kube e2e suites (07 §7) now cover the cluster/datastore/repo paths end to end. Full `rdc`-surface CI coverage is still P5/P6's examples work |
+
+
 1. **Whole-cluster fork does NOT clone PV data.** `forkCluster` runs prep-fork → repository
    fork → mount → identity-rewrite; no PV/RBD clone step exists in that path. PV images live
    OUTSIDE the node images, so the fork's PV objects (carried via kine) point at the PARENT's
@@ -110,5 +129,9 @@ the same feature: the file IS the LUKS container; unencrypted repos degrade to d
 - Crash-consistent CoW semantics ("same as a power cycle") as the documented contract.
 - BTRFS snapshot backup of a datastore = every repo at one instant (`renet backup`,
   `.backup-*` snapshots).
-- The measured numbers table (namespace fork ~1-5s, single RBD ~5s, 2-node cluster fork
-  ~46s, migrate ~16s cutover) — the honest-marketing framing.
+- The honest-marketing framing itself: every published number is measured, never estimated.
+  **The OLD numbers (namespace fork ~1-5s, single RBD ~5s, 2-node cluster fork ~46s, migrate
+  ~16s cutover) measured the OLD architecture and are NOT comparable to the new ones.** They
+  are kept here as part of the historical record only. The new architecture's measured figures
+  are in the README's "What is proven live" table, and those are the ones docs and marketing
+  must use (08 §0).

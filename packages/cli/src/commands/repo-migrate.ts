@@ -23,6 +23,7 @@ import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { formatBytes } from '../utils/format.js';
 import { resolveRemoteName } from '../utils/remote-resolve.js';
+import { resolveRepoRef } from '../utils/repo-target.js';
 import { withSpinner } from '../utils/spinner.js';
 import { formatStepDuration } from '../utils/timeline.js';
 import { autoProvisionTarget, buildPushParams } from './repo-backup.js';
@@ -35,19 +36,22 @@ export function registerRepoMigrateCommand(repoCommand: Command): void {
     .command('migrate')
     .summary(t('commands.repo.migrate.descriptionShort'))
     .description(t('commands.repo.migrate.description'))
-    .requiredOption('--name <name>', t('options.name'))
-    .requiredOption('--from <machine>', t('commands.repo.migrate.optionFrom'))
-    .requiredOption('--to <machine>', t('commands.repo.migrate.optionTo'))
+    .argument('<ref>', t('options.repoRef'))
+    .requiredOption('--to <place>', t('commands.repo.migrate.optionTo'))
     .option('--provision <provider>', t('commands.repo.migrate.optionProvision'))
     .option('--bwlimit <limit>', t('commands.repo.migrate.optionBwlimit'))
     .option('--checkpoint', t('commands.repo.migrate.optionCheckpoint'))
     .option('--delta-base <guid>', t('commands.repo.migrate.optionDeltaBase'))
     .option('--strategy <strategy>', t('commands.repo.migrate.optionStrategy'))
     .option('--skip-dns', t('commands.repo.migrate.optionSkipDns'))
+    // --health-window / --health-timeout (spec §5.4) are intentionally NOT
+    // registered: the current migrate is a two-phase rsync with no post-cutover
+    // health-gate path, so advertising them would render dead console fields and
+    // promise behavior that does not run. They return with the gate (as-built §12).
     .option('--debug', t('options.debug'))
-    .action(async (options) => {
+    .action(async (ref: string, options: MigrateOptions) => {
       try {
-        await migrateRepo(options);
+        await migrateRepo(ref, options);
       } catch (error) {
         handleError(error);
       }
@@ -55,8 +59,6 @@ export function registerRepoMigrateCommand(repoCommand: Command): void {
 }
 
 interface MigrateOptions {
-  name: string;
-  from: string;
   to: string;
   provision?: string;
   bwlimit?: string;
@@ -284,12 +286,13 @@ async function executePhase3(
 }
 
 /**
- * Resolve a migrate endpoint (`--from`/`--to`) to a machine name. A cluster name
+ * Resolve the migrate destination (`--to`) to a machine name. A cluster name
  * resolves to its control-node machine (design D14: the whole repo-verb funnel
  * maps a cluster to its control node), so migrate works machine<->machine,
- * machine<->cluster, and cluster<->cluster. The data plane (CoW images +
- * rsync/FIEMAP) is runtime-agnostic, so no per-endpoint special-casing beyond
- * this name resolution is needed before buildPushParams.
+ * machine<->cluster, and cluster<->cluster (the source side is derived from the
+ * ref's placement in migrateRepo). The data plane (CoW images + rsync/FIEMAP) is
+ * runtime-agnostic, so no per-endpoint special-casing beyond this name
+ * resolution is needed before buildPushParams.
  */
 async function resolveMigrateEndpoint(name: string): Promise<string> {
   const resolved = await resolveRemoteName(name);
@@ -300,19 +303,33 @@ async function resolveMigrateEndpoint(name: string): Promise<string> {
   return name;
 }
 
-async function migrateRepo(options: MigrateOptions): Promise<void> {
-  const { name, provision, bwlimit, checkpoint, deltaBase, strategy, skipDns, debug } = options;
-  const from = await resolveMigrateEndpoint(options.from);
+async function migrateRepo(ref: string, options: MigrateOptions): Promise<void> {
+  const { provision, bwlimit, checkpoint, deltaBase, strategy, skipDns, debug } = options;
+
+  // Source is DERIVED from the repo's config placement (spec/03 §2.3): `machineName`
+  // is the ref's home machine (a cluster repo's home is its control node). Migrate's
+  // data plane (CoW images + rsync/FIEMAP) is runtime-agnostic, so it operates
+  // machine<->machine and does not thread kubeCluster (see resolveMigrateEndpoint).
+  // `repoKey` (name or name:tag) drives config + renet; `name` is for messages.
+  const { name, repoKey, machineName: from } = await resolveRepoRef(ref);
+
   // With --provision the target machine is created below, so it is not yet a
   // known machine/cluster name to resolve; use it verbatim.
   const to = provision ? options.to : await resolveMigrateEndpoint(options.to);
   const migrationStart = Date.now();
 
-  await assertCommandPolicy(CMD.REPO_PUSH, name);
+  await assertCommandPolicy(CMD.REPO_PUSH, repoKey);
 
-  const repoConfig = await configService.getRepository(name);
+  const repoConfig = await configService.getRepository(repoKey);
   if (!repoConfig) {
     throw new ValidationError(t('errors.repositoryNotFound', { name }));
+  }
+
+  // Same-home no-op: migrating to where the repo already lives is a 0-cost win,
+  // not a full self-transfer. --provision always targets a fresh, distinct host.
+  if (!provision && to === from) {
+    outputService.info(t('commands.repo.migrate.noOpSameHome', { name, machine: from }));
+    return;
   }
 
   if (provision) {
@@ -332,15 +349,15 @@ async function migrateRepo(options: MigrateOptions): Promise<void> {
   }
 
   if (from !== to) {
-    await assertNotMountedOnTarget(name, repoConfig.repositoryGuid, to);
+    await assertNotMountedOnTarget(repoKey, repoConfig.repositoryGuid, to);
   }
 
   // Phase 1 retains this base; Phase 2 deltas against it (or an explicit
   // --delta-base override) and prunes it.
   const phase1Base = randomUUID();
-  await executePhase1(name, repoConfig, from, to, bwlimit, strategy, phase1Base, debug);
+  await executePhase1(repoKey, repoConfig, from, to, bwlimit, strategy, phase1Base, debug);
   const downtimeMs = await executePhase2(
-    name,
+    repoKey,
     repoConfig,
     from,
     to,
@@ -353,7 +370,7 @@ async function migrateRepo(options: MigrateOptions): Promise<void> {
     },
     debug
   );
-  await executePhase3(name, to, skipDns, debug);
+  await executePhase3(repoKey, to, skipDns, debug);
 
   const totalMs = Date.now() - migrationStart;
   outputService.info('');

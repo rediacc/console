@@ -2,7 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { Command } from 'commander';
 import { COMMAND_METADATA, type CommandMeta } from '../../config/command-metadata.js';
 import { t } from '../../i18n/index.js';
-import { isGrandEnvWildcard, isRepoAllowedByGrandEnv } from '../../utils/grand-env.js';
+import { isRepoAllowedByGrandEnv } from '../../utils/grand-env.js';
 import {
   isAncestryVerificationAvailable,
   isOverrideLegitimate,
@@ -121,18 +121,6 @@ async function guardNamedRepo(
   return guardGrandRepo(repoName);
 }
 
-/** Guard term_exec without a named repo — block unless wildcard override is legitimate. */
-function guardTermExecMachine(): ToolResult | null {
-  if (!isGrandEnvWildcard()) {
-    return guardError(t('errors.agent.mcpMachineGuard'));
-  }
-  return checkOverrideLegitimacy(
-    'errors.agent.mcpMachineGuardOverride',
-    'errors.agent.mcpMachineGuardOverrideNonLinux',
-    {}
-  );
-}
-
 /**
  * Block destructive ops on non-fork repos unless --allow-grand or env override.
  * Also blocks fork-incompatible commands on fork repos.
@@ -146,8 +134,6 @@ async function applyGrandRepoGuard(
 
   const repoName = args[tool.repoArgField] as string | undefined;
   if (repoName) return guardNamedRepo(tool, repoName, options);
-
-  if (tool.name === 'term_exec') return guardTermExecMachine();
 
   return null;
 }

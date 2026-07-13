@@ -7,19 +7,21 @@
  * the kube_apply bridge verb, and record the set as managed state (R2-F17).
  *
  * REFRESH is rolling, one replica at a time (N-1 keep serving): a fresh
- * snapshot, then per replica bounce the ordinal pod (kube_delete pod_ordinal),
- * discard + re-fork + re-attach its datastore under the unchanged PV path, and
- * let kubelet remount + the readiness probe re-admit it. The old snapshot is
- * deleted once every replica clones from the new one.
+ * snapshot, then per replica strip its node label (the scheduling gate — see
+ * refreshReplicaSet), bounce the ordinal pod, discard + re-fork + re-attach its
+ * datastore under the unchanged PV path, and re-stamp the label so kubelet
+ * remounts and the readiness probe re-admits it. The old snapshot is deleted
+ * once every replica clones from the new one.
+ *
+ * ALL of it keys off the REPO REF: one managed replica set per repo (spec §4.4),
+ * so the set name, its snapshot and its fork tags are all DERIVED from the repo
+ * rather than named independently.
  */
 
-import { DEFAULTS } from '@rediacc/shared/config';
 import { getCluster } from '../config/config-cluster-ops.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
-import { getExecutor } from '../executor/executor-factory.js';
-import { parseCapturedJson } from '../executor/local-executor.js';
-import { controlDatastore, controlDatastoreMount } from './cluster-kube.js';
+import { controlDatastoreMount } from './cluster-kube.js';
 import { resolveExecutionTarget } from './cluster-target.js';
 import {
   discardReplicaDatastores,
@@ -31,6 +33,7 @@ import {
   type ReplicaNode,
   recordReplicaSet,
   renderReplicaSet,
+  replicaSetNameFor,
   replicaSnapshotName,
 } from './repo-replicate.js';
 
@@ -51,13 +54,13 @@ export function __setReplicateClock(fn: () => number): void {
 }
 
 export interface ReplicateOptions {
+  /** The repo's config/renet key (`name` or `name:tag`) — the set's identity. */
   repo: string;
+  /** The repo's cluster, derived from its datastore's backref (spec §2.3). */
   cluster: string;
+  /** The named datastore the repo lives in, derived from its placement (§2.3). */
+  datastore: string;
   replicas: number;
-  /** Data datastore holding the repo. Default: the cluster's single data datastore. */
-  datastore?: string;
-  /** Replica-set name. Default: `<repo>-replicas`. */
-  set?: string;
   /** Engine image the replicas run (same engine as the primary). */
   image: string;
   /** Port the engine serves on. */
@@ -77,11 +80,11 @@ export interface ReplicateOptions {
  * (PVs + StatefulSet + -rw/-ro Services) -> record managed state.
  */
 export async function replicateRepo(options: ReplicateOptions): Promise<void> {
-  const setName = options.set ?? `${options.repo}-replicas`;
+  const setName = replicaSetNameFor(options.repo);
   if (await getReplicaSet(setName)) {
     throw new Error(
-      `Replica set "${setName}" already exists. Remove it first ("rdc repo replicate remove ` +
-        `--name ${setName}") or pick another --set name.`
+      `Repository "${options.repo}" already has a replica set. Reconcile it by re-running ` +
+        `replicate, or remove it first ("rdc repo replicate remove ${options.repo}").`
     );
   }
   if (!Number.isInteger(options.replicas) || options.replicas < 1) {
@@ -89,8 +92,7 @@ export async function replicateRepo(options: ReplicateOptions): Promise<void> {
   }
   const { machineName: control } = await resolveExecutionTarget({ cluster: options.cluster });
   const controlMount = controlDatastoreMount(options.cluster);
-  const datastore =
-    options.datastore ?? (await inferClusterDatastore(control, options.cluster, options.debug));
+  const datastore = options.datastore;
   const nodes = await resolveReplicaNodes(options.cluster);
   const snapshot = replicaSnapshotName(setName);
 
@@ -147,20 +149,23 @@ export async function replicateRepo(options: ReplicateOptions): Promise<void> {
   outputService.success(
     `Replica set "${setName}" created: ${options.replicas} point-in-time read replica(s). ` +
       `Reads: ${options.repo}-ro, writes: ${options.repo}-rw. Replicas are point-in-time ` +
-      `copies (no read-your-writes); refresh with "rdc repo replicate refresh --name ${setName}".`
+      `copies (no read-your-writes); refresh with "rdc repo replicate refresh ${options.repo}".`
   );
 }
 
 /**
- * Remove a replica set: delete the label-scoped overlay, strip the fork node
- * labels, discard the fork datastores, drop the snapshot, forget the state.
+ * Remove a repo's replica set: delete the label-scoped overlay, strip the fork
+ * node labels, discard the fork datastores, drop the snapshot, forget the state.
  * Every infra step is best-effort (warn + continue) so remove converges even
- * when the cluster is partially gone; state is forgotten last.
+ * when the cluster is partially gone; state is forgotten last. Removing a repo
+ * that has no set is a no-op (§5.4: converge-to-absent).
  */
-export async function removeReplicaSet(setName: string, debug?: boolean): Promise<void> {
+export async function removeReplicaSet(repoKey: string, debug?: boolean): Promise<void> {
+  const setName = replicaSetNameFor(repoKey);
   const set = await getReplicaSet(setName);
   if (!set) {
-    throw new Error(`Replica set "${setName}" not found. See "rdc repo replicate status".`);
+    outputService.success(`Repository "${repoKey}" has no replica set; nothing to remove.`);
+    return;
   }
   const { machineName: control } = await resolveExecutionTarget({ cluster: set.cluster });
   const controlMount = controlDatastoreMount(set.cluster);
@@ -197,14 +202,30 @@ export async function removeReplicaSet(setName: string, debug?: boolean): Promis
 
 /**
  * Rolling refresh (spec 05 §1): fresh snapshot, then ONE replica at a time —
- * bounce its ordinal pod, discard + re-fork + re-attach its datastore under
- * the same tag (so the PV path never changes), re-stamp the node label.
- * Readiness auto-ejects the bouncing replica from -ro; N-1 keep serving.
+ * hold the replica down, discard + re-fork + re-attach its datastore under the
+ * same tag (so the PV path never changes), and let it back in. Readiness
+ * auto-ejects the bouncing replica from -ro; N-1 keep serving.
+ *
+ * ★ EVICT-AND-HOLD (bug #41). Deleting the ordinal pod first does NOT work: the
+ * StatefulSet recreates it within a second, kubelet re-mounts the OLD fork at
+ * the unchanged PV path, and the discard-detach then loses to a busy mount
+ * forever. The hold is the node label itself — a replica's PV pins via
+ * nodeAffinity to `rediacc.io/ds-<datastore>-<tag>`, so STRIPPING that label
+ * before the bounce leaves the recreated pod unschedulable (volume node affinity
+ * conflict) and it never re-mounts the old fork. It stays Pending until
+ * provisionOneReplica re-stamps the label at the end of the swap, at which point
+ * it schedules onto the NEW fork. Stripping the label does not disturb the
+ * RUNNING pod (kubelet does not re-evaluate node affinity mid-flight), so the
+ * replica keeps serving right up to its own bounce. detachWithRetry stays as the
+ * belt for kubelet's unmount lag, but it now converges instead of racing.
  */
-export async function refreshReplicaSet(setName: string, debug?: boolean): Promise<void> {
+export async function refreshReplicaSet(repoKey: string, debug?: boolean): Promise<void> {
+  const setName = replicaSetNameFor(repoKey);
   const set = await getReplicaSet(setName);
   if (!set) {
-    throw new Error(`Replica set "${setName}" not found. See "rdc repo replicate status".`);
+    throw new Error(
+      `Repository "${repoKey}" has no replica set. See "rdc repo replicate status ${repoKey}".`
+    );
   }
   const { machineName: control } = await resolveExecutionTarget({ cluster: set.cluster });
   const controlMount = controlDatastoreMount(set.cluster);
@@ -213,6 +234,7 @@ export async function refreshReplicaSet(setName: string, debug?: boolean): Promi
 
   await dispatch('datastore_snapshot_create', control, { name: set.datastore, snapshot }, debug);
   const one = {
+    repo: set.repo,
     setName,
     datastore: set.datastore,
     snapshot,
@@ -222,8 +244,19 @@ export async function refreshReplicaSet(setName: string, debug?: boolean): Promi
   };
   for (const r of [...set.replicas].sort((a, b) => a.index - b.index)) {
     outputService.info(`  refresh: replica ${r.index}/${set.replicas.length} on ${r.node}...`);
-    // Bounce the ordinal pod; the StatefulSet recreates it, and it blocks in
-    // ContainerCreating until the re-forked datastore is attached below.
+    // 1. Close the scheduling gate BEFORE the bounce (see the evict-and-hold note).
+    await dispatch(
+      'kube_node_label',
+      control,
+      {
+        mount_path: controlMount,
+        node_ip: await nodeIp(r.node),
+        datastore: r.fork.replace(':', '-'),
+        remove: true,
+      },
+      debug
+    );
+    // 2. Bounce the ordinal pod. It cannot come back: no node satisfies its PV.
     await dispatch(
       'kube_delete',
       control,
@@ -235,7 +268,15 @@ export async function refreshReplicaSet(setName: string, debug?: boolean): Promi
       },
       debug
     );
+    // 3. The mount is nobody's now; discard and re-fork under the same tag.
+    //    Close the per-volume LUKS images first (bug #49's mirror): provisioning
+    //    opened them, and a fork holding a live LUKS mapping plus its loop device
+    //    is BUSY, so the discard below would burn its retries and then throw.
+    //    Best-effort — a replica with nothing open is a no-op, and the retrying
+    //    detach remains the real guard.
+    await tryStep('datastore_volumes_close', r.node, { name: r.fork, repo: set.repo }, debug);
     await detachWithRetry(r.fork, r.node, debug);
+    // 4. provisionOneReplica re-stamps the label last, which re-opens the gate.
     await provisionOneReplica(one, r.index, { machine: r.node, ip: await nodeIp(r.node) });
   }
   await tryStep(
@@ -282,52 +323,6 @@ async function tryStep(
   } catch (err) {
     outputService.warn(`  remove: ${functionName} on ${machineName} failed (continuing): ${err}`);
   }
-}
-
-/** One datastore record from `renet datastore list --json` (fields we filter on). */
-interface DatastoreRecord {
-  name: string;
-  cluster?: string;
-  fork?: unknown;
-  implicit?: boolean;
-}
-
-/**
- * Infer the repo's datastore when --datastore is omitted: the cluster's single
- * cluster-labeled data datastore (excluding the control datastore and forks).
- * Ambiguity is an error naming the candidates — never a guess.
- */
-async function inferClusterDatastore(
-  control: string,
-  cluster: string,
-  debug?: boolean
-): Promise<string> {
-  const res = await getExecutor().execute({
-    functionName: 'datastore_list',
-    machineName: control,
-    params: {},
-    debug,
-    captureOutput: true,
-  });
-  if (!res.success) {
-    throw new Error(
-      `datastore_list failed on ${control}: ${res.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR}`
-    );
-  }
-  // datastore_list shells out; captured stdout is `[datastore_list] [...]` — strip
-  // the bridge relay prefix before parsing (finding #10 / parseCapturedJson).
-  const records = parseCapturedJson<DatastoreRecord[]>(res.stdout);
-  const candidates = records
-    .filter(
-      (r) => !r.implicit && !r.fork && r.cluster === cluster && r.name !== controlDatastore(cluster)
-    )
-    .map((r) => r.name);
-  if (candidates.length === 1) return candidates[0];
-  throw new Error(
-    candidates.length === 0
-      ? `Cluster "${cluster}" has no data datastore to replicate from; pass --datastore.`
-      : `Cluster "${cluster}" has ${candidates.length} data datastores (${candidates.join(', ')}); pass --datastore.`
-  );
 }
 
 /** The cluster's k8s-capable members (replica hosts), in pool/index order. */

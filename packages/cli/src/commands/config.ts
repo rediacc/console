@@ -1,20 +1,17 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
+import { getSubscriptionServerUrl } from '../services/account/subscription-auth.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import type { OutputFormat, RdcConfig } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
+import { rotateCek } from './config-remote.js';
 import { registerAuditCommands } from './config/audit.js';
 import { registerEditCommands } from './config/edit.js';
 import { registerFieldCommands } from './config/field.js';
-import { registerBackupStrategyCommands } from './config-backup-strategy.js';
-import { registerClusterConfigCommands } from './config-cluster.js';
-import { registerRepositoryCommands, registerStorageCommands } from './config-data.js';
-import { registerInfraCommands } from './config-infra.js';
 import { registerPruneCommand as registerConfigPruneCommand } from './config-prune-cmd.js';
 import { registerRemoteCommands } from './config-remote.js';
-import { registerMachineCommands, registerProviderCommands } from './config-setup.js';
 import { registerSSHCommands } from './config-ssh.js';
 
 /** Build display data for a self-hosted config. */
@@ -121,6 +118,30 @@ export function mergeInitUpdates(
   };
 }
 
+/**
+ * The v3 `defaults` keys `config set`/`clear` accept (spec/03 §5.1). `team`,
+ * `region` and `machine` are DELETED keys (R2-F9 residue sweep): they get a
+ * teaching error naming the valid keys, never a silent write.
+ */
+const DEFAULT_KEYS: Record<string, 'language' | 'datastoreSize' | 'pruneGraceDays'> = {
+  language: 'language',
+  'datastore-size': 'datastoreSize',
+  'prune-grace-days': 'pruneGraceDays',
+};
+const RETIRED_KEYS = new Set(['team', 'region', 'machine']);
+
+function resolveDefaultKey(key: string): 'language' | 'datastoreSize' | 'pruneGraceDays' {
+  const field = DEFAULT_KEYS[key];
+  if (!field) {
+    const valid = Object.keys(DEFAULT_KEYS).join(', ');
+    if (RETIRED_KEYS.has(key)) {
+      throw new ValidationError(t('errors.config.retiredKey', { key, keys: valid }));
+    }
+    throw new ValidationError(t('errors.invalidKey', { keys: valid }));
+  }
+  return field;
+}
+
 /** Check whether the user passed any config-init flags beyond --name. */
 function hasInitFlags(options: {
   sshKey?: string;
@@ -183,25 +204,30 @@ export function registerConfigCommands(program: Command): void {
     'after',
     `
 ${t('help.examples')}
-  $ rdc config init --name production --ssh-key ~/.ssh/id_ed25519   ${t('help.config.init')}
-  $ rdc config machine add --name server-1 --ip 10.0.0.1 --user deploy  ${t('help.config.addMachine')}
-  $ rdc config machine setup --name server-1                        ${t('help.config.setupMachine')}
+  $ rdc config init production --ssh-key ~/.ssh/id_ed25519          ${t('help.config.init')}
+  $ rdc machine add server-1 --ip 10.0.0.1 --user deploy            ${t('help.config.addMachine')}
+  $ rdc machine setup server-1                                      ${t('help.config.setupMachine')}
 `
   );
 
-  // config init - Initialize a new config file
+  // config init [name] - Create a named config file
   config
     .command('init')
+    .argument('[name]', t('options.name'))
     .description(t('commands.config.init.description'))
-    .option('--name <name>', t('options.name'))
     .option('--ssh-key <path>', t('options.sshKey'))
     .option('--renet-path <path>', t('options.renetPath'))
     .option('--master-password <password>', t('commands.config.init.optionMasterPassword'))
     .option('--server <url>', t('options.serverUrl'))
-    .action(async (options) => {
+    .action(async (name: string | undefined, options) => {
       try {
-        const name = options.name;
         const configName = name ?? DEFAULTS.CONTEXT.CONFIG_NAME;
+
+        // The default config auto-creates on first use; `config init` is for
+        // named configs. A bare, flagless invocation teaches that and exits 2.
+        if (!name && !hasInitFlags(options)) {
+          throw new ValidationError(t('commands.config.init.bareForm'));
+        }
 
         const { configFileStorage } = await import('../adapters/config-file-storage.js');
         const exists = await configFileStorage.exists(configName);
@@ -209,12 +235,6 @@ ${t('help.examples')}
         // Named configs must not already exist
         if (exists && name) {
           throw new ValidationError(t('commands.config.init.alreadyExists', { name: configName }));
-        }
-
-        // Default config already exists — if no flags, just confirm
-        if (exists && !name && !hasInitFlags(options)) {
-          outputService.success(t('commands.config.init.success', { name: configName }));
-          return;
         }
 
         const newConfig = exists
@@ -321,15 +341,14 @@ ${t('help.examples')}
       }
     });
 
-  // config delete
+  // config delete <name>
   config
     .command('delete')
     .alias('rm')
+    .argument('<name>', t('options.name'))
     .description(t('commands.config.delete.description'))
-    .requiredOption('--name <name>', t('options.name'))
-    .action(async (options) => {
+    .action(async (name: string) => {
       try {
-        const name = options.name;
         await configService.delete(name);
         outputService.success(t('commands.config.delete.success', { name }));
       } catch (error) {
@@ -337,40 +356,32 @@ ${t('help.examples')}
       }
     });
 
-  // config set
+  // config set <key> <value>
   config
     .command('set')
+    .argument('<key>', t('options.configKey'))
+    .argument('<value>', t('options.configValue'))
     .description(t('commands.config.set.description'))
-    .requiredOption('--key <key>', t('options.configKey'))
-    .requiredOption('--value <value>', t('options.configValue'))
-    .action(async (options) => {
+    .action(async (key: string, value: string) => {
       try {
-        const { key, value } = options;
-        const validKeys = ['team', 'region'];
-        if (!validKeys.includes(key)) {
-          throw new ValidationError(t('errors.invalidKey', { keys: validKeys.join(', ') }));
-        }
-        await configService.set(key as 'team' | 'region', value);
+        const field = resolveDefaultKey(key);
+        await configService.setDefault(field, value);
         outputService.success(t('commands.config.set.success', { key, value }));
       } catch (error) {
         handleError(error);
       }
     });
 
-  // config clear
+  // config clear [key]
   config
     .command('clear')
+    .argument('[key]', t('options.configKey'))
     .description(t('commands.config.clear.description'))
-    .option('--key <key>', t('options.configKey'))
-    .action(async (options) => {
+    .action(async (key: string | undefined) => {
       try {
-        const key = options.key;
         if (key) {
-          const validKeys = ['team', 'region'];
-          if (!validKeys.includes(key)) {
-            throw new ValidationError(t('errors.invalidKey', { keys: validKeys.join(', ') }));
-          }
-          await configService.remove(key as 'team' | 'region');
+          const field = resolveDefaultKey(key);
+          await configService.clearDefault(field);
           outputService.success(t('commands.config.clear.keyCleared', { key }));
         } else {
           await configService.clearDefaults();
@@ -438,16 +449,80 @@ ${t('help.examples')}
       }
     });
 
-  registerBackupStrategyCommands(config);
   registerConfigPruneCommand(config);
 
+  // config reconcile — rebuild the state bucket from machine truth (R2-F2).
+  config
+    .command('reconcile')
+    .description(t('commands.config.reconcile.description'))
+    .option('--machine <m...>', t('commands.config.reconcile.optionMachine'))
+    .option('--dry-run', t('options.dryRun'))
+    .action(async (options: { machine?: string[]; dryRun?: boolean }) => {
+      try {
+        const { reconcileState } = await import('../services/config/config-reconcile.js');
+        const { fetchMachineStatus } = await import('../services/machine/machine-status.js');
+        const { configFileStorage } = await import('../adapters/config-file-storage.js');
+        const cfgName = configService.getEffectiveConfigName();
+        const filter = options.machine;
+
+        const report = await reconcileState({
+          loadConfig: async () => {
+            const cfg = await configService.getCurrent();
+            if (cfg && filter?.length) {
+              const machines = Object.fromEntries(
+                Object.entries(cfg.resources?.machines ?? {}).filter(([n]) => filter.includes(n))
+              );
+              return { ...cfg, resources: { ...(cfg.resources ?? {}), machines } };
+            }
+            return cfg;
+          },
+          fetchStatus: (m) => fetchMachineStatus(m),
+          writeState: options.dryRun
+            ? async () => {}
+            : async (updater) => {
+                await configFileStorage.updateState(cfgName, updater);
+              },
+        });
+
+        const format = program.opts().output as OutputFormat;
+        outputService.print(
+          {
+            dryRun: !!options.dryRun,
+            reconciledAt: report.reconciledAt,
+            machinesSeen: report.machinesSeen,
+            unreachable: report.machinesUnreachable,
+            placementsFilled: report.placementsFilled,
+            conflicts: report.conflicts,
+          },
+          format
+        );
+        // Exit 6 (NETWORK) when nothing was reachable but machines were tried.
+        if (report.machinesSeen.length === 0 && report.machinesUnreachable.length > 0) {
+          process.exitCode = 6;
+        }
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // config rotate-cek — destructive, org-wide (Q3): registered here, not under
+  // `config remote`, because it rotates the ORGANIZATION's key, not this device's
+  // link. The impl still lives in config-remote.ts alongside the store internals.
+  config
+    .command('rotate-cek')
+    .description(t('commands.config.rotateCek.description'))
+    .option('--api-url <url>', t('commands.config.rotateCek.optionApiUrl'))
+    .action(async (options: { apiUrl?: string }) => {
+      try {
+        const configName = configService.getEffectiveConfigName();
+        const apiUrl = options.apiUrl ?? getSubscriptionServerUrl();
+        await rotateCek(configName, apiUrl);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
   // Register nested sub-command groups
-  registerMachineCommands(config, program);
-  registerProviderCommands(config, program);
-  registerRepositoryCommands(config, program);
-  registerStorageCommands(config, program);
-  registerClusterConfigCommands(config);
-  registerInfraCommands(config, program);
   registerSSHCommands(config, program);
   registerRemoteCommands(config);
   registerFieldCommands(config, program);

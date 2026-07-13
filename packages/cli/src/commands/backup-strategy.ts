@@ -31,7 +31,7 @@ async function upsertBackupDestination(o: UpsertDestOpts): Promise<void> {
   const existingDest = existing?.destinations.find((d) => d.name === o.destinationName);
   const storageName = o.storage ?? existingDest?.storage;
   if (!storageName) {
-    throw new ValidationError(t('commands.config.backupStrategy.set.storageRequired'));
+    throw new ValidationError(t('commands.backup.strategy.set.storageRequired'));
   }
   await assertStorageExists(storageName);
   const dest = parseConfig(
@@ -86,23 +86,25 @@ export function buildStrategyUpdate(
   return u;
 }
 
-async function applyBackupStrategyOptions(options: {
-  name: string;
-  destination?: string;
-  storage?: string;
-  cron?: string;
-  mode?: string;
-  bwlimit?: string;
-  include?: string;
-  exclude?: string;
-  folder?: string;
-  enable?: boolean;
-  disable?: boolean;
-}): Promise<void> {
+async function applyBackupStrategyOptions(
+  name: string,
+  options: {
+    destination?: string;
+    storage?: string;
+    cron?: string;
+    mode?: string;
+    bwlimit?: string;
+    include?: string;
+    exclude?: string;
+    folder?: string;
+    enable?: boolean;
+    disable?: boolean;
+  }
+): Promise<void> {
   const enabled = resolveEnabledFlag(options.enable, options.disable);
   if (options.destination) {
     await upsertBackupDestination({
-      strategyName: options.name,
+      strategyName: name,
       destinationName: options.destination,
       storage: options.storage,
       enabled,
@@ -110,7 +112,7 @@ async function applyBackupStrategyOptions(options: {
       folder: options.folder,
     });
   } else {
-    await configService.setBackupStrategy(options.name, buildStrategyUpdate(options, enabled));
+    await configService.setBackupStrategy(name, buildStrategyUpdate(options, enabled));
   }
 }
 
@@ -124,10 +126,10 @@ function displayStrategy(name: string, strategy: BackupStrategyConfig): void {
   if (strategy.include) outputService.info(`  Include: ${strategy.include.join(', ')}`);
   if (strategy.exclude) outputService.info(`  Exclude: ${strategy.exclude.join(', ')}`);
   if (strategy.destinations.length === 0) {
-    outputService.info(t('commands.config.backupStrategy.show.noDestinations'));
+    outputService.info(t('commands.backup.strategy.show.noDestinations'));
     return;
   }
-  outputService.info(t('commands.config.backupStrategy.show.destinationsHeader'));
+  outputService.info(t('commands.backup.strategy.show.destinationsHeader'));
   for (const dest of strategy.destinations) {
     const bwlimit = dest.bandwidthLimit ?? strategy.bandwidthLimit ?? '-';
     const enabled = dest.enabled !== false;
@@ -138,34 +140,33 @@ function displayStrategy(name: string, strategy: BackupStrategyConfig): void {
   }
 }
 
-export function registerBackupStrategyCommands(config: Command): void {
-  const group = config
-    .command('backup-strategy')
-    .description(t('commands.config.backupStrategy.description'));
+/** Register the `backup strategy` subgroup (named backup strategy records). */
+export function registerBackupStrategyCommands(backup: Command): void {
+  const group = backup.command('strategy').description(t('commands.backup.strategy.description'));
 
   group
     .command('set')
-    .description(t('commands.config.backupStrategy.set.description'))
-    .requiredOption('--name <name>', t('commands.config.backupStrategy.set.optionName'))
-    .option('--destination <name>', t('commands.config.backupStrategy.set.optionDestination'))
-    .option('--storage <name>', t('commands.config.backupStrategy.set.optionStorage'))
-    .option('--cron <expression>', t('commands.config.backupStrategy.set.optionCron'))
+    .argument('<strategy>', t('options.strategyName'))
+    .description(t('commands.backup.strategy.set.description'))
+    .option('--destination <name>', t('commands.backup.strategy.set.optionDestination'))
+    .option('--storage <name>', t('commands.backup.strategy.set.optionStorage'))
+    .option('--cron <expression>', t('commands.backup.strategy.set.optionCron'))
     .addOption(
-      new Option('--mode <mode>', t('commands.config.backupStrategy.set.optionMode')).choices([
+      new Option('--mode <mode>', t('commands.backup.strategy.set.optionMode')).choices([
         'hot',
         'cold',
       ])
     )
-    .option('--bwlimit <limit>', t('commands.config.backupStrategy.set.optionBwlimit'))
-    .option('--include <repos>', t('commands.config.backupStrategy.set.optionInclude'))
-    .option('--exclude <repos>', t('commands.config.backupStrategy.set.optionExclude'))
-    .option('--folder <path>', t('commands.config.backupStrategy.set.optionFolder'))
-    .option('--enable', t('commands.config.backupStrategy.set.optionEnable'))
-    .option('--disable', t('commands.config.backupStrategy.set.optionDisable'))
-    .action(async (options) => {
+    .option('--bwlimit <limit>', t('commands.backup.strategy.set.optionBwlimit'))
+    .option('--include <repos>', t('commands.backup.strategy.set.optionInclude'))
+    .option('--exclude <repos>', t('commands.backup.strategy.set.optionExclude'))
+    .option('--folder <path>', t('commands.backup.strategy.set.optionFolder'))
+    .option('--enable', t('commands.backup.strategy.set.optionEnable'))
+    .option('--disable', t('commands.backup.strategy.set.optionDisable'))
+    .action(async (strategy: string, options) => {
       try {
-        await applyBackupStrategyOptions(options);
-        outputService.success(t('commands.config.backupStrategy.set.saved'));
+        await applyBackupStrategyOptions(strategy, options);
+        outputService.success(t('commands.backup.strategy.set.saved'));
       } catch (error) {
         handleError(error);
       }
@@ -173,17 +174,17 @@ export function registerBackupStrategyCommands(config: Command): void {
 
   group
     .command('remove')
-    .description(t('commands.config.backupStrategy.remove.description'))
-    .requiredOption('--name <name>', t('commands.config.backupStrategy.remove.optionName'))
-    .option('--destination <name>', t('commands.config.backupStrategy.remove.optionDestination'))
-    .action(async (options) => {
+    .argument('<strategy>', t('options.strategyName'))
+    .description(t('commands.backup.strategy.remove.description'))
+    .option('--destination <name>', t('commands.backup.strategy.remove.optionDestination'))
+    .action(async (strategy: string, options) => {
       try {
         if (options.destination) {
-          await configService.removeBackupDestination(options.name, options.destination);
+          await configService.removeBackupDestination(strategy, options.destination);
         } else {
-          await configService.removeBackupStrategy(options.name);
+          await configService.removeBackupStrategy(strategy);
         }
-        outputService.success(t('commands.config.backupStrategy.remove.removed'));
+        outputService.success(t('commands.backup.strategy.remove.removed'));
       } catch (error) {
         handleError(error);
       }
@@ -191,13 +192,13 @@ export function registerBackupStrategyCommands(config: Command): void {
 
   group
     .command('list')
-    .description(t('commands.config.backupStrategy.list.description'))
+    .description(t('commands.backup.strategy.list.description'))
     .action(async () => {
       try {
         const strategies = await configService.listBackupStrategies();
         const names = Object.keys(strategies);
         if (names.length === 0) {
-          outputService.info(t('commands.config.backupStrategy.show.notConfigured'));
+          outputService.info(t('commands.backup.strategy.show.notConfigured'));
           return;
         }
         for (const name of names) {
@@ -216,25 +217,23 @@ export function registerBackupStrategyCommands(config: Command): void {
 
   group
     .command('show')
-    .description(t('commands.config.backupStrategy.show.description'))
-    .option('--name <name>', t('commands.config.backupStrategy.show.optionName'))
-    .action(async (options) => {
+    .argument('[strategy]', t('options.strategyName'))
+    .description(t('commands.backup.strategy.show.description'))
+    .action(async (strategy: string | undefined) => {
       try {
-        if (options.name) {
-          const strategy = await configService.getBackupStrategy(options.name);
-          if (!strategy) {
-            outputService.info(
-              t('commands.config.backupStrategy.show.notFound', { name: options.name })
-            );
+        if (strategy) {
+          const found = await configService.getBackupStrategy(strategy);
+          if (!found) {
+            outputService.info(t('commands.backup.strategy.show.notFound', { name: strategy }));
             return;
           }
-          displayStrategy(options.name, strategy);
+          displayStrategy(strategy, found);
           return;
         }
         const strategies = await configService.listBackupStrategies();
         const names = Object.keys(strategies);
         if (names.length === 0) {
-          outputService.info(t('commands.config.backupStrategy.show.notConfigured'));
+          outputService.info(t('commands.backup.strategy.show.notConfigured'));
           return;
         }
         for (const name of names) {

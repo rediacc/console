@@ -377,8 +377,12 @@ briefed from.
     clear it. P7 must.
 15. **From spec/07, unchanged:** latest-magic resolver; composite-key view;
     `takeover` -> `promote` CLI rename; D3 baseline re-keying in P7.
-16. **CLI-side from config v3:** the command reshape itself is P4's subject (153 leaves per
-    spec/03). The one explicit handoff note I could locate is `reports/p3-w7-productionize.md:86`
+16. **CLI-side from config v3:** the command reshape itself is P4's subject.
+    **[CORRECTED 2026-07-13: "153 leaves per spec/03" is retired.** The count was never
+    computable (spec/03's own baseline was off by one) and drifts with every merge. The
+    contract is spec/03 **§6's disposition table**: every command in the live tree carries a
+    row, every row resolves to a real command, checked mechanically against
+    `command-tree.json`. See spec/03 §0 and ruling Q10.] The one explicit handoff note I could locate is `reports/p3-w7-productionize.md:86`
     (the legacy per-node repo mount "is P4 porcelain for the cluster-repo path"), which is the
     same object as #25 above. I did not find a separate config-v3 handoff document beyond this
     and the program memory; if one exists outside `reports/`, it was not in my evidence set.

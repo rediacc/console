@@ -72,7 +72,18 @@ describe('renderReplicaSet (spec 05 §1 manifest plumbing)', () => {
 });
 
 function execMock() {
-  return vi.spyOn(localExecutorService, 'execute').mockResolvedValue({ success: true } as never);
+  // datastore_fork is captured (--json) so provisionOneReplica can ferry the
+  // record to an off-control node via datastore_adopt (finding #36); every
+  // other step just needs success.
+  return vi
+    .spyOn(localExecutorService, 'execute')
+    .mockImplementation((opts) =>
+      Promise.resolve(
+        (opts.functionName === 'datastore_fork'
+          ? { success: true, stdout: '{"fork":{"cloneImage":"clone"}}' }
+          : { success: true }) as never
+      )
+    );
 }
 
 describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)', () => {
@@ -145,6 +156,53 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
     ]);
   });
 
+  it('ferries the fork record via datastore_adopt off-control, and skips adopt on the control node (finding #36)', async () => {
+    vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
+    const exec = execMock();
+    // nodes = [control cp1, worker w1] — mirrors the live b1src layout where
+    // replica 1 lands on the control node and replica 2 on an agent node.
+    await provisionReplicaDatastores({
+      ...base,
+      replicas: 2,
+      nodes: [
+        { machine: 'cp1', ip: '10.0.0.1' }, // == controlMachine: record already local
+        { machine: 'w1', ip: '10.0.0.2' }, // off-control: needs the adopt ferry
+      ],
+    });
+    const calls = exec.mock.calls.map((c) => c[0]);
+    // datastore_fork always runs on the control machine, captured for the ferry.
+    expect(
+      calls.filter((c) => c.functionName === 'datastore_fork').every((c) => c.machineName === 'cp1')
+    ).toBe(true);
+    // Only the OFF-control replica adopts; the on-control one skips it.
+    const adopts = calls.filter((c) => c.functionName === 'datastore_adopt');
+    expect(adopts.map((c) => c.machineName)).toEqual(['w1']);
+    expect(adopts[0].params?.name).toBe('ds-data:set1-r2');
+    expect(typeof adopts[0].params?.record_b64).toBe('string');
+    // The adopt must PRECEDE the attach on that node (attach fails otherwise —
+    // "not registered on this machine", the live bug this fixes).
+    const w1Seq = calls
+      .filter(
+        (c) =>
+          c.machineName === 'w1' &&
+          (c.functionName === 'datastore_adopt' || c.functionName === 'datastore_attach')
+      )
+      .map((c) => c.functionName);
+    expect(w1Seq).toEqual(['datastore_adopt', 'datastore_attach']);
+    // #40: after the off-control attach, the control's vestigial fork record is
+    // forgotten (registry-only) so a later re-fork of the same tag (refresh)
+    // does not collide. ONLY the off-control replica; on-control skips it.
+    const forgets = calls.filter((c) => c.functionName === 'datastore_forget');
+    expect(forgets.map((c) => c.machineName)).toEqual(['cp1']);
+    expect(forgets[0].params?.name).toBe('ds-data:set1-r2');
+    // Order: forget runs AFTER the off-control attach (fork→adopt→attach→forget).
+    const attachIdx = calls.findIndex(
+      (c) => c.functionName === 'datastore_attach' && c.machineName === 'w1'
+    );
+    const forgetIdx = calls.findIndex((c) => c.functionName === 'datastore_forget');
+    expect(forgetIdx).toBeGreaterThan(attachIdx);
+  });
+
   it('refuses when the cluster has no nodes', async () => {
     execMock();
     await expect(provisionReplicaDatastores({ ...base, replicas: 2, nodes: [] })).rejects.toThrow(
@@ -169,6 +227,90 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
       .map((c) => c[0])
       .filter((c) => c.functionName === 'datastore_detach' && c.params?.discard === true);
     expect(detaches.map((c) => c.params?.name)).toEqual(['ds-data:set1-r1', 'ds-data:set1-r2']);
+  });
+
+  // ── bug #49: the per-volume LUKS images, and the two traps ────────────────
+
+  // A datastore fork is a BLOCK-layer clone: it carries the ciphertext
+  // repos/<repo>/volumes/<pvc>.img AND the empty directory that image was mounted
+  // over. The replica's PV points at that directory. If nothing re-opens the image,
+  // the replica mounts the empty dir and comes up healthy, Ready, and EMPTY — the
+  // failure has NO symptom except missing data, which is why it must be pinned here
+  // rather than left to a live suite.
+  it('opens the repo volumes on each fork, AFTER attach and BEFORE the node label', async () => {
+    vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
+    const exec = execMock();
+
+    await provisionReplicaDatastores({
+      ...base,
+      replicas: 2,
+      nodes: [
+        { machine: 'n1', ip: '10.0.0.1' },
+        { machine: 'n2', ip: '10.0.0.2' },
+      ],
+    });
+
+    const calls = exec.mock.calls.map((c) => c[0]);
+    const opens = calls.filter((c) => c.functionName === 'datastore_volumes_open');
+    expect(opens.length).toBe(2);
+    // Scoped to the fork AND the repo: the images live in one repo's folder, and an
+    // unscoped open would silently open nothing.
+    expect(opens.map((c) => c.params?.name)).toEqual(['ds-data:set1-r1', 'ds-data:set1-r2']);
+    expect(opens.every((c) => c.params?.repo === 'sqldb')).toBe(true);
+    // Each open runs on the node that HOLDS the fork, not on the control plane.
+    expect(opens.map((c) => c.machineName)).toEqual(['n1', 'n2']);
+
+    // The ordering is the safety property. The node label is the PV's nodeAffinity
+    // key and therefore the scheduling gate: opening BEFORE the label means a pod
+    // can never be scheduled onto a volume that is not yet mounted. Attaching before
+    // the open is likewise required — there is no mount to open the image on until
+    // the datastore is attached.
+    const names = calls.map((c) => c.functionName);
+    for (const [i, fork] of ['ds-data:set1-r1', 'ds-data:set1-r2'].entries()) {
+      const attachAt = calls.findIndex(
+        (c) => c.functionName === 'datastore_attach' && c.params?.name === fork
+      );
+      const openAt = calls.findIndex(
+        (c) => c.functionName === 'datastore_volumes_open' && c.params?.name === fork
+      );
+      const labelAt = names.indexOf('kube_node_label', attachAt);
+      expect(attachAt, `replica ${i + 1}: attach must precede open`).toBeLessThan(openAt);
+      expect(openAt, `replica ${i + 1}: open must precede the node label`).toBeLessThan(labelAt);
+    }
+  });
+
+  // TRAP 2: anything the provision path opens, the discard path must close. A fork
+  // holding a live LUKS mapping and its loop device is BUSY, so a discard-detach
+  // that skipped the close would simply fail.
+  it('closes the repo volumes BEFORE discarding each fork', async () => {
+    vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
+    const exec = execMock();
+
+    await discardReplicaDatastores({
+      repo: 'sqldb',
+      datastore: 'ds-data',
+      cluster: 'prod',
+      createdAt: 'now',
+      replicas: [
+        { index: 1, fork: 'ds-data:set1-r1', node: 'n1' },
+        { index: 2, fork: 'ds-data:set1-r2', node: 'n2' },
+      ],
+    });
+
+    const calls = exec.mock.calls.map((c) => c[0]);
+    const closes = calls.filter((c) => c.functionName === 'datastore_volumes_close');
+    expect(closes.map((c) => c.params?.name)).toEqual(['ds-data:set1-r1', 'ds-data:set1-r2']);
+    expect(closes.every((c) => c.params?.repo === 'sqldb')).toBe(true);
+
+    for (const fork of ['ds-data:set1-r1', 'ds-data:set1-r2']) {
+      const closeAt = calls.findIndex(
+        (c) => c.functionName === 'datastore_volumes_close' && c.params?.name === fork
+      );
+      const detachAt = calls.findIndex(
+        (c) => c.functionName === 'datastore_detach' && c.params?.name === fork
+      );
+      expect(closeAt, `${fork}: close must precede detach --discard`).toBeLessThan(detachAt);
+    }
   });
 });
 
