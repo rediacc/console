@@ -349,11 +349,11 @@ export function createCli(): Command {
     'after',
     `
   ${t('help.examples')}
-    $ rdc machine query --name server-1             ${t('help.cli.machineQuery')}
-    $ rdc term connect -m server-1 -r my-app        ${t('help.cli.termRepo')}
-    $ rdc repo up --name my-app -m server-1          ${t('help.cli.repoUp')}
-    $ rdc repo sync upload -m server-1 -r my-app     ${t('help.cli.syncUpload')}
-    $ rdc repo sync download -m server-1 -r my-app   ${t('help.cli.syncDownload')}
+    $ rdc machine status server-1                    ${t('help.cli.machineQuery')}
+    $ rdc term connect my-app                        ${t('help.cli.termRepo')}
+    $ rdc repo up my-app@server-1                    ${t('help.cli.repoUp')}
+    $ rdc repo sync upload my-app --local ./src      ${t('help.cli.syncUpload')}
+    $ rdc repo sync download my-app --local ./out    ${t('help.cli.syncDownload')}
   `
   );
 
