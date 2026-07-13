@@ -91,8 +91,7 @@
         "scripts/**/*.ts"
       ],
       "ignoreBinaries": [
-        // BLOCKER: rotation CLI shells out to the authenticated gh binary for GitHub org-secret pushes and to openssl for key generation; host tools, not npm deps
-        "gh",
+        // BLOCKER: rotation CLI shells out to openssl for key generation; host tool, not an npm dep (knip 6.26 resolves the gh binary natively)
         "openssl"
       ],
       "ignoreUnresolved": [
@@ -146,14 +145,11 @@
     "fast-xml-parser"
   ],
   "ignoreBinaries": [
-    // BLOCKER: platform/system tools spawned via child_process at runtime by the CLI (user lookups, keyrings, service control, Windows/macOS shells); host binaries, never npm-managed. knip 6.25 additionally resolves bare `which` (doctor PATH probes), `powershell` (secure-storage fallback beside powershell.exe), and `qemu-img` (e2e VM image inspection on the KVM host)
-    "cmd.exe",
+    // BLOCKER: platform/system tools spawned via child_process at runtime by the CLI (user lookups, keyrings, service control, macOS/Linux/WSL shells); host binaries, never npm-managed. knip 6.26 still parses bare `which` (doctor PATH probes) and `qemu-img` (e2e VM image inspection on the KVM host), so they stay listed; it resolves the Windows cmd.exe/powershell shells natively
     "dscl",
     "getent",
     "keyctl",
     "osascript",
-    "powershell",
-    "powershell.exe",
     "qemu-img",
     "security",
     "systemctl",

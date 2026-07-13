@@ -47,7 +47,7 @@ function emptyList(): ListResult {
 
 function makeDeps(
   config: RdcConfig,
-  statuses: Record<string, ListResult | Error>
+  statuses: Record<string, ListResult | Error | undefined>
 ): { deps: ReconcileDeps; written: () => RdcConfig } {
   let current = config;
   const deps: ReconcileDeps = {

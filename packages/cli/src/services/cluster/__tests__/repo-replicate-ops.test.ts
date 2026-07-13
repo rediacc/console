@@ -15,10 +15,12 @@ vi.mock('../cluster-target.js', () => ({
   resolveExecutionTarget: vi.fn(() => Promise.resolve({ machineName: 'cp1', cluster: 'prod' })),
 }));
 vi.mock('../../config/config-cluster-ops.js', () => ({
-  getCluster: vi.fn(() => Promise.resolve({
-    provider: 'kvm',
-    pools: [{ name: 'w', role: 'hyperconverged', count: 2 }],
-  })),
+  getCluster: vi.fn(() =>
+    Promise.resolve({
+      provider: 'kvm',
+      pools: [{ name: 'w', role: 'hyperconverged', count: 2 }],
+    })
+  ),
 }));
 
 /** In-memory replica-set state + a scripted executor. */

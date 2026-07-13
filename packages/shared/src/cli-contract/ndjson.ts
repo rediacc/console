@@ -42,6 +42,22 @@ export class LineTooLongError extends Error {
  * MAX_LINE_BYTES so an untrusted source cannot exhaust memory with a
  * newline-free flood.
  */
+/**
+ * Yield every complete (newline-terminated, non-blank) line already in `buffer`
+ * and return the unconsumed remainder. Split out of readLines so the outer read
+ * loop stays under the cognitive-complexity budget; behaviour is identical.
+ */
+function* drainCompleteLines(buffer: string): Generator<string, string> {
+  let newlineIndex = buffer.indexOf('\n');
+  while (newlineIndex !== -1) {
+    const line = buffer.slice(0, newlineIndex);
+    buffer = buffer.slice(newlineIndex + 1);
+    if (line.trim() !== '') yield line;
+    newlineIndex = buffer.indexOf('\n');
+  }
+  return buffer;
+}
+
 export async function* readLines(stream: ReadableStream<Uint8Array>): AsyncGenerator<string> {
   const reader = stream.getReader();
   const decoder = new TextDecoder();
@@ -53,14 +69,7 @@ export async function* readLines(stream: ReadableStream<Uint8Array>): AsyncGener
       if (done) break;
 
       buffer += decoder.decode(value, { stream: true });
-
-      let newlineIndex = buffer.indexOf('\n');
-      while (newlineIndex !== -1) {
-        const line = buffer.slice(0, newlineIndex);
-        buffer = buffer.slice(newlineIndex + 1);
-        if (line.trim() !== '') yield line;
-        newlineIndex = buffer.indexOf('\n');
-      }
+      buffer = yield* drainCompleteLines(buffer);
 
       // No newline arrived and the pending line is already oversized: this is
       // the flood case. Stop before the next chunk doubles the allocation.

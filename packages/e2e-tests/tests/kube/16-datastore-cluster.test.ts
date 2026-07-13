@@ -164,7 +164,9 @@ test.describe
         `sudo bash -c 'for i in 1 2 3; do ${select} | xargs -r -n1 umount 2>/dev/null; ${select} | xargs -r -n1 umount -l 2>/dev/null; sleep 1; done; udevadm settle 2>/dev/null; ` +
           `sync; echo REMAINING_HOLDERS:; ${select}'; true`
       );
-      process.stdout.write(`[suite16 unwind ${mount}] ${res.stdout.trim().replace(/\n/g, ' | ')}\n`);
+      process.stdout.write(
+        `[suite16 unwind ${mount}] ${res.stdout.trim().replaceAll('\n', ' | ')}\n`
+      );
     };
 
     // `renet kube install` auto-starts the node CSI units (rediacc-csi / -provisioner
@@ -194,7 +196,7 @@ test.describe
           `echo "MOUNTINFO_NS:"; grep -l -F "${mount}" /proc/[0-9]*/mountinfo 2>/dev/null || echo none'; true`
       );
       process.stdout.write(
-        `[suite16 deepHolders ${mount}] ${res.stdout.trim().replace(/\n/g, ' | ')}\n`
+        `[suite16 deepHolders ${mount}] ${res.stdout.trim().replaceAll('\n', ' | ')}\n`
       );
     };
 
@@ -391,7 +393,7 @@ test.describe
       // on the dest before attaching (cluster-fork.ts). Replicate that here: w2's
       // registry has no `<parent>:f1` row until we adopt the ferried record.
       const listRes = await w1.executeViaBridge('sudo renet datastore list --json');
-      const records = JSON.parse(listRes.stdout) as Array<{ name: string }>;
+      const records = JSON.parse(listRes.stdout) as { name: string }[];
       for (const parent of [CTRL_DS, DATA_DS]) {
         const forkName = `${parent}:${FORK_TAG}`;
         const rec = records.find((r) => r.name === forkName);

@@ -10,6 +10,18 @@ import { describe, expect, it } from 'vitest';
 import { nodeCryptoProvider } from '../../adapters/crypto.js';
 
 /**
+ * These tests probe dynamic and removed fields on migrated documents, so they
+ * walk the result structurally rather than through the schema types. A migrated
+ * doc is modeled as a recursive index type: every access yields another node.
+ */
+type MigratedDoc = { readonly [key: string]: MigratedDoc };
+
+/** The v2 input shape these tests mutate before feeding the migration. */
+type V2Input = Record<string, unknown> & {
+  resources: { repositories: Record<string, unknown> };
+};
+
+/**
  * The schema package is runtime-portable and holds no crypto provider, so the
  * host injects one (see ConfigFileStorage.migrationContext). These tests inject
  * the same Node provider the CLI uses in production.
@@ -137,7 +149,7 @@ describe('migrateV2ToV3 transforms', () => {
   });
 
   it('T2 keys repositories by name into families of structural tags', async () => {
-    const out = (await migrateV2ToV3(makeV2Sample(), throwingCtx)) as any;
+    const out = (await migrateV2ToV3(makeV2Sample(), throwingCtx)) as MigratedDoc;
     const repos = out.resources.repositories;
     expect(repos.erpnext.grand).toBe('latest');
     expect(repos.erpnext.tags.latest.repositoryGuid).toBe('11111111-1111-4111-8111-111111111111');
@@ -149,7 +161,7 @@ describe('migrateV2ToV3 transforms', () => {
   });
 
   it('T4 extracts status into the state bucket', async () => {
-    const out = (await migrateV2ToV3(makeV2Sample(), throwingCtx)) as any;
+    const out = (await migrateV2ToV3(makeV2Sample(), throwingCtx)) as MigratedDoc;
     expect(out.state.repos.shop.latest.networkId).toBe(2880);
     expect(out.state.repos.shop.latest.headCommit).toBe('c0ffee');
     expect(out.state.repos.shop.test.networkId).toBe(2944);
@@ -161,7 +173,7 @@ describe('migrateV2ToV3 transforms', () => {
   });
 
   it('T6 residue-sweeps team/region/defaults.machine/nextNetworkId', async () => {
-    const out = (await migrateV2ToV3(makeV2Sample(), throwingCtx)) as any;
+    const out = (await migrateV2ToV3(makeV2Sample(), throwingCtx)) as MigratedDoc;
     expect(out.account.team).toBeUndefined();
     expect(out.account.region).toBeUndefined();
     expect(out.defaults.machine).toBeUndefined();
@@ -169,25 +181,25 @@ describe('migrateV2ToV3 transforms', () => {
   });
 
   it('T7 drops machines[*].ceph', async () => {
-    const out = (await migrateV2ToV3(makeV2Sample(), throwingCtx)) as any;
+    const out = (await migrateV2ToV3(makeV2Sample(), throwingCtx)) as MigratedDoc;
     expect(out.resources.machines['web-1'].ceph).toBeUndefined();
     expect(out.resources.machines['web-1'].ip).toBe('10.0.0.1');
   });
 
   it('T9 splits archived-repo composite name into {name, tag}', async () => {
-    const out = (await migrateV2ToV3(makeV2Sample(), throwingCtx)) as any;
+    const out = (await migrateV2ToV3(makeV2Sample(), throwingCtx)) as MigratedDoc;
     const archived = out.resources.deletedRepositories[0];
     expect(archived.name).toBe('old');
     expect(archived.tag).toBe('v1');
   });
 
   it('T10 preserves unknown top-level keys', async () => {
-    const out = (await migrateV2ToV3(makeV2Sample(), throwingCtx)) as any;
+    const out = (await migrateV2ToV3(makeV2Sample(), throwingCtx)) as MigratedDoc;
     expect(out.unknownFutureKey).toEqual({ kept: true });
   });
 
   it('refuses a shop + shop:latest ambiguity, naming both keys', async () => {
-    const v2 = makeV2Sample() as any;
+    const v2 = makeV2Sample() as V2Input;
     v2.resources.repositories = {
       shop: { repositoryGuid: '66666666-6666-4666-8666-666666666666' },
       'shop:latest': { repositoryGuid: '77777777-7777-4777-8777-777777777777' },
@@ -196,7 +208,7 @@ describe('migrateV2ToV3 transforms', () => {
   });
 
   it('fails when a secret exceeds its mode cap, naming the key', async () => {
-    const v2 = makeV2Sample() as any;
+    const v2 = makeV2Sample() as V2Input;
     v2.resources.repositories = {
       shop: {
         repositoryGuid: '66666666-6666-4666-8666-666666666666',
@@ -239,7 +251,7 @@ describe('migrateV2ToV3 transforms', () => {
       getMasterPassword: () => Promise.resolve(password),
       decryptLegacyBlob,
     };
-    const out = (await migrateV2ToV3(v2, ctx)) as any;
+    const out = (await migrateV2ToV3(v2, ctx)) as MigratedDoc;
     expect(out.resources.repositories.secret.grand).toBe('latest');
     expect(out.resources.repositories.secret.tags.latest.credential).toBe('luks-secret');
     expect(out.state.repos.secret.latest.networkId).toBe(4032);

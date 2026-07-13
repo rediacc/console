@@ -15,7 +15,7 @@
     "cluster": {
       "create": {
         "baseDomainOption": "النطاق الأساسي لـ DNS العام للعنقود (وإلا يُورَث من جهاز شقيق)",
-        "controlDsBackendOption": "Anchor control datastore backend: local | ceph (default: ceph if the cluster has ceph, else local)",
+        "controlDsBackendOption": "خلفية مخزن بيانات التحكم المرجعي: local | ceph (الافتراضي: ceph إذا كان العنقود يحتوي على ceph، وإلا local)",
         "controlDsPoolOption": "مجمع Ceph RBD لمخزن بيانات التحكم التأسيسي (خلفية ceph)",
         "controlDsSizeOption": "حجم مخزن بيانات التحكم التأسيسي (الافتراضي 10G)",
         "description": "تجهيز أعضاء تجمع عنقود مُعرَّف بـ 'rdc config cluster add'، وإقلاع renet على كل منها، وتثبيت المكونات (ceph أولاً). تُجهِّز مزودات السحابة عبر OpenTofu؛ يصل KVM في موجة لاحقة.",
@@ -34,7 +34,7 @@
         "nameOption": "اسم العنقود"
       },
       "evict": {
-        "description": "Drain the node, delete its Node object, and clear its cluster membership. The cluster is derived from the machine; a machine that still mounts a datastore is refused.",
+        "description": "تفريغ العقدة، وحذف كائن Node الخاص بها، ومسح عضويتها في العنقود. يُشتق العنقود من الجهاز؛ يُرفض أي جهاز لا يزال مخزن بيانات مثبَّتًا عليه.",
         "descriptionShort": "إزالة عقدة من عنقودها",
         "forceOption": "تخطي التفريغ إذا كانت العقدة ميتة بالفعل",
         "machineOption": "الجهاز المطلوب إخلاؤه"
@@ -46,7 +46,7 @@
         "nameOption": "اسم العنقود",
         "tagOption": "وسم التفريع",
         "upOption": "تشغيل المستودعات المُفرَّعة والتحقق من صحة العنقود بعد إقلاع التفريع",
-        "writesOption": "Fork write disposition: local (ephemeral dm-COW overlay, zero Ceph footprint) | ceph (durable clone). Default local"
+        "writesOption": "نمط الكتابة في التفريع: local (طبقة تراكبية dm-COW مؤقتة، بدون أي أثر على Ceph) | ceph (نسخة دائمة). الافتراضي local"
       },
       "install": {
         "description": "تثبيت مكونات العنقود (ceph أولاً، ثم k8s) على أعضاء مجهزين بالفعل.",
@@ -55,7 +55,7 @@
       },
       "join": {
         "clusterOption": "العنقود المطلوب ضم الجهاز إليه",
-        "description": "Adopt an existing registered machine as a Kubernetes agent node of a cluster, using the same CA-derived join token as anchor and rejoin.",
+        "description": "ضمّ جهاز مسجَّل موجود كعقدة عامل Kubernetes تابعة لعنقود، باستخدام نفس رمز الانضمام المُشتق من CA المستخدم عند التثبيت (anchor) وإعادة الانضمام (rejoin).",
         "descriptionShort": "إضافة جهاز إلى عنقود كعقدة عامل",
         "machineOption": "جهاز مسجَّل للضم"
       },
@@ -73,10 +73,10 @@
       },
       "rehearse": {
         "clusterOption": "عنقود الوجهة الذي تستضيف عقده تفريع التمرين المؤقت",
-        "description": "Rehearse a release/upgrade: fork the cluster onto a destination as an ephemeral throwaway (writes=local, secretless role=rehearsal), bring it up, gate on health, then discard it. The parent is never touched.",
+        "description": "التمرين على إصدار/ترقية: تفريع العنقود إلى وجهة كنسخة مؤقتة قابلة للتخلص منها (writes=local، بلا أسرار role=rehearsal)، ثم تشغيلها والتحقق من صحتها، ثم حذفها. لا يُمَس الأصل أبدًا.",
         "descriptionShort": "تشغيل تفريع مؤقت قابل للتخلص منه، والتحقق من صحته، ثم حذفه",
         "nameOption": "عنقود المصدر للتمرين",
-        "tagOption": "Optional tag for the rehearsal fork (default: timestamped)"
+        "tagOption": "وسم اختياري لتفريع التمرين (الافتراضي: بطابع زمني)"
       },
       "scale": {
         "countOption": "عدد الأعضاء المطلوب",
@@ -958,25 +958,25 @@
         "workingOption": "فرع العمل (fork) الذي يشير الـ branch إلى الـ commit الحالي له"
       },
       "canary": {
-        "description": "Run a NEW image next to the stable one and split live traffic between them by percentage (release ladder rung 2). Creates one canary Deployment + Service on the SAME live data (no fork: canary users on forked data would read stale data and write into a doomed copy) and tells the Rediacc proxy to route the given percent of the stable hostname's traffic to it. Weight 0 keeps the canary dark; weight 100 is the blue/green flip. Before every canary change, an automatic group snapshot of the cluster's datastores is taken (release ladder rung 0) as the universal undo. Schema compatibility between the two versions (expand-contract) is the application's responsibility. For schema-BREAKING releases, use blue/green instead: fork the repo (instant, includes data), point the fork's Service here with weight 100, and roll back by restarting the untouched parent; writes made after the flip exist only in the new copy, so the rollback window is a policy decision.",
-        "descriptionShort": "Canary release: weighted traffic split on shared data",
+        "description": "شغّل صورة جديدة إلى جانب الصورة المستقرة وقسّم حركة المرور الحية بينهما بنسبة مئوية (الدرجة 2 من سلّم الإصدار). يُنشئ هذا الأمر Deployment وService واحدًا للـ Canary على نفس البيانات الحية (بلا تفريع: لأن مستخدمي الـ Canary على بيانات مفرَّعة سيقرؤون بيانات قديمة ويكتبون في نسخة مصيرها الحذف)، ويُخبر وكيل Rediacc بتوجيه النسبة المحددة من حركة مرور المضيف المستقر إليه. الوزن 0 يُبقي الـ Canary بلا حركة مرور (dark)، والوزن 100 هو تحويل blue/green الكامل. قبل كل تغيير على الـ Canary، تؤخذ تلقائيًا لقطة جماعية لمخازن بيانات العنقود (الدرجة 0 من سلّم الإصدار) كوسيلة تراجع شاملة. توافق المخطط (schema) بين الإصدارين (expand-contract) هو مسؤولية التطبيق نفسه. أما الإصدارات التي تكسر المخطط، فاستخدم blue/green بدلاً من ذلك: فرّع المستودع (فوري، يشمل البيانات)، ووجّه Service الخاص بالتفريع إلى هنا بوزن 100، وتراجع بإعادة تشغيل الأصل غير الممسوس؛ الكتابات التي تحدث بعد التحويل توجد فقط في النسخة الجديدة، لذا نافذة التراجع قرار يخص السياسة التشغيلية.",
+        "descriptionShort": "إصدار Canary: تقسيم موزون لحركة المرور على بيانات مشتركة",
         "imageOption": "الصورة الجديدة التي يشغّلها Deployment الخاص بالـ Canary (على البيانات الحية المشتركة)",
         "nameOption": "المستودع الذي ينتمي إليه الـ Canary (فضاء أسمائه)",
         "portOption": "المنفذ الذي يخدم عليه التطبيق (يجب أن يطابق Service المستقر)",
         "remove": {
-          "description": "Remove a canary's Deployment and Service (label-scoped); the stable Service serves 100% again. Release-undo snapshots are retained; prune them with the datastore snapshot commands.",
+          "description": "إزالة Deployment وService الخاصين بالـ Canary (ضمن نطاق التصنيفات)؛ يعود Service المستقر لخدمة 100% من حركة المرور. تُحتفَظ بلقطات التراجع عن الإصدار؛ نظّفها باستخدام أوامر لقطات مخزن البيانات.",
           "descriptionShort": "تفكيك Canary",
           "nameOption": "مجموعة الـ Canary المطلوب إزالتها"
         },
-        "replicasOption": "Canary Deployment replica count (default: 1)",
-        "serviceOption": "Stable Service to split traffic with (default: the repo name)",
+        "replicasOption": "عدد نسخ Deployment الخاص بالـ Canary (الافتراضي: 1)",
+        "serviceOption": "Service المستقر الذي سيتم تقسيم حركة المرور معه (الافتراضي: اسم المستودع)",
         "status": {
-          "description": "Show managed canary sets: weight, images, stable service, and the latest release-undo snapshot.",
-          "descriptionShort": "Show managed canary sets",
-          "nameOption": "Show one canary set by name"
+          "description": "عرض مجموعات الـ Canary المُدارة: الوزن، الصور، Service المستقر، وأحدث لقطة للتراجع عن الإصدار.",
+          "descriptionShort": "عرض مجموعات الـ Canary المُدارة",
+          "nameOption": "عرض مجموعة Canary واحدة بالاسم"
         },
         "weight": {
-          "description": "Change the percent of traffic routed to a canary. Takes a fresh release-undo group snapshot first, then re-applies the overlay; the proxy picks up the new split on its refresh tick. Weight 100 sends all traffic to the new version (the blue/green flip).",
+          "description": "تغيير نسبة حركة المرور الموجَّهة إلى الـ Canary. يأخذ أولاً لقطة جماعية جديدة للتراجع عن الإصدار، ثم يعيد تطبيق الطبقة التراكبية (overlay)؛ ويلتقط الوكيل التقسيم الجديد في دورة التحديث التالية. الوزن 100 يرسل كل حركة المرور إلى الإصدار الجديد (تحويل blue/green).",
           "descriptionShort": "تغيير نسبة حركة المرور لـ Canary",
           "nameOption": "مجموعة الـ Canary المطلوب تعديلها"
         },
@@ -1270,32 +1270,32 @@
         "statsNoBytes": "تم دفع \"{{repo}}\" إلى {{machine}} — اكتمل خلال {{duration}}"
       },
       "replicate": {
-        "datastoreOption": "Data datastore holding the repository (default: the cluster's single data datastore)",
-        "description": "Create N read replicas of a repository in seconds, regardless of database size. Takes ONE datastore snapshot, then makes N constant-time fork-attaches (copy-on-write, throwaway local writes) spread across the cluster's nodes, and applies a generated overlay: one pinned PersistentVolume per replica, a StatefulSet, and two Services ({repo}-rw to the primary, {repo}-ro across the replicas). Replicas are POINT-IN-TIME copies: no replication stream, no read-your-writes; each replica runs one crash-recovery pass before serving. Refresh them with 'repo replicate refresh'. Replica sets are managed state: see 'repo replicate status' and remove with 'repo replicate remove'.",
+        "datastoreOption": "مخزن البيانات الذي يحتضن المستودع (الافتراضي: مخزن بيانات العنقود الوحيد)",
+        "description": "إنشاء N نسخة قراءة من مستودع في ثوانٍ، بغض النظر عن حجم قاعدة البيانات. يأخذ لقطة واحدة فقط لمخزن البيانات، ثم يُنشئ N من عمليات ربط-التفريع (fork-attach) ثابتة الزمن (نسخ عند الكتابة، كتابات محلية قابلة للتخلص منها) موزّعة عبر عقد العنقود، ويطبّق طبقة تراكبية (overlay) مُولَّدة: PersistentVolume واحد مثبَّت لكل نسخة، وStatefulSet، وService اثنان ({repo}-rw للنسخة الرئيسية، {repo}-ro عبر النسخ). النسخ هي لقطات في لحظة زمنية محددة: لا يوجد تدفّق نسخ متماثل (replication)، ولا ضمان لقراءة ما كتبته بنفسك (read-your-writes)؛ تُجري كل نسخة دورة تعافٍ من الأعطال (crash-recovery) واحدة قبل بدء الخدمة. حدِّثها باستخدام 'repo replicate refresh'. مجموعات النسخ حالة مُدارة: راجعها عبر 'repo replicate status' وأزلها عبر 'repo replicate remove'.",
         "descriptionShort": "نسخ قراءة فورية من تفريعات مخزن البيانات",
-        "headlessOption": "Make the -ro Service headless: DNS returns every replica pod IP for driver-side balancing (long-lived DB connections skew a normal Service's per-connection balancing)",
+        "headlessOption": "اجعل Service الخاص بـ -ro بلا رأس (headless): يُعيد DNS عنوان IP لكل pod من النسخ لتمكين موازنة الحمل من جهة العميل (driver-side) (الاتصالات الطويلة الأمد بقاعدة البيانات تُخِلّ بموازنة الحمل التي يقوم بها Service العادي على مستوى الاتصال)",
         "imageOption": "صورة المحرك الذي تُشغّله النسخ (نفس محرك النسخة الرئيسية)",
         "nameOption": "المستودع المطلوب إنشاء نسخ قراءة منه (فضاء أسمائه + الاسم الأساسي لـ Service)",
         "portOption": "المنفذ الذي يخدم عليه المحرك",
-        "primaryAppOption": "The primary pod's 'app' label value the -rw Service targets (default: the repo name)",
-        "pvcOption": "Volume name the engine mounts as its data dir (default: data)",
+        "primaryAppOption": "قيمة تصنيف 'app' الخاص بالـ pod الرئيسي الذي يستهدفه Service الخاص بـ -rw (الافتراضي: اسم المستودع)",
+        "pvcOption": "اسم وحدة التخزين (volume) التي يُركِّبها المحرك كدليل بياناته (الافتراضي: data)",
         "refresh": {
-          "description": "Roll every replica onto a fresh point-in-time snapshot, ONE at a time: bounce the replica pod, discard and re-fork its datastore under the same path, and let readiness re-admit it. N-1 replicas keep serving throughout.",
+          "description": "نقل كل نسخة إلى لقطة جديدة في لحظة زمنية محددة، واحدة تلو الأخرى: أعد تشغيل pod الخاص بالنسخة، تخلَّص من مخزن بياناته وأعد تفريعه على نفس المسار، ثم اسمح لفحص الجاهزية (readiness) بإعادة قبوله. تستمر N-1 نسخة في تقديم الخدمة طوال هذه العملية.",
           "descriptionShort": "تحديث النسخ تدريجيًا إلى لقطة جديدة",
           "nameOption": "مجموعة النسخ المطلوب تحديثها"
         },
-        "refreshOption": "Intended refresh interval recorded on the set (e.g. 1h); run 'repo replicate refresh' to roll it",
+        "refreshOption": "فترة التحديث المقصودة المسجَّلة على المجموعة (مثال: 1h)؛ شغّل 'repo replicate refresh' لتنفيذها",
         "remove": {
-          "description": "Remove a replica set: delete its generated k8s objects (label-scoped), discard its fork datastores, drop its snapshot, and forget the state. Infra steps are best-effort so removal converges even on a partially-gone cluster.",
+          "description": "إزالة مجموعة نسخ: حذف كائنات k8s المُولَّدة لها (ضمن نطاق التصنيفات)، والتخلص من مخازن بياناتها المُفرَّعة، وإسقاط لقطتها، ونسيان حالتها. خطوات البنية التحتية تُنفَّذ على أساس بذل أفضل جهد (best-effort) بحيث تكتمل الإزالة حتى على عنقود فقد جزءًا منه.",
           "descriptionShort": "تفكيك مجموعة نسخ",
           "nameOption": "مجموعة النسخ المطلوب إزالتها"
         },
         "replicasOption": "عدد نسخ القراءة المطلوب إنشاؤها",
-        "setOption": "Replica-set name (default: <repo>-replicas)",
+        "setOption": "اسم مجموعة النسخ (الافتراضي: <repo>-replicas)",
         "status": {
-          "description": "Show managed replica sets: replicas, hosting nodes, fork datastores, snapshot, and refresh timestamps.",
-          "descriptionShort": "Show managed replica sets",
-          "nameOption": "Show one replica set by name"
+          "description": "عرض مجموعات النسخ المُدارة: النسخ، العقد المستضيفة، مخازن البيانات المُفرَّعة، اللقطة، وطوابع زمن التحديث.",
+          "descriptionShort": "عرض مجموعات النسخ المُدارة",
+          "nameOption": "عرض مجموعة نسخ واحدة بالاسم"
         }
       },
       "resize": {
@@ -1908,7 +1908,9 @@
       "sync": "مزامنة الملفات",
       "term": "وصول طرفية SSH",
       "update": "تحديثات سطر الأوامر",
-      "vscode": "تكامل VS Code"
+      "vscode": "تكامل VS Code",
+      "job": "المهام المنفصلة",
+      "serve": "خدمة المُنفِّذ"
     },
     "supplements": {
       "config": {
@@ -1968,11 +1970,11 @@
     "cannotDeleteGrandRepo": "لا يمكن حذف المستودع الرئيسي: {{reason}}",
     "cannotPromote": "لا يمكن الترقية: {{reason}}",
     "cluster": {
-      "controlDsBackendInvalid": "--control-ds-backend must be local or ceph",
+      "controlDsBackendInvalid": "يجب أن تكون قيمة --control-ds-backend إما local أو ceph",
       "countInvalid": "يجب أن يكون --count عدداً صحيحاً غير سالب",
       "dockerOnlyVerb": "\"repo {{verb}}\" يستهدف مستودعات Docker فقط ولا يمكن تشغيله ضد --cluster؛ ليس له مكافئ في Kubernetes في v1",
       "featureUnsupportedV1": "{{feature}} غير مدعوم مع --cluster في v1 (عرض عقدة التحكم)؛ {{hint}}",
-      "forkWritesInvalid": "--writes must be local or ceph",
+      "forkWritesInvalid": "يجب أن تكون قيمة --writes إما local أو ceph",
       "pendingContractRegen": "\"repo {{verb}}\" على عنقود يُرسِل {{fn}}، وهو بانتظار إعادة توليد عقد renet kube (الموجة 5). تم حل العنقود وفضاء الأسماء؛ أعد التشغيل بمجرد توفر العقد.",
       "targetExclusive": "حدّد واحداً فقط من -m/--machine أو --cluster، وليس كليهما",
       "targetRequired": "مطلوب جهاز هدف (-m) أو عنقود (--cluster)"

@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1811,
-    "sourceCommit": "9eee3671bf0c1a3a05fac2c9a207d6be54c863e3"
+    "keyCount": 1813,
+    "sourceCommit": "c3dc6bf445c638232414d4315a6fffd78d51ad51"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1405,10 +1405,12 @@
     "docs.sectionTitles.credits": "30d8e1db",
     "docs.sectionTitles.datastore": "15b635b7",
     "docs.sectionTitles.doctor": "5d24fa7d",
+    "docs.sectionTitles.job": "7640f21a",
     "docs.sectionTitles.machine": "002a903b",
     "docs.sectionTitles.mcp": "1949609d",
     "docs.sectionTitles.ops": "83c5ceac",
     "docs.sectionTitles.repo": "12349d83",
+    "docs.sectionTitles.serve": "8c9f5c1b",
     "docs.sectionTitles.shortcuts": "0d9199d7",
     "docs.sectionTitles.storage": "e4d88e14",
     "docs.sectionTitles.subscription": "e9c97c57",

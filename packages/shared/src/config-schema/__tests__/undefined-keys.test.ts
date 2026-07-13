@@ -28,14 +28,15 @@ import type { RdcConfig } from '../schemas.js';
 import { pathsToCommit } from '../walker.js';
 
 function configWithSsh(ssh: Record<string, unknown>): RdcConfig {
-  return {
+  const config = {
     schemaVersion: 3,
     id: '7c8d1e9f-2a3b-4c5d-8e6f-1a2b3c4d5e6f',
     version: 1,
     defaults: { language: 'en', datastoreSize: '95%' },
     credentials: { ssh },
     encryption: { mode: 'plaintext' },
-  } as RdcConfig;
+  };
+  return config as RdcConfig;
 }
 
 describe('explicit undefined keys', () => {
@@ -102,13 +103,13 @@ describe('explicit undefined keys', () => {
  * The two are indistinguishable to a reader and different to the walker.
  */
 function configWithPolicy(policy: unknown, keyPresent: boolean): RdcConfig {
-  const config = {
+  const config: RdcConfig = {
     schemaVersion: 3,
     id: '7c8d1e9f-2a3b-4c5d-8e6f-1a2b3c4d5e6f',
     version: 1,
     defaults: { language: 'en', datastoreSize: '95%' },
     encryption: { mode: 'plaintext' },
-  } as RdcConfig;
+  };
 
   if (keyPresent) (config as { policy?: unknown }).policy = policy;
   return config;

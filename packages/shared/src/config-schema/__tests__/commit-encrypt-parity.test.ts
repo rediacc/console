@@ -46,7 +46,7 @@ function fullyPopulated(): RdcConfig {
       cloudProviders: { cp1: { apiToken: 'provider-secret', sshUser: 'u' } },
       datastores: { ds1: { size: '10G', backend: { kind: 'local', machine: 'm1', path: '/x' } } },
     },
-  } as RdcConfig;
+  };
 }
 
 /** Project to the encrypted shape and rebuild, exactly as a rotation/pull does. */
@@ -80,7 +80,7 @@ describe('commit set / encrypt set parity', () => {
     expect(rebuilt.credentials?.cfDnsApiToken).toBe('cf-secret');
     expect(
       (rebuilt.resources?.cloudProviders as Record<string, { apiToken: string; sshUser: string }>)
-        ?.cp1
+        .cp1
     ).toEqual({ apiToken: 'provider-secret', sshUser: 'u' });
   });
 

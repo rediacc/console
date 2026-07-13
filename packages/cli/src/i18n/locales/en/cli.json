@@ -2360,7 +2360,9 @@
       "mcp": "MCP Server",
       "datastore": "Datastore Management",
       "sync": "File Sync",
-      "backup": "Backup & Restore"
+      "backup": "Backup & Restore",
+      "job": "Detached Jobs",
+      "serve": "Executor Service"
     },
     "errors": {
       "heading": "Common Error Messages",

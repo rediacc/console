@@ -34,7 +34,7 @@ function sampleConfig(): RdcConfig {
       storages: {},
     },
     encryption: { mode: 'plaintext' },
-  } as RdcConfig;
+  };
 }
 
 async function keys(): Promise<{ cek: CryptoKey; sdkDerived: CryptoKey }> {
@@ -103,7 +103,7 @@ describe('config push payload', () => {
       cek,
     });
 
-    const tampered = { ...payload, encryptedBlob: payload.encryptedBlob.slice(0, -4) + 'AAAA' };
+    const tampered = { ...payload, encryptedBlob: `${payload.encryptedBlob.slice(0, -4)}AAAA` };
     await expect(decryptConfigPullPayload(tampered, { cek, sdkDerived })).rejects.toThrow(
       /integrity check failed/i
     );

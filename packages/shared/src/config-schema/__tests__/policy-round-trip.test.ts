@@ -49,7 +49,7 @@ function configWith(policy?: PolicyDocument): RdcConfig {
     },
     encryption: { mode: 'plaintext' },
     ...(policy === undefined ? {} : { policy: structuredClone(policy) }),
-  } as RdcConfig;
+  };
 }
 
 async function keys() {

@@ -36,7 +36,7 @@ function configWithPolicy(): RdcConfig {
     // shared fixture object would let the "tampered" config mutate the original
     // and hide the very difference this file is testing for.
     policy: structuredClone(POLICY),
-  } as RdcConfig;
+  };
 }
 
 describe('policy document in the config', () => {

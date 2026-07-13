@@ -40,7 +40,7 @@ export class PolicyDenied extends Error {
  * quietly ignoring them would be the worst possible failure, since it would look
  * like the rules were in force.
  */
-export function readPolicyDocument(config: RdcConfig): PolicyDocument | undefined {
+function readPolicyDocument(config: RdcConfig): PolicyDocument | undefined {
   const raw = config.policy;
   if (raw === undefined) return undefined;
 

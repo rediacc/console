@@ -15,7 +15,7 @@
     "cluster": {
       "create": {
         "baseDomainOption": "Klastri avaliku DNS-i alusdomeen (muidu päritud kõrvalmasinast)",
-        "controlDsBackendOption": "Anchor control datastore backend: local | ceph (default: ceph if the cluster has ceph, else local)",
+        "controlDsBackendOption": "Ankru juhtandmesalve taustaprogramm: local | ceph (vaikimisi: ceph, kui klastril on ceph, muidu local)",
         "controlDsPoolOption": "Ceph rbd pool ankru juhtandmesalve jaoks (ceph taustaprogramm)",
         "controlDsSizeOption": "Ankru juhtandmesalve suurus (vaikimisi 10G)",
         "description": "Valmista ette käsuga 'rdc config cluster add' defineeritud klastri pesa liikmed, käivita renet igaühel ja paigalda komponendid (ceph esimesena). Pilvepakkujad valmistavad ette OpenTofu kaudu; KVM saabub hilisemas laines.",
@@ -34,7 +34,7 @@
         "nameOption": "Klastri nimi"
       },
       "evict": {
-        "description": "Drain the node, delete its Node object, and clear its cluster membership. The cluster is derived from the machine; a machine that still mounts a datastore is refused.",
+        "description": "Tühjenda sõlm, kustuta selle Node objekt ja eemalda selle klastriliikmesus. Klaster tuletatakse masinast; masin, mis endiselt haagib andmesalve, lükatakse tagasi.",
         "descriptionShort": "Eemalda sõlm selle klastrist",
         "forceOption": "Jäta tühjendamine vahele, kui sõlm on juba maas",
         "machineOption": "Väljatõstetav masin"
@@ -46,7 +46,7 @@
         "nameOption": "Klastri nimi",
         "tagOption": "Fork'i silt",
         "upOption": "Juuruta forgitud hoidlad ja kontrolli klastri tervist väravana pärast forgi käivitumist",
-        "writesOption": "Fork write disposition: local (ephemeral dm-COW overlay, zero Ceph footprint) | ceph (durable clone). Default local"
+        "writesOption": "Forgi kirjutusrežiim: local (ajutine dm-COW ülekate, null mõju Cephile) | ceph (püsiv kloon). Vaikimisi local"
       },
       "install": {
         "description": "Paigalda klastri komponendid (ceph esimesena, siis k8s) juba ette valmistatud liikmetele.",
@@ -55,7 +55,7 @@
       },
       "join": {
         "clusterOption": "Klaster, millega masin liidetakse",
-        "description": "Adopt an existing registered machine as a Kubernetes agent node of a cluster, using the same CA-derived join token as anchor and rejoin.",
+        "description": "Liida olemasolev registreeritud masin klastri Kubernetese agentsõlmena, kasutades sama CA-lt tuletatud liitumistokenit, mida kasutatakse ankurdamisel ja taasliitumisel.",
         "descriptionShort": "Lisa masin klastrisse agendina",
         "machineOption": "Registreeritud masin, mida liita"
       },
@@ -73,10 +73,10 @@
       },
       "rehearse": {
         "clusterOption": "Sihtklaster, mille sõlmed majutavad äravisatavat prooviforki",
-        "description": "Rehearse a release/upgrade: fork the cluster onto a destination as an ephemeral throwaway (writes=local, secretless role=rehearsal), bring it up, gate on health, then discard it. The parent is never touched.",
+        "description": "Proovi väljalasget/uuendust: forgi klaster sihtkohta ajutise äravisatava eksemplarina (writes=local, saladusteta roll: rehearsal), käivita see, kontrolli selle tervist väravana ning seejärel kõrvalda. Originaali ei puudutata kunagi.",
         "descriptionShort": "Käivita ajutine äravisatav proovifork, kontrolli selle tervist väravana, seejärel kõrvalda",
         "nameOption": "Lähteklaster, mida proovida",
-        "tagOption": "Optional tag for the rehearsal fork (default: timestamped)"
+        "tagOption": "Valikuline silt prooviforgi jaoks (vaikimisi: ajatempel)"
       },
       "scale": {
         "countOption": "Soovitud liikmete arv",
@@ -958,25 +958,25 @@
         "workingOption": "Töötav fork, mille praegusele commit'ile branch osutab"
       },
       "canary": {
-        "description": "Run a NEW image next to the stable one and split live traffic between them by percentage (release ladder rung 2). Creates one canary Deployment + Service on the SAME live data (no fork: canary users on forked data would read stale data and write into a doomed copy) and tells the Rediacc proxy to route the given percent of the stable hostname's traffic to it. Weight 0 keeps the canary dark; weight 100 is the blue/green flip. Before every canary change, an automatic group snapshot of the cluster's datastores is taken (release ladder rung 0) as the universal undo. Schema compatibility between the two versions (expand-contract) is the application's responsibility. For schema-BREAKING releases, use blue/green instead: fork the repo (instant, includes data), point the fork's Service here with weight 100, and roll back by restarting the untouched parent; writes made after the flip exist only in the new copy, so the rollback window is a policy decision.",
-        "descriptionShort": "Canary release: weighted traffic split on shared data",
+        "description": "Käivita UUS pilt stabiilse kõrval ja jaga reaalaja liiklus nende vahel protsentuaalselt (väljalaske redeli 2. aste). Loob ühe canary Deployment'i + Service'i SAMADEL reaalaja andmetel (mitte fork: forgitud andmetel olevad canary kasutajad loeksid aegunud andmeid ja kirjutaksid hukule määratud koopiasse) ning käsib Rediacc proxy'l suunata sinna antud protsendi stabiilse hostinime liiklusest. Kaal 0 hoiab canary pimedana; kaal 100 on täielik blue/green vahetus. Enne iga canary muudatust tehakse klastri andmesalvedest automaatne rühmasnapshot (väljalaske redeli 0. aste) universaalse tagasivõtuna. Kahe versiooni skeemi ühilduvus (expand-contract) on rakenduse vastutusala. Skeemi LÕHKUVATE väljalasete puhul kasuta selle asemel blue/green meetodit: forgi hoidla (hetkeline, sisaldab andmeid), suuna forgi Service siia kaaluga 100 ja tee tagasipööramine puutumata vanema taaskäivitades; pärast vahetust tehtud kirjutused eksisteerivad ainult uues koopias, seega tagasipööramise ajaaken on põhimõtteline (policy) otsus.",
+        "descriptionShort": "Canary väljalase: kaalutud liiklusjaotus jagatud andmetel",
         "imageOption": "Uus pilt, mida canary Deployment käitab (jagatud reaalandmetel)",
         "nameOption": "Hoidla, millele canary kuulub (selle nimeruum)",
         "portOption": "Port, mida rakendus teenindab (peab ühtima stabiilse Service'iga)",
         "remove": {
-          "description": "Remove a canary's Deployment and Service (label-scoped); the stable Service serves 100% again. Release-undo snapshots are retained; prune them with the datastore snapshot commands.",
+          "description": "Eemaldab canary Deployment'i ja Service'i (label'ite ulatuses); stabiilne Service teenindab jälle 100% liiklusest. Release-undo snapshotid säilitatakse; kärbi neid andmesalve snapshoti käskudega.",
           "descriptionShort": "Lammuta canary",
           "nameOption": "Eemaldatav canary komplekt"
         },
-        "replicasOption": "Canary Deployment replica count (default: 1)",
-        "serviceOption": "Stable Service to split traffic with (default: the repo name)",
+        "replicasOption": "Canary Deployment'i repliikide arv (vaikimisi: 1)",
+        "serviceOption": "Stabiilne Service, millega liiklust jagada (vaikimisi: hoidla nimi)",
         "status": {
-          "description": "Show managed canary sets: weight, images, stable service, and the latest release-undo snapshot.",
-          "descriptionShort": "Show managed canary sets",
-          "nameOption": "Show one canary set by name"
+          "description": "Kuva hallatavad canary komplektid: kaal, pildid, stabiilne service ja viimane release-undo snapshot.",
+          "descriptionShort": "Kuva hallatavad canary komplektid",
+          "nameOption": "Kuva üks canary komplekt nime järgi"
         },
         "weight": {
-          "description": "Change the percent of traffic routed to a canary. Takes a fresh release-undo group snapshot first, then re-applies the overlay; the proxy picks up the new split on its refresh tick. Weight 100 sends all traffic to the new version (the blue/green flip).",
+          "description": "Muuda canary'le suunatud liikluse protsenti. Teeb kõigepealt uue release-undo rühmasnapshoti, seejärel rakendab ülekatte uuesti; proxy võtab uue jaotuse kasutusele oma järgmisel värskendustsüklil. Kaal 100 saadab kogu liikluse uude versiooni (blue/green vahetus).",
           "descriptionShort": "Muuda canary liiklusprotsenti",
           "nameOption": "Kohandatav canary komplekt"
         },
@@ -1270,32 +1270,32 @@
         "statsNoBytes": "\"{{repo}}\" lükatud masinale {{machine}} — valmis {{duration}} jooksul"
       },
       "replicate": {
-        "datastoreOption": "Data datastore holding the repository (default: the cluster's single data datastore)",
-        "description": "Create N read replicas of a repository in seconds, regardless of database size. Takes ONE datastore snapshot, then makes N constant-time fork-attaches (copy-on-write, throwaway local writes) spread across the cluster's nodes, and applies a generated overlay: one pinned PersistentVolume per replica, a StatefulSet, and two Services ({repo}-rw to the primary, {repo}-ro across the replicas). Replicas are POINT-IN-TIME copies: no replication stream, no read-your-writes; each replica runs one crash-recovery pass before serving. Refresh them with 'repo replicate refresh'. Replica sets are managed state: see 'repo replicate status' and remove with 'repo replicate remove'.",
+        "datastoreOption": "Andmete andmesalv, mis majutab hoidlat (vaikimisi: klastri ainus andmete andmesalv)",
+        "description": "Loo N lugemisreplikat hoidlast sekunditega, sõltumata andmebaasi suurusest. Teeb ÜHE andmesalve snapshoti, seejärel N konstantse ajaga fork-attach'i (copy-on-write, äravisatavad kohalikud kirjutused), mis jaotatakse klastri sõlmede vahel, ning rakendab genereeritud ülekatte: üks kinnistatud PersistentVolume iga replika kohta, üks StatefulSet ja kaks Service'it ({repo}-rw primaarse poole ja {repo}-ro replikate poole). Replikad on AJAHETKE koopiad: replikatsioonivoogu ega read-your-writes-käitumist ei ole; iga replika teeb enne teenindamise algust ühe crash-recovery läbimise. Värskenda neid käsuga 'repo replicate refresh'. Replikakomplektid on hallatav olek: vaata 'repo replicate status' ja eemalda käsuga 'repo replicate remove'.",
         "descriptionShort": "Hetkelised lugemisreplikad andmesalve forkidest",
-        "headlessOption": "Make the -ro Service headless: DNS returns every replica pod IP for driver-side balancing (long-lived DB connections skew a normal Service's per-connection balancing)",
+        "headlessOption": "Muuda -ro Service peata (headless): DNS tagastab iga replika podi IP draiveripoolse tasakaalustamise jaoks (pikaajalised andmebaasiühendused moonutavad tavalise Service'i ühenduspõhist tasakaalustamist)",
         "imageOption": "Mootoripilt, mida replikad käitavad (sama mootor mis peamisel)",
         "nameOption": "Hoidla, mida replitseerida (selle nimeruum + teenuse baasnimi)",
         "portOption": "Port, mida mootor teenindab",
-        "primaryAppOption": "The primary pod's 'app' label value the -rw Service targets (default: the repo name)",
-        "pvcOption": "Volume name the engine mounts as its data dir (default: data)",
+        "primaryAppOption": "Primaarse podi 'app' label'i väärtus, mida -rw Service sihib (vaikimisi: hoidla nimi)",
+        "pvcOption": "Köite nimi, mille mootor haagib andmekataloogina (vaikimisi: data)",
         "refresh": {
-          "description": "Roll every replica onto a fresh point-in-time snapshot, ONE at a time: bounce the replica pod, discard and re-fork its datastore under the same path, and let readiness re-admit it. N-1 replicas keep serving throughout.",
+          "description": "Vii iga replika värskele ajahetke snapshotile üle, ÜKSHAAVAL: taaskäivita replika pod, viska ära ja forgi selle andmesalv sama tee all uuesti ning lase readiness'il see tagasi lubada. Ülejäänud N-1 replikat jätkab kogu protsessi vältel teenindamist.",
           "descriptionShort": "Vii replikad üle värskele hetktõmmisele",
           "nameOption": "Värskendatav replikakomplekt"
         },
-        "refreshOption": "Intended refresh interval recorded on the set (e.g. 1h); run 'repo replicate refresh' to roll it",
+        "refreshOption": "Komplektile salvestatud kavandatud värskendusintervall (nt 1h); käivita 'repo replicate refresh', et see rakendada",
         "remove": {
-          "description": "Remove a replica set: delete its generated k8s objects (label-scoped), discard its fork datastores, drop its snapshot, and forget the state. Infra steps are best-effort so removal converges even on a partially-gone cluster.",
+          "description": "Eemaldab replikakomplekti: kustutab selle genereeritud k8s objektid (label'ite ulatuses), viskab ära selle forgitud andmesalved, kustutab selle snapshoti ja unustab oleku. Infrasammud on parima jõupingutuse põhimõttel, nii et eemaldamine koondub ka osaliselt kadunud klastril.",
           "descriptionShort": "Lammuta replikakomplekt",
           "nameOption": "Eemaldatav replikakomplekt"
         },
         "replicasOption": "Loodavate lugemisreplikate arv",
-        "setOption": "Replica-set name (default: <repo>-replicas)",
+        "setOption": "Replikakomplekti nimi (vaikimisi: <repo>-replicas)",
         "status": {
-          "description": "Show managed replica sets: replicas, hosting nodes, fork datastores, snapshot, and refresh timestamps.",
-          "descriptionShort": "Show managed replica sets",
-          "nameOption": "Show one replica set by name"
+          "description": "Kuva hallatavad replikakomplektid: replikad, majutavad sõlmed, forgitud andmesalved, snapshot ja värskendusajad.",
+          "descriptionShort": "Kuva hallatavad replikakomplektid",
+          "nameOption": "Kuva üks replikakomplekt nime järgi"
         }
       },
       "resize": {
@@ -1908,7 +1908,9 @@
       "sync": "Failide sünkroonimine",
       "term": "SSH-terminali juurdepääs",
       "update": "CLI uuendused",
-      "vscode": "VS Code'i integratsioon"
+      "vscode": "VS Code'i integratsioon",
+      "job": "Eraldatud tööd",
+      "serve": "Käitaja teenus"
     },
     "supplements": {
       "config": {
@@ -1968,11 +1970,11 @@
     "cannotDeleteGrandRepo": "Grand-repositooriumi ei saa kustutada: {{reason}}",
     "cannotPromote": "Ülendamine ei õnnestu: {{reason}}",
     "cluster": {
-      "controlDsBackendInvalid": "--control-ds-backend must be local or ceph",
+      "controlDsBackendInvalid": "--control-ds-backend peab olema local või ceph",
       "countInvalid": "--count peab olema mittenegatiivne täisarv",
       "dockerOnlyVerb": "\"repo {{verb}}\" on suunatud ainult Dockeri repositooriumitele ega saa töötada --cluster'i vastu; sellel pole v1-s Kubernetese vastet",
       "featureUnsupportedV1": "{{feature}} ei ole --cluster'iga v1-s toetatud (juhtsõlme vaade); {{hint}}",
-      "forkWritesInvalid": "--writes must be local or ceph",
+      "forkWritesInvalid": "--writes peab olema local või ceph",
       "pendingContractRegen": "\"repo {{verb}}\" klastril saadab {{fn}}, mis ootab renet kube lepingu taasgenereerimist (laine 5). Klaster ja nimeruum lahendati; käivita uuesti, kui leping saabub.",
       "targetExclusive": "Määra ainult üks: -m/--machine või --cluster, mitte mõlemad",
       "targetRequired": "Vajalik on sihtmasin (-m) või klaster (--cluster)"

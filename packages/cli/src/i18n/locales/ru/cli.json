@@ -15,7 +15,7 @@
     "cluster": {
       "create": {
         "baseDomainOption": "Базовый домен для публичного DNS кластера (иначе наследуется от соседней машины)",
-        "controlDsBackendOption": "Anchor control datastore backend: local | ceph (default: ceph if the cluster has ceph, else local)",
+        "controlDsBackendOption": "Бэкенд опорного управляющего хранилища данных: local | ceph (по умолчанию: ceph, если в кластере есть ceph, иначе local)",
         "controlDsPoolOption": "Пул Ceph rbd для якорного управляющего хранилища данных (backend ceph)",
         "controlDsSizeOption": "Размер якорного управляющего хранилища данных (по умолчанию 10G)",
         "description": "Провизировать участников пулов кластера, определённого с помощью 'rdc config cluster add', инициализировать renet на каждом и установить компоненты (сначала ceph). Облачные провайдеры провизируют через OpenTofu; KVM появится в следующей волне.",
@@ -34,7 +34,7 @@
         "nameOption": "Имя кластера"
       },
       "evict": {
-        "description": "Drain the node, delete its Node object, and clear its cluster membership. The cluster is derived from the machine; a machine that still mounts a datastore is refused.",
+        "description": "Вывести узел из работы, удалить его объект Node и очистить его членство в кластере. Кластер определяется по машине; машина, у которой всё ещё подключено хранилище данных, будет отклонена.",
         "descriptionShort": "Удалить узел из его кластера",
         "forceOption": "Пропустить вывод узла, если он уже не отвечает",
         "machineOption": "Машина для исключения"
@@ -46,7 +46,7 @@
         "nameOption": "Имя кластера",
         "tagOption": "Тег форка",
         "upOption": "Поднять репозитории форка и проверить работоспособность кластера после его запуска",
-        "writesOption": "Fork write disposition: local (ephemeral dm-COW overlay, zero Ceph footprint) | ceph (durable clone). Default local"
+        "writesOption": "Режим записи форка: local (временный оверлей dm-COW, не расходует место в Ceph) | ceph (долговечный клон). По умолчанию local"
       },
       "install": {
         "description": "Установить компоненты кластера (сначала ceph, затем k8s) на уже провизированных участниках.",
@@ -55,7 +55,7 @@
       },
       "join": {
         "clusterOption": "Кластер для присоединения машины",
-        "description": "Adopt an existing registered machine as a Kubernetes agent node of a cluster, using the same CA-derived join token as anchor and rejoin.",
+        "description": "Подключить уже зарегистрированную машину к кластеру как агентский узел Kubernetes, используя тот же CA-токен присоединения, что и при закреплении (anchor) и повторном присоединении (rejoin).",
         "descriptionShort": "Добавить машину в кластер в роли агента",
         "machineOption": "Зарегистрированная машина для присоединения"
       },
@@ -73,10 +73,10 @@
       },
       "rehearse": {
         "clusterOption": "Кластер назначения, на узлах которого размещается одноразовый форк для репетиции",
-        "description": "Rehearse a release/upgrade: fork the cluster onto a destination as an ephemeral throwaway (writes=local, secretless role=rehearsal), bring it up, gate on health, then discard it. The parent is never touched.",
+        "description": "Отрепетировать релиз или обновление: форкнуть кластер на целевое место как эфемерную одноразовую копию (writes=local, без секретов, role=rehearsal), поднять её, проверить работоспособность, затем удалить. Родитель никогда не затрагивается.",
         "descriptionShort": "Поднять эфемерный одноразовый форк, проверить его работоспособность, затем удалить",
         "nameOption": "Исходный кластер для репетиции",
-        "tagOption": "Optional tag for the rehearsal fork (default: timestamped)"
+        "tagOption": "Необязательный тег для репетиционного форка (по умолчанию: с меткой времени)"
       },
       "scale": {
         "countOption": "Желаемое количество участников",
@@ -958,25 +958,25 @@
         "workingOption": "Рабочий fork, на текущий commit которого указывает branch"
       },
       "canary": {
-        "description": "Run a NEW image next to the stable one and split live traffic between them by percentage (release ladder rung 2). Creates one canary Deployment + Service on the SAME live data (no fork: canary users on forked data would read stale data and write into a doomed copy) and tells the Rediacc proxy to route the given percent of the stable hostname's traffic to it. Weight 0 keeps the canary dark; weight 100 is the blue/green flip. Before every canary change, an automatic group snapshot of the cluster's datastores is taken (release ladder rung 0) as the universal undo. Schema compatibility between the two versions (expand-contract) is the application's responsibility. For schema-BREAKING releases, use blue/green instead: fork the repo (instant, includes data), point the fork's Service here with weight 100, and roll back by restarting the untouched parent; writes made after the flip exist only in the new copy, so the rollback window is a policy decision.",
-        "descriptionShort": "Canary release: weighted traffic split on shared data",
+        "description": "Запустить НОВЫЙ образ рядом со стабильным и разделить живой трафик между ними по проценту (ступень 2 лестницы релиза). Создаёт один канареечный Deployment + Service на ТЕХ ЖЕ живых данных (без форка: пользователи канареечной версии на форкнутых данных читали бы устаревшие данные и писали бы в обречённую копию) и указывает прокси Rediacc направить заданный процент трафика стабильного хоста на него. Вес 0 держит канареечную версию без трафика (dark), вес 100 - это blue/green-переключение. Перед каждым изменением канареечной версии автоматически делается групповой снимок хранилищ данных кластера (ступень 0 лестницы релиза) как универсальная отмена. Совместимость схемы между двумя версиями (expand-contract) - ответственность приложения. Для релизов, ЛОМАЮЩИХ схему, используйте вместо этого blue/green: форкните репозиторий (мгновенно, включая данные), направьте Service форка сюда с весом 100 и откатитесь, перезапустив нетронутый родительский репозиторий; записи, сделанные после переключения, существуют только в новой копии, поэтому окно отката определяется политикой.",
+        "descriptionShort": "Канареечный релиз: взвешенное разделение трафика на общих данных",
         "imageOption": "Новый образ, который запускает канареечный Deployment (на тех же боевых данных)",
         "nameOption": "Репозиторий, которому принадлежит канареечная версия (его пространство имён)",
         "portOption": "Порт, на котором работает приложение (должен совпадать со стабильным Service)",
         "remove": {
-          "description": "Remove a canary's Deployment and Service (label-scoped); the stable Service serves 100% again. Release-undo snapshots are retained; prune them with the datastore snapshot commands.",
+          "description": "Удалить Deployment и Service канареечной версии (по меткам); стабильный Service снова обслуживает 100% трафика. Снимки для отмены релиза сохраняются; удаляйте их командами снимков хранилища данных.",
           "descriptionShort": "Демонтировать канареечную версию",
           "nameOption": "Канареечный набор для удаления"
         },
-        "replicasOption": "Canary Deployment replica count (default: 1)",
-        "serviceOption": "Stable Service to split traffic with (default: the repo name)",
+        "replicasOption": "Количество реплик канареечного Deployment (по умолчанию: 1)",
+        "serviceOption": "Стабильный Service, с которым разделяется трафик (по умолчанию: имя репозитория)",
         "status": {
-          "description": "Show managed canary sets: weight, images, stable service, and the latest release-undo snapshot.",
-          "descriptionShort": "Show managed canary sets",
-          "nameOption": "Show one canary set by name"
+          "description": "Показать управляемые канареечные наборы: вес, образы, стабильный service и последний снимок для отмены релиза.",
+          "descriptionShort": "Показать управляемые канареечные наборы",
+          "nameOption": "Показать один канареечный набор по имени"
         },
         "weight": {
-          "description": "Change the percent of traffic routed to a canary. Takes a fresh release-undo group snapshot first, then re-applies the overlay; the proxy picks up the new split on its refresh tick. Weight 100 sends all traffic to the new version (the blue/green flip).",
+          "description": "Изменить процент трафика, направляемого на канареечную версию. Сначала делает свежий групповой снимок для отмены релиза, затем повторно применяет оверлей; прокси подхватывает новое разделение на следующем цикле обновления. Вес 100 отправляет весь трафик на новую версию (blue/green-переключение).",
           "descriptionShort": "Изменить процент трафика канареечной версии",
           "nameOption": "Канареечный набор для изменения"
         },
@@ -1270,32 +1270,32 @@
         "statsNoBytes": "\"{{repo}}\" отправлен на {{machine}} — завершено за {{duration}}"
       },
       "replicate": {
-        "datastoreOption": "Data datastore holding the repository (default: the cluster's single data datastore)",
-        "description": "Create N read replicas of a repository in seconds, regardless of database size. Takes ONE datastore snapshot, then makes N constant-time fork-attaches (copy-on-write, throwaway local writes) spread across the cluster's nodes, and applies a generated overlay: one pinned PersistentVolume per replica, a StatefulSet, and two Services ({repo}-rw to the primary, {repo}-ro across the replicas). Replicas are POINT-IN-TIME copies: no replication stream, no read-your-writes; each replica runs one crash-recovery pass before serving. Refresh them with 'repo replicate refresh'. Replica sets are managed state: see 'repo replicate status' and remove with 'repo replicate remove'.",
+        "datastoreOption": "Хранилище данных, содержащее репозиторий (по умолчанию: единственное хранилище данных кластера)",
+        "description": "Создать N реплик репозитория для чтения за секунды, независимо от размера базы данных. Делает ОДИН снимок хранилища данных, затем выполняет N присоединений форков за постоянное время (copy-on-write, одноразовые локальные записи), распределённых по узлам кластера, и применяет сгенерированный оверлей: один закреплённый PersistentVolume на реплику, StatefulSet и два Service ({repo}-rw к primary, {repo}-ro по всем репликам). Реплики - это копии на момент времени: нет потока репликации, нет гарантии read-your-writes; каждая реплика перед началом обслуживания проходит один цикл восстановления после сбоя (crash-recovery). Обновляйте их командой 'repo replicate refresh'. Наборы реплик - управляемое состояние: смотрите 'repo replicate status' и удаляйте командой 'repo replicate remove'.",
         "descriptionShort": "Мгновенные реплики для чтения из форков хранилища данных",
-        "headlessOption": "Make the -ro Service headless: DNS returns every replica pod IP for driver-side balancing (long-lived DB connections skew a normal Service's per-connection balancing)",
+        "headlessOption": "Сделать -ro Service headless: DNS возвращает IP-адрес каждого пода-реплики для балансировки на стороне драйвера (долгоживущие соединения с базой данных искажают балансировку обычного Service, которая работает на уровне подключения)",
         "imageOption": "Образ СУБД, который запускают реплики (та же СУБД, что и у primary)",
         "nameOption": "Репозиторий для репликации (его пространство имён + базовое имя сервиса)",
         "portOption": "Порт, на котором работает СУБД",
-        "primaryAppOption": "The primary pod's 'app' label value the -rw Service targets (default: the repo name)",
-        "pvcOption": "Volume name the engine mounts as its data dir (default: data)",
+        "primaryAppOption": "Значение метки 'app' primary-пода, на который нацелен -rw Service (по умолчанию: имя репозитория)",
+        "pvcOption": "Имя тома, который СУБД монтирует как каталог данных (по умолчанию: data)",
         "refresh": {
-          "description": "Roll every replica onto a fresh point-in-time snapshot, ONE at a time: bounce the replica pod, discard and re-fork its datastore under the same path, and let readiness re-admit it. N-1 replicas keep serving throughout.",
+          "description": "Перевести каждую реплику на свежий снимок на момент времени, ПО ОДНОЙ: перезапустить под реплики, отбросить и заново форкнуть его хранилище данных по тому же пути и дать проверке готовности (readiness) снова допустить его к работе. Всё это время N-1 реплик продолжают обслуживать запросы.",
           "descriptionShort": "Перевести реплики на свежий снимок",
           "nameOption": "Набор реплик для обновления"
         },
-        "refreshOption": "Intended refresh interval recorded on the set (e.g. 1h); run 'repo replicate refresh' to roll it",
+        "refreshOption": "Предполагаемый интервал обновления, записанный на наборе (например, 1h); запустите 'repo replicate refresh', чтобы выполнить его",
         "remove": {
-          "description": "Remove a replica set: delete its generated k8s objects (label-scoped), discard its fork datastores, drop its snapshot, and forget the state. Infra steps are best-effort so removal converges even on a partially-gone cluster.",
+          "description": "Удалить набор реплик: удалить сгенерированные объекты k8s (по меткам), отбросить его форкнутые хранилища данных, удалить его снимок и забыть состояние. Инфраструктурные шаги выполняются по принципу best-effort, поэтому удаление доводится до конца даже на частично утраченном кластере.",
           "descriptionShort": "Демонтировать набор реплик",
           "nameOption": "Набор реплик для удаления"
         },
         "replicasOption": "Количество создаваемых реплик для чтения",
-        "setOption": "Replica-set name (default: <repo>-replicas)",
+        "setOption": "Имя набора реплик (по умолчанию: <repo>-replicas)",
         "status": {
-          "description": "Show managed replica sets: replicas, hosting nodes, fork datastores, snapshot, and refresh timestamps.",
-          "descriptionShort": "Show managed replica sets",
-          "nameOption": "Show one replica set by name"
+          "description": "Показать управляемые наборы реплик: реплики, узлы размещения, форкнутые хранилища данных, снимок и метки времени обновления.",
+          "descriptionShort": "Показать управляемые наборы реплик",
+          "nameOption": "Показать один набор реплик по имени"
         }
       },
       "resize": {
@@ -1908,7 +1908,9 @@
       "sync": "Синхронизация файлов",
       "term": "Доступ к SSH-терминалу",
       "update": "Обновления CLI",
-      "vscode": "Интеграция с VS Code"
+      "vscode": "Интеграция с VS Code",
+      "job": "Отсоединённые задачи",
+      "serve": "Сервис исполнителя"
     },
     "supplements": {
       "config": {
@@ -1968,11 +1970,11 @@
     "cannotDeleteGrandRepo": "Невозможно удалить главный репозиторий: {{reason}}",
     "cannotPromote": "Невозможно повысить уровень: {{reason}}",
     "cluster": {
-      "controlDsBackendInvalid": "--control-ds-backend must be local or ceph",
+      "controlDsBackendInvalid": "--control-ds-backend должен быть local или ceph",
       "countInvalid": "--count должен быть неотрицательным целым числом",
       "dockerOnlyVerb": "\"repo {{verb}}\" предназначена только для Docker-репозиториев и не может выполняться с --cluster; в v1 у неё нет эквивалента для Kubernetes",
       "featureUnsupportedV1": "{{feature}} не поддерживается с --cluster в v1 (представление управляющего узла); {{hint}}",
-      "forkWritesInvalid": "--writes must be local or ceph",
+      "forkWritesInvalid": "--writes должен быть local или ceph",
       "pendingContractRegen": "\"repo {{verb}}\" на кластере вызывает {{fn}}, что ожидает регенерации контракта renet kube (волна 5). Кластер и пространство имён были разрешены; повторите запуск, когда контракт будет готов.",
       "targetExclusive": "Укажите только один из -m/--machine или --cluster, но не оба сразу",
       "targetRequired": "Требуется целевая машина (-m) или кластер (--cluster)"

@@ -39,8 +39,8 @@ describe('readLines', () => {
     // rather than allocate all of it.
     const flood = enc.encode('x'.repeat(2 * 1024 * 1024));
     const iterate = async () => {
-      for await (const _ of readLines(streamOf(flood))) {
-        // draining
+      for await (const line of readLines(streamOf(flood))) {
+        void line; // draining; the flood throws before any line is yielded
       }
     };
     await expect(iterate()).rejects.toBeInstanceOf(LineTooLongError);

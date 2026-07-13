@@ -216,7 +216,9 @@ test.describe
         `sudo bash -c 'for i in 1 2 3; do ${select} | xargs -r -n1 umount 2>/dev/null; ${select} | xargs -r -n1 umount -l 2>/dev/null; sleep 1; done; udevadm settle 2>/dev/null; ` +
           `sync; echo REMAINING_HOLDERS:; ${select}'; true`
       );
-      process.stdout.write(`[suite15 unwind ${mount}] ${res.stdout.trim().replace(/\n/g, ' | ')}\n`);
+      process.stdout.write(
+        `[suite15 unwind ${mount}] ${res.stdout.trim().replaceAll('\n', ' | ')}\n`
+      );
     };
 
     // Every mountpoint the PRODUCT owns under the repo folder (the per-volume LUKS
@@ -225,7 +227,10 @@ test.describe
       const res = await w1.executeViaBridge(
         `grep -F "${DATA_MOUNT}/repos/" /proc/mounts | cut -d" " -f2 || true`
       );
-      return res.stdout.split('\n').map((l) => l.trim()).filter(Boolean);
+      return res.stdout
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
     };
 
     // `renet kube install` auto-starts the node CSI units (rediacc-csi / -provisioner

@@ -15,7 +15,7 @@
     "cluster": {
       "create": {
         "baseDomainOption": "集群公共 DNS 的基础域名（否则从同级机器继承）",
-        "controlDsBackendOption": "Anchor control datastore backend: local | ceph (default: ceph if the cluster has ceph, else local)",
+        "controlDsBackendOption": "锚点控制数据存储后端：local | ceph（默认：集群含 ceph 时为 ceph，否则为 local）",
         "controlDsPoolOption": "锚点控制数据存储所用的 Ceph rbd 池（ceph 后端）",
         "controlDsSizeOption": "锚点控制数据存储的大小（默认 10G）",
         "description": "配置使用 'rdc config cluster add' 定义的集群的池成员，在每个成员上引导 renet，并安装组件（先安装 ceph）。云服务提供商通过 OpenTofu 配置；KVM 将在后续版本中支持。",
@@ -34,7 +34,7 @@
         "nameOption": "集群名称"
       },
       "evict": {
-        "description": "Drain the node, delete its Node object, and clear its cluster membership. The cluster is derived from the machine; a machine that still mounts a datastore is refused.",
+        "description": "清空节点、删除其 Node 对象，并清除其集群成员关系。集群由机器自动推断得出；仍挂载着数据存储的机器会被拒绝执行。",
         "descriptionShort": "将节点从其所属集群中移除",
         "forceOption": "节点已失效时跳过清空步骤",
         "machineOption": "待驱逐的机器"
@@ -46,7 +46,7 @@
         "nameOption": "集群名称",
         "tagOption": "fork 标签",
         "upOption": "在 fork 启动后拉起其中的仓库，并以集群健康状况作为门禁检查",
-        "writesOption": "Fork write disposition: local (ephemeral dm-COW overlay, zero Ceph footprint) | ceph (durable clone). Default local"
+        "writesOption": "fork 的写入方式：local（临时性 dm-COW 覆盖层，不占用 Ceph 空间） | ceph（持久克隆）。默认 local"
       },
       "install": {
         "description": "在已配置的成员上安装集群组件（先安装 ceph，再安装 k8s）。",
@@ -55,7 +55,7 @@
       },
       "join": {
         "clusterOption": "要加入的目标集群",
-        "description": "Adopt an existing registered machine as a Kubernetes agent node of a cluster, using the same CA-derived join token as anchor and rejoin.",
+        "description": "将一台已注册的现有机器纳入集群，作为其 Kubernetes agent 节点；使用与锚点搭建、节点重新加入时相同的、由 CA 派生的 join 令牌。",
         "descriptionShort": "将机器作为 agent 节点添加到集群",
         "machineOption": "待接入的已注册机器"
       },
@@ -73,10 +73,10 @@
       },
       "rehearse": {
         "clusterOption": "目标集群，其节点用于承载一次性演练 fork",
-        "description": "Rehearse a release/upgrade: fork the cluster onto a destination as an ephemeral throwaway (writes=local, secretless role=rehearsal), bring it up, gate on health, then discard it. The parent is never touched.",
+        "description": "对发布/升级进行演练：将集群以一次性临时 fork 的形式 fork 到目标位置（writes=local，不含 secret 的 role=rehearsal），启动它，进行健康门禁检查，然后丢弃。全程不会触碰父集群。",
         "descriptionShort": "启动一个临时的一次性 fork，进行健康门禁检查后随即丢弃",
         "nameOption": "要演练的源集群",
-        "tagOption": "Optional tag for the rehearsal fork (default: timestamped)"
+        "tagOption": "演练 fork 的可选标签（默认使用时间戳）"
       },
       "scale": {
         "countOption": "期望的成员数量",
@@ -958,25 +958,25 @@
         "workingOption": "branch 所指向其当前 commit 的工作 fork"
       },
       "canary": {
-        "description": "Run a NEW image next to the stable one and split live traffic between them by percentage (release ladder rung 2). Creates one canary Deployment + Service on the SAME live data (no fork: canary users on forked data would read stale data and write into a doomed copy) and tells the Rediacc proxy to route the given percent of the stable hostname's traffic to it. Weight 0 keeps the canary dark; weight 100 is the blue/green flip. Before every canary change, an automatic group snapshot of the cluster's datastores is taken (release ladder rung 0) as the universal undo. Schema compatibility between the two versions (expand-contract) is the application's responsibility. For schema-BREAKING releases, use blue/green instead: fork the repo (instant, includes data), point the fork's Service here with weight 100, and roll back by restarting the untouched parent; writes made after the flip exist only in the new copy, so the rollback window is a policy decision.",
-        "descriptionShort": "Canary release: weighted traffic split on shared data",
+        "description": "让新镜像与稳定版并行运行，并按百分比在两者间拆分实时流量（发布阶梯第 2 级）。在同一份实时数据上创建一个 canary Deployment + Service（不使用 fork：如果 canary 用户读取的是 fork 出的数据，就会读到过期数据，写入内容也会进入注定被丢弃的副本），并让 Rediacc 代理将稳定版主机名流量中指定的百分比路由给它。权重为 0 时 canary 保持暗启动；权重为 100 即完成 blue/green 切换。每次修改 canary 之前，都会自动为集群的数据存储创建一次组快照（发布阶梯第 0 级），作为万能的回滚手段。两个版本之间的 schema 兼容性（expand-contract 方式）由应用程序自行负责。对于会破坏 schema 的发布，请改用 blue/green：fork 该仓库（即时完成，包含数据），将 fork 的 Service 权重设为 100 指向这里，再通过重启未被触碰的父仓库来回滚；切换之后发生的写入只存在于新副本中，因此回滚窗口的长短是一个策略决定。",
+        "descriptionShort": "Canary 发布：在共享数据上按权重拆分流量",
         "imageOption": "canary Deployment 运行的新镜像（针对共享的生产数据）",
         "nameOption": "canary 所属的仓库（其命名空间）",
         "portOption": "应用对外提供服务的端口（必须与稳定版 Service 一致）",
         "remove": {
-          "description": "Remove a canary's Deployment and Service (label-scoped); the stable Service serves 100% again. Release-undo snapshots are retained; prune them with the datastore snapshot commands.",
+          "description": "移除 canary 的 Deployment 和 Service（按标签定位范围）；之后稳定版 Service 将重新承担 100% 的流量。发布回滚用的快照会被保留，需用数据存储快照相关命令自行清理。",
           "descriptionShort": "拆除一个 canary",
           "nameOption": "要移除的 canary 组"
         },
-        "replicasOption": "Canary Deployment replica count (default: 1)",
-        "serviceOption": "Stable Service to split traffic with (default: the repo name)",
+        "replicasOption": "canary Deployment 的副本数量（默认：1）",
+        "serviceOption": "用于拆分流量的稳定版 Service（默认：仓库名）",
         "status": {
-          "description": "Show managed canary sets: weight, images, stable service, and the latest release-undo snapshot.",
-          "descriptionShort": "Show managed canary sets",
-          "nameOption": "Show one canary set by name"
+          "description": "显示受管理的 canary 组：权重、镜像、稳定版 Service，以及最近一次的发布回滚快照。",
+          "descriptionShort": "显示受管理的 canary 组",
+          "nameOption": "按名称显示单个 canary 组"
         },
         "weight": {
-          "description": "Change the percent of traffic routed to a canary. Takes a fresh release-undo group snapshot first, then re-applies the overlay; the proxy picks up the new split on its refresh tick. Weight 100 sends all traffic to the new version (the blue/green flip).",
+          "description": "更改路由到 canary 的流量百分比。会先创建一份新的发布回滚用组快照，再重新应用覆盖配置；代理会在下一次刷新周期应用新的流量拆分比例。权重设为 100 时，所有流量都会发往新版本（即 blue/green 切换）。",
           "descriptionShort": "调整 canary 的流量百分比",
           "nameOption": "要调整的 canary 组"
         },
@@ -1270,32 +1270,32 @@
         "statsNoBytes": "已将 \"{{repo}}\" 推送到 {{machine}}：在 {{duration}} 内完成"
       },
       "replicate": {
-        "datastoreOption": "Data datastore holding the repository (default: the cluster's single data datastore)",
-        "description": "Create N read replicas of a repository in seconds, regardless of database size. Takes ONE datastore snapshot, then makes N constant-time fork-attaches (copy-on-write, throwaway local writes) spread across the cluster's nodes, and applies a generated overlay: one pinned PersistentVolume per replica, a StatefulSet, and two Services ({repo}-rw to the primary, {repo}-ro across the replicas). Replicas are POINT-IN-TIME copies: no replication stream, no read-your-writes; each replica runs one crash-recovery pass before serving. Refresh them with 'repo replicate refresh'. Replica sets are managed state: see 'repo replicate status' and remove with 'repo replicate remove'.",
+        "datastoreOption": "承载该仓库的数据类数据存储（默认：集群中唯一的数据类数据存储）",
+        "description": "无论数据库大小如何，都能在数秒内为仓库创建 N 个读副本。先对数据存储做一次快照，然后在集群各节点间分散执行 N 次常数时间的 fork-attach（写时复制，本地写入为一次性丢弃式），并应用生成的覆盖配置：每个副本各绑定一个 PersistentVolume、一个 StatefulSet，以及两个 Service（指向主库的 {repo}-rw，覆盖所有副本的 {repo}-ro）。副本是某一时间点的静态拷贝：没有复制流，也不保证 read-your-writes；每个副本在开始对外服务前都会先执行一次崩溃恢复。可以用 'repo replicate refresh' 刷新它们。副本集是受管理的状态：用 'repo replicate status' 查看，用 'repo replicate remove' 移除。",
         "descriptionShort": "基于数据存储 fork 的即时读副本",
-        "headlessOption": "Make the -ro Service headless: DNS returns every replica pod IP for driver-side balancing (long-lived DB connections skew a normal Service's per-connection balancing)",
+        "headlessOption": "将 -ro Service 设为 headless：DNS 会返回每个副本 Pod 的 IP，以便在客户端驱动侧做负载均衡（长连接的数据库连接会打乱普通 Service 按连接做负载均衡的方式）",
         "imageOption": "副本运行的引擎镜像（须与主库使用相同引擎）",
         "nameOption": "要创建副本的仓库（其命名空间 + 服务基础名称）",
         "portOption": "引擎对外提供服务的端口",
-        "primaryAppOption": "The primary pod's 'app' label value the -rw Service targets (default: the repo name)",
-        "pvcOption": "Volume name the engine mounts as its data dir (default: data)",
+        "primaryAppOption": "-rw Service 所匹配的主 Pod 的 'app' 标签值（默认：仓库名）",
+        "pvcOption": "引擎挂载为数据目录的卷名称（默认：data）",
         "refresh": {
-          "description": "Roll every replica onto a fresh point-in-time snapshot, ONE at a time: bounce the replica pod, discard and re-fork its datastore under the same path, and let readiness re-admit it. N-1 replicas keep serving throughout.",
+          "description": "将每个副本逐一（每次一个）滚动切换到新的时间点快照：重启该副本 Pod，在相同路径下丢弃并重新 fork 其数据存储，待 readiness 探针通过后重新接入流量。整个过程中，其余 N-1 个副本会持续提供服务。",
           "descriptionShort": "将副本滚动切换到新快照",
           "nameOption": "要刷新的副本集"
         },
-        "refreshOption": "Intended refresh interval recorded on the set (e.g. 1h); run 'repo replicate refresh' to roll it",
+        "refreshOption": "记录在该副本集上的预期刷新周期（例如 1h）；使用以下命令刷新：'repo replicate refresh'",
         "remove": {
-          "description": "Remove a replica set: delete its generated k8s objects (label-scoped), discard its fork datastores, drop its snapshot, and forget the state. Infra steps are best-effort so removal converges even on a partially-gone cluster.",
+          "description": "移除一个副本集：删除其生成的 k8s 对象（按标签定位范围）、丢弃其 fork 出的数据存储、删除其快照，并清除相应状态记录。基础设施相关步骤是尽力而为的，因此即便集群部分节点已经消失，移除操作最终仍会收敛完成。",
           "descriptionShort": "拆除一个副本集",
           "nameOption": "要移除的副本集"
         },
         "replicasOption": "要创建的读副本数量",
-        "setOption": "Replica-set name (default: <repo>-replicas)",
+        "setOption": "副本集名称（默认：<repo>-replicas）",
         "status": {
-          "description": "Show managed replica sets: replicas, hosting nodes, fork datastores, snapshot, and refresh timestamps.",
-          "descriptionShort": "Show managed replica sets",
-          "nameOption": "Show one replica set by name"
+          "description": "显示受管理的副本集：副本、承载节点、fork 出的数据存储、快照，以及刷新时间戳。",
+          "descriptionShort": "显示受管理的副本集",
+          "nameOption": "按名称显示单个副本集"
         }
       },
       "resize": {
@@ -1908,7 +1908,9 @@
       "sync": "文件同步",
       "term": "SSH 终端访问",
       "update": "CLI 更新",
-      "vscode": "VS Code 集成"
+      "vscode": "VS Code 集成",
+      "job": "分离任务",
+      "serve": "执行器服务"
     },
     "supplements": {
       "config": {
@@ -1968,11 +1970,11 @@
     "cannotDeleteGrandRepo": "无法删除主仓库：{{reason}}",
     "cannotPromote": "无法提升：{{reason}}",
     "cluster": {
-      "controlDsBackendInvalid": "--control-ds-backend must be local or ceph",
+      "controlDsBackendInvalid": "--control-ds-backend 必须是 local 或 ceph",
       "countInvalid": "--count 必须是非负整数",
       "dockerOnlyVerb": "\"repo {{verb}}\" 仅面向 Docker 仓库，不能针对 --cluster 运行；在 v1 中没有对应的 Kubernetes 等价操作",
       "featureUnsupportedV1": "{{feature}} 在 v1 中不支持 --cluster（控制节点视图）；{{hint}}",
-      "forkWritesInvalid": "--writes must be local or ceph",
+      "forkWritesInvalid": "--writes 必须是 local 或 ceph",
       "pendingContractRegen": "在集群上执行 \"repo {{verb}}\" 会调度 {{fn}}，该功能有待 renet kube 契约重新生成（第 5 波）。集群和命名空间已解析；待契约就绪后重新运行。",
       "targetExclusive": "只能指定 -m/--machine 或 --cluster 之一，不能同时指定",
       "targetRequired": "需要目标机器（-m）或集群（--cluster）"

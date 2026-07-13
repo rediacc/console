@@ -1,5 +1,8 @@
 // IMPORTANT: temp-config-env MUST be the first import so it redirects the
-// config dir before config-file-storage captures getConfigDir().
+// config dir before config-file-storage captures getConfigDir(). Kept in its
+// own import group (blank line below) so biome's organizeImports does not sort
+// it back down into the block and reintroduce the ENOENT redirect race.
+import { TEST_CONFIG_HOME } from './helpers/temp-config-env.js';
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -8,7 +11,6 @@ import { configFileStorage } from '../../adapters/config-file-storage.js';
 import type { RdcConfig } from '../../types/index.js';
 import { configService } from '../config/config-resources.js';
 import { RemoteResourceState } from '../config/resource-state.js';
-import { TEST_CONFIG_HOME } from './helpers/temp-config-env.js';
 
 const CONFIG_NAME = 'rediacc';
 const GUID = 'a1111111-1111-4111-8111-111111111111';
@@ -82,9 +84,9 @@ describe('persist unification (R2-F3 data-loss regression + per-field encryption
 
     configFileStorage.clearCache();
     const resources = (rawFile().resources ?? {}) as Record<string, Record<string, unknown>>;
-    expect(resources.clusters?.c1).toBeDefined();
-    expect(resources.cloudProviders?.hetzner).toBeDefined();
-    expect(resources.backupStrategies?.s1).toBeDefined();
+    expect(resources.clusters.c1).toBeDefined();
+    expect(resources.cloudProviders.hetzner).toBeDefined();
+    expect(resources.backupStrategies.s1).toBeDefined();
   });
 
   it('T2: sensitive values are encrypted at rest under concrete pointers', async () => {

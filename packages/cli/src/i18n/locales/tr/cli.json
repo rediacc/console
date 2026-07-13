@@ -15,7 +15,7 @@
     "cluster": {
       "create": {
         "baseDomainOption": "Kümenin genel DNS'i için temel alan adı (aksi takdirde bir kardeş makineden devralınır)",
-        "controlDsBackendOption": "Anchor control datastore backend: local | ceph (default: ceph if the cluster has ceph, else local)",
+        "controlDsBackendOption": "Çapa kontrol veri deposu arka ucu: local | ceph (varsayılan: kümede ceph varsa ceph, yoksa local)",
         "controlDsPoolOption": "Çapa kontrol veri deposu için Ceph rbd havuzu (ceph arka ucu)",
         "controlDsSizeOption": "Çapa kontrol veri deposu boyutu (varsayılan 10G)",
         "description": "'rdc config cluster add' ile tanımlanmış bir kümenin havuz üyelerini hazırlar, her birinde renet'i başlatır ve bileşenleri kurar (önce ceph). Bulut sağlayıcılar OpenTofu üzerinden hazırlanır; KVM daha sonraki bir dalgada gelecektir.",
@@ -34,7 +34,7 @@
         "nameOption": "Küme adı"
       },
       "evict": {
-        "description": "Drain the node, delete its Node object, and clear its cluster membership. The cluster is derived from the machine; a machine that still mounts a datastore is refused.",
+        "description": "Düğümü boşalt, Node nesnesini sil ve küme üyeliğini temizle. Küme, makineden türetilir; hâlâ bir veri deposu bağlı olan makine reddedilir.",
         "descriptionShort": "Bir düğümü kümesinden çıkar",
         "forceOption": "Düğüm zaten ölüyse boşaltmayı atla",
         "machineOption": "Tahliye edilecek makine"
@@ -46,7 +46,7 @@
         "nameOption": "Küme adı",
         "tagOption": "Fork etiketi",
         "upOption": "Fork'lanan depoları ayağa kaldır ve fork ayağa kalktıktan sonra küme sağlığını kontrol et",
-        "writesOption": "Fork write disposition: local (ephemeral dm-COW overlay, zero Ceph footprint) | ceph (durable clone). Default local"
+        "writesOption": "Fork yazma düzeni: local (geçici dm-COW overlay, Ceph üzerinde sıfır ayak izi) | ceph (kalıcı klon). Varsayılan local"
       },
       "install": {
         "description": "Zaten hazırlanmış üyelere küme bileşenlerini kurar (önce ceph, sonra k8s).",
@@ -55,7 +55,7 @@
       },
       "join": {
         "clusterOption": "Makinenin katılacağı küme",
-        "description": "Adopt an existing registered machine as a Kubernetes agent node of a cluster, using the same CA-derived join token as anchor and rejoin.",
+        "description": "Var olan kayıtlı bir makineyi, çapalama (anchor) ve yeniden katılmada (rejoin) kullanılanla aynı CA kökenli katılım jetonunu kullanarak kümenin bir Kubernetes ajan düğümü olarak sahiplen.",
         "descriptionShort": "Bir makineyi kümeye ajan olarak ekle",
         "machineOption": "Sahiplenilecek kayıtlı makine"
       },
@@ -73,10 +73,10 @@
       },
       "rehearse": {
         "clusterOption": "Atılabilir prova fork'unu düğümlerinde barındıracak hedef küme",
-        "description": "Rehearse a release/upgrade: fork the cluster onto a destination as an ephemeral throwaway (writes=local, secretless role=rehearsal), bring it up, gate on health, then discard it. The parent is never touched.",
+        "description": "Bir sürüm/yükseltmeyi prova et: kümeyi bir hedefe geçici, atılabilir bir kopya olarak fork'la (writes=local, sırsız role=rehearsal), ayağa kaldır, sağlık kontrolünden geçir, ardından at. Ebeveyne asla dokunulmaz.",
         "descriptionShort": "Geçici, atılabilir bir fork ayağa kaldır, sağlığını kontrol et, sonra at",
         "nameOption": "Prova edilecek kaynak küme",
-        "tagOption": "Optional tag for the rehearsal fork (default: timestamped)"
+        "tagOption": "Prova fork'u için isteğe bağlı etiket (varsayılan: zaman damgalı)"
       },
       "scale": {
         "countOption": "İstenen üye sayısı",
@@ -958,25 +958,25 @@
         "workingOption": "Branch'in mevcut commit'ini göstereceği çalışan fork"
       },
       "canary": {
-        "description": "Run a NEW image next to the stable one and split live traffic between them by percentage (release ladder rung 2). Creates one canary Deployment + Service on the SAME live data (no fork: canary users on forked data would read stale data and write into a doomed copy) and tells the Rediacc proxy to route the given percent of the stable hostname's traffic to it. Weight 0 keeps the canary dark; weight 100 is the blue/green flip. Before every canary change, an automatic group snapshot of the cluster's datastores is taken (release ladder rung 0) as the universal undo. Schema compatibility between the two versions (expand-contract) is the application's responsibility. For schema-BREAKING releases, use blue/green instead: fork the repo (instant, includes data), point the fork's Service here with weight 100, and roll back by restarting the untouched parent; writes made after the flip exist only in the new copy, so the rollback window is a policy decision.",
-        "descriptionShort": "Canary release: weighted traffic split on shared data",
+        "description": "Kararlı imajın yanında YENİ bir imaj çalıştır ve canlı trafiği aralarında yüzdeyle böl (sürüm merdiveninin 2. basamağı). Aynı canlı veri üzerinde tek bir canary Deployment + Service oluşturur (fork yok: fork'lanmış veri üzerindeki canary kullanıcıları eski veri okur ve sonunda atılacak bir kopyaya yazardı) ve Rediacc proxy'sine, kararlı ana bilgisayar adının trafiğinin verilen yüzdesini buraya yönlendirmesini söyler. Ağırlık 0, canary'yi trafiksiz (dark) bırakır; ağırlık 100 blue/green geçişidir. Her canary değişikliğinden önce, evrensel geri alma olarak kümenin veri depolarının otomatik bir grup anlık görüntüsü alınır (sürüm merdiveninin 0. basamağı). İki sürüm arasındaki şema uyumluluğu (expand-contract) uygulamanın sorumluluğundadır. Şemayı BOZAN sürümler için bunun yerine blue/green kullanın: depoyu fork'layın (anında, veriyi de içerir), fork'un Service'ini buraya ağırlık 100 ile yönlendirin ve dokunulmamış ebeveyni yeniden başlatarak geri alın; geçişten sonra yapılan yazmalar yalnızca yeni kopyada var olur, bu yüzden geri alma penceresi bir politika kararıdır.",
+        "descriptionShort": "Canary sürüm: paylaşılan veri üzerinde ağırlıklı trafik bölüşümü",
         "imageOption": "Canary Deployment'ın çalıştıracağı yeni imaj (paylaşılan canlı veriye karşı)",
         "nameOption": "Canary'nin ait olduğu depo (ad alanı)",
         "portOption": "Uygulamanın hizmet verdiği port (kararlı Service ile eşleşmeli)",
         "remove": {
-          "description": "Remove a canary's Deployment and Service (label-scoped); the stable Service serves 100% again. Release-undo snapshots are retained; prune them with the datastore snapshot commands.",
+          "description": "Bir canary'nin Deployment'ını ve Service'ini kaldır (etikete göre kapsamlı); kararlı Service yeniden %100'e hizmet verir. Sürüm geri alma anlık görüntüleri saklanır; bunları veri deposu anlık görüntü komutlarıyla temizleyin.",
           "descriptionShort": "Bir canary'yi kaldır",
           "nameOption": "Kaldırılacak canary seti"
         },
-        "replicasOption": "Canary Deployment replica count (default: 1)",
-        "serviceOption": "Stable Service to split traffic with (default: the repo name)",
+        "replicasOption": "Canary Deployment replika sayısı (varsayılan: 1)",
+        "serviceOption": "Trafiği bölüştürülecek kararlı Service (varsayılan: depo adı)",
         "status": {
-          "description": "Show managed canary sets: weight, images, stable service, and the latest release-undo snapshot.",
-          "descriptionShort": "Show managed canary sets",
-          "nameOption": "Show one canary set by name"
+          "description": "Yönetilen canary kümelerini göster: ağırlık, imajlar, kararlı service ve en son sürüm geri alma anlık görüntüsü.",
+          "descriptionShort": "Yönetilen canary kümelerini göster",
+          "nameOption": "Ada göre tek bir canary kümesini göster"
         },
         "weight": {
-          "description": "Change the percent of traffic routed to a canary. Takes a fresh release-undo group snapshot first, then re-applies the overlay; the proxy picks up the new split on its refresh tick. Weight 100 sends all traffic to the new version (the blue/green flip).",
+          "description": "Bir canary'ye yönlendirilen trafik yüzdesini değiştir. Önce taze bir sürüm geri alma grup anlık görüntüsü alır, ardından overlay'i yeniden uygular; proxy yeni bölüşümü bir sonraki yenileme turunda alır. Ağırlık 100, tüm trafiği yeni sürüme gönderir (blue/green geçişi).",
           "descriptionShort": "Bir canary'nin trafik yüzdesini değiştir",
           "nameOption": "Ayarlanacak canary seti"
         },
@@ -1270,32 +1270,32 @@
         "statsNoBytes": "\"{{repo}}\" {{machine}} hedefine gönderildi — {{duration}} içinde tamamlandı"
       },
       "replicate": {
-        "datastoreOption": "Data datastore holding the repository (default: the cluster's single data datastore)",
-        "description": "Create N read replicas of a repository in seconds, regardless of database size. Takes ONE datastore snapshot, then makes N constant-time fork-attaches (copy-on-write, throwaway local writes) spread across the cluster's nodes, and applies a generated overlay: one pinned PersistentVolume per replica, a StatefulSet, and two Services ({repo}-rw to the primary, {repo}-ro across the replicas). Replicas are POINT-IN-TIME copies: no replication stream, no read-your-writes; each replica runs one crash-recovery pass before serving. Refresh them with 'repo replicate refresh'. Replica sets are managed state: see 'repo replicate status' and remove with 'repo replicate remove'.",
+        "datastoreOption": "Depoyu barındıran veri deposu (varsayılan: kümenin tek veri deposu)",
+        "description": "Veritabanı boyutundan bağımsız olarak, saniyeler içinde bir deponun N okuma replikasını oluştur. TEK bir veri deposu anlık görüntüsü alır, ardından kümenin düğümlerine yayılmış N adet sabit zamanlı fork-attach (copy-on-write, atılabilir yerel yazmalar) yapar ve üretilmiş bir overlay uygular: replika başına sabitlenmiş bir PersistentVolume, bir StatefulSet ve iki Service ({repo}-rw birincile, {repo}-ro replikalara). Replikalar BELİRLİ BİR ZAMAN NOKTASININ kopyalarıdır: replikasyon akışı yoktur, kendi yazdığını okuma garantisi (read-your-writes) yoktur; her replika hizmet vermeye başlamadan önce bir çökme kurtarma (crash-recovery) turu çalıştırır. Bunları 'repo replicate refresh' ile tazeleyin. Replika kümeleri yönetilen bir durumdur: 'repo replicate status' ile görüntüleyin, 'repo replicate remove' ile kaldırın.",
         "descriptionShort": "Veri deposu fork'larından anında okuma replikaları",
-        "headlessOption": "Make the -ro Service headless: DNS returns every replica pod IP for driver-side balancing (long-lived DB connections skew a normal Service's per-connection balancing)",
+        "headlessOption": "-ro Service'ini headless yap: DNS, sürücü tarafı yük dengeleme için her replika pod'unun IP'sini döndürür (uzun ömürlü veritabanı bağlantıları, normal bir Service'in bağlantı başına yük dengelemesini bozar)",
         "imageOption": "Replikaların çalıştıracağı motor imajı (birincil ile aynı motor)",
         "nameOption": "Çoğaltılacak depo (ad alanı + servis temel adı)",
         "portOption": "Motorun hizmet verdiği port",
-        "primaryAppOption": "The primary pod's 'app' label value the -rw Service targets (default: the repo name)",
-        "pvcOption": "Volume name the engine mounts as its data dir (default: data)",
+        "primaryAppOption": "-rw Service'inin hedeflediği birincil pod'un 'app' etiket değeri (varsayılan: depo adı)",
+        "pvcOption": "Motorun veri dizini olarak bağladığı birim adı (varsayılan: data)",
         "refresh": {
-          "description": "Roll every replica onto a fresh point-in-time snapshot, ONE at a time: bounce the replica pod, discard and re-fork its datastore under the same path, and let readiness re-admit it. N-1 replicas keep serving throughout.",
+          "description": "Her replikayı taze bir zaman noktası anlık görüntüsüne, BİRER BİRER geçir: replika pod'unu yeniden başlat, veri deposunu aynı yol altında at ve yeniden fork'la, ardından hazır olma (readiness) kontrolünün onu yeniden kabul etmesine izin ver. Bu süreç boyunca N-1 replika hizmet vermeye devam eder.",
           "descriptionShort": "Replikaları yeni bir anlık görüntüye taşı",
           "nameOption": "Yenilenecek replika seti"
         },
-        "refreshOption": "Intended refresh interval recorded on the set (e.g. 1h); run 'repo replicate refresh' to roll it",
+        "refreshOption": "Kümede kaydedilen amaçlanan tazeleme aralığı (örn. 1h); uygulamak için 'repo replicate refresh' çalıştırın",
         "remove": {
-          "description": "Remove a replica set: delete its generated k8s objects (label-scoped), discard its fork datastores, drop its snapshot, and forget the state. Infra steps are best-effort so removal converges even on a partially-gone cluster.",
+          "description": "Bir replika kümesini kaldır: üretilen k8s nesnelerini sil (etikete göre kapsamlı), fork veri depolarını at, anlık görüntüsünü düşür ve durumu unut. Altyapı adımları en iyi çaba (best-effort) esasına dayanır, böylece kaldırma işlemi kısmen kaybolmuş bir kümede bile sonuca ulaşır.",
           "descriptionShort": "Bir replika setini kaldır",
           "nameOption": "Kaldırılacak replika seti"
         },
         "replicasOption": "Oluşturulacak okuma replikası sayısı",
-        "setOption": "Replica-set name (default: <repo>-replicas)",
+        "setOption": "Replika kümesi adı (varsayılan: <repo>-replicas)",
         "status": {
-          "description": "Show managed replica sets: replicas, hosting nodes, fork datastores, snapshot, and refresh timestamps.",
-          "descriptionShort": "Show managed replica sets",
-          "nameOption": "Show one replica set by name"
+          "description": "Yönetilen replika kümelerini göster: replikalar, barındıran düğümler, fork veri depoları, anlık görüntü ve tazeleme zaman damgaları.",
+          "descriptionShort": "Yönetilen replika kümelerini göster",
+          "nameOption": "Ada göre tek bir replika kümesini göster"
         }
       },
       "resize": {
@@ -1908,7 +1908,9 @@
       "sync": "Dosya Senkronizasyonu",
       "term": "SSH Terminal Erişimi",
       "update": "CLI Güncellemeleri",
-      "vscode": "VS Code Entegrasyonu"
+      "vscode": "VS Code Entegrasyonu",
+      "job": "Ayrık işler",
+      "serve": "Yürütücü hizmeti"
     },
     "supplements": {
       "config": {
@@ -1968,11 +1970,11 @@
     "cannotDeleteGrandRepo": "Ana depo silinemiyor: {{reason}}",
     "cannotPromote": "Yükseltilemez: {{reason}}",
     "cluster": {
-      "controlDsBackendInvalid": "--control-ds-backend must be local or ceph",
+      "controlDsBackendInvalid": "--control-ds-backend local veya ceph olmalıdır",
       "countInvalid": "--count negatif olmayan bir tam sayı olmalıdır",
       "dockerOnlyVerb": "\"repo {{verb}}\" yalnızca Docker depolarını hedefler ve bir --cluster'a karşı çalıştırılamaz; v1'de Kubernetes karşılığı yoktur",
       "featureUnsupportedV1": "{{feature}}, v1'de --cluster ile desteklenmiyor (kontrol düğümü görünümü); {{hint}}",
-      "forkWritesInvalid": "--writes must be local or ceph",
+      "forkWritesInvalid": "--writes local veya ceph olmalıdır",
       "pendingContractRegen": "Bir kümede \"repo {{verb}}\", renet kube sözleşmesinin yeniden üretilmesini (dalga 5) bekleyen {{fn}}'yi tetikler. Küme + ad alanı çözümlendi; sözleşme tamamlandığında yeniden çalıştırın.",
       "targetExclusive": "Yalnızca -m/--machine veya --cluster'dan birini belirtin, ikisini birden değil",
       "targetRequired": "Bir hedef makine (-m) veya küme (--cluster) gereklidir"

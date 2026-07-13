@@ -15,7 +15,7 @@
     "cluster": {
       "create": {
         "baseDomainOption": "Basis-Domain für die öffentliche DNS des Clusters (sonst von einer benachbarten Maschine geerbt)",
-        "controlDsBackendOption": "Anchor control datastore backend: local | ceph (default: ceph if the cluster has ceph, else local)",
+        "controlDsBackendOption": "Backend des Anker-Control-Datenspeichers: local | ceph (Standard: ceph, falls der Cluster Ceph nutzt, sonst local)",
         "controlDsPoolOption": "Ceph RBD-Pool für den Anker-Control-Datenspeicher (Ceph-Backend)",
         "controlDsSizeOption": "Größe des Anker-Control-Datenspeichers (Standard 10G)",
         "description": "Die Pool-Mitglieder eines mit 'rdc config cluster add' definierten Clusters provisionieren, renet auf jedem bootstrappen und Komponenten installieren (ceph zuerst). Cloud-Provider provisionieren über OpenTofu; KVM kommt in einer späteren Welle.",
@@ -34,7 +34,7 @@
         "nameOption": "Cluster-Name"
       },
       "evict": {
-        "description": "Drain the node, delete its Node object, and clear its cluster membership. The cluster is derived from the machine; a machine that still mounts a datastore is refused.",
+        "description": "Den Knoten leeren, sein Node-Objekt löschen und seine Cluster-Mitgliedschaft aufheben. Der Cluster wird von der Maschine abgeleitet; eine Maschine, die noch einen Datenspeicher eingehängt hat, wird abgelehnt.",
         "descriptionShort": "Einen Knoten aus seinem Cluster entfernen",
         "forceOption": "Draining überspringen, wenn der Knoten bereits tot ist",
         "machineOption": "Zu entfernende Maschine"
@@ -46,7 +46,7 @@
         "nameOption": "Cluster-Name",
         "tagOption": "Fork-Tag",
         "upOption": "Geforkte Repos hochfahren und die Cluster-Gesundheit prüfen, sobald der Fork hochgekommen ist",
-        "writesOption": "Fork write disposition: local (ephemeral dm-COW overlay, zero Ceph footprint) | ceph (durable clone). Default local"
+        "writesOption": "Schreibverhalten des Forks: local (kurzlebiges dm-COW-Overlay, kein Ceph-Fußabdruck) | ceph (dauerhafter Klon). Standard: local"
       },
       "install": {
         "description": "Cluster-Komponenten (zuerst ceph, dann k8s) auf bereits provisionierten Mitgliedern installieren.",
@@ -55,7 +55,7 @@
       },
       "join": {
         "clusterOption": "Cluster, dem die Maschine beitreten soll",
-        "description": "Adopt an existing registered machine as a Kubernetes agent node of a cluster, using the same CA-derived join token as anchor and rejoin.",
+        "description": "Eine bereits registrierte Maschine als Kubernetes-Agent-Knoten in einen Cluster aufnehmen – mit demselben CA-abgeleiteten Beitritts-Token wie beim Anker- und beim erneuten Beitritt.",
         "descriptionShort": "Eine Maschine als Agent zu einem Cluster hinzufügen",
         "machineOption": "Aufzunehmende registrierte Maschine"
       },
@@ -73,10 +73,10 @@
       },
       "rehearse": {
         "clusterOption": "Ziel-Cluster, dessen Knoten den Wegwerf-Fork der Probe hosten",
-        "description": "Rehearse a release/upgrade: fork the cluster onto a destination as an ephemeral throwaway (writes=local, secretless role=rehearsal), bring it up, gate on health, then discard it. The parent is never touched.",
+        "description": "Ein Release oder Upgrade proben: den Cluster als kurzlebigen Wegwerf-Fork (writes=local, role=rehearsal, ohne Secrets) auf ein Ziel forken, hochfahren, die Gesundheit prüfen und ihn anschließend verwerfen. Das Original wird dabei nie angefasst.",
         "descriptionShort": "Einen kurzlebigen Wegwerf-Fork starten, seine Gesundheit prüfen und dann verwerfen",
         "nameOption": "Zu probendes Quell-Cluster",
-        "tagOption": "Optional tag for the rehearsal fork (default: timestamped)"
+        "tagOption": "Optionaler Tag für den Proben-Fork (Standard: mit Zeitstempel)"
       },
       "scale": {
         "countOption": "Gewünschte Mitgliederanzahl",
@@ -958,25 +958,25 @@
         "workingOption": "Arbeits-Fork, auf dessen aktuellen commit die branch zeigt"
       },
       "canary": {
-        "description": "Run a NEW image next to the stable one and split live traffic between them by percentage (release ladder rung 2). Creates one canary Deployment + Service on the SAME live data (no fork: canary users on forked data would read stale data and write into a doomed copy) and tells the Rediacc proxy to route the given percent of the stable hostname's traffic to it. Weight 0 keeps the canary dark; weight 100 is the blue/green flip. Before every canary change, an automatic group snapshot of the cluster's datastores is taken (release ladder rung 0) as the universal undo. Schema compatibility between the two versions (expand-contract) is the application's responsibility. For schema-BREAKING releases, use blue/green instead: fork the repo (instant, includes data), point the fork's Service here with weight 100, and roll back by restarting the untouched parent; writes made after the flip exist only in the new copy, so the rollback window is a policy decision.",
-        "descriptionShort": "Canary release: weighted traffic split on shared data",
+        "description": "Ein NEUES Image parallel zum stabilen laufen lassen und den Live-Traffic prozentual zwischen beiden aufteilen (Stufe 2 der Release-Leiter). Legt ein Canary-Deployment + einen Service auf DENSELBEN Live-Daten an (kein Fork: Canary-Nutzer auf geforkten Daten würden veraltete Daten lesen und in eine zum Scheitern verurteilte Kopie schreiben) und weist den Rediacc-Proxy an, den angegebenen Prozentsatz des Traffics des stabilen Hostnamens dorthin zu leiten. Gewicht 0 hält den Canary dark; Gewicht 100 ist der Blue/Green-Umschalt. Vor jeder Canary-Änderung wird automatisch ein Gruppen-Snapshot der Datenspeicher des Clusters erstellt (Stufe 0 der Release-Leiter) als universelles Undo. Die Schema-Kompatibilität zwischen den beiden Versionen (expand-contract) liegt in der Verantwortung der Anwendung. Für schema-BRECHENDE Releases stattdessen Blue/Green verwenden: das Repository forken (sofort, inklusive Daten), den Service des Forks hier mit Gewicht 100 einsetzen und per Neustart des unangetasteten Originals zurückrollen; nach dem Umschalten vorgenommene Schreibvorgänge existieren nur in der neuen Kopie – das Rollback-Fenster ist somit eine Policy-Entscheidung.",
+        "descriptionShort": "Canary-Release: gewichtete Traffic-Aufteilung auf gemeinsamen Daten",
         "imageOption": "Neues Image, mit dem das Canary-Deployment läuft (gegen dieselben Live-Daten)",
         "nameOption": "Repository, zu dem der Canary gehört (dessen Namespace)",
         "portOption": "Port, auf dem die App lauscht (muss mit dem stabilen Service übereinstimmen)",
         "remove": {
-          "description": "Remove a canary's Deployment and Service (label-scoped); the stable Service serves 100% again. Release-undo snapshots are retained; prune them with the datastore snapshot commands.",
+          "description": "Deployment und Service eines Canary entfernen (auf Labels begrenzt); der stabile Service bedient wieder 100 %. Release-Undo-Snapshots bleiben erhalten; sie werden mit den Datenspeicher-Snapshot-Befehlen bereinigt.",
           "descriptionShort": "Einen Canary abbauen",
           "nameOption": "Zu entfernendes Canary-Set"
         },
-        "replicasOption": "Canary Deployment replica count (default: 1)",
-        "serviceOption": "Stable Service to split traffic with (default: the repo name)",
+        "replicasOption": "Anzahl der Canary-Deployment-Replikate (Standard: 1)",
+        "serviceOption": "Stabiler Service, mit dem der Traffic aufgeteilt wird (Standard: der Repository-Name)",
         "status": {
-          "description": "Show managed canary sets: weight, images, stable service, and the latest release-undo snapshot.",
-          "descriptionShort": "Show managed canary sets",
-          "nameOption": "Show one canary set by name"
+          "description": "Verwaltete Canary-Sets anzeigen: Gewicht, Images, stabiler Service und der letzte Release-Undo-Snapshot.",
+          "descriptionShort": "Verwaltete Canary-Sets anzeigen",
+          "nameOption": "Ein Canary-Set anhand des Namens anzeigen"
         },
         "weight": {
-          "description": "Change the percent of traffic routed to a canary. Takes a fresh release-undo group snapshot first, then re-applies the overlay; the proxy picks up the new split on its refresh tick. Weight 100 sends all traffic to the new version (the blue/green flip).",
+          "description": "Den Prozentsatz des zum Canary geleiteten Traffics ändern. Erstellt zuerst einen frischen Release-Undo-Gruppen-Snapshot und wendet dann das Overlay erneut an; der Proxy übernimmt die neue Aufteilung bei seinem nächsten Refresh-Tick. Gewicht 100 leitet den gesamten Traffic zur neuen Version (der Blue/Green-Umschalt).",
           "descriptionShort": "Den Traffic-Anteil für einen Canary ändern",
           "nameOption": "Anzupassendes Canary-Set"
         },
@@ -1270,32 +1270,32 @@
         "statsNoBytes": "\"{{repo}}\" nach {{machine}} übertragen — abgeschlossen in {{duration}}"
       },
       "replicate": {
-        "datastoreOption": "Data datastore holding the repository (default: the cluster's single data datastore)",
-        "description": "Create N read replicas of a repository in seconds, regardless of database size. Takes ONE datastore snapshot, then makes N constant-time fork-attaches (copy-on-write, throwaway local writes) spread across the cluster's nodes, and applies a generated overlay: one pinned PersistentVolume per replica, a StatefulSet, and two Services ({repo}-rw to the primary, {repo}-ro across the replicas). Replicas are POINT-IN-TIME copies: no replication stream, no read-your-writes; each replica runs one crash-recovery pass before serving. Refresh them with 'repo replicate refresh'. Replica sets are managed state: see 'repo replicate status' and remove with 'repo replicate remove'.",
+        "datastoreOption": "Datenspeicher, der das Repository enthält (Standard: der einzige Datenspeicher des Clusters)",
+        "description": "Erzeugt in Sekunden N Lesereplikate eines Repositorys, unabhängig von der Datenbankgröße. Erstellt EINEN Datenspeicher-Snapshot und dann N zeitkonstante Fork-Attaches (Copy-on-Write, verwerfbare lokale Schreibvorgänge), verteilt über die Knoten des Clusters, und wendet ein generiertes Overlay an: ein gepinntes PersistentVolume pro Replikat, ein StatefulSet und zwei Services ({repo}-rw zur Primärinstanz, {repo}-ro über alle Replikate). Replikate sind Point-in-Time-Kopien: kein Replikationsstream, kein Read-your-Writes; jedes Replikat durchläuft vor der Bereitstellung einen Crash-Recovery-Durchlauf. Mit 'repo replicate refresh' werden sie aktualisiert. Replikat-Sets sind verwalteter Zustand: siehe 'repo replicate status', entfernen mit 'repo replicate remove'.",
         "descriptionShort": "Sofortige Lesereplikate aus Datenspeicher-Forks",
-        "headlessOption": "Make the -ro Service headless: DNS returns every replica pod IP for driver-side balancing (long-lived DB connections skew a normal Service's per-connection balancing)",
+        "headlessOption": "Den -ro-Service headless machen: DNS liefert für treiberseitiges Load-Balancing die IP jedes Replikat-Pods zurück (langlebige DB-Verbindungen verzerren die Pro-Verbindung-Verteilung eines normalen Service)",
         "imageOption": "Engine-Image, mit dem die Replikate laufen (dieselbe Engine wie die Primärinstanz)",
         "nameOption": "Zu replizierendes Repository (dessen Namespace + Basisname des Diensts)",
         "portOption": "Port, auf dem die Engine lauscht",
-        "primaryAppOption": "The primary pod's 'app' label value the -rw Service targets (default: the repo name)",
-        "pvcOption": "Volume name the engine mounts as its data dir (default: data)",
+        "primaryAppOption": "Wert des 'app'-Labels des primären Pods, auf den der -rw-Service zielt (Standard: der Repository-Name)",
+        "pvcOption": "Name des Volumes, das die Engine als Datenverzeichnis mountet (Standard: data)",
         "refresh": {
-          "description": "Roll every replica onto a fresh point-in-time snapshot, ONE at a time: bounce the replica pod, discard and re-fork its datastore under the same path, and let readiness re-admit it. N-1 replicas keep serving throughout.",
+          "description": "Jedes Replikat NACHEINANDER auf einen frischen Point-in-Time-Snapshot aktualisieren: den Replikat-Pod neu starten, seinen Datenspeicher unter demselben Pfad verwerfen und neu forken, und es per Readiness-Prüfung wieder aufnehmen lassen. N-1 Replikate bedienen währenddessen weiterhin Anfragen.",
           "descriptionShort": "Replikate auf einen neuen Snapshot aktualisieren",
           "nameOption": "Zu aktualisierendes Replikat-Set"
         },
-        "refreshOption": "Intended refresh interval recorded on the set (e.g. 1h); run 'repo replicate refresh' to roll it",
+        "refreshOption": "Vorgesehenes Refresh-Intervall, das im Set vermerkt wird (z. B. 1h); mit 'repo replicate refresh' ausführen, um es zu aktualisieren",
         "remove": {
-          "description": "Remove a replica set: delete its generated k8s objects (label-scoped), discard its fork datastores, drop its snapshot, and forget the state. Infra steps are best-effort so removal converges even on a partially-gone cluster.",
+          "description": "Ein Replikat-Set entfernen: seine generierten k8s-Objekte löschen (auf Labels begrenzt), seine Fork-Datenspeicher verwerfen, seinen Snapshot löschen und den Zustand vergessen. Infra-Schritte laufen best-effort, sodass die Entfernung auch bei einem teilweise verschwundenen Cluster konvergiert.",
           "descriptionShort": "Ein Replikat-Set abbauen",
           "nameOption": "Zu entfernendes Replikat-Set"
         },
         "replicasOption": "Anzahl der zu erstellenden Lesereplikate",
-        "setOption": "Replica-set name (default: <repo>-replicas)",
+        "setOption": "Name des Replikat-Sets (Standard: <repo>-replicas)",
         "status": {
-          "description": "Show managed replica sets: replicas, hosting nodes, fork datastores, snapshot, and refresh timestamps.",
-          "descriptionShort": "Show managed replica sets",
-          "nameOption": "Show one replica set by name"
+          "description": "Verwaltete Replikat-Sets anzeigen: Replikate, Hosting-Knoten, Fork-Datenspeicher, Snapshot und Refresh-Zeitstempel.",
+          "descriptionShort": "Verwaltete Replikat-Sets anzeigen",
+          "nameOption": "Ein Replikat-Set anhand des Namens anzeigen"
         }
       },
       "resize": {
@@ -1831,7 +1831,7 @@
       },
       "finished": {
         "succeeded": "Job {{jobId}} war erfolgreich.",
-        "other": "Job {{jobId}} {{state}}. {{error}}"
+        "other": "Der Job {{jobId}} {{state}}. {{error}}"
       }
     }
   },
@@ -1908,7 +1908,9 @@
       "sync": "Dateisynchronisierung",
       "term": "SSH-Terminalzugang",
       "update": "CLI-Updates",
-      "vscode": "VS Code-Integration"
+      "vscode": "VS Code-Integration",
+      "job": "Entkoppelte Jobs",
+      "serve": "Executor-Dienst"
     },
     "supplements": {
       "config": {
@@ -1968,11 +1970,11 @@
     "cannotDeleteGrandRepo": "Kann Grand-Repository nicht löschen: {{reason}}",
     "cannotPromote": "Kann nicht befördern: {{reason}}",
     "cluster": {
-      "controlDsBackendInvalid": "--control-ds-backend must be local or ceph",
+      "controlDsBackendInvalid": "--control-ds-backend muss local oder ceph sein",
       "countInvalid": "--count muss eine nicht-negative ganze Zahl sein",
       "dockerOnlyVerb": "\"repo {{verb}}\" richtet sich nur an Docker-Repositories und kann nicht gegen einen --cluster ausgeführt werden; es hat in v1 kein Kubernetes-Äquivalent",
       "featureUnsupportedV1": "{{feature}} wird mit --cluster in v1 nicht unterstützt (Control-Knoten-Ansicht); {{hint}}",
-      "forkWritesInvalid": "--writes must be local or ceph",
+      "forkWritesInvalid": "--writes muss local oder ceph sein",
       "pendingContractRegen": "\"repo {{verb}}\" auf einem Cluster löst {{fn}} aus, was auf die renet-kube-Contract-Regenerierung wartet (Welle 5). Cluster und Namespace wurden aufgelöst; erneut ausführen, sobald der Contract verfügbar ist.",
       "targetExclusive": "Geben Sie nur eines von -m/--machine oder --cluster an, nicht beides",
       "targetRequired": "Eine Ziel-Maschine (-m) oder ein Cluster (--cluster) ist erforderlich"

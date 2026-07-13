@@ -53,6 +53,7 @@ const repoEventTypes = [
   'cli.repo.ownership',
   'cli.repo.policy_get',
   'cli.repo.policy_set',
+  'cli.repo.promote',
   'cli.repo.prune',
   'cli.repo.resize',
   'cli.repo.status',
@@ -76,7 +77,9 @@ const datastoreEventTypes = [
   'cli.datastore.ceph_fork',
   'cli.datastore.ceph_init',
   'cli.datastore.ceph_unfork',
+  'cli.datastore.detach',
   'cli.datastore.init',
+  'cli.datastore.list',
   'cli.datastore.status',
 ] as const;
 
@@ -86,11 +89,16 @@ const explicitEventTypes = ['cli.sync.upload', 'cli.sync.download', 'cli.term.se
 // cluster_/kube_ prefix rule, so these map through the `cli.${functionName}`
 // fall-through (underscores preserved), unlike the dotted machine/repo groups.
 const clusterEventTypes = [
+  'cli.ceph_client_config_export',
+  'cli.ceph_health',
   'cli.cluster_create',
   'cli.cluster_destroy',
+  'cli.cluster_evict',
   'cli.cluster_fork',
+  'cli.cluster_join',
   'cli.cluster_migrate',
   'cli.cluster_scale',
+  'cli.kube_health',
   'cli.kube_namespace_create',
   'cli.kube_namespace_delete',
   'cli.kube_namespace_fork',
@@ -138,8 +146,8 @@ const baseData = z.object({
  * attributing the event to it, so a caller can never forge attribution.
  */
 const eventEnvelope = {
-  idempotencyKey: z.string().uuid(),
-  onBehalfOfTokenId: z.string().uuid().optional(),
+  idempotencyKey: z.uuid(),
+  onBehalfOfTokenId: z.uuid().optional(),
 };
 
 // Machine/repo/backup/datastore ops AND cluster/k8s-namespace ops all carry the

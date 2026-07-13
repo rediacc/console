@@ -6,6 +6,7 @@
  * as "allowed" in the console must be the rule the executor enforces.
  */
 
+import { DEFAULTS } from '../config';
 import type { MutationScope, PolicyDocument, PolicyOrgRole, PolicyRule } from './schema.js';
 
 /**
@@ -77,7 +78,7 @@ export function matchesGlob(pattern: string, value: string): boolean {
   // "repoXXXfork".
   const source = pattern
     .split('*')
-    .map((literal) => literal.replace(/[.+?^${}()|[\]\\]/g, '\\$&'))
+    .map((literal) => literal.replaceAll(/[.+?^${}()|[\]\\]/g, '\\$&'))
     .join('.*');
   return new RegExp(`^${source}$`).test(value);
 }
@@ -120,6 +121,60 @@ function looksLikeClusterOp(commandPath: string): boolean {
   return head === 'cluster' || head === 'kube';
 }
 
+/** The decision when an org has no policy document at all. */
+function missingPolicyDecision(ctx: PolicyContext, subject: string): PolicyDecision {
+  const allowed = MISSING_POLICY_DEFAULT[ctx.orgRole];
+  return {
+    allowed,
+    reason: allowed
+      ? `No policy is configured; ${ctx.orgRole}s may run ${subject} by default.`
+      : `No policy is configured; ${ctx.orgRole}s may not run ${subject}. An owner or admin must grant access.`,
+  };
+}
+
+/**
+ * Target-dimension denials: machine, repo, grand-repo. Returns the first denial,
+ * or null when every target the context carries is within policy.
+ */
+function denyByTarget(tiers: readonly PolicyRule[], ctx: PolicyContext): PolicyDecision | null {
+  const machines = resolve(tiers, 'machines');
+  if (ctx.machineName && machines && !matchesAny(machines, ctx.machineName)) {
+    return { allowed: false, reason: `Policy does not allow machine "${ctx.machineName}".` };
+  }
+
+  const repos = resolve(tiers, 'repos');
+  if (ctx.repoName && repos && !matchesAny(repos, ctx.repoName)) {
+    return { allowed: false, reason: `Policy does not allow repo "${ctx.repoName}".` };
+  }
+
+  if (ctx.isGrandRepo && resolve(tiers, 'allowGrandRepos') !== true) {
+    return {
+      allowed: false,
+      reason: `Policy does not allow operations on grand repos ("${ctx.repoName ?? DEFAULTS.TELEMETRY.UNKNOWN}").`,
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Operation-dimension denials: cluster lifecycle and mutation class. Returns the
+ * first denial, or null when the operation is within policy.
+ */
+function denyByOperation(tiers: readonly PolicyRule[], ctx: PolicyContext): PolicyDecision | null {
+  const isClusterOp = ctx.isClusterOp ?? looksLikeClusterOp(ctx.commandPath);
+  if (isClusterOp && resolve(tiers, 'allowClusterOps') !== true) {
+    return { allowed: false, reason: 'Policy does not allow cluster operations.' };
+  }
+
+  const mutationScopes = resolve(tiers, 'mutationScopes');
+  if (ctx.mutationScope && mutationScopes && !mutationScopes.includes(ctx.mutationScope)) {
+    return { allowed: false, reason: `Policy does not allow "${ctx.mutationScope}" mutations.` };
+  }
+
+  return null;
+}
+
 /**
  * Decide whether `ctx` is permitted by `doc`.
  *
@@ -135,15 +190,7 @@ export function evaluatePolicy(
     ? `destructive command "${ctx.commandPath}"`
     : `"${ctx.commandPath}"`;
 
-  if (!doc) {
-    const allowed = MISSING_POLICY_DEFAULT[ctx.orgRole];
-    return {
-      allowed,
-      reason: allowed
-        ? `No policy is configured; ${ctx.orgRole}s may run ${subject} by default.`
-        : `No policy is configured; ${ctx.orgRole}s may not run ${subject}. An owner or admin must grant access.`,
-    };
-  }
+  if (!doc) return missingPolicyDecision(ctx, subject);
 
   const tiers = applicableTiers(doc, ctx);
 
@@ -172,32 +219,8 @@ export function evaluatePolicy(
     return { allowed: false, reason: `Policy does not allow ${subject}.` };
   }
 
-  const machines = resolve(tiers, 'machines');
-  if (ctx.machineName && machines && !matchesAny(machines, ctx.machineName)) {
-    return { allowed: false, reason: `Policy does not allow machine "${ctx.machineName}".` };
-  }
-
-  const repos = resolve(tiers, 'repos');
-  if (ctx.repoName && repos && !matchesAny(repos, ctx.repoName)) {
-    return { allowed: false, reason: `Policy does not allow repo "${ctx.repoName}".` };
-  }
-
-  if (ctx.isGrandRepo && resolve(tiers, 'allowGrandRepos') !== true) {
-    return {
-      allowed: false,
-      reason: `Policy does not allow operations on grand repos ("${ctx.repoName ?? 'unknown'}").`,
-    };
-  }
-
-  const isClusterOp = ctx.isClusterOp ?? looksLikeClusterOp(ctx.commandPath);
-  if (isClusterOp && resolve(tiers, 'allowClusterOps') !== true) {
-    return { allowed: false, reason: 'Policy does not allow cluster operations.' };
-  }
-
-  const mutationScopes = resolve(tiers, 'mutationScopes');
-  if (ctx.mutationScope && mutationScopes && !mutationScopes.includes(ctx.mutationScope)) {
-    return { allowed: false, reason: `Policy does not allow "${ctx.mutationScope}" mutations.` };
-  }
-
-  return { allowed: true, reason: `Policy allows ${subject}.` };
+  return (
+    denyByTarget(tiers, ctx) ??
+    denyByOperation(tiers, ctx) ?? { allowed: true, reason: `Policy allows ${subject}.` }
+  );
 }

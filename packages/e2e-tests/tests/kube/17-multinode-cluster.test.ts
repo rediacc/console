@@ -280,7 +280,9 @@ test.describe
         `sudo bash -c 'for i in 1 2 3; do ${select} | xargs -r -n1 umount 2>/dev/null; ${select} | xargs -r -n1 umount -l 2>/dev/null; sleep 1; done; udevadm settle 2>/dev/null; ` +
           `sync; echo REMAINING_HOLDERS:; ${select}'; true`
       );
-      process.stdout.write(`[suite17 unwind ${mount}] ${res.stdout.trim().replace(/\n/g, ' | ')}\n`);
+      process.stdout.write(
+        `[suite17 unwind ${mount}] ${res.stdout.trim().replaceAll('\n', ' | ')}\n`
+      );
     };
 
     // NOTE (#26, product-fixed): the node CSI units (rediacc-csi / -provisioner /
@@ -302,7 +304,10 @@ test.describe
       const res = await runner.executeViaBridge(
         `sudo bash -c 'losetup -a | grep -F "${mount}"' 2>/dev/null; true`
       );
-      const loops = res.stdout.split('\n').map((l) => l.trim()).filter(Boolean);
+      const loops = res.stdout
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
       process.stdout.write(`[suite17 devices ${mount}] ${loops.join(' | ') || 'none'}\n`);
       return loops;
     };
@@ -665,7 +670,9 @@ test.describe
           'get nodes --no-headers',
         ]) {
           const r = await kubectlOn(w1, KC, q);
-          process.stdout.write(`[suite17 #30 ${q.slice(0, 28)}] ${r.stdout.trim().slice(0, 300)}\n`);
+          process.stdout.write(
+            `[suite17 #30 ${q.slice(0, 28)}] ${r.stdout.trim().slice(0, 300)}\n`
+          );
         }
       }
       expect(down.code, `repository down: ${(down.stdout + down.stderr).slice(-600)}`).toBe(0);

@@ -93,13 +93,13 @@ export function fullConfigToRdcConfig(decrypted: FullConfig): RdcConfig {
   if (ssh?.privateKey) {
     credentials.ssh = {
       privateKey: ssh.privateKey as string,
-      ...(ssh.publicKey !== undefined ? { publicKey: ssh.publicKey as string } : {}),
-      ...(ssh.knownHosts !== undefined ? { knownHosts: ssh.knownHosts as string } : {}),
+      ...(ssh.publicKey === undefined ? {} : { publicKey: ssh.publicKey as string }),
+      ...(ssh.knownHosts === undefined ? {} : { knownHosts: ssh.knownHosts as string }),
     };
   }
   if (decrypted.cfDnsApiToken !== undefined) credentials.cfDnsApiToken = decrypted.cfDnsApiToken;
 
-  return {
+  const rebuilt = {
     schemaVersion: 3,
     id: decrypted.id,
     version: decrypted.version,
@@ -125,7 +125,8 @@ export function fullConfigToRdcConfig(decrypted: FullConfig): RdcConfig {
     ...(decrypted.policy === undefined ? {} : { policy: decrypted.policy }),
     ...(Object.keys(credentials).length > 0 ? { credentials } : {}),
     encryption: { mode: 'plaintext' },
-  } as RdcConfig;
+  };
+  return rebuilt as RdcConfig;
 }
 
 /**

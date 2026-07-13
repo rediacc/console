@@ -32,7 +32,7 @@ type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : n
  * by record(), never passed in, so no caller can reuse a key and suppress its
  * own event server-side.
  */
-export type AuditEventDraft = DistributiveOmit<AuditEvent, 'idempotencyKey'>;
+type AuditEventDraft = DistributiveOmit<AuditEvent, 'idempotencyKey'>;
 
 class AuditService {
   private queue: AuditEvent[] = [];
