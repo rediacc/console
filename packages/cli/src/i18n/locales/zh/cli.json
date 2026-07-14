@@ -893,10 +893,8 @@
     },
     "repo": {
       "batchConfirm": "{{action}} \"{{machine}}\" 上的所有 {{count}} 个仓库？ [y/N]",
-      "batchFailed": "\"{{repo}}\" 的 {{action}} 失败：{{error}}",
       "batchIterating": "{{action}} {{current}}/{{total}}：\"{{repo}}\"...",
       "batchResult": "{{action}} 完成：{{succeeded}}/{{total}} 成功",
-      "batchStarting": "{{action}}：\"{{repo}}\"...",
       "branch": {
         "branchOption": "新分支的名称",
         "completed": "分支 \"{{branch}}\" -> {{commit}}",

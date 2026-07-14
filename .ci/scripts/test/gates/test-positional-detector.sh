@@ -50,6 +50,31 @@ const CASES: [string, boolean, string][] = [
   // MUST NOT FLAG — nothing positional is being taught at all.
   ['rdc repo secret list', false, 'no token after the command path'],
   ['rdc machine list --name x', false, 'a flag is not a positional'],
+
+  // MUST NOT FLAG — a PROSE WORD that ends the clause is not an argument.
+  // German splits separable verbs (ausfuehren -> "fuehren Sie ... aus"), so the
+  // particle lands AFTER the command and the detector read it as a positional. The
+  // German is correct German; the detector was wrong, and it un-translated real work
+  // to satisfy a parser bug. Dutch and the Nordic languages split verbs the same way.
+  [
+    'Falls er bereits angehaengt ist, fuehren Sie rdc config reconcile aus.',
+    false,
+    'German separable-verb particle after the command is prose, not an argument',
+  ],
+  [
+    'Voer daarna rdc config reconcile uit.',
+    false,
+    'Dutch separable-verb particle, same class',
+  ],
+  [
+    'Run rdc config reconcile, then retry.',
+    false,
+    'an English prose word ending the clause is not an argument either',
+  ],
+
+  // …but the fix must not go too quiet: a real argument still flags even at the
+  // end of a sentence, because it is value-shaped rather than a bare prose word.
+  ['Run rdc machine list prod-1.', true, 'value-shaped token is a positional, sentence-final or not'],
 ];
 
 let failures = 0;
@@ -75,7 +100,7 @@ test_detector_both_ways() {
         echo "$output" >&2
         log_fail "positional-cli-detector did not behave as expected"
     fi
-    log_pass "positional detector: 8/8 cases, both directions"
+    log_pass "positional detector: 12/12 cases, both directions"
 }
 
 test_detector_both_ways

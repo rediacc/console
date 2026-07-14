@@ -59,7 +59,12 @@ vi.mock('../../utils/errors.js', async (orig) => ({
 import { handleRepoCreate } from '../repo-create-delete.js';
 
 /** A config with the given datastores + machines, enough for placement resolution. */
-function config(over: Partial<NonNullable<RdcConfig['resources']>> = {}, state = {}): RdcConfig {
+// Fixtures are deliberately partial. Taking a loose record here is what lets the call
+// sites pass a plain literal instead of casting each one through `as never`.
+function config(
+  over: Record<string, unknown> = {},
+  state: Record<string, unknown> = {}
+): RdcConfig {
   return {
     resources: { machines: {}, datastores: {}, ...over },
     state: { datastores: {}, ...state },
@@ -100,7 +105,7 @@ describe('repo create placement union (#38)', () => {
 
   it('refuses --machine on a cluster-member machine (R2-F12)', async () => {
     getCurrent.mockResolvedValue(
-      config({ machines: { m1: { cluster: { cluster: 'c1', pool: 'p' } } } as never })
+      config({ machines: { m1: { cluster: { cluster: 'c1', pool: 'p' } } } })
     );
     await handleRepoCreate('shop', { machine: 'm1', size: '5G' });
     expect(addRepository).not.toHaveBeenCalled();
@@ -117,7 +122,7 @@ describe('repo create placement union (#38)', () => {
     getCurrent.mockResolvedValue(
       config(
         {
-          datastores: { tier1: { backend: { kind: 'rbd', pool: 'rbd', image: 'tier1' } } } as never,
+          datastores: { tier1: { backend: { kind: 'rbd', pool: 'rbd', image: 'tier1' } } },
         },
         { datastores: { tier1: { attachedTo: 'm2' } } }
       )
@@ -145,7 +150,7 @@ describe('repo create placement union (#38)', () => {
               cluster: 'b1src',
               backend: { kind: 'rbd', pool: 'rbd', image: 'shopdata' },
             },
-          } as never,
+          },
         },
         { datastores: { shopdata: { attachedTo: 'cp-1' } } }
       )
@@ -164,7 +169,7 @@ describe('repo create placement union (#38)', () => {
               cluster: 'b1src',
               backend: { kind: 'rbd', pool: 'rbd', image: 'shopdata' },
             },
-          } as never,
+          },
         },
         { datastores: { shopdata: { attachedTo: 'cp-1' } } }
       )
@@ -227,7 +232,7 @@ describe('repo create placement union (#38)', () => {
               cluster: 'b1src',
               backend: { kind: 'rbd', pool: 'rbd', image: 'shopdata' },
             },
-          } as never,
+          },
         },
         { datastores: { shopdata: { attachedTo: 'cp-1' } } }
       )
@@ -303,7 +308,7 @@ describe('repo create placement union (#38)', () => {
               cluster: 'b1src',
               backend: { kind: 'rbd', pool: 'rbd', image: 'shopdata' },
             },
-          } as never,
+          },
         },
         { datastores: { shopdata: { attachedTo: 'cp-1' } } }
       )
@@ -324,7 +329,7 @@ describe('repo create placement union (#38)', () => {
     getCurrent.mockResolvedValue(
       config(
         {
-          datastores: { tier1: { backend: { kind: 'rbd', pool: 'rbd', image: 'tier1' } } } as never,
+          datastores: { tier1: { backend: { kind: 'rbd', pool: 'rbd', image: 'tier1' } } },
         },
         { datastores: { tier1: { attachedTo: 'm2' } } }
       )
@@ -353,7 +358,7 @@ describe('repo create placement union (#38)', () => {
 
     vi.clearAllMocks();
     getCurrent.mockResolvedValue(
-      config({ datastores: { d: { backend: { kind: 'rbd', pool: 'rbd', image: 'd' } } } as never })
+      config({ datastores: { d: { backend: { kind: 'rbd', pool: 'rbd', image: 'd' } } } })
     );
     await handleRepoCreate('shop', { datastore: 'd', size: '5G' });
     expect(handleError.mock.calls[0][0].exitCode).toBe(12);

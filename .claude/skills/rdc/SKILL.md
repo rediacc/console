@@ -88,20 +88,24 @@ For first-time setup (new VMs), see prerequisites in [ops.md](ops.md) and [confi
 ## Quick-start: Push a repo to another machine
 
 ```bash
-# Migration (same identity). --up mounts and deploys on the target after the transfer.
-rdc repo push <repo> --to-machine <target> --up
+# Migration (same identity). A pushed copy lands on the target as a backup ARTIFACT,
+# so it is booted with `backup restore` — that is where --up lives; `repo push` has no --up.
+rdc repo push <repo> --to-machine <target>
+rdc backup restore <repo> --as <repo> -m <target> --up
 
 # Independent fork to another machine (the fork inherits the parent's encryption key)
 rdc repo fork <repo> --tag <tag>
-rdc repo push <repo>:<tag> --to-machine <target> --up
+rdc repo push <repo>:<tag> --to-machine <target>
+rdc backup restore <repo>:<tag> --as <repo> -m <target> --up
 ```
 
 ## Quick-start: Live migration with CRIU
 
 ```bash
 # Checkpoint + push (captures process memory + disk state, source keeps running).
-# --up restores on the target, auto-detecting the checkpoint.
-rdc repo push <repo> --to-machine <target> --checkpoint --up
+# The checkpoint rides along with the artifact; `backup restore --up` boots from it.
+rdc repo push <repo> --to-machine <target> --checkpoint
+rdc backup restore <repo> --as <repo> -m <target> --up
 
 # Or move the repo outright (two-phase, minimal downtime, placement follows)
 rdc repo migrate <repo> --to <target> --checkpoint

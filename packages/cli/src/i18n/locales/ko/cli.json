@@ -893,10 +893,8 @@
     },
     "repo": {
       "batchConfirm": "\"{{machine}}\"의 {{count}}개 저장소 모두 {{action}}하시겠습니까? [y/N]",
-      "batchFailed": "\"{{repo}}\"에 대해 {{action}} 실패: {{error}}",
       "batchIterating": "{{action}} ({{current}}/{{total}}): \"{{repo}}\"...",
       "batchResult": "{{action}} 완료: {{total}} 중 {{succeeded}} 성공",
-      "batchStarting": "{{action}} 시작: \"{{repo}}\"...",
       "branch": {
         "branchOption": "새 브랜치의 이름",
         "completed": "branch \"{{branch}}\" -> {{commit}}",

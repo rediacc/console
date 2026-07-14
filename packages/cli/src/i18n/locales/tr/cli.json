@@ -893,10 +893,8 @@
     },
     "repo": {
       "batchConfirm": "\"{{machine}}\" üzerindeki tüm {{count}} depoyu {{action}} yap? [y/N]",
-      "batchFailed": "\"{{repo}}\" için {{action}} başarısız: {{error}}",
       "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
       "batchResult": "{{action}} tamamlandı: {{succeeded}}/{{total}} başarılı",
-      "batchStarting": "{{action}}: «{{repo}}»...",
       "branch": {
         "branchOption": "Yeni dalın adı",
         "completed": "Dal \"{{branch}}\" -> {{commit}}",

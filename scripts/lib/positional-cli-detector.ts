@@ -187,8 +187,19 @@ function buildDetectionRegex(commandPath: string): RegExp {
   //   <  {  [  "  '  alphanumeric
   // Prose separators (em-dash, en-dash, ampersand) and flags (`-`, `--`)
   // are NOT positional tokens — those match the negative universe.
+  //
+  // …and neither is a PROSE WORD THAT ENDS THE CLAUSE. German splits separable
+  // verbs, so "run `rdc config reconcile`" is written "führen Sie rdc config
+  // reconcile aus." — the particle "aus" lands after the command and read as an
+  // argument. It is not one; the German is correct German. A real argument in these
+  // strings is a placeholder (<name>, {{name}}), a quoted value, or value-shaped
+  // (prod-1, s3-main) — never a bare run of letters immediately followed by
+  // sentence punctuation. Dutch and the Nordic languages split verbs the same way,
+  // so this is a class fix, not a one-off. Guarded by the fixtures in
+  // scripts/lib/__tests__/positional-cli-detector.test.ts.
   return new RegExp(
-    `(?:^|[\\s\`($:'"])(?:rdc\\s+)${segments}\\s+(?=[<{\\["'a-zA-Z0-9])`
+    `(?:^|[\\s\`($:'"])(?:rdc\\s+)${segments}\\s+(?![\\p{L}]+[.,;:!?])(?=[<{\\["'a-zA-Z0-9])`,
+    'u'
   );
 }
 

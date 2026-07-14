@@ -72,15 +72,36 @@ const backupEventTypes = [
   'cli.backup.push',
 ] as const;
 
+// Every datastore verb `packages/cli/src/commands/datastore.ts` dispatches. It goes
+// through a `dispatch(functionName, …)` helper rather than a `functionName: '…'`
+// literal, so check-audit-coverage.sh — which greps for the literal — cannot see most
+// of them: it only ever flagged `fork` and `volumes_close`. The rest were emitting
+// event types absent from this union, which makes functionNameToEventType return null
+// and the audit record vanish, on exactly the class-D ops (attach, delete, resize)
+// that most need an audit trail. `init`, `ceph_init` and `ceph_unfork` are the mirror
+// image: literals for functions that no longer exist (#34 / the P4 rename).
 const datastoreEventTypes = [
+  'cli.datastore.adopt',
+  'cli.datastore.attach',
   'cli.datastore.ceph_fork',
-  'cli.datastore.ceph_init',
-  'cli.datastore.ceph_unfork',
+  'cli.datastore.create',
+  'cli.datastore.delete',
   'cli.datastore.detach',
-  'cli.datastore.init',
+  'cli.datastore.forget',
+  'cli.datastore.fork',
   'cli.datastore.list',
+  'cli.datastore.resize',
+  'cli.datastore.snapshot_create',
+  'cli.datastore.snapshot_delete',
+  'cli.datastore.snapshot_list',
   'cli.datastore.status',
+  'cli.datastore.volumes_close',
+  'cli.datastore.volumes_open',
 ] as const;
+
+// `repo logs` / `repo exec` (repo-container.ts, new in P4). Dotted, like every other
+// group — the fall-through would have produced `cli.container_exec`.
+const containerEventTypes = ['cli.container.exec', 'cli.container.logs'] as const;
 
 const explicitEventTypes = ['cli.sync.upload', 'cli.sync.download', 'cli.term.session'] as const;
 
@@ -108,6 +129,7 @@ export const MACHINE_OP_EVENT_TYPES = [
   ...repoEventTypes,
   ...backupEventTypes,
   ...datastoreEventTypes,
+  ...containerEventTypes,
 ] as const;
 
 export const ALL_EVENT_TYPES = [
@@ -219,6 +241,9 @@ function mapToEventTypeString(functionName: string): string {
   }
   if (functionName.startsWith('machine_')) {
     return `cli.machine.${functionName.slice('machine_'.length)}`;
+  }
+  if (functionName.startsWith('container_')) {
+    return `cli.container.${functionName.slice('container_'.length)}`;
   }
   if (functionName === 'sync_upload') return 'cli.sync.upload';
   if (functionName === 'sync_download') return 'cli.sync.download';

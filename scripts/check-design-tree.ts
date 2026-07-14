@@ -135,7 +135,10 @@ function docLeaves(): Set<string> {
         .split(/\s+/)
         .filter(Boolean);
 
-    const header = line.match(/^rdc\s+(\S+)\s*(.*)$/);
+    // The noun may carry a trailing colon (`rdc ops:  up down …`). It is a table
+    // separator, not part of the name: without it the row parses as the invocation
+    // `rdc ops up` and the positional-syntax detector reds on the design doc.
+    const header = line.match(/^rdc\s+([^\s:]+):?\s*(.*)$/);
     if (header) {
       flush();
       domain = header[1];

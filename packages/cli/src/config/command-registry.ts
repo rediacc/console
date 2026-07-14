@@ -33,9 +33,10 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
     name: 'machine',
     domain: 'INFRASTRUCTURE',
     subcommands: {
-      containers: { experimental: true },
-      services: { experimental: true },
-      repos: { experimental: true },
+      // containers/services/repos were folded into `machine status --containers`
+      // / `--services` / `--repositories` by the P4 reshape; they are not leaves
+      // any more, and a registry entry for a command that does not exist is a
+      // name waiting to be silently re-bound.
       health: { experimental: true },
     },
   },

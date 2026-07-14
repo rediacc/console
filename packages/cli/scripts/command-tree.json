@@ -253,7 +253,7 @@
             },
             {
               "flags": "--desc",
-              "descriptionKey": "options.sortDescending",
+              "descriptionKey": "options.sortDesc",
               "mandatory": false,
               "defaultValue": null
             }
@@ -3479,19 +3479,20 @@
           "descriptionKey": "commands.storage.browse.description",
           "options": [
             {
-              "flags": "--name <name>",
-              "descriptionKey": "options.name",
-              "mandatory": true,
-              "defaultValue": null
-            },
-            {
               "flags": "--path <subpath>",
               "descriptionKey": "commands.storage.browse.pathOption",
               "mandatory": false,
               "defaultValue": ""
             }
           ],
-          "arguments": [],
+          "arguments": [
+            {
+              "name": "storage",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
           "subcommands": []
         },
         {

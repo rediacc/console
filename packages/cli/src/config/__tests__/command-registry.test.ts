@@ -76,8 +76,13 @@ describe('config/command-registry', () => {
 
     it('machine experimental subcommands are declared', () => {
       const def = getCommandDef('machine');
-      expect(def?.subcommands?.containers.experimental).toBe(true);
       expect(def?.subcommands?.health.experimental).toBe(true);
+      // containers/services/repos were folded into `machine status --containers` etc.
+      // by the P4 reshape. A registry entry for a command that no longer exists is a
+      // name waiting to be silently re-bound, so it must stay gone.
+      expect(def?.subcommands?.containers).toBeUndefined();
+      expect(def?.subcommands?.services).toBeUndefined();
+      expect(def?.subcommands?.repos).toBeUndefined();
     });
   });
 

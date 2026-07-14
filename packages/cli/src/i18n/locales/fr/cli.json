@@ -893,10 +893,8 @@
     },
     "repo": {
       "batchConfirm": "{{action}} les {{count}} dépôts sur \"{{machine}}\" ? [y/N]",
-      "batchFailed": "{{action}} échoué pour \"{{repo}}\" : {{error}}",
       "batchIterating": "{{action}} {{current}}/{{total}} : \"{{repo}}\"...",
       "batchResult": "{{action}} terminé : {{succeeded}}/{{total}} réussis",
-      "batchStarting": "{{action}} : «{{repo}}»...",
       "branch": {
         "branchOption": "Nom de la nouvelle branche",
         "completed": "Branch « {{branch}} » -> {{commit}}",

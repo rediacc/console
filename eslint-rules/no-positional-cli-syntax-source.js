@@ -39,7 +39,13 @@ const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const buildCommandRegex = (commandPath) => {
   const segments = commandPath.trim().split(/\s+/).map(escapeRegex).join('\\s+');
   return new RegExp(
-    `(?:^|[\\s\`($:'"])(?:rdc\\s+)${segments}\\s+(?=[<{\\["'a-zA-Z0-9])`
+    // A prose word that ends the clause is not an argument. German splits separable
+    // verbs ("fuehren Sie rdc config reconcile aus."), so the particle lands after the
+    // command and used to read as a positional. Kept identical to the shared detector in
+    // scripts/lib/positional-cli-detector.ts — an ESLint rule cannot import a .ts module,
+    // which is why this regex exists twice; if you change one, change the other.
+    `(?:^|[\\s\`($:'"])(?:rdc\\s+)${segments}\\s+(?![\\p{L}]+[.,;:!?])(?=[<{\\["'a-zA-Z0-9])`,
+    'u'
   );
 };
 

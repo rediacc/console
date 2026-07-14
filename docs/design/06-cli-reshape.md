@@ -37,15 +37,15 @@ exists in the CLI, and every leaf in the CLI appears below. **164 contract comma
 out of the contract.
 
 ```
-rdc config      init list show delete set clear recover prune edit reconcile rotate-cek
+rdc config:     init list show delete set clear recover prune edit reconcile rotate-cek
                 field {get set unset rotate list}    audit {log tail verify}
                 remote {enable disable status refresh}    ssh {set show remove}
-rdc machine     add remove list status setup scan-keys health prune
+rdc machine:    add remove list status setup scan-keys health prune
                 provision deprovision
                 provider {add remove list}
                 infra {set show push  cert {pull push status clear}}
-rdc datastore   create list status attach detach fork snapshot {create list} resize delete
-rdc repo        create up down status list delete fork push pull migrate promote
+rdc datastore:  create list status attach detach fork snapshot {create list} resize delete
+rdc repo:       create up down status list delete fork push pull migrate promote
                 secret {get list set unset}    sync {upload download status}
                 cat diff logs exec tunnel
                 replicate {status remove refresh}          (the parent also runs: `replicate <ref>`)
@@ -54,15 +54,15 @@ rdc repo        create up down status list delete fork push pull migrate promote
                 admin {validate fsck ownership autostart {enable disable list}
                        template {list apply}  archive {list restore purge}}
                 canary {create status weight remove}
-rdc cluster     create scale join evict destroy status kubeconfig snapshot {create list}
+rdc cluster:    create scale join evict destroy status kubeconfig snapshot {create list}
                 fork migrate rehearse
-rdc backup      strategy {set remove list show}  schedule  run  status  cancel  list  restore
-rdc storage     add remove list import browse prune
-rdc term        connect
-rdc vscode      connect list cleanup check serve {status stop}
-rdc ops         up down status ssh setup check
-rdc subscription login logout status refresh
-rdc job         list status logs cancel gc          (see §9)
+rdc backup:     strategy {set remove list show}  schedule  run  status  cancel  list  restore
+rdc storage:    add remove list import browse prune
+rdc term:       connect
+rdc vscode:     connect list cleanup check serve {status stop}
+rdc ops:        up down status ssh setup check
+rdc subscription: login logout status refresh
+rdc job:        list status logs cancel gc          (see §9)
 rdc doctor | credits | update | serve | mcp serve | run (hidden)
 ```
 

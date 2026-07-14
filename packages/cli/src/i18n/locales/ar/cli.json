@@ -893,10 +893,8 @@
     },
     "repo": {
       "batchConfirm": "{{action}} جميع المستودعات {{count}} على \"{{machine}}\"؟ [y/N]",
-      "batchFailed": "فشل {{action}} للمستودع \"{{repo}}\": {{error}}",
       "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
       "batchResult": "اكتمل {{action}}: {{succeeded}}/{{total}} نجح",
-      "batchStarting": "{{action}}: «{{repo}}»...",
       "branch": {
         "branchOption": "اسم الفرع الجديد",
         "completed": "الـ branch \"{{branch}}\" -> {{commit}}",

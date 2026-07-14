@@ -3880,6 +3880,10 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "positionals": [],
       "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
@@ -4277,7 +4281,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
-          "descriptionKey": "options.sortDescending",
+          "descriptionKey": "options.sortDesc",
           "label": "Sort in descending order"
         }
       ],
@@ -9744,16 +9748,6 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Browse files in a storage system",
       "options": [
         {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
           "flags": "--path <subpath>",
           "long": "path",
           "valueTaking": true,
@@ -9764,7 +9758,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Subdirectory path to list"
         }
       ],
-      "positionals": [],
+      "positionals": [
+        {
+          "name": "storage",
+          "kind": "storage",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.storageRef",
+          "label": "Storage ref: the name of a registered storage endpoint (for example s3-main)"
+        }
+      ],
       "hasSubcommands": false,
       "mcpExcludeReason": "Interactive file browser — requires TTY",
       "interactive": false,

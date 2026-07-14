@@ -73,12 +73,7 @@ export function registerRepoContainerCommands(repo: Command): void {
           const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref, {
             readOnly: true,
           });
-          const container = resolveContainer(
-            repoKey,
-            machineName,
-            kubeCluster,
-            options.container
-          );
+          const container = resolveContainer(repoKey, machineName, kubeCluster, options.container);
           const lines = Number(options.lines);
           if (!Number.isInteger(lines) || lines < 1) {
             throw new ValidationError(
@@ -100,7 +95,7 @@ export function registerRepoContainerCommands(repo: Command): void {
             ...(kubeCluster !== undefined && { kubeCluster }),
           });
           if (!result.success) {
-            throw new Error(result.error ?? 'container_logs failed');
+            throw new Error(result.error ?? t('errors.container.logsFailed'));
           }
         } catch (error) {
           handleError(error);
@@ -132,12 +127,7 @@ export function registerRepoContainerCommands(repo: Command): void {
         try {
           const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
           await assertCommandPolicy(CMD.REPO_EXEC, repoKey);
-          const container = resolveContainer(
-            repoKey,
-            machineName,
-            kubeCluster,
-            options.container
-          );
+          const container = resolveContainer(repoKey, machineName, kubeCluster, options.container);
 
           const result = await getExecutor().execute({
             functionName: 'container_exec',
@@ -163,7 +153,7 @@ export function registerRepoContainerCommands(repo: Command): void {
               process.exitCode = result.exitCode;
               return;
             }
-            throw new Error(result.error ?? 'container_exec failed');
+            throw new Error(result.error ?? t('errors.container.execFailed'));
           }
         } catch (error) {
           handleError(error);

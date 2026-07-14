@@ -217,7 +217,8 @@ To reproduce license-enforcement issues locally, set:
 ```bash
 ACCOUNT_ED25519_PUBLIC_KEY="$(curl -s https://www.rediacc.com/api/public/account-key)" \
 RDC_RENET_LICENSE=1 \
-./rdc.sh --config <prod-config> repo push <repo> --to <fresh-machine> --up
+./rdc.sh --config <prod-config> repo push <repo> --to-machine <fresh-machine>
+./rdc.sh --config <prod-config> backup restore <repo> --as <repo> -m <fresh-machine> --up
 ```
 
 `RDC_RENET_LICENSE=1` drops the `--nolicense` build flag. `ACCOUNT_ED25519_PUBLIC_KEY` must match the account server that issued the licenses on your test machines — for production licenses that's the prod ed25519 public key. The build flow wires this into `private/renet/pkg/license/keys.ProductionPublicKey` via ldflags. Without it, prod-signed licenses fail validation as `invalid_signature`.

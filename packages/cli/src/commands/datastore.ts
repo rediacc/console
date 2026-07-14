@@ -12,6 +12,7 @@
  * infrastructure act, not a repo act. Reads are class A.
  */
 
+import { DEFAULTS } from '@rediacc/shared/config';
 import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
 import {
@@ -117,7 +118,10 @@ function registerCreate(datastore: Command): void {
               name,
               backend: rbd ? 'ceph' : 'local',
               size: options.size,
-              ...(rbd && { pool: options.pool ?? 'rbd', image: options.image ?? name }),
+              ...(rbd && {
+                pool: options.pool ?? DEFAULTS.DATASTORE.RBD_POOL,
+                image: options.image ?? name,
+              }),
               ...(options.cluster && { cluster: options.cluster }),
             },
             { debug: options.debug }
@@ -125,7 +129,11 @@ function registerCreate(datastore: Command): void {
 
           await recordDatastore(name, {
             backend: rbd
-              ? { kind: 'rbd', pool: options.pool ?? 'rbd', image: options.image ?? name }
+              ? {
+                  kind: 'rbd',
+                  pool: options.pool ?? DEFAULTS.DATASTORE.RBD_POOL,
+                  image: options.image ?? name,
+                }
               : { kind: 'local', machine: options.machine, path: `/mnt/rediacc-ds/${name}` },
             ...(options.cluster && { cluster: options.cluster }),
             size: options.size,

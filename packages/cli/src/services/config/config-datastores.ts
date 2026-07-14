@@ -19,6 +19,7 @@
  */
 
 import type { RdcConfig } from '@rediacc/shared/config-schema';
+import { t } from '../../i18n/index.js';
 import { notFound } from '../../utils/cli-exit-error.js';
 import { ValidationError } from '../../utils/errors.js';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
@@ -49,9 +50,7 @@ export function parseDatastoreRef(ref: string): { name: string; tag?: string } {
  */
 export function assertCreatableName(name: string): void {
   if (name === 'default') {
-    throw new ValidationError(
-      'the default datastore is implicit; these verbs manage additional named datastores.'
-    );
+    throw new ValidationError(t('errors.datastore.defaultIsImplicit'));
   }
   if (name.startsWith(CONTROL_DS_PREFIX)) {
     throw new ValidationError(

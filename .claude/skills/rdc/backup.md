@@ -13,7 +13,7 @@ Two nouns are involved:
 ## Backup commands
 
 ### Push to another machine
-`rdc repo push <ref> --to-machine <target>` copies the encrypted repo image directly to the target machine with the **same GUID**. This is a backup/migration, not a fork. Add `--up` to mount and deploy on the target in the same command.
+`rdc repo push <ref> --to-machine <target>` copies the encrypted repo image directly to the target machine with the **same GUID**. This is a backup/migration, not a fork. The copy lands as a backup ARTIFACT, so it is booted on the target with `backup restore ... --up`; `repo push` itself has no `--up`.
 
 **Important**: mounting is automatic. The retired `repo up --mount` flag is gone, and forks resolve the parent's credential on their own (no `--grand` flag on `repo up` any more).
 
@@ -51,8 +51,9 @@ CRIU (Checkpoint/Restore In Userspace) captures running process memory state. Th
 
 ```bash
 # Checkpoint labeled containers + push (captures process memory + disk state).
-# --up restores on the target, auto-detecting the checkpoint data.
-rdc repo push <repo> --to-machine <target> --checkpoint --up
+# The checkpoint rides along with the artifact; `backup restore --up` boots from it.
+rdc repo push <repo> --to-machine <target> --checkpoint
+rdc backup restore <repo> --as <repo> -m <target> --up
 
 # Or move the repo outright: two-phase rsync, brief cutover, placement follows.
 rdc repo migrate <repo> --to <target> --checkpoint
@@ -77,7 +78,8 @@ rdc repo up <parent>:<tag>
 ```bash
 # Fork with checkpoint, then push the fork to the target and deploy it there
 rdc repo fork <parent> --tag <tag> --checkpoint
-rdc repo push <parent>:<tag> --to-machine <target> --up
+rdc repo push <parent>:<tag> --to-machine <target>
+rdc backup restore <parent>:<tag> --as <parent> -m <target> --up
 ```
 
 ### Save/restore cycle (stop and resume later)
@@ -156,8 +158,8 @@ File transfer between local machine and remote repositories. See [sync.md](sync.
 
 | Goal | Command | Result |
 |------|---------|--------|
-| **Independent copy** on another machine | `repo fork <ref> --tag <tag>` then `repo push <ref>:<tag> --to-machine <m> --up` | New GUID, new networkId, new IPs |
-| **Migrate/backup** same repo to another machine | `repo push <ref> --to-machine <m> --up` | Same GUID, same identity |
+| **Independent copy** on another machine | `repo fork <ref> --tag <tag>`, `repo push <ref>:<tag> --to-machine <m>`, then `backup restore ... --up` | New GUID, new networkId, new IPs |
+| **Migrate/backup** same repo to another machine | `repo push <ref> --to-machine <m>`, then `backup restore ... --up` | Same GUID, same identity |
 | **Move** a repo to another machine | `repo migrate <ref> --to <m>` | Same GUID, placement follows |
 | **Test copy** on same machine | `repo fork <ref> --tag <tag>` then `repo up <ref>:<tag>` | New GUID, shares encryption cred |
 
@@ -170,7 +172,8 @@ The fork uses the name:tag model — `<parent>:<tag>` (e.g., `my-app:staging`). 
 rdc repo fork <parent> --tag <tag>
 
 # 2. Push the fork to target and deploy it there
-rdc repo push <parent>:<tag> --to-machine <target-machine> --up
+rdc repo push <parent>:<tag> --to-machine <target-machine>
+rdc backup restore <parent>:<tag> --as <parent> -m <target-machine> --up
 ```
 
 **Note**: The CLI automatically resolves the parent repo's LUKS credential for forks. This is handled internally because forks inherit the parent's encryption key.
@@ -178,7 +181,8 @@ rdc repo push <parent>:<tag> --to-machine <target-machine> --up
 ### Simple migration (same identity)
 ```bash
 # Push and deploy on the target in one command
-rdc repo push <repo> --to-machine <target-machine> --up
+rdc repo push <repo> --to-machine <target-machine>
+rdc backup restore <repo> --as <repo> -m <target-machine> --up
 ```
 
 ## Delta transfer for repo push

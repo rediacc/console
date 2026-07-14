@@ -96,6 +96,11 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
 
+  // A read-only probe. It was the one leaf with no classification at all, which
+  // fails closed (no MCP exposure) but leaves the question open rather than answered.
+  'machine health': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
   'machine list': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },

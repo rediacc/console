@@ -893,10 +893,8 @@
     },
     "repo": {
       "batchConfirm": "\"{{machine}}\"上のすべての{{count}}リポジトリを{{action}}しますか？ [y/N]",
-      "batchFailed": "\"{{repo}}\"の{{action}}に失敗しました: {{error}}",
       "batchIterating": "{{action}} {{current}}/{{total}}：「{{repo}}」...",
       "batchResult": "{{action}}完了: {{succeeded}}/{{total}} 成功",
-      "batchStarting": "{{action}}：「{{repo}}」...",
       "branch": {
         "branchOption": "新しいブランチの名前",
         "completed": "branch \"{{branch}}\" -> {{commit}}",

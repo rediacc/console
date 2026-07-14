@@ -26,7 +26,6 @@ import { dispatchCeph, exportCephClientConfig, resolveCephMembers } from './clus
 const MOUNT_BASE = '/mnt/rediacc/mounts';
 export const NAMED_DS_BASE = '/mnt/rediacc-ds';
 const API_PORT = 6443;
-const DEFAULT_NODE_SIZE = '20G';
 /** Default size of the anchor control datastore (spec 03 gate-fixed: 10 GiB). */
 const CONTROL_DS_DEFAULT_SIZE = '10G';
 /**
@@ -276,10 +275,6 @@ export async function dispatch(
  */
 export async function allocateAgentNetworkId(): Promise<number> {
   return configService.allocateNetworkId();
-}
-
-export function poolSize(pools: ClusterPool[], poolName: string): string {
-  return pools.find((p) => p.name === poolName)?.size ?? DEFAULT_NODE_SIZE;
 }
 
 /**

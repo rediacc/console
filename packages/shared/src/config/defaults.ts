@@ -211,6 +211,11 @@ export const LOCALE_DEFAULTS = {
 /**
  * Status and state defaults
  */
+export const DATASTORE_DEFAULTS = {
+  /** RADOS pool a `--backend rbd` datastore lands in when `--pool` is not given. */
+  RBD_POOL: 'rbd',
+} as const;
+
 export const STATUS_DEFAULTS = {
   /** Unknown status fallback */
   UNKNOWN: 'Unknown',
@@ -469,6 +474,7 @@ export const DEFAULTS = {
   PLATFORM: PLATFORM_DEFAULTS,
   LOCALE: LOCALE_DEFAULTS,
   STATUS: STATUS_DEFAULTS,
+  DATASTORE: DATASTORE_DEFAULTS,
   HOST: HOST_DEFAULTS,
   UI: UI_DEFAULTS,
   PRIORITY: PRIORITY_DEFAULTS,

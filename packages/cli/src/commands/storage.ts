@@ -258,11 +258,10 @@ export function registerStorageCommands(program: Command): void {
   storage
     .command('browse')
     .description(t('commands.storage.browse.description'))
-    .requiredOption('--name <name>', t('options.name'))
+    .argument('<storage>', t('options.storageRef'))
     .option('--path <subpath>', t('commands.storage.browse.pathOption'), '')
-    .action(async (options: { name: string; path: string }) => {
+    .action(async (name: string, options: { path: string }) => {
       try {
-        const name = options.name;
         const storageConfig = await configService.getStorage(name);
         const guidMap = await configService.getRepositoryGuidMap();
 

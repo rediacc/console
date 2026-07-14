@@ -172,6 +172,7 @@ else
             backup_*) type="cli.backup.${fn#backup_}" ;;
             datastore_*) type="cli.datastore.${fn#datastore_}" ;;
             machine_*) type="cli.machine.${fn#machine_}" ;;
+            container_*) type="cli.container.${fn#container_}" ;;
             sync_upload) type="cli.sync.upload" ;;
             sync_download) type="cli.sync.download" ;;
             term_connect) type="cli.term.session" ;;
