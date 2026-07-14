@@ -63,6 +63,18 @@ const TARGET_GLOBS = [
 ];
 
 /**
+ * Files a scan must NOT read, because their content is EVIDENCE rather than instruction.
+ *
+ * BLOCKER: a verdict document quotes the broken syntax it is reporting. The P4 gate
+ * review's design-tree finding IS the line `rdc ops   up down …` plus an explanation that
+ * it parses as `rdc ops up` — so scanning it flags the review for containing the evidence
+ * that makes the review true. Its findings are also not ours to edit: it is an independent
+ * verdict, and rewriting it to satisfy a validator would destroy the only thing it is for.
+ * Any FIX it prompted lands as a later commit, never as an edit to the report.
+ */
+const EXCLUDED_FILES = new Set<string>(['docs/design/spec/11-p4-gate-review.md']);
+
+/**
  * Files that legitimately contain AGENTS.md-style copy-paste templates
  * inside ```markdown fences. Shell-fence-only scanning misses these. The
  * scanner enters the markdown fence for files matching these path hints.
@@ -537,8 +549,8 @@ async function main(): Promise<void> {
     files.push(...matches);
   }
 
-  // Deduplicate
-  const uniqueFiles = [...new Set(files)].sort();
+  // Deduplicate, minus the evidence documents (see EXCLUDED_FILES)
+  const uniqueFiles = [...new Set(files)].filter((f) => !EXCLUDED_FILES.has(f)).sort();
 
   console.log(colors.dim(`Scanning ${uniqueFiles.length} files...`));
 
