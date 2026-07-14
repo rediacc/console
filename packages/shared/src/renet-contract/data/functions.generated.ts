@@ -521,8 +521,10 @@ export interface RepositoryCommitMetaParams {
 
 /** Create a new repository */
 export interface RepositoryCreateParams {
-  /** Repository size (e.g., 100G, 1T) */
-  size: string;
+  /** Repository size (e.g., 100G, 1T) — docker repos only */
+  size?: string;
+  /** Declared runtime (kube|docker) */
+  runtime?: string;
   /** Owner user ID */
   ownerUid?: string;
   /** Base64 encoded template JSON */
@@ -2449,10 +2451,14 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
     params: {
       size: {
         type: 'string',
-        required: true,
-        help: 'Repository size (e.g., 100G, 1T)',
+        help: 'Repository size (e.g., 100G, 1T) — docker repos only',
         format: 'size',
         units: ['G', 'T'],
+      },
+      runtime: {
+        type: 'string',
+        help: 'Declared runtime (kube|docker)',
+        options: ['kube', 'docker'],
       },
       ownerUid: {
         type: 'string',

@@ -387,7 +387,8 @@ export const RepositoryCommitMetaParamsSchema = z.object({
 
 /** Create a new repository */
 export const RepositoryCreateParamsSchema = z.object({
-  size: z.string().min(1).describe('Repository size (e.g., 100G, 1T)'),
+  size: z.string().optional().describe('Repository size (e.g., 100G, 1T) — docker repos only'),
+  runtime: z.string().optional().describe('Declared runtime (kube|docker)'),
   ownerUid: z.string().optional().describe('Owner user ID'),
   tmpl: z.string().optional().describe('Base64 encoded template JSON'),
 });
