@@ -12,6 +12,8 @@ import { BackupMethods } from './methods/BackupMethods';
 import { CephMethods } from './methods/CephMethods';
 import { ContainerMethods } from './methods/ContainerMethods';
 import { DaemonMethods } from './methods/DaemonMethods';
+import type { CsiNodeUpOptions } from './methods/CsiMethods';
+import { CsiMethods } from './methods/CsiMethods';
 import type {
   DatastoreAttachOptions,
   DatastoreCreateOptions,
@@ -70,6 +72,7 @@ export class BridgeTestRunner {
   // Method groups
   private readonly systemCheckMethods: SystemCheckMethods;
   private readonly setupMethods: SetupMethods;
+  private readonly csiMethods: CsiMethods;
   private readonly datastoreMethods: DatastoreMethods;
   private readonly registryMethods: RegistryMethods;
   private readonly kubeMethods: KubeMethods;
@@ -106,6 +109,7 @@ export class BridgeTestRunner {
     // Initialize method groups
     this.systemCheckMethods = new SystemCheckMethods(this.testFunction.bind(this));
     this.setupMethods = new SetupMethods(this.testFunction.bind(this));
+    this.csiMethods = new CsiMethods(this.executeViaBridge.bind(this));
     this.datastoreMethods = new DatastoreMethods(this.testFunction.bind(this));
     this.registryMethods = new RegistryMethods(this.testFunction.bind(this));
     this.kubeMethods = new KubeMethods(this.testFunction.bind(this));
@@ -942,6 +946,13 @@ export class BridgeTestRunner {
     this.datastoreMethods.datastoreSnapshotCreate(opts);
   datastoreSnapshotDelete = (opts: DatastoreSnapshotOptions) =>
     this.datastoreMethods.datastoreSnapshotDelete(opts);
+
+  // CSI Methods — the CLI path (`renet kube csi-*`). The kube_csi_template BRIDGE
+  // verb never existed in the registry; the subject (stand CSI up so a PVC binds)
+  // survives on the CLI.
+  kubeCsiInstall = (kubeconfig?: string) => this.csiMethods.kubeCsiInstall(kubeconfig);
+  kubeCsiNodeUp = (opts: CsiNodeUpOptions) => this.csiMethods.kubeCsiNodeUp(opts);
+  kubeCsiNodeDown = (nodeName: string) => this.csiMethods.kubeCsiNodeDown(nodeName);
 
   // Registry Methods (kube_registry_up / _wire — zot pull-through cache)
   kubeRegistryUp = (opts?: RegistryUpOptions) => this.registryMethods.kubeRegistryUp(opts);
