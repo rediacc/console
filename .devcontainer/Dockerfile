@@ -226,7 +226,20 @@ USER root
 # Playwright system dependencies (browser binaries installed by postCreateCommand
 # as vscode user, ensuring version matches the project's @playwright/test)
 # =============================================================================
-RUN npx playwright install-deps chromium
+# `apt-get update` MUST be in the same layer as the install.
+#
+# install-deps shells out to apt, and apt uses whatever package index the last cached
+# layer left behind. Ubuntu's pool only keeps the CURRENT version of each .deb, so once
+# a point release lands (libasound2t64 1.2.11-1ubuntu0.3 -> .4), a stale index points at
+# a file that no longer exists and apt dies on a 404 — which is exactly how the arm64
+# devcontainer broke. It is not a flake: it will happen again on the next point release,
+# and it fails ONLY on the arch whose layer cache happens to be older.
+#
+# Refreshing the index in the same RUN keeps the two in step, and the list is cleaned up
+# so this does not bloat the image.
+RUN apt-get update && \
+    npx playwright install-deps chromium && \
+    rm -rf /var/lib/apt/lists/*
 
 # =============================================================================
 # Global npm tools
