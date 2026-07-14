@@ -177,6 +177,12 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
+      # check:i18n ends with check:cli-docs, which imports the LIVE Commander tree
+      # (packages/cli/src/cli.js) rather than a hand-maintained list. That import pulls in
+      # kvm-provisioner.ts -> @rediacc/provisioning, whose package main is ./dist/index.js.
+      # Without this build the gate does not fail — it CRASHES with ERR_MODULE_NOT_FOUND,
+      # which is why it went unnoticed locally, where dist/ is already warm.
+      - run: npm run build:packages
       - run: npm run check:i18n
       - run: npm run check:ci-search-index
 
@@ -680,13 +686,13 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
-      - name: Build shared package
-        run: npm run build --workspace=@rediacc/shared
       # The cluster services import @rediacc/provisioning at runtime (OpsManager),
       # which resolves through its dist/. Without this the suites that pull in
       # cluster-provision fail with "Failed to resolve entry for package".
-      - name: Build provisioning package
-        run: npm run build --workspace=@rediacc/provisioning
+      # `build:packages` is the single list of what the CLI imports — naming the
+      # workspaces here instead means a third package silently rots this job.
+      - name: Build the packages the CLI imports
+        run: npm run build:packages
       - name: Run CLI unit tests
         run: npm run test:unit --workspace=@rediacc/cli
 
