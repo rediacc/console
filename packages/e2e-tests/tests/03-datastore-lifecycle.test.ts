@@ -35,6 +35,12 @@ test.describe('Datastore Lifecycle @bridge', () => {
   test.beforeAll(async () => {
     runner = BridgeTestRunner.forWorker();
     await runner.resetWorkerState();
+    // Re-lay the base pool at a SMALL size. `datastore_expand` grows a pool and
+    // cannot shrink one, and the harness's global setup lays down a pool far larger
+    // than the 2G this suite expands to — so without this, "expand to 2G" asks the
+    // backend to shrink and it refuses. The pre-P1 suite did exactly this via
+    // datastore_init; the verb moved to the CLI, the PRECONDITION did not go away.
+    await runner.datastoreInitPool('1G', DEFAULT_DATASTORE_PATH, true);
   });
 
   test('datastore_expand should expand size', async () => {
@@ -104,6 +110,9 @@ test.describe
     test.beforeAll(async () => {
       runner = BridgeTestRunner.forWorker();
       await runner.resetWorkerState();
+      // Same precondition as above: step 5 expands the base pool to 2G, which is only
+      // a growth if the pool starts smaller.
+      await runner.datastoreInitPool('1G', DEFAULT_DATASTORE_PATH, true);
     });
 
     test.afterAll(async () => {
