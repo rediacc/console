@@ -761,21 +761,33 @@ the tutorials and re-narrating them in 13 languages**, which is a media pipeline
 **But it needs its own entry with this count, because the P7 backlog LOOKS like it covers the website and does
 not.** A deferral that hides inside another deferral is not a deferral; it is an omission.
 
-## N5 — a gate that CANNOT FAIL, sitting inside `npm run ci` (the purest specimen)
+## N5 — RETRACTED. The gate two reviewers called vacuous is the STRICTEST setting there is
 
-`validate-landing-cli-usage` loads `packages/www/scripts/data/landing-cli-capability-map.json`.
+**What was claimed** (by the gate review, and independently by me): `validate-landing-cli-usage`
+loads `packages/www/scripts/data/landing-cli-capability-map.json`, that file is 20 bytes —
+`{"entries": []}` — so it validates zero commands, prints "✓ valid", exits 0, and is
+"structurally incapable of failing." The verdict was **populate it or delete it**.
 
-**That file is 20 bytes: `{"entries": []}`.**
+**Both reviewers were wrong, and the ruling would have destroyed a working gate.**
 
-It validates **zero** commands, prints **"✓ valid"**, exits **0** — and it runs inside the `check:i18n` chain,
-which is a CI gate. Meanwhile the landing page carries **3 real `rdc` commands**.
+The map does not list the commands the gate CHECKS. It lists the commands the gate **EXCUSES**
+from parsing. Empty therefore excuses **nothing**, and all **31** `rdc` commands on the landing
+surfaces must parse against the live CLI. **Empty is the strictest the file can be. Populating it
+would have WEAKENED the gate; deleting it would have removed the very check that catches the
+homepage hero teaching a deleted command.**
 
-**It is the gate that should have caught the homepage hero teaching `rdc cluster fork --name prod`** — a
-command this wave deleted — and it did not, because **it is structurally incapable of failing.**
+**How it was settled: by running it, not by reading it.** A dead command (`rdc cluster fork --name
+prod`) was planted in the homepage hero. The gate went **red**. That single experiment refuted two
+careful readings of the source.
 
-Empty since #513, so **not P4's fault** — but it is the thirteenth broken gate and the cleanest example of the
-entire phase's thesis. **Fix it (populate the map from the landing page's real commands) or DELETE it. A
-deleted gate is honest. A vacuous one lies, and its lie is "you are covered."**
+Its real defect is much smaller and is now fixed: **its success message understated its own work.**
+It said "✓ valid" without saying it had checked 31 commands, and it would have claimed success on
+an empty scan. It now prints what it checked, labels the map as EXCUSED commands, and refuses to
+report success if it scanned nothing.
+
+**The lesson, and it is the phase's real thesis:** a gate that cannot describe itself is one bad
+reading away from deletion — and *"I read the source"* is not evidence about a gate. **Ask the
+thing that decides. Run it, and make it fail.**
 
 ## The renet i18n baseline: THREE numbers, THREE definitions, all true
 
@@ -823,3 +835,72 @@ the tutorials are re-recorded; an entry that outlives the re-record is a bug, no
 
 **Record this as evidence, not as an inconvenience:** the re-record is real work with a real CI
 red behind it, not a tidy-up someone can keep postponing.
+
+### Storyboard ↔ cast ↔ portal: three statements, and only two can be true at once
+
+The same debt surfaced a THIRD time, from the opposite direction, and the third time is the one
+that teaches the shape of it.
+
+The account portal's first-run flow (`private/account/web/src/data/onboarding-content.json`) is
+GENERATED from four tutorial storyboard scenes' `card.commandFull`. Those scenes still taught the
+pre-P4 CLI — `rdc config machine add --name …`, `rdc vscode connect --machine … --repository …`.
+**That is the first command a new user ever types, and it no longer exists.** A regeneration had
+already silently reverted a hand-edit of the generated file once, and no gate said a word:
+`check-account-onboarding` asserted the command was a non-empty STRING, so the correct file and a
+file teaching a deleted command both passed. It validated the SHAPE and not the THING.
+
+The durable fix is the storyboard, because the storyboard is the source. But the storyboard is
+also **supposed to describe what the video shows** — and the video still shows the old command.
+So:
+
+- Fix the storyboard → the PORTAL is right, and `Quality / Tutorial Parity` goes red, because the
+  storyboard now disagrees with its recording.
+- Leave the storyboard → the RECORDING is consistent, and the portal ships a dead command to
+  every new user.
+- Re-record → everything agrees. That is the work being deferred.
+
+**A doc, a script, or a storyboard fixed ahead of its recording is not a repair — it is one more
+statement of the same stale-recording debt.** The coupling rule, arriving for the third time
+tonight and the first time pointing at a source file rather than a derived one.
+
+Resolved by taking the fix that a regeneration cannot erase (the storyboard), and deferring the
+parity break in a **per-scene, exact-pair** backlog (`packages/www/scripts/tutorial-parity-baseline.json`):
+each entry pins BOTH the storyboard command and the recorded marker, so changing either side, or
+drifting any other scene, still goes red. Proven red-first in all four directions. **It
+self-destructs mechanically** — an entry that matches no drift is a FAILURE, not a shrug.
+
+These entries clear at the SAME event as `tutorial-cast-baseline.json`: the re-record. **They
+clear together or they are a lie.**
+
+The gate was hardened to compare the command TEXT against its storyboard source, so this class
+cannot come back silently.
+
+## A gate that CRASHES has not failed — it has gone blind, and it takes a real red down with it
+
+`Quality / i18n` was red on a stack trace, not on a finding:
+`ERR_MODULE_NOT_FOUND: @rediacc/provisioning/dist/index.js`.
+
+`check-cli-docs` imports the **live Commander tree** (`packages/cli/src/cli.js`) instead of a
+hand-maintained list — which is exactly right, and is why it can see a dead flag at all. But that
+import pulls in `kvm-provisioner.ts → @rediacc/provisioning`, whose package main is `./dist/index.js`,
+and the job never built it. **Locally it is invisible: `dist/` is always warm.**
+
+The cost was not the crash. **The crash was standing in front of a real defect**: once the package
+is built, the gate runs and immediately reports that `commands.repo.delete.cloudBackupHint` — the
+hint the CLI prints after deleting a repo, in all 13 languages — tells the user to run
+`rdc storage prune --name <storage>`, a flag P4 deleted. **The gate was right, had been right all
+along, and could not say so.** A crashing gate is worse than a failing one: a failure names a
+defect, a crash names only itself.
+
+Two fixes, both mechanical:
+- The job now runs `npm run build:packages` — the repo's single list of what the CLI imports (13
+  other sites already use it). The two jobs that instead named the workspaces by hand have been
+  converted: **naming them twice is how a third package silently rots a job.**
+- The dead flag is fixed at its source (`packages/cli/src/i18n/locales/*/cli.json`, all 13), with
+  the generated CLI contract regenerated from it. **A command name is never translated** — so the
+  same dead flag was sitting in all twelve non-English catalogues, in parity, undetected.
+
+**Verified the only way that means anything: cold.** `dist/` AND `*.tsbuildinfo` removed (deleting
+the output alone is not a cold build — `composite: true` makes `tsc` exit 0 and emit nothing), the
+crash reproduced byte-identically, then the fix applied and the gate watched to go from CRASH to a
+real finding to green.
