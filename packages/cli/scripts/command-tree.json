@@ -3500,12 +3500,6 @@
           "descriptionKey": "commands.storage.prune.description",
           "options": [
             {
-              "flags": "--name <name>",
-              "descriptionKey": "options.name",
-              "mandatory": true,
-              "defaultValue": null
-            },
-            {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.storage.prune.machineOption",
               "mandatory": true,
@@ -3548,7 +3542,14 @@
               "defaultValue": null
             }
           ],
-          "arguments": [],
+          "arguments": [
+            {
+              "name": "storage",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
           "subcommands": []
         }
       ]
