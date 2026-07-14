@@ -43,5 +43,5 @@ rdc machine status server-1
 rdc machine status server-1 --containers
 
 # CI/CD health gate
-rdc machine health --name server-1 --output json
+rdc machine health server-1 --output json
 ```

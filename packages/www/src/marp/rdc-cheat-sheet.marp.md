@@ -88,7 +88,7 @@ rdc machine status <machine> --services
 rdc machine status <machine> --repositories
 
 # Health check — exits 0 (healthy) / 1 (warning) / 2 (error)
-rdc machine health --name <machine>
+rdc machine health <machine>
 
 ```
 

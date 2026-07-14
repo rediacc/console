@@ -93,7 +93,7 @@ Each takes the machine positionally.
 `rdc machine provider remove <name>`
 
 ### Provision a machine
-`rdc machine provision --name <name> --provider <provider>` creates a VM via OpenTofu, waits for SSH, registers the machine, installs renet, and runs setup. Auto-detects `baseDomain` from sibling machines in the config; use `--base-domain` to override or `--no-infra` to skip infrastructure setup entirely. Requires `tofu` binary on PATH.
+`rdc machine provision <name> --provider <provider>` creates a VM via OpenTofu, waits for SSH, registers the machine, installs renet, and runs setup. Auto-detects `baseDomain` from sibling machines in the config; use `--base-domain` to override or `--no-infra` to skip infrastructure setup entirely. Requires `tofu` binary on PATH.
 
 ### Deprovision a machine
 `rdc machine deprovision --name <name>` destroys a cloud-provisioned VM via OpenTofu and removes it from the config. Only works for machines created with `machine provision`.
@@ -102,7 +102,7 @@ Each takes the machine positionally.
 ```bash
 rdc config ssh set --key ~/.ssh/id_ed25519
 rdc machine provider add my-linode --provider linode/linode --token $TOKEN --region us-east
-rdc machine provision --name prod-1 --provider my-linode
+rdc machine provision prod-1 --provider my-linode
 # baseDomain auto-detected from sibling machines (or pass --base-domain example.com)
 # Now ready for: rdc repo create <name> -m prod-1 --size 5G
 ```
