@@ -421,7 +421,10 @@ function surfaceRenetWarnings(exitCode: number, combined: string, options: Execu
   for (const line of combined.split('\n')) {
     if (!line.includes('level=warning')) continue;
     // logrus renders the payload as msg="..."; fall back to the raw line if it does not.
-    const msg = /msg="((?:[^"\\]|\\.)*)"/.exec(line)?.[1]?.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+    const msg = /msg="((?:[^"\\]|\\.)*)"/
+      .exec(line)?.[1]
+      ?.replaceAll('\\"', '"')
+      .replaceAll('\\\\', '\\');
     outputService.warn(msg ?? line.trim());
   }
 }
