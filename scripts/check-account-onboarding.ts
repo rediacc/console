@@ -82,6 +82,33 @@ function readStoryboard(slug: string): Storyboard {
   return readJson<Storyboard>(path.join(STORYBOARD_DIR, `${slug}.json`));
 }
 
+/**
+ * The command a step MUST carry, derived from the same source the generator reads: the
+ * storyboard scene's `card.commandFull`. A step with no tutorial (a plain shell step) takes
+ * its command straight from the manifest.
+ *
+ * This is the oracle. The generated file is not — it is the artifact, and asking the artifact
+ * whether it is correct is how this file drifted in the first place.
+ */
+function expectedCommandFor(step: ManifestStep, issues: Issue[]): string | undefined {
+  if (step.tutorial === undefined || step.markerIndex === undefined) return step.command;
+  const storyboardPath = path.join(STORYBOARD_DIR, `${step.tutorial}.json`);
+  if (!existsSync(storyboardPath)) return undefined;
+  const storyboard = readStoryboard(step.tutorial);
+  const scene = storyboard.scenes.find(
+    (sc) => sc.type === 'cast-narrated' && sc.markerIndex === step.markerIndex
+  );
+  const cmd = scene?.card?.commandFull?.trim();
+  if (!cmd) {
+    issues.push({
+      step: step.id,
+      message: `storyboard scene has no card.commandFull to check the generated command against`,
+    });
+    return undefined;
+  }
+  return cmd;
+}
+
 function readTranscript(slug: string, lang: string): TranscriptDoc | null {
   const filePath = path.join(TRANSCRIPT_DIR, lang, `${slug}.json`);
   if (!existsSync(filePath)) return null;
@@ -271,6 +298,30 @@ function checkFreshness(manifest: Manifest, issues: Issue[]): void {
         step: mStep.id,
         message: `generated step is missing command; run "npm run build:account-onboarding"`,
       });
+    } else {
+      // ★ Compare the command TEXT, not just its non-emptiness.
+      //
+      // This gate used to check that `command` was a non-empty string and nothing more — so
+      // the CORRECT file and a file teaching a DELETED command both passed. That is how a
+      // regeneration silently reverted a real fix in the FIRST-RUN FLOW, the very first
+      // command a new user ever types, and no gate said a word. It validated the SHAPE and
+      // not the THING.
+      //
+      // The command is derived from the storyboard scene's `card.commandFull`, so a mismatch
+      // means the generated file was hand-edited (it is generated — do not) or the storyboard
+      // moved underneath it. Either way it is stale, and staleness in this file is a lie told
+      // to someone on their first minute with the product.
+      const expected = expectedCommandFor(mStep, issues);
+      if (expected !== undefined && gStep.command.trim() !== expected.trim()) {
+        issues.push({
+          step: mStep.id,
+          message:
+            `generated command does not match its source.\n` +
+            `      generated: ${gStep.command}\n` +
+            `      source:    ${expected}\n` +
+            `      run "npm run build:account-onboarding" (never hand-edit onboarding-content.json)`,
+        });
+      }
     }
     if ((gStep.optional ?? false) !== (mStep.optional ?? false)) {
       issues.push({

@@ -10,7 +10,7 @@
  * misses a required field. Runs in CI via the quality-tutorial-parity job.
  */
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -24,12 +24,24 @@ const storyboardDir = path.join(wwwRoot, 'src', 'data', 'tutorial-storyboard');
 const transcriptDir = path.join(wwwRoot, 'src', 'data', 'tutorial-transcripts');
 const castDir = path.join(wwwRoot, 'public', 'assets', 'tutorials');
 const docsDir = path.join(wwwRoot, 'src', 'content', 'docs', 'en');
+const baselinePath = path.join(scriptDir, 'tutorial-parity-baseline.json');
+
+// A storyboard command that disagrees with the recorded marker it narrates. Carries both
+// texts so the backlog below can defer ONE known pair without muting the class.
+interface Drift {
+  key: string;
+  commandFull: string;
+  recorded: string;
+}
 
 interface Issue {
   tutorial: string;
   file: string;
   message: string;
+  drift?: Drift;
 }
+
+type Baseline = Record<string, { commandFull: string; recorded: string }>;
 
 function isAuthored(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0 && !value.startsWith('TODO:');
@@ -148,8 +160,8 @@ function checkTutorial(slug: string, issues: Issue[]): void {
   const mdxPath = path.join(docsDir, `${slug}.mdx`);
   const mdPath = path.join(docsDir, `${slug}.md`);
 
-  const push = (file: string, message: string) =>
-    issues.push({ tutorial: slug, file: path.relative(wwwRoot, file), message });
+  const push = (file: string, message: string, drift?: Drift) =>
+    issues.push({ tutorial: slug, file: path.relative(wwwRoot, file), message, drift });
 
   // Storyboard is structural; load first.
   const storyboard = readStoryboard(sbPath);
@@ -216,7 +228,8 @@ function checkTutorial(slug: string, issues: Issue[]): void {
     if (recorded && commandPath(full) !== commandPath(recorded)) {
       push(
         sbPath,
-        `scene "${scene.id}" card.commandFull "${full}" command path differs from recorded marker "${recorded}"`
+        `scene "${scene.id}" card.commandFull "${full}" command path differs from recorded marker "${recorded}"`,
+        { key: `${slug}#${scene.id}`, commandFull: full.trim(), recorded: recorded.trim() }
       );
     }
 
@@ -369,6 +382,72 @@ function checkCrossTutorial(slugs: string[], issues: Issue[]): void {
   }
 }
 
+/**
+ * The STALE-RECORDING parity backlog.
+ *
+ * BLOCKER: the P4 reshape rewrote the CLI surface (positional refs, the config exodus), so the
+ * four onboarding scenes below now carry the command a user must ACTUALLY type
+ * (`rdc machine add <machine-name> …`) while their `.cast` recordings still show the pre-P4
+ * text (`rdc config machine add --name machine-11 …`). Storyboard, recording and the account
+ * portal's first-run flow are locked together and only two of the three can be true at once:
+ * the storyboard is *supposed* to describe what the video shows, so fixing the script ahead of
+ * the recording is not a repair — it is a third statement of the SAME stale-recording debt.
+ *
+ * The command text is the one that must be right: it is generated into the portal's first-run
+ * flow (`private/account/web/src/data/onboarding-content.json`) and is the first command a new
+ * user ever types. A command that no longer exists is a lie told in someone's first minute with
+ * the product. The recording is stale; re-recording needs a live VM lab plus re-narration in 13
+ * languages, and is deferred.
+ *
+ * ★ NOT A COUNT — AN EXACT PAIR. Each entry pins BOTH texts. Change the storyboard command,
+ * change the recording, or drift a DIFFERENT scene, and the key or the text stops matching and
+ * the gate goes red. This defers four known facts; it does not mute a class. Every other parity
+ * check (missing commandFull, short flags, marker counts, transcripts, mdx steps) is untouched.
+ *
+ * ★ SELF-DESTRUCT, ENFORCED. An entry that matches nothing is a FAILURE, not a shrug — the
+ * re-record must delete these, and the gate will not let them outlive it.
+ *
+ * ★ THEY CLEAR TOGETHER. Same root cause and same fix event as the stale-recording backlog in
+ * `tutorial-cast-baseline.json` (see its BLOCKER) and the "188 dead commands" entry in
+ * `docs/design/spec/12-carried-debt.md`. One re-record clears all three, or all three are lying.
+ */
+function loadBaseline(): Baseline {
+  if (!existsSync(baselinePath)) return {};
+  return JSON.parse(readFileSync(baselinePath, 'utf-8')) as Baseline;
+}
+
+/** Split the run into what is genuinely wrong and what the backlog defers. */
+function applyBaseline(issues: Issue[], baseline: Baseline): { live: Issue[]; deferred: number } {
+  const matched = new Set<string>();
+  const live: Issue[] = [];
+
+  for (const issue of issues) {
+    const entry = issue.drift ? baseline[issue.drift.key] : undefined;
+    if (
+      issue.drift &&
+      entry &&
+      entry.commandFull === issue.drift.commandFull &&
+      entry.recorded === issue.drift.recorded
+    ) {
+      matched.add(issue.drift.key);
+      continue;
+    }
+    live.push(issue);
+  }
+
+  for (const key of Object.keys(baseline)) {
+    if (matched.has(key)) continue;
+    const [tutorial = key] = key.split('#');
+    live.push({
+      tutorial,
+      file: path.relative(wwwRoot, baselinePath),
+      message: `backlog entry "${key}" defers a drift that no longer exists — the recording, the storyboard, or the scene moved out from under it. DELETE it (see the BLOCKER: these entries must vanish at the re-record), and fix any parity break reported above.`,
+    });
+  }
+
+  return { live, deferred: matched.size };
+}
+
 function main(): number {
   const slugs = listStoryboards();
   const issues: Issue[] = [];
@@ -385,18 +464,39 @@ function main(): number {
   }
   checkCrossTutorial(slugs, issues);
 
-  if (issues.length === 0) {
-    console.log(`✓ Tutorial parity OK for ${slugs.length} tutorials`);
+  // Re-freeze from THIS run's own findings — never scraped from stdout.
+  if (process.argv.includes('--write-baseline')) {
+    const next: Baseline = {};
+    for (const { drift } of issues) {
+      if (drift) next[drift.key] = { commandFull: drift.commandFull, recorded: drift.recorded };
+    }
+    const sorted = Object.fromEntries(Object.entries(next).sort(([a], [b]) => a.localeCompare(b)));
+    writeFileSync(baselinePath, `${JSON.stringify(sorted, null, 2)}\n`);
+    console.log(`Wrote stale-recording parity backlog: ${Object.keys(sorted).length} scene(s).`);
     return 0;
   }
 
+  const { live, deferred } = applyBaseline(issues, loadBaseline());
+
+  if (live.length === 0) {
+    console.log(`✓ Tutorial parity OK for ${slugs.length} tutorials`);
+    if (deferred > 0) {
+      console.log(
+        `⚠ ${deferred} scene(s) show a command their recording PREDATES (P4 reshape), pending a` +
+          ' re-record. A new drift, an edit to either side, or any other parity break still fails.'
+      );
+    }
+    return 0;
+  }
+  const issuesToReport = live;
+
   const byTutorial = new Map<string, Issue[]>();
-  for (const issue of issues) {
+  for (const issue of issuesToReport) {
     if (!byTutorial.has(issue.tutorial)) byTutorial.set(issue.tutorial, []);
     byTutorial.get(issue.tutorial)!.push(issue);
   }
   console.error(
-    `✗ Tutorial parity check failed (${issues.length} issues across ${byTutorial.size} tutorials)\n`
+    `✗ Tutorial parity check failed (${issuesToReport.length} issues across ${byTutorial.size} tutorials)\n`
   );
   for (const [tut, list] of byTutorial) {
     console.error(`[${tut}]`);
