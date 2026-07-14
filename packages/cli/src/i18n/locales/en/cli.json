@@ -100,10 +100,10 @@
       },
       "snapshot": {
         "descriptionShort": "Snapshot every datastore in the cluster at one instant",
-        "description": "Point-in-time snapshots of the whole cluster. One crash-consistent instant across every rbd-backed datastore the cluster owns, taken through Ceph's group snapshot: nothing stops and the cluster never notices. Local-backend datastores have no block-level group primitive, so they fall outside the instant and are reported as such.",
+        "description": "Point-in-time snapshots of the whole cluster. One crash-consistent instant across every rbd-backed datastore the cluster owns, taken through Ceph's group snapshot: nothing stops and the cluster never notices. Local-backend datastores have no block-level group primitive, so they fall outside the instant and are reported as such. The instant is crash-consistent, not application-consistent: if you need a specific write to be IN the snapshot, sync it first.",
         "create": {
           "descriptionShort": "Take a cluster-wide snapshot",
-          "description": "Snapshot every rbd-backed datastore in the cluster at ONE instant. Nothing is stopped. Any local-backend datastore in the cluster is listed as outside the instant: it is not part of the snapshot.",
+          "description": "Snapshot every rbd-backed datastore in the cluster at ONE instant. Nothing is stopped. Any local-backend datastore in the cluster is listed as outside the instant: it is not part of the snapshot. The instant is crash-consistent, not application-consistent: if you need a specific write to be IN the snapshot, sync it first.",
           "labelOption": "Snapshot label (default: a UTC timestamp)"
         },
         "list": {
@@ -800,7 +800,7 @@
         "description": "Take and list point-in-time snapshots of a datastore. A snapshot costs nothing at rest and is what a fork clones from.",
         "create": {
           "descriptionShort": "Snapshot a datastore",
-          "description": "Take a point-in-time snapshot of a datastore. Nothing stops.",
+          "description": "Take a point-in-time snapshot of a datastore. Nothing stops. The instant is crash-consistent, not application-consistent: if you need a specific write to be IN the snapshot, sync it first.",
           "labelOption": "Snapshot label (default: a UTC timestamp)",
           "created": "Datastore \"{{ref}}\" snapshotted as \"{{label}}\"."
         },
