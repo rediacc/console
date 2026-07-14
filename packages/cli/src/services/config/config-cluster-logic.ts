@@ -157,10 +157,48 @@ export async function removeClusterFromStore(configName: string, name: string): 
     // gone, its state goes with it.
     const stateClusters = { ...(cfg.state?.clusters ?? {}) };
     delete stateClusters[name];
+
+    // BUG #89: #22 stated that principle and then applied it to ONE field. Everything
+    // else the cluster owned kept its observation: state.datastores still named
+    // `<cluster>-cp-1` as the holder of a datastore whose cluster was gone.
+    //
+    // That is not untidiness, it is a routing hazard. `state.datastores[*].attachedTo` IS
+    // the derived-machine routing hint, and machine names are DETERMINISTIC — a same-name
+    // recreate re-mints `<cluster>-cp-1`, so the stale hint does not dangle harmlessly, it
+    // re-aims at a brand-new, same-named machine that has no such datastore. resolve-machine
+    // throws only when the hint is ABSENT; a hint that is merely WRONG is trusted.
+    //
+    // So the observation goes, and the DECLARATION stays. That split is the whole rule:
+    // `resources.*` is what the operator declared and may well intend to recreate; a spec
+    // outliving its cluster is defensible. `state.*` is what we observed, and an observation
+    // of a world that no longer exists is a lie by construction. Do not "fix" this by also
+    // deleting the resources — that would discard the operator's intent.
+    const ownedDatastores = new Set(
+      Object.entries(cfg.resources?.datastores ?? {})
+        .filter(([, ds]) => ds.cluster === name)
+        .map(([dsName]) => dsName)
+    );
+    const stateDatastores = { ...(cfg.state?.datastores ?? {}) };
+    for (const ds of ownedDatastores) delete stateDatastores[ds];
+
+    // A repo's observation lives or dies with the datastore it was placed on.
+    const stateRepos = { ...(cfg.state?.repos ?? {}) };
+    for (const [repo, family] of Object.entries(cfg.resources?.repositories ?? {})) {
+      const placement = family.placement;
+      if (placement && 'datastore' in placement && ownedDatastores.has(placement.datastore)) {
+        delete stateRepos[repo];
+      }
+    }
+
     return {
       ...cfg,
       resources: { ...(cfg.resources ?? {}), clusters },
-      state: { ...(cfg.state ?? {}), clusters: stateClusters },
+      state: {
+        ...(cfg.state ?? {}),
+        clusters: stateClusters,
+        datastores: stateDatastores,
+        repos: stateRepos,
+      },
     };
   });
 }
@@ -188,5 +226,34 @@ export async function removeCloudProviderFromStore(
     if (!(name in providers)) throw new Error(`Cloud provider "${name}" not found`);
     delete providers[name];
     return { ...cfg, resources: { ...(cfg.resources ?? {}), cloudProviders: providers } };
+  });
+}
+
+/**
+ * #89, third site of the class: `machine remove` dropped the DECLARATION and kept the
+ * OBSERVATION — `state.machines[m]`, and every `state.datastores[*]` hint still naming `m`.
+ *
+ * The datastore half is the one that bites. `state.datastores[*].attachedTo` IS the
+ * derived-machine routing hint; `resolve-machine` throws only when it is ABSENT, so a hint
+ * that is merely WRONG gets followed. Machine names are DETERMINISTIC, so re-adding the name
+ * re-aims that hint at a brand-new machine which has no such datastore. That is the #89
+ * hazard arriving through `machine remove` instead of `cluster destroy`.
+ *
+ * The DECLARATIONS (`resources.datastores`) stay: the operator may intend to re-add the
+ * machine and re-attach. A spec outliving its machine is defensible; an observation of a
+ * world that no longer exists is a lie by construction.
+ */
+export async function dropMachineObservations(
+  configName: string,
+  machineName: string
+): Promise<void> {
+  await configFileStorage.updateState(configName, (cfg) => {
+    const machines = { ...(cfg.state?.machines ?? {}) };
+    delete machines[machineName];
+    const datastores = { ...(cfg.state?.datastores ?? {}) };
+    for (const [ds, hint] of Object.entries(datastores)) {
+      if (hint.attachedTo === machineName) delete datastores[ds];
+    }
+    return { ...cfg, state: { ...(cfg.state ?? {}), machines, datastores } };
   });
 }

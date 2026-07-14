@@ -32,6 +32,7 @@ import { ConfigServiceBase } from './config-base.js';
 import {
   assertClusterMembersUnique,
   assertUniqueName,
+  dropMachineObservations,
   listClustersFromConfig,
   removeCloudProviderFromStore,
   removeClusterFromStore,
@@ -182,6 +183,10 @@ class ConfigService extends ConfigServiceBase {
     if (!(machineName in machines)) throw new Error(`Machine "${machineName}" not found`);
     delete machines[machineName];
     await state.setMachines(machines);
+
+    // #89, third site of the class (see dropMachineObservations).
+    await dropMachineObservations(this.getEffectiveConfigName(), machineName);
+
     try {
       removeMachineSSHConfigEntry(machineName);
     } catch {
