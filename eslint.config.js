@@ -1126,18 +1126,26 @@ export default tseslint.config(
   },
 
   // ── P4 reshape: size/complexity debt, suppressed deliberately, scheduled for P5 ──
-  //
-  // We do not refactor product code mid-babysit to satisfy an aesthetic gate. Splitting
-  // files and extracting functions inside an unmerged wave buys a lint number and risks a
-  // silent behaviour change; the P5 items below do it deliberately, with review.
   {
-    // BLOCKER: command-metadata.ts (823 lines) is the hand-maintained, command-keyed MCP
-    // and policy classification table. The P4 reshape re-keyed every entry, which pushed it
-    // past max-lines. It FAILS OPEN — a stale or dropped entry silently stops denying (#55,
-    // a security-authz class) — so splitting it while the wave is red is precisely the wrong
-    // time: a deny-gap here is invisible. datastore.ts (539) and machine/status.ts (548) are
-    // ordinary size drift from the reshape. P5: split all three by noun, with the authz table
-    // split last and under test.
+    // BLOCKER: splitting a command-REGISTERING module is not cosmetic, and this is the
+    // failure mode, not a plea that we were busy.
+    //   1. check:ci-command-planes attributes every leaf to the module whose .action()
+    //      REGISTERS it — it patches Command.prototype.command/.action and captures a
+    //      stack at registration time. Split the file and leaves get re-attributed: if a
+    //      split-out module's import graph no longer reaches a machine seam, a machine-plane
+    //      leaf becomes unattributable, or worse, silently changes plane.
+    //   2. command-tree.json is derived from registration ORDER, and a split can shift it.
+    //      Four validators and two ESLint rules read that file as their model of the CLI.
+    //   3. COMMAND_METADATA / COMMAND_PLANES / the policy globs are keyed by command-path
+    //      STRING and have no stale-entry gate. A split that re-nests or renames a leaf
+    //      ORPHANS its guard — and guards fail OPEN: a deny that stops denying (#55).
+    // command-metadata.ts (823 lines) is the authz table itself, so it is the most dangerous
+    // of the three and gets split LAST, under test. datastore.ts (539) and machine/status.ts
+    // (548) are ordinary size drift from the reshape.
+    // Deferred to P5, where the split is done deliberately with the plane/tree/guard artifacts
+    // regenerated and diffed. A 512-line cap is not worth a silent authz gap. The
+    // command-tree freshness gate added in this wave (check:ci-command-tree) is what makes
+    // that split safe to attempt — do it after that gate exists, never before.
     files: [
       'packages/cli/src/config/command-metadata.ts',
       'packages/cli/src/commands/datastore.ts',
@@ -1150,10 +1158,13 @@ export default tseslint.config(
   {
     // BLOCKER: eight functions in the P4 command layer sit between 11 and 17 cognitive
     // complexity against a limit of 10. Every one is a command action whose branching IS the
-    // contract it implements (placement unions, the datastore attach/detach state machine,
-    // the repo verb dispatch). Extracting helpers to please the counter, in an unmerged wave
-    // that four feature-breaking bugs already survived, trades a real risk for a cosmetic
-    // number. P5: extract these deliberately, each with a red-first test.
+    // contract it implements (the placement union, the datastore attach/detach state machine,
+    // the repo verb dispatch). Extracting helpers to please a counter, inside an unmerged wave
+    // that four feature-breaking bugs already survived, trades a real risk of behaviour change
+    // for a cosmetic number. These are also the exact functions whose guards the type system
+    // already lies about (noUncheckedIndexedAccess is off — see docs/design/spec/12-carried-debt),
+    // so a careless extraction can drop a load-bearing check while looking like a tidy-up.
+    // P5: extract deliberately, each with a red-first test.
     files: [
       'packages/cli/src/commands/datastore.ts',
       'packages/cli/src/commands/repo.ts',
