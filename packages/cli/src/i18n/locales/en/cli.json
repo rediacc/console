@@ -940,7 +940,7 @@
         "archiveHint": "To archive credentials for recovery: rerun with --archive-config",
         "archiveOption": "Move config entry to deletedRepositories for later recovery",
         "archived": "Credential for \"{{repository}}\" archived",
-        "cloudBackupHint": "Cloud backups (if any) persist after delete. Remove orphaned cloud backups with: rdc storage prune --name <storage> -m {{machine}}",
+        "cloudBackupHint": "Cloud backups (if any) persist after delete. Remove orphaned cloud backups with: rdc storage prune <storage> -m {{machine}}",
         "completed": "Repository deleted",
         "configRetained": "Config entry for \"{{repository}}\" retained (the repo may exist on other machines). To drop it, re-run with --archive-config, then \"rdc repo admin archive purge {{repository}}\".",
         "confirm": "Delete repository \"{{repository}}\" on \"{{machine}}\"? This destroys its containers, volumes, and encrypted image.",

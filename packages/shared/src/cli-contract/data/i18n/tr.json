@@ -811,7 +811,7 @@
   "commands.repo.delete.archived": "\"{{repository}}\" kimlik bilgisi arşivlendi",
   "commands.repo.delete.archiveHint": "Kurtarma için kimlik bilgilerini arşivlemek üzere: --archive-config ile tekrar çalıştırın",
   "commands.repo.delete.archiveOption": "Yapılandırma girdisini daha sonra kurtarmak için deletedRepositories'e taşı",
-  "commands.repo.delete.cloudBackupHint": "Bulut yedekleri (varsa) silmeden sonra kalır. Sahipsiz bulut yedeklerini şu komutla kaldırın: rdc storage prune --name <storage> -m {{machine}}",
+  "commands.repo.delete.cloudBackupHint": "Bulut yedekleri (varsa) silmeden sonra kalır. Sahipsiz bulut yedeklerini şu komutla kaldırın: rdc storage prune <storage> -m {{machine}}",
   "commands.repo.delete.completed": "Depo silindi",
   "commands.repo.delete.configRetained": "\"{{repository}}\" için yapılandırma girişi korundu (depo başka makinelerde mevcut olabilir). Kaldırmak için --archive-config ile yeniden çalıştırın, ardından \"rdc repo admin archive purge {{repository}}\" komutunu kullanın.",
   "commands.repo.delete.confirm": "\"{{machine}}\" üzerindeki \"{{repository}}\" deposu silinsin mi? Bu işlem konteynerleri, volümleri ve şifreli imajı yok eder.",

@@ -819,7 +819,7 @@
     "commands.repo.delete.archived": "756a85b5",
     "commands.repo.delete.archiveHint": "700820fa",
     "commands.repo.delete.archiveOption": "6bd8b32b",
-    "commands.repo.delete.cloudBackupHint": "7a3a2c8e",
+    "commands.repo.delete.cloudBackupHint": "2c39aeb2",
     "commands.repo.delete.completed": "62ef4b3e",
     "commands.repo.delete.configRetained": "de1665ed",
     "commands.repo.delete.confirm": "23edef10",

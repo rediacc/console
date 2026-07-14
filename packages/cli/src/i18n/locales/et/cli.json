@@ -984,7 +984,7 @@
         "archived": "Hoidla \"{{repository}}\" mandaat arhiveeritud",
         "archiveHint": "Mandaatide arhiveerimiseks taastamise tarbeks: käivita uuesti lipuga --archive-config",
         "archiveOption": "Teisalda konfiguratsioonikirje deletedRepositories-i hilisemaks taastamiseks",
-        "cloudBackupHint": "Pilvevarukoopiad (kui neid on) säilivad pärast kustutamist. Eemalda orvuks jäänud pilvevarukoopiad käsuga: rdc storage prune --name <storage> -m {{machine}}",
+        "cloudBackupHint": "Pilvevarukoopiad (kui neid on) säilivad pärast kustutamist. Eemalda orvuks jäänud pilvevarukoopiad käsuga: rdc storage prune <storage> -m {{machine}}",
         "completed": "Hoidla kustutatud",
         "configRetained": "Hoidla \"{{repository}}\" konfiguratsioonikirje säilitati (hoidla võib eksisteerida teistel masinatel). Selle eemaldamiseks käivita uuesti lipuga --archive-config ja seejärel \"rdc repo admin archive purge {{repository}}\".",
         "confirm": "Kas kustutada repositoorium \"{{repository}}\" masinas \"{{machine}}\"? See hävitab konteinerid, kettad ja krüpteeritud tõmmise.",

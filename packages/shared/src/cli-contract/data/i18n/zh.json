@@ -811,7 +811,7 @@
   "commands.repo.delete.archived": "\"{{repository}}\" 的凭据已归档",
   "commands.repo.delete.archiveHint": "要归档凭据以便恢复: 使用 --archive-config 重新运行",
   "commands.repo.delete.archiveOption": "将配置条目移至 deletedRepositories 以便后续恢复",
-  "commands.repo.delete.cloudBackupHint": "云备份（如有）在删除后仍会保留。使用以下命令删除孤立的云备份：rdc storage prune --name <storage> -m {{machine}}",
+  "commands.repo.delete.cloudBackupHint": "云备份（如有）在删除后仍会保留。使用以下命令删除孤立的云备份：rdc storage prune <storage> -m {{machine}}",
   "commands.repo.delete.completed": "仓库已删除",
   "commands.repo.delete.configRetained": "\"{{repository}}\" 的配置条目已保留（该仓库可能存在于其他机器上）。要丢弃它，请使用 --archive-config 重新运行，然后执行 \"rdc repo admin archive purge {{repository}}\"。",
   "commands.repo.delete.confirm": "要删除 \"{{machine}}\" 上的仓库 \"{{repository}}\" 吗？此操作将销毁其容器、卷和加密镜像。",

@@ -811,7 +811,7 @@
   "commands.repo.delete.archived": "تم أرشفة بيانات اعتماد \"{{repository}}\"",
   "commands.repo.delete.archiveHint": "لأرشفة بيانات الاعتماد للاسترداد: أعد التشغيل باستخدام --archive-config",
   "commands.repo.delete.archiveOption": "نقل إدخال الإعدادات إلى deletedRepositories للاستعادة لاحقاً",
-  "commands.repo.delete.cloudBackupHint": "تظل النسخ الاحتياطية السحابية (إن وجدت) بعد الحذف. أزِل النسخ الاحتياطية السحابية المعزولة باستخدام: rdc storage prune --name <storage> -m {{machine}}",
+  "commands.repo.delete.cloudBackupHint": "تظل النسخ الاحتياطية السحابية (إن وجدت) بعد الحذف. أزِل النسخ الاحتياطية السحابية المعزولة باستخدام: rdc storage prune <storage> -m {{machine}}",
   "commands.repo.delete.completed": "تم حذف المستودع",
   "commands.repo.delete.configRetained": "تم الاحتفاظ بإدخال التكوين لـ \"{{repository}}\" (قد يكون المستودع موجودًا على أجهزة أخرى). لإسقاطه، أعد التشغيل مع --archive-config، ثم \"rdc repo admin archive purge {{repository}}\".",
   "commands.repo.delete.confirm": "هل تريد حذف المستودع \"{{repository}}\" على \"{{machine}}\"؟ سيؤدي ذلك إلى تدمير الحاويات ووحدات التخزين والصورة المشفرة.",

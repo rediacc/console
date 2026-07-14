@@ -984,7 +984,7 @@
         "archived": "\"{{repository}}\"의 자격증명이 보관되었습니다",
         "archiveHint": "복구를 위해 자격증명을 보관하려면 --archive-config를 추가하여 다시 실행하십시오",
         "archiveOption": "설정 항목을 나중에 복구할 수 있도록 deletedRepositories로 이동합니다",
-        "cloudBackupHint": "클라우드 백업(있는 경우)은 삭제 후에도 유지됩니다. 고아 클라우드 백업을 제거하려면: rdc storage prune --name <storage> -m {{machine}}",
+        "cloudBackupHint": "클라우드 백업(있는 경우)은 삭제 후에도 유지됩니다. 고아 클라우드 백업을 제거하려면: rdc storage prune <storage> -m {{machine}}",
         "completed": "저장소 삭제 완료",
         "configRetained": "\"{{repository}}\"의 설정 항목이 유지되었습니다 (저장소가 다른 머신에 존재할 수 있습니다). 제거하려면 --archive-config를 붙여 다시 실행한 뒤 \"rdc repo admin archive purge {{repository}}\"를 실행하세요",
         "confirm": "\"{{machine}}\"의 리포지토리 \"{{repository}}\"를 삭제할까요? 컨테이너, 볼륨, 암호화된 이미지가 모두 삭제됩니다.",

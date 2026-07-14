@@ -811,7 +811,7 @@
   "commands.repo.delete.archived": "Zugangsdaten für \"{{repository}}\" archiviert",
   "commands.repo.delete.archiveHint": "Um Anmeldedaten für die Wiederherstellung zu archivieren: erneut mit --archive-config ausführen",
   "commands.repo.delete.archiveOption": "Konfigurationseintrag nach deletedRepositories verschieben zur späteren Wiederherstellung",
-  "commands.repo.delete.cloudBackupHint": "Cloud-Backups (falls vorhanden) bleiben nach dem Löschen erhalten. Verwaiste Cloud-Backups entfernen mit: rdc storage prune --name <storage> -m {{machine}}",
+  "commands.repo.delete.cloudBackupHint": "Cloud-Backups (falls vorhanden) bleiben nach dem Löschen erhalten. Verwaiste Cloud-Backups entfernen mit: rdc storage prune <storage> -m {{machine}}",
   "commands.repo.delete.completed": "Repository gelöscht",
   "commands.repo.delete.configRetained": "Konfigurationseintrag für \"{{repository}}\" beibehalten (das Repository kann auf anderen Maschinen existieren). Zum Entfernen: erneut mit --archive-config ausführen, dann \"rdc repo admin archive purge {{repository}}\".",
   "commands.repo.delete.confirm": "Repository \"{{repository}}\" auf \"{{machine}}\" löschen? Dabei werden Container, Volumes und das verschlüsselte Image zerstört.",

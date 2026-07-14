@@ -984,7 +984,7 @@
         "archived": "Identifiant de \"{{repository}}\" archivé",
         "archiveHint": "Pour archiver les identifiants pour la récupération : relancez avec --archive-config",
         "archiveOption": "Déplacer l'entrée de configuration vers deletedRepositories pour récupération ultérieure",
-        "cloudBackupHint": "Les sauvegardes cloud (le cas échéant) persistent après la suppression. Supprimez les sauvegardes cloud orphelines avec : rdc storage prune --name <storage> -m {{machine}}",
+        "cloudBackupHint": "Les sauvegardes cloud (le cas échéant) persistent après la suppression. Supprimez les sauvegardes cloud orphelines avec : rdc storage prune <storage> -m {{machine}}",
         "completed": "Dépôt supprimé",
         "configRetained": "Entrée de configuration pour \"{{repository}}\" conservée (le dépôt peut exister sur d'autres machines). Pour la supprimer, relancez avec --archive-config, puis \"rdc repo admin archive purge {{repository}}\".",
         "confirm": "Supprimer le dépôt \"{{repository}}\" sur \"{{machine}}\" ? Cette action détruit ses conteneurs, ses volumes et l'image chiffrée.",

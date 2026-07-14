@@ -984,7 +984,7 @@
         "archived": "Credencial de \"{{repository}}\" archivada",
         "archiveHint": "Para archivar las credenciales para recuperación: vuelva a ejecutar con --archive-config",
         "archiveOption": "Mover entrada de configuración a deletedRepositories para recuperación posterior",
-        "cloudBackupHint": "Las copias de seguridad en la nube (si las hay) persisten tras la eliminación. Elimina las copias huérfanas con: rdc storage prune --name <storage> -m {{machine}}",
+        "cloudBackupHint": "Las copias de seguridad en la nube (si las hay) persisten tras la eliminación. Elimina las copias huérfanas con: rdc storage prune <storage> -m {{machine}}",
         "completed": "Repositorio eliminado",
         "configRetained": "Entrada de configuración para \"{{repository}}\" retenida (el repositorio puede existir en otras máquinas). Para eliminarla, vuelve a ejecutar con --archive-config, y luego \"rdc repo admin archive purge {{repository}}\".",
         "confirm": "¿Eliminar el repositorio \"{{repository}}\" en \"{{machine}}\"? Esto destruye sus contenedores, volúmenes y la imagen cifrada.",

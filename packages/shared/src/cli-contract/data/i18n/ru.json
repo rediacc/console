@@ -811,7 +811,7 @@
   "commands.repo.delete.archived": "Учётные данные \"{{repository}}\" архивированы",
   "commands.repo.delete.archiveHint": "Для архивации учётных данных для восстановления: повторите с --archive-config",
   "commands.repo.delete.archiveOption": "Переместить запись конфигурации в deletedRepositories для последующего восстановления",
-  "commands.repo.delete.cloudBackupHint": "Облачные резервные копии (если есть) сохраняются после удаления. Удалите осиротевшие облачные копии командой: rdc storage prune --name <storage> -m {{machine}}",
+  "commands.repo.delete.cloudBackupHint": "Облачные резервные копии (если есть) сохраняются после удаления. Удалите осиротевшие облачные копии командой: rdc storage prune <storage> -m {{machine}}",
   "commands.repo.delete.completed": "Репозиторий удалён",
   "commands.repo.delete.configRetained": "Запись конфигурации для \"{{repository}}\" сохранена (репозиторий может существовать на других машинах). Чтобы удалить её, повторите запуск с --archive-config, затем выполните \"rdc repo admin archive purge {{repository}}\".",
   "commands.repo.delete.confirm": "Удалить репозиторий \"{{repository}}\" на \"{{machine}}\"? Это уничтожит его контейнеры, тома и зашифрованный образ.",
