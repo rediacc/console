@@ -926,9 +926,16 @@ export class BridgeTestRunner {
     this.executeViaBridge(
       `sudo renet datastore init --path ${datastorePath} --size ${size}${force ? ' --force' : ''}`
     );
-  datastoreExpand = (newSize: string) => this.datastoreMethods.datastoreExpand(newSize);
-  datastoreResize = (newSize: string) => this.datastoreMethods.datastoreResize(newSize);
-  datastoreValidate = () => this.datastoreMethods.datastoreValidate();
+  // `datastorePath` is NOT a function param — the harness turns it into
+  // `renet functions once --datastore-path <p>`, which sets the DATASTORE CONTEXT the
+  // command's RequireDatastore(vault) reads. Dropping it strips the context and
+  // datastore_expand fails outright. It was never "passed into the void".
+  datastoreExpand = (newSize: string, datastorePath?: string) =>
+    this.datastoreMethods.datastoreExpand(newSize, datastorePath);
+  datastoreResize = (newSize: string, datastorePath?: string) =>
+    this.datastoreMethods.datastoreResize(newSize, datastorePath);
+  datastoreValidate = (datastorePath?: string) =>
+    this.datastoreMethods.datastoreValidate(datastorePath);
 
   // Named-datastore lifecycle (datastore_create/attach/detach/fork/snapshot/delete/list)
   datastoreCreate = (opts: DatastoreCreateOptions) => this.datastoreMethods.datastoreCreate(opts);

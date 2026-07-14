@@ -941,21 +941,36 @@ phantom anchor is why the board looked otherwise.
 truth.** The gap is real, it is now visible, and closing it means a real CSI e2e suite driving the
 CLI path (the same way `OpsManager` shells out for `renet datastore init`).
 
-## A parameter the schema never accepted — #74's class, in the test harness
+## RETRACTED — "a parameter the schema never accepted" was MY error, and CI refuted it
 
-The e2e harness called `datastore_expand`, `datastore_resize` and `datastore_validate` with a
-`datastorePath` argument. **renet's schema has no such parameter** — `expand`/`resize` take a
-`size`, `validate` takes nothing at all. The value was serialized, sent, and **silently discarded**
-on every call, in every suite, for as long as those tests have existed.
+**The claim (mine, and I convinced the lead of it):** the e2e harness passed a `datastorePath`
+argument to `datastore_expand/resize/validate`; renet's function schema has no such param;
+therefore it was serialized, sent and silently discarded on every call, forever — #74's class,
+*a declaration the system is free to ignore is not a declaration.*
 
-Nothing failed. Nothing warned. The tests passed, and every one of them was passing a path that
-the thing under test never read — so a suite that *believed* it was validating a datastore at
-`/mnt/test-datastore` was in fact validating whatever the machine's base pool happened to be.
+**It is false, and the way it is false matters more than the claim did.**
 
-**This is bug #74's class, arriving through a different door: a declaration the system is free to
-ignore is not a declaration.** An argument that no receiver validates is indistinguishable from a
-comment — except that a comment does not lie about what the test covered.
+`datastorePath` is **not a function param at all.** The harness turns it into a flag on the bridge
+INVOCATION:
 
-Removed with the P1 verb translation. The general defect stands: **the bridge accepts unknown
-params without complaint.** Rejecting an unknown param at dispatch would have surfaced this on the
-first run, years earlier, for free.
+```ts
+let cmd = `renet functions once --test-mode --debug --function ${opts.function}`;
+if (opts.datastorePath) cmd += ` --datastore-path ${opts.datastorePath}`;   // BridgeTestRunner
+```
+
+`--datastore-path` sets the **datastore CONTEXT** — precisely what each command's
+`RequireDatastore(vault)` reads. It is not ignored; **it is the subject of the call.** I removed it
+on the strength of the schema alone, and `datastore_expand` promptly failed in CI on all five OS
+images: `RequireDatastore` had nothing to require.
+
+**I checked the function schema and concluded the harness was wrong, without ever reading what the
+harness DID with the value.** The schema was the artifact; the invocation was the thing that
+decides. It took a live CI run across five distros to catch, because no local gate can see it and
+the bridge accepts the flag happily.
+
+**What survives, and only this:** the bridge still accepts unknown *params* without complaint, so a
+genuinely misspelled param would vanish silently. That remains worth fixing at dispatch (P5, renet).
+But this was **not** an instance of it, and the ledger will not claim a bug it does not have.
+
+**Restored** on `datastore_expand/resize/validate`, with the reason written where the next person
+will read it before deleting it again.

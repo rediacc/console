@@ -60,23 +60,26 @@ export interface DatastoreSnapshotOptions {
 export class DatastoreMethods {
   constructor(private readonly testFunction: (opts: TestFunctionOptions) => Promise<ExecResult>) {}
 
-  async datastoreExpand(newSize: string): Promise<ExecResult> {
+  async datastoreExpand(newSize: string, datastorePath?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'datastore_expand',
       newSize,
+      datastorePath,
     });
   }
 
-  async datastoreResize(newSize: string): Promise<ExecResult> {
+  async datastoreResize(newSize: string, datastorePath?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'datastore_resize',
       newSize,
+      datastorePath,
     });
   }
 
-  async datastoreValidate(): Promise<ExecResult> {
+  async datastoreValidate(datastorePath?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'datastore_validate',
+      datastorePath,
     });
   }
 

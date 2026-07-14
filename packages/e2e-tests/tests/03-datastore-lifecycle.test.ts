@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { DEFAULT_DATASTORE_PATH } from '../src/constants';
 import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 
 /**
@@ -22,9 +23,11 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  *   create -> attach -> validate -> expand -> detach -> delete
  *
  * `datastore_expand`, `datastore_resize`, `datastore_validate` and `datastore_status`
- * survive UNCHANGED and take no name: they act on the machine's base pool. Their
- * tests are kept as they were (minus the dead path argument, which those verbs never
- * accepted — the harness was passing it into the void).
+ * survive UNCHANGED: they act on the machine's base pool, identified by the DATASTORE
+ * CONTEXT (`renet functions once --datastore-path <p>`), not by a function param. That
+ * context is what each command's RequireDatastore(vault) reads — strip it and
+ * datastore_expand fails outright. It is not "a param the schema ignores"; it is the
+ * subject of the call. (I removed it once on exactly that misreading. CI said no.)
  */
 test.describe('Datastore Lifecycle @bridge', () => {
   let runner: BridgeTestRunner;
@@ -36,25 +39,25 @@ test.describe('Datastore Lifecycle @bridge', () => {
 
   test('datastore_expand should expand size', async () => {
     // Expand auto-mounts if needed (BTRFS online resize requires mounted state)
-    const result = await runner.datastoreExpand('2G');
+    const result = await runner.datastoreExpand('2G', DEFAULT_DATASTORE_PATH);
     expect(runner.isSuccess(result)).toBe(true);
     expect(result.code).toBe(0);
   });
 
   test('datastore_resize should resize datastore', async () => {
-    const result = await runner.datastoreResize('3G');
+    const result = await runner.datastoreResize('3G', DEFAULT_DATASTORE_PATH);
     expect(runner.isSuccess(result)).toBe(true);
     expect(result.code).toBe(0);
   });
 
   test('datastore_validate should validate integrity', async () => {
-    const result = await runner.datastoreValidate();
+    const result = await runner.datastoreValidate(DEFAULT_DATASTORE_PATH);
     expect(runner.isSuccess(result)).toBe(true);
     expect(result.code).toBe(0);
   });
 
   test('datastore_status should report the base pool', async () => {
-    const result = await runner.checkDatastore();
+    const result = await runner.checkDatastore(DEFAULT_DATASTORE_PATH);
     expect(runner.isSuccess(result)).toBe(true);
     expect(result.code).toBe(0);
   });
@@ -117,7 +120,10 @@ test.describe
     test('2. datastore_list: the registry reports it', async () => {
       const result = await runner.datastoreList();
       expect(runner.isSuccess(result)).toBe(true);
-      expect(result.stdout).toContain(name);
+      // `datastore_list` shells out to `renet datastore list --json`, and the bridge
+      // runs it with --debug, which interleaves renet's logs on stderr. Assert against
+      // BOTH streams: the claim is "the registry reports it", not "on this fd".
+      expect(`${result.stdout}${result.stderr}`).toContain(name);
     });
 
     test('3. datastore_attach: attach it', async () => {
@@ -126,12 +132,12 @@ test.describe
     });
 
     test('4. datastore_validate: validate the pool', async () => {
-      const result = await runner.datastoreValidate();
+      const result = await runner.datastoreValidate(DEFAULT_DATASTORE_PATH);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
     test('5. datastore_expand: expand the pool', async () => {
-      const result = await runner.datastoreExpand('2G');
+      const result = await runner.datastoreExpand('2G', DEFAULT_DATASTORE_PATH);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
