@@ -226,6 +226,7 @@ function extractFromMarkdown(
     // Strip leading $ prompt
     let command = trimmed;
     if (command.startsWith('$ ')) command = command.slice(2);
+    command = normaliseInvocation(command);
 
     if (!command.startsWith('rdc ') && command !== 'rdc') continue;
     if (isSkippableContext(lines, i)) continue;
@@ -233,12 +234,46 @@ function extractFromMarkdown(
     const merged = mergeContinuationLines(lines, i);
     let mergedCommand = merged.command;
     if (mergedCommand.startsWith('$ ')) mergedCommand = mergedCommand.slice(2);
+    mergedCommand = normaliseInvocation(mergedCommand);
     i = merged.endIndex;
 
     // Pass surrounding lines for cloud-only context detection
     const ctx = lines.slice(Math.max(0, i - 10), i + 1);
     validateCommand(mergedCommand, filePath, i + 1, violations, ctx);
   }
+}
+
+/**
+ * Normalise the WRAPPER invocation to the bare binary.
+ *
+ * ★ CLAUDE.md's own convention MANDATES `./rdc.sh …`, and this scanner's line filter was
+ * `startsWith('rdc ')` — so it read the file and walked straight past every line the file
+ * is made of. It reported zero because it had looked at nothing.
+ *
+ * check-cli-docs.ts:624 already carries a comment describing this exact class ("failed
+ * startsWith('rdc'), and WAS SILENTLY DISCARDED. The scanner reported zero and had looked
+ * at nothing. Half a fix is a fresh blind spot."). Someone diagnosed it, fixed ONE scanner,
+ * and never applied it to the sibling. So: both wrappers, one place, both scanners.
+ */
+const WRAPPER_ONLY_FLAGS = /^\s*--(?:override-local|dev)\b/;
+
+function normaliseInvocation(command: string): string {
+  const m = /^(?:\.\/)?rdc\.sh(?=\s|$)/.exec(command);
+  if (!m) return command;
+  let rest = command.slice(m[0].length);
+  // `./rdc.sh --override-local` / `--dev` are consumed BY THE WRAPPER and never reach the
+  // CLI, so passing them to the parser would invent a new false-positive class while
+  // fixing a blind spot. See rdc.sh:82.
+  let stripped = true;
+  while (stripped) {
+    stripped = false;
+    const f = WRAPPER_ONLY_FLAGS.exec(rest);
+    if (f) {
+      rest = rest.slice(f[0].length);
+      stripped = true;
+    }
+  }
+  return `rdc${rest}`;
 }
 
 /**
@@ -281,7 +316,7 @@ function extractFromTypeScript(
     const line = lines[i];
 
     // Match patterns like:  $ rdc ...  in help text strings and JSX display
-    const rdcMatches = line.matchAll(/\$\s+rdc\s+[^\n`'"]+/g);
+    const rdcMatches = line.matchAll(/\$\s+(?:\.\/)?rdc(?:\.sh)?\s+[^\n`'"]+/g);
     for (const match of rdcMatches) {
       let command = match[0].replace(/^\$\s+/, '').trim();
       // Strip everything from ${t( onwards (i18n template expressions)
@@ -290,6 +325,7 @@ function extractFromTypeScript(
       command = command.replace(/\s*`.*$/, '').trim();
       // Strip HTML/XML tags (Astro, JSX)
       command = command.replace(/<\/?\w[^>]*>.*$/g, '').trim();
+      command = normaliseInvocation(command);
       if (!command.startsWith('rdc') || command.length < 5) continue;
       if (isSkippableContext(lines, i)) continue;
 
