@@ -57,7 +57,16 @@ CI_NPM="npm@10"
 
 # Discovered, never hardcoded: a hardcoded list is how this gate went stale in the first
 # place, and a lockfile added tomorrow must be covered without anyone remembering to add it.
-mapfile -t LOCKFILES < <(find . -name package-lock.json -not -path '*/node_modules/*' | sed 's|^\./||' | sort)
+#
+# `while read`, not `mapfile`: mapfile/readarray are bash-4 builtins and are BANNED by
+# .ci/scripts/security/check-commands.sh, which tracks what is actually available in the
+# minimal CI images (and on macOS / Git Bash). This gate was written to catch npm-10-vs-11
+# ENVIRONMENT DRIFT and was itself defeated by environment drift — it passed locally on
+# bash 5 and failed in CI. The discovery stays; only the builtin goes.
+LOCKFILES=()
+while IFS= read -r lock; do
+    LOCKFILES+=("$lock")
+done < <(find . -name package-lock.json -not -path '*/node_modules/*' | sed 's|^\./||' | sort)
 
 if [[ ${#LOCKFILES[@]} -eq 0 ]]; then
     log_error "No package-lock.json found anywhere. That cannot be right."
