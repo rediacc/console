@@ -404,6 +404,29 @@ function echoRenetFailure(exitCode: number, combined: string, options: ExecuteOp
 }
 
 /**
+ * Surface renet's WARNINGS on a SUCCESSFUL run.
+ *
+ * renet's output is otherwise echoed only on failure (above) or under --debug, so a
+ * command that succeeded while warning that it had silently skipped half its job said
+ * nothing at all to the operator — which is how a datastore could report "attached"
+ * while its CSI enablement had been skipped and every future PVC would hang Pending
+ * (#86). A warning nobody can see is not a warning.
+ *
+ * Warnings are rare by construction (a full `cluster create` emits one), so this is not
+ * a noise channel: renet uses log.Warn for "I did the thing, but you need to know
+ * something", which is exactly what an operator must read.
+ */
+function surfaceRenetWarnings(exitCode: number, combined: string, options: ExecuteOptions): void {
+  if (exitCode !== 0 || options.debug) return; // failures echo everything; debug already shows it
+  for (const line of combined.split('\n')) {
+    if (!line.includes('level=warning')) continue;
+    // logrus renders the payload as msg="..."; fall back to the raw line if it does not.
+    const msg = /msg="((?:[^"\\]|\\.)*)"/.exec(line)?.[1]?.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+    outputService.warn(msg ?? line.trim());
+  }
+}
+
+/**
  * Parse a JSON payload out of a captured bridge stdout. A bridge function that
  * SHELLS OUT to a sub-`renet` command (e.g. datastore_list ->
  * `renet datastore list --json`, ceph_client_config_export ->
@@ -1269,6 +1292,8 @@ class LocalExecutorService {
     const operationMs = renetDurationMatch
       ? Number.parseInt(renetDurationMatch[1], 10)
       : Date.now() - execStart;
+
+    surfaceRenetWarnings(exitCode, combined, options);
 
     return {
       success: exitCode === 0,
