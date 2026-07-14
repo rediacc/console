@@ -42,6 +42,23 @@ const DOC_GLOBS = [
   // Executable CI tutorial scripts. They were never covered, which is why the
   // reshape broke them silently — see listCheckableFiles().
   '.ci/tutorials',
+  // ★ The executable CI TEST DRIVERS, one directory over. Adding `.ci/tutorials`
+  // fixed the instance and left the class: these scripts drive the `Tests + Infra`
+  // jobs against a live machine, and they still spoke the pre-P4 CLI (`rdc config
+  // machine setup`, `repo template apply`, `repo up --name`). Nothing caught it,
+  // because that tier is gated behind the upstream gates and had never once run in
+  // this campaign — so they failed at RUNTIME, in the one place where a stale
+  // command is not a typo but a broken build.
+  //
+  // Scoped to `private/` (the drivers), NOT all of `.ci/scripts`: the sibling
+  // setup/test/gates scripts MENTION rdc without invoking it (`command -v rdc`,
+  // an error string naming "an rdc executable", a heredoc echoing fake `rdc
+  // version` output) and the positional-detector gate carries deliberately dead
+  // specimens as FIXTURES — one is literally labeled "MUST NOT FLAG". This
+  // extractor cannot tell an invocation from a mention in that code, and a gate
+  // that cries wolf gets an allowlist, which is how a gate dies. Widening this
+  // needs a smarter extractor, not a bigger glob.
+  '.ci/scripts/private',
   // Repo docs. See EXCLUDED_DIRS: docs/design/** is held out.
   'docs',
 ];
