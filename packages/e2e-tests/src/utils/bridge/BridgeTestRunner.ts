@@ -930,6 +930,21 @@ export class BridgeTestRunner {
   // `renet functions once --datastore-path <p>`, which sets the DATASTORE CONTEXT the
   // command's RequireDatastore(vault) reads. Dropping it strips the context and
   // datastore_expand fails outright. It was never "passed into the void".
+  /**
+   * Mount / unmount the machine's BASE pool.
+   *
+   * The datastore_mount / datastore_unmount BRIDGE verbs were deleted by the
+   * datastore-centric redesign, but the CLI still has them — and the base pool's
+   * MOUNT STATE is a PRECONDITION of the surviving verbs, not a test of the dead ones:
+   * `datastore resize` REFUSES while mounted ("must be unmounted for resize"), and
+   * `datastore validate` needs it mounted. The old suite spelled those preconditions out
+   * as mount/unmount tests; when the verbs moved I carried the CALLS across and dropped
+   * the PRECONDITIONS they were carrying. That is what these two restore.
+   */
+  datastoreMountPool = (datastorePath = DEFAULT_DATASTORE_PATH) =>
+    this.executeViaBridge(`sudo renet datastore mount --path ${datastorePath}`);
+  datastoreUnmountPool = (datastorePath = DEFAULT_DATASTORE_PATH) =>
+    this.executeViaBridge(`sudo renet datastore unmount --path ${datastorePath}`);
   datastoreExpand = (newSize: string, datastorePath?: string) =>
     this.datastoreMethods.datastoreExpand(newSize, datastorePath);
   datastoreResize = (newSize: string, datastorePath?: string) =>

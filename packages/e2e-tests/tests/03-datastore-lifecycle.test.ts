@@ -51,12 +51,18 @@ test.describe('Datastore Lifecycle @bridge', () => {
   });
 
   test('datastore_resize should resize datastore', async () => {
+    // resize REFUSES while the pool is mounted — and expand (above) auto-mounts it.
+    // The precondition is the product's, not the test's: an offline resize of a mounted
+    // BTRFS pool is not safe, so renet declines it.
+    await runner.datastoreUnmountPool();
     const result = await runner.datastoreResize('3G', DEFAULT_DATASTORE_PATH);
     expect(runner.isSuccess(result)).toBe(true);
     expect(result.code).toBe(0);
   });
 
   test('datastore_validate should validate integrity', async () => {
+    // The resize above leaves the pool unmounted; validate reads the mounted filesystem.
+    await runner.datastoreMountPool();
     const result = await runner.datastoreValidate(DEFAULT_DATASTORE_PATH);
     expect(runner.isSuccess(result)).toBe(true);
     expect(result.code).toBe(0);

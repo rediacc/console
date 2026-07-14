@@ -204,6 +204,33 @@ while IFS= read -r hit; do
     DEAD+=("$verb  — ${file#"$REPO_ROOT"/}:$line")
 done < <(grep -rn --include='*.ts' -E "function:[[:space:]]*'[a-z0-9_]+'" "$E2E_TESTS_DIR/src" "$E2E_TESTS_DIR/tests" 2>/dev/null || true)
 
+# ★ THE SECOND WAY THE HARNESS DISPATCHES, and the gate could not see it.
+#
+# `function: 'name'` is how the METHOD classes name a verb. But a test can also shell the
+# bridge out directly, as a raw command string:
+#
+#     sudo renet functions once --test-mode --function datastore_init --datastore-path ...
+#
+# That is the SAME dispatch through a different door, and the gate above is blind to it —
+# which is exactly how the dual-group migrate suite kept calling the DELETED datastore_init
+# and dying with "no command builder registered", while the coverage gate reported that every
+# e2e-dispatched verb existed. A gate that checks one of two call sites is not a gate.
+while IFS= read -r hit; do
+    file="${hit%%:*}"
+    rest="${hit#*:}"
+    line="${rest%%:*}"
+    code="${rest#*:}"
+    # Skip COMMENTS. Both this gate's own explanation and OpsManager's name the dead verb
+    # in prose ("the old `functions once --function datastore_init` path fails..."), and a
+    # gate that reds on a comment about a bug is a gate people delete.
+    case "$(printf '%s' "$code" | sed -E 's/^[[:space:]]*//')" in
+        '//'* | '*'* | '/*'*) continue ;;
+    esac
+    verb="$(printf '%s' "$rest" | sed -E 's/.*--function[[:space:]]+([a-z0-9_]+).*/\1/')"
+    is_dispatchable "$verb" && continue
+    DEAD+=("$verb  — ${file#"$REPO_ROOT"/}:$line  (raw --function dispatch)")
+done < <(grep -rn --include='*.ts' -E -- "--function[[:space:]]+[a-z0-9_]+" "$E2E_TESTS_DIR/src" "$E2E_TESTS_DIR/tests" 2>/dev/null || true)
+
 if [[ ${#DEAD[@]} -gt 0 ]]; then
     log_error "e2e-tests dispatch ${#DEAD[@]} verb(s) that renet no longer registers:"
     log_error ""

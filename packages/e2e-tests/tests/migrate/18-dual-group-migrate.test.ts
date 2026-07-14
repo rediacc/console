@@ -185,8 +185,13 @@ test.describe
       expect(link.stdout).toContain('linked');
 
       // The destination worker is fresh from `ops up`: give it a datastore.
+      //
+      // Via the CLI, not `functions once --function datastore_init`: the datastore-centric
+      // redesign DELETED that bridge verb, so the dispatch failed with "no command builder
+      // registered" — the exit-1 this suite has been dying on. The CLI kept `datastore init`
+      // (it needs root for the BTRFS mount), which is the surviving way to lay down a pool.
       const dsB = await onB(
-        `sudo renet functions once --test-mode --function datastore_init --datastore-path ${DATASTORE} --size 10G --force`,
+        `sudo renet datastore init --path ${DATASTORE} --size 10G --force`,
         180_000
       );
       expect(dsB.code, `group B datastore_init: ${dsB.stderr}`).toBe(0);
@@ -196,7 +201,7 @@ test.describe
       const dsMountedA = await onA(`mountpoint -q ${DATASTORE} && echo MOUNTED || echo NO`);
       if (!dsMountedA.stdout.includes('MOUNTED')) {
         const dsA = await onA(
-          `sudo renet functions once --test-mode --function datastore_init --datastore-path ${DATASTORE} --size 10G --force`,
+          `sudo renet datastore init --path ${DATASTORE} --size 10G --force`,
           180_000
         );
         expect(dsA.code, `group A datastore_init: ${dsA.stderr}`).toBe(0);
