@@ -476,6 +476,10 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
+      # The tree first: nine validators (this job's included) read command-tree.json as
+      # their model of the CLI, and a stale one fails OPEN — they keep passing while
+      # checking a CLI that no longer exists.
+      - run: npm run check:ci-command-tree
       - run: npm run check:cli-examples
 
   quality-ebpf:
