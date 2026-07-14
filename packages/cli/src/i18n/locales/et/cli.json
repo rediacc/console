@@ -731,7 +731,7 @@
           "dnsSkipNoToken": "DNS-i jäetakse vahele: Cloudflare API tõend puudub. Määra käsuga: rdc machine infra set <machine> --cf-dns-token <token>",
           "dnsUnchanged": "DNS: {{type}} {{name}} on juba korrektne",
           "dnsUpdated": "DNS: uuendatud {{type}} {{name}} → {{content}}",
-          "installingProxy": "Puhverserveri installimine ja käivitamine...",
+          "installingProxy": "Marsruuteri installimine...",
           "proxyInstallWarning": "Puhverserveri installimine ebaõnnestus (kood {{code}}). Käivita käsitsi: sudo renet proxy install",
           "success": "Infrastruktuuri konfiguratsioon lükati masinale \"{{name}}\""
         },
@@ -1043,8 +1043,8 @@
         "alreadyExists": "Hoidla \"{{name}}\" on konfiguratsioonis juba olemas",
         "checkpointOption": "Loo CRIU kontrollpunkt allikal enne forkimist (jäädvusta protsessi mäluseisund forgi taastamiseks)",
         "clusterResolved": "Forgitakse \"{{parent}}\" nimeruumina \"{{parent}}-{{tag}}\" klastris \"{{cluster}}\" (juhtsõlm {{controlNode}})",
-        "completed": "Fork loodud. Juuruta kohalikult: repo up {{repository}} -m {{machine}}. Forgi teisaldamiseks teisele masinale: repo push {{repository}} -m {{machine}} --to <siht> --up",
-        "description": "Loo hoidla CoW (Copy-on-Write) fork. FORK ON PEAAEGU HETKELINE JA KONSTANTSE AJAGA sõltumata hoidla suurusest -- BTRFS reflink kloonib alusel oleva kujutise nii, et 100 GB hoidla ja 1 GB hoidla forkitakse sama ~mõne sekundiga. Fork saab uue GUID-i, networkId, IP-vahemiku ja automaatse marsruudi domeeni ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) ning on täiesti iseseisev koopia. Onlainforkimine on toetatud, vanem võib jääda töötavaks. Fork pärib vanema krüpteerimismandaadid automaatselt. Kasuta --checkpoint, et jäädvustada CRIU protsessiseisund enne forkimist -- fork taastab selle automaatselt esimesel käsul 'repo up' (mäluseisund säilitatakse). RISTMASINA FORK: forgi kõigepealt kohalikult, seejärel kanna üle: (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine> --up. HOIATUS: ära kasuta ainult käsku \"repo push\" forkimiseks -- see loob sama GUID-iga toorkoopia (mitte iseseisva forki). Forgi alati kõigepealt uue identiteedi saamiseks. Automarsruudid kasutavad hoidla nime, nii et iga fork saab automaatselt kordumatu domeeni.",
+        "completed": "Fork loodud. Juuruta see: repo up {{repository}}. Teisele masinale kopeerimiseks: repo push {{repository}} --to <target>, seejärel käivita seal artefakt käsuga backup restore {{repository}} --as {{repository}} -m <target> --up",
+        "description": "Loo hoidla CoW (Copy-on-Write) fork. FORK ON PEAAEGU HETKELINE JA KONSTANTSE AJAGA sõltumata hoidla suurusest -- BTRFS reflink kloonib alusel oleva kujutise nii, et 100 GB hoidla ja 1 GB hoidla forkitakse sama ~mõne sekundiga. Fork saab uue GUID-i, networkId, IP-vahemiku ja automaatse marsruudi domeeni ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) ning on täiesti iseseisev koopia. Onlainforkimine on toetatud, vanem võib jääda töötavaks. Fork pärib vanema krüpteerimismandaadid automaatselt. Kasuta --checkpoint, et jäädvustada CRIU protsessiseisund enne forkimist -- fork taastab selle automaatselt esimesel käsul 'repo up' (mäluseisund säilitatakse). RISTMASINA FORK: forgi kõigepealt kohalikult, seejärel kanna üle: (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine>, (3) rdc backup restore <fork-ref> --as <fork-name> -m <target-machine> --up. HOIATUS: ära kasuta ainult käsku \"repo push\" forkimiseks -- see loob sama GUID-iga toorkoopia (mitte iseseisva forki). Forgi alati kõigepealt uue identiteedi saamiseks. Automarsruudid kasutavad hoidla nime, nii et iga fork saab automaatselt kordumatu domeeni.",
         "descriptionShort": "Peaaegu hetkeline CoW-fork hoidlast (uus GUID, networkId, IP-vahemik)",
         "detachedHint": "Teenused käivituvad taustal. Kontrolli olekut: rdc machine status {{machine}} --containers",
         "detachOption": "Koos --up: naaseb kohe, kui konteinerid on käivitatud; tervisekontrollid jätkuvad taustal (ideaalne ühekordsete forkide jaoks)",
@@ -1183,7 +1183,7 @@
         "deployed": "Hoidla \"{{repo}}\" juurutatud masinal {{machine}}",
         "deployFailed": "Hoidla \"{{repo}}\" juurutamine pärast pushumist ebaõnnestus",
         "deploying": "Hoidla \"{{repo}}\" juurutamine masinal {{machine}}...",
-        "description": "Lükka hoidla kaugele (masin või salvestus). Jäta nimi välja, et lükata kõik hoidlad. Sihtkoha tüüp tuvastatakse automaatselt konfiguratsioonist. Masinate vahelisel ülekandel kopeeritakse krüpteeritud hoidlakujutis SAMA GUID-iga -- see on varukoopia/migratsioon, mitte fork. Iseseisva forgi loomiseks kasuta kõigepealt 'repo fork' ja seejärel push. Kasuta --up, et juurutada pärast pushumist",
+        "description": "Lükka hoidla kaugele (masin või salvestus). Sihtkoha tüüp tuvastatakse automaatselt konfiguratsioonist. Masinate vahelisel ülekandel kopeeritakse krüpteeritud hoidlakujutis SAMA GUID-iga -- see on varukoopia/migratsioon, mitte fork. Iseseisva forgi loomiseks kasuta kõigepealt 'repo fork' ja seejärel push. Lükatud koopia maandub varukoopia ARTEFAKTINA: käivita see sihtmasinal käsuga 'backup restore <ref> --as <name> -m <target> --up'",
         "descriptionShort": "Lükka hoidla kaugele (masin või salvestus)",
         "destRequired": "Määra --to <kaugkoht> (masina või salvestuse nimi konfiguratsioonist)",
         "optionBwlimit": "Ribalaiuse piirang rsync-ülekandele (nt \"6M\", \"10M\")",
@@ -1803,7 +1803,7 @@
         "followOption": "Voogesita kuni töö lõpeb",
         "sinceLineOption": "Jätka pärast antud arvu ridu (arv, mille juba said)",
         "invalidSinceLine": "--since-line peab olema ridade arv (saadi \"{{value}}\")",
-        "detached": "Katkestati ühendus tööga {{jobId}}. See töötab endiselt masinas {{machine}} ja seda EI TÜHISTATUD. Uuesti ühendumiseks: rdc job logs -m {{machine}} --id {{jobId}} --follow"
+        "detached": "Katkestati ühendus tööga {{jobId}}. See töötab endiselt masinas {{machine}} ja seda EI TÜHISTATUD. Uuesti ühendumiseks: rdc job logs {{jobId}} -m {{machine}} --follow"
       },
       "cancel": {
         "description": "Tühista töötav eraldiseisev töö",
@@ -1821,11 +1821,6 @@
       "finished": {
         "succeeded": "Töö {{jobId}} õnnestus.",
         "other": "Töö {{jobId}} {{state}}. {{error}}"
-      }
-    },
-    "context": {
-      "pushInfra": {
-        "installingProxy": "Marsruuteri installimine..."
       }
     }
   },
@@ -1894,7 +1889,7 @@
       "doctor": "Süsteemi diagnostika",
       "machine": "Masina haldus",
       "mcp": "MCP-server",
-      "ops": "Eksperimentaalsed VM-toimingud",
+      "ops": "Kohalikud VM-toimingud",
       "repo": "Repositooriumi elutsükkel",
       "shortcuts": "Kiirkäsud (otseteed)",
       "storage": "Salvestuse haldus",

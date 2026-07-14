@@ -315,7 +315,7 @@ async function executeProxySetup(
   }
 
   if (options.debug) {
-    outputService.info(t('commands.context.pushInfra.installingProxy'));
+    outputService.info(t('commands.machine.infra.push.installingProxy'));
   }
 
   const installExitCode = await sftp.execStreaming(`sudo ${remoteRenetPath} proxy install`, {

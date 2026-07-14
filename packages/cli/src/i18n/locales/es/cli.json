@@ -731,7 +731,7 @@
           "dnsSkipNoToken": "Omitiendo DNS: no hay token de API de Cloudflare. Configura con: rdc machine infra set <machine> --cf-dns-token <token>",
           "dnsUnchanged": "DNS: {{type}} {{name}} ya está correcto",
           "dnsUpdated": "DNS: {{type}} {{name}} → {{content}} actualizado",
-          "installingProxy": "Instalando e iniciando el proxy...",
+          "installingProxy": "Instalando el enrutador...",
           "proxyInstallWarning": "Falló la instalación del proxy (código {{code}}). Ejecuta manualmente: sudo renet proxy install",
           "success": "Configuración de infraestructura enviada a \"{{name}}\""
         },
@@ -1821,11 +1821,6 @@
       "finished": {
         "succeeded": "El trabajo {{jobId}} finalizó correctamente.",
         "other": "El trabajo {{jobId}} {{state}}. {{error}}"
-      }
-    },
-    "context": {
-      "pushInfra": {
-        "installingProxy": "Instalando el enrutador..."
       }
     }
   },

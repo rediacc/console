@@ -731,7 +731,7 @@
           "dnsSkipNoToken": "DNS をスキップ: Cloudflare API トークンがありません。次のコマンドで設定してください: rdc machine infra set <machine> --cf-dns-token <token>",
           "dnsUnchanged": "DNS: {{type}} {{name}} は既に正しい設定です",
           "dnsUpdated": "DNS: {{type}} {{name}} → {{content}} を更新しました",
-          "installingProxy": "プロキシをインストールして起動中...",
+          "installingProxy": "ルーターをインストール中...",
           "proxyInstallWarning": "プロキシのインストールに失敗しました（コード {{code}}）。手動で実行してください: sudo renet proxy install",
           "success": "\"{{name}}\" にインフラ設定をプッシュしました"
         },
@@ -1044,7 +1044,7 @@
         "checkpointOption": "fork 前にソースで CRIU checkpoint を作成する（fork 先での復元用にプロセスメモリ状態を取得）",
         "clusterResolved": "\"{{parent}}\" をクラスター \"{{cluster}}\" 内の namespace \"{{parent}}-{{tag}}\" としてフォーク中（コントロールノード {{controlNode}}）",
         "completed": "フォークを作成しました。デプロイ: repo up {{repository}}。別のマシンへコピーするには: repo push {{repository}} --to <target> を実行し、その後 backup restore {{repository}} --as {{repository}} -m <target> --up でそのマシン上のアーティファクトを起動してください",
-        "description": "リポジトリの CoW（コピーオンライト）フォークを作成する。フォークはリポジトリのサイズに関わらずほぼ瞬時かつ定数時間で完了する。BTRFS reflink が基盤イメージをクローンするため、100 GB のリポジトリと 1 GB のリポジトリが同じ数秒でフォークされる。フォークは新しい GUID、networkId、IP 範囲、自動ルートドメイン（{service}-fork-{tag}.{repo}.{machine}.{baseDomain}）を持ち、完全に独立したコピーとなる。オンラインフォークに対応しており、親は稼働したままでよい。フォークは親の暗号化認証情報を自動的に継承する。--checkpoint を使用するとフォーク前に CRIU プロセス状態をキャプチャし、フォークは最初の 'repo up' 時に自動復元される（メモリ内状態が保持される）。クロスマシンフォーク: まずローカルでフォークしてから転送する: (1) rdc repo fork <parent-ref> --tag <name>、(2) rdc repo push <fork-ref> --to <target-machine> --up。警告: フォークのために \"repo push\" だけを使用しないこと。同じ GUID を持つ生のコピーが作成される（独立したフォークではない）。常に先にフォークして新しい identity を取得すること。自動ルートはリポジトリ名を使用するため、各フォークは自動的に一意のドメインを取得する",
+        "description": "リポジトリの CoW（コピーオンライト）フォークを作成する。フォークはリポジトリのサイズに関わらずほぼ瞬時かつ定数時間で完了する。BTRFS reflink が基盤イメージをクローンするため、100 GB のリポジトリと 1 GB のリポジトリが同じ数秒でフォークされる。フォークは新しい GUID、networkId、IP 範囲、自動ルートドメイン（{service}-fork-{tag}.{repo}.{machine}.{baseDomain}）を持ち、完全に独立したコピーとなる。オンラインフォークに対応しており、親は稼働したままでよい。フォークは親の暗号化認証情報を自動的に継承する。--checkpoint を使用するとフォーク前に CRIU プロセス状態をキャプチャし、フォークは最初の 'repo up' 時に自動復元される（メモリ内状態が保持される）。クロスマシンフォーク: まずローカルでフォークしてから転送する: (1) rdc repo fork <parent-ref> --tag <name>、(2) rdc repo push <fork-ref> --to <target-machine>、(3) rdc backup restore <fork-ref> --as <fork-name> -m <target-machine> --up。警告: フォークのために \"repo push\" だけを使用しないこと。同じ GUID を持つ生のコピーが作成される（独立したフォークではない）。常に先にフォークして新しい identity を取得すること。自動ルートはリポジトリ名を使用するため、各フォークは自動的に一意のドメインを取得する",
         "descriptionShort": "リポジトリの CoW フォークを作成する（新規 GUID、networkId、IP 範囲）",
         "detachedHint": "サービスはバックグラウンドで起動中です。状態確認: rdc machine status {{machine}} --containers",
         "detachOption": "--up と併用: コンテナ起動後すぐに戻ります。ヘルスチェックはバックグラウンドで継続します（使い捨てフォークに最適）",
@@ -1183,7 +1183,7 @@
         "deployed": "リポジトリ \"{{repo}}\" が {{machine}} にデプロイされました",
         "deployFailed": "プッシュ後の \"{{repo}}\" のデプロイに失敗しました",
         "deploying": "{{machine}} に \"{{repo}}\" をデプロイ中...",
-        "description": "リポジトリをリモート（マシンまたはストレージ）にプッシュ。名前を省略するとすべてのリポジトリをプッシュ。ターゲットタイプは設定から自動検出。マシン間転送では、暗号化されたリポジトリイメージが同じGUIDでコピーされます — これはバックアップ/移行であり、forkではありません。独立したforkを作成するには、まず'repo fork'を使用してからpush。push後にデプロイするには--upを使用",
+        "description": "リポジトリをリモート（マシンまたはストレージ）にプッシュ。ターゲットタイプは設定から自動検出。マシン間転送では、暗号化されたリポジトリイメージが同じGUIDでコピーされます — これはバックアップ/移行であり、forkではありません。独立したforkを作成するには、まず'repo fork'を使用してからpush。プッシュされたコピーはバックアップアーティファクトとして配置されます: 'backup restore <ref> --as <name> -m <target> --up' でターゲット上に起動してください",
         "descriptionShort": "リポジトリをリモート（マシンまたはストレージ）にプッシュ",
         "destRequired": "--to <remote> を指定してください（設定からのマシンまたはストレージ名）",
         "optionBwlimit": "rsync転送の帯域幅制限（例: \"6M\", \"10M\"）",
@@ -1822,11 +1822,6 @@
         "succeeded": "ジョブ {{jobId}} は成功しました。",
         "other": "ジョブ {{jobId}} は {{state}}。{{error}}"
       }
-    },
-    "context": {
-      "pushInfra": {
-        "installingProxy": "ルーターをインストール中..."
-      }
     }
   },
   "common": {
@@ -1894,7 +1889,7 @@
       "doctor": "システム診断",
       "machine": "マシン管理",
       "mcp": "MCPサーバー",
-      "ops": "実験的 VM 操作",
+      "ops": "ローカル VM 操作",
       "repo": "リポジトリライフサイクル",
       "shortcuts": "クイックコマンド（ショートカット）",
       "storage": "ストレージ管理",

@@ -731,7 +731,7 @@
           "dnsSkipNoToken": "DNS atlanıyor: Cloudflare API belirteci yok. Şu komutla ayarlayın: rdc machine infra set <machine> --cf-dns-token <token>",
           "dnsUnchanged": "DNS: {{type}} {{name}} zaten doğru",
           "dnsUpdated": "DNS: {{type}} {{name}} → {{content}} güncellendi",
-          "installingProxy": "Proxy kuruluyor ve başlatılıyor...",
+          "installingProxy": "Router kuruluyor...",
           "proxyInstallWarning": "Proxy kurulumu başarısız oldu (kod {{code}}). Manuel olarak çalıştırın: sudo renet proxy install",
           "success": "Altyapı yapılandırması \"{{name}}\" makinesine gönderildi"
         },
@@ -1821,11 +1821,6 @@
       "finished": {
         "succeeded": "{{jobId}} görevi başarıyla tamamlandı.",
         "other": "{{jobId}} görevi {{state}}. {{error}}"
-      }
-    },
-    "context": {
-      "pushInfra": {
-        "installingProxy": "Router kuruluyor..."
       }
     }
   },

@@ -731,7 +731,7 @@
           "dnsSkipNoToken": "DNS übersprungen: kein Cloudflare API-Token. Festlegen mit: rdc machine infra set <machine> --cf-dns-token <token>",
           "dnsUnchanged": "DNS: {{type}} {{name}} bereits korrekt",
           "dnsUpdated": "DNS: {{type}} {{name}} → {{content}} aktualisiert",
-          "installingProxy": "Proxy wird installiert und gestartet...",
+          "installingProxy": "Router wird installiert...",
           "proxyInstallWarning": "Proxy-Installation fehlgeschlagen (Code {{code}}). Manuell ausführen: sudo renet proxy install",
           "success": "Infrastrukturkonfiguration auf \"{{name}}\" übertragen"
         },
@@ -1233,7 +1233,7 @@
       },
       "secret": {
         "currentOption": "Vorheriger Klartextwert (passwd-artige Vorbedingung). Erforderlich zum Überschreiben/Löschen; schließt sich mit --rotate-secret gegenseitig aus.",
-        "description": "Pro-Repo-Geheimnisse verwalten, die bei der Bereitstellung injiziert werden. Nur schreibend: get liefert nur den Digest (nie den Klartext), set/unset erfordern eine --current-Digest-Übereinstimmung oder --rotate-secret. Zwei Zustellungsmodi: env (REDIACC_SECRET_<KEY>) und file (tmpfs unter /var/run/rediacc/secrets/<networkId>/<KEY> über compose `secrets:`). Geheimnisse gelangen nie in das verschlüsselte LUKS-Image; Forks erben keine.",
+        "description": "Pro-Repo-Geheimnisse verwalten, die bei der Bereitstellung injiziert werden. Nur schreibend: get liefert nur den Digest (nie den Klartext), set/unset erfordern eine Digest-Übereinstimmung über --current oder --rotate-secret. Zwei Zustellungsmodi: env (REDIACC_SECRET_<KEY>) und file (tmpfs unter /var/run/rediacc/secrets/<networkId>/<KEY> über compose `secrets:`). Geheimnisse gelangen nie in das verschlüsselte LUKS-Image; Forks erben keine.",
         "descriptionShort": "Per-Repo-Bereitstellungsgeheimnisse verwalten (env / file)",
         "get": {
           "description": "Den SHA-256-Digest eines Geheimnisses anzeigen. Der Klartextwert wird bewusst nie zurückgegeben (nur schreibend). Verwenden Sie --current bei einem nachfolgenden set/unset, um einen bereits bekannten Wert zu verifizieren, oder rotieren Sie ihn über `set --rotate-secret`.",
@@ -1821,11 +1821,6 @@
       "finished": {
         "succeeded": "Job {{jobId}} war erfolgreich.",
         "other": "Der Job {{jobId}} {{state}}. {{error}}"
-      }
-    },
-    "context": {
-      "pushInfra": {
-        "installingProxy": "Router wird installiert..."
       }
     }
   },

@@ -731,7 +731,7 @@
           "dnsSkipNoToken": "跳过 DNS：没有 Cloudflare API 令牌。使用以下命令设置：rdc machine infra set <machine> --cf-dns-token <token>",
           "dnsUnchanged": "DNS：{{type}} {{name}} 已是正确配置",
           "dnsUpdated": "DNS：已更新 {{type}} {{name}} → {{content}}",
-          "installingProxy": "正在安装并启动代理...",
+          "installingProxy": "正在安装路由器...",
           "proxyInstallWarning": "代理安装失败（代码 {{code}}）。请手动运行：sudo renet proxy install",
           "success": "已将基础设施配置推送到 \"{{name}}\""
         },
@@ -1822,11 +1822,6 @@
         "succeeded": "任务 {{jobId}} 已成功完成。",
         "other": "任务 {{jobId}} {{state}}。{{error}}"
       }
-    },
-    "context": {
-      "pushInfra": {
-        "installingProxy": "正在安装路由器..."
-      }
     }
   },
   "common": {
@@ -1894,7 +1889,7 @@
       "doctor": "系统诊断",
       "machine": "机器管理",
       "mcp": "MCP 服务器",
-      "ops": "实验性 VM 操作",
+      "ops": "本地 VM 操作",
       "repo": "仓库生命周期",
       "shortcuts": "快捷命令（快捷方式）",
       "storage": "存储管理",

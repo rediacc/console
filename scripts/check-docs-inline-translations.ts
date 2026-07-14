@@ -154,6 +154,7 @@ const P7_DEFERRED_STALE_KEYS = new Set([
   'cli.commands.repo.mount.noDockerOption',
   'cli.commands.repo.ownership.description',
   'cli.commands.repo.ownership.uidOption',
+  'cli.commands.repo.push.optionUp',
   'cli.commands.repo.replicate.refresh.nameOption',
   'cli.commands.repo.replicate.remove.nameOption',
   'cli.commands.repo.replicate.status.nameOption',

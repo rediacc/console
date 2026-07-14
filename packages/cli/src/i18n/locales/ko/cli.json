@@ -731,7 +731,7 @@
           "dnsSkipNoToken": "DNS 건너뜀: Cloudflare API 토큰이 없습니다. 다음으로 설정하십시오: rdc machine infra set <machine> --cf-dns-token <token>",
           "dnsUnchanged": "DNS: {{type}} {{name}} 이미 올바름",
           "dnsUpdated": "DNS: {{type}} {{name}} → {{content}} 업데이트됨",
-          "installingProxy": "프록시를 설치하고 시작하는 중...",
+          "installingProxy": "라우터를 설치하는 중...",
           "proxyInstallWarning": "프록시 설치 실패 (코드 {{code}}). 수동으로 실행하십시오: sudo renet proxy install",
           "success": "\"{{name}}\"에 인프라 설정 푸시 완료"
         },
@@ -1043,8 +1043,8 @@
         "alreadyExists": "저장소 \"{{name}}\"이 이미 설정에 존재합니다",
         "checkpointOption": "포크 전 소스에서 CRIU 체크포인트를 생성합니다 (포크에서 복원을 위해 프로세스 메모리 상태를 캡처합니다)",
         "clusterResolved": "\"{{parent}}\"를 클러스터 \"{{cluster}}\"의 네임스페이스 \"{{parent}}-{{tag}}\"로 포크하는 중 (컨트롤 노드 {{controlNode}})",
-        "completed": "포크 생성 완료. 로컬 배포: repo up {{repository}} -m {{machine}}. 다른 머신으로 포크 마이그레이션: repo push {{repository}} -m {{machine}} --to <target> --up",
-        "description": "저장소의 CoW(Copy-on-Write) 포크를 생성합니다. 포크는 저장소 크기와 무관하게 거의 즉시, 일정한 시간에 완료됩니다. BTRFS reflink가 기반 이미지를 복제하므로 100 GB 저장소와 1 GB 저장소가 같은 몇 초 안에 포크됩니다. 포크는 새 GUID, networkId, IP 범위, 자동 라우트 도메인({service}-fork-{tag}.{repo}.{machine}.{baseDomain})을 가지며 완전히 독립된 사본입니다. 온라인 포크를 지원하므로 상위 저장소는 계속 실행된 상태로 두어도 됩니다. 포크는 상위의 암호화 자격증명을 자동으로 상속합니다. --checkpoint를 사용하면 포크 전에 CRIU 프로세스 상태를 캡처하며, 포크는 첫 번째 'repo up' 시 자동으로 복원됩니다(메모리 내 상태 보존). 크로스 머신 포크: 먼저 로컬에서 포크한 뒤 전송하세요: (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine> --up. 경고: 포크를 위해 \"repo push\"만 단독으로 사용하지 마세요. 동일한 GUID를 가진 원시 사본이 생성됩니다(독립적인 포크가 아님). 항상 먼저 포크하여 새 식별자를 얻으세요. 자동 라우트는 저장소 이름을 사용하므로 각 포크는 자동으로 고유한 도메인을 얻습니다",
+        "completed": "포크가 생성되었습니다. 배포: repo up {{repository}}. 다른 머신으로 복사: repo push {{repository}} --to <target>, 그런 다음 backup restore {{repository}} --as {{repository}} -m <target> --up으로 해당 머신에서 아티팩트를 부팅하세요",
+        "description": "저장소의 CoW(Copy-on-Write) 포크를 생성합니다. 포크는 저장소 크기와 무관하게 거의 즉시, 일정한 시간에 완료됩니다. BTRFS reflink가 기반 이미지를 복제하므로 100 GB 저장소와 1 GB 저장소가 같은 몇 초 안에 포크됩니다. 포크는 새 GUID, networkId, IP 범위, 자동 라우트 도메인({service}-fork-{tag}.{repo}.{machine}.{baseDomain})을 가지며 완전히 독립된 사본입니다. 온라인 포크를 지원하므로 상위 저장소는 계속 실행된 상태로 두어도 됩니다. 포크는 상위의 암호화 자격증명을 자동으로 상속합니다. --checkpoint를 사용하면 포크 전에 CRIU 프로세스 상태를 캡처하며, 포크는 첫 번째 'repo up' 시 자동으로 복원됩니다(메모리 내 상태 보존). 크로스 머신 포크: 먼저 로컬에서 포크한 뒤 전송하세요: (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine>, (3) rdc backup restore <fork-ref> --as <fork-name> -m <target-machine> --up. 경고: 포크를 위해 \"repo push\"만 단독으로 사용하지 마세요. 동일한 GUID를 가진 원시 사본이 생성됩니다(독립적인 포크가 아님). 항상 먼저 포크하여 새 식별자를 얻으세요. 자동 라우트는 저장소 이름을 사용하므로 각 포크는 자동으로 고유한 도메인을 얻습니다",
         "descriptionShort": "저장소의 즉각적인 CoW 포크 (새 GUID, networkId, IP 범위)",
         "detachedHint": "서비스가 백그라운드에서 시작 중입니다. 상태 확인: rdc machine status {{machine}} --containers",
         "detachOption": "--up 와 함께: 컨테이너가 시작되면 즉시 반환합니다. 헬스체크는 백그라운드에서 계속됩니다 (일회용 포크에 적합)",
@@ -1183,7 +1183,7 @@
         "deployed": "{{machine}}에서 저장소 \"{{repo}}\" 배포 완료",
         "deployFailed": "푸시 후 \"{{repo}}\" 배포 실패",
         "deploying": "{{machine}}에서 \"{{repo}}\"를 배포하는 중...",
-        "description": "저장소를 원격 (머신 또는 스토리지)으로 푸시합니다. 이름을 생략하면 모든 저장소를 푸시합니다. 대상 유형은 설정에서 자동으로 감지됩니다. 머신 간 전송 시 암호화된 저장소 이미지가 동일한 GUID로 복사됩니다. 이는 백업/마이그레이션이며 포크가 아닙니다. 독립적인 포크를 생성하려면 먼저 'repo fork'를 사용한 후 푸시하십시오. 푸시 후 배포하려면 --up을 사용하십시오",
+        "description": "저장소를 원격 (머신 또는 스토리지)으로 푸시합니다. 대상 유형은 설정에서 자동으로 감지됩니다. 머신 간 전송 시 암호화된 저장소 이미지가 동일한 GUID로 복사됩니다. 이는 백업/마이그레이션이며 포크가 아닙니다. 독립적인 포크를 생성하려면 먼저 'repo fork'를 사용한 후 푸시하십시오. 푸시된 사본은 백업 아티팩트로 저장됩니다: 대상에서 'backup restore <ref> --as <name> -m <target> --up'으로 부팅하세요",
         "descriptionShort": "저장소를 원격 (머신 또는 스토리지)으로 푸시합니다",
         "destRequired": "--to <remote>를 지정하십시오 (설정의 머신 또는 스토리지 이름)",
         "optionBwlimit": "rsync 전송의 대역폭 제한 (예: \"6M\", \"10M\")",
@@ -1803,7 +1803,7 @@
         "followOption": "작업이 끝날 때까지 스트리밍합니다",
         "sinceLineOption": "지정한 줄 수 이후부터 재개합니다(이미 수신한 줄 수)",
         "invalidSinceLine": "--since-line은 줄 수(정수)여야 합니다(입력값: \"{{value}}\")",
-        "detached": "작업 {{jobId}}에서 분리되었습니다. {{machine}}에서 계속 실행 중이며 취소된 것이 결코 아닙니다. 다시 연결하려면: rdc job logs -m {{machine}} --id {{jobId}} --follow"
+        "detached": "작업 {{jobId}}에서 분리되었습니다. {{machine}}에서 계속 실행 중이며 취소된 것이 아닙니다. 다시 연결하려면: rdc job logs {{jobId}} -m {{machine}} --follow"
       },
       "cancel": {
         "description": "실행 중인 분리된 작업을 취소합니다",
@@ -1821,11 +1821,6 @@
       "finished": {
         "succeeded": "작업 {{jobId}}이(가) 성공적으로 완료되었습니다.",
         "other": "작업 {{jobId}}이(가) {{state}} 상태입니다. {{error}}"
-      }
-    },
-    "context": {
-      "pushInfra": {
-        "installingProxy": "라우터를 설치하는 중..."
       }
     }
   },
@@ -1894,7 +1889,7 @@
       "doctor": "시스템 진단",
       "machine": "머신 관리",
       "mcp": "MCP 서버",
-      "ops": "실험적 VM 작업",
+      "ops": "로컬 VM 작업",
       "repo": "저장소 라이프사이클",
       "shortcuts": "빠른 명령 (단축키)",
       "storage": "스토리지 관리",
@@ -2135,8 +2130,6 @@
       "unsupportedArch": "브라우저용 VS Code에서 지원하지 않는 머신 아키텍처입니다: {{arch}}",
       "repoRequired": "이 VS Code 서버에는 저장소 대상이 필요합니다. 저장소 참조를 전달하세요"
     },
-    "regionSelectionRequiresTTY": "리전 선택에는 대화형 입력이 필요합니다. --server <url>을 사용하여 서버를 직접 지정하세요.",
-    "unknownRegion": "알 수 없는 리전: {{region}}",
     "datastore": {
       "defaultIsImplicit": "기본 데이터스토어는 암묵적으로 존재합니다. 이 명령어들은 그 외의 이름 지정 데이터스토어를 관리합니다.",
       "deleteHasRepos": "데이터스토어 \"{{ref}}\"에 아직 저장소가 있습니다: {{repos}}. 먼저 삭제하거나, --force를 전달해 함께 파기하세요",
@@ -2145,7 +2138,9 @@
       "localForkUnsupported": "\"{{name}}\"은(는) local 데이터스토어이며, 블록 수준 클론이 존재하지 않습니다. local 데이터스토어 안의 저장소는 reflink로 하나씩 포크합니다(rdc repo fork). 데이터스토어 단위 포크에는 rbd 백엔드가 필요합니다.",
       "writesImmutable": "\"{{ref}}\"는 이미 다른 writes 설정으로 여기에 어태치되어 있습니다. writes는 어태치 시점에 정해지므로 먼저 분리하세요",
       "writesOnNonFork": "\"{{ref}}\"는 포크가 아니므로 다른 곳에 쓸 필요가 없습니다. --writes를 제거하세요"
-    }
+    },
+    "regionSelectionRequiresTTY": "리전 선택에는 대화형 입력이 필요합니다. --server <url>을 사용하여 서버를 직접 지정하세요.",
+    "unknownRegion": "알 수 없는 리전: {{region}}"
   },
   "help": {
     "agentMode": "\n  에이전트 모드\n    • 포크 전용: 어떤 저장소든 변경하기 전에 포크를 생성\n    • Grand(비포크) 저장소는 에이전트에게 읽기 전용\n    • 워크플로: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • 저장소 참조(repo[:tag])는 그 자체로 머신을 결정하므로 -m이 필요 없음\n    • JSON 출력이 자동으로 활성화됨 -- 모든 명령이 { success, data, errors, metrics }를 반환\n    • 항상 전체 JSON을 파싱 -- JSON 출력에 tail/head/grep 사용 금지\n    • 응답 크기를 줄이려면 필터 플래그 사용 (예: --repositories, --containers)\n\n",

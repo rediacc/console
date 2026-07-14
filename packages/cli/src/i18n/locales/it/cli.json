@@ -731,7 +731,7 @@
           "dnsSkipNoToken": "DNS ignorato: nessun token API Cloudflare. Impostalo con: rdc machine infra set <machine> --cf-dns-token <token>",
           "dnsUnchanged": "DNS: {{type}} {{name}} già corretto",
           "dnsUpdated": "DNS: aggiornato {{type}} {{name}} → {{content}}",
-          "installingProxy": "Installazione e avvio del proxy...",
+          "installingProxy": "Installazione del router in corso...",
           "proxyInstallWarning": "Installazione del proxy non riuscita (codice {{code}}). Esegui manualmente: sudo renet proxy install",
           "success": "Configurazione infrastruttura inviata a \"{{name}}\""
         },
@@ -1822,11 +1822,6 @@
         "succeeded": "Il job {{jobId}} è riuscito.",
         "other": "Il job {{jobId}} {{state}}. {{error}}"
       }
-    },
-    "context": {
-      "pushInfra": {
-        "installingProxy": "Installazione del router in corso..."
-      }
     }
   },
   "common": {
@@ -1894,7 +1889,7 @@
       "doctor": "Diagnostica di sistema",
       "machine": "Gestione delle macchine",
       "mcp": "Server MCP",
-      "ops": "Operazioni VM sperimentali",
+      "ops": "Operazioni VM locali",
       "repo": "Ciclo di vita del repository",
       "shortcuts": "Comandi rapidi (scorciatoie)",
       "storage": "Gestione dello storage",

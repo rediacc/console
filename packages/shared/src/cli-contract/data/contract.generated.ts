@@ -1443,7 +1443,7 @@ export const CLI_CONTRACT: CliContract = {
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.cluster.snapshot.create.description",
-      "label": "Snapshot every rbd-backed datastore in the cluster at ONE instant. Nothing is stopped. Any local-backend datastore in the cluster is listed as outside the instant: it is not part of the snapshot.",
+      "label": "Snapshot every rbd-backed datastore in the cluster at ONE instant. Nothing is stopped. Any local-backend datastore in the cluster is listed as outside the instant: it is not part of the snapshot. The instant is crash-consistent, not application-consistent: if you need a specific write to be IN the snapshot, sync it first.",
       "options": [
         {
           "flags": "--snapshot <label>",
@@ -2330,16 +2330,6 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Restore config from backup (.bak) file",
       "options": [
         {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
           "flags": "-y, --yes",
           "long": "yes",
           "short": "y",
@@ -2351,7 +2341,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip confirmation prompt"
         }
       ],
-      "positionals": [],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "plain",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
       "hasSubcommands": false,
       "mcpExcludeReason": "Rewrites a damaged config from backup; the operator must see what changed.",
       "interactive": false,
@@ -3268,7 +3267,7 @@ export const CLI_CONTRACT: CliContract = {
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.datastore.snapshot.create.description",
-      "label": "Take a point-in-time snapshot of a datastore. Nothing stops.",
+      "label": "Take a point-in-time snapshot of a datastore. Nothing stops. The instant is crash-consistent, not application-consistent: if you need a specific write to be IN the snapshot, sync it first.",
       "options": [
         {
           "flags": "--snapshot <label>",
@@ -3456,16 +3455,6 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Target machine name"
         },
         {
-          "flags": "--id <jobId>",
-          "long": "id",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "commands.job.idOption",
-          "label": "Job ID"
-        },
-        {
           "flags": "-y, --yes",
           "long": "yes",
           "short": "y",
@@ -3477,7 +3466,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip confirmation prompt"
         }
       ],
-      "positionals": [],
+      "positionals": [
+        {
+          "name": "job-id",
+          "kind": "job-id",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.job.idOption",
+          "label": "Job ID"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": true,
@@ -3799,16 +3797,6 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Destroy a cloud-provisioned machine and remove from config",
       "options": [
         {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
           "flags": "--force",
           "long": "force",
           "valueTaking": false,
@@ -3829,7 +3817,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
-      "positionals": [],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": false,
@@ -3838,7 +3835,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
-      "machineOption": "name",
+      "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
       "repoPositional": null
@@ -3857,16 +3854,6 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Check machine health for CI/CD pipelines",
       "options": [
         {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
           "flags": "-t, --team <name>",
           "long": "team",
           "short": "t",
@@ -3878,7 +3865,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Team name"
         }
       ],
-      "positionals": [],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": false,
       "idempotent": true,
@@ -3887,7 +3883,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
-      "machineOption": "name",
+      "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
       "repoPositional": null
@@ -4064,7 +4060,7 @@ export const CLI_CONTRACT: CliContract = {
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.machine.infra.push.description",
-      "label": "Push infrastructure config to machine (Traefik proxy, router, Cloudflare DNS). Run 'config infra set <machine>' first",
+      "label": "Push infrastructure config to machine (Traefik proxy, router, Cloudflare DNS). Run 'machine infra set <machine>' first",
       "options": [
         {
           "flags": "--debug",
@@ -4590,16 +4586,6 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Provision a new machine on a cloud provider using OpenTofu",
       "options": [
         {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
           "flags": "--provider <name>",
           "long": "provider",
           "valueTaking": true,
@@ -4607,7 +4593,7 @@ export const CLI_CONTRACT: CliContract = {
           "mandatory": true,
           "defaultValue": null,
           "descriptionKey": "commands.machine.provision.optionProvider",
-          "label": "Cloud provider name (from config provider add)"
+          "label": "Cloud provider name (from machine provider add)"
         },
         {
           "flags": "--region <region>",
@@ -4680,7 +4666,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
-      "positionals": [],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": false,
@@ -4689,7 +4684,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
-      "machineOption": "name",
+      "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
       "repoPositional": null
@@ -4707,16 +4702,6 @@ export const CLI_CONTRACT: CliContract = {
       "descriptionKey": "commands.machine.prune.description",
       "label": "Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from your local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.",
       "options": [
-        {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
         {
           "flags": "--dry-run",
           "long": "dry-run",
@@ -4788,7 +4773,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Enable debug output"
         }
       ],
-      "positionals": [],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": true,
@@ -4797,7 +4791,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
-      "machineOption": "name",
+      "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
       "repoPositional": null
@@ -5648,17 +5642,6 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Disable autostart for a repository (omit name to disable all)",
       "options": [
         {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,
@@ -5695,7 +5678,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
-      "machineOption": "machine",
+      "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
       "repoPositional": "ref"
@@ -5716,17 +5699,6 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Enable autostart for a repository (omit name to enable all)",
       "options": [
         {
-          "flags": "-m, --machine <name>",
-          "long": "machine",
-          "short": "m",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "descriptionKey": "commands.repo.machineOption",
-          "label": "Target machine name"
-        },
-        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,
@@ -5763,7 +5735,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
-      "machineOption": "machine",
+      "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
       "repoPositional": "ref"
@@ -7259,7 +7231,7 @@ export const CLI_CONTRACT: CliContract = {
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.repo.fork.description",
-      "label": "Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: fork locally first, then transfer: (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine> --up. WARNING: do NOT use \"repo push\" alone to fork, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name, so each fork gets a unique domain automatically.",
+      "label": "Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: fork locally first, then transfer: (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine>, (3) rdc backup restore <fork-ref> --as <fork-name> -m <target-machine> --up. WARNING: do NOT use \"repo push\" alone to fork, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name, so each fork gets a unique domain automatically.",
       "options": [
         {
           "flags": "--tag <name>",
@@ -8229,7 +8201,7 @@ export const CLI_CONTRACT: CliContract = {
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.repo.push.description",
-      "label": "Push repository to a remote (machine or storage). Omit name to push all repos. The target type is auto-detected from config. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. Use --up to deploy after push",
+      "label": "Push repository to a remote (machine or storage). The target type is auto-detected from config. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. A pushed copy lands as a backup ARTIFACT: boot it on the target with 'backup restore <ref> --as <name> -m <target> --up'",
       "options": [
         {
           "flags": "--to <remote>",
@@ -9886,16 +9858,6 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Delete orphaned backups from storage that are no longer in any config. Multi-config safe with grace period protection. The rclone calls run on --machine (the executor), not on your laptop, so clients don't need rclone installed locally; --machine is the executor, not the source of truth.",
       "options": [
         {
-          "flags": "--name <name>",
-          "long": "name",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": true,
-          "defaultValue": null,
-          "descriptionKey": "options.name",
-          "label": "Resource name"
-        },
-        {
           "flags": "-m, --machine <name>",
           "long": "machine",
           "short": "m",
@@ -9967,7 +9929,16 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip restarting the route server after binary update"
         }
       ],
-      "positionals": [],
+      "positionals": [
+        {
+          "name": "storage",
+          "kind": "storage",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.storageRef",
+          "label": "Storage ref: the name of a registered storage endpoint (for example s3-main)"
+        }
+      ],
       "hasSubcommands": false,
       "destructive": true,
       "idempotent": true,

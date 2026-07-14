@@ -6,7 +6,7 @@ order: 2
 language: es
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/es/cli.json
-sourceHash: "af8589c1919d8ae6"
+sourceHash: "4340feabb4ae0e68"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -144,12 +144,11 @@ rdc config clear [key]
 {{t:cli.commands.config.recover.description}}
 
 ```bash
-rdc config recover [options]
+rdc config recover [name] [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -391,6 +390,20 @@ rdc config reconcile [options]
 | `--dry-run` | {{t:cli.options.dryRun}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
+<a id="cli-local-config-rotate-cek"></a>
+### 1.15 rotate-cek
+
+{{t:cli.commands.config.rotateCek.description}}
+
+```bash
+rdc config rotate-cek [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--api-url <url>` | {{t:cli.options.serverUrl}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 ---
 
 <a id="cli-local-group-datastore"></a>
@@ -404,87 +417,158 @@ rdc config reconcile [options]
 {{t:cli.commands.datastore.resize.description}}
 
 ```bash
-rdc datastore resize [options]
+rdc datastore resize <datastore> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.commands.datastore.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--size <size>` | {{t:cli.commands.datastore.resize.sizeOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-<a id="cli-local-datastore-init"></a>
-### 2.2 init
-
-{{t:cli.commands.datastore.init.description}}
-
-```bash
-rdc datastore init [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.commands.datastore.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--size <size>` | {{t:cli.commands.datastore.init.sizeOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--backend <type>` | {{t:cli.commands.datastore.init.backendOption}} | {{t:cli.docs.optionLabels.no}} | `local` |
-| `--pool <name>` | {{t:cli.commands.datastore.init.poolOption}} | {{t:cli.docs.optionLabels.no}} | `rbd` |
-| `--image <name>` | {{t:cli.commands.datastore.init.imageOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.datastore.init.clusterOption}} | {{t:cli.docs.optionLabels.no}} | `ceph` |
-| `--force` | {{t:cli.commands.datastore.init.forceOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
 <a id="cli-local-datastore-fork"></a>
-### 2.3 fork
+### 2.2 fork
 
 {{t:cli.commands.datastore.fork.description}}
 
 ```bash
-rdc datastore fork [options]
+rdc datastore fork <datastore> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.commands.datastore.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--to <name>` | {{t:cli.commands.datastore.fork.toOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--tag <tag>` | {{t:cli.commands.datastore.fork.tagOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--attach-to <machine>` | {{t:cli.commands.datastore.fork.attachToOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--writes <disposition>` | {{t:cli.commands.datastore.fork.writesOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--cow-size <size>` | {{t:cli.commands.datastore.fork.cowSizeOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-<a id="cli-local-datastore-unfork"></a>
-### 2.4 unfork
-
-{{t:cli.commands.datastore.unfork.description}}
-
-```bash
-rdc datastore unfork [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.commands.datastore.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--source <image>` | {{t:cli.commands.datastore.unfork.sourceOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--snapshot <name>` | {{t:cli.commands.datastore.unfork.snapshotOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--dest <image>` | {{t:cli.commands.datastore.unfork.destOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--pool <name>` | {{t:cli.commands.datastore.unfork.poolOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--mount-point <path>` | {{t:cli.commands.datastore.unfork.mountPointOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--force` | {{t:cli.commands.datastore.unfork.forceOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
 <a id="cli-local-datastore-status"></a>
-### 2.5 status
+### 2.3 status
 
 {{t:cli.commands.datastore.status.description}}
 
 ```bash
-rdc datastore status [options]
+rdc datastore status <datastore> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.commands.datastore.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-datastore-create"></a>
+### 2.4 create
+
+{{t:cli.commands.datastore.create.description}}
+
+```bash
+rdc datastore create <datastore> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.commands.datastore.create.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--size <size>` | {{t:cli.commands.datastore.create.sizeOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--backend <type>` | {{t:cli.commands.datastore.create.backendOption}} | {{t:cli.docs.optionLabels.no}} | `local` |
+| `--pool <name>` | {{t:cli.commands.datastore.create.poolOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--image <name>` | {{t:cli.commands.datastore.create.imageOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--cluster <name>` | {{t:cli.commands.datastore.create.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-datastore-list"></a>
+### 2.5 list
+
+{{t:cli.commands.datastore.list.description}}
+
+```bash
+rdc datastore list [place]
+```
+
+<a id="cli-local-datastore-attach"></a>
+### 2.6 attach
+
+{{t:cli.commands.datastore.attach.description}}
+
+```bash
+rdc datastore attach <datastore> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--to <machine>` | {{t:cli.commands.datastore.attach.toOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--writes <disposition>` | {{t:cli.commands.datastore.attach.writesOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--cow-size <size>` | {{t:cli.commands.datastore.fork.cowSizeOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--no-auto` | {{t:cli.commands.datastore.attach.noAutoOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--force` | {{t:cli.commands.datastore.attach.forceOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-datastore-detach"></a>
+### 2.7 detach
+
+{{t:cli.commands.datastore.detach.description}}
+
+```bash
+rdc datastore detach <datastore> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--discard` | {{t:cli.commands.datastore.detach.discardOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-datastore-snapshot"></a>
+### 2.8 snapshot
+
+{{t:cli.commands.datastore.snapshot.description}}
+
+<a id="cli-local-datastore-snapshot-create"></a>
+#### create
+
+{{t:cli.commands.datastore.snapshot.create.description}}
+
+```bash
+rdc datastore snapshot create <datastore> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--snapshot <label>` | {{t:cli.commands.cluster.snapshot.create.labelOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-datastore-snapshot-list"></a>
+#### list
+
+{{t:cli.commands.datastore.snapshot.list.description}}
+
+```bash
+rdc datastore snapshot list <datastore> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-datastore-delete"></a>
+### 2.9 delete
+
+{{t:cli.commands.datastore.delete.description}}
+
+```bash
+rdc datastore delete <datastore> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--force` | {{t:cli.commands.datastore.delete.forceOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -508,7 +592,7 @@ rdc machine list [options]
 |------|-------------|----------|---------|
 | `--search <text>` | {{t:cli.options.searchInField}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--sort <field>` | {{t:cli.options.sortByField}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--desc` | {{t:cli.options.sortDescending}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--desc` | {{t:cli.options.sortDesc}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-machine-health"></a>
@@ -519,12 +603,11 @@ rdc machine list [options]
 {{t:cli.docs.supplements.machine.health.afterDescription}}
 
 ```bash
-rdc machine health [options]
+rdc machine health <name> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -534,12 +617,11 @@ rdc machine health [options]
 {{t:cli.commands.machine.provision.description}}
 
 ```bash
-rdc machine provision [options]
+rdc machine provision <name> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--provider <name>` | {{t:cli.commands.machine.provision.optionProvider}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--region <region>` | {{t:cli.commands.machine.provision.optionRegion}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--type <type>` | {{t:cli.commands.machine.provision.optionType}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -556,12 +638,11 @@ rdc machine provision [options]
 {{t:cli.commands.machine.deprovision.description}}
 
 ```bash
-rdc machine deprovision [options]
+rdc machine deprovision <name> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--force` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -572,12 +653,11 @@ rdc machine deprovision [options]
 {{t:cli.commands.machine.prune.description}}
 
 ```bash
-rdc machine prune [options]
+rdc machine prune <name> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--dry-run` | {{t:cli.commands.machine.prune.dryRunOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--orphaned-repos` | {{t:cli.commands.machine.prune.orphanedReposOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--prune-unknown` | {{t:cli.commands.machine.prune.pruneUnknownOption}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -603,149 +683,23 @@ rdc machine add <name> [options]
 | `--port <port>` | {{t:cli.options.sshPort}} | {{t:cli.docs.optionLabels.no}} | `22` |
 
 
-<a id="cli-local-machine-remove"></a>
-### 3.7 remove
-
-{{t:cli.commands.machine.remove.description}}
-
-```bash
-rdc machine remove <name> [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
-<a id="cli-local-machine-scan-keys"></a>
-### 3.8 scan-keys
-
-{{t:cli.commands.machine.scanKeys.description}}
-
-```bash
-rdc machine scan-keys [name]
-```
-
-<a id="cli-local-machine-setup"></a>
-### 3.9 setup
-
-{{t:cli.commands.machine.setup.description}}
-
-```bash
-rdc machine setup <name> [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--datastore-path <path>` | {{t:cli.commands.machine.setup.datastoreOption}} | {{t:cli.docs.optionLabels.no}} | `/mnt/rediacc` |
-| `--datastore-size <size>` | {{t:cli.commands.machine.setup.datastoreSizeOption}} | {{t:cli.docs.optionLabels.no}} | `95%` |
-| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
-<a id="cli-local-machine-provider"></a>
-### 3.10 provider
-
-{{t:cli.commands.machine.provider.description}}
-
-<a id="cli-local-machine-provider-add"></a>
-#### add
-
-{{t:cli.commands.machine.provider.add.description}}
-
-```bash
-rdc machine provider add <name> [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--provider <source>` | {{t:cli.commands.machine.provider.add.optionProvider}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--source <source>` | {{t:cli.commands.machine.provider.add.optionSource}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--token <token>` | {{t:cli.commands.machine.provider.add.optionToken}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--region <region>` | {{t:cli.commands.machine.provider.add.optionRegion}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--type <type>` | {{t:cli.commands.machine.provider.add.optionInstanceType}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--image <image>` | {{t:cli.commands.machine.provider.add.optionImage}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--ssh-user <user>` | {{t:cli.commands.machine.provider.add.optionSshUser}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--resource <type>` | {{t:cli.commands.machine.provider.add.optionResource}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--label-attr <attr>` | {{t:cli.commands.machine.provider.add.optionLabelAttr}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--region-attr <attr>` | {{t:cli.commands.machine.provider.add.optionRegionAttr}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--size-attr <attr>` | {{t:cli.commands.machine.provider.add.optionSizeAttr}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--image-attr <attr>` | {{t:cli.commands.machine.provider.add.optionImageAttr}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--ipv4-output <attr>` | {{t:cli.commands.machine.provider.add.optionIpv4Output}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--ipv6-output <attr>` | {{t:cli.commands.machine.provider.add.optionIpv6Output}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--ssh-key-attr <attr>` | {{t:cli.commands.machine.provider.add.optionSshKeyAttr}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--ssh-key-format <format>` | {{t:cli.commands.machine.provider.add.optionSshKeyFormat}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--ssh-key-resource <type>` | {{t:cli.commands.machine.provider.add.optionSshKeyResource}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
-<a id="cli-local-machine-provider-remove"></a>
-#### remove
-
-{{t:cli.commands.machine.provider.remove.description}}
-
-```bash
-rdc machine provider remove <name>
-```
-
-<a id="cli-local-machine-provider-list"></a>
-#### list
-
-{{t:cli.commands.machine.provider.list.description}}
-
-```bash
-rdc machine provider list
-```
-
 <a id="cli-local-machine-infra"></a>
-### 3.11 infra
+### 3.7 infra
 
 {{t:cli.commands.machine.infra.description}}
-
-<a id="cli-local-machine-infra-set"></a>
-#### set
-
-{{t:cli.commands.machine.infra.set.description}}
-
-```bash
-rdc machine infra set <machine> [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--public-ipv4 <ip>` | {{t:cli.commands.machine.infra.set.optionPublicIPv4}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--public-ipv6 <ip>` | {{t:cli.commands.machine.infra.set.optionPublicIPv6}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--base-domain <domain>` | {{t:cli.commands.machine.infra.set.optionBaseDomain}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cert-email <email>` | {{t:cli.commands.machine.infra.set.optionCertEmail}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cf-dns-token <token>` | {{t:cli.commands.machine.infra.set.optionCfDnsToken}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--tcp-ports <ports>` | {{t:cli.commands.machine.infra.set.optionTcpPorts}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--udp-ports <ports>` | {{t:cli.commands.machine.infra.set.optionUdpPorts}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
-<a id="cli-local-machine-infra-show"></a>
-#### show
-
-{{t:cli.commands.machine.infra.show.description}}
-
-```bash
-rdc machine infra show <machine>
-```
-
-<a id="cli-local-machine-infra-push"></a>
-#### push
-
-{{t:cli.commands.machine.infra.push.description}}
-
-```bash
-rdc machine infra push <machine> [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
-
 
 #### cert
 
 {{t:cli.commands.machine.infra.cert.description}}
+
+<a id="cli-local-machine-infra-cert-clear"></a>
+**clear:**
+
+{{t:cli.commands.machine.infra.cert.clear.description}}
+
+```bash
+rdc machine infra cert clear
+```
 
 <a id="cli-local-machine-infra-cert-pull"></a>
 **pull:**
@@ -785,14 +739,140 @@ rdc machine infra cert push <machine> [options]
 rdc machine infra cert status
 ```
 
-<a id="cli-local-machine-infra-cert-clear"></a>
-**clear:**
+<a id="cli-local-machine-infra-push"></a>
+#### push
 
-{{t:cli.commands.machine.infra.cert.clear.description}}
+{{t:cli.commands.machine.infra.push.description}}
 
 ```bash
-rdc machine infra cert clear
+rdc machine infra push <machine> [options]
 ```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-machine-infra-set"></a>
+#### set
+
+{{t:cli.commands.machine.infra.set.description}}
+
+```bash
+rdc machine infra set <machine> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--public-ipv4 <ip>` | {{t:cli.commands.machine.infra.set.optionPublicIPv4}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--public-ipv6 <ip>` | {{t:cli.commands.machine.infra.set.optionPublicIPv6}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--base-domain <domain>` | {{t:cli.commands.machine.infra.set.optionBaseDomain}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--cert-email <email>` | {{t:cli.commands.machine.infra.set.optionCertEmail}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--cf-dns-token <token>` | {{t:cli.commands.machine.infra.set.optionCfDnsToken}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--tcp-ports <ports>` | {{t:cli.commands.machine.infra.set.optionTcpPorts}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--udp-ports <ports>` | {{t:cli.commands.machine.infra.set.optionUdpPorts}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-machine-infra-show"></a>
+#### show
+
+{{t:cli.commands.machine.infra.show.description}}
+
+```bash
+rdc machine infra show <machine>
+```
+
+<a id="cli-local-machine-provider"></a>
+### 3.8 provider
+
+{{t:cli.commands.machine.provider.description}}
+
+<a id="cli-local-machine-provider-add"></a>
+#### add
+
+{{t:cli.commands.machine.provider.add.description}}
+
+```bash
+rdc machine provider add <name> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--provider <source>` | {{t:cli.commands.machine.provider.add.optionProvider}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--source <source>` | {{t:cli.commands.machine.provider.add.optionSource}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--token <token>` | {{t:cli.commands.machine.provider.add.optionToken}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--region <region>` | {{t:cli.commands.machine.provider.add.optionRegion}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--type <type>` | {{t:cli.commands.machine.provider.add.optionInstanceType}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--image <image>` | {{t:cli.commands.machine.provider.add.optionImage}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--ssh-user <user>` | {{t:cli.commands.machine.provider.add.optionSshUser}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--resource <type>` | {{t:cli.commands.machine.provider.add.optionResource}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--label-attr <attr>` | {{t:cli.commands.machine.provider.add.optionLabelAttr}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--region-attr <attr>` | {{t:cli.commands.machine.provider.add.optionRegionAttr}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--size-attr <attr>` | {{t:cli.commands.machine.provider.add.optionSizeAttr}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--image-attr <attr>` | {{t:cli.commands.machine.provider.add.optionImageAttr}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--ipv4-output <attr>` | {{t:cli.commands.machine.provider.add.optionIpv4Output}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--ipv6-output <attr>` | {{t:cli.commands.machine.provider.add.optionIpv6Output}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--ssh-key-attr <attr>` | {{t:cli.commands.machine.provider.add.optionSshKeyAttr}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--ssh-key-format <format>` | {{t:cli.commands.machine.provider.add.optionSshKeyFormat}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--ssh-key-resource <type>` | {{t:cli.commands.machine.provider.add.optionSshKeyResource}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-machine-provider-list"></a>
+#### list
+
+{{t:cli.commands.machine.provider.list.description}}
+
+```bash
+rdc machine provider list
+```
+
+<a id="cli-local-machine-provider-remove"></a>
+#### remove
+
+{{t:cli.commands.machine.provider.remove.description}}
+
+```bash
+rdc machine provider remove <name>
+```
+
+<a id="cli-local-machine-remove"></a>
+### 3.9 remove
+
+{{t:cli.commands.machine.remove.description}}
+
+```bash
+rdc machine remove <name> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-machine-scan-keys"></a>
+### 3.10 scan-keys
+
+{{t:cli.commands.machine.scanKeys.description}}
+
+```bash
+rdc machine scan-keys [name]
+```
+
+<a id="cli-local-machine-setup"></a>
+### 3.11 setup
+
+{{t:cli.commands.machine.setup.description}}
+
+```bash
+rdc machine setup <name> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--datastore-path <path>` | {{t:cli.commands.machine.setup.datastoreOption}} | {{t:cli.docs.optionLabels.no}} | `/mnt/rediacc` |
+| `--datastore-size <size>` | {{t:cli.commands.machine.setup.datastoreSizeOption}} | {{t:cli.docs.optionLabels.no}} | `95%` |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
 
 <a id="cli-local-machine-status"></a>
 ### 3.12 status
@@ -835,12 +915,11 @@ rdc machine status [name] [options]
 {{t:cli.commands.cluster.create.description}}
 
 ```bash
-rdc cluster create [options]
+rdc cluster create <cluster> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.commands.cluster.create.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--provider <provider>` | {{t:cli.commands.cluster.create.providerOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--pool <spec...>` | {{t:cli.commands.cluster.create.poolOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--declare-only` | {{t:cli.commands.cluster.create.declareOnlyOption}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -866,13 +945,8 @@ rdc cluster create [options]
 {{t:cli.commands.cluster.status.description}}
 
 ```bash
-rdc cluster status [options]
+rdc cluster status [cluster]
 ```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.commands.cluster.status.nameOption}} | {{t:cli.docs.optionLabels.no}} | - |
-
 
 <a id="cli-local-cluster-scale"></a>
 ### 4.3 scale
@@ -880,12 +954,11 @@ rdc cluster status [options]
 {{t:cli.commands.cluster.scale.description}}
 
 ```bash
-rdc cluster scale [options]
+rdc cluster scale <cluster> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.commands.cluster.create.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--pool <pool>` | {{t:cli.commands.cluster.scale.poolOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--count <n>` | {{t:cli.commands.cluster.scale.countOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -897,12 +970,11 @@ rdc cluster scale [options]
 {{t:cli.commands.cluster.destroy.description}}
 
 ```bash
-rdc cluster destroy [options]
+rdc cluster destroy <cluster> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.commands.cluster.create.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--force` | {{t:cli.commands.cluster.destroy.forceOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -913,13 +985,8 @@ rdc cluster destroy [options]
 {{t:cli.commands.cluster.kubeconfig.description}}
 
 ```bash
-rdc cluster kubeconfig [options]
+rdc cluster kubeconfig <cluster>
 ```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.commands.cluster.create.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-
 
 <a id="cli-local-cluster-fork"></a>
 ### 4.6 fork
@@ -927,14 +994,13 @@ rdc cluster kubeconfig [options]
 {{t:cli.commands.cluster.fork.description}}
 
 ```bash
-rdc cluster fork [options]
+rdc cluster fork <cluster> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.commands.cluster.create.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--tag <tag>` | {{t:cli.commands.cluster.fork.tagOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--cluster <dest>` | {{t:cli.commands.cluster.fork.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--to <dest-cluster>` | {{t:cli.commands.cluster.fork.toOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--writes <disposition>` | {{t:cli.commands.cluster.fork.writesOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--up` | {{t:cli.commands.cluster.fork.upOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -946,13 +1012,12 @@ rdc cluster fork [options]
 {{t:cli.commands.cluster.migrate.description}}
 
 ```bash
-rdc cluster migrate [options]
+rdc cluster migrate <cluster> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.commands.cluster.create.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--to <dest>` | {{t:cli.commands.cluster.migrate.toOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--to <dest-cluster>` | {{t:cli.commands.cluster.migrate.toOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -962,12 +1027,11 @@ rdc cluster migrate [options]
 {{t:cli.commands.cluster.join.description}}
 
 ```bash
-rdc cluster join [options]
+rdc cluster join <machine> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--machine <name>` | {{t:cli.commands.cluster.join.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--cluster <name>` | {{t:cli.commands.cluster.join.clusterOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -978,12 +1042,11 @@ rdc cluster join [options]
 {{t:cli.commands.cluster.evict.description}}
 
 ```bash
-rdc cluster evict [options]
+rdc cluster evict <machine> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--machine <name>` | {{t:cli.commands.cluster.evict.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--force` | {{t:cli.commands.cluster.evict.forceOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -994,14 +1057,47 @@ rdc cluster evict [options]
 {{t:cli.commands.cluster.rehearse.description}}
 
 ```bash
-rdc cluster rehearse [options]
+rdc cluster rehearse <cluster> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.commands.cluster.rehearse.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--cluster <dest>` | {{t:cli.commands.cluster.rehearse.clusterOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--on <dest-cluster>` | {{t:cli.commands.cluster.rehearse.onOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--tag <tag>` | {{t:cli.commands.cluster.rehearse.tagOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-cluster-snapshot"></a>
+### 4.11 snapshot
+
+{{t:cli.commands.cluster.snapshot.description}}
+
+<a id="cli-local-cluster-snapshot-create"></a>
+#### create
+
+{{t:cli.commands.cluster.snapshot.create.description}}
+
+```bash
+rdc cluster snapshot create <cluster> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--snapshot <label>` | {{t:cli.commands.cluster.snapshot.create.labelOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-cluster-snapshot-list"></a>
+#### list
+
+{{t:cli.commands.cluster.snapshot.list.description}}
+
+```bash
+rdc cluster snapshot list <cluster> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -1034,70 +1130,24 @@ rdc mcp serve [options]
 
 {{t:cli.commands.repo.description}}
 
-<a id="cli-local-repo-mount"></a>
-### 6.1 mount
-
-{{t:cli.commands.repo.mount.description}}
-
-```bash
-rdc repo mount [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--checkpoint` | {{t:cli.commands.repo.mount.checkpointOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--no-docker` | {{t:cli.commands.repo.mount.noDockerOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--parallel` | {{t:cli.commands.repo.upAll.parallelOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--concurrency <n>` | {{t:cli.commands.repo.upAll.concurrencyOption}} | {{t:cli.docs.optionLabels.no}} | `3` |
-| `-y, --yes` | {{t:cli.commands.repo.yesOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
-<a id="cli-local-repo-unmount"></a>
-### 6.2 unmount
-
-{{t:cli.commands.repo.unmount.description}}
-
-```bash
-rdc repo unmount [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--checkpoint` | {{t:cli.commands.repo.unmount.checkpointOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--parallel` | {{t:cli.commands.repo.upAll.parallelOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--concurrency <n>` | {{t:cli.commands.repo.upAll.concurrencyOption}} | {{t:cli.docs.optionLabels.no}} | `3` |
-| `-y, --yes` | {{t:cli.commands.repo.yesOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
 <a id="cli-local-repo-up"></a>
-### 6.3 up
+### 6.1 up
 
 {{t:cli.commands.repo.up.description}}
 
 ```bash
-rdc repo up [options]
+rdc repo up [ref] [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--no-start` | {{t:cli.commands.repo.up.noStartOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-checkpoint` | {{t:cli.commands.repo.up.skipCheckpointOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--tls` | {{t:cli.commands.repo.up.tlsOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--detach` | {{t:cli.commands.repo.up.detachOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--no-wait` | {{t:cli.commands.repo.up.noWaitOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--all` | {{t:cli.commands.repo.up.allOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-m, --machine <name>` | {{t:cli.commands.repo.batchMachineOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--include-forks` | {{t:cli.commands.repo.upAll.includeForksOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--mount-only` | {{t:cli.commands.repo.upAll.mountOnlyOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--parallel` | {{t:cli.commands.repo.upAll.parallelOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--concurrency <n>` | {{t:cli.commands.repo.upAll.concurrencyOption}} | {{t:cli.docs.optionLabels.no}} | `3` |
 | `-y, --yes` | {{t:cli.commands.repo.yesOption}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1107,21 +1157,22 @@ rdc repo up [options]
 
 
 <a id="cli-local-repo-down"></a>
-### 6.4 down
+### 6.2 down
 
 {{t:cli.commands.repo.down.description}}
 
 ```bash
-rdc repo down [options]
+rdc repo down [ref] [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--unmount` | {{t:cli.commands.repo.down.unmountOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--checkpoint` | {{t:cli.commands.repo.down.checkpointOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--all` | {{t:cli.commands.repo.down.allOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-m, --machine <name>` | {{t:cli.commands.repo.batchMachineOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--parallel` | {{t:cli.commands.repo.upAll.parallelOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--concurrency <n>` | {{t:cli.commands.repo.upAll.concurrencyOption}} | {{t:cli.docs.optionLabels.no}} | `3` |
 | `-y, --yes` | {{t:cli.commands.repo.yesOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1129,37 +1180,31 @@ rdc repo down [options]
 
 
 <a id="cli-local-repo-status"></a>
-### 6.5 status
+### 6.3 status
 
 {{t:cli.commands.repo.status.description}}
 
 ```bash
-rdc repo status [options]
+rdc repo status <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-repo-cat"></a>
-### 6.6 cat
+### 6.4 cat
 
 {{t:cli.commands.repo.cat.description}}
 
 ```bash
-rdc repo cat [options]
+rdc repo cat <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--remote-file <path>` | {{t:cli.commands.repo.cat.remoteFileOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--max-bytes <n>` | {{t:cli.commands.repo.cat.maxBytesOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--offset <n>` | {{t:cli.commands.repo.cat.offsetOption}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1172,31 +1217,27 @@ rdc repo cat [options]
 
 
 <a id="cli-local-repo-diff"></a>
-### 6.7 diff
+### 6.5 diff
 
 {{t:cli.commands.repo.diff.description}}
 
 ```bash
-rdc repo diff [options]
+rdc repo diff <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.commands.repo.diff.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--base <name>` | {{t:cli.commands.repo.diff.baseOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--base <ref>` | {{t:cli.commands.repo.diff.baseOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--name-only` | {{t:cli.commands.repo.diff.nameOnlyOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--stat` | {{t:cli.commands.repo.diff.statOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--content [path]` | {{t:cli.commands.repo.diff.contentOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--json` | {{t:cli.commands.repo.diff.jsonOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--fast` | {{t:cli.commands.repo.diff.fastOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-repo-list"></a>
-### 6.8 list
+### 6.6 list
 
 {{t:cli.commands.repo.list.description}}
 
@@ -1207,45 +1248,41 @@ rdc repo list [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--datastore <name>` | {{t:cli.commands.repo.list.datastoreOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-repo-create"></a>
-### 6.9 create
+### 6.7 create
 
 {{t:cli.commands.repo.create.description}}
 
 ```bash
-rdc repo create [options]
+rdc repo create <name> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--size <size>` | {{t:cli.commands.repo.create.sizeOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--datastore <name>` | {{t:cli.commands.repo.create.datastoreOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--size <size>` | {{t:cli.commands.repo.create.sizeOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--no-docker` | {{t:cli.commands.repo.create.noDockerOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-repo-delete"></a>
-### 6.10 delete
+### 6.8 delete
 
 {{t:cli.commands.repo.delete.description}}
 
 ```bash
-rdc repo delete [options]
+rdc repo delete <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--archive-config` | {{t:cli.commands.repo.delete.archiveOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1254,92 +1291,78 @@ rdc repo delete [options]
 
 
 <a id="cli-local-repo-commit"></a>
-### 6.11 commit
+### 6.9 commit
 
 {{t:cli.commands.repo.commit.description}}
 
 ```bash
-rdc repo commit [options]
+rdc repo commit <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.commands.repo.commit.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--message <msg>` | {{t:cli.commands.repo.commit.messageOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--author <author>` | {{t:cli.commands.repo.commit.authorOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-repo-branch"></a>
-### 6.12 branch
+### 6.10 branch
 
 {{t:cli.commands.repo.branch.description}}
 
 ```bash
-rdc repo branch [options]
+rdc repo branch <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `--branch <branch>` | {{t:cli.commands.repo.branch.branchOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--name <name>` | {{t:cli.commands.repo.branch.workingOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 
 
 <a id="cli-local-repo-checkout"></a>
-### 6.13 checkout
+### 6.11 checkout
 
 {{t:cli.commands.repo.checkout.description}}
 
 ```bash
-rdc repo checkout [options]
+rdc repo checkout <commit-or-branch-ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--ref <commit|branch>` | {{t:cli.commands.repo.checkout.refOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--tag <name>` | {{t:cli.commands.repo.checkout.tagOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--from <workingFork>` | {{t:cli.commands.repo.checkout.fromOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-repo-log"></a>
-### 6.14 log
+### 6.12 log
 
 {{t:cli.commands.repo.log.description}}
 
 ```bash
-rdc repo log [options]
+rdc repo log <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.commands.repo.log.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--json` | {{t:cli.commands.repo.log.jsonOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-repo-merge"></a>
-### 6.15 merge
+### 6.13 merge
 
 {{t:cli.commands.repo.merge.description}}
 
 ```bash
-rdc repo merge [options]
+rdc repo merge <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.commands.repo.merge.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--from <source>` | {{t:cli.commands.repo.merge.fromOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--force` | {{t:cli.commands.repo.merge.forceOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--resolve <ours|theirs>` | {{t:cli.commands.repo.merge.resolveOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--base <guid>` | {{t:cli.commands.repo.merge.baseOption}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1347,7 +1370,7 @@ rdc repo merge [options]
 
 
 <a id="cli-local-repo-gc"></a>
-### 6.16 gc
+### 6.14 gc
 
 {{t:cli.commands.repo.gc.description}}
 
@@ -1362,47 +1385,28 @@ rdc repo gc [options]
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-<a id="cli-local-repo-fsck"></a>
-### 6.17 fsck
-
-{{t:cli.commands.repo.fsck.description}}
-
-```bash
-rdc repo fsck [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-
-
 <a id="cli-local-repo-fork"></a>
-### 6.18 fork
+### 6.15 fork
 
 {{t:cli.commands.repo.fork.description}}
 
 ```bash
-rdc repo fork [options]
+rdc repo fork <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--parent <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--tag <name>` | {{t:cli.commands.repo.fork.tagOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--to-cluster <name>` | {{t:cli.commands.repo.fork.toClusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--provider <name>` | {{t:cli.commands.repo.fork.providerOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--checkpoint` | {{t:cli.commands.repo.fork.checkpointOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--immutable` | {{t:cli.commands.repo.fork.immutableOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--up` | {{t:cli.commands.repo.fork.upOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--detach` | {{t:cli.commands.repo.fork.detachOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--no-wait` | {{t:cli.commands.repo.fork.detachOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-repo-replicate"></a>
-### 6.19 replicate
+### 6.16 replicate
 
 {{t:cli.commands.repo.replicate.description}}
 
@@ -1412,13 +1416,8 @@ rdc repo fork [options]
 {{t:cli.commands.repo.replicate.status.description}}
 
 ```bash
-rdc repo replicate status [options]
+rdc repo replicate status <ref>
 ```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--name <set>` | {{t:cli.commands.repo.replicate.status.nameOption}} | {{t:cli.docs.optionLabels.no}} | - |
-
 
 <a id="cli-local-repo-replicate-remove"></a>
 #### remove
@@ -1426,12 +1425,11 @@ rdc repo replicate status [options]
 {{t:cli.commands.repo.replicate.remove.description}}
 
 ```bash
-rdc repo replicate remove [options]
+rdc repo replicate remove <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <set>` | {{t:cli.commands.repo.replicate.remove.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -1441,17 +1439,16 @@ rdc repo replicate remove [options]
 {{t:cli.commands.repo.replicate.refresh.description}}
 
 ```bash
-rdc repo replicate refresh [options]
+rdc repo replicate refresh <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <set>` | {{t:cli.commands.repo.replicate.refresh.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-repo-canary"></a>
-### 6.20 canary
+### 6.17 canary
 
 {{t:cli.commands.repo.canary.description}}
 
@@ -1461,13 +1458,8 @@ rdc repo replicate refresh [options]
 {{t:cli.commands.repo.canary.status.description}}
 
 ```bash
-rdc repo canary status [options]
+rdc repo canary status <ref>
 ```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--name <set>` | {{t:cli.commands.repo.canary.status.nameOption}} | {{t:cli.docs.optionLabels.no}} | - |
-
 
 <a id="cli-local-repo-canary-weight"></a>
 #### weight
@@ -1475,12 +1467,11 @@ rdc repo canary status [options]
 {{t:cli.commands.repo.canary.weight.description}}
 
 ```bash
-rdc repo canary weight [options]
+rdc repo canary weight <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <set>` | {{t:cli.commands.repo.canary.weight.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--weight <percent>` | {{t:cli.commands.repo.canary.weightOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -1491,93 +1482,85 @@ rdc repo canary weight [options]
 {{t:cli.commands.repo.canary.remove.description}}
 
 ```bash
-rdc repo canary remove [options]
+rdc repo canary remove <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <set>` | {{t:cli.commands.repo.canary.remove.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-<a id="cli-local-repo-takeover"></a>
-### 6.21 takeover
+<a id="cli-local-repo-canary-create"></a>
+#### create
 
-{{t:cli.commands.repo.takeover.description}}
+{{t:cli.commands.repo.canary.create.description}}
 
 ```bash
-rdc repo takeover [options]
+rdc repo canary create <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--force` | {{t:cli.commands.repo.takeover.forceOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--image <image>` | {{t:cli.commands.repo.canary.imageOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--port <port>` | {{t:cli.commands.repo.canary.portOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--weight <percent>` | {{t:cli.commands.repo.canary.weightOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--service <name>` | {{t:cli.commands.repo.canary.serviceOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--replicas <n>` | {{t:cli.commands.repo.canary.replicasOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-repo-resize"></a>
-### 6.22 resize
+### 6.18 resize
 
 {{t:cli.commands.repo.resize.description}}
 
 ```bash
-rdc repo resize [options]
+rdc repo resize <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--size <size>` | {{t:cli.commands.repo.resize.sizeOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-repo-expand"></a>
-### 6.23 expand
+### 6.19 expand
 
 {{t:cli.commands.repo.expand.description}}
 
 ```bash
-rdc repo expand [options]
+rdc repo expand <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--size <size>` | {{t:cli.commands.repo.resize.sizeOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-repo-trim"></a>
-### 6.24 trim
+### 6.20 trim
 
 {{t:cli.commands.repo.trim.description}}
 
 ```bash
-rdc repo trim [options]
+rdc repo trim [ref] [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--name <name>` | {{t:cli.commands.repo.trim.nameOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--docker` | {{t:cli.commands.repo.trim.dockerOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--docker-volumes` | {{t:cli.commands.repo.trim.dockerVolumesOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--report-only` | {{t:cli.commands.repo.trim.reportOnlyOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-repo-policy"></a>
-### 6.25 policy
+### 6.21 policy
 
 {{t:cli.commands.repo.policy.description}}
 
@@ -1587,19 +1570,18 @@ rdc repo trim [options]
 {{t:cli.commands.repo.policy.set.description}}
 
 ```bash
-rdc repo policy set [options]
+rdc repo policy set [ref] [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--name <name>` | {{t:cli.commands.repo.policy.nameOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--auto-grow <bool>` | {{t:cli.commands.repo.policy.set.autoGrowOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--max-quota <size>` | {{t:cli.commands.repo.policy.set.maxQuotaOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--grow-threshold <percent>` | {{t:cli.commands.repo.policy.set.growThresholdOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--grow-step <step>` | {{t:cli.commands.repo.policy.set.growStepOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--auto-trim <bool>` | {{t:cli.commands.repo.policy.set.autoTrimOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--trim-interval <hours>` | {{t:cli.commands.repo.policy.set.trimIntervalOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -1609,198 +1591,55 @@ rdc repo policy set [options]
 {{t:cli.commands.repo.policy.get.description}}
 
 ```bash
-rdc repo policy get [options]
+rdc repo policy get [ref] [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--name <name>` | {{t:cli.commands.repo.policy.nameOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
-<a id="cli-local-repo-validate"></a>
-### 6.26 validate
-
-{{t:cli.commands.repo.validate.description}}
-
-```bash
-rdc repo validate [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
-<a id="cli-local-repo-autostart"></a>
-### 6.27 autostart
-
-{{t:cli.commands.repo.autostart.description}}
-
-<a id="cli-local-repo-autostart-enable"></a>
-#### enable
-
-{{t:cli.commands.repo.autostart.enable.description}}
-
-```bash
-rdc repo autostart enable [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
-<a id="cli-local-repo-autostart-disable"></a>
-#### disable
-
-{{t:cli.commands.repo.autostart.disable.description}}
-
-```bash
-rdc repo autostart disable [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
-<a id="cli-local-repo-autostart-list"></a>
-#### list
-
-{{t:cli.commands.repo.autostart.list.description}}
-
-```bash
-rdc repo autostart list [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
-<a id="cli-local-repo-ownership"></a>
-### 6.28 ownership
-
-{{t:cli.commands.repo.ownership.description}}
-
-```bash
-rdc repo ownership [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--uid <uid>` | {{t:cli.commands.repo.ownership.uidOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
-<a id="cli-local-repo-template"></a>
-### 6.29 template
-
-{{t:cli.commands.repo.template.description}}
-
-<a id="cli-local-repo-template-list"></a>
-#### list
-
-{{t:cli.commands.repo.template.list.description}}
-
-```bash
-rdc repo template list
-```
-
-<a id="cli-local-repo-template-apply"></a>
-#### apply
-
-{{t:cli.commands.repo.template.apply.description}}
-
-```bash
-rdc repo template apply [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-r, --repository <name>` | {{t:cli.options.repository}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--file <path>` | {{t:cli.commands.repo.template.fileOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--grand <name>` | {{t:cli.commands.repo.up.grandOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-repo-push"></a>
-### 6.30 push
+### 6.22 push
 
 {{t:cli.commands.repo.push.description}}
 
 ```bash
-rdc repo push [options]
+rdc repo push <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--to <remote>` | {{t:cli.commands.repo.push.optionTo}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--to-machine <machine>` | — | {{t:cli.docs.optionLabels.no}} | - |
 | `--provision <provider>` | {{t:cli.commands.repo.push.optionProvision}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--checkpoint` | {{t:cli.commands.repo.push.optionCheckpoint}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--force` | {{t:cli.commands.repo.push.optionForce}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--up` | {{t:cli.commands.repo.push.optionUp}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--tag <tag>` | {{t:cli.commands.repo.push.optionTag}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-w, --watch` | {{t:cli.options.watch}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--parallel` | {{t:cli.commands.repo.upAll.parallelOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--concurrency <n>` | {{t:cli.commands.repo.upAll.concurrencyOption}} | {{t:cli.docs.optionLabels.no}} | `3` |
-| `-y, --yes` | {{t:cli.commands.repo.yesOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--bwlimit <limit>` | {{t:cli.commands.repo.push.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--delta-base <guid>` | {{t:cli.commands.repo.push.optionDeltaBase}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--strategy <strategy>` | {{t:cli.commands.repo.push.optionStrategy}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--json` | {{t:cli.commands.repo.push.optionJson}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-repo-pull"></a>
-### 6.31 pull
+### 6.23 pull
 
 {{t:cli.commands.repo.pull.description}}
 
 ```bash
-rdc repo pull [options]
+rdc repo pull <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--from <remote>` | {{t:cli.commands.repo.pull.optionFrom}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--from-machine <machine>` | — | {{t:cli.docs.optionLabels.no}} | - |
 | `--force` | {{t:cli.commands.repo.pull.optionForce}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--up` | {{t:cli.commands.repo.pull.optionUp}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-w, --watch` | {{t:cli.options.watch}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--parallel` | {{t:cli.commands.repo.upAll.parallelOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--concurrency <n>` | {{t:cli.commands.repo.upAll.concurrencyOption}} | {{t:cli.docs.optionLabels.no}} | `3` |
-| `-y, --yes` | {{t:cli.commands.repo.yesOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--bwlimit <limit>` | {{t:cli.commands.repo.push.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--delta-base <guid>` | {{t:cli.commands.repo.pull.optionDeltaBase}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--strategy <strategy>` | {{t:cli.commands.repo.push.optionStrategy}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1809,19 +1648,17 @@ rdc repo pull [options]
 
 
 <a id="cli-local-repo-migrate"></a>
-### 6.32 migrate
+### 6.24 migrate
 
 {{t:cli.commands.repo.migrate.description}}
 
 ```bash
-rdc repo migrate [options]
+rdc repo migrate <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--from <machine>` | {{t:cli.commands.repo.migrate.optionFrom}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--to <machine>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--to <place>` | {{t:cli.commands.repo.migrate.optionTo}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--provision <provider>` | {{t:cli.commands.repo.migrate.optionProvision}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--bwlimit <limit>` | {{t:cli.commands.repo.migrate.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--checkpoint` | {{t:cli.commands.repo.migrate.optionCheckpoint}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1832,7 +1669,7 @@ rdc repo migrate [options]
 
 
 <a id="cli-local-repo-sync"></a>
-### 6.33 sync
+### 6.25 sync
 
 {{t:cli.commands.repo.sync.description}}
 
@@ -1842,15 +1679,11 @@ rdc repo migrate [options]
 {{t:cli.commands.repo.sync.upload.description}}
 
 ```bash
-rdc repo sync upload [options]
+rdc repo sync upload <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-r, --repository <name>` | {{t:cli.options.repository}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--local <paths...>` | {{t:cli.options.localPaths}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--remote <path>` | {{t:cli.options.remotePath}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--remote-file <path>` | {{t:cli.options.remoteFileUpload}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1867,15 +1700,11 @@ rdc repo sync upload [options]
 {{t:cli.commands.repo.sync.download.description}}
 
 ```bash
-rdc repo sync download [options]
+rdc repo sync download <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-r, --repository <name>` | {{t:cli.options.repository}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--local <path>` | {{t:cli.options.localPath}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--remote <path>` | {{t:cli.options.remotePath}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--remote-file <path>` | {{t:cli.options.remoteFile}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1892,34 +1721,27 @@ rdc repo sync download [options]
 {{t:cli.commands.repo.sync.status.description}}
 
 ```bash
-rdc repo sync status [options]
+rdc repo sync status <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-r, --repository <name>` | {{t:cli.options.repository}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--local <path>` | {{t:cli.options.localPath}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--remote <path>` | {{t:cli.options.remotePath}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--remote-file <path>` | {{t:cli.options.remoteFile}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-repo-tunnel"></a>
-### 6.34 tunnel
+### 6.26 tunnel
 
 {{t:cli.commands.repo.tunnel.description}}
 
 ```bash
-rdc repo tunnel [options]
+rdc repo tunnel <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-r, --repository <name>` | {{t:cli.options.repository}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-c, --container <name>` | {{t:cli.commands.repo.tunnel.containerOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--port <port>` | {{t:cli.commands.repo.tunnel.portOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--local <port>` | {{t:cli.commands.repo.tunnel.localOption}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1927,7 +1749,7 @@ rdc repo tunnel [options]
 
 
 <a id="cli-local-repo-secret"></a>
-### 6.35 secret
+### 6.27 secret
 
 {{t:cli.commands.repo.secret.description}}
 
@@ -1937,12 +1759,11 @@ rdc repo tunnel [options]
 {{t:cli.commands.repo.secret.get.description}}
 
 ```bash
-rdc repo secret get [options]
+rdc repo secret get <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <repository>` | {{t:cli.commands.repo.secret.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--key <KEY>` | {{t:cli.commands.repo.secret.keyOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 
 
@@ -1952,13 +1773,8 @@ rdc repo secret get [options]
 {{t:cli.commands.repo.secret.list.description}}
 
 ```bash
-rdc repo secret list [options]
+rdc repo secret list <ref>
 ```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--name <repository>` | {{t:cli.commands.repo.secret.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-
 
 <a id="cli-local-repo-secret-set"></a>
 #### set
@@ -1966,12 +1782,11 @@ rdc repo secret list [options]
 {{t:cli.commands.repo.secret.set.description}}
 
 ```bash
-rdc repo secret set [options]
+rdc repo secret set <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <repository>` | {{t:cli.commands.repo.secret.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--key <KEY>` | {{t:cli.commands.repo.secret.keyOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--value <value>` | {{t:cli.commands.repo.secret.valueOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--mode <mode>` | {{t:cli.commands.repo.secret.modeOption}} | {{t:cli.docs.optionLabels.no}} | `file` |
@@ -1985,19 +1800,18 @@ rdc repo secret set [options]
 {{t:cli.commands.repo.secret.unset.description}}
 
 ```bash
-rdc repo secret unset [options]
+rdc repo secret unset <ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <repository>` | {{t:cli.commands.repo.secret.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--key <KEY>` | {{t:cli.commands.repo.secret.keyOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--current <value>` | {{t:cli.commands.repo.secret.currentOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--rotate-secret` | {{t:cli.commands.repo.secret.rotateOption}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-repo-admin"></a>
-### 6.36 admin
+### 6.28 admin
 
 {{t:cli.commands.repo.admin.description}}
 
@@ -2014,6 +1828,20 @@ rdc repo secret unset [options]
 rdc repo admin archive list
 ```
 
+<a id="cli-local-repo-admin-archive-purge"></a>
+**purge:**
+
+{{t:cli.commands.repo.admin.archive.purge.description}}
+
+```bash
+rdc repo admin archive purge [name] [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-repo-admin-archive-restore"></a>
 **restore:**
 
@@ -2028,18 +1856,181 @@ rdc repo admin archive restore <name> [options]
 | `--new-name <name>` | {{t:cli.options.newName}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-<a id="cli-local-repo-admin-archive-purge"></a>
-**purge:**
+<a id="cli-local-repo-admin-validate"></a>
+#### validate
 
-{{t:cli.commands.repo.admin.archive.purge.description}}
+{{t:cli.commands.repo.admin.validate.description}}
 
 ```bash
-rdc repo admin archive purge [name] [options]
+rdc repo admin validate <ref> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-repo-admin-fsck"></a>
+#### fsck
+
+{{t:cli.commands.repo.admin.fsck.description}}
+
+```bash
+rdc repo admin fsck [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+
+
+<a id="cli-local-repo-admin-ownership"></a>
+#### ownership
+
+{{t:cli.commands.repo.admin.ownership.description}}
+
+```bash
+rdc repo admin ownership <ref> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--uid <uid>` | {{t:cli.commands.repo.admin.ownership.uidOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+#### autostart
+
+{{t:cli.commands.repo.admin.autostart.description}}
+
+<a id="cli-local-repo-admin-autostart-enable"></a>
+**enable:**
+
+{{t:cli.commands.repo.admin.autostart.enable.description}}
+
+```bash
+rdc repo admin autostart enable [ref] [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-repo-admin-autostart-disable"></a>
+**disable:**
+
+{{t:cli.commands.repo.admin.autostart.disable.description}}
+
+```bash
+rdc repo admin autostart disable [ref] [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-repo-admin-autostart-list"></a>
+**list:**
+
+{{t:cli.commands.repo.admin.autostart.list.description}}
+
+```bash
+rdc repo admin autostart list [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+#### template
+
+{{t:cli.commands.repo.admin.template.description}}
+
+<a id="cli-local-repo-admin-template-list"></a>
+**list:**
+
+{{t:cli.commands.repo.admin.template.list.description}}
+
+```bash
+rdc repo admin template list
+```
+
+<a id="cli-local-repo-admin-template-apply"></a>
+**apply:**
+
+{{t:cli.commands.repo.admin.template.apply.description}}
+
+```bash
+rdc repo admin template apply <ref> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--template <name>` | {{t:cli.commands.repo.admin.template.apply.templateOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--file <path>` | {{t:cli.commands.repo.admin.template.fileOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--grand <name>` | {{t:cli.commands.repo.up.grandOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-repo-promote"></a>
+### 6.29 promote
+
+{{t:cli.commands.repo.promote.description}}
+
+```bash
+rdc repo promote <fork-ref> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-repo-logs"></a>
+### 6.30 logs
+
+{{t:cli.commands.repo.logs.description}}
+
+```bash
+rdc repo logs <ref> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-c, --container <name>` | {{t:cli.commands.repo.logs.containerOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-f, --follow` | {{t:cli.commands.repo.logs.followOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--lines <n>` | {{t:cli.commands.repo.logs.linesOption}} | {{t:cli.docs.optionLabels.no}} | `100` |
+| `--timestamps` | {{t:cli.commands.repo.logs.timestampsOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-repo-exec"></a>
+### 6.31 exec
+
+{{t:cli.commands.repo.exec.description}}
+
+```bash
+rdc repo exec <ref> <cmd...> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-c, --container <name>` | {{t:cli.commands.repo.exec.containerOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-i, --interactive` | {{t:cli.commands.repo.exec.interactiveOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-u, --user <user>` | {{t:cli.commands.repo.exec.userOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ---
@@ -2100,13 +2091,12 @@ rdc job logs <job-id> [options]
 {{t:cli.commands.job.cancel.description}}
 
 ```bash
-rdc job cancel [options]
+rdc job cancel <job-id> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--id <jobId>` | {{t:cli.commands.job.idOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -2153,12 +2143,11 @@ rdc storage list [name] [options]
 {{t:cli.commands.storage.browse.description}}
 
 ```bash
-rdc storage browse [options]
+rdc storage browse <storage> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--path <subpath>` | {{t:cli.commands.storage.browse.pathOption}} | {{t:cli.docs.optionLabels.no}} | `` |
 
 
@@ -2168,12 +2157,11 @@ rdc storage browse [options]
 {{t:cli.commands.storage.prune.description}}
 
 ```bash
-rdc storage prune [options]
+rdc storage prune <storage> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-m, --machine <name>` | {{t:cli.commands.storage.prune.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--dry-run` | {{t:cli.options.dryRun}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--force` | {{t:cli.options.force}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -2183,22 +2171,8 @@ rdc storage prune [options]
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-<a id="cli-local-storage-import"></a>
-### 8.4 import
-
-{{t:cli.commands.storage.import.description}}
-
-```bash
-rdc storage import <file> [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.commands.storage.import.optionName}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
 <a id="cli-local-storage-add"></a>
-### 8.5 add
+### 8.4 add
 
 {{t:cli.commands.storage.add.description}}
 
@@ -2209,6 +2183,20 @@ rdc storage add <name> [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `--vault <json>` | {{t:cli.options.vaultContent}} | {{t:cli.docs.optionLabels.yes}} | - |
+
+
+<a id="cli-local-storage-import"></a>
+### 8.5 import
+
+{{t:cli.commands.storage.import.description}}
+
+```bash
+rdc storage import <file> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--name <name>` | {{t:cli.commands.storage.import.optionName}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-storage-remove"></a>
@@ -2239,15 +2227,11 @@ rdc storage remove <name> [options]
 {{t:cli.commands.vscode.connect.description}}
 
 ```bash
-rdc vscode connect [options]
+rdc vscode connect <target> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-r, --repository <name>` | {{t:cli.options.repository}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-f, --folder <path>` | {{t:cli.options.folder}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--url-only` | {{t:cli.options.urlOnly}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-n, --new-window` | {{t:cli.options.newWindow}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -2309,14 +2293,11 @@ rdc vscode check [options]
 {{t:cli.commands.vscode.serve.status.description}}
 
 ```bash
-rdc vscode serve status [options]
+rdc vscode serve status <target> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-r, --repository <name>` | {{t:cli.options.repository}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--server-provider <id>` | {{t:cli.options.vscodeServerProvider}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -2326,14 +2307,11 @@ rdc vscode serve status [options]
 {{t:cli.commands.vscode.serve.stop.description}}
 
 ```bash
-rdc vscode serve stop [options]
+rdc vscode serve stop <target> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-r, --repository <name>` | {{t:cli.options.repository}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--server-provider <id>` | {{t:cli.options.vscodeServerProvider}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -2350,20 +2328,12 @@ rdc vscode serve stop [options]
 {{t:cli.commands.term.connect.description}}
 
 ```bash
-rdc term connect [options]
+rdc term connect <target> [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--cluster <name>` | {{t:cli.commands.repo.clusterOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-r, --repository <name>` | {{t:cli.options.repository}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-c, --command <cmd>` | {{t:cli.options.command}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--container <id>` | {{t:cli.options.container}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--container-action <action>` | {{t:cli.options.containerAction}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--log-lines <lines>` | {{t:cli.options.logLines}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--follow` | {{t:cli.options.follow}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--external` | {{t:cli.options.external}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--reset-home` | {{t:cli.options.resetHome}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -2446,93 +2416,27 @@ rdc subscription logout
 {{t:cli.commands.subscription.status.description}}
 
 ```bash
-rdc subscription status
-```
-
-<a id="cli-local-subscription-activation"></a>
-### 12.4 activation
-
-{{t:cli.commands.subscription.activation.description}}
-
-<a id="cli-local-subscription-activation-status"></a>
-#### status
-
-{{t:cli.commands.subscription.activation.status.description}}
-
-```bash
-rdc subscription activation status [options]
+rdc subscription status [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
-
-
-<a id="cli-local-subscription-repo"></a>
-### 12.5 repo
-
-{{t:cli.commands.subscription.repo.description}}
-
-<a id="cli-local-subscription-repo-status"></a>
-#### status
-
-{{t:cli.commands.subscription.repo.status.description}}
-
-```bash
-rdc subscription repo status [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-subscription-refresh"></a>
-### 12.6 refresh
+### 12.4 refresh
 
 {{t:cli.commands.subscription.refresh.description}}
 
-<a id="cli-local-subscription-refresh-activation"></a>
-#### activation
-
-{{t:cli.commands.subscription.refresh.activation.description}}
-
 ```bash
-rdc subscription refresh activation [options]
+rdc subscription refresh [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
-
-
-<a id="cli-local-subscription-refresh-repos"></a>
-#### repos
-
-{{t:cli.commands.subscription.refresh.repos.description}}
-
-```bash
-rdc subscription refresh repos [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
-
-
-<a id="cli-local-subscription-refresh-repo"></a>
-#### repo
-
-{{t:cli.commands.subscription.refresh.repo.description}}
-
-```bash
-rdc subscription refresh repo [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--repo <ref>` | {{t:cli.options.repoRef}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ---
