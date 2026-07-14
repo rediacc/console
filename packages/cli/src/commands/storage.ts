@@ -295,7 +295,7 @@ export function registerStorageCommands(program: Command): void {
     .command('prune')
     .summary(t('commands.storage.prune.descriptionShort'))
     .description(t('commands.storage.prune.description'))
-    .requiredOption('--name <name>', t('options.name'))
+    .argument('<storage>', t('options.storageRef'))
     .requiredOption('-m, --machine <name>', t('commands.storage.prune.machineOption'))
     .option('--dry-run', t('options.dryRun'))
     .option('--force', t('options.force'))
@@ -303,9 +303,8 @@ export function registerStorageCommands(program: Command): void {
     .option('--grace-days <days>', t('options.graceDays'), Number.parseInt)
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (options: StoragePruneOptions & { name: string }) => {
+    .action(async (storageName: string, options: StoragePruneOptions) => {
       try {
-        const storageName = options.name;
         await assertStorageExists(storageName);
         await executeStoragePrune(storageName, options);
       } catch (error) {
