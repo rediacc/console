@@ -10215,7 +10215,7 @@
           "title": "Mantém o teu Kubernetes. Ganha mobilidade."
         },
         "bottomCta": {
-          "command": "rdc cluster fork --name prod --tag staging",
+          "command": "rdc cluster fork prod --tag staging",
           "ctaText": "Começar Gratuitamente",
           "description": "Faz fork, testa a mudança, depois migra a sério. Começa o teu período de 14 dias grátis.",
           "title": "Dá ao teu cluster uma rota de saída"
@@ -10547,8 +10547,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc cluster fork",
-              "flag": "--name prod",
+              "cmd": "rdc cluster fork prod",
               "type": "command",
               "value": "--tag staging"
             },
@@ -10578,8 +10577,7 @@
               "type": "spacer"
             },
             {
-              "cmd": "rdc cluster migrate",
-              "flag": "--name prod",
+              "cmd": "rdc cluster migrate prod",
               "type": "command",
               "value": "--to fsn1-dc2"
             },
@@ -13121,7 +13119,7 @@
               "type": "spacer"
             },
             {
-              "cmd": "rdc term connect -m patch-test-ubuntu-24",
+              "cmd": "rdc term connect patch-test-ubuntu-24",
               "flag": "-c",
               "prompt": "$",
               "type": "command",

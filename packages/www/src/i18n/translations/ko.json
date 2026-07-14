@@ -10191,7 +10191,7 @@
           "title": "쓰던 Kubernetes는 그대로. 이동성은 새롭게."
         },
         "bottomCta": {
-          "command": "rdc cluster fork --name prod --tag staging",
+          "command": "rdc cluster fork prod --tag staging",
           "ctaText": "Community로 무료 시작",
           "description": "무료 Community 에디션으로 시작하세요. 포크한 뒤 이동을 테스트하고, 실제로 마이그레이션하세요.",
           "title": "클러스터에 탈출구를 마련하세요"
@@ -10523,8 +10523,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc cluster fork",
-              "flag": "--name prod",
+              "cmd": "rdc cluster fork prod",
               "type": "command",
               "value": "--tag staging"
             },
@@ -10554,8 +10553,7 @@
               "type": "spacer"
             },
             {
-              "cmd": "rdc cluster migrate",
-              "flag": "--name prod",
+              "cmd": "rdc cluster migrate prod",
               "type": "command",
               "value": "--to fsn1-dc2"
             },
@@ -13097,7 +13095,7 @@
               "type": "spacer"
             },
             {
-              "cmd": "rdc term connect -m patch-test-ubuntu-24",
+              "cmd": "rdc term connect patch-test-ubuntu-24",
               "flag": "-c",
               "prompt": "$",
               "type": "command",

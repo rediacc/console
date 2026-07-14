@@ -10173,7 +10173,7 @@
           "title": "Kubernetesはそのまま。可搬性を手に入れる。"
         },
         "bottomCta": {
-          "command": "rdc cluster fork --name prod --tag staging",
+          "command": "rdc cluster fork prod --tag staging",
           "ctaText": "無料トライアルを開始",
           "description": "フォークして移行をテストし、それから本番移行。14日間の無料トライアルを開始しましょう。",
           "title": "クラスタに退路を"
@@ -10505,8 +10505,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc cluster fork",
-              "flag": "--name prod",
+              "cmd": "rdc cluster fork prod",
               "type": "command",
               "value": "--tag staging"
             },
@@ -10536,8 +10535,7 @@
               "type": "spacer"
             },
             {
-              "cmd": "rdc cluster migrate",
-              "flag": "--name prod",
+              "cmd": "rdc cluster migrate prod",
               "type": "command",
               "value": "--to fsn1-dc2"
             },
@@ -13079,7 +13077,7 @@
               "type": "spacer"
             },
             {
-              "cmd": "rdc term connect -m patch-test-ubuntu-24",
+              "cmd": "rdc term connect patch-test-ubuntu-24",
               "flag": "-c",
               "prompt": "$",
               "type": "command",

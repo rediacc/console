@@ -10143,7 +10143,7 @@
           "title": "保留你的 Kubernetes，获得迁移能力。"
         },
         "bottomCta": {
-          "command": "rdc cluster fork --name prod --tag staging",
+          "command": "rdc cluster fork prod --tag staging",
           "ctaText": "免费开始使用社区版",
           "description": "先克隆它，测试一下迁移，再正式迁移。开始你的 14 天免费试用。",
           "title": "给你的集群留一条退出路径"
@@ -10475,8 +10475,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc cluster fork",
-              "flag": "--name prod",
+              "cmd": "rdc cluster fork prod",
               "type": "command",
               "value": "--tag staging"
             },
@@ -10506,8 +10505,7 @@
               "type": "spacer"
             },
             {
-              "cmd": "rdc cluster migrate",
-              "flag": "--name prod",
+              "cmd": "rdc cluster migrate prod",
               "type": "command",
               "value": "--to fsn1-dc2"
             },
@@ -13049,7 +13047,7 @@
               "type": "spacer"
             },
             {
-              "cmd": "rdc term connect -m patch-test-ubuntu-24",
+              "cmd": "rdc term connect patch-test-ubuntu-24",
               "flag": "-c",
               "prompt": "$",
               "type": "command",

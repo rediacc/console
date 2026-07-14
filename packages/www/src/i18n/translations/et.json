@@ -10200,7 +10200,7 @@
           "title": "Hoia oma Kubernetes. Saa liikuvus juurde."
         },
         "bottomCta": {
-          "command": "rdc cluster fork --name prod --tag staging",
+          "command": "rdc cluster fork prod --tag staging",
           "ctaText": "Alusta tasuta prooviga",
           "description": "Forki see, testi kolimist ja seejärel migreeri päriselt. Alusta oma 14-päevast tasuta prooviaega.",
           "title": "Anna oma klastrile väljapääsutee"
@@ -10532,8 +10532,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc cluster fork",
-              "flag": "--name prod",
+              "cmd": "rdc cluster fork prod",
               "type": "command",
               "value": "--tag staging"
             },
@@ -10563,8 +10562,7 @@
               "type": "spacer"
             },
             {
-              "cmd": "rdc cluster migrate",
-              "flag": "--name prod",
+              "cmd": "rdc cluster migrate prod",
               "type": "command",
               "value": "--to fsn1-dc2"
             },
@@ -13106,7 +13104,7 @@
               "type": "spacer"
             },
             {
-              "cmd": "rdc term connect -m patch-test-ubuntu-24",
+              "cmd": "rdc term connect patch-test-ubuntu-24",
               "flag": "-c",
               "prompt": "$",
               "type": "command",

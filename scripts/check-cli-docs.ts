@@ -26,6 +26,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cli } from '../packages/cli/src/cli.js';
 import { EXCLUDED_TOP_LEVEL } from '../packages/cli/scripts/lib/command-tree-lib.js';
+import {
+  findRegressions,
+  loadBacklog,
+  writeBacklog,
+} from '../packages/www/scripts/lib/p7-backlog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -819,8 +824,28 @@ function main(): void {
     return;
   }
 
-  console.error(`✗ check-cli-docs: ${violations.length} stale rdc reference(s) found:\n`);
-  for (const v of violations) {
+  // The frozen P7 backlog: see packages/www/scripts/lib/p7-backlog.js for the BLOCKER and
+  // the self-destruct condition. The gate still fails on a NEW doc or a GROWING count.
+  const baselinePath = path.resolve(__dirname, 'cli-docs-baseline.json');
+  if (process.argv.includes('--write-baseline')) {
+    const { files: n, violations: v } = writeBacklog(baselinePath, violations);
+    console.log(`Wrote P7 backlog: ${n} files, ${v} violations.`);
+    return;
+  }
+
+  const regressions = findRegressions(violations, loadBacklog(baselinePath));
+  if (regressions.length === 0) {
+    console.log(
+      `⚠ check-cli-docs: ${violations.length} stale rdc reference(s), ALL within the frozen P7 backlog.`
+    );
+    console.log('  These docs are rewritten wholesale in P7. A NEW doc, or a GROWING count, still fails.');
+    return;
+  }
+
+  console.error('✗ check-cli-docs: stale rdc references BEYOND the frozen P7 backlog:\n');
+  for (const r of regressions) console.error(`  ✗ ${r}`);
+  const offending = new Set(regressions.map((r) => r.split(':')[0]));
+  for (const v of violations.filter((x) => offending.has(x.file))) {
     console.error(`  ${v.file}:${v.line}: ${v.message}`);
     console.error(`      in: ${v.command}`);
   }

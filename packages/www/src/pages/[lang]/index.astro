@@ -20,7 +20,7 @@ const heroTerminalLines = [
   { type: 'command' as const, prompt: '❯', cmd: 'rdc term', flag: 'staging', value: 'mail' },
   { type: 'check' as const, text: 'Connecting to staging/mail', result: 'connected' },
   { type: 'spacer' as const },
-  { type: 'command' as const, prompt: '❯', cmd: 'rdc cluster fork', flag: '--name prod', value: '--tag staging' },
+  { type: 'command' as const, prompt: '❯', cmd: 'rdc cluster fork prod', flag: '--tag', value: 'staging' },
   { type: 'check' as const, text: 'Cloning cluster images + RBD volumes', result: 'copy-on-write' },
   { type: 'success' as const, text: 'Created: prod-staging (whole Kubernetes cluster, 46s)' },
 ];

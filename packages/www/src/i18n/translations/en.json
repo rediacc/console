@@ -6213,7 +6213,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc term connect -m patch-test-ubuntu-24",
+              "cmd": "rdc term connect patch-test-ubuntu-24",
               "flag": "-c",
               "value": "\"apt upgrade -y\""
             },
@@ -11917,8 +11917,7 @@
           "lines": [
             {
               "type": "command",
-              "cmd": "rdc cluster fork",
-              "flag": "--name prod",
+              "cmd": "rdc cluster fork prod",
               "value": "--tag staging"
             },
             {
@@ -11948,8 +11947,7 @@
             },
             {
               "type": "command",
-              "cmd": "rdc cluster migrate",
-              "flag": "--name prod",
+              "cmd": "rdc cluster migrate prod",
               "value": "--to fsn1-dc2"
             },
             {
@@ -12201,7 +12199,7 @@
           "title": "Give your cluster an exit route",
           "description": "Fork it, test the move, then migrate for real. Start your 14-day free trial.",
           "ctaText": "Start free trial",
-          "command": "rdc cluster fork --name prod --tag staging"
+          "command": "rdc cluster fork prod --tag staging"
         },
         "techStrip": {
           "label": "Runs the apps you already ship",
