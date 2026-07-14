@@ -143,7 +143,82 @@ for fn in "${FUNCTIONS[@]}"; do
     MISSING+=("$fn")
 done
 
-# Phase 3: Report results
+# Phase 3: THE REVERSE DIRECTION — does e2e dispatch a verb that no longer EXISTS?
+#
+# Phases 1-2 walk live -> e2e: "is every renet function exercised?" That is only half
+# the contract, and the missing half is the one that bites. An e2e test calling a
+# DELETED verb passed this gate in total silence — which is exactly how
+# datastore_init/mount/unmount, datastore_ceph_{init,fork,unfork} and kube_csi_template
+# outlived their own removal in P1 and only surfaced when the Tests + Infra tier finally
+# ran (it is gated behind the upstream gates, so it had not executed once all campaign).
+#
+# The oracle is RENET_BRIDGE_FUNCTIONS: every name in the dispatcher's Registry —
+# internal verbs included. RENET_FUNCTIONS above is the PUBLIC surface and omits them,
+# and the bridge drives mostly internal verbs (datastore_*, machine_check_*, daemon_*),
+# so it cannot answer this question. A schema-derived list cannot either: a verb may be
+# registered WITHOUT a schema (ceph_clone_create is) and still dispatch fine.
+log_step "Checking e2e-tests dispatch only verbs that still exist..."
+
+BRIDGE_FUNCTIONS=()
+IN_ARRAY=false
+while IFS= read -r line; do
+    if [[ "$line" =~ RENET_BRIDGE_FUNCTIONS[[:space:]]*=[[:space:]]*\[ ]]; then
+        IN_ARRAY=true
+        continue
+    fi
+    if $IN_ARRAY && [[ "$line" =~ \][[:space:]]*as[[:space:]]+const ]]; then
+        break
+    fi
+    if $IN_ARRAY && [[ "$line" =~ \'([a-z0-9_]+)\' ]]; then
+        BRIDGE_FUNCTIONS+=("${BASH_REMATCH[1]}")
+    fi
+done <"$FUNCTIONS_FILE"
+
+if [[ ${#BRIDGE_FUNCTIONS[@]} -eq 0 ]]; then
+    log_error "No functions extracted from RENET_BRIDGE_FUNCTIONS — parsing may be broken,"
+    log_error "or the contract predates it. Regenerate:"
+    log_error "  private/renet/bin/renet functions generate-types --output packages/shared/src/renet-contract/data --version dev"
+    exit 1
+fi
+log_info "Found ${#BRIDGE_FUNCTIONS[@]} dispatchable verbs in RENET_BRIDGE_FUNCTIONS"
+
+is_dispatchable() {
+    local needle="$1"
+    local item
+    for item in "${BRIDGE_FUNCTIONS[@]}"; do
+        [[ "$item" == "$needle" ]] && return 0
+    done
+    return 1
+}
+
+# Every `function: 'name'` literal in the harness IS a dispatch — that is how
+# src/utils/bridge/methods/*.ts name the verb they send to `functions once`.
+DEAD=()
+while IFS= read -r hit; do
+    # grep -rn gives  <file>:<line>:<match>
+    file="${hit%%:*}"
+    rest="${hit#*:}"
+    line="${rest%%:*}"
+    verb="$(printf '%s' "$rest" | sed -E "s/.*function:[[:space:]]*'([a-z0-9_]+)'.*/\1/")"
+    is_dispatchable "$verb" && continue
+    DEAD+=("$verb  — ${file#"$REPO_ROOT"/}:$line")
+done < <(grep -rn --include='*.ts' -E "function:[[:space:]]*'[a-z0-9_]+'" "$E2E_TESTS_DIR/src" "$E2E_TESTS_DIR/tests" 2>/dev/null || true)
+
+if [[ ${#DEAD[@]} -gt 0 ]]; then
+    log_error "e2e-tests dispatch ${#DEAD[@]} verb(s) that renet no longer registers:"
+    log_error ""
+    for d in "${DEAD[@]}"; do
+        log_error "  - $d"
+    done
+    log_error ""
+    log_error "These calls fail at RUNTIME with \"no command builder registered\". A renamed"
+    log_error "verb means the test is stale by design: fix it FORWARD against the surviving"
+    log_error "surface (see RENET_BRIDGE_FUNCTIONS), never restore the old name."
+    exit 1
+fi
+log_info "All e2e-dispatched verbs exist in the renet registry"
+
+# Phase 4: Report results
 if [[ ${#MISSING[@]} -eq 0 ]]; then
     log_info "All enforced renet functions have e2e-tests coverage (${#ALLOWLIST[@]} legacy names allowlisted)"
     exit 0
