@@ -797,3 +797,29 @@ be read as three different quantities.
 **The convention, stated once so it stops recurring: every i18n count in this repo must name
 its unit (findings vs entries) and its reference commit.** A count with neither is folklore,
 and this program has now had to correct five of them.
+
+### The 188-command deferral now has a LIVE CI RED attached to it
+
+It is no longer theoretical. `Quality / Tutorial Cast Hygiene` went red in CI round 3 on three
+recordings — `tutorial-branching`, `tutorial-managing-secrets`, `tutorial-vscode-browser`.
+
+The mechanism is the coupling rule, arriving from a direction nobody was watching. That gate
+exempts a command's error output when the tutorial script declares it with
+`run_cmd_expect_fail "<command>"`, and it matches the declaration to the recording **by command
+text**. P4 rewrote all 22 scripts in `.ci/tutorials` to positional syntax; the `.cast` files
+still carry the pre-P4 text. **The labels stopped matching, so three DELIBERATE failure demos
+stopped being recognised as deliberate.**
+
+**A script fixed ahead of its recording is not a fix, it is a different bug.**
+
+The scripts are right and must stay right (they are the source for the next recording, and
+`.ci/tutorials` is also scanned by `check-cli-docs`, so reverting them would simply move the
+failure). **The RECORDINGS are what is stale** — and reconciling them means re-recording with a
+live VM lab and re-narrating in 13 languages, which is exactly the work this entry defers.
+
+**Held by a self-destructing per-file backlog** (`packages/www/scripts/tutorial-cast-baseline.json`),
+proven red-first: a NEW error in a clean recording still fails. **Every entry must vanish when
+the tutorials are re-recorded; an entry that outlives the re-record is a bug, not a deferral.**
+
+**Record this as evidence, not as an inconvenience:** the re-record is real work with a real CI
+red behind it, not a tidy-up someone can keep postponing.

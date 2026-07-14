@@ -317,6 +317,12 @@ function main() {
    * ★ SELF-DESTRUCT: every entry here must vanish the moment the tutorials are re-recorded.
    * A stale-cast entry that outlives the re-record is a bug, not a deferral. The gate stays
    * fully armed for every other recording and for any NEW error in these ones.
+   *
+   * See `docs/design/spec/12-carried-debt.md` — "The website's STRUCTURED command data: 188
+   * dead commands". These three recordings are the LIVE PROOF of that deferral: 70 of those
+   * 188 are the commands TYPED in these recorded terminals, and 26 are the commands SPOKEN in
+   * the narration, in 13 languages. This CI red is the deferral becoming visible, not an
+   * inconvenience — it is the evidence that the re-record is real work, not a tidy-up.
    */
   const BASELINE_PATH = path.resolve(__dirname, 'tutorial-cast-baseline.json');
   if (process.argv.includes('--write-baseline')) {
