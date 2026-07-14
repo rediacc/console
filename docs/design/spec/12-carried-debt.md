@@ -42,7 +42,11 @@ Their pods are rejected at admission (`FailedCreate` ×13), even when they other
 
 - **#83** — `repo create` never wrote `.rediacc/repo.json`, so CSI refused **every** dynamic PVC: dynamic provisioning was unreachable through the porcelain. The guard's comment claimed it tested *"is this a rediacc repo"* while it actually tested *"has this repo already been through the static-PV path"* — it measured a **side effect of the thing it meant to measure**. Fixed red-first, live-proven; the fix realigns the predicate with its stated intent and weakens nothing.
 - **#85** — 2-OSD Ceph `cluster create` could never succeed: the global `osd_pool_default_size` was never set (so `HEALTH_OK` was unreachable) *and* the health gate's escape hatch was dead code (`grep -c … || echo '0'` emits **two** zeros, so its `== "0"` test can never be true). Note for posterity: fixing only the dead branch would have been **worse than the bug** — it would have converted a loud failure into a silent, permanently degraded cluster.
-- **#86 (HALF-fixed — read the P5 section below).** Attach-time CSI enablement silently no-oped on any node without a local admin kubeconfig, while attach still reported success. **What P4 fixes is the LIE, not the gap:** attach now fails loudly, naming why. CSI datastores still work only on the control-plane node; the feature itself is P5.
+- **#86 (HALF-fixed).** Attach-time CSI enablement silently no-oped (a `Debugf`) on any node with no admin kubeconfig, while attach reported success.
+  **CORRECTION — this ledger previously said "attach now FAILS loudly." That was WRONG, and it is worth keeping the correction visible:** the code does not fail. `cmd/renet/kube_csi.go:96-108` is a `log.Warnf` followed by a bare `return`; the exit code is unchanged and the warning text ends, verbatim, **"Attach itself succeeded."**
+  **What P4 actually fixes is the SILENCE, not the outcome:** attach still succeeds and still mounts the datastore, but the skip is now a loud warning naming exactly what was skipped (StorageClass, node CSI units, topology label) and what it costs ("dynamic PVCs on this datastore will stay Pending"). **Ruled: warn-and-succeed is CORRECT** — the attach genuinely worked, and hard-failing would strand a mounted datastore behind a non-zero exit.
+  The *feature* — CSI on a worker node — remains P5 (control-plane-mediated scoped mint; see below).
+  **The lesson is the correction itself:** a debt ledger that describes behavior the code does not have is the same defect as help text that teaches a deleted command. The author of the rule broke the rule, and an agent reading the code caught it.
 
 ## Carried from earlier phases — still open
 
@@ -54,37 +58,12 @@ Their pods are rejected at admission (`FailedCreate` ×13), even when they other
 
 ## P5 items opened by the P4 gate and the babysit
 
-- **renet i18n baseline: re-based explicitly, not silently.** The wave's baseline growth is **28
-  entries, not 41** — measured by diffing `pkg/i18n/baseline.json` against the pre-wave commit. Of
-  those, **22 are `fmt.Errorf` internal wraps** (the sanctioned class) and **6 are user-facing**, all
-  six enumerated by name in the commit that re-based them (2 × `cobra.Short` and 3 × `fmt.Printf` in
-  `cmd/renet/datastore_volumes.go`, 1 × `fmt.Sprintf` in `pkg/nodeteardown/nodeteardown.go`). No
-  `renet job` strings appear in this wave's growth at all; if 41 included those, they predate this
-  snapshot and are someone else's debt to own. renet's house style is `i18n.T` (288 vs 52 raw), so
-  the six are still an anomaly and are owned here. **Two P5 items:** internationalize the six, and —
-  the structural bug — **teach the gate to tell "internal error wrap" from "user-facing"**, because
-  today it is green *because* they were laundered: it cannot fail for this reason by construction.
-  *(This entry is itself an instance of the counting problem below: the ledger arrived saying 41.)*
-- **`noUncheckedIndexedAccess` is off, and the linter will tell you to delete real guards.** Because
-  the flag is unset, `map[key]` is typed as always-present while returning `undefined` at runtime, so
-  every absence check written against it reads as dead code. `no-unnecessary-condition` flagged 14 of
-  them in the P4 wave, and **every single one was load-bearing**: `if (!record)` in `getDatastore` IS
-  the exit-5 not-found path; `if (!field)` in `resolveDefaultKey` IS what rejects an unknown config
-  key; `state[ref]?.attachedTo` crashes without the `?.`. Taking the linter's advice literally would
-  have shipped a family of silent bugs — a not-found that returns undefined, a validation that stops
-  validating, and several crashes.
-
-  It wears a **second costume that is easier to fall for**: three lines of the form
-  `const record = await getDatastore(ref);` where the *binding* is unused but the **call is the
-  guard** (`getDatastore` throws exit-5 on a miss). The naive "unused variable" fix deletes the whole
-  line and takes the existence check with it. The correct fix is to drop the binding and keep the
-  call.
-
-  A trap for whoever pays this down: **annotating the variable does not work.** `const x: T | undefined
-  = map[k]` still fails, because TypeScript narrows a `const` straight back to the initializer's
-  (lying) type. The lookup must go through a helper whose *declared* return type is `T | undefined`;
-  that is what survives narrowing. Enabling the flag properly costs **194 type errors in
-  `packages/cli` alone** — hence P5, not a babysit fix.
+- **renet i18n baseline — THE NUMBER, WITH ITS WINDOW STATED (this ledger previously contradicted itself, and the gate reviewer caught it).**
+  **TOTAL DEBT: 41 user-facing strings** (18 `fmt.Printf`, 11 `cobra.Short`, and the rest), measured against the **P3 gate's own baseline commit `c7e187a`** — independently confirmed twice. That is the number the P5 item is scoped to: **internationalize the 41.**
+  **OF WHICH THIS PR ADDED 6** (measured against the pre-wave commit); the other **35 are pre-existing debt** this wave did not create and does not own.
+  **BOTH numbers are true and they answer different questions. This ledger previously stated only the 6** — which made the debt look settled at ~1/7 its real size, so someone fixes six strings and calls it paid. **A number without its window is folklore; this entry is what that looks like when the folklore is your own.**
+  They were baselined as though they were internal error wraps. renet's house style is `i18n.T` (288 vs 52 raw), so these are an anomaly. They are enumerated in the commit that re-based them. **Two P5 items:** internationalize the 41, and — the structural bug — **teach the gate to tell "internal error wrap" from "user-facing"**, because today it is green *because* they were laundered: it cannot fail for this reason by construction.
+- **`noUncheckedIndexedAccess` is off**, which makes `map[key]` type as always-present while returning `undefined` at runtime. This made 14 real runtime guards (the exit-5 not-found path, the invalid-config-key rejection, several crash guards) look like dead code to the linter. Enabling it costs 194 type errors in `packages/cli` alone. Until then, "fixing" a `no-unnecessary-condition` warning in this repo can silently delete a load-bearing guard.
 - **Deferred refactors** (suppressed with BLOCKERs, not fixed, to avoid refactoring product code inside an unmerged wave): `command-metadata.ts` 820 lines, `datastore.ts` 531, `machine/status.ts` 548 vs a 512 cap; 8 `sonarjs/cognitive-complexity` sites.
 - **`runBatchParallel` deleted** — a fully-implemented parallel batch runner (with a Semaphore) that nothing called. If batch-parallel is wanted, wire it deliberately with a contract. It survives in the snapshot commit's history.
 - **P7 deferrals, named with counts so they cannot be quietly forgotten:** `validate-docs-cli-usage` — 379 violations under `packages/www/src/content/**`, plus ~30 inherited em dashes; `check:i18n:docs` — 13 www locale doc files referencing CLI i18n keys the reshape deleted (gate scoped with a BLOCKER, not bulk-edited, because P7 rewrites them anyway).
@@ -247,50 +226,15 @@ eight.
 **P5 fix:** the audit-coverage gate must **walk the dispatch**, not grep the source. A grep-based coverage
 check cannot see a variable dispatch, and therefore cannot fail for the reason it exists.
 
-## The TENTH broken gate: nothing can see an orphaned CLI translation key
-
-Found while executing ruling G (delete `runBatchParallel`), which orphaned two i18n keys. The question
-"will a gate catch this?" was answered **red-first, not by reading code**: plant
-`commands.repo.zzTestOrphanKey` in `en/cli.json` with no caller anywhere, and see who complains.
-
-Nobody does.
-
-- **`check:i18n:key-usage` → exit 0.** It validates the *opposite* direction (every `t()` call resolves
-  to a key that exists), and it only scans **www source files** — it never opens the CLI.
-- **The `i18n/no-unused-keys` ESLint rule did not fire** on the CLI locales either.
-- The only thing that spoke up was **`cross-language-consistency`**, and it complained about
-  **asymmetry** (key in `en`, missing in `ar`/`de`/…), not about the key having no caller.
-
-So a CLI translation key whose last caller is deleted, but which remains present in all 13 locales, is
-**completely invisible**. Deleting the two `runBatchParallel` keys was only safe because they were removed
-from English too — which converted an *orphan* into an *asymmetry*, and asymmetry is the only property
-anything watches. Dead i18n weight can accumulate indefinitely and no gate will ever say so.
-
-**P5 fix:** point an unused-key check at the CLI locales with the CLI as its source dir — the rule already
-exists, it is simply not aimed at this package.
-
-## F6 is the prerequisite for paying down the size debt, not a nicety
-
-The `command-tree.json` freshness gate added in this wave is what makes the deferred
-`command-metadata.ts` / `datastore.ts` / `machine/status.ts` split **safe to attempt** in P5. Splitting a
-command-registering module can shift registration order; without a gate that regenerates-and-diffs the
-tree, that staleness would land silently beneath four validators and two ESLint rules that all read it.
-Do the split *after* F6 exists, never before. (See the BLOCKER text on those three files for the full
-failure mode: plane re-attribution, silent tree staleness, and guard orphaning that fails OPEN.)
-
 ## Numbers that turned out to be folklore (P5, instrumentation)
 
 A pattern worth naming, because it recurred three times in one phase and each time a decision rested on it:
 
 | Number | Claimed | Actual |
 |---|---|---|
-| renet i18n baseline | "frozen at 2970"; then "+41 user-facing" | growth is **28** entries: 22 sanctioned `fmt.Errorf` wraps + **6** user-facing. Four sources gave four values; nobody wrote down what is counted |
+| renet i18n baseline | "frozen at 2970" | four sources gave four values; nobody wrote down what is counted |
 | CLI orphan i18n keys | 408 | **2** real orphans × 12 locales = 24 (408 was a docs gate double-counting 58 stale keys across languages) |
-| Stale translator keys | 82 | **130**, and *both numbers are real* — they answer different questions. 82 is the literal output of `check:i18n:hashes` ("English values changed for 82 key(s)", CLI-only, hash-vs-current). 130 is the hash manifest derivation (120 hash-stale + 4 missing + 8 still-English) and is the safe superset to staff off. The failure here is not a wrong count, it is **two oracles with no stated scope** |
-
-`i18n:naturalize-status` deserves its own line: it reports **"all 12 locales OK"** and, by its own output,
-fails only when a *whole language* is absent. It cannot fail an individual stale key — so it cannot fail for
-the reason anyone consults it.
+| Stale translator keys | 82 | **130** derived from the hash manifest (120 hash-stale + 4 missing + 8 still-English); `i18n:naturalize-status` reports "all 12 OK" and by its own output cannot fail an individual stale key |
 
 **The lesson is not that people were careless — it is that these numbers had no reproducible oracle.**
 A count with no single definition cannot be checked, and the program's own rule ("a count that moved is a
@@ -318,3 +262,538 @@ switches dialect mid-file reads as broken to native speakers of either variant.
 **P7 item:** decide whether `pt` is European or Brazilian, state it in the i18n conventions doc, and
 normalise the file once. Until that decision exists, every future translator will re-litigate it string by
 string — which is exactly what just happened.
+
+## Gates 10 and 11: the i18n key-usage and naturalization gates are blind (P5)
+
+**#10 — `check:i18n:key-usage` has ZERO coverage of the CLI.** Established red-first, not by argument: an
+orphan key (`commands.repo.zzTestOrphanKey`, present in English, called by nothing) was planted, and
+**every gate stayed green.** The gate only validates the *other* direction (every `t()` call resolves to a
+key) and **only scans www source files — it never opens the CLI at all.** The one check that spoke up was
+`cross-language-consistency`, complaining about *asymmetry* (key in en, absent in other locales) — a
+different property entirely.
+
+**Consequence:** a CLI translation key whose last caller is deleted, but which remains present in all 13
+locales, is **completely invisible**. Dead i18n weight accumulates forever and nothing will ever say so.
+The `runBatchParallel` key deletion in P4 was only safe because the keys were removed from **English too**,
+which converted an orphan into an asymmetry — the one shape something watches.
+
+**#11 — `i18n:naturalize-status` cannot fail for the reason anyone would ask it.** It prints "all 12
+locales OK" and, by its own output, fails only when a *whole language* is absent or near-empty; it
+explicitly does **not** fail individual un-naturalized or stale keys. It is therefore useless as a
+staleness oracle, which is the only question anyone brings to it.
+
+## Correction: the lead's own "130 stale keys" was not a measurement
+
+Recorded because it is the same error this ledger indicts elsewhere, committed by the person writing it.
+
+The CLI's real stale-key oracle is **`npm run check:i18n:hashes`**, which prints *"English values changed
+for **82** key(s)"*. The lead instead recomputed crc32 over the English values by hand and got 120, then
+staffed the translation wave off a 130-key superset. **The hashing did not match the tool's**, so roughly
+38 of those "stale" keys were artifacts of the lead's own arithmetic — **a number with no reproducible
+oracle, built while writing the ledger entry condemning numbers with no reproducible oracle.**
+
+**Why the error was free, and it was not luck:** the work set was a *superset* of the truth (130 ⊇ 82), and
+the translators were instructed to **verify each key and leave correct translations untouched** rather than
+rewrite blind. The false-stale keys cost a few verification reads and changed nothing. Had the instruction
+been "these 130 are stale, rewrite them," 38 good translations would have been churned across 12 languages.
+
+**The rule this yields:** when you cannot reach the authoritative oracle, a **superset plus verify-don't-churn**
+is safe; a **point estimate plus rewrite** is not. And always look for the tool that already prints the number
+before computing your own.
+
+## The English help text taught a CLI that no longer exists (8 lies, fixed in P4)
+
+The single most consequential find of the phase, and **the last thing anyone thought to check**.
+
+**H1 — `help.repo.keyConcepts`, the authoritative repo-addressing document read by users AND agents, still
+taught the DELETED `--name` model**, verbatim: *"A bare `--name` resolves to the exact config key, else
+falls back to `<repo>:latest`… `--name app` targets the GRAND; `--name app:test` targets that FORK."*
+`--name` does not exist on `repo up`/`down`/`delete`/`term`/`sync`. **English contradicted itself inside
+one file**: three keys away, `help.agentMode` already said *"A repository ref derives its own machine, so
+`-m` is not needed."* Two eras of the CLI side by side.
+
+Also: `machine.description` advertised `query` and **`rename`** as key subcommands (neither exists —
+`rename` was deleted outright); `help.machine.keyConcepts` advertised `containers --health-check` /
+`services --stability-check` (merged into `machine status --containers/--services`); and
+`errors.agent.commandBlocked` — **the error shown to a blocked agent** — recommended the MCP tool
+`machine_query`, **which does not exist**. We blocked the agent and handed it a dead tool name.
+
+### Nothing in the repo could ever have caught this — four gates, four blind spots
+
+- **Locale gates** check locales ↔ English. English is the source of truth, so *by construction it can
+  never be wrong.*
+- **Contract gates** check code ↔ generated artifact — **tautological**: the artifact is generated *from*
+  the code.
+- **`validate-cli-examples`** parses `rdc …` **syntax**. These lies live in **prose lists**.
+- **The i18n hash delta** never fired: English's hash never changed, because English was *always* wrong.
+
+**The instrument that finally noticed was a Japanese translator reading a sentence.**
+
+**P5 gate (highest-value of all of them, ~40 lines):** walk the live Commander tree; for every domain-level
+help string, assert every command-ish word it names is a live child of that domain. Same mechanism as the
+spec-intent gate; one more axis.
+
+## Doctrine: a sweep that returns zero without a control is a broken instrument reporting good news
+
+Recorded because the gate reviewer caught **itself** with it, and said so unprompted.
+
+Its first sweep of the English-help axis returned **ZERO** — and it nearly reported that as a clean bill of
+health. The probe searched for `rdc <cmd>` and backticked forms; **the lies were in prose lists**, so the
+instrument was blind to the entire class. It was caught only because the lead had handed it one **known
+positive** (`machine.descriptionShort`) to check against.
+
+**Every sweep now carries an explicit control**: a known-positive that MUST appear in the results, or the
+run is void. A zero-finding sweep with no control is indistinguishable from a broken sweep — and "no
+problems found" is the most dangerous possible output of a broken instrument, because nobody audits good
+news.
+
+## Italian accent corruption — CLI fixed; the WEBSITE's Italian is still broken (follow-up PR, NOT this one)
+
+**Fixed in P4 (CLI locale):** 17 accent defects in `packages/cli/src/i18n/locales/it/cli.json`. These were
+not typos — they changed meaning. Italian `e` = *and*, `è` = *is*, so `"Il binario corrente e in uso"` reads
+as *"the current binary AND in use"*: a broken sentence in a message users see when an update fails.
+
+**Found by tracing the same bad pass into `packages/www/src/i18n/translations/it.json` (9,184 strings) —
+NOT FIXED, deliberately:**
+
+- **5 × `e` that should be `è`**, including **`pages.termsOfService.sections.accounts.content[0]`** —
+  *"Per accedere alla Piattaforma e gestire gli Abbonamenti **e** necessario…"* — **in the Terms of
+  Service.**
+- **23 × unaccented words**, many using the typewriter-era **apostrophe-as-accent** workaround
+  (`gia'`, `piu'`, `e'`) — concentrated in **`pages.refundPolicy.*`**: *"Ore di servizi professionali
+  **gia'** erogate"*, *"Rediacc offre **piu'** livelli"*, *"Se l'utente **e'** un nuovo abbonato"*.
+  In published commercial copy this reads as unfinished work.
+- **Control fired**: 77 strings retain legitimate `e` (= *and*), so the corruption is real and localised,
+  not an artifact of the probe.
+
+**Why it is NOT fixed in the P4 PR, on purpose:** the CLI's Italian was in scope because P4 reshaped the
+CLI. The website's Italian is not. Slipping ~28 www-locale edits into a 270-file CLI PR **at the finish
+line** risks tripping the www i18n gates at the worst possible moment, and buries a customer-facing legal-copy
+fix where no reviewer would ever look for it. **A three-file www-locale fix reviewed on its own is both
+safer and more honest than smuggling it in here.**
+
+**Action:** dedicated follow-up PR (or P7's www wave). The keys are enumerated above; the method is proven
+(word-list probe → manual context review → reject false positives → control check). **Do not blanket-replace:**
+`"la politica effettiva unita"` correctly means *"the effective MERGED policy"* — `unita` is the participle
+*merged*, not the noun `unità` (*unit*). A mechanical accent-fixer corrupts that string while "fixing" it.
+
+## H9 — the fork SUCCESS message printed two commands and BOTH failed (fixed in P4)
+
+`commands.repo.fork.completed`, printed after **every single fork** — the flagship operation:
+
+> "Fork created. Deploy locally: `repo up {{repository}} -m {{machine}}`. To migrate fork to another
+> machine: `repo push {{repository}} -m {{machine}} --to <target> --up`"
+
+`repo push` has **no `-m` flag at all** (`error: unknown option '-m'`), and **`--up` on push was DELETED**
+`[P0-DECIDED]`. **F1 was the front door; this was the exit.** Every fork ended by telling the user two
+things to do next, and neither ran.
+
+Plus H10 (`push.description`: teaches the dead `--up`, and *"omit name to push all repos"* — impossible,
+the ref is required), H11 (`fork.description` step 2 teaches `push --up`; **it also GENERATES
+`.claude/skills/rdc/reference.md:921`** — fix English, regenerate, never hand-edit the skill), H12
+(orphan `push.optionUp`; **`repo pull` genuinely still has `--up`** — do not "fix" that one).
+
+## Gate 12 — `validate-cli-examples` cannot see the examples CLAUDE.md is made of
+
+`scripts/validate-cli-examples.ts:293`: `if (!command.startsWith('rdc') …) continue;`. CLAUDE.md's own
+convention **mandates `./rdc.sh`**. So the gate scans the file and **walks past every line the file is made
+of** — and reported zero. `CLAUDE.md:220` teaches the deleted `repo push … --up` and the gate has never
+seen it.
+
+**The damning part: the repo already knew.** `scripts/check-cli-docs.ts:624` carries a comment describing
+**this exact bug**, found and fixed *there*: *"failed `startsWith('rdc')`, and WAS SILENTLY DISCARDED. The
+scanner reported zero."* Someone hit it, diagnosed it, fixed one scanner — **and never applied it to its
+sibling ten lines away.** A fix that is not swept across its own class is half a fix.
+
+## The one surface that is NOT lying, and why
+
+**MCP tool descriptions: CLEAN.** 73 tools walked from the live tree, **0 prose hits**, control carried.
+And `argv-acceptance.test.ts` passes **96/96** — it resolves every tool's argv **against the real Commander
+tree**, and its header names exactly the rot it exists to catch.
+
+**That is not luck. It is the only surface in the repo whose gate asks the thing that DECIDES.** Every other
+surface — help text, skills, CLAUDE.md, docs — is validated against something *adjacent* (a generated
+artifact, a syntax pattern, itself), and every one of them was lying. The thesis of this entire phase,
+demonstrated by its single counter-example.
+
+## P7's true size, measured
+
+`packages/www/src/content/**`: **4,380 lines across 1,081 files** matching dead-model vocabulary. Counted,
+not fixed — so the P7 rewrite knows what it is actually signing up for rather than discovering it midway.
+
+## The wave broke all three doors — and the exam that certifies people on it
+
+**166 hits / 30 files** in `private/account` teach the deleted CLI. **`practice-questions.ts` — THE EXAM —
+has 22.** `study-content/` (the certification modules) has 126. We were about to certify people on a CLI
+that will not exist, and grade them against answers that are wrong.
+
+**Register the shape of this, because it is the phase in one line:**
+- **F1** — `rdc --help`'s own examples errored against the binary printing them. **The front door.**
+- **H9** — `repo fork`'s SUCCESS message printed two commands, and **both failed**. **The exit.**
+- **onboarding-content.json** — the first-run flow: **all three** commands broken. **The onboarding.**
+
+**The reshape renamed the world and left every sign pointing at the old one.**
+
+### The sequencing rule (learned twice — skill docs, then cert content)
+
+Five constructs (`machine health|prune|provision|deprovision --name`) **match the code today**, because
+their positional fixes had not landed yet. Correcting the docs *first* would have made them wrong in the
+**other** direction — certifying people against a CLI that exists in **neither** era.
+
+**A doc fix that precedes its code fix is not a fix, it is a different bug.** Land the code, then the docs.
+
+### Why nothing saw it
+
+The cert content is TS/JSON **in another repo**. `validate-cli-examples` scans the console monorepo and
+flags **1 of the 166 lines**. It cannot see the exam, the study modules, or **12 of the 13 locale copies**
+of a UI string (`machines.json:14`) that names a deleted command — English is checked, the other twelve are
+invisible, so fixing English alone would leave 12 live strings teaching `machine query`.
+
+**A wave that renames the CLI invalidates the exam that certifies people on it — and nothing in this
+codebase connects those two facts.** The P5 spec-intent gate must run against `private/account/web/src/data/**`
+and `.../i18n/**` with the same live-tree oracle.
+
+### Two disciplines worth copying
+
+- **The gate caught a false positive in its OWN detector**: `repo diff --name` is not real — `repo diff` has
+  `--name-only`, a **live** flag, and the `\b` matched at the hyphen. It reported the flaw rather than
+  shipping a batch that would have deleted a working flag.
+- **It checked whether a hit was doc rot or a functional bug**: `contract-context.ts` *comments* mention
+  `--name`, but the code reads `entry.machineOption ?? entry.machinePositional` — binding-driven and
+  reshape-safe. Comment dead, code correct. The distinction mattered and it went and looked.
+
+## A trap TypeScript cannot see: converting an option to a positional silently shifts action arity
+
+**Found during the positional sweep, and it would have shipped a functional bug with a green type-check.**
+
+**Commander's `.action()` callback arity is untyped.** When a leaf gains a positional argument, Commander
+starts passing it **first**: `(options)` becomes `(name, options)`. But the action's declared signature is
+not checked against the command's shape — so after converting `machine prune --name` to
+`machine prune <name>`, the action **still declared `(options)`** while Commander now handed it
+`(name, options)`.
+
+**The machine NAME would have arrived in the variable the code reads options from.** Not a crash — a
+silent misbinding, on a *destructive* command.
+
+**`check:types` stayed GREEN through it.** The type system cannot see this, by construction: the arity
+contract lives in Commander's runtime, not in the callback's type. It was caught by **reading every action
+after the change**, not by any gate.
+
+**Rule:** a positional conversion in Commander is a **silent arity change**. Every `.action()` on a
+converted leaf must be re-read. **P5:** an argv-acceptance-style test per converted leaf (the MCP layer
+already has this — `argv-acceptance.test.ts` — and it is precisely why the MCP argv builder needed **no**
+change during the sweep: it derives argv from the live tree, so it followed automatically).
+
+### And a test that codified the bug
+
+`job cancel`'s unit test **asserted the inconsistency in its own docstring** — *"`cancel` still uses
+`--id`"* — while its siblings `job status <job-id>` and `job logs <job-id>` took positionals. **The test was
+not missing the bug; it was documenting it as intended behaviour.** A test that encodes a defect as a
+contract is worse than no test: it converts a bug into a requirement, and the next person to fix the bug
+has to break a green test to do it.
+
+## Diacritic corruption is a CROSS-LOCALE class — and four of the lead's instruments failed to see it
+
+Surfaced only because translators *read* their files. **Every instance below passed every mechanical check
+we have** — valid JSON, correct keys, correct placeholders, non-English text.
+
+| locale | defect |
+|---|---|
+| **it** | **17** accent defects. `"Il binario corrente **e** in uso"` = *"the current binary AND in use"* — `e`=*and*, `è`=*is*. A broken sentence in a live update-failure message. |
+| **tr** | `errors.agent.commandBlocked` was **ASCII-only garbage** — every diacritic stripped. Plus `subscription.login.*` (`Guncelleme kanali… ayarlandi` → `Güncelleme kanalı… ayarlandı`) and **two strings still in English**. |
+| **de** | umlauts stripped through a live error message (`verfugbar`, `fuhrt`, `benotigen`, `ausfuhren`). |
+| **fr** | `"**Ou** vos **donnees** doivent-elles **etre** **stockees** ?"` — four missing accents in one sentence, in the **login flow**, and `Ou` (*or*) vs `Où` (*where*) **changes the meaning**: it reads *"Or your data must-they be stored?"* |
+| **es** | `esta` → `está`. |
+
+### The lead's instruments failed FOUR times in one night
+
+1. Accent sweep **cleared French as clean** — French had four missing accents in one sentence.
+2. Accent sweep **never checked German at all**.
+3. Accent patterns **missed 8 of Italy's 17** defects.
+4. English-prose detector returned **six hits, all false positives** — it matched **placeholder names**
+   (`{{to}}` contains "to", `{{from}}` contains "from").
+
+**The readers beat the pattern-matcher every single time.** This is the same finding as the twelve broken
+gates, arriving from the opposite direction: **the instruments confirm structure; they cannot confirm
+meaning.** A `--help` text that taught a deleted command, a fork success message recommending two commands
+that both fail, an exam certifying people on a CLI that does not exist, and a login prompt asking *"or your
+data must-they be stored"* — **none of it was findable by a machine checking that the pieces were present.**
+
+**Method that does work** (Italian's, adopted by all): word-list probe → **read every hit in context** →
+reject false positives → keep a **control** (legitimate unaccented words must survive, or you over-corrected).
+Italian's control fired: 53 legitimate `e` (=*and*) survived. And it correctly **refused** one apparent hit —
+`"la politica effettiva unita"` means *"the effective MERGED policy"* (participle), not `unità` (*unit*). A
+mechanical accent-fixer corrupts that string while "fixing" it.
+
+**P5:** the `check:i18n:untranslated` gate cannot see stale English left in a locale (it only catches values
+*byte-identical* to current English). Leftover English from an older source text is invisible to it.
+
+## A hand-assembled delta list is not a delta — it is a memory of one
+
+**Caught before it shipped, and it is the cleanest process failure of the phase.**
+
+The H9 fix rewrote `commands.repo.fork.completed` (the fork success message that printed two commands which
+both failed). The fix correctly removed `-m {{machine}}` from both — so English went to `{{repository}}` ×4
+with **zero** `{{machine}}`. But that key **was not on the hand-written "final English delta" list** handed to
+the 12 translators, so none of them touched it.
+
+**Result: a placeholder mismatch in all 12 locales** (locales still carried `{{machine}}` ×2). Every
+translator reported clean — and every one *was* clean **against the list they were given**. The defect was
+in the relay, not in any of them.
+
+**The authoritative delta was always available, mechanically:**
+`git diff <sha>^..<sha> -- packages/cli/src/i18n/locales/en/cli.json` names **every** changed key, with no
+possibility of omission. Instead the list was assembled by hand — twice: the lead's earlier relay also
+dropped `commands.repo.push.optionUp` (caught by the German translator) while naming its sibling deletion.
+
+**Rule: never hand-assemble a change list that a diff can generate.** The same principle as everything else
+this phase found — *ask the thing that decides*. A human-curated list of what changed is a **memory** of
+what changed, and memory is the failure mode.
+
+**Also caught in the same pass:** `docs.sectionTitles.ops` is the ONLY English value still saying
+"experimental", while `commands.ops.description(Short)` correctly dropped that framing. **English now
+contradicts itself, three keys apart, in the same file** — the exact shape of H1. The Estonian translator
+found it independently and flagged it as out of scope; it was not out of scope, it was the same bug.
+
+**New axis for the P5 English-truth gate:** sibling English values for one noun (`description`,
+`descriptionShort`, `docs.sectionTitles.*`) must not contradict each other. The hand-run two-axis sweep
+found zero dead-command references and **still could not see this**, because both axes compared English to
+the *tree* — neither compared English to **itself**.
+
+## #85 — what is PROVEN LIVE, and what is not (scope this precisely in the commit message)
+
+**#85a (the global pin) is LIVE-PROVEN.** From the surviving provisioning transcript:
+`"Pinning osd_pool_default_size=2/min_size=1 for a 2-OSD topology"` → `"Ceph health: HEALTH_OK (elapsed: 0s)"`.
+**The FIRST health poll returned HEALTH_OK** — stronger than the requirement. The gate did not tolerate a
+warning, did not fall through, did not wait out a degraded window: **there was no warning to tolerate,
+because the pin removed `TOO_FEW_OSDS`'s cause.** A size-2 `rbd` pool was then created, two rbd datastores
+mapped/LUKS-opened/mounted, and `cluster create` **returned 0** — a command that could never succeed before.
+
+**#85b (the repaired dead branch) is UNIT-PROVEN, NOT live-exercised** — and that is the correct outcome,
+not a gap: `WaitForHealth` only reaches the repaired predicate inside the `HEALTH_WARN` branch, and a healthy
+cluster never enters it. It is covered by 10 tests built from **verbatim live strings** (including the
+`"0\n0"` captured with `od -c`). **A commit message claiming "#85b proven live" would be false.**
+
+`active+clean` is **ENTAILED** by HEALTH_OK (any inactive/undersized/degraded PG raises a warning) — but it
+was **not directly captured** in the winning run. Entailed, not observed. Say it that way.
+
+**The rewrite is better than the fix it replaced:** the gate no longer substring-matches health against a
+benign-warning allowlist; it asserts the property (**every OSD up AND every PG `active+clean`**) and warns
+loudly when it proceeds through a warning. The old allowlist had `"pool size"` on its benign list — it would
+have **passed a permanently undersized cluster** (the exact size-3-on-2-OSDs hole) while **failing** a
+serviceable one whose only complaint was I/O latency.
+
+## #90 — the fix for silence was itself silent (the 9th file)
+
+**Caught at hand-off. Shipping the 8 renet files without the 9th would have shipped #86 broken, reading as done.**
+
+#86 turned a silent `log.Debugf` into a loud `log.Warnf` when CSI enablement is skipped on a node. But
+**`local-executor.ts:397` echoes renet's output ONLY on failure or under `--debug`:**
+
+```
+if (exitCode === 0 || options.debug || options.captureOutput) return false;
+```
+
+And a `datastore attach` on a worker **succeeds** — that is the entire point of #86. **So the new warning was
+dropped before the operator could ever see it.** The renet half alone "fixes" the silence *while leaving it
+silent*.
+
+**This program's disease, inside this program's own fix, in the very bug whose defect was silence.**
+
+Fix: `surfaceRenetWarnings()` in the CLI executor (+25 lines) — renet's warnings reach the operator on a
+**successful** run too. The nine files ship together or #86 is theatre.
+
+## Two holes found in a verification script — by its own author
+
+Recorded because it is the doctrine, self-applied, and because the second one nearly ate the base fleet.
+
+1. **An assertion that COULD NOT FAIL.** The teardown gate's "libvirt disk images" check pointed at
+   `/var/lib/libvirt/images` — **a directory that is empty on this host and is not where these VMs keep their
+   disks** (they live in `/tmp`). It returned `0` unconditionally and **read as a PASS**. *An assertion that
+   cannot fail for the right reason predicts nothing* — written straight into the gate meant to enforce it.
+2. **A false positive**: `grep -ci 'b2c'` matched `/tmp/sshconfig-test-<epoch>-<random>` unit-test fixtures
+   whose random IDs happened to contain `b2c`, created **before b2c existed**. A gate that goes red for an
+   unrelated reason is as useless as one that cannot go red at all.
+
+**Fixed the instrument, not the verdict** — then added a **falsifiability control**: the same search must find
+the base fleet's 6 disks, or every zero it reports is declared meaningless. Only then was "clean" claimed.
+
+### ⚠ LIVE FOOTGUN: VM ids OVERLAP between the base fleet and test clusters
+
+Base fleet VM ids: **1, 11, 12, 21, 22, 23**. The b2c cluster's were: **1, 11, 12, 13, 21, 22**. **They
+overlap** — and disk paths are keyed by VM id. **A teardown matching on the bare id would have deleted the
+base fleet's disks.** Cluster-path matching only, always. This nearly happened.
+
+## Teardown honesty: which step cleaned what
+
+`cluster destroy b2c --force` returned exit 0 — and **did NOT clear the datastores or repos.** The config
+file `rm` did. Measured cold on a clean, single-driver destroy with all VMs gone:
+
+| after `cluster destroy` | |
+|---|---|
+| `resources.clusters` / `machines` / `state.clusters` | **cleared** (#22's fix working) |
+| `resources.datastores`, `resources.repositories`, `state.datastores` | **SURVIVED** — three `mounted: true` claims on machines that no longer exist |
+
+**#89 reproduced on a clean single-driver teardown**, so it is not an artifact of the earlier churn. Reporting
+"destroy: clean" without naming the config `rm` as the actual cleaner would have laundered #89 through the
+teardown proof — precisely the swallowed-error failure B1 was pilloried for.
+
+**Minor systemic leak (P5):** `cluster destroy` leaves its per-cluster scratch dir. `/tmp/rediacc-b2c/`
+survived empty — and **nine siblings from earlier campaigns are still there** (`rediacc-b1src`, `-csi1`,
+`-fu1src/dst`, `-fu2`, `-rdst`, `-rv1src/dst/mig`). Zero bytes, but the product owns them.
+
+## #89 had THREE sites — and #91 is the same hazard through a different door
+
+The lead ruled on ONE site. The babysitter applied the lead's own rule (*"a fix not swept across its class is
+half a fix"*) **to the ruling itself**, and found two more:
+
+1. **`removeClusterFromStore`** — the ruled site. Now clears `state.datastores` for every datastore the
+   cluster owned, plus `state.repos` for repos placed on them.
+2. **`forgetDatastore`** — **same bug, and it was a TRAP rather than a non-bug.** It drops
+   `resources.datastores` and keeps `state.datastores`. It is unreachable today **only because the delete path
+   happens to call `setDatastoreState(ref, undefined)` first whenever the datastore is attached.**
+   **The invariant held only because every caller remembered.** `forget` now means forget, regardless of caller.
+3. **#91 — `removeMachine`. NEW. The same routing hazard through a different door.** It kept `state.machines[m]`
+   **and every `state.datastores[*]` hint still naming the removed machine**. `machine remove` + re-add the same
+   name = a hint aimed at a brand-new machine that has never heard of that datastore. **Identical to #89,
+   arriving via `machine remove` instead of `cluster destroy`.**
+
+**The split is now written into the code at all three sites, with the reason**, so nobody "fixes" it backwards:
+`resources.*` is what the operator **declared** (a spec outliving its cluster is defensible intent);
+`state.*` is what we **observed**, and an observation of a world that no longer exists is a **lie by
+construction**. Explicit: *do not fix this by also deleting the resources.*
+
+**And the max-lines pressure the fix created was paid down by EXTRACTION, not by widening a suppression** —
+`dropMachineObservations` moved into the file whose own header says it exists to keep the other under budget.
+In the babysitter's words: *"I did not want to answer 'we added a suppression' when you asked what it cost."*
+
+**Third comment this wave that described behavior the code did not have:** the doc promised *"every read here
+tolerates a stale hint instead of trusting it blindly"* — it tolerates a **MISSING** hint and **TRUSTS a WRONG
+one**. Now corrected to say exactly that, with the read-hardening marked P5. **A comment promising a mitigation
+the code does not implement is worse than no comment, because it stops the next person from looking.**
+
+## Nuance: when a `no-unnecessary-condition` guard IS genuinely dead
+
+Recorded so the successor does not over-apply the earlier lesson.
+
+The `noUncheckedIndexedAccess` entry says the linter tries to delete **real** runtime guards, because
+`map[key]` is typed as always-present while returning `undefined` at runtime. **That is true for indexed
+access — and NOT true for `Object.entries()`.**
+
+`Object.entries()` only ever yields **existing** keys, so **its value type is honest.** Guards derived from it
+really are dead, and removing them is correct. The distinction is precise:
+
+> **`map[key]` lies about optionality. `Object.entries()` does not.**
+
+Preserve the guard when the type is lying. Delete it when the type is telling the truth.
+
+## The P7 www deferral was measured wrong — and hidden by a && short-circuit
+
+**CORRECTION, and it invalidates a number this ledger and the PR body both carried.**
+
+The deferral was recorded as **"379 violations under `packages/www/src/content`, not in any CI gate."** Both
+halves were wrong.
+
+**It IS a CI gate.** `check:i18n` (`ci-quality.yml:180`) is a **17-link `&&` chain**, and the www validators
+sit at links **8, 9 and 16**. **Link 1 — `check-translation-hashes.ts` — was failing the entire time**, so
+the chain short-circuited before ever reaching them. Grepping the workflows for the validator script names
+found nothing, and the conclusion "not a CI gate" was drawn without following the chain that invokes them.
+
+**A gate that never got to RUN is indistinguishable from a gate that PASSES.** The same disease, this time
+inside the diagnosis of the disease. **It surfaced only because `i18n:generate-hashes` was taken LAST, in the
+correct order** — that turned link 1 green and let links 2-17 execute for the first time in thirty rounds.
+**Correct sequencing produced the evidence.**
+
+**True size: 3355 violations, 24 distinct docs, all 13 locales** (~832 files if bulk-edited: 60 English + 772
+locale). The "379" was one narrower validator's count. **Fifth number this program has had to correct.**
+
+### Ruling: a per-FILE frozen baseline, not an exclusion
+
+- **Excluding `packages/www/src/content/docs/**` is not scoping the gate — it is DELETING it** (that directory
+  is the validator's entire scan root, exactly as with `check:i18n:docs`).
+- **Bulk-editing 832 files is what P7 exists to defer**, and it would land untranslated CLI prose in 12 locales.
+- **Dropping the validators from the chain removes them from CI forever** — worse than a baseline that
+  self-destructs.
+
+**So: record each of the 24 docs with its EXACT violation count. Per-file, never a global total** — with one
+number, a fix in one doc and a regression in another **cancel out silently**; with per-file counts they cannot.
+A new doc, or a rising count in a baselined doc, **still fails**. Every entry **must vanish when P7 rewrites the
+docs — a count that outlives the rewrite is a bug, not a deferral.**
+
+**And the baseline must be PROVEN to fail before it ships** (red on a rising count, red on a new doc, green
+as-is). *We have found twelve gates that were green because they could not fail. Do not build the thirteenth
+while fixing the twelfth.*
+
+## A dead-looking name is a hypothesis, not a verdict — grep the callers
+
+**Third time this wave the obvious deletion would have broken something live:**
+
+1. **`repo diff --name-only`** — a sweep's regex matched it as `repo diff --name`; deleting it would have
+   removed a **live flag**.
+2. **`repo pull --up` / `repo fork --up`** — real, and survive; only `repo push --up` was deleted.
+3. **`commands.context.*`** — `context` is the noun the config exodus **retired**, yet it still held **one LIVE
+   key** (`pushInfra.installingProxy`, called from `infra-provision.ts:318`). **Deleting it breaks the code;
+   keeping it leaves a retired noun waiting to be re-bound.** Correct answer was neither: **relocate** it to the
+   command that now owns it (`commands.machine.infra.push.installingProxy`), carrying the value **verbatim**
+   across all 13 locales — a relocation, not a re-translation, costing the translators nothing.
+
+**Grep the callers before you delete. A name that looks dead is a hypothesis.**
+
+## The website's STRUCTURED command data: 188 dead commands, covered by NOTHING (P4-caused)
+
+**Found by asking the question the homepage-hero fix raised: do other structured-data surfaces share that
+blindness? They do, and it is worse.** These are `"command":` / `"commandFull":` FIELDS, not prose — **no
+string-replace sweep can see them, no gate scans them, and the P7 backlog contains ZERO of them.**
+
+| where | count | what it is |
+|---|---|---|
+| `www/src/i18n/translations/*.json` (13 locales) | **91** | UI/marketing terminal demos |
+| `tutorial-storyboard/` | **70** | the commands **TYPED** in the recorded tutorial terminals |
+| `tutorial-transcripts/<lang>/` (13 languages) | **26** | the commands **SPOKEN** in the video narration |
+
+Real examples: `"command": "rdc repo mount production -m primary"` (verb deleted);
+`"commandFull": "rdc repo fork --parent <x> --detach"` (**all four constructs gone**).
+
+**This is P4-caused** — the reshape deleted these commands — **so it is ours by the scope test** (does this wave
+create the problem?). **Deferring is reasonable**: fixing the transcripts and storyboards means **re-recording
+the tutorials and re-narrating them in 13 languages**, which is a media pipeline, not a text edit.
+
+**But it needs its own entry with this count, because the P7 backlog LOOKS like it covers the website and does
+not.** A deferral that hides inside another deferral is not a deferral; it is an omission.
+
+## N5 — a gate that CANNOT FAIL, sitting inside `npm run ci` (the purest specimen)
+
+`validate-landing-cli-usage` loads `packages/www/scripts/data/landing-cli-capability-map.json`.
+
+**That file is 20 bytes: `{"entries": []}`.**
+
+It validates **zero** commands, prints **"✓ valid"**, exits **0** — and it runs inside the `check:i18n` chain,
+which is a CI gate. Meanwhile the landing page carries **3 real `rdc` commands**.
+
+**It is the gate that should have caught the homepage hero teaching `rdc cluster fork --name prod`** — a
+command this wave deleted — and it did not, because **it is structurally incapable of failing.**
+
+Empty since #513, so **not P4's fault** — but it is the thirteenth broken gate and the cleanest example of the
+entire phase's thesis. **Fix it (populate the map from the landing page's real commands) or DELETE it. A
+deleted gate is honest. A vacuous one lies, and its lie is "you are covered."**
+
+## The renet i18n baseline: THREE numbers, THREE definitions, all true
+
+`docs/design/spec/10-p3-gate-review.md` records the gate reference as **2970**. `baseline.json`
+holds **2822 entries**. CI reports **"3057 grandfathered via baseline"**. None of these is
+wrong, and none of them means the same thing:
+
+| number | what it actually counts |
+|---|---|
+| **2970** | FINDINGS at the P3 gate reference — every extractor hit, occurrence by occurrence |
+| **2822** | unique ENTRIES in `baseline.json` — deduplicated (one string used twice is one entry) |
+| **3057** | FINDINGS today, i.e. 2970 plus what the waves since have added |
+
+**The P3 verdict is NOT edited to "fix" 2970.** It is a verdict document, its independence is
+the point, and its number is correct *for the thing it counts*. The defect was never a wrong
+number — it was a number quoted **without its window**, which is how the same figure came to
+be read as three different quantities.
+
+**The convention, stated once so it stops recurring: every i18n count in this repo must name
+its unit (findings vs entries) and its reference commit.** A count with neither is folklore,
+and this program has now had to correct five of them.

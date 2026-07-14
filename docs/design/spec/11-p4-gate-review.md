@@ -479,3 +479,185 @@ docs; and I attributed every lint and example failure to a specific commit range
 it P4's. For every green above, I asked what would make it go red, and confirmed that thing was
 reachable — which is how F4 (a gate that is green *because* the violations were absorbed into its
 baseline) and F6 (a gate that would grade the wrong CLI and never know) were found.
+
+---
+
+# P4 gate review — ROUND 2 verdict (re-run at `64c3b674a`)
+
+Cold shell: fresh worktree `/home/muhammed/monorepo/console-gate2` at console `64c3b674a`,
+renet `f01688e`, account `b5d2166`. Installed with **`npx -y npm@10`** in root +
+`private/account` + `private/account/web`.
+
+**Lockfile hygiene, stated up front:** `npm@10 install` *did* modify the ROOT lockfile — it
+**stripped `libc` fields that only npm 11 writes** (the committed lockfile was authored by npm 11).
+That is the inverse of the known trap, and it is cosmetic: I restored the file to the committed
+bytes (`git show HEAD:… > …` — undoing my own contamination, not editing the product) and confirmed
+the tree was byte-faithful to `64c3b674a` **before running any gate**. The new lockfile gate then
+passed on the committed state. So no result below is polluted by my shell.
+
+---
+
+## VERDICT: **PASS-WITH-NOTES** — the FAIL flips.
+
+Every red I raised is green, and I confirmed each **for the right reason**, not merely by exit code.
+Nothing below blocks the landing. The notes are four record-keeping defects and one **new ungated
+surface** that the wave broke and nobody has counted.
+
+---
+
+## The flip — gate by gate
+
+| gate | round 1 | round 2 | evidence |
+|---|---|---|---|
+| `lint` | **1** (59 errors) | **0** | — |
+| `check:lint` | **1** (59) | **0** | — |
+| `check:cli-examples` | **1** (88) | **0** | — |
+| `check:cli-docs` | **1** (2) | **0** | — |
+| `check:ci-renet` | 0 | **0** | +4 baseline entries, **all `fmt.Errorf`** = sanctioned class. No new unsanctioned growth. |
+| `check:types` | 0 | **0** | — |
+| `check:test-cli` | 1867 | **1870 passed** | — |
+| `check:ci-cli-contract` | 0 | **0** | — |
+| `check:ci-command-planes` | 0 | **0** | 17 domains, 164 commands |
+| `check:ci-design-tree` | 0 | **0** | 163 leaves, both directions |
+| **`check:ci-command-tree`** (my F6) | *did not exist* | **0** | **and I proved it can fail — see below** |
+| **`check:ci-lockfile`** (new) | *root only* | **0** | all 7 lockfiles, `npm@10 ci --dry-run` |
+
+### The gates that could have been theatre — I tried to make each one red
+
+- **`check:ci-command-tree` (F6).** Green on the clean tree. I then **injected a phantom `machine
+  query` leaf** into `command-tree.json` → **exit 1**. It fails for exactly the right reason.
+  Restored clean. **F6 is genuinely closed.**
+- **The P7 backlog suppression.** Proven red-first **two ways, by me**, with the `category`
+  frontmatter that made the babysitter's own first probe falsely pass:
+  - **(A)** new doc, not in the backlog → RED: *"docs/en/p4gate-probe.md: 1 violation(s) — NOT in
+    the P7 backlog"*, naming my file and line.
+  - **(B)** existing backlogged doc, count grows → RED: *"docs/ar/agents-md-template.md: 13
+    violations, backlog allows 12 — the backlog GREW"*.
+  - Tree restored clean after both. Its per-file design is right: a fix in one doc cannot silently
+    pay for a regression in another.
+
+### F1 — the broken front door — **fixed, and verified LIVE**
+
+`rdc --help` now prints positional refs. I did not stop there; a help string no gate proves *runs*
+is what F1 *was*. I **executed all five**:
+
+| example | result |
+|---|---|
+| `rdc machine status server-1` | parses — `"command": "machine status"`, fails at config (no such machine) |
+| `rdc term connect my-app` | parses — structured `{"success": false}` |
+| `rdc repo up my-app@server-1` | parses |
+| `rdc repo sync upload my-app --local ./src` | parses |
+| `rdc repo sync download my-app --local ./out` | parses |
+
+**Zero parse errors.** Every failure is config/runtime, which is correct for an unconfigured shell.
+
+### My three audits — the ones no gate performs
+
+- **Guardrails / planes:** **0 stale `COMMAND_METADATA` keys (142), 0 stale `COMMAND_PLANES` keys
+  (51)**, all **47** guarded commands live. The nine positional renames orphaned nothing.
+- **Policy globs:** 93 authored globs, **0 real stale**. All 23 hits are the gate's own negative
+  fixtures, doc prose, my regex's Vite false positive — and, now, **my own verdict document**,
+  committed to `spec/11-p4-gate-review.md`.
+- **MCP:** **0 unclassified leaves** (F9 closed — `machine health` now classified). 69 exposed / 94 excluded.
+
+### My nine misses — landed, and **without over-correcting**
+
+All nine gained their positional and lost the dead flag. Critically, the two `-m` flags I warned
+were **contracted** (`job cancel`, `storage prune`) were **kept**, and the uncontracted one
+(`repo admin autostart enable`) was **removed**. That is the distinction I asked for, applied
+correctly. **F7** (stale registry entries) deleted; **F5** carried debt now in `spec/12-carried-debt.md`.
+
+---
+
+## NOTES — none blocking, but four are record-keeping defects and one is a new surface
+
+### N1 ★ `spec/12-carried-debt.md:287` understates the renet i18n debt by ~7× — **41, not 6**
+
+The ledger records: *"growth is **28** entries: 22 sanctioned `fmt.Errorf` wraps + **6**
+user-facing."* I re-derived it from git at the new sha, with the baseline point stated explicitly
+(`c7e187a`, the P3 gate's **own** reference commit):
+
+| point | total | user-facing-class entries |
+|---|---|---|
+| `c7e187a` (P3 gate reference) | 2726 | **825** |
+| `ea650bc` (my round-1 FAIL) | 2818 | **864** |
+| `f01688e` (now) | 2822 | **864** |
+
+**Added since `c7e187a`: 110 = 69 `fmt.Errorf` (sanctioned) + 41 USER-FACING** — 18 `fmt.Printf`,
+11 `cobra.Short`, 4 `fmt.Fprintf`, 3 `fmt.Sprintf`, 2 `errors.New`, 2 `log.Info`, 1 `fmt.Println`.
+My round-1 figure of **41 is confirmed independently.**
+
+**Why it matters:** the P5 item is *"internationalize the 41."* Scoped against the ledger's **6**,
+someone internationalizes six strings and declares the debt paid. The ledger even admits *"four
+sources gave four values; nobody wrote down what is counted"* — and then picks a number without
+showing the derivation, which is worse than leaving it open, because now it looks settled.
+**Fix: correct :287 to 41, and state the baseline point (`c7e187a`) so it is reproducible.**
+
+### N2 `09-implementation-phases.md:497` still says the baseline is "grandfathered at **2970**"
+
+The tree is at **2822 raw ≈ 3048 tool-count**. The re-base was ruled and recorded elsewhere, but
+this line still contradicts the tree. One line.
+
+### N3 `p7-backlog.js`'s own BLOCKER states the wrong counts
+
+It claims `validate-content-accuracy 1326` and `check-cli-docs 379`. The **actual baseline files**
+say **1534** and **425** (`3354` is correct). Real total: **5313 across ~300 files**. The corrected
+figure is right in the ledger and PR — but **wrong in the suppression itself**, which is the one
+place a future reader will actually look. Understates by 254.
+
+### N4 ★ NEW — 188 dead commands in **structured `"command":` fields**, ungated, and **not covered by the P7 backlog**
+
+You asked whether other structured-data surfaces share the hero's blindness. **They do, and it is
+worse than the hero.** Sweeping every `.astro`/`.tsx`/`.ts`/`.json` outside `content/docs`
+(control fired on the hero's own shape):
+
+| surface | hits | what it is |
+|---|---|---|
+| `packages/www/src/i18n/translations/*.json` | **91** | 13 locales |
+| `packages/www/src/data/tutorial-storyboard/` | **70** | the commands **typed** in the recorded tutorial terminals |
+| `packages/www/src/data/tutorial-transcripts/<lang>/` | **26** | the narration **spoken** in the tutorial videos, in **13 languages** |
+
+Real, not prose false-positives — these are full commands in structured fields:
+
+```json
+"command":      "rdc repo fork --parent production --tag pentest -m server-1"
+"command":      "rdc repo status --name production -m server-1"
+"command":      "rdc repo mount production -m primary"
+"commandFull":  "rdc repo fork --parent demo-pgadmin --tag experiment --machine <m> --up --detach"
+```
+
+`repo mount` is **deleted**; `--parent`, `--name`, `-m`-as-target and `--detach` are **all gone**.
+
+**Nothing sees these.** `validate-cli-examples` does not scan `src/data/**`; `validate-docs-cli-usage`
+is scoped to `src/content/docs/**`; and **the P7 backlog contains 0 tutorial-transcript entries**.
+So this is *not* inside the sanctioned deferral — it is simply uncounted.
+
+**This is P4-caused** (P4 deleted those constructs), so by your own scope test it is ours, not the
+Italian-accent category. The remediation is expensive (storyboards drive recorded terminals;
+transcripts drive TTS narration in 13 languages), so deferring is reasonable — **but it needs its
+own ledger entry with this count, or it will be forgotten precisely because the P7 backlog looks
+like it covers the website and does not.**
+
+### N5 `validate-landing-cli-usage` is a **vacuous gate** — green because it checks nothing
+
+Its input is a hand-maintained map, `packages/www/scripts/data/landing-cli-capability-map.json`,
+whose contents are **`{"entries": []}` — 14 bytes, zero entries.** It duly validates those zero
+entries and prints *"✓ Landing terminal command usage is valid"*, `supported=0, partial=0,
+unsupported=0`, **exit 0** — while the landing page itself carries 3 `rdc` commands. It is in
+`check:i18n` → `npm run ci`.
+
+**Not P4's fault** — the map has been empty since `5fab1177d` (#513), pre-dating this wave, so by
+your scope test it is the Italian-accent category and belongs in its own PR. But it is *the gate
+that should have caught the hero rot*, and it is the purest specimen of the disease this program
+exists to fight: **an assertion that cannot fail for the right reason.** Fix it or delete it — a
+gate that cannot fail is worse than no gate, because it manufactures confidence.
+
+---
+
+## Bottom line
+
+**The wave is landable.** Every round-1 red is green for a verified reason, the front door runs, the
+new gates can actually fail, and the nine renames disarmed nothing. **N1 is the one I would fix
+before the ledger is trusted** — a durable record that understates a debt 7× in the flattering
+direction is exactly the failure this role exists to catch, and it would have quietly mis-scoped a
+P5 item. **N4 needs a ledger entry with its count.** N2, N3, N5 are one-liners.

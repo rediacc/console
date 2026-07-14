@@ -6,9 +6,17 @@
  * exodus, `repo takeover` -> `repo promote`, `machine query` -> `machine status`, …) and left
  * a large backlog of dead examples across the docs in all 13 locales:
  *
- *     validate-docs-cli-usage    3354 violations
- *     validate-content-accuracy  1326 violations
- *     check-cli-docs              379 violations
+ *     validate-docs-cli-usage    3354 violations across 312 files
+ *     validate-content-accuracy  1534 violations across 299 files
+ *     check-cli-docs              425 violations across  50 files
+ *     ------------------------------------------------------------
+ *     TOTAL                      5313
+ *
+ * ★ Those numbers are read from the baseline files themselves, not remembered. This program
+ * has had to correct five counts that were quoted from memory (the renet baseline, the "408"
+ * orphan keys, the stale-key delta, and the "379" that was one narrower validator's total and
+ * got mistaken for all three). A wrong number in a BLOCKER is worse than a wrong number in a
+ * chat message: this is the one place a future reader will look.
  *
  * Fixing them means editing ~832 files (60 English + 772 locale). The P7 docs pass REWRITES
  * those documents wholesale, so doing it now means doing it twice — and would land
@@ -44,7 +52,7 @@ export function loadBacklog(baselinePath) {
  * RED when a file exceeds its recorded count, or when a file that is NOT in the backlog has
  * any violation at all. Returns the human-readable regressions; empty means "within budget".
  */
-export function findRegressions(errors, backlog, fileOf = (e) => e.file) {
+export function findRegressions(errors, backlog, fileOf = (e) => e.file, noun = 'doc') {
   const byFile = new Map();
   for (const e of errors) {
     const f = fileOf(e);
@@ -56,7 +64,7 @@ export function findRegressions(errors, backlog, fileOf = (e) => e.file) {
     const allowed = backlog[file];
     if (allowed === undefined) {
       regressions.push(
-        `${file}: ${count} violation(s) — NOT in the P7 backlog (a new doc, or one that was clean)`
+        `${file}: ${count} violation(s) — NOT in the backlog (a new ${noun}, or one that was clean)`
       );
     } else if (count > allowed) {
       regressions.push(
