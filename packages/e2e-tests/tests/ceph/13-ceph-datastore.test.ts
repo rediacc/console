@@ -56,12 +56,32 @@ test.describe
     // Discovered at fork time (fork-<unix>), needed for the orphan checks.
     let forkSnapshot = '';
 
-    /** Resolve a datastore's mount path from the layer that owns it. */
+    /**
+     * Resolve a datastore's mount path by ASKING THE REGISTRY that owns it.
+     *
+     * The first cut of this ran `renet datastore path <ref>` and took the last
+     * whitespace-token of stdout. There is no such subcommand, so it scraped the last
+     * word of the CLI's error text and "resolved" the mount path to the string
+     * "command." — a parse that cannot fail loudly is worse than one that cannot parse.
+     * `datastore list --json` emits the registry records, each carrying its own
+     * mountPath; that is the layer that decides where a named datastore lives.
+     */
     const pathOf = async (ref: string): Promise<string> => {
-      const out = await worker.executeViaBridge(`sudo renet datastore path ${ref}`);
-      expect(out.code).toBe(0);
-      const resolved = out.stdout.trim().split(/\s+/).pop() ?? '';
-      expect(resolved).toMatch(/^\//);
+      const out = await worker.executeViaBridge('sudo renet datastore list --json');
+      expect(out.code, `datastore list: ${out.stderr}`).toBe(0);
+      const start = out.stdout.indexOf('[');
+      expect(
+        start,
+        `datastore list --json emitted no JSON array: ${out.stdout}`
+      ).toBeGreaterThanOrEqual(0);
+      const records = JSON.parse(out.stdout.slice(start)) as {
+        name?: string;
+        mountPath?: string;
+      }[];
+      const hit = records.find((r) => r.name === ref);
+      expect(hit, `datastore ${ref} is not in the registry: ${out.stdout}`).toBeTruthy();
+      const resolved = hit?.mountPath ?? '';
+      expect(resolved, `registry gave no mountPath for ${ref}`).toMatch(/^\//);
       return resolved;
     };
 
@@ -106,7 +126,10 @@ test.describe
     });
 
     test('5. datastore_expand grows the RBD datastore', async () => {
-      const result = await worker.datastoreExpand('3G');
+      // The PATH is the subject: `datastore_expand` with no --datastore-path grows the
+      // machine's BASE pool, not this ceph-backed datastore. Dropping it would not fail
+      // loudly — it would expand the wrong datastore and assert nothing about RBD.
+      const result = await worker.datastoreExpand('3G', dsPath);
       expect(worker.isSuccess(result)).toBe(true);
     });
 
