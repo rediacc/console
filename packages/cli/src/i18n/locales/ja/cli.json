@@ -4,7 +4,7 @@
   },
   "commands": {
     "backup": {
-      "description": "バックアップ戦略、スケジュール実行、およびそのアーティファクトを管理する",
+      "description": "バックアップ戦略、そのスケジュール実行、および生成されるアーティファクトを管理する: リポジトリに対して戦略を宣言し、必要に応じて実行・復元し、ストレージエンドポイントに書き出されたアーカイブを確認する",
       "schedule": {
         "description": "リモートマシンにバックアップスケジュールをデプロイする（systemd タイマー）",
         "optionDryRun": "デプロイせずに生成されるユニットをプレビュー",
@@ -173,11 +173,11 @@
       },
       "snapshot": {
         "create": {
-          "description": "クラスター内のすべての rbd バックエンドデータストアを、単一の瞬間でスナップショットする。何も停止しない。クラスター内の local バックエンドデータストアはこの瞬間の対象外として一覧表示され、スナップショットには含まれない",
+          "description": "クラスター内のすべての rbd バックエンドデータストアを、単一の瞬間でスナップショットする。何も停止しない。クラスター内の local バックエンドデータストアはこの瞬間の対象外として一覧表示され、スナップショットには含まれない。この瞬間はクラッシュコンシステントであり、アプリケーションコンシステントではない: 特定の書き込みをスナップショットに含めたい場合は、事前に同期（sync）しておくこと。",
           "descriptionShort": "クラスター全体のスナップショットを取得する",
           "labelOption": "スナップショットのラベル（デフォルト: UTC タイムスタンプ）"
         },
-        "description": "クラスター全体のポイントインタイムスナップショット。クラスターが保有するすべての rbd バックエンドデータストアにわたる、クラッシュコンシステントな単一の瞬間を Ceph のグループスナップショットによって取得する: 何も停止せず、クラスターは何も気づかない。local バックエンドデータストアにはブロックレベルのグループプリミティブがないため、この瞬間の対象外となりその旨が報告される",
+        "description": "クラスター全体のポイントインタイムスナップショット。クラスターが保有するすべての rbd バックエンドデータストアにわたる、クラッシュコンシステントな単一の瞬間を Ceph のグループスナップショットによって取得する: 何も停止せず、クラスターは何も気づかない。local バックエンドデータストアにはブロックレベルのグループプリミティブがないため、この瞬間の対象外となりその旨が報告される。この瞬間はクラッシュコンシステントであり、アプリケーションコンシステントではない: 特定の書き込みをスナップショットに含めたい場合は、事前に同期（sync）しておくこと。",
         "descriptionShort": "クラスター内のすべてのデータストアを単一の瞬間でスナップショットする",
         "list": {
           "description": "クラスターのグループスナップショットを一覧表示する",
@@ -510,7 +510,7 @@
       "snapshot": {
         "create": {
           "created": "データストア \"{{ref}}\" のスナップショットを \"{{label}}\" として作成しました",
-          "description": "データストアのポイントインタイムスナップショットを取得する。何も停止しない",
+          "description": "データストアのポイントインタイムスナップショットを取得する。何も停止しない。この瞬間はクラッシュコンシステントであり、アプリケーションコンシステントではない: 特定の書き込みをスナップショットに含めたい場合は、事前に同期（sync）しておくこと。",
           "descriptionShort": "データストアのスナップショットを取得する",
           "labelOption": "スナップショットのラベル（デフォルト: UTC タイムスタンプ）"
         },
@@ -586,8 +586,8 @@
         "noState": "\"{{name}}\" のOpenTofu状態が見つかりません。手動で追加したマシンには 'config remove-machine' を使用してください。",
         "optionForce": "確認プロンプトをスキップ"
       },
-      "description": "リモートマシンの管理 (ステータス、コンテナ、サービス、ヘルス)",
-      "descriptionShort": "リモートマシンの管理 (ステータス、コンテナ、サービス、ヘルス)",
+      "description": "リモートマシンの状態を調べる: システムリソース、実行中のコンテナ、systemd サービス、デプロイ済みリポジトリ、ヘルス診断。読み取り専用のクエリであり、リポジトリを変更するには `repo` を使用する。主なサブコマンド: status（--system、--containers、--repositories、--services で絞り込める完全な状態）、health、list、add、remove、setup、prune、provision、deprovision。",
+      "descriptionShort": "リモートマシンの管理（status、health、list、add、remove、setup、prune）",
       "health": {
         "containersSection": "\nコンテナ:",
         "containersSummary": "  {{running}}/{{total}} 実行中 ({{healthy}} 健全, {{unhealthy}} 不健全)",
@@ -633,7 +633,7 @@
         "optionImage": "デフォルトOSイメージを上書き",
         "optionInfra": "インフラストラクチャも設定する（infra set + infra push）",
         "optionNoInfra": "インフラ設定をスキップ（プロキシ + DNS）",
-        "optionProvider": "クラウドプロバイダー名（config provider addから）",
+        "optionProvider": "クラウドプロバイダー名（machine provider addから）",
         "optionRegion": "デフォルトリージョンを上書き",
         "optionSshUser": "新しいVMのSSHユーザー名（デフォルト: root）",
         "optionType": "デフォルトインスタンスタイプを上書き",
@@ -660,7 +660,7 @@
         "noStaleSnapshots": "古いスナップショットは見つかりませんでした",
         "noUnknownRepos": "不明なリポジトリは見つかりませんでした。すべてのマシンリポジトリはローカル設定にあるか、renet ミラーを持っています",
         "orphanedReposCompleted": "{{count}} 件の孤立したリポジトリを削除しました",
-        "orphanedReposOption": "どの設定にも存在しないリポジトリイメージも削除する",
+        "orphanedReposOption": "ローカル CLI 設定に存在しないマシン上のリポジトリイメージをすべて削除する。粗い操作であり、renet ミラーがフォークだと正しく識別している場合でも、ローカル設定エントリがない他ツール作成のフォークまで削除してしまう。ミラーを尊重するより狭い挙動には --prune-unknown を使用すること。",
         "orphanedReposStarting": "{{machine}} 上の孤立したリポジトリをスキャン中...",
         "previewEmpty": "孤立したデータストアリソースは見つかりませんでした",
         "pruneUnknownOption": "renet .interim/state ミラーが分類できないリポジトリのみを削除します（ローカル設定になく、かつフォークマークされたミラーがない）。--orphaned-repos より厳密に狭い：ミラーがそれらを識別する場合、設定なしのフォークは保持されます。プレミラーレガシー孤児と設定エントリが削除された古い grands は両方ともこのバケットに入ります。",
@@ -722,7 +722,7 @@
         "description": "インフラ設定を管理する（プロキシ、DNS、証明書）",
         "push": {
           "certCacheUploaded": "キャッシュされた証明書をリモートにアップロードしました",
-          "description": "インフラ設定をマシンにプッシュします（Traefik プロキシ、ルーター、Cloudflare DNS）。先に 'config infra set <machine>' を実行してください",
+          "description": "インフラ設定をマシンにプッシュします（Traefik プロキシ、ルーター、Cloudflare DNS）。先に 'machine infra set <machine>' を実行してください",
           "descriptionShort": "インフラ設定をマシンにプッシュする",
           "dnsCreated": "DNS: {{type}} {{name}} → {{content}} を作成しました",
           "dnsError": "DNS 警告: {{message}}（レコードの手動設定が必要な場合があります）",
@@ -855,8 +855,8 @@
         "localFallback": "（ローカルチェック使用中 — renetが利用できません）",
         "title": "OPS 前提条件チェック"
       },
-      "description": "実験的な VM 操作（プロビジョニング、管理、破棄）",
-      "descriptionShort": "実験的な VM 操作（プロビジョニング、管理、破棄）",
+      "description": "KVM/QEMU/Hyper-V を使ったローカル VM のプロビジョニングと管理（プラットフォームは自動検出）。リモートマシン向けではない — そちらには `machine` を使用する。主なサブコマンド: up（VM 起動）、down（停止）、status（実行中 VM の一覧）、ssh（VM へ接続）、setup（前提条件のインストール）、check（ホストの準備状況を確認）。",
+      "descriptionShort": "ローカル VM 操作（プロビジョニング、管理、破棄）",
       "down": {
         "completed": "VM クラスターの破棄が完了しました",
         "description": "VM クラスターを破棄",
@@ -995,7 +995,7 @@
         "restoreHint": "復元するには: rdc repo admin archive restore {{guid}}",
         "starting": "\"{{machine}}\" で \"{{repository}}\" を削除中..."
       },
-      "description": "マシン上の暗号化リポジトリをデプロイ・管理する",
+      "description": "マシン上の暗号化リポジトリをデプロイ・管理する。主なサブコマンド: create、up（デプロイ）、down（停止）、fork（即時 CoW クローン）、delete、push/pull（バックアップ）、sync（ファイル転送）。ライフサイクル: repo create → repo up → repo down。アーキテクチャ、ルーティング、環境変数の詳細は rdc --help の Key Concepts を参照。",
       "descriptionShort": "マシン上の暗号化リポジトリをデプロイ・管理する",
       "diff": {
         "baseOption": "差分対象のリポジトリ（基底／旧側）。既定では --name の親",
@@ -1043,7 +1043,7 @@
         "alreadyExists": "リポジトリ \"{{name}}\" はコンテキスト内に既に存在します",
         "checkpointOption": "fork 前にソースで CRIU checkpoint を作成する（fork 先での復元用にプロセスメモリ状態を取得）",
         "clusterResolved": "\"{{parent}}\" をクラスター \"{{cluster}}\" 内の namespace \"{{parent}}-{{tag}}\" としてフォーク中（コントロールノード {{controlNode}}）",
-        "completed": "Forkが作成されました。ローカルでデプロイ: repo up {{repository}} -m {{machine}}。別のマシンにforkを移行: repo push {{repository}} -m {{machine}} --to <target> --up",
+        "completed": "フォークを作成しました。デプロイ: repo up {{repository}}。別のマシンへコピーするには: repo push {{repository}} --to <target> を実行し、その後 backup restore {{repository}} --as {{repository}} -m <target> --up でそのマシン上のアーティファクトを起動してください",
         "description": "リポジトリの CoW（コピーオンライト）フォークを作成する。フォークはリポジトリのサイズに関わらずほぼ瞬時かつ定数時間で完了する。BTRFS reflink が基盤イメージをクローンするため、100 GB のリポジトリと 1 GB のリポジトリが同じ数秒でフォークされる。フォークは新しい GUID、networkId、IP 範囲、自動ルートドメイン（{service}-fork-{tag}.{repo}.{machine}.{baseDomain}）を持ち、完全に独立したコピーとなる。オンラインフォークに対応しており、親は稼働したままでよい。フォークは親の暗号化認証情報を自動的に継承する。--checkpoint を使用するとフォーク前に CRIU プロセス状態をキャプチャし、フォークは最初の 'repo up' 時に自動復元される（メモリ内状態が保持される）。クロスマシンフォーク: まずローカルでフォークしてから転送する: (1) rdc repo fork <parent-ref> --tag <name>、(2) rdc repo push <fork-ref> --to <target-machine> --up。警告: フォークのために \"repo push\" だけを使用しないこと。同じ GUID を持つ生のコピーが作成される（独立したフォークではない）。常に先にフォークして新しい identity を取得すること。自動ルートはリポジトリ名を使用するため、各フォークは自動的に一意のドメインを取得する",
         "descriptionShort": "リポジトリの CoW フォークを作成する（新規 GUID、networkId、IP 範囲）",
         "detachedHint": "サービスはバックグラウンドで起動中です。状態確認: rdc machine status {{machine}} --containers",
@@ -1195,7 +1195,6 @@
         "optionStrategy": "差分ベース使用時のブロック差分戦略: auto、physical、または shared",
         "optionTag": "バージョニング用デプロイタグ",
         "optionTo": "宛先マシンまたはストレージ名（設定から自動検出）",
-        "optionUp": "プッシュ後、ターゲットマシンにリポジトリをマウントしてデプロイする",
         "pushing": "\"{{repo}}\" のバックアップを {{dest}} にプッシュ中...",
         "statsDelta": "\"{{repo}}\" を {{machine}} にプッシュしました: {{duration}} で {{transferred}} を転送（ベース {{base}} とのデルタ、イメージ {{image}}）",
         "statsFull": "\"{{repo}}\" を {{machine}} にプッシュしました: {{duration}} で {{transferred}} を転送（フル転送）",
@@ -1233,11 +1232,11 @@
         "starting": "\"{{machine}}\" で \"{{repository}}\" を {{size}} にリサイズ中..."
       },
       "secret": {
-        "currentOption": "SHA-256 digest of the previous value (passwd-style precondition). Required for overwrite under agent context; optional for first-write.",
-        "description": "Manage per-repo secrets injected at deploy time. Two modes: env (REDIACC_SECRET_<KEY> via compose ${VAR} interpolation) and file (host tmpfs at /var/run/rediacc/secrets/<networkId>/<KEY>, mounted via Docker compose `secrets:` block). Secrets never enter the encrypted LUKS image, so forks inherit none — externals see the fork as a different principal.",
+        "currentOption": "以前の平文値（passwd スタイルの事前条件）。上書き/削除には必須。--rotate-secret とは併用不可。",
+        "description": "デプロイ時に注入されるリポジトリ単位のシークレットを管理する。書き込み専用: get はダイジェストのみを返し（平文は返さない）、set/unset には --current によるダイジェスト一致または --rotate-secret が必要。配信モードは2種類: env（REDIACC_SECRET_<KEY>）と file（compose の `secrets:` 経由で /var/run/rediacc/secrets/<networkId>/<KEY> の tmpfs に配置）。シークレットは暗号化された LUKS イメージには一切入らないため、フォークはシークレットを一切継承しない。",
         "descriptionShort": "リポジトリ単位のデプロイ時シークレットを管理 (env / file)",
         "get": {
-          "description": "Read a single secret. Returns a redacted stub (`<redacted:secret>:<digest8>`) under agent context regardless of policy.",
+          "description": "シークレットの SHA-256 ダイジェストを表示する。平文値は設計上決して返されない（書き込み専用）。既知の値を確認するには、後続の set/unset で --current を使用するか、`set --rotate-secret` でローテーションすること。",
           "descriptionShort": "シークレットのダイジェストを表示 (値は決して返されない)",
           "notFound": "リポジトリ \"{{repository}}\" にシークレット \"{{key}}\" が見つかりません",
           "repoNotFound": "リポジトリ \"{{repository}}\" が見つかりません"
@@ -1511,7 +1510,7 @@
         "noFiles": "ファイルが見つかりません",
         "pathOption": "リスト表示するサブディレクトリのパス"
       },
-      "description": "外部バックアップストレージエンドポイントを管理する（S3、rclone 互換）",
+      "description": "外部バックアップストレージエンドポイント（S3 やその他の rclone 互換先）を管理する: 登録・削除、登録済み一覧の表示、保持しているアーティファクトの閲覧、孤立したバックアップの整理を行う。",
       "descriptionShort": "ストレージを管理する",
       "list": {
         "description": "ストレージエンドポイントを一覧表示する。名前を指定すると詳細を表示する",
@@ -1804,7 +1803,7 @@
         "followOption": "ジョブが完了するまでストリーミング",
         "sinceLineOption": "指定した行数の続きから再開(すでに受信済みの行数)",
         "invalidSinceLine": "--since-line には行数を指定してください(指定値: \"{{value}}\")",
-        "detached": "ジョブ {{jobId}} からデタッチしました。ジョブは {{machine}} 上で引き続き実行中であり、キャンセルはされていません。再アタッチするには次を実行してください: rdc job logs -m {{machine}} --id {{jobId}} --follow"
+        "detached": "ジョブ {{jobId}} からデタッチしました。ジョブは {{machine}} 上で引き続き実行中であり、キャンセルはされていません。再アタッチするには次を実行してください: rdc job logs {{jobId}} -m {{machine}} --follow"
       },
       "cancel": {
         "description": "実行中のデタッチジョブをキャンセル",
@@ -1883,7 +1882,7 @@
     },
     "overview": {
       "heading": "概要",
-      "text": "**Rediacc CLI**（`rdc`）は、Rediaccプラットフォームのすべての側面を管理するためのコマンドラインインターフェースです — 認証、インフラストラクチャ、リポジトリ、キュー、ストレージなど。"
+      "text": "**Rediacc CLI**（`rdc`）は、セルフホスト型インフラストラクチャ — マシン、リポジトリ、ストレージ、バックアップなど — を管理するためのコマンドラインインターフェースです。"
     },
     "pageTitle": "Rediacc CLIリファレンス",
     "sectionTitles": {
@@ -1934,7 +1933,7 @@
     "affectedChildClones": "。影響を受ける子クローン: {{clones}}。子クローンを最初に削除するか昇格させてください。",
     "agent": {
       "clusterOpBlocked": "クラスターコマンド \"{{command}}\" はエージェントモードではブロックされています。クラスター操作は実際のインフラを構築または破棄するため、エージェント自身が承認することはできません。ユーザーへ: これを許可するには、エージェントセッションを開始する前にターミナルで REDIACC_ALLOW_CLUSTER_OPS=<cluster-name>（またはすべてのクラスターに対して *）を設定してください。エージェント内部から設定されたオーバーライドは受け入れられません。",
-      "commandBlocked": "\"{{command}}\" コマンドはエージェントモードでは使用できません。\n\nこのコマンドは安全ガードなしに任意の低レベル関数を実行します。代わりに型付きCLIコマンドまたはMCPツールを使用してください。\n\n代替手段:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - 利用可能なすべてのコマンドを表示するには \"rdc --help\" を実行してください\n\n直接アクセスが必要な場合は、ユーザーにコマンドを直接実行するよう依頼してください。",
+      "commandBlocked": "\"{{command}}\" コマンドはエージェントモードでは使用できません。\n\nこのコマンドは安全ガードなしに任意の低レベル関数を実行します。代わりに型付きCLIコマンドまたはMCPツールを使用してください。\n\n代替手段:\n  - MCP tools: repo_up, repo_down, repo_fork, repo_logs, repo_exec, machine_status\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - 利用可能なすべてのコマンドを表示するには \"rdc --help\" を実行してください\n\n直接アクセスが必要な場合は、ユーザーにコマンドを直接実行するよう依頼してください。",
       "configEdit": "対話型エディタはエージェント環境ではブロックされます。\n\n代替手段:\n  • rdc config edit --dump > config.jsonc    (安全な秘匿表示)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nオーバーライドするには、エージェントを起動する前に親シェルで\nREDIACC_ALLOW_CONFIG_EDIT=<scope-glob> を設定してください(エージェントの祖先プロセス内に存在する必要があります)。",
       "configEditAncestry": "対話型エディタはエージェント環境ではブロックされます(REDIACC_ALLOW_CONFIG_EDIT は設定されましたが祖先検証に失敗 — オーバーライドはエージェントではなく親シェルから設定する必要があります)。\n\n代替手段:\n  • rdc config edit --dump > config.jsonc    (安全な秘匿表示)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nエージェントを起動する前に親シェルで REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> を設定してください。",
       "createGuard": "エージェントモードでは新しいgrandリポジトリ \"{{name}}\" を作成できません。\n\nエージェントはfork専用モードで動作します。grandリポジトリは本番環境であり、作成後にエージェントがアクセスすることはできません。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork <parent-ref> --tag {{name}}\n\nユーザーへ: リポジトリの作成を許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO=*（または特定のリポジトリ名）を設定してください。",
@@ -1984,6 +1983,10 @@
       "pointerNotFound": "ポインタ「{{pointer}}」が見つかりません",
       "storageNotFound": "ストレージ \"{{name}}\" が設定に見つかりません。利用可能: {{available}}。",
       "retiredKey": "デフォルト \"{{key}}\" は既に存在しません。有効なキー: {{keys}}"
+    },
+    "container": {
+      "execFailed": "container_exec に失敗しました",
+      "logsFailed": "container_logs に失敗しました"
     },
     "contextNotFound": "コンテキスト \"{{name}}\" が見つかりません",
     "editor": {
@@ -2051,10 +2054,8 @@
       "machineRequired": "マシン名が必要です。--machine <name> を使用してください",
       "notSupported": "{{platform}} ではプロトコル登録がサポートされていません",
       "parseFailed": "URL の解析に失敗しました: {{error}}",
-      "regionSelectionRequiresTTY": "リージョンの選択には対話型入力が必要です。--server <url> を使用してサーバーを直接指定してください。",
       "teamRequired": "チーム名が必要です。--team <name> を使用してください",
-      "tokenRequired": "トークンが必要です。--token <token> を使用してください",
-      "unknownRegion": "不明なリージョン: {{region}}"
+      "tokenRequired": "トークンが必要です。--token <token> を使用してください"
     },
     "regionRequired": "リージョン名が必要です。--region を使用するか、次のコマンドでデフォルトを設定してください: rdc config set region <name>",
     "registrationFailed": "登録に失敗しました",
@@ -2137,6 +2138,7 @@
     "regionSelectionRequiresTTY": "リージョンの選択には対話型入力が必要です。--server <url> を使用してサーバーを直接指定してください。",
     "unknownRegion": "不明なリージョン: {{region}}",
     "datastore": {
+      "defaultIsImplicit": "デフォルトデータストアは暗黙的な存在であり、ここでの各コマンドはそれ以外の名前付きデータストアを管理する。",
       "deleteHasRepos": "データストア \"{{ref}}\" にはまだリポジトリが存在します: {{repos}}。先にそれらを削除するか、--force を渡してデータストアと一緒に破棄してください",
       "forkNeedsWrites": "\"{{ref}}\" はフォークです。書き込み先を指定してください: --writes local（即時・一時的、デタッチで消失）または --writes ceph（プール内の永続クローン）",
       "localForkNeedsDiscard": "\"{{ref}}\" は --writes local でアタッチされているため、そのオーバーレイは一時的であり、デタッチすると破棄されます。それを望む場合は --discard を渡してください",
@@ -2162,16 +2164,15 @@
     "examples": "例:",
     "keyConcepts": "\nKey Concepts:\n\n  アーキテクチャ\n    • 各リポジトリ = 分離された Docker 環境（専用 daemon、ループバック IP 範囲、LUKS 暗号化ストレージ）\n    • renet compose を使用する（raw docker compose は使わない）— network_mode:host と rediacc.* ラベルを自動的に注入する\n    • ストレージ: ${REDIACC_WORKING_DIR}/... への bind-mount — Docker の named volume は使わない（フォークやバックアップから除外される）\n    • eBPF バインド書き換えが IP 分離を処理する: アプリは 0.0.0.0 にバインドし、カーネルが正しいループバック IP に書き換える\n\n  ルーティング\n    • 自動ルート（フォークフレンドリー）: https://{service}.{repo}.{machine}.{baseDomain}\n    • カスタムドメイン: Traefik ラベル（traefik.enable=true）— フォークフレンドリーではない\n    • 80 番以外のポートには rediacc.service_port ラベル。ルートはデプロイ後約3秒で有効化される\n    • HTTPS: Cloudflare DNS-01 経由の自動 Let's Encrypt ワイルドカード証明書。'rdc machine infra set' で設定する --cf-dns-token が必要。未設定の場合、HTTP は動作するが HTTPS 証明書はプロビジョニングされない\n    • Grand リポジトリは *.{repo}.{machine}.{baseDomain} を取得する — 最初の repo up 時に Traefik が自動的にプロビジョニングする\n    • フォークは親リポジトリのワイルドカード証明書を再利用する（プロビジョニング済み、レート制限への影響なし）\n\n  環境変数\n    • Rediaccfile シェル: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • コンテナ内: SERVICE_IP, REDIACC_NETWORK_ID（renet が自動的に注入する）\n\n  フォーク\n    • rdc repo fork <parent-ref> --tag <tag>: 新しい GUID、networkId、IP 範囲、自動ルートドメインを持つ即時 CoW クローン\n    • 親は稼働したままでよい（オンラインフォーク）。クロスマシン: まずローカルでフォークしてから rdc repo push <ref> --to <machine>\n    • リポジトリ削除後も設定エントリは残る（リポジトリは他のマシンに存在する可能性がある）",
     "machine": {
-      "containers": "実行中のコンテナを一覧表示",
       "health": "CI/CD用ヘルスチェック",
-      "keyConcepts": "\n主要概念:\n\n  クエリフィルター\n    • rdc machine status <name> はデフォルトで全セクションを返します\n    • --system、--repositories、--containers、--services、--network、--block-devices でフィルタリング\n    • JSON 出力はコンテナを拡張: repository (解決済み名)、domain、autoRoute\n\n  監視とヘルス\n    • machine health の終了コード: 0=正常、1=警告、2=エラー — CI/CD ゲートに使用\n    • containers --health-check は異常なコンテナがあれば終了コード 2\n    • services --stability-check は失敗・再起動中・再起動 3 回超のサービスがあれば終了コード 2\n    • machine prune は削除済みリポジトリの孤立したループバック IP と systemd ユニットを削除します\n\n  データストア構造 (/mnt/rediacc/)\n    • repositories/ — 暗号化された LUKS イメージ (リポジトリ GUID ごとに 1 つ)\n    • mounts/ — 復号化されたマウントポイント (リポジトリがマウントされている時にアクセス可能)\n    • immovable/ — リポジトリごとの Docker daemon データ\n    • データストアはシステムディスク上の BTRFS プールファイルです。実効空き容量 = min(ディスク空き容量, データストア空き容量)。拡張: rdc datastore resize\n",
+      "keyConcepts": "\n主要概念:\n\n  クエリフィルター\n    • rdc machine status <name> はデフォルトで全セクションを返します\n    • --system、--repositories、--containers、--services、--network、--block-devices でフィルタリング\n    • JSON 出力はコンテナを拡張: repository (解決済み名)、domain、autoRoute\n\n  監視とヘルス\n    • machine health の終了コード: 0=正常、1=警告、2=エラー — CI/CD ゲートに使用\n    • machine status <name> --containers --health-check は異常なコンテナがあれば終了コード 2\n    • machine status <name> --services --stability-check は失敗・再起動中・再起動 3 回超のサービスがあれば終了コード 2\n    • machine prune は削除済みリポジトリの孤立したループバック IP と systemd ユニットを削除します\n\n  データストア構造 (/mnt/rediacc/)\n    • repositories/ — 暗号化された LUKS イメージ (リポジトリ GUID ごとに 1 つ)\n    • mounts/ — 復号化されたマウントポイント (リポジトリがマウントされている時にアクセス可能)\n    • immovable/ — リポジトリごとの Docker daemon データ\n    • データストアはシステムディスク上の BTRFS プールファイルです。実効空き容量 = min(ディスク空き容量, データストア空き容量)。拡張: rdc datastore resize\n",
       "query": "マシンの完全な状態を表示"
     },
     "repo": {
       "create": "暗号化リポジトリを作成",
       "down": "サービスを停止",
       "fork": "テスト用CoWフォーク",
-      "keyConcepts": "\n主要概念:\n\n  Compose と Rediaccfile\n    • renet compose -- up -d を使用する（生の docker compose は使わない）。-- セパレータは必須\n    • Rediaccfile は up() と down() 関数を定義する必要があります。up() では: ディレクトリ作成、設定生成、コンテナ起動を行うべきです\n    • compose の ports: は無視されます（network_mode:host）。外部アクセスには rediacc.service_port ラベルを使用してください\n    • restart: always/unless-stopped は renet によって自動的に取り除かれ .rediacc.json に保存されます — ルーターの watchdog が停止したサービスを自動復旧します\n    • 各サービスはループバック IP を取得します。eBPF バインド書き換えが分離を透過的に処理するため、アプリは 0.0.0.0 にバインドできます\n    • 隣接サービスに接続するにはそのサービス名を使用してください（例: \"db\"、\"redis\"）— renet がすべてのサービス名をホスト名として注入します。データベース内に保存する接続文字列に ${DB_IP} を直接埋め込まないでください — IP が固定化されフォーク分離が壊れます（検証エラー）\n    • ヘルスチェックには localhost を使用できます。例: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  ストレージ\n    • ${REDIACC_WORKING_DIR}/data、${REDIACC_WORKING_DIR}/config などへバインドマウントしてください\n    • 例: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker の named volume はフォークとバックアップから除外されます\n    • コンテナにバインドマウントされる設定ファイルは、コンテナが非デフォルト UID で実行される場合 world-readable（644）である必要があります\n\n  ルーティング\n    • Grand リポジトリの自動ルート: https://{service}.{repo}.{machine}.{baseDomain}（ワイルドカード証明書 *.{repo}.{machine}.{baseDomain} は最初の repo up 時に Traefik が自動プロビジョニング）\n    • フォークの自動ルート: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain}（親リポジトリのワイルドカード証明書を使用、レート制限への影響なし）\n    • カスタムドメイン: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP フォワーディング: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • カスタムドメイン（rediacc.domain ラベル）はフォークでは無視されます — ドメインは Grand リポジトリに属します\n\n  ライフサイクル\n    • repo delete は完全にクリーンアップします: ストレージ、Docker daemon、ループバック IP、systemd ユニット\n    • repo down はコンテナを停止しますが Docker daemon と IP は保持します（repo up で素早く再起動可能）\n    • condition: service_healthy を伴う depends_on は起動順序を処理しますが、ランタイムの復旧は処理しません\n    • データベースが正常終了（exit 0）した場合、依存サービスはクラッシュループに陥ります。対処: rdc repo up -m <machine>\n    • 自動起動: rdc repo admin autostart enable <repo-ref> — マシン起動時にリポジトリを自動マウントして起動します\n    • 予約バックアップはフォークリポジトリを自動的にスキップします。手動でフォークをバックアップするには rdc repo push <repo-ref> --to <remote> を使用してください\n    • rdc repo promote <fork-ref> — 本番データをフォークのデータで置き換えます（ID は保持）。元に戻すには: rdc repo promote <backup-fork-ref>\n\n  命名とターゲット指定\n    • Grand（本番）リポジトリ: <repo> として参照します。<repo>:latest も同義です（latest がデフォルトタグ）。裸の --name は設定キーに完全一致すればそれに解決され、なければ <repo>:latest にフォールバックします\n    • フォーク: 常に latest 以外のタグを付けた <repo>:<tag> で参照します（例: app:test）。up/down/delete/term/sync はすべて同じ <repo>:<tag> を受け取ります\n    • つまり --name app は GRAND を対象とし、--name app:test はその FORK を対象とします。フォークを操作する際は必ずタグを含めてください — 唯一の曖昧なケースは、フォークが誤って裸/latest の名前で登録されている場合です\n    • エージェントはフォークのみを変更できます。Grand リポジトリは保護されており（オーバーライドは REDIACC_ALLOW_GRAND_REPO のみで可能。これはセッション開始前にオペレーターが設定する必要があります）、フォークは安全で使い捨て可能な単位です\n",
+      "keyConcepts": "\n主要概念:\n\n  Compose と Rediaccfile\n    • renet compose -- up -d を使用する（生の docker compose は使わない）。-- セパレータは必須\n    • Rediaccfile は up() と down() 関数を定義する必要があります。up() では: ディレクトリ作成、設定生成、コンテナ起動を行うべきです\n    • compose の ports: は無視されます（network_mode:host）。外部アクセスには rediacc.service_port ラベルを使用してください\n    • restart: always/unless-stopped は renet によって自動的に取り除かれ .rediacc.json に保存されます — ルーターの watchdog が停止したサービスを自動復旧します\n    • 各サービスはループバック IP を取得します。eBPF バインド書き換えが分離を透過的に処理するため、アプリは 0.0.0.0 にバインドできます\n    • 隣接サービスに接続するにはそのサービス名を使用してください（例: \"db\"、\"redis\"）— renet がすべてのサービス名をホスト名として注入します。データベース内に保存する接続文字列に ${DB_IP} を直接埋め込まないでください — IP が固定化されフォーク分離が壊れます（検証エラー）\n    • ヘルスチェックには localhost を使用できます。例: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  ストレージ\n    • ${REDIACC_WORKING_DIR}/data、${REDIACC_WORKING_DIR}/config などへバインドマウントしてください\n    • 例: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker の named volume はフォークとバックアップから除外されます\n    • コンテナにバインドマウントされる設定ファイルは、コンテナが非デフォルト UID で実行される場合 world-readable（644）である必要があります\n\n  ルーティング\n    • Grand リポジトリの自動ルート: https://{service}.{repo}.{machine}.{baseDomain}（ワイルドカード証明書 *.{repo}.{machine}.{baseDomain} は最初の repo up 時に Traefik が自動プロビジョニング）\n    • フォークの自動ルート: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain}（親リポジトリのワイルドカード証明書を使用、レート制限への影響なし）\n    • カスタムドメイン: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP フォワーディング: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • カスタムドメイン（rediacc.domain ラベル）はフォークでは無視されます — ドメインは Grand リポジトリに属します\n\n  ライフサイクル\n    • repo delete は完全にクリーンアップします: ストレージ、Docker daemon、ループバック IP、systemd ユニット\n    • repo down はコンテナを停止しますが Docker daemon と IP は保持します（repo up で素早く再起動可能）\n    • condition: service_healthy を伴う depends_on は起動順序を処理しますが、ランタイムの復旧は処理しません\n    • データベースが正常終了（exit 0）した場合、依存サービスはクラッシュループに陥ります。対処: rdc repo up <repo-ref>\n    • 自動起動: rdc repo admin autostart enable <repo-ref> — マシン起動時にリポジトリを自動マウントして起動します\n    • 予約バックアップはフォークリポジトリを自動的にスキップします。手動でフォークをバックアップするには rdc repo push <repo-ref> --to <remote> を使用してください\n    • rdc repo promote <fork-ref> — 本番データをフォークのデータで置き換えます（ID は保持）。元に戻すには: rdc repo promote <backup-fork-ref>\n\n  命名とターゲット指定\n    • Grand（本番）リポジトリ: <repo> として参照します。<repo>:latest も同義です（latest がデフォルトタグ）。裸の ref は設定キーに完全一致すればそれに解決され、なければ <repo>:latest にフォールバックします\n    • フォーク: 常に latest 以外のタグを付けた <repo>:<tag> で参照します（例: app:test）。up/down/delete/term/sync はすべて同じ <repo>:<tag> を受け取ります\n    • つまり `app` は GRAND を対象とし、`app:test` はその FORK を対象とします。フォークを操作する際は必ずタグを含めてください — 唯一の曖昧なケースは、フォークが誤って裸/latest の名前で登録されている場合です\n    • エージェントはフォークのみを変更できます。Grand リポジトリは保護されており（オーバーライドは REDIACC_ALLOW_GRAND_REPO のみで可能。これはセッション開始前にオペレーターが設定する必要があります）、フォークは安全で使い捨て可能な単位です\n",
       "up": "自動マウントでデプロイ"
     },
     "sync": {
@@ -2348,6 +2349,7 @@
     "proxy": "直接接続する代わりに、この URL のエグゼキューター経由でマシン操作を実行する",
     "queryDatastores": "アタッチされたデータストアを表示する（マウント、アタッチ、使用量）",
     "repoRef": "リポジトリ ref: 名前、または 名前:タグ、任意で @machine を付加（例: shop、shop:test）",
+    "storageRef": "ストレージ ref: 登録済みストレージエンドポイントの名前（例: s3-main）",
     "strategyName": "バックアップ戦略名"
   },
   "prompts": {

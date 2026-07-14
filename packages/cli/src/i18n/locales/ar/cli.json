@@ -4,7 +4,7 @@
   },
   "commands": {
     "backup": {
-      "description": "إدارة استراتيجيات النسخ الاحتياطي، والتشغيلات المجدولة، وعناصرها.",
+      "description": "إدارة استراتيجيات النسخ الاحتياطي وتشغيلاتها المجدولة والعناصر التي تنتجها: عرّف استراتيجية لمستودع، شغّلها أو استعدها عند الطلب، وافحص الأرشيفات التي كتبتها إلى نقطة تخزين.",
       "schedule": {
         "description": "نشر جدول النسخ الاحتياطي إلى جهاز بعيد (مؤقتات systemd)",
         "optionDryRun": "معاينة الوحدات المُولَّدة دون نشرها",
@@ -173,11 +173,11 @@
       },
       "snapshot": {
         "create": {
-          "description": "أخذ لقطة لكل مخزن بيانات معتمد على rbd في العنقود في لحظة واحدة. لا يتوقف أي شيء. أي مخزن بيانات بخلفية local في العنقود يُدرَج خارج تلك اللحظة: فهو ليس جزءًا من اللقطة.",
+          "description": "أخذ لقطة لكل مخزن بيانات معتمد على rbd في العنقود في لحظة واحدة. لا يتوقف أي شيء. أي مخزن بيانات بخلفية local في العنقود يُدرَج خارج تلك اللحظة: فهو ليس جزءًا من اللقطة. اللحظة متّسقة عبر الانهيار، وليست متّسقة على مستوى التطبيق: إذا احتجت أن تكون كتابة معيّنة داخل اللقطة، زامنها أولاً.",
           "descriptionShort": "أخذ لقطة على مستوى العنقود بالكامل",
           "labelOption": "تسمية اللقطة (الافتراضي: طابع زمني UTC)"
         },
-        "description": "لقطات لحظية للعنقود بأكمله. لحظة واحدة متسقة عبر الانهيار (crash-consistent) عبر كل مخزن بيانات معتمد على rbd يملكه العنقود، تُؤخذ عبر لقطة المجموعة (group snapshot) في Ceph: لا يتوقف شيء ولا يلاحظ العنقود ذلك مطلقًا. مخازن البيانات بخلفية local ليس لها بدائية مجموعة على مستوى الكتل، لذا تقع خارج هذه اللحظة ويُبلَّغ عنها كذلك.",
+        "description": "لقطات لحظية للعنقود بأكمله. لحظة واحدة متسقة عبر الانهيار (crash-consistent) عبر كل مخزن بيانات معتمد على rbd يملكه العنقود، تُؤخذ عبر لقطة المجموعة (group snapshot) في Ceph: لا يتوقف شيء ولا يلاحظ العنقود ذلك مطلقًا. مخازن البيانات بخلفية local ليس لها بدائية مجموعة على مستوى الكتل، لذا تقع خارج هذه اللحظة ويُبلَّغ عنها كذلك. اللحظة متّسقة عبر الانهيار، وليست متّسقة على مستوى التطبيق: إذا احتجت أن تكون كتابة معيّنة داخل اللقطة، زامنها أولاً.",
         "descriptionShort": "أخذ لقطة لكل مخزن بيانات في العنقود في لحظة واحدة",
         "list": {
           "description": "عرض لقطات المجموعة الخاصة بالعنقود.",
@@ -510,7 +510,7 @@
       "snapshot": {
         "create": {
           "created": "تم أخذ لقطة لمخزن البيانات \"{{ref}}\" باسم \"{{label}}\".",
-          "description": "أخذ لقطة لحظية لمخزن بيانات. لا يتوقف شيء.",
+          "description": "أخذ لقطة لحظية لمخزن بيانات. لا يتوقف شيء. اللحظة متّسقة عبر الانهيار، وليست متّسقة على مستوى التطبيق: إذا احتجت أن تكون كتابة معيّنة داخل اللقطة، زامنها أولاً.",
           "descriptionShort": "أخذ لقطة لمخزن بيانات",
           "labelOption": "تسمية اللقطة (الافتراضي: طابع زمني UTC)"
         },
@@ -586,8 +586,8 @@
         "noState": "لم يتم العثور على حالة OpenTofu لـ \"{{name}}\". استخدم 'config remove-machine' للأجهزة المضافة يدوياً.",
         "optionForce": "تخطي مطالبة التأكيد"
       },
-      "description": "إدارة الأجهزة البعيدة (الحالة، الحاويات، الخدمات، الصحة)",
-      "descriptionShort": "إدارة الأجهزة البعيدة (الحالة، الحاويات، الخدمات، الصحة)",
+      "description": "فحص حالة الأجهزة البعيدة: موارد النظام، والحاويات قيد التشغيل، وخدمات systemd، والمستودعات المنشورة، وتشخيصات الصحة. استعلامات للقراءة فقط؛ لتعديل المستودعات استخدم `repo`. الأوامر الفرعية الرئيسية: status (الحالة الكاملة، مُضيَّقة بـ --system و--containers و--repositories و--services)، health، list، add، remove، setup، prune، provision، deprovision.",
+      "descriptionShort": "إدارة الأجهزة البعيدة (status، health، list، add، remove، setup، prune)",
       "health": {
         "containersSection": "\nالحاويات:",
         "containersSummary": "  {{running}}/{{total}} قيد التشغيل ({{healthy}} سليم، {{unhealthy}} غير سليم)",
@@ -633,7 +633,7 @@
         "optionImage": "تجاوز صورة نظام التشغيل الافتراضية",
         "optionInfra": "تكوين البنية التحتية أيضاً (infra set + infra push)",
         "optionNoInfra": "تخطي تكوين البنية التحتية (الوكيل + DNS)",
-        "optionProvider": "اسم المزود السحابي (من config provider add)",
+        "optionProvider": "اسم المزود السحابي (من machine provider add)",
         "optionRegion": "تجاوز المنطقة الافتراضية",
         "optionSshUser": "اسم مستخدم SSH للجهاز الافتراضي الجديد (الافتراضي: root)",
         "optionType": "تجاوز نوع المثيل الافتراضي",
@@ -660,7 +660,7 @@
         "noStaleSnapshots": "لم يتم العثور على لقطات قديمة",
         "noUnknownRepos": "لم يتم العثور على مستودعات غير معروفة، كل مستودع آلة إما في التكوين المحلي أو لديه مرآة renet",
         "orphanedReposCompleted": "تم تنظيف {{count}} مستودعات معزولة",
-        "orphanedReposOption": "تنظيف صور المستودعات غير الموجودة في أي تكوين أيضًا",
+        "orphanedReposOption": "حذف كل صورة مستودع على الجهاز غير موجودة في تكوين CLI المحلي لديك. سلوك خشن — يحذف أيضًا النسخ المتفرعة التي أنشأتها أدوات أخرى ولا يوجد لها إدخال تكوين محلي، حتى عندما تحدِّدها مرآة renet بشكل صحيح كنسخ متفرعة. استخدم --prune-unknown للسلوك الأضيق الذي يحترم المرآة.",
         "orphanedReposStarting": "جارٍ البحث عن المستودعات المعزولة على {{machine}}...",
         "previewEmpty": "لم يتم العثور على موارد مخزن بيانات يتيمة",
         "pruneUnknownOption": "حذف فقط المستودعات التي لا يستطيع مرآة renet .interim/state تصنيفها (ليست في التكوين المحلي ولا تحتوي على مرآة موسومة بالشوكة). أضيق بشكل صارم من --orphaned-repos: تتم المحافظة على الشوكات بدون تكوين عندما تحددها المرآة. المتبقيات القديمة قبل المرآة والأجداد القدامى الذين تم حذف إدخال التكوين الخاص بهم يقعون كلاهما في هذه الفئة.",
@@ -722,7 +722,7 @@
         "description": "إدارة تكوين البنية التحتية (الوكيل، DNS، الشهادات)",
         "push": {
           "certCacheUploaded": "تم رفع الشهادات المخزنة مؤقتاً إلى الجهاز البعيد",
-          "description": "دفع إعدادات البنية التحتية إلى الجهاز (وكيل Traefik، الموجّه، Cloudflare DNS). شغّل 'config infra set <machine>' أولاً",
+          "description": "دفع إعدادات البنية التحتية إلى الجهاز (وكيل Traefik، الموجّه، Cloudflare DNS). شغّل 'machine infra set <machine>' أولاً",
           "descriptionShort": "دفع تكوين البنية التحتية إلى الجهاز",
           "dnsCreated": "DNS: تم إنشاء {{type}} {{name}} → {{content}}",
           "dnsError": "تحذير DNS: {{message}} (قد تحتاج السجلات إلى إعداد يدوي)",
@@ -855,8 +855,8 @@
         "localFallback": "(استخدام فحوصات محلية — renet غير متاح)",
         "title": "فحص متطلبات OPS"
       },
-      "description": "عمليات VM التجريبية (إنشاء، إدارة، حذف)",
-      "descriptionShort": "عمليات VM التجريبية (إنشاء، إدارة، حذف)",
+      "description": "تجهيز وإدارة أجهزة افتراضية محلية باستخدام KVM/QEMU/Hyper-V (يُكتشف النظام الأساسي تلقائيًا). ليست للأجهزة البعيدة — استخدم `machine` لتلك. الأوامر الفرعية الرئيسية: up (تشغيل الأجهزة الافتراضية)، down (إيقافها)، status (سرد الأجهزة الافتراضية العاملة)، ssh (الاتصال بجهاز افتراضي)، setup (تثبيت المتطلبات)، check (التحقق من جاهزية المضيف).",
+      "descriptionShort": "عمليات VM محلية (توفير، إدارة، تدمير)",
       "down": {
         "completed": "تم تدمير مجموعة VM بنجاح",
         "description": "تدمير مجموعة VM",
@@ -995,7 +995,7 @@
         "restoreHint": "للاستعادة: rdc repo admin archive restore {{guid}}",
         "starting": "جارٍ حذف \"{{repository}}\" على \"{{machine}}\"..."
       },
-      "description": "نشر وإدارة المستودعات المشفرة على الأجهزة",
+      "description": "نشر وإدارة المستودعات المشفرة على الأجهزة. الأوامر الفرعية الرئيسية: create، up (نشر)، down (إيقاف)، fork (استنساخ CoW فوري)، delete، push/pull (نسخ احتياطي)، sync (نقل الملفات). دورة الحياة: repo create → repo up → repo down. راجع المفاهيم الأساسية في rdc --help لتفاصيل البنية والتوجيه ومتغيرات البيئة.",
       "descriptionShort": "نشر وإدارة المستودعات المشفرة على الأجهزة",
       "diff": {
         "baseOption": "المستودع المُراد المقارنة معه (الجانب القديم/الأساس)؛ افتراضيًا أصل --name",
@@ -1195,7 +1195,6 @@
         "optionStrategy": "استراتيجية دلتا الكتل عند استخدام أساس دلتا: auto أو physical أو shared",
         "optionTag": "علامة النشر للإصدارات",
         "optionTo": "اسم الجهاز أو التخزين الوجهة (يتم الكشف تلقائياً من الإعدادات)",
-        "optionUp": "بعد الدفع، قم بتركيب ونشر المستودع على الجهاز الهدف",
         "pushing": "جارٍ دفع نسخة احتياطية لـ \"{{repo}}\" إلى {{dest}}...",
         "statsDelta": "تم دفع \"{{repo}}\" إلى {{machine}} — نُقل {{transferred}} خلال {{duration}} (دلتا مقابل الأساس {{base}}، الصورة {{image}})",
         "statsFull": "تم دفع \"{{repo}}\" إلى {{machine}} — نُقل {{transferred}} خلال {{duration}} (نقل كامل)",
@@ -1233,11 +1232,11 @@
         "starting": "جارٍ تغيير حجم \"{{repository}}\" إلى {{size}} على \"{{machine}}\"..."
       },
       "secret": {
-        "currentOption": "SHA-256 digest of the previous value (passwd-style precondition). Required for overwrite under agent context; optional for first-write.",
-        "description": "Manage per-repo secrets injected at deploy time. Two modes: env (REDIACC_SECRET_<KEY> via compose ${VAR} interpolation) and file (host tmpfs at /var/run/rediacc/secrets/<networkId>/<KEY>, mounted via Docker compose `secrets:` block). Secrets never enter the encrypted LUKS image, so forks inherit none — externals see the fork as a different principal.",
+        "currentOption": "القيمة الصريحة السابقة (شرط مسبق بنمط passwd). مطلوبة للكتابة فوق القيمة أو حذفها؛ حصرية بشكل متبادل مع --rotate-secret.",
+        "description": "إدارة أسرار كل مستودع المُحقنة وقت النشر. للكتابة فقط: تُعيد get التلخيص فقط (لا القيمة الصريحة أبدًا)، وتتطلب set/unset تطابق تلخيص --current أو --rotate-secret. وضعا تسليم: env (REDIACC_SECRET_<KEY>) وfile (نظام tmpfs في /var/run/rediacc/secrets/<networkId>/<KEY> عبر `secrets:` في compose). الأسرار لا تدخل صورة LUKS المشفرة أبدًا؛ النسخ المتفرعة لا ترث أيًا منها.",
         "descriptionShort": "إدارة أسرار وقت النشر لكل مستودع (env / file)",
         "get": {
-          "description": "Read a single secret. Returns a redacted stub (`<redacted:secret>:<digest8>`) under agent context regardless of policy.",
+          "description": "عرض تلخيص SHA-256 لسر. لا تُعاد القيمة الصريحة أبدًا بحكم التصميم (للكتابة فقط). استخدم --current في عملية set/unset لاحقة للتحقق من قيمة تعرفها بالفعل، أو دوّرها عبر `set --rotate-secret`.",
           "descriptionShort": "إظهار بصمة سر (لا تُعاد القيمة أبدًا)",
           "notFound": "لم يتم العثور على السر \"{{key}}\" في المستودع \"{{repository}}\"",
           "repoNotFound": "لم يتم العثور على المستودع \"{{repository}}\""
@@ -1511,7 +1510,7 @@
         "noFiles": "لم يتم العثور على ملفات",
         "pathOption": "مسار الدليل الفرعي للعرض"
       },
-      "description": "إدارة نقاط تخزين النسخ الاحتياطي الخارجية (S3، ومتوافقة مع rclone).",
+      "description": "إدارة نقاط تخزين النسخ الاحتياطي الخارجية (S3 ووجهات أخرى متوافقة مع rclone): تسجيلها وإزالتها، وعرض المسجَّل منها، وتصفح العناصر التي تحتفظ بها، وتنظيف النسخ الاحتياطية اليتيمة.",
       "descriptionShort": "إدارة التخزين",
       "list": {
         "description": "عرض نقاط التخزين. أعطِ اسمًا للحصول على التفاصيل الكاملة.",
@@ -1883,7 +1882,7 @@
     },
     "overview": {
       "heading": "نظرة عامة",
-      "text": "**Rediacc CLI** (`rdc`) هي واجهة سطر أوامر لإدارة جميع جوانب منصة Rediacc — المصادقة، البنية التحتية، المستودعات، قوائم الانتظار، التخزين والمزيد."
+      "text": "**Rediacc CLI** (`rdc`) هي واجهة سطر أوامر لإدارة البنية التحتية ذاتية الاستضافة — الأجهزة، والمستودعات، والتخزين، والنسخ الاحتياطية، والمزيد."
     },
     "pageTitle": "مرجع سطر أوامر Rediacc",
     "sectionTitles": {
@@ -1934,7 +1933,7 @@
     "affectedChildClones": ". النسخ المتأثرة: {{clones}}. احذف أو ارقِ النسخ الفرعية أولاً.",
     "agent": {
       "clusterOpBlocked": "أمر الكتلة \"{{command}}\" محظور في وضع الوكيل. عمليات الكتلة تُنشئ أو تزيل بنية تحتية حقيقية، لذا لا يمكن للوكيل أن يصرّح بها بنفسه. للمستخدم: للسماح بذلك، عيّن REDIACC_ALLOW_CLUSTER_OPS=<cluster-name> (أو * لجميع الكتل) في الطرفية قبل بدء جلسة الوكيل — لا يُقبل أي تجاوز يُعيَّن من داخل الوكيل.",
-      "commandBlocked": "الامر \"{{command}}\" غير متاح في وضع الوكيل.\n\nهذا الامر ينفذ وظائف منخفضة المستوى بشكل اعتباطي دون ضمانات السلامة. استخدم اوامر CLI المكتوبة او ادوات MCP بدلا من ذلك.\n\nالبدائل:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - نفذ \"rdc --help\" لعرض جميع الاوامر المتاحة\n\nاذا كنت بحاجة الى وصول مباشر، اطلب من المستخدم تشغيل الامر مباشرة.",
+      "commandBlocked": "الأمر \"{{command}}\" غير متاح في وضع الوكيل.\n\nينفذ هذا الأمر وظائف منخفضة المستوى بشكل اعتباطي دون ضمانات السلامة. استخدم أوامر CLI المكتوبة أو أدوات MCP بدلاً من ذلك.\n\nالبدائل:\n  - MCP tools: repo_up, repo_down, repo_fork, repo_logs, repo_exec, machine_status\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - نفّذ \"rdc --help\" لعرض جميع الأوامر المتاحة\n\nإذا كنت بحاجة إلى وصول مباشر، اطلب من المستخدم تشغيل الأمر مباشرة.",
       "configEdit": "المحرر التفاعلي محظور في بيئات العملاء.\n\nالبدائل:\n  • rdc config edit --dump > config.jsonc    (فحص مُخفى آمن)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nللتجاوز، حدد REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> في الصدفة الأبوية\nقبل بدء العميل (يجب أن يظهر في سلالة العميل).",
       "configEditAncestry": "المحرر التفاعلي محظور في بيئات العملاء (تم تعيين REDIACC_ALLOW_CONFIG_EDIT لكن فشل التحقق من السلالة - يجب تعيين التجاوز من الصدفة وليس من العميل).\n\nالبدائل:\n  • rdc config edit --dump > config.jsonc    (فحص مُخفى آمن)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nحدد REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> في الصدفة الأبوية قبل بدء العميل.",
       "createGuard": "لا يمكن إنشاء مستودع رئيسي جديد \"{{name}}\" في وضع الوكيل.\n\nالوكلاء يعملون في وضع fork فقط. المستودعات الرئيسية هي بيئات إنتاجية لا يمكن للوكلاء الوصول إليها بعد الإنشاء.\n\nبدلاً من ذلك، أنشئ fork من مستودع موجود:\n  rdc repo fork <parent-ref> --tag {{name}}\n\nللمستخدم: للسماح بإنشاء المستودع، عيّن REDIACC_ALLOW_GRAND_REPO=* (أو اسم مستودع محدد) في الطرفية قبل بدء جلسة الوكيل.",
@@ -1977,6 +1976,10 @@
       "poolRequired": "يحتاج العنقود إلى تجمّع عقد واحد على الأقل. أضف --pool <spec>."
     },
     "clusterNotFound": "مجموعة Ceph \"{{name}}\" غير موجودة",
+    "container": {
+      "execFailed": "فشل container_exec",
+      "logsFailed": "فشل container_logs"
+    },
     "config": {
       "invalidEmail": "عنوان بريد إلكتروني غير صالح: \"{{value}}\".",
       "machineNotFound": "الآلة \"{{name}}\" غير موجودة في التكوين. المتاحة: {{available}}.",
@@ -2051,10 +2054,8 @@
       "machineRequired": "اسم الآلة مطلوب. استخدم --machine <name>",
       "notSupported": "تسجيل البروتوكول غير مدعوم على {{platform}}",
       "parseFailed": "فشل تحليل عنوان URL: {{error}}",
-      "regionSelectionRequiresTTY": "اختيار المنطقة يتطلب إدخالاً تفاعلياً. استخدم --server <url> لتحديد الخادم مباشرة.",
       "teamRequired": "اسم الفريق مطلوب. استخدم --team <name>",
-      "tokenRequired": "الرمز مطلوب. استخدم --token <token>",
-      "unknownRegion": "منطقة غير معروفة: {{region}}"
+      "tokenRequired": "الرمز مطلوب. استخدم --token <token>"
     },
     "regionRequired": "اسم المنطقة مطلوب. استخدم --region أو عيّن القيمة الافتراضية بـ: rdc config set region <name>",
     "registrationFailed": "فشل التسجيل",
@@ -2137,6 +2138,7 @@
     "regionSelectionRequiresTTY": "اختيار المنطقة يتطلب إدخالاً تفاعلياً. استخدم --server <url> لتحديد الخادم مباشرة.",
     "unknownRegion": "منطقة غير معروفة: {{region}}",
     "datastore": {
+      "defaultIsImplicit": "مخزن البيانات الافتراضي ضمني؛ هذه الأفعال تُدير مخازن بيانات مسمّاة إضافية.",
       "deleteHasRepos": "مخزن البيانات \"{{ref}}\" لا يزال يحمل مستودعات: {{repos}}. احذفها أولاً، أو مرّر --force لتدميرها معه.",
       "forkNeedsWrites": "\"{{ref}}\" مفترع. حدِّد وجهة كتاباته: --writes local (فوري، مؤقت، يُفقد عند الفصل) أو --writes ceph (نسخة دائمة في التجمّع).",
       "localForkNeedsDiscard": "\"{{ref}}\" مرفق بـ --writes local، لذا فإن طبقته التراكبية مؤقتة وفصله يدمّرها. مرّر --discard لتأكيد أن هذا ما تريده.",
@@ -2162,16 +2164,15 @@
     "examples": "أمثلة:",
     "keyConcepts": "\nالمفاهيم الأساسية:\n\n  البنية\n    • كل مستودع = بيئة Docker معزولة (خدمة daemon خاصة، نطاق IP محلي loopback، تخزين LUKS مشفّر)\n    • استخدم renet compose (وليس docker compose الخام أبدًا) — يُدرج تلقائيًا network_mode:host وعلامات rediacc.*\n    • التخزين: bind-mount إلى ${REDIACC_WORKING_DIR}/... — وليس أحجام Docker المسمّاة أبدًا (مستبعدة من الـ forks/النسخ الاحتياطية)\n    • إعادة كتابة bind عبر eBPF تتولى عزل IP: التطبيقات ترتبط بـ 0.0.0.0 والنواة تعيد الكتابة إلى عنوان loopback الصحيح\n\n  التوجيه\n    • المسار التلقائي (متوافق مع الـ forks): https://{service}.{repo}.{machine}.{baseDomain}\n    • نطاق مخصص: علامات Traefik (traefik.enable=true) — غير متوافق مع الـ forks\n    • علامة rediacc.service_port للمنافذ غير 80. تُفعَّل المسارات بعد حوالي 3 ثوانٍ من النشر\n    • HTTPS: شهادات Let's Encrypt wildcard تلقائية عبر Cloudflare DNS-01، والتي تتطلب --cf-dns-token يُضبط عبر 'rdc machine infra set'. بدونه يعمل HTTP لكن لا تُصدَر شهادات HTTPS\n    • المستودعات الرئيسية تحصل على *.{repo}.{machine}.{baseDomain} — يوفّرها Traefik تلقائيًا عند أول repo up\n    • تعيد الـ forks استخدام شهادة wildcard الخاصة بالمستودع الأصل (مُصدَرة مسبقًا، بلا أثر على حدود المعدل)\n\n  متغيرات البيئة\n    • صَدَفة Rediaccfile: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • داخل الحاويات: SERVICE_IP, REDIACC_NETWORK_ID (تُدرَج تلقائيًا بواسطة renet)\n\n  التفريع (Forking)\n    • rdc repo fork <parent-ref> --tag <tag>: نسخة CoW فورية بمعرّف GUID جديد وnetworkId ونطاق IP ونطاق مسار تلقائي\n    • يستمر الأصل بالعمل (تفريع أثناء التشغيل). بين الأجهزة: نفّذ fork محليًا ثم rdc repo push <ref> --to <machine>\n    • يبقى إدخال التكوين بعد حذف المستودع (قد يوجد المستودع على أجهزة أخرى)",
     "machine": {
-      "containers": "عرض الحاويات قيد التشغيل",
       "health": "فحص صحة الجهاز لـ CI/CD",
-      "keyConcepts": "\nالمفاهيم الأساسية:\n\n  فلاتر الاستعلام\n    • rdc machine status <name> يعرض جميع الأقسام افتراضيًا\n    • استخدم --system أو --repositories أو --containers أو --services أو --network أو --block-devices للتصفية\n    • مخرجات JSON تُثري الحاويات بـ: repository (الاسم المُحلل) و domain و autoRoute\n\n  المراقبة والصحة\n    • machine health يخرج بـ: 0=سليم، 1=تحذير، 2=خطأ — استخدمه لبوابات CI/CD\n    • containers --health-check يخرج بـ 2 إذا كانت أي حاوية غير سليمة\n    • services --stability-check يخرج بـ 2 إذا كانت أي خدمة فاشلة أو تُعيد التشغيل أو لديها أكثر من 3 إعادات تشغيل\n    • machine prune يزيل عناوين loopback IP ووحدات systemd اليتيمة من المستودعات المحذوفة\n\n  هيكل مخزن البيانات (/mnt/rediacc/)\n    • repositories/ — صور LUKS مشفرة (واحدة لكل GUID مستودع)\n    • mounts/ — نقاط تثبيت مفكوكة التشفير (متاحة عند تثبيت المستودع)\n    • immovable/ — بيانات Docker daemon لكل مستودع\n    • مخزن البيانات هو ملف تجمّع BTRFS على قرص النظام. المساحة الحرة الفعلية = min(المساحة الحرة على القرص، المساحة الحرة في مخزن البيانات). وسّعه بـ: rdc datastore resize\n",
+      "keyConcepts": "\nالمفاهيم الأساسية:\n\n  فلاتر الاستعلام\n    • rdc machine status <name> يعرض جميع الأقسام افتراضيًا\n    • استخدم --system أو --repositories أو --containers أو --services أو --network أو --block-devices للتصفية\n    • مخرجات JSON تُثري الحاويات بـ: repository (الاسم المُحلل) و domain و autoRoute\n\n  المراقبة والصحة\n    • machine health يخرج بـ: 0=سليم، 1=تحذير، 2=خطأ — استخدمه لبوابات CI/CD\n    • machine status <name> --containers --health-check يخرج بـ 2 إذا كانت أي حاوية غير سليمة\n    • machine status <name> --services --stability-check يخرج بـ 2 إذا كانت أي خدمة فاشلة أو تُعيد التشغيل أو لديها أكثر من 3 إعادات تشغيل\n    • machine prune يزيل عناوين loopback IP ووحدات systemd اليتيمة من المستودعات المحذوفة\n\n  هيكل مخزن البيانات (/mnt/rediacc/)\n    • repositories/ — صور LUKS مشفرة (واحدة لكل GUID مستودع)\n    • mounts/ — نقاط تثبيت مفكوكة التشفير (متاحة عند تثبيت المستودع)\n    • immovable/ — بيانات Docker daemon لكل مستودع\n    • مخزن البيانات هو ملف تجمّع BTRFS على قرص النظام. المساحة الحرة الفعلية = min(المساحة الحرة على القرص، المساحة الحرة في مخزن البيانات). وسّعه بـ: rdc datastore resize\n",
       "query": "عرض حالة الجهاز الكاملة"
     },
     "repo": {
       "create": "إنشاء مستودع مشفر",
       "down": "إيقاف الخدمات",
       "fork": "نسخ CoW للاختبار",
-      "keyConcepts": "\nالمفاهيم الأساسية:\n\n  Compose و Rediaccfile\n    • renet compose -- up -d (وليس docker compose الخام أبدًا). الفاصل -- إلزامي\n    • يجب أن يُعرّف Rediaccfile دالتي up() و down(). يجب أن تقوم up() بـ: إنشاء المجلدات، توليد الإعدادات، تشغيل الحاويات\n    • compose ports: تُتجاهل (network_mode:host). استخدم علامة rediacc.service_port للوصول الخارجي\n    • restart: always/unless-stopped تُحذف تلقائيًا بواسطة renet وتُحفظ في .rediacc.json - يُعيد راصد الموجّه تشغيل الخدمات المتوقفة تلقائيًا\n    • تحصل كل خدمة على عنوان loopback IP. تتولى إعادة كتابة bind عبر eBPF عزل IP بشفافية، لذا يمكن للتطبيقات الارتباط بـ 0.0.0.0\n    • للاتصال بالخدمات المجاورة استخدم اسم الخدمة (مثل \"db\"، \"redis\") - يُدرج renet جميع أسماء الخدمات كأسماء مضيفين. لا تُضمّن ${DB_IP} أبدًا في نصوص الاتصال المخزّنة داخل قواعد البيانات - فهذا يُثبّت عنوان IP بشكل دائم ويكسر عزل النسخ المتفرعة (خطأ تحقق)\n    • يمكن لفحوصات الصحة استخدام localhost. مثال: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  التخزين\n    • Bind-mount إلى ${REDIACC_WORKING_DIR}/data و ${REDIACC_WORKING_DIR}/config وغيرها\n    • مثال: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • أحجام Docker المسمّاة مستبعدة من النسخ المتفرعة والنسخ الاحتياطية\n    • ملفات الإعدادات المُدرجة في الحاويات عبر bind-mount يجب أن تكون قابلة للقراءة للجميع (644) إذا كانت الحاوية تعمل بمعرّف مستخدم غير افتراضي\n\n  التوجيه\n    • المسار التلقائي للمستودع الرئيسي: https://{service}.{repo}.{machine}.{baseDomain} (شهادة wildcard بصيغة *.{repo}.{machine}.{baseDomain} تُصدرها Traefik تلقائيًا عند أول repo up)\n    • المسار التلقائي للنسخة المتفرعة: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (يستخدم شهادة wildcard الخاصة بالمستودع الأصل، بلا أثر على حدود المعدل)\n    • نطاق مخصص: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • توجيه TCP/UDP: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • النطاقات المخصصة (علامة rediacc.domain) تُتجاهل على النسخ المتفرعة - فالنطاق ملك للمستودع الرئيسي\n\n  دورة الحياة\n    • repo delete يُنظّف كل شيء بالكامل: التخزين، خدمة Docker daemon، عناوين loopback IP، وحدات systemd\n    • repo down يوقف الحاويات لكنه يُبقي على خدمة Docker daemon وعناوين IP (إعادة تشغيل سريعة عبر repo up)\n    • depends_on مع condition: service_healthy يتحكم بترتيب بدء التشغيل لكن ليس بالتعافي أثناء التشغيل\n    • إذا توقفت قاعدة البيانات بشكل نظيف (exit 0)، تدخل الخدمات المعتمدة عليها في حلقة تعطل متكرر. الإصلاح: rdc repo up -m <machine>\n    • التشغيل التلقائي: rdc repo admin autostart enable <repo-ref> - يُركّب المستودع ويشغّله تلقائيًا عند إقلاع الجهاز\n    • النسخ الاحتياطية المجدولة تتخطى مستودعات النسخ المتفرعة تلقائيًا. استخدم rdc repo push <repo-ref> --to <remote> لنسخ احتياطي يدوي للنسخة المتفرعة\n    • rdc repo promote <fork-ref> - استبدال بيانات الإنتاج ببيانات النسخة المتفرعة (مع الحفاظ على الهوية). للتراجع: rdc repo promote <backup-fork-ref>\n\n  التسمية والاستهداف\n    • المستودع الرئيسي (الإنتاجي): أشر إليه بـ <repo>، وهو ما يُعادل <repo>:latest (latest هو الوسم الافتراضي). --name المجرد يُحلّ إلى مفتاح الإعداد الدقيق، وإلا يعود إلى <repo>:latest.\n    • النسخة المتفرعة: دائمًا <repo>:<tag> بوسم غير latest (مثال: app:test). تأخذ up/down/delete/term/sync جميعها نفس <repo>:<tag>.\n    • أي أن --name app يستهدف المستودع الرئيسي؛ بينما --name app:test يستهدف تلك النسخة المتفرعة. اذكر الوسم دائمًا عند العمل على نسخة متفرعة - الحالة الوحيدة الملتبسة هي نسخة متفرعة سُجّلت خطأً تحت الاسم المجرد/latest.\n    • لا يمكن للوكلاء تعديل سوى النسخ المتفرعة؛ المستودعات الرئيسية محمية (التجاوز فقط عبر REDIACC_ALLOW_GRAND_REPO، التي يجب أن يُعيّنها المُشغّل قبل بدء الجلسة). النسخ المتفرعة هي الوحدة الآمنة القابلة للتخلص منها.\n",
+      "keyConcepts": "\nالمفاهيم الأساسية:\n\n  Compose و Rediaccfile\n    • renet compose -- up -d (وليس docker compose الخام أبدًا). الفاصل -- إلزامي\n    • يجب أن يُعرّف Rediaccfile دالتي up() و down(). يجب أن تقوم up() بـ: إنشاء المجلدات، توليد الإعدادات، تشغيل الحاويات\n    • compose ports: تُتجاهل (network_mode:host). استخدم علامة rediacc.service_port للوصول الخارجي\n    • restart: always/unless-stopped تُحذف تلقائيًا بواسطة renet وتُحفظ في .rediacc.json - يُعيد راصد الموجّه تشغيل الخدمات المتوقفة تلقائيًا\n    • تحصل كل خدمة على عنوان loopback IP. تتولى إعادة كتابة bind عبر eBPF عزل IP بشفافية، لذا يمكن للتطبيقات الارتباط بـ 0.0.0.0\n    • للاتصال بالخدمات المجاورة استخدم اسم الخدمة (مثل \"db\"، \"redis\") - يُدرج renet جميع أسماء الخدمات كأسماء مضيفين. لا تُضمّن ${DB_IP} أبدًا في نصوص الاتصال المخزّنة داخل قواعد البيانات - فهذا يُثبّت عنوان IP بشكل دائم ويكسر عزل النسخ المتفرعة (خطأ تحقق)\n    • يمكن لفحوصات الصحة استخدام localhost. مثال: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  التخزين\n    • Bind-mount إلى ${REDIACC_WORKING_DIR}/data و ${REDIACC_WORKING_DIR}/config وغيرها\n    • مثال: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • أحجام Docker المسمّاة مستبعدة من النسخ المتفرعة والنسخ الاحتياطية\n    • ملفات الإعدادات المُدرجة في الحاويات عبر bind-mount يجب أن تكون قابلة للقراءة للجميع (644) إذا كانت الحاوية تعمل بمعرّف مستخدم غير افتراضي\n\n  التوجيه\n    • المسار التلقائي للمستودع الرئيسي: https://{service}.{repo}.{machine}.{baseDomain} (شهادة wildcard بصيغة *.{repo}.{machine}.{baseDomain} تُصدرها Traefik تلقائيًا عند أول repo up)\n    • المسار التلقائي للنسخة المتفرعة: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (يستخدم شهادة wildcard الخاصة بالمستودع الأصل، بلا أثر على حدود المعدل)\n    • نطاق مخصص: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • توجيه TCP/UDP: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • النطاقات المخصصة (علامة rediacc.domain) تُتجاهل على النسخ المتفرعة - فالنطاق ملك للمستودع الرئيسي\n\n  دورة الحياة\n    • repo delete يُنظّف كل شيء بالكامل: التخزين، خدمة Docker daemon، عناوين loopback IP، وحدات systemd\n    • repo down يوقف الحاويات لكنه يُبقي على خدمة Docker daemon وعناوين IP (إعادة تشغيل سريعة عبر repo up)\n    • depends_on مع condition: service_healthy يتحكم بترتيب بدء التشغيل لكن ليس بالتعافي أثناء التشغيل\n    • إذا توقفت قاعدة البيانات بشكل نظيف (exit 0)، تدخل الخدمات المعتمدة عليها في حلقة تعطل متكرر. الإصلاح: rdc repo up <repo-ref>\n    • التشغيل التلقائي: rdc repo admin autostart enable <repo-ref> - يُركّب المستودع ويشغّله تلقائيًا عند إقلاع الجهاز\n    • النسخ الاحتياطية المجدولة تتخطى مستودعات النسخ المتفرعة تلقائيًا. استخدم rdc repo push <repo-ref> --to <remote> لنسخ احتياطي يدوي للنسخة المتفرعة\n    • rdc repo promote <fork-ref> - استبدال بيانات الإنتاج ببيانات النسخة المتفرعة (مع الحفاظ على الهوية). للتراجع: rdc repo promote <backup-fork-ref>\n\n  التسمية والاستهداف\n    • المستودع الرئيسي (الإنتاجي): أشر إليه بـ <repo>، وهو ما يُعادل <repo>:latest (latest هو الوسم الافتراضي). المرجع المجرد يُحلّ إلى مفتاح الإعداد الدقيق، وإلا يعود إلى <repo>:latest.\n    • النسخة المتفرعة: دائمًا <repo>:<tag> بوسم غير latest (مثال: app:test). تأخذ up/down/delete/term/sync جميعها نفس <repo>:<tag>.\n    • أي أن `app` يستهدف المستودع الرئيسي؛ بينما `app:test` يستهدف تلك النسخة المتفرعة. اذكر الوسم دائمًا عند العمل على نسخة متفرعة - الحالة الوحيدة الملتبسة هي نسخة متفرعة سُجّلت خطأً تحت الاسم المجرد/latest.\n    • لا يمكن للوكلاء تعديل سوى النسخ المتفرعة؛ المستودعات الرئيسية محمية (التجاوز فقط عبر REDIACC_ALLOW_GRAND_REPO، التي يجب أن يُعيّنها المُشغّل قبل بدء الجلسة). النسخ المتفرعة هي الوحدة الآمنة القابلة للتخلص منها.\n",
       "up": "نشر مع التحميل التلقائي"
     },
     "sync": {
@@ -2348,6 +2349,7 @@
     "proxy": "تشغيل عمليات الجهاز عبر منفّذ على هذا العنوان بدلاً من الاتصال المباشر",
     "queryDatastores": "عرض مخازن البيانات المرفقة (التركيب، الإرفاق، الاستخدام)",
     "repoRef": "مرجع المستودع: اسم، أو اسم:وسم، اختياريًا مع @machine (مثال shop أو shop:test)",
+    "storageRef": "مرجع التخزين: اسم نقطة تخزين مسجَّلة (مثال s3-main)",
     "strategyName": "اسم استراتيجية النسخ الاحتياطي"
   },
   "prompts": {

@@ -4,7 +4,7 @@
   },
   "commands": {
     "backup": {
-      "description": "Gérer les stratégies de sauvegarde, les exécutions planifiées et leurs artefacts.",
+      "description": "Gérer les stratégies de sauvegarde, leurs exécutions planifiées et les artefacts qu'elles produisent : déclarez une stratégie pour un dépôt, exécutez-la ou restaurez-la à la demande, et inspectez les archives qu'elle a écrites sur un point de terminaison de stockage.",
       "schedule": {
         "description": "Déployer la planification de sauvegarde sur une machine distante (minuteries systemd)",
         "optionDryRun": "Prévisualiser les unités générées sans déployer",
@@ -173,10 +173,10 @@
       },
       "snapshot": {
         "descriptionShort": "Prendre un snapshot de tous les datastores du cluster à un instant donné",
-        "description": "Snapshots à un instant T de tout le cluster. Un instant cohérent au crash près sur chaque datastore adossé à rbd que possède le cluster, pris via le group snapshot de Ceph : rien ne s'arrête et le cluster ne le remarque jamais. Les datastores à backend local n'ont pas de primitive de groupe au niveau bloc, ils tombent donc hors de cet instant et sont signalés comme tels.",
+        "description": "Snapshots à un instant T de tout le cluster. Un instant cohérent au crash près sur chaque datastore adossé à rbd que possède le cluster, pris via le group snapshot de Ceph : rien ne s'arrête et le cluster ne le remarque jamais. Les datastores à backend local n'ont pas de primitive de groupe au niveau bloc, ils tombent donc hors de cet instant et sont signalés comme tels. L'instant est cohérent au crash près, pas cohérent au niveau applicatif : si vous avez besoin qu'une écriture précise soit DANS le snapshot, synchronisez-la d'abord.",
         "create": {
           "descriptionShort": "Prendre un snapshot à l'échelle du cluster",
-          "description": "Prend un snapshot de chaque datastore adossé à rbd dans le cluster à UN seul instant. Rien n'est arrêté. Tout datastore à backend local dans le cluster est signalé comme hors de cet instant : il ne fait pas partie du snapshot.",
+          "description": "Prend un snapshot de chaque datastore adossé à rbd dans le cluster à UN seul instant. Rien n'est arrêté. Tout datastore à backend local dans le cluster est signalé comme hors de cet instant : il ne fait pas partie du snapshot. L'instant est cohérent au crash près, pas cohérent au niveau applicatif : si vous avez besoin qu'une écriture précise soit DANS le snapshot, synchronisez-la d'abord.",
           "labelOption": "Libellé du snapshot (par défaut : un horodatage UTC)"
         },
         "list": {
@@ -512,7 +512,7 @@
         "description": "Prendre et lister les snapshots à un instant T d'un datastore. Un snapshot au repos ne coûte rien et c'est ce dont un fork clone.",
         "create": {
           "descriptionShort": "Prendre un snapshot d'un datastore",
-          "description": "Prendre un snapshot à un instant T d'un datastore. Rien ne s'arrête.",
+          "description": "Prendre un snapshot à un instant T d'un datastore. Rien ne s'arrête. L'instant est cohérent au crash près, pas cohérent au niveau applicatif : si vous avez besoin qu'une écriture précise soit DANS le snapshot, synchronisez-la d'abord.",
           "labelOption": "Libellé du snapshot (par défaut : un horodatage UTC)",
           "created": "Datastore \"{{ref}}\" capturé en snapshot sous \"{{label}}\"."
         },
@@ -586,8 +586,8 @@
         "noState": "Aucun état OpenTofu trouvé pour \"{{name}}\". Utilisez 'config remove-machine' pour les machines ajoutées manuellement.",
         "optionForce": "Passer l'invite de confirmation"
       },
-      "description": "Gérer les machines distantes (état, conteneurs, services, santé)",
-      "descriptionShort": "Gérer les machines distantes (état, conteneurs, services, santé)",
+      "description": "Inspecter l'état d'une machine distante : ressources système, conteneurs en cours d'exécution, services systemd, dépôts déployés et diagnostics de santé. Requêtes en lecture seule ; pour modifier des dépôts, utilisez `repo`. Sous-commandes clés : status (état complet, filtré avec --system, --containers, --repositories, --services), health, list, add, remove, setup, prune, provision, deprovision.",
+      "descriptionShort": "Gérer les machines distantes (status, health, list, add, remove, setup, prune)",
       "health": {
         "containersSection": "\nConteneurs :",
         "containersSummary": "  {{running}}/{{total}} en cours d'exécution ({{healthy}} sains, {{unhealthy}} non sains)",
@@ -633,7 +633,7 @@
         "optionImage": "Remplacer l'image OS par défaut",
         "optionInfra": "Configurer également l'infrastructure (infra set + infra push)",
         "optionNoInfra": "Ignorer la configuration d'infrastructure (proxy + DNS)",
-        "optionProvider": "Nom du fournisseur cloud (depuis config provider add)",
+        "optionProvider": "Nom du fournisseur cloud (depuis machine provider add)",
         "optionRegion": "Remplacer la région par défaut",
         "optionSshUser": "Nom d'utilisateur SSH pour la nouvelle VM (par défaut : root)",
         "optionType": "Remplacer le type d'instance par défaut",
@@ -660,7 +660,7 @@
         "noStaleSnapshots": "Aucun instantané périmé trouvé",
         "noUnknownRepos": "Aucun dépôt inconnu trouvé, chaque dépôt de machine est soit dans la configuration locale soit possède un miroir renet",
         "orphanedReposCompleted": "{{count}} dépôts orphelins supprimés",
-        "orphanedReposOption": "Supprimer aussi les images de dépôts absents de toute configuration",
+        "orphanedReposOption": "Supprimer chaque image de dépôt sur la machine absente de votre configuration CLI locale. Comportement grossier : supprime aussi les forks créés par d'autres outils sans entrée de configuration locale, même quand leur miroir renet les identifie correctement comme des forks. Utilisez --prune-unknown pour le comportement plus fin qui respecte le miroir.",
         "orphanedReposStarting": "Recherche des dépôts orphelins sur {{machine}}...",
         "previewEmpty": "Aucune ressource de datastore orpheline trouvée",
         "pruneUnknownOption": "Supprime uniquement les dépôts que le miroir renet .interim/state ne peut pas classer (pas dans la configuration locale ET pas de miroir marqué fork). Strictement plus restreint que --orphaned-repos : les forks sans configuration sont préservés quand le miroir les identifie. Les orphelins hérités pré-miroir et les grands obsolètes dont l'entrée de configuration a été supprimée tombent tous dans cette catégorie.",
@@ -722,7 +722,7 @@
         "description": "Gérer la configuration d'infrastructure (proxy, DNS, certificats)",
         "push": {
           "certCacheUploaded": "Certificats en cache envoyés vers le distant",
-          "description": "Envoyer la configuration d'infrastructure à la machine (proxy Traefik, routeur, Cloudflare DNS). Exécutez d'abord 'config infra set <machine>'",
+          "description": "Envoyer la configuration d'infrastructure à la machine (proxy Traefik, routeur, Cloudflare DNS). Exécutez d'abord 'machine infra set <machine>'",
           "descriptionShort": "Envoyer la configuration d'infrastructure vers la machine",
           "dnsCreated": "DNS : {{type}} {{name}} → {{content}} créé",
           "dnsError": "Avertissement DNS : {{message}} (les enregistrements peuvent nécessiter une configuration manuelle)",
@@ -855,8 +855,8 @@
         "localFallback": "(vérifications locales — renet non disponible)",
         "title": "Vérification des prérequis OPS"
       },
-      "description": "Opérations VM expérimentales (provisionner, gérer, détruire)",
-      "descriptionShort": "Opérations VM expérimentales (provisionner, gérer, détruire)",
+      "description": "Provisionnement et gestion de VM locales via KVM/QEMU/Hyper-V (plateforme détectée automatiquement). Pas pour les machines distantes — utilisez `machine` pour celles-ci. Sous-commandes clés : up (démarrer les VM), down (arrêter), status (lister les VM en cours), ssh (se connecter à une VM), setup (installer les prérequis), check (vérifier que l'hôte est prêt).",
+      "descriptionShort": "Opérations de VM locales (provisionner, gérer, détruire)",
       "down": {
         "completed": "Cluster VM détruit avec succès",
         "description": "Détruire le cluster VM",
@@ -995,7 +995,7 @@
         "restoreHint": "Restaurer avec : rdc repo admin archive restore {{guid}}",
         "starting": "Suppression de \"{{repository}}\" sur \"{{machine}}\"..."
       },
-      "description": "Déployer et gérer des dépôts chiffrés sur les machines",
+      "description": "Déployer et gérer des dépôts chiffrés sur les machines. Sous-commandes clés : create, up (déployer), down (arrêter), fork (clone CoW instantané), delete, push/pull (sauvegarde), sync (transfert de fichiers). Cycle de vie : repo create → repo up → repo down. Consultez Concepts clés dans rdc --help pour l'architecture, le routage et le détail des variables d'environnement.",
       "descriptionShort": "Déployer et gérer des dépôts chiffrés sur les machines",
       "diff": {
         "baseOption": "Dépôt avec lequel comparer (côté base/ancien) ; par défaut le parent de --name",
@@ -1043,8 +1043,8 @@
         "alreadyExists": "Le dépôt \"{{name}}\" existe déjà dans le contexte",
         "checkpointOption": "Créer un checkpoint CRIU sur la source avant le fork (capturer l'état mémoire des processus pour restauration sur le fork)",
         "clusterResolved": "Fork de \"{{parent}}\" en tant que namespace \"{{parent}}-{{tag}}\" dans le cluster \"{{cluster}}\" (nœud de contrôle {{controlNode}})",
-        "completed": "Fork créé. Déployer localement : repo up {{repository}} -m {{machine}}. Pour migrer le fork vers une autre machine : repo push {{repository}} -m {{machine}} --to <target> --up",
-        "description": "Créer un fork CoW (Copy-on-Write) d'un dépôt. LE FORK EST QUASI INSTANTANÉ ET EN TEMPS CONSTANT quelle que soit la taille du dépôt, le reflink BTRFS clone l'image sous-jacente, si bien qu'un dépôt de 100 Go et un dépôt de 1 Go forkent dans les mêmes ~secondes. Le fork obtient un NOUVEAU GUID, networkId, une nouvelle plage IP et un domaine auto-route ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}), et constitue une copie totalement indépendante. Le fork en ligne est pris en charge, le parent peut continuer de tourner. Le fork hérite automatiquement des identifiants de chiffrement du parent. Utilisez --checkpoint pour capturer l'état du processus CRIU avant le fork ; le fork se restaure automatiquement au premier 'repo up' (l'état en mémoire est préservé). FORK INTER-MACHINES : forkez d'abord localement, puis transférez : (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine> --up. ATTENTION : n'utilisez PAS \"repo push\" seul pour forker, cela crée une copie brute avec le MÊME GUID (pas un fork indépendant). Forkez toujours d'abord pour obtenir une nouvelle identité. Les auto-routes utilisent le nom du dépôt, chaque fork obtient donc automatiquement un domaine unique.",
+        "completed": "Fork créé. Déployez-le : repo up {{repository}}. Pour le copier vers une autre machine : repo push {{repository}} --to <target>, puis démarrez l'artefact là-bas avec backup restore {{repository}} --as {{repository}} -m <target> --up",
+        "description": "Créer un fork CoW (Copy-on-Write) d'un dépôt. LE FORK EST QUASI INSTANTANÉ ET EN TEMPS CONSTANT quelle que soit la taille du dépôt, le reflink BTRFS clone l'image sous-jacente, si bien qu'un dépôt de 100 Go et un dépôt de 1 Go forkent dans les mêmes ~secondes. Le fork obtient un NOUVEAU GUID, networkId, une nouvelle plage IP et un domaine auto-route ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}), et constitue une copie totalement indépendante. Le fork en ligne est pris en charge, le parent peut continuer de tourner. Le fork hérite automatiquement des identifiants de chiffrement du parent. Utilisez --checkpoint pour capturer l'état du processus CRIU avant le fork ; le fork se restaure automatiquement au premier 'repo up' (l'état en mémoire est préservé). FORK INTER-MACHINES : forkez d'abord localement, puis transférez : (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine>, (3) rdc backup restore <fork-ref> --as <fork-name> -m <target-machine> --up. ATTENTION : n'utilisez PAS \"repo push\" seul pour forker, cela crée une copie brute avec le MÊME GUID (pas un fork indépendant). Forkez toujours d'abord pour obtenir une nouvelle identité. Les auto-routes utilisent le nom du dépôt, chaque fork obtient donc automatiquement un domaine unique.",
         "descriptionShort": "Créer un fork CoW d'un dépôt (nouveau GUID, networkId, plage IP)",
         "detachedHint": "Les services démarrent en arrière-plan. Vérifiez l'état avec : rdc machine status {{machine}} --containers",
         "detachOption": "Avec --up : rend la main dès que les conteneurs sont démarrés ; les healthchecks continuent en arrière-plan (idéal pour les forks jetables)",
@@ -1183,7 +1183,7 @@
         "deployed": "Dépôt \"{{repo}}\" déployé sur {{machine}}",
         "deployFailed": "Échec du déploiement de \"{{repo}}\" après l'envoi",
         "deploying": "Déploiement de \"{{repo}}\" sur {{machine}}...",
-        "description": "Pousser un dépôt vers un distant (machine ou stockage). Omettre le nom pour pousser tous les dépôts. Le type de cible est détecté automatiquement depuis la configuration. Pour un transfert machine-à-machine, l'image chiffrée du dépôt est copiée avec le MÊME GUID — c'est une sauvegarde/migration, pas un fork. Pour créer un fork indépendant, utilisez d'abord 'repo fork', puis push. Utilisez --up pour déployer après le push",
+        "description": "Pousser un dépôt vers un distant (machine ou stockage). Le type de cible est détecté automatiquement depuis la configuration. Pour un transfert machine-à-machine, l'image chiffrée du dépôt est copiée avec le MÊME GUID — c'est une sauvegarde/migration, pas un fork. Pour créer un fork indépendant, utilisez d'abord 'repo fork', puis push. Une copie poussée atterrit comme un ARTEFACT de sauvegarde : démarrez-le sur la cible avec 'backup restore <ref> --as <name> -m <target> --up'",
         "descriptionShort": "Pousser un dépôt vers un distant (machine ou stockage)",
         "destRequired": "Spécifiez --to <remote> (nom de machine ou stockage depuis la configuration)",
         "optionBwlimit": "Limite de bande passante pour le transfert rsync (ex : \"6M\", \"10M\")",
@@ -1195,7 +1195,6 @@
         "optionStrategy": "Stratégie de delta par blocs lors de l'utilisation d'une base de delta : auto, physical ou shared",
         "optionTag": "Tag de déploiement pour le versionnage",
         "optionTo": "Nom de la machine ou du stockage de destination (détecté automatiquement depuis la configuration)",
-        "optionUp": "Après l'envoi, monter et déployer le dépôt sur la machine cible",
         "pushing": "Envoi de la sauvegarde de \"{{repo}}\" vers {{dest}}...",
         "statsDelta": "\"{{repo}}\" envoyé vers {{machine}} — {{transferred}} transférés en {{duration}} (delta par rapport à la base {{base}}, image {{image}})",
         "statsFull": "\"{{repo}}\" envoyé vers {{machine}} — {{transferred}} transférés en {{duration}} (transfert complet)",
@@ -1233,11 +1232,11 @@
         "starting": "Redimensionnement de \"{{repository}}\" à {{size}} sur \"{{machine}}\"..."
       },
       "secret": {
-        "currentOption": "SHA-256 digest of the previous value (passwd-style precondition). Required for overwrite under agent context; optional for first-write.",
-        "description": "Manage per-repo secrets injected at deploy time. Two modes: env (REDIACC_SECRET_<KEY> via compose ${VAR} interpolation) and file (host tmpfs at /var/run/rediacc/secrets/<networkId>/<KEY>, mounted via Docker compose `secrets:` block). Secrets never enter the encrypted LUKS image, so forks inherit none — externals see the fork as a different principal.",
+        "currentOption": "Valeur en clair précédente (précondition de type passwd). Requise pour l'écrasement/la suppression ; mutuellement exclusive avec --rotate-secret.",
+        "description": "Gérer les secrets par dépôt injectés au déploiement. Écriture seule : get ne renvoie que le digest (jamais la valeur en clair), set/unset exigent une correspondance de digest --current ou --rotate-secret. Deux modes de livraison : env (REDIACC_SECRET_<KEY>) et file (tmpfs à /var/run/rediacc/secrets/<networkId>/<KEY> via `secrets:` du compose). Les secrets n'entrent jamais dans l'image LUKS chiffrée ; les forks n'en héritent aucun.",
         "descriptionShort": "Gérer les secrets de déploiement par dépôt (env / file)",
         "get": {
-          "description": "Read a single secret. Returns a redacted stub (`<redacted:secret>:<digest8>`) under agent context regardless of policy.",
+          "description": "Afficher le digest SHA-256 d'un secret. La valeur en clair n'est jamais renvoyée, par conception (écriture seule). Utilisez --current lors d'un set/unset ultérieur pour vérifier une valeur que vous connaissez déjà, ou effectuez une rotation via `set --rotate-secret`.",
           "descriptionShort": "Afficher le digest d'un secret (la valeur n'est jamais renvoyée)",
           "notFound": "Secret \"{{key}}\" introuvable dans le dépôt \"{{repository}}\"",
           "repoNotFound": "Dépôt \"{{repository}}\" introuvable"
@@ -1511,7 +1510,7 @@
         "noFiles": "Aucun fichier trouvé",
         "pathOption": "Chemin du sous-répertoire à lister"
       },
-      "description": "Gérer les points de terminaison de stockage de sauvegarde externes (S3, compatible rclone).",
+      "description": "Gérer les points de terminaison de stockage de sauvegarde externes (S3 et autres cibles compatibles rclone) : les enregistrer et les supprimer, lister ce qui est enregistré, parcourir les artefacts qu'ils contiennent, et nettoyer les sauvegardes orphelines.",
       "descriptionShort": "Gérer le stockage",
       "list": {
         "description": "Lister les points de terminaison de stockage. Indiquez un nom pour le détail complet.",
@@ -1564,18 +1563,18 @@
       "description": "Gérer les licences et les jetons d'abonnement. Connectez-vous avec login, inspectez avec status, réémettez les licences avec refresh.",
       "descriptionShort": "Gérer les licences machine et l’abonnement",
       "login": {
-        "channelSynced": "Canal de mise a jour defini sur {{channel}}.",
+        "channelSynced": "Canal de mise à jour défini sur {{channel}}.",
         "description": "S’authentifier avec un jeton API du portail web",
-        "discoveringRegions": "Recherche des regions disponibles...",
+        "discoveringRegions": "Recherche des régions disponibles...",
         "expired": "L’autorisation a expiré. Veuillez réessayer.",
         "machines": "Machines : {{active}}/{{max}}",
         "openBrowser": "Visitez cette URL pour autoriser :",
         "plan": "Forfait : {{plan}}",
         "polling": "En attente de l’approbation (appuyez sur Ctrl+C pour annuler)...",
-        "regionPrompt": "Ou vos donnees doivent-elles etre stockees ?",
-        "regionsDiscovered": "Regions chargees",
-        "regionSelected": "Region de donnees : {{region}} ({{domain}})",
-        "serverChanged": "Serveur modifie. Session precedente effacee.",
+        "regionPrompt": "Où vos données doivent-elles être stockées ?",
+        "regionsDiscovered": "Régions chargées",
+        "regionSelected": "Région de données : {{region}} ({{domain}})",
+        "serverChanged": "Serveur modifié. Session précédente effacée.",
         "edgeSeparator": "Canal Edge",
         "success": "Connexion réussie",
         "validated": "Jeton validé",
@@ -1804,7 +1803,7 @@
         "followOption": "Suivre le flux jusqu'à la fin du job",
         "sinceLineOption": "Reprendre après ce nombre de lignes (le nombre déjà reçu)",
         "invalidSinceLine": "--since-line doit être un nombre de lignes (valeur reçue : \"{{value}}\")",
-        "detached": "Détaché du job {{jobId}}. Il continue de s'exécuter sur {{machine}} et n'a PAS été annulé. Pour vous rattacher : rdc job logs -m {{machine}} --id {{jobId}} --follow"
+        "detached": "Détaché du job {{jobId}}. Il continue de s'exécuter sur {{machine}} et n'a PAS été annulé. Pour vous rattacher : rdc job logs {{jobId}} -m {{machine}} --follow"
       },
       "cancel": {
         "description": "Annuler un job détaché en cours d'exécution",
@@ -1883,7 +1882,7 @@
     },
     "overview": {
       "heading": "Aperçu",
-      "text": "La **CLI Rediacc** (`rdc`) est une interface en ligne de commande pour gérer tous les aspects de la plateforme Rediacc — authentification, infrastructure, dépôts, files d'attente, stockage et plus encore."
+      "text": "La **CLI Rediacc** (`rdc`) est une interface en ligne de commande pour gérer une infrastructure auto-hébergée — machines, dépôts, stockage, sauvegardes et plus encore."
     },
     "pageTitle": "Référence CLI Rediacc",
     "sectionTitles": {
@@ -1934,7 +1933,7 @@
     "affectedChildClones": ". Clones enfants affectés : {{clones}}. Supprimez ou promouvez d'abord les clones enfants.",
     "agent": {
       "clusterOpBlocked": "La commande de cluster \"{{command}}\" est bloquée en mode agent. Les opérations de cluster provisionnent ou démantèlent une infrastructure réelle, un agent ne peut donc pas les autoriser lui-même. Utilisateur : pour l'autoriser, définissez REDIACC_ALLOW_CLUSTER_OPS=<nom-du-cluster> (ou * pour tous les clusters) dans votre terminal AVANT de démarrer la session de l'agent — un contournement défini depuis l'intérieur de l'agent n'est pas accepté.",
-      "commandBlocked": "La commande \"{{command}}\" n'est pas disponible en mode agent.\n\nCette commande execute des fonctions arbitraires de bas niveau sans garde-fous de securite. Utilisez plutot des commandes CLI typees ou des outils MCP.\n\nAlternatives :\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - Executez \"rdc --help\" pour voir toutes les commandes disponibles\n\nSi vous avez besoin d'un acces direct, demandez a l'utilisateur d'executer la commande directement.",
+      "commandBlocked": "La commande \"{{command}}\" n'est pas disponible en mode agent.\n\nCette commande exécute des fonctions arbitraires de bas niveau sans garde-fous de sécurité. Utilisez plutôt des commandes CLI typées ou des outils MCP.\n\nAlternatives :\n  - Outils MCP : repo_up, repo_down, repo_fork, repo_logs, repo_exec, machine_status\n  - Commandes CLI : rdc repo up, rdc repo down, rdc term connect\n  - Exécutez \"rdc --help\" pour voir toutes les commandes disponibles\n\nSi vous avez besoin d'un accès direct, demandez à l'utilisateur d'exécuter la commande directement.",
       "configEdit": "L'éditeur interactif est bloqué dans les environnements d'agent.\n\nAlternatives :\n  • rdc config edit --dump > config.jsonc    (inspection caviardée sûre)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nPour passer outre, définissez REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> dans le shell parent\nAVANT de démarrer l'agent (doit apparaître dans l'arborescence du processus).",
       "configEditAncestry": "L'éditeur interactif est bloqué dans les environnements d'agent (REDIACC_ALLOW_CONFIG_EDIT était défini mais la vérification d'ascendance a échoué : l'override doit être défini par votre shell, pas par un agent).\n\nAlternatives :\n  • rdc config edit --dump > config.jsonc    (inspection caviardée sûre)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nDéfinissez REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> dans le shell parent AVANT de démarrer l'agent.",
       "createGuard": "Impossible de créer un nouveau dépôt grand \"{{name}}\" en mode agent.\n\nLes agents fonctionnent en mode fork uniquement. Les dépôts grand sont des environnements de production auxquels les agents ne peuvent pas accéder après la création.\n\nCréez plutôt un fork d'un dépôt existant :\n  rdc repo fork <parent-ref> --tag {{name}}\n\nUtilisateur : pour autoriser la création de dépôts, définissez REDIACC_ALLOW_GRAND_REPO=* (ou un nom de dépôt spécifique) dans votre terminal avant de démarrer la session de l'agent.",
@@ -1984,6 +1983,10 @@
       "pointerNotFound": "Pointeur « {{pointer}} » introuvable",
       "retiredKey": "Le défaut \"{{key}}\" n'existe plus. Clés valides : {{keys}}",
       "storageNotFound": "Stockage \"{{name}}\" introuvable dans la configuration. Disponibles : {{available}}."
+    },
+    "container": {
+      "execFailed": "Échec de container_exec",
+      "logsFailed": "Échec de container_logs"
     },
     "contextNotFound": "Contexte \"{{name}}\" non trouvé",
     "editor": {
@@ -2051,10 +2054,8 @@
       "machineRequired": "Le nom de la machine est requis. Utilisez --machine <name>",
       "notSupported": "L'enregistrement du protocole n'est pas supporté sur {{platform}}",
       "parseFailed": "Impossible d'analyser l'URL : {{error}}",
-      "regionSelectionRequiresTTY": "La selection de region necessite une saisie interactive. Utilisez --server <url> pour specifier un serveur directement.",
       "teamRequired": "Le nom de l'équipe est requis. Utilisez --team <name>",
-      "tokenRequired": "Jeton requis. Utilisez --token <token>",
-      "unknownRegion": "Region inconnue : {{region}}"
+      "tokenRequired": "Jeton requis. Utilisez --token <token>"
     },
     "regionRequired": "Le nom de la région est requis. Utilisez --region ou définissez une valeur par défaut avec : rdc config set region <name>",
     "registrationFailed": "L'enregistrement a échoué",
@@ -2134,9 +2135,10 @@
       "repoRequired": "Ce serveur VS Code a besoin d'une cible de dépôt. Passez une réf de dépôt.",
       "unsupportedArch": "Architecture de machine non prise en charge pour VS Code navigateur : {{arch}}"
     },
-    "regionSelectionRequiresTTY": "La selection de region necessite une saisie interactive. Utilisez --server <url> pour specifier un serveur directement.",
-    "unknownRegion": "Region inconnue : {{region}}",
+    "regionSelectionRequiresTTY": "La sélection de région nécessite une saisie interactive. Utilisez --server <url> pour spécifier un serveur directement.",
+    "unknownRegion": "Région inconnue : {{region}}",
     "datastore": {
+      "defaultIsImplicit": "le datastore par défaut est implicite ; ces verbes gèrent des datastores nommés supplémentaires.",
       "forkNeedsWrites": "\"{{ref}}\" est un fork. Indiquez où vont ses écritures : --writes local (instantané, éphémère, perdu au détachement) ou --writes ceph (clone durable dans le pool).",
       "writesOnNonFork": "\"{{ref}}\" n'est pas un fork, il n'a donc nulle part ailleurs où écrire. Retirez --writes.",
       "writesImmutable": "\"{{ref}}\" est déjà attaché ici avec une disposition d'écriture différente. Les écritures sont fixées au moment de l'attachement : détachez-le d'abord.",
@@ -2162,16 +2164,15 @@
     "examples": "Exemples :",
     "keyConcepts": "\nConcepts clés :\n\n  Architecture\n    • Chaque dépôt = environnement Docker isolé (démon propre, plage d'IP loopback, stockage LUKS chiffré)\n    • Utilisez renet compose (jamais docker compose brut) : injecte automatiquement network_mode:host et les labels rediacc.*\n    • Stockage : bind-mount vers ${REDIACC_WORKING_DIR}/... (jamais de volumes Docker nommés, exclus des forks/sauvegardes)\n    • La réécriture de bind eBPF gère l'isolation IP : les applications se lient à 0.0.0.0 et le noyau réécrit vers l'IP loopback correcte\n\n  Routage\n    • Route automatique (compatible fork) : https://{service}.{repo}.{machine}.{baseDomain}\n    • Domaine personnalisé : labels Traefik (traefik.enable=true), non compatible fork\n    • Label rediacc.service_port pour les ports autres que 80. Les routes s'activent environ 3s après le déploiement\n    • HTTPS : certificats wildcard Let's Encrypt automatiques via Cloudflare DNS-01, ce qui nécessite --cf-dns-token configuré via 'rdc machine infra set'. Sans cela, HTTP fonctionne mais les certificats HTTPS ne sont pas provisionnés\n    • Les dépôts grand obtiennent *.{repo}.{machine}.{baseDomain}, provisionné automatiquement par Traefik au premier repo up\n    • Les forks réutilisent le certificat wildcard du dépôt parent (déjà provisionné, aucun impact sur la limite de débit)\n\n  Variables d'environnement\n    • Shell Rediaccfile : ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • À l'intérieur des conteneurs : SERVICE_IP, REDIACC_NETWORK_ID (injecté automatiquement par renet)\n\n  Fork\n    • rdc repo fork <parent-ref> --tag <tag> : clone CoW instantané avec un nouveau GUID, networkId, plage d'IP, domaine auto-route\n    • Le dépôt parent continue de fonctionner (forking en ligne). Entre machines : forkez d'abord localement, puis rdc repo push <ref> --to <machine>\n    • L'entrée de configuration persiste après la suppression du dépôt (le dépôt peut exister sur d'autres machines)",
     "machine": {
-      "containers": "Lister les conteneurs en cours",
       "health": "Vérification de santé pour CI/CD",
-      "keyConcepts": "\nConcepts Clés :\n\n  Filtres de Requête\n    • rdc machine status <name> renvoie toutes les sections par défaut\n    • Utilisez --system, --repositories, --containers, --services, --network, --block-devices pour filtrer\n    • La sortie JSON enrichit les conteneurs avec : repository (nom résolu), domain, autoRoute\n\n  Surveillance & Santé\n    • machine health retourne : 0=sain, 1=avertissement, 2=erreur (à utiliser pour les portes CI/CD)\n    • containers --health-check retourne 2 si un conteneur n'est pas sain\n    • services --stability-check retourne 2 si un service est en échec, redémarre ou a >3 redémarrages\n    • machine prune supprime les IP loopback orphelines et les unités systemd des dépôts supprimés\n\n  Structure du Stockage de Données (/mnt/rediacc/)\n    • repositories/ : images LUKS chiffrées (une par GUID de dépôt)\n    • mounts/ : points de montage déchiffrés (accessibles quand le dépôt est monté)\n    • immovable/ : données Docker daemon par dépôt\n    • Le datastore est un fichier pool BTRFS sur le disque système. Espace libre effectif = min(espace libre du disque, espace libre du datastore). Étendre avec : rdc datastore resize\n",
+      "keyConcepts": "\nConcepts Clés :\n\n  Filtres de Requête\n    • rdc machine status <name> renvoie toutes les sections par défaut\n    • Utilisez --system, --repositories, --containers, --services, --network, --block-devices pour filtrer\n    • La sortie JSON enrichit les conteneurs avec : repository (nom résolu), domain, autoRoute\n\n  Surveillance & Santé\n    • machine health retourne : 0=sain, 1=avertissement, 2=erreur (à utiliser pour les portes CI/CD)\n    • machine status <name> --containers --health-check retourne 2 si un conteneur n'est pas sain\n    • machine status <name> --services --stability-check retourne 2 si un service est en échec, redémarre ou a >3 redémarrages\n    • machine prune supprime les IP loopback orphelines et les unités systemd des dépôts supprimés\n\n  Structure du Stockage de Données (/mnt/rediacc/)\n    • repositories/ : images LUKS chiffrées (une par GUID de dépôt)\n    • mounts/ : points de montage déchiffrés (accessibles quand le dépôt est monté)\n    • immovable/ : données Docker daemon par dépôt\n    • Le datastore est un fichier pool BTRFS sur le disque système. Espace libre effectif = min(espace libre du disque, espace libre du datastore). Étendre avec : rdc datastore resize\n",
       "query": "Afficher l'état complet de la machine"
     },
     "repo": {
       "create": "Créer un dépôt chiffré",
       "down": "Arrêter les services",
       "fork": "Fork CoW pour les tests",
-      "keyConcepts": "\nConcepts Clés :\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (jamais docker compose brut). Le séparateur -- est requis\n    • Rediaccfile doit définir les fonctions up() et down(). up() doit : créer les répertoires, générer les configurations, démarrer les conteneurs\n    • compose ports : sont ignorés (network_mode:host). Utilisez le label rediacc.service_port pour l'accès externe\n    • restart: always/unless-stopped est retiré automatiquement par renet et enregistré dans .rediacc.json (le watchdog du routeur relance automatiquement les services arrêtés)\n    • Chaque service reçoit une IP loopback. La réécriture bind eBPF gère l'isolation de façon transparente, les applications peuvent donc se lier à 0.0.0.0\n    • Pour se connecter aux services voisins, utilisez leur nom de service (par ex. \"db\", \"redis\") : renet injecte tous les noms de service comme noms d'hôte. N'intégrez jamais ${DB_IP} dans des chaînes de connexion stockées dans des bases de données : cela fige l'IP et casse l'isolation des forks (erreur de validation)\n    • Les health checks peuvent utiliser localhost. Exemple : [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  Stockage\n    • Bind-mount vers ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Exemple : volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Les volumes Docker nommés sont exclus des forks et des sauvegardes\n    • Les fichiers de configuration montés dans les conteneurs doivent être lisibles par tous (644) si le conteneur s'exécute avec un UID non par défaut\n\n  Routage\n    • Auto-route du dépôt grand : https://{service}.{repo}.{machine}.{baseDomain} (certificat wildcard *.{repo}.{machine}.{baseDomain} provisionné automatiquement par Traefik au premier repo up)\n    • Auto-route du fork : https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (utilise le certificat wildcard du dépôt parent, aucun impact sur le rate limit)\n    • Domaine personnalisé : traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • Redirection TCP/UDP : rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Les domaines personnalisés (label rediacc.domain) sont ignorés sur les forks : le domaine appartient au dépôt grand\n\n  Cycle de vie\n    • repo delete nettoie entièrement : stockage, Docker daemon, IP loopback, unités systemd\n    • repo down arrête les conteneurs mais conserve le Docker daemon et les IP (redémarrage rapide avec repo up)\n    • depends_on avec condition: service_healthy gère l'ordre de démarrage mais pas la récupération à l'exécution\n    • Si une base de données s'arrête proprement (exit 0), les services dépendants entrent en crash-loop. Correction : rdc repo up -m <machine>\n    • Démarrage automatique : rdc repo admin autostart enable <repo-ref> (monte et démarre automatiquement le dépôt au démarrage de la machine)\n    • Les sauvegardes planifiées ignorent automatiquement les dépôts fork. Utilisez rdc repo push <repo-ref> --to <remote> pour une sauvegarde manuelle de fork\n    • rdc repo promote <fork-ref> remplace les données de production par les données du fork (l'identité est conservée). Pour annuler : rdc repo promote <backup-fork-ref>\n\n  Nommage & ciblage\n    • Dépôt grand (production) : référencez-le comme <repo>, ce qui équivaut à <repo>:latest (latest est le tag par défaut). Un --name simple résout la clé de configuration exacte, sinon retombe sur <repo>:latest.\n    • Fork : toujours <repo>:<tag> avec un tag différent de latest (par ex. app:test). up/down/delete/term/sync prennent tous le même <repo>:<tag>.\n    • Ainsi --name app cible le GRAND ; --name app:test cible ce FORK. Incluez toujours le tag lorsque vous agissez sur un fork : le seul cas ambigu est un fork enregistré par erreur sous le nom nu/latest.\n    • Les agents ne peuvent modifier que les forks ; les dépôts grand sont protégés (contournement possible uniquement via REDIACC_ALLOW_GRAND_REPO, qui doit être défini par l'opérateur avant la session). Les forks sont l'unité sûre et jetable.\n",
+      "keyConcepts": "\nConcepts Clés :\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (jamais docker compose brut). Le séparateur -- est requis\n    • Rediaccfile doit définir les fonctions up() et down(). up() doit : créer les répertoires, générer les configurations, démarrer les conteneurs\n    • compose ports : sont ignorés (network_mode:host). Utilisez le label rediacc.service_port pour l'accès externe\n    • restart: always/unless-stopped est retiré automatiquement par renet et enregistré dans .rediacc.json (le watchdog du routeur relance automatiquement les services arrêtés)\n    • Chaque service reçoit une IP loopback. La réécriture bind eBPF gère l'isolation de façon transparente, les applications peuvent donc se lier à 0.0.0.0\n    • Pour se connecter aux services voisins, utilisez leur nom de service (par ex. \"db\", \"redis\") : renet injecte tous les noms de service comme noms d'hôte. N'intégrez jamais ${DB_IP} dans des chaînes de connexion stockées dans des bases de données : cela fige l'IP et casse l'isolation des forks (erreur de validation)\n    • Les health checks peuvent utiliser localhost. Exemple : [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  Stockage\n    • Bind-mount vers ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Exemple : volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Les volumes Docker nommés sont exclus des forks et des sauvegardes\n    • Les fichiers de configuration montés dans les conteneurs doivent être lisibles par tous (644) si le conteneur s'exécute avec un UID non par défaut\n\n  Routage\n    • Auto-route du dépôt grand : https://{service}.{repo}.{machine}.{baseDomain} (certificat wildcard *.{repo}.{machine}.{baseDomain} provisionné automatiquement par Traefik au premier repo up)\n    • Auto-route du fork : https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (utilise le certificat wildcard du dépôt parent, aucun impact sur le rate limit)\n    • Domaine personnalisé : traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • Redirection TCP/UDP : rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Les domaines personnalisés (label rediacc.domain) sont ignorés sur les forks : le domaine appartient au dépôt grand\n\n  Cycle de vie\n    • repo delete nettoie entièrement : stockage, Docker daemon, IP loopback, unités systemd\n    • repo down arrête les conteneurs mais conserve le Docker daemon et les IP (redémarrage rapide avec repo up)\n    • depends_on avec condition: service_healthy gère l'ordre de démarrage mais pas la récupération à l'exécution\n    • Si une base de données s'arrête proprement (exit 0), les services dépendants entrent en crash-loop. Correction : rdc repo up <repo-ref>\n    • Démarrage automatique : rdc repo admin autostart enable <repo-ref> (monte et démarre automatiquement le dépôt au démarrage de la machine)\n    • Les sauvegardes planifiées ignorent automatiquement les dépôts fork. Utilisez rdc repo push <repo-ref> --to <remote> pour une sauvegarde manuelle de fork\n    • rdc repo promote <fork-ref> remplace les données de production par les données du fork (l'identité est conservée). Pour annuler : rdc repo promote <backup-fork-ref>\n\n  Nommage & ciblage\n    • Dépôt grand (production) : référencez-le comme <repo>, ce qui équivaut à <repo>:latest (latest est le tag par défaut). Une réf nue résout la clé de configuration exacte, sinon retombe sur <repo>:latest.\n    • Fork : toujours <repo>:<tag> avec un tag différent de latest (par ex. app:test). up/down/delete/term/sync prennent tous le même <repo>:<tag>.\n    • Ainsi `app` cible le GRAND ; `app:test` cible ce FORK. Incluez toujours le tag lorsque vous agissez sur un fork : le seul cas ambigu est un fork enregistré par erreur sous le nom nu/latest.\n    • Les agents ne peuvent modifier que les forks ; les dépôts grand sont protégés (contournement possible uniquement via REDIACC_ALLOW_GRAND_REPO, qui doit être défini par l'opérateur avant la session). Les forks sont l'unité sûre et jetable.\n",
       "up": "Déployer avec montage automatique"
     },
     "sync": {
@@ -2344,6 +2345,7 @@
     "clusterName": "Nom du cluster",
     "machineName": "Nom de la machine",
     "datastoreRef": "Réf de datastore : nom, ou nom:tag pour un fork (par exemple ds-data ou ds-data:exp)",
+    "storageRef": "Réf de stockage : le nom d'un point de terminaison de stockage enregistré (par exemple s3-main)",
     "connectTarget": "Cible : un nom de machine ou de cluster pour un shell dessus, ou une réf de dépôt (nom, nom:tag, éventuellement @machine) pour un shell à l'intérieur",
     "vscodeServerProvider": "Implémentation du serveur VS Code navigateur (openvscode, code-server)",
     "watch": "Surveiller les modifications",

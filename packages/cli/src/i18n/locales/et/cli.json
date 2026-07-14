@@ -4,7 +4,7 @@
   },
   "commands": {
     "backup": {
-      "description": "Halda varundusstrateegiaid, plaanitud käivitusi ja nende artefakte.",
+      "description": "Halda varundusstrateegiaid, nende plaanitud käivitusi ja tekkivaid artefakte: deklareeri hoidlale strateegia, käivita või taasta see nõudmisel ning uuri arhiive, mille see salvestuse lõpp-punkti kirjutas.",
       "schedule": {
         "description": "Juuruta varukoopia ajakava kaugmasinasse (systemd taimerid)",
         "optionDryRun": "Näitab genereeritud üksusi ilma neid juurutamata",
@@ -173,11 +173,11 @@
       },
       "snapshot": {
         "create": {
-          "description": "Tee hetktõmmis igast rbd-põhisest andmehoidlast klastris ÜHEL hetkel. Midagi ei peatata. Iga local-taustaprogrammiga andmehoidla klastris on loetletud selle hetke väliseks: see ei ole hetktõmmise osa.",
+          "description": "Tee hetktõmmis igast rbd-põhisest andmehoidlast klastris ÜHEL hetkel. Midagi ei peatata. Iga local-taustaprogrammiga andmehoidla klastris on loetletud selle hetke väliseks: see ei ole hetktõmmise osa. Hetk on avarii-järjekindel, mitte rakenduse-järjekindel: kui vajad, et konkreetne kirjutus jõuaks hetktõmmisesse, sünkroniseeri see enne.",
           "descriptionShort": "Tee klastriülene hetktõmmis",
           "labelOption": "Hetktõmmise silt (vaikimisi: UTC ajatempel)"
         },
-        "description": "Kogu klastri ajahetke hetktõmmised. Üks avarii-järjekindel hetk üle kõigi klastri omanduses olevate rbd-põhiste andmehoidlate, mis võetakse Cephi rühmasnapshoti kaudu: miski ei peatu ja klaster ei märka seda kunagi. Local-taustaprogrammiga andmehoidlatel puudub plokitaseme rühmaprimitiiv, seega jäävad need hetkest välja ja neist teatatakse vastavalt.",
+        "description": "Kogu klastri ajahetke hetktõmmised. Üks avarii-järjekindel hetk üle kõigi klastri omanduses olevate rbd-põhiste andmehoidlate, mis võetakse Cephi rühmasnapshoti kaudu: miski ei peatu ja klaster ei märka seda kunagi. Local-taustaprogrammiga andmehoidlatel puudub plokitaseme rühmaprimitiiv, seega jäävad need hetkest välja ja neist teatatakse vastavalt. Hetk on avarii-järjekindel, mitte rakenduse-järjekindel: kui vajad, et konkreetne kirjutus jõuaks hetktõmmisesse, sünkroniseeri see enne.",
         "descriptionShort": "Tee hetktõmmis igast klastri andmehoidlast ühel hetkel",
         "list": {
           "description": "Loetle klastri rühmasnapshotid.",
@@ -231,7 +231,7 @@
         "optionEditor": "Redaktori käsu tühistamine (järgib git-prioriteeti: lipp > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
         "optionReveal": "Kuva tundlike väärtuste lihttekst (ainult interaktiivne TTY; auditeeritakse)",
         "rotateDeclined": "Katkestatud; mustand säilitati redaktori ajutises failis.",
-        "rotatePromptBullet": "  * {{pointer}}",
+        "rotatePromptBullet": "  • {{pointer}}",
         "rotatePromptFooter": "Kinnitamiseks kirjuta 'rotate' (midagi muud katkestab): ",
         "rotatePromptHeader": "Oled pööramas {{count}} tundlikku välja(e):",
         "saved": "Konfiguratsioon \"{{name}}\" salvestatud"
@@ -510,7 +510,7 @@
       "snapshot": {
         "create": {
           "created": "Andmehoidlast \"{{ref}}\" tehti hetktõmmis \"{{label}}\".",
-          "description": "Tee andmehoidlast ajahetke hetktõmmis. Midagi ei peatata.",
+          "description": "Tee andmehoidlast ajahetke hetktõmmis. Midagi ei peatata. Hetk on avarii-järjekindel, mitte rakenduse-järjekindel: kui vajad, et konkreetne kirjutus jõuaks hetktõmmisesse, sünkroniseeri see enne.",
           "descriptionShort": "Tee andmehoidlast hetktõmmis",
           "labelOption": "Hetktõmmise silt (vaikimisi: UTC ajatempel)"
         },
@@ -586,8 +586,8 @@
         "noState": "Masina \"{{name}}\" jaoks pole OpenTofu olekut leitud. Kasuta käsitsi lisatud masinate jaoks 'config remove-machine'.",
         "optionForce": "Jätab kinnitusviipa vahele"
       },
-      "description": "Vaatab kaugmasina olekut: süsteemi ressursid, töötavad konteinerid, systemd teenused, juurutatud repositooriumid ja terviklikud diagnostikad. Ainult lugemiseks -- repositooriumide muutmiseks kasuta `repo`. Peamised alamkomandod: query (täisstaatus koos --system, --containers, --repositories, --services filtritega), list, create, rename, delete, prune.",
-      "descriptionShort": "Haldab kaugmasinaid (päringu olek, loetlemine, loomine, kustutamine)",
+      "description": "Vaatab kaugmasina olekut: süsteemi ressursid, töötavad konteinerid, systemd teenused, juurutatud repositooriumid ja tervisediagnostika. Ainult lugemiseks; repositooriumide muutmiseks kasuta `repo`. Peamised alamkomandod: status (täisolek, kitsendatav lippudega --system, --containers, --repositories, --services), health, list, add, remove, setup, prune, provision, deprovision.",
+      "descriptionShort": "Halda kaugmasinaid (olek, tervis, loetlemine, lisamine, eemaldamine, seadistamine, koristamine)",
       "health": {
         "containersSection": "\nKonteinerid:",
         "containersSummary": "  {{running}}/{{total}} töötab ({{healthy}} terved, {{unhealthy}} ebaterved)",
@@ -633,7 +633,7 @@
         "optionImage": "Tühistab vaikimisi OS-pildi",
         "optionInfra": "Konfigureerib ka infrastruktuuri (infra set + infra push)",
         "optionNoInfra": "Jätab infrastruktuuri konfiguratsiooni vahele (puhverserver + DNS)",
-        "optionProvider": "Pilveseadme nimi (konfiguratsiooni pakkujast add)",
+        "optionProvider": "Pilvepakkuja nimi (käsust machine provider add)",
         "optionRegion": "Tühistab vaikimisi piirkonna",
         "optionSshUser": "SSH-kasutajanimi uuele VM-ile (vaikimisi: root)",
         "optionType": "Tühistab vaikimisi eksemplari tüübi",
@@ -722,7 +722,7 @@
         "description": "Halda infrastruktuuri konfiguratsiooni (puhverserver, DNS, sertifikaadid)",
         "push": {
           "certCacheUploaded": "Vahemällu salvestatud sertifikaadid laaditi kaugele üles",
-          "description": "Lükka infrastruktuuri konfiguratsioon masinale (Traefik-puhverserver, marsruuter, Cloudflare DNS). Käivita kõigepealt 'config infra set <masin>'",
+          "description": "Lükka infrastruktuuri konfiguratsioon masinale (Traefik-puhverserver, marsruuter, Cloudflare DNS). Käivita kõigepealt 'machine infra set <machine>'",
           "descriptionShort": "Lükka infrastruktuuri konfiguratsioon masinale",
           "dnsCreated": "DNS: loodud {{type}} {{name}} → {{content}}",
           "dnsError": "DNS-hoiatus: {{message}} (kirjed vajavad võib-olla käsitsi seadistamist)",
@@ -856,7 +856,7 @@
         "title": "OPS eeltingimuste kontroll"
       },
       "description": "Kohalik VM-i ettevalmistamine ja haldamine KVM/QEMU/Hyper-V abil (platvorm tuvastatakse automaatselt). Mitte kaugmasinate jaoks -- kasuta nende jaoks `machine`. Peamised alamkomandod: up (käivitab VM-id), down (peatab), status (loetleb töötavad VM-id), ssh (ühendab VM-iga), setup (installib eeltingimused), check (kontrollib hosti valmisolekut).",
-      "descriptionShort": "Eksperimentaalsed VM-toimingud (ettevalmistamine, haldamine, hävitamine)",
+      "descriptionShort": "Kohalikud VM-toimingud (ettevalmistamine, haldamine, hävitamine)",
       "down": {
         "completed": "VM-klaster hävitatud edukalt",
         "description": "Hävitab VM-klastri",
@@ -995,7 +995,7 @@
         "restoreHint": "Taasta käsuga: rdc repo admin archive restore {{guid}}",
         "starting": "Hoidla \"{{repository}}\" kustutamine masinal \"{{machine}}\"..."
       },
-      "description": "Juuruta ja halda krüpteeritud hoidlaid masinatel. Põhialakomandod: create, up (juuruta), down (peata), fork (hetkeline CoW-kloon), delete, push/pull (varukoopia), sync (failide ülekanne). Elutsükkel: repo create → repo up → repo down. Vaata arhitektuuri, marsruutimise ja keskkonna muutujate üksikasju käsuga rdc --help.",
+      "description": "Juuruta ja halda krüpteeritud hoidlaid masinatel. Peamised alamkomandod: create, up (juuruta), down (peata), fork (hetkeline CoW-kloon), delete, push/pull (varukoopia), sync (failide ülekanne). Elutsükkel: repo create → repo up → repo down. Vaata arhitektuuri, marsruutimise ja keskkonna muutujate üksikasju käsuga rdc --help.",
       "descriptionShort": "Juuruta ja halda krüpteeritud hoidlaid masinatel",
       "diff": {
         "baseOption": "Hoidla, millega võrrelda (alus/vana pool); vaikimisi --name vanem",
@@ -1195,7 +1195,6 @@
         "optionStrategy": "Delta-baasi kasutamisel rakendatav plokidelta strateegia: auto, physical või shared",
         "optionTag": "Versioonimise juurutusmärgend",
         "optionTo": "Sihtkoha masina või salvestuse nimi (tuvastatakse automaatselt konfiguratsioonist)",
-        "optionUp": "Pärast pushumist haagi külge ja juuruta hoidla sihtmasinal",
         "pushing": "Hoidla \"{{repo}}\" varukoopia lükkamine kohta {{dest}}...",
         "statsDelta": "\"{{repo}}\" lükatud masinale {{machine}} — {{transferred}} üle kantud {{duration}} jooksul (delta baasi {{base}} suhtes, tõmmis {{image}})",
         "statsFull": "\"{{repo}}\" lükatud masinale {{machine}} — {{transferred}} üle kantud {{duration}} jooksul (täielik ülekanne)",
@@ -1286,7 +1285,7 @@
       },
       "trim": {
         "completed": "Trim valmis: {{total}} taastatud",
-        "description": "Reclaim andmehoidla puuli ruumi haagitud hoidlatest (võrgus, ilma seisakuta). Hoidlates kustutatud plokid tagastatakse puuli fstrim-iga. Ilma viiteta trimmitakse kõik haagitud hoidlad -m peal ja andmehoidla ise. Aktiivse varukoopiaga hoidlate puhul jäetakse fstrim vahele; --docker reclaim töötab siiski",
+        "description": "Vabasta andmehoidla puuli ruumi haagitud hoidlatest (võrgus, ilma seisakuta). Hoidlates kustutatud plokid tagastatakse puuli fstrim-iga. Ilma viiteta trimmitakse kõik haagitud hoidlad -m peal ja andmehoidla ise. Aktiivse varukoopiaga hoidlate puhul jäetakse fstrim vahele; --docker vabastamine töötab siiski",
         "descriptionShort": "Tagasta hoidlate vaba ruum puuli",
         "dockerOption": "Vabasta Dockeri ruum (seisatud konteinerid, ripakil pildid, ehitusvahemälu); töötab ka aktiivse varukoopia hetktõmmise ajal",
         "dockerVolumesOption": "Eemalda lisaks kasutamata Dockeri köited",
@@ -1511,7 +1510,7 @@
         "noFiles": "Faile ei leitud",
         "pathOption": "Loetlev alamkataloogi tee"
       },
-      "description": "Halda väliseid varukoopia salvestuse lõpp-punkte (S3, rclone-ühilduv).",
+      "description": "Halda väliseid varukoopia salvestuse lõpp-punkte (S3 ja muud rclone-ühilduvad sihtkohad): registreeri ja eemalda neid, loetle registreeritud lõpp-punktid, sirvi neis sisalduvaid artefakte ja korista orvuks jäänud varukoopiad.",
       "descriptionShort": "Halda salvestust",
       "list": {
         "description": "Loetle salvestuse lõpp-punktid. Anna nimi täieliku detaili jaoks.",
@@ -1750,7 +1749,7 @@
         "extensionWarning": "Hoiatus: Remote SSH-laiend ei pruugi olla installitud.\nInstalli: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
         "fetchingDetails": "Ühendusteavet laaditakse...",
         "installingServer": "Kontrollitakse, et {{provider}} {{version}} on masinal installitud...",
-        "opening": "VS Code avamine: {{connection}} -- {{path}}",
+        "opening": "VS Code avamine: {{connection}} → {{path}}",
         "openingBrowser": "Brauseri avamine...",
         "passwordNote": "Sisselogimise parool: {{password}}",
         "persistingKey": "SSH-võtit säilitatakse...",
@@ -1934,7 +1933,7 @@
     "affectedChildClones": ". Mõjutatud alamkloonid: {{clones}}. Kustuta või tõsta esmalt alamkloonid üles.",
     "agent": {
       "clusterOpBlocked": "Klastri käsk \"{{command}}\" on agendi režiimis blokeeritud. Klastri toimingud loovad või lammutavad reaalset taristut, seega ei saa agent neid ise volitada. Kasutaja: selle lubamiseks seadista REDIACC_ALLOW_CLUSTER_OPS=<klastri-nimi> (või * kõigi klastrite jaoks) oma terminalis ENNE agendi seansi käivitamist — agendi seest seatud ülekirjutust ei aktsepteerita.",
-      "commandBlocked": "Käsk \"{{command}}\" ei ole agendi režiimis saadaval.\n\nSee käsk täidab suvalisi madaltaseme funktsioone ilma turvakontrollideta. Kasuta selle asemel tüüpilisi CLI käske või MCP tööriistu.\n\nAlternatiivid:\n  - MCP tööriistad: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI käsud: rdc repo up, rdc repo down, rdc term connect\n  - Käivita \"rdc --help\", et näha kõiki saadaval olevaid käske\n\nKui vajad tooreset ligipääsu, palu kasutajal käivitada käsk otse.",
+      "commandBlocked": "Käsk \"{{command}}\" ei ole agendi režiimis saadaval.\n\nSee käsk täidab suvalisi madaltaseme funktsioone ilma turvakontrollideta. Kasuta selle asemel tüüpilisi CLI käske või MCP tööriistu.\n\nAlternatiivid:\n  - MCP tööriistad: repo_up, repo_down, repo_fork, repo_logs, repo_exec, machine_status\n  - CLI käsud: rdc repo up, rdc repo down, rdc term connect\n  - Käivita \"rdc --help\", et näha kõiki saadaval olevaid käske\n\nKui vajad tooreset ligipääsu, palu kasutajal käivitada käsk otse.",
       "configEdit": "Interaktiivne redaktor on agendikeskkondades blokeeritud.\n\nAlternatiivid:\n  • rdc config edit --dump > config.jsonc    (turvaline varjatud ülevaatus)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nÜlekirjutamiseks seadista REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> vanemas shellis\nENNE oma agendi käivitamist (see peab olema nähtav agendi protsessipuus).",
       "configEditAncestry": "Interaktiivne redaktor on agendikeskkondades blokeeritud (REDIACC_ALLOW_CONFIG_EDIT oli seadistatud, kuid esivanema kontroll ebaõnnestus - ülekiri peab olema seadistatud sinu shelli poolt, mitte agendi poolt).\n\nAlternatiivid:\n  • rdc config edit --dump > config.jsonc    (turvaline varjatud ülevaatus)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nSeadista REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> vanemas shellis ENNE oma agendi käivitamist.",
       "createGuard": "Uut grand-repositooriumi \"{{name}}\" ei saa agendi režiimis luua.\n\nAgendid töötavad fork-only režiimis. Grand-repositooriumid on tootmiskeskkonnad, millele agendid ei saa pärast loomist ligi.\n\nSelle asemel forki olemasolev repositoorium:\n  rdc repo fork <parent-ref> --tag {{name}}\n\nKasutaja: repositooriumi loomise lubamiseks seadista REDIACC_ALLOW_GRAND_REPO=* (või konkreetne repositooriumi nimi) oma terminalis enne agendi seansi käivitamist.",
@@ -1984,6 +1983,10 @@
       "pointerNotFound": "Osutit \"{{pointer}}\" ei leitud",
       "storageNotFound": "Salvestusruumi \"{{name}}\" ei leitud konfiguratsioonist. Saadaval: {{available}}.",
       "retiredKey": "Vaikeväärtust \"{{key}}\" enam ei ole. Kehtivad võtmed: {{keys}}"
+    },
+    "container": {
+      "execFailed": "container_exec ebaõnnestus",
+      "logsFailed": "container_logs ebaõnnestus"
     },
     "contextNotFound": "Konfiguratsioon \"{{name}}\" ei leitud",
     "editor": {
@@ -2051,10 +2054,8 @@
       "machineRequired": "Masina nimi on nõutud. Kasuta --machine <name>",
       "notSupported": "Protokolli registreerimine ei ole platvormil {{platform}} toetatud",
       "parseFailed": "URL-i parsimine ebaõnnestus: {{error}}",
-      "regionSelectionRequiresTTY": "Regiooni valik nõuab interaktiivset sisendit. Kasuta --server <url>, et määrata server otse.",
       "teamRequired": "Meeskonna nimi on nõutud. Kasuta --team <name>",
-      "tokenRequired": "Token on nõutud. Kasuta --token <token>",
-      "unknownRegion": "Tundmatu regioon: {{region}}"
+      "tokenRequired": "Token on nõutud. Kasuta --token <token>"
     },
     "regionRequired": "Regiooni nimi on nõutud. Kasuta --region või määra vaikimisi väärtus käsuga: rdc config set region <name>",
     "registrationFailed": "Registreerimine ebaõnnestus",
@@ -2101,7 +2102,7 @@
     "teamRequired": "Meeskonna nimi on nõutud. Kasuta --team või määra vaikimisi väärtus käsuga: rdc config set team <name>",
     "term": {
       "connectivityFailed": "Ei saavuta {{host}}:{{port}}. {{error}}\n\nVeaotsing:\n  - Kontrolli, kas masin on sisse lülitatud ja ühendatud võrku\n  - Veendu, et IP-aadress on masina võlvis õigesti seadistatud\n  - Veendu, et port {{port}} ei ole tulemüüriga blokeeritud\n  - Proovi masina pingimine: ping {{host}}",
-      "dockerComposeForbidden": "\"docker compose\" ei ole repositooriumi kontekstis lubatud.\n\nKasuta \"renet compose -- <args>\", et rakendataks repositooriumipõhised loopback-IP-d, hosti võrgu süstimine, CRIU võimalused ja compose valideerimine. \"docker compose\" otse käivitamine mööda hiib kõigist neist kontrollidest ja rikub kasutusele võtmise vaikselt.\n\nOrkestreeritud kasutusele võtmiseks eelista: rdc repo up <repo-ref>",
+      "dockerComposeForbidden": "\"docker compose\" ei ole repositooriumi kontekstis lubatud.\n\nKasuta \"renet compose -- <args>\", et rakendataks repositooriumipõhised loopback-IP-d, hosti võrgu süstimine, CRIU võimalused ja compose valideerimine. \"docker compose\" otse käivitamine hiilib kõigist neist kontrollidest mööda ja rikub kasutuselevõtu vaikselt.\n\nOrkestreeritud kasutusele võtmiseks eelista: rdc repo up <repo-ref>",
       "fileWriteDetected": "Tuvastati faili kirjutamine ({{detected}}). Kasuta selle asemel rdc repo sync:\n  rdc repo sync upload <repo-ref> --local FILE --remote PATH\n\nrsync kannab failid üle delta kompressiooni, kontrollsummade ja õigete õigustega.",
       "launchFailed": "Terminali käivitamine ebaõnnestus: {{error}}",
       "noHostKey": "Masinal '{{machine}}' ei ole hosti võtit võlvis seadistatud",
@@ -2137,6 +2138,7 @@
     "regionSelectionRequiresTTY": "Regiooni valik nõuab interaktiivset sisendit. Kasuta --server <url>, et määrata server otse.",
     "unknownRegion": "Tundmatu regioon: {{region}}",
     "datastore": {
+      "defaultIsImplicit": "vaikimisi andmehoidla on kaudne; need käsud haldavad täiendavaid nimega andmehoidlaid.",
       "deleteHasRepos": "Andmehoidlas \"{{ref}}\" on ikka veel hoidlad: {{repos}}. Kustuta need esmalt, või anna --force, et need koos sellega hävitada.",
       "forkNeedsWrites": "\"{{ref}}\" on fork. Ütle, kuhu selle kirjutused lähevad: --writes local (hetkeline, ajutine, kaob lahtiühendamisel) või --writes ceph (püsiv kloon puulis).",
       "localForkNeedsDiscard": "\"{{ref}}\" on ühendatud lipuga --writes local, seega on selle ülekate ajutine ja lahtiühendamine hävitab selle. Anna --discard, et kinnitada, et seda sa tahadki.",
@@ -2162,16 +2164,15 @@
     "examples": "Näited:",
     "keyConcepts": "\nPõhimõisted:\n\n  Arhitektuur\n    • Iga repositoorium = isoleeritud Dockeri keskkond (oma deemon, loopback-IP-vahemik, krüpteeritud LUKS-salvestus)\n    • Kasuta renet compose (mitte toorest docker compose) -- inject-ib automaatselt network_mode:host ja rediacc.* sildid\n    • Salvestus: bind-mount asukohta ${REDIACC_WORKING_DIR}/... -- mitte Dockeri nimega mahud (on välja jäetud forkidest/varukoopiatest)\n    • eBPF bind-ümbersoonamistöötlus haldab IP-isolatsiooni: rakendused seovad 0.0.0.0 ja tuum kirjutab ümber õige loopback-IP-ga\n\n  Suunamine\n    • Automaatsuunamine (fork-sõbralik): https://{service}.{repo}.{machine}.{baseDomain}\n    • Kohandatud domeen: Traefiku sildid (traefik.enable=true) -- ei ole fork-sõbralik\n    • rediacc.service_port silt mitte-80 portide jaoks. Marsruudid aktiveeritakse umbes 3 sekundit pärast juurutamist\n    • HTTPS: automaatsed Let's Encrypt metamärgi sertifikaadid Cloudflare DNS-01 kaudu -- vajab --cf-dns-token seadistust käsuga 'rdc machine infra set'. Ilma selleta töötab HTTP, kuid HTTPS-sertifikaate ei väljastata\n    • Pearepos saab *.{repo}.{machine}.{baseDomain} -- Traefik seadistab selle automaatselt esimesel repo käivitamisel\n    • Forkid kasutavad emarepo metamärgi sertifikaati (juba väljastatud, nullmõju limiitidele)\n\n  Keskkonnamuutujad\n    • Rediaccfile'i kest: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • Konteinerite sees: SERVICE_IP, REDIACC_NETWORK_ID (renet inject-ib automaatselt)\n\n  Forkimine\n    • rdc repo fork <parent-ref> --tag <tag>: kohene CoW-kloon uue GUID-i, networkId-ga, IP-vahemiku ja automaatse marsruudidomeeniga\n    • Vanem jääb tööle (võrguühendusega forkimine). Ristmasin: forki lokaalselt, seejärel rdc repo push <ref> --to <machine>\n    • Konfiguratsioonikirje püsib pärast repo kustutamist (repo võib eksisteerida teistel masinatel)",
     "machine": {
-      "containers": "Kuva töötavad konteinerid",
       "health": "Tervisekontroll CI/CD jaoks",
-      "keyConcepts": "\nPõhimõisted:\n\n  Päringufiltrid\n    • rdc machine status <name> tagastab vaikimisi kõik jaotised\n    • Kasuta --system, --repositories, --containers, --services, --network, --block-devices filtreerimiseks\n    • JSON-väljund rikastab konteinereid: repository (lahendatud nimi), domain, autoRoute\n\n  Tervis ja monitooring\n    • machine health väljub koodiga: 0=terve, 1=hoiatus, 2=viga -- kasuta CI/CD väravana\n    • containers --health-check väljub koodiga 2, kui mõni konteiner on ebaterve\n    • services --stability-check väljub koodiga 2, kui mõni teenus on ebaõnnestunud, taaskäivitub või on taaskäivitunud üle 3 korra\n    • machine prune eemaldab kustutatud repodest pärinevad orbtud loopback-IP-d ja systemd-üksused\n\n  Andmehoidla struktuur (/mnt/rediacc/)\n    • repositories/ -- krüpteeritud LUKS-pildid (üks repo GUID-i kohta)\n    • mounts/ -- dekrüpteeritud ühenduspunktid (kättesaadavad, kui repo on ühendatud)\n    • immovable/ -- iga-repo Dockeri deemoni andmed\n    • Andmehoidla on BTRFS-koolifail süsteemidraivil. Tegelik vaba ruum = min(ketta vaba ruum, andmehoidla vaba ruum). Laienda käsuga: rdc datastore resize\n",
+      "keyConcepts": "\nPõhimõisted:\n\n  Päringufiltrid\n    • rdc machine status <name> tagastab vaikimisi kõik jaotised\n    • Kasuta --system, --repositories, --containers, --services, --network, --block-devices filtreerimiseks\n    • JSON-väljund rikastab konteinereid: repository (lahendatud nimi), domain, autoRoute\n\n  Tervis ja monitooring\n    • machine health väljub koodiga: 0=terve, 1=hoiatus, 2=viga -- kasuta CI/CD väravana\n    • machine status <name> --containers --health-check väljub koodiga 2, kui mõni konteiner on ebaterve\n    • machine status <name> --services --stability-check väljub koodiga 2, kui mõni teenus on ebaõnnestunud, taaskäivitub või on taaskäivitunud üle 3 korra\n    • machine prune eemaldab kustutatud repodest pärinevad orbtud loopback-IP-d ja systemd-üksused\n\n  Andmehoidla struktuur (/mnt/rediacc/)\n    • repositories/ -- krüpteeritud LUKS-pildid (üks repo GUID-i kohta)\n    • mounts/ -- dekrüpteeritud ühenduspunktid (kättesaadavad, kui repo on ühendatud)\n    • immovable/ -- iga-repo Dockeri deemoni andmed\n    • Andmehoidla on BTRFS-koolifail süsteemidraivil. Tegelik vaba ruum = min(ketta vaba ruum, andmehoidla vaba ruum). Laienda käsuga: rdc datastore resize\n",
       "query": "Kuva masina täielik olek"
     },
     "repo": {
       "create": "Loo krüpteeritud repo",
       "down": "Peata teenused",
       "fork": "CoW-fork testimiseks",
-      "keyConcepts": "\nPõhimõisted:\n\n  Compose ja Rediaccfile\n    • renet compose -- up -d (mitte toorest docker compose). -- eraldaja on kohustuslik\n    • Rediaccfile peab defineerima up() ja down() funktsioonid. up() peaks: looma kaustad, genereerima konfiguratsioonid, käivitama konteinerid\n    • compose ports: ignoreeritakse (network_mode:host). Kasuta välisjuurdepääsuks rediacc.service_port silti\n    • restart: always/unless-stopped eemaldatakse automaatselt renet poolt ja salvestatakse .rediacc.json-i -- ruuteri valvekoer taastab peatunud teenused automaatselt\n    • Iga teenus saab loopback-IP. eBPF bind-ümbersoonamistöötlus haldab isolatsiooni läbipaistvalt, nii et rakendused saavad seostuda 0.0.0.0-ga\n    • Naabrite teenustega ühendumiseks kasuta teenuse nime (nt \"db\", \"redis\") -- renet inject-ib kõik teenuste nimed hostinimedena. Ära manusta ${DB_IP}-i andmebaaside sees salvestatud ühendusstringidesse -- see küpsetab IP sisse ja rikub forki isolatsiooni (valideerimisviga)\n    • Tervisekontrollid saavad kasutada localhost-i. Näide: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  Salvestus\n    • Bind-mount asukohta ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config jne\n    • Näide: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Dockeri nimega mahud on välja jäetud forkidest ja varukoopiatest\n    • Konteineritesse bind-mountitud konfiguratsioonifailid peavad olema maailma-loetavad (644), kui konteiner töötab mitte-vaikimisi UID-ga\n\n  Suunamine\n    • Pearepo automaatsuunamine: https://{service}.{repo}.{machine}.{baseDomain} (metamärgi sert *.{repo}.{machine}.{baseDomain} seadistatakse Traefiku poolt automaatselt esimesel repo käivitamisel)\n    • Forki automaatsuunamine: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (kasutab emarepo metamärgi serti, nullmõju limiitidele)\n    • Kohandatud domeen: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP edastamine: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Kohandatud domeenid (rediacc.domain silt) ignoreeritakse forkidel -- domeen kuulub pea-repole\n\n  Elutsükkel\n    • repo delete puhastab täielikult: salvestuse, Dockeri deemoni, loopback-IP-d, systemd-üksused\n    • repo down peatab konteinerid, kuid säilitab Dockeri deemoni ja IP-d (kiire taaskäivitus käsuga repo up)\n    • depends_on koos condition: service_healthy haldab käivitusjärjekorda, kuid mitte käitusaegset taastumist\n    • Kui andmebaas peatub puhtalt (exit 0), sõltuvad teenused taaskäivituvad pidevalt. Parandus: rdc repo up -m <machine>\n    • Automaatkäivitus: rdc repo admin autostart enable <repo-ref> -- ühendab ja käivitab repo masina buutimisel automaatselt\n    • Planeeritud varukoopiad jätavad fork-repod automaatselt vahele. Kasuta käsku rdc repo push <repo-ref> --to <remote> käsitsi forki varukoopia tegemiseks\n    • rdc repo promote <fork-ref> -- asenda tootmisandmed forki andmetega (säilitab identiteedi). Taasta käsuga: rdc repo promote <backup-fork-ref>\n\n  Nimetamine ja sihtimine\n    • Pearepo (tootmis): viita sellele kui <repo>, samaväärselt <repo>:latest (latest on vaikimisi silt). Paljas --name lahendub täpseks konfiguratsioonivõtmeks, vastasel juhul kasutatakse <repo>:latest.\n    • Fork: alati <repo>:<tag> mitte-latest sildiga (nt app:test). up/down/delete/term/sync võtavad kõik sama <repo>:<tag>.\n    • Seega --name app sihib PEAREPOT; --name app:test sihib seda FORKI. Lisa forgi puhul alati silt -- ainus ebaselge juhtum on fork, mis on ekslikult registreeritud paljas/latest nime all.\n    • Agendid tohivad muuta ainult forke; pearepod on kaitstud (ülekirjutamine ainult REDIACC_ALLOW_GRAND_REPO kaudu, mille peab operaator seadistama enne seanssi). Forgid on turvaline, äravisatav üksus.\n",
+      "keyConcepts": "\nPõhimõisted:\n\n  Compose ja Rediaccfile\n    • renet compose -- up -d (mitte toorest docker compose). -- eraldaja on kohustuslik\n    • Rediaccfile peab defineerima up() ja down() funktsioonid. up() peaks: looma kaustad, genereerima konfiguratsioonid, käivitama konteinerid\n    • compose ports: ignoreeritakse (network_mode:host). Kasuta välisjuurdepääsuks rediacc.service_port silti\n    • restart: always/unless-stopped eemaldatakse automaatselt renet poolt ja salvestatakse .rediacc.json-i -- ruuteri valvekoer taastab peatunud teenused automaatselt\n    • Iga teenus saab loopback-IP. eBPF bind-ümbersoonamistöötlus haldab isolatsiooni läbipaistvalt, nii et rakendused saavad seostuda 0.0.0.0-ga\n    • Naabrite teenustega ühendumiseks kasuta teenuse nime (nt \"db\", \"redis\") -- renet inject-ib kõik teenuste nimed hostinimedena. Ära manusta ${DB_IP}-i andmebaaside sees salvestatud ühendusstringidesse -- see küpsetab IP sisse ja rikub forki isolatsiooni (valideerimisviga)\n    • Tervisekontrollid saavad kasutada localhost-i. Näide: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  Salvestus\n    • Bind-mount asukohta ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config jne\n    • Näide: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Dockeri nimega mahud on välja jäetud forkidest ja varukoopiatest\n    • Konteineritesse bind-mountitud konfiguratsioonifailid peavad olema maailma-loetavad (644), kui konteiner töötab mitte-vaikimisi UID-ga\n\n  Suunamine\n    • Pearepo automaatsuunamine: https://{service}.{repo}.{machine}.{baseDomain} (metamärgi sert *.{repo}.{machine}.{baseDomain} seadistatakse Traefiku poolt automaatselt esimesel repo käivitamisel)\n    • Forki automaatsuunamine: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (kasutab emarepo metamärgi serti, nullmõju limiitidele)\n    • Kohandatud domeen: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP edastamine: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Kohandatud domeenid (rediacc.domain silt) ignoreeritakse forkidel -- domeen kuulub pea-repole\n\n  Elutsükkel\n    • repo delete puhastab täielikult: salvestuse, Dockeri deemoni, loopback-IP-d, systemd-üksused\n    • repo down peatab konteinerid, kuid säilitab Dockeri deemoni ja IP-d (kiire taaskäivitus käsuga repo up)\n    • depends_on koos condition: service_healthy haldab käivitusjärjekorda, kuid mitte käitusaegset taastumist\n    • Kui andmebaas peatub puhtalt (exit 0), sõltuvad teenused taaskäivituvad pidevalt. Parandus: rdc repo up <repo-ref>\n    • Automaatkäivitus: rdc repo admin autostart enable <repo-ref> -- ühendab ja käivitab repo masina buutimisel automaatselt\n    • Planeeritud varukoopiad jätavad fork-repod automaatselt vahele. Kasuta käsku rdc repo push <repo-ref> --to <remote> käsitsi forki varukoopia tegemiseks\n    • rdc repo promote <fork-ref> -- asenda tootmisandmed forki andmetega (säilitab identiteedi). Taasta käsuga: rdc repo promote <backup-fork-ref>\n\n  Nimetamine ja sihtimine\n    • Pearepo (tootmis): viita sellele kui <repo>, samaväärselt <repo>:latest (latest on vaikimisi silt). Paljas viide lahendub täpseks konfiguratsioonivõtmeks, vastasel juhul kasutatakse <repo>:latest.\n    • Fork: alati <repo>:<tag> mitte-latest sildiga (nt app:test). up/down/delete/term/sync võtavad kõik sama <repo>:<tag>.\n    • Seega `app` sihib PEAREPOT; `app:test` sihib seda FORKI. Lisa forgi puhul alati silt -- ainus ebaselge juhtum on fork, mis on ekslikult registreeritud paljas/latest nime all.\n    • Agendid tohivad muuta ainult forke; pearepod on kaitstud (ülekirjutamine ainult REDIACC_ALLOW_GRAND_REPO kaudu, mille peab operaator seadistama enne seanssi). Forgid on turvaline, äravisatav üksus.\n",
       "up": "Juuruta automaatse ühendamisega"
     },
     "sync": {
@@ -2316,6 +2317,7 @@
     "sshPrivateKey": "Tee SSH-privaatvõtmeni",
     "sshPublicKey": "Tee SSH-avalikule võtmele",
     "sshUser": "SSH-kasutajanimi",
+    "storageRef": "Salvestuse viide: registreeritud salvestuse lõpp-punkti nimi (nt s3-main)",
     "subscriptionPlan": "Tellimisplaan (COMMUNITY, PROFESSIONAL, BUSINESS, ENTERPRISE)",
     "switch": "Lülitu sellele konfiguratsioonile pärast loomist",
     "target": "Siht-ressursi nimi",

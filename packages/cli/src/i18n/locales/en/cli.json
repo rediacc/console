@@ -2033,9 +2033,7 @@
       "teamRequired": "Team name is required. Use --team <name>",
       "machineRequired": "Machine name is required. Use --machine <name>",
       "invalidAction": "Invalid action '{{action}}'. Must be one of: {{validActions}}",
-      "parseFailed": "Failed to parse URL: {{error}}",
-      "regionSelectionRequiresTTY": "Region selection requires interactive input. Use --server <url> to specify a server directly.",
-      "unknownRegion": "Unknown region: {{region}}"
+      "parseFailed": "Failed to parse URL: {{error}}"
     },
     "regionRequired": "Region name required. Use --region or set default with: rdc config set region <name>",
     "regionSelectionRequiresTTY": "Region selection requires interactive input. Use --server <url> to specify a server directly.",
@@ -2374,7 +2372,7 @@
       "update": "CLI Updates",
       "credits": "Third-Party Credits",
       "doctor": "System Diagnostics",
-      "ops": "Experimental VM Operations",
+      "ops": "Local VM Operations",
       "subscription": "Subscription Management",
       "mcp": "MCP Server",
       "datastore": "Datastore Management",
