@@ -81,12 +81,12 @@ test.describe
           // Try to initialize the datastore if not initialized
           // eslint-disable-next-line no-console
           console.log(`Datastore not initialized on ${vm}, attempting to initialize...`);
-          const initResult = await runner.testFunctionOnMachine(vm, {
-            function: 'datastore_init',
-            datastorePath: DEFAULT_DATASTORE_PATH,
-            size: '5G',
-            force: true,
-          });
+          // The datastore_init BRIDGE verb was deleted by the datastore-centric
+          // redesign; laying down the base pool is a root CLI step now.
+          const initResult = await runner.executeOnVM(
+            vm,
+            `sudo renet datastore init --path ${DEFAULT_DATASTORE_PATH} --size 5G --force`
+          );
 
           if (runner.isSuccess(initResult)) {
             initializedVMs.push(vm);

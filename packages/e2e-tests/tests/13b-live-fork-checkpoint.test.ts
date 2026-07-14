@@ -76,7 +76,7 @@ test.describe
       if (!criuAvailable) return;
 
       await runner.resetWorkerState();
-      await runner.datastoreInit('10G', datastorePath, true);
+      await runner.datastoreInitPool('10G', datastorePath, true);
       for (const netId of [parentNetworkId, forkNetworkId]) {
         const setupResult = await runner.daemonSetup(netId);
         if (!runner.isSuccess(setupResult)) {

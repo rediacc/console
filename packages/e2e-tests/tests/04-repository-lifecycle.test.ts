@@ -37,7 +37,7 @@ test.describe
       await runner.resetWorkerState();
 
       // Initialize and mount datastore (LEVEL 2 prerequisite for repository operations)
-      const initResult = await runner.datastoreInit('10G', DEFAULT_DATASTORE_PATH, true);
+      const initResult = await runner.datastoreInitPool('10G', DEFAULT_DATASTORE_PATH, true);
       if (!runner.isSuccess(initResult)) {
         console.error('[Setup] Datastore init failed:', runner.getCombinedOutput(initResult));
       }
@@ -137,7 +137,7 @@ test.describe
       await runner.resetWorkerState();
 
       // Initialize datastore (LEVEL 2 prerequisite)
-      await runner.datastoreInit('10G', DEFAULT_DATASTORE_PATH, true);
+      await runner.datastoreInitPool('10G', DEFAULT_DATASTORE_PATH, true);
     });
 
     test('repository new with password should not have syntax errors', async () => {
@@ -191,7 +191,7 @@ test.describe
       await runner.resetWorkerState();
 
       // Initialize datastore (LEVEL 2 prerequisite)
-      await runner.datastoreInit('10G', DEFAULT_DATASTORE_PATH, true);
+      await runner.datastoreInitPool('10G', DEFAULT_DATASTORE_PATH, true);
     });
 
     test('repository new with various sizes should work', async () => {
@@ -250,7 +250,7 @@ test.describe
       await runner.resetWorkerState();
 
       // Initialize datastore (LEVEL 2 prerequisite)
-      await runner.datastoreInit('10G', datastorePath, true);
+      await runner.datastoreInitPool('10G', datastorePath, true);
     });
 
     test('1. new: create repository', async () => {
@@ -328,7 +328,7 @@ test.describe('Repository Error Handling @bridge', () => {
     await runner.resetWorkerState();
 
     // Initialize datastore (LEVEL 2 prerequisite)
-    await runner.datastoreInit('10G', DEFAULT_DATASTORE_PATH, true);
+    await runner.datastoreInitPool('10G', DEFAULT_DATASTORE_PATH, true);
   });
 
   test('operations on nonexistent repository should handle gracefully', async () => {

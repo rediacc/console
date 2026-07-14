@@ -45,7 +45,7 @@ test.describe
     test.beforeAll(async () => {
       runner = BridgeTestRunner.forWorker();
       await runner.resetWorkerState();
-      await runner.datastoreInit('10G', datastorePath, true);
+      await runner.datastoreInitPool('10G', datastorePath, true);
       // Setup and start daemon for Docker operations
       const setupResult = await runner.daemonSetup(networkId);
       if (!runner.isSuccess(setupResult)) {
@@ -199,7 +199,7 @@ test.describe
     test.beforeAll(async () => {
       runner = BridgeTestRunner.forWorker();
       await runner.resetWorkerState();
-      await runner.datastoreInit('12G', datastorePath, true);
+      await runner.datastoreInitPool('12G', datastorePath, true);
       // Setup and start daemons for both network IDs (parent and fork)
       for (const netId of [parentNetworkId, forkNetworkId]) {
         const setupResult = await runner.daemonSetup(netId);
@@ -483,7 +483,7 @@ test.describe
     test.beforeAll(async () => {
       runner = BridgeTestRunner.forWorker();
       await runner.resetWorkerState();
-      await runner.datastoreInit('10G', datastorePath, true);
+      await runner.datastoreInitPool('10G', datastorePath, true);
       // Setup and start daemons for all three network IDs (parent and both forks)
       for (const netId of [parentNetworkId, forkANetworkId, forkBNetworkId]) {
         const setupResult = await runner.daemonSetup(netId);
@@ -696,7 +696,7 @@ test.describe
     test.beforeAll(async () => {
       runner = BridgeTestRunner.forWorker();
       await runner.resetWorkerState();
-      await runner.datastoreInit('10G', datastorePath, true);
+      await runner.datastoreInitPool('10G', datastorePath, true);
       // Setup and start daemons for both network IDs (parent and fork)
       for (const netId of [parentNetworkId, forkNetworkId]) {
         const setupResult = await runner.daemonSetup(netId);
@@ -831,7 +831,7 @@ test.describe
     test.beforeAll(async () => {
       runner = BridgeTestRunner.forWorker();
       await runner.resetWorkerState();
-      await runner.datastoreInit('10G', datastorePath, true);
+      await runner.datastoreInitPool('10G', datastorePath, true);
       // Setup and start daemons for both network IDs (parent and fork)
       for (const netId of [parentNetworkId, forkNetworkId]) {
         const setupResult = await runner.daemonSetup(netId);
@@ -973,7 +973,7 @@ test.describe
     test.beforeAll(async () => {
       runner = BridgeTestRunner.forWorker();
       await runner.resetWorkerState();
-      await runner.datastoreInit('10G', datastorePath, true);
+      await runner.datastoreInitPool('10G', datastorePath, true);
       // Setup and start daemon for Docker operations
       const setupResult = await runner.daemonSetup(networkId);
       if (!runner.isSuccess(setupResult)) {

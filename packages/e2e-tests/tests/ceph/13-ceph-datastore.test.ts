@@ -14,15 +14,25 @@ const hasCephAndClient = cephNodes.length > 0 && workers.length >= 1;
  * image as its datastore (BTRFS on RBD), then instant-forks that datastore via
  * RBD snapshot + clone + local COW overlay.
  *
- * Coverage:
- *   - datastore_ceph_init: create + mount the RBD-backed datastore, backend
- *     detected as "ceph", datastore_expand grows it.
+ * TRANSLATED to the named-datastore registry. The datastore-centric redesign deleted
+ * the image/path-addressed ceph verbs this suite drove; the SUBJECT is unchanged and
+ * every assertion below survives — only the addressing does:
+ *
+ *   datastore_ceph_init   -> datastore_create --backend ceph  (then attach)
+ *   datastore_ceph_fork   -> datastore_fork --parent <name> --tag <tag>
+ *   datastore_ceph_unfork -> datastore_detach --discard  (fork removal)
+ *
+ * A named datastore is addressed by NAME, not by image + mount point: the mount path
+ * is DERIVED, so the filesystem assertions resolve it with `datastore path` instead of
+ * dictating it. That is the redesign's whole point — the caller stopped owning layout.
+ *
+ * Coverage (unchanged):
+ *   - create + attach the RBD-backed datastore, backend reported as "ceph",
+ *     datastore_expand grows it.
  *   - a repository created on the RBD datastore (repo lifecycle on RBD).
- *   - datastore_ceph_fork: fork carries the source data (divergence baseline),
- *     writes to the fork stay in the fork's COW, writes to the source stay in
- *     the source (source-unchanged guarantee).
- *   - datastore_ceph_unfork: strict teardown order, leaving no orphan RBD
- *     clone image or fork snapshot.
+ *   - fork carries the source data (divergence baseline), writes to the fork stay in
+ *     the fork's COW, writes to the source stay in the source.
+ *   - fork teardown leaves no orphan RBD clone image or fork snapshot.
  */
 test.describe
   .serial('Ceph RBD Datastore Lifecycle @bridge @ceph @datastore', () => {
@@ -34,14 +44,26 @@ test.describe
     const id = Date.now().toString(36);
     const pool = `ds-pool-${id}`;
     const image = `ds-img-${id}`;
-    const forkImage = `ds-fork-${id}`;
-    const dsPath = `/mnt/ceph-ds-${id}`;
-    const forkPath = `/mnt/ceph-fork-${id}`;
+    const dsName = `ceph-ds-${id}`;
+    const forkTag = 'fork1';
+    const forkRef = `${dsName}:${forkTag}`;
     const repoName = `ds-repo-${id}`;
     const repoPassword = 'ceph-ds-test-pw';
 
-    // Discovered at fork time (fork-<unix>), needed for unfork + orphan checks.
+    // Mount points are DERIVED by the datastore layer, not chosen by the caller.
+    let dsPath = '';
+    let forkPath = '';
+    // Discovered at fork time (fork-<unix>), needed for the orphan checks.
     let forkSnapshot = '';
+
+    /** Resolve a datastore's mount path from the layer that owns it. */
+    const pathOf = async (ref: string): Promise<string> => {
+      const out = await worker.executeViaBridge(`sudo renet datastore path ${ref}`);
+      expect(out.code).toBe(0);
+      const resolved = out.stdout.trim().split(/\s+/).pop() ?? '';
+      expect(resolved).toMatch(/^\//);
+      return resolved;
+    };
 
     test.beforeAll(() => {
       worker = BridgeTestRunner.forWorker(1);
@@ -58,30 +80,33 @@ test.describe
       expect(ceph.isSuccess(result)).toBe(true);
     });
 
-    test('3. datastore_ceph_init creates and mounts the RBD-backed datastore', async () => {
-      const result = await worker.datastoreCephInit({
+    test('3. datastore_create + attach materializes the RBD-backed datastore', async () => {
+      const created = await worker.datastoreCreate({
+        name: dsName,
+        backend: 'ceph',
         size: '2G',
-        image,
-        datastorePath: dsPath,
         pool,
+        image,
       });
-      expect(worker.isSuccess(result)).toBe(true);
+      expect(worker.isSuccess(created)).toBe(true);
 
-      // The RBD-backed BTRFS filesystem must be mounted at the datastore path.
+      const attached = await worker.datastoreAttach({ name: dsName });
+      expect(worker.isSuccess(attached)).toBe(true);
+
+      // The RBD-backed BTRFS filesystem must be mounted at the DERIVED path.
+      dsPath = await pathOf(dsName);
       const mounted = await worker.executeViaBridge(`mountpoint -q ${dsPath} && echo MOUNTED`);
       expect(mounted.stdout).toContain('MOUNTED');
     });
 
     test('4. datastore status reports the ceph backend', async () => {
-      const status = await worker.executeViaBridge(
-        `sudo renet datastore status --path ${dsPath} --json`
-      );
+      const status = await worker.executeViaBridge(`sudo renet datastore status ${dsName} --json`);
       expect(status.code).toBe(0);
       expect(status.stdout.toLowerCase()).toContain('ceph');
     });
 
     test('5. datastore_expand grows the RBD datastore', async () => {
-      const result = await worker.datastoreExpand('3G', dsPath);
+      const result = await worker.datastoreExpand('3G');
       expect(worker.isSuccess(result)).toBe(true);
     });
 
@@ -92,15 +117,18 @@ test.describe
       expect(write.code).toBe(0);
     });
 
-    test('7. datastore_ceph_fork forks the datastore (carries source data)', async () => {
-      const result = await worker.datastoreCephFork({
-        source: image,
-        dest: forkImage,
-        mountPoint: forkPath,
-        pool,
+    test('7. datastore_fork forks the datastore (carries source data)', async () => {
+      const result = await worker.datastoreFork({
+        parent: dsName,
+        tag: forkTag,
         cowSize: '2G',
       });
       expect(worker.isSuccess(result)).toBe(true);
+
+      // A fork is DETACHED at birth: it must choose a write home before it mounts.
+      const attached = await worker.datastoreAttach({ name: forkRef, writes: 'local' });
+      expect(worker.isSuccess(attached)).toBe(true);
+      forkPath = await pathOf(forkRef);
 
       // Discover the fork snapshot name (fork-<unix>) for later teardown checks.
       // Use grep -oE, not awk '{print $2}': the two-hop SSH shell expands awk's
@@ -148,14 +176,8 @@ test.describe
       expect(srcOwn.stdout).toContain(`source-new-${id}`);
     });
 
-    test('9. datastore_ceph_unfork tears the fork down in order', async () => {
-      const result = await worker.datastoreCephUnfork({
-        source: image,
-        dest: forkImage,
-        snapshot: forkSnapshot,
-        mountPoint: forkPath,
-        pool,
-      });
+    test('9. datastore_detach --discard tears the fork down in order', async () => {
+      const result = await worker.datastoreDetach(forkRef, true);
       expect(worker.isSuccess(result)).toBe(true);
 
       // Fork mount is gone.
@@ -167,8 +189,10 @@ test.describe
 
     test('10. no orphan RBD clone image or fork snapshot remain', async () => {
       // rbd ls / snap ls run on a worker (ceph nodes are cephadm-only, no host rbd).
+      // The clone image name is DERIVED from the fork now, so assert on the tag it
+      // must carry rather than on a name this test used to dictate.
       const images = await worker.executeViaBridge(`sudo rbd ls ${pool}`);
-      expect(images.stdout).not.toContain(forkImage);
+      expect(images.stdout).not.toContain(forkTag);
 
       const snaps = await worker.executeViaBridge(
         `sudo rbd snap ls ${pool}/${image} 2>/dev/null || true`

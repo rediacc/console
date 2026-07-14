@@ -40,7 +40,7 @@ test.describe('Container Operations @bridge', () => {
     await runner.resetWorkerState();
 
     // 1. Initialize datastore
-    await runner.datastoreInit('5G', datastorePath, true);
+    await runner.datastoreInitPool('5G', datastorePath, true);
 
     // 2. Setup and start daemon (required for Docker socket)
     const setupResult = await runner.daemonSetup(networkId);
@@ -229,7 +229,7 @@ test.describe
       await runner.resetWorkerState();
 
       // 1. Initialize datastore
-      await runner.datastoreInit('5G', datastorePath, true);
+      await runner.datastoreInitPool('5G', datastorePath, true);
 
       // 2. Setup and start daemon
       const setupResult = await runner.daemonSetup(networkId);
@@ -509,7 +509,7 @@ test.describe('Multiple Container Operations @bridge', () => {
     await runner.resetWorkerState();
 
     // 1. Initialize datastore
-    await runner.datastoreInit('5G', datastorePath, true);
+    await runner.datastoreInitPool('5G', datastorePath, true);
 
     // 2. Setup and start daemon
     const setupResult = await runner.daemonSetup(networkId);

@@ -11,15 +11,7 @@ import { TestHelpers } from './helpers/TestHelpers';
 import { BackupMethods } from './methods/BackupMethods';
 import { CephMethods } from './methods/CephMethods';
 import { ContainerMethods } from './methods/ContainerMethods';
-import type { CsiTemplateOptions } from './methods/CsiMethods';
-import { CsiMethods } from './methods/CsiMethods';
 import { DaemonMethods } from './methods/DaemonMethods';
-import type {
-  CephForkOptions,
-  CephInitOptions,
-  CephUnforkOptions,
-} from './methods/DatastoreCephMethods';
-import { DatastoreCephMethods } from './methods/DatastoreCephMethods';
 import type {
   DatastoreAttachOptions,
   DatastoreCreateOptions,
@@ -79,9 +71,7 @@ export class BridgeTestRunner {
   private readonly systemCheckMethods: SystemCheckMethods;
   private readonly setupMethods: SetupMethods;
   private readonly datastoreMethods: DatastoreMethods;
-  private readonly datastoreCephMethods: DatastoreCephMethods;
   private readonly registryMethods: RegistryMethods;
-  private readonly csiMethods: CsiMethods;
   private readonly kubeMethods: KubeMethods;
   private readonly repositoryMethods: RepositoryMethods;
   private readonly cephMethods: CephMethods;
@@ -117,9 +107,7 @@ export class BridgeTestRunner {
     this.systemCheckMethods = new SystemCheckMethods(this.testFunction.bind(this));
     this.setupMethods = new SetupMethods(this.testFunction.bind(this));
     this.datastoreMethods = new DatastoreMethods(this.testFunction.bind(this));
-    this.datastoreCephMethods = new DatastoreCephMethods(this.testFunction.bind(this));
     this.registryMethods = new RegistryMethods(this.testFunction.bind(this));
-    this.csiMethods = new CsiMethods(this.testFunction.bind(this));
     this.kubeMethods = new KubeMethods(this.testFunction.bind(this));
     this.repositoryMethods = new RepositoryMethods(this.testFunction.bind(this));
     this.cephMethods = new CephMethods(this.testFunction.bind(this));
@@ -926,17 +914,21 @@ export class BridgeTestRunner {
   fixUserGroups = (uid?: string) => this.setupMethods.fixUserGroups(uid);
 
   // Datastore Methods
-  datastoreInit = (size: string, datastorePath?: string, force?: boolean) =>
-    this.datastoreMethods.datastoreInit(size, datastorePath, force);
-  datastoreMount = (datastorePath?: string) => this.datastoreMethods.datastoreMount(datastorePath);
-  datastoreUnmount = (datastorePath?: string) =>
-    this.datastoreMethods.datastoreUnmount(datastorePath);
-  datastoreExpand = (newSize: string, datastorePath?: string) =>
-    this.datastoreMethods.datastoreExpand(newSize, datastorePath);
-  datastoreResize = (newSize: string, datastorePath?: string) =>
-    this.datastoreMethods.datastoreResize(newSize, datastorePath);
-  datastoreValidate = (datastorePath?: string) =>
-    this.datastoreMethods.datastoreValidate(datastorePath);
+  /**
+   * Lay down the machine's BASE datastore pool.
+   *
+   * The `datastore_init` BRIDGE verb was deleted by the datastore-centric redesign
+   * (only the named-registry verbs are registered now), so this shells out to the
+   * surviving path: the root CLI, exactly as OpsManager does during global setup.
+   * Dispatching the dead verb failed at runtime with "no command builder registered".
+   */
+  datastoreInitPool = (size: string, datastorePath = DEFAULT_DATASTORE_PATH, force = true) =>
+    this.executeViaBridge(
+      `sudo renet datastore init --path ${datastorePath} --size ${size}${force ? ' --force' : ''}`
+    );
+  datastoreExpand = (newSize: string) => this.datastoreMethods.datastoreExpand(newSize);
+  datastoreResize = (newSize: string) => this.datastoreMethods.datastoreResize(newSize);
+  datastoreValidate = () => this.datastoreMethods.datastoreValidate();
 
   // Named-datastore lifecycle (datastore_create/attach/detach/fork/snapshot/delete/list)
   datastoreCreate = (opts: DatastoreCreateOptions) => this.datastoreMethods.datastoreCreate(opts);
@@ -951,18 +943,9 @@ export class BridgeTestRunner {
   datastoreSnapshotDelete = (opts: DatastoreSnapshotOptions) =>
     this.datastoreMethods.datastoreSnapshotDelete(opts);
 
-  // Ceph Datastore Methods (datastore_ceph_init / _fork / _unfork)
-  datastoreCephInit = (opts: CephInitOptions) => this.datastoreCephMethods.datastoreCephInit(opts);
-  datastoreCephFork = (opts: CephForkOptions) => this.datastoreCephMethods.datastoreCephFork(opts);
-  datastoreCephUnfork = (opts: CephUnforkOptions) =>
-    this.datastoreCephMethods.datastoreCephUnfork(opts);
-
   // Registry Methods (kube_registry_up / _wire — zot pull-through cache)
   kubeRegistryUp = (opts?: RegistryUpOptions) => this.registryMethods.kubeRegistryUp(opts);
   kubeRegistryWire = (opts?: RegistryWireOptions) => this.registryMethods.kubeRegistryWire(opts);
-
-  // Ceph-CSI Methods (kube_csi_template)
-  kubeCsiTemplate = (opts: CsiTemplateOptions) => this.csiMethods.kubeCsiTemplate(opts);
 
   // Kube Methods (kube_* — k3s distribution lifecycle)
   kubeInstall = (opts: KubeInstallOptions) => this.kubeMethods.kubeInstall(opts);

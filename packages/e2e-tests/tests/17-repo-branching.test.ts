@@ -37,7 +37,7 @@ test.describe
     test.beforeAll(async () => {
       runner = BridgeTestRunner.forWorker();
       await runner.resetWorkerState();
-      const initResult = await runner.datastoreInit('10G', DS, true);
+      const initResult = await runner.datastoreInitPool('10G', DS, true);
       if (!runner.isSuccess(initResult)) {
         console.error('[Setup] Datastore init failed:', runner.getCombinedOutput(initResult));
       }
@@ -84,7 +84,7 @@ test.describe
 
     test.beforeAll(async () => {
       runner = BridgeTestRunner.forWorker();
-      await runner.datastoreInit('10G', DS, true);
+      await runner.datastoreInitPool('10G', DS, true);
       await runner.repositoryNew(parent, '1G', TEST_PASSWORD, DS);
       await runner.repositoryUnmount(parent, DS).catch(() => {});
     });
@@ -123,7 +123,7 @@ test.describe
 
     test.beforeAll(async () => {
       runner = BridgeTestRunner.forWorker();
-      await runner.datastoreInit('10G', DS, true);
+      await runner.datastoreInitPool('10G', DS, true);
       // Baseline → commit C0 (the common ancestor) → two checkouts.
       await runner.repositoryNew(work, '1G', TEST_PASSWORD, DS);
       await runner.writeFileToRepository(work, 'fileX.txt', 'base-X', DS);
@@ -187,7 +187,7 @@ test.describe
       runner = BridgeTestRunner.forWorker();
       multiMachine = runner.getWorkerVMs().length >= 2;
       if (!multiMachine) return;
-      await runner.datastoreInit('10G', DS, true);
+      await runner.datastoreInitPool('10G', DS, true);
       await runner.repositoryNew(repo, '1G', TEST_PASSWORD, DS);
       await runner.writeFileToRepository(repo, 'marker.txt', `v1-${stamp}`, DS);
       await runner.repositoryUnmount(repo, DS).catch(() => {});

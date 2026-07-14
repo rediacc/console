@@ -85,7 +85,7 @@ test.describe
       await runner.resetWorkerState();
 
       // Initialize datastore (LEVEL 2 prerequisite for repository operations)
-      await runner.datastoreInit('10G', datastorePath, true);
+      await runner.datastoreInitPool('10G', datastorePath, true);
     });
 
     test('1. create repository for Rediaccfile testing', async () => {
@@ -281,7 +281,7 @@ test.describe
     test.beforeAll(async () => {
       runner = BridgeTestRunner.forWorker();
       await runner.resetWorkerState();
-      await runner.datastoreInit('10G', datastorePath, true);
+      await runner.datastoreInitPool('10G', datastorePath, true);
     });
 
     test('1. create and mount repository', async () => {
