@@ -904,3 +904,58 @@ Two fixes, both mechanical:
 the output alone is not a cold build — `composite: true` makes `tsc` exit 0 and emit nothing), the
 crash reproduced byte-identically, then the fix applied and the gate watched to go from CRASH to a
 real finding to green.
+
+## The CSI driver has ZERO e2e coverage — and NO GATE CAN SEE THAT
+
+`packages/e2e-tests` used to carry a `CsiMethods` class that dispatched a bridge verb named
+`kube_csi_template`. Three facts about it, in the order they were discovered:
+
+1. **renet never registered that verb.** It is in no registry, no schema, nowhere.
+2. **No test ever called it.** Zero. It was wired into `BridgeTestRunner` and nothing else.
+3. **Its own header says why it existed**: it dispatched the name *"so the e2e-coverage gate finds
+   it once the lead regenerates the renet contract."*
+
+**It was a coverage ANCHOR — a string written to satisfy a gate, for a function that did not
+exist.** The one-directional `check-e2e-coverage` (live → e2e only) could never have caught it,
+and did not. The bidirectional gate found it on its first run.
+
+Deleting it costs no coverage, **because there never was any.** But deleting it does not close the
+question — it OPENS it, and this entry is the record:
+
+★ **The CSI driver is not exercised by any e2e test.** Not one.
+
+★ **No gate can demand that it is.** The surviving surface is the CLI (`renet kube csi-install`,
+`csi-node-up`, `csi-serve` — `cmd/renet/kube_csi.go`), and `check-e2e-coverage` governs the BRIDGE
+registry. **The gate is not broken; the subject is outside its jurisdiction.** Nothing will ever go
+red about this. That is the whole reason it needs writing down.
+
+★ **The only thing that has ever proved CSI works is B2's live campaign** — a hand-driven run
+against real infrastructure, whose result is a transcript. **A live campaign is not a regression
+test.** It proves the code worked once, on one topology, on one day, under one operator. It cannot
+tell you that it still works tomorrow, and nothing else will either.
+
+★ The P3 gate flagged CSI **EXIT-blocking precisely because it had never been exercised**. The
+phantom anchor is why the board looked otherwise.
+
+**A deleted fake test must leave a recorded gap, or you have improved the board and degraded the
+truth.** The gap is real, it is now visible, and closing it means a real CSI e2e suite driving the
+CLI path (the same way `OpsManager` shells out for `renet datastore init`).
+
+## A parameter the schema never accepted — #74's class, in the test harness
+
+The e2e harness called `datastore_expand`, `datastore_resize` and `datastore_validate` with a
+`datastorePath` argument. **renet's schema has no such parameter** — `expand`/`resize` take a
+`size`, `validate` takes nothing at all. The value was serialized, sent, and **silently discarded**
+on every call, in every suite, for as long as those tests have existed.
+
+Nothing failed. Nothing warned. The tests passed, and every one of them was passing a path that
+the thing under test never read — so a suite that *believed* it was validating a datastore at
+`/mnt/test-datastore` was in fact validating whatever the machine's base pool happened to be.
+
+**This is bug #74's class, arriving through a different door: a declaration the system is free to
+ignore is not a declaration.** An argument that no receiver validates is indistinguishable from a
+comment — except that a comment does not lie about what the test covered.
+
+Removed with the P1 verb translation. The general defect stands: **the bridge accepts unknown
+params without complaint.** Rejecting an unknown param at dispatch would have surfaced this on the
+first run, years earlier, for free.
