@@ -398,12 +398,12 @@ ${t('help.examples')}
   config
     .command('recover')
     .description(t('commands.config.recover.description'))
-    .option('--name <name>', t('options.name'))
+    .argument('[name]', t('options.name'))
     .option('-y, --yes', t('options.yes'))
-    .action(async (options) => {
+    .action(async (name: string | undefined, options) => {
       try {
         const { configFileStorage } = await import('../adapters/config-file-storage.js');
-        const configName = options.name ?? configService.getCurrentName();
+        const configName = name ?? configService.getCurrentName();
 
         const backupInfo = await configFileStorage.getBackupInfo(configName);
         if (!backupInfo) {

@@ -141,11 +141,10 @@ export function registerHealthCommand(machine: Command, program: Command): void 
   machine
     .command('health')
     .description(t('commands.machine.health.description'))
-    .requiredOption('--name <name>', t('options.name'))
+    .argument('<name>', t('options.name'))
     .option('-t, --team <name>', t('options.team'))
-    .action(async (options: { name: string; team?: string }) => {
+    .action(async (name: string, options: { team?: string }) => {
       try {
-        const name = options.name;
         const provider = getStateProvider();
         const opts = await configService.applyDefaults(options);
 

@@ -8,7 +8,7 @@ export function registerCloudCommands(machine: Command, _program: Command): void
   machine
     .command('provision')
     .description(t('commands.machine.provision.description'))
-    .requiredOption('--name <name>', t('options.name'))
+    .argument('<name>', t('options.name'))
     .requiredOption('--provider <name>', t('commands.machine.provision.optionProvider'))
     .option('--region <region>', t('commands.machine.provision.optionRegion'))
     .option('--type <type>', t('commands.machine.provision.optionType'))
@@ -17,9 +17,8 @@ export function registerCloudCommands(machine: Command, _program: Command): void
     .option('--base-domain <domain>', t('commands.machine.provision.optionBaseDomain'))
     .option('--no-infra', t('commands.machine.provision.optionNoInfra'))
     .option('--debug', t('options.debug'))
-    .action(async (options) => {
+    .action(async (name: string, options) => {
       try {
-        const name = options.name;
         await createCloudMachine(name, options.provider, {
           region: options.region,
           instanceType: options.type,
@@ -38,12 +37,11 @@ export function registerCloudCommands(machine: Command, _program: Command): void
   machine
     .command('deprovision')
     .description(t('commands.machine.deprovision.description'))
-    .requiredOption('--name <name>', t('options.name'))
+    .argument('<name>', t('options.name'))
     .option('--force', t('commands.machine.deprovision.optionForce'))
     .option('--debug', t('options.debug'))
-    .action(async (options) => {
+    .action(async (name: string, options) => {
       try {
-        const name = options.name;
         if (!options.force) {
           const { createInterface } = await import('node:readline');
           const rl = createInterface({ input: process.stdin, output: process.stdout });

@@ -65,13 +65,16 @@ describe('rdc job command surface', () => {
   });
 
   /**
-   * A single job is addressed by name, the whole spool is not. `status` and
-   * `logs` name the job with a required POSITIONAL `<job-id>` (the first real
-   * positional conversion of P4's ref work); `cancel` still uses `--id`; `list`
-   * and `gc` act on the whole spool, so they take neither.
+   * A single job is addressed by name, the whole spool is not. `status`, `logs` and
+   * `cancel` all name the job with a required POSITIONAL `<job-id>`; `list` and `gc`
+   * act on the whole spool, so they take neither.
+   *
+   * `cancel` was the odd one out — it alone still took `--id`, and this test asserted
+   * that inconsistency rather than catching it: three leaves, one contract, two
+   * implementations. It now asserts the contract instead.
    */
   it('addresses a single job by name exactly where one job is meant', () => {
-    for (const verb of ['status', 'logs']) {
+    for (const verb of ['status', 'logs', 'cancel']) {
       const args = jobCommand(program, verb).registeredArguments;
       expect(
         args.map((a) => a.name()),
@@ -82,10 +85,6 @@ describe('rdc job command surface', () => {
       const id = jobCommand(program, verb).options.find((o) => o.long === '--id');
       expect(id, `job ${verb} should not also carry --id`).toBeUndefined();
     }
-
-    const cancelId = jobCommand(program, 'cancel').options.find((o) => o.long === '--id');
-    expect(cancelId, 'job cancel is missing --id').toBeDefined();
-    expect(cancelId?.mandatory, 'job cancel --id should be required').toBe(true);
 
     for (const verb of ['list', 'gc']) {
       expect(jobCommand(program, verb).registeredArguments, `job ${verb} positionals`).toHaveLength(

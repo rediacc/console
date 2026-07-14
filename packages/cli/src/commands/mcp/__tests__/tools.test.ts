@@ -183,10 +183,12 @@ describe('MCP tool definitions', () => {
 
     it('machine_deprovision appends --force', () => {
       const tool = TOOLS.find((t) => t.name === 'machine_deprovision')!;
+      // The reshape gave `machine deprovision` a positional <name>. The builder derives
+      // argv from the live Commander tree, so it followed on its own — this assertion is
+      // what had to catch up.
       expect(tool.command({ name: 'old-server' })).toEqual([
         'machine',
         'deprovision',
-        '--name',
         'old-server',
         '--force',
       ]);

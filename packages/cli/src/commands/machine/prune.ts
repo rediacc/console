@@ -301,7 +301,7 @@ export function registerPruneCommand(machine: Command): void {
     .command('prune')
     .summary(t('commands.machine.prune.descriptionShort'))
     .description(t('commands.machine.prune.description'))
-    .requiredOption('--name <name>', t('options.name'))
+    .argument('<name>', t('options.name'))
     .option('--dry-run', t('commands.machine.prune.dryRunOption'))
     .option('--orphaned-repos', t('commands.machine.prune.orphanedReposOption'))
     .option('--prune-unknown', t('commands.machine.prune.pruneUnknownOption'))
@@ -309,9 +309,8 @@ export function registerPruneCommand(machine: Command): void {
     .option('--force', t('options.force'))
     .option('--grace-days <days>', t('options.graceDays'), Number.parseInt)
     .option('--debug', t('options.debug'))
-    .action(async (options: PruneOptions & { name: string }) => {
+    .action(async (machineName: string, options: PruneOptions) => {
       try {
-        const machineName = options.name;
         await assertMachineExists(machineName);
         await pruneDatastore(machineName, options);
 

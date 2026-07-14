@@ -132,19 +132,20 @@
               "defaultValue": null
             },
             {
-              "flags": "--id <jobId>",
-              "descriptionKey": "commands.job.idOption",
-              "mandatory": true,
-              "defaultValue": null
-            },
-            {
               "flags": "-y, --yes",
               "descriptionKey": "options.yes",
               "mandatory": false,
               "defaultValue": null
             }
           ],
-          "arguments": [],
+          "arguments": [
+            {
+              "name": "job-id",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
           "subcommands": []
         },
         {
@@ -418,31 +419,26 @@
           "descriptionKey": "commands.machine.health.description",
           "options": [
             {
-              "flags": "--name <name>",
-              "descriptionKey": "options.name",
-              "mandatory": true,
-              "defaultValue": null
-            },
-            {
               "flags": "-t, --team <name>",
               "descriptionKey": "options.team",
               "mandatory": false,
               "defaultValue": null
             }
           ],
-          "arguments": [],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
           "subcommands": []
         },
         {
           "name": "provision",
           "descriptionKey": "commands.machine.provision.description",
           "options": [
-            {
-              "flags": "--name <name>",
-              "descriptionKey": "options.name",
-              "mandatory": true,
-              "defaultValue": null
-            },
             {
               "flags": "--provider <name>",
               "descriptionKey": "commands.machine.provision.optionProvider",
@@ -492,19 +488,20 @@
               "defaultValue": null
             }
           ],
-          "arguments": [],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
           "subcommands": []
         },
         {
           "name": "deprovision",
           "descriptionKey": "commands.machine.deprovision.description",
           "options": [
-            {
-              "flags": "--name <name>",
-              "descriptionKey": "options.name",
-              "mandatory": true,
-              "defaultValue": null
-            },
             {
               "flags": "--force",
               "descriptionKey": "options.yes",
@@ -518,19 +515,20 @@
               "defaultValue": null
             }
           ],
-          "arguments": [],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
           "subcommands": []
         },
         {
           "name": "prune",
           "descriptionKey": "commands.machine.prune.description",
           "options": [
-            {
-              "flags": "--name <name>",
-              "descriptionKey": "options.name",
-              "mandatory": true,
-              "defaultValue": null
-            },
             {
               "flags": "--dry-run",
               "descriptionKey": "commands.machine.prune.dryRunOption",
@@ -574,7 +572,14 @@
               "defaultValue": null
             }
           ],
-          "arguments": [],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
           "subcommands": []
         },
         {
@@ -2047,12 +2052,6 @@
                   "descriptionKey": "commands.repo.admin.autostart.enable.description",
                   "options": [
                     {
-                      "flags": "-m, --machine <name>",
-                      "descriptionKey": "commands.repo.machineOption",
-                      "mandatory": false,
-                      "defaultValue": null
-                    },
-                    {
                       "flags": "--debug",
                       "descriptionKey": "options.debug",
                       "mandatory": false,
@@ -2079,12 +2078,6 @@
                   "name": "disable",
                   "descriptionKey": "commands.repo.admin.autostart.disable.description",
                   "options": [
-                    {
-                      "flags": "-m, --machine <name>",
-                      "descriptionKey": "commands.repo.machineOption",
-                      "mandatory": false,
-                      "defaultValue": null
-                    },
                     {
                       "flags": "--debug",
                       "descriptionKey": "options.debug",
@@ -3673,19 +3666,20 @@
           "descriptionKey": "commands.config.recover.description",
           "options": [
             {
-              "flags": "--name <name>",
-              "descriptionKey": "options.name",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
               "flags": "-y, --yes",
               "descriptionKey": "options.yes",
               "mandatory": false,
               "defaultValue": null
             }
           ],
-          "arguments": [],
+          "arguments": [
+            {
+              "name": "name",
+              "required": false,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
           "subcommands": []
         },
         {

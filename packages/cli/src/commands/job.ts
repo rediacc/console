@@ -165,12 +165,12 @@ export function registerJobCommands(program: Command): void {
   job
     .command('cancel')
     .description(t('commands.job.cancel.description'))
+    .argument('<job-id>', t('commands.job.idOption'))
     .requiredOption('-m, --machine <name>', t('commands.job.machineOption'))
-    .requiredOption('--id <jobId>', t('commands.job.idOption'))
     .option('-y, --yes', t('options.yes'))
-    .action(async (options: JobCommandOptions) => {
+    .action(async (jobId: string, options: JobCommandOptions) => {
       try {
-        await runJobCancel(options, getOutputFormat());
+        await runJobCancel({ ...options, id: jobId }, getOutputFormat());
       } catch (error) {
         handleError(error);
       }

@@ -293,7 +293,6 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
     .command('enable')
     .description(t('commands.repo.admin.autostart.enable.description'))
     .argument('[ref]', t('options.repoRef'))
-    .option('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
@@ -348,7 +347,6 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
     .command('disable')
     .description(t('commands.repo.admin.autostart.disable.description'))
     .argument('[ref]', t('options.repoRef'))
-    .option('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
