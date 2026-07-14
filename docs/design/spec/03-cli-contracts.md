@@ -1203,6 +1203,12 @@ Daily verbs keep today's semantics (06 §5) with the addressing migration: posit
   `backup restore ... --up` — a pushed copy that boots under the same name IS the
   two-places bug being retired), `-w/--watch`, `--parallel`, `--concurrency`, `-y`,
   `--bwlimit <limit>`, `--delta-base <guid>`, `--strategy <s>`.
+- Hidden alias: `--to-machine <machine>` exists and is `.hideHelp()` (`repo-backup.ts`).
+  It is an INTERNAL disambiguator, not part of the user-facing surface: `--to` auto-detects
+  machine-vs-storage from config, and `--to-machine` forces the machine reading when a name
+  is ambiguous. Because it is hidden it does not violate the positional-ref thesis, which
+  governs the surface users see — but for the same reason **no public doc may teach it**.
+  P5 decides whether `--to`'s auto-detection makes it redundant outright.
 - Errors: live-ref `@place` conflict per §3.2; dest unreachable → 6; transfer → 14.
 - Idempotency: re-push converges (delta transfer); success.
 - Gate: B. MCP: mcp(write, destructive, idempotent, repoArg:ref; descriptionOverride:

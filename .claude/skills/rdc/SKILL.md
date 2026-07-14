@@ -90,12 +90,12 @@ For first-time setup (new VMs), see prerequisites in [ops.md](ops.md) and [confi
 ```bash
 # Migration (same identity). A pushed copy lands on the target as a backup ARTIFACT,
 # so it is booted with `backup restore` — that is where --up lives; `repo push` has no --up.
-rdc repo push <repo> --to-machine <target>
+rdc repo push <repo> --to <target>
 rdc backup restore <repo> --as <repo> -m <target> --up
 
 # Independent fork to another machine (the fork inherits the parent's encryption key)
 rdc repo fork <repo> --tag <tag>
-rdc repo push <repo>:<tag> --to-machine <target>
+rdc repo push <repo>:<tag> --to <target>
 rdc backup restore <repo>:<tag> --as <repo> -m <target> --up
 ```
 
@@ -104,7 +104,7 @@ rdc backup restore <repo>:<tag> --as <repo> -m <target> --up
 ```bash
 # Checkpoint + push (captures process memory + disk state, source keeps running).
 # The checkpoint rides along with the artifact; `backup restore --up` boots from it.
-rdc repo push <repo> --to-machine <target> --checkpoint
+rdc repo push <repo> --to <target> --checkpoint
 rdc backup restore <repo> --as <repo> -m <target> --up
 
 # Or move the repo outright (two-phase, minimal downtime, placement follows)

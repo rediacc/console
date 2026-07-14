@@ -36,14 +36,13 @@ Replay or follow a detached job's event log
 
 > MCP tool
 
-### rdc job cancel
+### rdc job cancel <job-id>
 
 Cancel a running detached job
 
 **Options:**
 
 - `-m, --machine <name>` — Target machine name
-- `--id <jobId>` — Job ID
 - `-y, --yes` — Skip confirmation prompt
 
 > MCP tool
@@ -150,14 +149,13 @@ Show a machine's system, repositories, containers, and services.
 
 > MCP tool
 
-### rdc machine provision
+### rdc machine provision <name>
 
 Provision a new machine on a cloud provider using OpenTofu
 
 **Options:**
 
-- `--name <name>` — Resource name
-- `--provider <name>` — Cloud provider name (from config provider add)
+- `--provider <name>` — Cloud provider name (from machine provider add)
 - `--region <region>` — Override default region
 - `--type <type>` — Override default instance type
 - `--image <image>` — Override default OS image
@@ -168,25 +166,23 @@ Provision a new machine on a cloud provider using OpenTofu
 
 > MCP tool
 
-### rdc machine deprovision
+### rdc machine deprovision <name>
 
 Destroy a cloud-provisioned machine and remove from config
 
 **Options:**
 
-- `--name <name>` — Resource name
 - `--force` — Skip confirmation prompt
 - `--debug` — Enable debug output
 
 > MCP tool
 
-### rdc machine prune
+### rdc machine prune <name>
 
 Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from your local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.
 
 **Options:**
 
-- `--name <name>` — Resource name
 - `--dry-run` — Show what would be removed without making changes
 - `--orphaned-repos` — Delete every repo image on the machine that is not in your local CLI config. Coarse — also removes forks created by other tools that have no local config entry, even when their renet mirror correctly identifies them as forks. Use --prune-unknown for the narrower behavior that respects the mirror.
 - `--prune-unknown` — Delete only repos the renet .interim/state mirror cannot classify (not in local config AND no fork-marked mirror). Strictly narrower than --orphaned-repos: forks-without-config are preserved when the mirror identifies them. Pre-mirror legacy orphans and stale grands whose config entry was deleted both fall in this bucket.
@@ -259,7 +255,7 @@ Show infrastructure configuration for a machine
 
 ### rdc machine infra push <machine>
 
-Push infrastructure config to machine (Traefik proxy, router, Cloudflare DNS). Run 'config infra set <machine>' first
+Push infrastructure config to machine (Traefik proxy, router, Cloudflare DNS). Run 'machine infra set <machine>' first
 
 **Options:**
 
@@ -461,24 +457,22 @@ Import a storage endpoint from a definition file.
 
 > MCP excluded: Reads a local rclone definition file; use CLI directly.
 
-### rdc storage browse
+### rdc storage browse <storage>
 
 Browse files in a storage system
 
 **Options:**
 
-- `--name <name>` — Resource name
 - `--path <subpath>` — Subdirectory path to list (default: )
 
 > MCP excluded: Interactive file browser — requires TTY
 
-### rdc storage prune
+### rdc storage prune <storage>
 
 Delete orphaned backups from storage that are no longer in any config. Multi-config safe with grace period protection. The rclone calls run on --machine (the executor), not on your laptop, so clients don't need rclone installed locally; --machine is the executor, not the source of truth.
 
 **Options:**
 
-- `--name <name>` — Resource name
 - `-m, --machine <name>` — Executor machine — runs the rclone list/delete calls against the storage. Required because clients aren't expected to have rclone installed locally; storage credentials still come from your local config.
 - `--dry-run` — Show what would be done without making changes
 - `--force` — Skip confirmation prompts
@@ -589,7 +583,7 @@ Rehearse a release/upgrade: fork the cluster onto a destination as an ephemeral 
 
 ### rdc cluster snapshot create <cluster>
 
-Snapshot every rbd-backed datastore in the cluster at ONE instant. Nothing is stopped. Any local-backend datastore in the cluster is listed as outside the instant: it is not part of the snapshot.
+Snapshot every rbd-backed datastore in the cluster at ONE instant. Nothing is stopped. Any local-backend datastore in the cluster is listed as outside the instant: it is not part of the snapshot. The instant is crash-consistent, not application-consistent: if you need a specific write to be IN the snapshot, sync it first.
 
 **Options:**
 
@@ -760,7 +754,7 @@ Fork a datastore copy-on-write. The fork is instant and its cost does not grow w
 
 ### rdc datastore snapshot create <datastore>
 
-Take a point-in-time snapshot of a datastore. Nothing stops.
+Take a point-in-time snapshot of a datastore. Nothing stops. The instant is crash-consistent, not application-consistent: if you need a specific write to be IN the snapshot, sync it first.
 
 **Options:**
 
@@ -918,7 +912,7 @@ Read a bounded window of a file in a repository to stdout (diagnostics go to std
 
 ### rdc repo fork <ref>
 
-Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: fork locally first, then transfer: (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine> --up. WARNING: do NOT use "repo push" alone to fork, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name, so each fork gets a unique domain automatically.
+Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: fork locally first, then transfer: (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine>, (3) rdc backup restore <fork-ref> --as <fork-name> -m <target-machine> --up. WARNING: do NOT use "repo push" alone to fork, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name, so each fork gets a unique domain automatically.
 
 **Options:**
 
@@ -1054,7 +1048,6 @@ Enable autostart for a repository (omit name to enable all)
 
 **Options:**
 
-- `-m, --machine <name>` — Target machine name
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
@@ -1066,7 +1059,6 @@ Disable autostart for a repository (omit name to disable all)
 
 **Options:**
 
-- `-m, --machine <name>` — Target machine name
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
@@ -1200,7 +1192,7 @@ Show the stored machine default, the repository override (with a ref), and the e
 
 ### rdc repo push <ref>
 
-Push repository to a remote (machine or storage). Omit name to push all repos. The target type is auto-detected from config. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. Use --up to deploy after push
+Push repository to a remote (machine or storage). The target type is auto-detected from config. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. A pushed copy lands as a backup ARTIFACT: boot it on the target with 'backup restore <ref> --as <name> -m <target> --up'
 
 **Options:**
 
@@ -1495,13 +1487,12 @@ Clear defaults (all or specific key)
 
 > MCP excluded: Config value deletion — use CLI directly
 
-### rdc config recover
+### rdc config recover [name]
 
 Restore config from backup (.bak) file
 
 **Options:**
 
-- `--name <name>` — Resource name
 - `-y, --yes` — Skip confirmation prompt
 
 > MCP excluded: Rewrites a damaged config from backup; the operator must see what changed.

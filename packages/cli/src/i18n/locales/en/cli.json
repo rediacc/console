@@ -1004,7 +1004,7 @@
         "applied": "Garbage collection complete: {{deleted}}/{{total}} commit(s) deleted"
       },
       "fork": {
-        "description": "Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: fork locally first, then transfer: (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine> --up. WARNING: do NOT use \"repo push\" alone to fork, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name, so each fork gets a unique domain automatically.",
+        "description": "Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: fork locally first, then transfer: (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine>, (3) rdc backup restore <fork-ref> --as <fork-name> -m <target-machine> --up. WARNING: do NOT use \"repo push\" alone to fork, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name, so each fork gets a unique domain automatically.",
         "descriptionShort": "Near-instant CoW fork of a repository (new GUID, networkId, IP range)",
         "tagOption": "Tag for the fork (creates name:tag)",
         "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)",
@@ -1018,7 +1018,7 @@
         "tagRequired": "Tag is required for fork. Usage: rdc repo fork <parent-ref> --tag <tag>",
         "starting": "Forking \"{{parent}}\" as \"{{repository}}\" on \"{{machine}}\"...",
         "registered": "Registered fork \"{{repository}}\" ({{guid}}, network {{networkId}})",
-        "completed": "Fork created. Deploy locally: repo up {{repository}} -m {{machine}}. To migrate fork to another machine: repo push {{repository}} -m {{machine}} --to <target> --up",
+        "completed": "Fork created. Deploy it: repo up {{repository}}. To copy it to another machine: repo push {{repository}} --to <target>, then boot the artifact there with backup restore {{repository}} --as {{repository}} -m <target> --up",
         "failed": "Fork creation failed",
         "rollback": "Rolled back config for \"{{repository}}\"",
         "alreadyExists": "Repository \"{{name}}\" already exists in config",
@@ -1129,7 +1129,7 @@
         }
       },
       "push": {
-        "description": "Push repository to a remote (machine or storage). Omit name to push all repos. The target type is auto-detected from config. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. Use --up to deploy after push",
+        "description": "Push repository to a remote (machine or storage). The target type is auto-detected from config. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. A pushed copy lands as a backup ARTIFACT: boot it on the target with 'backup restore <ref> --as <name> -m <target> --up'",
         "descriptionShort": "Push repository to a remote (machine or storage)",
         "optionTo": "Destination machine or storage name (auto-detected from config)",
         "optionProvision": "Auto-provision target machine via cloud provider if it doesn't exist",
@@ -1138,7 +1138,6 @@
         "optionTag": "Deployment tag for versioning",
         "destRequired": "Specify --to <remote> (machine or storage name from config)",
         "pushing": "Pushing backup of \"{{repo}}\" to {{dest}}...",
-        "optionUp": "After push, mount and deploy repository on target machine",
         "deploying": "Deploying \"{{repo}}\" on {{machine}}...",
         "deployed": "Repository \"{{repo}}\" deployed on {{machine}}",
         "optionBwlimit": "Bandwidth limit for rsync transfer (e.g., \"6M\", \"10M\")",
@@ -1823,7 +1822,7 @@
         "followOption": "Stream until the job finishes",
         "sinceLineOption": "Resume after this many lines (the count you already received)",
         "invalidSinceLine": "--since-line must be a line count (got \"{{value}}\")",
-        "detached": "Detached from job {{jobId}}. It is still running on {{machine}} and was NOT cancelled. Re-attach with: rdc job logs -m {{machine}} --id {{jobId}} --follow"
+        "detached": "Detached from job {{jobId}}. It is still running on {{machine}} and was NOT cancelled. Re-attach with: rdc job logs {{jobId}} -m {{machine}} --follow"
       },
       "cancel": {
         "description": "Cancel a running detached job",

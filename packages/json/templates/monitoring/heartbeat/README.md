@@ -93,7 +93,7 @@ rdc repo up heartbeat-app@source
 # Wait for beats, note the counter value
 
 # Checkpoint + push to target. The copy lands as a backup ARTIFACT.
-rdc repo push heartbeat-app@source --to-machine target --checkpoint
+rdc repo push heartbeat-app@source --to target --checkpoint
 
 # Boot it on the target (this is where --up lives; `repo push` has no --up).
 rdc backup restore heartbeat-app --as heartbeat-app -m target --up
