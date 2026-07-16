@@ -59,6 +59,14 @@ const PushStateSchema = z.record(
  */
 const ReplicaSetSchema = z.object({
   repo: z.string(),
+  /**
+   * The repo's GUID — its STORAGE identity (#93 ruling: storage speaks GUID,
+   * k8s objects speak name). `repo create` stores the repo folder and its
+   * volume images under `<ds>/repos/<guid>`, so every renet storage verb
+   * (datastore_volumes_open/close) and every generated PV path must use this;
+   * `repo` above stays the k8s-facing name (namespace, Services, set name).
+   */
+  repoGuid: z.string().optional(),
   datastore: z.string(),
   cluster: z.string(),
   /** Number of replicas + the fork datastore/mount + node per replica. */

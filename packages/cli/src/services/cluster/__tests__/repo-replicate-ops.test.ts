@@ -38,6 +38,12 @@ function mockState(initial?: Record<string, ReplicaSet>): void {
   vi.spyOn(configService, 'getLocalMachine').mockImplementation(
     (name: string) => Promise.resolve({ ip: `10.0.0.${name.slice(-1)}` }) as never
   );
+  // The repo's storage identity (#93): replicate resolves the GUID up front and
+  // speaks it to every datastore verb; k8s objects keep the name.
+  vi.spyOn(configService, 'getRepository').mockImplementation(
+    (repoKey: string) =>
+      Promise.resolve({ repositoryGuid: `guid-${repoKey.replaceAll(':', '-')}` }) as never
+  );
 }
 
 function mockExec() {
@@ -130,6 +136,13 @@ describe('replicateRepo (create orchestrator)', () => {
       'kube_node_label',
       'kube_apply',
     ]);
+    // ★ #93 (storage speaks GUID): the orchestrator resolves the repo's GUID
+    // from config and every storage-facing step speaks it — a create that
+    // passes the NAME through (skipping resolution) turns this red.
+    const opens = calls.filter((c) => c.functionName === 'datastore_volumes_open');
+    expect(opens.every((c) => c.params?.repo === 'guid-sqldb')).toBe(true);
+    expect(opens.some((c) => c.params?.repo === 'sqldb')).toBe(false);
+
     // The overlay goes through kube_apply on the control node, stdin-fed,
     // persisted under a stable per-set basename.
     const apply = calls.find((c) => c.functionName === 'kube_apply');

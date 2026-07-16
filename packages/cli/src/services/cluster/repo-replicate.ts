@@ -51,6 +51,14 @@ export interface ReplicaNode {
 /** Inputs the orchestrator resolves before composing the datastore plane. */
 export interface ProvisionReplicasInput {
   repo: string;
+  /**
+   * The repo's GUID — its STORAGE identity (#93: storage speaks GUID, k8s
+   * objects speak name). The repo folder on the datastore is `repos/<guid>`
+   * (#83: `repo create` dispatches `repository create --name <guid>`), so the
+   * fork — a byte-clone of the parent — carries `repos/<guid>` too, and every
+   * storage-facing verb must address it by GUID; `repo` is only for k8s names.
+   */
+  repoGuid: string;
   setName: string;
   datastore: string;
   snapshot: string;
@@ -136,7 +144,7 @@ export async function provisionReplicaDatastores(
 export async function provisionOneReplica(
   input: Pick<
     ProvisionReplicasInput,
-    'repo' | 'setName' | 'datastore' | 'snapshot' | 'controlMachine' | 'controlMount' | 'debug'
+    'repoGuid' | 'setName' | 'datastore' | 'snapshot' | 'controlMachine' | 'controlMount' | 'debug'
   >,
   index: number,
   node: ReplicaNode
@@ -188,11 +196,15 @@ export async function provisionOneReplica(
     await dispatch('datastore_forget', input.controlMachine, { name: forkName }, input.debug);
   }
   // Open the repo's per-volume LUKS images on the fork (bug #49). The fork is a
-  // BLOCK-layer clone, so it carries the ciphertext `<fork>/repos/<repo>/volumes/
+  // BLOCK-layer clone, so it carries the ciphertext `<fork>/repos/<GUID>/volumes/
   // <pvc>.img` AND the empty directory that image was mounted over. The replica's
   // PV points at that directory. Without this step the image is never opened, the
   // pod bind-mounts the empty dir, and the replica comes up healthy, Ready, and
   // EMPTY — no FailedMount, no event, no symptom except missing data.
+  //
+  // By GUID, never by name (#93, found live by B1): the repo folder on the
+  // datastore — and therefore on its byte-clone fork — is `repos/<guid>`, so a
+  // name-based `repo:` param stats `repos/<name>` and aborts every replicate.
   //
   // It MUST precede kube_node_label: the label is the scheduling gate (the PV's
   // nodeAffinity key), so opening first means a pod can never be scheduled onto a
@@ -200,7 +212,7 @@ export async function provisionOneReplica(
   await dispatch(
     'datastore_volumes_open',
     node.machine,
-    { name: forkName, repo: input.repo },
+    { name: forkName, repo: input.repoGuid },
     input.debug
   );
   // Stamp the fork's datastore label on the hosting node (PV nodeAffinity key).
@@ -234,7 +246,10 @@ export async function discardReplicaDatastores(set: ReplicaSet, debug?: boolean)
       await getExecutor().execute({
         functionName: 'datastore_volumes_close',
         machineName: r.node,
-        params: { name: r.fork, repo: set.repo },
+        // By GUID (#93): the images live under repos/<guid> on the fork. Sets
+        // recorded before the guid was tracked fall back to the name (their
+        // volumes never opened, so the close is a no-op either way).
+        params: { name: r.fork, repo: set.repoGuid ?? set.repo },
         debug,
       });
     } catch (err) {
@@ -307,6 +322,14 @@ function replicaTag(setName: string, i: number): string {
 export interface ReplicaRenderInput {
   /** Repo name = the k8s namespace + the workload/Service base name. */
   repo: string;
+  /**
+   * The repo's GUID — the on-datastore folder identity (#93: storage speaks
+   * GUID, k8s objects speak name). Only PATHS use it: the replica PV points
+   * into the fork mount at `mounts/volumes/<guid>/<pvc>`, mirroring what the
+   * parent's volumes-open/CSI produce (kubevolume.MountPath keyed by the renet
+   * repo identifier, which #83 made the GUID).
+   */
+  repoGuid: string;
   /** The replica-set name (defaults to `<repo>-replicas`). */
   setName: string;
   /** The datastore the repo (and its replicas) live in. */
@@ -369,7 +392,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   volumeMode: Filesystem
   local:
-    path: ${r.mountPath}/mounts/volumes/${input.repo}/${input.pvc}
+    path: ${r.mountPath}/mounts/volumes/${input.repoGuid}/${input.pvc}
   nodeAffinity:
     required:
       nodeSelectorTerms:

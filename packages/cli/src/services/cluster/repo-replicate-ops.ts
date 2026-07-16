@@ -96,11 +96,25 @@ export async function replicateRepo(options: ReplicateOptions): Promise<void> {
   const nodes = await resolveReplicaNodes(options.cluster);
   const snapshot = replicaSnapshotName(setName);
 
+  // The repo's STORAGE identity (#93): the folder on the datastore — and on
+  // every byte-clone fork — is `repos/<guid>` (#83), so the datastore-plane
+  // verbs and the generated PV paths speak GUID while every k8s object keeps
+  // the name. A cluster repo without a config record cannot be replicated: the
+  // GUID is the only address its storage answers to.
+  const repoGuid = (await configService.getRepository(options.repo))?.repositoryGuid;
+  if (!repoGuid) {
+    throw new Error(
+      `Repository "${options.repo}" has no repositoryGuid in this config — ` +
+        `replicate needs the repo's storage identity (create it with "rdc repo create").`
+    );
+  }
+
   outputService.info(
     `Replicating "${options.repo}" (${datastore}): snapshot + ${options.replicas} fork-attach(es) across ${nodes.length} node(s)...`
   );
   const { placements, forks } = await provisionReplicaDatastores({
     repo: options.repo,
+    repoGuid,
     setName,
     datastore,
     snapshot,
@@ -113,6 +127,7 @@ export async function replicateRepo(options: ReplicateOptions): Promise<void> {
 
   const manifest = renderReplicaSet({
     repo: options.repo,
+    repoGuid,
     setName,
     datastore,
     primaryApp: options.primaryApp ?? options.repo,
@@ -138,6 +153,7 @@ export async function replicateRepo(options: ReplicateOptions): Promise<void> {
 
   await recordReplicaSet(setName, {
     repo: options.repo,
+    repoGuid,
     datastore,
     cluster: options.cluster,
     replicas: forks,
@@ -234,7 +250,8 @@ export async function refreshReplicaSet(repoKey: string, debug?: boolean): Promi
 
   await dispatch('datastore_snapshot_create', control, { name: set.datastore, snapshot }, debug);
   const one = {
-    repo: set.repo,
+    // Storage identity (#93); pre-guid recorded sets fall back to the name.
+    repoGuid: set.repoGuid ?? set.repo,
     setName,
     datastore: set.datastore,
     snapshot,
@@ -274,7 +291,12 @@ export async function refreshReplicaSet(repoKey: string, debug?: boolean): Promi
     //    is BUSY, so the discard below would burn its retries and then throw.
     //    Best-effort — a replica with nothing open is a no-op, and the retrying
     //    detach remains the real guard.
-    await tryStep('datastore_volumes_close', r.node, { name: r.fork, repo: set.repo }, debug);
+    await tryStep(
+      'datastore_volumes_close',
+      r.node,
+      { name: r.fork, repo: set.repoGuid ?? set.repo },
+      debug
+    );
     await detachWithRetry(r.fork, r.node, debug);
     // 4. provisionOneReplica re-stamps the label last, which re-opens the gate.
     await provisionOneReplica(one, r.index, { machine: r.node, ip: await nodeIp(r.node) });

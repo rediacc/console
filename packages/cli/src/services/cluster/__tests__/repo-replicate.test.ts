@@ -18,6 +18,7 @@ afterEach(() => vi.restoreAllMocks());
 
 const renderInput: ReplicaRenderInput = {
   repo: 'sqldb',
+  repoGuid: 'guid-sqldb',
   setName: 'sqldb-replicas',
   datastore: 'ds-data',
   primaryApp: 'sqldb-primary',
@@ -46,9 +47,17 @@ describe('renderReplicaSet (spec 05 §1 manifest plumbing)', () => {
     expect(yaml).toContain('name: sqldb-replicas-1-data');
     expect(yaml).toContain('name: sqldb-replicas-2-data');
     expect(yaml).toContain('key: rediacc.io/ds-ds-data-sqldb-replicas-r1');
+    // ★ #93 (storage speaks GUID, k8s objects speak name): the PV path into the
+    // fork mount is GUID-keyed — the fork is a byte-clone of the parent, whose
+    // volumes-open/CSI mount at mounts/volumes/<guid>/<vol>. A NAME-keyed path
+    // points at a directory that does not exist and the replica comes up EMPTY,
+    // so a regression back to the name must turn this red.
     expect(yaml).toContain(
-      'path: /mnt/rediacc-ds/ds-data-sqldb-replicas-r1/mounts/volumes/sqldb/data'
+      'path: /mnt/rediacc-ds/ds-data-sqldb-replicas-r1/mounts/volumes/guid-sqldb/data'
     );
+    expect(yaml).not.toContain('mounts/volumes/sqldb/');
+    // ...while the k8s OBJECTS keep the name: namespace + Services stay `sqldb`.
+    expect(yaml).toContain('namespace: sqldb');
     // StatefulSet: N replicas, anti-affinity, REDIACC_ROLE=replica.
     expect(yaml).toContain('kind: StatefulSet');
     expect(yaml).toContain('replicas: 2');
@@ -89,6 +98,7 @@ function execMock() {
 describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)', () => {
   const base = {
     repo: 'sqldb',
+    repoGuid: 'guid-sqldb',
     setName: 'set1',
     datastore: 'ds-data',
     snapshot: 'replicate-set1',
@@ -256,7 +266,13 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
     // Scoped to the fork AND the repo: the images live in one repo's folder, and an
     // unscoped open would silently open nothing.
     expect(opens.map((c) => c.params?.name)).toEqual(['ds-data:set1-r1', 'ds-data:set1-r2']);
-    expect(opens.every((c) => c.params?.repo === 'sqldb')).toBe(true);
+    // ★ #93 MUTATION CONTROL (found live by B1): the folder on the fork is
+    // repos/<GUID> (#83), so the open must speak the GUID — a NAME-based
+    // dispatch stats repos/<name>, which does not exist, and aborts every
+    // replicate of a real kube repo. Both assertions must hold: reverting to
+    // the name turns this red.
+    expect(opens.every((c) => c.params?.repo === 'guid-sqldb')).toBe(true);
+    expect(opens.some((c) => c.params?.repo === 'sqldb')).toBe(false);
     // Each open runs on the node that HOLDS the fork, not on the control plane.
     expect(opens.map((c) => c.machineName)).toEqual(['n1', 'n2']);
 
