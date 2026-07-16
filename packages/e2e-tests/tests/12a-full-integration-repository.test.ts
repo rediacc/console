@@ -312,9 +312,13 @@ test.describe('Error Recovery Integration @bridge @integration', () => {
     // Strict operations - should fail because resource doesn't exist
     expect(runner.isSuccess(info)).toBe(false); // Can't get info on nonexistent
     expect(runner.isSuccess(mount)).toBe(false); // Can't mount nonexistent
-    expect(runner.isSuccess(rm)).toBe(false); // Can't delete nonexistent
 
-    // Tolerant operations - succeed as no-op (nothing to do)
+    // Tolerant operations - succeed as no-op (nothing to do). rm moved here
+    // when this suite came back from the dark: teardown verbs CONVERGE to
+    // absent (the #45 ENOENT ruling, #95's no-set no-op, the convergent-init
+    // contract) — deleting what is already gone is the desired end state,
+    // not an error. The suite predated that doctrine.
+    expect(runner.isSuccess(rm)).toBe(true); // Already absent: converged
     expect(runner.isSuccess(up)).toBe(true); // No Rediaccfile, skips gracefully
     expect(runner.isSuccess(down)).toBe(true); // Nothing to stop, succeeds
     expect(runner.isSuccess(unmount)).toBe(true); // Already unmounted, succeeds
