@@ -175,3 +175,25 @@ TWO adjacent same-class sites flagged by the #93/#94 fix, awaiting their own rul
 - `reporuntime_dispatch.go:83` sets the k8s namespace from the GUID-name (#83) — a possible
   `repo up` #93-class tension ("k8s objects speak name" vs a GUID namespace). Needs a live
   check on the repo-up path (B1's primary namespace was rig-applied, not repo-up-created).
+
+## B1 window CLOSED (2026-07-16 late) — verdicts and residuals
+
+Full transcript: reports/b1-live-window.md. Teardown zero-residue, base fleet intact.
+
+| Feature | Verdict |
+|---|---|
+| repo replicate create/status/refresh | **PASS on the clean product path** (post-#93/#94). **#41 DISCHARGED live**: refresh completes via evict-and-hold, advances replicas to the new point-in-time, zero busy-detach |
+| replicate remove | #95 reproduced live (false success with full residue); fix landed in-tree same evening (ce57b26fe, unit-proven with mutation controls). LIVE re-validation of the fixed remove rides the next window / suite-24 work |
+| cluster rehearse | **BLOCKED (environment, not product)**: fork-dest-prep needs ceph-common+sqlite3; the WSL2 host's apt is offline. Sub-results PASS: refusal-before-mutation, bared-dest guard, **#44 catch fix CONFIRMED** (failure cleanup dispatched to the real dest machine). The fork/PKI/health/discard/#43 legs remain unexercised — re-run on a box with network or pre-staged packages |
+| canary + rung 0 | CLI/data-plane PASS (undo group snaps retained, overlay, annotations, ROLE=canary, weight flip, remove). **#42 remains OPEN, now precisely scoped**: no rediacc-router process runs on cluster nodes, AND the router's discovery glob (/mnt/rediacc/mounts/*) predates the named-datastore layout (/mnt/rediacc-ds/*) — so nothing consumes the annotations and no split exists to measure. Fix = both halves; needs a ruling on WHO starts the router on cluster nodes (kube install fold?) |
+| slug aliasing | Latent, NOT reachable: `repo fork` is docker-only (the F1/CT-11 carry-in), so a kube fork ref can't exist yet. RULING RECOMMENDED: land the create-time slug-collision refusal BEFORE any kube-aware repo fork |
+
+Bonus confirmations: #85 (2-OSD HEALTH_OK @6s), #44. Minor items filed: repo-fork kube
+error text, a swallowed replica kube_apply error, undo group-snaps invisible to the
+per-image snapshot list, replicate-right-after-create wants a sync.
+
+B1 exit-criterion accounting (09 §2 item 1): replicate transcript DONE; canary/rung-0
+transcript DONE except the split measurement (#42); rehearse transcript NOT DONE
+(env-blocked). B1 is materially discharged for the features that could run, with two
+named residuals carrying owners: #42 (product, ruling needed) and the rehearse re-run
+(environment).
