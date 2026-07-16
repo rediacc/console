@@ -146,3 +146,32 @@ assumption is wrong; the tree carries per-leaf options.
     provisioning/units; the structural half (no gate can DEMAND it) still stands.
     Owner: this wave for the glob/stub/vitest wiring (after the dark suites prove out
     locally); P5 for the coverage-gate hardening and the migrate e2e suite.
+
+## B1 live-window finds (2026-07-16, feature-breaking never-run defects)
+
+The exit-blocker campaign turned three arms' first-ever executions into fixes:
+
+- **#92** — the R6 presence probe (repo-mount-check) rides docker-only repository_list, so
+  it structurally can't see a kube repo and false-refused EVERY mutating verb on a
+  cluster-placed repo (exit 12). Answered the routing-design doc's open question #2 in the
+  negative. Fixed (91c4859db): datastore arm passes verification to dispatch; machine arm
+  keeps the probe; a datastore-aware presence verb is the follow-up.
+- **#93** — replicate was name-based while kube storage is GUID-based (#83); volumes_open
+  stat'd a nonexistent repos/<name>, aborting every replicate on a real repo. Fixed
+  (a6b4831f6): storage speaks GUID (volumes_open + PV paths), k8s objects speak name.
+- **#94** — CSI object names composed the fork ref's `:` raw; kubectl rejects it. Fixed
+  (renet 7ea35cc): DSSlug at each composition site; parameters.datastore stays raw.
+- **#95 (OPEN, dispatched)** — `replicate remove` is a false success: EXIT 0 + state
+  forgotten while StatefulSet/services/pods/forks/dm-devices/label all survive (swallowed
+  EBUSY on a still-running pod + an unverified overlay delete). Ruled verify-then-report
+  (the #43 principle); renet-rulings implementing after #93/#94.
+- **#41 DISCHARGED live** — replicate refresh completes (evict-and-hold) and advances data
+  point-in-time; previously deferred as feature-breaking. **#85 confirmed live** (2-OSD
+  HEALTH_OK). Leg-2 create/status/refresh PASS; remove blocked on #95.
+
+TWO adjacent same-class sites flagged by the #93/#94 fix, awaiting their own rulings:
+- `kube_templates.go` composes storageClassName+label from `h.Datastore` — `repo up` on a
+  FORK datastore (rehearse world) hits #94's illegal-name class.
+- `reporuntime_dispatch.go:83` sets the k8s namespace from the GUID-name (#83) — a possible
+  `repo up` #93-class tension ("k8s objects speak name" vs a GUID namespace). Needs a live
+  check on the repo-up path (B1's primary namespace was rig-applied, not repo-up-created).
