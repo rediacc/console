@@ -544,7 +544,10 @@ ${dataSource ?? ''}`;
       // wired mirror even when the image is cached, then asserts zot's
       // on-demand sync recorded the repo in its blob store. The store layout
       // can nest the upstream host, so match the repo dir anywhere under it.
-      const probe = `{"spec":{"containers":[{"name":"zotprobe","image":"busybox:1.36","imagePullPolicy":"Always","command":["sleep","30"]}]}}`;
+      // Repo namespaces enforce PSA `restricted` (the #84 surface), so the
+      // probe carries the full compliant securityContext like every other
+      // manifest in this suite.
+      const probe = `{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":65534,"seccompProfile":{"type":"RuntimeDefault"}},"containers":[{"name":"zotprobe","image":"busybox:1.36","imagePullPolicy":"Always","command":["sleep","30"],"securityContext":{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]}}}]}}`;
       const run = await kubectl(
         `-n ${NS} run zotprobe --image=busybox:1.36 --overrides='${probe}' --restart=Never`
       );
