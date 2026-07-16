@@ -313,8 +313,11 @@ test.describe
         `sudo renet repository mount --name ${REPO} --network-id ${MIG_NET} --start-docker=false`
       );
       expect(mount.code, `mount dest: ${mount.stderr}`).toBe(0);
+      // --operation is REQUIRED (no default): a fork silently rewritten as a
+      // migrate would ship the parent CA key (F1). This is the MIGRATE arm —
+      // same principal, CA preserved, serving cert regenerated for the new IP.
       const idw = await onB(
-        `sudo renet kube identity-rewrite --mount-path ${MOUNT} --network-id ${MIG_NET} --mode server --new-node-ip ${B_WORKER_IP}`,
+        `sudo renet kube identity-rewrite --operation migrate --mount-path ${MOUNT} --network-id ${MIG_NET} --mode server --new-node-ip ${B_WORKER_IP}`,
         540_000
       );
       expect(idw.code, `identity-rewrite dest: ${idw.stderr}`).toBe(0);
