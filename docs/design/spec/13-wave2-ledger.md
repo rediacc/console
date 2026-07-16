@@ -119,9 +119,9 @@ assumption is wrong; the tree carries per-leaf options.
    gate on the write-path probe rather than HEALTH_OK. Not a product bug.
 9. **Vite audit time bomb:** GHSA-fx2h-pf6j-xcff's fix published 2026-07-16;
    freshness-deferred until 2026-07-17 UTC, then DEMANDED. Bump rides the push.
-10. **Parked separate-PR work:** the www Italian accent fix
-    (`~/.claude/.../parked/www-it-accent-fix.patch`, spec/12 ruling) — land as its own
-    PR after this stack is green.
+10. **www Italian accent fix: LANDED ON THIS STACK** (20d9ae250) by operator ruling
+    2026-07-16, superseding spec/12's separate-PR note. The verify-don't-churn method
+    survived intact (the `unita` false-positive control held).
 11. **Deferred by standing rulings, unchanged from spec/12:** the family-loop migrate
     (reflink question), #84 PSA/seccomp decision, #87 CSI staging redesign sequencing
     with #86 worker-node mint, the 188-command tutorial re-record debt, P7's docs
