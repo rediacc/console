@@ -25,7 +25,10 @@ import {
   reposPlacedOnMachine,
 } from '../machine/machine-remove-guard.js';
 
-function repo(name: string, config: Partial<RepositoryConfig>): {
+function repo(
+  name: string,
+  config: Partial<RepositoryConfig>
+): {
   name: string;
   config: RepositoryConfig;
 } {
@@ -45,9 +48,9 @@ describe('reposPlacedOnMachine', () => {
   });
 
   it('returns [] when nothing is placed on the machine', () => {
-    expect(reposPlacedOnMachine('srv-1', [repo('mail', { placement: { machine: 'srv-2' } })])).toEqual(
-      []
-    );
+    expect(
+      reposPlacedOnMachine('srv-1', [repo('mail', { placement: { machine: 'srv-2' } })])
+    ).toEqual([]);
   });
 });
 
