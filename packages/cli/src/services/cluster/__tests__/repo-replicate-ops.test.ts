@@ -40,9 +40,8 @@ function mockState(initial?: Record<string, ReplicaSet>): void {
   );
   // The repo's storage identity (#93): replicate resolves the GUID up front and
   // speaks it to every datastore verb; k8s objects keep the name.
-  vi.spyOn(configService, 'getRepository').mockImplementation(
-    (repoKey: string) =>
-      Promise.resolve({ repositoryGuid: `guid-${repoKey.replaceAll(':', '-')}` }) as never
+  vi.spyOn(configService, 'getRepository').mockImplementation((repoKey: string) =>
+    Promise.resolve({ repositoryGuid: `guid-${repoKey.replaceAll(':', '-')}` })
   );
 }
 
@@ -209,50 +208,114 @@ describe('replicateRepo (create orchestrator)', () => {
 });
 
 describe('removeReplicaSet (teardown orchestrator)', () => {
-  it('deletes overlay, strips labels, discards forks, drops snapshot, forgets state', async () => {
+  it('deletes overlay, discards forks (close before detach), strips labels, drops snapshot, VERIFIES, then forgets', async () => {
     mockState({ 'sqldb-replicas': seededSet });
     const exec = mockExec();
 
     await removeReplicaSet('sqldb');
 
     const calls = exec.mock.calls.map((c) => c[0]);
-    // Each fork's per-volume LUKS images are closed BEFORE its discard-detach (bug
-    // #49's mirror): a fork holding a live LUKS mapping and its loop device is BUSY,
-    // so a detach that skipped the close would simply fail.
+    // ORDER is the safety property (bug #95): delete the WHOLE overlay FIRST so the
+    // replica pods terminate and release their fork mounts, THEN per fork close its
+    // LUKS volumes (#49 mirror) and detach --discard, THEN strip the labels, drop
+    // the snapshot, and VERIFY each fork is gone (datastore_list per node) before
+    // forgetting state. The old order stripped labels first and detached with a
+    // warn-and-continue swallow — the false-success the fix kills.
     expect(calls.map((c) => c.functionName)).toEqual([
       'kube_delete',
-      'kube_node_label',
-      'kube_node_label',
       'datastore_volumes_close',
       'datastore_detach',
       'datastore_volumes_close',
       'datastore_detach',
+      'kube_node_label',
+      'kube_node_label',
       'datastore_snapshot_delete',
+      'datastore_list',
+      'datastore_list',
     ]);
-    // The overlay delete is replica-set scoped (whole-overlay form, no ordinal).
+    // The overlay delete is replica-set scoped (whole-overlay form, no ordinal) and
+    // CAPTURED — a failure surfaces what it actually deleted (bug #95 mechanism b).
     expect(calls[0]).toMatchObject({
       machineName: 'cp1',
+      captureOutput: true,
       params: { namespace: 'sqldb', replica_set: 'sqldb-replicas' },
     });
     expect(calls[0].params?.pod_ordinal).toBeUndefined();
-    // Labels are stripped per fork (mount-style datastore name).
-    expect(calls[1].params).toMatchObject({ datastore: 'ds-data-sqldb-replicas-r1', remove: true });
+    // Per fork: close precedes detach --discard (a live LUKS mapping is BUSY).
+    for (const fork of ['ds-data:sqldb-replicas-r1', 'ds-data:sqldb-replicas-r2']) {
+      const closeAt = calls.findIndex(
+        (c) => c.functionName === 'datastore_volumes_close' && c.params?.name === fork
+      );
+      const detachAt = calls.findIndex(
+        (c) => c.functionName === 'datastore_detach' && c.params?.name === fork
+      );
+      expect(closeAt).toBeGreaterThanOrEqual(0);
+      expect(closeAt, `${fork}: close must precede detach --discard`).toBeLessThan(detachAt);
+      expect(calls[detachAt].params?.discard).toBe(true);
+    }
+    // Labels stripped per fork (mount-style datastore name), on the control node.
+    const labels = calls.filter((c) => c.functionName === 'kube_node_label');
+    expect(labels.map((c) => c.params?.datastore)).toEqual([
+      'ds-data-sqldb-replicas-r1',
+      'ds-data-sqldb-replicas-r2',
+    ]);
+    expect(labels.every((c) => c.params?.remove === true)).toBe(true);
     // The set's snapshot is dropped after the clones are discarded.
-    expect(calls.at(-1)?.params).toMatchObject({
-      name: 'ds-data',
-      snapshot: 'replicate-sqldb-replicas',
-    });
+    const snap = calls.find((c) => c.functionName === 'datastore_snapshot_delete');
+    expect(snap?.params).toMatchObject({ name: 'ds-data', snapshot: 'replicate-sqldb-replicas' });
+    // Verification queries each replica node; the mock list holds neither fork.
+    const lists = calls.filter((c) => c.functionName === 'datastore_list');
+    expect(lists.map((c) => c.machineName)).toEqual(['prod-w-1', 'prod-w-2']);
+    // State forgotten LAST, only after the verified teardown.
     expect(stored).toEqual({});
   });
 
-  it('continues past infra failures so remove converges, then forgets state', async () => {
+  it('REJECTS and PRESERVES state when a fork detach stays busy (bug #95 — no false success)', async () => {
     mockState({ 'sqldb-replicas': seededSet });
-    vi.spyOn(localExecutorService, 'execute').mockResolvedValue({
-      success: false,
-      error: 'cluster gone',
-    } as never);
-    await removeReplicaSet('sqldb');
-    expect(stored).toEqual({});
+    // The replica pod outlived the detach, so datastore_detach never clears. The
+    // OLD teardown swallowed this (tryStep warn-and-continue) and forgot state
+    // anyway — the false success. Now the discard is HARD: it must propagate and
+    // NEVER reach the state-forget.
+    const forget = vi.spyOn(configService, 'setStateBucket');
+    vi.spyOn(localExecutorService, 'execute').mockImplementation(({ functionName }) => {
+      if (functionName === 'datastore_detach') {
+        return Promise.resolve({
+          success: false,
+          error: 'device-mapper: remove ioctl ... Device or resource busy',
+        }) as never;
+      }
+      return Promise.resolve({ success: true }) as never;
+    });
+
+    await expect(removeReplicaSet('sqldb')).rejects.toThrow(/NOT removed.*could not be discarded/s);
+
+    // The state-forget (the only setStateBucket call remove makes) never fired —
+    // reverting the discard to a swallow makes this go red (state cleared).
+    expect(forget).not.toHaveBeenCalled();
+    expect(stored).toEqual({ 'sqldb-replicas': seededSet });
+  });
+
+  it('REJECTS naming the survivor when a fork is still attached after the discard', async () => {
+    mockState({ 'sqldb-replicas': seededSet });
+    const forget = vi.spyOn(configService, 'setStateBucket');
+    // Every teardown step SUCCEEDS, but datastore_list still enumerates r1's fork:
+    // the discard succeeded-but-did-nothing. Verify-before-forget catches it and
+    // fails loud naming the survivor, leaving state intact for the retry.
+    vi.spyOn(localExecutorService, 'execute').mockImplementation(
+      ({ functionName, machineName }) => {
+        if (functionName === 'datastore_list') {
+          const forks = machineName === 'prod-w-1' ? [{ name: 'ds-data:sqldb-replicas-r1' }] : [];
+          return Promise.resolve({ success: true, stdout: JSON.stringify(forks) }) as never;
+        }
+        return Promise.resolve({ success: true }) as never;
+      }
+    );
+
+    await expect(removeReplicaSet('sqldb')).rejects.toThrow(
+      /still attached: ds-data:sqldb-replicas-r1 on prod-w-1/
+    );
+    expect(forget).not.toHaveBeenCalled();
+    expect(stored).toEqual({ 'sqldb-replicas': seededSet });
   });
 });
 

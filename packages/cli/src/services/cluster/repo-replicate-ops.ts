@@ -18,13 +18,16 @@
  * rather than named independently.
  */
 
+import { DEFAULTS } from '@rediacc/shared/config';
+import type { ReplicaSet } from '@rediacc/shared/config-schema';
 import { getCluster } from '../config/config-cluster-ops.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
+import { getExecutor } from '../executor/executor-factory.js';
+import { parseCapturedJson } from '../executor/local-executor.js';
 import { controlDatastoreMount } from './cluster-kube.js';
 import { resolveExecutionTarget } from './cluster-target.js';
 import {
-  discardReplicaDatastores,
   dispatch,
   forgetReplicaSet,
   getReplicaSet,
@@ -170,11 +173,30 @@ export async function replicateRepo(options: ReplicateOptions): Promise<void> {
 }
 
 /**
- * Remove a repo's replica set: delete the label-scoped overlay, strip the fork
- * node labels, discard the fork datastores, drop the snapshot, forget the state.
- * Every infra step is best-effort (warn + continue) so remove converges even
- * when the cluster is partially gone; state is forgotten last. Removing a repo
- * that has no set is a no-op (§5.4: converge-to-absent).
+ * Remove a repo's replica set (spec §5.4: converge-to-absent). The teardown is
+ * ORDERED and its holder-releasing steps are HARD (bug #95, found live by the B1
+ * window):
+ *
+ *   1. delete the whole overlay (StatefulSet + Services + PVC + PV) by set label
+ *      so the replica pods terminate and release their fork mounts,
+ *   2. THEN discard each fork,
+ *   3. strip the node labels,
+ *   4. drop the snapshot,
+ *   5. VERIFY no fork of the set survives, and only THEN forget the state.
+ *
+ * Genuinely idempotent cleanups (LUKS close, label strip, snapshot delete) still
+ * warn-and-continue, but they are COUNTED and reported; any step whose failure
+ * would strand a holder — the fork discard, and the final verify — PROPAGATES.
+ * State is forgotten LAST, and never while a survivor remains.
+ *
+ * Bug #95 was a FALSE SUCCESS: the old teardown deleted the overlay and detached
+ * the forks with `tryStep` (warn-and-continue on EVERY failure), then forgot
+ * state unconditionally. In the live run the replica pod still held the fork
+ * mount (remove never waited for pod termination), the discard-detach lost the
+ * busy race, `tryStep` swallowed it, and remove reported "removed" while the
+ * StatefulSet, both Services, both forks, both nodes' dm devices and a node label
+ * all stayed live — and `replicate status` then said the set was gone. Removing a
+ * repo that has no set stays a no-op.
  */
 export async function removeReplicaSet(repoKey: string, debug?: boolean): Promise<void> {
   const setName = replicaSetNameFor(repoKey);
@@ -185,35 +207,201 @@ export async function removeReplicaSet(repoKey: string, debug?: boolean): Promis
   }
   const { machineName: control } = await resolveExecutionTarget({ cluster: set.cluster });
   const controlMount = controlDatastoreMount(set.cluster);
+  const skipped: string[] = [];
 
-  await tryStep(
+  // 1. Delete the whole overlay by set label. HARD, and captured: `kubectl
+  //    delete` default-waits for the pods to terminate, so a delete that fires is
+  //    ALSO the pod-termination wait that lets the fork discard win. Capture the
+  //    output so a later failure can name whether the delete removed anything —
+  //    bug #95 mechanism (b) was a silent no-op that left the StatefulSet (and so
+  //    the pods) running.
+  const deleteLog = await captureStep(
     'kube_delete',
     control,
     { mount_path: controlMount, namespace: set.repo, replica_set: setName },
     debug
   );
+
+  // 2. Discard each fork. HARD: a fork left attached IS the bug #95 survivor (dm
+  //    cow/pool + the running replica holding it). On final failure this PROPAGATES
+  //    (naming the survivor + surfacing the delete log), never reaching the forget.
+  await discardForks(set, deleteLog, repoKey, skipped, debug);
+
+  // 3. Strip the fork node labels (best-effort: a stray label holds nothing).
   for (const r of set.replicas) {
-    await tryStep(
-      'kube_node_label',
+    try {
+      await dispatch(
+        'kube_node_label',
+        control,
+        {
+          mount_path: controlMount,
+          node_ip: await nodeIp(r.node),
+          datastore: r.fork.replace(':', '-'),
+          remove: true,
+        },
+        debug
+      );
+    } catch (err) {
+      skipped.push(`kube_node_label ${r.fork} on ${r.node}: ${err}`);
+    }
+  }
+
+  // 4. Drop the set's snapshot (best-effort: a leftover snapshot reclaims free).
+  try {
+    await dispatch(
+      'datastore_snapshot_delete',
       control,
-      {
-        mount_path: controlMount,
-        node_ip: await nodeIp(r.node),
-        datastore: r.fork.replace(':', '-'),
-        remove: true,
-      },
+      { name: set.datastore, snapshot: set.snapshot ?? replicaSnapshotName(setName) },
       debug
     );
+  } catch (err) {
+    skipped.push(`datastore_snapshot_delete on ${control}: ${err}`);
   }
-  await discardReplicaDatastores(set, debug);
-  await tryStep(
-    'datastore_snapshot_delete',
-    control,
-    { name: set.datastore, snapshot: set.snapshot ?? replicaSnapshotName(setName) },
-    debug
-  );
+
+  // 5. VERIFY before forgetting (the #43 verify-then-report principle): confirm
+  //    no fork of the set is still attached on its node. datastore_detach
+  //    --discard removes the fork datastore, so a fork still enumerated by
+  //    datastore_list means the discard SUCCEEDED-but-DID-NOTHING (the false
+  //    success class). On any survivor, fail non-zero with the manual repair and
+  //    leave state intact so the operator can finish and re-run.
+  const survivors = await findSurvivingForks(set, debug);
+  if (survivors.length > 0) {
+    throw new Error(
+      removeFailure(setName, repoKey, `forks still attached: ${survivors.join('; ')}`, deleteLog)
+    );
+  }
+
+  // 6. Forget state LAST, only after verified teardown.
   await forgetReplicaSet(setName);
+  if (skipped.length > 0) {
+    outputService.warn(
+      `  remove: ${skipped.length} best-effort cleanup step(s) failed (set torn down anyway): ${skipped.join('; ')}`
+    );
+  }
   outputService.success(`Replica set "${setName}" removed.`);
+}
+
+/**
+ * Discard every fork of the set (bug #95 step 2): per fork, close its per-volume
+ * LUKS images (best-effort mirror of provisioning, bug #49 — a fork holding a
+ * live LUKS mapping is BUSY) then detach --discard, retrying through kubelet's
+ * unmount lag exactly like the refresh path. The detach is HARD: on final failure
+ * it THROWS (naming the fork + surfacing the delete log) so remove exits non-zero
+ * and never reaches the state-forget.
+ */
+async function discardForks(
+  set: ReplicaSet,
+  deleteLog: string,
+  repoKey: string,
+  skipped: string[],
+  debug?: boolean
+): Promise<void> {
+  for (const r of set.replicas) {
+    try {
+      await dispatch(
+        'datastore_volumes_close',
+        r.node,
+        { name: r.fork, repo: set.repoGuid ?? set.repo },
+        debug
+      );
+    } catch (err) {
+      skipped.push(`datastore_volumes_close ${r.fork} on ${r.node}: ${err}`);
+    }
+    try {
+      await detachWithRetry(r.fork, r.node, debug);
+    } catch (err) {
+      throw new Error(
+        removeFailure(
+          replicaSetNameFor(repoKey),
+          repoKey,
+          `fork ${r.fork} could not be discarded on ${r.node}: ${err}`,
+          deleteLog
+        )
+      );
+    }
+  }
+}
+
+/**
+ * The non-zero remove message: name the survivor, surface the captured
+ * overlay-delete log (bug #95 mechanism b — so the next run names the cause
+ * instead of guessing), and spell out the manual repair. State is preserved on
+ * this path, so the operator can finish the teardown and re-run.
+ */
+function removeFailure(
+  setName: string,
+  repoKey: string,
+  survivor: string,
+  deleteLog: string
+): string {
+  const log = deleteLog.trim();
+  return (
+    `Replica set "${setName}" NOT removed — ${survivor}. State was PRESERVED. ` +
+    `Overlay delete reported: ${log.length > 0 ? log : '(no output — it may have deleted nothing)'}. ` +
+    `Terminate any surviving replica pods and detach the fork(s) with --discard on their nodes, ` +
+    `then re-run "rdc repo replicate remove ${repoKey}".`
+  );
+}
+
+/**
+ * Dispatch a bridge verb capturing its stdout; throw on non-success. Used for the
+ * overlay delete (whose output must be surfaced on failure) and the survivor
+ * probe (whose output is the datastore listing).
+ */
+async function captureStep(
+  functionName: string,
+  machineName: string,
+  params: Record<string, unknown>,
+  debug?: boolean
+): Promise<string> {
+  const res = await getExecutor().execute({
+    functionName,
+    machineName,
+    params,
+    debug,
+    captureOutput: true,
+  });
+  if (!res.success) {
+    throw new Error(
+      `Replica teardown step "${functionName}" failed on ${machineName}: ${res.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR}`
+    );
+  }
+  return res.stdout ?? '';
+}
+
+/**
+ * The set's forks still attached on their nodes after the discard — the bug #95
+ * survivor probe. `datastore_detach --discard` removes the fork datastore, so a
+ * fork still enumerated by `datastore_list` on its node means the discard did
+ * nothing; a node we cannot query is itself unverifiable and counts as a survivor
+ * (fail loud rather than forget state blind).
+ */
+async function findSurvivingForks(set: ReplicaSet, debug?: boolean): Promise<string[]> {
+  const survivors: string[] = [];
+  for (const r of set.replicas) {
+    const res = await getExecutor().execute({
+      functionName: 'datastore_list',
+      machineName: r.node,
+      params: {},
+      debug,
+      captureOutput: true,
+    });
+    if (!res.success) {
+      survivors.push(
+        `${r.fork} on ${r.node} (unverifiable: ${res.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR})`
+      );
+      continue;
+    }
+    let records: { name?: string }[];
+    try {
+      records = parseCapturedJson<{ name?: string }[]>(res.stdout);
+    } catch (err) {
+      survivors.push(`${r.fork} on ${r.node} (unverifiable: ${err})`);
+      continue;
+    }
+    if (records.some((d) => d.name === r.fork)) survivors.push(`${r.fork} on ${r.node}`);
+  }
+  return survivors;
 }
 
 /**

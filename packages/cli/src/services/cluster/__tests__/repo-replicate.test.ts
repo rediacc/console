@@ -4,7 +4,6 @@ import { configService } from '../../config/config-resources.js';
 import { outputService } from '../../core/output.js';
 import { localExecutorService } from '../../executor/local-executor.js';
 import {
-  discardReplicaDatastores,
   forgetReplicaSet,
   getReplicaSet,
   listReplicaSets,
@@ -220,26 +219,7 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
     );
   });
 
-  it('discardReplicaDatastores detaches --discard every fork (best-effort)', async () => {
-    vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
-    const exec = execMock();
-    await discardReplicaDatastores({
-      repo: 'sqldb',
-      datastore: 'ds-data',
-      cluster: 'prod',
-      createdAt: 'now',
-      replicas: [
-        { index: 1, fork: 'ds-data:set1-r1', node: 'n1' },
-        { index: 2, fork: 'ds-data:set1-r2', node: 'n2' },
-      ],
-    });
-    const detaches = exec.mock.calls
-      .map((c) => c[0])
-      .filter((c) => c.functionName === 'datastore_detach' && c.params?.discard === true);
-    expect(detaches.map((c) => c.params?.name)).toEqual(['ds-data:set1-r1', 'ds-data:set1-r2']);
-  });
-
-  // ── bug #49: the per-volume LUKS images, and the two traps ────────────────
+  // ── bug #49: the per-volume LUKS images, and the trap ─────────────────────
 
   // A datastore fork is a BLOCK-layer clone: it carries the ciphertext
   // repos/<repo>/volumes/<pvc>.img AND the empty directory that image was mounted
@@ -292,40 +272,6 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
       const labelAt = names.indexOf('kube_node_label', attachAt);
       expect(attachAt, `replica ${i + 1}: attach must precede open`).toBeLessThan(openAt);
       expect(openAt, `replica ${i + 1}: open must precede the node label`).toBeLessThan(labelAt);
-    }
-  });
-
-  // TRAP 2: anything the provision path opens, the discard path must close. A fork
-  // holding a live LUKS mapping and its loop device is BUSY, so a discard-detach
-  // that skipped the close would simply fail.
-  it('closes the repo volumes BEFORE discarding each fork', async () => {
-    vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
-    const exec = execMock();
-
-    await discardReplicaDatastores({
-      repo: 'sqldb',
-      datastore: 'ds-data',
-      cluster: 'prod',
-      createdAt: 'now',
-      replicas: [
-        { index: 1, fork: 'ds-data:set1-r1', node: 'n1' },
-        { index: 2, fork: 'ds-data:set1-r2', node: 'n2' },
-      ],
-    });
-
-    const calls = exec.mock.calls.map((c) => c[0]);
-    const closes = calls.filter((c) => c.functionName === 'datastore_volumes_close');
-    expect(closes.map((c) => c.params?.name)).toEqual(['ds-data:set1-r1', 'ds-data:set1-r2']);
-    expect(closes.every((c) => c.params?.repo === 'sqldb')).toBe(true);
-
-    for (const fork of ['ds-data:set1-r1', 'ds-data:set1-r2']) {
-      const closeAt = calls.findIndex(
-        (c) => c.functionName === 'datastore_volumes_close' && c.params?.name === fork
-      );
-      const detachAt = calls.findIndex(
-        (c) => c.functionName === 'datastore_detach' && c.params?.name === fork
-      );
-      expect(closeAt, `${fork}: close must precede detach --discard`).toBeLessThan(detachAt);
     }
   });
 });

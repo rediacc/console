@@ -29,7 +29,6 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { ReplicaSet } from '@rediacc/shared/config-schema';
 import { configService } from '../config/config-resources.js';
-import { outputService } from '../core/output.js';
 import { getExecutor } from '../executor/executor-factory.js';
 import { parseCapturedJson } from '../executor/local-executor.js';
 
@@ -231,45 +230,6 @@ export async function provisionOneReplica(
 /** The fork clone's mount path `/mnt/rediacc-ds/<parent>-<tag>` on its node. */
 function replicaForkMount(datastore: string, tag: string): string {
   return `${NAMED_DS_BASE}/${datastore}-${tag}`;
-}
-
-/** Discard a replica set's datastores: detach --discard each fork (best-effort). */
-export async function discardReplicaDatastores(set: ReplicaSet, debug?: boolean): Promise<void> {
-  for (const r of set.replicas) {
-    try {
-      // Close the per-volume LUKS images FIRST (bug #49's mirror). Anything the
-      // provision path opens, the discard path must close: a fork carrying a live
-      // LUKS mapping and its loop device is BUSY, and `datastore_detach --discard`
-      // would fail on it. Best-effort like the detach itself — a replica whose
-      // volumes are already closed (or that never opened any) is a no-op, and a
-      // node that cannot answer must not strand the rest of the teardown.
-      await getExecutor().execute({
-        functionName: 'datastore_volumes_close',
-        machineName: r.node,
-        // By GUID (#93): the images live under repos/<guid> on the fork. Sets
-        // recorded before the guid was tracked fall back to the name (their
-        // volumes never opened, so the close is a no-op either way).
-        params: { name: r.fork, repo: set.repoGuid ?? set.repo },
-        debug,
-      });
-    } catch (err) {
-      outputService.warn(
-        `  discard: datastore_volumes_close ${r.fork} on ${r.node} failed (continuing): ${err}`
-      );
-    }
-    try {
-      await getExecutor().execute({
-        functionName: 'datastore_detach',
-        machineName: r.node,
-        params: { name: r.fork, discard: true },
-        debug,
-      });
-    } catch (err) {
-      outputService.warn(
-        `  discard: datastore_detach ${r.fork} on ${r.node} failed (continuing): ${err}`
-      );
-    }
-  }
 }
 
 /** Dispatch a bridge verb, throwing on non-success. */
