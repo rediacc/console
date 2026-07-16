@@ -3549,7 +3549,7 @@
   {
     "id": "search-1555",
     "content": "3.9 remove",
-    "body": "{{t:cli.commands.machine.remove.description}} rdc machine remove <name> [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | -y, --yes | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-machine-scan-keys\"></a>",
+    "body": "{{t:cli.commands.machine.remove.description}} rdc machine remove <name> [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | -y, --yes | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - | | --force | {{t:cli.commands.machine.remove.forceOption}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-machine-scan-keys\"></a>",
     "excerpt": "{{t:cli.commands.machine.remove.description}} rdc machine remove <name> [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.descr...",
     "category": "Documentation",
     "page": "/ar/docs/cli-application",

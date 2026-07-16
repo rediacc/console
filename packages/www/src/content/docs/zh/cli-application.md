@@ -6,7 +6,7 @@ order: 2
 language: zh
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/zh/cli.json
-sourceHash: "c4aa6241ac57d362"
+sourceHash: "1dcf9dd9fecdf778"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -848,6 +848,7 @@ rdc machine remove <name> [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--force` | {{t:cli.commands.machine.remove.forceOption}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-machine-scan-keys"></a>

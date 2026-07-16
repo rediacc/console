@@ -92,6 +92,7 @@ Remove a machine from the config. Does not touch the machine itself.
 **Options:**
 
 - `-y, --yes` — Skip confirmation prompt
+- `--force` — Remove the machine even if repositories are still placed on it, leaving those placements dangling.
 
 > MCP tool
 
