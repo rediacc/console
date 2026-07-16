@@ -21,7 +21,8 @@
       {
         "matcher": "^(Edit|MultiEdit|Write|NotebookEdit)$",
         "hooks": [
-          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-edit/block-suppressions.sh\"" }
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-edit/block-suppressions.sh\"" },
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-edit/block-inline-workflow-run.sh\"" }
         ]
       }
     ],
