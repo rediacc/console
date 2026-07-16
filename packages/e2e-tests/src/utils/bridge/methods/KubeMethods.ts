@@ -27,6 +27,8 @@ export interface KubeInstallOptions {
   version?: string;
   apiPort?: number;
   airgapBundle?: string;
+  /** registries.yaml so k3s gets --private-registry (a wired zot is bypassed without it). */
+  registriesYaml?: string;
   disableComponents?: string;
   /** Real private NIC to bind/advertise on (multi-node cluster); default: dummy IP. */
   bindIp?: string;
@@ -112,6 +114,7 @@ export class KubeMethods {
       version: opts.version,
       apiPort: opts.apiPort,
       airgapBundle: opts.airgapBundle,
+      registriesYaml: opts.registriesYaml,
       disableComponents: opts.disableComponents,
       bindIp: opts.bindIp,
     });

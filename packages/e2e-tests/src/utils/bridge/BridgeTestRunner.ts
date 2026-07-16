@@ -640,6 +640,7 @@ export class BridgeTestRunner {
     add('--version', opts.version);
     add('--api-port', opts.apiPort);
     add('--airgap-bundle', opts.airgapBundle);
+    add('--registries-yaml', opts.registriesYaml);
     add('--disable-components', opts.disableComponents);
     add('--node', opts.node);
     add('--token', opts.token);

@@ -398,6 +398,11 @@ ${dataSource ?? ''}`;
         mountPath: CTRL_MOUNT,
         networkId: CTRL_NET,
         role: 'server',
+        // R1 wired the zot mirror, but kube install must NAME the registries
+        // file or k3s starts without --private-registry and every pull silently
+        // bypasses the cache (found live: the R2 through-pull assert stayed
+        // empty until this line existed — the wire verb alone is half a wiring).
+        registriesYaml: '/etc/rancher/k3s/registries.yaml',
       });
       expect(w1.isSuccess(install)).toBe(true);
       expect(await poll(() => nodeReady(), 120_000)).toBe(true);

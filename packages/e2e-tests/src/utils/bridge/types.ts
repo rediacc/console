@@ -76,6 +76,7 @@ export interface TestFunctionOptions {
   version?: string;
   apiPort?: number;
   airgapBundle?: string;
+  registriesYaml?: string;
   disableComponents?: string;
   token?: string;
   node?: string;
