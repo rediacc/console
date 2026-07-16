@@ -846,6 +846,11 @@
         "noStartOption": "Mount and prepare the repository without running its up() steps (folds the retired 'repo mount'; LUKS open and, for cluster repos, PV generation).",
         "noWaitOption": "Return once containers are started; health checks continue in the background"
       },
+      "mount": {
+        "starting": "Mounting \"{{repository}}\" on \"{{machine}}\"...",
+        "completed": "Repository mounted",
+        "failed": "Mount failed"
+      },
       "upAll": {
         "includeForksOption": "Also mount/start forked repositories",
         "mountOnlyOption": "Only mount, don't start services",
@@ -1856,6 +1861,7 @@
     },
     "machine": {
       "query": "Show full machine status",
+      "containers": "Show container status only",
       "health": "Health check for CI/CD",
       "keyConcepts": "\nKey Concepts:\n\n  Query Filters\n    • rdc machine status <name> returns all sections by default\n    • Use --system, --repositories, --containers, --services, --network, --block-devices to filter\n    • JSON output enriches containers with: repository (resolved name), domain, autoRoute\n\n  Health & Monitoring\n    • machine health exits with: 0=healthy, 1=warning, 2=error — use for CI/CD gates\n    • machine status <name> --containers --health-check exits 2 if any container is unhealthy\n    • machine status <name> --services --stability-check exits 2 if any service is failed, restarting, or has >3 restarts\n    • machine prune removes orphaned loopback IPs and systemd units from deleted repos\n\n  Datastore Structure (/mnt/rediacc/)\n    • repositories/ — encrypted LUKS images (one per repo GUID)\n    • mounts/ — decrypted mount points (accessible when repo is mounted)\n    • immovable/ — per-repo Docker daemon data\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n"
     },
