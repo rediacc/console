@@ -557,7 +557,10 @@ ${dataSource ?? ''}`;
       );
       expect(ready.code, `zotprobe never Ready: ${ready.stderr.slice(-200)}`).toBe(0);
       const served = await w1.executeViaBridge(
-        'sudo find /var/lib/rediacc-zot -maxdepth 6 -type d -name busybox 2>/dev/null | head -1'
+        // The machine-scoped store is DefaultStorageDir=/var/lib/rediacc/zot
+        // (pkg/kube/registry/zot.go:50) — NOT the service name rediacc-zot,
+        // which this find once probed as a path.
+        'sudo find /var/lib/rediacc/zot -maxdepth 6 -type d -name busybox 2>/dev/null | head -1'
       );
       await kubectl(`-n ${NS} delete pod zotprobe --ignore-not-found --timeout=60s`);
       expect(served.stdout.trim(), 'busybox not found in the zot blob store').not.toBe('');
