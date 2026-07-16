@@ -242,3 +242,64 @@ test.describe
       expect(await sha('w1')).toBe(await sha('w2'));
     });
   });
+
+test.describe
+  .serial('Promote (fork → grand swap) @bridge', () => {
+    // repository_promote had no live dispatch site (allowlist-only). Prove the
+    // swap (spec 03 §5.4: "make a validated fork the production repository under
+    // its parent name"; both records must live in the same datastore) with the
+    // delta block's mount-free image-sha technique — remounting the swapped grand
+    // over two-hop SSH is the flaky path this suite deliberately avoids.
+    let runner: BridgeTestRunner;
+    const grand = `promo-grand-${stamp}`;
+    const fork = `promo-fork-${stamp}`;
+
+    const imageSha = async (name: string): Promise<string> => {
+      const r = await runner.executeViaBridge(
+        `sudo sha256sum "${DS}/repositories/${name}" | cut -d' ' -f1`
+      );
+      return extractSha(runner.getCombinedOutput(r));
+    };
+
+    test.beforeAll(async () => {
+      runner = BridgeTestRunner.forWorker();
+      await runner.datastoreInitPool('10G', DS, true);
+      await runner.repositoryNew(grand, '1G', TEST_PASSWORD, DS);
+      await runner.writeFileToRepository(grand, 'marker.txt', `grand-v1-${stamp}`, DS);
+      await runner.repositoryUnmount(grand, DS).catch(() => {});
+    });
+
+    test.afterAll(async () => {
+      for (const r of [fork, grand]) {
+        await runner.repositoryUnmount(r, DS).catch(() => {});
+        await runner.repositoryRm(r, DS).catch(() => {});
+      }
+    });
+
+    test('promote swaps a writable fork data into the grand (same-datastore)', async () => {
+      // A WRITABLE fork of the grand (no --immutable), diverged with its own data.
+      const forkRes = await runner.executeViaBridge(
+        `sudo renet repository fork --name "${grand}" --tag "${fork}" --datastore "${DS}"`
+      );
+      expect(runner.isSuccess(forkRes), `writable fork: ${runner.getCombinedOutput(forkRes)}`).toBe(
+        true
+      );
+      await runner.repositoryMount(fork, TEST_PASSWORD, DS);
+      await runner.writeFileToRepository(fork, 'marker.txt', `fork-v2-${stamp}`, DS);
+      await runner.repositoryUnmount(fork, DS).catch(() => {});
+
+      const grandBefore = await imageSha(grand);
+      const forkBefore = await imageSha(fork);
+      // They genuinely diverged (otherwise the swap proof below is vacuous).
+      expect(grandBefore).not.toBe(forkBefore);
+
+      const promote = await runner.repositoryPromote(grand, fork, DS);
+      expect(runner.isSuccess(promote), `promote: ${runner.getCombinedOutput(promote)}`).toBe(true);
+
+      // The grand now carries the FORK's data: its image bytes changed and match
+      // the fork's pre-promote image. Content proof, not exit code alone.
+      const grandAfter = await imageSha(grand);
+      expect(grandAfter, 'grand image unchanged after promote').not.toBe(grandBefore);
+      expect(grandAfter, 'grand did not take the fork image').toBe(forkBefore);
+    });
+  });

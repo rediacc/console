@@ -1,5 +1,35 @@
 import type { ExecResult, TestFunctionOptions } from '../types';
 
+/** repository_policy_set params (renet#76 auto-grow + scheduled trim). */
+export interface RepositoryPolicySetOptions {
+  /** Repository GUID; omit to address the machine-wide default policy. */
+  name?: string;
+  autoGrow?: boolean;
+  maxQuota?: string;
+  growThreshold?: string;
+  growStep?: string;
+  autoTrim?: boolean;
+  trimInterval?: string;
+  datastorePath?: string;
+}
+
+/** repository_policy_get params. */
+export interface RepositoryPolicyGetOptions {
+  /** Repository GUID; omit for the machine-wide default only. */
+  name?: string;
+  datastorePath?: string;
+}
+
+/** repository_trim params (pool reclaim across mounted repos). */
+export interface RepositoryTrimOptions {
+  /** Repository GUID; omit to cover all mounted repositories. */
+  name?: string;
+  docker?: boolean;
+  dockerVolumes?: boolean;
+  reportOnly?: boolean;
+  datastorePath?: string;
+}
+
 /**
  * Repository management methods for BridgeTestRunner.
  */
@@ -189,6 +219,43 @@ export class RepositoryMethods {
       parent,
       fork,
       datastorePath,
+    });
+  }
+
+  // repository_policy_set / _get / repository_trim (renet#76): size policy the
+  // storage-maintain timer consumes + on-demand pool reclaim. `name` is a repo
+  // GUID; omitting it addresses the machine-wide default (policy) / all mounted
+  // repos (trim). The renet command emits --output json.
+  async repositoryPolicySet(opts: RepositoryPolicySetOptions = {}): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_policy_set',
+      name: opts.name,
+      datastorePath: opts.datastorePath,
+      autoGrow: opts.autoGrow,
+      maxQuota: opts.maxQuota,
+      growThreshold: opts.growThreshold,
+      growStep: opts.growStep,
+      autoTrim: opts.autoTrim,
+      trimInterval: opts.trimInterval,
+    });
+  }
+
+  async repositoryPolicyGet(opts: RepositoryPolicyGetOptions = {}): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_policy_get',
+      name: opts.name,
+      datastorePath: opts.datastorePath,
+    });
+  }
+
+  async repositoryTrim(opts: RepositoryTrimOptions = {}): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_trim',
+      name: opts.name,
+      datastorePath: opts.datastorePath,
+      docker: opts.docker,
+      dockerVolumes: opts.dockerVolumes,
+      reportOnly: opts.reportOnly,
     });
   }
 }

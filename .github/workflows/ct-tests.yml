@@ -1,5 +1,11 @@
 name: Console CT - Tests
 
+# Which suites run in which job is driven by the playwright.*.config.ts files.
+# Suites deliberately left OUT of CI (concurrent multi-cluster, cluster rehearse,
+# image-build, destructive ops, the two ruled csi-sanity deviations, the examples
+# program, and the not-yet-enabled CLI migrate-routing suite) are documented, with
+# reasons, in packages/e2e-tests/README.md ("Deliberately not in CI").
+
 on:
   workflow_call:
     inputs:
@@ -84,6 +90,21 @@ jobs:
           #   packages/www/src/content/docs/en/requirements.md (Why UEK?)
           #   packages/www/src/content/docs/en/limits.md (Why not Rocky 10?)
           #   packages/www/src/content/docs/en/troubleshooting.md (btrfs module missing)
+        include:
+          # FULL_INTEGRATION legs: 12a/12b/12d (composition suites) + 13b (live
+          # CRIU fork). Composition logic is distro-agnostic, so two legs are the
+          # honest floor — one apt-family (ubuntu) + one rpm-family (fedora).
+          # CRIU_EXPECTED=1 turns 13b's "CRIU absent" guard into a hard failure.
+          #
+          # CLI_SUITE (suite 23, the rdc-driven migrate-routing e2e) is NOT enabled
+          # here yet: it needs a local two-worker validation of its exact argv +
+          # machine-registration/SSH wiring first (plan phase 5). To turn it on,
+          # add `cli-suite: '1'` to the ubuntu-24.04 leg below. Rationale +
+          # local-run instructions in packages/e2e-tests/README.md.
+          - os-image: ubuntu-24.04
+            full-integration: '1'
+          - os-image: fedora-43
+            full-integration: '1'
     env:
       CI: 'true'
       BRIDGE_TIMEOUT: 240000
@@ -91,6 +112,9 @@ jobs:
       VM_WORKERS: '11 12'
       VM_CEPH_NODES: ''
       VM_IMAGE: ${{ matrix.os-image }}
+      FULL_INTEGRATION: ${{ matrix.full-integration }}
+      CRIU_EXPECTED: ${{ matrix.full-integration }}
+      CLI_SUITE: ${{ matrix.cli-suite }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/app-token
@@ -1364,6 +1388,24 @@ jobs:
         run: |
           cd private/renet
           sudo go test ./pkg/ebpf/ -v -timeout 60s
+
+      # eBPF socket-isolation behavioral regression tests (ebpf_e2e tag). Loud-skip
+      # guard + bpffs mount live in the script so it runs identically on a dev box.
+      # Verified locally 2026-07-16: 5/5 pass once bpffs is mounted.
+      - name: Test eBPF socket isolation (ebpf_e2e)
+        run: sudo .ci/scripts/private/renet-ebpf-e2e.sh
+
+      # Root-tagged renet repository state tests (SaveState/LoadState). They
+      # t.Fatal off-root, so under sudo they must run and PASS.
+      # Verified locally 2026-07-16: 3/3 pass.
+      - name: Test renet repository (root-tagged)
+        run: sudo .ci/scripts/private/renet-root-tests.sh
+
+      # CSI driver conformance (csi-sanity, spec 09 §12) on a scratch loop-BTRFS
+      # datastore. Two ruled deviations (spec 09 §16) stay red by design and are
+      # skipped in the script. Verified locally 2026-07-16: 48/50 pass.
+      - name: Test renet CSI driver (csi-sanity conformance)
+        run: sudo .ci/scripts/private/renet-csi-sanity.sh
 
       # Integration tests (needs sudo for KVM)
       - name: Run integration tests

@@ -630,6 +630,38 @@ test.describe
       expect(await cmMarker(KC)).toBe('parent-v1');
     });
 
+    test('5b. cluster evict (kube_node_remove): the agent leaves, the control plane stays healthy', async () => {
+      // kube_node_remove has had ZERO live callers (dead coverage via
+      // KubeMethods.ts). Evict the agent (NODE2) from the restarted 2-node parent
+      // and assert TODAY'S contract: the node is gone from the API, the control
+      // plane stays Ready, and the NODE1-pinned workload keeps running.
+      //
+      // FU#2 G1 (evict leaves node-side k3s behind, blocking re-adopt) is a KNOWN
+      // product gap. The node-side assert ("no k3s unit / kubelet mounts left on
+      // NODE2") lands in the SAME PR that fixes G1 — the wave ledger (F3) records
+      // this split so the gap stays visible, not papered. So this test is
+      // deliberately the API-side half only. Placed BEFORE the migrate test
+      // (risk #8) so it never entangles with the #30 migrate-teardown red.
+      const evict = await w1.kubeNodeRemove({
+        mountPath: CTRL_MOUNT,
+        networkId: SRV_NET,
+        node: NODE2,
+      });
+      expect(w1.isSuccess(evict), `kube_node_remove: ${evict.stderr}`).toBe(true);
+
+      // The node is gone from the cluster (API-side).
+      expect(
+        await poll(async () => {
+          const nodes = await kubectlOn(w1, KC, 'get nodes --no-headers');
+          return nodes.code === 0 && !nodes.stdout.includes(NODE2);
+        }, 120_000)
+      ).toBe(true);
+      // The control plane is still healthy: exactly one Ready node (NODE1).
+      expect(await readyNodeCount(KC)).toBe(1);
+      // The NODE1-pinned workload is unaffected by the agent leaving.
+      expect(await podRunningOn(KC, NODE1)).toBe(true);
+    });
+
     test('6. cluster migrate (in-Ceph fenced remap): detach → fenced re-attach → identity-rewrite migrate', async () => {
       // Tear the multi-node cluster down to a single control node to migrate.
       await w2.executeViaBridge(

@@ -32,6 +32,11 @@ import type {
 import { KubeMethods } from './methods/KubeMethods';
 import type { RegistryUpOptions, RegistryWireOptions } from './methods/RegistryMethods';
 import { RegistryMethods } from './methods/RegistryMethods';
+import type {
+  RepositoryPolicyGetOptions,
+  RepositoryPolicySetOptions,
+  RepositoryTrimOptions,
+} from './methods/RepositoryMethods';
 import { RepositoryMethods } from './methods/RepositoryMethods';
 import { SetupMethods } from './methods/SetupMethods';
 import { SystemCheckMethods } from './methods/SystemCheckMethods';
@@ -660,6 +665,26 @@ export class BridgeTestRunner {
   }
 
   /**
+   * Build repository size-policy + trim flags (repository_policy_set / _get /
+   * repository_trim, renet#76). Tri-state booleans carry an explicit value so
+   * the renet side's cobra Changed() detection fires; docker/report-only are
+   * plain boolean flags.
+   */
+  private buildRepositoryPolicyFlags(opts: TestFunctionOptions): string {
+    let flags = '';
+    if (opts.autoGrow !== undefined) flags += ` --auto-grow ${String(opts.autoGrow)}`;
+    if (opts.maxQuota) flags += ` --max-quota ${opts.maxQuota}`;
+    if (opts.growThreshold) flags += ` --grow-threshold ${opts.growThreshold}`;
+    if (opts.growStep) flags += ` --grow-step ${opts.growStep}`;
+    if (opts.autoTrim !== undefined) flags += ` --auto-trim ${String(opts.autoTrim)}`;
+    if (opts.trimInterval) flags += ` --trim-interval ${opts.trimInterval}`;
+    if (opts.docker) flags += ` --docker`;
+    if (opts.dockerVolumes) flags += ` --docker-volumes`;
+    if (opts.reportOnly) flags += ` --report-only`;
+    return flags;
+  }
+
+  /**
    * Test a bridge function on target VM via two-hop SSH.
    * Uses: renet functions once --test-mode --function <name>
    * Executes: Host → Bridge → Target VM
@@ -676,6 +701,7 @@ export class BridgeTestRunner {
     cmd += this.buildInstallationFlags(opts);
     cmd += this.buildRegistryFlags(opts);
     cmd += this.buildKubeFlags(opts);
+    cmd += this.buildRepositoryPolicyFlags(opts);
 
     // Execute via two-hop SSH: Host → Bridge → Target
     return this.executeViaBridge(cmd, opts.timeout);
@@ -1016,6 +1042,11 @@ export class BridgeTestRunner {
     this.repositoryMethods.repositoryGrow(name, newSize, password, datastorePath);
   repositoryHealth = (name: string, datastorePath?: string) =>
     this.repositoryMethods.repositoryHealth(name, datastorePath);
+  repositoryPolicySet = (opts?: RepositoryPolicySetOptions) =>
+    this.repositoryMethods.repositoryPolicySet(opts);
+  repositoryPolicyGet = (opts?: RepositoryPolicyGetOptions) =>
+    this.repositoryMethods.repositoryPolicyGet(opts);
+  repositoryTrim = (opts?: RepositoryTrimOptions) => this.repositoryMethods.repositoryTrim(opts);
   repositoryLogs = (
     name: string,
     opts?: { container?: string; lines?: string; datastorePath?: string }

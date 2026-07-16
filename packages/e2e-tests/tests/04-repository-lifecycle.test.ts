@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { DEFAULT_DATASTORE_PATH, TEST_PASSWORD, TEST_REPOSITORY_NAME } from '../src/constants';
+import {
+  DEFAULT_DATASTORE_PATH,
+  DEFAULT_NETWORK_ID,
+  TEST_PASSWORD,
+  TEST_REPOSITORY_NAME,
+} from '../src/constants';
 import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 
 /**
@@ -372,3 +377,80 @@ test.describe('Repository Error Handling @bridge', () => {
     expect(result.stderr).not.toContain('unexpected token');
   });
 });
+
+/**
+ * Repository Size Policy + Trim + Maintain Timer (renet#76)
+ *
+ * B4 of the CI-strengthening wave: repository_policy_set / repository_policy_get
+ * and repository_trim ship but were never e2e-tested (they sit on the coverage
+ * gate's legacy allowlist). datastore_status rounds out the storage-health
+ * surface. A per-network daemon is started so the storage-maintain timer
+ * self-installs (it arms from the daemon's StartForeground, not plain machine
+ * setup — see private/renet CLAUDE.md "Autostart & auto-recovery").
+ */
+test.describe
+  .serial('Repository size policy, trim, and maintain timer @bridge @lifecycle', () => {
+    let runner: BridgeTestRunner;
+    const repositoryName = `policy-test-${Date.now()}`;
+    const datastorePath = DEFAULT_DATASTORE_PATH;
+
+    test.beforeAll(async () => {
+      runner = BridgeTestRunner.forWorker();
+      await runner.resetWorkerState();
+      await runner.datastoreInitPool('10G', datastorePath, true);
+      // A mounted repo gives trim something to report; a started per-network
+      // daemon is what self-installs the storage-maintain timer.
+      const created = await runner.repositoryNew(
+        repositoryName,
+        '1G',
+        TEST_PASSWORD,
+        datastorePath
+      );
+      expect(runner.isSuccess(created)).toBe(true);
+      await runner.daemonSetup(DEFAULT_NETWORK_ID);
+    });
+
+    test.afterAll(async () => {
+      await runner.repositoryUnmount(repositoryName, datastorePath).catch(() => undefined);
+      await runner.repositoryRm(repositoryName, datastorePath).catch(() => undefined);
+    });
+
+    test('1. policy set → get round-trips the machine-wide auto-trim policy', async () => {
+      const set = await runner.repositoryPolicySet({
+        autoTrim: true,
+        trimInterval: '24',
+        datastorePath,
+      });
+      expect(runner.isSuccess(set), `policy set: ${runner.getCombinedOutput(set)}`).toBe(true);
+      // Round-trip, NOT a blind success: the interval we just set is read back.
+      const get = await runner.repositoryPolicyGet({ datastorePath });
+      expect(runner.isSuccess(get), `policy get: ${runner.getCombinedOutput(get)}`).toBe(true);
+      const out = runner.getCombinedOutput(get);
+      expect(out.toLowerCase()).toContain('trim');
+      expect(out, 'policy get did not reflect the 24h interval just set').toContain('24');
+    });
+
+    test('2. trim --report-only returns a structured JSON reclaim report', async () => {
+      const trim = await runner.repositoryTrim({ reportOnly: true, datastorePath });
+      expect(runner.isSuccess(trim), `trim: ${runner.getCombinedOutput(trim)}`).toBe(true);
+      // The command emits --output json; a real report has an object payload.
+      expect(runner.getCombinedOutput(trim)).toContain('{');
+    });
+
+    test('3. datastore_status reports datastore health', async () => {
+      const status = await runner.checkDatastore(datastorePath);
+      expect(
+        runner.isSuccess(status),
+        `datastore_status: ${runner.getCombinedOutput(status)}`
+      ).toBe(true);
+    });
+
+    test('4. the storage-maintain timer self-installed and is enabled after daemon start', async () => {
+      // A conditional skip that can silently become permanent is the disease this
+      // wave targets, so this asserts (not skips): the timer must be armed.
+      const enabled = await runner.executeViaBridge(
+        'systemctl is-enabled rediacc-storage-maintain.timer 2>/dev/null || true'
+      );
+      expect(enabled.stdout.trim(), 'storage-maintain timer not enabled').toMatch(/enabled|static/);
+    });
+  });

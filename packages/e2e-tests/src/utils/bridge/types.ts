@@ -102,6 +102,18 @@ export interface TestFunctionOptions {
   keepThirdParty?: boolean;
   server?: string;
   removeLabel?: boolean;
+  // repository_policy_set / repository_policy_get / repository_trim (size policy
+  // + pool reclaim, renet#76). Tri-state booleans (auto_grow/auto_trim) are
+  // ParamString on the renet side ("true"/"false"), so they carry a value.
+  autoGrow?: boolean;
+  maxQuota?: string;
+  growThreshold?: string;
+  growStep?: string;
+  autoTrim?: boolean;
+  trimInterval?: string;
+  docker?: boolean;
+  dockerVolumes?: boolean;
+  reportOnly?: boolean;
 }
 
 /**

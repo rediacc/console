@@ -43,6 +43,12 @@ if ! npm run test -w @rediacc/provisioning; then
     exit 1
 fi
 
+log_step "Testing @rediacc/e2e-tests (unit)..."
+if ! npm run test:unit -w @rediacc/e2e-tests; then
+    log_error "@rediacc/e2e-tests unit tests failed"
+    exit 1
+fi
+
 # Generate coverage report if requested
 if [[ "$COVERAGE" == "true" ]]; then
     log_step "Generating coverage report..."

@@ -73,6 +73,15 @@ test.describe
       runner = BridgeTestRunner.forWorker();
       const criuCheck = await runner.checkCriu();
       criuAvailable = runner.isSuccess(criuCheck);
+      // Prove-the-instrument: on the FULL_INTEGRATION CI legs (ct-tests.yml sets
+      // CRIU_EXPECTED=1) a missing CRIU is a real failure, not a silent skip — a
+      // conditional skip that can quietly become permanent is the kube-registry
+      // disease in a different coat.
+      if (!criuAvailable && process.env.CRIU_EXPECTED === '1') {
+        throw new Error(
+          `CRIU_EXPECTED=1 but CRIU is unavailable on the worker: ${runner.getCombinedOutput(criuCheck)}`
+        );
+      }
       if (!criuAvailable) return;
 
       await runner.resetWorkerState();

@@ -19,7 +19,7 @@
     "test:09-ceph-clone": "playwright test --config=playwright.ceph.config.ts tests/ceph/09-ceph-snapshot-clone.test.ts",
     "test:10-backup": "playwright test tests/10-backup-checkpoint.test.ts",
     "test:11-multi": "playwright test tests/11-multi-machine.test.ts",
-    "test:12-integration": "playwright test tests/12-full-integration.test.ts",
+    "test:12-integration": "playwright test tests/12a-full-integration-repository.test.ts tests/12b-full-integration-checkpoint.test.ts tests/12d-full-integration-multi-machine.test.ts",
     "test:13-fork": "playwright test tests/13-postgres-fork-isolation.test.ts",
     "test:14-vault": "playwright test tests/14-vault-builder.test.ts",
     "test:15-storage": "playwright test tests/15-storage-backup.test.ts",

@@ -48,7 +48,12 @@ const DATA_MOUNT = `/mnt/rediacc-ds/${DATA_DS}`;
 const REPO = 'shop';
 const REPO_NET = '2880';
 const NS = REPO; // the repo's namespace mirrors its name
-const SC = `rediacc-ds-${DATA_DS}`; // the repo's no-provisioner StorageClass
+const SC = `rediacc-ds-${DATA_DS}`; // the repo's no-provisioner StorageClass (static local PV)
+// The per-datastore DYNAMIC CSI StorageClass (spec 09 §9, applied at datastore
+// attach) + the one cluster-level VolumeSnapshotClass (spec 09 §11). Used by the
+// CSI battery (tests 7-9b): dynamic PVC, snapshot/restore, clone.
+const CSI_SC = `rediacc-csi-${DATA_DS}`;
+const VSCLASS = 'rediacc-csi';
 const APP_SECRET_VALUE = 's3cr3t-prod';
 const FORK_REPO = `${REPO}-joseph`;
 const FORK_NET = '2944';
@@ -185,6 +190,84 @@ test.describe
       return res.stdout.trim();
     };
 
+    // --- CSI battery helpers (tests 7-9b) -------------------------------------
+    // The dynamic-provisioning tests use bare Pods with their own labels/names
+    // (not the web Deployment), so they need generic apply/wait/read helpers.
+    const kubectlApply = async (yaml: string): Promise<ExecResult> => {
+      const b64 = Buffer.from(yaml).toString('base64');
+      return w1.executeViaBridge(
+        `echo ${b64} | base64 -d | sudo ${K3S} kubectl --kubeconfig ${KC} apply -f -`
+      );
+    };
+    const pvcBound = async (ns: string, name: string): Promise<boolean> =>
+      (await kubectl(`-n ${ns} get pvc ${name} --no-headers`)).stdout.includes('Bound');
+    const namedPodRunning = async (ns: string, pod: string): Promise<boolean> =>
+      /\sRunning\s/.test((await kubectl(`-n ${ns} get pod ${pod} --no-headers`)).stdout);
+    const podMarker = async (ns: string, pod: string): Promise<string> =>
+      (await kubectl(`-n ${ns} exec ${pod} -- cat /data/marker.txt`)).stdout.trim();
+    // A restricted-PSA-compliant single-container pod that keeps a PVC mounted at
+    // /data and (optionally) seeds a marker only when /data is empty. seccomp
+    // RuntimeDefault is mandatory under PSA restricted (spec 09 §9; the #84 caveat).
+    const csiPod = (name: string, claim: string, seed?: string): string => {
+      const cmd = seed
+        ? `test -s /data/marker.txt || echo ${seed} > /data/marker.txt; exec tail -f /dev/null`
+        : 'exec tail -f /dev/null';
+      return `apiVersion: v1
+kind: Pod
+metadata:
+  name: ${name}
+  namespace: ${NS}
+  labels:
+    app: ${name}
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    fsGroup: 65534
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: c
+      image: busybox:1.36
+      command: ["sh", "-c", "${cmd}"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: [ALL]
+      volumeMounts:
+        - name: data
+          mountPath: /data
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: ${claim}
+`;
+    };
+    const csiPvc = (name: string, dataSource?: string): string => `apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ${name}
+  namespace: ${NS}
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: ${CSI_SC}
+  resources:
+    requests:
+      storage: 1Gi
+${dataSource ?? ''}`;
+    // Delete a bare pod + its PVC and wait for the volume to actually release
+    // (reclaimPolicy Delete ⇒ the driver removes the .img). Keeps the CSI battery
+    // from leaking mounts into test 10's no-leak assertion.
+    const csiCleanup = async (pods: string[], pvcs: string[]): Promise<void> => {
+      for (const p of pods) {
+        await kubectl(`-n ${NS} delete pod ${p} --ignore-not-found --wait=true --timeout=60s`);
+      }
+      for (const c of pvcs) {
+        await kubectl(`-n ${NS} delete pvc ${c} --ignore-not-found --wait=true --timeout=60s`);
+      }
+    };
+
     // Bring the kube repo up carrying its declared secret. Secrets ride the SAME
     // CLI transport as the docker path: REDIACC_SECRET_<NAME> in the environment
     // → collectEnvSecrets → SecretSet.Env → InjectSecrets → per-namespace Opaque
@@ -262,6 +345,9 @@ test.describe
       await w1.executeViaBridge(`sudo renet datastore detach --name ${CTRL_DS} 2>/dev/null; true`);
       await w1.executeViaBridge(`sudo renet datastore delete --name ${CTRL_DS} 2>/dev/null; true`);
       await w1.executeViaBridge(`sudo ip link del rdk${CTRL_NET} 2>/dev/null; true`);
+      // The zot pull-through cache (test R1) is a machine-scoped systemd unit, not
+      // a repo/cluster resource, so nothing above removes it — stop it here.
+      await w1.executeViaBridge('sudo systemctl stop rediacc-zot 2>/dev/null; true');
     };
 
     test.beforeAll(async () => {
@@ -272,6 +358,26 @@ test.describe
     test.afterAll(async () => {
       if (process.env.KEEP_CLUSTER === '1') return;
       await teardownAll().catch(() => undefined);
+    });
+
+    test('R1. zot pull-through cache: registry up + wire BEFORE k3s so image pulls resolve through it', async () => {
+      // Revives the coverage the (now deleted) kube-registry.test.ts anchor stood
+      // in for. Bring the zot cache online and point containerd/k3s at it BEFORE
+      // the k3s install (test 1), so the workload image pull (test 4) resolves
+      // THROUGH the cache. `up` extracts the embedded zot binary + renders its
+      // sync.onDemand config + installs the rediacc-zot unit; `wire` writes the
+      // containerd certs.d hosts.toml + k3s registries.yaml.
+      expect(
+        w1.isSuccess(
+          await w1.kubeRegistryUp({ upstreams: 'docker.io,ghcr.io,quay.io', scope: 'machine' })
+        )
+      ).toBe(true);
+      expect(w1.isSuccess(await w1.kubeRegistryWire({ endpoint: '127.0.0.1:5000' }))).toBe(true);
+      // The zot systemd unit is actually running (not merely installed).
+      const active = await w1.executeViaBridge(
+        'systemctl is-active rediacc-zot 2>/dev/null || true'
+      );
+      expect(active.stdout.trim()).toBe('active');
     });
 
     test('1. anchor cluster: control datastore + kube install → node Ready on a non-loopback IP', async () => {
@@ -429,6 +535,19 @@ test.describe
       expect(seen.stdout.trim()).toBe(APP_SECRET_VALUE);
     });
 
+    test('R2. the workload image pull resolved THROUGH the zot cache (repo tree records busybox)', async () => {
+      // The pod in test 4 is Running, so k3s pulled busybox:1.36 AFTER test R1
+      // wired containerd/k3s at the zot cache. zot's on-demand sync writes the
+      // pulled repo into its blob store, so busybox must now be present there —
+      // the assertable proof the pull went THROUGH the cache, not around it. The
+      // store layout can nest the upstream host, so match the repo dir anywhere
+      // under the store rather than pinning one exact path.
+      const served = await w1.executeViaBridge(
+        'sudo find /var/lib/rediacc-zot -maxdepth 6 -type d -name busybox 2>/dev/null | head -1'
+      );
+      expect(served.stdout.trim(), 'busybox not found in the zot blob store').not.toBe('');
+    });
+
     test('5. F5 hazard: stock k3s local-path is the DEFAULT SC; the rediacc SC is not', async () => {
       // The PVC MUST name the rediacc SC or it is silently adopted by local-path
       // (the default), escaping the forkable per-volume LUKS image. Assert the
@@ -520,7 +639,141 @@ test.describe
       expect(parentRole.stdout.trim()).toBe('primary');
     });
 
-    test('7. teardown: repository down (no leak) + cluster + datastores + dummy interface removed', async () => {
+    test('7. CSI dynamic PVC: pod-triggered WFFC provisioning binds a per-datastore CSI volume + marker persists', async () => {
+      // spec 09 §12 e2e item 1: a PVC on the DYNAMIC per-datastore CSI class
+      // (rediacc-csi-<ds>, WaitForFirstConsumer) is provisioned only once a
+      // consuming pod schedules; the pod writes a marker into the CSI volume.
+      const pvcRes = await kubectlApply(csiPvc('csi-dyn'));
+      expect(pvcRes.code, `apply csi-dyn pvc: ${pvcRes.stderr}`).toBe(0);
+      const podRes = await kubectlApply(csiPod('csi-writer', 'csi-dyn', 'csi-original'));
+      expect(podRes.code, `apply csi-writer pod: ${podRes.stderr}`).toBe(0);
+      // WFFC: the PVC binds only after the pod schedules onto the datastore node.
+      expect(await poll(() => pvcBound(NS, 'csi-dyn'), 120_000)).toBe(true);
+      expect(await poll(() => namedPodRunning(NS, 'csi-writer'), 120_000)).toBe(true);
+      // The bound PV is a real csi.rediacc.io volume, not stock local-path.
+      const volName = await kubectl(`-n ${NS} get pvc csi-dyn -o jsonpath="{.spec.volumeName}"`);
+      const drv = await kubectl(`get pv ${volName.stdout.trim()} -o jsonpath="{.spec.csi.driver}"`);
+      expect(drv.stdout.trim()).toBe('csi.rediacc.io');
+      // The marker the pod seeded is present in the CSI volume.
+      expect(await poll(async () => (await podMarker(NS, 'csi-writer')).length > 0)).toBe(true);
+      expect(await podMarker(NS, 'csi-writer')).toBe('csi-original');
+    });
+
+    test('8. CSI VolumeSnapshot restore is point-in-time (snapshot precedes the 2nd write)', async () => {
+      // spec 09 §12 e2e item 2. Snapshot csi-dyn (holding only 'csi-original'),
+      // THEN write a 2nd marker, THEN restore the snapshot into a new PVC. The
+      // restored volume must carry the 1st marker and NOT the 2nd — that is what
+      // proves point-in-time restore rather than copy-of-latest (same
+      // falsifiability discipline as test 6's secret check).
+      const snapYaml = `apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+  name: csi-snap
+  namespace: ${NS}
+spec:
+  volumeSnapshotClassName: ${VSCLASS}
+  source:
+    persistentVolumeClaimName: csi-dyn
+`;
+      expect((await kubectlApply(snapYaml)).code).toBe(0);
+      expect(
+        await poll(
+          async () =>
+            (
+              await kubectl(
+                `-n ${NS} get volumesnapshot csi-snap -o jsonpath="{.status.readyToUse}"`
+              )
+            ).stdout.trim() === 'true',
+          120_000
+        )
+      ).toBe(true);
+      // Second write AFTER the snapshot.
+      const w2 = await kubectl(
+        `-n ${NS} exec csi-writer -- sh -c "echo csi-second > /data/marker.txt"`
+      );
+      expect(w2.code, w2.stderr).toBe(0);
+      expect(await podMarker(NS, 'csi-writer')).toBe('csi-second');
+      // Restore the snapshot into a fresh PVC via dataSource, boot a pod on it.
+      const restoreDs = `  dataSource:
+    name: csi-snap
+    kind: VolumeSnapshot
+    apiGroup: snapshot.storage.k8s.io
+`;
+      expect((await kubectlApply(csiPvc('csi-restore', restoreDs))).code).toBe(0);
+      expect((await kubectlApply(csiPod('csi-restored', 'csi-restore'))).code).toBe(0);
+      expect(await poll(() => namedPodRunning(NS, 'csi-restored'), 120_000)).toBe(true);
+      // Point-in-time: the restore carries the pre-snapshot marker, not the later write.
+      expect(await poll(async () => (await podMarker(NS, 'csi-restored')).length > 0)).toBe(true);
+      expect(await podMarker(NS, 'csi-restored')).toBe('csi-original');
+    });
+
+    test('9. CSI clone (PVC→PVC dataSource) is independent of its parent', async () => {
+      // spec 09 §12 e2e item 3. Clone csi-dyn into a new PVC, write into the CLONE,
+      // and assert the PARENT is unchanged — divergence proof in both directions.
+      const cloneDs = `  dataSource:
+    name: csi-dyn
+    kind: PersistentVolumeClaim
+`;
+      expect((await kubectlApply(csiPvc('csi-clone', cloneDs))).code).toBe(0);
+      expect((await kubectlApply(csiPod('csi-cloned', 'csi-clone'))).code).toBe(0);
+      expect(await poll(() => namedPodRunning(NS, 'csi-cloned'), 120_000)).toBe(true);
+      // The clone starts as a copy of the parent's CURRENT content ('csi-second').
+      expect(await poll(async () => (await podMarker(NS, 'csi-cloned')).length > 0)).toBe(true);
+      expect(await podMarker(NS, 'csi-cloned')).toBe('csi-second');
+      // Write into the clone; the parent must NOT see it (independence).
+      const wc = await kubectl(
+        `-n ${NS} exec csi-cloned -- sh -c "echo clone-only > /data/marker.txt"`
+      );
+      expect(wc.code, wc.stderr).toBe(0);
+      expect(await podMarker(NS, 'csi-cloned')).toBe('clone-only');
+      expect(await podMarker(NS, 'csi-writer')).toBe('csi-second');
+    });
+
+    test('9b. CSI negative: an oversize PVC stays Pending with a teaching event; battery cleans up', async () => {
+      // spec 09 §12 e2e item 7 (negative battery, cheap slice). A PVC far larger
+      // than the datastore + a consumer pod: WFFC provisioning must NOT succeed;
+      // the PVC stays Pending and surfaces a scheduling/capacity/provisioning event.
+      const bigYaml = `apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: csi-toobig
+  namespace: ${NS}
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: ${CSI_SC}
+  resources:
+    requests:
+      storage: 900Ti
+`;
+      expect((await kubectlApply(bigYaml)).code).toBe(0);
+      expect((await kubectlApply(csiPod('csi-toobig-pod', 'csi-toobig'))).code).toBe(0);
+      // A Bound oversize PVC would be the bug — it must NOT bind in a bounded wait.
+      expect(await poll(() => pvcBound(NS, 'csi-toobig'), 30_000), 'oversize PVC bound').toBe(
+        false
+      );
+      const phase = await kubectl(`-n ${NS} get pvc csi-toobig -o jsonpath="{.status.phase}"`);
+      expect(phase.stdout.trim()).toBe('Pending');
+      // A teaching event exists (falsifiable: an empty event stream fails here).
+      const events = await kubectl(
+        `-n ${NS} get events --field-selector involvedObject.name=csi-toobig-pod --no-headers`
+      );
+      expect(
+        events.stdout.trim().length,
+        'no scheduling/provisioning event for the oversize pod'
+      ).toBeGreaterThan(0);
+
+      // Tear the whole CSI battery down so test 10's no-leak assertion sees only
+      // the repo's own declared volume (reclaimPolicy Delete removes the .img).
+      await csiCleanup(
+        ['csi-writer', 'csi-restored', 'csi-cloned', 'csi-toobig-pod'],
+        ['csi-dyn', 'csi-restore', 'csi-clone', 'csi-toobig']
+      );
+      await kubectl(
+        `-n ${NS} delete volumesnapshot csi-snap --ignore-not-found --wait=true --timeout=60s`
+      );
+    });
+
+    test('10. teardown: repository down (no leak) + cluster + datastores + dummy interface removed', async () => {
       // BOTH repos come down: the FORK first, then the parent. Since F1 landed, test 6
       // creates a real fork — its own namespace with a RUNNING pod holding its own
       // cloned per-volume LUKS mounts. Those are live holders of the data datastore,

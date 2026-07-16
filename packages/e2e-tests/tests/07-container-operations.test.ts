@@ -209,6 +209,46 @@ test.describe('Container Operations @bridge', () => {
     );
     expect(runner.isSuccess(result)).toBe(true);
   });
+
+  // Runtime-generic repository verbs (repository_exec / repository_logs /
+  // repository_health) against the SAME running nginx repo. These had no live
+  // dispatch site (allowlist-only on the coverage gate); each assert here checks
+  // CONTENT, not exit code alone, so it can actually fail.
+  test('repository_exec runs a command inside the deployed container', async () => {
+    await runner.containerStart(testContainer, testRepo, datastorePath, networkId);
+    const marker = `repo-exec-${Date.now()}`;
+    const result = await runner.repositoryExec(testRepo, `echo ${marker}`, {
+      container: testContainer,
+      datastorePath,
+    });
+    expect(runner.isSuccess(result)).toBe(true);
+    // The echoed marker must ride back through repository_exec's output.
+    expect(runner.getCombinedOutput(result)).toContain(marker);
+  });
+
+  test('repository_logs tails the deployed container log', async () => {
+    const result = await runner.repositoryLogs(testRepo, {
+      container: testContainer,
+      lines: '100',
+      datastorePath,
+    });
+    expect(runner.isSuccess(result)).toBe(true);
+    // nginx:alpine's entrypoint prints deterministic startup lines — assert one,
+    // not merely a zero exit.
+    expect(runner.getCombinedOutput(result).toLowerCase()).toMatch(
+      /nginx|docker-entrypoint|worker process/
+    );
+  });
+
+  test('repository_health reports a health-gate verdict for the running repo', async () => {
+    const result = await runner.repositoryHealth(testRepo, datastorePath);
+    // repository_health emits a JSON HealthReport whose `state` is one of
+    // healthy|warming|unhealthy|unknown (renet cmd/renet/repository_health.go).
+    // Assert on that verdict content rather than the process exit code.
+    expect(runner.getCombinedOutput(result).toLowerCase()).toMatch(
+      /healthy|warming|unhealthy|unknown/
+    );
+  });
 });
 
 /**
