@@ -600,12 +600,23 @@ test.describe
       // RUN 7: the `-f1` mount survived this teardown with its kubelet submounts).
       await unwindSubmounts(w1, FORK_CTRL_MOUNT);
       await unwindSubmounts(w1, `${DATA_MOUNT}-${FORK_TAG}`);
-      await w1.executeViaBridge(
-        `sudo renet datastore detach --name ${CTRL_DS}:${FORK_TAG} --discard 2>/dev/null; true`
-      );
-      await w1.executeViaBridge(
-        `sudo renet datastore detach --name ${DATA_DS}:${FORK_TAG} --discard 2>/dev/null; true`
-      );
+      // ASSERTED, not muffled. These two discards ran under `2>/dev/null; true` and
+      // one of them failed silently on every run: the fork's clone record survived,
+      // and step 7's group-snapshot delete then (correctly) refused with "1 live
+      // clone" — the failure surfaced three tests away from its cause. The product's
+      // detach now fails loudly with a holder-naming probe, so if a fork holder is
+      // still alive at this moment, THIS line names it (suite 16's teardown asserts
+      // its discards the same way, and is green).
+      const forkCtrlDiscard = await w1.datastoreDetach(`${CTRL_DS}:${FORK_TAG}`, true);
+      expect(
+        w1.isSuccess(forkCtrlDiscard),
+        `fork ctrl discard: ${(forkCtrlDiscard.stdout + forkCtrlDiscard.stderr).slice(-400)}`
+      ).toBe(true);
+      const forkDataDiscard = await w1.datastoreDetach(`${DATA_DS}:${FORK_TAG}`, true);
+      expect(
+        w1.isSuccess(forkDataDiscard),
+        `fork data discard: ${(forkDataDiscard.stdout + forkDataDiscard.stderr).slice(-400)}`
+      ).toBe(true);
       await w1.executeViaBridge(`sudo ip addr del ${W1_FORK_IP}/24 dev ${NIC} 2>/dev/null; true`);
 
       // Restart the parent's k3s units (identity unchanged; its ceph datastore
