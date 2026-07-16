@@ -3,7 +3,7 @@
  * Split out of cluster-kube.ts (max-lines): a PURE move — these sequence the same
  * renet datastore_/kube_/repository_ bridge primitives via the shared install/naming
  * helpers exported from cluster-kube.ts. No behavior change.
- *   - FORK    = crash-consistent rbd group snapshot → clone → fenced attach (--writes)
+ *   - FORK    = quiesced (syncfs) rbd group snapshot → clone → fenced attach (--writes)
  *               → identity-rewrite operation=fork (PKI re-mint + secret scrub) → rejoin.
  *   - REHEARSE= fork into a throwaway, health-gate, discard.
  *   - MIGRATE = in-Ceph fenced remap (identity-rewrite operation=migrate, CA preserved).
@@ -122,7 +122,7 @@ async function listClusterCephDatastores(
 /**
  * Fork a whole cluster onto a destination cluster's nodes — the ANCHOR+REJOIN
  * model (04 §2, promoted from the P2-A proven battery). The control-plane image
- * IS the cluster, so we move the ANCHOR (a crash-consistent group snapshot of the
+ * IS the cluster, so we move the ANCHOR (a quiesced group snapshot of the
  * cluster's datastores — the parent NEVER stops) and let agents REJOIN fresh with
  * the new-CA token. This is F1-safe by construction: the control-plane identity
  * rewrite runs `--operation fork`, which re-mints the whole PKI and scrubs
@@ -179,8 +179,12 @@ export async function forkCluster(
       `group snapshot (parent stays live)...`
   );
 
-  // 1. ONE atomic, crash-consistent group snapshot across the cluster's ceph
-  //    datastores. No drain, no stop — the parent never notices (04 §2 step 1).
+  // 1. ONE atomic group snapshot across the cluster's ceph datastores — QUIESCED
+  //    (fork semantics, #440: a fork carries what you just wrote), so every member
+  //    is syncfs-flushed, inner filesystems first, before the instant. syncfs
+  //    flushes without pausing: no drain, no stop — the parent never notices
+  //    (04 §2 step 1). The bare cluster-snapshot verb stays crash-consistent and
+  //    never passes quiesce.
   const clusterDatastores = await listClusterCephDatastores(
     srcControl.name,
     clusterName,
@@ -189,7 +193,7 @@ export async function forkCluster(
   await dispatch(
     'datastore_snapshot_create',
     srcControl.name,
-    { group: clusterName, snapshot },
+    { group: clusterName, snapshot, quiesce: true },
     { debug: options.debug }
   );
 

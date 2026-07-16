@@ -91,6 +91,8 @@ export interface TestFunctionOptions {
   noAuto?: boolean;
   discard?: boolean;
   group?: string;
+  /** datastore_snapshot_create: fork-path flush opt-in (default crash-consistent). */
+  quiesce?: boolean;
   // kube_identity_rewrite / kube_prep_fork / kube_node_label (cluster fork/migrate) params
   operation?: 'fork' | 'migrate';
   mode?: 'server' | 'agent';

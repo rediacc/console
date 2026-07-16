@@ -495,9 +495,15 @@ test.describe
       const t0 = Date.now();
 
       // ONE atomic group snapshot across the cluster's ceph datastores — the
-      // parent is NOT stopped for the snapshot (crash-consistent).
+      // parent is NOT stopped (syncfs flushes, never pauses). This capture FEEDS
+      // A FORK, so it passes quiesce like the product's fork orchestrator does:
+      // the seeded marker (test 3) must ride the clone even when kine has not
+      // fsynced it yet. The bare snapshot verb stays crash-consistent (no flush)
+      // by documented contract; quiesce is the fork path's explicit opt-in.
       expect(
-        w1.isSuccess(await w1.datastoreSnapshotCreate({ group: CLUSTER, snapshot: SNAP }))
+        w1.isSuccess(
+          await w1.datastoreSnapshotCreate({ group: CLUSTER, snapshot: SNAP, quiesce: true })
+        )
       ).toBe(true);
       for (const parent of [CTRL_DS, DATA_DS]) {
         expect(

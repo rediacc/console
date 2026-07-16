@@ -653,6 +653,7 @@ export class BridgeTestRunner {
     add('--server', opts.server);
     if (opts.noAuto) flags += ' --no-auto';
     if (opts.discard) flags += ' --discard';
+    if (opts.quiesce) flags += ' --quiesce';
     if (opts.keepThirdParty) flags += ' --keep-third-party-secrets';
     if (opts.removeLabel) flags += ' --remove';
     return flags;

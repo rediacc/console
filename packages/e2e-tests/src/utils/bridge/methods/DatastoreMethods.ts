@@ -52,6 +52,12 @@ export interface DatastoreSnapshotOptions {
   /** Cluster name: a GROUP snapshot atomic across the cluster's ceph datastores. */
   group?: string;
   snapshot: string;
+  /**
+   * Flush member filesystems before the capture (fork semantics: "every write
+   * completed before the fork is in the fork"). Default false — the bare
+   * snapshot verb is crash-consistent by documented contract and never flushes.
+   */
+  quiesce?: boolean;
 }
 
 /**
@@ -159,6 +165,7 @@ export class DatastoreMethods {
       name: opts.name,
       group: opts.group,
       snapshot: opts.snapshot,
+      quiesce: opts.quiesce,
     });
   }
 
