@@ -19,7 +19,29 @@ import {
 } from '../services/addressing/resolve-machine.js';
 import { resolveExecutionTarget } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
+import { probeRepoPresent } from '../services/repo/repo-mount-check.js';
 import { ambiguous, notFound } from './cli-exit-error.js';
+
+/**
+ * Inject the default step-5 verifier (spec/03 §2.3) unless the caller opted out.
+ * A read-only verb (`readOnly: true`) skips step 5; a caller that already passed
+ * its own `verifyMount` keeps it. Otherwise every MUTATING repo verb, through
+ * this single funnel, gets the GUID-presence probe: the derived machine must
+ * know the resolved tag's image or the verb refuses with exit 12 rather than
+ * deploying to the wrong host. Probe-infrastructure failure fails OPEN (undefined
+ * => true): the verb's own execution against the same machine surfaces the real
+ * error moments later (repo-mount-check convention).
+ */
+function withDefaultVerifier(options: ResolveMachineOptions): ResolveMachineOptions {
+  if (options.readOnly || options.verifyMount) return options;
+  return {
+    ...options,
+    verifyMount: async ({ machine, repoGuid }) => {
+      const present = await probeRepoPresent(repoGuid, machine);
+      return present !== false;
+    },
+  };
+}
 
 export interface RepoTarget {
   /** Effective machine to SSH to — the cluster's control node for a cluster target. */
@@ -75,7 +97,7 @@ export async function resolveRepoRef(
     throw notFound(`repository "${parsed.name}" is not in this config.`);
   }
   const view = placementViewFromConfig(config);
-  const resolved = await resolveMachine(ref, view, options);
+  const resolved = await resolveMachine(ref, view, withDefaultVerifier(options));
   return {
     name: parsed.name,
     repoKey: parsed.tag ? `${parsed.name}:${parsed.tag}` : parsed.name,

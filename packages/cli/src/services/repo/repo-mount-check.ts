@@ -56,3 +56,49 @@ export async function probeRepoMounted(
   const entry = repos.find((r) => r.name === repoGuid);
   return entry?.mounted === true;
 }
+
+/**
+ * Probe whether `repoGuid`'s image is PRESENT on `machineName` (mounted or not).
+ *
+ * This is the step-5 derived-machine check (spec/03 §2.3): the invariant a
+ * mutating verb needs is "the derived machine knows this repo's image", NOT
+ * "it is mounted" — a legitimately downed repo is unmounted and `repo up` must
+ * still work. So it tests `entry !== undefined`, not `entry.mounted`.
+ *
+ * Returns `undefined` when the probe itself fails (machine unreachable, renet
+ * error, parse error) — callers fail OPEN, per the convention above.
+ *
+ * Honest limitation (design: derived-routing repair family, R6): With the stale
+ * source image still present (pre-fix configs, --keep-source, interrupted
+ * migrates), the presence probe passes on the wrong machine; it cannot detect
+ * defect 1's scenario by itself. It becomes the effective config recover net
+ * exactly when 2b's deletion has removed the fuel: recover restores pre-migrate
+ * placement, old machine no longer has the image, probe fails closed, operator
+ * is pointed at reconcile, and the amended reconcile (declared-plus-strays) or
+ * the rewrite-carrying config fixes routing.
+ */
+export async function probeRepoPresent(
+  repoGuid: string,
+  machineName: string,
+  options: { debug?: boolean } = {}
+): Promise<boolean | undefined> {
+  const result = await getExecutor().execute({
+    functionName: 'repository_list',
+    machineName,
+    params: {},
+    captureOutput: true,
+    quietSpinners: true,
+    debug: options.debug,
+  });
+
+  if (!result.success || !result.stdout) return undefined;
+
+  let repos: Record<string, unknown>[];
+  try {
+    repos = parseRepositoryListOutput(result.stdout);
+  } catch {
+    return undefined;
+  }
+
+  return repos.some((r) => r.name === repoGuid);
+}

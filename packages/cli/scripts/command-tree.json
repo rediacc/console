@@ -2695,6 +2695,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--keep-source",
+              "descriptionKey": "commands.repo.migrate.optionKeepSource",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -3739,6 +3745,12 @@
             {
               "flags": "--dry-run",
               "descriptionKey": "options.dryRun",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--accept-observed",
+              "descriptionKey": "commands.config.reconcile.optionAcceptObserved",
               "mandatory": false,
               "defaultValue": null
             }

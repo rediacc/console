@@ -341,7 +341,7 @@ async function setupRemoteEnvironment(
  * derived from the repo's placement, not from a flag.
  */
 async function resolveVSCodeTarget(target: string, options: VSCodeConnectOptions) {
-  const resolved = await resolveConnectTarget(target);
+  const resolved = await resolveConnectTarget(target, { readOnly: true });
   const isCluster = Boolean(resolved.kubeCluster);
   const isRepo = resolved.kind === 'repo';
 

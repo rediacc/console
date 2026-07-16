@@ -43,44 +43,113 @@ export interface ReconcileConflict {
   message: string;
 }
 
+/** One declared placement that `--accept-observed` would rewrite to match reality. */
+interface AcceptedPlacement {
+  repository: string;
+  from: string;
+  to: string;
+}
+
 export interface ReconcileReport {
   reconciledAt: string;
   machinesSeen: string[];
   machinesUnreachable: { machine: string; error: string }[];
   placementsFilled: { repository: string; placement: Placement }[];
+  /**
+   * Declared placements rewritten to match observation under `--accept-observed`
+   * (or, under `--dry-run`, the ones that WOULD be). Only the unambiguous
+   * machine-arm drift class (spec/04 §4.3); duplicates never appear here.
+   */
+  placementsAccepted: AcceptedPlacement[];
   conflicts: ReconcileConflict[];
+}
+
+export interface ReconcileOptions {
+  /**
+   * Overwrite a declared placement with the observed one — but ONLY for the
+   * unambiguous machine-arm drift class (grand GUID on exactly one machine that
+   * differs from the declaration). Duplicates stay conflicts even with the flag
+   * (spec/04 §4.3: ambiguity errors, never guesses).
+   */
+  acceptObserved?: boolean;
 }
 
 export interface ReconcileDeps {
   loadConfig: () => Promise<RdcConfig | null>;
   fetchStatus: (machineName: string) => Promise<ListResult>;
+  /** State-half writer (no version bump, excluded from remote push). */
   writeState: (updater: (config: RdcConfig) => RdcConfig) => Promise<void>;
+  /**
+   * Spec-half writer (version-bumping, remote-push-dirty). Distinct from
+   * `writeState` on purpose: `--accept-observed` rewrites a DECLARATION, which
+   * is a version-bumping change, so the two write paths stay two visible calls.
+   */
+  writeResources: (updater: (config: RdcConfig) => RdcConfig) => Promise<void>;
 }
 
-/** Placement fill or conflict for one repository family, from what was observed. */
+type Classified = {
+  fill?: { repository: string; placement: Placement };
+  conflict?: ReconcileConflict;
+  accept?: AcceptedPlacement;
+};
+
+/**
+ * Classify a DECLARED machine placement against observation (spec §4.3). Never
+ * an auto-edit: drift is a conflict, and the unambiguous single-machine drift
+ * additionally carries the `accept` --accept-observed would apply (it always
+ * rides alongside the conflict, so a run without the flag still reports it).
+ */
+function classifyDeclaredMachine(
+  name: string,
+  declared: string,
+  machines: string[],
+  grandGuid: string
+): Classified {
+  if (!machines.includes(declared)) {
+    const conflict: ReconcileConflict = {
+      kind: 'placement',
+      repository: name,
+      message: `repository "${name}" is placed on "${declared}" but its image was observed on ${machines.join(', ')}. Use 'rdc repo migrate' to move it, or accept the observed placement: 'rdc config reconcile --accept-observed'.`,
+    };
+    // Unambiguous drift: exactly one observed machine, different from the
+    // declaration. This is the only class --accept-observed rewrites.
+    if (machines.length === 1) {
+      return { conflict, accept: { repository: name, from: declared, to: machines[0] } };
+    }
+    return { conflict };
+  }
+  // R4: the declared machine holds a copy, but the grand GUID also lives on
+  // OTHER machines — stray copies (interrupted migrate, `--keep-source`, or a
+  // pushed backup left mounted). spec/04 §4.3 lists "same GUID on two machines"
+  // as a conflict class; this is its declared-plus-strays case.
+  if (machines.length > 1) {
+    const strays = machines.filter((m) => m !== declared);
+    return {
+      conflict: {
+        kind: 'duplicate',
+        repository: name,
+        message: `repository "${name}" (guid ${grandGuid.slice(0, 8)}) is placed on "${declared}" but its image is ALSO on ${strays.join(', ')}. If that is a leftover from an interrupted migrate or 'rdc repo migrate --keep-source', remove it there ('rdc machine prune <machine>'); a pushed backup is fine unbooted but should be a storage artifact, not a mounted repo.`,
+      },
+    };
+  }
+  return {};
+}
+
+/**
+ * Placement fill / conflict / would-accept for one family, from what was
+ * observed.
+ */
 function classifyFamilyPlacement(
   name: string,
   family: RepoFamily,
   observed: Map<string, ObservedRepo[]>
-): { fill?: { repository: string; placement: Placement }; conflict?: ReconcileConflict } {
+): Classified {
   const grandGuid = family.tags[family.grand].repositoryGuid;
   const machines = [...new Set((observed.get(grandGuid) ?? []).map((s) => s.machine))];
 
   if (family.placement) {
-    // A declared machine placement that disagrees with observation is a
-    // conflict, never an auto-edit (spec §4.3).
-    if (
-      'machine' in family.placement &&
-      machines.length > 0 &&
-      !machines.includes(family.placement.machine)
-    ) {
-      return {
-        conflict: {
-          kind: 'placement',
-          repository: name,
-          message: `repository "${name}" is placed on "${family.placement.machine}" but its image was observed on ${machines.join(', ')}. Use 'rdc repo migrate' to move it, or reconcile with --accept-observed.`,
-        },
-      };
+    if ('machine' in family.placement && machines.length > 0) {
+      return classifyDeclaredMachine(name, family.placement.machine, machines, grandGuid);
     }
     return {};
   }
@@ -142,7 +211,10 @@ async function collectObserved(
  * Reconcile the state half. Returns a report; writes the rebuilt state via the
  * injected `writeState` (which must not bump the version counter).
  */
-export async function reconcileState(deps: ReconcileDeps): Promise<ReconcileReport> {
+export async function reconcileState(
+  deps: ReconcileDeps,
+  options: ReconcileOptions = {}
+): Promise<ReconcileReport> {
   const config = await deps.loadConfig();
   if (!config) throw new Error('No active config to reconcile');
 
@@ -150,15 +222,27 @@ export async function reconcileState(deps: ReconcileDeps): Promise<ReconcileRepo
   const reconciledAt = new Date().toISOString();
 
   const placementsFilled: { repository: string; placement: Placement }[] = [];
+  const placementsAccepted: AcceptedPlacement[] = [];
   const conflicts: ReconcileConflict[] = [];
   const pendingPlacement = new Map<string, Placement>();
+  // Declared-placement rewrites accepted under --accept-observed (spec-half).
+  const pendingAccept = new Map<string, Placement>();
   for (const [name, family] of Object.entries(config.resources?.repositories ?? {})) {
-    const { fill, conflict } = classifyFamilyPlacement(name, family, observed);
+    const { fill, conflict, accept } = classifyFamilyPlacement(name, family, observed);
     if (fill) {
       pendingPlacement.set(fill.repository, fill.placement);
       placementsFilled.push(fill);
     }
-    if (conflict) conflicts.push(conflict);
+    // The unambiguous drift carries both `accept` and `conflict`. With the flag,
+    // resolve it (record the acceptance, suppress the conflict); without, report
+    // the conflict as usual. Duplicates have no `accept`, so they stay conflicts
+    // even under the flag.
+    if (accept && options.acceptObserved) {
+      pendingAccept.set(accept.repository, { machine: accept.to });
+      placementsAccepted.push(accept);
+    } else if (conflict) {
+      conflicts.push(conflict);
+    }
   }
 
   // Rebuild state.machines observations. state.repos.networkId reconciliation
@@ -188,11 +272,27 @@ export async function reconcileState(deps: ReconcileDeps): Promise<ReconcileRepo
     };
   });
 
+  // Spec-half rewrite (--accept-observed) — a SEPARATE, version-bumping write,
+  // kept visibly distinct from the state write above (spec/04 §4.3). Under
+  // --dry-run the command wires this to a no-op, so placementsAccepted still
+  // reports what WOULD change while nothing is written.
+  if (pendingAccept.size > 0) {
+    await deps.writeResources((cfg) => {
+      const repositories = { ...(cfg.resources?.repositories ?? {}) };
+      for (const [name, placement] of pendingAccept) {
+        // pendingAccept keys are family names classified this run, so present.
+        repositories[name] = { ...repositories[name], placement };
+      }
+      return { ...cfg, resources: { ...(cfg.resources ?? {}), repositories } };
+    });
+  }
+
   return {
     reconciledAt,
     machinesSeen: seen,
     machinesUnreachable: unreachable,
     placementsFilled,
+    placementsAccepted,
     conflicts,
   };
 }
@@ -216,6 +316,10 @@ export async function reconcile(configName?: string): Promise<ReconcileReport> {
     fetchStatus: (machine) => fetchMachineStatus(machine),
     writeState: async (updater) => {
       await configFileStorage.updateState(name, updater);
+    },
+    // Version-bumping write for the --accept-observed declaration rewrite.
+    writeResources: async (updater) => {
+      await configFileStorage.update(name, updater);
     },
   });
 }

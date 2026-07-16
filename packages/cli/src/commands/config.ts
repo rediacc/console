@@ -2,16 +2,16 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { getSubscriptionServerUrl } from '../services/account/subscription-auth.js';
+import type { ReconcileDeps } from '../services/config/config-reconcile.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import type { OutputFormat, RdcConfig } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
-import { rotateCek } from './config-remote.js';
 import { registerAuditCommands } from './config/audit.js';
 import { registerEditCommands } from './config/edit.js';
 import { registerFieldCommands } from './config/field.js';
 import { registerPruneCommand as registerConfigPruneCommand } from './config-prune-cmd.js';
-import { registerRemoteCommands } from './config-remote.js';
+import { registerRemoteCommands, rotateCek } from './config-remote.js';
 import { registerSSHCommands } from './config-ssh.js';
 
 /** Build display data for a self-hosted config. */
@@ -193,6 +193,94 @@ async function applyRevealGate(cfg: RdcConfig): Promise<void> {
     });
   } catch {
     /* best-effort */
+  }
+}
+
+interface ReconcileCliOptions {
+  machine?: string[];
+  dryRun?: boolean;
+  acceptObserved?: boolean;
+}
+
+/**
+ * `config reconcile` body (extracted so the action stays thin). Rebuilds the
+ * state half from machine truth; under --accept-observed it also rewrites an
+ * unambiguous machine-arm placement drift (spec/04 §4.3) through the
+ * version-bumping resources writer, distinct from the state writer.
+ */
+async function runReconcile(program: Command, options: ReconcileCliOptions): Promise<void> {
+  try {
+    await runReconcileInner(program, options);
+  } catch (error) {
+    handleError(error);
+  }
+}
+
+/** Build the reconcile DI deps: a config loader filtered to `--machine`, and the
+ * two writers (state-half and version-bumping resources), both no-ops under --dry-run. */
+async function buildReconcileDeps(
+  cfgName: string,
+  filter: string[] | undefined,
+  dryRun: boolean | undefined
+): Promise<ReconcileDeps> {
+  const { fetchMachineStatus } = await import('../services/machine/machine-status.js');
+  const { configFileStorage } = await import('../adapters/config-file-storage.js');
+  const noop = async () => {};
+  return {
+    loadConfig: async () => {
+      const cfg = await configService.getCurrent();
+      if (!cfg || !filter?.length) return cfg;
+      const machines = Object.fromEntries(
+        Object.entries(cfg.resources?.machines ?? {}).filter(([n]) => filter.includes(n))
+      );
+      return { ...cfg, resources: { ...(cfg.resources ?? {}), machines } };
+    },
+    fetchStatus: (m) => fetchMachineStatus(m),
+    writeState: dryRun
+      ? noop
+      : async (updater) => {
+          await configFileStorage.updateState(cfgName, updater);
+        },
+    writeResources: dryRun
+      ? noop
+      : async (updater) => {
+          await configFileStorage.update(cfgName, updater);
+        },
+  };
+}
+
+async function runReconcileInner(program: Command, options: ReconcileCliOptions): Promise<void> {
+  const { reconcileState } = await import('../services/config/config-reconcile.js');
+  const cfgName = configService.getEffectiveConfigName();
+  const filter = options.machine;
+
+  // --accept-observed rewrites a declaration from "observed on exactly one
+  // machine", which is meaningless when --machine scanned only a subset:
+  // rewriting from partial evidence is a guess. Refuse the combination
+  // (spec/04 §4.3); run it unfiltered instead.
+  if (options.acceptObserved && filter?.length) {
+    throw new ValidationError(t('commands.config.reconcile.acceptObservedUnfiltered'));
+  }
+
+  const deps = await buildReconcileDeps(cfgName, filter, options.dryRun);
+  const report = await reconcileState(deps, { acceptObserved: options.acceptObserved });
+
+  const format = program.opts().output as OutputFormat;
+  outputService.print(
+    {
+      dryRun: !!options.dryRun,
+      reconciledAt: report.reconciledAt,
+      machinesSeen: report.machinesSeen,
+      unreachable: report.machinesUnreachable,
+      placementsFilled: report.placementsFilled,
+      placementsAccepted: report.placementsAccepted,
+      conflicts: report.conflicts,
+    },
+    format
+  );
+  // Exit 6 (NETWORK) when nothing was reachable but machines were tried.
+  if (report.machinesSeen.length === 0 && report.machinesUnreachable.length > 0) {
+    process.exitCode = 6;
   }
 }
 
@@ -459,53 +547,8 @@ ${t('help.examples')}
     .description(t('commands.config.reconcile.description'))
     .option('--machine <m...>', t('commands.config.reconcile.optionMachine'))
     .option('--dry-run', t('options.dryRun'))
-    .action(async (options: { machine?: string[]; dryRun?: boolean }) => {
-      try {
-        const { reconcileState } = await import('../services/config/config-reconcile.js');
-        const { fetchMachineStatus } = await import('../services/machine/machine-status.js');
-        const { configFileStorage } = await import('../adapters/config-file-storage.js');
-        const cfgName = configService.getEffectiveConfigName();
-        const filter = options.machine;
-
-        const report = await reconcileState({
-          loadConfig: async () => {
-            const cfg = await configService.getCurrent();
-            if (cfg && filter?.length) {
-              const machines = Object.fromEntries(
-                Object.entries(cfg.resources?.machines ?? {}).filter(([n]) => filter.includes(n))
-              );
-              return { ...cfg, resources: { ...(cfg.resources ?? {}), machines } };
-            }
-            return cfg;
-          },
-          fetchStatus: (m) => fetchMachineStatus(m),
-          writeState: options.dryRun
-            ? async () => {}
-            : async (updater) => {
-                await configFileStorage.updateState(cfgName, updater);
-              },
-        });
-
-        const format = program.opts().output as OutputFormat;
-        outputService.print(
-          {
-            dryRun: !!options.dryRun,
-            reconciledAt: report.reconciledAt,
-            machinesSeen: report.machinesSeen,
-            unreachable: report.machinesUnreachable,
-            placementsFilled: report.placementsFilled,
-            conflicts: report.conflicts,
-          },
-          format
-        );
-        // Exit 6 (NETWORK) when nothing was reachable but machines were tried.
-        if (report.machinesSeen.length === 0 && report.machinesUnreachable.length > 0) {
-          process.exitCode = 6;
-        }
-      } catch (error) {
-        handleError(error);
-      }
-    });
+    .option('--accept-observed', t('commands.config.reconcile.optionAcceptObserved'))
+    .action((options: ReconcileCliOptions) => runReconcile(program, options));
 
   // config rotate-cek — destructive, org-wide (Q3): registered here, not under
   // `config remote`, because it rotates the ORGANIZATION's key, not this device's

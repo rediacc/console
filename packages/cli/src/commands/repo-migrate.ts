@@ -12,6 +12,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { DEFAULTS } from '@rediacc/shared/config';
+import type { RepoFamily } from '@rediacc/shared/config-schema';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { resolveExecutionTarget } from '../services/cluster/cluster-target.js';
@@ -44,6 +45,7 @@ export function registerRepoMigrateCommand(repoCommand: Command): void {
     .option('--delta-base <guid>', t('commands.repo.migrate.optionDeltaBase'))
     .option('--strategy <strategy>', t('commands.repo.migrate.optionStrategy'))
     .option('--skip-dns', t('commands.repo.migrate.optionSkipDns'))
+    .option('--keep-source', t('commands.repo.migrate.optionKeepSource'))
     // --health-window / --health-timeout (spec §5.4) are intentionally NOT
     // registered: the current migrate is a two-phase rsync with no post-cutover
     // health-gate path, so advertising them would render dead console fields and
@@ -66,6 +68,7 @@ interface MigrateOptions {
   deltaBase?: string;
   strategy?: string;
   skipDns?: boolean;
+  keepSource?: boolean;
   debug?: boolean;
 }
 
@@ -303,15 +306,132 @@ async function resolveMigrateEndpoint(name: string): Promise<string> {
   return name;
 }
 
-async function migrateRepo(ref: string, options: MigrateOptions): Promise<void> {
-  const { provision, bwlimit, checkpoint, deltaBase, strategy, skipDns, debug } = options;
+/**
+ * R3 source disposition: delete the migrated image on the source machine after
+ * a fully successful phase 3. Fails SAFE — the move already succeeded, so a
+ * failed cleanup NEVER fails the migrate: it warns, leaves the image in place,
+ * and names `machine prune` as the sweep. renet deletes an unmounted repo by
+ * `name:tag` on the source (the `.interim` state mirror still resolves it after
+ * phase 2's unmount).
+ */
+async function deleteSourceImage(
+  repoKey: string,
+  from: string,
+  debug: boolean | undefined
+): Promise<void> {
+  outputService.info(`  ${t('commands.repo.migrate.deletingSource', { machine: from })}`);
+  let ok = false;
+  let error: string = DEFAULTS.CLOUD.UNKNOWN_ERROR;
+  try {
+    const result = await getExecutor().execute({
+      functionName: 'repository_delete',
+      machineName: from,
+      params: { repository: repoKey },
+      debug,
+      quietSpinners: true,
+    });
+    ok = result.success;
+    if (!ok) error = result.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR;
+  } catch (err) {
+    error = err instanceof Error ? err.message : String(err);
+  }
+  if (ok) {
+    outputService.info(
+      `  ${t('commands.repo.migrate.sourceDeleted', { name: repoKey, machine: from })}`
+    );
+  } else {
+    outputService.warn(
+      t('commands.repo.migrate.sourceDeleteFailed', { name: repoKey, machine: from, error })
+    );
+  }
+}
+
+/**
+ * R2 (fallback scope): migrate moves a whole FAMILY to one home (spec/04
+ * §1.2.1 — placement is single-valued per family). Two refusals keep that
+ * invariant honest until the family-loop follow-up (grand-first + fork seeds,
+ * gated on Open question #1: reflink preservation across backup_push with seeds,
+ * a VM check the fleet cannot give this week):
+ *   1. a ref naming a non-grand tag is a fork ref — exit 2, teaching push/promote;
+ *   2. a family that has forks refuses wholesale — moving only the grand would
+ *      split the family across machines, the exact two-places bug being retired.
+ * Exit 2 via ValidationError, the same precedent `repo promote` uses.
+ */
+function assertFamilyMigratable(name: string, tag: string, family: RepoFamily | undefined): void {
+  if (!family) return;
+  if (tag !== family.grand) {
+    throw new ValidationError(t('commands.repo.migrate.forkRefError', { name, tag }));
+  }
+  const forks = Object.keys(family.tags)
+    .filter((tg) => tg !== family.grand)
+    .sort();
+  if (forks.length > 0) {
+    throw new ValidationError(
+      t('commands.repo.migrate.familyHasForks', { name, forks: forks.join(', ') })
+    );
+  }
+}
+
+/**
+ * The cutover tail, split out of migrateRepo to stay under the complexity
+ * budget: rewrite routing to the target (R1), run phase 3, then dispose of the
+ * source (R3).
+ *
+ * R1: the cutover IS the authority transfer. After phase 2's final delta sync
+ * and source unmount, the target holds the single authoritative copy, so routing
+ * must point there NOW, before phase 3. Rewriting here (not after phase 3) is
+ * what makes a post-cutover failure safe: the data's home is the target, so the
+ * operator's natural recovery (`rdc repo up <name>`) lands on the target, not on
+ * the stale source copy — the exact wrong-host redeploy this closes. A
+ * pre-cutover failure never reaches this function, so placement still names the
+ * source (spec/03 §5.4 exit-14 row). placementUpdated is emitted before phase 3
+ * so it stays on screen even if phase 3 then fails: both failure windows are
+ * stated in output.
+ */
+async function finalizeCutover(
+  name: string,
+  repoKey: string,
+  from: string,
+  to: string,
+  skipDns: boolean | undefined,
+  keepSource: boolean | undefined,
+  debug: boolean | undefined
+): Promise<void> {
+  await configService.setRepositoryPlacement(name, { machine: to });
+  outputService.info(`  ${t('commands.repo.migrate.placementUpdated', { name, machine: to })}`);
+
+  try {
+    await executePhase3(repoKey, to, skipDns, debug);
+  } catch (err) {
+    // Post-cutover failure: routing already points at the destination, so
+    // recovery lands there. State it, keep the source images as recovery
+    // material (R3 deletion below is skipped by the throw), and rethrow.
+    outputService.warn(t('commands.repo.migrate.placementRetryHint', { name, machine: to }));
+    throw err;
+  }
+
+  // R3: migrate is a MOVE. Only after phase 3 fully succeeds is the source image
+  // a nameless orphan (the target is a superset — final delta synced at cutover,
+  // source down since), so delete it here, strictly LAST. --keep-source opts out
+  // and warns the leftover is a stray reconcile will flag.
+  if (from === to) return;
+  if (keepSource) {
+    outputService.warn(t('commands.repo.migrate.sourceRetained', { name, machine: from }));
+    return;
+  }
+  await deleteSourceImage(repoKey, from, debug);
+}
+
+export async function migrateRepo(ref: string, options: MigrateOptions): Promise<void> {
+  const { provision, bwlimit, checkpoint, deltaBase, strategy, skipDns, keepSource, debug } =
+    options;
 
   // Source is DERIVED from the repo's config placement (spec/03 §2.3): `machineName`
   // is the ref's home machine (a cluster repo's home is its control node). Migrate's
   // data plane (CoW images + rsync/FIEMAP) is runtime-agnostic, so it operates
   // machine<->machine and does not thread kubeCluster (see resolveMigrateEndpoint).
   // `repoKey` (name or name:tag) drives config + renet; `name` is for messages.
-  const { name, repoKey, machineName: from } = await resolveRepoRef(ref);
+  const { name, repoKey, machineName: from, tag } = await resolveRepoRef(ref);
 
   // With --provision the target machine is created below, so it is not yet a
   // known machine/cluster name to resolve; use it verbatim.
@@ -324,6 +444,9 @@ async function migrateRepo(ref: string, options: MigrateOptions): Promise<void> 
   if (!repoConfig) {
     throw new ValidationError(t('errors.repositoryNotFound', { name }));
   }
+
+  const currentConfig = await configService.getCurrent();
+  assertFamilyMigratable(name, tag, currentConfig?.resources?.repositories?.[name]);
 
   // Same-home no-op: migrating to where the repo already lives is a 0-cost win,
   // not a full self-transfer. --provision always targets a fresh, distinct host.
@@ -370,7 +493,7 @@ async function migrateRepo(ref: string, options: MigrateOptions): Promise<void> 
     },
     debug
   );
-  await executePhase3(repoKey, to, skipDns, debug);
+  await finalizeCutover(name, repoKey, from, to, skipDns, keepSource, debug);
 
   const totalMs = Date.now() - migrationStart;
   outputService.info('');

@@ -47,9 +47,15 @@ function emptyList(): ListResult {
 
 function makeDeps(
   config: RdcConfig,
-  statuses: Record<string, ListResult | Error | undefined>
-): { deps: ReconcileDeps; written: () => RdcConfig } {
+  statuses: Record<string, ListResult | Error | undefined>,
+  opts: { dryRunResources?: boolean } = {}
+): {
+  deps: ReconcileDeps;
+  written: () => RdcConfig;
+  calls: { writeState: number; writeResources: number };
+} {
   let current = config;
+  const calls = { writeState: 0, writeResources: 0 };
   const deps: ReconcileDeps = {
     loadConfig: () => Promise.resolve(current),
     fetchStatus: (m) => {
@@ -58,11 +64,19 @@ function makeDeps(
       return Promise.resolve(s ?? emptyList());
     },
     writeState: (updater) => {
+      calls.writeState++;
       current = updater(current);
       return Promise.resolve();
     },
+    writeResources: (updater) => {
+      calls.writeResources++;
+      // dryRunResources models the command's --dry-run wiring: the call is made
+      // but nothing is persisted.
+      if (!opts.dryRunResources) current = updater(current);
+      return Promise.resolve();
+    },
   };
-  return { deps, written: () => current };
+  return { deps, written: () => current, calls };
 }
 
 describe('reconcileState', () => {
@@ -111,6 +125,22 @@ describe('reconcileState', () => {
     expect(report.conflicts[0].kind).toBe('duplicate');
   });
 
+  it('flags a duplicate when the declared machine holds a copy but strays exist elsewhere (R4)', async () => {
+    const config = baseConfig();
+    config.resources!.repositories!.shop.placement = { machine: 'web-1' };
+    const { deps } = makeDeps(config, {
+      'web-1': listWithRepo(GRAND), // the declared home DOES hold it…
+      'web-2': listWithRepo(GRAND), // …and a stray copy is ALSO here.
+    });
+    const report = await reconcileState(deps);
+
+    expect(report.placementsFilled).toHaveLength(0);
+    expect(report.conflicts).toHaveLength(1);
+    expect(report.conflicts[0].kind).toBe('duplicate');
+    expect(report.conflicts[0].message).toContain('web-2');
+    expect(report.conflicts[0].message).toContain('web-1');
+  });
+
   it('records unreachable machines without failing the whole reconcile', async () => {
     const { deps } = makeDeps(baseConfig(), {
       'web-1': listWithRepo(GRAND),
@@ -121,6 +151,72 @@ describe('reconcileState', () => {
     expect(report.machinesSeen).toEqual(['web-1']);
     expect(report.machinesUnreachable).toEqual([{ machine: 'web-2', error: 'ssh timeout' }]);
     expect(report.placementsFilled).toHaveLength(1);
+  });
+});
+
+describe('reconcileState — --accept-observed (R5)', () => {
+  it('rewrites unambiguous machine-arm drift via writeResources, never writeState', async () => {
+    const config = baseConfig();
+    config.resources!.repositories!.shop.placement = { machine: 'web-1' };
+    const { deps, written, calls } = makeDeps(config, {
+      'web-1': emptyList(),
+      'web-2': listWithRepo(GRAND), // observed on exactly ONE machine, not the declared one
+    });
+    const report = await reconcileState(deps, { acceptObserved: true });
+
+    expect(report.placementsAccepted).toEqual([{ repository: 'shop', from: 'web-1', to: 'web-2' }]);
+    expect(report.conflicts).toHaveLength(0);
+    // The declaration was rewritten…
+    expect(written().resources?.repositories?.shop.placement).toEqual({ machine: 'web-2' });
+    // …through the spec-half writer, exactly once.
+    expect(calls.writeResources).toBe(1);
+  });
+
+  it('leaves duplicates as conflicts even under the flag (ambiguity never guesses)', async () => {
+    const config = baseConfig();
+    config.resources!.repositories!.shop.placement = { machine: 'web-1' };
+    const { deps, calls } = makeDeps(config, {
+      'web-1': listWithRepo(GRAND),
+      'web-2': listWithRepo(GRAND), // declared-plus-stray duplicate
+    });
+    const report = await reconcileState(deps, { acceptObserved: true });
+
+    expect(report.placementsAccepted).toHaveLength(0);
+    expect(report.conflicts).toHaveLength(1);
+    expect(report.conflicts[0].kind).toBe('duplicate');
+    expect(calls.writeResources).toBe(0);
+  });
+
+  it('dry-run reports placementsAccepted but writes nothing', async () => {
+    const config = baseConfig();
+    config.resources!.repositories!.shop.placement = { machine: 'web-1' };
+    const { deps, written, calls } = makeDeps(
+      config,
+      { 'web-1': emptyList(), 'web-2': listWithRepo(GRAND) },
+      { dryRunResources: true }
+    );
+    const report = await reconcileState(deps, { acceptObserved: true });
+
+    expect(report.placementsAccepted).toEqual([{ repository: 'shop', from: 'web-1', to: 'web-2' }]);
+    // The writer was invoked but persisted nothing (command wires it to a no-op).
+    expect(calls.writeResources).toBe(1);
+    expect(written().resources?.repositories?.shop.placement).toEqual({ machine: 'web-1' });
+  });
+
+  it('does NOT rewrite drift without the flag; reports the conflict', async () => {
+    const config = baseConfig();
+    config.resources!.repositories!.shop.placement = { machine: 'web-1' };
+    const { deps, written, calls } = makeDeps(config, {
+      'web-1': emptyList(),
+      'web-2': listWithRepo(GRAND),
+    });
+    const report = await reconcileState(deps);
+
+    expect(report.placementsAccepted).toHaveLength(0);
+    expect(report.conflicts).toHaveLength(1);
+    expect(report.conflicts[0].kind).toBe('placement');
+    expect(calls.writeResources).toBe(0);
+    expect(written().resources?.repositories?.shop.placement).toEqual({ machine: 'web-1' });
   });
 });
 

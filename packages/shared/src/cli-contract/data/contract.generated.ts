@@ -2299,6 +2299,16 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "descriptionKey": "options.dryRun",
           "label": "Show what would be done without making changes"
+        },
+        {
+          "flags": "--accept-observed",
+          "long": "accept-observed",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.config.reconcile.optionAcceptObserved",
+          "label": "Rewrite a declared placement to match where the image actually is, but only when that is unambiguous (observed on exactly one machine). Duplicates stay conflicts."
         }
       ],
       "positionals": [],
@@ -7698,7 +7708,7 @@ export const CLI_CONTRACT: CliContract = {
       "experimental": false,
       "plane": "machine",
       "descriptionKey": "commands.repo.migrate.description",
-      "label": "Live-migrate a repository from one machine to another with minimal downtime. Two-phase rsync: bulk transfer while running, then brief stop for delta sync. Supports CRIU checkpoint for process memory migration and auto-provisioning of target machines",
+      "label": "Live-migrate a repository from one machine to another with minimal downtime. Two-phase rsync: bulk transfer while running, then brief stop for delta sync. Moves the whole repository (routing is repointed at the new home) and, once the move succeeds, deletes the source images (use --keep-source to retain them). Supports CRIU checkpoint for process memory migration and auto-provisioning of target machines",
       "options": [
         {
           "flags": "--to <place>",
@@ -7769,6 +7779,16 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "descriptionKey": "commands.repo.migrate.optionSkipDns",
           "label": "Skip DNS record switching after migration"
+        },
+        {
+          "flags": "--keep-source",
+          "long": "keep-source",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.repo.migrate.optionKeepSource",
+          "label": "Keep the source images after a successful move (by default they are deleted; leftover copies are not addressable by any config record and reconcile flags them as strays)"
         },
         {
           "flags": "--debug",

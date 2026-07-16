@@ -48,11 +48,20 @@ export interface ResolveMachineOptions {
    */
   readOnly?: boolean;
   /**
-   * Step 5's cheap remote mount check. Resolves true when `machine` actually
-   * mounts `datastore` (undefined = the machine's implicit default datastore).
-   * Omitted => step 5 is skipped, which is what makes pure resolution testable.
+   * Step 5's cheap remote presence check. Resolves true when `machine` KNOWS the
+   * resolved tag's image (`repoGuid` appears in `repository_list`) — presence,
+   * not mounted (a downed repo is unmounted and `repo up` must still work). The
+   * `datastore` is the named-datastore arm's registry key (undefined = the
+   * machine's implicit default datastore). Omitted => step 5 is skipped, which is
+   * what makes pure resolution testable. The default injector (repo-target)
+   * probes via `probeRepoPresent` and maps a probe-infrastructure failure to
+   * `true` (fail open).
    */
-  verifyMount?: (machine: string, datastore: string | undefined) => Promise<boolean>;
+  verifyMount?: (ctx: {
+    machine: string;
+    datastore: string | undefined;
+    repoGuid: string;
+  }) => Promise<boolean>;
 }
 
 export interface ResolvedMachine {
@@ -198,15 +207,23 @@ async function verifyBeforeExecuting(
   name: string,
   candidate: string,
   datastore: string | undefined,
+  repoGuid: string,
   options: ResolveMachineOptions
 ): Promise<void> {
   if (options.readOnly || !options.verifyMount) return;
-  const mounted = await options.verifyMount(candidate, datastore);
-  if (mounted) return;
-  const subject = datastore ?? `${name}'s datastore`;
+  const present = await options.verifyMount({ machine: candidate, datastore, repoGuid });
+  if (present) return;
+  // Definite absence => exit 12, naming both sides and the fix. The datastore
+  // arm speaks of the attach; the machine arm speaks of the image itself.
+  if (datastore !== undefined) {
+    throw stateMismatch(
+      `config says ${datastore} is attached to ${candidate}, ` +
+        `but ${candidate} does not mount it. Run "rdc config reconcile", then retry.`
+    );
+  }
   throw stateMismatch(
-    `config says ${subject} is attached to ${candidate}, ` +
-      `but ${candidate} does not mount it. Run "rdc config reconcile", then retry.`
+    `config places ${name} on ${candidate}, ` +
+      `but ${candidate} does not have its image. Run "rdc config reconcile", then retry.`
   );
 }
 
@@ -230,8 +247,10 @@ export async function resolveMachine(
     assertPlaceMatches(name, place, candidate, cluster, view);
   }
 
-  // Step 5: verify before executing — state is a routing hint, not truth.
-  await verifyBeforeExecuting(name, candidate, datastore, options);
+  // Step 5: verify before executing — state is a routing hint, not truth. The
+  // resolved tag's GUID is the image the candidate machine must know.
+  const repoGuid = view.families[name].tags[tag].repositoryGuid;
+  await verifyBeforeExecuting(name, candidate, datastore, repoGuid, options);
 
   // Step 6: the caller executes on the verified machine.
   return {

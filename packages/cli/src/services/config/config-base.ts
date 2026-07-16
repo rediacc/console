@@ -1,4 +1,5 @@
 import { DEFAULTS } from '@rediacc/shared/config';
+import type { Placement } from '@rediacc/shared/config-schema';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import type { RemoteConfigAdapter } from '../../adapters/remote-config-adapter.js';
 import type { RdcConfig } from '../../types/index.js';
@@ -68,6 +69,31 @@ export class ConfigServiceBase {
     this._resourceState = LocalResourceState.load(decrypted, configName);
 
     return this._resourceState;
+  }
+
+  /**
+   * Set a whole family's placement (spec/04 §1.2.1) via the version-bumping
+   * resources persist — a migrate is a DECLARED change of home (unlike
+   * reconcile's observation-only state writes). getResourceState throws if no
+   * config is active.
+   *
+   * Writes `placement` onto EVERY flat `family:*` record: the flat-view
+   * decompose is first-wins (resource-state.ts groupFlatRepos), so editing only
+   * one record would be order-dependent and could silently drop the change.
+   */
+  async setRepositoryPlacement(family: string, placement: Placement): Promise<void> {
+    const state = await this.getResourceState();
+    const repos = state.getRepositories();
+    let matched = false;
+    for (const [key, cfg] of Object.entries(repos)) {
+      const colon = key.indexOf(':');
+      if ((colon === -1 ? key : key.slice(0, colon)) === family) {
+        repos[key] = { ...cfg, placement };
+        matched = true;
+      }
+    }
+    if (!matched) throw new Error(`Repository "${family}" not found`);
+    await state.setRepositories(repos);
   }
 
   /**

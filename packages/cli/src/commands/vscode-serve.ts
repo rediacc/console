@@ -23,7 +23,7 @@ interface VSCodeServeOptions {
 }
 
 async function resolveServeContext(target: string, options: VSCodeServeOptions) {
-  const resolved = await resolveConnectTarget(target);
+  const resolved = await resolveConnectTarget(target, { readOnly: true });
   if (resolved.kind !== 'repo') {
     throw new ValidationError(t('errors.vscode.browserNeedsRepo'));
   }

@@ -184,17 +184,39 @@ describe('resolveMachine — verify before executing (step 5)', () => {
       machines: { 'node-2': machine() },
     });
 
-  it('exits 12 with the reconcile teaching error when the mount check fails', async () => {
+  it('exits 12 with the reconcile teaching error when the datastore-arm check fails', async () => {
     const verifyMount = vi.fn().mockResolvedValue(false);
     const err = await expectExit(() => resolveMachine('shop', attachedView(), { verifyMount }), 12);
-    expect(verifyMount).toHaveBeenCalledWith('node-2', 'ds');
+    expect(verifyMount).toHaveBeenCalledWith({
+      machine: 'node-2',
+      datastore: 'ds',
+      repoGuid: GUID,
+    });
     expect(err.message).toBe(
       'config says ds is attached to node-2, but node-2 does not mount it. ' +
         'Run "rdc config reconcile", then retry.'
     );
   });
 
-  it('proceeds when the mount check passes', async () => {
+  it('exits 12 naming the repo when the machine-arm presence check fails', async () => {
+    const v = view({
+      families: { shop: family({ machine: 'prod-1' }) },
+      machines: { 'prod-1': machine() },
+    });
+    const verifyMount = vi.fn().mockResolvedValue(false);
+    const err = await expectExit(() => resolveMachine('shop', v, { verifyMount }), 12);
+    expect(verifyMount).toHaveBeenCalledWith({
+      machine: 'prod-1',
+      datastore: undefined,
+      repoGuid: GUID,
+    });
+    expect(err.message).toBe(
+      'config places shop on prod-1, but prod-1 does not have its image. ' +
+        'Run "rdc config reconcile", then retry.'
+    );
+  });
+
+  it('proceeds when the presence check passes (fail-open maps undefined -> true upstream)', async () => {
     const verifyMount = vi.fn().mockResolvedValue(true);
     const resolved = await resolveMachine('shop', attachedView(), { verifyMount });
     expect(resolved.machine).toBe('node-2');

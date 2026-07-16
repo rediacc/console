@@ -271,7 +271,7 @@ function splitTargetRoles(target: ConnectTarget): {
 async function connectTerminal(targetRef: string, options: TermConnectOptions): Promise<void> {
   const startTime = Date.now();
 
-  const target = await resolveConnectTarget(targetRef);
+  const target = await resolveConnectTarget(targetRef, { readOnly: true });
   await enforceTermPolicy(options, target);
 
   const { dockerRepo, kubeNamespace, sessionScope } = splitTargetRoles(target);

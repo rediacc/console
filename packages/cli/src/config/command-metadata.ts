@@ -532,7 +532,9 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       timeout: 'write',
       descriptionOverride:
         'Rebuild the local state bucket from machine truth (renet list all). Fixes stale datastore-attach and routing data; run this when a derived-machine op reports a state mismatch (exit 12).',
-      excludeOptions: ['debug'],
+      // --accept-observed rewrites a DECLARATION (promote-class human decision);
+      // an agent hitting a placement conflict should surface it, not resolve it.
+      excludeOptions: ['debug', 'accept-observed'],
     },
   },
   'config rotate-cek': {
