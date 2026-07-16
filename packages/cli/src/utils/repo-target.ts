@@ -36,7 +36,19 @@ function withDefaultVerifier(options: ResolveMachineOptions): ResolveMachineOpti
   if (options.readOnly || options.verifyMount) return options;
   return {
     ...options,
-    verifyMount: async ({ machine, repoGuid }) => {
+    verifyMount: async ({ machine, datastore, repoGuid }) => {
+      // #92: the presence probe serves the MACHINE arm only. probeRepoPresent
+      // rides repository_list, which enumerates DOCKER repos under
+      // <datastore>/repositories — a kube repo lives at <ds>/repos/<guid> on a
+      // NAMED datastore and is structurally invisible to it, so probing the
+      // datastore arm false-refused every mutating verb on a cluster repo with
+      // exit 12 (found live by the B1 window, the arm's first-ever execution).
+      // The datastore arm's routing is verified at dispatch instead: derivation
+      // rides the attach hint, and renet errors loudly on an unmounted
+      // datastore — a wrong host cannot silently succeed there. A datastore-
+      // aware presence probe (a renet verb that can see <ds>/repos/) is the
+      // recorded follow-up, spec/13.
+      if (datastore !== undefined) return true;
       const present = await probeRepoPresent(repoGuid, machine);
       return present !== false;
     },

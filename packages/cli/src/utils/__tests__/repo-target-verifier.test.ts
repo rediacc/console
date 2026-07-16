@@ -19,6 +19,7 @@ const probeRepoPresent = h.probeRepoPresent;
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getCurrent: vi.fn().mockResolvedValue({
+      state: { datastores: { ds1: { attachedTo: 'cp1' } } },
       resources: {
         repositories: {
           shop: {
@@ -26,8 +27,14 @@ vi.mock('../../services/config/config-resources.js', () => ({
             tags: { main: { repositoryGuid: h.GUID } },
             placement: { machine: 'm1' },
           },
+          kshop: {
+            grand: 'main',
+            tags: { main: { repositoryGuid: h.GUID } },
+            placement: { datastore: 'ds1' },
+          },
         },
-        machines: { m1: { ip: '10.0.0.1', user: 'root' } },
+        datastores: { ds1: { cluster: 'c1' } },
+        machines: { m1: { ip: '10.0.0.1', user: 'root' }, cp1: { ip: '10.0.0.2', user: 'root' } },
       },
     }),
   },
@@ -75,5 +82,26 @@ describe('resolveRepoRef — default step-5 verifier (R6)', () => {
     h.present = undefined;
     const resolved = await resolveRepoRef('shop');
     expect(resolved.machineName).toBe('m1');
+  });
+});
+
+// #92 (found live by the B1 window — the datastore arm's first-ever execution):
+// probeRepoPresent rides repository_list, which is docker-world-only, so probing
+// the DATASTORE arm false-refused every mutating verb on a cluster repo with
+// exit 12. The arm now passes verification through to dispatch. Mutation
+// control: re-point the datastore arm at the probe and the first test goes red
+// (h.present=false would refuse).
+describe('resolveRepoRef — datastore arm skips the docker probe (#92)', () => {
+  it('never consults the probe for a datastore-placed ref, even when it would refuse', async () => {
+    h.present = false;
+    const resolved = await resolveRepoRef('kshop');
+    expect(resolved.machineName).toBe('cp1');
+    expect(resolved.kubeCluster).toBe('c1');
+    expect(probeRepoPresent).not.toHaveBeenCalled();
+  });
+
+  it('still consults the probe for a machine-placed ref', async () => {
+    await resolveRepoRef('shop');
+    expect(probeRepoPresent).toHaveBeenCalledWith(h.GUID, 'm1');
   });
 });
