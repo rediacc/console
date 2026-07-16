@@ -754,7 +754,7 @@
             "question": "Che supporto ricevo?"
           },
           {
-            "answer": "Il tempo di ripristino dipende dal livello: il piano Community ripristina gli snapshot piu' recenti in pochi minuti, il Professional offre ripristino point-in-time (24 h), il Business garantisce un SLA di 4 ore e l'Enterprise offre un RTO personalizzato da 15 a 60 minuti.",
+            "answer": "Il tempo di ripristino dipende dal livello: il piano Community ripristina gli snapshot più recenti in pochi minuti, il Professional offre ripristino point-in-time (24 h), il Business garantisce un SLA di 4 ore e l'Enterprise offre un RTO personalizzato da 15 a 60 minuti.",
             "question": "Quanto tempo ci vuole per il ripristino?"
           },
           {
@@ -763,7 +763,7 @@
           },
           {
             "answer": "I tuoi dati rimangono cifrati nella posizione che hai scelto. Mantieni il pieno controllo e puoi accedere ai backup anche se il nostro servizio non è disponibile.",
-            "question": "Cosa succede ai miei dati se il servizio non e' disponibile?"
+            "question": "Cosa succede ai miei dati se il servizio non è disponibile?"
           }
         ]
       },
@@ -773,7 +773,7 @@
           "talkToSales": "Parla con il team commerciale"
         },
         "description": "Installa Rediacc e fai il tuo primo backup in meno di 10 minuti.",
-        "heading": "Inizia a Ripristinare Piu' Velocemente"
+        "heading": "Inizia a Ripristinare Più Velocemente"
       },
       "hero": {
         "subtitle": "Inizia con una prova gratuita di 14 giorni e passa al livello successivo solo quando le ore di inattività costerebbero soldi all'azienda. Stesso prodotto, nessun cambio di piattaforma.",
@@ -3012,14 +3012,14 @@
         },
         "childrenPrivacy": {
           "content": [
-            "I nostri servizi non sono destinati a persone di eta inferiore ai 16 anni. Non raccogliamo consapevolmente dati personali di minori. Qualora venissimo a conoscenza di aver raccolto dati relativi a un minore di 16 anni, provvederemo tempestivamente alla loro cancellazione."
+            "I nostri servizi non sono destinati a persone di età inferiore ai 16 anni. Non raccogliamo consapevolmente dati personali di minori. Qualora venissimo a conoscenza di aver raccolto dati relativi a un minore di 16 anni, provvederemo tempestivamente alla loro cancellazione."
           ],
           "id": "children-privacy",
           "title": "9. Privacy dei Minori"
         },
         "dataRetention": {
           "content": [
-            "I moduli di contatto vengono conservati nel nostro sistema e-mail per il tempo necessario a rispondere alla vostra richiesta e mantenere la corrispondenza. I dati dell'account vengono conservati per tutta la durata dell'account attivo e per 30 giorni successivi alla sua cancellazione, per consentirne il ripristino. I documenti di fatturazione vengono conservati in conformita alle leggi fiscali e contabili applicabili.",
+            "I moduli di contatto vengono conservati nel nostro sistema e-mail per il tempo necessario a rispondere alla vostra richiesta e mantenere la corrispondenza. I dati dell'account vengono conservati per tutta la durata dell'account attivo e per 30 giorni successivi alla sua cancellazione, per consentirne il ripristino. I documenti di fatturazione vengono conservati in conformità alle leggi fiscali e contabili applicabili.",
             "I dati analitici di Plausible sono aggregati e non contengono dati personali, pertanto le politiche di conservazione non vi si applicano.",
             "I dati di telemetria del prodotto vengono conservati come tracce grezze per un massimo di 90 giorni a fini di debug. Le metriche di telemetria aggregate vengono conservate per un massimo di 12 mesi e successivamente cancellate. Per ulteriori dettagli, consultate la nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>."
           ],
@@ -3042,7 +3042,7 @@
             "<strong>Fornitori di servizi</strong> che assistono nella gestione della nostra piattaforma (ad es., hosting cloud, elaborazione dei pagamenti), vincolati da obblighi contrattuali a proteggere i vostri dati",
             "<strong>Plausible Analytics</strong> per analisi del sito web senza cookie e anonimizzate (nessun dato personale viene condiviso)",
             "<strong>Elaborazione della telemetria</strong>: i dati anonimi di utilizzo del prodotto vengono trasmessi al nostro endpoint di telemetria all'interno dell'UE per l'aggregazione e l'analisi. Nessun dato di telemetria viene condiviso con terzi (consultate la nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>)",
-            "<strong>Autorita di polizia giudiziaria</strong> se richiesto dalla legge, da normative o da un valido procedimento legale"
+            "<strong>Autorità di polizia giudiziaria</strong> se richiesto dalla legge, da normative o da un valido procedimento legale"
           ],
           "title": "4. Condivisione dei Dati e Terze Parti"
         },
@@ -3127,8 +3127,8 @@
             "<strong>Accesso:</strong> Richiedere una copia dei dati personali che conserviamo su di voi",
             "<strong>Rettifica:</strong> Richiedere la correzione di dati inesatti o incompleti",
             "<strong>Cancellazione:</strong> Richiedere la cancellazione dei vostri dati personali",
-            "<strong>Portabilita:</strong> Richiedere una copia dei vostri dati in formato leggibile da macchina",
-            "<strong>Opposizione:</strong> Opporvi al trattamento dei vostri dati per specifiche finalita",
+            "<strong>Portabilità:</strong> Richiedere una copia dei vostri dati in formato leggibile da macchina",
+            "<strong>Opposizione:</strong> Opporvi al trattamento dei vostri dati per specifiche finalità",
             "<strong>Limitazione:</strong> Richiedere che limitiamo il trattamento dei vostri dati",
             "<strong>Disattivazione della telemetria:</strong> Disabilitare la telemetria del prodotto in qualsiasi momento utilizzando le procedure descritte nella nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>"
           ],
@@ -3216,8 +3216,8 @@
           "id": "non-refundable",
           "items": [
             "Abbonamenti cancellati dopo la finestra di 14 giorni per i nuovi abbonati",
-            "Addebiti basati sull'utilizzo (ad es., costi di eccedenza) per le risorse gia' consumate",
-            "Ore di servizi professionali gia' erogate e accettate",
+            "Addebiti basati sull'utilizzo (ad es., costi di eccedenza) per le risorse già consumate",
+            "Ore di servizi professionali già erogate e accettate",
             "Commissioni di riattivazione dell'account",
             "Addebiti derivanti dalla violazione dei <a href=\"terms-of-service\">Termini di Servizio</a> da parte dell'utente"
           ],
@@ -3232,7 +3232,7 @@
         },
         "platformSubscriptions": {
           "content": [
-            "Rediacc offre piu' livelli di abbonamento per la nostra piattaforma di automazione dell'infrastruttura. I seguenti termini si applicano agli abbonamenti a pagamento:"
+            "Rediacc offre più livelli di abbonamento per la nostra piattaforma di automazione dell'infrastruttura. I seguenti termini si applicano agli abbonamenti a pagamento:"
           ],
           "id": "platform-subscriptions",
           "subsections": {
@@ -3244,19 +3244,19 @@
             },
             "freeTier": {
               "content": [
-                "Il livello Community e' gratuito per sempre e non richiede informazioni di pagamento. Non e' previsto alcun rimborso in quanto non vi e' alcun addebito."
+                "Il livello Community è gratuito per sempre e non richiede informazioni di pagamento. Non è previsto alcun rimborso in quanto non vi è alcun addebito."
               ],
               "title": "2.1 Livello Gratuito"
             },
             "paidTiers": {
               "content": [
-                "Gli abbonamenti a pagamento (livelli Team, Business ed Enterprise, da $349 a $2.100+/mese) vengono fatturati in anticipo su base mensile o annuale. Poiche' questi servizi vengono erogati in forma digitale e le risorse vengono provisionate immediatamente al momento del pagamento, gli abbonamenti non sono generalmente rimborsabili.",
+                "Gli abbonamenti a pagamento (livelli Team, Business ed Enterprise, da $349 a $2.100+/mese) vengono fatturati in anticipo su base mensile o annuale. Poiché questi servizi vengono erogati in forma digitale e le risorse vengono provisionate immediatamente al momento del pagamento, gli abbonamenti non sono generalmente rimborsabili.",
                 "Tuttavia, sono previsti rimborsi nelle seguenti circostanze:"
               ],
               "items": [
-                "<strong>Primi 14 giorni:</strong> Se l'utente e' un nuovo abbonato e richiede un rimborso entro 14 giorni dal primo pagamento, verra' emesso un rimborso integrale. Questo si applica unicamente al primo abbonamento.",
-                "<strong>Interruzione del servizio:</strong> Se la piattaforma subisce un'interruzione prolungata (piu' di 48 ore consecutive) non causata da manutenzione programmata, e' possibile richiedere un credito proporzionale per il periodo interessato.",
-                "<strong>Errori di fatturazione:</strong> Se l'utente e' stato addebitato in modo errato (ad es., addebiti duplicati, livello errato), verra' emesso un rimborso integrale per l'addebito erroneo."
+                "<strong>Primi 14 giorni:</strong> Se l'utente è un nuovo abbonato e richiede un rimborso entro 14 giorni dal primo pagamento, verrà emesso un rimborso integrale. Questo si applica unicamente al primo abbonamento.",
+                "<strong>Interruzione del servizio:</strong> Se la piattaforma subisce un'interruzione prolungata (più di 48 ore consecutive) non causata da manutenzione programmata, è possibile richiedere un credito proporzionale per il periodo interessato.",
+                "<strong>Errori di fatturazione:</strong> Se l'utente è stato addebitato in modo errato (ad es., addebiti duplicati, livello errato), verrà emesso un rimborso integrale per l'addebito erroneo."
               ],
               "title": "2.2 Livelli a Pagamento"
             }
@@ -3269,16 +3269,16 @@
           ],
           "id": "professional-services",
           "items": [
-            "<strong>Prima dell'avvio del lavoro:</strong> rimborso integrale in caso di cancellazione prima che qualsiasi attivita' sia stata svolta",
-            "<strong>Durante il servizio:</strong> l'addebito riguardera' esclusivamente le ore lavorate. Le ore prepagate non utilizzate verranno rimborsate",
-            "<strong>Contestazioni sulla qualita':</strong> in caso di insoddisfazione per la qualita' del lavoro, ci contatti entro 7 giorni dalla consegna. Ci adopereremo in primo luogo per risolvere il problema; qualora non fosse possibile, potremo offrire un rimborso parziale a nostra discrezione",
+            "<strong>Prima dell'avvio del lavoro:</strong> rimborso integrale in caso di cancellazione prima che qualsiasi attività sia stata svolta",
+            "<strong>Durante il servizio:</strong> l'addebito riguarderà esclusivamente le ore lavorate. Le ore prepagate non utilizzate verranno rimborsate",
+            "<strong>Contestazioni sulla qualità:</strong> in caso di insoddisfazione per la qualità del lavoro, ci contatti entro 7 giorni dalla consegna. Ci adopereremo in primo luogo per risolvere il problema; qualora non fosse possibile, potremo offrire un rimborso parziale a nostra discrezione",
             "<strong>Impegno minimo:</strong> alcuni pacchetti di servizi prevedono un impegno minimo. La cancellazione prima del periodo minimo potrebbe comportare una penale di cancellazione come specificato nel contratto di servizio"
           ],
           "title": "3. Servizi Professionali"
         },
         "refundProcessing": {
           "content": [
-            "I rimborsi approvati verranno elaborati sul metodo di pagamento originale entro 10 giorni lavorativi. Il tempo effettivo affinche' il rimborso appaia sull'estratto conto dipende dal fornitore del servizio di pagamento e potrebbe richiedere ulteriori 5-10 giorni lavorativi.",
+            "I rimborsi approvati verranno elaborati sul metodo di pagamento originale entro 10 giorni lavorativi. Il tempo effettivo affinché il rimborso appaia sull'estratto conto dipende dal fornitore del servizio di pagamento e potrebbe richiedere ulteriori 5-10 giorni lavorativi.",
             "I rimborsi per abbonamenti annuali pagati tramite bonifico bancario potrebbero richiedere fino a 30 giorni lavorativi per essere elaborati."
           ],
           "id": "refund-processing",
@@ -11917,7 +11917,7 @@
             },
             {
               "text": "Splunk & Oxford Economics, \"The Hidden Costs of Downtime\", giugno 2024. \"Ogni minuto di inattività costa $9.000, ovvero $540.000 all'ora.\"",
-              "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
+              "url": "https://www.splunk.com/en_us/blog/ciò-office/cost-of-downtime-from-global-executives.html"
             },
             {
               "text": "Cybereason, \"Ransomware Attacks and the True Cost to Business 2022\", 2022. \"L'80% delle organizzazioni che hanno pagato è stato colpito una seconda volta da ransomware, con il 68% che afferma che il secondo attacco è avvenuto meno di un mese dopo e con richieste di riscatto più elevate.\"",
@@ -12113,7 +12113,7 @@
               "title": "Registro audit completo"
             }
           ],
-          "overline": "PERCHE' CONTA",
+          "overline": "PERCHÉ CONTA",
           "title": "Cosa ottieni"
         },
         "bottomCta": {
@@ -12656,7 +12656,7 @@
               "title": "Rollback immediato"
             }
           ],
-          "overline": "PERCHE' CONTA",
+          "overline": "PERCHÉ CONTA",
           "title": "Cosa ottieni"
         },
         "bottomCta": {
@@ -12954,7 +12954,7 @@
             },
             {
               "text": "Splunk & Oxford Economics, \"The Hidden Costs of Downtime\", giugno 2024. \"Ogni minuto di downtime costa $9.000 o $540.000 all'ora.\"",
-              "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
+              "url": "https://www.splunk.com/en_us/blog/ciò-office/cost-of-downtime-from-global-executives.html"
             },
             {
               "text": "Veeam Virtual Lab crea ambienti di rete isolati per i test SureBackup senza impattare le reti di produzione.",
@@ -13170,7 +13170,7 @@
               "title": "Potere contrattuale"
             }
           ],
-          "overline": "PERCHE' CONTA",
+          "overline": "PERCHÉ CONTA",
           "title": "Cosa ottieni"
         },
         "bottomCta": {
@@ -13645,7 +13645,7 @@
               "title": "Verifica completa"
             }
           ],
-          "overline": "PERCHE' CONTA",
+          "overline": "PERCHÉ CONTA",
           "title": "Cosa ottieni"
         },
         "bottomCta": {
@@ -14058,7 +14058,7 @@
         "title": "Le Nostre Pratiche di Telemetria"
       },
       "meta": {
-        "description": "Dati di telemetria raccolti dai prodotti Rediacc, finalita', modalita' di elaborazione e come disattivarla. Copre Web, CLI, Middleware e Renet Agent.",
+        "description": "Dati di telemetria raccolti dai prodotti Rediacc, finalità, modalità di elaborazione e come disattivarla. Copre Web, CLI, Middleware e Renet Agent.",
         "keywords": "informativa sulla telemetria, raccolta dati, OpenTelemetry, opt-out, privacy, GDPR, Rediacc",
         "title": "Informativa sulla Telemetria - Raccolta Dati | Rediacc"
       },
@@ -14075,7 +14075,7 @@
             "bridgeDataCollected": {
               "content": ["Il Renet Agent raccoglie le seguenti categorie di dati:"],
               "items": [
-                "<strong>Operazioni in coda:</strong> ID del task, livello di priorita', tipo di operazione, durata dell'esecuzione, stato di successo o errore",
+                "<strong>Operazioni in coda:</strong> ID del task, livello di priorità, tipo di operazione, durata dell'esecuzione, stato di successo o errore",
                 "<strong>Operazioni SSH:</strong> host di destinazione, nome utente, numero di porta, codice di uscita, durata dell'esecuzione (nessun contenuto del comando o output viene raccolto)",
                 "<strong>Chiamate API:</strong> nome della procedura, durata della richiesta",
                 "<strong>Operazioni Vault:</strong> tipo e durata dell'operazione (nessun valore segreto, chiave o contenuto del vault viene raccolto)",
@@ -14095,14 +14095,14 @@
         },
         "ccpa": {
           "content": [
-            "Se l'utente e' residente in California, si applicano le seguenti informative aggiuntive ai sensi del California Consumer Privacy Act (CCPA) come modificato dal California Privacy Rights Act (CPRA):"
+            "Se l'utente è residente in California, si applicano le seguenti informative aggiuntive ai sensi del California Consumer Privacy Act (CCPA) come modificato dal California Privacy Rights Act (CPRA):"
           ],
           "id": "ccpa",
           "items": [
-            "<strong>Categorie di informazioni raccolte:</strong> attivita' su Internet o su reti elettroniche (tipo di browser, dati di interazione, log degli errori), identificatori del dispositivo (anonimizzati), dati di geolocalizzazione (solo a livello di paese, derivati dall'indirizzo IP che non viene archiviato)",
-            "<strong>Finalita':</strong> miglioramento e mantenimento della qualita' del servizio, debug, monitoraggio delle performance e sicurezza",
-            "<strong>Vendita/Condivisione:</strong> non vendiamo ne' condividiamo i dati di telemetria come definito dal CCPA/CPRA",
-            "<strong>Diritto all'opt-out:</strong> utilizzi i meccanismi di opt-out specifici del prodotto descritti nelle sezioni 4-7 sopra. Rispettiamo altresi' il segnale Global Privacy Control (GPC) nella nostra Web Application."
+            "<strong>Categorie di informazioni raccolte:</strong> attività su Internet o su reti elettroniche (tipo di browser, dati di interazione, log degli errori), identificatori del dispositivo (anonimizzati), dati di geolocalizzazione (solo a livello di paese, derivati dall'indirizzo IP che non viene archiviato)",
+            "<strong>Finalità:</strong> miglioramento e mantenimento della qualità del servizio, debug, monitoraggio delle performance e sicurezza",
+            "<strong>Vendita/Condivisione:</strong> non vendiamo né condividiamo i dati di telemetria come definito dal CCPA/CPRA",
+            "<strong>Diritto all'opt-out:</strong> utilizzi i meccanismi di opt-out specifici del prodotto descritti nelle sezioni 4-7 sopra. Rispettiamo altresì il segnale Global Privacy Control (GPC) nella nostra Web Application."
           ],
           "title": "11. Residenti in California (CCPA/CPRA)"
         },
@@ -14134,12 +14134,12 @@
             },
             "cliOptOut": {
               "content": [
-                "E' possibile disabilitare la telemetria della CLI (inclusa la profilazione) con uno dei seguenti metodi:"
+                "È possibile disabilitare la telemetria della CLI (inclusa la profilazione) con uno dei seguenti metodi:"
               ],
               "items": [
                 "Impostare la variabile d'ambiente <code>REDIACC_TELEMETRY_DISABLED=1</code>",
                 "Impostare <code>telemetryEnabled: false</code> nel file di configurazione della CLI",
-                "La telemetria e' <strong>automaticamente disabilitata</strong> negli ambienti CI (rilevata tramite la variabile d'ambiente <code>CI</code>)"
+                "La telemetria è <strong>automaticamente disabilitata</strong> negli ambienti CI (rilevata tramite la variabile d'ambiente <code>CI</code>)"
               ],
               "title": "5.2 Come Disattivare la Telemetria"
             }
@@ -14153,7 +14153,7 @@
           "id": "data-processing",
           "items": [
             "<strong>Cifratura:</strong> tutti i dati vengono cifrati in transito tramite TLS. Il Renet Agent utilizza inoltre la compressione gzip.",
-            "<strong>Conservazione:</strong> le tracce di telemetria grezze vengono archiviate per un massimo di 90 giorni per le attivita' di debug e le indagini sugli incidenti. Le metriche aggregate vengono conservate per un massimo di 12 mesi e successivamente eliminate.",
+            "<strong>Conservazione:</strong> le tracce di telemetria grezze vengono archiviate per un massimo di 90 giorni per le attività di debug e le indagini sugli incidenti. Le metriche aggregate vengono conservate per un massimo di 12 mesi e successivamente eliminate.",
             "<strong>Accesso:</strong> i dati di telemetria sono accessibili solo al personale tecnico e operativo di Rediacc su base need-to-know.",
             "<strong>Nessuna condivisione con terze parti:</strong> i dati di telemetria non vengono condivisi, venduti o resi accessibili a terze parti.",
             "<strong>Infrastruttura:</strong> tutti i dati di telemetria vengono elaborati e archiviati su infrastruttura situata all'interno dell'Unione Europea."
@@ -14162,14 +14162,14 @@
         },
         "internationalTransfers": {
           "content": [
-            "I dati di telemetria vengono elaborati e archiviati esclusivamente su server situati nell'Unione Europea. Nell'improbabile eventualita' in cui i dati di telemetria debbano essere trasferiti al di fuori dell'UE/SEE (ad es., per il disaster recovery), saranno adottate adeguate misure di salvaguardia, incluse le Clausole Contrattuali Standard (SCC) approvate dalla Commissione Europea."
+            "I dati di telemetria vengono elaborati e archiviati esclusivamente su server situati nell'Unione Europea. Nell'improbabile eventualità in cui i dati di telemetria debbano essere trasferiti al di fuori dell'UE/SEE (ad es., per il disaster recovery), saranno adottate adeguate misure di salvaguardia, incluse le Clausole Contrattuali Standard (SCC) approvate dalla Commissione Europea."
           ],
           "id": "international-transfers",
           "title": "9. Trasferimenti Internazionali di Dati"
         },
         "introduction": {
           "content": [
-            "I prodotti software Rediacc raccolgono telemetria di utilizzo anonimizzata per aiutarci a migliorare la qualita' del prodotto, diagnosticare problemi e capire come vengono utilizzati i nostri strumenti. La presente Informativa sulla Telemetria descrive esattamente quali dati vengono raccolti, perche', come vengono elaborati e come e' possibile disattivarla.",
+            "I prodotti software Rediacc raccolgono telemetria di utilizzo anonimizzata per aiutarci a migliorare la qualità del prodotto, diagnosticare problemi e capire come vengono utilizzati i nostri strumenti. La presente Informativa sulla Telemetria descrive esattamente quali dati vengono raccolti, perché, come vengono elaborati e come è possibile disattivarla.",
             "La presente informativa riguarda quattro prodotti: la <strong>Rediacc Web Application</strong>, la <strong>Rediacc CLI</strong>, il <strong>Rediacc Middleware</strong> e il <strong>Rediacc Renet Agent</strong>. Le analisi del sito web (Plausible) sono trattate separatamente nella nostra <a href=\"privacy-policy\">Informativa sulla Privacy</a> e nella nostra <a href=\"cookie-policy\">Informativa sui Cookie</a>."
           ],
           "id": "introduction",
@@ -14178,8 +14178,8 @@
         "legalBasis": {
           "content": [
             "Ai sensi del Regolamento Generale sulla Protezione dei Dati dell'UE (GDPR) e della Direttiva ePrivacy, la base giuridica per la raccolta di telemetria dipende dal contesto del prodotto:",
-            "Per la <strong>Web Application</strong> (basata su browser): la telemetria viene raccolta sulla base del <strong>legittimo interesse</strong> (GDPR Art. 6(1)(f)) ai fini del mantenimento e del miglioramento della qualita' del servizio. L'utente puo' disattivarla in qualsiasi momento.",
-            "Per la <strong>CLI, il Middleware e il Bridge</strong> (installati sull'infrastruttura dell'utente): la telemetria viene raccolta sulla base del <strong>legittimo interesse</strong> con chiari meccanismi di opt-out. E' possibile disabilitare la telemetria prima che vengano trasmessi dati."
+            "Per la <strong>Web Application</strong> (basata su browser): la telemetria viene raccolta sulla base del <strong>legittimo interesse</strong> (GDPR Art. 6(1)(f)) ai fini del mantenimento e del miglioramento della qualità del servizio. L'utente può disattivarla in qualsiasi momento.",
+            "Per la <strong>CLI, il Middleware e il Bridge</strong> (installati sull'infrastruttura dell'utente): la telemetria viene raccolta sulla base del <strong>legittimo interesse</strong> con chiari meccanismi di opt-out. È possibile disabilitare la telemetria prima che vengano trasmessi dati."
           ],
           "id": "legal-basis",
           "title": "3. Base Giuridica per la Raccolta"
@@ -14189,7 +14189,7 @@
           "id": "principles",
           "items": [
             "<strong>Privacy by design:</strong> gli identificatori personali vengono anonimizzati prima della trasmissione. Gli indirizzi email vengono ridotti al solo dominio, gli ID utente vengono sottoposti ad hashing (SHA-256) e troncati; password e segreti non vengono mai raccolti.",
-            "<strong>Raccolta minimale:</strong> raccogliamo solo cio' che e' necessario per migliorare la qualita' del prodotto e diagnosticare problemi. Non raccogliamo contenuti di file, contenuti di database, risultati di query o dati aziendali.",
+            "<strong>Raccolta minimale:</strong> raccogliamo solo ciò che è necessario per migliorare la qualità del prodotto e diagnosticare problemi. Non raccogliamo contenuti di file, contenuti di database, risultati di query o dati aziendali.",
             "<strong>Trasparenza:</strong> la presente informativa elenca ogni categoria di dati raccolta da ciascun prodotto. Non esistono flussi di dati nascosti.",
             "<strong>Controllo dell'utente:</strong> ogni prodotto fornisce un meccanismo per disabilitare completamente la telemetria. La disattivazione viene rispettata immediatamente e in modo completo.",
             "<strong>Aggregazione:</strong> i dati di telemetria vengono analizzati in forma aggregata. Non costruiamo profili individuali degli utenti a partire dalla telemetria."
@@ -14198,7 +14198,7 @@
         },
         "yourRights": {
           "content": [
-            "Poiche' i nostri dati di telemetria sono anonimizzati e aggregati, in generale non costituiscono dati personali ai sensi del GDPR. Tuttavia, nella misura in cui qualsiasi dato di telemetria possa essere collegato all'utente personalmente, egli ha il diritto di:"
+            "Poiché i nostri dati di telemetria sono anonimizzati e aggregati, in generale non costituiscono dati personali ai sensi del GDPR. Tuttavia, nella misura in cui qualsiasi dato di telemetria possa essere collegato all'utente personalmente, egli ha il diritto di:"
           ],
           "content2": [
             "Per esercitare qualsiasi di questi diritti, ci contatti all'indirizzo <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>. Risponderemo entro 30 giorni."
@@ -14238,7 +14238,7 @@
         "acceptance": {
           "content": [
             "Accedendo o utilizzando qualsiasi parte dei Servizi, incluso il download della CLI, l'installazione del Renet Agent su un Dispositivo, la creazione di un Account o l'utilizzo della Piattaforma, accettate di essere vincolati dai presenti Termini di Servizio (\"Termini\"). Se utilizzate i Servizi per conto di un'organizzazione, dichiarate e garantite di avere l'autorita di vincolare tale organizzazione ai presenti Termini; in tal caso, i riferimenti a \"voi\" o \"Cliente\" comprendono tale organizzazione.",
-            "Se non accettate i presenti Termini, non potete accedere ai Servizi ne utilizzarli. I presenti Termini costituiscono un accordo legalmente vincolante tra voi e Rediacc OÜ (codice registro 17363830), societa registrata in Estonia con sede legale in Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estonia (\"Rediacc\", \"noi\", \"ci\" o \"nostro\")."
+            "Se non accettate i presenti Termini, non potete accedere ai Servizi ne utilizzarli. I presenti Termini costituiscono un accordo legalmente vincolante tra voi e Rediacc OÜ (codice registro 17363830), società registrata in Estonia con sede legale in Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estonia (\"Rediacc\", \"noi\", \"ci\" o \"nostro\")."
           ],
           "id": "acceptance",
           "title": "2. Accettazione dei Termini"
@@ -14248,12 +14248,12 @@
             "Per accedere alla Piattaforma e gestire gli Abbonamenti e necessario creare un Account. Accettate di fornire informazioni accurate, aggiornate e complete durante la registrazione e di mantenerle aggiornate. Siete gli unici responsabili di:"
           ],
           "content2": [
-            "Siete tenuti a notificarci immediatamente all'indirizzo <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> qualora sospettiate un accesso non autorizzato al vostro Account. Ci riserviamo il diritto di sospendere o cancellare gli Account rimasti inattivi per piu di dodici (12) mesi o che riteniamo ragionevolmente vengano utilizzati in violazione dei presenti Termini."
+            "Siete tenuti a notificarci immediatamente all'indirizzo <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> qualora sospettiate un accesso non autorizzato al vostro Account. Ci riserviamo il diritto di sospendere o cancellare gli Account rimasti inattivi per più di dodici (12) mesi o che riteniamo ragionevolmente vengano utilizzati in violazione dei presenti Termini."
           ],
           "id": "accounts",
           "items": [
             "Proteggere le credenziali del vostro Account, i token API e le chiavi di accesso",
-            "Tutte le attivita svolte nell'ambito del vostro Account o tramite i vostri Utenti Autorizzati",
+            "Tutte le attività svolte nell'ambito del vostro Account o tramite i vostri Utenti Autorizzati",
             "Garantire che gli Utenti Autorizzati rispettino i presenti Termini",
             "Mantenere la riservatezza dei file di Configurazione, incluse le chiavi private SSH e le credenziali di cifratura"
           ],
@@ -14269,9 +14269,9 @@
         },
         "dataOwnership": {
           "content": [
-            "<strong>I Dati del Cliente sono di vostra proprieta.</strong> Poiche il Software On-Premise archivia i Dati del Cliente su Dispositivi sotto il vostro controllo, cifrati con credenziali in vostro esclusivo possesso, Rediacc non ha accesso ai vostri Dati del Cliente a riposo. Non accediamo, utilizziamo o condividiamo i vostri Dati del Cliente se non nella misura strettamente necessaria a fornire i Servizi (ad esempio, l'elaborazione di richieste API della Piattaforma da voi avviate).",
+            "<strong>I Dati del Cliente sono di vostra proprietà.</strong> Poiché il Software On-Premise archivia i Dati del Cliente su Dispositivi sotto il vostro controllo, cifrati con credenziali in vostro esclusivo possesso, Rediacc non ha accesso ai vostri Dati del Cliente a riposo. Non accediamo, utilizziamo o condividiamo i vostri Dati del Cliente se non nella misura strettamente necessaria a fornire i Servizi (ad esempio, l'elaborazione di richieste API della Piattaforma da voi avviate).",
             "Le informazioni dell'Account (e-mail, nome dell'organizzazione, dati di fatturazione) sono trattate conformemente alla nostra <a href=\"privacy-policy\">Informativa sulla Privacy</a>. In seguito alla chiusura del vostro Account, potrete esportare i dati dell'Account entro trenta (30) giorni. Trascorso tale termine, cancellieremo i dati dell'Account dai nostri sistemi attivi. I Dati del Cliente sui vostri Dispositivi non sono interessati dalla chiusura dell'Account e rimangono sulla vostra infrastruttura sotto il vostro controllo.",
-            "In conformita con il Regolamento UE sui Dati (Regolamento 2023/2854), se utilizzate le funzionalita cloud della Piattaforma, avete il diritto di cambiare fornitore o migrare a una configurazione self-hosted. I vostri Dati del Cliente sono archiviati sui vostri Dispositivi e sono sempre sotto il vostro controllo. I dati dell'Account e le configurazioni archiviate sulla Piattaforma possono essere esportati in formati standard leggibili da macchina. Forniremo assistenza ragionevole durante qualsiasi periodo di transizione fino a trenta (30) giorni successivi alla vostra richiesta."
+            "In conformità con il Regolamento UE sui Dati (Regolamento 2023/2854), se utilizzate le funzionalità cloud della Piattaforma, avete il diritto di cambiare fornitore o migrare a una configurazione self-hosted. I vostri Dati del Cliente sono archiviati sui vostri Dispositivi e sono sempre sotto il vostro controllo. I dati dell'Account e le configurazioni archiviate sulla Piattaforma possono essere esportati in formati standard leggibili da macchina. Forniremo assistenza ragionevole durante qualsiasi periodo di transizione fino a trenta (30) giorni successivi alla vostra richiesta."
           ],
           "id": "data-ownership",
           "title": "11. I Vostri Dati e la Cifratura"
@@ -14288,28 +14288,28 @@
             "<strong>\"CLI\"</strong> indica l'interfaccia a riga di comando di Rediacc (<code>rdc</code>) installata sulla vostra workstation.",
             "<strong>\"Configurazione\"</strong> indica i file di configurazione locali archiviati sulla vostra workstation, contenenti i dettagli di connessione ai Dispositivi, le credenziali di cifratura e altre impostazioni operative.",
             "<strong>\"Dati del Cliente\"</strong> indica qualsiasi dato, contenuto, file, container, configurazione e applicazione che distribuite, archiviate o elaborate sui vostri Dispositivi tramite i Servizi. I Dati del Cliente non includono le informazioni dell'Account ne i Dati di Telemetria.",
-            "<strong>\"Dispositivo\"</strong> indica un server o una macchina virtuale di vostra proprieta o sotto il vostro controllo su cui e installato il Renet Agent.",
+            "<strong>\"Dispositivo\"</strong> indica un server o una macchina virtuale di vostra proprietà o sotto il vostro controllo su cui e installato il Renet Agent.",
             "<strong>\"Software On-Premise\"</strong> indica i componenti software installati sulla vostra infrastruttura, inclusi la CLI, il Renet Agent e l'Applicazione Desktop.",
             "<strong>\"Piattaforma\"</strong> indica l'applicazione web Rediacc, il portale account e qualsiasi servizio cloud fornito da Rediacc.",
             "<strong>\"Repository\"</strong> indica un'applicazione isolata gestita dal Renet Agent, composta da un'immagine disco cifrata, un daemon Docker dedicato e i container associati.",
             "<strong>\"Servizi\"</strong> indica, complessivamente, il Software On-Premise, la Piattaforma, la documentazione e qualsiasi servizio professionale correlato fornito da Rediacc.",
-            "<strong>\"Abbonamento\"</strong> indica il piano tariffario selezionato (Community, Professional, Business o Enterprise), che determina l'accesso alle funzionalita e i limiti delle risorse.",
+            "<strong>\"Abbonamento\"</strong> indica il piano tariffario selezionato (Community, Professional, Business o Enterprise), che determina l'accesso alle funzionalità e i limiti delle risorse.",
             "<strong>\"Dati di Telemetria\"</strong> indica i dati di utilizzo anonimizzati raccolti dai Servizi come descritto nella nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>."
           ],
           "title": "1. Definizioni"
         },
         "experimentalFeatures": {
           "content": [
-            "Alcune funzionalita dei Servizi potrebbero essere designate come \"sperimentali\", \"beta\" o \"anteprima\" (collettivamente, \"Funzionalita Sperimentali\"). Le Funzionalita Sperimentali sono fornite a scopo di valutazione e potrebbero essere incomplete, instabili o soggette a modifiche senza preavviso.",
-            "Le Funzionalita Sperimentali sono fornite \"NELLO STATO IN CUI SI TROVANO\" senza alcuna garanzia. Potremmo modificarle o interromperle in qualsiasi momento senza preavviso e non siamo responsabili per eventuali perdite o danni derivanti dal vostro utilizzo o affidamento sulle Funzionalita Sperimentali."
+            "Alcune funzionalità dei Servizi potrebbero essere designate come \"sperimentali\", \"beta\" o \"anteprima\" (collettivamente, \"Funzionalità Sperimentali\"). Le Funzionalità Sperimentali sono fornite a scopo di valutazione e potrebbero essere incomplete, instabili o soggette a modifiche senza preavviso.",
+            "Le Funzionalità Sperimentali sono fornite \"NELLO STATO IN CUI SI TROVANO\" senza alcuna garanzia. Potremmo modificarle o interromperle in qualsiasi momento senza preavviso e non siamo responsabili per eventuali perdite o danni derivanti dal vostro utilizzo o affidamento sulle Funzionalità Sperimentali."
           ],
           "id": "experimental-features",
-          "title": "8. Funzionalita Sperimentali"
+          "title": "8. Funzionalità Sperimentali"
         },
         "governingLaw": {
           "content": [
-            "I presenti Termini sono disciplinati e interpretati conformemente alle leggi della Repubblica di Estonia, senza riguardo ai principi in materia di conflitti di legge. Qualsiasi controversia sorta ai sensi o in connessione con i presenti Termini sara sottoposta alla giurisdizione esclusiva del Tribunale della Contea di Harju (Harju Maakohus) a Tallinn, Estonia.",
-            "Fermo restando quanto sopra, ciascuna delle parti potra richiedere provvedimenti inibitori o altri rimedi equitativi a qualsiasi tribunale competente per prevenire la violazione attuale o minacciata, l'appropriazione indebita o la lesione di diritti di proprieta intellettuale o di obblighi di riservatezza."
+            "I presenti Termini sono disciplinati e interpretati conformemente alle leggi della Repubblica di Estonia, senza riguardo ai principi in materia di conflitti di legge. Qualsiasi controversia sorta ai sensi o in connessione con i presenti Termini sarà sottoposta alla giurisdizione esclusiva del Tribunale della Contea di Harju (Harju Maakohus) a Tallinn, Estonia.",
+            "Fermo restando quanto sopra, ciascuna delle parti potrà richiedere provvedimenti inibitori o altri rimedi equitativi a qualsiasi tribunale competente per prevenire la violazione attuale o minacciata, l'appropriazione indebita o la lesione di diritti di proprietà intellettuale o di obblighi di riservatezza."
           ],
           "id": "governing-law",
           "title": "18. Legge Applicabile e Risoluzione delle Controversie"
@@ -14325,8 +14325,8 @@
             },
             "byRediacc": {
               "content": [
-                "Rediacc vi manlevera, difendera e terrera indenni da qualsiasi reclamo di terze parti secondo cui il Software On-Premise o la Piattaforma, cosi come forniti da Rediacc, violano un valido diritto di proprieta intellettuale di terze parti, a condizione che voi: (a) notifichiate prontamente a Rediacc il reclamo; (b) concediate a Rediacc il controllo esclusivo della difesa e della transazione; e (c) forniate la cooperazione ragionevole a spese di Rediacc.",
-                "Qualora i Servizi diventino, o a giudizio di Rediacc rischino di diventare, oggetto di un reclamo per violazione, Rediacc potra a sua discrezione: (i) procurarsi il diritto a favore vostro di continuare a utilizzare i Servizi; (ii) sostituire o modificare il componente interessato per renderlo non lesivo; o (iii) se ne (i) ne (ii) risultano commercialmente praticabili, risolvere l'Abbonamento interessato e rimborsare le tariffe prepagate e non utilizzate.",
+                "Rediacc vi manlevera, difendera e terrera indenni da qualsiasi reclamo di terze parti secondo cui il Software On-Premise o la Piattaforma, così come forniti da Rediacc, violano un valido diritto di proprietà intellettuale di terze parti, a condizione che voi: (a) notifichiate prontamente a Rediacc il reclamo; (b) concediate a Rediacc il controllo esclusivo della difesa e della transazione; e (c) forniate la cooperazione ragionevole a spese di Rediacc.",
+                "Qualora i Servizi diventino, o a giudizio di Rediacc rischino di diventare, oggetto di un reclamo per violazione, Rediacc potrà a sua discrezione: (i) procurarsi il diritto a favore vostro di continuare a utilizzare i Servizi; (ii) sostituire o modificare il componente interessato per renderlo non lesivo; o (iii) se ne (i) ne (ii) risultano commercialmente praticabili, risolvere l'Abbonamento interessato e rimborsare le tariffe prepagate e non utilizzate.",
                 "Rediacc non ha alcun obbligo ai sensi della presente sezione per reclami derivanti da: modifiche da voi apportate ai Servizi, utilizzo dei Servizi in combinazione con software di terze parti non fornito da Rediacc, o utilizzo dei Servizi in violazione dei presenti Termini."
               ],
               "title": "16.2 Da Parte di Rediacc"
@@ -14336,37 +14336,37 @@
         },
         "intellectualProperty": {
           "content": [
-            "I Servizi, inclusi il Software On-Premise, la Piattaforma, la documentazione, le API, i design e tutti i contenuti forniti da Rediacc, sono di proprieta di Rediacc OÜ e protetti dalle leggi sulla proprieta intellettuale dell'Estonia, dell'Unione Europea e dai trattati internazionali applicabili. Fatta eccezione per le licenze espressamente concesse nei presenti Termini, nessun altro diritto o licenza e implicito o concesso.",
+            "I Servizi, inclusi il Software On-Premise, la Piattaforma, la documentazione, le API, i design e tutti i contenuti forniti da Rediacc, sono di proprietà di Rediacc OÜ e protetti dalle leggi sulla proprietà intellettuale dell'Estonia, dell'Unione Europea e dai trattati internazionali applicabili. Fatta eccezione per le licenze espressamente concesse nei presenti Termini, nessun altro diritto o licenza e implicito o concesso.",
             "Conservate tutti i diritti, titoli e interessi sui vostri Dati del Cliente e su qualsiasi contenuto o applicazione creati tramite i Servizi. Utilizzando la Piattaforma, concedete a Rediacc una licenza limitata, mondiale e a titolo gratuito per ospitare, elaborare e visualizzare le informazioni del vostro Account esclusivamente al fine di fornirvi i Servizi. Tale licenza si estingue al momento della cancellazione del vostro Account.",
-            "Potremmo raccogliere e utilizzare dati anonimi e aggregati derivati dall'utilizzo dei Servizi da parte vostra (inclusi i Dati di Telemetria) per finalita di miglioramento del prodotto, analisi e benchmarking. Tali dati aggregati non vi identificano ne identificano alcun singolo utente."
+            "Potremmo raccogliere e utilizzare dati anonimi e aggregati derivati dall'utilizzo dei Servizi da parte vostra (inclusi i Dati di Telemetria) per finalità di miglioramento del prodotto, analisi e benchmarking. Tali dati aggregati non vi identificano ne identificano alcun singolo utente."
           ],
           "id": "intellectual-property",
-          "title": "12. Proprieta Intellettuale"
+          "title": "12. Proprietà Intellettuale"
         },
         "limitationOfLiability": {
           "content": [
-            "NELLA MISURA MASSIMA CONSENTITA DALLA LEGGE APPLICABILE, IN NESSUN CASO REDIACC, LE SUE AFFILIATE, I SUOI DIRIGENTI, AMMINISTRATORI, DIPENDENTI O AGENTI SARANNO RESPONSABILI PER DANNI INDIRETTI, INCIDENTALI, SPECIALI, CONSEQUENZIALI O PUNITIVI, NE PER PERDITE DI PROFITTI, RICAVI, DATI, USO O AVVIAMENTO, DERIVANTI DA O IN CONNESSIONE CON I PRESENTI TERMINI O IL VOSTRO UTILIZZO DEI SERVIZI, INDIPENDENTEMENTE DALLA TEORIA DELLA RESPONSABILITA E INDIPENDENTEMENTE DAL FATTO CHE REDIACC SIA STATA INFORMATA DELLA POSSIBILITA DI TALI DANNI.",
-            "LA RESPONSABILITA COMPLESSIVA TOTALE DI REDIACC PER TUTTI I RECLAMI DERIVANTI DA O CORRELATI AI PRESENTI TERMINI O AI SERVIZI NON SUPERERA IL MAGGIORE TRA: (A) L'IMPORTO TOTALE PAGATO A REDIACC NEI DODICI (12) MESI PRECEDENTI L'EVENTO CHE HA DATO ORIGINE AL RECLAMO; O (B) CENTO DOLLARI STATUNITENSI ($100).",
-            "LE LIMITAZIONI E LE ESCLUSIONI DI CUI ALLE SEZIONI 14 E 15 NON SI APPLICANO A: (A) RESPONSABILITA PER MORTE O LESIONI PERSONALI CAUSATE DA NEGLIGENZA; (B) RESPONSABILITA PER FRODE O FALSA DICHIARAZIONE FRAUDOLENTA; (C) RESPONSABILITA PER DOLO (TAHTLIK RIKKUMINE) O COLPA GRAVE (RASKE HOOLETUS) AI SENSI DELLA LEGGE ESTONE SULLE OBBLIGAZIONI; O (D) QUALSIASI ALTRA RESPONSABILITA CHE NON PUO ESSERE ESCLUSA O LIMITATA DALLA LEGGE APPLICABILE."
+            "NELLA MISURA MASSIMA CONSENTITA DALLA LEGGE APPLICABILE, IN NESSUN CASO REDIACC, LE SUE AFFILIATE, I SUOI DIRIGENTI, AMMINISTRATORI, DIPENDENTI O AGENTI SARANNO RESPONSABILI PER DANNI INDIRETTI, INCIDENTALI, SPECIALI, CONSEQUENZIALI O PUNITIVI, NE PER PERDITE DI PROFITTI, RICAVI, DATI, USO O AVVIAMENTO, DERIVANTI DA O IN CONNESSIONE CON I PRESENTI TERMINI O IL VOSTRO UTILIZZO DEI SERVIZI, INDIPENDENTEMENTE DALLA TEORIA DELLA RESPONSABILITÀ E INDIPENDENTEMENTE DAL FATTO CHE REDIACC SIA STATA INFORMATA DELLA POSSIBILITÀ DI TALI DANNI.",
+            "LA RESPONSABILITÀ COMPLESSIVA TOTALE DI REDIACC PER TUTTI I RECLAMI DERIVANTI DA O CORRELATI AI PRESENTI TERMINI O AI SERVIZI NON SUPERERÀ IL MAGGIORE TRA: (A) L'IMPORTO TOTALE PAGATO A REDIACC NEI DODICI (12) MESI PRECEDENTI L'EVENTO CHE HA DATO ORIGINE AL RECLAMO; O (B) CENTO DOLLARI STATUNITENSI ($100).",
+            "LE LIMITAZIONI E LE ESCLUSIONI DI CUI ALLE SEZIONI 14 E 15 NON SI APPLICANO A: (A) RESPONSABILITÀ PER MORTE O LESIONI PERSONALI CAUSATE DA NEGLIGENZA; (B) RESPONSABILITÀ PER FRODE O FALSA DICHIARAZIONE FRAUDOLENTA; (C) RESPONSABILITÀ PER DOLO (TAHTLIK RIKKUMINE) O COLPA GRAVE (RASKE HOOLETUS) AI SENSI DELLA LEGGE ESTONE SULLE OBBLIGAZIONI; O (D) QUALSIASI ALTRA RESPONSABILITÀ CHE NON PUÒ ESSERE ESCLUSA O LIMITATA DALLA LEGGE APPLICABILE."
           ],
           "id": "limitation-of-liability",
-          "title": "15. Limitazione di Responsabilita"
+          "title": "15. Limitazione di Responsabilità"
         },
         "onPremiseLicense": {
           "content": [
-            "Subordinatamente ai presenti Termini e al vostro Abbonamento attivo, Rediacc vi concede una licenza limitata, non esclusiva, non sublicenziabile, non trasferibile e revocabile per installare e utilizzare il Software On-Premise (CLI, Renet Agent e Applicazione Desktop) esclusivamente per le vostre finalita aziendali interne durante il periodo di Abbonamento."
+            "Subordinatamente ai presenti Termini e al vostro Abbonamento attivo, Rediacc vi concede una licenza limitata, non esclusiva, non sublicenziabile, non trasferibile e revocabile per installare e utilizzare il Software On-Premise (CLI, Renet Agent e Applicazione Desktop) esclusivamente per le vostre finalità aziendali interne durante il periodo di Abbonamento."
           ],
           "id": "on-premise-license",
           "subsections": {
             "encryptionCredentials": {
               "content": [
-                "Il Software On-Premise utilizza la cifratura completa del disco LUKS per i dati del Repository. Le credenziali di cifratura vengono generate localmente e conservate esclusivamente nei file di Configurazione sulla vostra workstation. <strong>Rediacc non ha accesso alle vostre credenziali di cifratura e non puo recuperare i vostri dati in caso di smarrimento.</strong> Siete gli unici responsabili del backup dei file di Configurazione e delle credenziali di cifratura."
+                "Il Software On-Premise utilizza la cifratura completa del disco LUKS per i dati del Repository. Le credenziali di cifratura vengono generate localmente e conservate esclusivamente nei file di Configurazione sulla vostra workstation. <strong>Rediacc non ha accesso alle vostre credenziali di cifratura e non può recuperare i vostri dati in caso di smarrimento.</strong> Siete gli unici responsabili del backup dei file di Configurazione e delle credenziali di cifratura."
               ],
               "title": "6.3 Cifratura e Credenziali"
             },
             "installation": {
               "content": [
-                "Il Renet Agent opera con privilegi elevati (root) sui vostri Dispositivi per gestire volumi cifrati, container runtime e servizi di sistema. Siete gli unici responsabili della sicurezza dei vostri Dispositivi, inclusi l'accesso SSH, la configurazione del firewall, gli aggiornamenti del sistema operativo e la sicurezza fisica. Rediacc non accede da remoto ai vostri Dispositivi salvo esplicita richiesta da parte vostra per finalita di supporto."
+                "Il Renet Agent opera con privilegi elevati (root) sui vostri Dispositivi per gestire volumi cifrati, container runtime e servizi di sistema. Siete gli unici responsabili della sicurezza dei vostri Dispositivi, inclusi l'accesso SSH, la configurazione del firewall, gli aggiornamenti del sistema operativo e la sicurezza fisica. Rediacc non accede da remoto ai vostri Dispositivi salvo esplicita richiesta da parte vostra per finalità di supporto."
               ],
               "title": "6.1 Installazione e Accesso ai Dispositivi"
             },
@@ -14388,8 +14388,8 @@
         "platformLicense": {
           "content": [
             "Subordinatamente ai presenti Termini e al vostro Abbonamento attivo, Rediacc vi concede una licenza limitata, non esclusiva e non trasferibile per accedere alla Piattaforma e utilizzarla durante il periodo di Abbonamento. Potete concedere l'accesso agli Utenti Autorizzati all'interno della vostra organizzazione.",
-            "Ci riserviamo il diritto di modificare, aggiornare o interrompere le funzionalita della Piattaforma in qualsiasi momento. Ove possibile, forniremo un preavviso adeguato in caso di modifiche sostanziali. Le modifiche non ridurranno in modo sostanziale le funzionalita principali del vostro piano di Abbonamento corrente durante un periodo di fatturazione a pagamento attivo.",
-            "Ci impegniamo a garantire un'elevata disponibilita della Piattaforma, ma non garantiamo un accesso ininterrotto. La Piattaforma potrebbe essere temporaneamente non disponibile a causa di manutenzione, aggiornamenti o circostanze al di fuori del nostro controllo."
+            "Ci riserviamo il diritto di modificare, aggiornare o interrompere le funzionalità della Piattaforma in qualsiasi momento. Ove possibile, forniremo un preavviso adeguato in caso di modifiche sostanziali. Le modifiche non ridurranno in modo sostanziale le funzionalità principali del vostro piano di Abbonamento corrente durante un periodo di fatturazione a pagamento attivo.",
+            "Ci impegniamo a garantire un'elevata disponibilità della Piattaforma, ma non garantiamo un accesso ininterrotto. La Piattaforma potrebbe essere temporaneamente non disponibile a causa di manutenzione, aggiornamenti o circostanze al di fuori del nostro controllo."
           ],
           "id": "platform-license",
           "title": "7. Licenza della Piattaforma"
@@ -14399,7 +14399,7 @@
             "Rediacc fornisce una piattaforma di automazione dell'infrastruttura per la gestione di ambienti server self-hosted. I Servizi comprendono:"
           ],
           "content2": [
-            "Le funzionalita specifiche, i limiti delle risorse e le capacita a vostra disposizione dipendono dal piano di Abbonamento. Le descrizioni delle funzionalita presenti sul nostro sito web e nella documentazione illustrano le funzionalita previste per ciascun piano, ma non costituiscono garanzie vincolanti di prestazione."
+            "Le funzionalità specifiche, i limiti delle risorse e le capacità a vostra disposizione dipendono dal piano di Abbonamento. Le descrizioni delle funzionalità presenti sul nostro sito web e nella documentazione illustrano le funzionalità previste per ciascun piano, ma non costituiscono garanzie vincolanti di prestazione."
           ],
           "id": "service-description",
           "items": [
@@ -14410,10 +14410,10 @@
           "title": "3. Descrizione dei Servizi"
         },
         "subscriptions": {
-          "content": ["Rediacc offre piu piani di Abbonamento:"],
+          "content": ["Rediacc offre più piani di Abbonamento:"],
           "id": "subscriptions",
           "items": [
-            "<strong>Community</strong> (gratuito): limitato a 2 attivazioni di Dispositivi, funzionalita di base, supporto della community",
+            "<strong>Community</strong> (gratuito): limitato a 2 attivazioni di Dispositivi, funzionalità di base, supporto della community",
             "<strong>Professional</strong>: fino a 5 attivazioni di Dispositivi, registro di audit, supporto prioritario, branding personalizzato",
             "<strong>Business</strong>: fino a 20 attivazioni di Dispositivi, storage distribuito, analisi avanzate, responsabile del successo dedicato",
             "<strong>Enterprise</strong>: fino a 50 attivazioni di Dispositivi, infrastruttura dedicata, integrazioni personalizzate, supporto 24/7"
@@ -14429,19 +14429,19 @@
             },
             "gracePeriod": {
               "content": [
-                "Il Software On-Premise verifica periodicamente lo stato del vostro Abbonamento. In caso di errore di validazione (dovuto a problemi di rete, Abbonamento scaduto o mancato pagamento), si applica un periodo di tolleranza di tre (3) giorni. Trascorso tale periodo, il Software On-Premise operera al livello di funzionalita del piano Community fino al ripristino dello stato dell'Abbonamento."
+                "Il Software On-Premise verifica periodicamente lo stato del vostro Abbonamento. In caso di errore di validazione (dovuto a problemi di rete, Abbonamento scaduto o mancato pagamento), si applica un periodo di tolleranza di tre (3) giorni. Trascorso tale periodo, il Software On-Premise operera al livello di funzionalità del piano Community fino al ripristino dello stato dell'Abbonamento."
               ],
               "title": "5.4 Validazione della Licenza e Periodo di Tolleranza"
             },
             "renewalCancellation": {
               "content": [
-                "Gli Abbonamenti a pagamento si rinnovano automaticamente al termine di ogni ciclo di fatturazione al prezzo vigente, salvo disdetta prima della data di rinnovo. <strong>Sottoscrivendo un piano a pagamento, autorizzate gli addebiti ricorrenti sul vostro metodo di pagamento fino alla disdetta.</strong> Potete disdire in qualsiasi momento tramite il portale account o contattandoci all'indirizzo <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>. In caso di disdetta, manterrete l'accesso alle funzionalita a pagamento fino al termine del periodo di fatturazione in corso. Non vengono emessi rimborsi proporzionali per i periodi di fatturazione parziali, salvo quanto previsto dalla nostra <a href=\"refund-policy\">Politica di Rimborso</a>. Invieremo un promemoria di rinnovo all'indirizzo e-mail dell'Account prima di ogni rinnovo annuale."
+                "Gli Abbonamenti a pagamento si rinnovano automaticamente al termine di ogni ciclo di fatturazione al prezzo vigente, salvo disdetta prima della data di rinnovo. <strong>Sottoscrivendo un piano a pagamento, autorizzate gli addebiti ricorrenti sul vostro metodo di pagamento fino alla disdetta.</strong> Potete disdire in qualsiasi momento tramite il portale account o contattandoci all'indirizzo <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>. In caso di disdetta, manterrete l'accesso alle funzionalità a pagamento fino al termine del periodo di fatturazione in corso. Non vengono emessi rimborsi proporzionali per i periodi di fatturazione parziali, salvo quanto previsto dalla nostra <a href=\"refund-policy\">Politica di Rimborso</a>. Invieremo un promemoria di rinnovo all'indirizzo e-mail dell'Account prima di ogni rinnovo annuale."
               ],
               "title": "5.3 Rinnovo e Disdetta"
             },
             "taxes": {
               "content": [
-                "Tutte le tariffe sono al netto delle imposte applicabili. Siete responsabili di tutte le imposte, i dazi e i prelievi imposti dalle autorita fiscali sull'Abbonamento, ad esclusione delle imposte sul reddito netto di Rediacc. Ove previsto dalla legge, Rediacc raccogliera e versera le imposte applicabili (inclusa l'IVA UE), che saranno dettagliate nella vostra fattura."
+                "Tutte le tariffe sono al netto delle imposte applicabili. Siete responsabili di tutte le imposte, i dazi e i prelievi imposti dalle autorità fiscali sull'Abbonamento, ad esclusione delle imposte sul reddito netto di Rediacc. Ove previsto dalla legge, Rediacc raccogliera e versera le imposte applicabili (inclusa l'IVA UE), che saranno dettagliate nella vostra fattura."
               ],
               "title": "5.2 Imposte"
             }
@@ -14450,8 +14450,8 @@
         },
         "telemetry": {
           "content": [
-            "Il Software On-Premise e la Piattaforma raccolgono Dati di Telemetria anonimizzati per migliorare la qualita del prodotto, diagnosticare errori e comprendere i pattern di utilizzo. La telemetria e concepita nel rispetto della privacy: gli identificatori personali vengono anonimizzati prima della trasmissione e tutti i Dati di Telemetria sono elaborati su infrastrutture all'interno dell'Unione Europea.",
-            "La telemetria e abilitata per impostazione predefinita nella CLI e nell'Applicazione Web. E possibile disabilitarla prima di qualsiasi trasmissione di dati utilizzando i meccanismi specifici di ciascun prodotto descritti nella nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>, che illustra in dettaglio i dati raccolti da ciascun prodotto e le modalita di disattivazione. La telemetria e disabilitata automaticamente negli ambienti CI e nell'Applicazione Desktop.",
+            "Il Software On-Premise e la Piattaforma raccolgono Dati di Telemetria anonimizzati per migliorare la qualità del prodotto, diagnosticare errori e comprendere i pattern di utilizzo. La telemetria e concepita nel rispetto della privacy: gli identificatori personali vengono anonimizzati prima della trasmissione e tutti i Dati di Telemetria sono elaborati su infrastrutture all'interno dell'Unione Europea.",
+            "La telemetria e abilitata per impostazione predefinita nella CLI e nell'Applicazione Web. E possibile disabilitarla prima di qualsiasi trasmissione di dati utilizzando i meccanismi specifici di ciascun prodotto descritti nella nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>, che illustra in dettaglio i dati raccolti da ciascun prodotto e le modalità di disattivazione. La telemetria e disabilitata automaticamente negli ambienti CI e nell'Applicazione Desktop.",
             "Nelle giurisdizioni che richiedono il consenso esplicito per la raccolta di telemetria su apparecchiature terminali (anche ai sensi della Direttiva ePrivacy nella sua attuazione locale), e opportuno configurare le proprie preferenze di telemetria prima del primo utilizzo del Software On-Premise. Il continuato utilizzo dei Servizi con la telemetria abilitata costituisce il vostro consenso alla raccolta descritta nell'<a href=\"telemetry-policy\">Informativa sulla Telemetria</a>."
           ],
           "id": "telemetry",
@@ -14459,22 +14459,22 @@
         },
         "termination": {
           "content": [
-            "Potete disdire il vostro Abbonamento in qualsiasi momento tramite il portale account o contattandoci all'indirizzo <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>. Potremmo sospendere o cessare il vostro accesso ai Servizi in caso di violazione sostanziale dei presenti Termini, previa comunicazione scritta di trenta (30) giorni e possibilita di rimediare, salvo che la violazione rappresenti un rischio immediato per la sicurezza o comporti attivita illegali.",
+            "Potete disdire il vostro Abbonamento in qualsiasi momento tramite il portale account o contattandoci all'indirizzo <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>. Potremmo sospendere o cessare il vostro accesso ai Servizi in caso di violazione sostanziale dei presenti Termini, previa comunicazione scritta di trenta (30) giorni e possibilità di rimediare, salvo che la violazione rappresenti un rischio immediato per la sicurezza o comporti attività illegali.",
             "In seguito alla risoluzione:"
           ],
           "id": "termination",
           "items": [
             "La vostra licenza a utilizzare il Software On-Premise e la Piattaforma cessa al termine del periodo di fatturazione in corso (o immediatamente in caso di violazione)",
-            "I Dati del Cliente sui vostri Dispositivi rimangono sotto il vostro controllo: Rediacc non ha la possibilita di accedervi ne di cancellarli",
+            "I Dati del Cliente sui vostri Dispositivi rimangono sotto il vostro controllo: Rediacc non ha la possibilità di accedervi ne di cancellarli",
             "I dati dell'Account saranno conservati per trenta (30) giorni per consentire l'esportazione, quindi cancellati dai nostri sistemi attivi",
-            "Le sezioni 1 (Definizioni), 11 (I Vostri Dati), 12 (Proprieta Intellettuale), 14 (Garanzie), 15 (Responsabilita), 16 (Manleva) e 18 (Legge Applicabile) sopravvivono alla risoluzione"
+            "Le sezioni 1 (Definizioni), 11 (I Vostri Dati), 12 (Proprietà Intellettuale), 14 (Garanzie), 15 (Responsabilità), 16 (Manleva) e 18 (Legge Applicabile) sopravvivono alla risoluzione"
           ],
           "title": "17. Risoluzione"
         },
         "thirdPartyComponents": {
           "content": [
-            "Il Software On-Premise puo installare, configurare o interagire con software open source di terze parti sui vostri Dispositivi, tra cui Docker, container runtime e strumenti di sincronizzazione dello storage. Questi componenti di terze parti sono regolati dalle rispettive licenze e sono forniti \"NELLO STATO IN CUI SI TROVANO\" senza alcuna garanzia da parte di Rediacc.",
-            "Rediacc non si assume alcuna responsabilita per la funzionalita, la sicurezza o la disponibilita dei componenti di terze parti. Siete responsabili di esaminare e rispettare le licenze di qualsiasi software di terze parti distribuito sulla vostra infrastruttura."
+            "Il Software On-Premise può installare, configurare o interagire con software open source di terze parti sui vostri Dispositivi, tra cui Docker, container runtime e strumenti di sincronizzazione dello storage. Questi componenti di terze parti sono regolati dalle rispettive licenze e sono forniti \"NELLO STATO IN CUI SI TROVANO\" senza alcuna garanzia da parte di Rediacc.",
+            "Rediacc non si assume alcuna responsabilità per la funzionalità, la sicurezza o la disponibilità dei componenti di terze parti. Siete responsabili di esaminare e rispettare le licenze di qualsiasi software di terze parti distribuito sulla vostra infrastruttura."
           ],
           "id": "third-party-components",
           "title": "13. Componenti di Terze Parti"
@@ -14490,10 +14490,10 @@
           "items": [
             "Distribuire, ospitare o diffondere malware, virus, ransomware o qualsiasi altro codice dannoso",
             "Gestire il mining di criptovalute, reti di condivisione file peer-to-peer o servizi proxy aperti",
-            "Violare o appropriarsi indebitamente di proprieta intellettuale, diritti alla riservatezza o altri diritti di terzi",
+            "Violare o appropriarsi indebitamente di proprietà intellettuale, diritti alla riservatezza o altri diritti di terzi",
             "Inviare comunicazioni commerciali non sollecitate (spam) o condurre attacchi di phishing",
-            "Eseguire scansioni di vulnerabilita, test di penetrazione o test di carico non autorizzati sull'infrastruttura Rediacc",
-            "Impersonare persone o entita, o dichiarare falsamente la propria affiliazione",
+            "Eseguire scansioni di vulnerabilità, test di penetrazione o test di carico non autorizzati sull'infrastruttura Rediacc",
+            "Impersonare persone o entità, o dichiarare falsamente la propria affiliazione",
             "Violare qualsiasi legge, normativa o diritto di terzi applicabile",
             "Rivendere, ridistribuire o rendere i Servizi disponibili a terzi nell'ambito di un'offerta di servizi gestiti senza il nostro previo consenso scritto"
           ],
@@ -14503,8 +14503,8 @@
           "content": [
             "NELLA MISURA MASSIMA CONSENTITA DALLA LEGGE APPLICABILE, I SERVIZI SONO FORNITI \"NELLO STATO IN CUI SI TROVANO\" E \"COME DISPONIBILI\". REDIACC ESCLUDE QUALSIASI GARANZIA, ESPRESSA, IMPLICITA O DI LEGGE, IVI INCLUSE, A TITOLO ESEMPLIFICATIVO, LE GARANZIE IMPLICITE DI COMMERCIABILITA, IDONEITA A UNO SCOPO SPECIFICO, NON VIOLAZIONE E QUALSIASI GARANZIA DERIVANTE DAL CORSO ORDINARIO DEGLI AFFARI O DAGLI USI DEL COMMERCIO.",
             "SENZA LIMITARE QUANTO SOPRA, REDIACC NON GARANTISCE CHE: (A) I SERVIZI SODDISFINO I VOSTRI REQUISITI O ASPETTATIVE; (B) I SERVIZI SIANO ININTERROTTI, TEMPESTIVI, SICURI O PRIVI DI ERRORI; (C) I RISULTATI OTTENUTI DAI SERVIZI SIANO ACCURATI O AFFIDABILI; O (D) EVENTUALI DIFETTI NEI SERVIZI VENGANO CORRETTI.",
-            "NESSUNA DISPOSIZIONE DEI PRESENTI TERMINI ESCLUDE O LIMITA LA RESPONSABILITA PER: (A) MORTE O LESIONI PERSONALI CAUSATE DA NEGLIGENZA; (B) FRODE O FALSA DICHIARAZIONE FRAUDOLENTA; O (C) QUALSIASI RESPONSABILITA CHE NON PUO ESSERE ESCLUSA O LIMITATA AI SENSI DELLA LEGGE ESTONE SULLE OBBLIGAZIONI (VOLAÕIGUSSEADUS), IVI INCLUSA LA RESPONSABILITA PER DOLO O COLPA GRAVE.",
-            "Riconoscete che il Software On-Premise opera con privilegi elevati sui vostri Dispositivi e che assumete tutti i rischi connessi alla sua installazione e al suo utilizzo sulla vostra infrastruttura. Le descrizioni delle funzionalita, le metriche di prestazione e le stime dei tempi di ripristino presenti nella documentazione e nei materiali di marketing illustrano le funzionalita previste e non costituiscono garanzie vincolanti di prestazione."
+            "NESSUNA DISPOSIZIONE DEI PRESENTI TERMINI ESCLUDE O LIMITA LA RESPONSABILITÀ PER: (A) MORTE O LESIONI PERSONALI CAUSATE DA NEGLIGENZA; (B) FRODE O FALSA DICHIARAZIONE FRAUDOLENTA; O (C) QUALSIASI RESPONSABILITÀ CHE NON PUÒ ESSERE ESCLUSA O LIMITATA AI SENSI DELLA LEGGE ESTONE SULLE OBBLIGAZIONI (VOLAÕIGUSSEADUS), IVI INCLUSA LA RESPONSABILITÀ PER DOLO O COLPA GRAVE.",
+            "Riconoscete che il Software On-Premise opera con privilegi elevati sui vostri Dispositivi e che assumete tutti i rischi connessi alla sua installazione e al suo utilizzo sulla vostra infrastruttura. Le descrizioni delle funzionalità, le metriche di prestazione e le stime dei tempi di ripristino presenti nella documentazione e nei materiali di marketing illustrano le funzionalità previste e non costituiscono garanzie vincolanti di prestazione."
           ],
           "id": "warranties",
           "title": "14. Esclusione di Garanzie"
