@@ -283,25 +283,31 @@ test.describe
 
       parentCaFingerprint = await caFingerprintOn(w1, CTRL_MOUNT);
       expect(parentCaFingerprint).toMatch(/Fingerprint=/);
-
-      // Flush the control node's kine SQLite (on the ceph control datastore mount)
-      // to the RBD image BEFORE the crash-consistent group snapshot (test 4). The
-      // snapshot never stops the parent, so a just-seeded-but-unsynced kine write
-      // (the `shop` namespace + configmaps) would not ride the clone — a test race,
-      // not a product gap (a real fork accepts the crash-consistent point-in-time).
-      await w1.executeViaBridge('sync');
     });
 
     test('4. GROUP snapshot atomic across the cluster ceph datastores; parent never stopped', async () => {
       // Start a background parent-liveness loop: the group snapshot + clone must
-      // NOT interrupt the parent API (crash-consistent, no stop).
+      // NOT interrupt the parent API (quiesce flushes via syncfs, never stops the
+      // parent — the loop below witnesses continuous liveness across the capture).
       await w1.executeViaBridge(
         `sudo bash -c 'rm -f /tmp/live.stop; (while [ ! -f /tmp/live.stop ]; do ` +
           `${K3S} kubectl --kubeconfig ${KC} get --raw=/readyz >>/tmp/live.log 2>&1 || echo UNREACHABLE >>/tmp/live.log; ` +
           `sleep 2; done) >/dev/null 2>&1 &'`
       );
 
-      const snap = await w1.datastoreSnapshotCreate({ group: CLUSTER, snapshot: SNAP });
+      // This capture FEEDS THE FORK (test 5), so fork semantics apply: pass
+      // quiesce so the product's fork-path flush lands every just-seeded kine
+      // write (the `shop` namespace + configmaps from test 3) and the storage
+      // marker into the member RBD images before the snap — "every write that
+      // completed before the fork is in the fork". The bare snapshot verb stays
+      // crash-consistent by documented contract; quiesce is the fork path's
+      // explicit opt-in, which is the honest product mechanism here (not a
+      // test-side sync papering over a race).
+      const snap = await w1.datastoreSnapshotCreate({
+        group: CLUSTER,
+        snapshot: SNAP,
+        quiesce: true,
+      });
       expect(w1.isSuccess(snap), (snap.stdout + snap.stderr).slice(-400)).toBe(true);
     });
 

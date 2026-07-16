@@ -5,6 +5,7 @@ import { t } from '../../i18n/index.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
 import { machineConnections } from '../../services/machine/machine-connection.js';
+import { guardMachineRemoval } from '../../services/machine/machine-remove-guard.js';
 import { pushInfraConfig } from '../../services/provision/infra-provision.js';
 import { provisionRenetToRemote, readSSHKey } from '../../services/renet/renet-execution.js';
 import { deployAllRepoKeys } from '../../services/repo/repo-key-deployment.js';
@@ -134,8 +135,12 @@ function registerRemove(machine: Command): void {
     .argument('<name>', t('options.name'))
     .description(t('commands.machine.remove.description'))
     .option('-y, --yes', t('options.yes'))
-    .action(async (name: string, options: { yes?: boolean }) => {
+    .option('--force', t('commands.machine.remove.forceOption'))
+    .action(async (name: string, options: { yes?: boolean; force?: boolean }) => {
       try {
+        // Refuse (exit 12) if repositories are still placed on this machine,
+        // unless --force. Runs before the confirm so we fail fast and teaching.
+        await guardMachineRemoval(name, options.force);
         if (!options.yes) {
           const { askConfirm } = await import('../../utils/prompt.js');
           const confirmed = await askConfirm(t('commands.machine.remove.confirm', { name }));

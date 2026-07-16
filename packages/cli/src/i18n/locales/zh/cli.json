@@ -12,23 +12,17 @@
         "optionResetFailed": "部署成功后清除已修改服务的 failed 状态（默认关闭，保留故障信号）",
         "success": "已将备份计划部署到 {{machine}}"
       },
-      "sync": {
-        "description": "跨机器双向同步备份"
-      },
       "cancel": {
         "cancelled": "已取消 {{name}}",
         "cancelling": "正在停止 {{name}}...",
         "description": "取消远程机器上正在运行的备份",
-        "notRunning": "策略 \"{{name}}\" 没有正在运行的备份",
-        "optionStrategy": "策略名称（省略时取消全部）"
+        "notRunning": "策略 \"{{name}}\" 没有正在运行的备份"
       },
       "run": {
-        "description": "在远程机器上立即触发备份",
-        "optionStrategy": "策略名称（省略时触发全部）"
+        "description": "在远程机器上立即触发备份"
       },
       "status": {
-        "description": "显示远程机器上的备份状态和定时器状态",
-        "optionStrategy": "显示特定策略的详细信息"
+        "description": "显示远程机器上的备份状态和定时器状态"
       },
       "strategy": {
         "description": "管理命名备份策略（热/冷模式、目标、调度）",
@@ -38,7 +32,6 @@
         "remove": {
           "description": "删除备份策略或目标",
           "optionDestination": "仅删除此目标（保留其他目标）",
-          "optionName": "策略名称（必填）",
           "removed": "备份策略已删除"
         },
         "set": {
@@ -52,7 +45,6 @@
           "optionFolder": "该目标在存储桶中的子文件夹（如 hot, cold）",
           "optionInclude": "仅备份这些仓库（逗号分隔的名称）",
           "optionMode": "备份模式：\"hot\"（零停机）或 \"cold\"（停止、快照、重启）",
-          "optionName": "策略名称（必填）",
           "optionStorage": "存储配置名称（rclone 凭据）",
           "saved": "备份策略配置已保存",
           "storageRequired": "创建新目标时需要 --storage。用法: --storage <storage-name>"
@@ -62,8 +54,7 @@
           "destinationsHeader": "  目标:",
           "noDestinations": "  目标: (无)",
           "notConfigured": "未配置备份策略",
-          "notFound": "备份策略 \"{{name}}\" 未找到",
-          "optionName": "策略名称（省略时显示全部）"
+          "notFound": "备份策略 \"{{name}}\" 未找到"
         }
       },
       "restore": {
@@ -357,7 +348,6 @@
         },
         "set": {
           "description": "为当前配置设置 SSH 密钥",
-          "embedWarning": "密钥内容将存储在配置文件中",
           "invalidKey": "文件不包含有效的 SSH 私钥",
           "keyNotFound": "未找到 SSH 密钥文件：{{path}}",
           "optionEmbed": "将密钥内容嵌入配置中而非存储路径",
@@ -442,12 +432,9 @@
       "description": "存放仓库的命名存储池。数据存储是可移动的（挂接到一台机器，也可迁移到另一台），并且单点挂接（同一时刻只能由一台机器持有）。每台机器上隐式的默认数据存储不在此处管理。",
       "descriptionShort": "命名的可移动存储池",
       "fork": {
-        "completed": "数据存储分叉成功（快照：{{snapshot}}）",
         "cowSizeOption": "--writes local 时使用的覆盖层大小",
         "description": "以写时复制方式 fork 数据存储。fork 是即时完成的，其成本不会随存储池大小增长。需要 rbd 后端：local 数据存储没有块级克隆，因此其内部的仓库需改为通过 reflink 逐个 fork（rdc repo fork）。",
         "descriptionShort": "以写时复制方式 fork 数据存储",
-        "failed": "数据存储分叉失败",
-        "starting": "正在\"{{source}}\"上分叉数据存储（为\"{{target}}\"命名的克隆）...",
         "writesOption": "fork 的写入去向：local（即时、临时）或 ceph（持久克隆）",
         "tagOption": "fork 的标签（结果为 name:tag）",
         "attachToOption": "立即将 fork 挂接到此机器（需要 --writes）",
@@ -528,9 +515,7 @@
       "allPassed": "所有检查均通过",
       "checks": {
         "activeConfig": "活跃配置",
-        "authStatus": "状态",
         "cliVersion": "CLI版本",
-        "contextMode": "上下文模式",
         "dockerAvailable": "Docker",
         "goInstalled": "Go",
         "machines": "机器",
@@ -540,7 +525,6 @@
         "renetCriu": "内置CRIU",
         "renetRsync": "内置rsync",
         "renetVersion": "版本",
-        "seaMode": "SEA模式",
         "sshKey": "SSH密钥",
         "subscriptionMachineSlots": "机器槽位",
         "subscriptionRepoLicenses": "仓库许可证",
@@ -549,18 +533,13 @@
       },
       "description": "诊断CLI环境和renet集成",
       "descriptionShort": "诊断CLI环境和renet集成",
-      "devMode": "否（开发模式）",
       "hasErrors": "{{count}}个错误",
       "hasWarnings": "{{count}}个警告",
-      "notAuthenticated": "未认证",
       "notConfigured": "未配置",
       "notInstalled": "未安装",
       "notLoggedIn": "未登录",
-      "opsNotSupported": "不支持 {{platform}}",
       "opsSkipped": "renet 不可用（已跳过）",
-      "seaActive": "是（单一可执行应用程序）",
       "sections": {
-        "authentication": "身份验证",
         "configuration": "配置",
         "environment": "环境",
         "renet": "Renet网络",
@@ -568,11 +547,6 @@
         "virtualization": "虚拟化"
       },
       "serverMismatch": "服务器不匹配",
-      "status": {
-        "fail": "失败",
-        "ok": "OK",
-        "warn": "警告"
-      },
       "subscriptionUnreachable": "无法连接订阅服务器",
       "title": "Rediacc CLI 诊断工具"
     },
@@ -621,19 +595,16 @@
       },
       "list": {
         "description": "列出机器",
-        "fetching": "正在获取机器...",
         "noMachines": "当前配置中没有机器。使用以下命令添加：rdc machine add <name> --ip <ip> --user <user>"
       },
       "provision": {
         "completed": "机器 {{name}} 已配置完成并就绪 ({{ip}})",
         "configuringInfra": "正在为 {{name}} 配置基础设施（代理 + DNS）...",
         "description": "使用OpenTofu在云提供商上配置新机器",
-        "failed": "机器配置失败：{{error}}",
         "infraInherited": "已从兄弟机器 \"{{source}}\" 自动检测到基础域名",
         "noInfraHint": "未配置基础域名。运行 'rdc machine infra set <machine> --base-domain <domain>' 然后 'rdc machine infra push <machine>' 以启用 DNS 和代理。",
         "optionBaseDomain": "基础设施的基础域名（例如 example.com）。隐含 --infra",
         "optionImage": "覆盖默认操作系统镜像",
-        "optionInfra": "同时配置基础设施（infra set + infra push）",
         "optionNoInfra": "跳过基础设施配置（代理 + DNS）",
         "optionProvider": "云提供商名称（来自 machine provider add）",
         "optionRegion": "覆盖默认区域",
@@ -643,15 +614,12 @@
         "provisioning": "正在 {{provider}} ({{region}}) 上配置 {{name}}...",
         "settingUp": "正在运行机器设置...",
         "sshReady": "SSH连接已建立",
-        "tofuNotInstalled": "OpenTofu (tofu) 未安装。安装地址：https://opentofu.org/docs/intro/install/",
         "waitingSSH": "正在等待SSH连接..."
       },
       "prune": {
-        "checkingActivity": "正在检查快照活动...",
         "completed": "清理完成",
         "datastoreCompleted": "数据存储清理完成",
         "datastoreFailed": "数据存储清理失败",
-        "datastoreOnlyOption": "仅清理孤立的数据存储资源",
         "datastorePrunedSummary": "已清理 {{count}} 个孤立的数据存储资源",
         "description": "从机器中移除孤立的数据存储资源和过期快照",
         "descriptionShort": "清理孤立资源和过期快照",
@@ -659,21 +627,13 @@
         "dryRunOption": "显示将被移除的内容，但不做实际更改",
         "forceDeleteMountedOption": "覆盖挂载安全预检并删除仓库，即使它们当前已挂载或有正在运行的 Docker 容器。与 --force 不同（后者仅覆盖归档宽限期）。适用于 --orphaned-repos 和 --prune-unknown。",
         "noReposFound": "在机器上未找到仓库",
-        "noStaleSnapshots": "未找到过期快照",
         "noUnknownRepos": "未找到未知仓库，每个机器仓库要么在本地配置中，要么有 renet 镜像",
         "orphanedReposCompleted": "已清理 {{count}} 个孤立仓库",
         "orphanedReposOption": "删除机器上所有不在本地 CLI 配置中的仓库镜像。这是粗粒度操作 — 也会移除由其他工具创建、没有本地配置条目的 fork，即使其 renet 镜像已正确将其识别为 fork。如需遵循镜像的更精细行为，请使用 --prune-unknown。",
         "orphanedReposStarting": "正在扫描 {{machine}} 上的孤立仓库...",
         "previewEmpty": "未找到孤立的数据存储资源",
         "pruneUnknownOption": "仅删除 renet .interim/state 镜像无法分类的仓库（不在本地配置中且没有标记为 fork 的镜像）。比 --orphaned-repos 严格更窄：镜像识别时保留没有配置的 fork。镜像前的遗留孤儿和配置条目已删除的过时 grands 都属于此类别。",
-        "snapshotDeleted": "已删除 {{name}}",
-        "snapshotDeleting": "正在删除 {{name}}...",
-        "snapshotInUse": "跳过 {{name}}（正在使用中）",
-        "snapshotsCompleted": "快照清理: 已删除 {{deleted}} 个，已跳过 {{skipped}} 个",
-        "snapshotsOnlyOption": "仅清理过期快照",
-        "snapshotStale": "过期: {{name}} ({{size}})",
         "startingDatastore": "正在扫描 {{machine}} 上的孤立数据存储资源...",
-        "startingSnapshots": "正在扫描 {{machine}} 上的过期快照...",
         "unknownCompleted": "已清理 {{count}} 个未知仓库",
         "unknownFound": "找到 {{count}} 个未知仓库（挂载安全检查后 {{deletable}} 个可删除）",
         "unknownStarting": "正在 {{machine}} 上扫描未知仓库（不在本地配置中 + 没有标记为 fork 的镜像）..."
@@ -681,8 +641,6 @@
       "add": {
         "description": "将机器添加到当前配置",
         "descriptionShort": "将机器添加到当前配置",
-        "sshConfigFailed": "写入 SSH 别名失败（非致命）：{{error}}",
-        "sshConfigWritten": "已将 SSH 别名 rediacc--{{name}} 写入 ~/.ssh/config_rediacc",
         "success": "已添加机器 \"{{name}}\" ({{user}}@{{ip}})"
       },
       "infra": {
@@ -693,25 +651,12 @@
             "noCache": "没有可清除的证书缓存"
           },
           "description": "管理缓存的 TLS 证书",
-          "noBaseDomain": "机器未配置 baseDomain",
-          "noCacheForDomain": "未找到 {{domain}} 的证书缓存",
           "pull": {
-            "cached": "已缓存 {{count}} 个证书 ({{size}})",
             "description": "从机器下载并缓存 TLS 证书",
-            "downloading": "正在从 {{machine}} 下载证书...",
-            "merged": "从本地缓存保留了 {{count}} 个有效期更长的证书",
-            "noAcmeJson": "在 {{machine}} 上未找到 acme.json",
-            "optionNoPrune": "跳过清理过期的网络 ID 证书",
-            "pruned": "已清理 {{count}} 个过期证书",
-            "prunedExpired": "已清除 {{count}} 个过期证书"
+            "optionNoPrune": "跳过清理过期的网络 ID 证书"
           },
           "push": {
-            "description": "将缓存的 TLS 证书上传到机器",
-            "merged": "已将 {{count}} 个有效期更长的证书合并到 {{machine}}",
-            "noCache": "未找到证书缓存。请先运行 'rdc machine infra cert pull <machine>'",
-            "uploaded": "已上传 {{count}} 个证书到 {{machine}}",
-            "uploading": "正在将缓存的证书上传到 {{machine}}...",
-            "upToDate": "{{machine}} 上的证书已是最新"
+            "description": "将缓存的 TLS 证书上传到机器"
           },
           "status": {
             "certCount": "{{count}} 个证书，{{size}} 压缩",
@@ -723,25 +668,14 @@
         },
         "description": "管理基础设施配置（代理、DNS、证书）",
         "push": {
-          "certCacheUploaded": "已将缓存的证书上传到远程服务器",
           "description": "将基础设施配置推送到机器（Traefik 代理、路由器、Cloudflare DNS）。请先运行 'machine infra set <machine>'",
           "descriptionShort": "将基础设施配置推送到机器",
-          "dnsCreated": "DNS：已创建 {{type}} {{name}} → {{content}}",
-          "dnsError": "DNS 警告：{{message}}（可能需要手动设置记录）",
-          "dnsResolvingZone": "正在解析 {{domain}} 的 Cloudflare 区域...",
-          "dnsSkipLocal": "跳过 DNS：.local 域名不使用 Cloudflare",
-          "dnsSkipNoToken": "跳过 DNS：没有 Cloudflare API 令牌。使用以下命令设置：rdc machine infra set <machine> --cf-dns-token <token>",
-          "dnsUnchanged": "DNS：{{type}} {{name}} 已是正确配置",
-          "dnsUpdated": "DNS：已更新 {{type}} {{name}} → {{content}}",
           "installingProxy": "正在安装路由器...",
-          "proxyInstallWarning": "代理安装失败（代码 {{code}}）。请手动运行：sudo renet proxy install",
           "success": "已将基础设施配置推送到 \"{{name}}\""
         },
         "set": {
           "description": "设置机器的基础设施配置（机器特定：IP、域名、端口；共享：证书邮箱、CF DNS 令牌）",
           "descriptionShort": "设置机器的基础设施配置",
-          "invalidIPv4": "无效的 IPv4 地址：{{ip}}",
-          "invalidIPv6": "无效的 IPv6 地址：{{ip}}",
           "noOptions": "未指定选项。请使用 --public-ipv4、--base-domain 等",
           "optionBaseDomain": "应用程序的基础域名（按机器）",
           "optionCertEmail": "TLS 证书通知邮箱（跨机器共享）",
@@ -791,7 +725,6 @@
       },
       "remove": {
         "description": "从当前配置中移除机器",
-        "sshConfigCleared": "已移除 SSH 别名 rediacc--{{name}}",
         "success": "已移除机器 \"{{name}}\"",
         "confirm": "从配置中移除机器 \"{{name}}\"？"
       },
@@ -820,7 +753,6 @@
         "fetching": "正在从 {{machine}} 获取状态...",
         "healthCheck": "健康检查模式 - 如果有不健康的容器，将以代码 2 退出",
         "infrastructure": "基础设施",
-        "noData": "无可用状态数据",
         "servicesAllStable": "所有服务都稳定",
         "servicesUnstableFound": "找到 {{count}} 个不稳定的服务",
         "stabilityCheck": "稳定性检查模式 - 如果有失败/重启的服务，将以代码 2 退出",
@@ -841,12 +773,6 @@
         "configOption": "用于所有命令的配置名称",
         "description": "启动 MCP 服务器（stdio 传输）",
         "timeoutOption": "默认命令超时时间（毫秒）"
-      },
-      "tools": {
-        "repo_fork": {
-          "parentDescription": "要 fork 的父仓库名称（或 名称:标签）",
-          "tagDescription": "fork 的标签（创建 名称:标签，例如 \"staging\"）"
-        }
       }
     },
     "ops": {
@@ -869,7 +795,6 @@
         "brewFailed": "Homebrew 安装失败",
         "completed": "前置条件安装成功",
         "description": "安装虚拟化前置条件",
-        "detecting": "正在检测平台...",
         "failed": "安装失败",
         "linux": "正在通过 renet 安装 KVM 前置条件...",
         "macos": "正在通过 Homebrew 安装 QEMU...",
@@ -883,7 +808,6 @@
       },
       "status": {
         "description": "显示 VM 集群状态",
-        "fetching": "正在获取 VM 集群状态...",
         "noVMs": "未找到任何 VM"
       },
       "up": {
@@ -895,14 +819,11 @@
     },
     "repo": {
       "batchConfirm": "{{action}} \"{{machine}}\" 上的所有 {{count}} 个仓库？ [y/N]",
-      "batchIterating": "{{action}} {{current}}/{{total}}：\"{{repo}}\"...",
-      "batchResult": "{{action}} 完成：{{succeeded}}/{{total}} 成功",
       "branch": {
         "branchOption": "新分支的名称",
         "completed": "分支 \"{{branch}}\" -> {{commit}}",
         "description": "创建一个指向工作 fork 当前 commit（其顶端）的命名 branch 引用。Branch 引用保存在 CLI 配置中（machine = 对象存储，config = 引用存储）。",
-        "descriptionShort": "创建指向当前 commit 的 branch 引用",
-        "workingOption": "branch 所指向其当前 commit 的工作 fork"
+        "descriptionShort": "创建指向当前 commit 的 branch 引用"
       },
       "canary": {
         "description": "让新镜像与稳定版并行运行，并按百分比在两者间拆分实时流量（发布阶梯第 2 级）。在同一份实时数据上创建一个 canary Deployment + Service（不使用 fork：如果 canary 用户读取的是 fork 出的数据，就会读到过期数据，写入内容也会进入注定被丢弃的副本），并让 Rediacc 代理将稳定版主机名流量中指定的百分比路由给它。权重为 0 时 canary 保持暗启动；权重为 100 即完成 blue/green 切换。每次修改 canary 之前，都会自动为集群的数据存储创建一次组快照（发布阶梯第 0 级），作为万能的回滚手段。两个版本之间的 schema 兼容性（expand-contract 方式）由应用程序自行负责。对于会破坏 schema 的发布，请改用 blue/green：fork 该仓库（即时完成，包含数据），将 fork 的 Service 权重设为 100 指向这里，再通过重启未被触碰的父仓库来回滚；切换之后发生的写入只存在于新副本中，因此回滚窗口的长短是一个策略决定。",
@@ -948,23 +869,18 @@
         "description": "通过 reflink 克隆将不可变的 commit（或 branch 顶端）克隆为一个全新的可写工作 fork，并将 HEAD 指向它。近乎即时且耗时与体积无关（BTRFS reflink）。",
         "descriptionShort": "通过 reflink 克隆将 commit/branch 检出为可写的工作 fork",
         "fromOption": "将位置参数 <commit-or-branch-ref> 解析为此工作 fork 上的分支名称",
-        "refOption": "要检出的提交 GUID（或使用 --from 的分支名称）",
         "tagOption": "新的可写工作 fork 的名称"
       },
-      "clusterDone": "已在集群 \"{{cluster}}\" 中{{verb}}命名空间 \"{{repository}}\"",
-      "clusterOption": "目标 Kubernetes 集群（与 -m 互斥）；路由到集群的控制节点并注入 KUBECONFIG",
       "commit": {
         "authorOption": "Commit 作者",
         "completed": "已提交 {{commit}}：{{message}}",
         "description": "将已挂载的工作 fork 的当前状态冻结为新的不可变 commit（类似 git）。该 commit 在卷内记录其提交信息、作者、时间戳和父 commit（因此可随 push 一同传输），并被标记为只读——它拒绝挂载。工作 fork 保持不变，就像 git 不会改动工作树一样。使用 'rdc repo checkout' 检出某个 commit 以获取可写副本。",
         "descriptionShort": "将工作 fork 冻结为新的不可变 commit",
         "failed": "Commit 失败",
-        "messageOption": "Commit 信息",
-        "nameOption": "要提交的工作 fork（必须已挂载）"
+        "messageOption": "Commit 信息"
       },
       "create": {
         "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",
-        "clusterResolved": "Kubernetes 仓库 \"{{repository}}\" 的目标为集群 \"{{cluster}}\"（控制节点 {{controlNode}}）",
         "completed": "仓库已创建",
         "description": "创建新仓库。只需指定一次其归属位置：机器或数据存储。",
         "failed": "仓库创建失败",
@@ -1008,9 +924,7 @@
         "descriptionShort": "两个分支仓库之间的 git 风格文件差异 (A/M/D/R)",
         "failed": "差分失败",
         "fastOption": "信任块过滤器；跳过内容哈希确认（可能过报 \"已修改\"）",
-        "jsonOption": "以 JSON 信封形式输出结构化的差分结果",
         "nameOnlyOption": "仅打印更改的文件路径，每行一个（不含状态字母）",
-        "nameOption": "要检查的仓库（目标/新侧）",
         "notAFork": "\"{{name}}\" 不是分支。请通过 --base 传入显式的基准。",
         "notFound": "上下文中未找到仓库 \"{{name}}\"",
         "parentMissing": "\"{{name}}\" 的父级不在此上下文中。请通过 --base 显式传入。",
@@ -1028,7 +942,6 @@
         "description": "停止仓库的 Docker 容器（通过 renet compose 运行 Rediaccfile 的 down）。机器由引用的放置位置推导得出。不会卸载加密卷——仓库仍保持挂载状态，可通过 'repo up' 重新启动。使用 --unmount 可在停止后同时关闭 LUKS 容器（合并了已弃用的 'repo unmount'）。使用 --checkpoint 可在停止前保存 CRIU 进程状态（下次 'repo up' 会自动恢复）。使用 --all --machine <m> 可停止某台机器上的所有仓库。",
         "descriptionShort": "停止仓库的 Docker 容器",
         "failed": "服务停止失败",
-        "grandOption": "主仓库名称 (自动解析为 GUID)",
         "starting": "正在 \"{{machine}}\" 上停止 \"{{repository}}\" 的服务...",
         "unmountOption": "停止后同时卸载（关闭 LUKS 容器）。在 'repo resize' 之前或需要完全保护卷时为必需操作",
         "allOption": "停止所有归属于 --machine 的仓库（批量形式）"
@@ -1044,7 +957,6 @@
       "fork": {
         "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",
         "checkpointOption": "fork 前在源上创建 CRIU checkpoint（捕获进程内存状态以便在 fork 上恢复）",
-        "clusterResolved": "正在将 \"{{parent}}\" fork 为集群 \"{{cluster}}\" 中的命名空间 \"{{parent}}-{{tag}}\"（控制节点 {{controlNode}}）",
         "completed": "Fork 已创建。部署它：repo up {{repository}}。要将其复制到另一台机器：repo push {{repository}} --to <target>，然后使用 backup restore {{repository}} --as {{repository}} -m <target> --up 在目标机器上启动该产物",
         "description": "创建仓库的 CoW（写时复制）fork。无论仓库大小如何，FORK 都近乎即时且耗时恒定：BTRFS reflink 克隆底层镜像，因此 100 GB 与 1 GB 的仓库 fork 所需时间同样只有几秒。fork 会获得全新的 GUID、networkId、IP 范围和自动路由域名（{service}-fork-{tag}.{repo}.{machine}.{baseDomain}），是完全独立的副本。支持在线 fork，父仓库可以继续运行。fork 会自动继承父仓库的加密凭据。使用 --checkpoint 可在 fork 前捕获 CRIU 进程状态，fork 会在首次 'repo up' 时自动恢复（保留内存状态）。跨机器 FORK：请先在本地 fork，再进行传输：(1) rdc repo fork <parent-ref> --tag <name>，(2) rdc repo push <fork-ref> --to <target-machine>，(3) rdc backup restore <fork-ref> --as <fork-name> -m <target-machine> --up。警告：不要仅使用 \"repo push\" 进行 fork，它会创建一个使用相同 GUID 的原始副本（而非独立的 fork）。请务必先 fork 以获得新的身份标识。自动路由使用仓库名称，因此每个 fork 都会自动获得唯一域名。",
         "descriptionShort": "创建仓库的 CoW 分支（新 GUID、networkId、IP 范围）",
@@ -1054,16 +966,11 @@
         "failed": "分支创建失败",
         "immutableOption": "将分叉标记为只读：它会拒绝挂载，使其镜像永久保持字节级稳定（用于跨机器增量推送的冻结提交/基线）",
         "immutableUpConflict": "repo fork：--immutable 与 --up 互斥。不可变分叉会拒绝挂载，因此无法启动。请去掉 --up，或去掉 --immutable 以部署普通分叉。",
-        "providerOption": "配置一个新集群（镜像源集群的节点池形态）并 fork 到其中",
-        "providerPending": "正在将 \"{{parent}}\" 作为 \"{{parent}}-{{tag}}\" fork 到新的 {{provider}} 集群",
-        "provisioning": "正在 fork 之前于 {{provider}} 上配置集群 \"{{cluster}}\"……",
         "registered": "已注册分支 \"{{repository}}\"（{{guid}}，网络 {{networkId}}）",
         "rollback": "已回滚 \"{{repository}}\" 的配置",
         "starting": "正在 \"{{machine}}\" 上将 \"{{parent}}\" 分支为 \"{{repository}}\"...",
         "tagOption": "分支的标签（创建 名称:标签）",
-        "tagRequired": "fork 需要标签。用法：rdc repo fork <parent-ref> --tag <tag>",
         "tagReservedLatest": "repo fork: 标签 \"latest\" 保留给主 (生产) 仓库 — 请选择其他 --tag (例如 \"test\"、\"staging\"、\"<feature>\")",
-        "toClusterOption": "fork 到另一个现有的 Kubernetes 集群（跨集群命名空间 fork）",
         "upOption": "fork后挂载并启动服务（fork + mount + up 一条命令完成）",
         "noWaitOption": "配合 --up 使用：容器启动后立即返回；健康检查在后台继续（适合一次性 fork）"
       },
@@ -1089,9 +996,7 @@
       "log": {
         "description": "打印从工作 fork 的当前 commit（或某个 commit 引用）可达的提交历史，沿 'rdc repo commit' 记录的父 commit 链进行遍历。读取的是卷外镜像，因此不会解锁任何 commit。",
         "descriptionShort": "遍历某个 fork 或 commit 的提交历史",
-        "failed": "Log 失败",
-        "jsonOption": "以 JSON 格式输出提交历史",
-        "nameOption": "作为历史遍历起点的工作 fork 或 commit"
+        "failed": "Log 失败"
       },
       "machineOption": "目标机器名称",
       "merge": {
@@ -1102,23 +1007,19 @@
         "failed": "merge 失败",
         "forceOption": "先静默停止已挂载/正在运行的目标，然后 merge（绝不修改实时挂载）",
         "fromOption": "要从中 merge 的源 commit 或 fork",
-        "nameOption": "要 merge 到的目标工作 fork",
         "resolveOption": "三方合并的逐文件冲突解决方式：'ours' 保留目标的版本，'theirs' 采用源的版本。省略则对整个镜像执行快进（采用 theirs）。"
       },
       "migrate": {
         "checkpointing": "正在创建 CRIU 检查点...",
         "complete": "迁移完成：{{name}} 已从 {{from}} 移动到 {{to}}",
         "deltaDone": "差异同步完成",
-        "deltaFailed": "差异同步失败",
         "deltaSync": "正在同步差异数据...",
         "description": "以最短停机时间将仓库从一台机器实时迁移到另一台机器。两阶段 rsync：在运行期间进行批量传输，然后短暂停止以进行增量同步。迁移整个仓库（路由会重新指向新位置），迁移成功后会删除源镜像（使用 --keep-source 可保留它们）。支持用于进程内存状态迁移的 CRIU 检查点，以及目标机器的自动置备",
         "descriptionShort": "在机器之间实时迁移仓库",
-        "dnsSkipped": "已跳过 DNS 切换（无 baseDomain 或 Cloudflare 配置）",
         "downtime": "停机时间：{{duration}}",
         "optionBwlimit": "rsync 传输带宽限制（例如 10M）",
         "optionCheckpoint": "CRIU 实时迁移：捕获和恢复进程内存状态",
         "optionDeltaBase": "用于切换增量的不可变基准 GUID（高级；默认使用阶段 1 的基准）",
-        "optionFrom": "源机器名称",
         "optionProvision": "通过云服务商自动配置目标机器（例如 hetzner、linode）",
         "optionSkipDns": "迁移后跳过 DNS 记录切换",
         "optionKeepSource": "成功迁移后保留源镜像（默认会被删除；残留副本无法通过任何配置记录寻址，reconcile 会将其标记为孤立项）",
@@ -1126,7 +1027,6 @@
         "optionTo": "目标机器或集群",
         "phase1": "阶段 1：批量传输数据（源继续运行）...",
         "phase1Done": "批量传输完成",
-        "phase1Failed": "批量传输失败",
         "phase1Stats": "{{duration}} 内传输 {{transferred}}（源端保持在线）",
         "phase2": "阶段 2：切换（短暂停机）...",
         "phase2Stats": "切换（停机）：{{duration}} 内传输 {{transferred}}",
@@ -1134,13 +1034,10 @@
         "provisioning": "正在通过 {{provider}} 配置目标机器 {{machine}}...",
         "sourceStopped": "源服务已停止",
         "sourceUnmounted": "源已卸载",
-        "startFailed": "在目标上启动失败",
         "startingTarget": "正在目标上启动服务...",
-        "stopFailed": "停止源服务失败",
         "stoppingSource": "正在停止源服务...",
         "switchingDns": "正在切换 DNS 记录...",
         "targetStarted": "目标服务已启动",
-        "unmountFailed": "卸载源失败",
         "unmountingSource": "正在卸载源...",
         "noOpSameHome": "仓库 {{name}} 已位于 {{machine}} 上；无需迁移。",
         "placementUpdated": "路由已更新：{{name}} 现在位于 {{machine}}",
@@ -1162,7 +1059,6 @@
           "descriptionShort": "显示大小策略（机器默认、仓库覆盖、有效值）"
         },
         "invalidBool": "{{flag}} 必须为 'true' 或 'false'，收到：{{value}}",
-        "nameOption": "仓库（默认：机器级策略）",
         "repoNotFound": "未找到仓库：{{name}}",
         "set": {
           "autoGrowOption": "启用在线自动扩大配额（true/false）",
@@ -1201,10 +1097,8 @@
         "optionCheckpoint": "备份前创建CRIU检查点（捕获进程内存状态用于实时迁移）",
         "optionDeltaBase": "在两台机器上字节完全相同的不可变基准 GUID；仅传输已更改的块（机器目标）。省略以自动选择基准",
         "optionForce": "强制覆盖现有备份",
-        "optionJson": "以 JSON 格式输出传输统计",
         "optionProvision": "如果目标机器不存在，通过云提供商自动配置",
         "optionStrategy": "使用增量基准时的块增量策略：auto、physical 或 shared",
-        "optionTag": "用于版本控制的部署标签",
         "optionTo": "目标机器或存储名称（从配置中自动检测）",
         "pushing": "正在将 \"{{repo}}\" 的备份推送到 {{dest}}...",
         "statsDelta": "已将 \"{{repo}}\" 推送到 {{machine}}：{{duration}} 内传输 {{transferred}}（相对基准 {{base}} 的增量，镜像 {{image}}）",
@@ -1249,8 +1143,7 @@
         "get": {
           "description": "显示密钥的 SHA-256 摘要。明文值按设计永不返回（仅写入）。可在后续的 set/unset 中使用 --current 验证一个你已知的值，或通过 `set --rotate-secret` 进行轮换。",
           "descriptionShort": "显示密钥摘要 (永不返回值)",
-          "notFound": "在仓库 \"{{repository}}\" 中未找到密钥 \"{{key}}\"",
-          "repoNotFound": "未找到仓库 \"{{repository}}\""
+          "notFound": "在仓库 \"{{repository}}\" 中未找到密钥 \"{{key}}\""
         },
         "keyOption": "UPPER_SNAKE_CASE 格式的密钥（最多 64 个字符）。在 env 模式下作为 REDIACC_SECRET_<KEY> 暴露，在 file 模式下作为容器中的 /run/secrets/<key>。",
         "list": {
@@ -1259,7 +1152,6 @@
           "empty": "在 \"{{repository}}\" 上未定义密钥"
         },
         "modeOption": "传递模式：'env'（在容器环境中可见，docker inspect）或 'file'（tmpfs 文件，永不出现在 env 中）。默认：file。",
-        "nameOption": "仓库名称（例如 mail、mail:staging）。未指定标签时默认为 :latest。",
         "rotateOption": "确认轮换；跳过 --current 前置条件（作为轮换审计）。在不验证先前值的情况下故意轮换时使用。",
         "set": {
           "description": "设置或覆盖一个密钥。Fork 不继承；请在 fork 上显式设置。在代理上下文中，需要 --current 摘要匹配（passwd 风格）。",
@@ -1282,16 +1174,13 @@
       "sync": {
         "description": "同步仓库和文件（批量推送/拉取，文件传输）",
         "download": {
-          "description": "从仓库下载文件",
-          "descriptionShort": "通过 rsync 从仓库下载文件"
+          "description": "从仓库下载文件"
         },
         "status": {
-          "description": "检查同步状态并比较本地/远程文件",
-          "descriptionShort": "比较本地和远程文件（模拟运行）"
+          "description": "检查同步状态并比较本地/远程文件"
         },
         "upload": {
-          "description": "上传文件到仓库",
-          "descriptionShort": "通过 rsync 向仓库上传文件"
+          "description": "上传文件到仓库"
         }
       },
       "trim": {
@@ -1301,7 +1190,6 @@
         "dockerOption": "回收 Docker 空间（已停止的容器、悬空镜像、构建缓存）；即使在备份快照处于活动状态时也会执行",
         "dockerVolumesOption": "同时清理未使用的 Docker 卷",
         "failed": "修剪失败",
-        "nameOption": "要修剪的仓库（默认：所有已挂载的仓库）",
         "noMountedRepos": "未找到已挂载的仓库",
         "repoNotFound": "未找到仓库：{{name}}",
         "reportOnlyOption": "仅显示 discard 状态和可回收空间估算，不执行修剪",
@@ -1328,7 +1216,6 @@
         "urlOnlyOption": "隧道就绪后只输出本地 URL（机器可读）"
       },
       "up": {
-        "checkpointOption": "启动时恢复 CRIU 检查点（从保存的内存状态恢复进程）",
         "completed": "服务已启动",
         "description": "部署或更新仓库（挂载并运行调用 renet compose 的 Rediaccfile up）。机器由引用的放置位置推导得出。代理路由在部署后约 3 秒生效。完成后会打印 HTTP 暴露服务的 URL 格式（rediacc.service_port 标签）。首次部署和 fork 会自动挂载。CRIU checkpoint 恢复会自动检测；使用 --skip-checkpoint 可强制全新启动。使用 --all --machine <m> 可部署某台机器上的所有仓库。",
         "descriptionShort": "部署或更新仓库",
@@ -1349,10 +1236,8 @@
       "upAll": {
         "completed": "所有仓库已启动",
         "concurrencyOption": "最大并发仓库数 (默认: 3)",
-        "dryRunOption": "显示将要执行的操作而不实际执行",
         "failed": "全部启动操作失败",
         "includeForksOption": "同时挂载/启动分叉的仓库",
-        "mountOnlyOption": "仅挂载，不启动服务",
         "parallelOption": "并发启动仓库",
         "starting": "正在 \"{{machine}}\" 上启动所有仓库..."
       },
@@ -1371,7 +1256,6 @@
           },
           "restore": {
             "description": "恢复已归档的仓库凭据",
-            "optionName": "使用其他名称恢复",
             "success": "已恢复 \"{{name}}\"（{{guid}}）"
           },
           "description": "已归档仓库记录的簿记管理。"
@@ -1420,7 +1304,6 @@
             "startingAll": "正在为 \"{{machine}}\" 上的所有仓库启用自动启动..."
           },
           "list": {
-            "completed": "自动启动列表已获取",
             "description": "列出已启用自动启动的仓库",
             "empty": "\"{{machine}}\" 上没有已启用自动启动的仓库",
             "failed": "获取自动启动仓库列表失败",
@@ -1498,15 +1381,11 @@
         "description": "运行函数（快捷方式：queue create）",
         "descriptionShort": "在机器上运行原始桥接函数（仅限调试）",
         "executingLocal": "在 {{machine}} 上执行 '{{function}}'...",
-        "failedLocal": "失败：{{error}}",
-        "watching": "正在监视完成情况..."
+        "failedLocal": "失败：{{error}}"
       },
       "trace": {
         "description": "跟踪任务 (queue trace 的快捷方式)"
       }
-    },
-    "snapshot": {
-      "description": "管理远程机器上的 BTRFS 快照"
     },
     "serve": {
       "description": "将此进程作为执行器运行，让客户端可以通过它执行命令，而不必自己通过 SSH 连接",
@@ -1521,7 +1400,6 @@
     "storage": {
       "browse": {
         "description": "浏览存储系统中的文件",
-        "failed": "文件列表获取失败: {{error}}",
         "listing": "正在列出 \"{{name}}\" 中的文件...",
         "noFiles": "未找到文件",
         "pathOption": "要列出的子目录路径"
@@ -1530,7 +1408,6 @@
       "descriptionShort": "管理存储",
       "list": {
         "description": "列出存储端点。指定名称可查看完整详情。",
-        "fetching": "正在获取存储提供商...",
         "optionReveal": "以明文显示存储配置(仅限交互式 TTY;记入审计日志)",
         "noStorages": "未配置任何存储端点。请使用以下命令注册：rdc storage add <name> --vault <json>"
       },
@@ -1540,7 +1417,6 @@
         "descriptionShort": "删除存储中的孤立备份",
         "forceDeleteMountedOption": "覆盖挂载安全检查，即使源 GUID 当前在执行机器上已挂载或有正在运行的容器，也删除云备份。与 --force 不同（后者仅覆盖已归档仓库的宽限期）。",
         "found": "在存储中找到 {{count}} 个备份",
-        "listFailed": "获取存储备份列表失败",
         "listing": "正在列出 \"{{storage}}\" 中的备份...",
         "machineOption": "执行机器：对存储运行 rclone list/delete 调用。必需，因为客户端不应在本地安装 rclone；存储凭据仍来自你的本地配置。",
         "noBackups": "存储中未找到备份"
@@ -1681,7 +1557,6 @@
       "connect": {
         "description": "在机器上打开 shell，或在已配置好 Docker 的仓库内部打开 shell。"
       },
-      "connecting": "正在连接到 {{machine}}...",
       "connectingTo": "正在连接到 {{title}}...",
       "description": "打开到机器或仓库的 SSH 终端。目标可以是机器名称或仓库引用，仓库上下文（DOCKER_HOST、工作目录、环境变量）会自动设置。使用 `-c` 可非交互式运行单条命令。若需查看容器日志或在容器中执行一次性命令，请使用 `repo logs` 和 `repo exec`。如需 VS Code，请使用 `vscode`。",
       "descriptionShort": "SSH 终端访问机器和仓库",
@@ -1691,7 +1566,6 @@
       "testingConnectivity": "正在测试与 {{host}}:{{port}} 的连接..."
     },
     "update": {
-      "applyFailed": "应用暂存更新失败: {{error}}",
       "autoApplied": "已更新到 v{{version}}（之前为 v{{from}}）。更改将在下次运行时生效。",
       "available": "有可用更新: v{{version}} (当前: v{{current}})",
       "channelDescription": "设置发布渠道 (stable 或 edge)",
@@ -1726,7 +1600,6 @@
       "stagedFallback": "更新 v{{version}} 已下载并暂存。将在下次启动时应用。",
       "statusDescription": "显示自动更新状态和诊断信息",
       "success": "已从 v{{from}} 更新到 v{{to}}",
-      "unknownError": "未知错误",
       "upToDate": "已是最新版本 (v{{version}})"
     },
     "vscode": {
@@ -1840,17 +1713,6 @@
       }
     }
   },
-  "common": {
-    "completed": "已完成",
-    "failed": "失败",
-    "inProgress": "进行中",
-    "no": "否",
-    "running": "运行中",
-    "stopped": "已停止",
-    "success": "✓ 成功",
-    "unknown": "未知",
-    "yes": "是"
-  },
   "docs": {
     "admonitions": {
       "note": "注意",
@@ -1940,8 +1802,6 @@
     }
   },
   "errors": {
-    "activationFailed": "激活失败",
-    "affectedChildClones": "。受影响的子克隆：{{clones}}。请先删除或提升子克隆。",
     "agent": {
       "clusterOpBlocked": "集群命令 \"{{command}}\" 在代理模式下被阻止。集群操作会创建或销毁真实的基础设施，因此代理无法自行授权这些操作。用户：要允许此操作，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_CLUSTER_OPS=<cluster-name>（或 * 表示所有集群）——从代理内部设置的覆盖不被接受。",
       "commandBlocked": "\"{{command}}\" 命令在代理模式下不可用。\n\n此命令在没有安全防护的情况下执行任意低级函数。请改用类型化的 CLI 命令或 MCP 工具。\n\n替代方案：\n  - MCP tools: repo_up, repo_down, repo_fork, repo_logs, repo_exec, machine_status\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - 运行 \"rdc --help\" 查看所有可用命令\n\n如果需要直接访问，请让用户直接运行该命令。",
@@ -1961,32 +1821,24 @@
       "mcpGrandGuard": "\"{{name}}\" 是一个 grand（生产）仓库。代理无法直接修改 grand 仓库。\n\n使用 repo_fork 创建安全、隔离的沙箱副本，然后在 fork 上操作。\n如需直接访问，请要求用户在启动代理前导出 REDIACC_ALLOW_GRAND_REPO。",
       "mcpGrandGuardOverride": "\"{{name}}\" 是一个 grand（生产）仓库。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO。\n\n使用 repo_fork 创建安全、隔离的沙箱副本，然后在 fork 上操作。",
       "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" 是一个 grand（生产）仓库。REDIACC_ALLOW_GRAND_REPO 覆盖无法在 {{platform}} 上验证（祖先验证辅助程序不可用或失败），因此不接受。\n\n使用 repo_fork 创建安全、隔离的沙箱副本，然后在 fork 上操作。",
-      "mcpMachineGuard": "代理不允许直接机器访问。\n\n代理必须通过仓库上下文连接。使用 repo_fork 创建 fork，然后连接。\n如需直接访问，请要求用户在启动代理前导出 REDIACC_ALLOW_GRAND_REPO=*。",
-      "mcpMachineGuardOverride": "不允许直接机器访问。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO。\n\n使用 repo_fork 创建 fork，然后连接。",
-      "mcpMachineGuardOverrideNonLinux": "直接机器访问覆盖无法在 {{platform}} 上验证（祖先验证辅助程序不可用或失败），因此不接受。\n\n使用 repo_fork 创建 fork，然后连接。",
       "revealRequiresTty": "--reveal 需要交互式 TTY;拒绝将敏感值打印到管道。",
       "rotateNotSensitive": "指针“{{pointer}}”不是敏感字段;请改用 'config field set'。",
       "rotateRequiresTty": "config field rotate 需要交互式 TTY 确认;在非交互式上下文中被拒绝(如需覆盖请设置 REDIACC_ALLOW_CONFIG_EDIT)。",
       "showReveal": "在代理环境中禁止使用 --reveal。请使用 `rdc config show`（脱敏）或 `rdc config field get --pointer <pointer> --digest` 获取安全指纹。",
       "showRevealRequiresTty": "--reveal 需要交互式 TTY;拒绝将明文重定向到非 TTY 目标。"
     },
-    "authFailed": "身份验证失败",
     "authRequired": "需要身份验证。运行：rdc subscription login",
-    "cannotDeleteGrandRepo": "无法删除主仓库：{{reason}}",
-    "cannotPromote": "无法提升：{{reason}}",
     "cluster": {
       "controlDsBackendInvalid": "--control-ds-backend 必须是 local 或 ceph",
       "countInvalid": "--count 必须是非负整数",
       "dockerOnlyVerb": "\"repo {{verb}}\" 仅面向 Docker 仓库，不能针对 --cluster 运行；在 v1 中没有对应的 Kubernetes 等价操作",
       "featureUnsupportedV1": "{{feature}} 在 v1 中不支持 --cluster（控制节点视图）；{{hint}}",
       "forkWritesInvalid": "--writes 必须是 local 或 ceph",
-      "pendingContractRegen": "在集群上执行 \"repo {{verb}}\" 会调度 {{fn}}，该功能有待 renet kube 契约重新生成（第 5 波）。集群和命名空间已解析；待契约就绪后重新运行。",
       "targetExclusive": "只能指定 -m/--machine 或 --cluster 之一，不能同时指定",
       "targetRequired": "需要目标机器（-m）或集群（--cluster）",
       "poolRequired": "集群至少需要一个节点池。请添加 --pool <spec>。",
       "declareNeedsProvider": "--declare-only 仅记录集群而不进行配置（provision），因此需要 --provider 和 --pool。"
     },
-    "clusterNotFound": "Ceph 集群 \"{{name}}\" 未找到",
     "config": {
       "invalidEmail": "无效的电子邮件地址: \"{{value}}\"。",
       "machineNotFound": "机器 \"{{name}}\" 在配置中未找到。可用: {{available}}。",
@@ -1999,27 +1851,14 @@
       "execFailed": "container_exec 失败",
       "logsFailed": "container_logs 失败"
     },
-    "contextNotFound": "上下文 \"{{name}}\" 未找到",
     "editor": {
       "headlessRefused": "无头编辑器调用将永远阻塞:{{command}}。请显式传入带交互标志的 --editor。",
       "nonzeroExit": "编辑器 {{command}} 以退出码 {{code}} 终止",
       "notFound": "未配置编辑器。请设置 $GIT_EDITOR、git config core.editor、$VISUAL 或 $EDITOR,或传入 --editor。",
       "spawnFailed": "启动编辑器 {{command}} 失败:{{reason}}"
     },
-    "failedCreateQueueItem": "无法创建队列项",
-    "invalidAction": "无效的操作 \"{{action}}\"。使用 \"{{valid}}\"。",
-    "invalidCredentials": "凭证无效",
-    "invalidEmail": "请输入有效的电子邮件",
-    "invalidExpiration": "令牌过期时间必须在 1 到 720 小时之间",
     "invalidFunctionParams": "函数 \"{{function}}\" 的参数无效：{{errors}}",
-    "invalidHost": "无效的 IP 地址或主机名：\"{{host}}\"。必须是有效的 IPv4、IPv6 或主机名。",
-    "invalidJsonFile": "提供的文件不包含有效的 JSON。",
-    "invalidJsonVault": "无效的 JSON 保险箱数据。",
     "invalidKey": "无效的密钥。有效的密钥：{{keys}}",
-    "invalidMasterPassword": "保险箱加密的主密码无效",
-    "invalidPort": "无效的端口号：\"{{port}}\"。必须在 1 到 65535 之间。",
-    "invalidPriorityMax": "无效的优先级-最大值。必须在 1 到 5 之间。",
-    "invalidPriorityMin": "无效的优先级-最小值。必须在 1 到 5 之间。",
     "license": {
       "preflightTokenNotReady": "订阅令牌尚未就绪。请运行：rdc subscription login。已跳过部署到 {{machine}}。",
       "recoveryFailedNoKnownRepos": "在 {{machine}} 上发现了仓库，但本地配置中未追踪任何仓库。请运行 `rdc repo list` 列出已追踪的仓库，然后重试。",
@@ -2030,18 +1869,9 @@
     "machineNotFound": "机器 \"{{name}}\" 未找到",
     "machineRequired": "需要机器名称。使用 --machine <name>",
     "machineRequiredLocal": "需要机器名称。使用 --machine <name>",
-    "networkError": "网络错误：{{message}}",
     "noActiveConfig": "没有活跃的配置。请使用以下命令创建：rdc config init <name>",
-    "notAuthenticated": "未认证。运行：rdc subscription login",
-    "passwordsMismatch": "密码不匹配",
     "permissionDenied": "权限被拒绝",
-    "poolNotFound": "Ceph 池 \"{{name}}\" 未找到",
     "precondition": {
-      "currentSecretsRequired": "{{pointer}}:未提供 --current 情况下更改了敏感字段;请提供 --current-secrets <file>,映射 pointer→旧值",
-      "digestMismatch": "--current 摘要不匹配(期望 {{expected}}…,实际 {{got}}…)",
-      "kindMismatch": "值类型已更改(已存储:{{stored}},声明:{{claimed}})",
-      "mismatch": "{{count}} 条路径前置条件失败:\n{{details}}",
-      "missing": "敏感路径需要 --current(或 --rotate-secret)",
       "next": {
         "options": {
           "confirm": {
@@ -2049,27 +1879,13 @@
             "run": "rdc repo secret get {{repository}} --key {{key}}"
           },
           "rotate": {
-            "description": "跳过前置条件 (轮换,有审计)",
-            "run": "<原始命令> --rotate-secret"
+            "description": "跳过前置条件 (轮换,有审计)"
           }
         },
         "summary": "提供当前值或确认轮换。"
-      },
-      "rotationRequiresTty": "{{pointer}}:轮换确认需要交互式 TTY(或使用 --current-secrets)",
-      "stubStillStub": "{{pointer}}:编辑后的值仍像脱敏占位符,但不匹配当前摘要"
-    },
-    "protocol": {
-      "commandExitCode": "命令退出代码 {{code}}",
-      "invalidAction": "无效的操作 '{{action}}'。必须是以下之一：{{validActions}}",
-      "invalidUrl": "无效的协议 URL：{{error}}",
-      "machineRequired": "需要机器名称。使用 --machine <name>",
-      "notSupported": "{{platform}} 上不支持协议注册",
-      "parseFailed": "无法解析 URL：{{error}}",
-      "teamRequired": "需要团队名称。使用 --team <name>",
-      "tokenRequired": "需要令牌。使用 --token <token>"
+      }
     },
     "regionRequired": "需要区域名称。使用 --region 或使用以下命令设置默认值：rdc config set region <name>",
-    "registrationFailed": "注册失败",
     "remoteNotFound": "\"{{name}}\"不是已知的机器、存储或集群。机器: {{machines}}。存储: {{storages}}。集群: {{clusters}}",
     "repo": {
       "secret": {
@@ -2084,14 +1900,11 @@
     "repoNotDeployed": "仓库 \"{{repository}}\" 未部署在 {{machine}} 上。\n\n请先部署：\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "仓库 \"{{name}}\" 已挂载在 \"{{machine}}\" 上。对活跃仓库进行迁移会导致数据损坏。请先执行: rdc repo down {{name}} --unmount",
     "repositoryNotFound": "仓库 \"{{name}}\" 未找到",
-    "repositoryRequired": "需要仓库 ref。例如：\"shop\" 或 \"shop:test\"。",
-    "resourceNotFound": "{{resource}} 未找到",
     "ssh": {
       "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
       "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥"
     },
-    "sshKeyNotFound": "SSH 密钥未找到：{{path}}",
     "subscription": {
       "activationFailed": "机器激活失败。请确保您的订阅处于活动状态且机器插槽可用。",
       "notLoggedIn": "未登录。请先运行 `rdc subscription login`。",
@@ -2102,9 +1915,6 @@
       "absolutePathBlocked": "--remote 路径必须是相对路径，不能是绝对路径。请使用相对于仓库根目录的路径。",
       "localPathNotFound": "本地路径不存在：{{path}}",
       "mirrorWithFile": "当源是文件时不能使用 --mirror：这会删除目标目录中的同级文件。",
-      "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
-      "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
-      "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
       "pathTraversalBlocked": "--remote 路径不得包含 \"..\" 路径遍历。请使用仓库内的路径。",
       "remoteAndRemoteFile": "--remote 和 --remote-file 不能同时使用。请选择其中一个。",
       "remoteFileLocalNotDir": "设置了 --remote-file 时，--local 必须是已存在的目录：{{path}}",
@@ -2127,19 +1937,12 @@
       "sshCode255": "SSH 连接失败 - 可能的原因：\n    - 身份验证失败（检查 SSH 密钥权限）\n    - 主机密钥验证失败\n    - 网络连接断开\n    - 远程 SSH 服务未运行",
       "sshExitCode": "SSH 退出代码 {{code}}"
     },
-    "tfaVerificationFailed": "TFA验证失败",
-    "tokenExpired": "令牌已过期。请重新登录。",
-    "unexpectedError": "意外错误：{{message}}",
     "unknownCommand": "未知命令 \"{{command}}\"。可用命令：{{available}}。",
     "unknownSubcommand": "未知子命令 \"{{command}}\"。可用的 {{parent}} 子命令：{{available}}。",
-    "validationError": "验证错误：{{message}}",
     "vscode": {
       "browserNeedsRepo": "vscode --browser 用于提供仓库沙盒，因此其目标必须是仓库 ref：rdc vscode connect <repo-ref> --browser",
       "cleanupRequired": "指定 --all 以移除所有连接或指定 --connection <name> 以移除特定连接。",
       "connectivityFailed": "无法到达 {{host}}:{{port}}。{{error}}\n\n故障排除：\n  - 检查机器是否已启动并连接到网络\n  - 验证 IP 地址在机器保险箱中是否正确\n  - 确保端口 {{port}} 未被防火墙阻止\n  - 尝试 ping 机器：ping {{host}}",
-      "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
-      "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
-      "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
       "notFound": "未找到 VS Code。\n\n请从以下地址安装：https://code.visualstudio.com/\n或设置 REDIACC_VSCODE_PATH 环境变量。",
       "serverInstallFailed": "安装 {{provider}} 失败：{{error}}",
       "serverStartFailed": "启动 {{provider}} 失败：{{error}}",
@@ -2209,57 +2012,36 @@
     }
   },
   "options": {
-    "activationCode": "来自电子邮件的激活码",
     "apiToken": "API令牌 (rdt_...)",
-    "apiUrl": "API 网址",
-    "bridge": "网桥名称",
     "cleanupAll": "移除所有 rediacc SSH 配置",
-    "cluster": "Ceph 集群名称",
     "command": "执行命令而不是交互式 shell",
     "config": "为此命令使用特定配置",
     "configKey": "配置键",
     "configValue": "配置值",
-    "confirmPasswordNonInteractive": "确认密码（非交互式模式）",
     "confirmSync": "预览更改并在同步前请求确认",
     "connectionName": "移除特定连接",
-    "currentName": "当前资源名称",
-    "datastore": "机器上的数据存储路径",
     "debug": "启用调试输出（本地模式）",
     "dryRun": "显示将执行的操作但不进行实际更改",
-    "email": "电子邮件地址",
-    "endpoint": "API 端点 URL",
     "excludePatterns": "从同步中排除的模式",
-    "expires": "过期时间（小时数，1-720）",
     "external": "强制在外部终端窗口中启动",
     "extraMachine": "用于多机操作的额外机器 (名称:IP:用户)",
     "fields": "要包含在输出中的字段列表（逗号分隔）",
     "file": "文件路径",
-    "filterStatus": "按状态过滤",
     "folder": "远程文件夹路径以打开",
-    "follow": "跟踪日志输出",
     "force": "跳过确认提示",
     "function": "要执行的函数名称",
     "graceDays": "最近归档仓库的宽限期天数（默认：7）",
-    "image": "RBD 镜像名称",
-    "importMode": "导入模式（merge 或 replace）",
     "insiders": "使用 VS Code Insiders 设置",
     "lang": "语言覆盖（{{languages}}）",
     "licenses": "打印随发行版打包的完整 THIRD_PARTY_LICENSES 文本",
-    "limit": "最大结果数",
     "localPath": "本地目录路径（默认：当前目录）",
     "localPaths": "一个或多个本地文件或目录路径（默认：当前目录）",
-    "logLines": "显示的日志行数（默认：50）",
     "machine": "机器名称",
-    "machineForVault": "机器名称（用于测试后更新保险箱）",
     "machineIp": "机器 IP 地址或主机名",
-    "machineNames": "机器名称（逗号分隔）",
-    "machineShorthand": "机器名称（--machine 的简写）",
-    "masterPassword": "保险箱加密的主密码",
     "mirrorDownload": "镜像模式 - 删除远程不存在的本地文件",
     "mirrorUpload": "镜像模式 - 删除本地不存在的远程文件",
     "name": "资源名称",
     "newName": "新资源名称",
-    "newPasswordNonInteractive": "新密码（非交互式模式）",
     "newWindow": "在新 VS Code 窗口中打开",
     "opsBackend": "虚拟化后端 (kvm|qemu，自动检测)",
     "opsBasic": "最小集群（网桥 + 1 个工作节点）",
@@ -2269,25 +2051,9 @@
     "opsParallel": "并行创建 VM",
     "opsSkipOrchestration": "跳过集群编排",
     "opsSSHUser": "VM 连接的 SSH 用户名",
-    "organization": "组织名称",
     "output": "输出格式（table|json|yaml|csv）。使用 REDIACC_DEFAULT_OUTPUT 覆盖默认值。",
     "outputFormat": "输出格式（json）",
-    "outputPath": "保存输出文件的路径",
     "param": "函数参数",
-    "parentRepository": "父仓库（用于分叉）",
-    "parentRepositoryTag": "父仓库标签",
-    "password": "密码（用于非交互式登录）",
-    "pollInterval": "轮询间隔（毫秒）",
-    "pool": "Ceph 池名称",
-    "priority": "优先级（1=最高）",
-    "priorityMax": "最大优先级（1-5）",
-    "priorityMin": "最小优先级（1-5）",
-    "protocolAction": "操作（{{actions}}）",
-    "protocolForce": "强制重新注册即使已注册",
-    "protocolParams": "附加参数",
-    "protocolSystem": "系统范围内注册（需要管理员权限）",
-    "protocolSystemUnregister": "注销系统范围的注册（需要管理员权限）",
-    "protocolToken": "身份验证令牌",
     "queryBlockDevices": "仅包含块设备",
     "queryContainers": "仅包含容器",
     "queryLicenses": "包含仓库许可证状态",
@@ -2299,48 +2065,26 @@
     "querySyncCerts": "查询后也从机器拉取 ACME 证书缓存",
     "querySystem": "仅包含系统信息",
     "quiet": "抑制信息性输出",
-    "rawVault": "原始保险箱 JSON（用于脚本/CI）",
-    "region": "区域名称",
     "remoteFile": "仓库中的远程文件路径（用于单文件传输，作为 --remote 的替代项）",
     "remoteFileUpload": "要上传到的单个远程文件路径（相对于仓库根目录）。与 --remote 互斥。",
     "remotePath": "仓库内的远程子目录路径",
     "renetPath": "renet 二进制文件的路径（默认：PATH 中的 renet）",
-    "repository": "仓库名称（连接到仓库环境）",
-    "repositoryShorthand": "仓库 ref（repo[:tag]）；机器由此推导",
-    "repositoryTag": "仓库标签",
     "resetHome": "重置每个仓库的主目录覆盖层以全新开始",
-    "saveAs": "将凭证保存到命名上下文",
-    "saveKnownHosts": "测试成功后将 known_hosts 保存到机器保险箱",
     "searchInField": "在 {{field}} 中搜索",
-    "searchQueue": "在任务 ID、团队、机器、网桥中搜索",
     "searchRepos": "按名称过滤仓库",
     "serverUrl": "账户服务器URL",
-    "sessionName": "会话名称",
     "skipEnvSetup": "跳过远程环境设置",
     "skipRouterRestart": "二进制更新后跳过重启路由服务器",
-    "snapshot": "RBD 快照名称",
     "sortByField": "按字段排序",
     "sortDesc": "按降序排序",
     "sortDescending": "降序排序",
-    "sortField": "按字段排序",
     "sshKey": "SSH 私钥路径（例如：~/.ssh/id_rsa）",
-    "sshPassword": "用于初始身份验证的 SSH 密码",
     "sshPort": "SSH 端口",
-    "sshPrivateKey": "SSH 私钥路径",
-    "sshPublicKey": "SSH 公钥路径",
     "sshUser": "SSH 用户名",
-    "subscriptionPlan": "订阅计划（COMMUNITY、PROFESSIONAL、BUSINESS、ENTERPRISE）",
-    "switch": "创建后切换到此上下文",
-    "target": "目标资源名称",
     "team": "团队名称",
-    "tfaCode": "用于验证的当前双因素认证代码",
-    "tokenName": "令牌名称",
     "urlOnly": "打印 VS Code URI 而不是启动",
-    "userPassword": "新用户的密码",
     "vaultContent": "保险箱内容为 JSON 字符串",
     "vaultJson": "保险箱内容为 JSON 字符串",
-    "vaultJsonMachine": "机器保险箱数据为 JSON 字符串",
-    "vaultVersion": "用于乐观锁定的当前保险箱版本",
     "verifyChecksum": "同步后使用校验和验证文件",
     "vmId": "虚拟机 ID",
     "vscodeBrowser": "从仓库沙盒内提供浏览器 VS Code（无需在本地安装 VS Code）",
@@ -2348,7 +2092,6 @@
     "vscodeServerArchive": "机器上预先暂存的服务器压缩包路径（离线安装）",
     "vscodeServerProvider": "浏览器 VS Code 服务器实现（openvscode、code-server）",
     "watch": "监视更改",
-    "watchUpdates": "监视更新",
     "yes": "跳过确认提示",
     "clusterName": "集群名称",
     "connectTarget": "目标：机器或集群名称（在其上打开 shell），或仓库引用（name、name:tag，可选 @machine）（在其内部打开 shell）",
@@ -2365,22 +2108,8 @@
     "storageRef": "存储引用：已注册存储端点的名称（例如 s3-main）"
   },
   "prompts": {
-    "apiUrl": "API URL：",
     "cancelled": "已取消",
-    "confirm": "确定吗？",
-    "confirmDelete": "确定要删除此项吗？",
-    "confirmNewPassword": "确认新密码：",
-    "confirmPassword": "确认密码：",
-    "email": "电子邮件：",
-    "enterValue": "输入 {{field}}：",
     "masterPassword": "请输入您的主密码：",
-    "masterPasswordForVault": "请输入保险箱加密的主密码：",
-    "newPassword": "新密码：",
-    "password": "密码：",
-    "passwordForUser": "新用户的密码：",
-    "selectOption": "选择选项：",
-    "setPassword": "为用户设置密码：",
-    "sshPassword": "SSH 密码（如果使用密钥认证，则留空）：",
     "syncConfirm": "\n继续同步吗？[y/N/d(etails)]",
     "syncConfirmHelp": "请输入 y（是）、n（否）或 d（详情）"
   },
@@ -2391,29 +2120,10 @@
       "unreadableConfigs": "无法读取 {{count}} 个配置文件: {{names}} (已加密或已损坏)"
     }
   },
-  "spinners": {
-    "connecting": "正在连接...",
-    "creating": "正在创建 {{resource}}...",
-    "deleting": "正在删除 {{resource}}...",
-    "fetching": "正在获取 {{resource}}...",
-    "loading": "正在加载...",
-    "processing": "正在处理...",
-    "saving": "正在保存...",
-    "updating": "正在更新 {{resource}}..."
-  },
   "status": {
-    "cancelled": "已取消",
-    "completed": "已完成",
-    "failed": "失败",
-    "pending": "待处理",
-    "processing": "处理中",
-    "success": "成功"
-  },
-  "table": {
-    "noData": "没有要显示的数据"
+    "cancelled": "已取消"
   },
   "timing": {
-    "completed": "在 {{operation}} 内完成 (总计: {{total}})",
     "step": {
       "activating": "正在激活许可证...",
       "configLoaded": "配置已加载 ({{duration}})",

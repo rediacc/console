@@ -4829,6 +4829,16 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "descriptionKey": "options.yes",
           "label": "Skip confirmation prompt"
+        },
+        {
+          "flags": "--force",
+          "long": "force",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "descriptionKey": "commands.machine.remove.forceOption",
+          "label": "Remove the machine even if repositories are still placed on it, leaving those placements dangling."
         }
       ],
       "positionals": [

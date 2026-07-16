@@ -224,6 +224,12 @@
               "descriptionKey": "options.yes",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--force",
+              "descriptionKey": "commands.machine.remove.forceOption",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [

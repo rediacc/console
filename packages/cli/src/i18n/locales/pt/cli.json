@@ -12,23 +12,17 @@
         "optionResetFailed": "Limpar estado falhado nos serviços afetados após uma implementação bem-sucedida (desativado por predefinição, preserva o sinal de falha)",
         "success": "Agendamento de cópia de segurança implementado em {{machine}}"
       },
-      "sync": {
-        "description": "Sincronização bidirecional de cópias de segurança de repositórios entre máquinas"
-      },
       "cancel": {
         "cancelled": "{{name}} cancelado",
         "cancelling": "A parar {{name}}...",
         "description": "Cancelar uma cópia de segurança em curso numa máquina remota",
-        "notRunning": "Nenhuma cópia de segurança em curso para a estratégia \"{{name}}\"",
-        "optionStrategy": "Nome da estratégia (cancela todas se omitido)"
+        "notRunning": "Nenhuma cópia de segurança em curso para a estratégia \"{{name}}\""
       },
       "run": {
-        "description": "Acionar uma cópia de segurança imediatamente numa máquina remota",
-        "optionStrategy": "Nome da estratégia (aciona todas se omitido)"
+        "description": "Acionar uma cópia de segurança imediatamente numa máquina remota"
       },
       "status": {
-        "description": "Mostrar estado da cópia de segurança e estado do temporizador numa máquina remota",
-        "optionStrategy": "Mostrar detalhes de uma estratégia específica"
+        "description": "Mostrar estado da cópia de segurança e estado do temporizador numa máquina remota"
       },
       "strategy": {
         "description": "Gerir estratégias de cópia de segurança com nome (modos hot/cold, destinos, agendamento)",
@@ -38,7 +32,6 @@
         "remove": {
           "description": "Remover uma estratégia ou destino de cópia de segurança",
           "optionDestination": "Remover apenas este destino (mantém os outros destinos)",
-          "optionName": "Nome da estratégia (obrigatório)",
           "removed": "Estratégia de cópia de segurança removida"
         },
         "set": {
@@ -52,7 +45,6 @@
           "optionFolder": "Subpasta dentro do bucket de armazenamento para este destino (por ex., hot, cold)",
           "optionInclude": "Fazer cópia de segurança apenas destes repositórios (nomes separados por vírgula)",
           "optionMode": "Modo de cópia de segurança: \"hot\" (sem tempo de inactividade) ou \"cold\" (parar, snapshot, reiniciar)",
-          "optionName": "Nome da estratégia (obrigatório)",
           "optionStorage": "Nome da configuração de armazenamento (credenciais rclone)",
           "saved": "Configuração da estratégia de cópia de segurança guardada",
           "storageRequired": "--storage é obrigatório ao criar um novo destino. Use: --storage <nome-do-armazenamento>"
@@ -62,8 +54,7 @@
           "destinationsHeader": "  Destinos:",
           "noDestinations": "  Destinos: (nenhum)",
           "notConfigured": "Nenhuma estratégia de cópia de segurança configurada",
-          "notFound": "Estratégia de cópia de segurança \"{{name}}\" não encontrada",
-          "optionName": "Nome da estratégia (mostra todas se omitido)"
+          "notFound": "Estratégia de cópia de segurança \"{{name}}\" não encontrada"
         }
       },
       "descriptionShort": "Gerir cópias de segurança",
@@ -357,7 +348,6 @@
         },
         "set": {
           "description": "Definir a chave SSH para a configuração actual",
-          "embedWarning": "O conteúdo da chave será guardado no ficheiro de configuração",
           "invalidKey": "O ficheiro não contém uma chave privada SSH válida",
           "keyNotFound": "Ficheiro de chave SSH não encontrado: {{path}}",
           "optionEmbed": "Incorporar o conteúdo da chave na configuração em vez de guardar o caminho",
@@ -442,12 +432,9 @@
       "description": "Pools de armazenamento com nome que alojam repositórios. Um datastore é móvel (anexe-o a uma máquina, mova-o para outra) e de anexação única (apenas uma máquina o possui de cada vez). O datastore predefinido implícito de cada máquina não é gerido aqui.",
       "descriptionShort": "Pools de armazenamento com nome e móveis",
       "fork": {
-        "completed": "Fork do datastore concluído com sucesso (snapshot: {{snapshot}})",
         "cowSizeOption": "Tamanho do overlay para --writes local",
         "description": "Faz fork de um datastore por copy-on-write. O fork é instantâneo e o seu custo não cresce com o tamanho da pool. Precisa do backend rbd: um datastore local não tem clonagem a nível de bloco, pelo que os repositórios que contém fazem fork um de cada vez por reflink (rdc repo fork).",
         "descriptionShort": "Fazer fork de um datastore por copy-on-write",
-        "failed": "Falha no fork do datastore",
-        "starting": "A fazer fork do datastore em \"{{source}}\" (clone com nome para \"{{target}}\")...",
         "attachToOption": "Anexar o fork a esta máquina de imediato (requer --writes)",
         "forked": "Datastore \"{{ref}}\" copiado por fork a partir de \"{{name}}\" (desanexado).",
         "tagOption": "Etiqueta para o fork (o resultado é nome:etiqueta)",
@@ -528,9 +515,7 @@
       "allPassed": "Todas as verificações passaram",
       "checks": {
         "activeConfig": "Configuração ativa",
-        "authStatus": "Estado",
         "cliVersion": "Versão do CLI",
-        "contextMode": "Adaptador",
         "dockerAvailable": "Docker",
         "goInstalled": "Go",
         "machines": "Máquinas",
@@ -540,7 +525,6 @@
         "renetCriu": "CRIU integrado",
         "renetRsync": "rsync integrado",
         "renetVersion": "Versão",
-        "seaMode": "Modo SEA",
         "sshKey": "Chave SSH",
         "subscriptionMachineSlots": "Slots de máquina",
         "subscriptionRepoLicenses": "Licenças de repositório",
@@ -549,18 +533,13 @@
       },
       "description": "Executar verificações de diagnóstico ao ambiente do CLI: versão do Node.js, disponibilidade do binário renet, validade do ficheiro de configuração, estado das chaves SSH e conectividade de rede. Produz um relatório de saúde estruturado com indicadores de aprovação/falha.",
       "descriptionShort": "Diagnosticar o ambiente do CLI e a integração do renet",
-      "devMode": "não (modo de desenvolvimento)",
       "hasErrors": "{{count}} erro(s)",
       "hasWarnings": "{{count}} aviso(s)",
-      "notAuthenticated": "não autenticado",
       "notConfigured": "não configurado",
       "notInstalled": "não instalado",
       "notLoggedIn": "sem sessão iniciada",
-      "opsNotSupported": "não suportado em {{platform}}",
       "opsSkipped": "renet não disponível (ignorado)",
-      "seaActive": "sim (Single Executable Application)",
       "sections": {
-        "authentication": "Autenticação",
         "configuration": "Configuração",
         "environment": "Ambiente",
         "renet": "Renet",
@@ -568,11 +547,6 @@
         "virtualization": "Virtualização"
       },
       "serverMismatch": "servidor não corresponde",
-      "status": {
-        "fail": "FALHA",
-        "ok": "OK",
-        "warn": "AVISO"
-      },
       "subscriptionUnreachable": "impossível contactar o servidor de subscrição",
       "title": "Diagnóstico do CLI Rediacc"
     },
@@ -621,19 +595,16 @@
       },
       "list": {
         "description": "Listar máquinas",
-        "fetching": "A obter máquinas...",
         "noMachines": "Nenhuma máquina configurada. Adicione uma com: rdc machine add <name> --ip <ip> --user <user>"
       },
       "provision": {
         "completed": "Máquina {{name}} provisionada e pronta ({{ip}})",
         "configuringInfra": "A configurar infraestrutura (proxy + DNS) para {{name}}...",
         "description": "Provisionar uma nova máquina num fornecedor de cloud com OpenTofu",
-        "failed": "Falha no provisionamento da máquina: {{error}}",
         "infraInherited": "Domínio base detetado automaticamente a partir da máquina irmã \"{{source}}\"",
         "noInfraHint": "Nenhum domínio base configurado. Execute 'rdc machine infra set <machine> --base-domain <domain>' e depois 'rdc machine infra push <machine>' para ativar DNS e proxy.",
         "optionBaseDomain": "Domínio base para a infraestrutura (por ex., example.com). Implica --infra",
         "optionImage": "Substituir imagem de SO predefinida",
-        "optionInfra": "Também configurar infraestrutura (infra set + infra push)",
         "optionNoInfra": "Ignorar configuração de infraestrutura (proxy + DNS)",
         "optionProvider": "Nome do fornecedor de cloud (de machine provider add)",
         "optionRegion": "Substituir região predefinida",
@@ -643,15 +614,12 @@
         "provisioning": "A provisionar {{name}} em {{provider}} ({{region}})...",
         "settingUp": "A executar configuração da máquina...",
         "sshReady": "Ligação SSH estabelecida",
-        "tofuNotInstalled": "OpenTofu (tofu) não está instalado. Instale em: https://opentofu.org/docs/intro/install/",
         "waitingSSH": "À espera de conectividade SSH..."
       },
       "prune": {
-        "checkingActivity": "A verificar atividade dos snapshots...",
         "completed": "Limpeza concluída",
         "datastoreCompleted": "Limpeza do datastore concluída",
         "datastoreFailed": "Falha na limpeza do datastore",
-        "datastoreOnlyOption": "Apenas remover recursos de datastore órfãos",
         "datastorePrunedSummary": "Removidos {{count}} recurso(s) órfão(s) do datastore",
         "description": "Remover recursos de datastore órfãos e snapshots desatualizados de uma máquina. A execução base limpa artefactos internos do datastore do renet (subvolumes BTRFS, ficheiros de bloqueio, ficheiros temporários). As opções abaixo permitem limpezas progressivamente mais específicas de repositórios: --orphaned-repos usa apenas a configuração local do CLI como referência, enquanto --prune-unknown consulta também o espelho .interim/state do renet para que forks legítimos criados por outras ferramentas sobrevivam mesmo sem entrada na configuração local. Ambos os caminhos de eliminação executam uma verificação prévia de segurança de montagem; use --force-delete-mounted para ignorar.",
         "descriptionShort": "Remover recursos órfãos e snapshots desatualizados",
@@ -659,21 +627,13 @@
         "dryRunOption": "Mostrar o que seria removido sem efetuar alterações",
         "forceDeleteMountedOption": "Ignorar a verificação prévia de segurança de montagem e eliminar repositórios mesmo que estejam montados ou com contentores Docker em execução. Distinto de --force (que apenas ignora o período de carência para repositórios arquivados). Aplica-se a --orphaned-repos e --prune-unknown.",
         "noReposFound": "Nenhum repositório encontrado na máquina",
-        "noStaleSnapshots": "Nenhum snapshot desatualizado encontrado",
         "noUnknownRepos": "Nenhum repositório desconhecido encontrado -- todos os repositórios da máquina estão na configuração local ou têm espelho renet",
         "orphanedReposCompleted": "{{count}} repositório(s) órfão(s) removido(s)",
         "orphanedReposOption": "Eliminar todos os repositórios na máquina que não existam na configuração local do CLI. Abrangente -- também remove forks criados por outras ferramentas sem entrada na configuração local, mesmo quando o espelho renet os identifica corretamente como forks. Use --prune-unknown para o comportamento mais restrito que respeita o espelho.",
         "orphanedReposStarting": "A procurar repositórios órfãos em {{machine}}...",
         "previewEmpty": "Nenhum recurso órfão do datastore encontrado",
         "pruneUnknownOption": "Eliminar apenas repositórios que o espelho .interim/state do renet não consegue classificar (não na configuração local E sem espelho marcado como fork). Estritamente mais restrito do que --orphaned-repos: forks sem configuração são preservados quando o espelho os identifica. Órfãos legados anteriores ao espelho e grands desatualizados cuja entrada de configuração foi eliminada entram neste grupo.",
-        "snapshotDeleted": "{{name}} eliminado",
-        "snapshotDeleting": "A eliminar {{name}}...",
-        "snapshotInUse": "A ignorar {{name}} (em uso ativo)",
-        "snapshotsCompleted": "Limpeza de snapshots: {{deleted}} eliminados, {{skipped}} ignorados",
-        "snapshotsOnlyOption": "Apenas remover snapshots desatualizados",
-        "snapshotStale": "Desatualizado: {{name}} ({{size}})",
         "startingDatastore": "A procurar recursos de datastore órfãos em {{machine}}...",
-        "startingSnapshots": "A procurar snapshots desatualizados em {{machine}}...",
         "unknownCompleted": "{{count}} repositório(s) desconhecido(s) removido(s)",
         "unknownFound": "Encontrado(s) {{count}} repositório(s) desconhecido(s) ({{deletable}} eliminável(eis) após verificação de segurança de montagem)",
         "unknownStarting": "A procurar repositórios desconhecidos em {{machine}} (não na configuração local + sem espelho marcado como fork)..."
@@ -681,8 +641,6 @@
       "add": {
         "description": "Adicionar uma máquina à configuração actual. Analisa automaticamente as chaves de anfitrião SSH. Após adicionar, execute: config machine setup <nome>",
         "descriptionShort": "Adicionar uma máquina à configuração actual",
-        "sshConfigFailed": "Falha ao escrever o alias SSH (não fatal): {{error}}",
-        "sshConfigWritten": "Alias SSH rediacc--{{name}} escrito em ~/.ssh/config_rediacc",
         "success": "Máquina \"{{name}}\" adicionada ({{user}}@{{ip}})"
       },
       "infra": {
@@ -693,25 +651,12 @@
             "noCache": "Nenhuma cache de certificados para limpar"
           },
           "description": "Gerir certificados TLS em cache",
-          "noBaseDomain": "A máquina não tem baseDomain configurado",
-          "noCacheForDomain": "Nenhuma cache de certificados encontrada para {{domain}}",
           "pull": {
-            "cached": "{{count}} certificado(s) em cache ({{size}})",
             "description": "Descarregar e colocar em cache os certificados TLS de uma máquina",
-            "downloading": "A descarregar certificados de {{machine}}...",
-            "merged": "{{count}} certificado(s) da cache local com validade superior preservados",
-            "noAcmeJson": "Nenhum acme.json encontrado em {{machine}}",
-            "optionNoPrune": "Não remover certificados de ID de rede obsoletos",
-            "pruned": "{{count}} certificado(s) obsoleto(s) removido(s)",
-            "prunedExpired": "{{count}} certificado(s) expirado(s) removido(s)"
+            "optionNoPrune": "Não remover certificados de ID de rede obsoletos"
           },
           "push": {
-            "description": "Carregar certificados TLS em cache para uma máquina",
-            "merged": "{{count}} certificado(s) com validade superior fundidos em {{machine}}",
-            "noCache": "Nenhuma cache de certificados encontrada. Execute 'rdc machine infra cert pull <machine>' primeiro",
-            "uploaded": "{{count}} certificado(s) carregado(s) para {{machine}}",
-            "uploading": "A carregar certificados em cache para {{machine}}...",
-            "upToDate": "Os certificados em {{machine}} estão actualizados"
+            "description": "Carregar certificados TLS em cache para uma máquina"
           },
           "status": {
             "certCount": "{{count}} certificado(s), {{size}} comprimido(s)",
@@ -723,25 +668,14 @@
         },
         "description": "Gerir a configuração de infraestrutura (proxy, DNS, certificados)",
         "push": {
-          "certCacheUploaded": "Certificados em cache carregados para o servidor remoto",
           "description": "Enviar a configuração de infraestrutura para a máquina (proxy Traefik, router, DNS Cloudflare). Execute 'machine infra set <machine>' primeiro.",
           "descriptionShort": "Enviar a configuração de infraestrutura para a máquina",
-          "dnsCreated": "DNS: criado {{type}} {{name}} → {{content}}",
-          "dnsError": "Aviso DNS: {{message}} (os registos podem necessitar de configuração manual)",
-          "dnsResolvingZone": "A resolver a zona Cloudflare para {{domain}}...",
-          "dnsSkipLocal": "A ignorar DNS: o domínio .local não usa Cloudflare",
-          "dnsSkipNoToken": "A ignorar DNS: sem token de API Cloudflare. Defina com: rdc machine infra set <machine> --cf-dns-token <token>",
-          "dnsUnchanged": "DNS: {{type}} {{name}} já correcto",
-          "dnsUpdated": "DNS: actualizado {{type}} {{name}} → {{content}}",
           "installingProxy": "A instalar o router...",
-          "proxyInstallWarning": "Instalação do proxy falhou (código {{code}}). Execute manualmente: sudo renet proxy install",
           "success": "Configuração de infraestrutura enviada para \"{{name}}\""
         },
         "set": {
           "description": "Definir a configuração de infraestrutura para uma máquina (específico da máquina: IPs, domínio, portas; partilhado: email de certificado, token DNS CF)",
           "descriptionShort": "Definir a configuração de infraestrutura para uma máquina",
-          "invalidIPv4": "Endereço IPv4 inválido: {{ip}}",
-          "invalidIPv6": "Endereço IPv6 inválido: {{ip}}",
           "noOptions": "Nenhuma opção especificada. Use --public-ipv4, --base-domain, etc.",
           "optionBaseDomain": "Domínio base para aplicações (por máquina)",
           "optionCertEmail": "Email para notificações de certificados TLS (partilhado entre máquinas)",
@@ -791,7 +725,6 @@
       },
       "remove": {
         "description": "Remover uma máquina da configuração actual",
-        "sshConfigCleared": "Alias SSH rediacc--{{name}} removido",
         "success": "Máquina \"{{name}}\" removida",
         "confirm": "Remover a máquina \"{{name}}\" da configuração?"
       },
@@ -820,7 +753,6 @@
         "fetching": "A obter estado de {{machine}}...",
         "healthCheck": "Modo de verificação de saúde - sai com código 2 se algum não estiver saudável",
         "infrastructure": "Infraestrutura",
-        "noData": "Sem dados de estado disponíveis",
         "servicesAllStable": "Todos os serviços estão estáveis",
         "servicesUnstableFound": "{{count}} serviço(s) instável(eis) encontrado(s)",
         "stabilityCheck": "Modo de verificação de estabilidade - sai com código 2 se algum falhar/reiniciar",
@@ -841,12 +773,6 @@
         "configOption": "Nome da configuração a usar em todos os comandos",
         "description": "Iniciar o servidor MCP (transporte stdio)",
         "timeoutOption": "Tempo limite predefinido dos comandos em milissegundos"
-      },
-      "tools": {
-        "repo_fork": {
-          "parentDescription": "Nome do repositório pai (ou nome:tag) a partir do qual fazer fork",
-          "tagDescription": "Etiqueta para o fork (cria nome:tag, por ex. \"staging\")"
-        }
       }
     },
     "ops": {
@@ -869,7 +795,6 @@
         "brewFailed": "Falha na instalação do Homebrew",
         "completed": "Pré-requisitos instalados com sucesso",
         "description": "Instalar pré-requisitos de virtualização",
-        "detecting": "A detetar plataforma...",
         "failed": "Falha na instalação",
         "linux": "A instalar pré-requisitos KVM via renet...",
         "macos": "A instalar QEMU via Homebrew...",
@@ -883,7 +808,6 @@
       },
       "status": {
         "description": "Mostrar estado do cluster de VMs",
-        "fetching": "A obter estado do cluster de VMs...",
         "noVMs": "Nenhuma VM encontrada"
       },
       "up": {
@@ -895,14 +819,11 @@
     },
     "repo": {
       "batchConfirm": "{{action}} todos os {{count}} repositórios em \"{{machine}}\"? [s/N]",
-      "batchIterating": "{{action}} — passo {{current}}/{{total}}: \"{{repo}}\"...",
-      "batchResult": "{{action}} concluído: {{succeeded}}/{{total}} bem-sucedidos",
       "branch": {
         "branchOption": "Nome do novo branch",
         "completed": "Ramo \"{{branch}}\" -> {{commit}}",
         "description": "Cria uma referência de branch nomeada apontando para o commit atual do fork de trabalho (sua ponta). As referências de branch ficam na configuração do CLI (máquina = armazenamento de objetos, configuração = armazenamento de referências).",
-        "descriptionShort": "Cria uma referência de branch apontando para o commit atual",
-        "workingOption": "Fork de trabalho cujo commit atual o branch aponta"
+        "descriptionShort": "Cria uma referência de branch apontando para o commit atual"
       },
       "canary": {
         "description": "Executar uma NOVA imagem ao lado da estável e dividir o tráfego em produção entre ambas por percentagem (degrau 2 da escada de releases). Cria um Deployment + Service canary sobre OS MESMOS dados em produção (sem fork: utilizadores do canary sobre dados copiados por fork estariam a ler dados desatualizados e a escrever numa cópia condenada) e instrui o proxy da Rediacc a encaminhar para ele a percentagem indicada do tráfego do hostname estável. Um peso de 0 mantém o canary oculto; um peso de 100 corresponde à troca blue/green completa. Antes de cada alteração ao canary, é feito automaticamente um snapshot de grupo dos datastores do cluster (degrau 0 da escada de releases), como undo universal. A compatibilidade de esquema entre as duas versões (expand-contract) é da responsabilidade da aplicação. Para releases que QUEBREM o esquema, use antes o blue/green: faça fork do repositório (instantâneo, incluindo os dados), aponte para aqui o Service do fork com peso 100 e reverta reiniciando o pai intacto; as escritas feitas após a troca existem apenas na nova cópia, pelo que a janela de rollback é uma decisão de política.",
@@ -948,23 +869,18 @@
         "description": "Clona via reflink um commit imutável (ou a ponta de um branch) em um novo fork de trabalho gravável e aponta o HEAD para ele. Quase instantâneo e de tempo constante (reflink BTRFS).",
         "descriptionShort": "Clona via reflink um commit/branch em um fork de trabalho gravável",
         "fromOption": "Resolver o argumento posicional <commit-or-branch-ref> como nome de branch neste working fork",
-        "refOption": "GUID do commit (ou nome do branch com --from) para fazer checkout",
         "tagOption": "Nome para o novo fork de trabalho gravável"
       },
-      "clusterDone": "{{verb}} namespace \"{{repository}}\" no cluster \"{{cluster}}\"",
-      "clusterOption": "Cluster Kubernetes de destino (mutuamente exclusivo com -m); encaminha para o nó de controlo do cluster com o KUBECONFIG injetado",
       "commit": {
         "authorOption": "Autor do commit",
         "completed": "Commit realizado {{commit}}: {{message}}",
         "description": "Congela o estado actual de um fork de trabalho montado num novo commit imutável (semelhante ao git). O commit regista a sua mensagem, autor, data/hora e pai dentro do volume (para que viaje no push) e é marcado como só de leitura -- recusa-se a montar. O fork de trabalho continua inalterado, tal como o git deixa a árvore de trabalho intacta. Faça checkout de um commit com 'rdc repo checkout' para obter uma cópia gravável.",
         "descriptionShort": "Congela um fork de trabalho em um novo commit imutável",
         "failed": "Falha no commit",
-        "messageOption": "Mensagem do commit",
-        "nameOption": "Fork de trabalho para fazer commit (deve estar montado)"
+        "messageOption": "Mensagem do commit"
       },
       "create": {
         "alreadyExists": "O repositório \"{{name}}\" já existe na configuração",
-        "clusterResolved": "O repositório Kubernetes \"{{repository}}\" tem como destino o cluster \"{{cluster}}\" (nó de controlo {{controlNode}})",
         "completed": "Repositório criado",
         "description": "Cria um novo repositório. Indique a sua localização uma vez: uma máquina ou um datastore.",
         "failed": "Falha na criação do repositório",
@@ -1008,9 +924,7 @@
         "descriptionShort": "Diff de arquivos estilo git entre dois repositórios bifurcados (A/M/D/R)",
         "failed": "Diff falhou",
         "fastOption": "Confiar no filtro de blocos; pular confirmação por hash de conteúdo (pode super-relatar Modificado)",
-        "jsonOption": "Imprimir o resultado do diff estruturado no envelope JSON",
         "nameOnlyOption": "Imprimir apenas os caminhos dos arquivos alterados, um por linha (sem letras de status)",
-        "nameOption": "Repositório a inspecionar (lado alvo/novo)",
         "notAFork": "\"{{name}}\" não é um fork. Passe uma base explícita com --base.",
         "notFound": "Repositório \"{{name}}\" não encontrado no contexto",
         "parentMissing": "O pai de \"{{name}}\" não está neste contexto. Passe-o explicitamente com --base.",
@@ -1028,7 +942,6 @@
         "description": "Para os contentores Docker do repositório (executa o down do Rediaccfile via renet compose). A máquina é derivada da localização da ref. NÃO desmonta o volume encriptado -- o repositório permanece montado e pode ser reiniciado com 'repo up'. Use --unmount para também fechar o contentor LUKS após parar (integra o retirado 'repo unmount'). Use --checkpoint para guardar o estado do processo CRIU antes de parar (o próximo 'repo up' restaura automaticamente). Use --all --machine <m> para parar todos os repositórios de uma máquina.",
         "descriptionShort": "Parar os contentores Docker do repositório",
         "failed": "Falha ao parar os serviços",
-        "grandOption": "Repositório de credenciais pai (resolve automaticamente o nome para GUID). Apenas para repositórios que partilham segredos com um pai.",
         "starting": "A parar os serviços de \"{{repository}}\" em \"{{machine}}\"...",
         "unmountOption": "Também desmontar (fechar o contentor LUKS) após parar. Necessário antes de 'repo resize' ou para proteger completamente o volume",
         "allOption": "Parar todos os repositórios cuja casa seja --machine (forma em lote)"
@@ -1044,7 +957,6 @@
       "fork": {
         "alreadyExists": "O repositório \"{{name}}\" já existe na configuração",
         "checkpointOption": "Criar ponto de verificação CRIU na origem antes de copiar (capturar o estado de memória do processo para restauro no fork)",
-        "clusterResolved": "A fazer fork de \"{{parent}}\" como namespace \"{{parent}}-{{tag}}\" no cluster \"{{cluster}}\" (nó de controlo {{controlNode}})",
         "completed": "Fork criado. Implementar: repo up {{repository}}. Para copiar para outra máquina: repo push {{repository}} --to <destino>, depois arrancar o artefacto aí com backup restore {{repository}} --as {{repository}} -m <destino> --up",
         "description": "Cria um fork CoW (Copy-on-Write) de um repositório. O FORK É QUASE INSTANTÂNEO E DE TEMPO CONSTANTE independentemente do tamanho do repositório; o reflink BTRFS clona a imagem subjacente, pelo que um repositório de 100 GB e um de 1 GB são copiados no mesmo tempo (~segundos). O fork recebe um NOVO GUID, networkId, intervalo de IPs e domínio de rota automática ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}), sendo uma cópia totalmente independente. O fork online é suportado; o pai pode permanecer em execução. O fork herda automaticamente as credenciais de encriptação do pai. Use --checkpoint para capturar o estado do processo CRIU antes de copiar; o fork restaura automaticamente no primeiro 'repo up' (estado em memória preservado). FORK ENTRE MÁQUINAS: primeiro faça fork localmente e depois transfira: (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine>, (3) rdc backup restore <fork-ref> --as <fork-name> -m <target-machine> --up. AVISO: NÃO use \"repo push\" isoladamente para copiar; cria uma cópia bruta com o MESMO GUID (não é um fork independente). Faça sempre fork primeiro para obter uma nova identidade. As rotas automáticas utilizam o nome do repositório, pelo que cada fork obtém automaticamente um domínio único.",
         "descriptionShort": "Fork CoW quase instantâneo de um repositório (novo GUID, networkId, intervalo de IPs)",
@@ -1054,16 +966,11 @@
         "failed": "Falha na criação do fork",
         "immutableOption": "Marca o fork como somente leitura: ele recusa a montagem e mantém sua imagem estável em nível de bytes para sempre (um commit/base congelado para o delta push entre máquinas)",
         "immutableUpConflict": "repo fork: --immutable e --up são mutuamente exclusivos. Um fork imutável recusa a montagem, portanto não pode ser iniciado. Remova --up ou remova --immutable para implantar um fork normal.",
-        "providerOption": "Provisionar um novo cluster (refletindo a forma dos pools de origem) e fazer fork para ele",
-        "providerPending": "A fazer fork de \"{{parent}}\" como \"{{parent}}-{{tag}}\" para um novo cluster {{provider}}",
-        "provisioning": "A provisionar o cluster \"{{cluster}}\" em {{provider}} antes de fazer fork...",
         "registered": "Fork \"{{repository}}\" registado ({{guid}}, rede {{networkId}})",
         "rollback": "Configuração revertida para \"{{repository}}\"",
         "starting": "A copiar \"{{parent}}\" como \"{{repository}}\" em \"{{machine}}\"...",
         "tagOption": "Etiqueta para o fork (cria nome:etiqueta)",
-        "tagRequired": "A etiqueta é obrigatória para fork. Utilização: rdc repo fork <parent-ref> --tag <tag>",
         "tagReservedLatest": "repo fork: a tag \"latest\" é reservada para o repositório principal (produção) — escolha um --tag diferente (ex.: \"test\", \"staging\", \"<feature>\")",
-        "toClusterOption": "Fazer fork para outro cluster Kubernetes existente (fork de namespace entre clusters)",
         "upOption": "Montar e iniciar os serviços após copiar (fork + mount + up num único comando)",
         "noWaitOption": "Com --up: retorna assim que os contentores arrancam; os healthchecks continuam em segundo plano (ideal para forks descartáveis)"
       },
@@ -1089,9 +996,7 @@
       "log": {
         "description": "Imprime o histórico de commits alcançável a partir do commit atual de um fork de trabalho (ou de uma referência de commit), percorrendo a cadeia de pais registrada por 'rdc repo commit'. Lê o espelho fora do volume, então nenhum commit é desbloqueado.",
         "descriptionShort": "Percorre o histórico de commits de um fork ou commit",
-        "failed": "Falha no log",
-        "jsonOption": "Exibe o histórico de commits como JSON",
-        "nameOption": "Fork de trabalho ou commit a partir do qual iniciar o percurso do histórico"
+        "failed": "Falha no log"
       },
       "machineOption": "Nome da máquina de destino",
       "merge": {
@@ -1102,23 +1007,19 @@
         "failed": "Falha no merge",
         "forceOption": "Suspende primeiro um destino montado/em execução e, em seguida, faz o merge (nunca altera uma montagem ativa)",
         "fromOption": "commit ou fork de origem a partir do qual fazer o merge",
-        "nameOption": "fork de trabalho de destino no qual fazer o merge",
         "resolveOption": "Resolução de conflitos por arquivo num merge three-way: 'ours' mantém a versão do destino, 'theirs' adota a da origem. Omita para fast-forward de imagem inteira (take-theirs)."
       },
       "migrate": {
         "checkpointing": "A criar ponto de verificação CRIU...",
         "complete": "Migração concluída: {{name}} movido de {{from}} para {{to}}",
         "deltaDone": "Sincronização delta concluída",
-        "deltaFailed": "Sincronização delta falhou",
         "deltaSync": "A sincronizar delta...",
         "description": "Migra um repositório em direto de uma máquina para outra com o mínimo de tempo de inatividade. rsync em duas fases: transferência em massa enquanto está em execução, seguida de uma breve paragem para sincronização delta. Move o repositório inteiro (o encaminhamento é redirecionado para o novo destino) e, assim que a mudança for bem-sucedida, elimina as imagens de origem (use --keep-source para as manter). Suporta checkpoint CRIU para migração do estado de memória dos processos e aprovisionamento automático das máquinas de destino",
         "descriptionShort": "Migrar um repositório entre máquinas em directo",
-        "dnsSkipped": "Comutação DNS ignorada (sem baseDomain ou configuração Cloudflare)",
         "downtime": "Tempo de inactividade: {{duration}}",
         "optionBwlimit": "Limite de largura de banda para transferência rsync (por ex., 10M)",
         "optionCheckpoint": "Migração em directo CRIU: capturar e restaurar o estado de memória dos processos",
         "optionDeltaBase": "GUID de base imutável para o delta do corte (avançado; por omissão usa a base da Fase 1)",
-        "optionFrom": "Nome da máquina de origem",
         "optionProvision": "Aprovisionar automaticamente o destino via fornecedor de cloud (por ex., hetzner, linode)",
         "optionSkipDns": "Não comutar os registos DNS após a migração",
         "optionKeepSource": "Manter as imagens de origem após uma mudança bem-sucedida (por omissão são eliminadas; as cópias remanescentes não são endereçáveis por nenhum registo de configuração e o reconcile assinala-as como órfãs)",
@@ -1126,7 +1027,6 @@
         "optionTo": "Máquina ou cluster de destino",
         "phase1": "Fase 1: A transferir dados em volume (origem continua em execução)...",
         "phase1Done": "Transferência em volume concluída",
-        "phase1Failed": "Transferência em volume falhou",
         "phase1Stats": "{{transferred}} transferidos em {{duration}} — a origem manteve-se online",
         "phase2": "Fase 2: Corte (breve tempo de inactividade)...",
         "phase2Stats": "Transição (TEMPO DE INACTIVIDADE): {{transferred}} em {{duration}}",
@@ -1134,13 +1034,10 @@
         "provisioning": "A aprovisionar a máquina de destino {{machine}} via {{provider}}...",
         "sourceStopped": "Serviços de origem parados",
         "sourceUnmounted": "Origem desmontada",
-        "startFailed": "Falha ao iniciar no destino",
         "startingTarget": "A iniciar os serviços no destino...",
-        "stopFailed": "Falha ao parar os serviços de origem",
         "stoppingSource": "A parar os serviços de origem...",
         "switchingDns": "A comutar os registos DNS...",
         "targetStarted": "Serviços de destino iniciados",
-        "unmountFailed": "Falha ao desmontar a origem",
         "unmountingSource": "A desmontar a origem...",
         "noOpSameHome": "O repositório {{name}} já vive em {{machine}}; nada a migrar.",
         "placementUpdated": "Encaminhamento atualizado: {{name}} está agora em {{machine}}",
@@ -1162,7 +1059,6 @@
           "descriptionShort": "Mostrar a política de tamanho (padrão da máquina, substituição do repositório, efetiva)"
         },
         "invalidBool": "{{flag}} deve ser 'true' ou 'false', recebido: {{value}}",
-        "nameOption": "Repositório (padrão: política de toda a máquina)",
         "repoNotFound": "Repositório não encontrado: {{name}}",
         "set": {
           "autoGrowOption": "Ativar o crescimento automático de cota online (true/false)",
@@ -1201,10 +1097,8 @@
         "optionCheckpoint": "Criar ponto de verificação CRIU antes da cópia de segurança (captura o estado de memória do processo para migração em directo)",
         "optionDeltaBase": "GUID de base imutável presente byte-a-byte idêntico em ambas as máquinas; transferir apenas os blocos alterados (máquina de destino). Omita para base automática sem intervenção",
         "optionForce": "Forçar substituição de cópia de segurança existente",
-        "optionJson": "Mostrar estatísticas de transferência em JSON",
         "optionProvision": "Aprovisionar automaticamente a máquina de destino via fornecedor de cloud se não existir",
         "optionStrategy": "Estratégia de delta de blocos ao usar uma base de delta: auto, physical ou shared",
-        "optionTag": "Etiqueta de implementação para controlo de versões",
         "optionTo": "Máquina ou nome de armazenamento de destino (detectado automaticamente a partir da configuração)",
         "pushing": "A enviar cópia de segurança de \"{{repo}}\" para {{dest}}...",
         "statsDelta": "\"{{repo}}\" enviado para {{machine}} — {{transferred}} transferidos em {{duration}} (delta sobre a base {{base}}, imagem {{image}})",
@@ -1249,8 +1143,7 @@
         "get": {
           "description": "Mostrar o resumo SHA-256 de um segredo. O valor em texto simples nunca é devolvido por design (apenas de escrita). Use --current numa operação set/unset subsequente para verificar um valor que já conhece, ou rode via `set --rotate-secret`.",
           "descriptionShort": "Mostrar o resumo de um segredo (o valor nunca é devolvido)",
-          "notFound": "Segredo \"{{key}}\" não encontrado no repositório \"{{repository}}\"",
-          "repoNotFound": "Repositório \"{{repository}}\" não encontrado"
+          "notFound": "Segredo \"{{key}}\" não encontrado no repositório \"{{repository}}\""
         },
         "keyOption": "Chave do segredo em UPPER_SNAKE_CASE (máx. 64 caracteres). Será exposto como REDIACC_SECRET_<KEY> no modo env ou /run/secrets/<key> nos contentores no modo ficheiro.",
         "list": {
@@ -1259,7 +1152,6 @@
           "empty": "Nenhum segredo definido em \"{{repository}}\""
         },
         "modeOption": "Modo de entrega: 'env' (visível no ambiente do contentor, docker inspect) ou 'file' (ficheiro tmpfs, nunca em env). Por omissão: file.",
-        "nameOption": "Nome do repositório (por ex., mail, mail:staging). Sem etiqueta, assume por omissão :latest.",
         "rotateOption": "Confirmar rotação; ignorar a pré-condição --current (auditado como rotação). Use quando pretende rodar intencionalmente sem verificar o valor anterior.",
         "set": {
           "description": "Definir ou sobrescrever um segredo. Os forks não herdam; defina no fork explicitamente. Em contexto de agente, requer correspondência do resumo --current (estilo passwd).",
@@ -1282,16 +1174,13 @@
       "sync": {
         "description": "Sincronizar repositórios e ficheiros (push/pull em volume, transferência de ficheiros)",
         "download": {
-          "description": "Descarregar ficheiros de um repositório via rsync sobre SSH (transferência delta). Use --mirror para eliminar ficheiros locais extra, --dry-run para pré-visualizar, --exclude para ignorar padrões.",
-          "descriptionShort": "Descarregar ficheiros de um repositório via rsync"
+          "description": "Descarregar ficheiros de um repositório via rsync sobre SSH (transferência delta). Use --mirror para eliminar ficheiros locais extra, --dry-run para pré-visualizar, --exclude para ignorar padrões."
         },
         "status": {
-          "description": "Comparação em modo de simulação dos ficheiros locais e remotos (mostra o que seria transferido sem transferir de facto)",
-          "descriptionShort": "Comparar ficheiros locais e remotos (simulação)"
+          "description": "Comparação em modo de simulação dos ficheiros locais e remotos (mostra o que seria transferido sem transferir de facto)"
         },
         "upload": {
-          "description": "Carregar ficheiros para um repositório via rsync sobre SSH (transferência delta). Use --mirror para eliminar ficheiros remotos extra, --dry-run para pré-visualizar, --exclude para ignorar padrões.",
-          "descriptionShort": "Carregar ficheiros para um repositório via rsync"
+          "description": "Carregar ficheiros para um repositório via rsync sobre SSH (transferência delta). Use --mirror para eliminar ficheiros remotos extra, --dry-run para pré-visualizar, --exclude para ignorar padrões."
         }
       },
       "trim": {
@@ -1301,7 +1190,6 @@
         "dockerOption": "Liberar espaço do Docker (contêineres parados, imagens órfãs, cache de build); é executado mesmo com um snapshot de backup ativo",
         "dockerVolumesOption": "Remover também volumes Docker não utilizados",
         "failed": "Falha no trim",
-        "nameOption": "Repositório a aparar (padrão: todos os repositórios montados)",
         "noMountedRepos": "Nenhum repositório montado encontrado",
         "repoNotFound": "Repositório não encontrado: {{name}}",
         "reportOnlyOption": "Mostrar o estado de discard e a estimativa recuperável sem aparar",
@@ -1328,7 +1216,6 @@
         "urlOnlyOption": "Imprimir apenas o URL local quando o túnel estiver pronto (legível por máquina)"
       },
       "up": {
-        "checkpointOption": "Restaurar ponto de verificação CRIU no arranque (retomar processos a partir do estado de memória guardado)",
         "completed": "Serviços iniciados",
         "description": "Implementa ou atualiza um repositório (monta, executa o up do Rediaccfile que invoca o renet compose). A máquina é derivada da localização da ref. As rotas de proxy demoram ~3s a ficar ativas após a implementação. Ao concluir, apresenta o padrão de URL dos serviços expostos via HTTP (etiqueta rediacc.service_port). A primeira implementação e os forks são montados automaticamente. O restauro de checkpoint CRIU é detetado automaticamente; use --skip-checkpoint para forçar um arranque limpo. Use --all --machine <m> para implementar todos os repositórios de uma máquina.",
         "descriptionShort": "Implementar ou atualizar um repositório",
@@ -1349,10 +1236,8 @@
       "upAll": {
         "completed": "Todos os repositórios iniciados",
         "concurrencyOption": "Máximo de repositórios em simultâneo (por omissão: 3)",
-        "dryRunOption": "Mostrar o que seria feito sem executar",
         "failed": "Operação up-all falhou",
         "includeForksOption": "Montar e iniciar também os repositórios copiados (fork)",
-        "mountOnlyOption": "Apenas montar, sem iniciar os serviços",
         "parallelOption": "Iniciar os repositórios em simultâneo",
         "starting": "A iniciar todos os repositórios em \"{{machine}}\"..."
       },
@@ -1371,7 +1256,6 @@
           },
           "restore": {
             "description": "Restaurar uma credencial de repositório arquivado",
-            "optionName": "Restaurar com um nome diferente",
             "success": "\"{{name}}\" restaurado ({{guid}})"
           },
           "description": "Gestão de registos de repositórios arquivados."
@@ -1420,7 +1304,6 @@
             "startingAll": "A activar o arranque automático de todos os repositórios em \"{{machine}}\"..."
           },
           "list": {
-            "completed": "Lista de arranque automático obtida",
             "description": "Listar os repositórios com arranque automático activado",
             "empty": "Nenhum repositório com arranque automático ativado em \"{{machine}}\"",
             "failed": "Falha ao listar os repositórios com arranque automático",
@@ -1498,15 +1381,11 @@
         "description": "AVISO: Comando de baixo nível apenas para depuração e experimentação. Não para uso em produção. Use comandos de nível superior (repo up, repo down, etc.) em alternativa. Executa uma função bridge diretamente numa máquina.",
         "descriptionShort": "Executar uma função bridge diretamente numa máquina (apenas depuração)",
         "executingLocal": "A executar '{{function}}' em {{machine}}...",
-        "failedLocal": "Falhou: {{error}}",
-        "watching": "À espera de conclusão..."
+        "failedLocal": "Falhou: {{error}}"
       },
       "trace": {
         "description": "Rastrear uma tarefa (atalho para: queue trace)"
       }
-    },
-    "snapshot": {
-      "description": "Gerir snapshots BTRFS em máquinas remotas"
     },
     "serve": {
       "description": "Executa este processo como executor para que os clientes possam executar comandos através dele em vez de se conectarem eles próprios via SSH",
@@ -1521,7 +1400,6 @@
     "storage": {
       "browse": {
         "description": "Navegar em ficheiros num sistema de armazenamento",
-        "failed": "Falha ao listar ficheiros: {{error}}",
         "listing": "A listar ficheiros em \"{{name}}\"...",
         "noFiles": "Nenhum ficheiro encontrado",
         "pathOption": "Caminho de subdiretório a listar"
@@ -1530,7 +1408,6 @@
       "descriptionShort": "Gerir armazenamento",
       "list": {
         "description": "Listar os armazenamentos. Indique um nome para o detalhe completo.",
-        "fetching": "A obter fornecedores de armazenamento...",
         "optionReveal": "Mostrar a configuração de armazenamento em texto simples (apenas TTY interactivo; auditado)",
         "noStorages": "Nenhum armazenamento configurado. Registe um com: rdc storage add <name> --vault <json>"
       },
@@ -1540,7 +1417,6 @@
         "descriptionShort": "Eliminar cópias de segurança órfãs do armazenamento",
         "forceDeleteMountedOption": "Ignorar a verificação de segurança de montagem e eliminar cópias de segurança na cloud mesmo que o GUID de origem esteja montado ou com contentor em execução na máquina executora. Distinto de --force (que apenas ignora o período de carência para repositórios arquivados).",
         "found": "Encontradas {{count}} cópias de segurança no armazenamento",
-        "listFailed": "Falha ao listar cópias de segurança no armazenamento",
         "listing": "A listar cópias de segurança em \"{{storage}}\"...",
         "machineOption": "Máquina executora -- executa as chamadas rclone list/delete contra o armazenamento. Obrigatório porque não se espera que os clientes tenham o rclone instalado localmente; as credenciais de armazenamento continuam a vir da sua configuração local.",
         "noBackups": "Nenhuma cópia de segurança encontrada no armazenamento"
@@ -1681,7 +1557,6 @@
       "connect": {
         "description": "Abrir uma shell numa máquina, ou dentro de um repositório com o seu Docker configurado."
       },
-      "connecting": "A ligar a {{machine}}...",
       "connectingTo": "A ligar a {{title}}...",
       "description": "Abre um terminal SSH para uma máquina ou um repositório. O destino é um nome de máquina ou uma ref de repositório, e o contexto do repositório (DOCKER_HOST, diretório de trabalho, ambiente) é configurado automaticamente. Use `-c` para executar um único comando de forma não interativa. Para logs de contentor ou um comando pontual num contentor, use `repo logs` e `repo exec`. Para o VS Code, use `vscode`.",
       "descriptionShort": "Acesso SSH a máquinas e repositórios",
@@ -1691,7 +1566,6 @@
       "testingConnectivity": "A testar conectividade para {{host}}:{{port}}..."
     },
     "update": {
-      "applyFailed": "Falha ao aplicar atualização em espera: {{error}}",
       "autoApplied": "Atualizado para v{{version}} (era v{{from}}). As alterações entram em vigor na próxima execução.",
       "available": "Atualização disponível: v{{version}} (atual: v{{current}})",
       "channelDescription": "Definir canal de versão (stable ou edge)",
@@ -1726,7 +1600,6 @@
       "stagedFallback": "Atualização v{{version}} transferida e em espera. Será aplicada no próximo arranque.",
       "statusDescription": "Mostrar estado e diagnósticos da atualização automática",
       "success": "Atualizado de v{{from}} para v{{to}}",
-      "unknownError": "Erro desconhecido",
       "upToDate": "Já está na versão mais recente (v{{version}})"
     },
     "vscode": {
@@ -1840,17 +1713,6 @@
       }
     }
   },
-  "common": {
-    "completed": "Concluído",
-    "failed": "Falhado",
-    "inProgress": "Em curso",
-    "no": "Não",
-    "running": "Em execução",
-    "stopped": "Parado",
-    "success": "✓ Sucesso",
-    "unknown": "Desconhecido",
-    "yes": "Sim"
-  },
   "docs": {
     "admonitions": {
       "note": "Nota",
@@ -1940,8 +1802,6 @@
     }
   },
   "errors": {
-    "activationFailed": "Falha na ativação",
-    "affectedChildClones": ". Clones filhos afetados: {{clones}}. Elimine ou promova os clones filhos primeiro.",
     "agent": {
       "clusterOpBlocked": "O comando de cluster \"{{command}}\" está bloqueado no modo de agente. As operações de cluster criam ou desmantelam infraestrutura real, portanto um agente não as pode autorizar por si próprio. Utilizador: para permitir isto, defina REDIACC_ALLOW_CLUSTER_OPS=<nome-do-cluster> (ou * para todos os clusters) no terminal ANTES de iniciar a sessão do agente — uma substituição definida a partir de dentro do agente não é aceite.",
       "commandBlocked": "O comando \"{{command}}\" não está disponível no modo de agente.\n\nEste comando executa funções de baixo nível arbitrárias sem salvaguardas. Use comandos CLI tipados ou ferramentas MCP em alternativa.\n\nAlternativas:\n  - Ferramentas MCP: repo_up, repo_down, repo_fork, repo_logs, repo_exec, machine_status\n  - Comandos CLI: rdc repo up, rdc repo down, rdc term connect\n  - Execute \"rdc --help\" para ver todos os comandos disponíveis\n\nSe precisar de acesso direto, peça ao utilizador que execute o comando.",
@@ -1961,19 +1821,13 @@
       "mcpGrandGuard": "\"{{name}}\" é um repositório grand (produção). Os agentes não podem modificar repositórios grand diretamente.\n\nUse repo_fork para criar uma cópia de sandbox isolada e segura, depois opere no fork.\nSe precisar de acesso direto, peça ao utilizador que exporte REDIACC_ALLOW_GRAND_REPO antes de iniciar o agente.",
       "mcpGrandGuardOverride": "\"{{name}}\" é um repositório grand (produção). Substituições iniciadas por agentes não são aceites.\n\nNão tente definir REDIACC_ALLOW_GRAND_REPO.\n\nUse repo_fork para criar uma cópia de sandbox isolada e segura, depois opere no fork.",
       "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" é um repositório grand (produção). A substituição REDIACC_ALLOW_GRAND_REPO não pôde ser verificada em {{platform}} (o auxiliar de verificação de herança está indisponível ou falhou) e não é aceite.\n\nUse repo_fork para criar uma cópia de sandbox isolada e segura, depois opere no fork.",
-      "mcpMachineGuard": "O acesso direto à máquina não é permitido no modo agente.\n\nOs agentes têm de se ligar através de um contexto de repositório. Use repo_fork para criar um fork e depois ligue-se a ele.\nSe precisar de acesso direto, peça ao utilizador que exporte REDIACC_ALLOW_GRAND_REPO=* antes de iniciar o agente.",
-      "mcpMachineGuardOverride": "O acesso direto à máquina não é permitido. Substituições iniciadas por agentes não são aceites.\n\nNão tente definir REDIACC_ALLOW_GRAND_REPO.\n\nUse repo_fork para criar um fork e depois ligue-se a ele.",
-      "mcpMachineGuardOverrideNonLinux": "A substituição de acesso direto à máquina não pôde ser verificada em {{platform}} (o auxiliar de verificação de herança está indisponível ou falhou) e não é aceite.\n\nUse repo_fork para criar um fork e depois ligue-se a ele.",
       "revealRequiresTty": "--reveal requer um TTY interativo; recusando imprimir valor sensível para um pipe.",
       "rotateNotSensitive": "O apontador \"{{pointer}}\" não é um campo sensível; use 'config field set' em alternativa.",
       "rotateRequiresTty": "config field rotate requer confirmação em TTY interativo; recusando em contexto não interativo (defina REDIACC_ALLOW_CONFIG_EDIT para substituir).",
       "showReveal": "--reveal está bloqueado em ambientes de agente. Use `rdc config show` (redatado) ou `rdc config field get --pointer <pointer> --digest` para uma impressão digital segura.",
       "showRevealRequiresTty": "--reveal requer um TTY interativo; recusando enviar texto simples para um destino que não é TTY."
     },
-    "authFailed": "Falha na autenticação",
     "authRequired": "Autenticação necessária. Execute: rdc subscription login",
-    "cannotDeleteGrandRepo": "Não é possível eliminar o repositório grand: {{reason}}",
-    "cannotPromote": "Não é possível promover: {{reason}}",
     "container": {
       "execFailed": "Falha em container_exec",
       "logsFailed": "Falha em container_logs"
@@ -1984,13 +1838,11 @@
       "dockerOnlyVerb": "\"repo {{verb}}\" destina-se apenas a repositórios Docker e não pode ser executado contra um --cluster; não tem equivalente Kubernetes na v1",
       "featureUnsupportedV1": "{{feature}} não é suportado com --cluster na v1 (vista do nó de controlo); {{hint}}",
       "forkWritesInvalid": "--writes deve ser local ou ceph",
-      "pendingContractRegen": "\"repo {{verb}}\" num cluster despacha {{fn}}, que está pendente da regeneração do contrato renet kube (fase 5). O cluster + namespace foram resolvidos; execute novamente assim que o contrato for concluído.",
       "targetExclusive": "Especifique apenas um de -m/--machine ou --cluster, não ambos",
       "targetRequired": "É necessária uma máquina de destino (-m) ou um cluster (--cluster)",
       "declareNeedsProvider": "--declare-only regista um cluster sem o provisionar, pelo que precisa de --provider e --pool.",
       "poolRequired": "Um cluster precisa de pelo menos uma pool de nós. Adicione --pool <spec>."
     },
-    "clusterNotFound": "Cluster Ceph \"{{name}}\" não encontrado",
     "config": {
       "invalidEmail": "Endereço de e-mail inválido: \"{{value}}\".",
       "machineNotFound": "Máquina \"{{name}}\" não encontrada na configuração. Disponíveis: {{available}}.",
@@ -1999,27 +1851,14 @@
       "storageNotFound": "Armazenamento \"{{name}}\" não encontrado na configuração. Disponíveis: {{available}}.",
       "retiredKey": "A predefinição \"{{key}}\" já não existe. Chaves válidas: {{keys}}"
     },
-    "contextNotFound": "Configuração \"{{name}}\" não encontrada",
     "editor": {
       "headlessRefused": "A invocação de editor sem cabeça bloquearia indefinidamente: {{command}}. Passe --editor explicitamente com flags interativas.",
       "nonzeroExit": "O editor {{command}} terminou com o código {{code}}",
       "notFound": "Nenhum editor configurado. Defina $GIT_EDITOR, git config core.editor, $VISUAL ou $EDITOR, ou passe --editor.",
       "spawnFailed": "Falha ao abrir o editor {{command}}: {{reason}}"
     },
-    "failedCreateQueueItem": "Falha ao criar item na fila",
-    "invalidAction": "Ação inválida \"{{action}}\". Use \"{{valid}}\".",
-    "invalidCredentials": "Credenciais inválidas",
-    "invalidEmail": "Introduza um endereço de e-mail válido",
-    "invalidExpiration": "A expiração do token tem de estar entre 1 e 720 horas",
     "invalidFunctionParams": "Parâmetros inválidos para a função \"{{function}}\": {{errors}}",
-    "invalidHost": "Endereço IP ou nome de anfitrião inválido: \"{{host}}\". Tem de ser um IPv4, IPv6 ou nome de anfitrião válido.",
-    "invalidJsonFile": "O ficheiro fornecido não contém JSON válido.",
-    "invalidJsonVault": "Dados de cofre JSON inválidos.",
     "invalidKey": "Chave inválida. Chaves válidas: {{keys}}",
-    "invalidMasterPassword": "Palavra-passe mestra inválida para a encriptação do cofre",
-    "invalidPort": "Número de porta inválido: \"{{port}}\". Tem de estar entre 1 e 65535.",
-    "invalidPriorityMax": "Valor de priority-max inválido. Tem de estar entre 1 e 5.",
-    "invalidPriorityMin": "Valor de priority-min inválido. Tem de estar entre 1 e 5.",
     "license": {
       "preflightTokenNotReady": "O token de subscrição não está pronto. Execute: rdc subscription login. A implementação em {{machine}} foi ignorada.",
       "recoveryFailedNoKnownRepos": "Foram encontrados repositórios em {{machine}}, mas nenhum está registado na sua configuração local. Liste os seus repositórios rastreados com `rdc repo list`, depois tente novamente.",
@@ -2030,18 +1869,9 @@
     "machineNotFound": "Máquina \"{{name}}\" não encontrada",
     "machineRequired": "Nome da máquina necessário. Use --machine <name>",
     "machineRequiredLocal": "Nome da máquina necessário. Use --machine <name>",
-    "networkError": "Erro de rede: {{message}}",
     "noActiveConfig": "Nenhuma configuração ativa. Crie uma com: rdc config init <name>",
-    "notAuthenticated": "Não autenticado. Execute: rdc subscription login",
-    "passwordsMismatch": "As palavras-passe não coincidem",
     "permissionDenied": "Permissão negada",
-    "poolNotFound": "Pool Ceph \"{{name}}\" não encontrada",
     "precondition": {
-      "currentSecretsRequired": "{{pointer}}: campo sensível alterado sem --current; forneça --current-secrets <file> com o mapeamento pointer→valor-antigo",
-      "digestMismatch": "divergência de digest em --current (esperado {{expected}}..., obtido {{got}}...)",
-      "kindMismatch": "o tipo de valor mudou (armazenado: {{stored}}, indicado: {{claimed}})",
-      "mismatch": "Pré-condição falhou para {{count}} caminho(s):\n{{details}}",
-      "missing": "o caminho sensível requer --current (ou --rotate-secret)",
       "next": {
         "options": {
           "confirm": {
@@ -2049,27 +1879,13 @@
             "run": "rdc repo secret get {{repository}} --key {{key}}"
           },
           "rotate": {
-            "description": "Ignore a pré-condição (rotação, auditada)",
-            "run": "<comando original> --rotate-secret"
+            "description": "Ignore a pré-condição (rotação, auditada)"
           }
         },
         "summary": "Forneça o valor atual ou confirme a rotação."
-      },
-      "rotationRequiresTty": "{{pointer}}: a confirmação de rotação requer um TTY interativo (ou use --current-secrets)",
-      "stubStillStub": "{{pointer}}: o valor editado ainda parece um stub de redação mas não corresponde ao digest atual"
-    },
-    "protocol": {
-      "commandExitCode": "O comando terminou com o código {{code}}",
-      "invalidAction": "Ação inválida '{{action}}'. Tem de ser uma de: {{validActions}}",
-      "invalidUrl": "URL de protocolo inválido: {{error}}",
-      "machineRequired": "O nome da máquina é obrigatório. Use --machine <name>",
-      "notSupported": "O registo de protocolo não é suportado em {{platform}}",
-      "parseFailed": "Falha ao analisar o URL: {{error}}",
-      "teamRequired": "O nome da equipa é obrigatório. Use --team <name>",
-      "tokenRequired": "O token é obrigatório. Use --token <token>"
+      }
     },
     "regionRequired": "Nome da região necessário. Use --region ou defina o padrão com: rdc config set region <name>",
-    "registrationFailed": "Falha no registo",
     "remoteNotFound": "\"{{name}}\" não é uma máquina, armazenamento ou cluster reconhecido. Máquinas: {{machines}}. Armazenamentos: {{storages}}. Clusters: {{clusters}}",
     "repo": {
       "secret": {
@@ -2084,14 +1900,11 @@
     "repoNotDeployed": "O repositório \"{{repository}}\" não está implementado em {{machine}}.\n\nImplemente-o primeiro:\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "O repositório \"{{name}}\" já está montado em \"{{machine}}\". Migrar sobre um repositório ativo corrompê-lo-ia. Execute primeiro: rdc repo down {{name}} --unmount",
     "repositoryNotFound": "Repositório \"{{name}}\" não encontrado",
-    "repositoryRequired": "É necessária uma ref de repositório, por exemplo \"shop\" ou \"shop:test\".",
-    "resourceNotFound": "{{resource}} não encontrado",
     "ssh": {
       "noHostKey": "A máquina '{{machine}}' não tem uma chave de anfitrião configurada no cofre",
       "noIpAddress": "A máquina '{{machine}}' não tem um endereço IP configurado",
       "noPrivateKey": "A equipa '{{team}}' não tem uma chave privada SSH configurada"
     },
-    "sshKeyNotFound": "Chave SSH não encontrada: {{path}}",
     "subscription": {
       "activationFailed": "Falha na emissão da licença. Certifique-se de que a subscrição está ativa e existe um slot de máquina disponível.",
       "notLoggedIn": "Sessão não iniciada. Utilizadores devem executar `rdc subscription login`. Automação deve executar `rdc subscription login --token <token>` ou definir `REDIACC_SUBSCRIPTION_TOKEN`.",
@@ -2102,9 +1915,6 @@
       "absolutePathBlocked": "O caminho --remote tem de ser relativo, não absoluto. Use um caminho relativo à raiz do repositório.",
       "localPathNotFound": "O caminho local não existe: {{path}}",
       "mirrorWithFile": "Não é possível usar --mirror quando uma origem é um ficheiro: isso eliminaria ficheiros adjacentes no diretório de destino.",
-      "noHostKey": "A máquina '{{machine}}' não tem uma chave de anfitrião configurada no cofre",
-      "noIpAddress": "A máquina '{{machine}}' não tem um endereço IP configurado",
-      "noPrivateKey": "A equipa '{{team}}' não tem uma chave privada SSH configurada",
       "pathTraversalBlocked": "O caminho --remote não pode conter traversal \"..\" de diretório. Use um caminho dentro do repositório.",
       "remoteAndRemoteFile": "Não é possível usar --remote e --remote-file em conjunto. Escolha um.",
       "remoteFileLocalNotDir": "Quando --remote-file está definido, --local tem de ser um diretório existente: {{path}}",
@@ -2127,19 +1937,12 @@
       "sshCode255": "Falha na ligação SSH - possíveis causas:\n    - Falha na autenticação (verifique as permissões da chave SSH)\n    - Falha na verificação da chave de anfitrião\n    - Ligação de rede interrompida\n    - Serviço SSH remoto não está em execução",
       "sshExitCode": "SSH terminou com o código {{code}}"
     },
-    "tfaVerificationFailed": "Falha na verificação do segundo fator",
-    "tokenExpired": "Token expirado. Inicie sessão novamente.",
-    "unexpectedError": "Erro inesperado: {{message}}",
     "unknownCommand": "Comando desconhecido \"{{command}}\". Comandos disponíveis: {{available}}.",
     "unknownSubcommand": "Subcomando desconhecido \"{{command}}\". Subcomandos de {{parent}} disponíveis: {{available}}.",
-    "validationError": "Erro de validação: {{message}}",
     "vscode": {
       "browserNeedsRepo": "vscode --browser serve uma sandbox de repositório, pelo que o alvo tem de ser uma ref de repositório: rdc vscode connect <repo-ref> --browser",
       "cleanupRequired": "Especifique --all para remover todas as ligações ou --connection <name> para uma específica.",
       "connectivityFailed": "Não é possível alcançar {{host}}:{{port}}. {{error}}\n\nResolução de problemas:\n  - Verifique se a máquina está ligada e conectada à rede\n  - Confirme que o endereço IP está correto no cofre da máquina\n  - Certifique-se de que a porta {{port}} não está bloqueada por uma firewall\n  - Tente fazer ping à máquina: ping {{host}}",
-      "noHostKey": "A máquina '{{machine}}' não tem uma chave de anfitrião configurada no cofre",
-      "noIpAddress": "A máquina '{{machine}}' não tem um endereço IP configurado",
-      "noPrivateKey": "A equipa '{{team}}' não tem uma chave privada SSH configurada",
       "notFound": "VS Code não encontrado.\n\nInstale a partir de: https://code.visualstudio.com/\nOu defina a variável de ambiente REDIACC_VSCODE_PATH.",
       "serverInstallFailed": "Falha ao instalar o {{provider}}: {{error}}",
       "serverStartFailed": "Falha ao iniciar o {{provider}}: {{error}}",
@@ -2209,57 +2012,36 @@
     }
   },
   "options": {
-    "activationCode": "Código de ativação por e-mail",
     "apiToken": "Token de API (rdt_...)",
-    "apiUrl": "URL da API",
-    "bridge": "Nome da bridge",
     "cleanupAll": "Remover todas as configurações SSH do rediacc",
-    "cluster": "Nome do cluster Ceph",
     "command": "Executar um comando em vez do shell interativo",
     "config": "Usar configuração específica para este comando",
     "configKey": "Chave de configuração",
     "configValue": "Valor de configuração",
-    "confirmPasswordNonInteractive": "Confirmar palavra-passe (modo não interativo)",
     "confirmSync": "Pré-visualizar alterações e pedir confirmação antes de sincronizar",
     "connectionName": "Remover ligação específica",
-    "currentName": "Nome atual do recurso",
-    "datastore": "Caminho do datastore na máquina",
     "debug": "Ativar saída de depuração",
     "dryRun": "Mostrar o que seria feito sem efetuar alterações",
-    "email": "Endereço de e-mail",
-    "endpoint": "URL do endpoint da API",
     "excludePatterns": "Padrões a excluir da sincronização",
-    "expires": "Expiração em horas (1-720)",
     "external": "Forçar abertura numa janela de terminal externa",
     "extraMachine": "Máquina adicional para operações multi-máquina (name:ip:user)",
     "fields": "Lista de campos a incluir na saída, separados por vírgula",
     "file": "Caminho para o ficheiro",
-    "filterStatus": "Filtrar por estado",
     "folder": "Caminho da pasta remota a abrir",
-    "follow": "Seguir a saída dos logs",
     "force": "Ignorar pedidos de confirmação",
     "function": "Nome da função a executar",
     "graceDays": "Período de graça em dias para repositórios recentemente arquivados (predefinição: 7)",
-    "image": "Nome da imagem RBD",
-    "importMode": "Modo de importação (merge ou replace)",
     "insiders": "Usar definições do VS Code Insiders",
     "lang": "Substituição de idioma ({{languages}})",
     "licenses": "Imprimir o texto completo THIRD_PARTY_LICENSES incluído nas compilações de lançamento",
-    "limit": "Número máximo de resultados",
     "localPath": "Caminho do diretório local (predefinição: diretório atual)",
     "localPaths": "Um ou mais caminhos de ficheiros ou diretórios locais (predefinição: diretório atual)",
-    "logLines": "Número de linhas de log a mostrar (predefinição: 50)",
     "machine": "Nome da máquina",
-    "machineForVault": "Nome da máquina (para atualizar o vault após o teste)",
     "machineIp": "Endereço IP ou hostname da máquina",
-    "machineNames": "Nomes das máquinas (separados por vírgula)",
-    "machineShorthand": "Nome da máquina (abreviatura de --machine)",
-    "masterPassword": "Palavra-passe mestre para encriptação do vault",
     "mirrorDownload": "Modo espelho - eliminar ficheiros locais não presentes no remoto",
     "mirrorUpload": "Modo espelho - eliminar ficheiros remotos não presentes localmente",
     "name": "Nome do recurso",
     "newName": "Novo nome do recurso",
-    "newPasswordNonInteractive": "Nova palavra-passe (modo não interativo)",
     "newWindow": "Abrir numa nova janela do VS Code",
     "opsBackend": "Backend de virtualização (kvm|qemu, detetado automaticamente)",
     "opsBasic": "Cluster mínimo (bridge + 1 worker)",
@@ -2269,25 +2051,9 @@
     "opsParallel": "Criar VMs em paralelo",
     "opsSkipOrchestration": "Ignorar orquestração do cluster",
     "opsSSHUser": "Nome de utilizador SSH para ligação à VM",
-    "organization": "Nome da organização",
     "output": "Formato de saída (table|json|yaml|csv)",
     "outputFormat": "Formato de saída (json)",
-    "outputPath": "Caminho para guardar o ficheiro de saída",
     "param": "Parâmetros da função",
-    "parentRepository": "Repositório pai (para forks)",
-    "parentRepositoryTag": "Tag do repositório pai",
-    "password": "Palavra-passe (para login não interativo)",
-    "pollInterval": "Intervalo de polling em milissegundos",
-    "pool": "Nome do pool Ceph",
-    "priority": "Prioridade (1=mais alta)",
-    "priorityMax": "Prioridade máxima (1-5)",
-    "priorityMin": "Prioridade mínima (1-5)",
-    "protocolAction": "Ação ({{actions}})",
-    "protocolForce": "Forçar novo registo mesmo que já esteja registado",
-    "protocolParams": "Parâmetros adicionais",
-    "protocolSystem": "Registar em todo o sistema (requer privilégios de administrador)",
-    "protocolSystemUnregister": "Cancelar registo em todo o sistema (requer privilégios de administrador)",
-    "protocolToken": "Token de autenticação",
     "queryBlockDevices": "Incluir apenas dispositivos de bloco",
     "queryContainers": "Incluir apenas contentores",
     "queryLicenses": "Incluir estados de licença dos repositórios",
@@ -2299,49 +2065,27 @@
     "querySyncCerts": "Também obter a cache de certificados ACME da máquina após a consulta",
     "querySystem": "Incluir apenas informações do sistema",
     "quiet": "Suprimir saída informativa",
-    "rawVault": "JSON bruto do vault (para scripts/CI)",
-    "region": "Nome da região",
     "remoteFile": "Caminho do ficheiro remoto dentro do repositório (alternativa a --remote para transferências de ficheiro único)",
     "remoteFileUpload": "Caminho único do ficheiro remoto (relativo à raiz do repositório) para envio. Mutuamente exclusivo com --remote.",
     "remotePath": "Caminho do subdiretório remoto dentro do repositório",
     "renetPath": "Caminho para o binário renet (predefinição: renet no PATH)",
-    "repository": "Nome do repositório (liga ao ambiente do repositório)",
-    "repositoryShorthand": "Ref de repositório (repo[:tag]); a máquina é derivada a partir dela",
-    "repositoryTag": "Tag do repositório",
     "resetHome": "Repor a sobreposição home por repositório para um início limpo",
     "storageRef": "Ref de armazenamento: o nome de um destino de armazenamento registado (por exemplo s3-main)",
-    "saveAs": "Guardar credenciais numa configuração nomeada",
-    "saveKnownHosts": "Guardar known_hosts no vault da máquina após teste bem-sucedido",
     "searchInField": "Pesquisar em {{field}}",
-    "searchQueue": "Pesquisar por ID de tarefa, equipa, máquina, bridge",
     "searchRepos": "Filtrar repositórios por nome",
     "serverUrl": "URL do servidor de conta",
-    "sessionName": "Nome da sessão",
     "skipEnvSetup": "Ignorar configuração do ambiente remoto",
     "skipRouterRestart": "Ignorar o reinício do servidor de rotas após atualização do binário",
-    "snapshot": "Nome do snapshot RBD",
     "sortByField": "Ordenar por campo",
     "sortDesc": "Ordenar por ordem decrescente",
     "sortDescending": "Ordenar por ordem decrescente",
-    "sortField": "Ordenar por campo",
     "sshKey": "Caminho para a chave privada SSH (ex.: ~/.ssh/id_rsa)",
-    "sshPassword": "Palavra-passe SSH para autenticação inicial",
     "sshPort": "Porta SSH",
-    "sshPrivateKey": "Caminho para a chave privada SSH",
-    "sshPublicKey": "Caminho para a chave pública SSH",
     "sshUser": "Nome de utilizador SSH",
-    "subscriptionPlan": "Plano de subscrição (COMMUNITY, PROFESSIONAL, BUSINESS, ENTERPRISE)",
-    "switch": "Mudar para esta configuração após a criação",
-    "target": "Nome do recurso alvo",
     "team": "Nome da equipa",
-    "tfaCode": "Código TFA atual para verificação",
-    "tokenName": "Nome do token",
     "urlOnly": "Imprimir o URI do VS Code em vez de o lançar",
-    "userPassword": "Palavra-passe para o novo utilizador",
     "vaultContent": "Conteúdo do vault como string JSON",
     "vaultJson": "Conteúdo do vault como string JSON",
-    "vaultJsonMachine": "Dados do vault da máquina como string JSON",
-    "vaultVersion": "Versão atual do vault para bloqueio otimista",
     "verifyChecksum": "Verificar ficheiros com checksums após a sincronização",
     "vmId": "ID da máquina virtual",
     "vscodeBrowser": "Servir o VS Code para browser a partir da sandbox do repositório (sem VS Code local)",
@@ -2349,7 +2093,6 @@
     "vscodeServerArchive": "Caminho do arquivo tar do servidor pré-colocado na máquina (instalações sem ligação à internet)",
     "vscodeServerProvider": "Implementação do servidor VS Code para browser (openvscode, code-server)",
     "watch": "Monitorizar alterações",
-    "watchUpdates": "Monitorizar atualizações",
     "yes": "Ignorar pedido de confirmação",
     "artifactRef": "Referência do artefacto de cópia de segurança (repo[:tag][@local])",
     "background": "Executar como job desanexado na máquina: imprime o seu id e termina",
@@ -2365,22 +2108,8 @@
     "strategyName": "Nome da estratégia de cópia de segurança"
   },
   "prompts": {
-    "apiUrl": "URL da API:",
     "cancelled": "Cancelado",
-    "confirm": "Tem a certeza?",
-    "confirmDelete": "Tem a certeza que pretende eliminar?",
-    "confirmNewPassword": "Confirmar nova palavra-passe:",
-    "confirmPassword": "Confirmar palavra-passe:",
-    "email": "E-mail:",
-    "enterValue": "Introduza {{field}}:",
     "masterPassword": "Introduza a sua palavra-passe mestra:",
-    "masterPasswordForVault": "Introduza a palavra-passe mestra para encriptação do cofre:",
-    "newPassword": "Nova palavra-passe:",
-    "password": "Palavra-passe:",
-    "passwordForUser": "Palavra-passe para o novo utilizador:",
-    "selectOption": "Selecione uma opção:",
-    "setPassword": "Definir palavra-passe para o utilizador:",
-    "sshPassword": "Palavra-passe SSH (deixe em branco se usar autenticação por chave): ",
     "syncConfirm": "\nProsseguir com a sincronização? [s/N/d(etalhes)] ",
     "syncConfirmHelp": "Introduza s (sim), n (não) ou d (detalhes)"
   },
@@ -2391,29 +2120,10 @@
       "unreadableConfigs": "Não é possível ler {{count}} configuração(ões): {{names}} (encriptada(s) ou corrompida(s))"
     }
   },
-  "spinners": {
-    "connecting": "A ligar...",
-    "creating": "A criar {{resource}}...",
-    "deleting": "A eliminar {{resource}}...",
-    "fetching": "A obter {{resource}}...",
-    "loading": "A carregar...",
-    "processing": "A processar...",
-    "saving": "A guardar...",
-    "updating": "A atualizar {{resource}}..."
-  },
   "status": {
-    "cancelled": "Cancelado",
-    "completed": "Concluído",
-    "failed": "Falhado",
-    "pending": "Pendente",
-    "processing": "A processar",
-    "success": "Sucesso"
-  },
-  "table": {
-    "noData": "Sem dados para apresentar"
+    "cancelled": "Cancelado"
   },
   "timing": {
-    "completed": "Concluído em {{operation}} (total: {{total}})",
     "step": {
       "activating": "A ativar licença...",
       "configLoaded": "Configuração carregada ({{duration}})",

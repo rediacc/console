@@ -12,23 +12,17 @@
         "optionResetFailed": "성공적인 배포 후 수정된 서비스의 실패 상태를 지웁니다 (기본적으로 꺼져 있으며, 실패 신호를 보존합니다)",
         "success": "{{machine}}에 백업 일정이 배포되었습니다"
       },
-      "sync": {
-        "description": "머신 간 저장소 백업의 양방향 동기화"
-      },
       "cancel": {
         "cancelled": "{{name}}이 취소되었습니다",
         "cancelling": "{{name}} 중지 중...",
         "description": "원격 머신에서 실행 중인 백업을 취소합니다",
-        "notRunning": "전략 \"{{name}}\"에 대해 실행 중인 백업이 없습니다",
-        "optionStrategy": "전략 이름 (생략 시 모두 취소)"
+        "notRunning": "전략 \"{{name}}\"에 대해 실행 중인 백업이 없습니다"
       },
       "run": {
-        "description": "원격 머신에서 즉시 백업을 실행합니다",
-        "optionStrategy": "전략 이름 (생략 시 모두 실행)"
+        "description": "원격 머신에서 즉시 백업을 실행합니다"
       },
       "status": {
-        "description": "원격 머신의 백업 상태 및 타이머 상태를 표시합니다",
-        "optionStrategy": "특정 전략의 세부 정보를 표시합니다"
+        "description": "원격 머신의 백업 상태 및 타이머 상태를 표시합니다"
       },
       "strategy": {
         "description": "이름 지정 백업 전략을 관리합니다 (hot/cold 모드, 대상, 스케줄링)",
@@ -38,7 +32,6 @@
         "remove": {
           "description": "백업 전략 또는 대상을 제거합니다",
           "optionDestination": "이 대상만 제거합니다 (다른 대상은 유지)",
-          "optionName": "전략 이름 (필수)",
           "removed": "백업 전략 제거 완료"
         },
         "set": {
@@ -52,7 +45,6 @@
           "optionFolder": "이 대상에 대한 스토리지 버킷 아래의 하위 폴더 (예: hot, cold)",
           "optionInclude": "이 저장소만 백업합니다 (쉼표로 구분된 이름)",
           "optionMode": "백업 모드: \"hot\" (무중단) 또는 \"cold\" (중지, 스냅샷, 재시작)",
-          "optionName": "전략 이름 (필수)",
           "optionStorage": "스토리지 설정 이름 (rclone 자격증명)",
           "saved": "백업 전략 설정 저장 완료",
           "storageRequired": "새 대상을 생성할 때 --storage가 필요합니다. 사용법: --storage <storage-name>"
@@ -62,8 +54,7 @@
           "destinationsHeader": "  대상:",
           "noDestinations": "  대상: (없음)",
           "notConfigured": "설정된 백업 전략이 없습니다",
-          "notFound": "백업 전략 \"{{name}}\"을 찾을 수 없습니다",
-          "optionName": "전략 이름 (생략 시 모두 표시)"
+          "notFound": "백업 전략 \"{{name}}\"을 찾을 수 없습니다"
         }
       },
       "descriptionShort": "백업 관리",
@@ -357,7 +348,6 @@
         },
         "set": {
           "description": "현재 설정의 SSH 키를 설정합니다",
-          "embedWarning": "키 내용이 설정 파일에 저장됩니다",
           "invalidKey": "파일에 유효한 SSH 개인 키가 포함되어 있지 않습니다",
           "keyNotFound": "SSH 키 파일을 찾을 수 없습니다: {{path}}",
           "optionEmbed": "경로 저장 대신 키 내용을 설정에 직접 포함합니다",
@@ -442,12 +432,9 @@
       "description": "저장소를 담는 이름 지정 스토리지 풀입니다. 데이터스토어는 이동 가능하며(머신에 어태치하고 다른 머신으로 옮길 수 있음) 단일 마운터입니다(항상 정확히 한 대의 머신만 보유). 각 머신의 암묵적 기본 데이터스토어는 여기서 관리하지 않습니다",
       "descriptionShort": "이름 지정 이동 가능 스토리지 풀",
       "fork": {
-        "completed": "데이터스토어가 성공적으로 포크되었습니다 (스냅샷: {{snapshot}})",
         "cowSizeOption": "--writes local용 오버레이 크기",
         "description": "데이터스토어를 copy-on-write 방식으로 포크합니다. 포크는 즉시 완료되며 비용은 풀 크기에 비례해 늘지 않습니다. rbd 백엔드가 필요합니다: local 데이터스토어에는 블록 수준 클론이 없으므로, 내부의 저장소는 대신 reflink로 하나씩 포크합니다 (rdc repo fork)",
         "descriptionShort": "데이터스토어를 copy-on-write로 포크합니다",
-        "failed": "데이터스토어 포크에 실패했습니다",
-        "starting": "\"{{source}}\"에서 데이터스토어 포크 중 (\"{{target}}\"을 위한 클론 이름)...",
         "attachToOption": "생성 즉시 포크를 이 머신에 어태치합니다 (--writes 필요)",
         "forked": "데이터스토어 \"{{ref}}\"가 \"{{name}}\"에서 포크되었습니다 (분리 상태)",
         "tagOption": "포크의 태그 (결과는 name:tag 형태)",
@@ -528,9 +515,7 @@
       "allPassed": "모든 검사를 통과했습니다",
       "checks": {
         "activeConfig": "활성 설정",
-        "authStatus": "상태",
         "cliVersion": "CLI 버전",
-        "contextMode": "어댑터",
         "dockerAvailable": "Docker",
         "goInstalled": "Go",
         "machines": "머신",
@@ -540,7 +525,6 @@
         "renetCriu": "내장 CRIU",
         "renetRsync": "내장 rsync",
         "renetVersion": "버전",
-        "seaMode": "SEA 모드",
         "sshKey": "SSH 키",
         "subscriptionMachineSlots": "머신 슬롯",
         "subscriptionRepoLicenses": "저장소 라이선스",
@@ -549,18 +533,13 @@
       },
       "description": "CLI 환경에 대한 진단 검사를 실행합니다: Node.js 버전, renet 바이너리 가용성, 설정 파일 유효성, SSH 키 상태, 네트워크 연결. 통과/실패 지표와 함께 구조화된 상태 보고서를 출력합니다.",
       "descriptionShort": "CLI 환경 및 renet 통합을 진단합니다",
-      "devMode": "아니요 (개발 모드)",
       "hasErrors": "오류 {{count}}개",
       "hasWarnings": "경고 {{count}}개",
-      "notAuthenticated": "인증되지 않음",
       "notConfigured": "설정되지 않음",
       "notInstalled": "설치되지 않음",
       "notLoggedIn": "로그인되지 않음",
-      "opsNotSupported": "{{platform}}에서는 지원되지 않음",
       "opsSkipped": "renet을 사용할 수 없음 (건너뜀)",
-      "seaActive": "예 (Single Executable Application)",
       "sections": {
-        "authentication": "인증",
         "configuration": "설정",
         "environment": "환경",
         "renet": "Renet",
@@ -568,11 +547,6 @@
         "virtualization": "가상화"
       },
       "serverMismatch": "서버 불일치",
-      "status": {
-        "fail": "실패",
-        "ok": "정상",
-        "warn": "경고"
-      },
       "subscriptionUnreachable": "구독 서버에 연결할 수 없음",
       "title": "Rediacc CLI Doctor"
     },
@@ -621,19 +595,16 @@
       },
       "list": {
         "description": "머신 목록을 나열합니다",
-        "fetching": "머신 가져오는 중...",
         "noMachines": "설정된 머신이 없습니다. 다음으로 추가하십시오: rdc machine add <name> --ip <ip> --user <user>"
       },
       "provision": {
         "completed": "머신 {{name}}이 프로비저닝되어 준비되었습니다 ({{ip}})",
         "configuringInfra": "{{name}}에 대한 인프라 (프록시 + DNS) 설정 중...",
         "description": "OpenTofu를 사용하여 클라우드 제공자에서 새 머신을 프로비저닝합니다",
-        "failed": "머신 프로비저닝 실패: {{error}}",
         "infraInherited": "형제 머신 \"{{source}}\"에서 기본 도메인 자동 감지",
         "noInfraHint": "기본 도메인이 설정되지 않았습니다. 'rdc machine infra set <machine> --base-domain <domain>'을 실행한 후 'rdc machine infra push <machine>'으로 DNS 및 프록시를 활성화하세요.",
         "optionBaseDomain": "인프라를 위한 기본 도메인 (예: example.com). --infra를 내포합니다",
         "optionImage": "기본 OS 이미지 재정의",
-        "optionInfra": "인프라 설정도 구성 (infra set + infra push)",
         "optionNoInfra": "인프라 설정 건너뜀 (프록시 + DNS)",
         "optionProvider": "클라우드 제공자 이름 (machine provider add에서 설정)",
         "optionRegion": "기본 지역 재정의",
@@ -643,15 +614,12 @@
         "provisioning": "{{provider}} ({{region}})에서 {{name}} 프로비저닝 중...",
         "settingUp": "머신 설정 실행 중...",
         "sshReady": "SSH 연결이 설정되었습니다",
-        "tofuNotInstalled": "OpenTofu (tofu)가 설치되어 있지 않습니다. 다음에서 설치하세요: https://opentofu.org/docs/intro/install/",
         "waitingSSH": "SSH 연결 대기 중..."
       },
       "prune": {
-        "checkingActivity": "스냅샷 활동 확인 중...",
         "completed": "정리가 완료되었습니다",
         "datastoreCompleted": "데이터스토어 정리가 완료되었습니다",
         "datastoreFailed": "데이터스토어 정리에 실패했습니다",
-        "datastoreOnlyOption": "고아 데이터스토어 리소스만 정리합니다",
         "datastorePrunedSummary": "고아 데이터스토어 리소스 {{count}}개를 정리했습니다",
         "description": "머신에서 고아 데이터스토어 리소스와 오래된 스냅샷을 제거합니다. 기본 실행은 renet 내부 데이터스토어 아티팩트(BTRFS 서브볼륨, 잠금 파일, 임시 파일)를 정리합니다. 아래의 선택적 플래그는 점진적으로 더 좁은 저장소 정리를 활성화합니다: --orphaned-repos는 로컬 CLI 설정만을 신호로 사용하고, --prune-unknown은 추가로 renet .interim/state 미러를 참조하여 다른 도구로 생성된 합법적인 포크가 로컬 설정에 없더라도 살아남을 수 있습니다. 두 삭제 경로 모두 마운트 안전 사전 확인을 실행합니다; --force-delete-mounted로 재정의할 수 있습니다.",
         "descriptionShort": "고아 리소스 및 오래된 스냅샷 정리",
@@ -659,21 +627,13 @@
         "dryRunOption": "변경 없이 제거될 항목을 표시합니다",
         "forceDeleteMountedOption": "마운트 안전 사전 확인을 재정의하고 현재 마운트되어 있거나 실행 중인 Docker 컨테이너가 있는 저장소도 삭제합니다. --force(아카이브 유예 기간만 재정의)와는 별개입니다. --orphaned-repos와 --prune-unknown 모두에 적용됩니다.",
         "noReposFound": "머신에서 저장소를 찾을 수 없습니다",
-        "noStaleSnapshots": "오래된 스냅샷이 없습니다",
         "noUnknownRepos": "알 수 없는 저장소가 없습니다 - 모든 머신 저장소는 로컬 설정에 있거나 renet 미러가 있습니다",
         "orphanedReposCompleted": "고아 저장소 {{count}}개가 정리되었습니다",
         "orphanedReposOption": "로컬 CLI 설정에 없는 머신의 모든 저장소 이미지를 삭제합니다. 광범위함 - renet 미러가 올바르게 포크로 식별하더라도 로컬 설정 항목이 없는 다른 도구로 생성된 포크도 제거합니다. 미러를 존중하는 더 좁은 동작에는 --prune-unknown을 사용하세요.",
         "orphanedReposStarting": "{{machine}}에서 고아 저장소 검색 중...",
         "previewEmpty": "고아 데이터스토어 리소스를 찾을 수 없습니다",
         "pruneUnknownOption": "renet .interim/state 미러가 분류할 수 없는 저장소만 삭제합니다 (로컬 설정에 없고 포크 표시 미러도 없는 경우). --orphaned-repos보다 엄격하게 더 좁음: 미러가 식별한 포크 없음 설정은 미러가 식별할 때 보존됩니다. 이전 미러 레거시 고아 및 설정 항목이 삭제된 오래된 grand 모두 이 버킷에 해당합니다.",
-        "snapshotDeleted": "{{name}}이 삭제되었습니다",
-        "snapshotDeleting": "{{name}} 삭제 중...",
-        "snapshotInUse": "{{name}} 건너뜀 (활성 사용 중)",
-        "snapshotsCompleted": "스냅샷 정리: {{deleted}}개 삭제, {{skipped}}개 건너뜀",
-        "snapshotsOnlyOption": "오래된 스냅샷만 정리합니다",
-        "snapshotStale": "오래됨: {{name}} ({{size}})",
         "startingDatastore": "{{machine}}에서 고아 데이터스토어 리소스 검색 중...",
-        "startingSnapshots": "{{machine}}에서 오래된 스냅샷 검색 중...",
         "unknownCompleted": "알 수 없는 저장소 {{count}}개가 정리되었습니다",
         "unknownFound": "알 수 없는 저장소 {{count}}개 발견 (마운트 안전 확인 후 삭제 가능 {{deletable}}개)",
         "unknownStarting": "{{machine}}에서 알 수 없는 저장소 검색 중 (로컬 설정에 없고 포크 표시 미러도 없는 경우)..."
@@ -681,8 +641,6 @@
       "add": {
         "description": "현재 설정에 머신을 추가합니다. SSH 호스트 키를 자동으로 검사합니다. 추가 후 실행하십시오: config machine setup <name>",
         "descriptionShort": "현재 설정에 머신을 추가합니다",
-        "sshConfigFailed": "SSH 별칭 쓰기 실패 (치명적이지 않음): {{error}}",
-        "sshConfigWritten": "SSH 별칭 rediacc--{{name}}을 ~/.ssh/config_rediacc에 저장했습니다",
         "success": "머신 \"{{name}}\" 추가 완료 ({{user}}@{{ip}})"
       },
       "infra": {
@@ -693,25 +651,12 @@
             "noCache": "지울 인증서 캐시가 없습니다"
           },
           "description": "캐시된 TLS 인증서를 관리합니다",
-          "noBaseDomain": "머신에 baseDomain이 설정되어 있지 않습니다",
-          "noCacheForDomain": "{{domain}}에 대한 인증서 캐시를 찾을 수 없습니다",
           "pull": {
-            "cached": "{{count}}개의 인증서 캐시됨 ({{size}})",
             "description": "머신에서 TLS 인증서를 다운로드하고 캐시합니다",
-            "downloading": "{{machine}}에서 인증서를 다운로드하는 중...",
-            "merged": "만료 기간이 긴 로컬 캐시에서 {{count}}개의 인증서 유지",
-            "noAcmeJson": "{{machine}}에서 acme.json을 찾을 수 없습니다",
-            "optionNoPrune": "오래된 네트워크 ID 인증서 정리를 건너뜁니다",
-            "pruned": "{{count}}개의 오래된 인증서 정리됨",
-            "prunedExpired": "{{count}}개의 만료된 인증서 정리됨"
+            "optionNoPrune": "오래된 네트워크 ID 인증서 정리를 건너뜁니다"
           },
           "push": {
-            "description": "캐시된 TLS 인증서를 머신에 업로드합니다",
-            "merged": "만료 기간이 긴 {{count}}개의 인증서를 {{machine}}에 병합됨",
-            "noCache": "인증서 캐시를 찾을 수 없습니다. 먼저 실행하십시오: rdc machine infra cert pull <machine>",
-            "uploaded": "{{machine}}에 {{count}}개의 인증서 업로드됨",
-            "uploading": "{{machine}}에 캐시된 인증서를 업로드하는 중...",
-            "upToDate": "{{machine}}의 인증서가 최신 상태입니다"
+            "description": "캐시된 TLS 인증서를 머신에 업로드합니다"
           },
           "status": {
             "certCount": "{{count}}개의 인증서, {{size}} 압축됨",
@@ -723,25 +668,14 @@
         },
         "description": "인프라 설정을 관리합니다 (프록시, DNS, 인증서)",
         "push": {
-          "certCacheUploaded": "캐시된 인증서를 원격에 업로드했습니다",
           "description": "인프라 설정을 머신에 푸시합니다 (Traefik 프록시, 라우터, Cloudflare DNS). 먼저 'machine infra set <machine>'을 실행하십시오",
           "descriptionShort": "인프라 설정을 머신에 푸시합니다",
-          "dnsCreated": "DNS: {{type}} {{name}} → {{content}} 생성됨",
-          "dnsError": "DNS 경고: {{message}} (레코드를 수동으로 설정해야 할 수 있습니다)",
-          "dnsResolvingZone": "{{domain}}에 대한 Cloudflare 영역을 확인하는 중...",
-          "dnsSkipLocal": "DNS 건너뜀: .local 도메인은 Cloudflare를 사용하지 않습니다",
-          "dnsSkipNoToken": "DNS 건너뜀: Cloudflare API 토큰이 없습니다. 다음으로 설정하십시오: rdc machine infra set <machine> --cf-dns-token <token>",
-          "dnsUnchanged": "DNS: {{type}} {{name}} 이미 올바름",
-          "dnsUpdated": "DNS: {{type}} {{name}} → {{content}} 업데이트됨",
           "installingProxy": "라우터를 설치하는 중...",
-          "proxyInstallWarning": "프록시 설치 실패 (코드 {{code}}). 수동으로 실행하십시오: sudo renet proxy install",
           "success": "\"{{name}}\"에 인프라 설정 푸시 완료"
         },
         "set": {
           "description": "머신에 대한 인프라 설정을 지정합니다 (머신별: IP, 도메인, 포트; 공유: 인증서 이메일, CF DNS 토큰)",
           "descriptionShort": "머신에 대한 인프라 설정을 지정합니다",
-          "invalidIPv4": "잘못된 IPv4 주소: {{ip}}",
-          "invalidIPv6": "잘못된 IPv6 주소: {{ip}}",
           "noOptions": "옵션이 지정되지 않았습니다. --public-ipv4, --base-domain 등을 사용하십시오.",
           "optionBaseDomain": "애플리케이션의 기본 도메인 (머신별)",
           "optionCertEmail": "TLS 인증서 알림을 위한 이메일 (머신 간 공유)",
@@ -791,7 +725,6 @@
       },
       "remove": {
         "description": "현재 설정에서 머신을 제거합니다",
-        "sshConfigCleared": "SSH 별칭 rediacc--{{name}} 제거 완료",
         "success": "머신 \"{{name}}\" 제거 완료",
         "confirm": "설정에서 머신 \"{{name}}\"을(를) 제거하시겠습니까?"
       },
@@ -820,7 +753,6 @@
         "fetching": "{{machine}}에서 상태 가져오는 중...",
         "healthCheck": "상태 확인 모드 - 비정상 컨테이너가 있으면 종료 코드 2로 종료",
         "infrastructure": "인프라",
-        "noData": "사용 가능한 상태 데이터가 없습니다",
         "servicesAllStable": "모든 서비스가 안정적입니다",
         "servicesUnstableFound": "불안정한 서비스 {{count}}개 발견",
         "stabilityCheck": "안정성 확인 모드 - 실패하거나 재시작 중인 서비스가 있으면 종료 코드 2로 종료",
@@ -841,12 +773,6 @@
         "configOption": "모든 명령어에 사용할 설정 이름",
         "description": "MCP 서버 시작 (stdio 전송)",
         "timeoutOption": "기본 명령어 타임아웃 (밀리초)"
-      },
-      "tools": {
-        "repo_fork": {
-          "parentDescription": "포크할 부모 저장소 이름 (또는 name:tag)",
-          "tagDescription": "포크의 태그 (name:tag 형식으로 생성, 예: \"staging\")"
-        }
       }
     },
     "ops": {
@@ -869,7 +795,6 @@
         "brewFailed": "Homebrew 설치에 실패했습니다",
         "completed": "필수 조건이 성공적으로 설치되었습니다",
         "description": "가상화 필수 조건을 설치합니다",
-        "detecting": "플랫폼 감지 중...",
         "failed": "설치에 실패했습니다",
         "linux": "renet을 통해 KVM 필수 조건 설치 중...",
         "macos": "Homebrew를 통해 QEMU 설치 중...",
@@ -883,7 +808,6 @@
       },
       "status": {
         "description": "VM 클러스터 상태를 표시합니다",
-        "fetching": "VM 클러스터 상태 가져오는 중...",
         "noVMs": "VM을 찾을 수 없습니다"
       },
       "up": {
@@ -895,14 +819,11 @@
     },
     "repo": {
       "batchConfirm": "\"{{machine}}\"의 {{count}}개 저장소 모두 {{action}}하시겠습니까? [y/N]",
-      "batchIterating": "{{action}} ({{current}}/{{total}}): \"{{repo}}\"...",
-      "batchResult": "{{action}} 완료: {{total}} 중 {{succeeded}} 성공",
       "branch": {
         "branchOption": "새 브랜치의 이름",
         "completed": "branch \"{{branch}}\" -> {{commit}}",
         "description": "작업 fork의 현재 commit(팁)을 가리키는 이름 있는 branch 참조를 생성합니다. branch 참조는 CLI 설정에 저장됩니다(머신 = 오브젝트 저장소, 설정 = 참조 저장소).",
-        "descriptionShort": "현재 commit을 가리키는 branch 참조를 생성합니다",
-        "workingOption": "branch가 가리킬 현재 commit의 작업 fork"
+        "descriptionShort": "현재 commit을 가리키는 branch 참조를 생성합니다"
       },
       "canary": {
         "description": "새 이미지를 안정 버전과 나란히 실행하고 실 트래픽을 비율로 나눕니다(릴리스 사다리 2단계). 동일한 라이브 데이터 위에 카나리 Deployment와 Service를 하나 생성합니다(포크하지 않음: 포크된 데이터에서 카나리 사용자가 오래된 데이터를 읽고, 어차피 버려질 사본에 쓰게 되기 때문입니다). 그리고 Rediacc 프록시에게 안정 버전 호스트네임으로 향하는 트래픽 중 지정한 비율을 카나리로 라우팅하도록 지시합니다. 가중치 0은 카나리를 다크 상태로 유지하고, 가중치 100은 blue/green 완전 전환입니다. 카나리를 변경할 때마다 클러스터 데이터스토어의 자동 그룹 스냅샷이 먼저 촬영되며(릴리스 사다리 0단계), 이는 만능 되돌리기 수단으로 쓰입니다. 두 버전 간 스키마 호환성(expand-contract 방식 유지)은 애플리케이션의 책임입니다. 스키마를 깨뜨리는 릴리스에는 대신 blue/green 방식을 사용하십시오: 저장소를 포크하고(즉시 완료, 데이터 포함), 포크의 Service를 가중치 100으로 여기에 연결한 뒤, 손대지 않은 원본을 재시작해 롤백합니다. 전환 이후에 이루어진 쓰기는 새 사본에만 존재하므로, 롤백 가능 기간은 정책으로 정할 문제입니다.",
@@ -948,23 +869,18 @@
         "description": "불변 commit(또는 branch 팁)을 새로운 쓰기 가능한 작업 fork로 reflink 복제하고 HEAD가 이를 가리키도록 합니다. 거의 즉각적이며 크기와 무관하게 일정한 시간이 소요됩니다(BTRFS reflink).",
         "descriptionShort": "commit/branch를 쓰기 가능한 작업 fork로 reflink 복제합니다",
         "fromOption": "위치 인자 <commit-or-branch-ref>를 이 작업 포크의 브랜치 이름으로 확인",
-        "refOption": "체크아웃할 commit GUID(또는 --from과 함께 브랜치 이름)",
         "tagOption": "새 쓰기 가능한 작업 fork의 이름"
       },
-      "clusterDone": "클러스터 \"{{cluster}}\"의 네임스페이스 \"{{repository}}\"를 {{verb}}",
-      "clusterOption": "대상 Kubernetes 클러스터 (-m과는 함께 사용할 수 없음); KUBECONFIG를 주입해 클러스터의 컨트롤 노드로 라우팅합니다",
       "commit": {
         "authorOption": "commit 작성자",
         "completed": "{{commit}} commit됨: {{message}}",
         "description": "마운트된 작업 fork의 현재 상태를 새로운 불변 commit으로 고정합니다(git과 유사). commit은 메시지, 작성자, 타임스탬프, 부모 정보를 볼륨 내부에 기록하므로 push 시 함께 이동하며, 읽기 전용으로 표시되어 마운트를 거부합니다. 작업 fork는 git이 작업 트리를 그대로 두는 것처럼 변경 없이 유지됩니다. 쓰기 가능한 사본을 얻으려면 'rdc repo checkout'으로 commit을 체크아웃하세요.",
         "descriptionShort": "작업 중인 fork를 새로운 불변 commit으로 고정합니다",
         "failed": "commit에 실패했습니다",
-        "messageOption": "commit 메시지",
-        "nameOption": "commit할 작업 fork(마운트되어 있어야 합니다)"
+        "messageOption": "commit 메시지"
       },
       "create": {
         "alreadyExists": "저장소 \"{{name}}\"이 이미 설정에 존재합니다",
-        "clusterResolved": "Kubernetes 저장소 \"{{repository}}\"는 클러스터 \"{{cluster}}\"를 대상으로 합니다 (컨트롤 노드 {{controlNode}})",
         "completed": "저장소 생성 완료",
         "description": "새 저장소를 생성합니다. 홈을 한 번만 지정하세요: 머신 또는 데이터스토어",
         "failed": "저장소 생성 실패",
@@ -1008,9 +924,7 @@
         "descriptionShort": "두 포크된 저장소 간의 git 스타일 파일 비교 (A/M/D/R)",
         "failed": "비교 실패",
         "fastOption": "블록 필터를 신뢰하고 콘텐츠 해시 확인 건너뛰기 (수정 항목이 과다 보고될 수 있음)",
-        "jsonOption": "구조화된 비교 결과를 JSON 엔벨로프로 출력",
         "nameOnlyOption": "변경된 파일 경로만 한 줄에 하나씩 출력 (상태 문자 없음)",
-        "nameOption": "검사할 저장소 (대상/새 쪽)",
         "notAFork": "\"{{name}}\" 은(는) 포크가 아닙니다. --base 로 명시적인 기준을 전달하세요.",
         "notFound": "컨텍스트에서 저장소 \"{{name}}\" 을(를) 찾을 수 없습니다",
         "parentMissing": "\"{{name}}\" 의 부모가 이 컨텍스트에 없습니다. --base 로 명시적으로 전달하세요.",
@@ -1028,7 +942,6 @@
         "description": "저장소 Docker 컨테이너를 정지합니다 (renet compose를 통해 Rediaccfile의 down 실행). 머신은 참조의 배치에서 자동으로 결정됩니다. 암호화 볼륨은 마운트 해제하지 않습니다. 저장소는 마운트된 상태를 유지하며 'repo up'으로 다시 시작할 수 있습니다. 정지 후 LUKS 컨테이너도 닫으려면 --unmount를 사용하세요 (폐지된 'repo unmount'를 흡수). 정지 전 CRIU 프로세스 상태를 저장하려면 --checkpoint를 사용하세요 (다음 'repo up'에서 자동 복원). 머신의 모든 저장소를 정지하려면 --all --machine <m>을 사용하세요",
         "descriptionShort": "저장소 Docker 컨테이너를 중지합니다",
         "failed": "서비스 중지 실패",
-        "grandOption": "상위 자격증명 저장소 (이름을 GUID로 자동 확인). 상위와 시크릿을 공유하는 저장소에만 해당",
         "starting": "\"{{machine}}\"에서 \"{{repository}}\"의 서비스를 중지하는 중...",
         "unmountOption": "정지 후 마운트도 해제합니다 (LUKS 컨테이너 닫기). 'repo resize' 전이나 볼륨을 완전히 보호하려면 필요",
         "allOption": "--machine을 홈으로 하는 모든 저장소를 정지합니다 (일괄 형식)"
@@ -1044,7 +957,6 @@
       "fork": {
         "alreadyExists": "저장소 \"{{name}}\"이 이미 설정에 존재합니다",
         "checkpointOption": "포크 전 소스에서 CRIU 체크포인트를 생성합니다 (포크에서 복원을 위해 프로세스 메모리 상태를 캡처합니다)",
-        "clusterResolved": "\"{{parent}}\"를 클러스터 \"{{cluster}}\"의 네임스페이스 \"{{parent}}-{{tag}}\"로 포크하는 중 (컨트롤 노드 {{controlNode}})",
         "completed": "포크가 생성되었습니다. 배포: repo up {{repository}}. 다른 머신으로 복사: repo push {{repository}} --to <target>, 그런 다음 backup restore {{repository}} --as {{repository}} -m <target> --up으로 해당 머신에서 아티팩트를 부팅하세요",
         "description": "저장소의 CoW(Copy-on-Write) 포크를 생성합니다. 포크는 저장소 크기와 무관하게 거의 즉시, 일정한 시간에 완료됩니다. BTRFS reflink가 기반 이미지를 복제하므로 100 GB 저장소와 1 GB 저장소가 같은 몇 초 안에 포크됩니다. 포크는 새 GUID, networkId, IP 범위, 자동 라우트 도메인({service}-fork-{tag}.{repo}.{machine}.{baseDomain})을 가지며 완전히 독립된 사본입니다. 온라인 포크를 지원하므로 상위 저장소는 계속 실행된 상태로 두어도 됩니다. 포크는 상위의 암호화 자격증명을 자동으로 상속합니다. --checkpoint를 사용하면 포크 전에 CRIU 프로세스 상태를 캡처하며, 포크는 첫 번째 'repo up' 시 자동으로 복원됩니다(메모리 내 상태 보존). 크로스 머신 포크: 먼저 로컬에서 포크한 뒤 전송하세요: (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine>, (3) rdc backup restore <fork-ref> --as <fork-name> -m <target-machine> --up. 경고: 포크를 위해 \"repo push\"만 단독으로 사용하지 마세요. 동일한 GUID를 가진 원시 사본이 생성됩니다(독립적인 포크가 아님). 항상 먼저 포크하여 새 식별자를 얻으세요. 자동 라우트는 저장소 이름을 사용하므로 각 포크는 자동으로 고유한 도메인을 얻습니다",
         "descriptionShort": "저장소의 즉각적인 CoW 포크 (새 GUID, networkId, IP 범위)",
@@ -1054,16 +966,11 @@
         "failed": "포크 생성 실패",
         "immutableOption": "포크를 읽기 전용으로 표시합니다. 마운트를 거부하고 이미지를 영구적으로 바이트 수준에서 안정적으로 유지합니다(머신 간 델타 푸시를 위한 고정된 커밋/베이스)",
         "immutableUpConflict": "repo fork: --immutable과 --up은 함께 사용할 수 없습니다. 불변 포크는 마운트를 거부하므로 시작할 수 없습니다. --up을 제거하거나 일반 포크를 배포하려면 --immutable을 제거하세요.",
-        "providerOption": "새 클러스터를 프로비저닝하여(원본의 풀 구성을 그대로 반영) 그곳으로 포크합니다",
-        "providerPending": "\"{{parent}}\"를 새 {{provider}} 클러스터에 \"{{parent}}-{{tag}}\"로 포크하는 중",
-        "provisioning": "포크 전에 {{provider}}에 클러스터 \"{{cluster}}\"를 프로비저닝하는 중...",
         "registered": "포크 \"{{repository}}\" 등록 완료 ({{guid}}, 네트워크 {{networkId}})",
         "rollback": "\"{{repository}}\"의 설정을 롤백했습니다",
         "starting": "\"{{machine}}\"에서 \"{{parent}}\"를 \"{{repository}}\"로 포크하는 중...",
         "tagOption": "포크의 태그 (name:tag 형태로 생성)",
-        "tagRequired": "포크에는 태그가 필요합니다. 사용법: rdc repo fork <parent-ref> --tag <tag>",
         "tagReservedLatest": "repo fork: 태그 \"latest\"는 그랜드(프로덕션) 저장소용으로 예약되어 있습니다 — 다른 --tag을 선택하세요 (예: \"test\", \"staging\", \"<feature>\")",
-        "toClusterOption": "다른 기존 Kubernetes 클러스터로 포크합니다(클러스터 간 네임스페이스 포크)",
         "upOption": "포크 후 서비스를 마운트하고 시작합니다 (fork + mount + up을 하나의 명령으로)",
         "noWaitOption": "--up과 함께: 컨테이너가 시작되면 바로 반환됩니다. 상태 확인은 백그라운드에서 계속됩니다 (일회용 포크에 적합)"
       },
@@ -1089,9 +996,7 @@
       "log": {
         "description": "작업 fork의 현재 commit(또는 commit 참조)에서 도달 가능한 commit 이력을 출력하며, 'rdc repo commit'이 기록한 부모 체인을 따라갑니다. 볼륨 외부의 미러를 읽으므로 어떤 commit도 잠금 해제되지 않습니다.",
         "descriptionShort": "fork 또는 commit의 commit 이력을 따라갑니다",
-        "failed": "log에 실패했습니다",
-        "jsonOption": "commit 이력을 JSON으로 출력합니다",
-        "nameOption": "이력 탐색을 시작할 작업 fork 또는 commit"
+        "failed": "log에 실패했습니다"
       },
       "machineOption": "대상 머신 이름",
       "merge": {
@@ -1102,23 +1007,19 @@
         "failed": "merge에 실패했습니다",
         "forceOption": "마운트/실행 중인 대상을 먼저 정지시킨 뒤 merge합니다(실행 중인 마운트는 절대 변경하지 않음)",
         "fromOption": "merge할 소스 commit 또는 fork",
-        "nameOption": "merge 대상이 되는 작업 fork",
         "resolveOption": "3-way merge의 파일별 충돌 해결: 'ours'는 대상의 버전을 유지하고, 'theirs'는 소스의 버전을 가져옵니다. 전체 이미지 fast-forward(take-theirs)에는 생략하세요."
       },
       "migrate": {
         "checkpointing": "CRIU 체크포인트 생성 중...",
         "complete": "마이그레이션 완료: {{name}}이 {{from}}에서 {{to}}으로 이동되었습니다",
         "deltaDone": "델타 동기화 완료",
-        "deltaFailed": "델타 동기화 실패",
         "deltaSync": "델타 동기화 중...",
         "description": "다운타임을 최소화하며 저장소를 한 머신에서 다른 머신으로 라이브 마이그레이션합니다. 2단계 rsync: 실행 중에 대량 전송을 수행한 후, 델타 동기화를 위해 짧게 정지합니다. 저장소 전체를 이동시키며 (라우팅이 새 위치로 재설정됩니다), 이동이 성공하면 원본 이미지를 삭제합니다 (유지하려면 --keep-source 사용). 프로세스 메모리 상태 마이그레이션을 위한 CRIU 체크포인트와 대상 머신 자동 프로비저닝을 지원합니다",
         "descriptionShort": "머신 간 저장소를 라이브 마이그레이션합니다",
-        "dnsSkipped": "DNS 전환 건너뜀 (baseDomain 또는 Cloudflare 설정 없음)",
         "downtime": "다운타임: {{duration}}",
         "optionBwlimit": "rsync 전송의 대역폭 제한 (예: 10M)",
         "optionCheckpoint": "CRIU 라이브 마이그레이션: 프로세스 메모리 상태를 캡처하고 복원합니다",
         "optionDeltaBase": "전환 델타를 위한 불변 베이스 GUID (고급; 기본값은 1단계 베이스)",
-        "optionFrom": "소스 머신 이름",
         "optionProvision": "클라우드 공급자를 통해 대상을 자동 프로비저닝합니다 (예: hetzner, linode)",
         "optionSkipDns": "마이그레이션 후 DNS 레코드 전환을 건너뜁니다",
         "optionKeepSource": "성공적으로 이동한 후에도 원본 이미지를 유지합니다 (기본적으로 삭제됨. 남은 사본은 어떤 설정 레코드로도 참조할 수 없으며 reconcile이 이를 미아로 표시합니다)",
@@ -1126,7 +1027,6 @@
         "optionTo": "대상 머신 또는 클러스터",
         "phase1": "1단계: 대량 데이터 전송 중 (소스 계속 실행 중)...",
         "phase1Done": "대량 전송 완료",
-        "phase1Failed": "대량 전송 실패",
         "phase1Stats": "{{duration}} 동안 {{transferred}} 전송 (소스는 온라인 유지)",
         "phase2": "2단계: 전환 (잠시 다운타임)...",
         "phase2Stats": "컷오버 (다운타임): {{duration}} 동안 {{transferred}}",
@@ -1134,13 +1034,10 @@
         "provisioning": "{{provider}}를 통해 대상 머신 {{machine}}을 프로비저닝하는 중...",
         "sourceStopped": "소스 서비스 중지 완료",
         "sourceUnmounted": "소스 마운트 해제 완료",
-        "startFailed": "대상에서 시작 실패",
         "startingTarget": "대상에서 서비스를 시작하는 중...",
-        "stopFailed": "소스 서비스 중지 실패",
         "stoppingSource": "소스 서비스를 중지하는 중...",
         "switchingDns": "DNS 레코드를 전환하는 중...",
         "targetStarted": "대상 서비스 시작 완료",
-        "unmountFailed": "소스 마운트 해제 실패",
         "unmountingSource": "소스를 마운트 해제하는 중...",
         "noOpSameHome": "저장소 {{name}}은(는) 이미 {{machine}}에 있습니다. 마이그레이션할 것이 없습니다",
         "placementUpdated": "라우팅이 업데이트되었습니다: {{name}}이(가) 이제 {{machine}}에 있습니다",
@@ -1162,7 +1059,6 @@
           "descriptionShort": "크기 정책 표시(머신 기본값, 저장소 재정의, 유효값)"
         },
         "invalidBool": "{{flag}}은(는) 'true' 또는 'false'여야 합니다. 받은 값: {{value}}",
-        "nameOption": "저장소(기본값: 머신 전체 정책)",
         "repoNotFound": "저장소를 찾을 수 없습니다: {{name}}",
         "set": {
           "autoGrowOption": "쿼터의 온라인 자동 확장 활성화(true/false)",
@@ -1201,10 +1097,8 @@
         "optionCheckpoint": "백업 전에 CRIU 체크포인트를 생성합니다 (라이브 마이그레이션을 위해 프로세스 메모리 상태를 캡처합니다)",
         "optionDeltaBase": "두 머신에 바이트 단위로 동일하게 존재하는 불변 베이스 GUID; 변경된 블록만 전송합니다 (머신 대상). 자동 베이스를 사용하려면 생략하십시오",
         "optionForce": "기존 백업을 강제로 덮어씁니다",
-        "optionJson": "전송 통계를 JSON으로 출력",
         "optionProvision": "대상이 존재하지 않는 경우 클라우드 공급자를 통해 자동으로 대상 머신을 프로비저닝합니다",
         "optionStrategy": "델타 베이스 사용 시 블록 델타 전략: auto, physical, 또는 shared",
-        "optionTag": "버전 관리를 위한 배포 태그",
         "optionTo": "대상 머신 또는 스토리지 이름 (설정에서 자동 감지)",
         "pushing": "\"{{repo}}\"의 백업을 {{dest}}으로 푸시하는 중...",
         "statsDelta": "\"{{repo}}\"을(를) {{machine}}에 푸시 완료: {{duration}} 동안 {{transferred}} 전송 (베이스 {{base}} 대비 델타, 이미지 {{image}})",
@@ -1249,8 +1143,7 @@
         "get": {
           "description": "시크릿의 SHA-256 다이제스트를 표시합니다. 평문 값은 설계상 반환되지 않습니다 (쓰기 전용). 이미 알고 있는 값을 확인하려면 후속 set/unset에서 --current를 사용하거나 `set --rotate-secret`으로 교체하십시오.",
           "descriptionShort": "시크릿의 다이제스트를 표시합니다 (값은 반환되지 않음)",
-          "notFound": "저장소 \"{{repository}}\"에서 시크릿 \"{{key}}\"을 찾을 수 없습니다",
-          "repoNotFound": "저장소 \"{{repository}}\"를 찾을 수 없습니다"
+          "notFound": "저장소 \"{{repository}}\"에서 시크릿 \"{{key}}\"을 찾을 수 없습니다"
         },
         "keyOption": "UPPER_SNAKE_CASE의 시크릿 키 (최대 64자). env 모드에서는 REDIACC_SECRET_<KEY>로, file 모드에서는 컨테이너의 /run/secrets/<key>로 노출됩니다.",
         "list": {
@@ -1259,7 +1152,6 @@
           "empty": "\"{{repository}}\"에 정의된 시크릿이 없습니다"
         },
         "modeOption": "전달 모드: 'env' (컨테이너 env 및 docker inspect에서 표시) 또는 'file' (tmpfs 파일, env에 없음). 기본값: file.",
-        "nameOption": "저장소 이름 (예: mail, mail:staging). 태그가 없으면 :latest가 기본값입니다.",
         "rotateOption": "교체를 인정합니다. --current 사전 조건을 건너뜁니다 (교체로 감사 기록). 이전 값을 확인하지 않고 의도적으로 교체할 때 사용하십시오.",
         "set": {
           "description": "시크릿을 설정하거나 덮어씁니다. 포크는 상속하지 않으므로 포크에 명시적으로 설정하십시오. 에이전트 컨텍스트에서는 --current 다이제스트 일치가 필요합니다 (passwd 방식).",
@@ -1282,16 +1174,13 @@
       "sync": {
         "description": "저장소와 파일을 동기화합니다 (일괄 push/pull, 파일 전송)",
         "download": {
-          "description": "SSH를 통한 rsync로 저장소에서 파일을 다운로드합니다 (델타 전송). 로컬 추가 파일을 삭제하려면 --mirror, 미리 보기는 --dry-run, 패턴을 건너뛰려면 --exclude를 사용하십시오",
-          "descriptionShort": "rsync를 통해 저장소에서 파일을 다운로드합니다"
+          "description": "SSH를 통한 rsync로 저장소에서 파일을 다운로드합니다 (델타 전송). 로컬 추가 파일을 삭제하려면 --mirror, 미리 보기는 --dry-run, 패턴을 건너뛰려면 --exclude를 사용하십시오"
         },
         "status": {
-          "description": "로컬과 원격 파일을 드라이런으로 비교합니다 (실제 전송 없이 전송될 내용을 표시합니다)",
-          "descriptionShort": "로컬과 원격 파일을 비교합니다 (드라이런)"
+          "description": "로컬과 원격 파일을 드라이런으로 비교합니다 (실제 전송 없이 전송될 내용을 표시합니다)"
         },
         "upload": {
-          "description": "SSH를 통한 rsync로 저장소에 파일을 업로드합니다 (델타 전송). 원격 추가 파일을 삭제하려면 --mirror, 미리 보기는 --dry-run, 패턴을 건너뛰려면 --exclude를 사용하십시오",
-          "descriptionShort": "rsync를 통해 저장소에 파일을 업로드합니다"
+          "description": "SSH를 통한 rsync로 저장소에 파일을 업로드합니다 (델타 전송). 원격 추가 파일을 삭제하려면 --mirror, 미리 보기는 --dry-run, 패턴을 건너뛰려면 --exclude를 사용하십시오"
         }
       },
       "trim": {
@@ -1301,7 +1190,6 @@
         "dockerOption": "Docker 공간 회수(중지된 컨테이너, 댕글링 이미지, 빌드 캐시). 백업 스냅샷이 활성 상태일 때도 실행됩니다",
         "dockerVolumesOption": "사용하지 않는 Docker 볼륨도 정리",
         "failed": "트림 실패",
-        "nameOption": "트림할 저장소(기본값: 마운트된 모든 저장소)",
         "noMountedRepos": "마운트된 저장소가 없습니다",
         "repoNotFound": "저장소를 찾을 수 없습니다: {{name}}",
         "reportOnlyOption": "트림하지 않고 discard 상태와 회수 가능 추정치만 표시",
@@ -1328,7 +1216,6 @@
         "urlOnlyOption": "터널이 준비되면 로컬 URL만 출력합니다 (머신 판독용)"
       },
       "up": {
-        "checkpointOption": "시작 시 CRIU 체크포인트를 복원합니다 (저장된 메모리 상태에서 프로세스를 재개합니다)",
         "completed": "서비스 시작 완료",
         "description": "저장소를 배포하거나 업데이트합니다 (마운트하고, renet compose를 호출하는 Rediaccfile의 up을 실행). 머신은 참조의 배치에서 자동으로 결정됩니다. 프록시 라우트는 배포 후 약 3초 후에 활성화됩니다. 완료 시 HTTP로 노출된 서비스(rediacc.service_port 레이블)의 URL 패턴을 출력합니다. 최초 배포와 포크는 자동으로 마운트됩니다. CRIU 체크포인트 복원은 자동으로 감지됩니다. 새로 시작하려면 --skip-checkpoint를 사용하세요. 머신의 모든 저장소를 배포하려면 --all --machine <m>을 사용하세요",
         "descriptionShort": "저장소를 배포하거나 업데이트합니다",
@@ -1349,10 +1236,8 @@
       "upAll": {
         "completed": "모든 저장소 시작 완료",
         "concurrencyOption": "최대 동시 저장소 수 (기본값: 3)",
-        "dryRunOption": "실행하지 않고 수행될 작업을 표시합니다",
         "failed": "전체 시작 작업 실패",
         "includeForksOption": "포크된 저장소도 마운트 및 시작합니다",
-        "mountOnlyOption": "서비스를 시작하지 않고 마운트만 합니다",
         "parallelOption": "저장소를 동시에 시작합니다",
         "starting": "\"{{machine}}\"에서 모든 저장소를 시작하는 중..."
       },
@@ -1371,7 +1256,6 @@
           },
           "restore": {
             "description": "보관된 저장소 자격증명을 복원합니다",
-            "optionName": "다른 이름으로 복원합니다",
             "success": "\"{{name}}\" 복원 완료 ({{guid}})"
           },
           "description": "보관된 저장소 레코드 관리"
@@ -1420,7 +1304,6 @@
             "startingAll": "\"{{machine}}\"의 모든 저장소 자동 시작을 활성화하는 중..."
           },
           "list": {
-            "completed": "자동 시작 목록 조회 완료",
             "description": "자동 시작이 활성화된 저장소를 나열합니다",
             "empty": "\"{{machine}}\"에 자동 시작이 활성화된 저장소가 없습니다",
             "failed": "자동 시작 저장소 목록 조회 실패",
@@ -1498,15 +1381,11 @@
         "description": "경고: 디버깅 및 실험 전용 저수준 명령어입니다. 프로덕션 환경에서는 사용하지 마세요. 더 높은 수준의 명령어(repo up, repo down 등)를 사용하세요. 머신에서 원시 브릿지 함수를 실행합니다.",
         "descriptionShort": "머신에서 원시 브릿지 함수 실행 (디버깅 전용)",
         "executingLocal": "{{machine}}에서 '{{function}}' 실행 중...",
-        "failedLocal": "실패: {{error}}",
-        "watching": "완료 대기 중..."
+        "failedLocal": "실패: {{error}}"
       },
       "trace": {
         "description": "작업 추적 (단축키: queue trace)"
       }
-    },
-    "snapshot": {
-      "description": "원격 머신의 BTRFS 스냅샷 관리"
     },
     "serve": {
       "description": "클라이언트가 직접 SSH로 연결하는 대신 이 프로세스를 통해 명령을 실행할 수 있도록 실행기로 구동합니다",
@@ -1521,7 +1400,6 @@
     "storage": {
       "browse": {
         "description": "스토리지 시스템의 파일을 탐색합니다",
-        "failed": "파일 목록 조회 실패: {{error}}",
         "listing": "\"{{name}}\"의 파일 목록 조회 중...",
         "noFiles": "파일을 찾을 수 없습니다",
         "pathOption": "나열할 하위 디렉터리 경로"
@@ -1530,7 +1408,6 @@
       "descriptionShort": "스토리지 관리",
       "list": {
         "description": "스토리지 엔드포인트를 나열합니다. 이름을 지정하면 상세 정보를 표시합니다",
-        "fetching": "스토리지 제공자 가져오는 중...",
         "optionReveal": "스토리지 구성을 평문으로 표시합니다 (대화형 TTY 전용; 감사 기록됨)",
         "noStorages": "설정된 스토리지 엔드포인트가 없습니다. 다음으로 등록하세요: rdc storage add <name> --vault <json>"
       },
@@ -1540,7 +1417,6 @@
         "descriptionShort": "스토리지에서 고아 백업 삭제",
         "forceDeleteMountedOption": "마운트 안전 확인을 재정의하고 소스 GUID가 현재 마운트되어 있거나 실행자 머신에서 실행 중인 컨테이너가 있는 경우에도 클라우드 백업을 삭제합니다. --force(아카이브 저장소의 유예 기간만 재정의)와는 별개입니다.",
         "found": "스토리지에서 {{count}}개의 백업 발견",
-        "listFailed": "스토리지 백업 목록 조회에 실패했습니다",
         "listing": "\"{{storage}}\"의 백업 목록 조회 중...",
         "machineOption": "실행자 머신 - 스토리지에 대해 rclone 목록/삭제 호출을 실행합니다. 클라이언트에 rclone이 로컬에 설치되어 있지 않아도 되므로 필수입니다; 스토리지 자격 증명은 여전히 로컬 설정에서 가져옵니다.",
         "noBackups": "스토리지에서 백업을 찾을 수 없습니다"
@@ -1681,7 +1557,6 @@
       "connect": {
         "description": "머신에서, 또는 Docker가 설정된 저장소 안에서 셸을 엽니다"
       },
-      "connecting": "{{machine}}에 연결 중...",
       "connectingTo": "{{title}}에 연결 중...",
       "description": "머신 또는 저장소로 SSH 터미널을 엽니다. 대상은 머신 이름이나 저장소 참조이며, 저장소 컨텍스트(DOCKER_HOST, 작업 디렉터리, 환경)는 자동으로 설정됩니다. `-c`로 단일 명령을 비대화형으로 실행할 수 있습니다. 컨테이너 로그나 컨테이너 내 일회성 명령에는 `repo logs`와 `repo exec`를 사용하세요. VS Code에는 `vscode`를 사용하세요",
       "descriptionShort": "머신 및 저장소에 대한 SSH 터미널 접속",
@@ -1691,7 +1566,6 @@
       "testingConnectivity": "{{host}}:{{port}}에 대한 연결 테스트 중..."
     },
     "update": {
-      "applyFailed": "준비된 업데이트 적용 실패: {{error}}",
       "autoApplied": "v{{version}}으로 업데이트되었습니다 (이전: v{{from}}). 변경 사항은 다음 실행 시 적용됩니다.",
       "available": "업데이트 사용 가능: v{{version}} (현재: v{{current}})",
       "channelDescription": "릴리즈 채널 설정 (stable 또는 edge)",
@@ -1726,7 +1600,6 @@
       "stagedFallback": "업데이트 v{{version}}이 다운로드되어 준비되었습니다. 다음 실행 시 적용됩니다.",
       "statusDescription": "자동 업데이트 상태 및 진단 정보 표시",
       "success": "v{{from}}에서 v{{to}}로 업데이트되었습니다",
-      "unknownError": "알 수 없는 오류",
       "upToDate": "이미 최신 버전입니다 (v{{version}})"
     },
     "vscode": {
@@ -1840,17 +1713,6 @@
       }
     }
   },
-  "common": {
-    "completed": "완료됨",
-    "failed": "실패",
-    "inProgress": "진행 중",
-    "no": "아니오",
-    "running": "실행 중",
-    "stopped": "중지됨",
-    "success": "✓ 성공",
-    "unknown": "알 수 없음",
-    "yes": "예"
-  },
   "docs": {
     "admonitions": {
       "note": "참고",
@@ -1940,8 +1802,6 @@
     }
   },
   "errors": {
-    "activationFailed": "활성화에 실패했습니다",
-    "affectedChildClones": ". 영향을 받는 하위 클론: {{clones}}. 하위 클론을 먼저 삭제하거나 승격시키세요.",
     "agent": {
       "clusterOpBlocked": "클러스터 명령 \"{{command}}\"은(는) 에이전트 모드에서 차단됩니다. 클러스터 작업은 실제 인프라를 프로비저닝하거나 해체하므로 에이전트가 스스로 승인할 수 없습니다. 사용자: 이를 허용하려면 에이전트 세션을 시작하기 전에 터미널에서 REDIACC_ALLOW_CLUSTER_OPS=<cluster-name>(또는 모든 클러스터의 경우 *)을 설정하세요 — 에이전트 내부에서 설정한 재정의는 허용되지 않습니다.",
       "commandBlocked": "\"{{command}}\" 명령은 에이전트 모드에서 사용할 수 없습니다.\n\n이 명령은 안전 가드 없이 임의의 저수준 함수를 실행합니다. 대신 타입이 지정된 CLI 명령 또는 MCP 도구를 사용하세요.\n\n대안:\n  - MCP 도구: repo_up, repo_down, repo_fork, repo_logs, repo_exec, machine_status\n  - CLI 명령: rdc repo up, rdc repo down, rdc term connect\n  - 사용 가능한 명령을 보려면 \"rdc --help\"를 실행하세요\n\n원시 접근이 필요하다면 사용자에게 해당 명령을 직접 실행하도록 요청하세요.",
@@ -1961,32 +1821,24 @@
       "mcpGrandGuard": "\"{{name}}\"은(는) 그랜드(프로덕션) 리포지토리입니다. 에이전트는 그랜드 리포지토리를 직접 수정할 수 없습니다.\n\nrepo_fork를 사용하여 안전하고 격리된 샌드박스 복사본을 만든 후 포크에서 작업을 수행하세요.\n직접 접근이 필요하다면 사용자에게 에이전트를 시작하기 전에 REDIACC_ALLOW_GRAND_REPO를 내보내도록 요청하세요.",
       "mcpGrandGuardOverride": "\"{{name}}\"은(는) 그랜드(프로덕션) 리포지토리입니다. 에이전트가 시작한 재정의는 허용되지 않습니다.\n\nREDIACC_ALLOW_GRAND_REPO 설정을 시도하지 마세요.\n\nrepo_fork를 사용하여 안전하고 격리된 샌드박스 복사본을 만든 후 포크에서 작업을 수행하세요.",
       "mcpGrandGuardOverrideNonLinux": "\"{{name}}\"은(는) 그랜드(프로덕션) 리포지토리입니다. REDIACC_ALLOW_GRAND_REPO 재정의를 {{platform}}에서 확인할 수 없어 (계보 확인 도구를 사용할 수 없거나 실패함) 허용되지 않습니다.\n\nrepo_fork를 사용하여 안전하고 격리된 샌드박스 복사본을 만든 후 포크에서 작업을 수행하세요.",
-      "mcpMachineGuard": "에이전트는 직접 머신 접근이 허용되지 않습니다.\n\n에이전트는 리포지토리 컨텍스트를 통해 연결해야 합니다. repo_fork를 사용하여 포크를 생성한 후 연결하세요.\n직접 접근이 필요하다면 사용자에게 에이전트를 시작하기 전에 REDIACC_ALLOW_GRAND_REPO=*을 내보내도록 요청하세요.",
-      "mcpMachineGuardOverride": "직접 머신 접근이 허용되지 않습니다. 에이전트가 시작한 재정의는 허용되지 않습니다.\n\nREDIACC_ALLOW_GRAND_REPO 설정을 시도하지 마세요.\n\nrepo_fork를 사용하여 포크를 생성한 후 연결하세요.",
-      "mcpMachineGuardOverrideNonLinux": "직접 머신 접근 재정의를 {{platform}}에서 확인할 수 없어 (계보 확인 도구를 사용할 수 없거나 실패함) 허용되지 않습니다.\n\nrepo_fork를 사용하여 포크를 생성한 후 연결하세요.",
       "revealRequiresTty": "--reveal은 대화형 TTY가 필요합니다. 파이프에 민감한 값을 출력하기를 거부합니다.",
       "rotateNotSensitive": "포인터 \"{{pointer}}\"는 민감한 필드가 아닙니다. 대신 'config field set'을 사용하세요.",
       "rotateRequiresTty": "config field rotate는 대화형 TTY 확인이 필요합니다. 비대화형 컨텍스트에서는 거부됩니다 (재정의하려면 REDIACC_ALLOW_CONFIG_EDIT를 설정하세요).",
       "showReveal": "--reveal은 에이전트 환경에서 차단됩니다. 안전한 지문 확인을 위해 `rdc config show`(검열됨) 또는 `rdc config field get --pointer <pointer> --digest`를 사용하세요.",
       "showRevealRequiresTty": "--reveal은 대화형 TTY가 필요합니다. TTY가 아닌 싱크로 평문을 파이프하기를 거부합니다."
     },
-    "authFailed": "인증에 실패했습니다",
     "authRequired": "인증이 필요합니다. 실행: rdc subscription login",
-    "cannotDeleteGrandRepo": "그랜드 리포지토리를 삭제할 수 없습니다: {{reason}}",
-    "cannotPromote": "승격할 수 없습니다: {{reason}}",
     "cluster": {
       "controlDsBackendInvalid": "--control-ds-backend는 local 또는 ceph여야 합니다",
       "countInvalid": "--count는 음수가 아닌 정수여야 합니다",
       "dockerOnlyVerb": "\"repo {{verb}}\"는 Docker 저장소만 대상으로 하며 --cluster에 대해서는 실행할 수 없습니다. v1에는 이에 상응하는 Kubernetes 기능이 없습니다",
       "featureUnsupportedV1": "{{feature}}은(는) v1의 --cluster에서 지원되지 않습니다(컨트롤 노드 뷰); {{hint}}",
       "forkWritesInvalid": "--writes는 local 또는 ceph여야 합니다",
-      "pendingContractRegen": "클러스터에서의 \"repo {{verb}}\"는 {{fn}}을 호출하지만, 이는 renet kube 계약 재생성(wave 5)을 기다리는 중입니다. 클러스터와 네임스페이스는 이미 해석되었으므로 계약이 반영되면 다시 실행하십시오.",
       "targetExclusive": "-m/--machine 또는 --cluster 중 하나만 지정하십시오. 둘 다 지정할 수 없습니다",
       "targetRequired": "대상 머신(-m) 또는 클러스터(--cluster)가 필요합니다",
       "declareNeedsProvider": "--declare-only는 프로비저닝 없이 클러스터를 기록하므로 --provider와 --pool이 필요합니다",
       "poolRequired": "클러스터에는 최소 하나의 노드 풀이 필요합니다. --pool <spec>을 추가하세요"
     },
-    "clusterNotFound": "Ceph 클러스터 \"{{name}}\"을(를) 찾을 수 없습니다",
     "config": {
       "invalidEmail": "유효하지 않은 이메일 주소: \"{{value}}\".",
       "machineNotFound": "설정에서 머신 \"{{name}}\"을(를) 찾을 수 없습니다. 사용 가능한 항목: {{available}}.",
@@ -1999,27 +1851,14 @@
       "execFailed": "container_exec 실패",
       "logsFailed": "container_logs 실패"
     },
-    "contextNotFound": "설정 \"{{name}}\"을(를) 찾을 수 없습니다",
     "editor": {
       "headlessRefused": "헤드리스 편집기 호출은 무한 대기를 유발합니다: {{command}}. 대화형 플래그와 함께 --editor를 명시적으로 전달하세요.",
       "nonzeroExit": "편집기 {{command}}가 코드 {{code}}로 종료되었습니다",
       "notFound": "편집기가 설정되어 있지 않습니다. $GIT_EDITOR, git config core.editor, $VISUAL, $EDITOR를 설정하거나 --editor를 전달하세요.",
       "spawnFailed": "편집기 {{command}} 실행에 실패했습니다: {{reason}}"
     },
-    "failedCreateQueueItem": "큐 항목 생성에 실패했습니다",
-    "invalidAction": "잘못된 액션 \"{{action}}\"입니다. \"{{valid}}\"을(를) 사용하세요.",
-    "invalidCredentials": "자격 증명이 올바르지 않습니다",
-    "invalidEmail": "유효한 이메일 주소를 입력해 주세요",
-    "invalidExpiration": "토큰 만료 시간은 1시간에서 720시간 사이여야 합니다",
     "invalidFunctionParams": "함수 \"{{function}}\"에 대한 파라미터가 올바르지 않습니다: {{errors}}",
-    "invalidHost": "유효하지 않은 IP 주소 또는 호스트명: \"{{host}}\". 유효한 IPv4, IPv6 또는 호스트명이어야 합니다.",
-    "invalidJsonFile": "제공된 파일에 유효한 JSON이 포함되어 있지 않습니다.",
-    "invalidJsonVault": "볼트 JSON 데이터가 올바르지 않습니다.",
     "invalidKey": "유효하지 않은 키입니다. 유효한 키: {{keys}}",
-    "invalidMasterPassword": "볼트 암호화를 위한 마스터 비밀번호가 올바르지 않습니다",
-    "invalidPort": "유효하지 않은 포트 번호: \"{{port}}\". 1에서 65535 사이여야 합니다.",
-    "invalidPriorityMax": "priority-max 값이 올바르지 않습니다. 1에서 5 사이여야 합니다.",
-    "invalidPriorityMin": "priority-min 값이 올바르지 않습니다. 1에서 5 사이여야 합니다.",
     "license": {
       "preflightTokenNotReady": "구독 토큰이 준비되지 않았습니다. 실행: rdc subscription login. {{machine}}에 대한 배포를 건너뛰었습니다.",
       "recoveryFailedNoKnownRepos": "{{machine}}에서 저장소가 발견되었지만 로컬 설정에 추적된 항목이 없습니다. 추적 중인 저장소 목록을 보려면 `rdc repo list`를 실행한 후 다시 시도하세요.",
@@ -2030,18 +1869,9 @@
     "machineNotFound": "머신 \"{{name}}\"을(를) 찾을 수 없습니다",
     "machineRequired": "머신 이름이 필요합니다. --machine <name>을 사용하세요",
     "machineRequiredLocal": "머신 이름이 필요합니다. --machine <name>을 사용하세요",
-    "networkError": "네트워크 오류: {{message}}",
     "noActiveConfig": "활성 설정이 없습니다. 다음 명령으로 생성하세요: rdc config init <name>",
-    "notAuthenticated": "인증되지 않았습니다. 실행: rdc subscription login",
-    "passwordsMismatch": "비밀번호가 일치하지 않습니다",
     "permissionDenied": "권한이 거부되었습니다",
-    "poolNotFound": "Ceph 풀 \"{{name}}\"을(를) 찾을 수 없습니다",
     "precondition": {
-      "currentSecretsRequired": "{{pointer}}: --current 없이 민감한 필드가 변경되었습니다. 포인터와 이전 값을 매핑하는 --current-secrets <file>을 제공하세요",
-      "digestMismatch": "--current 다이제스트가 일치하지 않습니다 (예상: {{expected}}..., 실제: {{got}}...)",
-      "kindMismatch": "값 종류가 변경되었습니다 (저장됨: {{stored}}, 요청됨: {{claimed}})",
-      "mismatch": "{{count}}개 경로의 사전 조건이 실패했습니다:\n{{details}}",
-      "missing": "민감한 경로에는 --current(또는 --rotate-secret)가 필요합니다",
       "next": {
         "options": {
           "confirm": {
@@ -2049,27 +1879,13 @@
             "run": "rdc repo secret get {{repository}} --key {{key}}"
           },
           "rotate": {
-            "description": "사전 조건 건너뛰기 (교체, 감사됨)",
-            "run": "<원래 명령어> --rotate-secret"
+            "description": "사전 조건 건너뛰기 (교체, 감사됨)"
           }
         },
         "summary": "현재 값을 제공하거나 교체를 확인하세요."
-      },
-      "rotationRequiresTty": "{{pointer}}: 교체 확인에는 대화형 TTY가 필요합니다 (또는 --current-secrets 사용)",
-      "stubStillStub": "{{pointer}}: 편집된 값이 여전히 검열 스텁처럼 보이지만 현재 다이제스트와 일치하지 않습니다"
-    },
-    "protocol": {
-      "commandExitCode": "명령이 코드 {{code}}로 종료되었습니다",
-      "invalidAction": "잘못된 액션 '{{action}}'입니다. 다음 중 하나여야 합니다: {{validActions}}",
-      "invalidUrl": "유효하지 않은 프로토콜 URL: {{error}}",
-      "machineRequired": "머신 이름이 필요합니다. --machine <name>을 사용하세요",
-      "notSupported": "{{platform}}에서는 프로토콜 등록이 지원되지 않습니다",
-      "parseFailed": "URL 파싱에 실패했습니다: {{error}}",
-      "teamRequired": "팀 이름이 필요합니다. --team <name>을 사용하세요",
-      "tokenRequired": "토큰이 필요합니다. --token <token>을 사용하세요"
+      }
     },
     "regionRequired": "리전 이름이 필요합니다. --region을 사용하거나 다음 명령으로 기본값을 설정하세요: rdc config set region <name>",
-    "registrationFailed": "등록에 실패했습니다",
     "remoteNotFound": "\"{{name}}\"은(는) 알 수 없는 머신, 스토리지 또는 클러스터입니다. 머신: {{machines}}. 스토리지: {{storages}}. 클러스터: {{clusters}}",
     "repo": {
       "secret": {
@@ -2084,14 +1900,11 @@
     "repoNotDeployed": "\"{{repository}}\" 리포지토리가 {{machine}}에 배포되어 있지 않습니다.\n\n먼저 배포하세요:\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "\"{{name}}\" 리포지토리가 이미 \"{{machine}}\"에 마운트되어 있습니다. 실행 중인 리포지토리를 마이그레이션하면 데이터가 손상될 수 있습니다. 먼저 실행하세요: rdc repo down {{name}} --unmount",
     "repositoryNotFound": "리포지토리 \"{{name}}\"을(를) 찾을 수 없습니다",
-    "repositoryRequired": "저장소 ref가 필요합니다. 예: \"shop\" 또는 \"shop:test\".",
-    "resourceNotFound": "{{resource}}을(를) 찾을 수 없습니다",
     "ssh": {
       "noHostKey": "'{{machine}}' 머신에 볼트에 구성된 호스트 키가 없습니다",
       "noIpAddress": "'{{machine}}' 머신에 IP 주소가 설정되어 있지 않습니다",
       "noPrivateKey": "'{{team}}' 팀에 SSH 개인 키가 설정되어 있지 않습니다"
     },
-    "sshKeyNotFound": "SSH 키를 찾을 수 없습니다: {{path}}",
     "subscription": {
       "activationFailed": "라이선스 발급에 실패했습니다. 구독이 활성 상태이고 머신 슬롯이 사용 가능한지 확인하세요.",
       "notLoggedIn": "로그인되어 있지 않습니다. 일반 사용자는 `rdc subscription login`을 실행하세요. 자동화 환경에서는 `rdc subscription login --token <token>`을 실행하거나 `REDIACC_SUBSCRIPTION_TOKEN`을 설정하세요.",
@@ -2102,9 +1915,6 @@
       "absolutePathBlocked": "--remote 경로는 절대 경로가 아닌 상대 경로여야 합니다. 리포지토리 루트를 기준으로 한 상대 경로를 사용하세요.",
       "localPathNotFound": "로컬 경로가 존재하지 않습니다: {{path}}",
       "mirrorWithFile": "소스가 파일인 경우 --mirror를 사용할 수 없습니다. 대상 디렉토리의 인접 파일이 삭제될 수 있습니다.",
-      "noHostKey": "'{{machine}}' 머신에 볼트에 구성된 호스트 키가 없습니다",
-      "noIpAddress": "'{{machine}}' 머신에 IP 주소가 설정되어 있지 않습니다",
-      "noPrivateKey": "'{{team}}' 팀에 SSH 개인 키가 설정되어 있지 않습니다",
       "pathTraversalBlocked": "--remote 경로에 \"..\" 경로 순회가 포함되어서는 안 됩니다. 리포지토리 내부의 경로를 사용하세요.",
       "remoteAndRemoteFile": "--remote와 --remote-file을 함께 사용할 수 없습니다. 하나만 선택하세요.",
       "remoteFileLocalNotDir": "--remote-file이 설정된 경우 --local은 기존 디렉토리여야 합니다: {{path}}",
@@ -2127,19 +1937,12 @@
       "sshCode255": "SSH 연결에 실패했습니다. 가능한 원인:\n    - 인증 실패 (SSH 키 권한 확인)\n    - 호스트 키 검증 실패\n    - 네트워크 연결 끊김\n    - 원격 SSH 서비스가 실행되지 않음",
       "sshExitCode": "SSH가 코드 {{code}}로 종료되었습니다"
     },
-    "tfaVerificationFailed": "TFA 인증에 실패했습니다",
-    "tokenExpired": "토큰이 만료되었습니다. 다시 로그인해 주세요.",
-    "unexpectedError": "예기치 않은 오류: {{message}}",
     "unknownCommand": "알 수 없는 명령 \"{{command}}\"입니다. 사용 가능한 명령: {{available}}.",
     "unknownSubcommand": "알 수 없는 서브커맨드 \"{{command}}\"입니다. 사용 가능한 {{parent}} 서브커맨드: {{available}}.",
-    "validationError": "유효성 검사 오류: {{message}}",
     "vscode": {
       "browserNeedsRepo": "vscode --browser는 저장소 샌드박스를 서빙하므로, 대상은 저장소 ref여야 합니다: rdc vscode connect <repo-ref> --browser",
       "cleanupRequired": "모든 연결을 제거하려면 --all을, 특정 연결을 제거하려면 --connection <name>을 지정하세요.",
       "connectivityFailed": "{{host}}:{{port}}에 연결할 수 없습니다. {{error}}\n\n문제 해결:\n  - 머신이 켜져 있고 네트워크에 연결되어 있는지 확인하세요\n  - 머신 볼트의 IP 주소가 올바른지 확인하세요\n  - 방화벽에서 포트 {{port}}가 차단되어 있지 않은지 확인하세요\n  - 머신에 ping을 시도해 보세요: ping {{host}}",
-      "noHostKey": "'{{machine}}' 머신에 볼트에 구성된 호스트 키가 없습니다",
-      "noIpAddress": "'{{machine}}' 머신에 IP 주소가 설정되어 있지 않습니다",
-      "noPrivateKey": "'{{team}}' 팀에 SSH 개인 키가 설정되어 있지 않습니다",
       "notFound": "VS Code를 찾을 수 없습니다.\n\n다음에서 설치하세요: https://code.visualstudio.com/\n또는 REDIACC_VSCODE_PATH 환경 변수를 설정하세요.",
       "serverInstallFailed": "{{provider}} 설치 실패: {{error}}",
       "serverStartFailed": "{{provider}} 시작 실패: {{error}}",
@@ -2209,57 +2012,36 @@
     }
   },
   "options": {
-    "activationCode": "이메일에서 받은 활성화 코드",
     "apiToken": "API 토큰 (rdt_...)",
-    "apiUrl": "API 주소",
-    "bridge": "브리지 이름",
     "cleanupAll": "모든 rediacc SSH 구성 제거",
-    "cluster": "Ceph 클러스터 이름",
     "command": "대화형 셸 대신 명령 실행",
     "config": "이 명령에 특정 구성 사용",
     "configKey": "구성 키",
     "configValue": "구성 값",
-    "confirmPasswordNonInteractive": "비밀번호 확인 (비대화형 모드)",
     "confirmSync": "동기화 전 변경 사항 미리 보기 및 확인 요청",
     "connectionName": "특정 연결 제거",
-    "currentName": "현재 리소스 이름",
-    "datastore": "머신의 데이터스토어 경로",
     "debug": "디버그 출력 활성화",
     "dryRun": "변경 없이 수행될 작업 표시",
-    "email": "이메일 주소",
-    "endpoint": "API 엔드포인트 URL",
     "excludePatterns": "동기화에서 제외할 패턴",
-    "expires": "만료 시간 (시간 단위, 1-720)",
     "external": "외부 터미널 창에서 강제 실행",
     "extraMachine": "다중 머신 작업을 위한 추가 머신 (name:ip:user)",
     "fields": "출력에 포함할 필드 목록 (쉼표로 구분)",
     "file": "파일 경로",
-    "filterStatus": "상태로 필터링",
     "folder": "열 원격 폴더 경로",
-    "follow": "로그 출력 팔로우",
     "force": "확인 프롬프트 건너뜀",
     "function": "실행할 함수 이름",
     "graceDays": "최근 보관된 저장소의 유예 기간 (일 단위, 기본값: 7)",
-    "image": "RBD 이미지 이름",
-    "importMode": "가져오기 모드 (merge 또는 replace)",
     "insiders": "VS Code Insiders 설정 사용",
     "lang": "언어 재정의 ({{languages}})",
     "licenses": "릴리스 빌드에 포함된 THIRD_PARTY_LICENSES 전문을 출력합니다",
-    "limit": "최대 결과 수",
     "localPath": "로컬 디렉터리 경로 (기본값: 현재 디렉터리)",
     "localPaths": "하나 이상의 로컬 파일 또는 디렉터리 경로 (기본값: 현재 디렉터리)",
-    "logLines": "표시할 로그 줄 수 (기본값: 50)",
     "machine": "머신 이름",
-    "machineForVault": "머신 이름 (테스트 후 볼트 업데이트용)",
     "machineIp": "머신 IP 주소 또는 호스트명",
-    "machineNames": "머신 이름 (쉼표로 구분)",
-    "machineShorthand": "머신 이름 (--machine의 단축 표기)",
-    "masterPassword": "볼트 암호화를 위한 마스터 비밀번호",
     "mirrorDownload": "미러 모드 -- 원격에 없는 로컬 파일 삭제",
     "mirrorUpload": "미러 모드 -- 로컬에 없는 원격 파일 삭제",
     "name": "리소스 이름",
     "newName": "새 리소스 이름",
-    "newPasswordNonInteractive": "새 비밀번호 (비대화형 모드)",
     "newWindow": "새 VS Code 창에서 열기",
     "opsBackend": "가상화 백엔드 (kvm|qemu, 자동 감지)",
     "opsBasic": "최소 클러스터 (브리지 + 워커 1개)",
@@ -2269,25 +2051,9 @@
     "opsParallel": "VM 병렬 생성",
     "opsSkipOrchestration": "클러스터 오케스트레이션 건너뜀",
     "opsSSHUser": "VM 연결을 위한 SSH 사용자 이름",
-    "organization": "조직 이름",
     "output": "출력 형식 (table|json|yaml|csv)",
     "outputFormat": "출력 형식 (json)",
-    "outputPath": "출력 파일 저장 경로",
     "param": "함수 매개변수",
-    "parentRepository": "상위 저장소 (포크용)",
-    "parentRepositoryTag": "상위 저장소 태그",
-    "password": "비밀번호 (비대화형 로그인용)",
-    "pollInterval": "폴링 간격 (밀리초)",
-    "pool": "Ceph 풀 이름",
-    "priority": "우선순위 (1=최고)",
-    "priorityMax": "최대 우선순위 (1-5)",
-    "priorityMin": "최소 우선순위 (1-5)",
-    "protocolAction": "작업 ({{actions}})",
-    "protocolForce": "이미 등록된 경우에도 강제 재등록",
-    "protocolParams": "추가 매개변수",
-    "protocolSystem": "시스템 전체에 등록 (관리자 권한 필요)",
-    "protocolSystemUnregister": "시스템 전체 등록 해제 (관리자 권한 필요)",
-    "protocolToken": "인증 토큰",
     "queryBlockDevices": "블록 장치만 포함",
     "queryContainers": "컨테이너만 포함",
     "queryLicenses": "저장소 라이선스 상태 포함",
@@ -2299,48 +2065,26 @@
     "querySyncCerts": "쿼리 후 머신에서 ACME 인증서 캐시도 가져오기",
     "querySystem": "시스템 정보만 포함",
     "quiet": "정보 출력 억제",
-    "rawVault": "원시 볼트 JSON (스크립트/CI용)",
-    "region": "리전 이름",
     "remoteFile": "저장소 내 원격 파일 경로 (단일 파일 전송 시 --remote의 대안)",
     "remoteFileUpload": "업로드할 단일 원격 파일 경로 (저장소 루트 기준 상대 경로). --remote와 상호 배타적.",
     "remotePath": "저장소 내 원격 하위 디렉터리 경로",
     "renetPath": "renet 바이너리 경로 (기본값: PATH의 renet)",
-    "repository": "저장소 이름 (저장소 환경에 연결)",
-    "repositoryShorthand": "저장소 ref (repo[:tag]); 머신은 여기서 유도됨",
-    "repositoryTag": "저장소 태그",
     "resetHome": "새로 시작을 위해 저장소별 홈 오버레이 초기화",
-    "saveAs": "이름 지정 구성에 자격 증명 저장",
-    "saveKnownHosts": "성공적인 테스트 후 known_hosts를 머신 볼트에 저장",
     "searchInField": "{{field}}에서 검색",
-    "searchQueue": "작업 ID, 팀, 머신, 브리지에서 검색",
     "searchRepos": "이름으로 저장소 필터링",
     "serverUrl": "계정 서버 URL",
-    "sessionName": "세션 이름",
     "skipEnvSetup": "원격 환경 설정 건너뜀",
     "skipRouterRestart": "바이너리 업데이트 후 라우트 서버 재시작 건너뜀",
-    "snapshot": "RBD 스냅샷 이름",
     "sortByField": "필드로 정렬",
     "sortDesc": "내림차순 정렬",
     "sortDescending": "내림차순 정렬",
-    "sortField": "필드로 정렬",
     "sshKey": "SSH 개인 키 경로 (예: ~/.ssh/id_rsa)",
-    "sshPassword": "초기 인증을 위한 SSH 비밀번호",
     "sshPort": "SSH 포트",
-    "sshPrivateKey": "SSH 개인 키 경로",
-    "sshPublicKey": "SSH 공개 키 경로",
     "sshUser": "SSH 사용자 이름",
-    "subscriptionPlan": "구독 플랜 (COMMUNITY, PROFESSIONAL, BUSINESS, ENTERPRISE)",
-    "switch": "생성 후 이 구성으로 전환",
-    "target": "대상 리소스 이름",
     "team": "팀 이름",
-    "tfaCode": "인증을 위한 현재 TFA 코드",
-    "tokenName": "토큰 이름",
     "urlOnly": "실행 대신 VS Code URI 출력",
-    "userPassword": "새 사용자의 비밀번호",
     "vaultContent": "JSON 문자열로 된 볼트 내용",
     "vaultJson": "JSON 문자열로 된 볼트 내용",
-    "vaultJsonMachine": "JSON 문자열로 된 머신 볼트 데이터",
-    "vaultVersion": "낙관적 잠금을 위한 현재 볼트 버전",
     "verifyChecksum": "동기화 후 체크섬으로 파일 검증",
     "vmId": "가상 머신 ID",
     "vscodeBrowser": "저장소 샌드박스 안에서 브라우저용 VS Code 서빙 (로컬 VS Code 불필요)",
@@ -2348,7 +2092,6 @@
     "vscodeServerArchive": "머신에 미리 준비된 서버 tarball 경로 (에어갭 설치용)",
     "vscodeServerProvider": "브라우저용 VS Code 서버 구현체 (openvscode, code-server)",
     "watch": "변경 사항 감시",
-    "watchUpdates": "업데이트 감시",
     "yes": "확인 프롬프트 건너뜀",
     "artifactRef": "백업 아티팩트 참조 (repo[:tag][@place])",
     "background": "머신에서 분리된 작업으로 실행합니다: ID를 출력하고 종료합니다",
@@ -2365,22 +2108,8 @@
     "strategyName": "백업 전략 이름"
   },
   "prompts": {
-    "apiUrl": "API 주소:",
     "cancelled": "취소됨",
-    "confirm": "계속 진행하시겠습니까?",
-    "confirmDelete": "이 항목을 삭제하시겠습니까?",
-    "confirmNewPassword": "새 비밀번호 확인:",
-    "confirmPassword": "비밀번호 확인:",
-    "email": "이메일:",
-    "enterValue": "{{field}} 입력:",
     "masterPassword": "마스터 비밀번호를 입력하세요:",
-    "masterPasswordForVault": "볼트 암호화를 위한 마스터 비밀번호를 입력하세요:",
-    "newPassword": "새 비밀번호:",
-    "password": "비밀번호:",
-    "passwordForUser": "새 사용자의 비밀번호:",
-    "selectOption": "옵션을 선택하세요:",
-    "setPassword": "사용자 비밀번호 설정:",
-    "sshPassword": "SSH 비밀번호 (키 인증 사용 시 비워두세요): ",
     "syncConfirm": "\n동기화를 진행하시겠습니까? [y/N/d(etails)] ",
     "syncConfirmHelp": "y (예), n (아니오), 또는 d (세부 정보)를 입력하세요"
   },
@@ -2391,29 +2120,10 @@
       "unreadableConfigs": "{{count}}개의 설정 파일을 읽을 수 없습니다: {{names}} (암호화되었거나 손상됨)"
     }
   },
-  "spinners": {
-    "connecting": "연결 중...",
-    "creating": "{{resource}} 생성 중...",
-    "deleting": "{{resource}} 삭제 중...",
-    "fetching": "{{resource}} 가져오는 중...",
-    "loading": "불러오는 중...",
-    "processing": "처리 중...",
-    "saving": "저장 중...",
-    "updating": "{{resource}} 업데이트 중..."
-  },
   "status": {
-    "cancelled": "취소됨",
-    "completed": "완료됨",
-    "failed": "실패",
-    "pending": "대기 중",
-    "processing": "처리 중",
-    "success": "성공"
-  },
-  "table": {
-    "noData": "표시할 데이터가 없습니다"
+    "cancelled": "취소됨"
   },
   "timing": {
-    "completed": "{{operation}}에서 완료됨 (총 소요 시간: {{total}})",
     "step": {
       "activating": "라이선스 활성화 중...",
       "configLoaded": "설정 불러오기 완료 ({{duration}})",
