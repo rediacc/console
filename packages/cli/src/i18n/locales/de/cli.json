@@ -408,7 +408,9 @@
       },
       "reconcile": {
         "description": "Baut den Laufzeitzustand aus der auf den Maschinen tatsächlich vorhandenen Wahrheit neu auf. Behebt veraltete Anhänge- und Routing-Daten.",
-        "optionMachine": "Den Abgleich auf diese Maschinen beschränken"
+        "optionMachine": "Den Abgleich auf diese Maschinen beschränken",
+        "optionAcceptObserved": "Eine deklarierte Platzierung so umschreiben, dass sie mit dem tatsächlichen Standort des Images übereinstimmt, aber nur wenn das eindeutig ist (auf genau einer Maschine beobachtet). Duplikate bleiben Konflikte.",
+        "acceptObservedUnfiltered": "--accept-observed kann nicht mit --machine kombiniert werden: Ein partieller Scan kann nicht beweisen, dass eine Platzierung eindeutig ist, daher wäre das Umschreiben eine Vermutung. Führen Sie 'rdc config reconcile --accept-observed' ungefiltert aus."
       },
       "rotateCek": {
         "description": "Den Konfigurations-Verschlüsselungsschlüssel der Organisation rotieren",
@@ -1109,17 +1111,26 @@
         "deltaDone": "Delta-Sync abgeschlossen",
         "deltaFailed": "Delta-Sync fehlgeschlagen",
         "deltaSync": "Delta wird synchronisiert...",
-        "description": "Live-Migration eines Repositorys von einer Maschine zur anderen mit minimaler Ausfallzeit. Zwei-Phasen-rsync: Massentransfer im Betrieb, dann kurzer Stopp für Delta-Sync. Unterstützt CRIU-Checkpoint für Prozessspeicher-Migration und automatische Bereitstellung von Zielmaschinen",
+        "description": "Ein Repository mit minimaler Ausfallzeit live von einer Maschine auf eine andere migrieren. Zweiphasiges rsync: Massentransfer während des laufenden Betriebs, dann kurzer Stopp für die Delta-Synchronisierung. Verschiebt das gesamte Repository (das Routing wird auf das neue Zuhause umgestellt) und löscht nach erfolgreichem Umzug die Quell-Images (mit --keep-source behalten). Unterstützt CRIU-Checkpoints für die Migration des Prozessspeicherzustands und automatische Bereitstellung von Zielmaschinen",
         "descriptionShort": "Live-Migration eines Repositorys zwischen Maschinen",
         "dnsSkipped": "DNS-Umschaltung übersprungen (keine baseDomain oder Cloudflare-Konfiguration)",
         "downtime": "Ausfallzeit: {{duration}}",
         "noOpSameHome": "Repository {{name}} befindet sich bereits auf {{machine}}; nichts zu migrieren.",
+        "placementUpdated": "Routing aktualisiert: {{name}} befindet sich jetzt auf {{machine}}",
+        "placementRetryHint": "Das Routing zeigt bereits auf {{machine}}, daher wird 'rdc repo up {{name}}' dort erneut versuchen. Die Quell-Images wurden als Wiederherstellungsmaterial behalten.",
+        "forkRefError": "migrate verschiebt ein Repository und alle seine Forks zusammen, und {{name}}:{{tag}} ist ein Fork. Um eine Kopie des Forks woanders zu platzieren, verwenden Sie 'rdc repo push {{name}}:{{tag}} --to <place>' (die Kopie ist ein Backup-Artefakt; 'rdc backup restore' macht sie aktiv), oder befördern Sie ihn zuerst mit 'rdc repo promote {{name}}:{{tag}}'.",
+        "familyHasForks": "migrate verschiebt die gesamte Familie auf eine Maschine, aber {{name}} hat noch Forks: {{forks}}. Verschieben Sie jeden Fork mit 'rdc repo push {{name}}:<tag> --to <place>' dorthin, wo Sie ihn haben möchten, oder warten Sie auf die Migration der gesamten Familie.",
+        "deletingSource": "Quell-Images auf {{machine}} werden gelöscht...",
+        "sourceDeleted": "Quell-Images für {{name}} von {{machine}} gelöscht",
+        "sourceRetained": "Quell-Images für {{name}} auf {{machine}} behalten. Sie sind über keinen Konfigurationseintrag adressierbar; reconcile wird sie als Streufunde markieren.",
+        "sourceDeleteFailed": "Die Quell-Images für {{name}} auf {{machine}} konnten nicht gelöscht werden: {{error}}. Der Umzug war bereits erfolgreich; räumen Sie den Rest mit 'rdc machine prune {{machine}}' auf.",
         "optionBwlimit": "Bandbreitenlimit für rsync-Transfer (z.B. 10M)",
         "optionCheckpoint": "CRIU-Live-Migration: Prozessspeicherzustand erfassen und wiederherstellen",
         "optionDeltaBase": "Unveränderliche Basis-GUID für das Umschalt-Delta (erweitert; Standard ist die Phase-1-Basis)",
         "optionFrom": "Name der Quellmaschine",
         "optionProvision": "Automatische Bereitstellung über Cloud-Anbieter (z.B. hetzner, linode)",
         "optionSkipDns": "DNS-Umschaltung nach Migration überspringen",
+        "optionKeepSource": "Quell-Images nach einem erfolgreichen Umzug behalten (werden standardmäßig gelöscht; übrig gebliebene Kopien sind über keinen Konfigurationseintrag adressierbar und werden von reconcile als Streufunde markiert)",
         "optionStrategy": "Block-Delta-Strategie für die Umschaltung: auto, physical oder shared",
         "optionTo": "Zielmaschine oder -cluster",
         "phase1": "Phase 1: Massendaten übertragen (Quelle läuft weiter)...",
@@ -1329,6 +1340,11 @@
         "skipCheckpointOption": "CRIU checkpoint-Wiederherstellung überspringen, auch wenn checkpoint-Daten vorhanden sind (Neustart erzwingen)",
         "starting": "Dienste für \"{{repository}}\" auf \"{{machine}}\" werden gestartet...",
         "tlsOption": "Dediziertes TLS-Zertifikat für dieses Repository anfordern (Forks verwenden standardmäßig das gemeinsame Maschinenzertifikat)"
+      },
+      "mount": {
+        "starting": "\"{{repository}}\" wird auf \"{{machine}}\" eingehängt...",
+        "completed": "Repository eingehängt",
+        "failed": "Einhängen fehlgeschlagen"
       },
       "upAll": {
         "completed": "Alle Repositories gestartet",
@@ -2161,7 +2177,8 @@
     "machine": {
       "health": "Maschinenprüfung für CI/CD",
       "keyConcepts": "\nSchlüsselkonzepte:\n\n  Abfragefilter\n    • rdc machine status <name> gibt standardmäßig alle Abschnitte zurück\n    • Verwenden Sie --system, --repositories, --containers, --services, --network, --block-devices zum Filtern\n    • JSON-Ausgabe ergänzt Container mit: repository (aufgelöster Name), domain, autoRoute\n\n  Überwachung & Gesundheit\n    • machine health gibt zurück: 0=gesund, 1=Warnung, 2=Fehler (für CI/CD-Gates nutzen)\n    • machine status <name> --containers --health-check gibt 2 zurück, wenn ein Container ungesund ist\n    • machine status <name> --services --stability-check gibt 2 zurück, wenn ein Dienst fehlgeschlagen ist, neu startet oder >3 Neustarts hat\n    • machine prune entfernt verwaiste Loopback-IPs und systemd-Units gelöschter Repositories\n\n  Datenspeicher-Struktur (/mnt/rediacc/)\n    • repositories/: verschlüsselte LUKS-Images (eines pro Repository-GUID)\n    • mounts/: entschlüsselte Einhängepunkte (zugänglich wenn Repository eingehängt ist)\n    • immovable/: Docker-Daemon-Daten pro Repository\n    • Datastore ist eine BTRFS-Pool-Datei auf der Systemplatte. Effektiv freier Speicher = min(freier Speicher der Platte, freier Speicher des Datastores). Erweitern mit: rdc datastore resize\n",
-      "query": "Vollständigen Maschinenstatus anzeigen"
+      "query": "Vollständigen Maschinenstatus anzeigen",
+      "containers": "Nur den Container-Status anzeigen"
     },
     "repo": {
       "create": "Verschlüsseltes Repository erstellen",

@@ -408,7 +408,9 @@
       },
       "reconcile": {
         "description": "根据机器上的真实状态重建运行时状态。修复过时的挂接和路由数据。",
-        "optionMachine": "将协调（reconcile）限定于这些机器"
+        "optionMachine": "将协调（reconcile）限定于这些机器",
+        "optionAcceptObserved": "将声明的放置位置重写为镜像的实际所在位置，但仅当结果是无歧义时才这样做（恰好在一台机器上观察到）。重复项仍视为冲突。",
+        "acceptObservedUnfiltered": "--accept-observed 不能与 --machine 同时使用：部分扫描无法证明放置位置是无歧义的，因此重写将只是猜测。请不加过滤地运行 'rdc config reconcile --accept-observed'。"
       },
       "rotateCek": {
         "verifying": "正在验证新密钥能否解密配置...",
@@ -1109,7 +1111,7 @@
         "deltaDone": "差异同步完成",
         "deltaFailed": "差异同步失败",
         "deltaSync": "正在同步差异数据...",
-        "description": "以最小停机时间将仓库从一台机器实时迁移到另一台。两阶段 rsync：运行时批量传输，然后短暂停止进行差异同步。支持 CRIU 检查点用于进程内存迁移和目标机器自动配置",
+        "description": "以最短停机时间将仓库从一台机器实时迁移到另一台机器。两阶段 rsync：在运行期间进行批量传输，然后短暂停止以进行增量同步。迁移整个仓库（路由会重新指向新位置），迁移成功后会删除源镜像（使用 --keep-source 可保留它们）。支持用于进程内存状态迁移的 CRIU 检查点，以及目标机器的自动置备",
         "descriptionShort": "在机器之间实时迁移仓库",
         "dnsSkipped": "已跳过 DNS 切换（无 baseDomain 或 Cloudflare 配置）",
         "downtime": "停机时间：{{duration}}",
@@ -1119,6 +1121,7 @@
         "optionFrom": "源机器名称",
         "optionProvision": "通过云服务商自动配置目标机器（例如 hetzner、linode）",
         "optionSkipDns": "迁移后跳过 DNS 记录切换",
+        "optionKeepSource": "成功迁移后保留源镜像（默认会被删除；残留副本无法通过任何配置记录寻址，reconcile 会将其标记为孤立项）",
         "optionStrategy": "切换时的块增量策略：auto、physical 或 shared",
         "optionTo": "目标机器或集群",
         "phase1": "阶段 1：批量传输数据（源继续运行）...",
@@ -1139,7 +1142,15 @@
         "targetStarted": "目标服务已启动",
         "unmountFailed": "卸载源失败",
         "unmountingSource": "正在卸载源...",
-        "noOpSameHome": "仓库 {{name}} 已位于 {{machine}} 上；无需迁移。"
+        "noOpSameHome": "仓库 {{name}} 已位于 {{machine}} 上；无需迁移。",
+        "placementUpdated": "路由已更新：{{name}} 现在位于 {{machine}}",
+        "placementRetryHint": "路由已指向 {{machine}}，因此 'rdc repo up {{name}}' 将在那里重试。源镜像已作为恢复素材保留。",
+        "forkRefError": "migrate 会将仓库及其所有 fork 一起迁移，而 {{name}}:{{tag}} 是一个 fork。要将 fork 的副本放到别处，请使用 'rdc repo push {{name}}:{{tag}} --to <place>'（该副本是备份产物；'rdc backup restore' 可使其生效），或先用 'rdc repo promote {{name}}:{{tag}}' 将其提升。",
+        "familyHasForks": "migrate 会将整个家族迁移到一台机器上，但 {{name}} 仍有 fork：{{forks}}。请用 'rdc repo push {{name}}:<tag> --to <place>' 将每个 fork 推送到你想要的位置，或等待整个家族一起迁移。",
+        "deletingSource": "正在删除 {{machine}} 上的源镜像...",
+        "sourceDeleted": "{{name}} 的源镜像已从 {{machine}} 删除",
+        "sourceRetained": "{{name}} 的源镜像已保留在 {{machine}} 上。它们无法通过任何配置记录寻址；reconcile 会将其标记为孤立项。",
+        "sourceDeleteFailed": "无法删除 {{machine}} 上 {{name}} 的源镜像：{{error}}。迁移本身已经成功；请用 'rdc machine prune {{machine}}' 清理残留。"
       },
       "noCredential": "警告: 仓库 \"{{name}}\" 未设置凭证。对加密仓库的操作可能会失败。",
       "policy": {
@@ -1329,6 +1340,11 @@
         "allOption": "部署所有归属于 --machine 的仓库（批量形式）",
         "noWaitOption": "容器启动后立即返回；健康检查在后台继续",
         "noStartOption": "挂载并准备仓库，但不运行其 up() 步骤（合并了已弃用的 'repo mount'：LUKS 解锁，以及针对集群仓库的 PV 生成）。"
+      },
+      "mount": {
+        "starting": "正在将 \"{{repository}}\" 挂载到 \"{{machine}}\"...",
+        "completed": "仓库已挂载",
+        "failed": "挂载失败"
       },
       "upAll": {
         "completed": "所有仓库已启动",
@@ -2161,7 +2177,8 @@
     "machine": {
       "health": "CI/CD 健康检查",
       "keyConcepts": "\n关键概念:\n\n  查询过滤器\n    • rdc machine status <name> 默认返回所有部分\n    • 使用 --system、--repositories、--containers、--services、--network、--block-devices 进行过滤\n    • JSON 输出为容器补充: repository (解析后的名称)、domain、autoRoute\n\n  健康监控\n    • machine health 退出码: 0=健康、1=警告、2=错误 — 用于 CI/CD 门控\n    • machine status <name> --containers --health-check 如果任何容器不健康则退出码为 2\n    • machine status <name> --services --stability-check 如果任何服务失败、正在重启或重启超过 3 次则退出码为 2\n    • machine prune 会清理已删除仓库残留的孤立回环 IP 和 systemd 单元\n\n  数据存储结构 (/mnt/rediacc/)\n    • repositories/ — 加密的 LUKS 镜像 (每个仓库 GUID 一个)\n    • mounts/ — 解密的挂载点 (仓库挂载时可访问)\n    • immovable/ — 每个仓库的 Docker daemon 数据\n    • 数据存储是系统磁盘上的 BTRFS 池文件。有效可用空间 = min(磁盘可用空间, 数据存储可用空间)。使用以下命令扩容: rdc datastore resize\n",
-      "query": "显示完整机器状态"
+      "query": "显示完整机器状态",
+      "containers": "仅显示容器状态"
     },
     "repo": {
       "create": "创建加密仓库",

@@ -408,7 +408,9 @@
       },
       "reconcile": {
         "description": "머신의 실제 상태를 기준으로 런타임 상태를 재구축합니다. 오래된 어태치 정보와 라우팅 데이터를 수정합니다",
-        "optionMachine": "reconcile 대상을 이 머신들로 제한합니다"
+        "optionMachine": "reconcile 대상을 이 머신들로 제한합니다",
+        "optionAcceptObserved": "선언된 배치를 이미지가 실제로 있는 위치와 일치하도록 다시 씁니다. 단, 모호하지 않은 경우에만 적용됩니다 (정확히 하나의 머신에서 관찰된 경우). 중복은 계속 충돌로 남습니다.",
+        "acceptObservedUnfiltered": "--accept-observed는 --machine과 함께 사용할 수 없습니다: 부분 스캔으로는 배치가 모호하지 않음을 증명할 수 없으므로, 다시 쓰는 것은 추측이 됩니다. 필터 없이 'rdc config reconcile --accept-observed'를 실행하세요."
       },
       "rotateCek": {
         "cancelled": "교체가 취소되었습니다. 변경된 사항이 없습니다",
@@ -1109,7 +1111,7 @@
         "deltaDone": "델타 동기화 완료",
         "deltaFailed": "델타 동기화 실패",
         "deltaSync": "델타 동기화 중...",
-        "description": "최소 다운타임으로 저장소를 한 머신에서 다른 머신으로 라이브 마이그레이션합니다. 두 단계 rsync: 실행 중에 대량 전송 후 델타 동기화를 위해 잠시 중지합니다. 프로세스 메모리 마이그레이션을 위한 CRIU 체크포인트와 대상 머신 자동 프로비저닝을 지원합니다",
+        "description": "다운타임을 최소화하며 저장소를 한 머신에서 다른 머신으로 라이브 마이그레이션합니다. 2단계 rsync: 실행 중에 대량 전송을 수행한 후, 델타 동기화를 위해 짧게 정지합니다. 저장소 전체를 이동시키며 (라우팅이 새 위치로 재설정됩니다), 이동이 성공하면 원본 이미지를 삭제합니다 (유지하려면 --keep-source 사용). 프로세스 메모리 상태 마이그레이션을 위한 CRIU 체크포인트와 대상 머신 자동 프로비저닝을 지원합니다",
         "descriptionShort": "머신 간 저장소를 라이브 마이그레이션합니다",
         "dnsSkipped": "DNS 전환 건너뜀 (baseDomain 또는 Cloudflare 설정 없음)",
         "downtime": "다운타임: {{duration}}",
@@ -1119,6 +1121,7 @@
         "optionFrom": "소스 머신 이름",
         "optionProvision": "클라우드 공급자를 통해 대상을 자동 프로비저닝합니다 (예: hetzner, linode)",
         "optionSkipDns": "마이그레이션 후 DNS 레코드 전환을 건너뜁니다",
+        "optionKeepSource": "성공적으로 이동한 후에도 원본 이미지를 유지합니다 (기본적으로 삭제됨. 남은 사본은 어떤 설정 레코드로도 참조할 수 없으며 reconcile이 이를 미아로 표시합니다)",
         "optionStrategy": "전환을 위한 블록 델타 전략: auto, physical, 또는 shared",
         "optionTo": "대상 머신 또는 클러스터",
         "phase1": "1단계: 대량 데이터 전송 중 (소스 계속 실행 중)...",
@@ -1139,7 +1142,15 @@
         "targetStarted": "대상 서비스 시작 완료",
         "unmountFailed": "소스 마운트 해제 실패",
         "unmountingSource": "소스를 마운트 해제하는 중...",
-        "noOpSameHome": "저장소 {{name}}은(는) 이미 {{machine}}에 있습니다. 마이그레이션할 것이 없습니다"
+        "noOpSameHome": "저장소 {{name}}은(는) 이미 {{machine}}에 있습니다. 마이그레이션할 것이 없습니다",
+        "placementUpdated": "라우팅이 업데이트되었습니다: {{name}}이(가) 이제 {{machine}}에 있습니다",
+        "placementRetryHint": "라우팅이 이미 {{machine}}을(를) 가리키고 있으므로 'rdc repo up {{name}}'이 그곳에서 재시도됩니다. 원본 이미지는 복구 자료로 보존되었습니다.",
+        "forkRefError": "migrate는 저장소와 그 모든 포크를 함께 이동시키는데, {{name}}:{{tag}}는 포크입니다. 포크의 사본을 다른 곳에 두려면 'rdc repo push {{name}}:{{tag}} --to <place>'를 사용하세요 (사본은 백업 아티팩트이며, 'rdc backup restore'로 활성화합니다). 또는 먼저 'rdc repo promote {{name}}:{{tag}}'로 승격하세요.",
+        "familyHasForks": "migrate는 전체 패밀리를 한 머신으로 이동시키지만, {{name}}에는 아직 포크가 있습니다: {{forks}}. 원하는 위치로 각 포크를 'rdc repo push {{name}}:<tag> --to <place>'로 push하거나, 전체 패밀리 migrate를 기다리세요.",
+        "deletingSource": "{{machine}}에서 원본 이미지를 삭제하는 중...",
+        "sourceDeleted": "{{name}}의 원본 이미지가 {{machine}}에서 삭제되었습니다",
+        "sourceRetained": "{{name}}의 원본 이미지를 {{machine}}에 보존했습니다. 어떤 설정 레코드로도 참조할 수 없습니다. reconcile이 이를 미아로 표시합니다.",
+        "sourceDeleteFailed": "{{machine}}에서 {{name}}의 원본 이미지를 삭제하지 못했습니다: {{error}}. 이동 자체는 이미 성공했습니다. 'rdc machine prune {{machine}}'으로 남은 것을 정리하세요."
       },
       "noCredential": "경고: 저장소 \"{{name}}\"에 자격증명이 설정되어 있지 않습니다. 암호화된 저장소에 대한 작업이 실패할 수 있습니다.",
       "policy": {
@@ -1329,6 +1340,11 @@
         "allOption": "--machine을 홈으로 하는 모든 저장소를 배포합니다 (일괄 형식)",
         "noStartOption": "up() 단계를 실행하지 않고 저장소를 마운트하고 준비만 합니다 (폐지된 'repo mount'를 흡수: LUKS 오픈, 클러스터 저장소의 경우 PV 생성)",
         "noWaitOption": "컨테이너가 시작되면 바로 반환됩니다. 상태 확인은 백그라운드에서 계속됩니다"
+      },
+      "mount": {
+        "starting": "\"{{machine}}\"에서 \"{{repository}}\"를 마운트하는 중...",
+        "completed": "저장소 마운트 완료",
+        "failed": "마운트 실패"
       },
       "upAll": {
         "completed": "모든 저장소 시작 완료",
@@ -2161,7 +2177,8 @@
     "machine": {
       "health": "CI/CD용 상태 확인",
       "keyConcepts": "\n핵심 개념:\n\n  쿼리 필터\n    • rdc machine status <name>은 기본적으로 모든 섹션을 반환\n    • --system, --repositories, --containers, --services, --network, --block-devices로 필터링\n    • JSON 출력은 컨테이너에 repository (이름 해결), domain, autoRoute를 추가로 제공\n\n  상태 확인 및 모니터링\n    • machine health 종료 코드: 0=정상, 1=경고, 2=오류 -- CI/CD 게이트에 활용\n    • machine status <name> --containers --health-check: 비정상 컨테이너가 있으면 코드 2로 종료\n    • machine status <name> --services --stability-check: 실패하거나 재시작 중이거나 재시작 횟수가 3회 초과인 서비스가 있으면 코드 2로 종료\n    • machine prune: 삭제된 저장소의 고아 루프백 IP 및 systemd 유닛 제거\n\n  데이터스토어 구조 (/mnt/rediacc/)\n    • repositories/ -- 암호화된 LUKS 이미지 (저장소 GUID당 하나)\n    • mounts/ -- 복호화된 마운트 지점 (저장소가 마운트된 경우 접근 가능)\n    • immovable/ -- 저장소별 Docker 데몬 데이터\n    • 데이터스토어는 시스템 디스크의 BTRFS 풀 파일입니다. 유효 여유 공간 = min(디스크 여유, 데이터스토어 여유). rdc datastore resize로 확장 가능\n",
-      "query": "전체 머신 상태 표시"
+      "query": "전체 머신 상태 표시",
+      "containers": "컨테이너 상태만 표시"
     },
     "repo": {
       "create": "암호화된 저장소 생성",

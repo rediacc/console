@@ -408,7 +408,9 @@
       },
       "reconcile": {
         "description": "Reconstrói o estado em tempo de execução a partir do estado real das máquinas. Corrige dados de anexação e encaminhamento desatualizados.",
-        "optionMachine": "Limitar a reconciliação a estas máquinas"
+        "optionMachine": "Limitar a reconciliação a estas máquinas",
+        "optionAcceptObserved": "Reescreve uma colocação declarada para corresponder ao local real da imagem, mas apenas quando isso é inequívoco (observada em exatamente uma máquina). As duplicações mantêm-se como conflitos.",
+        "acceptObservedUnfiltered": "--accept-observed não pode ser combinado com --machine: uma verificação parcial não consegue provar que uma colocação é inequívoca, pelo que a reescrita seria um palpite. Execute 'rdc config reconcile --accept-observed' sem filtro."
       },
       "rotateCek": {
         "cancelled": "Rotação cancelada. Nada foi alterado.",
@@ -1109,7 +1111,7 @@
         "deltaDone": "Sincronização delta concluída",
         "deltaFailed": "Sincronização delta falhou",
         "deltaSync": "A sincronizar delta...",
-        "description": "Migrar um repositório em directo de uma máquina para outra com tempo de inactividade mínimo. rsync em duas fases: transferência em volume enquanto está em execução, depois breve paragem para sincronização delta. Suporta ponto de verificação CRIU para migração do estado de memória dos processos e aprovisionamento automático das máquinas de destino.",
+        "description": "Migra um repositório em direto de uma máquina para outra com o mínimo de tempo de inatividade. rsync em duas fases: transferência em massa enquanto está em execução, seguida de uma breve paragem para sincronização delta. Move o repositório inteiro (o encaminhamento é redirecionado para o novo destino) e, assim que a mudança for bem-sucedida, elimina as imagens de origem (use --keep-source para as manter). Suporta checkpoint CRIU para migração do estado de memória dos processos e aprovisionamento automático das máquinas de destino",
         "descriptionShort": "Migrar um repositório entre máquinas em directo",
         "dnsSkipped": "Comutação DNS ignorada (sem baseDomain ou configuração Cloudflare)",
         "downtime": "Tempo de inactividade: {{duration}}",
@@ -1119,6 +1121,7 @@
         "optionFrom": "Nome da máquina de origem",
         "optionProvision": "Aprovisionar automaticamente o destino via fornecedor de cloud (por ex., hetzner, linode)",
         "optionSkipDns": "Não comutar os registos DNS após a migração",
+        "optionKeepSource": "Manter as imagens de origem após uma mudança bem-sucedida (por omissão são eliminadas; as cópias remanescentes não são endereçáveis por nenhum registo de configuração e o reconcile assinala-as como órfãs)",
         "optionStrategy": "Estratégia de delta de blocos para o corte: auto, physical ou shared",
         "optionTo": "Máquina ou cluster de destino",
         "phase1": "Fase 1: A transferir dados em volume (origem continua em execução)...",
@@ -1139,7 +1142,15 @@
         "targetStarted": "Serviços de destino iniciados",
         "unmountFailed": "Falha ao desmontar a origem",
         "unmountingSource": "A desmontar a origem...",
-        "noOpSameHome": "O repositório {{name}} já vive em {{machine}}; nada a migrar."
+        "noOpSameHome": "O repositório {{name}} já vive em {{machine}}; nada a migrar.",
+        "placementUpdated": "Encaminhamento atualizado: {{name}} está agora em {{machine}}",
+        "placementRetryHint": "O encaminhamento já aponta para {{machine}}, pelo que 'rdc repo up {{name}}' tentará novamente aí. As imagens de origem foram mantidas como material de recuperação.",
+        "forkRefError": "o migrate move um repositório e todos os seus forks em conjunto, e {{name}}:{{tag}} é um fork. Para colocar uma cópia do fork noutro local, use 'rdc repo push {{name}}:{{tag}} --to <place>' (a cópia é um artefacto de backup; 'rdc backup restore' torna-a ativa), ou promova-o primeiro com 'rdc repo promote {{name}}:{{tag}}'.",
+        "familyHasForks": "o migrate move toda a família para uma única máquina, mas {{name}} ainda tem forks: {{forks}}. Envie cada fork para onde pretende com 'rdc repo push {{name}}:<tag> --to <place>', ou aguarde por uma migração de toda a família.",
+        "deletingSource": "A eliminar as imagens de origem em {{machine}}...",
+        "sourceDeleted": "As imagens de origem de {{name}} foram eliminadas de {{machine}}",
+        "sourceRetained": "As imagens de origem de {{name}} foram mantidas em {{machine}}. Não são endereçáveis por nenhum registo de configuração; o reconcile assinalá-las-á como órfãs.",
+        "sourceDeleteFailed": "Não foi possível eliminar as imagens de origem de {{name}} em {{machine}}: {{error}}. A mudança já foi bem-sucedida; limpe o que ficou com 'rdc machine prune {{machine}}'."
       },
       "noCredential": "Aviso: o repositório \"{{name}}\" não tem credencial definida. As operações em repositórios encriptados podem falhar.",
       "policy": {
@@ -1329,6 +1340,11 @@
         "allOption": "Implementar todos os repositórios cuja casa seja --machine (forma em lote)",
         "noStartOption": "Montar e preparar o repositório sem executar os seus passos up() (integra o retirado 'repo mount'; abre o LUKS e, para repositórios de cluster, gera o PV).",
         "noWaitOption": "Retornar assim que os contentores arrancam; os healthchecks continuam em segundo plano"
+      },
+      "mount": {
+        "starting": "A montar \"{{repository}}\" em \"{{machine}}\"...",
+        "completed": "Repositório montado",
+        "failed": "Falha ao montar"
       },
       "upAll": {
         "completed": "Todos os repositórios iniciados",
@@ -2161,7 +2177,8 @@
     "machine": {
       "health": "Verificação de saúde para CI/CD",
       "keyConcepts": "\nConceitos Principais:\n\n  Filtros de Consulta\n    • rdc machine status <name> retorna todas as secções por defeito\n    • Use --system, --repositories, --containers, --services, --network, --block-devices para filtrar\n    • A saída JSON enriquece os contentores com: repository (nome resolvido), domain, autoRoute\n\n  Saúde e Monitorização\n    • machine health termina com: 0=saudável, 1=aviso, 2=erro — útil para gates de CI/CD\n    • machine status <name> --containers --health-check termina com 2 se algum contentor não estiver saudável\n    • machine status <name> --services --stability-check termina com 2 se algum serviço falhou, está a reiniciar ou tem >3 reinícios\n    • machine prune remove IPs de loopback e unidades systemd órfãs de repositórios eliminados\n\n  Estrutura do Datastore (/mnt/rediacc/)\n    • repositories/ — imagens LUKS encriptadas (uma por GUID de repositório)\n    • mounts/ — pontos de montagem desencriptados (acessíveis quando o repositório está montado)\n    • immovable/ — dados do daemon Docker por repositório\n    • O datastore é um ficheiro de pool BTRFS no disco do sistema. O espaço livre efetivo = min(livre no disco, livre no datastore). Expanda com: rdc datastore resize\n",
-      "query": "Mostrar estado completo da máquina"
+      "query": "Mostrar estado completo da máquina",
+      "containers": "Mostrar apenas o estado dos contentores"
     },
     "repo": {
       "create": "Criar repositório encriptado",

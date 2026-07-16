@@ -408,7 +408,9 @@
       },
       "reconcile": {
         "description": "Çalışma zamanı durumunu makinelerin gerçek durumundan yeniden kurar. Eski bağlama ve yönlendirme verilerini düzeltir.",
-        "optionMachine": "Uzlaştırmayı bu makinelerle sınırla"
+        "optionMachine": "Uzlaştırmayı bu makinelerle sınırla",
+        "optionAcceptObserved": "Bildirilen bir yerleşimi, imajın gerçekte bulunduğu yere uyacak şekilde yeniden yazar, ancak yalnızca bu belirsizlik içermediğinde (tam olarak bir makinede gözlemlendiğinde) yapar. Kopyalar çakışma olarak kalır.",
+        "acceptObservedUnfiltered": "--accept-observed, --machine ile birleştirilemez: kısmi bir tarama, bir yerleşimin belirsizlik içermediğini kanıtlayamaz, bu yüzden yeniden yazma bir tahmin olur. 'rdc config reconcile --accept-observed' komutunu filtresiz çalıştırın."
       },
       "rotateCek": {
         "cancelled": "Döndürme iptal edildi. Hiçbir şey değişmedi.",
@@ -1109,7 +1111,7 @@
         "deltaDone": "Delta senkronizasyonu tamamlandı",
         "deltaFailed": "Delta senkronizasyonu başarısız",
         "deltaSync": "Delta senkronize ediliyor...",
-        "description": "Bir depoyu minimum kesinti ile başka bir makineye canlı taşıma. İki aşamalı rsync: çalışırken toplu aktarım, ardından delta senkronizasyonu için kısa duraklama. CRIU kontrol noktası ile süreç belleği taşıma ve hedef makinelerin otomatik oluşturulmasını destekler",
+        "description": "Bir depoyu minimum kesinti süresiyle bir makineden diğerine canlı olarak taşır. İki aşamalı rsync: çalışırken toplu aktarım, ardından delta senkronizasyonu için kısa bir durdurma. Depoyu bütünüyle taşır (yönlendirme yeni konuma yeniden işaret eder) ve taşıma başarılı olduktan sonra kaynak imajları siler (korumak için --keep-source kullanın). Süreç bellek durumu taşıma için CRIU checkpoint'i ve hedef makinelerin otomatik provizyonlanmasını destekler",
         "descriptionShort": "Makineler arası depo canlı taşıma",
         "dnsSkipped": "DNS geçişi atlandı (baseDomain veya Cloudflare yapılandırması yok)",
         "downtime": "Kesinti süresi: {{duration}}",
@@ -1119,6 +1121,7 @@
         "optionFrom": "Kaynak makine adı",
         "optionProvision": "Bulut sağlayıcı aracılığıyla hedefi otomatik oluştur (ör. hetzner, linode)",
         "optionSkipDns": "Taşıma sonrası DNS kaydı geçişini atla",
+        "optionKeepSource": "Başarılı bir taşımadan sonra kaynak imajları koru (varsayılan olarak silinirler; kalan kopyalar herhangi bir yapılandırma kaydıyla adreslenemez ve reconcile bunları başıboş olarak işaretler)",
         "optionStrategy": "Geçiş için blok-delta stratejisi: auto, physical veya shared",
         "optionTo": "Hedef makine veya küme",
         "phase1": "Aşama 1: Toplu veri aktarılıyor (kaynak çalışmaya devam ediyor)...",
@@ -1139,7 +1142,15 @@
         "targetStarted": "Hedef servisler başlatıldı",
         "unmountFailed": "Kaynağın bağlantısı kaldırılamadı",
         "unmountingSource": "Kaynağın bağlantısı kaldırılıyor...",
-        "noOpSameHome": "{{name}} deposu zaten {{machine}} üzerinde yaşıyor; taşınacak bir şey yok."
+        "noOpSameHome": "{{name}} deposu zaten {{machine}} üzerinde yaşıyor; taşınacak bir şey yok.",
+        "placementUpdated": "Yönlendirme güncellendi: {{name}} artık {{machine}} üzerinde bulunuyor",
+        "placementRetryHint": "Yönlendirme zaten {{machine}}'e işaret ediyor, bu yüzden 'rdc repo up {{name}}' orada yeniden denenecek. Kaynak imajlar kurtarma malzemesi olarak korundu.",
+        "forkRefError": "migrate bir depoyu ve tüm çatallarını birlikte taşır, ve {{name}}:{{tag}} bir çatal. Çatalın bir kopyasını başka bir yere koymak için 'rdc repo push {{name}}:{{tag}} --to <place>' kullanın (kopya bir yedekleme yapısıdır; 'rdc backup restore' onu aktif hale getirir) veya önce 'rdc repo promote {{name}}:{{tag}}' ile terfi ettirin.",
+        "familyHasForks": "migrate tüm aileyi tek bir makineye taşır, ancak {{name}} hâlâ çatallara sahip: {{forks}}. Her çatalı istediğiniz yere 'rdc repo push {{name}}:<tag> --to <place>' ile gönderin veya tüm ailenin taşınmasını bekleyin.",
+        "deletingSource": "{{machine}} üzerindeki kaynak imajlar siliniyor...",
+        "sourceDeleted": "{{name}} için kaynak imajlar {{machine}}'den silindi",
+        "sourceRetained": "{{name}} için kaynak imajlar {{machine}} üzerinde korundu. Herhangi bir yapılandırma kaydıyla adreslenemezler; reconcile bunları başıboş olarak işaretleyecek.",
+        "sourceDeleteFailed": "{{machine}} üzerindeki {{name}} için kaynak imajlar silinemedi: {{error}}. Taşıma zaten başarılı oldu; kalanları 'rdc machine prune {{machine}}' ile temizleyin."
       },
       "noCredential": "Uyarı: \"{{name}}\" deposunun kimlik bilgisi ayarlanmamış. Şifreli depolardaki işlemler başarısız olabilir.",
       "policy": {
@@ -1329,6 +1340,11 @@
         "allOption": "Barındığı yer --machine olan tüm depoları dağıt (toplu biçim)",
         "noStartOption": "up() adımlarını çalıştırmadan depoyu bağla ve hazırla (kullanımdan kaldırılan 'repo mount' komutunu içerir; LUKS açma ve küme depoları için PV üretimi).",
         "noWaitOption": "Konteynerler başlar başlamaz dön; sağlık kontrolleri arka planda devam eder"
+      },
+      "mount": {
+        "starting": "\"{{repository}}\" \"{{machine}}\" üzerinde bağlanıyor...",
+        "completed": "Depo bağlandı",
+        "failed": "Bağlama başarısız"
       },
       "upAll": {
         "completed": "Tüm depolar başlatıldı",
@@ -2161,7 +2177,8 @@
     "machine": {
       "health": "CI/CD için sağlık kontrolü",
       "keyConcepts": "\nTemel Kavramlar:\n\n  Sorgu Filtreleri\n    • rdc machine status <name> varsayılan olarak tüm bölümleri döndürür\n    • Filtrelemek için --system, --repositories, --containers, --services, --network, --block-devices kullanın\n    • JSON çıktısı konteynerleri şu bilgilerle zenginleştirir: repository (çözülmüş ad), domain, autoRoute\n\n  Sağlık ve İzleme\n    • machine health çıkış kodları: 0=sağlıklı, 1=uyarı, 2=hata — CI/CD kapıları için kullanın\n    • machine status <name> --containers --health-check herhangi bir konteyner sağlıksızsa 2 ile çıkar\n    • machine status <name> --services --stability-check herhangi bir hizmet başarısız, yeniden başlatılıyor veya >3 yeniden başlatma varsa 2 ile çıkar\n    • machine prune, silinmiş depolardan kalan başıboş loopback IP'lerini ve systemd birimlerini kaldırır\n\n  Veri Deposu Yapısı (/mnt/rediacc/)\n    • repositories/ — şifreli LUKS imajları (depo GUID'si başına bir tane)\n    • mounts/ — şifresi çözülmüş bağlama noktaları (depo bağlıyken erişilebilir)\n    • immovable/ — depo başına Docker daemon verileri\n    • Veri deposu, sistem diskinde bir BTRFS havuz dosyasıdır. Etkin boş alan = min(disk boş alanı, veri deposu boş alanı). Genişletmek için: rdc datastore resize\n",
-      "query": "Tam makine durumunu göster"
+      "query": "Tam makine durumunu göster",
+      "containers": "Yalnızca konteyner durumunu göster"
     },
     "repo": {
       "create": "Şifreli depo oluştur",

@@ -408,7 +408,9 @@
       },
       "reconcile": {
         "description": "Ehita töötamisaegne olek uuesti masina tõe põhjal. Parandab aegunud ühendus- ja marsruutimisandmed.",
-        "optionMachine": "Piira tasakaalustamine nende masinatega"
+        "optionMachine": "Piira tasakaalustamine nende masinatega",
+        "optionAcceptObserved": "Kirjuta deklareeritud asukoht ümber vastavaks image'i tegelikule asukohale, kuid ainult siis, kui see on ühemõtteline (täheldatud täpselt ühel masinal). Duplikaadid jäävad konfliktideks.",
+        "acceptObservedUnfiltered": "--accept-observed ei saa kombineerida --machine'iga: osaline skaneerimine ei suuda tõestada, et asukoht on ühemõtteline, seega oleks ümberkirjutamine oletus. Käivita 'rdc config reconcile --accept-observed' ilma filtrita."
       },
       "rotateCek": {
         "cancelled": "Rotatsioon tühistatud. Midagi ei muutunud.",
@@ -1109,7 +1111,7 @@
         "deltaDone": "Delta sünkroonimine lõpetatud",
         "deltaFailed": "Delta sünkroonimine ebaõnnestus",
         "deltaSync": "Delta sünkroonimine...",
-        "description": "Migreerige hoidla ühelt masinalt teisele minimaalse katkestusajaga. Kahefaasiline rsync: mahtude ülekanne töötamise ajal, seejärel lühike peatamine delta-sünkroonimiseks. Toetab CRIU kontrollpunkti protsessimälu migratsiooniks ja sihtmasinate autoprovisionimist",
+        "description": "Migreeri hoidla elavalt ühelt masinalt teisele minimaalse seisakuajaga. Kaheetapiline rsync: mahtülekanne töö ajal, seejärel lühike peatus delta sünkroniseerimiseks. Liigutab kogu hoidla (marsruutimine suunatakse ümber uude asukohta) ning kustutab pärast kolimise õnnestumist lähte-image'id (kasuta --keep-source nende säilitamiseks). Toetab CRIU kontrollpunkti protsesside mäluseisundi migreerimiseks ja sihtmasinate automaatset provisjoneerimist",
         "descriptionShort": "Migreerige hoidla masinate vahel otse",
         "dnsSkipped": "DNS-i vahetamine vahele jäetud (puudub baseDomain või Cloudflare-konfiguratsioon)",
         "downtime": "Katkestusaeg: {{duration}}",
@@ -1119,6 +1121,7 @@
         "optionFrom": "Allika masina nimi",
         "optionProvision": "Provisioni siht automaatselt pilveteenusepakkuja kaudu (nt hetzner, linode)",
         "optionSkipDns": "Jäta DNS-kirjete vahetamine pärast migratsiooni vahele",
+        "optionKeepSource": "Säilita lähte-image'id pärast edukat kolimist (vaikimisi kustutatakse; ülejäänud koopiad ei ole ühegi konfiguratsioonikirje kaudu aadresseeritavad ning reconcile märgib need hulkurdiks)",
         "optionStrategy": "Üleminekul kasutatav plokidelta strateegia: auto, physical või shared",
         "optionTo": "Sihtmasin või -klaster",
         "phase1": "1. faas: mahukate andmete ülekandmine (allikas jääb töötama)...",
@@ -1139,7 +1142,15 @@
         "targetStarted": "Sihtmasina teenused käivitatud",
         "unmountFailed": "Allika lahtihaakimine ebaõnnestus",
         "unmountingSource": "Allika lahtihaakimine...",
-        "noOpSameHome": "Hoidla {{name}} asub juba masinal {{machine}}; midagi migreerida ei ole."
+        "noOpSameHome": "Hoidla {{name}} asub juba masinal {{machine}}; midagi migreerida ei ole.",
+        "placementUpdated": "Marsruutimine uuendatud: {{name}} asub nüüd masinal {{machine}}",
+        "placementRetryHint": "Marsruutimine osutab juba masinale {{machine}}, seega proovib 'rdc repo up {{name}}' uuesti seal. Lähte-image'id jäeti taastematerjalina alles.",
+        "forkRefError": "migrate liigutab hoidla ja kõik selle forgid koos, ning {{name}}:{{tag}} on fork. Forgi koopia mujale paigutamiseks kasuta 'rdc repo push {{name}}:{{tag}} --to <place>' (koopia on varukoopia artefakt; 'rdc backup restore' teeb selle aktiivseks), või edenda see esmalt käsuga 'rdc repo promote {{name}}:{{tag}}'.",
+        "familyHasForks": "migrate liigutab kogu perekonna ühele masinale, kuid hoidlal {{name}} on ikka veel forke: {{forks}}. Saada iga fork soovitud kohta käsuga 'rdc repo push {{name}}:<tag> --to <place>', või oota kogu perekonna migreerimist.",
+        "deletingSource": "Lähte-image'ide kustutamine masinal {{machine}}...",
+        "sourceDeleted": "Hoidla {{name}} lähte-image'id kustutati masinalt {{machine}}",
+        "sourceRetained": "Hoidla {{name}} lähte-image'id jäeti masinale {{machine}} alles. Need ei ole ühegi konfiguratsioonikirje kaudu aadresseeritavad; reconcile märgib need hulkurdiks.",
+        "sourceDeleteFailed": "Hoidla {{name}} lähte-image'e masinal {{machine}} ei õnnestunud kustutada: {{error}}. Kolimine juba õnnestus; koorista ülejääk käsuga 'rdc machine prune {{machine}}'."
       },
       "noCredential": "Hoiatus: hoidlal \"{{name}}\" puudub mandaat. Toimingud krüpteeritud hoidlatega võivad ebaõnnestuda.",
       "policy": {
@@ -1329,6 +1340,11 @@
         "allOption": "Juuruta iga hoidla, mille kodu on --machine (pakkvorm)",
         "noStartOption": "Haagi hoidla külge ja valmista ette ilma selle up() sammeta käivitamata (koondab endasse pensionile jäänud 'repo mount'; LUKS avamine ja, klastri hoidlate puhul, PV genereerimine).",
         "noWaitOption": "Naaseb, kui konteinerid on käivitatud; tervisekontrollid jätkuvad taustal"
+      },
+      "mount": {
+        "starting": "Hoidla \"{{repository}}\" ühendamine masinal \"{{machine}}\"...",
+        "completed": "Hoidla ühendatud",
+        "failed": "Ühendamine ebaõnnestus"
       },
       "upAll": {
         "completed": "Kõik hoidlad käivitatud",
@@ -2161,7 +2177,8 @@
     "machine": {
       "health": "Tervisekontroll CI/CD jaoks",
       "keyConcepts": "\nPõhimõisted:\n\n  Päringufiltrid\n    • rdc machine status <name> tagastab vaikimisi kõik jaotised\n    • Kasuta --system, --repositories, --containers, --services, --network, --block-devices filtreerimiseks\n    • JSON-väljund rikastab konteinereid: repository (lahendatud nimi), domain, autoRoute\n\n  Tervis ja monitooring\n    • machine health väljub koodiga: 0=terve, 1=hoiatus, 2=viga -- kasuta CI/CD väravana\n    • machine status <name> --containers --health-check väljub koodiga 2, kui mõni konteiner on ebaterve\n    • machine status <name> --services --stability-check väljub koodiga 2, kui mõni teenus on ebaõnnestunud, taaskäivitub või on taaskäivitunud üle 3 korra\n    • machine prune eemaldab kustutatud repodest pärinevad orbtud loopback-IP-d ja systemd-üksused\n\n  Andmehoidla struktuur (/mnt/rediacc/)\n    • repositories/ -- krüpteeritud LUKS-pildid (üks repo GUID-i kohta)\n    • mounts/ -- dekrüpteeritud ühenduspunktid (kättesaadavad, kui repo on ühendatud)\n    • immovable/ -- iga-repo Dockeri deemoni andmed\n    • Andmehoidla on BTRFS-koolifail süsteemidraivil. Tegelik vaba ruum = min(ketta vaba ruum, andmehoidla vaba ruum). Laienda käsuga: rdc datastore resize\n",
-      "query": "Kuva masina täielik olek"
+      "query": "Kuva masina täielik olek",
+      "containers": "Kuva ainult konteinerite olek"
     },
     "repo": {
       "create": "Loo krüpteeritud repo",
