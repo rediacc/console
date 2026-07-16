@@ -6,7 +6,7 @@ order: 2
 language: ko
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ko/cli.json
-sourceHash: "4340feabb4ae0e68"
+sourceHash: "c4aa6241ac57d362"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -388,6 +388,7 @@ rdc config reconcile [options]
 |------|-------------|----------|---------|
 | `--machine <m...>` | {{t:cli.commands.config.reconcile.optionMachine}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--dry-run` | {{t:cli.options.dryRun}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--accept-observed` | {{t:cli.commands.config.reconcile.optionAcceptObserved}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-config-rotate-cek"></a>
@@ -1665,6 +1666,7 @@ rdc repo migrate <ref> [options]
 | `--delta-base <guid>` | {{t:cli.commands.repo.migrate.optionDeltaBase}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--strategy <strategy>` | {{t:cli.commands.repo.migrate.optionStrategy}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-dns` | {{t:cli.commands.repo.migrate.optionSkipDns}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--keep-source` | {{t:cli.commands.repo.migrate.optionKeepSource}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 

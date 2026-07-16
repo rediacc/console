@@ -1231,7 +1231,7 @@ Pull repository from a remote (machine or storage). Omit name to pull all repos.
 
 ### rdc repo migrate <ref>
 
-Live-migrate a repository from one machine to another with minimal downtime. Two-phase rsync: bulk transfer while running, then brief stop for delta sync. Supports CRIU checkpoint for process memory migration and auto-provisioning of target machines
+Live-migrate a repository from one machine to another with minimal downtime. Two-phase rsync: bulk transfer while running, then brief stop for delta sync. Moves the whole repository (routing is repointed at the new home) and, once the move succeeds, deletes the source images (use --keep-source to retain them). Supports CRIU checkpoint for process memory migration and auto-provisioning of target machines
 
 **Options:**
 
@@ -1242,6 +1242,7 @@ Live-migrate a repository from one machine to another with minimal downtime. Two
 - `--delta-base <guid>` — Immutable base GUID for the cutover delta (advanced; defaults to the Phase-1 base)
 - `--strategy <strategy>` — Block-delta strategy for the cutover: auto, physical, or shared
 - `--skip-dns` — Skip DNS record switching after migration
+- `--keep-source` — Keep the source images after a successful move (by default they are deleted; leftover copies are not addressable by any config record and reconcile flags them as strays)
 - `--debug` — Enable debug output
 
 > MCP tool | agent: fork-only
@@ -1520,6 +1521,7 @@ Rebuild runtime state from machine truth. Fixes stale attach and routing data.
 
 - `--machine <m...>` — Limit the reconcile to these machines
 - `--dry-run` — Show what would be done without making changes
+- `--accept-observed` — Rewrite a declared placement to match where the image actually is, but only when that is unambiguous (observed on exactly one machine). Duplicates stay conflicts.
 
 > MCP tool
 
