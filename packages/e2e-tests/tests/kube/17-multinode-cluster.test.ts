@@ -720,6 +720,15 @@ test.describe
       await unwindSubmounts(w1, DATA_MOUNT);
       await deviceHolders(w1, CTRL_MOUNT);
       await deviceHolders(w1, DATA_MOUNT);
+      // Delete test 4's GROUP snapshot before the member images: `rbd rm` refuses
+      // an image that still has snapshots (exit 39), so leaving it makes both
+      // datastore_deletes and the pool drop fail. Suite 16 does the same (its
+      // teardown was green for exactly this reason); this suite only reached the
+      // deletes at all once the #30 finalize-guard was fixed, which is why the
+      // ordering hole stayed invisible until now.
+      expect(
+        w1.isSuccess(await w1.datastoreSnapshotDelete({ group: CLUSTER, snapshot: SNAP }))
+      ).toBe(true);
       expect(w1.isSuccess(await w1.datastoreDetach(DATA_DS))).toBe(true);
       expect(w1.isSuccess(await w1.datastoreDelete(DATA_DS))).toBe(true);
       expect(w1.isSuccess(await w1.datastoreDetach(CTRL_DS))).toBe(true);
