@@ -298,30 +298,32 @@ test.describe('Error Recovery Integration @bridge @integration', () => {
   test('should handle sequential operations on nonexistent resources', async () => {
     const nonexistent = 'nonexistent-resource-xyz';
 
-    // Run operations on nonexistent resources - they should fail gracefully (no crashes/syntax errors)
-    // Some operations are strict (fail if resource doesn't exist), others are tolerant (succeed as no-op)
-    const [info, mount, up, down, unmount, rm] = await Promise.all([
-      runner.repositoryInfo(nonexistent, DEFAULT_DATASTORE_PATH),
-      runner.repositoryMount(nonexistent, TEST_PASSWORD, DEFAULT_DATASTORE_PATH),
-      runner.repositoryUp(nonexistent, DEFAULT_DATASTORE_PATH),
-      runner.repositoryDown(nonexistent, DEFAULT_DATASTORE_PATH),
-      runner.repositoryUnmount(nonexistent, DEFAULT_DATASTORE_PATH),
-      runner.repositoryRm(nonexistent, DEFAULT_DATASTORE_PATH),
-    ]);
+    // SEQUENTIAL, as the test's name always claimed: the dark-era body fired
+    // all six lifecycle ops in Promise.all — six concurrent operations racing
+    // on one resource, whose "tolerant" outcomes were timing artifacts (up
+    // passed in a full-suite run and failed in isolation). Sequential ops have
+    // deterministic contracts.
+    const info = await runner.repositoryInfo(nonexistent, DEFAULT_DATASTORE_PATH);
+    const mount = await runner.repositoryMount(nonexistent, TEST_PASSWORD, DEFAULT_DATASTORE_PATH);
+    const up = await runner.repositoryUp(nonexistent, DEFAULT_DATASTORE_PATH);
+    const down = await runner.repositoryDown(nonexistent, DEFAULT_DATASTORE_PATH);
+    const unmount = await runner.repositoryUnmount(nonexistent, DEFAULT_DATASTORE_PATH);
+    const rm = await runner.repositoryRm(nonexistent, DEFAULT_DATASTORE_PATH);
 
-    // Strict operations - should fail because resource doesn't exist
+    // Strict operations - fail because the resource doesn't exist. up is
+    // strict: it implies mount, and SafeStartup refuses a mount with no
+    // credentials for a repo that was never created (observed live).
     expect(runner.isSuccess(info)).toBe(false); // Can't get info on nonexistent
     expect(runner.isSuccess(mount)).toBe(false); // Can't mount nonexistent
+    expect(runner.isSuccess(up)).toBe(false); // Implies mount; SafeStartup refuses
 
-    // Tolerant operations - succeed as no-op (nothing to do). rm moved here
-    // when this suite came back from the dark: teardown verbs CONVERGE to
-    // absent (the #45 ENOENT ruling, #95's no-set no-op, the convergent-init
-    // contract) — deleting what is already gone is the desired end state,
-    // not an error. The suite predated that doctrine.
-    expect(runner.isSuccess(rm)).toBe(true); // Already absent: converged
-    expect(runner.isSuccess(up)).toBe(true); // No Rediaccfile, skips gracefully
+    // Tolerant operations - CONVERGE to the desired end state (the #45 ENOENT
+    // ruling, #95's no-set no-op, the convergent-init contract): what is
+    // already stopped/unmounted/absent is success, not error. The dark-era
+    // suite predated that doctrine.
     expect(runner.isSuccess(down)).toBe(true); // Nothing to stop, succeeds
     expect(runner.isSuccess(unmount)).toBe(true); // Already unmounted, succeeds
+    expect(runner.isSuccess(rm)).toBe(true); // Already absent: converged
   });
 
   test('should recover from failed operation', async () => {
