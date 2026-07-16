@@ -126,3 +126,10 @@ assumption is wrong; the tree carries per-leaf options.
     (reflink question), #84 PSA/seccomp decision, #87 CSI staging redesign sequencing
     with #86 worker-node mint, the 188-command tutorial re-record debt, P7's docs
     rewrite baselines.
+
+12. **Migrate's phase-1 delta base outlives its own prune (found during the routing
+    live-verification).** After a clean `repo migrate`, the temporary phase-1 base
+    image (a distinct GUID, unmounted) survived on BOTH machines despite
+    `retainBasePrune` — pre-existing lifecycle, not the wave's R3 change (which
+    deletes the MIGRATED repo's images and verified live). `machine prune` sweeps it;
+    the prune-at-cutover should be made to actually fire. Owner: P5.
