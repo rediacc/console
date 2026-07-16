@@ -119,10 +119,26 @@ test.describe
       expect(mounted.stdout).toContain('MOUNTED');
     });
 
-    test('4. datastore status reports the ceph backend', async () => {
-      const status = await worker.executeViaBridge(`sudo renet datastore status ${dsName} --json`);
-      expect(status.code).toBe(0);
-      expect(status.stdout.toLowerCase()).toContain('ceph');
+    test('4. the registry reports the ceph backend for the named datastore', async () => {
+      // Ask the REGISTRY (the layer that owns backend identity), scoped to the
+      // exact record. The previous form — `datastore status <name> --json` —
+      // passed the name POSITIONALLY; `status` only knows --path, and cobra
+      // silently swallowed the stray arg, so the assert ran against the DEFAULT
+      // base pool (caught in CI; renet now rejects stray positionals outright).
+      const list = await worker.executeViaBridge('sudo renet datastore list --json');
+      expect(list.code, `datastore list: ${list.stderr.slice(-200)}`).toBe(0);
+      const records = JSON.parse(
+        list.stdout.slice(list.stdout.indexOf('['), list.stdout.lastIndexOf(']') + 1)
+      ) as Array<{ name: string; backend?: string }>;
+      const rec = records.find((r) => r.name === dsName);
+      expect(rec, `registry has no record for ${dsName}`).toBeDefined();
+      expect(rec?.backend?.toLowerCase()).toContain('ceph');
+      // And the mount itself is the named datastore, via the path-scoped status.
+      const status = await worker.executeViaBridge(
+        `sudo renet datastore status --path ${dsPath} --json`
+      );
+      expect(status.code, `status --path: ${status.stderr.slice(-200)}`).toBe(0);
+      expect(status.stdout).toContain('"mounted": true');
     });
 
     test('5. datastore_expand grows the RBD datastore', async () => {

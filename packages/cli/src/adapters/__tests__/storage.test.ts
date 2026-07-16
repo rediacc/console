@@ -730,7 +730,12 @@ describe('ConfigFileStorage', () => {
       expect(Object.keys(config.resources?.machines ?? {})).toHaveLength(5);
     });
 
-    it('should handle interleaved read-modify-write operations', async () => {
+    // 30s bound, not the 5s default: this stress case serializes ~dozens of
+    // locked read-modify-write round-trips through real file I/O and took
+    // 11.4s on a loaded CI runner (round-7 red) while passing in ~2s locally.
+    // The assertion is unchanged — only the bound fits the operation now
+    // (the #28 "deadline that fits" rule, applied to a test).
+    it('should handle interleaved read-modify-write operations', { timeout: 30_000 }, async () => {
       await storage.init('test');
 
       const results = await runInterleavedOperations(storage, 'test');
