@@ -381,10 +381,13 @@
       "infra": {
         "push": {
           "certCacheUploaded": "Zwischengespeicherte Zertifikate auf Remote hochgeladen",
+          "dnsCreated": "{{type}}-Eintrag {{name}} -> {{content}} erstellt",
           "dnsError": "DNS-Warnung: {{message}} (Einträge müssen möglicherweise manuell eingerichtet werden)",
           "dnsResolvingZone": "Cloudflare-Zone für {{domain}} wird aufgelöst...",
           "dnsSkipLocal": "DNS übersprungen: .local-Domain verwendet kein Cloudflare",
-          "dnsSkipNoToken": "DNS übersprungen: kein Cloudflare API-Token. Festlegen mit: rdc machine infra set <machine> --cf-dns-token <token>"
+          "dnsSkipNoToken": "DNS übersprungen: kein Cloudflare API-Token. Festlegen mit: rdc machine infra set <machine> --cf-dns-token <token>",
+          "dnsUnchanged": "{{type}}-Eintrag {{name}} ist bereits aktuell",
+          "dnsUpdated": "{{type}}-Eintrag {{name}} -> {{content}} aktualisiert"
         }
       },
       "machine": {

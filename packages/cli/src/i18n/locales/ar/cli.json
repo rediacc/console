@@ -381,10 +381,13 @@
       "infra": {
         "push": {
           "certCacheUploaded": "تم رفع الشهادات المخزنة مؤقتاً إلى الجهاز البعيد",
+          "dnsCreated": "تم إنشاء سجل {{type}} {{name}} -> {{content}}",
           "dnsError": "تحذير DNS: {{message}} (قد تحتاج السجلات إلى إعداد يدوي)",
           "dnsResolvingZone": "جارٍ تحديد منطقة Cloudflare لـ {{domain}}...",
           "dnsSkipLocal": "تخطي DNS: النطاق .local لا يستخدم Cloudflare",
-          "dnsSkipNoToken": "تخطي DNS: لا يوجد رمز Cloudflare API. عيّنه بـ: rdc machine infra set <machine> --cf-dns-token <token>"
+          "dnsSkipNoToken": "تخطي DNS: لا يوجد رمز Cloudflare API. عيّنه بـ: rdc machine infra set <machine> --cf-dns-token <token>",
+          "dnsUnchanged": "سجل {{type}} {{name}} محدّث بالفعل",
+          "dnsUpdated": "تم تحديث سجل {{type}} {{name}} -> {{content}}"
         }
       },
       "machine": {

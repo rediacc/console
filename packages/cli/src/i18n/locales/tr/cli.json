@@ -381,10 +381,13 @@
       "infra": {
         "push": {
           "certCacheUploaded": "Önbelleğe alınmış sertifikalar uzak sunucuya yüklendi",
+          "dnsCreated": "{{type}} kaydı {{name}} -> {{content}} oluşturuldu",
           "dnsError": "DNS uyarısı: {{message}} (kayıtların manuel kurulumu gerekebilir)",
           "dnsResolvingZone": "{{domain}} için Cloudflare bölgesi çözümleniyor...",
           "dnsSkipLocal": "DNS atlanıyor: .local alan adı Cloudflare kullanmaz",
-          "dnsSkipNoToken": "DNS atlanıyor: Cloudflare API belirteci yok. Şu komutla ayarlayın: rdc machine infra set <machine> --cf-dns-token <token>"
+          "dnsSkipNoToken": "DNS atlanıyor: Cloudflare API belirteci yok. Şu komutla ayarlayın: rdc machine infra set <machine> --cf-dns-token <token>",
+          "dnsUnchanged": "{{type}} kaydı {{name}} zaten güncel",
+          "dnsUpdated": "{{type}} kaydı {{name}} -> {{content}} güncellendi"
         }
       },
       "machine": {

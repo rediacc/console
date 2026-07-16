@@ -381,10 +381,13 @@
       "infra": {
         "push": {
           "certCacheUploaded": "Certificati in cache caricati sul remoto",
+          "dnsCreated": "Record {{type}} {{name}} -> {{content}} creato",
           "dnsError": "Avviso DNS: {{message}} (i record potrebbero richiedere una configurazione manuale)",
           "dnsResolvingZone": "Risoluzione della zona Cloudflare per {{domain}}...",
           "dnsSkipLocal": "DNS ignorato: il dominio .local non usa Cloudflare",
-          "dnsSkipNoToken": "DNS ignorato: nessun token API Cloudflare. Impostalo con: rdc machine infra set <machine> --cf-dns-token <token>"
+          "dnsSkipNoToken": "DNS ignorato: nessun token API Cloudflare. Impostalo con: rdc machine infra set <machine> --cf-dns-token <token>",
+          "dnsUnchanged": "Il record {{type}} {{name}} è già aggiornato",
+          "dnsUpdated": "Record {{type}} {{name}} -> {{content}} aggiornato"
         }
       },
       "machine": {

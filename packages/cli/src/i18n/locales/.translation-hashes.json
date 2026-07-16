@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1585,
+    "keyCount": 1588,
     "sourceCommit": "21ebeb13d5f097292757dfccfac0ca2f88c4b70a"
   },
   "hashes": {
@@ -200,10 +200,13 @@
     "commands.config.field.unset.optionPointer": "07c80cc7",
     "commands.config.field.unset.success": "f65e4cd3",
     "commands.config.infra.push.certCacheUploaded": "e7359f2c",
+    "commands.config.infra.push.dnsCreated": "012f6aa8",
     "commands.config.infra.push.dnsError": "21243d11",
     "commands.config.infra.push.dnsResolvingZone": "077df14e",
     "commands.config.infra.push.dnsSkipLocal": "6d9ab9c5",
     "commands.config.infra.push.dnsSkipNoToken": "fffa0f82",
+    "commands.config.infra.push.dnsUnchanged": "431d05ab",
+    "commands.config.infra.push.dnsUpdated": "d068e1c8",
     "commands.config.init.alreadyExists": "23b6d12a",
     "commands.config.init.bareForm": "840d6ffc",
     "commands.config.init.description": "f64609b2",

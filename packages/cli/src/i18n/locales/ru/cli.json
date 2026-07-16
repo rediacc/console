@@ -381,10 +381,13 @@
       "infra": {
         "push": {
           "certCacheUploaded": "Кэшированные сертификаты загружены на удалённый сервер",
+          "dnsCreated": "Создана запись {{type}} {{name}} -> {{content}}",
           "dnsError": "Предупреждение DNS: {{message}} (записи могут потребовать ручной настройки)",
           "dnsResolvingZone": "Определение зоны Cloudflare для {{domain}}...",
           "dnsSkipLocal": "DNS пропущен: домен .local не использует Cloudflare",
-          "dnsSkipNoToken": "DNS пропущен: отсутствует API-токен Cloudflare. Задайте командой: rdc machine infra set <machine> --cf-dns-token <token>"
+          "dnsSkipNoToken": "DNS пропущен: отсутствует API-токен Cloudflare. Задайте командой: rdc machine infra set <machine> --cf-dns-token <token>",
+          "dnsUnchanged": "Запись {{type}} {{name}} уже актуальна",
+          "dnsUpdated": "Обновлена запись {{type}} {{name}} -> {{content}}"
         }
       },
       "machine": {

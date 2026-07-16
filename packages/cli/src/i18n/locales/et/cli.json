@@ -381,10 +381,13 @@
       "infra": {
         "push": {
           "certCacheUploaded": "Vahemällu salvestatud sertifikaadid laaditi kaugele üles",
+          "dnsCreated": "Kirje {{type}} {{name}} -> {{content}} loodi",
           "dnsError": "DNS-hoiatus: {{message}} (kirjed vajavad võib-olla käsitsi seadistamist)",
           "dnsResolvingZone": "Cloudflare tsooni lahendamine domeenile {{domain}}...",
           "dnsSkipLocal": "DNS-i jäetakse vahele: .local domeen ei kasuta Cloudflare'i",
-          "dnsSkipNoToken": "DNS-i jäetakse vahele: Cloudflare API tõend puudub. Määra käsuga: rdc machine infra set <machine> --cf-dns-token <token>"
+          "dnsSkipNoToken": "DNS-i jäetakse vahele: Cloudflare API tõend puudub. Määra käsuga: rdc machine infra set <machine> --cf-dns-token <token>",
+          "dnsUnchanged": "Kirje {{type}} {{name}} on juba ajakohane",
+          "dnsUpdated": "Kirje {{type}} {{name}} -> {{content}} uuendati"
         }
       },
       "machine": {

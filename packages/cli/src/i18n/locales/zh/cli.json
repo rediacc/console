@@ -381,10 +381,13 @@
       "infra": {
         "push": {
           "certCacheUploaded": "已将缓存的证书上传到远程服务器",
+          "dnsCreated": "已创建 {{type}} 记录 {{name}} -> {{content}}",
           "dnsError": "DNS 警告：{{message}}（可能需要手动设置记录）",
           "dnsResolvingZone": "正在解析 {{domain}} 的 Cloudflare 区域...",
           "dnsSkipLocal": "跳过 DNS：.local 域名不使用 Cloudflare",
-          "dnsSkipNoToken": "跳过 DNS：没有 Cloudflare API 令牌。使用以下命令设置：rdc machine infra set <machine> --cf-dns-token <token>"
+          "dnsSkipNoToken": "跳过 DNS：没有 Cloudflare API 令牌。使用以下命令设置：rdc machine infra set <machine> --cf-dns-token <token>",
+          "dnsUnchanged": "{{type}} 记录 {{name}} 已是最新",
+          "dnsUpdated": "已更新 {{type}} 记录 {{name}} -> {{content}}"
         }
       },
       "machine": {

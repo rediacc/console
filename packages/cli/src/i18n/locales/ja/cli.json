@@ -381,10 +381,13 @@
       "infra": {
         "push": {
           "certCacheUploaded": "キャッシュされた証明書をリモートにアップロードしました",
+          "dnsCreated": "{{type}} レコード {{name}} -> {{content}} を作成しました",
           "dnsError": "DNS 警告: {{message}}（レコードの手動設定が必要な場合があります）",
           "dnsResolvingZone": "{{domain}} の Cloudflare ゾーンを解決中...",
           "dnsSkipLocal": "DNS をスキップ: .local ドメインは Cloudflare を使用しません",
-          "dnsSkipNoToken": "DNS をスキップ: Cloudflare API トークンがありません。次のコマンドで設定してください: rdc machine infra set <machine> --cf-dns-token <token>"
+          "dnsSkipNoToken": "DNS をスキップ: Cloudflare API トークンがありません。次のコマンドで設定してください: rdc machine infra set <machine> --cf-dns-token <token>",
+          "dnsUnchanged": "{{type}} レコード {{name}} は既に最新です",
+          "dnsUpdated": "{{type}} レコード {{name}} -> {{content}} を更新しました"
         }
       },
       "machine": {
