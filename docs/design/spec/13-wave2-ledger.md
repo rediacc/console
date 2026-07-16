@@ -133,3 +133,16 @@ assumption is wrong; the tree carries per-leaf options.
     `retainBasePrune` — pre-existing lifecycle, not the wave's R3 change (which
     deletes the MIGRATED repo's images and verified live). `machine prune` sweeps it;
     the prune-at-cutover should be made to actually fire. Owner: P5.
+
+13. **Local-vs-CI coverage map (2026-07-16 sweep; full report in the wave round log).**
+    Dark suites: 12a/12b/12d and 13b exist but NO CI project glob selects them — and the
+    `12-*` project is satisfied by an EMPTY stub (`12-full-integration.test.ts`,
+    `export {}`) that always passes: a vacuous project standing in front of three real
+    suites. Suite 20 (image-build) is in no workflow. `packages/e2e-tests`' own vitest
+    units and renet's `root`-tagged tests execute nowhere. `check-e2e-coverage` counts a
+    bridge verb covered if its name appears ANYWHERE in e2e sources, dead suites
+    included. The two-VM CLI migrate routing scenario is unit-mocked only. CORRECTION to
+    spec/12: "CSI has zero e2e" is STALE — kube suites 15/16/17 smoke-cover CSI
+    provisioning/units; the structural half (no gate can DEMAND it) still stands.
+    Owner: this wave for the glob/stub/vitest wiring (after the dark suites prove out
+    locally); P5 for the coverage-gate hardening and the migrate e2e suite.
