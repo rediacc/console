@@ -535,16 +535,28 @@ ${dataSource ?? ''}`;
       expect(seen.stdout.trim()).toBe(APP_SECRET_VALUE);
     });
 
-    test('R2. the workload image pull resolved THROUGH the zot cache (repo tree records busybox)', async () => {
-      // The pod in test 4 is Running, so k3s pulled busybox:1.36 AFTER test R1
-      // wired containerd/k3s at the zot cache. zot's on-demand sync writes the
-      // pulled repo into its blob store, so busybox must now be present there —
-      // the assertable proof the pull went THROUGH the cache, not around it. The
-      // store layout can nest the upstream host, so match the repo dir anywhere
-      // under the store rather than pinning one exact path.
+    test('R2. an image pull resolves THROUGH the zot cache (blob store records the repo)', async () => {
+      // DETERMINISTIC pull: relying on test 4's busybox pull was fleet-state-
+      // dependent — on a dirty fleet containerd already holds the image, no pull
+      // happens, and zot is empty for a reason that has nothing to do with the
+      // cache (caught on the first local validation run). This test makes its
+      // OWN pull with imagePullPolicy=Always, which re-resolves through the
+      // wired mirror even when the image is cached, then asserts zot's
+      // on-demand sync recorded the repo in its blob store. The store layout
+      // can nest the upstream host, so match the repo dir anywhere under it.
+      const probe = `{"spec":{"containers":[{"name":"zotprobe","image":"busybox:1.36","imagePullPolicy":"Always","command":["sleep","30"]}]}}`;
+      const run = await kubectl(
+        `-n ${NS} run zotprobe --image=busybox:1.36 --overrides='${probe}' --restart=Never`
+      );
+      expect(run.code, `zotprobe create: ${run.stderr.slice(-200)}`).toBe(0);
+      const ready = await kubectl(
+        `-n ${NS} wait pod/zotprobe --for=condition=Ready --timeout=120s`
+      );
+      expect(ready.code, `zotprobe never Ready: ${ready.stderr.slice(-200)}`).toBe(0);
       const served = await w1.executeViaBridge(
         'sudo find /var/lib/rediacc-zot -maxdepth 6 -type d -name busybox 2>/dev/null | head -1'
       );
+      await kubectl(`-n ${NS} delete pod zotprobe --ignore-not-found --timeout=60s`);
       expect(served.stdout.trim(), 'busybox not found in the zot blob store').not.toBe('');
     });
 
