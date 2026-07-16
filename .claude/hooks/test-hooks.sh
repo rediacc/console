@@ -45,6 +45,11 @@ check 0 pre-bash/block-ssh-docker.sh        "$(bash_json 'ssh 192.168.111.1 dock
 check 0 pre-bash/block-ssh-file-write.sh    "$(bash_json 'ssh host "cat /etc/criu/runc.conf 2>&1; ls"')" "ssh-file-write: stderr redirect is a read"
 check 0 pre-bash/block-ssh-file-write.sh    "$(bash_json 'ssh host "cat /var/log/x >/dev/null 2>&1"')" "ssh-file-write: dev-null read ok"
 check 0 pre-bash/block-long-sleep.sh        "$(bash_json 'sleep 10')" "long-sleep: 10s ok"
+# The sanctioned terminal-state CI watch (see .claude/agents/pr-babysitter.md) must pass all three CI-poll guards.
+WATCH='R=123; until [ "$(gh run view $R --repo rediacc/console --json status --jq .status)" = "completed" ]; do sleep 20; done; gh run view $R --repo rediacc/console --json conclusion,jobs'
+check 0 pre-bash/block-ci-polling.sh        "$(bash_json "$WATCH")" "ci-polling: terminal-state watch ok"
+check 0 pre-bash/block-ci-reverse-poll.sh   "$(bash_json "$WATCH")" "ci-reverse-poll: terminal-state watch ok"
+check 0 pre-bash/block-long-sleep.sh        "$(bash_json "$WATCH")" "long-sleep: terminal-state watch ok"
 check 0 pre-bash/block-git-force-push.sh    "$(bash_json 'git push')" "force-push: plain push ok"
 check 0 pre-edit/block-suppressions.sh      "$(edit_json 'const x = 1;')" "suppressions: clean"
 
