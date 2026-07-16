@@ -724,9 +724,16 @@
         }
       },
       "remove": {
+        "confirm": "\"{{name}}\" makinesi yapılandırmadan kaldırılsın mı?",
         "description": "Mevcut yapılandırmadan makine kaldır",
-        "success": "Makine \"{{name}}\" kaldırıldı",
-        "confirm": "\"{{name}}\" makinesi yapılandırmadan kaldırılsın mı?"
+        "forceDangling": "\"{{name}}\" makinesi, üzerinde hâlâ {{count}} depo yerleşimi varken kaldırıldı: {{repos}}. Bu yerleşimler artık askıda. \"rdc repo migrate\" ile yeniden yönlendirin veya \"rdc repo delete\" ile silin.",
+        "forceOption": "Depolar hâlâ üzerinde yerleşikken bile makineyi kaldır, bu yerleşimleri askıda bırak.",
+        "nextDelete": "Bu makinede yerleşik her depoyu silin.",
+        "nextForce": "Yine de makineyi kaldır, bu depo yerleşimlerini askıda bırak.",
+        "nextMigrate": "Önce her depoyu başka bir makineye taşıyın.",
+        "placementConflict": "\"{{name}}\" makinesi kaldırılamıyor: {{count}} depo yerleşimi hâlâ ona referans veriyor: {{repos}}.",
+        "placementConflictNext": "Önce bu depoları taşıyın veya silin, ya da kaldırmayı zorlayın.",
+        "success": "Makine \"{{name}}\" kaldırıldı"
       },
       "scanKeys": {
         "completed": "{{count}}/{{total}} makine tarandı",

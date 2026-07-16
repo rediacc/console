@@ -724,9 +724,16 @@
         }
       },
       "remove": {
+        "confirm": "从配置中移除机器 \"{{name}}\"？",
         "description": "从当前配置中移除机器",
-        "success": "已移除机器 \"{{name}}\"",
-        "confirm": "从配置中移除机器 \"{{name}}\"？"
+        "forceDangling": "已移除机器 \"{{name}}\"，但其上仍有 {{count}} 个仓库放置：{{repos}}。这些放置现已悬空。请使用 \"rdc repo migrate\" 重新指向它们，或使用 \"rdc repo delete\" 删除它们。",
+        "forceOption": "即使仓库仍放置在该机器上，也移除该机器，使这些放置处于悬空状态。",
+        "nextDelete": "删除放置在该机器上的每个仓库。",
+        "nextForce": "仍然移除该机器，使这些仓库放置处于悬空状态。",
+        "nextMigrate": "先将每个仓库迁移到另一台机器。",
+        "placementConflict": "无法移除机器 \"{{name}}\"：仍有 {{count}} 个仓库放置引用它：{{repos}}。",
+        "placementConflictNext": "请先迁移或删除这些仓库，或强制执行移除。",
+        "success": "已移除机器 \"{{name}}\""
       },
       "scanKeys": {
         "completed": "已扫描 {{count}}/{{total}} 台机器",

@@ -724,9 +724,16 @@
         }
       },
       "remove": {
+        "confirm": "¿Eliminar la máquina \"{{name}}\" de la configuración?",
         "description": "Eliminar una máquina de la configuración actual",
-        "success": "Máquina \"{{name}}\" eliminada",
-        "confirm": "¿Eliminar la máquina \"{{name}}\" de la configuración?"
+        "forceDangling": "Máquina \"{{name}}\" eliminada con {{count}} ubicación(es) de repositorio todavía en ella: {{repos}}. Esas ubicaciones ahora quedan colgantes. Redirígelas con \"rdc repo migrate\" o elimínalas con \"rdc repo delete\".",
+        "forceOption": "Eliminar la máquina aunque todavía tenga repositorios ubicados en ella, dejando esas ubicaciones colgantes.",
+        "nextDelete": "Elimina cada repositorio ubicado en esta máquina.",
+        "nextForce": "Elimina la máquina de todos modos, dejando esas ubicaciones de repositorio colgantes.",
+        "nextMigrate": "Mueve cada repositorio a otra máquina primero.",
+        "placementConflict": "No se puede eliminar la máquina \"{{name}}\": {{count}} ubicación(es) de repositorio todavía la referencian: {{repos}}.",
+        "placementConflictNext": "Mueve o elimina estos repositorios primero, o fuerza la eliminación.",
+        "success": "Máquina \"{{name}}\" eliminada"
       },
       "scanKeys": {
         "completed": "{{count}}/{{total}} máquinas escaneadas",

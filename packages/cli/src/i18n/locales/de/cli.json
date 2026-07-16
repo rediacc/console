@@ -726,6 +726,13 @@
       "remove": {
         "confirm": "Maschine \"{{name}}\" aus der Konfiguration entfernen?",
         "description": "Maschine aus der aktuellen Konfiguration entfernen",
+        "forceDangling": "Maschine \"{{name}}\" entfernt, obwohl {{count}} Repository-Platzierung(en) noch darauf waren: {{repos}}. Diese Platzierungen hängen jetzt. Verweisen Sie sie mit \"rdc repo migrate\" neu oder löschen Sie sie mit \"rdc repo delete\".",
+        "forceOption": "Die Maschine auch entfernen, wenn noch Repositories darauf platziert sind, sodass diese Platzierungen hängend zurückbleiben.",
+        "nextDelete": "Löschen Sie jedes auf dieser Maschine platzierte Repository.",
+        "nextForce": "Die Maschine trotzdem entfernen, sodass diese Repository-Platzierungen hängend zurückbleiben.",
+        "nextMigrate": "Verschieben Sie jedes Repository zuerst auf eine andere Maschine.",
+        "placementConflict": "Maschine \"{{name}}\" kann nicht entfernt werden: {{count}} Repository-Platzierung(en) verweisen noch darauf: {{repos}}.",
+        "placementConflictNext": "Verschieben oder löschen Sie diese Repositories zuerst, oder erzwingen Sie die Entfernung.",
         "success": "Maschine \"{{name}}\" entfernt"
       },
       "scanKeys": {

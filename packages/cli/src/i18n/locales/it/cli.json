@@ -724,9 +724,16 @@
         }
       },
       "remove": {
+        "confirm": "Rimuovere la macchina \"{{name}}\" dalla configurazione?",
         "description": "Rimuovi un macchinario dalla configurazione corrente",
-        "success": "Macchinario \"{{name}}\" rimosso",
-        "confirm": "Rimuovere la macchina \"{{name}}\" dalla configurazione?"
+        "forceDangling": "Macchinario \"{{name}}\" rimosso con {{count}} posizionamento/i di repository ancora su di esso: {{repos}}. Quei posizionamenti ora sono pendenti. Reindirizzali con \"rdc repo migrate\" o eliminali con \"rdc repo delete\".",
+        "forceOption": "Rimuovi il macchinario anche se vi sono ancora repository posizionati su di esso, lasciando quei posizionamenti pendenti.",
+        "nextDelete": "Elimina ogni repository posizionato su questo macchinario.",
+        "nextForce": "Rimuovi comunque il macchinario, lasciando pendenti quei posizionamenti di repository.",
+        "nextMigrate": "Sposta prima ogni repository su un altro macchinario.",
+        "placementConflict": "Impossibile rimuovere il macchinario \"{{name}}\": {{count}} posizionamento/i di repository lo referenziano ancora: {{repos}}.",
+        "placementConflictNext": "Sposta o elimina prima questi repository, oppure forza la rimozione.",
+        "success": "Macchinario \"{{name}}\" rimosso"
       },
       "scanKeys": {
         "completed": "Scansionati {{count}}/{{total}} macchinari",

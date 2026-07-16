@@ -726,6 +726,13 @@
       "remove": {
         "confirm": "Supprimer la machine \"{{name}}\" de la configuration ?",
         "description": "Supprimer une machine de la configuration actuelle",
+        "forceDangling": "Machine \"{{name}}\" supprimée alors que {{count}} placement(s) de dépôt y étaient encore : {{repos}}. Ces placements sont désormais orphelins. Repointez-les avec \"rdc repo migrate\" ou supprimez-les avec \"rdc repo delete\".",
+        "forceOption": "Supprimer la machine même si des dépôts y sont encore placés, laissant ces placements orphelins.",
+        "nextDelete": "Supprimez chaque dépôt placé sur cette machine.",
+        "nextForce": "Supprimez la machine quand même, en laissant ces placements de dépôt orphelins.",
+        "nextMigrate": "Déplacez chaque dépôt vers une autre machine d'abord.",
+        "placementConflict": "Impossible de supprimer la machine \"{{name}}\" : {{count}} placement(s) de dépôt la référencent encore : {{repos}}.",
+        "placementConflictNext": "Déplacez ou supprimez ces dépôts d'abord, ou forcez la suppression.",
         "success": "Machine \"{{name}}\" supprimée"
       },
       "scanKeys": {

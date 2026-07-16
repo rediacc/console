@@ -724,9 +724,16 @@
         }
       },
       "remove": {
+        "confirm": "설정에서 머신 \"{{name}}\"을(를) 제거하시겠습니까?",
         "description": "현재 설정에서 머신을 제거합니다",
-        "success": "머신 \"{{name}}\" 제거 완료",
-        "confirm": "설정에서 머신 \"{{name}}\"을(를) 제거하시겠습니까?"
+        "forceDangling": "머신 \"{{name}}\"을(를) 제거했지만 {{count}}개의 저장소 배치가 여전히 남아 있었습니다: {{repos}}. 이 배치들은 이제 댕글링 상태입니다. \"rdc repo migrate\"로 재배치하거나 \"rdc repo delete\"로 삭제하세요.",
+        "forceOption": "저장소가 아직 배치되어 있어도 머신을 제거하며, 그 배치는 댕글링 상태로 남습니다.",
+        "nextDelete": "이 머신에 배치된 각 저장소를 삭제하세요.",
+        "nextForce": "그래도 머신을 제거하며, 그 저장소 배치는 댕글링 상태로 남습니다.",
+        "nextMigrate": "각 저장소를 먼저 다른 머신으로 이동하세요.",
+        "placementConflict": "머신 \"{{name}}\"을(를) 제거할 수 없습니다: {{count}}개의 저장소 배치가 여전히 이를 참조합니다: {{repos}}.",
+        "placementConflictNext": "이 저장소들을 먼저 이동하거나 삭제하세요. 또는 제거를 강제하세요.",
+        "success": "머신 \"{{name}}\" 제거 완료"
       },
       "scanKeys": {
         "completed": "{{total}} 중 {{count}}개의 머신 검사 완료",

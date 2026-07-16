@@ -724,9 +724,16 @@
         }
       },
       "remove": {
+        "confirm": "マシン \"{{name}}\" を設定から削除しますか？",
         "description": "現在の設定からマシンを削除する",
-        "success": "マシン \"{{name}}\" を削除しました",
-        "confirm": "マシン \"{{name}}\" を設定から削除しますか？"
+        "forceDangling": "マシン \"{{name}}\" を削除しましたが、{{count}} 件のリポジトリ配置がまだ残っていました: {{repos}}。これらの配置は現在ダングリング状態です。\"rdc repo migrate\" で再配置するか、\"rdc repo delete\" で削除してください。",
+        "forceOption": "リポジトリがまだ配置されていてもマシンを削除し、それらの配置をダングリング状態のまま残す。",
+        "nextDelete": "このマシンに配置されている各リポジトリを削除する。",
+        "nextForce": "それでもマシンを削除し、それらのリポジトリ配置をダングリング状態のまま残す。",
+        "nextMigrate": "各リポジトリを先に別のマシンへ移動する。",
+        "placementConflict": "マシン \"{{name}}\" を削除できません: {{count}} 件のリポジトリ配置がまだ参照しています: {{repos}}。",
+        "placementConflictNext": "これらのリポジトリを先に移動または削除するか、削除を強制してください。",
+        "success": "マシン \"{{name}}\" を削除しました"
       },
       "scanKeys": {
         "completed": "{{count}}/{{total}} 台のマシンをスキャン済み",

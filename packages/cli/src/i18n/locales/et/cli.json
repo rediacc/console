@@ -724,9 +724,16 @@
         }
       },
       "remove": {
+        "confirm": "Eemaldada masin \"{{name}}\" konfiguratsioonist?",
         "description": "Eemalda masin praegusest konfiguratsioonist",
-        "success": "Masin \"{{name}}\" eemaldatud",
-        "confirm": "Eemaldada masin \"{{name}}\" konfiguratsioonist?"
+        "forceDangling": "Masin \"{{name}}\" eemaldati, kuigi sellel oli veel {{count}} hoidla asukoht(a): {{repos}}. Need asukohad ripuvad nüüd. Suuna need ümber käsuga \"rdc repo migrate\" või kustuta käsuga \"rdc repo delete\".",
+        "forceOption": "Eemalda masin ka siis, kui sellel on veel hoidlaid, jättes need asukohad ripakile.",
+        "nextDelete": "Kustuta iga sellel masinal asuv hoidla.",
+        "nextForce": "Eemalda masin sellegipoolest, jättes need hoidla asukohad ripakile.",
+        "nextMigrate": "Liiguta iga hoidla kõigepealt teisele masinale.",
+        "placementConflict": "Masinat \"{{name}}\" ei saa eemaldada: {{count}} hoidla asukoht(a) viitab sellele endiselt: {{repos}}.",
+        "placementConflictNext": "Liiguta või kustuta need hoidlad kõigepealt, või sunni eemaldamist.",
+        "success": "Masin \"{{name}}\" eemaldatud"
       },
       "scanKeys": {
         "completed": "Skannitud {{count}}/{{total}} masinat",
