@@ -12,6 +12,5 @@
   "ct-install-methods.yml": 1,
   "ct-tests.yml": 9,
   "promote-stable.yml": 5,
-  "rerun-failed.yml": 1,
-  "standalone-run.yml": 7
+  "rerun-failed.yml": 1
 }

@@ -234,9 +234,13 @@ AWK_EOF
 
     log_step "Checking workflow run: blocks stay thin (<= $INLINE_MAX_LOGIC logic lines)..."
 
+    # Portable read loop instead of `mapfile` — the CI runner's minimal bash
+    # (busybox-flavored) does not ship the `mapfile`/`readarray` builtin.
     local baseline_keys=()
     if [[ -f "$WORKFLOW_INLINE_BASELINE" ]]; then
-        mapfile -t baseline_keys < <(jq -r 'keys[] | select(. != "__doc__")' "$WORKFLOW_INLINE_BASELINE")
+        while IFS= read -r _key; do
+            [[ -n "$_key" ]] && baseline_keys+=("$_key")
+        done < <(jq -r 'keys[] | select(. != "__doc__")' "$WORKFLOW_INLINE_BASELINE")
     fi
 
     declare -A actual=()
@@ -274,7 +278,9 @@ AWK_EOF
 
     local sorted=()
     if ((${#union[@]} > 0)); then
-        mapfile -t sorted < <(printf '%s\n' "${!union[@]}" | sort)
+        while IFS= read -r _k; do
+            [[ -n "$_k" ]] && sorted+=("$_k")
+        done < <(printf '%s\n' "${!union[@]}" | sort)
     fi
 
     local a b
