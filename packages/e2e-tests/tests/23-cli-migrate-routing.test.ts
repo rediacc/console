@@ -207,7 +207,11 @@ test.describe
     });
 
     test('8. `--accept-observed` resolves the duplicate in the observed direction', async () => {
-      const rec = await cli.run(['config', 'reconcile', '--machine', M1, '--accept-observed']);
+      // TRANSCRIPT-CONFIRMED live: --accept-observed must run UNFILTERED (no
+      // --machine). A partial scan cannot prove a placement is observed on
+      // exactly one machine, so the product refuses the combination (exit 2)
+      // rather than guess the rewrite direction.
+      const rec = await cli.run(['config', 'reconcile', '--accept-observed']);
       expect(rec.code, `reconcile --accept-observed: ${rec.stderr}`).toBe(0);
       // After acceptance a plain reconcile no longer reports the duplicate.
       const again = await cli.run(['config', 'reconcile', '--machine', M1]);
