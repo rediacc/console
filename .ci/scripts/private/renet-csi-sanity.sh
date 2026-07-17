@@ -31,8 +31,11 @@ if ! command -v mkfs.btrfs >/dev/null || ! command -v cryptsetup >/dev/null; the
 fi
 
 log_step "Creating scratch loop-BTRFS datastore at $CSI_MNT..."
+# Idempotent re-run: a previous run's mount/image must not fail this one
+# (bit the first local rerun; GH runners get fresh /tmp and never see it).
+umount "$CSI_MNT" 2>/dev/null || true
 truncate -s 4G "$CSI_IMG"
-mkfs.btrfs -q "$CSI_IMG"
+mkfs.btrfs -q -f "$CSI_IMG"
 mkdir -p "$CSI_MNT"
 mount -o loop "$CSI_IMG" "$CSI_MNT"
 
