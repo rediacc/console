@@ -207,8 +207,15 @@ named residuals carrying owners: #42 (product, ruling needed) and the rehearse r
     shape. Found by suite 15's through-pull assert refusing to go green (six honest
     reds, four distinct causes: fleet-cached image, PSA enforcement, a
     service-name-as-path typo, and the half-connected wire — kube install's
-    --registries-yaml defaulted empty, fixed as renet 79d07b5). The suite's assert now
-    proves TRAVERSAL via zot's journal; storage-commit is #96's own item. Owner: P5.
+    --registries-yaml defaulted empty, fixed as renet 79d07b5). Two evidence channels
+    were tried and are INVALID — recorded so nobody resurrects them: the blob store
+    (#96 means committed state never appears for manifest lists) and the zot journal
+    (renet configures zot at log level "warn", pkg/kube/registry/zot.go — a successful
+    serve logs NOTHING; only failing syncs appear, so journal silence proved nothing
+    for two runs). The suite's assert now proves the two halves deterministically:
+    containerd's generated config names the mirror endpoint, and zot serves the probe
+    manifest over that endpoint (HTTP 200); the catalog commit is logged
+    informationally as #96's tripwire. Storage-commit is #96's own item. Owner: P5.
     Related footgun, same owner: the e2e setup's renet redeploy skips on VERSION
     equality (0.0.0-dev == 0.0.0-dev) so dev binaries never refresh — checksum compare.
 
