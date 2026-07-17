@@ -13,22 +13,20 @@ const daysFromNow = (days: number): string =>
 
 describe('computeDelegationCertValidity', () => {
   describe('plan defaults (no override, no expiry)', () => {
-    it.each([
-      'COMMUNITY',
-      'PROFESSIONAL',
-      'BUSINESS',
-      'ENTERPRISE',
-    ] as const)('returns the per-plan default for %s', (planCode) => {
-      const result = computeDelegationCertValidity({
-        planCode,
-        subscriptionOverrideDays: null,
-        subscriptionExpiresAt: null,
-        requestedDays: undefined,
-        now: NOW,
-      });
-      expect(result.effectiveDays).toBe(PLAN_DELEGATION_CERT_DEFAULT_DAYS[planCode]);
-      expect(result.reason).toBe('plan_default');
-    });
+    it.each(['COMMUNITY', 'PROFESSIONAL', 'BUSINESS', 'ENTERPRISE'] as const)(
+      'returns the per-plan default for %s',
+      (planCode) => {
+        const result = computeDelegationCertValidity({
+          planCode,
+          subscriptionOverrideDays: null,
+          subscriptionExpiresAt: null,
+          requestedDays: undefined,
+          now: NOW,
+        });
+        expect(result.effectiveDays).toBe(PLAN_DELEGATION_CERT_DEFAULT_DAYS[planCode]);
+        expect(result.reason).toBe('plan_default');
+      }
+    );
   });
 
   describe('subscription override (no plan ceiling applies)', () => {

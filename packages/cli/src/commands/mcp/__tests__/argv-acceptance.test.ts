@@ -133,23 +133,25 @@ describe('MCP tools emit argv the CLI accepts', () => {
     expect(TOOLS.length).toBeGreaterThan(50);
   });
 
-  it.each(
-    TOOLS.map((t) => [t.name, t] as const)
-  )('%s builds an argv the CLI accepts', (_name, tool) => {
-    const argv = tool.command(fullArgs(tool));
-    const problems = rejections(argv);
+  it.each(TOOLS.map((t) => [t.name, t] as const))(
+    '%s builds an argv the CLI accepts',
+    (_name, tool) => {
+      const argv = tool.command(fullArgs(tool));
+      const problems = rejections(argv);
 
-    expect(problems, `rdc ${argv.join(' ')}\n  -> ${problems.join('; ')}`).toEqual([]);
-  });
+      expect(problems, `rdc ${argv.join(' ')}\n  -> ${problems.join('; ')}`).toEqual([]);
+    }
+  );
 
-  it.each(
-    TOOLS.filter((t) => t.repoArgField).map((t) => [t.name, t] as const)
-  )("%s's repoArg names a field that actually exists in its schema", (_name, tool) => {
-    // repoArgField drives the grand-repo guard: the guard reads args[repoArgField]
-    // to learn which repo is being touched. Name a field that does not exist and
-    // it reads `undefined` — the guard then scopes NOTHING, silently, on a tool
-    // whose whole reason for carrying the annotation is that it touches a repo.
-    // The web console reads the same annotation to pick its repo picker.
-    expect(Object.keys(tool.schema)).toContain(tool.repoArgField);
-  });
+  it.each(TOOLS.filter((t) => t.repoArgField).map((t) => [t.name, t] as const))(
+    "%s's repoArg names a field that actually exists in its schema",
+    (_name, tool) => {
+      // repoArgField drives the grand-repo guard: the guard reads args[repoArgField]
+      // to learn which repo is being touched. Name a field that does not exist and
+      // it reads `undefined` — the guard then scopes NOTHING, silently, on a tool
+      // whose whole reason for carrying the annotation is that it touches a repo.
+      // The web console reads the same annotation to pick its repo picker.
+      expect(Object.keys(tool.schema)).toContain(tool.repoArgField);
+    }
+  );
 });

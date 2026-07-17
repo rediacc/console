@@ -149,6 +149,18 @@
           }
         }
       }
+    },
+    {
+      "includes": ["packages/cli/src/services/__tests__/persist-unification.test.ts"],
+      "assist": {
+        "actions": {
+          "source": {
+            "organizeImports": {
+              "level": "off"
+            }
+          }
+        }
+      }
     }
   ]
 }
