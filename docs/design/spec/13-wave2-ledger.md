@@ -211,3 +211,13 @@ named residuals carrying owners: #42 (product, ruling needed) and the rehearse r
     proves TRAVERSAL via zot's journal; storage-commit is #96's own item. Owner: P5.
     Related footgun, same owner: the e2e setup's renet redeploy skips on VERSION
     equality (0.0.0-dev == 0.0.0-dev) so dev binaries never refresh — checksum compare.
+
+15. **#97 — CSI CreateSnapshot (and the PVC-clone arm) reflink a LIVE mounted volume
+    with no flush**: a write completed seconds before the snapshot exists only in page
+    cache, so the restored PVC comes back without it — found live by suite 15's
+    point-in-time assert (the restored marker read EMPTY), the first execution of the
+    restore path since B2's timing-lucky battery. spec 09's "restore proven
+    point-in-time" claim held by luck, not construction. Ruling: the #440 one-rule
+    doctrine — a capture that feeds restore/clone carries fork semantics; syncfs the
+    volume's mountpoint before the reflink, fail-soft (crash-consistent on flush
+    failure, loudly). Fix in flight (fix-97). Owner: this wave.
