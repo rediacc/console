@@ -4,8 +4,43 @@ import { rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
+import { getRenetBinaryPath } from './renetPath';
 
 const execFileAsync = promisify(execFile);
+
+/**
+ * Resolve the dev renet binary the CLI should deploy to the fleet, robustly.
+ * The pin MUST land or the CLI resolves the host's production /usr/bin/renet
+ * and deploys it fleet-wide, stripping the bridge surfaces (functions/kube/
+ * ops) the very suite then queries — a bug that hid behind three different
+ * failed resolution attempts (__dirname under Playwright's transform, a PATH
+ * prepend the spawned CLI never honored, and the provisioning resolver's
+ * fallback which points one directory too shallow). So try every channel and
+ * verify the file exists:
+ *   1. the harness's own resolver (correct when its singleton is initialized);
+ *   2. an explicit RENET_BINARY_PATH (rdc.sh / CI export);
+ *   3. walk up from cwd AND __dirname to <root>/private/renet/bin/renet.
+ * Returns undefined only when none exist (CI / SEA), where the pin is moot.
+ */
+function resolveDevRenet(): string | undefined {
+  const candidates: string[] = [];
+  try {
+    candidates.push(getRenetBinaryPath());
+  } catch {
+    // resolver not initialized in this process — fall through
+  }
+  if (process.env.RENET_BINARY_PATH) candidates.push(process.env.RENET_BINARY_PATH);
+  for (const start of [process.cwd(), __dirname]) {
+    let dir = start;
+    for (let i = 0; i < 8; i++) {
+      candidates.push(path.join(dir, 'private', 'renet', 'bin', 'renet'));
+      const parent = path.dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
+    }
+  }
+  return candidates.find((c) => c && existsSync(c));
+}
 
 /**
  * CliRunner — the e2e harness's FIRST rdc-driving surface.
@@ -77,17 +112,15 @@ export class CliRunner {
     // vanished fleet-wide right after suite 23's own preflight; both binaries
     // report 0.0.0-dev so the version guard never rejects the downgrade).
     //
-    // The fix is an ABSOLUTE config.renetPath (pinned by initConfig below):
+    // The pin is an ABSOLUTE config.renetPath (written by initConfig below):
     // resolveRenetPath uses an absolute existing path DIRECTLY, with no PATH
-    // lookup to lose. PATH prepend is kept as belt-and-suspenders for any CLI
-    // path that still guesses.
-    const devRenetPath = path.resolve(__dirname, '../../../../private/renet/bin/renet');
-    let pinned: string | undefined;
-    if (existsSync(devRenetPath)) {
-      pinned = devRenetPath;
+    // lookup to lose. PATH prepend is belt-and-suspenders for any CLI path
+    // that still guesses.
+    const devRenetPath = resolveDevRenet();
+    if (devRenetPath) {
       env.PATH = `${path.dirname(devRenetPath)}${path.delimiter}${env.PATH ?? ''}`;
     }
-    return new CliRunner(process.execPath, [bundle], env, pinned);
+    return new CliRunner(process.execPath, [bundle], env, devRenetPath);
   }
 
   /** Spawn the CLI with the given argv verbatim (no --config injected). */
