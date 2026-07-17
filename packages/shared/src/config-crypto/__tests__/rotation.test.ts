@@ -11,16 +11,15 @@
  * guard), so this test also pins that the subpath consumers use keeps working.
  */
 
-import { describe, expect, it } from 'vitest';
 import type { RotationIdentity } from '@rediacc/shared/config-crypto/rotation';
 import {
   distributeNewCek,
   generateCek,
   reencryptConfig,
 } from '@rediacc/shared/config-crypto/rotation';
+import { describe, expect, it } from 'vitest';
 import type { RdcConfig } from '../../config-schema/index.js';
 import { buildConfigPushPayload, decryptConfigPullPayload } from '../../config-schema/index.js';
-import type { CekHandoffBlob } from '../types.js';
 import {
   cekHandoffDecrypt,
   cekUnwrap,
@@ -33,6 +32,7 @@ import {
   sdkDerive,
   toBase64,
 } from '../index.js';
+import type { CekHandoffBlob } from '../types.js';
 
 const TEST_CONFIG: RdcConfig = {
   schemaVersion: 3,

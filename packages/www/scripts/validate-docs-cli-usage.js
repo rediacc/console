@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import fs from 'node:fs';
-import { findRegressions, loadBacklog, writeBacklog } from './lib/p7-backlog.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import matter from 'gray-matter';
@@ -11,6 +10,7 @@ import {
   SHELL_FENCE_LANGS,
   TARGET_DOC_CATEGORIES,
 } from './lib/cli-reference-catalog.js';
+import { findRegressions, loadBacklog, writeBacklog } from './lib/p7-backlog.js';
 
 // ---------------------------------------------------------------------------
 // Positional-syntax pre-scan

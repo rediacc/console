@@ -15,13 +15,14 @@
  * generation loudly, because a stale key does not fail on its own — the lookup
  * simply misses and the classification silently stops applying.
  */
+
+import { RESOURCE_KINDS } from '../../../shared/src/cli-contract/discovery.js';
 import type {
   ContractOption,
   FormatHint,
   OptionTier,
   ResourceKind,
 } from '../../../shared/src/cli-contract/types.js';
-import { RESOURCE_KINDS } from '../../../shared/src/cli-contract/discovery.js';
 
 // ---------- Resource-kind binding (console pick-or-type combobox) ----------
 

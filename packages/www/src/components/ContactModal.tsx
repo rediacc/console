@@ -1,7 +1,7 @@
+import { Turnstile } from '@marsidev/react-turnstile';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
-import { Turnstile } from '@marsidev/react-turnstile';
 
 declare global {
   interface Window {

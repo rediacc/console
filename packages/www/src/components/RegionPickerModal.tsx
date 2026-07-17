@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { REGIONS, type Region } from '../config/regions';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
-import { REGIONS, type Region } from '../config/regions';
 import { buildPortalRedirectUrl, getHostKind } from '../utils/marketing-host';
 
 const DEFAULT_TARGET_PATH = '/account/';

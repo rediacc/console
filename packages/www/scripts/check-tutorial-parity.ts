@@ -10,12 +10,12 @@
  * misses a required field. Runs in CI via the quality-tutorial-parity job.
  */
 
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import { parseCast, markerTimestamps } from './lib/cast-splitter.ts';
+import { markerTimestamps, parseCast } from './lib/cast-splitter.ts';
 import { readStoryboard } from './lib/storyboard.ts';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));

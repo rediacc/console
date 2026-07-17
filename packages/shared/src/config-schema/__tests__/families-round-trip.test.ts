@@ -24,14 +24,14 @@
 
 import { describe, expect, it } from 'vitest';
 import type { z } from 'zod';
-import { fullConfigToRdcConfig } from '../../config-crypto/rotation.js';
 import { generateAesKey, generateCek } from '../../config-crypto/index.js';
+import { fullConfigToRdcConfig } from '../../config-crypto/rotation.js';
 import {
   buildConfigPushPayload,
   decryptConfigPullPayload,
   pathsToCommit,
-  RdcConfigSchema,
   type RdcConfig,
+  RdcConfigSchema,
 } from '../index.js';
 
 /** The authoritative family list, straight from the schema. */

@@ -14,9 +14,9 @@
  */
 
 import fs from 'node:fs';
-import { findRegressions, loadBacklog, writeBacklog } from './lib/p7-backlog.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { findRegressions, loadBacklog, writeBacklog } from './lib/p7-backlog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');

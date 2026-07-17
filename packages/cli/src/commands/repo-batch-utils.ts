@@ -1,6 +1,7 @@
 import readline from 'node:readline';
 import { getMachineContainers } from '@rediacc/shared/services/machine';
 import { t } from '../i18n/index.js';
+import { getDatastore, requireDatastoreHost } from '../services/config/config-datastores.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
@@ -10,7 +11,6 @@ import { telemetryService } from '../services/telemetry/telemetry.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { createRepoNameResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
-import { getDatastore, requireDatastoreHost } from '../services/config/config-datastores.js';
 import { resolveRepoTarget } from '../utils/repo-target.js';
 import { recordTimelineStep, type TimelineStep } from '../utils/timeline.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';

@@ -57,6 +57,8 @@ export { hmacCompute, hmacVerify } from './hmac.js';
 export { configDecrypt, configEncrypt, orgDecrypt, orgEncrypt } from './layers.js';
 // SDK time-windowed derivation
 export { generateSdkMaster, sdkDerive, sdkGetEpoch } from './sdk.js';
+// Selective encryption
+export { selectiveDecrypt, selectiveEncrypt } from './selective.js';
 // CEK key slots (passkey / password / recovery-code)
 export type { SlotKdfParams, SlotMethod } from './slots.js';
 export {
@@ -65,13 +67,11 @@ export {
   generateRecoveryCode,
   newPasswordSlotParams,
   newRecoverySlotParams,
-  parseRecoveryCode,
   PASSWORD_PBKDF2_ITERATIONS,
+  parseRecoveryCode,
   unwrapCekForSlot,
   wrapCekForSlot,
 } from './slots.js';
-// Selective encryption
-export { selectiveDecrypt, selectiveEncrypt } from './selective.js';
 
 // Types
 export type {

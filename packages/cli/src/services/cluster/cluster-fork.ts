@@ -17,11 +17,11 @@ import { outputService } from '../core/output.js';
 import { getExecutor } from '../executor/executor-factory.js';
 import { parseCapturedJson } from '../executor/local-executor.js';
 import {
+  allocateAgentNetworkId,
   assertDestNotRunningOwnK3s,
   clusterMount,
   controlDatastore,
   controlDatastoreMount,
-  allocateAgentNetworkId,
   dispatch,
   K8S_SERVER_ROLES,
   type K8sMember,

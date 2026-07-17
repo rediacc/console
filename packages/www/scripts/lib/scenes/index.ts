@@ -1,13 +1,8 @@
-import type { Scene, Storyboard } from '../storyboard.ts';
 import type { ParsedCast } from '../cast-splitter.ts';
 import type { NarrationLookup } from '../narration-lookup.ts';
+import type { Scene, Storyboard } from '../storyboard.ts';
+import { compileBrowser, compileBrowserSplit, computeBrowserSceneDurationDry } from './browser.ts';
 import type { SessionManager } from './browser-session.ts';
-import {
-  compileSlide,
-  compileTitle,
-  compileOutro,
-  computeFreezeSceneDurationDry,
-} from './slide.ts';
 import {
   compileCast,
   compileCastFreeze,
@@ -16,7 +11,12 @@ import {
   computeCastFreezeDurationDry,
   computeCastNarratedDurationDry,
 } from './cast.ts';
-import { compileBrowser, compileBrowserSplit, computeBrowserSceneDurationDry } from './browser.ts';
+import {
+  compileOutro,
+  compileSlide,
+  compileTitle,
+  computeFreezeSceneDurationDry,
+} from './slide.ts';
 
 export interface CastNarratedDebug {
   sceneId: string;

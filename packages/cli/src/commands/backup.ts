@@ -11,9 +11,9 @@ import { compositeKey } from '../utils/config-schema.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { resolveRemoteName } from '../utils/remote-resolve.js';
+import { assertMachineExists } from './_validate.js';
 import { registerBackupOpsCommands } from './backup-ops.js';
 import { registerBackupStrategyCommands } from './backup-strategy.js';
-import { assertMachineExists } from './_validate.js';
 import { fetchBackupList, renderBackupList, type TaggedBackupEntry } from './repo-backup-list.js';
 
 /** Resolve the executor machine for `backup list`. */

@@ -32,10 +32,10 @@
 
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { RefGrammarError, splitRef } from '@rediacc/shared/ref';
+import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import { notFound } from '../../utils/cli-exit-error.js';
 import { ValidationError } from '../../utils/errors.js';
-import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { configService } from './config-resources.js';
 
 type DatastoreConfig = NonNullable<NonNullable<RdcConfig['resources']>['datastores']>[string];

@@ -27,8 +27,8 @@ vi.mock('../config-resources.js', () => ({
   configService: { getEffectiveConfigName: () => 'cfg' },
 }));
 
-import { forgetDatastore } from '../config-datastores.js';
 import { dropMachineObservations } from '../config-cluster-logic.js';
+import { forgetDatastore } from '../config-datastores.js';
 
 function cfgWith(): RdcConfig {
   return {

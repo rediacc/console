@@ -2,7 +2,6 @@
 // config dir before config-file-storage captures getConfigDir(). Kept in its
 // own import group (blank line below) so biome's organizeImports does not sort
 // it back down into the block and reintroduce the ENOENT redirect race.
-import { TEST_CONFIG_HOME } from './helpers/temp-config-env.js';
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -11,6 +10,7 @@ import { configFileStorage } from '../../adapters/config-file-storage.js';
 import type { RdcConfig } from '../../types/index.js';
 import { configService } from '../config/config-resources.js';
 import { RemoteResourceState } from '../config/resource-state.js';
+import { TEST_CONFIG_HOME } from './helpers/temp-config-env.js';
 
 const CONFIG_NAME = 'rediacc';
 const GUID = 'a1111111-1111-4111-8111-111111111111';

@@ -4,7 +4,6 @@
  */
 
 import type { ImageMetadata } from 'astro';
-import { ACCOUNT_PATH } from './constants';
 // Problem section illustrations
 import illustrationAiPentesting from '../assets/images/illustrations/ai-pentesting.svg';
 import illustrationAuditTrail from '../assets/images/illustrations/audit-trail.svg';
@@ -17,8 +16,8 @@ import illustrationEnvironmentCloning from '../assets/images/illustrations/envir
 import illustrationFailoverTesting from '../assets/images/illustrations/failover-testing.svg';
 import illustrationImmutableBackups from '../assets/images/illustrations/immutable-backups.svg';
 import illustrationInfrastructureCosts from '../assets/images/illustrations/infrastructure-costs.svg';
-import illustrationInstantRecovery from '../assets/images/illustrations/instant-recovery.svg';
 import illustrationInstantRecoveryMobile from '../assets/images/illustrations/instant-recovery.mobile.svg';
+import illustrationInstantRecovery from '../assets/images/illustrations/instant-recovery.svg';
 import illustrationIntegrations from '../assets/images/illustrations/integrations.svg';
 import illustrationKubernetesClusterMobility from '../assets/images/illustrations/kubernetes-cluster-mobility.svg';
 import illustrationMigrationSafety from '../assets/images/illustrations/migration-safety.svg';
@@ -28,6 +27,7 @@ import illustrationRetentionCompliance from '../assets/images/illustrations/rete
 import illustrationSafeOsTesting from '../assets/images/illustrations/safe-os-testing.svg';
 import illustrationVendorLockIn from '../assets/images/illustrations/vendor-lock-in.svg';
 import illustrationVulnerabilityManagement from '../assets/images/illustrations/vulnerability-management.svg';
+import { ACCOUNT_PATH } from './constants';
 
 export type SectionType =
   | 'hero'

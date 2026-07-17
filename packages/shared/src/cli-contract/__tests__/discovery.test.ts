@@ -6,13 +6,13 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { getCommand } from '../index';
 import {
   DISCOVERY_FAMILIES,
+  type DiscoveryFamily,
   RESOURCE_DISCOVERY,
   RESOURCE_KINDS,
-  type DiscoveryFamily,
 } from '../discovery';
+import { getCommand } from '../index';
 import type { ResourceKind } from '../types';
 
 /** The kinds whose values come straight from a config family. */

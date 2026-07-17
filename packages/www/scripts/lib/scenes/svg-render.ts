@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { Resvg } from '@resvg/resvg-js';
-import { VIDEO_W, VIDEO_H } from '../ffmpeg-video.ts';
+import { VIDEO_H, VIDEO_W } from '../ffmpeg-video.ts';
 
 export function rasterizeSvgTo1080p(
   svgPath: string,

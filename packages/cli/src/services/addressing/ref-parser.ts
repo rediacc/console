@@ -11,22 +11,22 @@
  * Everything else is a straight re-export; call sites and tests are unchanged.
  */
 
-import { ERROR_CODES } from '../../types/errors.js';
-import { CliExitError } from '../../utils/cli-exit-error.js';
 import {
   isValidLabel,
   LABEL_MAX_LENGTH,
-  parseRef as sharedParseRef,
   type ParsedRef,
-  RefGrammarError,
   RESERVED_TAG,
+  RefGrammarError,
   type SegmentRole,
+  parseRef as sharedParseRef,
   validateLabel as sharedValidateLabel,
   validateTag as sharedValidateTag,
 } from '@rediacc/shared/ref';
+import { ERROR_CODES } from '../../types/errors.js';
+import { CliExitError } from '../../utils/cli-exit-error.js';
 
-export { isValidLabel, LABEL_MAX_LENGTH, RESERVED_TAG };
 export type { ParsedRef, SegmentRole };
+export { isValidLabel, LABEL_MAX_LENGTH, RESERVED_TAG };
 
 /** Run `fn`, converting a shared RefGrammarError into an exit-2 CliExitError. */
 function asExit<T>(fn: () => T): T {

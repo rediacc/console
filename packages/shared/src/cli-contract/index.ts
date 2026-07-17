@@ -7,6 +7,13 @@
  */
 export { CLI_CONTRACT, CLI_CONTRACT_VERSION } from './data/contract.generated';
 export {
+  DISCOVERY_FAMILIES,
+  type DiscoveryFamily,
+  type DiscoverySource,
+  RESOURCE_DISCOVERY,
+  RESOURCE_KINDS,
+} from './discovery';
+export {
   CONTRACT_LANGUAGES,
   type ContractLanguage,
   isContractLanguage,
@@ -30,13 +37,6 @@ export type {
   TimeoutClass,
 } from './types';
 export {
-  DISCOVERY_FAMILIES,
-  RESOURCE_DISCOVERY,
-  RESOURCE_KINDS,
-  type DiscoveryFamily,
-  type DiscoverySource,
-} from './discovery';
-export {
   CliContractSchema,
   CommandExampleSchema,
   CommandGroupSchema,
@@ -49,8 +49,8 @@ export {
   FormatHintSchema,
   OptionTierSchema,
   OutputHintsSchema,
-  parseCliContract,
   PositionalKindSchema,
+  parseCliContract,
   ResourceKindSchema,
   safeParseCliContract,
   TimeoutClassSchema,

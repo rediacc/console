@@ -1,8 +1,18 @@
-import { spawn, type ChildProcess } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
+import { type ChildProcess, execFileSync, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import type { FrameLocator, Locator, Page } from 'playwright';
+import {
+  FPS,
+  muxNarratedSegment,
+  PAD_FILTER_CENTER,
+  probeDurationSec,
+  trimMp4Duration,
+  VIDEO_H,
+  VIDEO_W,
+  videoCodecArgs,
+} from '../ffmpeg-video.ts';
 import type {
   BrowserAction,
   BrowserPageSource,
@@ -12,19 +22,8 @@ import type {
   SessionSpec,
   Storyboard,
 } from '../storyboard.ts';
-import {
-  muxNarratedSegment,
-  probeDurationSec,
-  trimMp4Duration,
-  videoCodecArgs,
-  PAD_FILTER_CENTER,
-  FPS,
-  VIDEO_W,
-  VIDEO_H,
-} from '../ffmpeg-video.ts';
-import { execFileSync } from 'node:child_process';
-import type { ChunkProducer, SceneContext } from './index.ts';
 import type { LiveSession } from './browser-session.ts';
+import type { ChunkProducer, SceneContext } from './index.ts';
 
 /**
  * Environment for storyboard-driven host commands (setupCommand,

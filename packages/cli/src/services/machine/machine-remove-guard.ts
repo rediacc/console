@@ -17,10 +17,10 @@
  */
 
 import { t } from '../../i18n/index.js';
-import { configService } from '../config/config-resources.js';
-import { outputService } from '../core/output.js';
 import type { RepositoryConfig } from '../../types/index.js';
 import { type CliExitError, stateMismatch } from '../../utils/cli-exit-error.js';
+import { configService } from '../config/config-resources.js';
+import { outputService } from '../core/output.js';
 
 /** Names of the repositories whose placement DIRECTLY names `machineName`. */
 export function reposPlacedOnMachine(

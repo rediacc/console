@@ -17,6 +17,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { hkdfDeriveKey } from '../hkdf.js';
 import {
   cekHandoffDecrypt,
   cekUnwrap,
@@ -26,12 +27,11 @@ import {
   exportAesKey,
   fromBase64,
   HKDF_INFO,
-  parseRecoveryCode,
   PRF_EVAL_SALT_VALUE,
+  parseRecoveryCode,
   prfEvalSalt,
   sdkDerive,
 } from '../index.js';
-import { hkdfDeriveKey } from '../hkdf.js';
 import type { CekHandoffBlob } from '../types.js';
 
 const bytesToHex = (data: Uint8Array): string =>

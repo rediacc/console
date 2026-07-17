@@ -14,12 +14,12 @@
 
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { ClusterConfig, ClusterPool } from '../../types/index.js';
-import { allocateAgentNetworkId } from './cluster-kube.js';
 import { getCluster } from '../config/config-cluster-ops.js';
 import { configService } from '../config/config-resources.js';
 import { auditService } from '../core/audit.js';
 import { outputService } from '../core/output.js';
 import { type ExecuteResult, getExecutor } from '../executor/executor-factory.js';
+import { allocateAgentNetworkId } from './cluster-kube.js';
 
 const MOUNT_BASE = '/mnt/rediacc/mounts';
 const NAMED_DS_BASE = '/mnt/rediacc-ds';

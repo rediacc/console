@@ -10,22 +10,22 @@ import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
+import { createRepoAdminCommand } from './repo-admin.js';
 import { registerRepoBackupCommands } from './repo-backup.js';
 import { handleDownAll, handleRepoList, handleUpAll, postRepoUpTasks } from './repo-batch-utils.js';
 import { registerRepoBranchingCommands } from './repo-branching.js';
 import { registerRepoCanaryCommands } from './repo-canary.js';
 import { registerRepoCatCommand } from './repo-cat.js';
-import { registerRepoForkCommand } from './repo-fork.js';
+import { registerRepoContainerCommands } from './repo-container.js';
 import { registerRepoCreateDeleteCommands } from './repo-create-delete.js';
 import { registerRepoDiffCommand } from './repo-diff.js';
 import { registerExtendedRepoCommands } from './repo-extended.js';
-import { createRepoAdminCommand } from './repo-admin.js';
+import { registerRepoForkCommand } from './repo-fork.js';
 import { registerRepoMaintenanceCommands } from './repo-maintenance.js';
 import { registerRepoMigrateCommand } from './repo-migrate.js';
 import { registerRepoReplicateCommands } from './repo-replicate.js';
 import { registerRepoSecretCommands } from './repo-secret.js';
 import { registerRepoSyncCommands } from './repo-sync.js';
-import { registerRepoContainerCommands } from './repo-container.js';
 import { registerRepoTunnelCommand } from './repo-tunnel.js';
 
 interface RepoUpSingleOptions {

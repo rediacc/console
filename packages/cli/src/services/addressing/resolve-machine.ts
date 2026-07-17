@@ -269,7 +269,13 @@ export async function resolveMachine(
   // Step 5: verify before executing — state is a routing hint, not truth. The
   // resolved tag's GUID is the image the candidate machine must know.
   const repoGuid = view.families[name].tags[tag].repositoryGuid;
-  const { imageAbsent } = await verifyBeforeExecuting(name, candidate, datastore, repoGuid, options);
+  const { imageAbsent } = await verifyBeforeExecuting(
+    name,
+    candidate,
+    datastore,
+    repoGuid,
+    options
+  );
 
   // Step 6: the caller executes on the verified machine.
   return {
