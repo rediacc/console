@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -33,8 +33,15 @@ export class CliRunner {
   private constructor(
     private readonly bin: string,
     private readonly binPrefixArgs: string[],
-    private readonly env: NodeJS.ProcessEnv
+    private readonly env: NodeJS.ProcessEnv,
+    /** Absolute dev renet to pin into the config (undefined in CI / SEA). */
+    private readonly devRenetPath?: string
   ) {}
+
+  /** Path of the isolated e2e-cli config file. */
+  private static configFilePath(): string {
+    return path.join(os.homedir(), '.config', 'rediacc', `${E2E_CLI_CONFIG}.json`);
+  }
 
   /**
    * Resolve the CLI. CI installs it globally (install-cli-global.sh runs in
@@ -60,22 +67,27 @@ export class CliRunner {
     }
     // packages/e2e-tests/src/utils -> packages/cli/dist/cli-bundle.cjs
     const bundle = path.resolve(__dirname, '../../../cli/dist/cli-bundle.cjs');
-    // Pin the DEV renet for the CLI's remote provisioning, the way rdc.sh
-    // does it: PREPEND the dev bin dir to PATH (the CLI resolves `renet` via
-    // its configured path, then PATH lookup — there is no env-var override).
-    // Without this the bundle resolves /usr/bin/renet — the HOST'S installed
-    // production build — and its first machine connection DEPLOYS that binary
-    // into the fleet's install slot, silently replacing the dev renet and
-    // breaking every bridge-side surface the production build does not carry
-    // (found live TWICE: `functions` vanished fleet-wide after suite 23's own
-    // preflight, and survived an ops re-provision because both binaries
-    // report 0.0.0-dev while the provisioner correctly hash-compares against
-    // whatever LOCAL binary it resolved).
-    const devRenetDir = path.resolve(__dirname, '../../../../private/renet/bin');
-    if (existsSync(path.join(devRenetDir, 'renet'))) {
-      env.PATH = `${devRenetDir}${path.delimiter}${env.PATH ?? ''}`;
+    // Pin the DEV renet for the CLI's REMOTE provisioning. The CLI resolves
+    // its local renet from config.renetPath (default the bare name `renet`,
+    // which becomes a PATH lookup). On a dev box PATH finds /usr/bin/renet —
+    // the HOST'S installed PRODUCTION build — and the CLI's first machine
+    // connection DEPLOYS that into the fleet's install slot, silently
+    // replacing the dev renet the harness setup put there and breaking every
+    // bridge surface the production build lacks (found live: `functions`
+    // vanished fleet-wide right after suite 23's own preflight; both binaries
+    // report 0.0.0-dev so the version guard never rejects the downgrade).
+    //
+    // The fix is an ABSOLUTE config.renetPath (pinned by initConfig below):
+    // resolveRenetPath uses an absolute existing path DIRECTLY, with no PATH
+    // lookup to lose. PATH prepend is kept as belt-and-suspenders for any CLI
+    // path that still guesses.
+    const devRenetPath = path.resolve(__dirname, '../../../../private/renet/bin/renet');
+    let pinned: string | undefined;
+    if (existsSync(devRenetPath)) {
+      pinned = devRenetPath;
+      env.PATH = `${path.dirname(devRenetPath)}${path.delimiter}${env.PATH ?? ''}`;
     }
-    return new CliRunner(process.execPath, [bundle], env);
+    return new CliRunner(process.execPath, [bundle], env, pinned);
   }
 
   /** Spawn the CLI with the given argv verbatim (no --config injected). */
@@ -134,7 +146,17 @@ export class CliRunner {
    * resetConfig(): a config outliving the fleet is stale, not reusable.
    */
   async initConfig(sshKeyPath: string): Promise<CliResult> {
-    return this.exec(['config', 'init', E2E_CLI_CONFIG, '--ssh-key', sshKeyPath]);
+    const result = await this.exec(['config', 'init', E2E_CLI_CONFIG, '--ssh-key', sshKeyPath]);
+    // Pin the dev renet as an ABSOLUTE top-level renetPath (host-local field,
+    // unencrypted per config sensitivity rules) so the CLI never PATH-guesses
+    // and downgrades the fleet to the host's production binary. See create().
+    if (this.devRenetPath) {
+      const file = CliRunner.configFilePath();
+      const cfg = JSON.parse(readFileSync(file, 'utf8')) as { renetPath?: string };
+      cfg.renetPath = this.devRenetPath;
+      writeFileSync(file, `${JSON.stringify(cfg, null, 2)}\n`);
+    }
+    return result;
   }
 
   /** Register a machine in the e2e-cli config (`machine add <name> --ip --user`). */
