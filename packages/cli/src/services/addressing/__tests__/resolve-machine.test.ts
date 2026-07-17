@@ -216,6 +216,35 @@ describe('resolveMachine — verify before executing (step 5)', () => {
     );
   });
 
+  it('converges on machine-arm absence under absentOk (#45/#95) instead of exit 12', async () => {
+    const v = view({
+      families: { shop: family({ machine: 'prod-1' }) },
+      machines: { 'prod-1': machine() },
+    });
+    const verifyMount = vi.fn().mockResolvedValue(false);
+    const resolved = await resolveMachine('shop', v, { verifyMount, absentOk: true });
+    expect(resolved.machine).toBe('prod-1');
+    expect(resolved.imageAbsent).toBe(true);
+  });
+
+  it('absentOk does NOT soften the datastore arm: a failed attach check stays exit 12', async () => {
+    const verifyMount = vi.fn().mockResolvedValue(false);
+    await expectExit(
+      () => resolveMachine('shop', attachedView(), { verifyMount, absentOk: true }),
+      12
+    );
+  });
+
+  it('absentOk with a passing presence check resolves without the imageAbsent marker', async () => {
+    const v = view({
+      families: { shop: family({ machine: 'prod-1' }) },
+      machines: { 'prod-1': machine() },
+    });
+    const verifyMount = vi.fn().mockResolvedValue(true);
+    const resolved = await resolveMachine('shop', v, { verifyMount, absentOk: true });
+    expect(resolved.imageAbsent).toBeUndefined();
+  });
+
   it('proceeds when the presence check passes (fail-open maps undefined -> true upstream)', async () => {
     const verifyMount = vi.fn().mockResolvedValue(true);
     const resolved = await resolveMachine('shop', attachedView(), { verifyMount });

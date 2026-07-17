@@ -90,6 +90,12 @@ export interface ResolvedRepoRef {
   tag: string;
   /** The `@place` the ref carried, once accepted as a redundant confirmation. */
   place?: string;
+  /**
+   * Set only when the caller passed `absentOk` (converge-to-absent verbs,
+   * #45/#95): the machine arm's presence probe returned a definite absence, so
+   * the caller skips the machine dispatch and finishes its config-side work.
+   */
+  imageAbsent?: boolean;
 }
 
 /**
@@ -118,6 +124,7 @@ export async function resolveRepoRef(
     ...(resolved.datastore !== undefined && { datastore: resolved.datastore }),
     tag: resolved.tag,
     ...(resolved.place !== undefined && { place: resolved.place }),
+    ...(resolved.imageAbsent && { imageAbsent: true }),
   };
 }
 

@@ -255,3 +255,18 @@ named residuals carrying owners: #42 (product, ruling needed) and the rehearse r
     symlink. For k8s-owned volumes the node's mount tree belongs to kubelet.
     Spec 09 §5 + §10 rewritten. The suite's detach polls stay: unstage is
     asynchronous by design (pod deletion returns before volume teardown).
+
+17. **#99 — `repo delete` violated the converge-to-absent doctrine on the machine
+    arm (mechanism fixed this wave; command wiring pending a tree settle).**
+    Delete RETAINS the config family by design ("may exist on other machines"),
+    so delete-again / delete-after-manual-cleanup is a legitimate sequence — but
+    the step-5 presence probe answered a definite absence with exit 12 and
+    reconcile busywork. Found live by suite 23's first-ever executions (the
+    archaeology also disproved two scarier theories: the listing DOES show
+    unmounted repos, and no sibling-wipe exists). Ruling: #45/#95 extends to the
+    machine arm for destructive verbs — `resolveMachine` gains `absentOk` and
+    returns `imageAbsent` for the caller to converge on. The datastore arm's
+    attach refusal is deliberately NOT softened. Suite 23's helpers still need
+    the GUID-based bridge cross-check (storage speaks GUID, #93) and config-file
+    placement reads (`repo list` requires -m); its `deleteAppQuietly` benefits
+    from #99 directly.

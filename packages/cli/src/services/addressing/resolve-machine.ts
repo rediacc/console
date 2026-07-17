@@ -48,6 +48,16 @@ export interface ResolveMachineOptions {
    */
   readOnly?: boolean;
   /**
+   * Destructive verbs whose doctrine is converge-to-absent (#45/#95: `repo
+   * delete`). A definite machine-arm absence is then NOT exit 12 — the resolve
+   * succeeds with `imageAbsent: true` so the caller can skip the machine
+   * dispatch and finish its config-side semantics. Found live: delete RETAINS
+   * the config family by design ("may exist on other machines"), so deleting a
+   * repo whose image is already gone is a legitimate, expected sequence — the
+   * refusal only manufactured reconcile busywork.
+   */
+  absentOk?: boolean;
+  /**
    * Step 5's cheap remote presence check. Resolves true when `machine` KNOWS the
    * resolved tag's image (`repoGuid` appears in `repository_list`) — presence,
    * not mounted (a downed repo is unmounted and `repo up` must still work). The
@@ -75,6 +85,12 @@ export interface ResolvedMachine {
   tag: string;
   /** The `@place` the ref carried, once accepted as a redundant confirmation. */
   place?: string;
+  /**
+   * Set only under `absentOk`: the machine arm's presence probe returned a
+   * DEFINITE absence. The caller converges (skips the machine dispatch) instead
+   * of refusing.
+   */
+  imageAbsent?: boolean;
 }
 
 /** Which stored tag key a parsed tag resolves to (bare/base => the grand tag). */
@@ -209,10 +225,10 @@ async function verifyBeforeExecuting(
   datastore: string | undefined,
   repoGuid: string,
   options: ResolveMachineOptions
-): Promise<void> {
-  if (options.readOnly || !options.verifyMount) return;
+): Promise<{ imageAbsent: boolean }> {
+  if (options.readOnly || !options.verifyMount) return { imageAbsent: false };
   const present = await options.verifyMount({ machine: candidate, datastore, repoGuid });
-  if (present) return;
+  if (present) return { imageAbsent: false };
   // Definite absence => exit 12, naming both sides and the fix. The datastore
   // arm speaks of the attach; the machine arm speaks of the image itself.
   if (datastore !== undefined) {
@@ -221,6 +237,9 @@ async function verifyBeforeExecuting(
         `but ${candidate} does not mount it. Run "rdc config reconcile", then retry.`
     );
   }
+  // Converge-to-absent verbs (#45/#95) treat a definite absence as "already
+  // done" on the machine arm — the caller skips the dispatch.
+  if (options.absentOk) return { imageAbsent: true };
   throw stateMismatch(
     `config places ${name} on ${candidate}, ` +
       `but ${candidate} does not have its image. Run "rdc config reconcile", then retry.`
@@ -250,7 +269,7 @@ export async function resolveMachine(
   // Step 5: verify before executing — state is a routing hint, not truth. The
   // resolved tag's GUID is the image the candidate machine must know.
   const repoGuid = view.families[name].tags[tag].repositoryGuid;
-  await verifyBeforeExecuting(name, candidate, datastore, repoGuid, options);
+  const { imageAbsent } = await verifyBeforeExecuting(name, candidate, datastore, repoGuid, options);
 
   // Step 6: the caller executes on the verified machine.
   return {
@@ -259,6 +278,7 @@ export async function resolveMachine(
     ...(cluster !== undefined && { cluster }),
     tag,
     ...(place !== undefined && { place }),
+    ...(imageAbsent && { imageAbsent: true }),
   };
 }
 
