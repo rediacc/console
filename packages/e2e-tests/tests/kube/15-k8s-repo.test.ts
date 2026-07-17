@@ -781,11 +781,14 @@ spec:
       //     evidence of a bypass.
       // What CAN be asserted deterministically:
       //   (1) k3s ingested the wiring — its generated containerd config
-      //       names the mirror endpoint;
+      //       names the mirror endpoint. NOTE the relocated data-dir: this
+      //       cluster's k3s lives INSIDE the control datastore (the image IS
+      //       the cluster), so the agent tree is under the mount, not
+      //       /var/lib/rancher;
       //   (2) zot serves the exact probe image through that endpoint
       //       (on-demand pull-through, HTTP 200 on the manifest).
       const containerdCfg = await w1.executeViaBridge(
-        `sudo grep -rl '127.0.0.1:5000' /var/lib/rancher/k3s/agent/etc/containerd/ 2>/dev/null | head -5; true`
+        `sudo grep -rl '127.0.0.1:5000' ${CTRL_MOUNT}/.rediacc/k3s/data/agent/etc/containerd/ 2>/dev/null | head -5; true`
       );
       expect(
         containerdCfg.stdout.trim(),
