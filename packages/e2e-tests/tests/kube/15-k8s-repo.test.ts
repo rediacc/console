@@ -848,12 +848,24 @@ spec:
       // blocks the release) and k3s's leftover containerd/kubelet kernel mounts (#20).
       await csiNodeDown(w1);
       await unwindSubmounts(w1, DATA_MOUNT);
-      expect(w1.isSuccess(await w1.datastoreDetach(DATA_DS))).toBe(true);
+      // Detach as a bounded CONVERGENCE poll: kubelet/containerd release
+      // their mounts asynchronously after pod/namespace deletion, so a
+      // just-torn-down node can hold the datastore for a few more seconds.
+      // The product correctly refuses while holders exist (no lazy unmount);
+      // the test retries within a bound instead of racing it — observed
+      // live: a detach refused at T+0 succeeded seconds later.
+      expect(
+        await poll(async () => w1.isSuccess(await w1.datastoreDetach(DATA_DS)), 60_000, 5_000),
+        `${DATA_DS} detach did not converge within 60s — holders never drained`
+      ).toBe(true);
       expect(
         w1.isSuccess(await w1.kubeUninstall({ mountPath: CTRL_MOUNT, networkId: CTRL_NET }))
       ).toBe(true);
       await unwindSubmounts(w1, CTRL_MOUNT);
-      expect(w1.isSuccess(await w1.datastoreDetach(CTRL_DS))).toBe(true);
+      expect(
+        await poll(async () => w1.isSuccess(await w1.datastoreDetach(CTRL_DS)), 60_000, 5_000),
+        `${CTRL_DS} detach did not converge within 60s — holders never drained`
+      ).toBe(true);
       // The per-cluster dummy interface is removed on uninstall.
       const iface = await w1.executeViaBridge(
         `ip link show rdk${CTRL_NET} 2>/dev/null && echo PRESENT || echo GONE`
