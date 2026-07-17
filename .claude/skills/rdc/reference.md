@@ -1560,6 +1560,7 @@ Link this config to remote encrypted storage
 **Options:**
 
 - `--headless` — Use device code flow (for headless servers)
+- `--password` — Enroll headlessly with a pre-provisioned password slot (no browser)
 - `--api-url <url>` — Account server URL
 
 ### rdc config remote disable

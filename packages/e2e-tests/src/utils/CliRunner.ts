@@ -26,7 +26,7 @@ export interface CliResult {
 }
 
 /** The isolated e2e config namespace — NEVER the user's default config. */
-export const E2E_CLI_CONFIG = 'e2e-cli';
+const E2E_CLI_CONFIG = 'e2e-cli';
 
 export class CliRunner {
   private constructor(

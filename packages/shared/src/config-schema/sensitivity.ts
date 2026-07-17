@@ -11,9 +11,13 @@
  *   - packages/cli/src/services/resource-state.ts — which paths encrypt at rest
  *   - packages/shared/src/config-crypto/commitments.ts — which paths commit to the server envelope
  *
- * Invariant: every sensitive leaf in schemas.ts MUST have a corresponding
- * template entry here. The CI gate `check:ci-schema-coverage` (Step 15) will
- * fail closed on any Zod leaf introduced without a registry entry.
+ * Invariant: every primitive leaf in schemas.ts MUST resolve to a template
+ * entry here (exact, wildcard, or a registered ancestor container), except the
+ * envelope fields the coverage gate explicitly excludes (schemaVersion, id,
+ * version, encryption). The CI gate `check:ci-schema-coverage`
+ * (scripts/check-schema-coverage.ts) walks RdcConfigSchema and fails closed on
+ * any Zod leaf introduced without a registry entry — and on any registry entry
+ * whose template no longer matches a schema node (stale residue).
  *
  * Convention: prefer one entry per template. Use `*` wildcards freely; the
  * walker expands them against live config values at lookup time.
@@ -54,17 +58,30 @@ function withDefaults(meta: SensitivityMeta): Required<SensitivityMeta> {
  * Order: grouped by top-level section in the order they appear in RdcConfig v2.
  */
 const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
-  // ── Account (cloud/experimental credentials) ─────────────────────────────
-  '/account/apiUrl': { kind: 'identifier' },
-  '/account/token': { kind: 'secret' },
+  // ── Account ──────────────────────────────────────────────────────────────
   '/account/userEmail': { kind: 'pii' },
   '/account/accountServer': { kind: 'identifier' },
+  // Retired cloud-adapter residue (R2-F9): the v2→v3 migration strips team and
+  // region and nothing repopulates them. Registered public so the coverage
+  // gate stays strict until P4 deletes the fields with the dead command
+  // surface.
+  '/account/team': { kind: 'public' },
+  '/account/region': { kind: 'public' },
 
   // ── Defaults ─────────────────────────────────────────────────────────────
   '/defaults/universalUser': { kind: 'pii' },
+  // Operator preferences: UI language, default datastore sizing, prune grace.
+  '/defaults/language': { kind: 'public' },
+  '/defaults/datastoreSize': { kind: 'public' },
+  '/defaults/pruneGraceDays': { kind: 'public' },
+  // Retired residue (R2-F9), same story as /account/team above.
+  '/defaults/machine': { kind: 'public' },
 
   // ── Credentials ──────────────────────────────────────────────────────────
   '/credentials/ssh/privateKey': { kind: 'credential' },
+  // Public half of the keypair, shareable by construction — mirrors
+  // /resources/repositories/*/tags/*/sshPublicKey.
+  '/credentials/ssh/publicKey': { kind: 'public' },
   '/credentials/ssh/knownHosts': { kind: 'pii' },
   '/credentials/cfDnsApiToken': { kind: 'secret' },
 
@@ -97,10 +114,20 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   // ── Machines ─────────────────────────────────────────────────────────────
   '/resources/machines/*/ip': { kind: 'pii' },
   '/resources/machines/*/user': { kind: 'pii' },
+  '/resources/machines/*/port': { kind: 'public' },
   '/resources/machines/*/datastore': { kind: 'pii' },
   '/resources/machines/*/knownHosts': { kind: 'pii' },
   '/resources/machines/*/infra/publicIPv4': { kind: 'pii' },
   '/resources/machines/*/infra/publicIPv6': { kind: 'pii' },
+  // Published DNS, but it identifies the deployment exactly like the sibling
+  // public IPs it resolves to — same kind, or redacting the IPs is pointless.
+  '/resources/machines/*/infra/baseDomain': { kind: 'pii' },
+  // Firewall topology (arrays of primitives registered at the array level,
+  // like backupStrategies/*/include below).
+  '/resources/machines/*/infra/tcpPorts': { kind: 'public' },
+  '/resources/machines/*/infra/udpPorts': { kind: 'public' },
+  // Strategy names; the strategies themselves are registered below.
+  '/resources/machines/*/backupStrategies': { kind: 'public' },
   // Cluster backref on materialized pool members — non-secret inventory.
   '/resources/machines/*/cluster/cluster': { kind: 'public' },
   '/resources/machines/*/cluster/pool': { kind: 'public' },
@@ -135,8 +162,32 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/resources/clusters/*/registry/upstreams/*': { kind: 'public' },
   '/resources/clusters/*/ceph/pool': { kind: 'public' },
   '/resources/clusters/*/controlNode': { kind: 'public' },
+  // Local KVM topology — libvirt network naming + a registry hostname; no
+  // credentials by design (D15: kubeconfigs/join tokens never enter the config).
+  '/resources/clusters/*/kvm/netName': { kind: 'public' },
+  '/resources/clusters/*/kvm/netBase': { kind: 'public' },
+  '/resources/clusters/*/kvm/netOffset': { kind: 'public' },
+  '/resources/clusters/*/kvm/controlId': { kind: 'public' },
+  '/resources/clusters/*/kvm/dockerRegistry': { kind: 'public' },
+
+  // ── Backup strategies (scheduling topology; storage creds live in vaultContent) ──
+  // A strategy references storages by NAME; the credentials are in
+  // /resources/storages/*/vaultContent (secret). Folder paths and include/
+  // exclude globs are location topology, same sensitivity as datastore paths.
+  '/resources/backupStrategies/*/schedule': { kind: 'public' },
+  '/resources/backupStrategies/*/mode': { kind: 'public' },
+  '/resources/backupStrategies/*/enabled': { kind: 'public' },
+  '/resources/backupStrategies/*/bandwidthLimit': { kind: 'public' },
+  '/resources/backupStrategies/*/include': { kind: 'public' },
+  '/resources/backupStrategies/*/exclude': { kind: 'public' },
+  '/resources/backupStrategies/*/destinations/*/name': { kind: 'public' },
+  '/resources/backupStrategies/*/destinations/*/storage': { kind: 'public' },
+  '/resources/backupStrategies/*/destinations/*/enabled': { kind: 'public' },
+  '/resources/backupStrategies/*/destinations/*/bandwidthLimit': { kind: 'public' },
+  '/resources/backupStrategies/*/destinations/*/folder': { kind: 'public' },
 
   // ── Storages ─────────────────────────────────────────────────────────────
+  '/resources/storages/*/provider': { kind: 'public' },
   '/resources/storages/*/vaultContent': { kind: 'secret' },
 
   // ── Repositories (structural tags: name -> tags -> tag -> record) ──────────
@@ -160,26 +211,133 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/resources/deletedRepositories/*/parentGuid': { kind: 'identifier' },
   '/resources/deletedRepositories/*/sshPrivateKey': { kind: 'credential' },
   '/resources/deletedRepositories/*/sshPublicKey': { kind: 'public' },
+  '/resources/deletedRepositories/*/immutable': { kind: 'public' },
+  '/resources/deletedRepositories/*/name': { kind: 'public' },
+  '/resources/deletedRepositories/*/tag': { kind: 'public' },
+  '/resources/deletedRepositories/*/deletedAt': { kind: 'public' },
 
   // ── Cloud providers ──────────────────────────────────────────────────────
   '/resources/cloudProviders/*/apiToken': { kind: 'secret' },
   '/resources/cloudProviders/*/sshUser': { kind: 'pii' },
+  // Provider-catalog plumbing: OpenTofu module source/attribute names and
+  // instance/image/region labels. The only live secrets in this family are
+  // apiToken and the operator identity in sshUser, above.
+  '/resources/cloudProviders/*/provider': { kind: 'public' },
+  '/resources/cloudProviders/*/source': { kind: 'public' },
+  '/resources/cloudProviders/*/region': { kind: 'public' },
+  '/resources/cloudProviders/*/instanceType': { kind: 'public' },
+  '/resources/cloudProviders/*/image': { kind: 'public' },
+  '/resources/cloudProviders/*/version': { kind: 'public' },
+  '/resources/cloudProviders/*/tokenAttr': { kind: 'public' },
+  '/resources/cloudProviders/*/resource': { kind: 'public' },
+  '/resources/cloudProviders/*/labelAttr': { kind: 'public' },
+  '/resources/cloudProviders/*/regionAttr': { kind: 'public' },
+  '/resources/cloudProviders/*/sizeAttr': { kind: 'public' },
+  '/resources/cloudProviders/*/imageAttr': { kind: 'public' },
+  '/resources/cloudProviders/*/ipv4Output': { kind: 'public' },
+  '/resources/cloudProviders/*/ipv6Output': { kind: 'public' },
+  '/resources/cloudProviders/*/sshKey/attr': { kind: 'public' },
+  '/resources/cloudProviders/*/sshKey/format': { kind: 'public' },
+  '/resources/cloudProviders/*/sshKey/keyResource': { kind: 'public' },
 
   // ── Infra ────────────────────────────────────────────────────────────────
   '/infra/certEmail': { kind: 'pii' },
   '/infra/cfDnsZoneId': { kind: 'identifier' },
 
   // ── State (runtime status half; never pushed) ──────────────────────────────
-  // ACME cert cache moved from /infra/acmeCertCache. `commit:false` because
-  // state never enters the server envelope.
+  // payload.ts strips `state` before push, so nothing here may carry a
+  // commitment: any non-public entry below MUST set `commit: false` (a
+  // committed-but-not-carried pointer is dropped on the first pull and bricks
+  // the re-push — same doctrine as masterPasswordVerifier). Runtime
+  // observations are registered `public` so the coverage gate forces a
+  // conscious sensitivity choice whenever a new runtime field lands; records
+  // and arrays whose values are primitives are registered at the container
+  // level (same style as backupStrategies/*/include).
+  '/state/datastores/*/attachedTo': { kind: 'public' },
+  '/state/datastores/*/writes': { kind: 'public' },
+  '/state/datastores/*/mounted': { kind: 'public' },
+  '/state/datastores/*/mountPath': { kind: 'public' },
+  '/state/datastores/*/attachedAt': { kind: 'public' },
+  '/state/datastores/*/holders/loops': { kind: 'public' },
+  '/state/datastores/*/holders/dm': { kind: 'public' },
+  '/state/datastores/*/holders/volumes': { kind: 'public' },
+  '/state/machines/*/lastSeenAt': { kind: 'public' },
+  '/state/machines/*/renetVersion': { kind: 'public' },
+  '/state/clusters/*/memberIds': { kind: 'public' },
+  '/state/clusters/*/k3sVersion': { kind: 'public' },
+  '/state/clusters/*/nodes/*/k3sVersion': { kind: 'public' },
+  '/state/clusters/*/nodes/*/lastSeenAt': { kind: 'public' },
+  '/state/repos/*/*/networkId': { kind: 'public' },
+  '/state/repos/*/*/registryPort': { kind: 'public' },
+  '/state/repos/*/*/pushState/*/verifiedBase': { kind: 'public' },
+  '/state/repos/*/*/pushState/*/lastPushAt': { kind: 'public' },
+  '/state/repos/*/*/pushState/*/method': { kind: 'public' },
+  '/state/repos/*/*/headCommit': { kind: 'public' },
+  '/state/repos/*/*/commitMessage': { kind: 'public' },
+  '/state/repos/*/*/commitAuthor': { kind: 'public' },
+  '/state/repos/*/*/commitParent': { kind: 'public' },
+  '/state/repos/*/*/head': { kind: 'public' },
+  '/state/repos/*/*/branches': { kind: 'public' },
+  '/state/repos/*/*/reflog/*/ref': { kind: 'public' },
+  '/state/repos/*/*/reflog/*/from': { kind: 'public' },
+  '/state/repos/*/*/reflog/*/to': { kind: 'public' },
+  '/state/repos/*/*/reflog/*/at': { kind: 'public' },
+  '/state/repos/*/*/reflog/*/message': { kind: 'public' },
+  '/state/networkIds/next': { kind: 'public' },
+  // ACME cert cache moved from /infra/acmeCertCache. `data` is the compressed
+  // acme.json dump — Traefik resolver state with private keys inside —
+  // `commit:false` because state never enters the server envelope. The fields
+  // beside it are the domain/expiry inventory and transfer bookkeeping.
+  '/state/certCache/*/baseDomain': { kind: 'public' },
+  '/state/certCache/*/updatedAt': { kind: 'public' },
+  '/state/certCache/*/sourceMachine': { kind: 'public' },
+  '/state/certCache/*/certCount': { kind: 'public' },
+  '/state/certCache/*/certs': { kind: 'public' },
   '/state/certCache/*/data': { kind: 'credential', commit: false },
+  '/state/certCache/*/rawSize': { kind: 'public' },
+  // Managed replica/canary sets (spec 05, R2-F17). repoGuid mirrors the
+  // spec-side repositoryGuid (identifier there), so it gets the same
+  // agent-redaction here; commit:false per the state rule above.
+  '/state/replicaSets/*/repo': { kind: 'public' },
+  '/state/replicaSets/*/repoGuid': { kind: 'identifier', commit: false },
+  '/state/replicaSets/*/datastore': { kind: 'public' },
+  '/state/replicaSets/*/cluster': { kind: 'public' },
+  '/state/replicaSets/*/replicas/*/index': { kind: 'public' },
+  '/state/replicaSets/*/replicas/*/fork': { kind: 'public' },
+  '/state/replicaSets/*/replicas/*/node': { kind: 'public' },
+  '/state/replicaSets/*/headless': { kind: 'public' },
+  '/state/replicaSets/*/refresh': { kind: 'public' },
+  '/state/replicaSets/*/snapshot': { kind: 'public' },
+  '/state/replicaSets/*/createdAt': { kind: 'public' },
+  '/state/replicaSets/*/refreshedAt': { kind: 'public' },
+  '/state/canaries/*/repo': { kind: 'public' },
+  '/state/canaries/*/cluster': { kind: 'public' },
+  '/state/canaries/*/service': { kind: 'public' },
+  '/state/canaries/*/image': { kind: 'public' },
+  '/state/canaries/*/port': { kind: 'public' },
+  '/state/canaries/*/replicas': { kind: 'public' },
+  '/state/canaries/*/weight': { kind: 'public' },
+  '/state/canaries/*/undoSnapshot': { kind: 'public' },
+  '/state/canaries/*/createdAt': { kind: 'public' },
+  '/state/canaries/*/updatedAt': { kind: 'public' },
+  '/state/reconciledAt': { kind: 'public' },
 
   // ── Remote (config store pointer) ────────────────────────────────────────
-  '/remote/apiUrl': { kind: 'identifier' },
-  '/remote/storeId': { kind: 'identifier' },
-  '/remote/configId': { kind: 'identifier' },
-  '/remote/teamId': { kind: 'identifier' },
-  '/remote/storageKeyId': { kind: 'identifier' },
+  // HOST-LOCAL bootstrap data: how THIS host reaches the store. It is never
+  // carried in the blob (a pulled config self-evidently already knows its
+  // store; the wire identity lives in the plaintext envelope), so it must not
+  // be committed either — the CLI pushes its on-disk document with `remote`
+  // present, and a committed-but-not-carried pointer is dropped by the first
+  // pull, making the re-push fail anti-downgrade. Same doctrine as
+  // masterPasswordVerifier: not synced, therefore not committed.
+  '/remote/apiUrl': { kind: 'identifier', commit: false },
+  '/remote/storeId': { kind: 'identifier', commit: false },
+  '/remote/configId': { kind: 'identifier', commit: false },
+  '/remote/teamId': { kind: 'identifier', commit: false },
+  '/remote/storageKeyId': { kind: 'identifier', commit: false },
+  // Region display label ("eu"/"us"); public, so never committed either —
+  // consistent with the host-local doctrine of its siblings above.
+  '/remote/dataRegion': { kind: 'public' },
 
   // ── Local binary override ────────────────────────────────────────────────
   // renetPath is a user-set filesystem override (e.g. /opt/bin/renet). It is

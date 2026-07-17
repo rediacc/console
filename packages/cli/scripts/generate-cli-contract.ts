@@ -21,13 +21,20 @@ import { fileURLToPath } from 'node:url';
 import type { Option } from 'commander';
 import type {
   CliContract,
+  CommandExample,
   CommandGroup,
   ContractCommand,
   ContractOption,
   ContractPositional,
+  OutputHints,
   PositionalKind,
 } from '../../shared/src/cli-contract/types.js';
 import { cli } from '../src/cli.js';
+import {
+  COMMAND_EXAMPLES,
+  COMMAND_KEYWORDS,
+  COMMAND_OUTPUT_HINTS,
+} from '../src/config/command-docs.js';
 import { COMMAND_METADATA, READ_TIMEOUT, WRITE_TIMEOUT } from '../src/config/command-metadata.js';
 import { getCommandPlane, isInteractiveCommand } from '../src/config/command-planes.js';
 import { COMMAND_REGISTRY } from '../src/config/command-registry.js';
@@ -39,6 +46,13 @@ import {
   loadLocale,
   walkContractCommands,
 } from './lib/command-tree-lib.js';
+import {
+  collectClassificationProblems,
+  resolveOptionFormat,
+  resolveOptionKinds,
+  resolveOptionSensitive,
+  resolveOptionTier,
+} from './lib/option-classification.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -128,10 +142,40 @@ const POSITIONAL_KIND_BY_NAME: Record<string, PositionalKind> = {
   'job-id': 'job-id',
 };
 
-function classifyPositional(domain: string, name: string): PositionalKind {
+/**
+ * Machine-domain commands whose `<name>` positional names a machine (or
+ * provider) that does NOT exist yet, so it must NOT bind the console's machine
+ * picker. Everything else on the `machine` domain named `name` references an
+ * existing machine — see `classifyPositional`.
+ */
+const MACHINE_NAME_CREATORS = new Set<string>([
+  'machine add',
+  'machine provision',
+  'machine provider add',
+]);
+
+function classifyPositional(pathKey: string, domain: string, name: string): PositionalKind {
   // `rdc job status <job-id>` and `rdc job logs <job-id>` name the job; an `id`
   // argument on the `job` domain is the same thing under an older spelling.
   if (domain === 'job' && (name === 'id' || name === 'job-id')) return 'job-id';
+  // `machine provider remove <name>` names an EXISTING configured provider, so
+  // the console can bind its provider picker to it. Path-aware on purpose:
+  // `machine provider add <name>` and `machine provision <name>` name NEW
+  // resources — there is nothing to pick, so they stay plain.
+  if (pathKey === 'machine provider remove' && name === 'name') return 'provider';
+  // A machine verb's `<name>` positional names an EXISTING configured machine
+  // (`machine status`, `health`, `deprovision`, `prune`, `remove`, `setup`,
+  // `scan-keys`), so the console can bind its machine picker to it and its
+  // container discovery / context / policy layers can resolve the machine from
+  // the ref. Same path-aware carve-out as `machine provider remove` above: the
+  // commands below name a machine (or provider) that does NOT exist yet, so
+  // there is nothing to pick and they stay plain —
+  //   `machine add`          registers a brand-new machine under this name,
+  //   `machine provision`    provisions a brand-new cloud machine under this name,
+  //   `machine provider add` names a new cloud PROVIDER, not a machine.
+  if (domain === 'machine' && name === 'name' && !MACHINE_NAME_CREATORS.has(pathKey)) {
+    return 'machine';
+  }
   return POSITIONAL_KIND_BY_NAME[name] ?? 'plain';
 }
 
@@ -196,7 +240,8 @@ function stripDashes(flag: string): string {
 
 function toContractOption(
   opt: Option,
-  resolver: ReturnType<typeof createDescriptionResolver>
+  resolver: ReturnType<typeof createDescriptionResolver>,
+  pathKey: string
 ): ContractOption {
   if (!opt.long) {
     throw new Error(
@@ -218,15 +263,35 @@ function toContractOption(
   // is what tells a consumer to render a Select instead of a text input.
   const choices = opt.argChoices;
 
+  // Classification (scripts/lib/option-classification.ts): kinds feed the
+  // console's pick-or-type combobox, format its input control, sensitive its
+  // masking/redaction, tier its progressive disclosure. All hints — none of
+  // them constrains what the CLI accepts.
+  const long = stripDashes(opt.long);
+  const valueTaking = opt.required || opt.optional;
+  const mandatory = opt.mandatory ?? false;
+  const kinds = resolveOptionKinds(pathKey, long, valueTaking);
+  const format = valueTaking ? resolveOptionFormat(pathKey, long) : undefined;
+  const sensitive = resolveOptionSensitive(pathKey, long);
+  const tier = resolveOptionTier(pathKey, long, {
+    mandatory,
+    hasKinds: kinds !== undefined && kinds.length > 0,
+    hasChoices: choices !== undefined && choices.length > 0,
+  });
+
   return {
     flags: opt.flags,
-    long: stripDashes(opt.long),
+    long,
     ...(opt.short ? { short: stripDashes(opt.short) } : {}),
-    valueTaking: opt.required || opt.optional,
+    valueTaking,
     variadic: opt.variadic,
-    mandatory: opt.mandatory ?? false,
+    mandatory,
     defaultValue,
     ...(choices && choices.length > 0 ? { choices: [...choices] } : {}),
+    ...(kinds && kinds.length > 0 ? { kinds: [...kinds] } : {}),
+    ...(format ? { format } : {}),
+    tier,
+    ...(sensitive ? { sensitive: true } : {}),
     descriptionKey: resolver.findDescriptionKey(opt.description),
     label: opt.description,
   };
@@ -316,6 +381,248 @@ if (staleExclusions.length > 0) {
   process.exit(1);
 }
 
+/**
+ * Same staleness discipline for the curated registries (command-docs.ts): a
+ * key naming a command that no longer exists means its examples/keywords/
+ * output hints silently stop shipping — curation lost through a rename, with
+ * no gate anywhere saying so.
+ */
+const staleRegistryKeys = [
+  ...Object.keys(COMMAND_EXAMPLES).map((k) => [k, 'COMMAND_EXAMPLES'] as const),
+  ...Object.keys(COMMAND_KEYWORDS).map((k) => [k, 'COMMAND_KEYWORDS'] as const),
+  ...Object.keys(COMMAND_OUTPUT_HINTS).map((k) => [k, 'COMMAND_OUTPUT_HINTS'] as const),
+].filter(([pathKey]) => !livePathKeys.has(pathKey));
+
+if (staleRegistryKeys.length > 0) {
+  console.error('\x1b[31m✗ Stale registry keys — these commands do not exist\x1b[0m\n');
+  for (const [pathKey, table] of staleRegistryKeys) {
+    console.error(`  ${table}["${pathKey}"]`);
+  }
+  console.error(
+    '\n  A stale key does not fail loudly: the lookup misses and the curated metadata\n' +
+      "  silently stops shipping. Re-key it to the command's current name, or delete it\n" +
+      '  deliberately.\n'
+  );
+  process.exit(1);
+}
+
+/**
+ * Problems found while attaching the curated registries (example parse
+ * failures, malformed keywords, inconsistent output hints). Collected during
+ * the build and reported in one red block alongside the classification gates.
+ */
+const curationProblems: string[] = [];
+
+/** Split an example command line into shell-ish tokens (quote-aware). */
+function tokenizeExampleCommand(command: string): string[] | null {
+  const tokens: string[] = [];
+  let current = '';
+  let hasCurrent = false;
+  let quote: '"' | "'" | null = null;
+
+  for (const ch of command) {
+    if (quote) {
+      if (ch === quote) quote = null;
+      else current += ch;
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      hasCurrent = true;
+      continue;
+    }
+    if (ch === ' ' || ch === '\t') {
+      if (hasCurrent || current.length > 0) {
+        tokens.push(current);
+        current = '';
+        hasCurrent = false;
+      }
+      continue;
+    }
+    current += ch;
+  }
+  if (quote) return null;
+  if (hasCurrent || current.length > 0) tokens.push(current);
+  return tokens;
+}
+
+/**
+ * Parse one curated example against the command's OWN declared surface and
+ * derive its click-to-fill `values` map: positionals by declared order (a
+ * trailing variadic collects), flags by long name, booleans as 'true'.
+ *
+ * The parse doubles as the example-validity gate: a stale pathKey (checked by
+ * longest-prefix match against the live tree), an unknown flag, bad arity, an
+ * out-of-choices value, a missing required positional, or a missing mandatory
+ * option all fail generation. Global options (-o/--output, --lang, --context)
+ * are tolerated but never enter `values` — they are not form fields.
+ */
+function parseExampleValues(
+  pathKey: string,
+  exampleCommand: string,
+  options: ContractOption[],
+  positionals: ContractPositional[]
+): Record<string, string> {
+  const fail = (message: string): Record<string, string> => {
+    curationProblems.push(
+      `COMMAND_EXAMPLES["${pathKey}"]: ${JSON.stringify(exampleCommand)} — ${message}`
+    );
+    return {};
+  };
+
+  const tokens = tokenizeExampleCommand(exampleCommand);
+  if (!tokens) return fail('unterminated quote');
+  if (tokens[0] !== 'rdc') return fail('must start with "rdc"');
+
+  // Longest-prefix pathKey match: the tokens after `rdc` must resolve to THIS
+  // command, so an example filed under the wrong key cannot slip through.
+  let matched = '';
+  for (let i = 1; i < tokens.length; i++) {
+    const candidate = tokens.slice(1, i + 1).join(' ');
+    if (livePathKeys.has(candidate)) matched = candidate;
+  }
+  if (!matched) return fail('names no live command');
+  if (matched !== pathKey) return fail(`parses as "${matched}" but is filed under "${pathKey}"`);
+
+  const byLong = new Map(options.map((o) => [o.long, o]));
+  const byShort = new Map(options.filter((o) => o.short).map((o) => [o.short as string, o]));
+  const globalShorts: Record<string, string> = { '-o': '--output', '-l': '--lang' };
+
+  const values: Record<string, string> = {};
+  let posIndex = 0;
+  const rest = tokens.slice(1 + matched.split(' ').length);
+
+  for (let i = 0; i < rest.length; i++) {
+    const token = rest[i];
+
+    if (token.startsWith('-') && token.length > 1) {
+      let flag = token;
+      let inlineValue: string | undefined;
+      const eq = token.indexOf('=');
+      if (eq !== -1) {
+        flag = token.slice(0, eq);
+        inlineValue = token.slice(eq + 1);
+      }
+
+      const globalLong = GLOBAL_OPTION_LONGS.has(flag) ? flag : globalShorts[flag];
+      if (globalLong) {
+        if (globalLong === '--version' || globalLong === '--help') {
+          return fail(`${globalLong} has no place in a worked example`);
+        }
+        // --output/--lang/--context take a value; consume it, keep it out of
+        // `values` — global options are not form fields.
+        if (inlineValue === undefined) i++;
+        continue;
+      }
+
+      const opt = flag.startsWith('--') ? byLong.get(flag.slice(2)) : byShort.get(flag.slice(1));
+      if (!opt) return fail(`unknown flag ${flag}`);
+
+      if (!opt.valueTaking) {
+        if (inlineValue !== undefined) return fail(`boolean --${opt.long} takes no value`);
+        if (values[opt.long] !== undefined) return fail(`--${opt.long} given twice`);
+        values[opt.long] = 'true';
+        continue;
+      }
+
+      const value = inlineValue ?? rest[++i];
+      if (value === undefined) return fail(`--${opt.long} is missing its value`);
+      if (opt.choices && !opt.choices.includes(value)) {
+        return fail(
+          `--${opt.long} value "${value}" is not one of its choices (${opt.choices.join(', ')})`
+        );
+      }
+      if (values[opt.long] !== undefined) {
+        if (!opt.variadic) return fail(`--${opt.long} given twice`);
+        values[opt.long] += ` ${value}`;
+      } else {
+        values[opt.long] = value;
+      }
+      continue;
+    }
+
+    const positional = positionals[posIndex];
+    if (!positional) {
+      return fail(
+        `too many positional tokens (expected ${positionals.length}, "${token}" is extra)`
+      );
+    }
+    values[positional.name] =
+      values[positional.name] === undefined ? token : `${values[positional.name]} ${token}`;
+    if (!positional.variadic) posIndex++;
+  }
+
+  for (const p of positionals) {
+    if (p.required && values[p.name] === undefined) {
+      return fail(`missing required positional <${p.name}>`);
+    }
+  }
+  for (const o of options) {
+    if (o.mandatory && values[o.long] === undefined) {
+      return fail(`missing mandatory option --${o.long}`);
+    }
+  }
+
+  return values;
+}
+
+/** Curated examples for a command, parsed into contract shape (or undefined). */
+function buildCommandExamples(
+  pathKey: string,
+  options: ContractOption[],
+  positionals: ContractPositional[]
+): CommandExample[] | undefined {
+  const defs = COMMAND_EXAMPLES[pathKey];
+  if (!defs || defs.length === 0) return undefined;
+
+  return defs.map((def) => {
+    const values = parseExampleValues(pathKey, def.command, options, positionals);
+    if (!/^commands\..+\.examples\.[a-zA-Z0-9-]+$/.test(def.descriptionKey)) {
+      curationProblems.push(
+        `COMMAND_EXAMPLES["${pathKey}"]: descriptionKey "${def.descriptionKey}" does not follow commands.<path>.examples.<slug>`
+      );
+    }
+    const label = resolver.strings.get(def.descriptionKey);
+    if (label === undefined) {
+      curationProblems.push(
+        `COMMAND_EXAMPLES["${pathKey}"]: descriptionKey "${def.descriptionKey}" has no English string in en/cli.json`
+      );
+    }
+    return { command: def.command, values, descriptionKey: def.descriptionKey, label: label ?? '' };
+  });
+}
+
+/** Curated keywords, gated to lowercase-ascii palette tokens. */
+function buildCommandKeywords(pathKey: string): string[] | undefined {
+  const keywords = COMMAND_KEYWORDS[pathKey];
+  if (!keywords) return undefined;
+  if (keywords.length === 0) {
+    curationProblems.push(`COMMAND_KEYWORDS["${pathKey}"]: entry is empty — delete it instead`);
+  }
+  for (const keyword of keywords) {
+    if (!/^[a-z][a-z0-9-]*$/.test(keyword)) {
+      curationProblems.push(
+        `COMMAND_KEYWORDS["${pathKey}"]: ${JSON.stringify(keyword)} is not a lowercase-ascii token`
+      );
+    }
+  }
+  return [...keywords];
+}
+
+/** Curated output hints, gated so primaryKey is always one of columns. */
+function buildCommandOutput(pathKey: string): OutputHints | undefined {
+  const hints = COMMAND_OUTPUT_HINTS[pathKey];
+  if (!hints) return undefined;
+  if (hints.columns.length === 0) {
+    curationProblems.push(`COMMAND_OUTPUT_HINTS["${pathKey}"]: columns is empty`);
+  } else if (!hints.columns.includes(hints.primaryKey)) {
+    curationProblems.push(
+      `COMMAND_OUTPUT_HINTS["${pathKey}"]: primaryKey "${hints.primaryKey}" is not one of its columns (${hints.columns.join(', ')})`
+    );
+  }
+  return { primaryKey: hints.primaryKey, columns: [...hints.columns] };
+}
+
 const commands: ContractCommand[] = walked.map((w) => {
   const domain = w.path[0];
   const meta = COMMAND_METADATA[w.pathKey];
@@ -333,16 +640,20 @@ const commands: ContractCommand[] = walked.map((w) => {
 
   const options = liveCommand.options
     .filter((o) => !GLOBAL_OPTION_LONGS.has(o.long ?? ''))
-    .map((o) => toContractOption(o, resolver));
+    .map((o) => toContractOption(o, resolver, w.pathKey));
 
   const positionals: ContractPositional[] = w.positionals.map((p) => ({
     name: p.name,
-    kind: classifyPositional(domain, p.name),
+    kind: classifyPositional(w.pathKey, domain, p.name),
     required: p.required,
     variadic: p.variadic,
     descriptionKey: p.descriptionKey,
     label: p.label,
   }));
+
+  const examples = buildCommandExamples(w.pathKey, options, positionals);
+  const keywords = buildCommandKeywords(w.pathKey);
+  const output = buildCommandOutput(w.pathKey);
 
   const proxyCapable = plane === 'machine' && !interactive && !(w.pathKey in PROXY_EXCLUSIONS);
   const blockedReason = proxyCapable
@@ -367,6 +678,10 @@ const commands: ContractCommand[] = walked.map((w) => {
     positionals,
     hasSubcommands: w.hasSubcommands,
 
+    ...(examples ? { examples } : {}),
+    ...(keywords ? { keywords } : {}),
+    ...(output ? { output } : {}),
+
     ...(mcp ? { destructive: mcp.destructive, idempotent: mcp.idempotent } : {}),
     ...(mcp ? { timeout: mcp.timeout } : {}),
     ...(mcp ? { timeoutMs: mcp.timeout === 'write' ? WRITE_TIMEOUT : READ_TIMEOUT } : {}),
@@ -389,6 +704,27 @@ const commands: ContractCommand[] = walked.map((w) => {
 });
 
 commands.sort((a, b) => a.pathKey.localeCompare(b.pathKey));
+
+/**
+ * Metadata gates: the classification tables (staleness, resource-noun
+ * coverage, waiver quality, tier floor — see option-classification.ts) plus
+ * everything collected while attaching the curated registries. One red block,
+ * exit 1: a wrong or stale entry must never survive a regen silently.
+ */
+const metadataProblems = [...curationProblems, ...collectClassificationProblems(commands)];
+
+if (metadataProblems.length > 0) {
+  console.error('\x1b[31m✗ Contract metadata gates failed\x1b[0m\n');
+  for (const problem of metadataProblems) {
+    console.error(`  ${problem}`);
+  }
+  console.error(
+    '\n  Fix the classification-table or command-docs entry each line names. A stale or\n' +
+      '  wrong entry does not fail on its own — the lookup misses and the metadata\n' +
+      '  silently stops applying — so generation refuses to proceed instead.\n'
+  );
+  process.exit(1);
+}
 
 const languages = listLocales();
 

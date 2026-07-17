@@ -23,7 +23,7 @@ import { describe, expect, it } from 'vitest';
 import { cli } from '../../../cli.js';
 import { buildAllTools, type ToolDef } from '../tools.js';
 
-const TOOLS = buildAllTools(cli);
+const TOOLS = buildAllTools();
 
 /** Flags the executor appends to every invocation; they live on the root program. */
 const EXECUTOR_GLOBALS = new Set(['--output', '--yes', '--quiet', '--config', '--lang']);

@@ -42,10 +42,71 @@ export function buildCommitEntries(config: RdcConfig): CommitEntry[] {
 }
 
 /**
+ * Committed top-level sections (userEmail, universalUser, certEmail,
+ * cfDnsZoneId): committed means carried, or the first pull/re-push round trip
+ * drops them and trips the server's anti-downgrade check. The sections
+ * deliberately NOT projected are host-local by design and carry no committed
+ * pointers: `remote` (store pointer, commit:false), `state` (runtime half,
+ * stripped before push), `encryption` (at-rest metadata), `renetPath` (binary
+ * override, public). Spread-if-present, never `key: value ?? undefined`.
+ */
+function projectTopLevelSections(config: RdcConfig): Partial<FullConfig> {
+  return {
+    ...(config.account === undefined ? {} : { account: config.account }),
+    ...(config.defaults === undefined ? {} : { defaults: config.defaults }),
+    ...(config.infra === undefined ? {} : { infra: config.infra }),
+  };
+}
+
+/**
+ * The remaining v3 families. All-public leaves (nothing committed except
+ * deletedRepositories' credential pointers), but they must ride in the blob or a
+ * push/pull round trip silently loses every datastore, cluster, and
+ * backup-strategy definition. Spread-if-present, same discipline as everywhere
+ * in this projection.
+ */
+function projectResourceFamilies(resources: RdcConfig['resources']): Partial<FullConfig> {
+  return {
+    ...(resources?.datastores === undefined ? {} : { datastores: resources.datastores }),
+    ...(resources?.clusters === undefined ? {} : { clusters: resources.clusters }),
+    ...(resources?.backupStrategies === undefined
+      ? {}
+      : { backupStrategies: resources.backupStrategies }),
+    ...(resources?.deletedRepositories === undefined
+      ? {}
+      : { deletedRepositories: resources.deletedRepositories }),
+  };
+}
+
+/**
+ * Committed org secrets and policy that ride inside the ciphertext, or a push/
+ * rotation round trip drops them (data loss) and the re-push commits fewer
+ * pointers than the server was told to expect (anti-downgrade rejection). These
+ * paths are in the sensitivity registry, so an explicit-undefined key would
+ * commit a pointer the blob cannot back — spread-if-present only. Policy travels
+ * inside the ciphertext because the executor enforces it and only ever sees what
+ * the blob carries. See __tests__/undefined-keys.test.ts.
+ */
+function projectCommittedSecrets(config: RdcConfig): Partial<FullConfig> {
+  return {
+    ...(config.resources?.cloudProviders === undefined
+      ? {}
+      : { cloudProviders: config.resources.cloudProviders }),
+    ...(config.credentials?.cfDnsApiToken === undefined
+      ? {}
+      : { cfDnsApiToken: config.credentials.cfDnsApiToken }),
+    ...(config.policy === undefined ? {} : { policy: config.policy }),
+  };
+}
+
+/**
  * Project an `RdcConfig` into the `FullConfig` shape the crypto layer encrypts.
  *
  * `version` is the version being WRITTEN (that is, current + 1). The caller owns
  * the increment because only it knows the version it pulled.
+ *
+ * The per-section spreads keep the exact key order and spread-if-present
+ * discipline the anti-downgrade check depends on; see the helper docs.
  */
 export function toFullConfig(
   config: RdcConfig,
@@ -60,31 +121,13 @@ export function toFullConfig(
     // Commitments are recomputed inside selectiveEncrypt from commitEntries;
     // this placeholder keeps the type total.
     commitments: { alg: 'HMAC-SHA256', fckSalt: '', fields: {} },
+    ...projectTopLevelSections(config),
     machines: config.resources?.machines ?? {},
     repositories: config.resources?.repositories ?? {},
     storages: config.resources?.storages ?? {},
+    ...projectResourceFamilies(config.resources),
     ssh: config.credentials?.ssh,
-    // Committed org secrets that must ride inside the ciphertext, or a push/
-    // rotation round trip drops them (data loss) and the re-push commits fewer
-    // pointers than the server was told to expect (anti-downgrade rejection).
-    // Spread-if-present for the same reason ssh/policy are: these paths are in
-    // the sensitivity registry, so an explicit-undefined key would commit a
-    // pointer the blob cannot back.
-    ...(config.resources?.cloudProviders === undefined
-      ? {}
-      : { cloudProviders: config.resources.cloudProviders }),
-    ...(config.credentials?.cfDnsApiToken === undefined
-      ? {}
-      : { cfDnsApiToken: config.credentials.cfDnsApiToken }),
-    // The rules travel INSIDE the ciphertext, because the executor enforces them
-    // and the executor only ever sees what the blob carries. Left out, an org's
-    // policy never reaches the thing it governs.
-    //
-    // Spread-if-present, never `policy: config.policy`: '/policy' is in the
-    // sensitivity registry, so an explicit-undefined key would commit a pointer
-    // the blob cannot back, and the next ordinary push would look like it had
-    // dropped a sensitive path. See __tests__/undefined-keys.test.ts.
-    ...(config.policy === undefined ? {} : { policy: config.policy }),
+    ...projectCommittedSecrets(config),
   };
 }
 
@@ -120,7 +163,8 @@ export async function buildConfigPushPayload(
 
 /**
  * Inverse of `buildConfigPushPayload`: decrypt a pulled envelope back into the
- * sensitive halves of the config (machines, repositories, storages, ssh).
+ * sensitive halves of the config (every `resources` family, ssh, policy, org
+ * secrets — see SENSITIVE_FIELDS).
  *
  * Returns `FullConfig` rather than a whole `RdcConfig` because the remaining
  * fields (defaults, state, encryption mode) are host-local and never leave the

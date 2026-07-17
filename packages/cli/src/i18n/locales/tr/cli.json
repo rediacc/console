@@ -19,7 +19,11 @@
         "notRunning": "\"{{name}}\" stratejisi için çalışan yedekleme yok"
       },
       "run": {
-        "description": "Uzak makinede hemen bir yedekleme başlat"
+        "description": "Uzak makinede hemen bir yedekleme başlat",
+        "examples": {
+          "basic": "Bir yedekleme stratejisini şimdi çalıştır.",
+          "watch": "Bir yedekleme stratejisini çalıştır ve ilerlemesini izle."
+        }
       },
       "status": {
         "description": "Uzak makinede yedekleme durumunu ve zamanlayıcı durumunu göster"
@@ -47,7 +51,11 @@
           "optionMode": "Yedekleme modu: \"hot\" (kesintisiz) veya \"cold\" (durdur, anlık görüntü, yeniden başlat)",
           "optionStorage": "Depolama yapılandırma adı (rclone kimlik bilgileri)",
           "saved": "Yedekleme stratejisi yapılandırması kaydedildi",
-          "storageRequired": "Yeni bir hedef oluştururken --storage gereklidir. Kullanım: --storage <storage-name>"
+          "storageRequired": "Yeni bir hedef oluştururken --storage gereklidir. Kullanım: --storage <storage-name>",
+          "examples": {
+            "configure": "Bir yedekleme stratejisinin depolamasını ve modunu yapılandır.",
+            "disable": "Bir yedekleme stratejisini kapat."
+          }
         },
         "show": {
           "description": "Yedekleme stratejisi ayrıntılarını göster",
@@ -65,7 +73,11 @@
         "optionPath": "Depolama kökü içindeki alt dizin. Belirtilmezse hot/ ve cold/ listelenip birleştirilir.",
         "optionStorage": "Bu depolama uç noktasındaki artefaktları listele",
         "placementExclusive": "--machine veya --storage seçeneklerinden yalnızca birini geçirin, ikisini birden değil.",
-        "placementRequired": "Nereden listeleneceğini belirtmek için --machine <m> veya --storage <s> kullanın."
+        "placementRequired": "Nereden listeleneceğini belirtmek için --machine <m> veya --storage <s> kullanın.",
+        "examples": {
+          "basic": "Bir makine için saklanan yedekleri listele.",
+          "byStorage": "Belirli bir depolama arka ucundaki yedekleri listele."
+        }
       },
       "restore": {
         "datastoreUnattached": "\"{{datastore}}\" veri deposu hiçbir makineye bağlı değil. Önce bağlayın: rdc datastore attach {{datastore}} --to <machine>.",
@@ -83,7 +95,11 @@
         "pulling": "{{name}}, {{place}} konumundan çekiliyor...",
         "restored": "{{name}}, {{machine}} üzerine geri yüklendi",
         "sourceUnknown": "Bu yapılandırmada \"{{name}}\" adlı bir depo bilinmiyor, bu yüzden yedek artefaktı bulunamıyor.",
-        "targetExists": "\"{{name}}\" zaten mevcut. Başka bir adla geri yükleyin (--as) veya önce mevcut depoyu silin."
+        "targetExists": "\"{{name}}\" zaten mevcut. Başka bir adla geri yükleyin (--as) veya önce mevcut depoyu silin.",
+        "examples": {
+          "basic": "Bir yedeği bir makineye geri yükle.",
+          "asNewRepo": "Bir yedeği yeni bir depo olarak geri yükle ve başlat."
+        }
       }
     },
     "cluster": {
@@ -106,7 +122,11 @@
         "primitiveOption": "Ağ ilkeli (ör. vlan, vpc, network)",
         "providerOption": "Sağlayıcı: bir cloudProviders anahtarı veya 'kvm'",
         "declareOnlyOption": "Kümeyi hazırlamadan yalnızca yapılandırmaya kaydet",
-        "declared": "\"{{name}}\" kümesi tanımlandı"
+        "declared": "\"{{name}}\" kümesi tanımlandı",
+        "examples": {
+          "basic": "Bir sağlayıcıda küme oluştur.",
+          "declareOnly": "Mevcut bir control node etrafında küme tanımla."
+        }
       },
       "description": "Kümeleri hazırla ve yönet: özel bir ağ üzerinde adlandırılmış düğüm havuzu kümeleri (ceph, k8s-server, k8s-agent, hyperconverged). Havuz üyeleri makinelere dönüşür, bu nedenle her -m komutu bunlar üzerinde çalışır.",
       "descriptionShort": "Küme oluştur ve yönet (özel bir LAN üzerinde düğüm havuzları)",
@@ -128,12 +148,19 @@
         "tagOption": "Fork etiketi",
         "upOption": "Fork'lanan depoları ayağa kaldır ve fork ayağa kalktıktan sonra küme sağlığını kontrol et",
         "writesOption": "Fork yazma düzeni: local (geçici dm-COW overlay, Ceph üzerinde sıfır ayak izi) | ceph (kalıcı klon). Varsayılan local",
-        "toOption": "Fork'u barındıracak düğümlere sahip hedef küme (kontrol düğümü ve agent'ları; bir küme kendi makinelerine fork'lanamaz, çünkü iki k3s aynı ana bilgisayar ağ ad alanını paylaşamaz)"
+        "toOption": "Fork'u barındıracak düğümlere sahip hedef küme (kontrol düğümü ve agent'ları; bir küme kendi makinelerine fork'lanamaz, çünkü iki k3s aynı ana bilgisayar ağ ad alanını paylaşamaz)",
+        "examples": {
+          "basic": "Bir kümeyi yeni bir hedefe çatalla.",
+          "andStart": "Bir kümeyi çatalla ve hemen başlat."
+        }
       },
       "join": {
         "clusterOption": "Makinenin katılacağı küme",
         "description": "Var olan kayıtlı bir makineyi, çapalama (anchor) ve yeniden katılmada (rejoin) kullanılanla aynı CA kökenli katılım jetonunu kullanarak kümenin bir Kubernetes ajan düğümü olarak sahiplen.",
-        "descriptionShort": "Bir makineyi kümeye ajan olarak ekle"
+        "descriptionShort": "Bir makineyi kümeye ajan olarak ekle",
+        "examples": {
+          "basic": "Bir makineyi kümeye ekle."
+        }
       },
       "kubeconfig": {
         "cached": "Kubeconfig {{path}} konumunda önbelleğe alındı",
@@ -266,7 +293,11 @@
         "description": "Yeni bir adlandırılmış yapılandırma dosyası oluşturun",
         "optionMasterPassword": "Kaynakları bir ana şifreyle şifreleyin",
         "success": "\"{{name}}\" yapılandırması başlatıldı",
-        "bareForm": "Varsayılan yapılandırma otomatik olarak oluşturulur; adlandırılmış bir yapılandırma için 'config init <ad>' kullanın veya varsayılan üzerinde bir seçenek ayarlamak için bir bayrak geçirin (--ssh-key, --server, ...)."
+        "bareForm": "Varsayılan yapılandırma otomatik olarak oluşturulur; adlandırılmış bir yapılandırma için 'config init <ad>' kullanın veya varsayılan üzerinde bir seçenek ayarlamak için bir bayrak geçirin (--ssh-key, --server, ...).",
+        "examples": {
+          "basic": "Adlandırılmış bir yapılandırma profili oluştur.",
+          "withServer": "Belirli bir hesap sunucusuna işaret eden profil oluştur."
+        }
       },
       "list": {
         "description": "Tüm yapılandırma dosyalarını listeleyin",
@@ -300,35 +331,42 @@
       },
       "remote": {
         "description": "Uzak yapılandırma depolama bağlantısını yönet",
+        "tokenExpired": "Uzak yapılandırma jetonu süresi doldu. Yeniden kimlik doğrulayın: rdc config remote enable",
+        "passkeySecretMissing": "Geçiş anahtarı sırrı işletim sistemi anahtar deposunda bulunamadı. Yeniden kimlik doğrulayın: rdc config remote enable",
+        "staleSlot": "Key slot'unuz güncel değil (yapılandırma şifreleme anahtarı döndürüldü). Şununla yeniden kaydolun: rdc config remote enable",
+        "enable": {
+          "description": "Bu yapılandırmayı uzak şifreli depolamaya bağla",
+          "optionHeadless": "Cihaz kodu akışını kullan (arayüzsüz sunucular için)",
+          "optionApiUrl": "Hesap sunucusu URL'si",
+          "openBrowser": "Kurulumu tamamlamak için bu URL'yi açın:",
+          "waiting": "Tarayıcı onayı bekleniyor...",
+          "received": "Aktarım alındı",
+          "polling": "Tarayıcı onayı bekleniyor...",
+          "success": "Uzak yapılandırma etkinleştirildi. Yapılandırma \"{{name}}\" artık {{apiUrl}} ile senkronize ediliyor.",
+          "alreadyEnabled": "Yapılandırma \"{{name}}\" zaten uzak depolamaya bağlı. Önce bağlantıyı kesin: rdc config remote disable",
+          "expired": "Cihaz kodu süresi doldu. Tekrar deneyin.",
+          "optionPassword": "Önceden hazırlanmış bir password slot ile headless kaydol (tarayıcısız)",
+          "passwordPrompt": "Yapılandırma ana parolası:",
+          "passwordNonInteractive": "Bir yapılandırma ana parolası gereklidir. REDIACC_CONFIG_PASSWORD değişkenini ayarlayın veya etkileşimli bir terminalde --password olmadan çalıştırın.",
+          "passwordRequirePasskey": "Bu organizasyon, yapılandırma deposunun kilidini açmak için passkey gerektiriyor; parolayla kayıt devre dışı. Bir tarayıcıdan şununla kaydolun: rdc config remote enable",
+          "passwordNoSlot": "Yapılandırma deponuz için hazırlanmış bir password slot yok. Portaldan bir tane ekleyin (Config Storage > key slots), sonra tekrar deneyin.",
+          "passwordWrong": "Yapılandırmanın kilidi bu parolayla açılamadı. REDIACC_CONFIG_PASSWORD değişkenini (veya girdiğiniz parolayı) kontrol edip tekrar deneyin."
+        },
         "disable": {
           "description": "Uzak depolamadan bağlantıyı kes ve yapılandırmayı yerel olarak kaydet",
           "notEnabled": "Uzak yapılandırma etkin değil.",
           "success": "Uzak yapılandırma devre dışı bırakıldı. Yapılandırma \"{{name}}\" yerel olarak kaydedildi."
         },
-        "enable": {
-          "alreadyEnabled": "Yapılandırma \"{{name}}\" zaten uzak depolamaya bağlı. Önce bağlantıyı kesin: rdc config remote disable",
-          "description": "Bu yapılandırmayı uzak şifreli depolamaya bağla",
-          "expired": "Cihaz kodu süresi doldu. Tekrar deneyin.",
-          "openBrowser": "Kurulumu tamamlamak için bu URL'yi açın:",
-          "optionApiUrl": "Hesap sunucusu URL'si",
-          "optionHeadless": "Cihaz kodu akışını kullan (arayüzsüz sunucular için)",
-          "polling": "Tarayıcı onayı bekleniyor...",
-          "received": "Aktarım alındı",
-          "success": "Uzak yapılandırma etkinleştirildi. Yapılandırma \"{{name}}\" artık {{apiUrl}} ile senkronize ediliyor.",
-          "waiting": "Tarayıcı onayı bekleniyor..."
+        "status": {
+          "description": "Uzak bağlantı durumunu göster"
         },
-        "passkeySecretMissing": "Geçiş anahtarı sırrı işletim sistemi anahtar deposunda bulunamadı. Yeniden kimlik doğrulayın: rdc config remote enable",
         "refresh": {
           "description": "Yapılandırmayı uzak depolamadan zorla yeniden al",
           "notEnabled": "Uzak yapılandırma etkin değil.",
           "pulled": "Yapılandırma alındı",
           "pulling": "Yapılandırma uzak sunucudan alınıyor...",
           "success": "Yapılandırma uzak sunucudan güncellendi (sürüm {{version}})."
-        },
-        "status": {
-          "description": "Uzak bağlantı durumunu göster"
-        },
-        "tokenExpired": "Uzak yapılandırma jetonu süresi doldu. Yeniden kimlik doğrulayın: rdc config remote enable"
+        }
       },
       "set": {
         "description": "Varsayılan bir değer belirleyin (takım, bölge, köprü)",
@@ -441,7 +479,11 @@
         "attachToOption": "Fork'u hemen bu makineye bağla (--writes gerektirir)",
         "forked": "\"{{ref}}\" veri deposu \"{{name}}\"'den çatallandı (ayrık).",
         "tagOption": "Fork için etiket (sonuç ad:etiket olur)",
-        "writesOption": "Fork'un yazmalarının nereye gideceği: local (anında, geçici) veya ceph (kalıcı klon)"
+        "writesOption": "Fork'un yazmalarının nereye gideceği: local (anında, geçici) veya ceph (kalıcı klon)",
+        "examples": {
+          "basic": "Bir veri deposunu yeni bir etikete çatalla.",
+          "andAttach": "Bir veri deposunu çatalla ve bir makineye bağla."
+        }
       },
       "resize": {
         "description": "Bir veri deposunu büyüt veya küçült. Bu çevrimdışı bir işlemdir: içindeki depoların durdurulmuş olması gerekir.",
@@ -463,7 +505,11 @@
         "noop": "\"{{ref}}\" veri deposu zaten aynı şekilde {{machine}} üzerine bağlı. Yapılacak bir şey yok.",
         "relocating": "\"{{ref}}\", {{from}} konumundan {{to}} konumuna taşınıyor (önce {{from}}'dan ayrılıyor)...",
         "toOption": "Veri deposunun bağlanacağı makine",
-        "writesOption": "Bir fork'un yazmalarının nereye gideceği: local (anında, geçici, ayrılınca kaybolur) veya ceph (havuzda kalıcı klon). Bir fork için zorunludur."
+        "writesOption": "Bir fork'un yazmalarının nereye gideceği: local (anında, geçici, ayrılınca kaybolur) veya ceph (havuzda kalıcı klon). Bir fork için zorunludur.",
+        "examples": {
+          "basic": "Bir veri deposunu bir makineye bağla.",
+          "cephWrites": "Ceph destekli yazmalara sahip bir veri deposu bağla."
+        }
       },
       "create": {
         "backendOption": "Depolama arka ucu: local (dosya tabanlı, bu makinede kalır) veya rbd (Ceph, taşınabilir)",
@@ -474,7 +520,11 @@
         "imageOption": "rbd arka ucu için RBD imaj adı (varsayılan: veri deposu adı)",
         "machineOption": "Veri deposunun oluşturulacağı makine",
         "poolOption": "rbd arka ucu için Ceph havuzu (varsayılan: rbd)",
-        "sizeOption": "Veri deposu boyutu (örn. 100G)"
+        "sizeOption": "Veri deposu boyutu (örn. 100G)",
+        "examples": {
+          "basic": "Bir makinede veri deposu oluştur.",
+          "ceph": "Ceph destekli bir veri deposu oluştur."
+        }
       },
       "delete": {
         "aborted": "Hiçbir şey silinmedi.",
@@ -497,7 +547,11 @@
       "list": {
         "description": "Adlandırılmış veri depolarını, nereye bağlı olduklarını ve neyi barındırdıklarını listele.",
         "descriptionShort": "Adlandırılmış veri depolarını listele",
-        "placeArgument": "Tek bir kümeye veya tek bir makineye daralt"
+        "placeArgument": "Tek bir kümeye veya tek bir makineye daralt",
+        "examples": {
+          "basic": "Tüm veri depolarını listele.",
+          "byPlace": "Bir makine veya kümedeki veri depolarını listele."
+        }
       },
       "snapshot": {
         "create": {
@@ -598,7 +652,11 @@
       },
       "list": {
         "description": "Makineleri listeleyin",
-        "noMachines": "Yapılandırılmış makine yok. Şununla bir tane ekleyin: rdc machine add <name> --ip <ip> --user <user>"
+        "noMachines": "Yapılandırılmış makine yok. Şununla bir tane ekleyin: rdc machine add <name> --ip <ip> --user <user>",
+        "examples": {
+          "basic": "Kayıtlı tüm makineleri listele.",
+          "sorted": "Makineleri ada göre sıralayarak listele."
+        }
       },
       "provision": {
         "completed": "Makine {{name}} oluşturuldu ve hazır ({{ip}})",
@@ -617,7 +675,11 @@
         "provisioning": "{{provider}} ({{region}}) üzerinde {{name}} oluşturuluyor...",
         "settingUp": "Makine kurulumu çalıştırılıyor...",
         "sshReady": "SSH bağlantısı kuruldu",
-        "waitingSSH": "SSH bağlantısı bekleniyor..."
+        "waitingSSH": "SSH bağlantısı bekleniyor...",
+        "examples": {
+          "basic": "Bir sağlayıcıdan yeni bir bulut makinesi hazırla.",
+          "sized": "Bir bölgede seçilen boyutta bir makine hazırla."
+        }
       },
       "prune": {
         "completed": "Temizlik tamamlandı",
@@ -644,7 +706,11 @@
       "add": {
         "description": "Mevcut yapılandırmaya makine ekle",
         "descriptionShort": "Mevcut yapılandırmaya makine ekle",
-        "success": "Makine \"{{name}}\" eklendi ({{user}}@{{ip}})"
+        "success": "Makine \"{{name}}\" eklendi ({{user}}@{{ip}})",
+        "examples": {
+          "basic": "Bir makineyi adresi ve giriş kullanıcısıyla kaydet.",
+          "customPort": "Varsayılan olmayan bir SSH portu kullanan makineyi kaydet."
+        }
       },
       "infra": {
         "cert": {
@@ -773,7 +839,11 @@
         "storageHealthSummary": "Depolama verimliliği: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} konteyner sapma eşiğini aştı; sıfır olmayan koduyla çıkılıyor",
         "syncCertsFailed": "Sertifika önbelleği senkronizasyonu başarısız: {{error}}",
-        "ambiguous": "Birden fazla makine kayıtlı ({{machines}}); gösterilecek olanı belirtin."
+        "ambiguous": "Birden fazla makine kayıtlı ({{machines}}); gösterilecek olanı belirtin.",
+        "examples": {
+          "basic": "Bir makinenin tam durumunu göster.",
+          "containers": "Bir makinedeki yalnızca çalışan konteynerleri göster."
+        }
       }
     },
     "mcp": {
@@ -870,7 +940,10 @@
         "remoteFileOption": "Okunacak dosya yolu, depo bağlama köküne göreli",
         "starting": "\"{{machine}}\" üzerindeki \"{{repository}}\" deposundan \"{{path}}\" okunuyor...",
         "statOption": "Yalnızca boyut, tür ve değiştirme zamanını yazdır; içerik okuma",
-        "tailOption": "Yalnızca son N satırı yazdır (bayt aralığıyla birleştirilemez)"
+        "tailOption": "Yalnızca son N satırı yazdır (bayt aralığıyla birleştirilemez)",
+        "examples": {
+          "basic": "Bir depo içinden bir dosyayı yazdır."
+        }
       },
       "certSync": {
         "updated": "{{machine}} makinesinden ACME sertifika önbelleği güncellendi ({{count}} sertifika)"
@@ -906,7 +979,11 @@
         "placementRequired": "repo create tam olarak bir yerleşim bayrağı alır: --machine (docker, varsayılan veri deposu) veya --datastore (adlandırılmış veri deposu; küme depoları için zorunlu).",
         "sizeOnK8s": "kubernetes depoları birimlerini PVC tanımlarından boyutlandırır; --size docker depolarına uygulanır.",
         "sizeRequiredDocker": "Bir docker deposu için --size zorunludur (--machine veya docker dünyasına ait bir --datastore).",
-        "startingDatastore": "\"{{repository}}\" deposu \"{{datastore}}\" veri deposunda oluşturuluyor ({{machine}})..."
+        "startingDatastore": "\"{{repository}}\" deposu \"{{datastore}}\" veri deposunda oluşturuluyor ({{machine}})...",
+        "examples": {
+          "basic": "Bir makinede yeni bir depo oluştur.",
+          "sized": "Sabit bir birim boyutuyla depo oluştur."
+        }
       },
       "delete": {
         "archived": "\"{{repository}}\" kimlik bilgisi arşivlendi",
@@ -918,7 +995,10 @@
         "confirm": "\"{{machine}}\" üzerindeki \"{{repository}}\" deposu silinsin mi? Bu işlem konteynerleri, volümleri ve şifreli imajı yok eder.",
         "description": "Bir depoyu ve verilerini sil. Yapılandırma girişi korunur; kimlik bilgilerini 'repo admin archive restore' ile kurtarmak üzere deletedRepositories'e taşımak için --archive-config kullanın. Konumsal bir <ref> alır; yalnızca bir ad, grand hatta çözümlenir ve birden fazla depo aynı taban adı paylaştığında reddedilir, bu yüzden bir fork'u hedeflemek için ad:etiket geçirin.",
         "descriptionShort": "Bir depoyu ve verilerini sil",
-        "examples": "\nÖrnekler:\n  $ rdc repo delete app\n  $ rdc repo delete app:test\n",
+        "examples": {
+          "basic": "Bir depoyu sil.",
+          "fork": "Etiketiyle tek bir çatalı sil."
+        },
         "failed": "Depo silme başarısız",
         "restoreHint": "Geri yüklemek için: rdc repo admin archive restore {{guid}}",
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" siliniyor..."
@@ -954,7 +1034,11 @@
         "failed": "Servis durdurma başarısız",
         "starting": "\"{{repository}}\" için servisler \"{{machine}}\" üzerinde durduruluyor...",
         "unmountOption": "Durdurduktan sonra ayrıca ayır (LUKS konteynerini kapat). 'repo resize' öncesinde veya birimi tamamen güvence altına almak için zorunludur",
-        "allOption": "Barındığı yer --machine olan tüm depoları durdur (toplu biçim)"
+        "allOption": "Barındığı yer --machine olan tüm depoları durdur (toplu biçim)",
+        "examples": {
+          "basic": "Bir deponun konteynerlerini durdur.",
+          "unmount": "Bir depoyu durdur ve şifreli birimini ayır."
+        }
       },
       "expand": {
         "completed": "Genişletme tamamlandı",
@@ -972,7 +1056,10 @@
         "descriptionShort": "Deponun CoW çatalını oluştur (yeni GUID, networkId, IP aralığı)",
         "detachedHint": "Servisler arka planda başlıyor. Durumu kontrol edin: rdc machine status {{machine}} --containers",
         "detachOption": "--up ile: konteynerler başlar başlamaz döner; sağlık kontrolleri arka planda devam eder (kullan-at çatallar için ideal)",
-        "examples": "\nÖrnekler:\n  $ rdc repo fork app --tag test\n  $ rdc repo fork app --tag staging --up\n",
+        "examples": {
+          "basic": "Bir depoyu yeni bir etiket altında çatalla.",
+          "andStart": "Bir depoyu çatalla ve çatalı hemen başlat."
+        },
         "failed": "Çatal oluşturma başarısız",
         "immutableOption": "Çatalı salt okunur olarak işaretler: bağlanmayı reddeder ve görüntüsünü kalıcı olarak bayt düzeyinde sabit tutar (makineler arası delta push için dondurulmuş bir commit/temel)",
         "immutableUpConflict": "repo fork: --immutable ve --up birlikte kullanılamaz. Değişmez bir çatal bağlanmayı reddeder, bu nedenle başlatılamaz. --up seçeneğini kaldırın veya normal bir çatal dağıtmak için --immutable seçeneğini kaldırın.",
@@ -1001,7 +1088,11 @@
         "failed": "Listeleme başarısız: {{error}}",
         "serverNameLegend": "* ad makineden okundu (yerel yapılandırmanızda yok)",
         "starting": "\"{{machine}}\" üzerindeki depolar listeleniyor...",
-        "datastoreOption": "Bu veri deposundaki depoları listele (şu anda onu tutan makineye göre çözümlenir)"
+        "datastoreOption": "Bu veri deposundaki depoları listele (şu anda onu tutan makineye göre çözümlenir)",
+        "examples": {
+          "basic": "Bir makinedeki depoları listele.",
+          "byDatastore": "Bir veri deposunda yaşayan depoları listele."
+        }
       },
       "log": {
         "description": "Bir çalışan fork'un mevcut commit'inden (veya bir commit referansından) erişilebilen commit geçmişini, 'rdc repo commit' tarafından kaydedilen üst zinciri izleyerek yazdırın. Birim dışı (out-of-volume) yansımayı okur, bu yüzden hiçbir commit kilidi açılmaz.",
@@ -1057,7 +1148,11 @@
         "deletingSource": "{{machine}} üzerindeki kaynak imajlar siliniyor...",
         "sourceDeleted": "{{name}} için kaynak imajlar {{machine}}'den silindi",
         "sourceRetained": "{{name}} için kaynak imajlar {{machine}} üzerinde korundu. Herhangi bir yapılandırma kaydıyla adreslenemezler; reconcile bunları başıboş olarak işaretleyecek.",
-        "sourceDeleteFailed": "{{machine}} üzerindeki {{name}} için kaynak imajlar silinemedi: {{error}}. Taşıma zaten başarılı oldu; kalanları 'rdc machine prune {{machine}}' ile temizleyin."
+        "sourceDeleteFailed": "{{machine}} üzerindeki {{name}} için kaynak imajlar silinemedi: {{error}}. Taşıma zaten başarılı oldu; kalanları 'rdc machine prune {{machine}}' ile temizleyin.",
+        "examples": {
+          "basic": "Bir depoyu başka bir makineye taşı.",
+          "strategy": "Bir depoyu fiziksel kopyalama stratejisiyle taşı."
+        }
       },
       "noCredential": "Uyarı: \"{{name}}\" deposunun kimlik bilgisi ayarlanmamış. Şifreli depolardaki işlemler başarısız olabilir.",
       "policy": {
@@ -1094,7 +1189,11 @@
         "optionStrategy": "Delta temeli kullanırken blok-delta stratejisi: auto, physical veya shared",
         "optionUp": "Pull sonrası bu makinede depoyu bağla ve dağıt",
         "pulling": "\"{{repo}}\" yedeği alınıyor...",
-        "sourceRequired": "--from <remote> belirtin (yapılandırmadaki makine veya depolama adı)"
+        "sourceRequired": "--from <remote> belirtin (yapılandırmadaki makine veya depolama adı)",
+        "examples": {
+          "basic": "Bir depoyu bir depolama arka ucundan çek.",
+          "andStart": "Bir depoyu çek ve hemen başlat."
+        }
       },
       "push": {
         "deployed": "\"{{repo}}\" deposu {{machine}} üzerinde dağıtıldı",
@@ -1113,7 +1212,11 @@
         "pushing": "\"{{repo}}\" yedeği {{dest}} hedefine gönderiliyor...",
         "statsDelta": "\"{{repo}}\" {{machine}} hedefine gönderildi — {{duration}} içinde {{transferred}} aktarıldı (taban {{base}} ile delta, imaj {{image}})",
         "statsFull": "\"{{repo}}\" {{machine}} hedefine gönderildi — {{duration}} içinde {{transferred}} aktarıldı (tam aktarım)",
-        "statsNoBytes": "\"{{repo}}\" {{machine}} hedefine gönderildi — {{duration}} içinde tamamlandı"
+        "statsNoBytes": "\"{{repo}}\" {{machine}} hedefine gönderildi — {{duration}} içinde tamamlandı",
+        "examples": {
+          "toStorage": "Bir depoyu bir depolama arka ucuna gönder.",
+          "toMachine": "Bir depoyu başka bir makineye gönder."
+        }
       },
       "replicate": {
         "description": "Veritabanı boyutundan bağımsız olarak, saniyeler içinde bir deponun N okuma replikasını oluştur. TEK bir veri deposu anlık görüntüsü alır, ardından kümenin düğümlerine yayılmış N adet sabit zamanlı fork-attach (copy-on-write, atılabilir yerel yazmalar) yapar ve üretilmiş bir overlay uygular: replika başına sabitlenmiş bir PersistentVolume, bir StatefulSet ve iki Service ({repo}-rw birincile, {repo}-ro replikalara). Replikalar BELİRLİ BİR ZAMAN NOKTASININ kopyalarıdır: replikasyon akışı yoktur, kendi yazdığını okuma garantisi (read-your-writes) yoktur; her replika hizmet vermeye başlamadan önce bir çökme kurtarma (crash-recovery) turu çalıştırır. Bunları 'repo replicate refresh' ile tazeleyin. Replika kümeleri yönetilen bir durumdur: 'repo replicate status' ile görüntüleyin, 'repo replicate remove' ile kaldırın.",
@@ -1153,7 +1256,10 @@
         "get": {
           "description": "Tek bir gizli anahtarı oku. Politikadan bağımsız olarak, aracı bağlamında redakte edilmiş bir stub döndürür (`<redacted:secret>:<digest8>`).",
           "descriptionShort": "Sırrın özetini göster (değer asla döndürülmez)",
-          "notFound": "\"{{repository}}\" deposunda \"{{key}}\" gizli anahtarı bulunamadı"
+          "notFound": "\"{{repository}}\" deposunda \"{{key}}\" gizli anahtarı bulunamadı",
+          "examples": {
+            "basic": "Bir depo gizli anahtarını oku."
+          }
         },
         "keyOption": "UPPER_SNAKE_CASE biçiminde gizli anahtar (maks 64 karakter). env modu için REDIACC_SECRET_<KEY> olarak veya file modu için konteynerlerde /run/secrets/<key> olarak gösterilecek.",
         "list": {
@@ -1166,7 +1272,11 @@
         "set": {
           "description": "Bir gizli anahtarı ayarla veya üzerine yaz. Fork'lar miras almaz; fork üzerinde açıkça ayarla. Aracı bağlamı altında, --current özet eşleşmesi gerektirir (passwd tarzı).",
           "descriptionShort": "Depo sırrını ayarla veya üzerine yaz",
-          "success": "\"{{repository}}\" üzerinde \"{{key}}\" ({{mode}}) gizli anahtarı ayarlandı"
+          "success": "\"{{repository}}\" üzerinde \"{{key}}\" ({{mode}}) gizli anahtarı ayarlandı",
+          "examples": {
+            "basic": "Bir depo için gizli anahtar kaydet.",
+            "envMode": "Bir gizli anahtar kaydet ve ortam değişkeni olarak sun."
+          }
         },
         "unset": {
           "description": "Bir gizli anahtarı sil. Aracı bağlamı altında, --current özet eşleşmesi gerektirir.",
@@ -1184,13 +1294,21 @@
       "sync": {
         "description": "Depoları ve dosyaları senkronize et (toplu push/pull, dosya aktarımı)",
         "download": {
-          "description": "Depodan dosya indir"
+          "description": "Depodan dosya indir",
+          "examples": {
+            "dir": "Bir depo dizinini yerel bir klasöre indir.",
+            "file": "Bir depodan tek bir dosya indir."
+          }
         },
         "status": {
           "description": "Senkronizasyon durumunu kontrol et ve yerel/uzak dosyaları karşılaştır"
         },
         "upload": {
-          "description": "Depoya dosya yükle"
+          "description": "Depoya dosya yükle",
+          "examples": {
+            "dir": "Yerel bir dizini bir depoya yükle.",
+            "file": "Bir depo içindeki bir yola tek bir dosya yükle."
+          }
         }
       },
       "trim": {
@@ -1236,7 +1354,11 @@
         "tlsOption": "Bu depo için özel TLS sertifikası talep et (fork'lar varsayılan olarak paylaşılan makine sertifikasını kullanır)",
         "allOption": "Barındığı yer --machine olan tüm depoları dağıt (toplu biçim)",
         "noStartOption": "up() adımlarını çalıştırmadan depoyu bağla ve hazırla (kullanımdan kaldırılan 'repo mount' komutunu içerir; LUKS açma ve küme depoları için PV üretimi).",
-        "noWaitOption": "Konteynerler başlar başlamaz dön; sağlık kontrolleri arka planda devam eder"
+        "noWaitOption": "Konteynerler başlar başlamaz dön; sağlık kontrolleri arka planda devam eder",
+        "examples": {
+          "basic": "Bir depoyu kendi makinesinde dağıt.",
+          "all": "Bir makinedeki tüm depoları tek seferde dağıt."
+        }
       },
       "mount": {
         "starting": "\"{{repository}}\" \"{{machine}}\" üzerinde bağlanıyor...",
@@ -1350,7 +1472,10 @@
         "confirm": "\"{{fork}}\" öğesini \"{{grand}}\" olarak üretime terfi ettir? Mevcut üretim verisi bir yedek fork olarak korunur.",
         "description": "Grand deponun verilerini bir çatalın verileriyle değiştir. Grand, kimliğini (GUID, networkId, alan adları, otomatik başlatma, yedekleme zinciri) korur ancak çatalın güncellenmiş verilerini alır. Eski üretim verileri yedek çatal olarak saklanır. Kullanım: çatalda yükseltmeyi test et → doğrula → üretime devir.",
         "descriptionShort": "Üretim verilerini çatal verileriyle değiştir",
-        "examples": "\nÖrnekler:\n  $ rdc repo promote app:test\n  $ rdc repo promote app:test --yes\n",
+        "examples": {
+          "basic": "Bir çatalı ana depo yap.",
+          "noConfirm": "Bir çatalı onay istemi olmadan yükselt."
+        },
         "failed": "Devralma başarısız",
         "grandNotFound": "\"{{name}}\" çatalı için grand depo bulunamadı",
         "notAFork": "\"{{name}}\" bir çatal depo değil (parentGuid eksik)",
@@ -1367,7 +1492,11 @@
         "description": "Bir depo konteyneri içinde bir komut çalıştır. Komutun kendi çıkış kodu doğrudan iletilir, bu yüzden betiklerde ve koşullu ifadelerde çalışır. Docker depoları bunu deponun kendi Docker daemon'ı üzerinden çalıştırır; kubernetes depoları deponun ad alanında çalıştırır.",
         "descriptionShort": "Bir depo konteyneri içinde komut çalıştır",
         "interactiveOption": "Bir terminal ayır (bunu bekleyen bir komut için)",
-        "userOption": "Komutun çalıştırılacağı kullanıcı"
+        "userOption": "Komutun çalıştırılacağı kullanıcı",
+        "examples": {
+          "basic": "Bir depo konteyneri içinde komut çalıştır.",
+          "interactive": "Bir konteynerde etkileşimli kabuk aç."
+        }
       },
       "logs": {
         "containerOption": "Okunacak konteyner (depo birden fazla çalıştırdığında gerekir)",
@@ -1375,7 +1504,11 @@
         "descriptionShort": "Bir deponun konteyner günlüklerini göster",
         "followOption": "Kesilene kadar yeni satırları akıtmaya devam et",
         "linesOption": "Gösterilecek geçmiş satır sayısı (varsayılan: 100)",
-        "timestampsOption": "Her satırın başına zaman damgasını ekle"
+        "timestampsOption": "Her satırın başına zaman damgasını ekle",
+        "examples": {
+          "basic": "Bir deponun konteyner günlüklerini göster.",
+          "container": "Tek bir konteynerin son 50 günlük satırını göster."
+        }
       },
       "refMachineConflict": "Bir depo referansı kendi makinesini kendisi belirler. -m/--machine'i yalnızca makine geneli biçim için kullanın: repo {{verb}} --all -m <machine>."
     },
@@ -1405,7 +1538,12 @@
       "summary": "Uzak istemciler için yürütücü olarak çalıştır",
       "listening": "Yürütücü http://{{host}}:{{port}} adresinde dinliyor (mod: {{mode}})",
       "hint": "Bir istemciyi şununla yönlendirin: rdc --proxy <url> <command>",
-      "draining": "Kapatmadan önce devam eden komutlar tamamlanıyor."
+      "draining": "Kapatmadan önce devam eden komutlar tamamlanıyor.",
+      "examples": {
+        "basic": "Yerel yürütücü sunucusunu başlat.",
+        "customPort": "Yürütücü sunucusunu belirli bir portta başlat.",
+        "container": "Yürütücü sunucusunu konteyner modunda başlat."
+      }
     },
     "storage": {
       "browse": {
@@ -1443,7 +1581,10 @@
       "add": {
         "added": "\"{{name}}\" depolaması kaydedildi",
         "adding": "\"{{name}}\" depolaması kaydediliyor...",
-        "description": "Bir depolama uç noktası kaydet."
+        "description": "Bir depolama uç noktası kaydet.",
+        "examples": {
+          "basic": "Bir vault tanımından depolama arka ucu kaydet."
+        }
       },
       "remove": {
         "confirm": "\"{{name}}\" depolama uç noktası kaldırılsın mı?",
@@ -1565,7 +1706,12 @@
     },
     "term": {
       "connect": {
-        "description": "Bir makinede veya Docker'ı kurulmuş bir depo içinde bir kabuk açın."
+        "description": "Bir makinede veya Docker'ı kurulmuş bir depo içinde bir kabuk açın.",
+        "examples": {
+          "machine": "Bir makineye SSH terminali aç.",
+          "repo": "Bir depo içinde terminal aç.",
+          "runCommand": "Bir makinede SSH üzerinden tek bir komut çalıştır."
+        }
       },
       "connectingTo": "{{title}} adresine bağlanılıyor...",
       "description": "Bir makineye veya depoya SSH terminali açın. Hedef bir makine adı veya bir depo referansıdır ve depo bağlamı (DOCKER_HOST, çalışma dizini, ortam) otomatik olarak ayarlanır. Tek bir komutu etkileşimsiz çalıştırmak için `-c` kullanın. Konteyner günlükleri veya bir konteynerde tek seferlik bir komut için `repo logs` ve `repo exec` kullanın. VS Code için `vscode` kullanın.",
@@ -1659,7 +1805,11 @@
         "startingServer": "Depo sandbox'ı içinde {{provider}} başlatılıyor...",
         "success": "VS Code başarıyla başlatıldı.",
         "testingConnectivity": "{{host}}:{{port}} adresine bağlantı sınanıyor...",
-        "tunnelReady": "Tünel localhost:{{port}} üzerinde hazır"
+        "tunnelReady": "Tünel localhost:{{port}} üzerinde hazır",
+        "examples": {
+          "basic": "Bir depoyu SSH üzerinden VS Code'da aç.",
+          "folder": "Bir deponun belirli bir klasörünü VS Code'da aç."
+        }
       },
       "description": "Bir makine veya depoya VS Code Remote SSH ile bağlanın",
       "descriptionShort": "Bir makine veya depoya VS Code Remote SSH ile bağlanın",
@@ -1692,23 +1842,36 @@
       "idOption": "Görev kimliği",
       "list": {
         "description": "Bir makinedeki bağımsız görevleri en yeniden en eskiye listeler",
-        "empty": "{{machine}} üzerinde görev yok."
+        "empty": "{{machine}} üzerinde görev yok.",
+        "examples": {
+          "basic": "Bir makinedeki görevleri listele."
+        }
       },
       "status": {
-        "description": "Bağımsız bir görevin durumunu gösterir"
+        "description": "Bağımsız bir görevin durumunu gösterir",
+        "examples": {
+          "basic": "Tek bir görevin durumunu göster."
+        }
       },
       "logs": {
         "description": "Bağımsız bir görevin olay günlüğünü yeniden oynatır veya canlı izler",
         "followOption": "Görev tamamlanana kadar akışı sürdürür",
         "sinceLineOption": "Bu satır sayısından sonra devam eder (zaten aldığınız satır sayısı)",
         "invalidSinceLine": "--since-line bir satır sayısı olmalıdır (alınan: \"{{value}}\")",
-        "detached": "{{jobId}} görevinden ayrıldınız. Görev {{machine}} üzerinde hâlâ çalışıyor ve İPTAL EDİLMEDİ. Yeniden bağlanmak için: rdc job logs {{jobId}} -m {{machine}} --follow"
+        "detached": "{{jobId}} görevinden ayrıldınız. Görev {{machine}} üzerinde hâlâ çalışıyor ve İPTAL EDİLMEDİ. Yeniden bağlanmak için: rdc job logs {{jobId}} -m {{machine}} --follow",
+        "examples": {
+          "basic": "Bir görevin günlüklerini göster.",
+          "follow": "Bir görevin günlüklerini geldikçe izle."
+        }
       },
       "cancel": {
         "description": "Çalışan bağımsız bir görevi iptal eder",
         "confirm": "{{machine}} üzerindeki {{jobId}} ({{function}}) görevi iptal edilsin mi? İşlem durdurulacak.",
         "requested": "{{jobId}} görevi için iptal isteği gönderildi.",
-        "alreadyFinished": "{{jobId}} görevi zaten {{state}}; iptal edilecek bir şey yok."
+        "alreadyFinished": "{{jobId}} görevi zaten {{state}}; iptal edilecek bir şey yok.",
+        "examples": {
+          "basic": "Çalışan bir görevi iptal et."
+        }
       },
       "gc": {
         "description": "Tamamlanmış görevleri ve günlüklerini kaldırır",

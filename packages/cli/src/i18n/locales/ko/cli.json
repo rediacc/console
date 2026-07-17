@@ -19,7 +19,11 @@
         "notRunning": "전략 \"{{name}}\"에 대해 실행 중인 백업이 없습니다"
       },
       "run": {
-        "description": "원격 머신에서 즉시 백업을 실행합니다"
+        "description": "원격 머신에서 즉시 백업을 실행합니다",
+        "examples": {
+          "basic": "백업 전략을 지금 실행합니다.",
+          "watch": "백업 전략을 실행하고 진행 상황을 지켜봅니다."
+        }
       },
       "status": {
         "description": "원격 머신의 백업 상태 및 타이머 상태를 표시합니다"
@@ -47,7 +51,11 @@
           "optionMode": "백업 모드: \"hot\" (무중단) 또는 \"cold\" (중지, 스냅샷, 재시작)",
           "optionStorage": "스토리지 설정 이름 (rclone 자격증명)",
           "saved": "백업 전략 설정 저장 완료",
-          "storageRequired": "새 대상을 생성할 때 --storage가 필요합니다. 사용법: --storage <storage-name>"
+          "storageRequired": "새 대상을 생성할 때 --storage가 필요합니다. 사용법: --storage <storage-name>",
+          "examples": {
+            "configure": "백업 전략의 스토리지와 모드를 구성합니다.",
+            "disable": "백업 전략을 끕니다."
+          }
         },
         "show": {
           "description": "백업 전략 세부 정보를 표시합니다",
@@ -65,7 +73,11 @@
         "optionPath": "스토리지 루트 내 하위 디렉터리. 생략하면 hot/과 cold/를 모두 나열해 병합합니다",
         "optionStorage": "이 스토리지 엔드포인트의 아티팩트를 나열합니다",
         "placementExclusive": "--machine 또는 --storage 중 하나만 지정하세요 (둘 다는 불가)",
-        "placementRequired": "어디서 나열할지 --machine <m> 또는 --storage <s>로 지정하세요"
+        "placementRequired": "어디서 나열할지 --machine <m> 또는 --storage <s>로 지정하세요",
+        "examples": {
+          "basic": "머신에 저장된 백업을 나열합니다.",
+          "byStorage": "특정 스토리지 백엔드의 백업을 나열합니다."
+        }
       },
       "restore": {
         "datastoreUnattached": "데이터스토어 \"{{datastore}}\"가 어떤 머신에도 어태치되어 있지 않습니다. 먼저 어태치하세요: rdc datastore attach {{datastore}} --to <machine>",
@@ -83,7 +95,11 @@
         "pulling": "{{place}}에서 {{name}}을(를) 가져오는 중...",
         "restored": "{{machine}}에 {{name}} 복원 완료",
         "sourceUnknown": "이 설정에 \"{{name}}\"이라는 저장소가 없어 백업 아티팩트를 찾을 수 없습니다",
-        "targetExists": "\"{{name}}\"이(가) 이미 존재합니다. 다른 이름으로 복원하거나(--as) 먼저 기존 저장소를 삭제하세요"
+        "targetExists": "\"{{name}}\"이(가) 이미 존재합니다. 다른 이름으로 복원하거나(--as) 먼저 기존 저장소를 삭제하세요",
+        "examples": {
+          "basic": "백업을 머신에 복원합니다.",
+          "asNewRepo": "백업을 새 저장소로 복원하고 시작합니다."
+        }
       }
     },
     "cluster": {
@@ -106,7 +122,11 @@
         "primitiveOption": "네트워크 프리미티브 (예: vlan, vpc, network)",
         "providerOption": "공급자: cloudProviders 키 또는 'kvm'",
         "declareOnlyOption": "프로비저닝 없이 클러스터를 설정에 기록합니다",
-        "declared": "클러스터 \"{{name}}\" 선언 완료"
+        "declared": "클러스터 \"{{name}}\" 선언 완료",
+        "examples": {
+          "basic": "프로바이더에 클러스터를 생성합니다.",
+          "declareOnly": "기존 컨트롤 노드를 중심으로 클러스터를 선언합니다."
+        }
       },
       "description": "클러스터를 프로비저닝하고 관리합니다: 프라이빗 네트워크상의 노드 풀(ceph, k8s-server, k8s-agent, hyperconverged)로 이루어진 이름 있는 집합입니다. 풀 멤버는 실제 머신으로 구체화되므로 모든 -m 명령이 그대로 작동합니다.",
       "descriptionShort": "클러스터 생성 및 관리 (프라이빗 LAN의 노드 풀)",
@@ -128,12 +148,19 @@
         "tagOption": "포크 태그",
         "upOption": "포크된 저장소를 기동하고 포크가 부팅된 후 클러스터 상태를 게이트로 확인합니다",
         "writesOption": "포크 쓰기 방식: local (일시적 dm-COW 오버레이, Ceph 사용량 0) | ceph (영구 클론). 기본값 local",
-        "toOption": "포크를 호스팅할 노드를 가진 대상 클러스터 (해당 컨트롤 노드와 에이전트). 클러스터는 자기 자신의 머신으로는 포크할 수 없습니다 (두 개의 k3s가 하나의 호스트 네트워크 네임스페이스를 공유할 수 없기 때문)"
+        "toOption": "포크를 호스팅할 노드를 가진 대상 클러스터 (해당 컨트롤 노드와 에이전트). 클러스터는 자기 자신의 머신으로는 포크할 수 없습니다 (두 개의 k3s가 하나의 호스트 네트워크 네임스페이스를 공유할 수 없기 때문)",
+        "examples": {
+          "basic": "클러스터를 새 대상으로 포크합니다.",
+          "andStart": "클러스터를 포크하고 즉시 시작합니다."
+        }
       },
       "join": {
         "clusterOption": "머신을 가입시킬 클러스터",
         "description": "기존에 등록된 머신을 클러스터의 Kubernetes 에이전트 노드로 편입시킵니다. 앵커 구성 및 재참여 때와 동일한, CA에서 파생된 join 토큰을 사용합니다.",
-        "descriptionShort": "머신을 에이전트로 클러스터에 추가합니다"
+        "descriptionShort": "머신을 에이전트로 클러스터에 추가합니다",
+        "examples": {
+          "basic": "머신을 클러스터에 참여시킵니다."
+        }
       },
       "kubeconfig": {
         "cached": "Kubeconfig가 {{path}}에 캐시되었습니다",
@@ -266,7 +293,11 @@
         "description": "새로운 이름 지정 설정 파일을 생성합니다",
         "optionMasterPassword": "마스터 비밀번호로 리소스를 암호화합니다",
         "success": "설정 \"{{name}}\" 초기화 완료",
-        "bareForm": "기본 설정은 자동으로 생성됩니다. 이름 지정 설정을 만들려면 'config init <name>'을 사용하고, 기본 설정에 옵션을 지정하려면 플래그(--ssh-key, --server 등)를 전달하세요"
+        "bareForm": "기본 설정은 자동으로 생성됩니다. 이름 지정 설정을 만들려면 'config init <name>'을 사용하고, 기본 설정에 옵션을 지정하려면 플래그(--ssh-key, --server 등)를 전달하세요",
+        "examples": {
+          "basic": "이름 지정 설정 프로필을 생성합니다.",
+          "withServer": "특정 계정 서버를 가리키는 프로필을 생성합니다."
+        }
       },
       "list": {
         "description": "모든 설정 파일을 나열합니다",
@@ -300,35 +331,42 @@
       },
       "remote": {
         "description": "원격 설정 스토리지 연결을 관리합니다",
+        "tokenExpired": "원격 설정 토큰이 만료되었습니다. 다음으로 재인증하십시오: rdc config remote enable",
+        "passkeySecretMissing": "OS 키링에서 패스키 시크릿을 찾을 수 없습니다. 다음으로 재인증하십시오: rdc config remote enable",
+        "staleSlot": "키 슬롯이 오래되었습니다 (설정 암호화 키가 교체되었습니다). 다음 명령으로 다시 등록하세요: rdc config remote enable",
+        "enable": {
+          "description": "이 설정을 원격 암호화 스토리지에 연결합니다",
+          "optionHeadless": "기기 코드 흐름을 사용합니다 (헤드리스 서버용)",
+          "optionApiUrl": "계정 서버 URL",
+          "openBrowser": "설정을 완료하려면 이 URL을 여십시오:",
+          "waiting": "브라우저 승인을 기다리는 중...",
+          "received": "핸드오프 수신됨",
+          "polling": "브라우저 승인을 폴링하는 중...",
+          "success": "원격 설정이 활성화되었습니다. 설정 \"{{name}}\"이 이제 {{apiUrl}}에 동기화됩니다.",
+          "alreadyEnabled": "설정 \"{{name}}\"이 이미 원격 스토리지에 연결되어 있습니다. 먼저 비활성화하십시오: rdc config remote disable",
+          "expired": "기기 코드가 만료되었습니다. 다시 시도하십시오.",
+          "optionPassword": "사전 프로비저닝된 비밀번호 슬롯으로 헤드리스 등록 (브라우저 불필요)",
+          "passwordPrompt": "설정 마스터 비밀번호:",
+          "passwordNonInteractive": "설정 마스터 비밀번호가 필요합니다. REDIACC_CONFIG_PASSWORD를 설정하거나, 대화형 터미널에서 --password 없이 실행하세요.",
+          "passwordRequirePasskey": "이 조직은 설정 스토리지 잠금 해제에 패스키를 요구하며, 비밀번호 등록은 비활성화되어 있습니다. 브라우저에서 다음 명령으로 등록하세요: rdc config remote enable",
+          "passwordNoSlot": "설정 스토리지에 프로비저닝된 비밀번호 슬롯이 없습니다. 포털(Config Storage > key slots)에서 하나를 추가한 뒤 다시 시도하세요.",
+          "passwordWrong": "해당 비밀번호로 설정의 잠금을 해제할 수 없습니다. REDIACC_CONFIG_PASSWORD(또는 입력한 비밀번호)를 확인하고 다시 시도하세요."
+        },
         "disable": {
           "description": "원격 스토리지 연결을 끊고 설정을 로컬에 저장합니다",
           "notEnabled": "원격 설정이 활성화되어 있지 않습니다.",
           "success": "원격 설정이 비활성화되었습니다. 설정 \"{{name}}\"이 로컬에 저장되었습니다."
         },
-        "enable": {
-          "alreadyEnabled": "설정 \"{{name}}\"이 이미 원격 스토리지에 연결되어 있습니다. 먼저 비활성화하십시오: rdc config remote disable",
-          "description": "이 설정을 원격 암호화 스토리지에 연결합니다",
-          "expired": "기기 코드가 만료되었습니다. 다시 시도하십시오.",
-          "openBrowser": "설정을 완료하려면 이 URL을 여십시오:",
-          "optionApiUrl": "계정 서버 URL",
-          "optionHeadless": "기기 코드 흐름을 사용합니다 (헤드리스 서버용)",
-          "polling": "브라우저 승인을 폴링하는 중...",
-          "received": "핸드오프 수신됨",
-          "success": "원격 설정이 활성화되었습니다. 설정 \"{{name}}\"이 이제 {{apiUrl}}에 동기화됩니다.",
-          "waiting": "브라우저 승인을 기다리는 중..."
+        "status": {
+          "description": "원격 연결 상태를 표시합니다"
         },
-        "passkeySecretMissing": "OS 키링에서 패스키 시크릿을 찾을 수 없습니다. 다음으로 재인증하십시오: rdc config remote enable",
         "refresh": {
           "description": "원격 스토리지에서 설정을 강제로 다시 가져옵니다",
           "notEnabled": "원격 설정이 활성화되어 있지 않습니다.",
           "pulled": "설정 가져오기 완료",
           "pulling": "원격에서 설정을 가져오는 중...",
           "success": "원격에서 설정이 새로 고침되었습니다 (버전 {{version}})."
-        },
-        "status": {
-          "description": "원격 연결 상태를 표시합니다"
-        },
-        "tokenExpired": "원격 설정 토큰이 만료되었습니다. 다음으로 재인증하십시오: rdc config remote enable"
+        }
       },
       "set": {
         "description": "기본값을 설정합니다 (team, region, bridge)",
@@ -441,7 +479,11 @@
         "attachToOption": "생성 즉시 포크를 이 머신에 어태치합니다 (--writes 필요)",
         "forked": "데이터스토어 \"{{ref}}\"가 \"{{name}}\"에서 포크되었습니다 (분리 상태)",
         "tagOption": "포크의 태그 (결과는 name:tag 형태)",
-        "writesOption": "포크의 쓰기 대상: local (즉시, 일시적) 또는 ceph (영구 클론)"
+        "writesOption": "포크의 쓰기 대상: local (즉시, 일시적) 또는 ceph (영구 클론)",
+        "examples": {
+          "basic": "데이터스토어를 새 태그로 포크합니다.",
+          "andAttach": "데이터스토어를 포크하고 머신에 연결합니다."
+        }
       },
       "resize": {
         "description": "데이터스토어를 확장하거나 축소합니다. 이는 오프라인 작업이므로 내부의 저장소를 먼저 정지해야 합니다",
@@ -463,7 +505,11 @@
         "noop": "데이터스토어 \"{{ref}}\"는 이미 같은 방식으로 {{machine}}에 어태치되어 있습니다. 수행할 작업이 없습니다",
         "relocating": "\"{{ref}}\"를 {{from}}에서 {{to}}로 이동하는 중 (먼저 {{from}}에서 분리됩니다)...",
         "toOption": "데이터스토어를 어태치할 머신",
-        "writesOption": "포크의 쓰기 대상: local (즉시, 일시적, 분리 시 소멸) 또는 ceph (풀 내 영구 클론). 포크의 경우 필수"
+        "writesOption": "포크의 쓰기 대상: local (즉시, 일시적, 분리 시 소멸) 또는 ceph (풀 내 영구 클론). 포크의 경우 필수",
+        "examples": {
+          "basic": "데이터스토어를 머신에 연결합니다.",
+          "cephWrites": "Ceph 기반 쓰기가 적용된 데이터스토어를 연결합니다."
+        }
       },
       "create": {
         "backendOption": "스토리지 백엔드: local (파일 기반, 이 머신에 고정) 또는 rbd (Ceph, 이동 가능)",
@@ -474,7 +520,11 @@
         "imageOption": "rbd 백엔드용 RBD 이미지 이름 (기본값: 데이터스토어 이름)",
         "machineOption": "데이터스토어를 생성할 머신",
         "poolOption": "rbd 백엔드용 Ceph 풀 (기본값: rbd)",
-        "sizeOption": "데이터스토어 크기 (예: 100G)"
+        "sizeOption": "데이터스토어 크기 (예: 100G)",
+        "examples": {
+          "basic": "머신에 데이터스토어를 생성합니다.",
+          "ceph": "Ceph 기반 데이터스토어를 생성합니다."
+        }
       },
       "delete": {
         "aborted": "삭제된 항목이 없습니다",
@@ -497,7 +547,11 @@
       "list": {
         "description": "이름 지정 데이터스토어 목록, 어태치 위치, 보유 중인 항목을 표시합니다",
         "descriptionShort": "이름 지정 데이터스토어 나열",
-        "placeArgument": "클러스터 또는 머신 하나로 범위를 좁힙니다"
+        "placeArgument": "클러스터 또는 머신 하나로 범위를 좁힙니다",
+        "examples": {
+          "basic": "모든 데이터스토어를 나열합니다.",
+          "byPlace": "머신 또는 클러스터의 데이터스토어를 나열합니다."
+        }
       },
       "snapshot": {
         "create": {
@@ -598,7 +652,11 @@
       },
       "list": {
         "description": "머신 목록을 나열합니다",
-        "noMachines": "설정된 머신이 없습니다. 다음으로 추가하십시오: rdc machine add <name> --ip <ip> --user <user>"
+        "noMachines": "설정된 머신이 없습니다. 다음으로 추가하십시오: rdc machine add <name> --ip <ip> --user <user>",
+        "examples": {
+          "basic": "등록된 모든 머신을 나열합니다.",
+          "sorted": "머신을 이름순으로 정렬하여 나열합니다."
+        }
       },
       "provision": {
         "completed": "머신 {{name}}이 프로비저닝되어 준비되었습니다 ({{ip}})",
@@ -617,7 +675,11 @@
         "provisioning": "{{provider}} ({{region}})에서 {{name}} 프로비저닝 중...",
         "settingUp": "머신 설정 실행 중...",
         "sshReady": "SSH 연결이 설정되었습니다",
-        "waitingSSH": "SSH 연결 대기 중..."
+        "waitingSSH": "SSH 연결 대기 중...",
+        "examples": {
+          "basic": "프로바이더에서 새 클라우드 머신을 프로비저닝합니다.",
+          "sized": "선택한 크기로 리전에 머신을 프로비저닝합니다."
+        }
       },
       "prune": {
         "completed": "정리가 완료되었습니다",
@@ -644,7 +706,11 @@
       "add": {
         "description": "현재 설정에 머신을 추가합니다. SSH 호스트 키를 자동으로 검사합니다. 추가 후 실행하십시오: config machine setup <name>",
         "descriptionShort": "현재 설정에 머신을 추가합니다",
-        "success": "머신 \"{{name}}\" 추가 완료 ({{user}}@{{ip}})"
+        "success": "머신 \"{{name}}\" 추가 완료 ({{user}}@{{ip}})",
+        "examples": {
+          "basic": "주소와 로그인 사용자로 머신을 등록합니다.",
+          "customPort": "기본이 아닌 SSH 포트를 사용하는 머신을 등록합니다."
+        }
       },
       "infra": {
         "cert": {
@@ -773,7 +839,11 @@
         "storageHealthSummary": "스토리지 효율성: {{summary}}",
         "strictDriftDetected": "--strict: 드리프트 임계값을 초과한 컨테이너 {{count}}개; 비정상 종료",
         "syncCertsFailed": "인증서 캐시 동기화 실패: {{error}}",
-        "ambiguous": "등록된 머신이 두 대 이상입니다 ({{machines}}). 표시할 머신을 지정하세요"
+        "ambiguous": "등록된 머신이 두 대 이상입니다 ({{machines}}). 표시할 머신을 지정하세요",
+        "examples": {
+          "basic": "머신의 전체 상태를 표시합니다.",
+          "containers": "머신에서 실행 중인 컨테이너만 표시합니다."
+        }
       }
     },
     "mcp": {
@@ -870,7 +940,10 @@
         "remoteFileOption": "읽을 파일 경로 (저장소 마운트 루트 기준 상대 경로)",
         "starting": "\"{{machine}}\"의 \"{{repository}}\"에서 \"{{path}}\" 읽는 중...",
         "statOption": "크기, 유형, 수정 시간만 출력하고 내용은 읽지 않습니다",
-        "tailOption": "마지막 N줄만 출력합니다 (바이트 범위와 함께 사용할 수 없음)"
+        "tailOption": "마지막 N줄만 출력합니다 (바이트 범위와 함께 사용할 수 없음)",
+        "examples": {
+          "basic": "저장소 내부의 파일을 출력합니다."
+        }
       },
       "certSync": {
         "updated": "{{machine}}에서 ACME 인증서 캐시 업데이트 완료 ({{count}}개 인증서)"
@@ -906,7 +979,11 @@
         "placementRequired": "repo create는 배치 플래그를 정확히 하나만 받습니다: --machine (Docker, 기본 데이터스토어) 또는 --datastore (이름 지정 데이터스토어; 클러스터 저장소에는 필수)",
         "sizeOnK8s": "Kubernetes 저장소의 볼륨 크기는 PVC 선언에서 결정됩니다. --size는 Docker 저장소에만 적용됩니다",
         "sizeRequiredDocker": "Docker 저장소에는 --size가 필수입니다 (--machine, 또는 Docker 세계의 --datastore)",
-        "startingDatastore": "데이터스토어 \"{{datastore}}\" ({{machine}})에 저장소 \"{{repository}}\"를 생성하는 중..."
+        "startingDatastore": "데이터스토어 \"{{datastore}}\" ({{machine}})에 저장소 \"{{repository}}\"를 생성하는 중...",
+        "examples": {
+          "basic": "머신에 새 저장소를 생성합니다.",
+          "sized": "고정된 볼륨 크기로 저장소를 생성합니다."
+        }
       },
       "delete": {
         "archived": "\"{{repository}}\"의 자격증명이 보관되었습니다",
@@ -918,7 +995,10 @@
         "confirm": "\"{{machine}}\"의 리포지토리 \"{{repository}}\"를 삭제할까요? 컨테이너, 볼륨, 암호화된 이미지가 모두 삭제됩니다.",
         "description": "저장소와 그 데이터를 삭제합니다. 설정 항목은 유지됩니다. --archive-config를 사용하면 자격증명을 deletedRepositories로 옮겨 'repo admin archive restore'로 복구할 수 있습니다. 위치 인자로 <ref>를 받습니다. 이름만 전달하면 그랜드 계열로 해석되지만, 같은 기본 이름을 여러 저장소가 공유하면 거부되므로 포크를 지정하려면 이름:태그를 전달하세요",
         "descriptionShort": "저장소와 데이터를 삭제합니다",
-        "examples": "\n예시:\n  $ rdc repo delete app\n  $ rdc repo delete app:test\n",
+        "examples": {
+          "basic": "저장소를 삭제합니다.",
+          "fork": "태그로 지정한 단일 포크를 삭제합니다."
+        },
         "failed": "저장소 삭제 실패",
         "restoreHint": "복원 명령어: rdc repo admin archive restore {{guid}}",
         "starting": "\"{{machine}}\"에서 \"{{repository}}\"를 삭제하는 중..."
@@ -954,7 +1034,11 @@
         "failed": "서비스 중지 실패",
         "starting": "\"{{machine}}\"에서 \"{{repository}}\"의 서비스를 중지하는 중...",
         "unmountOption": "정지 후 마운트도 해제합니다 (LUKS 컨테이너 닫기). 'repo resize' 전이나 볼륨을 완전히 보호하려면 필요",
-        "allOption": "--machine을 홈으로 하는 모든 저장소를 정지합니다 (일괄 형식)"
+        "allOption": "--machine을 홈으로 하는 모든 저장소를 정지합니다 (일괄 형식)",
+        "examples": {
+          "basic": "저장소의 컨테이너를 중지합니다.",
+          "unmount": "저장소를 중지하고 암호화된 볼륨을 마운트 해제합니다."
+        }
       },
       "expand": {
         "completed": "확장 완료",
@@ -972,7 +1056,10 @@
         "descriptionShort": "저장소의 즉각적인 CoW 포크 (새 GUID, networkId, IP 범위)",
         "detachedHint": "서비스가 백그라운드에서 시작 중입니다. 상태 확인: rdc machine status {{machine}} --containers",
         "detachOption": "--up 와 함께: 컨테이너가 시작되면 즉시 반환합니다. 헬스체크는 백그라운드에서 계속됩니다 (일회용 포크에 적합)",
-        "examples": "\n예시:\n  $ rdc repo fork app --tag test\n  $ rdc repo fork app --tag staging --up\n",
+        "examples": {
+          "basic": "저장소를 새 태그로 포크합니다.",
+          "andStart": "저장소를 포크하고 그 포크를 즉시 시작합니다."
+        },
         "failed": "포크 생성 실패",
         "immutableOption": "포크를 읽기 전용으로 표시합니다. 마운트를 거부하고 이미지를 영구적으로 바이트 수준에서 안정적으로 유지합니다(머신 간 델타 푸시를 위한 고정된 커밋/베이스)",
         "immutableUpConflict": "repo fork: --immutable과 --up은 함께 사용할 수 없습니다. 불변 포크는 마운트를 거부하므로 시작할 수 없습니다. --up을 제거하거나 일반 포크를 배포하려면 --immutable을 제거하세요.",
@@ -1001,7 +1088,11 @@
         "failed": "목록 조회 실패: {{error}}",
         "serverNameLegend": "* 머신에서 읽은 이름 (로컬 구성에 없음)",
         "starting": "\"{{machine}}\"의 저장소를 나열하는 중...",
-        "datastoreOption": "이 데이터스토어 안의 저장소를 나열합니다 (현재 보유 중인 머신으로 자동 해석됨)"
+        "datastoreOption": "이 데이터스토어 안의 저장소를 나열합니다 (현재 보유 중인 머신으로 자동 해석됨)",
+        "examples": {
+          "basic": "머신의 저장소를 나열합니다.",
+          "byDatastore": "데이터스토어에 있는 저장소를 나열합니다."
+        }
       },
       "log": {
         "description": "작업 fork의 현재 commit(또는 commit 참조)에서 도달 가능한 commit 이력을 출력하며, 'rdc repo commit'이 기록한 부모 체인을 따라갑니다. 볼륨 외부의 미러를 읽으므로 어떤 commit도 잠금 해제되지 않습니다.",
@@ -1057,7 +1148,11 @@
         "deletingSource": "{{machine}}에서 원본 이미지를 삭제하는 중...",
         "sourceDeleted": "{{name}}의 원본 이미지가 {{machine}}에서 삭제되었습니다",
         "sourceRetained": "{{name}}의 원본 이미지를 {{machine}}에 보존했습니다. 어떤 설정 레코드로도 참조할 수 없습니다. reconcile이 이를 미아로 표시합니다.",
-        "sourceDeleteFailed": "{{machine}}에서 {{name}}의 원본 이미지를 삭제하지 못했습니다: {{error}}. 이동 자체는 이미 성공했습니다. 'rdc machine prune {{machine}}'으로 남은 것을 정리하세요."
+        "sourceDeleteFailed": "{{machine}}에서 {{name}}의 원본 이미지를 삭제하지 못했습니다: {{error}}. 이동 자체는 이미 성공했습니다. 'rdc machine prune {{machine}}'으로 남은 것을 정리하세요.",
+        "examples": {
+          "basic": "저장소를 다른 머신으로 이동합니다.",
+          "strategy": "물리적 복사 전략을 사용하여 저장소를 이동합니다."
+        }
       },
       "noCredential": "경고: 저장소 \"{{name}}\"에 자격증명이 설정되어 있지 않습니다. 암호화된 저장소에 대한 작업이 실패할 수 있습니다.",
       "policy": {
@@ -1094,7 +1189,11 @@
         "optionStrategy": "델타 베이스 사용 시 블록 델타 전략: auto, physical, 또는 shared",
         "optionUp": "가져온 후 이 머신에서 저장소를 마운트하고 배포합니다",
         "pulling": "\"{{repo}}\"의 백업을 가져오는 중...",
-        "sourceRequired": "--from <remote>를 지정하십시오 (설정의 머신 또는 스토리지 이름)"
+        "sourceRequired": "--from <remote>를 지정하십시오 (설정의 머신 또는 스토리지 이름)",
+        "examples": {
+          "basic": "저장소를 스토리지 백엔드에서 풀합니다.",
+          "andStart": "저장소를 풀하고 즉시 시작합니다."
+        }
       },
       "push": {
         "deployed": "{{machine}}에서 저장소 \"{{repo}}\" 배포 완료",
@@ -1113,7 +1212,11 @@
         "pushing": "\"{{repo}}\"의 백업을 {{dest}}으로 푸시하는 중...",
         "statsDelta": "\"{{repo}}\"을(를) {{machine}}에 푸시 완료: {{duration}} 동안 {{transferred}} 전송 (베이스 {{base}} 대비 델타, 이미지 {{image}})",
         "statsFull": "\"{{repo}}\"을(를) {{machine}}에 푸시 완료: {{duration}} 동안 {{transferred}} 전송 (전체 전송)",
-        "statsNoBytes": "\"{{repo}}\"을(를) {{machine}}에 푸시 완료: {{duration}} 소요"
+        "statsNoBytes": "\"{{repo}}\"을(를) {{machine}}에 푸시 완료: {{duration}} 소요",
+        "examples": {
+          "toStorage": "저장소를 스토리지 백엔드로 푸시합니다.",
+          "toMachine": "저장소를 다른 머신으로 푸시합니다."
+        }
       },
       "replicate": {
         "description": "데이터베이스 크기와 무관하게 몇 초 만에 저장소의 읽기 전용 복제본 N개를 생성합니다. 먼저 데이터스토어 스냅샷을 한 번 찍은 뒤, 클러스터의 노드들에 분산된 형태로 N개의 상수 시간 포크-어태치(copy-on-write, 일회성 로컬 쓰기)를 수행하고, 생성된 오버레이를 적용합니다: 복제본마다 고정된 PersistentVolume 하나, StatefulSet 하나, 그리고 두 개의 Service(프라이머리를 향하는 {repo}-rw와 모든 복제본에 걸친 {repo}-ro). 복제본은 특정 시점의 사본입니다: 복제 스트림이 없고, read-your-writes도 보장되지 않습니다. 각 복제본은 서비스를 시작하기 전에 크래시 복구를 한 번 수행합니다. 'repo replicate refresh'로 최신화할 수 있습니다. 복제본 세트는 관리되는 상태이며, 'repo replicate status'로 확인하고 'repo replicate remove'로 제거합니다.",
@@ -1153,7 +1256,10 @@
         "get": {
           "description": "시크릿의 SHA-256 다이제스트를 표시합니다. 평문 값은 설계상 반환되지 않습니다 (쓰기 전용). 이미 알고 있는 값을 확인하려면 후속 set/unset에서 --current를 사용하거나 `set --rotate-secret`으로 교체하십시오.",
           "descriptionShort": "시크릿의 다이제스트를 표시합니다 (값은 반환되지 않음)",
-          "notFound": "저장소 \"{{repository}}\"에서 시크릿 \"{{key}}\"을 찾을 수 없습니다"
+          "notFound": "저장소 \"{{repository}}\"에서 시크릿 \"{{key}}\"을 찾을 수 없습니다",
+          "examples": {
+            "basic": "저장소 시크릿을 읽습니다."
+          }
         },
         "keyOption": "UPPER_SNAKE_CASE의 시크릿 키 (최대 64자). env 모드에서는 REDIACC_SECRET_<KEY>로, file 모드에서는 컨테이너의 /run/secrets/<key>로 노출됩니다.",
         "list": {
@@ -1166,7 +1272,11 @@
         "set": {
           "description": "시크릿을 설정하거나 덮어씁니다. 포크는 상속하지 않으므로 포크에 명시적으로 설정하십시오. 에이전트 컨텍스트에서는 --current 다이제스트 일치가 필요합니다 (passwd 방식).",
           "descriptionShort": "저장소별 시크릿을 설정하거나 덮어씁니다",
-          "success": "\"{{repository}}\"에서 시크릿 \"{{key}}\" ({{mode}}) 설정 완료"
+          "success": "\"{{repository}}\"에서 시크릿 \"{{key}}\" ({{mode}}) 설정 완료",
+          "examples": {
+            "basic": "저장소용 시크릿을 저장합니다.",
+            "envMode": "시크릿을 저장하고 환경 변수로 노출합니다."
+          }
         },
         "unset": {
           "description": "시크릿을 삭제합니다. 에이전트 컨텍스트에서는 --current 다이제스트 일치가 필요합니다.",
@@ -1184,13 +1294,21 @@
       "sync": {
         "description": "저장소와 파일을 동기화합니다 (일괄 push/pull, 파일 전송)",
         "download": {
-          "description": "SSH를 통한 rsync로 저장소에서 파일을 다운로드합니다 (델타 전송). 로컬 추가 파일을 삭제하려면 --mirror, 미리 보기는 --dry-run, 패턴을 건너뛰려면 --exclude를 사용하십시오"
+          "description": "SSH를 통한 rsync로 저장소에서 파일을 다운로드합니다 (델타 전송). 로컬 추가 파일을 삭제하려면 --mirror, 미리 보기는 --dry-run, 패턴을 건너뛰려면 --exclude를 사용하십시오",
+          "examples": {
+            "dir": "저장소 디렉터리를 로컬 폴더로 다운로드합니다.",
+            "file": "저장소에서 단일 파일을 다운로드합니다."
+          }
         },
         "status": {
           "description": "로컬과 원격 파일을 드라이런으로 비교합니다 (실제 전송 없이 전송될 내용을 표시합니다)"
         },
         "upload": {
-          "description": "SSH를 통한 rsync로 저장소에 파일을 업로드합니다 (델타 전송). 원격 추가 파일을 삭제하려면 --mirror, 미리 보기는 --dry-run, 패턴을 건너뛰려면 --exclude를 사용하십시오"
+          "description": "SSH를 통한 rsync로 저장소에 파일을 업로드합니다 (델타 전송). 원격 추가 파일을 삭제하려면 --mirror, 미리 보기는 --dry-run, 패턴을 건너뛰려면 --exclude를 사용하십시오",
+          "examples": {
+            "dir": "로컬 디렉터리를 저장소에 업로드합니다.",
+            "file": "저장소 내 경로에 단일 파일을 업로드합니다."
+          }
         }
       },
       "trim": {
@@ -1236,7 +1354,11 @@
         "tlsOption": "이 저장소에 대한 전용 TLS 인증서를 요청합니다 (포크는 기본적으로 공유 머신 인증서를 사용)",
         "allOption": "--machine을 홈으로 하는 모든 저장소를 배포합니다 (일괄 형식)",
         "noStartOption": "up() 단계를 실행하지 않고 저장소를 마운트하고 준비만 합니다 (폐지된 'repo mount'를 흡수: LUKS 오픈, 클러스터 저장소의 경우 PV 생성)",
-        "noWaitOption": "컨테이너가 시작되면 바로 반환됩니다. 상태 확인은 백그라운드에서 계속됩니다"
+        "noWaitOption": "컨테이너가 시작되면 바로 반환됩니다. 상태 확인은 백그라운드에서 계속됩니다",
+        "examples": {
+          "basic": "저장소를 해당 머신에 배포합니다.",
+          "all": "머신의 모든 저장소를 한 번에 배포합니다."
+        }
       },
       "mount": {
         "starting": "\"{{machine}}\"에서 \"{{repository}}\"를 마운트하는 중...",
@@ -1350,7 +1472,10 @@
         "confirm": "\"{{fork}}\"을(를) \"{{grand}}\"(으)로 프로덕션에 인수하시겠습니까? 현재 프로덕션 데이터는 백업 포크로 보존됩니다.",
         "description": "grand 저장소의 데이터를 포크의 데이터로 교체합니다. grand는 자신의 식별자 (GUID, networkId, 도메인, 자동 시작, 백업 체인)를 유지하지만 포크의 업그레이드된 데이터를 갖게 됩니다. 이전 프로덕션 데이터는 백업 포크로 보존됩니다. 사용 사례: 포크에서 업그레이드 테스트 → 검증 → 프로덕션으로 takeover.",
         "descriptionShort": "프로덕션 데이터를 포크 데이터로 교체합니다",
-        "examples": "\n예시:\n  $ rdc repo promote app:test\n  $ rdc repo promote app:test --yes\n",
+        "examples": {
+          "basic": "포크를 메인 저장소로 승격합니다.",
+          "noConfirm": "확인 프롬프트 없이 포크를 승격합니다."
+        },
         "failed": "인수 실패",
         "grandNotFound": "포크 \"{{name}}\"의 grand 저장소를 찾을 수 없습니다",
         "notAFork": "\"{{name}}\"은 포크 저장소가 아닙니다 (parentGuid 누락)",
@@ -1367,7 +1492,11 @@
         "description": "저장소 컨테이너 내부에서 명령을 실행합니다. 명령 자체의 종료 코드가 그대로 전달되므로 스크립트와 조건문에서도 사용할 수 있습니다. Docker 저장소는 저장소의 Docker 데몬을 통해 실행되고, Kubernetes 저장소는 저장소의 네임스페이스 안에서 실행됩니다",
         "descriptionShort": "저장소 컨테이너 내부에서 명령을 실행합니다",
         "interactiveOption": "터미널을 할당합니다 (터미널을 필요로 하는 명령용)",
-        "userOption": "명령을 실행할 사용자"
+        "userOption": "명령을 실행할 사용자",
+        "examples": {
+          "basic": "저장소 컨테이너 내부에서 명령을 실행합니다.",
+          "interactive": "컨테이너에서 대화형 셸을 엽니다."
+        }
       },
       "logs": {
         "containerOption": "로그를 읽을 컨테이너 (저장소가 컨테이너를 두 개 이상 실행할 때만 필요)",
@@ -1375,7 +1504,11 @@
         "descriptionShort": "저장소의 컨테이너 로그를 표시합니다",
         "followOption": "중단할 때까지 새 로그 줄을 계속 스트리밍합니다",
         "linesOption": "표시할 이력 줄 수 (기본값: 100)",
-        "timestampsOption": "각 줄 앞에 타임스탬프를 붙입니다"
+        "timestampsOption": "각 줄 앞에 타임스탬프를 붙입니다",
+        "examples": {
+          "basic": "저장소의 컨테이너 로그를 표시합니다.",
+          "container": "하나의 컨테이너에 대한 최근 50줄의 로그를 표시합니다."
+        }
       },
       "refMachineConflict": "저장소 참조는 그 자체로 머신을 결정합니다. -m/--machine은 머신 전체 형식에서만 사용하세요: repo {{verb}} --all -m <machine>"
     },
@@ -1405,7 +1538,12 @@
       "summary": "원격 클라이언트를 위한 실행기로 실행",
       "listening": "실행기가 http://{{host}}:{{port}}에서 대기 중입니다 (모드: {{mode}})",
       "hint": "다음 명령으로 클라이언트를 연결하세요: rdc --proxy <url> <command>",
-      "draining": "종료 전에 진행 중인 명령을 마무리하고 있습니다."
+      "draining": "종료 전에 진행 중인 명령을 마무리하고 있습니다.",
+      "examples": {
+        "basic": "로컬 실행기 서버를 시작합니다.",
+        "customPort": "특정 포트에서 실행기 서버를 시작합니다.",
+        "container": "컨테이너 모드로 실행기 서버를 시작합니다."
+      }
     },
     "storage": {
       "browse": {
@@ -1443,7 +1581,10 @@
       "add": {
         "added": "스토리지 \"{{name}}\" 등록 완료",
         "adding": "스토리지 \"{{name}}\"을(를) 등록하는 중...",
-        "description": "스토리지 엔드포인트를 등록합니다"
+        "description": "스토리지 엔드포인트를 등록합니다",
+        "examples": {
+          "basic": "vault 정의로부터 스토리지 백엔드를 등록합니다."
+        }
       },
       "remove": {
         "confirm": "스토리지 엔드포인트 \"{{name}}\"을(를) 제거하시겠습니까?",
@@ -1565,7 +1706,12 @@
     },
     "term": {
       "connect": {
-        "description": "머신에서, 또는 Docker가 설정된 저장소 안에서 셸을 엽니다"
+        "description": "머신에서, 또는 Docker가 설정된 저장소 안에서 셸을 엽니다",
+        "examples": {
+          "machine": "머신으로 SSH 터미널을 엽니다.",
+          "repo": "저장소 안에서 터미널을 엽니다.",
+          "runCommand": "SSH를 통해 머신에서 단일 명령을 실행합니다."
+        }
       },
       "connectingTo": "{{title}}에 연결 중...",
       "description": "머신 또는 저장소로 SSH 터미널을 엽니다. 대상은 머신 이름이나 저장소 참조이며, 저장소 컨텍스트(DOCKER_HOST, 작업 디렉터리, 환경)는 자동으로 설정됩니다. `-c`로 단일 명령을 비대화형으로 실행할 수 있습니다. 컨테이너 로그나 컨테이너 내 일회성 명령에는 `repo logs`와 `repo exec`를 사용하세요. VS Code에는 `vscode`를 사용하세요",
@@ -1659,7 +1805,11 @@
         "startingServer": "저장소 샌드박스 안에서 {{provider}} 시작 중...",
         "success": "VS Code가 성공적으로 실행되었습니다.",
         "testingConnectivity": "{{host}}:{{port}}에 대한 연결 테스트 중...",
-        "tunnelReady": "터널이 localhost:{{port}}에서 준비되었습니다"
+        "tunnelReady": "터널이 localhost:{{port}}에서 준비되었습니다",
+        "examples": {
+          "basic": "SSH를 통해 저장소를 VS Code에서 엽니다.",
+          "folder": "저장소의 특정 폴더를 VS Code에서 엽니다."
+        }
       },
       "description": "샌드박스 처리된 저장소별 환경을 사용하여 머신 또는 저장소에 VS Code Remote SSH를 엽니다. `term`과 동일한 SSH 연결을 사용하지만 VS Code를 실행합니다. 주요 하위 명령어: connect (또는 위치 축약어), list (설정된 연결 표시), cleanup (SSH 설정 항목 제거), check (VS Code 설치 확인).",
       "descriptionShort": "머신 또는 저장소에 VS Code Remote SSH 연결",
@@ -1692,23 +1842,36 @@
       "idOption": "작업 ID",
       "list": {
         "description": "머신의 분리된 작업을 최신순으로 나열합니다",
-        "empty": "{{machine}}에 작업이 없습니다."
+        "empty": "{{machine}}에 작업이 없습니다.",
+        "examples": {
+          "basic": "머신의 작업을 나열합니다."
+        }
       },
       "status": {
-        "description": "분리된 작업의 상태를 표시합니다"
+        "description": "분리된 작업의 상태를 표시합니다",
+        "examples": {
+          "basic": "단일 작업의 상태를 표시합니다."
+        }
       },
       "logs": {
         "description": "분리된 작업의 이벤트 로그를 재생하거나 스트리밍합니다",
         "followOption": "작업이 끝날 때까지 스트리밍합니다",
         "sinceLineOption": "지정한 줄 수 이후부터 재개합니다(이미 수신한 줄 수)",
         "invalidSinceLine": "--since-line은 줄 수(정수)여야 합니다(입력값: \"{{value}}\")",
-        "detached": "작업 {{jobId}}에서 분리되었습니다. {{machine}}에서 계속 실행 중이며 취소된 것이 아닙니다. 다시 연결하려면: rdc job logs {{jobId}} -m {{machine}} --follow"
+        "detached": "작업 {{jobId}}에서 분리되었습니다. {{machine}}에서 계속 실행 중이며 취소된 것이 아닙니다. 다시 연결하려면: rdc job logs {{jobId}} -m {{machine}} --follow",
+        "examples": {
+          "basic": "작업의 로그를 표시합니다.",
+          "follow": "작업의 로그를 실시간으로 따라갑니다."
+        }
       },
       "cancel": {
         "description": "실행 중인 분리된 작업을 취소합니다",
         "confirm": "{{machine}}에서 작업 {{jobId}}({{function}})를 취소하시겠습니까? 작업이 중단됩니다.",
         "requested": "작업 {{jobId}}에 대한 취소를 요청했습니다.",
-        "alreadyFinished": "작업 {{jobId}}은(는) 이미 {{state}} 상태이므로 취소할 것이 없습니다."
+        "alreadyFinished": "작업 {{jobId}}은(는) 이미 {{state}} 상태이므로 취소할 것이 없습니다.",
+        "examples": {
+          "basic": "실행 중인 작업을 취소합니다."
+        }
       },
       "gc": {
         "description": "완료된 작업과 해당 로그를 삭제합니다",

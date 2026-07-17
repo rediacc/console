@@ -1,7 +1,7 @@
 import { t } from '../i18n/index.js';
 import { outputService } from '../services/core/output.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
-import { ValidationError } from '../utils/errors.js';
+import { getOutputFormat, ValidationError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { assertMachineExists, assertStorageExists } from './_validate.js';
@@ -159,6 +159,6 @@ export async function renderBackupList(entries: TaggedBackupEntry[]): Promise<vo
     { key: 'size', header: 'Size', align: 'right' as const },
     { key: 'modified', header: 'Modified' },
   ];
-  const output = outputService.format(rows, 'table', columns);
+  const output = outputService.format(rows, getOutputFormat(), columns);
   outputService.print(output);
 }

@@ -274,10 +274,17 @@ describe('container-tier config loading', () => {
     return sessionId;
   }
 
-  async function runCommand(token = OWNER_TOKEN): Promise<Response> {
+  async function runCommand(
+    token = OWNER_TOKEN,
+    extraHeaders: Record<string, string> = {}
+  ): Promise<Response> {
     return fetch(`${baseUrl}${PROXY_ROUTES.command}`, {
       method: 'POST',
-      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+        ...extraHeaders,
+      },
       body: JSON.stringify({
         contractVersion: CLI_CONTRACT_VERSION,
         pathKey: COMMAND_PATH,
@@ -426,5 +433,70 @@ describe('container-tier config loading', () => {
     await grantKey();
     await (await runCommand()).text();
     expect(accountCalls.filter((u) => u.includes('/configs/'))).toHaveLength(4);
+  });
+
+  // ── X-Config-Session: the console names the session it granted through ──
+
+  it('runs under the session the X-Config-Session header names', async () => {
+    const sessionId = await grantKey();
+
+    const response = await runCommand(OWNER_TOKEN, { 'X-Config-Session': sessionId });
+    expect(response.status).toBe(200);
+    await response.text();
+
+    // The command genuinely ran against the config that session's key opened.
+    expect(executed).toHaveLength(1);
+    expect(authorizedAgainst[0].credentials?.ssh?.privateKey).toBe('THE-SSH-KEY');
+  });
+
+  it('draws the key from the NAMED session, not the latest-grant index', async () => {
+    // Two live grants by the same user: the index points at the second, but the
+    // request names the first. The per-session config cache makes the selection
+    // observable: repeating the named-session request must pull NOTHING new,
+    // while the headerless fallback (the second session) pays its own pull.
+    const first = await grantKey();
+    await grantKey();
+
+    await (await runCommand(OWNER_TOKEN, { 'X-Config-Session': first })).text();
+    await (await runCommand(OWNER_TOKEN, { 'X-Config-Session': first })).text();
+    expect(accountCalls.filter((u) => u.includes('/configs/'))).toHaveLength(2);
+
+    await (await runCommand(OWNER_TOKEN)).text();
+    expect(accountCalls.filter((u) => u.includes('/configs/'))).toHaveLength(4);
+    expect(executed).toHaveLength(3);
+  });
+
+  it('refuses a header naming a session someone ELSE granted (principal mismatch)', async () => {
+    const sessionId = await grantKey(OWNER_TOKEN);
+
+    // A different real user in the same org names the owner's session. Same
+    // ownership rule as the grant itself: refused, and indistinguishable from a
+    // session that does not exist.
+    const response = await runCommand(OTHER_TOKEN, { 'X-Config-Session': sessionId });
+
+    expect(response.status).toBe(404);
+    expect((await response.json<{ error: string }>()).error).toMatch(/unknown or expired/i);
+    expect(executed).toHaveLength(0);
+  });
+
+  it('refuses a header naming a session that does not exist', async () => {
+    await grantKey(OWNER_TOKEN);
+
+    const response = await runCommand(OWNER_TOKEN, {
+      'X-Config-Session': '33333333-3333-3333-3333-333333333333',
+    });
+
+    expect(response.status).toBe(404);
+    expect(executed).toHaveLength(0);
+  });
+
+  it('keeps the headerless CLI fallback intact alongside header-named sessions', async () => {
+    await grantKey(OWNER_TOKEN);
+
+    // No header: exactly the pre-header behavior, found via sessionFor().
+    const response = await runCommand(OWNER_TOKEN);
+    expect(response.status).toBe(200);
+    await response.text();
+    expect(executed).toHaveLength(1);
   });
 });

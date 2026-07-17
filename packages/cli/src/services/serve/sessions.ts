@@ -202,6 +202,31 @@ export class SessionStore {
     return sessionId;
   }
 
+  /**
+   * The session a command should draw its config key from.
+   *
+   * When the request NAMES a session (the web console's X-Config-Session
+   * header), the named session must exist and belong to the request principal —
+   * the same ownership rule grantCek enforces, refused with the same
+   * deliberately indistinguishable message, so a caller cannot probe which
+   * session ids exist. The named session wins over the grant index: a user with
+   * two live sessions (say, a browser grant and a CLI grant) gets the one they
+   * asked for, not whichever granted last.
+   *
+   * Without a named session this is exactly sessionFor(): the CLI proxy path,
+   * unchanged.
+   */
+  sessionForExec(principal: SessionPrincipal, requestedId?: string): string | undefined {
+    if (!requestedId) return this.sessionFor(principal);
+
+    const session = this.require(requestedId);
+    if (session.principal.userId !== principal.userId) {
+      throw new SessionError('Unknown or expired session. Open a new one.');
+    }
+    session.lastUsedAt = this.now();
+    return requestedId;
+  }
+
   /** Drop a session and the key it holds. */
   close(sessionId: string): void {
     this.forget(sessionId);

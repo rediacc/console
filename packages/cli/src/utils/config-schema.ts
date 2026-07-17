@@ -5,6 +5,7 @@
  * Used by config write commands for fail-fast validation.
  */
 import { isIP } from 'node:net';
+import { splitRef } from '@rediacc/shared/ref';
 import { z } from 'zod';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
@@ -82,11 +83,14 @@ const DEFAULT_TAG = 'latest';
  * Parse a repository reference into name and tag.
  * "marketing:staging" → { name: "marketing", tag: "staging" }
  * "marketing"         → { name: "marketing", tag: "latest" }
+ *
+ * Delegates to the shared lenient {@link splitRef}. The legacy `latest` default
+ * tag universe stays separate from the P4 `base` grammar (parseRef): these are
+ * config-key strings, not user-typed refs.
  */
 export function parseRepoRef(ref: string): { name: string; tag: string } {
-  const colonIndex = ref.indexOf(':');
-  if (colonIndex === -1) return { name: ref, tag: DEFAULT_TAG };
-  return { name: ref.slice(0, colonIndex), tag: ref.slice(colonIndex + 1) };
+  const { name, tag } = splitRef(ref, DEFAULT_TAG);
+  return { name, tag: tag ?? DEFAULT_TAG };
 }
 
 /**

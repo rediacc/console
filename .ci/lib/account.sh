@@ -79,6 +79,16 @@ account_wait_port() {
     return 1
 }
 
+# True when a RustFS (S3) endpoint is answering on the port. RustFS returns 403
+# on GET / (no anonymous access), so any HTTP status — not just 2xx — means the
+# service is up; a closed port yields curl code 000.
+account_rustfs_alive() {
+    local port="$1"
+    local code
+    code=$(curl -s -o /dev/null -m 2 -w '%{http_code}' "http://127.0.0.1:${port}/" 2>/dev/null || echo 000)
+    [[ "$code" != "000" ]]
+}
+
 # =============================================================================
 # ENSURE .ENV
 # =============================================================================
@@ -381,24 +391,47 @@ account_dev() {
     # Create log directory
     mkdir -p "$ACCOUNT_LOG_DIR"
 
-    # Start config blob storage (RustFS) if Docker is available
+    # Start config blob storage (RustFS) if Docker is available. The web console's
+    # config store (key slots, proxy, etc.) needs this; without it the portal shows
+    # "Config storage not configured on this server".
     if command -v docker &>/dev/null && docker info &>/dev/null 2>&1; then
         log_step "Starting config blob storage (RustFS)..."
-        local rustfs_port
-        rustfs_port=$(find_available_port 9100 9199)
-        export CONFIG_RUSTFS_PORT=$rustfs_port
+        local rustfs_port=9100
+        local rustfs_key="${CONFIG_R2_ACCESS_KEY_ID:-configadmin}"
+        local rustfs_secret="${CONFIG_R2_SECRET_ACCESS_KEY:-configadmin}"
 
-        (cd "$ACCOUNT_DIR" && CONFIG_RUSTFS_PORT=$rustfs_port \
-            docker compose up -d config-rustfs config-rustfs-init) \
-            >"$ACCOUNT_LOG_DIR/rustfs.log" 2>&1 || true
-        account_wait_port "$rustfs_port" "RustFS" 30 || log_warn "RustFS failed to start (config storage disabled)"
+        # Reuse a RustFS already serving on the canonical port. This survives a
+        # corrupt `docker compose` project state (dangling/ghost containers that
+        # block recreate but cannot be `docker rm`'d without a daemon restart):
+        # a plain `docker run` of the same image on 9100 is picked up here.
+        if account_rustfs_alive "$rustfs_port"; then
+            log_info "Reusing RustFS already serving on port ${rustfs_port}"
+        else
+            # Best-effort clean of stale project containers so a fresh recreate
+            # is not blocked by a prior run's leftovers.
+            docker rm -f account-config-rustfs account-config-rustfs-init >/dev/null 2>&1 || true
+            export CONFIG_RUSTFS_PORT=$rustfs_port
+            (cd "$ACCOUNT_DIR" && CONFIG_RUSTFS_PORT=$rustfs_port \
+                docker compose up -d config-rustfs config-rustfs-init) \
+                >"$ACCOUNT_LOG_DIR/rustfs.log" 2>&1 || true
+            account_wait_port "$rustfs_port" "RustFS" 30 || true
+        fi
 
-        if is_port_in_use "$rustfs_port"; then
+        if account_rustfs_alive "$rustfs_port"; then
             export CONFIG_R2_ENDPOINT="http://127.0.0.1:${rustfs_port}"
             export CONFIG_R2_BUCKET="rediacc-configs"
-            export CONFIG_R2_ACCESS_KEY_ID="${CONFIG_R2_ACCESS_KEY_ID:-configadmin}"
-            export CONFIG_R2_SECRET_ACCESS_KEY="${CONFIG_R2_SECRET_ACCESS_KEY:-configadmin}"
+            export CONFIG_R2_ACCESS_KEY_ID="$rustfs_key"
+            export CONFIG_R2_SECRET_ACCESS_KEY="$rustfs_secret"
+            # Ensure the bucket exists (compose's init does this too, but the
+            # reuse path skips it).
+            docker run --rm --network host \
+                -e AWS_ACCESS_KEY_ID="$rustfs_key" -e AWS_SECRET_ACCESS_KEY="$rustfs_secret" \
+                -e AWS_DEFAULT_REGION=us-east-1 amazon/aws-cli s3api create-bucket \
+                --bucket rediacc-configs --endpoint-url "http://127.0.0.1:${rustfs_port}" \
+                >/dev/null 2>&1 || true
             log_info "Config blob storage: http://127.0.0.1:${rustfs_port}/rediacc-configs"
+        else
+            log_warn "RustFS failed to start (config storage disabled). If 'docker compose' is stuck on a ghost container, run: docker run -d --name rediacc-config-rustfs-dev -p 9100:9000 -e RUSTFS_VOLUMES=/data -e RUSTFS_ADDRESS=0.0.0.0:9000 -e RUSTFS_ACCESS_KEY=configadmin -e RUSTFS_SECRET_KEY=configadmin rustfs/rustfs:latest"
         fi
     else
         log_info "Docker not available — config blob storage disabled"
@@ -485,6 +518,10 @@ account_dev_credentials() {
         -d "{\"email\":\"$user_email\",\"password\":\"$user_pw\"}" >/dev/null 2>&1 || ok=0
     curl -sf -X POST "$base/test/ensure-login" -H 'Content-Type: application/json' \
         -d "{\"email\":\"$partner_email\",\"password\":\"$partner_pw\"}" >/dev/null 2>&1 || ok=0
+    # Give the dev user a PROFESSIONAL plan so paid surfaces (the web console,
+    # gated on PLAN_METADATA[plan].webConsole) are reachable in dev. Idempotent.
+    curl -sf -X POST "$base/test/ensure-subscription" -H 'Content-Type: application/json' \
+        -d "{\"email\":\"$user_email\",\"planCode\":\"PROFESSIONAL\"}" >/dev/null 2>&1 || ok=0
     # Partner demo data (idempotent; re-runs append a fresh batch)
     curl -sf -X POST "$base/test/seed-demo-partner" -H 'Content-Type: application/json' \
         -d "{\"email\":\"$partner_email\"}" >/dev/null 2>&1 || ok=0
@@ -510,6 +547,7 @@ account_dev_credentials() {
             "$lan_ip" "$gateway_port" $((22 - ${#lan_ip} - ${#gateway_port})) ""
     fi
     echo "  │  root → /account/admin   partner → /account/partner (seeded)    │"
+    echo "  │  user → /account/console (PROFESSIONAL plan seeded)             │"
     echo "  └─────────────────────────────────────────────────────────────────┘"
     echo ""
 }

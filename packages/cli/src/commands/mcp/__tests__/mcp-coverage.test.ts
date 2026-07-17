@@ -6,13 +6,15 @@
  * in COMMAND_METADATA. Fails CI when a command is added to the registry
  * but not covered.
  */
+import { CLI_CONTRACT } from '@rediacc/shared/cli-contract';
 import { describe, expect, it } from 'vitest';
 import { cli } from '../../../cli.js';
 import { COMMAND_METADATA, getMcpExclusions } from '../../../config/command-metadata.js';
 import { COMMAND_REGISTRY } from '../../../config/command-registry.js';
+import { buildToolsFromContract } from '../tool-factory.js';
 import { buildAllTools } from '../tools.js';
 
-const TOOLS = buildAllTools(cli);
+const TOOLS = buildAllTools();
 const MCP_EXCLUDED = getMcpExclusions();
 
 /**
@@ -175,6 +177,62 @@ describe('MCP tool coverage', () => {
     }
     if (conflicts.length > 0) {
       expect.fail(`Entries with both mcp and mcpExcludeReason: ${conflicts.join(', ')}`);
+    }
+  });
+});
+
+/**
+ * The re-sourcing contract itself: buildToolsFromContract must derive exactly one
+ * tool for every mcp-annotated contract command, none for an excluded one, and
+ * nothing that does not trace back to such a command. This is the assertion that
+ * would catch the derivation drifting away from the contract it now reads from
+ * (an experimental command silently acquiring a tool, an exclusion being ignored,
+ * a stray tool with no backing command).
+ */
+describe('contract-sourced tool derivation', () => {
+  const autoTools = buildToolsFromContract();
+  const autoNames = new Set(autoTools.map((t) => t.name));
+  const toolName = (pathKey: string): string => pathKey.replaceAll(' ', '_');
+
+  it('every non-experimental mcp-annotated contract command produces exactly one tool', () => {
+    for (const cmd of CLI_CONTRACT.commands) {
+      if (cmd.experimental) continue;
+      if (!COMMAND_METADATA[cmd.pathKey]?.mcp) continue;
+      const name = toolName(cmd.pathKey);
+      const matches = autoTools.filter((t) => t.name === name);
+      expect(matches.length, `${cmd.pathKey} should derive exactly one tool "${name}"`).toBe(1);
+    }
+  });
+
+  it('no mcp-excluded command produces an auto-derived tool', () => {
+    for (const cmd of CLI_CONTRACT.commands) {
+      if (!COMMAND_METADATA[cmd.pathKey]?.mcpExcludeReason) continue;
+      const name = toolName(cmd.pathKey);
+      expect(autoNames.has(name), `${cmd.pathKey} is excluded but produced tool "${name}"`).toBe(
+        false
+      );
+    }
+  });
+
+  it('no experimental command produces an auto-derived tool (parity with the hidden tree)', () => {
+    for (const cmd of CLI_CONTRACT.commands) {
+      if (!cmd.experimental) continue;
+      expect(
+        autoNames.has(toolName(cmd.pathKey)),
+        `experimental ${cmd.pathKey} must not derive a tool`
+      ).toBe(false);
+    }
+  });
+
+  it('every auto-derived tool traces back to a non-experimental mcp-annotated command', () => {
+    for (const tool of autoTools) {
+      const cmd = CLI_CONTRACT.commands.find((c) => toolName(c.pathKey) === tool.name);
+      expect(cmd, `tool "${tool.name}" has no backing contract command`).toBeDefined();
+      expect(cmd!.experimental, `tool "${tool.name}" backs an experimental command`).toBe(false);
+      expect(
+        COMMAND_METADATA[cmd!.pathKey]?.mcp,
+        `tool "${tool.name}" backs a command with no mcp metadata`
+      ).toBeTruthy();
     }
   });
 });

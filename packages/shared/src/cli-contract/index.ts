@@ -15,17 +15,30 @@ export {
 } from './i18n';
 export type {
   CliContract,
+  CommandExample,
   CommandGroup,
   CommandPlane,
   ContractCommand,
   ContractOption,
   ContractPositional,
   ContractStrings,
+  FormatHint,
+  OptionTier,
+  OutputHints,
   PositionalKind,
+  ResourceKind,
   TimeoutClass,
 } from './types';
 export {
+  DISCOVERY_FAMILIES,
+  RESOURCE_DISCOVERY,
+  RESOURCE_KINDS,
+  type DiscoveryFamily,
+  type DiscoverySource,
+} from './discovery';
+export {
   CliContractSchema,
+  CommandExampleSchema,
   CommandGroupSchema,
   CommandPlaneSchema,
   ContractCommandSchema,
@@ -33,8 +46,12 @@ export {
   ContractPositionalSchema,
   ContractStringsSchema,
   checkContractInvariants,
+  FormatHintSchema,
+  OptionTierSchema,
+  OutputHintsSchema,
   parseCliContract,
   PositionalKindSchema,
+  ResourceKindSchema,
   safeParseCliContract,
   TimeoutClassSchema,
 } from './validation';

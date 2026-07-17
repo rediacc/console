@@ -101,7 +101,7 @@ async function handleRepoPromote(ref: string, options: PromoteOptions): Promise<
 }
 
 export function registerRepoPromoteCommand(repo: Command): void {
-  const promoteCmd = repo
+  repo
     .command('promote')
     .summary(t('commands.repo.promote.descriptionShort'))
     .description(t('commands.repo.promote.description'))
@@ -112,5 +112,4 @@ export function registerRepoPromoteCommand(repo: Command): void {
     .action(async (ref: string, options: PromoteOptions) => {
       await handleRepoPromote(ref, options);
     });
-  promoteCmd.addHelpText('after', t('commands.repo.promote.examples'));
 }

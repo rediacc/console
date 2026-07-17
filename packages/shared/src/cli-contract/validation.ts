@@ -31,8 +31,57 @@ export const PositionalKindSchema = z.enum([
   'job-id',
   'target',
   'file',
+  'provider',
   'plain',
 ]);
+
+export const ResourceKindSchema = z.enum([
+  'machine',
+  'repo',
+  'datastore',
+  'storage',
+  'cluster',
+  'provider',
+  'container',
+  'template',
+  'snapshot',
+  'job',
+  'strategy',
+  'artifact',
+]);
+
+export const FormatHintSchema = z.enum([
+  'size',
+  'cron',
+  'duration',
+  'integer',
+  'port',
+  'path',
+  'ip',
+  'ipv4',
+  'ipv6',
+  'cidr',
+  'domain',
+  'url',
+  'percent',
+  'guid',
+  'bandwidth',
+]);
+
+export const OptionTierSchema = z.enum(['common', 'advanced']);
+
+export const CommandExampleSchema = z.object({
+  command: z.string().min(1),
+  values: z.record(z.string(), z.string()),
+  descriptionKey: z.string().min(1),
+  label: z.string(),
+});
+
+/** Both fields are required; the primaryKey ∈ columns invariant is checked below. */
+export const OutputHintsSchema = z.object({
+  primaryKey: z.string().min(1),
+  columns: z.array(z.string().min(1)).min(1),
+});
 
 export const ContractPositionalSchema = z.object({
   name: z.string().min(1),
@@ -52,6 +101,10 @@ export const ContractOptionSchema = z.object({
   mandatory: z.boolean(),
   defaultValue: z.string().nullable(),
   choices: z.array(z.string().min(1)).min(1).optional(),
+  kinds: z.array(ResourceKindSchema).min(1).optional(),
+  format: FormatHintSchema.optional(),
+  tier: OptionTierSchema,
+  sensitive: z.boolean().optional(),
   descriptionKey: z.string().nullable(),
   label: z.string(),
 });
@@ -68,6 +121,10 @@ export const ContractCommandSchema = z.object({
   options: z.array(ContractOptionSchema),
   positionals: z.array(ContractPositionalSchema),
   hasSubcommands: z.boolean(),
+
+  examples: z.array(CommandExampleSchema).optional(),
+  keywords: z.array(z.string().min(1)).optional(),
+  output: OutputHintsSchema.optional(),
 
   destructive: z.boolean().optional(),
   idempotent: z.boolean().optional(),
@@ -171,6 +228,61 @@ function checkOptionChoices(cmd: ContractCommand): string[] {
 }
 
 /**
+ * Resource-binding hints must be well-formed: `kinds` may only sit on a
+ * value-taking option (a boolean switch names no resource), and — enforced by
+ * the schema's `.min(1)` — is never empty. A tier, when present, may not demote
+ * a mandatory option to `advanced`: an option the CLI refuses to run without can
+ * never be folded out of sight.
+ */
+function checkOptionHints(cmd: ContractCommand): string[] {
+  const problems: string[] = [];
+
+  for (const opt of cmd.options) {
+    if (opt.kinds && !opt.valueTaking) {
+      problems.push(`${cmd.pathKey} --${opt.long}: declares kinds but takes no value`);
+    }
+    if (opt.mandatory && opt.tier === 'advanced') {
+      problems.push(`${cmd.pathKey} --${opt.long}: mandatory option may not be tier "advanced"`);
+    }
+  }
+
+  return problems;
+}
+
+/**
+ * Every example must be a command line for THIS command: it starts with `rdc `
+ * followed by the command's own path. (Whether each `values` key names a real
+ * option is a stronger check the generator does, where the option set is known
+ * from the live tree; the schema alone can only prove the path prefix.)
+ */
+function checkExamples(cmd: ContractCommand): string[] {
+  if (!cmd.examples) return [];
+  const problems: string[] = [];
+  const prefix = `rdc ${cmd.pathKey}`;
+
+  for (const ex of cmd.examples) {
+    if (ex.command !== prefix && !ex.command.startsWith(`${prefix} `)) {
+      problems.push(
+        `${cmd.pathKey}: example ${JSON.stringify(ex.command)} does not start with "${prefix}"`
+      );
+    }
+  }
+
+  return problems;
+}
+
+/** An output hint's primaryKey must be one of the columns it lists. */
+function checkOutput(cmd: ContractCommand): string[] {
+  if (!cmd.output) return [];
+  if (!cmd.output.columns.includes(cmd.output.primaryKey)) {
+    return [
+      `${cmd.pathKey}: output.primaryKey "${cmd.output.primaryKey}" is not one of its columns (${cmd.output.columns.join(', ')})`,
+    ];
+  }
+  return [];
+}
+
+/**
  * Positional bindings must be self-consistent, and this is where the §2.0
  * fail-open trap is caught. A `repo-ref` positional MUST surface as
  * `repoPositional`, and a `machine` positional as `machinePositional`; without
@@ -230,6 +342,9 @@ export function checkContractInvariants(contract: CliContract): string[] {
       ...checkIdentity(cmd),
       ...checkProxyCapability(cmd),
       ...checkOptionChoices(cmd),
+      ...checkOptionHints(cmd),
+      ...checkExamples(cmd),
+      ...checkOutput(cmd),
       ...checkPositionalBindings(cmd),
       ...checkDetachable(cmd)
     );

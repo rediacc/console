@@ -406,7 +406,13 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .option('-w, --watch', t('options.watch'))
     .option('--bwlimit <limit>', t('commands.repo.push.optionBwlimit'))
     .option('--delta-base <guid>', t('commands.repo.push.optionDeltaBase'))
-    .option('--strategy <strategy>', t('commands.repo.push.optionStrategy'))
+    .addOption(
+      new Option('--strategy <strategy>', t('commands.repo.push.optionStrategy')).choices([
+        'auto',
+        'physical',
+        'shared',
+      ])
+    )
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (ref: string, options: Record<string, unknown>) => {
@@ -430,7 +436,13 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .option('-w, --watch', t('options.watch'))
     .option('--bwlimit <limit>', t('commands.repo.pull.optionBwlimit'))
     .option('--delta-base <guid>', t('commands.repo.pull.optionDeltaBase'))
-    .option('--strategy <strategy>', t('commands.repo.pull.optionStrategy'))
+    .addOption(
+      new Option('--strategy <strategy>', t('commands.repo.pull.optionStrategy')).choices([
+        'auto',
+        'physical',
+        'shared',
+      ])
+    )
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (ref: string, options: Record<string, unknown>) => {

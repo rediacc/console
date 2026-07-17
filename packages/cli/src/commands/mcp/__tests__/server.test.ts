@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import { cli } from '../../../cli.js';
 import { buildAllTools, registerAllTools } from '../tools.js';
 
 // Mock executor so no child processes are spawned
@@ -15,7 +14,7 @@ vi.mock('../executor.js', () => ({
   resolveRdcBinary: () => ({ command: 'node', prefixArgs: ['index.js'] }),
 }));
 
-const TOOLS = buildAllTools(cli);
+const TOOLS = buildAllTools();
 
 describe('MCP server', () => {
   it('registers all tools on the McpServer', () => {
@@ -26,7 +25,7 @@ describe('MCP server', () => {
       },
     };
 
-    registerAllTools(mockServer as never, cli, { defaultTimeoutMs: 120_000, program: cli });
+    registerAllTools(mockServer as never, { defaultTimeoutMs: 120_000 });
 
     expect(registeredTools.length).toBe(TOOLS.length);
     for (const tool of TOOLS) {
@@ -43,7 +42,7 @@ describe('MCP server', () => {
       },
     };
 
-    registerAllTools(mockServer as never, cli, { defaultTimeoutMs: 120_000, program: cli });
+    registerAllTools(mockServer as never, { defaultTimeoutMs: 120_000 });
 
     const result = (await capturedHandler!({ name: 'prod' })) as {
       content: { type: string; text: string }[];
@@ -73,7 +72,7 @@ describe('MCP server', () => {
       },
     };
 
-    registerAllTools(mockServer as never, cli, { defaultTimeoutMs: 120_000, program: cli });
+    registerAllTools(mockServer as never, { defaultTimeoutMs: 120_000 });
     await containerHandler!({ name: 'staging' });
 
     expect(executeRdcCommand).toHaveBeenCalledWith(
@@ -93,10 +92,9 @@ describe('MCP server', () => {
       },
     };
 
-    registerAllTools(mockServer as never, cli, {
+    registerAllTools(mockServer as never, {
       defaultTimeoutMs: 120_000,
       configName: 'production',
-      program: cli,
     });
     await capturedHandler!({ name: 'prod' });
 
@@ -120,7 +118,7 @@ describe('MCP server', () => {
       },
     };
 
-    registerAllTools(mockServer as never, cli, { defaultTimeoutMs: 120_000, program: cli });
+    registerAllTools(mockServer as never, { defaultTimeoutMs: 120_000 });
     await repoUpHandler!({ name: 'app', machine: 'prod' });
 
     expect(executeRdcCommand).toHaveBeenCalledWith(
@@ -137,7 +135,7 @@ describe('MCP server', () => {
       },
     };
 
-    registerAllTools(mockServer as never, cli, { defaultTimeoutMs: 120_000, program: cli });
+    registerAllTools(mockServer as never, { defaultTimeoutMs: 120_000 });
 
     // Read tools: readOnly, not destructive, idempotent
     for (const name of ['machine_status', 'machine_list']) {
@@ -181,7 +179,7 @@ describe('MCP server', () => {
       },
     };
 
-    registerAllTools(mockServer as never, cli, { defaultTimeoutMs: 120_000, program: cli });
+    registerAllTools(mockServer as never, { defaultTimeoutMs: 120_000 });
 
     const result = (await capturedHandler!({ name: 'bad' })) as {
       content: { type: string; text: string }[];

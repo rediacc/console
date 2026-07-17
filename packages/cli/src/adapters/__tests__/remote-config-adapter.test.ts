@@ -45,6 +45,7 @@ import type { RemoteConfig } from '../../types/index.js';
 import {
   RemoteConfigAdapter,
   RemotePasskeySecretMissingError,
+  RemoteStaleSlotError,
   RemoteTokenExpiredError,
 } from '../remote-config-adapter.js';
 import type { RemoteTokenStorage } from '../remote-token-storage.js';
@@ -225,6 +226,18 @@ describe('RemoteConfigAdapter', () => {
       tokenStorage.get.mockResolvedValue(null);
 
       await expect(adapter.pull()).rejects.toThrow(RemoteTokenExpiredError);
+    });
+
+    it('should throw RemoteStaleSlotError when the CEK unwrap fails (rotated/stale slot)', async () => {
+      // Session succeeds so we reach the CEK-derivation step.
+      mockConfigServerFetch.mockResolvedValueOnce({
+        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1 },
+      });
+
+      // A wrong slot secret / rotated CEK surfaces as an AES-GCM auth failure.
+      mockCekUnwrap.mockRejectedValueOnce(new Error('OperationError'));
+
+      await expect(adapter.pull()).rejects.toThrow(RemoteStaleSlotError);
     });
   });
 

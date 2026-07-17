@@ -3837,6 +3837,12 @@
                   "defaultValue": null
                 },
                 {
+                  "flags": "--password",
+                  "descriptionKey": "commands.config.remote.enable.optionPassword",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--api-url <url>",
                   "descriptionKey": "options.serverUrl",
                   "mandatory": false,

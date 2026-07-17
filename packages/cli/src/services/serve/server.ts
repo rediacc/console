@@ -45,6 +45,17 @@ import { CekHandoffBlobSchema } from './handoff-schema.js';
 import { PolicyDenied } from './policy.js';
 import { SessionError } from './sessions.js';
 
+/**
+ * Names the session whose granted key a command should run under.
+ *
+ * Sent by the web console (relayed opaquely by the account worker); absent for
+ * CLI proxy clients, whose key is found by principal via sessionFor(). A
+ * literal here and in the worker's console route, rather than a shared wire
+ * constant, because this wave pins the wire module (CommandRequestSchema and
+ * friends) untouched — no regen.
+ */
+const CONFIG_SESSION_HEADER = 'x-config-session';
+
 /** Turn any thrown value into an HTTP status plus a message worth reading. */
 function statusFor(error: unknown): { status: 400 | 401 | 403 | 404 | 500; message: string } {
   if (error instanceof AuthError) return { status: error.status, message: error.message };
@@ -168,8 +179,17 @@ export function createServeApp(deps: ServeDeps): Hono {
     // runs THAT path. There is no second name for the client to disagree with.
     // The target is read from both the flag and positional bindings, so a
     // positional-addressed command scopes exactly as a flag-addressed one does.
+    const trimmedSession = c.req.header(CONFIG_SESSION_HEADER)?.trim();
+    // A whitespace-only header collapses to "no session", not the empty string —
+    // `??` cannot express that, so the empty case is normalized explicitly.
+    const configSessionId = trimmedSession === '' ? undefined : trimmedSession;
     try {
-      const config = await deps.loadConfig(principal);
+      // A named session must exist and belong to the REQUEST principal — the
+      // same ownership rule grantCek enforces — before it may select the config
+      // the command runs against. Validated here, above the loader, so the rule
+      // holds in every tier, including a daemon whose loader ignores sessions.
+      if (configSessionId) deps.sessions.sessionForExec(principal, configSessionId);
+      const config = await deps.loadConfig(principal, configSessionId);
       deps.authorize({
         principal,
         commandPath: request.pathKey,

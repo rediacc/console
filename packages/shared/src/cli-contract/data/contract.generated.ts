@@ -45,6 +45,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "options.machine",
           "label": "Machine name"
         },
@@ -55,6 +59,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -103,6 +108,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "options.machine",
           "label": "Machine name"
         },
@@ -113,6 +122,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "storage"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.backup.list.optionStorage",
           "label": "List artifacts on this storage endpoint"
         },
@@ -123,6 +136,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
           "descriptionKey": "commands.backup.list.optionPath",
           "label": "Subdirectory within the storage root. When omitted, hot/ and cold/ are listed and merged."
         },
@@ -134,6 +149,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "options.watch",
           "label": "Watch for changes"
         },
@@ -144,6 +160,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -159,6 +176,41 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc backup list -m prod-1",
+          "values": {
+            "machine": "prod-1"
+          },
+          "descriptionKey": "commands.backup.list.examples.basic",
+          "label": "List the backups stored for a machine."
+        },
+        {
+          "command": "rdc backup list -m prod-1 --storage backups-s3",
+          "values": {
+            "machine": "prod-1",
+            "storage": "backups-s3"
+          },
+          "descriptionKey": "commands.backup.list.examples.byStorage",
+          "label": "List the backups in a specific storage backend."
+        }
+      ],
+      "keywords": [
+        "ls",
+        "snapshots",
+        "archives",
+        "restores"
+      ],
+      "output": {
+        "primaryKey": "name",
+        "columns": [
+          "mode",
+          "name",
+          "guid",
+          "size",
+          "modified"
+        ]
+      },
       "destructive": false,
       "idempotent": true,
       "timeout": "read",
@@ -191,6 +243,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.backup.restore.optionAs",
           "label": "Name for the restored repository (defaults to the artifact name)"
         },
@@ -202,6 +255,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "options.machine",
           "label": "Machine name"
         },
@@ -212,6 +269,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "datastore"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.backup.restore.optionDatastore",
           "label": "Restore into this named datastore (its attached machine hosts it)"
         },
@@ -222,6 +283,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.backup.restore.optionUp",
           "label": "Deploy the restored repository after the transfer"
         },
@@ -232,6 +294,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
           "descriptionKey": "options.healthWindow",
           "label": "Total health-gate window in seconds (default 300)"
         },
@@ -242,6 +306,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
           "descriptionKey": "options.healthTimeout",
           "label": "Per-attempt health-check timeout in seconds (default 30)"
         },
@@ -253,6 +319,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.yes",
           "label": "Skip confirmation prompt"
         },
@@ -263,6 +330,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -278,6 +346,33 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc backup restore shop -m prod-1",
+          "values": {
+            "artifact-ref": "shop",
+            "machine": "prod-1"
+          },
+          "descriptionKey": "commands.backup.restore.examples.basic",
+          "label": "Restore a backup onto a machine."
+        },
+        {
+          "command": "rdc backup restore shop --as shop-restored -m prod-1 --up",
+          "values": {
+            "artifact-ref": "shop",
+            "as": "shop-restored",
+            "machine": "prod-1",
+            "up": "true"
+          },
+          "descriptionKey": "commands.backup.restore.examples.asNewRepo",
+          "label": "Restore a backup as a new repository and start it."
+        }
+      ],
+      "keywords": [
+        "recover",
+        "download",
+        "rollback"
+      ],
       "destructive": true,
       "idempotent": false,
       "timeout": "write",
@@ -312,6 +407,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "options.machine",
           "label": "Machine name"
         },
@@ -323,6 +422,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.watch",
           "label": "Watch for changes"
         },
@@ -333,6 +433,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -348,6 +449,33 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc backup run nightly -m prod-1",
+          "values": {
+            "strategy": "nightly",
+            "machine": "prod-1"
+          },
+          "descriptionKey": "commands.backup.run.examples.basic",
+          "label": "Run a backup strategy now."
+        },
+        {
+          "command": "rdc backup run nightly -m prod-1 --watch",
+          "values": {
+            "strategy": "nightly",
+            "machine": "prod-1",
+            "watch": "true"
+          },
+          "descriptionKey": "commands.backup.run.examples.watch",
+          "label": "Run a backup strategy and follow its progress."
+        }
+      ],
+      "keywords": [
+        "execute",
+        "snapshot",
+        "save",
+        "trigger"
+      ],
       "destructive": false,
       "idempotent": false,
       "timeout": "write",
@@ -381,6 +509,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "options.machine",
           "label": "Machine name"
         },
@@ -391,6 +523,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.backup.schedule.optionDryRun",
           "label": "Preview generated units without deploying"
         },
@@ -401,6 +534,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.backup.schedule.optionForce",
           "label": "Proceed even if a backup is currently running (new unit applies on next tick; running invocation keeps its old unit)"
         },
@@ -411,6 +545,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.backup.schedule.optionResetFailed",
           "label": "Clear failed state on touched services after a successful deploy (off by default, preserves failure signal)"
         },
@@ -421,6 +556,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -457,6 +593,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "options.machine",
           "label": "Machine name"
         },
@@ -467,6 +607,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -544,6 +685,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.remove.optionDestination",
           "label": "Remove only this destination (keeps other destinations)"
         }
@@ -590,6 +732,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.set.optionDestination",
           "label": "Destination name within the strategy"
         },
@@ -600,6 +743,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "storage"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.backup.strategy.set.optionStorage",
           "label": "Storage config name (rclone credentials)"
         },
@@ -610,6 +757,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "cron",
+          "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.set.optionCron",
           "label": "Cron schedule (e.g., \"0 * * * *\" for hourly)"
         },
@@ -624,6 +773,7 @@ export const CLI_CONTRACT: CliContract = {
             "hot",
             "cold"
           ],
+          "tier": "common",
           "descriptionKey": "commands.backup.strategy.set.optionMode",
           "label": "Backup mode: \"hot\" (zero downtime) or \"cold\" (stop, snapshot, restart)"
         },
@@ -634,6 +784,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "bandwidth",
+          "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.set.optionBwlimit",
           "label": "Rclone bandwidth limit (e.g., \"6M\", \"10M:off\", \"08:00,3M;22:00,10M\")"
         },
@@ -644,6 +796,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.set.optionInclude",
           "label": "Only back up these repos (comma-separated names)"
         },
@@ -654,6 +807,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.set.optionExclude",
           "label": "Exclude these repos from backup (comma-separated names)"
         },
@@ -664,6 +818,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.set.optionFolder",
           "label": "Subfolder under the storage bucket for this destination (e.g. hot, cold)"
         },
@@ -674,6 +830,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.set.optionEnable",
           "label": "Enable the strategy or destination"
         },
@@ -684,6 +841,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.set.optionDisable",
           "label": "Disable the strategy or destination"
         }
@@ -699,6 +857,33 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc backup strategy set nightly --storage backups-s3 --mode hot",
+          "values": {
+            "strategy": "nightly",
+            "storage": "backups-s3",
+            "mode": "hot"
+          },
+          "descriptionKey": "commands.backup.strategy.set.examples.configure",
+          "label": "Configure a backup strategy's storage and mode."
+        },
+        {
+          "command": "rdc backup strategy set nightly --disable",
+          "values": {
+            "strategy": "nightly",
+            "disable": "true"
+          },
+          "descriptionKey": "commands.backup.strategy.set.examples.disable",
+          "label": "Turn a backup strategy off."
+        }
+      ],
+      "keywords": [
+        "schedule",
+        "policy",
+        "configure",
+        "cron"
+      ],
       "mcpExcludeReason": "Backup policy mutation; use CLI directly.",
       "interactive": false,
       "proxyCapable": false,
@@ -767,6 +952,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "provider"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.cluster.create.providerOption",
           "label": "Provider: a cloudProviders key, or 'kvm'"
         },
@@ -777,6 +966,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": true,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.cluster.create.poolOption",
           "label": "Pool spec name:role:count[:size] (role: ceph|k8s-server|k8s-agent|hyperconverged)"
         },
@@ -787,6 +977,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.cluster.create.declareOnlyOption",
           "label": "Record the cluster in config without provisioning it"
         },
@@ -797,6 +988,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "cidr",
+          "tier": "advanced",
           "descriptionKey": "commands.cluster.create.cidrOption",
           "label": "Private network CIDR (e.g. 10.0.0.0/24)"
         },
@@ -807,6 +1000,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.cluster.create.primitiveOption",
           "label": "Network primitive (e.g. vlan, vpc, network)"
         },
@@ -817,6 +1011,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.cluster.create.controlNodeOption",
           "label": "Explicit control-node machine (default: first k8s-server member)"
         },
@@ -827,6 +1025,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.cluster.create.netNameOption",
           "label": "KVM: libvirt network for this cluster (e.g. renet12)"
         },
@@ -837,6 +1036,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.cluster.create.netBaseOption",
           "label": "KVM: network prefix, the first three octets (e.g. 192.168.112)"
         },
@@ -847,6 +1047,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
           "descriptionKey": "commands.cluster.create.netOffsetOption",
           "label": "KVM: offset added to each VM id when deriving its address"
         },
@@ -857,6 +1059,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
           "descriptionKey": "commands.cluster.create.controlIdOption",
           "label": "KVM: VM id of the control and registry node (default: 1)"
         },
@@ -867,6 +1071,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.cluster.create.dockerRegistryOption",
           "label": "KVM: in-VM Docker registry endpoint for this cluster"
         },
@@ -877,6 +1082,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.cluster.create.sshUserOption",
           "label": "SSH user for provisioned members"
         },
@@ -887,6 +1093,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "domain",
+          "tier": "advanced",
           "descriptionKey": "commands.cluster.create.baseDomainOption",
           "label": "Base domain for cluster public DNS (else inherited from a sibling machine)"
         },
@@ -897,6 +1105,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "size",
+          "tier": "advanced",
           "descriptionKey": "commands.cluster.create.controlDsSizeOption",
           "label": "Anchor control datastore size (default 10G)"
         },
@@ -911,6 +1121,7 @@ export const CLI_CONTRACT: CliContract = {
             "local",
             "ceph"
           ],
+          "tier": "common",
           "descriptionKey": "commands.cluster.create.controlDsBackendOption",
           "label": "Anchor control datastore backend: local | ceph (default: ceph if the cluster has ceph, else local)"
         },
@@ -921,6 +1132,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.cluster.create.controlDsPoolOption",
           "label": "Ceph rbd pool for the anchor control datastore (ceph backend)"
         },
@@ -931,6 +1143,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -946,6 +1159,33 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc cluster create k8s-main --provider hetzner",
+          "values": {
+            "cluster": "k8s-main",
+            "provider": "hetzner"
+          },
+          "descriptionKey": "commands.cluster.create.examples.basic",
+          "label": "Create a cluster on a provider."
+        },
+        {
+          "command": "rdc cluster create k8s-main --declare-only --control-node prod-1",
+          "values": {
+            "cluster": "k8s-main",
+            "declare-only": "true",
+            "control-node": "prod-1"
+          },
+          "descriptionKey": "commands.cluster.create.examples.declareOnly",
+          "label": "Declare a cluster around an existing control node."
+        }
+      ],
+      "keywords": [
+        "new",
+        "k8s",
+        "kubernetes",
+        "provision"
+      ],
       "agentBlocked": true,
       "mcpExcludeReason": "Provisions cloud/VM infrastructure — not an agent operation",
       "interactive": false,
@@ -976,6 +1216,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.cluster.destroy.forceOption",
           "label": "Skip confirmation and continue past teardown errors"
         },
@@ -986,6 +1227,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -1031,6 +1273,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.cluster.evict.forceOption",
           "label": "Skip the drain when the node is already dead"
         },
@@ -1041,6 +1284,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -1086,6 +1330,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "commands.cluster.fork.tagOption",
           "label": "Fork tag"
         },
@@ -1096,6 +1341,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "cluster"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.cluster.fork.toOption",
           "label": "Destination cluster whose nodes host the fork (its control node and agents; a cluster cannot fork onto its own machines, since two k3s cannot share a host network namespace)"
         },
@@ -1110,6 +1359,7 @@ export const CLI_CONTRACT: CliContract = {
             "local",
             "ceph"
           ],
+          "tier": "common",
           "descriptionKey": "commands.cluster.fork.writesOption",
           "label": "Fork write disposition: local (ephemeral dm-COW overlay, zero Ceph footprint) | ceph (durable clone). Default local"
         },
@@ -1120,6 +1370,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.cluster.fork.upOption",
           "label": "Bring the forked repos up and gate on cluster health after the fork boots"
         },
@@ -1130,6 +1381,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -1145,6 +1397,35 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc cluster fork k8s-main --tag test --to k8s-copy",
+          "values": {
+            "cluster": "k8s-main",
+            "tag": "test",
+            "to": "k8s-copy"
+          },
+          "descriptionKey": "commands.cluster.fork.examples.basic",
+          "label": "Fork a cluster into a new destination."
+        },
+        {
+          "command": "rdc cluster fork k8s-main --tag staging --to k8s-stage --up",
+          "values": {
+            "cluster": "k8s-main",
+            "tag": "staging",
+            "to": "k8s-stage",
+            "up": "true"
+          },
+          "descriptionKey": "commands.cluster.fork.examples.andStart",
+          "label": "Fork a cluster and start it right away."
+        }
+      ],
+      "keywords": [
+        "clone",
+        "cow",
+        "copy",
+        "k8s"
+      ],
       "agentBlocked": true,
       "mcpExcludeReason": "Clones a whole cluster — not an agent operation",
       "interactive": false,
@@ -1175,6 +1456,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "cluster"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.cluster.join.clusterOption",
           "label": "Cluster to join the machine to"
         },
@@ -1185,6 +1470,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -1200,6 +1486,24 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc cluster join server-2 --cluster k8s-main",
+          "values": {
+            "machine": "server-2",
+            "cluster": "k8s-main"
+          },
+          "descriptionKey": "commands.cluster.join.examples.basic",
+          "label": "Join a machine to a cluster."
+        }
+      ],
+      "keywords": [
+        "add",
+        "enroll",
+        "node",
+        "member",
+        "k8s"
+      ],
       "agentBlocked": true,
       "mcpExcludeReason": "Cluster membership mutation — not an agent operation",
       "interactive": false,
@@ -1267,6 +1571,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "cluster"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.cluster.migrate.toOption",
           "label": "Destination"
         },
@@ -1277,6 +1585,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -1322,6 +1631,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "cluster"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.cluster.rehearse.onOption",
           "label": "Destination cluster to boot the throwaway rehearsal on"
         },
@@ -1332,6 +1645,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "commands.cluster.rehearse.tagOption",
           "label": "Optional tag for the rehearsal fork (default: timestamped)"
         },
@@ -1342,6 +1656,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -1386,6 +1701,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "commands.cluster.scale.poolOption",
           "label": "Pool name"
         },
@@ -1396,6 +1712,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "format": "integer",
+          "tier": "common",
           "descriptionKey": "commands.cluster.scale.countOption",
           "label": "Desired member count"
         },
@@ -1406,6 +1724,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -1452,6 +1771,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.cluster.snapshot.create.labelOption",
           "label": "Snapshot label (default: a UTC timestamp)"
         },
@@ -1462,6 +1782,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -1508,6 +1829,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -1593,6 +1915,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.config.audit.log.optionSince",
           "label": "Only show entries newer than (e.g., '24h', '7d', ISO timestamp)"
         },
@@ -1603,6 +1926,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.config.audit.log.optionPath",
           "label": "Filter by JSON Pointer glob (e.g., /credentials/*)"
         },
@@ -1617,6 +1941,7 @@ export const CLI_CONTRACT: CliContract = {
             "human",
             "agent"
           ],
+          "tier": "common",
           "descriptionKey": "commands.config.audit.log.optionActor",
           "label": "Filter by actor kind (human|agent)"
         }
@@ -1779,6 +2104,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.config.field.get.optionReveal",
           "label": "Show plaintext for sensitive values (interactive TTY only; audited)"
         },
@@ -1789,6 +2115,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.config.edit.optionDump",
           "label": "Print current config as JSONC to stdout (read-only; safe for agents when redacted)"
         },
@@ -1799,6 +2126,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
           "descriptionKey": "commands.config.edit.optionApply",
           "label": "Apply an edited JSONC file (skips $EDITOR launch)"
         },
@@ -1809,6 +2138,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
+          "sensitive": true,
           "descriptionKey": "commands.config.edit.optionCurrentSecrets",
           "label": "JSON file mapping pointer→old plaintext for knowledge-gate on --apply"
         },
@@ -1819,6 +2150,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.config.edit.optionEditor",
           "label": "Editor command override (follows git precedence: flag > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)"
         }
@@ -1856,6 +2188,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "commands.config.field.get.optionPointer",
           "label": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)"
         },
@@ -1866,6 +2199,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.config.field.get.optionReveal",
           "label": "Show plaintext for sensitive values (interactive TTY only; audited)"
         },
@@ -1876,6 +2210,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.config.field.get.optionDigest",
           "label": "Print the SHA-256 digest instead of the value (safe to share with agents)"
         }
@@ -1912,12 +2247,23 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.config.field.list.optionSensitive",
           "label": "Show only sensitive (non-public) templates"
         }
       ],
       "positionals": [],
       "hasSubcommands": false,
+      "output": {
+        "primaryKey": "pointer",
+        "columns": [
+          "pointer",
+          "kind",
+          "redactAs",
+          "commit",
+          "encryptAtRest"
+        ]
+      },
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -1948,6 +2294,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "commands.config.field.rotate.optionPointer",
           "label": "JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)"
         },
@@ -1958,6 +2305,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
+          "sensitive": true,
           "descriptionKey": "commands.config.field.rotate.optionNew",
           "label": "New value"
         }
@@ -1994,6 +2343,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "commands.config.field.get.optionPointer",
           "label": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)"
         },
@@ -2004,6 +2354,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
+          "sensitive": true,
           "descriptionKey": "commands.config.field.set.optionNew",
           "label": "New value (parsed as JSON if it looks like JSON: {, [, \", true/false/null/number)"
         },
@@ -2014,6 +2366,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
+          "sensitive": true,
           "descriptionKey": "commands.config.field.set.optionCurrent",
           "label": "Current plaintext value — required for sensitive-path mutations (knowledge-gate proof)"
         }
@@ -2050,6 +2404,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "commands.config.field.get.optionPointer",
           "label": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)"
         },
@@ -2060,6 +2415,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
+          "sensitive": true,
           "descriptionKey": "commands.config.field.unset.optionCurrent",
           "label": "Current plaintext value — required for sensitive-path deletions"
         }
@@ -2095,6 +2452,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
           "descriptionKey": "options.sshKey",
           "label": "Path to SSH private key (e.g., ~/.ssh/id_rsa)"
         },
@@ -2105,6 +2464,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
           "descriptionKey": "options.renetPath",
           "label": "Path to renet binary (default: renet in PATH)"
         },
@@ -2115,6 +2476,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
+          "sensitive": true,
           "descriptionKey": "commands.config.init.optionMasterPassword",
           "label": "Encrypt resources with a master password"
         },
@@ -2125,6 +2488,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "url",
+          "tier": "advanced",
           "descriptionKey": "options.serverUrl",
           "label": "Account server URL"
         }
@@ -2140,6 +2505,31 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc config init production",
+          "values": {
+            "name": "production"
+          },
+          "descriptionKey": "commands.config.init.examples.basic",
+          "label": "Create a named configuration profile."
+        },
+        {
+          "command": "rdc config init staging --server https://eu.rediacc.com",
+          "values": {
+            "name": "staging",
+            "server": "https://eu.rediacc.com"
+          },
+          "descriptionKey": "commands.config.init.examples.withServer",
+          "label": "Create a profile pointed at a specific account server."
+        }
+      ],
+      "keywords": [
+        "setup",
+        "create",
+        "configure",
+        "profile"
+      ],
       "mcpExcludeReason": "Creates a named config file — the operator decides what configs exist.",
       "interactive": false,
       "proxyCapable": false,
@@ -2165,6 +2555,15 @@ export const CLI_CONTRACT: CliContract = {
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
+      "output": {
+        "primaryKey": "name",
+        "columns": [
+          "name",
+          "active",
+          "machines",
+          "status"
+        ]
+      },
       "destructive": false,
       "idempotent": true,
       "timeout": "read",
@@ -2198,6 +2597,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.config.prune.dryRunOption",
           "label": "Preview what would be removed without modifying the config file. Mirrors the default-off semantics of the other prune commands."
         },
@@ -2208,6 +2608,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.config.prune.certsOnlyOption",
           "label": "Restrict to the ACME cert-cache bucket. Skips archive purging and cross-reference cleanup. Mutually exclusive with --archives-only and --refs-only."
         },
@@ -2218,6 +2619,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.config.prune.archivesOnlyOption",
           "label": "Restrict to expired-archive purging. Skips cert-cache and cross-reference cleanup. Mutually exclusive with --certs-only and --refs-only."
         },
@@ -2228,6 +2630,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.config.prune.refsOnlyOption",
           "label": "Restrict to dangling cross-references (machine→strategy, strategy→repo excludes/includes). Skips cert-cache and archives. Mutually exclusive with --certs-only and --archives-only."
         },
@@ -2238,6 +2641,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.config.prune.purgeArchivedOption",
           "label": "Drop ALL archived repositories regardless of age, not just those past grace. Equivalent to running 'rdc repo admin archive purge' for every archived repo. Use only when you're sure you don't need any of the stashed credentials for restore."
         },
@@ -2248,6 +2652,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
           "descriptionKey": "commands.config.prune.graceDaysOption",
           "label": "Override the archive grace window (in days) for this invocation. Falls back to defaults.pruneGraceDays in the config, then to 7 if neither is set."
         }
@@ -2287,6 +2693,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": true,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.config.reconcile.optionMachine",
           "label": "Limit the reconcile to these machines"
         },
@@ -2297,6 +2707,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.dryRun",
           "label": "Show what would be done without making changes"
         },
@@ -2307,6 +2718,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.config.reconcile.optionAcceptObserved",
           "label": "Rewrite a declared placement to match where the image actually is, but only when that is unambiguous (observed on exactly one machine). Duplicates stay conflicts."
         }
@@ -2347,6 +2759,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.yes",
           "label": "Skip confirmation prompt"
         }
@@ -2418,8 +2831,20 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.config.remote.enable.optionHeadless",
           "label": "Use device code flow (for headless servers)"
+        },
+        {
+          "flags": "--password",
+          "long": "password",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.remote.enable.optionPassword",
+          "label": "Enroll headlessly with a pre-provisioned password slot (no browser)"
         },
         {
           "flags": "--api-url <url>",
@@ -2428,6 +2853,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "url",
+          "tier": "advanced",
           "descriptionKey": "options.serverUrl",
           "label": "Account server URL"
         }
@@ -2513,6 +2940,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "url",
+          "tier": "advanced",
           "descriptionKey": "options.serverUrl",
           "label": "Account server URL"
         }
@@ -2591,6 +3020,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.config.show.optionReveal",
           "label": "Show plaintext for sensitive values (interactive only)"
         }
@@ -2656,6 +3086,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "format": "path",
+          "tier": "common",
           "descriptionKey": "commands.config.ssh.set.optionKey",
           "label": "Path to SSH private key file"
         },
@@ -2666,6 +3098,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.config.ssh.set.optionEmbed",
           "label": "Embed key content in config instead of storing path"
         }
@@ -2725,6 +3158,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.licenses",
           "label": "Print the full THIRD_PARTY_LICENSES text bundled with release builds"
         }
@@ -2764,6 +3198,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.datastore.attach.toOption",
           "label": "Machine to attach the datastore to"
         },
@@ -2778,6 +3216,7 @@ export const CLI_CONTRACT: CliContract = {
             "local",
             "ceph"
           ],
+          "tier": "common",
           "descriptionKey": "commands.datastore.attach.writesOption",
           "label": "Where a fork's writes go: local (instant, ephemeral, lost on detach) or ceph (durable clone in the pool). Required for a fork."
         },
@@ -2788,6 +3227,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "size",
+          "tier": "advanced",
           "descriptionKey": "commands.datastore.fork.cowSizeOption",
           "label": "Overlay size for --writes local"
         },
@@ -2798,6 +3239,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.datastore.attach.noAutoOption",
           "label": "Do not re-attach this datastore automatically on boot"
         },
@@ -2808,6 +3250,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.datastore.attach.forceOption",
           "label": "Fence a stale holder that did not give the datastore up cleanly"
         },
@@ -2818,6 +3261,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -2833,6 +3277,32 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc datastore attach data-1 --to prod-1",
+          "values": {
+            "datastore": "data-1",
+            "to": "prod-1"
+          },
+          "descriptionKey": "commands.datastore.attach.examples.basic",
+          "label": "Attach a datastore to a machine."
+        },
+        {
+          "command": "rdc datastore attach data-1 --to prod-1 --writes ceph",
+          "values": {
+            "datastore": "data-1",
+            "to": "prod-1",
+            "writes": "ceph"
+          },
+          "descriptionKey": "commands.datastore.attach.examples.cephWrites",
+          "label": "Attach a datastore with Ceph-backed writes."
+        }
+      ],
+      "keywords": [
+        "mount",
+        "connect",
+        "bind"
+      ],
       "agentBlocked": true,
       "mcpExcludeReason": "Moves every repository in the pool; operator unlock only.",
       "interactive": false,
@@ -2864,6 +3334,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.datastore.create.machineOption",
           "label": "Machine to create the datastore on"
         },
@@ -2874,6 +3348,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "format": "size",
+          "tier": "common",
           "descriptionKey": "commands.datastore.create.sizeOption",
           "label": "Datastore size (for example 100G)"
         },
@@ -2888,6 +3364,7 @@ export const CLI_CONTRACT: CliContract = {
             "local",
             "rbd"
           ],
+          "tier": "common",
           "descriptionKey": "commands.datastore.create.backendOption",
           "label": "Storage backend: local (file-backed, stays on this machine) or rbd (Ceph, movable)"
         },
@@ -2898,6 +3375,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.datastore.create.poolOption",
           "label": "Ceph pool for the rbd backend (default: rbd)"
         },
@@ -2908,6 +3386,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.datastore.create.imageOption",
           "label": "RBD image name for the rbd backend (default: the datastore name)"
         },
@@ -2918,6 +3397,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "cluster"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.datastore.create.clusterOption",
           "label": "Kubernetes cluster this datastore belongs to. Set means kubernetes repositories only; unset means docker repositories only. Fixed at creation."
         },
@@ -2928,6 +3411,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -2943,6 +3427,35 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc datastore create data-1 -m prod-1 --size 50G",
+          "values": {
+            "datastore": "data-1",
+            "machine": "prod-1",
+            "size": "50G"
+          },
+          "descriptionKey": "commands.datastore.create.examples.basic",
+          "label": "Create a datastore on a machine."
+        },
+        {
+          "command": "rdc datastore create pool-a -m prod-1 --size 100G --backend rbd",
+          "values": {
+            "datastore": "pool-a",
+            "machine": "prod-1",
+            "size": "100G",
+            "backend": "rbd"
+          },
+          "descriptionKey": "commands.datastore.create.examples.ceph",
+          "label": "Create a Ceph-backed datastore."
+        }
+      ],
+      "keywords": [
+        "new",
+        "pool",
+        "volume",
+        "storage"
+      ],
       "agentBlocked": true,
       "mcpExcludeReason": "Infrastructure storage provisioning; operator unlock only.",
       "interactive": false,
@@ -2974,6 +3487,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.yes",
           "label": "Skip confirmation prompt"
         },
@@ -2984,6 +3498,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.datastore.delete.forceOption",
           "label": "Delete even though repositories still point at it. Their data goes with it."
         },
@@ -2994,6 +3509,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -3039,6 +3555,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.datastore.detach.discardOption",
           "label": "Throw away a local-writes fork and its overlay. The data is not recoverable."
         },
@@ -3050,6 +3567,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.yes",
           "label": "Skip confirmation prompt"
         },
@@ -3060,6 +3578,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -3105,6 +3624,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "commands.datastore.fork.tagOption",
           "label": "Tag for the fork (the result is name:tag)"
         },
@@ -3115,6 +3635,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.datastore.fork.attachToOption",
           "label": "Attach the fork to this machine right away (needs --writes)"
         },
@@ -3129,6 +3653,7 @@ export const CLI_CONTRACT: CliContract = {
             "local",
             "ceph"
           ],
+          "tier": "common",
           "descriptionKey": "commands.datastore.fork.writesOption",
           "label": "Where the fork's writes go: local (instant, ephemeral) or ceph (durable clone)"
         },
@@ -3139,6 +3664,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "size",
+          "tier": "advanced",
           "descriptionKey": "commands.datastore.fork.cowSizeOption",
           "label": "Overlay size for --writes local"
         },
@@ -3149,6 +3676,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -3164,6 +3692,33 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc datastore fork data-1 --tag test",
+          "values": {
+            "datastore": "data-1",
+            "tag": "test"
+          },
+          "descriptionKey": "commands.datastore.fork.examples.basic",
+          "label": "Fork a datastore into a new tag."
+        },
+        {
+          "command": "rdc datastore fork data-1 --tag test --attach-to prod-1",
+          "values": {
+            "datastore": "data-1",
+            "tag": "test",
+            "attach-to": "prod-1"
+          },
+          "descriptionKey": "commands.datastore.fork.examples.andAttach",
+          "label": "Fork a datastore and attach it to a machine."
+        }
+      ],
+      "keywords": [
+        "clone",
+        "cow",
+        "snapshot",
+        "copy"
+      ],
       "agentBlocked": true,
       "mcpExcludeReason": "Infrastructure storage operation; operator unlock only.",
       "interactive": false,
@@ -3198,6 +3753,40 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc datastore list",
+          "values": {},
+          "descriptionKey": "commands.datastore.list.examples.basic",
+          "label": "List every datastore."
+        },
+        {
+          "command": "rdc datastore list prod-1",
+          "values": {
+            "place": "prod-1"
+          },
+          "descriptionKey": "commands.datastore.list.examples.byPlace",
+          "label": "List the datastores at a machine or cluster."
+        }
+      ],
+      "keywords": [
+        "ls",
+        "pools",
+        "volumes",
+        "datastores"
+      ],
+      "output": {
+        "primaryKey": "name",
+        "columns": [
+          "name",
+          "backend",
+          "size",
+          "cluster",
+          "attachedTo",
+          "writes",
+          "repos"
+        ]
+      },
       "destructive": false,
       "idempotent": true,
       "timeout": "read",
@@ -3230,6 +3819,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "format": "size",
+          "tier": "common",
           "descriptionKey": "commands.datastore.resize.sizeOption",
           "label": "New size (for example 200G)"
         },
@@ -3240,6 +3831,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -3286,6 +3878,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.cluster.snapshot.create.labelOption",
           "label": "Snapshot label (default: a UTC timestamp)"
         },
@@ -3296,6 +3889,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -3342,6 +3936,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -3389,6 +3984,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -3430,6 +4026,12 @@ export const CLI_CONTRACT: CliContract = {
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
+      "keywords": [
+        "diagnose",
+        "check",
+        "troubleshoot",
+        "health"
+      ],
       "mcpExcludeReason": "Diagnoses local CLI installation — not a remote operation",
       "interactive": false,
       "proxyCapable": false,
@@ -3461,6 +4063,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.machineOption",
           "label": "Target machine name"
         },
@@ -3472,6 +4078,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.yes",
           "label": "Skip confirmation prompt"
         }
@@ -3487,6 +4094,23 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc job cancel 12345 -m prod-1",
+          "values": {
+            "job-id": "12345",
+            "machine": "prod-1"
+          },
+          "descriptionKey": "commands.job.cancel.examples.basic",
+          "label": "Cancel a running job."
+        }
+      ],
+      "keywords": [
+        "kill",
+        "stop",
+        "abort",
+        "terminate"
+      ],
       "destructive": true,
       "idempotent": true,
       "timeout": "write",
@@ -3520,6 +4144,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.machineOption",
           "label": "Target machine name"
         },
@@ -3530,6 +4158,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
           "descriptionKey": "commands.job.gc.olderThanOption",
           "label": "Collect jobs that finished longer ago than this, in hours (default: 168)"
         },
@@ -3541,6 +4171,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.yes",
           "label": "Skip confirmation prompt"
         }
@@ -3580,12 +4211,43 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.machineOption",
           "label": "Target machine name"
         }
       ],
       "positionals": [],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc job list -m prod-1",
+          "values": {
+            "machine": "prod-1"
+          },
+          "descriptionKey": "commands.job.list.examples.basic",
+          "label": "List the jobs on a machine."
+        }
+      ],
+      "keywords": [
+        "ls",
+        "jobs",
+        "tasks",
+        "queue"
+      ],
+      "output": {
+        "primaryKey": "id",
+        "columns": [
+          "id",
+          "state",
+          "function",
+          "repo",
+          "started",
+          "duration"
+        ]
+      },
       "destructive": false,
       "idempotent": true,
       "timeout": "read",
@@ -3619,6 +4281,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.machineOption",
           "label": "Target machine name"
         },
@@ -3630,6 +4296,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "commands.job.logs.followOption",
           "label": "Stream until the job finishes"
         },
@@ -3640,6 +4307,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
           "descriptionKey": "commands.job.logs.sinceLineOption",
           "label": "Resume after this many lines (the count you already received)"
         },
@@ -3650,6 +4319,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -3665,6 +4335,32 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc job logs 12345 -m prod-1",
+          "values": {
+            "job-id": "12345",
+            "machine": "prod-1"
+          },
+          "descriptionKey": "commands.job.logs.examples.basic",
+          "label": "Show a job's logs."
+        },
+        {
+          "command": "rdc job logs 12345 -m prod-1 --follow",
+          "values": {
+            "job-id": "12345",
+            "machine": "prod-1",
+            "follow": "true"
+          },
+          "descriptionKey": "commands.job.logs.examples.follow",
+          "label": "Stream a job's logs as they arrive."
+        }
+      ],
+      "keywords": [
+        "log",
+        "tail",
+        "output"
+      ],
       "destructive": false,
       "idempotent": true,
       "timeout": "read",
@@ -3698,6 +4394,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.machineOption",
           "label": "Target machine name"
         }
@@ -3713,6 +4413,23 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc job status 12345 -m prod-1",
+          "values": {
+            "job-id": "12345",
+            "machine": "prod-1"
+          },
+          "descriptionKey": "commands.job.status.examples.basic",
+          "label": "Show the status of one job."
+        }
+      ],
+      "keywords": [
+        "info",
+        "state",
+        "progress",
+        "inspect"
+      ],
       "destructive": false,
       "idempotent": true,
       "timeout": "read",
@@ -3745,6 +4462,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "options.machineIp",
           "label": "Machine IP address or hostname"
         },
@@ -3755,6 +4473,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "options.sshUser",
           "label": "SSH username"
         },
@@ -3765,6 +4484,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": "22",
+          "format": "port",
+          "tier": "advanced",
           "descriptionKey": "options.sshPort",
           "label": "SSH port"
         }
@@ -3780,6 +4501,35 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc machine add prod-1 --ip 203.0.113.10 --user root",
+          "values": {
+            "name": "prod-1",
+            "ip": "203.0.113.10",
+            "user": "root"
+          },
+          "descriptionKey": "commands.machine.add.examples.basic",
+          "label": "Register a machine by its address and login user."
+        },
+        {
+          "command": "rdc machine add prod-1 --ip 203.0.113.10 --user admin --port 2222",
+          "values": {
+            "name": "prod-1",
+            "ip": "203.0.113.10",
+            "user": "admin",
+            "port": "2222"
+          },
+          "descriptionKey": "commands.machine.add.examples.customPort",
+          "label": "Register a machine that uses a non-default SSH port."
+        }
+      ],
+      "keywords": [
+        "register",
+        "host",
+        "server",
+        "node"
+      ],
       "destructive": false,
       "idempotent": false,
       "timeout": "write",
@@ -3813,6 +4563,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.yes",
           "label": "Skip confirmation prompt"
         },
@@ -3823,6 +4574,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -3830,7 +4582,7 @@ export const CLI_CONTRACT: CliContract = {
       "positionals": [
         {
           "name": "name",
-          "kind": "plain",
+          "kind": "machine",
           "required": true,
           "variadic": false,
           "descriptionKey": "options.name",
@@ -3847,7 +4599,7 @@ export const CLI_CONTRACT: CliContract = {
       "detachable": true,
       "machineOption": null,
       "repoOption": null,
-      "machinePositional": null,
+      "machinePositional": "name",
       "repoPositional": null
     },
     {
@@ -3871,6 +4623,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.team",
           "label": "Team name"
         }
@@ -3878,7 +4631,7 @@ export const CLI_CONTRACT: CliContract = {
       "positionals": [
         {
           "name": "name",
-          "kind": "plain",
+          "kind": "machine",
           "required": true,
           "variadic": false,
           "descriptionKey": "options.name",
@@ -3895,7 +4648,7 @@ export const CLI_CONTRACT: CliContract = {
       "detachable": true,
       "machineOption": null,
       "repoOption": null,
-      "machinePositional": null,
+      "machinePositional": "name",
       "repoPositional": null
     },
     {
@@ -3947,6 +4700,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.infra.cert.pull.optionNoPrune",
           "label": "Skip pruning stale network-ID certificates"
         },
@@ -3957,6 +4711,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -4004,6 +4759,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -4079,6 +4835,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -4124,6 +4881,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "ipv4",
+          "tier": "advanced",
           "descriptionKey": "commands.machine.infra.set.optionPublicIPv4",
           "label": "Public IPv4 address (per-machine)"
         },
@@ -4134,6 +4893,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "ipv6",
+          "tier": "advanced",
           "descriptionKey": "commands.machine.infra.set.optionPublicIPv6",
           "label": "Public IPv6 address (per-machine)"
         },
@@ -4144,6 +4905,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "domain",
+          "tier": "advanced",
           "descriptionKey": "commands.machine.infra.set.optionBaseDomain",
           "label": "Base domain for applications (per-machine)"
         },
@@ -4154,6 +4917,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.infra.set.optionCertEmail",
           "label": "Email for TLS certificate notifications (shared across machines)"
         },
@@ -4164,6 +4928,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
+          "sensitive": true,
           "descriptionKey": "commands.machine.infra.set.optionCfDnsToken",
           "label": "Cloudflare DNS API token for ACME DNS-01 challenge (shared across machines)"
         },
@@ -4174,6 +4940,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.infra.set.optionTcpPorts",
           "label": "TCP ports to forward (comma-separated, e.g., 25,143,465)"
         },
@@ -4184,6 +4951,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.infra.set.optionUdpPorts",
           "label": "UDP ports to forward (comma-separated, e.g., 53)"
         }
@@ -4267,6 +5035,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.searchInField",
           "label": "Search in name"
         },
@@ -4277,6 +5046,14 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "choices": [
+            "name",
+            "ip",
+            "user",
+            "port",
+            "datastore"
+          ],
+          "tier": "common",
           "descriptionKey": "options.sortByField",
           "label": "Sort by field"
         },
@@ -4287,12 +5064,46 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.sortDesc",
           "label": "Sort in descending order"
         }
       ],
       "positionals": [],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc machine list",
+          "values": {},
+          "descriptionKey": "commands.machine.list.examples.basic",
+          "label": "List every registered machine."
+        },
+        {
+          "command": "rdc machine list --sort name",
+          "values": {
+            "sort": "name"
+          },
+          "descriptionKey": "commands.machine.list.examples.sorted",
+          "label": "List machines sorted by name."
+        }
+      ],
+      "keywords": [
+        "ls",
+        "hosts",
+        "servers",
+        "inventory",
+        "nodes"
+      ],
+      "output": {
+        "primaryKey": "name",
+        "columns": [
+          "name",
+          "ip",
+          "user",
+          "port",
+          "datastore"
+        ]
+      },
       "destructive": false,
       "idempotent": true,
       "timeout": "read",
@@ -4327,6 +5138,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provider.add.optionProvider",
           "label": "Known provider source (e.g., linode/linode, hetznercloud/hcloud)"
         },
@@ -4337,6 +5149,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provider.add.optionSource",
           "label": "Custom OpenTofu provider source (e.g., vultr/vultr)"
         },
@@ -4347,6 +5160,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
+          "sensitive": true,
           "descriptionKey": "commands.machine.provider.add.optionToken",
           "label": "API token for the cloud provider"
         },
@@ -4357,6 +5172,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provider.add.optionRegion",
           "label": "Default region for new machines"
         },
@@ -4367,6 +5183,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provider.add.optionInstanceType",
           "label": "Default instance type/size"
         },
@@ -4377,6 +5194,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provider.add.optionImage",
           "label": "Default OS image"
         },
@@ -4387,6 +5205,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provider.add.optionSshUser",
           "label": "SSH username for new VMs (default: root)"
         },
@@ -4397,6 +5216,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provider.add.optionResource",
           "label": "Custom: OpenTofu resource type for VM"
         },
@@ -4407,6 +5227,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provider.add.optionLabelAttr",
           "label": "Custom: attribute name for VM label"
         },
@@ -4417,6 +5238,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provider.add.optionRegionAttr",
           "label": "Custom: attribute name for region"
         },
@@ -4427,6 +5249,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provider.add.optionSizeAttr",
           "label": "Custom: attribute name for instance type"
         },
@@ -4437,6 +5260,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provider.add.optionImageAttr",
           "label": "Custom: attribute name for OS image"
         },
@@ -4447,6 +5271,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provider.add.optionIpv4Output",
           "label": "Custom: output attribute for IPv4 address"
         },
@@ -4457,6 +5282,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provider.add.optionIpv6Output",
           "label": "Custom: output attribute for IPv6 address"
         },
@@ -4467,6 +5293,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provider.add.optionSshKeyAttr",
           "label": "Custom: attribute name for SSH keys"
         },
@@ -4477,6 +5304,11 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "choices": [
+            "inline_list",
+            "resource_id"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.machine.provider.add.optionSshKeyFormat",
           "label": "Custom: SSH key format (inline_list or resource_id)"
         },
@@ -4487,6 +5319,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provider.add.optionSshKeyResource",
           "label": "Custom: OpenTofu resource type for SSH keys"
         }
@@ -4531,6 +5364,16 @@ export const CLI_CONTRACT: CliContract = {
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
+      "output": {
+        "primaryKey": "name",
+        "columns": [
+          "name",
+          "provider",
+          "region",
+          "instanceType",
+          "sshUser"
+        ]
+      },
       "destructive": false,
       "idempotent": true,
       "timeout": "read",
@@ -4561,7 +5404,7 @@ export const CLI_CONTRACT: CliContract = {
       "positionals": [
         {
           "name": "name",
-          "kind": "plain",
+          "kind": "provider",
           "required": true,
           "variadic": false,
           "descriptionKey": "options.name",
@@ -4602,6 +5445,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "provider"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.machine.provision.optionProvider",
           "label": "Cloud provider name (from machine provider add)"
         },
@@ -4612,6 +5459,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provision.optionRegion",
           "label": "Override default region"
         },
@@ -4622,6 +5470,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provision.optionType",
           "label": "Override default instance type"
         },
@@ -4632,6 +5481,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provision.optionImage",
           "label": "Override default OS image"
         },
@@ -4642,6 +5492,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provision.optionSshUser",
           "label": "SSH username for the new VM (default: root)"
         },
@@ -4652,6 +5503,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "domain",
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provision.optionBaseDomain",
           "label": "Base domain for infrastructure (e.g., example.com). Implies --infra"
         },
@@ -4662,6 +5515,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.provision.optionNoInfra",
           "label": "Skip infrastructure configuration (proxy + DNS)"
         },
@@ -4672,6 +5526,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -4687,6 +5542,35 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc machine provision prod-1 --provider hetzner",
+          "values": {
+            "name": "prod-1",
+            "provider": "hetzner"
+          },
+          "descriptionKey": "commands.machine.provision.examples.basic",
+          "label": "Provision a new cloud machine from a provider."
+        },
+        {
+          "command": "rdc machine provision prod-1 --provider hetzner --region fsn1 --type cx22",
+          "values": {
+            "name": "prod-1",
+            "provider": "hetzner",
+            "region": "fsn1",
+            "type": "cx22"
+          },
+          "descriptionKey": "commands.machine.provision.examples.sized",
+          "label": "Provision a machine in a region with a chosen size."
+        }
+      ],
+      "keywords": [
+        "create",
+        "vm",
+        "cloud",
+        "spinup",
+        "tofu"
+      ],
       "destructive": true,
       "idempotent": false,
       "timeout": "write",
@@ -4719,6 +5603,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.prune.dryRunOption",
           "label": "Show what would be removed without making changes"
         },
@@ -4729,6 +5614,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.prune.orphanedReposOption",
           "label": "Delete every repo image on the machine that is not in your local CLI config. Coarse — also removes forks created by other tools that have no local config entry, even when their renet mirror correctly identifies them as forks. Use --prune-unknown for the narrower behavior that respects the mirror."
         },
@@ -4739,6 +5625,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.prune.pruneUnknownOption",
           "label": "Delete only repos the renet .interim/state mirror cannot classify (not in local config AND no fork-marked mirror). Strictly narrower than --orphaned-repos: forks-without-config are preserved when the mirror identifies them. Pre-mirror legacy orphans and stale grands whose config entry was deleted both fall in this bucket."
         },
@@ -4749,6 +5636,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.prune.forceDeleteMountedOption",
           "label": "Override the mount-safety preflight and delete repos even if they are currently mounted or have running Docker containers. Distinct from --force (which only overrides the archive grace period). Applies to both --orphaned-repos and --prune-unknown."
         },
@@ -4759,6 +5647,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.force",
           "label": "Skip confirmation prompts"
         },
@@ -4769,6 +5658,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
           "descriptionKey": "options.graceDays",
           "label": "Grace period in days for recently archived repos (default: 7)"
         },
@@ -4779,6 +5670,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -4786,7 +5678,7 @@ export const CLI_CONTRACT: CliContract = {
       "positionals": [
         {
           "name": "name",
-          "kind": "plain",
+          "kind": "machine",
           "required": true,
           "variadic": false,
           "descriptionKey": "options.name",
@@ -4803,7 +5695,7 @@ export const CLI_CONTRACT: CliContract = {
       "detachable": true,
       "machineOption": null,
       "repoOption": null,
-      "machinePositional": null,
+      "machinePositional": "name",
       "repoPositional": null
     },
     {
@@ -4827,6 +5719,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.yes",
           "label": "Skip confirmation prompt"
         },
@@ -4837,6 +5730,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.remove.forceOption",
           "label": "Remove the machine even if repositories are still placed on it, leaving those placements dangling."
         }
@@ -4844,7 +5738,7 @@ export const CLI_CONTRACT: CliContract = {
       "positionals": [
         {
           "name": "name",
-          "kind": "plain",
+          "kind": "machine",
           "required": true,
           "variadic": false,
           "descriptionKey": "options.name",
@@ -4852,6 +5746,12 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "keywords": [
+        "delete",
+        "rm",
+        "deregister",
+        "unregister"
+      ],
       "destructive": true,
       "idempotent": false,
       "timeout": "write",
@@ -4862,7 +5762,7 @@ export const CLI_CONTRACT: CliContract = {
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
-      "machinePositional": null,
+      "machinePositional": "name",
       "repoPositional": null
     },
     {
@@ -4881,7 +5781,7 @@ export const CLI_CONTRACT: CliContract = {
       "positionals": [
         {
           "name": "name",
-          "kind": "plain",
+          "kind": "machine",
           "required": false,
           "variadic": false,
           "descriptionKey": "options.name",
@@ -4899,7 +5799,7 @@ export const CLI_CONTRACT: CliContract = {
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
-      "machinePositional": null,
+      "machinePositional": "name",
       "repoPositional": null
     },
     {
@@ -4922,6 +5822,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": "/mnt/rediacc",
+          "format": "path",
+          "tier": "advanced",
           "descriptionKey": "commands.machine.setup.datastoreOption",
           "label": "Datastore path on remote machine"
         },
@@ -4932,6 +5834,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": "95%",
+          "tier": "advanced",
           "descriptionKey": "commands.machine.setup.datastoreSizeOption",
           "label": "Datastore size (e.g., 95%, 100G)"
         },
@@ -4942,6 +5845,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -4949,7 +5853,7 @@ export const CLI_CONTRACT: CliContract = {
       "positionals": [
         {
           "name": "name",
-          "kind": "plain",
+          "kind": "machine",
           "required": true,
           "variadic": false,
           "descriptionKey": "options.name",
@@ -4966,7 +5870,7 @@ export const CLI_CONTRACT: CliContract = {
       "detachable": true,
       "machineOption": null,
       "repoOption": null,
-      "machinePositional": null,
+      "machinePositional": "name",
       "repoPositional": null
     },
     {
@@ -4989,6 +5893,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -4999,6 +5904,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.querySystem",
           "label": "Include system info only"
         },
@@ -5009,6 +5915,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.queryRepositories",
           "label": "Include repositories only"
         },
@@ -5019,6 +5926,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.queryContainers",
           "label": "Include containers only"
         },
@@ -5029,6 +5937,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.queryServices",
           "label": "Include services only"
         },
@@ -5039,6 +5948,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.queryNetwork",
           "label": "Include network interfaces only"
         },
@@ -5049,6 +5959,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.queryBlockDevices",
           "label": "Include block devices only"
         },
@@ -5059,6 +5970,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.queryLicenses",
           "label": "Include repository license statuses"
         },
@@ -5069,6 +5981,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.queryStorageHealth",
           "label": "Show BTRFS reflink savings and (informational) image fragmentation per repository"
         },
@@ -5079,6 +5992,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.queryDatastores",
           "label": "Show attached datastores (mount, attach, usage)"
         },
@@ -5089,6 +6003,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.status.healthCheck",
           "label": "Health check mode - exits with code 2 if any unhealthy"
         },
@@ -5099,6 +6014,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.machine.status.stabilityCheck",
           "label": "Stability check mode - exits with code 2 if any failed/restarting"
         },
@@ -5109,6 +6025,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.searchRepos",
           "label": "Filter repositories by name"
         },
@@ -5119,6 +6036,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.querySyncCerts",
           "label": "Also pull the ACME cert cache from the machine after querying"
         },
@@ -5129,6 +6047,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.queryStrict",
           "label": "Exit non-zero (code 2) if any container has crossed the health-drift threshold"
         }
@@ -5136,7 +6055,7 @@ export const CLI_CONTRACT: CliContract = {
       "positionals": [
         {
           "name": "name",
-          "kind": "plain",
+          "kind": "machine",
           "required": false,
           "variadic": false,
           "descriptionKey": "options.name",
@@ -5144,6 +6063,31 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc machine status prod-1",
+          "values": {
+            "name": "prod-1"
+          },
+          "descriptionKey": "commands.machine.status.examples.basic",
+          "label": "Show a machine's full status."
+        },
+        {
+          "command": "rdc machine status prod-1 --containers",
+          "values": {
+            "name": "prod-1",
+            "containers": "true"
+          },
+          "descriptionKey": "commands.machine.status.examples.containers",
+          "label": "Show only the running containers on a machine."
+        }
+      ],
+      "keywords": [
+        "info",
+        "health",
+        "inspect",
+        "overview"
+      ],
       "destructive": false,
       "idempotent": true,
       "timeout": "read",
@@ -5153,7 +6097,7 @@ export const CLI_CONTRACT: CliContract = {
       "detachable": true,
       "machineOption": null,
       "repoOption": null,
-      "machinePositional": null,
+      "machinePositional": "name",
       "repoPositional": null
     },
     {
@@ -5176,6 +6120,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.mcp.serve.configOption",
           "label": "Config name to use for all commands"
         },
@@ -5186,6 +6131,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": "120000",
+          "format": "integer",
+          "tier": "advanced",
           "descriptionKey": "commands.mcp.serve.timeoutOption",
           "label": "Default command timeout in milliseconds"
         }
@@ -5249,6 +6196,7 @@ export const CLI_CONTRACT: CliContract = {
             "kvm",
             "qemu"
           ],
+          "tier": "common",
           "descriptionKey": "options.opsBackend",
           "label": "Virtualization backend (kvm|qemu, auto-detected)"
         },
@@ -5259,6 +6207,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -5294,6 +6243,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -5329,6 +6279,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "format": "integer",
+          "tier": "common",
           "descriptionKey": "options.vmId",
           "label": "Virtual machine ID"
         },
@@ -5340,6 +6292,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.command",
           "label": "Execute a command instead of interactive shell"
         },
@@ -5354,6 +6307,7 @@ export const CLI_CONTRACT: CliContract = {
             "kvm",
             "qemu"
           ],
+          "tier": "common",
           "descriptionKey": "options.opsBackend",
           "label": "Virtualization backend (kvm|qemu, auto-detected)"
         },
@@ -5364,6 +6318,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.opsSSHUser",
           "label": "SSH username for VM connection"
         }
@@ -5403,6 +6358,7 @@ export const CLI_CONTRACT: CliContract = {
             "kvm",
             "qemu"
           ],
+          "tier": "common",
           "descriptionKey": "options.opsBackend",
           "label": "Virtualization backend (kvm|qemu, auto-detected)"
         }
@@ -5438,6 +6394,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.opsForce",
           "label": "Force restart all VMs"
         },
@@ -5448,6 +6405,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.opsParallel",
           "label": "Create VMs in parallel"
         },
@@ -5458,6 +6416,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.opsBasic",
           "label": "Minimal cluster (bridge + 1 worker)"
         },
@@ -5468,6 +6427,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.opsLite",
           "label": "Skip VM provisioning (status only)"
         },
@@ -5478,6 +6438,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.opsSkipOrchestration",
           "label": "Skip cluster orchestration"
         },
@@ -5492,6 +6453,7 @@ export const CLI_CONTRACT: CliContract = {
             "kvm",
             "qemu"
           ],
+          "tier": "common",
           "descriptionKey": "options.opsBackend",
           "label": "Virtualization backend (kvm|qemu, auto-detected)"
         },
@@ -5502,6 +6464,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.opsOS",
           "label": "VM operating system (e.g., ubuntu-24.04, debian-13)"
         },
@@ -5512,6 +6475,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -5544,6 +6508,16 @@ export const CLI_CONTRACT: CliContract = {
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
+      "output": {
+        "primaryKey": "name",
+        "columns": [
+          "name",
+          "tag",
+          "guid",
+          "credential",
+          "deletedAt"
+        ]
+      },
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -5576,6 +6550,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.yes",
           "label": "Skip confirmation prompt"
         }
@@ -5622,6 +6597,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.newName",
           "label": "New resource name"
         }
@@ -5668,6 +6644,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -5678,6 +6655,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         }
@@ -5725,6 +6703,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -5735,6 +6714,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         }
@@ -5783,6 +6763,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.machineOption",
           "label": "Target machine name"
         },
@@ -5793,6 +6777,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -5803,12 +6788,22 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         }
       ],
       "positionals": [],
       "hasSubcommands": false,
+      "output": {
+        "primaryKey": "repository",
+        "columns": [
+          "repository",
+          "guid",
+          "enabled",
+          "onDisk"
+        ]
+      },
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
@@ -5839,6 +6834,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.machineOption",
           "label": "Target machine name"
         }
@@ -5878,6 +6877,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.admin.ownership.uidOption",
           "label": "Owner UID (default: 7111)"
         },
@@ -5888,6 +6889,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -5898,6 +6900,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         }
@@ -5945,6 +6948,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "template"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.admin.template.apply.templateOption",
           "label": "Template to apply"
         },
@@ -5955,6 +6962,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.admin.template.fileOption",
           "label": "Path to custom template JSON file ({\"version\":\"2\",\"files\":{\"Rediaccfile\":\"...\",\"docker-compose.yml\":\"...\"}}): overrides the built-in template name"
         },
@@ -5965,6 +6974,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "repo"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.up.grandOption",
           "label": "Parent credential repository (auto-resolves name to GUID). Only for repos sharing secrets with a parent"
         },
@@ -5975,6 +6988,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -5985,6 +6999,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         }
@@ -6057,6 +7072,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -6067,6 +7083,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         }
@@ -6112,6 +7129,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "commands.repo.branch.branchOption",
           "label": "Name of the new branch"
         }
@@ -6159,6 +7177,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "commands.repo.canary.imageOption",
           "label": "New image the canary Deployment runs (against shared live data)"
         },
@@ -6169,6 +7188,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "format": "port",
+          "tier": "common",
           "descriptionKey": "commands.repo.canary.portOption",
           "label": "Port the app serves on (must match the stable Service)"
         },
@@ -6179,6 +7200,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "format": "percent",
+          "tier": "common",
           "descriptionKey": "commands.repo.canary.weightOption",
           "label": "Percent of traffic routed to the canary (integer 0-100; 0 = dark, 100 = full flip)"
         },
@@ -6189,6 +7212,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.canary.serviceOption",
           "label": "Stable Service to split traffic with (default: the repo name)"
         },
@@ -6199,6 +7223,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.canary.replicasOption",
           "label": "Canary Deployment replica count (default: 1)"
         },
@@ -6209,6 +7235,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -6255,6 +7282,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -6336,6 +7364,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "format": "percent",
+          "tier": "common",
           "descriptionKey": "commands.repo.canary.weightOption",
           "label": "Percent of traffic routed to the canary (integer 0-100; 0 = dark, 100 = full flip)"
         },
@@ -6346,6 +7376,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -6391,6 +7422,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "format": "path",
+          "tier": "common",
           "descriptionKey": "commands.repo.cat.remoteFileOption",
           "label": "File path to read, relative to the repository mount root"
         },
@@ -6401,6 +7434,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.cat.maxBytesOption",
           "label": "Maximum bytes to read and print (default 1 MiB, hard ceiling 50 MiB)"
         },
@@ -6411,6 +7446,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.cat.offsetOption",
           "label": "Byte offset to start reading from"
         },
@@ -6421,6 +7458,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.cat.headOption",
           "label": "Print only the first N lines (cannot combine with byte range)"
         },
@@ -6431,6 +7470,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.cat.tailOption",
           "label": "Print only the last N lines (cannot combine with byte range)"
         },
@@ -6441,6 +7482,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.cat.statOption",
           "label": "Print only size, type, and modification time; read no content"
         },
@@ -6451,6 +7493,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.cat.forceBinaryOption",
           "label": "Allow reading binary (NUL-containing) content"
         },
@@ -6461,6 +7504,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -6471,6 +7515,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         }
@@ -6486,6 +7531,24 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc repo cat shop --remote-file etc/config.toml",
+          "values": {
+            "ref": "shop",
+            "remote-file": "etc/config.toml"
+          },
+          "descriptionKey": "commands.repo.cat.examples.basic",
+          "label": "Print a file from inside a repository."
+        }
+      ],
+      "keywords": [
+        "read",
+        "view",
+        "print",
+        "file",
+        "show"
+      ],
       "destructive": false,
       "idempotent": true,
       "timeout": "read",
@@ -6519,6 +7582,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "commands.repo.checkout.tagOption",
           "label": "Name for the new writable working fork"
         },
@@ -6529,6 +7593,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "repo"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.checkout.fromOption",
           "label": "Resolve the positional <commit-or-branch-ref> as a branch name on this working fork"
         },
@@ -6539,6 +7607,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -6549,6 +7618,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         }
@@ -6598,6 +7668,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "commands.repo.commit.messageOption",
           "label": "Commit message"
         },
@@ -6608,6 +7679,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.commit.authorOption",
           "label": "Commit author"
         },
@@ -6618,6 +7690,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -6668,6 +7741,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.machineOption",
           "label": "Target machine name"
         },
@@ -6678,6 +7755,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "datastore"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.create.datastoreOption",
           "label": "Named datastore that holds the repo (docker tiering, or the cluster form)"
         },
@@ -6688,6 +7769,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "size",
+          "tier": "common",
           "descriptionKey": "commands.repo.create.sizeOption",
           "label": "Repository size (e.g., 10G, 100G, 1T)"
         },
@@ -6698,6 +7781,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.create.noDockerOption",
           "label": "Skip starting Docker daemon after creation"
         },
@@ -6708,6 +7792,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -6718,6 +7803,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         }
@@ -6733,6 +7819,32 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc repo create shop -m prod-1",
+          "values": {
+            "name": "shop",
+            "machine": "prod-1"
+          },
+          "descriptionKey": "commands.repo.create.examples.basic",
+          "label": "Create a new repository on a machine."
+        },
+        {
+          "command": "rdc repo create shop -m prod-1 --size 5G",
+          "values": {
+            "name": "shop",
+            "machine": "prod-1",
+            "size": "5G"
+          },
+          "descriptionKey": "commands.repo.create.examples.sized",
+          "label": "Create a repository with a fixed volume size."
+        }
+      ],
+      "keywords": [
+        "new",
+        "init",
+        "provision"
+      ],
       "destructive": true,
       "idempotent": false,
       "timeout": "write",
@@ -6765,6 +7877,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.delete.archiveOption",
           "label": "Move config entry to deletedRepositories for later recovery"
         },
@@ -6776,6 +7889,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.yes",
           "label": "Skip confirmation prompt"
         },
@@ -6786,6 +7900,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -6796,6 +7911,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         },
@@ -6806,6 +7922,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.dryRun",
           "label": "Show what would be done without making changes"
         }
@@ -6821,6 +7938,30 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc repo delete shop",
+          "values": {
+            "ref": "shop"
+          },
+          "descriptionKey": "commands.repo.delete.examples.basic",
+          "label": "Delete a repository."
+        },
+        {
+          "command": "rdc repo delete shop:test",
+          "values": {
+            "ref": "shop:test"
+          },
+          "descriptionKey": "commands.repo.delete.examples.fork",
+          "label": "Delete a single fork by its tag."
+        }
+      ],
+      "keywords": [
+        "remove",
+        "rm",
+        "destroy",
+        "teardown"
+      ],
       "destructive": true,
       "idempotent": false,
       "timeout": "write",
@@ -6855,6 +7996,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "repo"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.diff.baseOption",
           "label": "Repository to diff against (the base / old side); defaults to the parent of --name"
         },
@@ -6865,6 +8010,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.diff.nameOnlyOption",
           "label": "Print only changed file paths, one per line (no status letters)"
         },
@@ -6875,6 +8021,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.diff.statOption",
           "label": "Show per-file change magnitude (byte and block deltas) and totals"
         },
@@ -6885,6 +8032,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.diff.contentOption",
           "label": "Show a unified text diff for a single file (requires a file path)"
         },
@@ -6895,6 +8043,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.diff.fastOption",
           "label": "Trust the block filter; skip content-hash confirmation (may over-report Modified)"
         },
@@ -6905,6 +8054,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -6915,6 +8065,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         }
@@ -6930,6 +8081,11 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "keywords": [
+        "compare",
+        "delta",
+        "changes"
+      ],
       "destructive": false,
       "idempotent": true,
       "timeout": "read",
@@ -6963,6 +8119,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.down.unmountOption",
           "label": "Also unmount (close the LUKS container) after stopping. Required before 'repo resize' or to fully secure the volume"
         },
@@ -6973,6 +8130,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.down.checkpointOption",
           "label": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')"
         },
@@ -6983,6 +8141,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "commands.repo.down.allOption",
           "label": "Stop every repository whose home is --machine (batch form)"
         },
@@ -6994,6 +8153,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.batchMachineOption",
           "label": "With --all: the machine whose repositories to run the batch against"
         },
@@ -7004,6 +8167,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.upAll.parallelOption",
           "label": "Start repositories concurrently"
         },
@@ -7014,6 +8178,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": "3",
+          "format": "integer",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.upAll.concurrencyOption",
           "label": "Max concurrent repositories (default: 3)"
         },
@@ -7025,6 +8191,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.yesOption",
           "label": "Skip confirmation for batch operations"
         },
@@ -7035,6 +8202,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -7045,6 +8213,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         },
@@ -7055,6 +8224,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.dryRun",
           "label": "Show what would be done without making changes"
         }
@@ -7070,6 +8240,31 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc repo down shop",
+          "values": {
+            "ref": "shop"
+          },
+          "descriptionKey": "commands.repo.down.examples.basic",
+          "label": "Stop a repository's containers."
+        },
+        {
+          "command": "rdc repo down shop --unmount",
+          "values": {
+            "ref": "shop",
+            "unmount": "true"
+          },
+          "descriptionKey": "commands.repo.down.examples.unmount",
+          "label": "Stop a repository and unmount its encrypted volume."
+        }
+      ],
+      "keywords": [
+        "stop",
+        "halt",
+        "teardown",
+        "shutdown"
+      ],
       "destructive": true,
       "idempotent": true,
       "timeout": "write",
@@ -7105,6 +8300,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "container"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.exec.containerOption",
           "label": "Container to run in (only needed when the repository runs more than one)"
         },
@@ -7116,6 +8315,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.exec.interactiveOption",
           "label": "Allocate a terminal (for a command that expects one)"
         },
@@ -7127,6 +8327,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.exec.userOption",
           "label": "User to run the command as"
         },
@@ -7137,6 +8338,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -7160,6 +8362,35 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc repo exec shop -c web whoami",
+          "values": {
+            "ref": "shop",
+            "container": "web",
+            "cmd": "whoami"
+          },
+          "descriptionKey": "commands.repo.exec.examples.basic",
+          "label": "Run a command inside a repository container."
+        },
+        {
+          "command": "rdc repo exec shop -c web -i bash",
+          "values": {
+            "ref": "shop",
+            "container": "web",
+            "interactive": "true",
+            "cmd": "bash"
+          },
+          "descriptionKey": "commands.repo.exec.examples.interactive",
+          "label": "Open an interactive shell in a container."
+        }
+      ],
+      "keywords": [
+        "run",
+        "shell",
+        "command",
+        "container"
+      ],
       "destructive": true,
       "idempotent": false,
       "timeout": "write",
@@ -7194,6 +8425,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "format": "size",
+          "tier": "common",
           "descriptionKey": "commands.repo.resize.sizeOption",
           "label": "New repository size (e.g., 10G, 100G, 1T)"
         },
@@ -7204,6 +8437,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -7214,6 +8448,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         }
@@ -7260,6 +8495,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "commands.repo.fork.tagOption",
           "label": "Tag for the fork (creates name:tag)"
         },
@@ -7270,6 +8506,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.fork.checkpointOption",
           "label": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)"
         },
@@ -7280,6 +8517,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.fork.immutableOption",
           "label": "Mark the fork read-only: it refuses to mount, keeping its image byte-stable forever (a frozen commit/base for cross-machine delta push)"
         },
@@ -7290,6 +8528,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.fork.upOption",
           "label": "Mount and start services after forking (fork + mount + up in one command)"
         },
@@ -7300,6 +8539,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.fork.detachOption",
           "label": "With --up: return once containers are started; health checks continue in the background (ideal for throwaway forks)"
         },
@@ -7310,6 +8550,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -7320,6 +8561,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         }
@@ -7335,6 +8577,34 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc repo fork shop --tag test",
+          "values": {
+            "ref": "shop",
+            "tag": "test"
+          },
+          "descriptionKey": "commands.repo.fork.examples.basic",
+          "label": "Fork a repository under a new tag."
+        },
+        {
+          "command": "rdc repo fork shop --tag staging --up",
+          "values": {
+            "ref": "shop",
+            "tag": "staging",
+            "up": "true"
+          },
+          "descriptionKey": "commands.repo.fork.examples.andStart",
+          "label": "Fork a repository and start the fork right away."
+        }
+      ],
+      "keywords": [
+        "clone",
+        "cow",
+        "branch",
+        "copy",
+        "snapshot"
+      ],
       "destructive": true,
       "idempotent": false,
       "timeout": "write",
@@ -7369,6 +8639,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.machineOption",
           "label": "Target machine name"
         },
@@ -7379,6 +8653,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.gc.applyOption",
           "label": "Actually delete the unreachable commits (default is a dry-run preview)"
         },
@@ -7389,6 +8664,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -7428,6 +8704,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.machineOption",
           "label": "Target machine name"
         },
@@ -7438,6 +8718,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "datastore"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.list.datastoreOption",
           "label": "List the repositories in this datastore (resolved to whichever machine currently holds it)"
         },
@@ -7448,6 +8732,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -7458,12 +8743,50 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         }
       ],
       "positionals": [],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc repo list -m prod-1",
+          "values": {
+            "machine": "prod-1"
+          },
+          "descriptionKey": "commands.repo.list.examples.basic",
+          "label": "List the repositories on a machine."
+        },
+        {
+          "command": "rdc repo list --datastore data-1",
+          "values": {
+            "datastore": "data-1"
+          },
+          "descriptionKey": "commands.repo.list.examples.byDatastore",
+          "label": "List the repositories that live in a datastore."
+        }
+      ],
+      "keywords": [
+        "ls",
+        "repos",
+        "inventory"
+      ],
+      "output": {
+        "primaryKey": "name",
+        "columns": [
+          "name",
+          "tag",
+          "type",
+          "size",
+          "mounted",
+          "docker",
+          "containers",
+          "services",
+          "modified"
+        ]
+      },
       "destructive": false,
       "idempotent": true,
       "timeout": "read",
@@ -7496,6 +8819,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -7545,6 +8869,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "container"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.logs.containerOption",
           "label": "Container to read (only needed when the repository runs more than one)"
         },
@@ -7556,6 +8884,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.logs.followOption",
           "label": "Keep streaming new lines until interrupted"
         },
@@ -7566,6 +8895,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": "100",
+          "format": "integer",
+          "tier": "common",
           "descriptionKey": "commands.repo.logs.linesOption",
           "label": "How many lines of history to show (default: 100)"
         },
@@ -7576,6 +8907,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.logs.timestampsOption",
           "label": "Prefix each line with its timestamp"
         },
@@ -7586,6 +8918,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -7601,6 +8934,32 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc repo logs shop",
+          "values": {
+            "ref": "shop"
+          },
+          "descriptionKey": "commands.repo.logs.examples.basic",
+          "label": "Show a repository's container logs."
+        },
+        {
+          "command": "rdc repo logs shop -c web --lines 50",
+          "values": {
+            "ref": "shop",
+            "container": "web",
+            "lines": "50"
+          },
+          "descriptionKey": "commands.repo.logs.examples.container",
+          "label": "Show the last 50 log lines for one container."
+        }
+      ],
+      "keywords": [
+        "log",
+        "tail",
+        "output",
+        "container"
+      ],
       "destructive": false,
       "idempotent": true,
       "timeout": "read",
@@ -7634,6 +8993,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "repo"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.merge.fromOption",
           "label": "Source commit or fork to merge from"
         },
@@ -7644,6 +9007,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.merge.forceOption",
           "label": "Quiesce a mounted/running target first, then merge (never mutates a live mount)"
         },
@@ -7658,6 +9022,7 @@ export const CLI_CONTRACT: CliContract = {
             "ours",
             "theirs"
           ],
+          "tier": "common",
           "descriptionKey": "commands.repo.merge.resolveOption",
           "label": "Per-file conflict resolution for a three-way merge: 'ours' keeps the target's version, 'theirs' takes the source's. Omit for whole-image fast-forward (take-theirs)."
         },
@@ -7668,6 +9033,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "guid",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.merge.baseOption",
           "label": "Common-ancestor commit GUID for a three-way merge (used with --resolve). Defaults to the source commit's parent or the target's current commit."
         },
@@ -7678,6 +9045,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -7727,6 +9095,11 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "machine",
+            "cluster"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.migrate.optionTo",
           "label": "Destination machine or cluster"
         },
@@ -7737,6 +9110,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "provider"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.migrate.optionProvision",
           "label": "Auto-provision target via cloud provider (e.g., hetzner, linode)"
         },
@@ -7747,6 +9124,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "bandwidth",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.migrate.optionBwlimit",
           "label": "Bandwidth limit for rsync transfer (e.g., 10M)"
         },
@@ -7757,6 +9136,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.migrate.optionCheckpoint",
           "label": "CRIU live migration: capture and restore process memory state"
         },
@@ -7767,6 +9147,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "guid",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.migrate.optionDeltaBase",
           "label": "Immutable base GUID for the cutover delta (advanced; defaults to the Phase-1 base)"
         },
@@ -7777,6 +9159,12 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "choices": [
+            "auto",
+            "physical",
+            "shared"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.migrate.optionStrategy",
           "label": "Block-delta strategy for the cutover: auto, physical, or shared"
         },
@@ -7787,6 +9175,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.migrate.optionSkipDns",
           "label": "Skip DNS record switching after migration"
         },
@@ -7797,6 +9186,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.migrate.optionKeepSource",
           "label": "Keep the source images after a successful move (by default they are deleted; leftover copies are not addressable by any config record and reconcile flags them as strays)"
         },
@@ -7807,6 +9197,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -7822,6 +9213,33 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc repo migrate shop --to server-1",
+          "values": {
+            "ref": "shop",
+            "to": "server-1"
+          },
+          "descriptionKey": "commands.repo.migrate.examples.basic",
+          "label": "Move a repository to another machine."
+        },
+        {
+          "command": "rdc repo migrate shop --to server-1 --strategy physical",
+          "values": {
+            "ref": "shop",
+            "to": "server-1",
+            "strategy": "physical"
+          },
+          "descriptionKey": "commands.repo.migrate.examples.strategy",
+          "label": "Move a repository using the physical copy strategy."
+        }
+      ],
+      "keywords": [
+        "move",
+        "relocate",
+        "transfer",
+        "cutover"
+      ],
       "destructive": true,
       "idempotent": false,
       "timeout": "write",
@@ -7858,6 +9276,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.machineOption",
           "label": "Target machine name"
         },
@@ -7868,6 +9290,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -7916,6 +9339,7 @@ export const CLI_CONTRACT: CliContract = {
             "true",
             "false"
           ],
+          "tier": "common",
           "descriptionKey": "commands.repo.policy.set.autoGrowOption",
           "label": "Enable automatic online quota growth (true/false)"
         },
@@ -7926,6 +9350,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "size",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.policy.set.maxQuotaOption",
           "label": "Auto-grow ceiling (e.g. 200G); required for auto-grow"
         },
@@ -7936,6 +9362,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "percent",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.policy.set.growThresholdOption",
           "label": "Filesystem used % that triggers a grow (default 85)"
         },
@@ -7946,6 +9374,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.policy.set.growStepOption",
           "label": "Growth per step: absolute (10G) or percent of quota (20%)"
         },
@@ -7960,6 +9389,7 @@ export const CLI_CONTRACT: CliContract = {
             "true",
             "false"
           ],
+          "tier": "common",
           "descriptionKey": "commands.repo.policy.set.autoTrimOption",
           "label": "Enable scheduled trim (true/false)"
         },
@@ -7970,6 +9400,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.policy.set.trimIntervalOption",
           "label": "Minimum hours between automatic trims (default 24)"
         },
@@ -7981,6 +9413,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.machineOption",
           "label": "Target machine name"
         },
@@ -7991,6 +9427,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -8035,6 +9472,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.yes",
           "label": "Skip confirmation prompt"
         },
@@ -8045,6 +9483,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -8055,6 +9494,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         }
@@ -8070,6 +9510,31 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc repo promote shop:test",
+          "values": {
+            "fork-ref": "shop:test"
+          },
+          "descriptionKey": "commands.repo.promote.examples.basic",
+          "label": "Promote a fork to be the main repository."
+        },
+        {
+          "command": "rdc repo promote shop:test --yes",
+          "values": {
+            "fork-ref": "shop:test",
+            "yes": "true"
+          },
+          "descriptionKey": "commands.repo.promote.examples.noConfirm",
+          "label": "Promote a fork without the confirmation prompt."
+        }
+      ],
+      "keywords": [
+        "publish",
+        "finalize",
+        "graduate",
+        "merge"
+      ],
       "grandGuard": true,
       "mcpExcludeReason": "Production swap; human decision.",
       "interactive": false,
@@ -8100,6 +9565,11 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "machine",
+            "storage"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.pull.optionFrom",
           "label": "Source machine or storage name (auto-detected from config)"
         },
@@ -8110,6 +9580,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": null,
           "label": ""
         },
@@ -8120,6 +9594,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.pull.optionForce",
           "label": "Force overwrite existing repository"
         },
@@ -8130,6 +9605,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.pull.optionUp",
           "label": "After pull, mount and deploy repository on this machine"
         },
@@ -8141,6 +9617,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.watch",
           "label": "Watch for changes"
         },
@@ -8151,6 +9628,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "bandwidth",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.push.optionBwlimit",
           "label": "Bandwidth limit for rsync transfer (e.g., \"6M\", \"10M\")"
         },
@@ -8161,6 +9640,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "guid",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.pull.optionDeltaBase",
           "label": "Immutable base GUID present byte-identical on both machines; receive only changed blocks (machine source)"
         },
@@ -8171,6 +9652,12 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "choices": [
+            "auto",
+            "physical",
+            "shared"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.push.optionStrategy",
           "label": "Block-delta strategy when using a delta base: auto, physical, or shared"
         },
@@ -8181,6 +9668,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -8191,6 +9679,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         }
@@ -8206,6 +9695,33 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc repo pull shop --from backups-s3",
+          "values": {
+            "ref": "shop",
+            "from": "backups-s3"
+          },
+          "descriptionKey": "commands.repo.pull.examples.basic",
+          "label": "Pull a repository from a storage backend."
+        },
+        {
+          "command": "rdc repo pull shop --from backups-s3 --up",
+          "values": {
+            "ref": "shop",
+            "from": "backups-s3",
+            "up": "true"
+          },
+          "descriptionKey": "commands.repo.pull.examples.andStart",
+          "label": "Pull a repository and start it right away."
+        }
+      ],
+      "keywords": [
+        "download",
+        "fetch",
+        "restore",
+        "retrieve"
+      ],
       "destructive": true,
       "idempotent": true,
       "timeout": "write",
@@ -8240,6 +9756,11 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "machine",
+            "storage"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.push.optionTo",
           "label": "Destination machine or storage name (auto-detected from config)"
         },
@@ -8250,6 +9771,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": null,
           "label": ""
         },
@@ -8260,6 +9785,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "provider"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.push.optionProvision",
           "label": "Auto-provision target machine via cloud provider if it doesn't exist"
         },
@@ -8270,6 +9799,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.push.optionCheckpoint",
           "label": "Create CRIU checkpoint before backup (captures process memory state for live migration)"
         },
@@ -8280,6 +9810,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.push.optionForce",
           "label": "Force overwrite existing backup"
         },
@@ -8291,6 +9822,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.watch",
           "label": "Watch for changes"
         },
@@ -8301,6 +9833,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "bandwidth",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.push.optionBwlimit",
           "label": "Bandwidth limit for rsync transfer (e.g., \"6M\", \"10M\")"
         },
@@ -8311,6 +9845,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "guid",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.push.optionDeltaBase",
           "label": "Immutable base GUID present byte-identical on both machines; transfer only changed blocks (machine target). Omit for hands-free auto-base"
         },
@@ -8321,6 +9857,12 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "choices": [
+            "auto",
+            "physical",
+            "shared"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.push.optionStrategy",
           "label": "Block-delta strategy when using a delta base: auto, physical, or shared"
         },
@@ -8331,6 +9873,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -8341,6 +9884,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         }
@@ -8356,6 +9900,32 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc repo push shop --to backups-s3",
+          "values": {
+            "ref": "shop",
+            "to": "backups-s3"
+          },
+          "descriptionKey": "commands.repo.push.examples.toStorage",
+          "label": "Push a repository to a storage backend."
+        },
+        {
+          "command": "rdc repo push shop --to-machine server-1",
+          "values": {
+            "ref": "shop",
+            "to-machine": "server-1"
+          },
+          "descriptionKey": "commands.repo.push.examples.toMachine",
+          "label": "Push a repository to another machine."
+        }
+      ],
+      "keywords": [
+        "upload",
+        "backup",
+        "replicate",
+        "send"
+      ],
       "destructive": true,
       "idempotent": true,
       "timeout": "write",
@@ -8390,6 +9960,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.replicate.replicasOption",
           "label": "Number of read replicas to create"
         },
@@ -8400,6 +9972,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.replicate.imageOption",
           "label": "Engine image the replicas run (same engine as the primary)"
         },
@@ -8410,6 +9983,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "port",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.replicate.portOption",
           "label": "Port the engine serves on"
         },
@@ -8420,6 +9995,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.replicate.pvcOption",
           "label": "Volume name the engine mounts as its data dir (default: data)"
         },
@@ -8430,6 +10006,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.replicate.primaryAppOption",
           "label": "The primary pod's 'app' label value the -rw Service targets (default: the repo name)"
         },
@@ -8440,6 +10017,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.replicate.headlessOption",
           "label": "Make the -ro Service headless: DNS returns every replica pod IP for driver-side balancing (long-lived DB connections skew a normal Service's per-connection balancing)"
         },
@@ -8450,6 +10028,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "duration",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.replicate.refreshOption",
           "label": "Intended refresh interval recorded on the set (e.g. 1h); run 'repo replicate refresh' to roll it"
         },
@@ -8460,6 +10040,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -8510,6 +10091,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -8556,6 +10138,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -8644,6 +10227,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "format": "size",
+          "tier": "common",
           "descriptionKey": "commands.repo.resize.sizeOption",
           "label": "New repository size (e.g., 10G, 100G, 1T)"
         },
@@ -8654,6 +10239,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -8664,6 +10250,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         }
@@ -8711,6 +10298,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "commands.repo.secret.keyOption",
           "label": "Secret key in UPPER_SNAKE_CASE (max 64 chars). Will be exposed as REDIACC_SECRET_<KEY> for env-mode or /run/secrets/<key> in containers for file-mode."
         }
@@ -8726,6 +10314,23 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc repo secret get shop --key API_TOKEN",
+          "values": {
+            "ref": "shop",
+            "key": "API_TOKEN"
+          },
+          "descriptionKey": "commands.repo.secret.get.examples.basic",
+          "label": "Read a repository secret."
+        }
+      ],
+      "keywords": [
+        "env",
+        "credential",
+        "read",
+        "reveal"
+      ],
       "destructive": false,
       "idempotent": true,
       "timeout": "read",
@@ -8765,6 +10370,13 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "output": {
+        "primaryKey": "key",
+        "columns": [
+          "key",
+          "mode"
+        ]
+      },
       "destructive": false,
       "idempotent": true,
       "timeout": "read",
@@ -8800,6 +10412,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "commands.repo.secret.keyOption",
           "label": "Secret key in UPPER_SNAKE_CASE (max 64 chars). Will be exposed as REDIACC_SECRET_<KEY> for env-mode or /run/secrets/<key> in containers for file-mode."
         },
@@ -8810,6 +10423,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
+          "sensitive": true,
           "descriptionKey": "commands.repo.secret.valueOption",
           "label": "Secret value. Pass `-` to read from stdin (avoids shell-history exposure)."
         },
@@ -8824,6 +10439,7 @@ export const CLI_CONTRACT: CliContract = {
             "env",
             "file"
           ],
+          "tier": "common",
           "descriptionKey": "commands.repo.secret.modeOption",
           "label": "Delivery mode: 'env' (visible in container env, docker inspect) or 'file' (tmpfs file, never in env). Default: file."
         },
@@ -8834,6 +10450,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
+          "sensitive": true,
           "descriptionKey": "commands.repo.secret.currentOption",
           "label": "Previous plaintext value (passwd-style precondition). Required for overwrite/unset; mutually exclusive with --rotate-secret."
         },
@@ -8844,6 +10462,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.secret.rotateOption",
           "label": "Acknowledge rotation; skip --current precondition (audited as rotation). Use when intentionally rotating without verifying the prior value."
         }
@@ -8859,6 +10478,35 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc repo secret set shop --key API_TOKEN --value s3cr3t",
+          "values": {
+            "ref": "shop",
+            "key": "API_TOKEN",
+            "value": "s3cr3t"
+          },
+          "descriptionKey": "commands.repo.secret.set.examples.basic",
+          "label": "Store a secret for a repository."
+        },
+        {
+          "command": "rdc repo secret set shop --key DB_PASSWORD --value hunter2 --mode env",
+          "values": {
+            "ref": "shop",
+            "key": "DB_PASSWORD",
+            "value": "hunter2",
+            "mode": "env"
+          },
+          "descriptionKey": "commands.repo.secret.set.examples.envMode",
+          "label": "Store a secret and expose it as an environment variable."
+        }
+      ],
+      "keywords": [
+        "env",
+        "credential",
+        "password",
+        "store"
+      ],
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -8889,6 +10537,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "commands.repo.secret.keyOption",
           "label": "Secret key in UPPER_SNAKE_CASE (max 64 chars). Will be exposed as REDIACC_SECRET_<KEY> for env-mode or /run/secrets/<key> in containers for file-mode."
         },
@@ -8899,6 +10548,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
+          "sensitive": true,
           "descriptionKey": "commands.repo.secret.currentOption",
           "label": "Previous plaintext value (passwd-style precondition). Required for overwrite/unset; mutually exclusive with --rotate-secret."
         },
@@ -8909,6 +10560,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.secret.rotateOption",
           "label": "Acknowledge rotation; skip --current precondition (audited as rotation). Use when intentionally rotating without verifying the prior value."
         }
@@ -8953,6 +10605,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -8963,6 +10616,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         }
@@ -9012,6 +10666,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "path",
+          "tier": "common",
           "descriptionKey": "options.localPath",
           "label": "Local directory path (default: current directory)"
         },
@@ -9022,6 +10678,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
           "descriptionKey": "options.remotePath",
           "label": "Remote subdirectory path within repository"
         },
@@ -9032,6 +10690,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
           "descriptionKey": "options.remoteFile",
           "label": "Remote file path within repository (alternative to --remote for single-file transfers)"
         },
@@ -9042,6 +10702,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.mirrorDownload",
           "label": "Mirror mode - delete local files not present on remote"
         },
@@ -9052,6 +10713,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.verifyChecksum",
           "label": "Verify files using checksums after sync"
         },
@@ -9062,6 +10724,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.confirmSync",
           "label": "Preview changes and ask for confirmation before syncing"
         },
@@ -9072,6 +10735,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": true,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.excludePatterns",
           "label": "Patterns to exclude from sync"
         },
@@ -9082,6 +10746,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.dryRun",
           "label": "Show what would be done without making changes"
         }
@@ -9097,6 +10762,33 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc repo sync download shop --local ./backup",
+          "values": {
+            "ref": "shop",
+            "local": "./backup"
+          },
+          "descriptionKey": "commands.repo.sync.download.examples.dir",
+          "label": "Download a repository directory to a local folder."
+        },
+        {
+          "command": "rdc repo sync download shop --local ./out --remote-file etc/config.toml",
+          "values": {
+            "ref": "shop",
+            "local": "./out",
+            "remote-file": "etc/config.toml"
+          },
+          "descriptionKey": "commands.repo.sync.download.examples.file",
+          "label": "Download a single file from a repository."
+        }
+      ],
+      "keywords": [
+        "pull",
+        "fetch",
+        "rsync",
+        "files"
+      ],
       "grandGuard": true,
       "mcpExcludeReason": "Requires local filesystem paths on the MCP host. Run it from the CLI.",
       "interactive": false,
@@ -9129,6 +10821,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
           "descriptionKey": "options.localPath",
           "label": "Local directory path (default: current directory)"
         },
@@ -9139,6 +10833,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
           "descriptionKey": "options.remotePath",
           "label": "Remote subdirectory path within repository"
         },
@@ -9149,6 +10845,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
           "descriptionKey": "options.remoteFile",
           "label": "Remote file path within repository (alternative to --remote for single-file transfers)"
         }
@@ -9195,6 +10893,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": true,
           "mandatory": false,
           "defaultValue": null,
+          "format": "path",
+          "tier": "common",
           "descriptionKey": "options.localPaths",
           "label": "One or more local file or directory paths (default: current directory)"
         },
@@ -9205,6 +10905,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
           "descriptionKey": "options.remotePath",
           "label": "Remote subdirectory path within repository"
         },
@@ -9215,6 +10917,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
           "descriptionKey": "options.remoteFileUpload",
           "label": "Single remote file path (relative to repo root) to upload to. Mutually exclusive with --remote."
         },
@@ -9225,6 +10929,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.mirrorUpload",
           "label": "Mirror mode - delete remote files not present locally"
         },
@@ -9235,6 +10940,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.verifyChecksum",
           "label": "Verify files using checksums after sync"
         },
@@ -9245,6 +10951,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.confirmSync",
           "label": "Preview changes and ask for confirmation before syncing"
         },
@@ -9255,6 +10962,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": true,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.excludePatterns",
           "label": "Patterns to exclude from sync"
         },
@@ -9265,6 +10973,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.dryRun",
           "label": "Show what would be done without making changes"
         }
@@ -9280,6 +10989,33 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc repo sync upload shop --local ./site",
+          "values": {
+            "ref": "shop",
+            "local": "./site"
+          },
+          "descriptionKey": "commands.repo.sync.upload.examples.dir",
+          "label": "Upload a local directory into a repository."
+        },
+        {
+          "command": "rdc repo sync upload shop --local ./config.toml --remote-file etc/config.toml",
+          "values": {
+            "ref": "shop",
+            "local": "./config.toml",
+            "remote-file": "etc/config.toml"
+          },
+          "descriptionKey": "commands.repo.sync.upload.examples.file",
+          "label": "Upload a single file to a path in a repository."
+        }
+      ],
+      "keywords": [
+        "push",
+        "copy",
+        "rsync",
+        "files"
+      ],
       "grandGuard": true,
       "mcpExcludeReason": "Requires local filesystem paths on the MCP host. Run it from the CLI.",
       "interactive": false,
@@ -9311,6 +11047,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.trim.dockerOption",
           "label": "Reclaim Docker space (stopped containers, dangling images, build cache); runs even while a backup snapshot is active"
         },
@@ -9321,6 +11058,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.trim.dockerVolumesOption",
           "label": "Additionally prune unused Docker volumes"
         },
@@ -9331,6 +11069,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.trim.reportOnlyOption",
           "label": "Show discard state and reclaimable estimate without trimming"
         },
@@ -9342,6 +11081,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.machineOption",
           "label": "Target machine name"
         },
@@ -9352,6 +11095,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         }
@@ -9401,6 +11145,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "container"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.tunnel.containerOption",
           "label": "Container name (auto-detected if only one running)"
         },
@@ -9411,6 +11159,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "port",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.tunnel.portOption",
           "label": "Remote container port to forward"
         },
@@ -9421,6 +11171,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "port",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.tunnel.localOption",
           "label": "Local port (defaults to same as remote port)"
         },
@@ -9431,6 +11183,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.tunnel.urlOnlyOption",
           "label": "Print only the local URL once the tunnel is ready (machine-readable)"
         }
@@ -9477,6 +11230,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.up.noStartOption",
           "label": "Mount and prepare the repository without running its up() steps (folds the retired 'repo mount'; LUKS open and, for cluster repos, PV generation)."
         },
@@ -9487,6 +11241,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.up.skipCheckpointOption",
           "label": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)"
         },
@@ -9497,6 +11252,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.up.tlsOption",
           "label": "Request dedicated TLS cert for this repo (forks use shared machine cert by default)"
         },
@@ -9507,6 +11263,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.up.noWaitOption",
           "label": "Return once containers are started; health checks continue in the background"
         },
@@ -9517,6 +11274,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "common",
           "descriptionKey": "commands.repo.up.allOption",
           "label": "Deploy every repository whose home is --machine (batch form)"
         },
@@ -9528,6 +11286,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.repo.batchMachineOption",
           "label": "With --all: the machine whose repositories to run the batch against"
         },
@@ -9538,6 +11300,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.upAll.includeForksOption",
           "label": "Also mount/start forked repositories"
         },
@@ -9548,6 +11311,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.upAll.parallelOption",
           "label": "Start repositories concurrently"
         },
@@ -9558,6 +11322,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": "3",
+          "format": "integer",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.upAll.concurrencyOption",
           "label": "Max concurrent repositories (default: 3)"
         },
@@ -9569,6 +11335,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.repo.yesOption",
           "label": "Skip confirmation for batch operations"
         },
@@ -9579,6 +11346,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -9589,6 +11357,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         },
@@ -9599,6 +11368,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.dryRun",
           "label": "Show what would be done without making changes"
         }
@@ -9614,6 +11384,32 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc repo up shop",
+          "values": {
+            "ref": "shop"
+          },
+          "descriptionKey": "commands.repo.up.examples.basic",
+          "label": "Deploy a repository on its machine."
+        },
+        {
+          "command": "rdc repo up --all -m prod-1",
+          "values": {
+            "all": "true",
+            "machine": "prod-1"
+          },
+          "descriptionKey": "commands.repo.up.examples.all",
+          "label": "Deploy every repository on a machine at once."
+        }
+      ],
+      "keywords": [
+        "deploy",
+        "start",
+        "boot",
+        "launch",
+        "compose"
+      ],
       "destructive": true,
       "idempotent": true,
       "timeout": "write",
@@ -9648,6 +11444,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": "8080",
+          "format": "port",
+          "tier": "advanced",
           "descriptionKey": "commands.serve.optionPort",
           "label": "Port to listen on"
         },
@@ -9658,6 +11456,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": "0.0.0.0",
+          "tier": "advanced",
           "descriptionKey": "commands.serve.optionHost",
           "label": "Address to bind"
         },
@@ -9672,12 +11471,44 @@ export const CLI_CONTRACT: CliContract = {
             "daemon",
             "container"
           ],
+          "tier": "common",
           "descriptionKey": "commands.serve.optionMode",
           "label": "Placement: daemon (customer host) or container"
         }
       ],
       "positionals": [],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc serve",
+          "values": {},
+          "descriptionKey": "commands.serve.examples.basic",
+          "label": "Start the local executor server."
+        },
+        {
+          "command": "rdc serve --port 8080",
+          "values": {
+            "port": "8080"
+          },
+          "descriptionKey": "commands.serve.examples.customPort",
+          "label": "Start the executor server on a specific port."
+        },
+        {
+          "command": "rdc serve --mode container",
+          "values": {
+            "mode": "container"
+          },
+          "descriptionKey": "commands.serve.examples.container",
+          "label": "Start the executor server in container mode."
+        }
+      ],
+      "keywords": [
+        "server",
+        "daemon",
+        "executor",
+        "host",
+        "api"
+      ],
       "mcpExcludeReason": "Runs the executor daemon in the foreground until SIGINT; it never returns.",
       "interactive": true,
       "proxyCapable": false,
@@ -9708,6 +11539,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "tier": "common",
+          "sensitive": true,
           "descriptionKey": "options.vaultContent",
           "label": "Vault content as JSON string"
         }
@@ -9723,6 +11556,24 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc storage add backups-s3 --vault '{\"type\":\"s3\"}'",
+          "values": {
+            "name": "backups-s3",
+            "vault": "{\"type\":\"s3\"}"
+          },
+          "descriptionKey": "commands.storage.add.examples.basic",
+          "label": "Register a storage backend from a vault definition."
+        }
+      ],
+      "keywords": [
+        "register",
+        "s3",
+        "bucket",
+        "endpoint",
+        "remote"
+      ],
       "destructive": false,
       "idempotent": false,
       "timeout": "write",
@@ -9756,6 +11607,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": "",
+          "format": "path",
+          "tier": "advanced",
           "descriptionKey": "commands.storage.browse.pathOption",
           "label": "Subdirectory path to list"
         }
@@ -9801,6 +11654,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.storage.import.optionName",
           "label": "Import only this named section"
         }
@@ -9846,6 +11700,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.storage.list.optionReveal",
           "label": "Reveal the storage configuration in plaintext (interactive TTY only; audited)"
         }
@@ -9861,6 +11716,13 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "output": {
+        "primaryKey": "name",
+        "columns": [
+          "name",
+          "provider"
+        ]
+      },
       "destructive": false,
       "idempotent": true,
       "timeout": "read",
@@ -9895,6 +11757,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": true,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "commands.storage.prune.machineOption",
           "label": "Executor machine — runs the rclone list/delete calls against the storage. Required because clients aren't expected to have rclone installed locally; storage credentials still come from your local config."
         },
@@ -9905,6 +11771,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.dryRun",
           "label": "Show what would be done without making changes"
         },
@@ -9915,6 +11782,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.force",
           "label": "Skip confirmation prompts"
         },
@@ -9925,6 +11793,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.storage.prune.forceDeleteMountedOption",
           "label": "Override the mount-safety check and delete cloud backups even if the source GUID is currently mounted or has a running container on the executor machine. Distinct from --force (which only overrides the grace period for archived repos)."
         },
@@ -9935,6 +11804,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
           "descriptionKey": "options.graceDays",
           "label": "Grace period in days for recently archived repos (default: 7)"
         },
@@ -9945,6 +11816,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.debug",
           "label": "Enable debug output"
         },
@@ -9955,6 +11827,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipRouterRestart",
           "label": "Skip restarting the route server after binary update"
         }
@@ -10003,6 +11876,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.yes",
           "label": "Skip confirmation prompt"
         },
@@ -10013,6 +11887,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.dryRun",
           "label": "Show what would be done without making changes"
         }
@@ -10062,6 +11937,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
+          "sensitive": true,
           "descriptionKey": "options.apiToken",
           "label": "API token (rdt_...)"
         },
@@ -10072,6 +11949,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "url",
+          "tier": "advanced",
           "descriptionKey": "options.serverUrl",
           "label": "Account server URL"
         }
@@ -10132,6 +12011,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "options.machine",
           "label": "Machine name"
         },
@@ -10142,6 +12025,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "repo"
+          ],
+          "tier": "common",
           "descriptionKey": "options.repoRef",
           "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
         }
@@ -10177,6 +12064,10 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
           "descriptionKey": "options.machine",
           "label": "Machine name"
         }
@@ -10212,6 +12103,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.command",
           "label": "Execute a command instead of interactive shell"
         },
@@ -10222,6 +12114,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.external",
           "label": "Force launching in external terminal window"
         },
@@ -10232,6 +12125,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.resetHome",
           "label": "Reset per-repo home overlay for a fresh start"
         }
@@ -10247,6 +12141,40 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc term connect prod-1",
+          "values": {
+            "target": "prod-1"
+          },
+          "descriptionKey": "commands.term.connect.examples.machine",
+          "label": "Open an SSH terminal to a machine."
+        },
+        {
+          "command": "rdc term connect shop",
+          "values": {
+            "target": "shop"
+          },
+          "descriptionKey": "commands.term.connect.examples.repo",
+          "label": "Open a terminal inside a repository."
+        },
+        {
+          "command": "rdc term connect prod-1 -c uptime",
+          "values": {
+            "target": "prod-1",
+            "command": "uptime"
+          },
+          "descriptionKey": "commands.term.connect.examples.runCommand",
+          "label": "Run a single command on a machine over SSH."
+        }
+      ],
+      "keywords": [
+        "ssh",
+        "shell",
+        "terminal",
+        "console",
+        "login"
+      ],
       "grandGuard": true,
       "interactive": true,
       "proxyCapable": false,
@@ -10276,6 +12204,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.update.force",
           "label": "Force update even if already up-to-date"
         },
@@ -10286,6 +12215,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.update.checkOnly",
           "label": "Only check for updates without downloading"
         },
@@ -10296,6 +12226,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.update.rollback",
           "label": "Rollback to the previous version"
         },
@@ -10306,6 +12237,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.update.statusDescription",
           "label": "Show auto-update status and diagnostics"
         },
@@ -10316,12 +12248,18 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "commands.update.channelDescription",
           "label": "Set release channel (stable or edge)"
         }
       ],
       "positionals": [],
       "hasSubcommands": false,
+      "keywords": [
+        "upgrade",
+        "version",
+        "self-update"
+      ],
       "mcpExcludeReason": "CLI self-update — not a remote operation",
       "interactive": false,
       "proxyCapable": false,
@@ -10352,6 +12290,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.insiders",
           "label": "Use VS Code Insiders settings"
         }
@@ -10387,6 +12326,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.cleanupAll",
           "label": "Remove all rediacc SSH configurations"
         },
@@ -10398,6 +12338,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.connectionName",
           "label": "Remove specific connection"
         }
@@ -10434,6 +12375,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
           "descriptionKey": "options.folder",
           "label": "Remote folder path to open"
         },
@@ -10444,6 +12387,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.urlOnly",
           "label": "Print the VS Code URI instead of launching"
         },
@@ -10455,6 +12399,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.newWindow",
           "label": "Open in new VS Code window"
         },
@@ -10465,6 +12410,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.skipEnvSetup",
           "label": "Skip remote environment setup"
         },
@@ -10475,6 +12421,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.insiders",
           "label": "Use VS Code Insiders settings"
         },
@@ -10485,6 +12432,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.vscodeBrowser",
           "label": "Serve browser VS Code from inside the repo sandbox (no local VS Code needed)"
         },
@@ -10495,6 +12443,7 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "tier": "advanced",
           "descriptionKey": "options.vscodeNoOpen",
           "label": "Print the URL without launching the local browser"
         },
@@ -10505,6 +12454,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "port",
+          "tier": "advanced",
           "descriptionKey": "commands.repo.tunnel.localOption",
           "label": "Local port (defaults to same as remote port)"
         },
@@ -10515,6 +12466,11 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "choices": [
+            "openvscode",
+            "code-server"
+          ],
+          "tier": "common",
           "descriptionKey": "options.vscodeServerProvider",
           "label": "Browser VS Code server implementation (openvscode, code-server)"
         },
@@ -10525,6 +12481,8 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
           "descriptionKey": "options.vscodeServerArchive",
           "label": "Pre-staged server tarball path on the machine (airgapped installs)"
         }
@@ -10540,6 +12498,32 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc vscode connect shop",
+          "values": {
+            "target": "shop"
+          },
+          "descriptionKey": "commands.vscode.connect.examples.basic",
+          "label": "Open a repository in VS Code over SSH."
+        },
+        {
+          "command": "rdc vscode connect shop -f /workspace",
+          "values": {
+            "target": "shop",
+            "folder": "/workspace"
+          },
+          "descriptionKey": "commands.vscode.connect.examples.folder",
+          "label": "Open a specific folder of a repository in VS Code."
+        }
+      ],
+      "keywords": [
+        "code",
+        "editor",
+        "ide",
+        "remote",
+        "tunnel"
+      ],
       "grandGuard": true,
       "interactive": true,
       "proxyCapable": false,
@@ -10595,6 +12579,11 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "choices": [
+            "openvscode",
+            "code-server"
+          ],
+          "tier": "common",
           "descriptionKey": "options.vscodeServerProvider",
           "label": "Browser VS Code server implementation (openvscode, code-server)"
         }
@@ -10639,6 +12628,11 @@ export const CLI_CONTRACT: CliContract = {
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
+          "choices": [
+            "openvscode",
+            "code-server"
+          ],
+          "tier": "common",
           "descriptionKey": "options.vscodeServerProvider",
           "label": "Browser VS Code server implementation (openvscode, code-server)"
         }

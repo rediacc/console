@@ -34,9 +34,30 @@ export interface ConfigEnvelope {
 
 /** The sensitive config data that gets encrypted */
 export interface ConfigSensitiveData {
+  /**
+   * Top-level document sections with COMMITTED pointers (account.userEmail,
+   * defaults.universalUser, infra.certEmail/cfDnsZoneId). Committed means they
+   * must travel: a committed-but-not-carried field is dropped by the first
+   * pull, and the re-push then commits fewer pointers than the server stored —
+   * anti-downgrade rejects it as a conflict.
+   */
+  account?: Record<string, unknown>;
+  defaults?: Record<string, unknown>;
+  infra?: Record<string, unknown>;
   machines?: Record<string, unknown>;
   repositories?: Record<string, unknown>;
   storages?: Record<string, unknown>;
+  /** v3 resource families. Public topology, but they must TRAVEL or sync drops them. */
+  datastores?: Record<string, unknown>;
+  clusters?: Record<string, unknown>;
+  backupStrategies?: Record<string, unknown>;
+  /**
+   * Archived repositories (an ARRAY, unlike the record families). Their
+   * credential/sshPrivateKey pointers are committed by the sensitivity
+   * registry, so this list must ride in the blob — a committed-but-not-carried
+   * field bricks push after the first round trip.
+   */
+  deletedRepositories?: unknown[];
   ssh?: Record<string, unknown>;
   /** Cloud provider credentials (apiToken, sshUser). Committed, so must travel. */
   cloudProviders?: Record<string, unknown>;

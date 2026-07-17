@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { cli } from '../../../cli.js';
 import { CUSTOM_TOOLS } from '../custom-tools.js';
 import type { ToolDef } from '../tool-factory.js';
 import { buildAllTools } from '../tools.js';
 
-// Build the full tool list from the real Commander tree
-const TOOLS: ToolDef[] = buildAllTools(cli);
+// Build the full tool list from the generated CLI contract
+const TOOLS: ToolDef[] = buildAllTools();
 
 describe('MCP tool definitions', () => {
   it('has at least 24 tools defined', () => {
@@ -300,6 +299,34 @@ describe('MCP tool definitions', () => {
       const schema = z.object(tool.schema);
       const result = schema.safeParse({ ref: 'app' });
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe('enum options (.choices())', () => {
+    // `config audit log` exposes `--actor` as `.choices(['human', 'agent'])` and
+    // carries an mcp block, so its derived schema must turn that closed set into a
+    // z.enum — accepting in-set values and rejecting anything else, rather than the
+    // permissive z.string() the auto-deriver produced before A5. The other
+    // value-taking options (`--since`, `--path`) are held constant so this asserts
+    // the enum constraint in isolation. (Value-taking options derive to REQUIRED
+    // fields in this deriver — see deriveSchema — so all three are supplied.)
+    it('derives a z.enum for an option declared with .choices()', () => {
+      const tool = TOOLS.find((t) => t.name === 'config_audit_log')!;
+      const schema = z.object(tool.schema);
+      const others = { since: '24h', path: '/credentials/*' };
+
+      expect(schema.safeParse({ ...others, actor: 'human' }).success).toBe(true);
+      expect(schema.safeParse({ ...others, actor: 'agent' }).success).toBe(true);
+      expect(schema.safeParse({ ...others, actor: 'robot' }).success).toBe(false);
+    });
+
+    it('value-taking options without .choices() stay unconstrained strings', () => {
+      // Guard against over-reach: only the `.choices()` option becomes an enum;
+      // `--since`/`--path` accept any string.
+      const tool = TOOLS.find((t) => t.name === 'config_audit_log')!;
+      const schema = z.object(tool.schema);
+      const parsed = schema.safeParse({ since: 'anything', path: '/x', actor: 'human' });
+      expect(parsed.success).toBe(true);
     });
   });
 

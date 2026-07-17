@@ -13,7 +13,7 @@
 import { randomUUID } from 'node:crypto';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { RepoFamily } from '@rediacc/shared/config-schema';
-import type { Command } from 'commander';
+import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
 import { resolveExecutionTarget } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
@@ -43,7 +43,13 @@ export function registerRepoMigrateCommand(repoCommand: Command): void {
     .option('--bwlimit <limit>', t('commands.repo.migrate.optionBwlimit'))
     .option('--checkpoint', t('commands.repo.migrate.optionCheckpoint'))
     .option('--delta-base <guid>', t('commands.repo.migrate.optionDeltaBase'))
-    .option('--strategy <strategy>', t('commands.repo.migrate.optionStrategy'))
+    .addOption(
+      new Option('--strategy <strategy>', t('commands.repo.migrate.optionStrategy')).choices([
+        'auto',
+        'physical',
+        'shared',
+      ])
+    )
     .option('--skip-dns', t('commands.repo.migrate.optionSkipDns'))
     .option('--keep-source', t('commands.repo.migrate.optionKeepSource'))
     // --health-window / --health-timeout (spec §5.4) are intentionally NOT

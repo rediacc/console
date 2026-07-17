@@ -14,6 +14,7 @@
  *     (`schema/fingerprint.ts`), because Web Crypto has no sync digest.
  */
 
+export * from './coverage.js';
 export * from './migrations/index.js';
 export * from './payload.js';
 export * from './schemas.js';

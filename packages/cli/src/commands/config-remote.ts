@@ -181,7 +181,7 @@ async function storeHandoffCredentials(
   };
 }
 
-async function finalizeEnable(remote: RemoteConfig, configName: string): Promise<void> {
+export async function finalizeEnable(remote: RemoteConfig, configName: string): Promise<void> {
   const { configFileStorage } = await import('../adapters/config-file-storage.js');
 
   // Validate by pulling BEFORE modifying local config.
@@ -537,6 +537,7 @@ export function registerRemoteCommands(configCommand: Command): void {
     .command('enable')
     .description(t('commands.config.remote.enable.description'))
     .option('--headless', t('commands.config.remote.enable.optionHeadless'))
+    .option('--password', t('commands.config.remote.enable.optionPassword'))
     .option('--api-url <url>', t('commands.config.remote.enable.optionApiUrl'))
     .action(async (options) => {
       try {
@@ -552,7 +553,10 @@ export function registerRemoteCommands(configCommand: Command): void {
 
         const apiUrl = options.apiUrl ?? getSubscriptionServerUrl();
 
-        if (options.headless) {
+        if (options.password) {
+          const { enablePassword } = await import('./config-remote-password.js');
+          await enablePassword(apiUrl, configName);
+        } else if (options.headless) {
           await enableHeadless(apiUrl, configName);
         } else {
           await enableBrowser(apiUrl, configName);

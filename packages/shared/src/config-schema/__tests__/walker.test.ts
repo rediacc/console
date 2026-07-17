@@ -22,8 +22,6 @@ describe('walker', () => {
     id: '00000000-0000-0000-0000-000000000001',
     version: 1,
     account: {
-      apiUrl: 'https://www.rediacc.com/api',
-      token: 'secret-token',
       userEmail: 'alice@example.com',
     },
     credentials: {
@@ -72,8 +70,6 @@ describe('walker', () => {
   it('walkSensitive yields entries for every registered concrete path in the config', () => {
     const entries = Array.from(walkSensitive(sampleConfig));
     const pointers = entries.map((e) => e.pointer).sort();
-    expect(pointers).toContain('/account/apiUrl');
-    expect(pointers).toContain('/account/token');
     expect(pointers).toContain('/account/userEmail');
     expect(pointers).toContain('/credentials/ssh/privateKey');
     expect(pointers).toContain('/credentials/cfDnsApiToken');

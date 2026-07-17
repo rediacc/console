@@ -1,5 +1,5 @@
 import { DEFAULTS } from '@rediacc/shared/config';
-import type { Command } from 'commander';
+import { type Command, Option } from 'commander';
 import { t } from '../../i18n/index.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
@@ -70,7 +70,13 @@ export function registerProviderCommands(machine: Command, program: Command): vo
     .option('--ipv4-output <attr>', t('commands.machine.provider.add.optionIpv4Output'))
     .option('--ipv6-output <attr>', t('commands.machine.provider.add.optionIpv6Output'))
     .option('--ssh-key-attr <attr>', t('commands.machine.provider.add.optionSshKeyAttr'))
-    .option('--ssh-key-format <format>', t('commands.machine.provider.add.optionSshKeyFormat'))
+    .addOption(
+      // Closed set: backed by z.enum(['inline_list', 'resource_id']) in the provider schema.
+      new Option(
+        '--ssh-key-format <format>',
+        t('commands.machine.provider.add.optionSshKeyFormat')
+      ).choices(['inline_list', 'resource_id'])
+    )
     .option('--ssh-key-resource <type>', t('commands.machine.provider.add.optionSshKeyResource'))
     .action(async (name: string, options) => {
       try {

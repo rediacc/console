@@ -74,6 +74,20 @@ export class RemotePasskeySecretMissingError extends Error {
   }
 }
 
+/**
+ * The stored slot secret no longer unwraps the CEK. The most common cause is a
+ * CEK rotation that bumped the store's generation while this device kept its old
+ * wrapping — the AES-GCM auth tag then fails. Surfaced instead of the raw
+ * OperationError so the user gets an action (re-enroll) rather than a crypto
+ * stack trace. Applies to every enrollment method (passkey and password).
+ */
+export class RemoteStaleSlotError extends Error {
+  constructor() {
+    super(t('commands.config.remote.staleSlot'));
+    this.name = 'RemoteStaleSlotError';
+  }
+}
+
 // ─── Adapter ────────────────────────────────────────────────────────────
 
 export class RemoteConfigAdapter {
@@ -239,7 +253,14 @@ export class RemoteConfigAdapter {
       throw new RemoteTokenExpiredError();
     }
 
-    return cekUnwrap(tokenData.wrappedCek, wrappingKey);
+    // A wrong slot secret (or a rotated CEK this device never re-wrapped for)
+    // surfaces here as an AES-GCM auth failure. Translate it into an actionable
+    // "re-enroll" message rather than leaking a raw OperationError.
+    try {
+      return await cekUnwrap(tokenData.wrappedCek, wrappingKey);
+    } catch {
+      throw new RemoteStaleSlotError();
+    }
   }
 
   /**

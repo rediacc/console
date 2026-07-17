@@ -189,7 +189,11 @@ export type ApiTokenScope =
   // executor, `proxy:admin` lets it manage the executor itself. `proxy:admin` is
   // privileged (owner/admin only); `proxy:exec` is creatable by any member.
   | 'proxy:exec'
-  | 'proxy:admin';
+  | 'proxy:admin'
+  // Config plane: `config:enroll` lets a headless CLI add a password key slot to
+  // its own config-store membership (rdc config remote enable --password).
+  // Creatable by any member — not privileged.
+  | 'config:enroll';
 
 /**
  * API token for machine authentication.

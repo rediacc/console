@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { CLI_CONTRACT, CLI_CONTRACT_VERSION } from '../data/contract.generated';
+import { RESOURCE_DISCOVERY } from '../discovery';
 import { CONTRACT_LANGUAGES, translate } from '../i18n';
 import { commandsByDomain, commandsForContext, getCommand, proxyCapableCommands } from '../index';
 import { ContractStringsSchema, checkContractInvariants, parseCliContract } from '../validation';
@@ -24,6 +25,32 @@ function readJson(relative: string): unknown {
 }
 
 const contractJson = readJson('../data/contract.json');
+
+/**
+ * For one command, collect example descriptionKeys missing from the English
+ * bundle and `values` keys that name no real field. Split out of the assertion
+ * so each function stays under the cognitive-complexity ceiling.
+ */
+function collectExampleIssues(
+  cmd: (typeof CLI_CONTRACT.commands)[number],
+  en: Record<string, string>
+): { missingKeys: string[]; strayValues: string[] } {
+  const fieldNames = new Set([
+    ...cmd.positionals.map((p) => p.name),
+    ...cmd.options.map((o) => o.long),
+  ]);
+  const missingKeys: string[] = [];
+  const strayValues: string[] = [];
+  for (const ex of cmd.examples ?? []) {
+    if (!(ex.descriptionKey in en)) {
+      missingKeys.push(`${cmd.pathKey} -> ${ex.descriptionKey}`);
+    }
+    for (const key of Object.keys(ex.values)) {
+      if (!fieldNames.has(key)) strayValues.push(`${cmd.pathKey}: values.${key}`);
+    }
+  }
+  return { missingKeys, strayValues };
+}
 
 describe('CLI contract', () => {
   it('contract.json parses against the schema', () => {
@@ -221,15 +248,26 @@ describe('CLI contract', () => {
       'datastore attach --writes=local|ceph',
       'datastore create --backend=local|rbd',
       'datastore fork --writes=local|ceph',
+      // A4 .choices() sweep: machine list --sort, machine provider add
+      // --ssh-key-format, repo migrate/pull/push --strategy, and the three
+      // vscode --server-provider commands are the eight enums added this wave.
+      'machine list --sort=name|ip|user|port|datastore',
+      'machine provider add --ssh-key-format=inline_list|resource_id',
       'ops down --backend=kvm|qemu',
       'ops ssh --backend=kvm|qemu',
       'ops status --backend=kvm|qemu',
       'ops up --backend=kvm|qemu',
       'repo merge --resolve=ours|theirs',
+      'repo migrate --strategy=auto|physical|shared',
       'repo policy set --auto-grow=true|false',
       'repo policy set --auto-trim=true|false',
+      'repo pull --strategy=auto|physical|shared',
+      'repo push --strategy=auto|physical|shared',
       'repo secret set --mode=env|file',
       'serve --mode=daemon|container',
+      'vscode connect --server-provider=openvscode|code-server',
+      'vscode serve status --server-provider=openvscode|code-server',
+      'vscode serve stop --server-provider=openvscode|code-server',
     ]);
   });
 
@@ -276,6 +314,15 @@ describe('CLI contract', () => {
       expect(cmd?.machinePositional, pathKey).toBeNull();
     }
 
+    // A machine verb's `<name>` positional names an EXISTING machine, so it MUST
+    // bind machinePositional (the console's machine picker and container
+    // discovery resolve the machine from it). The creators name a machine that
+    // does not exist yet, so they stay unbound.
+    const status = getCommand('machine status');
+    expect(status?.positionals.map((p) => p.kind)).toEqual(['machine']);
+    expect(status?.machinePositional).toBe('name');
+    expect(getCommand('machine add')?.machinePositional).toBeNull();
+
     // Every positional a command declares has a non-empty name, so a consumer
     // can key a form field or a positionals-bag entry off it.
     for (const cmd of CLI_CONTRACT.commands) {
@@ -294,5 +341,104 @@ describe('CLI contract', () => {
       if (cmd.domain === 'job') expect(cmd.detachable, cmd.pathKey).toBe(false);
       if (cmd.detachable) expect(cmd.proxyCapable, cmd.pathKey).toBe(true);
     }
+  });
+
+  it('binds resource-shaped options to the right kinds', () => {
+    // `kinds` is the picker HINT (pick-or-type combobox), distinct from the hard
+    // `choices` Select. The cross-plane transfer flags carry more than one kind:
+    // a repo can be pushed to a machine OR a storage, migrated to a machine OR a
+    // cluster. These are load-bearing for the console's PickerField.
+    const kindsOf = (pathKey: string, long: string) =>
+      getCommand(pathKey)?.options.find((o) => o.long === long)?.kinds;
+    expect(kindsOf('repo push', 'to')).toEqual(['machine', 'storage']);
+    expect(kindsOf('repo pull', 'from')).toEqual(['machine', 'storage']);
+    expect(kindsOf('repo migrate', 'to')).toEqual(['machine', 'cluster']);
+    expect(kindsOf('datastore attach', 'to')).toEqual(['machine']);
+
+    // Every `--machine` flag, across the whole surface, binds the machine kind.
+    for (const cmd of CLI_CONTRACT.commands) {
+      for (const opt of cmd.options) {
+        if (opt.long === 'machine') {
+          expect(opt.kinds, `${cmd.pathKey} --machine`).toEqual(['machine']);
+        }
+      }
+    }
+  });
+
+  it('gives every option a tier and never hides a mandatory option', () => {
+    // tier is required (STAGE-3 tightening): the console reads it to fold
+    // `advanced` options behind a disclosure. A mandatory option can never be
+    // `advanced` — the CLI refuses to run without it, so it must always show.
+    for (const cmd of CLI_CONTRACT.commands) {
+      for (const opt of cmd.options) {
+        expect(['common', 'advanced'], `${cmd.pathKey} --${opt.long}`).toContain(opt.tier);
+        if (opt.mandatory) {
+          expect(opt.tier, `${cmd.pathKey} --${opt.long}`).not.toBe('advanced');
+        }
+      }
+    }
+  });
+
+  it('only binds kinds that the discovery registry can resolve', () => {
+    // Every kind a console renders a picker for must have an entry in
+    // RESOURCE_DISCOVERY, or the picker would have no source to populate from.
+    const known = new Set(Object.keys(RESOURCE_DISCOVERY));
+    for (const cmd of CLI_CONTRACT.commands) {
+      for (const opt of cmd.options) {
+        for (const kind of opt.kinds ?? []) {
+          expect(known, `${cmd.pathKey} --${opt.long}`).toContain(kind);
+        }
+      }
+    }
+  });
+
+  it('resolves every example description key and only fills real fields', () => {
+    // An example's descriptionKey feeds the CLI help "Examples:" block, so it
+    // must exist in the English bundle. Its `values` drive console click-to-fill,
+    // so every key must name a real form field — a positional or an option — of
+    // that same command, or the fill would target a field the form never renders.
+    const enPath = fileURLToPath(new URL('../data/i18n/en.json', import.meta.url));
+    const en: Record<string, string> = JSON.parse(readFileSync(enPath, 'utf-8'));
+
+    const missingKeys: string[] = [];
+    const strayValues: string[] = [];
+    for (const cmd of CLI_CONTRACT.commands) {
+      const issues = collectExampleIssues(cmd, en);
+      missingKeys.push(...issues.missingKeys);
+      strayValues.push(...issues.strayValues);
+    }
+
+    expect(missingKeys).toEqual([]);
+    expect(strayValues).toEqual([]);
+  });
+
+  it('gives every output hint a primaryKey among its columns', () => {
+    // ResultView routes a table row to a detail page via primaryKey, so it must
+    // be one of the columns actually shown. (checkContractInvariants enforces
+    // this too; asserted here so a failure names the command.)
+    for (const cmd of CLI_CONTRACT.commands) {
+      if (cmd.output) {
+        expect(cmd.output.columns, cmd.pathKey).toContain(cmd.output.primaryKey);
+      }
+    }
+  });
+
+  it('keeps keywords lowercase palette-safe tokens', () => {
+    // Keywords are untranslated english search tokens the palette scores against.
+    // They must be lowercase kebab-shaped so the scorer treats them uniformly.
+    for (const cmd of CLI_CONTRACT.commands) {
+      for (const kw of cmd.keywords ?? []) {
+        expect(kw, `${cmd.pathKey}: ${kw}`).toMatch(/^[a-z][a-z0-9-]*$/);
+      }
+    }
+  });
+
+  it('marks a secret-bearing option sensitive so the console can redact it', () => {
+    // `repo secret set --value` carries the secret; the console masks the input
+    // and redacts it from run history. The `--key` names the secret, not its
+    // value, so it is NOT sensitive.
+    const set = getCommand('repo secret set');
+    expect(set?.options.find((o) => o.long === 'value')?.sensitive).toBe(true);
+    expect(set?.options.find((o) => o.long === 'key')?.sensitive).toBeUndefined();
   });
 });

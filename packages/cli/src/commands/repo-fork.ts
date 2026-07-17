@@ -538,7 +538,7 @@ export async function handleForkAction(
  * also drives `repo checkout`.
  */
 export function registerRepoForkCommand(repo: Command): void {
-  const forkCmd = repo
+  repo
     .command('fork')
     .summary(t('commands.repo.fork.descriptionShort'))
     .description(t('commands.repo.fork.description'))
@@ -587,5 +587,4 @@ export function registerRepoForkCommand(repo: Command): void {
         }
       }
     );
-  forkCmd.addHelpText('after', t('commands.repo.fork.examples'));
 }

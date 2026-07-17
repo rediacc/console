@@ -3,7 +3,7 @@
  * Opens VS Code with Remote SSH connection to machines and repositories
  */
 
-import { Command } from 'commander';
+import { Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
 import { SSHConnection, spawnSSH } from '../remote/ssh/index.js';
 import {
@@ -595,7 +595,12 @@ ${t('help.examples')}
     .option('--browser', t('options.vscodeBrowser'))
     .option('--no-open', t('options.vscodeNoOpen'))
     .option('--local <port>', t('commands.repo.tunnel.localOption'))
-    .option('--server-provider <id>', t('options.vscodeServerProvider'))
+    .addOption(
+      new Option('--server-provider <id>', t('options.vscodeServerProvider')).choices([
+        'openvscode',
+        'code-server',
+      ])
+    )
     .option('--server-archive <file>', t('options.vscodeServerArchive'))
     .action(async (target: string, options: VSCodeConnectOptions) => {
       try {

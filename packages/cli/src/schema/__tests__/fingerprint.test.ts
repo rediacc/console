@@ -14,8 +14,6 @@ describe('fingerprint', () => {
     id: '00000000-0000-0000-0000-000000000001',
     version: 1,
     account: {
-      apiUrl: 'https://www.rediacc.com/api',
-      token: 'secret-token',
       userEmail: 'alice@example.com',
     },
     credentials: {
@@ -59,7 +57,9 @@ describe('fingerprint', () => {
     const redacted = redactClone(sampleConfig);
     expect(redacted.credentials.ssh.privateKey).toMatch(/^<redacted:credential>:[0-9a-f]{8}$/);
     expect(redacted.credentials.cfDnsApiToken).toMatch(/^<redacted:secret>:[0-9a-f]{8}$/);
-    expect(redacted.account.token).toMatch(/^<redacted:secret>:[0-9a-f]{8}$/);
+    expect(redacted.resources.storages['s3-prod'].vaultContent).toMatch(
+      /^<redacted:secret>:[0-9a-f]{8}$/
+    );
     expect(redacted.resources.machines['web-1'].ip).toMatch(/^<redacted:pii>:[0-9a-f]{8}$/);
     // Public fields remain as-is.
     expect(redacted.schemaVersion).toBe(3);

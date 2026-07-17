@@ -35,6 +35,7 @@ import { fetchOtlpCredentials } from './services/telemetry/otlp-credentials.js';
 import { isTelemetryDisabled, telemetryService } from './services/telemetry/telemetry.js';
 import type { OutputFormat } from './types/index.js';
 import { isAgentEnvironment } from './utils/agent-guard.js';
+import { attachExamples } from './utils/attach-examples.js';
 import { setOutputFormat } from './utils/errors.js';
 import { applyRegistry } from './utils/mode-guard.js';
 import { VERSION } from './version.js';
@@ -334,6 +335,9 @@ export function createCli(): Command {
 
   // Apply mode guards, help tags, and domain grouping from the command registry
   applyRegistry(cli);
+
+  // Append curated "Examples:" help blocks to every command that has them
+  attachExamples(cli);
 
   // Add Key Concepts and Agent Mode sections for extended help (agents + --help-all)
   const showExtendedHelp = isAgentEnvironment() || process.argv.includes('--help-all');

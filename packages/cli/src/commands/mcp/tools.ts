@@ -1,5 +1,4 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { Command } from 'commander';
 import { COMMAND_METADATA, type CommandMeta } from '../../config/command-metadata.js';
 import { t } from '../../i18n/index.js';
 import { isRepoAllowedByGrandEnv } from '../../utils/grand-env.js';
@@ -10,15 +9,15 @@ import {
 import { CUSTOM_TOOLS } from './custom-tools.js';
 import { executeRdcCommand } from './executor.js';
 import type { McpServerOptions } from './server.js';
-import { buildToolsFromCommander, type ToolDef } from './tool-factory.js';
+import { buildToolsFromContract, type ToolDef } from './tool-factory.js';
 
 export type { ToolDef } from './tool-factory.js';
 
 type ToolResult = { content: [{ type: 'text'; text: string }]; isError: boolean };
 
-/** Build the complete list of MCP tools (auto-derived + custom). */
-export function buildAllTools(program: Command): ToolDef[] {
-  return [...buildToolsFromCommander(program), ...CUSTOM_TOOLS];
+/** Build the complete list of MCP tools (contract-derived + custom). */
+export function buildAllTools(): ToolDef[] {
+  return [...buildToolsFromContract(), ...CUSTOM_TOOLS];
 }
 
 function guardError(msg: string): ToolResult {
@@ -158,12 +157,8 @@ async function executeTool(
   };
 }
 
-export function registerAllTools(
-  server: McpServer,
-  program: Command,
-  options: McpServerOptions
-): void {
-  const allTools = buildAllTools(program);
+export function registerAllTools(server: McpServer, options: McpServerOptions): void {
+  const allTools = buildAllTools();
 
   for (const tool of allTools) {
     server.registerTool(

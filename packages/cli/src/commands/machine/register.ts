@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
-import type { Command } from 'commander';
+import { type Command, Option } from 'commander';
 import { t } from '../../i18n/index.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
@@ -163,7 +163,16 @@ function registerList(machine: Command, program: Command): void {
     .command('list')
     .description(t('commands.machine.list.description'))
     .option('--search <text>', t('options.searchInField', { field: 'name' }))
-    .option('--sort <field>', t('options.sortByField'))
+    // Closed set: --sort keys are exactly the columns of the output rows below.
+    .addOption(
+      new Option('--sort <field>', t('options.sortByField')).choices([
+        'name',
+        'ip',
+        'user',
+        'port',
+        'datastore',
+      ])
+    )
     .option('--desc', t('options.sortDescending'))
     .action(async (options: { search?: string; sort?: string; desc?: boolean }) => {
       try {

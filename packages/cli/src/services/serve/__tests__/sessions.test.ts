@@ -112,3 +112,62 @@ describe('SessionStore CEK grant ownership (SEC-3)', () => {
     );
   });
 });
+
+describe('SessionStore.sessionForExec (the X-Config-Session selection rule)', () => {
+  /** Open a session for a principal and complete a real grant on it. */
+  async function openAndGrant(store: SessionStore, principal: SessionPrincipal): Promise<string> {
+    const { sessionId, publicKey } = await openFor(store, principal);
+    const { blob } = await sealCekTo(publicKey);
+    await store.grantCek(sessionId, blob, principal);
+    return sessionId;
+  }
+
+  it('falls back to the principal-indexed session when no session is named', async () => {
+    const store = new SessionStore();
+    const granted = await openAndGrant(store, ALICE);
+
+    expect(store.sessionForExec(ALICE)).toBe(granted);
+    expect(store.sessionForExec(BOB)).toBeUndefined();
+  });
+
+  it('honours the NAMED session over the latest-grant index', async () => {
+    // Alice grants through two live sessions (say, a browser and a CLI). The
+    // index points at the newest, but a request that names the older one must
+    // get the older one — the client chose it.
+    const store = new SessionStore();
+    const first = await openAndGrant(store, ALICE);
+    const second = await openAndGrant(store, ALICE);
+
+    expect(store.sessionFor(ALICE)).toBe(second);
+    expect(store.sessionForExec(ALICE, first)).toBe(first);
+  });
+
+  it('refuses a named session that belongs to someone else, indistinguishably', async () => {
+    const store = new SessionStore();
+    const alices = await openAndGrant(store, ALICE);
+
+    // Bob naming Alice's session and Bob naming a nonexistent one must fail the
+    // same way, so the header cannot be used to probe which ids are live.
+    let wrongOwner: unknown;
+    let unknownId: unknown;
+    try {
+      store.sessionForExec(BOB, alices);
+    } catch (e) {
+      wrongOwner = e;
+    }
+    try {
+      store.sessionForExec(BOB, '22222222-2222-2222-2222-222222222222');
+    } catch (e) {
+      unknownId = e;
+    }
+
+    expect(wrongOwner).toBeInstanceOf(SessionError);
+    expect(unknownId).toBeInstanceOf(SessionError);
+    expect((wrongOwner as Error).message).toBe((unknownId as Error).message);
+  });
+
+  it('throws for a named session that never existed', () => {
+    const store = new SessionStore();
+    expect(() => store.sessionForExec(ALICE, 'no-such-session')).toThrow(SessionError);
+  });
+});

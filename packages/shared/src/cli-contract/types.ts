@@ -57,7 +57,106 @@ export type PositionalKind =
   | 'job-id'
   | 'target'
   | 'file'
+  | 'provider'
   | 'plain';
+
+/**
+ * A kind of resource an option can be BOUND to, so a console can offer a picker
+ * fed from the operator's decrypted config or a discovery command.
+ *
+ * This is a HINT, not a constraint. Unlike {@link ContractOption.choices} (a
+ * HARD closed set the CLI itself rejects out-of-set values for), `kinds` says
+ * "these are the resources this flag usually names" — the console renders a
+ * pick-or-type combobox, never a blocking Select. A consumer MUST NOT promote
+ * `kinds` to a hard constraint: an operator can always type a value the picker
+ * did not list (a machine that is not yet in config, a fork tag typed by hand).
+ *
+ * The 12 kinds are the noun set the addressing grammar binds. Seven resolve
+ * from config families (machine/repo/datastore/storage/cluster/provider/
+ * strategy); five resolve by running a discovery command
+ * (container/template/snapshot/job/artifact). The mapping lives in
+ * {@link RESOURCE_DISCOVERY} (./discovery). There are deliberately NO
+ * branch/commit kinds in v1.
+ */
+export type ResourceKind =
+  | 'machine'
+  | 'repo'
+  | 'datastore'
+  | 'storage'
+  | 'cluster'
+  | 'provider'
+  | 'container'
+  | 'template'
+  | 'snapshot'
+  | 'job'
+  | 'strategy'
+  | 'artifact';
+
+/**
+ * A rendering hint for a free-form option value, so a console can pick a control
+ * (a stepper for `integer`, a masked/validated box for `cidr`) and validate
+ * client-side. Purely cosmetic: the CLI does not enforce it, and an absent hint
+ * means an ordinary text box. Distinct from {@link ContractOption.choices}
+ * (a closed value set) and {@link ContractOption.kinds} (a resource binding).
+ */
+export type FormatHint =
+  | 'size'
+  | 'cron'
+  | 'duration'
+  | 'integer'
+  | 'port'
+  | 'path'
+  | 'ip'
+  | 'ipv4'
+  | 'ipv6'
+  | 'cidr'
+  | 'domain'
+  | 'url'
+  | 'percent'
+  | 'guid'
+  | 'bandwidth';
+
+/**
+ * How prominent an option is in a rendered form. `common` options show by
+ * default; `advanced` options fold behind a disclosure. Derived by the
+ * generator (mandatory, resource-bound, or enum options are always `common`);
+ * an override may never demote a mandatory option to `advanced`.
+ */
+export type OptionTier = 'common' | 'advanced';
+
+/**
+ * A worked example of a command, e.g. `rdc repo fork shop --tag test`.
+ *
+ * `command` is the full argv a laptop would type (concrete dummy values such as
+ * `shop` / `prod-1`, never `<placeholders>`). `values` is that same example
+ * parsed back into a field-name → value map by the generator, so a console can
+ * offer click-to-fill: applying `values` to the form reproduces `command`. The
+ * generator's parse doubles as a gate — an unknown flag, bad arity, or
+ * out-of-choices value fails generation.
+ */
+export interface CommandExample {
+  /** The full example argv, e.g. "rdc repo fork shop --tag test". */
+  command: string;
+  /** The example parsed into form field name → value, for click-to-fill. */
+  values: Record<string, string>;
+  /** i18n key for the one-line description of what the example does. */
+  descriptionKey: string;
+  /** English description, always present. */
+  label: string;
+}
+
+/**
+ * How a console should tabulate this command's `-o json` output: which column
+ * identifies a row (so a click routes to a detail page) and the column order to
+ * show. Present only on list-shaped commands; when present, BOTH fields are
+ * required and `primaryKey` must be one of `columns`.
+ */
+export interface OutputHints {
+  /** The column that identifies a row (a name or id). Must be in `columns`. */
+  primaryKey: string;
+  /** Column keys in display order. */
+  columns: string[];
+}
 
 /**
  * A positional argument of a command, e.g. the `<ref>` in `rdc repo up <ref>`.
@@ -104,6 +203,29 @@ export interface ContractOption {
    */
   choices?: string[];
   /**
+   * Resource kinds this option usually names, so a console can render a
+   * pick-or-type combobox fed from config/discovery. A HINT, never a hard
+   * constraint (see {@link ResourceKind}): free text is always allowed. Nonempty
+   * when present, and only on a value-taking option. Absent for options that
+   * name no resource.
+   */
+  kinds?: ResourceKind[];
+  /**
+   * Rendering hint for a free-form value (see {@link FormatHint}), so a console
+   * can pick a control and validate client-side. Absent means a plain text box.
+   */
+  format?: FormatHint;
+  /**
+   * How prominent this option is in a rendered form (see {@link OptionTier}).
+   * Always emitted by the generator.
+   */
+  tier: OptionTier;
+  /**
+   * The value is a secret (a token, a password). A console redacts it in run
+   * history and masks the input. Absent means an ordinary value.
+   */
+  sensitive?: boolean;
+  /**
    * i18n key for the description, or null when the English string could not be
    * traced back to a key (a handful of factory-generated CRUD descriptions are
    * built at runtime and have no static key).
@@ -145,6 +267,26 @@ export interface ContractCommand {
    * `repo replicate`. Its subcommands are separate entries.
    */
   hasSubcommands: boolean;
+
+  // ── Console affordances (examples, search, output shape) ────────────────
+  /**
+   * Worked examples of this command (see {@link CommandExample}), for the CLI
+   * help "Examples:" block and console click-to-fill. Absent when the command
+   * has no curated example.
+   */
+  examples?: CommandExample[];
+  /**
+   * Lowercase english search tokens for palette/command search, beyond the
+   * words already in the path and label. Untranslated by design (the palette
+   * scores against the operator's typing, which is language-neutral for CLI
+   * nouns). Absent when the command needs no extra tokens.
+   */
+  keywords?: string[];
+  /**
+   * How a console should tabulate this command's list output (see
+   * {@link OutputHints}). Present only on list-shaped commands.
+   */
+  output?: OutputHints;
 
   // ── Policy and agent annotations (from COMMAND_METADATA) ────────────────
   /** Mutates state in a way that is not trivially undone. Undefined when unannotated. */

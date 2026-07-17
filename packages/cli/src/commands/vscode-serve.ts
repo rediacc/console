@@ -7,7 +7,7 @@
  * browser flow has no kubernetes wiring in v1).
  */
 
-import type { Command } from 'commander';
+import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
 import { getServerProvider } from '../remote/vscode-server/index.js';
 import { outputService } from '../services/core/output.js';
@@ -58,7 +58,12 @@ export function registerVSCodeServeCommands(vscode: Command): void {
     .command('status')
     .description(t('commands.vscode.serve.status.description'))
     .argument('<target>', t('options.repoRef'))
-    .option('--server-provider <id>', t('options.vscodeServerProvider'))
+    .addOption(
+      new Option('--server-provider <id>', t('options.vscodeServerProvider')).choices([
+        'openvscode',
+        'code-server',
+      ])
+    )
     .action(async (target: string, options: VSCodeServeOptions) => {
       try {
         const { provider, connectionDetails } = await resolveServeContext(target, options);
@@ -83,7 +88,12 @@ export function registerVSCodeServeCommands(vscode: Command): void {
     .command('stop')
     .description(t('commands.vscode.serve.stop.description'))
     .argument('<target>', t('options.repoRef'))
-    .option('--server-provider <id>', t('options.vscodeServerProvider'))
+    .addOption(
+      new Option('--server-provider <id>', t('options.vscodeServerProvider')).choices([
+        'openvscode',
+        'code-server',
+      ])
+    )
     .action(async (target: string, options: VSCodeServeOptions) => {
       try {
         const { provider, connectionDetails } = await resolveServeContext(target, options);

@@ -658,7 +658,7 @@ export default tseslint.config(
     extraUntranslatedPatterns: [
       '^[A-Za-z]+\\d+$',
       // Brand and product names (exact match)
-      '^(Rediacc|Stripe|Docker|rdc|rediacc)$',
+      '^(Rediacc|Stripe|Docker|Kubernetes|rdc|rediacc)$',
       // Strings ending with the brand (e.g. signoffs like "— Rediacc")
       'Rediacc$',
       // CLI commands (rdc ...) must not be translated
@@ -672,6 +672,18 @@ export default tseslint.config(
       // Certificate-number format example (public verify page placeholder) —
       // a literal ID format, identical in every locale by design
       '^CERT-\\d{4}-\\d{4}$',
+      // Recovery-code format placeholder (config-unlock input hint) — a literal
+      // format mask (RC1 prefix + four 8-char groups), product syntax with
+      // nothing to translate, identical in every locale by design. Same case as
+      // the CERT- placeholder above.
+      '^RC1-X{8}-X{8}-X{8}-X{8}$',
+      // Passkey: the WebAuthn/FIDO product term. German keeps the loanword
+      // ("der Passkey"), used throughout the de configStorage strings; other
+      // locales that coin a native term differ and are unaffected by this exempt.
+      '^Passkey$',
+      // Tag: the fork/git tag label. German keeps "Tag" (also used in
+      // "Fork-Tag"); locales that translate it differ and stay checked.
+      '^Tag$',
       // Plan tier proper names (product names used as-is internationally)
       '^(Business|Community|Enterprise|Professional)$',
       // Certificate level designation ("Pro" certificate): a product-level
@@ -684,6 +696,50 @@ export default tseslint.config(
       // Words that are legitimately identical in many target languages
       // (borrowed/shared vocabulary across European languages and international tech terms)
       '^(Plan|Type|Newsletter|Name|Limit|Source|Admin|Total|Team|Status|Magnet|Machines|Code|Permissions|General|Description|Date|Dashboard|Contact|Activations|Actions)$',
+      // Console table column headers (columnLabel_*): infrastructure nouns
+      // that several locales keep as loanwords/cognates rather than coin a
+      // native term, matching the SAME word already used elsewhere in this
+      // product for the identical concept (e.g. CLI locale files, or this
+      // same console.json's own nav/title labels for cluster/datastore/tag).
+      // "Commit" (git-like commit) has zero established local translation in
+      // ANY of the 12 locales — every CLI translation keeps "commit"
+      // untranslated, so it is kept identical across all languages here too.
+      '^Commit$',
+      // "Backend" (storage backend: local/S3/etc.) — de/es/fr/it/pt keep this
+      // as a loanword, mirroring packages/cli/src/i18n/locales' own
+      // translation of the same concept ("Speicher-Backend", "backend de
+      // almacenamiento", "backend de stockage", "backend di storage",
+      // "backend de armazenamento").
+      '^Backend$',
+      // "Provider" (cloud provider) — Italian keeps this as a loanword,
+      // matching this same console.json file's own providersTitle ("Provider
+      // cloud").
+      '^Provider$',
+      // "Repository" — Italian keeps this identical (singular = plural,
+      // invariant loanword), matching this same console.json file's own
+      // navRepos/reposEmpty wording ("Repository").
+      '^Repository$',
+      // "Destinations"/"Services" — genuine French cognates (backup
+      // destinations, Docker services), spelled identically in French and
+      // English; French CLI translations of the same concepts already keep
+      // them identical ("Destinations :", "Services :").
+      '^(Destinations|Services)$',
+      // "Mode" — genuine French cognate (le mode), spelled identically in
+      // both languages; no distinct native alternative in common use.
+      '^Mode$',
+      // "Port" (network port) — de/fr keep this as the standard technical
+      // term (no distinct native alternative in common IT usage).
+      '^Port$',
+      // "Pools" (resource/storage pools) — de/es/fr/pt keep the loanword
+      // "pool" and pluralize it as "Pools", matching packages/cli's own
+      // translation of the same datastore concept ("Nombre del pool", "Nom
+      // du pool", "Nome do pool").
+      '^Pools$',
+      // "Region"/"Image"/"Cluster"/"Datastore" — genuine German/French/
+      // Italian cognates or established loanwords for these cloud/storage
+      // nouns; already allowlisted for the same reason in the broader
+      // scripts/check-translation-completeness.ts ALLOWED_IDENTICAL set.
+      '^(Region|Image|Cluster|Datastore)$',
     ],
     cliSyntax: {
       autoDerive: true,

@@ -1,14 +1,11 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import type { Command } from 'commander';
 import { VERSION } from '../../version.js';
 import { registerAllTools } from './tools.js';
 
 export interface McpServerOptions {
   configName?: string;
   defaultTimeoutMs: number;
-  /** Commander program instance for auto-deriving MCP tools from the command tree. */
-  program: Command;
 }
 
 export async function startMcpServer(options: McpServerOptions): Promise<void> {
@@ -17,7 +14,7 @@ export async function startMcpServer(options: McpServerOptions): Promise<void> {
     version: VERSION,
   });
 
-  registerAllTools(server, options.program, options);
+  registerAllTools(server, options);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

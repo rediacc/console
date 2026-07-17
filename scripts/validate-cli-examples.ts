@@ -23,6 +23,11 @@ import {
 // Shared positional-syntax detector (zero-positional commands)
 import { scanText as scanPositional } from './lib/positional-cli-detector.ts';
 
+// Curated contract examples (also parsed and gated by the contract generator;
+// validated here too so this script stays the one place that proves every
+// `rdc …` line in the repo against the command tree)
+import { COMMAND_EXAMPLES } from '../packages/cli/src/config/command-docs.ts';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
@@ -521,6 +526,28 @@ function validateCommand(
 }
 
 /**
+ * Validate the curated COMMAND_EXAMPLES registry (the source of the contract's
+ * worked examples and the CLI help "Examples:" blocks) through the same parser
+ * as every other example in the repo. The contract generator gates these too;
+ * this keeps them covered even when nothing regenerates.
+ */
+function extractFromCommandDocs(violations: Violation[]): void {
+  const relPath = 'packages/cli/src/config/command-docs.ts';
+  const content = fs.readFileSync(path.join(ROOT, relPath), 'utf-8');
+  const lines = content.split(/\r?\n/);
+  const findLine = (command: string): number => {
+    const index = lines.findIndex((l) => l.includes(command));
+    return index === -1 ? 1 : index + 1;
+  };
+
+  for (const examples of Object.values(COMMAND_EXAMPLES)) {
+    for (const example of examples) {
+      validateCommand(example.command, relPath, findLine(example.command), violations);
+    }
+  }
+}
+
+/**
  * Whole-file positional-syntax scan. Uses the shared detector to catch any
  * `rdc <zero-positional-cmd> <token>` pattern anywhere in the file.
  */
@@ -612,6 +639,9 @@ async function main(): Promise<void> {
       extractFromGo(content, relPath, violations);
     }
   }
+
+  // Curated contract examples, through the same parser as everything above
+  extractFromCommandDocs(violations);
 
   // Deduplicate: scanFileForPositional may overlap with narrow extractors
   dedupeViolations(violations);

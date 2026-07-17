@@ -47,8 +47,15 @@ export interface ServeDeps {
   /** X25519 helpers for the CEK grant. */
   crypto: ServeCrypto;
 
-  /** The decrypted config this principal's commands run against. */
-  loadConfig: (principal: SessionPrincipal) => Promise<RdcConfig>;
+  /**
+   * The decrypted config this principal's commands run against.
+   *
+   * `configSessionId` is present when the request named a session (the web
+   * console's X-Config-Session header): a session-holding loader (the container
+   * tier) must draw the key from THAT session rather than the principal's
+   * latest grant. A loader with its own config (the daemon tier) ignores it.
+   */
+  loadConfig: (principal: SessionPrincipal, configSessionId?: string) => Promise<RdcConfig>;
   /** Throws PolicyDenied when the principal may not run the command. */
   authorize: (args: AuthorizeArgs) => PolicyDecision;
   /** Ships one audit event per command. Awaited, so a killed process cannot lose it. */

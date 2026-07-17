@@ -43,7 +43,11 @@
         "netOffsetOption": "KVM: offset added to each VM id when deriving its address",
         "poolOption": "Pool spec name:role:count[:size] (role: ceph|k8s-server|k8s-agent|hyperconverged)",
         "primitiveOption": "Network primitive (e.g. vlan, vpc, network)",
-        "providerOption": "Provider: a cloudProviders key, or 'kvm'"
+        "providerOption": "Provider: a cloudProviders key, or 'kvm'",
+        "examples": {
+          "basic": "Create a cluster on a provider.",
+          "declareOnly": "Declare a cluster around an existing control node."
+        }
       },
       "status": {
         "descriptionShort": "Show clusters and their pools",
@@ -74,7 +78,11 @@
         "tagOption": "Fork tag",
         "writesOption": "Fork write disposition: local (ephemeral dm-COW overlay, zero Ceph footprint) | ceph (durable clone). Default local",
         "upOption": "Bring the forked repos up and gate on cluster health after the fork boots",
-        "toOption": "Destination cluster whose nodes host the fork (its control node and agents; a cluster cannot fork onto its own machines, since two k3s cannot share a host network namespace)"
+        "toOption": "Destination cluster whose nodes host the fork (its control node and agents; a cluster cannot fork onto its own machines, since two k3s cannot share a host network namespace)",
+        "examples": {
+          "basic": "Fork a cluster into a new destination.",
+          "andStart": "Fork a cluster and start it right away."
+        }
       },
       "migrate": {
         "descriptionShort": "Move a whole cluster to another place",
@@ -84,7 +92,10 @@
       "join": {
         "descriptionShort": "Add a machine to a cluster as an agent",
         "description": "Adopt an existing registered machine as a Kubernetes agent node of a cluster, using the same CA-derived join token as anchor and rejoin.",
-        "clusterOption": "Cluster to join the machine to"
+        "clusterOption": "Cluster to join the machine to",
+        "examples": {
+          "basic": "Join a machine to a cluster."
+        }
       },
       "evict": {
         "descriptionShort": "Remove a node from its cluster",
@@ -195,7 +206,11 @@
         "optionMasterPassword": "Encrypt resources with a master password",
         "alreadyExists": "Config \"{{name}}\" already exists",
         "success": "Config \"{{name}}\" initialized",
-        "bareForm": "The default config is created automatically; use 'config init <name>' for a named config, or pass a flag (--ssh-key, --server, ...) to set an option on the default."
+        "bareForm": "The default config is created automatically; use 'config init <name>' for a named config, or pass a flag (--ssh-key, --server, ...) to set an option on the default.",
+        "examples": {
+          "basic": "Create a named configuration profile.",
+          "withServer": "Create a profile pointed at a specific account server."
+        }
       },
       "list": {
         "description": "List all config files",
@@ -250,6 +265,7 @@
         "description": "Manage remote config storage connection",
         "tokenExpired": "Remote config token expired. Re-authenticate with: rdc config remote enable",
         "passkeySecretMissing": "Passkey secret not found in OS keyring. Re-authenticate with: rdc config remote enable",
+        "staleSlot": "Your key slot is outdated (the config encryption key was rotated). Re-enroll with: rdc config remote enable",
         "enable": {
           "description": "Link this config to remote encrypted storage",
           "optionHeadless": "Use device code flow (for headless servers)",
@@ -260,7 +276,13 @@
           "polling": "Polling for browser approval...",
           "success": "Remote config enabled. Config \"{{name}}\" is now synced to {{apiUrl}}.",
           "alreadyEnabled": "Config \"{{name}}\" is already linked to remote storage. Disable first with: rdc config remote disable",
-          "expired": "Device code expired. Try again."
+          "expired": "Device code expired. Try again.",
+          "optionPassword": "Enroll headlessly with a pre-provisioned password slot (no browser)",
+          "passwordPrompt": "Config master password:",
+          "passwordNonInteractive": "A config master password is required. Set REDIACC_CONFIG_PASSWORD, or run without --password in an interactive terminal.",
+          "passwordRequirePasskey": "This organization requires a passkey to unlock config storage; password enrollment is disabled. Enroll from a browser with: rdc config remote enable",
+          "passwordNoSlot": "No password slot is provisioned for your config storage. Add one from the portal (Config Storage > key slots), then retry.",
+          "passwordWrong": "Could not unlock the config with that password. Check REDIACC_CONFIG_PASSWORD (or the password you entered) and try again."
         },
         "disable": {
           "description": "Disconnect from remote storage and save config locally",
@@ -419,7 +441,11 @@
       "description": "Inspect remote machine state: system resources, running containers, systemd services, deployed repositories, and health diagnostics. Read-only queries; to modify repos use `repo`. Key subcommands: status (full state, narrowed with --system, --containers, --repositories, --services), health, list, add, remove, setup, prune, provision, deprovision.",
       "list": {
         "description": "List machines",
-        "noMachines": "No machines configured. Add one with: rdc machine add <name> --ip <ip> --user <user>"
+        "noMachines": "No machines configured. Add one with: rdc machine add <name> --ip <ip> --user <user>",
+        "examples": {
+          "basic": "List every registered machine.",
+          "sorted": "List machines sorted by name."
+        }
       },
       "health": {
         "description": "Check machine health for CI/CD pipelines",
@@ -467,7 +493,11 @@
         "waitingSSH": "Waiting for SSH connectivity...",
         "sshReady": "SSH connection established",
         "settingUp": "Running machine setup...",
-        "completed": "Machine {{name}} provisioned and ready ({{ip}})"
+        "completed": "Machine {{name}} provisioned and ready ({{ip}})",
+        "examples": {
+          "basic": "Provision a new cloud machine from a provider.",
+          "sized": "Provision a machine in a region with a chosen size."
+        }
       },
       "deprovision": {
         "description": "Destroy a cloud-provisioned machine and remove from config",
@@ -505,7 +535,11 @@
       "add": {
         "description": "Register an existing machine you can reach over SSH.",
         "descriptionShort": "Add a machine to the current config",
-        "success": "Machine \"{{name}}\" added ({{user}}@{{ip}})"
+        "success": "Machine \"{{name}}\" added ({{user}}@{{ip}})",
+        "examples": {
+          "basic": "Register a machine by its address and login user.",
+          "customPort": "Register a machine that uses a non-default SSH port."
+        }
       },
       "infra": {
         "cert": {
@@ -634,7 +668,11 @@
         "storageHealthPoolSummary": "Pool: {{used}} used, {{free}} free ({{percent}}% full)",
         "storageHealthSummary": "Storage efficiency: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} container(s) past drift threshold; exiting non-zero",
-        "syncCertsFailed": "Cert cache sync failed: {{error}}"
+        "syncCertsFailed": "Cert cache sync failed: {{error}}",
+        "examples": {
+          "basic": "Show a machine's full status.",
+          "containers": "Show only the running containers on a machine."
+        }
       }
     },
     "ops": {
@@ -695,7 +733,11 @@
         "tagOption": "Tag for the fork (the result is name:tag)",
         "attachToOption": "Attach the fork to this machine right away (needs --writes)",
         "writesOption": "Where the fork's writes go: local (instant, ephemeral) or ceph (durable clone)",
-        "forked": "Datastore \"{{ref}}\" forked from \"{{name}}\" (detached)."
+        "forked": "Datastore \"{{ref}}\" forked from \"{{name}}\" (detached).",
+        "examples": {
+          "basic": "Fork a datastore into a new tag.",
+          "andAttach": "Fork a datastore and attach it to a machine."
+        }
       },
       "status": {
         "description": "Show one datastore: its backend, attachment, usage, repositories and snapshots. A detached datastore still reports its record.",
@@ -710,12 +752,20 @@
         "poolOption": "Ceph pool for the rbd backend (default: rbd)",
         "imageOption": "RBD image name for the rbd backend (default: the datastore name)",
         "clusterOption": "Kubernetes cluster this datastore belongs to. Set means kubernetes repositories only; unset means docker repositories only. Fixed at creation.",
-        "created": "Datastore \"{{name}}\" created on {{machine}} (detached). Attach it with \"rdc datastore attach {{name}} --to {{machine}}\"."
+        "created": "Datastore \"{{name}}\" created on {{machine}} (detached). Attach it with \"rdc datastore attach {{name}} --to {{machine}}\".",
+        "examples": {
+          "basic": "Create a datastore on a machine.",
+          "ceph": "Create a Ceph-backed datastore."
+        }
       },
       "list": {
         "descriptionShort": "List named datastores",
         "description": "List named datastores, where they are attached, and what they hold.",
-        "placeArgument": "Narrow to one cluster or one machine"
+        "placeArgument": "Narrow to one cluster or one machine",
+        "examples": {
+          "basic": "List every datastore.",
+          "byPlace": "List the datastores at a machine or cluster."
+        }
       },
       "attach": {
         "descriptionShort": "Attach a datastore to a machine",
@@ -727,7 +777,11 @@
         "forceOption": "Fence a stale holder that did not give the datastore up cleanly",
         "attached": "Datastore \"{{ref}}\" is attached to {{machine}}.",
         "noop": "Datastore \"{{ref}}\" is already attached to {{machine}} the same way. Nothing to do.",
-        "relocating": "Moving \"{{ref}}\" from {{from}} to {{to}} (it detaches from {{from}} first)..."
+        "relocating": "Moving \"{{ref}}\" from {{from}} to {{to}} (it detaches from {{from}} first)...",
+        "examples": {
+          "basic": "Attach a datastore to a machine.",
+          "cephWrites": "Attach a datastore with Ceph-backed writes."
+        }
       },
       "detach": {
         "descriptionShort": "Detach a datastore from its machine",
@@ -783,7 +837,11 @@
         "failed": "Service start failed",
         "allOption": "Deploy every repository whose home is --machine (batch form)",
         "noStartOption": "Mount and prepare the repository without running its up() steps (folds the retired 'repo mount'; LUKS open and, for cluster repos, PV generation).",
-        "noWaitOption": "Return once containers are started; health checks continue in the background"
+        "noWaitOption": "Return once containers are started; health checks continue in the background",
+        "examples": {
+          "basic": "Deploy a repository on its machine.",
+          "all": "Deploy every repository on a machine at once."
+        }
       },
       "mount": {
         "starting": "Mounting \"{{repository}}\" on \"{{machine}}\"...",
@@ -809,7 +867,11 @@
         "allStarting": "Stopping all repositories on \"{{machine}}\"...",
         "allCompleted": "All repositories stopped",
         "allFailed": "Down-all operation failed",
-        "allOption": "Stop every repository whose home is --machine (batch form)"
+        "allOption": "Stop every repository whose home is --machine (batch form)",
+        "examples": {
+          "basic": "Stop a repository's containers.",
+          "unmount": "Stop a repository and unmount its encrypted volume."
+        }
       },
       "status": {
         "description": "Get repository status (mount state, Docker daemon running, container count, disk usage)",
@@ -827,7 +889,10 @@
         "statOption": "Print only size, type, and modification time; read no content",
         "forceBinaryOption": "Allow reading binary (NUL-containing) content",
         "starting": "Reading \"{{path}}\" from \"{{repository}}\" on \"{{machine}}\"...",
-        "failed": "Read failed"
+        "failed": "Read failed",
+        "examples": {
+          "basic": "Print a file from inside a repository."
+        }
       },
       "diff": {
         "description": "Git-style file-level diff between two copy-on-write forked repositories. Reports Added, Modified, Deleted, and Renamed files. Diffs the repository given by --name (the target / new side) against its parent, resolved from local config, or against an explicit --base repository (the base / old side). Metadata-only and size-independent: it diffs the encrypted LUKS images at the block level without decrypting them, so a 1 GB repo and a 100 GB repo diff in the same milliseconds.",
@@ -853,7 +918,11 @@
         "completed": "List completed",
         "failed": "List failed: {{error}}",
         "serverNameLegend": "* name read from the machine (not in your local config)",
-        "datastoreOption": "List the repositories in this datastore (resolved to whichever machine currently holds it)"
+        "datastoreOption": "List the repositories in this datastore (resolved to whichever machine currently holds it)",
+        "examples": {
+          "basic": "List the repositories on a machine.",
+          "byDatastore": "List the repositories that live in a datastore."
+        }
       },
       "create": {
         "description": "Create a new repository. State its home once: a machine or a datastore.",
@@ -872,7 +941,11 @@
         "placementRequired": "repo create takes exactly one placement flag: --machine (docker, default datastore) or --datastore (named datastore; required for cluster repos).",
         "sizeOnK8s": "kubernetes repos size their volumes from the PVC declarations; --size applies to docker repos.",
         "sizeRequiredDocker": "--size is required for a docker repository (--machine, or a docker-world --datastore).",
-        "startingDatastore": "Creating repository \"{{repository}}\" on datastore \"{{datastore}}\" ({{machine}})..."
+        "startingDatastore": "Creating repository \"{{repository}}\" on datastore \"{{datastore}}\" ({{machine}})...",
+        "examples": {
+          "basic": "Create a new repository on a machine.",
+          "sized": "Create a repository with a fixed volume size."
+        }
       },
       "delete": {
         "archiveHint": "To archive credentials for recovery: rerun with --archive-config",
@@ -884,10 +957,13 @@
         "confirm": "Delete repository \"{{repository}}\" on \"{{machine}}\"? This destroys its containers, volumes, and encrypted image.",
         "description": "Delete a repository and its data. Config entry is preserved; use --archive-config to move credentials to deletedRepositories for recovery via 'repo admin archive restore'. Takes a positional <ref>; a bare name resolves to the grand line and is refused when several repos share the base name, so pass name:tag to target a fork.",
         "descriptionShort": "Delete a repository and its data",
-        "examples": "\nExamples:\n  $ rdc repo delete app\n  $ rdc repo delete app:test\n",
         "failed": "Repository deletion failed",
         "restoreHint": "Restore with: rdc repo admin archive restore {{guid}}",
-        "starting": "Deleting \"{{repository}}\" on \"{{machine}}\"..."
+        "starting": "Deleting \"{{repository}}\" on \"{{machine}}\"...",
+        "examples": {
+          "basic": "Delete a repository.",
+          "fork": "Delete a single fork by its tag."
+        }
       },
       "commit": {
         "descriptionShort": "Freeze a working fork into a new immutable commit",
@@ -950,10 +1026,13 @@
         "rollback": "Rolled back config for \"{{repository}}\"",
         "alreadyExists": "Repository \"{{name}}\" already exists in config",
         "tagReservedLatest": "repo fork: tag \"latest\" is reserved for the grand (production) repository — pick a different --tag (e.g. \"test\", \"staging\", \"<feature>\")",
-        "examples": "\nExamples:\n  $ rdc repo fork app --tag test\n  $ rdc repo fork app --tag staging --up\n",
         "detachOption": "With --up: return once containers are started; health checks continue in the background (ideal for throwaway forks)",
         "detachedHint": "Services are starting in the background. Check status with: rdc machine status {{machine}} --containers",
-        "noWaitOption": "With --up: return once containers are started; health checks continue in the background (ideal for throwaway forks)"
+        "noWaitOption": "With --up: return once containers are started; health checks continue in the background (ideal for throwaway forks)",
+        "examples": {
+          "basic": "Fork a repository under a new tag.",
+          "andStart": "Fork a repository and start the fork right away."
+        }
       },
       "replicate": {
         "descriptionShort": "Instant read replicas from datastore forks",
@@ -1069,7 +1148,11 @@
         "statsDelta": "Pushed \"{{repo}}\" to {{machine}} — {{transferred}} transferred in {{duration}} (delta vs base {{base}}, image {{image}})",
         "statsFull": "Pushed \"{{repo}}\" to {{machine}} — {{transferred}} transferred in {{duration}} (full)",
         "statsNoBytes": "Pushed \"{{repo}}\" to {{machine}} — completed in {{duration}}",
-        "deployFailed": "Failed to deploy \"{{repo}}\" after push"
+        "deployFailed": "Failed to deploy \"{{repo}}\" after push",
+        "examples": {
+          "toStorage": "Push a repository to a storage backend.",
+          "toMachine": "Push a repository to another machine."
+        }
       },
       "pull": {
         "description": "Pull repository from a remote (machine or storage). Omit name to pull all repos. The source type is auto-detected from config. Use --up to deploy after pull",
@@ -1084,7 +1167,11 @@
         "pulling": "Pulling backup of \"{{repo}}\"...",
         "deploying": "Deploying \"{{repo}}\" on {{machine}}...",
         "deployed": "Repository \"{{repo}}\" deployed on {{machine}}",
-        "deployFailed": "Failed to deploy \"{{repo}}\" after pull"
+        "deployFailed": "Failed to deploy \"{{repo}}\" after pull",
+        "examples": {
+          "basic": "Pull a repository from a storage backend.",
+          "andStart": "Pull a repository and start it right away."
+        }
       },
       "migrate": {
         "description": "Live-migrate a repository from one machine to another with minimal downtime. Two-phase rsync: bulk transfer while running, then brief stop for delta sync. Moves the whole repository (routing is repointed at the new home) and, once the move succeeds, deletes the source images (use --keep-source to retain them). Supports CRIU checkpoint for process memory migration and auto-provisioning of target machines",
@@ -1124,15 +1211,27 @@
         "deletingSource": "Deleting source images on {{machine}}...",
         "sourceDeleted": "Source images for {{name}} deleted from {{machine}}",
         "sourceRetained": "Kept source images for {{name}} on {{machine}}. They are not addressable by any config record; reconcile will flag them as strays.",
-        "sourceDeleteFailed": "Could not delete the source images for {{name}} on {{machine}}: {{error}}. The move already succeeded; sweep the leftover with 'rdc machine prune {{machine}}'."
+        "sourceDeleteFailed": "Could not delete the source images for {{name}} on {{machine}}: {{error}}. The move already succeeded; sweep the leftover with 'rdc machine prune {{machine}}'.",
+        "examples": {
+          "basic": "Move a repository to another machine.",
+          "strategy": "Move a repository using the physical copy strategy."
+        }
       },
       "sync": {
         "description": "Sync repositories and files (bulk push/pull, file transfer)",
         "upload": {
-          "description": "Upload files to a repository via rsync over SSH (delta transfer). Use --mirror to delete extra remote files, --dry-run to preview, --exclude to skip patterns"
+          "description": "Upload files to a repository via rsync over SSH (delta transfer). Use --mirror to delete extra remote files, --dry-run to preview, --exclude to skip patterns",
+          "examples": {
+            "dir": "Upload a local directory into a repository.",
+            "file": "Upload a single file to a path in a repository."
+          }
         },
         "download": {
-          "description": "Download files from a repository via rsync over SSH (delta transfer). Use --mirror to delete extra local files, --dry-run to preview, --exclude to skip patterns"
+          "description": "Download files from a repository via rsync over SSH (delta transfer). Use --mirror to delete extra local files, --dry-run to preview, --exclude to skip patterns",
+          "examples": {
+            "dir": "Download a repository directory to a local folder.",
+            "file": "Download a single file from a repository."
+          }
         },
         "status": {
           "description": "Dry-run comparison of local and remote files (shows what would be transferred without actually transferring)"
@@ -1169,7 +1268,10 @@
         "get": {
           "descriptionShort": "Show digest of a secret (value never returned)",
           "description": "Show the SHA-256 digest of a secret. The plaintext value is never returned by design (write-only). Use --current on a subsequent set/unset to verify a value you already know, or rotate via `set --rotate-secret`.",
-          "notFound": "Secret \"{{key}}\" not found on repository \"{{repository}}\""
+          "notFound": "Secret \"{{key}}\" not found on repository \"{{repository}}\"",
+          "examples": {
+            "basic": "Read a repository secret."
+          }
         },
         "list": {
           "descriptionShort": "List per-repo secret keys and modes",
@@ -1179,7 +1281,11 @@
         "set": {
           "descriptionShort": "Set or overwrite a per-repo secret",
           "description": "Set or overwrite a secret. Forks do not inherit; set on the fork explicitly. Under agent context, requires --current digest match (passwd-style).",
-          "success": "Set secret \"{{key}}\" ({{mode}}) on \"{{repository}}\""
+          "success": "Set secret \"{{key}}\" ({{mode}}) on \"{{repository}}\"",
+          "examples": {
+            "basic": "Store a secret for a repository.",
+            "envMode": "Store a secret and expose it as an environment variable."
+          }
         },
         "unset": {
           "descriptionShort": "Delete a per-repo secret",
@@ -1289,12 +1395,15 @@
         "confirm": "Promote \"{{fork}}\" into production as \"{{grand}}\"? The current production data is preserved as a backup fork.",
         "description": "Make a validated fork the production repository under its parent name. The parent keeps its identity (GUID, networkId, domains, autostart, backup chain) and receives the fork's data; the old production data is preserved as a backup fork. Use it to test an upgrade on a fork, verify it, then promote. Pass an explicit <name>:<tag> for the fork; a bare ref resolves to the parent and is rejected with \"not a fork\". Promote never fetches bytes: use 'repo push' or 'backup restore' for that.",
         "descriptionShort": "Make a validated fork the production repository under its parent name",
-        "examples": "\nExamples:\n  $ rdc repo promote app:test\n  $ rdc repo promote app:test --yes\n",
         "failed": "Promote failed",
         "grandNotFound": "Grand repo not found for fork \"{{name}}\"",
         "notAFork": "promote swaps a fork into production; \"{{name}}\" is the production record",
         "revertHint": "To revert: rdc repo promote {{backup}}",
-        "starting": "Promoting \"{{fork}}\" into \"{{grand}}\" on \"{{machine}}\"..."
+        "starting": "Promoting \"{{fork}}\" into \"{{grand}}\" on \"{{machine}}\"...",
+        "examples": {
+          "basic": "Promote a fork to be the main repository.",
+          "noConfirm": "Promote a fork without the confirmation prompt."
+        }
       },
       "refMachineConflict": "A repository ref derives its own machine. Use -m/--machine only for the machine-wide form: repo {{verb}} --all -m <machine>.",
       "logs": {
@@ -1303,7 +1412,11 @@
         "containerOption": "Container to read (only needed when the repository runs more than one)",
         "followOption": "Keep streaming new lines until interrupted",
         "linesOption": "How many lines of history to show (default: 100)",
-        "timestampsOption": "Prefix each line with its timestamp"
+        "timestampsOption": "Prefix each line with its timestamp",
+        "examples": {
+          "basic": "Show a repository's container logs.",
+          "container": "Show the last 50 log lines for one container."
+        }
       },
       "exec": {
         "descriptionShort": "Run a command inside a repository container",
@@ -1311,7 +1424,11 @@
         "cmdArgument": "Command to run, after --",
         "containerOption": "Container to run in (only needed when the repository runs more than one)",
         "interactiveOption": "Allocate a terminal (for a command that expects one)",
-        "userOption": "User to run the command as"
+        "userOption": "User to run the command as",
+        "examples": {
+          "basic": "Run a command inside a repository container.",
+          "interactive": "Open an interactive shell in a container."
+        }
       }
     },
     "backup": {
@@ -1337,7 +1454,11 @@
         "optionPath": "Subdirectory within the storage root. When omitted, hot/ and cold/ are listed and merged.",
         "optionStorage": "List artifacts on this storage endpoint",
         "placementExclusive": "Pass exactly one of --machine or --storage, not both.",
-        "placementRequired": "Specify --machine <m> or --storage <s> to say where to list from."
+        "placementRequired": "Specify --machine <m> or --storage <s> to say where to list from.",
+        "examples": {
+          "basic": "List the backups stored for a machine.",
+          "byStorage": "List the backups in a specific storage backend."
+        }
       },
       "restore": {
         "datastoreUnattached": "Datastore \"{{datastore}}\" is not attached to any machine. Attach it first: rdc datastore attach {{datastore}} --to <machine>.",
@@ -1355,10 +1476,18 @@
         "pulling": "Pulling {{name}} from {{place}}...",
         "restored": "Restored {{name}} onto {{machine}}",
         "sourceUnknown": "No repository named \"{{name}}\" is known in this config, so its backup artifact cannot be located.",
-        "targetExists": "\"{{name}}\" already exists. Restore under another name (--as) or delete the existing repository first."
+        "targetExists": "\"{{name}}\" already exists. Restore under another name (--as) or delete the existing repository first.",
+        "examples": {
+          "basic": "Restore a backup onto a machine.",
+          "asNewRepo": "Restore a backup as a new repository and start it."
+        }
       },
       "run": {
-        "description": "Run a backup now."
+        "description": "Run a backup now.",
+        "examples": {
+          "basic": "Run a backup strategy now.",
+          "watch": "Run a backup strategy and follow its progress."
+        }
       },
       "status": {
         "description": "Show backup status and timer state on a remote machine"
@@ -1386,7 +1515,11 @@
           "optionMode": "Backup mode: \"hot\" (zero downtime) or \"cold\" (stop, snapshot, restart)",
           "optionStorage": "Storage config name (rclone credentials)",
           "saved": "Backup strategy configuration saved",
-          "storageRequired": "--storage is required when creating a new destination. Use: --storage <storage-name>"
+          "storageRequired": "--storage is required when creating a new destination. Use: --storage <storage-name>",
+          "examples": {
+            "configure": "Configure a backup strategy's storage and mode.",
+            "disable": "Turn a backup strategy off."
+          }
         },
         "show": {
           "description": "Show backup strategy details",
@@ -1424,7 +1557,10 @@
       "add": {
         "added": "Registered storage \"{{name}}\"",
         "adding": "Registering storage \"{{name}}\"...",
-        "description": "Register a storage endpoint."
+        "description": "Register a storage endpoint.",
+        "examples": {
+          "basic": "Register a storage backend from a vault definition."
+        }
       },
       "import": {
         "description": "Import a storage endpoint from a definition file.",
@@ -1612,7 +1748,12 @@
       "descriptionShort": "SSH terminal access to machines and repositories",
       "description": "Open an SSH terminal to a machine or a repository. The target is a machine name or a repo ref, and the repository context (DOCKER_HOST, working directory, environment) is set up automatically. Use `-c` to run a single command non-interactively. For container logs or a one-shot command in a container, use `repo logs` and `repo exec`. For VS Code, use `vscode`.",
       "connect": {
-        "description": "Open a shell on a machine, or inside a repository with its Docker set up."
+        "description": "Open a shell on a machine, or inside a repository with its Docker set up.",
+        "examples": {
+          "machine": "Open an SSH terminal to a machine.",
+          "repo": "Open a terminal inside a repository.",
+          "runCommand": "Run a single command on a machine over SSH."
+        }
       },
       "connectingTo": "Connecting to {{title}}...",
       "fetchingDetails": "Fetching connection details...",
@@ -1643,7 +1784,11 @@
         "tunnelReady": "Tunnel ready on localhost:{{port}}",
         "browserUrl": "Open VS Code in your browser: {{url}}",
         "passwordNote": "Login password: {{password}}",
-        "openingBrowser": "Opening your browser..."
+        "openingBrowser": "Opening your browser...",
+        "examples": {
+          "basic": "Open a repository in VS Code over SSH.",
+          "folder": "Open a specific folder of a repository in VS Code."
+        }
       },
       "list": {
         "description": "List configured VS Code SSH connections",
@@ -1701,7 +1846,12 @@
       "summary": "Run as an executor for remote clients",
       "listening": "Executor listening on http://{{host}}:{{port}} (mode: {{mode}})",
       "hint": "Point a client at it with: rdc --proxy <url> <command>",
-      "draining": "Draining in-flight commands before shutdown."
+      "draining": "Draining in-flight commands before shutdown.",
+      "examples": {
+        "basic": "Start the local executor server.",
+        "customPort": "Start the executor server on a specific port.",
+        "container": "Start the executor server in container mode."
+      }
     },
     "job": {
       "description": "Manage detached jobs on a machine: list them, check status, replay or follow their event logs, cancel one, or garbage-collect finished ones. A detached job runs under systemd on the machine, so it survives a dropped connection and can be re-attached to later.",
@@ -1710,23 +1860,36 @@
       "idOption": "Job ID",
       "list": {
         "description": "List detached jobs on a machine, newest first",
-        "empty": "No jobs on {{machine}}."
+        "empty": "No jobs on {{machine}}.",
+        "examples": {
+          "basic": "List the jobs on a machine."
+        }
       },
       "status": {
-        "description": "Show a detached job's status"
+        "description": "Show a detached job's status",
+        "examples": {
+          "basic": "Show the status of one job."
+        }
       },
       "logs": {
         "description": "Replay or follow a detached job's event log",
         "followOption": "Stream until the job finishes",
         "sinceLineOption": "Resume after this many lines (the count you already received)",
         "invalidSinceLine": "--since-line must be a line count (got \"{{value}}\")",
-        "detached": "Detached from job {{jobId}}. It is still running on {{machine}} and was NOT cancelled. Re-attach with: rdc job logs {{jobId}} -m {{machine}} --follow"
+        "detached": "Detached from job {{jobId}}. It is still running on {{machine}} and was NOT cancelled. Re-attach with: rdc job logs {{jobId}} -m {{machine}} --follow",
+        "examples": {
+          "basic": "Show a job's logs.",
+          "follow": "Stream a job's logs as they arrive."
+        }
       },
       "cancel": {
         "description": "Cancel a running detached job",
         "confirm": "Cancel job {{jobId}} ({{function}}) on {{machine}}? The operation will be stopped.",
         "requested": "Cancel requested for job {{jobId}}.",
-        "alreadyFinished": "Job {{jobId}} already {{state}}; nothing to cancel."
+        "alreadyFinished": "Job {{jobId}} already {{state}}; nothing to cancel.",
+        "examples": {
+          "basic": "Cancel a running job."
+        }
       },
       "gc": {
         "description": "Remove finished jobs and their logs",

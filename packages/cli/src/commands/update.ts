@@ -370,6 +370,8 @@ export function registerUpdateCommand(program: Command): void {
     .option('--check-only', t('commands.update.checkOnly'))
     .option('--rollback', t('commands.update.rollback'))
     .option('--status', t('commands.update.statusDescription'))
+    // No .choices(): the channel is a free-form R2 path segment (edge, stable, and
+    // per-PR pr-N channels are all legal), so the set is open by design.
     .option('--channel <channel>', t('commands.update.channelDescription'))
     .action(async (options) => {
       try {

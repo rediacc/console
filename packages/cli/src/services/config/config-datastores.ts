@@ -31,6 +31,7 @@
  */
 
 import type { RdcConfig } from '@rediacc/shared/config-schema';
+import { RefGrammarError, splitRef } from '@rediacc/shared/ref';
 import { t } from '../../i18n/index.js';
 import { notFound } from '../../utils/cli-exit-error.js';
 import { ValidationError } from '../../utils/errors.js';
@@ -45,13 +46,16 @@ const CONTROL_DS_PREFIX = 'ds-control-';
 
 /** A datastore ref is `name` or `name:tag` (the fork grammar, spec §5.3). */
 export function parseDatastoreRef(ref: string): { name: string; tag?: string } {
-  const [name, ...rest] = ref.split(':');
-  if (!name || rest.length > 1) {
-    throw new ValidationError(
-      `"${ref}" is not a datastore ref. Use <name> or <name>:<tag> (for example ds-data:exp).`
-    );
+  try {
+    return splitRef(ref);
+  } catch (error) {
+    if (error instanceof RefGrammarError) {
+      throw new ValidationError(
+        `"${ref}" is not a datastore ref. Use <name> or <name>:<tag> (for example ds-data:exp).`
+      );
+    }
+    throw error;
   }
-  return rest.length === 1 && rest[0] ? { name, tag: rest[0] } : { name };
 }
 
 /**
