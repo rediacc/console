@@ -1,3 +1,6 @@
+import { readFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 import { CliRunner } from '../src/utils/CliRunner';
@@ -40,10 +43,18 @@ const SSH_USER = process.env.E2E_SSH_USER ?? process.env.USER ?? 'root';
 const APP = 'e2ecli-app';
 const APP2 = 'e2ecli-keep';
 
-interface RepoListEntry {
-  name: string;
-  machine?: string;
-  guid?: string;
+// The slice of rdc's config-v3 file these helpers read (placement + GUID).
+interface CliConfigFile {
+  resources?: {
+    repositories?: Record<
+      string,
+      {
+        grand?: string;
+        placement?: { machine?: string };
+        tags?: Record<string, { repositoryGuid?: string }>;
+      }
+    >;
+  };
 }
 
 test.describe
@@ -55,24 +66,44 @@ test.describe
     let w1: BridgeTestRunner;
     let w2: BridgeTestRunner;
 
-    // Placement the config resolves for a repo, read from the CLI's own JSON
-    // output — this is the "placement rewrite" the migrate routing must produce.
-    const placementOf = async (name: string): Promise<string | undefined> => {
-      const { json } = await cli.runJson<RepoListEntry[]>(['repo', 'list']);
-      const entry = Array.isArray(json) ? json.find((r) => r.name === name) : undefined;
-      return entry?.machine;
+    // Placement the config claims for a repo, read from rdc's OWN config file —
+    // the exact artifact migrate mutates. TRANSCRIPT-CONFIRMED live: `repo
+    // list` requires -m (it queries a machine, merging live state), so the
+    // file read is both the only bare surface and the honest one for a pure
+    // config-placement assert.
+    const readCliConfig = async (): Promise<CliConfigFile> =>
+      JSON.parse(
+        await readFile(path.join(os.homedir(), '.config', 'rediacc', 'e2e-cli.json'), 'utf8')
+      ) as CliConfigFile;
+
+    const placementOf = async (name: string): Promise<string | undefined> =>
+      (await readCliConfig()).resources?.repositories?.[name]?.placement?.machine;
+
+    const guidOf = async (name: string): Promise<string | undefined> => {
+      const fam = (await readCliConfig()).resources?.repositories?.[name];
+      return fam?.tags?.[fam?.grand ?? 'latest']?.repositoryGuid;
     };
+
+    // GUIDs remembered at create time, so the residue check still works if a
+    // config entry is ever archived away.
+    const guids: Record<string, string | undefined> = {};
 
     // Bridge-side cross-check: does renet on <runner> report the repo present?
     // The CLI claims placement; the bridge is ground truth (07 §9).
+    // TRANSCRIPT-CONFIRMED live: storage speaks GUID (#93) — the raw
+    // repository_list carries the GUID as the repo's name, never the config
+    // name — and with --debug the listing rides the logrus stream (stderr),
+    // so both channels are grepped.
     const repoPresentOnBridge = async (
       runner: BridgeTestRunner,
       name: string
     ): Promise<boolean> => {
+      const guid = (await guidOf(name).catch(() => undefined)) ?? guids[name];
+      if (!guid) return false;
       const res = await runner.executeViaBridge(
         'renet functions once --test-mode --debug --function repository_list'
       );
-      return res.code === 0 && res.stdout.includes(name);
+      return res.code === 0 && (res.stdout + res.stderr).includes(guid);
     };
 
     const deleteAppQuietly = async (name: string): Promise<void> => {
@@ -123,6 +154,8 @@ test.describe
       // --datastore for a named one. Passing both is a validation error.
       const create = await cli.run(['repo', 'create', APP, '-m', M1, '--size', '1G']);
       expect(create.code, `repo create: ${create.stderr}`).toBe(0);
+      guids[APP] = await guidOf(APP);
+      expect(guids[APP], 'create registered no GUID in the config').toBeTruthy();
       const up = await cli.run(['repo', 'up', `${APP}@${M1}`]);
       expect(up.code, `repo up: ${up.stderr}`).toBe(0);
       // The repo is really on machine-11 (bridge ground truth).
@@ -153,6 +186,7 @@ test.describe
     test('6. `--keep-source` retains both copies; config still points at the target', async () => {
       const create = await cli.run(['repo', 'create', APP2, '-m', M1, '--size', '1G']);
       expect(create.code, `repo create keep: ${create.stderr}`).toBe(0);
+      guids[APP2] = await guidOf(APP2);
       await cli.run(['repo', 'up', `${APP2}@${M1}`]);
 
       const mig = await cli.run(['repo', 'migrate', `${APP2}@${M1}`, '--to', M2, '--keep-source']);
