@@ -133,7 +133,7 @@
     "proper-lockfile": "^4.1.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.3",
+    "@biomejs/biome": "^2.5.4",
     "@eslint/js": "^9.39.2",
     "@eslint/json": "^2.0.1",
     "@types/node": "^22.20.0",
@@ -152,7 +152,7 @@
     "eslint-plugin-unicorn": "^65.0.1",
     "glob": "^11.0.0",
     "globals": "^17.7.0",
-    "knip": "^6.26.0",
+    "knip": "^6.27.0",
     "lockfile-lint": "^5.0.0",
     "syncpack": "^15.3.2",
     "tsx": "^4.21.0",

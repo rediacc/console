@@ -29,13 +29,13 @@ Dekrüpteeritud võti jääb ainult brauseri mällu. Lehe värskendamine lukusta
 
 ## Ressursivalijad
 
-Kui konsool on avatud, asendavad käsuvormid vabateksti väljad valijatega, mis toituvad sinu dekrüpteeritud konfiguratsioonist: masinad, repositooriumid, andmesalved, salvestusruumid, klastrid, pilveteenuse pakkujad ja varundusstrateegiad. Mõned valijad lahendatakse selle asemel elavalt, käsku käivitades — näiteks konteinerid masinas või hetktõmmised andmesalves.
+Kui konsool on avatud, asendavad käsuvormid vabateksti väljad valijatega, mis toituvad sinu dekrüpteeritud konfiguratsioonist: masinad, repositooriumid, andmesalved, salvestusruumid, klastrid, pilveteenuse pakkujad ja varundusstrateegiad. Mõned valijad lahendatakse selle asemel elavalt, käsku käivitades, näiteks konteinerid masinas või hetktõmmised andmesalves.
 
 Valijad filtreerivad sõltuvalt: vali masin ja repositooriumi valija kitseneb selle masina peale. Repositooriumiviidete jaoks koostab viite koostaja täieliku `nimi:silt@masin` vormi üksikutest valikutest. Valijad on vihjed, mitte piirangud, ja sa saad väärtuse alati käsitsi sisestada.
 
 ## Käskude käivitamine
 
-Brauser ei hoia kunagi SSH-võtit ega masina aadressi. Kui klõpsad Käivita, saadab konsool ainult käsu kavatsuse — millist käsku ja milliseid parameetreid — ning käitaja lahendab kõik muu ja käivitab selle. Vaata [Proxy ja käitaja](/et/docs/proxy-and-executor), kuidas see töötab ja millised käsud saavad sel viisil töötada.
+Brauser ei hoia kunagi SSH-võtit ega masina aadressi. Kui klõpsad Käivita, saadab konsool ainult käsu kavatsuse, millist käsku ja milliseid parameetreid, ning käitaja lahendab kõik muu ja käivitab selle. Vaata [Proxy ja käitaja](/et/docs/proxy-and-executor), kuidas see töötab ja millised käsud saavad sel viisil töötada.
 
 Käsud, mis ainult muudavad sinu konfiguratsiooni (näiteks masinakirje loomine), ei käivitu kaugelt üldse. Konsool suunab need sisseehitatud konfiguratsiooniredaktorisse, kus muudatus krüpteeritakse ja lükatakse edasi nagu iga teine konfiguratsioonimuudatus.
 

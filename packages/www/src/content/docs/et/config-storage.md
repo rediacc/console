@@ -14,7 +14,7 @@ Konfiguratsioonisalv pakub sinu CLI konfiguratsiooni null-teadmisega krüpteerit
 
 ## Avamismeetodid (võtmepesad)
 
-Igal salvel on üks CEK, mis on iga avamismeetodi jaoks eraldi mähitud — sarnaselt LUKS-i võtmepesadele. Iga üksik pesa avab sama võtme ning pesasid saab lisada või eemaldada ilma andmeid uuesti krüpteerimata:
+Igal salvel on üks CEK, mis on iga avamismeetodi jaoks eraldi mähitud (sarnaselt LUKS-i võtmepesadele). Iga üksik pesa avab sama võtme ning pesasid saab lisada või eemaldada ilma andmeid uuesti krüpteerimata:
 
 | Meetod | Mis see on | Märkused |
 |--------|-----------|-------|
@@ -22,7 +22,7 @@ Igal salvel on üks CEK, mis on iga avamismeetodi jaoks eraldi mähitud — sarn
 | **Peaparool** | Sinu valitud parool, venitatud PBKDF2-SHA256-ga (600 000 iteratsiooni) | Toimib ka ilma PRF-toega riistvarata; võimaldab ka pealdiseta CLI registreerimist |
 | **Taastekood** | Genereeritud `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` kood | Näidatakse täpselt üks kord loomisel; hoia see turvalises kohas |
 
-Iga meetod läbib sama protsessi: pesa annab saladuse, mis kombineeritakse serveripoolse saladusega CEK-i lahtimähkimiseks. Kummastki poolest üksi ei piisa, seega kehtib null-teadmise põhimõte kõigi kolme meetodi puhul — pesa saladus ei jõua kunagi serverisse.
+Iga meetod läbib sama protsessi: pesa annab saladuse, mis kombineeritakse serveripoolse saladusega CEK-i lahtimähkimiseks. Kummastki poolest üksi ei piisa, seega kehtib null-teadmise põhimõte kõigi kolme meetodi puhul, pesa saladus ei jõua kunagi serverisse.
 
 Pesasid hallatakse portaalis Konfiguratsioonisalve lehel. Organisatsioonid, kes soovivad ainult riistvarapõhist avamist, saavad lubada **nõua passkey** poliitika, mis keeldub mitte-passkey pesadest ja tühistab need kogu salve jaoks.
 
@@ -78,7 +78,7 @@ Registreerimine on lugemistoiming: CLI toob pesa avalikud KDF-parameetrid ja mä
 
 Salve CEK-i pööramine mähib selle uude põlvkonda:
 
-- **Taastekoodid muutuvad pööramisel alati kehtetuks** — genereeri ja salvesta pärast seda uus
+- **Taastekoodid muutuvad pööramisel alati kehtetuks**, genereeri ja salvesta pärast seda uus
 - **Peaparooli pesa** säilib ainult siis, kui parool sisestatakse pööramisviisardis uuesti
 - Vana põlvkonda jäänud pesa märgitakse aegunuks, mitte ei ebaõnnestu arusaamatu dekrüpteerimisveaga
 

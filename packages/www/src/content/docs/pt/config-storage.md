@@ -22,7 +22,7 @@ Existe uma CEK por armazenamento, protegida de forma independente para cada mét
 | **Palavra-passe mestra** | Uma palavra-passe à sua escolha, reforçada com PBKDF2-SHA256 (600.000 iterações) | Funciona sem hardware compatível com PRF; também permite a inscrição headless do CLI |
 | **Código de recuperação** | Um código gerado no formato `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` | Mostrado apenas uma vez na criação; guarde-o num local seguro |
 
-Todos os métodos alimentam o mesmo processo: o slot produz um segredo que se combina com um segredo guardado no servidor para desbloquear a CEK. Nenhuma das duas metades é suficiente por si só, pelo que a propriedade zero-knowledge se mantém nos três métodos — o segredo do slot nunca chega ao servidor.
+Todos os métodos alimentam o mesmo processo: o slot produz um segredo que se combina com um segredo guardado no servidor para desbloquear a CEK. Nenhuma das duas metades é suficiente por si só, pelo que a propriedade zero-knowledge se mantém nos três métodos: o segredo do slot nunca chega ao servidor.
 
 Os slots são geridos no portal, na página Armazenamento de Configuração. As organizações que queiram exigir desbloqueio apenas por hardware podem ativar a política **exigir passkey**, que recusa e revoga slots não-passkey em todo o armazenamento.
 
