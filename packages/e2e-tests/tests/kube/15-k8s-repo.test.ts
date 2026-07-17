@@ -365,9 +365,19 @@ ${dataSource ?? ''}`;
 
     test.beforeAll(async () => {
       w1 = BridgeTestRunner.forWorker(1);
-      if (KEEP && (await nodeReady())) {
-        adopted = true;
-        return;
+      if (KEEP) {
+        // The harness's global setup REBOOTS the VMs, so a standing cluster is
+        // mid-recovery here (autostart reconciler reattaches the datastores,
+        // systemd restarts k3s). A single readiness probe would falsely demote
+        // to a full rebuild: check for the control datastore RECORD (cheap,
+        // survives reboot) and only then wait out the boot.
+        const rec = await w1.executeViaBridge(
+          `sudo renet datastore list --json 2>/dev/null | grep -c '"${CTRL_DS}"'; true`
+        );
+        if (rec.stdout.trim() !== '0' && (await poll(() => nodeReady(), 180_000))) {
+          adopted = true;
+          return;
+        }
       }
       await teardownAll();
     });
