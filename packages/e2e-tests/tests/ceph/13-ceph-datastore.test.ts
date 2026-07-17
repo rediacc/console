@@ -129,7 +129,7 @@ test.describe
       expect(list.code, `datastore list: ${list.stderr.slice(-200)}`).toBe(0);
       const records = JSON.parse(
         list.stdout.slice(list.stdout.indexOf('['), list.stdout.lastIndexOf(']') + 1)
-      ) as Array<{ name: string; backend?: string }>;
+      ) as { name: string; backend?: string }[];
       const rec = records.find((r) => r.name === dsName);
       expect(rec, `registry has no record for ${dsName}`).toBeDefined();
       expect(rec?.backend?.toLowerCase()).toContain('ceph');

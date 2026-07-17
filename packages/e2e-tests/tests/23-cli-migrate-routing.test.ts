@@ -81,7 +81,8 @@ test.describe
 
     const guidOf = async (name: string): Promise<string | undefined> => {
       const fam = (await readCliConfig()).resources?.repositories?.[name];
-      return fam?.tags?.[fam?.grand ?? 'latest']?.repositoryGuid;
+      if (!fam) return undefined;
+      return fam.tags?.[fam.grand ?? 'latest']?.repositoryGuid;
     };
 
     // GUIDs remembered at create time, so the residue check still works if a

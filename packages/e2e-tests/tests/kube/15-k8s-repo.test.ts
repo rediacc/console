@@ -867,7 +867,7 @@ spec:
       const catalog = await w1.executeViaBridge(
         `curl -s --max-time 15 http://127.0.0.1:5000/v2/_catalog; true`
       );
-      console.log(
+      console.warn(
         `R9 #96 tripwire — serve HTTP ${serve.stdout.trim() || 'HANG/timeout'}, catalog ${catalog.stdout.trim().slice(0, 200) || 'EMPTY'}`
       );
       // Smoke: a pod pulling through the wired runtime still comes Ready.

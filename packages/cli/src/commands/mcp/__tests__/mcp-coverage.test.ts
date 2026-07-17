@@ -9,7 +9,11 @@
 import { CLI_CONTRACT } from '@rediacc/shared/cli-contract';
 import { describe, expect, it } from 'vitest';
 import { cli } from '../../../cli.js';
-import { COMMAND_METADATA, getMcpExclusions } from '../../../config/command-metadata.js';
+import {
+  COMMAND_METADATA,
+  getCommandMeta,
+  getMcpExclusions,
+} from '../../../config/command-metadata.js';
 import { COMMAND_REGISTRY } from '../../../config/command-registry.js';
 import { buildToolsFromContract } from '../tool-factory.js';
 import { buildAllTools } from '../tools.js';
@@ -197,7 +201,7 @@ describe('contract-sourced tool derivation', () => {
   it('every non-experimental mcp-annotated contract command produces exactly one tool', () => {
     for (const cmd of CLI_CONTRACT.commands) {
       if (cmd.experimental) continue;
-      if (!COMMAND_METADATA[cmd.pathKey]?.mcp) continue;
+      if (!getCommandMeta(cmd.pathKey)?.mcp) continue;
       const name = toolName(cmd.pathKey);
       const matches = autoTools.filter((t) => t.name === name);
       expect(matches.length, `${cmd.pathKey} should derive exactly one tool "${name}"`).toBe(1);
@@ -206,7 +210,7 @@ describe('contract-sourced tool derivation', () => {
 
   it('no mcp-excluded command produces an auto-derived tool', () => {
     for (const cmd of CLI_CONTRACT.commands) {
-      if (!COMMAND_METADATA[cmd.pathKey]?.mcpExcludeReason) continue;
+      if (!getCommandMeta(cmd.pathKey)?.mcpExcludeReason) continue;
       const name = toolName(cmd.pathKey);
       expect(autoNames.has(name), `${cmd.pathKey} is excluded but produced tool "${name}"`).toBe(
         false
@@ -230,7 +234,7 @@ describe('contract-sourced tool derivation', () => {
       expect(cmd, `tool "${tool.name}" has no backing contract command`).toBeDefined();
       expect(cmd!.experimental, `tool "${tool.name}" backs an experimental command`).toBe(false);
       expect(
-        COMMAND_METADATA[cmd!.pathKey]?.mcp,
+        getCommandMeta(cmd!.pathKey)?.mcp,
         `tool "${tool.name}" backs a command with no mcp metadata`
       ).toBeTruthy();
     }
