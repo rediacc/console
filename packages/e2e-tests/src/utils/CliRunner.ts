@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -59,6 +60,20 @@ export class CliRunner {
     }
     // packages/e2e-tests/src/utils -> packages/cli/dist/cli-bundle.cjs
     const bundle = path.resolve(__dirname, '../../../cli/dist/cli-bundle.cjs');
+    // Pin the DEV renet for the CLI's remote provisioning. Without this the
+    // bundle resolves renet via the fallback chain (/usr/bin/renet — the
+    // HOST'S installed production build) and its first machine connection
+    // DEPLOYS that binary into the fleet's install slot, silently replacing
+    // the dev renet and breaking every bridge-side surface the production
+    // build does not carry (found live: `functions` gone fleet-wide after
+    // suite 23's own preflight). rdc.sh exports this; the playwright path
+    // must too.
+    if (!env.RENET_BINARY_PATH) {
+      const devRenet = path.resolve(__dirname, '../../../../private/renet/bin/renet');
+      if (existsSync(devRenet)) {
+        env.RENET_BINARY_PATH = devRenet;
+      }
+    }
     return new CliRunner(process.execPath, [bundle], env);
   }
 
