@@ -321,20 +321,34 @@ extents alive) — deleting a volume never cascades to its snapshots.
 
 ## 5. Staging/publish split [CSI-DECIDED]
 
-The canonical mount from spec 05 §2 stays the single source of truth; kubelet's
-paths are bind views onto it. This keeps the fork-hygiene invariant (no
-mountpoints inside `repos/<repo>/`, `provisioner.go:9-16`) and lets the datastore
-detach/failover sweeps keep operating on ONE well-known tree
-(`<ds-mount>/mounts/volumes/`, already swept by `KubeRuntime.Teardown`,
-`pkg/reporuntime/kube.go:242-274`).
+A staged CSI volume has exactly ONE device mount, and it lives at kubelet's
+`staging_target_path`. The canonical path from spec 05 §2
+(`<ds-mount>/mounts/volumes/<repo>/<volname>`) is a SYMLINK to the staging
+mount — visibility without a mount reference. The fork-hygiene invariant holds
+(no mountpoints inside `repos/<repo>/`), and the detach/failover sweeps see the
+symlink tree at the same well-known place.
+
+**Why not canonical-mount + bind-to-staging (the original ruling, REVERSED by
+#98):** kubelet's `GetDeviceMountRefs` safety check refuses to issue
+`NodeUnstageVolume` while the staged device is mounted anywhere besides
+globalmount. With the canonical device mount alive, unstage was permanently
+unreachable — kubelet retried on a 2m2s backoff forever, `DeleteVolume`
+correctly kept refusing (`still staged/open`), and the orphaned dm-crypt+loop
+stack held the whole datastore against detach. Observed live in suite 15
+(teardown reds were a retry-lottery: `repository down`'s CT-07 sweep happened
+to strip the canonical mount, and teardown went green only if a kubelet retry
+landed in the ~25s window before `csi-node-down`). For k8s-owned volumes the
+node's mount tree belongs to kubelet; the product keeps its addressing via the
+symlink, not a second mount.
 
 ```
 NodeStageVolume(volume_id, staging_target_path):
   1. resolve image; ResolveKeyForRepoDir
-  2. OpenAndMount → canonical <ds-mount>/mounts/volumes/<repo>/<volname>/
+  2. OpenAndMount → staging_target_path DIRECTLY
      (mapper name: rediacc-vol-<repo>-<volname>, kubevolume convention)
-  3. bind-mount canonical → staging_target_path
-  idempotent: same-args re-call with both mounts live → OK
+  3. canonical <ds-mount>/mounts/volumes/<repo>/<volname> → symlink to staging
+     (a stale symlink/empty dir is replaced; anything else is INTERNAL)
+  idempotent: same-args re-call with the mount live → OK
 
 NodePublishVolume(volume_id, staging_target_path, target_path):
   1. FAILED_PRECONDITION unless staged
@@ -345,11 +359,12 @@ NodePublishVolume(volume_id, staging_target_path, target_path):
   3. bind (rbind,ro if readonly) staging → target_path
 
 NodeUnpublishVolume: umount target (idempotent, absent → OK)
-NodeUnstageVolume:   umount staging bind, then TeardownVolume on the canonical
-                     mount (unmount + luksClose + loop detach — deepest-first,
-                     NEVER lazy, 03 §2 rules 1-2; surviving holder → INTERNAL
-                     with the holder list in the message, so kubelet retries
-                     instead of the datastore detaching under a live mount)
+NodeUnstageVolume:   TeardownVolume on the staging mount (unmount + luksClose +
+                     loop detach — deepest-first, NEVER lazy, 03 §2 rules 1-2;
+                     surviving holder → INTERNAL with the holder list in the
+                     message, so kubelet retries instead of the datastore
+                     detaching under a live mount), then remove the canonical
+                     symlink
 ```
 
 ## 6. Snapshots and clones over reflink
@@ -570,8 +585,9 @@ working — and the fork's own attach step re-mints fresh certs against the new 
 ### Datastore detach & failover (spec 05 §4 sequence — CSI additions in place)
 
 - Step 0/2 (drain / Node delete) already causes kubelet to NodeUnpublish +
-  NodeUnstage every CSI volume → the canonical mounts under
-  `<ds-mount>/mounts/volumes/` clear through `TeardownVolume`. The existing
+  NodeUnstage every CSI volume → the staging mounts clear through
+  `TeardownVolume` and the canonical symlinks under
+  `<ds-mount>/mounts/volumes/` are removed (§5, #98). The existing
   detach sweep remains the backstop for leaks; a LIVE holder still refuses
   detach (03 hygiene) — CSI changes nothing about that contract.
 - Step 4/5 additions: stop (last-ds) or restart (remaining-ds) the three CSI

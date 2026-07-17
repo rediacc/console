@@ -236,3 +236,22 @@ named residuals carrying owners: #42 (product, ruling needed) and the rehearse r
     doctrine — a capture that feeds restore/clone carries fork semantics; syncfs the
     volume's mountpoint before the reflink, fail-soft (crash-consistent on flush
     failure, loudly). Fix in flight (fix-97). Owner: this wave.
+
+16. **#98 — the CSI canonical device mount made NodeUnstage permanently unreachable;
+    §5 REVERSED to stage-directly + canonical symlink (fixed this wave).** The
+    original §5 ruling (canonical mount as source of truth, kubelet staging as a
+    bind view) collided with kubelet's GetDeviceMountRefs safety check: it refuses
+    to issue NodeUnstageVolume while the staged device is mounted anywhere besides
+    globalmount, so the canonical mount blocked unstage FOREVER (2m2s backoff;
+    driver's journal never even received the call). Downstream, DeleteVolume kept
+    correctly refusing ("still staged/open"), the dm-crypt+loop stack stranded, and
+    the datastore could never detach. Suite 15's teardown had been a retry-lottery:
+    `repository down`'s CT-07 sweep stripped the canonical mount out-of-band and
+    teardown went green only when a kubelet retry landed in the ~25s window before
+    csi-node-down (runs 9/10/13 won; 14/15 lost — three orphaned pvc stacks
+    autopsied live). Fix: NodeStage mounts the LUKS filesystem DIRECTLY at
+    kubelet's staging path (one mount per staged device) and leaves the canonical
+    path as a symlink; NodeUnstage tears down the staging mount and removes the
+    symlink. For k8s-owned volumes the node's mount tree belongs to kubelet.
+    Spec 09 §5 + §10 rewritten. The suite's detach polls stay: unstage is
+    asynchronous by design (pod deletion returns before volume teardown).
