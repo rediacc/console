@@ -1,4 +1,6 @@
 import { execFile } from 'node:child_process';
+import { rm } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
@@ -96,9 +98,24 @@ export class CliRunner {
   }
 
   /**
+   * Delete the isolated e2e-cli config file. The config is FLEET-scoped, not
+   * immortal: machine entries record the fleet's SSH host keys at add time, and
+   * an `ops down`/`ops up` re-mints them — a config surviving the reset makes
+   * every later connection fail host-key verification (found live: suite 23's
+   * preflight red while the bridge-side probes were green). Callers recreate
+   * from scratch each run; registration is cheap.
+   */
+  static async resetConfig(): Promise<void> {
+    await rm(path.join(os.homedir(), '.config', 'rediacc', `${E2E_CLI_CONFIG}.json`), {
+      force: true,
+    });
+  }
+
+  /**
    * Create the isolated e2e-cli config (positional name — `config init` takes a
    * positional, NOT --name). Idempotent-ish: a second init on an existing named
-   * config errors, which callers treat as already-initialised.
+   * config errors, which callers treat as already-initialised — but see
+   * resetConfig(): a config outliving the fleet is stale, not reusable.
    */
   async initConfig(sshKeyPath: string): Promise<CliResult> {
     return this.exec(['config', 'init', E2E_CLI_CONFIG, '--ssh-key', sshKeyPath]);

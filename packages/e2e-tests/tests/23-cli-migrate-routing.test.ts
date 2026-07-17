@@ -82,8 +82,13 @@ test.describe
       w2 = BridgeTestRunner.forWorker(2);
 
       // Isolated e2e-cli config (NEVER the default) + register both machines.
+      // Recreated from SCRATCH each run: the config records the fleet's host
+      // keys, and a config that outlives an ops down/up carries the PREVIOUS
+      // fleet's keys — every connection then fails host-key verification
+      // (found live: preflight red while the bridge probes were green).
       // TRANSCRIPT-CONFIRM: SSH key/user + whether a datastore attach step is
       // needed before repo create in the config-v3 model.
+      await CliRunner.resetConfig();
       await cli.initConfig(SSH_KEY);
       await cli.addMachine(M1, M1_IP, SSH_USER);
       await cli.addMachine(M2, M2_IP, SSH_USER);
