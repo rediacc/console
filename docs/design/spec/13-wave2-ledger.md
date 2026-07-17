@@ -215,7 +215,15 @@ named residuals carrying owners: #42 (product, ruling needed) and the rehearse r
     for two runs). The suite's assert now proves the two halves deterministically:
     containerd's generated config names the mirror endpoint, and zot serves the probe
     manifest over that endpoint (HTTP 200); the catalog commit is logged
-    informationally as #96's tripwire. Storage-commit is #96's own item. Owner: P5.
+    informationally as #96's tripwire. Live escalation of #96's severity: the serve
+    path can HANG — an on-demand manifest GET for library/busybox blocked
+    indefinitely (360s, curl killed by the test timeout) while k3s certs.d wiring was
+    proven correct and containerd's pulls succeeded via upstream fallback, and the
+    journal simultaneously showed "unauthorized access. check credentials" on zot's
+    upstream digest checks. So the cache today is a NO-OP with a working fallback,
+    not a partial cache. The suite asserts wiring hard, and runs serve+catalog as
+    bounded LOUD tripwires to flip into asserts when #96 lands. Storage-commit and
+    the hang are #96's own item. Owner: P5.
     Related footgun, same owner: the e2e setup's renet redeploy skips on VERSION
     equality (0.0.0-dev == 0.0.0-dev) so dev binaries never refresh — checksum compare.
 
