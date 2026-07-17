@@ -15,11 +15,15 @@ CONSOLE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 source "$SCRIPT_DIR/../lib/common.sh"
 
-# Parse arguments
-NOLICENSE=false
+# --nolicense is accepted for back-compat with the CI workflow steps that pass
+# it, but it is now redundant: build.sh dev defaults to nolicense and reads the
+# single knob (RDC_RENET_LICENSE=1 / RDC_BENCH=1) itself. We forward the flag so
+# an explicit --nolicense still forces the choice.
+BUILD_ARGS=()
 for arg in "$@"; do
     case "$arg" in
-        --nolicense) NOLICENSE=true ;;
+        --nolicense) BUILD_ARGS+=(--nolicense) ;;
+        --license) BUILD_ARGS+=(--license) ;;
     esac
 done
 
@@ -48,14 +52,12 @@ else
         exit 1
     fi
 
-    # Step 4: Build
-    if [[ "$NOLICENSE" == "true" ]]; then
-        log_step "Building renet from source (nolicense)..."
-        (cd "$RENET_SRC" && ./build.sh dev --nolicense)
-    else
-        log_step "Building renet from source..."
-        (cd "$RENET_SRC" && ./build.sh dev)
-    fi
+    # Step 4: Build. build.sh dev owns the license decision (nolicense by
+    # default; enforce on RDC_RENET_LICENSE=1 / RDC_BENCH=1); we only forward an
+    # explicit --nolicense/--license if one was passed.
+    log_step "Building renet from source..."
+    # Guarded expansion: safe under `set -u` when BUILD_ARGS is empty.
+    (cd "$RENET_SRC" && ./build.sh dev ${BUILD_ARGS[@]+"${BUILD_ARGS[@]}"})
 
     # Step 5: Verify binary produced
     if [[ ! -f "$RENET_BIN" ]]; then
