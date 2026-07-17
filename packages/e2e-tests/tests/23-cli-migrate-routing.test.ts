@@ -36,8 +36,6 @@ const SSH_KEY =
 // root. TRANSCRIPT-CONFIRMED live: as root, auth fails ("all configured
 // authentication methods failed") before anything else can run.
 const SSH_USER = process.env.E2E_SSH_USER ?? process.env.USER ?? 'root';
-// The datastore repos are created on (config-v3 named datastore). TRANSCRIPT-CONFIRM.
-const DATASTORE = process.env.E2E_DATASTORE ?? 'default';
 
 const APP = 'e2ecli-app';
 const APP2 = 'e2ecli-keep';
@@ -120,18 +118,10 @@ test.describe
     });
 
     test('2. create e2ecli-app on machine-11, bring it up, seed a marker', async () => {
-      // TRANSCRIPT-CONFIRM: create argv (name -m <machine> --datastore --size).
-      const create = await cli.run([
-        'repo',
-        'create',
-        APP,
-        '-m',
-        M1,
-        '--datastore',
-        DATASTORE,
-        '--size',
-        '1G',
-      ]);
+      // TRANSCRIPT-CONFIRMED live: create takes EXACTLY ONE placement flag —
+      // -m for a docker repo on the default datastore (this suite), or
+      // --datastore for a named one. Passing both is a validation error.
+      const create = await cli.run(['repo', 'create', APP, '-m', M1, '--size', '1G']);
       expect(create.code, `repo create: ${create.stderr}`).toBe(0);
       const up = await cli.run(['repo', 'up', `${APP}@${M1}`]);
       expect(up.code, `repo up: ${up.stderr}`).toBe(0);
@@ -161,17 +151,7 @@ test.describe
     });
 
     test('6. `--keep-source` retains both copies; config still points at the target', async () => {
-      const create = await cli.run([
-        'repo',
-        'create',
-        APP2,
-        '-m',
-        M1,
-        '--datastore',
-        DATASTORE,
-        '--size',
-        '1G',
-      ]);
+      const create = await cli.run(['repo', 'create', APP2, '-m', M1, '--size', '1G']);
       expect(create.code, `repo create keep: ${create.stderr}`).toBe(0);
       await cli.run(['repo', 'up', `${APP2}@${M1}`]);
 
