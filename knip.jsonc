@@ -145,14 +145,13 @@
     "fast-xml-parser"
   ],
   "ignoreBinaries": [
-    // BLOCKER: platform/system tools spawned via child_process at runtime by the CLI (user lookups, keyrings, service control, macOS/Linux/WSL shells); host binaries, never npm-managed. knip 6.26 still parses bare `which` (doctor PATH probes) and `qemu-img` (e2e VM image inspection on the KVM host), so they stay listed; it resolves the Windows cmd.exe/powershell shells natively
+    // BLOCKER: platform/system tools spawned via child_process at runtime by the CLI (user lookups, keyrings, macOS/Linux/WSL shells); host binaries, never npm-managed. knip 6.27 still parses bare `which` (doctor PATH probes) and `qemu-img` (e2e VM image inspection on the KVM host), so they stay listed; it now resolves `systemctl` (ops libvirtd/router service control, spawnSync in ops/check.ts) and the Windows cmd.exe/powershell shells natively, so those are dropped
     "dscl",
     "getent",
     "keyctl",
     "osascript",
     "qemu-img",
     "security",
-    "systemctl",
     "which",
     "wsl.exe",
 
