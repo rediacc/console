@@ -386,7 +386,13 @@ async function handleRepoDelete(
   }
 ): Promise<void> {
   try {
-    const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
+    // Converge-to-absent (#45/#95): delete RETAINS the config family by design
+    // ("may exist on other machines"), so a delete whose image is already gone
+    // is a legitimate sequence — resolve with absentOk and skip the machine
+    // dispatch on a definite absence instead of refusing with exit 12.
+    const { name, repoKey, machineName, kubeCluster, imageAbsent } = await resolveRepoRef(ref, {
+      absentOk: true,
+    });
     const { key: target, config: repoConfig } =
       await configService.resolveDestructiveTarget(repoKey);
     await assertCommandPolicy(CMD.REPO_DELETE, target);
@@ -422,14 +428,18 @@ async function handleRepoDelete(
       t('commands.repo.delete.starting', { repository: target, machine: machineName })
     );
 
-    const result = await getExecutor().execute({
-      functionName: 'repository_delete',
-      machineName,
-      ...(kubeCluster !== undefined && { kubeCluster }),
-      params: { repository: target },
-      debug: options.debug,
-      skipRouterRestart: options.skipRouterRestart,
-    });
+    // Definite machine-arm absence: the image is already gone — converge
+    // straight to the config-side completion (retention/archive messaging).
+    const result: import('../services/executor/local-executor.js').ExecuteResult = imageAbsent
+      ? { success: true, stdout: '', stderr: '', exitCode: 0, durationMs: 0 }
+      : await getExecutor().execute({
+          functionName: 'repository_delete',
+          machineName,
+          ...(kubeCluster !== undefined && { kubeCluster }),
+          params: { repository: target },
+          debug: options.debug,
+          skipRouterRestart: options.skipRouterRestart,
+        });
 
     if (result.success) {
       await handleDeleteSuccess(
@@ -466,7 +476,7 @@ export function registerRepoCreateDeleteCommands(repo: Command): void {
     });
 
   // repo delete <ref>
-  const deleteCmd = repo
+  repo
     .command('delete')
     .summary(t('commands.repo.delete.descriptionShort'))
     .description(t('commands.repo.delete.description'))
@@ -479,5 +489,4 @@ export function registerRepoCreateDeleteCommands(repo: Command): void {
     .action(async (ref: string, options) => {
       await handleRepoDelete(ref, options);
     });
-  deleteCmd.addHelpText('after', t('commands.repo.delete.examples'));
 }
