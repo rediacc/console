@@ -1,35 +1,53 @@
 ---
 title: Stockage de configuration
 description: >-
-  Synchronisation chiffrée à connaissance nulle des configurations avec
-  chiffrement basé sur les passkeys
+  Synchronisation chiffrée à connaissance nulle des configurations, avec
+  déverrouillage par passkey, mot de passe principal ou code de récupération
 category: Guides
 order: 8
 language: fr
-sourceHash: "daf79946b8925246"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "73c75b1f00630553"
+sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
 ---
 
 # Stockage de configuration
 
-Le stockage de configuration fournit une synchronisation chiffrée à connaissance nulle de votre configuration CLI entre appareils. Vos configurations sont chiffrées avec des clés dérivées de votre passkey, le serveur ne voit jamais les données en clair.
+Le stockage de configuration fournit une synchronisation chiffrée à connaissance nulle de votre configuration CLI entre appareils. Vos configurations sont chiffrées côté client avec une clé de chiffrement de contenu (CEK), le serveur ne voit jamais les données en clair.
+
+## Méthodes de déverrouillage (emplacements de clé)
+
+Chaque store possède une seule CEK, enveloppée indépendamment pour chaque méthode de déverrouillage, un peu comme les slots de clé LUKS. N'importe quel emplacement ouvre la même clé, et les emplacements peuvent être ajoutés ou retirés sans avoir à rechiffrer vos données :
+
+| Méthode | Ce que c'est | Remarques |
+|--------|-----------|-------|
+| **Passkey** | Passkey WebAuthn avec l'extension PRF | L'option la plus robuste, adossée au matériel |
+| **Mot de passe principal** | Un mot de passe de votre choix, étiré avec PBKDF2-SHA256 (600 000 itérations) | Fonctionne sans matériel compatible PRF ; permet aussi l'enrôlement CLI sans interface |
+| **Code de récupération** | Un code généré au format `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` | Affiché une seule fois à la création, conservez-le en lieu sûr |
+
+Chaque méthode alimente le même mécanisme : l'emplacement produit un secret qui se combine à un secret détenu par le serveur pour déballer la CEK. Aucune des deux moitiés ne suffit seule, si bien que la propriété de connaissance nulle tient pour les trois méthodes : le secret de l'emplacement n'atteint jamais le serveur.
+
+Les emplacements se gèrent depuis le portail, sur la page Stockage de configuration. Les organisations qui souhaitent un déverrouillage exclusivement matériel peuvent activer la politique **exiger une passkey**, qui refuse et révoque les emplacements non-passkey pour tout le store.
+
+Le déverrouillage se fait par appareil : vous déverrouillez une fois sur un nouvel appareil, après quoi les opérations CLI quotidiennes (push/pull) fonctionnent sans toucher à une passkey ni saisir de mot de passe.
 
 ## Prérequis
 
 - **Authentification à deux facteurs** activée sur votre compte
-- **Fournisseur de passkey avec support PRF** : clé de sécurité FIDO2 (ex. YubiKey), iCloud Keychain, Google Password Manager, 1Password ou Dashlane
+- Pour la méthode **passkey** : un fournisseur de passkey avec support PRF, comme une clé de sécurité FIDO2 (ex. YubiKey), iCloud Keychain, Google Password Manager, 1Password ou Dashlane
 - **Navigateur** : Chrome 133+, Edge 133+, Firefox 130+ ou Safari 17+
+
+L'exigence PRF ne s'applique qu'à l'emplacement passkey. Les méthodes mot de passe principal et code de récupération fonctionnent avec n'importe quel navigateur pris en charge.
 
 ## Configuration
 
 1. Accédez à **Stockage de configuration** dans la barre latérale, puis cliquez sur **Configurer le stockage de configuration**
 2. La liste de vérification des prérequis vérifie votre navigateur, la 2FA et l'état de la session
-3. Cliquez sur **Démarrer la configuration**, vous devrez toucher votre clé de sécurité deux fois :
+3. Cliquez sur **Démarrer la configuration**. Pour un emplacement passkey, vous devrez toucher votre clé de sécurité deux fois :
    - Premier toucher : enregistre le passkey
    - Second toucher : dérive les clés de chiffrement via PRF
 4. Configuration terminée, votre secret de passkey est stocké dans le trousseau de clés de votre système d'exploitation
 
-Après la configuration, les opérations CLI quotidiennes (push/pull) fonctionnent sans le passkey. Attention : la configuration nécessite un passkey avec support de l'extension PRF. Tous les jetons matériels ou authentificateurs de plateforme ne la proposent pas.
+Une fois la configuration terminée, ajoutez un emplacement mot de passe principal ou code de récupération depuis la page Stockage de configuration, pour qu'un authentificateur perdu ou non pris en charge ne puisse pas vous bloquer l'accès.
 
 ## Compatibilité des fournisseurs PRF
 
@@ -42,6 +60,29 @@ Après la configuration, les opérations CLI quotidiennes (push/pull) fonctionne
 | Dashlane | ✅ | Multiplateforme |
 | Extension Bitwarden | ❌ | En développement |
 | Windows Hello | ❌ | Non supporté |
+
+## Enrôlement CLI sans interface
+
+Une machine sans navigateur (un serveur, un runner CI, un démon executor) peut s'enrôler dans un store existant grâce à la méthode du mot de passe principal :
+
+```bash
+rdc config remote enable --password
+```
+
+Prérequis :
+
+- Un **emplacement mot de passe principal** déjà provisionné via le portail (le navigateur détient la clé pendant le provisionnement, cette étape ne peut donc pas elle-même se faire sans interface)
+- Un **token API avec le scope `config:enroll`** pour authentifier l'appel
+
+L'enrôlement est une lecture : le CLI récupère les paramètres KDF publics de l'emplacement ainsi que la clé enveloppée, dérive localement le secret du mot de passe, puis déballe la CEK sur l'appareil. Cela donne à l'appareil la capacité de déchiffrer et de synchroniser la configuration ; cela ne modifie pas le store.
+
+## Rotation de clé
+
+Faire tourner la CEK du store la réenveloppe sous une nouvelle génération :
+
+- **Les codes de récupération sont toujours invalidés** par la rotation, générez-en et sauvegardez-en un nouveau ensuite
+- Un **emplacement mot de passe principal** ne survit que si le mot de passe est ressaisi pendant l'assistant de rotation
+- Un emplacement resté sur une ancienne génération est signalé comme obsolète plutôt que d'échouer avec une erreur de déchiffrement obscure
 
 ## Gestion des membres
 
@@ -56,7 +97,7 @@ Les protections de sécurité empêchent la suppression du dernier membre actif 
 ## Sécurité
 
 - **Connaissance nulle** : Le serveur stocke des données triplement chiffrées qu'il ne peut pas déchiffrer
-- **Clé divisée** : Le déchiffrement nécessite à la fois votre secret de passkey (client) et le secret du serveur (serveur)
+- **Clé divisée** : Le déchiffrement nécessite à la fois votre secret d'emplacement (client) et le secret du serveur (serveur)
 - **Jetons rotatifs** : Chaque appel API utilise un jeton neuf ; les anciens jetons s'autodétruisent
 - **Liaison IP** : Les jetons sont liés à votre IP lors de la première utilisation
 - **Révocation instantanée** : Les membres supprimés perdent l'accès en 30 secondes
@@ -65,9 +106,15 @@ Les protections de sécurité empêchent la suppression du dernier membre actif 
 
 | Erreur | Cause | Solution |
 |-------|-------|-----|
-| PRF not supported | L'authentificateur ne dispose pas de l'extension PRF | Utilisez YubiKey, iCloud Keychain, 1Password ou Dashlane |
+| PRF not supported | L'authentificateur ne dispose pas de l'extension PRF | Utilisez YubiKey, iCloud Keychain, 1Password ou Dashlane, ou ajoutez un emplacement mot de passe principal |
 | X25519 not supported | Version du navigateur trop ancienne | Mettez à jour vers Chrome 133+, Edge 133+, Firefox 130+ ou Safari 17+ |
 | Already configured | Un stockage existe déjà pour votre organisation | Visitez /account/config-storage pour gérer |
 | Config storage not configured | Le serveur ne dispose pas de stockage blob | Contactez votre administrateur pour configurer R2/RustFS |
 | Token expired | Aucune activité pendant 24 heures | Exécutez n'importe quelle commande de stockage de configuration pour actualiser |
 | Cannot remove last member | Verrouillerait le stockage de façon permanente | Ajoutez d'abord un autre membre |
+| Stale slot | L'emplacement date d'avant la dernière rotation de clé | Réajoutez l'emplacement (les codes de récupération doivent être régénérés après chaque rotation) |
+
+## Voir aussi
+
+- [Console Web](/fr/docs/web-console), déverrouiller le store dans le navigateur pour exécuter des commandes
+- [Proxy et executor](/fr/docs/proxy-and-executor), comment la clé déverrouillée est accordée à un executor
