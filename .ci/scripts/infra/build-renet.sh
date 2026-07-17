@@ -3,7 +3,7 @@
 # Usage: .ci/scripts/infra/build-renet.sh
 #
 # Builds the renet binary from Go source at private/renet/.
-# Skips if the binary already exists. Reusable by CI jobs and ci-provision-start.sh.
+# Skips if the binary already exists. Reusable by CI jobs (ct-tests, ci-ops-test).
 #
 # Outputs:
 #   RENET_BINARY env var (exported, and written to $GITHUB_ENV if in CI)

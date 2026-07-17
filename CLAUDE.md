@@ -434,7 +434,7 @@ cd /path/to/console && git add -A && git commit -m "fix: ..." && git push
 
 ### Secrets in CI vs CD
 
-- **CI workflows** (`ci.yml`, `ci-quality.yml`, `ct-tests.yml`, `standalone-run.yml`): Use **generated throwaway keys** via `ci-env.sh`. Never pass production secrets.
+- **CI workflows** (`ci.yml`, `ci-quality.yml`, `ct-tests.yml`): Use **generated throwaway keys** via `ci-env.sh`. Never pass production secrets.
 - **Release workflow** (`cd-v2.yml`): Uses **real org secrets** from GitHub for production deployment.
 - Generated secrets are masked via `::add-mask::` in `ci-env.sh`.
 

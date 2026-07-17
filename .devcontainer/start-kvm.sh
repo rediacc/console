@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start KVM/libvirt stack for local VM provisioning (Standalone Run)
+# Start KVM/libvirt stack for local VM provisioning
 #
 # Architecture:
 #   /dev/kvm -> virtlogd -> libvirtd -> default NAT network (192.168.122.0/24)

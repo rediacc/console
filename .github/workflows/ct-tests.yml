@@ -19,10 +19,6 @@ on:
         type: string
         required: false
         default: 'chromium'
-      provision_vms:
-        type: boolean
-        required: false
-        default: true
     secrets:
       APP_PRIVATE_KEY:
         required: false

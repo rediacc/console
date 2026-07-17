@@ -23,9 +23,6 @@ This directory contains reusable CI scripts that work with both GitHub Actions a
 │   │   ├── build-packages.sh   # Build shared libraries
 │   │   ├── install-vscode.sh   # Cross-platform VS Code installation
 │   │   └── setup-display.sh    # Xvfb setup for Linux
-│   ├── tunnel/
-│   │   ├── download-url.sh     # Download tunnel URL artifact
-│   │   └── verify.sh           # Verify tunnel connectivity
 │   ├── env/
 │   │   └── create-e2e-env.sh   # Create E2E test .env
 │   ├── signal/
