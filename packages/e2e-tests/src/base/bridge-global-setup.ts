@@ -255,7 +255,11 @@ function writeSetupErrorLog(error: unknown) {
  */
 async function bridgeGlobalSetup(_config: FullConfig) {
   ensureEnvFile();
-  const skipReset = process.env.BRIDGE_TEST_SKIP_RESET === '1';
+  // KEEP_CLUSTER implies skip-reset: iteration mode exists to reuse a standing
+  // cluster, and a VM reboot both costs minutes per invocation and races the
+  // suite against boot recovery (observed live: a scoped re-run red on
+  // half-regenerated containerd config). CI sets neither flag.
+  const skipReset = process.env.BRIDGE_TEST_SKIP_RESET === '1' || process.env.KEEP_CLUSTER === '1';
 
   /* eslint-disable no-console */
   console.log('');
