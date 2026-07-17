@@ -776,6 +776,13 @@ spec:
       // content", observed live for k3s's own images — ledgered as #96), so
       // the blob store is not a reliable witness. The sync ATTEMPT in zot's
       // journal is: it only appears when the pull came through the mirror.
+      // Force a REAL pull: with the image cached node-side, Always only
+      // re-checks the digest and zot serves it without a sync log line —
+      // the evidence channel stays silent for a cached node. Deleting the
+      // cached image first makes the pull (and its sync evidence) real.
+      await w1.executeViaBridge(
+        `sudo /usr/local/bin/rediacc-k3s crictl rmi docker.io/library/busybox:1.36 2>/dev/null; true`
+      );
       const probe = `{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":65534,"seccompProfile":{"type":"RuntimeDefault"}},"containers":[{"name":"zotprobe","image":"busybox:1.36","imagePullPolicy":"Always","command":["sleep","30"],"securityContext":{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]}}}]}}`;
       const run = await kubectl(
         `-n ${NS} run zotprobe --image=busybox:1.36 --overrides='${probe}' --restart=Never`
