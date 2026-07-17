@@ -4,8 +4,8 @@ description: "Verschlüsselte Repositories auf rclone-kompatiblem Speicher siche
 category: "Guides"
 order: 7
 language: de
-sourceHash: "50b357f812a9337c"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "d800519615085ee9"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Backup & Wiederherstellung
@@ -118,28 +118,33 @@ Geplante Backups landen in moduspezifischen Unterordnern innerhalb des konfiguri
 
 Ein Repo kann sowohl in `hot/` als auch in `cold/` erscheinen (der stündliche Zeitplan erfasst es; der wöchentliche erfasst es erneut). Die zusammengeführte Auflistung zeigt beide Zeilen, sodass klar ist, welche Streams welche Repos abdecken.
 
-## Massen-Synchronisation
+## Ein Repository nach dem anderen synchronisieren
 
-Alle Repositories auf einmal übertragen oder abrufen:
+Push und Pull wirken jeweils auf ein einzelnes Repository, adressiert über einen Ref (`name`, `name:tag` oder `name@machine`). Es gibt keine Form für „alle Repositories auf einmal“: Führen Sie den Befehl einmal pro Repository aus.
 
-### Alle zum Speicher übertragen
+### In den Speicher übertragen
 
 ```bash
-rdc repo push --to my-storage -m server-1
+rdc repo push shop@server-1 --to my-storage
 ```
 
-### Alle vom Speicher abrufen
+### Aus dem Speicher abrufen
 
 ```bash
-rdc repo pull --from my-storage -m server-1
+rdc repo pull shop@server-1 --from my-storage
 ```
 
 | Option | Beschreibung |
 |--------|-------------|
-| `--to <storage>` | Ziel-Speicher (Push-Richtung) |
-| `--from <storage>` | Quell-Speicher (Pull-Richtung) |
-| `--repo <name>` | Bestimmte Repositories synchronisieren (wiederholbar) |
-| `--override` | Vorhandene Backups überschreiben |
+| `--to <remote>` | Ziel-Speicher oder -Maschine (Push) |
+| `--to-machine <machine>` | Zielmaschine für Maschine-zu-Maschine-Push |
+| `--from <remote>` | Quell-Speicher oder -Maschine (Pull) |
+| `--from-machine <machine>` | Quellmaschine für Maschine-zu-Maschine-Pull |
+| `--force` | Ein vorhandenes Backup oder Repository überschreiben |
+| `--checkpoint` | Vor dem Pushen einen CRIU-Checkpoint erstellen (nur Push) |
+| `--up` | Das Repository nach dem Pull einhängen und bereitstellen (nur Pull) |
+| `--bwlimit <limit>` | Bandbreitenlimit für den rsync-Transfer (z. B. `10M`) |
+| `--delta-base <guid>` | Nur geänderte Blöcke gegenüber einer unveränderlichen Basis-GUID übertragen |
 | `--debug` | Ausführliche Ausgabe aktivieren |
 | `--skip-router-restart` | Den Neustart des Route-Servers nach der Operation überspringen |
 

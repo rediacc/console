@@ -4,8 +4,8 @@ description: Konteineerpõhise teenuse käivitamine oma serveris minutitega.
 category: Guides
 order: -1
 language: et
-sourceHash: "866251eee417b1d4"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "a1350abc611570ef"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Kiirjuhend
@@ -93,8 +93,8 @@ Loob krüpteeritud mahu, ühendab selle ja käivitab selle Dockeri daemoni. Hoid
 ### 2. Rakenda mall
 
 ```bash
-rdc repo template list                                        # Kuva sisseehitatud mallid
-rdc repo template apply --name app-postgres -m my-server -r my-app  # Juuruta docker-compose.yml + Rediaccfile
+rdc repo admin template list                                        # Kuva sisseehitatud mallid
+rdc repo admin template apply --name app-postgres -m my-server -r my-app  # Juuruta docker-compose.yml + Rediaccfile
 ```
 
 Mallid pakuvad `docker-compose.yml`, `Rediaccfile` ja toetavad faile. Ilma mallit (või oma compose-faili) pole midagi käivitada. Kasuta sisseehitatud malli oma esimese hoidla jaoks. See on kiireim viis kogu töövoo nägemiseks otsast lõpuni.
@@ -126,7 +126,7 @@ Redigeerid faile *krüpteeritud mahu sees*. `docker ps` näitab ainult selle hoi
 | **Kasutusjuhtum** | CI/CD, automatiseerimine, kaugoperatsioonid | Arendaja sisesilmus |
 | **Eraldumine** | Orkestreerib väljastpoolt | On juba liivakastis |
 
-**Demo voog:** `rdc repo template apply` → `rdc vscode connect my-app` → muuda `docker-compose.yml` → `renet dev up` → vaata töötavat rakendust → korda.
+**Demo voog:** `rdc repo admin template apply` → `rdc vscode connect my-app` → muuda `docker-compose.yml` → `renet dev up` → vaata töötavat rakendust → korda.
 
 > Rediaccfile struktuur: [Teenused](/et/docs/services). Millist tööriista millal kasutada: [rdc vs renet](/et/docs/rdc-vs-renet).
 
@@ -261,7 +261,7 @@ rdc config infra push -m my-server  # Lükka proksi konfiguratsioon kaugele
 ### 2. Proksi mall
 
 ```bash
-rdc repo template apply --name proxy -m my-server -r infra  # Juuruta proksi hoidlasse
+rdc repo admin template apply --name proxy -m my-server -r infra  # Juuruta proksi hoidlasse
 rdc repo up --name infra -m my-server  # Käivita Traefik
 ```
 

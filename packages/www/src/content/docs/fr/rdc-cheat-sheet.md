@@ -4,8 +4,8 @@ description: "Référence rapide des commandes rdc : configurations, dépôts, m
 category: Guides
 order: 3
 language: fr
-sourceHash: "c9f10ececc124587"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d92987c4766d91ae"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Aide-mémoire RDC CLI
@@ -21,7 +21,7 @@ Cette aide-mémoire couvre les commandes `rdc` essentielles au déploiement quot
 | `rdc repo down <repo>@<machine>` | Arrêter un dépôt |
 | `rdc repo delete <repo>@<machine>` | Supprimer un dépôt |
 | `rdc repo fork <repo>@<machine> --tag <tag>` | Bifurquer un dépôt (quasi-instantané, BTRFS reflink) |
-| `rdc repo promote <repo>:<tag>` | Prendre possession d'un dépôt existant |
+| `rdc repo promote <repo>:<tag>` | Promouvoir un fork validé en production sous le nom du dépôt parent |
 | `rdc repo list` | Lister tous les dépôts avec leur nom et GUID |
 
 ## Secrets par dépôt
@@ -45,9 +45,7 @@ Identifiants de déploiement en lecture seule. `get` retourne seulement un diges
 | Commande | Description |
 |----------|-------------|
 | `rdc repo push <repo>@<machine> --to <storage>` | Pousser une sauvegarde du dépôt vers le stockage |
-| `rdc repo push --to <storage> -m <machine>` | Pousser tous les dépôts vers le stockage |
 | `rdc repo pull <repo>@<machine> --from <storage>` | Restaurer un dépôt depuis le stockage |
-| `rdc repo pull --from <storage> -m <machine>` | Restaurer tous les dépôts depuis le stockage |
 | `rdc repo push ... --bwlimit <limit>` | Limiter la bande passante rsync lors de l'envoi (ex. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Limiter la bande passante rsync lors de la réception |
 | `rdc repo push ... --checkpoint` | Créer un point de contrôle des conteneurs avant l'envoi |

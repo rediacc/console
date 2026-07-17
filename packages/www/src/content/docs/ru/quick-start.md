@@ -4,8 +4,8 @@ description: Запустите контейнерный сервис на ва�
 category: Guides
 order: -1
 language: ru
-sourceHash: "866251eee417b1d4"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "a1350abc611570ef"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Быстрый старт
@@ -93,8 +93,8 @@ rdc repo create --name my-app -m my-server --size 2G  # Создать заши�
 ### 2. Применение шаблона
 
 ```bash
-rdc repo template list                                        # Показать встроенные шаблоны
-rdc repo template apply --name app-postgres -m my-server -r my-app  # Развернуть docker-compose.yml + Rediaccfile
+rdc repo admin template list                                        # Показать встроенные шаблоны
+rdc repo admin template apply --name app-postgres -m my-server -r my-app  # Развернуть docker-compose.yml + Rediaccfile
 ```
 
 Шаблоны предоставляют `docker-compose.yml`, `Rediaccfile` и вспомогательные файлы. Без шаблона (или собственного compose-файла) запускать нечего. Используйте встроенный шаблон для первого репозитория. Это самый быстрый способ увидеть полный рабочий процесс от начала до конца.
@@ -126,7 +126,7 @@ rdc vscode connect my-app              # Открывает VS Code через S
 | **Сценарий использования** | CI/CD, автоматизация, удалённые операции | Внутренний цикл разработчика |
 | **Изоляция** | Оркестрация снаружи | Уже внутри песочницы |
 
-**Демонстрационный процесс:** `rdc repo template apply` → `rdc vscode connect my-app` → редактирование `docker-compose.yml` → `renet dev up` → приложение работает → итерация.
+**Демонстрационный процесс:** `rdc repo admin template apply` → `rdc vscode connect my-app` → редактирование `docker-compose.yml` → `renet dev up` → приложение работает → итерация.
 
 > Структура Rediaccfile: [Сервисы](/en/docs/services). Когда какой инструмент использовать: [rdc vs renet](/en/docs/rdc-vs-renet).
 
@@ -261,7 +261,7 @@ rdc config infra push -m my-server  # Отправить конфигураци�
 ### 2. Шаблон прокси
 
 ```bash
-rdc repo template apply --name proxy -m my-server -r infra  # Развернуть прокси в репозитории
+rdc repo admin template apply --name proxy -m my-server -r infra  # Развернуть прокси в репозитории
 rdc repo up --name infra -m my-server  # Запустить Traefik
 ```
 

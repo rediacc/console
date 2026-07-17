@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: it
-sourceHash: "269ed11573c50130"
-sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
+sourceHash: "5fb6196d9b6e9b0b"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Abbonamento e licenze
@@ -192,19 +192,13 @@ Mostra i dettagli della licenza repo installata su una macchina:
 rdc subscription status -m hostinger
 ```
 
-Aggiornamento in blocco delle licenze repo su una macchina:
+Aggiorna la licenza di un repository su una macchina:
 
 ```bash
-rdc subscription refresh repos -m hostinger
+rdc subscription refresh -m hostinger --repo my-app
 ```
 
-I repository rilevati sulla macchina ma assenti dalla configurazione `rdc` locale vengono rifiutati durante l'aggiornamento in blocco. Vengono segnalati come errori e non vengono classificati automaticamente.
-
-Forza l'aggiornamento della licenza repo per un repository esistente:
-
-```bash
-rdc subscription refresh repo --name my-app -m hostinger
-```
+Il ref `--repo` deve risolversi nella tua configurazione `rdc` locale. Un repository rilevato sulla macchina ma assente dalla configurazione locale viene rifiutato: viene segnalato come errore e non viene classificato automaticamente.
 
 Al primo utilizzo, un'operazione su un repository con licenza o un backup che non trova una licenza repo utilizzabile può attivare automaticamente un handoff di autorizzazione account. La CLI stampa un URL di autorizzazione, cerca di aprire il browser nei terminali interattivi e riprova l'operazione una volta dopo che l'autorizzazione e l'emissione hanno avuto successo.
 

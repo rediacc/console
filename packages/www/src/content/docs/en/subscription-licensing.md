@@ -188,19 +188,13 @@ Show installed repo-license details on one machine:
 rdc subscription status -m hostinger
 ```
 
-Batch-refresh repo licenses on a machine:
+Refresh a repository's license on a machine:
 
 ```bash
-rdc subscription refresh repos -m hostinger
+rdc subscription refresh -m hostinger --repo my-app
 ```
 
-Repositories discovered on the machine but missing from local `rdc` config are rejected during batch refresh. They are reported as failures and are not auto-classified.
-
-Force a repo-license refresh for an existing repository:
-
-```bash
-rdc subscription refresh repo --name my-app -m hostinger
-```
+The `--repo` ref must resolve in your local `rdc` config. A repository discovered on the machine but missing from local config is rejected: it is reported as a failure and not auto-classified.
 
 On first use, a licensed repo or backup operation that finds no usable repo license can trigger an account-authorization handoff automatically. The CLI prints an authorization URL, tries to open the browser in interactive terminals, and retries the operation once after authorization and issuance succeed.
 

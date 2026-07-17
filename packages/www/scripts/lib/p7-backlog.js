@@ -6,11 +6,11 @@
  * exodus, `repo takeover` -> `repo promote`, `machine query` -> `machine status`, …) and left
  * a large backlog of dead examples across the docs in all 13 locales:
  *
- *     validate-docs-cli-usage    3354 violations across 312 files
+ *     validate-docs-cli-usage    3289 violations across 312 files
  *     validate-content-accuracy  1534 violations across 299 files
  *     check-cli-docs              425 violations across  50 files
  *     ------------------------------------------------------------
- *     TOTAL                      5313
+ *     TOTAL                      5248
  *
  * ★ Those numbers are read from the baseline files themselves, not remembered. This program
  * has had to correct five counts that were quoted from memory (the renet baseline, the "408"

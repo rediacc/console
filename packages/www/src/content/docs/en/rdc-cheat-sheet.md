@@ -19,7 +19,7 @@ Not every `rdc` command is listed here, just the ones that come up on every depl
 | `rdc repo down <repo>@<machine>` | Stop a repository |
 | `rdc repo delete <repo>@<machine>` | Delete a repository |
 | `rdc repo fork <repo>@<machine> --tag <tag>` | Fork a repository (near-instant, BTRFS reflink) |
-| `rdc repo promote <repo>:<tag>` | Take ownership of an existing repository |
+| `rdc repo promote <repo>:<tag>` | Promote a validated fork to production under its parent's name |
 | `rdc repo list` | List all repositories with name and GUID |
 
 ## Per-repo Secrets
@@ -43,9 +43,7 @@ Write-only deploy-time credentials. `get` returns the digest only. The value is 
 | Command | Description |
 |---------|-------------|
 | `rdc repo push <repo>@<machine> --to <storage>` | Push a repository backup to storage |
-| `rdc repo push --to <storage> -m <machine>` | Push all repositories to storage |
 | `rdc repo pull <repo>@<machine> --from <storage>` | Restore a repository from storage |
-| `rdc repo pull --from <storage> -m <machine>` | Restore all repositories from storage |
 | `rdc repo push ... --bwlimit <limit>` | Limit rsync bandwidth during push (e.g. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Limit rsync bandwidth during pull |
 | `rdc repo push ... --checkpoint` | Checkpoint containers before pushing |

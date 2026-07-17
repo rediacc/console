@@ -4,8 +4,8 @@ description: "rdc コマンドのクイックリファレンス：設定、リ�
 category: Guides
 order: 3
 language: ja
-sourceHash: "c9f10ececc124587"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d92987c4766d91ae"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # RDC CLI チートシート
@@ -21,7 +21,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 | `rdc repo down <repo>@<machine>` | リポジトリを停止する |
 | `rdc repo delete <repo>@<machine>` | リポジトリを削除する |
 | `rdc repo fork <repo>@<machine> --tag <tag>` | リポジトリをフォークする (ほぼ瞬時、BTRFS reflink) |
-| `rdc repo promote <repo>:<tag>` | 既存リポジトリの所有権を取得する |
+| `rdc repo promote <repo>:<tag>` | 検証済みのフォークを親リポジトリの名前で本番環境に昇格する |
 | `rdc repo list` | 名前と GUID を含む全リポジトリを一覧表示する |
 
 ## リポジトリごとのシークレット
@@ -45,9 +45,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 | コマンド | 説明 |
 |---------|------|
 | `rdc repo push <repo>@<machine> --to <storage>` | リポジトリのバックアップをストレージにプッシュする |
-| `rdc repo push --to <storage> -m <machine>` | 全リポジトリをストレージにプッシュする |
 | `rdc repo pull <repo>@<machine> --from <storage>` | ストレージからリポジトリを復元する |
-| `rdc repo pull --from <storage> -m <machine>` | ストレージから全リポジトリを復元する |
 | `rdc repo push ... --bwlimit <limit>` | プッシュ時の rsync 帯域幅を制限する (例: `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | プル時の rsync 帯域幅を制限する |
 | `rdc repo push ... --checkpoint` | プッシュ前にコンテナのチェックポイントを作成する |

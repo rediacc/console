@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: "269ed11573c50130"
-sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
+sourceHash: "5fb6196d9b6e9b0b"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Abonelik ve Lisanslama
@@ -192,19 +192,13 @@ Bir makinede yüklü depo lisansı ayrıntılarını göster:
 rdc subscription status -m hostinger
 ```
 
-Bir makinedeki depo lisanslarını toplu olarak yenile:
+Bir makinede bir deponun lisansını yenile:
 
 ```bash
-rdc subscription refresh repos -m hostinger
+rdc subscription refresh -m hostinger --repo my-app
 ```
 
-Makinede keşfedilen ancak yerel `rdc` yapılandırmasında bulunmayan depolar toplu yenileme sırasında reddedilir. Bunlar başarısızlık olarak raporlanır ve otomatik olarak sınıflandırılmaz.
-
-Mevcut bir depo için depo lisansı yenilemesini zorla:
-
-```bash
-rdc subscription refresh repo --name my-app -m hostinger
-```
+`--repo` ref'i yerel `rdc` yapılandırmanızda çözümlenebilmelidir. Makinede keşfedilen ancak yerel yapılandırmada bulunmayan bir depo reddedilir: başarısızlık olarak raporlanır ve otomatik olarak sınıflandırılmaz.
 
 İlk kullanımda, kullanılabilir depo lisansı bulamayan lisanslı bir depo veya yedekleme işlemi otomatik olarak hesap yetkilendirme aktarımını tetikleyebilir. CLI bir yetkilendirme URL'si yazdırır, etkileşimli terminallerde tarayıcıyı açmaya çalışır ve yetkilendirme ile düzenleme başarılı olduktan sonra işlemi bir kez yeniden dener.
 

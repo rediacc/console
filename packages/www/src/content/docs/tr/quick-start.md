@@ -4,8 +4,8 @@ description: Birkaç dakika içinde sunucunuzda konteynerize bir servis çalış
 category: Guides
 order: -1
 language: tr
-sourceHash: "866251eee417b1d4"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "a1350abc611570ef"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Hızlı Başlangıç
@@ -93,8 +93,8 @@ rdc repo create --name my-app -m my-server --size 2G  # 2 GB şifrelenmiş repo 
 ### 2. Şablon Uygulama
 
 ```bash
-rdc repo template list                                        # Gömülü şablonları göster
-rdc repo template apply --name app-postgres -m my-server -r my-app  # docker-compose.yml + Rediaccfile dağıt
+rdc repo admin template list                                        # Gömülü şablonları göster
+rdc repo admin template apply --name app-postgres -m my-server -r my-app  # docker-compose.yml + Rediaccfile dağıt
 ```
 
 Şablonlar bir `docker-compose.yml`, `Rediaccfile` ve destekleyici dosyalar sağlar. Bir şablon (veya kendi compose dosyanız) olmadan başlatılacak bir şey yoktur. İlk reponuz için yerleşik şablonu kullanın. Tüm iş akışını baştan sona görmek için en hızlı yoldur.
@@ -126,7 +126,7 @@ rdc vscode connect my-app              # VS Code SSH açar, repo sandbox'una ine
 | **Kullanım senaryosu** | CI/CD, otomasyon, uzaktan işlemler | Geliştirici iç döngüsü |
 | **İzolasyon** | Dışarıdan yönetir | Zaten sandbox içindedir |
 
-**Demo akışı:** `rdc repo template apply` → `rdc vscode connect my-app` → `docker-compose.yml` düzenle → `renet dev up` → uygulamanın çalıştığını gör → tekrarla.
+**Demo akışı:** `rdc repo admin template apply` → `rdc vscode connect my-app` → `docker-compose.yml` düzenle → `renet dev up` → uygulamanın çalıştığını gör → tekrarla.
 
 > Rediaccfile yapısı: [Servisler](/en/docs/services). Hangi aracı ne zaman kullanmalı: [rdc vs renet](/en/docs/rdc-vs-renet).
 
@@ -261,7 +261,7 @@ rdc config infra push -m my-server  # Proxy yapılandırmasını uzak sunucuya g
 ### 2. Proxy Şablonu
 
 ```bash
-rdc repo template apply --name proxy -m my-server -r infra  # Proxy'yi bir repoya dağıt
+rdc repo admin template apply --name proxy -m my-server -r infra  # Proxy'yi bir repoya dağıt
 rdc repo up --name infra -m my-server  # Traefik'i başlat
 ```
 

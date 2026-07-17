@@ -4,8 +4,8 @@ description: "rdc 快速参考：配置、仓库、机器、文件同步和容�
 category: Guides
 order: 3
 language: zh
-sourceHash: "c9f10ececc124587"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d92987c4766d91ae"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # RDC CLI 快速参考
@@ -21,7 +21,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 | `rdc repo down <repo>@<machine>` | 停止仓库 |
 | `rdc repo delete <repo>@<machine>` | 删除仓库 |
 | `rdc repo fork <repo>@<machine> --tag <tag>` | 派生仓库（近乎瞬时，BTRFS reflink） |
-| `rdc repo promote <repo>:<tag>` | 接管现有仓库的所有权 |
+| `rdc repo promote <repo>:<tag>` | 将已验证的派生仓库以父仓库的名称提升为生产仓库 |
 | `rdc repo list` | 列出所有仓库及其名称和 GUID |
 
 ## 仓库机密
@@ -45,9 +45,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 | 命令 | 说明 |
 |------|------|
 | `rdc repo push <repo>@<machine> --to <storage>` | 将仓库备份推送到存储 |
-| `rdc repo push --to <storage> -m <machine>` | 将所有仓库推送到存储 |
 | `rdc repo pull <repo>@<machine> --from <storage>` | 从存储恢复仓库 |
-| `rdc repo pull --from <storage> -m <machine>` | 从存储恢复所有仓库 |
 | `rdc repo push ... --bwlimit <limit>` | 推送时限制 rsync 带宽（如 `10M`） |
 | `rdc repo pull ... --bwlimit <limit>` | 拉取时限制 rsync 带宽 |
 | `rdc repo push ... --checkpoint` | 推送前对容器创建检查点 |

@@ -4,8 +4,8 @@ description: "Kuidas Rediacc vastab ISO 27001 infoturbe kontrollidele krüptimis
 category: "Legal"
 order: 5
 language: et
-sourceHash: "7bdb4bcfdee26303"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "315946a692b6ee29"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 Okei. ISO/IEC 27001:2022 on rahvusvaheline infoturbe haldussüsteemide standard. ISO/IEC on selle avaldanud ja tegemist on pika dokumendiga, mis käsitleb kontrolle krüptimise, juurdepääsuhalduse, juhtumitevastase reageerimise ja kümnete muude turvavaldkondade osas. Te kindlasti teate, mis see on. Ütlen siis otse: Rediacc ei käsitle kõiki selle standardi kontrolle ja me ei kavatse seda teeskella. Järgnev on aus kaardistus sellest, kuidas Rediacc sobib. Kehtiv versioon on ISO/IEC 27001:2022.
@@ -42,7 +42,7 @@ Siin läheb huvitavaks: hargi-testimise-edendamise töövoog on kooskõlas ISO 2
 
 1. **Hark**: loo tootmiskeskkonnast eraldatud koopia
 2. **Testimine**: rakenda ja valideeri muudatused hargis
-3. **Edendamine**: kasuta `rdc repo takeover`, et vahetada hark tootmisse
+3. **Edendamine**: kasuta `rdc repo promote`, et vahetada hark tootmisse
 4. **Auditeerimine**: kõik toimingud logitakse ajatemplite ja tegutseja identifitseerimisega
 
 ## Pidev täiustamine

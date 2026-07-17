@@ -4,8 +4,8 @@ description: "암호화된 레포지토리를 rclone 호환 스토리지에 백�
 category: "Guides"
 order: 7
 language: ko
-sourceHash: "50b357f812a9337c"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "d800519615085ee9"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # 백업 및 복원
@@ -118,28 +118,33 @@ rdc repo backup list --from my-storage -m server-1 --path cold
 
 레포는 `hot/`과 `cold/` 모두에 나타날 수 있습니다(시간별 일정이 스냅샷을 찍고, 주별 일정이 다시 스냅샷을 찍음). 병합된 목록은 두 행 모두를 표시하여 어떤 스트림이 어떤 레포를 커버하는지 명확히 합니다.
 
-## 일괄 동기화
+## 한 번에 레포지토리 하나씩 동기화
 
-모든 레포지토리를 한 번에 푸시하거나 풀합니다.
+푸시와 풀은 ref(`name`, `name:tag` 또는 `name@machine`)로 지정한 단일 레포지토리에 대해 작동합니다. "모든 레포지토리를 한 번에" 형식은 없습니다. 레포지토리마다 명령을 한 번씩 실행하세요.
 
-### 모든 레포를 스토리지에 푸시
+### 스토리지에 푸시
 
 ```bash
-rdc repo push --to my-storage -m server-1
+rdc repo push shop@server-1 --to my-storage
 ```
 
-### 스토리지에서 모두 풀
+### 스토리지에서 풀
 
 ```bash
-rdc repo pull --from my-storage -m server-1
+rdc repo pull shop@server-1 --from my-storage
 ```
 
 | 옵션 | 설명 |
 |--------|-------------|
-| `--to <storage>` | 대상 스토리지 (푸시 방향) |
-| `--from <storage>` | 소스 스토리지 (풀 방향) |
-| `--repo <name>` | 특정 레포지토리만 동기화 (반복 사용 가능) |
-| `--override` | 기존 백업 덮어쓰기 |
+| `--to <remote>` | 대상 스토리지 또는 머신 (푸시) |
+| `--to-machine <machine>` | 머신 간 푸시를 위한 대상 머신 |
+| `--from <remote>` | 소스 스토리지 또는 머신 (풀) |
+| `--from-machine <machine>` | 머신 간 풀을 위한 소스 머신 |
+| `--force` | 기존 백업 또는 레포지토리 덮어쓰기 |
+| `--checkpoint` | 푸시 전 CRIU 체크포인트 생성 (푸시 전용) |
+| `--up` | 풀 후 레포지토리 마운트 및 배포 (풀 전용) |
+| `--bwlimit <limit>` | rsync 전송 대역폭 제한 (예: `10M`) |
+| `--delta-base <guid>` | 불변 기준 GUID 대비 변경된 블록만 전송 |
 | `--debug` | 상세 출력 활성화 |
 | `--skip-router-restart` | 작업 후 라우트 서버 재시작 건너뜀 |
 

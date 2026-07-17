@@ -4,8 +4,8 @@ description: "Kurzreferenz für rdc: Konfigurationen, Repos, Maschinen, Dateisyn
 category: Guides
 order: 3
 language: de
-sourceHash: "c9f10ececc124587"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d92987c4766d91ae"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # RDC CLI Cheat Sheet
@@ -21,7 +21,7 @@ Nicht alle `rdc`-Befehle sind hier aufgelistet, nur die, die bei jeder Bereitste
 | `rdc repo down <repo>@<machine>` | Repository stoppen |
 | `rdc repo delete <repo>@<machine>` | Repository löschen |
 | `rdc repo fork <repo>@<machine> --tag <tag>` | Repository forken (nahezu sofort, BTRFS-Reflink) |
-| `rdc repo promote <repo>:<tag>` | Eigentümerschaft eines vorhandenen Repositorys übernehmen |
+| `rdc repo promote <repo>:<tag>` | Einen validierten Fork unter dem Namen des übergeordneten Repositorys in Produktion überführen |
 | `rdc repo list` | Alle Repositories mit Name und GUID auflisten |
 
 ## Per-Repository-Geheimnisse
@@ -45,9 +45,7 @@ Schreibgeschützte Anmeldedaten zur Bereitstellungszeit. `get` gibt nur den Dige
 | Befehl | Beschreibung |
 |--------|--------------|
 | `rdc repo push <repo>@<machine> --to <storage>` | Repository-Sicherung in Speicher hochladen |
-| `rdc repo push --to <storage> -m <machine>` | Alle Repositories in Speicher hochladen |
 | `rdc repo pull <repo>@<machine> --from <storage>` | Repository aus Speicher wiederherstellen |
-| `rdc repo pull --from <storage> -m <machine>` | Alle Repositories aus Speicher wiederherstellen |
 | `rdc repo push ... --bwlimit <limit>` | rsync-Bandbreite beim Hochladen begrenzen (z. B. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | rsync-Bandbreite beim Herunterladen begrenzen |
 | `rdc repo push ... --checkpoint` | Container vor dem Hochladen sichern |

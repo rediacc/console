@@ -111,6 +111,32 @@ test.describe
       await cli.run(['repo', 'delete', name, '-y']).catch(() => undefined);
     };
 
+    // Shape of `config reconcile -o json` (the ReconcileReport the command
+    // prints — see packages/cli/src/commands/config.ts runReconcileInner).
+    interface ReconcileJson {
+      conflicts: { kind: 'placement' | 'duplicate'; repository: string; message: string }[];
+      placementsAccepted: { repository: string; from: string; to: string }[];
+    }
+
+    // Run `config reconcile` with `-o json` and hand back the parsed report.
+    // Asserting on the conflicts ARRAY is the honest surface: the old regex
+    // (`.not.toMatch(/duplicat|conflict/)`) false-matched the JSON field name
+    // "conflicts" even when the array was empty.
+    //
+    // `-o json` wraps the payload in the standard CLI envelope
+    // ({ success, command, data, errors, warnings, metrics } — output.ts
+    // formatJson), so the ReconcileReport lives under `.data`, not at top level.
+    const reconcileJson = async (...args: string[]): Promise<ReconcileJson> => {
+      const { result, json } = await cli.runJson<{ data: ReconcileJson }>([
+        'config',
+        'reconcile',
+        ...args,
+      ]);
+      expect(result.code, `config reconcile ${args.join(' ')}: ${result.stderr}`).toBe(0);
+      expect(json?.data, `non-JSON reconcile output: ${result.stdout.slice(0, 400)}`).toBeDefined();
+      return json!.data;
+    };
+
     test.beforeAll(async () => {
       cli = CliRunner.create();
       w1 = BridgeTestRunner.forWorker(1);
@@ -200,22 +226,71 @@ test.describe
     });
 
     test('7. `config reconcile` reports the keep-source duplicate WITHOUT silently picking a side', async () => {
-      const rec = await cli.run(['config', 'reconcile', '--machine', M1]);
-      // The duplicate must surface (the source copy from test 6 still exists).
-      // A silent success that picked a side is the failure mode we guard against.
-      expect((rec.stdout + rec.stderr).toLowerCase()).toMatch(/duplicat|conflict|observed on/);
+      // Unfiltered, the scanner sees the declared copy (machine-12) PLUS the
+      // stray (machine-11): a "duplicate" conflict, and nothing accepted.
+      const full = await reconcileJson();
+      expect(full.conflicts).toContainEqual(
+        expect.objectContaining({ kind: 'duplicate', repository: APP2 })
+      );
+      expect(full.placementsAccepted).toEqual([]);
+
+      // A --machine filtered scan sees only machine-11's copy — the partial
+      // evidence surfaces as a "placement" conflict, still never a rewrite.
+      const filtered = await reconcileJson('--machine', M1);
+      expect(filtered.conflicts).toContainEqual(
+        expect.objectContaining({ kind: 'placement', repository: APP2 })
+      );
+
+      // Reporting only: neither run touched the declaration.
+      expect(await placementOf(APP2)).toBe(M2);
     });
 
-    test('8. `--accept-observed` resolves the duplicate in the observed direction', async () => {
+    test('8. `--accept-observed` refuses the ambiguous duplicate, then resolves a real single-machine drift', async () => {
       // TRANSCRIPT-CONFIRMED live: --accept-observed must run UNFILTERED (no
       // --machine). A partial scan cannot prove a placement is observed on
       // exactly one machine, so the product refuses the combination (exit 2)
       // rather than guess the rewrite direction.
-      const rec = await cli.run(['config', 'reconcile', '--accept-observed']);
-      expect(rec.code, `reconcile --accept-observed: ${rec.stderr}`).toBe(0);
-      // After acceptance a plain reconcile no longer reports the duplicate.
-      const again = await cli.run(['config', 'reconcile', '--machine', M1]);
-      expect((again.stdout + again.stderr).toLowerCase()).not.toMatch(/duplicat|conflict/);
+      //
+      // Phase 1 — ambiguity is never rewritten. With the keep-source copy on
+      // BOTH machines, --accept-observed keeps reporting the duplicate and
+      // leaves the declaration alone (spec/04 §4.3: ambiguity errors, never
+      // guesses). Only the "declared X, observed on exactly one different Y"
+      // drift class carries an acceptance.
+      const ambiguous = await reconcileJson('--accept-observed');
+      expect(ambiguous.placementsAccepted).toEqual([]);
+      expect(ambiguous.conflicts).toContainEqual(
+        expect.objectContaining({ kind: 'duplicate', repository: APP2 })
+      );
+      expect(await placementOf(APP2)).toBe(M2);
+
+      // Phase 2 — manufacture that unambiguous drift: remove the DECLARED
+      // machine's copy (machine-12) OUT-OF-BAND via the bridge, as an
+      // interrupted migrate or manual renet surgery would (the CLI's config is
+      // not told). Only machine-11's copy survives.
+      const guid = (await guidOf(APP2)) ?? guids[APP2];
+      expect(guid, 'no GUID recorded for the drift setup').toBeTruthy();
+      const del = await w2.executeViaBridge(
+        `sudo renet repository delete --name ${guid} --force --stop-docker`
+      );
+      expect(del.code, `bridge delete on ${M2}: ${del.stderr.slice(-400)}`).toBe(0);
+      expect(await repoPresentOnBridge(w2, APP2)).toBe(false);
+      expect(await repoPresentOnBridge(w1, APP2)).toBe(true);
+
+      // Phase 3 — the accept: the declaration is rewritten to the single
+      // observed machine, visible in the report AND in the config file itself.
+      const accepted = await reconcileJson('--accept-observed');
+      expect(accepted.placementsAccepted).toContainEqual({
+        repository: APP2,
+        from: M2,
+        to: M1,
+      });
+      expect(accepted.conflicts).toEqual([]);
+      expect(await placementOf(APP2)).toBe(M1);
+
+      // Phase 4 — after acceptance, a plain unfiltered reconcile is clean.
+      const after = await reconcileJson();
+      expect(after.conflicts).toEqual([]);
+      expect(after.placementsAccepted).toEqual([]);
     });
 
     test('9. teardown removes both repos with zero residue on either machine', async () => {

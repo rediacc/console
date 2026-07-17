@@ -4,8 +4,8 @@ description: "Looge, hallake ja kasutage LUKS-krüpteeritud repositooriume kaugm
 category: "Guides"
 order: 4
 language: et
-sourceHash: "cc8733d3419b09f6"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "c9553259c9bf6b4c"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Repositooriumid
@@ -267,7 +267,7 @@ Vaata [Migreerimisjuhendit](/en/docs/migration) täieliku läbimise jaoks, milla
 Rakenda mall repositooriumi failidega initsialiseerimiseks:
 
 ```bash
-rdc repo template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
 ```
 
 ## Kustutamine

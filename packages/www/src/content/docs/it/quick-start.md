@@ -4,8 +4,8 @@ description: Avvia un servizio containerizzato sul tuo server in pochi minuti.
 category: Guides
 order: -1
 language: it
-sourceHash: "866251eee417b1d4"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "a1350abc611570ef"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Quick Start
@@ -93,8 +93,8 @@ Crea il volume cifrato, lo monta e avvia il suo demone Docker. La repository vie
 ### 2. Applica un Template
 
 ```bash
-rdc repo template list                                        # Mostra i template incorporati
-rdc repo template apply --name app-postgres -m my-server -r my-app  # Distribuisce docker-compose.yml + Rediaccfile
+rdc repo admin template list                                        # Mostra i template incorporati
+rdc repo admin template apply --name app-postgres -m my-server -r my-app  # Distribuisce docker-compose.yml + Rediaccfile
 ```
 
 I template forniscono un `docker-compose.yml`, un `Rediaccfile` e file di supporto. Senza un template (o il tuo file compose), non c'è nulla da avviare. Usa il template incorporato per il tuo primo repository. È il percorso più veloce per visualizzare il flusso di lavoro completo da capo a fondo.
@@ -126,7 +126,7 @@ Stai modificando file *all'interno* del volume cifrato. `docker ps` mostra solo 
 | **Caso d'uso** | CI/CD, automazione, operazioni remote | Inner loop dello sviluppatore |
 | **Isolamento** | Orchestra dall'esterno | Già all'interno del sandbox |
 
-**Flusso demo:** `rdc repo template apply` -> `rdc vscode connect my-app` -> modifica `docker-compose.yml` -> `renet dev up` -> vedi l'app in esecuzione -> itera.
+**Flusso demo:** `rdc repo admin template apply` -> `rdc vscode connect my-app` -> modifica `docker-compose.yml` -> `renet dev up` -> vedi l'app in esecuzione -> itera.
 
 > Struttura Rediaccfile: [Services](/it/docs/services). Quando usare quale strumento: [rdc vs renet](/it/docs/rdc-vs-renet).
 
@@ -261,7 +261,7 @@ rdc config infra push -m my-server  # Carica la config proxy in remoto
 ### 2. Template Proxy
 
 ```bash
-rdc repo template apply --name proxy -m my-server -r infra  # Distribuisce il proxy in una repository
+rdc repo admin template apply --name proxy -m my-server -r infra  # Distribuisce il proxy in una repository
 rdc repo up --name infra -m my-server  # Avvia Traefik
 ```
 

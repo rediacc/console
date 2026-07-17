@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: et
-sourceHash: "269ed11573c50130"
-sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
+sourceHash: "5fb6196d9b6e9b0b"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Tellimus ja litsentsid
@@ -192,19 +192,13 @@ Kuva paigaldatud repositooriumilitsentsi üksikasjad ühe masina kohta:
 rdc subscription status -m hostinger
 ```
 
-Uuenda repositooriumilitsentse partiina masinas:
+Uuenda repositooriumi litsentsi masinas:
 
 ```bash
-rdc subscription refresh repos -m hostinger
+rdc subscription refresh -m hostinger --repo my-app
 ```
 
-Masinas avastatud, kuid kohalikust `rdc` konfiguratsioonist puuduvad repositooriumid lükatakse partiina uuendamise ajal tagasi. Need kuvatakse tõrgetena ega klassifitseerita automaatselt.
-
-Tee repositooriumilitsentsi jõuluuendus olemasoleva repositooriumi jaoks:
-
-```bash
-rdc subscription refresh repo --name my-app -m hostinger
-```
+`--repo` viide peab lahenema sinu kohalikus `rdc` konfiguratsioonis. Masinas avastatud, kuid kohalikust konfiguratsioonist puuduv repositoorium lükatakse tagasi: see kuvatakse tõrkena ega klassifitseerita automaatselt.
 
 Esmakordsel kasutamisel võib litsentsitud repositooriumi või varunduse toiming, mis ei leia kasutatavat repositooriumilitsentsi, käivitada account-autoriseerimise ülemineku automaatselt. CLI kuvab autoriseerimise URL-i, üritab interaktiivsetes terminalides brauserit avada ja kordab toimingut üks kord pärast eduka autoriseerimise ja väljastamise toimumist.
 

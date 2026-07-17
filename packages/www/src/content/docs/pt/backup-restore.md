@@ -4,8 +4,8 @@ description: "Faça backup de repositórios encriptados para qualquer armazename
 category: "Guides"
 order: 7
 language: pt
-sourceHash: "50b357f812a9337c"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "d800519615085ee9"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Backup e Restauro
@@ -118,28 +118,33 @@ Os backups agendados ficam em subpastas por modo dentro da pasta configurada do 
 
 Um repositório pode aparecer em `hot/` e em `cold/` (o agendamento horário tira snapshot; o agendamento semanal tira outro). A listagem combinada mostra ambas as linhas para que fique claro quais os fluxos que cobrem quais repositórios.
 
-## Sincronização em Massa
+## Sincronizar um repositório de cada vez
 
-Envie ou receba todos os repositórios de uma vez:
+Push e pull atuam sobre um único repositório, identificado pelo ref (`name`, `name:tag` ou `name@machine`). Não existe uma forma para «todos os repositórios de uma vez»: execute o comando uma vez por repositório.
 
-### Enviar Tudo para o Armazenamento
+### Enviar para o armazenamento
 
 ```bash
-rdc repo push --to my-storage -m server-1
+rdc repo push shop@server-1 --to my-storage
 ```
 
-### Receber Tudo do Armazenamento
+### Receber do armazenamento
 
 ```bash
-rdc repo pull --from my-storage -m server-1
+rdc repo pull shop@server-1 --from my-storage
 ```
 
 | Opção | Descrição |
 |--------|-------------|
-| `--to <storage>` | Armazenamento de destino (direção de envio) |
-| `--from <storage>` | Armazenamento de origem (direção de receção) |
-| `--repo <name>` | Sincronizar repositórios específicos (repetível) |
-| `--override` | Substituir backups existentes |
+| `--to <remote>` | Armazenamento ou máquina de destino (envio) |
+| `--to-machine <machine>` | Máquina de destino para envio máquina a máquina |
+| `--from <remote>` | Armazenamento ou máquina de origem (receção) |
+| `--from-machine <machine>` | Máquina de origem para receção máquina a máquina |
+| `--force` | Substituir um backup ou repositório existente |
+| `--checkpoint` | Criar um checkpoint CRIU antes de enviar (apenas envio) |
+| `--up` | Montar e implementar o repositório após a receção (apenas receção) |
+| `--bwlimit <limit>` | Limite de largura de banda para a transferência rsync (por exemplo, `10M`) |
+| `--delta-base <guid>` | Transferir apenas os blocos alterados em relação a uma GUID base imutável |
 | `--debug` | Ativar saída detalhada |
 | `--skip-router-restart` | Ignorar o reinício do servidor de rotas após a operação |
 

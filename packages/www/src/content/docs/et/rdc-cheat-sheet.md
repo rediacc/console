@@ -4,8 +4,8 @@ description: "Kiirviide rdc käskudele: konfiguratsioonid, hoidlad, masinad, sü
 category: Guides
 order: 3
 language: et
-sourceHash: "c9f10ececc124587"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d92987c4766d91ae"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # RDC CLI petuleht
@@ -21,7 +21,7 @@ Siia pole loetletud kõiki `rdc` käske, vaid ainult need, mis igal juurutamisel
 | `rdc repo down <repo>@<machine>` | Peata hoidla |
 | `rdc repo delete <repo>@<machine>` | Kustuta hoidla |
 | `rdc repo fork <repo>@<machine> --tag <tag>` | Tee hoidlast fork (peaaegu kohene, BTRFS reflink) |
-| `rdc repo promote <repo>:<tag>` | Võta olemasoleva hoidla omand üle |
+| `rdc repo promote <repo>:<tag>` | Tõsta valideeritud fork emahoidla nime all tootmisse |
 | `rdc repo list` | Loenda kõik hoidlad nime ja GUID-iga |
 
 ## Hoidlapõhised saladused
@@ -45,9 +45,7 @@ Ainult kirjutatavad juurutamisaegsed mandaadid. `get` tagastab ainult kontrollsu
 | Käsk | Kirjeldus |
 |---------|-------------|
 | `rdc repo push <repo>@<machine> --to <storage>` | Lükka hoidla varukoopia mäluhoidlasse |
-| `rdc repo push --to <storage> -m <machine>` | Lükka kõik hoidlad mäluhoidlasse |
 | `rdc repo pull <repo>@<machine> --from <storage>` | Taasta hoidla mäluhoidlast |
-| `rdc repo pull --from <storage> -m <machine>` | Taasta kõik hoidlad mäluhoidlast |
 | `rdc repo push ... --bwlimit <limit>` | Piira rsync-i ribalaiust lükkamise ajal (nt `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Piira rsync-i ribalaiust tõmbamise ajal |
 | `rdc repo push ... --checkpoint` | Tee konteinerite kontrollpunkt enne lükkamist |

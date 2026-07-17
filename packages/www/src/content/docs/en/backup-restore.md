@@ -117,28 +117,33 @@ Scheduled backups land under per-mode subfolders inside the storage's configured
 
 A repo can appear in both `hot/` and `cold/` (the hourly schedule snapshots it; the weekly schedule snapshots it again). The merged listing shows both rows so you can see which streams cover which repos.
 
-## Bulk Sync
+## Sync One Repository at a Time
 
-Push or pull all repositories at once:
+Push and pull act on a single repository, addressed by ref (`name`, `name:tag`, or `name@machine`). There is no "all repositories at once" form: run the command once per repository.
 
-### Push All to Storage
+### Push to Storage
 
 ```bash
-rdc repo push --to my-storage -m server-1
+rdc repo push shop@server-1 --to my-storage
 ```
 
-### Pull All from Storage
+### Pull from Storage
 
 ```bash
-rdc repo pull --from my-storage -m server-1
+rdc repo pull shop@server-1 --from my-storage
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--to <storage>` | Target storage (push direction) |
-| `--from <storage>` | Source storage (pull direction) |
-| `--repo <name>` | Sync specific repositories (repeatable) |
-| `--override` | Override existing backups |
+| `--to <remote>` | Destination storage or machine (push) |
+| `--to-machine <machine>` | Destination machine for machine-to-machine push |
+| `--from <remote>` | Source storage or machine (pull) |
+| `--from-machine <machine>` | Source machine for machine-to-machine pull |
+| `--force` | Overwrite an existing backup or repository |
+| `--checkpoint` | Create a CRIU checkpoint before pushing (push only) |
+| `--up` | Mount and deploy the repository after pulling (pull only) |
+| `--bwlimit <limit>` | Bandwidth limit for the rsync transfer (e.g. `10M`) |
+| `--delta-base <guid>` | Transfer only changed blocks against an immutable base GUID |
 | `--debug` | Enable verbose output |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 

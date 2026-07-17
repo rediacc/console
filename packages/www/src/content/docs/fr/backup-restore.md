@@ -4,8 +4,8 @@ description: "Sauvegardez des dépôts chiffrés vers n'importe quel stockage co
 category: Guides
 order: 7
 language: fr
-sourceHash: "50b357f812a9337c"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "d800519615085ee9"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Sauvegarde et restauration
@@ -118,28 +118,33 @@ Les sauvegardes planifiées atterrissent dans des sous-dossiers par mode à l'in
 
 Un dépôt peut apparaître dans `hot/` et dans `cold/` (la planification horaire le capture ; la planification hebdomadaire le capture également). Le listing fusionné fait remonter les deux lignes pour qu'il soit clair quels flux couvrent quels dépôts.
 
-## Synchronisation en masse
+## Synchroniser un dépôt à la fois
 
-Envoyez ou récupérez tous les dépôts en une seule fois :
+Push et pull agissent sur un seul dépôt, identifié par sa réf (`name`, `name:tag` ou `name@machine`). Il n'existe pas de forme « tous les dépôts en une fois » : exécutez la commande une fois par dépôt.
 
-### Envoyer tout vers le stockage
+### Envoyer vers le stockage
 
 ```bash
-rdc repo push --to my-storage -m server-1
+rdc repo push shop@server-1 --to my-storage
 ```
 
-### Récupérer tout depuis le stockage
+### Récupérer depuis le stockage
 
 ```bash
-rdc repo pull --from my-storage -m server-1
+rdc repo pull shop@server-1 --from my-storage
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--to <storage>` | Stockage cible (direction envoi) |
-| `--from <storage>` | Stockage source (direction récupération) |
-| `--repo <name>` | Synchroniser des dépôts spécifiques (répétable) |
-| `--override` | Écraser les sauvegardes existantes |
+| `--to <remote>` | Stockage ou machine de destination (envoi) |
+| `--to-machine <machine>` | Machine de destination pour l'envoi de machine à machine |
+| `--from <remote>` | Stockage ou machine source (récupération) |
+| `--from-machine <machine>` | Machine source pour la récupération de machine à machine |
+| `--force` | Écraser une sauvegarde ou un dépôt existant |
+| `--checkpoint` | Créer un checkpoint CRIU avant l'envoi (envoi uniquement) |
+| `--up` | Monter et déployer le dépôt après la récupération (récupération uniquement) |
+| `--bwlimit <limit>` | Limite de bande passante pour le transfert rsync (p. ex. `10M`) |
+| `--delta-base <guid>` | Ne transférer que les blocs modifiés par rapport à une GUID de base immuable |
 | `--debug` | Activer la sortie détaillée |
 | `--skip-router-restart` | Ignorer le redémarrage du serveur de routes après l'opération |
 

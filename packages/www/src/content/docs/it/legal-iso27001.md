@@ -4,8 +4,8 @@ description: "Come Rediacc si mappa ai controlli di sicurezza delle informazioni
 category: "Legal"
 order: 5
 language: it
-sourceHash: "7bdb4bcfdee26303"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "315946a692b6ee29"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 Bene. ISO/IEC 27001:2022 è lo standard internazionale per i sistemi di gestione della sicurezza delle informazioni. Pubblicato da ISO/IEC, è un documento corposo che elenca controlli per la cifratura, la gestione degli accessi, la risposta agli incidenti e decine di domini di sicurezza. Probabilmente conosci già di cosa si tratta. Quindi sii franco: Rediacc non affronta ogni controllo dello standard, e non faremo finta che lo faccia. Quello che segue è una mappatura onesta di dove Rediacc si colloca. La versione corrente è ISO/IEC 27001:2022.
@@ -42,7 +42,7 @@ Il flusso di lavoro fork-test-promozione si allinea ai requisiti di gestione del
 
 1. **Fork**: creare una copia isolata dell'ambiente di produzione
 2. **Test**: applicare e validare le modifiche nel fork
-3. **Promozione**: utilizzare `rdc repo takeover` per sostituire il fork in produzione
+3. **Promozione**: utilizzare `rdc repo promote` per sostituire il fork in produzione
 4. **Audit**: tutte le operazioni sono registrate con timestamp e identificazione dell'autore
 
 ## Miglioramento continuo

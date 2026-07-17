@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: de
-sourceHash: "269ed11573c50130"
-sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
+sourceHash: "5fb6196d9b6e9b0b"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Abonnement & Lizenzierung
@@ -192,19 +192,13 @@ Installierte Repo-Lizenz-Details auf einer Maschine anzeigen:
 rdc subscription status -m hostinger
 ```
 
-Batch-Aktualisierung von Repo-Lizenzen auf einer Maschine:
+Die Lizenz eines Repositories auf einer Maschine aktualisieren:
 
 ```bash
-rdc subscription refresh repos -m hostinger
+rdc subscription refresh -m hostinger --repo my-app
 ```
 
-Repositories, die auf der Maschine entdeckt wurden, aber in der lokalen `rdc`-Konfiguration fehlen, werden bei der Batch-Aktualisierung abgelehnt. Sie werden als Fehler gemeldet und nicht automatisch klassifiziert.
-
-Repo-Lizenz-Aktualisierung für ein vorhandenes Repository erzwingen:
-
-```bash
-rdc subscription refresh repo --name my-app -m hostinger
-```
+Der `--repo`-Ref muss in Ihrer lokalen `rdc`-Konfiguration auflösbar sein. Ein Repository, das auf der Maschine entdeckt wird, aber in der lokalen Konfiguration fehlt, wird abgelehnt: Es wird als Fehler gemeldet und nicht automatisch klassifiziert.
 
 Bei der ersten Verwendung kann eine lizenzierte Repo- oder Backup-Operation, die keine verwendbare Repo-Lizenz findet, automatisch eine Konto-Autorisierungs-Übergabe auslösen. Die CLI gibt eine Autorisierungs-URL aus, versucht den Browser in interaktiven Terminals zu öffnen, und wiederholt die Operation einmal nach erfolgreicher Autorisierung und Ausstellung.
 

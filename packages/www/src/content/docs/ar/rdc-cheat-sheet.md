@@ -4,8 +4,8 @@ description: "مرجع سريع لـ rdc: الإعدادات والمستودع�
 category: Guides
 order: 3
 language: ar
-sourceHash: "c9f10ececc124587"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d92987c4766d91ae"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # ورقة مرجعية لـ RDC CLI
@@ -21,7 +21,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 | `rdc repo down <repo>@<machine>` | إيقاف مستودع |
 | `rdc repo delete <repo>@<machine>` | حذف مستودع |
 | `rdc repo fork <repo>@<machine> --tag <tag>` | تفريع مستودع (شبه فوري، باستخدام BTRFS reflink) |
-| `rdc repo promote <repo>:<tag>` | تولي ملكية مستودع موجود |
+| `rdc repo promote <repo>:<tag>` | ترقية فرع تم التحقق منه إلى مستودع الإنتاج باسم المستودع الأصل |
 | `rdc repo list` | عرض جميع المستودعات باسمها ومعرف GUID |
 
 ## أسرار المستودع
@@ -45,9 +45,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 | الأمر | الوصف |
 |-------|-------|
 | `rdc repo push <repo>@<machine> --to <storage>` | رفع نسخة احتياطية للمستودع إلى التخزين |
-| `rdc repo push --to <storage> -m <machine>` | رفع نسخ احتياطية لجميع المستودعات |
 | `rdc repo pull <repo>@<machine> --from <storage>` | استعادة مستودع من التخزين |
-| `rdc repo pull --from <storage> -m <machine>` | استعادة جميع المستودعات من التخزين |
 | `rdc repo push ... --bwlimit <limit>` | تحديد عرض نطاق rsync أثناء الرفع (مثال: `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | تحديد عرض نطاق rsync أثناء السحب |
 | `rdc repo push ... --checkpoint` | عمل نقطة تحقق للحاويات قبل الرفع |

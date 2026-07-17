@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: ar
-sourceHash: "269ed11573c50130"
-sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
+sourceHash: "5fb6196d9b6e9b0b"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # الاشتراك والترخيص
@@ -192,19 +192,13 @@ rdc subscription status -m hostinger
 rdc subscription status -m hostinger
 ```
 
-تنعيش تراخيص المستودع دفعةً واحدة على جهاز:
+تنعيش ترخيص مستودع على جهاز:
 
 ```bash
-rdc subscription refresh repos -m hostinger
+rdc subscription refresh -m hostinger --repo my-app
 ```
 
-المستودعات المكتشفة على الجهاز لكن المفقودة من تكوين `rdc` المحلي تُرفض أثناء التنعيش الدُفعي. تُبلَّغ عنها كإخفاقات ولا تُصنَّف تلقائياً.
-
-إجبار تنعيش ترخيص مستودع لمستودع موجود:
-
-```bash
-rdc subscription refresh repo --name my-app -m hostinger
-```
+يجب أن يُحَل مرجع `--repo` في تكوين `rdc` المحلي لديك. المستودع المكتشف على الجهاز لكن المفقود من التكوين المحلي يُرفض: يُبلَّغ عنه كإخفاق ولا يُصنَّف تلقائياً.
 
 عند الاستخدام الأول، يمكن لعملية مستودع أو نسخ احتياطي مرخَّصة لا تجد ترخيص مستودع قابلاً للاستخدام أن تُطلق تفويضاً تلقائياً من الحساب. يطبع CLI عنوان URL للتفويض، ويحاول فتح المتصفح في المحطات التفاعلية، ويُعيد المحاولة مرةً واحدة بعد نجاح التفويض والإصدار.
 

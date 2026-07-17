@@ -4,8 +4,8 @@ description: "Rediacc 如何满足 ISO 27001 加密、访问管理和运营安�
 category: "Legal"
 order: 5
 language: zh
-sourceHash: "7bdb4bcfdee26303"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "315946a692b6ee29"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 好吧，ISO/IEC 27001:2022 是 ISO/IEC 发布的信息安全管理体系国际标准。这是一份详尽的文档，列举了加密、访问管理、事件响应和众多安全领域的控制。你几乎肯定知道这是什么。那就直说吧：Rediacc 并未解决该标准中的所有控制，我们也不会假装做了。接下来是 Rediacc 实际覆盖范围的诚实总结。当前版本为 ISO/IEC 27001:2022。
@@ -42,7 +42,7 @@ Rediacc 的仓库模型自然支持资产清单要求：
 
 1. **Fork**：创建生产环境的隔离副本
 2. **测试**：在 Fork 上应用和验证更改
-3. **提升**：使用 `rdc repo takeover` 将 Fork 切换到生产环境
+3. **提升**：使用 `rdc repo promote` 将 Fork 切换到生产环境
 4. **审计**：所有操作均记录时间戳和执行者标识
 
 ## 持续改进

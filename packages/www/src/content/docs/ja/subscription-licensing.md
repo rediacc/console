@@ -4,8 +4,8 @@ description: account、rdc、renetがマシンスロット、リポジトリラ�
 category: Guides
 order: 7
 language: ja
-sourceHash: "269ed11573c50130"
-sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
+sourceHash: "5fb6196d9b6e9b0b"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # サブスクリプションとライセンス
@@ -190,19 +190,13 @@ rdc subscription status -m hostinger
 rdc subscription status -m hostinger
 ```
 
-マシン上のリポジトリライセンスをバッチ更新：
+マシン上のリポジトリのライセンスを更新：
 
 ```bash
-rdc subscription refresh repos -m hostinger
+rdc subscription refresh -m hostinger --repo my-app
 ```
 
-マシン上で発見されたがローカルの `rdc` 設定にないリポジトリはバッチ更新中に拒否されます。失敗として報告され、自動分類はされません。
-
-既存のリポジトリのリポジトリライセンスを強制更新：
-
-```bash
-rdc subscription refresh repo --name my-app -m hostinger
-```
+`--repo` の ref はローカルの `rdc` 設定で解決できる必要があります。マシン上で発見されたがローカル設定にないリポジトリは拒否されます。失敗として報告され、自動分類はされません。
 
 初回使用時、使用可能なリポジトリライセンスが見つからないライセンス済みリポジトリまたはバックアップ操作は、アカウント認可ハンドオフを自動的にトリガーする場合があります。CLIは認可URLを表示し、対話型ターミナルではブラウザを開こうとし、認可と発行が成功した後に一度操作を再試行します。
 

@@ -4,8 +4,8 @@ description: "Referencia rápida de rdc: configuraciones, repositorios, máquina
 category: Guides
 order: 3
 language: es
-sourceHash: "c9f10ececc124587"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d92987c4766d91ae"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Hoja de referencia de RDC CLI
@@ -21,7 +21,7 @@ No se enumeran todos los comandos de `rdc` aquí, solo los que aparecen en cada 
 | `rdc repo down <repo>@<machine>` | Detener un repositorio |
 | `rdc repo delete <repo>@<machine>` | Eliminar un repositorio |
 | `rdc repo fork <repo>@<machine> --tag <tag>` | Bifurcar un repositorio (casi instantáneo, BTRFS reflink) |
-| `rdc repo promote <repo>:<tag>` | Tomar propiedad de un repositorio existente |
+| `rdc repo promote <repo>:<tag>` | Promover un fork validado a producción con el nombre del repositorio original |
 | `rdc repo list` | Listar todos los repositorios con nombre y GUID |
 
 ## Secretos por repositorio
@@ -45,9 +45,7 @@ Credenciales de solo escritura en tiempo de despliegue. `get` devuelve solo el r
 | Comando | Descripción |
 |---------|-------------|
 | `rdc repo push <repo>@<machine> --to <storage>` | Subir una copia de seguridad del repositorio al almacenamiento |
-| `rdc repo push --to <storage> -m <machine>` | Subir todos los repositorios al almacenamiento |
 | `rdc repo pull <repo>@<machine> --from <storage>` | Restaurar un repositorio desde el almacenamiento |
-| `rdc repo pull --from <storage> -m <machine>` | Restaurar todos los repositorios desde el almacenamiento |
 | `rdc repo push ... --bwlimit <limit>` | Limitar el ancho de banda de rsync al subir (p. ej. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Limitar el ancho de banda de rsync al bajar |
 | `rdc repo push ... --checkpoint` | Guardar punto de control de contenedores antes de subir |

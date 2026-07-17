@@ -39,7 +39,7 @@ Forks make change management auditable. You fork production, you get a copy of l
 1. Fork a production repository (`rdc repo fork`)
 2. Apply and test changes on the fork
 3. Validate the fork independently
-4. Promote the fork to production (`rdc repo takeover`)
+4. Promote the fork to production (`rdc repo promote`)
 
 Every step: logged. Timestamped. Pinned to a person. No 'I don't know who changed that' moments.
 

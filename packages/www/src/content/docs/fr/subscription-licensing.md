@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: fr
-sourceHash: "269ed11573c50130"
-sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
+sourceHash: "5fb6196d9b6e9b0b"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Abonnement et licences
@@ -192,19 +192,13 @@ Afficher les détails de licence de dépôt installés sur une machine :
 rdc subscription status -m hostinger
 ```
 
-Renouveler les licences de dépôt en lot sur une machine :
+Renouveler la licence d'un dépôt sur une machine :
 
 ```bash
-rdc subscription refresh repos -m hostinger
+rdc subscription refresh -m hostinger --repo my-app
 ```
 
-Les dépôts découverts sur la machine mais absents de la configuration locale de `rdc` sont rejetés lors de l'actualisation en lot. Ils sont signalés comme des échecs et ne sont pas auto-classifiés.
-
-Forcer le renouvellement de licence de dépôt pour un dépôt existant :
-
-```bash
-rdc subscription refresh repo --name my-app -m hostinger
-```
+La réf `--repo` doit se résoudre dans votre configuration `rdc` locale. Un dépôt découvert sur la machine mais absent de la configuration locale est rejeté : il est signalé comme un échec et n'est pas auto-classifié.
 
 Lors de la première utilisation, une opération de dépôt ou de sauvegarde sous licence qui ne trouve pas de licence de dépôt utilisable peut déclencher automatiquement un transfert d'autorisation de compte. Le CLI imprime une URL d'autorisation, essaie d'ouvrir le navigateur dans les terminaux interactifs, et retente l'opération une fois après que l'autorisation et l'émission ont réussi.
 

@@ -4,8 +4,8 @@ description: "Rediacc'ın şifreleme, erişim yönetimi ve operasyon güvenliği
 category: "Legal"
 order: 5
 language: tr
-sourceHash: "7bdb4bcfdee26303"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "315946a692b6ee29"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 Tamam. ISO/IEC 27001:2022, bilgi güvenliği yönetim sistemleri için uluslararası standarttır. ISO/IEC tarafından yayımlanmış olup, şifreleme, erişim yönetimi, olay yanıtı ve pek çok güvenlik alanı için kontroller içeren uzun bir belgedir. Muhtemelen ne olduğunu zaten biliyorsunuz. O halde açık söyleyim: Rediacc standarttaki tüm kontrolleri ele almaz ve bunu gizlemeye çalışmayacağız. Aşağıda Rediacc'ın nereye uyum sağladığının dürüst bir haritası sunulmaktadır. Mevcut sürüm ISO/IEC 27001:2022'dir.
@@ -42,7 +42,7 @@ Fork-test-yükseltme iş akışı ISO 27001'in değişiklik yönetimi gereksinim
 
 1. **Fork**: Üretim ortamının izole bir kopyasını oluşturma
 2. **Test**: Fork üzerinde değişiklikleri uygulama ve doğrulama
-3. **Yükseltme**: Fork'u üretime almak için `rdc repo takeover` kullanma
+3. **Yükseltme**: Fork'u üretime almak için `rdc repo promote` kullanma
 4. **Denetim**: Tüm işlemler zaman damgaları ve aktör kimliği ile kaydedilir
 
 ## Sürekli İyileştirme

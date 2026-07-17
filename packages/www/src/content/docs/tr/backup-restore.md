@@ -7,8 +7,8 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: "50b357f812a9337c"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "d800519615085ee9"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -121,28 +121,33 @@ Zamanlanmış yedeklemeler, depolamanın yapılandırılmış klasörünün içi
 
 Bir depo hem `hot/` hem de `cold/` altında görünebilir (saatlik zamanlama anlık görüntüsünü alır; haftalık zamanlama tekrar alır). Birleşik liste her iki satırı da gösterir, böylece hangi akışların hangi depoları kapsadığı net olur.
 
-## Toplu Senkronizasyon
+## Repoları teker teker senkronize etme
 
-Tüm depoları aynı anda gönderin veya çekin:
+Push ve pull tek bir depo üzerinde çalışır; depo ref ile adreslenir (`name`, `name:tag` veya `name@machine`). «Tüm depolar aynı anda» biçimi yoktur: komutu her depo için bir kez çalıştırın.
 
-### Tümünü Depolamaya Gönder
+### Depolamaya Gönder
 
 ```bash
-rdc repo push --to my-storage -m server-1
+rdc repo push shop@server-1 --to my-storage
 ```
 
-### Tümünü Depolamadan Çek
+### Depolamadan Çek
 
 ```bash
-rdc repo pull --from my-storage -m server-1
+rdc repo pull shop@server-1 --from my-storage
 ```
 
 | Seçenek | Açıklama |
-|---------|----------|
-| `--to <storage>` | Hedef depolama (gönderme yönü) |
-| `--from <storage>` | Kaynak depolama (çekme yönü) |
-| `--repo <name>` | Belirli depoları senkronize et (tekrarlanabilir) |
-| `--override` | Mevcut yedekleri geçersiz kıl |
+|--------|-------------|
+| `--to <remote>` | Hedef depolama veya makine (gönderme) |
+| `--to-machine <machine>` | Makineden makineye gönderme için hedef makine |
+| `--from <remote>` | Kaynak depolama veya makine (çekme) |
+| `--from-machine <machine>` | Makineden makineye çekme için kaynak makine |
+| `--force` | Mevcut bir yedeği veya depoyu geçersiz kıl |
+| `--checkpoint` | Göndermeden önce CRIU checkpoint oluştur (yalnızca gönderme) |
+| `--up` | Çektikten sonra depoyu bağla ve dağıt (yalnızca çekme) |
+| `--bwlimit <limit>` | rsync transferi için bant genişliği sınırı (örn. `10M`) |
+| `--delta-base <guid>` | Değişmez bir temel GUID'e göre yalnızca değişen blokları aktar |
 | `--debug` | Ayrıntılı çıktıyı etkinleştir |
 | `--skip-router-restart` | İşlem sonrası yönlendirici sunucusunun yeniden başlatılmasını atla |
 

@@ -266,7 +266,7 @@ See the [Migration Guide](/en/docs/migration) for a complete walkthrough of when
 Apply a template to initialize a repository with files:
 
 ```bash
-rdc repo template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
 ```
 
 ## Delete

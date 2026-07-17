@@ -4,8 +4,8 @@ description: 数分でサーバー上にコンテナ化されたサービスを�
 category: Guides
 order: -1
 language: ja
-sourceHash: "866251eee417b1d4"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "a1350abc611570ef"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # クイックスタート
@@ -93,8 +93,8 @@ rdc repo create --name my-app -m my-server --size 2G  # 2 GB の暗号化リポ�
 ### 2. テンプレートの適用
 
 ```bash
-rdc repo template list                                        # 組み込みテンプレートを表示
-rdc repo template apply --name app-postgres -m my-server -r my-app  # docker-compose.yml + Rediaccfile をデプロイ
+rdc repo admin template list                                        # 組み込みテンプレートを表示
+rdc repo admin template apply --name app-postgres -m my-server -r my-app  # docker-compose.yml + Rediaccfile をデプロイ
 ```
 
 テンプレートは `docker-compose.yml`、`Rediaccfile`、およびサポートファイルを提供します。テンプレート（または独自の compose ファイル）がなければ、起動するものがありません。最初のリポジトリには組み込みテンプレートを使用してください。これが全体のワークフローをエンドツーエンドで学習する最速の方法です。
@@ -126,7 +126,7 @@ rdc vscode connect my-app              # VS Code SSH を開き、リポジトリ
 | **ユースケース** | CI/CD、自動化、リモート操作 | 開発者のインナーループ |
 | **隔離** | 外部からオーケストレーション | 既にサンドボックス内 |
 
-**デモフロー:** `rdc repo template apply` → `rdc vscode connect my-app` → `docker-compose.yml` を編集 → `renet dev up` → アプリの動作確認 → 反復開発。
+**デモフロー:** `rdc repo admin template apply` → `rdc vscode connect my-app` → `docker-compose.yml` を編集 → `renet dev up` → アプリの動作確認 → 反復開発。
 
 > Rediaccfile の構造: [サービス](/en/docs/services)。どちらのツールを使うか: [rdc vs renet](/en/docs/rdc-vs-renet)。
 
@@ -261,7 +261,7 @@ rdc config infra push -m my-server  # プロキシ設定をリモートにプッ
 ### 2. プロキシテンプレート
 
 ```bash
-rdc repo template apply --name proxy -m my-server -r infra  # リポジトリにプロキシをデプロイ
+rdc repo admin template apply --name proxy -m my-server -r infra  # リポジトリにプロキシをデプロイ
 rdc repo up --name infra -m my-server  # Traefik を起動
 ```
 

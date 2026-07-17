@@ -4,8 +4,8 @@ description: "rdc komutları için hızlı referans: yapılandırmalar, depolar,
 category: Guides
 order: 3
 language: tr
-sourceHash: "c9f10ececc124587"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d92987c4766d91ae"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # RDC CLI Hızlı Referans
@@ -21,7 +21,7 @@ Burada her `rdc` komutu listelenmemiştir, yalnızca her dağıtımda ortaya ç�
 | `rdc repo down <repo>@<machine>` | Depoyu durdur |
 | `rdc repo delete <repo>@<machine>` | Depoyu sil |
 | `rdc repo fork <repo>@<machine> --tag <tag>` | Depoyu çatalla (neredeyse anında, BTRFS reflink) |
-| `rdc repo promote <repo>:<tag>` | Mevcut bir deponun sahipliğini al |
+| `rdc repo promote <repo>:<tag>` | Doğrulanmış bir fork'u üst deponun adıyla üretime yükselt |
 | `rdc repo list` | Ad ve GUID ile tüm depoları listele |
 
 ## Depo Gizli Anahtarları
@@ -45,9 +45,7 @@ Yalnızca dağıtım sırasında yazılabilen kimlik bilgileri. `get` komutu yal
 | Komut | Açıklama |
 |-------|----------|
 | `rdc repo push <repo>@<machine> --to <storage>` | Depo yedeklemesini depolamaya gönder |
-| `rdc repo push --to <storage> -m <machine>` | Tüm depoları depolamaya gönder |
 | `rdc repo pull <repo>@<machine> --from <storage>` | Depoyu depolamadan geri yükle |
-| `rdc repo pull --from <storage> -m <machine>` | Tüm depoları depolamadan geri yükle |
 | `rdc repo push ... --bwlimit <limit>` | Gönderme sırasında rsync bant genişliğini sınırla (örn. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Alma sırasında rsync bant genişliğini sınırla |
 | `rdc repo push ... --checkpoint` | Göndermeden önce konteynerlerde kontrol noktası oluştur |

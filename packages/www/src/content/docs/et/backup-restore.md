@@ -4,8 +4,8 @@ description: "Varunda krüpteeritud repositooriumeid mis tahes rclone-ühilduvas
 category: "Guides"
 order: 7
 language: et
-sourceHash: "50b357f812a9337c"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "d800519615085ee9"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Varundamine ja taastamine
@@ -118,28 +118,33 @@ Ajastatud varukopiad maanduvad salvestuse konfigureeritud kausta sees režiimip�
 
 Repo võib ilmuda nii `hot/` kui ka `cold/` kaustas (tunnine ajakava teeb sellest hetktõmmise; iganädalane ajakava teeb uuesti). Ühendatud loend näitab mõlemat rida, nii et on selge, millised vood milliseid repo-sid katavad.
 
-## Masstihkroniseerimine
+## Sünkroniseeri üks repositoorium korraga
 
-Saada või tõmba kõik repositooriumid korraga:
+Push ja pull toimivad korraga ühe repositooriumi peal, mis on adresseeritud viitega (`name`, `name:tag` või `name@machine`). Vormi „kõik repositooriumid korraga“ ei ole: käivita käsk iga repositooriumi jaoks eraldi.
 
-### Saada kõik salvestusse
+### Saada salvestusse
 
 ```bash
-rdc repo push --to my-storage -m server-1
+rdc repo push shop@server-1 --to my-storage
 ```
 
-### Tõmba kõik salvestusest
+### Tõmba salvestusest
 
 ```bash
-rdc repo pull --from my-storage -m server-1
+rdc repo pull shop@server-1 --from my-storage
 ```
 
 | Valik | Kirjeldus |
 |--------|-------------|
-| `--to <storage>` | Sihtmärk salvestus (saatmise suund) |
-| `--from <storage>` | Lähtesalvestus (tõmbamise suund) |
-| `--repo <name>` | Sünkroniseeri konkreetsed repositooriumid (korratav) |
-| `--override` | Kirjuta olemasolevad varukopiad üle |
+| `--to <remote>` | Sihtsalvestus või -masin (saatmine) |
+| `--to-machine <machine>` | Sihtmasin masina-masina saatmiseks |
+| `--from <remote>` | Lähtesalvestus või -masin (tõmbamine) |
+| `--from-machine <machine>` | Lähtemašin masina-masina tõmbamiseks |
+| `--force` | Kirjuta olemasolev varukoopia või repositoorium üle |
+| `--checkpoint` | Loo enne saatmist CRIU kontrollpunkt (ainult saatmine) |
+| `--up` | Ühenda ja juuruta repositoorium pärast tõmbamist (ainult tõmbamine) |
+| `--bwlimit <limit>` | Ribalaiuse piirang rsync-ülekandele (nt `10M`) |
+| `--delta-base <guid>` | Kanna üle ainult muutunud plokid võrreldes muutumatu baas-GUID-iga |
 | `--debug` | Luba detailne väljund |
 | `--skip-router-restart` | Jäta marsruudiserverit pärast toimingut taaskäivitamata |
 

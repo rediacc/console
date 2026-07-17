@@ -4,8 +4,8 @@ description: "Краткая справка по rdc: конфиги, репоз
 category: Guides
 order: 3
 language: ru
-sourceHash: "c9f10ececc124587"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d92987c4766d91ae"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Шпаргалка по CLI RDC
@@ -21,7 +21,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 | `rdc repo down <repo>@<machine>` | Остановить репозиторий |
 | `rdc repo delete <repo>@<machine>` | Удалить репозиторий |
 | `rdc repo fork <repo>@<machine> --tag <tag>` | Создать форк репозитория (мгновенно, BTRFS reflink) |
-| `rdc repo promote <repo>:<tag>` | Взять на себя владение существующим репозиторием |
+| `rdc repo promote <repo>:<tag>` | Повысить проверенный форк до продакшена под именем родительского репозитория |
 | `rdc repo list` | Список всех репозиториев с именем и GUID |
 
 ## Секреты репозитория
@@ -45,9 +45,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 | Команда | Описание |
 |---------|----------|
 | `rdc repo push <repo>@<machine> --to <storage>` | Отправить резервную копию репозитория в хранилище |
-| `rdc repo push --to <storage> -m <machine>` | Отправить все репозитории в хранилище |
 | `rdc repo pull <repo>@<machine> --from <storage>` | Восстановить репозиторий из хранилища |
-| `rdc repo pull --from <storage> -m <machine>` | Восстановить все репозитории из хранилища |
 | `rdc repo push ... --bwlimit <limit>` | Ограничить пропускную способность rsync при отправке (например `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Ограничить пропускную способность rsync при получении |
 | `rdc repo push ... --checkpoint` | Создать контрольную точку контейнеров перед отправкой |

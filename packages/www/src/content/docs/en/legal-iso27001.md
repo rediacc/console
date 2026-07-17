@@ -40,7 +40,7 @@ This is where it gets interesting: the fork-test-promote workflow aligns with IS
 
 1. **Fork**: Create an isolated copy of the production environment
 2. **Test**: Apply and validate changes in the fork
-3. **Promote**: Use `rdc repo takeover` to swap the fork into production
+3. **Promote**: Use `rdc repo promote` to swap the fork into production
 4. **Audit**: All operations are logged with timestamps and actor identification
 
 ## Continuous Improvement

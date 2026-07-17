@@ -4,8 +4,8 @@ description: "rdc 빠른 참조: 설정, 리포지터리, 머신, 파일 동기�
 category: Guides
 order: 3
 language: ko
-sourceHash: "c9f10ececc124587"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "d92987c4766d91ae"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # RDC CLI 치트 시트
@@ -21,7 +21,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 | `rdc repo down <repo>@<machine>` | 리포지터리 중지 |
 | `rdc repo delete <repo>@<machine>` | 리포지터리 삭제 |
 | `rdc repo fork <repo>@<machine> --tag <tag>` | 리포지터리 포크 (거의 즉각적, BTRFS reflink) |
-| `rdc repo promote <repo>:<tag>` | 기존 리포지터리 소유권 획득 |
+| `rdc repo promote <repo>:<tag>` | 검증된 포크를 상위 리포지터리 이름으로 프로덕션에 승격 |
 | `rdc repo list` | 이름 및 GUID와 함께 모든 리포지터리 나열 |
 
 ## 리포지터리별 시크릿
@@ -45,9 +45,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 | 명령 | 설명 |
 |---------|-------------|
 | `rdc repo push <repo>@<machine> --to <storage>` | 리포지터리 백업을 스토리지로 푸시 |
-| `rdc repo push --to <storage> -m <machine>` | 모든 리포지터리를 스토리지로 푸시 |
 | `rdc repo pull <repo>@<machine> --from <storage>` | 스토리지에서 리포지터리 복원 |
-| `rdc repo pull --from <storage> -m <machine>` | 스토리지에서 모든 리포지터리 복원 |
 | `rdc repo push ... --bwlimit <limit>` | 푸시 중 rsync 대역폭 제한 (예: `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | 풀 중 rsync 대역폭 제한 |
 | `rdc repo push ... --checkpoint` | 푸시 전 컨테이너 체크포인트 생성 |

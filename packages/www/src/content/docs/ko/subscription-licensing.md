@@ -4,8 +4,8 @@ description: '계정, rdc, renet이 머신 슬롯, 저장소 라이선스, 요�
 category: Guides
 order: 7
 language: ko
-sourceHash: "269ed11573c50130"
-sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
+sourceHash: "5fb6196d9b6e9b0b"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # 구독 및 라이선싱
@@ -190,19 +190,13 @@ rdc subscription status -m hostinger
 rdc subscription status -m hostinger
 ```
 
-머신의 저장소 라이선스 배치 새로 고침:
+머신에서 레포지토리의 라이선스 새로 고침:
 
 ```bash
-rdc subscription refresh repos -m hostinger
+rdc subscription refresh -m hostinger --repo my-app
 ```
 
-머신에서 발견되었지만 로컬 `rdc` 구성에서 누락된 저장소는 배치 새로 고침 중에 거부됩니다. 실패로 보고되며 자동으로 분류되지 않습니다.
-
-기존 저장소의 저장소 라이선스 새로 고침을 강제합니다:
-
-```bash
-rdc subscription refresh repo --name my-app -m hostinger
-```
+`--repo` ref는 로컬 `rdc` 구성에서 확인될 수 있어야 합니다. 머신에서 발견되었지만 로컬 구성에서 누락된 레포지토리는 거부됩니다. 실패로 보고되며 자동으로 분류되지 않습니다.
 
 처음 사용할 때 라이선스된 저장소 또는 백업 작업이 사용 가능한 저장소 라이선스를 찾지 못하면 계정 인증을 자동으로 트리거할 수 있습니다. CLI가 권한 부여 URL을 인쇄하고, 대화형 터미널에서 브라우저를 열려고 하며, 권한 부여 및 발급이 성공한 후 작업을 재시도합니다.
 
