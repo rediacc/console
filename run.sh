@@ -1350,6 +1350,7 @@ ACCOUNT COMMANDS:
   account test e2e [opts]  Run account E2E tests (playwright, with Stripe wiring)
   account stop             Stop account Docker containers
   account reset            Reset .env + database and regenerate
+  account totp [email]     Print the current 2FA code for a dev user (default dev-user@rediacc.io)
 
 ROTATION COMMANDS (private/account/scripts/rotation/):
   rotation init            Bootstrap manifest from current platform state
@@ -1526,10 +1527,14 @@ main() {
                     shift
                     account_seed_demo "$@"
                     ;;
+                totp)
+                    shift
+                    account_totp "$@"
+                    ;;
                 *)
                     log_error "Unknown account command: ${1:-}"
                     echo ""
-                    echo "Usage: ./run.sh account [dev|test|stop|reset|seed-demo]"
+                    echo "Usage: ./run.sh account [dev|test|stop|reset|seed-demo|totp]"
                     exit 1
                     ;;
             esac

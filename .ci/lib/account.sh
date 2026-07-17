@@ -89,6 +89,19 @@ account_rustfs_alive() {
     [[ "$code" != "000" ]]
 }
 
+# Force-remove ghost RustFS containers by name. A corrupt `docker compose`
+# project state can leave containers that block a fresh recreate but survive a
+# plain `docker rm` — `rm -f` clears them. Best-effort and never touches the
+# live :9100 reuse path (a running RustFS must survive).
+account_docker_ghost_clean() {
+    command -v docker &>/dev/null || return 0
+    docker info &>/dev/null || return 0
+    local ids
+    ids=$(docker ps -aq --filter "name=account-config-rustfs" --filter "name=rediacc-config-rustfs-dev" 2>/dev/null || true)
+    [[ -n "$ids" ]] && echo "$ids" | xargs docker rm -f >/dev/null 2>&1 || true
+    return 0
+}
+
 # =============================================================================
 # ENSURE .ENV
 # =============================================================================
@@ -408,8 +421,9 @@ account_dev() {
             log_info "Reusing RustFS already serving on port ${rustfs_port}"
         else
             # Best-effort clean of stale project containers so a fresh recreate
-            # is not blocked by a prior run's leftovers.
-            docker rm -f account-config-rustfs account-config-rustfs-init >/dev/null 2>&1 || true
+            # is not blocked by a prior run's leftovers. Only reached when no
+            # RustFS is serving on the port, so a live instance is never touched.
+            account_docker_ghost_clean
             export CONFIG_RUSTFS_PORT=$rustfs_port
             (cd "$ACCOUNT_DIR" && CONFIG_RUSTFS_PORT=$rustfs_port \
                 docker compose up -d config-rustfs config-rustfs-init) \
@@ -468,7 +482,10 @@ account_dev() {
     # Provision + print dev login credentials once the gateway is healthy
     account_dev_credentials "$GATEWAY_PORT" &
 
-    # Start gateway (foreground — keeps terminal alive)
+    # Start gateway (foreground — keeps terminal alive). Precompute the WebAuthn
+    # origin so its ${GATEWAY_PORT} isn't expanded from the same env-prefix that
+    # (re)assigns GATEWAY_PORT (that ordering is a shellcheck SC2097/SC2098 trap).
+    local webauthn_origin="http://localhost:${GATEWAY_PORT}"
     log_step "Starting dev gateway on :${GATEWAY_PORT}..."
     (cd "$ACCOUNT_DIR" &&
         GATEWAY_PORT=$GATEWAY_PORT \
@@ -478,6 +495,8 @@ account_dev() {
             CONFIG_R2_BUCKET="${CONFIG_R2_BUCKET:-}" \
             CONFIG_R2_ACCESS_KEY_ID="${CONFIG_R2_ACCESS_KEY_ID:-}" \
             CONFIG_R2_SECRET_ACCESS_KEY="${CONFIG_R2_SECRET_ACCESS_KEY:-}" \
+            WEBAUTHN_RP_ID="localhost" \
+            WEBAUTHN_ORIGIN="$webauthn_origin" \
             npx tsx src/entry/dev-gateway.ts)
 }
 
@@ -531,25 +550,112 @@ account_dev_credentials() {
         return 0
     fi
 
-    echo ""
-    echo "  ┌─────────────────────────────────────────────────────────────────┐"
-    echo "  │  Dev logins (fresh passwords each start)                        │"
-    echo "  ├─────────────────────────────────────────────────────────────────┤"
-    printf "  │  root     %-32s %-16s  │\n" "$root_email" "$root_pw"
-    printf "  │  user     %-32s %-16s  │\n" "$user_email" "$user_pw"
-    printf "  │  partner  %-32s %-16s  │\n" "$partner_email" "$partner_pw"
-    echo "  ├─────────────────────────────────────────────────────────────────┤"
-    echo "  │  Portal:  http://127.0.0.1:${gateway_port}/account/login        │"
+    # Seed a fully unlockable config store for the dev user so the web console is
+    # usable with a known password on a fresh start. This is a CONSTANT password
+    # (never rotated): an idempotent re-seed cannot re-wrap the CEK without the
+    # prior password, so a fixed one keeps re-runs working. Best-effort and does
+    # NOT gate the login banner below — config storage needs RustFS (Docker), so
+    # a Docker-less dev box still gets its logins printed.
+    local store_pw="DevConsole123!"
+    local seed_json seed_existing="" seed_recovery="" seed_totp=""
+    seed_json=$(curl -sf -X POST "$base/test/seed-config-store" -H 'Content-Type: application/json' \
+        -d "{\"email\":\"$user_email\",\"password\":\"$store_pw\"}" 2>/dev/null || true)
+    if [[ -n "$seed_json" ]]; then
+        {
+            read -r seed_existing
+            read -r seed_recovery
+            read -r seed_totp
+        } < <(node -e 'const d=JSON.parse(require("fs").readFileSync(0,"utf8")||"{}");console.log(d.existing?1:0);console.log(d.recoveryCode||"");console.log(d.totpSecret||"")' <<<"$seed_json" 2>/dev/null || true)
+    fi
+
+    # 65 box-drawing dashes for the borders. account_banner_row's %-63s pads by
+    # BYTES, so every content string below stays ASCII-only — a multibyte glyph
+    # (arrow / em dash) would shift the closing bar left and break the box.
+    local rule
+    rule=$(printf '─%.0s' $(seq 1 65))
+
+    local recovery_display
+    if [[ "$seed_existing" == "1" ]]; then
+        recovery_display="issued on first seed (unchanged)"
+    else
+        recovery_display="${seed_recovery:-<unavailable>}"
+    fi
+
     local lan_ip
     lan_ip=$(hostname -I 2>/dev/null | awk '{print $1}')
-    if [[ -n "$lan_ip" ]]; then
-        printf "  │  Network: http://%s:%s/account/login%*s│\n" \
-            "$lan_ip" "$gateway_port" $((22 - ${#lan_ip} - ${#gateway_port})) ""
-    fi
-    echo "  │  root → /account/admin   partner → /account/partner (seeded)    │"
-    echo "  │  user → /account/console (PROFESSIONAL plan seeded)             │"
-    echo "  └─────────────────────────────────────────────────────────────────┘"
+
     echo ""
+    echo "  ┌${rule}┐"
+    account_banner_row "Dev logins (fresh passwords each start)"
+    echo "  ├${rule}┤"
+    account_banner_row "$(printf 'root     %-32s %s' "$root_email" "$root_pw")"
+    account_banner_row "$(printf 'user     %-32s %s' "$user_email" "$user_pw")"
+    account_banner_row "$(printf 'partner  %-32s %s' "$partner_email" "$partner_pw")"
+    echo "  ├${rule}┤"
+    account_banner_row "Portal:   http://localhost:${gateway_port}/account/login"
+    account_banner_row "Console:  http://localhost:${gateway_port}/account/console"
+    if [[ -n "$lan_ip" ]]; then
+        account_banner_row "Network:  http://${lan_ip}:${gateway_port}/account/login"
+        account_banner_row "          (LAN reachable; no passkeys over LAN)"
+    fi
+    echo "  ├${rule}┤"
+    account_banner_row "Store password:  ${store_pw}"
+    account_banner_row "Recovery code:   ${recovery_display}"
+    if [[ -n "$seed_totp" ]]; then
+        account_banner_row "2FA code:        ./run.sh account totp"
+        account_banner_row "2FA secret:      ${seed_totp}"
+    else
+        account_banner_row "2FA:             config storage disabled (Docker needed)"
+    fi
+    echo "  ├${rule}┤"
+    account_banner_row "root    -> /account/admin    (operator)"
+    account_banner_row "partner -> /account/partner  (seeded demo data)"
+    account_banner_row "user    -> /account/console  (PROFESSIONAL + config store)"
+    echo "  └${rule}┘"
+    echo ""
+}
+
+# One padded banner row inside the 65-col box drawn by account_dev_credentials /
+# account_totp: 2-space indent, a border bar, 2 spaces, then a 63-wide field.
+account_banner_row() {
+    printf "  │  %-63s│\n" "$1"
+}
+
+# Print the current TOTP code for a dev user (default dev-user@rediacc.io). Reads
+# the running gateway's port from the state file — the store + TOTP secret are
+# seeded by `account dev`, so the gateway must be up. Dev-only route.
+account_totp() {
+    local email="${1:-dev-user@rediacc.io}"
+    if [[ ! -f "$ACCOUNT_STATE_FILE" ]]; then
+        log_error "No running dev gateway (state file absent). Start it: ./run.sh account dev"
+        exit 1
+    fi
+    local gateway_port
+    gateway_port=$(grep "^gateway_port=" "$ACCOUNT_STATE_FILE" 2>/dev/null | cut -d= -f2)
+    if [[ -z "$gateway_port" ]]; then
+        log_error "Could not read gateway port from ${ACCOUNT_STATE_FILE}"
+        exit 1
+    fi
+
+    local url="http://127.0.0.1:${gateway_port}/account/api/v1/test/totp-code"
+    local json
+    json=$(curl -sf -m 5 -G "$url" --data-urlencode "email=${email}" 2>/dev/null || true)
+    if [[ -z "$json" ]]; then
+        log_error "No TOTP code for '${email}'. Has ./run.sh account dev seeded a config store?"
+        exit 1
+    fi
+
+    local code seconds
+    {
+        read -r code
+        read -r seconds
+    } < <(node -e 'const d=JSON.parse(require("fs").readFileSync(0,"utf8")||"{}");console.log(d.code||"");console.log(d.secondsRemaining??"")' <<<"$json" 2>/dev/null || true)
+    if [[ -z "$code" ]]; then
+        log_error "No TOTP code for '${email}'. Has ./run.sh account dev seeded a config store?"
+        exit 1
+    fi
+
+    log_info "TOTP for ${email}: ${code}  (${seconds}s remaining)"
 }
 
 account_stop() {
@@ -579,13 +685,17 @@ account_stop() {
     # Stop Docker containers
     (cd "$ACCOUNT_DIR" && docker compose down --remove-orphans) 2>/dev/null || true
 
-    local containers=(account-server account-config-rustfs account-config-rustfs-init)
+    local containers=(account-server)
     for container in "${containers[@]}"; do
         if docker ps -a --format "{{.Names}}" 2>/dev/null | grep -q "^${container}$"; then
             docker stop "$container" 2>/dev/null || true
             docker rm "$container" 2>/dev/null || true
         fi
     done
+
+    # RustFS config-store containers (including ghosts a corrupt compose state
+    # leaves behind) are force-removed by name.
+    account_docker_ghost_clean
 
     rm -f "$ACCOUNT_STATE_FILE"
     log_info "Account services stopped"
