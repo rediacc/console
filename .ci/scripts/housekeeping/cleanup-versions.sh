@@ -448,6 +448,22 @@ cleanup_deployments() {
         local full_repo="$GITHUB_ORG/$repo"
         log_step "  Processing deployments for $full_repo"
 
+        # Open PRs decide pr-* retention: a closed PR's pr-N environment gets
+        # ALL its deployment records deleted (keep 0) so it drops off the
+        # repo's Deployments view. The environment *object* can only be
+        # deleted with Administration:write (repo-settings surface), which
+        # this token deliberately lacks -- but the Deployments UI is driven by
+        # the records, which need only deployments:write, so this achieves the
+        # same visible cleanup without admin rights. If the open-PR lookup
+        # fails, fall back to the conservative keep-N so an API blip cannot
+        # wipe an open PR's preview history.
+        local open_prs=""
+        local open_prs_ok=true
+        if ! open_prs="$(gh pr list --repo "$full_repo" --state open --limit 200 --json number --jq '.[].number' 2>/dev/null)"; then
+            open_prs_ok=false
+            log_warn "  Could not list open PRs; pr-* deployments fall back to keep-$keep_per_env"
+        fi
+
         # Fetch all deployments, sorted newest first
         local deployments
         deployments="$(gh api "repos/$full_repo/deployments?per_page=100" \
@@ -473,14 +489,23 @@ cleanup_deployments() {
             local env_count
             env_count="$(echo "$env_deps" | jq 'length')"
 
-            if [[ "$env_count" -le "$keep_per_env" ]]; then
+            # Closed-PR pr-* environments keep nothing; everything else keeps N
+            local env_keep="$keep_per_env"
+            if [[ "$env" =~ ^pr-([0-9]+)$ ]]; then
+                local pr_number="${BASH_REMATCH[1]}"
+                if [[ "$open_prs_ok" == "true" ]] && ! grep -qx "$pr_number" <<<"$open_prs"; then
+                    env_keep=0
+                fi
+            fi
+
+            if [[ "$env_count" -le "$env_keep" ]]; then
                 log_debug "  $env: $env_count deployment(s), all retained"
                 continue
             fi
 
             # Skip the first N (newest), delete the rest
             local to_delete
-            to_delete="$(echo "$env_deps" | jq -c ".[$keep_per_env:][]")"
+            to_delete="$(echo "$env_deps" | jq -c ".[$env_keep:][]")"
 
             while IFS= read -r dep; do
                 [[ -z "$dep" ]] && continue
@@ -512,7 +537,7 @@ cleanup_deployments() {
             done <<<"$to_delete"
         done
 
-        log_info "  Deployments ($full_repo): deleted $deleted of $total (keeping $keep_per_env per environment)"
+        log_info "  Deployments ($full_repo): deleted $deleted of $total (keeping $keep_per_env per environment, 0 for closed-PR pr-*)"
     done
 }
 
@@ -632,6 +657,15 @@ cleanup_cf_pages() {
 # PHASE 6: GITHUB ENVIRONMENTS (PR previews)
 # =============================================================================
 
+# Deleting an environment OBJECT requires Administration:write (it is a
+# repo-settings operation; see the GitHub Apps permissions reference), which
+# the housekeeping token deliberately does not carry. This phase therefore
+# only succeeds if the App is ever granted admin; until then it bails out on
+# the first 403 instead of spamming a warning per environment. The visible
+# cleanup (Deployments view) is already handled by Phase 4, which deletes the
+# closed-PR deployment RECORDS with plain deployments:write; leftover empty
+# environment objects only appear under Settings -> Environments and hold no
+# secrets or rules.
 cleanup_environments() {
     log_step "Phase 6: Cleaning up stale GitHub preview environments"
 
@@ -681,12 +715,15 @@ cleanup_environments() {
                 log_warn "  [DRY-RUN] Would delete environment: $env_name (PR #$pr_number state: $pr_state)"
                 deleted=$((deleted + 1))
             else
-                if gh api -X DELETE "repos/$full_repo/environments/$env_name" 2>/dev/null; then
+                if gh api -X DELETE "repos/$full_repo/environments/$env_name" >/dev/null 2>&1; then
                     log_debug "  Deleted environment: $env_name (PR #$pr_number state: $pr_state)"
                     deleted=$((deleted + 1))
                     record_delete
                 else
-                    log_warn "  Failed to delete environment: $env_name"
+                    # Same token for every environment, so one failure means
+                    # they all fail -- warn once and stop.
+                    log_warn "  Cannot delete environment $env_name (token lacks Administration:write); skipping remaining environments"
+                    break
                 fi
             fi
         done < <(echo "$pr_envs" | jq -c '.[]')
