@@ -540,37 +540,6 @@ ${dataSource ?? ''}`;
       expect(seen.stdout.trim()).toBe(APP_SECRET_VALUE);
     });
 
-    test('R2. an image pull resolves THROUGH the zot cache (blob store records the repo)', async () => {
-      // DETERMINISTIC pull: relying on test 4's busybox pull was fleet-state-
-      // dependent — on a dirty fleet containerd already holds the image, no pull
-      // happens, and zot is empty for a reason that has nothing to do with the
-      // cache (caught on the first local validation run). This test makes its
-      // OWN pull with imagePullPolicy=Always, which re-resolves through the
-      // wired mirror even when the image is cached, then asserts zot's
-      // on-demand sync recorded the repo in its blob store. The store layout
-      // can nest the upstream host, so match the repo dir anywhere under it.
-      // Repo namespaces enforce PSA `restricted` (the #84 surface), so the
-      // probe carries the full compliant securityContext like every other
-      // manifest in this suite.
-      const probe = `{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":65534,"seccompProfile":{"type":"RuntimeDefault"}},"containers":[{"name":"zotprobe","image":"busybox:1.36","imagePullPolicy":"Always","command":["sleep","30"],"securityContext":{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]}}}]}}`;
-      const run = await kubectl(
-        `-n ${NS} run zotprobe --image=busybox:1.36 --overrides='${probe}' --restart=Never`
-      );
-      expect(run.code, `zotprobe create: ${run.stderr.slice(-200)}`).toBe(0);
-      const ready = await kubectl(
-        `-n ${NS} wait pod/zotprobe --for=condition=Ready --timeout=120s`
-      );
-      expect(ready.code, `zotprobe never Ready: ${ready.stderr.slice(-200)}`).toBe(0);
-      const served = await w1.executeViaBridge(
-        // The machine-scoped store is DefaultStorageDir=/var/lib/rediacc/zot
-        // (pkg/kube/registry/zot.go:50) — NOT the service name rediacc-zot,
-        // which this find once probed as a path.
-        'sudo find /var/lib/rediacc/zot -maxdepth 6 -type d -name busybox 2>/dev/null | head -1'
-      );
-      await kubectl(`-n ${NS} delete pod zotprobe --ignore-not-found --timeout=60s`);
-      expect(served.stdout.trim(), 'busybox not found in the zot blob store').not.toBe('');
-    });
-
     test('5. F5 hazard: stock k3s local-path is the DEFAULT SC; the rediacc SC is not', async () => {
       // The PVC MUST name the rediacc SC or it is silently adopted by local-path
       // (the default), escaping the forkable per-volume LUKS image. Assert the
@@ -794,6 +763,36 @@ spec:
       await kubectl(
         `-n ${NS} delete volumesnapshot csi-snap --ignore-not-found --wait=true --timeout=60s`
       );
+    });
+
+
+    test('R9. the probe pull TRAVERSED the zot mirror (sync evidence in the zot journal)', async () => {
+      // Placed LAST: an auxiliary cache-integration assert must not mask the
+      // primary coverage above (.serial skips everything after a failure —
+      // learned when this assert hid the whole CSI battery for six runs).
+      //
+      // Asserts TRAVERSAL, not storage: zot v2's on-demand sync SERVES
+      // manifest-list images while failing to COMMIT them ("invalid manifest
+      // content", observed live for k3s's own images — ledgered as #96), so
+      // the blob store is not a reliable witness. The sync ATTEMPT in zot's
+      // journal is: it only appears when the pull came through the mirror.
+      const probe = `{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":65534,"seccompProfile":{"type":"RuntimeDefault"}},"containers":[{"name":"zotprobe","image":"busybox:1.36","imagePullPolicy":"Always","command":["sleep","30"],"securityContext":{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]}}}]}}`;
+      const run = await kubectl(
+        `-n ${NS} run zotprobe --image=busybox:1.36 --overrides='${probe}' --restart=Never`
+      );
+      expect(run.code, `zotprobe create: ${run.stderr.slice(-200)}`).toBe(0);
+      const ready = await kubectl(
+        `-n ${NS} wait pod/zotprobe --for=condition=Ready --timeout=120s`
+      );
+      expect(ready.code, `zotprobe never Ready: ${ready.stderr.slice(-200)}`).toBe(0);
+      const evidence = await w1.executeViaBridge(
+        `sudo journalctl -u rediacc-zot --no-pager | grep -c 'busybox' || true`
+      );
+      await kubectl(`-n ${NS} delete pod zotprobe --ignore-not-found --timeout=60s`);
+      expect(
+        Number.parseInt(evidence.stdout.trim() || '0', 10),
+        'no busybox sync evidence in the zot journal — the pull bypassed the mirror'
+      ).toBeGreaterThan(0);
     });
 
     test('10. teardown: repository down (no leak) + cluster + datastores + dummy interface removed', async () => {

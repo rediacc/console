@@ -197,3 +197,17 @@ transcript DONE except the split measurement (#42); rehearse transcript NOT DONE
 (env-blocked). B1 is materially discharged for the features that could run, with two
 named residuals carrying owners: #42 (product, ruling needed) and the rehearse re-run
 (environment).
+
+14. **#96 — zot's on-demand sync SERVES manifest-list images but fails to COMMIT them
+    ("invalid manifest content", zot v2, observed live for k3s's own images e.g.
+    rancher/mirrored-coredns-coredns and for busybox).** The pull-through cache
+    therefore doesn't CACHE a broad image class — every such pull re-fetches upstream,
+    defeating the cache's fork/migrate purpose (04 §7b). Also observed: the config
+    dist-spec 1.1.0-vs-1.1.1 warning; a zot version bump or config fix is the likely
+    shape. Found by suite 15's through-pull assert refusing to go green (six honest
+    reds, four distinct causes: fleet-cached image, PSA enforcement, a
+    service-name-as-path typo, and the half-connected wire — kube install's
+    --registries-yaml defaulted empty, fixed as renet 79d07b5). The suite's assert now
+    proves TRAVERSAL via zot's journal; storage-commit is #96's own item. Owner: P5.
+    Related footgun, same owner: the e2e setup's renet redeploy skips on VERSION
+    equality (0.0.0-dev == 0.0.0-dev) so dev binaries never refresh — checksum compare.
