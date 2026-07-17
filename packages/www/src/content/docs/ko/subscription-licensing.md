@@ -4,7 +4,7 @@ description: '계정, rdc, renet이 머신 슬롯, 저장소 라이선스, 요�
 category: Guides
 order: 7
 language: ko
-sourceHash: de3bcbe1022db82f
+sourceHash: "269ed11573c50130"
 sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
@@ -116,7 +116,7 @@ Community는 항상 존재하는 무료 기본 요금제입니다. 신규 계정
 - VM 마이그레이션, 머신 ID 변경: 저장소는 계속 실행됨 (40일 창 내에서)
 - 다음 `rdc` 작업이 새 머신 ID로 라이선스를 새로 고침
 - 수동 개입 필요 없음
-- `rdc machine query --system --licenses --name <machine>`으로 머신 ID 및 라이선스 상태 확인
+- `rdc machine status <machine> --system --licenses`으로 머신 ID 및 라이선스 상태 확인
 
 **Edge 채널 계정**은 Community 요금제로 운영되며 제한이 2배로 늘어납니다 (20 GB 저장소, 월 200회 설정, 머신 2대). 유료 요금제는 Stable 채널에서만 사용할 수 있습니다. 자세한 내용은 [Release Channels](/en/docs/release-channels)를 참고하세요.
 
@@ -181,13 +181,13 @@ rdc subscription status
 한 머신의 머신 활성화 세부 정보 표시:
 
 ```bash
-rdc subscription activation status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 한 머신의 설치된 저장소 라이선스 세부 정보 표시:
 
 ```bash
-rdc subscription repo status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 머신의 저장소 라이선스 배치 새로 고침:
@@ -265,4 +265,4 @@ rdc subscription refresh repo --name my-app -m hostinger
 - 실패한 발급 시도
 - 발급 전에 거부된 추적되지 않는 저장소
 
-사용량과 최근 저장소 라이선스 발급 이력의 고객용 보기가 필요하면 account 포털을 사용하십시오. 머신 측 검사가 필요하면 `rdc subscription activation status -m` 및 `rdc subscription repo status -m`을 사용하십시오.
+사용량과 최근 저장소 라이선스 발급 이력의 고객용 보기가 필요하면 account 포털을 사용하십시오. 머신 측 검사가 필요하면 `rdc subscription status -m` 및 `rdc subscription status -m`을 사용하십시오.

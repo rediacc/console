@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: tr
-sourceHash: "83f6a9a2b0c8bae2"
+sourceHash: "b1f9e2e3bba92912"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -43,7 +43,7 @@ Tüm durum bilgisi iş istasyonunuzdaki bir yapılandırma dosyasında saklanır
 
 - Makinelere doğrudan SSH bağlantısı
 - Harici hizmet gerekmez
-- Varsayılan yapılandırma ilk CLI kullanımında otomatik oluşturulur. Adlandırılmış yapılandırmalar `rdc config init --name <name>` ile oluşturulur
+- Varsayılan yapılandırma ilk CLI kullanımında otomatik oluşturulur. Adlandırılmış yapılandırmalar `rdc config init <name>` ile oluşturulur
 - İsteğe bağlı şifreli yapılandırma senkronizasyonu aynı dosyayı yapılandırma deposunda, ekip başına kapsamlı olarak saklar
 
 ## rediacc Kullanıcısı
@@ -84,7 +84,7 @@ Bu şu anlama gelir:
 
 Rediaccfile işlevleri otomatik olarak `DOCKER_HOST` değerini doğru sokete ayarlar.
 
-Bir yapay zeka ajanı `rdc term connect -r <repo>` aracılığıyla bir depoya girdiğinde, aynı izolasyon geçerli olur: oturum, ayrıcalıksız `rediacc` kullanıcısı (UID 7111) olarak, ayrı bir bağlama ad alanında, `DOCKER_HOST` yalnızca o deponun daemon soketine kapsanmış şekilde çalışır. Önce-fork iş akışı bu çalışma zamanı izolasyonunu CoW klon ilkelleştirilmesiyle birleştirir: ajan, asla ana (üretim) depolar üzerinde değil, görev başına bir fork üzerinde işlem yapar. Tam sandbox modeli, geçersiz kılma anlamı ve harici hizmet kimlik bilgileri için geliştirici sorumluluğu sınırı için [AI Ajan Güvenliği ve Koruma](/en/docs/ai-agents-safety) sayfasına bakın.
+Bir yapay zeka ajanı `rdc term connect <repo>` aracılığıyla bir depoya girdiğinde, aynı izolasyon geçerli olur: oturum, ayrıcalıksız `rediacc` kullanıcısı (UID 7111) olarak, ayrı bir bağlama ad alanında, `DOCKER_HOST` yalnızca o deponun daemon soketine kapsanmış şekilde çalışır. Önce-fork iş akışı bu çalışma zamanı izolasyonunu CoW klon ilkelleştirilmesiyle birleştirir: ajan, asla ana (üretim) depolar üzerinde değil, görev başına bir fork üzerinde işlem yapar. Tam sandbox modeli, geçersiz kılma anlamı ve harici hizmet kimlik bilgileri için geliştirici sorumluluğu sınırı için [AI Ajan Güvenliği ve Koruma](/en/docs/ai-agents-safety) sayfasına bakın.
 
 ### Daemon Yol Düzeni
 

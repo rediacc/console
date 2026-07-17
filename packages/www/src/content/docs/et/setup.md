@@ -4,7 +4,7 @@ description: "Loo konfiguratsioon, lisa masinad, häälesta serverid ja konfigur
 category: "Guides"
 order: 3
 language: et
-sourceHash: "730a353fc046b7cc"
+sourceHash: "1fba8ac242726528"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -132,7 +132,7 @@ See avab masinaga SSH-ühenduse ja käivitab käsu. Kui see õnnestub, on sinu S
 rdc doctor
 ```
 
-> **Vihje**: SSH-ühenduvuse kontrollimiseks käivita `rdc term connect -m <machine> -c "hostname"` või kasuta otse `ssh`.
+> **Vihje**: SSH-ühenduvuse kontrollimiseks käivita `rdc term connect <machine> -c "hostname"` või kasuta otse `ssh`.
 
 ## Infrastruktuuri konfiguratsioon
 

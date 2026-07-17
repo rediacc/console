@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: de3bcbe1022db82f
+sourceHash: "269ed11573c50130"
 sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
@@ -118,7 +118,7 @@ Pratikte:
 - VM taşındı, makine kimliği değişti: depolar çalışmaya devam eder (40 günlük pencere içinde)
 - Sonraki `rdc` işlemi lisansı yeni makine kimliğiyle yeniler
 - El ile müdahale gerekli değil
-- `rdc machine query --system --licenses --name <machine>` ile makine kimliği ve lisans durumunu kontrol edin
+- `rdc machine status <machine> --system --licenses` ile makine kimliği ve lisans durumunu kontrol edin
 
 **Edge kanalı hesapları**, 2 katına çıkarılmış limitlerle Community planında çalışır (20 GB depolar, ayda 200 kurulum, 2 makine). Ücretli planlar yalnızca Stable kanalında mevcuttur. Ayrıntılar için [Yayın Kanalları](/tr/docs/release-channels) sayfasına bakın.
 
@@ -183,13 +183,13 @@ rdc subscription status
 Bir makine için makine aktivasyon ayrıntılarını göster:
 
 ```bash
-rdc subscription activation status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Bir makinede yüklü depo lisansı ayrıntılarını göster:
 
 ```bash
-rdc subscription repo status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Bir makinedeki depo lisanslarını toplu olarak yenile:
@@ -267,4 +267,4 @@ Bu metrik, mevcut UTC takvim ayında başarılı hesap destekli depo lisansı d�
 - başarısız düzenleme girişimleri
 - düzenlemeden önce reddedilen izlenmeyen depolar
 
-Kullanım ve son depo lisansı düzenleme geçmişinin müşteri görünümüne ihtiyaç duyuyorsanız hesap portalını kullanın. Makine tarafında incelemeye ihtiyaç duyuyorsanız `rdc subscription activation status -m` ve `rdc subscription repo status -m` komutlarını kullanın.
+Kullanım ve son depo lisansı düzenleme geçmişinin müşteri görünümüne ihtiyaç duyuyorsanız hesap portalını kullanın. Makine tarafında incelemeye ihtiyaç duyuyorsanız `rdc subscription status -m` ve `rdc subscription status -m` komutlarını kullanın.

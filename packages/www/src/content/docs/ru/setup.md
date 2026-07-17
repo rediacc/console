@@ -4,7 +4,7 @@ description: "Создание конфигурации, добавление м
 category: "Guides"
 order: 3
 language: ru
-sourceHash: "730a353fc046b7cc"
+sourceHash: "1fba8ac242726528"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -132,7 +132,7 @@ rdc term connect -m server-1 -c "hostname"
 rdc doctor
 ```
 
-> **Совет**: чтобы проверить SSH-подключение, выполните `rdc term connect -m <machine> -c "hostname"` или используйте `ssh` напрямую.
+> **Совет**: чтобы проверить SSH-подключение, выполните `rdc term connect <machine> -c "hostname"` или используйте `ssh` напрямую.
 
 ## Настройка инфраструктуры
 

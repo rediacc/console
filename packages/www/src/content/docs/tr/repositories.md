@@ -4,7 +4,7 @@ description: "Uzak makinelerde LUKS ile şifrelenmiş depoları oluşturma, yön
 category: "Guides"
 order: 4
 language: tr
-sourceHash: "0f08c5b75c3588cc"
+sourceHash: "cc8733d3419b09f6"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -156,7 +156,7 @@ rdc repo fork --parent my-app --tag staging -m server-1 --up
 rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
 ```
 
-Testlerimizde 128 GB'lık bir depo fork'landı ve servisler yaklaşık 57 saniyede çalışır hale geldi; `--detach` ile bu süre yaklaşık 31 saniyeye indi. Ayrılmış çalıştırmalar, ilerlemeyi kontrol etmek için bir ipucu yazdırır: `rdc machine query --containers --name <machine>`.
+Testlerimizde 128 GB'lık bir depo fork'landı ve servisler yaklaşık 57 saniyede çalışır hale geldi; `--detach` ile bu süre yaklaşık 31 saniyeye indi. Ayrılmış çalıştırmalar, ilerlemeyi kontrol etmek için bir ipucu yazdırır: `rdc machine status <machine> --containers`.
 
 ### Süre nereye gidiyor
 
@@ -226,7 +226,7 @@ Küçük harfli hizmet tarafı referansı (`stripe_live_key`), kapsayıcı için
 
 > **Depo arası yalıtım uygulanır**: renet'in compose doğrulayıcısı, başka bir deponun ağ kimliğine referans veren `secrets: file:` (ve `configs: file:`, ve `env_file:`) yollarını reddeder. `/var/run/rediacc/secrets/...` referansları için kabul edilen tek form, `${REDIACC_NETWORK_ID}` değişmez belirteci (veya kendi ağınızın tam sayısı) dir. `--unsafe` bu kontrolü geçersiz kılmaz. Rediaccfile bash alt işleminin etrafındaki Landlock korumalı alanı da dosya sistemi erişimini yalnızca kendi ağınızın gizli dizi diziniyle kapsar; bu nedenle bir Rediaccfile'dan kötü niyetli bir `cat /var/run/rediacc/secrets/<other>/X` çağrısı çekirdek katmanında EACCES ile başarısız olur.
 
-> **Fork'lar**: `rdc repo fork` gizli dizileri **kopyalamaz**. Fork'ta gizli diziler kullanmak için fork üzerinde açıkça `rdc repo secret set --name <fork>` çalıştırın. Bu, yük taşıyan güvenlik özelliğidir. Fork'un kapsayıcıları, harici hizmetlere karşı üretim asıl olarak hareket edememeli.
+> **Fork'lar**: `rdc repo fork` gizli dizileri **kopyalamaz**. Fork'ta gizli diziler kullanmak için fork üzerinde açıkça `rdc repo secret set <fork>` çalıştırın. Bu, yük taşıyan güvenlik özelliğidir. Fork'un kapsayıcıları, harici hizmetlere karşı üretim asıl olarak hareket edememeli.
 
 > **Ajanlar** (Claude Code, Cursor vb.): `repo secret list` ve `repo secret get`, MCP araçları olarak sunulur (güvenli okuma. Yalnızca adlar ve özetler, hiçbir zaman değerler). `set` ve `unset` yalnızca CLI'dır çünkü `--current`/`--rotate-secret` seremonisi insan gözü gerektirir; bunları kabuk üzerinden çağıran ajanlar insanlarla aynı kapıya gelir. Ön koşul başarısız olduğunda JSON zarfı, yapılandırılmış bir `errors[].next.options[].run` alanı içerir. Ajanlar bu komutları kullanıcıya birebir iletmelidir. Tam model için bkz. [Yapay zeka ajanı güvenliği](/en/docs/ai-agents-safety).
 

@@ -6,7 +6,7 @@ description: >-
 category: Reference
 order: 99
 language: de
-sourceHash: "ece2d423d416e7ec"
+sourceHash: "05755ef64f8d0ff6"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -61,7 +61,7 @@ Es gibt kein Limit für die Anzahl aktiver Forks eines Repositories. Jeder Fork 
 
 ### Immer aktive Ports
 
-Ports werden erst geöffnet, wenn Sie eine öffentliche IP mit `rdc config infra set --public-ipv4` konfigurieren. Bis dahin sind keine Ports auf der Maschine geöffnet. Nach der Konfiguration:
+Ports werden erst geöffnet, wenn Sie eine öffentliche IP mit `rdc machine infra set <machine> --public-ipv4` konfigurieren. Bis dahin sind keine Ports auf der Maschine geöffnet. Nach der Konfiguration:
 
 | Port | Protokoll | Zweck |
 |------|-----------|-------|
@@ -128,7 +128,7 @@ Live-Migration über CRIU hat folgende Einschränkungen:
 - **Netzwerkmodus**: CRIU erfordert den Host-Netzwerkmodus. Container mit benutzerdefinierten Netzwerkkonfigurationen können nicht gesichert werden.
 - **Arbeitsspeicher**: Die Größe der Checkpoint-Daten entspricht dem residenten Speicher des gesicherten Prozesses. Große In-Memory-Datensätze (z. B. eine Node.js-App, die 4 GB Daten zwischenspeichert) erzeugen 4 GB Checkpoint-Dateien.
 - **TCP-Verbindungen**: Anwendungen müssen Verbindungsverluste bei der Wiederherstellung tolerieren. Aktive TCP-Verbindungen bleiben **nicht** erhalten, der wiederhergestellte Prozess sieht Sockets als geschlossen und muss die Verbindung neu aufbauen. Dies gilt sowohl für Wiederherstellungen auf derselben Maschine als auch für maschinenübergreifende Wiederherstellungen.
-- **Live-Fork auf derselben Maschine leitet Eltern-Adressen um**: `rdc repo fork --parent X --tag Y --checkpoint` gefolgt von `rdc repo up` funktioniert, während das Eltern-Repository weiterläuft. Die wiederhergestellten Prozesse tragen die Loopback-Adressen des Eltern-Repositories vom Zeitpunkt des Checkpoints, daher leitet das System sie transparent auf die eigenen Adressen des Forks um (gleicher Dienst, Fork-Kopie der Daten). Die erste Nutzung einer wiederhergestellten TCP-Verbindung schlägt weiterhin fehl und die App muss sich neu verbinden, siehe den TCP-Punkt oben.
+- **Live-Fork auf derselben Maschine leitet Eltern-Adressen um**: `rdc repo fork X --tag Y --checkpoint` gefolgt von `rdc repo up` funktioniert, während das Eltern-Repository weiterläuft. Die wiederhergestellten Prozesse tragen die Loopback-Adressen des Eltern-Repositories vom Zeitpunkt des Checkpoints, daher leitet das System sie transparent auf die eigenen Adressen des Forks um (gleicher Dienst, Fork-Kopie der Daten). Die erste Nutzung einer wiederhergestellten TCP-Verbindung schlägt weiterhin fehl und die App muss sich neu verbinden, siehe den TCP-Punkt oben.
 
 ---
 
@@ -138,7 +138,7 @@ Live-Migration über CRIU hat folgende Einschränkungen:
 |-------|------|
 | Backup-Ziele pro Repository | Unbegrenzt |
 | Gleichzeitige Backup-Jobs | 1 pro Repository (Jobs werden in die Warteschlange gestellt, wenn sie gleichzeitig ausgelöst werden) |
-| Backup-Häufigkeit | Kein Mindestintervall erzwungen; begrenzt durch Ihre Speicherbandbreite. Verwenden Sie `rdc config backup-strategy set --name <name> --bwlimit "6M"` zum Begrenzen der Upload-Geschwindigkeit (rclone `--bwlimit` Syntax: einfach `6M`, direktional `6M:off`, oder Zeitplan `08:00,3M;22:00,10M`) |
+| Backup-Häufigkeit | Kein Mindestintervall erzwungen; begrenzt durch Ihre Speicherbandbreite. Verwenden Sie `rdc backup strategy set <name> --bwlimit "6M"` zum Begrenzen der Upload-Geschwindigkeit (rclone `--bwlimit` Syntax: einfach `6M`, direktional `6M:off`, oder Zeitplan `08:00,3M;22:00,10M`) |
 | Aufbewahrung | Gesteuert durch Ihren Speicheranbieter (S3, Cloudflare R2, usw.). Rediacc erzwingt keine Aufbewahrungsrichtlinien. |
 | Maschinenübergreifendes Backup | Unterstützt; die Zielmaschine muss über ausreichend Datastore-Speicherplatz verfügen |
 

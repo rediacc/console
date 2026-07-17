@@ -4,7 +4,7 @@ description: "Kubernetes'i Rediacc'ın depo zihniyetiyle çalıştırın: çalı
 category: "Guides"
 order: 6
 language: tr
-sourceHash: "56e1f177e8f4ef41"
+sourceHash: "d36c468ae2350e25"
 sourceCommit: "4401262fffbf29b9480dee8ecd209013e4b87f60"
 ---
 
@@ -19,7 +19,7 @@ Kubernetes, diğer sunucu tarafı ikili dosyalarla aynı şekilde renet içine g
 Rediacc, depo zihniyetinin hâlâ geçerli olması için olağan "küme her şeyi sarar" resmini tersine çevirir:
 
 - **Küme konteynerdir.** Bir makine, Docker depolarını (değişmeden) ve/veya kümeleri barındırır. Bir makinedeki tek düğümlü bir küme, "tek dosya tüm sistemi taşır" hikâyesini küme düzeyinde korur. Küme durumu (k3s veri dizini: gömülü veri deposu ve containerd'i) düğüm başına bir tane olmak üzere veri deposu destekli copy-on-write imaj dosyalarında yaşar; k3s'in `--data-dir`'i imaj bağlama noktasının içine bağlanır.
-- **Bir Kubernetes deposu bir ad alanıdır.** `rdc repo create --cluster <name>`, çalışma zamanı evi o küme içindeki `<repo>` Kubernetes ad alanı olan bir depo oluşturur.
+- **Bir Kubernetes deposu bir ad alanıdır.** `rdc repo create <repo> -m <name>`, çalışma zamanı evi o küme içindeki `<repo>` Kubernetes ad alanı olan bir depo oluşturur.
 - **Kalıcı birimler ayrı copy-on-write birimleridir.** PV'ler, Ceph üzerinde RBD imajları veya yerel arka uçta bir renet yerel PV sağlayıcısı aracılığıyla küçük veri deposu imaj dosyalarıdır. Asla tek bir opak küme imajı içindeki dizinler değildir: iç dosya sisteminin reflink'i yoktur, bu nedenle bağımsız depo başına forklar bağımsız PV imajları gerektirir.
 
 Bu ayrım, her iki vaadi de aynı anda fiziksel olarak mümkün kılan şeydir: **her zaman copy-on-write ad alanı forkları** (her deponun verisi bağımsız olarak klonlanır) ve **kümenin tamamının taşınabilirliği** (küme imajları artı her PV imajı birlikte taşınır).
@@ -97,7 +97,7 @@ rdc repo sync upload --cluster prod -r shop --local ./config
 rdc cluster kubeconfig --name prod           # KUBECONFIG'i dışa aktarın, ardından kubectl'i doğrudan kullanın
 ```
 
-Küme düğümleri de `resources.machines` içinde somutlaşır, bu nedenle sıradan `rdc term connect -m <cluster>-<pool>-<n>` komutuyla belirli bir düğüme SSH ile bağlanabilirsiniz.
+Küme düğümleri de `resources.machines` içinde somutlaşır, bu nedenle sıradan `rdc term connect <cluster>-<pool>-<n>` komutuyla belirli bir düğüme SSH ile bağlanabilirsiniz.
 
 ### Çift Çalışma Zamanlı Rediaccfile
 

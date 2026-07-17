@@ -4,7 +4,7 @@ description: "Резервное копирование зашифрованны
 category: Guides
 order: 7
 language: ru
-sourceHash: "7ff112c2ec14c35f"
+sourceHash: "50b357f812a9337c"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -177,8 +177,8 @@ Rediacc использует именованные стратегии резе�
 
 **Как операторы обнаруживают сбои:**
 
-- `rdc machine query --name <machine> --containers` показывает состояние выполнения. Сравните с ожидаемым набором.
-- `/var/run/rediacc/cold-backup-<guid>.status.json` на машине. Проверьте через `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` с устаревшим `startedAt` означает, что последнее резервное копирование не завершилось корректно.
+- `rdc machine status <machine> --containers` показывает состояние выполнения. Сравните с ожидаемым набором.
+- `/var/run/rediacc/cold-backup-<guid>.status.json` на машине. Проверьте через `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` с устаревшим `startedAt` означает, что последнее резервное копирование не завершилось корректно.
 - Логи запуска резервного копирования renet (`journalctl -u renet-*` или прямой вызов `rdc machine backup schedule`) содержат итоговую строку вида `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Непустой `failed_repos` является целевым шаблоном для grep.
 
 ### Оценка простоя при холодном резервном копировании
@@ -302,7 +302,7 @@ rdc config backup-strategy remove --name weekly-cold
 }
 ```
 
-> **Привязка действует только в локальной конфигурации.** Определение стратегии и её привязка к машине не вносят изменений на саму машину. Выполните `rdc machine backup schedule -m <machine>` (см. [Развертывание расписания на машине](#развертывание-расписания-на-машине)), чтобы развернуть таймеры systemd, и повторите команду после любого изменения стратегии или привязки.
+> **Привязка действует только в локальной конфигурации.** Определение стратегии и её привязка к машине не вносят изменений на саму машину. Выполните `rdc backup schedule -m <machine>` (см. [Развертывание расписания на машине](#развертывание-расписания-на-машине)), чтобы развернуть таймеры systemd, и повторите команду после любого изменения стратегии или привязки.
 
 ## Выбор горячего или холодного режима и фильтрация по репозиториям
 

@@ -2118,7 +2118,7 @@
   {
     "id": "search-16678",
     "content": "快速参考：智能体能做和不能做的事",
-    "body": "| 操作 | 智能体默认行为 | 如何为特定用途解锁 | |---|---|---| | rdc config show（已脱敏） | ✅ allowed | | | rdc config field get --pointer <pointer>（脱敏占位符或摘要） | ✅ allowed | | | rdc config field get --pointer <pointer> --digest | ✅ allowed | | | rdc config field set --pointer <pointer>（公开字段） | ✅ allowed | | | rdc config field set --pointer <pointer>（敏感字段，提供正确的 --current） | ✅ allowed | | | rdc config edit --dump（已脱敏的 JSONC） | ✅ allowed | | | rdc config audit {log, tail, verify} | ✅ allowed | | | rdc config field set --pointer <pointer>（敏感字段，无 --current） | 🔴 refused | 提供 --current \"<旧值>\" | | rdc config field get --pointer <pointer> --reveal | 🔴 refused | 改用 --digest | | rdc config show --reveal | 🔴 refused | 使用不带参数的 rdc config show | | rdc config edit（交互式编辑器） | 🔴 refused | 由人类在启动智能体前设置 REDIACC_ALLOW_CONFIG_EDIT=* | | rdc config edit --apply <file> | 🔴 refused | 相同的覆盖方式 | | rdc config field rotate --pointer <pointer> | 🔴 refused | 相同的覆盖方式；使用交互式确认 | | rdc term connect -m <machine>（直接 SSH 到机器） | 🔴 refused | 先 fork 一个仓库，再连接到 fork | 所有被拒绝的操作都会以 outcome: refused 和原因写入审计日志。",
+    "body": "| 操作 | 智能体默认行为 | 如何为特定用途解锁 | |---|---|---| | rdc config show（已脱敏） | ✅ allowed | | | rdc config field get --pointer <pointer>（脱敏占位符或摘要） | ✅ allowed | | | rdc config field get --pointer <pointer> --digest | ✅ allowed | | | rdc config field set --pointer <pointer>（公开字段） | ✅ allowed | | | rdc config field set --pointer <pointer>（敏感字段，提供正确的 --current） | ✅ allowed | | | rdc config edit --dump（已脱敏的 JSONC） | ✅ allowed | | | rdc config audit {log, tail, verify} | ✅ allowed | | | rdc config field set --pointer <pointer>（敏感字段，无 --current） | 🔴 refused | 提供 --current \"<旧值>\" | | rdc config field get --pointer <pointer> --reveal | 🔴 refused | 改用 --digest | | rdc config show --reveal | 🔴 refused | 使用不带参数的 rdc config show | | rdc config edit（交互式编辑器） | 🔴 refused | 由人类在启动智能体前设置 REDIACC_ALLOW_CONFIG_EDIT=* | | rdc config edit --apply <file> | 🔴 refused | 相同的覆盖方式 | | rdc config field rotate --pointer <pointer> | 🔴 refused | 相同的覆盖方式；使用交互式确认 | | rdc term connect <machine>（直接 SSH 到机器） | 🔴 refused | 先 fork 一个仓库，再连接到 fork | 所有被拒绝的操作都会以 outcome: refused 和原因写入审计日志。",
     "excerpt": "| 操作 | 智能体默认行为 | 如何为特定用途解锁 | |---|---|---| | rdc config show（已脱敏） | ✅ allowed | | | rdc config field get --pointer <pointer>（脱敏占位符或摘要） | ✅ allowed | |...",
     "category": "Documentation",
     "page": "/zh/docs/ai-agents-safety",
@@ -2369,7 +2369,7 @@
   {
     "id": "search-16701",
     "content": "配置",
-    "body": "所有 CLI 状态存储在 ~/.config/rediacc/ 下的扁平 JSON 配置文件中。 所有状态存储在工作站的配置文件中（例如 ~/.config/rediacc/rediacc.json）。 直接通过 SSH 连接到机器 无需外部服务 默认配置会在首次使用 CLI 时自动创建。命名配置通过 rdc config init --name <name> 创建 可选的加密配置同步将同一文件存储在配置存储中，按团队限定范围",
+    "body": "所有 CLI 状态存储在 ~/.config/rediacc/ 下的扁平 JSON 配置文件中。 所有状态存储在工作站的配置文件中（例如 ~/.config/rediacc/rediacc.json）。 直接通过 SSH 连接到机器 无需外部服务 默认配置会在首次使用 CLI 时自动创建。命名配置通过 rdc config init <name> 创建 可选的加密配置同步将同一文件存储在配置存储中，按团队限定范围",
     "excerpt": "所有 CLI 状态存储在 ~/.config/rediacc/ 下的扁平 JSON 配置文件中。 所有状态存储在工作站的配置文件中（例如 ~/.config/rediacc/rediacc.json）。 直接通过 SSH 连接到机器 无需外部服务 默认配置会在首次使用 CLI 时自动创建。命名配置通...",
     "category": "Documentation",
     "page": "/zh/docs/architecture",
@@ -2391,7 +2391,7 @@
   {
     "id": "search-16703",
     "content": "Docker 隔离",
-    "body": "每个仓库拥有自己的隔离 Docker 守护进程。当仓库被挂载时，renet 会启动一个专用的 dockerd 进程，使用唯一的套接字： Docker 隔离 /var/run/rediacc/docker-{networkId}.sock 例如，网络 ID 为 2816 的仓库使用： /var/run/rediacc/docker-2816.sock 这意味着： 不同仓库的容器彼此不可见 每个仓库拥有独立的镜像缓存、网络和卷 主机的 Docker 守护进程（如果有的话）完全独立 Rediaccfile 函数会自动设置 DOCKER_HOST 为正确的套接字。 当 AI 智能体通过 rdc term connect -r <repo> 进入仓库时，同样的隔离机制适用：会话以非特权 rediacc 用户（UID 7111）身份运行，处于独立的挂载命名空间中，且 DOCKER_HOST 仅限于该单个仓库的守护进程套接字。fork 优先工作流将这种运行时隔离与 CoW 克隆原语结合：智能体在每个任务的 fork 上操作，绝不在主（生产）仓库上操作。完整的沙箱模型、覆盖语义以及外部服务凭据的开发者责任边界，请参阅 AI 智能体安全与防护机制。",
+    "body": "每个仓库拥有自己的隔离 Docker 守护进程。当仓库被挂载时，renet 会启动一个专用的 dockerd 进程，使用唯一的套接字： Docker 隔离 /var/run/rediacc/docker-{networkId}.sock 例如，网络 ID 为 2816 的仓库使用： /var/run/rediacc/docker-2816.sock 这意味着： 不同仓库的容器彼此不可见 每个仓库拥有独立的镜像缓存、网络和卷 主机的 Docker 守护进程（如果有的话）完全独立 Rediaccfile 函数会自动设置 DOCKER_HOST 为正确的套接字。 当 AI 智能体通过 rdc term connect <repo> 进入仓库时，同样的隔离机制适用：会话以非特权 rediacc 用户（UID 7111）身份运行，处于独立的挂载命名空间中，且 DOCKER_HOST 仅限于该单个仓库的守护进程套接字。fork 优先工作流将这种运行时隔离与 CoW 克隆原语结合：智能体在每个任务的 fork 上操作，绝不在主（生产）仓库上操作。完整的沙箱模型、覆盖语义以及外部服务凭据的开发者责任边界，请参阅 AI 智能体安全与防护机制。",
     "excerpt": "每个仓库拥有自己的隔离 Docker 守护进程。当仓库被挂载时，renet 会启动一个专用的 dockerd 进程，使用唯一的套接字： Docker 隔离 /var/run/rediacc/docker-{networkId}.sock 例如，网络 ID 为 2816 的仓库使用： /var/run...",
     "category": "Documentation",
     "page": "/zh/docs/architecture",
@@ -2772,7 +2772,7 @@
   {
     "id": "search-16738",
     "content": "冷备份语义",
-    "body": "冷备份对每个包含的仓库执行三个阶段：停止 → 快照 → 启动。了解保证的边界有助于运维人员及早发现部分故障。 冷备份保证的内容： 在快照之前，每个包含仓库中正在运行的所有容器都通过 Rediaccfile 的 down() 钩子优雅地停止，并且每仓库的 Docker daemon 处于静默状态。因此快照是应用一致的，而不仅仅是崩溃一致的。 快照前正在运行的容器 ID 集合被持久化到 /var/run/rediacc/cold-backup-<guid>.running.json 的 sidecar 文件中。这是\"完成后应该恢复运行的内容\"的真实来源。 快照后，调用仓库的 Rediaccfile up() 钩子来恢复完整的 compose 堆栈。 /var/run/rediacc/cold-backup-<guid>.status.json 的每次运行状态 sidecar 记录每次尝试的阶段、结果和任何错误。 冷备份不保证的内容： up() 是尽力而为的。它可能因冷备份控制范围之外的原因而失败（depends_on: service_healthy 条件仍在等待、compose 文件语法错误、拉取镜像时的瞬时网络故障）。失败时，冷备份以错误级别记录错误，写入状态 sidecar，并继续处理下一个仓库。 当 up() 失败时，会启动直接回退重启：读取运行 sidecar，通过直接 Docker API（无 compose）重启每个记录的容器 ID。即使 compose 流程存在问题，这也能让服务恢复运行，但不会重新执行任何 Rediaccfile 钩子。 如果某些容器 ID 的回退也失败（例如 Docker daemon 本身已关闭），sidecar 保留在原位，以便路由器 watchdog 可以在每个 tick 继续重试。 Watchdog 恢复： 在每个 tick，watchdog 检查运行 sidecar 是否存在。其中列出的任何当前已停止的容器 ID 都会被重启，无论容器保存的 restart_policy 如何。这意味着配置了 restart: on-failure 的服务（Docker 在干净停止后不会重启）在冷备份后仍然会恢复。一旦所有列出的容器都在运行，sidecar 将被删除。 运维人员如何检测故障： rdc machine query --name <machine> --containers 显示运行状态。与预期集合进行比较。 机器上的 /var/run/rediacc/cold-backup-<guid>.status.json。通过 rdc term connect -m <machine> -r <repo> -c \"cat /var/run/rediacc/cold-backup-$GUID.status.json\" 检查。success: false 加上过时的 startedAt 表示上次备份未正常完成。 renet 备份运行的日志（journalctl -u renet-* 或直接的 rdc machine backup schedule 调用）会输出 Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...] 形式的最终摘要行。非空的 failed_repos 是 grep 的目标。",
+    "body": "冷备份对每个包含的仓库执行三个阶段：停止 → 快照 → 启动。了解保证的边界有助于运维人员及早发现部分故障。 冷备份保证的内容： 在快照之前，每个包含仓库中正在运行的所有容器都通过 Rediaccfile 的 down() 钩子优雅地停止，并且每仓库的 Docker daemon 处于静默状态。因此快照是应用一致的，而不仅仅是崩溃一致的。 快照前正在运行的容器 ID 集合被持久化到 /var/run/rediacc/cold-backup-<guid>.running.json 的 sidecar 文件中。这是\"完成后应该恢复运行的内容\"的真实来源。 快照后，调用仓库的 Rediaccfile up() 钩子来恢复完整的 compose 堆栈。 /var/run/rediacc/cold-backup-<guid>.status.json 的每次运行状态 sidecar 记录每次尝试的阶段、结果和任何错误。 冷备份不保证的内容： up() 是尽力而为的。它可能因冷备份控制范围之外的原因而失败（depends_on: service_healthy 条件仍在等待、compose 文件语法错误、拉取镜像时的瞬时网络故障）。失败时，冷备份以错误级别记录错误，写入状态 sidecar，并继续处理下一个仓库。 当 up() 失败时，会启动直接回退重启：读取运行 sidecar，通过直接 Docker API（无 compose）重启每个记录的容器 ID。即使 compose 流程存在问题，这也能让服务恢复运行，但不会重新执行任何 Rediaccfile 钩子。 如果某些容器 ID 的回退也失败（例如 Docker daemon 本身已关闭），sidecar 保留在原位，以便路由器 watchdog 可以在每个 tick 继续重试。 Watchdog 恢复： 在每个 tick，watchdog 检查运行 sidecar 是否存在。其中列出的任何当前已停止的容器 ID 都会被重启，无论容器保存的 restart_policy 如何。这意味着配置了 restart: on-failure 的服务（Docker 在干净停止后不会重启）在冷备份后仍然会恢复。一旦所有列出的容器都在运行，sidecar 将被删除。 运维人员如何检测故障： rdc machine status <machine> --containers 显示运行状态。与预期集合进行比较。 机器上的 /var/run/rediacc/cold-backup-<guid>.status.json。通过 rdc term connect <repo> -c \"cat /var/run/rediacc/cold-backup-$GUID.status.json\" 检查。success: false 加上过时的 startedAt 表示上次备份未正常完成。 renet 备份运行的日志（journalctl -u renet-* 或直接的 rdc machine backup schedule 调用）会输出 Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...] 形式的最终摘要行。非空的 failed_repos 是 grep 的目标。",
     "excerpt": "冷备份对每个包含的仓库执行三个阶段：停止 → 快照 → 启动。了解保证的边界有助于运维人员及早发现部分故障。 冷备份保证的内容： 在快照之前，每个包含仓库中正在运行的所有容器都通过 Rediaccfile 的 down() 钩子优雅地停止，并且每仓库的 Docker daemon 处于静默状态。因此...",
     "category": "Documentation",
     "page": "/zh/docs/backup-restore",
@@ -2849,7 +2849,7 @@
   {
     "id": "search-16745",
     "content": "将策略绑定到机器",
-    "body": "在配置中，将一个或多个策略名称绑定到机器： { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } 绑定仅作用于本地配置。 定义策略并将其绑定到机器并不会改动机器本身。运行 rdc machine backup schedule -m <machine>（参见将计划部署到机器）以部署 systemd 定时器，并在任何策略或绑定更改后重新运行。",
+    "body": "在配置中，将一个或多个策略名称绑定到机器： { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } 绑定仅作用于本地配置。 定义策略并将其绑定到机器并不会改动机器本身。运行 rdc backup schedule -m <machine>（参见将计划部署到机器）以部署 systemd 定时器，并在任何策略或绑定更改后重新运行。",
     "excerpt": "在配置中，将一个或多个策略名称绑定到机器： { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } 绑定仅作用于本地配置。 定义策略并将其绑定到机器并不会改动机器本身。运行 rdc...",
     "category": "Documentation",
     "page": "/zh/docs/backup-restore",
@@ -6105,7 +6105,7 @@
   {
     "id": "search-17043",
     "content": "对象模型",
-    "body": "Rediacc 反转了通常\"集群包裹一切\"的图景，使仓库理念依然适用： 集群就是容器。 一台机器可以承载 Docker 仓库（不变）和/或集群。单机上的单节点集群在集群这一层保留了\"一个文件搬动整个系统\"的特性。集群状态（k3s 数据目录：其内嵌数据存储和 containerd）存储在由数据存储支持的写时复制镜像文件中，每个节点一个，k3s 的 --data-dir 绑定在镜像挂载点内部。 Kubernetes 仓库就是一个命名空间。 rdc repo create --cluster <name> 创建一个仓库，其运行时归属为该集群内的 Kubernetes 命名空间 <repo>。 持久卷是独立的写时复制单元。 PV 是 Ceph 上的 RBD 镜像，或在本地后端通过 renet 本地 PV 供应器提供的小型数据存储镜像文件。它们绝不是单一不透明集群镜像内部的目录：内部文件系统没有 reflink，因此独立的按仓库 fork 需要独立的 PV 镜像。 正是这种拆分使得两个承诺能够同时在物理上实现：始终写时复制的命名空间 fork（每个仓库的数据独立克隆）和整集群的可移植性（集群镜像加上每个 PV 镜像一起迁移）。 | 概念 | Docker 仓库 | Kubernetes 仓库 | |---|---|---| | 运行时归属 | 隔离的 Docker 守护进程 | 集群中的命名空间 | | 注入的环境变量 | DOCKER_HOST | KUBECONFIG | | 部署包装器 | renet compose | renet kube | | 数据单元 | 一个 LUKS 镜像 | 集群镜像加每个 PV 的镜像 | | fork 单元 | 仓库镜像 | 命名空间加其 PV 克隆 | | 整体克隆 | （仓库本身就是那个\"地方\"） | rdc cluster fork / rdc cluster migrate |",
+    "body": "Rediacc 反转了通常\"集群包裹一切\"的图景，使仓库理念依然适用： 集群就是容器。 一台机器可以承载 Docker 仓库（不变）和/或集群。单机上的单节点集群在集群这一层保留了\"一个文件搬动整个系统\"的特性。集群状态（k3s 数据目录：其内嵌数据存储和 containerd）存储在由数据存储支持的写时复制镜像文件中，每个节点一个，k3s 的 --data-dir 绑定在镜像挂载点内部。 Kubernetes 仓库就是一个命名空间。 rdc repo create <repo> -m <name> 创建一个仓库，其运行时归属为该集群内的 Kubernetes 命名空间 <repo>。 持久卷是独立的写时复制单元。 PV 是 Ceph 上的 RBD 镜像，或在本地后端通过 renet 本地 PV 供应器提供的小型数据存储镜像文件。它们绝不是单一不透明集群镜像内部的目录：内部文件系统没有 reflink，因此独立的按仓库 fork 需要独立的 PV 镜像。 正是这种拆分使得两个承诺能够同时在物理上实现：始终写时复制的命名空间 fork（每个仓库的数据独立克隆）和整集群的可移植性（集群镜像加上每个 PV 镜像一起迁移）。 | 概念 | Docker 仓库 | Kubernetes 仓库 | |---|---|---| | 运行时归属 | 隔离的 Docker 守护进程 | 集群中的命名空间 | | 注入的环境变量 | DOCKER_HOST | KUBECONFIG | | 部署包装器 | renet compose | renet kube | | 数据单元 | 一个 LUKS 镜像 | 集群镜像加每个 PV 的镜像 | | fork 单元 | 仓库镜像 | 命名空间加其 PV 克隆 | | 整体克隆 | （仓库本身就是那个\"地方\"） | rdc cluster fork / rdc cluster migrate |",
     "excerpt": "Rediacc 反转了通常\"集群包裹一切\"的图景，使仓库理念依然适用： 集群就是容器。 一台机器可以承载 Docker 仓库（不变）和/或集群。单机上的单节点集群在集群这一层保留了\"一个文件搬动整个系统\"的特性。集群状态（k3s 数据目录：其内嵌数据存储和 containerd）存储在由数据存储支持...",
     "category": "Documentation",
     "page": "/zh/docs/kubernetes",
@@ -6138,7 +6138,7 @@
   {
     "id": "search-17046",
     "content": "Kubernetes 仓库",
-    "body": "目标标志决定运行时。没有类型标志。 # Docker 仓库（不变）：机器上一个隔离的 Docker 守护进程 rdc repo create --name shop -m server-1 --size 10G # Kubernetes 仓库：集群内 \"shop\" 命名空间加其存储 rdc repo create --name shop --cluster prod --size 10G 仓库动词是仓库范围工作的统一接口。通过目标解析漏斗，几乎整个仓库命令集都变得支持集群：fork、migrate、push、pull、up、down、resize、diff、commit、branch、checkout、merge、trim、cat、mount、sync、list、status 和 log 都接受 --cluster。集群目标会解析为其控制节点，加上固定到该仓库命名空间的 KUBECONFIG 上下文，这与将机器解析为 DOCKER_HOST 加一个工作目录是类似的。 rdc repo sync upload --cluster prod -r shop --local ./config rdc cluster kubeconfig --name prod # 导出 KUBECONFIG，然后直接使用 kubectl 集群节点同样会在 resources.machines 中具体化，因此您可以用普通的 rdc term connect -m <cluster>-<pool>-<n> 通过 SSH 连接到特定节点。",
+    "body": "目标标志决定运行时。没有类型标志。 # Docker 仓库（不变）：机器上一个隔离的 Docker 守护进程 rdc repo create --name shop -m server-1 --size 10G # Kubernetes 仓库：集群内 \"shop\" 命名空间加其存储 rdc repo create --name shop --cluster prod --size 10G 仓库动词是仓库范围工作的统一接口。通过目标解析漏斗，几乎整个仓库命令集都变得支持集群：fork、migrate、push、pull、up、down、resize、diff、commit、branch、checkout、merge、trim、cat、mount、sync、list、status 和 log 都接受 --cluster。集群目标会解析为其控制节点，加上固定到该仓库命名空间的 KUBECONFIG 上下文，这与将机器解析为 DOCKER_HOST 加一个工作目录是类似的。 rdc repo sync upload --cluster prod -r shop --local ./config rdc cluster kubeconfig --name prod # 导出 KUBECONFIG，然后直接使用 kubectl 集群节点同样会在 resources.machines 中具体化，因此您可以用普通的 rdc term connect <cluster>-<pool>-<n> 通过 SSH 连接到特定节点。",
     "excerpt": "目标标志决定运行时。没有类型标志。 # Docker 仓库（不变）：机器上一个隔离的 Docker 守护进程 rdc repo create --name shop -m server-1 --size 10G # Kubernetes 仓库：集群内 \"shop\" 命名空间加其存储 rdc repo...",
     "category": "Documentation",
     "page": "/zh/docs/kubernetes",
@@ -6376,8 +6376,8 @@
   {
     "id": "search-17068",
     "content": "数据清单",
-    "body": "每个 Rediacc 仓库都是具有唯一 GUID 的独立加密数据单元。您可以精确盘点数据所在位置： rdc machine query --name <machine> --repositories 列出机器上所有仓库及其大小和挂载状态 每个仓库在文件系统、网络和容器级别均实现隔离 Fork 关系被跟踪，因此您可以识别数据集的所有副本 CCPA 要求数据映射。Rediacc 的仓库模型提供了这一功能：每个数据集一个 GUID，可按机器枚举，Fork 谱系被跟踪。",
-    "excerpt": "每个 Rediacc 仓库都是具有唯一 GUID 的独立加密数据单元。您可以精确盘点数据所在位置： rdc machine query --name <machine> --repositories 列出机器上所有仓库及其大小和挂载状态 每个仓库在文件系统、网络和容器级别均实现隔离 Fork 关系被...",
+    "body": "每个 Rediacc 仓库都是具有唯一 GUID 的独立加密数据单元。您可以精确盘点数据所在位置： rdc machine status <machine> --repositories 列出机器上所有仓库及其大小和挂载状态 每个仓库在文件系统、网络和容器级别均实现隔离 Fork 关系被跟踪，因此您可以识别数据集的所有副本 CCPA 要求数据映射。Rediacc 的仓库模型提供了这一功能：每个数据集一个 GUID，可按机器枚举，Fork 谱系被跟踪。",
+    "excerpt": "每个 Rediacc 仓库都是具有唯一 GUID 的独立加密数据单元。您可以精确盘点数据所在位置： rdc machine status <machine> --repositories 列出机器上所有仓库及其大小和挂载状态 每个仓库在文件系统、网络和容器级别均实现隔离 Fork 关系被跟踪，因此您...",
     "category": "Documentation",
     "page": "/zh/docs/legal-ccpa",
     "path": "docs.legal-ccpa.content",
@@ -6797,8 +6797,8 @@
   {
     "id": "search-17107",
     "content": "附录 A 控制映射",
-    "body": "| 控制域 | 控制 | Rediacc 功能 | |--------|------|-------------| | A.8，资产管理 | A.8.1 资产清单 | 每个仓库是具有唯一 GUID 的独立可识别资产。rdc machine query --name <machine> --repositories 列出所有仓库及其大小、挂载状态和容器数量。 | | A.8，资产管理 | A.8.24 加密使用 | 所有仓库强制使用 LUKS2 AES-256 加密。密钥管理：凭据仅存储在操作员的本地配置中，从不在服务器上。 | | A.9，访问控制 | A.9.2 用户访问管理 | SSH 密钥认证。带 IP 绑定、团队范围限定和团队移除时自动撤销的 API 令牌。双因素认证 (TOTP)。 | | A.10，加密 | A.10.1 加密控制 | 可配置密钥参数的 LUKS2。每仓库加密凭据。所有远程传输通过 SSH。配置存储实现零知识加密：HKDF 密钥派生的 AES-256-GCM、X25519 成员密钥交换和用于即时撤销的时间窗口 SDK 密钥。 | | A.12，运营安全 | A.12.3 备份 | rdc repo push/pull 支持到多个目标（SSH、S3、B2、Azure、GDrive）的加密异地存储。CoW 快照实现时间点恢复。rdc repo validate 验证备份健康状况和仓库完整性。 | | A.12，运营安全 | A.12.4 日志和监控 | 70 多种事件类型（认证、API 令牌、配置、许可、机器操作）。通过 rdc machine query 监控机器健康。容器状态和资源监控。 | | A.13，通信安全 | A.13.1 网络安全管理 | 每仓库 Docker daemon 隔离。iptables 规则阻止跨仓库流量。每仓库环回 IP 子网（/26）。TLS 终端反向代理用于外部访问。 | | A.14，系统开发 | A.14.2 开发安全 | 基于 Fork 的开发环境在不暴露生产数据的情况下提供生产环境对等。Rediaccfile 生命周期钩子支持克隆环境中的自动数据清理。 |",
-    "excerpt": "| 控制域 | 控制 | Rediacc 功能 | |--------|------|-------------| | A.8，资产管理 | A.8.1 资产清单 | 每个仓库是具有唯一 GUID 的独立可识别资产。rdc machine query --name <machine> --repos...",
+    "body": "| 控制域 | 控制 | Rediacc 功能 | |--------|------|-------------| | A.8，资产管理 | A.8.1 资产清单 | 每个仓库是具有唯一 GUID 的独立可识别资产。rdc machine status <machine> --repositories 列出所有仓库及其大小、挂载状态和容器数量。 | | A.8，资产管理 | A.8.24 加密使用 | 所有仓库强制使用 LUKS2 AES-256 加密。密钥管理：凭据仅存储在操作员的本地配置中，从不在服务器上。 | | A.9，访问控制 | A.9.2 用户访问管理 | SSH 密钥认证。带 IP 绑定、团队范围限定和团队移除时自动撤销的 API 令牌。双因素认证 (TOTP)。 | | A.10，加密 | A.10.1 加密控制 | 可配置密钥参数的 LUKS2。每仓库加密凭据。所有远程传输通过 SSH。配置存储实现零知识加密：HKDF 密钥派生的 AES-256-GCM、X25519 成员密钥交换和用于即时撤销的时间窗口 SDK 密钥。 | | A.12，运营安全 | A.12.3 备份 | rdc repo push/pull 支持到多个目标（SSH、S3、B2、Azure、GDrive）的加密异地存储。CoW 快照实现时间点恢复。rdc repo validate 验证备份健康状况和仓库完整性。 | | A.12，运营安全 | A.12.4 日志和监控 | 70 多种事件类型（认证、API 令牌、配置、许可、机器操作）。通过 rdc machine query 监控机器健康。容器状态和资源监控。 | | A.13，通信安全 | A.13.1 网络安全管理 | 每仓库 Docker daemon 隔离。iptables 规则阻止跨仓库流量。每仓库环回 IP 子网（/26）。TLS 终端反向代理用于外部访问。 | | A.14，系统开发 | A.14.2 开发安全 | 基于 Fork 的开发环境在不暴露生产数据的情况下提供生产环境对等。Rediaccfile 生命周期钩子支持克隆环境中的自动数据清理。 |",
+    "excerpt": "| 控制域 | 控制 | Rediacc 功能 | |--------|------|-------------| | A.8，资产管理 | A.8.1 资产清单 | 每个仓库是具有唯一 GUID 的独立可识别资产。rdc machine status <machine> --repositorie...",
     "category": "Documentation",
     "page": "/zh/docs/legal-iso27001",
     "path": "docs.legal-iso27001.content",
@@ -6808,8 +6808,8 @@
   {
     "id": "search-17108",
     "content": "资产管理",
-    "body": "Rediacc 的仓库模型自然支持资产清单要求： 每个仓库在创建时分配唯一的 GUID 仓库可按机器枚举（rdc machine query --repositories） 每个仓库的加密状态、挂载状态、容器数量和磁盘使用量可见 Fork 关系跟踪克隆环境的谱系",
-    "excerpt": "Rediacc 的仓库模型自然支持资产清单要求： 每个仓库在创建时分配唯一的 GUID 仓库可按机器枚举（rdc machine query --repositories） 每个仓库的加密状态、挂载状态、容器数量和磁盘使用量可见 Fork 关系跟踪克隆环境的谱系",
+    "body": "Rediacc 的仓库模型自然支持资产清单要求： 每个仓库在创建时分配唯一的 GUID 仓库可按机器枚举（rdc machine status --repositories） 每个仓库的加密状态、挂载状态、容器数量和磁盘使用量可见 Fork 关系跟踪克隆环境的谱系",
+    "excerpt": "Rediacc 的仓库模型自然支持资产清单要求： 每个仓库在创建时分配唯一的 GUID 仓库可按机器枚举（rdc machine status --repositories） 每个仓库的加密状态、挂载状态、容器数量和磁盘使用量可见 Fork 关系跟踪克隆环境的谱系",
     "category": "Documentation",
     "page": "/zh/docs/legal-iso27001",
     "path": "docs.legal-iso27001.content",
@@ -6830,8 +6830,8 @@
   {
     "id": "search-17110",
     "content": "持续改进",
-    "body": "审计日志导出支持定期安全审查 机器健康检查（rdc machine query --system）支持运营监控 rdc repo validate 在每次操作后验证备份健康状况",
-    "excerpt": "审计日志导出支持定期安全审查 机器健康检查（rdc machine query --system）支持运营监控 rdc repo validate 在每次操作后验证备份健康状况",
+    "body": "审计日志导出支持定期安全审查 机器健康检查（rdc machine status --system）支持运营监控 rdc repo validate 在每次操作后验证备份健康状况",
+    "excerpt": "审计日志导出支持定期安全审查 机器健康检查（rdc machine status --system）支持运营监控 rdc repo validate 在每次操作后验证备份健康状况",
     "category": "Documentation",
     "page": "/zh/docs/legal-iso27001",
     "path": "docs.legal-iso27001.content",
@@ -7588,8 +7588,8 @@
   {
     "id": "search-17180",
     "content": "始终活跃的端口",
-    "body": "只有在使用 rdc config infra set --public-ipv4 配置公共 IP 后，端口才会打开。在此之前，机器上没有开放的端口。配置后： | 端口 | 协议 | 用途 | |------|------|------| | 80 | TCP | HTTP：由 Traefik 处理；对未配置的域名返回 404，不转发到任何服务 | | 443 | TCP | HTTPS：同上；没有匹配路由的请求在代理层被拒绝 | | 10000–10010 | TCP | Rediacc 管理的 TCP 转发动态范围 | HTTP/HTTPS 与原始 TCP 端口不同：尽管端口 80 和 443 是开放的，但每个请求都由反向代理根据明确的路由表进行验证。如果没有配置的服务和匹配的域名，则无法访问任何应用程序代码，也不会暴露任何数据。",
-    "excerpt": "只有在使用 rdc config infra set --public-ipv4 配置公共 IP 后，端口才会打开。在此之前，机器上没有开放的端口。配置后： | 端口 | 协议 | 用途 | |------|------|------| | 80 | TCP | HTTP：由 Traefik 处理；...",
+    "body": "只有在使用 rdc machine infra set <machine> --public-ipv4 配置公共 IP 后，端口才会打开。在此之前，机器上没有开放的端口。配置后： | 端口 | 协议 | 用途 | |------|------|------| | 80 | TCP | HTTP：由 Traefik 处理；对未配置的域名返回 404，不转发到任何服务 | | 443 | TCP | HTTPS：同上；没有匹配路由的请求在代理层被拒绝 | | 10000–10010 | TCP | Rediacc 管理的 TCP 转发动态范围 | HTTP/HTTPS 与原始 TCP 端口不同：尽管端口 80 和 443 是开放的，但每个请求都由反向代理根据明确的路由表进行验证。如果没有配置的服务和匹配的域名，则无法访问任何应用程序代码，也不会暴露任何数据。",
+    "excerpt": "只有在使用 rdc machine infra set <machine> --public-ipv4 配置公共 IP 后，端口才会打开。在此之前，机器上没有开放的端口。配置后： | 端口 | 协议 | 用途 | |------|------|------| | 80 | TCP | HTTP：由...",
     "category": "Documentation",
     "page": "/zh/docs/limits",
     "path": "docs.limits.content",
@@ -7632,7 +7632,7 @@
   {
     "id": "search-17184",
     "content": "检查点/恢复 (CRIU)",
-    "body": "通过 CRIU 进行实时迁移有以下约束： 可选启用：仅对带有 rediacc.checkpoint=true 标签的容器创建检查点。数据库和无状态服务默认排除，在恢复时重新启动。 内核要求：源机器和目标机器都需要 Linux 6.1 或更高版本。 网络模式：CRIU 要求主机网络模式。使用自定义网络配置的容器无法创建检查点。 内存：检查点数据大小等于被检查点进程的驻留内存。大型内存数据集（例如，缓存 4 GB 数据的 Node.js 应用程序）会产生 4 GB 的检查点文件。 TCP 连接：应用程序必须能够容忍恢复过程中的连接丢失。活跃的 TCP 连接不会被保留，恢复后的进程会看到套接字处于关闭状态，必须重新连接。这同时适用于同机恢复和跨机恢复两种路径。 同机热 fork 会重定向父仓库地址：在父仓库持续运行时，先执行 rdc repo fork --parent X --tag Y --checkpoint 再执行 rdc repo up 即可正常工作。恢复出的进程仍带着 checkpoint 时刻父仓库的 loopback 地址，系统会将其透明地重定向到 fork 自己的地址（同一服务，fork 的数据副本）。恢复的 TCP 连接首次使用时仍会失败，应用需要重连，见上文 TCP 条目。 ---",
+    "body": "通过 CRIU 进行实时迁移有以下约束： 可选启用：仅对带有 rediacc.checkpoint=true 标签的容器创建检查点。数据库和无状态服务默认排除，在恢复时重新启动。 内核要求：源机器和目标机器都需要 Linux 6.1 或更高版本。 网络模式：CRIU 要求主机网络模式。使用自定义网络配置的容器无法创建检查点。 内存：检查点数据大小等于被检查点进程的驻留内存。大型内存数据集（例如，缓存 4 GB 数据的 Node.js 应用程序）会产生 4 GB 的检查点文件。 TCP 连接：应用程序必须能够容忍恢复过程中的连接丢失。活跃的 TCP 连接不会被保留，恢复后的进程会看到套接字处于关闭状态，必须重新连接。这同时适用于同机恢复和跨机恢复两种路径。 同机热 fork 会重定向父仓库地址：在父仓库持续运行时，先执行 rdc repo fork X --tag Y --checkpoint 再执行 rdc repo up 即可正常工作。恢复出的进程仍带着 checkpoint 时刻父仓库的 loopback 地址，系统会将其透明地重定向到 fork 自己的地址（同一服务，fork 的数据副本）。恢复的 TCP 连接首次使用时仍会失败，应用需要重连，见上文 TCP 条目。 ---",
     "excerpt": "通过 CRIU 进行实时迁移有以下约束： 可选启用：仅对带有 rediacc.checkpoint=true 标签的容器创建检查点。数据库和无状态服务默认排除，在恢复时重新启动。 内核要求：源机器和目标机器都需要 Linux 6.1 或更高版本。 网络模式：CRIU 要求主机网络模式。使用自定义网络...",
     "category": "Documentation",
     "page": "/zh/docs/limits",
@@ -7643,8 +7643,8 @@
   {
     "id": "search-17185",
     "content": "备份",
-    "body": "| 限制 | 值 | |------|-----| | 每个仓库的备份目标 | 无限制 | | 同时备份任务 | 每个仓库 1 个（同时触发时任务排队） | | 备份频率 | 无强制最小间隔；受限于您的存储带宽。使用 rdc config backup-strategy set --name <name> --bwlimit \"6M\" 限制上传速度（rclone --bwlimit 语法：简单格式 6M、方向性 6M:off，或时间表 08:00,3M;22:00,10M） | | 保留策略 | 由您的存储提供商（S3、Cloudflare R2 等）控制。Rediacc 不强制执行保留策略。 | | 跨机器备份 | 支持；目标机器必须有足够的数据存储空间 | ---",
-    "excerpt": "| 限制 | 值 | |------|-----| | 每个仓库的备份目标 | 无限制 | | 同时备份任务 | 每个仓库 1 个（同时触发时任务排队） | | 备份频率 | 无强制最小间隔；受限于您的存储带宽。使用 rdc config backup-strategy set --name <na...",
+    "body": "| 限制 | 值 | |------|-----| | 每个仓库的备份目标 | 无限制 | | 同时备份任务 | 每个仓库 1 个（同时触发时任务排队） | | 备份频率 | 无强制最小间隔；受限于您的存储带宽。使用 rdc backup strategy set <name> --bwlimit \"6M\" 限制上传速度（rclone --bwlimit 语法：简单格式 6M、方向性 6M:off，或时间表 08:00,3M;22:00,10M） | | 保留策略 | 由您的存储提供商（S3、Cloudflare R2 等）控制。Rediacc 不强制执行保留策略。 | | 跨机器备份 | 支持；目标机器必须有足够的数据存储空间 | ---",
+    "excerpt": "| 限制 | 值 | |------|-----| | 每个仓库的备份目标 | 无限制 | | 同时备份任务 | 每个仓库 1 个（同时触发时任务排队） | | 备份频率 | 无强制最小间隔；受限于您的存储带宽。使用 rdc backup strategy set <name> --bwlimit...",
     "category": "Documentation",
     "page": "/zh/docs/limits",
     "path": "docs.limits.content",
@@ -8057,8 +8057,8 @@
   {
     "id": "search-17223",
     "content": "Scrub 状态",
-    "body": "最后一次 scrub 的结果保存在 BTRFS 卷外部（位于 /var/lib/rediacc/scrub-last-result.json），即使卷出现问题也能保持可读。rdc machine query --system 的输出包含 scrub_status 字段： \"scrub_status\": { \"last_run_human\": \"3 days ago\", \"status\": \"ok\", \"total_errors\": 0, \"uncorrectable\": 0, \"duration_seconds\": 312 } | 状态 | 含义 | |------|------| | ok | 最后一次 scrub 无错误完成 | | never_run | Scrub 尚未运行（计时器刚安装） | | overdue | 最后一次 scrub 超过 14 天前 | | errors_found | Scrub 发现校验和不匹配（检查 total_errors 和 uncorrectable 计数） | | failed | Scrub 进程以非零代码退出 | 如果 uncorrectable 大于零，受影响的块无法自动修复（单盘 BTRFS 没有冗余副本）。请从最近的备份恢复受影响的仓库。",
-    "excerpt": "最后一次 scrub 的结果保存在 BTRFS 卷外部（位于 /var/lib/rediacc/scrub-last-result.json），即使卷出现问题也能保持可读。rdc machine query --system 的输出包含 scrub_status 字段： \"scrub_status\"...",
+    "body": "最后一次 scrub 的结果保存在 BTRFS 卷外部（位于 /var/lib/rediacc/scrub-last-result.json），即使卷出现问题也能保持可读。rdc machine status --system 的输出包含 scrub_status 字段： \"scrub_status\": { \"last_run_human\": \"3 days ago\", \"status\": \"ok\", \"total_errors\": 0, \"uncorrectable\": 0, \"duration_seconds\": 312 } | 状态 | 含义 | |------|------| | ok | 最后一次 scrub 无错误完成 | | never_run | Scrub 尚未运行（计时器刚安装） | | overdue | 最后一次 scrub 超过 14 天前 | | errors_found | Scrub 发现校验和不匹配（检查 total_errors 和 uncorrectable 计数） | | failed | Scrub 进程以非零代码退出 | 如果 uncorrectable 大于零，受影响的块无法自动修复（单盘 BTRFS 没有冗余副本）。请从最近的备份恢复受影响的仓库。",
+    "excerpt": "最后一次 scrub 的结果保存在 BTRFS 卷外部（位于 /var/lib/rediacc/scrub-last-result.json），即使卷出现问题也能保持可读。rdc machine status --system 的输出包含 scrub_status 字段： \"scrub_status...",
     "category": "Documentation",
     "page": "/zh/docs/monitoring",
     "path": "docs.monitoring.content",
@@ -8068,8 +8068,8 @@
   {
     "id": "search-17224",
     "content": "手动 scrub",
-    "body": "立即运行 scrub（例如，在断电或磁盘迁移后）： rdc term connect -m server-1 -c \"sudo renet maintenance scrub --datastore /mnt/rediacc\" 结果保存到同一 JSON 文件，并在下次 rdc machine query --system 时立即可见。",
-    "excerpt": "立即运行 scrub（例如，在断电或磁盘迁移后）： rdc term connect -m server-1 -c \"sudo renet maintenance scrub --datastore /mnt/rediacc\" 结果保存到同一 JSON 文件，并在下次 rdc machine que...",
+    "body": "立即运行 scrub（例如，在断电或磁盘迁移后）： rdc term connect -m server-1 -c \"sudo renet maintenance scrub --datastore /mnt/rediacc\" 结果保存到同一 JSON 文件，并在下次 rdc machine status --system 时立即可见。",
+    "excerpt": "立即运行 scrub（例如，在断电或磁盘迁移后）： rdc term connect -m server-1 -c \"sudo renet maintenance scrub --datastore /mnt/rediacc\" 结果保存到同一 JSON 文件，并在下次 rdc machine sta...",
     "category": "Documentation",
     "page": "/zh/docs/monitoring",
     "path": "docs.monitoring.content",
@@ -8253,7 +8253,7 @@
   {
     "id": "search-17241",
     "content": "TLS 证书生命周期",
-    "body": "Let's Encrypt 证书从签发到到达每个仓库容器的完整路径： 在宿主机签发。 机器级 Traefik 容器（rediacc-proxy，部署于 /opt/rediacc/proxy/）负责 ACME 续期。它将所有状态存储在宿主机上的 /opt/rediacc/proxy/letsencrypt/acme.json 中。续期在到期前约 30 天自动触发；只要配置了 --cf-dns-token，无需任何操作员干预。 按仓库转储（可选）。需要在其自身容器内存放证书文件的服务（例如直接读取 .pem 文件的邮件服务器），会在自身旁边部署一个小型 traefik-certs-dumper 容器。转储器以只读方式绑定挂载 /opt/rediacc/proxy/letsencrypt，并将提取的证书和密钥作为 cert.pem / key.pem 写入仓库的数据卷。为使其正常工作，每个仓库的 Docker 守护进程必须在其挂载命名空间允许列表中包含 /opt/rediacc/proxy。默认情况下已包含此项。 客户端缓存（rediacc.json）。 CLI 在配置文件的 acmeCertCache 下缓存 acme.json 的压缩副本，以 baseDomain 为键。这使多台机器可以共享证书（通过 rdc config cert-cache push -m <machine>），并充当离线清单。 客户端缓存的同步触发条件： 在 rdc repo up 之后自动触发，但仅当机器 baseDomain 的本地缓存超过 6 小时时。新鲜的缓存保持不变，以防止连续部署对 SSH 造成压力。 按需触发：rdc config cert-cache pull -m <machine>（强制拉取）或 rdc machine query --name <machine> --sync-certs（作为状态查询副作用的拉取）。 在 rdc config infra push 时，缓存被推送到机器（到期时间更长的本地证书优先于远程证书）。 缓存维护： 旧的自动路由条目（带旧网络 ID 标签的域名，如 service-3200.rediacc.io）在每次拉取时被清除。 notAfter 超过 7 天的证书将被彻底删除。它们已失效，只会使缓存膨胀。 rdc config cert-cache clear 清除所有内容；rdc config cert-cache status 显示清单。 故障排查： 如果 traefik-certs-dumper 以 /traefik/acme.json: no such file or directory 崩溃，说明每个仓库的守护进程看不到宿主机的 letsencrypt 存储。请验证 (a) 宿主机上存在 /opt/rediacc/proxy/letsencrypt/acme.json（这是宿主机级 rediacc-proxy 的职责），以及 (b) 每个仓库的守护进程是以足够新版本的 renet 启动的（该版本将 /opt/rediacc/proxy 加入允许列表）。升级 renet 后使用 rdc repo up 重新部署仓库以应用更改。 实验性： 自动同步节奏和基于过期的清理在 renet 0.9+ 中推出。旧版 CLI/renet 仅使用通过 rdc config cert-cache pull 的纯手动同步。",
+    "body": "Let's Encrypt 证书从签发到到达每个仓库容器的完整路径： 在宿主机签发。 机器级 Traefik 容器（rediacc-proxy，部署于 /opt/rediacc/proxy/）负责 ACME 续期。它将所有状态存储在宿主机上的 /opt/rediacc/proxy/letsencrypt/acme.json 中。续期在到期前约 30 天自动触发；只要配置了 --cf-dns-token，无需任何操作员干预。 按仓库转储（可选）。需要在其自身容器内存放证书文件的服务（例如直接读取 .pem 文件的邮件服务器），会在自身旁边部署一个小型 traefik-certs-dumper 容器。转储器以只读方式绑定挂载 /opt/rediacc/proxy/letsencrypt，并将提取的证书和密钥作为 cert.pem / key.pem 写入仓库的数据卷。为使其正常工作，每个仓库的 Docker 守护进程必须在其挂载命名空间允许列表中包含 /opt/rediacc/proxy。默认情况下已包含此项。 客户端缓存（rediacc.json）。 CLI 在配置文件的 acmeCertCache 下缓存 acme.json 的压缩副本，以 baseDomain 为键。这使多台机器可以共享证书（通过 rdc machine infra cert push <machine>），并充当离线清单。 客户端缓存的同步触发条件： 在 rdc repo up 之后自动触发，但仅当机器 baseDomain 的本地缓存超过 6 小时时。新鲜的缓存保持不变，以防止连续部署对 SSH 造成压力。 按需触发：rdc machine infra cert pull <machine>（强制拉取）或 rdc machine status <machine> --sync-certs（作为状态查询副作用的拉取）。 在 rdc config infra push 时，缓存被推送到机器（到期时间更长的本地证书优先于远程证书）。 缓存维护： 旧的自动路由条目（带旧网络 ID 标签的域名，如 service-3200.rediacc.io）在每次拉取时被清除。 notAfter 超过 7 天的证书将被彻底删除。它们已失效，只会使缓存膨胀。 rdc config cert-cache clear 清除所有内容；rdc config cert-cache status 显示清单。 故障排查： 如果 traefik-certs-dumper 以 /traefik/acme.json: no such file or directory 崩溃，说明每个仓库的守护进程看不到宿主机的 letsencrypt 存储。请验证 (a) 宿主机上存在 /opt/rediacc/proxy/letsencrypt/acme.json（这是宿主机级 rediacc-proxy 的职责），以及 (b) 每个仓库的守护进程是以足够新版本的 renet 启动的（该版本将 /opt/rediacc/proxy 加入允许列表）。升级 renet 后使用 rdc repo up 重新部署仓库以应用更改。 实验性： 自动同步节奏和基于过期的清理在 renet 0.9+ 中推出。旧版 CLI/renet 仅使用通过 rdc config cert-cache pull 的纯手动同步。",
     "excerpt": "Let's Encrypt 证书从签发到到达每个仓库容器的完整路径： 在宿主机签发。 机器级 Traefik 容器（rediacc-proxy，部署于 /opt/rediacc/proxy/）负责 ACME 续期。它将所有状态存储在宿主机上的 /opt/rediacc/proxy/letsencry...",
     "category": "Documentation",
     "page": "/zh/docs/networking",
@@ -8440,7 +8440,7 @@
   {
     "id": "search-17258",
     "content": "常见问题",
-    "body": "| 问题 | 原因 | 解决方案 | |------|------|----------| | 服务不在路由中 | 容器未运行或缺少标签 | 在仓库的守护进程上使用 docker ps 验证；检查标签 | | 证书未签发 | DNS 未指向服务器，或 Cloudflare 令牌无效 | 验证 DNS 解析；检查 Cloudflare API 令牌权限 | | 502 Bad Gateway | 应用未在声明的端口上监听 | 验证应用正在运行且端口与 loadbalancer.server.port 匹配 | | TCP 端口不可达 | 端口未在基础设施中注册 | 运行 rdc config infra set --tcp-ports ... 和 push-infra | | 路由服务器运行旧版本 | 二进制文件已更新但服务未重启 | 在配置时自动发生；手动：sudo systemctl restart rediacc-router | | STUN/TURN 中继不可达 | 中继地址在启动时缓存 | 在 DNS 或 IP 更改后重建服务以获取新的网络配置 |",
+    "body": "| 问题 | 原因 | 解决方案 | |------|------|----------| | 服务不在路由中 | 容器未运行或缺少标签 | 在仓库的守护进程上使用 docker ps 验证；检查标签 | | 证书未签发 | DNS 未指向服务器，或 Cloudflare 令牌无效 | 验证 DNS 解析；检查 Cloudflare API 令牌权限 | | 502 Bad Gateway | 应用未在声明的端口上监听 | 验证应用正在运行且端口与 loadbalancer.server.port 匹配 | | TCP 端口不可达 | 端口未在基础设施中注册 | 运行 rdc machine infra set <machine> --tcp-ports ... 和 push-infra | | 路由服务器运行旧版本 | 二进制文件已更新但服务未重启 | 在配置时自动发生；手动：sudo systemctl restart rediacc-router | | STUN/TURN 中继不可达 | 中继地址在启动时缓存 | 在 DNS 或 IP 更改后重建服务以获取新的网络配置 |",
     "excerpt": "| 问题 | 原因 | 解决方案 | |------|------|----------| | 服务不在路由中 | 容器未运行或缺少标签 | 在仓库的守护进程上使用 docker ps 验证；检查标签 | | 证书未签发 | DNS 未指向服务器，或 Cloudflare 令牌无效 | 验证 DNS...",
     "category": "Documentation",
     "page": "/zh/docs/networking",
@@ -8830,8 +8830,8 @@
   {
     "id": "search-17294",
     "content": "清理",
-    "body": "# 清理 清理会清除不再对应于存活资源的状态。三个命令分别覆盖三个不同的范围： | 命令 | 清理内容 | 真实来源所在位置 | |---|---|---| | rdc storage prune --name <storage> -m <machine> | 云存储中的孤立备份 | 本地 CLI 配置（针对执行机器进行交叉检查以确保挂载安全） | | rdc machine prune --name <machine> | 机器上的数据存储工件（始终）；孤立或未知的仓库镜像（可选启用） | 本地 CLI 配置 + 机器的 .interim/state 镜像 | | rdc config prune | 本地配置遗留物（证书缓存、过期归档、悬空交叉引用） | 仅本地 CLI 配置 | 三者相互独立。您可以在不运行其他命令的情况下运行任何一个。它们共享下文 安全模型 中描述的通用安全模型。 清理命令清除的是已删除资源遗留的状态。若要回收存活仓库占用的空间（即文件系统已释放但存储池仍持有的块），请改用 rdc repo trim；两者互为补充。",
-    "excerpt": "# 清理 清理会清除不再对应于存活资源的状态。三个命令分别覆盖三个不同的范围： | 命令 | 清理内容 | 真实来源所在位置 | |---|---|---| | rdc storage prune --name <storage> -m <machine> | 云存储中的孤立备份 | 本地 CLI...",
+    "body": "# 清理 清理会清除不再对应于存活资源的状态。三个命令分别覆盖三个不同的范围： | 命令 | 清理内容 | 真实来源所在位置 | |---|---|---| | rdc storage prune <storage> -m <machine> | 云存储中的孤立备份 | 本地 CLI 配置（针对执行机器进行交叉检查以确保挂载安全） | | rdc machine prune <machine> | 机器上的数据存储工件（始终）；孤立或未知的仓库镜像（可选启用） | 本地 CLI 配置 + 机器的 .interim/state 镜像 | | rdc config prune | 本地配置遗留物（证书缓存、过期归档、悬空交叉引用） | 仅本地 CLI 配置 | 三者相互独立。您可以在不运行其他命令的情况下运行任何一个。它们共享下文 安全模型 中描述的通用安全模型。 清理命令清除的是已删除资源遗留的状态。若要回收存活仓库占用的空间（即文件系统已释放但存储池仍持有的块），请改用 rdc repo trim；两者互为补充。",
+    "excerpt": "# 清理 清理会清除不再对应于存活资源的状态。三个命令分别覆盖三个不同的范围： | 命令 | 清理内容 | 真实来源所在位置 | |---|---|---| | rdc storage prune <storage> -m <machine> | 云存储中的孤立备份 | 本地 CLI 配置（针对执行...",
     "category": "Documentation",
     "page": "/zh/docs/pruning",
     "path": "docs.pruning.content",
@@ -8995,7 +8995,7 @@
   {
     "id": "search-17309",
     "content": "宽限期",
-    "body": "当仓库通过 --archive-config 从配置中移除时，其凭据条目会被移到 resources.deletedRepositories[] 并带有 deletedAt 时间戳。清理命令遵守宽限期（默认 7 天），在此期间最近归档的仓库受到保护，不会被删除。这给您时间在仓库被意外移除时进行恢复（rdc config repository restore-archived --name <guid>）。一旦宽限期过期，storage prune、machine prune 和 config prune 都会自动清除该条目。",
+    "body": "当仓库通过 --archive-config 从配置中移除时，其凭据条目会被移到 resources.deletedRepositories[] 并带有 deletedAt 时间戳。清理命令遵守宽限期（默认 7 天），在此期间最近归档的仓库受到保护，不会被删除。这给您时间在仓库被意外移除时进行恢复（rdc repo admin archive restore <guid>）。一旦宽限期过期，storage prune、machine prune 和 config prune 都会自动清除该条目。",
     "excerpt": "当仓库通过 --archive-config 从配置中移除时，其凭据条目会被移到 resources.deletedRepositories[] 并带有 deletedAt 时间戳。清理命令遵守宽限期（默认 7 天），在此期间最近归档的仓库受到保护，不会被删除。这给您时间在仓库被意外移除时进行恢复（...",
     "category": "Documentation",
     "page": "/zh/docs/pruning",
@@ -9213,8 +9213,8 @@
   {
     "id": "search-17329",
     "content": "4. VS Code",
-    "body": "rdc vscode connect -m my-server -r my-app # 打开 VS Code SSH，进入仓库沙箱 您正在加密卷内部编辑文件。docker ps 只显示此仓库的容器。保存、compose up、迭代。",
-    "excerpt": "rdc vscode connect -m my-server -r my-app # 打开 VS Code SSH，进入仓库沙箱 您正在加密卷内部编辑文件。docker ps 只显示此仓库的容器。保存、compose up、迭代。",
+    "body": "rdc vscode connect my-app # 打开 VS Code SSH，进入仓库沙箱 您正在加密卷内部编辑文件。docker ps 只显示此仓库的容器。保存、compose up、迭代。",
+    "excerpt": "rdc vscode connect my-app # 打开 VS Code SSH，进入仓库沙箱 您正在加密卷内部编辑文件。docker ps 只显示此仓库的容器。保存、compose up、迭代。",
     "category": "Documentation",
     "page": "/zh/docs/quick-start",
     "path": "docs.quick-start.content",
@@ -9224,7 +9224,7 @@
   {
     "id": "search-17330",
     "content": "5. `rdc repo up` 与 `renet dev up`",
-    "body": "| | rdc repo up | renet dev up | |---|---|---| | 运行位置 | 您的笔记本电脑（CLI） | VS Code 沙箱内 | | 功能 | SSH → 自动挂载 → 运行 Rediaccfile up() | 直接运行 Rediaccfile up() | | 使用场景 | CI/CD、自动化、远程运维 | 开发者内循环 | | 隔离性 | 从外部编排 | 已在沙箱内部 | 演示流程： rdc repo template apply → rdc vscode connect -m my-server -r my-app → 编辑 docker-compose.yml → renet dev up → 看到应用运行 → 迭代。 Rediaccfile 结构：服务。何时使用哪个工具：rdc vs renet。",
+    "body": "| | rdc repo up | renet dev up | |---|---|---| | 运行位置 | 您的笔记本电脑（CLI） | VS Code 沙箱内 | | 功能 | SSH → 自动挂载 → 运行 Rediaccfile up() | 直接运行 Rediaccfile up() | | 使用场景 | CI/CD、自动化、远程运维 | 开发者内循环 | | 隔离性 | 从外部编排 | 已在沙箱内部 | 演示流程： rdc repo template apply → rdc vscode connect my-app → 编辑 docker-compose.yml → renet dev up → 看到应用运行 → 迭代。 Rediaccfile 结构：服务。何时使用哪个工具：rdc vs renet。",
     "excerpt": "| | rdc repo up | renet dev up | |---|---|---| | 运行位置 | 您的笔记本电脑（CLI） | VS Code 沙箱内 | | 功能 | SSH → 自动挂载 → 运行 Rediaccfile up() | 直接运行 Rediaccfile up() |...",
     "category": "Documentation",
     "page": "/zh/docs/quick-start",
@@ -9387,8 +9387,8 @@
   {
     "id": "search-17345",
     "content": "仓库生命周期",
-    "body": "| 命令 | 说明 | |------|------| | rdc repo create --name <repo> -m <machine> | 在机器上创建新仓库 | | rdc repo up --name <repo> -m <machine> | 部署或更新仓库 | | rdc repo down --name <repo> -m <machine> | 停止仓库 | | rdc repo delete --name <repo> -m <machine> | 删除仓库 | | rdc repo fork --parent <repo> --tag <tag> -m <machine> | 派生仓库（近乎瞬时，BTRFS reflink） | | rdc repo takeover --name <repo> -m <machine> | 接管现有仓库的所有权 | | rdc config repository list | 列出所有仓库及其名称和 GUID |",
-    "excerpt": "| 命令 | 说明 | |------|------| | rdc repo create --name <repo> -m <machine> | 在机器上创建新仓库 | | rdc repo up --name <repo> -m <machine> | 部署或更新仓库 | | rdc repo...",
+    "body": "| 命令 | 说明 | |------|------| | rdc repo create <repo> -m <machine> | 在机器上创建新仓库 | | rdc repo up <repo>@<machine> | 部署或更新仓库 | | rdc repo down <repo>@<machine> | 停止仓库 | | rdc repo delete <repo>@<machine> | 删除仓库 | | rdc repo fork <repo>@<machine> --tag <tag> | 派生仓库（近乎瞬时，BTRFS reflink） | | rdc repo promote <repo>:<tag> | 接管现有仓库的所有权 | | rdc repo list | 列出所有仓库及其名称和 GUID |",
+    "excerpt": "| 命令 | 说明 | |------|------| | rdc repo create <repo> -m <machine> | 在机器上创建新仓库 | | rdc repo up <repo>@<machine> | 部署或更新仓库 | | rdc repo down <repo>@<mac...",
     "category": "Documentation",
     "page": "/zh/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9398,8 +9398,8 @@
   {
     "id": "search-17346",
     "content": "仓库机密",
-    "body": "仅供部署时使用的一次性凭证。get 仅返回摘要，不返回值。完整指南请参阅 仓库 § 机密。 | 命令 | 说明 | |------|------| | rdc repo secret set --name <repo> --key <KEY> --value <val> [--mode env\\|file] --current \"\" | 创建新机密（首次写入时使用 --current \"\"） | | rdc repo secret set --name <repo> --key <KEY> --value <val> --current <prev> | 覆盖现有机密（密码风格的前置条件） | | rdc repo secret set --name <repo> --key <KEY> --value <val> --rotate-secret | 覆盖而不验证先前的值（作为轮换进行审计） | | rdc repo secret list --name <repo> | 列出机密名称和交付模式（从不返回值或摘要） | | rdc repo secret get --name <repo> --key <KEY> | 显示机密摘要和模式（永不返回明文值） | | rdc repo secret unset --name <repo> --key <KEY> --current <prev> | 删除机密 | | rdc repo secret unset --name <repo> --key <KEY> --rotate-secret | 删除而不验证先前的值 | 派生仓库不继承机密。需在派生仓库上显式设置，使用 rdc repo secret set --name <repo>:<tag>。",
-    "excerpt": "仅供部署时使用的一次性凭证。get 仅返回摘要，不返回值。完整指南请参阅 仓库 § 机密。 | 命令 | 说明 | |------|------| | rdc repo secret set --name <repo> --key <KEY> --value <val> [--mode env\\|f...",
+    "body": "仅供部署时使用的一次性凭证。get 仅返回摘要，不返回值。完整指南请参阅 仓库 § 机密。 | 命令 | 说明 | |------|------| | rdc repo secret set <repo> --key <KEY> --value <val> [--mode env\\|file] --current \"\" | 创建新机密（首次写入时使用 --current \"\"） | | rdc repo secret set <repo> --key <KEY> --value <val> --current <prev> | 覆盖现有机密（密码风格的前置条件） | | rdc repo secret set <repo> --key <KEY> --value <val> --rotate-secret | 覆盖而不验证先前的值（作为轮换进行审计） | | rdc repo secret list <repo> | 列出机密名称和交付模式（从不返回值或摘要） | | rdc repo secret get <repo> --key <KEY> | 显示机密摘要和模式（永不返回明文值） | | rdc repo secret unset <repo> --key <KEY> --current <prev> | 删除机密 | | rdc repo secret unset <repo> --key <KEY> --rotate-secret | 删除而不验证先前的值 | 派生仓库不继承机密。需在派生仓库上显式设置，使用 rdc repo secret set <repo>:<tag>。",
+    "excerpt": "仅供部署时使用的一次性凭证。get 仅返回摘要，不返回值。完整指南请参阅 仓库 § 机密。 | 命令 | 说明 | |------|------| | rdc repo secret set <repo> --key <KEY> --value <val> [--mode env\\|file] --...",
     "category": "Documentation",
     "page": "/zh/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9409,8 +9409,8 @@
   {
     "id": "search-17347",
     "content": "备份与恢复",
-    "body": "| 命令 | 说明 | |------|------| | rdc repo push --name <repo> -m <machine> --to <storage> | 将仓库备份推送到存储 | | rdc repo push --to <storage> -m <machine> | 将所有仓库推送到存储 | | rdc repo pull --name <repo> -m <machine> --from <storage> | 从存储恢复仓库 | | rdc repo pull --from <storage> -m <machine> | 从存储恢复所有仓库 | | rdc repo push ... --bwlimit <limit> | 推送时限制 rsync 带宽（如 10M） | | rdc repo pull ... --bwlimit <limit> | 拉取时限制 rsync 带宽 | | rdc repo push ... --checkpoint | 推送前对容器创建检查点 | | rdc repo backup list --from <storage> -m <machine> | 列出存储中的可用备份 | | rdc storage browse --name <storage> | 浏览存储内容 |",
-    "excerpt": "| 命令 | 说明 | |------|------| | rdc repo push --name <repo> -m <machine> --to <storage> | 将仓库备份推送到存储 | | rdc repo push --to <storage> -m <machine> | 将所有...",
+    "body": "| 命令 | 说明 | |------|------| | rdc repo push <repo>@<machine> --to <storage> | 将仓库备份推送到存储 | | rdc repo push --to <storage> -m <machine> | 将所有仓库推送到存储 | | rdc repo pull <repo>@<machine> --from <storage> | 从存储恢复仓库 | | rdc repo pull --from <storage> -m <machine> | 从存储恢复所有仓库 | | rdc repo push ... --bwlimit <limit> | 推送时限制 rsync 带宽（如 10M） | | rdc repo pull ... --bwlimit <limit> | 拉取时限制 rsync 带宽 | | rdc repo push ... --checkpoint | 推送前对容器创建检查点 | | rdc backup list --storage <storage> -m <machine> | 列出存储中的可用备份 | | rdc storage browse <storage> | 浏览存储内容 |",
+    "excerpt": "| 命令 | 说明 | |------|------| | rdc repo push <repo>@<machine> --to <storage> | 将仓库备份推送到存储 | | rdc repo push --to <storage> -m <machine> | 将所有仓库推送到存储 |...",
     "category": "Documentation",
     "page": "/zh/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9420,8 +9420,8 @@
   {
     "id": "search-17348",
     "content": "仓库迁移",
-    "body": "| 命令 | 说明 | |------|------| | rdc repo migrate --name <repo> --from <machine> --to <machine> | 在机器之间迁移仓库 | | rdc repo migrate ... --provision | 传输前在目标机器上进行配置 | | rdc repo migrate ... --checkpoint | 迁移前创建检查点 | | rdc repo migrate ... --skip-dns | 迁移后跳过 DNS 更新 | | rdc repo migrate ... --bwlimit <limit> | 限制传输带宽 |",
-    "excerpt": "| 命令 | 说明 | |------|------| | rdc repo migrate --name <repo> --from <machine> --to <machine> | 在机器之间迁移仓库 | | rdc repo migrate ... --provision | 传输前在目标...",
+    "body": "| 命令 | 说明 | |------|------| | rdc repo migrate <repo>@<machine> --to <machine> | 在机器之间迁移仓库 | | rdc repo migrate ... --provision | 传输前在目标机器上进行配置 | | rdc repo migrate ... --checkpoint | 迁移前创建检查点 | | rdc repo migrate ... --skip-dns | 迁移后跳过 DNS 更新 | | rdc repo migrate ... --bwlimit <limit> | 限制传输带宽 |",
+    "excerpt": "| 命令 | 说明 | |------|------| | rdc repo migrate <repo>@<machine> --to <machine> | 在机器之间迁移仓库 | | rdc repo migrate ... --provision | 传输前在目标机器上进行配置 | | rd...",
     "category": "Documentation",
     "page": "/zh/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9431,8 +9431,8 @@
   {
     "id": "search-17349",
     "content": "备份策略",
-    "body": "| 命令 | 说明 | |------|------| | rdc config backup-strategy set --name <name> --destination <storage> --cron <expr> --mode <hot\\|cold> --enable | 创建或更新命名备份策略 | | rdc config backup-strategy list | 列出所有已定义的备份策略 | | rdc config backup-strategy show --name <name> | 显示策略详情 | | rdc config backup-strategy remove --name <name> | 删除策略 | | rdc machine backup schedule -m <machine> | 将已配置的备份策略部署到机器 |",
-    "excerpt": "| 命令 | 说明 | |------|------| | rdc config backup-strategy set --name <name> --destination <storage> --cron <expr> --mode <hot\\|cold> --enable | 创建或更新命名...",
+    "body": "| 命令 | 说明 | |------|------| | rdc backup strategy set <name> --destination <storage> --cron <expr> --mode <hot\\|cold> --enable | 创建或更新命名备份策略 | | rdc backup strategy list | 列出所有已定义的备份策略 | | rdc backup strategy show <name> | 显示策略详情 | | rdc backup strategy remove <name> | 删除策略 | | rdc backup schedule -m <machine> | 将已配置的备份策略部署到机器 |",
+    "excerpt": "| 命令 | 说明 | |------|------| | rdc backup strategy set <name> --destination <storage> --cron <expr> --mode <hot\\|cold> --enable | 创建或更新命名备份策略 | | rdc b...",
     "category": "Documentation",
     "page": "/zh/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9442,8 +9442,8 @@
   {
     "id": "search-17350",
     "content": "备份操作",
-    "body": "| 命令 | 说明 | |------|------| | rdc machine backup schedule -m <machine> | 将绑定的策略部署为 systemd 定时器 | | rdc machine backup schedule -m <machine> --dry-run | 预览定时器单元而不部署（令牌已遮蔽） | | rdc machine backup now -m <machine> | 立即运行所有绑定的策略 | | rdc machine backup now -m <machine> --strategy <name> | 立即运行指定策略 | | rdc machine backup status -m <machine> | 显示定时器状态和最近的任务结果 | | rdc machine backup status -m <machine> --strategy <name> | 显示指定策略的状态 | | rdc machine backup cancel -m <machine> | 取消正在运行的备份 | | rdc machine backup cancel -m <machine> --strategy <name> | 取消指定的正在运行的备份 |",
-    "excerpt": "| 命令 | 说明 | |------|------| | rdc machine backup schedule -m <machine> | 将绑定的策略部署为 systemd 定时器 | | rdc machine backup schedule -m <machine> --dry-run...",
+    "body": "| 命令 | 说明 | |------|------| | rdc backup schedule -m <machine> | 将绑定的策略部署为 systemd 定时器 | | rdc backup schedule -m <machine> --dry-run | 预览定时器单元而不部署（令牌已遮蔽） | | rdc backup run -m <machine> | 立即运行所有绑定的策略 | | rdc backup run <name> -m <machine> | 立即运行指定策略 | | rdc backup status -m <machine> | 显示定时器状态和最近的任务结果 | | rdc backup status <name> -m <machine> | 显示指定策略的状态 | | rdc backup cancel -m <machine> | 取消正在运行的备份 | | rdc backup cancel <name> -m <machine> | 取消指定的正在运行的备份 |",
+    "excerpt": "| 命令 | 说明 | |------|------| | rdc backup schedule -m <machine> | 将绑定的策略部署为 systemd 定时器 | | rdc backup schedule -m <machine> --dry-run | 预览定时器单元而不部署（令牌...",
     "category": "Documentation",
     "page": "/zh/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9453,8 +9453,8 @@
   {
     "id": "search-17351",
     "content": "机器管理",
-    "body": "| 命令 | 说明 | |------|------| | rdc machine query --name <machine> | 完整机器状态（系统、容器、服务、仓库、网络） | | rdc machine query --name <machine> --system | 仅系统信息 | | rdc machine query --name <machine> --containers | 仅容器列表 | | rdc machine query --name <machine> --repositories | 仅仓库列表 | | rdc machine query --name <machine> --services | 仅服务列表 | | rdc machine query --name <machine> --network | 仅网络信息 | | rdc machine query --name <machine> --block-devices | 仅块设备信息 | | rdc machine list | 列出配置中的所有机器 | | rdc config machine setup --name <machine> | 运行机器初始配置 | | rdc machine prune --name <machine> | 从机器中删除未使用的资源 | | rdc machine deprovision --name <machine> | 完全取消配置机器 |",
-    "excerpt": "| 命令 | 说明 | |------|------| | rdc machine query --name <machine> | 完整机器状态（系统、容器、服务、仓库、网络） | | rdc machine query --name <machine> --system | 仅系统信息 | |...",
+    "body": "| 命令 | 说明 | |------|------| | rdc machine status <machine> | 完整机器状态（系统、容器、服务、仓库、网络） | | rdc machine status <machine> --system | 仅系统信息 | | rdc machine status <machine> --containers | 仅容器列表 | | rdc machine status <machine> --repositories | 仅仓库列表 | | rdc machine status <machine> --services | 仅服务列表 | | rdc machine status <machine> --network | 仅网络信息 | | rdc machine status <machine> --block-devices | 仅块设备信息 | | rdc machine list | 列出配置中的所有机器 | | rdc machine setup <machine> | 运行机器初始配置 | | rdc machine prune <machine> | 从机器中删除未使用的资源 | | rdc machine deprovision <machine> | 完全取消配置机器 |",
+    "excerpt": "| 命令 | 说明 | |------|------| | rdc machine status <machine> | 完整机器状态（系统、容器、服务、仓库、网络） | | rdc machine status <machine> --system | 仅系统信息 | | rdc machine...",
     "category": "Documentation",
     "page": "/zh/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9464,8 +9464,8 @@
   {
     "id": "search-17352",
     "content": "终端与同步",
-    "body": "| 命令 | 说明 | |------|------| | rdc term connect -m <machine> | 打开到机器的 SSH 终端 | | rdc term connect -m <machine> -r <repo> | 打开到仓库的 SSH 终端（设置 DOCKER_HOST） | | rdc term connect -m <machine> -c \"<command>\" | 在机器上运行命令 | | rdc repo sync upload -m <machine> -r <repo> --local <paths...> | 将一个或多个本地文件或目录上传到仓库 | | rdc repo sync upload -m <machine> -r <repo> --local <file> --remote-file <path> | 将单个本地文件上传到指定的远程路径 | | rdc repo sync download -m <machine> -r <repo> --local <dir> | 将仓库目录下载到本地 | | rdc repo sync download -m <machine> -r <repo> --remote-file <path> --local <dir> | 将单个远程文件下载到本地目录 | | rdc vscode connect -m <machine> -r <repo> | 打开 VS Code Remote SSH 会话 |",
-    "excerpt": "| 命令 | 说明 | |------|------| | rdc term connect -m <machine> | 打开到机器的 SSH 终端 | | rdc term connect -m <machine> -r <repo> | 打开到仓库的 SSH 终端（设置 DOCKER_HOST...",
+    "body": "| 命令 | 说明 | |------|------| | rdc term connect <machine> | 打开到机器的 SSH 终端 | | rdc term connect <repo>@<machine> | 打开到仓库的 SSH 终端（设置 DOCKER_HOST） | | rdc term connect <machine> -c \"<command>\" | 在机器上运行命令 | | rdc repo sync upload <repo>@<machine> --local <paths...> | 将一个或多个本地文件或目录上传到仓库 | | rdc repo sync upload <repo>@<machine> --local <file> --remote-file <path> | 将单个本地文件上传到指定的远程路径 | | rdc repo sync download <repo>@<machine> --local <dir> | 将仓库目录下载到本地 | | rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir> | 将单个远程文件下载到本地目录 | | rdc vscode connect <repo>@<machine> | 打开 VS Code Remote SSH 会话 |",
+    "excerpt": "| 命令 | 说明 | |------|------| | rdc term connect <machine> | 打开到机器的 SSH 终端 | | rdc term connect <repo>@<machine> | 打开到仓库的 SSH 终端（设置 DOCKER_HOST） | | rdc...",
     "category": "Documentation",
     "page": "/zh/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9475,8 +9475,8 @@
   {
     "id": "search-17353",
     "content": "配置",
-    "body": "| 命令 | 说明 | |------|------| | rdc config init --name <name> | 创建命名配置文件 | | rdc config machine add --name <machine> --host <host> --user <user> | 向配置中添加机器 | | rdc config storage import --file rclone.conf | 从 rclone 配置导入存储提供商 | | rdc config storage list | 列出已配置的存储提供商 | | rdc config backup-strategy set ... | 定义命名备份策略 | | rdc --config <name> <command> | 使用命名配置文件 |",
-    "excerpt": "| 命令 | 说明 | |------|------| | rdc config init --name <name> | 创建命名配置文件 | | rdc config machine add --name <machine> --host <host> --user <user> | 向配置中添...",
+    "body": "| 命令 | 说明 | |------|------| | rdc config init <name> | 创建命名配置文件 | | rdc machine add <machine> --ip <host> --user <user> | 向配置中添加机器 | | rdc storage import rclone.conf | 从 rclone 配置导入存储提供商 | | rdc storage list | 列出已配置的存储提供商 | | rdc backup strategy set ... | 定义命名备份策略 | | rdc --config <name> <command> | 使用命名配置文件 |",
+    "excerpt": "| 命令 | 说明 | |------|------| | rdc config init <name> | 创建命名配置文件 | | rdc machine add <machine> --ip <host> --user <user> | 向配置中添加机器 | | rdc storage imp...",
     "category": "Documentation",
     "page": "/zh/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9486,8 +9486,8 @@
   {
     "id": "search-17354",
     "content": "调试与直接访问",
-    "body": "| 命令 | 说明 | |------|------| | rdc term connect -m <machine> -r <repo> -c \"docker ps\" | 列出仓库中的容器 | | rdc term connect -m <machine> -r <repo> -c \"docker logs <name>\" | 获取容器日志 | | rdc term connect -m <machine> -r <repo> -c \"docker exec <name> <cmd>\" | 在容器中执行命令 | | rdc term connect -m <machine> -r <repo> -c \"docker restart <name>\" | 重启容器 |",
-    "excerpt": "| 命令 | 说明 | |------|------| | rdc term connect -m <machine> -r <repo> -c \"docker ps\" | 列出仓库中的容器 | | rdc term connect -m <machine> -r <repo> -c \"docker...",
+    "body": "| 命令 | 说明 | |------|------| | rdc term connect <repo>@<machine> -c \"docker ps\" | 列出仓库中的容器 | | rdc term connect <repo>@<machine> -c \"docker logs <name>\" | 获取容器日志 | | rdc term connect <repo>@<machine> -c \"docker exec <name> <cmd>\" | 在容器中执行命令 | | rdc term connect <repo>@<machine> -c \"docker restart <name>\" | 重启容器 |",
+    "excerpt": "| 命令 | 说明 | |------|------| | rdc term connect <repo>@<machine> -c \"docker ps\" | 列出仓库中的容器 | | rdc term connect <repo>@<machine> -c \"docker logs <name>...",
     "category": "Documentation",
     "page": "/zh/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -10019,8 +10019,8 @@
   {
     "id": "search-17403",
     "content": "JSON 模式",
-    "body": "rdc repo log --json 将 renet 结果包装在标准信封中。遍历的历史记录在 entries 中，按从新到旧排列： | 字段 | 类型 | 描述 | |------|------|------| | success | boolean | 遍历是否完成。 | | start | string | 遍历起始的 GUID。 | | entries | array | 每个提交一个对象，从新到旧排列。 | | entries[].guid | string | 提交 GUID。 | | entries[].message | string | 提交消息，为空时省略。 | | entries[].author | string | 提交作者，为空时省略。 | | entries[].parent | string | 父提交 GUID，在根提交处省略。 | | entries[].committed_at | string | RFC 3339 提交时间戳，未设置时省略。 | | entries[].immutable | boolean | 提交是否标记为只读（真正的提交始终为 true）。 | 有关信封字段和在非 TTY 环境中发出 JSON 的自动检测规则，请参阅 JSON 输出参考。",
-    "excerpt": "rdc repo log --json 将 renet 结果包装在标准信封中。遍历的历史记录在 entries 中，按从新到旧排列： | 字段 | 类型 | 描述 | |------|------|------| | success | boolean | 遍历是否完成。 | | start | s...",
+    "body": "rdc repo log <repo> --output json 将 renet 结果包装在标准信封中。遍历的历史记录在 entries 中，按从新到旧排列： | 字段 | 类型 | 描述 | |------|------|------| | success | boolean | 遍历是否完成。 | | start | string | 遍历起始的 GUID。 | | entries | array | 每个提交一个对象，从新到旧排列。 | | entries[].guid | string | 提交 GUID。 | | entries[].message | string | 提交消息，为空时省略。 | | entries[].author | string | 提交作者，为空时省略。 | | entries[].parent | string | 父提交 GUID，在根提交处省略。 | | entries[].committed_at | string | RFC 3339 提交时间戳，未设置时省略。 | | entries[].immutable | boolean | 提交是否标记为只读（真正的提交始终为 true）。 | 有关信封字段和在非 TTY 环境中发出 JSON 的自动检测规则，请参阅 JSON 输出参考。",
+    "excerpt": "rdc repo log <repo> --output json 将 renet 结果包装在标准信封中。遍历的历史记录在 entries 中，按从新到旧排列： | 字段 | 类型 | 描述 | |------|------|------| | success | boolean | 遍历是否完成。...",
     "category": "Documentation",
     "page": "/zh/docs/repo-branching",
     "path": "docs.repo-branching.content",
@@ -10444,7 +10444,7 @@
   {
     "id": "search-17442",
     "content": "一步完成分支并启动",
-    "body": "--up 以一次远程操作完成分支、挂载和服务启动。加上 --detach 可在容器启动后立即归还终端，健康检查在后台继续，代理会持续重试直到各服务就绪： rdc repo fork --parent my-app --tag staging -m server-1 --up rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach 实测数据：一个 128 GB 的仓库从分支到服务运行约需 57 秒，使用 --detach 约需 31 秒。后台模式下命令会打印进度查询提示：rdc machine query --containers --name <machine>。",
+    "body": "--up 以一次远程操作完成分支、挂载和服务启动。加上 --detach 可在容器启动后立即归还终端，健康检查在后台继续，代理会持续重试直到各服务就绪： rdc repo fork --parent my-app --tag staging -m server-1 --up rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach 实测数据：一个 128 GB 的仓库从分支到服务运行约需 57 秒，使用 --detach 约需 31 秒。后台模式下命令会打印进度查询提示：rdc machine status <machine> --containers。",
     "excerpt": "--up 以一次远程操作完成分支、挂载和服务启动。加上 --detach 可在容器启动后立即归还终端，健康检查在后台继续，代理会持续重试直到各服务就绪： rdc repo fork --parent my-app --tag staging -m server-1 --up rdc repo for...",
     "category": "Documentation",
     "page": "/zh/docs/repositories",
@@ -10477,7 +10477,7 @@
   {
     "id": "search-17445",
     "content": "密钥",
-    "body": "每仓库密钥是部署时凭证，注入容器而不写入加密仓库镜像。它们与仓库数据保持在独立平面上，因此 rdc repo fork 不会传播它们。分支以空密钥映射开始，其容器启动时将自己标识为不同于父级的外部主体。 想要逐步演练？请参阅管理密钥教程了解完整的设置/列出/部署/验证/轮换周期。 仅写模型 (GitHub 风格)： get 仅返回 SHA-256 摘要。纯文本值永远不会返回给任何人，人类或代理。如果忘记值是什么，在密码管理器中查找并轮换；根据设计，你无法从 Rediacc 读取它回来。这消除了整个泄漏类别：终端录像、shell 历史、意外重定向、肩头冲浪。 两种交付模式： env。密钥在目标机器上的 renet shell 中导出为 REDIACC_SECRET_<KEY>。通过 ${REDIACC_SECRET_<KEY>} 插值从 docker-compose.yml 中引用它。在容器环境中可见，因此使用此模式处理应用程序已期望在 env 中的连接字符串形状的值。 file。密钥写入主机上的 /var/run/rediacc/secrets/<networkID>/<KEY>（tmpfs，从不持久化）。通过带 file: 源的顶级 secrets: 声明以及每个服务的 secrets: 列表从 compose 文件中引用它。容器从 /run/secrets/<key> 读取。对任何敏感数据优选此模式。它不会出现在 docker inspect 或 /proc/<pid>/environ 中。 # 设置、列出、获取（仅摘要）、取消设置 rdc repo secret set --name my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current \"\" rdc repo secret set --name my-app --key DB_HOST --value postgres.internal --mode env --current \"\" rdc repo secret list --name my-app rdc repo secret get --name my-app --key DB_HOST # → { key, mode, digest }（无值） rdc repo secret unset --name my-app --key STRIPE_LIVE_KEY --current sk_live_xxx 对称变化门。 人类和代理都需要 --current <previous-value> 来覆盖或取消设置密钥（passwd 风格前置条件）。对于新密钥的首次写入，传递 --current \"\"（空）。要在不验证先前值的情况下轮换，改用 --rotate-secret。这会被大声审计为轮换。--current 和 --rotate-secret 互斥。 传递 --value - 从 stdin 而不是 argv 读取（避免 shell 历史泄漏以用于一次写入）。 在 docker-compose.yml 中： services: api: image: myapp environment: DATABASE_HOST: ${REDIACC_SECRET_DB_HOST} secrets: stripe_live_key secrets: stripe_live_key: file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY 小写服务端引用（stripe_live_key）是容器内 /run/secrets/<name> 文件名；主机路径尾部的大写（STRIPE_LIVE_KEY）与使用 --key 设置的内容匹配。${REDIACC_NETWORK_ID} 由 renet compose 自动插值。 跨仓库隔离执行：renet 的 compose 验证器拒绝引用任何其他仓库网络 ID 的 secrets: file:（以及 configs: file: 和 env_file:）路径。字面 ${REDIACC_NETWORK_ID} 令牌（或你自己网络的整数）是 /var/run/rediacc/secrets/... 引用的唯一接受形式。--unsafe 不会覆盖此检查。Rediaccfile bash 子进程周围的 Landlock 沙箱也仅将文件系统访问限定于你自己网络的密钥目录，所以来自 Rediaccfile 的恶意 cat /var/run/rediacc/secrets/<other>/X 在内核层面失败，错误码为 EACCES。 分支：rdc repo fork 不会复制密钥。要在分支中使用密钥，在分支上显式运行 rdc repo secret set --name <fork>。这是负载承载安全属性。分支的容器不应能在外部服务上充当生产主体。 代理 (Claude Code、Cursor 等)：repo secret list 和 repo secret get 作为 MCP 工具公开（读安全。仅名称和摘要，永不值）。set 和 unset 仅限 CLI，因为 --current/--rotate-secret 仪式需要人工审视；通过 shell 调用它们的代理获得与人类相同的门。前置条件失败时，JSON 封装包含结构化 errors[].next.options[].run 字段。代理应将这些命令逐字中继给用户。完整模型请参阅 AI 代理安全。",
+    "body": "每仓库密钥是部署时凭证，注入容器而不写入加密仓库镜像。它们与仓库数据保持在独立平面上，因此 rdc repo fork 不会传播它们。分支以空密钥映射开始，其容器启动时将自己标识为不同于父级的外部主体。 想要逐步演练？请参阅管理密钥教程了解完整的设置/列出/部署/验证/轮换周期。 仅写模型 (GitHub 风格)： get 仅返回 SHA-256 摘要。纯文本值永远不会返回给任何人，人类或代理。如果忘记值是什么，在密码管理器中查找并轮换；根据设计，你无法从 Rediacc 读取它回来。这消除了整个泄漏类别：终端录像、shell 历史、意外重定向、肩头冲浪。 两种交付模式： env。密钥在目标机器上的 renet shell 中导出为 REDIACC_SECRET_<KEY>。通过 ${REDIACC_SECRET_<KEY>} 插值从 docker-compose.yml 中引用它。在容器环境中可见，因此使用此模式处理应用程序已期望在 env 中的连接字符串形状的值。 file。密钥写入主机上的 /var/run/rediacc/secrets/<networkID>/<KEY>（tmpfs，从不持久化）。通过带 file: 源的顶级 secrets: 声明以及每个服务的 secrets: 列表从 compose 文件中引用它。容器从 /run/secrets/<key> 读取。对任何敏感数据优选此模式。它不会出现在 docker inspect 或 /proc/<pid>/environ 中。 # 设置、列出、获取（仅摘要）、取消设置 rdc repo secret set --name my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current \"\" rdc repo secret set --name my-app --key DB_HOST --value postgres.internal --mode env --current \"\" rdc repo secret list --name my-app rdc repo secret get --name my-app --key DB_HOST # → { key, mode, digest }（无值） rdc repo secret unset --name my-app --key STRIPE_LIVE_KEY --current sk_live_xxx 对称变化门。 人类和代理都需要 --current <previous-value> 来覆盖或取消设置密钥（passwd 风格前置条件）。对于新密钥的首次写入，传递 --current \"\"（空）。要在不验证先前值的情况下轮换，改用 --rotate-secret。这会被大声审计为轮换。--current 和 --rotate-secret 互斥。 传递 --value - 从 stdin 而不是 argv 读取（避免 shell 历史泄漏以用于一次写入）。 在 docker-compose.yml 中： services: api: image: myapp environment: DATABASE_HOST: ${REDIACC_SECRET_DB_HOST} secrets: stripe_live_key secrets: stripe_live_key: file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY 小写服务端引用（stripe_live_key）是容器内 /run/secrets/<name> 文件名；主机路径尾部的大写（STRIPE_LIVE_KEY）与使用 --key 设置的内容匹配。${REDIACC_NETWORK_ID} 由 renet compose 自动插值。 跨仓库隔离执行：renet 的 compose 验证器拒绝引用任何其他仓库网络 ID 的 secrets: file:（以及 configs: file: 和 env_file:）路径。字面 ${REDIACC_NETWORK_ID} 令牌（或你自己网络的整数）是 /var/run/rediacc/secrets/... 引用的唯一接受形式。--unsafe 不会覆盖此检查。Rediaccfile bash 子进程周围的 Landlock 沙箱也仅将文件系统访问限定于你自己网络的密钥目录，所以来自 Rediaccfile 的恶意 cat /var/run/rediacc/secrets/<other>/X 在内核层面失败，错误码为 EACCES。 分支：rdc repo fork 不会复制密钥。要在分支中使用密钥，在分支上显式运行 rdc repo secret set <fork>。这是负载承载安全属性。分支的容器不应能在外部服务上充当生产主体。 代理 (Claude Code、Cursor 等)：repo secret list 和 repo secret get 作为 MCP 工具公开（读安全。仅名称和摘要，永不值）。set 和 unset 仅限 CLI，因为 --current/--rotate-secret 仪式需要人工审视；通过 shell 调用它们的代理获得与人类相同的门。前置条件失败时，JSON 封装包含结构化 errors[].next.options[].run 字段。代理应将这些命令逐字中继给用户。完整模型请参阅 AI 代理安全。",
     "excerpt": "每仓库密钥是部署时凭证，注入容器而不写入加密仓库镜像。它们与仓库数据保持在独立平面上，因此 rdc repo fork 不会传播它们。分支以空密钥映射开始，其容器启动时将自己标识为不同于父级的外部主体。 想要逐步演练？请参阅管理密钥教程了解完整的设置/列出/部署/验证/轮换周期。 仅写模型 (Git...",
     "category": "Documentation",
     "page": "/zh/docs/repositories",
@@ -10878,7 +10878,7 @@
   {
     "id": "search-17482",
     "content": "存储",
-    "body": "所有 Docker 数据都存储在加密仓库内, Docker 的 data-root 位于 LUKS 卷内的 {mount}/.rediacc/docker/data。命名卷、镜像和容器层全部加密、备份，并自动 fork。 推荐使用 ${REDIACC_WORKING_DIR}/... 绑定挂载以保持清晰，但命名卷也可以安全使用。 ``yaml volumes: ${REDIACC_WORKING_DIR}/data:/data # 绑定挂载（推荐） pgdata:/var/lib/postgresql/data # 命名卷（同样安全） ` LUKS 卷挂载在 /mnt/rediacc/mounts/<guid>/。 BTRFS 快照捕获整个 LUKS 后备文件，包括所有绑定挂载的数据。 数据存储是系统磁盘上固定大小的 BTRFS 池文件。使用 rdc machine query --name <name> --system 查看有效可用空间。使用 rdc datastore resize` 扩容。",
+    "body": "所有 Docker 数据都存储在加密仓库内, Docker 的 data-root 位于 LUKS 卷内的 {mount}/.rediacc/docker/data。命名卷、镜像和容器层全部加密、备份，并自动 fork。 推荐使用 ${REDIACC_WORKING_DIR}/... 绑定挂载以保持清晰，但命名卷也可以安全使用。 ``yaml volumes: ${REDIACC_WORKING_DIR}/data:/data # 绑定挂载（推荐） pgdata:/var/lib/postgresql/data # 命名卷（同样安全） ` LUKS 卷挂载在 /mnt/rediacc/mounts/<guid>/。 BTRFS 快照捕获整个 LUKS 后备文件，包括所有绑定挂载的数据。 数据存储是系统磁盘上固定大小的 BTRFS 池文件。使用 rdc machine status <name> --system 查看有效可用空间。使用 rdc datastore resize` 扩容。",
     "excerpt": "所有 Docker 数据都存储在加密仓库内, Docker 的 data-root 位于 LUKS 卷内的 {mount}/.rediacc/docker/data。命名卷、镜像和容器层全部加密、备份，并自动 fork。 推荐使用 ${REDIACC_WORKING_DIR}/... 绑定挂载以保持...",
     "category": "Documentation",
     "page": "/zh/docs/rules-of-rediacc",
@@ -10933,7 +10933,7 @@
   {
     "id": "search-17487",
     "content": "部署",
-    "body": "rdc repo up 如果 LUKS 卷未挂载则自动挂载，然后在所有 Rediaccfile 中执行 up()。 rdc repo down 执行 down() 并停止 Docker 守护进程。 rdc repo down --unmount 还会关闭 LUKS 卷（锁定加密存储）。 Fork（rdc repo fork）创建具有新 GUID 和 networkId 的 CoW（写时复制）克隆，耗时与仓库大小无关，是常数时间。BTRFS reflink 只复制镜像元数据而非数据，因此 100 GB 的仓库 fork 和 1 GB 的仓库 fork 一样只需几秒钟。Fork 共享父级的加密密钥。 接管（rdc repo takeover --name <fork> -m <machine>）将 grand 仓库的数据替换为 fork 的数据。Grand 保留其身份（GUID、networkId、域名、自动启动、备份链）。旧的生产数据作为备份 fork 保留。用途：在 fork 上测试升级，验证后接管到生产。使用 rdc repo takeover --name <backup-fork> -m <machine> 回滚。 代理路由在部署后约 3 秒后变为活跃。repo up 期间的 \"Proxy is not running\" 警告在 ops/dev 环境中是信息性的。 rdc repo up 和 rdc repo fork --up 会在部署结束时打印带有 rediacc.service_port 标签的服务的 URL 模式。将 {service} 替换为你暴露的服务名以获得确切的 URL。没有 rediacc.service_port 的服务（数据库、工作进程）不会获得路由，也不会显示。",
+    "body": "rdc repo up 如果 LUKS 卷未挂载则自动挂载，然后在所有 Rediaccfile 中执行 up()。 rdc repo down 执行 down() 并停止 Docker 守护进程。 rdc repo down --unmount 还会关闭 LUKS 卷（锁定加密存储）。 Fork（rdc repo fork）创建具有新 GUID 和 networkId 的 CoW（写时复制）克隆，耗时与仓库大小无关，是常数时间。BTRFS reflink 只复制镜像元数据而非数据，因此 100 GB 的仓库 fork 和 1 GB 的仓库 fork 一样只需几秒钟。Fork 共享父级的加密密钥。 接管（rdc repo promote <fork>）将 grand 仓库的数据替换为 fork 的数据。Grand 保留其身份（GUID、networkId、域名、自动启动、备份链）。旧的生产数据作为备份 fork 保留。用途：在 fork 上测试升级，验证后接管到生产。使用 rdc repo promote <backup-fork> 回滚。 代理路由在部署后约 3 秒后变为活跃。repo up 期间的 \"Proxy is not running\" 警告在 ops/dev 环境中是信息性的。 rdc repo up 和 rdc repo fork --up 会在部署结束时打印带有 rediacc.service_port 标签的服务的 URL 模式。将 {service} 替换为你暴露的服务名以获得确切的 URL。没有 rediacc.service_port 的服务（数据库、工作进程）不会获得路由，也不会显示。",
     "excerpt": "rdc repo up 如果 LUKS 卷未挂载则自动挂载，然后在所有 Rediaccfile 中执行 up()。 rdc repo down 执行 down() 并停止 Docker 守护进程。 rdc repo down --unmount 还会关闭 LUKS 卷（锁定加密存储）。 Fork（r...",
     "category": "Documentation",
     "page": "/zh/docs/rules-of-rediacc",
@@ -10944,7 +10944,7 @@
   {
     "id": "search-17488",
     "content": "常见错误",
-    "body": "使用 docker compose 而不是 renet compose，容器将无法获得网络隔离。 重启策略是安全的，renet 自动剥离它们，watchdog 处理恢复。 使用 privileged: true，没有必要，renet 会改为注入特定的 CRIU capabilities。 在持久配置文件中硬编码原始 IP，连接请使用服务名以保持 fork 隔离的完整性。 使用 rdc term connect -c 作为失败命令的变通方法，请改为报告 bug。 repo delete 执行完整清理，包括回环 IP 和 systemd 单元。运行 rdc machine prune --name <name> 清理旧版删除操作遗留的残余。",
+    "body": "使用 docker compose 而不是 renet compose，容器将无法获得网络隔离。 重启策略是安全的，renet 自动剥离它们，watchdog 处理恢复。 使用 privileged: true，没有必要，renet 会改为注入特定的 CRIU capabilities。 在持久配置文件中硬编码原始 IP，连接请使用服务名以保持 fork 隔离的完整性。 使用 rdc term connect -c 作为失败命令的变通方法，请改为报告 bug。 repo delete 执行完整清理，包括回环 IP 和 systemd 单元。运行 rdc machine prune <name> 清理旧版删除操作遗留的残余。",
     "excerpt": "使用 docker compose 而不是 renet compose，容器将无法获得网络隔离。 重启策略是安全的，renet 自动剥离它们，watchdog 处理恢复。 使用 privileged: true，没有必要，renet 会改为注入特定的 CRIU capabilities。 在持久配置...",
     "category": "Documentation",
     "page": "/zh/docs/rules-of-rediacc",
@@ -11391,7 +11391,7 @@
   {
     "id": "search-17529",
     "content": "容器恢复与重启策略",
-    "body": "renet 和 Docker 有意在如何处理容器重启方面存在分工。在调试容器为什么恢复或未能恢复时，理解这种分工很重要。 重启策略转换。 当您在 compose 文件中写入 restart: always（或 unless-stopped，或 on-failure）时，renet 在合成实际 compose 部署时会删除它，并用 restart: no 替换。原始值保存到仓库的 .rediacc.json 中 services.<name>.restart_policy 下。这可以防止 Docker 守护进程级别的自动重启干扰 CRIU 检查点/恢复（守护进程驱动的重启会从过时的检查点前状态恢复）。 看门狗执行。 路由器看门狗在每台机器上定期运行。每次滴答时： 读取每个仓库的 .rediacc.json，找到具有可恢复 restart_policy 的服务 列出该仓库守护进程的所有容器，识别已停止的容器，并按保存的策略重启它们。30 秒的宽限期防止与刚刚运行 docker stop 的操作员发生冲突 同一循环还处理 /var/run/rediacc/cold-backup-<guid>.running.json（参见冷备份语义）。列出的容器无论保存的策略如何都会重启，因为 sidecar 意味着\"renet 有意停止了这些容器，欠操作员一次重启\" 为什么 on-failure 看起来像坏掉了。 Docker 的 on-failure 策略仅在容器以非零代码退出时重启。来自 docker stop 或守护进程关闭的正常停止（exit 0）不是\"失败\"，不会触发重启，无论是通过 Docker 的原生逻辑还是看门狗的保存策略路径。冷备份 sidecar 是安全网：有意停止的任何容器都会重启，无论其策略如何。 如何解读运行时状态： docker inspect <container> → RestartPolicy.Name：对于 renet 管理的容器始终为 no。不要依赖这个来判断语义策略 仓库挂载根目录的 .rediacc.json → services.<name>.restart_policy：真实意图 docker ps --format '{{.Status}}'：运行时状态 如何修复偏差。 如果容器的 .rediacc.json 保存策略错误（例如，因为您编辑了 compose 但未重新创建容器），请重新运行 rdc repo up --name <repo> -m <machine>。容器将以更新的策略重新创建。 实验性： 基于冷备份 sidecar 的恢复和 rdc machine query 上的 --sync-certs 标志在 renet 0.9+ 中发布。旧版本仅依赖保存的 restart_policy 进行看门狗恢复，这可能在冷备份后使 on-failure 容器搁浅。 每个仓库的守护进程禁用了 Docker bridge 网络。 每个仓库的守护进程（FlavorRediacc）都配置了 \"bridge\": \"none\" 和 \"iptables\": false。在仓库 shell 内运行一个简单的 docker run <image> 仍然能启动容器，但该容器只有 loopback 接口，没有 DNS 或出站连接。这是设计使然，因为仓库之间的 loopback 隔离由 eBPF cgroup 钩子强制执行，而 bridge 容器会绕过这些钩子。生产服务应使用 renet compose（它会自动为您注入主机网络）；对于临时调试，请显式传递 --network host：docker run --rm --network host -it ubuntu bash。 每个用户的 Hub 守护进程（FlavorHub，用于开发环境）是例外：它们设置 bridge=\"docker0\"、iptables=true 和 live-restore=true，使用户运行的容器拥有正常的 bridge 网络和出站连接。 注意： Fork 仓库在父仓库子域下获得自动路由：{service}-fork-{tag}.{repo}.{machine}.{baseDomain}。自定义域名在 fork 中被跳过。",
+    "body": "renet 和 Docker 有意在如何处理容器重启方面存在分工。在调试容器为什么恢复或未能恢复时，理解这种分工很重要。 重启策略转换。 当您在 compose 文件中写入 restart: always（或 unless-stopped，或 on-failure）时，renet 在合成实际 compose 部署时会删除它，并用 restart: no 替换。原始值保存到仓库的 .rediacc.json 中 services.<name>.restart_policy 下。这可以防止 Docker 守护进程级别的自动重启干扰 CRIU 检查点/恢复（守护进程驱动的重启会从过时的检查点前状态恢复）。 看门狗执行。 路由器看门狗在每台机器上定期运行。每次滴答时： 读取每个仓库的 .rediacc.json，找到具有可恢复 restart_policy 的服务 列出该仓库守护进程的所有容器，识别已停止的容器，并按保存的策略重启它们。30 秒的宽限期防止与刚刚运行 docker stop 的操作员发生冲突 同一循环还处理 /var/run/rediacc/cold-backup-<guid>.running.json（参见冷备份语义）。列出的容器无论保存的策略如何都会重启，因为 sidecar 意味着\"renet 有意停止了这些容器，欠操作员一次重启\" 为什么 on-failure 看起来像坏掉了。 Docker 的 on-failure 策略仅在容器以非零代码退出时重启。来自 docker stop 或守护进程关闭的正常停止（exit 0）不是\"失败\"，不会触发重启，无论是通过 Docker 的原生逻辑还是看门狗的保存策略路径。冷备份 sidecar 是安全网：有意停止的任何容器都会重启，无论其策略如何。 如何解读运行时状态： docker inspect <container> → RestartPolicy.Name：对于 renet 管理的容器始终为 no。不要依赖这个来判断语义策略 仓库挂载根目录的 .rediacc.json → services.<name>.restart_policy：真实意图 docker ps --format '{{.Status}}'：运行时状态 如何修复偏差。 如果容器的 .rediacc.json 保存策略错误（例如，因为您编辑了 compose 但未重新创建容器），请重新运行 rdc repo up <repo>。容器将以更新的策略重新创建。 实验性： 基于冷备份 sidecar 的恢复和 rdc machine query 上的 --sync-certs 标志在 renet 0.9+ 中发布。旧版本仅依赖保存的 restart_policy 进行看门狗恢复，这可能在冷备份后使 on-failure 容器搁浅。 每个仓库的守护进程禁用了 Docker bridge 网络。 每个仓库的守护进程（FlavorRediacc）都配置了 \"bridge\": \"none\" 和 \"iptables\": false。在仓库 shell 内运行一个简单的 docker run <image> 仍然能启动容器，但该容器只有 loopback 接口，没有 DNS 或出站连接。这是设计使然，因为仓库之间的 loopback 隔离由 eBPF cgroup 钩子强制执行，而 bridge 容器会绕过这些钩子。生产服务应使用 renet compose（它会自动为您注入主机网络）；对于临时调试，请显式传递 --network host：docker run --rm --network host -it ubuntu bash。 每个用户的 Hub 守护进程（FlavorHub，用于开发环境）是例外：它们设置 bridge=\"docker0\"、iptables=true 和 live-restore=true，使用户运行的容器拥有正常的 bridge 网络和出站连接。 注意： Fork 仓库在父仓库子域下获得自动路由：{service}-fork-{tag}.{repo}.{machine}.{baseDomain}。自定义域名在 fork 中被跳过。",
     "excerpt": "renet 和 Docker 有意在如何处理容器重启方面存在分工。在调试容器为什么恢复或未能恢复时，理解这种分工很重要。 重启策略转换。 当您在 compose 文件中写入 restart: always（或 unless-stopped，或 on-failure）时，renet 在合成实际 com...",
     "category": "Documentation",
     "page": "/zh/docs/services",
@@ -11413,8 +11413,8 @@
   {
     "id": "search-17531",
     "content": "后台启动",
-    "body": "加上 --detach，命令在容器启动后即返回，不等待健康检查完成。启动过程在后台继续：代理持续重试上游连接，直到各服务就绪，路由自动恢复。可通过 rdc machine query --containers --name <machine> 查看进度。适合一次性临时分支和无需等待服务就绪即可进行下一步的脚本化流程。",
-    "excerpt": "加上 --detach，命令在容器启动后即返回，不等待健康检查完成。启动过程在后台继续：代理持续重试上游连接，直到各服务就绪，路由自动恢复。可通过 rdc machine query --containers --name <machine> 查看进度。适合一次性临时分支和无需等待服务就绪即可进行下...",
+    "body": "加上 --detach，命令在容器启动后即返回，不等待健康检查完成。启动过程在后台继续：代理持续重试上游连接，直到各服务就绪，路由自动恢复。可通过 rdc machine status <machine> --containers 查看进度。适合一次性临时分支和无需等待服务就绪即可进行下一步的脚本化流程。",
+    "excerpt": "加上 --detach，命令在容器启动后即返回，不等待健康检查完成。启动过程在后台继续：代理持续重试上游连接，直到各服务就绪，路由自动恢复。可通过 rdc machine status <machine> --containers 查看进度。适合一次性临时分支和无需等待服务就绪即可进行下一步的脚本化...",
     "category": "Documentation",
     "page": "/zh/docs/services",
     "path": "docs.services.content",
@@ -11600,7 +11600,7 @@
   {
     "id": "search-17548",
     "content": "在 compose 中使用按仓库的密钥",
-    "body": "上面 POSTGRES_PASSWORD: changeme 占位符对于教程来说没问题，但真实应用需要真实凭证。将它们提交到 compose 文件（或仓库内的 .env 文件）意味着 fork 也会继承它们。对于部署时凭证，请使用 rdc repo secret。值存储在加密仓库镜像之外，因此 fork 开始时具有空的密钥映射。 compose 中两种传递模式有效： env 模式。通过 ${REDIACC_SECRET_<KEY>} 在任何 environment: 值中进行内插。renet 封装器在部署时将值传递到容器的环境中。 file 模式。值输入到主机端 tmpfs 文件 /var/run/rediacc/secrets/<networkID>/<KEY>，您通过 Docker compose 的标准 secrets: 块将其挂载到容器中。容器读取 /run/secrets/<key>。对于任何敏感内容，请优先选择此模式。值永远不会出现在 docker inspect 或 /proc/<pid>/environ 中。 services: api: image: myregistry/api:latest environment: DATABASE_URL: ${REDIACC_SECRET_DATABASE_URL} secrets: stripe_live_key secrets: stripe_live_key: file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY 使用 rdc repo secret set --name <repo> --key DATABASE_URL --value <val> --mode env --current \"\" 和等效的文件模式来设定值。参阅仓库 - 密钥了解完整的操作方法和按仓库的密钥在速查表中了解命令参考。 跨仓库路径在验证时被拒绝。 指向另一仓库的 /var/run/rediacc/secrets/<other-networkID>/ 目录的 compose secrets: file:（或 configs: file:，或 env_file:）在 docker compose 运行前由 renet 封装器硬拒绝。--unsafe 不会覆盖。纵深防御：Rediaccfile shell 周围的 Landlock 沙箱限制读取到当前网络的密钥目录，因此即使绕过 YAML 验证器，来自 Rediaccfile bash 的 cat /var/run/rediacc/secrets/<other>/X 也会以 EACCES 失败。您无需选择加入；这对每个 repo up 都默认启用。",
+    "body": "上面 POSTGRES_PASSWORD: changeme 占位符对于教程来说没问题，但真实应用需要真实凭证。将它们提交到 compose 文件（或仓库内的 .env 文件）意味着 fork 也会继承它们。对于部署时凭证，请使用 rdc repo secret。值存储在加密仓库镜像之外，因此 fork 开始时具有空的密钥映射。 compose 中两种传递模式有效： env 模式。通过 ${REDIACC_SECRET_<KEY>} 在任何 environment: 值中进行内插。renet 封装器在部署时将值传递到容器的环境中。 file 模式。值输入到主机端 tmpfs 文件 /var/run/rediacc/secrets/<networkID>/<KEY>，您通过 Docker compose 的标准 secrets: 块将其挂载到容器中。容器读取 /run/secrets/<key>。对于任何敏感内容，请优先选择此模式。值永远不会出现在 docker inspect 或 /proc/<pid>/environ 中。 services: api: image: myregistry/api:latest environment: DATABASE_URL: ${REDIACC_SECRET_DATABASE_URL} secrets: stripe_live_key secrets: stripe_live_key: file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY 使用 rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current \"\" 和等效的文件模式来设定值。参阅仓库 - 密钥了解完整的操作方法和按仓库的密钥在速查表中了解命令参考。 跨仓库路径在验证时被拒绝。 指向另一仓库的 /var/run/rediacc/secrets/<other-networkID>/ 目录的 compose secrets: file:（或 configs: file:，或 env_file:）在 docker compose 运行前由 renet 封装器硬拒绝。--unsafe 不会覆盖。纵深防御：Rediaccfile shell 周围的 Landlock 沙箱限制读取到当前网络的密钥目录，因此即使绕过 YAML 验证器，来自 Rediaccfile bash 的 cat /var/run/rediacc/secrets/<other>/X 也会以 EACCES 失败。您无需选择加入；这对每个 repo up 都默认启用。",
     "excerpt": "上面 POSTGRES_PASSWORD: changeme 占位符对于教程来说没问题，但真实应用需要真实凭证。将它们提交到 compose 文件（或仓库内的 .env 文件）意味着 fork 也会继承它们。对于部署时凭证，请使用 rdc repo secret。值存储在加密仓库镜像之外，因此 fo...",
     "category": "Documentation",
     "page": "/zh/docs/services",
@@ -11719,7 +11719,7 @@
   {
     "id": "search-17559",
     "content": "测试 SSH 连接",
-    "body": "添加机器后，验证其是否可达： rdc term connect -m server-1 -c \"hostname\" 此命令打开到机器的 SSH 连接并运行命令。如果成功，您的 SSH 配置正确。 如需更详细的诊断，运行： rdc doctor 提示：要验证 SSH 连接，运行 rdc term connect -m <machine> -c \"hostname\" 或直接使用 ssh。",
+    "body": "添加机器后，验证其是否可达： rdc term connect -m server-1 -c \"hostname\" 此命令打开到机器的 SSH 连接并运行命令。如果成功，您的 SSH 配置正确。 如需更详细的诊断，运行： rdc doctor 提示：要验证 SSH 连接，运行 rdc term connect <machine> -c \"hostname\" 或直接使用 ssh。",
     "excerpt": "添加机器后，验证其是否可达： rdc term connect -m server-1 -c \"hostname\" 此命令打开到机器的 SSH 连接并运行命令。如果成功，您的 SSH 配置正确。 如需更详细的诊断，运行： rdc doctor 提示：要验证 SSH 连接，运行 rdc term co...",
     "category": "Documentation",
     "page": "/zh/docs/setup",
@@ -11970,7 +11970,7 @@
   {
     "id": "search-17582",
     "content": "虚拟机迁移宽限期",
-    "body": "当托管提供商将虚拟机迁移到不同的物理硬件时，机器 ID 会改变（它派生自 DMI UUID、/etc/machine-id 和 NIC MAC 地址等硬件标识符）。仓库许可证绑定到机器 ID，因此迁移通常会使所有许可证失效。 为了透明地处理这个问题，仓库许可证包含一个 40 天的机器 ID 宽限期。如果机器 ID 不匹配但许可证是在 40 天内发放的，许可证仍然被接受。由于许可证每 30 天刷新一次，下次刷新会自动绑定到新的机器 ID。 实际上： 虚拟机迁移，机器 ID 改变：仓库保持运行（在 40 天窗口内） 下一个 rdc 操作用新机器 ID 刷新许可证 无需手动干预 使用 rdc machine query --system --licenses --name <machine> 检查机器 ID 和许可证状态 Edge 渠道账户运行在 Community 计划上，限制为 2 倍（20 GB 仓库、每月 200 次设置、2 台机器）。付费计划仅在 Stable 渠道提供。详情请参阅 发布渠道。",
+    "body": "当托管提供商将虚拟机迁移到不同的物理硬件时，机器 ID 会改变（它派生自 DMI UUID、/etc/machine-id 和 NIC MAC 地址等硬件标识符）。仓库许可证绑定到机器 ID，因此迁移通常会使所有许可证失效。 为了透明地处理这个问题，仓库许可证包含一个 40 天的机器 ID 宽限期。如果机器 ID 不匹配但许可证是在 40 天内发放的，许可证仍然被接受。由于许可证每 30 天刷新一次，下次刷新会自动绑定到新的机器 ID。 实际上： 虚拟机迁移，机器 ID 改变：仓库保持运行（在 40 天窗口内） 下一个 rdc 操作用新机器 ID 刷新许可证 无需手动干预 使用 rdc machine status <machine> --system --licenses 检查机器 ID 和许可证状态 Edge 渠道账户运行在 Community 计划上，限制为 2 倍（20 GB 仓库、每月 200 次设置、2 台机器）。付费计划仅在 Stable 渠道提供。详情请参阅 发布渠道。",
     "excerpt": "当托管提供商将虚拟机迁移到不同的物理硬件时，机器 ID 会改变（它派生自 DMI UUID、/etc/machine-id 和 NIC MAC 地址等硬件标识符）。仓库许可证绑定到机器 ID，因此迁移通常会使所有许可证失效。 为了透明地处理这个问题，仓库许可证包含一个 40 天的机器 ID 宽限期。...",
     "category": "Documentation",
     "page": "/zh/docs/subscription-licensing",
@@ -12047,7 +12047,7 @@
   {
     "id": "search-17589",
     "content": "检查状态和刷新许可证",
-    "body": "人工登录： rdc subscription login 自动化或 AI 代理登录： rdc subscription login --token \"$REDIACC_SUBSCRIPTION_TOKEN\" 对于非交互式环境，设置 REDIACC_SUBSCRIPTION_TOKEN 是最简单的选项。令牌应仅限于代理所需的订阅和仓库许可证操作。 显示账户支持的订阅状态： rdc subscription status 显示一台机器的机器激活详情： rdc subscription activation status -m hostinger 显示一台机器上已安装的仓库许可证详情： rdc subscription repo status -m hostinger 在机器上批量刷新仓库许可证： rdc subscription refresh repos -m hostinger 在机器上发现但本地 rdc 配置中缺少的仓库在批量刷新期间被拒绝。它们被报告为失败，不会自动分类。 强制刷新现有仓库的仓库许可证： rdc subscription refresh repo --name my-app -m hostinger 首次使用时，找不到可用仓库许可证的已授权仓库或备份操作可以自动触发账户授权移交。CLI 打印授权 URL，在交互式终端中尝试打开浏览器，并在授权和发放成功后重试一次操作。 在非交互式环境中，CLI 不等待浏览器批准。相反，它告诉您使用 rdc subscription login --token ... 或 REDIACC_SUBSCRIPTION_TOKEN 提供范围受限的令牌。 有关机器首次设置，请参阅 机器设置。",
+    "body": "人工登录： rdc subscription login 自动化或 AI 代理登录： rdc subscription login --token \"$REDIACC_SUBSCRIPTION_TOKEN\" 对于非交互式环境，设置 REDIACC_SUBSCRIPTION_TOKEN 是最简单的选项。令牌应仅限于代理所需的订阅和仓库许可证操作。 显示账户支持的订阅状态： rdc subscription status 显示一台机器的机器激活详情： rdc subscription status -m hostinger 显示一台机器上已安装的仓库许可证详情： rdc subscription status -m hostinger 在机器上批量刷新仓库许可证： rdc subscription refresh repos -m hostinger 在机器上发现但本地 rdc 配置中缺少的仓库在批量刷新期间被拒绝。它们被报告为失败，不会自动分类。 强制刷新现有仓库的仓库许可证： rdc subscription refresh repo --name my-app -m hostinger 首次使用时，找不到可用仓库许可证的已授权仓库或备份操作可以自动触发账户授权移交。CLI 打印授权 URL，在交互式终端中尝试打开浏览器，并在授权和发放成功后重试一次操作。 在非交互式环境中，CLI 不等待浏览器批准。相反，它告诉您使用 rdc subscription login --token ... 或 REDIACC_SUBSCRIPTION_TOKEN 提供范围受限的令牌。 有关机器首次设置，请参阅 机器设置。",
     "excerpt": "人工登录： rdc subscription login 自动化或 AI 代理登录： rdc subscription login --token \"$REDIACC_SUBSCRIPTION_TOKEN\" 对于非交互式环境，设置 REDIACC_SUBSCRIPTION_TOKEN 是最简单的选项...",
     "category": "Documentation",
     "page": "/zh/docs/subscription-licensing",
@@ -12091,7 +12091,7 @@
   {
     "id": "search-17593",
     "content": "每月仓库许可证发放次数",
-    "body": "此指标统计当前 UTC 日历月内成功的账户支持仓库许可证发放活动。 包括： 首次仓库许可证发放 返回新签名许可证的成功仓库许可证刷新 不包括： 未更改的批量条目 失败的发放尝试 在发放前被拒绝的未追踪仓库 如果您需要面向客户的使用情况和近期仓库许可证发放历史视图，请使用账户门户。如果您需要机器端检查，请使用 rdc subscription activation status -m 和 rdc subscription repo status -m。",
+    "body": "此指标统计当前 UTC 日历月内成功的账户支持仓库许可证发放活动。 包括： 首次仓库许可证发放 返回新签名许可证的成功仓库许可证刷新 不包括： 未更改的批量条目 失败的发放尝试 在发放前被拒绝的未追踪仓库 如果您需要面向客户的使用情况和近期仓库许可证发放历史视图，请使用账户门户。如果您需要机器端检查，请使用 rdc subscription status -m 和 rdc subscription status -m。",
     "excerpt": "此指标统计当前 UTC 日历月内成功的账户支持仓库许可证发放活动。 包括： 首次仓库许可证发放 返回新签名许可证的成功仓库许可证刷新 不包括： 未更改的批量条目 失败的发放尝试 在发放前被拒绝的未追踪仓库 如果您需要面向客户的使用情况和近期仓库许可证发放历史视图，请使用账户门户。如果您需要机器端检查...",
     "category": "Documentation",
     "page": "/zh/docs/subscription-licensing",
@@ -12503,8 +12503,8 @@
   {
     "id": "search-17631",
     "content": "SSH 连接失败",
-    "body": "验证您可以手动连接：ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50 运行 rdc config machine scan-keys -m server-1 以刷新主机密钥 检查 SSH 端口是否匹配：--port 22 使用简单命令进行测试：rdc term connect -m server-1 -c \"hostname\"",
-    "excerpt": "验证您可以手动连接：ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50 运行 rdc config machine scan-keys -m server-1 以刷新主机密钥 检查 SSH 端口是否匹配：--port 22 使用简单命令进行测试：rdc term...",
+    "body": "验证您可以手动连接：ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50 运行 rdc machine scan-keys server-1 以刷新主机密钥 检查 SSH 端口是否匹配：--port 22 使用简单命令进行测试：rdc term connect server-1 -c \"hostname\"",
+    "excerpt": "验证您可以手动连接：ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50 运行 rdc machine scan-keys server-1 以刷新主机密钥 检查 SSH 端口是否匹配：--port 22 使用简单命令进行测试：rdc term connect s...",
     "category": "Documentation",
     "page": "/zh/docs/troubleshooting",
     "path": "docs.troubleshooting.content",
@@ -12514,8 +12514,8 @@
   {
     "id": "search-17632",
     "content": "主机密钥不匹配",
-    "body": "如果服务器被重新安装或其 SSH 密钥已更改，您将看到 \"host key verification failed\"： rdc config machine scan-keys -m server-1 此命令获取新的主机密钥并更新您的配置。",
-    "excerpt": "如果服务器被重新安装或其 SSH 密钥已更改，您将看到 \"host key verification failed\"： rdc config machine scan-keys -m server-1 此命令获取新的主机密钥并更新您的配置。",
+    "body": "如果服务器被重新安装或其 SSH 密钥已更改，您将看到 \"host key verification failed\"： rdc machine scan-keys server-1 此命令获取新的主机密钥并更新您的配置。",
+    "excerpt": "如果服务器被重新安装或其 SSH 密钥已更改，您将看到 \"host key verification failed\"： rdc machine scan-keys server-1 此命令获取新的主机密钥并更新您的配置。",
     "category": "Documentation",
     "page": "/zh/docs/troubleshooting",
     "path": "docs.troubleshooting.content",
@@ -12525,8 +12525,8 @@
   {
     "id": "search-17633",
     "content": "机器设置失败",
-    "body": "确保 SSH 用户具有无密码的 sudo 访问权限，或为所需命令配置 NOPASSWD 检查服务器上的可用磁盘空间 使用 --debug 运行以获取详细输出：rdc config machine setup --name server-1 --debug",
-    "excerpt": "确保 SSH 用户具有无密码的 sudo 访问权限，或为所需命令配置 NOPASSWD 检查服务器上的可用磁盘空间 使用 --debug 运行以获取详细输出：rdc config machine setup --name server-1 --debug",
+    "body": "确保 SSH 用户具有无密码的 sudo 访问权限，或为所需命令配置 NOPASSWD 检查服务器上的可用磁盘空间 使用 --debug 运行以获取详细输出：rdc machine setup server-1 --debug",
+    "excerpt": "确保 SSH 用户具有无密码的 sudo 访问权限，或为所需命令配置 NOPASSWD 检查服务器上的可用磁盘空间 使用 --debug 运行以获取详细输出：rdc machine setup server-1 --debug",
     "category": "Documentation",
     "page": "/zh/docs/troubleshooting",
     "path": "docs.troubleshooting.content",
@@ -12646,8 +12646,8 @@
   {
     "id": "search-17644",
     "content": "VS Code 在沙箱文件上 Permission Denied",
-    "body": "在之前的 VS Code 会话之后使用 rdc vscode connect -m <machine> -r <repo> 连接时，旧版 renet 会产生类似 scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied 的错误。原因是：沙箱目录内存在混合的文件所有权，您的 SSH 用户和内部 rediacc 用户都写入了文件。 较新版本的 renet 通过以下方式修复了这个问题： 使用组 rediacc 和 set-group-ID 位（模式 2775）创建每仓库的沙箱工作区（/mnt/rediacc/.interim/sandbox/<repo>/），这样在其下写入的每个文件都会继承正确的组。 在沙箱运行时内应用 umask 002，使新文件以组可写的方式（0664/0775）创建。 在启动时规范化现有的 .vscode-server/ 子树，使修复前遗留的过期文件自动得到修复。 如果您仍然看到权限错误，请从机器上的 shell 使用 sudo systemctl restart rediacc-docker-<network-id> 重启仓库的 Docker daemon 一次，以便运行规范化过程，然后重试 rdc vscode connect。",
-    "excerpt": "在之前的 VS Code 会话之后使用 rdc vscode connect -m <machine> -r <repo> 连接时，旧版 renet 会产生类似 scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied 的错误。原因...",
+    "body": "在之前的 VS Code 会话之后使用 rdc vscode connect <repo> 连接时，旧版 renet 会产生类似 scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied 的错误。原因是：沙箱目录内存在混合的文件所有权，您的 SSH 用户和内部 rediacc 用户都写入了文件。 较新版本的 renet 通过以下方式修复了这个问题： 使用组 rediacc 和 set-group-ID 位（模式 2775）创建每仓库的沙箱工作区（/mnt/rediacc/.interim/sandbox/<repo>/），这样在其下写入的每个文件都会继承正确的组。 在沙箱运行时内应用 umask 002，使新文件以组可写的方式（0664/0775）创建。 在启动时规范化现有的 .vscode-server/ 子树，使修复前遗留的过期文件自动得到修复。 如果您仍然看到权限错误，请从机器上的 shell 使用 sudo systemctl restart rediacc-docker-<network-id> 重启仓库的 Docker daemon 一次，以便运行规范化过程，然后重试 rdc vscode connect。",
+    "excerpt": "在之前的 VS Code 会话之后使用 rdc vscode connect <repo> 连接时，旧版 renet 会产生类似 scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied 的错误。原因是：沙箱目录内存在混合的文件所有...",
     "category": "Documentation",
     "page": "/zh/docs/troubleshooting",
     "path": "docs.troubleshooting.content",
@@ -13922,7 +13922,7 @@
   {
     "id": "search-17762",
     "content": "第 11 步：Fork 甚至无法启动",
-    "body": "部署故意失败：bind source path does not exist: /var/run/rediacc/secrets/<fork-id>/STRIPE_KEY。密钥文件存在于父仓库的网络 ID 下，而非 fork 的，因此 Docker 拒绝挂载。这个失败就是演示本身：生产凭据永远不会跟随 fork，哪怕是意外。 如果你想在 fork 中使用密钥进行测试，用沙盒值在 fork 上单独设置，例如 rdc repo secret set --name my-app:test --key STRIPE_KEY --value sk_sandbox_yyy --mode file。这样 fork 与 Stripe 沙盒通信，可以正常启动。生产凭据从未离开生产环境。",
+    "body": "部署故意失败：bind source path does not exist: /var/run/rediacc/secrets/<fork-id>/STRIPE_KEY。密钥文件存在于父仓库的网络 ID 下，而非 fork 的，因此 Docker 拒绝挂载。这个失败就是演示本身：生产凭据永远不会跟随 fork，哪怕是意外。 如果你想在 fork 中使用密钥进行测试，用沙盒值在 fork 上单独设置，例如 rdc repo secret set my-app:test --key STRIPE_KEY --value sk_sandbox_yyy --mode file。这样 fork 与 Stripe 沙盒通信，可以正常启动。生产凭据从未离开生产环境。",
     "excerpt": "部署故意失败：bind source path does not exist: /var/run/rediacc/secrets/<fork-id>/STRIPE_KEY。密钥文件存在于父仓库的网络 ID 下，而非 fork 的，因此 Docker 拒绝挂载。这个失败就是演示本身：生产凭据永远不会跟...",
     "category": "Documentation",
     "page": "/zh/docs/tutorial-managing-secrets",
@@ -14202,8 +14202,8 @@
   {
     "id": "search-17788",
     "content": "开发模式 vs 生产模式",
-    "body": "区别很简单： renet dev up 在仓库内部运行，需要保持连接。 rdc repo up 从笔记本运行，之后不需要保持连接。 三个操作将你从开发带到生产： 停止、启动、自动启动 如果仓库内还有正在运行的 renet dev up 会话，先用 rdc vscode connect -m my-server -r my-app 连接进去，再执行 renet dev down 将其关闭。之后，所有操作完全由笔记本驱动。",
-    "excerpt": "区别很简单： renet dev up 在仓库内部运行，需要保持连接。 rdc repo up 从笔记本运行，之后不需要保持连接。 三个操作将你从开发带到生产： 停止、启动、自动启动 如果仓库内还有正在运行的 renet dev up 会话，先用 rdc vscode connect -m my-s...",
+    "body": "区别很简单： renet dev up 在仓库内部运行，需要保持连接。 rdc repo up 从笔记本运行，之后不需要保持连接。 三个操作将你从开发带到生产： 停止、启动、自动启动 如果仓库内还有正在运行的 renet dev up 会话，先用 rdc vscode connect my-app 连接进去，再执行 renet dev down 将其关闭。之后，所有操作完全由笔记本驱动。",
+    "excerpt": "区别很简单： renet dev up 在仓库内部运行，需要保持连接。 rdc repo up 从笔记本运行，之后不需要保持连接。 三个操作将你从开发带到生产： 停止、启动、自动启动 如果仓库内还有正在运行的 renet dev up 会话，先用 rdc vscode connect my-app...",
     "category": "Documentation",
     "page": "/zh/docs/tutorial-production-mode",
     "path": "docs.tutorial-production-mode.content",
@@ -14526,8 +14526,8 @@
   {
     "id": "search-17818",
     "content": "第三步：边界是真实存在的",
-    "body": "这些拒绝来自内核，不是配置。无论沙盒内运行什么（编辑器、终端、构建工具、AI 智能体），都止步于仓库的边界。 本地 VS Code？ rdc vscode connect -r my-app -m server-1（不加 --browser）会通过 Remote-SSH 在你已安装的 VS Code 中打开同一个仓库。 --- 下一篇：Fork 仓库。",
-    "excerpt": "这些拒绝来自内核，不是配置。无论沙盒内运行什么（编辑器、终端、构建工具、AI 智能体），都止步于仓库的边界。 本地 VS Code？ rdc vscode connect -r my-app -m server-1（不加 --browser）会通过 Remote-SSH 在你已安装的 VS Code...",
+    "body": "这些拒绝来自内核，不是配置。无论沙盒内运行什么（编辑器、终端、构建工具、AI 智能体），都止步于仓库的边界。 本地 VS Code？ rdc vscode connect my-app（不加 --browser）会通过 Remote-SSH 在你已安装的 VS Code 中打开同一个仓库。 --- 下一篇：Fork 仓库。",
+    "excerpt": "这些拒绝来自内核，不是配置。无论沙盒内运行什么（编辑器、终端、构建工具、AI 智能体），都止步于仓库的边界。 本地 VS Code？ rdc vscode connect my-app（不加 --browser）会通过 Remote-SSH 在你已安装的 VS Code 中打开同一个仓库。 ---...",
     "category": "Documentation",
     "page": "/zh/docs/tutorial-vscode-browser",
     "path": "docs.tutorial-vscode-browser.content",

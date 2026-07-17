@@ -306,7 +306,7 @@ Delta transfer applies only between machines (a remote with the FIEMAP base). Pu
 
 ## JSON schema
 
-`rdc repo log --json` wraps the renet result in the standard envelope. The walked history lives in `entries`, newest first:
+`rdc repo log <repo> --output json` wraps the renet result in the standard envelope. The walked history lives in `entries`, newest first:
 
 | Field | Type | Description |
 |-------|------|-------------|

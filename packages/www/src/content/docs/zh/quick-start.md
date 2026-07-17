@@ -4,7 +4,7 @@ description: 几分钟内在您的服务器上运行容器化服务。
 category: Guides
 order: -1
 language: zh
-sourceHash: "afd4d22ddc8e02e1"
+sourceHash: "866251eee417b1d4"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -112,7 +112,7 @@ rdc repo status --name my-app -m my-server  # 挂载状态、Docker、大小、�
 ### 4. VS Code
 
 ```bash
-rdc vscode connect -m my-server -r my-app              # 打开 VS Code SSH，进入仓库沙箱
+rdc vscode connect my-app              # 打开 VS Code SSH，进入仓库沙箱
 ```
 
 您正在加密卷*内部*编辑文件。`docker ps` 只显示此仓库的容器。保存、compose up、迭代。
@@ -126,7 +126,7 @@ rdc vscode connect -m my-server -r my-app              # 打开 VS Code SSH，�
 | **使用场景** | CI/CD、自动化、远程运维 | 开发者内循环 |
 | **隔离性** | 从外部编排 | 已在沙箱内部 |
 
-**演示流程：** `rdc repo template apply` → `rdc vscode connect -m my-server -r my-app` → 编辑 `docker-compose.yml` → `renet dev up` → 看到应用运行 → 迭代。
+**演示流程：** `rdc repo template apply` → `rdc vscode connect my-app` → 编辑 `docker-compose.yml` → `renet dev up` → 看到应用运行 → 迭代。
 
 > Rediaccfile 结构：[服务](/en/docs/services)。何时使用哪个工具：[rdc vs renet](/en/docs/rdc-vs-renet)。
 

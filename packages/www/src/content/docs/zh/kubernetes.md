@@ -4,7 +4,7 @@ description: "以 Rediacc 的仓库理念运行 Kubernetes：将一个正在运�
 category: "Guides"
 order: 6
 language: zh
-sourceHash: "56e1f177e8f4ef41"
+sourceHash: "d36c468ae2350e25"
 sourceCommit: "4401262fffbf29b9480dee8ecd209013e4b87f60"
 ---
 
@@ -19,7 +19,7 @@ Kubernetes 运行在经认证的 Kubernetes 发行版 [k3s](https://k3s.io/) 之
 Rediacc 反转了通常"集群包裹一切"的图景，使仓库理念依然适用：
 
 - **集群就是容器。** 一台机器可以承载 Docker 仓库（不变）和/或集群。单机上的单节点集群在集群这一层保留了"一个文件搬动整个系统"的特性。集群状态（k3s 数据目录：其内嵌数据存储和 containerd）存储在由数据存储支持的写时复制镜像文件中，每个节点一个，k3s 的 `--data-dir` 绑定在镜像挂载点内部。
-- **Kubernetes 仓库就是一个命名空间。** `rdc repo create --cluster <name>` 创建一个仓库，其运行时归属为该集群内的 Kubernetes 命名空间 `<repo>`。
+- **Kubernetes 仓库就是一个命名空间。** `rdc repo create <repo> -m <name>` 创建一个仓库，其运行时归属为该集群内的 Kubernetes 命名空间 `<repo>`。
 - **持久卷是独立的写时复制单元。** PV 是 Ceph 上的 RBD 镜像，或在本地后端通过 renet 本地 PV 供应器提供的小型数据存储镜像文件。它们绝不是单一不透明集群镜像内部的目录：内部文件系统没有 reflink，因此独立的按仓库 fork 需要独立的 PV 镜像。
 
 正是这种拆分使得两个承诺能够同时在物理上实现：**始终写时复制的命名空间 fork**（每个仓库的数据独立克隆）和**整集群的可移植性**（集群镜像加上每个 PV 镜像一起迁移）。
@@ -97,7 +97,7 @@ rdc repo sync upload --cluster prod -r shop --local ./config
 rdc cluster kubeconfig --name prod           # 导出 KUBECONFIG，然后直接使用 kubectl
 ```
 
-集群节点同样会在 `resources.machines` 中具体化，因此您可以用普通的 `rdc term connect -m <cluster>-<pool>-<n>` 通过 SSH 连接到特定节点。
+集群节点同样会在 `resources.machines` 中具体化，因此您可以用普通的 `rdc term connect <cluster>-<pool>-<n>` 通过 SSH 连接到特定节点。
 
 ### 双运行时 Rediaccfile
 

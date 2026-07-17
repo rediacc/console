@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 41
 language: it
-sourceHash: "2448559f0fcfc0e0"
+sourceHash: "fe334c1c94a0f417"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -308,7 +308,7 @@ Il trasferimento delta si applica solo tra macchine (un remoto con la base FIEMA
 
 ## Schema JSON
 
-`rdc repo log --json` avvolge il risultato di renet nell'envelope standard. La storia percorsa si trova in `entries`, dal più recente al meno recente:
+`rdc repo log <repo> --output json` avvolge il risultato di renet nell'envelope standard. La storia percorsa si trova in `entries`, dal più recente al meno recente:
 
 | Campo | Tipo | Descrizione |
 |-------|------|-------------|

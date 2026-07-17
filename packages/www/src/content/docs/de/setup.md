@@ -4,7 +4,7 @@ description: "Konfiguration erstellen, Maschinen hinzufügen, Server provisionie
 category: "Guides"
 order: 3
 language: de
-sourceHash: "730a353fc046b7cc"
+sourceHash: "1fba8ac242726528"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -132,7 +132,7 @@ Für eine detailliertere Diagnose führen Sie aus:
 rdc doctor
 ```
 
-> **Tipp**: Um die SSH-Konnektivität zu prüfen, führen Sie `rdc term connect -m <machine> -c "hostname"` aus oder verwenden Sie direkt `ssh`.
+> **Tipp**: Um die SSH-Konnektivität zu prüfen, führen Sie `rdc term connect <machine> -c "hostname"` aus oder verwenden Sie direkt `ssh`.
 
 ## Infrastruktur-Konfiguration
 

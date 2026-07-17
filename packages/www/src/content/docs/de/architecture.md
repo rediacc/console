@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: de
-sourceHash: "83f6a9a2b0c8bae2"
+sourceHash: "b1f9e2e3bba92912"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -43,7 +43,7 @@ Der gesamte Zustand liegt in einer Konfigurationsdatei auf Ihrer Workstation (z.
 
 - Direkte SSH-Verbindungen zu Maschinen
 - Keine externen Dienste erforderlich
-- Die Standardkonfiguration wird beim ersten CLI-Aufruf automatisch erstellt. Benannte Konfigurationen werden mit `rdc config init --name <name>` erstellt
+- Die Standardkonfiguration wird beim ersten CLI-Aufruf automatisch erstellt. Benannte Konfigurationen werden mit `rdc config init <name>` erstellt
 - Optionale verschlüsselte Config-Synchronisation speichert dieselbe Datei im Config Store, team-spezifisch
 
 ## Der rediacc-Benutzer
@@ -84,7 +84,7 @@ Das bedeutet:
 
 Rediaccfile-Funktionen haben automatisch `DOCKER_HOST` auf den korrekten Socket gesetzt.
 
-Wenn ein KI-Agent über `rdc term connect -r <repo>` ein Repository betritt, gilt dieselbe Isolation: Die Sitzung läuft als unprivilegierter `rediacc`-Benutzer (UID 7111), in einem eigenen Mount-Namespace, mit `DOCKER_HOST`, das auf den Daemon-Socket dieses einen Repositories beschränkt ist. Der Fork-First-Workflow kombiniert diese Laufzeitisolation mit einer CoW-Klon-Primitive: Der Agent arbeitet auf einem Fork pro Aufgabe, niemals auf Grand-Repositories (Produktion). Siehe [KI-Agent-Sicherheit & Schutzmaßnahmen](/en/docs/ai-agents-safety) für das vollständige Sandbox-Modell, die Überschreibungssemantik und die Entwicklerverantwortungsgrenze für Anmeldedaten externer Dienste.
+Wenn ein KI-Agent über `rdc term connect <repo>` ein Repository betritt, gilt dieselbe Isolation: Die Sitzung läuft als unprivilegierter `rediacc`-Benutzer (UID 7111), in einem eigenen Mount-Namespace, mit `DOCKER_HOST`, das auf den Daemon-Socket dieses einen Repositories beschränkt ist. Der Fork-First-Workflow kombiniert diese Laufzeitisolation mit einer CoW-Klon-Primitive: Der Agent arbeitet auf einem Fork pro Aufgabe, niemals auf Grand-Repositories (Produktion). Siehe [KI-Agent-Sicherheit & Schutzmaßnahmen](/en/docs/ai-agents-safety) für das vollständige Sandbox-Modell, die Überschreibungssemantik und die Entwicklerverantwortungsgrenze für Anmeldedaten externer Dienste.
 
 ### Daemon-Pfadstruktur
 

@@ -4,7 +4,7 @@ description: "Crea una config, aggiungi macchine, esegui il provisioning dei ser
 category: "Guides"
 order: 3
 language: it
-sourceHash: "730a353fc046b7cc"
+sourceHash: "1fba8ac242726528"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -132,7 +132,7 @@ Per una diagnostica più dettagliata, esegui:
 rdc doctor
 ```
 
-> **Suggerimento**: per verificare la connettività SSH, esegui `rdc term connect -m <machine> -c "hostname"` oppure usa `ssh` direttamente.
+> **Suggerimento**: per verificare la connettività SSH, esegui `rdc term connect <machine> -c "hostname"` oppure usa `ssh` direttamente.
 
 ## Configurazione dell'infrastruttura
 

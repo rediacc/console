@@ -4,7 +4,7 @@ description: "Faça backup de repositórios encriptados para qualquer armazename
 category: "Guides"
 order: 7
 language: pt
-sourceHash: "7ff112c2ec14c35f"
+sourceHash: "50b357f812a9337c"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -177,8 +177,8 @@ Um backup cold corre em três fases por repositório incluído: **parar -> snaps
 
 **Como os operadores detetam falhas:**
 
-- `rdc machine query --name <machine> --containers` mostra o estado de execução. Compare com o conjunto esperado.
-- `/var/run/rediacc/cold-backup-<guid>.status.json` na máquina. Inspecione via `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` com um `startedAt` desatualizado significa que o último backup não completou de forma limpa.
+- `rdc machine status <machine> --containers` mostra o estado de execução. Compare com o conjunto esperado.
+- `/var/run/rediacc/cold-backup-<guid>.status.json` na máquina. Inspecione via `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` com um `startedAt` desatualizado significa que o último backup não completou de forma limpa.
 - Os logs da execução de backup do renet (`journalctl -u renet-*` ou a invocação direta de `rdc machine backup schedule`) emitem uma linha de resumo final da forma `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Um `failed_repos` não vazio é o alvo do grep.
 
 ### Estimar o Downtime do Backup Cold
@@ -302,7 +302,7 @@ Na sua configuração, associe um ou mais nomes de estratégia a uma máquina:
 }
 ```
 
-> **A vinculação é apenas configuração local.** Definir uma estratégia e vinculá-la a uma máquina não afeta a máquina. Execute `rdc machine backup schedule -m <machine>` (consulte [Implementar Agendamento na Máquina](#implementar-agendamento-na-maquina)) para implantar os temporizadores systemd, e execute novamente após qualquer alteração de estratégia ou vinculação.
+> **A vinculação é apenas configuração local.** Definir uma estratégia e vinculá-la a uma máquina não afeta a máquina. Execute `rdc backup schedule -m <machine>` (consulte [Implementar Agendamento na Máquina](#implementar-agendamento-na-maquina)) para implantar os temporizadores systemd, e execute novamente após qualquer alteração de estratégia ou vinculação.
 
 ## Escolher entre Hot e Cold e Filtragem por Repositório
 

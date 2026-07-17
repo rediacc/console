@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: es
-sourceHash: "83f6a9a2b0c8bae2"
+sourceHash: "b1f9e2e3bba92912"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -43,7 +43,7 @@ Todo el estado reside en un archivo de configuración en tu estación de trabajo
 
 - Conexiones SSH directas a las máquinas
 - No se requieren servicios externos
-- La configuración predeterminada se crea automáticamente en el primer uso de la CLI. Las configuraciones con nombre se crean con `rdc config init --name <name>`
+- La configuración predeterminada se crea automáticamente en el primer uso de la CLI. Las configuraciones con nombre se crean con `rdc config init <name>`
 - La sincronización de configuración cifrada opcional almacena el mismo archivo en el almacén de configuración, con alcance por equipo
 
 ## El Usuario rediacc
@@ -84,7 +84,7 @@ Esto significa:
 
 Las funciones del Rediaccfile tienen automáticamente `DOCKER_HOST` configurado al socket correcto.
 
-Cuando un agente de IA entra en un repositorio mediante `rdc term connect -r <repo>`, se aplica el mismo aislamiento: la sesión se ejecuta como el usuario sin privilegios `rediacc` (UID 7111), en un espacio de nombres de montaje distinto, con `DOCKER_HOST` limitado al socket del daemon de ese único repositorio. El flujo de trabajo basado en bifurcación combina este aislamiento en tiempo de ejecución con una primitiva de clonación CoW: el agente opera sobre una bifurcación por tarea, nunca sobre repositorios grand (de producción). Consulta [Seguridad y salvaguardas para agentes de IA](/en/docs/ai-agents-safety) para conocer el modelo completo de sandbox, la semántica de las anulaciones y el límite de responsabilidad del desarrollador respecto a las credenciales de servicios externos.
+Cuando un agente de IA entra en un repositorio mediante `rdc term connect <repo>`, se aplica el mismo aislamiento: la sesión se ejecuta como el usuario sin privilegios `rediacc` (UID 7111), en un espacio de nombres de montaje distinto, con `DOCKER_HOST` limitado al socket del daemon de ese único repositorio. El flujo de trabajo basado en bifurcación combina este aislamiento en tiempo de ejecución con una primitiva de clonación CoW: el agente opera sobre una bifurcación por tarea, nunca sobre repositorios grand (de producción). Consulta [Seguridad y salvaguardas para agentes de IA](/en/docs/ai-agents-safety) para conocer el modelo completo de sandbox, la semántica de las anulaciones y el límite de responsabilidad del desarrollador respecto a las credenciales de servicios externos.
 
 ### Estructura de Rutas del Daemon
 

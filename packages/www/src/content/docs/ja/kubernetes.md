@@ -4,7 +4,7 @@ description: "Rediaccのリポジトリの考え方でKubernetesを運用する:
 category: "Guides"
 order: 6
 language: ja
-sourceHash: "56e1f177e8f4ef41"
+sourceHash: "d36c468ae2350e25"
 sourceCommit: "4401262fffbf29b9480dee8ecd209013e4b87f60"
 ---
 
@@ -19,7 +19,7 @@ Kubernetesは、認定Kubernetesディストリビューションである[k3s](
 Rediaccは、リポジトリの考え方が引き続き成り立つように、通常の「クラスターがすべてを包む」という図式を反転させます。
 
 - **クラスターがコンテナです。** マシンはDockerリポジトリ(変更なし)や、クラスターをホストします。1台のマシン上のシングルノードクラスターは、クラスターレベルでも「1つのファイルがシステム全体を移動する」という物語を保ちます。クラスターの状態(k3sのデータディレクトリ: その組み込みデータストアとcontainerd)は、ノードごとにデータストアに支えられたcopy-on-writeイメージファイルに存在し、k3sの `--data-dir` はイメージのマウント内にバインドされます。
-- **Kubernetesリポジトリはnamespaceです。** `rdc repo create --cluster <name>` は、そのクラスター内のKubernetes namespace `<repo>` を実行の場とするリポジトリを作成します。
+- **Kubernetesリポジトリはnamespaceです。** `rdc repo create <repo> -m <name>` は、そのクラスター内のKubernetes namespace `<repo>` を実行の場とするリポジトリを作成します。
 - **永続ボリュームは別個のcopy-on-writeユニットです。** PVはCeph上のRBDイメージか、ローカルバックエンドではローカルPVプロビジョナーによる小さなデータストアイメージファイルです。1つの不透明なクラスターイメージ内のディレクトリになることは決してありません。内部のファイルシステムにはreflinkがないため、独立したリポジトリフォークには独立したPVイメージが必要です。
 
 この分離こそが、両方の約束を同時に物理的に可能にしています。**常にcopy-on-writeなnamespaceフォーク**(各リポジトリのデータが独立してクローンされる)と、**クラスター全体の可搬性**(クラスターイメージと各PVイメージがまとめて移動する)です。
@@ -97,7 +97,7 @@ rdc repo sync upload --cluster prod -r shop --local ./config
 rdc cluster kubeconfig --name prod           # KUBECONFIGをエクスポートし、そのままkubectlを使う
 ```
 
-クラスターノードも `resources.machines` に実体化されるため、通常の `rdc term connect -m <cluster>-<pool>-<n>` で特定のノードにSSH接続できます。
+クラスターノードも `resources.machines` に実体化されるため、通常の `rdc term connect <cluster>-<pool>-<n>` で特定のノードにSSH接続できます。
 
 ### デュアルランタイムのRediaccfile
 

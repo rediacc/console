@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 41
 language: et
-sourceHash: "2448559f0fcfc0e0"
+sourceHash: "fe334c1c94a0f417"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -308,7 +308,7 @@ Delta edastamine rakendub ainult masinate vahel (kaugarvutiga, millel on FIEMAP 
 
 ## JSON-skeem
 
-`rdc repo log --json` mähib renet-i tulemuse standardümbrikusse. Jalutatud ajalugu elab `entries`-is, uusimast esimesena:
+`rdc repo log <repo> --output json` mähib renet-i tulemuse standardümbrikusse. Jalutatud ajalugu elab `entries`-is, uusimast esimesena:
 
 | Väli | Tüüp | Kirjeldus |
 |-------|------|-------------|

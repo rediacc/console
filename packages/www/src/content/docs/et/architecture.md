@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: et
-sourceHash: "83f6a9a2b0c8bae2"
+sourceHash: "b1f9e2e3bba92912"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -43,7 +43,7 @@ Kogu olek elab tööjaamal konfiguratsioonifailis (nt `~/.config/rediacc/rediacc
 
 - Otsesed SSH-ühendused masinatega
 - Väliseid teenuseid ei nõuta
-- Vaikimisi konfiguratsioon luuakse automaatselt CLI esimesel kasutamisel. Nimetatud konfiguratsioonid luuakse käsuga `rdc config init --name <name>`
+- Vaikimisi konfiguratsioon luuakse automaatselt CLI esimesel kasutamisel. Nimetatud konfiguratsioonid luuakse käsuga `rdc config init <name>`
 - Valikuline krüpteeritud konfiguratsiooni sünkroonimine salvestab sama faili konfiguratsioonisalves, meeskonnapõhiselt piiritletuna
 
 ## Kasutaja rediacc
@@ -84,7 +84,7 @@ See tähendab:
 
 Rediaccfile'i funktsioonidel on automaatselt `DOCKER_HOST` seatud õigele pistikupesale.
 
-Kui AI agent siseneb repositooriumisse käsuga `rdc term connect -r <repo>`, kehtib sama isoleerimine: seanss töötab väheste õigustega kasutajana `rediacc` (UID 7111), eraldiseisvas ühenduspunkt-nimeruumis, kusjuures `DOCKER_HOST` on piiratud selle ühe repo daemoni pistikupesaga. Fork-esmane töövoog ühendab selle käitusaegse isoleerimise CoW-kloonimise primitiiviga: agent tegutseb ülesandekohase fork'i peal, mitte grand (tootmis) repositooriumides. Täieliku liivakastimudeli, ülekatte semantika ja arendaja vastutuse piiri väliste teenuste volituste osas vaata [AI agendi ohutus ja turvamehhanismid](/et/docs/ai-agents-safety).
+Kui AI agent siseneb repositooriumisse käsuga `rdc term connect <repo>`, kehtib sama isoleerimine: seanss töötab väheste õigustega kasutajana `rediacc` (UID 7111), eraldiseisvas ühenduspunkt-nimeruumis, kusjuures `DOCKER_HOST` on piiratud selle ühe repo daemoni pistikupesaga. Fork-esmane töövoog ühendab selle käitusaegse isoleerimise CoW-kloonimise primitiiviga: agent tegutseb ülesandekohase fork'i peal, mitte grand (tootmis) repositooriumides. Täieliku liivakastimudeli, ülekatte semantika ja arendaja vastutuse piiri väliste teenuste volituste osas vaata [AI agendi ohutus ja turvamehhanismid](/et/docs/ai-agents-safety).
 
 ### Daemoni teekava paigutus
 

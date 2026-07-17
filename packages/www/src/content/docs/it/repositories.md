@@ -4,7 +4,7 @@ description: "Crea, gestisci e opera repository cifrati con LUKS su macchine rem
 category: "Guides"
 order: 4
 language: it
-sourceHash: "0f08c5b75c3588cc"
+sourceHash: "cc8733d3419b09f6"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -156,7 +156,7 @@ rdc repo fork --parent my-app --tag staging -m server-1 --up
 rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
 ```
 
-Nei nostri test, un repository da 128 GB ha completato il fork e raggiunto i servizi in esecuzione in circa 57 secondi, e circa 31 secondi con `--detach`. Le esecuzioni in modalità distaccata stampano un suggerimento per verificare l'avanzamento: `rdc machine query --containers --name <machine>`.
+Nei nostri test, un repository da 128 GB ha completato il fork e raggiunto i servizi in esecuzione in circa 57 secondi, e circa 31 secondi con `--detach`. Le esecuzioni in modalità distaccata stampano un suggerimento per verificare l'avanzamento: `rdc machine status <machine> --containers`.
 
 ### Distribuzione del tempo
 
@@ -226,7 +226,7 @@ Il riferimento al servizio in minuscolo (`stripe_live_key`) è il nome file in-c
 
 > **Isolamento cross-repo applicato**: il validatore di composizione di renet rifiuta i percorsi `secrets: file:` (e `configs: file:`, e `env_file:`) che fanno riferimento a qualsiasi altro Network ID del repository. Il token letterale `${REDIACC_NETWORK_ID}` (o il tuo numero di rete) è l'unica forma accettata per i riferimenti `/var/run/rediacc/secrets/...`. E `--unsafe` NON ignora questo controllo. La sandbox Landlock intorno al subprocess bash di Rediaccfile scopa anche l'accesso al filesystem alla sola directory dei secret della tua rete, quindi un malinteso `cat /var/run/rediacc/secrets/<other>/X` da un Rediaccfile fallisce con EACCES al livello del kernel.
 
-> **Fork**: `rdc repo fork` fa **non** copiare i secret. Per usare i secret in un fork, esegui `rdc repo secret set --name <fork>` sul fork esplicitamente. Questa è la proprietà di sicurezza che regge il carico. I container del fork non dovrebbero essere in grado di agire come il principal di produzione contro i servizi esterni.
+> **Fork**: `rdc repo fork` fa **non** copiare i secret. Per usare i secret in un fork, esegui `rdc repo secret set <fork>` sul fork esplicitamente. Questa è la proprietà di sicurezza che regge il carico. I container del fork non dovrebbero essere in grado di agire come il principal di produzione contro i servizi esterni.
 
 > **Agenti** (Claude Code, Cursor, ecc.): `repo secret list` e `repo secret get` sono esposti come strumenti MCP (read-safe. Solo nomi + digest, mai valori). `set` e `unset` sono CLI-only perché la cerimonia `--current`/`--rotate-secret` richiede occhi umani; gli agenti che li chiamano tramite shell ottengono lo stesso gate degli umani. Quando la precondizione fallisce, l'involucro JSON contiene un campo strutturato `errors[].next.options[].run`. Gli agenti dovrebbero trasmettere letteralmente quei comandi all'utente. Vedi [sicurezza degli agenti AI](/it/docs/ai-agents-safety) per il modello completo.
 

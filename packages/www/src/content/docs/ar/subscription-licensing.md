@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: ar
-sourceHash: de3bcbe1022db82f
+sourceHash: "269ed11573c50130"
 sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
@@ -118,7 +118,7 @@ Community هي الحد الأدنى المجاني الدائم. لم تعد خ
 - تم هجرة الجهاز الافتراضي، تغير معرّف الجهاز: تستمر المستودعات في العمل (ضمن نافذة 40 يوماً)
 - يُنعّش عملية `rdc` التالية الترخيص مع معرّف الجهاز الجديد
 - لا تُتطلب أي تدخل يدوي
-- تحقق من معرّف الجهاز وحالة الترخيص باستخدام `rdc machine query --system --licenses --name <machine>`
+- تحقق من معرّف الجهاز وحالة الترخيص باستخدام `rdc machine status <machine> --system --licenses`
 
 **حسابات قناة Edge** تعمل على خطة Community بضعف الحدود (مستودعات 20 GB، 200 عملية إعداد/شهر، جهازان). الخطط المدفوعة متاحة فقط على قناة Stable. راجع [قنوات الإصدار](/ar/docs/release-channels) للتفاصيل.
 
@@ -183,13 +183,13 @@ rdc subscription status
 عرض تفاصيل تفعيل الجهاز لجهاز واحد:
 
 ```bash
-rdc subscription activation status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 عرض تفاصيل ترخيص المستودع المثبت على جهاز واحد:
 
 ```bash
-rdc subscription repo status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 تنعيش تراخيص المستودع دفعةً واحدة على جهاز:
@@ -267,4 +267,4 @@ rdc subscription refresh repo --name my-app -m hostinger
 - محاولات الإصدار الفاشلة
 - المستودعات غير المتتبعة المرفوضة قبل الإصدار
 
-إذا كنت بحاجة إلى عرض الاستخدام وسجل إصدار ترخيص المستودع الأخير للعملاء، استخدم بوابة الحساب. وإذا كنت بحاجة إلى فحص من جانب الجهاز، استخدم `rdc subscription activation status -m` و`rdc subscription repo status -m`.
+إذا كنت بحاجة إلى عرض الاستخدام وسجل إصدار ترخيص المستودع الأخير للعملاء، استخدم بوابة الحساب. وإذا كنت بحاجة إلى فحص من جانب الجهاز، استخدم `rdc subscription status -m` و`rdc subscription status -m`.

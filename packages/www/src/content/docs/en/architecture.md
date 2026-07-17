@@ -41,7 +41,7 @@ All state lives in a config file on your workstation (e.g., `~/.config/rediacc/r
 
 - Direct SSH connections to machines
 - No external services required
-- Default config is created automatically on first CLI use. Named configs are created with `rdc config init --name <name>`
+- Default config is created automatically on first CLI use. Named configs are created with `rdc config init <name>`
 - Optional encrypted config sync stores the same file in the config store, scoped per team
 
 ## The rediacc User
@@ -82,7 +82,7 @@ This means:
 
 Rediaccfile functions automatically have `DOCKER_HOST` set to the correct socket.
 
-When an AI agent enters a repository via `rdc term connect -r <repo>`, the same isolation applies: the session runs as the unprivileged `rediacc` user (UID 7111), in a distinct mount namespace, with `DOCKER_HOST` scoped to that single repo's daemon socket. The fork-first workflow combines this runtime isolation with a CoW clone primitive: the agent operates on a per-task fork, never on grand (production) repositories. See [AI Agent Safety & Guardrails](/en/docs/ai-agents-safety) for the full sandbox model, the override semantics, and the developer-responsibility boundary for external service credentials.
+When an AI agent enters a repository via `rdc term connect <repo>`, the same isolation applies: the session runs as the unprivileged `rediacc` user (UID 7111), in a distinct mount namespace, with `DOCKER_HOST` scoped to that single repo's daemon socket. The fork-first workflow combines this runtime isolation with a CoW clone primitive: the agent operates on a per-task fork, never on grand (production) repositories. See [AI Agent Safety & Guardrails](/en/docs/ai-agents-safety) for the full sandbox model, the override semantics, and the developer-responsibility boundary for external service credentials.
 
 ### Daemon Path Layout
 

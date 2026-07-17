@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: pt
-sourceHash: de3bcbe1022db82f
+sourceHash: "269ed11573c50130"
 sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
@@ -118,7 +118,7 @@ Na prática:
 - VM migrada, ID da máquina muda: repositórios continuam executando (dentro da janela de 40 dias)
 - Próxima operação `rdc` atualiza a licença com o novo ID da máquina
 - Nenhuma intervenção manual necessária
-- Verifique o ID da máquina e o status da licença com `rdc machine query --system --licenses --name <machine>`
+- Verifique o ID da máquina e o status da licença com `rdc machine status <machine> --system --licenses`
 
 **Contas no canal Edge** funcionam no plano Community com o dobro dos limites (repositórios de 20 GB, 200 configurações/mês, 2 máquinas). Planos pagos estão disponíveis apenas no canal Stable. Veja [Canais de Lançamento](/pt/docs/release-channels) para detalhes.
 
@@ -183,13 +183,13 @@ rdc subscription status
 Mostrar detalhes de ativação de máquina para uma máquina:
 
 ```bash
-rdc subscription activation status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Mostrar detalhes de licenças de repositório instaladas em uma máquina:
 
 ```bash
-rdc subscription repo status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Atualizar em lote licenças de repositório em uma máquina:
@@ -267,4 +267,4 @@ Não inclui:
 - tentativas de emissão falhadas
 - repositórios rastreados rejeitados antes da emissão
 
-Se você precisar de uma visualização de uso voltada para o cliente e histórico recente de emissão de licenças de repositório, use o portal de conta. Se você precisar de inspeção do lado da máquina, use `rdc subscription activation status -m` e `rdc subscription repo status -m`.
+Se você precisar de uma visualização de uso voltada para o cliente e histórico recente de emissão de licenças de repositório, use o portal de conta. Se você precisar de inspeção do lado da máquina, use `rdc subscription status -m` e `rdc subscription status -m`.

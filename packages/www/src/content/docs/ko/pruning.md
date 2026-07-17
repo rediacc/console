@@ -4,7 +4,7 @@ description: "고아 백업, 오래된 스냅샷, 리포지터리 이미지, 로
 category: "Guides"
 order: 12
 language: ko
-sourceHash: "d2700c2ac4473962"
+sourceHash: "af01691f5fe908ee"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -14,8 +14,8 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 
 | 명령 | 정리하는 항목 | 진실의 원천 위치 |
 |---|---|---|
-| `rdc storage prune --name <storage> -m <machine>` | 클라우드 스토리지의 고아 백업 | 로컬 CLI config (마운트 안전성을 위해 실행기 머신과 교차 확인) |
-| `rdc machine prune --name <machine>` | 머신 내 데이터스토어 아티팩트 (항상 실행); 고아 또는 알 수 없는 리포지터리 이미지 (옵트인) | 로컬 CLI config + 머신의 `.interim/state` 미러 |
+| `rdc storage prune <storage> -m <machine>` | 클라우드 스토리지의 고아 백업 | 로컬 CLI config (마운트 안전성을 위해 실행기 머신과 교차 확인) |
+| `rdc machine prune <machine>` | 머신 내 데이터스토어 아티팩트 (항상 실행); 고아 또는 알 수 없는 리포지터리 이미지 (옵트인) | 로컬 CLI config + 머신의 `.interim/state` 미러 |
 | `rdc config prune` | 로컬 config 잔여물 (인증서 캐시, 만료된 아카이브, 끊어진 상호 참조) | 로컬 CLI config만 |
 
 세 가지는 독립적입니다. 다른 것 없이 어느 하나만 실행할 수 있습니다. 아래 [안전 모델](#안전-모델)에 설명된 공통 안전 모델을 공유합니다.
@@ -202,7 +202,7 @@ sudo /usr/local/bin/renet repository backfill-state-mirror \
 
 ### 유예 기간
 
-`--archive-config`로 config에서 리포지터리를 제거하면, 자격 증명 항목이 `deletedAt` 타임스탬프와 함께 `resources.deletedRepositories[]`로 이동됩니다. prune 명령은 최근 아카이브된 리포지터리가 삭제로부터 보호되는 유예 기간(기본값 7일)을 존중합니다. 이를 통해 실수로 제거된 리포지터리를 복원할 시간(`rdc config repository restore-archived --name <guid>`)을 제공합니다. 유예 기간이 만료되면 `storage prune`, `machine prune`, `config prune`이 모두 항목을 자동으로 제거합니다.
+`--archive-config`로 config에서 리포지터리를 제거하면, 자격 증명 항목이 `deletedAt` 타임스탬프와 함께 `resources.deletedRepositories[]`로 이동됩니다. prune 명령은 최근 아카이브된 리포지터리가 삭제로부터 보호되는 유예 기간(기본값 7일)을 존중합니다. 이를 통해 실수로 제거된 리포지터리를 복원할 시간(`rdc repo admin archive restore <guid>`)을 제공합니다. 유예 기간이 만료되면 `storage prune`, `machine prune`, `config prune`이 모두 항목을 자동으로 제거합니다.
 
 ### 마운트 안전성 프리플라이트
 

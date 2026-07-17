@@ -4,7 +4,7 @@ description: Coloque um serviço em contentor a funcionar no seu servidor em min
 category: Guides
 order: -1
 language: pt
-sourceHash: "afd4d22ddc8e02e1"
+sourceHash: "866251eee417b1d4"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -112,7 +112,7 @@ rdc repo status --name my-app -m my-server  # Estado de montagem, Docker, tamanh
 ### 4. VS Code
 
 ```bash
-rdc vscode connect -m my-server -r my-app              # Abre o VS Code SSH, aterra dentro da sandbox do repositório
+rdc vscode connect my-app              # Abre o VS Code SSH, aterra dentro da sandbox do repositório
 ```
 
 Está a editar ficheiros *dentro* do volume encriptado. `docker ps` apenas mostra os contentores deste repositório. Guarde, compose up, itere.
@@ -126,7 +126,7 @@ Está a editar ficheiros *dentro* do volume encriptado. `docker ps` apenas mostr
 | **Caso de uso** | CI/CD, automação, operações remotas | Ciclo interno do programador |
 | **Isolamento** | Orquestra de fora | Já dentro da sandbox |
 
-**Fluxo de demonstração:** `rdc repo template apply` → `rdc vscode connect -m my-server -r my-app` → edite `docker-compose.yml` → `renet dev up` → veja a aplicação a correr → itere.
+**Fluxo de demonstração:** `rdc repo template apply` → `rdc vscode connect my-app` → edite `docker-compose.yml` → `renet dev up` → veja a aplicação a correr → itere.
 
 > Estrutura do Rediaccfile: [Serviços](/pt/docs/services). Quando usar cada ferramenta: [rdc vs renet](/pt/docs/rdc-vs-renet).
 

@@ -4,7 +4,7 @@ description: 数分でサーバー上にコンテナ化されたサービスを�
 category: Guides
 order: -1
 language: ja
-sourceHash: "afd4d22ddc8e02e1"
+sourceHash: "866251eee417b1d4"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -112,7 +112,7 @@ rdc repo status --name my-app -m my-server  # マウント状態、Docker、サ�
 ### 4. VS Code
 
 ```bash
-rdc vscode connect -m my-server -r my-app              # VS Code SSH を開き、リポジトリサンドボックス内に移動
+rdc vscode connect my-app              # VS Code SSH を開き、リポジトリサンドボックス内に移動
 ```
 
 暗号化ボリューム*内部*でファイルを編集できます。`docker ps` はこのリポジトリのコンテナのみ表示します。保存、compose up、反復開発ができます。
@@ -126,7 +126,7 @@ rdc vscode connect -m my-server -r my-app              # VS Code SSH を開き�
 | **ユースケース** | CI/CD、自動化、リモート操作 | 開発者のインナーループ |
 | **隔離** | 外部からオーケストレーション | 既にサンドボックス内 |
 
-**デモフロー:** `rdc repo template apply` → `rdc vscode connect -m my-server -r my-app` → `docker-compose.yml` を編集 → `renet dev up` → アプリの動作確認 → 反復開発。
+**デモフロー:** `rdc repo template apply` → `rdc vscode connect my-app` → `docker-compose.yml` を編集 → `renet dev up` → アプリの動作確認 → 反復開発。
 
 > Rediaccfile の構造: [サービス](/en/docs/services)。どちらのツールを使うか: [rdc vs renet](/en/docs/rdc-vs-renet)。
 

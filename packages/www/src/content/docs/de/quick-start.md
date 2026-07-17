@@ -4,7 +4,7 @@ description: Starten Sie einen containerisierten Dienst auf Ihrem Server in weni
 category: Guides
 order: -1
 language: de
-sourceHash: "afd4d22ddc8e02e1"
+sourceHash: "866251eee417b1d4"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -112,7 +112,7 @@ rdc repo status --name my-app -m my-server  # Mount-Status, Docker, Größe, Ver
 ### 4. VS Code
 
 ```bash
-rdc vscode connect -m my-server -r my-app              # Öffnet VS Code SSH, landet in der Repo-Sandbox
+rdc vscode connect my-app              # Öffnet VS Code SSH, landet in der Repo-Sandbox
 ```
 
 Sie bearbeiten Dateien *innerhalb* des verschlüsselten Volumes. `docker ps` zeigt nur die Container dieses Repos. Speichern, compose up, iterieren.
@@ -126,7 +126,7 @@ Sie bearbeiten Dateien *innerhalb* des verschlüsselten Volumes. `docker ps` zei
 | **Anwendungsfall** | CI/CD, Automatisierung, Remote-Betrieb | Entwickler-Arbeitsschleife |
 | **Isolation** | Orchestriert von außen | Bereits in der Sandbox |
 
-**Demo-Ablauf:** `rdc repo template apply` → `rdc vscode connect -m my-server -r my-app` → `docker-compose.yml` bearbeiten → `renet dev up` → App läuft → iterieren.
+**Demo-Ablauf:** `rdc repo template apply` → `rdc vscode connect my-app` → `docker-compose.yml` bearbeiten → `renet dev up` → App läuft → iterieren.
 
 > Rediaccfile-Struktur: [Dienste](/de/docs/services). Wann welches Werkzeug verwenden: [rdc vs renet](/de/docs/rdc-vs-renet).
 

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: de
-sourceHash: de3bcbe1022db82f
+sourceHash: "269ed11573c50130"
 sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
@@ -118,7 +118,7 @@ In der Praxis:
 - VM migriert, Maschinen-ID ändert sich: Repos funktionieren weiterhin (innerhalb des 40-Tage-Fensters)
 - Nächste `rdc`-Operation aktualisiert die Lizenz mit der neuen Maschinen-ID
 - Keine manuelle Intervention erforderlich
-- Maschinen-ID und Lizenzbewertung überprüfen mit `rdc machine query --system --licenses --name <machine>`
+- Maschinen-ID und Lizenzbewertung überprüfen mit `rdc machine status <machine> --system --licenses`
 
 **Edge-Kanal-Konten** laufen auf dem Community-Plan mit doppelten Limits (20 GB Repos, 200 Setups/Monat, 2 Maschinen). Kostenpflichtige Pläne sind nur im Stable-Kanal verfügbar. Siehe [Release Channels](/en/docs/release-channels) für Details.
 
@@ -183,13 +183,13 @@ rdc subscription status
 Maschinenaktivierungsdetails für eine Maschine anzeigen:
 
 ```bash
-rdc subscription activation status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Installierte Repo-Lizenz-Details auf einer Maschine anzeigen:
 
 ```bash
-rdc subscription repo status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Batch-Aktualisierung von Repo-Lizenzen auf einer Maschine:
@@ -267,4 +267,4 @@ Nicht dazu gehören:
 - Fehlgeschlagene Ausstellungsversuche
 - Nicht verfolgte Repositories, die vor der Ausstellung abgelehnt wurden
 
-Wenn Sie eine kundenseitige Ansicht der Nutzung und des Repo-Lizenz-Ausstellungsverlaufs benötigen, verwenden Sie das Account-Portal. Wenn Sie maschinenseitige Inspektion benötigen, verwenden Sie `rdc subscription activation status -m` und `rdc subscription repo status -m`.
+Wenn Sie eine kundenseitige Ansicht der Nutzung und des Repo-Lizenz-Ausstellungsverlaufs benötigen, verwenden Sie das Account-Portal. Wenn Sie maschinenseitige Inspektion benötigen, verwenden Sie `rdc subscription status -m` und `rdc subscription status -m`.

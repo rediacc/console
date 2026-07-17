@@ -4,7 +4,7 @@ description: "Sauvegardez des dépôts chiffrés vers n'importe quel stockage co
 category: Guides
 order: 7
 language: fr
-sourceHash: "7ff112c2ec14c35f"
+sourceHash: "50b357f812a9337c"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -177,8 +177,8 @@ Une sauvegarde froide s'exécute en trois phases par dépôt inclus : **arrêt, 
 
 **Comment les opérateurs détectent les défaillances :**
 
-- `rdc machine query --name <machine> --containers` affiche l'état d'exécution. Comparez avec l'ensemble attendu.
-- `/var/run/rediacc/cold-backup-<guid>.status.json` sur la machine. Inspectez via `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` avec un `startedAt` obsolète signifie que la dernière sauvegarde ne s'est pas terminée proprement.
+- `rdc machine status <machine> --containers` affiche l'état d'exécution. Comparez avec l'ensemble attendu.
+- `/var/run/rediacc/cold-backup-<guid>.status.json` sur la machine. Inspectez via `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` avec un `startedAt` obsolète signifie que la dernière sauvegarde ne s'est pas terminée proprement.
 - Les journaux du run de sauvegarde renet (`journalctl -u renet-*` ou l'invocation directe `rdc machine backup schedule`) émettent une ligne de résumé finale de la forme `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` non vide est la cible de grep.
 
 ### Estimer le temps d'arrêt d'une sauvegarde froide
@@ -302,7 +302,7 @@ Dans votre configuration, associez un ou plusieurs noms de stratégie à une mac
 }
 ```
 
-> **La liaison ne concerne que la configuration locale.** Définir une stratégie et la lier à une machine n'agit pas sur la machine. Exécutez `rdc machine backup schedule -m <machine>` (voir [Déployer le calendrier sur une machine](#déployer-le-calendrier-sur-une-machine)) pour déployer les minuteurs systemd, et relancez-le après tout changement de stratégie ou de liaison.
+> **La liaison ne concerne que la configuration locale.** Définir une stratégie et la lier à une machine n'agit pas sur la machine. Exécutez `rdc backup schedule -m <machine>` (voir [Déployer le calendrier sur une machine](#déployer-le-calendrier-sur-une-machine)) pour déployer les minuteurs systemd, et relancez-le après tout changement de stratégie ou de liaison.
 
 ## Choisir entre hot et cold et filtrage par dépôt
 

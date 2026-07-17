@@ -4,7 +4,7 @@ description: "Kuidas Rediacc vastab ISO 27001 infoturbe kontrollidele krüptimis
 category: "Legal"
 order: 5
 language: et
-sourceHash: "52709a22c0b38178"
+sourceHash: "7bdb4bcfdee26303"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -18,7 +18,7 @@ Noh, Rediacc on üks komponent ISMS-i tehniliste kontrollide kihis. Alljärgnev 
 
 | Kontrollvaldkond | Kontroll | Rediacc'i võimekus |
 |---------------|---------|-------------------|
-| **A.8**, Varade haldamine | A.8.1 Varade inventuur | Iga hoidla on eraldiseisev, identifitseeritav vara unikaalse GUID-iga. `rdc machine query --name <machine> --repositories` loetleb kõik hoidlad koos suuruse, ühendamisoleku ja konteinerite arvuga. |
+| **A.8**, Varade haldamine | A.8.1 Varade inventuur | Iga hoidla on eraldiseisev, identifitseeritav vara unikaalse GUID-iga. `rdc machine status <machine> --repositories` loetleb kõik hoidlad koos suuruse, ühendamisoleku ja konteinerite arvuga. |
 | **A.8**, Varade haldamine | A.8.24 Krüptograafia kasutamine | LUKS2 AES-256 kohustuslik krüptimine kõigil hoidlatel. Võtmehaldus: volitused salvestatakse ainult operaatori lokaalses konfiguratsioonis, mitte kunagi serveris. |
 | **A.9**, Juurdepääsukontroll | A.9.2 Kasutajate juurdepääsuhaldamine | SSH-võtme autentimine. API-žetoonid IP-sidumise, meeskonnaulatuse ja automaatse tühistamisega meeskonnast eemaldamisel. Kahefaktoriline autentimine (TOTP) toetatud. |
 | **A.10**, Krüptograafia | A.10.1 Krüptograafilised kontrollid | LUKS2 konfigureeritavate võtmeparameetritega. Hoidlapõhised krüptimisvolitused. Kogu kaugtransport SSH kaudu. Konfiguratsioonihoidla rakendab null-teadmise krüptimist: AES-256-GCM HKDF võtme tuletamisega, X25519 liikmete võtmevahetus ja ajaaknaline SDK-võtmed koheseks tühistamiseks. |
@@ -32,7 +32,7 @@ Noh, Rediacc on üks komponent ISMS-i tehniliste kontrollide kihis. Alljärgnev 
 Rediacc'i hoidlamudel toetab varade inventuuri nõudeid loomulikul viisil:
 
 - Igal hoidlal on loomise ajal määratud unikaalne GUID
-- Hoidlad on masinate kaupa loendatavad (`rdc machine query --repositories`)
+- Hoidlad on masinate kaupa loendatavad (`rdc machine status --repositories`)
 - Iga hoidla krüptimisstaatus, ühendamisolek, konteinerite arv ja kettakasutus on nähtavad
 - Hargi seosed jälgivad kloonitud keskkondade päritolu
 
@@ -48,5 +48,5 @@ Siin läheb huvitavaks: hargi-testimise-edendamise töövoog on kooskõlas ISO 2
 ## Pidev täiustamine
 
 - Auditlogi eksport toetab perioodilisi turvaülevaateid
-- Masina tervise kontroll (`rdc machine query --system`) toetab operatiivset seiret
+- Masina tervise kontroll (`rdc machine status --system`) toetab operatiivset seiret
 - `rdc repo validate` kontrollib varukoopia seisundit pärast iga toimingut

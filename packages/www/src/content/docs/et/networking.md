@@ -4,7 +4,7 @@ description: "Avalda teenuseid pöördproksi, Dockeri siltide, TLS-sertifikaatid
 category: "Guides"
 order: 6
 language: et
-sourceHash: "2bb63d224370c266"
+sourceHash: "20b29c1a791304e4"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -204,12 +204,12 @@ Täielik tee, mille Let's Encrypt sert väljastamisest iga hoidla konteineriteni
 
 2. **Hoidlapõhine väljapumpamine (valikuline).** Teenused, mis vajavad serdi faile oma konteineri sees (näiteks meiliserverid, mis loevad `.pem` faili otse), juurutavad kõrval väikese `traefik-certs-dumper` konteineri. Väljapumpaja ühendab kirjutuskaitstult `/opt/rediacc/proxy/letsencrypt` ja kirjutab ekstraheeritud serdi + võtme hoidla andmemahtu failidena `cert.pem` / `key.pem`. Selleks peab hoidlapõhine Dockeri daemon omama `/opt/rediacc/proxy` oma mount-nimeruumi lubamisloendis. See on vaikimisi juba lisatud.
 
-3. **Kliendipoolne vahemälu (`rediacc.json`).** CLI vahemälustab `acme.json` tihendatud koopia `acmeCertCache` alla oma konfiguratsioonifailis, võtmena `baseDomain`. See võimaldab mitmel masinal serte jagada (läbi `rdc config cert-cache push -m <machine>`) ja toimib offline-inventuurina.
+3. **Kliendipoolne vahemälu (`rediacc.json`).** CLI vahemälustab `acme.json` tihendatud koopia `acmeCertCache` alla oma konfiguratsioonifailis, võtmena `baseDomain`. See võimaldab mitmel masinal serte jagada (läbi `rdc machine infra cert push <machine>`) ja toimib offline-inventuurina.
 
 **Kliendivahemälu sünkroonimise käivitajad:**
 
 - Automaatselt pärast `rdc repo up`, kuid ainult juhul, kui masina `baseDomain` kohalik vahemälu on vanem kui 6 tundi. Värskeid vahemälusid ei puudutata, et järjestikused juurutamised SSH-d ei koormaauks.
-- Nõudmisel: `rdc config cert-cache pull -m <machine>` (sunniviisiline tõmbamine) või `rdc machine query --name <machine> --sync-certs` (tõmbamine olekupäringu kõrvalefektina).
+- Nõudmisel: `rdc machine infra cert pull <machine>` (sunniviisiline tõmbamine) või `rdc machine status <machine> --sync-certs` (tõmbamine olekupäringu kõrvalefektina).
 - `rdc config infra push` käivitamisel lükatakse vahemälu masinale üles (pikema aegumisega kohalikud serdid võidavad kaugserdi üle).
 
 **Vahemälu hooldus:**
@@ -415,7 +415,7 @@ Näitab dünaamiliselt eraldatud portide TCP ja UDP pordimappinguid.
 | Teenust pole marsruutides | Konteiner ei tööta või puuduvad sildid | Kontrolli `docker ps`-ga hoidla daemonist; kontrolli silte |
 | Sertifikaati pole väljastatud | DNS ei osuta serverile või Cloudflare'i token on vale | Kontrolli DNS-i lahendust; kontrolli Cloudflare API tokeni õigusi |
 | 502 Bad Gateway | Rakendus ei kuula deklareeritud pordil | Kontrolli, et rakendus töötab ja port vastab `loadbalancer.server.port`-ile |
-| TCP-port pole kättesaadav | Port pole infrastruktuuris registreeritud | Käivita `rdc config infra set --tcp-ports ...` ja `push-infra` |
+| TCP-port pole kättesaadav | Port pole infrastruktuuris registreeritud | Käivita `rdc machine infra set <machine> --tcp-ports ...` ja `push-infra` |
 | Marsruutimisserver töötab vana versiooniga | Binaarne fail uuendati, kuid teenust ei taaskäivitatud | Toimub automaatselt provisioneerimisel; käsitsi: `sudo systemctl restart rediacc-router` |
 | STUN/TURN relee pole kättesaadav | Relee aadressid vahemälustati käivitamisel | Taas-loo teenus pärast DNS-i või IP muutusi, et see võtaks uue võrgukonfiguratsiooni |
 

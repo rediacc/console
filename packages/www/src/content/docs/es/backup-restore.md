@@ -4,7 +4,7 @@ description: "Respalde repositorios cifrados en almacenamiento compatible con rc
 category: Guides
 order: 7
 language: es
-sourceHash: "7ff112c2ec14c35f"
+sourceHash: "50b357f812a9337c"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -177,8 +177,8 @@ Un respaldo frío ejecuta tres fases por repositorio incluido: **detener - snaps
 
 **Cómo los operadores detectan fallos:**
 
-- `rdc machine query --name <machine> --containers` muestra el estado de ejecución. Compare con el conjunto esperado.
-- `/var/run/rediacc/cold-backup-<guid>.status.json` en la máquina. Inspeccione vía `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` con un `startedAt` obsoleto significa que el último respaldo no se completó correctamente.
+- `rdc machine status <machine> --containers` muestra el estado de ejecución. Compare con el conjunto esperado.
+- `/var/run/rediacc/cold-backup-<guid>.status.json` en la máquina. Inspeccione vía `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` con un `startedAt` obsoleto significa que el último respaldo no se completó correctamente.
 - Los registros del respaldo de renet (`journalctl -u renet-*` o la invocación directa `rdc machine backup schedule`) emiten una línea de resumen final de la forma `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` no vacío es el objetivo de grep.
 
 ### Estimación del tiempo de inactividad del respaldo en frío
@@ -302,7 +302,7 @@ En su configuración, vincule uno o más nombres de estrategia a una máquina:
 }
 ```
 
-> **La vinculación es solo de configuración local.** Definir una estrategia y vincularla a una máquina no afecta a la máquina. Ejecute `rdc machine backup schedule -m <machine>` (consulte [Desplegar Cronograma en la Máquina](#desplegar-cronograma-en-la-máquina)) para desplegar los temporizadores systemd, y vuelva a ejecutarlo tras cualquier cambio de estrategia o vinculación.
+> **La vinculación es solo de configuración local.** Definir una estrategia y vincularla a una máquina no afecta a la máquina. Ejecute `rdc backup schedule -m <machine>` (consulte [Desplegar Cronograma en la Máquina](#desplegar-cronograma-en-la-máquina)) para desplegar los temporizadores systemd, y vuelva a ejecutarlo tras cualquier cambio de estrategia o vinculación.
 
 ## Elegir entre Hot y Cold y Filtrado por Repositorio
 

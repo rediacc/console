@@ -4,7 +4,7 @@ description: "Rediacc platformunda uygulama geliştirmek için temel kurallar ve
 category: Guides
 order: 5
 language: tr
-sourceHash: "7654d7b072ee3ccc"
+sourceHash: "b2d38b48d1fac737"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -99,7 +99,7 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
   ```
 - LUKS birimi `/mnt/rediacc/mounts/<guid>/` konumuna bağlanır.
 - BTRFS anlık görüntüleri, tüm bind mount verileri dahil olmak üzere LUKS destek dosyasının tamamını yakalar.
-- Veri deposu, sistem diskindeki sabit boyutlu bir BTRFS havuz dosyasıdır. Etkin boş alanı görmek için `rdc machine query --name <name> --system` kullanın. `rdc datastore resize` ile genişletin.
+- Veri deposu, sistem diskindeki sabit boyutlu bir BTRFS havuz dosyasıdır. Etkin boş alanı görmek için `rdc machine status <name> --system` kullanın. `rdc datastore resize` ile genişletin.
 
 ## CRIU (Canlı Geçiş)
 
@@ -156,7 +156,7 @@ Sonuç: `rdc` ve `renet` çalışan işletim sistemini otomatik algılar ve beş
 - **`rdc repo down`** `down()` çalıştırır ve Docker daemon'ını durdurur.
 - **`rdc repo down --unmount`** ayrıca LUKS birimini kapatır (şifreli depolamayı kilitler).
 - **Fork'lar** (`rdc repo fork`) yeni GUID ve networkId ile bir CoW (copy-on-write) klon oluşturur ve bunu **depo boyutundan bağımsız olarak sabit sürede** yapar. BTRFS reflink veriyi değil görüntü meta verilerini çoğaltır, bu nedenle 100 GB'lık bir depo 1 GB'lık bir depo ile aynı birkaç saniyede fork edilir. Fork, üst öğenin şifreleme anahtarını paylaşır.
-- **Takeover** (`rdc repo takeover --name <fork> -m <machine>`) grand deponun verilerini bir fork'un verileriyle değiştirir. Grand kimliğini korur (GUID, networkId, alan adları, otomatik başlatma, yedekleme zinciri). Eski üretim verileri yedekleme fork'u olarak korunur. Kullanım: fork üzerinde yükseltmeyi test edin, doğrulayın, ardından üretime takeover yapın. `rdc repo takeover --name <backup-fork> -m <machine>` ile geri alın.
+- **Takeover** (`rdc repo promote <fork>`) grand deponun verilerini bir fork'un verileriyle değiştirir. Grand kimliğini korur (GUID, networkId, alan adları, otomatik başlatma, yedekleme zinciri). Eski üretim verileri yedekleme fork'u olarak korunur. Kullanım: fork üzerinde yükseltmeyi test edin, doğrulayın, ardından üretime takeover yapın. `rdc repo promote <backup-fork>` ile geri alın.
 - **Proxy yolları** dağıtımdan sonra yaklaşık 3 saniyede aktif olur. `repo up` sırasında "Proxy is not running" uyarısı ops/dev ortamlarında bilgilendirme amaçlıdır.
 - **`rdc repo up` ve `rdc repo fork --up`, dağıtımın sonunda** `rediacc.service_port` ile etiketlenmiş servisler için URL kalıbını yazdırır. `{service}` yerine açığa çıkarılan servis adınızı yazarak tam URL'yi elde edin. `rediacc.service_port` olmayan servisler (veritabanları, işçiler) rota almaz ve gösterilmez.
 
@@ -167,4 +167,4 @@ Sonuç: `rdc` ve `renet` çalışan işletim sistemini otomatik algılar ve beş
 - `privileged: true` kullanmak, gerekli değildir, renet bunun yerine belirli CRIU capability'lerini enjekte eder.
 - Ham IP'leri kalıcı yapılandırma dosyalarına sabit kodlamak, fork izolasyonunu sağlam tutmak için bağlantılarda servis adlarını kullanın.
 - Başarısız komutlar için geçici çözüm olarak `rdc term connect -c` kullanmak, bunun yerine hataları bildirin.
-- `repo delete` loopback IP'leri ve systemd birimlerini de dahil ederek tam temizlik yapar. Eski silmelerden kalan artıkları temizlemek için `rdc machine prune --name <name>` çalıştırın.
+- `repo delete` loopback IP'leri ve systemd birimlerini de dahil ederek tam temizlik yapar. Eski silmelerden kalan artıkları temizlemek için `rdc machine prune <name>` çalıştırın.

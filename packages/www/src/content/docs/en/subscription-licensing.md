@@ -114,7 +114,7 @@ In practice:
 - VM migrated, machine ID changes: repos keep running (within 40-day window)
 - Next `rdc` operation refreshes the license with the new machine ID
 - No manual intervention required
-- Check machine ID and license status with `rdc machine query --system --licenses --name <machine>`
+- Check machine ID and license status with `rdc machine status <machine> --system --licenses`
 
 **Edge channel accounts** run on the Community plan with 2X the limits (20 GB repos, 200 setups/month, 2 machines). Paid plans are only available on the Stable channel. See [Release Channels](/en/docs/release-channels) for details.
 
@@ -179,13 +179,13 @@ rdc subscription status
 Show machine activation details for one machine:
 
 ```bash
-rdc subscription activation status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Show installed repo-license details on one machine:
 
 ```bash
-rdc subscription repo status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Batch-refresh repo licenses on a machine:
@@ -263,4 +263,4 @@ It does not include:
 - failed issuance attempts
 - untracked repositories rejected before issuance
 
-If you need a customer-facing view of usage and recent repo-license issuance history, use the account portal. If you need machine-side inspection, use `rdc subscription activation status -m` and `rdc subscription repo status -m`.
+If you need a customer-facing view of usage and recent repo-license issuance history, use the account portal. If you need machine-side inspection, use `rdc subscription status -m` and `rdc subscription status -m`.

@@ -4,7 +4,7 @@ description: "구성 생성, 머신 추가, 서버 프로비저닝, 인프라 �
 category: "Guides"
 order: 3
 language: ko
-sourceHash: "730a353fc046b7cc"
+sourceHash: "1fba8ac242726528"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -132,7 +132,7 @@ rdc term connect -m server-1 -c "hostname"
 rdc doctor
 ```
 
-> **팁**: SSH 연결을 확인하려면 `rdc term connect -m <machine> -c "hostname"`을 실행하거나 `ssh`를 직접 사용하십시오.
+> **팁**: SSH 연결을 확인하려면 `rdc term connect <machine> -c "hostname"`을 실행하거나 `ssh`를 직접 사용하십시오.
 
 ## 인프라 구성
 

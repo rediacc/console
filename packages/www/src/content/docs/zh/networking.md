@@ -4,7 +4,7 @@ description: 通过反向代理、Docker 标签、TLS 证书、DNS 和 TCP/UDP �
 category: Guides
 order: 6
 language: zh
-sourceHash: "2bb63d224370c266"
+sourceHash: "20b29c1a791304e4"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -204,12 +204,12 @@ Let's Encrypt 证书从签发到到达每个仓库容器的完整路径：
 
 2. **按仓库转储（可选）。**需要在其自身容器内存放证书文件的服务（例如直接读取 `.pem` 文件的邮件服务器），会在自身旁边部署一个小型 `traefik-certs-dumper` 容器。转储器以只读方式绑定挂载 `/opt/rediacc/proxy/letsencrypt`，并将提取的证书和密钥作为 `cert.pem` / `key.pem` 写入仓库的数据卷。为使其正常工作，每个仓库的 Docker 守护进程必须在其挂载命名空间允许列表中包含 `/opt/rediacc/proxy`。默认情况下已包含此项。
 
-3. **客户端缓存（`rediacc.json`）。** CLI 在配置文件的 `acmeCertCache` 下缓存 `acme.json` 的压缩副本，以 `baseDomain` 为键。这使多台机器可以共享证书（通过 `rdc config cert-cache push -m <machine>`），并充当离线清单。
+3. **客户端缓存（`rediacc.json`）。** CLI 在配置文件的 `acmeCertCache` 下缓存 `acme.json` 的压缩副本，以 `baseDomain` 为键。这使多台机器可以共享证书（通过 `rdc machine infra cert push <machine>`），并充当离线清单。
 
 **客户端缓存的同步触发条件：**
 
 - 在 `rdc repo up` 之后自动触发，但仅当机器 `baseDomain` 的本地缓存超过 6 小时时。新鲜的缓存保持不变，以防止连续部署对 SSH 造成压力。
-- 按需触发：`rdc config cert-cache pull -m <machine>`（强制拉取）或 `rdc machine query --name <machine> --sync-certs`（作为状态查询副作用的拉取）。
+- 按需触发：`rdc machine infra cert pull <machine>`（强制拉取）或 `rdc machine status <machine> --sync-certs`（作为状态查询副作用的拉取）。
 - 在 `rdc config infra push` 时，缓存被推送到机器（到期时间更长的本地证书优先于远程证书）。
 
 **缓存维护：**
@@ -415,7 +415,7 @@ curl -s http://127.0.0.1:7111/ports | python3 -m json.tool
 | 服务不在路由中 | 容器未运行或缺少标签 | 在仓库的守护进程上使用 `docker ps` 验证；检查标签 |
 | 证书未签发 | DNS 未指向服务器，或 Cloudflare 令牌无效 | 验证 DNS 解析；检查 Cloudflare API 令牌权限 |
 | 502 Bad Gateway | 应用未在声明的端口上监听 | 验证应用正在运行且端口与 `loadbalancer.server.port` 匹配 |
-| TCP 端口不可达 | 端口未在基础设施中注册 | 运行 `rdc config infra set --tcp-ports ...` 和 `push-infra` |
+| TCP 端口不可达 | 端口未在基础设施中注册 | 运行 `rdc machine infra set <machine> --tcp-ports ...` 和 `push-infra` |
 | 路由服务器运行旧版本 | 二进制文件已更新但服务未重启 | 在配置时自动发生；手动：`sudo systemctl restart rediacc-router` |
 | STUN/TURN 中继不可达 | 中继地址在启动时缓存 | 在 DNS 或 IP 更改后重建服务以获取新的网络配置 |
 

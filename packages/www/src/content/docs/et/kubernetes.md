@@ -4,7 +4,7 @@ description: "Käita Kubernetest Rediacci repo mentaliteediga: forkida või liig
 category: "Guides"
 order: 6
 language: et
-sourceHash: "56e1f177e8f4ef41"
+sourceHash: "d36c468ae2350e25"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -19,7 +19,7 @@ Kubernetest käitab [k3s](https://k3s.io/), sertifitseeritud Kubernetese distrib
 Rediacc pöörab ümber tavapärase pildi "klaster ümbritseb kõike", nii et repo mentaliteet jääb kehtima:
 
 - **Klaster on konteiner.** Masin majutab Docker-reposid (muutumatult) ja/või klastreid. Ühesõlmeline klaster ühel masinal säilitab loo "üks fail liigutab kogu süsteemi" klastri tasandil. Klastri olek (k3s-i andmekataloog: selle põimitud andmesalv ja containerd) elab andmesalve-toetatud copy-on-write pildifailides, üks sõlme kohta, kusjuures k3s-i `--data-dir` on seotud pildi ühenduspunkti sees.
-- **Kubernetese repo on nimeruum.** `rdc repo create --cluster <name>` loob repo, mille käitusaegne kodu on Kubernetese nimeruum `<repo>` selle klastri sees.
+- **Kubernetese repo on nimeruum.** `rdc repo create <repo> -m <name>` loob repo, mille käitusaegne kodu on Kubernetese nimeruum `<repo>` selle klastri sees.
 - **Püsivad köited on eraldi copy-on-write üksused.** PV-d on RBD-pildid Cephis või väikesed andmesalve pildifailid renet-i kohaliku PV-provisioneerija kaudu kohalikul taustasüsteemil. Need pole kunagi kataloogid ühe läbipaistmatu klastripildi sees: sisemisel failisüsteemil pole reflinke, nii et sõltumatud repo-põhised fork'id vajavad sõltumatuid PV-pilte.
 
 See eraldus on see, mis teeb mõlemad lubadused korraga füüsiliselt võimalikuks: **alati copy-on-write nimeruumi fork'id** (iga repo andmed kloonitakse sõltumatult) ja **terve klastri porditavus** (klastripildid pluss iga PV-pilt liiguvad koos).
@@ -97,7 +97,7 @@ rdc repo sync upload --cluster prod -r shop --local ./config
 rdc cluster kubeconfig --name prod           # ekspordi KUBECONFIG, seejärel kasuta otse kubectl-i
 ```
 
-Klastri sõlmed materialiseeruvad samuti `resources.machines`-is, nii et saad SSH-ga ühenduda konkreetse sõlmega tavalise `rdc term connect -m <cluster>-<pool>-<n>` abil.
+Klastri sõlmed materialiseeruvad samuti `resources.machines`-is, nii et saad SSH-ga ühenduda konkreetse sõlmega tavalise `rdc term connect <cluster>-<pool>-<n>` abil.
 
 ### Kahe käitusajaga Rediaccfile
 

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: es
-sourceHash: de3bcbe1022db82f
+sourceHash: "269ed11573c50130"
 sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
@@ -118,7 +118,7 @@ En la práctica:
 - VM migrada, ID de máquina cambia: los repositorios siguen ejecutándose (dentro de la ventana de 40 días)
 - La siguiente operación `rdc` actualiza la licencia con el nuevo ID de máquina
 - No se requiere intervención manual
-- Verifica el ID de máquina y el estado de la licencia con `rdc machine query --system --licenses --name <machine>`
+- Verifica el ID de máquina y el estado de la licencia con `rdc machine status <machine> --system --licenses`
 
 **Las cuentas del canal Edge** se ejecutan en el plan Community con el doble de los límites (repositorios de 20 GB, 200 setups/mes, 2 máquinas). Los planes pagados solo están disponibles en el canal Stable. Consulta [Canales de Release](/es/docs/release-channels) para más detalles.
 
@@ -183,13 +183,13 @@ rdc subscription status
 Mostrar detalles de activación de máquina para una máquina:
 
 ```bash
-rdc subscription activation status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Mostrar detalles de licencia de repositorio instalada en una máquina:
 
 ```bash
-rdc subscription repo status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Actualizar en lote licencias de repositorio en una máquina:
@@ -267,4 +267,4 @@ No incluye:
 - intentos fallidos de issuance
 - repositorios no rastreados rechazados antes de la issuance
 
-Si necesitas una vista con datos del cliente de uso e historial de issuance de licencia de repositorio reciente, usa el portal de account. Si necesitas inspección del lado de la máquina, usa `rdc subscription activation status -m` y `rdc subscription repo status -m`.
+Si necesitas una vista con datos del cliente de uso e historial de issuance de licencia de repositorio reciente, usa el portal de account. Si necesitas inspección del lado de la máquina, usa `rdc subscription status -m` y `rdc subscription status -m`.

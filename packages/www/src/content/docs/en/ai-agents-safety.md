@@ -28,7 +28,7 @@ So you're pointing an AI coding assistant at your infrastructure. When Claude Co
 | `rdc config edit` (interactive editor) | 🔴 refused | Human sets `REDIACC_ALLOW_CONFIG_EDIT=*` before launching the agent |
 | `rdc config edit --apply <file>` | 🔴 refused | Same override |
 | `rdc config field rotate --pointer <pointer>` | 🔴 refused | Same override; uses interactive confirmation |
-| `rdc term connect -m <machine>` (direct machine SSH) | 🔴 refused | Fork a repo first and connect to the fork |
+| `rdc term connect <machine>` (direct machine SSH) | 🔴 refused | Fork a repo first and connect to the fork |
 
 Every refusal gets written to the audit log with `outcome: refused` and a reason.
 

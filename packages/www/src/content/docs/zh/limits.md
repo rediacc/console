@@ -5,7 +5,7 @@ description: >-
 category: "Reference"
 order: 99
 language: zh
-sourceHash: "ece2d423d416e7ec"
+sourceHash: "05755ef64f8d0ff6"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -60,7 +60,7 @@ Rediacc 没有强制的硬性上限。实际限制取决于您机器的资源：
 
 ### 始终活跃的端口
 
-只有在使用 `rdc config infra set --public-ipv4` 配置公共 IP 后，端口才会打开。在此之前，机器上没有开放的端口。配置后：
+只有在使用 `rdc machine infra set <machine> --public-ipv4` 配置公共 IP 后，端口才会打开。在此之前，机器上没有开放的端口。配置后：
 
 | 端口 | 协议 | 用途 |
 |------|------|------|
@@ -127,7 +127,7 @@ rdc config infra push -m server-1
 - **网络模式**：CRIU 要求主机网络模式。使用自定义网络配置的容器无法创建检查点。
 - **内存**：检查点数据大小等于被检查点进程的驻留内存。大型内存数据集（例如，缓存 4 GB 数据的 Node.js 应用程序）会产生 4 GB 的检查点文件。
 - **TCP 连接**：应用程序必须能够容忍恢复过程中的连接丢失。活跃的 TCP 连接**不会**被保留，恢复后的进程会看到套接字处于关闭状态，必须重新连接。这同时适用于同机恢复和跨机恢复两种路径。
-- **同机热 fork 会重定向父仓库地址**：在父仓库持续运行时，先执行 `rdc repo fork --parent X --tag Y --checkpoint` 再执行 `rdc repo up` 即可正常工作。恢复出的进程仍带着 checkpoint 时刻父仓库的 loopback 地址，系统会将其透明地重定向到 fork 自己的地址（同一服务，fork 的数据副本）。恢复的 TCP 连接首次使用时仍会失败，应用需要重连，见上文 TCP 条目。
+- **同机热 fork 会重定向父仓库地址**：在父仓库持续运行时，先执行 `rdc repo fork X --tag Y --checkpoint` 再执行 `rdc repo up` 即可正常工作。恢复出的进程仍带着 checkpoint 时刻父仓库的 loopback 地址，系统会将其透明地重定向到 fork 自己的地址（同一服务，fork 的数据副本）。恢复的 TCP 连接首次使用时仍会失败，应用需要重连，见上文 TCP 条目。
 
 ---
 
@@ -137,7 +137,7 @@ rdc config infra push -m server-1
 |------|-----|
 | 每个仓库的备份目标 | 无限制 |
 | 同时备份任务 | 每个仓库 1 个（同时触发时任务排队） |
-| 备份频率 | 无强制最小间隔；受限于您的存储带宽。使用 `rdc config backup-strategy set --name <name> --bwlimit "6M"` 限制上传速度（rclone `--bwlimit` 语法：简单格式 `6M`、方向性 `6M:off`，或时间表 `08:00,3M;22:00,10M`） |
+| 备份频率 | 无强制最小间隔；受限于您的存储带宽。使用 `rdc backup strategy set <name> --bwlimit "6M"` 限制上传速度（rclone `--bwlimit` 语法：简单格式 `6M`、方向性 `6M:off`，或时间表 `08:00,3M;22:00,10M`） |
 | 保留策略 | 由您的存储提供商（S3、Cloudflare R2 等）控制。Rediacc 不强制执行保留策略。 |
 | 跨机器备份 | 支持；目标机器必须有足够的数据存储空间 |
 

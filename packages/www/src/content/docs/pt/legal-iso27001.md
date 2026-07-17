@@ -4,7 +4,7 @@ description: "Como a Rediacc se mapeia com os controlos de segurança da informa
 category: "Legal"
 order: 5
 language: pt
-sourceHash: "52709a22c0b38178"
+sourceHash: "7bdb4bcfdee26303"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -18,7 +18,7 @@ Ora bem, a Rediacc é um componente da camada de controlos técnicos dentro de u
 
 | Domínio de Controlo | Controlo | Capacidade da Rediacc |
 |---------------|---------|-------------------|
-| **A.8**, Gestão de ativos | A.8.1 Inventário de ativos | Cada repositório é um ativo discreto e identificável com um GUID único. `rdc machine query --name <machine> --repositories` lista todos os repositórios com tamanho, estado de montagem e contagem de contentores. |
+| **A.8**, Gestão de ativos | A.8.1 Inventário de ativos | Cada repositório é um ativo discreto e identificável com um GUID único. `rdc machine status <machine> --repositories` lista todos os repositórios com tamanho, estado de montagem e contagem de contentores. |
 | **A.8**, Gestão de ativos | A.8.24 Utilização de criptografia | Encriptação obrigatória LUKS2 AES-256 em todos os repositórios. Gestão de chaves: credenciais armazenadas apenas na configuração local do operador, nunca no servidor. |
 | **A.9**, Controlo de acessos | A.9.2 Gestão de acessos de utilizadores | Autenticação por chave SSH. Tokens de API com vinculação de IP, âmbito por equipa e revogação automática na remoção da equipa. Suporte para autenticação de dois fatores (TOTP). |
 | **A.10**, Criptografia | A.10.1 Controlos criptográficos | LUKS2 com parâmetros de chave configuráveis. Credenciais de encriptação por repositório. Todo o transporte remoto via SSH. O arquivo de configuração implementa encriptação de conhecimento zero: AES-256-GCM com derivação de chave HKDF, troca de chaves de membros X25519 e chaves SDK com janela temporal para revogação instantânea. |
@@ -32,7 +32,7 @@ Ora bem, a Rediacc é um componente da camada de controlos técnicos dentro de u
 O modelo de repositórios da Rediacc suporta naturalmente os requisitos de inventário de ativos:
 
 - Cada repositório tem um GUID único atribuído na criação
-- Os repositórios são enumeráveis por máquina (`rdc machine query --repositories`)
+- Os repositórios são enumeráveis por máquina (`rdc machine status --repositories`)
 - O estado de encriptação, o estado de montagem, a contagem de contentores e o uso de disco de cada repositório são visíveis
 - As relações de fork acompanham a linhagem dos ambientes clonados
 
@@ -48,5 +48,5 @@ O fluxo de trabalho fork-testar-promover alinha-se com os requisitos de gestão 
 ## Melhoria Contínua
 
 - A exportação do registo de auditoria suporta revisões de segurança periódicas
-- As verificações do estado das máquinas (`rdc machine query --system`) suportam a monitorização operacional
+- As verificações do estado das máquinas (`rdc machine status --system`) suportam a monitorização operacional
 - `rdc repo validate` verifica o estado do backup após cada operação

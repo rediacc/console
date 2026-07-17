@@ -4,7 +4,7 @@ description: Konteineerpõhise teenuse käivitamine oma serveris minutitega.
 category: Guides
 order: -1
 language: et
-sourceHash: "afd4d22ddc8e02e1"
+sourceHash: "866251eee417b1d4"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -112,7 +112,7 @@ rdc repo status --name my-app -m my-server  # Ühenduse olek, Docker, suurus, kr
 ### 4. VS Code
 
 ```bash
-rdc vscode connect -m my-server -r my-app              # Avab VS Code SSH, maandub hoidla liivakastis
+rdc vscode connect my-app              # Avab VS Code SSH, maandub hoidla liivakastis
 ```
 
 Redigeerid faile *krüpteeritud mahu sees*. `docker ps` näitab ainult selle hoidla konteinereid. Salvesta, compose up, tee uuesti.
@@ -126,7 +126,7 @@ Redigeerid faile *krüpteeritud mahu sees*. `docker ps` näitab ainult selle hoi
 | **Kasutusjuhtum** | CI/CD, automatiseerimine, kaugoperatsioonid | Arendaja sisesilmus |
 | **Eraldumine** | Orkestreerib väljastpoolt | On juba liivakastis |
 
-**Demo voog:** `rdc repo template apply` → `rdc vscode connect -m my-server -r my-app` → muuda `docker-compose.yml` → `renet dev up` → vaata töötavat rakendust → korda.
+**Demo voog:** `rdc repo template apply` → `rdc vscode connect my-app` → muuda `docker-compose.yml` → `renet dev up` → vaata töötavat rakendust → korda.
 
 > Rediaccfile struktuur: [Teenused](/et/docs/services). Millist tööriista millal kasutada: [rdc vs renet](/et/docs/rdc-vs-renet).
 

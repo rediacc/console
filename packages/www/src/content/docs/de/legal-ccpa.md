@@ -4,7 +4,7 @@ description: "Wie das Self-Hosted-Modell von Rediacc die Anforderungen des Calif
 category: "Legal"
 order: 4
 language: de
-sourceHash: "949159b302cf6ab9"
+sourceHash: "3cee3262b53f7afd"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -35,7 +35,7 @@ Rediacc als Software greift nicht auf Verbraucherdaten zu, verarbeitet sie nicht
 
 Jedes Rediacc-Repository ist eine diskrete, verschlüsselte Dateneinheit mit einer eindeutigen GUID. Sie können genau inventarisieren, welche Daten wo vorhanden sind:
 
-- `rdc machine query --name <machine> --repositories` listet alle Repositories auf einer Maschine mit Größe und Mount-Status auf
+- `rdc machine status <machine> --repositories` listet alle Repositories auf einer Maschine mit Größe und Mount-Status auf
 - Jedes Repository ist auf Dateisystem-, Netzwerk- und Container-Ebene isoliert
 - Fork-Beziehungen werden verfolgt, sodass Sie alle Kopien eines Datensatzes identifizieren können
 

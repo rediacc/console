@@ -4,7 +4,7 @@ description: "Exécutez Kubernetes avec la mentalité du dépôt Rediacc : forke
 category: "Guides"
 order: 6
 language: fr
-sourceHash: "56e1f177e8f4ef41"
+sourceHash: "d36c468ae2350e25"
 sourceCommit: "4401262fffbf29b9480dee8ecd209013e4b87f60"
 ---
 
@@ -19,7 +19,7 @@ Kubernetes est propulsé par [k3s](https://k3s.io/), une distribution Kubernetes
 Rediacc inverse l'image habituelle « le cluster englobe tout » pour que la mentalité du dépôt continue de s'appliquer :
 
 - **Un cluster est le conteneur.** Une machine héberge des dépôts Docker (inchangés) et/ou des clusters. Un cluster à un seul nœud sur une machine conserve, au niveau du cluster, l'histoire du « un seul fichier déplace tout le système ». L'état du cluster (le répertoire de données k3s : son datastore embarqué et containerd) vit dans des fichiers image copy-on-write adossés au datastore, un par nœud, avec le `--data-dir` de k3s lié à l'intérieur du mount de l'image.
-- **Un dépôt Kubernetes est un namespace.** `rdc repo create --cluster <name>` crée un dépôt dont le foyer d'exécution est le namespace Kubernetes `<repo>` à l'intérieur de ce cluster.
+- **Un dépôt Kubernetes est un namespace.** `rdc repo create <repo> -m <name>` crée un dépôt dont le foyer d'exécution est le namespace Kubernetes `<repo>` à l'intérieur de ce cluster.
 - **Les volumes persistants sont des unités copy-on-write séparées.** Les PV sont des images RBD sur Ceph, ou de petits fichiers image du datastore via un provisioner de PV local sur le backend local. Ce ne sont jamais des répertoires à l'intérieur d'une seule image de cluster opaque : le système de fichiers interne n'a pas de reflinks, donc des forks de dépôt indépendants exigent des images de PV indépendantes.
 
 Cette séparation est ce qui rend les deux promesses physiquement possibles à la fois : des **forks de namespace toujours copy-on-write** (les données de chaque dépôt se clonent indépendamment) et une **portabilité du cluster entier** (les images du cluster plus chaque image de PV se déplacent ensemble).
@@ -97,7 +97,7 @@ rdc repo sync upload --cluster prod -r shop --local ./config
 rdc cluster kubeconfig --name prod           # exporter KUBECONFIG, puis utiliser kubectl directement
 ```
 
-Les nœuds de cluster se matérialisent aussi dans `resources.machines`, vous pouvez donc vous connecter en SSH à un nœud spécifique avec la commande ordinaire `rdc term connect -m <cluster>-<pool>-<n>`.
+Les nœuds de cluster se matérialisent aussi dans `resources.machines`, vous pouvez donc vous connecter en SSH à un nœud spécifique avec la commande ordinaire `rdc term connect <cluster>-<pool>-<n>`.
 
 ### Rediaccfile à double runtime
 

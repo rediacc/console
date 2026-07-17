@@ -4,7 +4,7 @@ description: 暗号化されたリポジトリをあらゆるrclone互換スト�
 category: Guides
 order: 7
 language: ja
-sourceHash: "7ff112c2ec14c35f"
+sourceHash: "50b357f812a9337c"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -177,8 +177,8 @@ Rediaccは名前付きバックアップ戦略を使用します。各戦略は�
 
 **オペレーターが障害を検出する方法：**
 
-- `rdc machine query --name <machine> --containers`で実行状態を確認します。期待されるセットと比較してください。
-- マシン上の`/var/run/rediacc/cold-backup-<guid>.status.json`を確認します。`rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`で検査できます。`success: false`と古い`startedAt`は、最後のバックアップが正常に完了しなかったことを示します。
+- `rdc machine status <machine> --containers`で実行状態を確認します。期待されるセットと比較してください。
+- マシン上の`/var/run/rediacc/cold-backup-<guid>.status.json`を確認します。`rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`で検査できます。`success: false`と古い`startedAt`は、最後のバックアップが正常に完了しなかったことを示します。
 - renetバックアップ実行のログ（`journalctl -u renet-*`または直接の`rdc machine backup schedule`呼び出し）は、`Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`の形式の最終サマリー行を出力します。空でない`failed_repos`がgrepのターゲットです。
 
 ### コールドバックアップのダウンタイム見積もり
@@ -302,7 +302,7 @@ rdc config backup-strategy remove --name weekly-cold
 }
 ```
 
-> **バインディングはローカル設定のみです。** ストラテジーを定義してマシンにバインドしてもマシン自体には影響しません。systemd タイマーをデプロイするには `rdc machine backup schedule -m <machine>` を実行してください（[マシンへのスケジュールのデプロイ](#マシンへのスケジュールのデプロイ)を参照）。ストラテジーやバインディングを変更した後は再度実行してください。
+> **バインディングはローカル設定のみです。** ストラテジーを定義してマシンにバインドしてもマシン自体には影響しません。systemd タイマーをデプロイするには `rdc backup schedule -m <machine>` を実行してください（[マシンへのスケジュールのデプロイ](#マシンへのスケジュールのデプロイ)を参照）。ストラテジーやバインディングを変更した後は再度実行してください。
 
 ## ホットとコールドの選択、およびリポジトリごとのフィルタリング
 

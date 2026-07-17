@@ -4,7 +4,7 @@ description: تشغيل خدمة حاويات على خادمك في دقائق.
 category: Guides
 order: -1
 language: ar
-sourceHash: "afd4d22ddc8e02e1"
+sourceHash: "866251eee417b1d4"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -112,7 +112,7 @@ rdc repo status --name my-app -m my-server  # حالة التوصيل، Docker،
 ### 4. VS Code
 
 ```bash
-rdc vscode connect -m my-server -r my-app              # يفتح VS Code عبر SSH، داخل صندوق حماية المستودع
+rdc vscode connect my-app              # يفتح VS Code عبر SSH، داخل صندوق حماية المستودع
 ```
 
 أنت تعدّل الملفات *داخل* وحدة التخزين المشفرة. `docker ps` يعرض فقط حاويات هذا المستودع. احفظ، نفّذ compose up، وكرّر العملية.
@@ -126,7 +126,7 @@ rdc vscode connect -m my-server -r my-app              # يفتح VS Code عبر
 | **حالة الاستخدام** | CI/CD، الأتمتة، العمليات عن بُعد | حلقة التطوير الداخلية |
 | **العزل** | ينسّق من الخارج | موجود بالفعل داخل صندوق الحماية |
 
-**سير العمل التجريبي:** `rdc repo template apply` ثم `rdc vscode connect -m my-server -r my-app` ثم عدّل `docker-compose.yml` ثم `renet dev up` ثم شاهد التطبيق يعمل ثم كرّر.
+**سير العمل التجريبي:** `rdc repo template apply` ثم `rdc vscode connect my-app` ثم عدّل `docker-compose.yml` ثم `renet dev up` ثم شاهد التطبيق يعمل ثم كرّر.
 
 > هيكل Rediaccfile: [الخدمات](/en/docs/services). متى تستخدم كل أداة: [rdc vs renet](/en/docs/rdc-vs-renet).
 

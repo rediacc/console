@@ -4,7 +4,7 @@ description: "設定の作成、マシンの追加、サーバーのプロビジ
 category: "Guides"
 order: 3
 language: ja
-sourceHash: "730a353fc046b7cc"
+sourceHash: "1fba8ac242726528"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -132,7 +132,7 @@ rdc term connect -m server-1 -c "hostname"
 rdc doctor
 ```
 
-> **ヒント**: SSH接続を確認するには、`rdc term connect -m <machine> -c "hostname"` を実行するか、`ssh` を直接使用してください。
+> **ヒント**: SSH接続を確認するには、`rdc term connect <machine> -c "hostname"` を実行するか、`ssh` を直接使用してください。
 
 ## インフラストラクチャ設定
 

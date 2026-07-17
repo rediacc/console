@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: et
-sourceHash: de3bcbe1022db82f
+sourceHash: "269ed11573c50130"
 sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
@@ -118,7 +118,7 @@ Praktikas:
 - VM migreeritakse, masina ID muutub: repositooriumid jätkavad tööd (40-päevase akna piires)
 - Järgmine `rdc` toiming uuendab litsentsi uue masina ID-ga
 - Käsitsi sekkumist ei ole vaja
-- Kontrolli masina ID-d ja litsentsi olekut käsuga `rdc machine query --system --licenses --name <machine>`
+- Kontrolli masina ID-d ja litsentsi olekut käsuga `rdc machine status <machine> --system --licenses`
 
 **Edge-kanali kontod** töötavad Community plaanil 2-kordsete piirangutega (20 GB repositooriumid, 200 seadistust/kuus, 2 masinat). Tasulised plaanid on saadaval ainult Stable-kanalil. Üksikasju vaata jaotisest [Väljalaskekanalid](/en/docs/release-channels).
 
@@ -183,13 +183,13 @@ rdc subscription status
 Kuva masina aktiveerimise üksikasjad ühe masina kohta:
 
 ```bash
-rdc subscription activation status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Kuva paigaldatud repositooriumilitsentsi üksikasjad ühe masina kohta:
 
 ```bash
-rdc subscription repo status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Uuenda repositooriumilitsentse partiina masinas:
@@ -267,4 +267,4 @@ See ei sisalda:
 - ebaõnnestunud väljastamiskatseid
 - jälgimata repositooriume, mis lükati tagasi enne väljastamist
 
-Kui vajad kliendile suunatud kasutuse ja hiljutiste repositooriumilitsentside väljastamise ajaloo vaadet, kasuta account-portaali. Kui vajad masina poolset kontrollimist, kasuta käske `rdc subscription activation status -m` ja `rdc subscription repo status -m`.
+Kui vajad kliendile suunatud kasutuse ja hiljutiste repositooriumilitsentside väljastamise ajaloo vaadet, kasuta account-portaali. Kui vajad masina poolset kontrollimist, kasuta käske `rdc subscription status -m` ja `rdc subscription status -m`.

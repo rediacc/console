@@ -4,7 +4,7 @@ description: "Comment Rediacc correspond aux contrôles de sécurité de l'infor
 category: "Legal"
 order: 5
 language: fr
-sourceHash: "52709a22c0b38178"
+sourceHash: "7bdb4bcfdee26303"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -18,7 +18,7 @@ Bon, Rediacc est un composant de la couche de contrôles techniques au sein d'un
 
 | Domaine de contrôle | Contrôle | Capacité Rediacc |
 |--------------------|----------|-----------------|
-| **A.8**, Gestion des actifs | A.8.1 Inventaire des actifs | Chaque dépôt est un actif discret et identifiable avec un GUID unique. `rdc machine query --name <machine> --repositories` liste tous les dépôts avec taille, état de montage et nombre de conteneurs. |
+| **A.8**, Gestion des actifs | A.8.1 Inventaire des actifs | Chaque dépôt est un actif discret et identifiable avec un GUID unique. `rdc machine status <machine> --repositories` liste tous les dépôts avec taille, état de montage et nombre de conteneurs. |
 | **A.8**, Gestion des actifs | A.8.24 Utilisation de la cryptographie | Chiffrement LUKS2 AES-256 obligatoire sur tous les dépôts. Gestion des clés : identifiants stockés uniquement dans la configuration locale de l'opérateur, jamais sur le serveur. |
 | **A.9**, Contrôle d'accès | A.9.2 Gestion des accès utilisateurs | Authentification par clé SSH. Jetons API avec liaison IP, portée par équipe et révocation automatique lors du retrait d'une équipe. Authentification à deux facteurs (TOTP). |
 | **A.10**, Cryptographie | A.10.1 Contrôles cryptographiques | LUKS2 avec paramètres de clé configurables. Identifiants de chiffrement par dépôt. Tout le transport distant via SSH. Le magasin de configuration implémente le chiffrement à connaissance nulle : AES-256-GCM avec dérivation de clé HKDF, échange de clés X25519 pour les membres et clés SDK à fenêtre temporelle pour la révocation immédiate. |
@@ -32,7 +32,7 @@ Bon, Rediacc est un composant de la couche de contrôles techniques au sein d'un
 C'est simple : le modèle de dépôts de Rediacc supporte naturellement les exigences d'inventaire des actifs :
 
 - Chaque dépôt a un GUID unique attribué à la création
-- Les dépôts sont énumérables par machine (`rdc machine query --repositories`)
+- Les dépôts sont énumérables par machine (`rdc machine status --repositories`)
 - L'état de chiffrement, l'état de montage, le nombre de conteneurs et l'utilisation du disque de chaque dépôt sont visibles
 - Les relations de fork tracent la lignée des environnements clonés
 
@@ -48,5 +48,5 @@ C'est là que c'est intéressant : le workflow fork-test-promote s'aligne sur le
 ## Amélioration continue
 
 - L'export des journaux d'audit supporte les revues de sécurité périodiques
-- Les vérifications de santé des machines (`rdc machine query --system`) supportent la surveillance opérationnelle
+- Les vérifications de santé des machines (`rdc machine status --system`) supportent la surveillance opérationnelle
 - `rdc repo validate` vérifie la santé des sauvegardes après chaque opération

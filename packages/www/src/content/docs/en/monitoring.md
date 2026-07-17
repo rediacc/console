@@ -153,7 +153,7 @@ The scrub timer is installed automatically on the first daemon start after a ren
 
 ### Scrub status
 
-The result of the last scrub is saved outside the BTRFS volume (at `/var/lib/rediacc/scrub-last-result.json`) so it remains readable even if the volume has issues. The `rdc machine query --system` output includes a `scrub_status` field:
+The result of the last scrub is saved outside the BTRFS volume (at `/var/lib/rediacc/scrub-last-result.json`) so it remains readable even if the volume has issues. The `rdc machine status --system` output includes a `scrub_status` field:
 
 ```json
 "scrub_status": {
@@ -183,7 +183,7 @@ To run a scrub immediately (e.g. after a power failure or disk migration):
 rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
-The result is saved to the same JSON file and immediately visible in the next `rdc machine query --system`.
+The result is saved to the same JSON file and immediately visible in the next `rdc machine status --system`.
 
 ## Machine Overview
 

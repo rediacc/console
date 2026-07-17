@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: it
-sourceHash: de3bcbe1022db82f
+sourceHash: "269ed11573c50130"
 sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
@@ -118,7 +118,7 @@ In pratica:
 - VM migrata, ID macchina cambia: i repository continuano a funzionare (entro la finestra di 40 giorni)
 - L'operazione `rdc` successiva aggiorna la licenza con il nuovo ID macchina
 - Nessun intervento manuale richiesto
-- Verifica l'ID macchina e lo stato della licenza con `rdc machine query --system --licenses --name <machine>`
+- Verifica l'ID macchina e lo stato della licenza con `rdc machine status <machine> --system --licenses`
 
 **Gli account sul canale Edge** operano sul piano Community con il doppio dei limiti (repository da 20 GB, 200 configurazioni/mese, 2 macchine). I piani a pagamento sono disponibili solo sul canale Stable. Consulta [Canali di rilascio](/it/docs/release-channels) per i dettagli.
 
@@ -183,13 +183,13 @@ rdc subscription status
 Mostra i dettagli di attivazione della macchina per una macchina:
 
 ```bash
-rdc subscription activation status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Mostra i dettagli della licenza repo installata su una macchina:
 
 ```bash
-rdc subscription repo status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Aggiornamento in blocco delle licenze repo su una macchina:
@@ -267,4 +267,4 @@ Non include:
 - tentativi di emissione non riusciti
 - repository non tracciati rifiutati prima dell'emissione
 
-Se hai bisogno di una vista rivolta al cliente dell'utilizzo e della cronologia recente delle emissioni di licenze repo, utilizza il portale account. Se hai bisogno dell'ispezione lato macchina, utilizza `rdc subscription activation status -m` e `rdc subscription repo status -m`.
+Se hai bisogno di una vista rivolta al cliente dell'utilizzo e della cronologia recente delle emissioni di licenze repo, utilizza il portale account. Se hai bisogno dell'ispezione lato macchina, utilizza `rdc subscription status -m` e `rdc subscription status -m`.

@@ -4,7 +4,7 @@ description: "Rediacc 如何满足 ISO 27001 加密、访问管理和运营安�
 category: "Legal"
 order: 5
 language: zh
-sourceHash: "52709a22c0b38178"
+sourceHash: "7bdb4bcfdee26303"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -18,7 +18,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 
 | 控制域 | 控制 | Rediacc 功能 |
 |--------|------|-------------|
-| **A.8**，资产管理 | A.8.1 资产清单 | 每个仓库是具有唯一 GUID 的独立可识别资产。`rdc machine query --name <machine> --repositories` 列出所有仓库及其大小、挂载状态和容器数量。 |
+| **A.8**，资产管理 | A.8.1 资产清单 | 每个仓库是具有唯一 GUID 的独立可识别资产。`rdc machine status <machine> --repositories` 列出所有仓库及其大小、挂载状态和容器数量。 |
 | **A.8**，资产管理 | A.8.24 加密使用 | 所有仓库强制使用 LUKS2 AES-256 加密。密钥管理：凭据仅存储在操作员的本地配置中，从不在服务器上。 |
 | **A.9**，访问控制 | A.9.2 用户访问管理 | SSH 密钥认证。带 IP 绑定、团队范围限定和团队移除时自动撤销的 API 令牌。双因素认证 (TOTP)。 |
 | **A.10**，加密 | A.10.1 加密控制 | 可配置密钥参数的 LUKS2。每仓库加密凭据。所有远程传输通过 SSH。配置存储实现零知识加密：HKDF 密钥派生的 AES-256-GCM、X25519 成员密钥交换和用于即时撤销的时间窗口 SDK 密钥。 |
@@ -32,7 +32,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 Rediacc 的仓库模型自然支持资产清单要求：
 
 - 每个仓库在创建时分配唯一的 GUID
-- 仓库可按机器枚举（`rdc machine query --repositories`）
+- 仓库可按机器枚举（`rdc machine status --repositories`）
 - 每个仓库的加密状态、挂载状态、容器数量和磁盘使用量可见
 - Fork 关系跟踪克隆环境的谱系
 
@@ -48,5 +48,5 @@ Rediacc 的仓库模型自然支持资产清单要求：
 ## 持续改进
 
 - 审计日志导出支持定期安全审查
-- 机器健康检查（`rdc machine query --system`）支持运营监控
+- 机器健康检查（`rdc machine status --system`）支持运营监控
 - `rdc repo validate` 在每次操作后验证备份健康状况

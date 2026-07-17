@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: it
-sourceHash: "83f6a9a2b0c8bae2"
+sourceHash: "b1f9e2e3bba92912"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -43,7 +43,7 @@ Tutto lo stato risiede in un file di configurazione sulla workstation (ad es., `
 
 - Connessioni SSH dirette alle macchine
 - Nessun servizio esterno richiesto
-- La configurazione predefinita viene creata automaticamente al primo uso della CLI. Le configurazioni con nome vengono create con `rdc config init --name <nome>`
+- La configurazione predefinita viene creata automaticamente al primo uso della CLI. Le configurazioni con nome vengono create con `rdc config init <nome>`
 - La sincronizzazione della configurazione, cifrata e facoltativa, memorizza lo stesso file nel config store, con ambito per team
 
 ## L'utente rediacc
@@ -84,7 +84,7 @@ Questo significa:
 
 Le funzioni del Rediaccfile hanno automaticamente `DOCKER_HOST` impostato al socket corretto.
 
-Quando un agente AI entra in un repository tramite `rdc term connect -r <repo>`, si applica lo stesso isolamento: la sessione gira come l'utente non privilegiato `rediacc` (UID 7111), in un mount namespace distinto, con `DOCKER_HOST` limitato al socket del daemon di quel singolo repository. Il flusso fork-first combina questo isolamento runtime con una primitiva di clone CoW: l'agente opera su un fork per attività, mai sui repository grand (produzione). Vedere [Sicurezza e guardrail degli agenti AI](/en/docs/ai-agents-safety) per il modello completo della sandbox, la semantica degli override e il confine di responsabilità dello sviluppatore per le credenziali dei servizi esterni.
+Quando un agente AI entra in un repository tramite `rdc term connect <repo>`, si applica lo stesso isolamento: la sessione gira come l'utente non privilegiato `rediacc` (UID 7111), in un mount namespace distinto, con `DOCKER_HOST` limitato al socket del daemon di quel singolo repository. Il flusso fork-first combina questo isolamento runtime con una primitiva di clone CoW: l'agente opera su un fork per attività, mai sui repository grand (produzione). Vedere [Sicurezza e guardrail degli agenti AI](/en/docs/ai-agents-safety) per il modello completo della sandbox, la semantica degli override e il confine di responsabilità dello sviluppatore per le credenziali dei servizi esterni.
 
 ### Layout del percorso del daemon
 

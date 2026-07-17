@@ -4,7 +4,7 @@ description: "创建配置、添加机器、配置服务器和设置基础设施
 category: "Guides"
 order: 3
 language: zh
-sourceHash: "730a353fc046b7cc"
+sourceHash: "1fba8ac242726528"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -132,7 +132,7 @@ rdc term connect -m server-1 -c "hostname"
 rdc doctor
 ```
 
-> **提示**：要验证 SSH 连接，运行 `rdc term connect -m <machine> -c "hostname"` 或直接使用 `ssh`。
+> **提示**：要验证 SSH 连接，运行 `rdc term connect <machine> -c "hostname"` 或直接使用 `ssh`。
 
 ## 基础设施配置
 

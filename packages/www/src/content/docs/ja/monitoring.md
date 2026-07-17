@@ -4,7 +4,7 @@ description: マシンの健全性、コンテナ、サービス、リポジト�
 category: Guides
 order: 9
 language: ja
-sourceHash: "e2f5d37c534fc40d"
+sourceHash: "b6deba17f1137188"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -155,7 +155,7 @@ Rediaccはすべてのマシンで毎週 BTRFS スクラブを自動的にスケ
 
 ### スクラブのステータス
 
-最後のスクラブの結果は BTRFS ボリュームの外部（`/var/lib/rediacc/scrub-last-result.json`）に保存されるため、ボリュームに問題があっても読み取り可能なままです。`rdc machine query --system` の出力には `scrub_status` フィールドが含まれます：
+最後のスクラブの結果は BTRFS ボリュームの外部（`/var/lib/rediacc/scrub-last-result.json`）に保存されるため、ボリュームに問題があっても読み取り可能なままです。`rdc machine status --system` の出力には `scrub_status` フィールドが含まれます：
 
 ```json
 "scrub_status": {
@@ -185,7 +185,7 @@ Rediaccはすべてのマシンで毎週 BTRFS スクラブを自動的にスケ
 rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
-結果は同じ JSON ファイルに保存され、次の `rdc machine query --system` で即座に確認できます。
+結果は同じ JSON ファイルに保存され、次の `rdc machine status --system` で即座に確認できます。
 
 ## マシン概要
 

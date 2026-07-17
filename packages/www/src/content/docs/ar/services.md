@@ -5,7 +5,7 @@ description: >-
 category: Guides
 order: 5
 language: ar
-sourceHash: "011bc5d87114f105"
+sourceHash: "2d470a876c00c352"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -210,7 +210,7 @@ services:
 - `.rediacc.json` في جذر تحميل المستودع ← `services.<name>.restart_policy`: النية الحقيقية.
 - `docker ps --format '{{.Status}}'`: حالة وقت التشغيل.
 
-**كيفية إصلاح الانحراف.** إذا كانت السياسة المحفوظة في `.rediacc.json` للحاوية غير صحيحة (مثلاً لأنك عدّلت compose لكن لم تُعد إنشاء الحاوية)، أعد تشغيل `rdc repo up --name <repo> -m <machine>`. ستُعاد إنشاء الحاوية مع تسجيل السياسة المحدّثة.
+**كيفية إصلاح الانحراف.** إذا كانت السياسة المحفوظة في `.rediacc.json` للحاوية غير صحيحة (مثلاً لأنك عدّلت compose لكن لم تُعد إنشاء الحاوية)، أعد تشغيل `rdc repo up <repo>`. ستُعاد إنشاء الحاوية مع تسجيل السياسة المحدّثة.
 
 > **تجريبي:** وصل استرداد sidecar النسخ الاحتياطية الباردة وعلامة `--sync-certs` في `rdc machine query` في renet 0.9+. الإصدارات الأقدم تعتمد كلياً على `restart_policy` المحفوظة لاسترداد watchdog، مما قد يترك حاويات `on-failure` عالقة بعد نسخة احتياطية باردة.
 
@@ -253,7 +253,7 @@ HTTP services (accessible via proxy after ~3s):
 
 ### التشغيل المنفصل
 
-مع `--detach`، يعود الأمر فور انطلاق الحاويات دون انتظار اكتمال فحوصات الجاهزية. يُنهي التشغيل عمله في الخلفية: يواصل الوكيل إعادة المحاولة حتى ترتبط كل خدمة بمنفذها، فتستعيد المسارات عملها تلقائياً. تابع التقدم بـ `rdc machine query --containers --name <machine>`. مثالي للنسخ المؤقتة والحلقات البرمجية التي لا تحتاج إلى جاهزية الخدمات قبل الخطوة التالية.
+مع `--detach`، يعود الأمر فور انطلاق الحاويات دون انتظار اكتمال فحوصات الجاهزية. يُنهي التشغيل عمله في الخلفية: يواصل الوكيل إعادة المحاولة حتى ترتبط كل خدمة بمنفذها، فتستعيد المسارات عملها تلقائياً. تابع التقدم بـ `rdc machine status <machine> --containers`. مثالي للنسخ المؤقتة والحلقات البرمجية التي لا تحتاج إلى جاهزية الخدمات قبل الخطوة التالية.
 
 ### اختبار الجاهزية
 
@@ -465,6 +465,6 @@ secrets:
     file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
 ```
 
-ازرع القيم باستخدام `rdc repo secret set --name <repo> --key DATABASE_URL --value <val> --mode env --current ""` والمعادل لنمط الملف. راجع [المستودعات § الأسرار](/ar/docs/repositories#secrets) للحصول على طريقة شاملة و [أسرار المستودع](/ar/docs/rdc-cheat-sheet#per-repo-secrets) في ورقة الغش للحصول على مرجع الأمر.
+ازرع القيم باستخدام `rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""` والمعادل لنمط الملف. راجع [المستودعات § الأسرار](/ar/docs/repositories#secrets) للحصول على طريقة شاملة و [أسرار المستودع](/ar/docs/rdc-cheat-sheet#per-repo-secrets) في ورقة الغش للحصول على مرجع الأمر.
 
 > **يتم رفض مسارات متعددة المستودعات في وقت التحقق.** تصريح compose `secrets: file:` (أو `configs: file:` أو `env_file:`) يشير إلى دليل `/var/run/rediacc/secrets/<other-networkID>/` لمستودع آخر يتم رفضه بشدة بواسطة غلاف renet قبل تشغيل docker compose. `--unsafe` لا تعكس. دفاع متعدد الطبقات: sandbox الـ Landlock حول شل Rediaccfile ينطاق القراءات إلى دليل الأسرار لشبكة حالية، لذا `cat /var/run/rediacc/secrets/<other>/X` من bash Rediaccfile يفشل مع EACCES حتى إذا تجاوز مدقق YAML. لا تحتاج إلى الانضمام؛ هذا بالفعل مفعّل بشكل افتراضي لكل `repo up`.

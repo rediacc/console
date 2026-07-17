@@ -4,7 +4,7 @@ description: "머신 상태, 컨테이너, 서비스, 저장소를 모니터링�
 category: "Guides"
 order: 9
 language: ko
-sourceHash: "e2f5d37c534fc40d"
+sourceHash: "b6deba17f1137188"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -155,7 +155,7 @@ Rediacc는 모든 머신에서 주간 BTRFS 스크럽을 자동으로 예약합�
 
 ### 스크럽 상태
 
-마지막 스크럽 결과는 BTRFS 볼륨 외부(`/var/lib/rediacc/scrub-last-result.json`)에 저장되므로 볼륨에 문제가 있어도 읽을 수 있습니다. `rdc machine query --system` 출력에는 `scrub_status` 필드가 포함됩니다.
+마지막 스크럽 결과는 BTRFS 볼륨 외부(`/var/lib/rediacc/scrub-last-result.json`)에 저장되므로 볼륨에 문제가 있어도 읽을 수 있습니다. `rdc machine status --system` 출력에는 `scrub_status` 필드가 포함됩니다.
 
 ```json
 "scrub_status": {
@@ -185,7 +185,7 @@ Rediacc는 모든 머신에서 주간 BTRFS 스크럽을 자동으로 예약합�
 rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
-결과는 동일한 JSON 파일에 저장되며 다음 `rdc machine query --system`에서 즉시 확인할 수 있습니다.
+결과는 동일한 JSON 파일에 저장되며 다음 `rdc machine status --system`에서 즉시 확인할 수 있습니다.
 
 ## 머신 개요
 

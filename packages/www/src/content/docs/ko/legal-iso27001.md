@@ -4,7 +4,7 @@ description: "Rediacc가 암호화, 접근 관리 및 운영 보안에 관한 IS
 category: "Legal"
 order: 5
 language: ko
-sourceHash: "52709a22c0b38178"
+sourceHash: "7bdb4bcfdee26303"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -18,7 +18,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 
 | 통제 도메인 | 통제 | Rediacc 기능 |
 |---------------|---------|-------------------|
-| **A.8**, 자산 관리 | A.8.1 자산 인벤토리 | 각 리포지토리는 고유한 GUID를 가진 별도의 식별 가능한 자산입니다. `rdc machine query --name <machine> --repositories`는 모든 리포지토리를 크기, 마운트 상태, 컨테이너 수와 함께 나열합니다. |
+| **A.8**, 자산 관리 | A.8.1 자산 인벤토리 | 각 리포지토리는 고유한 GUID를 가진 별도의 식별 가능한 자산입니다. `rdc machine status <machine> --repositories`는 모든 리포지토리를 크기, 마운트 상태, 컨테이너 수와 함께 나열합니다. |
 | **A.8**, 자산 관리 | A.8.24 암호화 사용 | 모든 리포지토리에 LUKS2 AES-256 필수 암호화 적용. 키 관리: 자격증명은 서버가 아닌 운영자의 로컬 설정에만 저장됩니다. |
 | **A.9**, 접근 제어 | A.9.2 사용자 접근 관리 | SSH 키 인증. IP 바인딩, 팀 범위 지정 및 팀 제거 시 자동 취소 기능이 있는 API 토큰. 이중 인증(TOTP) 지원. |
 | **A.10**, 암호화 | A.10.1 암호화 통제 | 구성 가능한 키 파라미터를 갖춘 LUKS2. 리포지토리당 암호화 자격증명. 모든 원격 전송에 SSH 사용. 설정 저장소는 제로 지식 암호화를 구현합니다. HKDF 키 파생을 사용한 AES-256-GCM, X25519 구성원 키 교환, 즉각적인 취소를 위한 시간 제한 SDK 키. |
@@ -32,7 +32,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 Rediacc의 리포지토리 모델은 자산 인벤토리 요건을 자연스럽게 지원합니다.
 
 - 모든 리포지토리는 생성 시 고유한 GUID가 할당됩니다
-- 리포지토리는 머신별로 열거할 수 있습니다(`rdc machine query --repositories`)
+- 리포지토리는 머신별로 열거할 수 있습니다(`rdc machine status --repositories`)
 - 각 리포지토리의 암호화 상태, 마운트 상태, 컨테이너 수, 디스크 사용량이 표시됩니다
 - 포크 관계가 클론된 환경의 계보를 추적합니다
 
@@ -48,5 +48,5 @@ Rediacc의 리포지토리 모델은 자산 인벤토리 요건을 자연스럽�
 ## 지속적 개선
 
 - 감사 로그 내보내기가 정기적인 보안 검토를 지원합니다
-- 머신 상태 확인(`rdc machine query --system`)이 운영 모니터링을 지원합니다
+- 머신 상태 확인(`rdc machine status --system`)이 운영 모니터링을 지원합니다
 - `rdc repo validate`가 각 작업 후 백업 상태를 검증합니다

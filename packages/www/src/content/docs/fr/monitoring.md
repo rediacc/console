@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: fr
-sourceHash: "e2f5d37c534fc40d"
+sourceHash: "b6deba17f1137188"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -157,7 +157,7 @@ Le minuteur de scrub est installé automatiquement au premier démarrage du daem
 
 ### Statut du scrub
 
-Le résultat du dernier scrub est sauvegardé hors du volume BTRFS (dans `/var/lib/rediacc/scrub-last-result.json`) afin qu'il reste lisible même si le volume rencontre des problèmes. La sortie de `rdc machine query --system` inclut un champ `scrub_status` :
+Le résultat du dernier scrub est sauvegardé hors du volume BTRFS (dans `/var/lib/rediacc/scrub-last-result.json`) afin qu'il reste lisible même si le volume rencontre des problèmes. La sortie de `rdc machine status --system` inclut un champ `scrub_status` :
 
 ```json
 "scrub_status": {
@@ -187,7 +187,7 @@ Pour lancer un scrub immédiatement (par exemple après une coupure de courant o
 rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
-Le résultat est sauvegardé dans le même fichier JSON et est immédiatement visible dans le prochain `rdc machine query --system`.
+Le résultat est sauvegardé dans le même fichier JSON et est immédiatement visible dans le prochain `rdc machine status --system`.
 
 ## Aperçu de la machine
 

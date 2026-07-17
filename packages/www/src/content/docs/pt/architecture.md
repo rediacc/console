@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: pt
-sourceHash: "83f6a9a2b0c8bae2"
+sourceHash: "b1f9e2e3bba92912"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -43,7 +43,7 @@ Todo o estado reside num ficheiro de configuração na sua workstation (por exem
 
 - Ligações SSH diretas às máquinas
 - Sem serviços externos necessários
-- A configuração predefinida é criada automaticamente no primeiro uso do CLI. As configurações nomeadas são criadas com `rdc config init --name <name>`
+- A configuração predefinida é criada automaticamente no primeiro uso do CLI. As configurações nomeadas são criadas com `rdc config init <name>`
 - Sincronização opcional de configuração encriptada guarda o mesmo ficheiro no arquivo de configuração, com âmbito por equipa
 
 ## O Utilizador rediacc
@@ -84,7 +84,7 @@ Isto significa:
 
 As funções do Rediaccfile têm automaticamente `DOCKER_HOST` definido para o socket correto.
 
-Quando um agente de IA entra num repositório via `rdc term connect -r <repo>`, o mesmo isolamento se aplica: a sessão corre como o utilizador `rediacc` sem privilégios (UID 7111), num namespace de mount distinto, com `DOCKER_HOST` limitado ao socket do daemon desse único repositório. O fluxo fork-first combina este isolamento de execução com uma primitiva de clone CoW: o agente opera num fork por tarefa, nunca em repositórios grand (produção). Consulte [Segurança e Controlos para Agentes de IA](/en/docs/ai-agents-safety) para o modelo completo de sandbox, a semântica dos overrides e a fronteira de responsabilidade do programador para credenciais de serviços externos.
+Quando um agente de IA entra num repositório via `rdc term connect <repo>`, o mesmo isolamento se aplica: a sessão corre como o utilizador `rediacc` sem privilégios (UID 7111), num namespace de mount distinto, com `DOCKER_HOST` limitado ao socket do daemon desse único repositório. O fluxo fork-first combina este isolamento de execução com uma primitiva de clone CoW: o agente opera num fork por tarefa, nunca em repositórios grand (produção). Consulte [Segurança e Controlos para Agentes de IA](/en/docs/ai-agents-safety) para o modelo completo de sandbox, a semântica dos overrides e a fronteira de responsabilidade do programador para credenciais de serviços externos.
 
 ### Layout do Caminho do Daemon
 

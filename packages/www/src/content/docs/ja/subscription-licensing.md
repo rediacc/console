@@ -4,7 +4,7 @@ description: account、rdc、renetがマシンスロット、リポジトリラ�
 category: Guides
 order: 7
 language: ja
-sourceHash: de3bcbe1022db82f
+sourceHash: "269ed11573c50130"
 sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
@@ -116,7 +116,7 @@ Communityは無料の標準プランとして常に存在します。新規ア�
 - VM移行、マシンIDが変わる：リポジトリは実行を続けます（40日以内）
 - 次の `rdc` 操作で新しいマシンIDでライセンスが更新される
 - 手動操作は不要
-- `rdc machine query --system --licenses --name <machine>` でマシンIDとライセンス状態を確認できます
+- `rdc machine status <machine> --system --licenses` でマシンIDとライセンス状態を確認できます
 
 **Edgeチャンネルのアカウント** はCommunityプランで動作し、制限が2倍になります（20GBのリポジトリ、月200回のセットアップ、マシン2台）。有料プランはStableチャンネルでのみ利用可能です。詳細は [リリースチャンネル](/ja/docs/release-channels) を参照してください。
 
@@ -181,13 +181,13 @@ rdc subscription status
 1台のマシンのマシンアクティベーション詳細を表示：
 
 ```bash
-rdc subscription activation status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 1台のマシンにインストールされたリポジトリライセンス詳細を表示：
 
 ```bash
-rdc subscription repo status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 マシン上のリポジトリライセンスをバッチ更新：
@@ -265,4 +265,4 @@ rdc subscription refresh repo --name my-app -m hostinger
 - 失敗した発行試行
 - 発行前に拒否された未追跡リポジトリ
 
-使用状況と最近のリポジトリライセンス発行履歴の顧客向けビューが必要な場合は、アカウントポータルを使用してください。マシン側の検査が必要な場合は、`rdc subscription activation status -m` と `rdc subscription repo status -m` を使用してください。
+使用状況と最近のリポジトリライセンス発行履歴の顧客向けビューが必要な場合は、アカウントポータルを使用してください。マシン側の検査が必要な場合は、`rdc subscription status -m` と `rdc subscription status -m` を使用してください。

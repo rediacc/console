@@ -5,7 +5,7 @@ description: >-
 category: Concepts
 order: 0
 language: ko
-sourceHash: "83f6a9a2b0c8bae2"
+sourceHash: "b1f9e2e3bba92912"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -42,7 +42,7 @@ Rediacc는 SSH를 통해 함께 작동하는 두 바이너리를 사용합니다
 
 - 머신에 직접 SSH 연결
 - 외부 서비스 불필요
-- 기본 설정은 첫 CLI 사용 시 자동으로 생성됩니다. 명명된 설정은 `rdc config init --name <name>`으로 생성합니다.
+- 기본 설정은 첫 CLI 사용 시 자동으로 생성됩니다. 명명된 설정은 `rdc config init <name>`으로 생성합니다.
 - 선택적으로 암호화된 설정 동기화를 사용하면 동일한 파일이 팀별로 범위가 지정된 설정 저장소에 저장됩니다.
 
 ## rediacc 사용자
@@ -83,7 +83,7 @@ Rediacc는 SSH를 통해 함께 작동하는 두 바이너리를 사용합니다
 
 Rediaccfile 함수는 자동으로 올바른 소켓으로 `DOCKER_HOST`가 설정됩니다.
 
-AI 에이전트가 `rdc term connect -r <repo>`를 통해 레포지토리에 진입할 때도 동일한 격리가 적용됩니다. 세션은 권한 없는 `rediacc` 사용자(UID 7111)로, 독립된 마운트 네임스페이스에서, 단일 레포 데몬 소켓으로 범위가 한정된 `DOCKER_HOST`로 실행됩니다. 포크 우선 워크플로우는 이 런타임 격리를 CoW 클론 기본 기능과 결합합니다. 에이전트는 태스크별 포크에서 작동하며, grand(프로덕션) 레포지토리에서는 작동하지 않습니다. 전체 샌드박스 모델, 재정의 의미론, 외부 서비스 자격 증명에 대한 개발자 책임 경계는 [AI 에이전트 안전성 및 가드레일](/en/docs/ai-agents-safety)을 참조하세요.
+AI 에이전트가 `rdc term connect <repo>`를 통해 레포지토리에 진입할 때도 동일한 격리가 적용됩니다. 세션은 권한 없는 `rediacc` 사용자(UID 7111)로, 독립된 마운트 네임스페이스에서, 단일 레포 데몬 소켓으로 범위가 한정된 `DOCKER_HOST`로 실행됩니다. 포크 우선 워크플로우는 이 런타임 격리를 CoW 클론 기본 기능과 결합합니다. 에이전트는 태스크별 포크에서 작동하며, grand(프로덕션) 레포지토리에서는 작동하지 않습니다. 전체 샌드박스 모델, 재정의 의미론, 외부 서비스 자격 증명에 대한 개발자 책임 경계는 [AI 에이전트 안전성 및 가드레일](/en/docs/ai-agents-safety)을 참조하세요.
 
 ### 데몬 경로 레이아웃
 

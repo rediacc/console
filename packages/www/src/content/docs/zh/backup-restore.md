@@ -4,7 +4,7 @@ description: 将加密仓库备份到任何与 rclone 兼容的存储，在任�
 category: Guides
 order: 7
 language: zh
-sourceHash: "7ff112c2ec14c35f"
+sourceHash: "50b357f812a9337c"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -177,8 +177,8 @@ Rediacc 使用具名备份策略。每个策略定义了一个计划、备份模
 
 **运维人员如何检测故障：**
 
-- `rdc machine query --name <machine> --containers` 显示运行状态。与预期集合进行比较。
-- 机器上的 `/var/run/rediacc/cold-backup-<guid>.status.json`。通过 `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"` 检查。`success: false` 加上过时的 `startedAt` 表示上次备份未正常完成。
+- `rdc machine status <machine> --containers` 显示运行状态。与预期集合进行比较。
+- 机器上的 `/var/run/rediacc/cold-backup-<guid>.status.json`。通过 `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"` 检查。`success: false` 加上过时的 `startedAt` 表示上次备份未正常完成。
 - renet 备份运行的日志（`journalctl -u renet-*` 或直接的 `rdc machine backup schedule` 调用）会输出 `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` 形式的最终摘要行。非空的 `failed_repos` 是 grep 的目标。
 
 ### 估算冷备份停机时间
@@ -302,7 +302,7 @@ rdc config backup-strategy remove --name weekly-cold
 }
 ```
 
-> **绑定仅作用于本地配置。** 定义策略并将其绑定到机器并不会改动机器本身。运行 `rdc machine backup schedule -m <machine>`（参见[将计划部署到机器](#将计划部署到机器)）以部署 systemd 定时器，并在任何策略或绑定更改后重新运行。
+> **绑定仅作用于本地配置。** 定义策略并将其绑定到机器并不会改动机器本身。运行 `rdc backup schedule -m <machine>`（参见[将计划部署到机器](#将计划部署到机器)）以部署 systemd 定时器，并在任何策略或绑定更改后重新运行。
 
 ## 选择热备份或冷备份以及按仓库筛选
 

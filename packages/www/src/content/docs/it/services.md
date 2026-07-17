@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: it
-sourceHash: "011bc5d87114f105"
+sourceHash: "2d470a876c00c352"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -211,7 +211,7 @@ renet e Docker non sono d'accordo, intenzionalmente, su come gestire i restart d
 - `.rediacc.json` nella root di mount del repository → `services.<name>.restart_policy`: l'intenzione reale.
 - `docker ps --format '{{.Status}}'`: stato di runtime.
 
-**Come correggere una deriva.** Se la policy salvata in `.rediacc.json` di un container è errata (ad esempio, perché hai modificato compose ma non hai mai ricreato il container), riesegui `rdc repo up --name <repo> -m <machine>`. Il container viene ricreato con la policy aggiornata registrata.
+**Come correggere una deriva.** Se la policy salvata in `.rediacc.json` di un container è errata (ad esempio, perché hai modificato compose ma non hai mai ricreato il container), riesegui `rdc repo up <repo>`. Il container viene ricreato con la policy aggiornata registrata.
 
 > **Sperimentale:** Il ripristino basato sul sidecar cold-backup e il flag `--sync-certs` su `rdc machine query` sono stati introdotti in renet 0.9+. Le versioni precedenti si affidano esclusivamente alla `restart_policy` salvata per il ripristino del watchdog, il che può lasciare i container `on-failure` bloccati dopo un cold backup.
 
@@ -254,7 +254,7 @@ I servizi senza etichette Traefik personalizzate mostrano solo la route generata
 
 ### Avvio distaccato
 
-Con `--detach`, il comando ritorna non appena i container sono avviati, senza attendere il completamento dei health check. L'avvio prosegue in background: il proxy riprova le connessioni upstream finché ogni servizio non si mette in ascolto, quindi le route si ripristinano da sole. Per controllare l'avanzamento, usa `rdc machine query --containers --name <machine>`. Questa modalità è ideale per fork usa e getta e cicli scriptati dove non è necessario che i servizi siano pronti prima del passo successivo.
+Con `--detach`, il comando ritorna non appena i container sono avviati, senza attendere il completamento dei health check. L'avvio prosegue in background: il proxy riprova le connessioni upstream finché ogni servizio non si mette in ascolto, quindi le route si ripristinano da sole. Per controllare l'avanzamento, usa `rdc machine status <machine> --containers`. Questa modalità è ideale per fork usa e getta e cicli scriptati dove non è necessario che i servizi siano pronti prima del passo successivo.
 
 ### Sonda di disponibilità
 
@@ -467,6 +467,6 @@ secrets:
     file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
 ```
 
-Inizializza i valori con `rdc repo secret set --name <repo> --key DATABASE_URL --value <val> --mode env --current ""` e l'equivalente in modalità file. Consulta [Repository § Segreti](/it/docs/repositories#secrets) per la guida completa e [Segreti per singolo repository](/it/docs/rdc-cheat-sheet#per-repo-secrets) sul cheat sheet per il riferimento ai comandi.
+Inizializza i valori con `rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""` e l'equivalente in modalità file. Consulta [Repository § Segreti](/it/docs/repositories#secrets) per la guida completa e [Segreti per singolo repository](/it/docs/rdc-cheat-sheet#per-repo-secrets) sul cheat sheet per il riferimento ai comandi.
 
 > **I percorsi cross-repo vengono rifiutati al momento della validazione.** Un `secrets: file:` compose (o `configs: file:`, o `env_file:`) che punta alla directory `/var/run/rediacc/secrets/<other-networkID>/` di un altro repository viene rifiutato definitivamente dal wrapper renet prima che docker compose venga eseguito. `--unsafe` NON sovrascrive. Difesa in profondità: la sandbox Landlock attorno alla shell Rediaccfile limita le letture alla directory dei segreti della rete corrente, quindi un `cat /var/run/rediacc/secrets/<other>/X` dalla shell bash del Rediaccfile fallisce con EACCES anche se aggira il validatore YAML. Non è necessario attivarlo; è abilitato per impostazione predefinita per ogni `repo up`.

@@ -4,7 +4,7 @@ description: "SSH、设置、仓库、服务和 Docker 常见问题的修复方�
 category: "Guides"
 order: 10
 language: zh
-sourceHash: "17dc03eb0589d606"
+sourceHash: "a1c58ae1fe3d0514"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -15,16 +15,16 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ## SSH 连接失败
 
 - 验证您可以手动连接：`ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- 运行 `rdc config machine scan-keys -m server-1` 以刷新主机密钥
+- 运行 `rdc machine scan-keys server-1` 以刷新主机密钥
 - 检查 SSH 端口是否匹配：`--port 22`
-- 使用简单命令进行测试：`rdc term connect -m server-1 -c "hostname"`
+- 使用简单命令进行测试：`rdc term connect server-1 -c "hostname"`
 
 ## 主机密钥不匹配
 
 如果服务器被重新安装或其 SSH 密钥已更改，您将看到 "host key verification failed"：
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 此命令获取新的主机密钥并更新您的配置。
@@ -33,7 +33,7 @@ rdc config machine scan-keys -m server-1
 
 - 确保 SSH 用户具有无密码的 sudo 访问权限，或为所需命令配置 `NOPASSWD`
 - 检查服务器上的可用磁盘空间
-- 使用 `--debug` 运行以获取详细输出：`rdc config machine setup --name server-1 --debug`
+- 使用 `--debug` 运行以获取详细输出：`rdc machine setup server-1 --debug`
 
 ## 发行版特定的设置问题
 
@@ -141,7 +141,7 @@ docker run --rm --network host -it ubuntu bash
 
 ## VS Code 在沙箱文件上 Permission Denied
 
-在之前的 VS Code 会话之后使用 `rdc vscode connect -m <machine> -r <repo>` 连接时，旧版 renet 会产生类似 `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` 的错误。原因是：沙箱目录内存在混合的文件所有权，您的 SSH 用户和内部 `rediacc` 用户都写入了文件。
+在之前的 VS Code 会话之后使用 `rdc vscode connect <repo>` 连接时，旧版 renet 会产生类似 `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` 的错误。原因是：沙箱目录内存在混合的文件所有权，您的 SSH 用户和内部 `rediacc` 用户都写入了文件。
 
 较新版本的 renet 通过以下方式修复了这个问题：
 

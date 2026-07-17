@@ -13,16 +13,16 @@ Common issues and how to fix them. When in doubt, start with `rdc doctor` to run
 ## SSH Connection Fails
 
 - Verify you can connect manually: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Run `rdc config machine scan-keys -m server-1` to refresh host keys
+- Run `rdc machine scan-keys server-1` to refresh host keys
 - Check that the SSH port matches: `--port 22`
-- Test with a simple command: `rdc term connect -m server-1 -c "hostname"`
+- Test with a simple command: `rdc term connect server-1 -c "hostname"`
 
 ## Host Key Mismatch
 
 If a server was reinstalled or its SSH keys changed, you'll see "host key verification failed":
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 This fetches fresh host keys and updates your config.
@@ -31,7 +31,7 @@ This fetches fresh host keys and updates your config.
 
 - Ensure the SSH user has sudo access without a password, or configure `NOPASSWD` for the required commands
 - Check available disk space on the server
-- Run with `--debug` for verbose output: `rdc config machine setup --name server-1 --debug`
+- Run with `--debug` for verbose output: `rdc machine setup server-1 --debug`
 
 ## Distribution-Specific Setup Issues
 
@@ -139,7 +139,7 @@ docker run --rm --network host -it ubuntu bash
 
 ## VS Code Permission Denied on sandbox files
 
-When connecting with `rdc vscode connect -m <machine> -r <repo>` after a previous VS Code session, older renet versions produced errors like `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied`. The cause: mixed file ownership inside the sandbox directory, where both your SSH user and the internal `rediacc` user had written files.
+When connecting with `rdc vscode connect <repo>` after a previous VS Code session, older renet versions produced errors like `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied`. The cause: mixed file ownership inside the sandbox directory, where both your SSH user and the internal `rediacc` user had written files.
 
 Modern versions of renet fix this by:
 

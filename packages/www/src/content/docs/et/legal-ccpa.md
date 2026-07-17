@@ -4,7 +4,7 @@ description: "Kuidas Rediacc'i ise majutatud mudel rahuldab California tarbijate
 category: "Legal"
 order: 4
 language: et
-sourceHash: "949159b302cf6ab9"
+sourceHash: "3cee3262b53f7afd"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -35,7 +35,7 @@ Rediacc tarkvarana ei liigu tarbijate andmetele ligi, ei töötle ega salvesta n
 
 Iga Rediacc'i hoidla on eraldiseisev, krüptitud andmeüksus unikaalse GUID-iga. Saate täpselt inventeerida, millised andmed kus asuvad:
 
-- `rdc machine query --name <machine> --repositories` loetleb kõik masinasse kuuluvad hoidlad koos suuruse ja ühendamisolekuga
+- `rdc machine status <machine> --repositories` loetleb kõik masinasse kuuluvad hoidlad koos suuruse ja ühendamisolekuga
 - Iga hoidla on failisüsteemi, võrgu ja konteineri tasemel eraldatud
 - Hargi seosed on jälgitavad, nii saate tuvastada kõik andmestiku koopiad
 

@@ -4,7 +4,7 @@ description: Lancez un service conteneurisé sur votre serveur en quelques minut
 category: Guides
 order: -1
 language: fr
-sourceHash: "afd4d22ddc8e02e1"
+sourceHash: "866251eee417b1d4"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -112,7 +112,7 @@ rdc repo status --name my-app -m my-server  # État du montage, Docker, taille, 
 ### 4. VS Code
 
 ```bash
-rdc vscode connect -m my-server -r my-app              # Ouvre VS Code SSH, atterrit dans le bac à sable du repo
+rdc vscode connect my-app              # Ouvre VS Code SSH, atterrit dans le bac à sable du repo
 ```
 
 Vous éditez des fichiers *à l'intérieur* du volume chiffré. `docker ps` n'affiche que les conteneurs de ce repo. Enregistrez, compose up, itérez.
@@ -126,7 +126,7 @@ Vous éditez des fichiers *à l'intérieur* du volume chiffré. `docker ps` n'af
 | **Cas d'usage** | CI/CD, automatisation, opérations à distance | Boucle de développement interne |
 | **Isolation** | Orchestre depuis l'extérieur | Déjà dans le bac à sable |
 
-**Flux de démonstration :** `rdc repo template apply` → `rdc vscode connect -m my-server -r my-app` → modifier `docker-compose.yml` → `renet dev up` → voir l'application en cours d'exécution → itérer.
+**Flux de démonstration :** `rdc repo template apply` → `rdc vscode connect my-app` → modifier `docker-compose.yml` → `renet dev up` → voir l'application en cours d'exécution → itérer.
 
 > Structure du Rediaccfile : [Services](/fr/docs/services). Quand utiliser quel outil : [rdc vs renet](/fr/docs/rdc-vs-renet).
 

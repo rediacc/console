@@ -4,7 +4,7 @@ description: "Lösungen für häufig auftretende SSH-, Setup-, Repository-, Serv
 category: "Guides"
 order: 10
 language: de
-sourceHash: "17dc03eb0589d606"
+sourceHash: "a1c58ae1fe3d0514"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -15,16 +15,16 @@ Häufig auftretende Probleme und deren Lösungen. Bei Unsicherheit können Sie m
 ## SSH-Verbindung fehlgeschlagen
 
 - Überprüfen Sie, ob Sie sich manuell verbinden können: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Führen Sie `rdc config machine scan-keys -m server-1` aus, um die Host-Schlüssel zu aktualisieren
+- Führen Sie `rdc machine scan-keys server-1` aus, um die Host-Schlüssel zu aktualisieren
 - Überprüfen Sie, dass der SSH-Port übereinstimmt: `--port 22`
-- Testen Sie mit einem einfachen Befehl: `rdc term connect -m server-1 -c "hostname"`
+- Testen Sie mit einem einfachen Befehl: `rdc term connect server-1 -c "hostname"`
 
 ## Host-Schlüssel stimmt nicht überein
 
 Falls ein Server neu installiert wurde oder sich seine SSH-Schlüssel geändert haben, sehen Sie die Fehlermeldung "host key verification failed":
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 Dies ruft neue Host-Schlüssel ab und aktualisiert Ihre Konfiguration.
@@ -33,7 +33,7 @@ Dies ruft neue Host-Schlüssel ab und aktualisiert Ihre Konfiguration.
 
 - Stellen Sie sicher, dass der SSH-Benutzer sudo-Zugriff ohne Passwort hat oder konfigurieren Sie `NOPASSWD` für die erforderlichen Befehle
 - Überprüfen Sie den verfügbaren Speicherplatz auf dem Server
-- Führen Sie mit `--debug` aus, um ausführliche Ausgaben zu erhalten: `rdc config machine setup --name server-1 --debug`
+- Führen Sie mit `--debug` aus, um ausführliche Ausgaben zu erhalten: `rdc machine setup server-1 --debug`
 
 ## Distributionsspezifische Setup-Probleme
 
@@ -141,7 +141,7 @@ docker run --rm --network host -it ubuntu bash
 
 ## VS Code: Berechtigung verweigert für Sandbox-Dateien
 
-Beim Verbinden mit `rdc vscode connect -m <machine> -r <repo>` nach einer vorherigen VS-Code-Sitzung erzeugten ältere renet-Versionen Fehler wie `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied`. Die Ursache: gemischtes Dateieigentum im Sandbox-Verzeichnis, wo sowohl Ihr SSH-Benutzer als auch der interne `rediacc`-Benutzer Dateien geschrieben hatten.
+Beim Verbinden mit `rdc vscode connect <repo>` nach einer vorherigen VS-Code-Sitzung erzeugten ältere renet-Versionen Fehler wie `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied`. Die Ursache: gemischtes Dateieigentum im Sandbox-Verzeichnis, wo sowohl Ihr SSH-Benutzer als auch der interne `rediacc`-Benutzer Dateien geschrieben hatten.
 
 Moderne Versionen von renet beheben dies durch:
 

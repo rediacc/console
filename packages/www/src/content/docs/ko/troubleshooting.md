@@ -4,7 +4,7 @@ description: "일반적인 SSH, 설정, 저장소, 서비스, Docker 문제에 �
 category: "Guides"
 order: 10
 language: ko
-sourceHash: "17dc03eb0589d606"
+sourceHash: "a1c58ae1fe3d0514"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -15,16 +15,16 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ## SSH 연결 실패
 
 - 수동으로 연결 가능한지 확인하세요: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- `rdc config machine scan-keys -m server-1`을 실행하여 호스트 키를 새로 고치세요
+- `rdc machine scan-keys server-1`을 실행하여 호스트 키를 새로 고치세요
 - SSH 포트가 일치하는지 확인하세요: `--port 22`
-- 간단한 명령으로 테스트하세요: `rdc term connect -m server-1 -c "hostname"`
+- 간단한 명령으로 테스트하세요: `rdc term connect server-1 -c "hostname"`
 
 ## 호스트 키 불일치
 
 서버가 재설치되거나 SSH 키가 변경되면 "host key verification failed" 오류가 표시됩니다:
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 이 명령은 새로운 호스트 키를 가져와 설정을 업데이트합니다.
@@ -33,7 +33,7 @@ rdc config machine scan-keys -m server-1
 
 - SSH 사용자에게 비밀번호 없는 sudo 접근 권한이 있는지, 또는 필요한 명령에 대해 `NOPASSWD`가 구성되어 있는지 확인하세요
 - 서버의 디스크 여유 공간을 확인하세요
-- 자세한 출력을 위해 `--debug`와 함께 실행하세요: `rdc config machine setup --name server-1 --debug`
+- 자세한 출력을 위해 `--debug`와 함께 실행하세요: `rdc machine setup server-1 --debug`
 
 ## 배포판별 설정 문제
 
@@ -141,7 +141,7 @@ docker run --rm --network host -it ubuntu bash
 
 ## 샌드박스 파일에 대한 VS Code 권한 거부
 
-이전 VS Code 세션 이후 `rdc vscode connect -m <machine> -r <repo>`로 연결할 때, 이전 버전의 renet은 `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` 같은 오류를 발생시켰습니다. 원인은 샌드박스 디렉터리 내의 파일 소유권 혼재로, SSH 사용자와 내부 `rediacc` 사용자가 모두 파일을 작성했기 때문입니다.
+이전 VS Code 세션 이후 `rdc vscode connect <repo>`로 연결할 때, 이전 버전의 renet은 `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` 같은 오류를 발생시켰습니다. 원인은 샌드박스 디렉터리 내의 파일 소유권 혼재로, SSH 사용자와 내부 `rediacc` 사용자가 모두 파일을 작성했기 때문입니다.
 
 최신 버전의 renet은 다음으로 이 문제를 해결합니다:
 

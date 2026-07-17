@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: fr
-sourceHash: de3bcbe1022db82f
+sourceHash: "269ed11573c50130"
 sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
@@ -118,7 +118,7 @@ En pratique :
 - VM migrée, ID de machine change : les dépôts continuent de fonctionner (dans la fenêtre de 40 jours)
 - La prochaine opération `rdc` renouvelle la licence avec l'ID de machine
 - Aucune intervention manuelle requise
-- Vérifiez l'ID de machine et le statut de la licence avec `rdc machine query --system --licenses --name <machine>`
+- Vérifiez l'ID de machine et le statut de la licence avec `rdc machine status <machine> --system --licenses`
 
 **Les comptes du canal Edge** fonctionnent sur le plan Community avec le double des limites (dépôts de 20 GB, 200 setups/mois, 2 machines). Les plans payants ne sont disponibles que sur le canal Stable. Voir [Canaux de publication](/fr/docs/release-channels) pour plus de détails.
 
@@ -183,13 +183,13 @@ rdc subscription status
 Afficher les détails d'activation de machine pour une machine :
 
 ```bash
-rdc subscription activation status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Afficher les détails de licence de dépôt installés sur une machine :
 
 ```bash
-rdc subscription repo status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Renouveler les licences de dépôt en lot sur une machine :
@@ -267,4 +267,4 @@ Elle n'inclut pas :
 - les tentatives d'émission échouées
 - les dépôts non suivis rejetés avant l'émission
 
-Si vous avez besoin d'une vue de l'utilisation et de l'historique récent d'émission de licences de dépôt orientée client, utilisez le portail de comptes. Si vous avez besoin d'une inspection côté machine, utilisez `rdc subscription activation status -m` et `rdc subscription repo status -m`.
+Si vous avez besoin d'une vue de l'utilisation et de l'historique récent d'émission de licences de dépôt orientée client, utilisez le portail de comptes. Si vous avez besoin d'une inspection côté machine, utilisez `rdc subscription status -m` et `rdc subscription status -m`.

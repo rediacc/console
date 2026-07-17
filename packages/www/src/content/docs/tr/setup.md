@@ -4,7 +4,7 @@ description: "Yapılandırma oluşturma, makine ekleme, sunucuları hazırlama v
 category: "Guides"
 order: 3
 language: tr
-sourceHash: "730a353fc046b7cc"
+sourceHash: "1fba8ac242726528"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -132,7 +132,7 @@ Daha ayrıntılı tanılama için şunu çalıştırın:
 rdc doctor
 ```
 
-> **İpucu**: SSH bağlantısını doğrulamak için `rdc term connect -m <machine> -c "hostname"` çalıştırın veya doğrudan `ssh` kullanın.
+> **İpucu**: SSH bağlantısını doğrulamak için `rdc term connect <machine> -c "hostname"` çalıştırın veya doğrudan `ssh` kullanın.
 
 ## Altyapı Yapılandırması
 

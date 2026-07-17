@@ -4,7 +4,7 @@ description: "SSH, kurulum, depo, hizmet ve Docker sorunlarının yaygın çöz�
 category: "Guides"
 order: 10
 language: tr
-sourceHash: "17dc03eb0589d606"
+sourceHash: "a1c58ae1fe3d0514"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -15,16 +15,16 @@ Yaygın sorunlar ve bunları nasıl düzeltileceği. Emin olmadığınız duruml
 ## SSH Bağlantısı Başarısız Oluyor
 
 - Manuel olarak bağlanabildiğinizi doğrulayın: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Ana bilgisayar anahtarlarını yenilemek için `rdc config machine scan-keys -m server-1` komutunu çalıştırın
+- Ana bilgisayar anahtarlarını yenilemek için `rdc machine scan-keys server-1` komutunu çalıştırın
 - SSH bağlantı noktasının eşleşip eşleşmediğini kontrol edin: `--port 22`
-- Basit bir komutla test edin: `rdc term connect -m server-1 -c "hostname"`
+- Basit bir komutla test edin: `rdc term connect server-1 -c "hostname"`
 
 ## Ana Bilgisayar Anahtarı Uyuşmuyor
 
 Bir sunucu yeniden yüklenirse veya SSH anahtarları değişirse, "host key verification failed" (ana bilgisayar anahtarı doğrulaması başarısız) hatası görürsünüz:
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 Bu, yeni ana bilgisayar anahtarlarını alır ve yapılandırmanızı günceller.
@@ -33,7 +33,7 @@ Bu, yeni ana bilgisayar anahtarlarını alır ve yapılandırmanızı günceller
 
 - SSH kullanıcısının parola olmaksızın sudo erişimine sahip olduğundan emin olun veya gerekli komutlar için `NOPASSWD` yapılandırın
 - Sunucuda kullanılabilir disk alanını kontrol edin
-- Ayrıntılı çıktı için `--debug` ile çalıştırın: `rdc config machine setup --name server-1 --debug`
+- Ayrıntılı çıktı için `--debug` ile çalıştırın: `rdc machine setup server-1 --debug`
 
 ## Dağıtıma Özgü Kurulum Sorunları
 
@@ -141,7 +141,7 @@ docker run --rm --network host -it ubuntu bash
 
 ## VS Code Sandbox Dosyalarında İzin Reddedildi
 
-`rdc vscode connect -m <machine> -r <repo>` ile önceki bir VS Code oturumundan sonra bağlantı kurarken, eski renet sürümleri `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` gibi hatalar üretti. Neden: sandbox dizini içinde karışık dosya sahipliği, burada SSH kullanıcınız ve dahili `rediacc` kullanıcısı dosya yazmışlardır.
+`rdc vscode connect <repo>` ile önceki bir VS Code oturumundan sonra bağlantı kurarken, eski renet sürümleri `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` gibi hatalar üretti. Neden: sandbox dizini içinde karışık dosya sahipliği, burada SSH kullanıcınız ve dahili `rediacc` kullanıcısı dosya yazmışlardır.
 
 Renet'in modern sürümleri bunu şu şekilde düzeltir:
 

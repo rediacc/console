@@ -16,7 +16,7 @@ Look, Rediacc is one component of the technical controls layer within an ISMS. T
 
 | Control Domain | Control | Rediacc Capability |
 |---------------|---------|-------------------|
-| **A.8**, Asset management | A.8.1 Inventory of assets | Each repository is a discrete, identifiable asset with a unique GUID. `rdc machine query --name <machine> --repositories` lists all repositories with size, mount state, and container count. |
+| **A.8**, Asset management | A.8.1 Inventory of assets | Each repository is a discrete, identifiable asset with a unique GUID. `rdc machine status <machine> --repositories` lists all repositories with size, mount state, and container count. |
 | **A.8**, Asset management | A.8.24 Use of cryptography | LUKS2 AES-256 mandatory encryption on all repositories. Key management: credentials stored in the operator's local config only, never on the server. |
 | **A.9**, Access control | A.9.2 User access management | SSH key authentication. API tokens with IP binding, team scoping, and automatic revocation on team removal. Two-factor authentication (TOTP) support. |
 | **A.10**, Cryptography | A.10.1 Cryptographic controls | LUKS2 with configurable key parameters. Per-repository encryption credentials. All remote transport over SSH. Config store implements zero-knowledge encryption: AES-256-GCM with HKDF key derivation, X25519 member key exchange, and time-windowed SDK keys for instant revocation. |
@@ -30,7 +30,7 @@ Look, Rediacc is one component of the technical controls layer within an ISMS. T
 This one is straightforward: Rediacc's repository model naturally supports asset inventory requirements:
 
 - Every repository has a unique GUID assigned at creation
-- Repositories are enumerable per machine (`rdc machine query --repositories`)
+- Repositories are enumerable per machine (`rdc machine status --repositories`)
 - Each repository's encryption status, mount state, container count, and disk usage are visible
 - Fork relationships track the lineage of cloned environments
 
@@ -46,5 +46,5 @@ This is where it gets interesting: the fork-test-promote workflow aligns with IS
 ## Continuous Improvement
 
 - Audit log export supports periodic security reviews
-- Machine health checks (`rdc machine query --system`) support operational monitoring
+- Machine health checks (`rdc machine status --system`) support operational monitoring
 - `rdc repo validate` verifies backup health after each operation

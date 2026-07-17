@@ -4,7 +4,7 @@ description: "Come il modello self-hosted di Rediacc risponde ai requisiti del C
 category: "Legal"
 order: 4
 language: it
-sourceHash: "949159b302cf6ab9"
+sourceHash: "3cee3262b53f7afd"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -35,7 +35,7 @@ Rediacc come software non accede, elabora né archivia i dati dei consumatori. I
 
 Ogni repository Rediacc è un'unità di dati discreta e cifrata con un GUID univoco. È possibile inventariare esattamente quali dati esistono e dove:
 
-- `rdc machine query --name <machine> --repositories` elenca tutti i repository su una macchina con dimensioni e stato di montaggio
+- `rdc machine status <machine> --repositories` elenca tutti i repository su una macchina con dimensioni e stato di montaggio
 - Ogni repository è isolato a livello di filesystem, di rete e di container
 - Le relazioni di fork sono tracciate, consentendo di identificare tutte le copie di un dataset
 

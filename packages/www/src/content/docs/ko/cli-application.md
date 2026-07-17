@@ -6,7 +6,7 @@ order: 2
 language: ko
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ko/cli.json
-sourceHash: "48edde39b6dc9958"
+sourceHash: "0b6dcd192fe3d8f1"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2122,13 +2122,183 @@ rdc job gc [options]
 
 ---
 
+<a id="cli-local-group-backup"></a>
+## 8. {{t:cli.docs.sectionTitles.backup}}
+
+{{t:cli.commands.backup.description}}
+
+<a id="cli-local-backup-schedule"></a>
+### 8.1 schedule
+
+{{t:cli.commands.backup.schedule.description}}
+
+```bash
+rdc backup schedule [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--dry-run` | {{t:cli.commands.backup.schedule.optionDryRun}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--force` | {{t:cli.commands.backup.schedule.optionForce}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--reset-failed` | {{t:cli.commands.backup.schedule.optionResetFailed}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-backup-cancel"></a>
+### 8.2 cancel
+
+{{t:cli.commands.backup.cancel.description}}
+
+```bash
+rdc backup cancel [strategy] [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-backup-list"></a>
+### 8.3 list
+
+{{t:cli.commands.backup.list.description}}
+
+```bash
+rdc backup list [artifact-ref] [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--storage <name>` | {{t:cli.commands.backup.list.optionStorage}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--path <subdir>` | {{t:cli.commands.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-w, --watch` | {{t:cli.options.watch}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-backup-restore"></a>
+### 8.4 restore
+
+{{t:cli.commands.backup.restore.description}}
+
+```bash
+rdc backup restore <artifact-ref> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--as <name>` | {{t:cli.commands.backup.restore.optionAs}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--datastore <name>` | {{t:cli.commands.backup.restore.optionDatastore}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--up` | {{t:cli.commands.backup.restore.optionUp}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--health-window <seconds>` | {{t:cli.options.healthWindow}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--health-timeout <seconds>` | {{t:cli.options.healthTimeout}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-backup-run"></a>
+### 8.5 run
+
+{{t:cli.commands.backup.run.description}}
+
+```bash
+rdc backup run [strategy] [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `-w, --watch` | {{t:cli.options.watch}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-backup-status"></a>
+### 8.6 status
+
+{{t:cli.commands.backup.status.description}}
+
+```bash
+rdc backup status [strategy] [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-backup-strategy"></a>
+### 8.7 strategy
+
+{{t:cli.commands.backup.strategy.description}}
+
+<a id="cli-local-backup-strategy-list"></a>
+#### list
+
+{{t:cli.commands.backup.strategy.list.description}}
+
+```bash
+rdc backup strategy list
+```
+
+<a id="cli-local-backup-strategy-remove"></a>
+#### remove
+
+{{t:cli.commands.backup.strategy.remove.description}}
+
+```bash
+rdc backup strategy remove <strategy> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--destination <name>` | {{t:cli.commands.backup.strategy.remove.optionDestination}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-backup-strategy-set"></a>
+#### set
+
+{{t:cli.commands.backup.strategy.set.description}}
+
+```bash
+rdc backup strategy set <strategy> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--destination <name>` | {{t:cli.commands.backup.strategy.set.optionDestination}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--storage <name>` | {{t:cli.commands.backup.strategy.set.optionStorage}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--cron <expression>` | {{t:cli.commands.backup.strategy.set.optionCron}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--mode <mode>` | {{t:cli.commands.backup.strategy.set.optionMode}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--bwlimit <limit>` | {{t:cli.commands.backup.strategy.set.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--include <repos>` | {{t:cli.commands.backup.strategy.set.optionInclude}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--exclude <repos>` | {{t:cli.commands.backup.strategy.set.optionExclude}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--folder <path>` | {{t:cli.commands.backup.strategy.set.optionFolder}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--enable` | {{t:cli.commands.backup.strategy.set.optionEnable}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--disable` | {{t:cli.commands.backup.strategy.set.optionDisable}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-backup-strategy-show"></a>
+#### show
+
+{{t:cli.commands.backup.strategy.show.description}}
+
+```bash
+rdc backup strategy show [strategy]
+```
+
+---
+
 <a id="cli-local-group-storage"></a>
-## 8. {{t:cli.docs.sectionTitles.storage}}
+## 9. {{t:cli.docs.sectionTitles.storage}}
 
 {{t:cli.commands.storage.description}}
 
 <a id="cli-local-storage-list"></a>
-### 8.1 list
+### 9.1 list
 
 {{t:cli.commands.storage.list.description}}
 
@@ -2142,7 +2312,7 @@ rdc storage list [name] [options]
 
 
 <a id="cli-local-storage-browse"></a>
-### 8.2 browse
+### 9.2 browse
 
 {{t:cli.commands.storage.browse.description}}
 
@@ -2156,7 +2326,7 @@ rdc storage browse <storage> [options]
 
 
 <a id="cli-local-storage-prune"></a>
-### 8.3 prune
+### 9.3 prune
 
 {{t:cli.commands.storage.prune.description}}
 
@@ -2176,7 +2346,7 @@ rdc storage prune <storage> [options]
 
 
 <a id="cli-local-storage-add"></a>
-### 8.4 add
+### 9.4 add
 
 {{t:cli.commands.storage.add.description}}
 
@@ -2190,7 +2360,7 @@ rdc storage add <name> [options]
 
 
 <a id="cli-local-storage-import"></a>
-### 8.5 import
+### 9.5 import
 
 {{t:cli.commands.storage.import.description}}
 
@@ -2204,7 +2374,7 @@ rdc storage import <file> [options]
 
 
 <a id="cli-local-storage-remove"></a>
-### 8.6 remove
+### 9.6 remove
 
 {{t:cli.commands.storage.remove.description}}
 
@@ -2221,12 +2391,12 @@ rdc storage remove <name> [options]
 ---
 
 <a id="cli-local-group-vscode"></a>
-## 9. {{t:cli.docs.sectionTitles.vscode}}
+## 10. {{t:cli.docs.sectionTitles.vscode}}
 
 {{t:cli.commands.vscode.description}}
 
 <a id="cli-local-vscode-connect"></a>
-### 9.1 connect
+### 10.1 connect
 
 {{t:cli.commands.vscode.connect.description}}
 
@@ -2249,7 +2419,7 @@ rdc vscode connect <target> [options]
 
 
 <a id="cli-local-vscode-list"></a>
-### 9.2 list
+### 10.2 list
 
 {{t:cli.commands.vscode.list.description}}
 
@@ -2258,7 +2428,7 @@ rdc vscode list
 ```
 
 <a id="cli-local-vscode-cleanup"></a>
-### 9.3 cleanup
+### 10.3 cleanup
 
 {{t:cli.commands.vscode.cleanup.description}}
 
@@ -2273,7 +2443,7 @@ rdc vscode cleanup [options]
 
 
 <a id="cli-local-vscode-check"></a>
-### 9.4 check
+### 10.4 check
 
 {{t:cli.commands.vscode.check.description}}
 
@@ -2287,7 +2457,7 @@ rdc vscode check [options]
 
 
 <a id="cli-local-vscode-serve"></a>
-### 9.5 serve
+### 10.5 serve
 
 {{t:cli.commands.vscode.serve.description}}
 
@@ -2322,12 +2492,12 @@ rdc vscode serve stop <target> [options]
 ---
 
 <a id="cli-local-group-term"></a>
-## 10. {{t:cli.docs.sectionTitles.term}}
+## 11. {{t:cli.docs.sectionTitles.term}}
 
 {{t:cli.commands.term.description}}
 
 <a id="cli-local-term-connect"></a>
-### 10.1 connect
+### 11.1 connect
 
 {{t:cli.commands.term.connect.description}}
 
@@ -2345,10 +2515,10 @@ rdc term connect <target> [options]
 ---
 
 <a id="cli-local-group-shortcuts"></a>
-## 11. {{t:cli.docs.sectionTitles.shortcuts}}
+## 12. {{t:cli.docs.sectionTitles.shortcuts}}
 
 <a id="cli-local-shortcuts-run"></a>
-### 11.1 run
+### 12.1 run
 
 {{t:cli.commands.shortcuts.run.description}}
 
@@ -2357,7 +2527,7 @@ rdc run
 ```
 
 <a id="cli-local-shortcuts-trace"></a>
-### 11.2 trace
+### 12.2 trace
 
 {{t:cli.commands.shortcuts.trace.description}}
 
@@ -2366,7 +2536,7 @@ rdc trace
 ```
 
 <a id="cli-local-shortcuts-cancel"></a>
-### 11.3 cancel
+### 12.3 cancel
 
 {{t:cli.commands.shortcuts.cancel.description}}
 
@@ -2375,7 +2545,7 @@ rdc cancel
 ```
 
 <a id="cli-local-shortcuts-retry"></a>
-### 11.4 retry
+### 12.4 retry
 
 {{t:cli.commands.shortcuts.retry.description}}
 
@@ -2386,12 +2556,12 @@ rdc retry
 ---
 
 <a id="cli-local-group-subscription"></a>
-## 12. {{t:cli.docs.sectionTitles.subscription}}
+## 13. {{t:cli.docs.sectionTitles.subscription}}
 
 {{t:cli.commands.subscription.description}}
 
 <a id="cli-local-subscription-login"></a>
-### 12.1 login
+### 13.1 login
 
 {{t:cli.commands.subscription.login.description}}
 
@@ -2406,7 +2576,7 @@ rdc subscription login [options]
 
 
 <a id="cli-local-subscription-logout"></a>
-### 12.2 logout
+### 13.2 logout
 
 {{t:cli.commands.subscription.logout.description}}
 
@@ -2415,7 +2585,7 @@ rdc subscription logout
 ```
 
 <a id="cli-local-subscription-status"></a>
-### 12.3 status
+### 13.3 status
 
 {{t:cli.commands.subscription.status.description}}
 
@@ -2429,7 +2599,7 @@ rdc subscription status [options]
 
 
 <a id="cli-local-subscription-refresh"></a>
-### 12.4 refresh
+### 13.4 refresh
 
 {{t:cli.commands.subscription.refresh.description}}
 
@@ -2446,7 +2616,7 @@ rdc subscription refresh [options]
 ---
 
 <a id="cli-local-group-update"></a>
-## 13. {{t:cli.docs.sectionTitles.update}}
+## 14. {{t:cli.docs.sectionTitles.update}}
 
 {{t:cli.commands.update.description}}
 
@@ -2467,7 +2637,7 @@ rdc update [options]
 ---
 
 <a id="cli-local-group-credits"></a>
-## 14. {{t:cli.docs.sectionTitles.credits}}
+## 15. {{t:cli.docs.sectionTitles.credits}}
 
 {{t:cli.commands.credits.description}}
 
@@ -2484,7 +2654,7 @@ rdc credits [options]
 ---
 
 <a id="cli-local-group-doctor"></a>
-## 15. {{t:cli.docs.sectionTitles.doctor}}
+## 16. {{t:cli.docs.sectionTitles.doctor}}
 
 {{t:cli.commands.doctor.description}}
 
@@ -2496,12 +2666,12 @@ rdc doctor
 ---
 
 <a id="cli-local-group-ops"></a>
-## 16. {{t:cli.docs.sectionTitles.ops}}
+## 17. {{t:cli.docs.sectionTitles.ops}}
 
 {{t:cli.commands.ops.description}}
 
 <a id="cli-local-ops-up"></a>
-### 16.1 up
+### 17.1 up
 
 {{t:cli.commands.ops.up.description}}
 
@@ -2522,7 +2692,7 @@ rdc ops up [options]
 
 
 <a id="cli-local-ops-down"></a>
-### 16.2 down
+### 17.2 down
 
 {{t:cli.commands.ops.down.description}}
 
@@ -2537,7 +2707,7 @@ rdc ops down [options]
 
 
 <a id="cli-local-ops-status"></a>
-### 16.3 status
+### 17.3 status
 
 {{t:cli.commands.ops.status.description}}
 
@@ -2551,7 +2721,7 @@ rdc ops status [options]
 
 
 <a id="cli-local-ops-ssh"></a>
-### 16.4 ssh
+### 17.4 ssh
 
 {{t:cli.commands.ops.ssh.description}}
 
@@ -2568,7 +2738,7 @@ rdc ops ssh [options]
 
 
 <a id="cli-local-ops-setup"></a>
-### 16.5 setup
+### 17.5 setup
 
 {{t:cli.commands.ops.setup.description}}
 
@@ -2582,7 +2752,7 @@ rdc ops setup [options]
 
 
 <a id="cli-local-ops-check"></a>
-### 16.6 check
+### 17.6 check
 
 {{t:cli.commands.ops.check.description}}
 
@@ -2593,7 +2763,7 @@ rdc ops check
 ---
 
 <a id="cli-local-group-serve"></a>
-## 17. {{t:cli.docs.sectionTitles.serve}}
+## 18. {{t:cli.docs.sectionTitles.serve}}
 
 {{t:cli.commands.serve.description}}
 

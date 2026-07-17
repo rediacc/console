@@ -4,7 +4,7 @@ description: "Rediacc의 저장소 사고방식으로 Kubernetes를 운영하세
 category: "Guides"
 order: 6
 language: ko
-sourceHash: "56e1f177e8f4ef41"
+sourceHash: "d36c468ae2350e25"
 sourceCommit: "4401262fffbf29b9480dee8ecd209013e4b87f60"
 ---
 
@@ -19,7 +19,7 @@ Kubernetes는 인증된 Kubernetes 배포판인 [k3s](https://k3s.io/)로 구동
 Rediacc는 저장소 사고방식이 계속 적용되도록 "클러스터가 모든 것을 감싼다"는 일반적인 그림을 뒤집습니다.
 
 - **클러스터가 컨테이너입니다.** 머신은 Docker 저장소(변경 없음)와/또는 클러스터를 호스팅합니다. 한 머신 위의 단일 노드 클러스터는 클러스터 수준에서도 "파일 하나가 시스템 전체를 옮긴다"는 이야기를 유지합니다. 클러스터 상태(노드별 k3s 데이터 디렉터리: 내장된 데이터스토어와 containerd)는 노드마다 데이터스토어 기반 copy-on-write 이미지 파일에 존재하며, k3s의 `--data-dir`가 이미지 마운트 내부에 바인딩됩니다.
-- **Kubernetes 저장소는 네임스페이스입니다.** `rdc repo create --cluster <name>`은 해당 클러스터 내 Kubernetes 네임스페이스 `<repo>`를 실행 거처로 하는 저장소를 생성합니다.
+- **Kubernetes 저장소는 네임스페이스입니다.** `rdc repo create <repo> -m <name>`은 해당 클러스터 내 Kubernetes 네임스페이스 `<repo>`를 실행 거처로 하는 저장소를 생성합니다.
 - **퍼시스턴트 볼륨은 별도의 copy-on-write 단위입니다.** PV는 Ceph의 RBD 이미지이거나, 로컬 백엔드에서는 로컬 PV 프로비저너를 통한 작은 데이터스토어 이미지 파일입니다. 하나의 불투명한 클러스터 이미지 내부의 디렉터리가 되는 일은 결코 없습니다. 내부 파일시스템에는 reflink가 없으므로, 독립적인 저장소 포크에는 독립적인 PV 이미지가 필요합니다.
 
 이 분리 덕분에 두 가지 약속이 동시에 물리적으로 가능해집니다. **항상 copy-on-write인 네임스페이스 포크**(각 저장소의 데이터가 독립적으로 복제됨)와 **클러스터 전체의 이동성**(클러스터 이미지와 각 PV 이미지가 함께 이동함)입니다.
@@ -97,7 +97,7 @@ rdc repo sync upload --cluster prod -r shop --local ./config
 rdc cluster kubeconfig --name prod           # KUBECONFIG를 export한 뒤 kubectl을 직접 사용
 ```
 
-클러스터 노드도 `resources.machines`에 구체화되므로, 일반적인 `rdc term connect -m <cluster>-<pool>-<n>`으로 특정 노드에 SSH 접속할 수 있습니다.
+클러스터 노드도 `resources.machines`에 구체화되므로, 일반적인 `rdc term connect <cluster>-<pool>-<n>`으로 특정 노드에 SSH 접속할 수 있습니다.
 
 ### 이중 런타임 Rediaccfile
 

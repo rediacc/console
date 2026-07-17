@@ -17,7 +17,7 @@ Kubernetes is powered by [k3s](https://k3s.io/), a certified Kubernetes distribu
 Rediacc inverts the usual "cluster wraps everything" picture so that the repo mentality still applies:
 
 - **A cluster is the container.** A machine hosts Docker repos (unchanged) and/or clusters. A single-node cluster on one machine keeps the "one file moves the whole system" story at the cluster level. Cluster state (the k3s data directory: its embedded datastore and containerd) lives in datastore-backed copy-on-write image files, one per node, with the k3s `--data-dir` bound inside the image mount.
-- **A Kubernetes repo is a namespace.** `rdc repo create --cluster <name>` creates a repo whose runtime home is the Kubernetes namespace `<repo>` inside that cluster.
+- **A Kubernetes repo is a namespace.** `rdc repo create <repo> -m <name>` creates a repo whose runtime home is the Kubernetes namespace `<repo>` inside that cluster.
 - **Persistent volumes are separate copy-on-write units.** PVs are RBD images on Ceph, or small datastore image files via a renet local PV provisioner on the local backend. They are never directories inside one opaque cluster image: the inner filesystem has no reflinks, so independent per-repo forks require independent PV images.
 
 This split is what makes both promises physically possible at once: **always-copy-on-write namespace forks** (each repo's data clones independently) and **whole-cluster portability** (the cluster images plus every PV image move together).
@@ -95,7 +95,7 @@ rdc repo sync upload --cluster prod -r shop --local ./config
 rdc cluster kubeconfig --name prod           # export KUBECONFIG, then use kubectl directly
 ```
 
-Cluster nodes also materialize into `resources.machines`, so you can SSH to a specific node with the ordinary `rdc term connect -m <cluster>-<pool>-<n>`.
+Cluster nodes also materialize into `resources.machines`, so you can SSH to a specific node with the ordinary `rdc term connect <cluster>-<pool>-<n>`.
 
 ### Dual-runtime Rediaccfile
 

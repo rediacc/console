@@ -4,7 +4,7 @@ description: 몇 분 안에 서버에서 컨테이너화된 서비스를 실행�
 category: Guides
 order: -1
 language: ko
-sourceHash: "afd4d22ddc8e02e1"
+sourceHash: "866251eee417b1d4"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -112,7 +112,7 @@ rdc repo status --name my-app -m my-server  # 마운트 상태, Docker, 크기, 
 ### 4. VS Code
 
 ```bash
-rdc vscode connect -m my-server -r my-app              # VS Code SSH를 열고 리포지터리 샌드박스 내부에 착지합니다
+rdc vscode connect my-app              # VS Code SSH를 열고 리포지터리 샌드박스 내부에 착지합니다
 ```
 
 암호화된 볼륨 *내부의* 파일을 편집하고 있습니다. `docker ps`는 이 리포지터리의 컨테이너만 표시합니다. 저장하고, compose up하고, 반복합니다.
@@ -126,7 +126,7 @@ rdc vscode connect -m my-server -r my-app              # VS Code SSH를 열고 �
 | **사용 사례** | CI/CD, 자동화, 원격 작업 | 개발자 내부 루프 |
 | **격리** | 외부에서 오케스트레이션 | 이미 샌드박스 내부 |
 
-**데모 흐름:** `rdc repo template apply` → `rdc vscode connect -m my-server -r my-app` → `docker-compose.yml` 편집 → `renet dev up` → 앱 실행 확인 → 반복.
+**데모 흐름:** `rdc repo template apply` → `rdc vscode connect my-app` → `docker-compose.yml` 편집 → `renet dev up` → 앱 실행 확인 → 반복.
 
 > Rediaccfile 구조: [서비스](/ko/docs/services). 어느 도구를 언제 사용할지: [rdc vs renet](/ko/docs/rdc-vs-renet).
 

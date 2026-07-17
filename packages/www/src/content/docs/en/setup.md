@@ -130,7 +130,7 @@ For more detailed diagnostics, run:
 rdc doctor
 ```
 
-> **Tip**: To verify SSH connectivity, run `rdc term connect -m <machine> -c "hostname"` or use `ssh` directly.
+> **Tip**: To verify SSH connectivity, run `rdc term connect <machine> -c "hostname"` or use `ssh` directly.
 
 ## Infrastructure Configuration
 

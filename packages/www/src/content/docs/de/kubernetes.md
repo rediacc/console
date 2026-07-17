@@ -4,7 +4,7 @@ description: "Kubernetes mit der Rediacc-Repo-Mentalität betreiben: einen laufe
 category: "Guides"
 order: 6
 language: de
-sourceHash: "56e1f177e8f4ef41"
+sourceHash: "d36c468ae2350e25"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -19,7 +19,7 @@ Kubernetes wird von [k3s](https://k3s.io/) angetrieben, einer zertifizierten Kub
 Rediacc kehrt das übliche Bild "Cluster umhüllt alles" um, damit die Repo-Mentalität weiterhin gilt:
 
 - **Ein Cluster ist der Container.** Eine Maschine hostet Docker-Repos (unverändert) und/oder Cluster. Ein Single-Node-Cluster auf einer Maschine bewahrt die Geschichte "eine Datei bewegt das ganze System" auf Cluster-Ebene. Cluster-Zustand (das k3s-Datenverzeichnis: sein eingebetteter Datastore und containerd) liegt in Datastore-gestützten Copy-on-Write-Image-Dateien, eine pro Knoten, wobei das k3s-`--data-dir` innerhalb des Image-Mounts gebunden ist.
-- **Ein Kubernetes-Repo ist ein Namespace.** `rdc repo create --cluster <name>` erstellt ein Repo, dessen Laufzeit-Zuhause der Kubernetes-Namespace `<repo>` innerhalb dieses Clusters ist.
+- **Ein Kubernetes-Repo ist ein Namespace.** `rdc repo create <repo> -m <name>` erstellt ein Repo, dessen Laufzeit-Zuhause der Kubernetes-Namespace `<repo>` innerhalb dieses Clusters ist.
 - **Persistent Volumes sind separate Copy-on-Write-Einheiten.** PVs sind RBD-Images auf Ceph oder kleine Datastore-Image-Dateien über einen lokalen renet-PV-Provisioner auf dem lokalen Backend. Sie sind niemals Verzeichnisse innerhalb eines opaken Cluster-Images: Das innere Dateisystem hat keine Reflinks, sodass unabhängige Pro-Repo-Forks unabhängige PV-Images erfordern.
 
 Diese Trennung ist es, die beide Versprechen gleichzeitig physisch möglich macht: **immer copy-on-write Namespace-Forks** (die Daten jedes Repos klonen unabhängig) und **Ganze-Cluster-Portabilität** (die Cluster-Images plus jedes PV-Image bewegen sich zusammen).
@@ -97,7 +97,7 @@ rdc repo sync upload --cluster prod -r shop --local ./config
 rdc cluster kubeconfig --name prod           # KUBECONFIG exportieren, dann kubectl direkt verwenden
 ```
 
-Cluster-Knoten materialisieren sich auch in `resources.machines`, sodass Sie sich mit dem gewöhnlichen `rdc term connect -m <cluster>-<pool>-<n>` per SSH mit einem bestimmten Knoten verbinden können.
+Cluster-Knoten materialisieren sich auch in `resources.machines`, sodass Sie sich mit dem gewöhnlichen `rdc term connect <cluster>-<pool>-<n>` per SSH mit einem bestimmten Knoten verbinden können.
 
 ### Dual-Runtime-Rediaccfile
 

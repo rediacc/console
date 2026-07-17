@@ -5,7 +5,7 @@ description: >-
 category: Concepts
 order: 35
 language: ja
-sourceHash: "eb4c8dd0389a45a6"
+sourceHash: "30c1cd3d88219e7c"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -28,7 +28,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 | `rdc config edit`（インタラクティブエディタ） | 🔴 refused | エージェント起動前に人間が `REDIACC_ALLOW_CONFIG_EDIT=*` を設定する |
 | `rdc config edit --apply <file>` | 🔴 refused | 同じオーバーライド |
 | `rdc config field rotate --pointer <pointer>` | 🔴 refused | 同じオーバーライド。インタラクティブ確認を使用 |
-| `rdc term connect -m <machine>`（マシンへの直接SSH） | 🔴 refused | 最初にリポジトリをフォークしてフォークに接続する |
+| `rdc term connect <machine>`（マシンへの直接SSH） | 🔴 refused | 最初にリポジトリをフォークしてフォークに接続する |
 
 エージェントが拒否されたすべての操作は `outcome: refused` と理由とともに監査ログに記録されます。
 

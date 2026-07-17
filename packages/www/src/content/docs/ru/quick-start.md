@@ -4,7 +4,7 @@ description: Запустите контейнерный сервис на ва�
 category: Guides
 order: -1
 language: ru
-sourceHash: "afd4d22ddc8e02e1"
+sourceHash: "866251eee417b1d4"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -112,7 +112,7 @@ rdc repo status --name my-app -m my-server  # Состояние монтиро�
 ### 4. VS Code
 
 ```bash
-rdc vscode connect -m my-server -r my-app              # Открывает VS Code через SSH внутри песочницы репозитория
+rdc vscode connect my-app              # Открывает VS Code через SSH внутри песочницы репозитория
 ```
 
 Вы редактируете файлы *внутри* зашифрованного тома. `docker ps` показывает только контейнеры этого репозитория. Сохраняйте, запускайте compose up, итерируйте.
@@ -126,7 +126,7 @@ rdc vscode connect -m my-server -r my-app              # Открывает VS C
 | **Сценарий использования** | CI/CD, автоматизация, удалённые операции | Внутренний цикл разработчика |
 | **Изоляция** | Оркестрация снаружи | Уже внутри песочницы |
 
-**Демонстрационный процесс:** `rdc repo template apply` → `rdc vscode connect -m my-server -r my-app` → редактирование `docker-compose.yml` → `renet dev up` → приложение работает → итерация.
+**Демонстрационный процесс:** `rdc repo template apply` → `rdc vscode connect my-app` → редактирование `docker-compose.yml` → `renet dev up` → приложение работает → итерация.
 
 > Структура Rediaccfile: [Сервисы](/en/docs/services). Когда какой инструмент использовать: [rdc vs renet](/en/docs/rdc-vs-renet).
 

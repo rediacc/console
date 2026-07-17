@@ -4,7 +4,7 @@ description: حلول للمشاكل الشائعة مع SSH والإعداد و
 category: Guides
 order: 10
 language: ar
-sourceHash: "17dc03eb0589d606"
+sourceHash: "a1c58ae1fe3d0514"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -15,16 +15,16 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ## فشل اتصال SSH
 
 - تحقق من إمكانية الاتصال يدوياً: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- شغّل `rdc config machine scan-keys -m server-1` لتحديث مفاتيح المضيف
+- شغّل `rdc machine scan-keys server-1` لتحديث مفاتيح المضيف
 - تأكد من تطابق منفذ SSH: `--port 22`
-- اختبر بأمر بسيط: `rdc term connect -m server-1 -c "hostname"`
+- اختبر بأمر بسيط: `rdc term connect server-1 -c "hostname"`
 
 ## عدم تطابق مفتاح المضيف
 
 إذا تمت إعادة تثبيت الخادم أو تغيّرت مفاتيح SSH الخاصة به، سترى "host key verification failed":
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 يقوم هذا الأمر بجلب مفاتيح المضيف الجديدة وتحديث إعداداتك.
@@ -33,7 +33,7 @@ rdc config machine scan-keys -m server-1
 
 - تأكد من أن مستخدم SSH لديه صلاحيات sudo بدون كلمة مرور، أو قم بتكوين `NOPASSWD` للأوامر المطلوبة
 - تحقق من مساحة القرص المتوفرة على الخادم
-- شغّل مع `--debug` للحصول على مخرجات مفصّلة: `rdc config machine setup --name server-1 --debug`
+- شغّل مع `--debug` للحصول على مخرجات مفصّلة: `rdc machine setup server-1 --debug`
 
 ## مشاكل الإعداد الخاصة بكل توزيعة
 
@@ -141,7 +141,7 @@ docker run --rm --network host -it ubuntu bash
 
 ## رفض صلاحيات VS Code على ملفات sandbox
 
-عند الاتصال باستخدام `rdc vscode connect -m <machine> -r <repo>`، ربما رأيت أخطاء مثل `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` بعد جلسة VS Code سابقة. كان سبب ذلك اختلاط ملكية الملفات داخل مجلد sandbox، الذي كان يحتوي على ملفات كتبها كل من مستخدم SSH الخاص بك والمستخدم الداخلي `rediacc`.
+عند الاتصال باستخدام `rdc vscode connect <repo>`، ربما رأيت أخطاء مثل `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` بعد جلسة VS Code سابقة. كان سبب ذلك اختلاط ملكية الملفات داخل مجلد sandbox، الذي كان يحتوي على ملفات كتبها كل من مستخدم SSH الخاص بك والمستخدم الداخلي `rediacc`.
 
 تعالج الإصدارات الحديثة من renet هذا عبر:
 

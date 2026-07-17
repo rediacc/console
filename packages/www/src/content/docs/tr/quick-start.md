@@ -4,7 +4,7 @@ description: Birkaç dakika içinde sunucunuzda konteynerize bir servis çalış
 category: Guides
 order: -1
 language: tr
-sourceHash: "afd4d22ddc8e02e1"
+sourceHash: "866251eee417b1d4"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -112,7 +112,7 @@ rdc repo status --name my-app -m my-server  # Bağlama durumu, Docker, boyut, ş
 ### 4. VS Code
 
 ```bash
-rdc vscode connect -m my-server -r my-app              # VS Code SSH açar, repo sandbox'una iner
+rdc vscode connect my-app              # VS Code SSH açar, repo sandbox'una iner
 ```
 
 Şifrelenmiş birim *içinde* dosyaları düzenliyorsunuz. `docker ps` yalnızca bu reponun konteynerlerini gösterir. Kaydedin, compose up yapın, tekrarlayın.
@@ -126,7 +126,7 @@ rdc vscode connect -m my-server -r my-app              # VS Code SSH açar, repo
 | **Kullanım senaryosu** | CI/CD, otomasyon, uzaktan işlemler | Geliştirici iç döngüsü |
 | **İzolasyon** | Dışarıdan yönetir | Zaten sandbox içindedir |
 
-**Demo akışı:** `rdc repo template apply` → `rdc vscode connect -m my-server -r my-app` → `docker-compose.yml` düzenle → `renet dev up` → uygulamanın çalıştığını gör → tekrarla.
+**Demo akışı:** `rdc repo template apply` → `rdc vscode connect my-app` → `docker-compose.yml` düzenle → `renet dev up` → uygulamanın çalıştığını gör → tekrarla.
 
 > Rediaccfile yapısı: [Servisler](/en/docs/services). Hangi aracı ne zaman kullanmalı: [rdc vs renet](/en/docs/rdc-vs-renet).
 

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: ru
-sourceHash: de3bcbe1022db82f
+sourceHash: "269ed11573c50130"
 sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
@@ -119,7 +119,7 @@ Community остаётся постоянным бесплатным базов�
 - ВМ перенесена, ID машины изменился: репозитории продолжают работать (в окне 40 дней)
 - Следующая операция `rdc` обновляет лицензию с новым ID машины
 - Никакого ручного вмешательства не требуется
-- Проверьте ID машины и статус лицензии с помощью `rdc machine query --system --licenses --name <machine>`
+- Проверьте ID машины и статус лицензии с помощью `rdc machine status <machine> --system --licenses`
 
 **Аккаунты канала Edge** работают на плане Community с удвоенными лимитами (20 GB репозиториев, 200 настроек в месяц, 2 машины). Платные планы доступны только на канале Stable. Подробнее см. [Каналы выпуска](/ru/docs/release-channels).
 
@@ -184,13 +184,13 @@ rdc subscription status
 Показать детали активации машины для одной машины:
 
 ```bash
-rdc subscription activation status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Показать детали установленной лицензии репозитория на одной машине:
 
 ```bash
-rdc subscription repo status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Массовое обновление лицензий репозиториев на машине:
@@ -268,4 +268,4 @@ See [On-Premise Installation - Licensing for Air-Gapped Deployments](/en/docs/on
 - неудачные попытки выпуска
 - неотслеживаемые репозитории, отклонённые перед выпуском
 
-Если вам нужен обращённый к клиенту вид использования и недавнюю историю выпусков лицензий репозиториев, используйте портал account. Если вам нужна проверка на стороне машины, используйте `rdc subscription activation status -m` и `rdc subscription repo status -m`.
+Если вам нужен обращённый к клиенту вид использования и недавнюю историю выпусков лицензий репозиториев, используйте портал account. Если вам нужна проверка на стороне машины, используйте `rdc subscription status -m` и `rdc subscription status -m`.

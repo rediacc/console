@@ -4,7 +4,7 @@ description: "Wie Rediacc den Informationssicherheitskontrollen von ISO 27001 f�
 category: "Legal"
 order: 5
 language: de
-sourceHash: "52709a22c0b38178"
+sourceHash: "7bdb4bcfdee26303"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -18,7 +18,7 @@ Schau, Rediacc ist eine Komponente der technischen Kontrollschicht innerhalb ein
 
 | Kontrolldomäne | Kontrolle | Rediacc-Fähigkeit |
 |----------------|-----------|-------------------|
-| **A.8**, Asset-Management | A.8.1 Inventar der Assets | Jedes Repository ist ein diskretes, identifizierbares Asset mit einer einzigartigen GUID. `rdc machine query --name <machine> --repositories` listet alle Repositories mit Größe, Mount-Status und Container-Anzahl. |
+| **A.8**, Asset-Management | A.8.1 Inventar der Assets | Jedes Repository ist ein diskretes, identifizierbares Asset mit einer einzigartigen GUID. `rdc machine status <machine> --repositories` listet alle Repositories mit Größe, Mount-Status und Container-Anzahl. |
 | **A.8**, Asset-Management | A.8.24 Einsatz von Kryptographie | LUKS2 AES-256 obligatorische Verschlüsselung aller Repositories. Key-Management: Anmeldedaten nur in der lokalen Konfiguration des Operators, nie auf dem Server. |
 | **A.9**, Zugangskontrolle | A.9.2 Benutzerzugangsverwaltung | SSH-Schlüssel-Authentifizierung. API-Tokens mit IP-Bindung, Team-Scoping und automatischem Widerruf bei Team-Entfernung. Zwei-Faktor-Authentifizierung (TOTP). |
 | **A.10**, Kryptographie | A.10.1 Kryptographische Kontrollen | LUKS2 mit konfigurierbaren Schlüsselparametern. Pro-Repository-Verschlüsselungsanmeldedaten. Gesamter Remote-Transport über SSH. Config Store implementiert Zero-Knowledge-Verschlüsselung: AES-256-GCM mit HKDF-Schlüsselableitung, X25519-Mitglieder-Schlüsselaustausch und zeitlich begrenzte SDK-Schlüssel für sofortigen Widerruf. |
@@ -32,7 +32,7 @@ Schau, Rediacc ist eine Komponente der technischen Kontrollschicht innerhalb ein
 Das ist einfach: Das Repository-Modell von Rediacc unterstützt natürlich die Anforderungen an das Asset-Inventar:
 
 - Jedes Repository hat eine einzigartige GUID, die bei der Erstellung zugewiesen wird
-- Repositories sind pro Maschine aufzählbar (`rdc machine query --repositories`)
+- Repositories sind pro Maschine aufzählbar (`rdc machine status --repositories`)
 - Verschlüsselungsstatus, Mount-Status, Container-Anzahl und Festplattennutzung jedes Repositories sind sichtbar
 - Fork-Beziehungen verfolgen die Herkunft geklonter Umgebungen
 
@@ -48,5 +48,5 @@ Das wird interessant: Der Fork-Test-Promote-Workflow entspricht den Änderungsma
 ## Kontinuierliche Verbesserung
 
 - Audit-Log-Export unterstützt regelmäßige Sicherheitsüberprüfungen
-- Maschinengesundheitsprüfungen (`rdc machine query --system`) unterstützen Betriebsüberwachung
+- Maschinengesundheitsprüfungen (`rdc machine status --system`) unterstützen Betriebsüberwachung
 - `rdc repo validate` überprüft Backup-Gesundheit nach jeder Operation

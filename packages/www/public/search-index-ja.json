@@ -2118,7 +2118,7 @@
   {
     "id": "search-10331",
     "content": "クイックリファレンス: エージェントができること・できないこと",
-    "body": "| 操作 | エージェントのデフォルト | 特定のユースケースでの解除方法 | |---|---|---| | rdc config show（秘匿化済み） | ✅ allowed | | | rdc config field get --pointer <pointer>（秘匿化スタブまたはダイジェスト） | ✅ allowed | | | rdc config field get --pointer <pointer> --digest | ✅ allowed | | | rdc config field set --pointer <pointer>（公開フィールド） | ✅ allowed | | | rdc config field set --pointer <pointer>（機密フィールド、正しい --current あり） | ✅ allowed | | | rdc config edit --dump（秘匿化済みJSONC） | ✅ allowed | | | rdc config audit {log, tail, verify} | ✅ allowed | | | rdc config field set --pointer <pointer>（機密フィールド、--current なし） | 🔴 refused | --current \"<古い値>\" を指定する | | rdc config field get --pointer <pointer> --reveal | 🔴 refused | 代わりに --digest を使用する | | rdc config show --reveal | 🔴 refused | オプションなしの rdc config show を使用する | | rdc config edit（インタラクティブエディタ） | 🔴 refused | エージェント起動前に人間が REDIACC_ALLOW_CONFIG_EDIT=* を設定する | | rdc config edit --apply <file> | 🔴 refused | 同じオーバーライド | | rdc config field rotate --pointer <pointer> | 🔴 refused | 同じオーバーライド。インタラクティブ確認を使用 | | rdc term connect -m <machine>（マシンへの直接SSH） | 🔴 refused | 最初にリポジトリをフォークしてフォークに接続する | エージェントが拒否されたすべての操作は outcome: refused と理由とともに監査ログに記録されます。",
+    "body": "| 操作 | エージェントのデフォルト | 特定のユースケースでの解除方法 | |---|---|---| | rdc config show（秘匿化済み） | ✅ allowed | | | rdc config field get --pointer <pointer>（秘匿化スタブまたはダイジェスト） | ✅ allowed | | | rdc config field get --pointer <pointer> --digest | ✅ allowed | | | rdc config field set --pointer <pointer>（公開フィールド） | ✅ allowed | | | rdc config field set --pointer <pointer>（機密フィールド、正しい --current あり） | ✅ allowed | | | rdc config edit --dump（秘匿化済みJSONC） | ✅ allowed | | | rdc config audit {log, tail, verify} | ✅ allowed | | | rdc config field set --pointer <pointer>（機密フィールド、--current なし） | 🔴 refused | --current \"<古い値>\" を指定する | | rdc config field get --pointer <pointer> --reveal | 🔴 refused | 代わりに --digest を使用する | | rdc config show --reveal | 🔴 refused | オプションなしの rdc config show を使用する | | rdc config edit（インタラクティブエディタ） | 🔴 refused | エージェント起動前に人間が REDIACC_ALLOW_CONFIG_EDIT=* を設定する | | rdc config edit --apply <file> | 🔴 refused | 同じオーバーライド | | rdc config field rotate --pointer <pointer> | 🔴 refused | 同じオーバーライド。インタラクティブ確認を使用 | | rdc term connect <machine>（マシンへの直接SSH） | 🔴 refused | 最初にリポジトリをフォークしてフォークに接続する | エージェントが拒否されたすべての操作は outcome: refused と理由とともに監査ログに記録されます。",
     "excerpt": "| 操作 | エージェントのデフォルト | 特定のユースケースでの解除方法 | |---|---|---| | rdc config show（秘匿化済み） | ✅ allowed | | | rdc config field get --pointer <pointer>（秘匿化スタブまたはダイジ...",
     "category": "Documentation",
     "page": "/ja/docs/ai-agents-safety",
@@ -2369,7 +2369,7 @@
   {
     "id": "search-10354",
     "content": "設定",
-    "body": "すべてのCLI状態は~/.config/rediacc/以下のフラットなJSON設定ファイルに保存されています。 すべての状態はワークステーション上の設定ファイル(例:~/.config/rediacc/rediacc.json)に存在します。 マシンへの直接SSH接続 外部サービスは不要 デフォルト設定はCLI初回使用時に自動作成されます。名前付き設定はrdc config init --name <name>で作成されます オプションの暗号化設定同期により、同じファイルがチームごとにスコープされた設定ストアに保存されます",
+    "body": "すべてのCLI状態は~/.config/rediacc/以下のフラットなJSON設定ファイルに保存されています。 すべての状態はワークステーション上の設定ファイル(例:~/.config/rediacc/rediacc.json)に存在します。 マシンへの直接SSH接続 外部サービスは不要 デフォルト設定はCLI初回使用時に自動作成されます。名前付き設定はrdc config init <name>で作成されます オプションの暗号化設定同期により、同じファイルがチームごとにスコープされた設定ストアに保存されます",
     "excerpt": "すべてのCLI状態は~/.config/rediacc/以下のフラットなJSON設定ファイルに保存されています。 すべての状態はワークステーション上の設定ファイル(例:~/.config/rediacc/rediacc.json)に存在します。 マシンへの直接SSH接続 外部サービスは不要 デフォル...",
     "category": "Documentation",
     "page": "/ja/docs/architecture",
@@ -2391,7 +2391,7 @@
   {
     "id": "search-10356",
     "content": "Docker分離",
-    "body": "各リポジトリは分離されたDockerデーモンを取得します。リポジトリをマウントすると、renetは一意のソケットを持つ専用のdockerdプロセスを開始します: Docker分離 /var/run/rediacc/docker-{networkId}.sock 例えば、ネットワークID2816を持つリポジトリは以下を使用します: /var/run/rediacc/docker-2816.sock これは以下を意味します: 異なるリポジトリのコンテナは互いに見えない 各リポジトリは独自のイメージキャッシュ、ネットワーク、ボリュームを持つ ホストDockerデーモン(存在する場合)は完全に分離されている Rediaccfile関数には、DOCKER_HOSTが正しいソケットに自動的に設定されます。 AIエージェントがrdc term connect -r <repo>経由でリポジトリに入る場合、同じ分離が適用されます。セッションは非特権rediaccユーザー(UID 7111)として実行され、別個のマウント名前空間内で、DOCKER_HOSTはそのリポジトリのデーモンソケットに限定されます。フォークファースト最適化はこのランタイム分離をCoWクローンプリミティブと組み合わせます。エージェントはタスクごとのフォーク上で動作し、grand(本番環境)リポジトリ上では決して動作しません。完全なサンドボックスモデル、オーバーライド意味論、外部サービス認証情報の開発者責任境界については、AIエージェント安全性とガードレールをご覧ください。",
+    "body": "各リポジトリは分離されたDockerデーモンを取得します。リポジトリをマウントすると、renetは一意のソケットを持つ専用のdockerdプロセスを開始します: Docker分離 /var/run/rediacc/docker-{networkId}.sock 例えば、ネットワークID2816を持つリポジトリは以下を使用します: /var/run/rediacc/docker-2816.sock これは以下を意味します: 異なるリポジトリのコンテナは互いに見えない 各リポジトリは独自のイメージキャッシュ、ネットワーク、ボリュームを持つ ホストDockerデーモン(存在する場合)は完全に分離されている Rediaccfile関数には、DOCKER_HOSTが正しいソケットに自動的に設定されます。 AIエージェントがrdc term connect <repo>経由でリポジトリに入る場合、同じ分離が適用されます。セッションは非特権rediaccユーザー(UID 7111)として実行され、別個のマウント名前空間内で、DOCKER_HOSTはそのリポジトリのデーモンソケットに限定されます。フォークファースト最適化はこのランタイム分離をCoWクローンプリミティブと組み合わせます。エージェントはタスクごとのフォーク上で動作し、grand(本番環境)リポジトリ上では決して動作しません。完全なサンドボックスモデル、オーバーライド意味論、外部サービス認証情報の開発者責任境界については、AIエージェント安全性とガードレールをご覧ください。",
     "excerpt": "各リポジトリは分離されたDockerデーモンを取得します。リポジトリをマウントすると、renetは一意のソケットを持つ専用のdockerdプロセスを開始します: Docker分離 /var/run/rediacc/docker-{networkId}.sock 例えば、ネットワークID2816を持つ...",
     "category": "Documentation",
     "page": "/ja/docs/architecture",
@@ -2772,7 +2772,7 @@
   {
     "id": "search-10391",
     "content": "コールドバックアップのセマンティクス",
-    "body": "コールドバックアップは、対象リポジトリごとに3つのフェーズで実行されます：停止 - スナップショット - 起動。保証の限界を理解することで、オペレーターが部分的な障害を早期に検出できます。 コールドバックアップが保証すること： スナップショット前に、各対象リポジトリで実行中のすべてのコンテナがRediaccfileのdown()フックを通じて正常に停止され、リポジトリごとのDockerデーモンが静止されます。スナップショットはクラッシュ整合性だけでなく、アプリケーション整合性を持ちます。 スナップショット前に実行されていたコンテナIDのセットが/var/run/rediacc/cold-backup-<guid>.running.jsonのサイドカーファイルに保持されます。これが「完了時に再び起動すべきもの」の真実の情報源です。 スナップショット後、リポジトリのRediaccfileのup()フックが呼び出され、完全なcomposeスタックが復元されます。 実行ごとのステータスサイドカーファイル/var/run/rediacc/cold-backup-<guid>.status.jsonに、各試行のフェーズ、結果、エラーが記録されます。 コールドバックアップが保証しないこと： up()はベストエフォートです。コールドバックアップの制御外の理由で失敗する可能性があります（depends_on: service_healthy条件の待機中、composeファイルの構文エラー、イメージプル中の一時的なネットワーク障害など）。失敗した場合、コールドバックアップはエラーレベルでログを記録し、ステータスサイドカーを書き込み、次のリポジトリに進みます。 up()が失敗した場合、直接フォールバック再起動が実行されます：実行サイドカーが読み込まれ、記録された各コンテナIDがDocker APIを通じて直接再起動されます（composeなし）。composeフローに問題があっても、Rediaccfileフックを再実行せずにサービスを復帰させます。 一部のコンテナID（Dockerデーモン自体がダウンしているなど）のフォールバックが失敗した場合、サイドカーはそのまま残され、ルーターwatchdogが各ティックで再試行できるようにします。 Watchdog回復： 各ティックで、watchdogは実行サイドカーの存在を確認します。そこにリストされているコンテナIDのうち、現在停止しているものは、コンテナの保存されたrestart_policyに関わらず再起動されます。これにより、restart: on-failure（クリーンな停止後にDockerが再起動しない）のサービスも、コールドバックアップ後に復帰します。リストされたすべてのコンテナが実行中になると、サイドカーは削除されます。 オペレーターが障害を検出する方法： rdc machine query --name <machine> --containersで実行状態を確認します。期待されるセットと比較してください。 マシン上の/var/run/rediacc/cold-backup-<guid>.status.jsonを確認します。rdc term connect -m <machine> -r <repo> -c \"cat /var/run/rediacc/cold-backup-$GUID.status.json\"で検査できます。success: falseと古いstartedAtは、最後のバックアップが正常に完了しなかったことを示します。 renetバックアップ実行のログ（journalctl -u renet-*または直接のrdc machine backup schedule呼び出し）は、Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]の形式の最終サマリー行を出力します。空でないfailed_reposがgrepのターゲットです。",
+    "body": "コールドバックアップは、対象リポジトリごとに3つのフェーズで実行されます：停止 - スナップショット - 起動。保証の限界を理解することで、オペレーターが部分的な障害を早期に検出できます。 コールドバックアップが保証すること： スナップショット前に、各対象リポジトリで実行中のすべてのコンテナがRediaccfileのdown()フックを通じて正常に停止され、リポジトリごとのDockerデーモンが静止されます。スナップショットはクラッシュ整合性だけでなく、アプリケーション整合性を持ちます。 スナップショット前に実行されていたコンテナIDのセットが/var/run/rediacc/cold-backup-<guid>.running.jsonのサイドカーファイルに保持されます。これが「完了時に再び起動すべきもの」の真実の情報源です。 スナップショット後、リポジトリのRediaccfileのup()フックが呼び出され、完全なcomposeスタックが復元されます。 実行ごとのステータスサイドカーファイル/var/run/rediacc/cold-backup-<guid>.status.jsonに、各試行のフェーズ、結果、エラーが記録されます。 コールドバックアップが保証しないこと： up()はベストエフォートです。コールドバックアップの制御外の理由で失敗する可能性があります（depends_on: service_healthy条件の待機中、composeファイルの構文エラー、イメージプル中の一時的なネットワーク障害など）。失敗した場合、コールドバックアップはエラーレベルでログを記録し、ステータスサイドカーを書き込み、次のリポジトリに進みます。 up()が失敗した場合、直接フォールバック再起動が実行されます：実行サイドカーが読み込まれ、記録された各コンテナIDがDocker APIを通じて直接再起動されます（composeなし）。composeフローに問題があっても、Rediaccfileフックを再実行せずにサービスを復帰させます。 一部のコンテナID（Dockerデーモン自体がダウンしているなど）のフォールバックが失敗した場合、サイドカーはそのまま残され、ルーターwatchdogが各ティックで再試行できるようにします。 Watchdog回復： 各ティックで、watchdogは実行サイドカーの存在を確認します。そこにリストされているコンテナIDのうち、現在停止しているものは、コンテナの保存されたrestart_policyに関わらず再起動されます。これにより、restart: on-failure（クリーンな停止後にDockerが再起動しない）のサービスも、コールドバックアップ後に復帰します。リストされたすべてのコンテナが実行中になると、サイドカーは削除されます。 オペレーターが障害を検出する方法： rdc machine status <machine> --containersで実行状態を確認します。期待されるセットと比較してください。 マシン上の/var/run/rediacc/cold-backup-<guid>.status.jsonを確認します。rdc term connect <repo> -c \"cat /var/run/rediacc/cold-backup-$GUID.status.json\"で検査できます。success: falseと古いstartedAtは、最後のバックアップが正常に完了しなかったことを示します。 renetバックアップ実行のログ（journalctl -u renet-*または直接のrdc machine backup schedule呼び出し）は、Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]の形式の最終サマリー行を出力します。空でないfailed_reposがgrepのターゲットです。",
     "excerpt": "コールドバックアップは、対象リポジトリごとに3つのフェーズで実行されます：停止 - スナップショット - 起動。保証の限界を理解することで、オペレーターが部分的な障害を早期に検出できます。 コールドバックアップが保証すること： スナップショット前に、各対象リポジトリで実行中のすべてのコンテナがRed...",
     "category": "Documentation",
     "page": "/ja/docs/backup-restore",
@@ -2849,7 +2849,7 @@
   {
     "id": "search-10398",
     "content": "マシンへの戦略のバインド",
-    "body": "設定内で、1つ以上の戦略名をマシンにバインドします： { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } バインディングはローカル設定のみです。 ストラテジーを定義してマシンにバインドしてもマシン自体には影響しません。systemd タイマーをデプロイするには rdc machine backup schedule -m <machine> を実行してください（マシンへのスケジュールのデプロイを参照）。ストラテジーやバインディングを変更した後は再度実行してください。",
+    "body": "設定内で、1つ以上の戦略名をマシンにバインドします： { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } バインディングはローカル設定のみです。 ストラテジーを定義してマシンにバインドしてもマシン自体には影響しません。systemd タイマーをデプロイするには rdc backup schedule -m <machine> を実行してください（マシンへのスケジュールのデプロイを参照）。ストラテジーやバインディングを変更した後は再度実行してください。",
     "excerpt": "設定内で、1つ以上の戦略名をマシンにバインドします： { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } バインディングはローカル設定のみです。 ストラテジーを定義してマシンにバ...",
     "category": "Documentation",
     "page": "/ja/docs/backup-restore",
@@ -6105,7 +6105,7 @@
   {
     "id": "search-10696",
     "content": "オブジェクトモデル",
-    "body": "Rediaccは、リポジトリの考え方が引き続き成り立つように、通常の「クラスターがすべてを包む」という図式を反転させます。 クラスターがコンテナです。 マシンはDockerリポジトリ(変更なし)や、クラスターをホストします。1台のマシン上のシングルノードクラスターは、クラスターレベルでも「1つのファイルがシステム全体を移動する」という物語を保ちます。クラスターの状態(k3sのデータディレクトリ: その組み込みデータストアとcontainerd)は、ノードごとにデータストアに支えられたcopy-on-writeイメージファイルに存在し、k3sの --data-dir はイメージのマウント内にバインドされます。 Kubernetesリポジトリはnamespaceです。 rdc repo create --cluster <name> は、そのクラスター内のKubernetes namespace <repo> を実行の場とするリポジトリを作成します。 永続ボリュームは別個のcopy-on-writeユニットです。 PVはCeph上のRBDイメージか、ローカルバックエンドではローカルPVプロビジョナーによる小さなデータストアイメージファイルです。1つの不透明なクラスターイメージ内のディレクトリになることは決してありません。内部のファイルシステムにはreflinkがないため、独立したリポジトリフォークには独立したPVイメージが必要です。 この分離こそが、両方の約束を同時に物理的に可能にしています。常にcopy-on-writeなnamespaceフォーク(各リポジトリのデータが独立してクローンされる)と、クラスター全体の可搬性(クラスターイメージと各PVイメージがまとめて移動する)です。 | 概念 | Dockerリポジトリ | Kubernetesリポジトリ | |---|---|---| | 実行の場 | 分離されたDockerデーモン | クラスター内のnamespace | | 注入される環境変数 | DOCKER_HOST | KUBECONFIG | | デプロイのラッパー | renet compose | renet kube | | データの単位 | 1つのLUKSイメージ | クラスターイメージ + PVごとのイメージ | | フォークの単位 | リポジトリのイメージ | namespace + そのPVクローン | | 場所全体のクローン | (リポジトリが場所そのもの) | rdc cluster fork / rdc cluster migrate |",
+    "body": "Rediaccは、リポジトリの考え方が引き続き成り立つように、通常の「クラスターがすべてを包む」という図式を反転させます。 クラスターがコンテナです。 マシンはDockerリポジトリ(変更なし)や、クラスターをホストします。1台のマシン上のシングルノードクラスターは、クラスターレベルでも「1つのファイルがシステム全体を移動する」という物語を保ちます。クラスターの状態(k3sのデータディレクトリ: その組み込みデータストアとcontainerd)は、ノードごとにデータストアに支えられたcopy-on-writeイメージファイルに存在し、k3sの --data-dir はイメージのマウント内にバインドされます。 Kubernetesリポジトリはnamespaceです。 rdc repo create <repo> -m <name> は、そのクラスター内のKubernetes namespace <repo> を実行の場とするリポジトリを作成します。 永続ボリュームは別個のcopy-on-writeユニットです。 PVはCeph上のRBDイメージか、ローカルバックエンドではローカルPVプロビジョナーによる小さなデータストアイメージファイルです。1つの不透明なクラスターイメージ内のディレクトリになることは決してありません。内部のファイルシステムにはreflinkがないため、独立したリポジトリフォークには独立したPVイメージが必要です。 この分離こそが、両方の約束を同時に物理的に可能にしています。常にcopy-on-writeなnamespaceフォーク(各リポジトリのデータが独立してクローンされる)と、クラスター全体の可搬性(クラスターイメージと各PVイメージがまとめて移動する)です。 | 概念 | Dockerリポジトリ | Kubernetesリポジトリ | |---|---|---| | 実行の場 | 分離されたDockerデーモン | クラスター内のnamespace | | 注入される環境変数 | DOCKER_HOST | KUBECONFIG | | デプロイのラッパー | renet compose | renet kube | | データの単位 | 1つのLUKSイメージ | クラスターイメージ + PVごとのイメージ | | フォークの単位 | リポジトリのイメージ | namespace + そのPVクローン | | 場所全体のクローン | (リポジトリが場所そのもの) | rdc cluster fork / rdc cluster migrate |",
     "excerpt": "Rediaccは、リポジトリの考え方が引き続き成り立つように、通常の「クラスターがすべてを包む」という図式を反転させます。 クラスターがコンテナです。 マシンはDockerリポジトリ(変更なし)や、クラスターをホストします。1台のマシン上のシングルノードクラスターは、クラスターレベルでも「1つのファ...",
     "category": "Documentation",
     "page": "/ja/docs/kubernetes",
@@ -6138,7 +6138,7 @@
   {
     "id": "search-10699",
     "content": "Kubernetesリポジトリ",
-    "body": "ターゲットフラグがランタイムを決定します。タイプフラグはありません。 # Dockerリポジトリ(変更なし): マシン上の分離されたDockerデーモン rdc repo create --name shop -m server-1 --size 10G # Kubernetesリポジトリ: クラスター内の namespace \"shop\" + そのストレージ rdc repo create --name shop --cluster prod --size 10G repoの各動詞は、リポジトリ単位の作業に対する単一のサーフェスです。ターゲット解決の漏斗を通じて、repoコマンド群のほぼ全体がクラスター対応になります。fork、migrate、push、pull、up、down、resize、diff、commit、branch、checkout、merge、trim、cat、mount、sync、list、status、log はすべて --cluster を受け付けます。クラスターターゲットは、そのコントロールノードと、リポジトリのnamespaceに固定されたKUBECONFIGコンテキストに解決されます。これは、マシンが DOCKER_HOST と作業ディレクトリに解決されるのと同じ類推です。 rdc repo sync upload --cluster prod -r shop --local ./config rdc cluster kubeconfig --name prod # KUBECONFIGをエクスポートし、そのままkubectlを使う クラスターノードも resources.machines に実体化されるため、通常の rdc term connect -m <cluster>-<pool>-<n> で特定のノードにSSH接続できます。",
+    "body": "ターゲットフラグがランタイムを決定します。タイプフラグはありません。 # Dockerリポジトリ(変更なし): マシン上の分離されたDockerデーモン rdc repo create --name shop -m server-1 --size 10G # Kubernetesリポジトリ: クラスター内の namespace \"shop\" + そのストレージ rdc repo create --name shop --cluster prod --size 10G repoの各動詞は、リポジトリ単位の作業に対する単一のサーフェスです。ターゲット解決の漏斗を通じて、repoコマンド群のほぼ全体がクラスター対応になります。fork、migrate、push、pull、up、down、resize、diff、commit、branch、checkout、merge、trim、cat、mount、sync、list、status、log はすべて --cluster を受け付けます。クラスターターゲットは、そのコントロールノードと、リポジトリのnamespaceに固定されたKUBECONFIGコンテキストに解決されます。これは、マシンが DOCKER_HOST と作業ディレクトリに解決されるのと同じ類推です。 rdc repo sync upload --cluster prod -r shop --local ./config rdc cluster kubeconfig --name prod # KUBECONFIGをエクスポートし、そのままkubectlを使う クラスターノードも resources.machines に実体化されるため、通常の rdc term connect <cluster>-<pool>-<n> で特定のノードにSSH接続できます。",
     "excerpt": "ターゲットフラグがランタイムを決定します。タイプフラグはありません。 # Dockerリポジトリ(変更なし): マシン上の分離されたDockerデーモン rdc repo create --name shop -m server-1 --size 10G # Kubernetesリポジトリ: クラス...",
     "category": "Documentation",
     "page": "/ja/docs/kubernetes",
@@ -6376,8 +6376,8 @@
   {
     "id": "search-10721",
     "content": "データインベントリ",
-    "body": "各Rediaccリポジトリは、固有のGUIDを持つ個別の暗号化されたデータユニットです。どこにどのようなデータが存在するかを正確にインベントリできます： rdc machine query --name <machine> --repositoriesがマシン上のすべてのリポジトリをサイズとマウント状態とともに一覧表示します 各リポジトリはファイルシステム、ネットワーク、コンテナレベルで分離されています フォーク関係が追跡されるため、データセットのすべてのコピーを特定できます CCPAはデータマッピングを要求します。Rediaccのリポジトリモデルがそれを提供します：データセットごとに1つのGUID、マシンごとに列挙可能、フォークの系譜が追跡されます。",
-    "excerpt": "各Rediaccリポジトリは、固有のGUIDを持つ個別の暗号化されたデータユニットです。どこにどのようなデータが存在するかを正確にインベントリできます： rdc machine query --name <machine> --repositoriesがマシン上のすべてのリポジトリをサイズとマウント...",
+    "body": "各Rediaccリポジトリは、固有のGUIDを持つ個別の暗号化されたデータユニットです。どこにどのようなデータが存在するかを正確にインベントリできます： rdc machine status <machine> --repositoriesがマシン上のすべてのリポジトリをサイズとマウント状態とともに一覧表示します 各リポジトリはファイルシステム、ネットワーク、コンテナレベルで分離されています フォーク関係が追跡されるため、データセットのすべてのコピーを特定できます CCPAはデータマッピングを要求します。Rediaccのリポジトリモデルがそれを提供します：データセットごとに1つのGUID、マシンごとに列挙可能、フォークの系譜が追跡されます。",
+    "excerpt": "各Rediaccリポジトリは、固有のGUIDを持つ個別の暗号化されたデータユニットです。どこにどのようなデータが存在するかを正確にインベントリできます： rdc machine status <machine> --repositoriesがマシン上のすべてのリポジトリをサイズとマウント状態とともに...",
     "category": "Documentation",
     "page": "/ja/docs/legal-ccpa",
     "path": "docs.legal-ccpa.content",
@@ -6797,8 +6797,8 @@
   {
     "id": "search-10760",
     "content": "Annex A 統制マッピング",
-    "body": "| 統制ドメイン | 統制 | Rediaccの機能 | |------------|------|--------------| | A.8、資産管理 | A.8.1 資産のインベントリ | 各リポジトリは固有のGUIDを持つ個別の識別可能な資産です。rdc machine query --name <machine> --repositoriesがすべてのリポジトリをサイズ、マウント状態、コンテナ数とともに一覧表示します。 | | A.8、資産管理 | A.8.24 暗号の使用 | すべてのリポジトリでLUKS2 AES-256必須暗号化。キー管理：認証情報はオペレーターのローカル設定にのみ保存、サーバーには保存されません。 | | A.9、アクセス制御 | A.9.2 ユーザーアクセス管理 | SSH鍵認証。IPバインド、チームスコープ、チーム削除時の自動失効付きAPIトークン。二要素認証（TOTP）サポート。 | | A.10、暗号 | A.10.1 暗号統制 | 設定可能なキーパラメータを持つLUKS2。リポジトリごとの暗号化認証情報。すべてのリモート転送はSSH経由。設定ストアはゼロ知識暗号化を実装：HKDF鍵導出によるAES-256-GCM、X25519メンバー鍵交換、即時失効のための時間制限付きSDKキー。 | | A.12、運用セキュリティ | A.12.3 バックアップ | rdc repo push/pullによる複数宛先（SSH、S3、B2、Azure、GDrive）への暗号化オフサイトストレージ。CoWスナップショットによるポイントインタイムリカバリ。rdc repo validateがバックアップの健全性とリポジトリの完全性を検証。 | | A.12、運用セキュリティ | A.12.4 ログと監視 | 70以上のイベントタイプ（認証、APIトークン、設定、ライセンス、マシン操作）。rdc machine queryによるマシン健全性監視。コンテナステータスとリソース監視。 | | A.13、通信セキュリティ | A.13.1 ネットワークセキュリティ管理 | リポジトリごとのDocker daemon分離。iptablesルールがクロスリポジトリトラフィックをブロック。リポジトリごとのループバックIPサブネット（/26）。外部アクセス用TLS終端付きリバースプロキシ。 | | A.14、システム開発 | A.14.2 開発におけるセキュリティ | Forkベースの開発環境が本番データを公開することなく本番同等性を提供。Rediaccfileライフサイクルフックがクローン環境での自動データサニタイゼーションを可能に。 |",
-    "excerpt": "| 統制ドメイン | 統制 | Rediaccの機能 | |------------|------|--------------| | A.8、資産管理 | A.8.1 資産のインベントリ | 各リポジトリは固有のGUIDを持つ個別の識別可能な資産です。rdc machine query --nam...",
+    "body": "| 統制ドメイン | 統制 | Rediaccの機能 | |------------|------|--------------| | A.8、資産管理 | A.8.1 資産のインベントリ | 各リポジトリは固有のGUIDを持つ個別の識別可能な資産です。rdc machine status <machine> --repositoriesがすべてのリポジトリをサイズ、マウント状態、コンテナ数とともに一覧表示します。 | | A.8、資産管理 | A.8.24 暗号の使用 | すべてのリポジトリでLUKS2 AES-256必須暗号化。キー管理：認証情報はオペレーターのローカル設定にのみ保存、サーバーには保存されません。 | | A.9、アクセス制御 | A.9.2 ユーザーアクセス管理 | SSH鍵認証。IPバインド、チームスコープ、チーム削除時の自動失効付きAPIトークン。二要素認証（TOTP）サポート。 | | A.10、暗号 | A.10.1 暗号統制 | 設定可能なキーパラメータを持つLUKS2。リポジトリごとの暗号化認証情報。すべてのリモート転送はSSH経由。設定ストアはゼロ知識暗号化を実装：HKDF鍵導出によるAES-256-GCM、X25519メンバー鍵交換、即時失効のための時間制限付きSDKキー。 | | A.12、運用セキュリティ | A.12.3 バックアップ | rdc repo push/pullによる複数宛先（SSH、S3、B2、Azure、GDrive）への暗号化オフサイトストレージ。CoWスナップショットによるポイントインタイムリカバリ。rdc repo validateがバックアップの健全性とリポジトリの完全性を検証。 | | A.12、運用セキュリティ | A.12.4 ログと監視 | 70以上のイベントタイプ（認証、APIトークン、設定、ライセンス、マシン操作）。rdc machine queryによるマシン健全性監視。コンテナステータスとリソース監視。 | | A.13、通信セキュリティ | A.13.1 ネットワークセキュリティ管理 | リポジトリごとのDocker daemon分離。iptablesルールがクロスリポジトリトラフィックをブロック。リポジトリごとのループバックIPサブネット（/26）。外部アクセス用TLS終端付きリバースプロキシ。 | | A.14、システム開発 | A.14.2 開発におけるセキュリティ | Forkベースの開発環境が本番データを公開することなく本番同等性を提供。Rediaccfileライフサイクルフックがクローン環境での自動データサニタイゼーションを可能に。 |",
+    "excerpt": "| 統制ドメイン | 統制 | Rediaccの機能 | |------------|------|--------------| | A.8、資産管理 | A.8.1 資産のインベントリ | 各リポジトリは固有のGUIDを持つ個別の識別可能な資産です。rdc machine status <mac...",
     "category": "Documentation",
     "page": "/ja/docs/legal-iso27001",
     "path": "docs.legal-iso27001.content",
@@ -6808,8 +6808,8 @@
   {
     "id": "search-10761",
     "content": "資産管理",
-    "body": "これは単純です：Rediaccのリポジトリモデルは資産インベントリ要件を自然にサポートします： すべてのリポジトリに作成時に一意のGUIDが割り当てられます リポジトリはマシンごとに列挙可能です（rdc machine query --repositories） 各リポジトリの暗号化状態、マウント状態、コンテナ数、ディスク使用量が可視化されます Fork関係がクローン環境の系譜を追跡します",
-    "excerpt": "これは単純です：Rediaccのリポジトリモデルは資産インベントリ要件を自然にサポートします： すべてのリポジトリに作成時に一意のGUIDが割り当てられます リポジトリはマシンごとに列挙可能です（rdc machine query --repositories） 各リポジトリの暗号化状態、マウント状...",
+    "body": "これは単純です：Rediaccのリポジトリモデルは資産インベントリ要件を自然にサポートします： すべてのリポジトリに作成時に一意のGUIDが割り当てられます リポジトリはマシンごとに列挙可能です（rdc machine status --repositories） 各リポジトリの暗号化状態、マウント状態、コンテナ数、ディスク使用量が可視化されます Fork関係がクローン環境の系譜を追跡します",
+    "excerpt": "これは単純です：Rediaccのリポジトリモデルは資産インベントリ要件を自然にサポートします： すべてのリポジトリに作成時に一意のGUIDが割り当てられます リポジトリはマシンごとに列挙可能です（rdc machine status --repositories） 各リポジトリの暗号化状態、マウント...",
     "category": "Documentation",
     "page": "/ja/docs/legal-iso27001",
     "path": "docs.legal-iso27001.content",
@@ -6830,8 +6830,8 @@
   {
     "id": "search-10763",
     "content": "継続的改善",
-    "body": "監査ログのエクスポートが定期的なセキュリティレビューをサポート マシン健全性チェック（rdc machine query --system）が運用監視をサポート rdc repo validateが各操作後のバックアップ健全性を検証",
-    "excerpt": "監査ログのエクスポートが定期的なセキュリティレビューをサポート マシン健全性チェック（rdc machine query --system）が運用監視をサポート rdc repo validateが各操作後のバックアップ健全性を検証",
+    "body": "監査ログのエクスポートが定期的なセキュリティレビューをサポート マシン健全性チェック（rdc machine status --system）が運用監視をサポート rdc repo validateが各操作後のバックアップ健全性を検証",
+    "excerpt": "監査ログのエクスポートが定期的なセキュリティレビューをサポート マシン健全性チェック（rdc machine status --system）が運用監視をサポート rdc repo validateが各操作後のバックアップ健全性を検証",
     "category": "Documentation",
     "page": "/ja/docs/legal-iso27001",
     "path": "docs.legal-iso27001.content",
@@ -7588,8 +7588,8 @@
   {
     "id": "search-10833",
     "content": "常時アクティブなポート",
-    "body": "ポートは rdc config infra set --public-ipv4 でパブリック IP を設定した後にのみ開かれます。それまではマシン上でポートは開かれません。設定後: | ポート | プロトコル | 用途 | |--------|-----------|------| | 80 | TCP | HTTP: Traefik が処理。未設定のドメインには 404 を返し、どのサービスにも転送されません | | 443 | TCP | HTTPS: 上記と同様。一致するルートがないリクエストはプロキシ層で拒否されます | | 10000–10010 | TCP | Rediacc が管理する TCP 転送用の動的範囲 | HTTP/HTTPS は生の TCP ポートとは異なります。80 と 443 が開いていても、すべてのリクエストはリバースプロキシによって明示的なルーティングテーブルに対して検証されます。設定されたサービスと一致するドメインがなければ、アプリケーションコードには到達せず、データも公開されません。",
-    "excerpt": "ポートは rdc config infra set --public-ipv4 でパブリック IP を設定した後にのみ開かれます。それまではマシン上でポートは開かれません。設定後: | ポート | プロトコル | 用途 | |--------|-----------|------| | 80 | T...",
+    "body": "ポートは rdc machine infra set <machine> --public-ipv4 でパブリック IP を設定した後にのみ開かれます。それまではマシン上でポートは開かれません。設定後: | ポート | プロトコル | 用途 | |--------|-----------|------| | 80 | TCP | HTTP: Traefik が処理。未設定のドメインには 404 を返し、どのサービスにも転送されません | | 443 | TCP | HTTPS: 上記と同様。一致するルートがないリクエストはプロキシ層で拒否されます | | 10000–10010 | TCP | Rediacc が管理する TCP 転送用の動的範囲 | HTTP/HTTPS は生の TCP ポートとは異なります。80 と 443 が開いていても、すべてのリクエストはリバースプロキシによって明示的なルーティングテーブルに対して検証されます。設定されたサービスと一致するドメインがなければ、アプリケーションコードには到達せず、データも公開されません。",
+    "excerpt": "ポートは rdc machine infra set <machine> --public-ipv4 でパブリック IP を設定した後にのみ開かれます。それまではマシン上でポートは開かれません。設定後: | ポート | プロトコル | 用途 | |--------|-----------|-----...",
     "category": "Documentation",
     "page": "/ja/docs/limits",
     "path": "docs.limits.content",
@@ -7632,7 +7632,7 @@
   {
     "id": "search-10837",
     "content": "チェックポイント / リストア (CRIU)",
-    "body": "CRIU によるライブマイグレーションには以下の制約があります。 オプトイン: rediacc.checkpoint=true ラベルを持つコンテナのみがチェックポイントされます。データベースとステートレスサービスはデフォルトで除外され、リストア時に新規起動します。 カーネル要件: ソースマシンとデスティネーションマシンの両方で Linux 6.1 以上が必要です。 ネットワークモード: CRIU にはホストネットワーキングモードが必要です。カスタムネットワーク構成を使用するコンテナはチェックポイントできません。 メモリ: チェックポイントデータのサイズは、チェックポイントされるプロセスのレジデントメモリと同等です。大規模なインメモリデータセット（例: 4 GB のデータをキャッシュする Node.js アプリ）は 4 GB のチェックポイントファイルを生成します。 TCP 接続: アプリケーションは復元時の接続損失を許容する必要があります。アクティブな TCP 接続は保持されません。復元されたプロセスはソケットが閉じられたものとして認識し、再接続する必要があります。これは同一マシン復元およびマシン間復元の両方に適用されます。 同一マシン上のライブフォークは親のアドレスをリダイレクトします: 親リポジトリが稼働したまま、rdc repo fork --parent X --tag Y --checkpoint に続けて rdc repo up を実行できます。復元されたプロセスはチェックポイント時点の親のループバックアドレスを持っているため、システムがフォーク自身のアドレス（同じサービス、フォーク側のデータコピー）へ透過的にリダイレクトします。復元された TCP 接続は最初の使用時に失敗するため、アプリは再接続が必要です（上記の TCP の項を参照）。 ---",
+    "body": "CRIU によるライブマイグレーションには以下の制約があります。 オプトイン: rediacc.checkpoint=true ラベルを持つコンテナのみがチェックポイントされます。データベースとステートレスサービスはデフォルトで除外され、リストア時に新規起動します。 カーネル要件: ソースマシンとデスティネーションマシンの両方で Linux 6.1 以上が必要です。 ネットワークモード: CRIU にはホストネットワーキングモードが必要です。カスタムネットワーク構成を使用するコンテナはチェックポイントできません。 メモリ: チェックポイントデータのサイズは、チェックポイントされるプロセスのレジデントメモリと同等です。大規模なインメモリデータセット（例: 4 GB のデータをキャッシュする Node.js アプリ）は 4 GB のチェックポイントファイルを生成します。 TCP 接続: アプリケーションは復元時の接続損失を許容する必要があります。アクティブな TCP 接続は保持されません。復元されたプロセスはソケットが閉じられたものとして認識し、再接続する必要があります。これは同一マシン復元およびマシン間復元の両方に適用されます。 同一マシン上のライブフォークは親のアドレスをリダイレクトします: 親リポジトリが稼働したまま、rdc repo fork X --tag Y --checkpoint に続けて rdc repo up を実行できます。復元されたプロセスはチェックポイント時点の親のループバックアドレスを持っているため、システムがフォーク自身のアドレス（同じサービス、フォーク側のデータコピー）へ透過的にリダイレクトします。復元された TCP 接続は最初の使用時に失敗するため、アプリは再接続が必要です（上記の TCP の項を参照）。 ---",
     "excerpt": "CRIU によるライブマイグレーションには以下の制約があります。 オプトイン: rediacc.checkpoint=true ラベルを持つコンテナのみがチェックポイントされます。データベースとステートレスサービスはデフォルトで除外され、リストア時に新規起動します。 カーネル要件: ソースマシンとデ...",
     "category": "Documentation",
     "page": "/ja/docs/limits",
@@ -7643,7 +7643,7 @@
   {
     "id": "search-10838",
     "content": "バックアップ",
-    "body": "| 制限 | 値 | |------|-----| | リポジトリあたりのバックアップ先 | 無制限 | | 同時バックアップジョブ | リポジトリあたり 1（同時にトリガーされた場合、ジョブはキューに入ります） | | バックアップ頻度 | 最小間隔の強制なし。ストレージ帯域幅によって制限されます。rdc config backup-strategy set --name <name> --bwlimit \"6M\" でアップロード速度を制限できます（rclone --bwlimit 構文: simple 6M、directional 6M:off、またはタイムテーブル 08:00,3M;22:00,10M） | | 保持期間 | ストレージプロバイダー（S3、Cloudflare R2 など）によって制御されます。Rediacc は保持ポリシーを強制しません。 | | マシン間バックアップ | サポート対象。デスティネーションマシンに十分なデータストア容量が必要です | ---",
+    "body": "| 制限 | 値 | |------|-----| | リポジトリあたりのバックアップ先 | 無制限 | | 同時バックアップジョブ | リポジトリあたり 1（同時にトリガーされた場合、ジョブはキューに入ります） | | バックアップ頻度 | 最小間隔の強制なし。ストレージ帯域幅によって制限されます。rdc backup strategy set <name> --bwlimit \"6M\" でアップロード速度を制限できます（rclone --bwlimit 構文: simple 6M、directional 6M:off、またはタイムテーブル 08:00,3M;22:00,10M） | | 保持期間 | ストレージプロバイダー（S3、Cloudflare R2 など）によって制御されます。Rediacc は保持ポリシーを強制しません。 | | マシン間バックアップ | サポート対象。デスティネーションマシンに十分なデータストア容量が必要です | ---",
     "excerpt": "| 制限 | 値 | |------|-----| | リポジトリあたりのバックアップ先 | 無制限 | | 同時バックアップジョブ | リポジトリあたり 1（同時にトリガーされた場合、ジョブはキューに入ります） | | バックアップ頻度 | 最小間隔の強制なし。ストレージ帯域幅によって制限されます...",
     "category": "Documentation",
     "page": "/ja/docs/limits",
@@ -8057,8 +8057,8 @@
   {
     "id": "search-10876",
     "content": "スクラブのステータス",
-    "body": "最後のスクラブの結果は BTRFS ボリュームの外部（/var/lib/rediacc/scrub-last-result.json）に保存されるため、ボリュームに問題があっても読み取り可能なままです。rdc machine query --system の出力には scrub_status フィールドが含まれます： \"scrub_status\": { \"last_run_human\": \"3 days ago\", \"status\": \"ok\", \"total_errors\": 0, \"uncorrectable\": 0, \"duration_seconds\": 312 } | ステータス | 意味 | |-----------|------| | ok | 最後のスクラブがエラーなしで完了した | | never_run | スクラブがまだ実行されていない（タイマーがインストールされたばかり） | | overdue | 最後のスクラブが 14 日以上前だった | | errors_found | スクラブがチェックサムの不一致を発見した（total_errors と uncorrectable のカウントを確認してください） | | failed | スクラブプロセスが非ゼロのコードで終了した | uncorrectable がゼロより大きい場合、影響を受けたブロックは自動的に修復できません（単一ディスクの BTRFS には冗長コピーがありません）。影響を受けたリポジトリを最新のバックアップから復元してください。",
-    "excerpt": "最後のスクラブの結果は BTRFS ボリュームの外部（/var/lib/rediacc/scrub-last-result.json）に保存されるため、ボリュームに問題があっても読み取り可能なままです。rdc machine query --system の出力には scrub_status フィー...",
+    "body": "最後のスクラブの結果は BTRFS ボリュームの外部（/var/lib/rediacc/scrub-last-result.json）に保存されるため、ボリュームに問題があっても読み取り可能なままです。rdc machine status --system の出力には scrub_status フィールドが含まれます： \"scrub_status\": { \"last_run_human\": \"3 days ago\", \"status\": \"ok\", \"total_errors\": 0, \"uncorrectable\": 0, \"duration_seconds\": 312 } | ステータス | 意味 | |-----------|------| | ok | 最後のスクラブがエラーなしで完了した | | never_run | スクラブがまだ実行されていない（タイマーがインストールされたばかり） | | overdue | 最後のスクラブが 14 日以上前だった | | errors_found | スクラブがチェックサムの不一致を発見した（total_errors と uncorrectable のカウントを確認してください） | | failed | スクラブプロセスが非ゼロのコードで終了した | uncorrectable がゼロより大きい場合、影響を受けたブロックは自動的に修復できません（単一ディスクの BTRFS には冗長コピーがありません）。影響を受けたリポジトリを最新のバックアップから復元してください。",
+    "excerpt": "最後のスクラブの結果は BTRFS ボリュームの外部（/var/lib/rediacc/scrub-last-result.json）に保存されるため、ボリュームに問題があっても読み取り可能なままです。rdc machine status --system の出力には scrub_status フィ...",
     "category": "Documentation",
     "page": "/ja/docs/monitoring",
     "path": "docs.monitoring.content",
@@ -8068,7 +8068,7 @@
   {
     "id": "search-10877",
     "content": "手動スクラブ",
-    "body": "スクラブを即座に実行するには（例：電源障害またはディスク移行後）： rdc term connect -m server-1 -c \"sudo renet maintenance scrub --datastore /mnt/rediacc\" 結果は同じ JSON ファイルに保存され、次の rdc machine query --system で即座に確認できます。",
+    "body": "スクラブを即座に実行するには（例：電源障害またはディスク移行後）： rdc term connect -m server-1 -c \"sudo renet maintenance scrub --datastore /mnt/rediacc\" 結果は同じ JSON ファイルに保存され、次の rdc machine status --system で即座に確認できます。",
     "excerpt": "スクラブを即座に実行するには（例：電源障害またはディスク移行後）： rdc term connect -m server-1 -c \"sudo renet maintenance scrub --datastore /mnt/rediacc\" 結果は同じ JSON ファイルに保存され、次の rdc...",
     "category": "Documentation",
     "page": "/ja/docs/monitoring",
@@ -8253,7 +8253,7 @@
   {
     "id": "search-10894",
     "content": "TLS証明書のライフサイクル",
-    "body": "Let's Encrypt証明書が発行されてから各リポジトリのコンテナに届くまでの完全な経路： ホストでの発行。 マシンレベルのTraefikコンテナ（rediacc-proxy、/opt/rediacc/proxy/にデプロイ）がACME更新を所有します。ホスト上の/opt/rediacc/proxy/letsencrypt/acme.jsonにすべての状態を保存します。更新は有効期限の約30日前に自動的にトリガーされます。--cf-dns-tokenが設定されていれば、オペレーターのアクションは不要です。 リポジトリごとのダンピング（オプション）。 独自のコンテナ内に証明書ファイルが必要なサービス（例：.pemを直接読み込むメールサーバー）は、小さなtraefik-certs-dumperコンテナを自分自身の隣にデプロイします。ダンパーは/opt/rediacc/proxy/letsencryptを読み取り専用でバインドマウントし、抽出された証明書とキーをリポジトリのデータボリュームにcert.pem / key.pemとして書き込みます。これが機能するには、リポジトリごとのDockerデーモンがマウント名前空間のアローリストに/opt/rediacc/proxyを持つ必要があります。これはデフォルトで既に含まれています。 クライアントサイドキャッシュ（rediacc.json）。 CLIはacme.jsonの圧縮コピーを設定ファイルのacmeCertCacheにbaseDomainをキーとして保存します。これにより複数のマシンが証明書を共有でき（rdc config cert-cache push -m <machine>経由）、オフラインインベントリとして機能します。 クライアントキャッシュの同期トリガー： rdc repo up後に自動的に、ただしマシンのbaseDomainのローカルキャッシュが6時間以上古い場合のみ。新鮮なキャッシュはそのまま残され、連続したデプロイがSSHを酷使しないようにします。 オンデマンド：rdc config cert-cache pull -m <machine>（強制プル）またはrdc machine query --name <machine> --sync-certs（ステータスクエリの副作用としてのプル）。 rdc config infra push時、キャッシュはマシンにプッシュされます（より長い有効期限のローカル証明書がリモートより優先されます）。 キャッシュメンテナンス： 古い自動ルートエントリ（service-3200.rediacc.ioのような古いネットワークIDタグ付きドメイン）は、各プル時に削除されます。 notAfterが7日以上過去の証明書は完全に削除されます。不活性でキャッシュを膨張させるだけです。 rdc config cert-cache clearはすべてを消去します。rdc config cert-cache statusはインベントリを表示します。 トラブルシューティング： traefik-certs-dumperが/traefik/acme.json: no such file or directoryでクラッシュする場合、リポジトリごとのデーモンがホストのletsencryptストアを見ることができません。（a）ホスト上に/opt/rediacc/proxy/letsencrypt/acme.jsonが存在することを確認してください（これはホストレベルのrediacc-proxyの責任です）、および（b）リポジトリごとのデーモンが/opt/rediacc/proxyをアローリストに含む十分に新しいrenetで起動されたことを確認してください。renetをアップグレードした後、rdc repo upでリポジトリを再デプロイして適用してください。 実験的： 自動同期ケイデンスと有効期限ベースの削除はrenet 0.9+で導入されました。古いCLI/renetバージョンはrdc config cert-cache pull経由の純粋な手動同期を使用します。",
+    "body": "Let's Encrypt証明書が発行されてから各リポジトリのコンテナに届くまでの完全な経路： ホストでの発行。 マシンレベルのTraefikコンテナ（rediacc-proxy、/opt/rediacc/proxy/にデプロイ）がACME更新を所有します。ホスト上の/opt/rediacc/proxy/letsencrypt/acme.jsonにすべての状態を保存します。更新は有効期限の約30日前に自動的にトリガーされます。--cf-dns-tokenが設定されていれば、オペレーターのアクションは不要です。 リポジトリごとのダンピング（オプション）。 独自のコンテナ内に証明書ファイルが必要なサービス（例：.pemを直接読み込むメールサーバー）は、小さなtraefik-certs-dumperコンテナを自分自身の隣にデプロイします。ダンパーは/opt/rediacc/proxy/letsencryptを読み取り専用でバインドマウントし、抽出された証明書とキーをリポジトリのデータボリュームにcert.pem / key.pemとして書き込みます。これが機能するには、リポジトリごとのDockerデーモンがマウント名前空間のアローリストに/opt/rediacc/proxyを持つ必要があります。これはデフォルトで既に含まれています。 クライアントサイドキャッシュ（rediacc.json）。 CLIはacme.jsonの圧縮コピーを設定ファイルのacmeCertCacheにbaseDomainをキーとして保存します。これにより複数のマシンが証明書を共有でき（rdc machine infra cert push <machine>経由）、オフラインインベントリとして機能します。 クライアントキャッシュの同期トリガー： rdc repo up後に自動的に、ただしマシンのbaseDomainのローカルキャッシュが6時間以上古い場合のみ。新鮮なキャッシュはそのまま残され、連続したデプロイがSSHを酷使しないようにします。 オンデマンド：rdc machine infra cert pull <machine>（強制プル）またはrdc machine status <machine> --sync-certs（ステータスクエリの副作用としてのプル）。 rdc config infra push時、キャッシュはマシンにプッシュされます（より長い有効期限のローカル証明書がリモートより優先されます）。 キャッシュメンテナンス： 古い自動ルートエントリ（service-3200.rediacc.ioのような古いネットワークIDタグ付きドメイン）は、各プル時に削除されます。 notAfterが7日以上過去の証明書は完全に削除されます。不活性でキャッシュを膨張させるだけです。 rdc config cert-cache clearはすべてを消去します。rdc config cert-cache statusはインベントリを表示します。 トラブルシューティング： traefik-certs-dumperが/traefik/acme.json: no such file or directoryでクラッシュする場合、リポジトリごとのデーモンがホストのletsencryptストアを見ることができません。（a）ホスト上に/opt/rediacc/proxy/letsencrypt/acme.jsonが存在することを確認してください（これはホストレベルのrediacc-proxyの責任です）、および（b）リポジトリごとのデーモンが/opt/rediacc/proxyをアローリストに含む十分に新しいrenetで起動されたことを確認してください。renetをアップグレードした後、rdc repo upでリポジトリを再デプロイして適用してください。 実験的： 自動同期ケイデンスと有効期限ベースの削除はrenet 0.9+で導入されました。古いCLI/renetバージョンはrdc config cert-cache pull経由の純粋な手動同期を使用します。",
     "excerpt": "Let's Encrypt証明書が発行されてから各リポジトリのコンテナに届くまでの完全な経路： ホストでの発行。 マシンレベルのTraefikコンテナ（rediacc-proxy、/opt/rediacc/proxy/にデプロイ）がACME更新を所有します。ホスト上の/opt/rediacc/pro...",
     "category": "Documentation",
     "page": "/ja/docs/networking",
@@ -8440,7 +8440,7 @@
   {
     "id": "search-10911",
     "content": "よくある問題",
-    "body": "| 問題 | 原因 | 解決方法 | |---------|-------|----------| | サービスがルートに表示されない | コンテナが実行されていない、またはラベルが不足 | リポジトリのデーモンでdocker psを確認、ラベルを確認 | | 証明書が発行されない | DNSがサーバーを指していない、または無効なCloudflareトークン | DNS解決を確認、Cloudflare APIトークンの権限を確認 | | 502 Bad Gateway | アプリケーションが宣言されたポートでリッスンしていない | アプリが実行中でポートがloadbalancer.server.portと一致していることを確認 | | TCPポートに到達できない | インフラストラクチャにポートが登録されていない | rdc config infra set --tcp-ports ...とpush-infraを実行 | | ルートサーバーが古いバージョン | バイナリは更新されたがサービスが再起動されていない | プロビジョニング時に自動的に発生します。手動の場合：sudo systemctl restart rediacc-router | | STUN/TURNリレーに到達できない | リレーアドレスが起動時にキャッシュされた | DNSまたはIP変更後、新しいネットワーク設定を取得するためにサービスを再作成 |",
+    "body": "| 問題 | 原因 | 解決方法 | |---------|-------|----------| | サービスがルートに表示されない | コンテナが実行されていない、またはラベルが不足 | リポジトリのデーモンでdocker psを確認、ラベルを確認 | | 証明書が発行されない | DNSがサーバーを指していない、または無効なCloudflareトークン | DNS解決を確認、Cloudflare APIトークンの権限を確認 | | 502 Bad Gateway | アプリケーションが宣言されたポートでリッスンしていない | アプリが実行中でポートがloadbalancer.server.portと一致していることを確認 | | TCPポートに到達できない | インフラストラクチャにポートが登録されていない | rdc machine infra set <machine> --tcp-ports ...とpush-infraを実行 | | ルートサーバーが古いバージョン | バイナリは更新されたがサービスが再起動されていない | プロビジョニング時に自動的に発生します。手動の場合：sudo systemctl restart rediacc-router | | STUN/TURNリレーに到達できない | リレーアドレスが起動時にキャッシュされた | DNSまたはIP変更後、新しいネットワーク設定を取得するためにサービスを再作成 |",
     "excerpt": "| 問題 | 原因 | 解決方法 | |---------|-------|----------| | サービスがルートに表示されない | コンテナが実行されていない、またはラベルが不足 | リポジトリのデーモンでdocker psを確認、ラベルを確認 | | 証明書が発行されない | DNSがサー...",
     "category": "Documentation",
     "page": "/ja/docs/networking",
@@ -8830,8 +8830,8 @@
   {
     "id": "search-10947",
     "content": "プルーニング",
-    "body": "# プルーニング プルーニングは、ライブリソースに対応しなくなった状態を一掃します。3 つのコマンドが 3 つの異なるスコープをカバーします。 | コマンド | クリーンアップ対象 | 信頼できる情報源の場所 | |---|---|---| | rdc storage prune --name <storage> -m <machine> | クラウドストレージ内の孤立したバックアップ | ローカル CLI 設定（マウント安全性のためにエグゼキュータマシンでクロスチェック） | | rdc machine prune --name <machine> | マシン上のデータストアアーティファクト（常に）；孤立または unknown のリポジトリイメージ（オプトイン） | ローカル CLI 設定 + マシンの .interim/state ミラー | | rdc config prune | ローカル設定の残存物（証明書キャッシュ、期限切れアーカイブ、宙吊りの相互参照） | ローカル CLI 設定のみ | 3 つは独立しています。任意の 1 つを他のものなしで実行できます。共通の安全モデルは下記の 安全モデル で説明されています。 プルーニングは削除済みリソースが残した状態を取り除きます。ライブリポジトリが占有している容量（ファイルシステムが解放したがプールがまだ保持しているブロック）を回収するには、代わりに rdc repo trim を使用してください。2 つは補完的な関係にあります。",
-    "excerpt": "# プルーニング プルーニングは、ライブリソースに対応しなくなった状態を一掃します。3 つのコマンドが 3 つの異なるスコープをカバーします。 | コマンド | クリーンアップ対象 | 信頼できる情報源の場所 | |---|---|---| | rdc storage prune --name <s...",
+    "body": "# プルーニング プルーニングは、ライブリソースに対応しなくなった状態を一掃します。3 つのコマンドが 3 つの異なるスコープをカバーします。 | コマンド | クリーンアップ対象 | 信頼できる情報源の場所 | |---|---|---| | rdc storage prune <storage> -m <machine> | クラウドストレージ内の孤立したバックアップ | ローカル CLI 設定（マウント安全性のためにエグゼキュータマシンでクロスチェック） | | rdc machine prune <machine> | マシン上のデータストアアーティファクト（常に）；孤立または unknown のリポジトリイメージ（オプトイン） | ローカル CLI 設定 + マシンの .interim/state ミラー | | rdc config prune | ローカル設定の残存物（証明書キャッシュ、期限切れアーカイブ、宙吊りの相互参照） | ローカル CLI 設定のみ | 3 つは独立しています。任意の 1 つを他のものなしで実行できます。共通の安全モデルは下記の 安全モデル で説明されています。 プルーニングは削除済みリソースが残した状態を取り除きます。ライブリポジトリが占有している容量（ファイルシステムが解放したがプールがまだ保持しているブロック）を回収するには、代わりに rdc repo trim を使用してください。2 つは補完的な関係にあります。",
+    "excerpt": "# プルーニング プルーニングは、ライブリソースに対応しなくなった状態を一掃します。3 つのコマンドが 3 つの異なるスコープをカバーします。 | コマンド | クリーンアップ対象 | 信頼できる情報源の場所 | |---|---|---| | rdc storage prune <storage>...",
     "category": "Documentation",
     "page": "/ja/docs/pruning",
     "path": "docs.pruning.content",
@@ -8995,7 +8995,7 @@
   {
     "id": "search-10962",
     "content": "猶予期間",
-    "body": "リポジトリが --archive-config で設定から削除されると、その認証情報エントリは deletedAt タイムスタンプとともに resources.deletedRepositories[] に移動されます。プルーニングコマンドは猶予期間（デフォルト 7 日間）を尊重し、その間、最近アーカイブされたリポジトリは削除から保護されます。これにより、誤って削除された場合にリポジトリを復元する時間（rdc config repository restore-archived --name <guid>）が確保されます。猶予期間が切れると、storage prune、machine prune、config prune のすべてがエントリを自動的に削除します。",
+    "body": "リポジトリが --archive-config で設定から削除されると、その認証情報エントリは deletedAt タイムスタンプとともに resources.deletedRepositories[] に移動されます。プルーニングコマンドは猶予期間（デフォルト 7 日間）を尊重し、その間、最近アーカイブされたリポジトリは削除から保護されます。これにより、誤って削除された場合にリポジトリを復元する時間（rdc repo admin archive restore <guid>）が確保されます。猶予期間が切れると、storage prune、machine prune、config prune のすべてがエントリを自動的に削除します。",
     "excerpt": "リポジトリが --archive-config で設定から削除されると、その認証情報エントリは deletedAt タイムスタンプとともに resources.deletedRepositories[] に移動されます。プルーニングコマンドは猶予期間（デフォルト 7 日間）を尊重し、その間、最近アー...",
     "category": "Documentation",
     "page": "/ja/docs/pruning",
@@ -9213,8 +9213,8 @@
   {
     "id": "search-10982",
     "content": "4. VS Code",
-    "body": "rdc vscode connect -m my-server -r my-app # VS Code SSH を開き、リポジトリサンドボックス内に移動 暗号化ボリューム内部でファイルを編集できます。docker ps はこのリポジトリのコンテナのみ表示します。保存、compose up、反復開発ができます。",
-    "excerpt": "rdc vscode connect -m my-server -r my-app # VS Code SSH を開き、リポジトリサンドボックス内に移動 暗号化ボリューム内部でファイルを編集できます。docker ps はこのリポジトリのコンテナのみ表示します。保存、compose up、反復開発が...",
+    "body": "rdc vscode connect my-app # VS Code SSH を開き、リポジトリサンドボックス内に移動 暗号化ボリューム内部でファイルを編集できます。docker ps はこのリポジトリのコンテナのみ表示します。保存、compose up、反復開発ができます。",
+    "excerpt": "rdc vscode connect my-app # VS Code SSH を開き、リポジトリサンドボックス内に移動 暗号化ボリューム内部でファイルを編集できます。docker ps はこのリポジトリのコンテナのみ表示します。保存、compose up、反復開発ができます。",
     "category": "Documentation",
     "page": "/ja/docs/quick-start",
     "path": "docs.quick-start.content",
@@ -9224,7 +9224,7 @@
   {
     "id": "search-10983",
     "content": "5. `rdc repo up` と `renet dev up` の比較",
-    "body": "| | rdc repo up | renet dev up | |---|---|---| | 実行場所 | ラップトップ（CLI） | VS Code サンドボックス内 | | 動作内容 | SSH → 自動マウント → Rediaccfile の up() を実行 | Rediaccfile の up() を直接実行 | | ユースケース | CI/CD、自動化、リモート操作 | 開発者のインナーループ | | 隔離 | 外部からオーケストレーション | 既にサンドボックス内 | デモフロー: rdc repo template apply → rdc vscode connect -m my-server -r my-app → docker-compose.yml を編集 → renet dev up → アプリの動作確認 → 反復開発。 Rediaccfile の構造: サービス。どちらのツールを使うか: rdc vs renet。",
+    "body": "| | rdc repo up | renet dev up | |---|---|---| | 実行場所 | ラップトップ（CLI） | VS Code サンドボックス内 | | 動作内容 | SSH → 自動マウント → Rediaccfile の up() を実行 | Rediaccfile の up() を直接実行 | | ユースケース | CI/CD、自動化、リモート操作 | 開発者のインナーループ | | 隔離 | 外部からオーケストレーション | 既にサンドボックス内 | デモフロー: rdc repo template apply → rdc vscode connect my-app → docker-compose.yml を編集 → renet dev up → アプリの動作確認 → 反復開発。 Rediaccfile の構造: サービス。どちらのツールを使うか: rdc vs renet。",
     "excerpt": "| | rdc repo up | renet dev up | |---|---|---| | 実行場所 | ラップトップ（CLI） | VS Code サンドボックス内 | | 動作内容 | SSH → 自動マウント → Rediaccfile の up() を実行 | Rediaccfile...",
     "category": "Documentation",
     "page": "/ja/docs/quick-start",
@@ -9387,8 +9387,8 @@
   {
     "id": "search-10998",
     "content": "リポジトリのライフサイクル",
-    "body": "| コマンド | 説明 | |---------|------| | rdc repo create --name <repo> -m <machine> | マシン上に新しいリポジトリを作成する | | rdc repo up --name <repo> -m <machine> | リポジトリをデプロイまたは更新する | | rdc repo down --name <repo> -m <machine> | リポジトリを停止する | | rdc repo delete --name <repo> -m <machine> | リポジトリを削除する | | rdc repo fork --parent <repo> --tag <tag> -m <machine> | リポジトリをフォークする (ほぼ瞬時、BTRFS reflink) | | rdc repo takeover --name <repo> -m <machine> | 既存リポジトリの所有権を取得する | | rdc config repository list | 名前と GUID を含む全リポジトリを一覧表示する |",
-    "excerpt": "| コマンド | 説明 | |---------|------| | rdc repo create --name <repo> -m <machine> | マシン上に新しいリポジトリを作成する | | rdc repo up --name <repo> -m <machine> | リポジトリを...",
+    "body": "| コマンド | 説明 | |---------|------| | rdc repo create <repo> -m <machine> | マシン上に新しいリポジトリを作成する | | rdc repo up <repo>@<machine> | リポジトリをデプロイまたは更新する | | rdc repo down <repo>@<machine> | リポジトリを停止する | | rdc repo delete <repo>@<machine> | リポジトリを削除する | | rdc repo fork <repo>@<machine> --tag <tag> | リポジトリをフォークする (ほぼ瞬時、BTRFS reflink) | | rdc repo promote <repo>:<tag> | 既存リポジトリの所有権を取得する | | rdc repo list | 名前と GUID を含む全リポジトリを一覧表示する |",
+    "excerpt": "| コマンド | 説明 | |---------|------| | rdc repo create <repo> -m <machine> | マシン上に新しいリポジトリを作成する | | rdc repo up <repo>@<machine> | リポジトリをデプロイまたは更新する | | r...",
     "category": "Documentation",
     "page": "/ja/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9398,8 +9398,8 @@
   {
     "id": "search-10999",
     "content": "リポジトリごとのシークレット",
-    "body": "デプロイ時のみに使用される書き込み専用の認証情報です。get はダイジェストのみを返します。値は決して返されません。完全なガイドは リポジトリ § シークレット を参照してください。 | コマンド | 説明 | |---------|------| | rdc repo secret set --name <repo> --key <KEY> --value <val> [--mode env\\|file] --current \"\" | 新しいシークレットを作成する (--current \"\" で初回書き込み) | | rdc repo secret set --name <repo> --key <KEY> --value <val> --current <prev> | 既存シークレットを上書きする (パスワードスタイルの事前条件) | | rdc repo secret set --name <repo> --key <KEY> --value <val> --rotate-secret | 事前値を検証せずに上書きする (ローテーションとして監査される) | | rdc repo secret list --name <repo> | シークレット名と配信モードを一覧表示する (値とダイジェストは表示されない) | | rdc repo secret get --name <repo> --key <KEY> | シークレットダイジェストとモードを表示する (プレーンテキスト値は表示されない) | | rdc repo secret unset --name <repo> --key <KEY> --current <prev> | シークレットを削除する | | rdc repo secret unset --name <repo> --key <KEY> --rotate-secret | 事前値を検証せずに削除する | フォークはシークレットを継承しません。フォーク上で rdc repo secret set --name <repo>:<tag> で明示的に設定してください。",
-    "excerpt": "デプロイ時のみに使用される書き込み専用の認証情報です。get はダイジェストのみを返します。値は決して返されません。完全なガイドは リポジトリ § シークレット を参照してください。 | コマンド | 説明 | |---------|------| | rdc repo secret set --n...",
+    "body": "デプロイ時のみに使用される書き込み専用の認証情報です。get はダイジェストのみを返します。値は決して返されません。完全なガイドは リポジトリ § シークレット を参照してください。 | コマンド | 説明 | |---------|------| | rdc repo secret set <repo> --key <KEY> --value <val> [--mode env\\|file] --current \"\" | 新しいシークレットを作成する (--current \"\" で初回書き込み) | | rdc repo secret set <repo> --key <KEY> --value <val> --current <prev> | 既存シークレットを上書きする (パスワードスタイルの事前条件) | | rdc repo secret set <repo> --key <KEY> --value <val> --rotate-secret | 事前値を検証せずに上書きする (ローテーションとして監査される) | | rdc repo secret list <repo> | シークレット名と配信モードを一覧表示する (値とダイジェストは表示されない) | | rdc repo secret get <repo> --key <KEY> | シークレットダイジェストとモードを表示する (プレーンテキスト値は表示されない) | | rdc repo secret unset <repo> --key <KEY> --current <prev> | シークレットを削除する | | rdc repo secret unset <repo> --key <KEY> --rotate-secret | 事前値を検証せずに削除する | フォークはシークレットを継承しません。フォーク上で rdc repo secret set <repo>:<tag> で明示的に設定してください。",
+    "excerpt": "デプロイ時のみに使用される書き込み専用の認証情報です。get はダイジェストのみを返します。値は決して返されません。完全なガイドは リポジトリ § シークレット を参照してください。 | コマンド | 説明 | |---------|------| | rdc repo secret set <re...",
     "category": "Documentation",
     "page": "/ja/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9409,8 +9409,8 @@
   {
     "id": "search-11000",
     "content": "バックアップと復元",
-    "body": "| コマンド | 説明 | |---------|------| | rdc repo push --name <repo> -m <machine> --to <storage> | リポジトリのバックアップをストレージにプッシュする | | rdc repo push --to <storage> -m <machine> | 全リポジトリをストレージにプッシュする | | rdc repo pull --name <repo> -m <machine> --from <storage> | ストレージからリポジトリを復元する | | rdc repo pull --from <storage> -m <machine> | ストレージから全リポジトリを復元する | | rdc repo push ... --bwlimit <limit> | プッシュ時の rsync 帯域幅を制限する (例: 10M) | | rdc repo pull ... --bwlimit <limit> | プル時の rsync 帯域幅を制限する | | rdc repo push ... --checkpoint | プッシュ前にコンテナのチェックポイントを作成する | | rdc repo backup list --from <storage> -m <machine> | ストレージ内の利用可能なバックアップを一覧表示する | | rdc storage browse --name <storage> | ストレージの内容を参照する |",
-    "excerpt": "| コマンド | 説明 | |---------|------| | rdc repo push --name <repo> -m <machine> --to <storage> | リポジトリのバックアップをストレージにプッシュする | | rdc repo push --to <storage...",
+    "body": "| コマンド | 説明 | |---------|------| | rdc repo push <repo>@<machine> --to <storage> | リポジトリのバックアップをストレージにプッシュする | | rdc repo push --to <storage> -m <machine> | 全リポジトリをストレージにプッシュする | | rdc repo pull <repo>@<machine> --from <storage> | ストレージからリポジトリを復元する | | rdc repo pull --from <storage> -m <machine> | ストレージから全リポジトリを復元する | | rdc repo push ... --bwlimit <limit> | プッシュ時の rsync 帯域幅を制限する (例: 10M) | | rdc repo pull ... --bwlimit <limit> | プル時の rsync 帯域幅を制限する | | rdc repo push ... --checkpoint | プッシュ前にコンテナのチェックポイントを作成する | | rdc backup list --storage <storage> -m <machine> | ストレージ内の利用可能なバックアップを一覧表示する | | rdc storage browse <storage> | ストレージの内容を参照する |",
+    "excerpt": "| コマンド | 説明 | |---------|------| | rdc repo push <repo>@<machine> --to <storage> | リポジトリのバックアップをストレージにプッシュする | | rdc repo push --to <storage> -m <mach...",
     "category": "Documentation",
     "page": "/ja/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9420,8 +9420,8 @@
   {
     "id": "search-11001",
     "content": "リポジトリの移行",
-    "body": "| コマンド | 説明 | |---------|------| | rdc repo migrate --name <repo> --from <machine> --to <machine> | マシン間でリポジトリを移動する | | rdc repo migrate ... --provision | 転送前に移行先をプロビジョニングする | | rdc repo migrate ... --checkpoint | 移行前にチェックポイントを作成する | | rdc repo migrate ... --skip-dns | 移行後の DNS 更新をスキップする | | rdc repo migrate ... --bwlimit <limit> | 転送帯域幅を制限する |",
-    "excerpt": "| コマンド | 説明 | |---------|------| | rdc repo migrate --name <repo> --from <machine> --to <machine> | マシン間でリポジトリを移動する | | rdc repo migrate ... --provisi...",
+    "body": "| コマンド | 説明 | |---------|------| | rdc repo migrate <repo>@<machine> --to <machine> | マシン間でリポジトリを移動する | | rdc repo migrate ... --provision | 転送前に移行先をプロビジョニングする | | rdc repo migrate ... --checkpoint | 移行前にチェックポイントを作成する | | rdc repo migrate ... --skip-dns | 移行後の DNS 更新をスキップする | | rdc repo migrate ... --bwlimit <limit> | 転送帯域幅を制限する |",
+    "excerpt": "| コマンド | 説明 | |---------|------| | rdc repo migrate <repo>@<machine> --to <machine> | マシン間でリポジトリを移動する | | rdc repo migrate ... --provision | 転送前に移行先をプ...",
     "category": "Documentation",
     "page": "/ja/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9431,8 +9431,8 @@
   {
     "id": "search-11002",
     "content": "バックアップ戦略",
-    "body": "| コマンド | 説明 | |---------|------| | rdc config backup-strategy set --name <name> --destination <storage> --cron <expr> --mode <hot\\|cold> --enable | 名前付きバックアップ戦略を作成または更新する | | rdc config backup-strategy list | 定義済みバックアップ戦略を全て一覧表示する | | rdc config backup-strategy show --name <name> | 戦略の詳細を表示する | | rdc config backup-strategy remove --name <name> | 戦略を削除する | | rdc machine backup schedule -m <machine> | 設定済みバックアップ戦略をマシンにデプロイする |",
-    "excerpt": "| コマンド | 説明 | |---------|------| | rdc config backup-strategy set --name <name> --destination <storage> --cron <expr> --mode <hot\\|cold> --enable | 名前...",
+    "body": "| コマンド | 説明 | |---------|------| | rdc backup strategy set <name> --destination <storage> --cron <expr> --mode <hot\\|cold> --enable | 名前付きバックアップ戦略を作成または更新する | | rdc backup strategy list | 定義済みバックアップ戦略を全て一覧表示する | | rdc backup strategy show <name> | 戦略の詳細を表示する | | rdc backup strategy remove <name> | 戦略を削除する | | rdc backup schedule -m <machine> | 設定済みバックアップ戦略をマシンにデプロイする |",
+    "excerpt": "| コマンド | 説明 | |---------|------| | rdc backup strategy set <name> --destination <storage> --cron <expr> --mode <hot\\|cold> --enable | 名前付きバックアップ戦略を作成ま...",
     "category": "Documentation",
     "page": "/ja/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9442,8 +9442,8 @@
   {
     "id": "search-11003",
     "content": "バックアップ操作",
-    "body": "| コマンド | 説明 | |---------|------| | rdc machine backup schedule -m <machine> | 紐付けられた戦略を systemd タイマーとしてデプロイする | | rdc machine backup schedule -m <machine> --dry-run | デプロイせずにタイマーユニットをプレビューする (トークンはマスク済み) | | rdc machine backup now -m <machine> | 紐付けられた全戦略を即時実行する | | rdc machine backup now -m <machine> --strategy <name> | 特定の戦略を即時実行する | | rdc machine backup status -m <machine> | タイマーの状態と最近のジョブ結果を表示する | | rdc machine backup status -m <machine> --strategy <name> | 特定の戦略の状態を表示する | | rdc machine backup cancel -m <machine> | 実行中のバックアップをキャンセルする | | rdc machine backup cancel -m <machine> --strategy <name> | 特定の実行中バックアップをキャンセルする |",
-    "excerpt": "| コマンド | 説明 | |---------|------| | rdc machine backup schedule -m <machine> | 紐付けられた戦略を systemd タイマーとしてデプロイする | | rdc machine backup schedule -m <mach...",
+    "body": "| コマンド | 説明 | |---------|------| | rdc backup schedule -m <machine> | 紐付けられた戦略を systemd タイマーとしてデプロイする | | rdc backup schedule -m <machine> --dry-run | デプロイせずにタイマーユニットをプレビューする (トークンはマスク済み) | | rdc backup run -m <machine> | 紐付けられた全戦略を即時実行する | | rdc backup run <name> -m <machine> | 特定の戦略を即時実行する | | rdc backup status -m <machine> | タイマーの状態と最近のジョブ結果を表示する | | rdc backup status <name> -m <machine> | 特定の戦略の状態を表示する | | rdc backup cancel -m <machine> | 実行中のバックアップをキャンセルする | | rdc backup cancel <name> -m <machine> | 特定の実行中バックアップをキャンセルする |",
+    "excerpt": "| コマンド | 説明 | |---------|------| | rdc backup schedule -m <machine> | 紐付けられた戦略を systemd タイマーとしてデプロイする | | rdc backup schedule -m <machine> --dry-run |...",
     "category": "Documentation",
     "page": "/ja/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9453,8 +9453,8 @@
   {
     "id": "search-11004",
     "content": "マシン管理",
-    "body": "| コマンド | 説明 | |---------|------| | rdc machine query --name <machine> | マシンの完全なステータス (システム、コンテナ、サービス、リポジトリ、ネットワーク) | | rdc machine query --name <machine> --system | システム情報のみ | | rdc machine query --name <machine> --containers | コンテナ一覧のみ | | rdc machine query --name <machine> --repositories | リポジトリ一覧のみ | | rdc machine query --name <machine> --services | サービス一覧のみ | | rdc machine query --name <machine> --network | ネットワーク情報のみ | | rdc machine query --name <machine> --block-devices | ブロックデバイス情報のみ | | rdc machine list | 設定内の全マシンを一覧表示する | | rdc config machine setup --name <machine> | マシンの初期プロビジョニングを実行する | | rdc machine prune --name <machine> | マシンから未使用リソースを削除する | | rdc machine deprovision --name <machine> | マシンを完全にデプロビジョニングする |",
-    "excerpt": "| コマンド | 説明 | |---------|------| | rdc machine query --name <machine> | マシンの完全なステータス (システム、コンテナ、サービス、リポジトリ、ネットワーク) | | rdc machine query --name <machi...",
+    "body": "| コマンド | 説明 | |---------|------| | rdc machine status <machine> | マシンの完全なステータス (システム、コンテナ、サービス、リポジトリ、ネットワーク) | | rdc machine status <machine> --system | システム情報のみ | | rdc machine status <machine> --containers | コンテナ一覧のみ | | rdc machine status <machine> --repositories | リポジトリ一覧のみ | | rdc machine status <machine> --services | サービス一覧のみ | | rdc machine status <machine> --network | ネットワーク情報のみ | | rdc machine status <machine> --block-devices | ブロックデバイス情報のみ | | rdc machine list | 設定内の全マシンを一覧表示する | | rdc machine setup <machine> | マシンの初期プロビジョニングを実行する | | rdc machine prune <machine> | マシンから未使用リソースを削除する | | rdc machine deprovision <machine> | マシンを完全にデプロビジョニングする |",
+    "excerpt": "| コマンド | 説明 | |---------|------| | rdc machine status <machine> | マシンの完全なステータス (システム、コンテナ、サービス、リポジトリ、ネットワーク) | | rdc machine status <machine> --system...",
     "category": "Documentation",
     "page": "/ja/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9464,8 +9464,8 @@
   {
     "id": "search-11005",
     "content": "ターミナルと同期",
-    "body": "| コマンド | 説明 | |---------|------| | rdc term connect -m <machine> | マシンへの SSH ターミナルを開く | | rdc term connect -m <machine> -r <repo> | リポジトリへの SSH ターミナルを開く (DOCKER_HOST を設定) | | rdc term connect -m <machine> -c \"<command>\" | マシン上でコマンドを実行する | | rdc repo sync upload -m <machine> -r <repo> --local <paths...> | 1 つ以上のローカルファイル/ディレクトリをリポジトリにアップロードする | | rdc repo sync upload -m <machine> -r <repo> --local <file> --remote-file <path> | 単一のローカルファイルを明示的なリモートパスにアップロードする | | rdc repo sync download -m <machine> -r <repo> --local <dir> | リポジトリディレクトリをローカルにダウンロードする | | rdc repo sync download -m <machine> -r <repo> --remote-file <path> --local <dir> | 単一のリモートファイルをローカルディレクトリにダウンロードする | | rdc vscode connect -m <machine> -r <repo> | VS Code Remote SSH セッションを開く |",
-    "excerpt": "| コマンド | 説明 | |---------|------| | rdc term connect -m <machine> | マシンへの SSH ターミナルを開く | | rdc term connect -m <machine> -r <repo> | リポジトリへの SSH ターミナルを...",
+    "body": "| コマンド | 説明 | |---------|------| | rdc term connect <machine> | マシンへの SSH ターミナルを開く | | rdc term connect <repo>@<machine> | リポジトリへの SSH ターミナルを開く (DOCKER_HOST を設定) | | rdc term connect <machine> -c \"<command>\" | マシン上でコマンドを実行する | | rdc repo sync upload <repo>@<machine> --local <paths...> | 1 つ以上のローカルファイル/ディレクトリをリポジトリにアップロードする | | rdc repo sync upload <repo>@<machine> --local <file> --remote-file <path> | 単一のローカルファイルを明示的なリモートパスにアップロードする | | rdc repo sync download <repo>@<machine> --local <dir> | リポジトリディレクトリをローカルにダウンロードする | | rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir> | 単一のリモートファイルをローカルディレクトリにダウンロードする | | rdc vscode connect <repo>@<machine> | VS Code Remote SSH セッションを開く |",
+    "excerpt": "| コマンド | 説明 | |---------|------| | rdc term connect <machine> | マシンへの SSH ターミナルを開く | | rdc term connect <repo>@<machine> | リポジトリへの SSH ターミナルを開く (DOCKE...",
     "category": "Documentation",
     "page": "/ja/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9475,8 +9475,8 @@
   {
     "id": "search-11006",
     "content": "設定",
-    "body": "| コマンド | 説明 | |---------|------| | rdc config init --name <name> | 名前付き設定ファイルを作成する | | rdc config machine add --name <machine> --host <host> --user <user> | 設定にマシンを追加する | | rdc config storage import --file rclone.conf | rclone 設定からストレージプロバイダをインポートする | | rdc config storage list | 設定済みストレージプロバイダを一覧表示する | | rdc config backup-strategy set ... | 名前付きバックアップ戦略を定義する | | rdc --config <name> <command> | 名前付き設定ファイルを使用する |",
-    "excerpt": "| コマンド | 説明 | |---------|------| | rdc config init --name <name> | 名前付き設定ファイルを作成する | | rdc config machine add --name <machine> --host <host> --user <u...",
+    "body": "| コマンド | 説明 | |---------|------| | rdc config init <name> | 名前付き設定ファイルを作成する | | rdc machine add <machine> --ip <host> --user <user> | 設定にマシンを追加する | | rdc storage import rclone.conf | rclone 設定からストレージプロバイダをインポートする | | rdc storage list | 設定済みストレージプロバイダを一覧表示する | | rdc backup strategy set ... | 名前付きバックアップ戦略を定義する | | rdc --config <name> <command> | 名前付き設定ファイルを使用する |",
+    "excerpt": "| コマンド | 説明 | |---------|------| | rdc config init <name> | 名前付き設定ファイルを作成する | | rdc machine add <machine> --ip <host> --user <user> | 設定にマシンを追加する | |...",
     "category": "Documentation",
     "page": "/ja/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9486,8 +9486,8 @@
   {
     "id": "search-11007",
     "content": "デバッグと直接アクセス",
-    "body": "| コマンド | 説明 | |---------|------| | rdc term connect -m <machine> -r <repo> -c \"docker ps\" | リポジトリ内のコンテナを一覧表示する | | rdc term connect -m <machine> -r <repo> -c \"docker logs <name>\" | コンテナのログを取得する | | rdc term connect -m <machine> -r <repo> -c \"docker exec <name> <cmd>\" | コンテナ内でコマンドを実行する | | rdc term connect -m <machine> -r <repo> -c \"docker restart <name>\" | コンテナを再起動する |",
-    "excerpt": "| コマンド | 説明 | |---------|------| | rdc term connect -m <machine> -r <repo> -c \"docker ps\" | リポジトリ内のコンテナを一覧表示する | | rdc term connect -m <machine> -r <r...",
+    "body": "| コマンド | 説明 | |---------|------| | rdc term connect <repo>@<machine> -c \"docker ps\" | リポジトリ内のコンテナを一覧表示する | | rdc term connect <repo>@<machine> -c \"docker logs <name>\" | コンテナのログを取得する | | rdc term connect <repo>@<machine> -c \"docker exec <name> <cmd>\" | コンテナ内でコマンドを実行する | | rdc term connect <repo>@<machine> -c \"docker restart <name>\" | コンテナを再起動する |",
+    "excerpt": "| コマンド | 説明 | |---------|------| | rdc term connect <repo>@<machine> -c \"docker ps\" | リポジトリ内のコンテナを一覧表示する | | rdc term connect <repo>@<machine> -c \"doc...",
     "category": "Documentation",
     "page": "/ja/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -10019,8 +10019,8 @@
   {
     "id": "search-11056",
     "content": "JSONスキーマ",
-    "body": "rdc repo log --jsonはrenetの結果を標準エンベロープでラップします。確認された履歴はentriesに新しい順で格納されます： | フィールド | 型 | 説明 | |-------|------|-------------| | success | boolean | ウォークが完了したかどうか。 | | start | string | ウォークを開始したGUID。 | | entries | array | コミットごとに1つのオブジェクト、新しい順。 | | entries[].guid | string | コミットGUID。 | | entries[].message | string | コミットメッセージ。空の場合は省略。 | | entries[].author | string | コミット作成者。空の場合は省略。 | | entries[].parent | string | 親コミットGUID。ルートでは省略。 | | entries[].committed_at | string | RFC 3339コミットタイムスタンプ。未設定の場合は省略。 | | entries[].immutable | boolean | コミットが読み取り専用としてマークされているかどうか（実際のコミットでは常にtrue）。 | エンベロープフィールドと非TTY環境でJSONを出力する自動検出ルールについては、JSON出力リファレンスを参照してください。",
-    "excerpt": "rdc repo log --jsonはrenetの結果を標準エンベロープでラップします。確認された履歴はentriesに新しい順で格納されます： | フィールド | 型 | 説明 | |-------|------|-------------| | success | boolean | ウォーク...",
+    "body": "rdc repo log <repo> --output jsonはrenetの結果を標準エンベロープでラップします。確認された履歴はentriesに新しい順で格納されます： | フィールド | 型 | 説明 | |-------|------|-------------| | success | boolean | ウォークが完了したかどうか。 | | start | string | ウォークを開始したGUID。 | | entries | array | コミットごとに1つのオブジェクト、新しい順。 | | entries[].guid | string | コミットGUID。 | | entries[].message | string | コミットメッセージ。空の場合は省略。 | | entries[].author | string | コミット作成者。空の場合は省略。 | | entries[].parent | string | 親コミットGUID。ルートでは省略。 | | entries[].committed_at | string | RFC 3339コミットタイムスタンプ。未設定の場合は省略。 | | entries[].immutable | boolean | コミットが読み取り専用としてマークされているかどうか（実際のコミットでは常にtrue）。 | エンベロープフィールドと非TTY環境でJSONを出力する自動検出ルールについては、JSON出力リファレンスを参照してください。",
+    "excerpt": "rdc repo log <repo> --output jsonはrenetの結果を標準エンベロープでラップします。確認された履歴はentriesに新しい順で格納されます： | フィールド | 型 | 説明 | |-------|------|-------------| | success |...",
     "category": "Documentation",
     "page": "/ja/docs/repo-branching",
     "path": "docs.repo-branching.content",
@@ -10444,7 +10444,7 @@
   {
     "id": "search-11095",
     "content": "1ステップでフォークして起動",
-    "body": "--up はフォーク、マウント、サービス起動をリモートで一括実行します。--detach を追加すると、コンテナが起動した時点でターミナルに制御が戻ります。ヘルスチェックはバックグラウンドで完了し、プロキシは各サービスがバインドするまで再試行を続けます。 rdc repo fork --parent my-app --tag staging -m server-1 --up rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach 実測値として、128 GB のリポジトリをフォークしてサービスが稼働状態に達するまで約 57 秒、--detach では約 31 秒でした。デタッチ実行は進捗確認のヒントを出力します：rdc machine query --containers --name <machine>。",
+    "body": "--up はフォーク、マウント、サービス起動をリモートで一括実行します。--detach を追加すると、コンテナが起動した時点でターミナルに制御が戻ります。ヘルスチェックはバックグラウンドで完了し、プロキシは各サービスがバインドするまで再試行を続けます。 rdc repo fork --parent my-app --tag staging -m server-1 --up rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach 実測値として、128 GB のリポジトリをフォークしてサービスが稼働状態に達するまで約 57 秒、--detach では約 31 秒でした。デタッチ実行は進捗確認のヒントを出力します：rdc machine status <machine> --containers。",
     "excerpt": "--up はフォーク、マウント、サービス起動をリモートで一括実行します。--detach を追加すると、コンテナが起動した時点でターミナルに制御が戻ります。ヘルスチェックはバックグラウンドで完了し、プロキシは各サービスがバインドするまで再試行を続けます。 rdc repo fork --parent...",
     "category": "Documentation",
     "page": "/ja/docs/repositories",
@@ -10477,7 +10477,7 @@
   {
     "id": "search-11098",
     "content": "シークレット",
-    "body": "リポジトリシークレットは、暗号化リポジトリイメージに書き込まれることなくコンテナに注入されるデプロイ時のクレデンシャルです。リポジトリのデータとは別の層に保持されるため、rdc repo fork では伝播されません。フォークは空のシークレットマップから始まり、そのコンテナは親とは異なる外部プリンシパルとして起動します。 ステップバイステップのガイドをご希望の場合は、set/list/deploy/verify/rotateの全サイクルについてシークレット管理チュートリアルを参照してください。 書き込み専用モデル（GitHubスタイル）: get はSHA-256ダイジェストのみを返します。平文の値は人間にもエージェントにも返されません。値を忘れた場合は、パスワードマネージャーで確認してローテーションしてください。設計上、Rediaccから値を読み戻すことはできません。これにより、ターミナル記録、シェル履歴、誤ったリダイレクト、ショルダーサーフィンなど、漏洩の一類型全体が排除されます。 2つの配信モード: env: シークレットはターゲットマシンのrenetシェルで REDIACC_SECRET_<KEY> としてエクスポートされます。docker-compose.yml から ${REDIACC_SECRET_<KEY>} 補間で参照します。コンテナの環境内で可視なので、アプリケーションがすでにenvで期待している接続文字列形式の値に使用してください。 file: シークレットはホスト上の /var/run/rediacc/secrets/<networkID>/<KEY> に書き込まれます（tmpfs、永続化されません）。composeファイルからは、file: ソースを持つトップレベルの secrets: 宣言とサービスごとの secrets: リストで参照します。コンテナは /run/secrets/<key> から読み取ります。機密性の高いものにはこのモードを使用してください。docker inspect や /proc/<pid>/environ には表示されません。 # Set, list, get（ダイジェストのみ）, unset rdc repo secret set --name my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current \"\" rdc repo secret set --name my-app --key DB_HOST --value postgres.internal --mode env --current \"\" rdc repo secret list --name my-app rdc repo secret get --name my-app --key DB_HOST # → { key, mode, digest } — 値なし rdc repo secret unset --name my-app --key STRIPE_LIVE_KEY --current sk_live_xxx 対称変更ゲート。 人間もエージェントも、シークレットを上書きまたは削除するには --current <前回の値> が必要です（passwd形式の前提条件）。新しいキーの初回書き込みには --current \"\"（空）を渡します。前回の値を検証せずにローテーションするには --rotate-secret を使用します。これはローテーションとして大々的に監査されます。--current と --rotate-secret は相互排他的です。 シェル履歴への露出を避けるため、argvの代わりにstdinから読み取るには --value - を渡します。 docker-compose.yml での使用例: services: api: image: myapp environment: DATABASE_HOST: ${REDIACC_SECRET_DB_HOST} secrets: stripe_live_key secrets: stripe_live_key: file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY サービス側の小文字の参照（stripe_live_key）はコンテナ内の /run/secrets/<name> ファイル名です。ホストパスの大文字の末尾部分（STRIPE_LIVE_KEY）は --key で設定した値と一致します。${REDIACC_NETWORK_ID} は renet compose によって自動的に補間されます。 クロスリポジトリ隔離の強制: renetのcomposeバリデーターは、他のリポジトリのネットワークIDを参照する secrets: file:（および configs: file:、env_file:）パスを拒否します。/var/run/rediacc/secrets/... 参照として受け入れられる形式はリテラルの ${REDIACC_NETWORK_ID} トークン（または自分のネットワークの整数）のみです。--unsafe はこのチェックを上書きしません。RediaccfileのBashサブプロセスを囲むLandlockサンドボックスも、自分のネットワークのシークレットディレクトリのみにファイルシステムアクセスをスコープするため、Rediaccfileからの悪意ある cat /var/run/rediacc/secrets/<other>/X はカーネル層でEACCESで失敗します。 フォーク: rdc repo fork はシークレットをコピーしません。フォークでシークレットを使用するには、フォークに対して rdc repo secret set --name <fork> を明示的に実行します。これは重要な安全特性です。フォークのコンテナは、外部サービスに対して本番プリンシパルとして動作できるべきではありません。 エージェント（Claude Code、Cursorなど）: repo secret list と repo secret get はMCPツールとして公開されています（読み取り安全。名前とダイジェストのみ、値は含まれません）。set と unset はCLI専用です。--current/--rotate-secret の確認手順は人間の目視が必要なためです。シェル経由でこれらを呼び出すエージェントも人間と同じゲートを受けます。前提条件が失敗した場合、JSONエンベロープには構造化された errors[].next.options[].run フィールドが含まれます。エージェントはそれらのコマンドをそのままユーザーに伝えてください。完全なモデルについてはAIエージェントの安全性を参照してください。",
+    "body": "リポジトリシークレットは、暗号化リポジトリイメージに書き込まれることなくコンテナに注入されるデプロイ時のクレデンシャルです。リポジトリのデータとは別の層に保持されるため、rdc repo fork では伝播されません。フォークは空のシークレットマップから始まり、そのコンテナは親とは異なる外部プリンシパルとして起動します。 ステップバイステップのガイドをご希望の場合は、set/list/deploy/verify/rotateの全サイクルについてシークレット管理チュートリアルを参照してください。 書き込み専用モデル（GitHubスタイル）: get はSHA-256ダイジェストのみを返します。平文の値は人間にもエージェントにも返されません。値を忘れた場合は、パスワードマネージャーで確認してローテーションしてください。設計上、Rediaccから値を読み戻すことはできません。これにより、ターミナル記録、シェル履歴、誤ったリダイレクト、ショルダーサーフィンなど、漏洩の一類型全体が排除されます。 2つの配信モード: env: シークレットはターゲットマシンのrenetシェルで REDIACC_SECRET_<KEY> としてエクスポートされます。docker-compose.yml から ${REDIACC_SECRET_<KEY>} 補間で参照します。コンテナの環境内で可視なので、アプリケーションがすでにenvで期待している接続文字列形式の値に使用してください。 file: シークレットはホスト上の /var/run/rediacc/secrets/<networkID>/<KEY> に書き込まれます（tmpfs、永続化されません）。composeファイルからは、file: ソースを持つトップレベルの secrets: 宣言とサービスごとの secrets: リストで参照します。コンテナは /run/secrets/<key> から読み取ります。機密性の高いものにはこのモードを使用してください。docker inspect や /proc/<pid>/environ には表示されません。 # Set, list, get（ダイジェストのみ）, unset rdc repo secret set --name my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current \"\" rdc repo secret set --name my-app --key DB_HOST --value postgres.internal --mode env --current \"\" rdc repo secret list --name my-app rdc repo secret get --name my-app --key DB_HOST # → { key, mode, digest } — 値なし rdc repo secret unset --name my-app --key STRIPE_LIVE_KEY --current sk_live_xxx 対称変更ゲート。 人間もエージェントも、シークレットを上書きまたは削除するには --current <前回の値> が必要です（passwd形式の前提条件）。新しいキーの初回書き込みには --current \"\"（空）を渡します。前回の値を検証せずにローテーションするには --rotate-secret を使用します。これはローテーションとして大々的に監査されます。--current と --rotate-secret は相互排他的です。 シェル履歴への露出を避けるため、argvの代わりにstdinから読み取るには --value - を渡します。 docker-compose.yml での使用例: services: api: image: myapp environment: DATABASE_HOST: ${REDIACC_SECRET_DB_HOST} secrets: stripe_live_key secrets: stripe_live_key: file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY サービス側の小文字の参照（stripe_live_key）はコンテナ内の /run/secrets/<name> ファイル名です。ホストパスの大文字の末尾部分（STRIPE_LIVE_KEY）は --key で設定した値と一致します。${REDIACC_NETWORK_ID} は renet compose によって自動的に補間されます。 クロスリポジトリ隔離の強制: renetのcomposeバリデーターは、他のリポジトリのネットワークIDを参照する secrets: file:（および configs: file:、env_file:）パスを拒否します。/var/run/rediacc/secrets/... 参照として受け入れられる形式はリテラルの ${REDIACC_NETWORK_ID} トークン（または自分のネットワークの整数）のみです。--unsafe はこのチェックを上書きしません。RediaccfileのBashサブプロセスを囲むLandlockサンドボックスも、自分のネットワークのシークレットディレクトリのみにファイルシステムアクセスをスコープするため、Rediaccfileからの悪意ある cat /var/run/rediacc/secrets/<other>/X はカーネル層でEACCESで失敗します。 フォーク: rdc repo fork はシークレットをコピーしません。フォークでシークレットを使用するには、フォークに対して rdc repo secret set <fork> を明示的に実行します。これは重要な安全特性です。フォークのコンテナは、外部サービスに対して本番プリンシパルとして動作できるべきではありません。 エージェント（Claude Code、Cursorなど）: repo secret list と repo secret get はMCPツールとして公開されています（読み取り安全。名前とダイジェストのみ、値は含まれません）。set と unset はCLI専用です。--current/--rotate-secret の確認手順は人間の目視が必要なためです。シェル経由でこれらを呼び出すエージェントも人間と同じゲートを受けます。前提条件が失敗した場合、JSONエンベロープには構造化された errors[].next.options[].run フィールドが含まれます。エージェントはそれらのコマンドをそのままユーザーに伝えてください。完全なモデルについてはAIエージェントの安全性を参照してください。",
     "excerpt": "リポジトリシークレットは、暗号化リポジトリイメージに書き込まれることなくコンテナに注入されるデプロイ時のクレデンシャルです。リポジトリのデータとは別の層に保持されるため、rdc repo fork では伝播されません。フォークは空のシークレットマップから始まり、そのコンテナは親とは異なる外部プリンシ...",
     "category": "Documentation",
     "page": "/ja/docs/repositories",
@@ -10878,7 +10878,7 @@
   {
     "id": "search-11135",
     "content": "ストレージ",
-    "body": "すべてのDockerデータは暗号化されたリポジトリ内に保存されます, Dockerのdata-rootはLUKSボリューム内の{mount}/.rediacc/docker/dataにあります。名前付きボリューム、イメージ、コンテナレイヤーはすべて暗号化され、バックアップされ、自動的にフォークされます。 ${REDIACC_WORKING_DIR}/...へのバインドマウントは明確さのために推奨されますが、名前付きボリュームも安全に使用できます。 ``yaml volumes: ${REDIACC_WORKING_DIR}/data:/data # バインドマウント（推奨） pgdata:/var/lib/postgresql/data # 名前付きボリューム（こちらも安全） ` LUKSボリュームは/mnt/rediacc/mounts/<guid>/にマウントされます。 BTRFSスナップショットは、すべてのバインドマウントデータを含むLUKSバッキングファイル全体をキャプチャします。 データストアはシステムディスク上の固定サイズのBTRFSプールファイルです。rdc machine query --name <name> --systemで実効的な空き容量を確認できます。rdc datastore resize`で拡張できます。",
+    "body": "すべてのDockerデータは暗号化されたリポジトリ内に保存されます, Dockerのdata-rootはLUKSボリューム内の{mount}/.rediacc/docker/dataにあります。名前付きボリューム、イメージ、コンテナレイヤーはすべて暗号化され、バックアップされ、自動的にフォークされます。 ${REDIACC_WORKING_DIR}/...へのバインドマウントは明確さのために推奨されますが、名前付きボリュームも安全に使用できます。 ``yaml volumes: ${REDIACC_WORKING_DIR}/data:/data # バインドマウント（推奨） pgdata:/var/lib/postgresql/data # 名前付きボリューム（こちらも安全） ` LUKSボリュームは/mnt/rediacc/mounts/<guid>/にマウントされます。 BTRFSスナップショットは、すべてのバインドマウントデータを含むLUKSバッキングファイル全体をキャプチャします。 データストアはシステムディスク上の固定サイズのBTRFSプールファイルです。rdc machine status <name> --systemで実効的な空き容量を確認できます。rdc datastore resize`で拡張できます。",
     "excerpt": "すべてのDockerデータは暗号化されたリポジトリ内に保存されます, Dockerのdata-rootはLUKSボリューム内の{mount}/.rediacc/docker/dataにあります。名前付きボリューム、イメージ、コンテナレイヤーはすべて暗号化され、バックアップされ、自動的にフォークされま...",
     "category": "Documentation",
     "page": "/ja/docs/rules-of-rediacc",
@@ -10933,7 +10933,7 @@
   {
     "id": "search-11140",
     "content": "デプロイ",
-    "body": "rdc repo up はLUKSボリュームが未マウントの場合は自動マウントし、すべてのRediaccfileでup()を実行します。 rdc repo down はdown()を実行してDockerデーモンを停止します。 rdc repo down --unmount はLUKSボリュームも閉じます（暗号化ストレージをロックします）。 フォーク（rdc repo fork）は新しいGUIDとnetworkIdを持つCoW（コピーオンライト）クローンを、リポジトリのサイズに関係なく一定時間で作成します。BTRFS reflink はイメージのメタデータを複製するだけでデータは複製しないため、100 GB のリポジトリも 1 GB のリポジトリも同じ数秒でフォークされます。フォークは親の暗号化キーを共有します。 テイクオーバー（rdc repo takeover --name <fork> -m <machine>）はgrandリポジトリのデータをフォークのデータで置き換えます。grandはその識別情報（GUID、networkId、ドメイン、自動起動、バックアップチェーン）を保持します。古い本番データはバックアップフォークとして保存されます。使用例: フォークでアップグレードをテストし、確認後に本番にテイクオーバー。rdc repo takeover --name <backup-fork> -m <machine>で元に戻せます。 プロキシルートはデプロイ後約3秒で有効になります。repo up中の「Proxy is not running」警告はops/dev環境では情報提供目的です。 rdc repo up と rdc repo fork --up は、デプロイ終了時に rediacc.service_port でラベル付けされたサービスの URL パターンを出力します。{service} を公開されたサービス名に置き換えて正確な URL を取得してください。rediacc.service_port のないサービス（データベース、ワーカー）はルートを取得せず、表示されません。",
+    "body": "rdc repo up はLUKSボリュームが未マウントの場合は自動マウントし、すべてのRediaccfileでup()を実行します。 rdc repo down はdown()を実行してDockerデーモンを停止します。 rdc repo down --unmount はLUKSボリュームも閉じます（暗号化ストレージをロックします）。 フォーク（rdc repo fork）は新しいGUIDとnetworkIdを持つCoW（コピーオンライト）クローンを、リポジトリのサイズに関係なく一定時間で作成します。BTRFS reflink はイメージのメタデータを複製するだけでデータは複製しないため、100 GB のリポジトリも 1 GB のリポジトリも同じ数秒でフォークされます。フォークは親の暗号化キーを共有します。 テイクオーバー（rdc repo promote <fork>）はgrandリポジトリのデータをフォークのデータで置き換えます。grandはその識別情報（GUID、networkId、ドメイン、自動起動、バックアップチェーン）を保持します。古い本番データはバックアップフォークとして保存されます。使用例: フォークでアップグレードをテストし、確認後に本番にテイクオーバー。rdc repo promote <backup-fork>で元に戻せます。 プロキシルートはデプロイ後約3秒で有効になります。repo up中の「Proxy is not running」警告はops/dev環境では情報提供目的です。 rdc repo up と rdc repo fork --up は、デプロイ終了時に rediacc.service_port でラベル付けされたサービスの URL パターンを出力します。{service} を公開されたサービス名に置き換えて正確な URL を取得してください。rediacc.service_port のないサービス（データベース、ワーカー）はルートを取得せず、表示されません。",
     "excerpt": "rdc repo up はLUKSボリュームが未マウントの場合は自動マウントし、すべてのRediaccfileでup()を実行します。 rdc repo down はdown()を実行してDockerデーモンを停止します。 rdc repo down --unmount はLUKSボリュームも閉じま...",
     "category": "Documentation",
     "page": "/ja/docs/rules-of-rediacc",
@@ -10944,7 +10944,7 @@
   {
     "id": "search-11141",
     "content": "よくある間違い",
-    "body": "renet composeの代わりにdocker composeを使用する, コンテナがネットワーク分離を取得できません。 再起動ポリシーは安全です, renetが自動的に削除し、ウォッチドッグが回復を処理します。 privileged: true を使用する, 不要です。renetが代わりに特定のCRIUケーパビリティを注入します。 生の IP を永続的な設定ファイルにハードコードする - 接続にはサービス名を使用して fork の分離性を保ってください。 失敗したコマンドの回避策としてrdc term connect -cを使用する, 代わりにバグを報告してください。 repo deleteはループバックIPとsystemdユニットを含む完全なクリーンアップを実行します。古い削除の残骸をクリーンアップするにはrdc machine prune --name <name>を実行してください。",
+    "body": "renet composeの代わりにdocker composeを使用する, コンテナがネットワーク分離を取得できません。 再起動ポリシーは安全です, renetが自動的に削除し、ウォッチドッグが回復を処理します。 privileged: true を使用する, 不要です。renetが代わりに特定のCRIUケーパビリティを注入します。 生の IP を永続的な設定ファイルにハードコードする - 接続にはサービス名を使用して fork の分離性を保ってください。 失敗したコマンドの回避策としてrdc term connect -cを使用する, 代わりにバグを報告してください。 repo deleteはループバックIPとsystemdユニットを含む完全なクリーンアップを実行します。古い削除の残骸をクリーンアップするにはrdc machine prune <name>を実行してください。",
     "excerpt": "renet composeの代わりにdocker composeを使用する, コンテナがネットワーク分離を取得できません。 再起動ポリシーは安全です, renetが自動的に削除し、ウォッチドッグが回復を処理します。 privileged: true を使用する, 不要です。renetが代わりに特定の...",
     "category": "Documentation",
     "page": "/ja/docs/rules-of-rediacc",
@@ -11391,7 +11391,7 @@
   {
     "id": "search-11182",
     "content": "コンテナの回復と再起動ポリシー",
-    "body": "renetとDockerは、コンテナの再起動処理について意図的に見解が異なります。この分離を理解することは、コンテナが戻った（戻らなかった）理由をデバッグする際に重要です。 再起動ポリシーの変換。 composeファイルにrestart: always（またはunless-stopped、on-failure）を書くと、renetは実際のcomposeデプロイメントを合成する際にそれを削除し、restart: noに置き換えます。元の値はリポジトリの.rediacc.jsonのservices.<name>.restart_policyに保存されます。これにより、DockerデーモンレベルのAuto-RestartがCRIUチェックポイント/リストアを妨げるのを防ぎます（デーモン主導の再起動は古いチェックポイント前の状態から再開します）。 ウォッチドッグの適用。 ルーターウォッチドッグは各マシンで定期的に実行されます。各ティックで： 各リポジトリの.rediacc.jsonを読み込み、回復可能なrestart_policyを持つサービスを見つけます。 そのリポジトリのデーモンのすべてのコンテナをリストし、停止しているものを特定し、保存されたポリシーに従って再起動します。30秒のグレース期間により、docker stopを実行したオペレーターとの競合を防ぎます。 同じループは/var/run/rediacc/cold-backup-<guid>.running.jsonも処理します（コールドバックアップのセマンティクスを参照）。リストされたコンテナは保存されたポリシーに関わらず再起動されます。サイドカーは「renetがこれらを意図的に停止し、オペレーターへの再起動を約束している」ことを意味するからです。 on-failureが壊れて見える理由。 Dockerのon-failureポリシーは、コンテナが非ゼロコードで終了した場合にのみ再起動します。docker stopやデーモンのシャットダウンによる正常な停止（exit 0）は「失敗」ではなく、Dockerのネイティブロジックでもウォッチドッグのポリシーパスでも再起動をトリガーしません。コールドバックアップサイドカーがセーフティネットです：意図的に停止したコンテナはポリシーに関わらず再起動されます。 ランタイム状態の解釈方法： docker inspect <container> -> RestartPolicy.Name：renet管理コンテナでは常にnoになります。セマンティックポリシーの判断には使用しないでください。 リポジトリマウントルートの.rediacc.json -> services.<name>.restart_policy：真の意図。 docker ps --format '{{.Status}}'：ランタイム状態。 ドリフトの修正方法。 コンテナの.rediacc.jsonに保存されたポリシーが誤っている場合（例：composeを編集したがコンテナを再作成しなかった場合）、rdc repo up --name <repo> -m <machine>を再実行してください。コンテナは更新されたポリシーを記録した状態で再作成されます。 実験的： コールドバックアップサイドカーベースの回復とrdc machine queryの--sync-certsフラグはrenet 0.9+で導入されました。古いバージョンはウォッチドッグ回復のために保存されたrestart_policyのみに依存するため、コールドバックアップ後にon-failureコンテナが孤立する可能性があります。 Docker のブリッジネットワーキングはリポジトリごとのデーモンでは無効化されています。 リポジトリごとの各デーモン（FlavorRediacc）は \"bridge\": \"none\" と \"iptables\": false で構成されています。リポジトリシェル内で単純に docker run <image> を実行してもコンテナは起動しますが、ループバックインターフェースしか持たず、DNS も外向きの接続性もありません。これは仕様です。なぜなら、リポジトリ間のループバック分離は eBPF の cgroup フックによって強制されており、ブリッジ化されたコンテナはそれを迂回してしまうからです。本番サービスは renet compose を使用してください（ホストネットワーキングを自動で注入してくれます）。アドホックなデバッグでは、明示的に --network host を指定してください: docker run --rm --network host -it ubuntu bash。 ユーザーごとの Hub デーモン（FlavorHub、開発環境で使用）は例外です。これらは bridge=\"docker0\"、iptables=true、live-restore=true を設定することで、ユーザーが実行するコンテナが通常のブリッジネットワーキングと外向きの接続性を利用できるようにします。 注意： Forkリポジトリは親のサブドメイン下に自動ルートを取得します：{service}-fork-{tag}.{repo}.{machine}.{baseDomain}。カスタムドメインはforkでは省略されます。",
+    "body": "renetとDockerは、コンテナの再起動処理について意図的に見解が異なります。この分離を理解することは、コンテナが戻った（戻らなかった）理由をデバッグする際に重要です。 再起動ポリシーの変換。 composeファイルにrestart: always（またはunless-stopped、on-failure）を書くと、renetは実際のcomposeデプロイメントを合成する際にそれを削除し、restart: noに置き換えます。元の値はリポジトリの.rediacc.jsonのservices.<name>.restart_policyに保存されます。これにより、DockerデーモンレベルのAuto-RestartがCRIUチェックポイント/リストアを妨げるのを防ぎます（デーモン主導の再起動は古いチェックポイント前の状態から再開します）。 ウォッチドッグの適用。 ルーターウォッチドッグは各マシンで定期的に実行されます。各ティックで： 各リポジトリの.rediacc.jsonを読み込み、回復可能なrestart_policyを持つサービスを見つけます。 そのリポジトリのデーモンのすべてのコンテナをリストし、停止しているものを特定し、保存されたポリシーに従って再起動します。30秒のグレース期間により、docker stopを実行したオペレーターとの競合を防ぎます。 同じループは/var/run/rediacc/cold-backup-<guid>.running.jsonも処理します（コールドバックアップのセマンティクスを参照）。リストされたコンテナは保存されたポリシーに関わらず再起動されます。サイドカーは「renetがこれらを意図的に停止し、オペレーターへの再起動を約束している」ことを意味するからです。 on-failureが壊れて見える理由。 Dockerのon-failureポリシーは、コンテナが非ゼロコードで終了した場合にのみ再起動します。docker stopやデーモンのシャットダウンによる正常な停止（exit 0）は「失敗」ではなく、Dockerのネイティブロジックでもウォッチドッグのポリシーパスでも再起動をトリガーしません。コールドバックアップサイドカーがセーフティネットです：意図的に停止したコンテナはポリシーに関わらず再起動されます。 ランタイム状態の解釈方法： docker inspect <container> -> RestartPolicy.Name：renet管理コンテナでは常にnoになります。セマンティックポリシーの判断には使用しないでください。 リポジトリマウントルートの.rediacc.json -> services.<name>.restart_policy：真の意図。 docker ps --format '{{.Status}}'：ランタイム状態。 ドリフトの修正方法。 コンテナの.rediacc.jsonに保存されたポリシーが誤っている場合（例：composeを編集したがコンテナを再作成しなかった場合）、rdc repo up <repo>を再実行してください。コンテナは更新されたポリシーを記録した状態で再作成されます。 実験的： コールドバックアップサイドカーベースの回復とrdc machine queryの--sync-certsフラグはrenet 0.9+で導入されました。古いバージョンはウォッチドッグ回復のために保存されたrestart_policyのみに依存するため、コールドバックアップ後にon-failureコンテナが孤立する可能性があります。 Docker のブリッジネットワーキングはリポジトリごとのデーモンでは無効化されています。 リポジトリごとの各デーモン（FlavorRediacc）は \"bridge\": \"none\" と \"iptables\": false で構成されています。リポジトリシェル内で単純に docker run <image> を実行してもコンテナは起動しますが、ループバックインターフェースしか持たず、DNS も外向きの接続性もありません。これは仕様です。なぜなら、リポジトリ間のループバック分離は eBPF の cgroup フックによって強制されており、ブリッジ化されたコンテナはそれを迂回してしまうからです。本番サービスは renet compose を使用してください（ホストネットワーキングを自動で注入してくれます）。アドホックなデバッグでは、明示的に --network host を指定してください: docker run --rm --network host -it ubuntu bash。 ユーザーごとの Hub デーモン（FlavorHub、開発環境で使用）は例外です。これらは bridge=\"docker0\"、iptables=true、live-restore=true を設定することで、ユーザーが実行するコンテナが通常のブリッジネットワーキングと外向きの接続性を利用できるようにします。 注意： Forkリポジトリは親のサブドメイン下に自動ルートを取得します：{service}-fork-{tag}.{repo}.{machine}.{baseDomain}。カスタムドメインはforkでは省略されます。",
     "excerpt": "renetとDockerは、コンテナの再起動処理について意図的に見解が異なります。この分離を理解することは、コンテナが戻った（戻らなかった）理由をデバッグする際に重要です。 再起動ポリシーの変換。 composeファイルにrestart: always（またはunless-stopped、on-fa...",
     "category": "Documentation",
     "page": "/ja/docs/services",
@@ -11413,8 +11413,8 @@
   {
     "id": "search-11184",
     "content": "デタッチ起動",
-    "body": "--detach を指定すると、ヘルスチェックの完了を待たず、コンテナが起動した時点でコマンドが返ります。起動の残りはバックグラウンドで進行します。プロキシは各サービスがバインドするまでアップストリーム接続を自動的に再試行するため、ルートは自然に回復します。進捗は rdc machine query --containers --name <machine> で確認できます。次のステップでサービスが揃っている必要のないスクリプトや使い捨てフォークに最適です。",
-    "excerpt": "--detach を指定すると、ヘルスチェックの完了を待たず、コンテナが起動した時点でコマンドが返ります。起動の残りはバックグラウンドで進行します。プロキシは各サービスがバインドするまでアップストリーム接続を自動的に再試行するため、ルートは自然に回復します。進捗は rdc machine query...",
+    "body": "--detach を指定すると、ヘルスチェックの完了を待たず、コンテナが起動した時点でコマンドが返ります。起動の残りはバックグラウンドで進行します。プロキシは各サービスがバインドするまでアップストリーム接続を自動的に再試行するため、ルートは自然に回復します。進捗は rdc machine status <machine> --containers で確認できます。次のステップでサービスが揃っている必要のないスクリプトや使い捨てフォークに最適です。",
+    "excerpt": "--detach を指定すると、ヘルスチェックの完了を待たず、コンテナが起動した時点でコマンドが返ります。起動の残りはバックグラウンドで進行します。プロキシは各サービスがバインドするまでアップストリーム接続を自動的に再試行するため、ルートは自然に回復します。進捗は rdc machine statu...",
     "category": "Documentation",
     "page": "/ja/docs/services",
     "path": "docs.services.content",
@@ -11600,7 +11600,7 @@
   {
     "id": "search-11201",
     "content": "composeでリポジトリごとのシークレットを使用する",
-    "body": "上記のPOSTGRES_PASSWORD: changemeプレースホルダーはチュートリアル用ですが、実アプリケーションは実クレデンシャルが必要で、composeファイル（またはリポジトリ内の.envファイル）にコミットするということは、フォークもそれを継承することを意味します。デプロイ時のクレデンシャルについては、rdc repo secretを使用してください。値は暗号化リポジトリイメージの外側にあるため、フォークは空のシークレットマップで開始します。 composeで機能する2つの配信モードがあります： envモード。任意のenvironment:値内で${REDIACC_SECRET_<KEY>}を使用して補間します。renetラッパーはデプロイ時にコンテナの環境に値を渡します。 fileモード。値はホスト側のtmpfsファイル（/var/run/rediacc/secrets/<networkID>/<KEY>）に配置され、Dockerのcomposeの標準secrets:ブロック経由でコンテナにマウントします。コンテナは/run/secrets/<key>を読みます。何か機密情報がある場合はこのモードを優先してください。値はdocker inspectや/proc/<pid>/environに表示されません。 services: api: image: myregistry/api:latest environment: DATABASE_URL: ${REDIACC_SECRET_DATABASE_URL} secrets: stripe_live_key secrets: stripe_live_key: file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY rdc repo secret set --name <repo> --key DATABASE_URL --value <val> --mode env --current \"\"でファイルモード相当の値をシードします。詳細についてはリポジトリ » シークレットを参照し、コマンドリファレンスについてはチートシートのリポジトリごとのシークレットを参照してください。 クロスリポパスはバリデーション時に拒否されます。 composeのsecrets: file:（またはconfigs: file:、またはenv_file:）が別のリポジトリの/var/run/rediacc/secrets/<other-networkID>/ディレクトリを指していると、renetラッパーによってdocker compose実行前に厳密に拒否されます。--unsafeはオーバーライドしません。深層防御：Rediaccfileシェルの周囲のLandlockサンドボックスはリードを現在のネットワークのシークレットディレクトリにスコープするため、YAMLバリデーターをバイパスしても、Rediaccfileのbashからcat /var/run/rediacc/secrets/<other>/Xを実行するとEACCESで失敗します。オプトインする必要はありません。これはすべてのrepo upでデフォルトで有効です。",
+    "body": "上記のPOSTGRES_PASSWORD: changemeプレースホルダーはチュートリアル用ですが、実アプリケーションは実クレデンシャルが必要で、composeファイル（またはリポジトリ内の.envファイル）にコミットするということは、フォークもそれを継承することを意味します。デプロイ時のクレデンシャルについては、rdc repo secretを使用してください。値は暗号化リポジトリイメージの外側にあるため、フォークは空のシークレットマップで開始します。 composeで機能する2つの配信モードがあります： envモード。任意のenvironment:値内で${REDIACC_SECRET_<KEY>}を使用して補間します。renetラッパーはデプロイ時にコンテナの環境に値を渡します。 fileモード。値はホスト側のtmpfsファイル（/var/run/rediacc/secrets/<networkID>/<KEY>）に配置され、Dockerのcomposeの標準secrets:ブロック経由でコンテナにマウントします。コンテナは/run/secrets/<key>を読みます。何か機密情報がある場合はこのモードを優先してください。値はdocker inspectや/proc/<pid>/environに表示されません。 services: api: image: myregistry/api:latest environment: DATABASE_URL: ${REDIACC_SECRET_DATABASE_URL} secrets: stripe_live_key secrets: stripe_live_key: file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current \"\"でファイルモード相当の値をシードします。詳細についてはリポジトリ » シークレットを参照し、コマンドリファレンスについてはチートシートのリポジトリごとのシークレットを参照してください。 クロスリポパスはバリデーション時に拒否されます。 composeのsecrets: file:（またはconfigs: file:、またはenv_file:）が別のリポジトリの/var/run/rediacc/secrets/<other-networkID>/ディレクトリを指していると、renetラッパーによってdocker compose実行前に厳密に拒否されます。--unsafeはオーバーライドしません。深層防御：Rediaccfileシェルの周囲のLandlockサンドボックスはリードを現在のネットワークのシークレットディレクトリにスコープするため、YAMLバリデーターをバイパスしても、Rediaccfileのbashからcat /var/run/rediacc/secrets/<other>/Xを実行するとEACCESで失敗します。オプトインする必要はありません。これはすべてのrepo upでデフォルトで有効です。",
     "excerpt": "上記のPOSTGRES_PASSWORD: changemeプレースホルダーはチュートリアル用ですが、実アプリケーションは実クレデンシャルが必要で、composeファイル（またはリポジトリ内の.envファイル）にコミットするということは、フォークもそれを継承することを意味します。デプロイ時のクレデン...",
     "category": "Documentation",
     "page": "/ja/docs/services",
@@ -11719,7 +11719,7 @@
   {
     "id": "search-11212",
     "content": "SSH接続のテスト",
-    "body": "マシンを追加した後、到達可能であることを確認します： rdc term connect -m server-1 -c \"hostname\" このコマンドはマシンへのSSH接続を開き、コマンドを実行します。成功すれば、SSH設定が正しいことが確認できます。 より詳細な診断については、以下を実行してください： rdc doctor ヒント: SSH接続を確認するには、rdc term connect -m <machine> -c \"hostname\" を実行するか、ssh を直接使用してください。",
+    "body": "マシンを追加した後、到達可能であることを確認します： rdc term connect -m server-1 -c \"hostname\" このコマンドはマシンへのSSH接続を開き、コマンドを実行します。成功すれば、SSH設定が正しいことが確認できます。 より詳細な診断については、以下を実行してください： rdc doctor ヒント: SSH接続を確認するには、rdc term connect <machine> -c \"hostname\" を実行するか、ssh を直接使用してください。",
     "excerpt": "マシンを追加した後、到達可能であることを確認します： rdc term connect -m server-1 -c \"hostname\" このコマンドはマシンへのSSH接続を開き、コマンドを実行します。成功すれば、SSH設定が正しいことが確認できます。 より詳細な診断については、以下を実行してくだ...",
     "category": "Documentation",
     "page": "/ja/docs/setup",
@@ -11970,7 +11970,7 @@
   {
     "id": "search-11235",
     "content": "VM移行猶予期間",
-    "body": "ホスティングプロバイダーがVMを異なる物理ハードウェアに移行する場合、マシンIDが変わります（DMI UUID、/etc/machine-id、NICのMACアドレスなどのハードウェア識別子から派生）。リポジトリライセンスはマシンIDに紐付けられているため、通常は移行によってすべてのライセンスが無効になります。 これを透過的に処理するために、リポジトリライセンスには 40日間のマシンID猶予期間 が含まれています。マシンIDが一致しなくても、ライセンスが40日以内に発行された場合、ライセンスはまだ受け入れられます。ライセンスは30日ごとに更新されるため、次の更新で自動的に新しいマシンIDに紐付けられます。 実際には： VM移行、マシンIDが変わる：リポジトリは実行を続けます（40日以内） 次の rdc 操作で新しいマシンIDでライセンスが更新される 手動操作は不要 rdc machine query --system --licenses --name <machine> でマシンIDとライセンス状態を確認できます Edgeチャンネルのアカウント はCommunityプランで動作し、制限が2倍になります（20GBのリポジトリ、月200回のセットアップ、マシン2台）。有料プランはStableチャンネルでのみ利用可能です。詳細は リリースチャンネル を参照してください。",
+    "body": "ホスティングプロバイダーがVMを異なる物理ハードウェアに移行する場合、マシンIDが変わります（DMI UUID、/etc/machine-id、NICのMACアドレスなどのハードウェア識別子から派生）。リポジトリライセンスはマシンIDに紐付けられているため、通常は移行によってすべてのライセンスが無効になります。 これを透過的に処理するために、リポジトリライセンスには 40日間のマシンID猶予期間 が含まれています。マシンIDが一致しなくても、ライセンスが40日以内に発行された場合、ライセンスはまだ受け入れられます。ライセンスは30日ごとに更新されるため、次の更新で自動的に新しいマシンIDに紐付けられます。 実際には： VM移行、マシンIDが変わる：リポジトリは実行を続けます（40日以内） 次の rdc 操作で新しいマシンIDでライセンスが更新される 手動操作は不要 rdc machine status <machine> --system --licenses でマシンIDとライセンス状態を確認できます Edgeチャンネルのアカウント はCommunityプランで動作し、制限が2倍になります（20GBのリポジトリ、月200回のセットアップ、マシン2台）。有料プランはStableチャンネルでのみ利用可能です。詳細は リリースチャンネル を参照してください。",
     "excerpt": "ホスティングプロバイダーがVMを異なる物理ハードウェアに移行する場合、マシンIDが変わります（DMI UUID、/etc/machine-id、NICのMACアドレスなどのハードウェア識別子から派生）。リポジトリライセンスはマシンIDに紐付けられているため、通常は移行によってすべてのライセンスが無効...",
     "category": "Documentation",
     "page": "/ja/docs/subscription-licensing",
@@ -12047,7 +12047,7 @@
   {
     "id": "search-11242",
     "content": "ステータスの確認とライセンスの更新",
-    "body": "人間によるログイン： rdc subscription login 自動化またはAIエージェントによるログイン： rdc subscription login --token \"$REDIACC_SUBSCRIPTION_TOKEN\" 非対話型環境では、REDIACC_SUBSCRIPTION_TOKEN を設定するのが最もシンプルな選択肢です。トークンはエージェントが必要とするサブスクリプションとリポジトリライセンス操作のみにスコープを限定する必要があります。 アカウントバックアップされたサブスクリプションステータスを表示： rdc subscription status 1台のマシンのマシンアクティベーション詳細を表示： rdc subscription activation status -m hostinger 1台のマシンにインストールされたリポジトリライセンス詳細を表示： rdc subscription repo status -m hostinger マシン上のリポジトリライセンスをバッチ更新： rdc subscription refresh repos -m hostinger マシン上で発見されたがローカルの rdc 設定にないリポジトリはバッチ更新中に拒否されます。失敗として報告され、自動分類はされません。 既存のリポジトリのリポジトリライセンスを強制更新： rdc subscription refresh repo --name my-app -m hostinger 初回使用時、使用可能なリポジトリライセンスが見つからないライセンス済みリポジトリまたはバックアップ操作は、アカウント認可ハンドオフを自動的にトリガーする場合があります。CLIは認可URLを表示し、対話型ターミナルではブラウザを開こうとし、認可と発行が成功した後に一度操作を再試行します。 非対話型環境では、CLIはブラウザの承認を待ちません。代わりに、rdc subscription login --token ... または REDIACC_SUBSCRIPTION_TOKEN でスコープ付きトークンを提供するよう指示します。 マシンの初回セットアップについては、マシンセットアップ を参照してください。",
+    "body": "人間によるログイン： rdc subscription login 自動化またはAIエージェントによるログイン： rdc subscription login --token \"$REDIACC_SUBSCRIPTION_TOKEN\" 非対話型環境では、REDIACC_SUBSCRIPTION_TOKEN を設定するのが最もシンプルな選択肢です。トークンはエージェントが必要とするサブスクリプションとリポジトリライセンス操作のみにスコープを限定する必要があります。 アカウントバックアップされたサブスクリプションステータスを表示： rdc subscription status 1台のマシンのマシンアクティベーション詳細を表示： rdc subscription status -m hostinger 1台のマシンにインストールされたリポジトリライセンス詳細を表示： rdc subscription status -m hostinger マシン上のリポジトリライセンスをバッチ更新： rdc subscription refresh repos -m hostinger マシン上で発見されたがローカルの rdc 設定にないリポジトリはバッチ更新中に拒否されます。失敗として報告され、自動分類はされません。 既存のリポジトリのリポジトリライセンスを強制更新： rdc subscription refresh repo --name my-app -m hostinger 初回使用時、使用可能なリポジトリライセンスが見つからないライセンス済みリポジトリまたはバックアップ操作は、アカウント認可ハンドオフを自動的にトリガーする場合があります。CLIは認可URLを表示し、対話型ターミナルではブラウザを開こうとし、認可と発行が成功した後に一度操作を再試行します。 非対話型環境では、CLIはブラウザの承認を待ちません。代わりに、rdc subscription login --token ... または REDIACC_SUBSCRIPTION_TOKEN でスコープ付きトークンを提供するよう指示します。 マシンの初回セットアップについては、マシンセットアップ を参照してください。",
     "excerpt": "人間によるログイン： rdc subscription login 自動化またはAIエージェントによるログイン： rdc subscription login --token \"$REDIACC_SUBSCRIPTION_TOKEN\" 非対話型環境では、REDIACC_SUBSCRIPTION_TO...",
     "category": "Documentation",
     "page": "/ja/docs/subscription-licensing",
@@ -12091,7 +12091,7 @@
   {
     "id": "search-11246",
     "content": "月次リポジトリライセンス発行数",
-    "body": "このメトリクスは、現在のUTCカレンダー月における成功したアカウントバックアップされたリポジトリライセンス発行アクティビティをカウントします。 含まれるもの： リポジトリライセンスの初回発行 新しく署名されたライセンスを返す成功したリポジトリライセンス更新 含まれないもの： 変更されていないバッチエントリ 失敗した発行試行 発行前に拒否された未追跡リポジトリ 使用状況と最近のリポジトリライセンス発行履歴の顧客向けビューが必要な場合は、アカウントポータルを使用してください。マシン側の検査が必要な場合は、rdc subscription activation status -m と rdc subscription repo status -m を使用してください。",
+    "body": "このメトリクスは、現在のUTCカレンダー月における成功したアカウントバックアップされたリポジトリライセンス発行アクティビティをカウントします。 含まれるもの： リポジトリライセンスの初回発行 新しく署名されたライセンスを返す成功したリポジトリライセンス更新 含まれないもの： 変更されていないバッチエントリ 失敗した発行試行 発行前に拒否された未追跡リポジトリ 使用状況と最近のリポジトリライセンス発行履歴の顧客向けビューが必要な場合は、アカウントポータルを使用してください。マシン側の検査が必要な場合は、rdc subscription status -m と rdc subscription status -m を使用してください。",
     "excerpt": "このメトリクスは、現在のUTCカレンダー月における成功したアカウントバックアップされたリポジトリライセンス発行アクティビティをカウントします。 含まれるもの： リポジトリライセンスの初回発行 新しく署名されたライセンスを返す成功したリポジトリライセンス更新 含まれないもの： 変更されていないバッチエ...",
     "category": "Documentation",
     "page": "/ja/docs/subscription-licensing",
@@ -12503,8 +12503,8 @@
   {
     "id": "search-11284",
     "content": "SSH接続の失敗",
-    "body": "手動で接続できるか確認してください: ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50 rdc config machine scan-keys -m server-1 を実行してホストキーを更新してください SSHポートが一致しているか確認してください: --port 22 簡単なコマンドでテストしてください: rdc term connect -m server-1 -c \"hostname\"",
-    "excerpt": "手動で接続できるか確認してください: ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50 rdc config machine scan-keys -m server-1 を実行してホストキーを更新してください SSHポートが一致しているか確認してください: -...",
+    "body": "手動で接続できるか確認してください: ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50 rdc machine scan-keys server-1 を実行してホストキーを更新してください SSHポートが一致しているか確認してください: --port 22 簡単なコマンドでテストしてください: rdc term connect server-1 -c \"hostname\"",
+    "excerpt": "手動で接続できるか確認してください: ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50 rdc machine scan-keys server-1 を実行してホストキーを更新してください SSHポートが一致しているか確認してください: --port 22 簡...",
     "category": "Documentation",
     "page": "/ja/docs/troubleshooting",
     "path": "docs.troubleshooting.content",
@@ -12514,8 +12514,8 @@
   {
     "id": "search-11285",
     "content": "ホストキーの不一致",
-    "body": "サーバーが再インストールされた場合やSSHキーが変更された場合、「host key verification failed」というエラーが表示されます: rdc config machine scan-keys -m server-1 このコマンドは新しいホストキーを取得し、設定を更新します。",
-    "excerpt": "サーバーが再インストールされた場合やSSHキーが変更された場合、「host key verification failed」というエラーが表示されます: rdc config machine scan-keys -m server-1 このコマンドは新しいホストキーを取得し、設定を更新します。",
+    "body": "サーバーが再インストールされた場合やSSHキーが変更された場合、「host key verification failed」というエラーが表示されます: rdc machine scan-keys server-1 このコマンドは新しいホストキーを取得し、設定を更新します。",
+    "excerpt": "サーバーが再インストールされた場合やSSHキーが変更された場合、「host key verification failed」というエラーが表示されます: rdc machine scan-keys server-1 このコマンドは新しいホストキーを取得し、設定を更新します。",
     "category": "Documentation",
     "page": "/ja/docs/troubleshooting",
     "path": "docs.troubleshooting.content",
@@ -12525,8 +12525,8 @@
   {
     "id": "search-11286",
     "content": "マシンセットアップの失敗",
-    "body": "SSHユーザーがパスワードなしのsudoアクセスを持っているか確認するか、必要なコマンドに NOPASSWD を設定してください サーバーの空きディスク容量を確認してください --debug を付けて詳細な出力を取得してください: rdc config machine setup --name server-1 --debug",
-    "excerpt": "SSHユーザーがパスワードなしのsudoアクセスを持っているか確認するか、必要なコマンドに NOPASSWD を設定してください サーバーの空きディスク容量を確認してください --debug を付けて詳細な出力を取得してください: rdc config machine setup --name se...",
+    "body": "SSHユーザーがパスワードなしのsudoアクセスを持っているか確認するか、必要なコマンドに NOPASSWD を設定してください サーバーの空きディスク容量を確認してください --debug を付けて詳細な出力を取得してください: rdc machine setup server-1 --debug",
+    "excerpt": "SSHユーザーがパスワードなしのsudoアクセスを持っているか確認するか、必要なコマンドに NOPASSWD を設定してください サーバーの空きディスク容量を確認してください --debug を付けて詳細な出力を取得してください: rdc machine setup server-1 --debug",
     "category": "Documentation",
     "page": "/ja/docs/troubleshooting",
     "path": "docs.troubleshooting.content",
@@ -12646,8 +12646,8 @@
   {
     "id": "search-11297",
     "content": "VS Code でサンドボックスファイルに Permission Denied が出る",
-    "body": "以前のVS Codeセッションの後に rdc vscode connect -m <machine> -r <repo> で接続すると、古いバージョンのrenetでは scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied のようなエラーが発生していました。原因はサンドボックスディレクトリ内のファイル所有権の混在で、SSHユーザーと内部の rediacc ユーザーの両方がファイルを書き込んでいました。 最近のバージョンのrenetは、以下の方法でこれを修正しています: リポジトリごとのサンドボックスワークスペース（/mnt/rediacc/.interim/sandbox/<repo>/）を、グループ rediacc とset-group-IDビット（モード 2775）付きで作成するため、配下に書かれるすべてのファイルは正しいグループを継承します。 サンドボックスランタイム内でumask 002 を適用し、新しいファイルがグループ書き込み可能（0664/0775）で作成されるようにします。 起動時に既存の .vscode-server/ サブツリーを正規化するため、修正前からある古いファイルが自動的に修復されます。 それでもパーミッションエラーが発生する場合は、マシン上のシェルから一度 sudo systemctl restart rediacc-docker-<network-id> でリポジトリのDocker daemonを再起動して正規化パスを走らせてから、再度 rdc vscode connect を試してください。",
-    "excerpt": "以前のVS Codeセッションの後に rdc vscode connect -m <machine> -r <repo> で接続すると、古いバージョンのrenetでは scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied のよう...",
+    "body": "以前のVS Codeセッションの後に rdc vscode connect <repo> で接続すると、古いバージョンのrenetでは scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied のようなエラーが発生していました。原因はサンドボックスディレクトリ内のファイル所有権の混在で、SSHユーザーと内部の rediacc ユーザーの両方がファイルを書き込んでいました。 最近のバージョンのrenetは、以下の方法でこれを修正しています: リポジトリごとのサンドボックスワークスペース（/mnt/rediacc/.interim/sandbox/<repo>/）を、グループ rediacc とset-group-IDビット（モード 2775）付きで作成するため、配下に書かれるすべてのファイルは正しいグループを継承します。 サンドボックスランタイム内でumask 002 を適用し、新しいファイルがグループ書き込み可能（0664/0775）で作成されるようにします。 起動時に既存の .vscode-server/ サブツリーを正規化するため、修正前からある古いファイルが自動的に修復されます。 それでもパーミッションエラーが発生する場合は、マシン上のシェルから一度 sudo systemctl restart rediacc-docker-<network-id> でリポジトリのDocker daemonを再起動して正規化パスを走らせてから、再度 rdc vscode connect を試してください。",
+    "excerpt": "以前のVS Codeセッションの後に rdc vscode connect <repo> で接続すると、古いバージョンのrenetでは scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied のようなエラーが発生していました。原因...",
     "category": "Documentation",
     "page": "/ja/docs/troubleshooting",
     "path": "docs.troubleshooting.content",
@@ -13922,7 +13922,7 @@
   {
     "id": "search-11415",
     "content": "ステップ11: フォークは起動すらできない",
-    "body": "デプロイは意図的に失敗します：bind source path does not exist: /var/run/rediacc/secrets/<fork-id>/STRIPE_KEY。シークレットファイルは親のネットワーク ID の下にあり、フォークのネットワーク ID の下にはないため、Docker がマウントを拒否します。この失敗こそがデモです。本番の認証情報はフォークに追いかけません。偶然にすら。 テスト用にフォークにシークレットが必要な場合は、サンドボックスの値で明示的に設定します。例：rdc repo secret set --name my-app:test --key STRIPE_KEY --value sk_sandbox_yyy --mode file。これでフォークは Stripe サンドボックスと通信し、クリーンに起動します。本番の認証情報は本番から出ません。",
+    "body": "デプロイは意図的に失敗します：bind source path does not exist: /var/run/rediacc/secrets/<fork-id>/STRIPE_KEY。シークレットファイルは親のネットワーク ID の下にあり、フォークのネットワーク ID の下にはないため、Docker がマウントを拒否します。この失敗こそがデモです。本番の認証情報はフォークに追いかけません。偶然にすら。 テスト用にフォークにシークレットが必要な場合は、サンドボックスの値で明示的に設定します。例：rdc repo secret set my-app:test --key STRIPE_KEY --value sk_sandbox_yyy --mode file。これでフォークは Stripe サンドボックスと通信し、クリーンに起動します。本番の認証情報は本番から出ません。",
     "excerpt": "デプロイは意図的に失敗します：bind source path does not exist: /var/run/rediacc/secrets/<fork-id>/STRIPE_KEY。シークレットファイルは親のネットワーク ID の下にあり、フォークのネットワーク ID の下にはないため、Doc...",
     "category": "Documentation",
     "page": "/ja/docs/tutorial-managing-secrets",
@@ -14202,7 +14202,7 @@
   {
     "id": "search-11441",
     "content": "開発と本番の違い",
-    "body": "違いはシンプルです。 renet dev up はリポジトリ内で実行します。接続が必要です。 rdc repo up はラップトップから実行します。その後は接続不要です。 開発から本番への移行は3つのアクションで完了します。 停止、起動、オートスタート リポジトリ内でまだ renet dev up セッションが実行中の場合は、rdc vscode connect -m my-server -r my-app を実行し、続けて renet dev down でセッションを終了してください。その後はすべてラップトップから操作できます。",
+    "body": "違いはシンプルです。 renet dev up はリポジトリ内で実行します。接続が必要です。 rdc repo up はラップトップから実行します。その後は接続不要です。 開発から本番への移行は3つのアクションで完了します。 停止、起動、オートスタート リポジトリ内でまだ renet dev up セッションが実行中の場合は、rdc vscode connect my-app を実行し、続けて renet dev down でセッションを終了してください。その後はすべてラップトップから操作できます。",
     "excerpt": "違いはシンプルです。 renet dev up はリポジトリ内で実行します。接続が必要です。 rdc repo up はラップトップから実行します。その後は接続不要です。 開発から本番への移行は3つのアクションで完了します。 停止、起動、オートスタート リポジトリ内でまだ renet dev up...",
     "category": "Documentation",
     "page": "/ja/docs/tutorial-production-mode",
@@ -14526,8 +14526,8 @@
   {
     "id": "search-11471",
     "content": "ステップ3: 壁は本物",
-    "body": "拒否はカーネルからきます。設定からではありません。サンドボックス内で動くもの（エディタ、ターミナル、ビルドツール、AI エージェント）はすべてリポジトリの壁で止まります。 ローカルの VS Code を使う場合は？ rdc vscode connect -r my-app -m server-1（--browser なし）で、インストール済みの VS Code が Remote-SSH 経由で同じリポジトリを開きます。 --- 次: リポジトリをフォークする",
-    "excerpt": "拒否はカーネルからきます。設定からではありません。サンドボックス内で動くもの（エディタ、ターミナル、ビルドツール、AI エージェント）はすべてリポジトリの壁で止まります。 ローカルの VS Code を使う場合は？ rdc vscode connect -r my-app -m server-1（-...",
+    "body": "拒否はカーネルからきます。設定からではありません。サンドボックス内で動くもの（エディタ、ターミナル、ビルドツール、AI エージェント）はすべてリポジトリの壁で止まります。 ローカルの VS Code を使う場合は？ rdc vscode connect my-app（--browser なし）で、インストール済みの VS Code が Remote-SSH 経由で同じリポジトリを開きます。 --- 次: リポジトリをフォークする",
+    "excerpt": "拒否はカーネルからきます。設定からではありません。サンドボックス内で動くもの（エディタ、ターミナル、ビルドツール、AI エージェント）はすべてリポジトリの壁で止まります。 ローカルの VS Code を使う場合は？ rdc vscode connect my-app（--browser なし）で、イ...",
     "category": "Documentation",
     "page": "/ja/docs/tutorial-vscode-browser",
     "path": "docs.tutorial-vscode-browser.content",

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: tr
-sourceHash: "e2f5d37c534fc40d"
+sourceHash: "b6deba17f1137188"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -157,7 +157,7 @@ Scrub zamanlayıcısı, renet yükseltmesinden sonraki ilk daemon başlangıcın
 
 ### Scrub durumu
 
-Son scrubun sonucu, BTRFS biriminin dışında (`/var/lib/rediacc/scrub-last-result.json`) kaydedilir; bu sayede birimde sorun olsa bile okunabilir kalır. `rdc machine query --system` çıktısı bir `scrub_status` alanı içerir:
+Son scrubun sonucu, BTRFS biriminin dışında (`/var/lib/rediacc/scrub-last-result.json`) kaydedilir; bu sayede birimde sorun olsa bile okunabilir kalır. `rdc machine status --system` çıktısı bir `scrub_status` alanı içerir:
 
 ```json
 "scrub_status": {
@@ -187,7 +187,7 @@ Bir scrub'u hemen çalıştırmak için (örneğin, güç kesintisi veya disk ta
 rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
-Sonuç aynı JSON dosyasına kaydedilir ve bir sonraki `rdc machine query --system` çağrısında hemen görünür.
+Sonuç aynı JSON dosyasına kaydedilir ve bir sonraki `rdc machine status --system` çağrısında hemen görünür.
 
 ## Makine Genel Görünümü
 

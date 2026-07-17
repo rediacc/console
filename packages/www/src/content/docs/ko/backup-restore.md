@@ -4,7 +4,7 @@ description: "암호화된 레포지토리를 rclone 호환 스토리지에 백�
 category: "Guides"
 order: 7
 language: ko
-sourceHash: "7ff112c2ec14c35f"
+sourceHash: "50b357f812a9337c"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -177,8 +177,8 @@ Rediacc는 명명된 백업 전략을 사용합니다. 각 전략은 일정, 백
 
 **운영자가 실패를 감지하는 방법:**
 
-- `rdc machine query --name <machine> --containers`는 실행 상태를 표시합니다. 예상 세트와 비교하세요.
-- 머신의 `/var/run/rediacc/cold-backup-<guid>.status.json`. `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`으로 검사하세요. 오래된 `startedAt`과 함께 `success: false`는 마지막 백업이 깔끔하게 완료되지 않았음을 의미합니다.
+- `rdc machine status <machine> --containers`는 실행 상태를 표시합니다. 예상 세트와 비교하세요.
+- 머신의 `/var/run/rediacc/cold-backup-<guid>.status.json`. `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`으로 검사하세요. 오래된 `startedAt`과 함께 `success: false`는 마지막 백업이 깔끔하게 완료되지 않았음을 의미합니다.
 - renet 백업 실행 로그(`journalctl -u renet-*` 또는 직접 `rdc machine backup schedule` 호출)는 `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` 형식의 최종 요약 줄을 출력합니다. 비어 있지 않은 `failed_repos`가 grep 대상입니다.
 
 ### 콜드 백업 다운타임 추정
@@ -302,7 +302,7 @@ rdc config backup-strategy remove --name weekly-cold
 }
 ```
 
-> **바인딩은 로컬 구성 전용입니다.** 전략을 정의하고 머신에 바인딩해도 머신은 변경되지 않습니다. systemd 타이머를 배포하려면 `rdc machine backup schedule -m <machine>`을 실행하세요([머신에 일정 배포](#머신에-일정-배포) 참조). 전략이나 바인딩을 변경한 후에는 다시 실행해야 합니다.
+> **바인딩은 로컬 구성 전용입니다.** 전략을 정의하고 머신에 바인딩해도 머신은 변경되지 않습니다. systemd 타이머를 배포하려면 `rdc backup schedule -m <machine>`을 실행하세요([머신에 일정 배포](#머신에-일정-배포) 참조). 전략이나 바인딩을 변경한 후에는 다시 실행해야 합니다.
 
 ## 핫 vs 콜드 선택 및 레포지토리별 필터링
 

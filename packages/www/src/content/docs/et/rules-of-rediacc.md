@@ -4,7 +4,7 @@ description: "Olulised reeglid ja kokkulepped rakenduste ehitamiseks Rediacci pl
 category: "Guides"
 order: 5
 language: et
-sourceHash: "7654d7b072ee3ccc"
+sourceHash: "b2d38b48d1fac737"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -99,7 +99,7 @@ Renet süstib need automaatselt igasse konteinerisse:
   ```
 - LUKS-maht on ühendatud aadressil `/mnt/rediacc/mounts/<guid>/`.
 - BTRFS-hetktõmmised jäädvustavad kogu LUKS-taustafaili, sealhulgas kõik sidumiskoha andmed.
-- Andmesalv on fikseeritud suurusega BTRFS-mahufail süsteemi kettal. Kasutage `rdc machine query --name <name> --system`, et näha tegelikku vaba ruumi. Laiendage käsuga `rdc datastore resize`.
+- Andmesalv on fikseeritud suurusega BTRFS-mahufail süsteemi kettal. Kasutage `rdc machine status <name> --system`, et näha tegelikku vaba ruumi. Laiendage käsuga `rdc datastore resize`.
 
 ## CRIU (reaalajas migratsioon)
 
@@ -156,7 +156,7 @@ Kokkuvõte: `rdc` ja `renet` tuvastavad käitatava OS-i automaatselt ja toodavad
 - **`rdc repo down`** käivitab `down()` ja peatab Dockeri deemoni.
 - **`rdc repo down --unmount`** sulgeb ka LUKS-mahu (lukustab krüpteeritud salvestuse).
 - **Forkid** (`rdc repo fork`) loovad CoW (kopeerimise-kirjutamisel) klooni uue GUID ja networkId-ga, **konstantses ajas sõltumata repositooriumi suurusest**. BTRFS-reflink dubleerib pildimetaandmed, mitte andmed, seega forkitakse 100 GB repositoorium sama mõne sekundiga kui 1 GB repositoorium. Fork jagab vanema krüpteerimisvõtit.
-- **Ülevõtmine** (`rdc repo takeover --name <fork> -m <machine>`) asendab grand-repositooriumi andmed forki andmetega. Grand säilitab oma identiteedi (GUID, networkId, domeenid, autostart, varundusakel). Vanad tootmisandmed säilitatakse varukoopia forkina. Kasutage selleks: testige uuendust forkil, kontrollige, seejärel võtke tootmine üle. Pöörduge tagasi käsuga `rdc repo takeover --name <backup-fork> -m <machine>`.
+- **Ülevõtmine** (`rdc repo promote <fork>`) asendab grand-repositooriumi andmed forki andmetega. Grand säilitab oma identiteedi (GUID, networkId, domeenid, autostart, varundusakel). Vanad tootmisandmed säilitatakse varukoopia forkina. Kasutage selleks: testige uuendust forkil, kontrollige, seejärel võtke tootmine üle. Pöörduge tagasi käsuga `rdc repo promote <backup-fork>`.
 - **Puhverserveri marsruudid** muutuvad aktiivseks umbes 3 sekundit pärast juurutamist. Teade "Proxy is not running" `repo up` ajal on informatiivne ops/dev-keskkondades.
 - **`rdc repo up` ja `rdc repo fork --up` trükivad URL-mustri** `rediacc.service_port`-ga märgistatud teenuste jaoks juurutamise lõpus. Asendage `{service}` oma paljastatud teenuse nimega, et saada täpne URL. Teenused ilma `rediacc.service_port`-ita (andmebaasid, töötajad) ei saa marsruute ja neid ei kuvata.
 
@@ -167,4 +167,4 @@ Kokkuvõte: `rdc` ja `renet` tuvastavad käitatava OS-i automaatselt ja toodavad
 - `privileged: true` kasutamine - pole vajalik, renet süstib spetsiifilised CRIU võimalused.
 - Toorte IP-de hardkodeerimine püsivatesse konfiguratsioonifailidesse - kasutage ühenduste jaoks teenuste nimesid, et hoida forki isoleerimine puutumata.
 - `rdc term connect -c` kasutamine lahendusena ebaõnnestunud käskude jaoks - teatage vigadest.
-- `repo delete` teeb täieliku puhastuse, sealhulgas loopback-IP-d ja systemd-üksused. Käivitage `rdc machine prune --name <name>`, et puhastada pärand-kustutamiste järelejäänud.
+- `repo delete` teeb täieliku puhastuse, sealhulgas loopback-IP-d ja systemd-üksused. Käivitage `rdc machine prune <name>`, et puhastada pärand-kustutamiste järelejäänud.

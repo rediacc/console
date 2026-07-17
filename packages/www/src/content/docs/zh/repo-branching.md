@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 41
 language: zh
-sourceHash: "2448559f0fcfc0e0"
+sourceHash: "fe334c1c94a0f417"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -308,7 +308,7 @@ $ rdc repo pull --name myapp:work --from-machine backup-1 --force -m server-1
 
 ## JSON 模式
 
-`rdc repo log --json` 将 renet 结果包装在标准信封中。遍历的历史记录在 `entries` 中，按从新到旧排列：
+`rdc repo log <repo> --output json` 将 renet 结果包装在标准信封中。遍历的历史记录在 `entries` 中，按从新到旧排列：
 
 | 字段 | 类型 | 描述 |
 |------|------|------|

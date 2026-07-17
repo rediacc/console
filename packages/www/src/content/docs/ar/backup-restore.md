@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 7
 language: ar
-sourceHash: "7ff112c2ec14c35f"
+sourceHash: "50b357f812a9337c"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -179,8 +179,8 @@ rdc repo pull --from my-storage -m server-1
 
 **كيف يكتشف المشغلون الأعطال:**
 
-- `rdc machine query --name <machine> --containers` يُظهر حالة التشغيل. قارن مع المجموعة المتوقعة.
-- `/var/run/rediacc/cold-backup-<guid>.status.json` على الجهاز. افحص عبر `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` مع `startedAt` قديم يعني أن آخر نسخة احتياطية لم تكتمل بنظافة.
+- `rdc machine status <machine> --containers` يُظهر حالة التشغيل. قارن مع المجموعة المتوقعة.
+- `/var/run/rediacc/cold-backup-<guid>.status.json` على الجهاز. افحص عبر `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` مع `startedAt` قديم يعني أن آخر نسخة احتياطية لم تكتمل بنظافة.
 - السجلات من تشغيل نسخ renet الاحتياطي (`journalctl -u renet-*` أو استدعاء `rdc machine backup schedule` المباشر) تصدر سطر ملخص نهائي بالشكل `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. `failed_repos` غير الفارغة هي هدف grep.
 
 ### تقدير وقت التوقف للنسخ الاحتياطي البارد
@@ -304,7 +304,7 @@ rdc config backup-strategy remove --name weekly-cold
 }
 ```
 
-> **الربط هو إعداد محلي فقط.** تعريف استراتيجية وربطها بجهاز لا يؤثر على الجهاز نفسه. شغّل `rdc machine backup schedule -m <machine>` (راجع [نشر الجدول على الجهاز](#نشر-الجدول-على-الجهاز)) لنشر مؤقتات systemd، وأعد تشغيله بعد أي تغيير في الاستراتيجية أو الربط.
+> **الربط هو إعداد محلي فقط.** تعريف استراتيجية وربطها بجهاز لا يؤثر على الجهاز نفسه. شغّل `rdc backup schedule -m <machine>` (راجع [نشر الجدول على الجهاز](#نشر-الجدول-على-الجهاز)) لنشر مؤقتات systemd، وأعد تشغيله بعد أي تغيير في الاستراتيجية أو الربط.
 
 ## اختيار الوضع الساخن أو البارد والتصفية لكل مستودع
 

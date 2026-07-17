@@ -5,7 +5,7 @@ description: >-
 category: Concepts
 order: 0
 language: zh
-sourceHash: "83f6a9a2b0c8bae2"
+sourceHash: "b1f9e2e3bba92912"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -42,7 +42,7 @@ Rediacc 采用两个通过 SSH 协同工作的二进制文件：
 
 - 直接通过 SSH 连接到机器
 - 无需外部服务
-- 默认配置会在首次使用 CLI 时自动创建。命名配置通过 `rdc config init --name <name>` 创建
+- 默认配置会在首次使用 CLI 时自动创建。命名配置通过 `rdc config init <name>` 创建
 - 可选的加密配置同步将同一文件存储在配置存储中，按团队限定范围
 
 ## rediacc 用户
@@ -83,7 +83,7 @@ Rediacc 采用两个通过 SSH 协同工作的二进制文件：
 
 Rediaccfile 函数会自动设置 `DOCKER_HOST` 为正确的套接字。
 
-当 AI 智能体通过 `rdc term connect -r <repo>` 进入仓库时，同样的隔离机制适用：会话以非特权 `rediacc` 用户（UID 7111）身份运行，处于独立的挂载命名空间中，且 `DOCKER_HOST` 仅限于该单个仓库的守护进程套接字。fork 优先工作流将这种运行时隔离与 CoW 克隆原语结合：智能体在每个任务的 fork 上操作，绝不在主（生产）仓库上操作。完整的沙箱模型、覆盖语义以及外部服务凭据的开发者责任边界，请参阅 [AI 智能体安全与防护机制](/en/docs/ai-agents-safety)。
+当 AI 智能体通过 `rdc term connect <repo>` 进入仓库时，同样的隔离机制适用：会话以非特权 `rediacc` 用户（UID 7111）身份运行，处于独立的挂载命名空间中，且 `DOCKER_HOST` 仅限于该单个仓库的守护进程套接字。fork 优先工作流将这种运行时隔离与 CoW 克隆原语结合：智能体在每个任务的 fork 上操作，绝不在主（生产）仓库上操作。完整的沙箱模型、覆盖语义以及外部服务凭据的开发者责任边界，请参阅 [AI 智能体安全与防护机制](/en/docs/ai-agents-safety)。
 
 ### 守护进程路径布局
 

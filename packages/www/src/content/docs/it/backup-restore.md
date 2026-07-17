@@ -4,7 +4,7 @@ description: "Esegui il backup dei repository cifrati su qualsiasi storage compa
 category: "Guides"
 order: 7
 language: it
-sourceHash: "7ff112c2ec14c35f"
+sourceHash: "50b357f812a9337c"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -177,8 +177,8 @@ Un backup cold viene eseguito in tre fasi per ogni repository incluso: **stop > 
 
 **Come gli operatori rilevano i fallimenti:**
 
-- `rdc machine query --name <machine> --containers` mostra lo stato di esecuzione. Confrontare con il set atteso.
-- `/var/run/rediacc/cold-backup-<guid>.status.json` sulla macchina. Ispezionare tramite `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` con un `startedAt` obsoleto significa che l'ultimo backup non è stato completato in modo pulito.
+- `rdc machine status <machine> --containers` mostra lo stato di esecuzione. Confrontare con il set atteso.
+- `/var/run/rediacc/cold-backup-<guid>.status.json` sulla macchina. Ispezionare tramite `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` con un `startedAt` obsoleto significa che l'ultimo backup non è stato completato in modo pulito.
 - I log dell'esecuzione del backup di renet (`journalctl -u renet-*` o l'invocazione diretta `rdc machine backup schedule`) emettono una riga di riepilogo finale della forma `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` non vuoto è il target di grep.
 
 ### Stima del Downtime del Backup Cold
@@ -302,7 +302,7 @@ Nella tua configurazione, associa uno o più nomi di strategia a una macchina:
 }
 ```
 
-> **Il binding è solo configurazione locale.** Definire una strategia e collegarla a una macchina non modifica la macchina. Esegui `rdc machine backup schedule -m <machine>` (vedi [Distribuisci lo Schedule sulla Macchina](#distribuisci-lo-schedule-sulla-macchina)) per distribuire i timer systemd, e rilancialo dopo ogni modifica di strategia o binding.
+> **Il binding è solo configurazione locale.** Definire una strategia e collegarla a una macchina non modifica la macchina. Esegui `rdc backup schedule -m <machine>` (vedi [Distribuisci lo Schedule sulla Macchina](#distribuisci-lo-schedule-sulla-macchina)) per distribuire i timer systemd, e rilancialo dopo ogni modifica di strategia o binding.
 
 ## Scegliere tra Hot e Cold e il filtraggio per repository
 

@@ -4,7 +4,7 @@ description: 了解 account、rdc 和 renet 如何处理机器槽位、仓库许
 category: Guides
 order: 7
 language: zh
-sourceHash: de3bcbe1022db82f
+sourceHash: "269ed11573c50130"
 sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
@@ -116,7 +116,7 @@ Community 是始终存在的免费基础计划。新账户已不能直接注册�
 - 虚拟机迁移，机器 ID 改变：仓库保持运行（在 40 天窗口内）
 - 下一个 `rdc` 操作用新机器 ID 刷新许可证
 - 无需手动干预
-- 使用 `rdc machine query --system --licenses --name <machine>` 检查机器 ID 和许可证状态
+- 使用 `rdc machine status <machine> --system --licenses` 检查机器 ID 和许可证状态
 
 **Edge 渠道账户**运行在 Community 计划上，限制为 2 倍（20 GB 仓库、每月 200 次设置、2 台机器）。付费计划仅在 Stable 渠道提供。详情请参阅 [发布渠道](/zh/docs/release-channels)。
 
@@ -181,13 +181,13 @@ rdc subscription status
 显示一台机器的机器激活详情：
 
 ```bash
-rdc subscription activation status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 显示一台机器上已安装的仓库许可证详情：
 
 ```bash
-rdc subscription repo status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 在机器上批量刷新仓库许可证：
@@ -265,4 +265,4 @@ rdc subscription refresh repo --name my-app -m hostinger
 - 失败的发放尝试
 - 在发放前被拒绝的未追踪仓库
 
-如果您需要面向客户的使用情况和近期仓库许可证发放历史视图，请使用账户门户。如果您需要机器端检查，请使用 `rdc subscription activation status -m` 和 `rdc subscription repo status -m`。
+如果您需要面向客户的使用情况和近期仓库许可证发放历史视图，请使用账户门户。如果您需要机器端检查，请使用 `rdc subscription status -m` 和 `rdc subscription status -m`。

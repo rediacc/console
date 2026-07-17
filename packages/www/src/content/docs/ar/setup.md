@@ -4,7 +4,7 @@ description: "إنشاء إعداد، وإضافة أجهزة، وتجهيز ا�
 category: "Guides"
 order: 3
 language: ar
-sourceHash: "730a353fc046b7cc"
+sourceHash: "1fba8ac242726528"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -132,7 +132,7 @@ rdc term connect -m server-1 -c "hostname"
 rdc doctor
 ```
 
-> **نصيحة**: للتحقق من اتصال SSH، شغّل `rdc term connect -m <machine> -c "hostname"` أو استخدم `ssh` مباشرة.
+> **نصيحة**: للتحقق من اتصال SSH، شغّل `rdc term connect <machine> -c "hostname"` أو استخدم `ssh` مباشرة.
 
 ## تهيئة البنية التحتية
 

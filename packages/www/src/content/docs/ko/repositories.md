@@ -4,7 +4,7 @@ description: "원격 머신에서 LUKS 암호화된 리포지터리를 생성, �
 category: "Guides"
 order: 4
 language: ko
-sourceHash: "0f08c5b75c3588cc"
+sourceHash: "cc8733d3419b09f6"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -156,7 +156,7 @@ rdc repo fork --parent my-app --tag staging -m server-1 --up
 rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
 ```
 
-테스트 결과, 128 GB 리포지터리가 포크 후 서비스가 실행 상태에 이르기까지 약 57초가 걸렸으며, `--detach` 사용 시에는 약 31초로 단축되었습니다. 분리 실행 시에는 진행 상황을 확인하는 힌트가 출력됩니다: `rdc machine query --containers --name <machine>`.
+테스트 결과, 128 GB 리포지터리가 포크 후 서비스가 실행 상태에 이르기까지 약 57초가 걸렸으며, `--detach` 사용 시에는 약 31초로 단축되었습니다. 분리 실행 시에는 진행 상황을 확인하는 힌트가 출력됩니다: `rdc machine status <machine> --containers`.
 
 ### 소요 시간 분석
 
@@ -226,7 +226,7 @@ secrets:
 
 > **리포지터리 간 격리 적용**: renet의 compose 검증자는 다른 리포지터리의 네트워크 ID를 참조하는 `secrets: file:` (그리고 `configs: file:`, `env_file:`) 경로를 거부합니다. `/var/run/rediacc/secrets/...` 참조에서 허용되는 유일한 형태는 리터럴 `${REDIACC_NETWORK_ID}` 토큰 (또는 자신의 네트워크 정수)입니다. `--unsafe`는 이 검사를 재정의하지 **않습니다**. Rediaccfile bash 서브프로세스 주변의 Landlock 샌드박스도 파일 시스템 접근을 자신의 네트워크 시크릿 디렉터리로만 제한하므로, Rediaccfile에서의 악의적인 `cat /var/run/rediacc/secrets/<other>/X`는 커널 레이어에서 EACCES로 실패합니다.
 
-> **포크**: `rdc repo fork`는 시크릿을 복사하지 **않습니다**. 포크에서 시크릿을 사용하려면 포크에 대해 명시적으로 `rdc repo secret set --name <fork>`를 실행하세요. 이것은 핵심 안전 속성입니다. 포크의 컨테이너는 외부 서비스에 대해 프로덕션 주체로 행동할 수 없어야 합니다.
+> **포크**: `rdc repo fork`는 시크릿을 복사하지 **않습니다**. 포크에서 시크릿을 사용하려면 포크에 대해 명시적으로 `rdc repo secret set <fork>`를 실행하세요. 이것은 핵심 안전 속성입니다. 포크의 컨테이너는 외부 서비스에 대해 프로덕션 주체로 행동할 수 없어야 합니다.
 
 > **에이전트** (Claude Code, Cursor 등): `repo secret list`와 `repo secret get`은 MCP 도구로 노출됩니다 (읽기 안전. 이름과 다이제스트만, 값은 절대 아님). `set`과 `unset`은 CLI 전용입니다. `--current`/`--rotate-secret` 절차에 사람의 눈이 필요하기 때문입니다. 셸을 통해 호출하는 에이전트는 사람과 동일한 게이트를 받습니다. 전제 조건이 실패하면 JSON 봉투에 구조화된 `errors[].next.options[].run` 필드가 포함됩니다. 에이전트는 그 명령을 사용자에게 그대로 전달해야 합니다. 전체 모델은 [AI 에이전트 안전](/ko/docs/ai-agents-safety)을 참조하세요.
 

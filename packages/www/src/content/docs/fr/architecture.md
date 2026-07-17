@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: fr
-sourceHash: "83f6a9a2b0c8bae2"
+sourceHash: "b1f9e2e3bba92912"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -43,7 +43,7 @@ Tout l'état réside dans un fichier de configuration sur votre poste de travail
 
 - Connexions SSH directes aux machines
 - Aucun service externe requis
-- La configuration par défaut est créée automatiquement au premier lancement du CLI. Les configurations nommées sont créées avec `rdc config init --name <name>`
+- La configuration par défaut est créée automatiquement au premier lancement du CLI. Les configurations nommées sont créées avec `rdc config init <name>`
 - La synchronisation chiffrée de la configuration (optionnelle) stocke le même fichier dans le magasin de configuration, avec une portée par équipe
 
 ## L'utilisateur rediacc
@@ -84,7 +84,7 @@ Cela signifie :
 
 Les fonctions du Rediaccfile ont automatiquement `DOCKER_HOST` configuré avec le socket correct.
 
-Lorsqu'un agent IA accède à un dépôt via `rdc term connect -r <repo>`, la même isolation s'applique : la session s'exécute en tant qu'utilisateur non privilégié `rediacc` (UID 7111), dans un espace de noms de montage distinct, avec `DOCKER_HOST` limité au socket du daemon de ce seul dépôt. Le flux fork-first combine cette isolation d'exécution avec une primitive de clonage CoW : l'agent opère sur un fork dédié à la tâche, jamais sur les dépôts grand (production). Consultez [Sécurité et garde-fous pour les agents IA](/fr/docs/ai-agents-safety) pour le modèle de bac à sable complet, la sémantique des substitutions et la frontière de responsabilité du développeur pour les identifiants des services externes.
+Lorsqu'un agent IA accède à un dépôt via `rdc term connect <repo>`, la même isolation s'applique : la session s'exécute en tant qu'utilisateur non privilégié `rediacc` (UID 7111), dans un espace de noms de montage distinct, avec `DOCKER_HOST` limité au socket du daemon de ce seul dépôt. Le flux fork-first combine cette isolation d'exécution avec une primitive de clonage CoW : l'agent opère sur un fork dédié à la tâche, jamais sur les dépôts grand (production). Consultez [Sécurité et garde-fous pour les agents IA](/fr/docs/ai-agents-safety) pour le modèle de bac à sable complet, la sémantique des substitutions et la frontière de responsabilité du développeur pour les identifiants des services externes.
 
 ### Structure des chemins du daemon
 
