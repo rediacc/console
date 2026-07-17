@@ -30,7 +30,12 @@ const M2_IP = `${NET_BASE}.${workers[1] ?? '12'}`;
 const SSH_KEY =
   process.env.E2E_SSH_KEY ??
   `${process.env.RENET_DATA_DIR ?? `${process.env.HOME}/.rediacc`}/staging/.ssh/id_rsa`;
-const SSH_USER = process.env.E2E_SSH_USER ?? 'root';
+// The ops VMs are cloud-inited with the INVOKING user (the whole bridge
+// harness connects as process.env.USER — see BridgeTestRunner/
+// InfrastructureManager), and the staged key authenticates that user, not
+// root. TRANSCRIPT-CONFIRMED live: as root, auth fails ("all configured
+// authentication methods failed") before anything else can run.
+const SSH_USER = process.env.E2E_SSH_USER ?? process.env.USER ?? 'root';
 // The datastore repos are created on (config-v3 named datastore). TRANSCRIPT-CONFIRM.
 const DATASTORE = process.env.E2E_DATASTORE ?? 'default';
 
