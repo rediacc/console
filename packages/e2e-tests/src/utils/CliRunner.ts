@@ -97,29 +97,35 @@ export class CliRunner {
     if (process.env.E2E_CLI_BIN) {
       return new CliRunner(process.env.E2E_CLI_BIN, [], env);
     }
-    if (process.env.CI) {
-      return new CliRunner('rdc', [], env);
-    }
-    // packages/e2e-tests/src/utils -> packages/cli/dist/cli-bundle.cjs
-    const bundle = path.resolve(__dirname, '../../../cli/dist/cli-bundle.cjs');
-    // Pin the DEV renet for the CLI's REMOTE provisioning. The CLI resolves
-    // its local renet from config.renetPath (default the bare name `renet`,
-    // which becomes a PATH lookup). On a dev box PATH finds /usr/bin/renet —
-    // the HOST'S installed PRODUCTION build — and the CLI's first machine
-    // connection DEPLOYS that into the fleet's install slot, silently
-    // replacing the dev renet the harness setup put there and breaking every
-    // bridge surface the production build lacks (found live: `functions`
-    // vanished fleet-wide right after suite 23's own preflight; both binaries
-    // report 0.0.0-dev so the version guard never rejects the downgrade).
+
+    // Pin the DEV renet for the CLI's REMOTE provisioning. The CLI resolves its
+    // local renet from config.renetPath (default the bare name `renet`, a PATH
+    // lookup). On a dev box PATH finds /usr/bin/renet — the HOST'S installed
+    // PRODUCTION build — and the CLI's first machine connection DEPLOYS that
+    // into the fleet's install slot, silently replacing the dev renet the
+    // harness setup put there and breaking every bridge surface the production
+    // build lacks (found live: `functions` vanished fleet-wide right after
+    // suite 23's own preflight; both binaries report 0.0.0-dev so the version
+    // guard never rejects the downgrade). The pin is an ABSOLUTE
+    // config.renetPath (written by initConfig): resolveRenetPath uses an
+    // absolute existing path DIRECTLY, no PATH lookup to lose; the PATH prepend
+    // is belt-and-suspenders.
     //
-    // The pin is an ABSOLUTE config.renetPath (written by initConfig below):
-    // resolveRenetPath uses an absolute existing path DIRECTLY, with no PATH
-    // lookup to lose. PATH prepend is belt-and-suspenders for any CLI path
-    // that still guesses.
+    // Resolved BEFORE the CI branch on purpose: the harness sets CI=true in
+    // .env to make Playwright behave CI-like locally, which used to route into
+    // the CI branch WITHOUT the pin — so a local run kept deploying the host's
+    // production renet. resolveDevRenet returns undefined when no dev binary
+    // exists (real CI / SEA), making the pin a safe no-op there.
     const devRenetPath = resolveDevRenet();
     if (devRenetPath) {
       env.PATH = `${path.dirname(devRenetPath)}${path.delimiter}${env.PATH ?? ''}`;
     }
+
+    if (process.env.CI) {
+      return new CliRunner('rdc', [], env, devRenetPath);
+    }
+    // packages/e2e-tests/src/utils -> packages/cli/dist/cli-bundle.cjs
+    const bundle = path.resolve(__dirname, '../../../cli/dist/cli-bundle.cjs');
     return new CliRunner(process.execPath, [bundle], env, devRenetPath);
   }
 
