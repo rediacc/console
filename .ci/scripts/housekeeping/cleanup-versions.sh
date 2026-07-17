@@ -356,19 +356,55 @@ cleanup_packages() {
 
         log_step "  Processing package: $package_name"
 
-        # List versions (newest first, single page — avoids OOM on large repos).
-        # The API returns newest first by default. We fetch 100 per page which is
-        # enough to apply retention (keep N) and clean up a batch per run.
-        local raw_versions versions
-        raw_versions="$(gh api "orgs/$GITHUB_ORG/packages/container/$encoded_package/versions?per_page=100" 2>/dev/null || echo "")"
+        # List versions across ALL pages. The API returns newest first, so the
+        # previous single-page fetch only ever saw the newest 100 -- on a
+        # frequently-pushed package those are all inside the retention window,
+        # the phase deleted 0 every day, and old versions piled up unseen
+        # beyond page 1 (elite/web had 8.7k versions when this was found).
+        # Each page is trimmed to {id, tags, created} before accumulating so
+        # memory stays small regardless of package size; MAX_DELETES_PER_RUN
+        # still bounds the per-run deletion work.
+        local versions
+        local pages=()
+        local page=1
+        local max_pages=200 # safety bound (20k versions per package per run)
+        local page_ok=true
+        while true; do
+            local raw_page
+            raw_page="$(gh api "orgs/$GITHUB_ORG/packages/container/$encoded_package/versions?per_page=100&page=$page" 2>/dev/null || echo "")"
 
-        # Validate response is a JSON array (not an error object)
-        if [[ -z "$raw_versions" ]] || ! echo "$raw_versions" | jq -e 'type == "array"' >/dev/null 2>&1; then
+            # Validate response is a JSON array (not an error object)
+            if [[ -z "$raw_page" ]] || ! echo "$raw_page" | jq -e 'type == "array"' >/dev/null 2>&1; then
+                page_ok=false
+                break
+            fi
+
+            local trimmed page_count
+            trimmed="$(echo "$raw_page" | jq '[.[] | {id: .id, tags: .metadata.container.tags, created: .created_at}]')"
+            page_count="$(echo "$trimmed" | jq 'length')"
+            pages+=("$trimmed")
+
+            if [[ "$page_count" -lt 100 ]]; then
+                break
+            fi
+            if [[ "$page" -ge "$max_pages" ]]; then
+                log_warn "  Pagination stopped at $max_pages pages for $package_name; versions beyond that are picked up on later runs as deletions shrink the list"
+                break
+            fi
+            page=$((page + 1))
+        done
+
+        if [[ "$page_ok" == "false" ]] && [[ "$page" -eq 1 ]]; then
             log_warn "  Skipping $package_name: package not accessible (app token may lack org-level packages permission)"
             continue
         fi
+        if [[ "$page_ok" == "false" ]]; then
+            # Partial list is safe: it is a newest-first prefix, and retention
+            # only ever deletes the old tail of what was actually fetched.
+            log_warn "  Page $page fetch failed for $package_name; proceeding with the $((page - 1)) page(s) already fetched"
+        fi
 
-        versions="$(echo "$raw_versions" | jq '[.[] | {id: .id, tags: .metadata.container.tags, created: .created_at}] | sort_by(.created) | reverse')"
+        versions="$(printf '%s\n' "${pages[@]}" | jq -s 'add | sort_by(.created) | reverse')"
 
         local total
         total="$(echo "$versions" | jq 'length')"
@@ -400,6 +436,7 @@ cleanup_packages() {
                 fi
                 if [[ "$DRY_RUN" == "true" ]]; then
                     log_warn "  [DRY-RUN] Would delete version: $version_id (tags: $tags, created: $created_at)"
+                    deleted=$((deleted + 1))
                 else
                     # Capture the exit code with `|| api_exit=$?` so a failed
                     # delete does not trip `set -e` and abort the whole job
