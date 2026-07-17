@@ -35,6 +35,13 @@ const cephNodes = (process.env.VM_CEPH_NODES ?? '').trim();
 const workers = (process.env.VM_WORKERS ?? '').trim().split(/\s+/).filter(Boolean);
 const canRun = enabled && cephNodes.length > 0 && workers.length >= 2;
 
+// KEEP_CLUSTER=1: iteration mode (never set on CI). This suite's tests mutate
+// the cluster end to end (fork, evict, migrate), so the cluster itself is
+// rebuilt each run — what KEEP preserves is CEPH: the pool and staged rbd clients
+// survive across runs, skipping the multi-minute BlueStore warmup that is also
+// this suite's dominant flake source.
+const KEEP = process.env.KEEP_CLUSTER === '1';
+
 const NET = process.env.VM_NET_BASE ?? '192.168.111';
 const W1_IP = `${NET}.${workers[0] ?? '11'}`; // control plane (real private NIC)
 const W2_IP = `${NET}.${workers[1] ?? '12'}`; // agent (real private NIC)
@@ -51,7 +58,9 @@ const SRV_NET = '3072';
 const AGT_NET = '3136';
 const DATA_DS = 'mnshop';
 const DATA_MOUNT = `/mnt/rediacc-ds/${DATA_DS}`;
-const POOL = `mn${Date.now().toString(36)}`;
+// Timestamped per run so parallel/consecutive runs never collide — except under
+// KEEP, where the whole point is finding the SAME pool again next run.
+const POOL = KEEP ? 'mnkeep' : `mn${Date.now().toString(36)}`;
 const REPO = 'shop';
 const REPO_NET = '3200';
 const NS = REPO;
@@ -377,9 +386,15 @@ test.describe
         'ceph never reached a responsive write path (slow BlueStore ops or PGs not active+clean)'
       ).toBe(true);
 
-      expect(cephNode.isSuccess(await cephNode.cephPoolCreate(POOL))).toBe(true);
-      const init = await cephNode.executeViaBridge(`sudo rbd pool init ${POOL}`);
-      expect(init.code, init.stderr).toBe(0);
+      // KEEP iteration: the stable-named pool from a previous run is adopted
+      // as-is — pool create/init are the only non-idempotent steps here.
+      const poolStanding =
+        KEEP && (await cephNode.executeViaBridge('sudo ceph osd pool ls')).stdout.includes(POOL);
+      if (!poolStanding) {
+        expect(cephNode.isSuccess(await cephNode.cephPoolCreate(POOL))).toBe(true);
+        const init = await cephNode.executeViaBridge(`sudo rbd pool init ${POOL}`);
+        expect(init.code, init.stderr).toBe(0);
+      }
       await stageCephClient(w1);
       await stageCephClient(w2);
     });

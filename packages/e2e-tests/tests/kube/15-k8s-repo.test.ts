@@ -34,6 +34,15 @@ const enabled = process.env.K8S_MODE === '1';
 const workers = (process.env.VM_WORKERS ?? '').trim().split(/\s+/).filter(Boolean);
 const canRun = enabled && workers.length >= 1;
 
+// KEEP_CLUSTER=1: iteration mode (never set on CI). First run builds the world
+// and leaves it standing (teardown + afterAll skipped). Subsequent runs ADOPT
+// the standing cluster: setup tests fast-path to verification, the CSI battery
+// pre-cleans its own residue, and a single test can be re-run alone:
+//   KEEP_CLUSTER=1 K8S_MODE=1 ... run-e2e.sh --config playwright.k8s.config.ts   # build
+//   KEEP_CLUSTER=1 K8S_MODE=1 npx playwright test --config playwright.k8s.config.ts --grep "8\."
+// Finish with a normal (flagless) run, or tear down by hand.
+const KEEP = process.env.KEEP_CLUSTER === '1';
+
 const K3S = '/usr/local/bin/rediacc-k3s';
 const CLUSTER = 'prod';
 // The anchor: a cluster-labeled control datastore whose mount holds the k3s
@@ -350,13 +359,21 @@ ${dataSource ?? ''}`;
       await w1.executeViaBridge('sudo systemctl stop rediacc-zot 2>/dev/null; true');
     };
 
+    // KEEP iteration state: true when a standing cluster from a previous
+    // KEEP_CLUSTER run was detected and adopted instead of torn down.
+    let adopted = false;
+
     test.beforeAll(async () => {
       w1 = BridgeTestRunner.forWorker(1);
+      if (KEEP && (await nodeReady())) {
+        adopted = true;
+        return;
+      }
       await teardownAll();
     });
 
     test.afterAll(async () => {
-      if (process.env.KEEP_CLUSTER === '1') return;
+      if (KEEP) return;
       await teardownAll().catch(() => undefined);
     });
 
@@ -367,12 +384,14 @@ ${dataSource ?? ''}`;
       // THROUGH the cache. `up` extracts the embedded zot binary + renders its
       // sync.onDemand config + installs the rediacc-zot unit; `wire` writes the
       // containerd certs.d hosts.toml + k3s registries.yaml.
-      expect(
-        w1.isSuccess(
-          await w1.kubeRegistryUp({ upstreams: 'docker.io,ghcr.io,quay.io', scope: 'machine' })
-        )
-      ).toBe(true);
-      expect(w1.isSuccess(await w1.kubeRegistryWire({ endpoint: '127.0.0.1:5000' }))).toBe(true);
+      if (!adopted) {
+        expect(
+          w1.isSuccess(
+            await w1.kubeRegistryUp({ upstreams: 'docker.io,ghcr.io,quay.io', scope: 'machine' })
+          )
+        ).toBe(true);
+        expect(w1.isSuccess(await w1.kubeRegistryWire({ endpoint: '127.0.0.1:5000' }))).toBe(true);
+      }
       // The zot systemd unit is actually running (not merely installed).
       const active = await w1.executeViaBridge(
         'systemctl is-active rediacc-zot 2>/dev/null || true'
@@ -382,29 +401,31 @@ ${dataSource ?? ''}`;
 
     test('1. anchor cluster: control datastore + kube install → node Ready on a non-loopback IP', async () => {
       // The control plane lives inside a cluster-labeled control datastore.
-      expect(
-        w1.isSuccess(
-          await w1.datastoreCreate({
-            name: CTRL_DS,
-            backend: 'local',
-            size: '10G',
-            cluster: CLUSTER,
-          })
-        )
-      ).toBe(true);
-      expect(w1.isSuccess(await w1.datastoreAttach({ name: CTRL_DS }))).toBe(true);
+      if (!adopted) {
+        expect(
+          w1.isSuccess(
+            await w1.datastoreCreate({
+              name: CTRL_DS,
+              backend: 'local',
+              size: '10G',
+              cluster: CLUSTER,
+            })
+          )
+        ).toBe(true);
+        expect(w1.isSuccess(await w1.datastoreAttach({ name: CTRL_DS }))).toBe(true);
 
-      const install = await w1.kubeInstall({
-        mountPath: CTRL_MOUNT,
-        networkId: CTRL_NET,
-        role: 'server',
-        // R1 wired the zot mirror, but kube install must NAME the registries
-        // file or k3s starts without --private-registry and every pull silently
-        // bypasses the cache (found live: the R2 through-pull assert stayed
-        // empty until this line existed — the wire verb alone is half a wiring).
-        registriesYaml: '/etc/rancher/k3s/registries.yaml',
-      });
-      expect(w1.isSuccess(install)).toBe(true);
+        const install = await w1.kubeInstall({
+          mountPath: CTRL_MOUNT,
+          networkId: CTRL_NET,
+          role: 'server',
+          // R1 wired the zot mirror, but kube install must NAME the registries
+          // file or k3s starts without --private-registry and every pull silently
+          // bypasses the cache (found live: the R2 through-pull assert stayed
+          // empty until this line existed — the wire verb alone is half a wiring).
+          registriesYaml: '/etc/rancher/k3s/registries.yaml',
+        });
+        expect(w1.isSuccess(install)).toBe(true);
+      }
       expect(await poll(() => nodeReady(), 120_000)).toBe(true);
 
       // S1 verdict 1: the node's InternalIP is the dedicated non-loopback node IP
@@ -428,17 +449,19 @@ ${dataSource ?? ''}`;
     test('3. cluster-attached data datastore + kube repo folder + node-label for local PVs', async () => {
       // A cluster-attached LOCAL data datastore. Its cluster backref makes repos
       // on it dispatch to KubeRuntime.
-      expect(
-        w1.isSuccess(
-          await w1.datastoreCreate({
-            name: DATA_DS,
-            backend: 'local',
-            size: '4G',
-            cluster: CLUSTER,
-          })
-        )
-      ).toBe(true);
-      expect(w1.isSuccess(await w1.datastoreAttach({ name: DATA_DS }))).toBe(true);
+      if (!adopted) {
+        expect(
+          w1.isSuccess(
+            await w1.datastoreCreate({
+              name: DATA_DS,
+              backend: 'local',
+              size: '4G',
+              cluster: CLUSTER,
+            })
+          )
+        ).toBe(true);
+        expect(w1.isSuccess(await w1.datastoreAttach({ name: DATA_DS }))).toBe(true);
+      }
 
       // Author the repo-as-folder: repos/shop/{Rediaccfile, manifests/app.yaml}.
       const repoPath = `${DATA_MOUNT}/repos/${REPO}`;
@@ -467,8 +490,11 @@ ${dataSource ?? ''}`;
     });
 
     test('4. repository up (kube arm): isolation trio + no-provisioner SC + bound local PV + pod + secret', async () => {
-      const up = await repoUpWithSecret(REPO);
-      expect(up.code, up.stderr).toBe(0);
+      // Adopted standing repo → the asserts below are all reads; skip the up.
+      if (!(adopted && (await podRunning(NS)))) {
+        const up = await repoUpWithSecret(REPO);
+        expect(up.code, up.stderr).toBe(0);
+      }
 
       // (1) PSA-restricted, repo-labeled namespace.
       const nsLabels = await kubectl(`get ns ${NS} -o jsonpath="{.metadata.labels}"`);
@@ -514,9 +540,12 @@ ${dataSource ?? ''}`;
       const pvcSc = await kubectl(`-n ${NS} get pvc data -o jsonpath="{.spec.storageClassName}"`);
       expect(pvcSc.stdout.trim()).toBe(SC);
 
-      // (7) pod Running with the marker in the local PV.
+      // (7) pod Running with the marker in the local PV. On an adopted cluster
+      // test 6 has already reseeded the parent marker, so accept either value.
       expect(await poll(() => podRunning(NS), 120_000)).toBe(true);
-      expect(await marker(NS)).toBe('original-data');
+      expect(await marker(NS)).toMatch(
+        adopted ? /^(original-data|parent-data-)/ : /^original-data$/
+      );
 
       // Router contract: the exposed Service carries rediacc.cluster.
       const ann = await kubectl(
@@ -569,19 +598,30 @@ ${dataSource ?? ''}`;
       // only assertion that proves the DATA rode the reflink. (Live-caught: the first
       // version of this test could not tell a clone from a fresh volume, and passed
       // while the parent's writes were in fact never reaching the clone.)
-      const seeded = `parent-data-${Date.now()}`;
-      const seed = await kubectl(
-        `-n ${NS} exec deploy/web -- sh -c "echo ${seeded} > /data/marker.txt"`
-      );
-      expect(seed.code, `seed parent marker: ${seed.stderr}`).toBe(0);
-      expect(await marker(NS)).toBe(seeded);
+      // Adopted standing fork → skip seed+fork; the lineage proof degrades
+      // gracefully: parent and fork still carry the SAME seeded value from the
+      // original fork (nothing writes the marker after it), which a fresh
+      // volume could not reproduce.
+      const forkStanding =
+        adopted &&
+        (await kubectl(`get ns ${FORK_REPO} --no-headers`)).code === 0 &&
+        (await podRunning(FORK_REPO));
+      const seeded = forkStanding ? await marker(NS) : `parent-data-${Date.now()}`;
+      if (!forkStanding) {
+        const seed = await kubectl(
+          `-n ${NS} exec deploy/web -- sh -c "echo ${seeded} > /data/marker.txt"`
+        );
+        expect(seed.code, `seed parent marker: ${seed.stderr}`).toBe(0);
+        expect(await marker(NS)).toBe(seeded);
 
-      const fork = await w1.executeViaBridge(
-        `sudo renet repository fork --name ${REPO} --tag ${FORK_REPO} --datastore ${DATA_MOUNT} --network-id ${FORK_NET} --up`
-      );
-      expect(fork.code, `kube repo fork failed: ${(fork.stderr + fork.stdout).slice(-700)}`).toBe(
-        0
-      );
+        const fork = await w1.executeViaBridge(
+          `sudo renet repository fork --name ${REPO} --tag ${FORK_REPO} --datastore ${DATA_MOUNT} --network-id ${FORK_NET} --up`
+        );
+        expect(fork.code, `kube repo fork failed: ${(fork.stderr + fork.stdout).slice(-700)}`).toBe(
+          0
+        );
+      }
+      expect(seeded).toMatch(/^parent-data-/);
 
       // The fork is its OWN repo → its own namespace.
       const forkNs = await kubectl(`get ns ${FORK_REPO} -o jsonpath="{.metadata.name}"`);
@@ -635,6 +675,17 @@ ${dataSource ?? ''}`;
       // spec 09 §12 e2e item 1: a PVC on the DYNAMIC per-datastore CSI class
       // (rediacc-csi-<ds>, WaitForFirstConsumer) is provisioned only once a
       // consuming pod schedules; the pod writes a marker into the CSI volume.
+      // KEEP iteration: a prior run (or a mid-battery failure) may have left
+      // battery residue standing — pre-clean so the battery is re-entrant.
+      if (KEEP) {
+        await csiCleanup(
+          ['csi-writer', 'csi-restored', 'csi-cloned', 'csi-toobig-pod'],
+          ['csi-dyn', 'csi-restore', 'csi-clone', 'csi-toobig']
+        );
+        await kubectl(
+          `-n ${NS} delete volumesnapshot csi-snap --ignore-not-found --wait=true --timeout=60s`
+        );
+      }
       const pvcRes = await kubectlApply(csiPvc('csi-dyn'));
       expect(pvcRes.code, `apply csi-dyn pvc: ${pvcRes.stderr}`).toBe(0);
       const podRes = await kubectlApply(csiPod('csi-writer', 'csi-dyn', 'csi-original'));
@@ -823,6 +874,7 @@ spec:
     });
 
     test('10. teardown: repository down (no leak) + cluster + datastores + dummy interface removed', async () => {
+      test.skip(KEEP, 'KEEP_CLUSTER=1: cluster left standing for iteration');
       // BOTH repos come down: the FORK first, then the parent. Since F1 landed, test 6
       // creates a real fork — its own namespace with a RUNNING pod holding its own
       // cloned per-volume LUKS mounts. Those are live holders of the data datastore,
