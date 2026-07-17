@@ -60,19 +60,20 @@ export class CliRunner {
     }
     // packages/e2e-tests/src/utils -> packages/cli/dist/cli-bundle.cjs
     const bundle = path.resolve(__dirname, '../../../cli/dist/cli-bundle.cjs');
-    // Pin the DEV renet for the CLI's remote provisioning. Without this the
-    // bundle resolves renet via the fallback chain (/usr/bin/renet — the
-    // HOST'S installed production build) and its first machine connection
-    // DEPLOYS that binary into the fleet's install slot, silently replacing
-    // the dev renet and breaking every bridge-side surface the production
-    // build does not carry (found live: `functions` gone fleet-wide after
-    // suite 23's own preflight). rdc.sh exports this; the playwright path
-    // must too.
-    if (!env.RENET_BINARY_PATH) {
-      const devRenet = path.resolve(__dirname, '../../../../private/renet/bin/renet');
-      if (existsSync(devRenet)) {
-        env.RENET_BINARY_PATH = devRenet;
-      }
+    // Pin the DEV renet for the CLI's remote provisioning, the way rdc.sh
+    // does it: PREPEND the dev bin dir to PATH (the CLI resolves `renet` via
+    // its configured path, then PATH lookup — there is no env-var override).
+    // Without this the bundle resolves /usr/bin/renet — the HOST'S installed
+    // production build — and its first machine connection DEPLOYS that binary
+    // into the fleet's install slot, silently replacing the dev renet and
+    // breaking every bridge-side surface the production build does not carry
+    // (found live TWICE: `functions` vanished fleet-wide after suite 23's own
+    // preflight, and survived an ops re-provision because both binaries
+    // report 0.0.0-dev while the provisioner correctly hash-compares against
+    // whatever LOCAL binary it resolved).
+    const devRenetDir = path.resolve(__dirname, '../../../../private/renet/bin');
+    if (existsSync(path.join(devRenetDir, 'renet'))) {
+      env.PATH = `${devRenetDir}${path.delimiter}${env.PATH ?? ''}`;
     }
     return new CliRunner(process.execPath, [bundle], env);
   }
