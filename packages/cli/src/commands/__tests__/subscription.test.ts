@@ -6,9 +6,12 @@ const {
   mockReadMachineActivationStatus,
   mockReadRuntimeRepoLicenseStatuses,
   mockRefreshRepoLicensesBatch,
+  mockRefreshRepoLicenseIdentity,
   mockAuthorizeSubscriptionViaDeviceCode,
   mockGetLocalConfig,
   mockGetLocalMachine,
+  mockGetRepository,
+  mockResolveRepoRef,
   mockGetTeam,
   mockReadSSHKey,
   mockProvisionRenetToRemote,
@@ -30,9 +33,12 @@ const {
   mockReadMachineActivationStatus: vi.fn(),
   mockReadRuntimeRepoLicenseStatuses: vi.fn(),
   mockRefreshRepoLicensesBatch: vi.fn(),
+  mockRefreshRepoLicenseIdentity: vi.fn(),
   mockAuthorizeSubscriptionViaDeviceCode: vi.fn(),
   mockGetLocalConfig: vi.fn(),
   mockGetLocalMachine: vi.fn(),
+  mockGetRepository: vi.fn(),
+  mockResolveRepoRef: vi.fn(),
   mockGetTeam: vi.fn(),
   mockReadSSHKey: vi.fn(),
   mockProvisionRenetToRemote: vi.fn(),
@@ -84,6 +90,11 @@ vi.mock('../../services/account/license.js', () => ({
   readMachineActivationStatus: mockReadMachineActivationStatus,
   readRuntimeRepoLicenseStatuses: mockReadRuntimeRepoLicenseStatuses,
   refreshRepoLicensesBatch: mockRefreshRepoLicensesBatch,
+  refreshRepoLicenseIdentity: mockRefreshRepoLicenseIdentity,
+}));
+
+vi.mock('../../utils/repo-target.js', () => ({
+  resolveRepoRef: mockResolveRepoRef,
 }));
 
 vi.mock('../../services/account/subscription-device-auth.js', () => ({
@@ -94,6 +105,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getLocalConfig: mockGetLocalConfig,
     getLocalMachine: mockGetLocalMachine,
+    getRepository: mockGetRepository,
     getTeam: mockGetTeam,
   },
 }));
@@ -117,11 +129,10 @@ vi.mock('../../utils/spinner.js', () => ({
 
 const {
   executeSubscriptionStatus,
-  executeActivationStatus,
-  executeSubscriptionRefresh,
-  executeActivationRefresh,
-  executeRepoStatus,
-  executeRepoRefresh,
+  executeMachineStatus,
+  executeAccountRefresh,
+  executeMachineRefresh,
+  executeRepoLicenseRefresh,
 } = await import('../subscription.js');
 
 const { renderRepoBatchRefreshSummary } = await import('../subscription-output.js');
@@ -171,6 +182,17 @@ describe('subscription command helpers', () => {
       },
     });
     mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([]);
+    mockResolveRepoRef.mockResolvedValue({
+      name: 'shop',
+      repoKey: 'shop:test',
+      machineName: 'hostinger',
+      tag: 'test',
+    });
+    mockGetRepository.mockResolvedValue({
+      repositoryGuid: 'repo-guid',
+      grandGuid: 'grand-guid',
+    });
+    mockRefreshRepoLicenseIdentity.mockResolvedValue(true);
     mockRefreshRepoLicensesBatch.mockResolvedValue({
       scanned: 3,
       issued: 1,
@@ -254,7 +276,7 @@ describe('subscription command helpers', () => {
     expect(mockFetchSubscriptionLicenseReport).not.toHaveBeenCalled();
   });
 
-  it('activation-status renders machine activation details only', async () => {
+  it('status -m renders activation and the repo license table from one renet provisioning', async () => {
     mockReadMachineActivationStatus.mockResolvedValue({
       machineId: 'machine-activation-id',
       active: true,
@@ -262,23 +284,6 @@ describe('subscription command helpers', () => {
       activeCount: 1,
       maxCount: 2,
     });
-
-    await executeActivationStatus('hostinger');
-
-    expect(mockReadMachineActivationStatus).toHaveBeenCalledTimes(1);
-    expect(mockOutputInfo).toHaveBeenCalledWith(
-      'commands.subscription.activation.status.header:hostinger'
-    );
-    expect(mockOutputInfo).toHaveBeenCalledWith(
-      'commands.subscription.activation.status.machineId:machine-activation-id'
-    );
-    expect(mockOutputSuccess).toHaveBeenCalledWith(
-      'commands.subscription.activation.status.active:2026-03-12T00:00:00Z'
-    );
-    expect(mockFetchSubscriptionLicenseReport).not.toHaveBeenCalled();
-  });
-
-  it('repo-status renders runtime repo license statuses from renet', async () => {
     mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([
       {
         repositoryGuid: 'repo-valid',
@@ -301,9 +306,21 @@ describe('subscription command helpers', () => {
       },
     ]);
 
-    await executeRepoStatus('hostinger');
+    await executeMachineStatus('hostinger');
 
+    // Both sections share one renet provisioning.
     expect(mockProvisionRenetToRemote).toHaveBeenCalledTimes(1);
+    expect(mockReadMachineActivationStatus).toHaveBeenCalledTimes(1);
+    expect(mockOutputInfo).toHaveBeenCalledWith(
+      'commands.subscription.activation.status.header:hostinger'
+    );
+    expect(mockOutputInfo).toHaveBeenCalledWith(
+      'commands.subscription.activation.status.machineId:machine-activation-id'
+    );
+    expect(mockOutputSuccess).toHaveBeenCalledWith(
+      'commands.subscription.activation.status.active:2026-03-12T00:00:00Z'
+    );
+
     expect(mockReadRuntimeRepoLicenseStatuses).toHaveBeenCalledWith(
       expect.objectContaining({ machineName: 'hostinger' }),
       'PRIVATE_KEY',
@@ -321,28 +338,93 @@ describe('subscription command helpers', () => {
     expect(mockOutputInfo).toHaveBeenCalledWith(
       'commands.subscription.repo.status.entry:repo-machine:machine mismatch:'
     );
+    // The account view is a different scope: no -m means no machine report.
+    expect(mockFetchSubscriptionLicenseReport).not.toHaveBeenCalled();
   });
 
-  it('refresh runs repo batch refresh and prints combined summary', async () => {
-    await executeSubscriptionRefresh('hostinger');
+  it('status -m still renders the repo table when the activation lookup fails', async () => {
+    mockReadMachineActivationStatus.mockRejectedValue(new Error('account unreachable'));
+    mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([]);
+
+    await executeMachineStatus('hostinger');
+
+    expect(mockOutputWarn).toHaveBeenCalledWith('commands.subscription.status.parseFailed');
+    expect(mockOutputInfo).toHaveBeenCalledWith(
+      'commands.subscription.repo.status.header:hostinger'
+    );
+    expect(mockOutputInfo).toHaveBeenCalledWith('commands.subscription.repo.status.empty');
+  });
+
+  it('refresh with no flags re-reads account state and never touches a machine', async () => {
+    mockFetchSubscriptionLicenseReport.mockResolvedValue({
+      subscriptionId: 'sub_1',
+      orgName: 'Acme',
+      teamName: 'Platform',
+      planCode: 'COMMUNITY',
+      status: 'active',
+      machineSlots: { active: 1, max: 2, machines: [] },
+      repoLicenseIssuances: {
+        used: 1,
+        limit: 500,
+        windowStart: '2026-03-01T00:00:00Z',
+        windowEnd: '2026-04-01T00:00:00Z',
+      },
+      repoLicenses: {
+        totalTrackedRepos: 1,
+        validCount: 1,
+        refreshRecommendedCount: 0,
+        hardExpiredCount: 0,
+      },
+    });
+
+    await executeAccountRefresh();
+
+    expect(mockFetchSubscriptionLicenseReport).toHaveBeenCalledTimes(1);
+    expect(mockOutputInfo).toHaveBeenCalledWith('commands.subscription.status.remote');
+    expect(mockProvisionRenetToRemote).not.toHaveBeenCalled();
+    expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
+  });
+
+  it('refresh with no flags fails when the account report cannot be read', async () => {
+    mockFetchSubscriptionLicenseReport.mockResolvedValue(null);
+
+    await expect(executeAccountRefresh()).rejects.toThrow(
+      'commands.subscription.refresh.account.failed'
+    );
+  });
+
+  it('refresh -m runs repo batch refresh and prints the summary', async () => {
+    await executeMachineRefresh('hostinger');
 
     expect(mockRefreshRepoLicensesBatch).toHaveBeenCalledTimes(1);
     expect(mockOutputSuccess).toHaveBeenCalledWith('commands.subscription.refresh.success');
     expect(mockOutputWarn).toHaveBeenCalledWith('repo-bad: quota reached');
   });
 
-  it('refresh-activation runs repo batch refresh', async () => {
-    await executeActivationRefresh('hostinger');
+  it('refresh --repo derives the machine from the ref and refreshes one license', async () => {
+    await executeRepoLicenseRefresh('shop:test');
 
-    expect(mockRefreshRepoLicensesBatch).toHaveBeenCalledTimes(1);
-    expect(mockOutputSuccess).toHaveBeenCalledWith('commands.subscription.refresh.refreshed');
+    expect(mockResolveRepoRef).toHaveBeenCalledWith('shop:test', { readOnly: true });
+    expect(mockGetLocalMachine).toHaveBeenCalledWith('hostinger');
+    expect(mockGetRepository).toHaveBeenCalledWith('shop:test');
+    expect(mockRefreshRepoLicenseIdentity).toHaveBeenCalledWith(
+      expect.objectContaining({ machineName: 'hostinger' }),
+      'PRIVATE_KEY',
+      { repositoryGuid: 'repo-guid', grandGuid: 'grand-guid', kind: 'fork' }
+    );
+    expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
+    expect(mockOutputSuccess).toHaveBeenCalledWith(
+      'commands.subscription.refresh.repo.success:shop:test'
+    );
   });
 
-  it('refresh-repos only performs repo batch refresh', async () => {
-    await executeRepoRefresh('hostinger');
+  it('refresh --repo fails when the ref is not a repository in this config', async () => {
+    mockGetRepository.mockResolvedValue(undefined);
 
-    expect(mockRefreshRepoLicensesBatch).toHaveBeenCalledTimes(1);
-    expect(mockOutputSuccess).toHaveBeenCalledWith('commands.subscription.refresh.repos.success');
+    await expect(executeRepoLicenseRefresh('shop:test')).rejects.toThrow(
+      'commands.subscription.refresh.repo.notFound:shop:test'
+    );
+    expect(mockRefreshRepoLicenseIdentity).not.toHaveBeenCalled();
   });
 
   it('renders repo batch summary including failures', () => {

@@ -59,7 +59,7 @@ There is no limit on the number of active forks of a repository. Each fork is a 
 
 ### Always-active ports
 
-Ports are only opened once you configure a public IP with `rdc config infra set --public-ipv4`. Until then, no ports are open on the machine. Once configured:
+Ports are only opened once you configure a public IP with `rdc machine infra set <machine> --public-ipv4`. Until then, no ports are open on the machine. Once configured:
 
 | Port | Protocol | Purpose |
 |------|----------|---------|
@@ -126,7 +126,7 @@ Live migration via CRIU has the following constraints:
 - **Network mode**: CRIU requires host networking mode. Containers using custom network configurations cannot be checkpointed.
 - **Memory**: The checkpoint data size equals the resident memory of the checkpointed process. Large in-memory datasets (e.g., a Node.js app caching 4 GB of data) produce 4 GB checkpoint files.
 - **TCP connections**: Applications must tolerate connection loss across restore. Active TCP connections are **not** preserved. The restored process sees sockets as closed and must reconnect. This applies to both same-machine and cross-machine restore paths.
-- **Same-machine live fork redirects parent addresses**: `rdc repo fork --parent X --tag Y --checkpoint` followed by `rdc repo up` works while the parent keeps running. The restored processes carry the parent's loopback addresses from the moment of the checkpoint, so the system transparently redirects them to the fork's own addresses (same service, fork's copy of the data). The first use of a restored TCP connection still fails and the app must reconnect, per the TCP bullet above.
+- **Same-machine live fork redirects parent addresses**: `rdc repo fork X --tag Y --checkpoint` followed by `rdc repo up` works while the parent keeps running. The restored processes carry the parent's loopback addresses from the moment of the checkpoint, so the system transparently redirects them to the fork's own addresses (same service, fork's copy of the data). The first use of a restored TCP connection still fails and the app must reconnect, per the TCP bullet above.
 
 ---
 
@@ -136,7 +136,7 @@ Live migration via CRIU has the following constraints:
 |-------|-------|
 | Backup destinations per repository | Unlimited |
 | Simultaneous backup jobs | 1 per repository (jobs queue if triggered concurrently) |
-| Backup frequency | No minimum interval enforced; limited by your storage bandwidth. Use `rdc config backup-strategy set --name <name> --bwlimit "6M"` to cap upload speed (rclone `--bwlimit` syntax: simple `6M`, directional `6M:off`, or timetable `08:00,3M;22:00,10M`) |
+| Backup frequency | No minimum interval enforced; limited by your storage bandwidth. Use `rdc backup strategy set <name> --bwlimit "6M"` to cap upload speed (rclone `--bwlimit` syntax: simple `6M`, directional `6M:off`, or timetable `08:00,3M;22:00,10M`) |
 | Retention | Controlled by your storage provider (S3, Cloudflare R2, etc.). Rediacc does not enforce retention policies. |
 | Cross-machine backup | Supported; destination machine must have sufficient datastore space |
 

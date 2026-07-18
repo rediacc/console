@@ -27,8 +27,8 @@ APP_DIR="$SCRIPT_DIR/apps/heartbeat"
 # Pre-recording setup
 rm -f ~/.config/rediacc/rediacc.json 2>/dev/null || true
 rdc config init --ssh-key "$TUTORIAL_SSH_KEY"
-rdc config machine add --name "$M" --ip "$TUTORIAL_MACHINE_IP" --user "$TUTORIAL_MACHINE_USER"
-rdc config machine add --name "$M2" --ip "$M2_IP" --user "$M2_USER"
+rdc machine add "$M" --ip "$TUTORIAL_MACHINE_IP" --user "$TUTORIAL_MACHINE_USER"
+rdc machine add "$M2" --ip "$M2_IP" --user "$M2_USER"
 for ip in "$TUTORIAL_MACHINE_IP" "$M2_IP"; do
     for i in $(seq 1 30); do
         ssh -i "$TUTORIAL_SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=2 \
@@ -36,22 +36,24 @@ for ip in "$TUTORIAL_MACHINE_IP" "$M2_IP"; do
         sleep 2
     done
 done
-rdc config machine setup --name "$M"
-rdc config machine setup --name "$M2"
+rdc machine setup "$M"
+rdc machine setup "$M2"
 rdc machine prune --name "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 rdc machine prune --name "$M2" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 
-rdc repo delete --name pulse --machine "$M" 2>/dev/null || true
-rdc repo delete --name pulse --machine "$M2" 2>/dev/null || true
-rdc repo create --name pulse --machine "$M" --size 2G
-rdc repo sync upload --machine "$M" --repository pulse --local "$APP_DIR/"
-rdc repo up --name pulse --machine "$M"
+# One delete, not two: the machine is derived from the ref, and a repo has a
+# single home in the config. Leftovers on $M2 (the migrate target) are reaped by
+# the `machine prune --orphaned-repos` sweep above, which matches by GUID.
+rdc repo delete pulse --archive-config -y 2>/dev/null || true
+rdc repo create pulse --machine "$M" --size 2G
+rdc repo sync upload pulse --local "$APP_DIR/"
+rdc repo up pulse
 # Wait until the heartbeat app is actually beating (postgres healthy +
 # npm install done + first beats written) so the opening shot shows a
 # live counter.
 for i in $(seq 1 60); do
-    rdc term connect --machine "$M" --repository pulse \
-        --command 'docker logs heartbeat_app 2>&1 | grep -q "memory counter=3"' 2>/dev/null && break
+    rdc term connect pulse \
+        -c 'docker logs heartbeat_app 2>&1 | grep -q "memory counter=3"' 2>/dev/null && break
     sleep 3
 done
 
@@ -61,12 +63,12 @@ exec >&3 2>&4
 clear_screen
 
 section "A live app — its in-memory counter is beating"
-run_cmd "rdc term connect --machine $M --repository pulse --command 'docker logs heartbeat_app --tail 5'"
+run_cmd "rdc term connect pulse -c 'docker logs heartbeat_app --tail 5'"
 
 pause 2
 
 section "Migrate it to another machine — live, memory included"
-run_cmd "rdc repo migrate --name pulse --from $M --to $M2 --checkpoint --skip-dns"
+run_cmd "rdc repo migrate pulse --to $M2 --checkpoint --skip-dns"
 
 pause 2
 
@@ -81,14 +83,16 @@ run_cmd "rdc repo list --machine $M"
 pause 2
 
 section "The counter CONTINUED — process memory made the trip"
-run_cmd "rdc term connect --machine $M2 --repository pulse --command 'docker logs heartbeat_app --tail 5'"
+run_cmd "rdc term connect pulse -c 'docker logs heartbeat_app --tail 5'"
 
 pause 2
 
 # End the on-camera portion; cleanup below is not recorded.
 end_recording
-# Cleanup
-rdc repo down --name pulse --machine "$M2" --unmount 2>/dev/null || true
-rdc repo delete --name pulse --machine "$M2" 2>/dev/null || true
-rdc repo delete --name pulse --machine "$M" 2>/dev/null || true
-rdc config repository remove --name pulse:latest 2>/dev/null || true
+# Cleanup. After the migrate the repo's home is $M2, so the ref derives $M2 —
+# that is what `down`/`delete` act on. `--archive-config` also drops the config
+# row, which makes any same-GUID residue left behind on the SOURCE machine
+# orphaned, so the GUID sweep below can reap it.
+rdc repo down pulse --unmount 2>/dev/null || true
+rdc repo delete pulse --archive-config -y 2>/dev/null || true
+rdc machine prune --name "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true

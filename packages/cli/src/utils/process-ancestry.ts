@@ -2,9 +2,10 @@
  * Process ancestry verification for agent security hardening.
  *
  * The guards must prove that an override env var (REDIACC_ALLOW_GRAND_REPO /
- * REDIACC_ALLOW_CONFIG_EDIT) was set by the human BEFORE the agent started,
- * not injected by the agent itself. The proof is the exec-time environment of
- * the "agent boundary" process (the highest ancestor carrying an agent var).
+ * REDIACC_ALLOW_CONFIG_EDIT / REDIACC_ALLOW_CLUSTER_OPS) was set by the human
+ * BEFORE the agent started, not injected by the agent itself. The proof is the
+ * exec-time environment of the "agent boundary" process (the highest ancestor
+ * carrying an agent var).
  *
  * Platform witnesses:
  *   - linux:   /proc/<pid>/environ read in-process (exec-time, kernel-served)
@@ -25,6 +26,8 @@ const AGENT_TRACE_VAR = 'CURSOR_TRACE_ID';
 export const OVERRIDE_VAR_GRAND = 'REDIACC_ALLOW_GRAND_REPO';
 /** Override for the config-edit guards (rdc config edit / --apply / rotate). */
 export const OVERRIDE_VAR_CONFIG_EDIT = 'REDIACC_ALLOW_CONFIG_EDIT';
+/** Override for the cluster-ops guards (rdc cluster create/destroy/scale/install/fork/migrate). */
+export const OVERRIDE_VAR_CLUSTER = 'REDIACC_ALLOW_CLUSTER_OPS';
 
 /**
  * Every key the ancestry walk witnesses — one walk (one helper spawn on
@@ -35,6 +38,7 @@ const WITNESS_KEYS: readonly string[] = [
   AGENT_TRACE_VAR,
   OVERRIDE_VAR_GRAND,
   OVERRIDE_VAR_CONFIG_EDIT,
+  OVERRIDE_VAR_CLUSTER,
 ];
 
 // Maximum ancestors to walk (prevent infinite loops on circular references)

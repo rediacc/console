@@ -10,8 +10,8 @@ import type { SignedSubscriptionBlob } from '../../subscription/types.js';
 import {
   BAKED_IN_REGIONS,
   DEFAULT_REGION,
-  verifySignedRegions,
   type RegionInfo,
+  verifySignedRegions,
 } from '../index.js';
 
 // Test keys (same as subscription crypto tests)

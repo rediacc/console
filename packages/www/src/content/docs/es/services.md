@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: es
-sourceHash: "011bc5d87114f105"
+sourceHash: "2d470a876c00c352"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -211,7 +211,7 @@ renet y Docker difieren deliberadamente en cómo manejar los reinicios de conten
 - `.rediacc.json` en el root del montaje del repositorio -> `services.<name>.restart_policy`: la intención real.
 - `docker ps --format '{{.Status}}'`: estado en tiempo de ejecución.
 
-**Cómo corregir una desviación.** Si la política guardada en `.rediacc.json` de un contenedor es incorrecta (por ejemplo, porque editó compose pero nunca recreó el contenedor), vuelva a ejecutar `rdc repo up --name <repo> -m <machine>`. El contenedor se recrea con la política actualizada registrada.
+**Cómo corregir una desviación.** Si la política guardada en `.rediacc.json` de un contenedor es incorrecta (por ejemplo, porque editó compose pero nunca recreó el contenedor), vuelva a ejecutar `rdc repo up <repo>`. El contenedor se recrea con la política actualizada registrada.
 
 > **Experimental:** La recuperación basada en sidecar de cold backup y el flag `--sync-certs` en `rdc machine query` llegaron en renet 0.9+. Las versiones anteriores dependen únicamente de `restart_policy` guardada para la recuperación del watchdog, lo que puede dejar contenedores `on-failure` atascados después de un cold backup.
 
@@ -254,7 +254,7 @@ Los servicios sin etiquetas Traefik personalizadas muestran solo la ruta auto-ge
 
 ### Inicio en modo desconectado
 
-Con `--detach`, el comando devuelve el control en cuanto los contenedores están iniciados, sin esperar a que finalicen las comprobaciones de estado. El arranque termina en segundo plano: el proxy reintenta las conexiones con cada servicio hasta que esté disponible, por lo que las rutas se recuperan solas. Compruebe el progreso con `rdc machine query --containers --name <machine>`. Ideal para forks desechables y bucles automatizados donde no necesita que los servicios estén listos antes del siguiente paso.
+Con `--detach`, el comando devuelve el control en cuanto los contenedores están iniciados, sin esperar a que finalicen las comprobaciones de estado. El arranque termina en segundo plano: el proxy reintenta las conexiones con cada servicio hasta que esté disponible, por lo que las rutas se recuperan solas. Compruebe el progreso con `rdc machine status <machine> --containers`. Ideal para forks desechables y bucles automatizados donde no necesita que los servicios estén listos antes del siguiente paso.
 
 ### Sonda de disponibilidad
 
@@ -466,6 +466,6 @@ secrets:
     file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
 ```
 
-Siembre los valores con `rdc repo secret set --name <repo> --key DATABASE_URL --value <val> --mode env --current ""` y el equivalente en modo file. Consulte [Repositorios § Secretos](/es/docs/repositories#secrets) para la guía completa y [Secretos por repositorio](/es/docs/rdc-cheat-sheet#per-repo-secrets) en la hoja de trucos para la referencia de comandos.
+Siembre los valores con `rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""` y el equivalente en modo file. Consulte [Repositorios § Secretos](/es/docs/repositories#secrets) para la guía completa y [Secretos por repositorio](/es/docs/rdc-cheat-sheet#per-repo-secrets) en la hoja de trucos para la referencia de comandos.
 
 > **Las rutas entre repositorios se rechazan en tiempo de validación.** Un `secrets: file:` (o `configs: file:`, o `env_file:`) de compose que apunta a `/var/run/rediacc/secrets/<other-networkID>/` de otro repositorio se rechaza duramente por el wrapper renet antes de que docker compose se ejecute. `--unsafe` NO anula esto. Defensa en profundidad: el sandbox Landlock alrededor de la shell del Rediaccfile restringe lecturas al directorio de secretos de la red actual, por lo que un `cat /var/run/rediacc/secrets/<other>/X` desde bash del Rediaccfile falla con EACCES incluso si evita el validador YAML. No necesita optar por esto; está activado por defecto para cada `repo up`.

@@ -4,8 +4,8 @@ description: "Come Rediacc si mappa ai controlli di sicurezza delle informazioni
 category: "Legal"
 order: 5
 language: it
-sourceHash: "52709a22c0b38178"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "315946a692b6ee29"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 Bene. ISO/IEC 27001:2022 è lo standard internazionale per i sistemi di gestione della sicurezza delle informazioni. Pubblicato da ISO/IEC, è un documento corposo che elenca controlli per la cifratura, la gestione degli accessi, la risposta agli incidenti e decine di domini di sicurezza. Probabilmente conosci già di cosa si tratta. Quindi sii franco: Rediacc non affronta ogni controllo dello standard, e non faremo finta che lo faccia. Quello che segue è una mappatura onesta di dove Rediacc si colloca. La versione corrente è ISO/IEC 27001:2022.
@@ -18,7 +18,7 @@ Rediacc è un componente del livello dei controlli tecnici all'interno di un ISM
 
 | Dominio di controllo | Controllo | Capacità di Rediacc |
 |---------------|---------|-------------------|
-| **A.8**, Gestione degli asset | A.8.1 Inventario degli asset | Ogni repository è un asset discreto e identificabile con un GUID univoco. `rdc machine query --name <machine> --repositories` elenca tutti i repository con dimensioni, stato di montaggio e conteggio dei container. |
+| **A.8**, Gestione degli asset | A.8.1 Inventario degli asset | Ogni repository è un asset discreto e identificabile con un GUID univoco. `rdc machine status <machine> --repositories` elenca tutti i repository con dimensioni, stato di montaggio e conteggio dei container. |
 | **A.8**, Gestione degli asset | A.8.24 Uso della crittografia | Cifratura obbligatoria LUKS2 AES-256 su tutti i repository. Gestione delle chiavi: le credenziali sono archiviate solo nella configurazione locale dell'operatore, mai sul server. |
 | **A.9**, Controllo degli accessi | A.9.2 Gestione degli accessi degli utenti | Autenticazione con chiave SSH. Token API con vincolo IP, ambito di team e revoca automatica alla rimozione dal team. Supporto all'autenticazione a due fattori (TOTP). |
 | **A.10**, Crittografia | A.10.1 Controlli crittografici | LUKS2 con parametri di chiave configurabili. Credenziali di cifratura per repository. Tutto il trasporto remoto tramite SSH. Il config store implementa la cifratura zero-knowledge: AES-256-GCM con derivazione della chiave HKDF, scambio di chiavi membro X25519 e chiavi SDK con finestra temporale per la revoca immediata. |
@@ -32,7 +32,7 @@ Rediacc è un componente del livello dei controlli tecnici all'interno di un ISM
 Il modello a repository di Rediacc supporta naturalmente i requisiti di inventario degli asset:
 
 - Ogni repository ha un GUID univoco assegnato alla creazione
-- I repository sono enumerabili per macchina (`rdc machine query --repositories`)
+- I repository sono enumerabili per macchina (`rdc machine status --repositories`)
 - Lo stato di cifratura, lo stato di montaggio, il conteggio dei container e l'utilizzo del disco di ogni repository sono visibili
 - Le relazioni di fork tracciano la derivazione degli ambienti clonati
 
@@ -42,11 +42,11 @@ Il flusso di lavoro fork-test-promozione si allinea ai requisiti di gestione del
 
 1. **Fork**: creare una copia isolata dell'ambiente di produzione
 2. **Test**: applicare e validare le modifiche nel fork
-3. **Promozione**: utilizzare `rdc repo takeover` per sostituire il fork in produzione
+3. **Promozione**: utilizzare `rdc repo promote` per sostituire il fork in produzione
 4. **Audit**: tutte le operazioni sono registrate con timestamp e identificazione dell'autore
 
 ## Miglioramento continuo
 
 - L'esportazione del log di audit supporta le verifiche periodiche della sicurezza
-- I controlli di stato delle macchine (`rdc machine query --system`) supportano il monitoraggio operativo
+- I controlli di stato delle macchine (`rdc machine status --system`) supportano il monitoraggio operativo
 - `rdc repo validate` verifica lo stato del backup dopo ogni operazione

@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: fr
-sourceHash: 10e9f781881854be
-sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
+sourceHash: "5fb6196d9b6e9b0b"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Abonnement et licences
@@ -62,7 +62,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Slots de machine (côté serveur)
 
-Le suivi des slots de machine est appliqué côté serveur. Lorsque le CLI émet une licence de dépôt, le serveur de comptes vérifie le quota de slots de machine de l'abonnement (par exemple, 2 machines pour Community, 3 pour Professional). Un slot est conservé pendant 5 heures à partir de la dernière émission de licence de dépôt sur cette machine et se libère automatiquement après inactivité. Un plan Business à 10 slots peut donc couvrir des dizaines de machines au fil du temps, puisque les slots ne sont conservés que lorsque vous approvisionnez activement.
+Le suivi des slots de machine est appliqué côté serveur. Lorsque le CLI émet une licence de dépôt, le serveur de comptes vérifie le quota de slots de machine de l'abonnement. Chaque plan en libre-service (Community, Professional, Business) inclut un slot de machine ; les déploiements multi-machines relèvent d'une configuration Enterprise dimensionnée avec nos partenaires. Un slot est conservé pendant 5 heures à partir de la dernière émission de licence de dépôt sur cette machine et se libère automatiquement après inactivité. Comme un slot n'est conservé que pendant que vous approvisionnez activement, un seul slot peut tout de même couvrir plusieurs machines au cours d'un mois.
 
 Aucun fichier de licence de machine n'est stocké sur la machine. L'application des slots se fait au moment de l'émission sur le serveur.
 
@@ -93,12 +93,20 @@ Limites par défaut des plans payants :
 
 | Plan | Licences flottantes | Taille du dépôt | Émissions mensuelles de licences de dépôt | Validité cert de délégation par défaut / max |
 |------|---------------------|-----------------|-------------------------------------------|----------------------------------------------|
-| Community | 2 | 10 GB | 100 | 15d / 30d |
-| Professional | 3 | 50 GB | 2,000+ | 60d / 120d |
-| Business | 10 | 200 GB | 5,000+ | 90d / 180d |
-| Enterprise | 25+ | 1 TB+ | 15,000+ | 120d / 365d |
+| Community | 1 | 10 GB | 100 | 15d / 30d |
+| Professional | 1 | 100 GB | 2,000+ | 60d / 120d |
+| Business | 1 | 500 GB | 5,000+ | 90d / 180d |
+| Enterprise | Sur mesure | 1 TB+ | 15,000+ | 120d / 365d |
 
 Les limites spécifiques au contrat peuvent augmenter ou diminuer ces valeurs pour un client particulier. La validité des certificats de délégation est également plafonnée à `subscription.expiresAt + 3 day grace`, de sorte que les abonnements facturés mensuellement obtiennent naturellement des certificats alignés sur leur cycle de facturation. Voir [Chaîne de licences et délégation - Politique de validité](/fr/docs/license-chain) pour les règles complètes.
+
+## Essai gratuit et repli sur Community
+
+Les nouvelles inscriptions démarrent un essai gratuit de 14 jours sur Professional ou Business. Une carte bancaire est enregistrée à l'inscription, et le premier prélèvement n'intervient qu'à la fin de l'essai, donc annuler avant ne coûte rien. Un seul essai est disponible par client.
+
+Community est le socle gratuit permanent. Ce n'est plus une option d'inscription directe pour les nouveaux comptes ; à la place, un compte bascule sur Community dès qu'un abonnement prend fin : annulation pendant l'essai, annulation ultérieure d'un plan payant, ou paiement en échec. Sur le repli Community, vous conservez une machine avec 10 Go par dépôt et 100 setups par mois. Les comptes créés avant le lancement du modèle basé sur l'essai conservent leur accès Community existant.
+
+L'application des limites reste souple. Les dépôts en cours d'exécution continuent de fonctionner même après la fin d'un abonnement ; seules les nouvelles opérations (création, fork, redimensionnement et renouvellement de licence) sont soumises à un droit actif.
 
 ## Période de grâce pour la migration de VM
 
@@ -110,9 +118,9 @@ En pratique :
 - VM migrée, ID de machine change : les dépôts continuent de fonctionner (dans la fenêtre de 40 jours)
 - La prochaine opération `rdc` renouvelle la licence avec l'ID de machine
 - Aucune intervention manuelle requise
-- Vérifiez l'ID de machine et le statut de la licence avec `rdc machine query --system --licenses --name <machine>`
+- Vérifiez l'ID de machine et le statut de la licence avec `rdc machine status <machine> --system --licenses`
 
-**Les utilisateurs du canal Edge** reçoivent 2X les limites Community sans frais supplémentaires (dépôts de 20 GB, 200 émissions/mois, 4 machines). Les plans payants ne sont disponibles que sur le canal Stable. Voir [Canaux de publication](/fr/docs/release-channels) pour plus de détails.
+**Les comptes du canal Edge** fonctionnent sur le plan Community avec le double des limites (dépôts de 20 GB, 200 setups/mois, 2 machines). Les plans payants ne sont disponibles que sur le canal Stable. Voir [Canaux de publication](/fr/docs/release-channels) pour plus de détails.
 
 ## Ce qui se passe lors de la création, du démarrage, de l'arrêt et du redémarrage d'un dépôt
 
@@ -175,28 +183,22 @@ rdc subscription status
 Afficher les détails d'activation de machine pour une machine :
 
 ```bash
-rdc subscription activation status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Afficher les détails de licence de dépôt installés sur une machine :
 
 ```bash
-rdc subscription repo status -m hostinger
+rdc subscription status -m hostinger
 ```
 
-Renouveler les licences de dépôt en lot sur une machine :
+Renouveler la licence d'un dépôt sur une machine :
 
 ```bash
-rdc subscription refresh repos -m hostinger
+rdc subscription refresh -m hostinger --repo my-app
 ```
 
-Les dépôts découverts sur la machine mais absents de la configuration locale de `rdc` sont rejetés lors de l'actualisation en lot. Ils sont signalés comme des échecs et ne sont pas auto-classifiés.
-
-Forcer le renouvellement de licence de dépôt pour un dépôt existant :
-
-```bash
-rdc subscription refresh repo --name my-app -m hostinger
-```
+La réf `--repo` doit se résoudre dans votre configuration `rdc` locale. Un dépôt découvert sur la machine mais absent de la configuration locale est rejeté : il est signalé comme un échec et n'est pas auto-classifié.
 
 Lors de la première utilisation, une opération de dépôt ou de sauvegarde sous licence qui ne trouve pas de licence de dépôt utilisable peut déclencher automatiquement un transfert d'autorisation de compte. Le CLI imprime une URL d'autorisation, essaie d'ouvrir le navigateur dans les terminaux interactifs, et retente l'opération une fois après que l'autorisation et l'émission ont réussi.
 
@@ -259,4 +261,4 @@ Elle n'inclut pas :
 - les tentatives d'émission échouées
 - les dépôts non suivis rejetés avant l'émission
 
-Si vous avez besoin d'une vue de l'utilisation et de l'historique récent d'émission de licences de dépôt orientée client, utilisez le portail de comptes. Si vous avez besoin d'une inspection côté machine, utilisez `rdc subscription activation status -m` et `rdc subscription repo status -m`.
+Si vous avez besoin d'une vue de l'utilisation et de l'historique récent d'émission de licences de dépôt orientée client, utilisez le portail de comptes. Si vous avez besoin d'une inspection côté machine, utilisez `rdc subscription status -m` et `rdc subscription status -m`.

@@ -5,6 +5,7 @@ category: "Legal"
 order: 7
 language: es
 sourceHash: "dba51d5d6dcf8197"
+sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 
 Muchos países requieren que los datos personales de sus ciudadanos se almacenen y procesen dentro de las fronteras nacionales. La arquitectura autoalojada de Rediacc satisface estos requisitos por diseño: los datos permanecen en tu máquina, en tu centro de datos, en tu jurisdicción. Ningún dato sale de la máquina durante la clonación, y ningún SaaS de terceros procesa tus datos.

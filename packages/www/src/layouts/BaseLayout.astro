@@ -12,7 +12,6 @@ import StructuredData from '../components/StructuredData.astro';
 import { createTranslator } from '../i18n/utils';
 import { getLanguageFromPath, getPathWithoutLanguage, SUPPORTED_LANGUAGES, getLocale, getHreflang } from '../i18n/language-utils';
 import type { Language } from '../i18n/types';
-import { isDesignPartnerProgramActive } from '../utils/design-partner-program';
 // ViewTransitions is now built-in in Astro 5+ via meta tag
 
 export interface Props {
@@ -54,13 +53,6 @@ const finalDescription = description || t('layout.meta.defaultDescription');
 const finalKeywords = keywords || t('layout.meta.defaultKeywords');
 const finalOgDescription = ogDescription || finalDescription;
 
-// Design Partner Program: prepend a per-locale promo prefix to og/twitter
-// title + description so social shares always carry the offer. No-op when
-// the program is disabled. Toggled via announcement.enabled in en.json.
-const dpActive = isDesignPartnerProgramActive();
-const dpOgTitle = dpActive ? `${t('layout.meta.designPartner.ogPrefix')} — ${ogTitle}` : ogTitle;
-const dpOgDescription = dpActive ? `${t('layout.meta.designPartner.ogDescPrefix')} ${finalOgDescription}` : finalOgDescription;
-
 // Use current origin in development, production site in build
 const baseURL = import.meta.env.DEV ? Astro.url.origin : Astro.site;
 const canonicalURL = canonical ? canonical : new URL(Astro.url.pathname, baseURL);
@@ -93,8 +85,8 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content={ogType}>
-    <meta property="og:title" content={dpOgTitle}>
-    <meta property="og:description" content={dpOgDescription}>
+    <meta property="og:title" content={ogTitle}>
+    <meta property="og:description" content={finalOgDescription}>
     <meta property="og:image" content={ogImage}>
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -104,8 +96,8 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
 
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content={dpOgTitle}>
-    <meta name="twitter:description" content={dpOgDescription}>
+    <meta name="twitter:title" content={ogTitle}>
+    <meta name="twitter:description" content={finalOgDescription}>
     <meta name="twitter:image" content={ogImage}>
     <meta name="twitter:site" content={t('layout.meta.twitter.site')}>
     <meta name="twitter:creator" content={t('layout.meta.twitter.creator')}>
@@ -453,12 +445,14 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
       // (CfPricingCard's checkout, Navigation/Sidebar's Account button)
       // all agree on which hosts open the region picker vs navigate
       // directly. See utils/marketing-host.ts header for the full matrix.
+      // PR previews (*.rediacc.workers.dev) are NOT marketing hosts: they
+      // serve a working portal backed by a per-PR D1, so /account/* CTAs
+      // navigate directly and the funnel is testable per PR.
       window.__rediaccIsMarketingHost = function (hostname) {
         return (
           hostname === 'www.rediacc.com' ||
           hostname === 'edge.rediacc.com' ||
-          hostname === 'localhost' ||
-          hostname.endsWith('.rediacc.workers.dev')
+          hostname === 'localhost'
         );
       };
 
@@ -468,10 +462,10 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
       // as the target. On portal hosts (regional cloud, edge, bench,
       // on-prem) we let the anchor navigate normally.
       //
-      // Covers the announcement bar, the design-partner CTAs, and any
-      // future plain /account/* link without per-anchor decoration.
-      // Cross-origin links to https://eu.rediacc.com/account/... are
-      // pass-through (already explicit destinations).
+      // Covers the announcement bar and any plain /account/* link without
+      // per-anchor decoration. Cross-origin links to
+      // https://eu.rediacc.com/account/... are pass-through (already
+      // explicit destinations).
       (function () {
         function bindAccountLinks() {
           var links = document.querySelectorAll('a[href^="/account"]');
@@ -499,7 +493,7 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
               if (window.plausible) {
                 window.plausible('account_link_click', {
                   props: {
-                    source: this.dataset.trackLabel || (this.dataset.designPartnerClaim !== undefined ? 'design_partner_claim' : 'unknown'),
+                    source: this.dataset.trackLabel || 'unknown',
                     dest: target,
                   },
                 });

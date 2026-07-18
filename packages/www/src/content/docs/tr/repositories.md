@@ -4,8 +4,8 @@ description: "Uzak makinelerde LUKS ile şifrelenmiş depoları oluşturma, yön
 category: "Guides"
 order: 4
 language: tr
-sourceHash: "0f08c5b75c3588cc"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "c9553259c9bf6b4c"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Depolar
@@ -99,9 +99,9 @@ Nasıl çalışır: depo görüntüleri seyrek dosyalardır ve şifreli birim di
 
 Notlar:
 
-- Aktif bir yedekleme altındaki depolar atlanır ve raporlanır. Yedekleme sırasında trim yapmak alan serbest bırakmaz; çünkü yedekleme anlık görüntüsü blokları hâlâ referans alır.
+- Aktif bir yedekleme altındaki depolar için dosya sistemi trim'i atlanır ve raporlanır; çünkü yedekleme anlık görüntüsü blokları hâlâ referans alır, dolayısıyla delik açmak havuz alanı serbest bırakmaz. `--docker` geri kazanımı bundan etkilenmez ve yine de çalışır (aşağıya bakın).
 - Trim'i arka arkaya iki kez çalıştırmak ikinci seferde 0 bayt raporlar. Dosya sistemi hangi blok gruplarının zaten trimlendiğini hatırlar; bu beklenen bir durumdur, hata değildir.
-- `--docker`, yalnızca sarkan görüntüleri, durdurulmuş konteynerleri ve derleme önbelleğini kaldırır; etiketli görüntülere dokunmaz. Kullanılmayan birimleri de kaldırmak için `--docker-volumes` ekleyin (bu veri siler; yalnızca CLI).
+- `--docker`, yalnızca sarkan görüntüleri, durdurulmuş konteynerleri ve derleme önbelleğini kaldırır; etiketli görüntülere asla dokunmaz. Kullanılmayan birimleri de kaldırmak için `--docker-volumes` ekleyin (bu veri siler; yalnızca CLI). Dosya sistemi trim'inin aksine, `--docker` geri kazanımı bir yedekleme devam ederken bile çalışır; böylece yedekleme penceresini beklemeden takılı kalmış bir derleme önbelleğini temizleyebilirsiniz.
 
 ## Otomatik Boyut Politikası
 
@@ -156,7 +156,7 @@ rdc repo fork --parent my-app --tag staging -m server-1 --up
 rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
 ```
 
-Testlerimizde 128 GB'lık bir depo fork'landı ve servisler yaklaşık 57 saniyede çalışır hale geldi; `--detach` ile bu süre yaklaşık 31 saniyeye indi. Ayrılmış çalıştırmalar, ilerlemeyi kontrol etmek için bir ipucu yazdırır: `rdc machine query --containers --name <machine>`.
+Testlerimizde 128 GB'lık bir depo fork'landı ve servisler yaklaşık 57 saniyede çalışır hale geldi; `--detach` ile bu süre yaklaşık 31 saniyeye indi. Ayrılmış çalıştırmalar, ilerlemeyi kontrol etmek için bir ipucu yazdırır: `rdc machine status <machine> --containers`.
 
 ### Süre nereye gidiyor
 
@@ -226,7 +226,7 @@ Küçük harfli hizmet tarafı referansı (`stripe_live_key`), kapsayıcı için
 
 > **Depo arası yalıtım uygulanır**: renet'in compose doğrulayıcısı, başka bir deponun ağ kimliğine referans veren `secrets: file:` (ve `configs: file:`, ve `env_file:`) yollarını reddeder. `/var/run/rediacc/secrets/...` referansları için kabul edilen tek form, `${REDIACC_NETWORK_ID}` değişmez belirteci (veya kendi ağınızın tam sayısı) dir. `--unsafe` bu kontrolü geçersiz kılmaz. Rediaccfile bash alt işleminin etrafındaki Landlock korumalı alanı da dosya sistemi erişimini yalnızca kendi ağınızın gizli dizi diziniyle kapsar; bu nedenle bir Rediaccfile'dan kötü niyetli bir `cat /var/run/rediacc/secrets/<other>/X` çağrısı çekirdek katmanında EACCES ile başarısız olur.
 
-> **Fork'lar**: `rdc repo fork` gizli dizileri **kopyalamaz**. Fork'ta gizli diziler kullanmak için fork üzerinde açıkça `rdc repo secret set --name <fork>` çalıştırın. Bu, yük taşıyan güvenlik özelliğidir. Fork'un kapsayıcıları, harici hizmetlere karşı üretim asıl olarak hareket edememeli.
+> **Fork'lar**: `rdc repo fork` gizli dizileri **kopyalamaz**. Fork'ta gizli diziler kullanmak için fork üzerinde açıkça `rdc repo secret set <fork>` çalıştırın. Bu, yük taşıyan güvenlik özelliğidir. Fork'un kapsayıcıları, harici hizmetlere karşı üretim asıl olarak hareket edememeli.
 
 > **Ajanlar** (Claude Code, Cursor vb.): `repo secret list` ve `repo secret get`, MCP araçları olarak sunulur (güvenli okuma. Yalnızca adlar ve özetler, hiçbir zaman değerler). `set` ve `unset` yalnızca CLI'dır çünkü `--current`/`--rotate-secret` seremonisi insan gözü gerektirir; bunları kabuk üzerinden çağıran ajanlar insanlarla aynı kapıya gelir. Ön koşul başarısız olduğunda JSON zarfı, yapılandırılmış bir `errors[].next.options[].run` alanı içerir. Ajanlar bu komutları kullanıcıya birebir iletmelidir. Tam model için bkz. [Yapay zeka ajanı güvenliği](/en/docs/ai-agents-safety).
 
@@ -267,7 +267,7 @@ Proje geçişi sırasında sahipliğin ne zaman ve nasıl kullanılacağına ili
 Bir depoyu dosyalarla başlatmak için şablon uygulayın:
 
 ```bash
-rdc repo template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
 ```
 
 ## Silme

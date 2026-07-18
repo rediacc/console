@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
 import { cli } from './cli.js';
+import { telemetryService } from './services/telemetry/telemetry.js';
 import {
   applyPendingUpdate,
   maybeSpawnBackgroundUpdate,
   runBackgroundUpdateWorker,
 } from './services/update/background-updater.js';
-import { telemetryService } from './services/telemetry/telemetry.js';
 import { handleError } from './utils/errors.js';
 import { runWarmup } from './warmup.js';
 
@@ -26,11 +26,11 @@ if (process.argv.includes('mcp') && process.argv.includes('serve')) {
   const defaultTimeoutMs =
     timeoutIdx >= 0 ? Number.parseInt(process.argv[timeoutIdx + 1], 10) : 120_000;
 
-  // Import cli to get the fully-configured Commander program for MCP tool derivation
-  Promise.all([import('./commands/mcp/server.js'), import('./cli.js')])
-    .then(([{ startMcpServer }, { cli: program }]) =>
-      startMcpServer({ configName, defaultTimeoutMs, program })
-    )
+  // MCP tools are derived from the generated CLI contract, not the live Commander
+  // tree, so this fast path no longer needs to import cli.js just to hand over the
+  // program instance.
+  import('./commands/mcp/server.js')
+    .then(({ startMcpServer }) => startMcpServer({ configName, defaultTimeoutMs }))
     .catch((err: unknown) => {
       process.stderr.write(
         `MCP server error: ${err instanceof Error ? err.message : String(err)}\n`

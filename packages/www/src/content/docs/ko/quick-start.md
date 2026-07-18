@@ -4,8 +4,8 @@ description: 몇 분 안에 서버에서 컨테이너화된 서비스를 실행�
 category: Guides
 order: -1
 language: ko
-sourceHash: "afd4d22ddc8e02e1"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "a1350abc611570ef"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # 빠른 시작
@@ -93,8 +93,8 @@ rdc repo create --name my-app -m my-server --size 2G  # 2 GB 암호화 리포지
 ### 2. 템플릿 적용
 
 ```bash
-rdc repo template list                                        # 내장 템플릿 표시
-rdc repo template apply --name app-postgres -m my-server -r my-app  # docker-compose.yml + Rediaccfile 배포
+rdc repo admin template list                                        # 내장 템플릿 표시
+rdc repo admin template apply --name app-postgres -m my-server -r my-app  # docker-compose.yml + Rediaccfile 배포
 ```
 
 템플릿은 `docker-compose.yml`, `Rediaccfile`, 지원 파일을 제공합니다. 템플릿(또는 자체 compose 파일) 없이는 시작할 것이 없습니다. 첫 번째 리포지터리에는 내장된 템플릿을 사용하세요. 전체 워크플로우를 처음부터 끝까지 보는 가장 빠른 방법입니다.
@@ -112,7 +112,7 @@ rdc repo status --name my-app -m my-server  # 마운트 상태, Docker, 크기, 
 ### 4. VS Code
 
 ```bash
-rdc vscode connect -m my-server -r my-app              # VS Code SSH를 열고 리포지터리 샌드박스 내부에 착지합니다
+rdc vscode connect my-app              # VS Code SSH를 열고 리포지터리 샌드박스 내부에 착지합니다
 ```
 
 암호화된 볼륨 *내부의* 파일을 편집하고 있습니다. `docker ps`는 이 리포지터리의 컨테이너만 표시합니다. 저장하고, compose up하고, 반복합니다.
@@ -126,7 +126,7 @@ rdc vscode connect -m my-server -r my-app              # VS Code SSH를 열고 �
 | **사용 사례** | CI/CD, 자동화, 원격 작업 | 개발자 내부 루프 |
 | **격리** | 외부에서 오케스트레이션 | 이미 샌드박스 내부 |
 
-**데모 흐름:** `rdc repo template apply` → `rdc vscode connect -m my-server -r my-app` → `docker-compose.yml` 편집 → `renet dev up` → 앱 실행 확인 → 반복.
+**데모 흐름:** `rdc repo admin template apply` → `rdc vscode connect my-app` → `docker-compose.yml` 편집 → `renet dev up` → 앱 실행 확인 → 반복.
 
 > Rediaccfile 구조: [서비스](/ko/docs/services). 어느 도구를 언제 사용할지: [rdc vs renet](/ko/docs/rdc-vs-renet).
 
@@ -261,7 +261,7 @@ rdc config infra push -m my-server  # 원격에 프록시 config 푸시
 ### 2. 프록시 템플릿
 
 ```bash
-rdc repo template apply --name proxy -m my-server -r infra  # 리포지터리에 프록시 배포
+rdc repo admin template apply --name proxy -m my-server -r infra  # 리포지터리에 프록시 배포
 rdc repo up --name infra -m my-server  # Traefik 시작
 ```
 

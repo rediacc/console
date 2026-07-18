@@ -1,7 +1,7 @@
 import { t } from '../../i18n/index.js';
 import { ValidationError } from '../../utils/errors.js';
-import { accountServerFetch } from './account-client.js';
 import { outputService } from '../core/output.js';
+import { accountServerFetch } from './account-client.js';
 import {
   getSubscriptionScopeMismatch,
   getSubscriptionServerUrl,

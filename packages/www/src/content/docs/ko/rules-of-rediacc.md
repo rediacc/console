@@ -4,7 +4,7 @@ description: "Rediacc 플랫폼에서 애플리케이션을 구축하기 위한 
 category: "Guides"
 order: 5
 language: ko
-sourceHash: "7654d7b072ee3ccc"
+sourceHash: "b2d38b48d1fac737"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -99,7 +99,7 @@ Renet이 모든 컨테이너에 자동으로 주입합니다.
   ```
 - LUKS 볼륨은 `/mnt/rediacc/mounts/<guid>/`에 마운트됩니다.
 - BTRFS 스냅샷은 모든 바인드 마운트된 데이터를 포함한 전체 LUKS 백업 파일을 캡처합니다.
-- 데이터스토어는 시스템 디스크의 고정 크기 BTRFS 풀 파일입니다. `rdc machine query --name <name> --system`으로 유효 여유 공간을 확인하십시오. `rdc datastore resize`로 확장하십시오.
+- 데이터스토어는 시스템 디스크의 고정 크기 BTRFS 풀 파일입니다. `rdc machine status <name> --system`으로 유효 여유 공간을 확인하십시오. `rdc datastore resize`로 확장하십시오.
 
 ## CRIU (라이브 마이그레이션)
 
@@ -156,7 +156,7 @@ OS별 보안 자세 플래그가 필요하지 않습니다. `rdc`와 `renet`은 
 - **`rdc repo down`**은 `down()`을 실행하고 Docker 데몬을 중지합니다.
 - **`rdc repo down --unmount`**는 LUKS 볼륨도 닫습니다 (암호화된 스토리지를 잠금).
 - **Fork** (`rdc repo fork`)는 **저장소 크기에 관계없이 일정한 시간에** 새 GUID와 networkId를 가진 CoW(copy-on-write) 클론을 생성합니다. BTRFS reflink는 데이터가 아닌 이미지 메타데이터를 복제하므로 100 GB 저장소도 1 GB 저장소와 동일한 몇 초 안에 fork됩니다. fork는 부모의 암호화 키를 공유합니다.
-- **Takeover** (`rdc repo takeover --name <fork> -m <machine>`)는 grand 저장소의 데이터를 fork의 데이터로 교체합니다. grand는 자신의 정체성(GUID, networkId, 도메인, autostart, 백업 체인)을 유지합니다. 기존 프로덕션 데이터는 백업 fork로 보존됩니다. 사용 방법: fork에서 업그레이드 테스트, 검증, 프로덕션으로 takeover. `rdc repo takeover --name <backup-fork> -m <machine>`으로 되돌릴 수 있습니다.
+- **Takeover** (`rdc repo promote <fork>`)는 grand 저장소의 데이터를 fork의 데이터로 교체합니다. grand는 자신의 정체성(GUID, networkId, 도메인, autostart, 백업 체인)을 유지합니다. 기존 프로덕션 데이터는 백업 fork로 보존됩니다. 사용 방법: fork에서 업그레이드 테스트, 검증, 프로덕션으로 takeover. `rdc repo promote <backup-fork>`으로 되돌릴 수 있습니다.
 - **프록시 경로**는 배포 후 활성화되는 데 약 3초가 걸립니다. `repo up` 중 "Proxy is not running" 경고는 ops/dev 환경에서 정보용입니다.
 - **`rdc repo up` 및 `rdc repo fork --up`은 배포 끝에 `rediacc.service_port`로 레이블된 서비스의 URL 패턴을 출력합니다.** `{service}`를 노출된 서비스 이름으로 교체하여 정확한 URL을 얻으십시오. `rediacc.service_port`가 없는 서비스(데이터베이스, 워커)는 경로를 받지 않으며 표시되지 않습니다.
 
@@ -167,4 +167,4 @@ OS별 보안 자세 플래그가 필요하지 않습니다. `rdc`와 `renet`은 
 - `privileged: true` 사용: 필요하지 않습니다. renet이 대신 특정 CRIU 권한을 주입합니다.
 - 영구 설정 파일에 원시 IP 하드코딩: fork 격리를 유지하기 위해 연결에 서비스 이름을 사용하십시오.
 - 실패한 명령의 해결 방법으로 `rdc term connect -c` 사용: 대신 버그를 보고하십시오.
-- `repo delete`는 루프백 IP와 systemd 유닛을 포함한 전체 정리를 수행합니다. 이전 삭제의 잔재를 정리하려면 `rdc machine prune --name <name>`을 실행하십시오.
+- `repo delete`는 루프백 IP와 systemd 유닛을 포함한 전체 정리를 수행합니다. 이전 삭제의 잔재를 정리하려면 `rdc machine prune <name>`을 실행하십시오.

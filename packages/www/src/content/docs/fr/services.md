@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: fr
-sourceHash: "011bc5d87114f105"
+sourceHash: "2d470a876c00c352"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -211,7 +211,7 @@ renet et Docker ont délibérément des avis divergents sur la façon de gérer 
 - `.rediacc.json` à la racine du montage du dépôt → `services.<name>.restart_policy` : l'intention réelle.
 - `docker ps --format '{{.Status}}'` : état d'exécution.
 
-**Comment corriger une dérive.** Si la politique sauvegardée dans `.rediacc.json` d'un conteneur est incorrecte (par exemple parce que vous avez modifié compose sans jamais recréer le conteneur), relancez `rdc repo up --name <repo> -m <machine>`. Le conteneur est recréé avec la politique mise à jour enregistrée.
+**Comment corriger une dérive.** Si la politique sauvegardée dans `.rediacc.json` d'un conteneur est incorrecte (par exemple parce que vous avez modifié compose sans jamais recréer le conteneur), relancez `rdc repo up <repo>`. Le conteneur est recréé avec la politique mise à jour enregistrée.
 
 > **Expérimental :** La récupération basée sur le sidecar cold backup et le flag `--sync-certs` sur `rdc machine query` ont été livrés dans renet 0.9+. Les versions antérieures s'appuient uniquement sur la `restart_policy` sauvegardée pour la récupération par watchdog, ce qui peut laisser les conteneurs `on-failure` bloqués après un cold backup.
 
@@ -254,7 +254,7 @@ Les services sans labels Traefik personnalisés affichent uniquement la route au
 
 ### Démarrage détaché
 
-Avec `--detach`, la commande rend la main dès que les conteneurs sont lancés, sans attendre la fin des vérifications de santé. Le démarrage se poursuit en arrière-plan : le proxy réessaie les connexions montantes jusqu'à ce que chaque service soit lié, les routes se rétablissent d'elles-mêmes. Suivez la progression avec `rdc machine query --containers --name <machine>`. Idéal pour les forks jetables et les boucles scriptées où la disponibilité immédiate des services n'est pas requise avant l'étape suivante.
+Avec `--detach`, la commande rend la main dès que les conteneurs sont lancés, sans attendre la fin des vérifications de santé. Le démarrage se poursuit en arrière-plan : le proxy réessaie les connexions montantes jusqu'à ce que chaque service soit lié, les routes se rétablissent d'elles-mêmes. Suivez la progression avec `rdc machine status <machine> --containers`. Idéal pour les forks jetables et les boucles scriptées où la disponibilité immédiate des services n'est pas requise avant l'étape suivante.
 
 ### Sonde de disponibilité
 
@@ -466,6 +466,6 @@ secrets:
     file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
 ```
 
-Semez les valeurs avec `rdc repo secret set --name <repo> --key DATABASE_URL --value <val> --mode env --current ""` et l'équivalent en mode fichier. Consultez [Dépôts § Secrets](/fr/docs/repositories#secrets) pour la procédure complète et [Secrets par dépôt](/fr/docs/rdc-cheat-sheet#per-repo-secrets) sur la feuille de triche pour la référence des commandes.
+Semez les valeurs avec `rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""` et l'équivalent en mode fichier. Consultez [Dépôts § Secrets](/fr/docs/repositories#secrets) pour la procédure complète et [Secrets par dépôt](/fr/docs/rdc-cheat-sheet#per-repo-secrets) sur la feuille de triche pour la référence des commandes.
 
 > **Les chemins entre dépôts sont rejetés lors de la validation.** Un `secrets: file:` (ou `configs: file:`, ou `env_file:`) de compose pointant vers le répertoire `/var/run/rediacc/secrets/<other-networkID>/` d'un autre dépôt est fortement rejeté par le wrapper renet avant l'exécution de docker compose. `--unsafe` ne l'ignore PAS. Défense en profondeur : le sandbox Landlock autour du shell Rediaccfile limite les lectures au répertoire des secrets du réseau actuel, de sorte qu'un `cat /var/run/rediacc/secrets/<other>/X` depuis bash du Rediaccfile échoue avec EACCES même s'il contourne le validateur YAML. Vous n'avez pas besoin d'opt-in ; c'est activé par défaut pour chaque `repo up`.

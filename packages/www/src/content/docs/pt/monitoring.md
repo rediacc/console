@@ -4,7 +4,7 @@ description: "Monitorize o estado da máquina, contentores, serviços, repositó
 category: "Guides"
 order: 9
 language: pt
-sourceHash: "e2f5d37c534fc40d"
+sourceHash: "b6deba17f1137188"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -155,7 +155,7 @@ O temporizador de scrub é instalado automaticamente no primeiro arranque do dae
 
 ### Estado do scrub
 
-O resultado do último scrub é guardado fora do volume BTRFS (em `/var/lib/rediacc/scrub-last-result.json`) para que permaneça legível mesmo que o volume tenha problemas. A saída de `rdc machine query --system` inclui um campo `scrub_status`:
+O resultado do último scrub é guardado fora do volume BTRFS (em `/var/lib/rediacc/scrub-last-result.json`) para que permaneça legível mesmo que o volume tenha problemas. A saída de `rdc machine status --system` inclui um campo `scrub_status`:
 
 ```json
 "scrub_status": {
@@ -185,7 +185,7 @@ Para executar um scrub imediatamente (por exemplo, após uma falha de energia ou
 rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
-O resultado é guardado no mesmo ficheiro JSON e fica imediatamente visível no próximo `rdc machine query --system`.
+O resultado é guardado no mesmo ficheiro JSON e fica imediatamente visível no próximo `rdc machine status --system`.
 
 ## Visão Geral da Máquina
 

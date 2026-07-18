@@ -1,15 +1,15 @@
-import { Command } from 'commander';
+import { Command, Option } from 'commander';
 import { t } from '../../i18n/index.js';
+import { outputService } from '../../services/core/output.js';
 import type { OpsBackend } from '../../services/executor/ops-executor.js';
 import { opsExecutorService } from '../../services/executor/ops-executor.js';
-import { outputService } from '../../services/core/output.js';
 import { handleError } from '../../utils/errors.js';
 
 export function registerOpsDownCommand(ops: Command, _program: Command): void {
   ops
     .command('down')
     .description(t('commands.ops.down.description'))
-    .option('--backend <backend>', t('options.opsBackend'))
+    .addOption(new Option('--backend <backend>', t('options.opsBackend')).choices(['kvm', 'qemu']))
     .option('--debug', t('options.debug'))
     .action(async (options: { backend?: string; debug?: boolean }) => {
       try {

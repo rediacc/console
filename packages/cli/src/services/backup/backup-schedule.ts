@@ -19,9 +19,15 @@
  * - backup-schedule/execute.ts        — mutations + verification + summary
  */
 
-import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
-import { SFTPClient } from '../../remote/sftp/index.js';
+import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { BackupStrategyConfig } from '../../types/index.js';
+import { refreshRepoLicensesBatch } from '../account/license.js';
+import { configService } from '../config/config-resources.js';
+import { outputService } from '../core/output.js';
+import { machineConnections } from '../machine/machine-connection.js';
+import { provisionRenetToRemote, readSSHKey } from '../renet/renet-execution.js';
+import { REMOTE_INSTALL_PATH } from '../renet/renet-provisioner.js';
+import { envFilePath, generateEnvFile } from './backup-env-file.js';
 import {
   emitPlanSummary,
   executePlan,
@@ -34,8 +40,8 @@ import {
   computeReconcilePlan,
   parseStrategyFromPath,
   parseSystemctlShow,
-  readRemoteState,
   type ReconcileOptions,
+  readRemoteState,
 } from './backup-schedule-reconcile.js';
 import {
   buildBackupCommands,
@@ -46,12 +52,6 @@ import {
   sanitizeBackupOutput,
   sha256Hex,
 } from './backup-schedule-unit-generator.js';
-import { envFilePath, generateEnvFile } from './backup-env-file.js';
-import { configService } from '../config/config-resources.js';
-import { refreshRepoLicensesBatch } from '../account/license.js';
-import { outputService } from '../core/output.js';
-import { provisionRenetToRemote, readSSHKey } from '../renet/renet-execution.js';
-import { REMOTE_INSTALL_PATH } from '../renet/renet-provisioner.js';
 
 type PushScheduleOptions = ReconcileOptions;
 
@@ -164,13 +164,8 @@ export async function pushBackupSchedule(
 
   const remoteRenetPath = await preDeployProvisioning(localConfig, machine, sshPrivateKey, options);
 
-  const sftp = new SFTPClient({
-    host: machine.ip,
-    port: machine.port ?? DEFAULTS.SSH.PORT,
-    username: machine.user,
-    privateKey: sshPrivateKey,
-  });
-  await sftp.connect();
+  const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
+  const sftp = lease.sftp;
 
   try {
     const desired = await computeDesiredUnits(strategies, datastore, remoteRenetPath);
@@ -194,7 +189,7 @@ export async function pushBackupSchedule(
     await executePlan(sftp, plan, options);
     await verifyPostDeploy(sftp, plan);
   } finally {
-    sftp.close();
+    lease.release();
   }
 }
 

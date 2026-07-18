@@ -115,6 +115,28 @@ function isValidRenetMetadata(data: unknown): data is RenetMetadata {
 }
 
 /**
+ * Get an arbitrary embedded text asset (UTF-8) by SEA asset key.
+ *
+ * Used for build-generated text assets such as THIRD_PARTY_LICENSES and the
+ * third-party-credits.json inventory, which are embedded by prepare-cli-assets.sh
+ * and only present in release SEA builds.
+ *
+ * @param key - SEA asset key (must match sea-config.json)
+ * @returns Asset contents decoded as UTF-8
+ * @throws Error if not running as SEA or the asset is not found
+ */
+export function getEmbeddedAssetText(key: string): string {
+  const sea = tryLoadSEA();
+  if (!sea) {
+    throw new Error('Not running as SEA - embedded assets not available');
+  }
+
+  // Note: getAsset throws if the asset is not found, no need for a falsy check
+  const asset = sea.getAsset(key);
+  return Buffer.from(asset).toString('utf-8');
+}
+
+/**
  * Get the embedded renet metadata (versions, hashes, sizes)
  *
  * @returns Parsed metadata object

@@ -1,15 +1,16 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { toBase64 } from '@rediacc/shared/config-crypto';
 import type { CekHandoffBlob } from '@rediacc/shared/config-crypto';
+import { toBase64 } from '@rediacc/shared/config-crypto';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
+import { getSubscriptionServerUrl } from '../services/account/subscription-auth.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
-import { getSubscriptionServerUrl } from '../services/account/subscription-auth.js';
 import type { OutputFormat, RdcConfig, RemoteConfig } from '../types/index.js';
 import { hasRemoteConfig } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
+import { askConfirm } from '../utils/prompt.js';
 import { withSpinner } from '../utils/spinner.js';
 
 /** Default output format when parent program is unavailable */
@@ -30,27 +31,18 @@ interface HandoffPayload {
 
 // ─── X25519 Helpers ──────────────────────────────────────────────────────
 
-async function generateX25519KeyPair() {
-  return (await crypto.subtle.generateKey(
-    { name: 'X25519' } as unknown as Parameters<typeof crypto.subtle.generateKey>[0],
-    true,
-    ['deriveBits']
-  )) as unknown as { publicKey: unknown; privateKey: unknown };
+function generateX25519KeyPair(): Promise<CryptoKeyPair> {
+  return crypto.subtle.generateKey({ name: 'X25519' }, true, ['deriveBits']);
 }
 
-async function exportPublicKeyBase64(publicKey: unknown): Promise<string> {
-  const spki = new Uint8Array(
-    await crypto.subtle.exportKey(
-      'spki',
-      publicKey as Parameters<typeof crypto.subtle.exportKey>[1]
-    )
-  );
+async function exportPublicKeyBase64(publicKey: CryptoKey): Promise<string> {
+  const spki = new Uint8Array(await crypto.subtle.exportKey('spki', publicKey));
   return toBase64(spki);
 }
 
 async function decryptHandoff(
   encryptedBlob: CekHandoffBlob,
-  privateKey: unknown
+  privateKey: CryptoKey
 ): Promise<HandoffPayload> {
   const { cekHandoffDecrypt } = await import('@rediacc/shared/config-crypto');
   const plainBytes = await cekHandoffDecrypt(encryptedBlob, privateKey);
@@ -156,7 +148,6 @@ function stripSensitiveFields(config: RdcConfig): RdcConfig {
       ? {
           team: config.account.team,
           region: config.account.region,
-          bridge: config.account.bridge,
           accountServer: config.account.accountServer,
         }
       : undefined,
@@ -190,7 +181,7 @@ async function storeHandoffCredentials(
   };
 }
 
-async function finalizeEnable(remote: RemoteConfig, configName: string): Promise<void> {
+export async function finalizeEnable(remote: RemoteConfig, configName: string): Promise<void> {
   const { configFileStorage } = await import('../adapters/config-file-storage.js');
 
   // Validate by pulling BEFORE modifying local config.
@@ -440,6 +431,100 @@ async function refreshRemote(configName: string): Promise<void> {
   outputService.success(t('commands.config.remote.refresh.success', { version: String(version) }));
 }
 
+// ─── CEK Rotation ────────────────────────────────────────────────────────
+
+/**
+ * Rotate the org-wide config encryption key.
+ *
+ * The rotation itself CANNOT run headlessly. It re-encrypts every config in the
+ * organization, so the server gates it behind a 2FA-backed, freshly
+ * re-authenticated (elevated) portal session — and the CLI holds config tokens,
+ * never a portal session. So this command drives the browser, exactly as
+ * `config remote enable` already does for the other session-gated config steps.
+ *
+ * Two browser trips, and both are load-bearing:
+ *   1. The wizard, which performs the rotation.
+ *   2. The credential handoff, because the rotation deliberately revokes this
+ *      device's wrapped CEK. Without step 2 the local config still holds the OLD
+ *      key and every subsequent pull would fail to decrypt.
+ */
+export async function rotateCek(configName: string, apiUrl: string): Promise<void> {
+  const { configFileStorage } = await import('../adapters/config-file-storage.js');
+  const config = await configFileStorage.load(configName);
+
+  if (!hasRemoteConfig(config)) {
+    throw new ValidationError(t('commands.config.rotateCek.notEnabled', { name: configName }));
+  }
+
+  outputService.warn(t('commands.config.rotateCek.warning'));
+  const confirmed = await askConfirm(t('commands.config.rotateCek.confirm'), false);
+  if (!confirmed) {
+    outputService.info(t('commands.config.rotateCek.cancelled'));
+    return;
+  }
+
+  const wizardUrl = `${apiUrl}/account/config-storage/rotate-key`;
+  outputService.info(t('commands.config.rotateCek.openWizard'));
+  outputService.info(`  ${wizardUrl}`);
+  outputService.info('');
+  await tryOpenBrowser(wizardUrl);
+
+  const proceed = await askConfirm(t('commands.config.rotateCek.confirmDone'), false);
+  if (!proceed) {
+    outputService.info(t('commands.config.rotateCek.cancelled'));
+    return;
+  }
+
+  // The rotation revoked this device's key. Re-acquire it over the same X25519
+  // handoff `config remote enable` uses; the pointer file is already correct, so
+  // only the stored token + wrapped CEK are replaced.
+  const keyPair = await generateX25519KeyPair();
+  const pubBase64 = await exportPublicKeyBase64(keyPair.publicKey);
+  const { port, waitForPayload, close } = await startCallbackServer();
+
+  const callbackUrl = `http://localhost:${port}`;
+  const handoffUrl = `${apiUrl}/account/config-remote?callback=${encodeURIComponent(callbackUrl)}&key=${encodeURIComponent(pubBase64)}`;
+
+  outputService.info(t('commands.config.rotateCek.resync'));
+  outputService.info(`  ${handoffUrl}`);
+  outputService.info('');
+  await tryOpenBrowser(handoffUrl);
+
+  try {
+    const encryptedBlob = await withSpinner(
+      t('commands.config.rotateCek.waiting'),
+      () => waitForPayload(),
+      t('commands.config.rotateCek.received')
+    );
+
+    const payload = await decryptHandoff(encryptedBlob, keyPair.privateKey);
+    const remote = await storeHandoffCredentials(payload, configName);
+
+    // Prove the new key actually decrypts the freshly rotated blob before
+    // declaring success — a silent stale key is the whole failure mode here.
+    const { RemoteConfigAdapter } = await import('../adapters/remote-config-adapter.js');
+    const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
+    const { getSecureStorage } = await import('../utils/secure-storage.js');
+    const adapter = new RemoteConfigAdapter(
+      remote,
+      configName,
+      remoteTokenStorage,
+      getSecureStorage()
+    );
+    const { version } = await withSpinner(
+      t('commands.config.rotateCek.verifying'),
+      () => adapter.pull(),
+      t('commands.config.rotateCek.verified')
+    );
+
+    outputService.success(
+      t('commands.config.rotateCek.success', { name: configName, version: String(version) })
+    );
+  } finally {
+    close();
+  }
+}
+
 // ─── Command Registration ────────────────────────────────────────────────
 
 export function registerRemoteCommands(configCommand: Command): void {
@@ -452,6 +537,7 @@ export function registerRemoteCommands(configCommand: Command): void {
     .command('enable')
     .description(t('commands.config.remote.enable.description'))
     .option('--headless', t('commands.config.remote.enable.optionHeadless'))
+    .option('--password', t('commands.config.remote.enable.optionPassword'))
     .option('--api-url <url>', t('commands.config.remote.enable.optionApiUrl'))
     .action(async (options) => {
       try {
@@ -467,7 +553,10 @@ export function registerRemoteCommands(configCommand: Command): void {
 
         const apiUrl = options.apiUrl ?? getSubscriptionServerUrl();
 
-        if (options.headless) {
+        if (options.password) {
+          const { enablePassword } = await import('./config-remote-password.js');
+          await enablePassword(apiUrl, configName);
+        } else if (options.headless) {
           await enableHeadless(apiUrl, configName);
         } else {
           await enableBrowser(apiUrl, configName);

@@ -1,0 +1,18 @@
+{
+  "name": "@rediacc/proxy-worker",
+  "version": "0.0.0-dev",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "dry-run": "wrangler deploy --dry-run --outdir /tmp/rediacc-proxy-dry-run"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "^0.3.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260101.0",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.110.0"
+  }
+}

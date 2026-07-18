@@ -37,7 +37,7 @@ This guide walks you through finding the root cause of errors showing up in prod
 
 9. **Cross-reference with Loki.** The "Error Logs" panel at the bottom of the Error Observatory dashboard shows log lines that match the same time window. Click a log line to expand it and see the full error message. This is especially useful when the error message is too long for a span attribute or when you need surrounding log context (e.g., the request body that caused the error).
 
-10. **For renet errors, check authentication and task patterns.** Renet tracks consecutive SSH auth failures in the bridge component. If you see auth-related errors:
+10. **For renet errors, check authentication and task patterns.** Renet surfaces SSH auth failures when it connects to a target machine over SSH. If you see auth-related errors:
     - Open the [Renet Infrastructure](https://grafana.rediacc.io/d/renet-infrastructure) dashboard
     - Check the "Task Failure Patterns" panel for recurring failures
     - Look at the "Auth Failure Rate" panel to see if a specific machine is rejecting connections

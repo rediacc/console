@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 50
 language: fr
-sourceHash: "bbdbb7bd6ac12d9a"
-sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
+sourceHash: "7290c90fe7218ea4"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Voici le problème : les assistants de programmation IA (Claude Code, Cursor, Cline, Windsurf) continuent d'inventer des options `rdc` inexistantes, et ils ne peuvent pas savoir quel nom de dépôt Rediacc correspond à quel GUID sans vous demander à chaque fois. Ce modèle règle cela. Collez le bloc ci-dessous dans le fichier `CLAUDE.md`, `.cursorrules` ou tout autre fichier de configuration d'agent utilisé par votre outil.
@@ -65,11 +65,8 @@ rdc term connect -m <machine> -c "command"
 rdc repo sync upload -m <machine> -r <repo> --local ./local-path
 rdc repo sync download -m <machine> -r <repo> --local ./local-path
 
-# List all available commands with schemas
-rdc agent capabilities
-
-# Show schema for a specific command
-rdc agent schema --command "machine query"
+# List all available commands
+rdc --help-all
 
 ### Architecture
 - **Repository**: Isolated application deployment with its own Docker daemon at /var/run/rediacc/docker-<networkId>.sock, loopback IP range (127.0.x.x/26), and encrypted btrfs mount at /mnt/rediacc/mounts/<guid>/
@@ -99,7 +96,7 @@ rdc machine query --name <machine-name>
 rdc config repository list
 
 # Check what commands are available
-rdc agent capabilities
+rdc --help-all
 ```
 
 ## Configuration par agent

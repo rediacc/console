@@ -3,8 +3,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { generateCek } from '../cek.js';
 import { canonicalize, valueKind } from '../canonical.js';
+import { generateCek } from '../cek.js';
 import {
   commitField,
   computeCommitments,

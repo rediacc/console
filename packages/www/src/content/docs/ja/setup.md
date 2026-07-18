@@ -4,8 +4,8 @@ description: "設定の作成、マシンの追加、サーバーのプロビジ
 category: "Guides"
 order: 3
 language: ja
-sourceHash: "19a208e453f7d742"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "1fba8ac242726528"
+sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
 # マシンセットアップ
@@ -78,6 +78,34 @@ rdc config machine setup --name server-1
 
 > セットアップはマシンごとに一度だけ実行する必要があります。必要に応じて再実行しても安全です。
 
+## データストアバックエンド
+
+データストアは、暗号化されたリポジトリイメージを保持するマシンごとのストレージプールです。`machine setup` はデフォルトで**ローカル**データストアを作成します。サーバー自身のディスク上の loop デバイスによる BTRFS ファイルシステムで、`--datastore-size`（デフォルトは利用可能ディスクの `95%`）でサイズを指定します。ほぼすべての単一マシン構成にはこのバックエンドが適しており、サーバー以外に何も必要ありません。
+
+### データストアのサイジング
+
+`--datastore-size` はパーセンテージ（`95%`）または絶対サイズ（`50G`、`1T`）を受け付けます。データストアは後からオンラインで拡張できます。
+
+```bash
+rdc datastore resize -m server-1 --size 200G
+```
+
+データストア内のリポジトリは `repo create` の時点で個別にサイズが決まり、実行中でも拡張できるため、事前にデータストアを過剰にプロビジョニングする必要はありません。
+
+### Ceph RBD バックエンド
+
+共有ストレージ、スケールアウト、または Kubernetes を支えるストレージが必要な場合は、代わりに外部の Ceph クラスターにデータストアを初期化します。この場合データストアは RBD イメージ上に置かれ（その上に BTRFS、イメージごとの LUKS レイヤーはなし）、フォークは BTRFS の reflink ではなく RBD 自体の copy-on-write クローンを使用します。
+
+```bash
+# 1. マシンの Ceph 参照を記録する（pool + RBD イメージ、非シークレット）
+rdc config machine set-ceph -m server-1 --pool rbd --image datastore-server1
+
+# 2. Ceph バックエンドでデータストアを初期化する
+rdc datastore init -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
+```
+
+Ceph の keyring はマシン上にとどまり、設定ファイルには非シークレットな pool とイメージの参照のみが保存されます。Ceph は、Kubernetes クラスターが ceph-csi を通じて利用するストレージ層でもあります。クラスターと永続ボリュームについては [Kubernetes](/ja/docs/kubernetes) ガイドを、2つのバックエンドの比較については [アーキテクチャ](/ja/docs/architecture) を参照してください。
+
 ## ホスト鍵の管理
 
 サーバーのSSHホスト鍵が変更された場合（例：再インストール後）、保存されている鍵を更新します：
@@ -104,7 +132,7 @@ rdc term connect -m server-1 -c "hostname"
 rdc doctor
 ```
 
-> **ヒント**: SSH接続を確認するには、`rdc term connect -m <machine> -c "hostname"` を実行するか、`ssh` を直接使用してください。
+> **ヒント**: SSH接続を確認するには、`rdc term connect <machine> -c "hostname"` を実行するか、`ssh` を直接使用してください。
 
 ## インフラストラクチャ設定
 

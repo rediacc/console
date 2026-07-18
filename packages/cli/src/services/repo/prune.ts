@@ -74,9 +74,11 @@ async function scanOtherConfig(
     }
 
     const repos = config.resources?.repositories ?? {};
-    for (const repoConfig of Object.values(repos)) {
-      const guid = repoConfig.repositoryGuid;
-      if (guid) addGuidSource(guidSources, guid, name);
+    for (const family of Object.values(repos)) {
+      for (const record of Object.values(family.tags)) {
+        const guid = record.repositoryGuid;
+        if (guid) addGuidSource(guidSources, guid, name);
+      }
     }
   } catch {
     unreadableConfigs.push(name);

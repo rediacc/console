@@ -2,7 +2,7 @@
   "announcement": {
     "enabled": true,
     "link": "/account/",
-    "text": "A tempo limitato: Programma Design Partner. Piano BUSINESS gratuito per sempre."
+    "text": "Novità: inizia a usare Rediacc con una prova gratuita di 14 giorni."
   },
   "beforeAfter": {
     "after": {
@@ -258,10 +258,10 @@
   },
   "hero": {
     "cta": {
-      "benefits": "Team illimitati • $0",
+      "benefits": "Team illimitati • Prova gratuita di 14 giorni",
       "bookDemo": "Prenota una demo",
       "contactUs": "Vedi tutte le opzioni di installazione",
-      "freeBadge": "GRATIS PER SEMPRE · Nessuna carta di credito",
+      "freeBadge": "Prova gratuita di 14 giorni · Disdici quando vuoi",
       "getStarted": "Inizia gratis",
       "learnMore": "Scopri come funziona",
       "readDocs": "Leggi la documentazione",
@@ -302,9 +302,12 @@
       "S3",
       "btrfs",
       "LUKS",
-      "systemd"
+      "systemd",
+      "Kubernetes",
+      "Ceph",
+      "k3s"
     ],
-    "migrationMessage": "Rediacc racchiude le tue app, database e impostazioni in un unico file. Spostalo ovunque. Usi già Docker? Sei quasi a posto.",
+    "migrationMessage": "Rediacc racchiude le tue app, database e impostazioni in un unico file. Spostalo ovunque. Usi già Docker? Sei quasi a posto. Usi Kubernetes? Fai il fork o sposta l'intero cluster allo stesso modo.",
     "title": "Funziona con quello che usi già"
   },
   "layout": {
@@ -312,10 +315,6 @@
       "author": "Rediacc",
       "defaultDescription": "Automazione dell'infrastruttura self-hosted. Clonazione istantanea degli ambienti, backup immutabili e disaster recovery in meno di 60 secondi.",
       "defaultKeywords": "automazione infrastruttura, operazioni AI, disaster recovery, ambienti di sviluppo, Model Context Protocol, DevOps, CI/CD",
-      "designPartner": {
-        "ogDescPrefix": "Ottieni BUSINESS gratis per sempre.",
-        "ogPrefix": "Programma Design Partner"
-      },
       "locale": "it_IT",
       "siteName": "Rediacc",
       "twitter": {
@@ -341,6 +340,10 @@
       {
         "label": "Tempo di recupero",
         "number": "< 1 min"
+      },
+      {
+        "label": "Whole Kubernetes cluster fork",
+        "number": "46s"
       }
     ]
   },
@@ -437,11 +440,15 @@
       {
         "description": "Salvano tutto. Ma il ripristino richiede ore, non un minuto.",
         "title": "Strumenti backup"
+      },
+      {
+        "description": "Copiano i tuoi manifest. Ma un cluster è più che YAML.",
+        "title": "Strumenti Kubernetes"
       }
     ],
     "title": "Copiano un pezzo. Copiamo tutto.",
     "winner": {
-      "description": "Ogni team ha la sua copia scrivibile. Dati, app, impostazioni: tutto. Tutto pronto in 60 secondi. Paghi per lo storage solo quando cambia qualcosa.",
+      "description": "Ogni team ha la sua copia scrivibile. Dati, app, impostazioni: tutto. Tutto pronto in 60 secondi. Vale anche per interi cluster Kubernetes. Paghi per lo storage solo quando cambia qualcosa.",
       "label": "Rediacc"
     }
   },
@@ -705,7 +712,7 @@
             "Crediamo nella privacy per impostazione predefinita. Le seguenti tecnologie <strong>non</strong> sono utilizzate sul nostro sito web:"
           ],
           "content2": [
-            "Nota: la presente Informativa sui Cookie si applica al sito web di marketing di Rediacc. I nostri prodotti software (Applicazione Web, CLI, Middleware, Bridge) raccolgono telemetria di utilizzo separata che non impiega cookie. Per i dettagli sulla telemetria dei prodotti, si consulti la nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>."
+            "Nota: la presente Informativa sui Cookie si applica al sito web di marketing di Rediacc. I nostri prodotti software (Applicazione Web, CLI, Middleware, Renet Agent) raccolgono telemetria di utilizzo separata che non impiega cookie. Per i dettagli sulla telemetria dei prodotti, si consulti la nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>."
           ],
           "id": "what-we-dont-use",
           "items": [
@@ -719,98 +726,6 @@
       },
       "toc": {
         "title": "Indice"
-      }
-    },
-    "designPartners": {
-      "ask": {
-        "items": [
-          {
-            "body": "Invia una e-mail di una riga quando qualcosa ti sorprende. Stack trace opzionale. Frustrazione incoraggiata.",
-            "title": "Dicci quando si rompe"
-          },
-          {
-            "body": "30 minuti ogni trimestre circa. Noi ascoltiamo, tu parli. Niente demo, niente upsell.",
-            "title": "Una chiamata ogni tanto"
-          },
-          {
-            "body": "Se rilasciamo qualcosa che ti riguarda, ti avvisiamo prima. Una semplice email va bene.",
-            "title": "Sii raggiungibile"
-          }
-        ],
-        "lede": "Impegno minimo. L'obiettivo non è estrarre lavoro gratuito; è mantenerci onesti.",
-        "title": "Cosa chiediamo in cambio"
-      },
-      "faq": {
-        "items": [
-          {
-            "a": "Sì. Il beneficio è registrato nel tuo profilo senza scadenza e senza downgrade automatico. Se cambiassimo idea, ti mandiamo una mail per primo. Non l'abbiamo mai fatto. Non lo faremo.",
-            "q": "È davvero per tutta la vita?"
-          },
-          {
-            "a": "Il tuo account smette di funzionare come tutti. La garanzia a vita è la vita dell'azienda. Siamo ancora senza clienti paganti; è il rischio vero che accetti.",
-            "q": "Cosa succede se Rediacc chiude?"
-          },
-          {
-            "a": "Nessun paywall, nessun contratto, nessuna fatturazione automatica. L'unica richiesta è il feedback leggero sopra descritto. Puoi ignorarci. Non revochiamo il tuo piano.",
-            "q": "Ci sono condizioni nascoste?"
-          },
-          {
-            "a": "Sì. Puoi rimanere su BUSINESS per sempre, o passare a Enterprise se superi i limiti. Salire di livello ha una fatturazione normale; il vantaggio a vita si applica solo a BUSINESS.",
-            "q": "Posso cambiare piano in seguito?"
-          },
-          {
-            "a": "Fino a quando non lo chiudiamo. Non annunceremo la chiusura in anticipo, quindi oggi è un buon giorno per iscriversi. I Design Partner esistenti mantengono il loro piano qualunque cosa accada.",
-            "q": "Per quanto tempo è aperto il programma?"
-          }
-        ],
-        "title": "Risposte oneste"
-      },
-      "finalCta": {
-        "button": "Rivendica BUSINESS Gratis",
-        "note": "Ti invieremo una e-mail per organizzare una chiamata di onboarding entro uno o due giorni.",
-        "subtitle": "Un'iscrizione. Nessuna carta. BUSINESS per la vita, garantito.",
-        "title": "Pronto a essere un pioniere?"
-      },
-      "hero": {
-        "eyebrow": "Offerta Limitata",
-        "note": "Nessuna carta. Nessun modulo. Il programma chiude quando vogliamo, iscriviti oggi.",
-        "primaryCta": "Rivendica BUSINESS Gratis",
-        "secondaryCta": "Vedi i prezzi",
-        "subtitle": "Siamo senza clienti paganti ancora. Cerchiamo pionieri disposti a usare il prodotto e dirci quando si rompe. In cambio, il piano BUSINESS è tuo gratis finché Rediacc esiste.",
-        "title": "Diventa Design Partner. Prendi BUSINESS per la vita. Gratis."
-      },
-      "meta": {
-        "description": "Diventa Design Partner gratis e il piano BUSINESS è tuo per sempre. Cerchiamo pionieri pronti a testare e dirci quando non funziona.",
-        "title": "Design Partner | Ottieni BUSINESS Gratis per Sempre"
-      },
-      "why": {
-        "items": [
-          {
-            "body": "Impariamo 100 volte di più da un team in produzione che da cento iscrizioni di prova. I Design Partner sono il nostro laboratorio per affinare il prodotto prima che arrivino i clienti veri.",
-            "title": "Team Reali, Sistemi Reali"
-          },
-          {
-            "body": "Non abbiamo bisogno dei tuoi soldi adesso. Abbiamo bisogno delle tue frustrazioni, i tuoi edge case, le tue domande. Gratis per la tua onestà: è un accordo leale.",
-            "title": "Denaro in cambio di feedback"
-          },
-          {
-            "body": "Il tuo BUSINESS non scade, non si declassa, non chiede una carta. Punto.",
-            "title": "Riconoscimento permanente"
-          }
-        ],
-        "title": "Perché lo facciamo"
-      },
-      "youGet": {
-        "items": [
-          "Piano BUSINESS: 200 GB per repository, 10 licenze utente, 10.000 attivazioni al mese",
-          "Sul canale early-access: limiti raddoppiati (400 GB per repo, 20 postazioni utente, 20.000 attivazioni)",
-          "Repository, utenti e team illimitati",
-          "Ripristino backup, modalità scura, tutte le 9 lingue",
-          "Supporto diretto da parte dell'ingegneria",
-          "Tuo per la Vita. Nessuna scadenza, nessun downgrade, nessun pagamento."
-        ],
-        "lede": "Il piano BUSINESS completo. Gratis. Finché Rediacc esiste.",
-        "title": "Cosa ottieni"
       }
     },
     "disasterRecovery": {
@@ -839,7 +754,7 @@
             "question": "Che supporto ricevo?"
           },
           {
-            "answer": "Il tempo di ripristino dipende dal livello: il piano Community ripristina gli snapshot piu' recenti in pochi minuti, il Professional offre ripristino point-in-time (24 h), il Business garantisce un SLA di 4 ore e l'Enterprise offre un RTO personalizzato da 15 a 60 minuti.",
+            "answer": "Il tempo di ripristino dipende dal livello: il piano Community ripristina gli snapshot più recenti in pochi minuti, il Professional offre ripristino point-in-time (24 h), il Business garantisce un SLA di 4 ore e l'Enterprise offre un RTO personalizzato da 15 a 60 minuti.",
             "question": "Quanto tempo ci vuole per il ripristino?"
           },
           {
@@ -848,7 +763,7 @@
           },
           {
             "answer": "I tuoi dati rimangono cifrati nella posizione che hai scelto. Mantieni il pieno controllo e puoi accedere ai backup anche se il nostro servizio non è disponibile.",
-            "question": "Cosa succede ai miei dati se il servizio non e' disponibile?"
+            "question": "Cosa succede ai miei dati se il servizio non è disponibile?"
           }
         ]
       },
@@ -858,10 +773,10 @@
           "talkToSales": "Parla con il team commerciale"
         },
         "description": "Installa Rediacc e fai il tuo primo backup in meno di 10 minuti.",
-        "heading": "Inizia a Ripristinare Piu' Velocemente"
+        "heading": "Inizia a Ripristinare Più Velocemente"
       },
       "hero": {
-        "subtitle": "La maggior parte dei team inizia con il piano gratuito e rimane lì. Quando un'interruzione costerebbe soldi all'azienda, passa al livello successivo. Stesso prodotto, nessun cambio di piattaforma.",
+        "subtitle": "Inizia con una prova gratuita di 14 giorni e passa al livello successivo solo quando le ore di inattività costerebbero soldi all'azienda. Stesso prodotto, nessun cambio di piattaforma.",
         "title": "Progettato per Operazioni di Ripristino Reali"
       },
       "meta": {
@@ -878,7 +793,7 @@
             "Storage distribuito in 3 regioni. Un guasto non ti ferma.",
             "Protezione dati continua. Perdita dati quasi zero.",
             "SLA ripristino 4 ore (garantito)",
-            "App illimitate, 200 GB l'una",
+            "App illimitate, 500 GB l'una",
             "7 lavori attivi/3 riservati",
             "Log di audit conservati 90 giorni",
             "Controllo accessi per ruoli e audit completo",
@@ -889,7 +804,7 @@
           "name": "Business"
         },
         "community": {
-          "description": "Disaster recovery production-ready da subito. Gratuito, per sempre.",
+          "description": "Disaster recovery pronto per la produzione fin dal primo giorno. Il piano gratuito di riserva.",
           "features": [
             "Utenti e team illimitati. Collabora senza vincoli.",
             "Ripristina dal backup più recente in pochi minuti, dopo qualsiasi guasto.",
@@ -926,7 +841,7 @@
             "Tutto il piano Community +",
             "Backup automatici. Configura una volta e scorditene.",
             "Ripristino point-in-time (24 h)",
-            "App illimitate, 50 GB l'una",
+            "App illimitate, 100 GB l'una",
             "Timeout lavori 24 ore, 3 attivi/2 riservati",
             "Log di audit conservati 30 giorni",
             "Supporto via email e chat",
@@ -943,7 +858,7 @@
         "viewDetails": "Esplora i Servizi Professionali"
       },
       "strategy": {
-        "copy": "Inizia da dove sei. La maggior parte dei team rimane al livello attuale più a lungo di quanto si aspetti. Passa a un livello superiore solo quando un ripristino lento comporterebbe un costo reale per l'azienda. Stesso prodotto, sempre.",
+        "copy": "Inizia da dove sei. La maggior parte dei team rimane al livello attuale più a lungo di quanto si aspetti. Passa a un livello superiore solo quando un ripristino lento comporterebbe un costo reale per l'azienda. Stesso prodotto, sempre. Usi Kubernetes? Interi cluster si spostano allo stesso modo, con un cutover breve e misurato.",
         "distribution": [
           "Professional → Business: I backup sono archiviati in una posizione secondaria. Ogni modifica viene salvata al momento. RTO garantito di 4 ore. Un contatto di supporto dedicato incluso.",
           "Business → Enterprise: Tu scegli la velocità di ripristino: 15-60 minuti. Il recovery avviene in un ambiente completamente isolato dai tuoi sistemi live. Supporto diretto quando conta davvero."
@@ -999,28 +914,27 @@
         "anchor": "Ancora strategica",
         "bestValue": "Miglior rapporto qualità-prezzo",
         "contactSales": "Contattaci",
+        "contactUs": "Contattaci",
+        "contactUsSub": "Limiti e condizioni personalizzati",
         "cta": {
           "business": {
-            "guarantee": "Garanzia di rimborso",
             "launchBadge": "Offerta lancio limitata",
-            "primary": "Prenota una call",
+            "primary": "Inizia gratis",
             "secondary": "Contattaci",
             "valueNote": "Credito setup da $9.999"
           },
           "community": {
-            "note": "Senza carta di credito",
-            "primary": "Prova gratis",
+            "note": "Piano gratuito di riserva",
+            "primary": "Prova Rediacc",
             "secondary": "Scopri cosa è incluso"
           },
           "enterprise": {
-            "guarantee": "Garanzia di rimborso",
             "primary": "Prenota una demo",
             "secondary": "Contattaci",
             "subtext": "SLA personalizzato · Supporto dedicato"
           },
           "professional": {
-            "guarantee": "Garanzia di rimborso",
-            "primary": "Inizia Professional",
+            "primary": "Inizia gratis",
             "secondary": "Contattaci"
           }
         },
@@ -1028,7 +942,7 @@
         "getStarted": "Installa ora",
         "guarantees": {
           "cancelAnytime": "Disdici quando vuoi",
-          "moneyBack": "Garanzia rimborso 14 giorni",
+          "freeTrial": "Prova gratuita di 14 giorni",
           "noContracts": "Nessun contratto a lungo termine"
         },
         "keyBenefits": "Vantaggi principali",
@@ -1252,11 +1166,6 @@
         "notFound": "404 - Pagina non trovata"
       },
       "description": "Spiacenti, la pagina che stai cercando non esiste o è stata spostata. Questo può accadere se hai seguito un link obsoleto o hai digitato l'URL in modo errato.",
-      "designPartner": {
-        "body": "Ottieni il piano BUSINESS gratis per sempre. Nessuna carta di credito.",
-        "cta": "Attiva Design Partner →",
-        "title": "Programma Design Partner"
-      },
       "help": {
         "description": "Se ritieni che si tratti di un errore o ti aspettavi di trovare contenuti qui, contatta il nostro team di supporto. Siamo qui per aiutarti a trovare quello che cerchi.",
         "link": "contatta il nostro team di supporto",
@@ -1480,7 +1389,7 @@
               "title": "Efficiente con il context window"
             },
             {
-              "description": "--dry-run mostra in anteprima le operazioni distruttive. --yes abilita l'automazione. Gli agenti possono distribuire con sicurezza grazie ai guardrail integrati.",
+              "description": "--dry-run mostra in anteprima le operazioni distruttive. --yes abilita l'automazione. Gli agenti possono distribuire con sicurezza grazie ai guardrail integrati. Anche il fork di un intero cluster segue le stesse regole.",
               "icon": "shield",
               "title": "Sicuro per impostazione predefinita"
             }
@@ -1564,7 +1473,7 @@
               "title": "Configura"
             },
             {
-              "description": "Esegui rdc agent capabilities per ottenere un albero di comandi JSON strutturato. L'agente conosce cosa è disponibile senza consultare la documentazione.",
+              "description": "Collega il tuo assistente a rdc mcp serve e avrà strumenti tipizzati per ogni operazione. O esegui rdc --help-all per l'elenco completo dei comandi.",
               "icon": "code",
               "title": "Scopri"
             },
@@ -1577,7 +1486,7 @@
           "title": "Tre step per gestire l'infrastruttura con gli agenti"
         },
         "meta": {
-          "description": "Rediacc è pensato per agenti AI. CLI-first, JSON strutturato, SSH, scoperta completa tramite rdc agent.",
+          "description": "Rediacc è pensato per assistenti AI di programmazione. CLI-first, JSON strutturato, accesso SSH e MCP server integrato.",
           "keywords": "agenti AI, Claude Code, Cursor, Cline, automazione infrastruttura, CLI, output JSON, self-hosted, agent-native, MCP",
           "title": "Per agenti AI - Automazione CLI-native | Rediacc"
         },
@@ -1671,8 +1580,12 @@
               "traditional": "Output HTML/non strutturato: 4 volte più token, parsing fragile"
             },
             {
-              "rediacc": "rdc agent capabilities: albero comandi strutturato a runtime",
+              "rediacc": "Server MCP: strumenti tipizzati rilevati a runtime",
               "traditional": "Nessuna discovery: gli agenti hanno bisogno di docs o API hardcoded"
+            },
+            {
+              "rediacc": "rdc cluster fork: one command, one JSON reply, whole cluster",
+              "traditional": "Modifiche al cluster: console web, wizard, runbook a più fasi"
             }
           ],
           "title": "Perché rdc è progettato per gli agenti AI",
@@ -1750,7 +1663,7 @@
               "title": "I tuoi dati, il tuo controllo"
             },
             {
-              "description": "Ripristino completo in caso di disastro in meno di 5 minuti. Backup immutabili che il ransomware non può toccare. La tua azienda continua a operare.",
+              "description": "Ripristino completo in caso di disastro in meno di 5 minuti. Backup immutabili che il ransomware non può toccare. La tua azienda continua a operare. Se un provider ti abbandona, l'intero sistema può essere spostato, Kubernetes incluso.",
               "icon": "shield",
               "title": "Continuità aziendale"
             }
@@ -1759,7 +1672,7 @@
           "title": "Cosa significa per la tua azienda"
         },
         "bottomCta": {
-          "description": "Un prezzo fisso per macchina. Zero tariffe per posto. Zero sorprese. Inizia con l'edizione Community gratuita.",
+          "description": "Un prezzo fisso per macchina. Zero tariffe per posto. Zero sorprese. Inizia con una prova gratuita di 14 giorni.",
           "primaryCta": "Scopri i prezzi",
           "title": "Scopri i prezzi"
         },
@@ -1971,7 +1884,7 @@
               "title": "Minuti, non ore"
             },
             {
-              "description": "I tuoi dati restano sulla tua infrastruttura in formati aperti. Cambia provider, gestisciti in autonomia o sposta tutto domani. Decidi tu.",
+              "description": "I tuoi dati restano sulla tua infrastruttura in formati aperti. Cambia provider, gestisciti in autonomia o sposta tutto domani. Decidi tu. Ora include anche i cluster Kubernetes.",
               "icon": "lock",
               "title": "Nessun vendor lock-in"
             }
@@ -2171,6 +2084,10 @@
             {
               "rediacc": "Conformità: verifica sulla tua infrastruttura",
               "traditional": "Conformità: fidarsi dell'attestazione del vendor"
+            },
+            {
+              "rediacc": "Fai il fork o sposta un cluster attivo verso un altro datacenter, cutover misurato in secondi",
+              "traditional": "Kubernetes ti vincola al datacenter in cui lo hai costruito"
             }
           ],
           "title": "Come Rediacc protegge la tua infrastruttura",
@@ -2248,7 +2165,7 @@
               "title": "Ambienti in 60 secondi"
             },
             {
-              "description": "Tutto è un comando. Integralo con CI/CD, hook Git o la tua automazione. Nessuna GUI richiesta.",
+              "description": "Tutto è un comando. Integralo con CI/CD, hook Git o la tua automazione. Nessuna GUI richiesta. Kubernetes incluso: un namespace fa il fork come qualsiasi repository.",
               "icon": "terminal",
               "title": "CLI-first, scriptabile"
             },
@@ -2263,7 +2180,7 @@
         },
         "bottomCta": {
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash",
-          "description": "Installa la CLI. Clona il tuo primo ambiente. Nessuna carta di credito. Nessuna chiamata commerciale.",
+          "description": "Installa la CLI. Clona il tuo primo ambiente. Inizia la tua prova gratuita di 14 giorni, senza chiamate commerciali.",
           "primaryCta": "Inizia gratis",
           "title": "Provalo tu stesso"
         },
@@ -2458,6 +2375,10 @@
             {
               "rediacc": "Rollback: cambio snapshot btrfs (<5 min)",
               "traditional": "Rollback: ripristino dal backup (30+ min)"
+            },
+            {
+              "rediacc": "rdc cluster fork copies it, data included. 46 seconds in our lab",
+              "traditional": "Clonare un cluster Kubernetes: ri-provisioning, redeploy, ripopolamento dei dati"
             }
           ],
           "title": "Perché i cloni da 60 secondi sono possibili",
@@ -2700,52 +2621,60 @@
         "heading": "Confronta i piani"
       },
       "edgeChannel": {
-        "cta": "Inizia gratis",
-        "description": "Limiti Community raddoppiati, ultime funzionalità, costo zero. Zero carte di credito.",
+        "cta": "Esplora il canale Edge",
+        "description": "Il canale edge rilascia per primo le nostre funzionalità più recenti e gira con il doppio dei limiti del canale stable.",
         "heading": "Prova il canale Edge"
       },
       "faq": {
         "heading": "Domande frequenti",
         "items": [
           {
-            "answer": "Sì. Il piano Community è gratuito. Copre fino a 2 server, 100 configurazioni server al mese e ripristini da backup. Nessuna carta di credito richiesta.",
-            "question": "C'è un piano gratuito?"
+            "answer": "Sì. Professional e Business iniziano entrambi con una prova gratuita di 14 giorni. Il primo addebito arriva solo alla fine della prova, quindi disdici prima e non paghi nulla. Se disdici, il tuo account torna al piano gratuito Community, che mantiene attiva una macchina con 10 GB per repository e 100 configurazioni al mese.",
+            "question": "C'è una prova gratuita?"
           },
           {
-            "answer": "Sì, cambila quando vuoi. Gli upgrade partono subito, i downgrade dal ciclo di fatturazione successivo. Zero penali.",
-            "question": "Posso cambiare piano quando voglio?"
+            "answer": "Sì. Entrambi i piani a pagamento richiedono una carta al momento della registrazione, così la prova può trasformarsi in abbonamento. Non ti viene addebitato nulla fino alla fine della prova di 14 giorni, e puoi disdire in qualsiasi momento prima di allora.",
+            "question": "Serve una carta di credito per iniziare?"
           },
           {
-            "answer": "Sì. Con fatturazione annuale risparmi il 17%, come avere 2 mesi gratis. Tutti i piani a pagamento hanno entrambe le opzioni.",
-            "question": "Offrite fatturazione annuale?"
+            "answer": "Sì, puoi cambiare piano in qualsiasi momento. Gli upgrade sono immediati, i downgrade partono dal ciclo di fatturazione successivo. Zero penali.",
+            "question": "Posso fare l'upgrade o il downgrade del piano?"
           },
           {
-            "answer": "Tutte le carte principali (Visa, MasterCard, American Express). Per i piani Enterprise annuali, anche fatturazione tramite ricevuta.",
+            "answer": "Sì. La fatturazione annuale ti fa risparmiare il 15% rispetto al pagamento mensile. Entrambi i piani a pagamento sono disponibili con fatturazione mensile o annuale.",
+            "question": "Offrite la fatturazione annuale?"
+          },
+          {
+            "answer": "Accettiamo tutte le principali carte di credito (Visa, MasterCard, American Express) e supportiamo la fatturazione su fattura per i piani Enterprise.",
             "question": "Quali metodi di pagamento accettate?"
           },
           {
-            "answer": "Ogni server fisico o virtuale con Rediacc conta come una macchina. I cloni istantanei non si aggiungono: contiamo solo le macchine host.",
+            "answer": "Ogni server fisico o virtuale su cui è installato Rediacc conta come una macchina. Le copie istantanee create su quelle macchine non si contano separatamente. Contiamo solo le macchine host.",
             "question": "Come si conteggiano le macchine?"
           },
           {
-            "answer": "Sì. Rediacc gira su qualsiasi Linux con supporto btrfs (un filesystem open-source integrato in Linux). Bare metal, VM, cloud (AWS, Azure, GCP, Hetzner, OVH, ecc.): tutti supportati.",
+            "answer": "Sì. Rediacc funziona su qualsiasi server Linux con supporto btrfs (un sistema di storage open-source integrato in Linux). Sono supportati server fisici, macchine virtuali e server cloud (AWS, Azure, GCP, Hetzner, OVH, ecc.).",
             "question": "Rediacc funziona sui miei server?"
           },
           {
-            "answer": "Community: fino a 2 macchine, cloni on-demand, ripristini backup, supporto community. Professional: fino a 5 macchine, backup programmati, backup a 24h, supporto prioritario, API.",
+            "answer": "Ogni piano self-service include una macchina (una licenza Floating). Se ti serve eseguire Rediacc su più macchine, si tratta di una configurazione Enterprise venduta tramite i nostri partner. Contattaci e ti aiutiamo a dimensionarla.",
+            "question": "Quante macchine copre ciascun piano?"
+          },
+          {
+            "answer": "Community è il piano gratuito di riserva: una macchina, 10 GB per repository, 100 configurazioni al mese e supporto community. Professional è un piano a pagamento con prova gratuita di 14 giorni: una macchina, 100 GB per repository, 2.000+ configurazioni al mese, pianificazione automatica, cronologia di ripristino di 24 ore, supporto più rapido e accesso alle API.",
             "question": "Qual è la differenza tra Community e Professional?"
           },
           {
-            "answer": "Enterprise è su misura per te. Scegli i termini. Infrastruttura dedicata, SLA personalizzato, supporto 24/7/365, revisioni di sicurezza ed esercitazioni regolari.",
+            "answer": "Enterprise è costruito su misura per la tua configurazione e venduto tramite i nostri partner. Scegli tu i termini, esegui su più macchine e ottieni il tuo spazio server dedicato, una promessa di ripristino personalizzata e supporto 24/7/365. Incluse revisioni di sicurezza ed esercitazioni periodiche.",
             "question": "Che cosa include il piano Enterprise?"
           },
           {
-            "answer": "Sì. Scrivici: abbiamo prezzi speciali per istituzioni educative e organizzazioni no-profit.",
-            "question": "Avete sconti per scuole e no-profit?"
+            "answer": "Sì. Scrivici via email. Scuole e no-profit hanno un prezzo speciale.",
+            "question": "Offrite sconti per il settore educativo o le no-profit?"
           },
           {
-            "answer": "Sì. 14 giorni di garanzia soddisfatti o rimborsati su tutti i piani a pagamento. Se Rediacc non ti piace, rimborso integrale, senza domande.",
-            "question": "C'è una garanzia soddisfatti o rimborsati?"
+            "answer": "Se disdici durante la prova di 14 giorni non ti viene addebitato nulla. Se disdici un piano a pagamento in seguito, mantieni le sue funzionalità fino alla fine del periodo di fatturazione, poi il tuo account torna al piano gratuito Community. I tuoi repository continuano a funzionare per tutto il tempo.",
+            "question": "Cosa succede se disdico?"
           }
         ]
       },
@@ -2754,7 +2683,7 @@
           "startFree": "Inizia gratis",
           "talkToSales": "Parla con il team sales"
         },
-        "description": "5 minuti per l'installazione. Community è gratis per sempre.",
+        "description": "Installazione in 5 minuti. Inizia la tua prova gratuita di 14 giorni.",
         "heading": "Proteggi la tua infrastruttura"
       },
       "hero": {
@@ -2762,35 +2691,34 @@
         "title": "Fatto per il vero lavoro"
       },
       "meta": {
-        "description": "Scegli il piano perfetto per la tua azienda. Tier community gratuito. Zero costi nascosti.",
+        "description": "Scegli il piano più adatto al tuo team. Ogni piano a pagamento inizia con una prova gratuita di 14 giorni. Zero costi nascosti.",
         "keywords": "prezzi, automazione infrastruttura, prezzi CI/CD, piani DevOps, esecuzione task",
         "title": "Tariffe | Fatto per il vero lavoro"
       },
       "plans": {
         "business": {
-          "description": "Configurazione esperta, backup in più regioni e ripristino garantito in 4 ore",
+          "description": "Repository più grandi, gestione avanzata e una promessa di ripristino in 4 ore.",
           "features": [
             "Tutto il piano Professional +",
-            "10 licenze Floating",
-            "Repository illimitati",
+            "1 licenza Floating",
+            "500 GB a repository",
             "5.000+ configurazioni server al mese",
-            "Supporto all'implementazione incluso (Offerta di lancio)",
             "Storage geo-ridondante (3 regioni)",
             "Protezione continua dei dati",
             "SLA di ripristino in 4 ore",
             "Controllo accessi basato sui ruoli e log di audit",
             "Reportistica conforme alle normative",
-            "Supporto telefonico e spazi di collaborazione"
+            "Supporto telefonico e workspace collaborativi"
           ],
           "name": "Aziendale"
         },
         "community": {
-          "description": "Backup e ripristino fino a 2 server, gratis per sempre",
+          "description": "Il piano gratuito di riserva. Mantiene attiva una macchina dopo la fine di una prova o di un piano a pagamento.",
           "features": [
             "Utenti e team senza limiti",
             "Repository illimitati",
             "100 configurazioni server al mese (1 licenza Floating per configurazione)",
-            "2 licenze Floating",
+            "1 licenza Floating",
             "Backup e ripristino",
             "Pianificazione manuale",
             "Accesso alla community Slack",
@@ -2799,10 +2727,10 @@
           "name": "Comunità"
         },
         "enterprise": {
-          "description": "Supporto dedicato e condizioni personalizzate per ambienti complessi su larga scala",
+          "description": "Distribuzioni multi-macchina, vendute tramite partner. Supporto dedicato e condizioni personalizzate.",
           "features": [
             "Tutto il piano Business +",
-            "25+ licenze Floating",
+            "Licenze Floating multi-macchina",
             "Repository illimitati",
             "15.000+ configurazioni server al mese",
             "SLA personalizzato con tempi di ripristino garantiti",
@@ -2817,11 +2745,11 @@
           "name": "Enterprise"
         },
         "professional": {
-          "description": "Automazione e pianificazione per team in crescita",
+          "description": "Automazione e pianificazione per una macchina di produzione",
           "features": [
             "Tutto il piano Community +",
-            "3 licenze Floating",
-            "Repository illimitati",
+            "1 licenza Floating",
+            "100 GB a repository",
             "2.000+ configurazioni server al mese",
             "Pianificazione automatica",
             "Ripristino da qualsiasi momento nelle ultime 24 ore",
@@ -3009,7 +2937,7 @@
         "bestValue": "Miglior valore",
         "billingToggle": {
           "annual": "Annuale",
-          "annualSavings": "Risparmi il 17%, 2 mesi gratis",
+          "annualSavings": "Risparmia il 15%",
           "ariaLabel": "Periodo di fatturazione",
           "monthly": "Mensile"
         },
@@ -3018,41 +2946,32 @@
         "contactUsSub": "Limiti e condizioni personalizzati",
         "cta": {
           "business": {
-            "guarantee": "Rimborso garantito",
             "launchBadge": "Offerta di lancio limitata",
-            "primary": "Prenota il setup",
+            "primary": "Inizia gratis",
             "secondary": "Parla con il team",
             "valueNote": "Include $9.999 di credito setup"
           },
           "community": {
-            "note": "Senza carta di credito",
+            "note": "Piano gratuito di riserva",
             "primary": "Prova Rediacc",
             "secondary": "Scopri cosa è incluso"
           },
           "enterprise": {
-            "guarantee": "Rimborso garantito",
-            "primary": "Richiedi una demo",
+            "primary": "Contatta il team vendite",
             "secondary": "Parla con il team",
             "subtext": "SLA su misura · Supporto dedicato"
           },
           "professional": {
-            "guarantee": "Rimborso garantito",
-            "primary": "Attiva Professional",
+            "primary": "Inizia gratis",
             "secondary": "Parla con il team"
           }
-        },
-        "designPartner": {
-          "badge": "GRATIS per i Design Partner",
-          "cta": "Richiedi Design Partner →",
-          "period": "Per sempre · Senza carta",
-          "price": "GRATIS"
         },
         "edgeLimitsNote": "Limiti per il canale edge. Il canale stable ha metà di questi limiti.",
         "foreverFree": "Sempre gratuito",
         "getStarted": "Installa ora",
         "guarantees": {
           "cancelAnytime": "Disdici quando vuoi",
-          "moneyBack": "Rimborso garantito entro 14 giorni",
+          "freeTrial": "Prova gratuita di 14 giorni",
           "noContracts": "Zero contratti a lungo termine"
         },
         "keyBenefits": "I vantaggi principali",
@@ -3061,6 +2980,7 @@
         "monthOrYear": "al mese o {{price}} all'anno",
         "popular": "Più scelto",
         "startingAt": "*A partire da",
+        "startTrial": "Inizia la prova gratuita di 14 giorni",
         "taxDisclaimer": "I prezzi sono in USD e non includono imposte e tasse locali.",
         "whatsIncluded": "Cosa è incluso:"
       }
@@ -3092,14 +3012,14 @@
         },
         "childrenPrivacy": {
           "content": [
-            "I nostri servizi non sono destinati a persone di eta inferiore ai 16 anni. Non raccogliamo consapevolmente dati personali di minori. Qualora venissimo a conoscenza di aver raccolto dati relativi a un minore di 16 anni, provvederemo tempestivamente alla loro cancellazione."
+            "I nostri servizi non sono destinati a persone di età inferiore ai 16 anni. Non raccogliamo consapevolmente dati personali di minori. Qualora venissimo a conoscenza di aver raccolto dati relativi a un minore di 16 anni, provvederemo tempestivamente alla loro cancellazione."
           ],
           "id": "children-privacy",
           "title": "9. Privacy dei Minori"
         },
         "dataRetention": {
           "content": [
-            "I moduli di contatto vengono conservati nel nostro sistema e-mail per il tempo necessario a rispondere alla vostra richiesta e mantenere la corrispondenza. I dati dell'account vengono conservati per tutta la durata dell'account attivo e per 30 giorni successivi alla sua cancellazione, per consentirne il ripristino. I documenti di fatturazione vengono conservati in conformita alle leggi fiscali e contabili applicabili.",
+            "I moduli di contatto vengono conservati nel nostro sistema e-mail per il tempo necessario a rispondere alla vostra richiesta e mantenere la corrispondenza. I dati dell'account vengono conservati per tutta la durata dell'account attivo e per 30 giorni successivi alla sua cancellazione, per consentirne il ripristino. I documenti di fatturazione vengono conservati in conformità alle leggi fiscali e contabili applicabili.",
             "I dati analitici di Plausible sono aggregati e non contengono dati personali, pertanto le politiche di conservazione non vi si applicano.",
             "I dati di telemetria del prodotto vengono conservati come tracce grezze per un massimo di 90 giorni a fini di debug. Le metriche di telemetria aggregate vengono conservate per un massimo di 12 mesi e successivamente cancellate. Per ulteriori dettagli, consultate la nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>."
           ],
@@ -3122,7 +3042,7 @@
             "<strong>Fornitori di servizi</strong> che assistono nella gestione della nostra piattaforma (ad es., hosting cloud, elaborazione dei pagamenti), vincolati da obblighi contrattuali a proteggere i vostri dati",
             "<strong>Plausible Analytics</strong> per analisi del sito web senza cookie e anonimizzate (nessun dato personale viene condiviso)",
             "<strong>Elaborazione della telemetria</strong>: i dati anonimi di utilizzo del prodotto vengono trasmessi al nostro endpoint di telemetria all'interno dell'UE per l'aggregazione e l'analisi. Nessun dato di telemetria viene condiviso con terzi (consultate la nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>)",
-            "<strong>Autorita di polizia giudiziaria</strong> se richiesto dalla legge, da normative o da un valido procedimento legale"
+            "<strong>Autorità di polizia giudiziaria</strong> se richiesto dalla legge, da normative o da un valido procedimento legale"
           ],
           "title": "4. Condivisione dei Dati e Terze Parti"
         },
@@ -3172,7 +3092,7 @@
             },
             "productTelemetry": {
               "content": [
-                "I nostri prodotti software (Applicazione Web, CLI, Middleware e Bridge) raccolgono dati di telemetria d'uso anonimi per migliorare la qualità, le prestazioni e l'affidabilità del prodotto. I dati di telemetria includono informazioni tecniche quali la versione dell'applicazione, il sistema operativo, il tipo di browser, le metriche di prestazione, i pattern di utilizzo delle funzionalità e le segnalazioni di errori. Gli identificatori personali vengono anonimizzati prima della raccolta: gli indirizzi e-mail sono ridotti al solo dominio, gli ID utente sono sottoposti a hash e troncati, e password o credenziali non vengono mai raccolte.",
+                "I nostri prodotti software (Applicazione Web, CLI, Middleware e Renet Agent) raccolgono dati di telemetria d'uso anonimi per migliorare la qualità, le prestazioni e l'affidabilità del prodotto. I dati di telemetria includono informazioni tecniche quali la versione dell'applicazione, il sistema operativo, il tipo di browser, le metriche di prestazione, i pattern di utilizzo delle funzionalità e le segnalazioni di errori. Gli identificatori personali vengono anonimizzati prima della raccolta: gli indirizzi e-mail sono ridotti al solo dominio, gli ID utente sono sottoposti a hash e troncati, e password o credenziali non vengono mai raccolte.",
                 "La telemetria è abilitata per impostazione predefinita nell'Applicazione Web e nella CLI e può essere disabilitata in tutti i prodotti. Per informazioni complete su cosa raccoglie ciascun prodotto e su come disattivarla, consultate la nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>."
               ],
               "title": "2.5 Dati di Telemetria del Prodotto"
@@ -3207,8 +3127,8 @@
             "<strong>Accesso:</strong> Richiedere una copia dei dati personali che conserviamo su di voi",
             "<strong>Rettifica:</strong> Richiedere la correzione di dati inesatti o incompleti",
             "<strong>Cancellazione:</strong> Richiedere la cancellazione dei vostri dati personali",
-            "<strong>Portabilita:</strong> Richiedere una copia dei vostri dati in formato leggibile da macchina",
-            "<strong>Opposizione:</strong> Opporvi al trattamento dei vostri dati per specifiche finalita",
+            "<strong>Portabilità:</strong> Richiedere una copia dei vostri dati in formato leggibile da macchina",
+            "<strong>Opposizione:</strong> Opporvi al trattamento dei vostri dati per specifiche finalità",
             "<strong>Limitazione:</strong> Richiedere che limitiamo il trattamento dei vostri dati",
             "<strong>Disattivazione della telemetria:</strong> Disabilitare la telemetria del prodotto in qualsiasi momento utilizzando le procedure descritte nella nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>"
           ],
@@ -3296,8 +3216,8 @@
           "id": "non-refundable",
           "items": [
             "Abbonamenti cancellati dopo la finestra di 14 giorni per i nuovi abbonati",
-            "Addebiti basati sull'utilizzo (ad es., costi di eccedenza) per le risorse gia' consumate",
-            "Ore di servizi professionali gia' erogate e accettate",
+            "Addebiti basati sull'utilizzo (ad es., costi di eccedenza) per le risorse già consumate",
+            "Ore di servizi professionali già erogate e accettate",
             "Commissioni di riattivazione dell'account",
             "Addebiti derivanti dalla violazione dei <a href=\"terms-of-service\">Termini di Servizio</a> da parte dell'utente"
           ],
@@ -3312,7 +3232,7 @@
         },
         "platformSubscriptions": {
           "content": [
-            "Rediacc offre piu' livelli di abbonamento per la nostra piattaforma di automazione dell'infrastruttura. I seguenti termini si applicano agli abbonamenti a pagamento:"
+            "Rediacc offre più livelli di abbonamento per la nostra piattaforma di automazione dell'infrastruttura. I seguenti termini si applicano agli abbonamenti a pagamento:"
           ],
           "id": "platform-subscriptions",
           "subsections": {
@@ -3324,19 +3244,19 @@
             },
             "freeTier": {
               "content": [
-                "Il livello Community e' gratuito per sempre e non richiede informazioni di pagamento. Non e' previsto alcun rimborso in quanto non vi e' alcun addebito."
+                "Il livello Community è gratuito per sempre e non richiede informazioni di pagamento. Non è previsto alcun rimborso in quanto non vi è alcun addebito."
               ],
               "title": "2.1 Livello Gratuito"
             },
             "paidTiers": {
               "content": [
-                "Gli abbonamenti a pagamento (livelli Team, Business ed Enterprise, da $349 a $2.100+/mese) vengono fatturati in anticipo su base mensile o annuale. Poiche' questi servizi vengono erogati in forma digitale e le risorse vengono provisionate immediatamente al momento del pagamento, gli abbonamenti non sono generalmente rimborsabili.",
+                "Gli abbonamenti a pagamento (livelli Team, Business ed Enterprise, da $349 a $2.100+/mese) vengono fatturati in anticipo su base mensile o annuale. Poiché questi servizi vengono erogati in forma digitale e le risorse vengono provisionate immediatamente al momento del pagamento, gli abbonamenti non sono generalmente rimborsabili.",
                 "Tuttavia, sono previsti rimborsi nelle seguenti circostanze:"
               ],
               "items": [
-                "<strong>Primi 14 giorni:</strong> Se l'utente e' un nuovo abbonato e richiede un rimborso entro 14 giorni dal primo pagamento, verra' emesso un rimborso integrale. Questo si applica unicamente al primo abbonamento.",
-                "<strong>Interruzione del servizio:</strong> Se la piattaforma subisce un'interruzione prolungata (piu' di 48 ore consecutive) non causata da manutenzione programmata, e' possibile richiedere un credito proporzionale per il periodo interessato.",
-                "<strong>Errori di fatturazione:</strong> Se l'utente e' stato addebitato in modo errato (ad es., addebiti duplicati, livello errato), verra' emesso un rimborso integrale per l'addebito erroneo."
+                "<strong>Primi 14 giorni:</strong> Se l'utente è un nuovo abbonato e richiede un rimborso entro 14 giorni dal primo pagamento, verrà emesso un rimborso integrale. Questo si applica unicamente al primo abbonamento.",
+                "<strong>Interruzione del servizio:</strong> Se la piattaforma subisce un'interruzione prolungata (più di 48 ore consecutive) non causata da manutenzione programmata, è possibile richiedere un credito proporzionale per il periodo interessato.",
+                "<strong>Errori di fatturazione:</strong> Se l'utente è stato addebitato in modo errato (ad es., addebiti duplicati, livello errato), verrà emesso un rimborso integrale per l'addebito erroneo."
               ],
               "title": "2.2 Livelli a Pagamento"
             }
@@ -3349,16 +3269,16 @@
           ],
           "id": "professional-services",
           "items": [
-            "<strong>Prima dell'avvio del lavoro:</strong> rimborso integrale in caso di cancellazione prima che qualsiasi attivita' sia stata svolta",
-            "<strong>Durante il servizio:</strong> l'addebito riguardera' esclusivamente le ore lavorate. Le ore prepagate non utilizzate verranno rimborsate",
-            "<strong>Contestazioni sulla qualita':</strong> in caso di insoddisfazione per la qualita' del lavoro, ci contatti entro 7 giorni dalla consegna. Ci adopereremo in primo luogo per risolvere il problema; qualora non fosse possibile, potremo offrire un rimborso parziale a nostra discrezione",
+            "<strong>Prima dell'avvio del lavoro:</strong> rimborso integrale in caso di cancellazione prima che qualsiasi attività sia stata svolta",
+            "<strong>Durante il servizio:</strong> l'addebito riguarderà esclusivamente le ore lavorate. Le ore prepagate non utilizzate verranno rimborsate",
+            "<strong>Contestazioni sulla qualità:</strong> in caso di insoddisfazione per la qualità del lavoro, ci contatti entro 7 giorni dalla consegna. Ci adopereremo in primo luogo per risolvere il problema; qualora non fosse possibile, potremo offrire un rimborso parziale a nostra discrezione",
             "<strong>Impegno minimo:</strong> alcuni pacchetti di servizi prevedono un impegno minimo. La cancellazione prima del periodo minimo potrebbe comportare una penale di cancellazione come specificato nel contratto di servizio"
           ],
           "title": "3. Servizi Professionali"
         },
         "refundProcessing": {
           "content": [
-            "I rimborsi approvati verranno elaborati sul metodo di pagamento originale entro 10 giorni lavorativi. Il tempo effettivo affinche' il rimborso appaia sull'estratto conto dipende dal fornitore del servizio di pagamento e potrebbe richiedere ulteriori 5-10 giorni lavorativi.",
+            "I rimborsi approvati verranno elaborati sul metodo di pagamento originale entro 10 giorni lavorativi. Il tempo effettivo affinché il rimborso appaia sull'estratto conto dipende dal fornitore del servizio di pagamento e potrebbe richiedere ulteriori 5-10 giorni lavorativi.",
             "I rimborsi per abbonamenti annuali pagati tramite bonifico bancario potrebbero richiedere fino a 30 giorni lavorativi per essere elaborati."
           ],
           "id": "refund-processing",
@@ -5524,6 +5444,12 @@
               "description": "Clona la produzione. Lascia attaccare l'AI.",
               "slug": "ai-pentesting",
               "title": "Pentesting AI"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Fai il fork o sposta un cluster attivo, dati inclusi",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Mobilità dei Cluster Kubernetes"
             }
           ],
           "title": "Esplora Altre Soluzioni"
@@ -6419,6 +6345,12 @@
               "description": "Clona la produzione in 60 secondi",
               "slug": "environment-cloning",
               "title": "Clonazione degli Ambienti"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Fai il fork o sposta un cluster attivo, dati inclusi",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Mobilità dei Cluster Kubernetes"
             }
           ],
           "title": "Esplora Altre Soluzioni"
@@ -7411,6 +7343,12 @@
               "description": "Clona la produzione. Lascia che l'IA la attacchi.",
               "slug": "ai-pentesting",
               "title": "Pentesting AI"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Fai il fork o sposta un cluster attivo, dati inclusi",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Mobilità dei Cluster Kubernetes"
             }
           ],
           "title": "Esplora altre soluzioni"
@@ -7678,6 +7616,10 @@
             {
               "rediacc": "10 clone condividono blocchi via CoW (~12 GB di delta)",
               "traditional": "10 clone = 10x storage (2,4 TB)"
+            },
+            {
+              "rediacc": "Un namespace fa il fork in 1-5 secondi, come qualsiasi repo",
+              "traditional": "Mettere in staging un'app Kubernetes richiede di costruire un secondo cluster"
             }
           ],
           "title": "Perché i clone in 60 secondi sono possibili",
@@ -7916,6 +7858,12 @@
               "description": "Clona la produzione. Lascia che l'IA la attacchi.",
               "slug": "ai-pentesting",
               "title": "Pentesting AI"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Fai il fork o sposta un cluster attivo, dati inclusi",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Mobilità dei Cluster Kubernetes"
             }
           ],
           "title": "Esplora altre soluzioni"
@@ -8165,6 +8113,10 @@
             {
               "rediacc": "Controlli di integrità automatizzati: pass/fail con RTO/RPO esatti",
               "traditional": "Verifica manuale: giudizi soggettivi del tipo \"sembra giusto\""
+            },
+            {
+              "rediacc": "Fai il fork dell'intero cluster in 46 secondi ed esegui l'esercitazione sulla copia",
+              "traditional": "Esercitazione DR su Kubernetes: mantieni un secondo cluster sincronizzato, poi speri"
             }
           ],
           "title": "Perché il test DR tradizionale fallisce",
@@ -8928,6 +8880,12 @@
               "description": "Clona la produzione. Lascia che l'IA la attacchi.",
               "slug": "ai-pentesting",
               "title": "Pentesting AI"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Fai il fork o sposta un cluster attivo, dati inclusi",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Mobilità dei Cluster Kubernetes"
             }
           ],
           "title": "Esplora altre soluzioni"
@@ -9163,6 +9121,10 @@
             {
               "rediacc": "52 secondi per creare un clone identico alla produzione",
               "traditional": "Da 15 a 30 minuti per il provisioning di ogni nuovo ambiente"
+            },
+            {
+              "rediacc": "Fai il fork del cluster per il test, poi eliminalo. Le copie condividono lo storage.",
+              "traditional": "Un cluster Kubernetes di staging: un secondo set di nodi, pagato 24 ore su 24"
             }
           ],
           "title": "Copie complete vs. copy-on-write",
@@ -9400,6 +9362,12 @@
               "description": "Clona la produzione. Lascia che l'AI la attacchi.",
               "slug": "ai-pentesting",
               "title": "Pentesting AI"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Fai il fork o sposta un cluster attivo, dati inclusi",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Mobilità dei Cluster Kubernetes"
             }
           ],
           "title": "Esplora Altre Soluzioni"
@@ -9893,6 +9861,12 @@
               "description": "Clona la produzione. Lascia che l'AI la attacchi.",
               "slug": "ai-pentesting",
               "title": "Pentesting AI"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Fai il fork o sposta un cluster attivo, dati inclusi",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Mobilità dei Cluster Kubernetes"
             }
           ],
           "title": "Esplora Altre Soluzioni"
@@ -10207,6 +10181,413 @@
           ]
         }
       },
+      "kubernetesClusterMobility": {
+        "benefits": {
+          "items": [
+            {
+              "description": "Rediacc esegue k3s per te, oppure si collega a un cluster che hai già. I volumi viaggiano su ceph-csi RBD. I tuoi manifest restano tuoi.",
+              "icon": "check-circle",
+              "title": "Mantieni il tuo Kubernetes"
+            },
+            {
+              "description": "Fai il provisioning sui tuoi host KVM o su cloud come Linode con VLAN private. I pool di nodi tengono separati i nodi Ceph, ad alto uso di disco, dai nodi Kubernetes, ad alto uso di CPU.",
+              "icon": "arrow-right-circle",
+              "title": "Vera mobilità tra datacenter"
+            },
+            {
+              "description": "Un'app Kubernetes è un namespace. Fai il fork come per qualsiasi repo: 1-5 secondi, dati inclusi. Gli stessi comandi che già usi per i repo Docker.",
+              "icon": "git-branch",
+              "title": "Un'unica mentalità per tutto"
+            }
+          ],
+          "overline": "PERCHÉ È IMPORTANTE",
+          "title": "Mantieni il tuo Kubernetes. Guadagna mobilità."
+        },
+        "bottomCta": {
+          "command": "rdc cluster fork prod --tag staging",
+          "ctaText": "Inizia Gratis con Community",
+          "description": "Fai il fork, testa lo spostamento, poi migra sul serio. Inizia la tua prova gratuita di 14 giorni.",
+          "title": "Dai al tuo cluster una via d'uscita"
+        },
+        "comparison": {
+          "capabilityLabel": "Funzionalità",
+          "description": "Gli strumenti di backup fermano e ripristinano. Cluster API clona la forma senza i dati. Il mirroring RBD copia i volumi, non il cluster. Rediacc sposta tutto quanto.",
+          "features": [
+            {
+              "name": "Esegue il backup di app e volumi",
+              "refs": [4, 5, 0, 9, 0],
+              "values": ["check", "check", "cross", "Volumes only", "rediacc"]
+            },
+            {
+              "name": "Sposta un intero cluster con i suoi dati",
+              "refs": [6, 7, 8, 0, 0],
+              "values": ["Stop and restore", "Stop and restore", "Shape only", "cross", "rediacc"]
+            },
+            {
+              "name": "Fa il fork di un cluster attivo, dati inclusi",
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Clona una singola app (namespace) in pochi secondi",
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Copia i dati senza una riscrittura completa",
+              "refs": [0, 0, 0, 10, 0],
+              "values": ["cross", "cross", "cross", "Async copy", "rediacc"]
+            },
+            {
+              "name": "Cutover breve e misurato per uno spostamento pianificato",
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            }
+          ],
+          "overline": "IL DIVARIO",
+          "title": "Nessun altro sposta un cluster attivo con i suoi dati"
+        },
+        "explore": {
+          "solutions": [
+            {
+              "category": "multi-cloud",
+              "current": true,
+              "description": "Fai il fork o sposta un cluster attivo, dati inclusi",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Mobilità dei Cluster Kubernetes"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "La tua infrastruttura. La tua scelta. Sempre.",
+              "slug": "vendor-lock-in",
+              "title": "Libertà dal Vendor Lock-in"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Quando AWS va giù, tu no",
+              "slug": "cloud-outage-protection",
+              "title": "Protezione dalle Interruzioni Cloud"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Testa il tuo failover prima di averne bisogno",
+              "slug": "failover-testing",
+              "title": "Test di Failover"
+            },
+            {
+              "category": "encryption",
+              "description": "Migra senza mettere a rischio i tuoi dati",
+              "slug": "migration-safety",
+              "title": "Sicurezza della Migrazione"
+            },
+            {
+              "category": "dev-env",
+              "description": "Clona la produzione in 60 secondi",
+              "slug": "environment-cloning",
+              "title": "Clonazione dell'Ambiente"
+            },
+            {
+              "category": "backups",
+              "description": "Ripristino completo dell'ambiente in pochi minuti",
+              "slug": "instant-recovery",
+              "title": "Ripristino Istantaneo"
+            },
+            {
+              "category": "encryption",
+              "description": "Le tue chiavi. La tua crittografia. Nessuna eccezione.",
+              "slug": "encryption",
+              "title": "Crittografia che Controlli Tu"
+            }
+          ],
+          "title": "Esplora Altre Soluzioni"
+        },
+        "hero": {
+          "badge": "MULTI-CLOUD",
+          "differentiator": "Velero ripristina i backup. Cluster API clona le forme. Rediacc sposta il cluster attivo, dati inclusi.",
+          "primaryCta": "Inizia Gratis con Community",
+          "secondaryCta": "Guarda i numeri misurati →",
+          "subtitle": "Il tuo cluster si sposta come un unico insieme: nodi, configurazione e dati. Verso un'altra macchina o un altro datacenter. Il cutover si misura in secondi, non in un weekend.",
+          "title": "Fai il fork o sposta un cluster Kubernetes attivo"
+        },
+        "howItWorks": {
+          "cloneVisual": {
+            "arrow": {
+              "icon": "arrow-right-circle-arrow",
+              "label": "Fork",
+              "time": "46s"
+            },
+            "clone": {
+              "cardClass": "restored",
+              "containerCount": "Fork",
+              "services": [
+                {
+                  "name": "Nodes",
+                  "port": "2 (k3s + Ceph)"
+                },
+                {
+                  "name": "Namespaces",
+                  "port": "8 apps"
+                },
+                {
+                  "name": "Volumes",
+                  "port": "Ceph RBD clones"
+                },
+                {
+                  "name": "State",
+                  "port": "Own identity, new IPs"
+                }
+              ],
+              "size": "46s",
+              "status": "Running",
+              "title": "prod-staging (Datacenter B)"
+            },
+            "production": {
+              "containerCount": "Genitore",
+              "services": [
+                {
+                  "name": "Nodes",
+                  "port": "2 (k3s + Ceph)"
+                },
+                {
+                  "name": "Namespaces",
+                  "port": "8 apps"
+                },
+                {
+                  "name": "Volumes",
+                  "port": "Ceph RBD"
+                },
+                {
+                  "name": "State",
+                  "port": "Keeps running"
+                }
+              ],
+              "size": "Untouched",
+              "status": "Running",
+              "title": "prod (Datacenter A)"
+            }
+          },
+          "overline": "COME FUNZIONA",
+          "steps": [
+            {
+              "description": "Ogni nodo gira da un file immagine. Ogni volume è un'immagine Ceph RBD. Insieme formano l'intero cluster: app, configurazione e dati.",
+              "icon": "layers",
+              "title": "Immagini del cluster più volumi"
+            },
+            {
+              "description": "Un solo comando clona ogni immagine, copy-on-write. Nel nostro laboratorio un cluster a 2 nodi ha fatto il fork in 46 secondi. Il genitore continua a funzionare.",
+              "icon": "git-branch",
+              "title": "Fork sul posto"
+            },
+            {
+              "description": "Rediacc pre-copia mentre il cluster è in funzione. Poi lo ferma, invia il delta finale e lo riavvia sulla nuova macchina. Cutover misurato: 16 secondi.",
+              "icon": "arrow-right-circle",
+              "title": "Migra con un cutover breve"
+            }
+          ],
+          "title": "L'intero cluster è un unico insieme di file"
+        },
+        "meta": {
+          "description": "Fai il fork o sposta un cluster Kubernetes attivo, dati inclusi, verso un'altra macchina o datacenter. Cutover breve e misurato. Costruito su Ceph RBD e k3s.",
+          "keywords": "migrazione cluster kubernetes, fork del cluster, ceph rbd, k3s, mobilità tra datacenter, portabilità kubernetes",
+          "title": "Fork or Move a Kubernetes Cluster | Rediacc"
+        },
+        "problem": {
+          "description": "Kubernetes ha reso le tue app portabili. Il cluster in sé no. I dati vivono in un solo datacenter. Spostarlo significa un progetto di ricostruzione: nuovi nodi, nuovo storage, ripristino dal backup, ritestare tutto. Così la maggior parte dei team non si sposta mai. E il loro provider lo sa.",
+          "overline": "IL PROBLEMA",
+          "statCallouts": [
+            {
+              "number": "27%",
+              "ref": 1,
+              "source": "Flexera 2024 State of the Cloud Report",
+              "text": "della spesa cloud viene sprecata ogni anno"
+            },
+            {
+              "number": "17%",
+              "ref": 2,
+              "source": "Flexera 2025 State of the Cloud Report",
+              "text": "importo medio di sforamento del budget cloud da parte delle aziende"
+            },
+            {
+              "number": "$0.09/GB",
+              "ref": 3,
+              "source": "AWS/Azure/GCP Pricing 2024",
+              "text": "in commissioni per spostare i dati fuori, pensate apposta per rendere costoso andarsene"
+            }
+          ],
+          "timeline": {
+            "newLabel": "CON REDIACC",
+            "newSteps": ["Pre-copy", "16s cutover", "Live"],
+            "oldLabel": "IL VECCHIO METODO",
+            "oldSteps": [
+              {
+                "day": "Month 1",
+                "text": "Allestisci il nuovo cluster"
+              },
+              {
+                "day": "Month 2",
+                "text": "Ricostruisci manifest e secret"
+              },
+              {
+                "day": "Month 3",
+                "text": "Ripristina i volumi dal backup"
+              },
+              {
+                "day": "Month 4",
+                "text": "Ritesta ogni app"
+              },
+              {
+                "day": "Month 5+",
+                "text": "Fai il cutover e spera"
+              }
+            ]
+          },
+          "title": "Il tuo cluster resta bloccato dove lo hai creato"
+        },
+        "references": {
+          "disclaimer": "I tempi di fork e migrazione sono stati misurati end-to-end nel laboratorio di test KVM di Rediacc su un cluster a 2 nodi. La consistenza predefinita è crash-consistent, la stessa semantica di un ciclo di spegnimento e riaccensione. I workload si riavviano sulla destinazione durante il cutover di migrazione.",
+          "items": [
+            {
+              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"27% of cloud spend continues to be wasted.\"",
+              "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
+            },
+            {
+              "text": "Flexera, \"2025 State of the Cloud Report,\" 2025. \"With cloud budgets already exceeding limits by 17%, organizations are increasingly turning to managed service providers.\"",
+              "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
+            },
+            {
+              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
+              "url": "https://aws.amazon.com/s3/pricing/"
+            },
+            {
+              "text": "Velero backs up Kubernetes cluster resources and persistent volumes and restores them into a cluster.",
+              "url": "https://velero.io/docs/"
+            },
+            {
+              "text": "Kasten K10 provides backup and restore of Kubernetes applications, including application data.",
+              "url": "https://docs.kasten.io/"
+            },
+            {
+              "text": "Velero cluster migration restores a backup into a new cluster; workloads are recreated from the backup point, not moved live.",
+              "url": "https://velero.io/docs/main/migration-case/"
+            },
+            {
+              "text": "Kasten K10 migrates applications between clusters by exporting a restore point and importing it into the target cluster.",
+              "url": "https://docs.kasten.io/latest/usage/migration.html"
+            },
+            {
+              "text": "Cluster API's clusterctl move relocates Cluster API objects (the cluster's definition) to another management cluster; it does not move workload data.",
+              "url": "https://cluster-api.sigs.k8s.io/clusterctl/commands/move"
+            },
+            {
+              "text": "Ceph RBD mirroring replicates block device images between Ceph clusters; it covers volumes, not Kubernetes cluster state.",
+              "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
+            },
+            {
+              "text": "Ceph RBD mirroring is asynchronous, based on journaling or periodic snapshots, and is designed for disaster recovery.",
+              "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
+            }
+          ],
+          "label": "Sources & References"
+        },
+        "stats": [
+          {
+            "icon": "layers",
+            "label": "Whole 2-node cluster fork",
+            "number": "46s"
+          },
+          {
+            "icon": "clock",
+            "label": "Migrate cutover, measured",
+            "number": "16s"
+          },
+          {
+            "icon": "zap",
+            "label": "Namespace fork",
+            "number": "1-5s"
+          }
+        ],
+        "techDiff": {
+          "description": "Ogni nodo gira da un file immagine su btrfs. Ogni volume è un'immagine Ceph RBD. Copiare un cluster significa clonare quelle immagini, copy-on-write. Nessun export, nessuna conversione, nessun passaggio di ripristino. Ecco perché un fork richiede secondi, non mesi.",
+          "overline": "SOTTO IL COFANO",
+          "rows": [
+            {
+              "rediacc": "Immagini dei nodi e volumi si spostano come un unico insieme",
+              "traditional": "Gli strumenti di backup ripristinano in un cluster vuoto, pezzo per pezzo"
+            },
+            {
+              "rediacc": "I cloni Ceph RBD viaggiano insieme, copy-on-write",
+              "traditional": "I dati richiedono un prodotto di replica separato"
+            },
+            {
+              "rediacc": "Nel nostro laboratorio il fork di un cluster a 2 nodi ha richiesto 46 secondi. Il genitore continua a funzionare",
+              "traditional": "Clonare un cluster significa ri-provisioning e redeploy"
+            },
+            {
+              "rediacc": "Cutover misurato: 16 secondi. I workload si riavviano sulla destinazione",
+              "traditional": "I piani di cutover occupano un intero weekend"
+            }
+          ],
+          "title": "Perché un cluster può spostarsi come un file"
+        },
+        "techStrip": {
+          "label": "Runs the apps you already ship",
+          "note": "Database, CI/CD, CMS, monitoraggio, autenticazione, storage: se gira su Kubernetes, Rediacc può farne il fork e spostarlo, dati inclusi."
+        },
+        "terminal": {
+          "lines": [
+            {
+              "cmd": "rdc cluster fork prod",
+              "type": "command",
+              "value": "--tag staging"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "Clonazione delle immagini dei nodi (copy-on-write)...... completato",
+              "type": "check"
+            },
+            {
+              "text": "Clonazione dei volumi Ceph RBD.......................... completato",
+              "type": "check"
+            },
+            {
+              "text": "Riscrittura dell'identità dei nodi per i nuovi IP...... completato",
+              "type": "check"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "✓ Fork completato in 46s: prod-staging è attivo. Il genitore non è stato toccato.",
+              "type": "success"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "cmd": "rdc cluster migrate prod",
+              "type": "command",
+              "value": "--to fsn1-dc2"
+            },
+            {
+              "text": "Pre-copia mentre il cluster resta in funzione...... completato",
+              "type": "check"
+            },
+            {
+              "text": "Cutover: stop, delta finale, riavvio........... 16s",
+              "type": "check"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "Fork: 46s   Cutover di migrazione: 16s   Consistenza: crash-consistent",
+              "type": "summary"
+            }
+          ]
+        }
+      },
       "leadMagnetButton": {
         "buttonLabel": "Scarica il documento",
         "description": "Un PDF senza fronzoli scritto per CISO, CTO e ingegneri senior. Le inviamo il link via email così potrà ritrovarlo facilmente.",
@@ -10383,6 +10764,12 @@
               "description": "Clona la produzione. Lascia che l'AI la attacchi.",
               "slug": "ai-pentesting",
               "title": "Pentesting AI"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Fai il fork o sposta un cluster attivo, dati inclusi",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Mobilità dei Cluster Kubernetes"
             }
           ],
           "title": "Esplora Altre Soluzioni"
@@ -10640,6 +11027,10 @@
             {
               "rediacc": "Verifica checksum SHA-256 per repository dopo il trasferimento",
               "traditional": "Integrità presunta, nessuna verifica automatica"
+            },
+            {
+              "rediacc": "Fai prima il fork del cluster. Testa lo spostamento prima del cutover",
+              "traditional": "Le migrazioni di cluster richiedono una build parallela e un atto di fede"
             }
           ],
           "title": "Decifra-trasferisci-ri-cifra vs. migrazione a zero esposizione",
@@ -10880,6 +11271,12 @@
               "description": "Clona la produzione. Lascia che l'AI la attacchi.",
               "slug": "ai-pentesting",
               "title": "Pentesting AI"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Fai il fork o sposta un cluster attivo, dati inclusi",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Mobilità dei Cluster Kubernetes"
             }
           ],
           "title": "Esplora Altre Soluzioni"
@@ -11111,6 +11508,10 @@
             {
               "rediacc": "47 secondi, verifica automatica della parità con il flag --verify-parity",
               "traditional": "Giorni per il provisioning, nessuna verifica della parità"
+            },
+            {
+              "rediacc": "rdc cluster fork copies the running cluster, data included. 46 seconds in our lab",
+              "traditional": "Un cluster di staging costruito dallo stesso YAML si discosta comunque dalla produzione"
             }
           ],
           "title": "Approssimazione vs. clonazione esatta",
@@ -11354,6 +11755,12 @@
               "description": "Clona la produzione. Lascia che l'AI la attacchi.",
               "slug": "ai-pentesting",
               "title": "Pentesting AI"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Fai il fork o sposta un cluster attivo, dati inclusi",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Mobilità dei Cluster Kubernetes"
             }
           ],
           "title": "Esplora Altre Soluzioni"
@@ -11510,7 +11917,7 @@
             },
             {
               "text": "Splunk & Oxford Economics, \"The Hidden Costs of Downtime\", giugno 2024. \"Ogni minuto di inattività costa $9.000, ovvero $540.000 all'ora.\"",
-              "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
+              "url": "https://www.splunk.com/en_us/blog/ciò-office/cost-of-downtime-from-global-executives.html"
             },
             {
               "text": "Cybereason, \"Ransomware Attacks and the True Cost to Business 2022\", 2022. \"L'80% delle organizzazioni che hanno pagato è stato colpito una seconda volta da ransomware, con il 68% che afferma che il secondo attacco è avvenuto meno di un mese dopo e con richieste di riscatto più elevate.\"",
@@ -11706,7 +12113,7 @@
               "title": "Registro audit completo"
             }
           ],
-          "overline": "PERCHE' CONTA",
+          "overline": "PERCHÉ CONTA",
           "title": "Cosa ottieni"
         },
         "bottomCta": {
@@ -12249,7 +12656,7 @@
               "title": "Rollback immediato"
             }
           ],
-          "overline": "PERCHE' CONTA",
+          "overline": "PERCHÉ CONTA",
           "title": "Cosa ottieni"
         },
         "bottomCta": {
@@ -12547,7 +12954,7 @@
             },
             {
               "text": "Splunk & Oxford Economics, \"The Hidden Costs of Downtime\", giugno 2024. \"Ogni minuto di downtime costa $9.000 o $540.000 all'ora.\"",
-              "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
+              "url": "https://www.splunk.com/en_us/blog/ciò-office/cost-of-downtime-from-global-executives.html"
             },
             {
               "text": "Veeam Virtual Lab crea ambienti di rete isolati per i test SureBackup senza impattare le reti di produzione.",
@@ -12701,7 +13108,7 @@
               "type": "spacer"
             },
             {
-              "cmd": "rdc term connect -m patch-test-ubuntu-24",
+              "cmd": "rdc term connect patch-test-ubuntu-24",
               "flag": "-c",
               "prompt": "$",
               "type": "command",
@@ -12763,7 +13170,7 @@
               "title": "Potere contrattuale"
             }
           ],
-          "overline": "PERCHE' CONTA",
+          "overline": "PERCHÉ CONTA",
           "title": "Cosa ottieni"
         },
         "bottomCta": {
@@ -12900,6 +13307,12 @@
               "description": "Clona la produzione. Lascia che l'IA la attacchi.",
               "slug": "ai-pentesting",
               "title": "Pentesting con IA"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Fai il fork o sposta un cluster attivo, dati inclusi",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Mobilità dei Cluster Kubernetes"
             }
           ],
           "title": "Esplora Altre Soluzioni"
@@ -13149,6 +13562,10 @@
             {
               "rediacc": "Cloud-agnostico: gli stessi comandi rdc funzionano su AWS, Hetzner e bare metal",
               "traditional": "Richiede tooling specifico del cloud: riscritture Terraform, modifiche API"
+            },
+            {
+              "rediacc": "rdc cluster migrate moves the running cluster, data included",
+              "traditional": "I cluster Kubernetes vengono ricostruiti a mano presso il nuovo provider"
             }
           ],
           "title": "Perché la migrazione richiede minuti, non mesi"
@@ -13228,7 +13645,7 @@
               "title": "Verifica completa"
             }
           ],
-          "overline": "PERCHE' CONTA",
+          "overline": "PERCHÉ CONTA",
           "title": "Cosa ottieni"
         },
         "bottomCta": {
@@ -13624,6 +14041,13 @@
         }
       }
     },
+    "solutionsIndex": {
+      "meta": {
+        "description": "Tutte le soluzioni Rediacc: recupero da ransomware, mobilità multi-cloud, portabilità Kubernetes, backup verificati, crittografia e ambienti di sviluppo veloci.",
+        "keywords": "soluzioni Rediacc, recupero da ransomware, multi-cloud, mobilità dei cluster Kubernetes, backup verificati, controllo della crittografia, ambienti di sviluppo",
+        "title": "Solutions - Business Continuity Software | Rediacc"
+      }
+    },
     "telemetryPolicy": {
       "contact": {
         "description": "Per domande sulle nostre pratiche di telemetria o per assistenza nella disattivazione, ci contatti all'indirizzo <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>.",
@@ -13634,7 +14058,7 @@
         "title": "Le Nostre Pratiche di Telemetria"
       },
       "meta": {
-        "description": "Dati di telemetria raccolti dai prodotti Rediacc, finalita', modalita' di elaborazione e come disattivarla. Copre Web, CLI, Middleware e Bridge.",
+        "description": "Dati di telemetria raccolti dai prodotti Rediacc, finalità, modalità di elaborazione e come disattivarla. Copre Web, CLI, Middleware e Renet Agent.",
         "keywords": "informativa sulla telemetria, raccolta dati, OpenTelemetry, opt-out, privacy, GDPR, Rediacc",
         "title": "Informativa sulla Telemetria - Raccolta Dati | Rediacc"
       },
@@ -13644,41 +14068,41 @@
       "sections": {
         "bridge": {
           "content": [
-            "Il Rediacc Bridge (Renet) utilizza OpenTelemetry con esportazione OTLP compressa con gzip. La telemetria viene trasmessa a <code>rediacc.com</code> in batch (massimo 10 span, svuotati ogni 5 secondi)."
+            "Il Rediacc Renet Agent utilizza OpenTelemetry con esportazione OTLP compressa con gzip. La telemetria viene trasmessa a <code>rediacc.com</code> in batch (massimo 10 span, svuotati ogni 5 secondi)."
           ],
           "id": "bridge",
           "subsections": {
             "bridgeDataCollected": {
-              "content": ["Il Bridge raccoglie le seguenti categorie di dati:"],
+              "content": ["Il Renet Agent raccoglie le seguenti categorie di dati:"],
               "items": [
-                "<strong>Operazioni in coda:</strong> ID del task, livello di priorita', tipo di operazione, durata dell'esecuzione, stato di successo o errore",
+                "<strong>Operazioni in coda:</strong> ID del task, livello di priorità, tipo di operazione, durata dell'esecuzione, stato di successo o errore",
                 "<strong>Operazioni SSH:</strong> host di destinazione, nome utente, numero di porta, codice di uscita, durata dell'esecuzione (nessun contenuto del comando o output viene raccolto)",
                 "<strong>Chiamate API:</strong> nome della procedura, durata della richiesta",
                 "<strong>Operazioni Vault:</strong> tipo e durata dell'operazione (nessun valore segreto, chiave o contenuto del vault viene raccolto)",
-                "<strong>Ciclo di vita del Bridge:</strong> eventi di avvio, arresto e riconnessione",
+                "<strong>Ciclo di vita del Renet Agent:</strong> eventi di avvio, arresto e riconnessione",
                 "<strong>Profilazione delle performance:</strong> campioni di utilizzo della CPU e profili di allocazione della memoria, raccolti automaticamente e inviati al nostro endpoint di profilazione"
               ],
               "title": "7.1 Dati Raccolti"
             },
             "bridgeOptOut": {
               "content": [
-                "Impostare la variabile d'ambiente <code>REDIACC_TELEMETRY_DISABLED=1</code> per disabilitare la telemetria del Bridge (inclusa la profilazione)."
+                "Impostare la variabile d'ambiente <code>REDIACC_TELEMETRY_DISABLED=1</code> per disabilitare la telemetria del Renet Agent (inclusa la profilazione)."
               ],
               "title": "7.2 Come Disattivare la Telemetria"
             }
           },
-          "title": "7. Telemetria del Bridge (Renet)"
+          "title": "7. Telemetria del Renet Agent"
         },
         "ccpa": {
           "content": [
-            "Se l'utente e' residente in California, si applicano le seguenti informative aggiuntive ai sensi del California Consumer Privacy Act (CCPA) come modificato dal California Privacy Rights Act (CPRA):"
+            "Se l'utente è residente in California, si applicano le seguenti informative aggiuntive ai sensi del California Consumer Privacy Act (CCPA) come modificato dal California Privacy Rights Act (CPRA):"
           ],
           "id": "ccpa",
           "items": [
-            "<strong>Categorie di informazioni raccolte:</strong> attivita' su Internet o su reti elettroniche (tipo di browser, dati di interazione, log degli errori), identificatori del dispositivo (anonimizzati), dati di geolocalizzazione (solo a livello di paese, derivati dall'indirizzo IP che non viene archiviato)",
-            "<strong>Finalita':</strong> miglioramento e mantenimento della qualita' del servizio, debug, monitoraggio delle performance e sicurezza",
-            "<strong>Vendita/Condivisione:</strong> non vendiamo ne' condividiamo i dati di telemetria come definito dal CCPA/CPRA",
-            "<strong>Diritto all'opt-out:</strong> utilizzi i meccanismi di opt-out specifici del prodotto descritti nelle sezioni 4-7 sopra. Rispettiamo altresi' il segnale Global Privacy Control (GPC) nella nostra Web Application."
+            "<strong>Categorie di informazioni raccolte:</strong> attività su Internet o su reti elettroniche (tipo di browser, dati di interazione, log degli errori), identificatori del dispositivo (anonimizzati), dati di geolocalizzazione (solo a livello di paese, derivati dall'indirizzo IP che non viene archiviato)",
+            "<strong>Finalità:</strong> miglioramento e mantenimento della qualità del servizio, debug, monitoraggio delle performance e sicurezza",
+            "<strong>Vendita/Condivisione:</strong> non vendiamo né condividiamo i dati di telemetria come definito dal CCPA/CPRA",
+            "<strong>Diritto all'opt-out:</strong> utilizzi i meccanismi di opt-out specifici del prodotto descritti nelle sezioni 4-7 sopra. Rispettiamo altresì il segnale Global Privacy Control (GPC) nella nostra Web Application."
           ],
           "title": "11. Residenti in California (CCPA/CPRA)"
         },
@@ -13710,12 +14134,12 @@
             },
             "cliOptOut": {
               "content": [
-                "E' possibile disabilitare la telemetria della CLI (inclusa la profilazione) con uno dei seguenti metodi:"
+                "È possibile disabilitare la telemetria della CLI (inclusa la profilazione) con uno dei seguenti metodi:"
               ],
               "items": [
                 "Impostare la variabile d'ambiente <code>REDIACC_TELEMETRY_DISABLED=1</code>",
                 "Impostare <code>telemetryEnabled: false</code> nel file di configurazione della CLI",
-                "La telemetria e' <strong>automaticamente disabilitata</strong> negli ambienti CI (rilevata tramite la variabile d'ambiente <code>CI</code>)"
+                "La telemetria è <strong>automaticamente disabilitata</strong> negli ambienti CI (rilevata tramite la variabile d'ambiente <code>CI</code>)"
               ],
               "title": "5.2 Come Disattivare la Telemetria"
             }
@@ -13728,8 +14152,8 @@
           ],
           "id": "data-processing",
           "items": [
-            "<strong>Cifratura:</strong> tutti i dati vengono cifrati in transito tramite TLS. Il Bridge utilizza inoltre la compressione gzip.",
-            "<strong>Conservazione:</strong> le tracce di telemetria grezze vengono archiviate per un massimo di 90 giorni per le attivita' di debug e le indagini sugli incidenti. Le metriche aggregate vengono conservate per un massimo di 12 mesi e successivamente eliminate.",
+            "<strong>Cifratura:</strong> tutti i dati vengono cifrati in transito tramite TLS. Il Renet Agent utilizza inoltre la compressione gzip.",
+            "<strong>Conservazione:</strong> le tracce di telemetria grezze vengono archiviate per un massimo di 90 giorni per le attività di debug e le indagini sugli incidenti. Le metriche aggregate vengono conservate per un massimo di 12 mesi e successivamente eliminate.",
             "<strong>Accesso:</strong> i dati di telemetria sono accessibili solo al personale tecnico e operativo di Rediacc su base need-to-know.",
             "<strong>Nessuna condivisione con terze parti:</strong> i dati di telemetria non vengono condivisi, venduti o resi accessibili a terze parti.",
             "<strong>Infrastruttura:</strong> tutti i dati di telemetria vengono elaborati e archiviati su infrastruttura situata all'interno dell'Unione Europea."
@@ -13738,15 +14162,15 @@
         },
         "internationalTransfers": {
           "content": [
-            "I dati di telemetria vengono elaborati e archiviati esclusivamente su server situati nell'Unione Europea. Nell'improbabile eventualita' in cui i dati di telemetria debbano essere trasferiti al di fuori dell'UE/SEE (ad es., per il disaster recovery), saranno adottate adeguate misure di salvaguardia, incluse le Clausole Contrattuali Standard (SCC) approvate dalla Commissione Europea."
+            "I dati di telemetria vengono elaborati e archiviati esclusivamente su server situati nell'Unione Europea. Nell'improbabile eventualità in cui i dati di telemetria debbano essere trasferiti al di fuori dell'UE/SEE (ad es., per il disaster recovery), saranno adottate adeguate misure di salvaguardia, incluse le Clausole Contrattuali Standard (SCC) approvate dalla Commissione Europea."
           ],
           "id": "international-transfers",
           "title": "9. Trasferimenti Internazionali di Dati"
         },
         "introduction": {
           "content": [
-            "I prodotti software Rediacc raccolgono telemetria di utilizzo anonimizzata per aiutarci a migliorare la qualita' del prodotto, diagnosticare problemi e capire come vengono utilizzati i nostri strumenti. La presente Informativa sulla Telemetria descrive esattamente quali dati vengono raccolti, perche', come vengono elaborati e come e' possibile disattivarla.",
-            "La presente informativa riguarda quattro prodotti: la <strong>Rediacc Web Application</strong>, la <strong>Rediacc CLI</strong>, il <strong>Rediacc Middleware</strong> e il <strong>Rediacc Bridge (Renet)</strong>. Le analisi del sito web (Plausible) sono trattate separatamente nella nostra <a href=\"privacy-policy\">Informativa sulla Privacy</a> e nella nostra <a href=\"cookie-policy\">Informativa sui Cookie</a>."
+            "I prodotti software Rediacc raccolgono telemetria di utilizzo anonimizzata per aiutarci a migliorare la qualità del prodotto, diagnosticare problemi e capire come vengono utilizzati i nostri strumenti. La presente Informativa sulla Telemetria descrive esattamente quali dati vengono raccolti, perché, come vengono elaborati e come è possibile disattivarla.",
+            "La presente informativa riguarda quattro prodotti: la <strong>Rediacc Web Application</strong>, la <strong>Rediacc CLI</strong>, il <strong>Rediacc Middleware</strong> e il <strong>Rediacc Renet Agent</strong>. Le analisi del sito web (Plausible) sono trattate separatamente nella nostra <a href=\"privacy-policy\">Informativa sulla Privacy</a> e nella nostra <a href=\"cookie-policy\">Informativa sui Cookie</a>."
           ],
           "id": "introduction",
           "title": "1. Introduzione"
@@ -13754,8 +14178,8 @@
         "legalBasis": {
           "content": [
             "Ai sensi del Regolamento Generale sulla Protezione dei Dati dell'UE (GDPR) e della Direttiva ePrivacy, la base giuridica per la raccolta di telemetria dipende dal contesto del prodotto:",
-            "Per la <strong>Web Application</strong> (basata su browser): la telemetria viene raccolta sulla base del <strong>legittimo interesse</strong> (GDPR Art. 6(1)(f)) ai fini del mantenimento e del miglioramento della qualita' del servizio. L'utente puo' disattivarla in qualsiasi momento.",
-            "Per la <strong>CLI, il Middleware e il Bridge</strong> (installati sull'infrastruttura dell'utente): la telemetria viene raccolta sulla base del <strong>legittimo interesse</strong> con chiari meccanismi di opt-out. E' possibile disabilitare la telemetria prima che vengano trasmessi dati."
+            "Per la <strong>Web Application</strong> (basata su browser): la telemetria viene raccolta sulla base del <strong>legittimo interesse</strong> (GDPR Art. 6(1)(f)) ai fini del mantenimento e del miglioramento della qualità del servizio. L'utente può disattivarla in qualsiasi momento.",
+            "Per la <strong>CLI, il Middleware e il Bridge</strong> (installati sull'infrastruttura dell'utente): la telemetria viene raccolta sulla base del <strong>legittimo interesse</strong> con chiari meccanismi di opt-out. È possibile disabilitare la telemetria prima che vengano trasmessi dati."
           ],
           "id": "legal-basis",
           "title": "3. Base Giuridica per la Raccolta"
@@ -13765,7 +14189,7 @@
           "id": "principles",
           "items": [
             "<strong>Privacy by design:</strong> gli identificatori personali vengono anonimizzati prima della trasmissione. Gli indirizzi email vengono ridotti al solo dominio, gli ID utente vengono sottoposti ad hashing (SHA-256) e troncati; password e segreti non vengono mai raccolti.",
-            "<strong>Raccolta minimale:</strong> raccogliamo solo cio' che e' necessario per migliorare la qualita' del prodotto e diagnosticare problemi. Non raccogliamo contenuti di file, contenuti di database, risultati di query o dati aziendali.",
+            "<strong>Raccolta minimale:</strong> raccogliamo solo ciò che è necessario per migliorare la qualità del prodotto e diagnosticare problemi. Non raccogliamo contenuti di file, contenuti di database, risultati di query o dati aziendali.",
             "<strong>Trasparenza:</strong> la presente informativa elenca ogni categoria di dati raccolta da ciascun prodotto. Non esistono flussi di dati nascosti.",
             "<strong>Controllo dell'utente:</strong> ogni prodotto fornisce un meccanismo per disabilitare completamente la telemetria. La disattivazione viene rispettata immediatamente e in modo completo.",
             "<strong>Aggregazione:</strong> i dati di telemetria vengono analizzati in forma aggregata. Non costruiamo profili individuali degli utenti a partire dalla telemetria."
@@ -13774,7 +14198,7 @@
         },
         "yourRights": {
           "content": [
-            "Poiche' i nostri dati di telemetria sono anonimizzati e aggregati, in generale non costituiscono dati personali ai sensi del GDPR. Tuttavia, nella misura in cui qualsiasi dato di telemetria possa essere collegato all'utente personalmente, egli ha il diritto di:"
+            "Poiché i nostri dati di telemetria sono anonimizzati e aggregati, in generale non costituiscono dati personali ai sensi del GDPR. Tuttavia, nella misura in cui qualsiasi dato di telemetria possa essere collegato all'utente personalmente, egli ha il diritto di:"
           ],
           "content2": [
             "Per esercitare qualsiasi di questi diritti, ci contatti all'indirizzo <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>. Risponderemo entro 30 giorni."
@@ -13813,8 +14237,8 @@
       "sections": {
         "acceptance": {
           "content": [
-            "Accedendo o utilizzando qualsiasi parte dei Servizi, incluso il download della CLI, l'installazione del Bridge su un Dispositivo, la creazione di un Account o l'utilizzo della Piattaforma, accettate di essere vincolati dai presenti Termini di Servizio (\"Termini\"). Se utilizzate i Servizi per conto di un'organizzazione, dichiarate e garantite di avere l'autorita di vincolare tale organizzazione ai presenti Termini; in tal caso, i riferimenti a \"voi\" o \"Cliente\" comprendono tale organizzazione.",
-            "Se non accettate i presenti Termini, non potete accedere ai Servizi ne utilizzarli. I presenti Termini costituiscono un accordo legalmente vincolante tra voi e Rediacc OÜ (codice registro 17363830), societa registrata in Estonia con sede legale in Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estonia (\"Rediacc\", \"noi\", \"ci\" o \"nostro\")."
+            "Accedendo o utilizzando qualsiasi parte dei Servizi, incluso il download della CLI, l'installazione del Renet Agent su un Dispositivo, la creazione di un Account o l'utilizzo della Piattaforma, accettate di essere vincolati dai presenti Termini di Servizio (\"Termini\"). Se utilizzate i Servizi per conto di un'organizzazione, dichiarate e garantite di avere l'autorita di vincolare tale organizzazione ai presenti Termini; in tal caso, i riferimenti a \"voi\" o \"Cliente\" comprendono tale organizzazione.",
+            "Se non accettate i presenti Termini, non potete accedere ai Servizi ne utilizzarli. I presenti Termini costituiscono un accordo legalmente vincolante tra voi e Rediacc OÜ (codice registro 17363830), società registrata in Estonia con sede legale in Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estonia (\"Rediacc\", \"noi\", \"ci\" o \"nostro\")."
           ],
           "id": "acceptance",
           "title": "2. Accettazione dei Termini"
@@ -13824,12 +14248,12 @@
             "Per accedere alla Piattaforma e gestire gli Abbonamenti e necessario creare un Account. Accettate di fornire informazioni accurate, aggiornate e complete durante la registrazione e di mantenerle aggiornate. Siete gli unici responsabili di:"
           ],
           "content2": [
-            "Siete tenuti a notificarci immediatamente all'indirizzo <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> qualora sospettiate un accesso non autorizzato al vostro Account. Ci riserviamo il diritto di sospendere o cancellare gli Account rimasti inattivi per piu di dodici (12) mesi o che riteniamo ragionevolmente vengano utilizzati in violazione dei presenti Termini."
+            "Siete tenuti a notificarci immediatamente all'indirizzo <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> qualora sospettiate un accesso non autorizzato al vostro Account. Ci riserviamo il diritto di sospendere o cancellare gli Account rimasti inattivi per più di dodici (12) mesi o che riteniamo ragionevolmente vengano utilizzati in violazione dei presenti Termini."
           ],
           "id": "accounts",
           "items": [
             "Proteggere le credenziali del vostro Account, i token API e le chiavi di accesso",
-            "Tutte le attivita svolte nell'ambito del vostro Account o tramite i vostri Utenti Autorizzati",
+            "Tutte le attività svolte nell'ambito del vostro Account o tramite i vostri Utenti Autorizzati",
             "Garantire che gli Utenti Autorizzati rispettino i presenti Termini",
             "Mantenere la riservatezza dei file di Configurazione, incluse le chiavi private SSH e le credenziali di cifratura"
           ],
@@ -13845,9 +14269,9 @@
         },
         "dataOwnership": {
           "content": [
-            "<strong>I Dati del Cliente sono di vostra proprieta.</strong> Poiche il Software On-Premise archivia i Dati del Cliente su Dispositivi sotto il vostro controllo, cifrati con credenziali in vostro esclusivo possesso, Rediacc non ha accesso ai vostri Dati del Cliente a riposo. Non accediamo, utilizziamo o condividiamo i vostri Dati del Cliente se non nella misura strettamente necessaria a fornire i Servizi (ad esempio, l'elaborazione di richieste API della Piattaforma da voi avviate).",
+            "<strong>I Dati del Cliente sono di vostra proprietà.</strong> Poiché il Software On-Premise archivia i Dati del Cliente su Dispositivi sotto il vostro controllo, cifrati con credenziali in vostro esclusivo possesso, Rediacc non ha accesso ai vostri Dati del Cliente a riposo. Non accediamo, utilizziamo o condividiamo i vostri Dati del Cliente se non nella misura strettamente necessaria a fornire i Servizi (ad esempio, l'elaborazione di richieste API della Piattaforma da voi avviate).",
             "Le informazioni dell'Account (e-mail, nome dell'organizzazione, dati di fatturazione) sono trattate conformemente alla nostra <a href=\"privacy-policy\">Informativa sulla Privacy</a>. In seguito alla chiusura del vostro Account, potrete esportare i dati dell'Account entro trenta (30) giorni. Trascorso tale termine, cancellieremo i dati dell'Account dai nostri sistemi attivi. I Dati del Cliente sui vostri Dispositivi non sono interessati dalla chiusura dell'Account e rimangono sulla vostra infrastruttura sotto il vostro controllo.",
-            "In conformita con il Regolamento UE sui Dati (Regolamento 2023/2854), se utilizzate le funzionalita cloud della Piattaforma, avete il diritto di cambiare fornitore o migrare a una configurazione self-hosted. I vostri Dati del Cliente sono archiviati sui vostri Dispositivi e sono sempre sotto il vostro controllo. I dati dell'Account e le configurazioni archiviate sulla Piattaforma possono essere esportati in formati standard leggibili da macchina. Forniremo assistenza ragionevole durante qualsiasi periodo di transizione fino a trenta (30) giorni successivi alla vostra richiesta."
+            "In conformità con il Regolamento UE sui Dati (Regolamento 2023/2854), se utilizzate le funzionalità cloud della Piattaforma, avete il diritto di cambiare fornitore o migrare a una configurazione self-hosted. I vostri Dati del Cliente sono archiviati sui vostri Dispositivi e sono sempre sotto il vostro controllo. I dati dell'Account e le configurazioni archiviate sulla Piattaforma possono essere esportati in formati standard leggibili da macchina. Forniremo assistenza ragionevole durante qualsiasi periodo di transizione fino a trenta (30) giorni successivi alla vostra richiesta."
           ],
           "id": "data-ownership",
           "title": "11. I Vostri Dati e la Cifratura"
@@ -13860,32 +14284,32 @@
           "items": [
             "<strong>\"Account\"</strong> indica l'account utente che create per accedere alla Piattaforma e gestire il vostro Abbonamento.",
             "<strong>\"Utente Autorizzato\"</strong> indica qualsiasi individuo a cui e stato concesso l'accesso ai Servizi nell'ambito del vostro Account, inclusi membri del team, dipendenti e collaboratori che agiscono per vostro conto.",
-            "<strong>\"Bridge\" (Renet)</strong> indica l'agente lato server di Rediacc che opera sui vostri Dispositivi per gestire lo storage cifrato, l'orchestrazione dei container e le operazioni infrastrutturali.",
+            "<strong>\"Renet Agent\"</strong> indica l'agente lato server di Rediacc che opera sui vostri Dispositivi per gestire lo storage cifrato, l'orchestrazione dei container e le operazioni infrastrutturali.",
             "<strong>\"CLI\"</strong> indica l'interfaccia a riga di comando di Rediacc (<code>rdc</code>) installata sulla vostra workstation.",
             "<strong>\"Configurazione\"</strong> indica i file di configurazione locali archiviati sulla vostra workstation, contenenti i dettagli di connessione ai Dispositivi, le credenziali di cifratura e altre impostazioni operative.",
             "<strong>\"Dati del Cliente\"</strong> indica qualsiasi dato, contenuto, file, container, configurazione e applicazione che distribuite, archiviate o elaborate sui vostri Dispositivi tramite i Servizi. I Dati del Cliente non includono le informazioni dell'Account ne i Dati di Telemetria.",
-            "<strong>\"Dispositivo\"</strong> indica un server o una macchina virtuale di vostra proprieta o sotto il vostro controllo su cui e installato il Bridge.",
-            "<strong>\"Software On-Premise\"</strong> indica i componenti software installati sulla vostra infrastruttura, inclusi la CLI, il Bridge e l'Applicazione Desktop.",
+            "<strong>\"Dispositivo\"</strong> indica un server o una macchina virtuale di vostra proprietà o sotto il vostro controllo su cui e installato il Renet Agent.",
+            "<strong>\"Software On-Premise\"</strong> indica i componenti software installati sulla vostra infrastruttura, inclusi la CLI, il Renet Agent e l'Applicazione Desktop.",
             "<strong>\"Piattaforma\"</strong> indica l'applicazione web Rediacc, il portale account e qualsiasi servizio cloud fornito da Rediacc.",
-            "<strong>\"Repository\"</strong> indica un'applicazione isolata gestita dal Bridge, composta da un'immagine disco cifrata, un daemon Docker dedicato e i container associati.",
+            "<strong>\"Repository\"</strong> indica un'applicazione isolata gestita dal Renet Agent, composta da un'immagine disco cifrata, un daemon Docker dedicato e i container associati.",
             "<strong>\"Servizi\"</strong> indica, complessivamente, il Software On-Premise, la Piattaforma, la documentazione e qualsiasi servizio professionale correlato fornito da Rediacc.",
-            "<strong>\"Abbonamento\"</strong> indica il piano tariffario selezionato (Community, Professional, Business o Enterprise), che determina l'accesso alle funzionalita e i limiti delle risorse.",
+            "<strong>\"Abbonamento\"</strong> indica il piano tariffario selezionato (Community, Professional, Business o Enterprise), che determina l'accesso alle funzionalità e i limiti delle risorse.",
             "<strong>\"Dati di Telemetria\"</strong> indica i dati di utilizzo anonimizzati raccolti dai Servizi come descritto nella nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>."
           ],
           "title": "1. Definizioni"
         },
         "experimentalFeatures": {
           "content": [
-            "Alcune funzionalita dei Servizi potrebbero essere designate come \"sperimentali\", \"beta\" o \"anteprima\" (collettivamente, \"Funzionalita Sperimentali\"). Le Funzionalita Sperimentali sono fornite a scopo di valutazione e potrebbero essere incomplete, instabili o soggette a modifiche senza preavviso.",
-            "Le Funzionalita Sperimentali sono fornite \"NELLO STATO IN CUI SI TROVANO\" senza alcuna garanzia. Potremmo modificarle o interromperle in qualsiasi momento senza preavviso e non siamo responsabili per eventuali perdite o danni derivanti dal vostro utilizzo o affidamento sulle Funzionalita Sperimentali."
+            "Alcune funzionalità dei Servizi potrebbero essere designate come \"sperimentali\", \"beta\" o \"anteprima\" (collettivamente, \"Funzionalità Sperimentali\"). Le Funzionalità Sperimentali sono fornite a scopo di valutazione e potrebbero essere incomplete, instabili o soggette a modifiche senza preavviso.",
+            "Le Funzionalità Sperimentali sono fornite \"NELLO STATO IN CUI SI TROVANO\" senza alcuna garanzia. Potremmo modificarle o interromperle in qualsiasi momento senza preavviso e non siamo responsabili per eventuali perdite o danni derivanti dal vostro utilizzo o affidamento sulle Funzionalità Sperimentali."
           ],
           "id": "experimental-features",
-          "title": "8. Funzionalita Sperimentali"
+          "title": "8. Funzionalità Sperimentali"
         },
         "governingLaw": {
           "content": [
-            "I presenti Termini sono disciplinati e interpretati conformemente alle leggi della Repubblica di Estonia, senza riguardo ai principi in materia di conflitti di legge. Qualsiasi controversia sorta ai sensi o in connessione con i presenti Termini sara sottoposta alla giurisdizione esclusiva del Tribunale della Contea di Harju (Harju Maakohus) a Tallinn, Estonia.",
-            "Fermo restando quanto sopra, ciascuna delle parti potra richiedere provvedimenti inibitori o altri rimedi equitativi a qualsiasi tribunale competente per prevenire la violazione attuale o minacciata, l'appropriazione indebita o la lesione di diritti di proprieta intellettuale o di obblighi di riservatezza."
+            "I presenti Termini sono disciplinati e interpretati conformemente alle leggi della Repubblica di Estonia, senza riguardo ai principi in materia di conflitti di legge. Qualsiasi controversia sorta ai sensi o in connessione con i presenti Termini sarà sottoposta alla giurisdizione esclusiva del Tribunale della Contea di Harju (Harju Maakohus) a Tallinn, Estonia.",
+            "Fermo restando quanto sopra, ciascuna delle parti potrà richiedere provvedimenti inibitori o altri rimedi equitativi a qualsiasi tribunale competente per prevenire la violazione attuale o minacciata, l'appropriazione indebita o la lesione di diritti di proprietà intellettuale o di obblighi di riservatezza."
           ],
           "id": "governing-law",
           "title": "18. Legge Applicabile e Risoluzione delle Controversie"
@@ -13901,8 +14325,8 @@
             },
             "byRediacc": {
               "content": [
-                "Rediacc vi manlevera, difendera e terrera indenni da qualsiasi reclamo di terze parti secondo cui il Software On-Premise o la Piattaforma, cosi come forniti da Rediacc, violano un valido diritto di proprieta intellettuale di terze parti, a condizione che voi: (a) notifichiate prontamente a Rediacc il reclamo; (b) concediate a Rediacc il controllo esclusivo della difesa e della transazione; e (c) forniate la cooperazione ragionevole a spese di Rediacc.",
-                "Qualora i Servizi diventino, o a giudizio di Rediacc rischino di diventare, oggetto di un reclamo per violazione, Rediacc potra a sua discrezione: (i) procurarsi il diritto a favore vostro di continuare a utilizzare i Servizi; (ii) sostituire o modificare il componente interessato per renderlo non lesivo; o (iii) se ne (i) ne (ii) risultano commercialmente praticabili, risolvere l'Abbonamento interessato e rimborsare le tariffe prepagate e non utilizzate.",
+                "Rediacc vi manlevera, difendera e terrera indenni da qualsiasi reclamo di terze parti secondo cui il Software On-Premise o la Piattaforma, così come forniti da Rediacc, violano un valido diritto di proprietà intellettuale di terze parti, a condizione che voi: (a) notifichiate prontamente a Rediacc il reclamo; (b) concediate a Rediacc il controllo esclusivo della difesa e della transazione; e (c) forniate la cooperazione ragionevole a spese di Rediacc.",
+                "Qualora i Servizi diventino, o a giudizio di Rediacc rischino di diventare, oggetto di un reclamo per violazione, Rediacc potrà a sua discrezione: (i) procurarsi il diritto a favore vostro di continuare a utilizzare i Servizi; (ii) sostituire o modificare il componente interessato per renderlo non lesivo; o (iii) se ne (i) ne (ii) risultano commercialmente praticabili, risolvere l'Abbonamento interessato e rimborsare le tariffe prepagate e non utilizzate.",
                 "Rediacc non ha alcun obbligo ai sensi della presente sezione per reclami derivanti da: modifiche da voi apportate ai Servizi, utilizzo dei Servizi in combinazione con software di terze parti non fornito da Rediacc, o utilizzo dei Servizi in violazione dei presenti Termini."
               ],
               "title": "16.2 Da Parte di Rediacc"
@@ -13912,44 +14336,44 @@
         },
         "intellectualProperty": {
           "content": [
-            "I Servizi, inclusi il Software On-Premise, la Piattaforma, la documentazione, le API, i design e tutti i contenuti forniti da Rediacc, sono di proprieta di Rediacc OÜ e protetti dalle leggi sulla proprieta intellettuale dell'Estonia, dell'Unione Europea e dai trattati internazionali applicabili. Fatta eccezione per le licenze espressamente concesse nei presenti Termini, nessun altro diritto o licenza e implicito o concesso.",
+            "I Servizi, inclusi il Software On-Premise, la Piattaforma, la documentazione, le API, i design e tutti i contenuti forniti da Rediacc, sono di proprietà di Rediacc OÜ e protetti dalle leggi sulla proprietà intellettuale dell'Estonia, dell'Unione Europea e dai trattati internazionali applicabili. Fatta eccezione per le licenze espressamente concesse nei presenti Termini, nessun altro diritto o licenza e implicito o concesso.",
             "Conservate tutti i diritti, titoli e interessi sui vostri Dati del Cliente e su qualsiasi contenuto o applicazione creati tramite i Servizi. Utilizzando la Piattaforma, concedete a Rediacc una licenza limitata, mondiale e a titolo gratuito per ospitare, elaborare e visualizzare le informazioni del vostro Account esclusivamente al fine di fornirvi i Servizi. Tale licenza si estingue al momento della cancellazione del vostro Account.",
-            "Potremmo raccogliere e utilizzare dati anonimi e aggregati derivati dall'utilizzo dei Servizi da parte vostra (inclusi i Dati di Telemetria) per finalita di miglioramento del prodotto, analisi e benchmarking. Tali dati aggregati non vi identificano ne identificano alcun singolo utente."
+            "Potremmo raccogliere e utilizzare dati anonimi e aggregati derivati dall'utilizzo dei Servizi da parte vostra (inclusi i Dati di Telemetria) per finalità di miglioramento del prodotto, analisi e benchmarking. Tali dati aggregati non vi identificano ne identificano alcun singolo utente."
           ],
           "id": "intellectual-property",
-          "title": "12. Proprieta Intellettuale"
+          "title": "12. Proprietà Intellettuale"
         },
         "limitationOfLiability": {
           "content": [
-            "NELLA MISURA MASSIMA CONSENTITA DALLA LEGGE APPLICABILE, IN NESSUN CASO REDIACC, LE SUE AFFILIATE, I SUOI DIRIGENTI, AMMINISTRATORI, DIPENDENTI O AGENTI SARANNO RESPONSABILI PER DANNI INDIRETTI, INCIDENTALI, SPECIALI, CONSEQUENZIALI O PUNITIVI, NE PER PERDITE DI PROFITTI, RICAVI, DATI, USO O AVVIAMENTO, DERIVANTI DA O IN CONNESSIONE CON I PRESENTI TERMINI O IL VOSTRO UTILIZZO DEI SERVIZI, INDIPENDENTEMENTE DALLA TEORIA DELLA RESPONSABILITA E INDIPENDENTEMENTE DAL FATTO CHE REDIACC SIA STATA INFORMATA DELLA POSSIBILITA DI TALI DANNI.",
-            "LA RESPONSABILITA COMPLESSIVA TOTALE DI REDIACC PER TUTTI I RECLAMI DERIVANTI DA O CORRELATI AI PRESENTI TERMINI O AI SERVIZI NON SUPERERA IL MAGGIORE TRA: (A) L'IMPORTO TOTALE PAGATO A REDIACC NEI DODICI (12) MESI PRECEDENTI L'EVENTO CHE HA DATO ORIGINE AL RECLAMO; O (B) CENTO DOLLARI STATUNITENSI ($100).",
-            "LE LIMITAZIONI E LE ESCLUSIONI DI CUI ALLE SEZIONI 14 E 15 NON SI APPLICANO A: (A) RESPONSABILITA PER MORTE O LESIONI PERSONALI CAUSATE DA NEGLIGENZA; (B) RESPONSABILITA PER FRODE O FALSA DICHIARAZIONE FRAUDOLENTA; (C) RESPONSABILITA PER DOLO (TAHTLIK RIKKUMINE) O COLPA GRAVE (RASKE HOOLETUS) AI SENSI DELLA LEGGE ESTONE SULLE OBBLIGAZIONI; O (D) QUALSIASI ALTRA RESPONSABILITA CHE NON PUO ESSERE ESCLUSA O LIMITATA DALLA LEGGE APPLICABILE."
+            "NELLA MISURA MASSIMA CONSENTITA DALLA LEGGE APPLICABILE, IN NESSUN CASO REDIACC, LE SUE AFFILIATE, I SUOI DIRIGENTI, AMMINISTRATORI, DIPENDENTI O AGENTI SARANNO RESPONSABILI PER DANNI INDIRETTI, INCIDENTALI, SPECIALI, CONSEQUENZIALI O PUNITIVI, NE PER PERDITE DI PROFITTI, RICAVI, DATI, USO O AVVIAMENTO, DERIVANTI DA O IN CONNESSIONE CON I PRESENTI TERMINI O IL VOSTRO UTILIZZO DEI SERVIZI, INDIPENDENTEMENTE DALLA TEORIA DELLA RESPONSABILITÀ E INDIPENDENTEMENTE DAL FATTO CHE REDIACC SIA STATA INFORMATA DELLA POSSIBILITÀ DI TALI DANNI.",
+            "LA RESPONSABILITÀ COMPLESSIVA TOTALE DI REDIACC PER TUTTI I RECLAMI DERIVANTI DA O CORRELATI AI PRESENTI TERMINI O AI SERVIZI NON SUPERERÀ IL MAGGIORE TRA: (A) L'IMPORTO TOTALE PAGATO A REDIACC NEI DODICI (12) MESI PRECEDENTI L'EVENTO CHE HA DATO ORIGINE AL RECLAMO; O (B) CENTO DOLLARI STATUNITENSI ($100).",
+            "LE LIMITAZIONI E LE ESCLUSIONI DI CUI ALLE SEZIONI 14 E 15 NON SI APPLICANO A: (A) RESPONSABILITÀ PER MORTE O LESIONI PERSONALI CAUSATE DA NEGLIGENZA; (B) RESPONSABILITÀ PER FRODE O FALSA DICHIARAZIONE FRAUDOLENTA; (C) RESPONSABILITÀ PER DOLO (TAHTLIK RIKKUMINE) O COLPA GRAVE (RASKE HOOLETUS) AI SENSI DELLA LEGGE ESTONE SULLE OBBLIGAZIONI; O (D) QUALSIASI ALTRA RESPONSABILITÀ CHE NON PUÒ ESSERE ESCLUSA O LIMITATA DALLA LEGGE APPLICABILE."
           ],
           "id": "limitation-of-liability",
-          "title": "15. Limitazione di Responsabilita"
+          "title": "15. Limitazione di Responsabilità"
         },
         "onPremiseLicense": {
           "content": [
-            "Subordinatamente ai presenti Termini e al vostro Abbonamento attivo, Rediacc vi concede una licenza limitata, non esclusiva, non sublicenziabile, non trasferibile e revocabile per installare e utilizzare il Software On-Premise (CLI, Bridge e Applicazione Desktop) esclusivamente per le vostre finalita aziendali interne durante il periodo di Abbonamento."
+            "Subordinatamente ai presenti Termini e al vostro Abbonamento attivo, Rediacc vi concede una licenza limitata, non esclusiva, non sublicenziabile, non trasferibile e revocabile per installare e utilizzare il Software On-Premise (CLI, Renet Agent e Applicazione Desktop) esclusivamente per le vostre finalità aziendali interne durante il periodo di Abbonamento."
           ],
           "id": "on-premise-license",
           "subsections": {
             "encryptionCredentials": {
               "content": [
-                "Il Software On-Premise utilizza la cifratura completa del disco LUKS per i dati del Repository. Le credenziali di cifratura vengono generate localmente e conservate esclusivamente nei file di Configurazione sulla vostra workstation. <strong>Rediacc non ha accesso alle vostre credenziali di cifratura e non puo recuperare i vostri dati in caso di smarrimento.</strong> Siete gli unici responsabili del backup dei file di Configurazione e delle credenziali di cifratura."
+                "Il Software On-Premise utilizza la cifratura completa del disco LUKS per i dati del Repository. Le credenziali di cifratura vengono generate localmente e conservate esclusivamente nei file di Configurazione sulla vostra workstation. <strong>Rediacc non ha accesso alle vostre credenziali di cifratura e non può recuperare i vostri dati in caso di smarrimento.</strong> Siete gli unici responsabili del backup dei file di Configurazione e delle credenziali di cifratura."
               ],
               "title": "6.3 Cifratura e Credenziali"
             },
             "installation": {
               "content": [
-                "Il Bridge opera con privilegi elevati (root) sui vostri Dispositivi per gestire volumi cifrati, container runtime e servizi di sistema. Siete gli unici responsabili della sicurezza dei vostri Dispositivi, inclusi l'accesso SSH, la configurazione del firewall, gli aggiornamenti del sistema operativo e la sicurezza fisica. Rediacc non accede da remoto ai vostri Dispositivi salvo esplicita richiesta da parte vostra per finalita di supporto."
+                "Il Renet Agent opera con privilegi elevati (root) sui vostri Dispositivi per gestire volumi cifrati, container runtime e servizi di sistema. Siete gli unici responsabili della sicurezza dei vostri Dispositivi, inclusi l'accesso SSH, la configurazione del firewall, gli aggiornamenti del sistema operativo e la sicurezza fisica. Rediacc non accede da remoto ai vostri Dispositivi salvo esplicita richiesta da parte vostra per finalità di supporto."
               ],
               "title": "6.1 Installazione e Accesso ai Dispositivi"
             },
             "restrictions": {
               "content": ["E vietato:"],
               "items": [
-                "Effettuare reverse engineering, decompilare, disassemblare o tentare in qualsiasi altro modo di ricavare il codice sorgente del binario Bridge o di qualsiasi componente non open source del Software On-Premise",
+                "Effettuare reverse engineering, decompilare, disassemblare o tentare in qualsiasi altro modo di ricavare il codice sorgente del binario Renet Agent o di qualsiasi componente non open source del Software On-Premise",
                 "Ridistribuire, sublicenziare, affittare, cedere in leasing o prestare il Software On-Premise a terzi",
                 "Rimuovere, alterare o occultare avvisi, etichette o marchi proprietari presenti sul Software On-Premise",
                 "Utilizzare il Software On-Premise per sviluppare un prodotto o servizio concorrente",
@@ -13964,8 +14388,8 @@
         "platformLicense": {
           "content": [
             "Subordinatamente ai presenti Termini e al vostro Abbonamento attivo, Rediacc vi concede una licenza limitata, non esclusiva e non trasferibile per accedere alla Piattaforma e utilizzarla durante il periodo di Abbonamento. Potete concedere l'accesso agli Utenti Autorizzati all'interno della vostra organizzazione.",
-            "Ci riserviamo il diritto di modificare, aggiornare o interrompere le funzionalita della Piattaforma in qualsiasi momento. Ove possibile, forniremo un preavviso adeguato in caso di modifiche sostanziali. Le modifiche non ridurranno in modo sostanziale le funzionalita principali del vostro piano di Abbonamento corrente durante un periodo di fatturazione a pagamento attivo.",
-            "Ci impegniamo a garantire un'elevata disponibilita della Piattaforma, ma non garantiamo un accesso ininterrotto. La Piattaforma potrebbe essere temporaneamente non disponibile a causa di manutenzione, aggiornamenti o circostanze al di fuori del nostro controllo."
+            "Ci riserviamo il diritto di modificare, aggiornare o interrompere le funzionalità della Piattaforma in qualsiasi momento. Ove possibile, forniremo un preavviso adeguato in caso di modifiche sostanziali. Le modifiche non ridurranno in modo sostanziale le funzionalità principali del vostro piano di Abbonamento corrente durante un periodo di fatturazione a pagamento attivo.",
+            "Ci impegniamo a garantire un'elevata disponibilità della Piattaforma, ma non garantiamo un accesso ininterrotto. La Piattaforma potrebbe essere temporaneamente non disponibile a causa di manutenzione, aggiornamenti o circostanze al di fuori del nostro controllo."
           ],
           "id": "platform-license",
           "title": "7. Licenza della Piattaforma"
@@ -13975,21 +14399,21 @@
             "Rediacc fornisce una piattaforma di automazione dell'infrastruttura per la gestione di ambienti server self-hosted. I Servizi comprendono:"
           ],
           "content2": [
-            "Le funzionalita specifiche, i limiti delle risorse e le capacita a vostra disposizione dipendono dal piano di Abbonamento. Le descrizioni delle funzionalita presenti sul nostro sito web e nella documentazione illustrano le funzionalita previste per ciascun piano, ma non costituiscono garanzie vincolanti di prestazione."
+            "Le funzionalità specifiche, i limiti delle risorse e le capacità a vostra disposizione dipendono dal piano di Abbonamento. Le descrizioni delle funzionalità presenti sul nostro sito web e nella documentazione illustrano le funzionalità previste per ciascun piano, ma non costituiscono garanzie vincolanti di prestazione."
           ],
           "id": "service-description",
           "items": [
-            "<strong>Software On-Premise:</strong> la CLI (<code>rdc</code>), il Bridge (Renet) e l'Applicazione Desktop, installati sulle vostre workstation e Dispositivi per orchestrare distribuzioni container cifrate e isolate",
+            "<strong>Software On-Premise:</strong> la CLI (<code>rdc</code>), il Renet Agent e l'Applicazione Desktop, installati sulle vostre workstation e Dispositivi per orchestrare distribuzioni container cifrate e isolate",
             "<strong>Piattaforma:</strong> l'applicazione web e il portale account per la gestione degli abbonamenti, la collaborazione in team e (ove disponibile) la gestione cloud dell'infrastruttura",
             "<strong>Servizi Professionali:</strong> consulenza, assistenza alla migrazione e supporto all'implementazione su base facoltativa, soggetti ad accordi di servizio separati"
           ],
           "title": "3. Descrizione dei Servizi"
         },
         "subscriptions": {
-          "content": ["Rediacc offre piu piani di Abbonamento:"],
+          "content": ["Rediacc offre più piani di Abbonamento:"],
           "id": "subscriptions",
           "items": [
-            "<strong>Community</strong> (gratuito): limitato a 2 attivazioni di Dispositivi, funzionalita di base, supporto della community",
+            "<strong>Community</strong> (gratuito): limitato a 2 attivazioni di Dispositivi, funzionalità di base, supporto della community",
             "<strong>Professional</strong>: fino a 5 attivazioni di Dispositivi, registro di audit, supporto prioritario, branding personalizzato",
             "<strong>Business</strong>: fino a 20 attivazioni di Dispositivi, storage distribuito, analisi avanzate, responsabile del successo dedicato",
             "<strong>Enterprise</strong>: fino a 50 attivazioni di Dispositivi, infrastruttura dedicata, integrazioni personalizzate, supporto 24/7"
@@ -13997,26 +14421,27 @@
           "subsections": {
             "billing": {
               "content": [
-                "Gli Abbonamenti a pagamento sono fatturati mensilmente o annualmente in anticipo. La fatturazione annuale e addebitata a un importo equivalente a dieci (10) mensilita del prezzo mensile. Tutte le tariffe sono espresse in dollari statunitensi. Il pagamento e elaborato dal nostro processore di pagamenti terzo (Stripe); non conserviamo i dati completi delle carte di pagamento.",
+                "Gli Abbonamenti a pagamento (Professional e Business) iniziano con una prova gratuita di 14 giorni. Fornite un metodo di pagamento al momento della registrazione, e il primo addebito avviene al termine del periodo di prova. Potete disdire prima della fine del periodo di prova senza alcun addebito. Se disdite durante il periodo di prova, disdite in seguito un Abbonamento a pagamento, oppure un pagamento non va a buon fine, il vostro account torna al piano Community gratuito.",
+                "Gli Abbonamenti a pagamento sono fatturati mensilmente o annualmente in anticipo. La fatturazione annuale è offerta con uno sconto del 15% su dodici (12) mesi al prezzo mensile. Tutte le tariffe sono espresse in dollari statunitensi. Il pagamento è elaborato dal nostro processore di pagamenti terzo (Stripe); non conserviamo i dati completi delle carte di pagamento.",
                 "Ci riserviamo il diritto di modificare i nostri prezzi con un preavviso di trenta (30) giorni. Le variazioni di prezzo non avranno effetto sul ciclo di fatturazione in corso. Se non accettate una modifica di prezzo, potete disdire il vostro Abbonamento prima dell'inizio del ciclo di fatturazione successivo."
               ],
               "title": "5.1 Fatturazione"
             },
             "gracePeriod": {
               "content": [
-                "Il Software On-Premise verifica periodicamente lo stato del vostro Abbonamento. In caso di errore di validazione (dovuto a problemi di rete, Abbonamento scaduto o mancato pagamento), si applica un periodo di tolleranza di tre (3) giorni. Trascorso tale periodo, il Software On-Premise operera al livello di funzionalita del piano Community fino al ripristino dello stato dell'Abbonamento."
+                "Il Software On-Premise verifica periodicamente lo stato del vostro Abbonamento. In caso di errore di validazione (dovuto a problemi di rete, Abbonamento scaduto o mancato pagamento), si applica un periodo di tolleranza di tre (3) giorni. Trascorso tale periodo, il Software On-Premise operera al livello di funzionalità del piano Community fino al ripristino dello stato dell'Abbonamento."
               ],
               "title": "5.4 Validazione della Licenza e Periodo di Tolleranza"
             },
             "renewalCancellation": {
               "content": [
-                "Gli Abbonamenti a pagamento si rinnovano automaticamente al termine di ogni ciclo di fatturazione al prezzo vigente, salvo disdetta prima della data di rinnovo. <strong>Sottoscrivendo un piano a pagamento, autorizzate gli addebiti ricorrenti sul vostro metodo di pagamento fino alla disdetta.</strong> Potete disdire in qualsiasi momento tramite il portale account o contattandoci all'indirizzo <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>. In caso di disdetta, manterrete l'accesso alle funzionalita a pagamento fino al termine del periodo di fatturazione in corso. Non vengono emessi rimborsi proporzionali per i periodi di fatturazione parziali, salvo quanto previsto dalla nostra <a href=\"refund-policy\">Politica di Rimborso</a>. Invieremo un promemoria di rinnovo all'indirizzo e-mail dell'Account prima di ogni rinnovo annuale."
+                "Gli Abbonamenti a pagamento si rinnovano automaticamente al termine di ogni ciclo di fatturazione al prezzo vigente, salvo disdetta prima della data di rinnovo. <strong>Sottoscrivendo un piano a pagamento, autorizzate gli addebiti ricorrenti sul vostro metodo di pagamento fino alla disdetta.</strong> Potete disdire in qualsiasi momento tramite il portale account o contattandoci all'indirizzo <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>. In caso di disdetta, manterrete l'accesso alle funzionalità a pagamento fino al termine del periodo di fatturazione in corso. Non vengono emessi rimborsi proporzionali per i periodi di fatturazione parziali, salvo quanto previsto dalla nostra <a href=\"refund-policy\">Politica di Rimborso</a>. Invieremo un promemoria di rinnovo all'indirizzo e-mail dell'Account prima di ogni rinnovo annuale."
               ],
               "title": "5.3 Rinnovo e Disdetta"
             },
             "taxes": {
               "content": [
-                "Tutte le tariffe sono al netto delle imposte applicabili. Siete responsabili di tutte le imposte, i dazi e i prelievi imposti dalle autorita fiscali sull'Abbonamento, ad esclusione delle imposte sul reddito netto di Rediacc. Ove previsto dalla legge, Rediacc raccogliera e versera le imposte applicabili (inclusa l'IVA UE), che saranno dettagliate nella vostra fattura."
+                "Tutte le tariffe sono al netto delle imposte applicabili. Siete responsabili di tutte le imposte, i dazi e i prelievi imposti dalle autorità fiscali sull'Abbonamento, ad esclusione delle imposte sul reddito netto di Rediacc. Ove previsto dalla legge, Rediacc raccogliera e versera le imposte applicabili (inclusa l'IVA UE), che saranno dettagliate nella vostra fattura."
               ],
               "title": "5.2 Imposte"
             }
@@ -14025,8 +14450,8 @@
         },
         "telemetry": {
           "content": [
-            "Il Software On-Premise e la Piattaforma raccolgono Dati di Telemetria anonimizzati per migliorare la qualita del prodotto, diagnosticare errori e comprendere i pattern di utilizzo. La telemetria e concepita nel rispetto della privacy: gli identificatori personali vengono anonimizzati prima della trasmissione e tutti i Dati di Telemetria sono elaborati su infrastrutture all'interno dell'Unione Europea.",
-            "La telemetria e abilitata per impostazione predefinita nella CLI e nell'Applicazione Web. E possibile disabilitarla prima di qualsiasi trasmissione di dati utilizzando i meccanismi specifici di ciascun prodotto descritti nella nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>, che illustra in dettaglio i dati raccolti da ciascun prodotto e le modalita di disattivazione. La telemetria e disabilitata automaticamente negli ambienti CI e nell'Applicazione Desktop.",
+            "Il Software On-Premise e la Piattaforma raccolgono Dati di Telemetria anonimizzati per migliorare la qualità del prodotto, diagnosticare errori e comprendere i pattern di utilizzo. La telemetria e concepita nel rispetto della privacy: gli identificatori personali vengono anonimizzati prima della trasmissione e tutti i Dati di Telemetria sono elaborati su infrastrutture all'interno dell'Unione Europea.",
+            "La telemetria e abilitata per impostazione predefinita nella CLI e nell'Applicazione Web. E possibile disabilitarla prima di qualsiasi trasmissione di dati utilizzando i meccanismi specifici di ciascun prodotto descritti nella nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>, che illustra in dettaglio i dati raccolti da ciascun prodotto e le modalità di disattivazione. La telemetria e disabilitata automaticamente negli ambienti CI e nell'Applicazione Desktop.",
             "Nelle giurisdizioni che richiedono il consenso esplicito per la raccolta di telemetria su apparecchiature terminali (anche ai sensi della Direttiva ePrivacy nella sua attuazione locale), e opportuno configurare le proprie preferenze di telemetria prima del primo utilizzo del Software On-Premise. Il continuato utilizzo dei Servizi con la telemetria abilitata costituisce il vostro consenso alla raccolta descritta nell'<a href=\"telemetry-policy\">Informativa sulla Telemetria</a>."
           ],
           "id": "telemetry",
@@ -14034,22 +14459,22 @@
         },
         "termination": {
           "content": [
-            "Potete disdire il vostro Abbonamento in qualsiasi momento tramite il portale account o contattandoci all'indirizzo <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>. Potremmo sospendere o cessare il vostro accesso ai Servizi in caso di violazione sostanziale dei presenti Termini, previa comunicazione scritta di trenta (30) giorni e possibilita di rimediare, salvo che la violazione rappresenti un rischio immediato per la sicurezza o comporti attivita illegali.",
+            "Potete disdire il vostro Abbonamento in qualsiasi momento tramite il portale account o contattandoci all'indirizzo <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>. Potremmo sospendere o cessare il vostro accesso ai Servizi in caso di violazione sostanziale dei presenti Termini, previa comunicazione scritta di trenta (30) giorni e possibilità di rimediare, salvo che la violazione rappresenti un rischio immediato per la sicurezza o comporti attività illegali.",
             "In seguito alla risoluzione:"
           ],
           "id": "termination",
           "items": [
             "La vostra licenza a utilizzare il Software On-Premise e la Piattaforma cessa al termine del periodo di fatturazione in corso (o immediatamente in caso di violazione)",
-            "I Dati del Cliente sui vostri Dispositivi rimangono sotto il vostro controllo: Rediacc non ha la possibilita di accedervi ne di cancellarli",
+            "I Dati del Cliente sui vostri Dispositivi rimangono sotto il vostro controllo: Rediacc non ha la possibilità di accedervi ne di cancellarli",
             "I dati dell'Account saranno conservati per trenta (30) giorni per consentire l'esportazione, quindi cancellati dai nostri sistemi attivi",
-            "Le sezioni 1 (Definizioni), 11 (I Vostri Dati), 12 (Proprieta Intellettuale), 14 (Garanzie), 15 (Responsabilita), 16 (Manleva) e 18 (Legge Applicabile) sopravvivono alla risoluzione"
+            "Le sezioni 1 (Definizioni), 11 (I Vostri Dati), 12 (Proprietà Intellettuale), 14 (Garanzie), 15 (Responsabilità), 16 (Manleva) e 18 (Legge Applicabile) sopravvivono alla risoluzione"
           ],
           "title": "17. Risoluzione"
         },
         "thirdPartyComponents": {
           "content": [
-            "Il Software On-Premise puo installare, configurare o interagire con software open source di terze parti sui vostri Dispositivi, tra cui Docker, container runtime e strumenti di sincronizzazione dello storage. Questi componenti di terze parti sono regolati dalle rispettive licenze e sono forniti \"NELLO STATO IN CUI SI TROVANO\" senza alcuna garanzia da parte di Rediacc.",
-            "Rediacc non si assume alcuna responsabilita per la funzionalita, la sicurezza o la disponibilita dei componenti di terze parti. Siete responsabili di esaminare e rispettare le licenze di qualsiasi software di terze parti distribuito sulla vostra infrastruttura."
+            "Il Software On-Premise può installare, configurare o interagire con software open source di terze parti sui vostri Dispositivi, tra cui Docker, container runtime e strumenti di sincronizzazione dello storage. Questi componenti di terze parti sono regolati dalle rispettive licenze e sono forniti \"NELLO STATO IN CUI SI TROVANO\" senza alcuna garanzia da parte di Rediacc.",
+            "Rediacc non si assume alcuna responsabilità per la funzionalità, la sicurezza o la disponibilità dei componenti di terze parti. Siete responsabili di esaminare e rispettare le licenze di qualsiasi software di terze parti distribuito sulla vostra infrastruttura."
           ],
           "id": "third-party-components",
           "title": "13. Componenti di Terze Parti"
@@ -14065,10 +14490,10 @@
           "items": [
             "Distribuire, ospitare o diffondere malware, virus, ransomware o qualsiasi altro codice dannoso",
             "Gestire il mining di criptovalute, reti di condivisione file peer-to-peer o servizi proxy aperti",
-            "Violare o appropriarsi indebitamente di proprieta intellettuale, diritti alla riservatezza o altri diritti di terzi",
+            "Violare o appropriarsi indebitamente di proprietà intellettuale, diritti alla riservatezza o altri diritti di terzi",
             "Inviare comunicazioni commerciali non sollecitate (spam) o condurre attacchi di phishing",
-            "Eseguire scansioni di vulnerabilita, test di penetrazione o test di carico non autorizzati sull'infrastruttura Rediacc",
-            "Impersonare persone o entita, o dichiarare falsamente la propria affiliazione",
+            "Eseguire scansioni di vulnerabilità, test di penetrazione o test di carico non autorizzati sull'infrastruttura Rediacc",
+            "Impersonare persone o entità, o dichiarare falsamente la propria affiliazione",
             "Violare qualsiasi legge, normativa o diritto di terzi applicabile",
             "Rivendere, ridistribuire o rendere i Servizi disponibili a terzi nell'ambito di un'offerta di servizi gestiti senza il nostro previo consenso scritto"
           ],
@@ -14078,8 +14503,8 @@
           "content": [
             "NELLA MISURA MASSIMA CONSENTITA DALLA LEGGE APPLICABILE, I SERVIZI SONO FORNITI \"NELLO STATO IN CUI SI TROVANO\" E \"COME DISPONIBILI\". REDIACC ESCLUDE QUALSIASI GARANZIA, ESPRESSA, IMPLICITA O DI LEGGE, IVI INCLUSE, A TITOLO ESEMPLIFICATIVO, LE GARANZIE IMPLICITE DI COMMERCIABILITA, IDONEITA A UNO SCOPO SPECIFICO, NON VIOLAZIONE E QUALSIASI GARANZIA DERIVANTE DAL CORSO ORDINARIO DEGLI AFFARI O DAGLI USI DEL COMMERCIO.",
             "SENZA LIMITARE QUANTO SOPRA, REDIACC NON GARANTISCE CHE: (A) I SERVIZI SODDISFINO I VOSTRI REQUISITI O ASPETTATIVE; (B) I SERVIZI SIANO ININTERROTTI, TEMPESTIVI, SICURI O PRIVI DI ERRORI; (C) I RISULTATI OTTENUTI DAI SERVIZI SIANO ACCURATI O AFFIDABILI; O (D) EVENTUALI DIFETTI NEI SERVIZI VENGANO CORRETTI.",
-            "NESSUNA DISPOSIZIONE DEI PRESENTI TERMINI ESCLUDE O LIMITA LA RESPONSABILITA PER: (A) MORTE O LESIONI PERSONALI CAUSATE DA NEGLIGENZA; (B) FRODE O FALSA DICHIARAZIONE FRAUDOLENTA; O (C) QUALSIASI RESPONSABILITA CHE NON PUO ESSERE ESCLUSA O LIMITATA AI SENSI DELLA LEGGE ESTONE SULLE OBBLIGAZIONI (VOLAÕIGUSSEADUS), IVI INCLUSA LA RESPONSABILITA PER DOLO O COLPA GRAVE.",
-            "Riconoscete che il Software On-Premise opera con privilegi elevati sui vostri Dispositivi e che assumete tutti i rischi connessi alla sua installazione e al suo utilizzo sulla vostra infrastruttura. Le descrizioni delle funzionalita, le metriche di prestazione e le stime dei tempi di ripristino presenti nella documentazione e nei materiali di marketing illustrano le funzionalita previste e non costituiscono garanzie vincolanti di prestazione."
+            "NESSUNA DISPOSIZIONE DEI PRESENTI TERMINI ESCLUDE O LIMITA LA RESPONSABILITÀ PER: (A) MORTE O LESIONI PERSONALI CAUSATE DA NEGLIGENZA; (B) FRODE O FALSA DICHIARAZIONE FRAUDOLENTA; O (C) QUALSIASI RESPONSABILITÀ CHE NON PUÒ ESSERE ESCLUSA O LIMITATA AI SENSI DELLA LEGGE ESTONE SULLE OBBLIGAZIONI (VOLAÕIGUSSEADUS), IVI INCLUSA LA RESPONSABILITÀ PER DOLO O COLPA GRAVE.",
+            "Riconoscete che il Software On-Premise opera con privilegi elevati sui vostri Dispositivi e che assumete tutti i rischi connessi alla sua installazione e al suo utilizzo sulla vostra infrastruttura. Le descrizioni delle funzionalità, le metriche di prestazione e le stime dei tempi di ripristino presenti nella documentazione e nei materiali di marketing illustrano le funzionalità previste e non costituiscono garanzie vincolanti di prestazione."
           ],
           "id": "warranties",
           "title": "14. Esclusione di Garanzie"
@@ -14093,7 +14518,7 @@
   "pricingPreview": {
     "compareAll": "Confronta tutti i piani e le funzionalità",
     "subtitle": "Inizia gratis. Scala quando vuoi.",
-    "title": "Prezzi che puoi difendere nel postmortem"
+    "title": "Prezzi chiari. Zero sorprese."
   },
   "problem": {
     "reality": {
@@ -14108,10 +14533,6 @@
     "title": "Perché il tuo team continua a testare in produzione"
   },
   "regionPicker": {
-    "channelEdge": "Edge",
-    "channelHintLabel": "Informazioni sui canali di rilascio",
-    "channelStable": "Stabile",
-    "edgeHint": "Produzione con deploy continuo. Limiti gratuiti raddoppiati durante il periodo di soak.",
     "footer": "Scegli la regione più vicina a te o quella richiesta dalla tua organizzazione. Non può essere cambiata dopo la registrazione.",
     "footerNote": "Non è modificabile dopo la registrazione.",
     "locations": {
@@ -14120,8 +14541,6 @@
       "us": "Virginia, Stati Uniti"
     },
     "reassurance": "I dati dei tuoi server e i backup restano sulla tua infrastruttura.",
-    "regionNote": "La regione non può essere cambiata dopo la registrazione.",
-    "stableHint": "Versioni affidabili, promosse da edge dopo 7 giorni di soak.",
     "subtitle": "Il tuo account, la fatturazione e le configurazioni rimangono nella regione che scegli. Non la lasciano mai.",
     "title": "Dove vuoi archiviare i tuoi dati?"
   },
@@ -14143,34 +14562,6 @@
       "personaHeadline": "Un messaggio per te",
       "playLabel": "Guarda il video"
     }
-  },
-  "testimonials": {
-    "items": [
-      {
-        "company": "Servizi finanziari",
-        "name": "Marcus R.",
-        "quote": "Il nostro piano di ripristino diceva quattro ore. La realtà era quattro giorni. Ora facciamo failover su un clone in meno di un minuto.",
-        "role": "Responsabile Disaster Recovery"
-      },
-      {
-        "name": "Sarah K.",
-        "quote": "Prima programmavo in produzione perché la sandbox era indietro di settimane. Ora ho un clone fresco in 60 secondi.",
-        "role": "Sviluppatore"
-      },
-      {
-        "company": "Piattaforma SaaS",
-        "name": "James L.",
-        "quote": "Siamo passati da un database a dodici senza acquistare nuovo hardware. I cloni di Rediacc condividono lo storage: paghiamo solo quello che cambia.",
-        "role": "CTO"
-      },
-      {
-        "name": "Ayumi T.",
-        "quote": "Non riuscivamo a eseguire la CI su dati reali. Ora ogni pipeline ha il suo clone di produzione in automatico.",
-        "role": "Ingegnere DevOps"
-      }
-    ],
-    "subtitle": "Come diversi ruoli vivono Rediacc",
-    "title": "Parole dei team"
   },
   "tutorial": {
     "audioControls": "Controlli audio della trascrizione",
@@ -14198,7 +14589,7 @@
         "title": "Hacker 10 volte più veloci"
       },
       {
-        "description": "Usi più cloud. La tua copia di test non funziona con nessuno.",
+        "description": "Usi più cloud. La tua copia di test non funziona con nessuno. Il tuo cluster Kubernetes è vincolato a uno solo.",
         "title": "Il tuo setup è sparso"
       }
     ],

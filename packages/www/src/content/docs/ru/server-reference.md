@@ -4,8 +4,8 @@ description: "Структура каталогов, команды renet, сл�
 category: "Concepts"
 order: 3
 language: ru
-sourceHash: "4fb53bb4cb1512f6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "af2e8fc3da708d9a"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # Справочник по серверу
@@ -227,6 +227,38 @@ renet datastore validate    # Filesystem integrity check
 renet datastore expand      # Expand the datastore online
 ```
 
+### Бэкенды хранилища данных (Ceph RBD)
+
+Хранилище данных бывает либо локальным (BTRFS на loop-устройстве на диске машины, по умолчанию), либо поддерживается внешним кластером Ceph через RBD-образ. Бэкенд выбирается во время инициализации:
+
+```bash
+# Локальный бэкенд (по умолчанию)
+renet datastore init --size 50G
+
+# Бэкенд Ceph RBD: BTRFS на RBD-образе, смонтированном из внешнего кластера Ceph
+renet datastore init --backend ceph --pool rbd --image {name} --cluster ceph
+```
+
+На бэкенде Ceph форк и unfork используют собственные примитивы copy-on-write RBD вместо reflink BTRFS:
+
+```bash
+renet datastore fork   --source {image} --target {new-image}   # snapshot RBD -> protect -> clone
+renet datastore unfork --image {image}                         # разбирает клон в порядке зависимостей
+```
+
+Узлы Ceph никогда не открывают LUKS (на этом бэкенде нет слоя LUKS на образ), поэтому их потребление памяти следует настройке демона Ceph (`osd_memory_target`), а не математике KDF. Второй клиент может смонтировать тот же RBD-образ только для чтения с локальным copy-on-write оверлеем: это путь горизонтального масштабирования, ориентированный преимущественно на чтение.
+
+### Kubernetes (renet kube)
+
+На узле кластера renet оборачивает k3s так же, как оборачивает Docker. `renet kube` представляет собой аналог compose: он внедряет `KUBECONFIG` и применяет манифесты или Helm-чарты из `up()` файла Rediaccfile.
+
+```bash
+sudo renet kube apply -f manifests/     # применить в пространство имён репозитория
+sudo renet kube -- get pods             # передать в kubectl в закреплённом пространстве имён
+```
+
+Состояние кластера хранится в поддерживаемых хранилищем данных copy-on-write образах (`--data-dir` k3s монтируется внутри точки монтирования образа), что и позволяет форкать и мигрировать кластер целиком. Постоянные тома представляют собой отдельные copy-on-write единицы: RBD-образы на Ceph (одно пространство имён RADOS на экземпляр кластера и на форк), или небольшие файлы-образы хранилища данных через локальный провайдер PV на локальном бэкенде. Рабочий процесс для пользователя описан в руководстве [Kubernetes](/en/docs/kubernetes); CLI управляет этими путями через `rdc cluster` и команды `rdc repo` с поддержкой кластеров.
+
 ## Службы systemd
 
 Каждый репозиторий создаёт следующие юниты systemd:
@@ -236,6 +268,7 @@ renet datastore expand      # Expand the datastore online
 | `rediacc-docker-{id}.service` | Изолированный Docker-демон |
 | `rediacc-docker-{id}.socket` | Активация сокета Docker API |
 | `rediacc-loopback-{id}.service` | Настройка псевдонима loopback IP |
+| `rediacc-k3s-{id}.service` | Узел k3s на кластер (только на хостах кластера) |
 
 Глобальные службы, общие для всех репозиториев:
 

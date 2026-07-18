@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Turnstile } from '@marsidev/react-turnstile';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
 import '../styles/lead-magnet-modal.css';

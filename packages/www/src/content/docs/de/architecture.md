@@ -6,8 +6,8 @@ description: >-
 category: Concepts
 order: 0
 language: de
-sourceHash: "947fcefa63eac600"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "b1f9e2e3bba92912"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 # Architektur
@@ -43,7 +43,7 @@ Der gesamte Zustand liegt in einer Konfigurationsdatei auf Ihrer Workstation (z.
 
 - Direkte SSH-Verbindungen zu Maschinen
 - Keine externen Dienste erforderlich
-- Die Standardkonfiguration wird beim ersten CLI-Aufruf automatisch erstellt. Benannte Konfigurationen werden mit `rdc config init --name <name>` erstellt
+- Die Standardkonfiguration wird beim ersten CLI-Aufruf automatisch erstellt. Benannte Konfigurationen werden mit `rdc config init <name>` erstellt
 - Optionale verschlüsselte Config-Synchronisation speichert dieselbe Datei im Config Store, team-spezifisch
 
 ## Der rediacc-Benutzer
@@ -84,7 +84,7 @@ Das bedeutet:
 
 Rediaccfile-Funktionen haben automatisch `DOCKER_HOST` auf den korrekten Socket gesetzt.
 
-Wenn ein KI-Agent über `rdc term connect -r <repo>` ein Repository betritt, gilt dieselbe Isolation: Die Sitzung läuft als unprivilegierter `rediacc`-Benutzer (UID 7111), in einem eigenen Mount-Namespace, mit `DOCKER_HOST`, das auf den Daemon-Socket dieses einen Repositories beschränkt ist. Der Fork-First-Workflow kombiniert diese Laufzeitisolation mit einer CoW-Klon-Primitive: Der Agent arbeitet auf einem Fork pro Aufgabe, niemals auf Grand-Repositories (Produktion). Siehe [KI-Agent-Sicherheit & Schutzmaßnahmen](/en/docs/ai-agents-safety) für das vollständige Sandbox-Modell, die Überschreibungssemantik und die Entwicklerverantwortungsgrenze für Anmeldedaten externer Dienste.
+Wenn ein KI-Agent über `rdc term connect <repo>` ein Repository betritt, gilt dieselbe Isolation: Die Sitzung läuft als unprivilegierter `rediacc`-Benutzer (UID 7111), in einem eigenen Mount-Namespace, mit `DOCKER_HOST`, das auf den Daemon-Socket dieses einen Repositories beschränkt ist. Der Fork-First-Workflow kombiniert diese Laufzeitisolation mit einer CoW-Klon-Primitive: Der Agent arbeitet auf einem Fork pro Aufgabe, niemals auf Grand-Repositories (Produktion). Siehe [KI-Agent-Sicherheit & Schutzmaßnahmen](/en/docs/ai-agents-safety) für das vollständige Sandbox-Modell, die Überschreibungssemantik und die Entwicklerverantwortungsgrenze für Anmeldedaten externer Dienste.
 
 ### Daemon-Pfadstruktur
 
@@ -118,6 +118,25 @@ Repositories sind LUKS-verschlüsselte Disk-Images, die im Datastore des Servers
 3. Wird über `cryptsetup` eingebunden, wenn darauf zugegriffen wird
 
 Das Credential wird in Ihrer Konfigurationsdatei gespeichert, jedoch **niemals** auf dem Server. Ohne das Credential können die Repository-Daten nicht gelesen werden. Wenn Autostart aktiviert ist, wird eine sekundäre LUKS-Schlüsseldatei auf dem Server gespeichert, um das automatische Einbinden beim Hochfahren zu ermöglichen.
+
+## Storage-Backends
+
+Ein Datastore ist ein Storage-Pool pro Maschine, der Repository-Images vorhält. Er hat zwei Backends, die beim `datastore init` gewählt werden:
+
+- **Lokal (Standard)**: ein loop-gestütztes BTRFS-Dateisystem auf der eigenen Festplatte der Maschine. Repository-Images sind LUKS-verschlüsselte Dateien darin; ein Fork ist ein einziges `cp --reflink=always`. Dieses Backend verwendet jede Single-Maschine-Bereitstellung, und es braucht nichts außer der Festplatte des Servers.
+- **Ceph RBD**: der Datastore liegt auf einem RBD-Image, das von einem externen Ceph-Cluster gemappt wird, mit einfachem BTRFS obendrauf (keine LUKS-Schicht auf dieser Ebene, da Ceph-Knoten niemals LUKS öffnen). Fork und die schreibgeschützte Multi-Client-Architektur nutzen RBDs eigene Copy-on-Write-Primitive (Snapshot, Protect, Clone) und RADOS-Namespaces für Mandantenisolierung.
+
+Beide Backends präsentieren allem darüber dasselbe Repository-Modell, sodass `repo`-Befehle, Backups und Forks identisch funktionieren. Der Unterschied liegt darin, wo die Bytes liegen und welchen Copy-on-Write-Mechanismus ein Fork verwendet (BTRFS-Reflink versus RBD-Clone). Siehe [Machine Setup](/de/docs/setup) zur Initialisierung jedes Backends und [Server-Referenz](/de/docs/server-reference) für die renet-seitigen Datastore-Befehle.
+
+## Kubernetes-Repositories
+
+Neben Docker-Repos kann eine Maschine **Cluster** hosten. Rediacc behält die Repo-Mentalität bei, indem es das übliche Objektmodell umkehrt: Der Cluster ist der Container, und ein Kubernetes-Repo ist ein Namespace darin.
+
+- Cluster-Zustand (das k3s-Datenverzeichnis pro Knoten) liegt in Datastore-gestützten Copy-on-Write-Image-Dateien, eine pro Knoten, sodass ein Cluster als Satz von Images forkt und migriert.
+- Ein Kubernetes-Repo ist der Namespace `<repo>` plus seine Volumes. Persistent Volumes sind **separate** Copy-on-Write-Einheiten (RBD-Images auf Ceph oder kleine Datastore-Image-Dateien über einen lokalen PV-Provisioner), niemals Verzeichnisse innerhalb eines opaken Cluster-Images. Diese Trennung ist es, die pro-Repo-Forks unabhängig copy-on-write macht.
+- `KUBECONFIG` wird als Analogon zu `DOCKER_HOST` injiziert, und ein `renet kube`-Wrapper wendet Manifeste aus `up()` an, so wie `renet compose` Docker ausführt.
+
+Ganze-Cluster-Klonen und -Umzug liegen bei `rdc cluster fork` und `rdc cluster migrate`. Das ist die differenzierende Fähigkeit: einen laufenden Cluster forken oder verschieben, einschließlich seiner Daten, auf eine andere Maschine oder ein anderes Rechenzentrum mit kurzem Cutover. Siehe den [Kubernetes](/de/docs/kubernetes)-Guide für das vollständige Modell, die Befehle und gemessene Cutover-Zahlen.
 
 ## Konfigurationsstruktur
 

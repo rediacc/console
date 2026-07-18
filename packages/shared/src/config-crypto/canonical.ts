@@ -18,7 +18,7 @@
  * (setting it to missing) to bypass the server's precondition check.
  *
  * Used by: packages/shared/src/config-crypto/commitments.ts.
- * Also mirrored (more loosely) in packages/cli/src/schema/walker.ts::canonicalJson
+ * Also mirrored (more loosely) in packages/shared/src/config-schema/walker.ts::canonicalJson
  * for UX fingerprints; that version is NOT interchangeable with this one.
  */
 

@@ -4,8 +4,8 @@ description: "Varunda krüpteeritud repositooriumeid mis tahes rclone-ühilduvas
 category: "Guides"
 order: 7
 language: et
-sourceHash: "7ff112c2ec14c35f"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "d800519615085ee9"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Varundamine ja taastamine
@@ -118,28 +118,33 @@ Ajastatud varukopiad maanduvad salvestuse konfigureeritud kausta sees režiimip�
 
 Repo võib ilmuda nii `hot/` kui ka `cold/` kaustas (tunnine ajakava teeb sellest hetktõmmise; iganädalane ajakava teeb uuesti). Ühendatud loend näitab mõlemat rida, nii et on selge, millised vood milliseid repo-sid katavad.
 
-## Masstihkroniseerimine
+## Sünkroniseeri üks repositoorium korraga
 
-Saada või tõmba kõik repositooriumid korraga:
+Push ja pull toimivad korraga ühe repositooriumi peal, mis on adresseeritud viitega (`name`, `name:tag` või `name@machine`). Vormi „kõik repositooriumid korraga“ ei ole: käivita käsk iga repositooriumi jaoks eraldi.
 
-### Saada kõik salvestusse
+### Saada salvestusse
 
 ```bash
-rdc repo push --to my-storage -m server-1
+rdc repo push shop@server-1 --to my-storage
 ```
 
-### Tõmba kõik salvestusest
+### Tõmba salvestusest
 
 ```bash
-rdc repo pull --from my-storage -m server-1
+rdc repo pull shop@server-1 --from my-storage
 ```
 
 | Valik | Kirjeldus |
 |--------|-------------|
-| `--to <storage>` | Sihtmärk salvestus (saatmise suund) |
-| `--from <storage>` | Lähtesalvestus (tõmbamise suund) |
-| `--repo <name>` | Sünkroniseeri konkreetsed repositooriumid (korratav) |
-| `--override` | Kirjuta olemasolevad varukopiad üle |
+| `--to <remote>` | Sihtsalvestus või -masin (saatmine) |
+| `--to-machine <machine>` | Sihtmasin masina-masina saatmiseks |
+| `--from <remote>` | Lähtesalvestus või -masin (tõmbamine) |
+| `--from-machine <machine>` | Lähtemašin masina-masina tõmbamiseks |
+| `--force` | Kirjuta olemasolev varukoopia või repositoorium üle |
+| `--checkpoint` | Loo enne saatmist CRIU kontrollpunkt (ainult saatmine) |
+| `--up` | Ühenda ja juuruta repositoorium pärast tõmbamist (ainult tõmbamine) |
+| `--bwlimit <limit>` | Ribalaiuse piirang rsync-ülekandele (nt `10M`) |
+| `--delta-base <guid>` | Kanna üle ainult muutunud plokid võrreldes muutumatu baas-GUID-iga |
 | `--debug` | Luba detailne väljund |
 | `--skip-router-restart` | Jäta marsruudiserverit pärast toimingut taaskäivitamata |
 
@@ -177,8 +182,8 @@ Külm varundamine käib kolmes faasis kaasatud repo kohta: **peatus → hetktõm
 
 **Kuidas operaatorid tõrkeid tuvastavad:**
 
-- `rdc machine query --name <machine> --containers` näitab töötavat olekut. Võrdle oodatud hulgaga.
-- `/var/run/rediacc/cold-backup-<guid>.status.json` masinas. Vaata seda käsuga `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` koos vana `startedAt`-ga tähendab, et viimane varukoopia ei lõppenud puhtalt.
+- `rdc machine status <machine> --containers` näitab töötavat olekut. Võrdle oodatud hulgaga.
+- `/var/run/rediacc/cold-backup-<guid>.status.json` masinas. Vaata seda käsuga `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` koos vana `startedAt`-ga tähendab, et viimane varukoopia ei lõppenud puhtalt.
 - Logid renet-i varundamiskäivitusest (`journalctl -u renet-*` või otsene `rdc machine backup schedule` kutse) väljastavad lõplik kokkuvõtterida kujul `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Mittevühi `failed_repos` on grep-sihtmärk.
 
 ### Külma varundamise seisakuaja hindamine
@@ -302,7 +307,7 @@ Oma konfiguratsioonis seo üks või mitu strateegianime masinaga:
 }
 ```
 
-> **Sidumine on ainult kohalik konfiguratsioon.** Strateegia määratlemine ja masinaga sidumine ei muuda masinat. Käivitage `rdc machine backup schedule -m <machine>` (vt [Ajakava juurutamine masinale](#ajakava-juurutamine-masinale)), et juurutada systemd-taimerid, ja käivitage see uuesti pärast iga strateegia või sidumise muudatust.
+> **Sidumine on ainult kohalik konfiguratsioon.** Strateegia määratlemine ja masinaga sidumine ei muuda masinat. Käivitage `rdc backup schedule -m <machine>` (vt [Ajakava juurutamine masinale](#ajakava-juurutamine-masinale)), et juurutada systemd-taimerid, ja käivitage see uuesti pärast iga strateegia või sidumise muudatust.
 
 ## Kuuma ja külma valimine ning repositooriumipõhine filtreerimine
 

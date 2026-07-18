@@ -26,6 +26,7 @@ const {
     mockConfigFileStorage: {
       getOrCreateDefault: vi.fn(),
       load: vi.fn(),
+      loadDecrypted: vi.fn(),
       exists: vi.fn(),
       init: vi.fn(),
       save: vi.fn(),
@@ -210,24 +211,24 @@ describe('ConfigServiceBase remote integration', () => {
 
     it('should return LocalResourceState when no remote field', async () => {
       mockConfigFileStorage.getOrCreateDefault.mockResolvedValue(localConfig);
+      mockConfigFileStorage.loadDecrypted.mockResolvedValue(localConfig);
 
       const mockLocalState = { getMachines: vi.fn() };
-      mockLocalResourceStateLoad.mockResolvedValue(mockLocalState);
+      mockLocalResourceStateLoad.mockReturnValue(mockLocalState);
 
       const state = await service.getResourceState();
 
-      expect(mockLocalResourceStateLoad).toHaveBeenCalledWith(
-        localConfig,
-        'rediacc',
-        null // no master password
-      );
+      // v3: encryption is a storage-layer transform, so config-base feeds
+      // LocalResourceState a decrypted config (no master-password arg).
+      expect(mockLocalResourceStateLoad).toHaveBeenCalledWith(localConfig, 'rediacc');
       expect(state).toBe(mockLocalState);
     });
 
     it('should cache resource state on second call', async () => {
       mockConfigFileStorage.getOrCreateDefault.mockResolvedValue(localConfig);
+      mockConfigFileStorage.loadDecrypted.mockResolvedValue(localConfig);
       const mockLocalState = { getMachines: vi.fn() };
-      mockLocalResourceStateLoad.mockResolvedValue(mockLocalState);
+      mockLocalResourceStateLoad.mockReturnValue(mockLocalState);
 
       const first = await service.getResourceState();
       const second = await service.getResourceState();

@@ -4,8 +4,8 @@ description: "Comment Edge et Stable diffèrent, et quel canal utiliser."
 category: "Concepts"
 order: 2
 language: fr
-sourceHash: "5fdcb0e8944f5d60"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "6669b5b089f94a39"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Rediacc livre les mises à jour via deux canaux : **Stable** et **Edge**. Ils fonctionnent sur des infrastructures séparées et impliquent des compromis distincts.
@@ -25,7 +25,7 @@ Edge récupère chaque modification dès sa fusion dans la branche principale. C
 
 - Dernières fonctionnalités et correctifs, déployés à chaque fusion
 - Limites du plan Community doublées (voir tableau ci-dessous)
-- Gratuit pour toujours. Aucun plan payant disponible sur Edge.
+- Aucun plan payant disponible sur Edge ; les comptes fonctionnent sur le plan Community.
 - Comptes séparés de Stable. Les données ne sont pas transférées entre les canaux.
 - Domaines : `edge-eu.rediacc.com`, `edge-us.rediacc.com`, `edge-asia.rediacc.com`
 
@@ -35,20 +35,20 @@ Edge récupère chaque modification dès sa fusion dans la branche principale. C
 |---|---|---|
 | **Cadence de déploiement** | Après stabilisation de 7 jours | À chaque fusion dans main |
 | **Stabilité** | Testé pendant 7 jours | Code le plus récent, moins de stabilisation |
-| **Limites du plan Community** | 10 Go de dépôts, 500 émissions/mois, 2 machines | 20 Go de dépôts, 1 000 émissions/mois, 4 machines |
+| **Limites du plan Community** | 10 Go de dépôts, 100 setups/mois, 1 machine | 20 Go de dépôts, 200 setups/mois, 2 machines |
 | **Plans payants** | Disponibles (Professional, Business, Enterprise) | Non disponibles |
 | **Comptes** | Indépendants | Indépendants (séparés de Stable) |
 | **Idéal pour** | Production, charges payantes | Tests, évaluation, projets annexes, accès anticipé |
 
 ## Limites doublées sur Edge
 
-Utilisez Edge sur le plan Community et vos limites de ressources doublent, sans frais supplémentaires :
+Utilisez Edge sur le plan Community et vos limites de ressources doublent :
 
 | Ressource | Community Stable | Community Edge |
 |---|---|---|
 | Taille des dépôts | 10 Go | 20 Go |
-| Émissions de licences par mois | 500 | 1 000 |
-| Activations de machines | 2 | 4 |
+| Émissions de licences par mois | 100 | 200 |
+| Activations de machines | 1 | 2 |
 
 Vous avez besoin de limites plus élevées ou de fonctionnalités payantes ? Créez votre compte sur Stable et effectuez une mise à niveau depuis là.
 

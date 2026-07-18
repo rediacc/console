@@ -4,8 +4,8 @@ description: "Respalde repositorios cifrados en almacenamiento compatible con rc
 category: Guides
 order: 7
 language: es
-sourceHash: "7ff112c2ec14c35f"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "d800519615085ee9"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Respaldo y Restauración
@@ -118,28 +118,33 @@ Los respaldos programados se escriben en subcarpetas por modo dentro de la carpe
 
 Un repositorio puede aparecer tanto en `hot/` como en `cold/` (el cronograma horario lo captura; el cronograma semanal lo vuelve a capturar). El listado combinado muestra ambas filas para que pueda ver qué flujos cubren qué repositorios.
 
-## Sincronización Masiva
+## Sincronizar un repositorio a la vez
 
-Envíe o descargue todos los repositorios a la vez:
+Push y pull actúan sobre un único repositorio, identificado por su ref (`name`, `name:tag` o `name@machine`). No existe una forma para «todos los repositorios a la vez»: ejecute el comando una vez por repositorio.
 
-### Enviar Todos al Almacenamiento
+### Enviar al almacenamiento
 
 ```bash
-rdc repo push --to my-storage -m server-1
+rdc repo push shop@server-1 --to my-storage
 ```
 
-### Descargar Todos desde el Almacenamiento
+### Descargar desde el almacenamiento
 
 ```bash
-rdc repo pull --from my-storage -m server-1
+rdc repo pull shop@server-1 --from my-storage
 ```
 
 | Opción | Descripción |
 |--------|-------------|
-| `--to <storage>` | Almacenamiento destino (dirección de envío) |
-| `--from <storage>` | Almacenamiento de origen (dirección de descarga) |
-| `--repo <name>` | Sincronizar repositorios específicos (repetible) |
-| `--override` | Sobreescribir respaldos existentes |
+| `--to <remote>` | Almacenamiento o máquina de destino (envío) |
+| `--to-machine <machine>` | Máquina de destino para envío de máquina a máquina |
+| `--from <remote>` | Almacenamiento o máquina de origen (descarga) |
+| `--from-machine <machine>` | Máquina de origen para descarga de máquina a máquina |
+| `--force` | Sobreescribir un respaldo o repositorio existente |
+| `--checkpoint` | Crear un checkpoint CRIU antes de enviar (solo envío) |
+| `--up` | Montar y desplegar el repositorio tras la descarga (solo descarga) |
+| `--bwlimit <limit>` | Límite de ancho de banda para la transferencia rsync (p. ej. `10M`) |
+| `--delta-base <guid>` | Transferir solo los bloques modificados respecto a una GUID base inmutable |
 | `--debug` | Habilitar salida detallada |
 | `--skip-router-restart` | Omitir el reinicio del servidor de rutas después de la operación |
 
@@ -177,8 +182,8 @@ Un respaldo frío ejecuta tres fases por repositorio incluido: **detener - snaps
 
 **Cómo los operadores detectan fallos:**
 
-- `rdc machine query --name <machine> --containers` muestra el estado de ejecución. Compare con el conjunto esperado.
-- `/var/run/rediacc/cold-backup-<guid>.status.json` en la máquina. Inspeccione vía `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` con un `startedAt` obsoleto significa que el último respaldo no se completó correctamente.
+- `rdc machine status <machine> --containers` muestra el estado de ejecución. Compare con el conjunto esperado.
+- `/var/run/rediacc/cold-backup-<guid>.status.json` en la máquina. Inspeccione vía `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` con un `startedAt` obsoleto significa que el último respaldo no se completó correctamente.
 - Los registros del respaldo de renet (`journalctl -u renet-*` o la invocación directa `rdc machine backup schedule`) emiten una línea de resumen final de la forma `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` no vacío es el objetivo de grep.
 
 ### Estimación del tiempo de inactividad del respaldo en frío
@@ -302,7 +307,7 @@ En su configuración, vincule uno o más nombres de estrategia a una máquina:
 }
 ```
 
-> **La vinculación es solo de configuración local.** Definir una estrategia y vincularla a una máquina no afecta a la máquina. Ejecute `rdc machine backup schedule -m <machine>` (consulte [Desplegar Cronograma en la Máquina](#desplegar-cronograma-en-la-máquina)) para desplegar los temporizadores systemd, y vuelva a ejecutarlo tras cualquier cambio de estrategia o vinculación.
+> **La vinculación es solo de configuración local.** Definir una estrategia y vincularla a una máquina no afecta a la máquina. Ejecute `rdc backup schedule -m <machine>` (consulte [Desplegar Cronograma en la Máquina](#desplegar-cronograma-en-la-máquina)) para desplegar los temporizadores systemd, y vuelva a ejecutarlo tras cualquier cambio de estrategia o vinculación.
 
 ## Elegir entre Hot y Cold y Filtrado por Repositorio
 

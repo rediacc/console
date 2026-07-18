@@ -4,7 +4,7 @@ description: "Supprimer les sauvegardes orphelines, les snapshots obsolètes, le
 category: "Guides"
 order: 12
 language: fr
-sourceHash: "d2700c2ac4473962"
+sourceHash: "af01691f5fe908ee"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -14,8 +14,8 @@ Le nettoyage balaie les états qui ne correspondent plus à une ressource vivant
 
 | Commande | Ce qu'elle nettoie | Où vit la source de vérité |
 |---|---|---|
-| `rdc storage prune --name <storage> -m <machine>` | Sauvegardes orphelines dans le stockage cloud | Configuration CLI locale (recoupée avec la machine d'exécution pour la sécurité de montage) |
-| `rdc machine prune --name <machine>` | Artefacts du datastore sur la machine (toujours) ; images de dépôt orphelines ou inconnues (opt-in) | Configuration CLI locale + le miroir `.interim/state` de la machine |
+| `rdc storage prune <storage> -m <machine>` | Sauvegardes orphelines dans le stockage cloud | Configuration CLI locale (recoupée avec la machine d'exécution pour la sécurité de montage) |
+| `rdc machine prune <machine>` | Artefacts du datastore sur la machine (toujours) ; images de dépôt orphelines ou inconnues (opt-in) | Configuration CLI locale + le miroir `.interim/state` de la machine |
 | `rdc config prune` | Résidus de la configuration locale (cache de certificats, archives expirées, références croisées orphelines) | Configuration CLI locale uniquement |
 
 Les trois sont indépendantes. Vous pouvez exécuter n'importe laquelle sans les autres. Elles partagent un modèle de sécurité commun décrit sous [Sécurité](#modèle-de-sécurité) ci-dessous.
@@ -202,7 +202,7 @@ Le nettoyage est conçu pour être sûr par défaut dans les configurations mult
 
 ### Période de grâce
 
-Lorsqu'un dépôt est retiré d'une configuration avec `--archive-config`, son entrée d'identifiant est déplacée vers `resources.deletedRepositories[]` avec un horodatage `deletedAt`. Les commandes de nettoyage respectent une période de grâce (par défaut 7 jours) pendant laquelle les dépôts récemment archivés sont protégés contre la suppression. Cela vous laisse le temps de restaurer un dépôt (`rdc config repository restore-archived --name <guid>`) s'il a été retiré accidentellement. Une fois la grâce expirée, `storage prune`, `machine prune` et `config prune` purgent tous automatiquement l'entrée.
+Lorsqu'un dépôt est retiré d'une configuration avec `--archive-config`, son entrée d'identifiant est déplacée vers `resources.deletedRepositories[]` avec un horodatage `deletedAt`. Les commandes de nettoyage respectent une période de grâce (par défaut 7 jours) pendant laquelle les dépôts récemment archivés sont protégés contre la suppression. Cela vous laisse le temps de restaurer un dépôt (`rdc repo admin archive restore <guid>`) s'il a été retiré accidentellement. Une fois la grâce expirée, `storage prune`, `machine prune` et `config prune` purgent tous automatiquement l'entrée.
 
 ### Préflight de sécurité de montage
 

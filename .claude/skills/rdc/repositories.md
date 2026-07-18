@@ -7,50 +7,59 @@ Repositories are isolated application deployments. Each gets an encrypted LUKS v
 ## Lifecycle commands
 
 ### Create
-Creates encrypted volume. Size examples: `2G`, `5G`, `100G`, `1T`. Takes ~15-25s for LUKS formatting. The volume is left mounted and ready for `sync upload` immediately after creation.
+`rdc repo create <name> -m <machine> --size 5G` creates the encrypted volume. Size examples: `2G`, `5G`, `100G`, `1T`. Takes ~15-25s for LUKS formatting. The volume is left mounted and ready for `sync upload` immediately after creation. This is one of the few repo commands that still takes `-m`: the repo does not exist yet, so there is no placement to derive the machine from.
 
 ### Deploy (start services)
-Runs the Rediaccfile lifecycle: `up()`.
-- `--mount`: Mount volume first. Required after any `repo push` to a new machine, and for first deploy of forked repos.
-- `--checkpoint`: Restore CRIU checkpoint instead of running up() lifecycle. When checkpoint data is found, the Rediaccfile is **not executed** — containers resume directly from saved state.
-- `--grand <parent>`: Use parent repo's LUKS credential to unlock a fork. Required when deploying a forked repo that inherited the parent's encryption key.
+`rdc repo up <ref>` runs the Rediaccfile lifecycle: `up()`. The machine is derived from the ref.
+- Mounting is automatic. First deploy and forks are mounted for you, so the old `repo mount` command is gone, and so is `repo up --mount`.
+- `--no-start`: Mount and prepare the repo without running `up()`. This is what folded in the retired `repo mount`.
+- `--skip-checkpoint`: Force a fresh start instead of restoring a CRIU checkpoint. Checkpoint restore is auto-detected by default; when checkpoint data is found the Rediaccfile is **not executed** and containers resume from saved state.
+- Fork credentials are resolved automatically. A fork inherits the parent's encryption key, so there is no `--grand` flag on `repo up` any more.
+- `--all -m <machine>`: Batch form. Deploy every repository whose home is that machine.
 
 ### Stop services
-Runs Rediaccfile `down()`. Stops containers but does NOT unmount — the repo stays mounted and can be restarted with `repo up`. Use `--unmount` to also close the LUKS volume.
+`rdc repo down <ref>` runs Rediaccfile `down()`. Stops containers but does NOT unmount: the repo stays mounted and can be restarted with `repo up`. Use `--unmount` to also close the LUKS volume (this folded in the retired `repo unmount`).
 
 ### Delete
-Destroys containers, volumes, and encrypted image. Credential is archived for recovery via `config restore-archived`. **Warning**: Config mapping is removed globally — if the repo exists on another machine (after `repo push`), re-add with `config add-repository`.
+`rdc repo delete <ref>` destroys containers, volumes, and encrypted image. The config entry is preserved by default; pass `--archive-config` to move the credentials into the archive, recoverable with `rdc repo admin archive restore <name>`. A bare name resolves to the grand line and is refused when several repos share the base name, so pass `name:tag` to target a fork.
 
 ### Prune orphaned resources
-Removes empty mount dirs, orphan immovable markers, and stale lock files left behind by deleted repos or failed operations. Only removes resources with no matching repository image. Non-empty mount directories are never removed.
+`rdc machine prune --name <machine>` removes empty mount dirs, orphan immovable markers, and stale lock files left behind by deleted repos or failed operations. Only removes resources with no matching repository image. Non-empty mount directories are never removed. Add `--orphaned-repos` to also delete repo images that are in no config.
+
+### Garbage-collect commits
+`rdc repo gc -m <machine>` deletes immutable commit objects that no branch or HEAD reaches. Dry-run by default; pass `--apply` to actually delete. It never touches a mounted object or a working fork.
 
 ### Status
-Shows mount state, Docker daemon, container count, disk usage.
+`rdc repo status <ref>` shows mount state, Docker daemon, container count, disk usage.
 
 ## Advanced operations
 
 ### Fork (copy-on-write clone)
-Creates an independent copy using the name:tag model — the fork is named `<parent>:<tag>` (e.g., `my-app:staging`). It gets a new GUID, networkId, and IP range while sharing the parent's name. Parent can remain running. Use `--checkpoint` to capture CRIU process state before forking — the fork auto-restores on first `repo up` (in-memory state preserved for containers with `rediacc.checkpoint=true` label). Cross-machine fork: fork locally first, then `repo push` to the target.
+`rdc repo fork <parent-ref> --tag <tag>` creates an independent copy using the name:tag model, so the fork is named `<parent>:<tag>` (e.g., `my-app:staging`). It gets a new GUID, networkId, and IP range while sharing the parent's name. Parent can remain running. Use `--checkpoint` to capture CRIU process state before forking; the fork auto-restores on first `repo up` (in-memory state preserved for containers with `rediacc.checkpoint=true` label). Cross-machine fork: fork locally first, then `repo push` to the target.
 
 **Agent guard**: AI agents operate in fork-only mode by default — they can only modify fork repositories. Use `repo fork` to create a fork first, then operate on the fork. Grand repo access requires `REDIACC_ALLOW_GRAND_REPO=<name>` (or a comma-separated list like `repo1,repo2`, or `*` for all repos) or `--allow-grand` on the MCP server.
 
-### Naming & targeting (grand vs forks) — READ BEFORE delete/takeover
-Every repo is addressed as `<name>:<tag>`. The **grand** (production) repo is `<name>`, equivalently `<name>:latest` (`latest` is the default tag, `DEFAULTS.REPOSITORY.TAG`); a bare `--name <name>` resolves to the exact config key, else falls back to `<name>:latest`. A **fork** is always `<name>:<tag>` with a non-`latest` tag (e.g. `my-app:staging`).
+### Naming & targeting (grand vs forks): READ BEFORE delete/promote
+Every repo is addressed by a positional **ref**: `name[:tag][@place]`. The **grand** (production) repo is the bare `name`, which is exactly `name:base` (`base` is the reserved birth tag; writing `:base` explicitly is refused). A **fork** is always `name:tag` with some other tag (e.g. `my-app:staging`).
 
-- `--name app` → the **grand**; `--name app:test` → that **fork**. Always pass the explicit `:tag` when acting on a fork — across `up`/`down`/`delete`/`term`/`sync` and `config repository remove`.
-- **Danger:** a fork can end up registered under the bare/`latest` name (colliding with the grand). Then a bare `--name` is ambiguous and a `delete` could hit the wrong repo. Disambiguate by checking `is_fork`/`grand_guid` (via `machine query --repositories`) and targeting the precise `<name>:<tag>`. The grand guard still refuses deleting a production grand from an agent session, but don't rely on it — target by tag.
+- `rdc repo up app` → the **grand**; `rdc repo up app:test` → that **fork**. Always pass the explicit `:tag` when acting on a fork, across `up` / `down` / `delete` / `term` / `sync`.
+- `@place` is an **assertion**, not a selector. `rdc repo up app@server-1` says "app had better be on server-1" and fails if it is not. The machine is derived from the ref either way; `@place` cannot move a repo or pick a copy.
+- **Danger:** when several repos share a base name, a bare ref is ambiguous and `repo delete` refuses it rather than guessing. Target the precise `name:tag`. Disambiguate with `rdc machine status <machine> --repositories` (check `is_fork` / `grand_guid`). The grand guard still refuses deleting a production grand from an agent session, but don't rely on it: target by tag.
 
 ### Resize (offline)
-Supports grow and shrink. Must be unmounted first (`repo down --unmount`).
+`rdc repo resize <ref> --size <size>` supports grow and shrink. Must be unmounted first (`repo down --unmount`).
 
 ### Expand (online, zero downtime)
-Grow-only while repo is running. Cannot shrink — use `repo resize` for that.
+`rdc repo expand <ref> --size <size>` is grow-only while the repo is running. Cannot shrink; use `repo resize` for that.
 
 ### Apply template
-Writes Rediaccfile and docker-compose.yaml from a template file.
+`rdc repo admin template apply <ref> --template <name>` writes Rediaccfile and docker-compose.yaml from a template. `rdc repo admin template list` shows the built-ins.
 
 ### Validate
-Checks LUKS container, filesystem consistency, and configuration. Use after unexpected shutdowns or to verify backup health.
+`rdc repo admin validate <ref>` checks the LUKS container, filesystem consistency, and configuration. Use after unexpected shutdowns or to verify backup health.
+
+### Admin verbs
+Maintenance verbs live under `rdc repo admin`: `archive {list,restore,purge}`, `fsck`, `validate`, `autostart {enable,disable,list}`, `ownership`, `template {list,apply}`.
 
 ## Rediaccfile rules
 
@@ -100,21 +109,29 @@ In containers: `SERVICE_IP`, `REDIACC_NETWORK_ID` (auto-injected by renet).
 - Custom domains are skipped for forks — the domain belongs to the grand repo
 - Scheduled backups skip forks (use `rdc repo push` for manual backup)
 
-## Takeover workflow (fork to production)
+## Promote workflow (fork to production)
 
-1. Fork: `rdc repo fork --parent jfrog --tag upgrade-test -m hostinger`
-2. Deploy fork: `rdc repo up --name jfrog:upgrade-test -m hostinger --mount`
+`repo promote` replaced `repo takeover`. It makes a validated fork the production repo under
+its parent's name: the parent keeps its identity (GUID, networkId, domains, autostart, backup
+chain) and receives the fork's data. The old production data is preserved as a backup fork.
+Promote never fetches bytes; use `repo push` or `backup restore` for that.
+
+1. Fork: `rdc repo fork jfrog --tag upgrade-test`
+2. Deploy fork: `rdc repo up jfrog:upgrade-test`
 3. Test upgrade in fork (SSH, apply changes, verify)
-4. Takeover: `rdc repo takeover --name jfrog:upgrade-test -m hostinger`
+4. Promote: `rdc repo promote jfrog:upgrade-test`
 5. Production now has upgraded data. Old data preserved as backup fork.
-6. To revert: `rdc repo takeover --name jfrog:pre-takeover-20260317 -m hostinger`
+6. To revert: `rdc repo promote jfrog:pre-promote-20260317`
+
+Pass an explicit `name:tag`. A bare ref resolves to the parent and is rejected with "not a fork".
 
 ## Storage architecture
 
-- The datastore is a BTRFS pool file hosted on the system disk (`/mnt/rediacc.pool`)
-- `rdc machine query --name <name> --system` shows both disk and datastore stats plus effective free space
+- A repository lives in a **datastore**: a named, movable storage pool. The implicit default datastore on each machine is a BTRFS pool file on the system disk (`/mnt/rediacc.pool`); additional named datastores are created with `rdc datastore create`.
+- `rdc machine status <name> --system` shows both disk and datastore stats plus effective free space
+- `rdc machine status <name> --datastores` lists the datastores attached to the machine
 - Effective free = min(disk free, datastore free) — the actual limit for new repos
-- Expand with: `rdc datastore resize -m <machine> --size <size>`
+- Grow a named datastore with: `rdc datastore resize <datastore> --size <size>`
 
 ## Cleanup behavior
 
@@ -125,8 +142,8 @@ In containers: `SERVICE_IP`, `REDIACC_NETWORK_ID` (auto-injected by renet).
 ## Typical deployment workflow
 
 ```bash
-rdc repo create --name my-app -m server-1 --size 5G
-rdc repo sync upload -m server-1 -r my-app --local ./my-app/
-rdc repo up --name my-app -m server-1
-rdc machine query --containers --name server-1    # verify
+rdc repo create my-app -m server-1 --size 5G
+rdc repo sync upload my-app --local ./my-app/
+rdc repo up my-app
+rdc machine status server-1 --containers    # verify
 ```

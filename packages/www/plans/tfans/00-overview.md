@@ -170,7 +170,7 @@ automatically.
 
 Renet is a low-level orchestrator managed by rdc. External tools MUST call
 `rdc` CLI only — never SSH into machines and run renet directly. Reasons:
-rdc manages renet's lifecycle (provisioning/upgrades), builds the QueueVaultV2
+rdc manages renet's lifecycle (provisioning/upgrades), builds the RenetVault
 payload (SSH keys, credentials, storage configs), manages config (machines,
 repos, network IDs, SSH keys), and handles SSH transport. If rdc is missing
 a command or JSON output, fix rdc — don't bypass it.

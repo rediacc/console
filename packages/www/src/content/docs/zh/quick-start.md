@@ -4,8 +4,8 @@ description: 几分钟内在您的服务器上运行容器化服务。
 category: Guides
 order: -1
 language: zh
-sourceHash: "afd4d22ddc8e02e1"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "a1350abc611570ef"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # 快速开始
@@ -93,8 +93,8 @@ rdc repo create --name my-app -m my-server --size 2G  # 创建 2 GB 加密仓库
 ### 2. 应用模板
 
 ```bash
-rdc repo template list                                        # 显示内置模板
-rdc repo template apply --name app-postgres -m my-server -r my-app  # 部署 docker-compose.yml + Rediaccfile
+rdc repo admin template list                                        # 显示内置模板
+rdc repo admin template apply --name app-postgres -m my-server -r my-app  # 部署 docker-compose.yml + Rediaccfile
 ```
 
 模板提供 `docker-compose.yml`、`Rediaccfile` 和辅助文件。如果没有模板（或您自己的 compose 文件），就没有可启动的内容。使用内置模板作为您第一个仓库的起点。这是从头到尾体验完整工作流程的最快途径。
@@ -112,7 +112,7 @@ rdc repo status --name my-app -m my-server  # 挂载状态、Docker、大小、�
 ### 4. VS Code
 
 ```bash
-rdc vscode connect -m my-server -r my-app              # 打开 VS Code SSH，进入仓库沙箱
+rdc vscode connect my-app              # 打开 VS Code SSH，进入仓库沙箱
 ```
 
 您正在加密卷*内部*编辑文件。`docker ps` 只显示此仓库的容器。保存、compose up、迭代。
@@ -126,7 +126,7 @@ rdc vscode connect -m my-server -r my-app              # 打开 VS Code SSH，�
 | **使用场景** | CI/CD、自动化、远程运维 | 开发者内循环 |
 | **隔离性** | 从外部编排 | 已在沙箱内部 |
 
-**演示流程：** `rdc repo template apply` → `rdc vscode connect -m my-server -r my-app` → 编辑 `docker-compose.yml` → `renet dev up` → 看到应用运行 → 迭代。
+**演示流程：** `rdc repo admin template apply` → `rdc vscode connect my-app` → 编辑 `docker-compose.yml` → `renet dev up` → 看到应用运行 → 迭代。
 
 > Rediaccfile 结构：[服务](/en/docs/services)。何时使用哪个工具：[rdc vs renet](/en/docs/rdc-vs-renet)。
 
@@ -261,7 +261,7 @@ rdc config infra push -m my-server  # 将代理配置推送到远程
 ### 2. 代理模板
 
 ```bash
-rdc repo template apply --name proxy -m my-server -r infra  # 将代理部署到仓库
+rdc repo admin template apply --name proxy -m my-server -r infra  # 将代理部署到仓库
 rdc repo up --name infra -m my-server  # 启动 Traefik
 ```
 

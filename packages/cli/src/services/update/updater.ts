@@ -3,8 +3,8 @@ import { promises as fs } from 'node:fs';
 import { get as httpGet } from 'node:http';
 import { get as httpsGet } from 'node:https';
 import { dirname, join } from 'node:path';
-import type { ReleaseChannel } from '@rediacc/shared/update/types';
 import { UPDATE_DEFAULTS } from '@rediacc/shared/config/defaults';
+import type { ReleaseChannel } from '@rediacc/shared/update/types';
 import { compareVersions } from '@rediacc/shared/utils';
 import { type UpdateManifest } from '../../types/index.js';
 import {
@@ -16,8 +16,8 @@ import {
   STAGED_UPDATE_DIR,
 } from '../../utils/platform.js';
 import { VERSION } from '../../version.js';
-import { telemetryService } from '../telemetry/telemetry.js';
 import { loadServerConfig } from '../account/subscription-auth.js';
+import { telemetryService } from '../telemetry/telemetry.js';
 import { getStagedBinaryPath, readUpdateState, writeUpdateState } from './update-state.js';
 
 const DEFAULT_MANIFEST_BASE_URL = 'https://releases.rediacc.com/cli';

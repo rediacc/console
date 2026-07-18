@@ -1,0 +1,37 @@
+# e2e-tests coverage allowlist — renet functions shipped but not yet exercised
+# by a LIVE suite (one CI runs). Read by scripts/check-e2e-coverage.ts through
+# the shared BLOCKER contract (scripts/lib/blocker-validator.ts): every entry
+# needs a substantive reason, and an entry that BECOMES covered fails the gate
+# as stale — so this list can only shrink, never quietly harbor paid-down debt.
+#
+# This is the forward-direction allowlist ONLY (is every shipped verb tested?).
+# The reverse direction (does a test dispatch a verb renet no longer registers?)
+# lives in .ci/scripts/quality/check-e2e-coverage.sh and has no allowlist.
+
+# BLOCKER: legacy renet functions that predate the packages/e2e-tests suite and
+# are not yet exercised by any suite CI runs. The middleware-backed
+# packages/cli/tests suite that once covered them was retired; migrating each
+# into packages/e2e-tests is tracked follow-up work (the datastore-centric
+# redesign wave burns these down — repository_policy_{get,set}/repository_trim
+# land in the B4 policy/trim extension, the autostart family and repository_cat/
+# diff/ownership/prune/down_all/up_all follow). Remove a name here the moment its
+# e2e-test lands; the gate rejects a stale (now-covered) entry automatically.
+backup_delete
+backup_list
+ceph_client_mount
+ceph_client_unmount
+ceph_clone_image
+container_remove
+repository_autostart_disable
+repository_autostart_disable_all
+repository_autostart_enable
+repository_autostart_enable_all
+repository_autostart_list
+repository_cat
+repository_commit_meta
+repository_diff
+repository_down_all
+repository_ownership
+repository_prune
+repository_template_apply
+repository_up_all

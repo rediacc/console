@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 4
 language: de
-sourceHash: "0f08c5b75c3588cc"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "c9553259c9bf6b4c"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Repositories
@@ -158,7 +158,7 @@ rdc repo fork --parent my-app --tag staging -m server-1 --up
 rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
 ```
 
-In unseren Tests hat ein 128-GB-Repository geforkt und laufende Dienste in etwa 57 Sekunden erreicht, mit `--detach` in etwa 31 Sekunden. Beim abgetrennten Lauf wird ein Hinweis ausgegeben, wie der Fortschritt verfolgt werden kann: `rdc machine query --containers --name <machine>`.
+In unseren Tests hat ein 128-GB-Repository geforkt und laufende Dienste in etwa 57 Sekunden erreicht, mit `--detach` in etwa 31 Sekunden. Beim abgetrennten Lauf wird ein Hinweis ausgegeben, wie der Fortschritt verfolgt werden kann: `rdc machine status <machine> --containers`.
 
 ### Wo die Zeit bleibt
 
@@ -228,7 +228,7 @@ Die Referenz auf Service-Seite in Kleinbuchstaben (`stripe_live_key`) ist der Da
 
 > **Cross-Repo-Isolation erzwungen**: Der Compose-Validator von renet lehnt `secrets: file:` (und `configs: file:` und `env_file:`) Pfade ab, die auf die Network ID eines anderen Repos verweisen. Das wörtliche `${REDIACC_NETWORK_ID}` Token (oder deine eigene Netzwerk-Int) ist die einzige akzeptierte Form für `/var/run/rediacc/secrets/...` Referenzen. Und `--unsafe` überschreibt diese Prüfung NICHT. Die Landlock-Sandbox um den Rediaccfile-Bash-Subprocess begrenzt auch den Dateisystem-Zugriff nur auf dein eigenes Netzwerk-Secrets-Verzeichnis, so dass ein böswilliges `cat /var/run/rediacc/secrets/<other>/X` von einem Rediaccfile mit EACCES auf Kernel-Ebene fehlschlägt.
 
-> **Forks**: `rdc repo fork` kopiert Secrets **nicht**. Um Secrets in einem Fork zu verwenden, führe `rdc repo secret set --name <fork>` auf dem Fork explizit aus. Das ist die tragende Sicherheitseigenschaft. Die Container des Forks sollten nicht als produktiver Principal gegenüber externen Services handeln können.
+> **Forks**: `rdc repo fork` kopiert Secrets **nicht**. Um Secrets in einem Fork zu verwenden, führe `rdc repo secret set <fork>` auf dem Fork explizit aus. Das ist die tragende Sicherheitseigenschaft. Die Container des Forks sollten nicht als produktiver Principal gegenüber externen Services handeln können.
 
 > **Agents** (Claude Code, Cursor, usw.): `repo secret list` und `repo secret get` werden als MCP-Tools verfügbar gemacht (lesarsicher: nur Namen + Digests, nie Werte). `set` und `unset` sind nur CLI, weil die `--current`/`--rotate-secret` Zeremonie menschliche Augen erfordert; Agents die sie über Shell aufrufen, bekommen das gleiche Gate wie Menschen. Wenn die Vorbedingung fehlschlägt, enthält die JSON-Hülle ein strukturiertes Feld `errors[].next.options[].run`. Agents sollten diese Befehle wörtlich an den Benutzer weitergeben. Siehe [KI-Agent-Sicherheit](/de/docs/ai-agents-safety) für das vollständige Modell.
 
@@ -269,7 +269,7 @@ Siehe den [Migrationsleitfaden](/de/docs/migration) für eine vollständige Erkl
 Wende eine Vorlage an, um ein Repository mit Dateien zu initialisieren:
 
 ```bash
-rdc repo template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
 ```
 
 ## Löschen

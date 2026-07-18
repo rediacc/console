@@ -2,13 +2,11 @@ import chalk from 'chalk';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
-import {
-  type LocalExecuteResult,
-  localExecutorService,
-} from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
-import { handleError, ValidationError } from '../utils/errors.js';
+import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
+import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { resolveRepoRef } from '../utils/repo-target.js';
 
 interface DiffEntry {
   status: 'A' | 'M' | 'D' | 'R';
@@ -56,13 +54,10 @@ interface ContentDiffResult {
 }
 
 interface DiffOptions {
-  name: string;
   base?: string;
-  machine: string;
   nameOnly?: boolean;
   stat?: boolean;
   content?: string | boolean;
-  json?: boolean;
   fast?: boolean;
   debug?: boolean;
   skipRouterRestart?: boolean;
@@ -230,19 +225,17 @@ type DiffMode =
   | { kind: 'content'; path: string }
   | { kind: 'render'; render: (d: DiffResult) => void };
 
-function pickRenderer(options: DiffOptions): (d: DiffResult) => void {
-  if (options.json) return (d) => outputService.print(d, 'json');
+function pickRenderer(options: DiffOptions, asJson: boolean): (d: DiffResult) => void {
+  if (asJson) return (d) => outputService.print(d, 'json');
   if (options.nameOnly) return renderNameOnly;
   if (options.stat) return renderStat;
   return renderNameStatus;
 }
 
 /** Pick the single output mode, enforcing mutual exclusivity. */
-function selectMode(options: DiffOptions): DiffMode {
+function selectMode(options: DiffOptions, asJson: boolean): DiffMode {
   const contentMode = options.content !== undefined;
-  const formats = [options.nameOnly, options.stat, contentMode, options.json].filter(
-    Boolean
-  ).length;
+  const formats = [options.nameOnly, options.stat, contentMode].filter(Boolean).length;
   if (formats > 1) {
     throw new ValidationError(t('commands.repo.diff.conflictingFormat'));
   }
@@ -252,16 +245,19 @@ function selectMode(options: DiffOptions): DiffMode {
     }
     return { kind: 'content', path: options.content };
   }
-  return { kind: 'render', render: pickRenderer(options) };
+  return { kind: 'render', render: pickRenderer(options, asJson) };
 }
 
-async function runDiff(options: DiffOptions): Promise<void> {
-  const mode = selectMode(options);
-  const { baseGuid, targetGuid } = await resolveBaseTarget(options.name, options.base);
+async function runDiff(ref: string, options: DiffOptions): Promise<void> {
+  // JSON output rides the global -o json (the per-command --json flag is retired).
+  const asJson = getOutputFormat() === 'json';
+  const mode = selectMode(options, asJson);
+  const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref, { readOnly: true });
+  const { baseGuid, targetGuid } = await resolveBaseTarget(repoKey, options.base);
   if (baseGuid === targetGuid) {
     throw new ValidationError(t('commands.repo.diff.sameRepo'));
   }
-  await configService.ensureRepositoryNetworkId(options.name);
+  await configService.ensureRepositoryNetworkId(repoKey);
 
   const params: Record<string, unknown> = { base: baseGuid, target: targetGuid };
   if (options.fast) params.fast = true;
@@ -271,14 +267,15 @@ async function runDiff(options: DiffOptions): Promise<void> {
     t('commands.repo.diff.starting', {
       base: baseGuid,
       target: targetGuid,
-      machine: options.machine,
+      machine: machineName,
     })
   );
 
-  const result: LocalExecuteResult = await localExecutorService.execute({
+  const result: ExecuteResult = await getExecutor().execute({
     functionName: 'repository_diff',
-    machineName: options.machine,
-    params: { repository: options.name, ...params },
+    machineName,
+    ...(kubeCluster !== undefined && { kubeCluster }),
+    params: { repository: repoKey, ...params },
     debug: options.debug,
     skipRouterRestart: options.skipRouterRestart,
     captureOutput: true,
@@ -289,7 +286,7 @@ async function runDiff(options: DiffOptions): Promise<void> {
     process.exitCode = 1;
     return;
   }
-  renderResult(mode, result.stdout ?? '', options.json ?? false);
+  renderResult(mode, result.stdout ?? '', asJson);
 }
 
 /** Parse the renet JSON payload and render it per the selected mode. */
@@ -316,19 +313,17 @@ export function registerRepoDiffCommand(repo: Command): void {
     .command('diff')
     .summary(t('commands.repo.diff.descriptionShort'))
     .description(t('commands.repo.diff.description'))
-    .requiredOption('--name <name>', t('commands.repo.diff.nameOption'))
-    .option('--base <name>', t('commands.repo.diff.baseOption'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .argument('<ref>', t('options.repoRef'))
+    .option('--base <ref>', t('commands.repo.diff.baseOption'))
     .option('--name-only', t('commands.repo.diff.nameOnlyOption'))
     .option('--stat', t('commands.repo.diff.statOption'))
     .option('--content [path]', t('commands.repo.diff.contentOption'))
-    .option('--json', t('commands.repo.diff.jsonOption'))
     .option('--fast', t('commands.repo.diff.fastOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (options: DiffOptions) => {
+    .action(async (ref: string, options: DiffOptions) => {
       try {
-        await runDiff(options);
+        await runDiff(ref, options);
       } catch (error) {
         handleError(error);
       }

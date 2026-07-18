@@ -92,7 +92,7 @@ Counterintuitive reveal. Every Docker tutorial teaches you to use one daemon. Th
 
 ### Why This Is a "Wow"
 
-A visible timer on screen. `rdc datastore fork -m prod --to staging`. The timer stops at 4.7 seconds. A 3.2TB production system — with its database, file storage, application state — is now running as an independent clone. Zero bytes transferred over the network (Ceph RBD snapshot + COW overlay reads from shared blocks, writes to local sparse file). The staging instance is immediately available for testing, and production never noticed.
+A visible timer on screen. `rdc datastore fork prod --tag staging --attach-to <machine>`. The timer stops at 4.7 seconds. A 3.2TB production system — with its database, file storage, application state — is now running as an independent clone. Zero bytes transferred over the network (Ceph RBD snapshot + COW overlay reads from shared blocks, writes to local sparse file). The staging instance is immediately available for testing, and production never noticed.
 
 ### Why People Share This
 
@@ -289,7 +289,7 @@ The r/selfhosted community (301K members) collectively shares one frustration: r
 
 ### Why This Is a "Wow"
 
-The tutorial simulates a ransomware attack: files encrypted, database corrupted, application down. A timer starts. The recovery: `rdc repo snapshot list production -m server` (see available snapshots) → `rdc repo fork production -m server --tag recovery` (instant COW clone from pre-attack snapshot) → `rdc repo up recovery -m server` (boot the clean clone). Timer stops at 47 seconds. The application is serving requests from the clean fork. Production data from before the attack is intact. The encryption keys were never on the server (LUKS credentials stored only in local config), so the attacker couldn't have compromised the backup snapshots.
+The tutorial simulates a ransomware attack: files encrypted, database corrupted, application down. A timer starts. The recovery: `rdc repo log production` (see the commit history — the restore points) → `rdc repo checkout <pre-attack-commit> --from production --tag recovery` (instant COW clone of the pre-attack commit into a fresh writable fork) → `rdc repo up recovery` (boot the clean clone). Timer stops at 47 seconds. The application is serving requests from the clean fork. Production data from before the attack is intact. The encryption keys were never on the server (LUKS credentials stored only in local config), so the attacker couldn't have compromised the backup snapshots.
 
 The contrast: industry average of 24 days vs. 47 seconds. $1.53M average cost vs. a single CLI command. The viewer realizes that the combination of encrypted snapshots + instant forking + local-only credentials makes ransomware recovery a solved problem rather than a 24-day crisis.
 

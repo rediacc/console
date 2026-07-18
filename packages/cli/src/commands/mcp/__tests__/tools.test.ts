@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { cli } from '../../../cli.js';
 import { CUSTOM_TOOLS } from '../custom-tools.js';
 import type { ToolDef } from '../tool-factory.js';
 import { buildAllTools } from '../tools.js';
 
-// Build the full tool list from the real Commander tree
-const TOOLS: ToolDef[] = buildAllTools(cli);
+// Build the full tool list from the generated CLI contract
+const TOOLS: ToolDef[] = buildAllTools();
 
 describe('MCP tool definitions', () => {
   it('has at least 24 tools defined', () => {
@@ -29,13 +28,12 @@ describe('MCP tool definitions', () => {
 
     it('includes expected read tools', () => {
       const names = readTools.map((t) => t.name);
-      expect(names).toContain('machine_query');
+      expect(names).toContain('machine_status');
       expect(names).toContain('machine_list');
       expect(names).toContain('machine_containers');
       expect(names).toContain('machine_services');
       expect(names).toContain('machine_repos');
       expect(names).toContain('machine_health');
-      expect(names).toContain('agent_capabilities');
     });
 
     it('are not marked as destructive', () => {
@@ -56,7 +54,7 @@ describe('MCP tool definitions', () => {
       expect(names).toContain('repo_delete');
       expect(names).toContain('repo_fork');
       expect(names).toContain('repo_pull');
-      expect(names).toContain('term_exec');
+      expect(names).toContain('repo_exec');
     });
 
     it('are marked as destructive', () => {
@@ -74,7 +72,7 @@ describe('MCP tool definitions', () => {
         'repo_fork',
         'repo_push',
         'repo_pull',
-        'term_exec',
+        'repo_exec',
       ]) {
         const tool = TOOLS.find((t) => t.name === name)!;
         expect(tool.timeoutMs, `${name} should have >= 300s timeout`).toBeGreaterThanOrEqual(
@@ -85,156 +83,111 @@ describe('MCP tool definitions', () => {
   });
 
   describe('command builders produce valid argv', () => {
-    it('machine_query builds correct argv', () => {
-      const tool = TOOLS.find((t) => t.name === 'machine_query')!;
-      expect(tool.command({ name: 'prod' })).toEqual(['machine', 'query', '--name', 'prod']);
+    it('machine_status builds correct argv', () => {
+      const tool = TOOLS.find((t) => t.name === 'machine_status')!;
+      expect(tool.command({ name: 'prod' })).toEqual(['machine', 'status', 'prod']);
     });
 
     it('machine_containers builds correct argv', () => {
       const tool = TOOLS.find((t) => t.name === 'machine_containers')!;
       expect(tool.command({ name: 'staging' })).toEqual([
         'machine',
-        'query',
-        '--name',
+        'status',
         'staging',
         '--containers',
       ]);
     });
 
-    it('agent_capabilities builds correct argv', () => {
-      const tool = TOOLS.find((t) => t.name === 'agent_capabilities')!;
-      expect(tool.command({})).toEqual(['agent', 'capabilities']);
-    });
-
     it('repo_create builds correct argv', () => {
       const tool = TOOLS.find((t) => t.name === 'repo_create')!;
       const argv = tool.command({ name: 'webapp', machine: 'prod', size: '10G' });
-      expect(argv).toContain('repo');
-      expect(argv).toContain('create');
-      expect(argv).toContain('--name');
-      expect(argv).toContain('webapp');
+      // `repo create <name>` takes the repo name POSITIONALLY (spec §5.4 placement
+      // union); the old `--name` flag is gone, and placement is --machine XOR
+      // --datastore.
+      expect(argv.slice(0, 3)).toEqual(['repo', 'create', 'webapp']);
+      expect(argv).not.toContain('--name');
+      expect(argv).toContain('--machine');
+      expect(argv).toContain('prod');
+      expect(argv).toContain('--size');
       expect(argv).toContain('10G');
-      expect(argv).toContain('prod');
     });
 
-    it('repo_up builds correct argv with machine flag', () => {
+    it('repo_up builds correct argv on the <ref> positional (machine derived)', () => {
       const tool = TOOLS.find((t) => t.name === 'repo_up')!;
-      const argv = tool.command({ name: 'gitlab', machine: 'prod' });
-      expect(argv.slice(0, 2)).toEqual(['repo', 'up']);
-      expect(argv).toContain('--name');
-      expect(argv).toContain('gitlab');
-      expect(argv).toContain('prod');
+      const argv = tool.command({ ref: 'gitlab' });
+      expect(argv.slice(0, 3)).toEqual(['repo', 'up', 'gitlab']);
+      expect(argv).not.toContain('--name');
+      expect(argv).not.toContain('--machine');
     });
 
-    it('repo_down builds correct argv', () => {
+    it('repo_down builds correct argv on the <ref> positional', () => {
       const tool = TOOLS.find((t) => t.name === 'repo_down')!;
-      const argv = tool.command({ name: 'gitlab', machine: 'prod' });
-      expect(argv.slice(0, 2)).toEqual(['repo', 'down']);
-      expect(argv).toContain('--name');
-      expect(argv).toContain('gitlab');
-      expect(argv).toContain('prod');
+      const argv = tool.command({ ref: 'gitlab' });
+      expect(argv.slice(0, 3)).toEqual(['repo', 'down', 'gitlab']);
+      expect(argv).not.toContain('--name');
+      expect(argv).not.toContain('--machine');
     });
 
     it('repo_down includes --unmount when set', () => {
       const tool = TOOLS.find((t) => t.name === 'repo_down')!;
-      const argv = tool.command({ name: 'gitlab', machine: 'prod', unmount: true });
+      const argv = tool.command({ ref: 'gitlab', unmount: true });
       expect(argv).toContain('--unmount');
     });
 
     it('repo_down excludes --unmount when false', () => {
       const tool = TOOLS.find((t) => t.name === 'repo_down')!;
-      const argv = tool.command({ name: 'gitlab', machine: 'prod', unmount: false });
+      const argv = tool.command({ ref: 'gitlab', unmount: false });
       expect(argv).not.toContain('--unmount');
     });
 
     it('repo_fork builds correct argv', () => {
       const tool = TOOLS.find((t) => t.name === 'repo_fork')!;
-      const argv = tool.command({ parent: 'webapp', machine: 'prod', tag: 'test' });
-      expect(argv.slice(0, 2)).toEqual(['repo', 'fork']);
-      expect(argv).toContain('--parent');
-      expect(argv).toContain('webapp');
+      // repo fork <parent-ref>: the parent is positional; the machine is derived
+      // from its placement (spec §2.3), so there is no --parent or --machine flag.
+      const argv = tool.command({ ref: 'webapp', tag: 'test' });
+      expect(argv.slice(0, 3)).toEqual(['repo', 'fork', 'webapp']);
+      expect(argv).not.toContain('--parent');
       expect(argv).toContain('--tag');
       expect(argv).toContain('test');
-      expect(argv).toContain('prod');
     });
 
-    it('repo_push builds correct argv with --to-machine', () => {
+    it('repo_push builds correct argv on the <ref> positional with --to-machine', () => {
       const tool = TOOLS.find((t) => t.name === 'repo_push')!;
-      const argv = tool.command({ name: 'webapp', machine: 'prod', to_machine: 'staging' });
-      expect(argv.slice(0, 2)).toEqual(['repo', 'push']);
-      expect(argv).toContain('--name');
-      expect(argv).toContain('webapp');
+      const argv = tool.command({ ref: 'webapp', to_machine: 'staging' });
+      expect(argv.slice(0, 3)).toEqual(['repo', 'push', 'webapp']);
+      expect(argv).not.toContain('--name');
+      expect(argv).not.toContain('--machine');
       expect(argv).toContain('--to-machine');
       expect(argv).toContain('staging');
-      expect(argv).toContain('prod');
     });
 
-    it('repo_pull builds correct argv with --from-machine', () => {
+    it('repo_pull builds correct argv on the <ref> positional with --from-machine', () => {
       const tool = TOOLS.find((t) => t.name === 'repo_pull')!;
-      const argv = tool.command({ name: 'webapp', machine: 'staging', from_machine: 'prod' });
-      expect(argv.slice(0, 2)).toEqual(['repo', 'pull']);
-      expect(argv).toContain('--name');
-      expect(argv).toContain('webapp');
+      const argv = tool.command({ ref: 'webapp', from_machine: 'prod' });
+      expect(argv.slice(0, 3)).toEqual(['repo', 'pull', 'webapp']);
+      expect(argv).not.toContain('--name');
+      expect(argv).not.toContain('--machine');
       expect(argv).toContain('--from-machine');
       expect(argv).toContain('prod');
-      expect(argv).toContain('staging');
     });
 
     it('repo_delete builds correct argv', () => {
       const tool = TOOLS.find((t) => t.name === 'repo_delete')!;
-      const argv = tool.command({ name: 'webapp', machine: 'prod' });
-      expect(argv.slice(0, 2)).toEqual(['repo', 'delete']);
-      expect(argv).toContain('--name');
-      expect(argv).toContain('webapp');
-      expect(argv).toContain('prod');
-    });
-
-    it('term_exec builds correct argv (machine only)', () => {
-      const tool = TOOLS.find((t) => t.name === 'term_exec')!;
-      expect(tool.command({ machine: 'prod', command: 'uptime' })).toEqual([
-        'term',
-        'connect',
-        '-m',
-        'prod',
-        '-c',
-        'uptime',
-      ]);
-    });
-
-    it('term_exec builds correct argv with repository', () => {
-      const tool = TOOLS.find((t) => t.name === 'term_exec')!;
-      expect(
-        tool.command({ machine: 'prod', repository: 'webapp', command: 'docker ps | grep running' })
-      ).toEqual([
-        'term',
-        'connect',
-        '-m',
-        'prod',
-        '-r',
-        'webapp',
-        '-c',
-        'docker ps | grep running',
-      ]);
-    });
-
-    it('term_exec omits repository when not provided', () => {
-      const tool = TOOLS.find((t) => t.name === 'term_exec')!;
-      expect(tool.command({ machine: 'prod', command: 'df -h' })).toEqual([
-        'term',
-        'connect',
-        '-m',
-        'prod',
-        '-c',
-        'df -h',
-      ]);
+      // repo delete <ref>: the repo is a positional; the machine is DERIVED, so
+      // there is no --machine flag to carry (spec §2.3).
+      const argv = tool.command({ ref: 'webapp' });
+      expect(argv.slice(0, 3)).toEqual(['repo', 'delete', 'webapp']);
+      expect(argv).not.toContain('--name');
     });
 
     it('machine_deprovision appends --force', () => {
       const tool = TOOLS.find((t) => t.name === 'machine_deprovision')!;
+      // The reshape gave `machine deprovision` a positional <name>. The builder derives
+      // argv from the live Commander tree, so it followed on its own — this assertion is
+      // what had to catch up.
       expect(tool.command({ name: 'old-server' })).toEqual([
         'machine',
         'deprovision',
-        '--name',
         'old-server',
         '--force',
       ]);
@@ -249,7 +202,10 @@ describe('MCP tool definitions', () => {
         'repo_delete',
         'repo_push',
         'repo_pull',
-        'term_exec',
+        // repo_exec replaced term_exec (w2b): the tool that used to build
+        // `term connect -m <machine> -c <cmd>` and whose argv silently went
+        // invalid when -m died. It is a real leaf now, so it is auto-derived.
+        'repo_exec',
       ];
       for (const name of guarded) {
         const tool = TOOLS.find((t) => t.name === name)!;
@@ -260,8 +216,7 @@ describe('MCP tool definitions', () => {
     it('is not set on safe or non-repo tools', () => {
       const safe = [
         'repo_create',
-        'repo_fork',
-        'machine_query',
+        'machine_status',
         'machine_list',
         'machine_provision',
         'machine_deprovision',
@@ -272,19 +227,43 @@ describe('MCP tool definitions', () => {
       }
     });
 
-    it('repo_up and repo_down use "name" field', () => {
-      expect(TOOLS.find((t) => t.name === 'repo_up')!.repoArgField).toBe('name');
-      expect(TOOLS.find((t) => t.name === 'repo_down')!.repoArgField).toBe('name');
-      expect(TOOLS.find((t) => t.name === 'repo_delete')!.repoArgField).toBe('name');
+    it('the positional-converted repo tools bind their repo to the <ref> arg', () => {
+      // repo cat/status/delete/fork/migrate/up/down carry a positional <ref>
+      // (spec §2.2); the guard's repo field is the positional name, not a dead
+      // --name flag.
+      for (const name of [
+        'repo_cat',
+        'repo_status',
+        'repo_delete',
+        'repo_fork',
+        'repo_migrate',
+        'repo_up',
+        'repo_down',
+        'repo_commit',
+        'repo_log',
+        'repo_merge',
+        'repo_secret_get',
+        'repo_secret_list',
+        'repo_diff',
+      ]) {
+        expect(TOOLS.find((t) => t.name === name)!.repoArgField, name).toBe('ref');
+      }
     });
 
-    it('backup tools use "repo" field', () => {
-      expect(TOOLS.find((t) => t.name === 'repo_push')!.repoArgField).toBe('repo');
-      expect(TOOLS.find((t) => t.name === 'repo_pull')!.repoArgField).toBe('repo');
+    it('repo_checkout binds its repo to the <commit-or-branch-ref> positional', () => {
+      // Checkout clones a commit/branch (not a family) into a fresh fork, so its
+      // positional is role-named; the guard field is the positional name.
+      expect(TOOLS.find((t) => t.name === 'repo_checkout')!.repoArgField).toBe(
+        'commit-or-branch-ref'
+      );
     });
 
-    it('term_exec uses "repository" field', () => {
-      expect(TOOLS.find((t) => t.name === 'term_exec')!.repoArgField).toBe('repository');
+    it('the backup tools bind their repo to the <ref> positional too', () => {
+      // Previously repoArg was 'repo', but no such field existed in the derived
+      // MCP schema (it had 'name'), so the grand-repo guard silently no-op'd on
+      // repo_push / repo_pull. Binding to the real positional actually enables it.
+      expect(TOOLS.find((t) => t.name === 'repo_push')!.repoArgField).toBe('ref');
+      expect(TOOLS.find((t) => t.name === 'repo_pull')!.repoArgField).toBe('ref');
     });
   });
 
@@ -305,23 +284,56 @@ describe('MCP tool definitions', () => {
     });
 
     it('schemas with required fields reject missing values', () => {
-      const tool = TOOLS.find((t) => t.name === 'machine_query')!;
+      // machine_status' name is now an OPTIONAL positional; machine_containers
+      // still requires the machine name, so it is the required-field example.
+      const tool = TOOLS.find((t) => t.name === 'machine_containers')!;
       const schema = z.object(tool.schema);
       const result = schema.safeParse({});
       expect(result.success).toBe(false);
     });
 
     it('schemas with optional fields accept missing values', () => {
+      // repo_up requires only its <ref> positional; no-start/skip-checkpoint/tls
+      // are optional and may be absent.
       const tool = TOOLS.find((t) => t.name === 'repo_up')!;
       const schema = z.object(tool.schema);
-      const result = schema.safeParse({ name: 'app', machine: 'prod' });
+      const result = schema.safeParse({ ref: 'app' });
       expect(result.success).toBe(true);
     });
   });
 
+  describe('enum options (.choices())', () => {
+    // `config audit log` exposes `--actor` as `.choices(['human', 'agent'])` and
+    // carries an mcp block, so its derived schema must turn that closed set into a
+    // z.enum — accepting in-set values and rejecting anything else, rather than the
+    // permissive z.string() the auto-deriver produced before A5. The other
+    // value-taking options (`--since`, `--path`) are held constant so this asserts
+    // the enum constraint in isolation. (Value-taking options derive to REQUIRED
+    // fields in this deriver — see deriveSchema — so all three are supplied.)
+    it('derives a z.enum for an option declared with .choices()', () => {
+      const tool = TOOLS.find((t) => t.name === 'config_audit_log')!;
+      const schema = z.object(tool.schema);
+      const others = { since: '24h', path: '/credentials/*' };
+
+      expect(schema.safeParse({ ...others, actor: 'human' }).success).toBe(true);
+      expect(schema.safeParse({ ...others, actor: 'agent' }).success).toBe(true);
+      expect(schema.safeParse({ ...others, actor: 'robot' }).success).toBe(false);
+    });
+
+    it('value-taking options without .choices() stay unconstrained strings', () => {
+      // Guard against over-reach: only the `.choices()` option becomes an enum;
+      // `--since`/`--path` accept any string.
+      const tool = TOOLS.find((t) => t.name === 'config_audit_log')!;
+      const schema = z.object(tool.schema);
+      const parsed = schema.safeParse({ since: 'anything', path: '/x', actor: 'human' });
+      expect(parsed.success).toBe(true);
+    });
+  });
+
   describe('custom tools', () => {
-    it('has exactly 5 custom tools', () => {
-      expect(CUSTOM_TOOLS.length).toBe(5);
+    it('has exactly 4 custom tools', () => {
+      // 5 -> 4: term_exec retired in w2b (repo_exec replaces it as a real leaf).
+      expect(CUSTOM_TOOLS.length).toBe(4);
     });
 
     it('custom tools are all present in full tool list', () => {

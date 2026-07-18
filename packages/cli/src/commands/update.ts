@@ -5,12 +5,16 @@ import { STATUS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { isCooldownExpired } from '@rediacc/shared/update';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { applyPendingUpdate, getAppliedAtStartup } from '../services/update/background-updater.js';
-import { outputService } from '../services/core/output.js';
 import { getSubscriptionServerUrl } from '../services/account/subscription-auth.js';
-import { resolveChannel } from '../services/update/updater.js';
+import { outputService } from '../services/core/output.js';
+import { applyPendingUpdate, getAppliedAtStartup } from '../services/update/background-updater.js';
 import { readUpdateState, writeUpdateState } from '../services/update/update-state.js';
-import { checkForUpdate, compareVersions, performUpdate } from '../services/update/updater.js';
+import {
+  checkForUpdate,
+  compareVersions,
+  performUpdate,
+  resolveChannel,
+} from '../services/update/updater.js';
 import { handleError } from '../utils/errors.js';
 import {
   getInstallMethod,
@@ -366,6 +370,8 @@ export function registerUpdateCommand(program: Command): void {
     .option('--check-only', t('commands.update.checkOnly'))
     .option('--rollback', t('commands.update.rollback'))
     .option('--status', t('commands.update.statusDescription'))
+    // No .choices(): the channel is a free-form R2 path segment (edge, stable, and
+    // per-PR pr-N channels are all legal), so the set is open by design.
     .option('--channel <channel>', t('commands.update.channelDescription'))
     .action(async (options) => {
       try {

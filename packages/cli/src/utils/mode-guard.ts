@@ -13,6 +13,7 @@ import {
 } from '../config/command-registry.js';
 import { t } from '../i18n/index.js';
 import { outputService } from '../services/core/output.js';
+import { exitProcess } from '../services/core/request-context.js';
 import { isAgentEnvironment } from './agent-guard.js';
 
 /** Whether to show extended (full) help descriptions instead of summaries. */
@@ -31,7 +32,7 @@ function addExperimentalGuard(command: Command): void {
           `"${command.name()}" is an experimental command. Enable with REDIACC_EXPERIMENTAL=1 environment variable.`
         );
       }
-      process.exit(1);
+      exitProcess(1);
     }
   });
 }

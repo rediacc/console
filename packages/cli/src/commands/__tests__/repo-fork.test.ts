@@ -167,6 +167,17 @@ describe('repo fork — hard-isolate of secrets', () => {
     expect(mockRemoveRepository).not.toHaveBeenCalled();
     expect(mockExecute).not.toHaveBeenCalled();
   });
+
+  it('rejects the reserved --tag base before any config mutation (exit 2)', async () => {
+    // The ref grammar reserves `base` as the birth tag; validateTag refuses it
+    // (CliExitError, VALIDATION_ERROR -> exit 2) ahead of any mutation.
+    await expect(handleForkAction('app', 'base', { machine: 'hostinger' })).rejects.toThrow(
+      /base names the original/i
+    );
+    expect(mockAddRepository).not.toHaveBeenCalled();
+    expect(mockRemoveRepository).not.toHaveBeenCalled();
+    expect(mockExecute).not.toHaveBeenCalled();
+  });
 });
 
 describe('repo fork — orchestration', () => {

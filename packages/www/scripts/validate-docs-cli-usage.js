@@ -10,6 +10,7 @@ import {
   SHELL_FENCE_LANGS,
   TARGET_DOC_CATEGORIES,
 } from './lib/cli-reference-catalog.js';
+import { findRegressions, loadBacklog, writeBacklog } from './lib/p7-backlog.js';
 
 // ---------------------------------------------------------------------------
 // Positional-syntax pre-scan
@@ -82,34 +83,39 @@ const getPathsFromTree = () => {
   if (cachedPaths) return cachedPaths;
   const tree = JSON.parse(fs.readFileSync(COMMAND_TREE_PATH, 'utf-8'));
   const leaves = new Set();
-  const all = new Set();
+  const parents = new Set();
+  // Mirrors scripts/lib/positional-cli-detector.ts (getZeroPositionalCommands /
+  // getPlaceholderOnlyParents): only a command that accepts NO positional of
+  // its own can teach wrong positional syntax. Post-P4 most leaves take a
+  // positional ref (`repo up <ref>`), so flagging `rdc <cmd> <placeholder>`
+  // for EVERY path — what this set did before — reds the CORRECT documented
+  // form; that stale copy grew the P7 backlog by ~1000 false positives when
+  // the docs migrated to positional syntax.
   const walk = (node, parts) => {
     if (parts.length > 0) {
       const commandPath = parts.join(' ');
-      if (!FREEFORM_ARG_COMMAND_PATHS.has(commandPath)) {
-        all.add(commandPath);
-        const isLeaf = (node.subcommands ?? []).length === 0;
-        if (isLeaf && (node.arguments ?? []).length === 0) {
-          leaves.add(commandPath);
-        }
+      const takesPositional = (node.arguments ?? []).length > 0;
+      if (!FREEFORM_ARG_COMMAND_PATHS.has(commandPath) && !takesPositional) {
+        if ((node.subcommands ?? []).length === 0) leaves.add(commandPath);
+        else parents.add(commandPath);
       }
     }
     for (const sub of node.subcommands ?? []) walk(sub, [...parts, sub.name]);
   };
   walk(tree, []);
-  cachedPaths = { leaves, all };
+  cachedPaths = { leaves, parents };
   return cachedPaths;
 };
 
 const scanPositional = (text) => {
-  const { leaves, all } = getPathsFromTree();
+  const { leaves, parents } = getPathsFromTree();
   const leafEntries = [...leaves]
     .sort((a, b) => b.length - a.length)
     .map((p) => ({
       path: p,
       regex: buildDetectionRegex(p),
     }));
-  const allEntries = [...all]
+  const parentEntries = [...parents]
     .sort((a, b) => b.length - a.length)
     .map((p) => ({ path: p, regex: buildPlaceholderOnlyRegex(p) }));
 
@@ -146,7 +152,7 @@ const scanPositional = (text) => {
       });
     };
     for (const entry of leafEntries) tryReport(entry);
-    for (const entry of allEntries) tryReport(entry);
+    for (const entry of parentEntries) tryReport(entry);
   }
   return violations;
 };
@@ -157,6 +163,7 @@ const LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh', 'et', '
 
 const colors = {
   red: (s) => `\x1b[31m${s}\x1b[0m`,
+  yellow: (s) => `\x1b[33m${s}\x1b[0m`,
   green: (s) => `\x1b[32m${s}\x1b[0m`,
   cyan: (s) => `\x1b[36m${s}\x1b[0m`,
   dim: (s) => `\x1b[2m${s}\x1b[0m`,
@@ -298,7 +305,16 @@ function groupByRule(errors) {
   return grouped;
 }
 
+const BASELINE_PATH = path.resolve(__dirname, 'docs-cli-usage-baseline.json');
+const P7_BACKLOG = loadBacklog(BASELINE_PATH);
+
 function printSummary(errors) {
+  if (process.argv.includes('--write-baseline')) {
+    const { files, violations } = writeBacklog(BASELINE_PATH, errors);
+    console.log(colors.yellow(`Wrote P7 backlog: ${files} files, ${violations} violations.`));
+    return 0;
+  }
+
   console.log(colors.bold('Docs CLI Usage Validation'));
   console.log('='.repeat(60));
 
@@ -308,6 +324,45 @@ function printSummary(errors) {
     return 0;
   }
 
+  const regressions = findRegressions(errors, P7_BACKLOG);
+  if (regressions.length === 0) {
+    const total = errors.length;
+    console.log(
+      colors.yellow(
+        `⚠ ${total} violation(s), ALL within the frozen P7 backlog (${Object.keys(P7_BACKLOG).length} files).`
+      )
+    );
+    console.log(
+      colors.dim(
+        '  These docs are rewritten wholesale in P7. The gate still fails on any NEW file,'
+      )
+    );
+    console.log(colors.dim('  or on any file whose count GROWS. See P7_BACKLOG in this script.'));
+    console.log('='.repeat(60));
+    return 0;
+  }
+
+  console.log(colors.red(`\n✗ CLI-usage REGRESSION beyond the frozen P7 backlog:\n`));
+  for (const r of regressions) console.log(colors.red(`  ✗ ${r}`));
+
+  // Show the violations for the OFFENDING files only. Dumping all ~3300 backlog entries
+  // would bury the regression in the very debt the baseline exists to set aside.
+  const offending = new Set(regressions.map((r) => r.split(':')[0]));
+  printSummaryDetail(errors.filter((e) => offending.has(e.file)));
+  console.log(
+    colors.dim(
+      '\n  The P7 backlog is frozen. A doc may improve (a lower count passes), but it may not\n' +
+        '  get worse, and a doc outside the backlog must be clean. Fix the example, or — if the\n' +
+        '  violation is genuinely new and deferred — update scripts/docs-cli-usage-baseline.json\n' +
+        '  deliberately, in a commit, with a reason.\n'
+    )
+  );
+  console.log('='.repeat(60));
+  return 1;
+}
+
+/** Per-violation detail. Called only for files that REGRESSED past the frozen backlog. */
+function printSummaryDetail(errors) {
   const grouped = groupByRule(errors);
   for (const [rule, items] of grouped.entries()) {
     console.log(colors.red(`\n[${rule}] (${items.length} errors)`));

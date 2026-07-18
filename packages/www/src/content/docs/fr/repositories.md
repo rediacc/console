@@ -4,8 +4,8 @@ description: "Créez, gérez et opérez des dépôts chiffrés LUKS sur des mach
 category: "Guides"
 order: 4
 language: fr
-sourceHash: "0f08c5b75c3588cc"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "c9553259c9bf6b4c"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Dépôts
@@ -156,7 +156,7 @@ rdc repo fork --parent my-app --tag staging -m server-1 --up
 rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
 ```
 
-Lors de nos tests, un dépôt de 128 Go a forké et atteint des services en cours d'exécution en environ 57 secondes, et environ 31 secondes avec `--detach`. Le mode détaché affiche une indication pour suivre la progression : `rdc machine query --containers --name <machine>`.
+Lors de nos tests, un dépôt de 128 Go a forké et atteint des services en cours d'exécution en environ 57 secondes, et environ 31 secondes avec `--detach`. Le mode détaché affiche une indication pour suivre la progression : `rdc machine status <machine> --containers`.
 
 ### Répartition du temps d'exécution
 
@@ -226,7 +226,7 @@ La référence côté service en minuscules (`stripe_live_key`) est le nom de fi
 
 > **Isolation cross-repo appliquée** : le validateur compose de renet rejette les chemins `secrets: file:` (et `configs: file:`, et `env_file:`) qui référencent l'ID réseau d'un autre dépôt. Le token littéral `${REDIACC_NETWORK_ID}` (ou l'entier de votre réseau) est la seule forme acceptée pour les références `/var/run/rediacc/secrets/...`. Et `--unsafe` ne remplace PAS ce contrôle. Le bac à sable Landlock autour du sous-processus bash Rediaccfile limite également l'accès au système de fichiers uniquement à votre répertoire de secrets du réseau, de sorte qu'une `cat /var/run/rediacc/secrets/<other>/X` malveillante depuis un Rediaccfile échoue avec EACCES au niveau du noyau.
 
-> **Forks** : `rdc repo fork` **ne copie pas** les secrets. Pour utiliser les secrets dans un fork, exécutez `rdc repo secret set --name <fork>` sur le fork explicitement. C'est la propriété de sécurité essentielle. Les conteneurs du fork ne doivent pas pouvoir agir comme le principal de production envers les services externes.
+> **Forks** : `rdc repo fork` **ne copie pas** les secrets. Pour utiliser les secrets dans un fork, exécutez `rdc repo secret set <fork>` sur le fork explicitement. C'est la propriété de sécurité essentielle. Les conteneurs du fork ne doivent pas pouvoir agir comme le principal de production envers les services externes.
 
 > **Agents** (Claude Code, Cursor, etc.) : `repo secret list` et `repo secret get` sont exposés comme outils MCP (lecture-sûr. Noms + digests uniquement, jamais de valeurs). `set` et `unset` sont CLI-only car la cérémonie `--current`/`--rotate-secret` nécessite une surveillance humaine ; les agents les appelant via shell obtiennent le même portail que les humains. Quand la condition préalable échoue, l'enveloppe JSON contient un champ structuré `errors[].next.options[].run`. Les agents doivent relayer ces commandes verbatim à l'utilisateur. Voir [sécurité des agents AI](/fr/docs/ai-agents-safety) pour le modèle complet.
 
@@ -266,7 +266,7 @@ Consultez le [Guide de migration](/fr/docs/migration) pour une procédure compl�
 Appliquer un modèle pour initialiser un dépôt avec des fichiers :
 
 ```bash
-rdc repo template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
 ```
 
 ## Supprimer

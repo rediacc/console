@@ -143,6 +143,8 @@ function validateEnglishCommands(errors, capabilityMap) {
       );
     }
   }
+
+  return commands.length;
 }
 
 function buildTranslationCommandMap(lang) {
@@ -217,14 +219,33 @@ function printMappings(mapEntries) {
   }
 }
 
-function printSummary(errors, mapEntries, strictMode) {
+function printSummary(errors, mapEntries, strictMode, checkedCount) {
   console.log(colors.bold('Landing CLI Usage Validation'));
   console.log('='.repeat(60));
 
+  // ★ SAY WHAT WAS ACTUALLY CHECKED, not just what is EXCUSED.
+  //
+  // This line used to print only the capability-map summary — "supported=0, partial=0,
+  // unsupported=0" — and then "✓ valid". Read cold, that says "this gate validated nothing",
+  // and it very nearly got the gate deleted as vacuous.
+  //
+  // It is the opposite. The capability map is the list of commands EXCUSED from parsing
+  // (with gap notes). An EMPTY map is the STRICTEST possible setting: nothing is excused, so
+  // every rdc command on the landing surfaces must parse against the live CLI. This gate is
+  // what caught the homepage hero teaching `rdc cluster fork --name prod` — a command the P4
+  // reshape deleted.
+  //
+  // A gate whose success message understates what it did is one bad reading away from being
+  // removed. So it now reports the commands it CHECKED first.
+  console.log(
+    colors.dim(
+      `Checked ${checkedCount} rdc command(s) on the landing surfaces against the live CLI.`
+    )
+  );
   const s = summarize(mapEntries);
   console.log(
     colors.dim(
-      `Capability map summary: supported=${s.supported}, partial=${s.partial}, unsupported=${s.unsupported}`
+      `Capability map (commands EXCUSED from parsing): supported=${s.supported}, partial=${s.partial}, unsupported=${s.unsupported}`
     )
   );
   printMappings(mapEntries);
@@ -276,10 +297,18 @@ function main() {
   const capabilityMap = mapBySourceId(entries);
   const strictMode = true;
 
-  validateEnglishCommands(errors, capabilityMap);
+  const checkedCount = validateEnglishCommands(errors, capabilityMap);
   validateLocaleParity(errors);
 
-  process.exit(printSummary(errors, entries, strictMode));
+  if (checkedCount === 0) {
+    // A landing page with ZERO rdc commands means the collector broke, not that the page is
+    // clean. Refuse to report success on an empty scan — that is the failure mode this whole
+    // program keeps finding.
+    console.error('✗ landing-cli-usage found NO rdc commands to check. The collector is broken.');
+    process.exit(1);
+  }
+
+  process.exit(printSummary(errors, entries, strictMode, checkedCount));
 }
 
 main();

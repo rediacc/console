@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 12
 language: de
-sourceHash: 3887adc59fc63c26
-sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
+sourceHash: 9d77ef9087375fbc
+sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
 ### Organisationen
@@ -18,7 +18,7 @@ Registrieren Sie ein Konto und Rediacc erstellt automatisch eine Organisation f�
 
 Jede Organisation hat:
 - Einen eindeutigen Namen (standardmäßig Ihre E-Mail-Adresse)
-- Einen Abonnementplan (beginnt mit COMMUNITY)
+- Einen Abonnementplan (neue Konten starten mit einer 14-tägigen kostenlosen Testphase im Plan Professional oder Business; siehe Abonnements & Pläne unten)
 - Ein Standardteam (alle Mitglieder treten automatisch bei)
 
 ### Mitglieder & Rollen
@@ -59,21 +59,21 @@ Rediacc bietet vier Pläne:
 
 | Plan | Maschinen | Repo-Lizenzen/Monat | Delegierungszert. Standard / Max | Funktionen |
 |------|-----------|----------------------|----------------------------------|------------|
-| COMMUNITY | 2 | 100 | 15d / 30d | Basis |
-| PROFESSIONAL | 3 | 2.000+ | 60d / 120d | Berechtigungsgruppen, Audit-Log, individuelles Branding, vorrangiger Support |
-| BUSINESS | 10 | 5.000+ | 90d / 180d | Ceph, erweiterte Analysen, Warteschlangen-Priorität, erweiterte Warteschlange |
-| ENTERPRISE | 25+ | 15.000+ | 120d / 365d | Dedizierter Account Manager |
+| COMMUNITY | 1 | 100 | 15d / 30d | Basis |
+| PROFESSIONAL | 1 | 2.000+ | 60d / 120d | Berechtigungsgruppen, Audit-Log, individuelles Branding, vorrangiger Support |
+| BUSINESS | 1 | 5.000+ | 90d / 180d | Ceph, erweiterte Analysen, Warteschlangen-Priorität, erweiterte Warteschlange |
+| ENTERPRISE | Individuell | 15.000+ | 120d / 365d | Dedizierter Account Manager |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 
-Alle Pläne beginnen mit einer 3-tägigen Übergangszeit. Maschinenaktivierungen werden pro Team verfolgt und nach Inaktivität automatisch freigegeben. Siehe [Abonnement & Lizenzierung](/de/docs/subscription-licensing) für das vollständige Maschinen- vs. Repo-Lizenz-Modell.
+Professional und Business sind Self-Service-Pläne und beinhalten jeweils eine Maschine; Multi-Maschinen-Enterprise wird über unsere Partner vertrieben. Neuanmeldungen starten eine 14-tägige kostenlose Testphase im Plan Professional oder Business, wobei bei der Anmeldung eine Kreditkarte hinterlegt wird und die erste Abbuchung erst am Ende der Testphase erfolgt. Wird die Testphase gekündigt, ein kostenpflichtiger Plan später gekündigt oder eine Zahlung verpasst, fällt das Konto auf den kostenlosen Community-Plan zurück (eine Maschine, 10 GB pro Repository, 100 Setups pro Monat). Alle Pläne beginnen mit einer 3-tägigen Übergangszeit. Maschinenaktivierungen werden pro Team verfolgt und nach Inaktivität automatisch freigegeben. Siehe [Abonnement & Lizenzierung](/de/docs/subscription-licensing) für das vollständige Maschinen- vs. Repo-Lizenz-Modell.
 
 ### Abrechnung
 
 Nur der **Owner** der Organisation kann die Abrechnung verwalten:
-- Eine Stripe-Checkout-Sitzung für Plan-Upgrades erstellen
+- Eine Stripe-Checkout-Sitzung erstellen, um einen Plan zu starten oder ein Upgrade durchzuführen
 - Auf das Stripe-Abrechnungsportal für Änderungen der Zahlungsmethode zugreifen
-- Self-Service-Rückerstattungen anfordern (innerhalb von 14 Tagen, mit 30 Tagen Abklingzeit)
+- Den Plan über das Abrechnungsportal kündigen oder ändern; eine Kündigung setzt das Konto auf den kostenlosen Community-Plan zurück
 
 ### Datenregion
 

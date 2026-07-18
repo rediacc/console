@@ -24,7 +24,7 @@
       "narrationRole": "step",
       "card": {
         "command": "rdc repo create",
-        "commandFull": "rdc repo create --name my-app -m <machine-name> --size 2G"
+        "commandFull": "rdc repo create my-app -m <machine-name> --size 2G"
       }
     },
     {

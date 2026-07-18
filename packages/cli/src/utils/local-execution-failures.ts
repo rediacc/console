@@ -1,6 +1,7 @@
 import { DEFAULTS } from '@rediacc/shared/config';
-import type { LocalExecuteResult } from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
+import { exitProcess, writeStderr, writeStdout } from '../services/core/request-context.js';
+import type { ExecuteResult } from '../services/executor/local-executor.js';
 import { isAgentEnvironment } from './agent-guard.js';
 import { getOutputFormat } from './errors.js';
 
@@ -39,7 +40,7 @@ function failureOutputTail(message: string, stderr?: string, stdout?: string): s
 
 export function renderLocalExecutionFailure(
   result: Pick<
-    LocalExecuteResult,
+    ExecuteResult,
     'error' | 'errorCode' | 'errorGuidance' | 'stderr' | 'stdout' | 'outputEchoed'
   > & {
     exitCode?: number;
@@ -71,11 +72,11 @@ export function renderLocalExecutionFailure(
       warnings: outputService.getWarnings(),
       metrics: { duration_ms: outputService.getDurationMs() },
     };
-    process.stdout.write(`${JSON.stringify(envelope, null, 2)}\n`);
+    writeStdout(`${JSON.stringify(envelope, null, 2)}\n`);
 
     // In agent mode, exit immediately so truncated output can't hide the error
     if (isAgentEnvironment()) {
-      process.exit(exitCode);
+      exitProcess(exitCode);
     }
     process.exitCode = exitCode;
     return;
@@ -83,10 +84,10 @@ export function renderLocalExecutionFailure(
 
   outputService.error(message);
   if (outputTail) {
-    process.stderr.write(`--- renet output ---\n${outputTail}\n---\n`);
+    writeStderr(`--- renet output ---\n${outputTail}\n---\n`);
   }
   if (isAgentEnvironment()) {
-    process.exit(exitCode);
+    exitProcess(exitCode);
   }
   process.exitCode = exitCode;
 }

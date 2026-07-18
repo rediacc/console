@@ -15,3 +15,15 @@ github.com/docker/go-connections  # BLOCKER: v0.7.0 removed sockets.DialPipe whi
 
 # go-landlock — sandbox isolation primitive (security-critical)
 github.com/landlock-lsm/go-landlock  # BLOCKER: v0.9.0 is a 0.x minor that can change the Landlock config API; this gates repo-sandbox isolation, so adoption needs sandbox-behavior validation on a live cluster before bumping
+
+# BLOCKER: kubelet is consumed for exactly one thing, the stable pluginregistration/v1
+# types (GetInfo / NotifyRegistrationStatus), which have not changed. Taking v0.36.x buys
+# nothing and costs three things: it REQUIRES an untagged protobuf pseudo-version
+# (v1.36.12-0.20260120151049-f2248ac996af — upstream k8s 1.36 ships against an unreleased
+# protobuf commit; pinning protobuf to the tagged v1.36.11 drags kubelet down to
+# v0.36.0-alpha.2), it forces the go directive from 1.25 to 1.26, and it breaks the
+# generated RegistrationServer interface (needs UnimplementedRegistrationServer embedded),
+# which means editing the CSI registration path while that path is under active
+# investigation for the #87 staging bug. Revisit once protobuf v1.36.12 is tagged and a
+# kubelet release requires the tagged version.
+k8s.io/kubelet

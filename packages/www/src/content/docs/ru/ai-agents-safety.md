@@ -7,7 +7,7 @@ description: >-
 category: Concepts
 order: 35
 language: ru
-sourceHash: "eb4c8dd0389a45a6"
+sourceHash: "30c1cd3d88219e7c"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -30,7 +30,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 | `rdc config edit` (интерактивный редактор) | 🔴 refused | Человек устанавливает `REDIACC_ALLOW_CONFIG_EDIT=*` перед запуском агента |
 | `rdc config edit --apply <file>` | 🔴 refused | То же переопределение |
 | `rdc config field rotate --pointer <pointer>` | 🔴 refused | То же переопределение; использует интерактивное подтверждение |
-| `rdc term connect -m <machine>` (прямой SSH на машину) | 🔴 refused | Сначала сделать форк репозитория и подключиться к форку |
+| `rdc term connect <machine>` (прямой SSH на машину) | 🔴 refused | Сначала сделать форк репозитория и подключиться к форку |
 
 Всё, в чём агенту отказывается, записывается в журнал аудита с `outcome: refused` и причиной.
 

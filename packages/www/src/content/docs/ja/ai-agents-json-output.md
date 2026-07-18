@@ -4,8 +4,8 @@ description: rdc CLIのJSON出力形式、エンベロープスキーマ、エ�
 category: Reference
 order: 51
 language: ja
-sourceHash: "9f8d61df26b59757"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "4da1be4753fa62bf"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 すべての `rdc` コマンドは構造化されたJSONを出力します。スクリプトにパイプするか、エージェントに直接渡してください。
@@ -24,9 +24,8 @@ rdc machine query --name prod-1 -o json
 `rdc` が非TTY環境（パイプ、サブシェル、AIエージェントからの起動）で実行されると、出力は自動的にJSONに切り替わります。フラグは不要です。
 
 ```bash
-# These all produce JSON automatically
+# Produces JSON automatically
 result=$(rdc machine query --name prod-1)
-echo '{}' | rdc agent exec "machine query"
 ```
 
 ## JSONエンベロープ
@@ -173,56 +172,6 @@ rdc repo delete --name mail -m prod-1 --dry-run -o json
 ```
 
 `--dry-run` をサポートするコマンド: `repo up`、`repo down`、`repo delete`、`snapshot delete`、`sync upload`、`sync download`。
-
-## エージェント検出コマンド
-
-`rdc agent` サブコマンドは、AIエージェントが実行時に利用可能な操作を発見するための構造化された手段を提供します。
-
-### すべてのコマンドの一覧
-
-```bash
-rdc agent capabilities
-```
-
-引数、オプション、説明を含む完全なコマンドツリーを返します:
-
-```json
-{
-  "success": true,
-  "command": "agent capabilities",
-  "data": {
-    "version": "1.0.0",
-    "commands": [
-      {
-        "name": "machine query",
-        "description": "Show machine status",
-        "arguments": [
-          { "name": "machine", "description": "Machine name", "required": true }
-        ],
-        "options": [
-          { "flags": "-o, --output <format>", "description": "Output format" }
-        ]
-      }
-    ]
-  }
-}
-```
-
-### コマンドスキーマの取得
-
-```bash
-rdc agent schema --command "machine query"
-```
-
-型やデフォルト値を含む、単一コマンドのすべての引数とオプションの詳細なスキーマを返します。
-
-### JSON経由での実行
-
-```bash
-echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
-```
-
-stdinからJSONを受け取り、キーをコマンドの引数とオプションにマッピングし、JSON出力を強制して実行します。エージェントからCLIへの呼び出しでシェルコマンド文字列を組み立てたくない場合に使用します。
 
 ## パースの例
 

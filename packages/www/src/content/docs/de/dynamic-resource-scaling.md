@@ -5,6 +5,7 @@ category: Use Cases
 order: 1
 language: de
 sourceHash: "7a75ab45703267eb"
+sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 
 > **Ist Ihre Cloud-Architektur starr? Bauen Sie mit grenzenloser Flexibilität.**

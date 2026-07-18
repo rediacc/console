@@ -4,7 +4,7 @@ description: 'Rediacc CLI''ı, AI kodlama asistanlarının sırları sızdırmas
 category: Concepts
 order: 35
 language: tr
-sourceHash: "eb4c8dd0389a45a6"
+sourceHash: "30c1cd3d88219e7c"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -27,7 +27,7 @@ Altyapınızı yönetmek için bir AI kodlama asistanını kullanıyorsanız. Cl
 | `rdc config edit` (etkileşimli düzenleyici) | 🔴 refused | İnsan, ajanı başlatmadan önce `REDIACC_ALLOW_CONFIG_EDIT=*` ayarlar |
 | `rdc config edit --apply <file>` | 🔴 refused | Aynı geçersiz kılma |
 | `rdc config field rotate --pointer <pointer>` | 🔴 refused | Aynı geçersiz kılma; etkileşimli onay kullanır |
-| `rdc term connect -m <machine>` (doğrudan makine SSH) | 🔴 refused | Önce bir repo forkla ve fork'a bağlan |
+| `rdc term connect <machine>` (doğrudan makine SSH) | 🔴 refused | Önce bir repo forkla ve fork'a bağlan |
 
 Bir ajana reddedilen her şey `outcome: refused` ve bir gerekçeyle denetim kaydına yazılır.
 

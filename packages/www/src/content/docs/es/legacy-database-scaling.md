@@ -5,6 +5,7 @@ category: Use Cases
 order: 3
 language: es
 sourceHash: "b15507f1e0da46d2"
+sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 
 > **Su base de datos heredada lo está frenando. Libérate sin romperlo.**

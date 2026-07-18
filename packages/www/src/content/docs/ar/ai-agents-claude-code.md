@@ -4,7 +4,8 @@ description: دليل خطوة بخطوة لتهيئة Claude Code لإدارة 
 category: Guides
 order: 31
 language: ar
-sourceHash: "1cb28ab2dc3ac39f"
+sourceHash: "0a4b93dedcf18e6d"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 يعمل Claude Code بشكل أصلي مع Rediacc من خلال أداة `rdc` CLI. يغطي هذا الدليل الإعداد والأذونات وسير العمل الشائعة.
@@ -97,6 +98,5 @@ Claude Code runs: rdc repo sync upload -m prod-1 -r mail -l ./config
 ## نصائح
 
 - يكتشف Claude Code تلقائيًا بيئة non-TTY ويتحول إلى مخرجات JSON, لا حاجة لتحديد `-o json` في معظم الحالات
-- استخدم `rdc agent capabilities` لتمكين Claude Code من اكتشاف جميع الأوامر المتاحة
-- استخدم `rdc agent schema "command name"` للحصول على معلومات تفصيلية عن الوسائط والخيارات
+- استخدم `rdc --help-all` لتمكين Claude Code من اكتشاف جميع الأوامر المتاحة
 - يساعد علم `--fields` في تقليل استخدام نافذة السياق عندما تحتاج فقط إلى بيانات محددة

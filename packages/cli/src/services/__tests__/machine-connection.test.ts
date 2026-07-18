@@ -54,9 +54,9 @@ vi.mock('../config/config-resources.js', () => ({
   },
 }));
 
-vi.mock('../renet/renet-execution.js', () => ({ readSSHKey: mockReadSSHKey }));
+vi.mock('../machine/ssh-key.js', () => ({ readSSHKey: mockReadSSHKey }));
 
-const { machineConnections } = await import('../machine/machine-connection.js');
+const { machineConnections, withPooledSftp } = await import('../machine/machine-connection.js');
 
 // The manager is a module singleton, so every test uses a unique machine to
 // get an isolated pool entry.
@@ -217,6 +217,65 @@ describe('machineConnections', () => {
     expect(instancesFor(machine.ip)).toHaveLength(2);
     a.release();
     b.release();
+  });
+
+  it('does not share a session across different credentials on the same host', async () => {
+    // A per-repo key is authorized with a `command=` sandbox on the remote, so it
+    // must never be served out of a session opened with the team key.
+    const machine = makeMachine();
+    const teamLease = await machineConnections.acquireFor(machine, 'TEAM_KEY');
+    const repoLease = await machineConnections.acquireFor(machine, 'REPO_KEY');
+
+    expect(repoLease.sftp).not.toBe(teamLease.sftp);
+    const clients = instancesFor(machine.ip);
+    expect(clients).toHaveLength(2);
+    expect(clients.map((c) => c.config.privateKey)).toEqual(['TEAM_KEY', 'REPO_KEY']);
+    teamLease.release();
+    repoLease.release();
+  });
+
+  it('does not share a session across differing host-key pinning', async () => {
+    const machine = makeMachine();
+    const pinned = { ...machine, knownHosts: 'host ssh-ed25519 AAAA' };
+    const a = await machineConnections.acquireFor(machine, 'KEY');
+    const b = await machineConnections.acquireFor(pinned, 'KEY');
+    expect(a.sftp).not.toBe(b.sftp);
+    a.release();
+    b.release();
+  });
+
+  it('acquireForConfig pools raw connect options alongside machine leases', async () => {
+    const machine = makeMachine({ knownHosts: 'host ssh-ed25519 AAAA' });
+    const machineLease = await machineConnections.acquireFor(machine, 'KEY');
+    const configLease = await machineConnections.acquireForConfig({
+      host: machine.ip,
+      port: 22,
+      username: 'root',
+      privateKey: 'KEY',
+      knownHosts: 'host ssh-ed25519 AAAA',
+    });
+
+    // Same host and same credentials: one session, two leases.
+    expect(configLease.sftp).toBe(machineLease.sftp);
+    expect(instancesFor(machine.ip)).toHaveLength(1);
+
+    const client = machineLease.sftp as unknown as InstanceType<typeof MockSFTPClient>;
+    configLease.release();
+    expect(client.closeCount).toBe(0);
+    machineLease.release();
+    expect(client.closeCount).toBe(1);
+  });
+
+  it('withPooledSftp releases the lease even when the body throws', async () => {
+    const machine = makeMachine();
+    const config = { host: machine.ip, port: 22, username: 'root', privateKey: 'KEY' };
+
+    await expect(
+      withPooledSftp(config, () => Promise.reject(new Error('body boom')))
+    ).rejects.toThrow('body boom');
+
+    const [client] = instancesFor(machine.ip);
+    expect(client.closeCount).toBe(1);
   });
 
   it('passes knownHosts and connection parameters to the client', async () => {

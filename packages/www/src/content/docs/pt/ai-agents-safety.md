@@ -7,7 +7,7 @@ description: >-
 category: Concepts
 order: 35
 language: pt
-sourceHash: "eb4c8dd0389a45a6"
+sourceHash: "30c1cd3d88219e7c"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -30,7 +30,7 @@ Você está apontando um assistente de código IA para sua infraestrutura. Quand
 | `rdc config edit` (editor interativo) | 🔴 recusado | Humano define `REDIACC_ALLOW_CONFIG_EDIT=*` antes de iniciar o agente |
 | `rdc config edit --apply <file>` | 🔴 recusado | Mesma anulação |
 | `rdc config field rotate --pointer <pointer>` | 🔴 recusado | Mesma anulação; usa confirmação interativa |
-| `rdc term connect -m <machine>` (SSH direto da máquina) | 🔴 recusado | Faça fork de um repositório primeiro e conecte ao fork |
+| `rdc term connect <machine>` (SSH direto da máquina) | 🔴 recusado | Faça fork de um repositório primeiro e conecte ao fork |
 
 Cada recusa é escrita no registro de auditoria com `outcome: refused` e um motivo.
 

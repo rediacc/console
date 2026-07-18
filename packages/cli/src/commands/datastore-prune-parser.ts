@@ -44,7 +44,7 @@ export interface PrunePreviewRow {
 }
 
 /**
- * Extract the prune JSON object from captured stdout. The renet bridge relays
+ * Extract the prune JSON object from captured stdout. The renet relays
  * the sub-command's stdout with a `[repository_prune] ` prefix on every line
  * (same prefix shape repo-list-parser strips), so we drop that first, then parse
  * the cleaned JSON — falling back to the outermost `{`…`}` span to tolerate any

@@ -4,8 +4,8 @@ description: Ejecute un servicio en contenedores en su servidor en minutos.
 category: Guides
 order: -1
 language: es
-sourceHash: "afd4d22ddc8e02e1"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "a1350abc611570ef"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Inicio rápido
@@ -93,8 +93,8 @@ Crea el volumen cifrado, lo monta e inicia su daemon Docker. El repo se registra
 ### 2. Aplicar una plantilla
 
 ```bash
-rdc repo template list                                        # Mostrar plantillas integradas
-rdc repo template apply --name app-postgres -m my-server -r my-app  # Despliega docker-compose.yml + Rediaccfile
+rdc repo admin template list                                        # Mostrar plantillas integradas
+rdc repo admin template apply --name app-postgres -m my-server -r my-app  # Despliega docker-compose.yml + Rediaccfile
 ```
 
 Las plantillas proporcionan un `docker-compose.yml`, `Rediaccfile` y archivos de soporte. Sin una plantilla (o su propio archivo compose), no hay nada que iniciar. Use la plantilla integrada para su primer repo. Es el camino más rápido para ver el flujo de trabajo completo de principio a fin.
@@ -112,7 +112,7 @@ rdc repo status --name my-app -m my-server  # Estado de montaje, Docker, tamaño
 ### 4. VS Code
 
 ```bash
-rdc vscode connect -m my-server -r my-app              # Abre VS Code SSH, aterriza dentro del sandbox del repo
+rdc vscode connect my-app              # Abre VS Code SSH, aterriza dentro del sandbox del repo
 ```
 
 Está editando archivos *dentro* del volumen cifrado. `docker ps` solo muestra los contenedores de este repo. Guarde, compose up, itere.
@@ -126,7 +126,7 @@ Está editando archivos *dentro* del volumen cifrado. `docker ps` solo muestra l
 | **Caso de uso** | CI/CD, automatización, operaciones remotas | Ciclo interno del desarrollador |
 | **Aislamiento** | Orquesta desde afuera | Ya está dentro del sandbox |
 
-**Flujo de demostración:** `rdc repo template apply` → `rdc vscode connect -m my-server -r my-app` → editar `docker-compose.yml` → `renet dev up` → ver la app ejecutándose → iterar.
+**Flujo de demostración:** `rdc repo admin template apply` → `rdc vscode connect my-app` → editar `docker-compose.yml` → `renet dev up` → ver la app ejecutándose → iterar.
 
 > Estructura del Rediaccfile: [Servicios](/en/docs/services). Cuándo usar cada herramienta: [rdc vs renet](/en/docs/rdc-vs-renet).
 
@@ -261,7 +261,7 @@ rdc config infra push -m my-server  # Enviar configuración de proxy al remoto
 ### 2. Plantilla de proxy
 
 ```bash
-rdc repo template apply --name proxy -m my-server -r infra  # Desplegar proxy en un repo
+rdc repo admin template apply --name proxy -m my-server -r infra  # Desplegar proxy en un repo
 rdc repo up --name infra -m my-server  # Iniciar Traefik
 ```
 

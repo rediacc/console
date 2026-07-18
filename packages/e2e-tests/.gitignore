@@ -1,0 +1,19 @@
+# Test outputs
+reports/
+test-results/
+
+# Accidental tsc emit into the source tree (sources are .ts only)
+src/**/*.js
+src/**/*.d.ts
+src/**/*.map
+tests/**/*.js
+tests/**/*.d.ts
+tests/**/*.map
+
+# Environment (machine-local VM topology; .env.example is the template)
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/

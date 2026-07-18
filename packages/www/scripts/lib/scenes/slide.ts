@@ -1,10 +1,10 @@
-import path from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
-import type { SlideScene, TitleScene, OutroScene, CastNarratedScene } from '../storyboard.ts';
-import { makeFreezeMp4, makeSilentFreezeMp4, PAD_FILTER_CENTER } from '../ffmpeg-video.ts';
+import path from 'node:path';
 import type { ParsedCast } from '../cast-splitter.ts';
-import { escapeXmlText, rasterizeSvgTo1080p } from './svg-render.ts';
+import { makeFreezeMp4, makeSilentFreezeMp4, PAD_FILTER_CENTER } from '../ffmpeg-video.ts';
+import type { CastNarratedScene, OutroScene, SlideScene, TitleScene } from '../storyboard.ts';
 import type { SceneContext, TranscriptDoc } from './index.ts';
+import { escapeXmlText, rasterizeSvgTo1080p } from './svg-render.ts';
 
 const SUB_ITEM_SLOTS = 8;
 // JetBrains Mono at 28px in the 1120px command column (x=640..1760).

@@ -162,10 +162,10 @@ describe('ConfigFileStorage', () => {
 
     it('should load config from file', async () => {
       const initial: RdcConfig = {
-        schemaVersion: 2,
+        schemaVersion: 3,
         id: '550e8400-e29b-41d4-a716-446655440000',
         version: 1,
-        defaults: { machine: 'prod-1' },
+        defaults: { language: 'en' },
         resources: {
           machines: {
             'prod-1': { ip: '10.0.0.1', user: 'admin' },
@@ -179,7 +179,7 @@ describe('ConfigFileStorage', () => {
 
       expect(config.id).toBe('550e8400-e29b-41d4-a716-446655440000');
       expect(config.version).toBe(1);
-      expect(config.defaults?.machine).toBe('prod-1');
+      expect(config.defaults?.language).toBe('en');
       expect(config.resources?.machines?.['prod-1']?.ip).toBe('10.0.0.1');
     });
 
@@ -730,7 +730,12 @@ describe('ConfigFileStorage', () => {
       expect(Object.keys(config.resources?.machines ?? {})).toHaveLength(5);
     });
 
-    it('should handle interleaved read-modify-write operations', async () => {
+    // 30s bound, not the 5s default: this stress case serializes ~dozens of
+    // locked read-modify-write round-trips through real file I/O and took
+    // 11.4s on a loaded CI runner (round-7 red) while passing in ~2s locally.
+    // The assertion is unchanged — only the bound fits the operation now
+    // (the #28 "deadline that fits" rule, applied to a test).
+    it('should handle interleaved read-modify-write operations', { timeout: 30_000 }, async () => {
       await storage.init('test');
 
       const results = await runInterleavedOperations(storage, 'test');

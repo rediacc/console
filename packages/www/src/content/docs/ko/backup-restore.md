@@ -4,8 +4,8 @@ description: "암호화된 레포지토리를 rclone 호환 스토리지에 백�
 category: "Guides"
 order: 7
 language: ko
-sourceHash: "7ff112c2ec14c35f"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "d800519615085ee9"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # 백업 및 복원
@@ -118,28 +118,33 @@ rdc repo backup list --from my-storage -m server-1 --path cold
 
 레포는 `hot/`과 `cold/` 모두에 나타날 수 있습니다(시간별 일정이 스냅샷을 찍고, 주별 일정이 다시 스냅샷을 찍음). 병합된 목록은 두 행 모두를 표시하여 어떤 스트림이 어떤 레포를 커버하는지 명확히 합니다.
 
-## 일괄 동기화
+## 한 번에 레포지토리 하나씩 동기화
 
-모든 레포지토리를 한 번에 푸시하거나 풀합니다.
+푸시와 풀은 ref(`name`, `name:tag` 또는 `name@machine`)로 지정한 단일 레포지토리에 대해 작동합니다. "모든 레포지토리를 한 번에" 형식은 없습니다. 레포지토리마다 명령을 한 번씩 실행하세요.
 
-### 모든 레포를 스토리지에 푸시
+### 스토리지에 푸시
 
 ```bash
-rdc repo push --to my-storage -m server-1
+rdc repo push shop@server-1 --to my-storage
 ```
 
-### 스토리지에서 모두 풀
+### 스토리지에서 풀
 
 ```bash
-rdc repo pull --from my-storage -m server-1
+rdc repo pull shop@server-1 --from my-storage
 ```
 
 | 옵션 | 설명 |
 |--------|-------------|
-| `--to <storage>` | 대상 스토리지 (푸시 방향) |
-| `--from <storage>` | 소스 스토리지 (풀 방향) |
-| `--repo <name>` | 특정 레포지토리만 동기화 (반복 사용 가능) |
-| `--override` | 기존 백업 덮어쓰기 |
+| `--to <remote>` | 대상 스토리지 또는 머신 (푸시) |
+| `--to-machine <machine>` | 머신 간 푸시를 위한 대상 머신 |
+| `--from <remote>` | 소스 스토리지 또는 머신 (풀) |
+| `--from-machine <machine>` | 머신 간 풀을 위한 소스 머신 |
+| `--force` | 기존 백업 또는 레포지토리 덮어쓰기 |
+| `--checkpoint` | 푸시 전 CRIU 체크포인트 생성 (푸시 전용) |
+| `--up` | 풀 후 레포지토리 마운트 및 배포 (풀 전용) |
+| `--bwlimit <limit>` | rsync 전송 대역폭 제한 (예: `10M`) |
+| `--delta-base <guid>` | 불변 기준 GUID 대비 변경된 블록만 전송 |
 | `--debug` | 상세 출력 활성화 |
 | `--skip-router-restart` | 작업 후 라우트 서버 재시작 건너뜀 |
 
@@ -177,8 +182,8 @@ Rediacc는 명명된 백업 전략을 사용합니다. 각 전략은 일정, 백
 
 **운영자가 실패를 감지하는 방법:**
 
-- `rdc machine query --name <machine> --containers`는 실행 상태를 표시합니다. 예상 세트와 비교하세요.
-- 머신의 `/var/run/rediacc/cold-backup-<guid>.status.json`. `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`으로 검사하세요. 오래된 `startedAt`과 함께 `success: false`는 마지막 백업이 깔끔하게 완료되지 않았음을 의미합니다.
+- `rdc machine status <machine> --containers`는 실행 상태를 표시합니다. 예상 세트와 비교하세요.
+- 머신의 `/var/run/rediacc/cold-backup-<guid>.status.json`. `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`으로 검사하세요. 오래된 `startedAt`과 함께 `success: false`는 마지막 백업이 깔끔하게 완료되지 않았음을 의미합니다.
 - renet 백업 실행 로그(`journalctl -u renet-*` 또는 직접 `rdc machine backup schedule` 호출)는 `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` 형식의 최종 요약 줄을 출력합니다. 비어 있지 않은 `failed_repos`가 grep 대상입니다.
 
 ### 콜드 백업 다운타임 추정
@@ -302,7 +307,7 @@ rdc config backup-strategy remove --name weekly-cold
 }
 ```
 
-> **바인딩은 로컬 구성 전용입니다.** 전략을 정의하고 머신에 바인딩해도 머신은 변경되지 않습니다. systemd 타이머를 배포하려면 `rdc machine backup schedule -m <machine>`을 실행하세요([머신에 일정 배포](#머신에-일정-배포) 참조). 전략이나 바인딩을 변경한 후에는 다시 실행해야 합니다.
+> **바인딩은 로컬 구성 전용입니다.** 전략을 정의하고 머신에 바인딩해도 머신은 변경되지 않습니다. systemd 타이머를 배포하려면 `rdc backup schedule -m <machine>`을 실행하세요([머신에 일정 배포](#머신에-일정-배포) 참조). 전략이나 바인딩을 변경한 후에는 다시 실행해야 합니다.
 
 ## 핫 vs 콜드 선택 및 레포지토리별 필터링
 

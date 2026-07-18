@@ -126,7 +126,7 @@ The rotation tool now reads `ROTATION_CONFIG.awsSes[<region>].githubSecretEnvSco
 (see `private/account/scripts/rotation/lib/config.ts`) and pushes the IAM
 access key pair to the configured GitHub env (`stable-us` for `ses-us`,
 `stable-asia` for `ses-asia`) instead of org-level. ses-eu stays org-level
-(used by `ci.yml` preview deploy + `standalone-run.yml` operator email).
+(used by `ci.yml` preview deploy).
 
 Trigger one rotation per region to push the existing keys to env scope:
 

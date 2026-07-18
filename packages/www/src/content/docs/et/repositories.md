@@ -4,8 +4,8 @@ description: "Looge, hallake ja kasutage LUKS-krüpteeritud repositooriume kaugm
 category: "Guides"
 order: 4
 language: et
-sourceHash: "0f08c5b75c3588cc"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "c9553259c9bf6b4c"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Repositooriumid
@@ -156,7 +156,7 @@ rdc repo fork --parent my-app --tag staging -m server-1 --up
 rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
 ```
 
-Meie testides kahveldati 128 GB repositoorium ja jõuti töötavate teenusteni umbes 57 sekundiga, `--detach`-iga aga umbes 31 sekundiga. Eraldusrežiim trükib vihje edenemise jälgimiseks: `rdc machine query --containers --name <machine>`.
+Meie testides kahveldati 128 GB repositoorium ja jõuti töötavate teenusteni umbes 57 sekundiga, `--detach`-iga aga umbes 31 sekundiga. Eraldusrežiim trükib vihje edenemise jälgimiseks: `rdc machine status <machine> --containers`.
 
 ### Kuhu aeg läheb
 
@@ -226,7 +226,7 @@ Väiketäheline teenusepoolne viide (`stripe_live_key`) on konteineri-sisene `/r
 
 > **Repodeülene eraldatus on tagatud**: renet-i compose-validaator lükkab tagasi `secrets: file:` (ja `configs: file:`, ja `env_file:`) teede, mis viitavad mõne muu repo võrgu ID-le. Literaalne `${REDIACC_NETWORK_ID}` token (või oma võrgu täisarv) on ainus aktsepteeritav vorm `/var/run/rediacc/secrets/...` viidete jaoks. Ja `--unsafe` EI alista seda kontrolli. Rediaccfaili bash-alamprotsessi ümber olev Landlock liivakast piirab ka failisüsteemi juurdepääsu ainult oma võrgu saladuste kataloogiga, seega pahatahtlik `cat /var/run/rediacc/secrets/<teise>/X` Rediaccfailist ebaõnnestub EACCES-ga kerneli tasemel.
 
-> **Kahvlid**: `rdc repo fork` ei kopeeri saladusi. Saladuste kasutamiseks kahvlis käivita `rdc repo secret set --name <fork>` kahvli kohta sõnaselgelt. See on kandev ohutusomadus. Kahvli konteinerid ei peaks suutma tegutseda tootmisprincipaalina väliste teenuste vastu.
+> **Kahvlid**: `rdc repo fork` ei kopeeri saladusi. Saladuste kasutamiseks kahvlis käivita `rdc repo secret set <fork>` kahvli kohta sõnaselgelt. See on kandev ohutusomadus. Kahvli konteinerid ei peaks suutma tegutseda tootmisprincipaalina väliste teenuste vastu.
 
 > **Agendid** (Claude Code, Cursor jne): `repo secret list` ja `repo secret get` on MCP tööriistadena eksponeeritud (lugemisturvaline. Ainult nimed ja räsid, mitte väärtused). `set` ja `unset` on ainult CLI-põhised, kuna `--current`/`--rotate-secret` tseremoonia nõuab inimese silmi; shelli kaudu neid kutsuvad agendid saavad sama lüüsi kui inimesed. Eeltingimuse ebaõnnestumise korral sisaldab JSON-ümbrik struktureeritud `errors[].next.options[].run` välja. Agendid peaksid need käsud kasutajale sõna-sõnalt edastama. Vaata [AI agendi ohutust](/en/docs/ai-agents-safety) täieliku mudeli jaoks.
 
@@ -267,7 +267,7 @@ Vaata [Migreerimisjuhendit](/en/docs/migration) täieliku läbimise jaoks, milla
 Rakenda mall repositooriumi failidega initsialiseerimiseks:
 
 ```bash
-rdc repo template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
 ```
 
 ## Kustutamine

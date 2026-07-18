@@ -13,6 +13,25 @@ export interface VMNetworkConfig {
   workerIds: number[];
   /** Ceph node IDs (optional) */
   cephIds: number[];
+  /**
+   * Cluster group token (renet VM_GROUP) that namespaces this group's libvirt
+   * domain names (rediacc-<group>-<id>) and disk scratch paths. Must be a
+   * libvirt-domain- and filename-safe token. Optional: the plain ops fleet
+   * leaves it unset and keeps its historical bare rediacc<id> domain names.
+   */
+  group?: string;
+  /**
+   * libvirt network / host-bridge name for this VM group (renet VM_NET).
+   * Distinct groups must use distinct networks (e.g. "renet11" vs "renet12").
+   * Optional: single-group callers inherit renet's default from ambient env.
+   */
+  netName?: string;
+  /**
+   * In-VM Docker registry endpoint for this group (renet DOCKER_REGISTRY),
+   * e.g. "192.168.112.5:5000". Optional: when unset, renet derives it from the
+   * group's bridge IP, so a second group reaches its own registry automatically.
+   */
+  dockerRegistry?: string;
 }
 
 /**
@@ -46,6 +65,16 @@ export interface ProvisioningConfig {
   renet: RenetConfig;
   /** SSH configuration (optional) */
   ssh?: SSHProvisioningConfig;
+  /**
+   * Per-group environment overrides threaded into every `renet ops` subprocess
+   * this manager spawns (VM_NET, VM_NET_BASE, VM_WORKERS, DOCKER_REGISTRY, ...).
+   *
+   * This is what lets one harness process drive two concurrent KVM groups
+   * without env-bleed: each group's OpsManager carries its own env, so a
+   * group-B command never inherits group-A's ambient VM_NET. When omitted, the
+   * subprocess inherits ambient env unchanged (single-group behavior).
+   */
+  groupEnv?: Record<string, string>;
 }
 
 /**

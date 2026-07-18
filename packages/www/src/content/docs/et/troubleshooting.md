@@ -4,7 +4,7 @@ description: "Lahendused tavalistele SSH, seadistuse, repositooriumi, teenuse ja
 category: "Guides"
 order: 10
 language: et
-sourceHash: "17dc03eb0589d606"
+sourceHash: "a1c58ae1fe3d0514"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -15,16 +15,16 @@ Levinud probleemid ja nende lahendused. Kui oled ebakindel, alusta käsuga `rdc 
 ## SSH-ühendus ebaõnnestub
 
 - Kinnita, et saad käsitsi ühenduse luua: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Käivita `rdc config machine scan-keys -m server-1` hostivõtmete värskendamiseks
+- Käivita `rdc machine scan-keys server-1` hostivõtmete värskendamiseks
 - Kontrolli, et SSH-port vastab: `--port 22`
-- Testi lihtsa käsuga: `rdc term connect -m server-1 -c "hostname"`
+- Testi lihtsa käsuga: `rdc term connect server-1 -c "hostname"`
 
 ## Hostivõtme lahknevus
 
 Kui server paigaldati ümber või selle SSH-võtmed muutusid, näed "host key verification failed":
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 See tõmbib uued hostivõtmed ja värskendab sinu konfiguratsiooni.
@@ -33,7 +33,7 @@ See tõmbib uued hostivõtmed ja värskendab sinu konfiguratsiooni.
 
 - Tagara, et SSH-kasutajal on sudo-juurdepääs ilma parooliga või konfigureerida `NOPASSWD` vajalike käskude jaoks
 - Kontrolli saadaolevat kettaruumi serveris
-- Käivita `--debug` piiretega, et näha üksikasjalikku väljundit: `rdc config machine setup --name server-1 --debug`
+- Käivita `--debug` piiretega, et näha üksikasjalikku väljundit: `rdc machine setup server-1 --debug`
 
 ## Operatsioonisüsteem-spetsiifilised seadistusprobleemid
 
@@ -141,7 +141,7 @@ docker run --rm --network host -it ubuntu bash
 
 ## VS Code juurdepääsu keeldumine liivakasti failidel
 
-Kui ühendad `rdc vscode connect -m <machine> -r <repo>` pärast eelmist VS Code-i seanssi, vanemad renet-i versioonid tekitasid vigu nagu `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied`. Põhjus: segatõõ omandisuhe liivakasti kataloogis, kus nii sinu SSH-kasutaja kui sisemine `rediacc` kasutaja kirjutasid faile.
+Kui ühendad `rdc vscode connect <repo>` pärast eelmist VS Code-i seanssi, vanemad renet-i versioonid tekitasid vigu nagu `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied`. Põhjus: segatõõ omandisuhe liivakasti kataloogis, kus nii sinu SSH-kasutaja kui sisemine `rediacc` kasutaja kirjutasid faile.
 
 Kaasaegsed renet-i versioonid parandavad seda:
 

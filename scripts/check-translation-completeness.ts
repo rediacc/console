@@ -40,6 +40,15 @@ const ALLOWED_IDENTICAL = new Set([
   'Professional',
   // Common loanwords used identically in many languages
   'Newsletter',
+  // Partner-program tier badge names. Several locales (it/ja/pt/ru/zh/tr)
+  // keep these in English because their existing cross-reference copy
+  // embeds the English names ("livello Registered", "Silver ortağın...");
+  // 'Gold' is already exempt via MIN_STRING_LENGTH. Locales that fully
+  // localized the tier vocabulary (ar/de/es/et/fr/ko) translate them and
+  // are unaffected by this allowlist.
+  'Registered',
+  'Silver',
+  'Platinum',
   // Pure-formatting strings (bullet prefix + JSON-Pointer placeholder) —
   // the rendered pointer is the meaningful content, not the bullet glyph.
   '  • {{pointer}}',
@@ -71,6 +80,7 @@ const ALLOWED_IDENTICAL = new Set([
   'MULTI-CLOUD',
   'Failover',
   'Backup',
+  'Clustering',
   'Standard',
   'Priority',
   'General',
@@ -81,6 +91,14 @@ const ALLOWED_IDENTICAL = new Set([
   'Backblaze',
   'Cloudflare',
   'Ceph',
+  // WebAuthn/FIDO2 term kept untranslated by locales that follow the same
+  // convention as Apple/Google/Microsoft account UIs in that language (e.g.
+  // German). "Password" is likewise an established loanword in some locales
+  // (e.g. Italian, where "password" is standard tech vocabulary with no
+  // dedicated native translation in common use — confirmed consistent
+  // throughout it/settings.json).
+  'Passkey',
+  'Password',
   // Storage provider brand names (keep as-is globally)
   'Dropbox',
   '1Fichier',
@@ -153,11 +171,24 @@ const ALLOWED_IDENTICAL = new Set([
   'Snapshot',
   'Image',
   'Pool',
+  'Pools',
   'Token',
   'Datastore',
   'Disk',
   'Memory',
   'Status',
+  // Console table column headers (columnLabel_*) kept as loanwords/cognates
+  // by several locales for the same reasons documented alongside the mirror
+  // entries in eslint.config.js's account-web extraUntranslatedPatterns:
+  // "Commit" has no established local translation in any of the 12 locales
+  // (every CLI translation keeps it untranslated); "Backend"/"Provider" are
+  // loanwords in de/es/fr/it/pt matching packages/cli's own translations;
+  // "Repository" is Italian's own established word for the concept
+  // (navRepos/reposEmpty in this same console.json use it identically).
+  'Commit',
+  'Backend',
+  'Provider',
+  'Repository',
   // International words (same or very similar across languages)
   'Online',
   'Failover',
@@ -187,6 +218,10 @@ const ALLOWED_IDENTICAL = new Set([
   'Model',
   'Services',
   'services',
+  // French cognate (destination/destinations spelled identically in both
+  // languages); French CLI translations of the same backup-destination
+  // concept already keep it identical ("Destinations :").
+  'Destinations',
   'Accessible',
   'Grand',
   'plugin',

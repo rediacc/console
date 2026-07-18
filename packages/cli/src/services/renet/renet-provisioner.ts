@@ -12,7 +12,7 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { SFTPClient, type SFTPClientConfig } from '../../remote/sftp/index.js';
+import type { SFTPClient, SFTPClientConfig } from '../../remote/sftp/index.js';
 import { VERSION } from '../../version.js';
 import {
   computeSha256,
@@ -22,8 +22,9 @@ import {
 } from '../core/embedded-assets.js';
 import { acquireLocalLock, releaseLocalLock } from '../core/file-lock.js';
 import { outputService } from '../core/output.js';
-import { shellEscape, stageRenetBinary } from './renet-binary-transfer.js';
+import { withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { compareVersions } from '../update/updater.js';
+import { shellEscape, stageRenetBinary } from './renet-binary-transfer.js';
 
 /** Root directory for versioned renet installs on remote machines */
 const REMOTE_INSTALL_ROOT = '/usr/lib/rediacc/renet';
@@ -175,12 +176,10 @@ class RenetProvisionerService {
     },
     sharedSftp?: SFTPClient
   ): Promise<ProvisionResult> {
-    const sftp = sharedSftp ?? new SFTPClient(config);
-    const ownsConnection = !sharedSftp;
-
     try {
-      if (ownsConnection) await sftp.connect();
-      return await this.doProvision(sftp, config, options);
+      return await withSharedOrPooledSftp(sharedSftp, config, (sftp) =>
+        this.doProvision(sftp, config, options)
+      );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       return {
@@ -189,8 +188,6 @@ class RenetProvisionerService {
         remotePath: REMOTE_INSTALL_PATH,
         error: `Failed to provision renet: ${errorMessage}`,
       };
-    } finally {
-      if (ownsConnection) sftp.close();
     }
   }
 

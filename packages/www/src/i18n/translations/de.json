@@ -2,7 +2,7 @@
   "announcement": {
     "enabled": true,
     "link": "/account/",
-    "text": "Begrenzte Zeit: Design Partner Programm. BUSINESS Plan kostenlos für immer."
+    "text": "Neu: Starten Sie Rediacc mit einer 14-tägigen kostenlosen Testphase."
   },
   "beforeAfter": {
     "after": {
@@ -203,10 +203,10 @@
   },
   "getStarted": {
     "benefits": [
-      "Arbeiten Sie direkt mit unserem Team zusammen",
-      "Voll ausgestattete Plattform",
-      "Vorrangiger Support",
-      "Regelmäßige Feature-Updates"
+      "Direkte Zusammenarbeit mit unserem Team",
+      "Vollständig ausgestattete Plattform",
+      "Prioritäts-Support",
+      "Laufend neue Features"
     ],
     "cta": {
       "primary": "Rediacc kostenlos installieren",
@@ -220,7 +220,7 @@
         },
         "message": {
           "label": "Nachricht",
-          "placeholder": "Erzählen Sie uns von Ihren Bedürfnissen..."
+          "placeholder": "Erzähl uns von deinen Bedürfnissen..."
         },
         "name": {
           "autoComplete": "Name",
@@ -235,34 +235,34 @@
           "label": "Rolle"
         },
         "useCase": {
-          "label": "Hauptinteresse",
+          "label": "Primäres Interesse",
           "options": {
             "aiSafeOperations": "Cybersicherheit",
             "developmentAcceleration": "Entwicklung",
             "disasterRecovery": "Notfallwiederherstellung",
             "multiple": "Mehrere",
             "other": "Andere",
-            "placeholder": "Wählen Sie eine aus"
+            "placeholder": "Wähle eine Kategorie aus"
           }
         }
       },
-      "submit": "Legen Sie los"
+      "submit": "Los geht's"
     },
     "notice": {
-      "description": "Klicken Sie auf „Senden“, um Ihre E-Mail zu öffnen. Wir antworten innerhalb von 48 Stunden.",
+      "description": "Klick auf Senden, um deine E-Mail zu öffnen. Wir antworten in 48 Stunden.",
       "emailLabel": "contact@rediacc.com",
-      "title": "So reichen Sie ein"
+      "title": "So reichst du ein"
     },
-    "subtitle": "Schließen Sie sich Teams an, die mit echten Produktionsdaten testen — ohne Risiko.",
-    "title": "Bereit, Ihren ersten Stack zu klonen?"
+    "subtitle": "Die meisten Teams testen mit Fake-Daten und hoffen das Beste. Klone dein Live-System in Sekunden. Führe die risikoreiche Änderung mit echten Daten aus. Deine Produktion merkt davon nichts.",
+    "title": "Bereit, deinen ersten Stack zu klonen?"
   },
   "hero": {
     "cta": {
-      "benefits": "Unbegrenzte Teams • 0 €",
+      "benefits": "Unbegrenzte Teams • 14 Tage kostenlos testen",
       "bookDemo": "Demo buchen",
       "contactUs": "Alle Installationsoptionen ansehen",
-      "freeBadge": "IMMER KOSTENLOS · Keine Kreditkarte",
-      "getStarted": "Kostenlos loslegen",
+      "freeBadge": "14 Tage kostenlos testen · Jederzeit kündbar",
+      "getStarted": "Kostenlos starten",
       "learnMore": "So funktioniert's",
       "readDocs": "Dokumentation lesen",
       "seeDetails": "Details ansehen"
@@ -302,9 +302,12 @@
       "S3",
       "btrfs",
       "LUKS",
-      "systemd"
+      "systemd",
+      "Kubernetes",
+      "Ceph",
+      "k3s"
     ],
-    "migrationMessage": "Rediacc bündelt Ihre Apps, Datenbanken und Einstellungen in einer Datei. Überall einsatzbereit. Nutzen Sie bereits Docker? Dann sind Sie schon fast am Ziel.",
+    "migrationMessage": "Rediacc bündelt Ihre Apps, Datenbanken und Einstellungen in einer Datei. Überall einsatzbereit. Nutzen Sie bereits Docker? Dann sind Sie schon fast am Ziel. Nutzen Sie Kubernetes? Forken oder verschieben Sie den ganzen Cluster genauso.",
     "title": "Funktioniert mit Ihrem bestehenden Stack"
   },
   "layout": {
@@ -312,10 +315,6 @@
       "author": "Rediacc",
       "defaultDescription": "Infrastrukturautomatisierungsplattform für beschleunigte Entwicklungsvorgänge. Sofortige Entwicklungsumgebungen und Disaster Recovery der nächsten Generation.",
       "defaultKeywords": "Infrastrukturautomatisierung, KI-Betrieb, Disaster Recovery, Entwicklungsumgebungen, Model Context Protocol, DevOps, CI/CD",
-      "designPartner": {
-        "ogDescPrefix": "BUSINESS lebenslang kostenlos erhalten.",
-        "ogPrefix": "Design-Partner-Programm"
-      },
       "locale": "de_DE",
       "siteName": "Rediacc",
       "twitter": {
@@ -341,6 +340,10 @@
       {
         "label": "Wiederherstellungszeit",
         "number": "< 1 Min"
+      },
+      {
+        "label": "Whole Kubernetes cluster fork",
+        "number": "46s"
       }
     ]
   },
@@ -437,11 +440,15 @@
       {
         "description": "Sie speichern alles. Wiederherstellung dauert Stunden, nicht eine Minute.",
         "title": "Backup-Tools"
+      },
+      {
+        "description": "Sie kopieren deine Manifeste. Ein Cluster ist mehr als YAML.",
+        "title": "Kubernetes-Tools"
       }
     ],
     "title": "Die meisten Tools kopieren ein Stück. Wir kopieren alles.",
     "winner": {
-      "description": "Jedes Team bekommt seine eigene schreibbare Kopie. Daten, Apps, Einstellungen, alles. Bereit in 60 Sekunden. Du zahlst nur für Speicher, wenn sich etwas ändert.",
+      "description": "Jedes Team bekommt seine eigene schreibbare Kopie. Daten, Apps, Einstellungen, alles. Bereit in 60 Sekunden. Das gilt auch für ganze Kubernetes-Cluster. Du zahlst nur für Speicher, wenn sich etwas ändert.",
       "label": "Rediacc"
     }
   },
@@ -495,44 +502,44 @@
           "contact": "Kontakt aufnehmen",
           "learnMore": "So funktioniert's"
         },
-        "subtitle": "Installieren Sie Rediacc in unter 5 Minuten. Die Community-Stufe ist für immer kostenlos.",
+        "subtitle": "Rediacc in unter 5 Minuten installiert. 14 Tage kostenlos testen.",
         "title": "Kostenlos testen"
       },
       "hero": {
-        "subtitle": "Rediacc ist für Teams gemacht, die Produktionssysteme betreiben und sie nicht verlieren können.",
-        "title": "Backup- und Recovery-Software unter Ihrer Kontrolle"
+        "subtitle": "Rediacc für Teams, die ihre Produktionssysteme nicht verlieren können.",
+        "title": "Backup- und Recovery-Software in deiner Hand"
       },
       "meta": {
         "description": "Rediacc entwickelt selbstgehostete Backup- und Disaster-Recovery-Software, mit der Sie Produktion klonen, sicher testen und in Sekunden wiederherstellen können.",
         "keywords": "Rediacc Unternehmen, selbstgehostetes Backup, Disaster-Recovery-Software, Infrastruktur-Zuverlässigkeit",
-        "title": "Unternehmen | Rediacc - Backups, die Ransomware überstehen"
+        "title": "Unternehmen | Rediacc - Ransomware-sichere Backups"
       },
       "mission": {
-        "belief": "Die Community-Edition hat alles, was die kostenpflichtigen Versionen bieten. Gleiches btrfs-Cloning. Gleiche LUKS-Verschlüsselung. Gleiche gesperrten, schreibgeschützten Backups. Nur mit niedrigeren Limits. Keine Feature-Gates. Keine versteckte Kundenfalle.",
+        "belief": "Die Community-Stufe macht alles wie die kostenpflichtigen. Gleiches btrfs-Cloning. Gleiche LUKS-Verschlüsselung. Gleiche gesperrten Backups. Nur mit niedrigeren Limits. Keine Feature-Walls. Keine versteckten Tricks.",
         "description": "Alle 47 Tage wird eine Produktionsdatenbank gelöscht. Jährlich fallen 1,71 % der Festplatten aus. 75 % der Ransomware-Angriffe zielen auf Backups. Wir bringen dich in 60 Sekunden wieder online.",
         "title": "Unsere Mission: Katastrophen unmöglich machen"
       },
       "overview": {
-        "description": "Rediacc ist selbstgehostete Software für Backup, Klonen und Disaster Recovery. Sie läuft auf Ihren eigenen Servern, kopiert ganze Produktionssysteme in Sekunden und bringt Sie schnell wieder online.",
+        "description": "Rediacc ist selbstgehostete Software für Backup, Klonen und Disaster Recovery. Sie läuft auf Ihren Servern, klont die Produktion in Sekunden und bringt Sie schnell wieder online.",
         "title": "Was wir tun"
       },
       "values": {
         "items": {
           "global": {
-            "description": "9 Sprachen. Nutzungsdaten bleiben in der EU. Estnisches Unternehmen mit GDPR im Kern.",
+            "description": "9 Sprachen. Deine Daten bleiben in der EU. Estnisches Unternehmen mit GDPR im Kern.",
             "title": "Globales Denken"
           },
           "innovation": {
-            "description": "Wir publishen wöchentlich. Jede Version löst ein echtes Deployment-Problem, das unsere Nutzer berichtet haben.",
+            "description": "Wir releasen jede Woche. Jede Version löst ein echtes Problem, das unsere Nutzer berichten.",
             "title": "Kontinuierliche Innovation"
           },
           "security": {
             "description": "LUKS-Verschlüsselung auf der Festplatte. TLS im Netzwerk. Eine separate Docker-Engine pro App. Alles durchgehend gesichert.",
-            "title": "Sicherheit by Design"
+            "title": "Sicherheit von Anfang an"
           },
           "simplicity": {
             "description": "Ein Befehl zum Kopieren von 241 GB Live-Daten. Das ist unser gesamtes Komplexitätsbudget.",
-            "title": "Einfachheit First"
+            "title": "Einfachheit zuerst"
           },
           "success": {
             "description": "Wir messen uns an deiner Recovery-Zeit, nicht an unserer Feature-Liste.",
@@ -559,58 +566,58 @@
           },
           "message": {
             "label": "Nachricht *",
-            "placeholder": "Erzählen Sie uns von Ihren Bedürfnissen..."
+            "placeholder": "Erzähl uns von deinen Anforderungen..."
           },
           "name": {
             "label": "Name *"
           },
           "subject": {
-            "label": "Ich interessiere mich für *",
+            "label": "Dein Anliegen *",
             "options": {
               "disasterRecovery": "Notfallwiederherstellung",
               "general": "Allgemein",
-              "other": "Andere",
+              "other": "Sonstiges",
               "partnership": "Partnerschaft",
-              "placeholder": "Wählen Sie eine aus",
+              "placeholder": "Bitte wählen",
               "technical": "Technische Frage"
             }
           }
         },
         "legend": "Kontaktinformationen",
-        "submit": "Legen Sie los"
+        "submit": "Nachricht senden"
       },
       "hero": {
-        "subtitle": "Füllen Sie das Formular aus und wir werden uns innerhalb von 48 Stunden bei Ihnen melden.",
-        "title": "Kontaktieren Sie uns"
+        "subtitle": "Füll das Formular aus. Innerhalb von 48 Stunden hast du eine Antwort.",
+        "title": "Kontakt mit uns"
       },
       "info": {
-        "description": "Arbeiten Sie direkt mit unserem Team zusammen. Wissen Sie, dass Ihre Backups funktionieren.",
+        "description": "Direkter Zugang zum Engineering-Team. Antwort meist in 24 Stunden.",
         "methods": {
           "general": {
             "email": "contact@rediacc.com",
             "title": "Fragen?"
           },
           "getStarted": {
-            "description": "Kostenlose Community-Stufe. Vorrangiger Support.",
+            "description": "Kostenlos starten. Mit Priority Support.",
             "link": "Erfahren Sie mehr",
-            "title": "Jetzt starten"
+            "title": "Los geht's"
           },
           "technicalSupport": {
-            "description": "Kontaktieren Sie direkt Ihr Support-Team.",
+            "description": "Sprich direkt mit deinem Support-Team.",
             "title": "Bestehende Kunden"
           }
         },
-        "title": "Was Sie bekommen"
+        "title": "Das erwartet dich"
       },
       "meta": {
-        "description": "Kontaktieren Sie das Rediacc-Team bei Fragen zu Support, Partnerschaften oder unserer Infrastrukturplattform.",
+        "description": "Kontakt zum Rediacc-Team: Disaster Recovery, Partnerschaften, technische Fragen. Antwort innerhalb von 48 Stunden.",
         "keywords": "Rediacc Kontakt, Disaster-Recovery-Plattform, verifizierte Backups",
-        "title": "Kontakt - Support & Hilfe erhalten | Rediacc"
+        "title": "Rediacc kontaktieren | Direkt zum Team"
       },
       "notice": {
-        "description": "Klicken Sie auf „Senden“, um Ihre E-Mail zu öffnen. Fragen? E-Mail",
+        "description": "Klick auf Senden, E-Mail öffnet sich. Fragen? Schreib uns.",
         "emailLabel": "contact@rediacc.com",
-        "title": "So reichen Sie ein"
+        "title": "So geht's"
       }
     },
     "cookiePolicy": {
@@ -701,7 +708,7 @@
             "Folgende Technologien werden auf unserer Website <strong>nicht</strong> verwendet:"
           ],
           "content2": [
-            "Hinweis: Diese Cookie-Richtlinie gilt für die Rediacc-Marketingwebsite. Unsere Softwareprodukte (Webanwendung, CLI, Middleware, Bridge) erfassen separate Nutzungstelemetrie, die keine Cookies verwendet. Einzelheiten zur Produkttelemetrie finden Sie in unserer <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a>."
+            "Hinweis: Diese Cookie-Richtlinie gilt für die Rediacc-Marketingwebsite. Unsere Softwareprodukte (Webanwendung, CLI, Middleware, Renet-Agent) erfassen separate Nutzungstelemetrie, die keine Cookies verwendet. Einzelheiten zur Produkttelemetrie finden Sie in unserer <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a>."
           ],
           "id": "what-we-dont-use",
           "items": [
@@ -715,98 +722,6 @@
       },
       "toc": {
         "title": "Inhaltsverzeichnis"
-      }
-    },
-    "designPartners": {
-      "ask": {
-        "items": [
-          {
-            "body": "Schreib eine kurze E-Mail, wenn dich etwas überrascht. Stack Trace optional. Frust willkommen.",
-            "title": "Sag uns, wenn etwas kaputt ist"
-          },
-          {
-            "body": "30 Minuten einmal pro Quartal oder so. Wir hören zu, du redest. Keine Demos, kein Upselling.",
-            "title": "Gelegentlich ein Gespräch mit uns"
-          },
-          {
-            "body": "Wenn wir etwas ausliefern, das dich betrifft, wollen wir dich vorher kurz informieren. Eine normale E-Mail reicht.",
-            "title": "Erreichbar sein"
-          }
-        ],
-        "lede": "Unkompliziert. Es geht nicht um kostenlose Arbeit, sondern darum, dass wir beide ehrlich sind.",
-        "title": "Was wir im Gegenzug erwarten"
-      },
-      "faq": {
-        "items": [
-          {
-            "a": "Ja. Das Angebot ist in deinem Abonnement verankert – ohne Ablaufdatum, ohne Downgrade. Falls wir das je ändern müssen, informieren wir dich vorher per E-Mail. Bislang haben wir das nicht getan und planen auch nicht, es zu tun.",
-            "q": "Ist es wirklich lebenslang?"
-          },
-          {
-            "a": "Dann funktioniert dein Konto nicht mehr, genau wie bei allen anderen. Das lebenslange Versprechen gilt für die Lebensdauer des Unternehmens. Wir sind vor dem ersten Kunden – das ist das ehrliche Risiko, das du mit uns eingehst.",
-            "q": "Was, wenn Rediacc einstellt?"
-          },
-          {
-            "a": "Nein. Keine Paywalls, keine Verträge, keine automatische Abrechnung. Die einzige Bitte ist das unkomplizierte Feedback oben. Du kannst uns ignorieren. Dein Plan bleibt unangetastet.",
-            "q": "Gibt es versteckte Bedingungen?"
-          },
-          {
-            "a": "Ja. Du kannst für immer auf BUSINESS bleiben oder zu Enterprise wechseln, wenn du über die Limits hinauswächst. Ein Upgrade wird normal abgerechnet; das lebenslange Angebot gilt nur für BUSINESS.",
-            "q": "Kann ich später den Plan wechseln?"
-          },
-          {
-            "a": "Bis wir es schließen – ohne Vorwarnung. Also: heute ist ein guter Tag zum Anmelden. Design Partner behalten ihren Plan für immer.",
-            "q": "Wie lange ist das Programm offen?"
-          }
-        ],
-        "title": "Ehrliche Antworten"
-      },
-      "finalCta": {
-        "button": "Meinen BUSINESS-Plan sichern",
-        "note": "Wir melden uns innerhalb von ein bis zwei Tagen per E-Mail, um einen Onboarding-Call zu vereinbaren.",
-        "subtitle": "Eine Anmeldung. Keine Kreditkarte. Lebenslang BUSINESS, für dich gesichert.",
-        "title": "Bereit, Pionier zu sein?"
-      },
-      "hero": {
-        "eyebrow": "Zeitlich begrenzt",
-        "note": "Keine Kreditkarte. Keine Bewerbung. Wir schließen das Programm ohne Vorwarnung – meld dich heute an.",
-        "primaryCta": "Meinen BUSINESS-Plan sichern",
-        "secondaryCta": "Preise ansehen",
-        "subtitle": "Wir sind vor dem ersten Kunden. Wir suchen Pioniere, die das Produkt nutzen und uns sagen, wenn's nicht läuft. Im Gegenzug bekommst du unseren BUSINESS-Plan kostenlos, solange Rediacc existiert.",
-        "title": "Werde Design Partner. Sichere dir BUSINESS lebenslang. Kostenlos."
-      },
-      "meta": {
-        "description": "Melde dich kostenlos als Design Partner an und erhalte unseren BUSINESS-Plan lebenslang. Wir suchen Pioniere, die Feedback teilen, während wir bauen.",
-        "title": "Design Partner – BUSINESS kostenlos, lebenslang"
-      },
-      "why": {
-        "items": [
-          {
-            "body": "Wir lernen 100x mehr von einem Team im Produktivbetrieb als von hundert Testanmeldungen. Design Partner sind unser Weg, das Produkt zu schärfen, bevor die Masse kommt.",
-            "title": "Echte Teams, echte Produktionsumgebungen"
-          },
-          {
-            "body": "Wir brauchen dein Geld noch nicht. Wir brauchen deine Erfahrungen, deine Edge Cases und deine Fragen. Kostenlos für Ehrlichkeit ist fair.",
-            "title": "Geld gegen ehrliches Feedback"
-          },
-          {
-            "body": "Dein lebenslanger BUSINESS-Plan läuft nie ab, wird nie herabgestuft und verlangt nie eine Kreditkarte. Das ist das Angebot.",
-            "title": "Dauerhafter Dank"
-          }
-        ],
-        "title": "Warum wir das tun"
-      },
-      "youGet": {
-        "items": [
-          "BUSINESS-Plan: 200 GB pro Repository, 10 Benutzerplätze, 10.000 Aktivierungen pro Monat",
-          "Im Early-Access-Track: doppelte Limits (400 GB pro Repository, 20 Benutzerplätze, 20.000 Aktivierungen)",
-          "Unbegrenzte Repositories, Benutzer und Teams",
-          "Backup-Wiederherstellungen, Dark Mode, alle 9 Sprachen",
-          "Direkter Support vom Engineering-Team",
-          "Lebenslang gesichert. Kein Ablauf, kein Downgrade, keine Karte hinterlegt."
-        ],
-        "lede": "Du bekommst den kompletten BUSINESS-Plan. Kostenlos. Solange Rediacc existiert.",
-        "title": "Was du bekommst"
       }
     },
     "disasterRecovery": {
@@ -827,7 +742,7 @@
             "question": "Welche Zahlungsmethoden akzeptieren Sie?"
           },
           {
-            "answer": "Der Community-Plan ist kostenlos – für immer. Für kostenpflichtige Pläne sprechen Sie mit unserem Vertrieb über Trial-Optionen.",
+            "answer": "Ja. Professional und Business starten beide mit einer 14-tägigen kostenlosen Testphase. Sie hinterlegen bei der Anmeldung eine Karte und werden erst belastet, wenn die Testphase endet. Kündigen Sie vorher, zahlen Sie nichts; Ihr Konto fällt dann auf den kostenlosen Community-Plan zurück.",
             "question": "Gibt es eine kostenlose Testversion?"
           },
           {
@@ -857,7 +772,7 @@
         "heading": "Schneller wieder online"
       },
       "hero": {
-        "subtitle": "Viele Teams starten kostenlos und bleiben dabei. Sie upgraden nur, wenn Ausfallzeiten dem Business wirklich Geld kosten. Überall dieselbe Plattform.",
+        "subtitle": "Starten Sie mit einer 14-tägigen kostenlosen Testphase und steigen Sie erst um, wenn Ausfallstunden dem Unternehmen wirklich Geld kosten. Gleiches Produkt, kein Wechsel.",
         "title": "Für echte Recovery-Operationen gebaut"
       },
       "meta": {
@@ -939,7 +854,7 @@
         "viewDetails": "Services anschauen"
       },
       "strategy": {
-        "copy": "Starten Sie einfach. Die meisten Teams bleiben länger kostenlos, als sie denken. Upgraden Sie nur, wenn Downtime wirklich Geld kostet. Eine Plattform, überall.",
+        "copy": "Starten Sie dort, wo Sie stehen. Die meisten Teams bleiben länger dort, als sie erwarten. Steigen Sie nur um, wenn eine langsame Wiederherstellung dem Unternehmen tatsächlich etwas kostet. Immer dasselbe Produkt. Nutzen Sie Kubernetes? Ganze Cluster wechseln genauso, mit einem kurzen, kontrollierten Cutover.",
         "distribution": [
           "Professional → Business: Backups an zweiter Lokation. Jede Änderung wird sofort gespeichert. 4-Stunden-Wiederherstellung garantiert. Und: ein dedizierter Support-Kontakt.",
           "Business → Enterprise: Sie bestimmen die Recovery-Zeit – 15 bis 60 Minuten. Recovery in komplett separater Umgebung. Ihre Live-Systeme sind sicher. Hands-on Support im kritischen Moment."
@@ -995,9 +910,10 @@
         "anchor": "Strategischer Anker",
         "bestValue": "Bestes Preis-Leistungs-Verhältnis",
         "contactSales": "Kontaktieren Sie den Vertrieb",
+        "contactUs": "Kontaktieren Sie uns",
+        "contactUsSub": "Individuelle Limits & Konditionen",
         "cta": {
           "business": {
-            "guarantee": "14-tägige Geld-zurück-Garantie",
             "launchBadge": "Begrenztes Einführungsangebot",
             "primary": "Planen Sie einen Implementierungsanruf",
             "secondary": "Kontaktieren Sie den Vertrieb",
@@ -1009,13 +925,11 @@
             "secondary": "Erfahren Sie mehr"
           },
           "enterprise": {
-            "guarantee": "14-tägige Geld-zurück-Garantie",
             "primary": "Planen Sie eine Executive-Demo",
             "secondary": "Kontaktieren Sie den Vertrieb",
             "subtext": "Benutzerdefiniertes SLA · Dedizierter Support"
           },
           "professional": {
-            "guarantee": "14-tägige Geld-zurück-Garantie",
             "primary": "Legen Sie los",
             "secondary": "Kontaktieren Sie den Vertrieb"
           }
@@ -1024,7 +938,7 @@
         "getStarted": "Legen Sie los",
         "guarantees": {
           "cancelAnytime": "Jederzeit kündbar",
-          "moneyBack": "14-tägige Geld-zurück-Garantie",
+          "freeTrial": "14 Tage kostenlos testen",
           "noContracts": "Keine langfristigen Verträge"
         },
         "keyBenefits": "Hauptvorteile",
@@ -1248,11 +1162,6 @@
         "notFound": "404 – Seite nicht gefunden"
       },
       "description": "Leider existiert die gesuchte Seite nicht oder wurde verschoben. Dies kann passieren, wenn Sie einem veralteten Link gefolgt sind oder die URL falsch eingegeben haben.",
-      "designPartner": {
-        "body": "Erhalte unseren BUSINESS-Plan lebenslang kostenlos. Keine Kreditkarte.",
-        "cta": "Design Partner werden",
-        "title": "Design-Partner-Programm"
-      },
       "help": {
         "description": "Wenn Sie glauben, dass es sich hierbei um einen Fehler handelt oder Sie erwartet haben, hier Inhalte zu finden, wenden Sie sich bitte an unser Support-Team. Wir sind hier, um Ihnen zu helfen, das zu finden, was Sie suchen.",
         "link": "Kontaktieren Sie unser Support-Team",
@@ -1476,7 +1385,7 @@
               "title": "Sparsam mit Kontextfenstern"
             },
             {
-              "description": "--dry-run zeigt destruktive Operationen als Vorschau. --yes ermöglicht Automatisierung. Agenten können mit eingebauten Schutzschienen zuversichtlich deployen.",
+              "description": "--dry-run zeigt destruktive Operationen als Vorschau. --yes ermöglicht Automatisierung. Agenten können mit eingebauten Schutzschienen zuversichtlich deployen. Sogar ein Fork des gesamten Clusters folgt denselben Regeln.",
               "icon": "shield",
               "title": "Standardmäßig sicher"
             }
@@ -1487,12 +1396,12 @@
         "bottomCta": {
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash",
           "description": "Installieren Sie die CLI. Fügen Sie die AGENTS.md-Vorlage hinzu. Ihr KI-Assistent erledigt den Rest.",
-          "primaryCta": "Kostenlos starten",
+          "primaryCta": "Jetzt kostenlos testen",
           "title": "Ihr KI-Agent verwaltet Ihre Infrastruktur"
         },
         "hero": {
           "badge": "FÜR KI-AGENTEN",
-          "primaryCta": "Kostenlos starten",
+          "primaryCta": "Jetzt kostenlos testen",
           "secondaryCta": "Dokumentation lesen",
           "subtitle": "CLI-first. SSH-basiert. JSON standardmäßig. Jeder rdc-Befehl ist für autonome Agenten gebaut: kein GUI, keine Browser-Automatisierung, keine benutzerdefinierten Integrationen.",
           "title": "Infrastruktur, die Ihr KI-Agent schon versteht"
@@ -1560,7 +1469,7 @@
               "title": "Konfigurieren"
             },
             {
-              "description": "rdc agent capabilities ausführen, um einen strukturierten JSON-Befehlsbaum zu erhalten. Der Agent weiß, was verfügbar ist, ohne Dokumentation.",
+              "description": "Verbinde deinen Assistenten mit rdc mcp serve und er erhält typisierte Tools für jede Operation. Oder nutze rdc --help-all für die vollständige Befehlsreferenz.",
               "icon": "code",
               "title": "Entdecken"
             },
@@ -1573,7 +1482,7 @@
           "title": "Drei Schritte zur agentengesteuerten Infrastruktur"
         },
         "meta": {
-          "description": "Rediacc ist für KI-Coding-Assistenten entwickelt. CLI-First, strukturierte JSON, SSH-Zugriff und vollständige Agent-Discovery über rdc agent-Befehle.",
+          "description": "Rediacc ist für KI-Coding-Assistenten gebaut: CLI-first, strukturiertes JSON, SSH-Zugriff und ein eingebauter MCP-Server für Tool-Aufrufe.",
           "keywords": "KI-Agenten, Claude Code, Cursor, Cline, Infrastruktur-Automatisierung, CLI, JSON-Ausgabe, selbst gehostet, agentennativ, MCP",
           "title": "Für KI-Agenten – CLI-native Automation | Rediacc"
         },
@@ -1667,8 +1576,12 @@
               "traditional": "HTML/unstrukturierter Output: 4x Token-Verbrauch, fragiles Parsen"
             },
             {
-              "rediacc": "rdc agent capabilities: structured command tree at runtime",
+              "rediacc": "MCP-Server: typisierte Tools, zur Laufzeit ermittelt",
               "traditional": "Keine automatische Erkennung: Agenten brauchen Dokumentation oder hardcodierte API-Aufrufe"
+            },
+            {
+              "rediacc": "rdc cluster fork: one command, one JSON reply, whole cluster",
+              "traditional": "Cluster-Änderungen: Web-Konsolen, Assistenten, mehrstufige Runbooks"
             }
           ],
           "title": "Warum rdc für KI-Agenten entwickelt wurde",
@@ -1746,7 +1659,7 @@
               "title": "Ihre Daten, Ihre Kontrolle"
             },
             {
-              "description": "Vollständige Wiederherstellung in unter 5 Minuten. Unveränderliche Backups, die Ransomware nicht angreifen kann. Ihr Unternehmen läuft weiter.",
+              "description": "Vollständige Wiederherstellung in unter 5 Minuten. Unveränderliche, nur einmal beschreibbare Backups, die Ransomware nicht verändern kann. Ihr Unternehmen läuft weiter. Lässt ein Anbieter Sie im Stich, kann das gesamte System umziehen, Kubernetes eingeschlossen.",
               "icon": "shield",
               "title": "Geschäftskontinuität"
             }
@@ -1755,7 +1668,7 @@
           "title": "Was das für Ihr Unternehmen bedeutet"
         },
         "bottomCta": {
-          "description": "Ein Pauschalpreis pro Maschine. Keine Pro-Sitz-Gebühren. Keine Überraschungen. Starten Sie mit der kostenlosen Community Edition.",
+          "description": "Ein Festpreis pro Maschine. Keine Pro-Sitz-Gebühren. Keine Überraschungen. Testen Sie 14 Tage kostenlos.",
           "primaryCta": "Preise ansehen",
           "title": "Preise ansehen"
         },
@@ -1967,7 +1880,7 @@
               "title": "Minuten, nicht Stunden"
             },
             {
-              "description": "Ihre Daten auf Ihrer Infrastruktur in offenen Formaten. Anbieterwechsel, Selbstverwaltung, Migration: Ihre Wahl.",
+              "description": "Ihre Daten bleiben auf Ihrer Infrastruktur, in offenen Formaten. Anbieter wechseln, selbst verwalten oder morgen migrieren: Ihre Entscheidung. Das gilt jetzt auch für Kubernetes-Cluster.",
               "icon": "lock",
               "title": "Kein Vendor Lock-in"
             }
@@ -2167,6 +2080,10 @@
             {
               "rediacc": "Compliance: Verifizieren Sie auf Ihrer eigenen Infrastruktur",
               "traditional": "Compliance: Sie verlassen sich auf Anbieter-Zertifikate"
+            },
+            {
+              "rediacc": "Cluster forken oder in ein anderes Rechenzentrum verschieben, Umschaltung in Sekunden",
+              "traditional": "Kubernetes bindet Sie an das Rechenzentrum, in dem Sie es aufgebaut haben"
             }
           ],
           "title": "So schützt Rediacc Ihre Infrastruktur",
@@ -2244,7 +2161,7 @@
               "title": "60-Sekunden-Umgebungen"
             },
             {
-              "description": "Alles ist ein Befehl. Integration mit CI/CD, Git Hooks oder deiner Automatisierung. Keine GUI erforderlich.",
+              "description": "Alles ist ein Befehl. Integration mit CI/CD, Git Hooks oder deiner eigenen Automatisierung. Keine GUI erforderlich. Kubernetes inklusive: Ein Namespace forkt wie jedes Repo.",
               "icon": "terminal",
               "title": "CLI-first, skriptfähig"
             },
@@ -2259,13 +2176,13 @@
         },
         "bottomCta": {
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash",
-          "description": "Installiere die CLI. Klone deine erste Umgebung. Keine Kreditkarte. Kein Verkaufsgespräch.",
-          "primaryCta": "Kostenlos starten",
+          "description": "Installiere die CLI. Klone deine erste Umgebung. 14 Tage kostenlos testen – kein Vertriebsanruf.",
+          "primaryCta": "Kostenlos testen",
           "title": "Probier es selbst aus"
         },
         "hero": {
           "badge": "FÜR DEVOPS-INGENIEURE",
-          "primaryCta": "Kostenlos starten",
+          "primaryCta": "Kostenlos testen",
           "secondaryCta": "Dokumentation lesen",
           "subtitle": "CLI-first Infrastruktur, die Produktion in 60 Sekunden klont, in unter 5 Minuten zurückrollt und auf deiner Hardware läuft. Keine Tickets. Kein Warten. Deine Daten gehören dir.",
           "title": "Klone in einer Minute. Stelle her in fünf. Keine Tickets mehr."
@@ -2454,6 +2371,10 @@
             {
               "rediacc": "Rollback: btrfs Snapshot-Wechsel (<5 Min)",
               "traditional": "Rollback: Wiederherstellung aus Backup (30+ Min)"
+            },
+            {
+              "rediacc": "rdc cluster fork copies it, data included. 46 seconds in our lab",
+              "traditional": "Kubernetes-Cluster klonen: neu bereitstellen, neu deployen, Daten neu einspielen"
             }
           ],
           "title": "Warum 60-Sekunden-Klone möglich sind",
@@ -2696,52 +2617,60 @@
         "heading": "Pläne detailliert vergleichen"
       },
       "edgeChannel": {
-        "cta": "Kostenlos starten",
-        "description": "2x Community-Limits. Neueste Features. Kostenlos. Keine Kreditkarte erforderlich.",
+        "cta": "Edge-Kanal entdecken",
+        "description": "Der Edge-Kanal liefert unsere neuesten Funktionen zuerst und läuft mit doppelt so hohen Limits wie der Stable-Kanal.",
         "heading": "Edge-Kanal testen"
       },
       "faq": {
         "heading": "Häufig gestellte Fragen",
         "items": [
           {
-            "answer": "Ja. Der Community-Plan ist dauerhaft kostenlos mit bis zu 2 Maschinen, 100 Jobs pro Monat und vollständigen Snapshot-Wiederherstellungsfunktionen. Keine Kreditkarte erforderlich.",
-            "question": "Gibt es einen kostenlosen Plan?"
+            "answer": "Ja. Professional und Business starten beide mit einer 14-tägigen kostenlosen Testphase. Die erste Abbuchung erfolgt erst nach Ablauf der Testphase — kündigen Sie vorher, zahlen Sie nichts. Wenn Sie kündigen, wechselt Ihr Konto automatisch zum kostenlosen Community-Plan, der eine Maschine mit 10 GB pro Repository und 100 Server-Setups pro Monat am Laufen hält.",
+            "question": "Gibt es eine kostenlose Testphase?"
+          },
+          {
+            "answer": "Ja. Beide kostenpflichtigen Pläne verlangen bei der Anmeldung eine Karte, damit die Testphase nahtlos in ein Abonnement übergehen kann. Es wird nichts berechnet, bis die 14-tägige Testphase endet, und Sie können jederzeit vorher kündigen.",
+            "question": "Benötige ich eine Kreditkarte, um zu starten?"
           },
           {
             "answer": "Ja, Sie können Ihren Plan jederzeit ändern. Upgrades werden sofort wirksam und Downgrades gelten zu Beginn Ihres nächsten Abrechnungszeitraums. Keine Strafen oder Gebühren.",
             "question": "Kann ich meinen Plan upgraden oder downgraden?"
           },
           {
-            "answer": "Ja. Bei jährlicher Abrechnung sparen Sie 17 % — das entspricht 2 kostenlosen Monaten. Alle kostenpflichtigen Pläne sind mit monatlicher oder jährlicher Abrechnung verfügbar.",
+            "answer": "Ja. Bei jährlicher Abrechnung sparen Sie 15 % im Vergleich zur monatlichen Zahlung. Beide kostenpflichtigen Pläne sind mit monatlicher oder jährlicher Abrechnung verfügbar.",
             "question": "Bieten Sie jährliche Abrechnung an?"
           },
           {
-            "answer": "Wir akzeptieren alle gängigen Kreditkarten (Visa, MasterCard, American Express) und unterstützen die rechnungsbasierte Abrechnung für jährliche Enterprise-Pläne.",
+            "answer": "Wir akzeptieren alle gängigen Kreditkarten (Visa, MasterCard, American Express) und unterstützen die rechnungsbasierte Abrechnung für Enterprise-Pläne.",
             "question": "Welche Zahlungsmethoden akzeptieren Sie?"
           },
           {
-            "answer": "Jeder physische oder virtuelle Server, auf dem Rediacc installiert ist, zählt als eine Maschine (Floating License). Auf diesen Maschinen erstellte Klone zählen nicht separat — nur die Host-Maschinen werden gezählt.",
+            "answer": "Jeder physische oder virtuelle Server, auf dem Rediacc installiert ist, zählt als eine Maschine. Auf diesen Maschinen erstellte Kopien werden nicht separat gezählt — nur die Host-Maschinen zählen.",
             "question": "Wie werden Maschinen gezählt?"
           },
           {
-            "answer": "Ja. Rediacc läuft auf jedem Linux-Server mit btrfs-Dateisystemunterstützung. Bare Metal, VMs und Cloud-Instanzen (AWS, Azure, GCP, Hetzner, OVH usw.) werden alle unterstützt.",
-            "question": "Kann ich auf beliebiger Infrastruktur selbst hosten?"
+            "answer": "Ja. Rediacc läuft auf jedem Linux-Server mit btrfs-Unterstützung (einem quelloffenen Speichersystem, das fest in Linux integriert ist). Physische Server, virtuelle Maschinen und Cloud-Server (AWS, Azure, GCP, Hetzner, OVH usw.) werden alle unterstützt.",
+            "question": "Läuft Rediacc auf meinen eigenen Servern?"
           },
           {
-            "answer": "Community umfasst grundlegendes Klonen, Snapshot-Wiederherstellungen und Community-Support für bis zu 2 Maschinen. Professional bietet zusätzlich automatische Planung, 24-Stunden-Point-in-Time-Wiederherstellung, Priority-Support, Integrations-API und unterstützt bis zu 5 Maschinen.",
-            "question": "Was ist in Community vs. Professional enthalten?"
+            "answer": "Jeder Self-Service-Plan umfasst eine Maschine (eine Floating-Lizenz). Wenn Sie Rediacc auf mehr als einer Maschine betreiben möchten, handelt es sich um ein Enterprise-Setup, das über unsere Partner vertrieben wird. Kontaktieren Sie uns, und wir passen die Größe gemeinsam mit Ihnen an.",
+            "question": "Wie viele Maschinen deckt jeder Plan ab?"
           },
           {
-            "answer": "Enterprise-Pläne werden basierend auf Ihrem Infrastrukturumfang, Compliance-Anforderungen und Support-Bedarf angepasst. Sie umfassen dedizierte Infrastruktur, individuelle SLAs, 24/7/365-Support, Sicherheitsüberprüfungen und vierteljährliche Bereitschaftsübungen.",
-            "question": "Was beinhaltet die Enterprise-Preisgestaltung?"
+            "answer": "Community ist der kostenlose Fallback-Plan: eine Maschine, 10 GB pro Repository, 100 Server-Setups pro Monat und Community-Support. Professional ist ein kostenpflichtiger Plan mit 14-tägiger kostenloser Testphase: eine Maschine, 100 GB pro Repository, 2.000+ Server-Setups pro Monat, automatisierte Planung, 24-Stunden-Wiederherstellungshistorie, schnellerer Support und API-Zugang.",
+            "question": "Was ist der Unterschied zwischen Community und Professional?"
           },
           {
-            "answer": "Ja. Kontaktieren Sie uns, um Sonderpreise für Bildungseinrichtungen und gemeinnützige Organisationen zu besprechen.",
-            "question": "Bieten Sie Rabatte für Bildungseinrichtungen oder gemeinnützige Organisationen an?"
+            "answer": "Enterprise wird für Ihr Setup entwickelt und über unsere Partner vertrieben. Sie legen die Konditionen fest, betreiben mehrere Maschinen und erhalten eigenen Server-Speicherplatz, ein individuelles Wiederherstellungsversprechen und 24/7/365-Support. Dazu kommen Sicherheitsüberprüfungen und regelmäßige Übungen.",
+            "question": "Was beinhaltet Enterprise?"
           },
           {
-            "answer": "Ja. Alle kostenpflichtigen Pläne beinhalten eine 14-tägige Geld-zurück-Garantie. Wenn Rediacc Ihre Anforderungen nicht erfüllt, erstatten wir den vollen Betrag — ohne Fragen.",
-            "question": "Gibt es eine Geld-zurück-Garantie?"
+            "answer": "Ja. Schreiben Sie uns eine E-Mail. Schulen und gemeinnützige Organisationen erhalten Sonderkonditionen.",
+            "question": "Gibt es Rabatte für Schulen oder gemeinnützige Organisationen?"
+          },
+          {
+            "answer": "Kündigen Sie während der 14-tägigen Testphase, wird Ihnen nichts berechnet. Kündigen Sie einen bezahlten Plan später, behalten Sie dessen Funktionen bis zum Ende des Abrechnungszeitraums, danach wechselt Ihr Konto automatisch zum kostenlosen Community-Plan. Ihre Repositories laufen die ganze Zeit weiter.",
+            "question": "Was passiert, wenn ich kündige?"
           }
         ]
       },
@@ -2750,7 +2679,7 @@
           "startFree": "Kostenlos starten",
           "talkToSales": "Sprechen Sie mit dem Vertrieb"
         },
-        "description": "Installation in 5 Minuten. Kostenlos starten.",
+        "description": "Installation in 5 Minuten. Starten Sie Ihre 14-tägige kostenlose Testphase.",
         "heading": "Schützen Sie Ihre Infrastruktur"
       },
       "hero": {
@@ -2758,35 +2687,34 @@
         "title": "Gebaut für echte Anforderungen"
       },
       "meta": {
-        "description": "Wählen Sie den richtigen Plan für Ihr Unternehmen. Kostenlose Community-Stufe inklusive. Keine versteckten Gebühren.",
+        "description": "Wählen Sie den Plan, der zu Ihrem Team passt. Jeder bezahlte Plan startet mit einer 14-tägigen kostenlosen Testphase. Keine versteckten Gebühren.",
         "keywords": "Preise, Infrastrukturautomatisierung, DevOps-Pläne, Aufgabenausführung",
         "title": "Preise | Für echte Anforderungen"
       },
       "plans": {
         "business": {
-          "description": "Professionelle Einrichtung, Sicherungen in mehreren Regionen und 4-Stunden-Wiederherstellungsgarantie.",
+          "description": "Größere Repositories, erweitertes Management und ein 4-Stunden-Wiederherstellungsversprechen.",
           "features": [
             "Alles in Professional +",
-            "10 Floating-Lizenzen",
-            "Unbegrenzte Repositories",
+            "1 Floating-Lizenz",
+            "500 GB pro Repository",
             "5.000+ Server-Setups pro Monat",
-            "Implementierungssupport inklusive (Einführungsangebot)",
             "Geo-redundanter Speicher (3 Regionen)",
             "Kontinuierlicher Datenschutz",
             "4-Stunden-Wiederherstellungs-SLA",
             "Rollenbasierte Zugriffskontrolle & Audit-Protokolle",
             "Compliance-fähige Berichte",
-            "Telefonsupport + Kollaborationsräume"
+            "Telefonsupport + Räume für die Zusammenarbeit"
           ],
           "name": "Geschäft"
         },
         "community": {
-          "description": "Sichern und wiederherstellen Sie bis zu 2 Server – kostenlos für immer.",
+          "description": "Der kostenlose Fallback-Plan. Hält eine Maschine am Laufen, nachdem eine Testphase oder ein bezahlter Plan endet.",
           "features": [
             "Unbegrenzte Benutzer und Teams",
             "Unbegrenzte Repositories",
             "100 Server-Setups pro Monat (1 Floating-Lizenz pro Setup)",
-            "2 Floating-Lizenzen",
+            "1 Floating-Lizenz",
             "Backup-Wiederherstellungen",
             "Manuelle Planung",
             "Community-Slack-Zugang",
@@ -2795,10 +2723,10 @@
           "name": "Gemeinschaft"
         },
         "enterprise": {
-          "description": "Dedizierter Support und maßgeschneiderte Bedingungen für große, komplexe Umgebungen.",
+          "description": "Mehrmaschinen-Bereitstellungen, vertrieben über unsere Partner. Dedizierter Support und maßgeschneiderte Bedingungen.",
           "features": [
             "Alles in Business +",
-            "25+ Floating-Lizenzen",
+            "Floating-Lizenzen für mehrere Maschinen",
             "Unbegrenzte Repositories",
             "15.000+ Server-Setups pro Monat",
             "Benutzerdefinierte SLA mit garantierten Wiederherstellungszeiten",
@@ -2813,11 +2741,11 @@
           "name": "Unternehmen"
         },
         "professional": {
-          "description": "Professionelle Automatisierung und Planung für wachsende Teams",
+          "description": "Automatisierung und Planung für eine Produktionsmaschine",
           "features": [
             "Alles in Community +",
-            "3 Floating-Lizenzen",
-            "Unbegrenzte Repositories",
+            "1 Floating-Lizenz",
+            "100 GB pro Repository",
             "2.000+ Server-Setups pro Monat",
             "Automatisierte Planung",
             "24-Stunden Point-in-Time-Wiederherstellung",
@@ -2980,7 +2908,7 @@
             "title": "60 Tage Nachfrist für Skalierung."
           },
           {
-            "description": "Eine Floating-Lizenz wird nur beim Erstellen oder Kopieren eines Servers genutzt. Die normale Arbeit belegt nie eine Lizenz. Lizenzen werden nach 5 Stunden ohne Aktion freigegeben. Ein Plan mit 5 Lizenzen funktioniert für Dutzende von Maschinen. Nie Gebühren pro Maschine.",
+            "description": "Eine Floating-Lizenz wird nur beim Erstellen oder Kopieren eines Servers verwendet. Die normale Arbeit belegt nie eine Lizenz. Lizenzen werden nach 5 Stunden ohne Aktivität wieder frei, sodass eine einzelne Floating-Lizenz im Laufe der Zeit viele Maschinen abdeckt. Nie Gebühren pro Maschine.",
             "title": "Unbegrenzte Maschinen. Zahlen nur für Neue."
           },
           {
@@ -3005,7 +2933,7 @@
         "bestValue": "Beste Leistung",
         "billingToggle": {
           "annual": "Jährlich",
-          "annualSavings": "17 % sparen – 2 Monate kostenlos",
+          "annualSavings": "15 % sparen",
           "ariaLabel": "Abrechnungszeitraum",
           "monthly": "Monatlich"
         },
@@ -3014,9 +2942,8 @@
         "contactUsSub": "Individuelle Limits & Konditionen",
         "cta": {
           "business": {
-            "guarantee": "Geld-zurück-Garantie",
             "launchBadge": "Begrenztes Einführungsangebot",
-            "primary": "Setup-Termin buchen",
+            "primary": "Mit Business starten",
             "secondary": "Mit uns sprechen",
             "valueNote": "Inklusive 9.999 $ Setup-Guthaben"
           },
@@ -3026,29 +2953,21 @@
             "secondary": "Erfahren Sie, was dabei ist"
           },
           "enterprise": {
-            "guarantee": "Geld-zurück-Garantie",
-            "primary": "Demo buchen",
+            "primary": "Vertrieb kontaktieren",
             "secondary": "Mit uns sprechen",
             "subtext": "Individuelles SLA · Dedizierter Support"
           },
           "professional": {
-            "guarantee": "Geld-zurück-Garantie",
             "primary": "Mit Professional starten",
             "secondary": "Mit uns sprechen"
           }
-        },
-        "designPartner": {
-          "badge": "KOSTENLOS für Design Partner",
-          "cta": "Als Design Partner anmelden",
-          "period": "Lebenslang · Keine Karte erforderlich",
-          "price": "FREE"
         },
         "edgeLimitsNote": "Limits gelten für den Edge-Kanal. Der Stable-Kanal hat die Hälfte dieser Limits.",
         "foreverFree": "Kostenlos für immer",
         "getStarted": "Jetzt installieren",
         "guarantees": {
           "cancelAnytime": "Jederzeit kündbar",
-          "moneyBack": "14-Tage Geld-zurück-Garantie",
+          "freeTrial": "14 Tage kostenlos testen",
           "noContracts": "Keine langfristigen Verträge"
         },
         "keyBenefits": "Hauptvorteile",
@@ -3057,6 +2976,7 @@
         "monthOrYear": "pro Monat oder {{price}} pro Jahr",
         "popular": "Am beliebtesten",
         "startingAt": "*Ab",
+        "startTrial": "Jetzt 14 Tage kostenlos testen",
         "taxDisclaimer": "Alle Preise in USD, ohne Steuern, Abgaben und Zölle.",
         "whatsIncluded": "Was ist enthalten:"
       }
@@ -3166,7 +3086,7 @@
             },
             "productTelemetry": {
               "content": [
-                "Unsere Softwareprodukte (Webanwendung, CLI, Middleware und Bridge) erfassen anonyme Nutzungstelemetrie, um die Produktqualität, Leistung und Zuverlässigkeit zu verbessern. Telemetriedaten umfassen technische Informationen wie Anwendungsversion, Betriebssystem, Browsertyp, Leistungsmetriken, Funktionsnutzungsmuster und Fehlerberichte. Persönliche Identifikatoren werden vor der Erfassung anonymisiert – E-Mail-Adressen werden auf die Domain reduziert, Benutzer-IDs werden gehasht und gekürzt, und Passwörter oder Geheimnisse werden niemals erfasst.",
+                "Unsere Softwareprodukte (Webanwendung, CLI, Middleware und Renet-Agent) erfassen anonyme Nutzungstelemetrie, um die Produktqualität, Leistung und Zuverlässigkeit zu verbessern. Telemetriedaten umfassen technische Informationen wie Anwendungsversion, Betriebssystem, Browsertyp, Leistungsmetriken, Funktionsnutzungsmuster und Fehlerberichte. Persönliche Identifikatoren werden vor der Erfassung anonymisiert – E-Mail-Adressen werden auf die Domain reduziert, Benutzer-IDs werden gehasht und gekürzt, und Passwörter oder Geheimnisse werden niemals erfasst.",
                 "Telemetrie ist in unserer Webanwendung und CLI standardmäßig aktiviert und kann in allen Produkten deaktiviert werden. Vollständige Details darüber, was jedes Produkt erfasst und wie Sie sich abmelden können, finden Sie in unserer <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a>."
               ],
               "title": "2.5 Produkttelemetriedaten"
@@ -5508,6 +5428,12 @@
               "description": "Produktion klonen. KI angreifen lassen.",
               "slug": "ai-pentesting",
               "title": "KI-Penetrationstest"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Laufenden Cluster forken oder verschieben, Daten inklusive",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes-Cluster-Mobilität"
             }
           ],
           "title": "Weitere Lösungen entdecken"
@@ -6403,6 +6329,12 @@
               "description": "Produktion in 60 Sekunden klonen",
               "slug": "environment-cloning",
               "title": "Umgebungs-Klonen"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Laufenden Cluster forken oder verschieben, Daten inklusive",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes-Cluster-Mobilität"
             }
           ],
           "title": "Weitere Lösungen entdecken"
@@ -7395,6 +7327,12 @@
               "description": "Produktion klonen. KI angreifen lassen.",
               "slug": "ai-pentesting",
               "title": "KI-Penetrationstest"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Laufenden Cluster forken oder verschieben, Daten inklusive",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes-Cluster-Mobilität"
             }
           ],
           "title": "Weitere Lösungen entdecken"
@@ -7662,6 +7600,10 @@
             {
               "rediacc": "10 Klone teilen Bloecke via CoW (~12 GB Delta)",
               "traditional": "10 Klone = 10x Speicher (2,4 TB)"
+            },
+            {
+              "rediacc": "Ein Namespace forkt in 1 bis 5 Sekunden, wie jedes Repository",
+              "traditional": "Eine Kubernetes-App fürs Staging bereitzustellen heißt, einen zweiten Cluster aufzubauen"
             }
           ],
           "title": "Warum 60-Sekunden-Klone möglich sind",
@@ -7900,6 +7842,12 @@
               "description": "Produktion klonen. KI angreifen lassen.",
               "slug": "ai-pentesting",
               "title": "KI-Penetrationstest"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Laufenden Cluster forken oder verschieben, Daten inklusive",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes-Cluster-Mobilität"
             }
           ],
           "title": "Weitere Lösungen entdecken"
@@ -8149,6 +8097,10 @@
             {
               "rediacc": "Automatisierte Integritaetspruefungen — Bestanden/Nicht bestanden mit exaktem RTO/RPO",
               "traditional": "Manuelle Verifizierung — „sieht richtig aus“-Beurteilungen"
+            },
+            {
+              "rediacc": "Den gesamten Cluster in 46 Sekunden forken und die Übung auf der Kopie durchführen",
+              "traditional": "Kubernetes-DR-Übung: einen zweiten Cluster synchron halten und hoffen"
             }
           ],
           "title": "Warum traditionelle DR-Tests versagen",
@@ -8912,6 +8864,12 @@
               "description": "Produktion klonen. KI angreifen lassen.",
               "slug": "ai-pentesting",
               "title": "KI-Penetrationstest"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Laufenden Cluster forken oder verschieben, Daten inklusive",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes-Cluster-Mobilität"
             }
           ],
           "title": "Weitere Lösungen entdecken"
@@ -9147,6 +9105,10 @@
             {
               "rediacc": "52 Sekunden fuer einen produktionsidentischen Klon",
               "traditional": "15–30 Minuten fuer die Bereitstellung jeder neuen Umgebung"
+            },
+            {
+              "rediacc": "Cluster für den Test forken, danach löschen. Kopien teilen sich den Speicher.",
+              "traditional": "Ein Kubernetes-Staging-Cluster: ein zweiter Satz Nodes, rund um die Uhr bezahlt"
             }
           ],
           "title": "Vollständige Kopien vs. Copy-on-Write",
@@ -9384,6 +9346,12 @@
               "description": "Produktion klonen. KI angreifen lassen.",
               "slug": "ai-pentesting",
               "title": "KI-Penetrationstest"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Laufenden Cluster forken oder verschieben, Daten inklusive",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes-Cluster-Mobilität"
             }
           ],
           "title": "Weitere Lösungen entdecken"
@@ -9877,6 +9845,12 @@
               "description": "Produktion klonen. KI angreifen lassen.",
               "slug": "ai-pentesting",
               "title": "KI-Penetrationstest"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Laufenden Cluster forken oder verschieben, Daten inklusive",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes-Cluster-Mobilität"
             }
           ],
           "title": "Weitere Lösungen entdecken"
@@ -10191,6 +10165,413 @@
           ]
         }
       },
+      "kubernetesClusterMobility": {
+        "benefits": {
+          "items": [
+            {
+              "description": "Rediacc betreibt k3s für Sie oder verbindet sich mit einem Cluster, den Sie bereits haben. Volumes laufen über ceph-csi RBD. Ihre Manifeste bleiben Ihre eigenen.",
+              "icon": "check-circle",
+              "title": "Behalten Sie Ihr Kubernetes"
+            },
+            {
+              "description": "Provisionieren Sie auf Ihren eigenen KVM-Hosts oder in Clouds wie Linode mit privaten VLANs. Node-Pools halten speicherintensive Ceph-Nodes getrennt von rechenintensiven Kubernetes-Nodes.",
+              "icon": "arrow-right-circle",
+              "title": "Echte Rechenzentrums-Mobilität"
+            },
+            {
+              "description": "Eine Kubernetes-App ist ein Namespace. Forken Sie ihn wie jedes Repository: 1 bis 5 Sekunden, Daten inklusive. Dieselben Befehle, die Sie schon für Docker-Repositories nutzen.",
+              "icon": "git-branch",
+              "title": "Eine Denkweise für alles"
+            }
+          ],
+          "overline": "WARUM ES WICHTIG IST",
+          "title": "Behalten Sie Ihr Kubernetes. Gewinnen Sie Mobilität."
+        },
+        "bottomCta": {
+          "command": "rdc cluster fork prod --tag staging",
+          "ctaText": "Kostenlos starten",
+          "description": "Forken Sie ihn, testen Sie den Umzug, dann migrieren Sie wirklich. Starten Sie Ihre 14-tägige kostenlose Testphase.",
+          "title": "Geben Sie Ihrem Cluster einen Fluchtweg"
+        },
+        "comparison": {
+          "capabilityLabel": "Fähigkeit",
+          "description": "Backup-Tools stoppen und stellen wieder her. Cluster API klont die Struktur ohne die Daten. RBD-Mirroring kopiert Volumes, nicht den Cluster. Rediacc verschiebt alles davon.",
+          "features": [
+            {
+              "name": "Sichert Apps und Volumes",
+              "refs": [4, 5, 0, 9, 0],
+              "values": ["check", "check", "cross", "Volumes only", "rediacc"]
+            },
+            {
+              "name": "Verschiebt einen ganzen Cluster samt Daten",
+              "refs": [6, 7, 8, 0, 0],
+              "values": ["Stop and restore", "Stop and restore", "Shape only", "cross", "rediacc"]
+            },
+            {
+              "name": "Forkt einen laufenden Cluster, Daten inklusive",
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Klont eine App (Namespace) in Sekunden",
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Kopiert Daten ohne vollständiges Neuschreiben",
+              "refs": [0, 0, 0, 10, 0],
+              "values": ["cross", "cross", "cross", "Async copy", "rediacc"]
+            },
+            {
+              "name": "Kurze, gemessene Umschaltung für einen geplanten Umzug",
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            }
+          ],
+          "overline": "DIE LÜCKE",
+          "title": "Niemand sonst verschiebt einen laufenden Cluster samt seinen Daten"
+        },
+        "explore": {
+          "solutions": [
+            {
+              "category": "multi-cloud",
+              "current": true,
+              "description": "Laufenden Cluster forken oder verschieben, Daten inklusive",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes-Cluster-Mobilität"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Ihre Infrastruktur. Ihre Wahl. Immer.",
+              "slug": "vendor-lock-in",
+              "title": "Vendor-Lock-in-Freiheit"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Wenn AWS ausfaellt, laufen Sie weiter",
+              "slug": "cloud-outage-protection",
+              "title": "Cloud-Ausfallschutz"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Testen Sie Ihren Failover, bevor Sie ihn brauchen",
+              "slug": "failover-testing",
+              "title": "Failover-Tests"
+            },
+            {
+              "category": "encryption",
+              "description": "Migrieren ohne Ihre Daten zu gefaehrden",
+              "slug": "migration-safety",
+              "title": "Migrationssicherheit"
+            },
+            {
+              "category": "dev-env",
+              "description": "Produktion in 60 Sekunden klonen",
+              "slug": "environment-cloning",
+              "title": "Umgebungs-Klonen"
+            },
+            {
+              "category": "backups",
+              "description": "Komplette Umgebungswiederherstellung in Minuten",
+              "slug": "instant-recovery",
+              "title": "Sofortige Wiederherstellung"
+            },
+            {
+              "category": "encryption",
+              "description": "Ihre Schluessel. Ihre Verschluesselung. Ohne Ausnahme.",
+              "slug": "encryption",
+              "title": "Verschluesselung unter Ihrer Kontrolle"
+            }
+          ],
+          "title": "Weitere Lösungen entdecken"
+        },
+        "hero": {
+          "badge": "MULTI-CLOUD",
+          "differentiator": "Velero stellt Backups wieder her. Cluster API klont Strukturen. Rediacc verschiebt den laufenden Cluster, Daten inklusive.",
+          "primaryCta": "Kostenlos starten",
+          "secondaryCta": "Die gemessenen Zahlen ansehen →",
+          "subtitle": "Ihr Cluster zieht als ein Ganzes um: Nodes, Konfiguration und Daten. Auf eine andere Maschine oder in ein anderes Rechenzentrum. Die Umschaltung dauert Sekunden, kein Wochenende.",
+          "title": "Einen laufenden Kubernetes-Cluster forken oder verschieben"
+        },
+        "howItWorks": {
+          "cloneVisual": {
+            "arrow": {
+              "icon": "arrow-right-circle-arrow",
+              "label": "Fork",
+              "time": "46s"
+            },
+            "clone": {
+              "cardClass": "restored",
+              "containerCount": "Fork",
+              "services": [
+                {
+                  "name": "Nodes",
+                  "port": "2 (k3s + Ceph)"
+                },
+                {
+                  "name": "Namespaces",
+                  "port": "8 apps"
+                },
+                {
+                  "name": "Volumes",
+                  "port": "Ceph RBD clones"
+                },
+                {
+                  "name": "State",
+                  "port": "Own identity, new IPs"
+                }
+              ],
+              "size": "46s",
+              "status": "Running",
+              "title": "prod-staging (Datacenter B)"
+            },
+            "production": {
+              "containerCount": "Ursprung",
+              "services": [
+                {
+                  "name": "Nodes",
+                  "port": "2 (k3s + Ceph)"
+                },
+                {
+                  "name": "Namespaces",
+                  "port": "8 apps"
+                },
+                {
+                  "name": "Volumes",
+                  "port": "Ceph RBD"
+                },
+                {
+                  "name": "State",
+                  "port": "Keeps running"
+                }
+              ],
+              "size": "Untouched",
+              "status": "Running",
+              "title": "prod (Datacenter A)"
+            }
+          },
+          "overline": "SO FUNKTIONIERT ES",
+          "steps": [
+            {
+              "description": "Jeder Node läuft von einer Image-Datei. Jedes Volume ist ein Ceph-RBD-Image. Zusammen ergeben sie den gesamten Cluster: Apps, Konfiguration und Daten.",
+              "icon": "layers",
+              "title": "Cluster-Images plus Volumes"
+            },
+            {
+              "description": "Ein einziger Befehl klont jedes Image, copy-on-write. Ein 2-Node-Cluster forkte in unserem Labor in 46 Sekunden. Der Ursprung läuft währenddessen weiter.",
+              "icon": "git-branch",
+              "title": "Fork an Ort und Stelle"
+            },
+            {
+              "description": "Rediacc kopiert vorab, während der Cluster läuft. Dann stoppt es, sendet das finale Delta und startet auf der neuen Maschine neu. Gemessene Umschaltung: 16 Sekunden.",
+              "icon": "arrow-right-circle",
+              "title": "Migrieren mit kurzer Umschaltung"
+            }
+          ],
+          "title": "Der gesamte Cluster ist ein Satz Dateien"
+        },
+        "meta": {
+          "description": "Forken oder verschieben Sie einen laufenden Kubernetes-Cluster mit Daten auf eine andere Maschine oder ins Rechenzentrum. Kurzer Wechsel. Mit Ceph RBD und k3s.",
+          "keywords": "Kubernetes-Cluster-Migration, Cluster-Fork, Ceph RBD, k3s, Rechenzentrums-Mobilität, Kubernetes-Portabilität",
+          "title": "Fork or Move a Kubernetes Cluster | Rediacc"
+        },
+        "problem": {
+          "description": "Kubernetes hat Ihre Apps portabel gemacht. Der Cluster selbst ist es nicht. Die Daten liegen in einem einzigen Rechenzentrum. Ihn zu verschieben bedeutet ein Neuaufbau-Projekt: neue Nodes, neuer Speicher, Wiederherstellung aus dem Backup, alles neu testen. Deshalb ziehen die meisten Teams nie um. Und ihr Anbieter weiß das.",
+          "overline": "DAS PROBLEM",
+          "statCallouts": [
+            {
+              "number": "27%",
+              "ref": 1,
+              "source": "Flexera 2024 State of the Cloud Report",
+              "text": "der Cloud-Ausgaben werden jedes Jahr verschwendet"
+            },
+            {
+              "number": "17%",
+              "ref": 2,
+              "source": "Flexera 2025 State of the Cloud Report",
+              "text": "durchschnittlicher Betrag, um den Unternehmen ihr Cloud-Budget überschreiten"
+            },
+            {
+              "number": "$0.09/GB",
+              "ref": 3,
+              "source": "AWS/Azure/GCP Pricing 2024",
+              "text": "an Gebühren für den Datenexport, bewusst so gestaltet, dass ein Wechsel teuer wird"
+            }
+          ],
+          "timeline": {
+            "newLabel": "MIT REDIACC",
+            "newSteps": ["Pre-copy", "16s cutover", "Live"],
+            "oldLabel": "DER ALTE WEG",
+            "oldSteps": [
+              {
+                "day": "Month 1",
+                "text": "Neuen Cluster aufsetzen"
+              },
+              {
+                "day": "Month 2",
+                "text": "Manifeste und Secrets neu aufbauen"
+              },
+              {
+                "day": "Month 3",
+                "text": "Volumes aus dem Backup wiederherstellen"
+              },
+              {
+                "day": "Month 4",
+                "text": "Jede App erneut testen"
+              },
+              {
+                "day": "Month 5+",
+                "text": "Umschalten und hoffen"
+              }
+            ]
+          },
+          "title": "Ihr Cluster sitzt fest, wo Sie ihn aufgebaut haben"
+        },
+        "references": {
+          "disclaimer": "Fork- und Migrationszeiten wurden Ende-zu-Ende in Rediaccʼs KVM-Testlabor an einem 2-Node-Cluster gemessen. Die Standardkonsistenz ist crash-consistent, dieselbe Semantik wie bei einem Stromausfall. Workloads starten während einer Migrations-Umschaltung auf dem Zielsystem neu.",
+          "items": [
+            {
+              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"27% of cloud spend continues to be wasted.\"",
+              "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
+            },
+            {
+              "text": "Flexera, \"2025 State of the Cloud Report,\" 2025. \"With cloud budgets already exceeding limits by 17%, organizations are increasingly turning to managed service providers.\"",
+              "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
+            },
+            {
+              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
+              "url": "https://aws.amazon.com/s3/pricing/"
+            },
+            {
+              "text": "Velero backs up Kubernetes cluster resources and persistent volumes and restores them into a cluster.",
+              "url": "https://velero.io/docs/"
+            },
+            {
+              "text": "Kasten K10 provides backup and restore of Kubernetes applications, including application data.",
+              "url": "https://docs.kasten.io/"
+            },
+            {
+              "text": "Velero cluster migration restores a backup into a new cluster; workloads are recreated from the backup point, not moved live.",
+              "url": "https://velero.io/docs/main/migration-case/"
+            },
+            {
+              "text": "Kasten K10 migrates applications between clusters by exporting a restore point and importing it into the target cluster.",
+              "url": "https://docs.kasten.io/latest/usage/migration.html"
+            },
+            {
+              "text": "Cluster API's clusterctl move relocates Cluster API objects (the cluster's definition) to another management cluster; it does not move workload data.",
+              "url": "https://cluster-api.sigs.k8s.io/clusterctl/commands/move"
+            },
+            {
+              "text": "Ceph RBD mirroring replicates block device images between Ceph clusters; it covers volumes, not Kubernetes cluster state.",
+              "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
+            },
+            {
+              "text": "Ceph RBD mirroring is asynchronous, based on journaling or periodic snapshots, and is designed for disaster recovery.",
+              "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
+            }
+          ],
+          "label": "Sources & References"
+        },
+        "stats": [
+          {
+            "icon": "layers",
+            "label": "Whole 2-node cluster fork",
+            "number": "46s"
+          },
+          {
+            "icon": "clock",
+            "label": "Migrate cutover, measured",
+            "number": "16s"
+          },
+          {
+            "icon": "zap",
+            "label": "Namespace fork",
+            "number": "1-5s"
+          }
+        ],
+        "techDiff": {
+          "description": "Jeder Node läuft von einer Image-Datei auf btrfs. Jedes Volume ist ein Ceph-RBD-Image. Einen Cluster zu kopieren heißt, diese Images copy-on-write zu klonen. Kein Export, keine Konvertierung, kein Wiederherstellungsschritt. Deshalb dauert ein Fork Sekunden, nicht Monate.",
+          "overline": "UNTER DER HAUBE",
+          "rows": [
+            {
+              "rediacc": "Node-Images und Volumes ziehen als ein Satz um",
+              "traditional": "Backup-Tools stellen Stück für Stück in einen leeren Cluster wieder her"
+            },
+            {
+              "rediacc": "Ceph-RBD-Klone laufen mit, copy-on-write",
+              "traditional": "Daten brauchen ein separates Replikationsprodukt"
+            },
+            {
+              "rediacc": "Ein 2-Node-Cluster-Fork dauerte in unserem Labor 46 Sekunden. Der Ursprung läuft weiter",
+              "traditional": "Ein Cluster-Klon bedeutet Neu-Provisionierung und Neu-Deployment"
+            },
+            {
+              "rediacc": "Gemessene Umschaltung: 16 Sekunden. Workloads starten am Zielort neu",
+              "traditional": "Umschaltungspläne erstrecken sich über ein Wochenende"
+            }
+          ],
+          "title": "Warum ein Cluster wie eine Datei umziehen kann"
+        },
+        "techStrip": {
+          "label": "Runs the apps you already ship",
+          "note": "Datenbanken, CI/CD, CMS, Monitoring, Logins, Storage. Wenn es auf Kubernetes läuft, kann Rediacc es forken und verschieben, Daten inklusive."
+        },
+        "terminal": {
+          "lines": [
+            {
+              "cmd": "rdc cluster fork prod",
+              "type": "command",
+              "value": "--tag staging"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "Node-Images werden geklont (copy-on-write)........... fertig",
+              "type": "check"
+            },
+            {
+              "text": "Ceph-RBD-Volumes werden geklont...................... fertig",
+              "type": "check"
+            },
+            {
+              "text": "Node-Identität wird für neue IPs neu geschrieben........... fertig",
+              "type": "check"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "✓ Fork abgeschlossen in 46s: prod-staging ist aktiv. Ursprung unverändert.",
+              "type": "success"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "cmd": "rdc cluster migrate prod",
+              "type": "command",
+              "value": "--to fsn1-dc2"
+            },
+            {
+              "text": "Vorab-Kopie, während der Cluster weiterläuft...... fertig",
+              "type": "check"
+            },
+            {
+              "text": "Umschaltung: stoppen, finales Delta, neu starten........... 16s",
+              "type": "check"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "Fork: 46s   Migrations-Umschaltung: 16s   Konsistenz: crash-consistent",
+              "type": "summary"
+            }
+          ]
+        }
+      },
       "leadMagnetButton": {
         "buttonLabel": "Briefing herunterladen",
         "description": "Ein PDF ohne Marketingsprache, geschrieben für CISOs, CTOs und erfahrene Ingenieure. Den Link erhalten Sie per E-Mail, damit Sie ihn jederzeit wiederfinden.",
@@ -10367,6 +10748,12 @@
               "description": "Produktion klonen. KI angreifen lassen.",
               "slug": "ai-pentesting",
               "title": "KI-Penetrationstest"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Laufenden Cluster forken oder verschieben, Daten inklusive",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes-Cluster-Mobilität"
             }
           ],
           "title": "Weitere Lösungen entdecken"
@@ -10624,6 +11011,10 @@
             {
               "rediacc": "SHA-256-Pruefsummenverifizierung pro Repository nach der Uebertragung",
               "traditional": "Integritaet wird angenommen — keine automatische Verifizierung"
+            },
+            {
+              "rediacc": "Zuerst den Cluster forken. Den Umzug testen, bevor Sie umschalten",
+              "traditional": "Cluster-Migrationen brauchen einen parallelen Aufbau und einen Vertrauensvorschuss"
             }
           ],
           "title": "Entschlüsseln-Übertragen-Neuverschlüsseln vs. Zero-Exposure-Migration",
@@ -10864,6 +11255,12 @@
               "description": "Produktion klonen. KI angreifen lassen.",
               "slug": "ai-pentesting",
               "title": "KI-Penetrationstest"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Laufenden Cluster forken oder verschieben, Daten inklusive",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes-Cluster-Mobilität"
             }
           ],
           "title": "Weitere Lösungen entdecken"
@@ -11095,6 +11492,10 @@
             {
               "rediacc": "47 Sekunden, automatische Paritaetsverifizierung mit --verify-parity-Flag",
               "traditional": "Tage fuer Bereitstellung, keine Paritaetsverifizierung"
+            },
+            {
+              "rediacc": "rdc cluster fork copies the running cluster, data included. 46 seconds in our lab",
+              "traditional": "Ein Staging-Cluster aus demselben YAML driftet trotzdem von der Produktion ab"
             }
           ],
           "title": "Annäherung vs. exaktes Klonen",
@@ -11338,6 +11739,12 @@
               "description": "Produktion klonen. KI angreifen lassen.",
               "slug": "ai-pentesting",
               "title": "KI-Penetrationstest"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Laufenden Cluster forken oder verschieben, Daten inklusive",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes-Cluster-Mobilität"
             }
           ],
           "title": "Weitere Lösungen entdecken"
@@ -12685,7 +13092,7 @@
               "type": "spacer"
             },
             {
-              "cmd": "rdc term connect -m patch-test-ubuntu-24",
+              "cmd": "rdc term connect patch-test-ubuntu-24",
               "flag": "-c",
               "prompt": "$",
               "type": "command",
@@ -12884,6 +13291,12 @@
               "description": "Produktion klonen. KI angreifen lassen.",
               "slug": "ai-pentesting",
               "title": "KI-Penetrationstest"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Laufenden Cluster forken oder verschieben, Daten inklusive",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes-Cluster-Mobilität"
             }
           ],
           "title": "Weitere Lösungen entdecken"
@@ -13133,6 +13546,10 @@
             {
               "rediacc": "Cloud-agnostisch: gleiche rdc-Befehle funktionieren auf AWS, Hetzner, Bare Metal",
               "traditional": "Erfordert cloudspezifisches Tooling: Terraform-Umschreibungen, API-Aenderungen"
+            },
+            {
+              "rediacc": "rdc cluster migrate moves the running cluster, data included",
+              "traditional": "Kubernetes-Cluster werden beim neuen Anbieter von Hand neu aufgebaut"
             }
           ],
           "title": "Warum Migration Minuten dauert, nicht Monate"
@@ -13608,6 +14025,13 @@
         }
       }
     },
+    "solutionsIndex": {
+      "meta": {
+        "description": "Alle Rediacc-Lösungen: Ransomware-Recovery, Multi-Cloud-Mobilität, Kubernetes-Portabilität, verifizierte Backups, Verschlüsselung und schnelle Dev-Umgebungen.",
+        "keywords": "Rediacc-Lösungen, Ransomware-Recovery, Multi-Cloud, Kubernetes-Cluster-Mobilität, verifizierte Backups, Verschlüsselungskontrolle, Dev-Umgebungen",
+        "title": "Solutions - Business Continuity Software | Rediacc"
+      }
+    },
     "telemetryPolicy": {
       "contact": {
         "description": "Bei Fragen zu unseren Telemetriepraktiken oder wenn Sie Hilfe bei der Abmeldung benötigen, kontaktieren Sie uns unter <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>.",
@@ -13618,7 +14042,7 @@
         "title": "Unsere Telemetriepraxis"
       },
       "meta": {
-        "description": "Welche Telemetriedaten Rediacc erfasst, warum, wie sie verarbeitet werden und wie Sie sich abmelden. Web-App, CLI, Middleware und Bridge.",
+        "description": "Welche Telemetriedaten Rediacc erfasst, warum, wie sie verarbeitet werden und wie Sie sich abmelden. Web-App, CLI, Middleware und Renet-Agent.",
         "keywords": "Telemetrie-Richtlinie, Datenerfassung, OpenTelemetry, Abmeldung, Datenschutz, DSGVO, Rediacc",
         "title": "Telemetrie-Richtlinie — Rediacc"
       },
@@ -13628,30 +14052,30 @@
       "sections": {
         "bridge": {
           "content": [
-            "Die Rediacc Bridge (Renet) verwendet OpenTelemetry mit gzip-komprimiertem OTLP-Export. Die Telemetrie wird in Stapeln (maximal 10 Spans, alle 5 Sekunden gesendet) an <code>rediacc.com</code> übermittelt."
+            "Der Rediacc Renet-Agent verwendet OpenTelemetry mit gzip-komprimiertem OTLP-Export. Die Telemetrie wird in Stapeln (maximal 10 Spans, alle 5 Sekunden gesendet) an <code>rediacc.com</code> übermittelt."
           ],
           "id": "bridge",
           "subsections": {
             "bridgeDataCollected": {
-              "content": ["Die Bridge erfasst die folgenden Datenkategorien:"],
+              "content": ["Der Renet-Agent erfasst die folgenden Datenkategorien:"],
               "items": [
                 "<strong>Warteschlangenoperationen:</strong> Aufgaben-ID, Prioritätsstufe, Operationstyp, Ausführungsdauer, Erfolgs- oder Fehlerstatus",
                 "<strong>SSH-Operationen:</strong> Zielhost, Benutzername, Portnummer, Exit-Code, Ausführungsdauer (keine Befehlsinhalte oder Ausgaben werden erfasst)",
                 "<strong>API-Aufrufe:</strong> Prozedurname, Anfragedauer",
                 "<strong>Vault-Operationen:</strong> Operationstyp und -dauer (keine geheimen Werte, Schlüssel oder Vault-Inhalte werden erfasst)",
-                "<strong>Bridge-Lebenszyklus:</strong> Start-, Stopp- und Wiederverbindungsereignisse",
+                "<strong>Renet-Agent-Lebenszyklus:</strong> Start-, Stopp- und Wiederverbindungsereignisse",
                 "<strong>Performance-Profiling:</strong> CPU-Nutzungsproben und Speicherzuweisungsprofile, automatisch erfasst und an unseren Profiling-Endpunkt gesendet"
               ],
               "title": "7.1 Erfasste Daten"
             },
             "bridgeOptOut": {
               "content": [
-                "Setzen Sie die Umgebungsvariable <code>REDIACC_TELEMETRY_DISABLED=1</code>, um die Bridge-Telemetrie (einschließlich Profiling) zu deaktivieren."
+                "Setzen Sie die Umgebungsvariable <code>REDIACC_TELEMETRY_DISABLED=1</code>, um die Renet-Agent-Telemetrie (einschließlich Profiling) zu deaktivieren."
               ],
               "title": "7.2 So melden Sie sich ab"
             }
           },
-          "title": "7. Bridge (Renet)-Telemetrie"
+          "title": "7. Renet-Agent-Telemetrie"
         },
         "ccpa": {
           "content": [
@@ -13712,7 +14136,7 @@
           ],
           "id": "data-processing",
           "items": [
-            "<strong>Verschlüsselung:</strong> Alle Daten werden während der Übertragung mit TLS verschlüsselt. Die Bridge verwendet zusätzlich gzip-Komprimierung.",
+            "<strong>Verschlüsselung:</strong> Alle Daten werden während der Übertragung mit TLS verschlüsselt. Der Renet-Agent verwendet zusätzlich gzip-Komprimierung.",
             "<strong>Aufbewahrung:</strong> Rohe Telemetrie-Traces werden bis zu 90 Tage für Debugging und Vorfalluntersuchungen gespeichert. Aggregierte Metriken werden bis zu 12 Monate aufbewahrt und dann gelöscht.",
             "<strong>Zugriff:</strong> Telemetriedaten sind nur für Rediacc-Engineering- und Betriebspersonal auf Need-to-Know-Basis zugänglich.",
             "<strong>Keine Weitergabe an Dritte:</strong> Telemetriedaten werden nicht an Dritte weitergegeben, verkauft oder zugänglich gemacht.",
@@ -13730,7 +14154,7 @@
         "introduction": {
           "content": [
             "Rediacc-Softwareprodukte erfassen anonymisierte Nutzungstelemetrie, um uns bei der Verbesserung der Produktqualität, der Diagnose von Problemen und dem Verständnis der Nutzung unserer Tools zu helfen. Diese Telemetrie-Richtlinie beschreibt genau, welche Daten erfasst werden, warum, wie sie verarbeitet werden und wie Sie sich abmelden können.",
-            "Diese Richtlinie umfasst vier Produkte: die <strong>Rediacc Webanwendung</strong>, die <strong>Rediacc CLI</strong>, die <strong>Rediacc Middleware</strong> und die <strong>Rediacc Bridge (Renet)</strong>. Die Webanalyse (Plausible) wird separat in unserer <a href=\"privacy-policy\">Datenschutzrichtlinie</a> und <a href=\"cookie-policy\">Cookie-Richtlinie</a> behandelt."
+            "Diese Richtlinie umfasst vier Produkte: die <strong>Rediacc Webanwendung</strong>, die <strong>Rediacc CLI</strong>, die <strong>Rediacc Middleware</strong> und die <strong>Rediacc Renet-Agent</strong>. Die Webanalyse (Plausible) wird separat in unserer <a href=\"privacy-policy\">Datenschutzrichtlinie</a> und <a href=\"cookie-policy\">Cookie-Richtlinie</a> behandelt."
           ],
           "id": "introduction",
           "title": "1. Einleitung"
@@ -13739,7 +14163,7 @@
           "content": [
             "Gemäß der EU-Datenschutz-Grundverordnung (DSGVO) und der ePrivacy-Richtlinie hängt unsere Rechtsgrundlage für die Telemetrieerfassung vom Produktkontext ab:",
             "Für die <strong>Webanwendung</strong> (browserbasiert): Die Telemetrie wird unter <strong>berechtigtem Interesse</strong> (DSGVO Art. 6(1)(f)) zum Zweck der Aufrechterhaltung und Verbesserung der Dienstqualität erfasst. Sie können sich jederzeit abmelden.",
-            "Für <strong>CLI, Middleware und Bridge</strong> (auf Ihrer Infrastruktur installiert): Die Telemetrie wird unter <strong>berechtigtem Interesse</strong> mit klaren Abmeldemechanismen erfasst. Sie können die Telemetrie deaktivieren, bevor Daten gesendet werden."
+            "Für <strong>CLI, Middleware und Renet-Agent</strong> (auf Ihrer Infrastruktur installiert): Die Telemetrie wird unter <strong>berechtigtem Interesse</strong> mit klaren Abmeldemechanismen erfasst. Sie können die Telemetrie deaktivieren, bevor Daten gesendet werden."
           ],
           "id": "legal-basis",
           "title": "3. Rechtsgrundlage für die Erfassung"
@@ -13842,14 +14266,14 @@
           "items": [
             "<strong>\"Konto\"</strong> bezeichnet das Benutzerkonto, das Sie erstellen, um auf die Plattform zuzugreifen und Ihr Abonnement zu verwalten.",
             "<strong>\"Autorisierter Benutzer\"</strong> bezeichnet jede Person, der unter Ihrem Konto Zugang zu den Diensten gewaehrt wird, einschliesslich Teammitgliedern, Mitarbeitern und Auftragnehmern, die in Ihrem Namen handeln.",
-            "<strong>\"Bridge\" (Renet)</strong> bezeichnet den serverseitigen Rediacc-Agenten, der auf Ihren Maschinen laeuft, um verschluesselte Speicherung, Container-Orchestrierung und Infrastrukturoperationen zu verwalten.",
+            "<strong>\"Renet-Agent\"</strong> bezeichnet den serverseitigen Rediacc-Agenten, der auf Ihren Maschinen laeuft, um verschluesselte Speicherung, Container-Orchestrierung und Infrastrukturoperationen zu verwalten.",
             "<strong>\"CLI\"</strong> bezeichnet die Rediacc-Befehlszeilenschnittstelle (<code>rdc</code>), die auf Ihrer Arbeitsstation installiert ist.",
             "<strong>\"Konfiguration\"</strong> bezeichnet die lokalen Konfigurationsdateien auf Ihrer Arbeitsstation, die Maschinenverbindungsdetails, Verschluesselungszugangsdaten und andere Betriebseinstellungen enthalten.",
             "<strong>\"Kundendaten\"</strong> bezeichnet alle Daten, Inhalte, Dateien, Container, Konfigurationen und Anwendungen, die Sie auf Ihren Maschinen unter Nutzung der Dienste bereitstellen, speichern oder verarbeiten. Kundendaten umfassen keine Kontoinformationen oder Telemetriedaten.",
-            "<strong>\"Maschine\"</strong> bezeichnet einen Server oder eine virtuelle Maschine, die Sie besitzen oder kontrollieren und auf der die Bridge installiert ist.",
-            "<strong>\"On-Premise-Software\"</strong> bezeichnet die auf Ihrer Infrastruktur installierten Softwarekomponenten, einschliesslich CLI, Bridge und Desktop-Anwendung.",
+            "<strong>\"Maschine\"</strong> bezeichnet einen Server oder eine virtuelle Maschine, die Sie besitzen oder kontrollieren und auf der der Renet-Agent installiert ist.",
+            "<strong>\"On-Premise-Software\"</strong> bezeichnet die auf Ihrer Infrastruktur installierten Softwarekomponenten, einschliesslich CLI, Renet-Agent und Desktop-Anwendung.",
             "<strong>\"Plattform\"</strong> bezeichnet die Rediacc-Webanwendung, das Kontoportal und alle von Rediacc bereitgestellten cloudbasierten Dienste.",
-            "<strong>\"Repository\"</strong> bezeichnet eine isolierte Anwendungsbereitstellung, die von der Bridge verwaltet wird und aus einem verschluesselten Festplatten-Image, einem dedizierten Docker-Daemon und zugehoerigen Containern besteht.",
+            "<strong>\"Repository\"</strong> bezeichnet eine isolierte Anwendungsbereitstellung, die vom Renet-Agenten verwaltet wird und aus einem verschluesselten Festplatten-Image, einem dedizierten Docker-Daemon und zugehoerigen Containern besteht.",
             "<strong>\"Dienste\"</strong> bezeichnet zusammenfassend die On-Premise-Software, die Plattform, die Dokumentation und alle zugehoerigen professionellen Dienstleistungen, die von Rediacc bereitgestellt werden.",
             "<strong>\"Abonnement\"</strong> bezeichnet die von Ihnen gewaehlte Planstufe (Community, Professional, Business oder Enterprise), die Ihren Zugang zu Funktionen und Ressourcenlimits bestimmt.",
             "<strong>\"Telemetriedaten\"</strong> bezeichnet anonymisierte Nutzungsdaten, die von den Diensten wie in unserer <a href=\"telemetry-policy\">Telemetrierichtlinie</a> beschrieben erfasst werden."
@@ -13912,7 +14336,7 @@
         },
         "onPremiseLicense": {
           "content": [
-            "Vorbehaltlich dieser Bedingungen und Ihres aktiven Abonnements gewaehrt Ihnen Rediacc eine beschraenkte, nicht-exklusive, nicht unterlizenzierbare, nicht uebertragbare, widerrufliche Lizenz zur Installation und Nutzung der On-Premise-Software (CLI, Bridge und Desktop-Anwendung) ausschliesslich fuer Ihre internen Geschaeftszwecke waehrend Ihrer Abonnementlaufzeit."
+            "Vorbehaltlich dieser Bedingungen und Ihres aktiven Abonnements gewaehrt Ihnen Rediacc eine beschraenkte, nicht-exklusive, nicht unterlizenzierbare, nicht uebertragbare, widerrufliche Lizenz zur Installation und Nutzung der On-Premise-Software (CLI, Renet-Agent und Desktop-Anwendung) ausschliesslich fuer Ihre internen Geschaeftszwecke waehrend Ihrer Abonnementlaufzeit."
           ],
           "id": "on-premise-license",
           "subsections": {
@@ -13924,14 +14348,14 @@
             },
             "installation": {
               "content": [
-                "Die Bridge arbeitet mit erhoehten (Root-)Rechten auf Ihren Maschinen, um verschluesselte Volumes, Container-Laufzeitumgebungen und Systemdienste zu verwalten. Sie sind allein verantwortlich fuer die Sicherheit Ihrer Maschinen, einschliesslich SSH-Zugriff, Firewall-Konfiguration, Betriebssystem-Updates und physischer Sicherheit. Rediacc greift nicht remote auf Ihre Maschinen zu, es sei denn, Sie fordern dies ausdruecklich zu Supportzwecken an."
+                "Der Renet-Agent arbeitet mit erhoehten (Root-)Rechten auf Ihren Maschinen, um verschluesselte Volumes, Container-Laufzeitumgebungen und Systemdienste zu verwalten. Sie sind allein verantwortlich fuer die Sicherheit Ihrer Maschinen, einschliesslich SSH-Zugriff, Firewall-Konfiguration, Betriebssystem-Updates und physischer Sicherheit. Rediacc greift nicht remote auf Ihre Maschinen zu, es sei denn, Sie fordern dies ausdruecklich zu Supportzwecken an."
               ],
               "title": "6.1 Installation and Machine Access"
             },
             "restrictions": {
               "content": ["Sie duerfen nicht:"],
               "items": [
-                "Die Bridge-Binaerdatei oder eine nicht quelloffene Komponente der On-Premise-Software zurueckentwickeln, dekompilieren, disassemblieren oder auf andere Weise versuchen, den Quellcode abzuleiten",
+                "Die Renet-Agent-Binaerdatei oder eine nicht quelloffene Komponente der On-Premise-Software zurueckentwickeln, dekompilieren, disassemblieren oder auf andere Weise versuchen, den Quellcode abzuleiten",
                 "Die On-Premise-Software an Dritte weiterverbreiten, unterlizenzieren, vermieten, verleasen oder verleihen",
                 "Eigentumshinweise, Kennzeichnungen oder Markierungen auf der On-Premise-Software entfernen, aendern oder unkenntlich machen",
                 "Die On-Premise-Software verwenden, um ein konkurrierendes Produkt oder einen konkurrierenden Dienst zu entwickeln",
@@ -13961,7 +14385,7 @@
           ],
           "id": "service-description",
           "items": [
-            "<strong>On-Premise-Software:</strong> Die CLI (<code>rdc</code>), die Bridge (Renet) und die Desktop-Anwendung — installiert auf Ihren Arbeitsstationen und Maschinen zur Orchestrierung verschluesselter, isolierter Container-Bereitstellungen",
+            "<strong>On-Premise-Software:</strong> Die CLI (<code>rdc</code>), der Renet-Agent und die Desktop-Anwendung — installiert auf Ihren Arbeitsstationen und Maschinen zur Orchestrierung verschluesselter, isolierter Container-Bereitstellungen",
             "<strong>Plattform:</strong> Die Webanwendung und das Kontoportal fuer Abonnementverwaltung, Teamzusammenarbeit und (sofern verfuegbar) cloudbasiertes Infrastrukturmanagement",
             "<strong>Professionelle Dienstleistungen:</strong> Optionale Beratung, Migrationsunterstuetzung und Implementierungshilfe, vorbehaltlich separater Dienstleistungsvereinbarungen"
           ],
@@ -13981,7 +14405,8 @@
           "subsections": {
             "billing": {
               "content": [
-                "Kostenpflichtige Abonnements werden monatlich oder jaehrlich im Voraus abgerechnet. Die Jahresabrechnung erfolgt zu einem Satz, der zehn (10) Monaten des Monatspreises entspricht. Alle Gebuehren sind in US-Dollar angegeben. Die Zahlung wird ueber unseren externen Zahlungsdienstleister (Stripe) abgewickelt; wir speichern keine vollstaendigen Zahlungskartendaten.",
+                "Kostenpflichtige Abonnements (Professional und Business) beginnen mit einer 14-taegigen kostenlosen Testphase. Sie geben bei der Anmeldung eine Zahlungsmethode an, und die erste Abbuchung erfolgt, wenn die Testphase endet. Sie koennen vor Ablauf der Testphase kostenlos kuendigen. Wenn Sie waehrend der Testphase kuendigen, ein kostenpflichtiges Abonnement spaeter kuendigen oder eine Zahlung fehlschlaegt, faellt Ihr Konto auf die kostenlose Community-Stufe zurueck.",
+                "Kostenpflichtige Abonnements werden monatlich oder jaehrlich im Voraus abgerechnet. Die jaehrliche Abrechnung wird mit einem Rabatt von 15 % auf zwoelf (12) Monate des Monatspreises angeboten. Alle Gebuehren sind in US-Dollar angegeben. Die Zahlung wird ueber unseren externen Zahlungsdienstleister (Stripe) abgewickelt; wir speichern keine vollstaendigen Zahlungskartendaten.",
                 "Wir behalten uns das Recht vor, unsere Preise mit einer Frist von dreissig (30) Tagen zu aendern. Preisaenderungen wirken sich nicht auf Ihren aktuellen Abrechnungszeitraum aus. Wenn Sie einer Preisaenderung nicht zustimmen, koennen Sie Ihr Abonnement vor dem naechsten Abrechnungszeitraum kuendigen."
               ],
               "title": "5.1 Billing"
@@ -14077,7 +14502,7 @@
   "pricingPreview": {
     "compareAll": "Alle Pläne und Features vergleichen",
     "subtitle": "Kostenlos starten. Skalieren, wenn Sie bereit sind.",
-    "title": "Preisgestaltung, die Sie vertreten können"
+    "title": "Klare Preise. Keine Überraschungen."
   },
   "problem": {
     "reality": {
@@ -14092,10 +14517,6 @@
     "title": "Warum dein Team immer auf dem Live-System testet"
   },
   "regionPicker": {
-    "channelEdge": "Edge",
-    "channelHintLabel": "Über Release-Kanäle",
-    "channelStable": "Stabil",
-    "edgeHint": "Produktion, kontinuierlich bereitgestellt. Doppelte kostenlose Limits während der Einlaufphase.",
     "footer": "Wählen Sie die Region, die Ihnen am nächsten liegt, oder die Ihre Organisation erfordert.",
     "footerNote": "Dies kann nach der Registrierung nicht mehr geändert werden.",
     "locations": {
@@ -14104,8 +14525,6 @@
       "us": "Virginia, Vereinigte Staaten"
     },
     "reassurance": "Ihre Serverdaten und Backups verbleiben auf Ihrer eigenen Infrastruktur.",
-    "regionNote": "Die Region kann nach der Registrierung nicht mehr geändert werden.",
-    "stableHint": "Zuverlässige Releases, nach 7-tägiger Testphase von Edge übernommen.",
     "subtitle": "Ihr Konto, Ihre Abrechnung und Konfigurationen bleiben in der von Ihnen gewählten Region.",
     "title": "Wählen Sie Ihre Konto-Region"
   },
@@ -14128,34 +14547,6 @@
       "playLabel": "Video ansehen"
     }
   },
-  "testimonials": {
-    "items": [
-      {
-        "company": "Finanzdienstleistungen",
-        "name": "Marcus R.",
-        "quote": "Unser Notfallplan sah vier Stunden vor. Die Realität: vier Tage. Jetzt wechseln wir in unter einer Minute zu einem Klon.",
-        "role": "Disaster-Recovery-Manager"
-      },
-      {
-        "name": "Sarah K.",
-        "quote": "Ich musste direkt in der Produktion programmieren, weil die Sandbox immer um Wochen hinterherhinkte. Heute bekomme ich in 60 Sekunden einen frischen Klon.",
-        "role": "Entwickler"
-      },
-      {
-        "company": "SaaS-Plattform",
-        "name": "James L.",
-        "quote": "Wir haben von einer Datenbank auf zwölf skaliert, ohne neue Hardware zu kaufen. Rediacc-Klone teilen sich den Speicher — wir zahlen nur für Änderungen.",
-        "role": "CTO"
-      },
-      {
-        "name": "Ayumi T.",
-        "quote": "Wir konnten CI nicht mit echten Daten ausführen. Jetzt bekommt jede Pipeline automatisch ihren eigenen Produktionsklon.",
-        "role": "DevOps-Ingenieur"
-      }
-    ],
-    "subtitle": "So erleben unterschiedliche Rollen Rediacc",
-    "title": "Was Teams sagen"
-  },
   "tutorial": {
     "audioControls": "Audio-Steuerung des Transkripts",
     "audioVolume": "Sprachlautstärke des Transkripts",
@@ -14174,20 +14565,20 @@
   "whyNow": {
     "cards": [
       {
-        "description": "KI schreibt Code in Minuten. Eine Testkopie dauert Tage.",
+        "description": "KI schreibt Code in Minuten. Du wartest tagelang auf eine Kopie zum Testen.",
         "title": "Entwickler sind 10× schneller"
       },
       {
-        "description": "Attacken in Sekunden. Ein Pen-Test alle 3 Monate reicht nicht.",
+        "description": "KI greift in Sekunden an. Ein Pen-Test alle 3 Monate reicht nicht.",
         "title": "Hacker sind 10× schneller"
       },
       {
-        "description": "Du läufst überall. Deine Testkopie passt nirgendwo hin.",
-        "title": "Dein Setup ist zersplittert"
+        "description": "Du läufst auf vielen Clouds. Deine Testkopie passt zu keiner davon. Dein Kubernetes-Cluster ist an eine einzige Cloud gebunden.",
+        "title": "Dein Setup ist verteilt"
       }
     ],
-    "footer": "Das Business läuft in Minuten. Die Testkopie? Immer noch Tage.",
+    "footer": "Dein Business läuft in Minuten. Deine Testkopie? Immer noch Tage.",
     "overline": "Warum jetzt",
-    "title": "Alles bewegt sich schneller. Deine Testkopie nicht."
+    "title": "Deine Welt bewegt sich schnell. Deine Testkopie nicht."
   }
 }

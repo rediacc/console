@@ -5,7 +5,7 @@ description: >-
 category: Guides
 order: 5
 language: ja
-sourceHash: "011bc5d87114f105"
+sourceHash: "2d470a876c00c352"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -210,7 +210,7 @@ renetとDockerは、コンテナの再起動処理について意図的に見解
 - リポジトリマウントルートの`.rediacc.json` -> `services.<name>.restart_policy`：真の意図。
 - `docker ps --format '{{.Status}}'`：ランタイム状態。
 
-**ドリフトの修正方法。** コンテナの`.rediacc.json`に保存されたポリシーが誤っている場合（例：composeを編集したがコンテナを再作成しなかった場合）、`rdc repo up --name <repo> -m <machine>`を再実行してください。コンテナは更新されたポリシーを記録した状態で再作成されます。
+**ドリフトの修正方法。** コンテナの`.rediacc.json`に保存されたポリシーが誤っている場合（例：composeを編集したがコンテナを再作成しなかった場合）、`rdc repo up <repo>`を再実行してください。コンテナは更新されたポリシーを記録した状態で再作成されます。
 
 > **実験的：** コールドバックアップサイドカーベースの回復と`rdc machine query`の`--sync-certs`フラグはrenet 0.9+で導入されました。古いバージョンはウォッチドッグ回復のために保存された`restart_policy`のみに依存するため、コールドバックアップ後に`on-failure`コンテナが孤立する可能性があります。
 
@@ -253,7 +253,7 @@ HTTP services (accessible via proxy after ~3s):
 
 ### デタッチ起動
 
-`--detach` を指定すると、ヘルスチェックの完了を待たず、コンテナが起動した時点でコマンドが返ります。起動の残りはバックグラウンドで進行します。プロキシは各サービスがバインドするまでアップストリーム接続を自動的に再試行するため、ルートは自然に回復します。進捗は `rdc machine query --containers --name <machine>` で確認できます。次のステップでサービスが揃っている必要のないスクリプトや使い捨てフォークに最適です。
+`--detach` を指定すると、ヘルスチェックの完了を待たず、コンテナが起動した時点でコマンドが返ります。起動の残りはバックグラウンドで進行します。プロキシは各サービスがバインドするまでアップストリーム接続を自動的に再試行するため、ルートは自然に回復します。進捗は `rdc machine status <machine> --containers` で確認できます。次のステップでサービスが揃っている必要のないスクリプトや使い捨てフォークに最適です。
 
 ### 準備完了プローブ
 
@@ -465,6 +465,6 @@ secrets:
     file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
 ```
 
-`rdc repo secret set --name <repo> --key DATABASE_URL --value <val> --mode env --current ""`でファイルモード相当の値をシードします。詳細については[リポジトリ » シークレット](/ja/docs/repositories#secrets)を参照し、コマンドリファレンスについてはチートシートの[リポジトリごとのシークレット](/ja/docs/rdc-cheat-sheet#per-repo-secrets)を参照してください。
+`rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""`でファイルモード相当の値をシードします。詳細については[リポジトリ » シークレット](/ja/docs/repositories#secrets)を参照し、コマンドリファレンスについてはチートシートの[リポジトリごとのシークレット](/ja/docs/rdc-cheat-sheet#per-repo-secrets)を参照してください。
 
 > **クロスリポパスはバリデーション時に拒否されます。** composeの`secrets: file:`（または`configs: file:`、または`env_file:`）が別のリポジトリの`/var/run/rediacc/secrets/<other-networkID>/`ディレクトリを指していると、renetラッパーによって`docker compose`実行前に厳密に拒否されます。`--unsafe`はオーバーライドしません。深層防御：Rediaccfileシェルの周囲のLandlockサンドボックスはリードを現在のネットワークのシークレットディレクトリにスコープするため、YAMLバリデーターをバイパスしても、Rediaccfileのbashから`cat /var/run/rediacc/secrets/<other>/X`を実行するとEACCESで失敗します。オプトインする必要はありません。これはすべての`repo up`でデフォルトで有効です。

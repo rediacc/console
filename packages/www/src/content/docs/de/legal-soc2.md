@@ -4,8 +4,8 @@ description: "Das ist der Knackpunkt bei SOC 2: Auditoren brauchen Nachweise, da
 category: "Legal"
 order: 2
 language: de
-sourceHash: "9ba8477a07292a7d"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "e03bef0cead86ab7"
+sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
 Ich kenne SOC 2 aus Audit-Meetings. Auditoren nutzen das AICPA-Framework, um zu prüfen, ob Ihre Controls tatsächlich funktionieren, nicht nur, ob Sie behaupten, dass sie funktionieren. Es gibt fünf Trust Service Criteria: Sicherheit, Verfügbarkeit, Verarbeitungsintegrität, Vertraulichkeit und Datenschutz.
@@ -41,7 +41,7 @@ Forks machen Änderungsmanagement auditierbar. Forken Sie Ihre Produktionsumgebu
 1. Produktions-Repository forken (`rdc repo fork`)
 2. Änderungen am Fork anwenden und testen
 3. Fork unabhängig validieren
-4. Fork in Produktion überführen (`rdc repo takeover`)
+4. Fork in Produktion überführen (`rdc repo promote`)
 
 Jeder Schritt wird mit Zeitstempel und Akteuridentifikation protokolliert.
 

@@ -4,7 +4,7 @@ description: "Esponi i servizi con il reverse proxy, le etichette Docker, i cert
 category: "Guides"
 order: 6
 language: it
-sourceHash: "2bb63d224370c266"
+sourceHash: "20b29c1a791304e4"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -204,12 +204,12 @@ Il percorso completo che un certificato Let's Encrypt percorre dall'emissione ai
 
 2. **Dump per repository (opzionale).** I servizi che necessitano di file di certificato all'interno del proprio container (ad esempio, un server di posta che legge direttamente un `.pem`) distribuiscono un piccolo container `traefik-certs-dumper` insieme a sé stessi. Il dumper monta in bind `/opt/rediacc/proxy/letsencrypt` in sola lettura e scrive il certificato estratto + la chiave nel volume di dati del repository come `cert.pem` / `key.pem`. Perché questo funzioni, il daemon Docker per repository deve avere `/opt/rediacc/proxy` nella sua lista di autorizzazioni mount-namespace. Questo è già incluso per impostazione predefinita.
 
-3. **Cache lato client (`rediacc.json`).** La CLI memorizza nella cache una copia compressa di `acme.json` sotto `acmeCertCache` nel tuo file di configurazione, indicizzata per `baseDomain`. Questo consente a più macchine di condividere i certificati (tramite `rdc config cert-cache push -m <machine>`) e funge da inventario offline.
+3. **Cache lato client (`rediacc.json`).** La CLI memorizza nella cache una copia compressa di `acme.json` sotto `acmeCertCache` nel tuo file di configurazione, indicizzata per `baseDomain`. Questo consente a più macchine di condividere i certificati (tramite `rdc machine infra cert push <machine>`) e funge da inventario offline.
 
 **Trigger di sincronizzazione per la cache client:**
 
 - Automaticamente dopo `rdc repo up`, ma solo se la cache locale per il `baseDomain` della macchina ha più di 6 ore. Le cache fresche vengono lasciate intatte in modo che i deploy consecutivi non sovraccarichino SSH.
-- Su richiesta: `rdc config cert-cache pull -m <machine>` (pull forzato) o `rdc machine query --name <machine> --sync-certs` (pull come effetto collaterale di una query di stato).
+- Su richiesta: `rdc machine infra cert pull <machine>` (pull forzato) o `rdc machine status <machine> --sync-certs` (pull come effetto collaterale di una query di stato).
 - Su `rdc config infra push`, la cache viene inviata alla macchina (i certificati locali con scadenza più lunga vincono su quelli remoti).
 
 **Manutenzione della cache:**
@@ -415,7 +415,7 @@ Mostra i mapping delle porte TCP e UDP per le porte allocate dinamicamente.
 | Servizio non nelle route | Container non in esecuzione o etichette mancanti | Verifica con `docker ps` sul daemon del repository; controlla le etichette |
 | Certificato non emesso | DNS non punta al server, o token Cloudflare non valido | Verifica la risoluzione DNS; controlla i permessi del token API Cloudflare |
 | 502 Bad Gateway | L'applicazione non è in ascolto sulla porta dichiarata | Verifica che l'app sia in esecuzione e che la porta corrisponda a `loadbalancer.server.port` |
-| Porta TCP non raggiungibile | Porta non registrata nell'infrastruttura | Esegui `rdc config infra set --tcp-ports ...` e `push-infra` |
+| Porta TCP non raggiungibile | Porta non registrata nell'infrastruttura | Esegui `rdc machine infra set <machine> --tcp-ports ...` e `push-infra` |
 | Route server con versione obsoleta | Il binario è stato aggiornato ma il servizio non è stato riavviato | Avviene automaticamente durante il provisioning; manuale: `sudo systemctl restart rediacc-router` |
 | Relay STUN/TURN non raggiungibile | Indirizzi relay memorizzati nella cache all'avvio | Ricrea il servizio dopo modifiche DNS o IP in modo da raccogliere la nuova configurazione di rete |
 

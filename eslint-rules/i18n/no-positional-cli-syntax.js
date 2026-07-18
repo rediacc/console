@@ -2,11 +2,17 @@
  * ESLint rule to ban positional CLI syntax in user-facing locale strings
  * for commands that actually require named options.
  *
- * Complements `custom/no-positional-arguments` (which enforces named options
- * on the Commander API side) by catching documentation that teaches the wrong
- * syntax. Fresh agents reliably try the form shown in help text first, so a
- * string like `rdc machine query <name>` — when the real command requires
- * `--name <name>` — burns one failed command per session.
+ * Catches documentation that teaches the wrong syntax. Fresh agents reliably try
+ * the form shown in help text first, so a string like `rdc machine status <name>`
+ * — when the real command requires `--name <name>` — burns one failed command per
+ * session.
+ *
+ * The denylist AUTO-DERIVES from command-tree.json (every leaf with zero
+ * positional arguments), so this rule follows the tree rather than asserting a
+ * doctrine about it. That is why it survived P4's inversion to positional refs
+ * while `custom/no-positional-arguments` — which banned positionals outright on
+ * the Commander side — had to be deleted: a command that now takes `<repo-ref>`
+ * simply stops being in the derived denylist.
  *
  * See issue #446.
  *
@@ -38,6 +44,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { FREEFORM_ARG_COMMAND_PATHS as SHARED_FREEFORM } from '../lib/cli-exempt-lists.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const COMMAND_TREE_PATH = path.resolve(
@@ -45,14 +52,7 @@ const COMMAND_TREE_PATH = path.resolve(
   '../../packages/cli/scripts/command-tree.json'
 );
 
-const FREEFORM_ARG_COMMAND_PATHS = new Set([
-  'agent schema',
-  'agent exec',
-  'mcp capabilities',
-  'mcp schema',
-  'mcp exec',
-  'run',
-]);
+const FREEFORM_ARG_COMMAND_PATHS = new Set(SHARED_FREEFORM);
 
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -66,7 +66,13 @@ const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const buildCommandRegex = (commandPath) => {
   const segments = commandPath.trim().split(/\s+/).map(escapeRegex).join('\\s+');
   return new RegExp(
-    `(?:^|[\\s\`($:'"])(?:rdc\\s+)${segments}\\s+(?=[<{\\["'a-zA-Z0-9])`
+    // A prose word that ends the clause is not an argument. German splits separable
+    // verbs ("fuehren Sie rdc config reconcile aus."), so the particle lands after the
+    // command and used to read as a positional. Kept identical to the shared detector in
+    // scripts/lib/positional-cli-detector.ts — an ESLint rule cannot import a .ts module,
+    // which is why this regex exists twice; if you change one, change the other.
+    `(?:^|[\\s\`($:'"])(?:rdc\\s+)${segments}\\s+(?![\\p{L}]+[.,;:!?])(?=[<{\\["'a-zA-Z0-9])`,
+    'u'
   );
 };
 
@@ -81,33 +87,35 @@ const buildPlaceholderOnlyRegex = (commandPath) => {
 };
 
 let cachedLeafPaths = null;
-let cachedAllPaths = null;
+let cachedParentPaths = null;
 
 const loadPathsFromTree = () => {
-  if (cachedLeafPaths && cachedAllPaths) {
-    return { leaves: cachedLeafPaths, all: cachedAllPaths };
+  if (cachedLeafPaths && cachedParentPaths) {
+    return { leaves: cachedLeafPaths, parents: cachedParentPaths };
   }
   const raw = fs.readFileSync(COMMAND_TREE_PATH, 'utf-8');
   const tree = JSON.parse(raw);
   const leaves = new Set();
-  const all = new Set();
+  const parents = new Set();
   const walk = (node, parts) => {
     if (parts.length > 0) {
       const commandPath = parts.join(' ');
       if (!FREEFORM_ARG_COMMAND_PATHS.has(commandPath)) {
-        all.add(commandPath);
         const isLeaf = (node.subcommands ?? []).length === 0;
-        if (isLeaf && (node.arguments ?? []).length === 0) {
-          leaves.add(commandPath);
-        }
+        const takesPositional = (node.arguments ?? []).length > 0;
+        // A command that takes a positional belongs in NEITHER pass: after P4
+        // `rdc repo up <repo-ref>` is the syntax we want the help text to teach.
+        // The parent set used to be every path, which flagged that correct form.
+        if (isLeaf && !takesPositional) leaves.add(commandPath);
+        if (!isLeaf && !takesPositional) parents.add(commandPath);
       }
     }
     for (const sub of node.subcommands ?? []) walk(sub, [...parts, sub.name]);
   };
   walk(tree, []);
   cachedLeafPaths = leaves;
-  cachedAllPaths = all;
-  return { leaves, all };
+  cachedParentPaths = parents;
+  return { leaves, parents };
 };
 
 /** @type {import('eslint').Rule.RuleModule} */
@@ -173,7 +181,7 @@ export const noPositionalCliSyntax = {
 
     let derivedCommands = [];
     if (autoDerive) {
-      const { leaves, all } = loadPathsFromTree();
+      const { leaves, parents } = loadPathsFromTree();
       // Leaf-command pass: reject ANY non-flag next token. Sorted
       // longest-first so the most specific leaf wins on dedup.
       const sortedLeaves = [...leaves].sort((a, b) => b.length - a.length);
@@ -185,10 +193,11 @@ export const noPositionalCliSyntax = {
           source: 'derived',
         });
       }
-      // All-paths pass: reject placeholder/interpolation next token.
+      // Parent pass: reject a placeholder/interpolation next token. A parent
+      // expects a SUBCOMMAND there, and a placeholder can never name one.
       // Sorted longest-first so the most specific path wins.
-      const sortedAll = [...all].sort((a, b) => b.length - a.length);
-      for (const p of sortedAll) {
+      const sortedParents = [...parents].sort((a, b) => b.length - a.length);
+      for (const p of sortedParents) {
         derivedCommands.push({
           path: p,
           regex: buildPlaceholderOnlyRegex(p),

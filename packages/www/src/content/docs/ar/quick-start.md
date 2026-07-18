@@ -4,8 +4,8 @@ description: تشغيل خدمة حاويات على خادمك في دقائق.
 category: Guides
 order: -1
 language: ar
-sourceHash: "afd4d22ddc8e02e1"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "a1350abc611570ef"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # البدء السريع
@@ -93,8 +93,8 @@ rdc repo create --name my-app -m my-server --size 2G  # إنشاء مستودع 
 ### 2. تطبيق قالب
 
 ```bash
-rdc repo template list                                        # عرض القوالب المضمنة
-rdc repo template apply --name app-postgres -m my-server -r my-app  # نشر docker-compose.yml + Rediaccfile
+rdc repo admin template list                                        # عرض القوالب المضمنة
+rdc repo admin template apply --name app-postgres -m my-server -r my-app  # نشر docker-compose.yml + Rediaccfile
 ```
 
 توفر القوالب ملف `docker-compose.yml` وملف `Rediaccfile` وملفات مساعدة. بدون قالب (أو ملف compose خاص بك)، لا يوجد شيء لتشغيله. استخدم القالب المضمن لأول مستودع لك. إنها الطريقة الأسرع لرؤية سير العمل الكامل من البداية إلى النهاية.
@@ -112,7 +112,7 @@ rdc repo status --name my-app -m my-server  # حالة التوصيل، Docker،
 ### 4. VS Code
 
 ```bash
-rdc vscode connect -m my-server -r my-app              # يفتح VS Code عبر SSH، داخل صندوق حماية المستودع
+rdc vscode connect my-app              # يفتح VS Code عبر SSH، داخل صندوق حماية المستودع
 ```
 
 أنت تعدّل الملفات *داخل* وحدة التخزين المشفرة. `docker ps` يعرض فقط حاويات هذا المستودع. احفظ، نفّذ compose up، وكرّر العملية.
@@ -126,7 +126,7 @@ rdc vscode connect -m my-server -r my-app              # يفتح VS Code عبر
 | **حالة الاستخدام** | CI/CD، الأتمتة، العمليات عن بُعد | حلقة التطوير الداخلية |
 | **العزل** | ينسّق من الخارج | موجود بالفعل داخل صندوق الحماية |
 
-**سير العمل التجريبي:** `rdc repo template apply` ثم `rdc vscode connect -m my-server -r my-app` ثم عدّل `docker-compose.yml` ثم `renet dev up` ثم شاهد التطبيق يعمل ثم كرّر.
+**سير العمل التجريبي:** `rdc repo admin template apply` ثم `rdc vscode connect my-app` ثم عدّل `docker-compose.yml` ثم `renet dev up` ثم شاهد التطبيق يعمل ثم كرّر.
 
 > هيكل Rediaccfile: [الخدمات](/en/docs/services). متى تستخدم كل أداة: [rdc vs renet](/en/docs/rdc-vs-renet).
 
@@ -261,7 +261,7 @@ rdc config infra push -m my-server  # دفع إعدادات الوكيل إلى 
 ### 2. قالب الوكيل العكسي
 
 ```bash
-rdc repo template apply --name proxy -m my-server -r infra  # نشر الوكيل في مستودع
+rdc repo admin template apply --name proxy -m my-server -r infra  # نشر الوكيل في مستودع
 rdc repo up --name infra -m my-server  # تشغيل Traefik
 ```
 

@@ -5,7 +5,7 @@ description: >-
 category: Concepts
 order: 35
 language: zh
-sourceHash: "eb4c8dd0389a45a6"
+sourceHash: "30c1cd3d88219e7c"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -28,7 +28,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 | `rdc config edit`（交互式编辑器） | 🔴 refused | 由人类在启动智能体前设置 `REDIACC_ALLOW_CONFIG_EDIT=*` |
 | `rdc config edit --apply <file>` | 🔴 refused | 相同的覆盖方式 |
 | `rdc config field rotate --pointer <pointer>` | 🔴 refused | 相同的覆盖方式；使用交互式确认 |
-| `rdc term connect -m <machine>`（直接 SSH 到机器） | 🔴 refused | 先 fork 一个仓库，再连接到 fork |
+| `rdc term connect <machine>`（直接 SSH 到机器） | 🔴 refused | 先 fork 一个仓库，再连接到 fork |
 
 所有被拒绝的操作都会以 `outcome: refused` 和原因写入审计日志。
 

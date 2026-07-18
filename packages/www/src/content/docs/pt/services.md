@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: pt
-sourceHash: "011bc5d87114f105"
+sourceHash: "2d470a876c00c352"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -211,7 +211,7 @@ O renet e o Docker discordam, propositadamente, sobre como tratar reinícios de 
 - `.rediacc.json` na raiz do repositório montado -> `services.<name>.restart_policy`: a intenção real.
 - `docker ps --format '{{.Status}}'`: estado em tempo de execução.
 
-**Como corrigir uma divergência.** Se a política guardada de um contêiner em `.rediacc.json` estiver errada (por exemplo, porque editou o compose mas nunca recriou o contêiner), execute novamente `rdc repo up --name <repo> -m <machine>`. O contêiner é recriado com a política atualizada registada.
+**Como corrigir uma divergência.** Se a política guardada de um contêiner em `.rediacc.json` estiver errada (por exemplo, porque editou o compose mas nunca recriou o contêiner), execute novamente `rdc repo up <repo>`. O contêiner é recriado com a política atualizada registada.
 
 > **Experimental:** A recuperação baseada em sidecar de cold backup e o flag `--sync-certs` em `rdc machine query` foram lançados no renet 0.9+. Versões anteriores dependem apenas de `restart_policy` guardado para recuperação pelo watchdog, o que pode deixar contêineres `on-failure` parados após um cold backup.
 
@@ -254,7 +254,7 @@ Os serviços sem labels Traefik personalizadas mostram apenas a rota gerada auto
 
 ### Inicialização em Modo Detached
 
-Com `--detach`, o comando retorna assim que os contêineres estiverem iniciados, sem aguardar a conclusão das verificações de saúde. A inicialização termina em segundo plano: o proxy tenta reconectar-se aos serviços de upstream até que cada um esteja vinculado, e as rotas se recuperam sozinhas. Acompanhe o progresso com `rdc machine query --containers --name <machine>`. Ideal para forks descartáveis e scripts em loop onde os serviços não precisam estar prontos antes da próxima etapa.
+Com `--detach`, o comando retorna assim que os contêineres estiverem iniciados, sem aguardar a conclusão das verificações de saúde. A inicialização termina em segundo plano: o proxy tenta reconectar-se aos serviços de upstream até que cada um esteja vinculado, e as rotas se recuperam sozinhas. Acompanhe o progresso com `rdc machine status <machine> --containers`. Ideal para forks descartáveis e scripts em loop onde os serviços não precisam estar prontos antes da próxima etapa.
 
 ### Verificação de Prontidão
 
@@ -467,6 +467,6 @@ secrets:
     file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
 ```
 
-Insira os valores com `rdc repo secret set --name <repo> --key DATABASE_URL --value <val> --mode env --current ""` e o equivalente em modo file. Consulte [Repositórios - Segredos](/pt/docs/repositories#secrets) para o guia completo e [Segredos por repositório](/pt/docs/rdc-cheat-sheet#per-repo-secrets) na cheat sheet para a referência de comandos.
+Insira os valores com `rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""` e o equivalente em modo file. Consulte [Repositórios - Segredos](/pt/docs/repositories#secrets) para o guia completo e [Segredos por repositório](/pt/docs/rdc-cheat-sheet#per-repo-secrets) na cheat sheet para a referência de comandos.
 
 > **Os caminhos entre repositórios são rejeitados no momento da validação.** Um `secrets: file:` do compose (ou `configs: file:`, ou `env_file:`) que aponte para o diretório `/var/run/rediacc/secrets/<other-networkID>/` de outro repositório é rejeitado pelo wrapper renet antes do docker compose ser executado. `--unsafe` NÃO substitui este comportamento. Defesa em profundidade: a sandbox Landlock em torno do shell do Rediaccfile limita as leituras ao diretório de segredos da rede atual, portanto um `cat /var/run/rediacc/secrets/<other>/X` a partir do bash do Rediaccfile falha com EACCES mesmo que contorne o validador YAML. Você não precisa ativar isto; está ativo por padrão em cada `repo up`.

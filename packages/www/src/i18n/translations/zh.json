@@ -2,7 +2,7 @@
   "announcement": {
     "enabled": true,
     "link": "/account/",
-    "text": "限时：设计合作伙伴计划，BUSINESS 套餐永久免费"
+    "text": "新功能：14 天免费试用，立即开始使用 Rediacc。"
   },
   "beforeAfter": {
     "after": {
@@ -253,11 +253,11 @@
   },
   "hero": {
     "cta": {
-      "benefits": "无限团队 • $0",
+      "benefits": "无限团队 • 14 天免费试用",
       "bookDemo": "预约演示",
       "contactUs": "查看所有安装方式",
-      "freeBadge": "永久免费 • 无需信用卡",
-      "getStarted": "免费开始",
+      "freeBadge": "14 天免费试用 · 随时取消",
+      "getStarted": "开始免费试用",
       "learnMore": "了解工作原理",
       "readDocs": "阅读文档",
       "seeDetails": "查看详情"
@@ -297,9 +297,12 @@
       "S3",
       "btrfs",
       "LUKS",
-      "systemd"
+      "systemd",
+      "Kubernetes",
+      "Ceph",
+      "k3s"
     ],
-    "migrationMessage": "Rediacc 把您的应用、数据库和配置打成一个文件。随处可移。已在 Docker？您已经完成大半。",
+    "migrationMessage": "Rediacc 把您的应用、数据库和配置打包成一个文件，随处可移。已经在用 Docker？您已经完成大半。已经在跑 Kubernetes？整个集群也能用同样的方式复刻或迁移。",
     "title": "与您现有的技术栈兼容"
   },
   "layout": {
@@ -307,10 +310,6 @@
       "author": "Rediacc",
       "defaultDescription": "基础设施自动化平台专为加速开发运营而设计。即时开发环境和下一代灾难恢复。",
       "defaultKeywords": "基础设施自动化、AI 运营、灾难恢复、开发环境、模型上下文协议、DevOps、CI/CD",
-      "designPartner": {
-        "ogDescPrefix": "终身免费获得 BUSINESS 版。",
-        "ogPrefix": "设计合作伙伴计划"
-      },
       "locale": "zh_CN",
       "siteName": "Rediacc",
       "twitter": {
@@ -336,6 +335,10 @@
       {
         "label": "快速恢复",
         "number": "< 1 min"
+      },
+      {
+        "label": "Whole Kubernetes cluster fork",
+        "number": "46s"
       }
     ]
   },
@@ -432,11 +435,15 @@
       {
         "description": "保存全部了。恢复却要等好几小时。",
         "title": "备份工具"
+      },
+      {
+        "description": "只复制配置文件。集群远不止 YAML。",
+        "title": "Kubernetes 工具"
       }
     ],
     "title": "别的工具只敢复制一部分。我们全要。",
     "winner": {
-      "description": "每个团队都有自己的完整副本。数据、应用、配置全都有。60 秒就绪。存储费用也聪明——有变化才计费。",
+      "description": "每个团队都拥有自己可写的完整副本，数据、应用、配置一样不少，60 秒就绪，连整个 Kubernetes 集群也是如此。只有发生变化时才需要为存储付费。",
       "label": "Rediacc"
     }
   },
@@ -692,7 +699,7 @@
         "whatWeDontUse": {
           "content": ["以下技术在我们的网站上<strong>未</strong>使用："],
           "content2": [
-            "注意：本Cookie政策适用于Rediacc营销网站。我们的软件产品（Web 应用程序、CLI、中间件、Bridge）收集不使用Cookie的单独使用遥测数据。有关产品遥测的详情，请参阅我们的<a href=\"telemetry-policy\">遥测策略</a>。"
+            "注意：本Cookie政策适用于Rediacc营销网站。我们的软件产品（Web 应用程序、CLI、中间件、Renet 代理）收集不使用Cookie的单独使用遥测数据。有关产品遥测的详情，请参阅我们的<a href=\"telemetry-policy\">遥测策略</a>。"
           ],
           "id": "what-we-dont-use",
           "items": [
@@ -706,98 +713,6 @@
       },
       "toc": {
         "title": "目录"
-      }
-    },
-    "designPartners": {
-      "ask": {
-        "items": [
-          {
-            "body": "有什么让你意外的，发一封简短的邮件就行。堆栈跟踪可选，吐槽欢迎。",
-            "title": "出问题时告诉我们"
-          },
-          {
-            "body": "大概每季度 30 分钟。我们听，你说。没有演示，没有追加销售。",
-            "title": "偶尔聊个天"
-          },
-          {
-            "body": "如果我们要发布影响你的东西，希望能在上线前联系到你。普通邮件就行。",
-            "title": "保持可联系"
-          }
-        ],
-        "lede": "要求很轻。我们不是想占用你的时间，而是让我们保持诚实。",
-        "title": "我们希望你做到的"
-      },
-      "faq": {
-        "items": [
-          {
-            "a": "是的。授权保存在你的订阅记录中，永不过期、永不自动降级。如果我们将来需要改变，会优先给每位设计伙伴发邮件通知。到目前为止我们从未这样做过，也没有任何计划。",
-            "q": "真的是终身的吗？"
-          },
-          {
-            "a": "那你的账号就停了，和其他所有用户一样。终身承诺是基于公司还活着。我们现在还在早期阶段，这就是你需要明白的真实风险。",
-            "q": "如果 Rediacc 停止运营怎么办？"
-          },
-          {
-            "a": "没有付费墙、没有合同、不会自动扣费。唯一的要求就是上面那点轻量反馈。你可以不理我们，我们不会收回你的套餐。",
-            "q": "有什么附加条件吗？"
-          },
-          {
-            "a": "可以。你可以永久保留 BUSINESS 套餐，也可以在超出限制时升级到 Enterprise。向上升级按正常计费；终身优惠仅限 BUSINESS 套餐。",
-            "q": "我以后可以换套餐吗？"
-          },
-          {
-            "a": "直到我们关闭。我们不会提前宣布关闭时间，所以今天就是注册的好时机。现有设计伙伴无论如何都能保留套餐。",
-            "q": "这个计划开放多久？"
-          }
-        ],
-        "title": "坦白的回答"
-      },
-      "finalCta": {
-        "button": "领取我的 BUSINESS",
-        "note": "我们会在一两天内发邮件，安排入驻通话。",
-        "subtitle": "一次注册，无需信用卡，BUSINESS 套餐永久锁定。",
-        "title": "准备好成为先行者了吗？"
-      },
-      "hero": {
-        "eyebrow": "限时招募",
-        "note": "无需信用卡，无需申请。我们可能随时关闭，现在就注册。",
-        "primaryCta": "领取我的 BUSINESS",
-        "secondaryCta": "查看定价",
-        "subtitle": "我们还在快速迭代阶段，需要你用起来、有问题就告诉我们。只要 Rediacc 还存在，BUSINESS 就永久免费给你。",
-        "title": "成为设计伙伴，BUSINESS 永久免费。"
-      },
-      "meta": {
-        "description": "免费成为设计伙伴，永久免费用 BUSINESS 套餐。我们在找那些真正愿意给反馈、一起打磨产品的先行者。",
-        "title": "加入我们的设计合作伙伴计划 | 永久免费获得 BUSINESS 商业版"
-      },
-      "why": {
-        "items": [
-          {
-            "body": "一个正在生产运行的真实团队，教给我们的东西比一百个试用用户多 100 倍。设计伙伴就是我们在大规模推广前打磨产品的方式。",
-            "title": "真实团队，真实系统"
-          },
-          {
-            "body": "我们现在不缺钱。缺的是你踩过的坑、遇到的边界情况、以及所有真实的想法。用诚实反馈换免费使用，对双方都公平。",
-            "title": "用钱换反馈"
-          },
-          {
-            "body": "你的 BUSINESS 套餐永久有效、永不降级、永不需要绑卡。就这么简单。",
-            "title": "永久致谢"
-          }
-        ],
-        "title": "为什么这样做"
-      },
-      "youGet": {
-        "items": [
-          "BUSINESS 套餐：每个仓库 200 GB、10 个用户授权、每月 10,000 次激活",
-          "Edge 通道：双倍配额（每仓库 400 GB、20 个授权、每月 20,000 次激活）",
-          "无限仓库、用户和团队",
-          "快照还原、深色模式、全部 9 种语言",
-          "直连工程支持团队",
-          "永久锁定，永不过期、永不降级、永不需要绑卡。"
-        ],
-        "lede": "BUSINESS 套餐全部权益，只要 Rediacc 还在就永久免费。",
-        "title": "你能得到什么"
       }
     },
     "disasterRecovery": {
@@ -818,7 +733,7 @@
             "question": "您接受哪些付款方式？"
           },
           {
-            "answer": "社区版永久免费。其他版本可联系销售团队了解试用方案。",
+            "answer": "有。Professional 和 Business 都提供 14 天免费试用，注册时需绑定信用卡，试用期结束后才会扣费。提前取消则完全免费，账户会自动降级为免费的 Community 方案。",
             "question": "有免费试用吗？"
           },
           {
@@ -841,14 +756,14 @@
       },
       "finalCta": {
         "buttons": {
-          "startFree": "免费开始",
+          "startFree": "开始免费试用",
           "talkToSales": "咨询销售"
         },
         "description": "安装 Rediacc，10 分钟内完成首次备份。",
         "heading": "更快开始恢复"
       },
       "hero": {
-        "subtitle": "大多数团队从免费版开始，然后长期保持。只有当停机会伤害业务时，才需要升级。产品相同，无需切换。",
+        "subtitle": "先从 14 天免费试用开始，只有当停机会让企业真正付出代价时，才需要升级。产品完全相同，无需切换。",
         "title": "为真实灾难恢复而生"
       },
       "meta": {
@@ -865,7 +780,7 @@
             "存储跨越 3 个地域。一次故障无法阻止您。",
             "持续数据保护。数据丢失接近零。",
             "4 小时恢复 SLA（有保证）",
-            "无限应用，每个 200 GB",
+            "无限应用，每个 500 GB",
             "7 个活跃/3 个备用任务",
             "90 天审计日志保留",
             "基于角色的访问控制和完整审计日志",
@@ -876,7 +791,7 @@
           "name": "商业"
         },
         "community": {
-          "description": "生产级灾难恢复，从第一天开始。永久免费。",
+          "description": "从第一天起就具备生产级灾难恢复能力，免费的兜底方案。",
           "features": [
             "无限用户和团队。自由协作。",
             "故障后几分钟内恢复最新备份。",
@@ -913,7 +828,7 @@
             "社区版全部功能，加强版",
             "自动备份计划——一次配置，永久省心。",
             "24 小时内的时间点恢复",
-            "无限应用，每个 50 GB",
+            "无限应用，每个 100 GB",
             "24 小时任务超时、3 个活跃/2 个备用任务",
             "30 天审计日志保留",
             "邮件和聊天支持",
@@ -930,7 +845,7 @@
         "viewDetails": "查看专业服务"
       },
       "strategy": {
-        "copy": "从你的现状开始。大多数团队使用免费版，并长期保持。只有当恢复变慢会真正伤害收入时，才升级。无论哪个版本，用的都是同一个产品。",
+        "copy": "从现状开始就好。大多数团队停留的时间都比预期更久，只有当恢复变慢真正影响业务时，才需要升级，用的始终是同一个产品。跑 Kubernetes？整个集群也能用同样的方式迁移，切换过程短暂且可控。",
         "distribution": [
           "从专业版升级到商业版：备份存储在第二个位置，每次变更即时保存，4小时恢复保证，专属支持联系人。",
           "从商业版升级到企业版：选择恢复速度（15至60分钟）。恢复在完全独立的隔离环境中进行，您的生产系统无法接触它，在关键时刻提供人工支持。"
@@ -986,11 +901,12 @@
         "anchor": "战略锚",
         "bestValue": "最划算",
         "contactSales": "联系销售",
+        "contactUs": "联系我们",
+        "contactUsSub": "自定义限制和条款",
         "cta": {
           "business": {
-            "guarantee": "14 天退款保证",
             "launchBadge": "限时首发特惠",
-            "primary": "预约配置通话",
+            "primary": "开始免费试用",
             "secondary": "联系销售",
             "valueNote": "赠送 $9,999 配置额度"
           },
@@ -1000,14 +916,12 @@
             "secondary": "了解套餐内容"
           },
           "enterprise": {
-            "guarantee": "14 天退款保证",
             "primary": "预约演示",
             "secondary": "联系销售",
             "subtext": "定制 SLA · 专属支持"
           },
           "professional": {
-            "guarantee": "14 天退款保证",
-            "primary": "选择专业版",
+            "primary": "开始免费试用",
             "secondary": "联系销售"
           }
         },
@@ -1015,7 +929,7 @@
         "getStarted": "立即安装",
         "guarantees": {
           "cancelAnytime": "随时取消",
-          "moneyBack": "14 天退款保证",
+          "freeTrial": "14 天免费试用",
           "noContracts": "无长期合同"
         },
         "keyBenefits": "主要优点",
@@ -1239,11 +1153,6 @@
         "notFound": "404 - 找不到页面"
       },
       "description": "抱歉，您要查找的页面不存在或已被移动。 如果您点击过时的链接或输入了错误的 URL，则可能会发生这种情况。",
-      "designPartner": {
-        "body": "终身免费获得我们的 BUSINESS 套餐，无需信用卡。",
-        "cta": "领取设计合作伙伴资格",
-        "title": "设计合作伙伴计划"
-      },
       "help": {
         "description": "如果您认为这是一个错误或者您希望在此处找到内容，请联系我们的支持团队。 我们随时帮助您找到您想要的东西。",
         "link": "联系我们的支持团队",
@@ -1458,7 +1367,7 @@
               "title": "上下文窗口友好"
             },
             {
-              "description": "--dry-run 预览破坏性操作。--yes 启用自动化。Agent 能在内置防护下放心部署。",
+              "description": "--dry-run 预览破坏性操作，--yes 启用自动化，Agent 可以在内置防护机制下放心部署。即使是整个集群的复刻，也遵循同样的规则。",
               "icon": "shield",
               "title": "默认安全"
             }
@@ -1469,12 +1378,12 @@
         "bottomCta": {
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash",
           "description": "安装 CLI、添加 AGENTS.md、AI 助手包办剩下的。",
-          "primaryCta": "免费开始",
+          "primaryCta": "开始免费试用",
           "title": "让 AI Agent 替你管理基础设施"
         },
         "hero": {
           "badge": "AI AGENT 专属",
-          "primaryCta": "免费开始",
+          "primaryCta": "开始免费试用",
           "secondaryCta": "查看文档",
           "subtitle": "CLI 优先、SSH 直连、JSON 原生。rdc 的每条命令都为自主 Agent 量身打造——没有 GUI、没有浏览器自动化、没有自定义集成。",
           "title": "你的 AI Agent 已经懂的基础设施"
@@ -1542,7 +1451,7 @@
               "title": "配置"
             },
             {
-              "description": "执行 rdc agent capabilities，获得一份结构化的 JSON 命令树。Agent 从此了然于心，无需查阅文档。",
+              "description": "把助手接到 rdc mcp serve，每项操作都能拿到带类型的工具；也可以运行 rdc --help-all，查看完整命令参考。",
               "icon": "code",
               "title": "发现"
             },
@@ -1555,7 +1464,7 @@
           "title": "三个步骤让 Agent 管理你的基础设施"
         },
         "meta": {
-          "description": "Rediacc 为 AI 助手而生。CLI 优先、JSON 结构化、SSH 直连，rdc agent 命令全面发现。",
+          "description": "Rediacc 专为 AI 编程助手打造。CLI 优先操作、结构化 JSON、SSH 访问，还内置 MCP server 供工具调用。",
           "keywords": "AI 智能体, Claude Code, Cursor, Cline, 基础设施自动化, CLI, JSON 输出, 自托管, 智能体原生, MCP",
           "title": "AI Agent 专用 - CLI 原生自动化 | Rediacc"
         },
@@ -1649,8 +1558,12 @@
               "traditional": "HTML / 非结构化输出：消耗 4 倍的 token、容易出错"
             },
             {
-              "rediacc": "rdc agent capabilities: structured command tree at runtime",
+              "rediacc": "MCP server：运行时发现带类型工具",
               "traditional": "无自动发现：Agent 需要文档或硬编码的 API 调用"
+            },
+            {
+              "rediacc": "rdc cluster fork: one command, one JSON reply, whole cluster",
+              "traditional": "集群变更：网页控制台、配置向导、多步骤运维手册"
             }
           ],
           "title": "rdc 为何为 AI Agent 量身打造",
@@ -1728,7 +1641,7 @@
               "title": "您的数据，您做主"
             },
             {
-              "description": "5 分钟内完全恢复。备份不可改写，勒索软件根本碰不了。您的生意永不中断。",
+              "description": "5 分钟内完全恢复。备份写入后即锁定，勒索软件根本无法篡改。您的业务持续运行。即使服务商掉链子，整套系统也能迁移，Kubernetes 集群同样适用。",
               "icon": "shield",
               "title": "业务连续性"
             }
@@ -1737,7 +1650,7 @@
           "title": "您真正能获得什么"
         },
         "bottomCta": {
-          "description": "每台机器一个固定价格。无按席位费用。无意外。从免费社区版开始。",
+          "description": "每台机器统一定价，没有按席位收费，没有意外费用，从 14 天免费试用开始。",
           "primaryCta": "查看定价",
           "title": "查看定价"
         },
@@ -2149,6 +2062,10 @@
             {
               "rediacc": "合规：在您自己的基础设施上独立验证",
               "traditional": "合规：只能信任厂商的合规声明"
+            },
+            {
+              "rediacc": "把运行中的集群克隆或迁移到另一个数据中心，切换只需几秒",
+              "traditional": "Kubernetes 把你锁在最初搭建的那个数据中心"
             }
           ],
           "title": "Rediacc 如何保护您的基础设施",
@@ -2226,7 +2143,7 @@
               "title": "环境秒级创建"
             },
             {
-              "description": "一切皆命令。与 CI/CD、Git hooks 和自定义自动化无缝集成。不需要 GUI。",
+              "description": "一切皆命令，可与 CI/CD、Git hooks 或您自己的自动化流程无缝集成，不需要 GUI。Kubernetes 同样支持：命名空间可以像普通仓库一样复刻。",
               "icon": "terminal",
               "title": "命令行优先，完全可脚本"
             },
@@ -2241,13 +2158,13 @@
         },
         "bottomCta": {
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash",
-          "description": "安装 CLI、克隆第一个环境。无需信用卡，无需销售电话。",
-          "primaryCta": "立即免费开始",
+          "description": "安装 CLI，克隆您的第一个环境，开启 14 天免费试用，无需销售电话。",
+          "primaryCta": "开始免费试用",
           "title": "动手一试"
         },
         "hero": {
           "badge": "为 DevOps 工程师打造",
-          "primaryCta": "立即免费开始",
+          "primaryCta": "开始免费试用",
           "secondaryCta": "查看文档",
           "subtitle": "CLI 优先的基础设施：60 秒克隆生产环境、5 分钟内完全恢复、运行在您自己的硬件上。无工单。无等待。数据掌控在您手。",
           "title": "一分钟内克隆。五分钟内恢复。永别工单地狱。"
@@ -2436,6 +2353,10 @@
             {
               "rediacc": "回滚：btrfs 快照切换（<5 分钟）",
               "traditional": "回滚：从备份恢复（30+ 分钟）"
+            },
+            {
+              "rediacc": "rdc cluster fork copies it, data included. 46 seconds in our lab",
+              "traditional": "克隆一个 Kubernetes 集群：重新开通资源、重新部署、重新灌入数据"
             }
           ],
           "title": "为什么能 60 秒克隆",
@@ -2678,61 +2599,69 @@
         "heading": "查看套餐详细对比"
       },
       "edgeChannel": {
-        "cta": "免费开始",
-        "description": "2 倍 Community 额度、最新功能、完全免费，不需要信用卡。",
+        "cta": "探索 Edge 渠道",
+        "description": "Edge 渠道率先推送最新功能，额度是 Stable 渠道的两倍。",
         "heading": "试试 Edge 频道"
       },
       "faq": {
         "heading": "常见问题",
         "items": [
           {
-            "answer": "有。Community 方案永久免费，支持最多 2 台机器、每月 100 次设置，还包括备份恢复。不需要信用卡。",
-            "question": "有免费计划吗？"
+            "answer": "有。Professional 和 Business 都提供 14 天免费试用，只有试用期结束后才会首次扣费，在此之前取消则完全免费。取消后，账户会自动降级为免费的 Community 方案，继续让一台机器运行，每个仓库 10 GB，每月 100 次设置。",
+            "question": "有免费试用吗？"
           },
           {
-            "answer": "可以，随时切换。升级即时生效，降级在下个计费周期开始应用。没有罚款也没有额外费用。",
+            "answer": "需要。两个付费方案在注册时都需要绑定信用卡，以便试用期结束后自动转为订阅。在 14 天试用期结束前不会扣费，您也可以随时取消。",
+            "question": "开始使用需要信用卡吗？"
+          },
+          {
+            "answer": "可以，您可以随时切换方案。升级立即生效，降级则在下一个计费周期开始时生效，没有罚款或额外费用。",
             "question": "可以升级或降级方案吗？"
           },
           {
-            "answer": "有的。年付最多能省 17%，相当于白得 2 个月。所有付费方案都支持月付和年付。",
-            "question": "有年付选项吗？"
+            "answer": "支持。相比按月付费，年付可节省 15%。两个付费方案都支持按月或按年付费。",
+            "question": "支持年付吗？"
           },
           {
-            "answer": "接受所有主流信用卡（Visa、MasterCard、American Express），Enterprise 年付方案还支持开票。",
+            "answer": "我们接受所有主流信用卡（Visa、MasterCard、American Express），Enterprise 方案还支持发票付费。",
             "question": "支持哪些付款方式？"
           },
           {
-            "answer": "每台安装 Rediacc 的物理或虚拟机器都算一台。这些机器上创建的克隆不额外计数，只算主机本身。",
-            "question": "怎样算一台机器？"
+            "answer": "每台安装了 Rediacc 的物理或虚拟服务器都算一台机器。在这些机器上创建的即时副本不单独计数，只计算主机本身。",
+            "question": "机器数量是如何计算的？"
           },
           {
-            "answer": "可以。Rediacc 支持任何 Linux 服务器（需要 btrfs 存储系统支持）。裸机、虚拟机、云实例（AWS、Azure、GCP、Hetzner、OVH 等）统统支持。",
-            "question": "能在自己的服务器上跑吗？"
+            "answer": "可以。Rediacc 可在任何支持 btrfs（Linux 内置的开源存储系统）的 Linux 服务器上运行，物理服务器、虚拟机以及云服务器（AWS、Azure、GCP、Hetzner、OVH 等）均可支持。",
+            "question": "Rediacc 能在我自己的服务器上运行吗？"
           },
           {
-            "answer": "免费的 Community 支持 2 台机器，包括按需克隆、备份恢复和社区支持。付费的 Professional 支持 5 台机器，额外提供定时备份、24 小时恢复记录、优先支持和 API 接口。",
+            "answer": "每个自助方案都包含一台机器（一个浮动许可证）。如果需要在多台机器上运行 Rediacc，则属于通过合作伙伴销售的 Enterprise 方案，请联系我们，一起为您规划合适的规模。",
+            "question": "每个方案支持多少台机器？"
+          },
+          {
+            "answer": "Community 是免费的兜底方案：一台机器，每个仓库 10 GB，每月 100 次设置，并提供社区支持。Professional 是提供 14 天免费试用的付费方案：一台机器，每个仓库 100 GB，每月 2,000+ 次设置，支持自动调度、24 小时恢复记录、更快的支持响应以及 API 访问。",
             "question": "Community 和 Professional 有什么区别？"
           },
           {
-            "answer": "Enterprise 是为你定制的。你说了算。包括独占的机器空间、自定义恢复承诺、24 小时随时支持。还有安全审查和定期演练。",
-            "question": "Enterprise 定价包括什么？"
+            "answer": "Enterprise 专为您的部署定制，通过合作伙伴销售。您可以自行商定条款，在多台机器上运行，并获得专属服务器空间、定制化恢复承诺以及 24/7/365 支持，此外还包括安全审查与定期演练。",
+            "question": "Enterprise 方案包括什么？"
           },
           {
             "answer": "有。邮件联系我们。学校和非营利组织有特殊价格。",
             "question": "教育机构和非营利组织有优惠吗？"
           },
           {
-            "answer": "有。所有付费方案都有 14 天退款保证。Rediacc 不符合你的需求？全额退款，不问为什么。",
-            "question": "有退款保证吗？"
+            "answer": "在 14 天试用期内取消，不会产生任何费用。之后取消付费方案，你可以继续使用其功能，直到当前计费周期结束，账户才会转为免费的 Community 方案。你的仓库全程正常运行。",
+            "question": "如果我取消订阅会怎样？"
           }
         ]
       },
       "finalCta": {
         "buttons": {
-          "startFree": "免费开始",
+          "startFree": "开始免费试用",
           "talkToSales": "联系销售"
         },
-        "description": "5 分钟搞定，免费开始。",
+        "description": "5 分钟完成安装，开启 14 天免费试用。",
         "heading": "保护你的基础设施"
       },
       "hero": {
@@ -2740,35 +2669,34 @@
         "title": "为真实运维而生"
       },
       "meta": {
-        "description": "选择最适合您业务规模和需求的定价方案。免费社区版本已包含其中，可升级到全面的企业级保护。所有价格公开透明，绝无隐藏费用。",
+        "description": "为您的团队选择最合适的定价方案。所有付费方案均包含 14 天免费试用，且无任何隐藏费用，价格完全透明。",
         "keywords": "定价、基础设施自动化、DevOps计划、任务执行",
         "title": "定价方案 | 为您的真实业务运营场景而量身打造的基础设施保护"
       },
       "plans": {
         "business": {
-          "description": "专家级配置、跨地域冗余备份和4小时恢复承诺",
+          "description": "更大的仓库容量、进阶管理功能，以及 4 小时恢复承诺。",
           "features": [
             "包含Professional所有功能，此外还有：",
-            "10 个浮动许可证",
-            "无限仓库",
+            "1 个浮动许可证",
+            "每个仓库 500 GB",
             "每月 5,000+ 次服务器配置",
-            "包含实施支持（首发优惠）",
-            "跨地域冗余存储（3个区域）",
+            "跨地域冗余存储（3 个区域）",
             "持续数据保护",
-            "4小时恢复SLA",
-            "基于角色的访问控制和审计日志",
-            "合规审计报告",
-            "电话支持和协作空间"
+            "4 小时恢复 SLA",
+            "基于角色的访问控制与审计日志",
+            "合规就绪报告",
+            "电话支持 + 协作空间"
           ],
           "name": "商业"
         },
         "community": {
-          "description": "最多2台服务器的备份和恢复，永久免费",
+          "description": "永久免费的兜底方案。试用或付费方案到期后，仍可让一台机器持续运行。",
           "features": [
             "无限用户和团队",
             "无限仓库",
             "每月 100 次服务器配置（每次配置消耗 1 个浮动许可证）",
-            "2 个浮动许可证",
+            "1 个浮动许可证",
             "备份和恢复",
             "支持手动调度",
             "社区Slack频道访问",
@@ -2777,10 +2705,10 @@
           "name": "社区"
         },
         "enterprise": {
-          "description": "企业级专属支持和定制条款，为复杂大规模环境设计",
+          "description": "多机部署，通过合作伙伴销售，提供专属支持与定制条款。",
           "features": [
             "包含Business所有功能，此外还有：",
-            "25+ 个浮动许可证",
+            "多机浮动许可证",
             "无限仓库",
             "每月 15,000+ 次服务器配置",
             "自定义SLA和保证的恢复时间",
@@ -2795,11 +2723,11 @@
           "name": "企业"
         },
         "professional": {
-          "description": "为成长中的团队量身打造的专业自动化和调度",
+          "description": "面向单台生产机器的自动化与调度",
           "features": [
             "包含Community所有功能，此外还有：",
-            "3 个浮动许可证",
-            "无限仓库",
+            "1 个浮动许可证",
+            "每个仓库 100 GB",
             "每月 2,000+ 次服务器配置",
             "支持自动调度",
             "支持从过去24小时内任意时间点恢复",
@@ -2962,7 +2890,7 @@
             "title": "扩容享受 60 天宽限"
           },
           {
-            "description": "浮动许可证仅在创建或复制服务器时使用。日常操作不会占用许可证。闲置 5 小时后许可证自动释放。5 个许可证的套餐即可满足数十台机器的使用需求。绝不按机器数量收费。",
+            "description": "浮动许可证只在您创建或复制服务器时使用，日常操作从不占用许可证。闲置 5 小时后，许可证会自动释放，因此一个浮动许可证也能在长期使用中覆盖多台机器。绝不按机器数量收费。",
             "title": "无限机器。只在新增时计费。"
           },
           {
@@ -2987,7 +2915,7 @@
         "bestValue": "最划算",
         "billingToggle": {
           "annual": "年付",
-          "annualSavings": "节省 17%，享受 2 个月免费",
+          "annualSavings": "节省 15%",
           "ariaLabel": "计费周期",
           "monthly": "月付"
         },
@@ -2996,41 +2924,32 @@
         "contactUsSub": "自定义限制和条款",
         "cta": {
           "business": {
-            "guarantee": "退款保证",
             "launchBadge": "限量首发优惠",
-            "primary": "预约设置电话",
+            "primary": "开始免费试用",
             "secondary": "联系销售",
             "valueNote": "包含 9,999 美元的配置额度"
           },
           "community": {
-            "note": "无需信用卡",
+            "note": "免费兜底方案",
             "primary": "试用 Rediacc",
             "secondary": "查看包含内容"
           },
           "enterprise": {
-            "guarantee": "退款保证",
-            "primary": "预约演示",
+            "primary": "联系销售",
             "secondary": "联系销售",
             "subtext": "定制 SLA · 专属支持"
           },
           "professional": {
-            "guarantee": "退款保证",
-            "primary": "开启专业版",
+            "primary": "开始免费试用",
             "secondary": "联系销售"
           }
-        },
-        "designPartner": {
-          "badge": "为设计合作伙伴免费提供",
-          "cta": "申请成为设计合作伙伴",
-          "period": "终身免费 · 无需信用卡",
-          "price": "FREE"
         },
         "edgeLimitsNote": "显示的是 edge 频道的限制。stable 频道的限制是这里的一半。",
         "foreverFree": "永远免费",
         "getStarted": "立即安装",
         "guarantees": {
           "cancelAnytime": "随时取消",
-          "moneyBack": "14 天退款保证",
+          "freeTrial": "14 天免费试用",
           "noContracts": "无长期合约"
         },
         "keyBenefits": "核心优势",
@@ -3039,6 +2958,7 @@
         "monthOrYear": "每月或 {{price}} 每年",
         "popular": "最热门",
         "startingAt": "*起价",
+        "startTrial": "开始 14 天免费试用",
         "taxDisclaimer": "所有价格均以美元计价，不含税款、关税等。",
         "whatsIncluded": "包含内容："
       }
@@ -3136,7 +3056,7 @@
             },
             "productTelemetry": {
               "content": [
-                "我们的软件产品（Web 应用程序、CLI、中间件和 Bridge）收集匿名使用遥测数据，以提高产品质量、性能和可靠性。遥测数据包括技术信息，例如应用程序版本、操作系统、浏览器类型、性能指标、功能使用模式和错误报告。个人标识符在收集前进行匿名处理——电子邮件地址仅保留域名部分，用户 ID 经过哈希和截断处理，密码或机密信息绝不收集。",
+                "我们的软件产品（Web 应用程序、CLI、中间件和 Renet 代理）收集匿名使用遥测数据，以提高产品质量、性能和可靠性。遥测数据包括技术信息，例如应用程序版本、操作系统、浏览器类型、性能指标、功能使用模式和错误报告。个人标识符在收集前进行匿名处理——电子邮件地址仅保留域名部分，用户 ID 经过哈希和截断处理，密码或机密信息绝不收集。",
                 "遥测功能在我们的 Web 应用程序和 CLI 中默认启用，并且可以在所有产品中禁用。有关每个产品收集的内容以及如何退出的完整详情，请参阅我们的<a href=\"telemetry-policy\">遥测策略</a>。"
               ],
               "title": "2.5 产品遥测数据"
@@ -5467,6 +5387,12 @@
               "description": "克隆生产环境，让 AI 发起攻击。",
               "slug": "ai-pentesting",
               "title": "AI 渗透测试"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "克隆或迁移正在运行的集群，数据一起带走",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes 集群迁移"
             }
           ],
           "title": "探索其他解决方案"
@@ -6362,6 +6288,12 @@
               "description": "60 秒克隆生产环境",
               "slug": "environment-cloning",
               "title": "环境克隆"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "克隆或迁移正在运行的集群，数据一起带走",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes 集群迁移"
             }
           ],
           "title": "探索其他解决方案"
@@ -7350,6 +7282,12 @@
               "description": "克隆生产环境，让 AI 发起攻击。",
               "slug": "ai-pentesting",
               "title": "AI 渗透测试"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "克隆或迁移正在运行的集群，数据一起带走",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes 集群迁移"
             }
           ],
           "title": "探索其他解决方案"
@@ -7617,6 +7555,10 @@
             {
               "rediacc": "10 个克隆通过 CoW 共享块（约 12 GB 增量）",
               "traditional": "10 个克隆 = 10 倍存储 (2.4 TB)"
+            },
+            {
+              "rediacc": "命名空间和普通仓库一样，克隆只需 1 到 5 秒",
+              "traditional": "为 Kubernetes 应用搭建预发布环境，就得再建一套集群"
             }
           ],
           "title": "为什么 60 秒克隆成为可能",
@@ -7855,6 +7797,12 @@
               "description": "克隆生产环境，让 AI 发起攻击。",
               "slug": "ai-pentesting",
               "title": "AI 渗透测试"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "克隆或迁移正在运行的集群，数据一起带走",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes 集群迁移"
             }
           ],
           "title": "探索其他解决方案"
@@ -8104,6 +8052,10 @@
             {
               "rediacc": "自动化健康检查——包含精确 RTO/RPO 的通过/失败结果",
               "traditional": "手动验证——\"看起来没问题\"的主观判断"
+            },
+            {
+              "rediacc": "整个集群 46 秒克隆完成，演练在副本上进行",
+              "traditional": "Kubernetes 灾备演练：维护一套同步集群，然后祈祷别出事"
             }
           ],
           "title": "为什么传统 DR 测试会失败",
@@ -8867,6 +8819,12 @@
               "description": "克隆生产环境，让 AI 发起攻击。",
               "slug": "ai-pentesting",
               "title": "AI 渗透测试"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "克隆或迁移正在运行的集群，数据一起带走",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes 集群迁移"
             }
           ],
           "title": "探索其他解决方案"
@@ -9102,6 +9060,10 @@
             {
               "rediacc": "52 秒创建与生产一致的克隆",
               "traditional": "每个新环境需要 15-30 分钟部署"
+            },
+            {
+              "rediacc": "克隆集群用于测试，测完就删。副本共享存储空间。",
+              "traditional": "预发布 Kubernetes 集群：另一套节点，24 小时全天付费"
             }
           ],
           "title": "完整复制 vs. 写时复制",
@@ -9339,6 +9301,12 @@
               "description": "克隆生产环境，让 AI 发起攻击。",
               "slug": "ai-pentesting",
               "title": "AI 渗透测试"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "克隆或迁移正在运行的集群，数据一起带走",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes 集群迁移"
             }
           ],
           "title": "探索其他解决方案"
@@ -9832,6 +9800,12 @@
               "description": "克隆生产环境，让 AI 发起攻击。",
               "slug": "ai-pentesting",
               "title": "AI 渗透测试"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "克隆或迁移正在运行的集群，数据一起带走",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes 集群迁移"
             }
           ],
           "title": "探索其他解决方案"
@@ -10146,6 +10120,413 @@
           ]
         }
       },
+      "kubernetesClusterMobility": {
+        "benefits": {
+          "items": [
+            {
+              "description": "Rediacc 可以帮你运行 k3s，也可以直接接入你已有的集群。存储卷基于 ceph-csi RBD。你的配置文件还是你的。",
+              "icon": "check-circle",
+              "title": "保留你的 Kubernetes"
+            },
+            {
+              "description": "可以部署在你自己的 KVM 主机上，也可以用 Linode 这类支持私有 VLAN 的云。节点池会把磁盘密集型的 Ceph 节点和 CPU 密集型的 Kubernetes 节点分开管理。",
+              "icon": "arrow-right-circle",
+              "title": "真正的数据中心迁移能力"
+            },
+            {
+              "description": "一个 Kubernetes 应用就是一个命名空间。像克隆普通仓库一样克隆它：1 到 5 秒，数据也一起带走。用的还是你操作 Docker 仓库时那套命令。",
+              "icon": "git-branch",
+              "title": "一套思路，管理一切"
+            }
+          ],
+          "overline": "重要意义",
+          "title": "保留你的 Kubernetes，获得迁移能力。"
+        },
+        "bottomCta": {
+          "command": "rdc cluster fork prod --tag staging",
+          "ctaText": "免费开始使用社区版",
+          "description": "先克隆它，测试一下迁移，再正式迁移。开始你的 14 天免费试用。",
+          "title": "给你的集群留一条退出路径"
+        },
+        "comparison": {
+          "capabilityLabel": "功能",
+          "description": "备份工具只能先停机再恢复。Cluster API 只克隆骨架，不带数据。RBD 镜像只复制存储卷，不复制整个集群。Rediacc 把这一切全部搬走。",
+          "features": [
+            {
+              "name": "备份应用和存储卷",
+              "refs": [4, 5, 0, 9, 0],
+              "values": ["check", "check", "cross", "Volumes only", "rediacc"]
+            },
+            {
+              "name": "连数据一起迁移整个集群",
+              "refs": [6, 7, 8, 0, 0],
+              "values": ["Stop and restore", "Stop and restore", "Shape only", "cross", "rediacc"]
+            },
+            {
+              "name": "克隆运行中的集群，数据一起带走",
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "几秒内克隆单个应用（命名空间）",
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "无需完整重写即可复制数据",
+              "refs": [0, 0, 0, 10, 0],
+              "values": ["cross", "cross", "cross", "Async copy", "rediacc"]
+            },
+            {
+              "name": "计划迁移时，切换时间短且可实测",
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            }
+          ],
+          "overline": "差距对比",
+          "title": "没有别的工具能带着数据迁移运行中的集群"
+        },
+        "explore": {
+          "solutions": [
+            {
+              "category": "multi-cloud",
+              "current": true,
+              "description": "克隆或迁移正在运行的集群，数据一起带走",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes 集群迁移"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "您的基础设施，您的选择，始终如此。",
+              "slug": "vendor-lock-in",
+              "title": "供应商锁定自由"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "AWS 宕机时，您不受影响",
+              "slug": "cloud-outage-protection",
+              "title": "云故障保护"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "在需要之前测试您的故障转移",
+              "slug": "failover-testing",
+              "title": "故障转移测试"
+            },
+            {
+              "category": "encryption",
+              "description": "迁移不冒数据风险",
+              "slug": "migration-safety",
+              "title": "迁移安全"
+            },
+            {
+              "category": "dev-env",
+              "description": "60 秒克隆生产环境",
+              "slug": "environment-cloning",
+              "title": "环境克隆"
+            },
+            {
+              "category": "backups",
+              "description": "分钟级完整环境恢复",
+              "slug": "instant-recovery",
+              "title": "即时恢复"
+            },
+            {
+              "category": "encryption",
+              "description": "您的密钥，您的加密，没有例外。",
+              "slug": "encryption",
+              "title": "您掌控的加密"
+            }
+          ],
+          "title": "探索其他解决方案"
+        },
+        "hero": {
+          "badge": "MULTI-CLOUD",
+          "differentiator": "Velero 只能恢复备份。Cluster API 只能克隆集群的骨架。Rediacc 能直接迁移运行中的集群，数据一起带走。",
+          "primaryCta": "免费开始使用社区版",
+          "secondaryCta": "查看实测数据 →",
+          "subtitle": "你的集群作为一个整体一起搬走：节点、配置和数据。搬到另一台机器，或者另一个数据中心。切换只需几秒实测完成，不用等一整个周末。",
+          "title": "克隆或迁移正在运行的 Kubernetes 集群"
+        },
+        "howItWorks": {
+          "cloneVisual": {
+            "arrow": {
+              "icon": "arrow-right-circle-arrow",
+              "label": "Fork",
+              "time": "46s"
+            },
+            "clone": {
+              "cardClass": "restored",
+              "containerCount": "Fork",
+              "services": [
+                {
+                  "name": "Nodes",
+                  "port": "2 (k3s + Ceph)"
+                },
+                {
+                  "name": "Namespaces",
+                  "port": "8 apps"
+                },
+                {
+                  "name": "Volumes",
+                  "port": "Ceph RBD clones"
+                },
+                {
+                  "name": "State",
+                  "port": "Own identity, new IPs"
+                }
+              ],
+              "size": "46s",
+              "status": "Running",
+              "title": "prod-staging (Datacenter B)"
+            },
+            "production": {
+              "containerCount": "父级",
+              "services": [
+                {
+                  "name": "Nodes",
+                  "port": "2 (k3s + Ceph)"
+                },
+                {
+                  "name": "Namespaces",
+                  "port": "8 apps"
+                },
+                {
+                  "name": "Volumes",
+                  "port": "Ceph RBD"
+                },
+                {
+                  "name": "State",
+                  "port": "Keeps running"
+                }
+              ],
+              "size": "Untouched",
+              "status": "Running",
+              "title": "prod (Datacenter A)"
+            }
+          },
+          "overline": "工作原理",
+          "steps": [
+            {
+              "description": "每个节点都从一个镜像文件启动。每个存储卷都是一个 Ceph RBD 镜像。合在一起，就是整个集群：应用、配置和数据。",
+              "icon": "layers",
+              "title": "集群镜像加存储卷"
+            },
+            {
+              "description": "一条命令，写时复制克隆所有镜像。在我们实验室里，一个 2 节点集群 46 秒内完成克隆，父级集群全程保持运行。",
+              "icon": "git-branch",
+              "title": "原地克隆"
+            },
+            {
+              "description": "Rediacc 会在集群运行时预先复制数据，然后停止服务、发送最终增量，再在新机器上重新启动。实测切换时间：16 秒。",
+              "icon": "arrow-right-circle",
+              "title": "短暂切换完成迁移"
+            }
+          ],
+          "title": "整个集群就是一组文件"
+        },
+        "meta": {
+          "description": "把运行中的 Kubernetes 集群克隆或迁移到另一台机器或数据中心，数据一起带走。切换时间短且可实测。基于 Ceph RBD 和 k3s 构建。",
+          "keywords": "kubernetes 集群迁移, 集群克隆, ceph rbd, k3s, 数据中心迁移能力, kubernetes 可移植性",
+          "title": "Fork or Move a Kubernetes Cluster | Rediacc"
+        },
+        "problem": {
+          "description": "Kubernetes 让你的应用可以随处运行，但集群本身做不到。数据始终留在一个数据中心。想要搬走，就是一个重建项目：新节点、新存储、从备份恢复、重新测试所有东西。所以大多数团队从来不搬家，而供应商很清楚这一点。",
+          "overline": "问题所在",
+          "statCallouts": [
+            {
+              "number": "27%",
+              "ref": 1,
+              "source": "Flexera 2024 State of the Cloud Report",
+              "text": "的云支出每年都被浪费掉"
+            },
+            {
+              "number": "17%",
+              "ref": 2,
+              "source": "Flexera 2025 State of the Cloud Report",
+              "text": "组织平均云预算超支比例"
+            },
+            {
+              "number": "$0.09/GB",
+              "ref": 3,
+              "source": "AWS/Azure/GCP Pricing 2024",
+              "text": "设计上让离开变得昂贵的出站流量费"
+            }
+          ],
+          "timeline": {
+            "newLabel": "使用 Rediacc",
+            "newSteps": ["Pre-copy", "16s cutover", "Live"],
+            "oldLabel": "传统方式",
+            "oldSteps": [
+              {
+                "day": "Month 1",
+                "text": "搭建新集群"
+              },
+              {
+                "day": "Month 2",
+                "text": "重建配置文件和密钥"
+              },
+              {
+                "day": "Month 3",
+                "text": "从备份恢复存储卷"
+              },
+              {
+                "day": "Month 4",
+                "text": "逐个重新测试应用"
+              },
+              {
+                "day": "Month 5+",
+                "text": "切换上线，祈祷顺利"
+              }
+            ]
+          },
+          "title": "集群会被困在最初搭建的地方"
+        },
+        "references": {
+          "disclaimer": "克隆和迁移的耗时是在 Rediacc 的 KVM 测试实验室里，对一个 2 节点集群做端到端实测得出的。默认一致性为崩溃一致性，语义等同于一次断电重启。迁移切换期间，工作负载会在目标端重新启动。",
+          "items": [
+            {
+              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"27% of cloud spend continues to be wasted.\"",
+              "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
+            },
+            {
+              "text": "Flexera, \"2025 State of the Cloud Report,\" 2025. \"With cloud budgets already exceeding limits by 17%, organizations are increasingly turning to managed service providers.\"",
+              "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
+            },
+            {
+              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
+              "url": "https://aws.amazon.com/s3/pricing/"
+            },
+            {
+              "text": "Velero backs up Kubernetes cluster resources and persistent volumes and restores them into a cluster.",
+              "url": "https://velero.io/docs/"
+            },
+            {
+              "text": "Kasten K10 provides backup and restore of Kubernetes applications, including application data.",
+              "url": "https://docs.kasten.io/"
+            },
+            {
+              "text": "Velero cluster migration restores a backup into a new cluster; workloads are recreated from the backup point, not moved live.",
+              "url": "https://velero.io/docs/main/migration-case/"
+            },
+            {
+              "text": "Kasten K10 migrates applications between clusters by exporting a restore point and importing it into the target cluster.",
+              "url": "https://docs.kasten.io/latest/usage/migration.html"
+            },
+            {
+              "text": "Cluster API's clusterctl move relocates Cluster API objects (the cluster's definition) to another management cluster; it does not move workload data.",
+              "url": "https://cluster-api.sigs.k8s.io/clusterctl/commands/move"
+            },
+            {
+              "text": "Ceph RBD mirroring replicates block device images between Ceph clusters; it covers volumes, not Kubernetes cluster state.",
+              "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
+            },
+            {
+              "text": "Ceph RBD mirroring is asynchronous, based on journaling or periodic snapshots, and is designed for disaster recovery.",
+              "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
+            }
+          ],
+          "label": "Sources & References"
+        },
+        "stats": [
+          {
+            "icon": "layers",
+            "label": "Whole 2-node cluster fork",
+            "number": "46s"
+          },
+          {
+            "icon": "clock",
+            "label": "Migrate cutover, measured",
+            "number": "16s"
+          },
+          {
+            "icon": "zap",
+            "label": "Namespace fork",
+            "number": "1-5s"
+          }
+        ],
+        "techDiff": {
+          "description": "每个节点都从 btrfs 上的一个镜像文件启动。每个存储卷都是一个 Ceph RBD 镜像。复制集群，就是对这些镜像做写时复制克隆。没有导出，没有格式转换，没有恢复步骤。这就是为什么克隆只需几秒，而不是几个月。",
+          "overline": "底层技术",
+          "rows": [
+            {
+              "rediacc": "节点镜像和存储卷作为一个整体一起迁移",
+              "traditional": "备份工具只能一点点地恢复到一个空集群里"
+            },
+            {
+              "rediacc": "Ceph RBD 克隆随行，写时复制",
+              "traditional": "数据还得靠另一套复制产品来处理"
+            },
+            {
+              "rediacc": "在我们实验室里，一个 2 节点集群的克隆只用了 46 秒，父级集群全程保持运行",
+              "traditional": "克隆一个集群，意味着重新开通资源、重新部署"
+            },
+            {
+              "rediacc": "实测切换时间：16 秒。工作负载会在目标端重新启动",
+              "traditional": "切换计划往往要占用一整个周末"
+            }
+          ],
+          "title": "为什么集群能像文件一样说搬就搬"
+        },
+        "techStrip": {
+          "label": "Runs the apps you already ship",
+          "note": "数据库、CI/CD、CMS、监控系统、登录系统、存储服务——只要跑在 Kubernetes 上，Rediacc 就能克隆它、迁移它，数据一起带走。"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "cmd": "rdc cluster fork prod",
+              "type": "command",
+              "value": "--tag staging"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "正在克隆节点镜像（写时复制）............... 完成",
+              "type": "check"
+            },
+            {
+              "text": "正在克隆 Ceph RBD 卷.......................... 完成",
+              "type": "check"
+            },
+            {
+              "text": "正在为新 IP 重写节点身份...................... 完成",
+              "type": "check"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "✓ 克隆在 46s 内完成：prod-staging 已启动，父级集群未受影响。",
+              "type": "success"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "cmd": "rdc cluster migrate prod",
+              "type": "command",
+              "value": "--to fsn1-dc2"
+            },
+            {
+              "text": "集群运行时预先复制数据.......................... 完成",
+              "type": "check"
+            },
+            {
+              "text": "切换：停止服务、传输最终增量、重启................ 16s",
+              "type": "check"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "克隆：46s   迁移切换：16s   一致性：崩溃一致性",
+              "type": "summary"
+            }
+          ]
+        }
+      },
       "leadMagnetButton": {
         "buttonLabel": "下载简报",
         "description": "这份简明 PDF 专为 CISO、CTO 及高级工程师撰写。我们将链接发送至您的邮箱，方便日后查阅。",
@@ -10322,6 +10703,12 @@
               "description": "克隆生产环境，让 AI 发起攻击。",
               "slug": "ai-pentesting",
               "title": "AI 渗透测试"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "克隆或迁移正在运行的集群，数据一起带走",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes 集群迁移"
             }
           ],
           "title": "探索其他解决方案"
@@ -10579,6 +10966,10 @@
             {
               "rediacc": "传输后每个仓库进行 SHA-256 校验和验证",
               "traditional": "假设完整性——无自动验证"
+            },
+            {
+              "rediacc": "先克隆集群，切换前先测试迁移是否可行",
+              "traditional": "集群迁移需要搭建一套平行环境，然后祈求顺利"
             }
           ],
           "title": "解密-传输-重新加密 vs. 零暴露迁移",
@@ -10819,6 +11210,12 @@
               "description": "克隆生产环境，让 AI 发起攻击。",
               "slug": "ai-pentesting",
               "title": "AI 渗透测试"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "克隆或迁移正在运行的集群，数据一起带走",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes 集群迁移"
             }
           ],
           "title": "探索其他解决方案"
@@ -11050,6 +11447,10 @@
             {
               "rediacc": "47 秒，通过 --verify-parity 标志自动一致性验证",
               "traditional": "数天部署，无一致性验证"
+            },
+            {
+              "rediacc": "rdc cluster fork copies the running cluster, data included. 46 seconds in our lab",
+              "traditional": "即使用同一份 YAML 搭建，预发布集群依旧会和生产环境产生偏差"
             }
           ],
           "title": "近似模拟 vs. 精确克隆",
@@ -11293,6 +11694,12 @@
               "description": "克隆生产环境，让 AI 发起攻击。",
               "slug": "ai-pentesting",
               "title": "AI 渗透测试"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "克隆或迁移正在运行的集群，数据一起带走",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes 集群迁移"
             }
           ],
           "title": "探索其他解决方案"
@@ -12640,7 +13047,7 @@
               "type": "spacer"
             },
             {
-              "cmd": "rdc term connect -m patch-test-ubuntu-24",
+              "cmd": "rdc term connect patch-test-ubuntu-24",
               "flag": "-c",
               "prompt": "$",
               "type": "command",
@@ -12839,6 +13246,12 @@
               "description": "克隆生产环境，让 AI 发起攻击。",
               "slug": "ai-pentesting",
               "title": "AI 渗透测试"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "克隆或迁移正在运行的集群，数据一起带走",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes 集群迁移"
             }
           ],
           "title": "探索其他解决方案"
@@ -13088,6 +13501,10 @@
             {
               "rediacc": "云无关：同样的 rdc 命令适用于 AWS、Hetzner、裸金属",
               "traditional": "需要云特定工具：Terraform 重写、API 变更"
+            },
+            {
+              "rediacc": "rdc cluster migrate moves the running cluster, data included",
+              "traditional": "换了新供应商，Kubernetes 集群得手动重建"
             }
           ],
           "title": "为什么迁移只需几分钟而非数月"
@@ -13563,6 +13980,13 @@
         }
       }
     },
+    "solutionsIndex": {
+      "meta": {
+        "description": "Rediacc 全部解决方案一站式呈现：勒索软件恢复、多云迁移、Kubernetes 可移植性、已验证备份、加密，以及快速开发环境。",
+        "keywords": "Rediacc 解决方案, 勒索软件恢复, 多云, Kubernetes 集群迁移, 已验证备份, 加密控制, 开发环境",
+        "title": "Solutions - Business Continuity Software | Rediacc"
+      }
+    },
     "telemetryPolicy": {
       "contact": {
         "description": "如果您对我们的遥测实践有疑问或需要帮助退出，请通过<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>联系我们。",
@@ -13573,7 +13997,7 @@
         "title": "我们的遥测数据收集实践与透明度"
       },
       "meta": {
-        "description": "Rediacc产品收集的遥测数据的详细说明，包括收集原因、处理方式以及如何退出。涵盖Web应用程序、CLI、中间件和Bridge。",
+        "description": "Rediacc产品收集的遥测数据的详细说明，包括收集原因、处理方式以及如何退出。涵盖Web应用程序、CLI、中间件和 Renet 代理。",
         "keywords": "遥测策略, 数据收集, OpenTelemetry, 退出, 隐私, GDPR, Rediacc",
         "title": "遥测策略 - Rediacc 产品遥测数据收集与使用的透明详细说明"
       },
@@ -13583,30 +14007,30 @@
       "sections": {
         "bridge": {
           "content": [
-            "Rediacc Bridge (Renet) 使用带有gzip压缩OTLP导出的OpenTelemetry。遥测数据以批次（最多10个span，每5秒刷新）传输至<code>rediacc.com</code>。"
+            "Rediacc Renet 代理使用带有gzip压缩OTLP导出的OpenTelemetry。遥测数据以批次（最多10个span，每5秒刷新）传输至<code>rediacc.com</code>。"
           ],
           "id": "bridge",
           "subsections": {
             "bridgeDataCollected": {
-              "content": ["Bridge收集以下类别的数据："],
+              "content": ["Renet 代理收集以下类别的数据："],
               "items": [
                 "<strong>队列操作：</strong>任务ID、优先级、操作类型、执行持续时间、成功或失败状态",
                 "<strong>SSH操作：</strong>目标主机、用户名、端口号、退出码、执行持续时间（不收集命令内容或输出）",
                 "<strong>API调用：</strong>过程名称、请求持续时间",
                 "<strong>Vault操作：</strong>操作类型和持续时间（不收集密钥值、密钥或Vault内容）",
-                "<strong>Bridge生命周期：</strong>启动、关闭和重连事件",
+                "<strong>Renet 代理生命周期：</strong>启动、关闭和重连事件",
                 "<strong>性能分析：</strong>CPU使用率采样和内存分配分析，自动收集并发送至我们的性能分析端点"
               ],
               "title": "7.1 收集的数据"
             },
             "bridgeOptOut": {
               "content": [
-                "设置环境变量<code>REDIACC_TELEMETRY_DISABLED=1</code>以禁用Bridge遥测（包括性能分析）。"
+                "设置环境变量<code>REDIACC_TELEMETRY_DISABLED=1</code>以禁用 Renet 代理遥测（包括性能分析）。"
               ],
               "title": "7.2 如何退出"
             }
           },
-          "title": "7. Bridge (Renet) 遥测"
+          "title": "7. Renet 代理遥测"
         },
         "ccpa": {
           "content": [
@@ -13665,7 +14089,7 @@
           ],
           "id": "data-processing",
           "items": [
-            "<strong>加密：</strong>所有数据在传输中使用TLS加密。Bridge还使用gzip压缩。",
+            "<strong>加密：</strong>所有数据在传输中使用TLS加密。Renet 代理还使用gzip压缩。",
             "<strong>保留：</strong>原始遥测追踪保留最多90天，用于调试和事件调查。聚合指标保留最多12个月，之后删除。",
             "<strong>访问：</strong>遥测数据仅限Rediacc工程和运营人员按需访问。",
             "<strong>不与第三方共享：</strong>遥测数据不会与任何第三方共享、出售或提供给任何第三方。",
@@ -13683,7 +14107,7 @@
         "introduction": {
           "content": [
             "Rediacc软件产品收集匿名使用遥测数据，以帮助我们改善产品质量、诊断问题并了解工具的使用情况。本遥测策略准确描述了收集的数据、原因、处理方式以及如何退出。",
-            "本策略涵盖四个产品：<strong>Rediacc Web 应用程序</strong>、<strong>Rediacc CLI</strong>、<strong>Rediacc 中间件</strong>和<strong>Rediacc Bridge (Renet)</strong>。网站分析（Plausible）在我们的<a href=\"privacy-policy\">隐私政策</a>和<a href=\"cookie-policy\">Cookie政策</a>中另行说明。"
+            "本策略涵盖四个产品：<strong>Rediacc Web 应用程序</strong>、<strong>Rediacc CLI</strong>、<strong>Rediacc 中间件</strong>和<strong>Rediacc Renet 代理</strong>。网站分析（Plausible）在我们的<a href=\"privacy-policy\">隐私政策</a>和<a href=\"cookie-policy\">Cookie政策</a>中另行说明。"
           ],
           "id": "introduction",
           "title": "1. 简介"
@@ -13692,7 +14116,7 @@
           "content": [
             "根据欧盟《通用数据保护条例》（GDPR）和《电子隐私指令》，我们收集遥测数据的法律依据取决于产品场景：",
             "对于<strong>Web 应用程序</strong>（基于浏览器）：遥测数据基于<strong>合法利益</strong>（GDPR第6(1)(f)条）收集，目的是维护和提高服务质量。您可以随时退出。",
-            "对于<strong>CLI、中间件和Bridge</strong>（安装在您的基础设施上）：遥测数据基于<strong>合法利益</strong>收集，并提供明确的退出机制。您可以在发送任何数据之前禁用遥测。"
+            "对于<strong>CLI、中间件和 Renet 代理</strong>（安装在您的基础设施上）：遥测数据基于<strong>合法利益</strong>收集，并提供明确的退出机制。您可以在发送任何数据之前禁用遥测。"
           ],
           "id": "legal-basis",
           "title": "3. 收集的法律依据"
@@ -13793,14 +14217,14 @@
           "items": [
             "<strong>\"账户\"</strong>是指您创建的用于访问平台和管理订阅的用户账户。",
             "<strong>\"授权用户\"</strong>是指在您的账户下被授予服务访问权限的任何个人，包括代表您行事的团队成员、员工和承包商。",
-            "<strong>\"Bridge\"（Renet）</strong>是指在您的机器上运行的 Rediacc 服务端代理，用于管理加密存储、容器编排和基础设施操作。",
+            "<strong>\"Renet 代理\"</strong>是指在您的机器上运行的 Rediacc 服务端代理，用于管理加密存储、容器编排和基础设施操作。",
             "<strong>\"CLI\"</strong>是指安装在您工作站上的 Rediacc 命令行界面（<code>rdc</code>）。",
             "<strong>\"配置\"</strong>是指存储在您工作站上的本地配置文件，其中包含机器连接详情、加密凭据和其他操作设置。",
             "<strong>\"客户数据\"</strong>是指您使用服务在机器上部署、存储或处理的任何数据、内容、文件、容器、配置和应用程序。客户数据不包括账户信息或遥测数据。",
-            "<strong>\"机器\"</strong>是指您拥有或控制的、安装了 Bridge 的服务器或虚拟机。",
-            "<strong>\"本地部署软件\"</strong>是指安装在您基础设施上的软件组件，包括 CLI、Bridge 和桌面应用程序。",
+            "<strong>\"机器\"</strong>是指您拥有或控制的、安装了 Renet 代理的服务器或虚拟机。",
+            "<strong>\"本地部署软件\"</strong>是指安装在您基础设施上的软件组件，包括 CLI、Renet 代理和桌面应用程序。",
             "<strong>\"平台\"</strong>是指 Rediacc 网页应用、账户门户以及 Rediacc 提供的任何云托管服务。",
-            "<strong>\"仓库\"</strong>是指由 Bridge 管理的隔离应用部署，由加密磁盘映像、专用 Docker 守护进程和关联容器组成。",
+            "<strong>\"仓库\"</strong>是指由 Renet 代理管理的隔离应用部署，由加密磁盘映像、专用 Docker 守护进程和关联容器组成。",
             "<strong>\"服务\"</strong>是指本地部署软件、平台、文档以及 Rediacc 提供的任何相关专业服务的统称。",
             "<strong>\"订阅\"</strong>是指您选择的计划层级（社区版、专业版、商业版或企业版），它决定了您可访问的功能和资源限制。",
             "<strong>\"遥测数据\"</strong>是指服务按照我们的<a href=\"telemetry-policy\">遥测政策</a>所述收集的匿名使用数据。"
@@ -13863,7 +14287,7 @@
         },
         "onPremiseLicense": {
           "content": [
-            "根据本条款和您的有效订阅，Rediacc 授予您有限的、非排他的、不可转授权的、不可转让的、可撤销的许可，仅允许您在订阅期内为内部业务目的安装和使用本地部署软件（CLI、Bridge 和桌面应用程序）。"
+            "根据本条款和您的有效订阅，Rediacc 授予您有限的、非排他的、不可转授权的、不可转让的、可撤销的许可，仅允许您在订阅期内为内部业务目的安装和使用本地部署软件（CLI、Renet 代理和桌面应用程序）。"
           ],
           "id": "on-premise-license",
           "subsections": {
@@ -13875,14 +14299,14 @@
             },
             "installation": {
               "content": [
-                "Bridge 以提升的（root）权限在您的机器上运行，以管理加密卷、容器运行时和系统服务。您应对机器的安全负全部责任，包括 SSH 访问、防火墙配置、操作系统更新和物理安全。除非您为获取支持而明确请求，否则 Rediacc 不会远程访问您的机器。"
+                "Renet 代理以提升的（root）权限在您的机器上运行，以管理加密卷、容器运行时和系统服务。您应对机器的安全负全部责任，包括 SSH 访问、防火墙配置、操作系统更新和物理安全。除非您为获取支持而明确请求，否则 Rediacc 不会远程访问您的机器。"
               ],
               "title": "6.1 Installation and Machine Access"
             },
             "restrictions": {
               "content": ["您不得："],
               "items": [
-                "对 Bridge 二进制文件或本地部署软件的任何非开源组件进行逆向工程、反编译、反汇编或以其他方式试图获取源代码",
+                "对 Renet 代理二进制文件或本地部署软件的任何非开源组件进行逆向工程、反编译、反汇编或以其他方式试图获取源代码",
                 "向任何第三方再分发、转授权、出租、租赁或出借本地部署软件",
                 "移除、更改或遮盖本地部署软件上的任何专有通知、标签或标记",
                 "使用本地部署软件构建竞争产品或服务",
@@ -13910,7 +14334,7 @@
           ],
           "id": "service-description",
           "items": [
-            "<strong>本地部署软件：</strong>CLI（<code>rdc</code>）、Bridge（Renet）和桌面应用程序——安装在您的工作站和机器上，用于编排加密的、隔离的容器部署",
+            "<strong>本地部署软件：</strong>CLI（<code>rdc</code>）、Renet 代理和桌面应用程序——安装在您的工作站和机器上，用于编排加密的、隔离的容器部署",
             "<strong>平台：</strong>用于订阅管理、团队协作以及（如适用）基于云的基础设施管理的网页应用和账户门户",
             "<strong>专业服务：</strong>可选的咨询、迁移协助和实施支持，须另行签订服务协议"
           ],
@@ -13930,7 +14354,8 @@
           "subsections": {
             "billing": {
               "content": [
-                "付费订阅按月或按年预付费计费。年付按相当于十 (10) 个月月费的费率收取。所有费用以美元计价。付款由我们的第三方支付处理商（Stripe）处理；我们不存储完整的支付卡信息。",
+                "付费订阅（Professional 和 Business）以 14 天免费试用开始。您在注册时提供付款方式，试用期结束时收取首次费用。您可以在试用期结束前取消，不产生任何费用。如果您在试用期内取消、稍后取消付费订阅，或付款失败，您的账户将恢复为免费的 Community 方案。",
+                "付费订阅按月或按年预付费计费。年付在月费十二 (12) 个月价格的基础上可享受 15% 的折扣。所有费用以美元计价。付款由我们的第三方支付处理商（Stripe）处理；我们不存储完整的支付卡信息。",
                 "我们保留在提前三十 (30) 天通知的情况下更改价格的权利。价格变更不会影响您当前的计费周期。如果您不同意价格变更，可以在下一个计费周期之前取消订阅。"
               ],
               "title": "5.1 Billing"
@@ -14024,7 +14449,7 @@
   "pricingPreview": {
     "compareAll": "对比所有套餐和功能",
     "subtitle": "免费开始，按需升级",
-    "title": "经得起推敲的定价方案"
+    "title": "价格清晰，绝无意外。"
   },
   "problem": {
     "reality": {
@@ -14039,10 +14464,6 @@
     "title": "为什么你的团队总在生产环境测试"
   },
   "regionPicker": {
-    "channelEdge": "Edge",
-    "channelHintLabel": "关于发布渠道",
-    "channelStable": "稳定版",
-    "edgeHint": "持续部署的生产环境。浸泡期内免费额度翻倍。",
     "footer": "选择离您最近的区域，或您的组织所要求的区域。",
     "footerNote": "注册后无法更改。",
     "locations": {
@@ -14051,8 +14472,6 @@
       "us": "弗吉尼亚，美国"
     },
     "reassurance": "您的服务器数据和备份保留在您自己的基础设施中。",
-    "regionNote": "注册后无法更改区域。",
-    "stableHint": "可靠版本，从 edge 经过 7 天验证后升级。",
     "subtitle": "您的账户、账单和配置保留在您选择的区域中，",
     "title": "选择您的账户区域"
   },
@@ -14074,34 +14493,6 @@
       "personaHeadline": "给你的一条消息",
       "playLabel": "观看视频"
     }
-  },
-  "testimonials": {
-    "items": [
-      {
-        "company": "金融服务",
-        "name": "Marcus R.",
-        "quote": "恢复计划说四小时，现实是四天。现在一分钟就能故障转移到克隆。",
-        "role": "灾备经理"
-      },
-      {
-        "name": "Sarah K.",
-        "quote": "沙盒总是落后，我只能在生产环境编码。现在 60 秒就有全新克隆。",
-        "role": "开发者"
-      },
-      {
-        "company": "SaaS 平台",
-        "name": "James L.",
-        "quote": "从一个数据库扩到十二个，不用买新硬件。Rediacc 克隆共享存储，只为增量付费。",
-        "role": "CTO"
-      },
-      {
-        "name": "Ayumi T.",
-        "quote": "真实数据无法跑 CI。现在每条流水线都能自动拿到生产克隆。",
-        "role": "DevOps 工程师"
-      }
-    ],
-    "subtitle": "不同角色如何体验 Rediacc",
-    "title": "他们这样说"
   },
   "tutorial": {
     "audioControls": "转录音频控制",
@@ -14129,7 +14520,7 @@
         "title": "黑客快 10 倍"
       },
       {
-        "description": "你在多个云上运行。测试环境却和哪个都对不上。",
+        "description": "你的业务跑在多个云上，测试环境却和哪个都对不上。你的 Kubernetes 集群更是被锁死在其中一朵云上。",
         "title": "你的架构分散"
       }
     ],

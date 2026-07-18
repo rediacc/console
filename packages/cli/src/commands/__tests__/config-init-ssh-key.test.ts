@@ -18,8 +18,8 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mergeInitUpdates, readSshKeyForInit } from '../config.js';
 import type { RdcConfig } from '../../types/index.js';
+import { mergeInitUpdates, readSshKeyForInit } from '../config.js';
 
 const PRIVATE_KEY_BODY =
   '-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAA==\n-----END OPENSSH PRIVATE KEY-----';

@@ -14,7 +14,7 @@ Register an account and Rediacc spins up an organization for you automatically. 
 
 Each organization has:
 - A unique name (defaults to your email)
-- A subscription plan (starts with COMMUNITY)
+- A subscription plan (new accounts start a 14-day free trial on Professional or Business; see Subscriptions & Plans below)
 - A default team (all members join automatically)
 
 ### Members & Roles
@@ -55,21 +55,21 @@ Rediacc offers four plans:
 
 | Plan | Machines | Repo Licenses/mo | Delegation cert default / max | Features |
 |------|----------|------------------|-------------------------------|----------|
-| COMMUNITY | 2 | 100 | 15d / 30d | Basic |
-| PROFESSIONAL | 3 | 2,000+ | 60d / 120d | Permission groups, audit log, custom branding, priority support |
-| BUSINESS | 10 | 5,000+ | 90d / 180d | Ceph, advanced analytics, queue priority, advanced queue |
-| ENTERPRISE | 25+ | 15,000+ | 120d / 365d | Dedicated account manager |
+| COMMUNITY | 1 | 100 | 15d / 30d | Basic |
+| PROFESSIONAL | 1 | 2,000+ | 60d / 120d | Permission groups, audit log, custom branding, priority support |
+| BUSINESS | 1 | 5,000+ | 90d / 180d | Ceph, advanced analytics, queue priority, advanced queue |
+| ENTERPRISE | Custom | 15,000+ | 120d / 365d | Dedicated account manager |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 
-All plans start with a 3-day grace period. Machine slots are tracked per-team and auto-release after 5 hours of inactivity. See [Subscription & Licensing](/en/docs/subscription-licensing) for details.
+Professional and Business are self-serve and each include one machine; multi-machine Enterprise is sold through our partners. New signups start a 14-day free trial on Professional or Business, with a credit card collected at signup and the first charge placed only when the trial ends. Cancel during the trial, cancel a paid plan later, or miss a payment, and the account falls back to the free Community plan (one machine, 10 GB per repository, 100 setups a month). All plans start with a 3-day grace period. Machine slots are tracked per-team and auto-release after 5 hours of inactivity. See [Subscription & Licensing](/en/docs/subscription-licensing) for details.
 
 ### Billing
 
 Only the organization **owner** can manage billing:
-- Create a Stripe checkout session for plan upgrades
+- Create a Stripe checkout session to start a plan or upgrade
 - Access the Stripe billing portal for payment method changes
-- Request self-service refunds (within 14 days, with a 30-day cooldown)
+- Cancel or change the plan from the billing portal; cancelling drops the account back to the free Community plan
 
 ### Data Region
 

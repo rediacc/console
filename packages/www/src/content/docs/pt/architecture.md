@@ -6,8 +6,8 @@ description: >-
 category: Concepts
 order: 0
 language: pt
-sourceHash: "947fcefa63eac600"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "b1f9e2e3bba92912"
+sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
 # Arquitetura
@@ -43,7 +43,7 @@ Todo o estado reside num ficheiro de configuração na sua workstation (por exem
 
 - Ligações SSH diretas às máquinas
 - Sem serviços externos necessários
-- A configuração predefinida é criada automaticamente no primeiro uso do CLI. As configurações nomeadas são criadas com `rdc config init --name <name>`
+- A configuração predefinida é criada automaticamente no primeiro uso do CLI. As configurações nomeadas são criadas com `rdc config init <name>`
 - Sincronização opcional de configuração encriptada guarda o mesmo ficheiro no arquivo de configuração, com âmbito por equipa
 
 ## O Utilizador rediacc
@@ -84,7 +84,7 @@ Isto significa:
 
 As funções do Rediaccfile têm automaticamente `DOCKER_HOST` definido para o socket correto.
 
-Quando um agente de IA entra num repositório via `rdc term connect -r <repo>`, o mesmo isolamento se aplica: a sessão corre como o utilizador `rediacc` sem privilégios (UID 7111), num namespace de mount distinto, com `DOCKER_HOST` limitado ao socket do daemon desse único repositório. O fluxo fork-first combina este isolamento de execução com uma primitiva de clone CoW: o agente opera num fork por tarefa, nunca em repositórios grand (produção). Consulte [Segurança e Controlos para Agentes de IA](/en/docs/ai-agents-safety) para o modelo completo de sandbox, a semântica dos overrides e a fronteira de responsabilidade do programador para credenciais de serviços externos.
+Quando um agente de IA entra num repositório via `rdc term connect <repo>`, o mesmo isolamento se aplica: a sessão corre como o utilizador `rediacc` sem privilégios (UID 7111), num namespace de mount distinto, com `DOCKER_HOST` limitado ao socket do daemon desse único repositório. O fluxo fork-first combina este isolamento de execução com uma primitiva de clone CoW: o agente opera num fork por tarefa, nunca em repositórios grand (produção). Consulte [Segurança e Controlos para Agentes de IA](/en/docs/ai-agents-safety) para o modelo completo de sandbox, a semântica dos overrides e a fronteira de responsabilidade do programador para credenciais de serviços externos.
 
 ### Layout do Caminho do Daemon
 
@@ -118,6 +118,25 @@ Os repositórios são imagens de disco encriptadas com LUKS armazenadas no datas
 3. É montado via `cryptsetup` quando acedido
 
 A credencial é armazenada no seu ficheiro de configuração mas **nunca** no servidor. Sem a credencial, os dados do repositório não podem ser lidos. Quando o autostart está ativado, um keyfile LUKS secundário é armazenado no servidor para permitir a montagem automática no arranque.
+
+## Backends de Armazenamento
+
+Um datastore é um pool de armazenamento por máquina que contém as imagens dos repositórios. Tem dois backends, escolhidos no momento do `datastore init`:
+
+- **Local (predefinição)**: um sistema de ficheiros BTRFS assente num loop device no próprio disco da máquina. As imagens dos repositórios são ficheiros encriptados com LUKS dentro dele; o fork é um único `cp --reflink=always`. É o backend usado por todas as implementações de máquina única, e não precisa de nada além do disco do servidor.
+- **Ceph RBD**: o datastore reside numa imagem RBD mapeada a partir de um cluster Ceph externo, com BTRFS simples por cima (sem LUKS nesta camada, já que os nós Ceph nunca abrem LUKS). O fork e a arquitetura multi-cliente só de leitura usam as primitivas nativas de copy-on-write do RBD (snapshot, protect, clone) e namespaces RADOS para isolamento por inquilino.
+
+Ambos os backends apresentam o mesmo modelo de repositório a tudo o que está acima deles, pelo que os comandos `repo`, os backups e os forks funcionam de forma idêntica. A diferença está em onde vivem os bytes e em qual mecanismo de copy-on-write um fork usa (reflink BTRFS versus clone RBD). Consulte [Configuração da Máquina](/en/docs/setup) para saber como inicializar cada backend e [Referência do Servidor](/en/docs/server-reference) para os comandos de datastore ao nível do renet.
+
+## Repositórios Kubernetes
+
+Além dos repositórios Docker, uma máquina pode alojar **clusters**. A Rediacc mantém a mentalidade de repositório invertendo o modelo de objetos habitual: o cluster é o contentor, e um repositório Kubernetes é um namespace dentro dele.
+
+- O estado do cluster (o diretório de dados do k3s por nó) vive em ficheiros de imagem copy-on-write suportados pelo datastore, um por nó, pelo que um cluster faz fork e migra como um conjunto de imagens.
+- Um repositório Kubernetes é o namespace `<repo>` mais os seus volumes. Os volumes persistentes são unidades copy-on-write **separadas** (imagens RBD no Ceph, ou pequenos ficheiros de imagem do datastore através de um provisionador de PV local), nunca diretórios dentro de uma única imagem de cluster opaca. Essa separação é o que torna os forks por repositório independentemente copy-on-write.
+- O `KUBECONFIG` é injetado como o análogo do `DOCKER_HOST`, e um wrapper `renet kube` aplica manifestos a partir de `up()` da mesma forma que o `renet compose` executa o Docker.
+
+A clonagem e a relocalização de um cluster inteiro residem em `rdc cluster fork` e `rdc cluster migrate`. Esta é a capacidade diferenciadora: fazer fork ou mover um cluster em execução, incluindo os seus dados, para outra máquina ou centro de dados com um curto período de corte. Consulte o guia [Kubernetes](/en/docs/kubernetes) para o modelo completo, os comandos e os números de corte medidos.
 
 ## Estrutura de Configuração
 

@@ -28,7 +28,7 @@ Terraform Provider (Go)
 **Why this is the only option:**
 - rdc manages everything: config, SSH keys, renet binary provisioning, vault
   building, network ID allocation, cross-machine credential resolution
-- renet requires a QueueVaultV2 payload that only rdc knows how to build
+- renet requires a RenetVault payload that only rdc knows how to build
 - If rdc is missing a command or JSON output, the fix goes into rdc
 - Same approach as Ansible modules — one consistent interface
 - Pattern is battle-tested (`community.general.terraform` wraps `terraform` CLI)

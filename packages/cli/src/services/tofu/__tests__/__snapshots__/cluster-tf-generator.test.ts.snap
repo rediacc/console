@@ -1,0 +1,156 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`generateClusterTfJson > renders a stable golden object (linode two-pool) 1`] = `
+{
+  "output": {
+    "ipv4_ceph_1": {
+      "value": "\${linode_instance.prod-ceph-1.ip_address}",
+    },
+    "ipv4_ceph_2": {
+      "value": "\${linode_instance.prod-ceph-2.ip_address}",
+    },
+    "ipv4_ceph_3": {
+      "value": "\${linode_instance.prod-ceph-3.ip_address}",
+    },
+    "ipv4_k8s_1": {
+      "value": "\${linode_instance.prod-k8s-1.ip_address}",
+    },
+    "ipv4_k8s_2": {
+      "value": "\${linode_instance.prod-k8s-2.ip_address}",
+    },
+    "ipv6_ceph_1": {
+      "value": "\${linode_instance.prod-ceph-1.ipv6}",
+    },
+    "ipv6_ceph_2": {
+      "value": "\${linode_instance.prod-ceph-2.ipv6}",
+    },
+    "ipv6_ceph_3": {
+      "value": "\${linode_instance.prod-ceph-3.ipv6}",
+    },
+    "ipv6_k8s_1": {
+      "value": "\${linode_instance.prod-k8s-1.ipv6}",
+    },
+    "ipv6_k8s_2": {
+      "value": "\${linode_instance.prod-k8s-2.ipv6}",
+    },
+    "network_cidr": {
+      "value": "10.0.0.0/24",
+    },
+    "network_mtu": {
+      "value": 1500,
+    },
+  },
+  "provider": {
+    "linode": {
+      "token": "TOKEN",
+    },
+  },
+  "resource": {
+    "linode_instance": {
+      "prod-ceph-1": {
+        "authorized_keys": [
+          "ssh-ed25519 AAAA test",
+        ],
+        "image": "linode/ubuntu24.04",
+        "interface": [
+          {
+            "purpose": "public",
+          },
+          {
+            "ipam_address": "10.0.0.11/24",
+            "label": "prod-lan",
+            "purpose": "vlan",
+          },
+        ],
+        "label": "prod-ceph-1",
+        "region": "de-fra-2",
+        "type": "g6-dedicated-8",
+      },
+      "prod-ceph-2": {
+        "authorized_keys": [
+          "ssh-ed25519 AAAA test",
+        ],
+        "image": "linode/ubuntu24.04",
+        "interface": [
+          {
+            "purpose": "public",
+          },
+          {
+            "ipam_address": "10.0.0.12/24",
+            "label": "prod-lan",
+            "purpose": "vlan",
+          },
+        ],
+        "label": "prod-ceph-2",
+        "region": "de-fra-2",
+        "type": "g6-dedicated-8",
+      },
+      "prod-ceph-3": {
+        "authorized_keys": [
+          "ssh-ed25519 AAAA test",
+        ],
+        "image": "linode/ubuntu24.04",
+        "interface": [
+          {
+            "purpose": "public",
+          },
+          {
+            "ipam_address": "10.0.0.13/24",
+            "label": "prod-lan",
+            "purpose": "vlan",
+          },
+        ],
+        "label": "prod-ceph-3",
+        "region": "de-fra-2",
+        "type": "g6-dedicated-8",
+      },
+      "prod-k8s-1": {
+        "authorized_keys": [
+          "ssh-ed25519 AAAA test",
+        ],
+        "image": "linode/ubuntu24.04",
+        "interface": [
+          {
+            "purpose": "public",
+          },
+          {
+            "ipam_address": "10.0.0.14/24",
+            "label": "prod-lan",
+            "purpose": "vlan",
+          },
+        ],
+        "label": "prod-k8s-1",
+        "region": "de-fra-2",
+        "type": "g6-standard-4",
+      },
+      "prod-k8s-2": {
+        "authorized_keys": [
+          "ssh-ed25519 AAAA test",
+        ],
+        "image": "linode/ubuntu24.04",
+        "interface": [
+          {
+            "purpose": "public",
+          },
+          {
+            "ipam_address": "10.0.0.15/24",
+            "label": "prod-lan",
+            "purpose": "vlan",
+          },
+        ],
+        "label": "prod-k8s-2",
+        "region": "de-fra-2",
+        "type": "g6-standard-4",
+      },
+    },
+  },
+  "terraform": {
+    "required_providers": {
+      "linode": {
+        "source": "linode/linode",
+        "version": "~> 3.0",
+      },
+    },
+  },
+}
+`;

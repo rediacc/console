@@ -356,6 +356,7 @@
       "location": "fsn1",
       "server_type": "cx32"
     },
+    "disk": "local-nvme",
     "firewall": {
       "attachResource": "hcloud_firewall_attachment",
       "resource": "hcloud_firewall"
@@ -364,6 +365,16 @@
     "ipv4Output": "ipv4_address",
     "ipv6Output": "ipv6_address",
     "labelAttr": "name",
+    "network": {
+      "attachResource": "hcloud_server_network",
+      "attachVia": "attach_resource",
+      "layer": "l3",
+      "maxNodes": 100,
+      "mtu": 1450,
+      "nicName": "enp7s0",
+      "resource": "hcloud_network",
+      "subnetResource": "hcloud_network_subnet"
+    },
     "regionAttr": "location",
     "resource": "hcloud_server",
     "sizeAttr": "server_type",
@@ -453,16 +464,46 @@
     "tokenAttr": "api_client_id",
     "version": "~> 0.8"
   },
+  "kvm": {
+    "engine": "renet-ops",
+    "disk": "local-nvme",
+    "imageAttr": "image",
+    "ipv4Output": "ipv4",
+    "labelAttr": "name",
+    "network": {
+      "attachVia": "interface",
+      "layer": "l2",
+      "mtu": 1500,
+      "nicName": "eth1",
+      "resource": "renet_ops_network"
+    },
+    "regionAttr": "region",
+    "resource": "renet_ops_vm",
+    "sizeAttr": "size",
+    "sshKey": {
+      "attr": "authorized_keys",
+      "format": "inline_list"
+    },
+    "tokenAttr": "token"
+  },
   "linode/linode": {
     "defaults": {
       "image": "linode/ubuntu24.04",
       "region": "us-east",
       "type": "g6-standard-4"
     },
+    "disk": "local-nvme",
     "imageAttr": "image",
     "ipv4Output": "ip_address",
     "ipv6Output": "ipv6",
     "labelAttr": "label",
+    "network": {
+      "attachVia": "interface",
+      "layer": "l2",
+      "mtu": 1500,
+      "nicName": "eth1",
+      "resource": "linode_instance"
+    },
     "regionAttr": "region",
     "resource": "linode_instance",
     "sizeAttr": "type",
@@ -471,7 +512,14 @@
       "format": "inline_list"
     },
     "tokenAttr": "token",
-    "version": "~> 3.0"
+    "version": "~> 3.0",
+    "volume": {
+      "attachAttr": "linode_id",
+      "labelAttr": "label",
+      "needsRegion": true,
+      "resource": "linode_volume",
+      "sizeAttr": "size"
+    }
   },
   "oracle/oci": {
     "defaults": {

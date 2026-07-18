@@ -5,6 +5,7 @@ category: "Legal"
 order: 7
 language: tr
 sourceHash: "dba51d5d6dcf8197"
+sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 
 Birçok ülke, vatandaşlarının kişisel verilerinin ulusal sınırlar içinde depolanmasını ve işlenmesini gerektirir. Rediacc'ın kendi sunucunuzda barındırma mimarisi bu gereksinimleri tasarım gereği karşılar: veriler makinenizde, veri merkezinizde, yetki alanınızda kalır. Klonlama sırasında hiçbir veri makineyi terk etmez ve hiçbir üçüncü taraf SaaS verilerinizi işlemez.

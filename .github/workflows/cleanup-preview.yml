@@ -95,10 +95,17 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
-      - name: Delete GitHub environment
+      # Deleting the environment OBJECT requires Administration:write, which
+      # GITHUB_TOKEN can never hold -- the old `gh api -X DELETE
+      # .../environments/pr-N` step here 403'd on every run while reporting
+      # "already deleted". Deleting the deployment RECORDS only needs the
+      # `deployments: write` permission this workflow already has, and the
+      # repo's Deployments view is driven by the records, so this is what
+      # actually removes pr-N from that view. The empty environment object
+      # remains under Settings -> Environments (no secrets, no rules);
+      # cleanup-versions.sh Phase 6 reaps those if the App is ever granted
+      # admin.
+      - name: Delete GitHub deployments for PR environment
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          gh api -X DELETE "repos/${{ github.repository }}/environments/pr-${{ github.event.pull_request.number }}" 2>/dev/null \
-            && echo "Deleted environment pr-${{ github.event.pull_request.number }}" \
-            || echo "Environment pr-${{ github.event.pull_request.number }} not found (already deleted)"
+        run: .ci/scripts/housekeeping/cleanup-github-deployments.sh --repo "${{ github.repository }}" --environment "pr-${{ github.event.pull_request.number }}"

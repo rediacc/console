@@ -6,7 +6,7 @@ description: >-
 category: Reference
 order: 99
 language: et
-sourceHash: "ece2d423d416e7ec"
+sourceHash: "05755ef64f8d0ff6"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -61,7 +61,7 @@ Hoidla aktiivsete hargnemiste arvule piirangut ei ole. Iga hargnemine on täieli
 
 ### Alati aktiivsed pordid
 
-Pordid avatakse ainult siis, kui konfigureerite avaliku IP aadressi `rdc config infra set --public-ipv4` abil. Kuni seda ei tehta, ei ole masinal ühtegi avatud porti. Pärast konfigureerimist:
+Pordid avatakse ainult siis, kui konfigureerite avaliku IP aadressi `rdc machine infra set <machine> --public-ipv4` abil. Kuni seda ei tehta, ei ole masinal ühtegi avatud porti. Pärast konfigureerimist:
 
 | Port | Protokoll | Eesmärk |
 |------|----------|---------|
@@ -128,7 +128,7 @@ Live-migratsiooni CRIU kaudu on järgmised piirangud:
 - **Võrgurežiim**: CRIU nõuab hosti võrgurežiimi. Kohandatud võrgukonfiguratsioonidega konteinereid ei saa kontrollpunktida.
 - **Mälu**: kontrollpunkti andmete suurus võrdub kontrollpunktitud protsessi residendimäluga. Suured mälus olevad andmekogumid (nt Node.js rakendus, mis vahemälustab 4 GB andmeid) toodavad 4 GB kontrollpunktifailid.
 - **TCP-ühendused**: rakendused peavad taluma ühenduse katkemist taastamisel. Aktiivseid TCP-ühendusi **ei** säilitata. Taastatud protsess näeb sokette suletuna ja peab uuesti ühenduma. See kehtib nii sama masina kui ka masinate vaheliste taastamisteede kohta.
-- **Sama masina live-fork suunab vanema aadressid ümber**: `rdc repo fork --parent X --tag Y --checkpoint` ja seejärel `rdc repo up` töötab, samal ajal kui vanem edasi töötab. Taastatud protsessid kannavad checkpoint'i hetke vanema loopback-aadresse, mistõttu süsteem suunab need läbipaistvalt fork'i enda aadressidele (sama teenus, fork'i andmekoopia). Taastatud TCP-ühenduse esimene kasutus ebaõnnestub endiselt ja rakendus peab uuesti ühenduma, vt TCP punkti eespool.
+- **Sama masina live-fork suunab vanema aadressid ümber**: `rdc repo fork X --tag Y --checkpoint` ja seejärel `rdc repo up` töötab, samal ajal kui vanem edasi töötab. Taastatud protsessid kannavad checkpoint'i hetke vanema loopback-aadresse, mistõttu süsteem suunab need läbipaistvalt fork'i enda aadressidele (sama teenus, fork'i andmekoopia). Taastatud TCP-ühenduse esimene kasutus ebaõnnestub endiselt ja rakendus peab uuesti ühenduma, vt TCP punkti eespool.
 
 ---
 
@@ -138,7 +138,7 @@ Live-migratsiooni CRIU kaudu on järgmised piirangud:
 |-------|-------|
 | Varukoopia sihtkohti hoidla kohta | Piiramatu |
 | Samaaegseid varukoopia töid | 1 hoidla kohta (tööd järjekorda, kui käivitatud samaaegselt) |
-| Varukoopia sagedus | Minimaalset intervalli ei jõustata; piiratud teie salvestuse ribalaiusega. Kasutage `rdc config backup-strategy set --name <name> --bwlimit "6M"` üleslaadimiskiiruse piiramiseks (rclone `--bwlimit` süntaks: lihtne `6M`, suunaline `6M:off` või ajakava `08:00,3M;22:00,10M`) |
+| Varukoopia sagedus | Minimaalset intervalli ei jõustata; piiratud teie salvestuse ribalaiusega. Kasutage `rdc backup strategy set <name> --bwlimit "6M"` üleslaadimiskiiruse piiramiseks (rclone `--bwlimit` süntaks: lihtne `6M`, suunaline `6M:off` või ajakava `08:00,3M;22:00,10M`) |
 | Säilitamine | Kontrollib teie salvestusteenuse pakkuja (S3, Cloudflare R2 jne). Rediacc ei jõusta säilitamispoliitikat. |
 | Masinate vaheline varukoopia | Toetatud; sihtmasinal peab olema piisavalt andmehoidla ruumi |
 

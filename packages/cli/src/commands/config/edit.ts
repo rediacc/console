@@ -21,33 +21,35 @@
  */
 
 import {
+  copyFileSync,
+  existsSync,
   mkdtempSync,
   readFileSync,
-  writeFileSync,
-  statSync,
-  existsSync,
-  copyFileSync,
   rmSync,
+  statSync,
+  writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 import { isatty } from 'node:tty';
-import type { Command } from 'commander';
-import { configFileStorage } from '../../adapters/config-file-storage.js';
-import { configService } from '../../services/config/config-resources.js';
-import { auditLog } from '../../services/core/audit-log.js';
-import { t } from '../../i18n/index.js';
-import { configEditOverrideScope, isAgentEnvironment } from '../../utils/agent-guard.js';
-import { openEditor, EditorError } from '../../utils/editor-launcher.js';
-import { outputService } from '../../services/core/output.js';
-import { redactClone, shortFingerprint, walkSensitive, getByPointer } from '../../schema/walker.js';
 import {
+  getByPointer,
   parseConfig,
+  type RdcConfig,
   RdcConfigSchema,
   stringifyConfig,
-  type RdcConfig,
-} from '../../schema/schemas.js';
+  walkSensitive,
+} from '@rediacc/shared/config-schema';
+import type { Command } from 'commander';
+import { configFileStorage } from '../../adapters/config-file-storage.js';
+import { t } from '../../i18n/index.js';
+import { redactClone, shortFingerprint } from '../../schema/fingerprint.js';
+import { configService } from '../../services/config/config-resources.js';
+import { auditLog } from '../../services/core/audit-log.js';
+import { outputService } from '../../services/core/output.js';
+import { configEditOverrideScope, isAgentEnvironment } from '../../utils/agent-guard.js';
+import { EditorError, openEditor } from '../../utils/editor-launcher.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 
 const REDACT_PATTERN = /^<redacted:[^>]+>:[0-9a-f]{8}$/;

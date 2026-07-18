@@ -58,6 +58,20 @@ function hasPlusSuffix(raw: string): boolean {
   return raw.trim().endsWith('+');
 }
 
+/**
+ * Machine/floating-license counts must match PLAN_MAX_MACHINES numerically,
+ * except ENTERPRISE: it is sold through partners with negotiated terms, so
+ * customer-facing surfaces display "Custom" while PLAN_MAX_MACHINES.ENTERPRISE
+ * stays the internal partner-deal default (see the PLAN_MAX_MACHINES comment
+ * in packages/shared/src/subscription/constants.ts).
+ */
+function machinesDisplayMatches(code: (typeof PLAN_ORDER)[number], raw: string): boolean {
+  if (code === 'ENTERPRISE' && raw.trim().toLowerCase() === 'custom') {
+    return true;
+  }
+  return parseCount(raw) === PLAN_MAX_MACHINES[code];
+}
+
 function checkEnJson(): void {
   const en = JSON.parse(fs.readFileSync(path.join(WWW_TRANSLATIONS_DIR, 'en.json'), 'utf8'));
   const pricing = en.pages?.pricing;
@@ -90,12 +104,10 @@ function checkEnJson(): void {
       );
     }
 
-    const floatingLicenses = parseCount(entry.floatingLicenses ?? '');
-    const canonicalMachines = PLAN_MAX_MACHINES[code];
-    if (floatingLicenses !== canonicalMachines) {
+    if (!machinesDisplayMatches(code, entry.floatingLicenses ?? '')) {
       fail(
         `en.json technicalSummary.values.${planId}.floatingLicenses = "${entry.floatingLicenses}" ` +
-          `(parsed ${floatingLicenses}) does not match PLAN_MAX_MACHINES.${code} = ${canonicalMachines}`
+          `does not match PLAN_MAX_MACHINES.${code} = ${PLAN_MAX_MACHINES[code]} (or "Custom" for ENTERPRISE)`
       );
     }
   }
@@ -109,11 +121,10 @@ function checkEnJson(): void {
   for (const code of PLAN_ORDER) {
     const planId = PLAN_ID_BY_CODE[code];
     if (machinesRow) {
-      const parsed = parseCount(machinesRow[planId] ?? '');
-      if (parsed !== PLAN_MAX_MACHINES[code]) {
+      if (!machinesDisplayMatches(code, machinesRow[planId] ?? '')) {
         fail(
           `en.json comparison Floating-Licenses row.${planId} = "${machinesRow[planId]}" ` +
-            `does not match PLAN_MAX_MACHINES.${code} = ${PLAN_MAX_MACHINES[code]}`
+            `does not match PLAN_MAX_MACHINES.${code} = ${PLAN_MAX_MACHINES[code]} (or "Custom" for ENTERPRISE)`
         );
       }
     }
@@ -168,12 +179,11 @@ function checkMarkdownTable(fileName: string, spec: MarkdownTableSpec): void {
       continue;
     }
     const cells = rowMatch[1].split('|').map((c) => c.trim());
-    const machines = parseCount(cells[spec.machinesCol]);
     const issuances = parseCount(cells[spec.issuancesCol]);
-    if (machines !== PLAN_MAX_MACHINES[code]) {
+    if (!machinesDisplayMatches(code, cells[spec.machinesCol])) {
       fail(
         `${fileName} row ${rowLabel}: machines column "${cells[spec.machinesCol]}" does not match ` +
-          `PLAN_MAX_MACHINES.${code} = ${PLAN_MAX_MACHINES[code]}`
+          `PLAN_MAX_MACHINES.${code} = ${PLAN_MAX_MACHINES[code]} (or "Custom" for ENTERPRISE)`
       );
     }
     if (issuances !== PLAN_LIMITS[code].maxRepoLicenseIssuancesPerMonth) {

@@ -1,5 +1,5 @@
-import { SITE_URL } from './constants';
 import { UPDATE_DEFAULTS } from '@rediacc/shared/config/defaults';
+import { SITE_URL } from './constants';
 
 const RELEASES_URL = 'https://releases.rediacc.com';
 const CHANNEL = import.meta.env.PUBLIC_REPO_CHANNEL ?? UPDATE_DEFAULTS.CHANNEL;

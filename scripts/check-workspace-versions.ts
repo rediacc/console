@@ -51,7 +51,7 @@ const PACKAGES: PackageConfig[] = [
   { path: '', name: 'rediacc-console (root)' },
   { path: 'packages/shared', name: '@rediacc/shared' },
   { path: 'packages/cli', name: '@rediacc/cli' },
-  { path: 'packages/bridge-tests', name: '@rediacc/bridge-tests' },
+  { path: 'packages/e2e-tests', name: '@rediacc/e2e-tests' },
   { path: 'packages/www', name: '@rediacc/www' },
   { path: 'packages/json', name: '@rediacc/json' },
 ];

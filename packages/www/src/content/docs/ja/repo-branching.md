@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 41
 language: ja
-sourceHash: "2448559f0fcfc0e0"
+sourceHash: "fe334c1c94a0f417"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -308,7 +308,7 @@ $ rdc repo pull --name myapp:work --from-machine backup-1 --force -m server-1
 
 ## JSONスキーマ
 
-`rdc repo log --json`はrenetの結果を標準エンベロープでラップします。確認された履歴は`entries`に新しい順で格納されます：
+`rdc repo log <repo> --output json`はrenetの結果を標準エンベロープでラップします。確認された履歴は`entries`に新しい順で格納されます：
 
 | フィールド | 型 | 説明 |
 |-------|------|-------------|

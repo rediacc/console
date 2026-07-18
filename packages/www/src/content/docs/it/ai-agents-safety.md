@@ -7,7 +7,7 @@ description: >-
 category: Concepts
 order: 35
 language: it
-sourceHash: "eb4c8dd0389a45a6"
+sourceHash: "30c1cd3d88219e7c"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -30,7 +30,7 @@ Stai indirizzando un assistente di coding AI alla tua infrastruttura. Quando Cla
 | `rdc config edit` (editor interattivo) | 🔴 rifiutato | L'umano imposta `REDIACC_ALLOW_CONFIG_EDIT=*` prima di lanciare l'agent |
 | `rdc config edit --apply <file>` | 🔴 rifiutato | Stesso override |
 | `rdc config field rotate --pointer <pointer>` | 🔴 rifiutato | Stesso override; usa conferma interattiva |
-| `rdc term connect -m <machine>` (SSH diretto alla macchina) | 🔴 rifiutato | Fork prima un repo e connettiti al fork |
+| `rdc term connect <machine>` (SSH diretto alla macchina) | 🔴 rifiutato | Fork prima un repo e connettiti al fork |
 
 Ogni rifiuto viene scritto nel log di audit con `outcome: refused` e una ragione.
 

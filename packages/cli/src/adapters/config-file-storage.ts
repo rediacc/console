@@ -1,11 +1,22 @@
 import { promises as fs } from 'node:fs';
 import { basename, join } from 'node:path';
+import {
+  createEmptyRdcConfig,
+  type MigrationContext,
+  parseConfig,
+  type RdcConfig,
+  RdcConfigSchema,
+  runMigrations,
+  stringifyConfig,
+} from '@rediacc/shared/config-schema';
 import { getConfigDir } from '@rediacc/shared/paths';
 import lockfile from 'proper-lockfile';
-import { runMigrations } from '../schema/migrations/index.js';
-import { RdcConfigSchema, parseConfig } from '../schema/schemas.js';
-import { createEmptyRdcConfig, type RdcConfig } from '../types/index.js';
-import { stringifyConfig } from '../utils/config-schema.js';
+import {
+  decryptConfigFields,
+  encryptConfigFields,
+  injectEncryptedStubs,
+} from './config-field-crypto.js';
+import { nodeCryptoProvider } from './crypto.js';
 
 const CONFIG_DIR = getConfigDir();
 const DEFAULT_CONFIG_NAME = 'rediacc';
@@ -23,11 +34,20 @@ function isReservedFile(fileName: string): boolean {
   return EXCLUDED_FILES.has(fileName) || fileName.startsWith('api-token-');
 }
 
+function isMasterPassword(config: RdcConfig): boolean {
+  return config.encryption?.mode === 'master-password';
+}
+
 /**
  * Storage adapter for per-file CLI configuration with file locking.
  *
  * Each config is a separate JSON file in the config dir (e.g., rediacc.json, production.json).
  * Uses proper-lockfile for cross-platform file locking with atomic temp+rename writes.
+ *
+ * Encryption-at-rest (v3) is a transform owned entirely by this layer: mutating
+ * reads (update/updateState) decrypt the on-disk config to plaintext, hand the
+ * updater plaintext, and re-encrypt per field on save. Callers never see blobs,
+ * and there is no second plaintext path a persist can clobber.
  */
 export class ConfigFileStorage {
   private readonly cache = new Map<string, RdcConfig>();
@@ -44,6 +64,29 @@ export class ConfigFileStorage {
 
   private getBackupPath(name: string): string {
     return `${this.getPath(name)}.bak`;
+  }
+
+  /**
+   * Resolve the master password for encrypt/decrypt transforms. Prefers the
+   * REDIACC_MASTER_PASSWORD env, else the interactive resolver (lazy import to
+   * avoid an adapters→services module cycle at eval time).
+   */
+  private async requirePassword(): Promise<string> {
+    if (process.env.REDIACC_MASTER_PASSWORD) return process.env.REDIACC_MASTER_PASSWORD;
+    const { requireMasterPassword } = await import('../services/core/master-password.js');
+    return requireMasterPassword();
+  }
+
+  private async encryptConfig(config: RdcConfig): Promise<RdcConfig> {
+    if (!isMasterPassword(config)) return config;
+    return encryptConfigFields(config, await this.requirePassword());
+  }
+
+  private async decryptConfig(config: RdcConfig): Promise<RdcConfig> {
+    if (!isMasterPassword(config)) return config;
+    const fields = config.encryption?.encryptedFields;
+    if (!fields || Object.keys(fields).length === 0) return config;
+    return decryptConfigFields(config, await this.requirePassword());
   }
 
   /**
@@ -124,6 +167,15 @@ export class ConfigFileStorage {
     }
   }
 
+  private migrationContext(): MigrationContext {
+    return {
+      getMasterPassword: () => this.requirePassword(),
+      // The v2 compound-blob unpack needs AES-GCM. The schema package is
+      // runtime-portable and carries no crypto provider, so the host injects one.
+      decryptLegacyBlob: (data, password) => nodeCryptoProvider.decrypt(data, password),
+    };
+  }
+
   private async loadUnlocked(name: string): Promise<RdcConfig> {
     const configPath = this.getPath(name);
     let content: string;
@@ -137,15 +189,15 @@ export class ConfigFileStorage {
     }
 
     const raw = JSON.parse(content) as unknown;
-    const migration = runMigrations(raw);
-    const config = parseConfig(RdcConfigSchema, migration.config, `config "${name}"`);
+    const migration = await runMigrations(raw, this.migrationContext());
+    // Hydrate encrypted leaves with type-valid stubs so the strict parse of the
+    // at-rest form succeeds without prompting for the master password. Sensitive
+    // values are decrypted lazily (loadDecrypted / update), never at load.
+    const hydrated = injectEncryptedStubs(migration.config as RdcConfig);
+    const config = parseConfig(RdcConfigSchema, hydrated, `config "${name}"`);
 
     // Persist the upgraded shape so future loads skip the migration step.
-    // Acquire the file lock first so concurrent saves can't race against the
-    // migration write (rename is atomic, but version increment is read-then-
-    // write so a parallel save would lose the migration). Best-effort: a
-    // read-only filesystem or a lock-acquisition failure must not break the
-    // load — the caller still gets the in-memory upgraded config.
+    // Best-effort: a read-only filesystem or lock failure must not break load.
     if (migration.migrated) {
       try {
         await this.withLock(name, () => this.saveUnlocked(config, name));
@@ -158,7 +210,9 @@ export class ConfigFileStorage {
 
   /**
    * Load a config file by name (uses cache if available).
-   * Defaults to "rediacc" if no name is provided.
+   * Returns the on-disk (at-rest) shape: encrypted leaves live in
+   * `encryption.encryptedFields`, not the plaintext tree. Public-field reads
+   * never prompt for the master password.
    */
   async load(name: string = DEFAULT_CONFIG_NAME): Promise<RdcConfig> {
     const cached = this.cache.get(name);
@@ -170,29 +224,39 @@ export class ConfigFileStorage {
   }
 
   /**
-   * Save a config atomically. Increments the version number.
+   * Load a config and decrypt every encrypted-at-rest leaf into the plaintext
+   * tree. Prompts for the master password when the config is encrypted; use
+   * only where a sensitive field is actually needed.
    */
-  private async saveUnlocked(config: RdcConfig, name: string): Promise<void> {
+  async loadDecrypted(name: string = DEFAULT_CONFIG_NAME): Promise<RdcConfig> {
+    const config = await this.load(name);
+    return this.decryptConfig(config);
+  }
+
+  /**
+   * Save a config atomically. Encrypts per field when in master-password mode.
+   * Bumps the version counter unless `bumpVersion` is false (state writes).
+   */
+  private async saveUnlocked(config: RdcConfig, name: string, bumpVersion = true): Promise<void> {
     await this.ensureDirectory();
     await this.createBackup(name);
     const configPath = this.getPath(name);
 
-    const toWrite: RdcConfig = {
-      ...config,
-      version: config.version + 1,
-    };
+    const versioned: RdcConfig = bumpVersion ? { ...config, version: config.version + 1 } : config;
+    const encrypted = await this.encryptConfig(versioned);
 
     const tempPath = `${configPath}.tmp.${process.pid}.${Date.now()}`;
-    const content = stringifyConfig(toWrite);
+    const content = stringifyConfig(encrypted);
 
     await fs.writeFile(tempPath, content, { mode: 0o600 });
     await fs.rename(tempPath, configPath);
 
-    this.cache.set(name, toWrite);
+    this.cache.set(name, encrypted);
   }
 
   /**
-   * Save a config with file locking.
+   * Save a config with file locking. The config passed in must be plaintext
+   * (encrypted leaves are produced by this layer, not by callers).
    */
   async save(config: RdcConfig, name: string = DEFAULT_CONFIG_NAME): Promise<void> {
     await this.withLock(name, async () => {
@@ -200,18 +264,38 @@ export class ConfigFileStorage {
     });
   }
 
-  /**
-   * Update a config atomically with a callback.
-   * Reads the latest version from disk, applies the updater, increments version, saves.
-   */
-  async update(name: string, updater: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
+  private async mutate(
+    name: string,
+    updater: (config: RdcConfig) => RdcConfig,
+    bumpVersion: boolean
+  ): Promise<RdcConfig> {
     return this.withLock(name, async () => {
       this.cache.delete(name);
-      const config = await this.loadUnlocked(name);
-      const updated = updater(config);
-      await this.saveUnlocked(updated, name);
-      return { ...updated, version: updated.version + 1 };
+      const raw = await this.loadUnlocked(name);
+      const plain = await this.decryptConfig(raw);
+      const updated = updater(plain);
+      await this.saveUnlocked(updated, name, bumpVersion);
+      return this.cache.get(name)!;
     });
+  }
+
+  /**
+   * Update the SPEC half of a config (declared intent). Bumps the version
+   * counter. Reads the latest from disk, decrypts, applies the updater, and
+   * re-encrypts per field on save.
+   */
+  async update(name: string, updater: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
+    return this.mutate(name, updater, true);
+  }
+
+  /**
+   * Update the STATE half of a config (runtime status). Does NOT bump the
+   * version counter — status churn must not create optimistic-version
+   * conflicts or audit noise (spec 04 §1.3 property 1). The writer is
+   * responsible for touching only `state.*`.
+   */
+  async updateState(name: string, updater: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
+    return this.mutate(name, updater, false);
   }
 
   /**

@@ -5,14 +5,6 @@
 
 // High-level operations
 export { formatChangesSummary, formatDetailedChanges } from './operations.js';
-// SFTP fallback (for systems without rsync)
-export {
-  sftpDownloadDirectory,
-  sftpDownloadFile,
-  sftpUploadFile,
-  sftpUploadPaths,
-} from './sftp-fallback.js';
-export type { SftpUploadSource } from './sftp-fallback.js';
 // Rsync execution
 export {
   executeRsync,
@@ -21,3 +13,11 @@ export {
   type RsyncChanges,
   type RsyncExecutorOptions,
 } from './rsync.js';
+export type { SftpUploadSource } from './sftp-fallback.js';
+// SFTP fallback (for systems without rsync)
+export {
+  sftpDownloadDirectory,
+  sftpDownloadFile,
+  sftpUploadFile,
+  sftpUploadPaths,
+} from './sftp-fallback.js';

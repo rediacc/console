@@ -6,8 +6,8 @@ description: >-
 category: Concepts
 order: 0
 language: tr
-sourceHash: "947fcefa63eac600"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "b1f9e2e3bba92912"
+sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
 # Mimari
@@ -43,7 +43,7 @@ Tüm durum bilgisi iş istasyonunuzdaki bir yapılandırma dosyasında saklanır
 
 - Makinelere doğrudan SSH bağlantısı
 - Harici hizmet gerekmez
-- Varsayılan yapılandırma ilk CLI kullanımında otomatik oluşturulur. Adlandırılmış yapılandırmalar `rdc config init --name <name>` ile oluşturulur
+- Varsayılan yapılandırma ilk CLI kullanımında otomatik oluşturulur. Adlandırılmış yapılandırmalar `rdc config init <name>` ile oluşturulur
 - İsteğe bağlı şifreli yapılandırma senkronizasyonu aynı dosyayı yapılandırma deposunda, ekip başına kapsamlı olarak saklar
 
 ## rediacc Kullanıcısı
@@ -84,7 +84,7 @@ Bu şu anlama gelir:
 
 Rediaccfile işlevleri otomatik olarak `DOCKER_HOST` değerini doğru sokete ayarlar.
 
-Bir yapay zeka ajanı `rdc term connect -r <repo>` aracılığıyla bir depoya girdiğinde, aynı izolasyon geçerli olur: oturum, ayrıcalıksız `rediacc` kullanıcısı (UID 7111) olarak, ayrı bir bağlama ad alanında, `DOCKER_HOST` yalnızca o deponun daemon soketine kapsanmış şekilde çalışır. Önce-fork iş akışı bu çalışma zamanı izolasyonunu CoW klon ilkelleştirilmesiyle birleştirir: ajan, asla ana (üretim) depolar üzerinde değil, görev başına bir fork üzerinde işlem yapar. Tam sandbox modeli, geçersiz kılma anlamı ve harici hizmet kimlik bilgileri için geliştirici sorumluluğu sınırı için [AI Ajan Güvenliği ve Koruma](/en/docs/ai-agents-safety) sayfasına bakın.
+Bir yapay zeka ajanı `rdc term connect <repo>` aracılığıyla bir depoya girdiğinde, aynı izolasyon geçerli olur: oturum, ayrıcalıksız `rediacc` kullanıcısı (UID 7111) olarak, ayrı bir bağlama ad alanında, `DOCKER_HOST` yalnızca o deponun daemon soketine kapsanmış şekilde çalışır. Önce-fork iş akışı bu çalışma zamanı izolasyonunu CoW klon ilkelleştirilmesiyle birleştirir: ajan, asla ana (üretim) depolar üzerinde değil, görev başına bir fork üzerinde işlem yapar. Tam sandbox modeli, geçersiz kılma anlamı ve harici hizmet kimlik bilgileri için geliştirici sorumluluğu sınırı için [AI Ajan Güvenliği ve Koruma](/en/docs/ai-agents-safety) sayfasına bakın.
 
 ### Daemon Yol Düzeni
 
@@ -118,6 +118,25 @@ Depolar, sunucunun veri deposunda (varsayılan: `/mnt/rediacc`) saklanan LUKS il
 3. Erişildiğinde `cryptsetup` ile bağlanır
 
 Kimlik bilgisi yapılandırma dosyanızda saklanır ancak sunucuda **hiçbir zaman** saklanmaz. Kimlik bilgisi olmadan depo verilerine erişilemez. Otomatik başlatma etkinleştirildiğinde, önyüklemede otomatik bağlama için sunucuda ikincil bir LUKS anahtar dosyası saklanır.
+
+## Depolama Arka Uçları
+
+Veri deposu (datastore), depo imajlarını tutan makine başına bir depolama havuzudur. `datastore init` sırasında seçilen iki arka ucu vardır:
+
+- **Yerel (varsayılan)**: makinenin kendi diskinde loop-destekli bir BTRFS dosya sistemi. Depo imajları bunun içinde LUKS ile şifrelenmiş dosyalardır; fork tek bir `cp --reflink=always` işlemidir. Bu, her tek makineli dağıtımın kullandığı arka uçtur ve sunucunun diskinden başka hiçbir şeye ihtiyaç duymaz.
+- **Ceph RBD**: veri deposu, harici bir Ceph kümesinden eşlenen bir RBD imajında yaşar ve üzerinde düz BTRFS bulunur (bu katmanda LUKS yoktur, çünkü Ceph düğümleri asla LUKS açmaz). Fork ve salt okunur çoklu istemci mimarisi, RBD'nin kendi copy-on-write ilkellerini (snapshot, protect, clone) ve kiracı başına yalıtım için RADOS ad alanlarını kullanır.
+
+Her iki arka uç da üzerlerindeki her şeye aynı depo modelini sunar, bu nedenle `repo` komutları, yedeklemeler ve forklar aynı şekilde çalışır. Fark, baytların nerede yaşadığında ve bir forkun hangi copy-on-write mekanizmasını kullandığındadır (BTRFS reflink'e karşı RBD klonu). Her arka ucun nasıl başlatılacağı için [Makine Kurulumu](/en/docs/setup) sayfasına ve renet düzeyindeki veri deposu komutları için [Sunucu Referansı](/en/docs/server-reference) sayfasına bakın.
+
+## Kubernetes Depoları
+
+Docker depolarının yanı sıra bir makine **kümeler** (cluster) de barındırabilir. Rediacc, olağan nesne modelini tersine çevirerek depo zihniyetini korur: küme konteynerdir, ve bir Kubernetes deposu onun içindeki bir ad alanıdır (namespace).
+
+- Küme durumu (düğüm başına k3s veri dizini), her düğüm için bir tane olmak üzere veri deposu destekli copy-on-write imaj dosyalarında yaşar, bu nedenle bir küme bir imaj kümesi olarak fork'lanır ve taşınır.
+- Bir Kubernetes deposu, `<repo>` ad alanı artı birimleridir. Kalıcı birimler **ayrı** copy-on-write birimleridir (Ceph üzerinde RBD imajları, veya yerel bir PV sağlayıcısı aracılığıyla küçük veri deposu imaj dosyaları), asla tek bir opak küme imajı içindeki dizinler değildir. Bu ayrım, depo başına forkların bağımsız olarak copy-on-write olmasını sağlayan şeydir.
+- `KUBECONFIG`, `DOCKER_HOST`'un analoğu olarak enjekte edilir ve bir `renet kube` sarmalayıcısı, `renet compose`'un Docker'ı çalıştırdığı şekilde `up()` içinden manifestleri uygular.
+
+Kümenin tamamının klonlanması ve taşınması `rdc cluster fork` ve `rdc cluster migrate` komutlarında yaşar. Bu, ayırt edici yetenektir: çalışan bir kümeyi, verileri dahil, kısa bir kesinti süresiyle başka bir makineye veya veri merkezine fork'lamak veya taşımak. Tam model, komutlar ve ölçülen kesinti süreleri için [Kubernetes](/en/docs/kubernetes) kılavuzuna bakın.
 
 ## Yapılandırma Yapısı
 

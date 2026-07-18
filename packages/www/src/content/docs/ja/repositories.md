@@ -4,8 +4,8 @@ description: リモートマシン上のLUKS暗号化リポジトリの作成、
 category: Guides
 order: 4
 language: ja
-sourceHash: "0f08c5b75c3588cc"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "c9553259c9bf6b4c"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # リポジトリ
@@ -156,7 +156,7 @@ rdc repo fork --parent my-app --tag staging -m server-1 --up
 rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
 ```
 
-実測値として、128 GB のリポジトリをフォークしてサービスが稼働状態に達するまで約 57 秒、`--detach` では約 31 秒でした。デタッチ実行は進捗確認のヒントを出力します：`rdc machine query --containers --name <machine>`。
+実測値として、128 GB のリポジトリをフォークしてサービスが稼働状態に達するまで約 57 秒、`--detach` では約 31 秒でした。デタッチ実行は進捗確認のヒントを出力します：`rdc machine status <machine> --containers`。
 
 ### 時間の内訳
 
@@ -226,7 +226,7 @@ secrets:
 
 > **クロスリポジトリ隔離の強制**: renetのcomposeバリデーターは、他のリポジトリのネットワークIDを参照する `secrets: file:`（および `configs: file:`、`env_file:`）パスを拒否します。`/var/run/rediacc/secrets/...` 参照として受け入れられる形式はリテラルの `${REDIACC_NETWORK_ID}` トークン（または自分のネットワークの整数）のみです。`--unsafe` はこのチェックを上書きしません。RediaccfileのBashサブプロセスを囲むLandlockサンドボックスも、自分のネットワークのシークレットディレクトリのみにファイルシステムアクセスをスコープするため、Rediaccfileからの悪意ある `cat /var/run/rediacc/secrets/<other>/X` はカーネル層でEACCESで失敗します。
 
-> **フォーク**: `rdc repo fork` はシークレットをコピー**しません**。フォークでシークレットを使用するには、フォークに対して `rdc repo secret set --name <fork>` を明示的に実行します。これは重要な安全特性です。フォークのコンテナは、外部サービスに対して本番プリンシパルとして動作できるべきではありません。
+> **フォーク**: `rdc repo fork` はシークレットをコピー**しません**。フォークでシークレットを使用するには、フォークに対して `rdc repo secret set <fork>` を明示的に実行します。これは重要な安全特性です。フォークのコンテナは、外部サービスに対して本番プリンシパルとして動作できるべきではありません。
 
 > **エージェント**（Claude Code、Cursorなど）: `repo secret list` と `repo secret get` はMCPツールとして公開されています（読み取り安全。名前とダイジェストのみ、値は含まれません）。`set` と `unset` はCLI専用です。`--current`/`--rotate-secret` の確認手順は人間の目視が必要なためです。シェル経由でこれらを呼び出すエージェントも人間と同じゲートを受けます。前提条件が失敗した場合、JSONエンベロープには構造化された `errors[].next.options[].run` フィールドが含まれます。エージェントはそれらのコマンドをそのままユーザーに伝えてください。完全なモデルについては[AIエージェントの安全性](/en/docs/ai-agents-safety)を参照してください。
 
@@ -267,7 +267,7 @@ rdc repo ownership --name my-app -m server-1
 テンプレートを適用してリポジトリをファイルで初期化します。
 
 ```bash
-rdc repo template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
 ```
 
 ## 削除

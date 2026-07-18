@@ -13,6 +13,11 @@ vi.mock('../agent-guard.js', () => ({
 vi.mock('../process-ancestry.js', () => ({
   isOverrideLegitimate: vi.fn(() => true),
   isAncestryVerificationAvailable: vi.fn(() => true),
+  OVERRIDE_VAR_CLUSTER: 'REDIACC_ALLOW_CLUSTER_OPS',
+}));
+
+vi.mock('../../services/core/audit-log.js', () => ({
+  auditLog: vi.fn(),
 }));
 
 vi.mock('../../i18n/index.js', () => ({
@@ -23,6 +28,7 @@ vi.mock('../../i18n/index.js', () => ({
 }));
 
 import { configService } from '../../services/config/config-resources.js';
+import { auditLog } from '../../services/core/audit-log.js';
 import type { RepositoryConfig } from '../../types/index.js';
 import { isAgentEnvironment } from '../agent-guard.js';
 import {
@@ -37,6 +43,7 @@ const mockIsAgent = vi.mocked(isAgentEnvironment);
 const mockGetRepo = vi.mocked(configService.getRepository);
 const mockIsOverrideLegitimate = vi.mocked(isOverrideLegitimate);
 const mockIsAncestryAvailable = vi.mocked(isAncestryVerificationAvailable);
+const mockAuditLog = vi.mocked(auditLog);
 
 describe('command-policy', () => {
   beforeEach(() => {
@@ -44,10 +51,12 @@ describe('command-policy', () => {
     mockIsOverrideLegitimate.mockReturnValue(true);
     mockIsAncestryAvailable.mockReturnValue(true);
     delete process.env.REDIACC_ALLOW_GRAND_REPO;
+    delete process.env.REDIACC_ALLOW_CLUSTER_OPS;
   });
 
   afterEach(() => {
     delete process.env.REDIACC_ALLOW_GRAND_REPO;
+    delete process.env.REDIACC_ALLOW_CLUSTER_OPS;
   });
 
   describe('assertCommandPolicy', () => {
@@ -224,6 +233,99 @@ describe('command-policy', () => {
       process.env.REDIACC_ALLOW_GRAND_REPO = '*';
 
       await expect(assertCommandPolicy(CMD.RUN)).rejects.toThrow('errors.agent.commandBlocked');
+    });
+  });
+
+  describe('cluster-ops override (REDIACC_ALLOW_CLUSTER_OPS)', () => {
+    it('allows a cluster verb with a legitimate wildcard override in agent mode', async () => {
+      mockIsAgent.mockReturnValue(true);
+      mockIsOverrideLegitimate.mockReturnValue(true);
+      process.env.REDIACC_ALLOW_CLUSTER_OPS = '*';
+
+      await expect(
+        assertCommandPolicy(CMD.CLUSTER_CREATE, undefined, 'prod')
+      ).resolves.not.toThrow();
+      expect(mockGetRepo).not.toHaveBeenCalled();
+    });
+
+    it('audits actor.kind=agent (via auditLog) when a legitimate override is honored', async () => {
+      mockIsAgent.mockReturnValue(true);
+      mockIsOverrideLegitimate.mockReturnValue(true);
+      process.env.REDIACC_ALLOW_CLUSTER_OPS = '*';
+
+      await assertCommandPolicy(CMD.CLUSTER_DESTROY, undefined, 'prod');
+
+      expect(mockAuditLog).toHaveBeenCalledTimes(1);
+      const draft = mockAuditLog.mock.calls[0][1];
+      expect(draft.command).toBe('cluster destroy');
+      expect(draft.paths).toEqual(['prod']);
+      expect(draft.outcome).toBe('ok');
+      expect(draft.reason).toContain('REDIACC_ALLOW_CLUSTER_OPS');
+    });
+
+    it('blocks when the override is present only in a descendant (agent self-set)', async () => {
+      mockIsAgent.mockReturnValue(true);
+      // isOverrideLegitimate=false models the ancestry walk finding the override
+      // BELOW the agent boundary (the agent set it itself).
+      mockIsOverrideLegitimate.mockReturnValue(false);
+      process.env.REDIACC_ALLOW_CLUSTER_OPS = '*';
+
+      await expect(assertCommandPolicy(CMD.CLUSTER_CREATE, undefined, 'prod')).rejects.toThrow(
+        'errors.agent.clusterOpBlocked'
+      );
+      expect(mockAuditLog).not.toHaveBeenCalled();
+    });
+
+    it('blocks a cluster verb when no override is set', async () => {
+      mockIsAgent.mockReturnValue(true);
+
+      await expect(assertCommandPolicy(CMD.CLUSTER_SCALE, undefined, 'prod')).rejects.toThrow(
+        'errors.agent.clusterOpBlocked'
+      );
+    });
+
+    it('allows cluster verbs for non-agent environments regardless of override', async () => {
+      mockIsAgent.mockReturnValue(false);
+
+      await expect(
+        assertCommandPolicy(CMD.CLUSTER_DESTROY, undefined, 'prod')
+      ).resolves.not.toThrow();
+    });
+
+    it('keeps `run` absolutely blocked even with REDIACC_ALLOW_CLUSTER_OPS=*', async () => {
+      mockIsAgent.mockReturnValue(true);
+      mockIsOverrideLegitimate.mockReturnValue(true);
+      process.env.REDIACC_ALLOW_CLUSTER_OPS = '*';
+
+      await expect(assertCommandPolicy(CMD.RUN)).rejects.toThrow('errors.agent.commandBlocked');
+      expect(mockAuditLog).not.toHaveBeenCalled();
+    });
+
+    it('name-list matches the target cluster and rejects others', async () => {
+      mockIsAgent.mockReturnValue(true);
+      mockIsOverrideLegitimate.mockReturnValue(true);
+      process.env.REDIACC_ALLOW_CLUSTER_OPS = 'prod,edge';
+
+      await expect(
+        assertCommandPolicy(CMD.CLUSTER_MIGRATE, undefined, 'prod')
+      ).resolves.not.toThrow();
+      await expect(
+        assertCommandPolicy(CMD.CLUSTER_MIGRATE, undefined, 'edge')
+      ).resolves.not.toThrow();
+      await expect(assertCommandPolicy(CMD.CLUSTER_MIGRATE, undefined, 'staging')).rejects.toThrow(
+        'errors.agent.clusterOpBlocked'
+      );
+    });
+
+    it('a name-list override does NOT unlock a different cluster even if legitimate', async () => {
+      mockIsAgent.mockReturnValue(true);
+      mockIsOverrideLegitimate.mockReturnValue(true);
+      process.env.REDIACC_ALLOW_CLUSTER_OPS = 'prod';
+
+      await expect(assertCommandPolicy(CMD.CLUSTER_FORK, undefined, 'other')).rejects.toThrow(
+        'errors.agent.clusterOpBlocked'
+      );
+      expect(mockAuditLog).not.toHaveBeenCalled();
     });
   });
 

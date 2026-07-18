@@ -1,12 +1,12 @@
 export type { FunctionRequirements, QueueRequestContext, VaultContent } from './requirements';
 export {
-  assertQueueVaultV2,
+  assertRenetVault,
   type ContextSection,
-  isQueueVaultV2,
+  isRenetVault,
   type LocalePreferences,
   type MachineSection,
   type PreferencesSection,
-  type QueueVaultV2,
+  type RenetVault,
   type RepositoryInfo,
   type SSHSection,
   type StorageSection,

@@ -4,8 +4,8 @@ description: "Claude Code, Cursor ve Cline'ın rdc aracılığıyla Rediacc alty
 category: Guides
 order: 30
 language: tr
-sourceHash: "0aa0c975030d4856"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "27ea21c36250d4a9"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Açıkçası, `rdc` tasarım gereği ajan bilinçlidir. Claude Code, Cursor, Cline: bir alt kabukta `rdc` çağıran herhangi bir AI asistanı yapılandırılmış JSON çıktısı, makine tarafından okunabilir hatalar ve otonom Rediacc altyapı yönetimi için isteyeceğiniz güvenlik koruyucularını elde eder. Entegrasyonun nasıl çalıştığına bakalım.
@@ -59,21 +59,6 @@ Hata yanıtları `retryable` ve `guidance` alanlarını içerir:
     "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
   }]
 }
-```
-
-### 3. Ajan Yetenekleri Keşfi
-
-`rdc agent` alt komutu yapılandırılmış iç gözlem sağlar:
-
-```bash
-# List all commands with arguments and options
-rdc agent capabilities
-
-# Show detailed schema for a specific command
-rdc agent schema --command "machine query"
-
-# Execute a command with JSON stdin
-echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 ```
 
 ## Ajanlar İçin Temel Bayraklar

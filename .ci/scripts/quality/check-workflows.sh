@@ -26,6 +26,20 @@ while IFS= read -r file; do
     GITHUB_YAMLS+=("$file")
 done < <(find .github/workflows .github/actions -name "*.yml" -type f 2>/dev/null)
 
+# --- Inline-run rule config (see check_inline_run_blocks below) ---------------
+# Overridable so the standalone gate test can drive the rule against fixtures.
+WORKFLOW_DIR="${WORKFLOW_DIR:-.github/workflows}"
+WORKFLOW_INLINE_BASELINE="${WORKFLOW_INLINE_BASELINE:-.ci/quality/workflow-inline-baseline.json}"
+INLINE_MAX_LOGIC="${INLINE_MAX_LOGIC:-8}"
+
+# When the gate test exercises ONLY the inline-run rule, empty the file list the
+# banned-pattern scans iterate so they become no-ops. This keeps the rule living
+# in this one script while letting the test point WORKFLOW_DIR at a fixture tree
+# without also tripping (or depending on) the real .github banned-pattern state.
+if [[ "${WORKFLOW_INLINE_ONLY:-0}" == "1" ]]; then
+    GITHUB_YAMLS=()
+fi
+
 # Check a banned pattern across all files
 # Usage: check_pattern <grep_pattern> <label> <fix_hint>
 check_pattern() {
@@ -155,9 +169,156 @@ for file in "${GITHUB_YAMLS[@]}"; do
     fi
 done
 
+# =============================================================================
+# Inline-run rule: workflow `run:` blocks must stay thin (env wiring + one call)
+# =============================================================================
+# CI step LOGIC belongs in .ci/scripts/<area>/<name>.sh, which is locally
+# runnable and shareable across CI systems. A workflow `run:` block scalar whose
+# shell logic (non-blank, non-comment lines) exceeds $INLINE_MAX_LOGIC lines is a
+# violation. Legacy violations are frozen per-file in $WORKFLOW_INLINE_BASELINE
+# and may only ratchet DOWN: a count that rises fails (new inline logic), a count
+# below baseline fails (you extracted a block but did not lower the baseline), and
+# a file with violations absent from the baseline fails.
+check_inline_run_blocks() {
+    require_cmd jq
+    require_cmd awk
+
+    local awk_prog
+    awk_prog="$(mktemp)"
+    # BLOCKER: RETURN trap removes the temp awk program when the function unwinds under set -e
+    # shellcheck disable=SC2064
+    # BLOCKER: expand awk_prog now so the trap rm targets this exact temp path
+    trap "rm -f '$awk_prog'" RETURN
+
+    # Block-scalar parser: emit "<startline>\t<logiccount>\t<stepname>" per run: block.
+    # A block owns every following line that is blank OR indented deeper than the
+    # `run:` key; a logic line is a non-blank line whose first non-space char is not `#`.
+    cat >"$awk_prog" <<'AWK_EOF'
+function record() {
+    if (inblock) {
+        printf "%d\t%d\t%s\n", startline, count, sname
+        inblock = 0
+    }
+}
+{
+    line = $0
+    sub(/\r$/, "", line)
+    if (line ~ /^[[:space:]]*$/) { next }
+    match(line, /^ */)
+    cur = RLENGTH
+    if (inblock) {
+        if (cur > keyindent) {
+            rest = substr(line, cur + 1)
+            if (substr(rest, 1, 1) != "#") count++
+            next
+        } else {
+            record()
+        }
+    }
+    if (line ~ /^[[:space:]]*(-[[:space:]]+)?name:[[:space:]]/) {
+        nm = line
+        sub(/^[[:space:]]*(-[[:space:]]+)?name:[[:space:]]*/, "", nm)
+        sub(/[[:space:]]+$/, "", nm)
+        stepname = nm
+    }
+    if (line ~ /^[[:space:]]*run:[[:space:]]*[|>]/) {
+        keyindent = cur
+        inblock = 1
+        count = 0
+        startline = NR
+        sname = stepname
+    }
+}
+END { record() }
+AWK_EOF
+
+    log_step "Checking workflow run: blocks stay thin (<= $INLINE_MAX_LOGIC logic lines)..."
+
+    # Portable read loop instead of `mapfile` — the CI runner's minimal bash
+    # (busybox-flavored) does not ship the `mapfile`/`readarray` builtin.
+    local baseline_keys=()
+    if [[ -f "$WORKFLOW_INLINE_BASELINE" ]]; then
+        while IFS= read -r _key; do
+            [[ -n "$_key" ]] && baseline_keys+=("$_key")
+        done < <(jq -r 'keys[] | select(. != "__doc__")' "$WORKFLOW_INLINE_BASELINE")
+    fi
+
+    declare -A actual=()
+    declare -A detail=()
+    declare -A seen=()
+
+    local f bn blocks start cnt name vcount d
+    if [[ -d "$WORKFLOW_DIR" ]]; then
+        for f in "$WORKFLOW_DIR"/*.yml; do
+            [[ -e "$f" ]] || continue
+            bn="$(basename "$f")"
+            seen["$bn"]=1
+            vcount=0
+            d=""
+            blocks="$(awk -f "$awk_prog" "$f")"
+            while IFS=$'\t' read -r start cnt name; do
+                [[ -z "$start" ]] && continue
+                if ((cnt > INLINE_MAX_LOGIC)); then
+                    vcount=$((vcount + 1))
+                    d+="      - ${bn}:${start} (step: ${name:-<unnamed>}) has ${cnt} logic lines"$'\n'
+                fi
+            done <<<"$blocks"
+            actual["$bn"]=$vcount
+            [[ -n "$d" ]] && detail["$bn"]="$d"
+        done
+    fi
+
+    # Union of baseline files and files that currently have any violation.
+    declare -A union=()
+    local k
+    for k in "${baseline_keys[@]}"; do union["$k"]=1; done
+    for k in "${!actual[@]}"; do
+        ((${actual[$k]} > 0)) && union["$k"]=1
+    done
+
+    local sorted=()
+    if ((${#union[@]} > 0)); then
+        while IFS= read -r _k; do
+            [[ -n "$_k" ]] && sorted+=("$_k")
+        done < <(printf '%s\n' "${!union[@]}" | sort)
+    fi
+
+    local a b
+    for k in "${sorted[@]}"; do
+        [[ -z "$k" ]] && continue
+        a="${actual[$k]:-0}"
+        b=0
+        if [[ -f "$WORKFLOW_INLINE_BASELINE" ]]; then
+            b="$(jq -r --arg key "$k" '.[$key] // 0' "$WORKFLOW_INLINE_BASELINE")"
+        fi
+        if ((a > b)); then
+            if ((b == 0)); then
+                log_error "$WORKFLOW_DIR/$k: $a inline run: block(s) exceed $INLINE_MAX_LOGIC logic lines; this file is not in the baseline"
+            else
+                log_error "$WORKFLOW_DIR/$k: $a inline run: block(s) exceed $INLINE_MAX_LOGIC logic lines; baseline allows only $b (regression)"
+            fi
+            [[ -n "${detail[$k]:-}" ]] && printf '%s' "${detail[$k]}"
+            echo "  Fix:  extract each over-threshold block to .ci/scripts/<area>/<name>.sh; the workflow step becomes env wiring + one script call, and the script header documents its required env + how to run it locally."
+            echo ""
+            ERRORS=$((ERRORS + 1))
+        elif ((a < b)); then
+            if [[ -z "${seen[$k]:-}" ]]; then
+                log_error "$WORKFLOW_INLINE_BASELINE lists '$k' ($b) but $WORKFLOW_DIR/$k no longer exists; remove the stale baseline entry (ratchet down)"
+            else
+                log_error "$WORKFLOW_DIR/$k: only $a inline block(s) over $INLINE_MAX_LOGIC lines remain but baseline records $b; lower the baseline entry to $a (ratchet down)"
+            fi
+            echo "  Fix:  edit $WORKFLOW_INLINE_BASELINE and set '$k' to $a (remove the key entirely when $a is 0)."
+            echo ""
+            ERRORS=$((ERRORS + 1))
+        fi
+    done
+}
+
+check_inline_run_blocks
+
 if [[ $ERRORS -gt 0 ]]; then
     echo ""
-    log_error "Found $ERRORS banned pattern(s) in workflows"
+    log_error "Found $ERRORS problem(s) in workflows"
     exit 1
 else
     log_info "All workflows are clean"

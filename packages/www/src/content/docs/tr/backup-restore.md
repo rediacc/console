@@ -7,8 +7,8 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: "7ff112c2ec14c35f"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "d800519615085ee9"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -121,28 +121,33 @@ Zamanlanmış yedeklemeler, depolamanın yapılandırılmış klasörünün içi
 
 Bir depo hem `hot/` hem de `cold/` altında görünebilir (saatlik zamanlama anlık görüntüsünü alır; haftalık zamanlama tekrar alır). Birleşik liste her iki satırı da gösterir, böylece hangi akışların hangi depoları kapsadığı net olur.
 
-## Toplu Senkronizasyon
+## Repoları teker teker senkronize etme
 
-Tüm depoları aynı anda gönderin veya çekin:
+Push ve pull tek bir depo üzerinde çalışır; depo ref ile adreslenir (`name`, `name:tag` veya `name@machine`). «Tüm depolar aynı anda» biçimi yoktur: komutu her depo için bir kez çalıştırın.
 
-### Tümünü Depolamaya Gönder
+### Depolamaya Gönder
 
 ```bash
-rdc repo push --to my-storage -m server-1
+rdc repo push shop@server-1 --to my-storage
 ```
 
-### Tümünü Depolamadan Çek
+### Depolamadan Çek
 
 ```bash
-rdc repo pull --from my-storage -m server-1
+rdc repo pull shop@server-1 --from my-storage
 ```
 
 | Seçenek | Açıklama |
-|---------|----------|
-| `--to <storage>` | Hedef depolama (gönderme yönü) |
-| `--from <storage>` | Kaynak depolama (çekme yönü) |
-| `--repo <name>` | Belirli depoları senkronize et (tekrarlanabilir) |
-| `--override` | Mevcut yedekleri geçersiz kıl |
+|--------|-------------|
+| `--to <remote>` | Hedef depolama veya makine (gönderme) |
+| `--to-machine <machine>` | Makineden makineye gönderme için hedef makine |
+| `--from <remote>` | Kaynak depolama veya makine (çekme) |
+| `--from-machine <machine>` | Makineden makineye çekme için kaynak makine |
+| `--force` | Mevcut bir yedeği veya depoyu geçersiz kıl |
+| `--checkpoint` | Göndermeden önce CRIU checkpoint oluştur (yalnızca gönderme) |
+| `--up` | Çektikten sonra depoyu bağla ve dağıt (yalnızca çekme) |
+| `--bwlimit <limit>` | rsync transferi için bant genişliği sınırı (örn. `10M`) |
+| `--delta-base <guid>` | Değişmez bir temel GUID'e göre yalnızca değişen blokları aktar |
 | `--debug` | Ayrıntılı çıktıyı etkinleştir |
 | `--skip-router-restart` | İşlem sonrası yönlendirici sunucusunun yeniden başlatılmasını atla |
 
@@ -180,8 +185,8 @@ Soğuk yedekleme, dahil edilen her depo için üç aşamada çalışır: **durdu
 
 **Operatörlerin arızaları nasıl tespit edeceği:**
 
-- `rdc machine query --name <machine> --containers` çalışma durumunu gösterir. Beklenen kümeyle karşılaştırın.
-- Makinedeki `/var/run/rediacc/cold-backup-<guid>.status.json` dosyasını kontrol edin. `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"` ile inceleyebilirsiniz. Eski bir `startedAt` ile birlikte `success: false`, son yedeklemenin temiz tamamlanmadığı anlamına gelir.
+- `rdc machine status <machine> --containers` çalışma durumunu gösterir. Beklenen kümeyle karşılaştırın.
+- Makinedeki `/var/run/rediacc/cold-backup-<guid>.status.json` dosyasını kontrol edin. `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"` ile inceleyebilirsiniz. Eski bir `startedAt` ile birlikte `success: false`, son yedeklemenin temiz tamamlanmadığı anlamına gelir.
 - renet yedekleme çalıştırmasından gelen günlükler (`journalctl -u renet-*` veya doğrudan `rdc machine backup schedule` çağrısı) `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` biçiminde bir son özet satırı yayar. Boş olmayan `failed_repos` grep hedefidir.
 
 ### Soğuk Yedekleme Kesinti Süresini Tahmin Etme
@@ -305,7 +310,7 @@ Yapılandırmanızda bir veya daha fazla strateji adını bir makineye bağlayı
 }
 ```
 
-> **Bağlama yalnızca yerel yapılandırmadır.** Bir strateji tanımlamak ve makineye bağlamak makineyi etkilemez. systemd zamanlayıcılarını dağıtmak için `rdc machine backup schedule -m <machine>` komutunu çalıştırın ([Zamanlamayı Makineye Dağıtma](#zamanlamayı-makineye-dağıtma) bölümüne bakın) ve her strateji veya bağlama değişikliğinden sonra tekrar çalıştırın.
+> **Bağlama yalnızca yerel yapılandırmadır.** Bir strateji tanımlamak ve makineye bağlamak makineyi etkilemez. systemd zamanlayıcılarını dağıtmak için `rdc backup schedule -m <machine>` komutunu çalıştırın ([Zamanlamayı Makineye Dağıtma](#zamanlamayı-makineye-dağıtma) bölümüne bakın) ve her strateji veya bağlama değişikliğinden sonra tekrar çalıştırın.
 
 ## Sıcak ve Soğuk Seçimi ve Depo Başına Filtreleme
 

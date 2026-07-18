@@ -4,8 +4,8 @@ description: "Edge와 Stable의 차이점, 그리고 어느 채널을 사용할�
 category: "Concepts"
 order: 2
 language: ko
-sourceHash: "5fdcb0e8944f5d60"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "6669b5b089f94a39"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Rediacc는 두 가지 채널을 통해 업데이트를 배포합니다: **Stable**과 **Edge**. 두 채널은 별도의 인프라에서 실행되며 서로 다른 트레이드오프가 있습니다.
@@ -25,7 +25,7 @@ Edge는 main에 병합되는 순간 모든 변경 사항을 받습니다. 지속
 
 - 매 main 병합 시 릴리스되는 지속적으로 배포된 프로덕션
 - 2X Community 플랜 제한 (아래 표 참조)
-- 무료 영구 사용. Edge에서는 유료 플랜 사용 불가.
+- Edge에서는 유료 플랜을 사용할 수 없으며, 계정은 Community 플랜으로 운영됩니다.
 - Stable과 별도의 계정. 채널 간 데이터가 이전되지 않습니다.
 - 도메인: `edge-eu.rediacc.com`, `edge-us.rediacc.com`, `edge-asia.rediacc.com`
 
@@ -35,20 +35,20 @@ Edge는 main에 병합되는 순간 모든 변경 사항을 받습니다. 지속
 |---|---|---|
 | **배포 주기** | 7일 소크 후 | main에 매 병합 시 |
 | **안정성** | 7일 테스트됨 | 프로덕션, 지속적으로 배포됨 |
-| **Community 플랜 제한** | 10 GB 리포지터리, 500건/월, 머신 2대 | 20 GB 리포지터리, 1,000건/월, 머신 4대 |
+| **Community 플랜 제한** | 10 GB 리포지터리, 월 100회 설정, 머신 1대 | 20 GB 리포지터리, 월 200회 설정, 머신 2대 |
 | **유료 플랜** | 사용 가능 (Professional, Business, Enterprise) | 사용 불가 |
 | **계정** | 독립적 | 독립적 (Stable과 분리) |
 | **적합한 대상** | 프로덕션, 유료 워크로드 | 프로덕션, 사이드 프로젝트, 얼리 액세스 |
 
 ## Edge 2X 제한
 
-Community 플랜에서 Edge를 사용하면 추가 비용 없이 리소스 제한이 두 배가 됩니다.
+Community 플랜에서 Edge를 실행하면 리소스 제한이 두 배로 늘어납니다:
 
 | 리소스 | Stable Community | Edge Community |
 |---|---|---|
 | 리포지터리 크기 | 10 GB | 20 GB |
-| 월별 라이선스 발급 | 500 | 1,000 |
-| 머신 활성화 | 2 | 4 |
+| 월별 라이선스 발급 | 100 | 200 |
+| 머신 활성화 | 1 | 2 |
 
 더 높은 제한이나 유료 기능이 필요하다면 Stable에서 계정을 만들고 거기서 업그레이드하세요.
 

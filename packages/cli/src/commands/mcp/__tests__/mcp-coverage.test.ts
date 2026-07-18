@@ -6,13 +6,19 @@
  * in COMMAND_METADATA. Fails CI when a command is added to the registry
  * but not covered.
  */
+import { CLI_CONTRACT } from '@rediacc/shared/cli-contract';
 import { describe, expect, it } from 'vitest';
 import { cli } from '../../../cli.js';
-import { COMMAND_METADATA, getMcpExclusions } from '../../../config/command-metadata.js';
+import {
+  COMMAND_METADATA,
+  getCommandMeta,
+  getMcpExclusions,
+} from '../../../config/command-metadata.js';
 import { COMMAND_REGISTRY } from '../../../config/command-registry.js';
+import { buildToolsFromContract } from '../tool-factory.js';
 import { buildAllTools } from '../tools.js';
 
-const TOOLS = buildAllTools(cli);
+const TOOLS = buildAllTools();
 const MCP_EXCLUDED = getMcpExclusions();
 
 /**
@@ -53,50 +59,73 @@ function getMcpPrefixes(paths: Set<string>): Set<string> {
   return prefixes;
 }
 
+/**
+ * Walk the REAL Commander tree to leaf command paths (same skip rules as
+ * tool-factory: no help, no hidden). The registry is NOT the ground truth for
+ * coverage — it only declares top-level domains, so registry-keyed checks let
+ * unregistered leaves drift out of MCP silently.
+ */
+function walkLeafPaths(): string[] {
+  const leaves: string[] = [];
+  function walk(cmd: (typeof cli.commands)[number], prefix: string): void {
+    const path = prefix ? `${prefix} ${cmd.name()}` : cmd.name();
+    const visible = cmd.commands.filter(
+      (sub) =>
+        sub.name() !== 'help' &&
+        !(sub as (typeof cli.commands)[number] & { _hidden?: boolean })._hidden
+    );
+    // ★ An ACTIONABLE PARENT is runnable and therefore must be classified too. `repo replicate
+    // <ref>` has subcommands AND its own action (spec/03 §5.4 keeps its bare create form). A
+    // leaves-only walk cannot see it, which is how it carried an `mcp` block that produced no
+    // tool at all: the gate was satisfied by a declaration that did nothing.
+    const runnable =
+      visible.length === 0 ||
+      typeof (cmd as (typeof cli.commands)[number] & { _actionHandler?: unknown })
+        ._actionHandler === 'function';
+    if (runnable) leaves.push(path);
+    for (const sub of visible) walk(sub, path);
+  }
+  for (const cmd of cli.commands) {
+    if (cmd.name() === 'help') continue;
+    if ((cmd as (typeof cli.commands)[number] & { _hidden?: boolean })._hidden) continue;
+    walk(cmd, '');
+  }
+  return leaves;
+}
+
+/** A path is excluded if it or ANY ancestor prefix carries mcpExcludeReason. */
+function isExcluded(path: string): boolean {
+  const parts = path.split(' ');
+  for (let i = parts.length; i >= 1; i--) {
+    if (parts.slice(0, i).join(' ') in MCP_EXCLUDED) return true;
+  }
+  return false;
+}
+
 describe('MCP tool coverage', () => {
   const mcpPaths = getMcpCommandPaths();
   const mcpPrefixes = getMcpPrefixes(mcpPaths);
-  const nonExperimental = COMMAND_REGISTRY.filter((c) => !c.experimental);
+  const experimentalPrefixes = new Set(
+    COMMAND_REGISTRY.filter((c) => c.experimental).map((c) => c.name)
+  );
 
-  it('every non-experimental command is either in MCP tools or explicitly excluded', () => {
-    const missing: string[] = [];
-
-    for (const cmd of nonExperimental) {
-      const hasMcpTool = mcpPrefixes.has(cmd.name);
-      const isExcluded = cmd.name in MCP_EXCLUDED;
-
-      if (!hasMcpTool && !isExcluded) {
-        missing.push(cmd.name);
-      }
-    }
-
-    if (missing.length > 0) {
-      const hint = missing
-        .map(
-          (name) => `  - "${name}": add MCP metadata in command-metadata.ts OR add mcpExcludeReason`
-        )
-        .join('\n');
-      expect.fail(`${missing.length} non-experimental command(s) missing from MCP tools:\n${hint}`);
-    }
-  });
-
-  it('every non-experimental subcommand is covered by MCP or explicitly excluded', () => {
-    const missing = nonExperimental.flatMap((cmd) => {
-      if (!cmd.subcommands || cmd.name in MCP_EXCLUDED) return [];
-      return Object.entries(cmd.subcommands)
-        .filter(([, subDef]) => !subDef.experimental)
-        .map(([subName]) => `${cmd.name} ${subName}`)
-        .filter((fullPath) => !mcpPaths.has(fullPath) && !(fullPath in MCP_EXCLUDED));
+  it('every visible leaf command has MCP metadata or an explicit exclusion (tree-walk)', () => {
+    const missing = walkLeafPaths().filter((path) => {
+      if (experimentalPrefixes.has(path.split(' ')[0])) return false;
+      if (isExcluded(path)) return false;
+      // A path with no metadata entry at all is exactly what this test hunts for.
+      if (!Object.hasOwn(COMMAND_METADATA, path)) return true;
+      return !COMMAND_METADATA[path].mcp;
     });
 
     if (missing.length > 0) {
       const hint = missing
         .map(
-          (name) => `  - "${name}": add MCP metadata in command-metadata.ts OR add mcpExcludeReason`
+          (path) => `  - "${path}": add MCP metadata in command-metadata.ts OR add mcpExcludeReason`
         )
         .join('\n');
       expect.fail(
-        `${missing.length} non-experimental subcommand(s) missing from MCP tools:\n${hint}`
+        `${missing.length} visible leaf command(s) missing from MCP (drift — new commands must opt in or out):\n${hint}`
       );
     }
   });
@@ -152,6 +181,62 @@ describe('MCP tool coverage', () => {
     }
     if (conflicts.length > 0) {
       expect.fail(`Entries with both mcp and mcpExcludeReason: ${conflicts.join(', ')}`);
+    }
+  });
+});
+
+/**
+ * The re-sourcing contract itself: buildToolsFromContract must derive exactly one
+ * tool for every mcp-annotated contract command, none for an excluded one, and
+ * nothing that does not trace back to such a command. This is the assertion that
+ * would catch the derivation drifting away from the contract it now reads from
+ * (an experimental command silently acquiring a tool, an exclusion being ignored,
+ * a stray tool with no backing command).
+ */
+describe('contract-sourced tool derivation', () => {
+  const autoTools = buildToolsFromContract();
+  const autoNames = new Set(autoTools.map((t) => t.name));
+  const toolName = (pathKey: string): string => pathKey.replaceAll(' ', '_');
+
+  it('every non-experimental mcp-annotated contract command produces exactly one tool', () => {
+    for (const cmd of CLI_CONTRACT.commands) {
+      if (cmd.experimental) continue;
+      if (!getCommandMeta(cmd.pathKey)?.mcp) continue;
+      const name = toolName(cmd.pathKey);
+      const matches = autoTools.filter((t) => t.name === name);
+      expect(matches.length, `${cmd.pathKey} should derive exactly one tool "${name}"`).toBe(1);
+    }
+  });
+
+  it('no mcp-excluded command produces an auto-derived tool', () => {
+    for (const cmd of CLI_CONTRACT.commands) {
+      if (!getCommandMeta(cmd.pathKey)?.mcpExcludeReason) continue;
+      const name = toolName(cmd.pathKey);
+      expect(autoNames.has(name), `${cmd.pathKey} is excluded but produced tool "${name}"`).toBe(
+        false
+      );
+    }
+  });
+
+  it('no experimental command produces an auto-derived tool (parity with the hidden tree)', () => {
+    for (const cmd of CLI_CONTRACT.commands) {
+      if (!cmd.experimental) continue;
+      expect(
+        autoNames.has(toolName(cmd.pathKey)),
+        `experimental ${cmd.pathKey} must not derive a tool`
+      ).toBe(false);
+    }
+  });
+
+  it('every auto-derived tool traces back to a non-experimental mcp-annotated command', () => {
+    for (const tool of autoTools) {
+      const cmd = CLI_CONTRACT.commands.find((c) => toolName(c.pathKey) === tool.name);
+      expect(cmd, `tool "${tool.name}" has no backing contract command`).toBeDefined();
+      expect(cmd!.experimental, `tool "${tool.name}" backs an experimental command`).toBe(false);
+      expect(
+        getCommandMeta(cmd!.pathKey)?.mcp,
+        `tool "${tool.name}" backs a command with no mcp metadata`
+      ).toBeTruthy();
     }
   });
 });

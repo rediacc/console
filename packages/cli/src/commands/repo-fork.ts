@@ -13,21 +13,25 @@
  * - "Total:" is printed once, at the true end, as wall time since entry.
  */
 import { randomUUID } from 'node:crypto';
+import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
+import { validateTag } from '../services/addressing/ref-parser.js';
 import { configService } from '../services/config/config-resources.js';
+import { outputService } from '../services/core/output.js';
 import {
-  type LocalExecuteResult,
-  localExecutorService,
+  type ExecuteResult,
+  getExecutor,
   type RenetEvent,
-} from '../services/executor/local-executor.js';
+} from '../services/executor/executor-factory.js';
+import { localExecutorService } from '../services/executor/local-executor.js';
 import {
   type MachineConnectionLease,
   machineConnections,
 } from '../services/machine/machine-connection.js';
-import { outputService } from '../services/core/output.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
-import { handleError } from '../utils/errors.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { resolveRepoRef } from '../utils/repo-target.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import {
   buildTimingSummary,
@@ -42,6 +46,13 @@ import { ensureDns, postRepoUpTasks } from './repo-batch-utils.js';
 
 interface ForkActionOptions {
   machine: string;
+  /**
+   * The datastore's cluster backref, set when the parent ref resolves to a
+   * kubernetes-world repo. Threaded into the executor so it injects KUBECONFIG;
+   * a docker parent leaves it unset and the fork runs against the machine's
+   * Docker daemon exactly as before.
+   */
+  kubeCluster?: string;
   checkpoint?: boolean;
   immutable?: boolean;
   up?: boolean;
@@ -155,7 +166,8 @@ async function registerFork(
 ): Promise<{ repositoryGuid: string; networkId: number }> {
   const existing = await configService.getRepository(forkKey);
   if (existing) {
-    throw new Error(t('commands.repo.fork.alreadyExists', { name: forkKey }));
+    // Exit 2 (INVALID_ARGUMENTS): the requested fork tag is already taken.
+    throw new ValidationError(t('commands.repo.fork.alreadyExists', { name: forkKey }));
   }
 
   const repositoryGuid = randomUUID();
@@ -224,10 +236,11 @@ function executeForkLeg(
   plan: ForkPlan,
   params: Record<string, unknown>,
   renetSteps: TimelineStep[]
-): Promise<LocalExecuteResult> {
-  return localExecutorService.execute({
+): Promise<ExecuteResult> {
+  return getExecutor().execute({
     functionName: 'repository_fork',
     machineName: plan.options.machine,
+    ...(plan.options.kubeCluster !== undefined && { kubeCluster: plan.options.kubeCluster }),
     params,
     debug: plan.options.debug,
     skipRouterRestart: plan.options.skipRouterRestart,
@@ -239,13 +252,13 @@ function executeForkLeg(
 }
 
 /** Whether a failed compound fork indicates the remote renet predates --up. */
-function isUpFlagUnsupported(result: LocalExecuteResult): boolean {
+function isUpFlagUnsupported(result: ExecuteResult): boolean {
   const text = `${result.error ?? ''}\n${result.stderr ?? ''}`;
   return /unknown (flag|shorthand flag|command)/i.test(text) && text.includes('--up');
 }
 
 /** Whether the compound fork actually ran the up phase remotely. */
-function compoundUpRan(result: LocalExecuteResult, renetSteps: TimelineStep[]): boolean {
+function compoundUpRan(result: ExecuteResult, renetSteps: TimelineStep[]): boolean {
   const steps = result.steps && result.steps.length > 0 ? result.steps : renetSteps;
   return steps.some((s) => UP_PHASE_STEP_NAMES.has(s.name));
 }
@@ -273,13 +286,11 @@ function startIdentityRefresh(
 }
 
 /** Legacy second leg: mount + up after a plain fork. */
-async function executeUpLeg(
-  plan: ForkPlan,
-  renetSteps: TimelineStep[]
-): Promise<LocalExecuteResult> {
-  const upResult = await localExecutorService.execute({
+async function executeUpLeg(plan: ForkPlan, renetSteps: TimelineStep[]): Promise<ExecuteResult> {
+  const upResult = await getExecutor().execute({
     functionName: 'repository_up',
     machineName: plan.options.machine,
+    ...(plan.options.kubeCluster !== undefined && { kubeCluster: plan.options.kubeCluster }),
     params: {
       repository: plan.forkKey,
       mount: true,
@@ -321,7 +332,7 @@ function finishTimeline(
   plan: ForkPlan,
   orchestrated: TimelineStep[],
   renetSteps: TimelineStep[],
-  results: (LocalExecuteResult | undefined)[]
+  results: (ExecuteResult | undefined)[]
 ): void {
   const cliSteps = results.flatMap((r) => r?.cliSteps ?? []);
   for (const step of cliSteps) {
@@ -351,7 +362,7 @@ function finishTimeline(
 async function runForkLeg(
   plan: ForkPlan,
   renetSteps: TimelineStep[]
-): Promise<{ result: LocalExecuteResult; forkParams: Record<string, unknown>; compound: boolean }> {
+): Promise<{ result: ExecuteResult; forkParams: Record<string, unknown>; compound: boolean }> {
   // PRIMARY: one compound `renet repository fork --up`. The legacy two-leg
   // path remains for --checkpoint (restore-on-first-up semantics).
   let compound = Boolean(plan.options.up && !plan.options.checkpoint);
@@ -380,7 +391,7 @@ async function runForkLeg(
  */
 async function handleForkLegFailure(
   plan: ForkPlan,
-  result: LocalExecuteResult,
+  result: ExecuteResult,
   orchestrated: TimelineStep[],
   renetSteps: TimelineStep[],
   dnsPromise: Promise<unknown> | undefined
@@ -429,7 +440,7 @@ async function orchestrateFork(plan: ForkPlan): Promise<void> {
   // with the up portion and the post-up tasks.
   const identityPromise = startIdentityRefresh(orchestrated, options, forkParams);
 
-  let upResult: LocalExecuteResult | undefined;
+  let upResult: ExecuteResult | undefined;
   if (options.up && !(compound && compoundUpRan(result, renetSteps))) {
     // Legacy/fallback up leg: --checkpoint flows, or a remote renet that
     // silently ignored the compound --up params.
@@ -468,6 +479,10 @@ export async function handleForkAction(
   // (credential included) when registerFork fails with "already exists".
   let registered = false;
   try {
+    // Refuse the reserved birth tag `base` (exit 2) and enforce the fork-tag
+    // label grammar before any config mutation; `latest` stays reserved as the
+    // grand pointer that a fork must not clobber (#495).
+    validateTag(tagName);
     assertNonLatestForkTag(tagName, t('commands.repo.fork.tagReservedLatest'));
     assertForkOptions(options);
     forkKey = compositeKey(options.forkBaseName ?? parseRepoRef(parent).name, tagName);
@@ -512,4 +527,64 @@ export async function handleForkAction(
     }
     handleError(error);
   }
+}
+
+/**
+ * Register `repo fork <ref>` (spec/03 §5.4). The parent repo is the positional
+ * ref; its config placement derives the execution machine and, for a
+ * kubernetes-world parent, the datastore's cluster backref (KUBECONFIG). There
+ * is no `-m`/`--cluster`/`--parent`: cross-machine forking is `fork` then
+ * `push`. Boolean flags are forwarded to the shared fork orchestration, which
+ * also drives `repo checkout`.
+ */
+export function registerRepoForkCommand(repo: Command): void {
+  repo
+    .command('fork')
+    .summary(t('commands.repo.fork.descriptionShort'))
+    .description(t('commands.repo.fork.description'))
+    .argument('<ref>', t('options.repoRef'))
+    .requiredOption('--tag <name>', t('commands.repo.fork.tagOption'))
+    .option('--checkpoint', t('commands.repo.fork.checkpointOption'))
+    .option('--immutable', t('commands.repo.fork.immutableOption'))
+    .option('--up', t('commands.repo.fork.upOption'))
+    .option('--no-wait', t('commands.repo.fork.noWaitOption'))
+    .option('--debug', t('options.debug'))
+    .option('--skip-router-restart', t('options.skipRouterRestart'))
+    .action(
+      async (
+        ref: string,
+        options: {
+          tag: string;
+          checkpoint?: boolean;
+          immutable?: boolean;
+          up?: boolean;
+          // `--no-wait` sets `wait` to false (Commander negated-flag default true).
+          wait?: boolean;
+          debug?: boolean;
+          skipRouterRestart?: boolean;
+        }
+      ) => {
+        try {
+          // Mutating verb: derive the execution machine from the parent ref's
+          // placement (spec/03 §2.3). No resolve options => step-5 mount
+          // verification is skipped, matching the pre-reshape fork behavior.
+          const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
+          await configService.ensureRepositoryNetworkId(repoKey);
+          await handleForkAction(repoKey, options.tag, {
+            machine: machineName,
+            ...(kubeCluster !== undefined && { kubeCluster }),
+            ...(options.checkpoint && { checkpoint: true }),
+            ...(options.immutable && { immutable: true }),
+            ...(options.up && { up: true }),
+            // `--no-wait` maps to the unchanged `detach` wire param: return once
+            // containers start, do not block on the health check.
+            ...(options.wait === false && { detach: true }),
+            ...(options.debug && { debug: true }),
+            ...(options.skipRouterRestart && { skipRouterRestart: true }),
+          });
+        } catch (error) {
+          handleError(error);
+        }
+      }
+    );
 }

@@ -41,7 +41,9 @@ const EXCLUDED_EN_PATHS = {
     'packages/www/src/content/docs/en/cli/',
     'packages/www/src/content/docs/en/siem-integration.md',
   ],
-  blog: [],
+  blog: [
+    'packages/www/src/content/blog/en/fork-a-running-kubernetes-cluster.md', // pending translation; remove after the 12 langs land
+  ],
 };
 
 function normalizeText(input) {

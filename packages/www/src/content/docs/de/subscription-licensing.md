@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: de
-sourceHash: 10e9f781881854be
-sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
+sourceHash: "5fb6196d9b6e9b0b"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Abonnement & Lizenzierung
@@ -62,7 +62,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Maschinenplätze (serverseitig)
 
-Das Tracking von Maschinenplätzen wird serverseitig durchgesetzt. Wenn die CLI eine Repo-Lizenz ausstellt, prüft der Account-Server das Maschinenplatz-Kontingent des Abonnements (z.B. 2 Maschinen für Community, 3 für Professional). Ein Platz wird 5 Stunden ab der letzten Repo-Lizenzausstellung auf dieser Maschine gehalten und wird nach Inaktivität automatisch freigegeben. Ein 10-Platz-Business-Plan kann daher im Laufe der Zeit Dutzende von Maschinen abdecken, da Plätze nur während der aktiven Bereitstellung gehalten werden.
+Das Tracking von Maschinenplätzen wird serverseitig durchgesetzt. Wenn die CLI eine Repo-Lizenz ausstellt, prüft der Account-Server das Maschinenplatz-Kontingent des Abonnements. Jeder Self-Service-Plan (Community, Professional, Business) umfasst einen Maschinenplatz; Multi-Maschinen-Deployments sind ein Enterprise-Setup, das gemeinsam mit unseren Partnern dimensioniert wird. Ein Platz wird 5 Stunden ab der letzten Repo-Lizenzausstellung auf dieser Maschine gehalten und wird nach Inaktivität automatisch freigegeben. Da ein Platz nur während der aktiven Bereitstellung gehalten wird, kann ein einzelner Platz im Laufe eines Monats dennoch mehrere Maschinen abdecken.
 
 Es wird keine Maschinenlizenz auf der Maschine gespeichert. Die Durchsetzung der Plätze erfolgt zum Ausstellungszeitpunkt auf dem Server.
 
@@ -93,12 +93,20 @@ Standard-Limits für kostenpflichtige Pläne:
 
 | Plan | Floating-Lizenzen | Repository-Größe | Monatliche Repo-Lizenzausstellungen | Delegierungszert. Standard / Max |
 |------|-------------------|------------------|-------------------------------------|---|
-| Community | 2 | 10 GB | 100 | 15d / 30d |
-| Professional | 3 | 50 GB | 2.000+ | 60d / 120d |
-| Business | 10 | 200 GB | 5.000+ | 90d / 180d |
-| Enterprise | 25+ | 1 TB+ | 15.000+ | 120d / 365d |
+| Community | 1 | 10 GB | 100 | 15d / 30d |
+| Professional | 1 | 100 GB | 2.000+ | 60d / 120d |
+| Business | 1 | 500 GB | 5.000+ | 90d / 180d |
+| Enterprise | Individuell | 1 TB+ | 15.000+ | 120d / 365d |
 
 Vertragsspezifische Limits können diese Werte für einen bestimmten Kunden erhöhen oder verringern. Die Gültigkeit von Delegierungszertifikaten ist zusätzlich auf `subscription.expiresAt + 3 day grace` begrenzt, sodass monatlich abgerechnete Abonnements natürlicherweise Zertifikate erhalten, die auf ihren Abrechnungszeitraum ausgerichtet sind. Siehe [License Chain & Delegation - Validity Policy](/en/docs/license-chain) für die vollständigen Regeln.
+
+## Kostenlose Testphase und der Community-Fallback
+
+Neuanmeldungen starten eine 14-tägige kostenlose Testphase im Plan Professional oder Business. Bei der Anmeldung wird eine Kreditkarte hinterlegt, und die erste Abbuchung erfolgt erst, wenn die Testphase endet, sodass eine Kündigung davor kostenlos ist. Pro Kunde ist eine Testphase verfügbar.
+
+Community ist die dauerhafte kostenlose Grundstufe. Für neue Konten ist sie keine direkte Anmeldeoption mehr; stattdessen landet ein Konto auf Community, sobald ein Abonnement endet: durch Kündigung während der Testphase, spätere Kündigung eines kostenpflichtigen Plans oder eine fehlgeschlagene Zahlung. Im Community-Fallback behalten Sie eine Maschine mit 10 GB pro Repository und 100 Setups pro Monat. Konten, die vor der Einführung des testphasenbasierten Modells erstellt wurden, behalten ihren bestehenden Community-Zugang.
+
+Die Durchsetzung bleibt bewusst nachsichtig. Laufende Repositories funktionieren auch nach Ablauf eines Abonnements weiter; nur neue Vorgänge (Erstellen, Forken, Größenänderung und Lizenzaktualisierung) setzen eine aktive Berechtigung voraus.
 
 ## Übergangsfrist für VM-Migration
 
@@ -110,9 +118,9 @@ In der Praxis:
 - VM migriert, Maschinen-ID ändert sich: Repos funktionieren weiterhin (innerhalb des 40-Tage-Fensters)
 - Nächste `rdc`-Operation aktualisiert die Lizenz mit der neuen Maschinen-ID
 - Keine manuelle Intervention erforderlich
-- Maschinen-ID und Lizenzbewertung überprüfen mit `rdc machine query --system --licenses --name <machine>`
+- Maschinen-ID und Lizenzbewertung überprüfen mit `rdc machine status <machine> --system --licenses`
 
-**Edge-Kanal-Benutzer** erhalten kostenlos doppelte Community-Limits (20 GB Repos, 200 Ausstellungen/Monat, 4 Maschinen). Kostenpflichtige Pläne sind nur im Stable-Kanal verfügbar. Siehe [Release Channels](/en/docs/release-channels) für Details.
+**Edge-Kanal-Konten** laufen auf dem Community-Plan mit doppelten Limits (20 GB Repos, 200 Setups/Monat, 2 Maschinen). Kostenpflichtige Pläne sind nur im Stable-Kanal verfügbar. Siehe [Release Channels](/en/docs/release-channels) für Details.
 
 ## Was bei Repo-Erstellung, -Start, -Stopp und -Neustart passiert
 
@@ -175,28 +183,22 @@ rdc subscription status
 Maschinenaktivierungsdetails für eine Maschine anzeigen:
 
 ```bash
-rdc subscription activation status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Installierte Repo-Lizenz-Details auf einer Maschine anzeigen:
 
 ```bash
-rdc subscription repo status -m hostinger
+rdc subscription status -m hostinger
 ```
 
-Batch-Aktualisierung von Repo-Lizenzen auf einer Maschine:
+Die Lizenz eines Repositories auf einer Maschine aktualisieren:
 
 ```bash
-rdc subscription refresh repos -m hostinger
+rdc subscription refresh -m hostinger --repo my-app
 ```
 
-Repositories, die auf der Maschine entdeckt wurden, aber in der lokalen `rdc`-Konfiguration fehlen, werden bei der Batch-Aktualisierung abgelehnt. Sie werden als Fehler gemeldet und nicht automatisch klassifiziert.
-
-Repo-Lizenz-Aktualisierung für ein vorhandenes Repository erzwingen:
-
-```bash
-rdc subscription refresh repo --name my-app -m hostinger
-```
+Der `--repo`-Ref muss in Ihrer lokalen `rdc`-Konfiguration auflösbar sein. Ein Repository, das auf der Maschine entdeckt wird, aber in der lokalen Konfiguration fehlt, wird abgelehnt: Es wird als Fehler gemeldet und nicht automatisch klassifiziert.
 
 Bei der ersten Verwendung kann eine lizenzierte Repo- oder Backup-Operation, die keine verwendbare Repo-Lizenz findet, automatisch eine Konto-Autorisierungs-Übergabe auslösen. Die CLI gibt eine Autorisierungs-URL aus, versucht den Browser in interaktiven Terminals zu öffnen, und wiederholt die Operation einmal nach erfolgreicher Autorisierung und Ausstellung.
 
@@ -259,4 +261,4 @@ Nicht dazu gehören:
 - Fehlgeschlagene Ausstellungsversuche
 - Nicht verfolgte Repositories, die vor der Ausstellung abgelehnt wurden
 
-Wenn Sie eine kundenseitige Ansicht der Nutzung und des Repo-Lizenz-Ausstellungsverlaufs benötigen, verwenden Sie das Account-Portal. Wenn Sie maschinenseitige Inspektion benötigen, verwenden Sie `rdc subscription activation status -m` und `rdc subscription repo status -m`.
+Wenn Sie eine kundenseitige Ansicht der Nutzung und des Repo-Lizenz-Ausstellungsverlaufs benötigen, verwenden Sie das Account-Portal. Wenn Sie maschinenseitige Inspektion benötigen, verwenden Sie `rdc subscription status -m` und `rdc subscription status -m`.

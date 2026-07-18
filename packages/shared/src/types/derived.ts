@@ -138,7 +138,7 @@ export interface QueueTraceSummary {
 }
 
 /** Queue vault snapshot */
-export interface QueueVaultSnapshot {
+export interface RenetVaultSnapshot {
   hasContent?: boolean;
   vaultVersion?: number | null;
   vaultContent?: string | null;
@@ -337,12 +337,6 @@ export interface TeamDropdownOption extends DropdownOption {
   status?: string;
 }
 
-/** Bridges grouped by region for dropdown */
-export interface RegionBridges {
-  regionName: string;
-  bridges: DropdownOption[];
-}
-
 /** Machines grouped by team for dropdown */
 export interface TeamMachines {
   teamName: string;
@@ -355,8 +349,6 @@ export interface OrganizationDropdownData {
   allTeams: TeamDropdownOption[];
   regions: DropdownOption[];
   machines: MachineDropdownOption[];
-  bridges: DropdownOption[];
-  bridgesByRegion: RegionBridges[];
   machinesByTeam: TeamMachines[];
   users: DropdownOption[];
   permissionGroups: DropdownOption[];
@@ -399,7 +391,7 @@ export interface OrganizationVaultsData {
 }
 
 // =============================================================================
-// QUEUE FUNCTION TYPES (for queue vault / bridge functions)
+// QUEUE FUNCTION TYPES (for renet vault / renet functions)
 // =============================================================================
 
 /** Queue function parameter definition */
@@ -428,7 +420,7 @@ export interface QueueFunctionRequirements {
   bridge?: boolean;
 }
 
-/** Queue function definition (bridge function) */
+/** Queue function definition (renet function) */
 export interface QueueFunction {
   name: string;
   description: string;

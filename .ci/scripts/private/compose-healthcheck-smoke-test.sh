@@ -50,8 +50,8 @@ _ssh() {
 
 cleanup() {
     log_step "Cleanup (best-effort)"
-    rdc repo down --name "$REPO_NAME" -m "$MACHINE_NAME" 2>/dev/null || true
-    rdc repo delete --name "$REPO_NAME" -m "$MACHINE_NAME" --force 2>/dev/null || true
+    rdc repo down "$REPO_NAME@$MACHINE_NAME" 2>/dev/null || true
+    rdc repo delete "$REPO_NAME@$MACHINE_NAME" --yes 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -60,10 +60,10 @@ trap cleanup EXIT
 # -------------------------------------------------------------------------
 log_step "Registering worker $VM_IP as machine '$MACHINE_NAME'"
 rdc config ssh set --key "$SSH_KEY" >/dev/null
-rdc config machine add --name "$MACHINE_NAME" --ip "$VM_IP" --user "$SSH_USER" 2>/dev/null ||
+rdc machine add "$MACHINE_NAME" --ip "$VM_IP" --user "$SSH_USER" 2>/dev/null ||
     log_warn "Machine '$MACHINE_NAME' already registered (continuing)"
-log_step "Provisioning renet on worker (rdc config machine setup)"
-rdc config machine setup --name "$MACHINE_NAME"
+log_step "Provisioning renet on worker"
+rdc machine setup "$MACHINE_NAME"
 
 # Pre-clean any debris from prior runs so create doesn't conflict
 cleanup
@@ -72,11 +72,11 @@ cleanup
 # Phase 1 — bring up app-postgres (db has pg_isready healthcheck on localhost)
 # -------------------------------------------------------------------------
 log_step "Creating repo + applying app-postgres template"
-rdc repo create --name "$REPO_NAME" -m "$MACHINE_NAME" --size 2G
-rdc repo template apply --name app-postgres -m "$MACHINE_NAME" -r "$REPO_NAME"
+rdc repo create "$REPO_NAME" -m "$MACHINE_NAME" --size 2G
+rdc repo admin template apply "$REPO_NAME@$MACHINE_NAME" --template app-postgres
 
 log_step "Bringing repo up (db must converge to healthy via pg_isready)"
-rdc repo up --name "$REPO_NAME" -m "$MACHINE_NAME"
+rdc repo up "$REPO_NAME@$MACHINE_NAME"
 
 # -------------------------------------------------------------------------
 # Phase 2 — poll db's healthcheck status until healthy or timeout

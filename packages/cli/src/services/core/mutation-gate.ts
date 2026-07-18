@@ -22,14 +22,14 @@
  * callers can pass v1-shape or v2-shape diffs and the gate handles both.
  */
 
+import type { SensitivityMeta } from '@rediacc/shared/config-schema';
+import { metaForPointer } from '@rediacc/shared/config-schema';
+import { digestForPointer } from '../../schema/fingerprint.js';
 import {
   configEditOverrideScope,
   isAgentEnvironment,
   scopeAllows,
 } from '../../utils/agent-guard.js';
-import { digestForPointer } from '../../schema/walker.js';
-import { metaForPointer } from '../../schema/walker.js';
-import type { SensitivityMeta } from '../../schema/sensitivity.js';
 
 export interface MutationEntry {
   /** JSON Pointer to the mutated leaf. */

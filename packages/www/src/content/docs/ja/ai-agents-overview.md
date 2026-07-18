@@ -4,8 +4,8 @@ description: "Claude Code、Cursor、Clineが rdc を通じてRediaccインフ�
 category: Guides
 order: 30
 language: ja
-sourceHash: "0aa0c975030d4856"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "27ea21c36250d4a9"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 `rdc` はもともとエージェントを念頭に置いて設計されています。Claude Code、Cursor、Cline など、サブシェルで `rdc` を呼び出すAIアシスタントはいずれも、構造化されたJSON出力、機械可読なエラー、そして自律的なRediaccインフラ管理に必要なガードレールを自動的に受け取ります。統合の仕組みを以下に説明します。
@@ -59,21 +59,6 @@ Rediaccのアーキテクチャはエージェントに適しています:
     "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
   }]
 }
-```
-
-### 3. エージェント機能の検出
-
-`rdc agent` サブコマンドは構造化されたイントロスペクションを提供します:
-
-```bash
-# List all commands with arguments and options
-rdc agent capabilities
-
-# Show detailed schema for a specific command
-rdc agent schema --command "machine query"
-
-# Execute a command with JSON stdin
-echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 ```
 
 ## エージェント向けの主要フラグ

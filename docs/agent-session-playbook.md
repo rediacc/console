@@ -106,7 +106,7 @@ npm run ci                                                  # full local gate su
 
 - Config: `--config tutorial` (never default). Machines: `machine-11`
   (192.168.111.11), `machine-12` (192.168.111.12), bridge `192.168.111.1`.
-  After re-provisioning: `rdc config machine scan-keys -m <m>`.
+  After re-provisioning: `rdc machine scan-keys <m>`.
 - Env: `REDIACC_ALLOW_GRAND_REPO=*` must be exported by the USER before the
   session (agents can't self-set it: ancestry verification).
   `REDIACC_SKIP_MACHINE_ACTIVATION=1` on unlicensed VMs.
@@ -114,7 +114,8 @@ npm run ci                                                  # full local gate su
 - Tutorial repos on the lab: `my-app`, `app(:work/:rollback)`, `demo-pgadmin
   (:experiment)`, staged idempotently by `.ci/tutorials/lib/stage-*.sh`
   (storyboard setupCommands). Throwaway work uses `verify-*` names + cleanup
-  (`repo delete` + `config repository remove` for orphan rows).
+  (`repo delete <ref> --archive-config`, which moves the config row to the
+  archive; `repo admin archive purge <name>` drops it for good).
 - Recording happens on the BRIDGE cluster (fresh machines), not the persistent
   lab; scripts' pre-setup must provision from zero. `--keep-vms` keeps the
   cluster for the video stage.

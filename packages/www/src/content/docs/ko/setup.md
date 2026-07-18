@@ -4,8 +4,8 @@ description: "구성 생성, 머신 추가, 서버 프로비저닝, 인프라 �
 category: "Guides"
 order: 3
 language: ko
-sourceHash: "19a208e453f7d742"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "1fba8ac242726528"
+sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
 # 머신 설정
@@ -78,6 +78,34 @@ rdc config machine setup --name server-1
 
 > 설정은 머신당 한 번만 실행해야 합니다. 필요한 경우 다시 실행해도 안전합니다.
 
+## 데이터스토어 백엔드
+
+데이터스토어는 암호화된 저장소 이미지를 보관하는 머신별 스토리지 풀입니다. `machine setup`은 기본적으로 **로컬** 데이터스토어를 생성합니다. 서버 자체 디스크의 루프 장치 기반 BTRFS 파일시스템이며, `--datastore-size`(기본값은 사용 가능한 디스크의 `95%`)로 크기를 지정합니다. 거의 모든 단일 머신 배포에 적합한 백엔드이며 서버 외에 다른 것이 필요하지 않습니다.
+
+### 데이터스토어 크기 조정
+
+`--datastore-size`는 백분율(`95%`) 또는 절대 크기(`50G`, `1T`)를 허용합니다. 데이터스토어는 나중에 온라인으로 확장할 수 있습니다.
+
+```bash
+rdc datastore resize -m server-1 --size 200G
+```
+
+데이터스토어 내부의 저장소는 `repo create` 시점에 독립적으로 크기가 정해지며 실행 중에도 확장할 수 있으므로, 데이터스토어를 미리 과도하게 프로비저닝할 필요가 없습니다.
+
+### Ceph RBD 백엔드
+
+공유형, 스케일 아웃형, 또는 Kubernetes를 지원하는 스토리지가 필요하다면 대신 외부 Ceph 클러스터에 데이터스토어를 초기화하십시오. 이 경우 데이터스토어는 RBD 이미지 위에 있게 되며(그 위에 BTRFS, 이미지별 LUKS 계층은 없음), 포크는 BTRFS reflink 대신 RBD 자체의 copy-on-write 클론을 사용합니다.
+
+```bash
+# 1. 머신의 Ceph 참조를 기록합니다 (pool + RBD 이미지, 비밀 정보 아님)
+rdc config machine set-ceph -m server-1 --pool rbd --image datastore-server1
+
+# 2. Ceph 백엔드에서 데이터스토어를 초기화합니다
+rdc datastore init -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
+```
+
+Ceph 키링은 머신에만 보관되며, 설정 파일에는 비밀이 아닌 pool과 이미지 참조만 저장됩니다. Ceph는 Kubernetes 클러스터가 ceph-csi를 통해 사용하는 스토리지 계층이기도 합니다. 클러스터와 퍼시스턴트 볼륨에 대해서는 [Kubernetes](/ko/docs/kubernetes) 가이드를, 두 백엔드의 비교는 [아키텍처](/ko/docs/architecture)를 참조하십시오.
+
 ## 호스트 키 관리
 
 서버의 SSH 호스트 키가 변경된 경우(예: 재설치 후) 저장된 키를 새로 고침하십시오.
@@ -104,7 +132,7 @@ rdc term connect -m server-1 -c "hostname"
 rdc doctor
 ```
 
-> **팁**: SSH 연결을 확인하려면 `rdc term connect -m <machine> -c "hostname"`을 실행하거나 `ssh`를 직접 사용하십시오.
+> **팁**: SSH 연결을 확인하려면 `rdc term connect <machine> -c "hostname"`을 실행하거나 `ssh`를 직접 사용하십시오.
 
 ## 인프라 구성
 

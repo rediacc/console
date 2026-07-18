@@ -64,7 +64,7 @@ rdc repo down --name <repo> -m <machine> --yes   # Stop a repository
 rdc term connect -m <machine> -c "command"       # Run command via SSH
 rdc repo sync upload -m <machine> -r <repo>    # Upload files
 rdc repo sync download -m <machine> -r <repo>  # Download files
-rdc agent capabilities                    # List all commands (for discovery)
+rdc --help-all                            # List all commands (for discovery)
 ```
 
 ## Security

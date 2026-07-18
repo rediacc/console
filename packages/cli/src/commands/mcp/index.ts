@@ -20,7 +20,6 @@ export function registerMcpCommands(program: Command): void {
       await startMcpServer({
         configName: options.config,
         defaultTimeoutMs: Number.parseInt(options.timeout ?? MCP_TIMEOUT_DEFAULT, 10),
-        program,
       });
     });
 }

@@ -4,8 +4,8 @@ description: "تخطيط المجلدات، وأوامر renet، وخدمات sy
 category: "Concepts"
 order: 3
 language: ar
-sourceHash: "4fb53bb4cb1512f6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "af2e8fc3da708d9a"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 # مرجع الخادم
@@ -227,6 +227,38 @@ renet datastore validate    # Filesystem integrity check
 renet datastore expand      # Expand the datastore online
 ```
 
+### طبقات مخزن البيانات (Ceph RBD)
+
+مخزن البيانات إما محلي (BTRFS مدعوم بجهاز loop على قرص الجهاز، الافتراضي) أو مدعوم بعنقود Ceph خارجي عبر صورة RBD. تُختار الطبقة عند `init`:
+
+```bash
+# الطبقة المحلية (الافتراضية)
+renet datastore init --size 50G
+
+# طبقة Ceph RBD: BTRFS على صورة RBD مُعيَّنة من عنقود Ceph خارجي
+renet datastore init --backend ceph --pool rbd --image {name} --cluster ceph
+```
+
+على طبقة Ceph، يستخدم التفريع وإلغاء التفريع أوليات النسخ عند الكتابة الخاصة بـ RBD بدلاً من reflinks الخاصة بـ BTRFS:
+
+```bash
+renet datastore fork   --source {image} --target {new-image}   # لقطة RBD -> حماية -> استنساخ
+renet datastore unfork --image {image}                         # تفكيك استنساخ بترتيب التبعية
+```
+
+لا تفتح عُقد Ceph أبداً LUKS (لا توجد طبقة LUKS لكل صورة في هذه الطبقة)، لذا يتبع بصمة ذاكرتها ضبط عملية Ceph الخلفية (`osd_memory_target`)، لا رياضيات KDF. يمكن لعميل ثانٍ تعيين نفس صورة RBD للقراءة فقط مع طبقة تراكب محلية للنسخ عند الكتابة، وهو مسار التوسع للقراءة الغالبة.
+
+### Kubernetes (renet kube)
+
+على عقدة عنقود، يُغلِّف renet k3s بنفس الطريقة التي يُغلِّف بها Docker. `renet kube` هو نظير compose: يحقن `KUBECONFIG` ويطبّق البيانات أو مخططات Helm من `up()` الخاصة بملف Rediaccfile.
+
+```bash
+sudo renet kube apply -f manifests/     # التطبيق داخل فضاء أسماء المستودع
+sudo renet kube -- get pods             # التمرير إلى kubectl في فضاء الأسماء المثبَّت
+```
+
+تعيش حالة العنقود في صور نسخ عند الكتابة مدعومة بمخزن البيانات (يرتبط `--data-dir` الخاص بـ k3s داخل نقطة تحميل الصورة)، وهو ما يسمح لعنقود كامل بالتفرع والهجرة. الأحجام الثابتة هي وحدات نسخ عند الكتابة منفصلة: صور RBD على Ceph (فضاء أسماء RADOS واحد لكل نسخة عنقود ولكل تفريع)، أو ملفات صور صغيرة لمخزن البيانات عبر موفر PV محلي على الطبقة المحلية. سير العمل من جهة المستخدم موجود في دليل [Kubernetes](/ar/docs/kubernetes)؛ تُوجِّه CLI هذه المسارات عبر `rdc cluster` وأوامر `rdc repo` المتوافقة مع العناقيد.
+
 ## خدمات systemd
 
 ينشئ كل مستودع وحدات systemd التالية:
@@ -236,6 +268,7 @@ renet datastore expand      # Expand the datastore online
 | `rediacc-docker-{id}.service` | عملية Docker daemon معزولة |
 | `rediacc-docker-{id}.socket` | تفعيل مقبس Docker API |
 | `rediacc-loopback-{id}.service` | إعداد عنوان IP الاسترجاعي |
+| `rediacc-k3s-{id}.service` | عقدة k3s لكل عنقود (مضيفات العناقيد فقط) |
 
 الخدمات العامة المشتركة بين جميع المستودعات:
 

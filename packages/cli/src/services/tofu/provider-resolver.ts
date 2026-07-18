@@ -25,7 +25,23 @@ function loadRegistry(): Record<string, KnownProviderMapping> {
  * - If config.provider is set → look up in provider-registry.json
  * - Merge user defaults (region, instanceType, image) over registry defaults
  */
+/**
+ * True for the local libvirt pseudo-provider. KVM never goes through OpenTofu;
+ * cluster provisioning routes it to the renet-ops-backed KVM provisioner. The
+ * resolver refuses to build a tofu mapping for it so it can never reach the
+ * generator.
+ */
+export function isKvmProvider(provider: string | undefined): boolean {
+  return provider === 'kvm';
+}
+
 export function resolveProviderMapping(config: CloudProviderConfig): ProviderMapping {
+  if (isKvmProvider(config.provider)) {
+    throw new Error(
+      "Provider 'kvm' is provisioned via renet ops, not OpenTofu; cluster provisioning routes it to the KVM provisioner."
+    );
+  }
+
   if (config.source) {
     return resolveCustomProvider(config);
   }

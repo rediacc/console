@@ -4,8 +4,8 @@ description: "Dove Rediacc ti fornisce evidenze SOC 2: i log, la traccia di chan
 category: "Legal"
 order: 2
 language: it
-sourceHash: "9ba8477a07292a7d"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "e03bef0cead86ab7"
+sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
 Conosco SOC 2 perché ho partecipato a riunioni di audit. Gli auditor usano il framework AICPA per verificare che i tuoi controlli funzionino davvero, non solo che tu dica che funzionano. Cinque Trust Service Criteria: sicurezza, disponibilità, integrità del trattamento, riservatezza e privacy.
@@ -41,7 +41,7 @@ I fork rendono la gestione dei cambiamenti verificabile. Fai un fork della produ
 1. Fork di un repository di produzione (`rdc repo fork`)
 2. Applicazione e test delle modifiche sul fork
 3. Validazione indipendente del fork
-4. Promozione del fork in produzione (`rdc repo takeover`)
+4. Promozione del fork in produzione (`rdc repo promote`)
 
 Ogni passaggio: registrato. Timestampato. Associato a una persona. Niente "non so chi ha cambiato questo" momenti.
 

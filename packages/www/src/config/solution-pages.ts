@@ -4,7 +4,6 @@
  */
 
 import type { ImageMetadata } from 'astro';
-import { ACCOUNT_PATH } from './constants';
 // Problem section illustrations
 import illustrationAiPentesting from '../assets/images/illustrations/ai-pentesting.svg';
 import illustrationAuditTrail from '../assets/images/illustrations/audit-trail.svg';
@@ -17,9 +16,10 @@ import illustrationEnvironmentCloning from '../assets/images/illustrations/envir
 import illustrationFailoverTesting from '../assets/images/illustrations/failover-testing.svg';
 import illustrationImmutableBackups from '../assets/images/illustrations/immutable-backups.svg';
 import illustrationInfrastructureCosts from '../assets/images/illustrations/infrastructure-costs.svg';
-import illustrationInstantRecovery from '../assets/images/illustrations/instant-recovery.svg';
 import illustrationInstantRecoveryMobile from '../assets/images/illustrations/instant-recovery.mobile.svg';
+import illustrationInstantRecovery from '../assets/images/illustrations/instant-recovery.svg';
 import illustrationIntegrations from '../assets/images/illustrations/integrations.svg';
+import illustrationKubernetesClusterMobility from '../assets/images/illustrations/kubernetes-cluster-mobility.svg';
 import illustrationMigrationSafety from '../assets/images/illustrations/migration-safety.svg';
 import illustrationProductionParity from '../assets/images/illustrations/production-parity.svg';
 import illustrationRapidRecovery from '../assets/images/illustrations/rapid-recovery.svg';
@@ -27,6 +27,7 @@ import illustrationRetentionCompliance from '../assets/images/illustrations/rete
 import illustrationSafeOsTesting from '../assets/images/illustrations/safe-os-testing.svg';
 import illustrationVendorLockIn from '../assets/images/illustrations/vendor-lock-in.svg';
 import illustrationVulnerabilityManagement from '../assets/images/illustrations/vulnerability-management.svg';
+import { ACCOUNT_PATH } from './constants';
 
 export type SectionType =
   | 'hero'
@@ -459,6 +460,37 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
       { name: 'Keycloak', kind: 'auth' },
       { name: 'Vaultwarden', kind: 'storage' },
       { name: 'MinIO', kind: 'storage' },
+    ],
+  },
+  'kubernetes-cluster-mobility': {
+    contentKey: 'kubernetesClusterMobility',
+    category: 'multi-cloud',
+    illustration: illustrationKubernetesClusterMobility,
+    sections: [
+      'hero',
+      'stats',
+      'problem',
+      'howItWorks',
+      'techDiff',
+      'benefits',
+      'downloadGated',
+      'competitorComparison',
+      'bottomCta',
+      'downloadShort',
+      'techStrip',
+      'exploreSolutions',
+      'references',
+    ],
+    competitors: ['Velero', 'Kasten K10', 'Cluster API', 'RBD Mirroring'],
+    techStrip: [
+      { name: 'GitLab', kind: 'devops' },
+      { name: 'Nextcloud', kind: 'collab' },
+      { name: 'WordPress', kind: 'cms' },
+      { name: 'MariaDB', kind: 'data' },
+      { name: 'Grafana', kind: 'monitor' },
+      { name: 'Keycloak', kind: 'auth' },
+      { name: 'MinIO', kind: 'storage' },
+      { name: 'Gitea', kind: 'devops' },
     ],
   },
   'vendor-lock-in': {

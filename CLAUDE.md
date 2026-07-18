@@ -11,7 +11,7 @@ Self-hosted infrastructure platform. Each machine runs Docker-based repositories
 ### Key Concepts
 
 - **Repository**: An isolated application deployment (e.g., `mail`, `gitlab`, `nextcloud`). Each repo has its own Docker daemon at `/var/run/rediacc/docker-<networkId>.sock`, loopback IP range (127.0.x.x/26), and mount at `/mnt/rediacc/mounts/<guid>/`.
-- **Fork**: `rdc repo fork --parent <name> --tag <tag> -m <machine>` makes a new repo with a fresh GUID and networkId that shares the parent's data via BTRFS reflink. **Forks are near-instant and constant-time** regardless of repo size: a 100 GB repo and a 1 GB repo fork in the same seconds. Use forks freely as the per-test isolation unit, do NOT assume fork cost scales with repo size.
+- **Fork**: `rdc repo fork <name> --tag <tag>` makes a new repo (`<name>:<tag>`) with a fresh GUID and networkId that shares the parent's data via BTRFS reflink. **Forks are near-instant and constant-time** regardless of repo size: a 100 GB repo and a 1 GB repo fork in the same seconds. Use forks freely as the per-test isolation unit, do NOT assume fork cost scales with repo size.
 - **Renet**: Network orchestrator on the machine. Manages compose files, loopback IPs, Docker daemon lifecycle. CLI: `sudo renet list all --json`, `sudo renet compose -- up -d`.
 - **Rediaccfile**: Bash script with lifecycle functions (`up()`, `down()`, `info()`) sourced by renet during deployment.
 - **Config**: CLI configuration file for connecting to machines. Each config is a flat JSON file (~/.config/rediacc/rediacc.json by default) with a unique ID and version number. Multiple named configs supported (e.g., production.json, staging.json).
@@ -30,60 +30,71 @@ Self-hosted infrastructure platform. Each machine runs Docker-based repositories
 
 ### Common Commands
 
+The thing a command acts on is a **positional ref**, not a `--name` flag. A repo ref is
+`name`, `name:tag` for a fork, and optionally `name@machine` to assert placement. The
+machine is derived from the ref, so `-m/--machine` is gone from most repo commands (it
+survives where there is nothing to derive from, e.g. `repo create`, or as a batch filter,
+e.g. `repo up --all -m <machine>`).
+
 ```bash
 # Full machine status (SSH + renet list all)
-rdc machine query --name <machine>
+rdc machine status <machine>
 
 # Filter by section
-rdc machine query --name <machine> --system
-rdc machine query --name <machine> --containers
-rdc machine query --name <machine> --services
-rdc machine query --name <machine> --repositories
-rdc machine query --name <machine> --network
-rdc machine query --name <machine> --block-devices
+rdc machine status <machine> --system
+rdc machine status <machine> --containers
+rdc machine status <machine> --services
+rdc machine status <machine> --repositories
+rdc machine status <machine> --network
+rdc machine status <machine> --block-devices
 
-# SSH terminal to machine
-rdc term connect -m <machine>
+# SSH terminal: one positional target, either a machine name or a repo ref
+rdc term connect <machine>
 
 # SSH terminal to repo (sets DOCKER_HOST, working dir)
-rdc term connect -m <machine> -r <repo>
+rdc term connect <repo>
 
 # Run command on machine
-rdc term connect -m <machine> -c "command"
+rdc term connect <machine> -c "command"
 
-# Deploy/update a repository
-rdc repo up --name <repo> -m <machine>
+# Deploy/update a repository (machine derived from the ref)
+rdc repo up <repo>
 
 # File sync (directory)
-rdc repo sync upload -m <machine> -r <repo> --local ./local-path
-rdc repo sync download -m <machine> -r <repo> --local ./local-path
+rdc repo sync upload <repo> --local ./local-path
+rdc repo sync download <repo> --local ./local-path
 
-# File sync (single file — explicit remote path)
-rdc repo sync upload -m <machine> -r <repo> --local ./config.toml --remote-file etc/config.toml
-rdc repo sync download -m <machine> -r <repo> --local ./out --remote-file etc/config.toml
+# File sync (single file, explicit remote path)
+rdc repo sync upload <repo> --local ./config.toml --remote-file etc/config.toml
+rdc repo sync download <repo> --local ./out --remote-file etc/config.toml
 
-# VS Code remote
-rdc vscode connect -m <machine> -r <repo>
+# Container logs / exec
+rdc repo logs <repo> -c <container> --lines 50
+rdc repo exec <repo> -c <container> -- <command>
+
+# VS Code remote (one positional target, like term)
+rdc vscode connect <repo>
 ```
 
 ### Run Functions (escape hatch, debugging only)
 
-`rdc run` executes Rediaccfile functions remotely. These are for debugging only — prefer dedicated commands above.
+`rdc run` executes Rediaccfile functions remotely. It is hidden from help and MCP, and is for
+debugging only. Prefer the dedicated commands above. The function name is passed with `-f`.
 
 ```bash
-rdc run container_list -m <machine> --param repository=<repo>
-rdc run container_logs -m <machine> --param repository=<repo> --param container=<name>
-rdc run container_exec -m <machine> --param repository=<repo> --param container=<name> --param command="..."
-rdc run container_restart -m <machine> --param repository=<repo> --param container=<name>
+rdc run -f container_list -m <machine> --param repository=<repo>
+rdc run -f container_logs -m <machine> --param repository=<repo> --param container=<name>
+rdc run -f container_exec -m <machine> --param repository=<repo> --param container=<name> --param command="..."
+rdc run -f container_restart -m <machine> --param repository=<repo> --param container=<name>
 ```
 
 ### Config Setup
 
 ```bash
 # Default config (~/.config/rediacc/rediacc.json) is created automatically on first use
-rdc config init --name production   # Create named config
-rdc config repository list         # List repos with name -> GUID mapping
-rdc --config production machine query --name prod-1  # Use specific config
+rdc config init production          # Create named config
+rdc repo list                       # List repos with name -> GUID mapping
+rdc --config production machine status prod-1  # Use specific config
 ```
 
 ### CLI Code Structure
@@ -206,7 +217,8 @@ To reproduce license-enforcement issues locally, set:
 ```bash
 ACCOUNT_ED25519_PUBLIC_KEY="$(curl -s https://www.rediacc.com/api/public/account-key)" \
 RDC_RENET_LICENSE=1 \
-./rdc.sh --config <prod-config> repo push --name <repo> -m <src> --to <fresh-machine> --up
+./rdc.sh --config <prod-config> repo push <repo> --to <fresh-machine>
+./rdc.sh --config <prod-config> backup restore <repo> --as <repo> -m <fresh-machine> --up
 ```
 
 `RDC_RENET_LICENSE=1` drops the `--nolicense` build flag. `ACCOUNT_ED25519_PUBLIC_KEY` must match the account server that issued the licenses on your test machines — for production licenses that's the prod ed25519 public key. The build flow wires this into `private/renet/pkg/license/keys.ProductionPublicKey` via ldflags. Without it, prod-signed licenses fail validation as `invalid_signature`.
@@ -357,8 +369,8 @@ Auth: `SES_AK_ID`/`SES_AK_SECRET` for AWS IAM admin, `CLOUDFLARE_API_TOKEN` (or 
 | `Quality / Shell` | `shfmt -w -i 4 <file>` after any shell edit (gate = `npm run check:ci-shell-format`) |
 | `lint` / `check:lint` | Fix ESLint errors properly (never suppress with comments). **Never revert a dev-dep bump (or pin it in `.deps-upgrade-blocklist`) just to silence new rules a plugin surfaces.** When `eslint-plugin-react-hooks` 7.x flags `react-hooks/set-state-in-effect` / `refs-in-render` / `immutability` / `preserve-manual-memoization` across existing files, fix each site per React 19 idioms: move ref writes into a dependency-less `useEffect`, derive state via the "previous value" pattern (`const [prev, setPrev] = useState(value); if (prev !== value) { setPrev(value); setDerived(...); }`), wrap effect-only side effects in `useEffectEvent` (from `react`, available in 19+), defer problematic setState with `queueMicrotask`, use `window.location.assign(url)` instead of direct `window.location.href = url` assignments, and initialize state lazily with `useState(() => ...)` instead of a post-mount effect. Downgrade is not a fix. |
 | `lint:unused` | Add to `ignoreDependencies` in `knip.jsonc` with a `// BLOCKER:` reason if it's a transitive/runtime dep |
-| `check:ci-e2e-coverage` | Add coverage for new renet bridge functions in `packages/bridge-tests` (the gate greps bridge-tests for each generated function name) |
-| `check:ci-renet` (types) | `private/renet/bin/renet bridge generate-types --output packages/shared/src/renet-contract/data --version dev` |
+| `check:ci-e2e-coverage` | Add coverage for new renet bridge functions in `packages/e2e-tests` (the gate greps e2e-tests for each generated function name) |
+| `check:ci-renet` (types) | `private/renet/bin/renet functions generate-types --output packages/shared/src/renet-contract/data --version dev` |
 | `Initialize` (PR title) | PR title must follow Conventional Commits (`type(scope): summary` or `type: summary`). Fix with `gh pr edit <N> --title "fix: ..."`. |
 | `Quality / PR Description` (stale) | Description's `updatedAt` is older than 30 min and there are new commits. Run `gh pr edit <N> --body "..."` **immediately before pushing the next commit** so the fresh timestamp is visible to the next CI run (editing alone does not trigger CI). **The body must actually change** — an edit with identical content does NOT bump `updatedAt`; summarize the new commits instead of re-sending the same text. Stale-only failure: refresh + `gh run rerun <id> --failed`, no commit needed. |
 
@@ -376,7 +388,7 @@ Do NOT classify a CI failure from a handful of grepped lines. The cost of a wron
 When fixing CI failures, follow this loop:
 
 1. **Run locally first**: Run `npm run ci` sub-commands locally before pushing to avoid costly CI round-trips. Use parallel sub-agents for independent checks.
-2. **Push and watch**: After pushing, watch CI with `gh run watch <id> --repo rediacc/console --exit-status --interval 100` in the background (the long interval keeps context small).
+2. **Push and watch**: After pushing, arm a terminal-state watch in the background: `R=<run-id>; until [ "$(gh run view $R --repo rediacc/console --json status --jq .status)" = "completed" ]; do sleep 20; done; gh run view $R --repo rediacc/console --json conclusion,jobs` with run_in_background: true — the process exit notifies on completion. Do NOT use `gh run watch` as the wake-up; it has dropped silently on terminal runs (observed 4/4).
 3. **Fix on notification**: When the background watch completes, check for failures with `gh run view <id> --json jobs --jq '.jobs[] | select(.conclusion == "failure") | {name}'`. A run that ends `cancelled` with a failed job means the watchdog killed it for that failure; `cancelled` with zero failed jobs means your own push superseded it. Cancelled NEVER means green — the run is only done when every job passes (deploy preview is among the last).
 4. **Every PR (console AND submodules) gets bot-reviewed within minutes of each push**: fetch `gh api repos/<owner>/<repo>/pulls/<N>/comments`, fix what's real, reply substantively to every comment, and resolve the threads via GraphQL. Unreplied/unresolved threads fail `Review Gate` (console PR) and `Quality / Submodule Branches` (submodule PRs) — check for fresh comments after each push, before the gates do.
 5. **Fix, commit, push, repeat**: Fix the issue, commit, push, and watch again. Batch pending fixes into one push — each push restarts the whole pipeline. Continue until green.
@@ -422,7 +434,7 @@ cd /path/to/console && git add -A && git commit -m "fix: ..." && git push
 
 ### Secrets in CI vs CD
 
-- **CI workflows** (`ci.yml`, `ci-quality.yml`, `ct-tests.yml`, `standalone-run.yml`): Use **generated throwaway keys** via `ci-env.sh`. Never pass production secrets.
+- **CI workflows** (`ci.yml`, `ci-quality.yml`, `ct-tests.yml`): Use **generated throwaway keys** via `ci-env.sh`. Never pass production secrets.
 - **Release workflow** (`cd-v2.yml`): Uses **real org secrets** from GitHub for production deployment.
 - Generated secrets are masked via `::add-mask::` in `ci-env.sh`.
 

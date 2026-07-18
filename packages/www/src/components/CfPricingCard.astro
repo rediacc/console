@@ -2,7 +2,6 @@
 import { EXTERNAL_LINKS } from '../config/constants';
 import { createTranslator } from '../i18n/utils';
 import type { Language } from '../i18n/types';
-import { DESIGN_PARTNER_GRANTED_PLAN, isDesignPartnerProgramActive } from '../utils/design-partner-program';
 import AccountLink from './AccountLink.astro';
 
 interface Props {
@@ -19,18 +18,9 @@ interface Props {
   lang: Language;
   ctaNamespace?: string;
   useCheckout?: boolean;
-  /**
-   * Promote this card's design-partner CTA to the page's "joker" red bolt.
-   * Only one button per page may carry this — enforced by
-   * scripts/check-cta-bolt-uniqueness.js. Pass true ONLY for the focal
-   * BUSINESS card on a dedicated pricing surface (pricing.astro,
-   * disaster-recovery.astro). Leave false on PricingPreview (home) where
-   * SPHero is the joker.
-   */
-  boltCta?: boolean;
 }
 
-const { plan, metrics, lang, ctaNamespace = 'pages.pricing', useCheckout = false, boltCta = false } = Astro.props;
+const { plan, metrics, lang, ctaNamespace = 'pages.pricing', useCheckout = false } = Astro.props;
 const { t } = createTranslator(lang);
 
 const priceFormatter = new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang, {
@@ -42,14 +32,6 @@ const formatPrice = (amount: number) => priceFormatter.format(amount);
 
 const checkoutPlans = useCheckout ? new Set(['professional', 'business']) : new Set<string>();
 const usesCheckout = checkoutPlans.has(plan.id);
-
-// Design Partner Program: only the granted tier (BUSINESS) gets the
-// "FREE for Design Partners" overlay. Other tiers shown alongside it
-// (Enterprise) render with their normal price + CTA so visitors aren't
-// misled into thinking Enterprise is also free.
-// Toggled via announcement.enabled in src/i18n/translations/en.json.
-const designPartner =
-  isDesignPartnerProgramActive() && plan.id === DESIGN_PARTNER_GRANTED_PLAN;
 ---
 
 <div
@@ -61,11 +43,7 @@ const designPartner =
   data-monthly-price={plan.monthly}
   data-annual-price={plan.annual}
 >
-  {designPartner ? (
-    <div class="cf-badge cf-badge-design-partner">
-      {t('pages.pricing.ui.designPartner.badge')}
-    </div>
-  ) : plan.badgeLabel ? (
+  {plan.badgeLabel ? (
     <div class="cf-badge">{plan.badgeLabel}</div>
   ) : null}
   <h3 class="cf-plan-name">{t(`${ctaNamespace}.plans.${plan.id}.name`)}</h3>
@@ -74,27 +52,6 @@ const designPartner =
       <>
         <div class="cf-price cf-contact-us">{t(`${ctaNamespace}.ui.contactUs`)}</div>
         <div class="cf-price-subtitle">{t(`${ctaNamespace}.ui.contactUsSub`)}</div>
-      </>
-    ) : plan.monthly === 0 ? (
-      designPartner ? (
-        <>
-          <div class="cf-price cf-dp-free">{t('pages.pricing.ui.designPartner.price')}</div>
-          <div class="cf-price-subtitle">{t('pages.pricing.ui.designPartner.period')}</div>
-        </>
-      ) : (
-        <>
-          <span class="cf-price">{formatPrice(0)}</span>
-          <div class="cf-price-subtitle">{t(`${ctaNamespace}.ui.foreverFree`)}</div>
-        </>
-      )
-    ) : designPartner ? (
-      <>
-        <div class="cf-price-line cf-dp-original">
-          <span class="cf-price" data-monthly={formatPrice(plan.monthly)} data-annual={formatPrice(plan.annual)}>{formatPrice(plan.monthly)}</span>
-          <span class="cf-price-period" data-monthly="/mo" data-annual="/yr">/mo</span>
-        </div>
-        <div class="cf-price cf-dp-free">{t('pages.pricing.ui.designPartner.price')}</div>
-        <div class="cf-price-subtitle">{t('pages.pricing.ui.designPartner.period')}</div>
       </>
     ) : (
       <>
@@ -126,21 +83,7 @@ const designPartner =
       </li>
     ))}
   </ul>
-  {plan.monthly === 0 && (
-    <p class="cf-edge-note">{t('pages.pricing.ui.edgeLimitsNote', 'Limits shown for edge channel. Half on stable.')}</p>
-  )}
-  {designPartner ? (
-    <a
-      href="/account/"
-      class:list={['cf-cta-btn cf-cta-featured', boltCta && 'cta-bolt']}
-      data-design-partner-claim
-      data-track="cta_click"
-      data-track-label="pricing-design-partner"
-      data-track-dest={plan.id}
-    >
-      {t('pages.pricing.ui.designPartner.cta')} &rarr;
-    </a>
-  ) : plan.id === 'enterprise' ? (
+  {plan.id === 'enterprise' ? (
     <a
       href={EXTERNAL_LINKS.SCHEDULE_CONSULTATION}
       target="_blank"
@@ -152,14 +95,6 @@ const designPartner =
     >
       {t(`${ctaNamespace}.ui.cta.${plan.id}.primary`)}
     </a>
-  ) : plan.monthly === 0 ? (
-    <AccountLink
-      label={t(`${ctaNamespace}.ui.cta.community.primary`)}
-      className="cf-cta-btn cf-cta-featured"
-      trackEvent="cta_click"
-      trackLabel="pricing-cta"
-      trackDest={plan.id}
-    />
   ) : usesCheckout ? (
     <button
       type="button"
@@ -169,7 +104,7 @@ const designPartner =
       data-track-label="pricing-checkout"
       data-track-dest={plan.id}
     >
-      {t(`${ctaNamespace}.ui.cta.${plan.id}.primary`)}
+      {t('pages.pricing.ui.startTrial')}
     </button>
   ) : (
     <AccountLink
@@ -186,7 +121,7 @@ const designPartner =
   // Self-contained handlers for the card's CTAs. Astro deduplicates this
   // script — it runs once regardless of how many cards are rendered.
   document.addEventListener('DOMContentLoaded', () => {
-    // 1. Stripe checkout buttons (Professional plan when not in design-partner mode).
+    // Stripe checkout buttons (Professional and Business plans).
     // Marketing-host detection delegated to window.__rediaccIsMarketingHost
     // (defined in BaseLayout.astro, mirrors src/utils/marketing-host.ts).
     // On marketing hosts (www / localhost / *.rediacc.workers.dev) we open
@@ -221,11 +156,5 @@ const designPartner =
         }
       });
     });
-
-    // 2. Design Partner Program "Claim" CTAs are bound globally in
-    // BaseLayout.astro so the picker handler works on every page that has
-    // a [data-design-partner-claim] anchor (persona pages, 404,
-    // design-partners landing, etc.) — not just pages that include this
-    // component. See the inline script at the bottom of BaseLayout.astro.
   });
 </script>

@@ -95,7 +95,7 @@ const Footer: React.FC = () => {
             <ul className="footer-list">
               <li>
                 <a
-                  href={`/${currentLang}#solutions`}
+                  href={`/${currentLang}/solutions`}
                   className="footer-link"
                   data-track="cta_click"
                   data-track-label="footer-product"

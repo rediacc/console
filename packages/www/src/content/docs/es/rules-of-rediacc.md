@@ -4,7 +4,7 @@ description: "Información esencial sobre reglas y convenciones para crear aplic
 category: "Guides"
 order: 5
 language: es
-sourceHash: "7654d7b072ee3ccc"
+sourceHash: "b2d38b48d1fac737"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -99,7 +99,7 @@ Renet auto-inyecta estas en cada contenedor:
   ```
 - El volumen LUKS se monta en `/mnt/rediacc/mounts/<guid>/`.
 - Las instantáneas BTRFS capturan todo el archivo de respaldo LUKS, incluyendo todos los datos montados con bind.
-- El datastore es un archivo de pool BTRFS de tamaño fijo en el disco del sistema. Usa `rdc machine query --name <name> --system` para ver el espacio libre efectivo. Amplía con `rdc datastore resize`.
+- El datastore es un archivo de pool BTRFS de tamaño fijo en el disco del sistema. Usa `rdc machine status <name> --system` para ver el espacio libre efectivo. Amplía con `rdc datastore resize`.
 
 ## CRIU (Migración en vivo)
 
@@ -156,7 +156,7 @@ En conclusión: `rdc` y `renet` detectan automáticamente el sistema operativo q
 - **`rdc repo down`** ejecuta `down()` y detiene el daemon Docker.
 - **`rdc repo down --unmount`** también cierra el volumen LUKS (bloquea el almacenamiento cifrado).
 - **Forks** (`rdc repo fork`) crean un clon CoW (copy-on-write) con un nuevo GUID y networkId, en **tiempo constante independientemente del tamaño del repo**. El reflink de BTRFS duplica los metadatos de la imagen, no los datos, por lo que un repo de 100 GB se forkea en los mismos pocos segundos que un repo de 1 GB. El fork comparte la clave de cifrado del padre.
-- **Takeover** (`rdc repo takeover --name <fork> -m <machine>`) reemplaza los datos del repo grand con los datos de un fork. El grand mantiene su identidad (GUID, networkId, dominios, autostart, cadena de backups). Los datos de producción antiguos se conservan como un fork de backup. Úsalo para: probar una actualización en un fork, verificar, luego hacer takeover a producción. Revertir con `rdc repo takeover --name <backup-fork> -m <machine>`.
+- **Takeover** (`rdc repo promote <fork>`) reemplaza los datos del repo grand con los datos de un fork. El grand mantiene su identidad (GUID, networkId, dominios, autostart, cadena de backups). Los datos de producción antiguos se conservan como un fork de backup. Úsalo para: probar una actualización en un fork, verificar, luego hacer takeover a producción. Revertir con `rdc repo promote <backup-fork>`.
 - **Las rutas del proxy** tardan ~3 segundos en activarse después del despliegue. La advertencia "Proxy is not running" durante `repo up` es informativa en entornos de ops/dev.
 - **`rdc repo up` y `rdc repo fork --up` imprimen el patrón de URL** al final del despliegue para los servicios etiquetados con `rediacc.service_port`. Reemplaza `{service}` con tu nombre de servicio expuesto para obtener la URL exacta. Los servicios sin `rediacc.service_port` (bases de datos, workers) no obtienen rutas y no se muestran.
 
@@ -167,4 +167,4 @@ En conclusión: `rdc` y `renet` detectan automáticamente el sistema operativo q
 - Usar `privileged: true`, no es necesario, renet inyecta capacidades CRIU específicas en su lugar.
 - Codificar IPs en bruto en archivos de configuración persistentes - usa nombres de servicio para las conexiones para mantener la aislación del fork intacta.
 - Usar `rdc term connect -c` como solución alternativa para comandos fallidos, reporta bugs en su lugar.
-- `repo delete` realiza una limpieza completa incluyendo IPs de loopback y unidades systemd. Ejecuta `rdc machine prune --name <name>` para limpiar los restos de eliminaciones antiguas.
+- `repo delete` realiza una limpieza completa incluyendo IPs de loopback y unidades systemd. Ejecuta `rdc machine prune <name>` para limpiar los restos de eliminaciones antiguas.

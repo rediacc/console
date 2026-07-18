@@ -5,7 +5,7 @@ description: >-
 category: Guides
 order: 5
 language: zh
-sourceHash: "011bc5d87114f105"
+sourceHash: "2d470a876c00c352"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -210,7 +210,7 @@ renet 和 Docker 有意在如何处理容器重启方面存在分工。在调试
 - 仓库挂载根目录的 `.rediacc.json` → `services.<name>.restart_policy`：真实意图
 - `docker ps --format '{{.Status}}'`：运行时状态
 
-**如何修复偏差。** 如果容器的 `.rediacc.json` 保存策略错误（例如，因为您编辑了 compose 但未重新创建容器），请重新运行 `rdc repo up --name <repo> -m <machine>`。容器将以更新的策略重新创建。
+**如何修复偏差。** 如果容器的 `.rediacc.json` 保存策略错误（例如，因为您编辑了 compose 但未重新创建容器），请重新运行 `rdc repo up <repo>`。容器将以更新的策略重新创建。
 
 > **实验性：** 基于冷备份 sidecar 的恢复和 `rdc machine query` 上的 `--sync-certs` 标志在 renet 0.9+ 中发布。旧版本仅依赖保存的 `restart_policy` 进行看门狗恢复，这可能在冷备份后使 `on-failure` 容器搁浅。
 
@@ -253,7 +253,7 @@ HTTP services (accessible via proxy after ~3s):
 
 ### 后台启动
 
-加上 `--detach`，命令在容器启动后即返回，不等待健康检查完成。启动过程在后台继续：代理持续重试上游连接，直到各服务就绪，路由自动恢复。可通过 `rdc machine query --containers --name <machine>` 查看进度。适合一次性临时分支和无需等待服务就绪即可进行下一步的脚本化流程。
+加上 `--detach`，命令在容器启动后即返回，不等待健康检查完成。启动过程在后台继续：代理持续重试上游连接，直到各服务就绪，路由自动恢复。可通过 `rdc machine status <machine> --containers` 查看进度。适合一次性临时分支和无需等待服务就绪即可进行下一步的脚本化流程。
 
 ### 就绪探测
 
@@ -464,6 +464,6 @@ secrets:
     file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
 ```
 
-使用 `rdc repo secret set --name <repo> --key DATABASE_URL --value <val> --mode env --current ""` 和等效的文件模式来设定值。参阅[仓库 - 密钥](/zh/docs/repositories#secrets)了解完整的操作方法和[按仓库的密钥](/zh/docs/rdc-cheat-sheet#per-repo-secrets)在速查表中了解命令参考。
+使用 `rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""` 和等效的文件模式来设定值。参阅[仓库 - 密钥](/zh/docs/repositories#secrets)了解完整的操作方法和[按仓库的密钥](/zh/docs/rdc-cheat-sheet#per-repo-secrets)在速查表中了解命令参考。
 
 > **跨仓库路径在验证时被拒绝。** 指向另一仓库的 `/var/run/rediacc/secrets/<other-networkID>/` 目录的 compose `secrets: file:`（或 `configs: file:`，或 `env_file:`）在 docker compose 运行前由 renet 封装器硬拒绝。`--unsafe` 不会覆盖。纵深防御：Rediaccfile shell 周围的 Landlock 沙箱限制读取到当前网络的密钥目录，因此即使绕过 YAML 验证器，来自 Rediaccfile bash 的 `cat /var/run/rediacc/secrets/<other>/X` 也会以 EACCES 失败。您无需选择加入；这对每个 `repo up` 都默认启用。

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: et
-sourceHash: "011bc5d87114f105"
+sourceHash: "2d470a876c00c352"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -211,7 +211,7 @@ renet ja Docker ei nõustu tahtlikult, kuidas käsitleda konteineri taaskäivitu
 - `.rediacc.json` repositooriumi ühendusraja juures → `services.<name>.restart_policy`: tegelik kavatsus.
 - `docker ps --format '{{.Status}}'`: käitusaja olek.
 
-**Kuidas triivi parandada.** Kui konteineri `.rediacc.json`-sse salvestatud poliitika on vale (näiteks sellepärast, et muutsite compose'i, kuid ei loonud kunagi konteinerit uuesti), käivitage uuesti `rdc repo up --name <repo> -m <machine>`. Konteiner luuakse uuesti koos uuendatud salvestatud poliitikaga.
+**Kuidas triivi parandada.** Kui konteineri `.rediacc.json`-sse salvestatud poliitika on vale (näiteks sellepärast, et muutsite compose'i, kuid ei loonud kunagi konteinerit uuesti), käivitage uuesti `rdc repo up <repo>`. Konteiner luuakse uuesti koos uuendatud salvestatud poliitikaga.
 
 > **Eksperimentaalne:** Külma varukoopia külgfailist taastamine ja `--sync-certs` lipp `rdc machine query` saadeti renet 0.9+-s. Vanemad versioonid toetuvad ainult salvestatud `restart_policy`-le valvekoera taastamiseks, mis võib jätta `on-failure` konteinerid külma varukoopia järel ummikusse.
 
@@ -254,7 +254,7 @@ Teenused ilma kohandatud Traefiku siltideta näitavad ainult automaatselt genere
 
 ### Eraldusrežiimis käivitamine
 
-`--detach`-iga naaseb käsk kohe, kui konteinerid on käivitatud, ootamata tervisekontrollide lõppemist. Käivitamine jätkub taustal: puhverserver kordab ühendustkatseid ülesvoolu, kuni iga teenus end seob, nii et marsruudid taastuvad omal käel. Edenemist saab jälgida käsuga `rdc machine query --containers --name <machine>`. Sobib suurepäraselt ühekordsetele kahvlitele ja skriptitud silmustele, kus järgmine samm ei nõua teenuste valmidust.
+`--detach`-iga naaseb käsk kohe, kui konteinerid on käivitatud, ootamata tervisekontrollide lõppemist. Käivitamine jätkub taustal: puhverserver kordab ühendustkatseid ülesvoolu, kuni iga teenus end seob, nii et marsruudid taastuvad omal käel. Edenemist saab jälgida käsuga `rdc machine status <machine> --containers`. Sobib suurepäraselt ühekordsetele kahvlitele ja skriptitud silmustele, kus järgmine samm ei nõua teenuste valmidust.
 
 ### Valmisolekuproov
 
@@ -467,6 +467,6 @@ secrets:
     file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
 ```
 
-Seemendage väärtused käsuga `rdc repo secret set --name <repo> --key DATABASE_URL --value <val> --mode env --current ""` ja faili-režiimi ekvivalendiga. Vaadake [Repositooriumid § Saladused](/en/docs/repositories#secrets) täieliku juhendi saamiseks ja [Repositooriumipõhised saladused](/en/docs/rdc-cheat-sheet#per-repo-secrets) käsuviite jaoks.
+Seemendage väärtused käsuga `rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""` ja faili-režiimi ekvivalendiga. Vaadake [Repositooriumid § Saladused](/en/docs/repositories#secrets) täieliku juhendi saamiseks ja [Repositooriumipõhised saladused](/en/docs/rdc-cheat-sheet#per-repo-secrets) käsuviite jaoks.
 
 > **Repositooriumivahelised teed lükatakse tagasi valideerimise ajal.** Compose'i `secrets: file:` (või `configs: file:` või `env_file:`), mis osutab teise repositooriumi `/var/run/rediacc/secrets/<other-networkID>/` kataloogi, lükatakse renet-ümbriku poolt kõvasti tagasi enne docker compose'i käivitamist. `--unsafe` EI tühista seda. Kaitse süviti: Landlocki liivakast Rediaccfile'i kesta ümber piirab lugemist praeguse võrgu saladuste kataloogiga, nii et `cat /var/run/rediacc/secrets/<other>/X` Rediaccfile'i bash-ist ebaõnnestub EACCES-ga isegi kui see möödub YAML validaatorist. Te ei pea sisse lülitama; see on vaikimisi sees iga `repo up` jaoks.

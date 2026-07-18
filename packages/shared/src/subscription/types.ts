@@ -184,7 +184,16 @@ export type ApiTokenScope =
   | 'license:activate'
   | 'subscription:read'
   | 'audit:write'
-  | 'delegation:renew';
+  | 'delegation:renew'
+  // Proxy plane (rdc serve): `proxy:exec` lets a client submit commands to an
+  // executor, `proxy:admin` lets it manage the executor itself. `proxy:admin` is
+  // privileged (owner/admin only); `proxy:exec` is creatable by any member.
+  | 'proxy:exec'
+  | 'proxy:admin'
+  // Config plane: `config:enroll` lets a headless CLI add a password key slot to
+  // its own config-store membership (rdc config remote enable --password).
+  // Creatable by any member — not privileged.
+  | 'config:enroll';
 
 /**
  * API token for machine authentication.
@@ -246,6 +255,14 @@ export interface PlanMetadata {
   description: string;
   paid: boolean;
   featured: boolean;
+  /** Purchasable via self-serve checkout. False = fallback-only (COMMUNITY) or partner-only (ENTERPRISE). */
+  selfServe: boolean;
+  /**
+   * The web console (browser-driven command execution through an executor) is
+   * available on this plan. Off for COMMUNITY: the console runs real commands
+   * against real machines on the operator's behalf, which is a paid capability.
+   */
+  webConsole: boolean;
 }
 
 /**

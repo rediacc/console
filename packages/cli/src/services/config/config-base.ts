@@ -1,4 +1,5 @@
 import { DEFAULTS } from '@rediacc/shared/config';
+import type { Placement } from '@rediacc/shared/config-schema';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import type { RemoteConfigAdapter } from '../../adapters/remote-config-adapter.js';
 import type { RdcConfig } from '../../types/index.js';
@@ -60,16 +61,39 @@ export class ConfigServiceBase {
       return this._resourceState;
     }
 
-    let masterPassword: string | null = null;
-    if (config.credentials?.masterPasswordVerifier) {
-      const { requireMasterPassword } = await import('../core/master-password.js');
-      masterPassword = await requireMasterPassword();
-    }
-
+    // Encryption-at-rest is a storage-layer transform in v3: loadDecrypted
+    // resolves the master password (env / prompt) only when the config is
+    // encrypted and materializes every encrypted leaf into plaintext.
+    const decrypted = await configFileStorage.loadDecrypted(configName);
     const { LocalResourceState } = await import('./resource-state.js');
-    this._resourceState = await LocalResourceState.load(config, configName, masterPassword);
+    this._resourceState = LocalResourceState.load(decrypted, configName);
 
     return this._resourceState;
+  }
+
+  /**
+   * Set a whole family's placement (spec/04 §1.2.1) via the version-bumping
+   * resources persist — a migrate is a DECLARED change of home (unlike
+   * reconcile's observation-only state writes). getResourceState throws if no
+   * config is active.
+   *
+   * Writes `placement` onto EVERY flat `family:*` record: the flat-view
+   * decompose is first-wins (resource-state.ts groupFlatRepos), so editing only
+   * one record would be order-dependent and could silently drop the change.
+   */
+  async setRepositoryPlacement(family: string, placement: Placement): Promise<void> {
+    const state = await this.getResourceState();
+    const repos = state.getRepositories();
+    let matched = false;
+    for (const [key, cfg] of Object.entries(repos)) {
+      const colon = key.indexOf(':');
+      if ((colon === -1 ? key : key.slice(0, colon)) === family) {
+        repos[key] = { ...cfg, placement };
+        matched = true;
+      }
+    }
+    if (!matched) throw new Error(`Repository "${family}" not found`);
+    await state.setRepositories(repos);
   }
 
   /**
@@ -115,6 +139,19 @@ export class ConfigServiceBase {
     }
 
     return config;
+  }
+
+  /**
+   * Get the current config with every encrypted-at-rest leaf materialized into
+   * plaintext. Prompts for the master password when the local config is
+   * encrypted; remote configs arrive already decrypted from the pull. Use where
+   * a sensitive field (cfDnsApiToken, cert-cache data, …) is actually read.
+   */
+  async getDecryptedConfig(): Promise<RdcConfig | null> {
+    const config = await this.getCurrent();
+    if (!config) return null;
+    if (hasRemoteConfig(config)) return config;
+    return configFileStorage.loadDecrypted(this.getEffectiveConfigName());
   }
 
   /**
@@ -216,7 +253,7 @@ export class ConfigServiceBase {
   }
 
   // ============================================================================
-  // Config Defaults (team, region, bridge, machine)
+  // Config Defaults (team, region, machine)
   // ============================================================================
 
   async getTeam(): Promise<string | undefined> {
@@ -231,36 +268,36 @@ export class ConfigServiceBase {
     return config?.account?.region;
   }
 
-  async getBridge(): Promise<string | undefined> {
-    if (process.env.REDIACC_BRIDGE) return process.env.REDIACC_BRIDGE;
-    const config = await this.getCurrent();
-    return config?.account?.bridge;
-  }
-
-  async set(key: 'team' | 'region' | 'bridge', value: string): Promise<void> {
+  /**
+   * Set one v3 `defaults` field (spec/03 §5.1). The retired `team`/`region`
+   * keys (R2-F9) are refused at the command layer, so this only ever writes a
+   * real DefaultsSchema field.
+   */
+  async setDefault(
+    key: 'language' | 'datastoreSize' | 'pruneGraceDays',
+    value: string
+  ): Promise<void> {
     const name = this.getEffectiveConfigName();
+    const typed: string | number = key === 'pruneGraceDays' ? Number(value) : value;
     await configFileStorage.update(name, (cfg) => ({
       ...cfg,
-      account: { ...(cfg.account ?? {}), [key]: value },
+      defaults: { ...(cfg.defaults ?? {}), [key]: typed },
     }));
   }
 
-  async remove(key: 'team' | 'region' | 'bridge'): Promise<void> {
+  /** Clear one v3 `defaults` field. */
+  async clearDefault(key: 'language' | 'datastoreSize' | 'pruneGraceDays'): Promise<void> {
     const name = this.getEffectiveConfigName();
     await configFileStorage.update(name, (cfg) => ({
       ...cfg,
-      account: cfg.account ? { ...cfg.account, [key]: undefined } : undefined,
+      defaults: cfg.defaults ? { ...cfg.defaults, [key]: undefined } : undefined,
     }));
   }
 
+  /** Clear the whole v3 `defaults` bucket. */
   async clearDefaults(): Promise<void> {
     const name = this.getEffectiveConfigName();
-    await configFileStorage.update(name, (cfg) => ({
-      ...cfg,
-      account: cfg.account
-        ? { ...cfg.account, team: undefined, region: undefined, bridge: undefined }
-        : undefined,
-    }));
+    await configFileStorage.update(name, (cfg) => ({ ...cfg, defaults: undefined }));
   }
 
   // --- Language Settings ---
@@ -290,18 +327,16 @@ export class ConfigServiceBase {
 
   async applyDefaults<T extends object>(
     options: T
-  ): Promise<T & { team?: string; region?: string; bridge?: string; machine?: string }> {
+  ): Promise<T & { team?: string; region?: string; machine?: string }> {
     type Result = T & {
       team?: string;
       region?: string;
-      bridge?: string;
       machine?: string;
     };
     const base = { ...options };
     const result = base as Result;
     result.team ??= await this.getTeam();
     result.region ??= await this.getRegion();
-    result.bridge ??= await this.getBridge();
     return result;
   }
 }

@@ -26,7 +26,13 @@ export class OpsVMLifecycle {
     private readonly vmExecutor: OpsVMExecutor,
     private readonly getAllVMIps: () => string[],
     private readonly getWorkerVMIps: () => string[],
-    private readonly getCephVMIps: () => string[]
+    private readonly getCephVMIps: () => string[],
+    /**
+     * Per-group env threaded into every ops subprocess spawned here. Empty for
+     * single-group callers (ambient env wins, unchanged behavior); populated for
+     * a second concurrent KVM group so its up/down/reset carry its own VM_NET.
+     */
+    private readonly groupEnv: Record<string, string> = {}
   ) {}
 
   /**
@@ -44,7 +50,7 @@ export class OpsVMLifecycle {
    * Get ops status
    */
   async getStatus(): Promise<{ stdout: string; stderr: string; code: number }> {
-    return this.commandRunner.run(['status'], [], 30000);
+    return this.commandRunner.runWithEnv(['status'], [], this.groupEnv, 30000);
   }
 
   /**
@@ -60,7 +66,10 @@ export class OpsVMLifecycle {
     if (options.parallel) args.push('--parallel');
 
     console.warn('[OpsVMLifecycle] Starting VMs...');
-    const result = await this.commandRunner.run(['up'], args, 600000); // 10 minute timeout
+    // 30 minutes: a ceph-pool topology bootstraps cephadm (mon+mgr+OSDs) inside `ops up`,
+    // which exceeds 10 minutes on loaded hosts — and startVMs({force}) recreates the VMs
+    // on every attempt, so a shorter cap makes ceph clusters unprovisionable rather than slow.
+    const result = await this.commandRunner.runWithEnv(['up'], args, this.groupEnv, 1_800_000);
 
     return {
       success: result.code === 0,
@@ -74,7 +83,7 @@ export class OpsVMLifecycle {
    */
   async stopVMs(): Promise<{ success: boolean; stdout: string; stderr: string }> {
     console.warn('[OpsVMLifecycle] Stopping VMs...');
-    const result = await this.commandRunner.run(['down'], [], 120000); // 2 minute timeout
+    const result = await this.commandRunner.runWithEnv(['down'], [], this.groupEnv, 120000); // 2 minute timeout
 
     return {
       success: result.code === 0,
@@ -121,7 +130,12 @@ export class OpsVMLifecycle {
     console.warn('[OpsVMLifecycle] Performing soft reset (renet ops up --force --parallel)...');
     // 30 min timeout to allow Ceph provisioning to complete fully
     // Note: Ceph provisioning is automatically enabled when VM_CEPH_NODES is configured
-    const result = await this.commandRunner.run(['up'], ['--force', '--parallel'], 1800000);
+    const result = await this.commandRunner.runWithEnv(
+      ['up'],
+      ['--force', '--parallel'],
+      this.groupEnv,
+      1800000
+    );
 
     // Check for infrastructure errors that should fail fast
     if (result.code !== 0) {
@@ -131,6 +145,16 @@ export class OpsVMLifecycle {
         console.error('[OpsVMLifecycle] Infrastructure error - KVM/libvirt not available');
         console.error('[OpsVMLifecycle] Run: sudo renet ops host setup');
         console.error('[OpsVMLifecycle] Error output:', combinedOutput.slice(0, 500));
+        return { success: false, duration: Date.now() - startTime };
+      }
+
+      // An orchestration failure (registry/docker/ceph provisioning) leaves
+      // SSH-reachable but unusable VMs: the readiness probe below would pass
+      // and the suite would then spin its whole ceph-health budget on a
+      // cluster that was never provisioned. Fail fast with renet's error.
+      if (combinedOutput.includes('orchestration failed')) {
+        console.error('[OpsVMLifecycle] ops up orchestration failed - failing the reset');
+        console.error('[OpsVMLifecycle] Error output:', combinedOutput.slice(-1000));
         return { success: false, duration: Date.now() - startTime };
       }
 

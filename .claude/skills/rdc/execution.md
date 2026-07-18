@@ -4,28 +4,44 @@ For full command syntax and options, see [reference.md](reference.md).
 
 ## High-level container commands (PREFERRED)
 
-Use `rdc term connect -m <machine> -r <repo> --container <name> --container-action <action>` for container operations. The repo context is required to target the correct isolated Docker daemon.
+Container operations are first-class `repo` verbs. They take a repo ref positionally
+(`my-app`, `my-app:staging`) and derive the machine from it. The container is selected
+with `-c` and is only needed when the repo runs more than one.
+
+```bash
+rdc repo logs <repo> -c <container> --lines 50      # logs (add -f to follow)
+rdc repo exec <repo> -c <container> -- <cmd>        # run a command; exit code passes through
+rdc repo exec <repo> -c <container> -i -- bash      # interactive shell in the container
+```
 
 ## Command reference: what to use for each task
 
-| Task | Preferred | Alternative (`rdc run`) |
-|------|-----------|------------------------|
-| View container logs | `rdc term connect -m <m> -r <repo> --container <c> --container-action logs` | `rdc run container_logs -m <m> --param repository=<repo> --param container=<c> --param lines=<n>` |
-| Exec into container | `rdc term connect -m <m> -r <repo> --container <c> --container-action exec` | `rdc run container_exec -m <m> --param repository=<repo> --param container=<c> --param command="..."` |
-| List containers | `rdc machine query --containers --name <m>` | `rdc run container_list -m <m> --param repository=<repo>` |
-| Container stats | `rdc term connect -m <m> -r <repo> --container <c> --container-action stats` | `rdc run container_stats -m <m> --param repository=<repo>` |
-| Deploy a repo | `rdc repo up` | — |
-| Stop a repo | `rdc repo down` | — |
-| Check repo status | `rdc repo status` | — |
-| Check machine health | `rdc machine health` | — |
+| Task | Command |
+|------|---------|
+| View container logs | `rdc repo logs <repo> -c <container> --lines <n>` |
+| Follow container logs | `rdc repo logs <repo> -c <container> -f` |
+| Exec into container | `rdc repo exec <repo> -c <container> -- <cmd>` |
+| List containers | `rdc machine status <machine> --containers` |
+| Container CPU/memory | `rdc machine status <machine> --containers --output json` (`cpu_percent`, `memory_usage`) |
+| Deploy a repo | `rdc repo up <repo>` |
+| Stop a repo | `rdc repo down <repo>` |
+| Check repo status | `rdc repo status <repo>` |
+| Check machine health | `rdc machine health` |
 
-Both forms work. The `term` form is preferred for interactive use; `rdc run` is acceptable for scripting or when you need specific parameter control (e.g., `--param lines=30`).
+`rdc repo exec` passes the container command's own exit code straight through, so it
+works in scripts and conditionals.
 
 ## rdc run — Low-Level Escape Hatch (hidden, debugging only)
 
 `rdc run` executes raw bridge functions on a machine. It is **hidden from help output and MCP** but still functional as a last resort. **Do NOT use it unless there is no higher-level alternative.** It bypasses safety checks and uses internal function names that may change. Always prefer typed commands (`rdc repo`, `rdc machine`, `rdc term`) over `rdc run`.
 
+The function name is passed with `-f`, not positionally:
+
+```bash
+rdc run -f <function> -m <machine> --param <key>=<value>
+```
+
 Only use `rdc run` for operations with **no** higher-level command (e.g., `container_restart`):
 ```bash
-rdc run container_restart -m <machine> --param repository=<repo> --param container=<name>
+rdc run -f container_restart -m <machine> --param repository=<repo> --param container=<name>
 ```

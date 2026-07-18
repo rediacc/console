@@ -4,8 +4,8 @@ description: "SOC 2의 관건은 감사인이 당신의 통제가 실제로 작�
 category: "Legal"
 order: 2
 language: ko
-sourceHash: "9ba8477a07292a7d"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "e03bef0cead86ab7"
+sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
 감사 회의를 여러 번 거쳐본 경험으로 SOC 2가 무엇인지 알게 되었습니다. 감사인은 AICPA 프레임워크를 사용하여 당신의 통제가 실제로 작동하는지 확인하며, 단순히 작동한다고 주장하는지만 확인하는 것이 아닙니다. 다섯 가지 신뢰 서비스 기준이 있습니다: 보안, 가용성, 처리 무결성, 기밀성, 개인정보 보호.
@@ -41,7 +41,7 @@ Rediacc는 사용자 작업, 시스템 변경, 구성 업데이트, 접근 제�
 1. 프로덕션 저장소 포크(`rdc repo fork`)
 2. 포크에 변경사항 적용 및 테스트
 3. 포크 독립적 검증
-4. 포크를 프로덕션으로 승격(`rdc repo takeover`)
+4. 포크를 프로덕션으로 승격(`rdc repo promote`)
 
 모든 단계가 기록되고, 타임스탐프되며, 특정 인물과 연결됩니다. '누가 이것을 변경했는지 모르겠다'는 말은 없습니다.
 

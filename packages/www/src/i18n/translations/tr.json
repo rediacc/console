@@ -2,7 +2,7 @@
   "announcement": {
     "enabled": true,
     "link": "/account/",
-    "text": "Sınırlı süre: Design Partner Programı. BUSINESS planında ömür boyu ücretsiz."
+    "text": "Yeni: Rediacc'ı 14 gün ücretsiz deneyin."
   },
   "beforeAfter": {
     "after": {
@@ -258,11 +258,11 @@
   },
   "hero": {
     "cta": {
-      "benefits": "Sınırsız Ekip • $0",
+      "benefits": "Sınırsız ekip • 14 günlük ücretsiz deneme",
       "bookDemo": "Demo Al",
       "contactUs": "Tüm Kurulum Seçeneklerini Gör",
-      "freeBadge": "HEP ÜCRETSİZ • Kredi kartı yok",
-      "getStarted": "Ücretsiz başla",
+      "freeBadge": "14 günlük ücretsiz deneme · İstediğiniz zaman iptal edin",
+      "getStarted": "Ücretsiz Başlayın",
       "learnMore": "Nasıl Çalıştığını Gör",
       "readDocs": "Belgeleri okuyun",
       "seeDetails": "Tüm Detayları Gör"
@@ -302,9 +302,12 @@
       "S3",
       "btrfs",
       "LUKS",
-      "systemd"
+      "systemd",
+      "Kubernetes",
+      "Ceph",
+      "k3s"
     ],
-    "migrationMessage": "Rediacc uygulamalarınızı, veritabanlarınızı ve ayarlarınızı tek dosyaya paketler. Nereye isterse oraya taşıyın. Docker zaten kullanıyor musunuz? Yarı yoldasınız.",
+    "migrationMessage": "Rediacc uygulamalarınızı, veritabanlarınızı ve ayarlarınızı tek dosyaya paketler. Nereye isterse oraya taşıyın. Docker zaten kullanıyor musunuz? Yarı yoldasınız. Kubernetes çalıştırıyor musunuz? Cluster'ın tamamını da aynı şekilde fork'layın veya taşıyın.",
     "title": "Kullandığın sistemlerle çalışır"
   },
   "layout": {
@@ -312,10 +315,6 @@
       "author": "Rediacc",
       "defaultDescription": "Hızlandırılmış geliştirme operasyonları için tasarlanmış Altyapı Otomasyon Platformu. Anında geliştirme ortamları ve yeni nesil olağanüstü durum kurtarma.",
       "defaultKeywords": "altyapı otomasyonu, yapay zeka işlemleri, felaket kurtarma, geliştirme ortamları, Model Bağlam Protokolü, DevOps, CI/CD",
-      "designPartner": {
-        "ogDescPrefix": "BUSINESS planını ömür boyu ücretsiz edinin.",
-        "ogPrefix": "Tasarım Ortağı Programı"
-      },
       "locale": "tr_TR",
       "siteName": "Rediacc",
       "twitter": {
@@ -341,6 +340,10 @@
       {
         "label": "Kurtarma süresi",
         "number": "< 1 dk"
+      },
+      {
+        "label": "Whole Kubernetes cluster fork",
+        "number": "46s"
       }
     ]
   },
@@ -437,11 +440,15 @@
       {
         "description": "Her şeyi saklarlar. Kurtarma saatler sürer, dakika değil.",
         "title": "Backup araçları"
+      },
+      {
+        "description": "Manifest'lerinizi kopyalarlar. Cluster, YAML'dan çok daha fazlasıdır.",
+        "title": "Kubernetes araçları"
       }
     ],
     "title": "Çoğu araç bir parçasını kopyalar. Biz tamamını.",
     "winner": {
-      "description": "Her takım kendi yazılabilir kopyasını alır. Veri, uygulamalar, ayarlar, hepsi. 60 saniyede hazır. Sadece değişikliklerin depolama ücretini ödersiniz.",
+      "description": "Her takım kendi yazılabilir kopyasını alır. Veri, uygulamalar, ayarlar, hepsi. 60 saniyede hazır. Buna Kubernetes cluster'larının tamamı da dahildir. Sadece değişikliklerin depolama ücretini ödersiniz.",
       "label": "Rediacc"
     }
   },
@@ -495,51 +502,51 @@
           "contact": "İletişime Geçin",
           "learnMore": "Nasıl Çalıştığını Görün"
         },
-        "subtitle": "Rediacc'ı 5 dakikadan kısa sürede kurun. Community katmanı sonsuza kadar ücretsizdir.",
+        "subtitle": "Rediacc'ı 5 dakikada kurun, 14 gün ücretsiz deneyin.",
         "title": "Ücretsiz Deneyin"
       },
       "hero": {
-        "subtitle": "Rediacc, üretim sistemleri çalıştıran ve onları kaybetmeyi göze alamayan ekipler için tasarlandı.",
-        "title": "Kontrol Ettiğiniz Yedekleme ve Kurtarma Yazılımı"
+        "subtitle": "Rediacc, üretim sistemleri çalıştıran ve onları kaybetmeyi göze alamayan ekipler için yapılmıştır.",
+        "title": "Yedeklemeyi Kendin Kontrol Et"
       },
       "meta": {
-        "description": "Rediacc, üretimi klonlayıp güvenle test etmenizi ve saniyeler içinde kurtarmanızı sağlayan kendi barındırılan yedekleme ve felaket kurtarma yazılımı geliştirir.",
+        "description": "Rediacc ile üretimi klonlayıp güvenle test et, saniyeler içinde geri getir. Kendi sunucunda çalışan yedekleme ve felaket kurtarma yazılımı.",
         "keywords": "Rediacc şirketi, kendi barındırılan yedekleme, felaket kurtarma yazılımı, altyapı güvenilirliği",
-        "title": "Şirket | Rediacc - Fidye Yazılımına Dayanan Yedekler"
+        "title": "Şirket | Rediacc - Fidye Yazılımından Koruma"
       },
       "mission": {
-        "belief": "Community tier, ücretli paketlerin tüm özelliklerini sunuyor. Aynı btrfs klonlama, aynı LUKS şifreleme, aynı salt-okunur yedekler. Sadece daha düşük limitler. Gizli ücret yok, kandırma yok.",
-        "description": "Yapay zeka her 47 günde bir üretim veritabanını siliyor. Her yıl disklerin %1,71'i arızalanıyor. Fidye yazılımlarının %75'i yedeklemeleri hedef alıyor. 60 saniye içinde yeniden çalışır duruma dönersiniz.",
+        "belief": "Community tier, ücretli paketler kadar güçlü. btrfs klonlaması var, LUKS şifreleme var, salt-okunur yedekler var. Tek fark limitler. Başka hiç ücret yok, kandırma yok.",
+        "description": "Her 47 günde bir yapay zeka bir veritabanı siliyor. Her yıl disklerin %1,71'i çöküyor. Fidye yazılımlarının %75'i yedekleri hedef alıyor. Ama siz sadece 60 saniyede tekrar çalışıyor olursunuz.",
         "title": "Misyonumuz: Felaketleri İmkansız Kıl"
       },
       "overview": {
-        "description": "Rediacc, yedekleme, klonlama ve felaket kurtarma için kendi barındırılan bir yazılımdır. Kendi sunucularınızda çalışır, tüm üretim sistemlerini saniyeler içinde kopyalar ve sizi hızla çevrimiçi duruma getirir.",
+        "description": "Rediacc, kendi sunucunuzda çalışan yedekleme yazılımı. Üretim sistemlerinizi saniyeler içinde kopyalar, sistem krizinde hızla çözersiniz.",
         "title": "Ne Yapıyoruz"
       },
       "values": {
         "items": {
           "global": {
-            "description": "9 dilde. Veriler AB'de kalıyor. GDPR entegre Estonya şirketi.",
+            "description": "9 dil, 9 pazara açık. Veriler AB'de kalır. GDPR ile yapılmış Estonya yazılımı.",
             "title": "Küresel Düşünce"
           },
           "innovation": {
-            "description": "Haftada bir çıkarırız. Her sürüm müşterilerin bildirdiği gerçek bir sorunu çözer.",
+            "description": "Haftada bir sürüm çıkarırız, her biri müşterilerin bildirdiği gerçek bir soruna çözüm getirir.",
             "title": "Sürekli Yenilik"
           },
           "security": {
-            "description": "Diskte LUKS şifreleme, ağda TLS, her app için ayrı Docker motoru. Her katman kilitli.",
+            "description": "Diskte LUKS şifreleme, ağda TLS, her app'e ayrı Docker motoru. Her katman kilitli.",
             "title": "Tasarımda Güvenlik"
           },
           "simplicity": {
-            "description": "241 GB veriyi kopyalamak için tek komut. Budur karmaşıklığımızın tümü.",
+            "description": "Tek komut: 241 GB data kopyalanıyor. Bu, tüm karmaşıklığımız.",
             "title": "Sadelik Her Şeyden Önce"
           },
           "success": {
-            "description": "Kendimizi özellik sayısı değil, sizin kurtarma süresiyle ölçeriz.",
+            "description": "Bizi ölçen şey feature sayısı değil, senin kurtarma süresidir.",
             "title": "Müşteri Başarısı"
           },
           "transparency": {
-            "description": "Açık iletişim, dürüst fiyatlandırma ve net belgeler. Gizli ücret yok, sürpriz yok, ince yazı yok.",
+            "description": "Açık konuşuruz, dürüst fiyat, açık belgeler. Gizli ücret yok, sürpriz yok, ince yazı yok.",
             "title": "Şeffaflık"
           }
         },
@@ -699,7 +706,7 @@
         "whatWeDontUse": {
           "content": ["Aşağıdaki teknolojiler web sitemizde <strong>kullanılmamaktadır</strong>:"],
           "content2": [
-            "Not: Bu Çerez Politikası Rediacc pazarlama web sitesi için geçerlidir. Yazılım ürünlerimiz (Web Uygulaması, CLI, Middleware, Bridge) çerez kullanmayan ayrı kullanım telemetrisi toplar. Ürün telemetrisi hakkında ayrıntılar için <a href=\"telemetry-policy\">Telemetri Politikamıza</a> bakın."
+            "Not: Bu Çerez Politikası Rediacc pazarlama web sitesi için geçerlidir. Yazılım ürünlerimiz (Web Uygulaması, CLI, Middleware, Renet Ajanı) çerez kullanmayan ayrı kullanım telemetrisi toplar. Ürün telemetrisi hakkında ayrıntılar için <a href=\"telemetry-policy\">Telemetri Politikamıza</a> bakın."
           ],
           "id": "what-we-dont-use",
           "items": [
@@ -713,98 +720,6 @@
       },
       "toc": {
         "title": "İçindekiler"
-      }
-    },
-    "designPartners": {
-      "ask": {
-        "items": [
-          {
-            "body": "Bir şey sizi şaşırtığında tek satırlık bir e-posta gönderin. Stack trace isteğe bağlı. Hayal kırıklığınız da hoş geldi.",
-            "title": "Bir Şey Bozulunca Söyleyin"
-          },
-          {
-            "body": "Her çeyrekte 30 dakika - ya da daha seyrek. Biz dinleriz, siz konuşursunuz. Demo yok, satış pitchi yok.",
-            "title": "Ara Sıra Bir Telefonda Konuşalım"
-          },
-          {
-            "body": "Sizi etkileyen bir şey yapacaksak önceden size ulaşmak istiyoruz. E-posta yeterli.",
-            "title": "Ulaşılabilir Olun"
-          }
-        ],
-        "lede": "Hafif dokunuş. Amacımız bedavaya emek almak değil - bizi dürüst tutmak.",
-        "title": "Karşılığında Ne İstiyoruz"
-      },
-      "faq": {
-        "items": [
-          {
-            "a": "Evet. Ücretsizlik abonelik kaydında kalıcı - süresi dolmaz, otomatik indirgenmez. Bunu değiştirmek zorunda kalırsak önce haber veririz. Şimdiye kadar değişmedik, planımız da yok.",
-            "q": "Gerçekten ömür boyu mu?"
-          },
-          {
-            "a": "O zaman hesabın da durur - tıpkı herkes gibi. Ömür boyu sözü şirketin ömrü kadar geçerli. Risk budur - dürüst bir risk.",
-            "q": "Rediacc kapanırsa ne olur?"
-          },
-          {
-            "a": "Ödeme duvarı yok, sözleşme yok, otomatik fatura yok. İsteğimiz sadece hafif geri bildirim. Bizi görmezden gelebilirsin, planın yine senindir.",
-            "q": "Ağırbaşlı şartlar var mı?"
-          },
-          {
-            "a": "Evet. BUSINESS'te sonsuza kadar kalabilirsin ya da limitleri aşarsan Enterprise'a geçebilirsin. Yükseltme ücretli olur; ömür boyu avantaj BUSINESS için geçerli.",
-            "q": "Sonra plan değiştirebilir miyim?"
-          },
-          {
-            "a": "Kapatana kadar. Duyuru yapmadan kapatabiliriz - bu yüzden şimdi kaydolmak için iyi bir zaman. Bugün katılanlar planlarını sonsuza kadar tutar.",
-            "q": "Program ne kadar açık kalacak?"
-          }
-        ],
-        "title": "Dürüst Cevaplar"
-      },
-      "finalCta": {
-        "button": "BUSINESS'i Şimdi Al",
-        "note": "Bir iki gün içinde kurulum ayarması için size e-posta göndereceğiz.",
-        "subtitle": "Tek adım. Kart yok. BUSINESS senindir ömür boyu.",
-        "title": "Öncü olmaya hazır mısın?"
-      },
-      "hero": {
-        "eyebrow": "Sınırlı Süre",
-        "note": "Kredi kartı yok. Başvuru yok. Program önceden haber vermeden kapanabilir - bugün katıl.",
-        "primaryCta": "BUSINESS'i Şimdi Al",
-        "secondaryCta": "Fiyatları Gör",
-        "subtitle": "Ürünü geliştiriyoruz. Siz onu kullanıp sorun görürseniz bize söyleyin. Karşılığında BUSINESS planı senindir ömür boyu - Rediacc var olduğu müddetçe.",
-        "title": "Tasarım Ortağı Ol. BUSINESS'i Ömür Boyu Kullan. Ücretsiz."
-      },
-      "meta": {
-        "description": "Tasarım Ortağı ol, BUSINESS'i ömür boyu ücretsiz kullan. Ürün geliştirirken sizi dinlemeyi istiyoruz.",
-        "title": "Tasarım Ortağı Ol | BUSINESS Senindir Ömür Boyu"
-      },
-      "why": {
-        "items": [
-          {
-            "body": "Canlı ortamda çalışan bir ekipten yüzlerce test kaydından 100 kat daha öğreniyoruz. Tasarım Ortakları sayesinde kitleler gelmeden ürünü mükemmel yapıyoruz.",
-            "title": "Gerçek Ekipler, Gerçek Sistemler"
-          },
-          {
-            "body": "Paranıza henüz ihtiyacımız yok. İhtiyacımız olan şey deneyiminiz, karşılaştığınız sorunlar, sorularınız. Dürüst geri bildirim karşılığında ücretsizlik - adil bir takas bu.",
-            "title": "Geri Bildirim Karşılığında Ücretsiz"
-          },
-          {
-            "body": "BUSINESS planın ömür boyu geçerli - süresi dolmaz, indirgenmez, kredi kartı sorulmaz. Nokta. Bu anlaşmamız.",
-            "title": "Kalıcı Teşekkür"
-          }
-        ],
-        "title": "Neden bunu yapıyoruz"
-      },
-      "youGet": {
-        "items": [
-          "BUSINESS planı: depo başına 200 GB, 10 kullanıcı, ayda 10.000 aktivasyon",
-          "Edge kanalında: 2 kat limit (depo başına 400 GB, 20 kullanıcı, 20.000 aktivasyon)",
-          "Sınırsız depo, kullanıcı ve ekip",
-          "Yedek Geri Yükleme, Karanlık Mod, 9 Dil Desteği",
-          "Doğrudan mühendislik desteği",
-          "Ömür boyu kilitli: Süresi yok, indirgenmez, kart yok"
-        ],
-        "lede": "BUSINESS planının tüm özellikleri - ömür boyu, ücretsiz, Rediacc var olduğu müddetçe.",
-        "title": "Ne Elde Ediyorsun"
       }
     },
     "disasterRecovery": {
@@ -825,7 +740,7 @@
             "question": "Hangi ödeme yöntemlerini kabul ediyorsunuz?"
           },
           {
-            "answer": "Topluluk planımız sonsuza kadar ücretsizdir. Ücretli planlar için deneme seçeneklerini satış ekibimizle görüşebilirsiniz.",
+            "answer": "Evet. Hem Profesyonel hem İşletme planı 14 günlük deneme ile başlıyor. Kaydolurken kartını ekle ama deneme boyunca para çekilmez. İptal et, ödemezsin; hesabın Topluluk planına geri düşer.",
             "question": "Ücretsiz deneme mevcut mu?"
           },
           {
@@ -848,14 +763,14 @@
       },
       "finalCta": {
         "buttons": {
-          "startFree": "Ücretsiz Başlayın",
+          "startFree": "Ücretsiz Dene",
           "talkToSales": "Satışla Konuşun"
         },
         "description": "Rediacc'ı kurun ve ilk yedeğinizi 10 min içinde alın.",
         "heading": "Daha Hızlı Kurtarmaya Başlayın"
       },
       "hero": {
-        "subtitle": "Çoğu ekip ücretsiz seviyede başlayıp orada kalıyor. Kesintiler işletmenize çok maliyetli olunca bir üst seviyeye geçin. Aynı ürün, sorunsuz geçiş.",
+        "subtitle": "14 günlük deneme ile başla, kesintiler işine maliyetli olmaya başlayınca yüksel. Aynı ürün, sorunsuz.",
         "title": "Gerçek Kurtarma İşlemleri İçin Tasarlandı"
       },
       "meta": {
@@ -872,7 +787,7 @@
             "3 bölge arasında depolama — tek bir arıza seni duraklatamaz.",
             "Sürekli veri koruması — neredeyse sıfır veri kaybı.",
             "4 saatlik kurtarma SLA'sı (garantili)",
-            "Sınırsız uygulama, her biri 200 GB",
+            "Sınırsız uygulama, her biri 500 GB",
             "7 etkin/3 rezerve iş",
             "90 günlük denetim günlüğü saklama",
             "Rol tabanlı erişim kontrolü ve tam denetim günlükleri",
@@ -883,7 +798,7 @@
           "name": "İşletme"
         },
         "community": {
-          "description": "Baştan sona üretime hazır — sonsuza kadar bedava.",
+          "description": "Üretime hazır afet kurtarma, başından itibaren. Bedava.",
           "features": [
             "Sınırsız kullanıcı ve takım — rahatça işbirliği yap.",
             "Herhangi bir arızanın ardından dakikalar içinde en son yedeği geri yükle.",
@@ -920,7 +835,7 @@
             "Community'deki her şey +",
             "Otomatik yedekleme zamanlaması — ayarla ve unut.",
             "Zaman içinde bir noktaya kurtarma (24 saat)",
-            "Sınırsız uygulama, her biri 50 GB",
+            "Sınırsız uygulama, her biri 100 GB",
             "24 saatlik iş zaman aşımı, 3 etkin/2 rezerve iş",
             "30 günlük denetim günlüğü saklama",
             "E-posta ve sohbet desteği",
@@ -937,7 +852,7 @@
         "viewDetails": "Profesyonel Hizmetler"
       },
       "strategy": {
-        "copy": "Bulunduğunuz yerden başlayın. Çoğu ekip orada beklediklerinden çok daha uzun kalıyor. Yavaş kurtarma işletmeye maliyetli gelmeye başlayınca bir üst seviyeye geçin. Hep aynı ürün, sorunsuz geçiş.",
+        "copy": "Bulunduğunuz yerden başlayın. Çoğu ekip orada beklediklerinden çok daha uzun kalıyor. Yavaş kurtarma işletmeye maliyetli gelmeye başlayınca bir üst seviyeye geçin. Hep aynı ürün. Kubernetes mi çalıştırıyorsunuz? Cluster'ların tamamı da aynı şekilde, kısa ve ölçülmüş bir kesintiyle taşınır.",
         "distribution": [
           "Profesyonel → İş: Yedeğiniz ikinci bir konumda depolanır. Her değişiklik anında yedeklenir. 4 saat içinde çevrimiçi olma garantisi. Adanmış destek dahil.",
           "İş → Kurumsal: Kurtarma süresini seçin. Bu pencere 15 ile 60 min arasında değişir. Kurtarma, canlı sistemlerinizi etkilemeyecek tamamen ayrı bir ortamda gerçekleşir. En kritik anlarda uygulamalı destek vardır."
@@ -993,28 +908,27 @@
         "anchor": "Stratejik çapa",
         "bestValue": "En İyi Değer",
         "contactSales": "Satış Ekibiyle İletişime Geçin",
+        "contactUs": "Bize Ulaşın",
+        "contactUsSub": "Özel limitler ve koşullar",
         "cta": {
           "business": {
-            "guarantee": "Para İade Garantisi",
             "launchBadge": "Sınırlı Zaman Teklifi",
-            "primary": "Kurulum Çağrısını Planlayın",
+            "primary": "Ücretsiz Dene",
             "secondary": "Satış Ekibiyle İletişime Geçin",
             "valueNote": "9.999 $ kurulum kredisini içerir"
           },
           "community": {
-            "note": "Kredi kartına gerek yok",
-            "primary": "Ücretsiz Başlayın",
+            "note": "Bedava yedek planı",
+            "primary": "Rediacc Dene",
             "secondary": "İçeriği Görüntüle"
           },
           "enterprise": {
-            "guarantee": "Para İade Garantisi",
             "primary": "Demo Planlayın",
             "secondary": "Satış Ekibiyle İletişime Geçin",
             "subtext": "Özel SLA · Özel destek"
           },
           "professional": {
-            "guarantee": "Para İade Garantisi",
-            "primary": "Profesyonel Başla",
+            "primary": "Ücretsiz Dene",
             "secondary": "Satış Ekibiyle İletişime Geçin"
           }
         },
@@ -1022,7 +936,7 @@
         "getStarted": "Hemen Yükle",
         "guarantees": {
           "cancelAnytime": "İstediğiniz zaman iptal edin",
-          "moneyBack": "14 Günlük Para İade Garantisi",
+          "freeTrial": "14 günlük ücretsiz deneme",
           "noContracts": "Uzun vadeli sözleşme yok"
         },
         "keyBenefits": "Ana Avantajlar",
@@ -1246,11 +1160,6 @@
         "notFound": "404 - Sayfa Bulunamadı"
       },
       "description": "Üzgünüz, aradığınız sayfa mevcut değil veya taşınmış. Güncel olmayan bir bağlantıyı izlediyseniz veya URL'yi yanlış yazdıysanız bu durum meydana gelebilir.",
-      "designPartner": {
-        "body": "BUSINESS planını ömür boyu ücretsiz edinin. Kredi kartı yok.",
-        "cta": "Tasarım Ortağı Ol",
-        "title": "Tasarım Ortağı Programı"
-      },
       "help": {
         "description": "Bunun bir hata olduğunu düşünüyorsanız veya burada içerik bulmayı bekliyorsanız lütfen destek ekibimizle iletişime geçin. Aradığınızı bulmanıza yardımcı olmak için buradayız.",
         "link": "destek ekibimizle iletişime geçin",
@@ -1471,7 +1380,7 @@
               "title": "Bağlam penceresi dostu"
             },
             {
-              "description": "--dry-run yıkıcı işlemleri önizler. --yes otomasyonu etkinleştirir. Ajanlar yerleşik koruma mekanizmalarıyla güvenle dağıtım yapabilir.",
+              "description": "--dry-run yıkıcı işlemleri önizler. --yes otomasyonu etkinleştirir. Ajanlar yerleşik koruma mekanizmalarıyla güvenle dağıtım yapabilir. Bir cluster'ın tamamını fork'lamak bile aynı kurallara tabidir.",
               "icon": "shield",
               "title": "Varsayılan olarak güvenli"
             }
@@ -1555,7 +1464,7 @@
               "title": "Yapılandır"
             },
             {
-              "description": "rdc agent capabilities komutunu çalıştırarak yapılandırılmış bir JSON komut ağacı alın. Ajan, belgelere gerek kalmadan nelerin mevcut olduğunu bilir.",
+              "description": "Asistanınızı rdc mcp serve'e bağlayın; her işlem için tip tanımlı araçlara anında kavuşur. Tam komut referansı için rdc --help-all çalıştırın.",
               "icon": "code",
               "title": "Keşfet"
             },
@@ -1568,7 +1477,7 @@
           "title": "Ajan tarafından yönetilen altyapıya üç adım"
         },
         "meta": {
-          "description": "Rediacc, yapay zeka kodlama asistanları için tasarlandı. CLI öncelikli işlemler, yapılandırılmış JSON, SSH-tabanlı erişim ve rdc agent komutlarıyla komut keşfi.",
+          "description": "Rediacc, yapay zeka kodlama asistanları için tasarlandı. CLI tabanlı işlemler, yapılandırılmış JSON, SSH erişimi ve yerleşik MCP sunucusuyla tam araç desteği.",
           "keywords": "Yapay zeka ajanları, Claude Code, Cursor, Cline, altyapı otomasyonu, CLI, JSON çıktısı, kendi sunucunuzda barındırma, ajan-doğal, MCP",
           "title": "AI Ajanlar – CLI Otomasyon | Rediacc"
         },
@@ -1662,8 +1571,12 @@
               "traditional": "HTML/yapılandırılmamış çıktı: 4 kat token kullanımı, kırılgan ayrıştırma"
             },
             {
-              "rediacc": "rdc agent capabilities: structured command tree at runtime",
+              "rediacc": "MCP sunucusu: çalışma zamanında keşfedilen tip tanımlı araçlar",
               "traditional": "Keşif yok: ajanların belgelere veya sabit kodlanmış API çağrılarına ihtiyacı var"
+            },
+            {
+              "rediacc": "rdc cluster fork: one command, one JSON reply, whole cluster",
+              "traditional": "Cluster değişiklikleri: web konsolları, sihirbazlar, çok adımlı runbook'lar"
             }
           ],
           "title": "rdc neden yapay zeka ajanları için tasarlandı",
@@ -1741,7 +1654,7 @@
               "title": "Verileriniz, kontrolünüz"
             },
             {
-              "description": "Tam felaket kurtarma 5 min'de. Ransomware'in dokunamayacağı kilitli, tek yazılımlı yedekler. İşletmeniz çalışmaya devam eder.",
+              "description": "5 dakikanın altında tam kurtarma. Fidye yazılımının değiştiremeyeceği kilitli, salt-okunur yedekler. İşletmeniz çalışmaya devam eder. Bir sağlayıcı sizi yüzüstü bırakırsa, Kubernetes dahil tüm sistem taşınabilir.",
               "icon": "shield",
               "title": "İş sürekliliği"
             }
@@ -1750,7 +1663,7 @@
           "title": "Ne kazanıyorsunuz?"
         },
         "bottomCta": {
-          "description": "Makine başına tek sabit fiyat. Kişi başı ücret yok. Sürpriz yok. Ücretsiz Community sürümüyle başlayın.",
+          "description": "Makine başına tek sabit fiyat. Kişi başı ücret yok. Sürpriz yok. 14 günlük ücretsiz denemeyle başlayın.",
           "primaryCta": "Fiyatlandırmayı Görün",
           "title": "Fiyatlandırmayı görün"
         },
@@ -1962,7 +1875,7 @@
               "title": "Dakikalar, Saatler Değil"
             },
             {
-              "description": "Verileriniz açık formatlarda kendi altyapınızda kalır. Sağlayıcı değiştirin, kendiniz yönetin ya da yarın taşıyın. Karar sizin.",
+              "description": "Verileriniz açık formatlarda kendi altyapınızda kalır. Sağlayıcı değiştirin, kendiniz yönetin ya da yarın taşıyın. Karar sizin. Artık buna Kubernetes cluster'ları da dahil.",
               "icon": "lock",
               "title": "Satıcı Bağımlılığı Yok"
             }
@@ -2162,6 +2075,10 @@
             {
               "rediacc": "Uyumluluk: kendi altyapınızda doğrulayın",
               "traditional": "Uyumluluk: satıcının beyanına güvenin"
+            },
+            {
+              "rediacc": "Çalışan bir cluster'ı başka bir veri merkezine fork'layın veya taşıyın, kesinti saniyelerle ölçülür",
+              "traditional": "Kubernetes sizi kurduğunuz veri merkezine bağımlı kılar"
             }
           ],
           "title": "Rediacc altyapınızı nasıl koruyor",
@@ -2239,7 +2156,7 @@
               "title": "60 saniyelik ortamlar"
             },
             {
-              "description": "Her şey bir komut. CI/CD, Git hook'ları veya kendi otomasyonunuzla entegre et. GUI istemeyen mühendisler için.",
+              "description": "Her şey bir komut. CI/CD, Git hook'ları veya kendi otomasyonunuzla entegre edin. GUI gerekmez. Kubernetes dahil: bir namespace de tıpkı bir depo gibi fork'lanır.",
               "icon": "terminal",
               "title": "CLI-öncelikli, betiklenebilir"
             },
@@ -2254,7 +2171,7 @@
         },
         "bottomCta": {
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash",
-          "description": "CLI'yi kur. İlk ortamını klonla. Kredi kartı istemeyen. Satış görüşmesi yok.",
+          "description": "CLI'yi kur. İlk ortamını klonla. 14 günlük ücretsiz denemeni başlat, satış görüşmesi yok.",
           "primaryCta": "Ücretsiz Başlayın",
           "title": "Kendiniz deneyin"
         },
@@ -2449,6 +2366,10 @@
             {
               "rediacc": "Geri alma: btrfs anlık görüntü geçişi (<5 dk)",
               "traditional": "Geri alma: yedekten geri yükleme (30+ dk)"
+            },
+            {
+              "rediacc": "rdc cluster fork copies it, data included. 46 seconds in our lab",
+              "traditional": "Bir Kubernetes cluster'ını klonlamak: yeniden provizyon, yeniden deploy, veriyi yeniden yükleme"
             }
           ],
           "title": "60 saniyelik klonlar neden mümkün",
@@ -2691,27 +2612,31 @@
         "heading": "Planları Detaylı Karşılaştırın"
       },
       "edgeChannel": {
-        "cta": "Ücretsiz Başlayın",
-        "description": "2X Community limitleri, en son özellikler, ücretsiz. Kredi kartı gerekmez.",
+        "cta": "Edge kanalını keşfedin",
+        "description": "Edge kanalı en yeni özellikleri önce sunar ve stable kanalının iki katı limitle çalışır.",
         "heading": "Edge Kanalını Deneyin"
       },
       "faq": {
         "heading": "Sıkça Sorulan Sorular",
         "items": [
           {
-            "answer": "Evet. Topluluk planı ücretsizdir. 2 sunucuya kadar, ayda 100 sunucu kurulumu ve yedek geri yüklemelerini kapsar. Kredi kartı gerekmez.",
-            "question": "Ücretsiz bir plan var mı?"
+            "answer": "Evet. Professional ve Business planlarının ikisi de 14 günlük ücretsiz denemeyle başlar. İlk ücretlendirme yalnızca deneme süresi bittiğinde yapılır; bu yüzden deneme bitmeden iptal ederseniz hiçbir ücret ödemezsiniz. İptal ederseniz hesabınız, depo başına 10 GB ve ayda 100 kuruluma kadar bir makineyi çalışır tutan ücretsiz Community planına döner.",
+            "question": "Ücretsiz deneme var mı?"
+          },
+          {
+            "answer": "Evet. Her iki ücretli plan da kayıt sırasında kart bilgisi ister, böylece deneme süresi bitince otomatik olarak aboneliğe döner. 14 günlük deneme bitene kadar ücretlendirilmezsiniz ve bu sürede istediğiniz zaman iptal edebilirsiniz.",
+            "question": "Başlamak için kredi kartına ihtiyacım var mı?"
           },
           {
             "answer": "Evet, planınızı istediğiniz zaman değiştirebilirsiniz. Yükseltmeler hemen geçerli olur ve düşürmeler bir sonraki faturalandırma döngünüzün başlangıcında uygulanır. Ceza veya ücret yoktur.",
             "question": "Planımı yükseltebilir veya düşürebilir miyim?"
           },
           {
-            "answer": "Evet. Yıllık faturalandırma %17 tasarruf sağlar — 2 ay ücretsiz kullanıma eşdeğerdir. Tüm ücretli planlar aylık veya yıllık faturalandırmayla kullanılabilir.",
+            "answer": "Evet. Yıllık faturalandırma, aylık ödemeye kıyasla %15 tasarruf sağlar. Her iki ücretli plan da aylık veya yıllık faturalandırmayla kullanılabilir.",
             "question": "Yıllık faturalandırma sunuyor musunuz?"
           },
           {
-            "answer": "Tüm büyük kredi kartlarını (Visa, MasterCard, American Express) kabul ediyoruz ve yıllık Enterprise planları için faturaya dayalı faturalandırmayı destekliyoruz.",
+            "answer": "Tüm büyük kredi kartlarını (Visa, MasterCard, American Express) kabul ediyoruz ve Enterprise planları için faturaya dayalı ödemeyi destekliyoruz.",
             "question": "Hangi ödeme yöntemlerini kabul ediyorsunuz?"
           },
           {
@@ -2719,24 +2644,28 @@
             "question": "Makineler nasıl sayılır?"
           },
           {
-            "answer": "Evet. Rediacc, btrfs dosya sistemi desteği olan herhangi bir Linux sunucusunda çalışır. Çıplak metal, VM'ler ve bulut örnekleri (AWS, Azure, GCP, Hetzner, OVH vb.) desteklenmektedir.",
+            "answer": "Evet. Rediacc, btrfs (Linux'a yerleşik açık kaynaklı bir depolama sistemi) desteği olan herhangi bir Linux sunucusunda çalışır. Fiziksel sunucular, sanal makineler ve bulut sunucuları (AWS, Azure, GCP, Hetzner, OVH vb.) desteklenir.",
             "question": "Rediacc kendi sunucularımda çalışabilir mi?"
           },
           {
-            "answer": "Community temel klonlama, anlık görüntü geri yüklemeleri ve 2 makineye kadar topluluk desteği içerir. Professional otomatik planlama, 24 saatlik belirli bir noktaya geri yükleme, öncelikli destek, entegrasyon API'si ve 5 makineye kadar destek ekler.",
+            "answer": "Her self-servis plan bir makineyi kapsar (bir Floating license). Rediacc'ı birden fazla makinede çalıştırmanız gerekiyorsa bu, iş ortaklarımız aracılığıyla satılan bir Enterprise kurulumudur. Bizimle iletişime geçin, ihtiyacınıza göre birlikte planlayalım.",
+            "question": "Her plan kaç makineyi kapsar?"
+          },
+          {
+            "answer": "Community, ücretsiz yedek plandır: bir makine, depo başına 10 GB, ayda 100 kurulum ve topluluk desteği. Professional ise 14 günlük ücretsiz denemeyle başlayan ücretli bir plandır: bir makine, depo başına 100 GB, ayda 2.000+ kurulum, otomatik planlama, 24 saatlik geri yükleme geçmişi, daha hızlı destek ve API erişimi.",
             "question": "Community ile Professional arasında ne fark var?"
           },
           {
-            "answer": "Enterprise sizin altyapınız için tasarlandı. Şartları siz belirlersiniz. Özel sunucu alanı, özel kurtarma taahhüdü ve 24/7/365 destek alırsınız. Ayrıca güvenlik incelemeleri ve düzenli tatbikatlar vardır.",
-            "question": "Enterprise fiyatlandırması neleri içerir?"
+            "answer": "Enterprise, sizin altyapınız için tasarlanır ve iş ortaklarımız aracılığıyla satılır. Şartları siz belirlersiniz, birden fazla makinede çalıştırırsınız ve kendi özel sunucu alanınızı, özel bir kurtarma taahhüdünü ve 7/24/365 desteği alırsınız. Ayrıca güvenlik incelemeleri ve düzenli tatbikatlar da vardır.",
+            "question": "Enterprise neleri içerir?"
           },
           {
-            "answer": "Evet. Eğitim kurumları ve kar amacı gütmeyen kuruluşlar için özel fiyatlandırmayı görüşmek üzere bizimle iletişime geçin.",
-            "question": "Eğitim kurumları veya kar amacı gütmeyen kuruluşlar için indirim sunuyor musunuz?"
+            "answer": "Evet. Bize e-posta gönderin. Okullar ve kâr amacı gütmeyen kuruluşlar özel fiyatlandırmadan yararlanır.",
+            "question": "Eğitim kurumları veya kâr amacı gütmeyen kuruluşlar için indirim sunuyor musunuz?"
           },
           {
-            "answer": "Evet. Tüm ücretli planlar 14 günlük para iade garantisi içerir. Rediacc ihtiyaçlarınızı karşılamıyorsa, tam iade yapacağız — soru sorulmaz.",
-            "question": "Para iade garantisi var mı?"
+            "answer": "14 günlük deneme süresi içinde iptal ederseniz hiç ücretlendirilmezsiniz. Ücretli bir planı daha sonra iptal ederseniz, faturalandırma döneminin sonuna kadar özelliklerini kullanmaya devam edersiniz, ardından hesabınız ücretsiz Community planına döner. Repolarınız bu süre boyunca çalışmaya devam eder.",
+            "question": "İptal edersem ne olur?"
           }
         ]
       },
@@ -2745,7 +2674,7 @@
           "startFree": "Ücretsiz Başlayın",
           "talkToSales": "Satışla Konuşun"
         },
-        "description": "5 min'de kurun. Ücretsiz başlayın.",
+        "description": "5 dakikada kurun. 14 günlük ücretsiz denemenizi başlatın.",
         "heading": "Altyapınızı Koruyun"
       },
       "hero": {
@@ -2753,35 +2682,34 @@
         "title": "Gerçek İşletmeler İçin Tasarlanmış"
       },
       "meta": {
-        "description": "İşletmeniz için doğru planı seçin. Ücretsiz topluluk planı dahil. Gizli ücret yok.",
+        "description": "Ekibinize uygun planı seçin. Her ücretli plan 14 günlük ücretsiz denemeyle başlar. Gizli ücret yok.",
         "keywords": "fiyatlandırma, altyapı otomasyonu, DevOps planları, görev yürütme",
         "title": "Fiyatlandırma | Gerçek İşletmeler İçin Tasarlanmış"
       },
       "plans": {
         "business": {
-          "description": "Uzman kurulumu, çok bölgeli yedeklemeler ve 4 saatlik geri yükleme garantisi.",
+          "description": "Daha büyük depolar, gelişmiş yönetim ve 4 saatlik geri yükleme garantisi.",
           "features": [
             "Professional'daki her şey +",
-            "10 slot",
-            "Sınırsız depo",
+            "1 slot",
+            "Depo başına 500 GB",
             "Ayda 5.000+ sunucu kurulumu",
-            "Kurulum desteği dahil (Lansman Teklifi)",
             "Coğrafi olarak yedeklenmiş depolama (3 bölge)",
             "Sürekli veri koruması",
             "4 saatlik geri yükleme SLA'sı",
             "Rol tabanlı erişim kontrolü ve denetim günlükleri",
             "Uyumluluk raporlaması",
-            "Telefon desteği ve işbirliği ortamları"
+            "Telefon desteği + ortak çalışma alanları"
           ],
           "name": "İşletme"
         },
         "community": {
-          "description": "2'ye kadar sunucunun yedeklemesi ve geri yüklenmesi, sonsuza kadar ücretsiz.",
+          "description": "Ücretsiz yedek plan. Deneme veya ücretli plan sona erdiğinde bir makineyi çalışır tutar.",
           "features": [
             "Sınırsız kullanıcı ve ekip",
             "Sınırsız depo",
             "Ayda 100 sunucu kurulumu (kurulum başına 1 slot)",
-            "2 slot",
+            "1 slot",
             "Yedek geri yüklemeler",
             "Manuel planlama",
             "Topluluk Slack kanalına erişim",
@@ -2790,10 +2718,10 @@
           "name": "Toplum"
         },
         "enterprise": {
-          "description": "Büyük ve karmaşık altyapılar için özel destek ve koşullar.",
+          "description": "Çoklu makine dağıtımları, iş ortaklarımız aracılığıyla satılır. Özel destek ve özel koşullar.",
           "features": [
             "Business'taki her şey +",
-            "25+ slot",
+            "Çoklu makine slotları",
             "Sınırsız depo",
             "Ayda 15.000+ sunucu kurulumu",
             "Özel SLA ve garantili geri yükleme süreleri",
@@ -2808,11 +2736,11 @@
           "name": "Girişim"
         },
         "professional": {
-          "description": "Büyüyen ekipler için profesyonel otomasyon ve planlama",
+          "description": "Tek bir üretim makinesi için otomasyon ve planlama",
           "features": [
             "Community'daki her şey +",
-            "3 slot",
-            "Sınırsız depo",
+            "1 slot",
+            "Depo başına 100 GB",
             "Ayda 2.000+ sunucu kurulumu",
             "Otomatik planlama",
             "Son 24 saatten herhangi bir noktadan geri yükleme",
@@ -2975,7 +2903,7 @@
             "title": "Ölçekleme İçin 60 Günlük İmtiyaz"
           },
           {
-            "description": "Slot yalnızca sunucu oluştururken veya kopyalarken kullanılır. Günlük işlemleriniz hiçbir slot tüketmez. 5 saat işlem yapılmadığında slotlar otomatik olarak boşalır. 5 slot'luk bir plan düzinelerce makine için yeterlidir. Makine başına asla ücret yoktur.",
+            "description": "Bir slot yalnızca sunucu oluştururken veya kopyalarken kullanılır. Normal işleriniz asla slot tüketmez. 5 saat hareketsizlik sonrasında slotlar otomatik olarak boşalır, bu yüzden tek bir slot bile zamanla birçok makineyi karşılayabilir. Makine başına asla ücret yoktur.",
             "title": "Sınırsız Sunucu. Yalnızca Yeni Olanları Öde"
           },
           {
@@ -3000,7 +2928,7 @@
         "bestValue": "En İyi Değer",
         "billingToggle": {
           "annual": "Yıllık",
-          "annualSavings": "17% tasarruf yap, 2 ay ücretsiz",
+          "annualSavings": "%15 tasarruf",
           "ariaLabel": "Faturalama Dönemi",
           "monthly": "Aylık"
         },
@@ -3009,41 +2937,32 @@
         "contactUsSub": "Özel limitler ve koşullar",
         "cta": {
           "business": {
-            "guarantee": "14 Günlük Para İade Garantisi",
             "launchBadge": "Sınırlı Lansman Teklifi",
-            "primary": "Kurulum Çağrısını Planla",
+            "primary": "Ücretsiz Başlayın",
             "secondary": "Satış Ekibine Ulaş",
             "valueNote": "9.999 $ kurulum kredisi dahil"
           },
           "community": {
-            "note": "Kredi kartı gerekmez",
+            "note": "Ücretsiz yedek plan",
             "primary": "Rediacc'yi Ücretsiz Dene",
             "secondary": "Neler Olduğunu Görmek"
           },
           "enterprise": {
-            "guarantee": "14 Günlük Para İade Garantisi",
-            "primary": "Demo Planla",
+            "primary": "Satış Ekibine Ulaş",
             "secondary": "Satış Ekibine Ulaş",
             "subtext": "Özel SLA · Özel Destek"
           },
           "professional": {
-            "guarantee": "14 Günlük Para İade Garantisi",
-            "primary": "Profesyonel Planı Başlat",
+            "primary": "Ücretsiz Başlayın",
             "secondary": "Satış Ekibine Ulaş"
           }
-        },
-        "designPartner": {
-          "badge": "Tasarım Ortakları İçin ÜCRETSİZ",
-          "cta": "Tasarım Ortağı Ödülünü Al",
-          "period": "Ömür Boyu · Kart Gerekmez",
-          "price": "FREE"
         },
         "edgeLimitsNote": "Gösterilen limitler edge kanalı içindir. Stable kanalında sınırlar yarısıdır.",
         "foreverFree": "Sonsuza Kadar Ücretsiz",
         "getStarted": "Hemen Yükle",
         "guarantees": {
           "cancelAnytime": "Her Zaman İptal Et",
-          "moneyBack": "14 Günlük Para İade Garantisi",
+          "freeTrial": "14 günlük ücretsiz deneme",
           "noContracts": "Uzun Vadeli Sözleşme Yok"
         },
         "keyBenefits": "Temel Faydalar",
@@ -3052,6 +2971,7 @@
         "monthOrYear": "ayda veya {{price}} yılda",
         "popular": "En Popüler",
         "startingAt": "*Şu fiyattan başlayan",
+        "startTrial": "14 günlük ücretsiz denemeyi başlatın",
         "taxDisclaimer": "Tüm fiyatlar USD cinsinden ve geçerli vergiler, harçlar ve gümrük vergileri hariçtir.",
         "whatsIncluded": "Neler dahil:"
       }
@@ -3157,7 +3077,7 @@
             },
             "productTelemetry": {
               "content": [
-                "Yazılım ürünlerimiz (Web Uygulaması, CLI, Middleware ve Bridge), ürün kalitesini, performansını ve güvenilirliğini artırmak amacıyla anonim kullanım telemetrisi toplar. Telemetri verileri; uygulama sürümü, işletim sistemi, tarayıcı türü, performans metrikleri, özellik kullanım kalıpları ve hata raporları gibi teknik bilgileri içerir. Kişisel tanımlayıcılar toplama öncesinde anonimleştirilir — e-posta adresleri yalnızca alan adına indirgenir, kullanıcı kimlikleri hashlenir ve kısaltılır, şifreler veya gizli bilgiler asla toplanmaz.",
+                "Yazılım ürünlerimiz (Web Uygulaması, CLI, Middleware ve Renet Ajanı), ürün kalitesini, performansını ve güvenilirliğini artırmak amacıyla anonim kullanım telemetrisi toplar. Telemetri verileri; uygulama sürümü, işletim sistemi, tarayıcı türü, performans metrikleri, özellik kullanım kalıpları ve hata raporları gibi teknik bilgileri içerir. Kişisel tanımlayıcılar toplama öncesinde anonimleştirilir — e-posta adresleri yalnızca alan adına indirgenir, kullanıcı kimlikleri hashlenir ve kısaltılır, şifreler veya gizli bilgiler asla toplanmaz.",
                 "Telemetri, Web Uygulamamızda ve CLI'da varsayılan olarak etkindir ve tüm ürünlerde devre dışı bırakılabilir. Her ürünün ne topladığı ve nasıl devre dışı bırakılacağı hakkında eksiksiz ayrıntılar için <a href=\"telemetry-policy\">Telemetri Politikamıza</a> bakın."
               ],
               "title": "2.5 Ürün Telemetri Verileri"
@@ -5497,6 +5417,12 @@
               "description": "Üretimi klonlayın. Yapay zekanın saldırmasına izin verin.",
               "slug": "ai-pentesting",
               "title": "Yapay Zeka Sızma Testi"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Çalışan bir cluster'ı fork'layın veya taşıyın, veri dahil",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes Cluster Taşınabilirliği"
             }
           ],
           "title": "Diğer Çözümleri Keşfedin"
@@ -6392,6 +6318,12 @@
               "description": "Üretimi 60 saniyede klonlayın",
               "slug": "environment-cloning",
               "title": "Ortam Klonlama"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Çalışan bir cluster'ı fork'layın veya taşıyın, veri dahil",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes Cluster Taşınabilirliği"
             }
           ],
           "title": "Diğer Çözümleri Keşfedin"
@@ -7384,6 +7316,12 @@
               "description": "Üretimi klonlayın. Yapay zekanın saldırmasına izin verin.",
               "slug": "ai-pentesting",
               "title": "Yapay Zeka Sızma Testi"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Çalışan bir cluster'ı fork'layın veya taşıyın, veri dahil",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes Cluster Taşınabilirliği"
             }
           ],
           "title": "Diğer Çözümleri Keşfedin"
@@ -7651,6 +7589,10 @@
             {
               "rediacc": "10 klon CoW ile blokları paylaşır (~12 GB delta)",
               "traditional": "10 klon = 10x depolama (2,4 TB)"
+            },
+            {
+              "rediacc": "Bir namespace, tıpkı bir repo gibi 1 ila 5 saniyede fork'lanır",
+              "traditional": "Bir Kubernetes uygulamasını staging'e almak, ikinci bir cluster kurmak demektir"
             }
           ],
           "title": "60 saniyelik klonlar neden mümkün",
@@ -7889,6 +7831,12 @@
               "description": "Üretimi klonlayın. Yapay zekanın saldırmasına izin verin.",
               "slug": "ai-pentesting",
               "title": "Yapay Zeka Sızma Testi"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Çalışan bir cluster'ı fork'layın veya taşıyın, veri dahil",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes Cluster Taşınabilirliği"
             }
           ],
           "title": "Diğer Çözümleri Keşfedin"
@@ -8138,6 +8086,10 @@
             {
               "rediacc": "Otomatik sağlık kontrolleri — kesin RTO/RPO ile geçti/kaldı",
               "traditional": "Manuel doğrulama — \"doğru görünüyor\" yargıları"
+            },
+            {
+              "rediacc": "Cluster'ın tamamını 46 saniyede fork'layın ve tatbikatı kopya üzerinde çalıştırın",
+              "traditional": "Kubernetes felaket kurtarma tatbikatı: ikinci bir cluster'ı senkron tutun, sonra umut edin"
             }
           ],
           "title": "Geleneksel felaket kurtarma testi neden başarısız olur",
@@ -8901,6 +8853,12 @@
               "description": "Üretimi klonlayın. Yapay zekanın saldırmasına izin verin.",
               "slug": "ai-pentesting",
               "title": "Yapay Zeka Sızma Testi"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Çalışan bir cluster'ı fork'layın veya taşıyın, veri dahil",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes Cluster Taşınabilirliği"
             }
           ],
           "title": "Diğer Çözümleri Keşfedin"
@@ -9136,6 +9094,10 @@
             {
               "rediacc": "Üretimle birebir aynı klon oluşturmak için 52 saniye",
               "traditional": "Her yeni ortam için 15–30 dakika hazırlık"
+            },
+            {
+              "rediacc": "Test için cluster'ı fork'layın, sonra silin. Kopyalar depolamayı paylaşır.",
+              "traditional": "Bir staging Kubernetes cluster'ı: ikinci bir node grubu, 7/24 ücretli"
             }
           ],
           "title": "Tam kopya vs. copy-on-write",
@@ -9373,6 +9335,12 @@
               "description": "Üretimi klonlayın. Yapay zekanın saldırmasına izin verin.",
               "slug": "ai-pentesting",
               "title": "Yapay Zeka Sızma Testi"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Çalışan bir cluster'ı fork'layın veya taşıyın, veri dahil",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes Cluster Taşınabilirliği"
             }
           ],
           "title": "Diğer Çözümleri Keşfedin"
@@ -9866,6 +9834,12 @@
               "description": "Üretimi klonlayın. Yapay zekanın saldırmasına izin verin.",
               "slug": "ai-pentesting",
               "title": "Yapay Zeka Sızma Testi"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Çalışan bir cluster'ı fork'layın veya taşıyın, veri dahil",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes Cluster Taşınabilirliği"
             }
           ],
           "title": "Diğer Çözümleri Keşfedin"
@@ -10180,6 +10154,413 @@
           ]
         }
       },
+      "kubernetesClusterMobility": {
+        "benefits": {
+          "items": [
+            {
+              "description": "Rediacc sizin için k3s çalıştırır, ya da zaten sahip olduğunuz bir cluster'a bağlanır. Volume'lar ceph-csi RBD üzerinde taşınır. Manifest'leriniz sizde kalır.",
+              "icon": "check-circle",
+              "title": "Kubernetes'inizi koruyun"
+            },
+            {
+              "description": "Kendi KVM sunucularınızda veya Linode gibi bulutlarda özel VLAN'larla provizyon yapın. Node havuzları, disk ağırlıklı Ceph node'larını cpu ağırlıklı Kubernetes node'larından ayrı tutar.",
+              "icon": "arrow-right-circle",
+              "title": "Gerçek veri merkezi taşınabilirliği"
+            },
+            {
+              "description": "Bir Kubernetes uygulaması bir namespace'tir. Onu tıpkı bir repo gibi fork'layın: 1 ila 5 saniye, veri dahil. Docker repolarınız için zaten kullandığınız aynı komutlar.",
+              "icon": "git-branch",
+              "title": "Her şey için tek bir yaklaşım"
+            }
+          ],
+          "overline": "NEDEN ÖNEMLİ",
+          "title": "Kubernetes'inizi koruyun. Taşınabilirlik kazanın."
+        },
+        "bottomCta": {
+          "command": "rdc cluster fork prod --tag staging",
+          "ctaText": "Ücretsiz başlayın",
+          "description": "Ücretsiz Community sürümüyle başlayın. Fork oluşturun, taşımayı test edin, sonra gerçekten göç edin.",
+          "title": "Cluster'ınıza bir çıkış yolu verin"
+        },
+        "comparison": {
+          "capabilityLabel": "Özellik",
+          "description": "Yedekleme araçları durdurup geri yükler. Cluster API şekli kopyalar, veriyi değil. RBD mirroring volume'ları kopyalar, cluster'ı değil. Rediacc hepsini taşır.",
+          "features": [
+            {
+              "name": "Uygulamaları ve volume'ları yedekler",
+              "refs": [4, 5, 0, 9, 0],
+              "values": ["check", "check", "cross", "Volumes only", "rediacc"]
+            },
+            {
+              "name": "Bir cluster'ın tamamını verisiyle taşır",
+              "refs": [6, 7, 8, 0, 0],
+              "values": ["Stop and restore", "Stop and restore", "Shape only", "cross", "rediacc"]
+            },
+            {
+              "name": "Çalışan bir cluster'ı fork'lar, veri dahil",
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Bir uygulamayı (namespace) saniyeler içinde klonlar",
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Veriyi tam yeniden yazma olmadan kopyalar",
+              "refs": [0, 0, 0, 10, 0],
+              "values": ["cross", "cross", "cross", "Async copy", "rediacc"]
+            },
+            {
+              "name": "Planlı bir taşıma için kısa, ölçülmüş kesinti",
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            }
+          ],
+          "overline": "FARK",
+          "title": "Başka hiç kimse çalışan bir cluster'ı verisiyle birlikte taşımaz"
+        },
+        "explore": {
+          "solutions": [
+            {
+              "category": "multi-cloud",
+              "current": true,
+              "description": "Çalışan bir cluster'ı fork'layın veya taşıyın, veri dahil",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes Cluster Taşınabilirliği"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Sizin altyapınız. Sizin seçiminiz. Her zaman.",
+              "slug": "vendor-lock-in",
+              "title": "Tedarikçi Bağımlılığından Kurtulma"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "AWS çökünce siz çökmezsiniz",
+              "slug": "cloud-outage-protection",
+              "title": "Bulut Kesinti Koruması"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Yük devretmenizi ihtiyaç duymadan önce test edin",
+              "slug": "failover-testing",
+              "title": "Yük Devretme Testi"
+            },
+            {
+              "category": "encryption",
+              "description": "Verilerinizi riske atmadan göç edin",
+              "slug": "migration-safety",
+              "title": "Taşıma Güvenliği"
+            },
+            {
+              "category": "dev-env",
+              "description": "Üretim ortamını 60 saniyede klonlayın",
+              "slug": "environment-cloning",
+              "title": "Ortam Klonlama"
+            },
+            {
+              "category": "backups",
+              "description": "Dakikalar içinde tam ortam kurtarma",
+              "slug": "instant-recovery",
+              "title": "Anında Kurtarma"
+            },
+            {
+              "category": "encryption",
+              "description": "Sizin anahtarlarınız. Sizin şifrelemeniz. İstisna yok.",
+              "slug": "encryption",
+              "title": "Sizin Kontrolünüzde Şifreleme"
+            }
+          ],
+          "title": "Diğer Çözümleri Keşfedin"
+        },
+        "hero": {
+          "badge": "MULTI-CLOUD",
+          "differentiator": "Velero yedekleri geri yükler. Cluster API şekilleri kopyalar. Rediacc çalışan cluster'ı taşır, veri dahil.",
+          "primaryCta": "Ücretsiz başlayın",
+          "secondaryCta": "Ölçülen rakamları görün →",
+          "subtitle": "Cluster'ınız tek bir bütün olarak taşınır: node'lar, yapılandırma ve veri. Başka bir makineye ya da başka bir veri merkezine. Kesinti saniyelerle ölçülür, bir hafta sonuyla değil.",
+          "title": "Çalışan bir Kubernetes cluster'ını fork'layın veya taşıyın"
+        },
+        "howItWorks": {
+          "cloneVisual": {
+            "arrow": {
+              "icon": "arrow-right-circle-arrow",
+              "label": "Fork",
+              "time": "46s"
+            },
+            "clone": {
+              "cardClass": "restored",
+              "containerCount": "Fork",
+              "services": [
+                {
+                  "name": "Nodes",
+                  "port": "2 (k3s + Ceph)"
+                },
+                {
+                  "name": "Namespaces",
+                  "port": "8 apps"
+                },
+                {
+                  "name": "Volumes",
+                  "port": "Ceph RBD clones"
+                },
+                {
+                  "name": "State",
+                  "port": "Own identity, new IPs"
+                }
+              ],
+              "size": "46s",
+              "status": "Running",
+              "title": "prod-staging (Datacenter B)"
+            },
+            "production": {
+              "containerCount": "Ana",
+              "services": [
+                {
+                  "name": "Nodes",
+                  "port": "2 (k3s + Ceph)"
+                },
+                {
+                  "name": "Namespaces",
+                  "port": "8 apps"
+                },
+                {
+                  "name": "Volumes",
+                  "port": "Ceph RBD"
+                },
+                {
+                  "name": "State",
+                  "port": "Keeps running"
+                }
+              ],
+              "size": "Untouched",
+              "status": "Running",
+              "title": "prod (Datacenter A)"
+            }
+          },
+          "overline": "NASIL ÇALIŞIR",
+          "steps": [
+            {
+              "description": "Her node bir imaj dosyasından çalışır. Her volume bir Ceph RBD imajıdır. Birlikte cluster'ın tamamını oluştururlar: uygulamalar, yapılandırma ve veri.",
+              "icon": "layers",
+              "title": "Cluster imajları artı volume'lar"
+            },
+            {
+              "description": "Tek bir komut her imajı copy-on-write olarak klonlar. Lab ortamımızda 2 node'lu bir cluster 46 saniyede fork'landı. Ana cluster çalışmaya devam eder.",
+              "icon": "git-branch",
+              "title": "Yerinde fork"
+            },
+            {
+              "description": "Rediacc, cluster çalışırken ön kopyalama yapar. Sonra durur, son delta'yı gönderir ve yeni makinede yeniden başlar. Ölçülen kesinti: 16 saniye.",
+              "icon": "arrow-right-circle",
+              "title": "Kısa bir kesintiyle göç edin"
+            }
+          ],
+          "title": "Cluster'ın tamamı tek bir dosya grubudur"
+        },
+        "meta": {
+          "description": "Çalışan bir Kubernetes cluster'ını, veri dahil, başka bir makineye veya veri merkezine fork'layın. Kısa, ölçülmüş kesinti. Ceph RBD ve k3s üzerine kurulu.",
+          "keywords": "kubernetes cluster göçü, cluster fork, ceph rbd, k3s, veri merkezi taşınabilirliği, kubernetes taşınabilirliği",
+          "title": "Fork or Move a Kubernetes Cluster | Rediacc"
+        },
+        "problem": {
+          "description": "Kubernetes uygulamalarınızı taşınabilir yaptı. Cluster'ın kendisi değil. Veri tek bir veri merkezinde yaşar. Onu taşımak bir yeniden kurulum projesi demektir: yeni node'lar, yeni depolama, yedekten geri yükleme, her şeyi yeniden test etme. Bu yüzden çoğu ekip hiç taşınmaz. Ve sağlayıcıları bunu bilir.",
+          "overline": "SORUN",
+          "statCallouts": [
+            {
+              "number": "27%",
+              "ref": 1,
+              "source": "Flexera 2024 State of the Cloud Report",
+              "text": "kuruluşlar genelinde bulut IaaS/PaaS harcamalarının israf edilmesi"
+            },
+            {
+              "number": "17%",
+              "ref": 2,
+              "source": "Flexera 2025 State of the Cloud Report",
+              "text": "kuruluşların ortalama bulut bütçe aşımı"
+            },
+            {
+              "number": "$0.09/GB",
+              "ref": 3,
+              "source": "AWS/Azure/GCP Pricing 2024",
+              "text": "ayrılmayı tasarım gereği pahalı hale getiren çıkış ücretleri"
+            }
+          ],
+          "timeline": {
+            "newLabel": "REDİACC İLE",
+            "newSteps": ["Pre-copy", "16s cutover", "Live"],
+            "oldLabel": "ESKİ YÖNTEM",
+            "oldSteps": [
+              {
+                "day": "Month 1",
+                "text": "Yeni cluster'ı kur"
+              },
+              {
+                "day": "Month 2",
+                "text": "Manifest'leri ve secret'ları yeniden oluştur"
+              },
+              {
+                "day": "Month 3",
+                "text": "Volume'ları yedekten geri yükle"
+              },
+              {
+                "day": "Month 4",
+                "text": "Her uygulamayı yeniden test et"
+              },
+              {
+                "day": "Month 5+",
+                "text": "Kesintiyi yap ve umut et"
+              }
+            ]
+          },
+          "title": "Cluster'ınız kurduğunuz yerde sıkışıp kalır"
+        },
+        "references": {
+          "disclaimer": "Fork ve göç süreleri, Rediacc'ın KVM test laboratuvarında 2 node'lu bir cluster üzerinde uçtan uca ölçülmüştür. Varsayılan tutarlılık modeli crash-consistent'tir, yani bir güç kesintisiyle aynı anlama gelir. İş yükleri, göç kesintisi sırasında hedef makinede yeniden başlar.",
+          "items": [
+            {
+              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"27% of cloud spend continues to be wasted.\"",
+              "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
+            },
+            {
+              "text": "Flexera, \"2025 State of the Cloud Report,\" 2025. \"With cloud budgets already exceeding limits by 17%, organizations are increasingly turning to managed service providers.\"",
+              "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
+            },
+            {
+              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
+              "url": "https://aws.amazon.com/s3/pricing/"
+            },
+            {
+              "text": "Velero backs up Kubernetes cluster resources and persistent volumes and restores them into a cluster.",
+              "url": "https://velero.io/docs/"
+            },
+            {
+              "text": "Kasten K10 provides backup and restore of Kubernetes applications, including application data.",
+              "url": "https://docs.kasten.io/"
+            },
+            {
+              "text": "Velero cluster migration restores a backup into a new cluster; workloads are recreated from the backup point, not moved live.",
+              "url": "https://velero.io/docs/main/migration-case/"
+            },
+            {
+              "text": "Kasten K10 migrates applications between clusters by exporting a restore point and importing it into the target cluster.",
+              "url": "https://docs.kasten.io/latest/usage/migration.html"
+            },
+            {
+              "text": "Cluster API's clusterctl move relocates Cluster API objects (the cluster's definition) to another management cluster; it does not move workload data.",
+              "url": "https://cluster-api.sigs.k8s.io/clusterctl/commands/move"
+            },
+            {
+              "text": "Ceph RBD mirroring replicates block device images between Ceph clusters; it covers volumes, not Kubernetes cluster state.",
+              "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
+            },
+            {
+              "text": "Ceph RBD mirroring is asynchronous, based on journaling or periodic snapshots, and is designed for disaster recovery.",
+              "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
+            }
+          ],
+          "label": "Sources & References"
+        },
+        "stats": [
+          {
+            "icon": "layers",
+            "label": "Whole 2-node cluster fork",
+            "number": "46s"
+          },
+          {
+            "icon": "clock",
+            "label": "Migrate cutover, measured",
+            "number": "16s"
+          },
+          {
+            "icon": "zap",
+            "label": "Namespace fork",
+            "number": "1-5s"
+          }
+        ],
+        "techDiff": {
+          "description": "Her node, btrfs üzerinde bir imaj dosyasından çalışır. Her volume bir Ceph RBD imajıdır. Bir cluster'ı kopyalamak, bu imajları copy-on-write olarak klonlamak demektir. Dışa aktarma yok, dönüştürme yok, geri yükleme adımı yok. Bir fork'un aylar değil saniyeler sürmesinin nedeni budur.",
+          "overline": "KAPUTUN ALTINDA",
+          "rows": [
+            {
+              "rediacc": "Node imajları ve volume'lar birlikte, tek parça halinde taşınır",
+              "traditional": "Yedekleme araçları boş bir cluster'a parça parça geri yükler"
+            },
+            {
+              "rediacc": "Ceph RBD klonları da beraberinde gelir, copy-on-write",
+              "traditional": "Veri için ayrı bir replikasyon ürünü gerekir"
+            },
+            {
+              "rediacc": "Lab ortamımızda 2 node'lu bir cluster fork'u 46 saniye sürdü. Ana cluster çalışmaya devam eder",
+              "traditional": "Bir cluster klonu, yeniden provizyon ve yeniden deploy demektir"
+            },
+            {
+              "rediacc": "Ölçülen kesinti: 16 saniye. İş yükleri hedefte yeniden başlar",
+              "traditional": "Kesinti planları bir hafta sonuna yayılır"
+            }
+          ],
+          "title": "Bir cluster neden bir dosya gibi taşınabilir"
+        },
+        "techStrip": {
+          "label": "Runs the apps you already ship",
+          "note": "Veritabanları, CI/CD, CMS, izleme, oturum açma, depolama. Kubernetes üzerinde çalışıyorsa, Rediacc onu fork'layabilir ve taşıyabilir, veri dahil."
+        },
+        "terminal": {
+          "lines": [
+            {
+              "cmd": "rdc cluster fork prod",
+              "type": "command",
+              "value": "--tag staging"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "Node imajları kopyalanıyor (copy-on-write)........... tamamlandı",
+              "type": "check"
+            },
+            {
+              "text": "Ceph RBD volume'ları kopyalanıyor...................... tamamlandı",
+              "type": "check"
+            },
+            {
+              "text": "Yeni IP'ler için node kimlikleri yeniden yazılıyor........... tamamlandı",
+              "type": "check"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "✓ Fork 46 saniyede tamamlandı: prod-staging ayakta. Ana cluster'a dokunulmadı.",
+              "type": "success"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "cmd": "rdc cluster migrate prod",
+              "type": "command",
+              "value": "--to fsn1-dc2"
+            },
+            {
+              "text": "Cluster çalışmaya devam ederken ön kopyalama...... tamamlandı",
+              "type": "check"
+            },
+            {
+              "text": "Kesinti: durdur, son delta, yeniden başlat........... 16s",
+              "type": "check"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "Fork: 46s   Göç kesintisi: 16s   Tutarlılık: crash-consistent",
+              "type": "summary"
+            }
+          ]
+        }
+      },
       "leadMagnetButton": {
         "buttonLabel": "Özeti indir",
         "description": "CISO'lar, CTO'lar ve kıdemli mühendisler için yazılmış, gereksiz ayrıntılardan arındırılmış bir PDF. Bağlantıyı e-posta ile gönderiyoruz; böylece daha sonra kolayca bulabilirsiniz.",
@@ -10356,6 +10737,12 @@
               "description": "Üretimi klonlayın. Yapay zekanın saldırmasına izin verin.",
               "slug": "ai-pentesting",
               "title": "Yapay Zeka Sızma Testi"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Çalışan bir cluster'ı fork'layın veya taşıyın, veri dahil",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes Cluster Taşınabilirliği"
             }
           ],
           "title": "Diğer Çözümleri Keşfedin"
@@ -10613,6 +11000,10 @@
             {
               "rediacc": "Transfer sonrası depo başına SHA-256 sağlama toplamı doğrulaması",
               "traditional": "Bütünlük varsayılır — otomatik doğrulama yok"
+            },
+            {
+              "rediacc": "Önce cluster'ı fork'layın. Kesintiye geçmeden önce taşımayı test edin",
+              "traditional": "Cluster göçleri paralel bir kurulum ve umuda bel bağlamayı gerektirir"
             }
           ],
           "title": "Çöz-aktar-yeniden şifrele vs. sıfır maruziyetli göç",
@@ -10853,6 +11244,12 @@
               "description": "Üretimi klonlayın. Yapay zekanın saldırmasına izin verin.",
               "slug": "ai-pentesting",
               "title": "Yapay Zeka Sızma Testi"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Çalışan bir cluster'ı fork'layın veya taşıyın, veri dahil",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes Cluster Taşınabilirliği"
             }
           ],
           "title": "Diğer Çözümleri Keşfedin"
@@ -11084,6 +11481,10 @@
             {
               "rediacc": "47 saniye, --verify-parity bayrağıyla otomatik eşitlik doğrulaması",
               "traditional": "Hazırlamak için günler, eşitlik doğrulaması yok"
+            },
+            {
+              "rediacc": "rdc cluster fork copies the running cluster, data included. 46 seconds in our lab",
+              "traditional": "Aynı YAML'dan kurulan bir staging cluster'ı yine de prod'dan sapar"
             }
           ],
           "title": "Yaklaşıklık vs. birebir klonlama",
@@ -11327,6 +11728,12 @@
               "description": "Üretimi klonlayın. Yapay zekanın saldırmasına izin verin.",
               "slug": "ai-pentesting",
               "title": "Yapay Zeka Sızma Testi"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Çalışan bir cluster'ı fork'layın veya taşıyın, veri dahil",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes Cluster Taşınabilirliği"
             }
           ],
           "title": "Diğer Çözümleri Keşfedin"
@@ -12674,7 +13081,7 @@
               "type": "spacer"
             },
             {
-              "cmd": "rdc term connect -m patch-test-ubuntu-24",
+              "cmd": "rdc term connect patch-test-ubuntu-24",
               "flag": "-c",
               "prompt": "$",
               "type": "command",
@@ -12873,6 +13280,12 @@
               "description": "Üretimi klonlayın. Yapay zekanın saldırmasına izin verin.",
               "slug": "ai-pentesting",
               "title": "Yapay Zeka Sızma Testi"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Çalışan bir cluster'ı fork'layın veya taşıyın, veri dahil",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetes Cluster Taşınabilirliği"
             }
           ],
           "title": "Diğer Çözümleri Keşfedin"
@@ -13122,6 +13535,10 @@
             {
               "rediacc": "Buluttan bağımsız: aynı rdc komutları AWS, Hetzner, çıplak donanımda çalışır",
               "traditional": "Buluta özgü araçlar gerektirir: Terraform yeniden yazımları, API değişiklikleri"
+            },
+            {
+              "rediacc": "rdc cluster migrate moves the running cluster, data included",
+              "traditional": "Kubernetes cluster'ları yeni sağlayıcıda elle yeniden kurulur"
             }
           ],
           "title": "Göç neden aylar değil dakikalar alır"
@@ -13597,6 +14014,13 @@
         }
       }
     },
+    "solutionsIndex": {
+      "meta": {
+        "description": "Tüm Rediacc çözümleri: fidye yazılımı kurtarma, çoklu bulut taşınabilirliği, Kubernetes taşınabilirliği, doğrulanmış yedekler, şifreleme ve hızlı dev ortamları.",
+        "keywords": "Rediacc çözümleri, fidye yazılımı kurtarma, çoklu bulut, Kubernetes cluster taşınabilirliği, doğrulanmış yedekler, şifreleme kontrolü, geliştirme ortamları",
+        "title": "Solutions - Business Continuity Software | Rediacc"
+      }
+    },
     "telemetryPolicy": {
       "contact": {
         "description": "Telemetri uygulamalarımız hakkında sorularınız varsa veya devre dışı bırakma konusunda yardıma ihtiyacınız varsa, <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresinden bize ulaşın.",
@@ -13617,30 +14041,30 @@
       "sections": {
         "bridge": {
           "content": [
-            "Rediacc Bridge (Renet), gzip sıkıştırmalı OTLP dışa aktarımı ile OpenTelemetry kullanır. Telemetri, toplu halde (maksimum 10 span, her 5 saniyede temizlenir) <code>rediacc.com</code> adresine iletilir."
+            "Rediacc Renet Ajanı, gzip sıkıştırmalı OTLP dışa aktarımı ile OpenTelemetry kullanır. Telemetri, toplu halde (maksimum 10 span, her 5 saniyede temizlenir) <code>rediacc.com</code> adresine iletilir."
           ],
           "id": "bridge",
           "subsections": {
             "bridgeDataCollected": {
-              "content": ["Bridge aşağıdaki veri kategorilerini toplar:"],
+              "content": ["Renet Ajanı aşağıdaki veri kategorilerini toplar:"],
               "items": [
                 "<strong>Kuyruk işlemleri:</strong> görev kimliği, öncelik düzeyi, işlem türü, yürütme süresi, başarı veya başarısızlık durumu",
                 "<strong>SSH işlemleri:</strong> hedef ana bilgisayar, kullanıcı adı, port numarası, çıkış kodu, yürütme süresi (komut içeriği veya çıktı toplanmaz)",
                 "<strong>API çağrıları:</strong> prosedür adı, istek süresi",
                 "<strong>Vault işlemleri:</strong> işlem türü ve süresi (gizli değerler, anahtarlar veya vault içerikleri toplanmaz)",
-                "<strong>Bridge yaşam döngüsü:</strong> başlatma, kapatma ve yeniden bağlanma olayları",
+                "<strong>Renet Ajanı yaşam döngüsü:</strong> başlatma, kapatma ve yeniden bağlanma olayları",
                 "<strong>Performans profilleme:</strong> CPU kullanım örnekleri ve bellek tahsis profilleri, otomatik olarak toplanır ve profilleme uç noktamıza gönderilir"
               ],
               "title": "7.1 Toplanan Veriler"
             },
             "bridgeOptOut": {
               "content": [
-                "Bridge telemetrisini (profilleme dahil) devre dışı bırakmak için <code>REDIACC_TELEMETRY_DISABLED=1</code> ortam değişkenini ayarlayın."
+                "Renet Ajanı telemetrisini (profilleme dahil) devre dışı bırakmak için <code>REDIACC_TELEMETRY_DISABLED=1</code> ortam değişkenini ayarlayın."
               ],
               "title": "7.2 Nasıl Devre Dışı Bırakılır"
             }
           },
-          "title": "7. Bridge (Renet) Telemetrisi"
+          "title": "7. Renet Ajanı Telemetrisi"
         },
         "ccpa": {
           "content": [
@@ -13701,7 +14125,7 @@
           ],
           "id": "data-processing",
           "items": [
-            "<strong>Şifreleme:</strong> Tüm veriler TLS kullanılarak iletim sırasında şifrelenir. Bridge ayrıca gzip sıkıştırma kullanır.",
+            "<strong>Şifreleme:</strong> Tüm veriler TLS kullanılarak iletim sırasında şifrelenir. Renet Ajanı ayrıca gzip sıkıştırma kullanır.",
             "<strong>Saklama:</strong> Ham telemetri izleri, hata ayıklama ve olay araştırması için 90 güne kadar saklanır. Toplu metrikler 12 aya kadar saklanır ve ardından silinir.",
             "<strong>Erişim:</strong> Telemetri verilerine yalnızca Rediacc mühendislik ve operasyon personeli, bilmesi gereken bazında erişebilir.",
             "<strong>Üçüncü taraflarla paylaşım yok:</strong> Telemetri verileri herhangi bir üçüncü tarafla paylaşılmaz, satılmaz veya erişilemez.",
@@ -13719,7 +14143,7 @@
         "introduction": {
           "content": [
             "Rediacc yazılım ürünleri, ürün kalitesini artırmamıza, sorunları teşhis etmemize ve araçlarımızın nasıl kullanıldığını anlamamıza yardımcı olmak için anonimleştirilmiş kullanım telemetrisi toplar. Bu Telemetri Politikası, tam olarak hangi verilerin toplandığını, neden toplandığını, nasıl işlendiğini ve nasıl devre dışı bırakabileceğinizi açıklar.",
-            "Bu politika dört ürünü kapsar: <strong>Rediacc Web Uygulaması</strong>, <strong>Rediacc CLI</strong>, <strong>Rediacc Middleware</strong> ve <strong>Rediacc Bridge (Renet)</strong>. Web sitesi analitiği (Plausible) ayrı olarak <a href=\"privacy-policy\">Gizlilik Politikamızda</a> ve <a href=\"cookie-policy\">Çerez Politikamızda</a> ele alınmaktadır."
+            "Bu politika dört ürünü kapsar: <strong>Rediacc Web Uygulaması</strong>, <strong>Rediacc CLI</strong>, <strong>Rediacc Middleware</strong> ve <strong>Rediacc Renet Ajanı</strong>. Web sitesi analitiği (Plausible) ayrı olarak <a href=\"privacy-policy\">Gizlilik Politikamızda</a> ve <a href=\"cookie-policy\">Çerez Politikamızda</a> ele alınmaktadır."
           ],
           "id": "introduction",
           "title": "1. Giriş"
@@ -13728,7 +14152,7 @@
           "content": [
             "AB Genel Veri Koruma Yönetmeliği (GDPR) ve eGizlilik Yönergesi kapsamında, telemetri toplama için yasal dayanağımız ürün bağlamına bağlıdır:",
             "<strong>Web Uygulaması</strong> (tarayıcı tabanlı) için: telemetri, hizmet kalitesini sürdürme ve iyileştirme amacıyla <strong>meşru menfaat</strong> (GDPR Md. 6(1)(f)) kapsamında toplanır. İstediğiniz zaman devre dışı bırakabilirsiniz.",
-            "<strong>CLI, Middleware ve Bridge</strong> (altyapınıza kurulan) için: telemetri, açık devre dışı bırakma mekanizmaları sağlanarak <strong>meşru menfaat</strong> kapsamında toplanır. Herhangi bir veri gönderilmeden önce telemetriyi devre dışı bırakabilirsiniz."
+            "<strong>CLI, Middleware ve Renet Ajanı</strong> (altyapınıza kurulan) için: telemetri, açık devre dışı bırakma mekanizmaları sağlanarak <strong>meşru menfaat</strong> kapsamında toplanır. Herhangi bir veri gönderilmeden önce telemetriyi devre dışı bırakabilirsiniz."
           ],
           "id": "legal-basis",
           "title": "3. Toplama için Yasal Dayanak"
@@ -13831,14 +14255,14 @@
           "items": [
             "<strong>\"Hesap\"</strong>, Platforma erişmek ve Aboneliğinizi yönetmek için oluşturduğunuz kullanıcı hesabı anlamına gelir.",
             "<strong>\"Yetkili Kullanıcı\"</strong>, ekip üyeleri, çalışanlar ve sizin adınıza hareket eden yükleniciler dahil olmak üzere Hesabınız kapsamında Hizmetlere erişim izni verilen herhangi bir birey anlamına gelir.",
-            "<strong>\"Bridge\" (Renet)</strong>, şifreli depolama, konteyner orkestrasyonu ve altyapı işlemlerini yönetmek için Makinelerinizde çalışan Rediacc sunucu tarafı ajanı anlamına gelir.",
+            "<strong>\"Renet Ajanı\"</strong>, şifreli depolama, konteyner orkestrasyonu ve altyapı işlemlerini yönetmek için Makinelerinizde çalışan Rediacc sunucu tarafı ajanı anlamına gelir.",
             "<strong>\"CLI\"</strong>, iş istasyonunuza yüklenen Rediacc komut satırı arayüzü (<code>rdc</code>) anlamına gelir.",
             "<strong>\"Yapılandırma\"</strong>, iş istasyonunuzda depolanan ve Makine bağlantı bilgileri, şifreleme kimlik bilgileri ve diğer işletimsel ayarları içeren yerel yapılandırma dosyaları anlamına gelir.",
             "<strong>\"Müşteri Verileri\"</strong>, Hizmetleri kullanarak Makinelerinizde dağıttığınız, depoladığınız veya işlediğiniz herhangi bir veri, içerik, dosya, konteyner, yapılandırma ve uygulama anlamına gelir. Müşteri Verileri, Hesap bilgilerini veya Telemetri Verilerini içermez.",
-            "<strong>\"Makine\"</strong>, sahip olduğunuz veya kontrol ettiğiniz ve Bridge'in yüklü olduğu bir sunucu veya sanal makine anlamına gelir.",
-            "<strong>\"Şirket İçi Yazılım\"</strong>, CLI, Bridge ve Masaüstü Uygulaması dahil olmak üzere altyapınıza yüklenen yazılım bileşenleri anlamına gelir.",
+            "<strong>\"Makine\"</strong>, sahip olduğunuz veya kontrol ettiğiniz ve Renet Ajanı'nın yüklü olduğu bir sunucu veya sanal makine anlamına gelir.",
+            "<strong>\"Şirket İçi Yazılım\"</strong>, CLI, Renet Ajanı ve Masaüstü Uygulaması dahil olmak üzere altyapınıza yüklenen yazılım bileşenleri anlamına gelir.",
             "<strong>\"Platform\"</strong>, Rediacc web uygulaması, hesap portalı ve Rediacc tarafından sağlanan bulut barındırmalı hizmetler anlamına gelir.",
-            "<strong>\"Depo\"</strong>, şifreli bir disk görüntüsü, ayrılmış bir Docker daemon'u ve ilişkili konteynerlerden oluşan, Bridge tarafından yönetilen izole bir uygulama dağıtımı anlamına gelir.",
+            "<strong>\"Depo\"</strong>, şifreli bir disk görüntüsü, ayrılmış bir Docker daemon'u ve ilişkili konteynerlerden oluşan, Renet Ajanı tarafından yönetilen izole bir uygulama dağıtımı anlamına gelir.",
             "<strong>\"Hizmetler\"</strong>, toplu olarak Şirket İçi Yazılım, Platform, belgeler ve Rediacc tarafından sağlanan ilgili profesyonel hizmetler anlamına gelir.",
             "<strong>\"Abonelik\"</strong>, özelliklere ve kaynak limitlerine erişiminizi belirleyen, seçtiğiniz plan seviyesi (Topluluk, Profesyonel, İş veya Kurumsal) anlamına gelir.",
             "<strong>\"Telemetri Verileri\"</strong>, <a href=\"telemetry-policy\">Telemetri Politikamızda</a> açıklandığı şekilde Hizmetler tarafından toplanan anonimleştirilmiş kullanım verileri anlamına gelir."
@@ -13901,7 +14325,7 @@
         },
         "onPremiseLicense": {
           "content": [
-            "Bu Şartlara ve aktif Aboneliğinize tabi olarak, Rediacc size Abonelik süreniz boyunca yalnızca dahili iş amaçlarınız için Şirket İçi Yazılımı (CLI, Bridge ve Masaüstü Uygulaması) yüklemek ve kullanmak üzere sınırlı, münhasır olmayan, alt lisanslanamaz, devredilemez, geri alınabilir bir lisans verir."
+            "Bu Şartlara ve aktif Aboneliğinize tabi olarak, Rediacc size Abonelik süreniz boyunca yalnızca dahili iş amaçlarınız için Şirket İçi Yazılımı (CLI, Renet Ajanı ve Masaüstü Uygulaması) yüklemek ve kullanmak üzere sınırlı, münhasır olmayan, alt lisanslanamaz, devredilemez, geri alınabilir bir lisans verir."
           ],
           "id": "on-premise-license",
           "subsections": {
@@ -13913,14 +14337,14 @@
             },
             "installation": {
               "content": [
-                "Bridge, şifreli birimleri, konteyner çalışma zamanlarını ve sistem hizmetlerini yönetmek için Makinelerinizde yükseltilmiş (root) ayrıcalıklarla çalışır. SSH erişimi, güvenlik duvarı yapılandırması, işletim sistemi güncellemeleri ve fiziksel güvenlik dahil olmak üzere Makinelerinizin güvenliğinden yalnızca siz sorumlusunuz. Rediacc, destek amacıyla siz tarafından açıkça talep edilmedikçe Makinelerinize uzaktan erişmez."
+                "Renet Ajanı, şifreli birimleri, konteyner çalışma zamanlarını ve sistem hizmetlerini yönetmek için Makinelerinizde yükseltilmiş (root) ayrıcalıklarla çalışır. SSH erişimi, güvenlik duvarı yapılandırması, işletim sistemi güncellemeleri ve fiziksel güvenlik dahil olmak üzere Makinelerinizin güvenliğinden yalnızca siz sorumlusunuz. Rediacc, destek amacıyla siz tarafından açıkça talep edilmedikçe Makinelerinize uzaktan erişmez."
               ],
               "title": "6.1 Installation and Machine Access"
             },
             "restrictions": {
               "content": ["Aşağıdakileri yapmamalısınız:"],
               "items": [
-                "Bridge ikili dosyasının veya Şirket İçi Yazılımın açık kaynak olmayan herhangi bir bileşeninin kaynak kodunu tersine mühendislik, derlemeyi çözme, sökme veya başka bir şekilde elde etmeye çalışma",
+                "Renet Ajanı'nın ikili dosyasının veya Şirket İçi Yazılımın açık kaynak olmayan herhangi bir bileşeninin kaynak kodunu tersine mühendislik, derlemeyi çözme, sökme veya başka bir şekilde elde etmeye çalışma",
                 "Şirket İçi Yazılımı herhangi bir üçüncü tarafa yeniden dağıtma, alt lisanslama, kiralama, lease veya ödünç verme",
                 "Şirket İçi Yazılım üzerindeki herhangi bir mülkiyet bildirimi, etiket veya işareti kaldırma, değiştirme veya gizleme",
                 "Şirket İçi Yazılımı rakip bir ürün veya hizmet oluşturmak için kullanma",
@@ -13950,7 +14374,7 @@
           ],
           "id": "service-description",
           "items": [
-            "<strong>Şirket İçi Yazılım:</strong> CLI (<code>rdc</code>), Bridge (Renet) ve Masaüstü Uygulaması — şifreli, izole konteyner dağıtımlarını düzenlemek için iş istasyonlarınıza ve Makinelerinize yüklenir",
+            "<strong>Şirket İçi Yazılım:</strong> CLI (<code>rdc</code>), Renet Ajanı ve Masaüstü Uygulaması — şifreli, izole konteyner dağıtımlarını düzenlemek için iş istasyonlarınıza ve Makinelerinize yüklenir",
             "<strong>Platform:</strong> Abonelik yönetimi, ekip işbirliği ve (mevcut olduğunda) bulut tabanlı altyapı yönetimi için web uygulaması ve hesap portalı",
             "<strong>Profesyonel Hizmetler:</strong> Ayrı hizmet sözleşmelerine tabi isteğe bağlı danışmanlık, geçiş yardımı ve uygulama desteği"
           ],
@@ -13970,7 +14394,8 @@
           "subsections": {
             "billing": {
               "content": [
-                "Ücretli Abonelikler aylık veya yıllık olarak peşin faturalandırılır. Yıllık faturalandırma, aylık fiyatın on (10) ayına eşdeğer bir oran üzerinden ücretlendirilir. Tüm ücretler ABD doları cinsindendir. Ödeme, üçüncü taraf ödeme işlemcimiz (Stripe) tarafından işlenir; tam ödeme kartı bilgilerini saklamayız.",
+                "Ücretli Abonelikler (Professional ve Business) 14 günlük ücretsiz deneme ile başlar. Kayıt sırasında bir ödeme yöntemi sağlarsınız ve deneme süresi sona erdiğinde ilk ücretlendirme yapılır. Deneme süresi sona ermeden önce ücretsiz olarak iptal edebilirsiniz. Deneme süresi boyunca iptal ederseniz, daha sonra ücretli bir Aboneliği iptal ederseniz veya bir ödeme başarısız olursa, hesabınız ücretsiz Community seviyesine döner.",
+                "Ücretli Abonelikler aylık veya yıllık olarak peşin faturalandırılır. Yıllık faturalandırma, aylık fiyatın on iki (12) ayına karşılık gelen tutar üzerinden %15 indirimli olarak sunulur. Tüm ücretler ABD doları cinsindendir. Ödeme, üçüncü taraf ödeme işlemcimiz (Stripe) tarafından işlenir; tam ödeme kartı bilgilerini saklamayız.",
                 "Fiyatlarımızı otuz (30) gün önceden bildirimle değiştirme hakkımızı saklı tutarız. Fiyat değişiklikleri mevcut faturalandırma döngünüzü etkilemez. Bir fiyat değişikliğini kabul etmiyorsanız, bir sonraki faturalandırma döngüsünden önce Aboneliğinizi iptal edebilirsiniz."
               ],
               "title": "5.1 Billing"
@@ -14066,7 +14491,7 @@
   "pricingPreview": {
     "compareAll": "Tüm paketleri ve özellikleri karşılaştır",
     "subtitle": "Ücretsiz başla. Hazır olunca ölçekle.",
-    "title": "Postmortemde savunabileceğin fiyatlandırma"
+    "title": "Net fiyatlandırma. Sürpriz yok."
   },
   "problem": {
     "reality": {
@@ -14081,10 +14506,6 @@
     "title": "Neden Üretimde Test Ediyoruz?"
   },
   "regionPicker": {
-    "channelEdge": "Edge",
-    "channelHintLabel": "Sürüm kanalları hakkında",
-    "channelStable": "Kararlı",
-    "edgeHint": "Sürekli dağıtılan üretim ortamı. Soak süresince 2 kat ücretsiz limitler.",
     "footer": "Size en yakın bölgeyi veya kuruluşunuzun gerektirdiği bölgeyi seçin.",
     "footerNote": "Kayıt sonrası değiştirilemez.",
     "locations": {
@@ -14093,8 +14514,6 @@
       "us": "Virginia, Amerika Birlesik Devletleri"
     },
     "reassurance": "Sunucu verileriniz ve yedekleriniz kendi altyapınızda kalır.",
-    "regionNote": "Bölge kayıt sonrası değiştirilemez.",
-    "stableHint": "Güvenilir sürümler, 7 günlük test sürecinden sonra edge'den yükseltilir.",
     "subtitle": "Hesabınız, faturalandırmanız ve yapılandırmalarınız seçtiğiniz bölgede kalır.",
     "title": "Hesap bölgenizi seçin"
   },
@@ -14116,34 +14535,6 @@
       "personaHeadline": "Size bir mesaj",
       "playLabel": "Videoyu izle"
     }
-  },
-  "testimonials": {
-    "items": [
-      {
-        "company": "Finansal Hizmetler",
-        "name": "Marcus R.",
-        "quote": "Kurtarma planımız dört saat diyordu. Gerçekte dört gün oldu. Şimdi bir dakikadan kısa sürede bir klona yük devrediyoruz.",
-        "role": "Afet Kurtarma Müdürü"
-      },
-      {
-        "name": "Sarah K.",
-        "quote": "Sandbox haftalarca geride kalıyordu diye üretimde yazıyordum. Şimdi 60 saniyede taze bir klon alıyorum.",
-        "role": "Geliştirici"
-      },
-      {
-        "company": "SaaS Platformu",
-        "name": "James L.",
-        "quote": "Yeni donanım almadan bir veritabanından on ikiye ölçeklendik. Rediacc klonlar depolamayı paylaşıyor — sadece değişenler için ödeme yapıyoruz.",
-        "role": "CTO"
-      },
-      {
-        "name": "Ayumi T.",
-        "quote": "CI'yi gerçek verilere karşı çalıştıramıyorduk. Şimdi her pipeline otomatik olarak kendi üretim klonunu alıyor.",
-        "role": "DevOps Mühendisi"
-      }
-    ],
-    "subtitle": "Farklı rollerde çalışanlar Rediacc'ı nasıl görüyor",
-    "title": "Ekipler ne diyor"
   },
   "tutorial": {
     "audioControls": "Transkript ses kontrolleri",
@@ -14171,7 +14562,7 @@
         "title": "Hackerlar 10 kat hızlı"
       },
       {
-        "description": "Birçok bulutta çalışıyorsunuz. Test ortamınız hiçbirine uymuyor.",
+        "description": "Birçok bulutta çalışıyorsunuz. Test ortamınız hiçbirine uymuyor. Kubernetes cluster'ınız ise tek bir yere sabit.",
         "title": "Altyapınız dağınık"
       }
     ],

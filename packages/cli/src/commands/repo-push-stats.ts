@@ -8,8 +8,8 @@
  */
 
 import { t } from '../i18n/index.js';
-import type { LocalExecuteResult } from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
+import type { ExecuteResult } from '../services/executor/local-executor.js';
 import { formatBytes, formatDuration } from '../utils/format.js';
 
 /** Stats emitted by `renet backup push` as the `push_result` stdout line. */
@@ -107,7 +107,7 @@ export function reportPushStats(
   repo: string,
   targetName: string,
   resolvedType: 'machine' | 'storage',
-  local: LocalExecuteResult | undefined,
+  local: ExecuteResult | undefined,
   asJson: boolean
 ): void {
   const stats = extractPushResult(local?.stdout);

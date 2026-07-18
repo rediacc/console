@@ -242,7 +242,7 @@ function generateCatalogJson(templatesDir, outputFile, skipList) {
 function processConfigs(configDir, outputDir) {
   console.log('Processing configuration files...');
 
-  const configFiles = ['endpoints.json', 'pricing.json', 'services.json', 'tiers.json'];
+  const configFiles = ['endpoints.json', 'pricing.json', 'services.json'];
   const configsOutputDir = path.join(outputDir, 'configs');
 
   fs.mkdirSync(configsOutputDir, { recursive: true });

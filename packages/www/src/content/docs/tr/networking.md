@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: tr
-sourceHash: "2bb63d224370c266"
+sourceHash: "20b29c1a791304e4"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -206,12 +206,12 @@ Let's Encrypt sertifikasının verilmesinden her deponun konteynerlerine ulaşma
 
 2. **Depo başına dökme (isteğe bağlı).** Kendi konteyneri içinde sertifika dosyalarına ihtiyaç duyan servisler (örneğin, doğrudan bir `.pem` okuyan bir posta sunucusu), yanlarına küçük bir `traefik-certs-dumper` konteyneri dağıtır. Dökücü `/opt/rediacc/proxy/letsencrypt`'i salt okunur olarak bağlar ve çıkarılan sertifika ile anahtarı deponun veri birimine `cert.pem` / `key.pem` olarak yazar. Bunun çalışması için, depo başına Docker daemon'ının bağlama ad alanı izin listesinde `/opt/rediacc/proxy` bulunmalıdır. Bu varsayılan olarak zaten dahildir.
 
-3. **İstemci tarafı önbellek (`rediacc.json`).** CLI, yapılandırma dosyanızda `acmeCertCache` altında `acme.json`'ın sıkıştırılmış bir kopyasını `baseDomain`'e göre anahtarlanmış olarak önbelleğe alır. Bu, birden fazla makinenin sertifikaları paylaşmasına olanak tanır (`rdc config cert-cache push -m <machine>` aracılığıyla) ve çevrimdışı envanter olarak işlev görür.
+3. **İstemci tarafı önbellek (`rediacc.json`).** CLI, yapılandırma dosyanızda `acmeCertCache` altında `acme.json`'ın sıkıştırılmış bir kopyasını `baseDomain`'e göre anahtarlanmış olarak önbelleğe alır. Bu, birden fazla makinenin sertifikaları paylaşmasına olanak tanır (`rdc machine infra cert push <machine>` aracılığıyla) ve çevrimdışı envanter olarak işlev görür.
 
 **İstemci önbelleği için eşitleme tetikleyicileri:**
 
 - `rdc repo up` sonrasında otomatik olarak, ancak yalnızca makinenin `baseDomain`'i için yerel önbellek 6 saatten eskiyse. Taze önbellekler, arka arkaya dağıtımların SSH'yi zorlamamaması için olduğu gibi bırakılır.
-- İsteğe bağlı: `rdc config cert-cache pull -m <machine>` (zorla çekme) veya `rdc machine query --name <machine> --sync-certs` (durum sorgusunun yan etkisi olarak çekme).
+- İsteğe bağlı: `rdc machine infra cert pull <machine>` (zorla çekme) veya `rdc machine status <machine> --sync-certs` (durum sorgusunun yan etkisi olarak çekme).
 - `rdc config infra push` sırasında önbellek makineye itilir (daha uzun son kullanma tarihine sahip yerel sertifikalar uzak olanları geçer).
 
 **Önbellek bakımı:**
@@ -417,7 +417,7 @@ Dinamik olarak atanan portlar için TCP ve UDP port eşlemelerini gösterir.
 | Servis yönlendirmelerde yok | Konteyner çalışmıyor veya etiketler eksik | Deponun daemon'unda `docker ps` ile doğrulayın; etiketleri kontrol edin |
 | Sertifika verilmedi | DNS sunucuya yönlenmiyor veya geçersiz Cloudflare token'ı | DNS çözümlemesini doğrulayın; Cloudflare API token izinlerini kontrol edin |
 | 502 Bad Gateway | Uygulama belirtilen portta dinlemiyor | Uygulamanın çalıştığını ve portun `loadbalancer.server.port` ile eşleştiğini doğrulayın |
-| TCP portu erişilemiyor | Port altyapıda kayıtlı değil | `rdc config infra set --tcp-ports ...` ve `push-infra` çalıştırın |
+| TCP portu erişilemiyor | Port altyapıda kayıtlı değil | `rdc machine infra set <machine> --tcp-ports ...` ve `push-infra` çalıştırın |
 | Route server eski sürümde çalışıyor | Binary güncellendi ancak servis yeniden başlatılmadı | Sağlama sırasında otomatik olarak gerçekleşir; manuel: `sudo systemctl restart rediacc-router` |
 | STUN/TURN relay erişilemiyor | Relay adresleri başlangıçta önbelleğe alındı | DNS veya IP değişikliklerinden sonra yeni ağ yapılandırmasını alması için servisi yeniden oluşturun |
 

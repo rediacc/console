@@ -4,8 +4,8 @@ description: "在远程机器上创建、管理和操作 LUKS 加密仓库。"
 category: Guides
 order: 4
 language: zh
-sourceHash: "0f08c5b75c3588cc"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "c9553259c9bf6b4c"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # 仓库
@@ -156,7 +156,7 @@ rdc repo fork --parent my-app --tag staging -m server-1 --up
 rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
 ```
 
-实测数据：一个 128 GB 的仓库从分支到服务运行约需 57 秒，使用 `--detach` 约需 31 秒。后台模式下命令会打印进度查询提示：`rdc machine query --containers --name <machine>`。
+实测数据：一个 128 GB 的仓库从分支到服务运行约需 57 秒，使用 `--detach` 约需 31 秒。后台模式下命令会打印进度查询提示：`rdc machine status <machine> --containers`。
 
 ### 耗时分布
 
@@ -226,7 +226,7 @@ secrets:
 
 > **跨仓库隔离执行**：renet 的 compose 验证器拒绝引用任何其他仓库网络 ID 的 `secrets: file:`（以及 `configs: file:` 和 `env_file:`）路径。字面 `${REDIACC_NETWORK_ID}` 令牌（或你自己网络的整数）是 `/var/run/rediacc/secrets/...` 引用的唯一接受形式。`--unsafe` **不会**覆盖此检查。Rediaccfile bash 子进程周围的 Landlock 沙箱也仅将文件系统访问限定于你自己网络的密钥目录，所以来自 Rediaccfile 的恶意 `cat /var/run/rediacc/secrets/<other>/X` 在内核层面失败，错误码为 EACCES。
 
-> **分支**：`rdc repo fork` **不会**复制密钥。要在分支中使用密钥，在分支上显式运行 `rdc repo secret set --name <fork>`。这是负载承载安全属性。分支的容器不应能在外部服务上充当生产主体。
+> **分支**：`rdc repo fork` **不会**复制密钥。要在分支中使用密钥，在分支上显式运行 `rdc repo secret set <fork>`。这是负载承载安全属性。分支的容器不应能在外部服务上充当生产主体。
 
 > **代理** (Claude Code、Cursor 等)：`repo secret list` 和 `repo secret get` 作为 MCP 工具公开（读安全。仅名称和摘要，永不值）。`set` 和 `unset` 仅限 CLI，因为 `--current`/`--rotate-secret` 仪式需要人工审视；通过 shell 调用它们的代理获得与人类相同的门。前置条件失败时，JSON 封装包含结构化 `errors[].next.options[].run` 字段。代理应将这些命令逐字中继给用户。完整模型请参阅 [AI 代理安全](/zh/docs/ai-agents-safety)。
 
@@ -267,7 +267,7 @@ rdc repo ownership --name my-app -m server-1
 应用模板以使用文件初始化仓库：
 
 ```bash
-rdc repo template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
 ```
 
 ## 删除

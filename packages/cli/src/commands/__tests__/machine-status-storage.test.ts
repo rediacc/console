@@ -1,9 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
 import type {
   ListResult,
   StorageHealthResult,
   SystemInfo,
 } from '@rediacc/shared/renet-contract/data/list-types.generated';
+import { describe, expect, it, vi } from 'vitest';
 
 // status.ts pulls in i18n/config/output at import time; stub the side-effectful
 // ones so we can exercise the pure helpers in isolation.

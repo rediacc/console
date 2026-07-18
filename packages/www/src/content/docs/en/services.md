@@ -209,7 +209,7 @@ renet and Docker disagree, on purpose, about how to handle container restarts. U
 - `.rediacc.json` at the repo mount root → `services.<name>.restart_policy`: the real intent.
 - `docker ps --format '{{.Status}}'`: runtime state.
 
-**How to fix a drift.** If a container's `.rediacc.json` saved policy is wrong (for example, because you edited compose but never recreated the container), re-run `rdc repo up --name <repo> -m <machine>`. The container is recreated with the updated policy recorded.
+**How to fix a drift.** If a container's `.rediacc.json` saved policy is wrong (for example, because you edited compose but never recreated the container), re-run `rdc repo up <repo>`. The container is recreated with the updated policy recorded.
 
 > **Experimental:** Cold-backup sidecar-based recovery and the `--sync-certs` flag on `rdc machine query` shipped in renet 0.9+. Older versions rely purely on saved `restart_policy` for watchdog recovery, which can leave `on-failure` containers stranded after a cold backup.
 
@@ -252,7 +252,7 @@ Services without custom Traefik labels show only the auto-generated route. Use t
 
 ### Detached Start
 
-With `--detach`, the command returns as soon as the containers are started instead of waiting for health checks. Startup finishes in the background: the proxy retries upstream connections until each service binds, so routes recover on their own. Check progress with `rdc machine query --containers --name <machine>`. Ideal for throwaway forks and scripted loops where you don't need the services ready before the next step.
+With `--detach`, the command returns as soon as the containers are started instead of waiting for health checks. Startup finishes in the background: the proxy retries upstream connections until each service binds, so routes recover on their own. Check progress with `rdc machine status <machine> --containers`. Ideal for throwaway forks and scripted loops where you don't need the services ready before the next step.
 
 ### Readiness Probe
 
@@ -465,6 +465,6 @@ secrets:
     file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
 ```
 
-Seed the values with `rdc repo secret set --name <repo> --key DATABASE_URL --value <val> --mode env --current ""` and the file-mode equivalent. See [Repositories § Secrets](/en/docs/repositories#secrets) for the full how-to and [Per-repo secrets](/en/docs/rdc-cheat-sheet#per-repo-secrets) on the cheat sheet for the command reference.
+Seed the values with `rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""` and the file-mode equivalent. See [Repositories § Secrets](/en/docs/repositories#secrets) for the full how-to and [Per-repo secrets](/en/docs/rdc-cheat-sheet#per-repo-secrets) on the cheat sheet for the command reference.
 
 > **Cross-repo paths are rejected at validate time.** A compose `secrets: file:` (or `configs: file:`, or `env_file:`) that points at another repo's `/var/run/rediacc/secrets/<other-networkID>/` directory is hard-rejected by the renet wrapper before docker compose runs. `--unsafe` does NOT override. Defense-in-depth: the Landlock sandbox around the Rediaccfile shell scopes reads to the current network's secrets dir, so a `cat /var/run/rediacc/secrets/<other>/X` from Rediaccfile bash fails with EACCES even if it bypasses the YAML validator. You don't need to opt in; this is on by default for every `repo up`.

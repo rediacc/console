@@ -6,7 +6,7 @@ description: >-
 category: Reference
 order: 99
 language: tr
-sourceHash: "ece2d423d416e7ec"
+sourceHash: "05755ef64f8d0ff6"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -61,7 +61,7 @@ Bir deponun aktif çatal sayısında limit yoktur. Her çatal, kendi şifrelenmi
 
 ### Her zaman aktif portlar
 
-Portlar yalnızca `rdc config infra set --public-ipv4` ile genel bir IP yapılandırdığınızda açılır. O zamana kadar makinede açık port yoktur. Yapılandırıldıktan sonra:
+Portlar yalnızca `rdc machine infra set <machine> --public-ipv4` ile genel bir IP yapılandırdığınızda açılır. O zamana kadar makinede açık port yoktur. Yapılandırıldıktan sonra:
 
 | Port | Protokol | Amaç |
 |------|----------|------|
@@ -128,7 +128,7 @@ CRIU aracılığıyla canlı geçiş aşağıdaki kısıtlamalara sahiptir:
 - **Ağ modu**: CRIU, ana bilgisayar ağ modunu gerektirir. Özel ağ yapılandırmaları kullanan konteynerlerin kontrol noktası alınamaz.
 - **Bellek**: Kontrol noktası veri boyutu, kontrol noktasına alınan sürecin yerleşik belleğine eşittir. Bellekteki büyük veri kümeleri (örneğin, 4 GB veri önbelleğe alan bir Node.js uygulaması) 4 GB kontrol noktası dosyaları üretir.
 - **TCP bağlantıları**: Uygulamalar, geri yükleme sırasında bağlantı kaybını tolere etmelidir. Aktif TCP bağlantıları **korunmaz**, geri yüklenen süreç soketleri kapalı olarak görür ve yeniden bağlanmalıdır. Bu, hem aynı makine hem de makineler arası geri yükleme yollarına uygulanır.
-- **Aynı makinede canlı fork, ebeveyn adreslerini yönlendirir**: Ebeveyn çalışmaya devam ederken `rdc repo fork --parent X --tag Y --checkpoint` ve ardından `rdc repo up` çalışır. Geri yüklenen süreçler, checkpoint anındaki ebeveynin loopback adreslerini taşır; sistem bunları şeffaf biçimde fork'un kendi adreslerine yönlendirir (aynı servis, verinin fork kopyası). Geri yüklenen bir TCP bağlantısının ilk kullanımı yine başarısız olur ve uygulamanın yeniden bağlanması gerekir; yukarıdaki TCP maddesine bakın.
+- **Aynı makinede canlı fork, ebeveyn adreslerini yönlendirir**: Ebeveyn çalışmaya devam ederken `rdc repo fork X --tag Y --checkpoint` ve ardından `rdc repo up` çalışır. Geri yüklenen süreçler, checkpoint anındaki ebeveynin loopback adreslerini taşır; sistem bunları şeffaf biçimde fork'un kendi adreslerine yönlendirir (aynı servis, verinin fork kopyası). Geri yüklenen bir TCP bağlantısının ilk kullanımı yine başarısız olur ve uygulamanın yeniden bağlanması gerekir; yukarıdaki TCP maddesine bakın.
 
 ---
 
@@ -138,7 +138,7 @@ CRIU aracılığıyla canlı geçiş aşağıdaki kısıtlamalara sahiptir:
 |-------|-------|
 | Depo başına yedekleme hedefleri | Sınırsız |
 | Eş zamanlı yedekleme görevleri | Depo başına 1 (eş zamanlı tetiklenirse görevler kuyruğa alınır) |
-| Yedekleme sıklığı | Zorunlu minimum aralık yok; depolama bant genişliğinizle sınırlıdır. Yükleme hızını sınırlamak için `rdc config backup-strategy set --name <name> --bwlimit "6M"` kullanın (rclone `--bwlimit` sözdizimi: basit `6M`, yönlü `6M:off` veya zaman çizelgesi `08:00,3M;22:00,10M`) |
+| Yedekleme sıklığı | Zorunlu minimum aralık yok; depolama bant genişliğinizle sınırlıdır. Yükleme hızını sınırlamak için `rdc backup strategy set <name> --bwlimit "6M"` kullanın (rclone `--bwlimit` sözdizimi: basit `6M`, yönlü `6M:off` veya zaman çizelgesi `08:00,3M;22:00,10M`) |
 | Saklama | Depolama sağlayıcınız (S3, Cloudflare R2 vb.) tarafından kontrol edilir. Rediacc saklama politikaları uygulamaz. |
 | Makineler arası yedekleme | Desteklenir; hedef makinede yeterli veri deposu alanı olmalıdır |
 

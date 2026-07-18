@@ -18,15 +18,22 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SUPPORTED_LANGUAGES as ALL_LANGUAGES } from '@rediacc/shared/i18n/types';
 import { getFileAtCommit, getLatestCommitForFile } from './utils/translation-diff.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 const DRY_RUN = process.argv.includes('--dry-run');
 
-const SUPPORTED_LANGUAGES = ['de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh'];
+// Derived from the shared list rather than copied: a hardcoded copy went stale and
+// silently skipped et/it/ko/pt, so those translations could never be stamped.
+const SUPPORTED_LANGUAGES = ALL_LANGUAGES.filter((lang) => lang !== 'en');
 const COLLECTIONS = ['docs', 'blog'];
 const WWW_ROOT = path.join(REPO_ROOT, 'packages/www');
+
+// Auto-generated docs are rewritten from source by their generator, which does not
+// emit sourceCommit; stamping them makes validate-cli-docs fail on the next run.
+const GENERATED_MARKER = /auto-generated/i;
 
 // ─── Simple frontmatter parser (avoids gray-matter dependency) ──────
 
@@ -142,6 +149,11 @@ function backfillMarkdownDocs(): BackfillResult[] {
 
         // Skip if already has sourceCommit
         if (parsed.data.sourceCommit) {
+          results.push({ file: path.relative(REPO_ROOT, file), status: 'skipped' });
+          continue;
+        }
+
+        if (GENERATED_MARKER.test(raw.slice(0, 800))) {
           results.push({ file: path.relative(REPO_ROOT, file), status: 'skipped' });
           continue;
         }

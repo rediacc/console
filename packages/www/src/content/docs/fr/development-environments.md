@@ -8,6 +8,7 @@ category: Use Cases
 order: 10
 language: fr
 sourceHash: "d534fc11b7ba4fa7"
+sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 
 > **Environnements éphémères. Parité de production. Zéro ticket DevOps.**

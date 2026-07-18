@@ -6,6 +6,7 @@
 
 import type { RegionInfo } from '@rediacc/shared/regions';
 import { t } from '../i18n/index.js';
+import { exitProcess } from '../services/core/request-context.js';
 import { detectLikelyRegion } from '../services/provision/region-discovery.js';
 import { EXIT_CODES } from '../types/index.js';
 
@@ -18,7 +19,7 @@ export interface RegionSelection {
 export async function promptRegionSelection(regions: RegionInfo[]): Promise<RegionSelection> {
   if (process.stdin.isTTY !== true) {
     console.error(t('errors.regionSelectionRequiresTTY'));
-    process.exit(EXIT_CODES.INVALID_ARGUMENTS);
+    exitProcess(EXIT_CODES.INVALID_ARGUMENTS);
   }
 
   // Lazy-load inquirer (rxjs + prompt graph) only when the region picker

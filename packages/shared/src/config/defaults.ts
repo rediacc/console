@@ -121,6 +121,20 @@ export const CEPH_DEFAULTS = {
 
   /** Default Ceph cluster name */
   CLUSTER: 'ceph',
+
+  /** Default OSD block device when a ceph pool disk spec omits the path */
+  OSD_DEVICE: '/dev/sdb',
+} as const;
+
+/**
+ * Whole-cluster fork/rehearse defaults (docs/design/04-cluster-fork-migrate.md).
+ */
+export const CLUSTER_DEFAULTS = {
+  /** Default effect-isolation ROLE for a cluster fork (02 §4): fork | rehearsal. */
+  FORK_ROLE: 'fork',
+
+  /** Default write disposition for a cluster fork's datastores (04 §2): local | ceph. */
+  FORK_WRITES: 'local',
 } as const;
 
 /**
@@ -197,6 +211,11 @@ export const LOCALE_DEFAULTS = {
 /**
  * Status and state defaults
  */
+export const DATASTORE_DEFAULTS = {
+  /** RADOS pool a `--backend rbd` datastore lands in when `--pool` is not given. */
+  RBD_POOL: 'rbd',
+} as const;
+
 export const STATUS_DEFAULTS = {
   /** Unknown status fallback */
   UNKNOWN: 'Unknown',
@@ -455,6 +474,7 @@ export const DEFAULTS = {
   PLATFORM: PLATFORM_DEFAULTS,
   LOCALE: LOCALE_DEFAULTS,
   STATUS: STATUS_DEFAULTS,
+  DATASTORE: DATASTORE_DEFAULTS,
   HOST: HOST_DEFAULTS,
   UI: UI_DEFAULTS,
   PRIORITY: PRIORITY_DEFAULTS,
@@ -468,6 +488,7 @@ export const DEFAULTS = {
   CLI_TEST: CLI_TEST_DEFAULTS,
   SORT: SORT_DEFAULTS,
   CEPH: CEPH_DEFAULTS,
+  CLUSTER: CLUSTER_DEFAULTS,
   CLOUD: CLOUD_DEFAULTS,
 } as const;
 

@@ -4,7 +4,7 @@ description: "Verwaiste Backups, überholte Snapshots, Repo-Images und lokale Ko
 category: "Guides"
 order: 12
 language: de
-sourceHash: "d2700c2ac4473962"
+sourceHash: "af01691f5fe908ee"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -14,8 +14,8 @@ Die Bereinigung entfernt Zustand, der keiner aktiven Ressource mehr entspricht. 
 
 | Befehl | Was bereinigt wird | Wo die Wahrheitsquelle liegt |
 |---|---|---|
-| `rdc storage prune --name <storage> -m <machine>` | Verwaiste Backups im Cloud-Speicher | Lokale CLI-Konfiguration (mit der Executor-Maschine zur Mount-Sicherheit abgeglichen) |
-| `rdc machine prune --name <machine>` | Datastore-Artefakte auf der Maschine (immer); verwaiste oder unbekannte Repo-Images (opt-in) | Lokale CLI-Konfiguration + der `.interim/state`-Mirror der Maschine |
+| `rdc storage prune <storage> -m <machine>` | Verwaiste Backups im Cloud-Speicher | Lokale CLI-Konfiguration (mit der Executor-Maschine zur Mount-Sicherheit abgeglichen) |
+| `rdc machine prune <machine>` | Datastore-Artefakte auf der Maschine (immer); verwaiste oder unbekannte Repo-Images (opt-in) | Lokale CLI-Konfiguration + der `.interim/state`-Mirror der Maschine |
 | `rdc config prune` | Reste in der lokalen Konfiguration (Cert-Cache, abgelaufene Archive, hängende Querverweise) | Nur die lokale CLI-Konfiguration |
 
 Die drei sind unabhängig. Sie können jeden einzeln ohne die anderen ausführen. Sie teilen sich ein gemeinsames Sicherheitsmodell, beschrieben unter [Sicherheit](#safety-model) weiter unten.
@@ -202,7 +202,7 @@ Die Bereinigung ist standardmäßig für Multi-Konfigurations-Setups sicher konz
 
 ### Schonfrist
 
-Wenn ein Repository mit `--archive-config` aus einer Konfiguration entfernt wird, wird sein Credential-Eintrag mit einem `deletedAt`-Zeitstempel nach `resources.deletedRepositories[]` verschoben. Die Prune-Befehle respektieren eine Schonfrist (standardmäßig 7 Tage), während der kürzlich archivierte Repos vor dem Löschen geschützt sind. Dies gibt Ihnen Zeit, ein Repo wiederherzustellen (`rdc config repository restore-archived --name <guid>`), falls es versehentlich entfernt wurde. Sobald die Schonfrist abläuft, entfernen `storage prune`, `machine prune` und `config prune` den Eintrag automatisch.
+Wenn ein Repository mit `--archive-config` aus einer Konfiguration entfernt wird, wird sein Credential-Eintrag mit einem `deletedAt`-Zeitstempel nach `resources.deletedRepositories[]` verschoben. Die Prune-Befehle respektieren eine Schonfrist (standardmäßig 7 Tage), während der kürzlich archivierte Repos vor dem Löschen geschützt sind. Dies gibt Ihnen Zeit, ein Repo wiederherzustellen (`rdc repo admin archive restore <guid>`), falls es versehentlich entfernt wurde. Sobald die Schonfrist abläuft, entfernen `storage prune`, `machine prune` und `config prune` den Eintrag automatisch.
 
 ### Mount-Safety-Preflight
 

@@ -4,6 +4,12 @@ Transfer files between local machine and remote repositories via rsync over SSH.
 
 For full command syntax and options, see [reference.md](reference.md).
 
+## Targeting
+
+`rdc repo sync {upload,download,status} <repo-ref> --local <path>` takes the repo as a
+positional ref (`my-app`, `my-app:staging`) and derives the machine from it. There is no
+`-m` / `-r` flag pair any more.
+
 ## Behavior notes
 
 - Uses rsync with archive mode (`-a`): preserves timestamps, permissions, symlinks.
@@ -39,36 +45,40 @@ Default detection uses file size + modification time. **Same-size edits are cons
 After making a small change to a file that's already synced:
 ```bash
 # Preview what would change
-rdc repo sync upload -m <machine> -r <repo> --local <path>/ --dry-run
+rdc repo sync upload <repo> --local <path>/ --dry-run
 
 # Upload only the delta
-rdc repo sync upload -m <machine> -r <repo> --local <path>/
+rdc repo sync upload <repo> --local <path>/
 ```
 Compare "files transferred" and "Total size" across syncs to verify delta behavior.
 
 ### Cross-repo file sync
 
-To copy files between repos on different machines (e.g., syncing app code updates):
+To copy files between two repos (e.g., syncing app code updates). Each ref carries its own
+machine, so the two commands can target different machines without naming them:
 ```bash
 # Download from source repo to local temp dir
-rdc repo sync download -m <source> -r <repo> --local /tmp/sync-temp/
+rdc repo sync download <source-repo> --local /tmp/sync-temp/
 
 # Upload to target repo
-rdc repo sync upload -m <target> -r <repo> --local /tmp/sync-temp/
+rdc repo sync upload <target-repo> --local /tmp/sync-temp/
 ```
 
 ## Examples
 
 ```bash
 # Upload app files to a repository
-rdc repo sync upload -m server-1 -r my-app --local ./src/
+rdc repo sync upload my-app --local ./src/
 
 # Download database dumps
-rdc repo sync download -m server-1 -r my-app --local ./backups/ --remote data/dumps
+rdc repo sync download my-app --local ./backups/ --remote data/dumps
 
 # Mirror mode (delete remote files not in local)
-rdc repo sync upload -m server-1 -r my-app --local ./deploy/ --mirror
+rdc repo sync upload my-app --local ./deploy/ --mirror
 
 # Preview before syncing
-rdc repo sync upload -m server-1 -r my-app --local ./config/ --confirm
+rdc repo sync upload my-app --local ./config/ --confirm
+
+# Target a fork explicitly
+rdc repo sync upload my-app:staging --local ./src/
 ```

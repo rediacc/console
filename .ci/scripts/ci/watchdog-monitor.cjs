@@ -10,8 +10,9 @@
 // On attempt 2+: force-cancels without retry.
 //
 // Required env vars:
-//   WATCHDOG_EXCLUDE_PATTERNS   - Comma-separated job name patterns to exclude from monitoring
-//   WATCHDOG_NO_RETRY_PATTERNS  - Comma-separated job name patterns that should never auto-retry
+//   WATCHDOG_EXCLUDE_PATTERNS            - Comma-separated job name patterns to exclude from monitoring
+//   WATCHDOG_NO_RETRY_PATTERNS           - Comma-separated job name patterns that should never auto-retry
+//   WATCHDOG_INSTALL_VALIDATION_PATTERNS - Comma-separated job name patterns identifying install-validation jobs
 //
 // Optional env vars (AI failure classification):
 //   CLOUDFLARE_API_TOKEN        - Cloudflare API token with Workers AI Read permission
@@ -24,7 +25,44 @@
 // Usage (from actions/github-script):
 //   script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
 
-module.exports = async ({ github, context, core }) => {
+// A downloaded release binary that will not execute is normally a truncated or
+// stale CDN download (transient). It is a corrupt build only when no platform's
+// install validation survives it. The classifier prompt says as much, but a
+// prompt is advice; this signature + cross-job check is the enforcement.
+const BINARY_EXEC_FAILURE_RE = /is not a valid application for this OS platform|cannot execute binary file|Exec format error/i;
+
+const matchesPatterns = (name, patterns) => patterns.some(p => name.includes(p));
+
+// Returns null when the guard does not apply (not an install-validation job, or
+// no binary-exec signature in the log tail). Otherwise returns the decision:
+//   { override: true }  -> the whole matrix failed to execute the binary: corrupt build
+//   { override: false } -> at least one platform passed, or did not fail
+//   { defer: true }     -> siblings still running; the matrix outcome is not known yet
+function evaluateBinaryExecGuard({ job, logTail, jobs, installPatterns }) {
+  if (!installPatterns.length || !matchesPatterns(job.name, installPatterns)) return null;
+  if (!logTail || !BINARY_EXEC_FAILURE_RE.test(logTail)) return null;
+
+  const installJobs = jobs.filter(j => matchesPatterns(j.name, installPatterns));
+
+  const passed = installJobs.filter(j => j.conclusion === 'success');
+  if (passed.length > 0) {
+    return { override: false, reason: `binary-exec failure in "${job.name}", but ${passed.length} install-validation job(s) passed (${passed.map(j => j.name).join(', ')}) -- the build executes elsewhere, treating as a download flake` };
+  }
+
+  const unfinished = installJobs.filter(j => j.status !== 'completed');
+  if (unfinished.length > 0) {
+    return { defer: true, reason: `binary-exec failure in "${job.name}", but ${unfinished.length} install-validation job(s) have not finished (${unfinished.map(j => j.name).join(', ')}) -- deferring until the matrix settles` };
+  }
+
+  const nonFailures = installJobs.filter(j => j.conclusion !== 'failure');
+  if (nonFailures.length > 0) {
+    return { override: false, reason: `binary-exec failure in "${job.name}", but ${nonFailures.length} install-validation job(s) did not fail (${nonFailures.map(j => `${j.name}=${j.conclusion}`).join(', ')})` };
+  }
+
+  return { override: true, reason: `every install-validation job (${installJobs.length}) failed to execute the downloaded binary -- corrupt cross-platform build, not a CDN flake` };
+}
+
+const monitor = async ({ github, context, core }) => {
   // Pin the GitHub REST API version on every request from this Octokit
   // instance. Without an explicit X-GitHub-Api-Version header, requests
   // default to 2022-11-28 and emit a per-call deprecation warning (that
@@ -57,16 +95,23 @@ module.exports = async ({ github, context, core }) => {
   let allCompleteStreak = 0;
 
   // Jobs to exclude from monitoring (required env var)
-  if (!process.env.WATCHDOG_EXCLUDE_PATTERNS || !process.env.WATCHDOG_NO_RETRY_PATTERNS) {
-    throw new Error('WATCHDOG_EXCLUDE_PATTERNS and WATCHDOG_NO_RETRY_PATTERNS env vars are required');
+  if (!process.env.WATCHDOG_EXCLUDE_PATTERNS || !process.env.WATCHDOG_NO_RETRY_PATTERNS || !process.env.WATCHDOG_INSTALL_VALIDATION_PATTERNS) {
+    throw new Error('WATCHDOG_EXCLUDE_PATTERNS, WATCHDOG_NO_RETRY_PATTERNS and WATCHDOG_INSTALL_VALIDATION_PATTERNS env vars are required');
   }
   const excludePatterns = process.env.WATCHDOG_EXCLUDE_PATTERNS.split(',').map(s => s.trim());
 
   // Jobs that should not trigger auto-retry (failures are never transient)
   const noRetryPatterns = process.env.WATCHDOG_NO_RETRY_PATTERNS.split(',').map(s => s.trim());
 
+  // Jobs that download and execute a released binary; subject to the binary-exec guard
+  const installValidationPatterns = process.env.WATCHDOG_INSTALL_VALIDATION_PATTERNS.split(',').map(s => s.trim()).filter(Boolean);
+
   // Track jobs already handled to avoid re-logging the same failure every poll
   const handledJobs = new Set();
+
+  // Deferred jobs stay eligible for handling on later polls, so they are tracked
+  // separately from handledJobs and only announced once.
+  const deferredJobs = new Set();
 
   // Helper: dispatch rerun-failed.yml to retry failed jobs
   async function dispatchRerun() {
@@ -97,6 +142,15 @@ module.exports = async ({ github, context, core }) => {
   const AI_CONFIDENCE_THRESHOLD = 0.8;
   const AI_MODEL = '@cf/qwen/qwen2.5-coder-32b-instruct';
   const AI_TIMEOUT = 10000; // 10 seconds
+
+  // A completed job's log never changes, so a deferred job re-examined on the
+  // next poll costs no extra API call.
+  const logTails = new Map();
+
+  async function getLogTail(job) {
+    if (!logTails.has(job.name)) logTails.set(job.name, await fetchJobLogs(job));
+    return logTails.get(job.name);
+  }
 
   async function fetchJobLogs(job) {
     try {
@@ -185,14 +239,32 @@ module.exports = async ({ github, context, core }) => {
     }
   }
 
-  async function classifyFailure(job) {
+  // `jobs` is the full job list from this poll: the cross-job fact the guard
+  // needs, already fetched, so it is threaded in rather than re-queried.
+  // Only install-validation jobs can trigger the guard, so no other job pays
+  // for a log fetch here.
+  async function evaluateGuard(job, jobs) {
+    if (!installValidationPatterns.length || !matchesPatterns(job.name, installValidationPatterns)) return null;
+    const logTail = await getLogTail(job);
+    if (!logTail) return null;
+    return evaluateBinaryExecGuard({ job, logTail, jobs, installPatterns: installValidationPatterns });
+  }
+
+  async function classifyFailure(job, guard) {
     const fallback = { classification: 'transient', confidence: 0, reason: 'AI unavailable, defaulting to retry' };
-    const logTail = await fetchJobLogs(job);
+    const logTail = await getLogTail(job);
     if (!logTail) return fallback;
-    const result = await callWorkersAI(logTail);
-    if (!result) {
-      console.log(`[AI] Classification failed for "${job.name}", falling back to retry`);
-      return fallback;
+
+    const ai = await callWorkersAI(logTail);
+    if (!ai) console.log(`[AI] Classification failed for "${job.name}", falling back to retry`);
+    const result = ai || fallback;
+
+    if (guard) {
+      console.log(`[guard] ${guard.reason}`);
+      if (guard.override) {
+        console.log(`[guard] Overriding "${result.classification}" (${result.confidence}) with code-change -- no retry`);
+        return { classification: 'code-change', confidence: 1, reason: guard.reason };
+      }
     }
     return result;
   }
@@ -295,6 +367,7 @@ module.exports = async ({ github, context, core }) => {
   console.log('Watchdog started - monitoring jobs for failures...');
   console.log(`Exclude patterns: ${excludePatterns.join(', ')}`);
   console.log(`No-retry patterns: ${noRetryPatterns.join(', ')}`);
+  console.log(`Install-validation patterns: ${installValidationPatterns.join(', ')}`);
   console.log(`Max runtime: ${maxRuntime / 3600000} hours`);
 
   // Loop-invariant: parse env var once. Cancelled jobs with elapsed runtime
@@ -374,8 +447,32 @@ module.exports = async ({ github, context, core }) => {
     // Filter to only NEW failures (not already handled in a previous poll)
     const newFailures = failedOrCancelled.filter(j => !handledJobs.has(j.name));
 
-    if (newFailures.length > 0) {
-      const job = newFailures[0];
+    // The binary-exec guard can defer an install-validation failure whose
+    // sibling platforms are still running: until the matrix settles, the same
+    // log cannot be told apart from a CDN flake and a corrupt build, and both
+    // a retry and a cancellation would be premature. Deferring must not starve
+    // the other failures in this poll, so pick the first candidate the guard
+    // does not defer instead of always taking newFailures[0]. Deferred jobs are
+    // left out of handledJobs so a later poll reconsiders them; the 3h watchdog
+    // timeout is the backstop.
+    let job = null;
+    let jobGuard = null;
+    for (const candidate of newFailures) {
+      const guard = failed.includes(candidate) ? await evaluateGuard(candidate, allJobs) : null;
+      if (guard?.defer) {
+        if (!deferredJobs.has(candidate.name)) {
+          deferredJobs.add(candidate.name);
+          console.log(`[guard] ${guard.reason}`);
+          console.log(`[guard] install matrix unfinished; deferring "${candidate.name}" until it completes`);
+        }
+        continue;
+      }
+      job = candidate;
+      jobGuard = guard;
+      break;
+    }
+
+    if (job) {
       const jobMin = jobElapsedMin(job);
       const isStuck = stuckCancellations.includes(job);
       const reason = failed.includes(job)
@@ -432,7 +529,7 @@ module.exports = async ({ github, context, core }) => {
       // so the watchdog does not need to stay up monitoring for more failures.
       // Code-change -> force-cancel now, retry would be pointless.
       else {
-        const ai = await classifyFailure(job);
+        const ai = await classifyFailure(job, jobGuard);
         if (ai.classification === 'code-change' && ai.confidence >= AI_CONFIDENCE_THRESHOLD) {
           console.log(`[AI] "${job.name}" -> code-change (${ai.confidence}): ${ai.reason}`);
           await forceCancel(failureMsg);
@@ -474,3 +571,7 @@ module.exports = async ({ github, context, core }) => {
   console.log('Watchdog reached 3h timeout - exiting');
   core.warning('Watchdog timeout reached');
 };
+
+module.exports = monitor;
+module.exports.evaluateBinaryExecGuard = evaluateBinaryExecGuard;
+module.exports.BINARY_EXEC_FAILURE_RE = BINARY_EXEC_FAILURE_RE;

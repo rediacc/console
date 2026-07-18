@@ -2,6 +2,11 @@
  * SFTP-based file transfer fallback for systems without rsync.
  * Slower than rsync (no delta sync) but works anywhere SSH works.
  *
+ * Every entry point takes an already-connected SFTPClient rather than connect
+ * options: connections are owned by the caller, which leases them from the pool
+ * (services/machine/machine-connection.ts). This module never opens or closes a
+ * session, so it stays a pure transport with no dependency on the service layer.
+ *
  * Parity goals with rsync:
  *  - Symlinks preserved as symlinks (not followed).
  *  - Executable bit preserved via chmod.
@@ -14,28 +19,28 @@ import type { Stats } from 'node:fs';
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'node:path';
 import { STATUS_DEFAULTS } from '@rediacc/shared/config/defaults';
-import { SFTPClient, type SFTPClientConfig } from '../sftp/client.js';
+import type { SFTPClient } from '../sftp/client.js';
 import { isExcluded } from './sftp-patterns.js';
 import {
-  type ExpandedSources,
-  type SftpFileEntry,
-  type SftpSymlinkEntry,
-  type SftpUploadSource,
-  collectSubdirs,
-  expandSftpSources,
-} from './sftp-walk.js';
-import {
-  type SftpTransferResult,
   chmodRemote,
   chownRemote,
   ensureRemoteDirs,
   finishResult,
   newResult,
+  type SftpTransferResult,
   sha256Hex,
   shellQuote,
   symlinkRemote,
   verifyRemoteSha256,
 } from './sftp-remote-helpers.js';
+import {
+  collectSubdirs,
+  type ExpandedSources,
+  expandSftpSources,
+  type SftpFileEntry,
+  type SftpSymlinkEntry,
+  type SftpUploadSource,
+} from './sftp-walk.js';
 
 export { isExcluded, type SftpTransferResult, type SftpUploadSource };
 
@@ -46,7 +51,7 @@ export interface SftpTransferOptions {
   exclude?: string[];
   /** Progress callback for each file. */
   onProgress?: (file: string, bytesTransferred: number, totalBytes: number) => void;
-  /** Dry run — count files without transferring. */
+  /** Dry run: count files without transferring. */
   dryRun?: boolean;
   /** Remote user; when set, upload helpers `sudo chown -R` written paths to `${u}:${u}`. */
   universalUser?: string;
@@ -160,7 +165,7 @@ async function ensureFileParent(
 export async function sftpUploadFile(
   localFilePath: string,
   remoteFilePath: string,
-  config: SFTPClientConfig,
+  sftp: SFTPClient,
   options?: SftpTransferOptions
 ): Promise<SftpTransferResult> {
   const startTime = Date.now();
@@ -175,9 +180,7 @@ export async function sftpUploadFile(
     return finishResult(result, startTime);
   }
 
-  const sftp = new SFTPClient(config);
   try {
-    await sftp.connect();
     await ensureFileParent(sftp, remoteFilePath, result.errors);
 
     const data = await fsPromises.readFile(localFilePath);
@@ -201,8 +204,6 @@ export async function sftpUploadFile(
     options?.onProgress?.(path.posix.basename(remoteFilePath), data.length, data.length);
   } catch (err) {
     result.errors.push(`${remoteFilePath}: ${err instanceof Error ? err.message : String(err)}`);
-  } finally {
-    sftp.close();
   }
 
   return finishResult(result, startTime);
@@ -276,7 +277,7 @@ function dirsToCreate(normalizedRemote: string, expanded: ExpandedSources): stri
 export async function sftpUploadPaths(
   sources: SftpUploadSource[],
   remoteDir: string,
-  config: SFTPClientConfig,
+  sftp: SFTPClient,
   options?: SftpTransferOptions
 ): Promise<SftpTransferResult> {
   const startTime = Date.now();
@@ -291,34 +292,27 @@ export async function sftpUploadPaths(
     return finishResult(result, startTime);
   }
 
-  const sftp = new SFTPClient(config);
-  try {
-    await sftp.connect();
+  const normalizedRemote = remoteDir.replace(/\/+$/, '');
+  await ensureRemoteDirs(sftp, dirsToCreate(normalizedRemote, expanded), result.errors);
 
-    const normalizedRemote = remoteDir.replace(/\/+$/, '');
-    await ensureRemoteDirs(sftp, dirsToCreate(normalizedRemote, expanded), result.errors);
+  const ctx: MultiUploadCtx = {
+    sftp,
+    normalizedRemote,
+    options,
+    totalBytes: expanded.files.reduce((s, f) => s + f.size, 0),
+    result,
+    writtenPaths: [],
+  };
 
-    const ctx: MultiUploadCtx = {
-      sftp,
-      normalizedRemote,
-      options,
-      totalBytes: expanded.files.reduce((s, f) => s + f.size, 0),
-      result,
-      writtenPaths: [],
-    };
+  for (const file of expanded.files) {
+    await uploadFileEntry(file, ctx);
+  }
+  for (const link of expanded.symlinks) {
+    await uploadSymlinkEntry(link, ctx);
+  }
 
-    for (const file of expanded.files) {
-      await uploadFileEntry(file, ctx);
-    }
-    for (const link of expanded.symlinks) {
-      await uploadSymlinkEntry(link, ctx);
-    }
-
-    if (options?.universalUser && ctx.writtenPaths.length > 0) {
-      await chownRemote(sftp, options.universalUser, ctx.writtenPaths, result.errors);
-    }
-  } finally {
-    sftp.close();
+  if (options?.universalUser && ctx.writtenPaths.length > 0) {
+    await chownRemote(sftp, options.universalUser, ctx.writtenPaths, result.errors);
   }
 
   return finishResult(result, startTime);
@@ -409,42 +403,35 @@ async function downloadOneFile(file: RemoteFileInfo, ctx: DirDownloadCtx): Promi
 export async function sftpDownloadDirectory(
   remotePath: string,
   localPath: string,
-  config: SFTPClientConfig,
+  sftp: SFTPClient,
   options?: SftpTransferOptions
 ): Promise<SftpTransferResult> {
   const startTime = Date.now();
   const result = newResult();
 
-  const sftp = new SFTPClient(config);
-  try {
-    await sftp.connect();
+  const normalizedRemote = remotePath.replace(/\/+$/, '');
+  const normalizedLocal = localPath.replace(/[/\\]+$/, '');
 
-    const normalizedRemote = remotePath.replace(/\/+$/, '');
-    const normalizedLocal = localPath.replace(/[/\\]+$/, '');
+  const remoteFiles = await listRemoteFiles(sftp, normalizedRemote);
 
-    const remoteFiles = await listRemoteFiles(sftp, normalizedRemote);
+  if (options?.dryRun) {
+    result.filesTransferred = remoteFiles.length;
+    result.bytesTransferred = remoteFiles.reduce((sum, f) => sum + f.size, 0);
+    return finishResult(result, startTime);
+  }
 
-    if (options?.dryRun) {
-      result.filesTransferred = remoteFiles.length;
-      result.bytesTransferred = remoteFiles.reduce((sum, f) => sum + f.size, 0);
-      return finishResult(result, startTime);
-    }
+  await fsPromises.mkdir(normalizedLocal, { recursive: true });
 
-    await fsPromises.mkdir(normalizedLocal, { recursive: true });
-
-    const ctx: DirDownloadCtx = {
-      sftp,
-      normalizedRemote,
-      normalizedLocal,
-      options,
-      totalBytes: remoteFiles.reduce((s, f) => s + f.size, 0),
-      result,
-    };
-    for (const file of remoteFiles) {
-      await downloadOneFile(file, ctx);
-    }
-  } finally {
-    sftp.close();
+  const ctx: DirDownloadCtx = {
+    sftp,
+    normalizedRemote,
+    normalizedLocal,
+    options,
+    totalBytes: remoteFiles.reduce((s, f) => s + f.size, 0),
+    result,
+  };
+  for (const file of remoteFiles) {
+    await downloadOneFile(file, ctx);
   }
 
   return finishResult(result, startTime);
@@ -464,7 +451,7 @@ async function fetchRemoteSize(sftp: SFTPClient, remotePath: string): Promise<nu
 export async function sftpDownloadFile(
   remoteFilePath: string,
   localDir: string,
-  config: SFTPClientConfig,
+  sftp: SFTPClient,
   options?: SftpTransferOptions
 ): Promise<SftpTransferResult> {
   const startTime = Date.now();
@@ -475,20 +462,12 @@ export async function sftpDownloadFile(
   const localFilePath = path.join(normalizedLocalDir, basename);
 
   if (options?.dryRun) {
-    const sftp = new SFTPClient(config);
-    try {
-      await sftp.connect();
-      result.filesTransferred = 1;
-      result.bytesTransferred = await fetchRemoteSize(sftp, normalizedRemote);
-      return finishResult(result, startTime);
-    } finally {
-      sftp.close();
-    }
+    result.filesTransferred = 1;
+    result.bytesTransferred = await fetchRemoteSize(sftp, normalizedRemote);
+    return finishResult(result, startTime);
   }
 
-  const sftp = new SFTPClient(config);
   try {
-    await sftp.connect();
     await fsPromises.mkdir(normalizedLocalDir, { recursive: true });
 
     const b64 = await sftp.exec(`base64 ${shellQuote(normalizedRemote)}`);
@@ -506,8 +485,6 @@ export async function sftpDownloadFile(
     }
   } catch (err) {
     result.errors.push(`${basename}: ${err instanceof Error ? err.message : String(err)}`);
-  } finally {
-    sftp.close();
   }
 
   return finishResult(result, startTime);

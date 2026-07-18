@@ -5,6 +5,7 @@ category: Use Cases
 order: 1
 language: zh
 sourceHash: "7a75ab45703267eb"
+sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 
 > **您的云架构是否僵化？ 构建具有无限的灵活性。**

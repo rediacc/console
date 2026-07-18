@@ -1,5 +1,7 @@
 // Unified error types for CLI
 
+import { EXIT_CODES } from './index.js';
+
 // Re-export ValidationError from shared package
 export { ValidationError } from '@rediacc/shared/errors';
 
@@ -12,7 +14,15 @@ export type ErrorCode =
   | 'NETWORK_ERROR'
   | 'SERVER_ERROR'
   | 'VALIDATION_ERROR'
-  | 'PRECONDITION_MISMATCH';
+  | 'PRECONDITION_MISMATCH'
+  // P4 refusal classes (spec/03 §1). Each string mirrors its exit-code name so
+  // `errors[].code` and the process exit code carry the same word.
+  | 'AMBIGUOUS'
+  | 'STATE_MISMATCH'
+  | 'HEALTH_GATE_FAILED'
+  | 'INFRA_FAILED'
+  | 'BUSY'
+  | 'DETACHED';
 
 /**
  * Stable error-code strings for switch-on-able CliError.code.
@@ -29,7 +39,44 @@ export const ERROR_CODES = {
   SERVER_ERROR: 'SERVER_ERROR',
   VALIDATION_ERROR: 'VALIDATION_ERROR',
   PRECONDITION_MISMATCH: 'PRECONDITION_MISMATCH',
+  AMBIGUOUS: 'AMBIGUOUS',
+  STATE_MISMATCH: 'STATE_MISMATCH',
+  HEALTH_GATE_FAILED: 'HEALTH_GATE_FAILED',
+  INFRA_FAILED: 'INFRA_FAILED',
+  BUSY: 'BUSY',
+  DETACHED: 'DETACHED',
 } as const satisfies Record<ErrorCode, ErrorCode>;
+
+/**
+ * Map an ERROR_CODES string to its process exit code (spec/03 §1). The sibling
+ * of `httpStatusToExitCode` (types/index.ts): that one turns an HTTP status into
+ * an exit code, this one turns a stable error-code name into one, so a thrown
+ * CliExitError can derive its exit code from its code alone.
+ *
+ * Unknown/unmapped codes fall back to GENERAL_ERROR (1). LICENSE_REQUIRED (10)
+ * is deliberately absent: renet's exit 10 is propagated verbatim by the recovery
+ * framework, never reconstructed from a code string here.
+ */
+export function errorToExitCode(code: string): number {
+  const map: Record<string, number> = {
+    [ERROR_CODES.GENERAL_ERROR]: EXIT_CODES.GENERAL_ERROR,
+    [ERROR_CODES.INVALID_REQUEST]: EXIT_CODES.INVALID_ARGUMENTS,
+    [ERROR_CODES.VALIDATION_ERROR]: EXIT_CODES.INVALID_ARGUMENTS,
+    [ERROR_CODES.PRECONDITION_MISMATCH]: EXIT_CODES.INVALID_ARGUMENTS,
+    [ERROR_CODES.AUTH_REQUIRED]: EXIT_CODES.AUTH_REQUIRED,
+    [ERROR_CODES.PERMISSION_DENIED]: EXIT_CODES.PERMISSION_DENIED,
+    [ERROR_CODES.NOT_FOUND]: EXIT_CODES.NOT_FOUND,
+    [ERROR_CODES.NETWORK_ERROR]: EXIT_CODES.NETWORK_ERROR,
+    [ERROR_CODES.SERVER_ERROR]: EXIT_CODES.API_ERROR,
+    [ERROR_CODES.AMBIGUOUS]: EXIT_CODES.AMBIGUOUS,
+    [ERROR_CODES.STATE_MISMATCH]: EXIT_CODES.STATE_MISMATCH,
+    [ERROR_CODES.HEALTH_GATE_FAILED]: EXIT_CODES.HEALTH_GATE_FAILED,
+    [ERROR_CODES.INFRA_FAILED]: EXIT_CODES.INFRA_FAILED,
+    [ERROR_CODES.BUSY]: EXIT_CODES.BUSY,
+    [ERROR_CODES.DETACHED]: EXIT_CODES.DETACHED,
+  };
+  return map[code] ?? EXIT_CODES.GENERAL_ERROR;
+}
 
 /**
  * One concrete next-action option a human or agent can take. The CLI

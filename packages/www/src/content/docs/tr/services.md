@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: tr
-sourceHash: "011bc5d87114f105"
+sourceHash: "2d470a876c00c352"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -192,7 +192,7 @@ renet ve Docker, konteyner yeniden başlatmalarının nasıl ele alınacağı ko
 - Depo bağlama kökündeki `.rediacc.json` → `services.<name>.restart_policy`: gerçek niyet.
 - `docker ps --format '{{.Status}}'`: çalışma zamanı durumu.
 
-**Sapmanın düzeltilmesi.** Bir konteynerin `.rediacc.json` dosyasındaki kaydedilmiş politika yanlışsa (örneğin compose düzenlendi ama konteyner hiç yeniden oluşturulmadı), `rdc repo up --name <repo> -m <machine>` komutunu yeniden çalıştırın. Konteyner, güncellenen politika kaydedilerek yeniden oluşturulur.
+**Sapmanın düzeltilmesi.** Bir konteynerin `.rediacc.json` dosyasındaki kaydedilmiş politika yanlışsa (örneğin compose düzenlendi ama konteyner hiç yeniden oluşturulmadı), `rdc repo up <repo>` komutunu yeniden çalıştırın. Konteyner, güncellenen politika kaydedilerek yeniden oluşturulur.
 
 > **Deneysel:** Soğuk yedek sidecar tabanlı kurtarma ve `rdc machine query` komutundaki `--sync-certs` bayrağı renet 0.9+ ile sunuldu. Eski sürümler watchdog kurtarması için yalnızca kaydedilmiş `restart_policy`'ye güvenir; bu da soğuk yedekten sonra `on-failure` konteynerlerini mahsur bırakabilir.
 
@@ -235,7 +235,7 @@ HTTP services (accessible via proxy after ~3s):
 
 ### Ayrılmış Başlatma
 
-`--detach` ile komut, sağlık kontrollerinin tamamlanmasını beklemek yerine konteynerler başlar başlamaz geri döner. Başlatma arka planda tamamlanır: proxy, her servis bağlanana kadar yukarı yönlü bağlantıları yeniden dener ve rotalar otomatik olarak açılır. İlerlemeyi `rdc machine query --containers --name <machine>` ile takip edin. Sıradaki adımdan önce servislerin hazır olmasına gerek duyulmayan tek kullanımlık fork'lar ve betikleştirilmiş döngüler için idealdir.
+`--detach` ile komut, sağlık kontrollerinin tamamlanmasını beklemek yerine konteynerler başlar başlamaz geri döner. Başlatma arka planda tamamlanır: proxy, her servis bağlanana kadar yukarı yönlü bağlantıları yeniden dener ve rotalar otomatik olarak açılır. İlerlemeyi `rdc machine status <machine> --containers` ile takip edin. Sıradaki adımdan önce servislerin hazır olmasına gerek duyulmayan tek kullanımlık fork'lar ve betikleştirilmiş döngüler için idealdir.
 
 ### Hazırlık Sondası
 
@@ -447,6 +447,6 @@ secrets:
     file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
 ```
 
-Değerleri `rdc repo secret set --name <repo> --key DATABASE_URL --value <val> --mode env --current ""` komutundan yararlanarak ve file-modu eşdeğeriyle yapılandırın. Tam nasıl yapılacağı için bkz. [Depolar § Sırlar](/tr/docs/repositories#secrets) ve komut referansı için [Depo başına sırlar](/tr/docs/rdc-cheat-sheet#per-repo-secrets) başlığına bakın.
+Değerleri `rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""` komutundan yararlanarak ve file-modu eşdeğeriyle yapılandırın. Tam nasıl yapılacağı için bkz. [Depolar § Sırlar](/tr/docs/repositories#secrets) ve komut referansı için [Depo başına sırlar](/tr/docs/rdc-cheat-sheet#per-repo-secrets) başlığına bakın.
 
 > **Depo arası yollar doğrulama zamanında reddedilir.** Başka bir deponun `/var/run/rediacc/secrets/<other-networkID>/` dizinine işaret eden bir compose `secrets: file:` (veya `configs: file:`, ya da `env_file:`) docker compose çalışmadan önce renet sarmalayıcısı tarafından kesin olarak reddedilir. `--unsafe` bunu geçersiz kılmaz. Savunma derinlemesine: Rediaccfile kabuk çevresindeki Landlock sandbox'ı okumaları geçerli ağın sırlar dizinine kapsamlandırır; bu nedenle Rediaccfile bash'inden `cat /var/run/rediacc/secrets/<other>/X` komutu YAML doğrulayıcısını atlasa bile EACCES ile başarısız olur. Katılmak gerekmez; bu, her `repo up` için varsayılan olarak etkindir.

@@ -1,9 +1,9 @@
 import { getMachineHealth, type MachineHealthResult } from '@rediacc/shared/services/machine';
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
-import { getStateProvider } from '../../services/state.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
+import { getStateProvider } from '../../services/state.js';
 import type { OutputFormat } from '../../types/index.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 import { withSpinner } from '../../utils/spinner.js';
@@ -141,11 +141,10 @@ export function registerHealthCommand(machine: Command, program: Command): void 
   machine
     .command('health')
     .description(t('commands.machine.health.description'))
-    .requiredOption('--name <name>', t('options.name'))
+    .argument('<name>', t('options.name'))
     .option('-t, --team <name>', t('options.team'))
-    .action(async (options: { name: string; team?: string }) => {
+    .action(async (name: string, options: { team?: string }) => {
       try {
-        const name = options.name;
         const provider = getStateProvider();
         const opts = await configService.applyDefaults(options);
 

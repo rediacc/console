@@ -4,8 +4,8 @@ description: Rediacc 中的组织、团队、成员和订阅。
 category: Guides
 order: 12
 language: zh
-sourceHash: 3887adc59fc63c26
-sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
+sourceHash: 9d77ef9087375fbc
+sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
 ### 组织
@@ -16,7 +16,7 @@ sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 
 每个组织包含：
 - 唯一名称（默认为您的电子邮件地址）
-- 订阅计划（从 COMMUNITY 开始）
+- 订阅计划（新账户会自动开始 Professional 或 Business 计划的 14 天免费试用；详见下方"订阅与计划"）
 - 默认团队（所有成员自动加入）
 
 ### 成员与角色
@@ -57,21 +57,21 @@ Rediacc 提供四种计划：
 
 | 计划 | 机器 | 仓库许可证/月 | 委托证书默认/最大有效期 | 功能 |
 |------|------|---------------|-------------------------|------|
-| COMMUNITY | 2 | 100 | 15d / 30d | 基础 |
-| PROFESSIONAL | 3 | 2,000+ | 60d / 120d | 权限组、审计日志、自定义品牌、优先支持 |
-| BUSINESS | 10 | 5,000+ | 90d / 180d | Ceph、高级分析、队列优先级、高级队列 |
-| ENTERPRISE | 25+ | 15,000+ | 120d / 365d | 专属账户经理 |
+| COMMUNITY | 1 | 100 | 15d / 30d | 基础 |
+| PROFESSIONAL | 1 | 2,000+ | 60d / 120d | 权限组、审计日志、自定义品牌、优先支持 |
+| BUSINESS | 1 | 5,000+ | 90d / 180d | Ceph、高级分析、队列优先级、高级队列 |
+| ENTERPRISE | 定制 | 15,000+ | 120d / 365d | 专属账户经理 |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 
-所有计划均以 3 天宽限期开始。机器激活按团队跟踪，不活跃后自动释放。完整的机器与仓库许可证模型，请参阅[订阅与许可](/zh/docs/subscription-licensing)。
+Professional 和 Business 均为自助服务计划，各自包含 1 台机器；需要多台机器的 Enterprise 通过我们的合作伙伴销售。新注册用户会自动开始 Professional 或 Business 计划的 14 天免费试用，注册时收集信用卡信息，但首次扣费只会在试用结束时发生。无论是在试用期内取消、日后取消付费计划，还是扣款失败，账户都会回退到免费的 Community 计划（1 台机器、每个仓库 10 GB、每月 100 次设置）。所有计划均以 3 天宽限期开始。机器激活按团队跟踪，不活跃后自动释放。完整的机器与仓库许可证模型，请参阅[订阅与许可](/zh/docs/subscription-licensing)。
 
 ### 计费
 
 只有组织的 **Owner** 可以管理计费：
-- 创建 Stripe 结账会话以升级计划
+- 创建 Stripe 结账会话以开始计划或升级
 - 访问 Stripe 计费门户以更改支付方式
-- 申请自助退款（14 天内，30 天冷却期）
+- 在计费门户中取消或更改计划；取消后账户将回退到免费的 Community 计划
 
 ### 数据区域
 

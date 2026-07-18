@@ -59,7 +59,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc vscode connect --machine <machine-name> --repository my-app --browser"
+        "commandFull": "rdc vscode connect my-app@<machine-name> --browser"
       }
     },
     {

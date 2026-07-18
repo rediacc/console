@@ -24,11 +24,17 @@ import {
   parseListResult,
 } from './parsing-types';
 
-export type { MachineWithVaultStatus };
-export { parseListResult };
-
 // Re-export list types for CLI consumers
-export type { BlockDevice, ContainerInfo, ListResult, NetworkInterface, ServiceInfo, SystemInfo };
+export type {
+  BlockDevice,
+  ContainerInfo,
+  ListResult,
+  MachineWithVaultStatus,
+  NetworkInterface,
+  ServiceInfo,
+  SystemInfo,
+};
+export { parseListResult };
 
 /**
  * Status of the vault status check
