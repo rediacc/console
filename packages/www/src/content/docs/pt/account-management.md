@@ -4,8 +4,8 @@ description: 'Organizações, equipas, membros e subscrições no Rediacc.'
 category: Guides
 order: 12
 language: pt
-sourceHash: 3887adc59fc63c26
-sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
+sourceHash: 9d77ef9087375fbc
+sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
 ### Organizações
@@ -16,7 +16,7 @@ Ao registar uma conta, o Rediacc cria automaticamente uma organização para si.
 
 Cada organização tem:
 - Um nome único (por omissão, o seu e-mail)
-- Um plano de subscrição (começa com COMMUNITY)
+- Um plano de subscrição (as novas contas iniciam um teste gratuito de 14 dias no Professional ou Business; ver Subscrições e Planos abaixo)
 - Uma equipa predefinida (todos os membros entram automaticamente)
 
 ### Membros e Funções
@@ -57,21 +57,21 @@ O Rediacc oferece quatro planos:
 
 | Plano | Máquinas | Licenças de Repo/mês | Validade padrão / máxima do cert. de delegação | Funcionalidades |
 |-------|----------|----------------------|------------------------------------------------|-----------------|
-| COMMUNITY | 2 | 100 | 15d / 30d | Básico |
-| PROFESSIONAL | 3 | 2.000+ | 60d / 120d | Grupos de permissões, registo de auditoria, marca personalizada, suporte prioritário |
-| BUSINESS | 10 | 5.000+ | 90d / 180d | Ceph, análises avançadas, prioridade de fila, fila avançada |
-| ENTERPRISE | 25+ | 15.000+ | 120d / 365d | Gestor de conta dedicado |
+| COMMUNITY | 1 | 100 | 15d / 30d | Básico |
+| PROFESSIONAL | 1 | 2.000+ | 60d / 120d | Grupos de permissões, registo de auditoria, marca personalizada, suporte prioritário |
+| BUSINESS | 1 | 5.000+ | 90d / 180d | Ceph, análises avançadas, prioridade de fila, fila avançada |
+| ENTERPRISE | Personalizado | 15.000+ | 120d / 365d | Gestor de conta dedicado |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 
-Todos os planos começam com um período de carência de 3 dias. As vagas de máquina são contabilizadas por equipa e libertadas automaticamente após 5 horas de inatividade. Consulte [Subscrição e Licenciamento](/en/docs/subscription-licensing) para mais detalhes.
+O Professional e o Business são self-service e incluem cada um uma máquina; o Enterprise multi-máquina é vendido através dos nossos parceiros. As novas contas iniciam um teste gratuito de 14 dias no Professional ou Business, com o cartão de crédito recolhido no registo e a primeira cobrança feita apenas quando o teste termina. Cancele durante o teste, cancele um plano pago mais tarde, ou falhe um pagamento, e a conta regressa ao plano Community gratuito (uma máquina, 10 GB por repositório, 100 configurações por mês). Todos os planos começam com um período de carência de 3 dias. As vagas de máquina são contabilizadas por equipa e libertadas automaticamente após 5 horas de inatividade. Consulte [Subscrição e Licenciamento](/pt/docs/subscription-licensing) para mais detalhes.
 
 ### Faturação
 
 Apenas o **proprietário** da organização pode gerir a faturação:
-- Criar uma sessão de checkout no Stripe para atualização de plano
+- Criar uma sessão de checkout no Stripe para iniciar um plano ou fazer upgrade
 - Aceder ao portal de faturação do Stripe para alterar o método de pagamento
-- Solicitar reembolsos de forma autónoma (até 14 dias, com um período de espera de 30 dias)
+- Cancelar ou alterar o plano a partir do portal de faturação; o cancelamento faz a conta regressar ao plano Community gratuito
 
 ### Região de Dados
 

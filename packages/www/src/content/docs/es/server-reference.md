@@ -4,8 +4,8 @@ description: "Organización de directorios, comandos de renet, servicios systemd
 category: "Concepts"
 order: 3
 language: es
-sourceHash: "4fb53bb4cb1512f6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "af2e8fc3da708d9a"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 # Referencia del Servidor
@@ -227,6 +227,38 @@ renet datastore validate    # Filesystem integrity check
 renet datastore expand      # Expand the datastore online
 ```
 
+### Backends de datastore (Ceph RBD)
+
+Un datastore es local (BTRFS respaldado por loop en el disco de la máquina, el predeterminado) o está respaldado por un clúster Ceph externo mediante una imagen RBD. El backend se elige en el momento de `init`:
+
+```bash
+# Backend local (predeterminado)
+renet datastore init --size 50G
+
+# Backend Ceph RBD: BTRFS sobre una imagen RBD mapeada desde un clúster Ceph externo
+renet datastore init --backend ceph --pool rbd --image {name} --cluster ceph
+```
+
+En el backend Ceph, la bifurcación y la reversión usan las propias primitivas de copy-on-write de RBD en lugar de reflinks de BTRFS:
+
+```bash
+renet datastore fork   --source {image} --target {new-image}   # snapshot RBD -> protect -> clone
+renet datastore unfork --image {image}                         # desmontar un clon en orden de dependencias
+```
+
+Los nodos Ceph nunca abren LUKS (no hay capa LUKS por imagen en este backend), por lo que su huella de memoria sigue el ajuste del daemon Ceph (`osd_memory_target`), no las matemáticas de KDF. Un segundo cliente puede mapear la misma imagen RBD en modo de solo lectura con una superposición copy-on-write local, que es la vía de escalado horizontal de solo lectura.
+
+### Kubernetes (renet kube)
+
+En un nodo de clúster, renet envuelve k3s de la misma forma que envuelve Docker. `renet kube` es el análogo de compose: inyecta `KUBECONFIG` y aplica manifiestos o charts de Helm desde el `up()` de un Rediaccfile.
+
+```bash
+sudo renet kube apply -f manifests/     # aplicar en el namespace del repo
+sudo renet kube -- get pods             # pasar a kubectl en el namespace fijado
+```
+
+El estado del clúster vive en imágenes copy-on-write respaldadas por el datastore (el `--data-dir` de k3s se vincula dentro del montaje de la imagen), lo que permite que un clúster completo se bifurque y migre. Los volúmenes persistentes son unidades copy-on-write separadas: imágenes RBD en Ceph (un espacio de nombres RADOS por instancia de clúster y por bifurcación), o pequeños archivos de imagen del datastore mediante un aprovisionador de PV local en el backend local. El flujo de trabajo de cara al usuario está en la guía [Kubernetes](/es/docs/kubernetes); la CLI dirige estas rutas mediante `rdc cluster` y los comandos `rdc repo` compatibles con clústeres.
+
 ## Servicios systemd
 
 Cada repositorio crea estas unidades systemd:
@@ -236,6 +268,7 @@ Cada repositorio crea estas unidades systemd:
 | `rediacc-docker-{id}.service` | Daemon de Docker aislado |
 | `rediacc-docker-{id}.socket` | Activación del socket de la API de Docker |
 | `rediacc-loopback-{id}.service` | Configuración del alias de IP de loopback |
+| `rediacc-k3s-{id}.service` | Nodo k3s por clúster (solo hosts de clúster) |
 
 Servicios globales compartidos por todos los repositorios:
 

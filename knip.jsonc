@@ -44,7 +44,14 @@
         "bundle.mjs"
       ]
     },
-    "packages/bridge-tests": {
+    "packages/e2e-tests": {
+      // BLOCKER: the playwright plugin EXECUTES every matched config; with two
+      // configs in one workspace (playwright.config.ts + playwright.ceph.config.ts)
+      // the second `require('@playwright/test')` in the same process throws
+      // "Requiring @playwright/test second time" (knip known-issue). The configs
+      // and tests are already declared as static entries below, so plugin
+      // discovery adds nothing here.
+      "playwright": false,
       "entry": [
         "playwright*.config.ts",
         "tests/**/*.test.ts",
@@ -84,9 +91,12 @@
         "scripts/**/*.ts"
       ],
       "ignoreBinaries": [
-        // BLOCKER: rotation CLI shells out to the authenticated gh binary for GitHub org-secret pushes and to openssl for key generation; host tools, not npm deps
-        "gh",
+        // BLOCKER: rotation CLI shells out to openssl for key generation; host tool, not an npm dep (knip 6.26 resolves the gh binary natively)
         "openssl"
+      ],
+      "ignoreUnresolved": [
+        // BLOCKER: knip 6.25's script parser reads the execSync('./rdc.sh ...') command strings in the rotation tool as an import specifier; it is the monorepo wrapper script invoked at its resolved repo root, not a module
+        "./rdc.sh"
       ]
     },
     "private/account/web": {
@@ -135,15 +145,14 @@
     "fast-xml-parser"
   ],
   "ignoreBinaries": [
-    // BLOCKER: platform/system tools spawned via child_process at runtime by the CLI (user lookups, keyrings, service control, Windows/macOS shells); host binaries, never npm-managed
-    "cmd.exe",
+    // BLOCKER: platform/system tools spawned via child_process at runtime by the CLI (user lookups, keyrings, macOS/Linux/WSL shells); host binaries, never npm-managed. knip 6.27 still parses bare `which` (doctor PATH probes) and `qemu-img` (e2e VM image inspection on the KVM host), so they stay listed; it now resolves `systemctl` (ops libvirtd/router service control, spawnSync in ops/check.ts) and the Windows cmd.exe/powershell shells natively, so those are dropped
     "dscl",
     "getent",
     "keyctl",
     "osascript",
-    "powershell.exe",
+    "qemu-img",
     "security",
-    "systemctl",
+    "which",
     "wsl.exe",
 
     // BLOCKER: terminal emulators probed by the CLI terminal launcher (the remote/ terminal detector tries each candidate); presence is optional per host
@@ -163,6 +172,9 @@
     "agent-browser",
     "ffmpeg",
     "pdftotext",
-    "rclone"
+    "rclone",
+
+    // BLOCKER: go toolchain spawned by scripts/generate-third-party-licenses.ts to run go-licenses for the renet Go-dependency section of THIRD_PARTY_LICENSES; host toolchain, not an npm dependency
+    "go"
   ]
 }

@@ -26,6 +26,7 @@ vi.mock('../../services/telemetry/telemetry.js', () => ({
 
 const { handleError, setOutputFormat, PreconditionValidationError } = await import('../errors.js');
 const { ERROR_CODES } = await import('../../types/errors.js');
+
 import type { NextAction } from '../../types/errors.js';
 
 const sampleNext: NextAction = {

@@ -202,7 +202,7 @@ cli_dist="$ROOT_DIR/packages/cli/dist/cli-bundle.cjs"
 if [[ ! -f "$ref_file" ]] || [[ "$cli_dist" -nt "$ref_file" ]]; then
     log_step "Regenerating skill reference"
     ref_tmp="$(mktemp)"
-    if node "$cli_dist" agent generate-reference >"$ref_tmp" 2>/dev/null && grep -q "^#" "$ref_tmp"; then
+    if npx tsx "$ROOT_DIR/packages/cli/scripts/generate-skill-reference.ts" >"$ref_tmp" 2>/dev/null && grep -q "^#" "$ref_tmp"; then
         mv "$ref_tmp" "$ref_file"
     else
         rm -f "$ref_tmp"

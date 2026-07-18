@@ -22,7 +22,7 @@ run_cmd "curl -fsSL https://www.rediacc.com/install.sh | bash"
 
 pause 2
 
-section "Confirm rdc is installed"
+section "Confirm the CLI is installed"
 run_cmd "rdc --version"
 
 pause 2

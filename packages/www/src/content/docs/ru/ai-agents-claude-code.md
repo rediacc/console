@@ -6,7 +6,8 @@ description: >-
 category: Guides
 order: 31
 language: ru
-sourceHash: "1cb28ab2dc3ac39f"
+sourceHash: "0a4b93dedcf18e6d"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Claude Code нативно работает с Rediacc через CLI `rdc`. Это руководство охватывает настройку, разрешения и типичные рабочие процессы.
@@ -99,6 +100,5 @@ Claude Code runs: rdc repo sync upload -m prod-1 -r mail -l ./config
 ## Советы
 
 - Claude Code автоматически определяет не-TTY среду и переключается на JSON вывод, в большинстве случаев указывать `-o json` не нужно
-- Используйте `rdc agent capabilities`, чтобы Claude Code мог обнаружить все доступные команды
-- Используйте `rdc agent schema "command name"` для получения подробной информации об аргументах и опциях
+- Используйте `rdc --help-all`, чтобы Claude Code мог обнаружить все доступные команды
 - Флаг `--fields` помогает снизить использование контекстного окна, когда нужны только определённые данные

@@ -1,8 +1,8 @@
-import { Command } from 'commander';
+import { Command, Option } from 'commander';
 import { t } from '../../i18n/index.js';
+import { outputService } from '../../services/core/output.js';
 import type { OpsBackend } from '../../services/executor/ops-executor.js';
 import { opsExecutorService } from '../../services/executor/ops-executor.js';
-import { outputService } from '../../services/core/output.js';
 import { handleError } from '../../utils/errors.js';
 
 export function registerOpsUpCommand(ops: Command, _program: Command): void {
@@ -14,7 +14,7 @@ export function registerOpsUpCommand(ops: Command, _program: Command): void {
     .option('--basic', t('options.opsBasic'))
     .option('--lite', t('options.opsLite'))
     .option('--skip-orchestration', t('options.opsSkipOrchestration'))
-    .option('--backend <backend>', t('options.opsBackend'))
+    .addOption(new Option('--backend <backend>', t('options.opsBackend')).choices(['kvm', 'qemu']))
     .option('--os <name>', t('options.opsOS'))
     .option('--debug', t('options.debug'))
     .action(

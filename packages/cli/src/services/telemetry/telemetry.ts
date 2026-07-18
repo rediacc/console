@@ -15,8 +15,8 @@ import { metrics as metricsApi, type Span, SpanStatusCode, type Tracer } from '@
 import { type Logger, SeverityNumber } from '@opentelemetry/api-logs';
 import { type PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { type NodeSDK } from '@opentelemetry/sdk-node';
-import type { TelemetryConfig, UserContext } from '@rediacc/shared/telemetry';
 import { DEFAULTS, UPDATE_DEFAULTS } from '@rediacc/shared/config';
+import type { TelemetryConfig, UserContext } from '@rediacc/shared/telemetry';
 import {
   anonymizeArgs,
   anonymizeObject,
@@ -26,12 +26,11 @@ import {
 } from '@rediacc/shared/telemetry';
 
 import { VERSION as CLI_VERSION } from '../../version.js';
-import { buildUserAttributes, flattenAttributes } from './telemetry-attrs.js';
-
 import {
   startProfiling as startProfilingImpl,
   stopProfiling as stopProfilingImpl,
 } from './profiling.js';
+import { buildUserAttributes, flattenAttributes } from './telemetry-attrs.js';
 
 /**
  * Pure env-var check for whether the user has opted out of telemetry.

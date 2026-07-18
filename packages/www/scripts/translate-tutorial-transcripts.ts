@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * Translates TODO markers in non-EN tutorial transcripts via the Anthropic API.
  *
@@ -15,11 +16,11 @@
  * so translation goes through the Agent SDK's query() — the supported path.
  */
 
-import { query } from '@anthropic-ai/claude-agent-sdk';
-import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { query } from '@anthropic-ai/claude-agent-sdk';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const wwwRoot = path.resolve(scriptDir, '..');

@@ -7,36 +7,36 @@
 //
 
 import {
-  BRIDGE_FUNCTIONS_VERSION,
-  type BridgeFunctionName,
-  isBridgeFunction,
+  isRenetFunction,
+  RENET_FUNCTIONS_VERSION,
+  type RenetFunctionName,
 } from '../data/functions.generated';
 
 // Re-export type guards from generated types
-export { assertQueueVaultV2, isQueueVaultV2 } from '../data/vault.generated';
+export { assertRenetVault, isRenetVault } from '../data/vault.generated';
 // Re-export vault validation from generated schemas
 export {
   ContextSectionSchema,
   getVaultValidationErrors,
   MachineSectionSchema,
-  parseQueueVault,
-  QueueVaultV2Schema,
+  parseRenetVault,
+  RenetVaultSchema,
   RepositoryInfoSchema,
   SSHSectionSchema,
   StorageSectionSchema,
   TaskSectionSchema,
-  validateQueueVault,
+  validateRenetVault,
 } from '../data/vault.schema';
 
 // Re-export vault types for convenience
-export type { MachineSection, QueueVaultV2, RepositoryInfo, StorageSection } from '../types';
+export type { MachineSection, RenetVault, RepositoryInfo, StorageSection } from '../types';
 
 // =============================================================================
 // Bridge Function Validation
 // =============================================================================
 
 /**
- * Error codes for bridge function validation.
+ * Error codes for renet function validation.
  * Note: INTERNAL_FUNCTION and EXPERIMENTAL_FUNCTION errors are now returned by renet,
  * not console. Console only validates that a function exists.
  */
@@ -56,12 +56,12 @@ export interface BridgeFunctionError {
  * @returns Error object if invalid, null if valid
  */
 export function validateBridgeFunction(functionName: string): BridgeFunctionError | null {
-  if (!isBridgeFunction(functionName)) {
+  if (!isRenetFunction(functionName)) {
     return {
       code: 'UNKNOWN_FUNCTION',
       function: functionName,
-      protocolVersion: BRIDGE_FUNCTIONS_VERSION,
-      message: `Function "${functionName}" is not supported in protocol v${BRIDGE_FUNCTIONS_VERSION}`,
+      protocolVersion: RENET_FUNCTIONS_VERSION,
+      message: `Function "${functionName}" is not supported in protocol v${RENET_FUNCTIONS_VERSION}`,
     };
   }
   return null;
@@ -99,7 +99,7 @@ export function validatePublicBridgeFunction(functionName: string): BridgeFuncti
  */
 export function assertPublicBridgeFunction(
   functionName: string
-): asserts functionName is BridgeFunctionName {
+): asserts functionName is RenetFunctionName {
   const error = validatePublicBridgeFunction(functionName);
   if (error) {
     throw new Error(error.message);

@@ -4,8 +4,8 @@ description: Konfiguration der Cursor-IDE für die Arbeit mit der Rediacc-Infras
 category: Guides
 order: 32
 language: de
-sourceHash: "b5e835461de00400"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "66821f514bc7a8bd"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Kurzversion: `.cursorrules` lädt den Rediacc-Kontext in die KI von Cursor; das Terminal ermöglicht es, `rdc`-Befehle direkt gegen Ihre realen Maschinen auszuführen.
@@ -75,5 +75,5 @@ Fuer Teamprojekte fuegen Sie Rediacc-spezifische Cursor-Einstellungen zu `.curso
 
 - Cursors Composer-Modus eignet sich gut für mehrstufige Infrastrukturaufgaben
 - Verwenden Sie `@terminal` im Cursor-Chat, um auf aktuelle Terminal-Ausgaben zu verweisen
-- Der Befehl `rdc agent capabilities` gibt Cursor eine vollstaendige Befehlsreferenz
+- Der Befehl `rdc --help-all` gibt Cursor eine vollstaendige Befehlsreferenz
 - Kombinieren Sie `.cursorrules` mit einer `CLAUDE.md`-Datei für maximale Kompatibilitaet über KI-Tools hinweg

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import type { RepositoryConfig } from '../schema/schemas.js';
+import type { RepositoryConfig } from '@rediacc/shared/config-schema';
 import { configService } from '../services/config/config-resources.js';
-import { localExecutorService } from '../services/executor/local-executor.js';
+import { getExecutor } from '../services/executor/executor-factory.js';
 
 /**
  * Resolve a hands-free delta base for pushing `repoConfig` to `machine`.
@@ -94,7 +94,7 @@ async function syncCommitMetaToTarget(
   debug?: boolean
 ): Promise<void> {
   try {
-    await localExecutorService.execute({
+    await getExecutor().execute({
       functionName: 'repository_commit_meta',
       machineName: machine,
       params: {

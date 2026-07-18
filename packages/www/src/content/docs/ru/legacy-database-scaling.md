@@ -5,6 +5,7 @@ category: Use Cases
 order: 3
 language: ru
 sourceHash: "b15507f1e0da46d2"
+sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 
 > **Ваша устаревшая база данных сдерживает вас. Освободитесь, не сломав его.**

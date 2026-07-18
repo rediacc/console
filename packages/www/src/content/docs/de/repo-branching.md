@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 41
 language: de
-sourceHash: "2448559f0fcfc0e0"
+sourceHash: "fe334c1c94a0f417"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -308,7 +308,7 @@ Delta-Transfer gilt nur zwischen Maschinen (ein Remote mit der FIEMAP-Basis). Pu
 
 ## JSON-Schema
 
-`rdc repo log --json` umhüllt das renet-Ergebnis in den Standardumschlag. Der durchlaufene Verlauf liegt in `entries`, neueste zuerst:
+`rdc repo log <repo> --output json` umhüllt das renet-Ergebnis in den Standardumschlag. Der durchlaufene Verlauf liegt in `entries`, neueste zuerst:
 
 | Feld | Typ | Beschreibung |
 |-------|------|-------------|

@@ -4,8 +4,8 @@ description: Configurez l'IDE Cursor pour travailler avec l'infrastructure Redia
 category: Guides
 order: 32
 language: fr
-sourceHash: "b5e835461de00400"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "66821f514bc7a8bd"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 En bref : `.cursorrules` charge le contexte Rediacc dans l'IA de Cursor ; le terminal lui permet d'exécuter des commandes `rdc` sur vos machines réelles.
@@ -75,5 +75,5 @@ Pour les projets d'équipe, ajoutez les paramètres Cursor spécifiques à Redia
 
 - Le mode Composer de Cursor fonctionne bien pour les tâches d'infrastructure en plusieurs étapes
 - Utilisez `@terminal` dans le chat de Cursor pour référencer la sortie récente du terminal
-- La commande `rdc agent capabilities` fournit à Cursor une référence complète des commandes
+- La commande `rdc --help-all` fournit à Cursor une référence complète des commandes
 - Combinez `.cursorrules` avec un fichier `CLAUDE.md` pour une compatibilité maximale entre les outils IA

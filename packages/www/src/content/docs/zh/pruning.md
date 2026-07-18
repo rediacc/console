@@ -4,7 +4,7 @@ description: "删除孤立备份、过期快照、仓库镜像和本地配置遗
 category: "Guides"
 order: 12
 language: zh
-sourceHash: "d2700c2ac4473962"
+sourceHash: "af01691f5fe908ee"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -14,8 +14,8 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 
 | 命令 | 清理内容 | 真实来源所在位置 |
 |---|---|---|
-| `rdc storage prune --name <storage> -m <machine>` | 云存储中的孤立备份 | 本地 CLI 配置（针对执行机器进行交叉检查以确保挂载安全） |
-| `rdc machine prune --name <machine>` | 机器上的数据存储工件（始终）；孤立或未知的仓库镜像（可选启用） | 本地 CLI 配置 + 机器的 `.interim/state` 镜像 |
+| `rdc storage prune <storage> -m <machine>` | 云存储中的孤立备份 | 本地 CLI 配置（针对执行机器进行交叉检查以确保挂载安全） |
+| `rdc machine prune <machine>` | 机器上的数据存储工件（始终）；孤立或未知的仓库镜像（可选启用） | 本地 CLI 配置 + 机器的 `.interim/state` 镜像 |
 | `rdc config prune` | 本地配置遗留物（证书缓存、过期归档、悬空交叉引用） | 仅本地 CLI 配置 |
 
 三者相互独立。您可以在不运行其他命令的情况下运行任何一个。它们共享下文 [安全模型](#safety-model) 中描述的通用安全模型。
@@ -202,7 +202,7 @@ sudo /usr/local/bin/renet repository backfill-state-mirror \
 
 ### 宽限期
 
-当仓库通过 `--archive-config` 从配置中移除时，其凭据条目会被移到 `resources.deletedRepositories[]` 并带有 `deletedAt` 时间戳。清理命令遵守宽限期（默认 7 天），在此期间最近归档的仓库受到保护，不会被删除。这给您时间在仓库被意外移除时进行恢复（`rdc config repository restore-archived --name <guid>`）。一旦宽限期过期，`storage prune`、`machine prune` 和 `config prune` 都会自动清除该条目。
+当仓库通过 `--archive-config` 从配置中移除时，其凭据条目会被移到 `resources.deletedRepositories[]` 并带有 `deletedAt` 时间戳。清理命令遵守宽限期（默认 7 天），在此期间最近归档的仓库受到保护，不会被删除。这给您时间在仓库被意外移除时进行恢复（`rdc repo admin archive restore <guid>`）。一旦宽限期过期，`storage prune`、`machine prune` 和 `config prune` 都会自动清除该条目。
 
 ### 挂载安全预检
 

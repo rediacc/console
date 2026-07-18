@@ -4,8 +4,8 @@ description: "Esegui il backup dei repository cifrati su qualsiasi storage compa
 category: "Guides"
 order: 7
 language: it
-sourceHash: "7ff112c2ec14c35f"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "d800519615085ee9"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Backup e Ripristino
@@ -118,28 +118,33 @@ I backup pianificati finiscono in sottocartelle per modalità all'interno della 
 
 Un repository può apparire sia in `hot/` che in `cold/` (lo schedule orario ne crea uno snapshot; lo schedule settimanale ne crea un altro). L'elenco unificato mostra entrambe le righe in modo che sia chiaro quali stream coprono quali repository.
 
-## Sincronizzazione Massiva
+## Sincronizzare un repository alla volta
 
-Invia o scarica tutti i repository contemporaneamente:
+Push e pull agiscono su un singolo repository, identificato dal ref (`name`, `name:tag` o `name@machine`). Non esiste una forma «tutti i repository in una volta»: esegui il comando una volta per ogni repository.
 
-### Invia Tutti allo Storage
+### Invia allo storage
 
 ```bash
-rdc repo push --to my-storage -m server-1
+rdc repo push shop@server-1 --to my-storage
 ```
 
-### Scarica Tutti dallo Storage
+### Scarica dallo storage
 
 ```bash
-rdc repo pull --from my-storage -m server-1
+rdc repo pull shop@server-1 --from my-storage
 ```
 
 | Opzione | Descrizione |
 |--------|-------------|
-| `--to <storage>` | Storage di destinazione (direzione push) |
-| `--from <storage>` | Storage sorgente (direzione pull) |
-| `--repo <name>` | Sincronizza repository specifici (ripetibile) |
-| `--override` | Sovrascrive i backup esistenti |
+| `--to <remote>` | Storage o macchina di destinazione (push) |
+| `--to-machine <machine>` | Macchina di destinazione per il push da macchina a macchina |
+| `--from <remote>` | Storage o macchina sorgente (pull) |
+| `--from-machine <machine>` | Macchina sorgente per il pull da macchina a macchina |
+| `--force` | Sovrascrive un backup o repository esistente |
+| `--checkpoint` | Crea un checkpoint CRIU prima dell'invio (solo push) |
+| `--up` | Monta e distribuisce il repository dopo il pull (solo pull) |
+| `--bwlimit <limit>` | Limite di banda per il trasferimento rsync (ad es. `10M`) |
+| `--delta-base <guid>` | Trasferisce solo i blocchi modificati rispetto a una GUID di base immutabile |
 | `--debug` | Abilita l'output dettagliato |
 | `--skip-router-restart` | Salta il riavvio del route server dopo l'operazione |
 
@@ -177,8 +182,8 @@ Un backup cold viene eseguito in tre fasi per ogni repository incluso: **stop > 
 
 **Come gli operatori rilevano i fallimenti:**
 
-- `rdc machine query --name <machine> --containers` mostra lo stato di esecuzione. Confrontare con il set atteso.
-- `/var/run/rediacc/cold-backup-<guid>.status.json` sulla macchina. Ispezionare tramite `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` con un `startedAt` obsoleto significa che l'ultimo backup non è stato completato in modo pulito.
+- `rdc machine status <machine> --containers` mostra lo stato di esecuzione. Confrontare con il set atteso.
+- `/var/run/rediacc/cold-backup-<guid>.status.json` sulla macchina. Ispezionare tramite `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` con un `startedAt` obsoleto significa che l'ultimo backup non è stato completato in modo pulito.
 - I log dell'esecuzione del backup di renet (`journalctl -u renet-*` o l'invocazione diretta `rdc machine backup schedule`) emettono una riga di riepilogo finale della forma `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` non vuoto è il target di grep.
 
 ### Stima del Downtime del Backup Cold
@@ -302,7 +307,7 @@ Nella tua configurazione, associa uno o più nomi di strategia a una macchina:
 }
 ```
 
-> **Il binding è solo configurazione locale.** Definire una strategia e collegarla a una macchina non modifica la macchina. Esegui `rdc machine backup schedule -m <machine>` (vedi [Distribuisci lo Schedule sulla Macchina](#distribuisci-lo-schedule-sulla-macchina)) per distribuire i timer systemd, e rilancialo dopo ogni modifica di strategia o binding.
+> **Il binding è solo configurazione locale.** Definire una strategia e collegarla a una macchina non modifica la macchina. Esegui `rdc backup schedule -m <machine>` (vedi [Distribuisci lo Schedule sulla Macchina](#distribuisci-lo-schedule-sulla-macchina)) per distribuire i timer systemd, e rilancialo dopo ogni modifica di strategia o binding.
 
 ## Scegliere tra Hot e Cold e il filtraggio per repository
 

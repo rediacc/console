@@ -7,7 +7,7 @@ description: >-
 category: Concepts
 order: 35
 language: fr
-sourceHash: "eb4c8dd0389a45a6"
+sourceHash: "30c1cd3d88219e7c"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -30,7 +30,7 @@ Vous pointez un assistant de codage IA vers votre infrastructure. Lorsque Claude
 | `rdc config edit` (éditeur interactif) | 🔴 refused | L'humain définit `REDIACC_ALLOW_CONFIG_EDIT=*` avant de lancer l'agent |
 | `rdc config edit --apply <file>` | 🔴 refused | Même substitution |
 | `rdc config field rotate --pointer <pointer>` | 🔴 refused | Même substitution ; utilise une confirmation interactive |
-| `rdc term connect -m <machine>` (SSH direct vers la machine) | 🔴 refused | Forker d'abord un dépôt et se connecter au fork |
+| `rdc term connect <machine>` (SSH direct vers la machine) | 🔴 refused | Forker d'abord un dépôt et se connecter au fork |
 
 Tout ce qui est refusé à un agent est consigné dans le journal d'audit avec `outcome: refused` et une raison.
 

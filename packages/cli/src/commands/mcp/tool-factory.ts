@@ -1,13 +1,31 @@
 /**
- * MCP Tool Factory — auto-derives MCP tool definitions from the Commander tree.
+ * MCP Tool Factory — derives MCP tool definitions from the generated CLI contract.
  *
- * Walks the Commander command tree and generates ToolDef entries for every command
- * path that has MCP metadata in COMMAND_METADATA. Zod schemas, command builders,
- * and annotations are all derived automatically.
+ * Iterates CLI_CONTRACT.commands (the single generated description of the `rdc`
+ * surface) and builds a ToolDef for every command that carries `mcp` metadata in
+ * COMMAND_METADATA. The zod schema, argv builder, and annotations are derived
+ * from the contract's option/positional shape — including the `.choices()` enums
+ * the big-bang enriched it with — rather than from a second, independent walk of
+ * the Commander tree.
+ *
+ * Split of sources: the STRUCTURE (which options/positionals a command has, their
+ * value/variadic/choice shape, and their English descriptions) comes from the
+ * contract. The MCP-specific SHAPING the contract does not carry — which options
+ * to drop (`excludeOptions`), which optional positionals to force-require
+ * (`requiredArgs`), what to append (`appendArgs`), the LLM-tuned description
+ * (`descriptionOverride`) — and the MCP policy (destructive/idempotent/timeout/
+ * repoArg) still come from COMMAND_METADATA.mcp, which is where they are authored.
+ * The contract merely mirrors that policy for its other consumers.
  */
-import type { Command } from 'commander';
-import { z } from 'zod';
+
 import type { ZodRawShapeCompat } from '@modelcontextprotocol/sdk/server/zod-compat.js';
+import {
+  CLI_CONTRACT,
+  type ContractCommand,
+  type ContractOption,
+  type ContractPositional,
+} from '@rediacc/shared/cli-contract';
+import { z } from 'zod';
 import {
   COMMAND_METADATA,
   type CommandMeta,
@@ -34,7 +52,14 @@ export interface ToolDef {
   repoArgField?: string;
 }
 
-/** Global options (long names without --) that are never exposed in MCP tools. */
+/**
+ * Global options (long names without --) that are never exposed in MCP tools.
+ *
+ * The contract already drops the root-program globals (--output/--lang/--help/…);
+ * this set is the MCP-specific extra — per-command flags like --yes/--quiet/
+ * --fields/--config an agent must never drive — so it is still applied on top of
+ * the contract's option list.
+ */
 const GLOBAL_EXCLUDED_OPTIONS = new Set([
   'output',
   'config',
@@ -46,104 +71,76 @@ const GLOBAL_EXCLUDED_OPTIONS = new Set([
   'version',
 ]);
 
-interface ArgDef {
-  name: string;
-  required: boolean;
-  description: string;
-}
-
-interface OptionDef {
-  long: string;
-  short?: string;
-  flags: string;
-  description: string;
-  required: boolean;
-  isBoolean: boolean;
-}
-
 /**
- * Convert a Commander option long name to a Zod schema key.
- * --dry-run → dry_run, --machine → machine, --to-machine → to_machine
+ * Convert a contract option's long name to a Zod schema key.
+ * dry-run → dry_run, machine → machine, to-machine → to_machine
  */
 function flagToSchemaKey(long: string): string {
-  return long.replace(/^--/, '').replaceAll('-', '_');
+  return long.replaceAll('-', '_');
 }
 
 /**
- * Check if a Commander option takes a value (vs being a boolean flag).
- * Options with <value> or [value] in their flags string take values.
+ * Does a value-taking option take a REQUIRED value (`<v>`) rather than an
+ * optional one (`[v]`)? The contract collapses both into `valueTaking`, so the
+ * distinction — which decides whether the derived field is required — is read
+ * back off the raw Commander flags string the contract carries verbatim. This is
+ * exactly Commander's own `Option.required`.
  */
-function isValueTaking(flags: string): boolean {
-  return flags.includes('<') || flags.includes('[');
+function takesRequiredValue(opt: ContractOption): boolean {
+  return opt.flags.includes('<');
 }
 
-/**
- * Extract positional argument definitions from a Commander command.
- */
-function extractArgs(cmd: Command): ArgDef[] {
-  const args = (
-    cmd as unknown as { _args: { _name: string; required: boolean; description: string }[] }
-  )._args;
-  return args.map((a) => ({
-    name: a._name,
-    required: a.required,
-    description: a.description || a._name,
-  }));
-}
-
-/**
- * Extract option definitions from a Commander command, filtering globals.
- */
-function extractOptions(cmd: Command, excludeSet: Set<string>): OptionDef[] {
-  return cmd.options
-    .filter((o) => {
-      if (!o.long) return false;
-      const longName = o.long.replace(/^--/, '');
-      return !GLOBAL_EXCLUDED_OPTIONS.has(longName) && !excludeSet.has(longName);
-    })
-    .map((o) => ({
-      long: o.long!,
-      short: o.short,
-      flags: o.flags,
-      description: o.description,
-      required: o.required,
-      isBoolean: !isValueTaking(o.flags),
-    }));
+/** The MCP-visible options for a command: contract options minus globals and per-tool excludes. */
+function selectOptions(cmd: ContractCommand, excludeSet: Set<string>): ContractOption[] {
+  return cmd.options.filter((o) => !GLOBAL_EXCLUDED_OPTIONS.has(o.long) && !excludeSet.has(o.long));
 }
 
 /** Derive a Zod type for a single positional argument. */
-function deriveArgType(arg: ArgDef, isRequired: boolean): z.ZodType {
-  const base = z.string().describe(arg.description);
+function deriveArgType(pos: ContractPositional, isRequired: boolean): z.ZodType {
+  const base = z.string().describe(pos.label || pos.name);
   return isRequired ? base : base.optional();
 }
 
-/** Derive a Zod type for a single Commander option. */
-function deriveOptionType(opt: OptionDef): z.ZodType {
-  if (opt.isBoolean) return z.boolean().optional().describe(opt.description);
-  const base = z.string().describe(opt.description);
-  return opt.required ? base : base.optional();
+/** Derive a Zod type for a single contract option. */
+function deriveOptionType(opt: ContractOption): z.ZodType {
+  if (!opt.valueTaking) return z.boolean().optional().describe(opt.label);
+  const base =
+    opt.choices && opt.choices.length > 0
+      ? z.enum(opt.choices as [string, ...string[]]).describe(opt.label)
+      : z.string().describe(opt.label);
+  return takesRequiredValue(opt) ? base : base.optional();
 }
 
 /**
- * Derive a Zod schema from Commander args and options.
+ * Derive a Zod schema from a command's positionals and options.
  */
 function deriveSchema(
-  args: ArgDef[],
-  options: OptionDef[],
+  positionals: ContractPositional[],
+  options: ContractOption[],
   requiredArgs?: string[]
 ): ZodRawShapeCompat {
   const schema: ZodRawShapeCompat = {};
   const requiredSet = new Set(requiredArgs ?? []);
   const argNames = new Set<string>();
 
-  for (const arg of args) {
-    argNames.add(arg.name);
-    schema[arg.name] = deriveArgType(arg, arg.required || requiredSet.has(arg.name));
+  for (const pos of positionals) {
+    argNames.add(pos.name);
+    schema[pos.name] = deriveArgType(pos, pos.required || requiredSet.has(pos.name));
   }
 
   for (const opt of options) {
     const key = flagToSchemaKey(opt.long);
     if (!argNames.has(key)) schema[key] = deriveOptionType(opt);
+  }
+
+  // Mutually-exclusive target pair (design D14): -m XOR --cluster. When a repo
+  // verb exposes both, make BOTH optional MCP fields — a value-taking option
+  // otherwise derives to a REQUIRED field, so exposing both would demand both.
+  // The auto-deriver can't express "exactly one", so the runtime
+  // (resolveRepoTarget) enforces it and returns a clear error for neither/both.
+  if ('machine' in schema && 'cluster' in schema) {
+    schema.machine = (schema.machine as z.ZodType).optional();
+    schema.cluster = (schema.cluster as z.ZodType).optional();
   }
 
   return schema;
@@ -152,13 +149,13 @@ function deriveSchema(
 /** Push positional arguments onto argv and return the set of arg names consumed. */
 function pushPositionalArgs(
   argv: string[],
-  args: ArgDef[],
+  positionals: ContractPositional[],
   toolArgs: Record<string, unknown>
 ): Set<string> {
   const argNames = new Set<string>();
-  for (const arg of args) {
-    argNames.add(arg.name);
-    const value = toolArgs[arg.name];
+  for (const pos of positionals) {
+    argNames.add(pos.name);
+    const value = toolArgs[pos.name];
     if (value !== undefined) argv.push(String(value));
   }
   return argNames;
@@ -167,7 +164,7 @@ function pushPositionalArgs(
 /** Push option flags onto argv, skipping positional-shadowed and unset options. */
 function pushOptionArgs(
   argv: string[],
-  options: OptionDef[],
+  options: ContractOption[],
   argNames: Set<string>,
   toolArgs: Record<string, unknown>
 ): void {
@@ -176,26 +173,31 @@ function pushOptionArgs(
     if (argNames.has(key)) continue;
     const value = toolArgs[key];
     if (value === undefined || value === false) continue;
+    const flag = `--${opt.long}`;
     if (value === true) {
-      argv.push(opt.long);
+      argv.push(flag);
     } else {
-      argv.push(opt.long, String(value));
+      argv.push(flag, String(value));
     }
   }
 }
 
 /**
  * Build a command factory function that converts MCP args to CLI argv.
+ *
+ * Positionals are emitted first in declared order, then the flags — the same
+ * serialisation rule the contract documents, so the argv a laptop would have
+ * typed is reproduced exactly.
  */
 function buildCommandFactory(
   pathParts: string[],
-  args: ArgDef[],
-  options: OptionDef[],
+  positionals: ContractPositional[],
+  options: ContractOption[],
   appendArgs?: string[]
 ): (toolArgs: Record<string, unknown>) => string[] {
   return (toolArgs: Record<string, unknown>) => {
     const argv = [...pathParts];
-    const argNames = pushPositionalArgs(argv, args, toolArgs);
+    const argNames = pushPositionalArgs(argv, positionals, toolArgs);
     pushOptionArgs(argv, options, argNames, toolArgs);
     if (appendArgs) argv.push(...appendArgs);
     return argv;
@@ -203,58 +205,36 @@ function buildCommandFactory(
 }
 
 /**
- * Recursively walk the Commander tree and collect leaf commands with their full paths.
- */
-function walkCommandTree(cmd: Command, prefix: string): { path: string; command: Command }[] {
-  const results: { path: string; command: Command }[] = [];
-
-  for (const sub of cmd.commands) {
-    if (sub.name() === 'help') continue;
-    // Skip experimental/hidden commands (defense in depth — COMMAND_METADATA allowlist also filters)
-    if ((sub as Command & { _hidden?: boolean })._hidden) continue;
-
-    const name = prefix ? `${prefix} ${sub.name()}` : sub.name();
-
-    if (sub.commands.length > 0) {
-      results.push(...walkCommandTree(sub, name));
-    } else {
-      results.push({ path: name, command: sub });
-    }
-  }
-
-  return results;
-}
-
-/**
- * Auto-derive MCP tool definitions from the Commander tree + COMMAND_METADATA.
+ * Derive MCP tool definitions from the CLI contract + COMMAND_METADATA.
  *
- * For each leaf command whose path has a `mcp` entry in COMMAND_METADATA,
- * generates a ToolDef with auto-derived Zod schema and command builder.
+ * For each contract command whose path has a `mcp` entry in COMMAND_METADATA,
+ * generates a ToolDef with a contract-derived Zod schema and command builder.
+ *
+ * Experimental commands are skipped: they are `_hidden` in the live tree (unless
+ * REDIACC_EXPERIMENTAL=1), so they never became MCP tools, and one of them
+ * (`machine health`) also ships a hand-written custom tool of the same name —
+ * auto-deriving it here would collide with that. The contract carries the
+ * `experimental` flag, so the skip is honoured without consulting the env.
  */
-export function buildToolsFromCommander(program: Command): ToolDef[] {
+export function buildToolsFromContract(): ToolDef[] {
   const tools: ToolDef[] = [];
-  const leafCommands = walkCommandTree(program, '');
 
-  for (const { path, command: cmd } of leafCommands) {
-    const meta = COMMAND_METADATA[path] as CommandMeta | undefined;
+  for (const cmd of CLI_CONTRACT.commands) {
+    if (cmd.experimental) continue;
+
+    const meta = COMMAND_METADATA[cmd.pathKey] as CommandMeta | undefined;
     if (!meta?.mcp) continue;
 
     const mcp = meta.mcp;
     const excludeSet = new Set(mcp.excludeOptions ?? []);
+    const options = selectOptions(cmd, excludeSet);
 
-    const args = extractArgs(cmd);
-    const options = extractOptions(cmd, excludeSet);
-    const pathParts = path.split(' ');
-
-    const schema = deriveSchema(args, options, mcp.requiredArgs);
-    const commandFn = buildCommandFactory(pathParts, args, options, mcp.appendArgs);
-
-    const toolName = path.replaceAll(' ', '_');
-    const description = mcp.descriptionOverride ?? cmd.description();
+    const schema = deriveSchema(cmd.positionals, options, mcp.requiredArgs);
+    const commandFn = buildCommandFactory(cmd.path, cmd.positionals, options, mcp.appendArgs);
 
     tools.push({
-      name: toolName,
-      description,
+      name: cmd.pathKey.replaceAll(' ', '_'),
+      description: mcp.descriptionOverride ?? cmd.label,
       schema,
       command: commandFn,
       isDestructive: mcp.destructive,

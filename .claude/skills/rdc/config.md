@@ -1,17 +1,24 @@
-# rdc config — Machine Registration & SSH
+# rdc config / rdc machine — Machine Registration & SSH
 
 For full command syntax and options, see [reference.md](reference.md).
 
 Manage config files, machine inventory, SSH keys, and machine setup.
 
+**Where things live now**: machine inventory and setup are under the `machine` noun
+(`rdc machine add|remove|list|scan-keys|setup|provider|infra`), not under `config`.
+`rdc config` keeps config-file concerns: `init`, `list`, `show`, `set`, `edit`, `ssh`,
+`remote`, `field`, `audit`, `prune`, `reconcile`.
+
 ## Machine management
 
 ### Add a machine
-Registers a machine and auto-scans SSH host keys. Defaults: port 22, datastore `/mnt/rediacc`.
+`rdc machine add <name> --ip <ip> --user <username>` registers a machine and auto-scans SSH host keys. Defaults: port 22.
 
 ### List machines
+`rdc machine list`
 
 ### Remove a machine
+`rdc machine remove <name>`
 
 ## SSH configuration
 
@@ -24,12 +31,12 @@ rdc config ssh set --key ~/.renet/staging/.ssh/id_rsa
 ```
 
 ### Scan host keys
-Re-scans SSH host keys. Run after VM re-provisioning if host key changes.
+`rdc machine scan-keys <name>` re-scans SSH host keys. Run after VM re-provisioning if the host key changes.
 
 ## Machine setup
 
 ### Setup a machine
-Provisions everything needed to run repositories. Idempotent — safe to re-run. Defaults: datastore `/mnt/rediacc`, size `95%`. After successful setup, automatically runs `push-infra` if the machine has infrastructure configured.
+`rdc machine setup <name>` provisions everything needed to run repositories. Idempotent, so it is safe to re-run. Defaults: datastore `/mnt/rediacc`, size `95%` (override with `--datastore-path` / `--datastore-size`). After successful setup, automatically pushes infra if the machine has infrastructure configured.
 
 What it does:
 - Installs Docker and configures system-level Docker experimental mode
@@ -55,71 +62,76 @@ Pass `--config <name>` to any `rdc` command.
 
 ## Infrastructure (Traefik proxy)
 
+Infra lives under `rdc machine infra` (`set`, `show`, `push`, and `cert {pull,push,status,clear}`).
+Each takes the machine positionally.
+
 ### Configure infra
+`rdc machine infra set <machine> ...`
 - `--base-domain`, `--public-ipv4`, `--public-ipv6`, `--tcp-ports`, `--udp-ports` are per-machine.
 - `--cert-email`, `--cf-dns-token` are shared across all machines in the config.
 - Machine name is automatically sent to renet as `machine_name` for subdomain routing (e.g., `*.server-1.example.com`).
 - Proxy entrypoints are only generated for configured address families (IPv4-only machines get no IPv6 entrypoints, and vice versa).
 
 ### View infra
-Shows base domain, public IPs, TLS email, and port forwarding config. Also visible in `rdc machine query --name <machine>`.
+`rdc machine infra show <machine>` shows base domain, public IPs, TLS email, and port forwarding config. Also visible in `rdc machine status <machine>`.
 
 ### Push infra to machine
-Installs Traefik reverse proxy and rediacc-router with `--machine-name`. Also creates Cloudflare DNS records (`{machineName}.{baseDomain}` and `*.{machineName}.{baseDomain}`) if `--cf-dns-token` is set. Required for HTTPS routing. Auto-routes use machine subdomains: `{service}-{id}.{machineName}.{baseDomain}`.
+`rdc machine infra push <machine>` installs the Traefik reverse proxy and rediacc-router. Also creates Cloudflare DNS records (`{machineName}.{baseDomain}` and `*.{machineName}.{baseDomain}`) if `--cf-dns-token` is set. Required for HTTPS routing. Auto-routes use machine subdomains: `{service}-{id}.{machineName}.{baseDomain}`.
+
+### Certificate cache
+`rdc machine infra cert {pull,push,status,clear}` manages the local TLS certificate cache (`pull` and `push` take the machine positionally).
 
 ## Cloud provisioning (OpenTofu)
 
 ### Add a cloud provider
-Registers a cloud provider for automated VM provisioning. Known providers: `linode/linode`, `hetznercloud/hcloud`. Use `--source` instead of `--provider` for custom providers with manual attribute mapping.
+`rdc machine provider add <name> --provider <source> --token <token>` registers a cloud provider for automated VM provisioning. Known providers: `linode/linode`, `hetznercloud/hcloud`. Use `--source` instead of `--provider` for custom providers with manual attribute mapping.
 
 ### List cloud providers
+`rdc machine provider list`
 
 ### Remove a cloud provider
+`rdc machine provider remove <name>`
 
 ### Provision a machine
-Creates a VM via OpenTofu, waits for SSH, registers the machine, installs renet, and runs setup. Auto-detects `baseDomain` from sibling machines in the config; use `--base-domain` to override or `--no-infra` to skip infrastructure setup entirely. Requires `tofu` binary on PATH.
+`rdc machine provision <name> --provider <provider>` creates a VM via OpenTofu, waits for SSH, registers the machine, installs renet, and runs setup. Auto-detects `baseDomain` from sibling machines in the config; use `--base-domain` to override or `--no-infra` to skip infrastructure setup entirely. Requires `tofu` binary on PATH.
 
 ### Deprovision a machine
-Destroys a cloud-provisioned VM via OpenTofu and removes from config. Only works for machines created with `machine provision`.
+`rdc machine deprovision --name <name>` destroys a cloud-provisioned VM via OpenTofu and removes it from the config. Only works for machines created with `machine provision`.
 
 ### Workflow: Cloud-provisioned machine
 ```bash
 rdc config ssh set --key ~/.ssh/id_ed25519
-rdc config provider add --name my-linode --provider linode/linode --token $TOKEN --region us-east
-rdc machine provision --name prod-1 --provider my-linode
+rdc machine provider add my-linode --provider linode/linode --token $TOKEN --region us-east
+rdc machine provision prod-1 --provider my-linode
 # baseDomain auto-detected from sibling machines (or pass --base-domain example.com)
-# Now ready for: rdc repo create --name <name> -m prod-1 --size 5G
+# Now ready for: rdc repo create <name> -m prod-1 --size 5G
 ```
 
 ## Backup strategy
 
-### Configure backup strategy
-Configures automated backup schedule. Multiple destinations supported.
+Backup strategies moved to the `backup` noun: `rdc backup strategy {set,remove,list,show}`.
+See [backup.md](backup.md).
 
-### Show backup strategy
+## Repository records
 
-## Repository GUID mappings
-
-### List repositories
-
-### Add repository mapping
-
-### Remove repository mapping
+Repository records live in the config and are managed by the repo lifecycle commands
+(`rdc repo create` / `rdc repo delete`). List them with `rdc repo list`. Archived records
+(from `repo delete --archive-config`) are handled by `rdc repo admin archive {list,restore,purge}`.
 
 ## Workflow: New machine from scratch
 
 ```bash
-rdc config machine add --name myserver --ip 10.0.0.1 --user deploy
+rdc machine add myserver --ip 10.0.0.1 --user deploy
 rdc config ssh set --key ~/.ssh/id_ed25519
-rdc config machine setup --name myserver
-# Now ready for: rdc repo create --name <name> -m myserver --size 5G
+rdc machine setup myserver
+# Now ready for: rdc repo create <name> -m myserver --size 5G
 ```
 
 ## Workflow: Ops VM
 
 ```bash
 rdc ops up --basic --parallel
-rdc config machine add --name rediacc11 --ip 192.168.111.11 --user muhammed
+rdc machine add rediacc11 --ip 192.168.111.11 --user muhammed
 rdc config ssh set --key ~/.renet/staging/.ssh/id_rsa
-rdc config machine setup --name rediacc11
+rdc machine setup rediacc11
 ```

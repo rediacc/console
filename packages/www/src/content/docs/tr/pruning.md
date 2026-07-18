@@ -4,7 +4,7 @@ description: "Sahipsiz yedekleri, eski anlık görüntüleri, depo görüntüler
 category: "Guides"
 order: 12
 language: tr
-sourceHash: "d2700c2ac4473962"
+sourceHash: "af01691f5fe908ee"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -14,8 +14,8 @@ Temizleme, artık canlı bir kaynağa karşılık gelmeyen durumu tarar. Üç ko
 
 | Komut | Neyi temizler | Doğruluk kaynağı nerede yaşar |
 |---|---|---|
-| `rdc storage prune --name <storage> -m <machine>` | Bulut depolamasındaki sahipsiz yedekler | Yerel CLI yapılandırması (bağlama güvenliği için yürütücü makineye karşı çapraz kontrol edilir) |
-| `rdc machine prune --name <machine>` | Makine üzerindeki veri deposu yapıtaşları (her zaman); sahipsiz veya unknown depo görüntüleri (isteğe bağlı) | Yerel CLI yapılandırması + makinenin `.interim/state` aynası |
+| `rdc storage prune <storage> -m <machine>` | Bulut depolamasındaki sahipsiz yedekler | Yerel CLI yapılandırması (bağlama güvenliği için yürütücü makineye karşı çapraz kontrol edilir) |
+| `rdc machine prune <machine>` | Makine üzerindeki veri deposu yapıtaşları (her zaman); sahipsiz veya unknown depo görüntüleri (isteğe bağlı) | Yerel CLI yapılandırması + makinenin `.interim/state` aynası |
 | `rdc config prune` | Yerel yapılandırma artıkları (sertifika önbelleği, süresi dolmuş arşivler, askıdaki çapraz referanslar) | Yalnızca yerel CLI yapılandırması |
 
 Üçü birbirinden bağımsızdır. Herhangi birini diğerleri olmadan çalıştırabilirsiniz. Aşağıdaki [Güvenlik Modeli](#guvenlik-modeli) altında açıklanan ortak bir güvenlik modelini paylaşırlar.
@@ -202,7 +202,7 @@ Temizleme, çoklu yapılandırma kurulumlarında varsayılan olarak güvenli ola
 
 ### Ek süre
 
-Bir depo `--archive-config` ile yapılandırmadan kaldırıldığında, kimlik bilgisi girişi `deletedAt` zaman damgasıyla `resources.deletedRepositories[]` listesine taşınır. Temizleme komutları, yakın zamanda arşivlenen depoların silinmeden korunduğu bir ek süreye (varsayılan 7 gün) saygı gösterir. Bu, yanlışlıkla kaldırılan bir depoyu geri yüklemek (`rdc config repository restore-archived --name <guid>`) için size zaman tanır. Ek süre dolduğunda, `storage prune`, `machine prune` ve `config prune` girişi otomatik olarak siler.
+Bir depo `--archive-config` ile yapılandırmadan kaldırıldığında, kimlik bilgisi girişi `deletedAt` zaman damgasıyla `resources.deletedRepositories[]` listesine taşınır. Temizleme komutları, yakın zamanda arşivlenen depoların silinmeden korunduğu bir ek süreye (varsayılan 7 gün) saygı gösterir. Bu, yanlışlıkla kaldırılan bir depoyu geri yüklemek (`rdc repo admin archive restore <guid>`) için size zaman tanır. Ek süre dolduğunda, `storage prune`, `machine prune` ve `config prune` girişi otomatik olarak siler.
 
 ### Bağlama güvenliği ön denetimi
 

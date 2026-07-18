@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: pt
-sourceHash: 10e9f781881854be
-sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
+sourceHash: "5fb6196d9b6e9b0b"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Assinatura e Licenciamento
@@ -62,7 +62,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Slots de máquina (lado do servidor)
 
-O rastreamento de slots de máquina é aplicado pelo lado do servidor. Quando a CLI emite uma licença de repositório, o servidor de conta verifica a cota de slots de máquina da assinatura (por exemplo, 2 máquinas para Community, 3 para Professional). Um slot é mantido por 5 horas a partir da última emissão de licença de repositório naquela máquina e é liberado automaticamente após inatividade. Um plano Business com 10 slots pode, portanto, cobrir dezenas de máquinas ao longo do tempo, já que os slots são apenas retidos enquanto você está provisionando ativamente.
+O rastreamento de slots de máquina é aplicado do lado do servidor. Quando a CLI emite uma licença de repositório, o servidor de conta verifica a cota de slots de máquina da assinatura. Todo plano self-service (Community, Professional, Business) inclui um slot de máquina; implantações multi-máquina são uma configuração Enterprise dimensionada junto com nossos parceiros. Um slot é mantido por 5 horas a partir da última emissão de licença de repositório naquela máquina e é liberado automaticamente após inatividade. Como um slot só fica retido enquanto você está provisionando ativamente, um único slot ainda pode cobrir várias máquinas ao longo de um mês.
 
 Nenhum arquivo de licença de máquina é armazenado na máquina. A aplicação de slots acontece no momento da emissão no servidor.
 
@@ -91,14 +91,22 @@ O tamanho do repositório depende do nível de direito:
 
 Os limites padrão para planos pagos são:
 
-| Plan | Floating Licenses | Repository Size | Monthly repo license issuances | Delegation cert default / max |
-|------|-------------------|-----------------|-------------------------------|---|
-| Community | 2 | 10 GB | 100 | 15d / 30d |
-| Professional | 3 | 50 GB | 2,000+ | 60d / 120d |
-| Business | 10 | 200 GB | 5,000+ | 90d / 180d |
-| Enterprise | 25+ | 1 TB+ | 15,000+ | 120d / 365d |
+| Plano | Licenças Flutuantes | Tamanho do Repositório | Emissões mensais de licença de repositório | Validade padrão / máxima do cert. de delegação |
+|-------|----------------------|--------------------------|------------------------------------------------|--------------------------------------------------|
+| Community | 1 | 10 GB | 100 | 15d / 30d |
+| Professional | 1 | 100 GB | 2.000+ | 60d / 120d |
+| Business | 1 | 500 GB | 5.000+ | 90d / 180d |
+| Enterprise | Personalizado | 1 TB+ | 15.000+ | 120d / 365d |
 
 Limites específicos do contrato podem aumentar ou diminuir esses valores para um cliente específico. A validade do certificado de delegação também é limitada a `subscription.expiresAt + 3 day grace`, portanto assinaturas faturadas mensalmente naturalmente obtêm certificados alinhados ao seu ciclo de faturamento. Veja [License Chain & Delegation - Validity Policy](/en/docs/license-chain) para as regras completas.
+
+## Teste Gratuito e o Retorno ao Community
+
+Novas contas começam um teste gratuito de 14 dias no plano Professional ou Business. O cartão de crédito é coletado no cadastro, e a primeira cobrança só acontece quando o teste termina, então cancelar antes disso não custa nada. Há apenas um teste disponível por cliente.
+
+Community é o piso gratuito permanente. Ele não é mais uma opção de cadastro direta para novas contas; em vez disso, uma conta cai para o Community sempre que uma assinatura termina: cancelamento durante o teste, cancelamento de um plano pago depois, ou um pagamento que falhou. No Community de fallback você mantém uma máquina com 10 GB por repositório e 100 configurações por mês. Contas criadas antes do lançamento do modelo baseado em teste mantêm o acesso Community que já tinham.
+
+A aplicação continua branda. Repositórios em execução continuam funcionando mesmo depois que uma assinatura termina; apenas trabalho novo (criar, fazer fork, redimensionar e renovar a licença) é bloqueado sem um direito de uso ativo.
 
 ## Período de Graça de Migração de VM
 
@@ -110,9 +118,9 @@ Na prática:
 - VM migrada, ID da máquina muda: repositórios continuam executando (dentro da janela de 40 dias)
 - Próxima operação `rdc` atualiza a licença com o novo ID da máquina
 - Nenhuma intervenção manual necessária
-- Verifique o ID da máquina e o status da licença com `rdc machine query --system --licenses --name <machine>`
+- Verifique o ID da máquina e o status da licença com `rdc machine status <machine> --system --licenses`
 
-**Usuários do edge channel** recebem 2X dos limites Community sem custo (repositórios de 20 GB, 200 emissões/mês, 4 máquinas). Planos pagos estão disponíveis apenas no canal Stable. Veja [Release Channels](/en/docs/release-channels) para detalhes.
+**Contas no canal Edge** funcionam no plano Community com o dobro dos limites (repositórios de 20 GB, 200 configurações/mês, 2 máquinas). Planos pagos estão disponíveis apenas no canal Stable. Veja [Canais de Lançamento](/pt/docs/release-channels) para detalhes.
 
 ## O que Acontece Durante Criação, Up, Down e Reinício de Repositório
 
@@ -175,28 +183,22 @@ rdc subscription status
 Mostrar detalhes de ativação de máquina para uma máquina:
 
 ```bash
-rdc subscription activation status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Mostrar detalhes de licenças de repositório instaladas em uma máquina:
 
 ```bash
-rdc subscription repo status -m hostinger
+rdc subscription status -m hostinger
 ```
 
-Atualizar em lote licenças de repositório em uma máquina:
+Atualizar a licença de um repositório numa máquina:
 
 ```bash
-rdc subscription refresh repos -m hostinger
+rdc subscription refresh -m hostinger --repo my-app
 ```
 
-Repositórios descobertos na máquina mas ausentes da configuração `rdc` local são rejeitados durante atualização em lote. Eles são reportados como falhas e não são auto-classificados.
-
-Forçar uma atualização de licença de repositório para um repositório existente:
-
-```bash
-rdc subscription refresh repo --name my-app -m hostinger
-```
+O ref de `--repo` tem de ser resolúvel na sua configuração `rdc` local. Um repositório descoberto na máquina mas ausente da configuração local é rejeitado: é reportado como falha e não é classificado automaticamente.
 
 No primeiro uso, uma operação de repositório licenciado ou backup que não encontra nenhuma licença de repositório utilizável pode acionar um handoff de autorização de conta automaticamente. A CLI imprime uma URL de autorização, tenta abrir o navegador em terminais interativos e tenta novamente a operação uma vez após autorização e emissão bem-sucedidas.
 
@@ -259,4 +261,4 @@ Não inclui:
 - tentativas de emissão falhadas
 - repositórios rastreados rejeitados antes da emissão
 
-Se você precisar de uma visualização de uso voltada para o cliente e histórico recente de emissão de licenças de repositório, use o portal de conta. Se você precisar de inspeção do lado da máquina, use `rdc subscription activation status -m` e `rdc subscription repo status -m`.
+Se você precisar de uma visualização de uso voltada para o cliente e histórico recente de emissão de licenças de repositório, use o portal de conta. Se você precisar de inspeção do lado da máquina, use `rdc subscription status -m` e `rdc subscription status -m`.

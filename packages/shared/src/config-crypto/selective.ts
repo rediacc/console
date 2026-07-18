@@ -2,21 +2,24 @@
  * Selective Encryption (envelope v2 with field commitments).
  *
  * Separates config into a plaintext envelope (v2 — adds per-field HMAC
- * commitments) and an encrypted blob (machines, repositories, storages, ssh).
+ * commitments) and an encrypted blob (SENSITIVE_FIELDS: machines, repositories,
+ * storages, ssh, policy).
  *
  * Server reads the envelope for authorization, versioning, and precondition
- * enforcement; it never sees the encrypted blob's plaintext.
+ * enforcement; it never sees the encrypted blob's plaintext — including the
+ * authorization rules, which ride inside the blob precisely so that the party
+ * enforcing them is the executor and not us.
  */
 
-import { SENSITIVE_FIELDS } from './constants.js';
-import { hmacCompute, hmacVerify } from './hmac.js';
-import { configDecrypt, configEncrypt } from './layers.js';
 import {
   computeCommitments,
   deriveFieldCommitmentKey,
-  generateFckSalt,
   type FieldCommitments,
+  generateFckSalt,
 } from './commitments.js';
+import { SENSITIVE_FIELDS } from './constants.js';
+import { hmacCompute, hmacVerify } from './hmac.js';
+import { configDecrypt, configEncrypt } from './layers.js';
 import type {
   ConfigEnvelope,
   ConfigSensitiveData,
@@ -33,7 +36,7 @@ import type {
  * rotating CEK since the FCK is derived from it).
  *
  * `commitEntries` are the `{pointer, value}` pairs to commit — caller selects
- * these using the CLI-side walker (packages/cli/src/schema/walker.ts::pathsToCommit).
+ * these using the CLI-side walker (packages/shared/src/config-schema/walker.ts::pathsToCommit).
  */
 export interface SelectiveEncryptOptions {
   sdkEpoch: number;
@@ -71,11 +74,18 @@ export async function selectiveEncrypt(
   if (config.orgId) envelope.orgId = config.orgId;
   if (config.lastModified) envelope.lastModified = config.lastModified;
 
+  // SENSITIVE_FIELDS is the single source of truth for what the blob carries.
+  // A field missing from that list is silently dropped on push and simply absent
+  // on pull, with no error anywhere — which is exactly how the policy document
+  // came to never reach the executor. Add fields there, not here.
   const sensitive: ConfigSensitiveData = {};
+  const write = sensitive as Record<string, unknown>;
   for (const field of SENSITIVE_FIELDS) {
-    if (config[field] !== undefined) {
-      sensitive[field] = config[field];
-    }
+    const value = config[field];
+    // Omit-if-undefined, never write an undefined-valued key: the sensitivity
+    // walker treats a present-but-undefined key as a committed pointer, so a
+    // config rebuilt from this object would commit a path the blob cannot back.
+    if (value !== undefined) write[field] = value;
   }
 
   const sensitiveJson = JSON.stringify(sensitive);

@@ -4,7 +4,7 @@ description: "Jälgige masina tervist, konteinereid, teenuseid, hoidlaid ning k�
 category: "Guides"
 order: 9
 language: et
-sourceHash: "e2f5d37c534fc40d"
+sourceHash: "b6deba17f1137188"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -155,7 +155,7 @@ Skrubimise taimer installitakse automaatselt esimesel deemoni käivitusel päras
 
 ### Skrubimise olek
 
-Viimase skrubimise tulemus salvestatakse väljaspool BTRFS-i mahtu (aadressil `/var/lib/rediacc/scrub-last-result.json`), nii et see jääb loetavaks isegi kui mahul on probleeme. `rdc machine query --system` väljund sisaldab välja `scrub_status`:
+Viimase skrubimise tulemus salvestatakse väljaspool BTRFS-i mahtu (aadressil `/var/lib/rediacc/scrub-last-result.json`), nii et see jääb loetavaks isegi kui mahul on probleeme. `rdc machine status --system` väljund sisaldab välja `scrub_status`:
 
 ```json
 "scrub_status": {
@@ -185,7 +185,7 @@ Skrubimise koheseks käivitamiseks (nt pärast toitekatkestust või ketta migree
 rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
-Tulemus salvestatakse samasse JSON-faili ja on koheselt nähtav järgmises `rdc machine query --system` väljundis.
+Tulemus salvestatakse samasse JSON-faili ja on koheselt nähtav järgmises `rdc machine status --system` väljundis.
 
 ## Masina ülevaade
 

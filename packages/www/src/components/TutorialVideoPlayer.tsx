@@ -12,9 +12,9 @@
  * hidden via CSS — our overlay replaces it.
  */
 
+import Plyr from 'plyr';
 import type { FC } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import Plyr from 'plyr';
 import 'plyr/dist/plyr.css';
 import '../styles/tutorial-video.css';
 

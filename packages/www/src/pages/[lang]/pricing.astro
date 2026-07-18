@@ -11,7 +11,6 @@ import { EXTERNAL_LINKS } from '../../config/constants';
 import LlmsInlineScript from '../../components/LlmsInlineScript.astro';
 import StructuredData from '../../components/StructuredData.astro';
 import PricingTrustSection from '../../components/PricingTrustSection.astro';
-import { DESIGN_PARTNER_GRANTED_PLAN, filterPlansForProgram, isDesignPartnerProgramActive } from '../../utils/design-partner-program';
 import '../../styles/pricing-page.css';
 
 export const getStaticPaths = getLanguagePaths;
@@ -35,28 +34,25 @@ const badgeConfig: Record<string, { isPopular?: boolean; badgeLabel?: string; ba
 
 const startingAtPlans = new Set(['enterprise']);
 
-const dpActive = isDesignPartnerProgramActive();
-
-// During the Design Partner Program, hide Community + Professional so the
-// page focuses on the granted BUSINESS tier (with overlay) and Enterprise
-// (as the upgrade reference). filterPlansForProgram is a no-op when the
-// program is disabled.
-const allPlans = filterPlansForProgram(
-  PLAN_ORDER.map((code) => {
-    const id = code.toLowerCase();
-    const monthly = PLAN_PRICING[code].monthlyPriceCents / 100;
-    const badge = badgeConfig[id];
-    return {
-      id,
-      monthly,
-      annual: monthly * 10,
-      isPopular: badge?.isPopular ?? false,
-      badgeLabel: badge?.badgeLabel,
-      badgeVariant: badge?.badgeVariant,
-      startingAt: startingAtPlans.has(id),
-    };
-  })
-);
+// Community is the post-cancellation fallback floor, not a self-serve plan,
+// so the pricing grid shows the two paid plans plus the Enterprise contact
+// card. Annual prices come from the shared constants (an explicit 15%-off
+// value, not a 10x-monthly shortcut).
+const allPlans = PLAN_ORDER.filter((code) => code !== 'COMMUNITY').map((code) => {
+  const id = code.toLowerCase();
+  const monthly = PLAN_PRICING[code].monthlyPriceCents / 100;
+  const annual = PLAN_PRICING[code].annualPriceCents / 100;
+  const badge = badgeConfig[id];
+  return {
+    id,
+    monthly,
+    annual,
+    isPopular: badge?.isPopular ?? false,
+    badgeLabel: badge?.badgeLabel,
+    badgeVariant: badge?.badgeVariant,
+    startingAt: startingAtPlans.has(id),
+  };
+});
 
 const technicalMetrics = ta(`${ns}.technicalSummary.metrics`);
 const technicalValues = to(`${ns}.technicalSummary.values`);
@@ -146,14 +142,10 @@ const faqSchema = faqItems ? {
           <span class="billing-toggle-savings">{t(`${ns}.ui.billingToggle.annualSavings`)}</span>
         </div>
 
-        {/* @ci marker — see scripts/check-cta-bolt-uniqueness.js. Emitted
-            only when the program is on so the check skips when off. */}
-        {dpActive && <Fragment set:html={'<!--@ci cta-bolt-required-->'} />}
-
         <!-- Pricing Cards -->
         <div class:list={['cf-pricing-grid', allPlans.length === 2 && 'two-up', allPlans.length === 3 && 'three-up']}>
           {allPlans.map((plan) => (
-            <CfPricingCard plan={plan} metrics={buildMetrics(plan.id)} lang={lang} useCheckout={true} boltCta={plan.id === DESIGN_PARTNER_GRANTED_PLAN} />
+            <CfPricingCard plan={plan} metrics={buildMetrics(plan.id)} lang={lang} useCheckout={true} />
           ))}
         </div>
 
@@ -185,11 +177,15 @@ const faqSchema = faqItems ? {
         <div class="edge-channel-banner">
           <div class="edge-channel-text">
             <h3>{t(`${ns}.edgeChannel.heading`, 'Try the Edge Channel')}</h3>
-            <p>{t(`${ns}.edgeChannel.description`, '2X Community limits, latest features, zero cost. No credit card required.')}</p>
+            <p>{t(`${ns}.edgeChannel.description`, 'The edge channel ships our newest features first and runs with double the limits of the stable channel.')}</p>
           </div>
-          <button onclick="window.openRegionPicker?.('/account/')" class="btn btn-secondary" type="button">
-            {t(`${ns}.edgeChannel.cta`, 'Get Started Free')} &rarr;
-          </button>
+          {/* The channel is host-determined: edge.rediacc.com is the front
+              door for the edge universe (its /account/* CTAs forward to
+              edge-* portals), so this banner links there instead of opening
+              the region picker. */}
+          <a href={`https://edge.rediacc.com/${lang}/pricing`} class="btn btn-secondary" data-track="cta_click" data-track-label="pricing-edge-channel">
+            {t(`${ns}.edgeChannel.cta`, 'Explore the edge channel')} &rarr;
+          </a>
         </div>
       </div>
     </section>

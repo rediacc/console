@@ -19,9 +19,9 @@ packages/*/src/**/*.js
 packages/*/src/**/*.js.map
 packages/*/src/**/*.d.ts
 !packages/*/src/**/*.generated.ts
-# Bridge-tests uses dual .ts/.js files (noEmit tsconfig, manually maintained JS)
-!packages/bridge-tests/src/**/*.js
-!packages/bridge-tests/src/**/*.d.ts
+# E2E tests use dual .ts/.js files (noEmit tsconfig, manually maintained JS)
+!packages/e2e-tests/src/**/*.js
+!packages/e2e-tests/src/**/*.d.ts
 
 # Desktop package compiled config
 packages/desktop/*.js
@@ -135,3 +135,6 @@ audit-prod.json
 audit-report.json
 # GHSA detail cache populated by audit.sh (transient per-run data)
 .audit-advisory-cache/
+
+# i18n naturalization-ledger flock sidecar (private/growth/i18n_pipeline ledger.update)
+packages/www/src/i18n/translations/*.lock

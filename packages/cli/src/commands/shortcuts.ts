@@ -1,12 +1,12 @@
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { localExecutorService } from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
+import { getExecutor } from '../services/executor/executor-factory.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
-import { coerceCliParams, parseParamOptions, validateFunctionParams } from './function-params.js';
 import { assertMachineExists } from './_validate.js';
+import { coerceCliParams, parseParamOptions, validateFunctionParams } from './function-params.js';
 
 interface RunLocalOptions {
   machine?: string;
@@ -77,7 +77,7 @@ async function runLocalMode(functionName: string, options: RunLocalOptions): Pro
     }
   }
 
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName,
     machineName,
     params,

@@ -9,9 +9,6 @@ export const SYSTEM_DEFAULTS = {
   /** Default region name */
   REGION_NAME: 'Default Region',
 
-  /** Default bridge group name */
-  BRIDGE_NAME: 'Global Bridges',
-
   /** Default repository tag */
   REPOSITORY_TAG: 'latest',
 } as const;

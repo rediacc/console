@@ -177,6 +177,12 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
+      # check:i18n ends with check:cli-docs, which imports the LIVE Commander tree
+      # (packages/cli/src/cli.js) rather than a hand-maintained list. That import pulls in
+      # kvm-provisioner.ts -> @rediacc/provisioning, whose package main is ./dist/index.js.
+      # Without this build the gate does not fail — it CRASHES with ERR_MODULE_NOT_FOUND,
+      # which is why it went unnoticed locally, where dist/ is already warm.
+      - run: npm run build:packages
       - run: npm run check:i18n
       - run: npm run check:ci-search-index
 
@@ -283,9 +289,14 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Install shfmt
+        # `curl | sh` exits 0 on an empty body (webi.sh outage), so the miss
+        # only surfaced later as a bare "shfmt is not installed" the watchdog
+        # cannot classify as network. Verify the binary here so an install
+        # failure is loud in the step that owns it.
         run: |
           curl -sS https://webi.sh/shfmt | sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+          "$HOME/.local/bin/shfmt" --version
       - run: .ci/scripts/security/shellcheck.sh
       - run: .ci/scripts/security/shfmt.sh
       - run: .ci/scripts/security/check-commands.sh
@@ -318,6 +329,21 @@ jobs:
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          submodules: false
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+      # The forward half (scripts/check-e2e-coverage.ts) was pure-bash until the
+      # live-config-membership check landed; it now needs `glob` (root dep) AND
+      # dynamically imports the playwright.config.ts files, which pull in
+      # @playwright/test (an e2e-tests workspace dep). --ignore-scripts skips the
+      # browser download the check never needs.
+      - name: Install dependencies (minimal)
+        run: npm ci --workspaces=false --include-workspace-root --ignore-scripts
+      - name: Install e2e-tests workspace deps (for the playwright config imports)
+        run: npm ci --workspace=@rediacc/e2e-tests --include-workspace-root --ignore-scripts
       - name: Check E2E test coverage for all renet functions
         run: .ci/scripts/quality/check-e2e-coverage.sh
 
@@ -471,6 +497,10 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
+      # The tree first: nine validators (this job's included) read command-tree.json as
+      # their model of the CLI, and a stale one fails OPEN — they keep passing while
+      # checking a CLI that no longer exists.
+      - run: npm run check:ci-command-tree
       - run: npm run check:cli-examples
 
   quality-ebpf:
@@ -559,6 +589,11 @@ jobs:
 
       - name: Check subscription schema consistency
         run: .ci/scripts/quality/check-subscription-schema.sh
+
+      # Needs the renet submodule (Dockerfile ARGs + pkg/embed sources), so it
+      # runs here rather than in quality-security (submodule-less checkout).
+      - name: Check embed credits consistency
+        run: npm run check:ci-embed-credits
 
   quality-account:
     name: Account Server
@@ -666,8 +701,13 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
-      - name: Build shared package
-        run: npm run build --workspace=@rediacc/shared
+      # The cluster services import @rediacc/provisioning at runtime (OpsManager),
+      # which resolves through its dist/. Without this the suites that pull in
+      # cluster-provision fail with "Failed to resolve entry for package".
+      # `build:packages` is the single list of what the CLI imports — naming the
+      # workspaces here instead means a third package silently rots this job.
+      - name: Build the packages the CLI imports
+        run: npm run build:packages
       - name: Run CLI unit tests
         run: npm run test:unit --workspace=@rediacc/cli
 

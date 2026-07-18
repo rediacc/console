@@ -4,7 +4,7 @@ description: 'كيف تمنع واجهة سطر أوامر Rediacc مساعدي 
 category: Concepts
 order: 35
 language: ar
-sourceHash: "eb4c8dd0389a45a6"
+sourceHash: "30c1cd3d88219e7c"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -27,7 +27,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 | `rdc config edit` (المحرر التفاعلي) | 🔴 refused | يضع الإنسان `REDIACC_ALLOW_CONFIG_EDIT=*` قبل تشغيل الوكيل |
 | `rdc config edit --apply <file>` | 🔴 refused | نفس التجاوز |
 | `rdc config field rotate --pointer <pointer>` | 🔴 refused | نفس التجاوز؛ يستخدم تأكيداً تفاعلياً |
-| `rdc term connect -m <machine>` (SSH مباشر إلى الجهاز) | 🔴 refused | تفريع مستودع أولاً والاتصال بالنسخة المفرعة |
+| `rdc term connect <machine>` (SSH مباشر إلى الجهاز) | 🔴 refused | تفريع مستودع أولاً والاتصال بالنسخة المفرعة |
 
 كل ما يُرفض للوكيل يُكتب في سجل التدقيق مع `outcome: refused` وسبب الرفض.
 

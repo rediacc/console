@@ -4,8 +4,8 @@ description: "リモートサーバーのディレクトリ構成、renetコマ�
 category: "Concepts"
 order: 3
 language: ja
-sourceHash: "4fb53bb4cb1512f6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "af2e8fc3da708d9a"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # サーバーリファレンス
@@ -227,6 +227,38 @@ renet datastore validate    # Filesystem integrity check
 renet datastore expand      # Expand the datastore online
 ```
 
+### データストアバックエンド（Ceph RBD）
+
+データストアはローカル（マシンのディスク上の loop デバイスによる BTRFS、デフォルト）か、外部の Ceph クラスターに RBD イメージ経由で支えられているかのいずれかです。バックエンドは初期化時に選択します。
+
+```bash
+# ローカルバックエンド（デフォルト）
+renet datastore init --size 50G
+
+# Ceph RBD バックエンド: 外部 Ceph クラスターからマップした RBD イメージ上の BTRFS
+renet datastore init --backend ceph --pool rbd --image {name} --cluster ceph
+```
+
+Ceph バックエンドでは、fork と unfork は BTRFS の reflink ではなく RBD 自体の copy-on-write プリミティブを使用します。
+
+```bash
+renet datastore fork   --source {image} --target {new-image}   # RBD スナップショット -> protect -> clone
+renet datastore unfork --image {image}                         # 依存関係の順序でクローンを解体
+```
+
+Ceph ノードは LUKS を一切開かないため(このバックエンドにはイメージごとの LUKS レイヤーがありません)、メモリ使用量は KDF の計算ではなく Ceph デーモンのチューニング(`osd_memory_target`)に従います。2番目のクライアントは同じ RBD イメージをローカルの copy-on-write オーバーレイ付きで読み取り専用にマップでき、これが読み取り主体のスケールアウト経路になります。
+
+### Kubernetes(renet kube)
+
+クラスターノード上では、renet は Docker と同じ方法で k3s をラップします。`renet kube` は compose に相当するもので、`KUBECONFIG` を注入し、Rediaccfile の `up()` からマニフェストや Helm チャートを適用します。
+
+```bash
+sudo renet kube apply -f manifests/     # リポジトリの namespace に適用
+sudo renet kube -- get pods             # 固定された namespace の kubectl にパススルー
+```
+
+クラスターの状態はデータストアに支えられた copy-on-write イメージ内にあり(k3s の `--data-dir` はイメージのマウント内にバインドされます)、これによりクラスター全体のフォークとマイグレーションが可能になります。永続ボリュームは別個の copy-on-write ユニットです: Ceph 上の RBD イメージ(クラスターインスタンスとフォークごとに1つの RADOS namespace)、またはローカルバックエンドではローカル PV プロビジョナーによる小さなデータストアイメージファイルです。ユーザー向けのワークフローは [Kubernetes](/ja/docs/kubernetes) ガイドにあります。CLI はこれらの経路を `rdc cluster` とクラスター対応の `rdc repo` コマンドで駆動します。
+
 ## systemdサービス
 
 各リポジトリは以下のsystemdユニットを作成します：
@@ -236,6 +268,7 @@ renet datastore expand      # Expand the datastore online
 | `rediacc-docker-{id}.service` | 分離されたDockerデーモン |
 | `rediacc-docker-{id}.socket` | Docker APIソケットアクティベーション |
 | `rediacc-loopback-{id}.service` | ループバックIPエイリアスの設定 |
+| `rediacc-k3s-{id}.service` | クラスターごとの k3s ノード(クラスターホストのみ) |
 
 すべてのリポジトリで共有されるグローバルサービス：
 

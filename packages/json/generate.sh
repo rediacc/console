@@ -427,8 +427,8 @@ process_configs() {
     for config_file in "$configs_dir"/*.json; do
         if [[ -f "$config_file" ]]; then
             local filename="$(basename "$config_file")"
-            # Only copy config files (endpoints, pricing, services, tiers)
-            if [[ "$filename" == "endpoints.json" ]] || [[ "$filename" == "pricing.json" ]] || [[ "$filename" == "services.json" ]] || [[ "$filename" == "tiers.json" ]]; then
+            # Only copy config files (endpoints, pricing, services)
+            if [[ "$filename" == "endpoints.json" ]] || [[ "$filename" == "pricing.json" ]] || [[ "$filename" == "services.json" ]]; then
                 cp "$config_file" "$output_dir/$filename"
                 processed=$((processed + 1))
             fi

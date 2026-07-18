@@ -4,8 +4,8 @@ description: "Verzeichnisstruktur, renet-Befehle, systemd-Dienste und Arbeitsabl
 category: "Concepts"
 order: 3
 language: de
-sourceHash: "4fb53bb4cb1512f6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "af2e8fc3da708d9a"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 # Server-Referenz
@@ -227,6 +227,38 @@ renet datastore validate    # Filesystem integrity check
 renet datastore expand      # Expand the datastore online
 ```
 
+### Datastore-Backends (Ceph RBD)
+
+Ein Datastore ist entweder lokal (loop-gestütztes BTRFS auf der Festplatte der Maschine, der Standard) oder über ein RBD-Image von einem externen Ceph-Cluster gestützt. Das Backend wird zum Zeitpunkt von `init` gewählt:
+
+```bash
+# Lokales Backend (Standard)
+renet datastore init --size 50G
+
+# Ceph-RBD-Backend: BTRFS auf einem RBD-Image, gemappt von einem externen Ceph-Cluster
+renet datastore init --backend ceph --pool rbd --image {name} --cluster ceph
+```
+
+Auf dem Ceph-Backend verwenden Fork und Unfork RBDs eigene Copy-on-Write-Primitive statt BTRFS-Reflinks:
+
+```bash
+renet datastore fork   --source {image} --target {new-image}   # RBD-Snapshot -> protect -> clone
+renet datastore unfork --image {image}                         # einen Clone in Abhängigkeitsreihenfolge abbauen
+```
+
+Ceph-Knoten öffnen niemals LUKS (auf diesem Backend gibt es keine Per-Image-LUKS-Schicht), sodass sich ihr Speicherbedarf nach dem Ceph-Daemon-Tuning richtet (`osd_memory_target`), nicht nach KDF-Mathematik. Ein zweiter Client kann dasselbe RBD-Image schreibgeschützt mit einem lokalen Copy-on-Write-Overlay mappen, was der schreibarme Scale-out-Pfad ist.
+
+### Kubernetes (renet kube)
+
+Auf einem Cluster-Knoten umhüllt renet k3s auf dieselbe Weise wie Docker. `renet kube` ist das Compose-Analogon: Es injiziert `KUBECONFIG` und wendet Manifeste oder Helm-Charts aus dem `up()` eines Rediaccfile an.
+
+```bash
+sudo renet kube apply -f manifests/     # in den Namespace des Repos anwenden
+sudo renet kube -- get pods             # an kubectl im gepinnten Namespace durchreichen
+```
+
+Cluster-Zustand liegt in Datastore-gestützten Copy-on-Write-Images (das k3s-`--data-dir` bindet innerhalb des Image-Mounts), was einen ganzen Cluster fork- und migrierbar macht. Persistent Volumes sind separate Copy-on-Write-Einheiten: RBD-Images auf Ceph (ein RADOS-Namespace pro Cluster-Instanz und pro Fork) oder kleine Datastore-Image-Dateien über einen lokalen PV-Provisioner auf dem lokalen Backend. Der nutzerseitige Workflow steht im [Kubernetes](/de/docs/kubernetes)-Guide; die CLI steuert diese Pfade über `rdc cluster` und die Cluster-fähigen `rdc repo`-Befehle.
+
 ## systemd-Dienste
 
 Jedes Repository erstellt folgende systemd-Units:
@@ -236,6 +268,7 @@ Jedes Repository erstellt folgende systemd-Units:
 | `rediacc-docker-{id}.service` | Isolierter Docker-Daemon |
 | `rediacc-docker-{id}.socket` | Docker-API-Socket-Aktivierung |
 | `rediacc-loopback-{id}.service` | Loopback-IP-Alias-Einrichtung |
+| `rediacc-k3s-{id}.service` | Pro-Cluster-k3s-Knoten (nur Cluster-Hosts) |
 
 Globale Dienste, die von allen Repositories gemeinsam genutzt werden:
 

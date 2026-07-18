@@ -1,14 +1,14 @@
-import path from 'node:path';
 import type { ChildProcess } from 'node:child_process';
-import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
-import type { SessionSpec, Storyboard } from '../storyboard.ts';
+import path from 'node:path';
+import { type Browser, type BrowserContext, chromium, type Page } from 'playwright';
 import {
   cutSegmentMp4,
   extractPosterJpg,
   probeDurationSec,
-  VIDEO_W,
   VIDEO_H,
+  VIDEO_W,
 } from '../ffmpeg-video.ts';
+import type { SessionSpec, Storyboard } from '../storyboard.ts';
 import { resolvePageSource, runActions } from './browser.ts';
 
 /**

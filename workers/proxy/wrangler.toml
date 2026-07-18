@@ -1,0 +1,41 @@
+name = "rediacc-proxy-eu"
+main = "src/index.ts"
+compatibility_date = "2026-01-20"
+compatibility_flags = ["nodejs_compat"]
+upload_source_maps = true
+
+# The executor is reached through the account origin, so a client needs no new
+# hostname and no new trust decision: it is the same domain it already logs in to.
+routes = [
+  { pattern = "proxy.eu.rediacc.com", custom_domain = true }
+]
+
+[vars]
+ACCOUNT_URL = "https://eu.rediacc.com"
+
+# EXECUTOR_TOKEN is a secret, never a var:
+#   npx wrangler secret put EXECUTOR_TOKEN --config workers/proxy/wrangler.toml
+
+[[containers]]
+class_name = "ExecutorContainer"
+image = "./Dockerfile"
+# `basic` is 1/4 vCPU and 1 GiB. The executor is a Node process holding an SSH
+# pool and a decrypted config, so `lite` (256 MiB) is too small for the runtime,
+# while anything larger pays for memory this workload does not use.
+instance_type = "basic"
+max_instances = 20
+
+[[durable_objects.bindings]]
+name = "EXECUTOR"
+class_name = "ExecutorContainer"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ExecutorContainer"]
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = false

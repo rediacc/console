@@ -23,7 +23,7 @@ Edge picks up every change the moment it merges to main. It is the live version 
 
 - Continuously deployed production, released on every merge to main
 - 2X Community plan limits (see table below)
-- Free forever. No paid plans available on Edge.
+- No paid plans available on Edge; accounts run on the Community plan.
 - Separate accounts from Stable. Data does not transfer between channels.
 - Domains: `edge-eu.rediacc.com`, `edge-us.rediacc.com`, `edge-asia.rediacc.com`
 
@@ -33,20 +33,20 @@ Edge picks up every change the moment it merges to main. It is the live version 
 |---|---|---|
 | **Deploy cadence** | After 7-day soak | Every merge to main |
 | **Stability** | Tested for 7 days | Production, continuously deployed |
-| **Community plan limits** | 10 GB repos, 500 issuances/month, 2 machines | 20 GB repos, 1,000 issuances/month, 4 machines |
+| **Community plan limits** | 10 GB repos, 100 setups/month, 1 machine | 20 GB repos, 200 setups/month, 2 machines |
 | **Paid plans** | Available (Professional, Business, Enterprise) | Not available |
 | **Accounts** | Independent | Independent (separate from Stable) |
 | **Best for** | Production, paid workloads | Production, side projects, early access |
 
 ## Edge 2X Limits
 
-Run Edge on the Community plan and your resource limits double, at no extra cost:
+Run Edge on the Community plan and your resource limits double:
 
 | Resource | Stable Community | Edge Community |
 |---|---|---|
 | Repository size | 10 GB | 20 GB |
-| License issuances per month | 500 | 1,000 |
-| Machine activations | 2 | 4 |
+| License issuances per month | 100 | 200 |
+| Machine activations | 1 | 2 |
 
 Need higher limits or paid features? Create your account on Stable and upgrade there.
 

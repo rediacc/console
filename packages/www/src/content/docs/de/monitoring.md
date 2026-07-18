@@ -4,7 +4,7 @@ description: 'Maschinengesundheit, Container, Dienste, Repositories und Diagnose
 category: Guides
 order: 9
 language: de
-sourceHash: "e2f5d37c534fc40d"
+sourceHash: "b6deba17f1137188"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -155,7 +155,7 @@ Der Scrub-Timer wird automatisch beim ersten Daemon-Start nach einem renet-Upgra
 
 ### Scrub-Status
 
-Das Ergebnis des letzten Scrubs wird außerhalb des BTRFS-Volumes gespeichert (unter `/var/lib/rediacc/scrub-last-result.json`), sodass es auch bei Problemen mit dem Volume lesbar bleibt. Die Ausgabe von `rdc machine query --system` enthält ein `scrub_status`-Feld:
+Das Ergebnis des letzten Scrubs wird außerhalb des BTRFS-Volumes gespeichert (unter `/var/lib/rediacc/scrub-last-result.json`), sodass es auch bei Problemen mit dem Volume lesbar bleibt. Die Ausgabe von `rdc machine status --system` enthält ein `scrub_status`-Feld:
 
 ```json
 "scrub_status": {
@@ -185,7 +185,7 @@ Um einen Scrub sofort auszuführen (z.B. nach einem Stromausfall oder einer Fest
 rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
-Das Ergebnis wird in derselben JSON-Datei gespeichert und ist sofort im nächsten `rdc machine query --system` sichtbar.
+Das Ergebnis wird in derselben JSON-Datei gespeichert und ist sofort im nächsten `rdc machine status --system` sichtbar.
 
 ## Maschinenübersicht
 

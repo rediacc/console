@@ -5,6 +5,7 @@ category: Use Cases
 order: 1
 language: ru
 sourceHash: "7a75ab45703267eb"
+sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 
 > **Является ли ваша облачная архитектура жесткой? Создавайте с безграничной гибкостью.**

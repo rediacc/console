@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { execSync } from 'node:child_process';
 import {
   copyFileSync,
   existsSync,
@@ -8,7 +9,6 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
-import { execSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
@@ -22,18 +22,18 @@ import {
   extractPosterJpg,
   probeDurationSec,
 } from './lib/ffmpeg-video.ts';
-import { readStoryboard } from './lib/storyboard.ts';
-import { loadNarrationLookup, castMarkerKey } from './lib/narration-lookup.ts';
+import { castMarkerKey, loadNarrationLookup } from './lib/narration-lookup.ts';
+import { browserSceneWillRecord, hostCommandEnv, substituteEnv } from './lib/scenes/browser.ts';
+import { createSessionManager } from './lib/scenes/browser-session.ts';
 import {
+  type CastNarratedDebug,
   compileScene,
   computeSceneDurationDry,
-  type CastNarratedDebug,
   type DebugCollector,
   type SceneContext,
   type SceneOutput,
 } from './lib/scenes/index.ts';
-import { browserSceneWillRecord, hostCommandEnv, substituteEnv } from './lib/scenes/browser.ts';
-import { createSessionManager } from './lib/scenes/browser-session.ts';
+import { readStoryboard } from './lib/storyboard.ts';
 import { emitChaptersVtt, emitSubtitlesVtt, emitWordTimingsJson } from './lib/vtt-emit.ts';
 
 function parseArgs(argv: string[]): {

@@ -4,8 +4,8 @@ description: rdc CLI JSON 출력 형식, 엔벨로프 스키마, 오류 처리 �
 category: Reference
 order: 51
 language: ko
-sourceHash: "9f8d61df26b59757"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "4da1be4753fa62bf"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 모든 `rdc` 명령은 구조화된 JSON을 출력합니다. 스크립트로 파이프하거나 에이전트에 직접 전달하면 됩니다.
@@ -24,9 +24,8 @@ rdc machine query --name prod-1 -o json
 `rdc`가 non-TTY 환경(파이프, 서브쉘 또는 AI 에이전트에 의해 실행)에서 실행될 때 출력이 자동으로 JSON으로 전환됩니다. 플래그가 필요하지 않습니다.
 
 ```bash
-# 이 모든 명령은 자동으로 JSON을 생성합니다
+# 자동으로 JSON을 생성합니다
 result=$(rdc machine query --name prod-1)
-echo '{}' | rdc agent exec "machine query"
 ```
 
 ## JSON 엔벨로프
@@ -173,56 +172,6 @@ rdc repo delete --name mail -m prod-1 --dry-run -o json
 ```
 
 `--dry-run`을 지원하는 명령: `repo up`, `repo down`, `repo delete`, `snapshot delete`, `sync upload`, `sync download`.
-
-## 에이전트 검색 명령
-
-`rdc agent` 서브커맨드는 AI 에이전트가 런타임에 사용 가능한 작업을 검색할 수 있도록 구조화된 방법을 제공합니다.
-
-### 모든 명령 목록 조회
-
-```bash
-rdc agent capabilities
-```
-
-인수, 옵션 및 설명이 포함된 전체 명령 트리를 반환합니다:
-
-```json
-{
-  "success": true,
-  "command": "agent capabilities",
-  "data": {
-    "version": "1.0.0",
-    "commands": [
-      {
-        "name": "machine query",
-        "description": "Show machine status",
-        "arguments": [
-          { "name": "machine", "description": "Machine name", "required": true }
-        ],
-        "options": [
-          { "flags": "-o, --output <format>", "description": "Output format" }
-        ]
-      }
-    ]
-  }
-}
-```
-
-### 명령 스키마 조회
-
-```bash
-rdc agent schema --command "machine query"
-```
-
-타입 및 기본값을 포함한 모든 인수와 옵션이 담긴 단일 명령의 전체 스키마를 반환합니다.
-
-### JSON을 통한 실행
-
-```bash
-echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
-```
-
-stdin에서 JSON을 받아 키를 명령 인수 및 옵션에 매핑하고 JSON 출력을 강제하여 실행합니다. 에이전트에서 CLI를 호출할 때 셸 명령 문자열을 직접 구성하고 싶지 않은 경우에 유용합니다.
 
 ## 파싱 예시
 

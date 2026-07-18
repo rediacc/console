@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock configFileStorage (unused for this test but required by the module graph).
 let mockConfig: Record<string, unknown> = {};

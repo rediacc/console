@@ -4,7 +4,7 @@ description: "Rediacc의 자체 호스팅 모델이 소비자 데이터 보호�
 category: "Legal"
 order: 4
 language: ko
-sourceHash: "949159b302cf6ab9"
+sourceHash: "3cee3262b53f7afd"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -35,7 +35,7 @@ CCPA는 개인정보와 관련된 소비자 권리에 초점을 맞춥니다. Re
 
 각 Rediacc 리포지토리는 고유한 GUID를 가진 별도의 암호화된 데이터 단위입니다. 어떤 데이터가 어디에 존재하는지 정확히 파악할 수 있습니다.
 
-- `rdc machine query --name <machine> --repositories` 명령으로 머신의 모든 리포지토리를 크기 및 마운트 상태와 함께 나열합니다
+- `rdc machine status <machine> --repositories` 명령으로 머신의 모든 리포지토리를 크기 및 마운트 상태와 함께 나열합니다
 - 각 리포지토리는 파일 시스템, 네트워크 및 컨테이너 수준에서 격리됩니다
 - 포크 관계가 추적되므로 데이터셋의 모든 복사본을 식별할 수 있습니다
 

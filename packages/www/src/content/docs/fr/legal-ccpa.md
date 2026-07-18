@@ -4,7 +4,7 @@ description: "Comment le modèle auto-hébergé de Rediacc répond aux exigences
 category: "Legal"
 order: 4
 language: fr
-sourceHash: "949159b302cf6ab9"
+sourceHash: "3cee3262b53f7afd"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -35,7 +35,7 @@ Rediacc en tant que logiciel n'accède pas aux données des consommateurs, ne le
 
 Chaque dépôt Rediacc est une unité de données discrète et chiffrée avec un GUID unique. Vous pouvez inventorier précisément quelles données existent et où :
 
-- `rdc machine query --name <machine> --repositories` liste tous les dépôts sur une machine avec leur taille et leur état de montage
+- `rdc machine status <machine> --repositories` liste tous les dépôts sur une machine avec leur taille et leur état de montage
 - Chaque dépôt est isolé au niveau du système de fichiers, du réseau et des conteneurs
 - Les relations de fork sont tracées, vous permettant d'identifier toutes les copies d'un jeu de données
 

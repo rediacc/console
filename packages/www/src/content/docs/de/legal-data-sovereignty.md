@@ -5,6 +5,7 @@ category: "Legal"
 order: 7
 language: de
 sourceHash: "dba51d5d6dcf8197"
+sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 
 Viele Länder verlangen, dass personenbezogene Daten ihrer Bürger innerhalb der Landesgrenzen gespeichert und verarbeitet werden. Die Self-Hosted-Architektur von Rediacc erfüllt diese Anforderungen von Natur aus: Daten verbleiben auf Ihrer Maschine, in Ihrem Rechenzentrum, in Ihrer Jurisdiktion. Keine Daten verlassen die Maschine während des Klonings, und kein Drittanbieter-SaaS verarbeitet Ihre Daten.

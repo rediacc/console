@@ -4,7 +4,7 @@ description: "孤立したバックアップ、古いスナップショット、
 category: "Guides"
 order: 12
 language: ja
-sourceHash: "d2700c2ac4473962"
+sourceHash: "af01691f5fe908ee"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -14,8 +14,8 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 
 | コマンド | クリーンアップ対象 | 信頼できる情報源の場所 |
 |---|---|---|
-| `rdc storage prune --name <storage> -m <machine>` | クラウドストレージ内の孤立したバックアップ | ローカル CLI 設定（マウント安全性のためにエグゼキュータマシンでクロスチェック） |
-| `rdc machine prune --name <machine>` | マシン上のデータストアアーティファクト（常に）；孤立または unknown のリポジトリイメージ（オプトイン） | ローカル CLI 設定 + マシンの `.interim/state` ミラー |
+| `rdc storage prune <storage> -m <machine>` | クラウドストレージ内の孤立したバックアップ | ローカル CLI 設定（マウント安全性のためにエグゼキュータマシンでクロスチェック） |
+| `rdc machine prune <machine>` | マシン上のデータストアアーティファクト（常に）；孤立または unknown のリポジトリイメージ（オプトイン） | ローカル CLI 設定 + マシンの `.interim/state` ミラー |
 | `rdc config prune` | ローカル設定の残存物（証明書キャッシュ、期限切れアーカイブ、宙吊りの相互参照） | ローカル CLI 設定のみ |
 
 3 つは独立しています。任意の 1 つを他のものなしで実行できます。共通の安全モデルは下記の [安全モデル](#safety-model) で説明されています。
@@ -202,7 +202,7 @@ sudo /usr/local/bin/renet repository backfill-state-mirror \
 
 ### 猶予期間
 
-リポジトリが `--archive-config` で設定から削除されると、その認証情報エントリは `deletedAt` タイムスタンプとともに `resources.deletedRepositories[]` に移動されます。プルーニングコマンドは猶予期間（デフォルト 7 日間）を尊重し、その間、最近アーカイブされたリポジトリは削除から保護されます。これにより、誤って削除された場合にリポジトリを復元する時間（`rdc config repository restore-archived --name <guid>`）が確保されます。猶予期間が切れると、`storage prune`、`machine prune`、`config prune` のすべてがエントリを自動的に削除します。
+リポジトリが `--archive-config` で設定から削除されると、その認証情報エントリは `deletedAt` タイムスタンプとともに `resources.deletedRepositories[]` に移動されます。プルーニングコマンドは猶予期間（デフォルト 7 日間）を尊重し、その間、最近アーカイブされたリポジトリは削除から保護されます。これにより、誤って削除された場合にリポジトリを復元する時間（`rdc repo admin archive restore <guid>`）が確保されます。猶予期間が切れると、`storage prune`、`machine prune`、`config prune` のすべてがエントリを自動的に削除します。
 
 ### マウント安全プリフライト
 

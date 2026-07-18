@@ -1,18 +1,15 @@
 import { randomUUID } from 'node:crypto';
-import type { Command } from 'commander';
+import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
-import {
-  type LocalExecuteResult,
-  localExecutorService,
-} from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
+import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { compositeKey, parseRepoRef } from '../utils/config-schema.js';
-import { handleError, ValidationError } from '../utils/errors.js';
+import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { resolveRepoRef, resolveRepoRefLocal } from '../utils/repo-target.js';
 import { handleForkAction } from './repo-fork.js';
-import { assertMachineExists } from './_validate.js';
 
 function tryParse<T>(s: string): T | undefined {
   try {
@@ -41,34 +38,38 @@ function parseRenetJson<T>(stdout: string): T | undefined {
   return undefined;
 }
 
-/** repo commit --name <workingFork> --message <msg> [--author] -m <machine> */
-async function handleCommit(options: {
-  name: string;
-  message: string;
-  author?: string;
-  machine: string;
-  debug?: boolean;
-}): Promise<void> {
+/** repo commit <ref> --message <msg> [--author] */
+async function handleCommit(
+  ref: string,
+  options: {
+    message: string;
+    author?: string;
+    debug?: boolean;
+  }
+): Promise<void> {
   try {
-    await assertCommandPolicy(CMD.REPO_COMMIT, options.name);
-    await assertMachineExists(options.machine);
+    // Mutating verb: derive the execution machine from the ref's placement
+    // (spec/03 §2.3). No `-m`/`--cluster` any more.
+    const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
+    await assertCommandPolicy(CMD.REPO_COMMIT, repoKey);
 
-    const cfg = await configService.getRepository(options.name);
-    if (!cfg) throw new ValidationError(`Repository "${options.name}" not found in context`);
+    const cfg = await configService.getRepository(repoKey);
+    if (!cfg) throw new ValidationError(`Repository "${name}" not found in context`);
     if (cfg.immutable) {
       throw new ValidationError(
-        `"${options.name}" is an immutable commit, not a working fork. Check it out first: rdc repo checkout ${options.name} --tag <name> -m ${options.machine}`
+        `"${name}" is an immutable commit, not a working fork. Check it out first: rdc repo checkout ${repoKey} --tag <name>`
       );
     }
 
     const parent = cfg.headCommit ?? '';
     const commitGuid = randomUUID();
 
-    const result: LocalExecuteResult = await localExecutorService.execute({
+    const result: ExecuteResult = await getExecutor().execute({
       functionName: 'repository_commit',
-      machineName: options.machine,
+      machineName,
+      ...(kubeCluster !== undefined && { kubeCluster }),
       params: {
-        repository: options.name,
+        repository: repoKey,
         tag: commitGuid,
         message: options.message,
         ...(options.author ? { author: options.author } : {}),
@@ -95,7 +96,7 @@ async function handleCommit(options: {
       commitAuthor: options.author,
       commitParent: parent || undefined,
     });
-    const workingKey = (await configService.getRepositoryKey(options.name)) ?? options.name;
+    const workingKey = (await configService.getRepositoryKey(repoKey)) ?? repoKey;
     await configService.addRepository(workingKey, { ...cfg, headCommit: commitGuid });
 
     outputService.success(
@@ -109,46 +110,46 @@ async function handleCommit(options: {
   }
 }
 
-/** repo branch <branchName> --name <workingFork> */
-async function handleBranch(branchName: string, options: { name: string }): Promise<void> {
+/** repo branch <ref> --branch <name> */
+async function handleBranch(ref: string, options: { branch: string }): Promise<void> {
   try {
-    await assertCommandPolicy(CMD.REPO_BRANCH, options.name);
-    const cfg = await configService.getRepository(options.name);
-    if (!cfg) throw new ValidationError(`Repository "${options.name}" not found in context`);
+    // Config-only ref op (spec §5.4): points a branch at a working fork in the
+    // config; it never dispatches to a machine, so resolve the family locally.
+    const { name, repoKey } = await resolveRepoRefLocal(ref);
+    await assertCommandPolicy(CMD.REPO_BRANCH, repoKey);
+    const cfg = await configService.getRepository(repoKey);
+    if (!cfg) throw new ValidationError(`Repository "${name}" not found in context`);
     const tip = cfg.headCommit;
     if (!tip) {
       throw new ValidationError(
-        `"${options.name}" has no commits yet — run 'rdc repo commit' before creating a branch`
+        `"${name}" has no commits yet; run 'rdc repo commit' before creating a branch`
       );
     }
-    const branches = { ...(cfg.branches ?? {}), [branchName]: tip };
-    const workingKey = (await configService.getRepositoryKey(options.name)) ?? options.name;
+    const branches = { ...(cfg.branches ?? {}), [options.branch]: tip };
+    const workingKey = (await configService.getRepositoryKey(repoKey)) ?? repoKey;
     await configService.addRepository(workingKey, { ...cfg, branches });
     outputService.success(
-      t('commands.repo.branch.completed', { branch: branchName, commit: tip.slice(0, 12) })
+      t('commands.repo.branch.completed', { branch: options.branch, commit: tip.slice(0, 12) })
     );
   } catch (error) {
     handleError(error);
   }
 }
 
-/** repo checkout <commit|branch> --tag <newWorking> -m <machine> */
+/** repo checkout <commit-or-branch-ref> --tag <newWorking> [--from <workingFork>] */
 async function handleCheckout(
   target: string,
   options: {
     tag: string;
-    machine: string;
     from?: string;
     debug?: boolean;
     skipRouterRestart?: boolean;
   }
 ): Promise<void> {
   try {
-    await assertCommandPolicy(CMD.REPO_CHECKOUT, target);
-    await assertMachineExists(options.machine);
-
     // Resolve target to a commit GUID: a branch name on --from's working fork,
-    // or a direct commit reference.
+    // or a direct commit reference. (The commit/branch ref is NOT a repo family,
+    // so it cannot itself derive an execution machine.)
     let commitRef = target;
     if (options.from) {
       const fromCfg = await configService.getRepository(options.from);
@@ -166,8 +167,18 @@ async function handleCheckout(
     // the --from working fork's base. A direct commit-GUID checkout keeps
     // the commit's key as base (the caller addressed it by GUID anyway).
     const baseName = parseRepoRef(options.from ?? commitRef).name;
+
+    // Mutating verb: derive the execution machine from the SOURCE family's
+    // placement (spec/03 §2.3) — the working fork named by --from, else the base
+    // repo the commit belongs to. The shared handleForkAction accepts an optional
+    // kubeCluster, so a kubernetes-world source forks with KUBECONFIG threaded;
+    // a docker source leaves it unset and forks against the machine's daemon.
+    const { repoKey, machineName, kubeCluster } = await resolveRepoRef(options.from ?? baseName);
+    await assertCommandPolicy(CMD.REPO_CHECKOUT, repoKey);
+
     await handleForkAction(commitRef, options.tag, {
-      machine: options.machine,
+      machine: machineName,
+      ...(kubeCluster !== undefined && { kubeCluster }),
       debug: options.debug,
       skipRouterRestart: options.skipRouterRestart,
       forkBaseName: baseName,
@@ -187,25 +198,24 @@ async function handleCheckout(
   }
 }
 
-/** repo log --name <workingFork|commit> -m <machine> */
-async function handleLog(options: {
-  name: string;
-  machine: string;
-  json?: boolean;
-  debug?: boolean;
-}): Promise<void> {
+/** repo log <ref> */
+async function handleLog(ref: string, options: { debug?: boolean }): Promise<void> {
   try {
-    await assertMachineExists(options.machine);
-    const cfg = await configService.getRepository(options.name);
-    if (!cfg) throw new ValidationError(`Repository "${options.name}" not found in context`);
+    // Read-only verb: skip step 5's remote round-trip (spec/03 §2.3 tail).
+    const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref, {
+      readOnly: true,
+    });
+    const cfg = await configService.getRepository(repoKey);
+    if (!cfg) throw new ValidationError(`Repository "${name}" not found in context`);
     const tip = cfg.headCommit ?? (cfg.immutable ? cfg.repositoryGuid : undefined);
     if (!tip) {
-      throw new ValidationError(`"${options.name}" has no commits yet`);
+      throw new ValidationError(`"${name}" has no commits yet`);
     }
 
-    const result: LocalExecuteResult = await localExecutorService.execute({
+    const result: ExecuteResult = await getExecutor().execute({
       functionName: 'repository_log',
-      machineName: options.machine,
+      machineName,
+      ...(kubeCluster !== undefined && { kubeCluster }),
       params: { repository: tip },
       debug: options.debug,
     });
@@ -215,7 +225,9 @@ async function handleLog(options: {
     }
 
     const parsed = parseRenetJson<{ entries: Record<string, unknown>[] }>(result.stdout ?? '');
-    if (options.json) {
+    // Structured output rides the global `-o json` format now; the dedicated
+    // `--json` flag is gone (spec/03 §5.4).
+    if (getOutputFormat() === 'json') {
       outputService.print(parsed ?? { entries: [] }, 'json');
       return;
     }
@@ -251,22 +263,23 @@ function deriveMergeBase(
   return base;
 }
 
-/** repo merge --name <target> --from <source> -m <machine> [--force] [--resolve ours|theirs] */
-async function handleMerge(options: {
-  name: string;
-  from: string;
-  machine: string;
-  force?: boolean;
-  resolve?: string;
-  base?: string;
-  debug?: boolean;
-}): Promise<void> {
+/** repo merge <ref> --from <source> [--force] [--resolve ours|theirs] [--base <guid>] */
+async function handleMerge(
+  ref: string,
+  options: {
+    from: string;
+    force?: boolean;
+    resolve?: string;
+    base?: string;
+    debug?: boolean;
+  }
+): Promise<void> {
   try {
-    await assertCommandPolicy(CMD.REPO_MERGE, options.name);
-    await assertMachineExists(options.machine);
+    const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
+    await assertCommandPolicy(CMD.REPO_MERGE, repoKey);
 
-    const targetCfg = await configService.getRepository(options.name);
-    if (!targetCfg) throw new ValidationError(`Repository "${options.name}" not found in context`);
+    const targetCfg = await configService.getRepository(repoKey);
+    if (!targetCfg) throw new ValidationError(`Repository "${name}" not found in context`);
     const sourceCfg = await configService.getRepository(options.from);
     if (!sourceCfg) throw new ValidationError(`Source "${options.from}" not found in context`);
 
@@ -277,11 +290,12 @@ async function handleMerge(options: {
       ? (options.base ?? deriveMergeBase(options.resolve, options.from, sourceCfg, targetCfg))
       : undefined;
 
-    const result: LocalExecuteResult = await localExecutorService.execute({
+    const result: ExecuteResult = await getExecutor().execute({
       functionName: 'repository_merge',
-      machineName: options.machine,
+      machineName,
+      ...(kubeCluster !== undefined && { kubeCluster }),
       params: {
-        repository: options.name,
+        repository: repoKey,
         from: sourceCfg.repositoryGuid,
         ...(options.force ? { force: true } : {}),
         ...(options.resolve ? { resolve: options.resolve, base: base as string } : {}),
@@ -294,13 +308,13 @@ async function handleMerge(options: {
       return;
     }
     // The merged target now carries the source's commit; track its tip.
-    const targetKey = (await configService.getRepositoryKey(options.name)) ?? options.name;
+    const targetKey = (await configService.getRepositoryKey(repoKey)) ?? repoKey;
     await configService.addRepository(targetKey, {
       ...targetCfg,
       headCommit: sourceCfg.repositoryGuid,
     });
     outputService.success(
-      t('commands.repo.merge.completed', { source: options.from, target: options.name })
+      t('commands.repo.merge.completed', { source: options.from, target: name })
     );
   } catch (error) {
     handleError(error);
@@ -313,10 +327,9 @@ export function registerRepoBranchingCommands(repo: Command): void {
     .command('commit')
     .summary(t('commands.repo.commit.descriptionShort'))
     .description(t('commands.repo.commit.description'))
-    .requiredOption('--name <name>', t('commands.repo.commit.nameOption'))
+    .argument('<ref>', t('options.repoRef'))
     .requiredOption('--message <msg>', t('commands.repo.commit.messageOption'))
     .option('--author <author>', t('commands.repo.commit.authorOption'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
     .action(handleCommit);
 
@@ -324,38 +337,26 @@ export function registerRepoBranchingCommands(repo: Command): void {
     .command('branch')
     .summary(t('commands.repo.branch.descriptionShort'))
     .description(t('commands.repo.branch.description'))
+    .argument('<ref>', t('options.repoRef'))
     .requiredOption('--branch <branch>', t('commands.repo.branch.branchOption'))
-    .requiredOption('--name <name>', t('commands.repo.branch.workingOption'))
-    .action((options: { branch: string; name: string }) => handleBranch(options.branch, options));
+    .action(handleBranch);
 
   repo
     .command('checkout')
     .summary(t('commands.repo.checkout.descriptionShort'))
     .description(t('commands.repo.checkout.description'))
-    .requiredOption('--ref <commit|branch>', t('commands.repo.checkout.refOption'))
+    .argument('<commit-or-branch-ref>', t('options.repoRef'))
     .requiredOption('--tag <name>', t('commands.repo.checkout.tagOption'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--from <workingFork>', t('commands.repo.checkout.fromOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(
-      (options: {
-        ref: string;
-        tag: string;
-        machine: string;
-        from?: string;
-        debug?: boolean;
-        skipRouterRestart?: boolean;
-      }) => handleCheckout(options.ref, options)
-    );
+    .action(handleCheckout);
 
   repo
     .command('log')
     .summary(t('commands.repo.log.descriptionShort'))
     .description(t('commands.repo.log.description'))
-    .requiredOption('--name <name>', t('commands.repo.log.nameOption'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--json', t('commands.repo.log.jsonOption'))
+    .argument('<ref>', t('options.repoRef'))
     .option('--debug', t('options.debug'))
     .action(handleLog);
 
@@ -363,11 +364,15 @@ export function registerRepoBranchingCommands(repo: Command): void {
     .command('merge')
     .summary(t('commands.repo.merge.descriptionShort'))
     .description(t('commands.repo.merge.description'))
-    .requiredOption('--name <name>', t('commands.repo.merge.nameOption'))
+    .argument('<ref>', t('options.repoRef'))
     .requiredOption('--from <source>', t('commands.repo.merge.fromOption'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--force', t('commands.repo.merge.forceOption'))
-    .option('--resolve <ours|theirs>', t('commands.repo.merge.resolveOption'))
+    .addOption(
+      new Option('--resolve <ours|theirs>', t('commands.repo.merge.resolveOption')).choices([
+        'ours',
+        'theirs',
+      ])
+    )
     .option('--base <guid>', t('commands.repo.merge.baseOption'))
     .option('--debug', t('options.debug'))
     .action(handleMerge);

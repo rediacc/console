@@ -4,8 +4,8 @@ description: "A verdade sobre SOC 2: os auditores querem evidências de que os s
 category: "Legal"
 order: 2
 language: pt
-sourceHash: "9ba8477a07292a7d"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "e03bef0cead86ab7"
+sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
 Sei o que é SOC 2 porque já estive em reuniões de auditoria. Os auditores usam o referencial AICPA para verificar se os seus controlos realmente funcionam, não apenas se afirma que funcionam. Cinco Critérios de Serviço de Confiança: segurança, disponibilidade, integridade de processamento, confidencialidade e privacidade.
@@ -41,7 +41,7 @@ Os forks tornam a gestão de alterações auditável. Faz fork da produção, ob
 1. Fazer fork de um repositório de produção (`rdc repo fork`)
 2. Aplicar e testar alterações no fork
 3. Validar o fork de forma independente
-4. Promover o fork para produção (`rdc repo takeover`)
+4. Promover o fork para produção (`rdc repo promote`)
 
 Cada passo: registado. Com marca de tempo. Atribuído a uma pessoa. Sem momentos de "Não sei quem alterou isto".
 

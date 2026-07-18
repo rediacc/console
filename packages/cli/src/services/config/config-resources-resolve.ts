@@ -1,7 +1,7 @@
 /**
  * Strict destructive-target resolution for repo destructive commands
- * (`repo delete`, `repo takeover`, `config repository remove`). See issue
- * #495. The resolver fails closed on bare `--name` ambiguity so destructive
+ * (`repo delete`, `repo promote`, `config repository remove`). See issue
+ * #495. The resolver fails closed on bare-ref ambiguity so destructive
  * commands cannot silently target a fork registered under the grand's slot.
  *
  * Kept as a separate module so the resolver logic stays small and testable

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: de
-sourceHash: "011bc5d87114f105"
+sourceHash: "2d470a876c00c352"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -211,7 +211,7 @@ renet und Docker sind absichtlich unterschiedlicher Meinung, wie Container-Neust
 - `.rediacc.json` im Repository-Mount-Root → `services.<name>.restart_policy`: die eigentliche Absicht.
 - `docker ps --format '{{.Status}}'`: Laufzeitzustand.
 
-**Abweichung beheben.** Wenn die in `.rediacc.json` gespeicherte Richtlinie eines Containers falsch ist (z. B. weil Sie Compose bearbeitet, den Container aber nie neu erstellt haben), führen Sie `rdc repo up --name <repo> -m <machine>` erneut aus. Der Container wird mit der aktualisierten gespeicherten Richtlinie neu erstellt.
+**Abweichung beheben.** Wenn die in `.rediacc.json` gespeicherte Richtlinie eines Containers falsch ist (z. B. weil Sie Compose bearbeitet, den Container aber nie neu erstellt haben), führen Sie `rdc repo up <repo>` erneut aus. Der Container wird mit der aktualisierten gespeicherten Richtlinie neu erstellt.
 
 > **Experimentell:** Die Cold-Backup-Sidecar-basierte Wiederherstellung und das Flag `--sync-certs` bei `rdc machine query` wurden in renet 0.9+ eingeführt. Ältere Versionen verlassen sich ausschließlich auf die gespeicherte `restart_policy` für Watchdog-Wiederherstellung, was `on-failure`-Container nach einem Cold-Backup hängen lassen kann.
 
@@ -254,7 +254,7 @@ Dienste ohne benutzerdefinierte Traefik-Labels zeigen nur die auto-generierte Ro
 
 ### Abgetrennter Start
 
-Mit `--detach` kehrt der Befehl zurück, sobald die Container gestartet sind, anstatt auf den Abschluss der Gesundheitsprüfungen zu warten. Das Hochfahren läuft im Hintergrund weiter: Der Proxy versucht wiederholt, die Verbindung zu den Upstreams herzustellen, bis jeder Dienst antwortet, sodass Routen sich von selbst erholen. Den Fortschritt können Sie mit `rdc machine query --containers --name <machine>` verfolgen. Ideal für kurzlebige Forks und geskriptete Abläufe, bei denen die Dienste nicht zwingend bereit sein müssen, bevor der nächste Schritt beginnt.
+Mit `--detach` kehrt der Befehl zurück, sobald die Container gestartet sind, anstatt auf den Abschluss der Gesundheitsprüfungen zu warten. Das Hochfahren läuft im Hintergrund weiter: Der Proxy versucht wiederholt, die Verbindung zu den Upstreams herzustellen, bis jeder Dienst antwortet, sodass Routen sich von selbst erholen. Den Fortschritt können Sie mit `rdc machine status <machine> --containers` verfolgen. Ideal für kurzlebige Forks und geskriptete Abläufe, bei denen die Dienste nicht zwingend bereit sein müssen, bevor der nächste Schritt beginnt.
 
 ### Bereitschaftsprüfung
 
@@ -466,6 +466,6 @@ secrets:
     file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
 ```
 
-Seeden Sie die Werte mit `rdc repo secret set --name <repo> --key DATABASE_URL --value <val> --mode env --current ""` und dem Äquivalent für File-Modus. Siehe [Repositories § Geheimnisse](/de/docs/repositories#secrets) für die vollständige Anleitung und [Pro-Repo-Geheimnisse](/de/docs/rdc-cheat-sheet#per-repo-secrets) im Spickzettel für die Befehlsreferenz.
+Seeden Sie die Werte mit `rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""` und dem Äquivalent für File-Modus. Siehe [Repositories § Geheimnisse](/de/docs/repositories#secrets) für die vollständige Anleitung und [Pro-Repo-Geheimnisse](/de/docs/rdc-cheat-sheet#per-repo-secrets) im Spickzettel für die Befehlsreferenz.
 
 > **Cross-Repo-Pfade werden zur Validierungszeit abgelehnt.** Ein Compose-`secrets: file:` (oder `configs: file:`, oder `env_file:`), das auf das `/var/run/rediacc/secrets/<other-networkID>/`-Verzeichnis eines anderen Repositories zeigt, wird von dem renet-Wrapper vor docker compose mit Hard-Reject blockiert. `--unsafe` überschreibt es NICHT. Defense-in-depth: Der Landlock-Sandbox um die Rediaccfile-Shell bewältigt Lesen auf das secrets-Verzeichnis des aktuellen Netzwerks, sodass ein `cat /var/run/rediacc/secrets/<other>/X` aus Rediaccfile-Bash mit EACCES fehlschlägt, selbst wenn es den YAML-Validator umgeht. Sie müssen es nicht explizit aktivieren; dies ist standardmäßig für alle `repo up` aktiviert.

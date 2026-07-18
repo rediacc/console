@@ -4,7 +4,7 @@ description: "Eliminar copias de seguridad huérfanas, snapshots obsoletos, imá
 category: "Guides"
 order: 12
 language: es
-sourceHash: "d2700c2ac4473962"
+sourceHash: "af01691f5fe908ee"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -14,8 +14,8 @@ La limpieza barre el estado que ya no corresponde a un recurso vivo. Tres comand
 
 | Comando | Qué limpia | Dónde reside la fuente de verdad |
 |---|---|---|
-| `rdc storage prune --name <storage> -m <machine>` | Respaldos huérfanos en almacenamiento en la nube | Configuración local del CLI (cruzada con la máquina ejecutora para seguridad de montaje) |
-| `rdc machine prune --name <machine>` | Artefactos del datastore en la máquina (siempre); imágenes de repositorio huérfanas o desconocidas (opt-in) | Configuración local del CLI + el espejo `.interim/state` de la máquina |
+| `rdc storage prune <storage> -m <machine>` | Respaldos huérfanos en almacenamiento en la nube | Configuración local del CLI (cruzada con la máquina ejecutora para seguridad de montaje) |
+| `rdc machine prune <machine>` | Artefactos del datastore en la máquina (siempre); imágenes de repositorio huérfanas o desconocidas (opt-in) | Configuración local del CLI + el espejo `.interim/state` de la máquina |
 | `rdc config prune` | Restos en la configuración local (caché de certificados, archivos expirados, referencias cruzadas colgantes) | Solo la configuración local del CLI |
 
 Los tres son independientes. Puedes ejecutar cualquiera sin los otros. Comparten un modelo de seguridad común descrito en [Modelo de seguridad](#modelo-de-seguridad) más abajo.
@@ -202,7 +202,7 @@ Todos los tres comandos adoptan un enfoque seguro por defecto en configuraciones
 
 ### Período de gracia
 
-Cuando un repositorio se elimina de una configuración con `--archive-config`, su entrada de credencial se mueve a `resources.deletedRepositories[]` con una marca de tiempo `deletedAt`. Los comandos de prune respetan un período de gracia (7 días por defecto) durante el cual los repositorios archivados recientemente están protegidos contra eliminación. Esto te da tiempo para restaurar un repositorio (`rdc config repository restore-archived --name <guid>`) si fue eliminado por accidente. Una vez que la gracia expira, `storage prune`, `machine prune` y `config prune` purgan automáticamente la entrada.
+Cuando un repositorio se elimina de una configuración con `--archive-config`, su entrada de credencial se mueve a `resources.deletedRepositories[]` con una marca de tiempo `deletedAt`. Los comandos de prune respetan un período de gracia (7 días por defecto) durante el cual los repositorios archivados recientemente están protegidos contra eliminación. Esto te da tiempo para restaurar un repositorio (`rdc repo admin archive restore <guid>`) si fue eliminado por accidente. Una vez que la gracia expira, `storage prune`, `machine prune` y `config prune` purgan automáticamente la entrada.
 
 ### Verificación previa de seguridad de montaje
 

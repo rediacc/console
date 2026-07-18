@@ -1,24 +1,17 @@
 ---
 /*
- * Site-wide Design Partner Program announcement bar.
+ * Site-wide announcement bar for time-limited promotions.
  *
- * To DISABLE the bar AND the pricing-card overlay (badge, strike-through,
- * unified "Claim Design Partner" CTA) in one shot:
- *   set "announcement.enabled": false in src/i18n/translations/en.json.
- * Both consumers (this component and CfPricingCard.astro) read the same
- * canonical EN value via utils/design-partner-program.ts.
- *
- * Note: this is independent from the account-side auto-grant. To stop
- * granting lifetime BUSINESS to new signups, also set
- * DESIGN_PARTNER_PROGRAM_ENABLED=false in workers/account/wrangler.*.toml
- * [vars] (defaults to false when unset).
+ * To show or hide the bar in one shot, flip "announcement.enabled" in
+ * src/i18n/translations/en.json. The canonical EN value controls the
+ * runtime decision so the bar never disagrees across locales.
  *
  * When enabled, the bar is fixed at the top of the viewport and pushes the
  * nav down via the --announcement-bar-height CSS variable set below.
  */
+import en from '../i18n/translations/en.json';
 import { createTranslator } from '../i18n/utils';
 import type { Language } from '../i18n/types';
-import { isDesignPartnerProgramActive } from '../utils/design-partner-program';
 
 interface Props {
   lang?: Language;
@@ -26,7 +19,7 @@ interface Props {
 
 const { lang = 'en' } = Astro.props;
 const { t } = createTranslator(lang);
-const enabled = isDesignPartnerProgramActive();
+const enabled = en.announcement.enabled === true;
 const text = t('announcement.text');
 const link = t('announcement.link');
 ---

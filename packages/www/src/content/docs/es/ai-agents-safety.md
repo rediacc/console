@@ -4,7 +4,7 @@ description: 'Cómo la CLI de Rediacc evita que los asistentes de codificación 
 category: Concepts
 order: 35
 language: es
-sourceHash: "eb4c8dd0389a45a6"
+sourceHash: "30c1cd3d88219e7c"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -27,7 +27,7 @@ Así que estás apuntando un asistente de codificación con IA a tu infraestruct
 | `rdc config edit` (editor interactivo) | 🔴 refused | El humano establece `REDIACC_ALLOW_CONFIG_EDIT=*` antes de lanzar el agente |
 | `rdc config edit --apply <file>` | 🔴 refused | La misma anulación |
 | `rdc config field rotate --pointer <pointer>` | 🔴 refused | La misma anulación; usa confirmación interactiva |
-| `rdc term connect -m <machine>` (SSH directo a la máquina) | 🔴 refused | Primero bifurcar un repositorio y conectarse al fork |
+| `rdc term connect <machine>` (SSH directo a la máquina) | 🔴 refused | Primero bifurcar un repositorio y conectarse al fork |
 
 Todo lo que se rechaza a un agente se escribe en el registro de auditoría con `outcome: refused` y una razón.
 

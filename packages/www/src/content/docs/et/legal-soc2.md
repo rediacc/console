@@ -4,8 +4,8 @@ description: "SOC 2-ga on asi lihtne: audiitorid tahavad tõendeid, et sinu kont
 category: "Legal"
 order: 2
 language: et
-sourceHash: "9ba8477a07292a7d"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "e03bef0cead86ab7"
+sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
 Tean SOC 2-st, sest olen paaril auditoorimiskoosolekul käinud. Audiitorid kasutavad AICPA raamistikku, et kontrollida, kas sinu kontrollid tegelikult toimivad, mitte ainult seda, et sa väidad nende toimivat. Viis usaldusteenuse kriteeriumi: turvalisus, kättesaadavus, töötlemise terviklikkus, konfidentsiaalsus ja privaatsus.
@@ -41,7 +41,7 @@ Hargid muudavad muudatuste halduse auditeeritavaks. Hargnedes tootmisest saad te
 1. Tootmishoidla hargnemine (`rdc repo fork`)
 2. Muudatuste rakendamine ja testimine harul
 3. Haru iseseisev valideerimine
-4. Haru edendamine tootmisse (`rdc repo takeover`)
+4. Haru edendamine tootmisse (`rdc repo promote`)
 
 Iga samm logitakse koos ajatemplite ja toimija tuvastusega.
 

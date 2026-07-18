@@ -1,33 +1,51 @@
 ---
 title: Armazenamento de Configuração
-description: Sincronização de configuração encriptada zero-knowledge com encriptação baseada em passkey
+description: Sincronização de configuração encriptada zero-knowledge com desbloqueio por passkey, palavra-passe mestra ou código de recuperação
 category: Guides
 order: 8
 language: pt
-sourceHash: "daf79946b8925246"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "73c75b1f00630553"
+sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
 ---
 
 # Armazenamento de Configuração
 
-O armazenamento de configuração fornece sincronização encriptada zero-knowledge da sua configuração CLI entre dispositivos. As suas configurações são encriptadas com chaves derivadas da sua passkey; o servidor nunca vê dados em texto simples.
+O armazenamento de configuração fornece sincronização encriptada zero-knowledge da sua configuração CLI entre dispositivos. As suas configurações são encriptadas no lado do cliente com uma chave de encriptação de conteúdo (CEK); o servidor nunca vê dados em texto simples.
+
+## Métodos de desbloqueio (slots de chave)
+
+Existe uma CEK por armazenamento, protegida de forma independente para cada método de desbloqueio, à semelhança dos slots de chave do LUKS. Qualquer slot individual abre a mesma chave, e os slots podem ser adicionados ou removidos sem reencriptar os seus dados:
+
+| Método | O que é | Notas |
+|--------|-----------|-------|
+| **Passkey** | Passkey WebAuthn com a extensão PRF | A opção mais forte; protegida por hardware |
+| **Palavra-passe mestra** | Uma palavra-passe à sua escolha, reforçada com PBKDF2-SHA256 (600.000 iterações) | Funciona sem hardware compatível com PRF; também permite a inscrição headless do CLI |
+| **Código de recuperação** | Um código gerado no formato `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` | Mostrado apenas uma vez na criação; guarde-o num local seguro |
+
+Todos os métodos alimentam o mesmo processo: o slot produz um segredo que se combina com um segredo guardado no servidor para desbloquear a CEK. Nenhuma das duas metades é suficiente por si só, pelo que a propriedade zero-knowledge se mantém nos três métodos: o segredo do slot nunca chega ao servidor.
+
+Os slots são geridos no portal, na página Armazenamento de Configuração. As organizações que queiram exigir desbloqueio apenas por hardware podem ativar a política **exigir passkey**, que recusa e revoga slots não-passkey em todo o armazenamento.
+
+O desbloqueio é feito por dispositivo: desbloqueia uma vez num dispositivo novo e, a partir daí, as operações diárias do CLI (push/pull) funcionam sem tocar numa passkey ou introduzir uma palavra-passe.
 
 ## Pré-requisitos
 
 - **Autenticação de dois fatores** ativada na sua conta
-- **Fornecedor de passkey com suporte PRF**: chave de segurança FIDO2 (por exemplo, YubiKey), iCloud Keychain, Google Password Manager, 1Password ou Dashlane
+- Para o método de **passkey**: um fornecedor de passkey com suporte PRF, como uma chave de segurança FIDO2 (por exemplo, YubiKey), iCloud Keychain, Google Password Manager, 1Password ou Dashlane
 - **Browser**: Chrome 133+, Edge 133+, Firefox 130+ ou Safari 17+
+
+O requisito de PRF aplica-se apenas ao slot de passkey. Os métodos de palavra-passe mestra e código de recuperação funcionam em qualquer browser suportado.
 
 ## Configuração
 
 1. Navegue até **Armazenamento de Configuração** na barra lateral e clique em **Configurar Armazenamento de Configuração**
 2. A lista de verificação de requisitos valida o seu browser, 2FA e estado da sessão
-3. Clique em **Iniciar Configuração**; precisará de tocar na sua chave de segurança duas vezes:
+3. Clique em **Iniciar Configuração**. Para um slot de passkey, precisará de tocar na sua chave de segurança duas vezes:
    - Primeiro toque: regista a passkey
    - Segundo toque: deriva as chaves de encriptação via PRF
 4. Configuração concluída; o segredo da sua passkey fica armazenado no keyring do seu sistema operativo
 
-Após a configuração, as operações diárias do CLI (push/pull) funcionam sem a passkey. Aviso importante: a configuração requer uma passkey com suporte de extensão PRF. Nem todos os tokens de hardware ou autenticadores de plataforma possuem este suporte.
+Após a configuração, adicione um slot de palavra-passe mestra ou de código de recuperação a partir da página Armazenamento de Configuração, para que um autenticador perdido ou não suportado não o deixe bloqueado para sempre.
 
 ## Compatibilidade de Fornecedores PRF
 
@@ -40,6 +58,29 @@ Após a configuração, as operações diárias do CLI (push/pull) funcionam sem
 | Dashlane | ✅ | Multiplataforma |
 | Extensão Bitwarden | ❌ | Em desenvolvimento |
 | Windows Hello | ❌ | Não suportado |
+
+## Inscrição headless do CLI
+
+Uma máquina sem browser (um servidor, um executor de CI, um daemon executor) pode inscrever-se num armazenamento existente através do método de palavra-passe mestra:
+
+```bash
+rdc config remote enable --password
+```
+
+Requisitos:
+
+- Um **slot de palavra-passe mestra** já provisionado através do portal (é o browser que detém a chave durante o provisionamento, pelo que este passo em si não pode ser headless)
+- Um **token de API com o âmbito `config:enroll`** para autenticar o pedido
+
+A inscrição é uma leitura: o CLI obtém os parâmetros KDF públicos do slot e a chave protegida, deriva o segredo da palavra-passe localmente e desbloqueia a CEK no próprio dispositivo. Isto concede ao dispositivo a capacidade de desencriptar e sincronizar a configuração; não altera o armazenamento.
+
+## Rotação de chaves
+
+Rodar a CEK do armazenamento volta a protegê-la sob uma nova geração:
+
+- Os **códigos de recuperação são sempre invalidados** pela rotação; gere e guarde um novo depois
+- Um **slot de palavra-passe mestra** só sobrevive se a palavra-passe for reintroduzida durante o assistente de rotação
+- Um slot deixado numa geração mais antiga é reportado como obsoleto em vez de falhar com um erro de desencriptação críptico
 
 ## Gestão de Membros
 
@@ -54,7 +95,7 @@ As proteções de segurança impedem a remoção do último membro ativo ou a re
 ## Segurança
 
 - **Zero-knowledge**: O servidor armazena dados triplamente encriptados que não consegue desencriptar
-- **Chave dividida**: A desencriptação requer tanto o segredo da sua passkey (cliente) como o segredo do servidor (servidor)
+- **Chave dividida**: A desencriptação requer tanto o segredo do seu slot (cliente) como o segredo do servidor (servidor)
 - **Tokens rotativos**: Cada chamada de API usa um token novo; os tokens antigos autodestroem-se
 - **Vinculação de IP**: Os tokens ficam vinculados ao seu IP no primeiro uso
 - **Revogação instantânea**: Os membros removidos perdem o acesso em 30 segundos
@@ -63,9 +104,15 @@ As proteções de segurança impedem a remoção do último membro ativo ou a re
 
 | Erro | Causa | Solução |
 |-------|-------|-----|
-| PRF não suportado | O autenticador não tem a extensão PRF | Use YubiKey, iCloud Keychain, 1Password ou Dashlane |
+| PRF não suportado | O autenticador não tem a extensão PRF | Use YubiKey, iCloud Keychain, 1Password ou Dashlane, ou adicione um slot de palavra-passe mestra |
 | X25519 não suportado | Versão do browser demasiado antiga | Atualize para Chrome 133+, Edge 133+, Firefox 130+ ou Safari 17+ |
 | Já configurado | Existe um armazenamento para a sua organização | Visite /account/config-storage para gerir |
 | Armazenamento de configuração não configurado | Servidor sem armazenamento de blobs | Contacte o seu administrador para configurar R2/RustFS |
 | Token expirado | Sem atividade há 24 horas | Execute qualquer comando de armazenamento de configuração para atualizar |
 | Não é possível remover o último membro | Bloquearia o armazenamento permanentemente | Adicione primeiro outro membro |
+| Slot obsoleto | O slot é anterior à última rotação de chaves | Adicione o slot novamente (os códigos de recuperação têm de ser regenerados após cada rotação) |
+
+## Relacionados
+
+- [Consola Web](/pt/docs/web-console), desbloquear o armazenamento no browser para executar comandos
+- [Proxy e Executor](/pt/docs/proxy-and-executor), como a chave desbloqueada é concedida a um executor

@@ -5,18 +5,17 @@ import { isSubscriptionActive, type SubscriptionStatus } from '@rediacc/shared/s
 import chalk from 'chalk';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { configService } from '../services/config/config-resources.js';
-import { getEmbeddedMetadata, isSEA as isSEAEmbedded } from '../services/core/embedded-assets.js';
 import { fetchSubscriptionLicenseReport } from '../services/account/license.js';
-import { outputService } from '../services/core/output.js';
 import {
   getSubscriptionServerUrl,
   getSubscriptionTokenState,
 } from '../services/account/subscription-auth.js';
+import { configService } from '../services/config/config-resources.js';
+import { getEmbeddedMetadata, isSEA as isSEAEmbedded } from '../services/core/embedded-assets.js';
+import { outputService } from '../services/core/output.js';
 import { resolveChannel } from '../services/update/updater.js';
-import { getInstallMethod } from '../utils/platform.js';
 import type { OutputFormat } from '../types/index.js';
-import { isSEA } from '../utils/platform.js';
+import { getInstallMethod, isSEA } from '../utils/platform.js';
 import { VERSION } from '../version.js';
 
 type CheckStatus = 'ok' | 'warn' | 'fail';

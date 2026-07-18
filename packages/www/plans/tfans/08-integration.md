@@ -833,7 +833,7 @@ Ansible/Terraform should NEVER:
 - SSH into machines and run renet commands directly
 - Parse Docker container state via `docker ps` — use `rdc machine containers`
 - Manage LUKS volumes, loopback IPs, or Docker daemon sockets
-- Build QueueVaultV2 payloads — only rdc knows how
+- Build RenetVault payloads — only rdc knows how
 - Allocate networkIds — rdc manages `nextNetworkId` in config
 
 ### Don't manage the same resource in both tools

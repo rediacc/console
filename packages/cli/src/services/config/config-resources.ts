@@ -8,26 +8,39 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
-import { MIN_NETWORK_ID, NETWORK_ID_INCREMENT } from '@rediacc/shared/renet-contract';
+import type { RdcState } from '@rediacc/shared/config-schema';
+import { configFileStorage } from '../../adapters/config-file-storage.js';
+import { t } from '../../i18n/index.js';
 import {
   addMachineSSHConfigEntry,
   removeMachineSSHConfigEntry,
 } from '../../remote/vscode/index.js';
-import { configFileStorage } from '../../adapters/config-file-storage.js';
-import { t } from '../../i18n/index.js';
 import type {
   ArchivedRepository,
   BackupStrategyConfig,
   BackupStrategyDestination,
   CloudProviderConfig,
+  ClusterConfig,
   InfraConfig,
   MachineConfig,
   RdcConfig,
   RepositoryConfig,
   StorageConfig,
 } from '../../types/index.js';
+import { outputService } from '../core/output.js';
 import { ConfigServiceBase } from './config-base.js';
-import { findFreeNetworkIdSlot, pickInitialNetworkId } from './config-network-id.js';
+import {
+  assertClusterMembersUnique,
+  assertUniqueName,
+  dropMachineObservations,
+  listClustersFromConfig,
+  removeCloudProviderFromStore,
+  removeClusterFromStore,
+  updateClusterInStore,
+  writeCloudProviderToStore,
+  writeClusterToStore,
+} from './config-cluster-logic.js';
+import { allocateNetworkIdInStore } from './config-network-id.js';
 import {
   assertRestoredForkKeyIsExplicit,
   buildCredentialsMap,
@@ -35,7 +48,6 @@ import {
   resolveDestructiveTargetFromRepos,
   resolveExactOrLatest,
 } from './config-resources-resolve.js';
-import { outputService } from '../core/output.js';
 
 export { AmbiguousRepoTargetError } from './config-resources-resolve.js';
 
@@ -65,6 +77,8 @@ class ConfigService extends ConfigServiceBase {
     datastoreSize?: string;
   }> {
     const config = await this.requireSelfHosted();
+    // cfDnsApiToken is encrypted at rest (v3); read it from a decrypted view.
+    const decrypted = (await this.getDecryptedConfig()) ?? config;
     const state = await this.getResourceState();
     const machines = state.getMachines();
     const configName = this.getEffectiveConfigName();
@@ -104,7 +118,7 @@ class ConfigService extends ConfigServiceBase {
       sshPrivateKey,
       sshPublicKey,
       renetPath: config.renetPath ?? DEFAULTS.CONTEXT.RENET_BINARY,
-      cfDnsApiToken: config.credentials?.cfDnsApiToken,
+      cfDnsApiToken: decrypted.credentials?.cfDnsApiToken,
       cfDnsZoneId: config.infra?.cfDnsZoneId,
       certEmail: config.infra?.certEmail,
       datastoreSize: config.defaults?.datastoreSize,
@@ -127,6 +141,23 @@ class ConfigService extends ConfigServiceBase {
 
   async addMachine(machineName: string, config: MachineConfig): Promise<void> {
     await this.requireSelfHosted();
+    assertUniqueName(await this.getCurrent(), machineName);
+    await this.writeMachine(machineName, config);
+  }
+
+  /** Public writer for materialized cluster members (see config-cluster-ops). */
+  async writeClusterMember(machineName: string, config: MachineConfig): Promise<void> {
+    await this.requireSelfHosted();
+    await this.writeMachine(machineName, config);
+  }
+
+  /**
+   * Low-level machine write (resource state + SSH config), WITHOUT the
+   * cross-resource uniqueness check. Used by addMachine (after the check) and by
+   * materializeClusterMachines (whose member names legitimately match their own
+   * cluster's projection, so they must not trip the check).
+   */
+  private async writeMachine(machineName: string, config: MachineConfig): Promise<void> {
     const state = await this.getResourceState();
     const machines = state.getMachines();
     machines[machineName] = config;
@@ -152,6 +183,10 @@ class ConfigService extends ConfigServiceBase {
     if (!(machineName in machines)) throw new Error(`Machine "${machineName}" not found`);
     delete machines[machineName];
     await state.setMachines(machines);
+
+    // #89, third site of the class (see dropMachineObservations).
+    await dropMachineObservations(this.getEffectiveConfigName(), machineName);
+
     try {
       removeMachineSSHConfigEntry(machineName);
     } catch {
@@ -189,6 +224,21 @@ class ConfigService extends ConfigServiceBase {
     await state.setMachines(machines);
   }
 
+  /**
+   * Write one key of the v3 `state` bucket (the STATUS half). All writers flow
+   * through `updateState`, which never bumps the version counter (R2-F2), so a
+   * cert refresh / replica-set record / canary record never dirties the
+   * remote-push document.
+   */
+  async setStateBucket<K extends keyof RdcState>(key: K, value: RdcState[K]): Promise<void> {
+    const name = this.getEffectiveConfigName();
+    await this.requireSelfHosted(name);
+    await configFileStorage.updateState(name, (cfg) => ({
+      ...cfg,
+      state: { ...(cfg.state ?? {}), [key]: value },
+    }));
+  }
+
   async setRenetPath(renetPath: string): Promise<void> {
     const name = this.getEffectiveConfigName();
     await this.requireSelfHosted(name);
@@ -199,11 +249,6 @@ class ConfigService extends ConfigServiceBase {
     cfDnsApiToken?: string;
     cfDnsZoneId?: string;
     certEmail?: string;
-    acmeCertCache?: RdcConfig['infra'] extends infer I
-      ? I extends { acmeCertCache?: infer A }
-        ? A
-        : never
-      : never;
   }): Promise<void> {
     const name = this.getEffectiveConfigName();
     await this.requireSelfHosted(name);
@@ -217,7 +262,6 @@ class ConfigService extends ConfigServiceBase {
         ...(cfg.infra ?? {}),
         ...('cfDnsZoneId' in updates ? { cfDnsZoneId: updates.cfDnsZoneId } : {}),
         ...('certEmail' in updates ? { certEmail: updates.certEmail } : {}),
-        ...('acmeCertCache' in updates ? { acmeCertCache: updates.acmeCertCache } : {}),
       },
     }));
   }
@@ -331,9 +375,9 @@ class ConfigService extends ConfigServiceBase {
   }
 
   /**
-   * Strict resolver for destructive commands (repo delete, repo takeover,
+   * Strict resolver for destructive commands (repo delete, repo promote,
    * config repository remove, datastore unfork). Fails closed on ambiguity
-   * so a bare `--name` cannot silently hit the wrong repo. See issue #495.
+   * so a bare ref cannot silently hit the wrong repo. See issue #495.
    *
    * - Exact-key match wins (same as `getRepositoryKey`).
    * - For a bare ref, refuses when more than one config key shares the base
@@ -382,11 +426,19 @@ class ConfigService extends ConfigServiceBase {
     // deploy-time secrets are out of scope and would otherwise survive a
     // delete-then-restore cycle. ArchivedRepositorySchema.omit({secrets})
     // mirrors this at the schema layer.
-    const scrubbed = { ...repos[repoName] };
-    delete scrubbed.secrets;
+    // v3 archives are RepoRecord (minus secrets) plus {name, tag, deletedAt}.
+    // Runtime status riding along is harmless (stripped by the archive schema on
+    // reload); `secrets` is scrubbed here so it never survives delete-restore.
+    const rec = repos[repoName];
+    const colon = repoName.indexOf(':');
+    const base = colon === -1 ? repoName : repoName.slice(0, colon);
+    const tag = rec.tag ?? (colon === -1 ? DEFAULTS.REPOSITORY.TAG : repoName.slice(colon + 1));
+    const { secrets: _secrets, ...record } = rec;
+    void _secrets;
     const archived: ArchivedRepository = {
-      ...scrubbed,
-      name: repoName,
+      ...record,
+      name: base,
+      tag,
       deletedAt: new Date().toISOString(),
     };
 
@@ -543,24 +595,13 @@ class ConfigService extends ConfigServiceBase {
   async addCloudProvider(name: string, config: CloudProviderConfig): Promise<void> {
     const configName = this.getEffectiveConfigName();
     await this.requireSelfHosted(configName);
-    await configFileStorage.update(configName, (cfg) => ({
-      ...cfg,
-      resources: {
-        ...(cfg.resources ?? {}),
-        cloudProviders: { ...(cfg.resources?.cloudProviders ?? {}), [name]: config },
-      },
-    }));
+    await writeCloudProviderToStore(configName, name, config);
   }
 
   async removeCloudProvider(name: string): Promise<void> {
     const configName = this.getEffectiveConfigName();
     await this.requireSelfHosted(configName);
-    await configFileStorage.update(configName, (cfg) => {
-      const providers = { ...(cfg.resources?.cloudProviders ?? {}) };
-      if (!(name in providers)) throw new Error(`Cloud provider "${name}" not found`);
-      delete providers[name];
-      return { ...cfg, resources: { ...(cfg.resources ?? {}), cloudProviders: providers } };
-    });
+    await removeCloudProviderFromStore(configName, name);
   }
 
   async listCloudProviders(): Promise<{ name: string; config: CloudProviderConfig }[]> {
@@ -572,49 +613,42 @@ class ConfigService extends ConfigServiceBase {
   }
 
   // ============================================================================
+  // Cluster CRUD (non-secret SSH-reachable inventory; members materialize into
+  // resources.machines). Cluster records are non-secret so they live in the
+  // plain config like cloudProviders, not the encrypted resource state.
+  // ============================================================================
+
+  async addCluster(name: string, config: ClusterConfig): Promise<void> {
+    const configName = this.getEffectiveConfigName();
+    await this.requireSelfHosted(configName);
+    const current = await this.getCurrent();
+    assertUniqueName(current, name);
+    assertClusterMembersUnique(current, name, config);
+    await writeClusterToStore(configName, name, config);
+  }
+
+  async listClusters(): Promise<{ name: string; config: ClusterConfig }[]> {
+    return listClustersFromConfig(await this.getCurrent());
+  }
+
+  async updateCluster(name: string, updates: Partial<ClusterConfig>): Promise<void> {
+    const configName = this.getEffectiveConfigName();
+    await this.requireSelfHosted(configName);
+    await updateClusterInStore(configName, name, updates);
+  }
+
+  async removeCluster(name: string): Promise<void> {
+    const configName = this.getEffectiveConfigName();
+    await this.requireSelfHosted(configName);
+    await removeClusterFromStore(configName, name);
+  }
+
+  // ============================================================================
   // Network ID Allocation (per config file)
   // ============================================================================
 
-  private scanUsedNetworkIds(config: RdcConfig): Set<number> {
-    const usedIds = new Set<number>();
-    const repos = config.resources?.repositories;
-    if (repos) {
-      for (const repo of Object.values(repos)) {
-        if (repo.networkId !== undefined && repo.networkId > 0) {
-          usedIds.add(repo.networkId);
-        }
-      }
-    }
-    return usedIds;
-  }
-
   async allocateNetworkId(): Promise<number> {
-    // Network ID space: 2816 to ~16,777,152, step 64 → ~261,944 possible IDs.
-    const MAX_NETWORK_ID = 16_711_680;
-
-    const name = this.getEffectiveConfigName();
-    let allocated = 0;
-    await configFileStorage.update(name, (config) => {
-      const usedIds = this.scanUsedNetworkIds(config);
-      let nextId = config.defaults?.nextNetworkId;
-
-      if (nextId === undefined || nextId < MIN_NETWORK_ID) {
-        nextId = pickInitialNetworkId(usedIds);
-      }
-
-      // If the forward counter is approaching the limit, scan for freed gaps.
-      // This handles long-running systems where many repos have been created and deleted.
-      if (nextId > MAX_NETWORK_ID) {
-        nextId = findFreeNetworkIdSlot(usedIds, MAX_NETWORK_ID);
-      }
-
-      allocated = nextId;
-      return {
-        ...config,
-        defaults: { ...(config.defaults ?? {}), nextNetworkId: nextId + NETWORK_ID_INCREMENT },
-      };
-    });
-    return allocated;
+    return allocateNetworkIdInStore(this.getEffectiveConfigName());
   }
 
   async ensureRepositoryNetworkId(repoRef: string): Promise<number> {

@@ -3,8 +3,6 @@
  * Platform-agnostic functions that work in both web and CLI environments
  */
 
-// Version comparison
-export { compareVersions } from './version';
 // CSV utilities
 export { buildCSVContent, escapeCSVValue } from './csv';
 // Text formatting
@@ -31,3 +29,5 @@ export {
 export type { SSHTestResult } from './sshTestResult';
 // SSH test parsing
 export { parseSshTestResult } from './sshTestResult';
+// Version comparison
+export { compareVersions } from './version';

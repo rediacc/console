@@ -4,8 +4,8 @@ description: "Loo konfiguratsioon, lisa masinad, häälesta serverid ja konfigur
 category: "Guides"
 order: 3
 language: et
-sourceHash: "19a208e453f7d742"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "1fba8ac242726528"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 # Masina ülesseadmine
@@ -78,6 +78,34 @@ See käsk:
 
 > Seadistust on vaja käivitada iga masina kohta ainult üks kord. Vajadusel on seda ohutu uuesti käivitada.
 
+## Andmesalvestuse taustasüsteemid
+
+Andmesalv on masinapõhine salvestuspesa, mis hoiab krüptitud repositooriumi pilte. `machine setup` loob vaikimisi **kohaliku** andmesalve: silmus-toetatud BTRFS-failisüsteemi serveri enda kettal, mille suurus määratakse lipuga `--datastore-size` (vaikimisi `95%` saadaolevast kettast). See on õige taustasüsteem peaaegu iga ühemasinalise juurutuse jaoks ega vaja midagi peale serveri enda.
+
+### Andmesalve suuruse määramine
+
+`--datastore-size` võtab vastu protsendi (`95%`) või absoluutse suuruse (`50G`, `1T`). Andmesalve saab hiljem veebis suurendada:
+
+```bash
+rdc datastore resize -m server-1 --size 200G
+```
+
+Andmesalve sees olevate repositooriumide suurus määratakse sõltumatult `repo create` ajal ja neid saab töö ajal laiendada, nii et sul pole vaja andmesalve ette liigselt ette valmistada.
+
+### Ceph RBD taustasüsteem
+
+Jagatud, horisontaalselt skaleeruva või Kubernetese-toega salvestuse jaoks initsialiseeri andmesalv selle asemel välisel Ceph-klastril. Andmesalv elab siis RBD-pildil (BTRFS selle peal, ilma pildipõhise LUKS-kihita) ja fork'id kasutavad BTRFS-reflinkide asemel RBD copy-on-write kloone.
+
+```bash
+# 1. Salvesta masina Ceph-viide (pesa + RBD-pilt, mitte salajane)
+rdc config machine set-ceph -m server-1 --pool rbd --image datastore-server1
+
+# 2. Initsialiseeri andmesalv Ceph-taustasüsteemil
+rdc datastore init -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
+```
+
+Ceph-võtmerõngad jäävad masinatesse; konfiguratsioonifail sisaldab ainult mittesalajasi pesa- ja pildiviiteid. Ceph on ka salvestuskiht, mida Kubernetese klastrid tarbivad ceph-csi kaudu. Vaata juhendit [Kubernetes](/et/docs/kubernetes) klastrite ja püsivate köidete jaoks ning [Arhitektuur](/et/docs/architecture) kahe taustasüsteemi võrdluseks.
+
 ## Hostimisvõtmete haldamine
 
 Kui serveri SSH hostimisvõti muutub (nt pärast uuesti paigaldamist), uuenda salvestatud võtmeid:
@@ -104,7 +132,7 @@ See avab masinaga SSH-ühenduse ja käivitab käsu. Kui see õnnestub, on sinu S
 rdc doctor
 ```
 
-> **Vihje**: SSH-ühenduvuse kontrollimiseks käivita `rdc term connect -m <machine> -c "hostname"` või kasuta otse `ssh`.
+> **Vihje**: SSH-ühenduvuse kontrollimiseks käivita `rdc term connect <machine> -c "hostname"` või kasuta otse `ssh`.
 
 ## Infrastruktuuri konfiguratsioon
 

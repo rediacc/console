@@ -37,10 +37,10 @@
  *   `commitments.fields`.
  */
 
-import { toBase64, fromBase64 } from './aes.js';
+import { fromBase64, toBase64 } from './aes.js';
+import { type CommitmentValueKind, canonicalize, valueKind } from './canonical.js';
 import { HKDF_INFO } from './constants.js';
 import { hkdfDeriveRaw } from './hkdf.js';
-import { canonicalize, valueKind, type CommitmentValueKind } from './canonical.js';
 
 /** ArrayBuffer coercion helper (Web Crypto needs the underlying buffer). */
 function buf(data: Uint8Array): ArrayBuffer {
@@ -109,7 +109,7 @@ export async function commitField(
 
 /**
  * Compute commitments for a list of pointer/value pairs. Caller is responsible
- * for selecting which pointers to commit (see packages/cli/src/schema/walker.ts).
+ * for selecting which pointers to commit (see packages/shared/src/config-schema/walker.ts).
  */
 export async function computeCommitments(
   fck: CryptoKey,

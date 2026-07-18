@@ -92,6 +92,13 @@ const ALLOWED_ENGLISH = [
   /\{\{t:[^}]+\}\}/,               // Translation keys
   /\*\*{{t:[^}]+}}\*\*/,           // Bold translation keys
   /`[^`]+`/,                        // Inline code
+  // A bold subcommand label, e.g. `**list:**`. These are COMMAND NAMES, not prose:
+  // the generated CLI docs emit one per leaf, and `rdc backup list` is spelled "list"
+  // in every language. Its siblings in the same file (**pull:**, **push:**, **status:**,
+  // **restore:**, **purge:**) already pass; only **list:** ever tripped, and solely
+  // because "list" also happens to be an English instruction word. Translating it would
+  // document a command that does not exist.
+  /^\*\*[a-z][a-z0-9-]*:\*\*$/,
   /\b(JSON|CSV|API|URL|SSH|HTTP|HTTPS|SQL|HTML|CSS|JS|TS|UUID|ID|IP|DNS|TLS|SSL|VPN|VM|OS|CPU|RAM|GB|MB|KB|TB|GHz|MHz)\b/i,  // Technical acronyms
   /\b(docker|git|npm|node|bash|linux|windows|macos)\b/i,  // Technical product names
   /\b(setup|backup|deploy|fork|unmount|checkpoint)\b/i,   // Function names that might appear

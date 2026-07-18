@@ -2,16 +2,15 @@ import { formatSizeBytes } from '@rediacc/shared/renet-contract';
 import { type RemoteFile, resolveGuidFileNames } from '@rediacc/shared/storage-browser';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { getStateProvider } from '../services/state.js';
 import { configService } from '../services/config/config-resources.js';
-import { localExecutorService } from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
+import { getExecutor } from '../services/executor/executor-factory.js';
 import { storageBrowserService } from '../services/repo/storage-browser.js';
-import { createResourceCommands } from '../utils/commandFactory.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import { assertStorageExists } from './_validate.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
+import { registerStorageEndpointCommands } from './storage-endpoints.js';
 
 function formatFileName(f: RemoteFile): string {
   if (f.isDirectory) return `${f.name}/`;
@@ -39,7 +38,7 @@ interface StoragePruneOptions {
 /** Build a set of GUIDs that are currently live (mounted or running) on the
  *  machine. Used as a safety preflight before deleting cloud backups. */
 async function fetchLiveGuids(options: StoragePruneOptions): Promise<Set<string>> {
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName: 'repository_list',
     machineName: options.machine,
     params: {},
@@ -99,7 +98,7 @@ async function listGuidsAtPath(
   subpath: StorageMode,
   options: StoragePruneOptions
 ): Promise<string[]> {
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName: 'backup_list',
     machineName: options.machine,
     params: { sourceType: 'storage', from: storageName, path: subpath },
@@ -188,7 +187,7 @@ async function deleteOrphansByMode(
   let firstCall = true;
   for (const [mode, guids] of byMode) {
     outputService.info(`Deleting ${guids.length} orphan(s) from ${mode}/`);
-    const deleteResult = await localExecutorService.execute({
+    const deleteResult = await getExecutor().execute({
       functionName: 'backup_delete',
       machineName: options.machine,
       params: {
@@ -247,49 +246,22 @@ async function executeStoragePrune(
 }
 
 export function registerStorageCommands(program: Command): void {
-  const storage = createResourceCommands(program, {
-    resourceName: 'storage',
-    resourceNamePlural: 'storage systems',
-    nameField: 'storageName',
-    parentOption: 'team',
-    operations: {
-      list: async (params) => {
-        const provider = getStateProvider();
-        return provider.storage.list({ teamName: params?.teamName as string });
-      },
-      create: async (payload) => {
-        const provider = getStateProvider();
-        return provider.storage.create(payload);
-      },
-      rename: async (payload) => {
-        const provider = getStateProvider();
-        return provider.storage.rename(payload);
-      },
-      delete: async (payload) => {
-        const provider = getStateProvider();
-        return provider.storage.delete(payload);
-      },
-    },
-    createOptions: [
-      { flags: '--vault <json>', description: t('options.vaultJson'), required: true },
-    ],
-    transformCreatePayload: (name, opts) => ({
-      storageName: name,
-      teamName: opts.team,
-      vaultContent: opts.vault,
-    }),
-  });
-  storage.summary(t('commands.storage.descriptionShort'));
+  const storage = program
+    .command('storage')
+    .summary(t('commands.storage.descriptionShort'))
+    .description(t('commands.storage.description'));
+
+  // add/remove/list/import — the endpoint registry (absorbs config storage *).
+  registerStorageEndpointCommands(storage, program);
 
   // Add browse subcommand for listing files in a storage system
   storage
     .command('browse')
     .description(t('commands.storage.browse.description'))
-    .requiredOption('--name <name>', t('options.name'))
+    .argument('<storage>', t('options.storageRef'))
     .option('--path <subpath>', t('commands.storage.browse.pathOption'), '')
-    .action(async (options: { name: string; path: string }) => {
+    .action(async (name: string, options: { path: string }) => {
       try {
-        const name = options.name;
         const storageConfig = await configService.getStorage(name);
         const guidMap = await configService.getRepositoryGuidMap();
 
@@ -323,7 +295,7 @@ export function registerStorageCommands(program: Command): void {
     .command('prune')
     .summary(t('commands.storage.prune.descriptionShort'))
     .description(t('commands.storage.prune.description'))
-    .requiredOption('--name <name>', t('options.name'))
+    .argument('<storage>', t('options.storageRef'))
     .requiredOption('-m, --machine <name>', t('commands.storage.prune.machineOption'))
     .option('--dry-run', t('options.dryRun'))
     .option('--force', t('options.force'))
@@ -331,9 +303,8 @@ export function registerStorageCommands(program: Command): void {
     .option('--grace-days <days>', t('options.graceDays'), Number.parseInt)
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
-    .action(async (options: StoragePruneOptions & { name: string }) => {
+    .action(async (storageName: string, options: StoragePruneOptions) => {
       try {
-        const storageName = options.name;
         await assertStorageExists(storageName);
         await executeStoragePrune(storageName, options);
       } catch (error) {

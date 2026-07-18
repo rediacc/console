@@ -4,8 +4,8 @@ description: "Kuidas Edge ja Stable erinevad ning millist kanalit kasutada."
 category: "Concepts"
 order: 2
 language: et
-sourceHash: "5fdcb0e8944f5d60"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "6669b5b089f94a39"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Rediacc saadab uuendusi kahe kanali kaudu: **Stable** ja **Edge**. Need töötavad eraldi infrastruktuuril ja toovad kaasa erinevad kompromissid.
@@ -25,7 +25,7 @@ Edge saab iga muudatuse kohe pärast seda, kui see ühineb põhaharuga. See on t
 
 - Pidevalt juurutatav tootmine, väljastatuna iga ühendamisega põhiharuga
 - 2X Community plaani piirangud (vt allolevat tabelit)
-- Igavesti tasuta. Edge'il pole tasulisi plaane.
+- Edge'il pole tasulisi plaane; kontod töötavad Community plaanil.
 - Eraldi kontod Stable'ist. Andmed ei liiku kanalite vahel.
 - Domeenid: `edge-eu.rediacc.com`, `edge-us.rediacc.com`, `edge-asia.rediacc.com`
 
@@ -35,20 +35,20 @@ Edge saab iga muudatuse kohe pärast seda, kui see ühineb põhaharuga. See on t
 |---|---|---|
 | **Juurutamise sagedus** | Pärast 7-päevast leotust | Iga ühendamine põhiharuga |
 | **Stabiilsus** | Testitud 7 päeva | Tootmine, pidevalt juurutatav |
-| **Community plaani piirangud** | 10 GB hoidlad, 500 väljastamist/kuu, 2 masinat | 20 GB hoidlad, 1000 väljastamist/kuu, 4 masinat |
+| **Community plaani piirangud** | 10 GB hoidlad, 100 seadistust/kuu, 1 masin | 20 GB hoidlad, 200 seadistust/kuu, 2 masinat |
 | **Tasulised plaanid** | Saadaval (Professional, Business, Enterprise) | Pole saadaval |
 | **Kontod** | Sõltumatud | Sõltumatud (eraldi Stable'ist) |
 | **Parim kasutus** | Tootmine, tasulised töökoormustered | Tootmine, kõrvaalprojektid, varajane juurdepääs |
 
 ## Edge 2X piirangud
 
-Edge'i kasutajad Community plaanil saavad topelt ressursipiiranguid tasuta:
+Kui käitad Edge't Community plaanil, kahekordistuvad su ressursipiirangud:
 
 | Ressurss | Stable Community | Edge Community |
 |---|---|---|
 | Hoidla suurus | 10 GB | 20 GB |
-| Litsentsi väljastamisi kuus | 500 | 1000 |
-| Masina aktiveerimisi | 2 | 4 |
+| Litsentsi väljastamisi kuus | 100 | 200 |
+| Masina aktiveerimisi | 1 | 2 |
 
 Kui vajad kõrgemaid piiranguid või tasulise plaani funktsioone, loo konto Stable kanalil ja uuenda seal.
 

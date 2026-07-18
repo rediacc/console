@@ -4,7 +4,7 @@ description: "Eemalda orvuks jäänud varukoopiad, aegunud hetktõmmised, hoidla
 category: "Guides"
 order: 12
 language: et
-sourceHash: "d2700c2ac4473962"
+sourceHash: "af01691f5fe908ee"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -14,8 +14,8 @@ Kärpimine eemaldab olekud, mis ei vasta enam elusale ressursile. Kolm käsku ka
 
 | Käsk | Mida puhastab | Kus asub tõeallikas |
 |---|---|---|
-| `rdc storage prune --name <storage> -m <machine>` | Orvuks jäänud varukoopiad pilvemälus | Kohalik CLI konfiguratsioon (ristleeritakse koos teostusmasina vastu ühendamise ohutuse jaoks) |
-| `rdc machine prune --name <machine>` | Masinal olevad andmehoidla artefaktid (alati); orvuks jäänud või tundmatud hoidlakujutised (valikuline) | Kohalik CLI konfiguratsioon + masina `.interim/state` peegel |
+| `rdc storage prune <storage> -m <machine>` | Orvuks jäänud varukoopiad pilvemälus | Kohalik CLI konfiguratsioon (ristleeritakse koos teostusmasina vastu ühendamise ohutuse jaoks) |
+| `rdc machine prune <machine>` | Masinal olevad andmehoidla artefaktid (alati); orvuks jäänud või tundmatud hoidlakujutised (valikuline) | Kohalik CLI konfiguratsioon + masina `.interim/state` peegel |
 | `rdc config prune` | Kohaliku konfiguratsiooni jäänukid (serdi vahemälu, aegunud arhiivid, rippuvad ristviited) | Ainult kohalik CLI konfiguratsioon |
 
 Need kolm on sõltumatud. Saad käivitada mis tahes ühe ilma teisteta. Need jagavad ühist ohutusmudelit, mida kirjeldatakse allpool jaotises [Ohutus](#ohutusmudel).
@@ -202,7 +202,7 @@ Kärpimine on loodud olema mitme konfiguratsiooni seadistustes vaikimisi ohutu.
 
 ### Armuaeg
 
-Kui hoidla eemaldatakse konfiguratsioonist `--archive-config` abil, liigutatakse selle mandaadikirje `resources.deletedRepositories[]` alla koos `deletedAt` ajatempliga. Kärpimiskäsud austavad armuaega (vaikimisi 7 päeva), mille jooksul on hiljuti arhiveeritud hoidlad kustutamise eest kaitstud. See annab sulle aega hoidla taastamiseks (`rdc config repository restore-archived --name <guid>`), kui see eemaldati kogemata. Pärast armuaja lõppu puhastab `storage prune`, `machine prune` ja `config prune` kirje automaatselt.
+Kui hoidla eemaldatakse konfiguratsioonist `--archive-config` abil, liigutatakse selle mandaadikirje `resources.deletedRepositories[]` alla koos `deletedAt` ajatempliga. Kärpimiskäsud austavad armuaega (vaikimisi 7 päeva), mille jooksul on hiljuti arhiveeritud hoidlad kustutamise eest kaitstud. See annab sulle aega hoidla taastamiseks (`rdc repo admin archive restore <guid>`), kui see eemaldati kogemata. Pärast armuaja lõppu puhastab `storage prune`, `machine prune` ja `config prune` kirje automaatselt.
 
 ### Ühendamise ohutuse eelkontroll
 

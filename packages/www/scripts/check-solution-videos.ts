@@ -48,11 +48,42 @@ function loadManifest(): VideoManifest {
 
 function listSlugs(): string[] {
   if (!fs.existsSync(solutionsPagesDir)) return [];
-  return fs
-    .readdirSync(solutionsPagesDir)
-    .filter((f) => f.endsWith('.astro'))
-    .map((f) => f.replace(/\.astro$/, ''))
-    .sort();
+  return (
+    fs
+      .readdirSync(solutionsPagesDir)
+      .filter((f) => f.endsWith('.astro'))
+      .map((f) => f.replace(/\.astro$/, ''))
+      // index.astro is the solutions LISTING page, not a solution page; it
+      // renders no SPSolutionVideo and has no SOLUTION_PAGES entry.
+      .filter((slug) => slug !== 'index')
+      .sort()
+  );
+}
+
+/**
+ * A slug needs manifest videos only if its page actually renders the player:
+ * SolutionPage.astro emits SPSolutionVideo when the slug's SOLUTION_PAGES
+ * `sections` array contains 'video' (or uses ALL_SECTIONS, which does).
+ *
+ * The config module cannot be imported here (it imports .svg assets, which
+ * tsx cannot load), so this reads the slug's config block as text. Fail-safe:
+ * a slug we cannot classify (no SOLUTION_PAGES entry, e.g. a legacy-template
+ * page, or an unparseable block) is treated as video-bearing, so drift can
+ * only ever FAIL the gate, never silently skip a shipped player.
+ */
+function slugRendersVideo(slug: string): boolean {
+  const configPath = path.join(wwwRoot, 'src', 'config', 'solution-pages.ts');
+  if (!fs.existsSync(configPath)) return true;
+  const text = fs.readFileSync(configPath, 'utf8');
+  const start = text.indexOf(`'${slug}': {`);
+  if (start === -1) return true;
+  // The entry ends where the next two-space-indented quoted key begins.
+  const next = text.indexOf("\n  '", start);
+  const block = next === -1 ? text.slice(start) : text.slice(start, next);
+  if (/sections:\s*ALL_SECTIONS/.test(block)) return true;
+  const sections = /sections:\s*\[([^\]]*)\]/.exec(block);
+  if (!sections) return true;
+  return /['"]video['"]/.test(sections[1]);
 }
 
 function missingManifestFields(manifest: VideoManifest, slug: string, lang: string): string[] {
@@ -78,10 +109,17 @@ function main(): number {
     return 1;
   }
 
+  const videoless = slugs.filter((slug) => !slugRendersVideo(slug));
+  const required = slugs.filter((slug) => slugRendersVideo(slug));
+  // Never truncate silently: name every slug the gate is NOT checking.
+  for (const slug of videoless) {
+    console.log(`↷ ${slug}: no 'video' section in SOLUTION_PAGES, videos not required`);
+  }
+
   const manifest = loadManifest();
   const misses: Miss[] = [];
   let checked = 0;
-  for (const slug of slugs) {
+  for (const slug of required) {
     for (const lang of VIDEO_LANGS) {
       checked++;
       const missing = missingManifestFields(manifest, slug, lang);
@@ -93,8 +131,10 @@ function main(): number {
 
   if (misses.length === 0) {
     console.log(
-      `✓ Solution videos OK: ${slugs.length} slugs × ${VIDEO_LANGS.length} langs ` +
-        `(${checked} sets present; ar/et/tr fall back to en by design)`
+      `✓ Solution videos OK: ${required.length} slugs × ${VIDEO_LANGS.length} langs ` +
+        `(${checked} sets present; ar/et/tr fall back to en by design` +
+        (videoless.length ? `; ${videoless.length} videoless slug(s) skipped` : '') +
+        `)`
     );
     return 0;
   }

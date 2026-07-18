@@ -5,6 +5,7 @@ category: "Legal"
 order: 7
 language: zh
 sourceHash: "dba51d5d6dcf8197"
+sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 
 许多国家要求其公民的个人数据在国境内存储和处理。Rediacc 的自托管架构在设计上满足这些要求：数据保留在您的机器上、您的数据中心、您的管辖区内。克隆期间数据不会离开机器，也没有第三方 SaaS 处理您的数据。

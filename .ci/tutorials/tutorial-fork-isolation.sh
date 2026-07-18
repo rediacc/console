@@ -22,21 +22,21 @@ APP_DIR="$SCRIPT_DIR/apps/demo-pgadmin"
 # Pre-recording setup
 rm -f ~/.config/rediacc/rediacc.json 2>/dev/null || true
 rdc config init --ssh-key "$TUTORIAL_SSH_KEY"
-rdc config machine add --name "$M" --ip "$TUTORIAL_MACHINE_IP" --user "$TUTORIAL_MACHINE_USER"
+rdc machine add "$M" --ip "$TUTORIAL_MACHINE_IP" --user "$TUTORIAL_MACHINE_USER"
 for i in $(seq 1 30); do
     ssh -i "$TUTORIAL_SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=2 \
         "$TUTORIAL_MACHINE_USER@$TUTORIAL_MACHINE_IP" true 2>/dev/null && break
     sleep 2
 done
-rdc config machine setup --name "$M"
+rdc machine setup "$M"
 # Reap any orphaned repo state from previous tutorial runs.
 rdc machine prune --name "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 
-rdc repo delete --name demo-pgadmin:experiment --machine "$M" 2>/dev/null || true
-rdc repo delete --name demo-pgadmin --machine "$M" 2>/dev/null || true
-rdc repo create --name demo-pgadmin --machine "$M" --size 2G
-rdc repo sync upload --machine "$M" --repository demo-pgadmin --local "$APP_DIR/"
-rdc repo up --name demo-pgadmin --machine "$M"
+rdc repo delete demo-pgadmin:experiment 2>/dev/null || true
+rdc repo delete demo-pgadmin 2>/dev/null || true
+rdc repo create demo-pgadmin --machine "$M" --size 2G
+rdc repo sync upload demo-pgadmin --local "$APP_DIR/"
+rdc repo up demo-pgadmin
 
 # Restore stdout/stderr so asciinema captures only the demo from here on.
 exec >&3 2>&4
@@ -49,9 +49,9 @@ run_cmd "rdc repo list --machine $M"
 pause 2
 
 section "Fork it — a full copy, in seconds"
-# --detach: the CoW copy + container start take seconds; pgAdmin's first-boot
+# --no-wait: the CoW copy + container start take seconds; pgAdmin's first-boot
 # health warmup continues in the background and is not worth 2 minutes of cast.
-run_cmd "rdc repo fork --parent demo-pgadmin --tag experiment --machine $M --up --detach"
+run_cmd "rdc repo fork demo-pgadmin --tag experiment --up --no-wait"
 
 pause 2
 
@@ -61,12 +61,14 @@ run_cmd "rdc repo list --machine $M"
 pause 2
 
 section "Done experimenting? Throw the fork away"
-run_cmd "rdc repo delete --name demo-pgadmin:experiment --machine $M"
+run_cmd "rdc repo delete demo-pgadmin:experiment"
 
 pause 2
 
 # End the on-camera portion; cleanup below is not recorded.
 end_recording
 # Cleanup — keep the grand deployed: the video render stage forks it again
-# for the browser scenes.
-rdc config repository remove --name demo-pgadmin:experiment 2>/dev/null || true
+# for the browser scenes. The on-camera `repo delete` above removed the fork
+# from the machine but RETAINED its config row; `--archive-config` is what
+# drops the row, and delete is idempotent for an already-absent image.
+rdc repo delete demo-pgadmin:experiment --archive-config -y 2>/dev/null || true

@@ -7,7 +7,7 @@ description: >-
 category: Concepts
 order: 35
 language: et
-sourceHash: "eb4c8dd0389a45a6"
+sourceHash: "30c1cd3d88219e7c"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -30,7 +30,7 @@ Niisiis suunad AI-koodiabistaja oma infrastruktuuri peale. Kui Claude Code, Curs
 | `rdc config edit` (interaktiivne redaktor) | 🔴 keeldutud | Inimene seab `REDIACC_ALLOW_CONFIG_EDIT=*` enne agendi käivitamist |
 | `rdc config edit --apply <file>` | 🔴 keeldutud | Sama ülekate |
 | `rdc config field rotate --pointer <pointer>` | 🔴 keeldutud | Sama ülekate; kasutab interaktiivset kinnitust |
-| `rdc term connect -m <machine>` (otsene masina SSH) | 🔴 keeldutud | Tee esmalt repo fork ja ühenda fork'iga |
+| `rdc term connect <machine>` (otsene masina SSH) | 🔴 keeldutud | Tee esmalt repo fork ja ühenda fork'iga |
 
 Kõik, milles agendile keeldutakse, kirjutatakse auditi logisse koos `outcome: refused` ja põhjusega.
 

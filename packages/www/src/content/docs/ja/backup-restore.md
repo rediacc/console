@@ -4,8 +4,8 @@ description: 暗号化されたリポジトリをあらゆるrclone互換スト�
 category: Guides
 order: 7
 language: ja
-sourceHash: "7ff112c2ec14c35f"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "d800519615085ee9"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # バックアップと復元
@@ -118,28 +118,33 @@ rdc repo backup list --from my-storage -m server-1 --path cold
 
 リポジトリは `hot/` と `cold/` の両方に出現する可能性があります（毎時スケジュールがスナップショットを取り、毎週スケジュールが再度スナップショットを取る）。マージされた一覧では両方の行が表示されるため、どのストリームがどのリポジトリをカバーしているかが明確になります。
 
-## 一括同期
+## リポジトリを1つずつ同期
 
-すべてのリポジトリを一度に送信または取得します：
+プッシュとプルは、ref（`name`、`name:tag`、または `name@machine`）で指定した単一のリポジトリに対して動作します。「すべてのリポジトリを一度に」という形式はありません。リポジトリごとにコマンドを1回ずつ実行してください。
 
-### すべてをストレージに送信
+### ストレージに送信
 
 ```bash
-rdc repo push --to my-storage -m server-1
+rdc repo push shop@server-1 --to my-storage
 ```
 
-### すべてをストレージから取得
+### ストレージから取得
 
 ```bash
-rdc repo pull --from my-storage -m server-1
+rdc repo pull shop@server-1 --from my-storage
 ```
 
 | オプション | 説明 |
-|-----------|------|
-| `--to <storage>` | ターゲットストレージ（送信方向） |
-| `--from <storage>` | ソースストレージ（取得方向） |
-| `--repo <name>` | 特定のリポジトリを同期（繰り返し指定可能） |
-| `--override` | 既存のバックアップを上書き |
+|--------|-------------|
+| `--to <remote>` | 宛先のストレージまたはマシン（送信） |
+| `--to-machine <machine>` | マシン間送信の宛先マシン |
+| `--from <remote>` | ソースのストレージまたはマシン（取得） |
+| `--from-machine <machine>` | マシン間取得のソースマシン |
+| `--force` | 既存のバックアップまたはリポジトリを上書き |
+| `--checkpoint` | 送信前にCRIUチェックポイントを作成（送信のみ） |
+| `--up` | 取得後にリポジトリをマウントしてデプロイ（取得のみ） |
+| `--bwlimit <limit>` | rsync転送の帯域幅制限（例：`10M`） |
+| `--delta-base <guid>` | 不変のベースGUIDと比較して変更されたブロックのみを転送 |
 | `--debug` | 詳細出力を有効化 |
 | `--skip-router-restart` | 操作後のルートサーバー再起動をスキップ |
 
@@ -177,8 +182,8 @@ Rediaccは名前付きバックアップ戦略を使用します。各戦略は�
 
 **オペレーターが障害を検出する方法：**
 
-- `rdc machine query --name <machine> --containers`で実行状態を確認します。期待されるセットと比較してください。
-- マシン上の`/var/run/rediacc/cold-backup-<guid>.status.json`を確認します。`rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`で検査できます。`success: false`と古い`startedAt`は、最後のバックアップが正常に完了しなかったことを示します。
+- `rdc machine status <machine> --containers`で実行状態を確認します。期待されるセットと比較してください。
+- マシン上の`/var/run/rediacc/cold-backup-<guid>.status.json`を確認します。`rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`で検査できます。`success: false`と古い`startedAt`は、最後のバックアップが正常に完了しなかったことを示します。
 - renetバックアップ実行のログ（`journalctl -u renet-*`または直接の`rdc machine backup schedule`呼び出し）は、`Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`の形式の最終サマリー行を出力します。空でない`failed_repos`がgrepのターゲットです。
 
 ### コールドバックアップのダウンタイム見積もり
@@ -302,7 +307,7 @@ rdc config backup-strategy remove --name weekly-cold
 }
 ```
 
-> **バインディングはローカル設定のみです。** ストラテジーを定義してマシンにバインドしてもマシン自体には影響しません。systemd タイマーをデプロイするには `rdc machine backup schedule -m <machine>` を実行してください（[マシンへのスケジュールのデプロイ](#マシンへのスケジュールのデプロイ)を参照）。ストラテジーやバインディングを変更した後は再度実行してください。
+> **バインディングはローカル設定のみです。** ストラテジーを定義してマシンにバインドしてもマシン自体には影響しません。systemd タイマーをデプロイするには `rdc backup schedule -m <machine>` を実行してください（[マシンへのスケジュールのデプロイ](#マシンへのスケジュールのデプロイ)を参照）。ストラテジーやバインディングを変更した後は再度実行してください。
 
 ## ホットとコールドの選択、およびリポジトリごとのフィルタリング
 

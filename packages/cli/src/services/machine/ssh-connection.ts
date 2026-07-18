@@ -4,10 +4,10 @@
  */
 
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
-import { repoTagFromName } from '../../remote/repository/index.js';
 import { t } from '../../i18n/index.js';
-import { getStateProvider } from '../state.js';
+import { repoTagFromName } from '../../remote/repository/index.js';
 import { debugLog } from '../../utils/debug.js';
+import { getStateProvider } from '../state.js';
 
 export interface ConnectionDetails {
   host: string;
@@ -22,6 +22,13 @@ export interface ConnectionDetails {
   repositoryPath?: string;
   networkId?: string;
   repositoryGuid?: string;
+  /**
+   * Kubernetes namespace to pin the kubectl current-context to for a
+   * `--cluster -r <repo>` session (design D14). Set by
+   * applyClusterConnectionContext; consumed by the term/vscode preambles to run
+   * `kubectl config set-context --current --namespace=<ns>`.
+   */
+  kubeNamespace?: string;
 }
 
 interface BaseConnectionInfo {

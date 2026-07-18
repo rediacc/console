@@ -4,8 +4,8 @@ description: "Verschlüsselte Repositories auf rclone-kompatiblem Speicher siche
 category: "Guides"
 order: 7
 language: de
-sourceHash: "7ff112c2ec14c35f"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "d800519615085ee9"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Backup & Wiederherstellung
@@ -118,28 +118,33 @@ Geplante Backups landen in moduspezifischen Unterordnern innerhalb des konfiguri
 
 Ein Repo kann sowohl in `hot/` als auch in `cold/` erscheinen (der stündliche Zeitplan erfasst es; der wöchentliche erfasst es erneut). Die zusammengeführte Auflistung zeigt beide Zeilen, sodass klar ist, welche Streams welche Repos abdecken.
 
-## Massen-Synchronisation
+## Ein Repository nach dem anderen synchronisieren
 
-Alle Repositories auf einmal übertragen oder abrufen:
+Push und Pull wirken jeweils auf ein einzelnes Repository, adressiert über einen Ref (`name`, `name:tag` oder `name@machine`). Es gibt keine Form für „alle Repositories auf einmal“: Führen Sie den Befehl einmal pro Repository aus.
 
-### Alle zum Speicher übertragen
+### In den Speicher übertragen
 
 ```bash
-rdc repo push --to my-storage -m server-1
+rdc repo push shop@server-1 --to my-storage
 ```
 
-### Alle vom Speicher abrufen
+### Aus dem Speicher abrufen
 
 ```bash
-rdc repo pull --from my-storage -m server-1
+rdc repo pull shop@server-1 --from my-storage
 ```
 
 | Option | Beschreibung |
 |--------|-------------|
-| `--to <storage>` | Ziel-Speicher (Push-Richtung) |
-| `--from <storage>` | Quell-Speicher (Pull-Richtung) |
-| `--repo <name>` | Bestimmte Repositories synchronisieren (wiederholbar) |
-| `--override` | Vorhandene Backups überschreiben |
+| `--to <remote>` | Ziel-Speicher oder -Maschine (Push) |
+| `--to-machine <machine>` | Zielmaschine für Maschine-zu-Maschine-Push |
+| `--from <remote>` | Quell-Speicher oder -Maschine (Pull) |
+| `--from-machine <machine>` | Quellmaschine für Maschine-zu-Maschine-Pull |
+| `--force` | Ein vorhandenes Backup oder Repository überschreiben |
+| `--checkpoint` | Vor dem Pushen einen CRIU-Checkpoint erstellen (nur Push) |
+| `--up` | Das Repository nach dem Pull einhängen und bereitstellen (nur Pull) |
+| `--bwlimit <limit>` | Bandbreitenlimit für den rsync-Transfer (z. B. `10M`) |
+| `--delta-base <guid>` | Nur geänderte Blöcke gegenüber einer unveränderlichen Basis-GUID übertragen |
 | `--debug` | Ausführliche Ausgabe aktivieren |
 | `--skip-router-restart` | Den Neustart des Route-Servers nach der Operation überspringen |
 
@@ -177,8 +182,8 @@ Ein Cold-Backup läuft in drei Phasen pro enthaltenem Repository: **Stopp - Snap
 
 **Wie Betreiber Ausfälle erkennen:**
 
-- `rdc machine query --name <machine> --containers` zeigt den Laufzustand. Vergleichen Sie mit der erwarteten Menge.
-- `/var/run/rediacc/cold-backup-<guid>.status.json` auf der Maschine. Prüfen Sie via `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` mit einem veralteten `startedAt` bedeutet, dass das letzte Backup nicht sauber abgeschlossen wurde.
+- `rdc machine status <machine> --containers` zeigt den Laufzustand. Vergleichen Sie mit der erwarteten Menge.
+- `/var/run/rediacc/cold-backup-<guid>.status.json` auf der Maschine. Prüfen Sie via `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` mit einem veralteten `startedAt` bedeutet, dass das letzte Backup nicht sauber abgeschlossen wurde.
 - Protokolle des renet-Backup-Laufs (`journalctl -u renet-*` oder der direkte `rdc machine backup schedule`-Aufruf) geben eine abschließende Zusammenfassungszeile der Form `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` aus. Ein nicht leeres `failed_repos` ist das grep-Ziel.
 
 ### Abschätzung der Cold-Backup-Ausfallzeit
@@ -302,7 +307,7 @@ Binden Sie in Ihrer Konfiguration einen oder mehrere Strategienamen an eine Masc
 }
 ```
 
-> **Bindung ist nur lokale Konfiguration.** Eine Strategie zu definieren und an eine Maschine zu binden, hat keine Auswirkung auf die Maschine. Führen Sie `rdc machine backup schedule -m <machine>` aus (siehe [Zeitplan auf Maschine deployen](#zeitplan-auf-maschine-deployen)), um die systemd-Timer zu deployen, und führen Sie den Befehl nach jeder Strategie- oder Bindungsänderung erneut aus.
+> **Bindung ist nur lokale Konfiguration.** Eine Strategie zu definieren und an eine Maschine zu binden, hat keine Auswirkung auf die Maschine. Führen Sie `rdc backup schedule -m <machine>` aus (siehe [Zeitplan auf Maschine deployen](#zeitplan-auf-maschine-deployen)), um die systemd-Timer zu deployen, und führen Sie den Befehl nach jeder Strategie- oder Bindungsänderung erneut aus.
 
 ## Hot vs. Cold und Repo-Filterung im Vergleich
 

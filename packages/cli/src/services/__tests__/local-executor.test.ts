@@ -594,4 +594,114 @@ describe('localExecutorService create/fork licensing flow', () => {
     expect(mockConnect).not.toHaveBeenCalled();
     expect(mockRefreshRepoLicenseIdentity).not.toHaveBeenCalled();
   });
+
+  // Bug #46: `kubeCluster` used to ALSO rewrite machineName to the cluster's
+  // control node. KUBECONFIG is the k8s analog of DOCKER_HOST, and DOCKER_HOST
+  // never reroutes the machine either: the caller's derived machine must stand,
+  // or every volume-level op on a k8s repo (trim, diff, commit, repo up's LUKS
+  // mount) runs on the control node instead of the host that mounts the datastore.
+  describe('bug #46: kubeCluster injects KUBECONFIG but never reroutes the machine', () => {
+    it('runs on the caller-derived machine (the datastore attach host), not the control node', async () => {
+      mockExecStreaming.mockImplementationOnce(() => Promise.resolve(0));
+
+      await localExecutorService.execute({
+        functionName: 'repository_trim',
+        // What resolveRepoRef derives: state.datastores[D].attachedTo. This is a
+        // WORKER, deliberately not the cluster's control node.
+        machineName: 'worker-1',
+        kubeCluster: 'c1',
+        captureOutput: true,
+      });
+
+      expect(mockGetLocalMachine).toHaveBeenCalledWith('worker-1');
+      expect(mockGetLocalMachine).not.toHaveBeenCalledWith('c1-cp-1');
+    });
+
+    it('still injects KUBECONFIG for the cluster while running on that machine', async () => {
+      mockExecStreaming.mockImplementationOnce(() => Promise.resolve(0));
+
+      await localExecutorService.execute({
+        functionName: 'repository_up',
+        machineName: 'worker-1',
+        kubeCluster: 'c1',
+        captureOutput: true,
+      });
+
+      const command = mockExecStreaming.mock.calls.at(-1)?.[0] as string;
+      expect(command).toContain('KUBECONFIG=');
+      expect(command).toContain('c1');
+      expect(mockGetLocalMachine).toHaveBeenCalledWith('worker-1');
+    });
+
+    it('a cluster-scoped op still reaches the control node, because its CALL SITE says so', async () => {
+      // services/cluster/* already resolve the control node explicitly
+      // (resolveExecutionTarget({ cluster }) -> machineName: control). That is the
+      // sanctioned way to run FROM the control node: explicit, not ambient.
+      mockExecStreaming.mockImplementationOnce(() => Promise.resolve(0));
+
+      await localExecutorService.execute({
+        functionName: 'kube_node_remove',
+        machineName: 'c1-cp-1',
+        kubeCluster: 'c1',
+        captureOutput: true,
+      });
+
+      expect(mockGetLocalMachine).toHaveBeenCalledWith('c1-cp-1');
+    });
+  });
+
+  // ── #74: the datastore CHANNEL ────────────────────────────────────────────
+  //
+  // renet reads the datastore from the MACHINE VAULT (`p.Datastore()` ->
+  // `machineDatastore`, set only by `WithMachineVault`), which the executor builds
+  // from the config machine record. `repository_create` calls `AddDatastore`, which
+  // reads that vault — NOT the params bag. (The kube_* verbs DO read a `datastore`
+  // param, which is exactly how a caller comes to believe the param is heard: the
+  // same name is live on one verb and inert on another.)
+  //
+  // So a repo on a NAMED datastore had no way to say where it lived, and every
+  // dispatch silently used the machine's default docker datastore instead.
+  //
+  // ★ THIS IS THE TEST THAT MAKES AN INERT FIX IMPOSSIBLE. It asks the CALLEE what
+  // it will accept, not the caller what it meant to send: it asserts the executor
+  // actually threads ExecuteOptions.datastore into the machine record handed to the
+  // vault builder — the one field renet ever reads. A test that only checked that
+  // some command set `params.datastore` would pass while the wire carried the wrong
+  // datastore, which is precisely the bug this guards.
+  describe('datastore override (#74)', () => {
+    it('threads options.datastore into the machine record the vault is built from', async () => {
+      await localExecutorService.execute({
+        functionName: 'repository_create',
+        machineName: 'hostinger',
+        datastore: '/mnt/rediacc-ds/pds3',
+        params: { repository: 'shop' },
+      });
+
+      expect(mockBuildLocalVault).toHaveBeenCalledTimes(1);
+      const opts = mockBuildLocalVault.mock.calls[0][0] as { machine: { datastore?: string } };
+      expect(opts.machine.datastore).toBe('/mnt/rediacc-ds/pds3');
+    });
+
+    it('leaves the machine default intact when no datastore is declared', async () => {
+      // The fallback is CORRECT for a machine with no named datastore, and #74 is
+      // that the caller stayed silent — not that the default exists. A caller that
+      // declares nothing must still get the machine's own datastore.
+      mockGetLocalMachine.mockResolvedValue({
+        machineName: 'hostinger',
+        ip: '127.0.0.1',
+        user: 'root',
+        port: 22,
+        datastore: '/mnt/rediacc',
+      });
+
+      await localExecutorService.execute({
+        functionName: 'repository_create',
+        machineName: 'hostinger',
+        params: { repository: 'shop' },
+      });
+
+      const opts = mockBuildLocalVault.mock.calls[0][0] as { machine: { datastore?: string } };
+      expect(opts.machine.datastore).toBe('/mnt/rediacc');
+    });
+  });
 });

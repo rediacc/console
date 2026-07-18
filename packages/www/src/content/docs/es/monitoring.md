@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: es
-sourceHash: "e2f5d37c534fc40d"
+sourceHash: "b6deba17f1137188"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -157,7 +157,7 @@ El temporizador del scrub se instala automáticamente en el primer inicio del da
 
 ### Estado del scrub
 
-El resultado del último scrub se guarda fuera del volumen BTRFS (en `/var/lib/rediacc/scrub-last-result.json`) para que permanezca legible incluso si el volumen tiene problemas. La salida de `rdc machine query --system` incluye un campo `scrub_status`:
+El resultado del último scrub se guarda fuera del volumen BTRFS (en `/var/lib/rediacc/scrub-last-result.json`) para que permanezca legible incluso si el volumen tiene problemas. La salida de `rdc machine status --system` incluye un campo `scrub_status`:
 
 ```json
 "scrub_status": {
@@ -187,7 +187,7 @@ Para ejecutar un scrub inmediatamente (por ejemplo, después de un corte de ener
 rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
-El resultado se guarda en el mismo archivo JSON y es visible de inmediato en el siguiente `rdc machine query --system`.
+El resultado se guarda en el mismo archivo JSON y es visible de inmediato en el siguiente `rdc machine status --system`.
 
 ## Visión General de la Máquina
 

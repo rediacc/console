@@ -1,38 +1,38 @@
-import { Command } from 'commander';
+import type { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { isAgentEnvironment } from '../../utils/agent-guard.js';
-import { registerCloudCommands } from './provision.js';
-import { registerContainersCommand } from './containers.js';
-import { registerCrudCommands } from './crud.js';
-import { registerDeployBackupCommand } from './deploy-backup.js';
 import { registerHealthCommand } from './health.js';
+import { registerInfraCommands } from './infra.js';
+import { registerProviderCommands } from './provider.js';
+import { registerCloudCommands } from './provision.js';
 import { registerPruneCommand } from './prune.js';
-import { registerRepositoriesCommand } from './repositories.js';
-import { registerServicesCommand } from './services.js';
-import { registerQueryCommand } from './status.js';
+import { registerMachineRegistrationCommands } from './register.js';
+import { registerStatusCommand } from './status.js';
 
 export function registerMachineCommands(program: Command): void {
-  // Create machine command and register CRUD commands
-  const machine = registerCrudCommands(program);
-  machine.summary(t('commands.machine.descriptionShort'));
+  const machine = program
+    .command('machine')
+    .summary(t('commands.machine.descriptionShort'))
+    .description(t('commands.machine.description'));
 
-  // Register all other command modules
-  registerRepositoriesCommand(machine, program);
+  // Config-CRUD + lifecycle: add/remove/list/scan-keys/setup, then the
+  // machine-reaching verbs. `machine query` is now `machine status` and folds in
+  // the retired containers/services/repos section commands as flags.
+  registerMachineRegistrationCommands(machine, program);
+  registerStatusCommand(machine, program);
   registerHealthCommand(machine, program);
-  registerContainersCommand(machine, program);
-  registerServicesCommand(machine, program);
-  registerQueryCommand(machine, program);
   registerCloudCommands(machine, program);
-  registerDeployBackupCommand(machine);
   registerPruneCommand(machine);
+  registerProviderCommands(machine, program);
+  registerInfraCommands(machine, program);
 
   machine.addHelpText(
     'after',
     `
 ${t('help.examples')}
-  $ rdc machine query --name server-1                          ${t('help.machine.query')}
-  $ rdc machine query --name server-1 --containers             ${t('help.machine.containers')}
-  $ rdc machine query --name server-1 --system --output json   ${t('help.machine.health')}
+  $ rdc machine status server-1                          ${t('help.machine.query')}
+  $ rdc machine status server-1 --containers             ${t('help.machine.containers')}
+  $ rdc machine status server-1 --system --output json   ${t('help.machine.health')}
 `
   );
 

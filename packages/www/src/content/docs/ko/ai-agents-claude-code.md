@@ -4,6 +4,8 @@ description: 자율적인 Rediacc 인프라 관리를 위한 Claude Code 구성 
 category: Guides
 order: 31
 language: ko
+sourceHash: "0a4b93dedcf18e6d"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Claude Code는 `rdc` CLI를 통해 Rediacc와 기본적으로 연동됩니다. 이 가이드에서는 설정, 권한 및 일반적인 워크플로를 다룹니다.
@@ -98,6 +100,5 @@ Claude Code 실행: rdc repo sync upload -m prod-1 -r mail -l ./config
 ## 팁
 
 - Claude Code는 non-TTY를 자동 감지하여 JSON 출력으로 전환하므로 대부분의 경우 `-o json`을 지정할 필요가 없습니다
-- `rdc agent capabilities`를 사용하면 Claude Code가 모든 사용 가능한 명령을 검색할 수 있습니다
-- `rdc agent schema "command name"`을 사용하면 인수/옵션에 대한 상세 정보를 얻을 수 있습니다
+- `rdc --help-all`를 사용하면 Claude Code가 모든 사용 가능한 명령을 검색할 수 있습니다
 - `--fields` 플래그를 사용하면 특정 데이터만 필요할 때 컨텍스트 창 사용량을 줄일 수 있습니다

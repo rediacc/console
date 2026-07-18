@@ -5,7 +5,7 @@ description: >-
 category: Guides
 order: 5
 language: ko
-sourceHash: "011bc5d87114f105"
+sourceHash: "2d470a876c00c352"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -210,7 +210,7 @@ renet과 Docker는 의도적으로 컨테이너 재시작 처리 방식이 다�
 - 저장소 마운트 루트의 `.rediacc.json` → `services.<name>.restart_policy`: 실제 의도.
 - `docker ps --format '{{.Status}}'`: 런타임 상태.
 
-**드리프트 수정 방법.** 컨테이너의 `.rediacc.json` 저장된 정책이 잘못된 경우(예: compose를 편집했지만 컨테이너를 재생성하지 않은 경우), `rdc repo up --name <repo> -m <machine>`을 다시 실행하십시오. 컨테이너가 업데이트된 정책으로 재생성됩니다.
+**드리프트 수정 방법.** 컨테이너의 `.rediacc.json` 저장된 정책이 잘못된 경우(예: compose를 편집했지만 컨테이너를 재생성하지 않은 경우), `rdc repo up <repo>`을 다시 실행하십시오. 컨테이너가 업데이트된 정책으로 재생성됩니다.
 
 > **실험적:** Cold-backup 사이드카 기반 복구와 `rdc machine query`의 `--sync-certs` 플래그는 renet 0.9+에 포함됩니다. 이전 버전은 watchdog 복구를 위해 저장된 `restart_policy`에만 의존하며, cold backup 후 `on-failure` 컨테이너가 중단될 수 있습니다.
 
@@ -253,7 +253,7 @@ HTTP services (accessible via proxy after ~3s):
 
 ### 분리 시작
 
-`--detach`를 사용하면 헬스체크 완료를 기다리지 않고 컨테이너가 시작되는 즉시 명령이 반환됩니다. 나머지 시작 과정은 백그라운드에서 진행됩니다. 프록시는 각 서비스가 바인딩될 때까지 업스트림 연결을 재시도하므로 경로는 자동으로 복구됩니다. 진행 상황은 `rdc machine query --containers --name <machine>`으로 확인할 수 있습니다. 임시 포크나 다음 단계 전에 서비스가 준비될 필요가 없는 스크립트 루프에 적합합니다.
+`--detach`를 사용하면 헬스체크 완료를 기다리지 않고 컨테이너가 시작되는 즉시 명령이 반환됩니다. 나머지 시작 과정은 백그라운드에서 진행됩니다. 프록시는 각 서비스가 바인딩될 때까지 업스트림 연결을 재시도하므로 경로는 자동으로 복구됩니다. 진행 상황은 `rdc machine status <machine> --containers`으로 확인할 수 있습니다. 임시 포크나 다음 단계 전에 서비스가 준비될 필요가 없는 스크립트 루프에 적합합니다.
 
 ### 준비 상태 프로브
 
@@ -465,6 +465,6 @@ secrets:
     file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
 ```
 
-`rdc repo secret set --name <repo> --key DATABASE_URL --value <val> --mode env --current ""`로 값을 설정하십시오. 전체 방법은 [저장소 § 시크릿](/en/docs/repositories#secrets)을 참조하고, 명령 참조는 치트 시트의 [저장소별 시크릿](/en/docs/rdc-cheat-sheet#per-repo-secrets)을 참조하십시오.
+`rdc repo secret set <repo> --key DATABASE_URL --value <val> --mode env --current ""`로 값을 설정하십시오. 전체 방법은 [저장소 § 시크릿](/en/docs/repositories#secrets)을 참조하고, 명령 참조는 치트 시트의 [저장소별 시크릿](/en/docs/rdc-cheat-sheet#per-repo-secrets)을 참조하십시오.
 
 > **교차 저장소 경로는 유효성 검사 시 거부됩니다.** 다른 저장소의 `/var/run/rediacc/secrets/<other-networkID>/` 디렉터리를 가리키는 compose `secrets: file:`(또는 `configs: file:`, `env_file:`)은 docker compose가 실행되기 전에 renet 래퍼에 의해 강경히 거부됩니다. `--unsafe`는 이를 재정의하지 않습니다. 심층 방어: Rediaccfile 셸 주변의 Landlock 샌드박스는 읽기를 현재 네트워크의 시크릿 디렉터리로 범위를 제한하므로, Rediaccfile bash에서 `cat /var/run/rediacc/secrets/<other>/X`는 YAML 유효성 검사기를 우회하더라도 EACCES로 실패합니다. 별도로 활성화할 필요가 없습니다. 모든 `repo up`에 기본적으로 적용됩니다.

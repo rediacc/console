@@ -4,8 +4,8 @@ description: "كيف تُدير Claude Code وCursor وCline بنية Rediacc ا
 category: Guides
 order: 30
 language: ar
-sourceHash: "0aa0c975030d4856"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "27ea21c36250d4a9"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 صراحةً، `rdc` مصمّم مع مراعاة الوكلاء من الأساس. سواء كنت تستخدم Claude Code أو Cursor أو Cline، فأي مساعد ذكاء اصطناعي ينادي `rdc` في صدفة فرعية يحصل على مخرجات JSON منظمة، وأخطاء قابلة للقراءة آليًا، وضوابط أمان تناسب إدارة بنية Rediacc التحتية باستقلالية. إليك كيف يعمل التكامل.
@@ -59,21 +59,6 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
     "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
   }]
 }
-```
-
-### 3. اكتشاف قدرات الوكيل
-
-يوفر الأمر الفرعي `rdc agent` استبطانًا منظمًا:
-
-```bash
-# List all commands with arguments and options
-rdc agent capabilities
-
-# Show detailed schema for a specific command
-rdc agent schema --command "machine query"
-
-# Execute a command with JSON stdin
-echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 ```
 
 ## أعلام مهمة للوكلاء

@@ -24,7 +24,7 @@
       "narrationRole": "step",
       "card": {
         "command": "rdc config machine add",
-        "commandFull": "rdc config machine add --name <machine-name> --ip <server-ip> --user <user>"
+        "commandFull": "rdc machine add <machine-name> --ip <server-ip> --user <user>"
       }
     },
     {
@@ -35,7 +35,7 @@
       "narrationRole": "step",
       "card": {
         "command": "rdc config machine setup",
-        "commandFull": "rdc config machine setup --name <machine-name>"
+        "commandFull": "rdc machine setup <machine-name>"
       }
     },
     {

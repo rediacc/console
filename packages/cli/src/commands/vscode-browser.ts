@@ -3,15 +3,11 @@
  * sandbox and tunnel it to localhost. No local VS Code install needed.
  */
 
+import { t } from '../i18n/index.js';
 import { testSSHConnectivity } from '../remote/ssh/index.js';
 import { getServerProvider, type VSCodeServerProvider } from '../remote/vscode-server/index.js';
-import { t } from '../i18n/index.js';
+import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
-import {
-  findFreeLocalPort,
-  openRepoTunnel,
-  type TunnelHandle,
-} from '../services/repo/repo-ssh-tunnel.js';
 import {
   detectServerPlatform,
   ensureServerInstalled,
@@ -19,16 +15,20 @@ import {
   type ServerLaunchResult,
   waitForHttpReady,
 } from '../services/core/vscode-server-remote.js';
-import { ValidationError } from '../types/errors.js';
-import { openBrowser } from '../utils/open-browser.js';
-import { configService } from '../services/config/config-resources.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
-import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
-import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
 import {
   type ConnectionDetails,
   getSSHConnectionDetails,
 } from '../services/machine/ssh-connection.js';
+import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
+import {
+  findFreeLocalPort,
+  openRepoTunnel,
+  type TunnelHandle,
+} from '../services/repo/repo-ssh-tunnel.js';
+import { ValidationError } from '../types/errors.js';
+import { openBrowser } from '../utils/open-browser.js';
 import { withSpinner } from '../utils/spinner.js';
 
 export interface VSCodeBrowserOptions {
@@ -64,11 +64,12 @@ export async function verifySSHConnectivity(connectionDetails: ConnectionDetails
  * check, mount check, per-repo key deployment, and renet provisioning.
  */
 async function prepareBrowserConnection(
-  teamName: string,
   machineName: string,
   repositoryName: string
 ): Promise<{ connectionDetails: ConnectionDetails; teamKey: string }> {
-  const connectionDetails = await getSSHConnectionDetails(teamName, machineName, repositoryName);
+  // Teams are retired vocabulary (`-t` is deleted in P4); the SSH-connection
+  // layer still takes the segment, so the local adapter's empty team is passed.
+  const connectionDetails = await getSSHConnectionDetails('', machineName, repositoryName);
   await verifySSHConnectivity(connectionDetails);
 
   const repoConfig = await configService.getRepository(repositoryName);
@@ -139,16 +140,15 @@ async function holdTunnelOpen(tunnel: TunnelHandle): Promise<void> {
  */
 export async function connectVSCodeBrowser(
   options: VSCodeBrowserOptions,
-  parsed: { teamName: string; machineName: string; repositoryName?: string }
+  parsed: { machineName: string; repositoryName?: string }
 ): Promise<void> {
-  const { teamName, machineName, repositoryName } = parsed;
+  const { machineName, repositoryName } = parsed;
   if (!repositoryName) {
     throw new ValidationError(t('errors.vscode.browserNeedsRepo'));
   }
 
   const serverProvider = getServerProvider(options.serverProvider);
   const { connectionDetails, teamKey } = await prepareBrowserConnection(
-    teamName,
     machineName,
     repositoryName
   );

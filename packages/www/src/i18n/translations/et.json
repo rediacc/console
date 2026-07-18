@@ -2,11 +2,11 @@
   "announcement": {
     "enabled": true,
     "link": "/account/",
-    "text": "Piiratud ajal: Design Partner Program. BUSINESS pakett igavesti tasuta."
+    "text": "Uus: alusta Rediacci kasutamist 14-päevase tasuta prooviperioodiga."
   },
   "beforeAfter": {
     "after": {
-      "label": "Rediaccga",
+      "label": "Rediacciga",
       "points": [
         "Täiuslik koopia 60 sekundiga.",
         "Varukoopiad iga tund. Ekstra salvestust pole vaja.",
@@ -17,9 +17,9 @@
     "before": {
       "label": "Ilma Rediaccita",
       "points": [
-        "Meeskond ootab testikoopiat päevi. See pole tootmisega sama.",
+        "Sinu meeskond ootab testikoopiat päevi. See pole tootmisega sama.",
         "Varukoopiad võtavad nädalaid. Paljud ebaõnnestuvad hoiatuseta.",
-        "Plaan ütleb: 4 tundi. Tegelikkuses: 4 päeva.",
+        "Sinu taasteplaan ütleb 4 tundi. Päriselus on 4 päeva.",
         "Arendajad kirjutavad koodi otse tootmises. Testikoopia on nädalaid vana."
       ]
     },
@@ -258,11 +258,11 @@
   },
   "hero": {
     "cta": {
-      "benefits": "Piiramatu arv meeskondi • 0 €",
+      "benefits": "Piiramatu arv meeskondi • 14-päevane tasuta prooviaeg",
       "bookDemo": "Broneeri demo",
       "contactUs": "Vaata kõiki installimise võimalusi",
-      "freeBadge": "TASUTA IGAVESTI · Ilma krediitkaaardita",
-      "getStarted": "Alusta tasuta",
+      "freeBadge": "14-päevane tasuta prooviaeg · Tühista igal ajal",
+      "getStarted": "Alusta tasuta prooviperioodi",
       "learnMore": "Vaata, kuidas see toimib",
       "readDocs": "Loe dokumentatsiooni",
       "seeDetails": "Loe täielikku teavet"
@@ -302,20 +302,19 @@
       "S3",
       "btrfs",
       "LUKS",
-      "systemd"
+      "systemd",
+      "Kubernetes",
+      "Ceph",
+      "k3s"
     ],
-    "migrationMessage": "Rediacc pakendab sinu rakendused, andmebaasid ja seadistused ühte faili. Liiguta see kuhu tahes. Kasutad juba Docker? Siis oled enam kui poolel teel.",
-    "title": "Sobib sinu praegusele"
+    "migrationMessage": "Rediacc pakendab sinu rakendused, andmebaasid ja seadistused ühte faili. Liiguta see kuhu tahes. Kasutad juba Docker? Siis oled enam kui poolel teel. Kasutad Kubernetest? Forki või vii kogu klaster samamoodi üle.",
+    "title": "Ühildub sellega, mida juba kasutad"
   },
   "layout": {
     "meta": {
       "author": "Rediacc",
       "defaultDescription": "Isemajutatud infrastruktuuri automatiseerimine. Kohene keskkondade kloonimine, muutmiskindlad varukoopiad ja alla 60 sekundi kestvav avariitaaste.",
       "defaultKeywords": "infrastruktuuri automatiseerimine, AI operatsioonid, avariitaaste, arenduskeskkonnad, Model Context Protocol, DevOps, CI/CD",
-      "designPartner": {
-        "ogDescPrefix": "Saa BUSINESS tasuta eluks ajaks.",
-        "ogPrefix": "Disainipartneri programm"
-      },
       "locale": "et_EE",
       "siteName": "Rediacc",
       "twitter": {
@@ -341,6 +340,10 @@
       {
         "label": "Taastusaeg",
         "number": "< 1 min"
+      },
+      {
+        "label": "Whole Kubernetes cluster fork",
+        "number": "46s"
       }
     ]
   },
@@ -437,11 +440,15 @@
       {
         "description": "Nad salvestavad kõik. Taastamine võtab tunde, mitte minuti.",
         "title": "Varundamise tööriistad"
+      },
+      {
+        "description": "Nad kopeerivad sinu manifestid. Klaster on midagi enamat kui YAML.",
+        "title": "Kubernetese tööriistad"
       }
     ],
     "title": "Enamik tööriistu kopeerib ühe osa. Me kopeerime kõike.",
     "winner": {
-      "description": "Iga meeskond saab oma kirjutatava koopia. Andmed, rakendused, seaded, kõik. Valmis 60 sekundiga. Sa maksad salvestuse eest ainult siis, kui midagi muutub.",
+      "description": "Iga meeskond saab oma kirjutatava koopia. Andmed, rakendused, seaded, kõik. Valmis 60 sekundiga. See hõlmab ka terveid Kubernetes klastreid. Sa maksad salvestuse eest ainult siis, kui midagi muutub.",
       "label": "Rediacc"
     }
   },
@@ -493,27 +500,27 @@
       "cta": {
         "buttons": {
           "contact": "Võta ühendust",
-          "learnMore": "Vaata, kuidas see töötab"
+          "learnMore": "Kuidas see töötab"
         },
-        "subtitle": "Paigalda Rediacc alla viie minutiga. Kogukonna pakett on igavesti tasuta.",
+        "subtitle": "Paigalda Rediacc viie minutiga. Proovi 14 päeva tasuta.",
         "title": "Proovi tasuta"
       },
       "hero": {
-        "subtitle": "Rediacc on loodud meeskondadele, kes käitavad tootmissüsteeme ja ei saa neid kaotada.",
-        "title": "Sinu kontrolli all olev varundus- ja taastetarkvara"
+        "subtitle": "Rediacc on loodud tiimidele, kes käitavad tootmissüsteeme ja neid kaotada ei saa.",
+        "title": "Sinu käes olev varundus ja taaste"
       },
       "meta": {
-        "description": "Rediacc ehitab isemajutatud varundus- ja katastrofitaastetarkvara, mis võimaldab tootmist kloonida, turvaliselt testida ja sekunditega taastada.",
+        "description": "Rediacc pakub isemajutatud varundust ja katastrofitaastet – kloonige tootmine, testigen turvaliselt, taastuge sekunditega.",
         "keywords": "Rediacc ettevõte, isemajutatud varundus, katastrofitaaste tarkvara, infrastruktuuri töökindlus",
-        "title": "Ettevõte | Rediacc - Rünnakutele vastupidavad varukoopiad"
+        "title": "Ettevõte | Rediacc - Rünnakute eest kaitstud varundused"
       },
       "mission": {
-        "belief": "Kogukonna pakett teeb täpselt sama, mis tasulised paketid: sama btrfs kloonimine, sama LUKS krüpteerimine, samad lukustatud, ühekordse kirjutusega varundused. Vaid väiksemate piirangutega. Funktsioonide ees pole uksi, peibutust ega trikke.",
-        "description": "Iga 47 päeval hävitatakse kuskil andmebaas. Aastas riknevad 1,71% kettaid. Lunarvarad sihivad 75% korral varukoopiad. 60 sekundiga oled taas online.",
+        "belief": "Kogukonna pakett teeb täpselt sama, mis tasulised paketid: sama btrfs kloonimine, sama LUKS krüpteerimine, samad lukustatud ja ühekordse kirjutusega varundused. Vaid väiksemate piirangutega. Pole funktsioonide uksi, peibutust ega trikke.",
+        "description": "Iga 47 päeva järel kusagil andmebaas rikib. Aastas riknevad 1,71% kettaid. Ransomvara sihib 75% juhtudest varukoopiad. 60 sekundiga oled taas töökorras.",
         "title": "Meie missioon: muuta katastroofid võimatuks"
       },
       "overview": {
-        "description": "Rediacc on isemajutatud tarkvara varundamiseks, kloonimiseks ja katastrofitaasteks. See töötab sinu enda serverites, kopeerib terveid tootmissüsteeme sekunditega ja viib su kiiresti tagasi võrku.",
+        "description": "Rediacc on isemajutatud alus varundamiseks, kloonimiseks ja katastrofitaasteks. Töötab sinu serverites, kopeerib terveid tootmissüsteeme sekunditega ja saab sind kiiresti töösse.",
         "title": "Mida me teeme"
       },
       "values": {
@@ -527,11 +534,11 @@
             "title": "Pidev innovatsioon"
           },
           "security": {
-            "description": "LUKS krüpteerimine puhkeolekus. TLS võrgu kaudu. Eraldi Docker mootor iga rakenduse jaoks. Iga kiht lukustatud.",
+            "description": "LUKS krüpteerimine puhkeolekus. TLS võrgus. Eraldi Docker mootor iga rakendusele. Kõik kihid lukustatud.",
             "title": "Turvalisus disainis"
           },
           "simplicity": {
-            "description": "Üks käsk – 241 GB tootmisandmeid kopeeritud. Sellest piisab meie keerukuse eelarveks.",
+            "description": "Üks käsk – 241 GB tootmisandmeid kopeerida. Sellest piisab meie terve keerukuse eelarveks.",
             "title": "Lihtsus esikohal"
           },
           "success": {
@@ -703,7 +710,7 @@
             "Usume privaatsusesse vaikimisi. Meie veebisaidil <strong>ei</strong> kasutata järgmisi tehnoloogiaid:"
           ],
           "content2": [
-            "Märkus: käesolev küpsiste põhimõte kehtib Rediacc turundusveebisaidi kohta. Meie tarkvaratooted (veebirakendus, CLI, vahevara, sild) koguvad eraldi kasutuse telemetriat, mis ei kasuta küpsiseid. Toottelemetria üksikasjade kohta vaata meie <a href=\"telemetry-policy\">telemetria poliitikat</a>."
+            "Märkus: käesolev küpsiste põhimõte kehtib Rediacc turundusveebisaidi kohta. Meie tarkvaratooted (veebirakendus, CLI, vahevara, Renet agent) koguvad eraldi kasutuse telemetriat, mis ei kasuta küpsiseid. Toottelemetria üksikasjade kohta vaata meie <a href=\"telemetry-policy\">telemetria poliitikat</a>."
           ],
           "id": "what-we-dont-use",
           "items": [
@@ -719,101 +726,9 @@
         "title": "Sisukord"
       }
     },
-    "designPartners": {
-      "ask": {
-        "items": [
-          {
-            "body": "Saada üherealise e-kiri, kui midagi sind üllatab. Stack trace valikuline. Pettumust teretulnud.",
-            "title": "Ütle meile, kui midagi katki läheb"
-          },
-          {
-            "body": "30 minutit kvartalis korra-kaks. Meie kuulame, sina räägid. Demosid pole, ülesmüügit pole.",
-            "title": "Pea aeg-ajalt kõne"
-          },
-          {
-            "body": "Kui saadame midagi, mis sind puudutab, tahame sinult eelnevalt teada saada. Tavameil sobib.",
-            "title": "Ole kättesaadav"
-          }
-        ],
-        "lede": "Kerge koorem. Eesmärk ei ole tasuta tööjõudu välja pressida, vaid hoida ennast ausana.",
-        "title": "Mida me palume vastuseks"
-      },
-      "faq": {
-        "items": [
-          {
-            "a": "Jah. See on fikseeritud sinu tellimuses, aegumiseta ja ilma automaatse alandamiseta. Kui peaksime seda kunagi muutma, saadame esmalt kõigile disainipartneritele e-kirja. Seni pole me nii teinud. Plaanis pole ka.",
-            "q": "Kas see on tõesti eluaegne?"
-          },
-          {
-            "a": "Siis lõpeb ka sinu juurdepääs, nagu igal teisele kasutajale. Eluaegne lubadus tähendab ettevõtte eluaega. Oleme enne kliente; see on risk, mille sa ausalt võtad.",
-            "q": "Mis juhtub, kui Rediacc suletakse?"
-          },
-          {
-            "a": "Makseseinu pole, lepinguid pole, autoarvet pole. Ainus palve on ülal nimetatud kerge tagasiside. Võid meid ignoreerida. Ei tühista sinu paketti.",
-            "q": "Kas lepingus on varjatud tingimusi?"
-          },
-          {
-            "a": "Jah. Võid jääda BUSINESS paketti igavesti või liikuda Enterprise juurde, kui piirid liiga tihedaks tulevad. Ülespoole liikumine on tavaline arveldus; eluaegne privileeg kehtib ainult BUSINESS paketile.",
-            "q": "Kas saan hiljem paketti vahetada?"
-          },
-          {
-            "a": "Kuni me selle sulgeme. Sulgemisest ette ei teata, seega on täna hea päev registreerumiseks. Olemasolevatest disainipartneritest kõik oma paketi säilitavad, mis iganes juhtubki.",
-            "q": "Kui kaua on programm avatud?"
-          }
-        ],
-        "title": "Ausad vastused"
-      },
-      "finalCta": {
-        "button": "Võta oma BUSINESS pakett",
-        "note": "Saadame sulle e-kirja onboarding-kõne korraldamiseks ühe-kahe päeva pärast.",
-        "subtitle": "Üks registreerimine. Krediitkaart pole vaja. Eluaegne BUSINESS pakett, lukustatud.",
-        "title": "Kas oled valmis pioneer saama?"
-      },
-      "hero": {
-        "eyebrow": "Piiratud aeg",
-        "note": "Krediitkaart pole vaja. Taotlust pole. Me võime programmi igal ajal sulgeda, seega registreeru täna.",
-        "primaryCta": "Võta oma BUSINESS pakett",
-        "secondaryCta": "Vaata hindu",
-        "subtitle": "Oleme enne kliente. Tahame pioneere, kes kasutavad toodet ja räägivad meile, kui midagi katki läheb. Vastuseks saad meie BUSINESS paketi tasuta nii kaua, kui Rediacc eksisteerib.",
-        "title": "Saa disainipartneriks. BUSINESS eluks. Tasuta."
-      },
-      "meta": {
-        "description": "Liitu tasuta disainipartnerina ja saad meie BUSINESS paketi eluks ajaks. Otsime pioneere, kes jagavad siirast tagasisidet, kui koos areneme.",
-        "title": "Disainipartner — BUSINESS eluks tasuta"
-      },
-      "why": {
-        "items": [
-          {
-            "body": "Õpime ühe produktiivsest tiimist 100x rohkem kui sajast proovijast. Disainipartnerid on viis, kuidas me toote enne massiturule minekut suurepäraseks teeme.",
-            "title": "Päristiimid, päris-süsteemid"
-          },
-          {
-            "body": "Raha me ei vaja veel. Vajame sinu teadmisi, äärjuhtumeid ja küsimusi. Tasuta aususe eest on aus lepe.",
-            "title": "Raha asemel tagasiside"
-          },
-          {
-            "body": "Sinu eluaegne BUSINESS pakett ei aegu, kunagi ei alandatu ja kunagi krediitkaarte ei küsi. See on kokkulepe.",
-            "title": "Eluaegne tänuavaldus"
-          }
-        ],
-        "title": "Miks me seda teeme"
-      },
-      "youGet": {
-        "items": [
-          "BUSINESS pakett: 200 GB repositooriumi kohta, 10 kasutajakohta, 10 000 aktiveerimist kuus",
-          "Varajases juurdepääsus: 2x piirangud (400 GB repo kohta, 20 kasutajakohta, 20 000 aktiveerimist)",
-          "Piiramatu repositooriume, kasutajaid ja tiime",
-          "Varukoopiate taastamine, tume režiim, 9 keelt",
-          "Otsene inseneritugi",
-          "Lukustatud eluks ajaks. Ei aegu, kunagi ei lõpe, krediitkaart pole vaja."
-        ],
-        "lede": "Kogu BUSINESS pakett tasuta. Nii kaua, kui Rediacc eksisteerib.",
-        "title": "Mida sa saad"
-      }
-    },
     "disasterRecovery": {
       "enterpriseCta": {
-        "button": "Võta müügiga ühendust",
+        "button": "Räägi müügiga",
         "description": "Kui ükski ülaltoodud pakett ei sobi, räägi meile, mida kasutad. Me lahendame selle.",
         "heading": "Ebatavaline seadistus? Räägi meile, mida kasutad."
       },
@@ -829,7 +744,7 @@
             "question": "Milliseid makseviise aktsepteerite?"
           },
           {
-            "answer": "Kogukonna pakett on tasuta igavesti. Äripakettide jaoks küsi müügimeeskonnalt proovivõimaluste kohta.",
+            "answer": "Jah. Professionaalsel ja äripaketil on mõlemale 14-päevane tasuta prooviaeg. Lisad kaardi registreerimisel ja tasud ainult siis, kui prooviaeg lõpeb. Tühista enne seda ja ei maksa midagi; sinu konto langeb tasuta Kogukonna paketi tasemele.",
             "question": "Kas on saadaval tasuta prooviaeg?"
           },
           {
@@ -852,14 +767,14 @@
       },
       "finalCta": {
         "buttons": {
-          "startFree": "Alusta tasuta",
+          "startFree": "Alusta tasuta prooviga",
           "talkToSales": "Räägi müügiga"
         },
         "description": "Paigalda Rediacc ja käivita esimene varukoopia alla 10 minutiga.",
-        "heading": "Alusta kiiremini taastuma"
+        "heading": "Alusta kiiremast taastumisest"
       },
       "hero": {
-        "subtitle": "Enamik meeskondi alustab tasuta tasemelt ja jäävad sinna. Kui võrgust eemalolekud muutuksid ärikuluks, tõuse järgmisele. Sama toode, vahetamist pole.",
+        "subtitle": "Alusta 14-päevase tasuta prooviga ja tõuse järgmisele tasandile, kui seisak muutub ärikuluks. Sama toode, vahetamist pole.",
         "title": "Ehitatud tõelistele taastusoperatsioonidele"
       },
       "meta": {
@@ -876,7 +791,7 @@
             "Salvestus 3 piirkonna üle. Üks rike ei peata teid.",
             "Pidev andmekaitse. Andmekadu on minimaalne.",
             "4-tunnine taaste SLA (garanteeritud)",
-            "Piiramatu hulk rakendusi, igaüks 200 GB",
+            "Piiramatu arv rakendusi, igaüks 500 GB",
             "7 aktiivset ja 3 reserveeritud tööd",
             "Auditi logid 90 päeva jooksul",
             "Rollide järgi määratud juurdepääs ja täielik auditi logi",
@@ -887,7 +802,7 @@
           "name": "Äri"
         },
         "community": {
-          "description": "Katastroofitaaste on valmis kohe esimesest päevast. Ja igaveseks tasuta.",
+          "description": "Katastroofitaaste tootmistasemega, esimesest päevast alates. Tasuta ohutusvõrk.",
           "features": [
             "Piiramatu hulk kasutajaid ja meeskondi. Tee koostööd vabalt.",
             "Taasta viimane varukoopia minutitega mis tahes rikke korral.",
@@ -924,7 +839,7 @@
             "Kõik kogukonna paketist +",
             "Automaatne varukoopiate ajastamine. Seadista ja unusta.",
             "Hetktaaste (24 tundi)",
-            "Piiramatu hulk rakendusi, igaüks 50 GB",
+            "Piiramatu arv rakendusi, igaüks 100 GB",
             "24-tunnine töö ajapiir, 3 aktiivset ja 2 reserveeritud tööd",
             "Auditi logid 30 päeva jooksul",
             "E-maili ja jututoa tugi",
@@ -938,15 +853,15 @@
       "psTeaser": {
         "heading": "Vajad ekspertabi?",
         "subtitle": "Professionaalsed juurutamise ja toe teenused on saadaval kõikides pakettides: koolitus, tugi, migreerimine, taaste ning turvalisus ja vastavus",
-        "viewDetails": "Tutvu professionaalsete teenustega"
+        "viewDetails": "Vaata professionaalseid teenuseid"
       },
       "strategy": {
-        "copy": "Alusta sealt, kus oled. Enamik meeskondi jäävad arvust pikemaks. Tõusta ainult siis, kui aeglane taastumine teeks ärikuluks. Sama toode kogu ulatuses.",
+        "copy": "Alusta sealt, kus oled. Enamik meeskondi jäävad arvust pikemaks. Tõusta ainult siis, kui aeglane taastumine teeks ärikuluks. Sama toode kogu ulatuses. Kasutad Kubernetest? Terved klastrid liiguvad samamoodi, lühikese ja mõõdetud ülemineku ajal.",
         "distribution": [
           "Professional → Äri: Geo-redundantne varundamine, reaalajas andmekaitse, garanteeritud 4-tunnine taastumisaeg ja pühendatud kliendiedukuse juhendaja.",
           "Äri → Enterprise: Valid taastumiskiiruse – 15–60 minutit. Taastumine toimub täiesti eraldatud keskkonnas, mida sinu tööajad juurde ei pääse. Tiimtugi on seal, kui loeb."
         ],
-        "heading": "Ehitatud igaks etapiks"
+        "heading": "Ehitatud igale etapile"
       },
       "technicalSummary": {
         "description": "Andge oma IT-meeskonnale selge ülevaade salvestuspiiritest ja taaste eesmärkidest.",
@@ -991,34 +906,33 @@
       },
       "trust": {
         "heading": "Turvalisus ja töökindlus",
-        "items": ["AES-256 krüpteerimisstandard", "99,99% tööaja SLA"]
+        "items": ["AES-256 krüptimisstandard", "99,99% tööaja SLA"]
       },
       "ui": {
         "anchor": "Strateegiline ankur",
         "bestValue": "Parim väärtus",
         "contactSales": "Kontakteeri müüki",
+        "contactUs": "Võta ühendust",
+        "contactUsSub": "Kohandatud piirid ja tingimused",
         "cta": {
           "business": {
-            "guarantee": "Raha tagasi garantii",
             "launchBadge": "Avamispakkumine",
-            "primary": "Broneeri seadistamiskõne",
+            "primary": "Alusta tasuta prooviga",
             "secondary": "Kontakteeri müüki",
             "valueNote": "Sisaldab 9 999 $ seadistamiskrediiti"
           },
           "community": {
-            "note": "Krediitkaart pole vaja",
-            "primary": "Alusta tasuta",
+            "note": "Tasuta ohutusvõrk",
+            "primary": "Proovi Rediacc",
             "secondary": "Vaata, mis on kaasas"
           },
           "enterprise": {
-            "guarantee": "Raha tagasi garantii",
             "primary": "Broneeri demo",
             "secondary": "Kontakteeri müüki",
             "subtext": "Kohandatud SLA · Pühendatud tugi"
           },
           "professional": {
-            "guarantee": "Raha tagasi garantii",
-            "primary": "Alusta Professionaliga",
+            "primary": "Alusta tasuta prooviga",
             "secondary": "Kontakteeri müüki"
           }
         },
@@ -1026,7 +940,7 @@
         "getStarted": "Installi nüüd",
         "guarantees": {
           "cancelAnytime": "Tühista igal ajal",
-          "moneyBack": "14-päevane raha tagasi garantii",
+          "freeTrial": "14-päevane tasuta prooviaeg",
           "noContracts": "Pikaajalisi lepinguid ei ole"
         },
         "keyBenefits": "Peamised eelised",
@@ -1250,11 +1164,6 @@
         "notFound": "404 - Lehte ei leitud"
       },
       "description": "Vabandame, otsitavat lehte ei ole olemas või see on teisaldatud. See võib juhtuda, kui järgisite aegunud linki või trükisite URL-i valesti.",
-      "designPartner": {
-        "body": "Saa meie BUSINESS pakett tasuta eluks ajaks. Krediitkaart puudub.",
-        "cta": "Nõua disainipartneri staatus →",
-        "title": "Disainipartneri programm"
-      },
       "help": {
         "description": "Kui usud, et see on viga, või ootasid siit sisu leida, võta palun ühendust meie tugimeeskonnaga. Oleme siin, et aidata leida, mida otsite.",
         "link": "võta meie tugimeeskonnaga ühendust",
@@ -1287,110 +1196,29 @@
       "title": "Lehte ei leitud"
     },
     "partners": {
-      "meta": {
-        "title": "Rediacc Partner 1st programm edasimüüjatele",
-        "description": "Liitu Rediacc Partner 1st programmiga. Kaitse marginaali tehingute registreerimisega, teeni tasuta sertifikaat ja anna klientidele litsentse, mida ise juhid."
-      },
-      "hero": {
-        "eyebrow": "Partnerprogramm",
-        "title": "Tee Rediacciga koostööd ja hoia oma marginaal",
-        "subtitle": "Rediacc Partner 1st programm on loodud edasimüüjatele, hallatud teenuste pakkujatele ja konsultantidele. Registreeri oma tehingud, sertifitseeri oma meeskond tasuta ja anna klientidele prooviperioodi litsentsid, mida sina kontrollid.",
-        "primaryCta": "Saa partneriks",
-        "secondaryCta": "Partneri sisselogimine",
-        "note": "Liitumine on tasuta. Iga taotluse vaatab läbi päris inimene."
+      "apply": {
+        "lede": "Räägi meile oma ettevõttest. Loeme iga taotluse läbi ja vastame e-kirjaga.",
+        "title": "Taotle liitumist Partner 1st programmiga"
       },
       "benefits": {
-        "title": "Miks meiega partnerlust sõlmida",
-        "lede": "Kolm asja teevad Partner 1st programmi sinu aja väärt.",
         "items": [
           {
-            "title": "Registreeri tehingud, kaitse oma marginaali",
-            "body": "Kui tood meile kliendi, registreeri tehing. Kui me selle heaks kiidame, jääb allahindlus sulle kogu kaitseakna kestuse ajaks. Teine partner ei saa sama klienti registreerida ega sinu hinda alla lüüa."
+            "body": "Kui tood meile kliendi, registreeri tehing. Kui me selle heaks kiidame, jääb allahindlus sulle kogu kaitseakna kestuse ajaks. Teine partner ei saa sama klienti registreerida ega sinu hinda alla lüüa.",
+            "title": "Registreeri tehingud, kaitse oma marginaali"
           },
           {
-            "title": "Sertifitseeri oma meeskond tasuta",
-            "body": "Meil on kaks lühikest õpperada, üks müügile ja üks tehnilisele personalile. Sinu inimesed õpivad partneriportaalis ja teevad eksami tasuta. Läbimine viib sinu meeskonna astme võrra edasi ja süvendab sinu allahindlusi."
+            "body": "Meil on kaks lühikest õpperada, üks müügile ja üks tehnilisele personalile. Sinu inimesed õpivad partneriportaalis ja teevad eksami tasuta. Läbimine viib sinu meeskonna astme võrra edasi ja süvendab sinu allahindlusi.",
+            "title": "Sertifitseeri oma meeskond tasuta"
           },
           {
-            "title": "Anna kliendile prooviperioodi litsentse, mida sina kontrollid",
-            "body": "Anna kliendile töötav prooviperiood, ilma et peaksid meid ootama. Sina otsustad, kes selle saab ja millal see algab. Iga prooviperiood on ajaliselt piiratud, nii et miski ei kesta lõputult."
+            "body": "Anna kliendile töötav prooviperiood, ilma et peaksid meid ootama. Sina otsustad, kes selle saab ja millal see algab. Iga prooviperiood on ajaliselt piiratud, nii et miski ei kesta lõputult.",
+            "title": "Anna kliendile prooviperioodi litsentse, mida sina kontrollid"
           }
-        ]
-      },
-      "tiers": {
-        "title": "Partneriastmed",
-        "lede": "Liitud registreeritud partnerina päeval, mil me su heaks kiidame. Kui su meeskond sertifitseerub ja äri kasvab, liigud astmeid mööda üles ning sinu registreeritud tehingu allahindlus kasvab koos sinuga.",
-        "requirementsLabel": "Kuidas siia jõuad",
-        "benefitsLabel": "Mida saad",
-        "cards": [
-          {
-            "name": "Registreeritud",
-            "tagline": "Siit alustab iga partner",
-            "requirements": ["Esita taotlus ja saa heakskiit"],
-            "benefits": [
-              "Ligipääs partneriportaalile",
-              "Tehingute registreerimine marginaalikaitsega",
-              "Tasuta müügi- ja tehniline sertifikaat",
-              "Prooviperioodi litsentsid sinu klientidele"
-            ]
-          },
-          {
-            "name": "Hõbe",
-            "tagline": "Sertifitseeritud ja müümas",
-            "requirements": [
-              "Kõik, mida teeb registreeritud partner",
-              "Kaks kehtivat sertifikaati kogu meeskonnas",
-              "Sertifikaadid kehtivad 6 kuud"
-            ],
-            "benefits": [
-              "Kõik, mis registreeritud astmel",
-              "Suurem allahindlus registreeritud tehingutele"
-            ]
-          },
-          {
-            "name": "Kuld",
-            "tagline": "Kasvame koos",
-            "requirements": [
-              "Kõik, mida teeb hõbeastme partner",
-              "Teenitud, kui su äri meiega kasvab"
-            ],
-            "benefits": ["Kõik, mis hõbeastmel", "Kõrgem allahindlustase"]
-          },
-          {
-            "name": "Plaatina",
-            "tagline": "Meie lähimad partnerid",
-            "requirements": [
-              "Kõik, mida teeb kuldastme partner",
-              "Reserveeritud meie aktiivseimatele partneritele"
-            ],
-            "benefits": ["Kõik, mis kuldastmel", "Meie parim partneriallahindlus"]
-          }
-        ]
-      },
-      "how": {
-        "title": "Kuidas see toimib",
-        "steps": [
-          {
-            "title": "Taotle",
-            "body": "Täida allolev lühike vorm ja räägi, kuidas müüd ja keda teenindad."
-          },
-          {
-            "title": "Saa heakskiit",
-            "body": "Vaatame iga taotluse käsitsi läbi. Kui oled sees, saad sisselogimisandmed ja ligipääsu partneriportaalile."
-          },
-          {
-            "title": "Õpi ja sertifitseeru",
-            "body": "Läbi müügi- ja tehniline õpperada omas tempos ning soorita eksam, et teenida oma sertifikaadid."
-          },
-          {
-            "title": "Registreeri tehinguid ja müü",
-            "body": "Registreeri kliendi tehinguid, jaga prooviperioodi litsentse ja müü Rediacci, teades, et su marginaal on kaitstud."
-          }
-        ]
+        ],
+        "lede": "Kolm asja teevad Partner 1st programmi sinu aja väärt.",
+        "title": "Miks meiega partnerlust sõlmida"
       },
       "certification": {
-        "title": "Tasuta sertifikaat, kaks õpperada",
-        "lede": "Iga partner saab end tasuta sertifitseerida. Vali inimesele sobiv rada: müük või tehniline. Õppeprogramm asub portaalis, nii et sinu meeskond saab enne eksamile minekut valmistuda.",
         "facts": [
           "Kaks õpperada: üks müügile, üks tehnilisele personalile",
           "Õppeprogramm otse partneriportaalis",
@@ -1399,68 +1227,149 @@
           "Läbid 17 õige vastusega või rohkemaga",
           "Sertifikaadid kehtivad 6 kuud",
           "Alati tasuta"
-        ]
-      },
-      "apply": {
-        "title": "Taotle liitumist Partner 1st programmiga",
-        "lede": "Räägi meile oma ettevõttest. Loeme iga taotluse läbi ja vastame e-kirjaga."
-      },
-      "form": {
-        "fields": {
-          "contactName": "Sinu nimi",
-          "contactNamePlaceholder": "Ees- ja perekonnanimi",
-          "jobTitle": "Ametinimetus",
-          "jobTitlePlaceholder": "Sinu roll",
-          "email": "Töö e-post",
-          "emailPlaceholder": "sina@ettevote.com",
-          "phone": "Telefon",
-          "phonePlaceholder": "Valikuline",
-          "company": "Ettevõtte nimi",
-          "companyPlaceholder": "Sinu ettevõte",
-          "website": "Veebileht",
-          "websitePlaceholder": "https://example.com",
-          "country": "Riik",
-          "countryPlaceholder": "Vali oma riik",
-          "partnerTypes": "Kuidas müüd? Vali kõik, mis sobivad.",
-          "isDistributor": "Töötame turustajana ja müüme edasi teiste partnerite kaudu.",
-          "howHeard": "Kust sa meist kuulsid?",
-          "message": "Kas veel midagi?",
-          "messagePlaceholder": "Räägi meile oma ettevõttest ja klientidest, keda teenindad.",
-          "consent": "Nõustun, et minuga võetakse Rediacc partnerprogrammi asjus ühendust."
-        },
-        "partnerTypeOptions": {
-          "reseller": "Edasimüüja",
-          "msp": "Hallatud teenuste pakkuja",
-          "consultant": "Konsultant",
-          "distributor": "Turustaja",
-          "referral": "Soovituspartner"
-        },
-        "howHeardOptions": {
-          "search": "Otsingumootor",
-          "referral": "Kolleeg või sõber",
-          "event": "Üritus või veebiseminar",
-          "socialMedia": "Sotsiaalmeedia",
-          "blog": "Blogi või artikkel",
-          "other": "Midagi muud"
-        },
-        "submit": "Saada taotlus",
-        "sending": "Saadame...",
-        "success": {
-          "title": "Taotlus on vastu võetud",
-          "body": "Täname huvi eest. Loeme iga taotluse läbi ja vastame peagi e-kirjaga."
-        },
-        "errors": {
-          "requiredFields": "Palun täida oma nimi, töö e-post, ettevõte, riik ja vähemalt üks müügiviis.",
-          "consent": "Palun nõustu, et sinuga võetakse ühendust, et saaksime taotlusele vastata.",
-          "captcha": "Palun lahenda captcha, et jätkata.",
-          "generic": "Midagi läks valesti. Palun proovi uuesti."
-        }
+        ],
+        "lede": "Iga partner saab end tasuta sertifitseerida. Vali inimesele sobiv rada: müük või tehniline. Õppeprogramm asub portaalis, nii et sinu meeskond saab enne eksamile minekut valmistuda.",
+        "title": "Tasuta sertifikaat, kaks õpperada"
       },
       "finalCta": {
-        "title": "Kas oled valmis Rediacci müüma?",
-        "subtitle": "Liitu Partner 1st programmiga ja hakka oma tehinguid kaitsma.",
         "button": "Saa partneriks",
-        "note": "Juba heaks kiidetud? Logi sisse partneriportaali."
+        "note": "Juba heaks kiidetud? Logi sisse partneriportaali.",
+        "subtitle": "Liitu Partner 1st programmiga ja hakka oma tehinguid kaitsma.",
+        "title": "Kas oled valmis Rediacci müüma?"
+      },
+      "form": {
+        "errors": {
+          "captcha": "Palun lahenda captcha, et jätkata.",
+          "consent": "Palun nõustu, et sinuga võetakse ühendust, et saaksime taotlusele vastata.",
+          "generic": "Midagi läks valesti. Palun proovi uuesti.",
+          "requiredFields": "Palun täida oma nimi, töö e-post, ettevõte, riik ja vähemalt üks müügiviis."
+        },
+        "fields": {
+          "company": "Ettevõtte nimi",
+          "companyPlaceholder": "Sinu ettevõte",
+          "consent": "Nõustun, et minuga võetakse Rediacc partnerprogrammi asjus ühendust.",
+          "contactName": "Sinu nimi",
+          "contactNamePlaceholder": "Ees- ja perekonnanimi",
+          "country": "Riik",
+          "countryPlaceholder": "Vali oma riik",
+          "email": "Töö e-post",
+          "emailPlaceholder": "sina@ettevote.com",
+          "howHeard": "Kust sa meist kuulsid?",
+          "isDistributor": "Töötame turustajana ja müüme edasi teiste partnerite kaudu.",
+          "jobTitle": "Ametinimetus",
+          "jobTitlePlaceholder": "Sinu roll",
+          "message": "Kas veel midagi?",
+          "messagePlaceholder": "Räägi meile oma ettevõttest ja klientidest, keda teenindad.",
+          "partnerTypes": "Kuidas müüd? Vali kõik, mis sobivad.",
+          "phone": "Telefon",
+          "phonePlaceholder": "Valikuline",
+          "website": "Veebileht",
+          "websitePlaceholder": "https://example.com"
+        },
+        "howHeardOptions": {
+          "blog": "Blogi või artikkel",
+          "event": "Üritus või veebiseminar",
+          "other": "Midagi muud",
+          "referral": "Kolleeg või sõber",
+          "search": "Otsingumootor",
+          "socialMedia": "Sotsiaalmeedia"
+        },
+        "partnerTypeOptions": {
+          "consultant": "Konsultant",
+          "distributor": "Turustaja",
+          "msp": "Hallatud teenuste pakkuja",
+          "referral": "Soovituspartner",
+          "reseller": "Edasimüüja"
+        },
+        "sending": "Saadame...",
+        "submit": "Saada taotlus",
+        "success": {
+          "body": "Täname huvi eest. Loeme iga taotluse läbi ja vastame peagi e-kirjaga.",
+          "title": "Taotlus on vastu võetud"
+        }
+      },
+      "hero": {
+        "eyebrow": "Partnerprogramm",
+        "note": "Liitumine on tasuta. Iga taotluse vaatab läbi päris inimene.",
+        "primaryCta": "Saa partneriks",
+        "secondaryCta": "Partneri sisselogimine",
+        "subtitle": "Rediacc Partner 1st programm on loodud edasimüüjatele, hallatud teenuste pakkujatele ja konsultantidele. Registreeri oma tehingud, sertifitseeri oma meeskond tasuta ja anna klientidele prooviperioodi litsentsid, mida sina kontrollid.",
+        "title": "Tee Rediacciga koostööd ja hoia oma marginaal"
+      },
+      "how": {
+        "steps": [
+          {
+            "body": "Täida allolev lühike vorm ja räägi, kuidas müüd ja keda teenindad.",
+            "title": "Taotle"
+          },
+          {
+            "body": "Vaatame iga taotluse käsitsi läbi. Kui oled sees, saad sisselogimisandmed ja ligipääsu partneriportaalile.",
+            "title": "Saa heakskiit"
+          },
+          {
+            "body": "Läbi müügi- ja tehniline õpperada omas tempos ning soorita eksam, et teenida oma sertifikaadid.",
+            "title": "Õpi ja sertifitseeru"
+          },
+          {
+            "body": "Registreeri kliendi tehinguid, jaga prooviperioodi litsentse ja müü Rediacci, teades, et su marginaal on kaitstud.",
+            "title": "Registreeri tehinguid ja müü"
+          }
+        ],
+        "title": "Kuidas see toimib"
+      },
+      "meta": {
+        "description": "Liitu Rediacc Partner 1st programmiga. Kaitse marginaali tehingute registreerimisega, teeni tasuta sertifikaat ja anna klientidele litsentse, mida ise juhid.",
+        "title": "Rediacc Partner 1st programm edasimüüjatele"
+      },
+      "tiers": {
+        "benefitsLabel": "Mida saad",
+        "cards": [
+          {
+            "benefits": [
+              "Ligipääs partneriportaalile",
+              "Tehingute registreerimine marginaalikaitsega",
+              "Tasuta müügi- ja tehniline sertifikaat",
+              "Prooviperioodi litsentsid sinu klientidele"
+            ],
+            "name": "Registreeritud",
+            "requirements": ["Esita taotlus ja saa heakskiit"],
+            "tagline": "Siit alustab iga partner"
+          },
+          {
+            "benefits": [
+              "Kõik, mis registreeritud astmel",
+              "Suurem allahindlus registreeritud tehingutele"
+            ],
+            "name": "Hõbe",
+            "requirements": [
+              "Kõik, mida teeb registreeritud partner",
+              "Kaks kehtivat sertifikaati kogu meeskonnas",
+              "Sertifikaadid kehtivad 6 kuud"
+            ],
+            "tagline": "Sertifitseeritud ja müümas"
+          },
+          {
+            "benefits": ["Kõik, mis hõbeastmel", "Kõrgem allahindlustase"],
+            "name": "Kuld",
+            "requirements": [
+              "Kõik, mida teeb hõbeastme partner",
+              "Teenitud, kui su äri meiega kasvab"
+            ],
+            "tagline": "Kasvame koos"
+          },
+          {
+            "benefits": ["Kõik, mis kuldastmel", "Meie parim partneriallahindlus"],
+            "name": "Plaatina",
+            "requirements": [
+              "Kõik, mida teeb kuldastme partner",
+              "Reserveeritud meie aktiivseimatele partneritele"
+            ],
+            "tagline": "Meie lähimad partnerid"
+          }
+        ],
+        "lede": "Liitud registreeritud partnerina päeval, mil me su heaks kiidame. Kui su meeskond sertifitseerub ja äri kasvab, liigud astmeid mööda üles ning sinu registreeritud tehingu allahindlus kasvab koos sinuga.",
+        "requirementsLabel": "Kuidas siia jõuad",
+        "title": "Partneriastmed"
       }
     },
     "personaPages": {
@@ -1478,7 +1387,7 @@
               "title": "Kontekstiakna sõbralik"
             },
             {
-              "description": "--dry-run näitab hävitavate toimingute eelvaate. --yes lubab automatiseerimist. Agendid saavad kindlalt juurutada sisseehitatud turvameetmete abil.",
+              "description": "--dry-run näitab hävitavate toimingute eelvaate. --yes lubab automatiseerimist. Agendid saavad kindlalt juurutada sisseehitatud turvameetmete abil. Isegi terve klastri fork järgib samu reegleid.",
               "icon": "shield",
               "title": "Vaikimisi turvaline"
             }
@@ -1489,12 +1398,12 @@
         "bottomCta": {
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash",
           "description": "Installi CLI. Lisa AGENTS.md mall. Teie AI-abistaja teeb ülejäänu.",
-          "primaryCta": "Alusta tasuta",
+          "primaryCta": "Proovi tasuta",
           "title": "Laske oma AI-agendil hallata teie infrastruktuuri"
         },
         "hero": {
           "badge": "AI-AGENTIDELE",
-          "primaryCta": "Alusta tasuta",
+          "primaryCta": "Proovi tasuta",
           "secondaryCta": "Loe dokumente",
           "subtitle": "CLI-esimene. SSH-põhine. JSON vaikimisi. Iga rdc käsk on kavandatud autonoomsetele agentidele: GUI-ta, brauseri automatiseerimiseta, kohandatud integratsioonideta.",
           "title": "Infrastruktuur, mida teie AI-agent juba teab kuidas kasutada."
@@ -1562,7 +1471,7 @@
               "title": "Seadistamine"
             },
             {
-              "description": "Käivita rdc agent capabilities ja saa struktureeritud JSON käsupuu. Agent teab, mis on saadaval – dokumentatsioon pole vajalik.",
+              "description": "Ühenda oma assistent rdc mcp serve'iga ja see annab talle tüübitud tööriistad iga toimingu jaoks. Võid ka käivitada rdc --help-all täieliku käsuviite saamiseks.",
               "icon": "code",
               "title": "Avastamine"
             },
@@ -1575,7 +1484,7 @@
           "title": "Kolm sammu agendiga hallatud infrastruktuuri juurde"
         },
         "meta": {
-          "description": "Rediacc on loodud AI-kodeerimisabistajatele. CLI-esimene, JSON-struktureeritud, SSH-juurdepääs, täielik agendi avastamine rdc agendi käskude kaudu.",
+          "description": "Rediacc on loodud AI koodiassistentidele. CLI-põhine töö, struktureeritud JSON, SSH-juurdepääs ja sisseehitatud MCP server tööriistade kasutamiseks.",
           "keywords": "tehisintellekti agendid, Claude Code, Cursor, Cline, infrastruktuuri automatiseerimine, CLI, JSON-väljund, omahosting, agendi-põhine, MCP",
           "title": "AI-agentidele - CLI-põhine automatiseerimine | Rediacc"
         },
@@ -1669,8 +1578,12 @@
               "traditional": "HTML/struktureerimata väljund: 4x märkide kasutamine, ebastabiilne parsimine"
             },
             {
-              "rediacc": "rdc agent capabilities: struktureeritud käsupuu käitamisajal",
+              "rediacc": "MCP server: käitamisajal avastatud tüübitud tööriistad",
               "traditional": "Avastust ei ole: agendid vajavad dokumentatsiooni või käsitsi kirjutatud API kutseid"
+            },
+            {
+              "rediacc": "rdc cluster fork: one command, one JSON reply, whole cluster",
+              "traditional": "Klastri muudatused: veebikonsoolid, sammhaaval abistajad, mitmeetapilised juhendid"
             }
           ],
           "title": "Miks rdc on ehitatud tehisintellekti agentidele",
@@ -1748,7 +1661,7 @@
               "title": "Teie andmed, teie kontroll"
             },
             {
-              "description": "Täielik taastamine alla 5 minutiga. Muutmatud varukopiad, mida lunavara ei saa muuta. Teie äri jätkab tööd.",
+              "description": "Täielik taastamine alla 5 minutiga. Muutmatud varukopiad, mida lunavara ei saa muuta. Teie äri jätkab tööd. Kui pakkuja teid alt veab, saab kogu süsteemi üle viia, Kubernetes kaasa arvatud.",
               "icon": "shield",
               "title": "Äri järjepidevus"
             }
@@ -1757,7 +1670,7 @@
           "title": "Mida te saate."
         },
         "bottomCta": {
-          "description": "Üks kindel hind masina kohta. Puuduvad isikupõhised tasud. Pole üllatusi. Alusta tasuta Community-väljaandega.",
+          "description": "Üks hind masina kohta. Istmepõhiseid tasusid pole. Üllatusi pole. Alusta 14-päevasel tasuta katsel.",
           "primaryCta": "Vaata hindasid",
           "title": "Vaata hindasid"
         },
@@ -1969,7 +1882,7 @@
               "title": "Minutid, mitte tunnid"
             },
             {
-              "description": "Andmed jäävad oma riistvarale avatud vormingutes. Vahetad pakkujat, haldasid ise või liigutad mujale – valik on sinu käes.",
+              "description": "Andmed jäävad oma riistvarale avatud vormingutes. Vahetad pakkujat, haldasid ise või liigutad mujale – valik on sinu käes. Nüüd kehtib see ka Kubernetes klastrite kohta.",
               "icon": "lock",
               "title": "Tarnijast vaba"
             }
@@ -2169,6 +2082,10 @@
             {
               "rediacc": "Vastavus: kontrolli oma infrastruktuuril",
               "traditional": "Vastavus: usalda tarnija kinnitust"
+            },
+            {
+              "rediacc": "Forki või vii töötav klaster teise andmekeskusesse üle, ümberlülitus mõõdetud sekundites",
+              "traditional": "Kubernetes seob sind andmekeskusega, kuhu selle algselt ehitasid"
             }
           ],
           "title": "Kuidas Rediacc teie infrastruktuuri kaitseb",
@@ -2241,17 +2158,17 @@
         "benefits": {
           "items": [
             {
-              "description": "Päringust toimiva keskkonnani alla minuti. Täis stack: OS, konteinerid, andmebaasid, konfiguratsioon.",
+              "description": "Päringust toimiva keskkonnani alla minuti. Kogu stekk: OS, konteinerid, andmebaasid, konfiguratsioon.",
               "icon": "zap",
               "title": "60-sekundilised keskkonnad"
             },
             {
-              "description": "Kõik on käsk. Integreeri CI/CD-ga, Git hookidega või enda automaatikaga. GUI pole vajalik.",
+              "description": "Kõik on käsk. Integreeri CI/CD-ga, Git hookidega või enda automaatikaga. GUI pole vajalik. Kubernetes on kaasas: nimeruum forgitakse nagu iga hoidla.",
               "icon": "terminal",
               "title": "CLI-esimene, skriptitav"
             },
             {
-              "description": "Btrfs muutmatud hetktõmmised tähendavad, et saate mis tahes keskkonna sekunditega tagasi pöörata. Andmekadu puudub. Seisakut ei ole.",
+              "description": "Btrfsi muutumatute hetktõmmiste abil saate mis tahes keskkonna sekunditega tagasi pöörata. Andmekadu puudub. Seisakut ei ole.",
               "icon": "shield",
               "title": "Kohene tagasipööramine"
             }
@@ -2261,13 +2178,13 @@
         },
         "bottomCta": {
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash",
-          "description": "Installi CLI. Klooni oma esimene keskkond. Krediitkaart ei ole vajalik. Müügikõnet ei ole.",
-          "primaryCta": "Alusta tasuta",
+          "description": "Alusta oma 14-päevast tasuta katset",
+          "primaryCta": "Alusta tasuta katset",
           "title": "Proovige ise"
         },
         "hero": {
           "badge": "DEVOPS-INSENERIDELE",
-          "primaryCta": "Alusta tasuta",
+          "primaryCta": "Alusta tasuta katset",
           "secondaryCta": "Loe dokumente",
           "subtitle": "CLI-esimene infrastruktuur, mis kloonib tootmist 60 sekundiga, taastab alla viie minutiga ja töötab teie riistvaral. Pileteid pole. Ootamist pole. Teie andmed jäävad teile.",
           "title": "Kloonige prod minutiga. Taastage viies. Ära esitage pileteid."
@@ -2456,6 +2373,10 @@
             {
               "rediacc": "Tagasipööramine: btrfs hetktõmmise vahetus (<5 minutit)",
               "traditional": "Tagasipööramine: taasta varukoopiast (30+ minutit)"
+            },
+            {
+              "rediacc": "rdc cluster fork copies it, data included. 46 seconds in our lab",
+              "traditional": "Kubernetese klastri kloonimine: uus ettevalmistus, uus juurutus, andmete taassisestamine"
             }
           ],
           "title": "Miks 60-sekundilised kloonid on võimalikud",
@@ -2698,27 +2619,31 @@
         "heading": "Pakettide üksikasjalik võrdlus"
       },
       "edgeChannel": {
-        "cta": "Alusta tasuta",
-        "description": "2x kogukonna piirid, uusimad funktsioonid, täiesti tasuta. Krediitkaart pole nõutav.",
+        "cta": "Uuri Edge kanalit",
+        "description": "Edge kanal saab uued funktsioonid esimesena ja pakub kaks korda suuremaid piire kui stabiilne kanal.",
         "heading": "Proovi Edge versioon"
       },
       "faq": {
         "heading": "Korduma kippuvad küsimused",
         "items": [
           {
-            "answer": "Jah. Kogukonna plaan on tasuta. See hõlmab kuni 2 serverit, 100 serveriseadistust kuus ja varukoopiate taastamist. Krediitkaart pole nõutav.",
-            "question": "Kas on olemas tasuta plaani?"
+            "answer": "Jah. Nii Professional kui ka Äri pakett algavad 14-päevase tasuta prooviperioodiga. Esimene makse võetakse alles siis, kui prooviperiood lõpeb, nii et tühistades enne seda ei maksa sa midagi. Kui tühistad, langeb sinu konto tagasi tasuta Kogukonna paketile, mis hoiab ühe masina töös 10 GB-ga hoidla kohta ja 100 seadistusega kuus.",
+            "question": "Kas on olemas tasuta prooviperiood?"
+          },
+          {
+            "answer": "Jah. Mõlemad tasulised paketid küsivad registreerumisel kaarti, et prooviperiood saaks sujuvalt tellimuseks muutuda. Sinult ei võeta tasu enne, kui 14-päevane prooviperiood lõpeb, ja võid selle jooksul igal ajal tühistada.",
+            "question": "Kas alustamiseks on vaja krediitkaarti?"
           },
           {
             "answer": "Jah, saad oma plaani igal ajal muuta. Parendused jõustuvad koheselt, alandamised alates järgmise arveldusperioodi algusest. Trahve ega tasusid pole.",
             "question": "Kas saan oma plaani muuta?"
           },
           {
-            "answer": "Jah. Aastane arveldus säästab 17% – see on nagu 2 kuud tasuta. Kõik tasulised plaanid on saadaval kuu- või aastaarveldusega.",
+            "answer": "Jah. Aastane arveldus säästab 15% võrreldes igakuise maksmisega. Kõik tasulised plaanid on saadaval kuu- või aastaarveldusega.",
             "question": "Kas on saadaval aastane arveldus?"
           },
           {
-            "answer": "Aktsepteerime kõiki peamisi krediitkaarte (Visa, MasterCard, American Express) ja pakume arvepõhist arveldamist aastaste Enterprise plaanide jaoks.",
+            "answer": "Aktsepteerime kõiki peamisi krediitkaarte (Visa, MasterCard, American Express) ja toetame arvepõhist arveldamist Enterprise plaanide jaoks.",
             "question": "Milliseid makseviise aktsepteerite?"
           },
           {
@@ -2726,33 +2651,37 @@
             "question": "Kuidas masinaid loendatakse?"
           },
           {
-            "answer": "Jah. Rediacc töötab kõigil Linux serveritel btrfs toega. Füüsilised serverid, virtuaalmasinaid ja pilveteenused (AWS, Azure, GCP, Hetzner, OVH jne) – kõik toetatud.",
+            "answer": "Jah. Rediacc töötab kõigil Linux-serveritel, millel on btrfs (avatud lähtekoodiga salvestussüsteem, mis on sisse ehitatud Linuxisse) tugi. Toetatud on füüsilised serverid, virtuaalmasinad ja pilveserverid (AWS, Azure, GCP, Hetzner, OVH jne).",
             "question": "Kas Rediacc töötab minu enda serverites?"
           },
           {
-            "answer": "Tasuta plaaniga saad 2 masinat, serverite kloonid nõudmisel, varukoopiate taastamise ja kogukonna toe. Tasulise plaaniga saad 5 masinat, ajastatud varundamise, 24-tunnise ajaloo, kiirema toe ja API juurdepääsu.",
+            "answer": "Iga iseteeninduspakett sisaldab ühte masinat (ühte ujuvat litsentsi). Kui pead Rediacci käitama rohkem kui ühes masinas, on see Enterprise seadistus, mida müüakse meie partnerite kaudu. Võta meiega ühendust ja paneme selle koos paika.",
+            "question": "Mitut masinat iga pakett katab?"
+          },
+          {
+            "answer": "Kogukond on tasuta varuplaan: üks masin, 10 GB hoidla kohta, 100 seadistust kuus ja kogukonna tugi. Professional on tasuline pakett 14-päevase tasuta prooviperioodiga: üks masin, 100 GB hoidla kohta, 2000+ seadistust kuus, automaatne ajastamine, 24-tunnine taastamisajalugu, kiirem tugi ja API juurdepääs.",
             "question": "Mis on erinevus kogukonna ja Professional plaani vahel?"
           },
           {
-            "answer": "Enterprise on ehitatud teie jaoks. Teie valite tingimused. Saate oma serveriruumi, kohandatud taastamise tõotuse ja 24/7/365 tugiteenuse. Juurde turbeülevaated ja regulaarsed harjutused.",
+            "answer": "Enterprise on ehitatud sinu seadistuse jaoks ja müüakse meie partnerite kaudu. Sina valid tingimused, käitad mitmes masinas ning saad oma serveriruumi, kohandatud taastamislubaduse ja 24/7/365 toe. Lisaks turbeülevaated ja regulaarsed harjutused.",
             "question": "Mis on kaasas Enterprise plaaniga?"
           },
           {
-            "answer": "Jah. Võtke meiega ühendust – koolide ja mittetulundusühingute jaoks on erihind saadaval.",
+            "answer": "Jah. Võtke meiega ühendust. Koolidele ja mittetulundusühingutele kehtivad erihinnad.",
             "question": "Kas pakute allahindlusi haridusasutustele või mittetulundusühingutele?"
           },
           {
-            "answer": "Jah. Kõik tasulised plaanid sisaldavad 14-päevast raha tagastamise garantiid. Kui Rediacc teie vajadustele ei vasta, tagastame raha täielikult – küsimusi ei esitata.",
-            "question": "Kas on rahade tagastamise garantii?"
+            "answer": "Kui tühistad 14-päevase prooviperioodi jooksul, ei võeta sinult kunagi tasu. Kui tühistad tasulise plaani hiljem, säilivad selle funktsioonid kuni arveldusperioodi lõpuni ning seejärel langeb sinu konto tagasi tasuta Community versioonile. Sinu hoidlad töötavad kogu selle aja katkematult.",
+            "question": "Mis juhtub, kui tühistan?"
           }
         ]
       },
       "finalCta": {
         "buttons": {
-          "startFree": "Alusta tasuta",
+          "startFree": "Alusta tasuta prooviperioodi",
           "talkToSales": "Räägi müügitiimiga"
         },
-        "description": "Paigalda 5 minutiga. Tasuta alustamiseks.",
+        "description": "Paigalda 5 minutiga. Alusta oma 14-päevast tasuta prooviaega.",
         "heading": "Kaitse oma infrastruktuuri"
       },
       "hero": {
@@ -2760,19 +2689,18 @@
         "title": "Tegeliku käituse jaoks ehitatud"
       },
       "meta": {
-        "description": "Leia oma äri jaoks sobiv plaani. Lihtne hinnakujundus, varjatud kulusid pole, tühista igal ajal.",
+        "description": "Vali oma meeskonnale sobiv plaan. Iga tasuline plaan algab 14-päevase tasuta prooviperioodiga. Varjatud tasusid pole.",
         "keywords": "hinnad, infrastruktuuri automatiseerimine, CI/CD hinnad, DevOpsi paketid, ülesannete täitmine",
         "title": "Hinnakujundus | Tegeliku käituse jaoks"
       },
       "plans": {
         "business": {
-          "description": "Ekspertne seadistamine, varundus mitmes piirkonnas ja 4-tunnine taastamine.",
+          "description": "Suuremad hoidlad, põhjalikum haldus ja 4-tunnine taastamise lubadus.",
           "features": [
             "Kõik Professional paketis sisalduv +",
-            "10 ujuvat litsentsi",
-            "Piiramata hoidlaid",
+            "1 ujuv litsents",
+            "500 GB hoidla kohta",
             "5 000+ serveriseadistust kuus",
-            "Juurutustugi kaasas (käivituspakkumine)",
             "Geo-redundantne salvestus (3 piirkonda)",
             "Pidev andmekaitse",
             "4-tunnine taastamise SLA",
@@ -2783,12 +2711,12 @@
           "name": "Äri"
         },
         "community": {
-          "description": "Varundus ja taastamine kuni 2 serveri jaoks, igavesti tasuta.",
+          "description": "Tasuta varuplaan. Hoiab ühe masina töös pärast prooviperioodi või tasulise plaani lõppu.",
           "features": [
             "Piiramata kasutajaid ja meeskondi",
             "Piiramata hoidlaid",
             "100 serveriseadistust kuus (1 ujuv litsents iga seadistuse kohta)",
-            "2 ujuvat litsentsi",
+            "1 ujuv litsents",
             "Varunduse taastamine",
             "Käsitsi ajastamine",
             "Juurdepääs kogukonna Slack-kanalile",
@@ -2797,10 +2725,10 @@
           "name": "Kogukond"
         },
         "enterprise": {
-          "description": "Pühendatud tugi ja kohandatud tingimused keeruliste keskkondade jaoks.",
+          "description": "Mitme masina juurutused, müügil partnerite kaudu. Pühendatud tugi ja kohandatud tingimused.",
           "features": [
             "Kõik äripaketis sisalduv +",
-            "25+ ujuvat litsentsi",
+            "Mitme masina ujuvad litsentsid",
             "Piiramata hoidlaid",
             "15 000+ serveriseadistust kuus",
             "Kohandatud SLA garanteeritud taastamisaegadega",
@@ -2815,11 +2743,11 @@
           "name": "Enterprise"
         },
         "professional": {
-          "description": "Professionaalne automatiseerimine ja ajastamine teie kasvavale meeskonnale",
+          "description": "Automatiseerimine ja ajastamine ühele tootmismasinale.",
           "features": [
             "Kõik kogukonnapaketis sisalduv +",
-            "3 ujuvat litsentsi",
-            "Piiramata hoidlaid",
+            "1 ujuv litsents",
+            "100 GB hoidla kohta",
             "2 000+ serveriseadistust kuus",
             "Automaatne ajastamine",
             "Taastamine viimase 24 tunni mis tahes hetkel",
@@ -2982,7 +2910,7 @@
             "title": "60-päevane ajapikendus skaleerimiseks."
           },
           {
-            "description": "Ujuvat litsentsi kasutatakse ainult uue serveri loomiseks või olemasoleva kopeerimiseks. Sinu tavatoimingud ei hõiva kunagi litsentsi. Litsentsid vabanevad pärast 5 tunnist tegevusetust. 5 litsentsiga pakett sobib kümnete masinate jaoks. Masinapõhiseid tasusid pole kunagi.",
+            "description": "Ujuvat litsentsi kasutatakse ainult siis, kui loot või kopeerid serverit. Sinu tavapärane töö ei hõiva kunagi litsentsi. Litsentsid vabanevad pärast 5 tundi tegevusetust, mistõttu üksainus ujuv litsents katab aja jooksul ikkagi palju masinaid. Masinapõhiseid tasusid pole kunagi.",
             "title": "Piiramatu arv masinaid. Tasud ainult uute loomisel."
           },
           {
@@ -3016,7 +2944,6 @@
         "contactUsSub": "Kohandatud piirangud ja tingimused",
         "cta": {
           "business": {
-            "guarantee": "Raha tagasi garantii",
             "launchBadge": "Piiratud käivituspakkumine",
             "primary": "Broneeri seadistamiskõne",
             "secondary": "Võta müügiga ühendust",
@@ -3028,29 +2955,21 @@
             "secondary": "Vaata, mis on kaasas"
           },
           "enterprise": {
-            "guarantee": "Raha tagasi garantii",
             "primary": "Broneeri demo",
             "secondary": "Võta müügiga ühendust",
             "subtext": "Kohandatud SLA · Pühendatud tugi"
           },
           "professional": {
-            "guarantee": "Raha tagasi garantii",
             "primary": "Alusta Professionaliga",
             "secondary": "Võta müügiga ühendust"
           }
-        },
-        "designPartner": {
-          "badge": "TASUTA disainipartneritele",
-          "cta": "Taotle disainipartneri juurdepääsu →",
-          "period": "Eluaegne · Kaarti ei nõuta",
-          "price": "FREE"
         },
         "edgeLimitsNote": "Näidatud piirid Edge kanali jaoks. Stabiilsel kanalil on pooled piirid.",
         "foreverFree": "Igavesti tasuta",
         "getStarted": "Installi nüüd",
         "guarantees": {
           "cancelAnytime": "Tühista igal ajal",
-          "moneyBack": "14-päevane raha tagasi garantii",
+          "freeTrial": "14-päevane tasuta prooviaeg",
           "noContracts": "Pikaajalisi lepinguid ei ole"
         },
         "keyBenefits": "Peamised eelised",
@@ -3059,6 +2978,7 @@
         "monthOrYear": "kuus või {{price}} aastas",
         "popular": "Kõige populaarsem",
         "startingAt": "*Alates",
+        "startTrial": "Alusta 14-päevase tasuta prooviga",
         "taxDisclaimer": "Kõik hinnad on USA dollarites ja ei sisalda kohaldatavaid makse, tasusid ega tollimakse.",
         "whatsIncluded": "Mis on kaasas:"
       }
@@ -3170,7 +3090,7 @@
             },
             "productTelemetry": {
               "content": [
-                "Meie tarkvaratooted (veebirakendus, CLI, vahevara ja sild) koguvad anonüümset kasutustelemetriat toote kvaliteedi, jõudluse ja töökindluse parandamiseks. Telemetria andmed hõlmavad tehnilist teavet, nagu rakenduse versioon, operatsioonisüsteem, brauseri tüüp, jõudluse mõõdikud, funktsioonide kasutamise mustrid ja veaaruanded. Isikutuvastajad anonümiseeritakse enne kogumist - e-posti aadressid taandatakse ainult domeeniks, kasutajatunnused räsitatakse ja lühendatakse ning paroole ega saladusi ei koguta kunagi.",
+                "Meie tarkvaratooted (veebirakendus, CLI, vahevara ja Renet agent) koguvad anonüümset kasutustelemetriat toote kvaliteedi, jõudluse ja töökindluse parandamiseks. Telemetria andmed hõlmavad tehnilist teavet, nagu rakenduse versioon, operatsioonisüsteem, brauseri tüüp, jõudluse mõõdikud, funktsioonide kasutamise mustrid ja veaaruanded. Isikutuvastajad anonümiseeritakse enne kogumist - e-posti aadressid taandatakse ainult domeeniks, kasutajatunnused räsitatakse ja lühendatakse ning paroole ega saladusi ei koguta kunagi.",
                 "Telemetria on meie veebirakenduses ja CLI-s vaikimisi lubatud ning seda saab kõigis toodetes keelata. Üksikasjaliku teabe saamiseks selle kohta, mida iga toode kogub ja kuidas loobuda, vaata meie <a href=\"telemetry-policy\">telemetria poliitikat</a>."
               ],
               "title": "2.5 Tootetelemetria andmed"
@@ -3895,12 +3815,12 @@
         }
       },
       "description": "Valige oma ettevõtte suurus ja kohandage sisendeid – näete TCO võrdlust reaalajas, arendajate säästetud tunde ja tasuvusperioodi.",
-      "footnote": "Hinnangud põhinevad ITIC, IBM/Ponemon, Sophos, Cortex ja KPMG tööstuse võrdlusalustel (2024). TCO hõlmab infrastruktuuri, administreerimist, katastroofi taastamise testimist ja hooldust. Arendajate tootlikkus kasutab konservatiivset 40% realiseerimise määra. Katastroofi taastamise säästud saavutatakse btrfs-ga, mis võimaldab kiiremaid taastusi (avatud lähtekoodiga salvestussüsteem, mis on Linux sisse ehitatud). Salvestuse säästud tulevad kopiatest, mis ei nõua lisaruumi, erinevalt täielikult varukoopiaahelatest. Tegelikud tulemused erinevad töökoormuse ja seadistuse alusel.",
+      "footnote": "Hinnangud põhinevad tööstuse võrdlusalustel ITIC, IBM/Ponemon, Sophos, Cortex ja KPMG uuringutest (2024). TCO hõlmab infrastruktuuri, administreerimist, katastroofitaaste testimist ja hooldust. Arendajate tootlikkus kasutab konservatiivset 40% realiseerimise määra. Katastroofitaaste säästud saavutatakse btrfs-ga, mis on Linux-sse ehitatud avatud lähtekoodiga salvestussüsteem, võimaldades kiiremaid taastisi. Salvestuse säästud tulevad kopiatest, mis ei nõua lisaruumi, erinevalt täieliku varukoopiate ahelatest. Tegelikud tulemused varieeruvad töökoormuse ja konfiguratsiooni alusel.",
       "hero": {
         "title": "Arvutage oma infrastruktuuri ROI"
       },
       "meta": {
-        "description": "Vaata, kui palju Rediacc sulle säästa võib. Sisesta oma arvud ja näe TCO-d, tasuvusperioodi ja 3-aastase ROI-d.",
+        "description": "Vaata, kui palju Rediacc sulle omahosting infrastruktuuril säästa võib. Sisesta oma arvud ja näe TCO-d, tasuvusperioodi ja 3-aastast ROI-d.",
         "keywords": "ROI kalkulaator, TCO võrdlus, infrastruktuuri säästud, omahosting ROI, tasuvusperiood, varukoopiate kulude vähendamine",
         "title": "ROI kalkulaator - infrastruktuuri säästud | Rediacc"
       },
@@ -3913,11 +3833,11 @@
             "url": "https://itic-corp.com/itic-2024-hourly-cost-of-downtime-report/"
           },
           {
-            "text": "IBM Security / Ponemon Institute, \"Cost of a Data Breach Report 2024.\" Andmemurde keskmine maksumus: 4,88 miljonit $ (10% aasta-aastane kasv). Organisatsioonid, kelle intsidentidele reageerimise meeskonnad regulaarselt oma plaane testisid, olid 58% madalamad murdekulud.",
+            "text": "IBM Security / Ponemon Institute, \"Cost of a Data Breach Report 2024.\" Andmemurde keskmine maksumus: 4,88 miljonit $ (10% aasta-aastane kasv). Organisatsioonidel, kelle intsidentidele reageerimise meeskonnad regulaarselt oma plaane testisid, olid murdekulud 58% madalamad.",
             "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
           },
           {
-            "text": "Sophos, \"The State of Ransomware 2024.\" Keskmine taastumise kulu (ilma lunarahata): 2,73 miljonit $, 50% kasv 1,82 miljonist dollarist 2023. aastal. 59% organisatsioonidest sattus eelmisel aastal lunavararünnaku ohvriks.",
+            "text": "Sophos, \"The State of Ransomware 2024.\" Keskmine taastumise kulu (ilma lunarahata): 2,73 miljonit $, mis on 50% kasv 1,82 miljonist dollarist 2023. aastal. 59% organisatsioonidest sattus eelmisel aastal lunavararünnaku ohvriks.",
             "url": "https://www.sophos.com/en-us/content/state-of-ransomware"
           },
           {
@@ -3947,7 +3867,7 @@
         "enterprise": "Enterprise",
         "enterpriseDesc": "200–1 000 töötajat",
         "label": "Ettevõtte suurus",
-        "large": "Suur ettevõte",
+        "large": "Suur Enterprise",
         "largeDesc": "1 000+ töötajat",
         "mid": "Keskturg",
         "midDesc": "25–200 töötajat",
@@ -3968,7 +3888,7 @@
         "paybackUnit": "kuud",
         "threeYearRoi": "3-aastane ROI"
       },
-      "title": "Kui palju saab Rediacc teie ettevõttele säästa?"
+      "title": "Kui palju saab Rediacc teie organisatsioonile säästa?"
     },
     "solutionPages": {
       "aiPentesting": {
@@ -5520,6 +5440,12 @@
               "description": "Klooni tootmiskeskkond. Lase tehisintellektil seda rünnata.",
               "slug": "ai-pentesting",
               "title": "Tehisintellekti läbitungimistestimine"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Forki või vii üle töötav klaster, andmed kaasas",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetese klastri liikuvus"
             }
           ],
           "title": "Avastage teisi lahendusi"
@@ -6415,6 +6341,12 @@
               "description": "Klooni tootmiskeskkond 60 sekundiga",
               "slug": "environment-cloning",
               "title": "Keskkonna kloonimine"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Forki või vii üle töötav klaster, andmed kaasas",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetese klastri liikuvus"
             }
           ],
           "title": "Avastage teisi lahendusi"
@@ -7407,6 +7339,12 @@
               "description": "Klooni tootmine. Las AI ründab seda.",
               "slug": "ai-pentesting",
               "title": "AI-põhine läbitungimistest"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Forki või vii üle töötav klaster, andmed kaasas",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetese klastri liikuvus"
             }
           ],
           "title": "Uuri teisi lahendusi"
@@ -7674,6 +7612,10 @@
             {
               "rediacc": "10 klooni jagavad plokke CoW kaudu (~12 GB delta)",
               "traditional": "10 klooni = 10x salvestus (2,4 TB)"
+            },
+            {
+              "rediacc": "Nimeruum forkitakse 1 kuni 5 sekundiga, nagu iga hoidla",
+              "traditional": "Kubernetese rakenduse jaoks staging-keskkonna loomine tähendab teise klastri ehitamist"
             }
           ],
           "title": "Miks 60-sekundilised kloonid on võimalikud",
@@ -7912,6 +7854,12 @@
               "description": "Klooni tootmine. Las AI ründab seda.",
               "slug": "ai-pentesting",
               "title": "AI-põhine läbitungimistest"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Forki või vii üle töötav klaster, andmed kaasas",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetese klastri liikuvus"
             }
           ],
           "title": "Uuri teisi lahendusi"
@@ -8161,6 +8109,10 @@
             {
               "rediacc": "Automatiseeritud tervisekontrollid — lõpetamine/mittelõpetamine täpse RTO/RPO-ga",
               "traditional": "Käsitsi kontrollimine — \"näeb õige välja\" otsused"
+            },
+            {
+              "rediacc": "Forki terve klaster 46 sekundiga ja käivita õppus koopial",
+              "traditional": "Kubernetese DR-õppus: hoia teist klastrit sünkroonis ja looda parimat"
             }
           ],
           "title": "Miks traditsiooniline KT-testimine ebaõnnestub",
@@ -8924,6 +8876,12 @@
               "description": "Klooni tootmine. Las AI ründab seda.",
               "slug": "ai-pentesting",
               "title": "AI-põhine läbitungimistest"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Forki või vii üle töötav klaster, andmed kaasas",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetese klastri liikuvus"
             }
           ],
           "title": "Uuri teisi lahendusi"
@@ -9159,6 +9117,10 @@
             {
               "rediacc": "52 sekundit tootmisidentse klooni loomiseks",
               "traditional": "15–30 minutit iga uue keskkonna ettevalmistamiseks"
+            },
+            {
+              "rediacc": "Forki klaster testi jaoks, kustuta see pärast. Koopiad jagavad salvestusruumi.",
+              "traditional": "Staging-Kubernetese klaster: teine komplekt sõlmesid, mille eest maksad 24/7"
             }
           ],
           "title": "Täielikud koopiad vs. copy-on-write",
@@ -9396,6 +9358,12 @@
               "description": "Klooni tootmiskeskkond. Lase tehisintellektil seda rünnata.",
               "slug": "ai-pentesting",
               "title": "Tehisintellekti pentest"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Forki või vii üle töötav klaster, andmed kaasas",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetese klastri liikuvus"
             }
           ],
           "title": "Tutvu teiste lahendustega"
@@ -9889,6 +9857,12 @@
               "description": "Klooni tootmiskeskkond. Lase tehisintellektil seda rünnata.",
               "slug": "ai-pentesting",
               "title": "Tehisintellekti pentest"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Forki või vii üle töötav klaster, andmed kaasas",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetese klastri liikuvus"
             }
           ],
           "title": "Tutvu teiste lahendustega"
@@ -10203,6 +10177,413 @@
           ]
         }
       },
+      "kubernetesClusterMobility": {
+        "benefits": {
+          "items": [
+            {
+              "description": "Rediacc käitab sinu eest k3s-i või ühendub klastriga, mis sul juba on. Mahud töötavad ceph-csi RBD peal. Sinu manifestid jäävad sinu omaks.",
+              "icon": "check-circle",
+              "title": "Hoia oma Kubernetes"
+            },
+            {
+              "description": "Valmista ette oma KVM-hostidel või pilvedes nagu Linode, kasutades privaatseid VLAN-e. Sõlmede kogumid hoiavad kettamahukad Ceph-sõlmed protsessorimahukatest Kubernetese sõlmedest eraldi.",
+              "icon": "arrow-right-circle",
+              "title": "Tõeline andmekeskuste liikuvus"
+            },
+            {
+              "description": "Kubernetese rakendus on nimeruum. Forki see nagu iga teine hoidla: 1 kuni 5 sekundit, andmed kaasas. Samad käsud, mida juba kasutad Dockeri hoidlate jaoks.",
+              "icon": "git-branch",
+              "title": "Üks mõtteviis kõige jaoks"
+            }
+          ],
+          "overline": "MIKS SEE OLULINE ON",
+          "title": "Hoia oma Kubernetes. Saa liikuvus juurde."
+        },
+        "bottomCta": {
+          "command": "rdc cluster fork prod --tag staging",
+          "ctaText": "Alusta tasuta prooviga",
+          "description": "Forki see, testi kolimist ja seejärel migreeri päriselt. Alusta oma 14-päevast tasuta prooviaega.",
+          "title": "Anna oma klastrile väljapääsutee"
+        },
+        "comparison": {
+          "capabilityLabel": "Võimekus",
+          "description": "Varundustööriistad peatavad ja taastavad. Cluster API kloonib struktuuri, kuid mitte andmeid. RBD peegeldamine kopeerib mahtusid, mitte klastrit. Rediacc viib üle kõik korraga.",
+          "features": [
+            {
+              "name": "Varundab rakendusi ja mahte",
+              "refs": [4, 5, 0, 9, 0],
+              "values": ["check", "check", "cross", "Volumes only", "rediacc"]
+            },
+            {
+              "name": "Viib üle terve klastri koos andmetega",
+              "refs": [6, 7, 8, 0, 0],
+              "values": ["Stop and restore", "Stop and restore", "Shape only", "cross", "rediacc"]
+            },
+            {
+              "name": "Forkib töötava klastri, andmed kaasas",
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Kloonib ühe rakenduse (nimeruumi) sekunditega",
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Kopeerib andmed ilma täieliku ümberkirjutamiseta",
+              "refs": [0, 0, 0, 10, 0],
+              "values": ["cross", "cross", "cross", "Async copy", "rediacc"]
+            },
+            {
+              "name": "Lühike mõõdetud ümberlülitus plaanitud kolimiseks",
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+            }
+          ],
+          "overline": "LÕHE",
+          "title": "Keegi teine ei vii töötavat klastrit üle koos selle andmetega"
+        },
+        "explore": {
+          "solutions": [
+            {
+              "category": "multi-cloud",
+              "current": true,
+              "description": "Forki või vii üle töötav klaster, andmed kaasas",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetese klastri liikuvus"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Teie taristu. Teie valik. Alati.",
+              "slug": "vendor-lock-in",
+              "title": "Tarnija lukustusest vabanemine"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Kui AWS läheb alla, sina ei lähe",
+              "slug": "cloud-outage-protection",
+              "title": "Pilve katkestuste kaitse"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Testi oma tõrkeüleminek enne, kui seda vajad",
+              "slug": "failover-testing",
+              "title": "Tõrkesiirde testimine"
+            },
+            {
+              "category": "encryption",
+              "description": "Migreeri ilma andmeid riskimata",
+              "slug": "migration-safety",
+              "title": "Migratsiooni turvalisus"
+            },
+            {
+              "category": "dev-env",
+              "description": "Klooni tootmiskeskkond 60 sekundiga",
+              "slug": "environment-cloning",
+              "title": "Keskkonna kloonimine"
+            },
+            {
+              "category": "backups",
+              "description": "Täieliku keskkonna taastamine minutitega",
+              "slug": "instant-recovery",
+              "title": "Kohene taastamine"
+            },
+            {
+              "category": "encryption",
+              "description": "Teie võtmed. Teie krüpteerimine. Ilma eranditeta.",
+              "slug": "encryption",
+              "title": "Teie kontrollitav krüptimine"
+            }
+          ],
+          "title": "Tutvu teiste lahendustega"
+        },
+        "hero": {
+          "badge": "MULTI-CLOUD",
+          "differentiator": "Velero taastab varukoopiaid. Cluster API kloonib struktuure. Rediacc viib üle töötava klastri, andmed kaasas.",
+          "primaryCta": "Alusta tasuta prooviga",
+          "secondaryCta": "Vaata mõõdetud numbreid →",
+          "subtitle": "Sinu klaster liigub tervikuna: sõlmed, seaded ja andmed. Teise masinasse või teise andmekeskusesse. Ümberlülitus on mõõdetud sekundites, mitte nädalavahetuses.",
+          "title": "Forki või vii üle töötav Kubernetese klaster"
+        },
+        "howItWorks": {
+          "cloneVisual": {
+            "arrow": {
+              "icon": "arrow-right-circle-arrow",
+              "label": "Fork",
+              "time": "46s"
+            },
+            "clone": {
+              "cardClass": "restored",
+              "containerCount": "Fork",
+              "services": [
+                {
+                  "name": "Nodes",
+                  "port": "2 (k3s + Ceph)"
+                },
+                {
+                  "name": "Namespaces",
+                  "port": "8 apps"
+                },
+                {
+                  "name": "Volumes",
+                  "port": "Ceph RBD clones"
+                },
+                {
+                  "name": "State",
+                  "port": "Own identity, new IPs"
+                }
+              ],
+              "size": "46s",
+              "status": "Running",
+              "title": "prod-staging (Datacenter B)"
+            },
+            "production": {
+              "containerCount": "Vanem",
+              "services": [
+                {
+                  "name": "Nodes",
+                  "port": "2 (k3s + Ceph)"
+                },
+                {
+                  "name": "Namespaces",
+                  "port": "8 apps"
+                },
+                {
+                  "name": "Volumes",
+                  "port": "Ceph RBD"
+                },
+                {
+                  "name": "State",
+                  "port": "Keeps running"
+                }
+              ],
+              "size": "Untouched",
+              "status": "Running",
+              "title": "prod (Datacenter A)"
+            }
+          },
+          "overline": "KUIDAS SEE TOIMIB",
+          "steps": [
+            {
+              "description": "Iga sõlm töötab tõmmisfailist. Iga maht on Ceph RBD tõmmis. Koos moodustavad need terve klastri: rakendused, seaded ja andmed.",
+              "icon": "layers",
+              "title": "Klastri tõmmised ja mahud"
+            },
+            {
+              "description": "Üks käsk kloonib iga tõmmise, copy-on-write põhimõttel. Kahesõlmeline klaster forkiti meie laboris 46 sekundiga. Vanem jätkab töötamist.",
+              "icon": "git-branch",
+              "title": "Forki kohapeal"
+            },
+            {
+              "description": "Rediacc kopeerib eelnevalt, samal ajal kui klaster töötab. Seejärel peatab selle, saadab lõpliku erinevuse ja käivitab uuel masinal uuesti. Mõõdetud ümberlülitus: 16 sekundit.",
+              "icon": "arrow-right-circle",
+              "title": "Migreeri lühikese ümberlülitusega"
+            }
+          ],
+          "title": "Terve klaster on üks failikomplekt"
+        },
+        "meta": {
+          "description": "Forki või vii üle töötav Kubernetese klaster, andmed kaasas, teise masinasse või andmekeskusesse. Lühike mõõdetud ümberlülitus. Ehitatud Ceph RBD ja k3s peale.",
+          "keywords": "kubernetese klastri migratsioon, klastri fork, ceph rbd, k3s, andmekeskuse liikuvus, kubernetese kaasaskantavus",
+          "title": "Fork or Move a Kubernetes Cluster | Rediacc"
+        },
+        "problem": {
+          "description": "Kubernetes muutis sinu rakendused kaasaskantavaks. Klaster ise seda ei ole. Andmed asuvad ühes andmekeskuses. Selle ümbertõstmine tähendab tervet ülesehitusprojekti: uued sõlmed, uus salvestus, taastamine varukoopiast, kõige uuesti testimine. Seepärast enamik meeskondi ei liigugi kunagi. Ja nende tarnija teab seda.",
+          "overline": "PROBLEEM",
+          "statCallouts": [
+            {
+              "number": "27%",
+              "ref": 1,
+              "source": "Flexera 2024 State of the Cloud Report",
+              "text": "pilvekulutustest läheb igal aastal raisku"
+            },
+            {
+              "number": "17%",
+              "ref": 2,
+              "source": "Flexera 2025 State of the Cloud Report",
+              "text": "keskmine summa, mille võrra ettevõtted oma pilve-eelarvet ületavad"
+            },
+            {
+              "number": "$0.09/GB",
+              "ref": 3,
+              "source": "AWS/Azure/GCP Pricing 2024",
+              "text": "tasudes andmete väljaviimise eest – loodud selleks, et lahkumine oleks kulukas"
+            }
+          ],
+          "timeline": {
+            "newLabel": "REDIACCIGA",
+            "newSteps": ["Pre-copy", "16s cutover", "Live"],
+            "oldLabel": "VANA VIIS",
+            "oldSteps": [
+              {
+                "day": "Month 1",
+                "text": "Ehita üles uus klaster"
+              },
+              {
+                "day": "Month 2",
+                "text": "Ehita uuesti üles manifestid ja saladused"
+              },
+              {
+                "day": "Month 3",
+                "text": "Taasta mahud varukoopiast"
+              },
+              {
+                "day": "Month 4",
+                "text": "Testi iga rakendus uuesti"
+              },
+              {
+                "day": "Month 5+",
+                "text": "Lülitu üle ja looda parimat"
+              }
+            ]
+          },
+          "title": "Sinu klaster on kinni seal, kuhu sa selle ehitasid"
+        },
+        "references": {
+          "disclaimer": "Fork-i ja migreerimise ajad mõõdeti algusest lõpuni Rediacci KVM-testlaboris kahesõlmelisel klastril. Vaikimisi järjepidevus on crash-consistent, sama semantika mis toitekatkestusel. Migreerimise ümberlülituse ajal käivituvad töökoormused sihtmasinal uuesti.",
+          "items": [
+            {
+              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"27% of cloud spend continues to be wasted.\"",
+              "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
+            },
+            {
+              "text": "Flexera, \"2025 State of the Cloud Report,\" 2025. \"With cloud budgets already exceeding limits by 17%, organizations are increasingly turning to managed service providers.\"",
+              "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
+            },
+            {
+              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
+              "url": "https://aws.amazon.com/s3/pricing/"
+            },
+            {
+              "text": "Velero backs up Kubernetes cluster resources and persistent volumes and restores them into a cluster.",
+              "url": "https://velero.io/docs/"
+            },
+            {
+              "text": "Kasten K10 provides backup and restore of Kubernetes applications, including application data.",
+              "url": "https://docs.kasten.io/"
+            },
+            {
+              "text": "Velero cluster migration restores a backup into a new cluster; workloads are recreated from the backup point, not moved live.",
+              "url": "https://velero.io/docs/main/migration-case/"
+            },
+            {
+              "text": "Kasten K10 migrates applications between clusters by exporting a restore point and importing it into the target cluster.",
+              "url": "https://docs.kasten.io/latest/usage/migration.html"
+            },
+            {
+              "text": "Cluster API's clusterctl move relocates Cluster API objects (the cluster's definition) to another management cluster; it does not move workload data.",
+              "url": "https://cluster-api.sigs.k8s.io/clusterctl/commands/move"
+            },
+            {
+              "text": "Ceph RBD mirroring replicates block device images between Ceph clusters; it covers volumes, not Kubernetes cluster state.",
+              "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
+            },
+            {
+              "text": "Ceph RBD mirroring is asynchronous, based on journaling or periodic snapshots, and is designed for disaster recovery.",
+              "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
+            }
+          ],
+          "label": "Sources & References"
+        },
+        "stats": [
+          {
+            "icon": "layers",
+            "label": "Whole 2-node cluster fork",
+            "number": "46s"
+          },
+          {
+            "icon": "clock",
+            "label": "Migrate cutover, measured",
+            "number": "16s"
+          },
+          {
+            "icon": "zap",
+            "label": "Namespace fork",
+            "number": "1-5s"
+          }
+        ],
+        "techDiff": {
+          "description": "Iga sõlm töötab btrfs-il asuvast tõmmisfailist. Iga maht on Ceph RBD tõmmis. Klastri kopeerimine tähendab nende tõmmiste kloonimist, copy-on-write põhimõttel. Ei mingit eksporti, teisendust ega taastamissammu. Sellepärast võtab fork aega sekundeid, mitte kuid.",
+          "overline": "KAPOTI ALL",
+          "rows": [
+            {
+              "rediacc": "Sõlmede tõmmised ja mahud liiguvad ühe komplektina",
+              "traditional": "Varundustööriistad taastavad tühja klastrisse, tükk tüki haaval"
+            },
+            {
+              "rediacc": "Ceph RBD kloonid liiguvad kaasa, copy-on-write põhimõttel",
+              "traditional": "Andmed vajavad eraldi replikatsioonilahendust"
+            },
+            {
+              "rediacc": "Kahesõlmelise klastri fork võttis meie laboris aega 46 sekundit. Vanem jätkab töötamist",
+              "traditional": "Klastri kloon tähendab uut ettevalmistust ja uut juurutust"
+            },
+            {
+              "rediacc": "Mõõdetud ümberlülitus: 16 sekundit. Töökoormused käivituvad sihtmasinal uuesti",
+              "traditional": "Ümberlülituse plaanid kestavad terve nädalavahetuse"
+            }
+          ],
+          "title": "Miks klaster saab liikuda nagu fail"
+        },
+        "techStrip": {
+          "label": "Runs the apps you already ship",
+          "note": "Andmebaasid, CI/CD, CMS, jälgimine, sisselogimised, salvestus. Kui see töötab Kubernetesel, suudab Rediacc selle forkida ja üle viia, andmed kaasas."
+        },
+        "terminal": {
+          "lines": [
+            {
+              "cmd": "rdc cluster fork prod",
+              "type": "command",
+              "value": "--tag staging"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "Sõlmede tõmmiste kloonimine (copy-on-write)... valmis",
+              "type": "check"
+            },
+            {
+              "text": "Ceph RBD mahtude kloonimine.................... valmis",
+              "type": "check"
+            },
+            {
+              "text": "Sõlmede identiteedi ümberkirjutamine uute IP-de jaoks... valmis",
+              "type": "check"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "✓ Fork valmis 46 sekundiga: prod-staging töötab. Vanem puutumata.",
+              "type": "success"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "cmd": "rdc cluster migrate prod",
+              "type": "command",
+              "value": "--to fsn1-dc2"
+            },
+            {
+              "text": "Eelkopeerimine, samal ajal kui klaster töötab edasi... valmis",
+              "type": "check"
+            },
+            {
+              "text": "Ümberlülitus: peatamine, lõplik erinevus, taaskäivitus... 16s",
+              "type": "check"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "Fork: 46s   Migreerimise ümberlülitus: 16s   Järjepidevus: crash-consistent",
+              "type": "summary"
+            }
+          ]
+        }
+      },
       "leadMagnetButton": {
         "buttonLabel": "Laadi ülevaade alla",
         "description": "Otse asja juurde minev PDF, mis on kirjutatud CISO-dele, CTO-dele ja vaneminsenieridele. Saadame lingi e-postiga, et saaksid selle hiljem üles leida.",
@@ -10379,6 +10760,12 @@
               "description": "Klooni tootmiskeskkond. Lase tehisintellektil seda rünnata.",
               "slug": "ai-pentesting",
               "title": "Tehisintellekti pentest"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Forki või vii üle töötav klaster, andmed kaasas",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetese klastri liikuvus"
             }
           ],
           "title": "Tutvu teiste lahendustega"
@@ -10636,6 +11023,10 @@
             {
               "rediacc": "SHA-256 kontrollsumma tõendamine repositooriumi kohta pärast ülekannet",
               "traditional": "Terviklikkus eeldatav - automaatne tõendamine puudub"
+            },
+            {
+              "rediacc": "Forki klaster kõigepealt. Testi kolimist enne ümberlülitumist",
+              "traditional": "Klastri migratsioonid vajavad paralleelset ülesehitust ja pimesi lootmist"
             }
           ],
           "title": "Dekrüpteeri-edasta-krüpteeri vs. nullkokkupuutega migreerimine",
@@ -10876,6 +11267,12 @@
               "description": "Klooni tootmiskeskkond. Lase tehisintellektil seda rünnata.",
               "slug": "ai-pentesting",
               "title": "Tehisintellekti pentest"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Forki või vii üle töötav klaster, andmed kaasas",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetese klastri liikuvus"
             }
           ],
           "title": "Tutvu teiste lahendustega"
@@ -11107,6 +11504,10 @@
             {
               "rediacc": "47 sekundit, automaatne pariteetsuse tõendamine --verify-parity lipuga",
               "traditional": "Päevi seadistada, pariteetsuse tõendamine puudub"
+            },
+            {
+              "rediacc": "rdc cluster fork copies the running cluster, data included. 46 seconds in our lab",
+              "traditional": "Samast YAML-ist ehitatud staging-klaster triivib ikkagi tootmisest eemale"
             }
           ],
           "title": "Lähendus vs. täpne kloonimine",
@@ -11350,6 +11751,12 @@
               "description": "Klooni tootmiskeskkond. Lase tehisintellektil seda rünnata.",
               "slug": "ai-pentesting",
               "title": "Tehisintellekti pentest"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Forki või vii üle töötav klaster, andmed kaasas",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetese klastri liikuvus"
             }
           ],
           "title": "Tutvu teiste lahendustega"
@@ -12697,7 +13104,7 @@
               "type": "spacer"
             },
             {
-              "cmd": "rdc term connect -m patch-test-ubuntu-24",
+              "cmd": "rdc term connect patch-test-ubuntu-24",
               "flag": "-c",
               "prompt": "$",
               "type": "command",
@@ -12896,6 +13303,12 @@
               "description": "Kloonige tootmine. Laske AI-l seda rünnata.",
               "slug": "ai-pentesting",
               "title": "AI-läbitestimine"
+            },
+            {
+              "category": "multi-cloud",
+              "description": "Forki või vii üle töötav klaster, andmed kaasas",
+              "slug": "kubernetes-cluster-mobility",
+              "title": "Kubernetese klastri liikuvus"
             }
           ],
           "title": "Tutvu teiste lahendustega"
@@ -13145,6 +13558,10 @@
             {
               "rediacc": "Pilv-agnostiline: samad rdc käsud töötavad AWS-il, Hetzneril, paljale riistvarale",
               "traditional": "Pilve-spetsiifilisi tööriistu vajalik: Terraformi ümberkirjutused, API muudatused"
+            },
+            {
+              "rediacc": "rdc cluster migrate moves the running cluster, data included",
+              "traditional": "Kubernetese klastrid ehitatakse uue tarnija juures käsitsi uuesti üles"
             }
           ],
           "title": "Miks migratsioon kestab minuteid, mitte kuuid"
@@ -13620,6 +14037,13 @@
         }
       }
     },
+    "solutionsIndex": {
+      "meta": {
+        "description": "Kõik Rediacc lahendused: lunavaralt taastumine, multi-cloud liikuvus, Kubernetese porditavus, kontrollitud varukoopiad, krüpteerimine, kiired dev-keskkonnad.",
+        "keywords": "Rediacc lahendused, lunavaralt taastumine, multi-cloud, Kubernetese klastri liikuvus, kontrollitud varukoopiad, krüpteerimise kontroll, arenduskeskkonnad",
+        "title": "Solutions - Business Continuity Software | Rediacc"
+      }
+    },
     "telemetryPolicy": {
       "contact": {
         "description": "Kui teil on küsimusi meie telemetria tavade kohta või vajate abi loobumiseks, võtke meiega ühendust aadressil <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>.",
@@ -13630,7 +14054,7 @@
         "title": "Meie telemetria tavad"
       },
       "meta": {
-        "description": "Milliseid telemetria andmeid Rediacc tooted koguvad, miks ja kuidas neid töödeldakse. Hõlmab veebirakendust, CLI-d, vahevara ja silda. Loobumisjuhised.",
+        "description": "Milliseid telemetria andmeid Rediacc tooted koguvad, miks ja kuidas neid töödeldakse. Hõlmab veebirakendust, CLI-d, vahevara ja Renet agenti. Loobumisjuhised.",
         "keywords": "telemetria poliitika, andmete kogumine, OpenTelemetry, loobumine, privaatsus, GDPR, Rediacc",
         "title": "Telemetria poliitika - andmete kogumine | Rediacc"
       },
@@ -13640,30 +14064,30 @@
       "sections": {
         "bridge": {
           "content": [
-            "Rediacc sild (Renet) kasutab OpenTelemetryt koos gzip-tihendatud OTLP ekspordiga. Telemetria edastatakse aadressile <code>rediacc.com</code> partiidena (maksimaalselt 10 spanni, loputatakse iga 5 sekundi tagant)."
+            "Rediacc Renet agent kasutab OpenTelemetryt koos gzip-tihendatud OTLP ekspordiga. Telemetria edastatakse aadressile <code>rediacc.com</code> partiidena (maksimaalselt 10 spanni, loputatakse iga 5 sekundi tagant)."
           ],
           "id": "bridge",
           "subsections": {
             "bridgeDataCollected": {
-              "content": ["Sild kogub järgmiseid andmekategooriaid:"],
+              "content": ["Renet agent kogub järgmiseid andmekategooriaid:"],
               "items": [
                 "<strong>Järjekorra toimingud:</strong> ülesande ID, prioriteedi tase, toimingu tüüp, täitmise kestus, edukuse või ebaõnnestumise olek",
                 "<strong>SSH toimingud:</strong> sihthost, kasutajanimi, pordinumber, väljumiskood, täitmise kestus (käsu sisu ega väljundit ei koguta)",
                 "<strong>API kutsed:</strong> protseduuri nimi, päringu kestus",
                 "<strong>Vault'i toimingud:</strong> toimingu tüüp ja kestus (saladuste väärtusi, võtmeid ega vault'i sisu ei koguta)",
-                "<strong>Silla elutsükkel:</strong> käivitamise, sulgemise ja uuesti ühendamise sündmused",
+                "<strong>Renet agendi elutsükkel:</strong> käivitamise, sulgemise ja uuesti ühendamise sündmused",
                 "<strong>Jõudluse profileerimine:</strong> CPU kasutuse proovid ja mälu eraldamise profiilid, kogutud automaatselt ja saadetud meie profiilimise lõpp-punktile"
               ],
               "title": "7.1 Kogutavad andmed"
             },
             "bridgeOptOut": {
               "content": [
-                "Seadistage keskkonnamuutuja <code>REDIACC_TELEMETRY_DISABLED=1</code>, et keelata silla telemetria (sealhulgas profileerimine)."
+                "Seadistage keskkonnamuutuja <code>REDIACC_TELEMETRY_DISABLED=1</code>, et keelata Renet agendi telemetria (sealhulgas profileerimine)."
               ],
               "title": "7.2 Kuidas loobuda"
             }
           },
-          "title": "7. Silla (Renet) telemetria"
+          "title": "7. Renet agendi telemetria"
         },
         "ccpa": {
           "content": [
@@ -13724,7 +14148,7 @@
           ],
           "id": "data-processing",
           "items": [
-            "<strong>Krüpteerimine:</strong> Kõik andmed krüpteeritakse edastamisel TLS-i abil. Sild kasutab lisaks gzip-tihendamist.",
+            "<strong>Krüpteerimine:</strong> Kõik andmed krüpteeritakse edastamisel TLS-i abil. Renet agent kasutab lisaks gzip-tihendamist.",
             "<strong>Säilitamine:</strong> Töötlemata telemetria jälgeid salvestatakse kuni 90 päeva silumiseks ja intsidentide uurimiseks. Koondatud mõõdikuid säilitatakse kuni 12 kuud ja seejärel kustutatakse.",
             "<strong>Juurdepääs:</strong> Telemetria andmetele pääsevad juurde ainult Rediacc inseneerimis- ja operatsioonipersonali teadmisvajaduse alusel.",
             "<strong>Kolmandate osapooltega jagamine puudub:</strong> Telemetria andmeid ei jagata, müüda ega ole juurdepääsetavad kolmandale osapoolele.",
@@ -13742,7 +14166,7 @@
         "introduction": {
           "content": [
             "Rediacc tarkvaratooted koguvad anonümiseeritud kasutustelemetriat, et aidata meil parandada toote kvaliteeti, diagnoosida probleeme ja mõista, kuidas meie tööriistu kasutatakse. Käesolev telemetria poliitika kirjeldab täpselt, milliseid andmeid kogutakse, miks, kuidas neid töödeldakse ja kuidas saate loobuda.",
-            "See poliitika hõlmab nelja toodet: <strong>Rediacc veebirakendust</strong>, <strong>Rediacc CLI-d</strong>, <strong>Rediacc vahevara</strong> ja <strong>Rediacc silda (Renet)</strong>. Veebisaidi analüütika (Plausible) on eraldi kaetud meie <a href=\"privacy-policy\">privaatsuspoliitikas</a> ja <a href=\"cookie-policy\">küpsiste poliitikas</a>."
+            "See poliitika hõlmab nelja toodet: <strong>Rediacc veebirakendust</strong>, <strong>Rediacc CLI-d</strong>, <strong>Rediacc vahevara</strong> ja <strong>Rediacc Renet agenti</strong>. Veebisaidi analüütika (Plausible) on eraldi kaetud meie <a href=\"privacy-policy\">privaatsuspoliitikas</a> ja <a href=\"cookie-policy\">küpsiste poliitikas</a>."
           ],
           "id": "introduction",
           "title": "1. Sissejuhatus"
@@ -13751,7 +14175,7 @@
           "content": [
             "ELi isikuandmete kaitse üldmääruse (GDPR) ja ePrivacy direktiivi kohaselt sõltub meie telemetria kogumise õiguslik alus toote kontekstist:",
             "<strong>Veebirakenduse</strong> jaoks (brauseripõhine): telemetriat kogutakse <strong>õiguspärase huvi</strong> alusel (GDPR art. 6(1)(f)) teenuse kvaliteedi säilitamise ja parandamise eesmärgil. Saate igal ajal loobuda.",
-            "<strong>CLI, vahevara ja silla</strong> jaoks (paigaldatud teie infrastruktuurile): telemetriat kogutakse <strong>õiguspärase huvi</strong> alusel selgete loobumismehhanismide pakkumisega. Saate telemetria keelata enne andmete saatmist."
+            "<strong>CLI ja Renet agendi</strong> jaoks (paigaldatud teie infrastruktuurile): telemetriat kogutakse <strong>õiguspärase huvi</strong> alusel selgete loobumismehhanismide pakkumisega. Saate telemetria keelata enne andmete saatmist."
           ],
           "id": "legal-basis",
           "title": "3. Kogumise õiguslik alus"
@@ -13809,7 +14233,7 @@
       "sections": {
         "acceptance": {
           "content": [
-            "Kasutades mis tahes osa teenustest - sealhulgas CLI allalaadimist, silla paigaldamist masinale, konto loomist või platvormi kasutamist - nõustute olema seotud käesolevate teenuse kasutustingimustega (\"tingimused\"). Kui kasutate teenuseid organisatsiooni nimel, kinnitate ja garanteerite, et teil on volitused siduda see organisatsioon käesolevate tingimustega ja viited \"teile\" või \"kliendile\" hõlmavad seda organisatsiooni.",
+            "Kasutades mis tahes osa teenustest - sealhulgas CLI allalaadimist, Renet agendi paigaldamist masinale, konto loomist või platvormi kasutamist - nõustute olema seotud käesolevate teenuse kasutustingimustega (\"tingimused\"). Kui kasutate teenuseid organisatsiooni nimel, kinnitate ja garanteerite, et teil on volitused siduda see organisatsioon käesolevate tingimustega ja viited \"teile\" või \"kliendile\" hõlmavad seda organisatsiooni.",
             "Kui te ei nõustu käesolevate tingimustega, ei tohi te teenuseid kasutada. Käesolevad tingimused moodustavad õiguslikult siduva lepingu teie ja Rediacc OÜ vahel (registrikood 17363830), Eestis registreeritud ettevõte aadressil Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Eesti (\"Rediacc\", \"meie\" või \"meid\")."
           ],
           "id": "acceptance",
@@ -13854,14 +14278,14 @@
           "items": [
             "<strong>\"Konto\"</strong> tähendab kasutajakontot, mille loote platvormi kasutamiseks ja tellimuse haldamiseks.",
             "<strong>\"Volitatud kasutaja\"</strong> tähendab isikut, kellele on antud juurdepääs teenustele teie konto alusel, sealhulgas meeskonnaliikmed, töötajad ja töövõtjad, kes tegutsevad teie nimel.",
-            "<strong>\"Sild\" (Renet)</strong> tähendab Rediacc serveripoolset agenti, mis töötab teie masinatel krüpteeritud salvestuse, konteineri orkestratsiooni ja infrastruktuuri toimingute haldamiseks.",
+            "<strong>\"Renet agent\"</strong> tähendab Rediacc serveripoolset agenti, mis töötab teie masinatel krüpteeritud salvestuse, konteineri orkestratsiooni ja infrastruktuuri toimingute haldamiseks.",
             "<strong>\"CLI\"</strong> tähendab teie tööjaamal paigaldatud Rediacc käsurea liidest (<code>rdc</code>).",
             "<strong>\"Konfiguratsioon\"</strong> tähendab teie tööjaamal salvestatud kohalikke konfiguratsioonifaile, mis sisaldavad masina ühenduse üksikasju, krüpteerimismandaate ja muid operatiivseid seadistusi.",
             "<strong>\"Kliendiandmed\"</strong> tähendab kõiki andmeid, sisu, faile, konteinereid, konfiguratsioone ja rakendusi, mida juurutate, salvestate või töötlete oma masinatel teenuste abil. Kliendiandmed ei hõlma konto teavet ega telemetria andmeid.",
-            "<strong>\"Masin\"</strong> tähendab serverit või virtuaalmasinat, mis kuulub teile või mida te kontrollite ning millele sild on paigaldatud.",
-            "<strong>\"Ettevõttesisene tarkvara\"</strong> tähendab teie infrastruktuurile paigaldatud tarkvarakomponente, sealhulgas CLI, sild ja töölauarakendus.",
+            "<strong>\"Masin\"</strong> tähendab serverit või virtuaalmasinat, mis kuulub teile või mida te kontrollite ning millele Renet agent on paigaldatud.",
+            "<strong>\"Ettevõttesisene tarkvara\"</strong> tähendab teie infrastruktuurile paigaldatud tarkvarakomponente, sealhulgas CLI, Renet agent ja töölauarakendus.",
             "<strong>\"Platvorm\"</strong> tähendab Rediacc veebirakendust, kontoiportaali ja kõiki pilves hostiitud teenuseid, mida Rediacc pakub.",
-            "<strong>\"Hoidla\"</strong> tähendab silla hallatud isoleeritud rakenduse juurutust, mis koosneb krüpteeritud kettakuvandist, pühendatud Dockeri deemonist ja seotud konteineritest.",
+            "<strong>\"Hoidla\"</strong> tähendab Renet agendi hallatud isoleeritud rakenduse juurutust, mis koosneb krüpteeritud kettakuvandist, pühendatud Dockeri deemonist ja seotud konteineritest.",
             "<strong>\"Teenused\"</strong> tähendab koos ettevõttesisest tarkvara, platvormi, dokumentatsiooni ja kõiki seotud professionaalseid teenuseid, mida Rediacc pakub.",
             "<strong>\"Tellimus\"</strong> tähendab teie valitud paketi taset (Kogukond, Professional, Äri või Enterprise), mis määrab teie juurdepääsu funktsioonidele ja ressursside piirangutele.",
             "<strong>\"Telemetria andmed\"</strong> tähendab anonümiseeritud kasutusandmeid, mida teenused koguvad vastavalt meie <a href=\"telemetry-policy\">telemetria poliitikale</a>."
@@ -13924,7 +14348,7 @@
         },
         "onPremiseLicense": {
           "content": [
-            "Vastavalt käesolevatele tingimustele ja teie aktiivsele tellimusele annab Rediacc teile piiratud, mitteeksklusiivse, mitteallliitsentsitava, mitteülekantava, tühistatava litsentsi paigaldada ja kasutada ettevõttesisest tarkvara (CLI, sild ja töölauarakendus) ainult teie sisemistel ärilistel eesmärkidel tellimuse perioodi jooksul."
+            "Vastavalt käesolevatele tingimustele ja teie aktiivsele tellimusele annab Rediacc teile piiratud, mitteeksklusiivse, mitteallliitsentsitava, mitteülekantava, tühistatava litsentsi paigaldada ja kasutada ettevõttesisest tarkvara (CLI, Renet agent ja töölauarakendus) ainult teie sisemistel ärilistel eesmärkidel tellimuse perioodi jooksul."
           ],
           "id": "on-premise-license",
           "subsections": {
@@ -13936,14 +14360,14 @@
             },
             "installation": {
               "content": [
-                "Sild töötab teie masinatel kõrgendatud (juur) õigustega krüpteeritud mahtude, konteineri käituste ja süsteemiteenuste haldamiseks. Teie vastutate ainuisikuliselt oma masinate turvalisuse eest, sealhulgas SSH juurdepääs, tulemüüri konfiguratsioon, operatsioonisüsteemi uuendused ja füüsiline turvalisus. Rediacc ei pääse teie masinatele kaugjuurde, välja arvatud juhul, kui te seda toetuse eesmärgil sõnaselgelt taotlete."
+                "Renet agent töötab teie masinatel kõrgendatud (juur) õigustega krüpteeritud mahtude, konteineri käituste ja süsteemiteenuste haldamiseks. Teie vastutate ainuisikuliselt oma masinate turvalisuse eest, sealhulgas SSH juurdepääs, tulemüüri konfiguratsioon, operatsioonisüsteemi uuendused ja füüsiline turvalisus. Rediacc ei pääse teie masinatele kaugjuurde, välja arvatud juhul, kui te seda toetuse eesmärgil sõnaselgelt taotlete."
               ],
               "title": "6.1 Paigaldamine ja masina juurdepääs"
             },
             "restrictions": {
               "content": ["Te ei tohi:"],
               "items": [
-                "Pöördprojekteerida, dekompileerida, lahtimonteerida ega muul viisil püüda tuletada silla kahendmooduli või mis tahes muu mitte-avatud lähtekoodiga ettevõttesisese tarkvara komponendi lähtekoodi",
+                "Pöördprojekteerida, dekompileerida, lahtimonteerida ega muul viisil püüda tuletada Renet agendi kahendmooduli või mis tahes muu mitte-avatud lähtekoodiga ettevõttesisese tarkvara komponendi lähtekoodi",
                 "Levitada, allliitsentsida, rentida, liisida ega laenata ettevõttesisest tarkvara kolmandale osapoolele",
                 "Eemaldada, muuta ega varjata ühtegi ettevõttesisese tarkvara omandiõiguse teadet, märgistust ega märki",
                 "Kasutada ettevõttesisest tarkvara konkureeriva toote või teenuse loomiseks",
@@ -13973,7 +14397,7 @@
           ],
           "id": "service-description",
           "items": [
-            "<strong>Ettevõttesisene tarkvara:</strong> CLI (<code>rdc</code>), sild (Renet) ja töölauarakendus - paigaldatud teie tööjaamadele ja masinatele krüpteeritud, isoleeritud konteineri juurutuste orkestratsiooni jaoks",
+            "<strong>Ettevõttesisene tarkvara:</strong> CLI (<code>rdc</code>), Renet agent ja töölauarakendus - paigaldatud teie tööjaamadele ja masinatele krüpteeritud, isoleeritud konteineri juurutuste orkestratsiooni jaoks",
             "<strong>Platvorm:</strong> Veebirakendus ja kontoiportaal tellimuse haldamiseks, meeskonnakoostööks ja (kui saadaval) pilves infrastruktuuri haldamiseks",
             "<strong>Professionaalsed teenused:</strong> Valikuline konsulteerimine, migreerimisabi ja juurutuse tugi, mis allub eraldi teenuslepingutele"
           ],
@@ -13991,7 +14415,8 @@
           "subsections": {
             "billing": {
               "content": [
-                "Tasulisi tellimusi arveldatakse igakuiselt või aastas ette. Aastane arveldamine arvutatakse kümne (10) kuu igakuise hinna ekvivalendina. Kõik tasud on USA dollarites. Makset töötleb meie kolmanda osapoole maksetöötleja (Stripe); me ei salvesta täielikke maksekaardiandmeid.",
+                "Tasulised tellimused (Professional ja Business) algavad 14-päevase tasuta prooviperioodiga. Registreerumisel esitate makseviisi ning esimene tasu võetakse, kui prooviperiood lõpeb. Tühistamine enne prooviperioodi lõppu on tasuta. Kui tühistate prooviperioodi ajal, tühistate tasulise tellimuse hiljem või makse ebaõnnestub, naaseb teie konto tasuta Community tasemele.",
+                "Tasulisi tellimusi arveldatakse igakuiselt või aastas ette. Aastane arveldamine pakutakse 15% allahindlusega kaheteistkümne (12) kuu igakuisest hinnast. Kõik tasud on USA dollarites. Makset töötleb meie kolmanda osapoole maksetöötleja (Stripe); me ei salvesta täielikke maksekaardiandmeid.",
                 "Jätame endale õiguse muuta oma hinnakujundust kolmekümne (30) päeva etteteatamisega. Hinnamuutused ei mõjuta teie praegust arvestusperioodi. Kui te ei nõustu hinnamuutusega, võite oma tellimuse tühistada enne järgmist arvestusperioodi."
               ],
               "title": "5.1 Arveldamine"
@@ -14087,7 +14512,7 @@
   "pricingPreview": {
     "compareAll": "Võrdle kõiki plaane ja funktsioone",
     "subtitle": "Tasuta algus. Kasva, kui valmis.",
-    "title": "Hinnakiri, mida kaitsed postmortemis"
+    "title": "Selge hinnakujundus. Üllatusi pole."
   },
   "problem": {
     "reality": {
@@ -14102,10 +14527,6 @@
     "title": "Miks teie meeskond testib tootmises"
   },
   "regionPicker": {
-    "channelEdge": "Edge",
-    "channelHintLabel": "Versioonikanalite kohta",
-    "channelStable": "Stabiilne",
-    "edgeHint": "Pidevalt juurutatud tootmine. 2× tasuta limiidid leotamisperioodi ajal.",
     "footer": "Vali endale lähim piirkond või see, mida sinu organisatsioon nõuab.",
     "footerNote": "Pärast registreerumist ei saa seda muuta.",
     "locations": {
@@ -14114,8 +14535,6 @@
       "us": "Virginia, Ameerika Ühendriigid"
     },
     "reassurance": "Sinu serverite andmed ja varukoopiad jäävad sinu enda infrastruktuuri.",
-    "regionNote": "Piirkonda ei saa pärast registreerumist muuta.",
-    "stableHint": "Usaldusväärsed väljalasked, mis on edge'ist edendatud pärast 7-päevast leotamist.",
     "subtitle": "Sinu konto, arveldus ja konfiguratsioonid jäävad valitud piirkonda.",
     "title": "Vali oma konto piirkond"
   },
@@ -14137,34 +14556,6 @@
       "personaHeadline": "Sõnum sulle",
       "playLabel": "Vaata videot"
     }
-  },
-  "testimonials": {
-    "items": [
-      {
-        "company": "Finantsteenused",
-        "name": "Marcus R.",
-        "quote": "Taasteplaan lubas neli tundi, tegelikkus oli neli päeva. Nüüd lülitume kloonile üle vähem kui minutiga.",
-        "role": "Avariitaaste juht"
-      },
-      {
-        "name": "Sarah K.",
-        "quote": "Enne kodeerisin otse tootmises, sest liivakast oli nädalate kaupa mahajäänud. Nüüd saan värske klooni 60 sekundiga.",
-        "role": "Arendaja"
-      },
-      {
-        "company": "SaaS-platvorm",
-        "name": "James L.",
-        "quote": "Skaleerisime ühest andmebaasist kaheteistkümnele, ilma uut riistvara ostmata. Rediacc kloonid jagavad salvestust — maksame ainult muutuste eest.",
-        "role": "CTO"
-      },
-      {
-        "name": "Ayumi T.",
-        "quote": "Me ei saanud CI-d käitada pärisandmete vastu. Nüüd saab iga pipeline automaatselt oma tootmisklooni.",
-        "role": "DevOpsi insener"
-      }
-    ],
-    "subtitle": "Kuidas erinevad rollid Rediacc-d tajuvad",
-    "title": "Mida meeskonnad ütlevad"
   },
   "tutorial": {
     "audioControls": "Transkriptsiooni helikontrollid",
@@ -14192,7 +14583,7 @@
         "title": "Häkkerid on 10× kiiremad"
       },
       {
-        "description": "Mitut pilvet käitad. Testiversioon neist ei sobi ühegile.",
+        "description": "Mitut pilvet käitad. Testiversioon neist ei sobi ühegile. Sinu Kubernetes-klaster on kinni ühes neist.",
         "title": "Sinu seadistus on killustunud"
       }
     ],

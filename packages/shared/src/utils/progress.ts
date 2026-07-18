@@ -1,6 +1,6 @@
 /**
  * Progress parsing utilities for console output
- * Supports bash scripts, rsync, rclone, and renet bridge progress formats
+ * Supports bash scripts, rsync, rclone, and renet progress formats
  */
 
 /**
@@ -8,7 +8,7 @@
  * Supports multiple formats:
  * - bash msg_progress "- N%"
  * - rsync/rclone "N%"
- * - renet bridge "[operation] N% - message"
+ * - renet "[operation] N% - message"
  *
  * @param output - Console output string
  * @returns Progress percentage (0-100) or null if not found
@@ -45,7 +45,7 @@ export function extractMostRecentProgress(output: string): number | null {
     }
   }
 
-  // Pattern 3: renet bridge format "[operation] N% - message"
+  // Pattern 3: renet format "[operation] N% - message"
   // Examples: "[setup] 45% - Installing packages" or "[sync] 100% - Complete"
   const renetProgressPattern = /\[[^\]]+\]\s+(\d+(?:\.\d+)?)%/g;
   const renetMatches = [...output.matchAll(renetProgressPattern)];
@@ -79,7 +79,7 @@ function cleanProgressMessage(message: string): string {
 /** Pattern for msg_progress format "message - N%" */
 const MSG_PROGRESS_LINE_PATTERN = /^(.+)\s+-\s+\d+(?:\.\d+)?%\s*$/;
 
-/** Pattern for renet bridge format "[operation] N% - message" */
+/** Pattern for renet format "[operation] N% - message" */
 const RENET_PROGRESS_LINE_PATTERN = /^\[([^\]]+)\]\s+\d+(?:\.\d+)?%\s+-\s+(.+)$/;
 
 /** Pattern for rsync transfer line */

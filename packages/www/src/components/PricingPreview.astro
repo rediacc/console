@@ -1,10 +1,9 @@
 ---
 import { createTranslator } from '../i18n/utils';
 import type { Language } from '../i18n/types';
-import { PLAN_ORDER, PLAN_PRICING, PLAN_METADATA } from '@rediacc/shared/subscription';
+import { PLAN_ORDER, PLAN_PRICING } from '@rediacc/shared/subscription';
 import CfPricingCard from './CfPricingCard.astro';
 import CorporateGuarantee from './CorporateGuarantee.astro';
-import { filterPlansForProgram, isDesignPartnerProgramActive } from '../utils/design-partner-program';
 import '../styles/pricing-page.css';
 
 interface Props {
@@ -31,22 +30,24 @@ const badgeConfig: Record<string, { isPopular?: boolean; badgeLabel?: string; ba
 
 const startingAtPlans = new Set(['enterprise']);
 
-const plans = filterPlansForProgram(
-  PLAN_ORDER.map((code) => {
-    const id = code.toLowerCase();
-    const monthly = PLAN_PRICING[code].monthlyPriceCents / 100;
-    const badge = badgeConfig[id];
-    return {
-      id,
-      monthly,
-      annual: monthly * 10,
-      isPopular: badge?.isPopular ?? false,
-      badgeLabel: badge?.badgeLabel,
-      badgeVariant: badge?.badgeVariant,
-      startingAt: startingAtPlans.has(id),
-    };
-  })
-);
+// Community is the fallback floor, not a self-serve plan, so the home-page
+// preview shows the two paid plans plus the Enterprise contact card. Annual
+// prices come from the shared constants (an explicit 15%-off value).
+const plans = PLAN_ORDER.filter((code) => code !== 'COMMUNITY').map((code) => {
+  const id = code.toLowerCase();
+  const monthly = PLAN_PRICING[code].monthlyPriceCents / 100;
+  const annual = PLAN_PRICING[code].annualPriceCents / 100;
+  const badge = badgeConfig[id];
+  return {
+    id,
+    monthly,
+    annual,
+    isPopular: badge?.isPopular ?? false,
+    badgeLabel: badge?.badgeLabel,
+    badgeVariant: badge?.badgeVariant,
+    startingAt: startingAtPlans.has(id),
+  };
+});
 
 const buildMetrics = (planId: string) =>
   technicalMetrics.map((metric: any) => ({

@@ -18,8 +18,8 @@ set -euo pipefail
 if [[ -n "${TUTORIAL_RDC_CMD:-}" && "$TUTORIAL_RDC_CMD" != "rdc" ]]; then
     rdc() { $TUTORIAL_RDC_CMD "$@"; }
     export -f rdc
-elif ! command -v rdc &>/dev/null; then
-    echo "Error: rdc not found. Set TUTORIAL_RDC_CMD to a wrapper command, or put rdc in PATH." >&2
+elif ! command -v "rdc" &>/dev/null; then
+    echo "Error: 'rdc' not found. Set TUTORIAL_RDC_CMD to a wrapper command, or put it in PATH." >&2
     exit 1
 fi
 
@@ -150,7 +150,7 @@ _settle_prompt() {
 # a non-zero exit aborts the recording so broken demos can never ship.
 #
 # Usage: run_cmd "rdc ops check"
-#        run_cmd "rdc repo up --name app -m srv" "rdc repo up --name app -m srv --debug"
+#        run_cmd "rdc repo up app" "rdc repo up app --debug"
 #
 # The optional second argument is the command actually EXECUTED while the
 # first is what the viewer sees typed (and what flows into cards/docs).
@@ -197,7 +197,7 @@ run_cmd_expect_fail() {
 # seconds, then deliver Ctrl+C exactly like a human would: print ^C and
 # send SIGINT. The command must exit cleanly (0 or 130) on SIGINT.
 #
-# Usage: run_cmd_interrupt "rdc repo tunnel -m srv -r app" 4
+# Usage: run_cmd_interrupt "rdc repo tunnel app --container web" 4
 run_cmd_interrupt() {
     local cmd="$1"
     local run_secs="${2:-4}"

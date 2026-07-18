@@ -7,15 +7,15 @@
  * Also ensures Cloudflare DNS records for the machine subdomain.
  */
 
-import { DEFAULTS } from '@rediacc/shared/config';
-import { parentRepoName } from '../../remote/repository/index.js';
-import { SFTPClient } from '../../remote/sftp/index.js';
 import { t } from '../../i18n/index.js';
+import { parentRepoName } from '../../remote/repository/index.js';
+import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { InfraConfig } from '../../types/index.js';
-import { CloudflareDnsClient, type DnsAction } from './cloudflare-dns.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
+import { machineConnections } from '../machine/machine-connection.js';
 import { provisionRenetToRemote, readSSHKey } from '../renet/renet-execution.js';
+import { CloudflareDnsClient, type DnsAction } from './cloudflare-dns.js';
 
 interface PushInfraOptions {
   debug?: boolean;
@@ -172,6 +172,50 @@ export async function ensureRepoDnsRecords(
 }
 
 /**
+ * Ensure Cloudflare DNS records for a cluster subdomain.
+ * Creates: {clusterName}.{machineName}.{baseDomain} and
+ * *.{clusterName}.{machineName}.{baseDomain} A/AAAA records, so the flat k8s
+ * hostname scheme ({svc}--{ns}.{cluster}.{machine}.{baseDomain}) resolves under
+ * one per-cluster wildcard (new cert/DNS only per cluster, never per namespace
+ * or fork). Additive analog of ensureRepoDnsRecords; called after cluster create.
+ */
+export async function ensureClusterDnsRecords(
+  machineName: string,
+  clusterName: string,
+  infra: InfraConfig,
+  config: { cfDnsApiToken?: string; cfDnsZoneId?: string }
+): Promise<void> {
+  if (!config.cfDnsApiToken) return;
+  if (!infra.baseDomain || infra.baseDomain.endsWith('.local')) return;
+  if (!infra.publicIPv4) return;
+
+  const client = new CloudflareDnsClient(config.cfDnsApiToken);
+
+  try {
+    const zoneId = await resolveZoneId(client, infra.baseDomain, config.cfDnsZoneId);
+    const clusterBase = `${clusterName}.${machineName}.${infra.baseDomain}`;
+    const records: { type: string; name: string; content: string }[] = [
+      { type: 'A', name: clusterBase, content: infra.publicIPv4 },
+      { type: 'A', name: `*.${clusterBase}`, content: infra.publicIPv4 },
+    ];
+    if (infra.publicIPv6) {
+      records.push(
+        { type: 'AAAA', name: clusterBase, content: infra.publicIPv6 },
+        { type: 'AAAA', name: `*.${clusterBase}`, content: infra.publicIPv6 }
+      );
+    }
+
+    for (const { type, name, content } of records) {
+      const action = await client.ensureRecord(zoneId, type, name, content);
+      logDnsAction(action, type, name, content);
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    outputService.warn(t('commands.config.infra.push.dnsError', { message }));
+  }
+}
+
+/**
  * Remove all Cloudflare DNS records for a machine subdomain.
  * Deletes: {machineName}.{baseDomain}, *.{machineName}.{baseDomain},
  * and any repo-level wildcards (*.{repo}.{machineName}.{baseDomain}).
@@ -188,6 +232,37 @@ export async function removeMachineDnsRecords(
   const client = new CloudflareDnsClient(config.cfDnsApiToken);
   const zoneId = await resolveZoneId(client, infra.baseDomain, config.cfDnsZoneId);
   const suffix = `${machineName}.${infra.baseDomain}`;
+
+  const records = await client.searchRecordsBySuffix(zoneId, suffix);
+  for (const record of records) {
+    await client.deleteRecord(zoneId, record.id);
+    outputService.info(
+      t('commands.machine.deprovision.dnsDeleted', { type: record.type, name: record.name })
+    );
+  }
+
+  return records.length;
+}
+
+/**
+ * Remove all Cloudflare DNS records for a cluster subdomain.
+ * Deletes {clusterName}.{machineName}.{baseDomain},
+ * *.{clusterName}.{machineName}.{baseDomain}, and any namespace/fork wildcards
+ * under it (suffix match). Additive analog of removeMachineDnsRecords; called on
+ * cluster destroy. Returns the number of records deleted.
+ */
+export async function removeClusterDnsRecords(
+  machineName: string,
+  clusterName: string,
+  infra: InfraConfig,
+  config: { cfDnsApiToken?: string; cfDnsZoneId?: string }
+): Promise<number> {
+  if (!config.cfDnsApiToken) return 0;
+  if (!infra.baseDomain || infra.baseDomain.endsWith('.local')) return 0;
+
+  const client = new CloudflareDnsClient(config.cfDnsApiToken);
+  const zoneId = await resolveZoneId(client, infra.baseDomain, config.cfDnsZoneId);
+  const suffix = `${clusterName}.${machineName}.${infra.baseDomain}`;
 
   const records = await client.searchRecordsBySuffix(zoneId, suffix);
   for (const record of records) {
@@ -240,7 +315,7 @@ async function executeProxySetup(
   }
 
   if (options.debug) {
-    outputService.info(t('commands.context.pushInfra.installingProxy'));
+    outputService.info(t('commands.machine.infra.push.installingProxy'));
   }
 
   const installExitCode = await sftp.execStreaming(`sudo ${remoteRenetPath} proxy install`, {
@@ -307,18 +382,18 @@ export async function pushInfraConfig(
     team,
   });
 
-  const sftp = new SFTPClient({
-    host: machine.ip,
-    port: machine.port ?? DEFAULTS.SSH.PORT,
-    username: machine.user,
-    privateKey: sshPrivateKey,
-  });
-  await sftp.connect();
+  const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
 
   try {
-    await executeProxySetup(sftp, infraJSON, machine.infra.baseDomain, remoteRenetPath, options);
+    await executeProxySetup(
+      lease.sftp,
+      infraJSON,
+      machine.infra.baseDomain,
+      remoteRenetPath,
+      options
+    );
   } finally {
-    sftp.close();
+    lease.release();
   }
 
   await ensureMachineDnsRecords(machineName, machine.infra, localConfig, options);

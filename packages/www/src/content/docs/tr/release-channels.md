@@ -4,8 +4,8 @@ description: "Edge ve Stable'ın farkları ve hangi kanalı çalıştırmalısı
 category: "Concepts"
 order: 2
 language: tr
-sourceHash: "5fdcb0e8944f5d60"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "6669b5b089f94a39"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Rediacc güncellemeleri iki sürüm kanalı üzerinden yayınlar: **Stable** ve **Edge**. Her kanal farklı bir kitleye hizmet eder ve farklı dengeler sunar.
@@ -25,7 +25,7 @@ Edge, her değişikliği main'e merge edildiği anda alır. Sürekli olarak dağ
 
 - En yeni özellikler ve düzeltmeler, her merge'de dağıtılır
 - 2X Community plan limitleri (aşağıdaki tabloya bakın)
-- Sonsuza kadar ücretsiz. Edge'de ücretli plan mevcut değildir.
+- Edge'de ücretli plan mevcut değildir; hesaplar Community planında çalışır.
 - Stable'dan ayrı hesaplar. Veriler kanallar arasında aktarılmaz.
 - Etki alanları: `edge-eu.rediacc.com`, `edge-us.rediacc.com`, `edge-asia.rediacc.com`
 
@@ -35,20 +35,20 @@ Edge, her değişikliği main'e merge edildiği anda alır. Sürekli olarak dağ
 |---|---|---|
 | **Dağıtım sıklığı** | 7 günlük bekleme sonrası | Main'e her merge'de |
 | **Kararlılık** | 7 gün test edildi | En güncel kod, daha az bekleme süresi |
-| **Community plan limitleri** | 10 GB depolar, 500 düzenleme/ay, 2 makine | 20 GB depolar, 1.000 düzenleme/ay, 4 makine |
+| **Community plan limitleri** | 10 GB depolar, 100 kurulum/ay, 1 makine | 20 GB depolar, 200 kurulum/ay, 2 makine |
 | **Ücretli planlar** | Mevcut (Professional, Business, Enterprise) | Mevcut değil |
 | **Hesaplar** | Bağımsız | Bağımsız (Stable'dan ayrı) |
 | **En iyi kullanım** | Üretim, ücretli iş yükleri | Test, değerlendirme, yan projeler, erken erişim |
 
 ## Edge 2X Limitleri
 
-Community planındaki Edge kullanıcıları ücretsiz olarak iki katına çıkmış kaynak limitleri alır:
+Community planında Edge çalıştırdığınızda kaynak limitleriniz iki katına çıkar:
 
 | Kaynak | Stable Community | Edge Community |
 |---|---|---|
 | Depo boyutu | 10 GB | 20 GB |
-| Ay başına lisans düzenlemesi | 500 | 1.000 |
-| Makine aktivasyonları | 2 | 4 |
+| Ay başına lisans düzenlemesi | 100 | 200 |
+| Makine aktivasyonları | 1 | 2 |
 
 Daha yüksek limitlere veya ücretli plan özelliklerine ihtiyaç duyuyorsanız, Stable kanalında hesap oluşturun ve oradan yükseltin.
 

@@ -19,6 +19,7 @@ import { t } from '../../i18n/index.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
 import type { InfraConfig, MachineConfig, OutputFormat } from '../../types/index.js';
+import { ambiguous, notFound } from '../../utils/cli-exit-error.js';
 import { extractAutoRoute, extractCustomDomain } from '../../utils/domain-helpers.js';
 import { handleError } from '../../utils/errors.js';
 import {
@@ -28,12 +29,18 @@ import {
   type RepoNameSource,
   resolveGuids,
 } from '../../utils/guid-resolver.js';
+import {
+  filterRepositoriesBySearch,
+  runContainerHealthCheck,
+  runServiceStabilityCheck,
+} from './status-checks.js';
 
 /** Resolves a repo GUID + server repo_name to a display name and its source. */
 type RepoNameResolver = (
   guid: string,
   serverRepoName?: string
 ) => { name: string; source: RepoNameSource };
+
 import { withSpinner } from '../../utils/spinner.js';
 
 /** Parse size strings like "71.9G", "180.3G" into GB numbers. */
@@ -327,6 +334,7 @@ const SECTION_FLAGS = [
   { flag: 'blockDevices', section: 'block' },
   { flag: 'licenses', section: 'licenses' },
   { flag: 'storageHealth', section: 'storage-health' },
+  { flag: 'datastores', section: 'datastores' },
 ] as const;
 
 interface QueryOptions {
@@ -339,7 +347,11 @@ interface QueryOptions {
   blockDevices?: boolean;
   licenses?: boolean;
   storageHealth?: boolean;
+  datastores?: boolean;
   strict?: boolean;
+  healthCheck?: boolean;
+  stabilityCheck?: boolean;
+  search?: string;
 }
 
 interface StorageSummary {
@@ -383,7 +395,7 @@ function printStorageSummary(sys: SystemInfo | undefined): void {
 function renderPoolSummary(pool: StorageHealthResult['pool']): void {
   if (!pool) return;
   outputService.info(
-    t('commands.machine.query.storageHealthPoolSummary', {
+    t('commands.machine.status.storageHealthPoolSummary', {
       used: pool.used_human,
       free: pool.free_human,
       percent: pool.used_percent.toFixed(1),
@@ -391,7 +403,7 @@ function renderPoolSummary(pool: StorageHealthResult['pool']): void {
   );
   if (pool.active_backup_snapshots > 0 || pool.stale_backup_snapshots > 0) {
     outputService.info(
-      t('commands.machine.query.storageHealthPoolSnapshots', {
+      t('commands.machine.status.storageHealthPoolSnapshots', {
         pinned: pool.backup_snapshot_pinned_human,
         active: pool.active_backup_snapshots,
         stale: pool.stale_backup_snapshots,
@@ -412,11 +424,11 @@ function renderTableMode(
   printSummary(listResult);
 
   if (machineConfig) {
-    outputService.info(`\n${t('commands.machine.query.connection')}`);
+    outputService.info(`\n${t('commands.machine.status.connection')}`);
     process.stdout.write(`${outputService.formatTable([flattenConnection(machineConfig)])}\n`);
   }
   if (infra) {
-    outputService.info(`\n${t('commands.machine.query.infrastructure')}`);
+    outputService.info(`\n${t('commands.machine.status.infrastructure')}`);
     process.stdout.write(`${outputService.formatTable([flattenInfra(infra)])}\n`);
   }
   for (const section of tableSections) {
@@ -438,11 +450,11 @@ function renderTableMode(
 
   if (listResult.storage_health) {
     outputService.info(
-      t('commands.machine.query.storageHealthSummary', {
+      t('commands.machine.status.storageHealthSummary', {
         summary: listResult.storage_health.savings_human,
       })
     );
-    outputService.info(t('commands.machine.query.storageHealthFragmentationNote'));
+    outputService.info(t('commands.machine.status.storageHealthFragmentationNote'));
 
     renderPoolSummary(listResult.storage_health.pool);
   }
@@ -501,12 +513,29 @@ export function collectSections(options: QueryOptions): string[] {
   return sections;
 }
 
-export function registerQueryCommand(machine: Command, program: Command): void {
+/**
+ * Resolve the target machine from the positional name. When omitted, the sole
+ * registered machine is used; more than one is an AMBIGUOUS refusal (exit 11)
+ * listing the candidates, never a guess (spec/03 §5.2).
+ */
+async function resolveStatusMachine(name: string | undefined): Promise<string> {
+  if (name) return name;
+  const machines = await configService.listMachines();
+  if (machines.length === 1) return machines[0].name;
+  if (machines.length === 0) {
+    throw notFound(t('commands.machine.list.noMachines'));
+  }
+  throw ambiguous(
+    t('commands.machine.status.ambiguous', { machines: machines.map((m) => m.name).join(', ') })
+  );
+}
+
+export function registerStatusCommand(machine: Command, program: Command): void {
   machine
-    .command('query')
-    .summary(t('commands.machine.query.descriptionShort'))
-    .description(t('commands.machine.query.description'))
-    .requiredOption('--name <name>', t('options.name'))
+    .command('status')
+    .argument('[name]', t('options.name'))
+    .summary(t('commands.machine.status.descriptionShort'))
+    .description(t('commands.machine.status.description'))
     .option('--debug', t('options.debug'))
     .option('--system', t('options.querySystem'))
     .option('--repositories', t('options.queryRepositories'))
@@ -516,14 +545,15 @@ export function registerQueryCommand(machine: Command, program: Command): void {
     .option('--block-devices', t('options.queryBlockDevices'))
     .option('--licenses', t('options.queryLicenses'))
     .option('--storage-health', t('options.queryStorageHealth'))
+    .option('--datastores', t('options.queryDatastores'))
+    .option('--health-check', t('commands.machine.status.healthCheck'))
+    .option('--stability-check', t('commands.machine.status.stabilityCheck'))
+    .option('--search <text>', t('options.searchRepos'))
     .option('--sync-certs', t('options.querySyncCerts'))
     .option('--strict', t('options.queryStrict'))
-    .action(async (options: QueryOptions & { name: string; syncCerts?: boolean }) => {
+    .action(async (name: string | undefined, options: QueryOptions & { syncCerts?: boolean }) => {
       try {
-        const machineName = options.name;
-        if (!machineName) {
-          throw new Error(t('errors.machineRequiredLocal'));
-        }
+        const machineName = await resolveStatusMachine(name);
 
         const sections = collectSections(options);
 
@@ -531,13 +561,13 @@ export function registerQueryCommand(machine: Command, program: Command): void {
 
         const [listResult, guidMap, machineConfig] = await Promise.all([
           withSpinner(
-            t('commands.machine.query.fetching', { machine: machineName }),
+            t('commands.machine.status.fetching', { machine: machineName }),
             () =>
               fetchMachineStatus(machineName, {
                 debug: options.debug,
                 sections: sections.length > 0 ? sections : undefined,
               }),
-            t('commands.machine.query.fetched')
+            t('commands.machine.status.fetched')
           ),
           loadGuidMap(),
           configService.getLocalMachine(machineName).catch(() => undefined),
@@ -547,6 +577,24 @@ export function registerQueryCommand(machine: Command, program: Command): void {
         const format = program.opts().output as OutputFormat;
         const resolve = createGuidResolver(guidMap);
         const repoName = createRepoNameResolver(guidMap);
+
+        // Folded-in section refinements (06 §6.1): --health-check / --stability-check
+        // gate and return; --search narrows the repositories section.
+        if (options.healthCheck) {
+          runContainerHealthCheck(listResult, format, resolve);
+          return;
+        }
+        if (options.stabilityCheck) {
+          runServiceStabilityCheck(listResult, format, resolve);
+          return;
+        }
+        if (options.search) {
+          listResult.repositories = filterRepositoriesBySearch(
+            listResult.repositories,
+            options.search,
+            (guid, serverName) => repoName(guid, serverName).name
+          );
+        }
 
         if (format === 'json') {
           const enriched = buildEnrichedJson(
@@ -564,7 +612,7 @@ export function registerQueryCommand(machine: Command, program: Command): void {
 
         // Hint: nudge toward --storage-health (stderr so it doesn't break JSON piping)
         if (!options.storageHealth) {
-          process.stderr.write(`\n${t('commands.machine.query.storageHealthHint')}\n`);
+          process.stderr.write(`\n${t('commands.machine.status.storageHealthHint')}\n`);
         }
 
         // --strict: exit non-zero when any container has crossed the
@@ -574,7 +622,9 @@ export function registerQueryCommand(machine: Command, program: Command): void {
         // 1 = warn, 2 = error).
         if (options.strict && (listResult.health_drift?.entries.length ?? 0) > 0) {
           const count = listResult.health_drift?.entries.length ?? 0;
-          process.stderr.write(`\n${t('commands.machine.query.strictDriftDetected', { count })}\n`);
+          process.stderr.write(
+            `\n${t('commands.machine.status.strictDriftDetected', { count })}\n`
+          );
           process.exitCode = 2;
         }
 
@@ -596,7 +646,7 @@ async function runOptInCertSync(machineName: string): Promise<void> {
     await downloadCertCache(machineName, { silent: false });
   } catch (err) {
     outputService.warn(
-      t('commands.machine.query.syncCertsFailed', {
+      t('commands.machine.status.syncCertsFailed', {
         error: err instanceof Error ? err.message : String(err),
       })
     );

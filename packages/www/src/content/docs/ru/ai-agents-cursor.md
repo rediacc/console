@@ -4,8 +4,8 @@ description: Настройка Cursor IDE для работы с инфраст
 category: Guides
 order: 32
 language: ru
-sourceHash: "b5e835461de00400"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "66821f514bc7a8bd"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Кратко: `.cursorrules` загружает контекст Rediacc в AI Cursor, а терминал позволяет выполнять команды `rdc` на ваших реальных машинах.
@@ -75,5 +75,5 @@ rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
 
 - Режим Composer в Cursor хорошо подходит для многошаговых инфраструктурных задач
 - Используйте `@terminal` в чате Cursor для ссылки на недавний вывод терминала
-- Команда `rdc agent capabilities` предоставляет Cursor полный справочник команд
+- Команда `rdc --help-all` предоставляет Cursor полный справочник команд
 - Сочетание `.cursorrules` с файлом `CLAUDE.md` обеспечивает максимальную совместимость между AI-инструментами

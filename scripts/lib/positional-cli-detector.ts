@@ -18,6 +18,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+// Shared with the two ESLint rules; see eslint-rules/lib/cli-exempt-lists.js.
+import {
+  EXEMPT_COMMAND_PREFIXES as SHARED_EXEMPT_PREFIXES,
+  FREEFORM_ARG_COMMAND_PATHS as SHARED_FREEFORM,
+} from '../../eslint-rules/lib/cli-exempt-lists.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const COMMAND_TREE_PATH = path.resolve(
@@ -53,34 +58,14 @@ interface CommandNode {
 // Leaving these off the zero-positional denylist.
 // ---------------------------------------------------------------------------
 
-const FREEFORM_ARG_COMMAND_PATHS = new Set<string>([
-  'agent schema',
-  'agent exec',
-  'mcp capabilities',
-  'mcp schema',
-  'mcp exec',
-  'run',
-]);
+const FREEFORM_ARG_COMMAND_PATHS = new Set<string>(SHARED_FREEFORM);
 
 // ---------------------------------------------------------------------------
 // Exempt prefixes — cloud-adapter and legacy groups that legitimately use
 // positional subcommands. Mirrors eslint.config.js `exemptCommandPrefixes`.
 // ---------------------------------------------------------------------------
 
-const EXEMPT_COMMAND_PREFIXES = [
-  'rdc auth',
-  'rdc audit',
-  'rdc bridge',
-  'rdc organization',
-  'rdc permission',
-  'rdc protocol',
-  'rdc queue',
-  'rdc region',
-  'rdc repository',
-  'rdc team',
-  'rdc user',
-  'rdc ceph',
-];
+const EXEMPT_COMMAND_PREFIXES: string[] = SHARED_EXEMPT_PREFIXES;
 
 // ---------------------------------------------------------------------------
 // Tree traversal
@@ -130,12 +115,27 @@ function getZeroPositionalCommands(): Set<string> {
 }
 
 /**
- * Return ALL command paths (leaf + parent). Used for the
- * placeholder-after-parent check: a parent like `term` expects a
- * subcommand name as its next token; a `<placeholder>` or `{{interp}}`
- * can never be a subcommand name, so any such pattern is a violation.
+ * Return PARENT command paths that take no positional of their own — the
+ * placeholder-after-parent check: a parent like `term` expects a subcommand name
+ * as its next token, and a `<placeholder>` or `{{interp}}` can never be a
+ * subcommand name, so any such pattern is a violation.
+ *
+ * ★ This used to return ALL command paths, leaves included, and that made it
+ * wrong the moment P4 gave leaves positional refs (R-P4-1, spec 03 §2.2). It
+ * flagged `rdc datastore create <name>` — the CORRECT documented form — and told
+ * the author that `datastore create` "accepts zero positional arguments", which
+ * is simply false: it accepts `<datastore>`. The docstring above always said
+ * "parent"; only the code said "all". A comment cannot fail, so nothing caught
+ * the divergence until the tree changed underneath it.
+ *
+ * Two exclusions, both load-bearing:
+ *   - a LEAF is never here (pass 1 already covers the zero-positional ones, and
+ *     its lookahead includes `<`, so nothing is lost);
+ *   - an ACTIONABLE parent that takes a positional is never here either
+ *     (`repo replicate <ref>` keeps its bare create form, spec §5.4), because for
+ *     those the placeholder is exactly right.
  */
-function getAllCommandPaths(): Set<string> {
+function getPlaceholderOnlyParents(): Set<string> {
   if (cachedAllPaths) return cachedAllPaths;
   const tree = getCommandTree();
   const out = new Set<string>();
@@ -143,7 +143,9 @@ function getAllCommandPaths(): Set<string> {
   const walk = (node: CommandNode, pathParts: string[]): void => {
     if (pathParts.length > 0) {
       const commandPath = pathParts.join(' ');
-      if (!FREEFORM_ARG_COMMAND_PATHS.has(commandPath)) {
+      const isParent = node.subcommands.length > 0;
+      const takesPositional = node.arguments.length > 0;
+      if (isParent && !takesPositional && !FREEFORM_ARG_COMMAND_PATHS.has(commandPath)) {
         out.add(commandPath);
       }
     }
@@ -185,8 +187,19 @@ function buildDetectionRegex(commandPath: string): RegExp {
   //   <  {  [  "  '  alphanumeric
   // Prose separators (em-dash, en-dash, ampersand) and flags (`-`, `--`)
   // are NOT positional tokens — those match the negative universe.
+  //
+  // …and neither is a PROSE WORD THAT ENDS THE CLAUSE. German splits separable
+  // verbs, so "run `rdc config reconcile`" is written "führen Sie rdc config
+  // reconcile aus." — the particle "aus" lands after the command and read as an
+  // argument. It is not one; the German is correct German. A real argument in these
+  // strings is a placeholder (<name>, {{name}}), a quoted value, or value-shaped
+  // (prod-1, s3-main) — never a bare run of letters immediately followed by
+  // sentence punctuation. Dutch and the Nordic languages split verbs the same way,
+  // so this is a class fix, not a one-off. Guarded by the fixtures in
+  // scripts/lib/__tests__/positional-cli-detector.test.ts.
   return new RegExp(
-    `(?:^|[\\s\`($:'"])(?:rdc\\s+)${segments}\\s+(?=[<{\\["'a-zA-Z0-9])`
+    `(?:^|[\\s\`($:'"])(?:rdc\\s+)${segments}\\s+(?![\\p{L}]+[.,;:!?])(?=[<{\\["'a-zA-Z0-9])`,
+    'u'
   );
 }
 
@@ -226,12 +239,15 @@ export interface ScanOptions {
 /**
  * Scan text for positional-syntax violations. Returns one entry per match.
  *
- * Two passes:
- *   1. Leaf commands (zero positional args): flag ANY non-flag next token.
- *   2. All commands (leaves + parents): flag placeholder (`<x>`) or
- *      interpolation (`{{x}}`) next token. A placeholder is never a
- *      valid subcommand name, so this pattern teaches wrong syntax
- *      regardless of whether the path is a leaf.
+ * Two passes, and BOTH are about commands that accept no positional of their own:
+ *   1. Leaf commands with zero positionals: flag ANY non-flag next token.
+ *   2. Parent commands with zero positionals: flag only a placeholder (`<x>`) or
+ *      interpolation (`{{x}}`) next token. A parent legitimately expects a
+ *      subcommand name there, so a bare word is fine and only a placeholder is
+ *      provably wrong.
+ *
+ * A command that DOES take a positional is in neither pass — after P4 that is
+ * most of the tree, and `rdc repo up <repo-ref>` is the syntax we now want taught.
  */
 export function scanText(text: string, opts: ScanOptions = {}): Violation[] {
   const exemptPrefixes = [
@@ -247,7 +263,7 @@ export function scanText(text: string, opts: ScanOptions = {}): Violation[] {
     }));
   // Sort descending by path length so `repo autostart enable` matches
   // before `repo` (otherwise the shorter parent wins on regex dispatch).
-  const allEntries = [...getAllCommandPaths()]
+  const parentEntries = [...getPlaceholderOnlyParents()]
     .sort((a, b) => b.length - a.length)
     .map((p) => ({ path: p, regex: buildPlaceholderOnlyRegex(p) }));
 
@@ -300,9 +316,9 @@ export function scanText(text: string, opts: ScanOptions = {}): Violation[] {
     // Pass 1: leaf commands (zero positional) — any non-flag next token.
     for (const entry of leafEntries) report(entry, line, li, seenKeys);
 
-    // Pass 2: any command path — placeholder/interpolation next token.
+    // Pass 2: parents with no positional — placeholder/interpolation next token.
     // Longer paths first so we report the most specific match.
-    for (const entry of allEntries) report(entry, line, li, seenKeys);
+    for (const entry of parentEntries) report(entry, line, li, seenKeys);
   }
 
   return violations;

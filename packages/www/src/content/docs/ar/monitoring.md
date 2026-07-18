@@ -4,7 +4,7 @@ description: مراقبة صحة الأجهزة والحاويات والخدم�
 category: Guides
 order: 9
 language: ar
-sourceHash: "e2f5d37c534fc40d"
+sourceHash: "b6deba17f1137188"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -155,7 +155,7 @@ Unique data: 323.7 MB | Shared: 224.0 GB | Efficiency: 99.9%
 
 ### حالة الفحص
 
-يُحفظ نتيجة آخر فحص خارج حجم BTRFS (في `/var/lib/rediacc/scrub-last-result.json`) حتى يظل قابلًا للقراءة حتى في حالة وجود مشكلات في الحجم. تتضمن مخرجات `rdc machine query --system` حقل `scrub_status`:
+يُحفظ نتيجة آخر فحص خارج حجم BTRFS (في `/var/lib/rediacc/scrub-last-result.json`) حتى يظل قابلًا للقراءة حتى في حالة وجود مشكلات في الحجم. تتضمن مخرجات `rdc machine status --system` حقل `scrub_status`:
 
 ```json
 "scrub_status": {
@@ -185,7 +185,7 @@ Unique data: 323.7 MB | Shared: 224.0 GB | Efficiency: 99.9%
 rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
-تُحفظ النتيجة في ملف JSON ذاته وتظهر فورًا في `rdc machine query --system` التالي.
+تُحفظ النتيجة في ملف JSON ذاته وتظهر فورًا في `rdc machine status --system` التالي.
 
 ## نظرة عامة على الجهاز
 

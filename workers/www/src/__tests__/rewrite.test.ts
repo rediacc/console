@@ -145,6 +145,50 @@ describe('rewriteOrigin', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Host → channel contract for the www → portal handoff.
+// The marketing site derives the account-portal channel from the host
+// (packages/www/src/utils/marketing-host.ts); these cases pin the worker
+// behavior that model depends on.
+// ---------------------------------------------------------------------------
+
+describe('host→channel contract (www → portal handoff)', () => {
+  it('edge marketing host maps to the edge channel', () => {
+    expect(getChannel('edge.rediacc.com')).toBe('edge');
+  });
+
+  it('PR preview hosts map to their own pr-N channel', () => {
+    expect(getChannel('pr-420.rediacc.workers.dev')).toBe('pr-420');
+  });
+
+  it('www is NOT a preview: responses are served unrewritten, keeping stable defaults', () => {
+    // fetch() gates rewriteOrigin on isPreview (hostname !== 'www.rediacc.com'),
+    // so on www the baked-in stable channel reaches the visitor untouched.
+    const isPreview = (h: string) => h !== 'www.rediacc.com';
+    expect(isPreview('www.rediacc.com')).toBe(false);
+    expect(isPreview('edge.rediacc.com')).toBe(true);
+  });
+
+  it('edge host rewrites the install-script channel default to edge', async () => {
+    const edgeUrl = new URL('https://edge.rediacc.com/install.sh');
+    const body = 'CHANNEL="${REDIACC_CHANNEL:-stable}"';
+    const out = await rewriteOrigin(makeResponse(body, 'application/x-sh'), edgeUrl, 'edge');
+    const text = await out.text();
+    expect(text).toContain('REDIACC_CHANNEL:-edge');
+    expect(text).not.toContain('REDIACC_CHANNEL:-stable');
+  });
+
+  it('edge host rewrites CLI release URLs to the edge channel', async () => {
+    const body = 'https://releases.rediacc.com/cli/stable/rdc-linux-x64';
+    const out = await rewriteOrigin(
+      makeResponse(body, 'text/html'),
+      new URL('https://edge.rediacc.com/en/downloads'),
+      'edge'
+    );
+    expect(await out.text()).toContain('releases.rediacc.com/cli/edge');
+  });
+});
+
 describe('buildDisallowRobots', () => {
   it('returns a Disallow: / body with text/plain content-type', async () => {
     const res = buildDisallowRobots();

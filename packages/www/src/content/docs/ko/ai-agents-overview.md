@@ -4,8 +4,8 @@ description: "Claude Code, Cursor, Cline이 rdc를 통해 Rediacc 인프라를 �
 category: Guides
 order: 30
 language: ko
-sourceHash: "0aa0c975030d4856"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "27ea21c36250d4a9"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 `rdc`는 설계부터 에이전트를 고려했습니다. Claude Code, Cursor, Cline 등 서브셸에서 `rdc`를 호출하는 AI 어시스턴트는 구조화된 JSON 출력, 머신 가독 오류, 그리고 자율적인 Rediacc 인프라 관리에 필요한 가드레일을 그대로 활용할 수 있습니다. 통합 방식을 소개합니다.
@@ -59,21 +59,6 @@ Rediacc의 아키텍처는 에이전트에 잘 맞습니다.
     "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
   }]
 }
-```
-
-### 3. 에이전트 기능 탐색
-
-`rdc agent` 서브커맨드는 구조화된 내부 검사 기능을 제공합니다.
-
-```bash
-# 모든 명령어와 인수 및 옵션 목록 확인
-rdc agent capabilities
-
-# 특정 명령어의 상세 스키마 확인
-rdc agent schema --command "machine query"
-
-# JSON stdin으로 명령어 실행
-echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 ```
 
 ## 에이전트용 주요 플래그

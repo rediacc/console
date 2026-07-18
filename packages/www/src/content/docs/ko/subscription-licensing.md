@@ -4,8 +4,8 @@ description: '계정, rdc, renet이 머신 슬롯, 저장소 라이선스, 요�
 category: Guides
 order: 7
 language: ko
-sourceHash: 10e9f781881854be
-sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
+sourceHash: "5fb6196d9b6e9b0b"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # 구독 및 라이선싱
@@ -60,7 +60,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### 머신 슬롯 (서버 측)
 
-머신 슬롯 추적은 서버 측에서 적용됩니다. CLI가 저장소 라이선스를 발급할 때, 계정 서버는 구독의 머신 슬롯 할당량(예: Community의 경우 2개 머신, Professional의 경우 3개)을 확인합니다. 슬롯은 해당 머신에서 마지막 저장소 라이선스 발급 후 5시간 동안 보유되며 비활성 후 자동으로 해제됩니다. 10슬롯 Business 요금제는 슬롯이 활발히 프로비저닝할 때만 보유되므로 시간이 지남에 따라 수십 개의 머신을 지원할 수 있습니다.
+머신 슬롯 추적은 서버 측에서 적용됩니다. CLI가 저장소 라이선스를 발급하면 계정 서버가 구독의 머신 슬롯 할당량을 확인합니다. 셀프 서비스 요금제(Community, Professional, Business)는 모두 머신 슬롯을 1개씩 포함하며, 여러 대의 머신을 운영하려면 파트너와 함께 구성하는 Enterprise 계약이 필요합니다. 슬롯은 해당 머신에서 마지막으로 저장소 라이선스가 발급된 시점부터 5시간 동안 유지되며, 비활성 상태가 지속되면 자동으로 해제됩니다. 슬롯은 실제로 프로비저닝하는 동안에만 유지되므로, 슬롯 하나로도 한 달 동안 여러 대의 머신을 충분히 감당할 수 있습니다.
 
 머신 라이선스 파일은 머신에 저장되지 않습니다. 슬롯 적용은 서버의 발급 시간에 발생합니다.
 
@@ -91,12 +91,20 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 | Plan | Floating Licenses | Repository Size | Monthly repo license issuances | Delegation cert default / max |
 |------|-------------------|-----------------|-------------------------------|---|
-| Community | 2 | 10 GB | 100 | 15d / 30d |
-| Professional | 3 | 50 GB | 2,000+ | 60d / 120d |
-| Business | 10 | 200 GB | 5,000+ | 90d / 180d |
-| Enterprise | 25+ | 1 TB+ | 15,000+ | 120d / 365d |
+| Community | 1 | 10 GB | 100 | 15d / 30d |
+| Professional | 1 | 100 GB | 2,000+ | 60d / 120d |
+| Business | 1 | 500 GB | 5,000+ | 90d / 180d |
+| Enterprise | 맞춤형 | 1 TB+ | 15,000+ | 120d / 365d |
 
 계약별 제한은 특정 고객을 위해 이러한 값을 높이거나 낮출 수 있습니다. 위임 인증서 유효성도 `subscription.expiresAt + 3 day grace`로 하드 캡되므로 월별 청구되는 구독은 자연스럽게 청구 주기에 맞춰진 인증서를 얻습니다. 전체 규칙은 [License Chain & Delegation - Validity Policy](/en/docs/license-chain)를 참고하세요.
+
+## 무료 체험판과 Community 폴백
+
+신규 가입자는 Professional 또는 Business 요금제로 14일 무료 체험이 자동으로 시작됩니다. 가입 시 신용카드 정보를 등록하지만 실제 결제는 체험 기간이 끝날 때 처음 발생하므로, 그 전에 해지하면 비용이 전혀 들지 않습니다. 체험판은 고객 한 명당 한 번만 이용할 수 있습니다.
+
+Community는 항상 존재하는 무료 기본 요금제입니다. 신규 계정이 바로 가입할 수 있는 옵션은 아니며, 대신 체험 중 해지, 이후 유료 요금제 해지, 결제 실패 등 구독이 종료될 때마다 계정이 Community로 전환됩니다. Community 폴백 상태에서는 머신 1대, 저장소당 10GB, 월 100회 설정이라는 제한이 적용됩니다. 체험판 기반 모델 도입 이전에 만들어진 계정은 기존 Community 접근 권한을 그대로 유지합니다.
+
+제한 적용 방식은 완만합니다. 구독이 종료되어도 실행 중인 저장소는 계속 정상 작동합니다. 새로운 작업(생성, 포크, 크기 조정, 라이선스 갱신)만 유효한 권한이 있는 계정으로 제한됩니다.
 
 ## VM 마이그레이션 유예 기간
 
@@ -108,9 +116,9 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 - VM 마이그레이션, 머신 ID 변경: 저장소는 계속 실행됨 (40일 창 내에서)
 - 다음 `rdc` 작업이 새 머신 ID로 라이선스를 새로 고침
 - 수동 개입 필요 없음
-- `rdc machine query --system --licenses --name <machine>`으로 머신 ID 및 라이선스 상태 확인
+- `rdc machine status <machine> --system --licenses`으로 머신 ID 및 라이선스 상태 확인
 
-**Edge 채널 사용자**는 무료로 2X Community 제한을 받습니다 (20 GB 저장소, 월 200회 발급, 4개 머신). 유료 요금제는 Stable 채널에서만 사용할 수 있습니다. 자세한 내용은 [Release Channels](/en/docs/release-channels)를 참고하세요.
+**Edge 채널 계정**은 Community 요금제로 운영되며 제한이 2배로 늘어납니다 (20 GB 저장소, 월 200회 설정, 머신 2대). 유료 요금제는 Stable 채널에서만 사용할 수 있습니다. 자세한 내용은 [Release Channels](/en/docs/release-channels)를 참고하세요.
 
 ## 저장소 생성, 시작, 중지, 재시작 중의 작동
 
@@ -173,28 +181,22 @@ rdc subscription status
 한 머신의 머신 활성화 세부 정보 표시:
 
 ```bash
-rdc subscription activation status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 한 머신의 설치된 저장소 라이선스 세부 정보 표시:
 
 ```bash
-rdc subscription repo status -m hostinger
+rdc subscription status -m hostinger
 ```
 
-머신의 저장소 라이선스 배치 새로 고침:
+머신에서 레포지토리의 라이선스 새로 고침:
 
 ```bash
-rdc subscription refresh repos -m hostinger
+rdc subscription refresh -m hostinger --repo my-app
 ```
 
-머신에서 발견되었지만 로컬 `rdc` 구성에서 누락된 저장소는 배치 새로 고침 중에 거부됩니다. 실패로 보고되며 자동으로 분류되지 않습니다.
-
-기존 저장소의 저장소 라이선스 새로 고침을 강제합니다:
-
-```bash
-rdc subscription refresh repo --name my-app -m hostinger
-```
+`--repo` ref는 로컬 `rdc` 구성에서 확인될 수 있어야 합니다. 머신에서 발견되었지만 로컬 구성에서 누락된 레포지토리는 거부됩니다. 실패로 보고되며 자동으로 분류되지 않습니다.
 
 처음 사용할 때 라이선스된 저장소 또는 백업 작업이 사용 가능한 저장소 라이선스를 찾지 못하면 계정 인증을 자동으로 트리거할 수 있습니다. CLI가 권한 부여 URL을 인쇄하고, 대화형 터미널에서 브라우저를 열려고 하며, 권한 부여 및 발급이 성공한 후 작업을 재시도합니다.
 
@@ -257,4 +259,4 @@ rdc subscription refresh repo --name my-app -m hostinger
 - 실패한 발급 시도
 - 발급 전에 거부된 추적되지 않는 저장소
 
-사용량과 최근 저장소 라이선스 발급 이력의 고객용 보기가 필요하면 account 포털을 사용하십시오. 머신 측 검사가 필요하면 `rdc subscription activation status -m` 및 `rdc subscription repo status -m`을 사용하십시오.
+사용량과 최근 저장소 라이선스 발급 이력의 고객용 보기가 필요하면 account 포털을 사용하십시오. 머신 측 검사가 필요하면 `rdc subscription status -m` 및 `rdc subscription status -m`을 사용하십시오.

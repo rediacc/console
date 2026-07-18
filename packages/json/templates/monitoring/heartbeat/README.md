@@ -86,18 +86,18 @@ CRIU restores process memory including TCP socket file descriptors, but the unde
 
 ```bash
 # Deploy on source
-rdc repo create --name heartbeat-app -m source --size 2G
-rdc repo template apply --name heartbeat -m source -r heartbeat-app --file <template.json>
-rdc repo up --name heartbeat-app -m source
+rdc repo create heartbeat-app -m source --size 2G
+rdc repo admin template apply heartbeat-app --template heartbeat --file <template.json>
+rdc repo up heartbeat-app@source
 
 # Wait for beats, note the counter value
 
-# Checkpoint + push to target
-rdc repo push --name heartbeat-app -m source --to-machine target --checkpoint
+# Checkpoint + push to target. The copy lands as a backup ARTIFACT.
+rdc repo push heartbeat-app@source --to target --checkpoint
 
-# Restore on target
-rdc repo up --name heartbeat-app -m target
+# Boot it on the target (this is where --up lives; `repo push` has no --up).
+rdc backup restore heartbeat-app --as heartbeat-app -m target --up
 
 # Verify counter continues (not restart from 1)
-rdc term connect -m target -r heartbeat-app -c "docker logs heartbeat_app --tail 10"
+rdc repo logs heartbeat-app@target -c heartbeat_app --lines 10
 ```

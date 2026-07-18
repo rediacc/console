@@ -4,8 +4,8 @@ description: 'Rediacc''ta organizasyonlar, ekipler, üyeler ve abonelikler.'
 category: Guides
 order: 12
 language: tr
-sourceHash: 3887adc59fc63c26
-sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
+sourceHash: 9d77ef9087375fbc
+sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
 ### Organizasyonlar
@@ -16,7 +16,7 @@ Bir hesap oluşturduğunuzda Rediacc sizin için otomatik olarak bir organizasyo
 
 Her organizasyonun sahip olduğu özellikler:
 - Benzersiz bir ad (varsayılan olarak e-posta adresiniz)
-- Bir abonelik planı (COMMUNITY ile başlar)
+- Bir abonelik planı (yeni hesaplar Professional veya Business planında 14 günlük ücretsiz denemeyle başlar; aşağıdaki Abonelikler ve Planlar bölümüne bakın)
 - Varsayılan bir ekip (tüm üyeler otomatik olarak katılır)
 
 ### Üyeler ve Roller
@@ -57,21 +57,21 @@ Rediacc dört plan sunar:
 
 | Plan | Makineler | Depo Lisansı/ay | Delegasyon sertifikası varsayılan / maks | Özellikler |
 |------|-----------|-----------------|----------------------------------------|------------|
-| COMMUNITY | 2 | 100 | 15g / 30g | Temel |
-| PROFESSIONAL | 3 | 2.000+ | 60g / 120g | İzin grupları, denetim günlüğü, özel marka, öncelikli destek |
-| BUSINESS | 10 | 5.000+ | 90g / 180g | Ceph, gelişmiş analitik, kuyruk önceliği, gelişmiş kuyruk |
-| ENTERPRISE | 25+ | 15.000+ | 120g / 365g | Özel hesap yöneticisi |
+| COMMUNITY | 1 | 100 | 15g / 30g | Temel |
+| PROFESSIONAL | 1 | 2.000+ | 60g / 120g | İzin grupları, denetim günlüğü, özel marka, öncelikli destek |
+| BUSINESS | 1 | 5.000+ | 90g / 180g | Ceph, gelişmiş analitik, kuyruk önceliği, gelişmiş kuyruk |
+| ENTERPRISE | Özel | 15.000+ | 120g / 365g | Özel hesap yöneticisi |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 
-Tüm planlar 3 günlük bir ek süre ile başlar. Makine aktivasyonları ekip bazında izlenir ve hareketsizlik sonrası otomatik olarak serbest bırakılır. Makine lisansı ile depo lisansı modeli hakkında ayrıntılı bilgi için [Abonelik ve Lisanslama](/tr/docs/subscription-licensing) sayfasına bakın.
+Professional ve Business self-servis planlardır ve her biri bir makine içerir; çok makineli Enterprise ise ortaklarımız aracılığıyla satılır. Yeni kayıtlar Professional veya Business planında 14 günlük ücretsiz denemeyle başlar; kayıt sırasında bir kredi kartı alınır, ilk ücretlendirme ise yalnızca deneme süresi bittiğinde yapılır. Deneme sırasında iptal ederseniz, sonradan ücretli planı iptal ederseniz veya bir ödemeyi kaçırırsanız hesabınız ücretsiz Community planına (bir makine, depo başına 10 GB, ayda 100 kurulum) düşer. Tüm planlar 3 günlük bir ek süre ile başlar. Makine aktivasyonları ekip bazında izlenir ve hareketsizlik sonrası otomatik olarak serbest bırakılır. Makine lisansı ile depo lisansı modeli hakkında ayrıntılı bilgi için [Abonelik ve Lisanslama](/tr/docs/subscription-licensing) sayfasına bakın.
 
 ### Faturalama
 
 Yalnızca organizasyonun **sahibi** faturlamayı yönetebilir:
-- Plan yükseltmeleri için Stripe ödeme oturumu oluşturma
+- Plan başlatmak veya yükseltmek için Stripe ödeme oturumu oluşturma
 - Ödeme yöntemi değişiklikleri için Stripe faturalama portalına erişim
-- Self-servis geri ödeme talep etme (14 gün içinde, 30 günlük bekleme süresiyle)
+- Faturalama portalından planı iptal etme veya değiştirme; iptal etmek hesabı ücretsiz Community planına düşürür
 
 ### Veri Bölgesi
 

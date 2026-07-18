@@ -1,8 +1,8 @@
-import { Command } from 'commander';
+import { Command, Option } from 'commander';
 import { t } from '../../i18n/index.js';
+import { outputService } from '../../services/core/output.js';
 import type { OpsBackend } from '../../services/executor/ops-executor.js';
 import { opsExecutorService } from '../../services/executor/ops-executor.js';
-import { outputService } from '../../services/core/output.js';
 import type { OutputFormat } from '../../types/index.js';
 import { handleError } from '../../utils/errors.js';
 
@@ -21,7 +21,7 @@ export function registerOpsStatusCommand(ops: Command, program: Command): void {
   ops
     .command('status')
     .description(t('commands.ops.status.description'))
-    .option('--backend <backend>', t('options.opsBackend'))
+    .addOption(new Option('--backend <backend>', t('options.opsBackend')).choices(['kvm', 'qemu']))
     .action(async (options: { backend?: string }) => {
       try {
         const backend = options.backend ? (options.backend as OpsBackend) : undefined;

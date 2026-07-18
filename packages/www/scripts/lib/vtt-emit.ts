@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs';
-import type { Storyboard, Scene } from './storyboard.ts';
 import { STEP_CARD_DURATION_SEC } from './scenes/cast.ts';
 import type { CastNarratedDebug } from './scenes/index.ts';
+import type { Scene, Storyboard } from './storyboard.ts';
 
 // Single source of truth for the cast-narrated scene's pre-audio dwell:
 // imported from scenes/cast.ts so emitter and renderer can never drift.

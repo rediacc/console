@@ -57,12 +57,12 @@ cleanup() {
     log_step "Cleanup (best-effort)"
     [[ -n "$COUNTER_DIR" ]] && rm -rf "$COUNTER_DIR"
     [[ -n "$cp_up_log" ]] && rm -f "$cp_up_log"
-    rdc repo down --name "$CP_FORK_REPO" -m "$MACHINE_NAME" 2>/dev/null || true
-    rdc repo down --name "$FORK_REPO" -m "$MACHINE_NAME" 2>/dev/null || true
-    rdc repo down --name "$PARENT_REPO" -m "$MACHINE_NAME" 2>/dev/null || true
-    rdc repo delete --name "$CP_FORK_REPO" -m "$MACHINE_NAME" --force 2>/dev/null || true
-    rdc repo delete --name "$FORK_REPO" -m "$MACHINE_NAME" --force 2>/dev/null || true
-    rdc repo delete --name "$PARENT_REPO" -m "$MACHINE_NAME" --force 2>/dev/null || true
+    rdc repo down "$CP_FORK_REPO@$MACHINE_NAME" 2>/dev/null || true
+    rdc repo down "$FORK_REPO@$MACHINE_NAME" 2>/dev/null || true
+    rdc repo down "$PARENT_REPO@$MACHINE_NAME" 2>/dev/null || true
+    rdc repo delete "$CP_FORK_REPO@$MACHINE_NAME" --yes 2>/dev/null || true
+    rdc repo delete "$FORK_REPO@$MACHINE_NAME" --yes 2>/dev/null || true
+    rdc repo delete "$PARENT_REPO@$MACHINE_NAME" --yes 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -71,10 +71,10 @@ trap cleanup EXIT
 # -------------------------------------------------------------------------
 log_step "Registering worker $VM_IP as machine '$MACHINE_NAME'"
 rdc config ssh set --key "$SSH_KEY" >/dev/null
-rdc config machine add --name "$MACHINE_NAME" --ip "$VM_IP" --user "$SSH_USER" 2>/dev/null ||
+rdc machine add "$MACHINE_NAME" --ip "$VM_IP" --user "$SSH_USER" 2>/dev/null ||
     log_warn "Machine '$MACHINE_NAME' already registered (continuing)"
-log_step "Provisioning renet on worker (rdc config machine setup)"
-rdc config machine setup --name "$MACHINE_NAME"
+log_step "Provisioning renet on worker"
+rdc machine setup "$MACHINE_NAME"
 
 # Pre-clean any debris from prior runs so create doesn't conflict
 cleanup
@@ -83,8 +83,8 @@ cleanup
 # Phase 1 — bring parent up
 # -------------------------------------------------------------------------
 log_step "Creating parent repo + applying app-postgres template"
-rdc repo create --name "$PARENT_REPO" -m "$MACHINE_NAME" --size 2G
-rdc repo template apply --name app-postgres -m "$MACHINE_NAME" -r "$PARENT_REPO"
+rdc repo create "$PARENT_REPO" -m "$MACHINE_NAME" --size 2G
+rdc repo admin template apply "$PARENT_REPO@$MACHINE_NAME" --template app-postgres
 
 # Counter sidecar for the console#440 checkpoint phase: a checkpoint-labeled
 # process whose monotonic in-memory counter proves CRIU restore vs fresh
@@ -109,20 +109,20 @@ down() {
     renet compose -- down
 }
 REDIACCFILE
-rdc repo sync upload -m "$MACHINE_NAME" -r "$PARENT_REPO" --local "$COUNTER_DIR" --remote Zcounter
+rdc repo sync upload "$PARENT_REPO@$MACHINE_NAME" --local "$COUNTER_DIR" --remote Zcounter
 rm -rf "$COUNTER_DIR"
 COUNTER_DIR=""
 
 log_step "Bringing parent up (parent's postgres will bind first)"
-rdc repo up --name "$PARENT_REPO" -m "$MACHINE_NAME"
+rdc repo up "$PARENT_REPO@$MACHINE_NAME"
 
 # -------------------------------------------------------------------------
 # Phase 2 — fork-of-running parent: this is the failure path on main
 # -------------------------------------------------------------------------
 log_step "Forking parent into '$FORK_TAG' (parent stays running)"
-rdc repo fork --parent "$PARENT_REPO" --tag "$FORK_TAG" -m "$MACHINE_NAME"
+rdc repo fork "$PARENT_REPO@$MACHINE_NAME" --tag "$FORK_TAG"
 log_step "Bringing fork up — must succeed (renet#60 regression guard)"
-if ! rdc repo up --name "$FORK_REPO" -m "$MACHINE_NAME"; then
+if ! rdc repo up "$FORK_REPO@$MACHINE_NAME"; then
     log_error "rdc repo up '$FORK_REPO' failed"
     log_error "Diagnostic dump follows — db logs + cgroup state + listening sockets"
 
@@ -298,11 +298,11 @@ fi
 log_info "parent counter at $parent_count before checkpoint"
 
 log_step "Forking running parent with --checkpoint into '$CP_FORK_TAG'"
-rdc repo fork --parent "$PARENT_REPO" --tag "$CP_FORK_TAG" -m "$MACHINE_NAME" --checkpoint
+rdc repo fork "$PARENT_REPO@$MACHINE_NAME" --tag "$CP_FORK_TAG" --checkpoint
 
 log_step "Bringing checkpoint fork up — restore must fire (console#440)"
 cp_up_log=$(mktemp)
-if ! rdc repo up --name "$CP_FORK_REPO" -m "$MACHINE_NAME" --debug 2>&1 | tee "$cp_up_log"; then
+if ! rdc repo up "$CP_FORK_REPO@$MACHINE_NAME" --debug 2>&1 | tee "$cp_up_log"; then
     log_error "rdc repo up '$CP_FORK_REPO' failed"
     exit 1
 fi

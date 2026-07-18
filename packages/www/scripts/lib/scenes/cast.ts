@@ -1,6 +1,4 @@
 import path from 'node:path';
-import type { CastScene, CastFreezeScene, CastNarratedScene } from '../storyboard.ts';
-import { resolveCastEndpoint } from '../storyboard.ts';
 import {
   countDisplayRows,
   countOutputLines,
@@ -25,6 +23,8 @@ import {
   trimMp4Duration,
   videoDimensions,
 } from '../ffmpeg-video.ts';
+import type { CastFreezeScene, CastNarratedScene, CastScene } from '../storyboard.ts';
+import { resolveCastEndpoint } from '../storyboard.ts';
 import type { CastNarratedDebug, SceneContext } from './index.ts';
 import { renderStepCard } from './slide.ts';
 

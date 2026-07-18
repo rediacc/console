@@ -18,7 +18,7 @@ M="${TUTORIAL_MACHINE_NAME:-machine-11}"
 prewarm_vscode() {
     local repo="$1" out pid i
     out="$(mktemp)"
-    rdc vscode connect --machine "$M" --repository "$repo" --browser --url-only >"$out" 2>/dev/null &
+    rdc vscode connect "$repo" --browser --url-only >"$out" 2>/dev/null &
     pid=$!
     for i in $(seq 1 120); do
         grep -q '^http' "$out" 2>/dev/null && break
@@ -33,8 +33,8 @@ prewarm_vscode() {
 list="$(rdc repo list --machine "$M" 2>/dev/null || true)"
 
 if echo "$list" | grep -q "rollback" && echo "$list" | grep -q "work"; then
-    rdc repo up --name app:work --machine "$M" >/dev/null 2>&1 || true
-    rdc repo up --name app:rollback --machine "$M" >/dev/null 2>&1 || true
+    rdc repo up app:work >/dev/null 2>&1 || true
+    rdc repo up app:rollback >/dev/null 2>&1 || true
     prewarm_vscode app:rollback
     prewarm_vscode app:work
     exit 0
@@ -43,13 +43,17 @@ fi
 # Reaching here means the staged chain is absent or PARTIAL (interrupted
 # run, re-provisioned machine, stale config rows). Tear down whatever
 # half-exists on the machine and in the config, then rebuild from scratch.
+#
+# `repo delete --archive-config` is the config-row reaper: it drops the entry
+# from resources.repositories (into deletedRepositories) so `repo create` below
+# is not refused by a stale row. Machine-side delete is idempotent, so a ref
+# whose image is already gone still archives cleanly.
 for r in app:rollback app:work app; do
-    rdc repo delete --name "$r" --machine "$M" >/dev/null 2>&1 || true
-    rdc config repository remove --name "$r" >/dev/null 2>&1 || true
+    rdc repo delete "$r" --archive-config -y >/dev/null 2>&1 || true
 done
-rdc config repository remove --name app:latest >/dev/null 2>&1 || true
-rdc repo create --name app --machine "$M" --size 2G
-rdc repo template apply --name app-postgres --machine "$M" --repository app
+rdc repo delete app:latest --archive-config -y >/dev/null 2>&1 || true
+rdc repo create app --machine "$M" --size 2G
+rdc repo admin template apply app --template app-postgres
 
 # Rebind the staged stack to its allocated loopback IPs on conflict-free
 # ports (5433/3100) so it coexists with whatever else runs on the machine
@@ -73,20 +77,20 @@ sed -i \
 sync && sync
 PATCH
 )"
-rdc term connect --machine "$M" --repository app --command "echo $PATCH_B64 | base64 -d | bash"
-rdc repo fork --parent app --tag work --machine "$M" --up
-rdc repo up --name app:work --machine "$M"
+rdc term connect app -c "echo $PATCH_B64 | base64 -d | bash"
+rdc repo fork app --tag work --up
+rdc repo up app:work
 
 # `sync` after each write: repo commit reflink-clones the LUKS image at the
 # btrfs level, and a just-written file can still sit in the inner ext4 page
 # cache — the clone would then miss it (commit's own syncfs only covers the
 # outer filesystem). Double sync settles ext4 -> loop -> btrfs propagation.
-rdc term connect --machine "$M" --repository app:work --command 'echo v1 > version.txt && sync && sync'
-rdc repo commit --name app:work --message 'v1 baseline' --machine "$M"
-rdc repo branch --branch stable --name app:work
-rdc term connect --machine "$M" --repository app:work --command 'echo v2 > version.txt && sync && sync'
-rdc repo commit --name app:work --message 'v2 risky change' --machine "$M"
-rdc repo checkout --ref stable --from app:work --tag rollback --machine "$M"
-rdc repo up --name app:rollback --machine "$M"
+rdc term connect app:work -c 'echo v1 > version.txt && sync && sync'
+rdc repo commit app:work --message 'v1 baseline'
+rdc repo branch app:work --branch stable
+rdc term connect app:work -c 'echo v2 > version.txt && sync && sync'
+rdc repo commit app:work --message 'v2 risky change'
+rdc repo checkout stable --from app:work --tag rollback
+rdc repo up app:rollback
 prewarm_vscode app:rollback
 prewarm_vscode app:work

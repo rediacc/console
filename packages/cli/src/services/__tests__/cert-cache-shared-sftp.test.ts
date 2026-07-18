@@ -20,7 +20,9 @@ const { mockLeaseExec, mockRelease, mockAcquire, mockConfigService } = vi.hoiste
     mockConfigService: {
       getLocalConfig: vi.fn(),
       getCurrent: vi.fn(),
+      getDecryptedConfig: vi.fn(),
       updateConfigFields: vi.fn(),
+      setStateBucket: vi.fn(),
     },
   };
 });
@@ -44,7 +46,9 @@ describe('downloadCertCache connection sharing', () => {
       },
     });
     mockConfigService.getCurrent.mockResolvedValue({});
+    mockConfigService.getDecryptedConfig.mockResolvedValue({});
     mockConfigService.updateConfigFields.mockResolvedValue(undefined);
+    mockConfigService.setStateBucket.mockResolvedValue(undefined);
     mockLeaseExec.mockResolvedValue(EMPTY_ACME);
   });
 
@@ -60,11 +64,12 @@ describe('downloadCertCache connection sharing', () => {
     expect(exec).toHaveBeenCalledWith('sudo cat /opt/rediacc/proxy/letsencrypt/acme.json');
     // The caller owns the shared connection; it must not be closed here.
     expect(close).not.toHaveBeenCalled();
-    expect(mockConfigService.updateConfigFields).toHaveBeenCalledWith({
-      acmeCertCache: expect.objectContaining({
+    expect(mockConfigService.setStateBucket).toHaveBeenCalledWith(
+      'certCache',
+      expect.objectContaining({
         'rediacc.io': expect.objectContaining({ baseDomain: 'rediacc.io', sourceMachine: 'm1' }),
-      }),
-    });
+      })
+    );
   });
 
   it('acquires from the shared pool by default and releases when done', async () => {

@@ -11,18 +11,18 @@
 import {
   cekUnwrap,
   deriveWrappingKey,
+  type EncryptedConfigPayload,
+  type FieldCommitments,
   fromBase64,
   importAesKey,
   selectiveDecrypt,
-  selectiveEncrypt,
-  type EncryptedConfigPayload,
-  type FieldCommitments,
-  type FullConfig,
 } from '@rediacc/shared/config-crypto';
-import type { RemoteConfig, RdcConfig } from '../types/index.js';
-import type { SecureStorage } from '../utils/secure-storage.js';
-import { configServerFetch, ConfigServerError } from '../services/config/config-server-client.js';
+import { fullConfigToRdcConfig } from '@rediacc/shared/config-crypto/rotation';
+import { buildConfigPushPayload } from '@rediacc/shared/config-schema';
 import { t } from '../i18n/index.js';
+import { ConfigServerError, configServerFetch } from '../services/config/config-server-client.js';
+import type { RdcConfig, RemoteConfig } from '../types/index.js';
+import type { SecureStorage } from '../utils/secure-storage.js';
 import type { RemoteTokenStorage } from './remote-token-storage.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────
@@ -71,6 +71,20 @@ export class RemotePasskeySecretMissingError extends Error {
   constructor() {
     super(t('commands.config.remote.passkeySecretMissing'));
     this.name = 'RemotePasskeySecretMissingError';
+  }
+}
+
+/**
+ * The stored slot secret no longer unwraps the CEK. The most common cause is a
+ * CEK rotation that bumped the store's generation while this device kept its old
+ * wrapping — the AES-GCM auth tag then fails. Surfaced instead of the raw
+ * OperationError so the user gets an action (re-enroll) rather than a crypto
+ * stack trace. Applies to every enrollment method (passkey and password).
+ */
+export class RemoteStaleSlotError extends Error {
+  constructor() {
+    super(t('commands.config.remote.staleSlot'));
+    this.name = 'RemoteStaleSlotError';
   }
 }
 
@@ -134,34 +148,13 @@ export class RemoteConfigAdapter {
 
     const decrypted = await selectiveDecrypt(payload, cek, session.sdkDerived);
 
-    // Map decrypted FullConfig to RdcConfig (v2 shape).
-    const sshRaw = decrypted.ssh;
-    const config: RdcConfig = {
-      schemaVersion: 2,
-      id: decrypted.id,
-      version: decrypted.version,
-      resources: {
-        machines: (decrypted.machines ?? {}) as NonNullable<
-          NonNullable<RdcConfig['resources']>['machines']
-        >,
-        repositories: (decrypted.repositories ?? {}) as NonNullable<
-          NonNullable<RdcConfig['resources']>['repositories']
-        >,
-        storages: (decrypted.storages ?? {}) as NonNullable<
-          NonNullable<RdcConfig['resources']>['storages']
-        >,
-      },
-      credentials: sshRaw?.privateKey
-        ? {
-            ssh: {
-              privateKey: sshRaw.privateKey as string,
-              publicKey: sshRaw.publicKey as string | undefined,
-              knownHosts: sshRaw.knownHosts as string | undefined,
-            },
-          }
-        : undefined,
-      encryption: { mode: 'plaintext' },
-    };
+    // Rebuild the RdcConfig from the decrypted blob through the ONE shared
+    // reconstruction. This used to be a hand-written copy that had to "mirror"
+    // fullConfigToRdcConfig exactly; keeping two copies in sync is precisely how
+    // the explicit-undefined trap (and later the dropped-secret bug) reached
+    // production, so there is now a single implementation and both the CLI pull
+    // and the CEK rotation go through it.
+    const config = fullConfigToRdcConfig(decrypted);
 
     return {
       config,
@@ -179,30 +172,14 @@ export class RemoteConfigAdapter {
     const session = await this.fetchSession(token);
     const cek = await this.deriveCek(session.serverSecret);
 
-    // Build a FullConfig for selective encryption. Commitments are computed
-    // from the schema walker over the v2-shape config.
-    const { pathsToCommit, getByPointer } = await import('../schema/walker.js');
-    const commitPaths = pathsToCommit(config);
-    const commitEntries = commitPaths.map((pointer) => ({
-      pointer,
-      value: getByPointer(config, pointer),
-    }));
-
-    const fullConfig: FullConfig = {
-      envelopeVersion: 2,
-      id: config.id,
+    // Envelope + commitments + ciphertext are composed by the shared helper, so
+    // the CLI, the web console editor, and the CEK rotation flow all emit a
+    // byte-identical payload. Diverging here would fail the server precondition.
+    const encrypted = await buildConfigPushPayload(config, {
       version: currentVersion + 1,
       sdkEpoch: session.sdkEpoch,
-      commitments: { alg: 'HMAC-SHA256', fckSalt: '', fields: {} },
-      machines: config.resources?.machines ?? {},
-      repositories: config.resources?.repositories ?? {},
-      storages: config.resources?.storages ?? {},
-      ssh: config.credentials?.ssh,
-    };
-
-    const encrypted = await selectiveEncrypt(fullConfig, session.sdkDerived, cek, {
-      sdkEpoch: session.sdkEpoch,
-      commitEntries,
+      sdkDerived: session.sdkDerived,
+      cek,
     });
 
     // Push to server (server adds Layer 3)
@@ -276,7 +253,14 @@ export class RemoteConfigAdapter {
       throw new RemoteTokenExpiredError();
     }
 
-    return cekUnwrap(tokenData.wrappedCek, wrappingKey);
+    // A wrong slot secret (or a rotated CEK this device never re-wrapped for)
+    // surfaces here as an AES-GCM auth failure. Translate it into an actionable
+    // "re-enroll" message rather than leaking a raw OperationError.
+    try {
+      return await cekUnwrap(tokenData.wrappedCek, wrappingKey);
+    } catch {
+      throw new RemoteStaleSlotError();
+    }
   }
 
   /**

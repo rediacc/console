@@ -7,7 +7,7 @@ description: >-
 category: Concepts
 order: 35
 language: de
-sourceHash: "eb4c8dd0389a45a6"
+sourceHash: "30c1cd3d88219e7c"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -30,7 +30,7 @@ Sie setzen einen KI-Coding-Assistenten auf Ihre Infrastruktur an. Wenn Claude Co
 | `rdc config edit` (interaktiver Editor) | 🔴 refused | Mensch setzt `REDIACC_ALLOW_CONFIG_EDIT=*` vor dem Start des Agents |
 | `rdc config edit --apply <file>` | 🔴 refused | Gleiche Überschreibung |
 | `rdc config field rotate --pointer <pointer>` | 🔴 refused | Gleiche Überschreibung; nutzt interaktive Bestätigung |
-| `rdc term connect -m <machine>` (direktes Maschinen-SSH) | 🔴 refused | Zuerst ein Repository forken und mit dem Fork verbinden |
+| `rdc term connect <machine>` (direktes Maschinen-SSH) | 🔴 refused | Zuerst ein Repository forken und mit dem Fork verbinden |
 
 Jede Verweigerung gegenüber einem Agent wird mit `outcome: refused` und einem Grund in das Audit-Log geschrieben.
 

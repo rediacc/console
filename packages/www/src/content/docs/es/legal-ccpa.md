@@ -4,7 +4,7 @@ description: "Cómo el modelo autoalojado de Rediacc cumple con los requisitos d
 category: "Legal"
 order: 4
 language: es
-sourceHash: "949159b302cf6ab9"
+sourceHash: "3cee3262b53f7afd"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -35,7 +35,7 @@ Rediacc como software no accede, procesa ni almacena datos del consumidor. Tu eq
 
 Cada repositorio de Rediacc es una unidad de datos discreta y cifrada con un GUID único. Puedes inventariar exactamente qué datos existen y dónde:
 
-- `rdc machine query --name <machine> --repositories` lista todos los repositorios en una máquina con tamaño y estado de montaje
+- `rdc machine status <machine> --repositories` lista todos los repositorios en una máquina con tamaño y estado de montaje
 - Cada repositorio está aislado a nivel de sistema de archivos, red y contenedores
 - Se rastrean las relaciones de fork, para que puedas identificar todas las copias de un conjunto de datos
 

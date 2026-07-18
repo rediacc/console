@@ -25,8 +25,8 @@ M2_USER="${TUTORIAL_BACKUP_USER:-$TUTORIAL_MACHINE_USER}"
 # Pre-recording setup
 rm -f ~/.config/rediacc/rediacc.json 2>/dev/null || true
 rdc config init --ssh-key "$TUTORIAL_SSH_KEY"
-rdc config machine add --name "$M" --ip "$TUTORIAL_MACHINE_IP" --user "$TUTORIAL_MACHINE_USER"
-rdc config machine add --name "$M2" --ip "$M2_IP" --user "$M2_USER"
+rdc machine add "$M" --ip "$TUTORIAL_MACHINE_IP" --user "$TUTORIAL_MACHINE_USER"
+rdc machine add "$M2" --ip "$M2_IP" --user "$M2_USER"
 for ip in "$TUTORIAL_MACHINE_IP" "$M2_IP"; do
     for i in $(seq 1 30); do
         ssh -i "$TUTORIAL_SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=2 \
@@ -34,21 +34,23 @@ for ip in "$TUTORIAL_MACHINE_IP" "$M2_IP"; do
         sleep 2
     done
 done
-rdc config machine setup --name "$M"
-rdc config machine setup --name "$M2"
+rdc machine setup "$M"
+rdc machine setup "$M2"
 rdc machine prune --name "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 rdc machine prune --name "$M2" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 
-rdc repo delete --name my-app --machine "$M" 2>/dev/null || true
-rdc repo delete --name my-app --machine "$M2" 2>/dev/null || true
-rdc repo create --name my-app --machine "$M" --size 2G
-rdc repo template apply --name app-postgres --machine "$M" --repository my-app
-rdc repo up --name my-app --machine "$M"
+# One delete, not two: the machine is derived from the ref, and a repo has a
+# single home in the config. Leftovers on $M2 (the push target) are reaped by
+# the `machine prune --orphaned-repos` sweep above, which matches by GUID.
+rdc repo delete my-app --archive-config -y 2>/dev/null || true
+rdc repo create my-app --machine "$M" --size 2G
+rdc repo admin template apply my-app --template app-postgres
+rdc repo up my-app
 # Seed a real gigabyte of data so the first push is visibly heavy and
 # the second push's 50 MB delta is visibly NOT a full copy. `sync`
 # settles the inner ext4 so the push sees the seeded blocks.
-rdc term connect --machine "$M" --repository my-app \
-    --command 'dd if=/dev/urandom of=dataset.bin bs=1M count=1024 status=none && sync'
+rdc term connect my-app \
+    -c 'dd if=/dev/urandom of=dataset.bin bs=1M count=1024 status=none && sync'
 
 # Restore stdout/stderr so asciinema captures only the demo from here on.
 exec >&3 2>&4
@@ -56,18 +58,18 @@ exec >&3 2>&4
 clear_screen
 
 section "First push — the full image travels"
-run_cmd "rdc repo push --name my-app --machine $M --to $M2"
+run_cmd "rdc repo push my-app --to $M2"
 
 pause 2
 
 section "Change a little data"
-run_cmd "rdc term connect --machine $M --repository my-app --command 'dd if=/dev/urandom of=delta-test.bin bs=1M count=50 status=none && ls -lh delta-test.bin'" \
-    "rdc term connect --machine $M --repository my-app --command 'dd if=/dev/urandom of=delta-test.bin bs=1M count=50 status=none && sync && ls -lh delta-test.bin'"
+run_cmd "rdc term connect my-app -c 'dd if=/dev/urandom of=delta-test.bin bs=1M count=50 status=none && ls -lh delta-test.bin'" \
+    "rdc term connect my-app -c 'dd if=/dev/urandom of=delta-test.bin bs=1M count=50 status=none && sync && ls -lh delta-test.bin'"
 
 pause 2
 
 section "Push again — only the changed blocks travel"
-run_cmd "rdc repo push --name my-app --machine $M --to $M2"
+run_cmd "rdc repo push my-app --to $M2"
 
 pause 2
 
@@ -78,8 +80,11 @@ pause 2
 
 # End the on-camera portion; cleanup below is not recorded.
 end_recording
-# Cleanup
-rdc repo delete --name my-app --machine "$M2" 2>/dev/null || true
-rdc repo down --name my-app --machine "$M" 2>/dev/null || true
-rdc repo down --name my-app --machine "$M" --unmount 2>/dev/null || true
-rdc repo delete --name my-app --machine "$M" 2>/dev/null || true
+# Cleanup. The ref derives the SOURCE machine ($M) — `repo push` transferred the
+# image to $M2 with the SAME GUID and no config row of its own, so `repo delete`
+# cannot address the $M2 copy. Archive the row (drops it from the config), which
+# makes that GUID orphaned, then sweep $M2 by GUID.
+rdc repo down my-app 2>/dev/null || true
+rdc repo down my-app --unmount 2>/dev/null || true
+rdc repo delete my-app --archive-config -y 2>/dev/null || true
+rdc machine prune --name "$M2" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true

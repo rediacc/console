@@ -155,7 +155,19 @@ if [[ "$SKIP_SETUP" != "true" ]]; then
         "ROOT_EMAIL=${ROOT_EMAIL:?ROOT_EMAIL must be set}"
         "DATABASE_PATH=e2e-account.db"
         "PUBLIC_SITE_URL=http://localhost:$E2E_PORT"
+        # WebAuthn/passkey ceremonies (20-03/20-08/27-console): the server's
+        # setup-requirements report includes webauthnConfigured, and the
+        # config-setup Continue button stays disabled without it. The origin
+        # must equal the BROWSER origin (the Vite e2e port) or the ceremony's
+        # origin check fails. Mirrors the dev .env (RP_ID localhost).
+        "WEBAUTHN_RP_ID=localhost"
+        "WEBAUTHN_RP_NAME=Rediacc"
+        "WEBAUTHN_ORIGIN=http://localhost:$E2E_PORT"
         "PORT=$ACCOUNT_API_PORT"
+        # E2E runs node.ts with ENVIRONMENT=production (for billing coverage), so
+        # TEST_MODE is the only opener for the /test/* seed + email-capture routes
+        # the Playwright suite depends on. Deployed Workers never set this.
+        "TEST_MODE=true"
     )
     if [[ -n "${STRIPE_LISTEN_WEBHOOK_SECRET:-}" ]]; then
         ACCOUNT_ENV+=("STRIPE_WEBHOOK_SECRET=$STRIPE_LISTEN_WEBHOOK_SECRET")

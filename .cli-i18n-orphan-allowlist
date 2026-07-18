@@ -1,0 +1,23 @@
+# Dynamic-key prefix baseline for the ORPHAN direction of
+# scripts/check-cli-i18n-key-usage.ts.
+#
+# The orphan check reports every en/cli.json leaf that no STATIC t('literal')
+# call references. That over-reports: ~17 call sites build their key at runtime
+# — t(`commands.sync.${mode}.completed`), t(successKey), t(errorKey) — and their
+# leaves look unreferenced to a static scan. Each line below is a key PREFIX that
+# a dynamic call site provably constructs; any leaf under it is exempt from the
+# orphan report (but STILL covered by the runtime help-render gate where it
+# renders through Commander).
+#
+# Format (same BLOCKER contract as .deps-upgrade-blocklist):
+#   <key-prefix>  # BLOCKER: <substantive reason, 30+ chars, not a banned phrase>
+# Enforced by scripts/lib/blocker-validator.ts via the check itself. Blank line
+# ends a group. To retire a prefix, delete its line and re-run the check.
+
+commands.sync.  # BLOCKER: repo-sync.ts builds t(`commands.sync.${mode}.completed|failed|starting|progress`) where mode is upload|download; the full leaf key is never a static literal, so the upload/download subtrees are only reachable at runtime.
+errors.term.  # BLOCKER: term.ts renders t(`errors.term.${codeKey}`) mapping an SSH exit code to a message; the per-code leaves are concatenated at runtime and never appear as a static t() literal.
+commands.machine.health.  # BLOCKER: machine/health.ts emits t(`commands.machine.health.${field.key}`) over a runtime field list; the per-field leaves are built dynamically and never appear as a static literal.
+commands.config.infra.push.dns  # BLOCKER: infra-provision.ts logDnsAction builds `commands.config.infra.push.dns${Created|Updated|Deleted}` from a DnsAction; the dnsCreated/dnsUpdated/dnsDeleted leaves are concatenated at runtime, not static literals.
+
+docs.  # BLOCKER: the docs.* namespace is the www cli-docs generator's private vocabulary (packages/www/scripts/generate-cli-docs.js), not CLI t(); it reads docs.frontmatter directly and emits docs.* via runtime-built {{t:cli.docs.*}} the committed markdown may not fully enumerate, so a static CLI scan cannot see these references.
+

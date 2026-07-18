@@ -1,0 +1,16 @@
+{
+  "__doc__": "Frozen per-file baseline of LEGACY inline 'run:' blocks whose shell logic exceeds 8 non-blank/non-comment lines, enforced by .ci/scripts/quality/check-workflows.sh. Each value is the count of over-threshold blocks that file is grandfathered for. Ratchet-only: when you extract a legacy block into .ci/scripts/<area>/<name>.sh, LOWER that file's count (or delete the entry at 0). The gate fails if a count rises (new inline logic), if a count is below the recorded value (you fixed one but did not ratchet the baseline down), or if a file with violations is missing here entirely. New workflow logic must never be added inline; put it in a script and call it. There is deliberately no auto-regenerator: edit this file by hand as you extract, so the ratchet cannot be trivially reset.",
+  "backfill-release-sentinel.yml": 4,
+  "cd-deploy-account.yml": 2,
+  "cd-deploy-worker.yml": 2,
+  "cd-stage.yml": 3,
+  "cd-v2.yml": 13,
+  "ci-build-docker.yml": 5,
+  "ci-ops-test.yml": 2,
+  "ci.yml": 6,
+  "cleanup-r2-staging.yml": 1,
+  "ct-install-methods.yml": 1,
+  "ct-tests.yml": 9,
+  "promote-stable.yml": 5,
+  "rerun-failed.yml": 1
+}

@@ -202,12 +202,12 @@ The full path a Let's Encrypt cert takes from issuance to each repo's containers
 
 2. **Per-repo dumping (optional).** Services that need cert files inside their own container (for example, a mail server that reads a `.pem` directly) deploy a small `traefik-certs-dumper` container alongside themselves. The dumper bind-mounts `/opt/rediacc/proxy/letsencrypt` read-only and writes the extracted cert + key into the repo's data volume as `cert.pem` / `key.pem`. For this to work, the per-repo Docker daemon must have `/opt/rediacc/proxy` in its mount-namespace allowlist. This is already included by default.
 
-3. **Client-side cache (`rediacc.json`).** The CLI caches a compressed copy of `acme.json` under `acmeCertCache` in your config file, keyed by `baseDomain`. This lets multiple machines share certs (via `rdc config cert-cache push -m <machine>`) and acts as an offline inventory.
+3. **Client-side cache (`rediacc.json`).** The CLI caches a compressed copy of `acme.json` under `acmeCertCache` in your config file, keyed by `baseDomain`. This lets multiple machines share certs (via `rdc machine infra cert push <machine>`) and acts as an offline inventory.
 
 **Sync triggers for the client cache:**
 
 - Automatically after `rdc repo up`, but only if the local cache for the machine's `baseDomain` is older than 6 hours. Fresh caches are left alone so back-to-back deploys don't thrash SSH.
-- On demand: `rdc config cert-cache pull -m <machine>` (force pull) or `rdc machine query --name <machine> --sync-certs` (pull as a side effect of a status query).
+- On demand: `rdc machine infra cert pull <machine>` (force pull) or `rdc machine status <machine> --sync-certs` (pull as a side effect of a status query).
 - On `rdc config infra push`, the cache is pushed up to the machine (local certs with longer expiry win over remote).
 
 **Cache maintenance:**
@@ -413,7 +413,7 @@ Shows TCP and UDP port mappings for dynamically allocated ports.
 | Service not in routes | Container not running or missing labels | Verify with `docker ps` on the repository's daemon; check labels |
 | Certificate not issued | DNS not pointing to server, or invalid Cloudflare token | Verify DNS resolution; check Cloudflare API token permissions |
 | 502 Bad Gateway | Application not listening on the declared port | Verify the app is running and the port matches `loadbalancer.server.port` |
-| TCP port not reachable | Port not registered in infrastructure | Run `rdc config infra set --tcp-ports ...` and `push-infra` |
+| TCP port not reachable | Port not registered in infrastructure | Run `rdc machine infra set <machine> --tcp-ports ...` and `push-infra` |
 | Route server running old version | Binary was updated but service not restarted | Happens automatically on provisioning; manual: `sudo systemctl restart rediacc-router` |
 | STUN/TURN relay not reachable | Relay addresses cached at startup | Recreate the service after DNS or IP changes so it picks up the new network config |
 

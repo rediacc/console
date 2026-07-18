@@ -68,7 +68,8 @@ describe('archiveRepository — scrubs secrets', () => {
     await configService.archiveRepository('app:latest');
     expect(mockDeleted).toHaveLength(1);
     const archived = mockDeleted[0];
-    expect(archived.name).toBe('app:latest');
+    expect(archived.name).toBe('app');
+    expect(archived.tag).toBe('latest');
     expect(archived.repositoryGuid).toBe('00000000-0000-0000-0000-000000000001');
     expect(archived.credential).toBe('luks-passphrase');
     expect(archived.deletedAt).toBeDefined();

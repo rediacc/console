@@ -24,5 +24,5 @@ export type {
   E2eResponseEnvelope,
 } from './envelope.js';
 export { openRequest, openResponse, sealRequest, sealResponse } from './envelope.js';
-export { CURRENT_SERVER_E2E_KEY, SERVER_E2E_KEYS } from './keys.js';
 export type { ServerE2eKey } from './keys.js';
+export { CURRENT_SERVER_E2E_KEY, SERVER_E2E_KEYS } from './keys.js';

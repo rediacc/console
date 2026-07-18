@@ -4,7 +4,7 @@ description: 监控机器健康状况、容器、服务、仓库，并运行诊�
 category: Guides
 order: 9
 language: zh
-sourceHash: "e2f5d37c534fc40d"
+sourceHash: "b6deba17f1137188"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -155,7 +155,7 @@ Scrub 计时器在 renet 升级后的第一次 daemon 启动时自动安装。�
 
 ### Scrub 状态
 
-最后一次 scrub 的结果保存在 BTRFS 卷外部（位于 `/var/lib/rediacc/scrub-last-result.json`），即使卷出现问题也能保持可读。`rdc machine query --system` 的输出包含 `scrub_status` 字段：
+最后一次 scrub 的结果保存在 BTRFS 卷外部（位于 `/var/lib/rediacc/scrub-last-result.json`），即使卷出现问题也能保持可读。`rdc machine status --system` 的输出包含 `scrub_status` 字段：
 
 ```json
 "scrub_status": {
@@ -185,7 +185,7 @@ Scrub 计时器在 renet 升级后的第一次 daemon 启动时自动安装。�
 rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
-结果保存到同一 JSON 文件，并在下次 `rdc machine query --system` 时立即可见。
+结果保存到同一 JSON 文件，并在下次 `rdc machine status --system` 时立即可见。
 
 ## 机器概览
 

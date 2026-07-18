@@ -4,8 +4,8 @@ description: "SOC 2 的核心问题是：审计人员需要你的控制措施有
 category: "Legal"
 order: 2
 language: zh
-sourceHash: "9ba8477a07292a7d"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "e03bef0cead86ab7"
+sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
 我对 SOC 2 很熟悉，因为我参加过审计会议。审计人员使用 AICPA 框架来检查你的控制措施是否真正有效，而不只是你声称有效。五项信任服务标准分别是：安全性、可用性、处理完整性、机密性和隐私。
@@ -41,7 +41,7 @@ fork 使变更管理具有可审计性。你 fork 生产环境，你获得当前
 1. Fork 生产仓库（`rdc repo fork`）
 2. 在 fork 上应用和测试更改
 3. 独立验证 fork
-4. 将 fork 提升到生产环境（`rdc repo takeover`）
+4. 将 fork 提升到生产环境（`rdc repo promote`）
 
 每个步骤都记录了时间戳和执行者标识。
 

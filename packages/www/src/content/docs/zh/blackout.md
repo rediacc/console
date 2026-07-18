@@ -5,6 +5,7 @@ category: Use Cases
 order: 6
 language: zh
 sourceHash: "51a38f7f8567e63e"
+sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 
 > **当灯熄灭时，您的业务仍在继续。**

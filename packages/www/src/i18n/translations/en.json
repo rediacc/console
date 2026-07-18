@@ -93,7 +93,7 @@
     "personas": {
       "devops": {
         "tagline": "Ship faster. Recover instantly. Sleep better.",
-        "cta": "Get Started Free"
+        "cta": "Start free trial"
       },
       "cto": {
         "tagline": "Reduce TCO by 60%. Scale on your hardware.",
@@ -160,13 +160,13 @@
     "titleHighlight": " Break Nothing.",
     "subtitle": "Rediacc is software you install on your own servers. It copies your whole live system in seconds: apps, databases, and settings. Then you can test, back up, and recover fast.",
     "cta": {
-      "getStarted": "Get Started Free",
+      "getStarted": "Start free trial",
       "readDocs": "Read the Docs",
       "contactUs": "View All Install Options",
       "learnMore": "See how it works",
       "bookDemo": "Book Demo",
-      "freeBadge": "FREE FOREVER · No credit card",
-      "benefits": "Unlimited teams • $0",
+      "freeBadge": "14-day free trial · Cancel anytime",
+      "benefits": "Unlimited teams • 14-day free trial",
       "seeDetails": "See full details"
     },
     "install": {
@@ -241,7 +241,7 @@
       },
       {
         "title": "Your setup is split",
-        "description": "You run on many clouds. Your test copy fits none of them."
+        "description": "You run on many clouds. Your test copy fits none of them. Your Kubernetes cluster is pinned to one."
       }
     ],
     "footer": "Your business runs in minutes. Your test copy still runs in days."
@@ -261,11 +261,15 @@
       {
         "title": "Backup tools",
         "description": "They save everything. Recovery takes hours, not a minute."
+      },
+      {
+        "title": "Kubernetes tools",
+        "description": "They copy your manifests. A cluster is more than YAML."
       }
     ],
     "winner": {
       "label": "Rediacc",
-      "description": "Each team gets their own writable copy. Data, apps, settings, all of it. Ready in 60 seconds. You only pay for storage when something changes."
+      "description": "Each team gets their own writable copy. Data, apps, settings, all of it. Ready in 60 seconds. That includes whole Kubernetes clusters. You only pay for storage when something changes."
     }
   },
   "beforeAfter": {
@@ -302,12 +306,16 @@
       {
         "number": "< 1 min",
         "label": "Recovery Time"
+      },
+      {
+        "number": "46s",
+        "label": "Whole Kubernetes cluster fork"
       }
     ]
   },
   "integrations": {
     "title": "Works with what you already run",
-    "migrationMessage": "Rediacc bundles your apps, databases, and settings into one file. Move it anywhere. Already on Docker? You're most of the way there.",
+    "migrationMessage": "Rediacc bundles your apps, databases, and settings into one file. Move it anywhere. Already on Docker? You're most of the way there. Running Kubernetes? Fork or move the whole cluster the same way.",
     "items": [
       "Docker",
       "PostgreSQL",
@@ -320,11 +328,14 @@
       "S3",
       "btrfs",
       "LUKS",
-      "systemd"
+      "systemd",
+      "Kubernetes",
+      "Ceph",
+      "k3s"
     ]
   },
   "pricingPreview": {
-    "title": "Pricing You Can Defend in a Postmortem",
+    "title": "Clear pricing. No surprises.",
     "subtitle": "Free to start. Scale when you're ready.",
     "compareAll": "Compare all plans and features"
   },
@@ -337,36 +348,8 @@
   },
   "announcement": {
     "enabled": false,
-    "text": "Limited time: Design Partner Program. BUSINESS plan free for life.",
+    "text": "New: start Rediacc with a 14-day free trial.",
     "link": "/account/"
-  },
-  "testimonials": {
-    "title": "What Teams Say",
-    "subtitle": "How different roles experience Rediacc",
-    "items": [
-      {
-        "role": "Disaster Recovery Manager",
-        "name": "Marcus R.",
-        "company": "Financial Services",
-        "quote": "Our recovery plan said four hours. Reality was four days. Now we failover to a clone in under a minute."
-      },
-      {
-        "role": "Developer",
-        "name": "Sarah K.",
-        "quote": "I used to code on production because the sandbox was weeks behind. Now I get a fresh clone in 60 seconds."
-      },
-      {
-        "role": "CTO",
-        "name": "James L.",
-        "company": "SaaS Platform",
-        "quote": "We scaled from one database to twelve without buying new hardware. Rediacc clones share storage. We only pay for what changes."
-      },
-      {
-        "role": "DevOps Engineer",
-        "name": "Ayumi T.",
-        "quote": "We couldn't run CI against real data. Now every pipeline gets its own production clone, automatically."
-      }
-    ]
   },
   "getStarted": {
     "title": "Ready to Clone Your First Stack?",
@@ -466,13 +449,7 @@
       "eu": "Frankfurt, Germany",
       "us": "Virginia, USA",
       "asia": "Tokyo, Japan"
-    },
-    "channelEdge": "Edge",
-    "channelStable": "Stable",
-    "channelHintLabel": "About release channels",
-    "edgeHint": "Continuously deployed production. 2X free limits during soak period.",
-    "stableHint": "Reliable releases, promoted from edge after 7-day soak.",
-    "regionNote": "Region can't be changed after sign-up."
+    }
   },
   "contactModal": {
     "title": "Get in Touch",
@@ -628,103 +605,11 @@
       },
       "cta": {
         "title": "Try It Free",
-        "subtitle": "Install Rediacc in under 5 minutes. Community tier is free forever.",
+        "subtitle": "Install Rediacc in under 5 minutes. Start with a 14-day free trial.",
         "buttons": {
           "contact": "Get in Touch",
           "learnMore": "See How It Works"
         }
-      }
-    },
-    "designPartners": {
-      "meta": {
-        "title": "Design Partner Program | Get BUSINESS Free for Life",
-        "description": "Sign up free as a Design Partner and get our BUSINESS plan for life. We are looking for pioneers willing to share feedback while we build."
-      },
-      "hero": {
-        "eyebrow": "Limited Time",
-        "title": "Become a Design Partner. Get BUSINESS for life. Free.",
-        "subtitle": "We are pre-customer. We want pioneers willing to use the product and tell us when it breaks. In exchange, you get our BUSINESS plan free for as long as Rediacc exists.",
-        "primaryCta": "Claim my BUSINESS plan",
-        "secondaryCta": "See pricing",
-        "note": "No credit card. No application. We close the program without notice, so sign up today."
-      },
-      "why": {
-        "title": "Why we run this",
-        "items": [
-          {
-            "title": "Real teams, real systems",
-            "body": "We learn 100x more from one team running production than from a hundred trial signups. Design Partners are how we sharpen the product before the masses arrive."
-          },
-          {
-            "title": "Trade money for feedback",
-            "body": "We do not need your dollars yet. We need your scars, your edge cases, and your questions. Free in exchange for honesty is fair."
-          },
-          {
-            "title": "Permanent thanks",
-            "body": "Your lifetime BUSINESS plan never expires, never gets downgraded, and never asks for a credit card. That is the deal."
-          }
-        ]
-      },
-      "youGet": {
-        "title": "What you get",
-        "lede": "You get the full BUSINESS plan. Free. For as long as Rediacc exists.",
-        "items": [
-          "BUSINESS plan: 200 GB per repository, 10 user seats, 10,000 seat activations per month",
-          "On the early-access track: 2x limits (400 GB per repo, 20 user seats, 20,000 seat activations)",
-          "Unlimited repositories, users, and teams",
-          "Backup restores, dark mode, all 9 languages",
-          "Direct engineering support",
-          "Locked in for life. No expiry, no downgrade, no card on file."
-        ]
-      },
-      "ask": {
-        "title": "What we ask in return",
-        "lede": "Light-touch. The point is not to extract free labor; it is to keep us honest.",
-        "items": [
-          {
-            "title": "Tell us when it breaks",
-            "body": "Send a one-line email when something surprises you. Stack trace optional. Frustration encouraged."
-          },
-          {
-            "title": "Hop on a call now and then",
-            "body": "30 minutes every quarter or so. We listen, you talk. No demos, no upsells."
-          },
-          {
-            "title": "Be reachable",
-            "body": "If we ship something that affects you, we want to be able to ping you before it lands. Standard email is fine."
-          }
-        ]
-      },
-      "faq": {
-        "title": "Honest answers",
-        "items": [
-          {
-            "q": "Is it really lifetime?",
-            "a": "Yes. The grant lives in your subscription record with no expiry and no auto-downgrade. If we ever need to change that, we will email every Design Partner first. We have not done it. We have no plans to."
-          },
-          {
-            "q": "What if Rediacc shuts down?",
-            "a": "Then your account stops working, same as anyone else. The lifetime promise is the lifetime of the company. We are pre-customer; this is the honest risk you are taking."
-          },
-          {
-            "q": "Are there strings attached?",
-            "a": "No paywalls, no contracts, no auto-billing. The only ask is the light-touch feedback above. You can ignore us. We will not revoke your plan."
-          },
-          {
-            "q": "Can I switch plans later?",
-            "a": "Yes. You can stay on BUSINESS forever, or move to Enterprise if you outgrow the limits. Going up is normal billing; the lifetime perk applies only to BUSINESS."
-          },
-          {
-            "q": "How long is the program open?",
-            "a": "Until we close it. We will not announce the close ahead of time, so today is a fine day to sign up. Existing Design Partners keep their plan whatever happens."
-          }
-        ]
-      },
-      "finalCta": {
-        "title": "Ready to be a pioneer?",
-        "subtitle": "One signup. No credit card. Lifetime BUSINESS plan, locked in.",
-        "button": "Claim my BUSINESS plan",
-        "note": "We will email you to set up an onboarding call within a day or two."
       }
     },
     "partners": {
@@ -935,7 +820,7 @@
     "pricing": {
       "meta": {
         "title": "Pricing | Built for Real Operations",
-        "description": "Choose the right plan for your business. Free community tier included. No hidden fees.",
+        "description": "Choose the plan that fits your team. Every paid plan starts with a 14-day free trial. No hidden fees.",
         "keywords": "pricing, infrastructure automation, CI/CD pricing, DevOps plans, task execution"
       },
       "hero": {
@@ -945,12 +830,12 @@
       "plans": {
         "community": {
           "name": "Community",
-          "description": "Back up and restore up to 2 servers, free forever.",
+          "description": "The free fallback plan. Keeps one machine running after a trial or paid plan ends.",
           "features": [
             "Unlimited users & teams",
             "Unlimited repositories",
             "100 server setups per month (1 Floating license per setup)",
-            "2 Floating licenses",
+            "1 Floating license",
             "Backup restores",
             "Manual scheduling",
             "Community Slack access",
@@ -959,11 +844,11 @@
         },
         "professional": {
           "name": "Professional",
-          "description": "Professional automation and scheduling for growing teams",
+          "description": "Automation and scheduling for one production machine",
           "features": [
             "Everything in Community +",
-            "3 Floating licenses",
-            "Unlimited repositories",
+            "1 Floating license",
+            "100 GB per repository",
             "2,000+ server setups per month",
             "Automated scheduling",
             "Restore from any point in the last 24 hours",
@@ -975,13 +860,12 @@
         },
         "business": {
           "name": "Business",
-          "description": "Expert setup, backups across multiple regions, and a 4-hour restore promise.",
+          "description": "Larger repositories, advanced management, and a 4-hour restore promise.",
           "features": [
             "Everything in Professional +",
-            "10 Floating licenses",
-            "Unlimited repositories",
+            "1 Floating license",
+            "500 GB per repository",
             "5,000+ server setups per month",
-            "Implementation support included (Launch Offer)",
             "Geo-redundant storage (3 regions)",
             "Continuous data protection",
             "4-hour restore SLA",
@@ -992,10 +876,10 @@
         },
         "enterprise": {
           "name": "Enterprise",
-          "description": "Dedicated support and custom terms for large, complex environments.",
+          "description": "Multi-machine deployments, sold through partners. Dedicated support and custom terms.",
           "features": [
             "Everything in Business +",
-            "25+ Floating licenses",
+            "Multi-machine floating licenses",
             "Unlimited repositories",
             "15,000+ server setups per month",
             "Custom SLA with guaranteed restore times",
@@ -1076,20 +960,24 @@
         "heading": "Frequently Asked Questions",
         "items": [
           {
-            "question": "Is there a free plan?",
-            "answer": "Yes. The Community plan is free. It covers up to 2 servers, 100 server setups per month, and backup restores. No credit card needed."
+            "question": "Is there a free trial?",
+            "answer": "Yes. Professional and Business both start with a 14-day free trial. The first charge only lands when the trial ends, so cancel before then and you pay nothing. If you cancel, your account falls back to the free Community plan, which keeps one machine running with 10 GB per repository and 100 setups a month."
+          },
+          {
+            "question": "Do I need a credit card to start?",
+            "answer": "Yes. Both paid plans ask for a card at signup so the trial can roll into a subscription. You are not charged until the 14-day trial ends, and you can cancel any time before then."
           },
           {
             "question": "Can I upgrade or downgrade my plan?",
-            "answer": "Yes, you can change your plan at any time. Upgrades take effect immediately, and downgrades will apply at the start of your next billing cycle. No penalties or fees."
+            "answer": "Yes, you can change your plan at any time. Upgrades take effect immediately, and downgrades apply at the start of your next billing cycle. No penalties or fees."
           },
           {
             "question": "Do you offer annual billing?",
-            "answer": "Yes. Annual billing saves 17%, equivalent to 2 months free. All paid plans are available with monthly or annual billing."
+            "answer": "Yes. Annual billing saves 15% compared to paying monthly. Both paid plans are available with monthly or annual billing."
           },
           {
             "question": "What payment methods do you accept?",
-            "answer": "We accept all major credit cards (Visa, MasterCard, American Express) and support invoice-based billing for annual Enterprise plans."
+            "answer": "We accept all major credit cards (Visa, MasterCard, American Express) and support invoice-based billing for Enterprise plans."
           },
           {
             "question": "How are machines counted?",
@@ -1100,27 +988,31 @@
             "answer": "Yes. Rediacc runs on any Linux server with btrfs (an open-source storage system built into Linux) support. Physical servers, virtual machines, and cloud servers (AWS, Azure, GCP, Hetzner, OVH, etc.) are all supported."
           },
           {
-            "question": "What is the difference between Community and Professional?",
-            "answer": "The free plan covers 2 machines. You get server copies on demand, backup restores, and community support. The paid plan covers 5 machines. It adds timed backups, 24-hour backup records, faster support, and API access."
+            "question": "How many machines does each plan cover?",
+            "answer": "Every self-serve plan includes one machine (one Floating license). If you need to run Rediacc on more than one machine, that is an Enterprise setup sold through our partners. Get in touch and we'll size it with you."
           },
           {
-            "question": "What does Enterprise pricing include?",
-            "answer": "Look, Enterprise is built for your setup. You choose the terms. You get your own server space, a custom recovery promise, and 24/7/365 support. Plus safety reviews and regular drills."
+            "question": "What is the difference between Community and Professional?",
+            "answer": "Community is the free fallback plan: one machine, 10 GB per repository, 100 setups a month, and community support. Professional is a paid plan with a 14-day free trial: one machine, 100 GB per repository, 2,000+ setups a month, automated scheduling, 24-hour restore history, faster support, and API access."
+          },
+          {
+            "question": "What does Enterprise include?",
+            "answer": "Enterprise is built for your setup and sold through our partners. You choose the terms, run across multiple machines, and get your own server space, a custom recovery promise, and 24/7/365 support. Plus security reviews and regular drills."
           },
           {
             "question": "Do you offer discounts for education or nonprofits?",
             "answer": "Yes. Email us. Schools and nonprofits get special pricing."
           },
           {
-            "question": "Is there a money-back guarantee?",
-            "answer": "Yes. All paid plans include a 14-day money-back guarantee. If Rediacc doesn't meet your needs, we'll issue a full refund with no questions asked."
+            "question": "What happens if I cancel?",
+            "answer": "Cancel during the 14-day trial and you are never charged. Cancel a paid plan later and you keep its features until the end of the billing period, then your account falls back to the free Community plan. Your repositories keep running the whole time."
           }
         ]
       },
       "edgeChannel": {
         "heading": "Try the Edge Channel",
-        "description": "2x the Community limits. Latest features. No cost. No card needed.",
-        "cta": "Get Started Free"
+        "description": "The edge channel ships our newest features first and runs with double the limits of the stable channel.",
+        "cta": "Explore the edge channel"
       },
       "roiCta": {
         "heading": "Not sure which plan fits?",
@@ -1128,9 +1020,9 @@
       },
       "finalCta": {
         "heading": "Protect Your Infrastructure",
-        "description": "Install in 5 minutes. Free to start.",
+        "description": "Install in 5 minutes. Start your 14-day free trial.",
         "buttons": {
-          "startFree": "Start Free",
+          "startFree": "Start free trial",
           "talkToSales": "Talk to Sales"
         }
       },
@@ -1160,7 +1052,7 @@
           },
           {
             "title": "Unlimited machines. Pay only when adding new ones.",
-            "description": "A Floating license is only used when you create or copy a server. Your normal work never takes up a license. Licenses free up after 5 hours with no action. A 5-license plan works for dozens of machines. No per-machine fees, ever."
+            "description": "A Floating license is only used when you create or copy a server. Your normal work never takes up a license. Licenses free up after 5 hours with no action, so a single Floating license still covers many machines over time. No per-machine fees, ever."
           },
           {
             "title": "40-day buffer when your server hardware changes.",
@@ -1193,47 +1085,39 @@
         "monthOrYear": "per month or {{price}} per year",
         "foreverFree": "Forever free",
         "edgeLimitsNote": "Limits shown for the edge channel. The stable channel has half these limits.",
-        "designPartner": {
-          "badge": "FREE for Design Partners",
-          "price": "FREE",
-          "period": "Lifetime · No card required",
-          "cta": "Claim Design Partner"
-        },
+        "startTrial": "Start 14-day free trial",
         "taxDisclaimer": "All prices are in USD and exclude applicable taxes, levies, and duties.",
         "cta": {
           "community": {
             "primary": "Try Rediacc",
             "secondary": "See What's Included",
-            "note": "No credit card required"
+            "note": "Free fallback plan"
           },
           "professional": {
-            "primary": "Start Professional",
-            "secondary": "Contact Sales",
-            "guarantee": "Money Back Guarantee"
+            "primary": "Start free trial",
+            "secondary": "Contact Sales"
           },
           "business": {
-            "primary": "Book Setup Call",
+            "primary": "Start free trial",
             "secondary": "Contact Sales",
-            "guarantee": "Money Back Guarantee",
             "valueNote": "Includes $9,999 setup credit",
             "launchBadge": "Limited Launch Offer"
           },
           "enterprise": {
-            "primary": "Book Demo",
+            "primary": "Contact sales",
             "secondary": "Contact Sales",
-            "guarantee": "Money Back Guarantee",
             "subtext": "Custom SLA · Dedicated support"
           }
         },
         "guarantees": {
-          "moneyBack": "14-Day Money-Back Guarantee",
+          "freeTrial": "14-day free trial",
           "cancelAnytime": "Cancel anytime",
           "noContracts": "No long-term contracts"
         },
         "billingToggle": {
           "monthly": "Monthly",
           "annual": "Annual",
-          "annualSavings": "Save 17%, get 2 months free",
+          "annualSavings": "Save 15%",
           "ariaLabel": "Billing period"
         },
         "contactUs": "Contact us",
@@ -1272,28 +1156,28 @@
             "jobsPerMonth": "100",
             "repoSize": "10 GB",
             "repositories": "Unlimited",
-            "floatingLicenses": "2",
+            "floatingLicenses": "1",
             "usersTeams": "Unlimited"
           },
           "professional": {
             "jobsPerMonth": "2,000+",
-            "repoSize": "50 GB",
+            "repoSize": "100 GB",
             "repositories": "Unlimited",
-            "floatingLicenses": "3",
+            "floatingLicenses": "1",
             "usersTeams": "Unlimited"
           },
           "business": {
             "jobsPerMonth": "5,000+",
-            "repoSize": "200 GB",
+            "repoSize": "500 GB",
             "repositories": "Unlimited",
-            "floatingLicenses": "10",
+            "floatingLicenses": "1",
             "usersTeams": "Unlimited"
           },
           "enterprise": {
             "jobsPerMonth": "15,000+",
             "repoSize": "1 TB+",
             "repositories": "Unlimited",
-            "floatingLicenses": "25+",
+            "floatingLicenses": "Custom",
             "usersTeams": "Unlimited"
           }
         }
@@ -1307,10 +1191,10 @@
             "rows": [
               {
                 "label": "Floating Licenses (Machines)",
-                "community": "2",
-                "professional": "3",
-                "business": "10",
-                "enterprise": "25+"
+                "community": "1",
+                "professional": "1",
+                "business": "1",
+                "enterprise": "Custom"
               },
               {
                 "label": "Server setups per month (1 Floating license each)",
@@ -1322,8 +1206,8 @@
               {
                 "label": "Repository size",
                 "community": "10 GB",
-                "professional": "50 GB",
-                "business": "200 GB",
+                "professional": "100 GB",
+                "business": "500 GB",
                 "enterprise": "1 TB+"
               }
             ]
@@ -1658,11 +1542,6 @@
         "homepage": "Go to Homepage",
         "contactSupport": "Contact Support"
       },
-      "designPartner": {
-        "title": "Design Partner Program",
-        "body": "Get our BUSINESS plan free for life. No credit card.",
-        "cta": "Claim Design Partner"
-      },
       "help": {
         "title": "Need Help?",
         "description": "If you believe this is an error or you were expecting to find content here, please contact our support team. We're here to help you find what you're looking for.",
@@ -1729,7 +1608,7 @@
             "productTelemetry": {
               "title": "2.5 Product Telemetry Data",
               "content": [
-                "Our software products (CLI and Bridge) collect anonymous usage telemetry to improve product quality, performance, and reliability. Telemetry data includes technical information such as application version, operating system, performance metrics, feature usage patterns, and error reports. Personal identifiers are anonymized before collection: email addresses are reduced to domain only, user IDs are hashed and truncated, and passwords or secrets are never collected.",
+                "Our software products (CLI and Renet Agent) collect anonymous usage telemetry to improve product quality, performance, and reliability. Telemetry data includes technical information such as application version, operating system, performance metrics, feature usage patterns, and error reports. Personal identifiers are anonymized before collection: email addresses are reduced to domain only, user IDs are hashed and truncated, and passwords or secrets are never collected.",
                 "Telemetry is enabled by default in our CLI, and can be disabled in all products. For complete details on what each product collects and how to opt out, see our <a href=\"telemetry-policy\">Telemetry Policy</a>."
               ]
             },
@@ -1854,14 +1733,14 @@
           "items": [
             "<strong>\"Account\"</strong> means the user account you create to access the Platform and manage your Subscription.",
             "<strong>\"Authorized User\"</strong> means any individual granted access to the Services under your Account, including team members, employees, and contractors acting on your behalf.",
-            "<strong>\"Bridge\" (Renet)</strong> means the Rediacc server-side agent that runs on your Machines to manage encrypted storage, container orchestration, and infrastructure operations.",
+            "<strong>\"Renet Agent\"</strong> means the Rediacc server-side agent that runs on your Machines to manage encrypted storage, container orchestration, and infrastructure operations.",
             "<strong>\"CLI\"</strong> means the Rediacc command-line interface (<code>rdc</code>) installed on your workstation.",
             "<strong>\"Configuration\"</strong> means the local configuration files stored on your workstation that contain Machine connection details, encryption credentials, and other operational settings.",
             "<strong>\"Customer Data\"</strong> means any data, content, files, containers, configurations, and applications you deploy, store, or process on your Machines using the Services. Customer Data does not include Account information or Telemetry Data.",
-            "<strong>\"Machine\"</strong> means a server or virtual machine that you own or control on which the Bridge is installed.",
-            "<strong>\"On-Premise Software\"</strong> means the software components installed on your infrastructure, including the CLI and the Bridge.",
+            "<strong>\"Machine\"</strong> means a server or virtual machine that you own or control on which the Renet Agent is installed.",
+            "<strong>\"On-Premise Software\"</strong> means the software components installed on your infrastructure, including the CLI and the Renet Agent.",
             "<strong>\"Platform\"</strong> means the Rediacc account portal and any cloud-hosted services provided by Rediacc.",
-            "<strong>\"Repository\"</strong> means an isolated application deployment managed by the Bridge, consisting of an encrypted disk image, a dedicated Docker daemon, and associated containers.",
+            "<strong>\"Repository\"</strong> means an isolated application deployment managed by the Renet Agent, consisting of an encrypted disk image, a dedicated Docker daemon, and associated containers.",
             "<strong>\"Services\"</strong> means, collectively, the On-Premise Software, the Platform, documentation, and any related professional services provided by Rediacc.",
             "<strong>\"Subscription\"</strong> means the plan tier you have selected (Community, Professional, Business, or Enterprise), which determines your access to features and resource limits.",
             "<strong>\"Telemetry Data\"</strong> means anonymized usage data collected by the Services as described in our <a href=\"telemetry-policy\">Telemetry Policy</a>."
@@ -1871,7 +1750,7 @@
           "id": "acceptance",
           "title": "2. Acceptance of Terms",
           "content": [
-            "By accessing or using any part of the Services — including downloading the CLI, installing the Bridge on a Machine, creating an Account, or using the Platform — you agree to be bound by these Terms of Service (\"Terms\"). If you are using the Services on behalf of an organization, you represent and warrant that you have the authority to bind that organization to these Terms, and references to \"you\" or \"Customer\" include that organization.",
+            "By accessing or using any part of the Services — including downloading the CLI, installing the Renet Agent on a Machine, creating an Account, or using the Platform — you agree to be bound by these Terms of Service (\"Terms\"). If you are using the Services on behalf of an organization, you represent and warrant that you have the authority to bind that organization to these Terms, and references to \"you\" or \"Customer\" include that organization.",
             "If you do not agree to these Terms, you must not access or use the Services. These Terms constitute a legally binding agreement between you and Rediacc OÜ (registry code 17363830), a company registered in Estonia with its office at Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estonia (\"Rediacc\", \"we\", \"us\", or \"our\")."
           ]
         },
@@ -1882,7 +1761,7 @@
             "Rediacc provides an infrastructure automation platform for managing self-hosted server environments. The Services consist of:"
           ],
           "items": [
-            "<strong>On-Premise Software:</strong> The CLI (<code>rdc</code>) and the Bridge (Renet), installed on your workstations and Machines to orchestrate encrypted, isolated container deployments",
+            "<strong>On-Premise Software:</strong> The CLI (<code>rdc</code>) and the Renet Agent, installed on your workstations and Machines to orchestrate encrypted, isolated container deployments",
             "<strong>Platform:</strong> The account portal for subscription management, team collaboration, and (where available) cloud-based infrastructure management",
             "<strong>Professional Services:</strong> Optional consulting, migration assistance, and implementation support, subject to separate service agreements"
           ],
@@ -1911,16 +1790,17 @@
           "title": "5. Subscriptions, Billing, and Payment",
           "content": ["Rediacc offers multiple Subscription tiers:"],
           "items": [
-            "<strong>Community</strong> (free) — Limited to 2 Machine activations, core features, community support",
-            "<strong>Professional</strong> — Up to 5 Machine activations, audit logging, priority support, custom branding",
-            "<strong>Business</strong> — Up to 20 Machine activations, distributed storage, advanced analytics, dedicated success manager",
-            "<strong>Enterprise</strong> — Up to 50 Machine activations, dedicated infrastructure, custom integrations, 24/7 support"
+            "<strong>Community</strong> (free) — 1 Machine activation, core features, community support. This is the fallback plan your account returns to after a trial or paid Subscription ends.",
+            "<strong>Professional</strong> — 1 Machine activation, audit logging, priority support, custom branding",
+            "<strong>Business</strong> — 1 Machine activation, distributed storage, advanced analytics, dedicated success manager",
+            "<strong>Enterprise</strong> — up to 25 Machine activations, dedicated infrastructure, custom integrations, 24/7 support. Enterprise is sold through our partners."
           ],
           "subsections": {
             "billing": {
               "title": "5.1 Billing",
               "content": [
-                "Paid Subscriptions are billed monthly or annually in advance. Annual billing is charged at a rate equivalent to ten (10) months of the monthly price. All fees are stated in US dollars. Payment is processed by our third-party payment processor (Stripe); we do not store full payment card details.",
+                "Paid Subscriptions (Professional and Business) begin with a 14-day free trial. You provide a payment method at signup, and the first charge is placed when the trial ends. You may cancel before the trial ends at no charge. If you cancel during the trial, cancel a paid Subscription later, or a payment fails, your account returns to the free Community tier.",
+                "Paid Subscriptions are billed monthly or annually in advance. Annual billing is offered at a 15% discount off twelve (12) months of the monthly price. All fees are stated in US dollars. Payment is processed by our third-party payment processor (Stripe); we do not store full payment card details.",
                 "We reserve the right to change our pricing with thirty (30) days' notice. Price changes will not affect your current billing cycle. If you do not agree to a price change, you may cancel your Subscription before the next billing cycle."
               ]
             },
@@ -1948,20 +1828,20 @@
           "id": "on-premise-license",
           "title": "6. On-Premise Software License",
           "content": [
-            "Subject to these Terms and your active Subscription, Rediacc grants you a limited, non-exclusive, non-sublicensable, non-transferable, revocable license to install and use the On-Premise Software (CLI and Bridge) solely for your internal business purposes during your Subscription term."
+            "Subject to these Terms and your active Subscription, Rediacc grants you a limited, non-exclusive, non-sublicensable, non-transferable, revocable license to install and use the On-Premise Software (CLI and Renet Agent) solely for your internal business purposes during your Subscription term."
           ],
           "subsections": {
             "installation": {
               "title": "6.1 Installation and Machine Access",
               "content": [
-                "The Bridge operates with elevated (root) privileges on your Machines to manage encrypted volumes, container runtimes, and system services. You are solely responsible for the security of your Machines, including SSH access, firewall configuration, operating system updates, and physical security. Rediacc does not remotely access your Machines unless explicitly requested by you for support purposes."
+                "The Renet Agent operates with elevated (root) privileges on your Machines to manage encrypted volumes, container runtimes, and system services. You are solely responsible for the security of your Machines, including SSH access, firewall configuration, operating system updates, and physical security. Rediacc does not remotely access your Machines unless explicitly requested by you for support purposes."
               ]
             },
             "restrictions": {
               "title": "6.2 Restrictions",
               "content": ["You shall not:"],
               "items": [
-                "Reverse engineer, decompile, disassemble, or otherwise attempt to derive the source code of the Bridge binary or any non-open-source component of the On-Premise Software",
+                "Reverse engineer, decompile, disassemble, or otherwise attempt to derive the source code of the Renet Agent binary or any non-open-source component of the On-Premise Software",
                 "Redistribute, sublicense, rent, lease, or lend the On-Premise Software to any third party",
                 "Remove, alter, or obscure any proprietary notices, labels, or marks on the On-Premise Software",
                 "Use the On-Premise Software to build a competing product or service",
@@ -2180,7 +2060,7 @@
             "<strong>Fingerprinting</strong> — We do not use browser or device fingerprinting techniques"
           ],
           "content2": [
-            "Note: This Cookie Policy applies to the Rediacc marketing website. Our software products (CLI and Bridge) collect separate usage telemetry that does not use cookies. For details on product telemetry, see our <a href=\"telemetry-policy\">Telemetry Policy</a>."
+            "Note: This Cookie Policy applies to the Rediacc marketing website. Our software products (CLI and Renet Agent) collect separate usage telemetry that does not use cookies. For details on product telemetry, see our <a href=\"telemetry-policy\">Telemetry Policy</a>."
           ]
         },
         "analytics": {
@@ -2262,17 +2142,17 @@
             "freeTier": {
               "title": "2.1 Free Tier",
               "content": [
-                "The Community tier is free forever and does not require payment information. No refund applies as there is no charge."
+                "The Community plan has no charge and does not require payment information, so no refund applies. It is the fallback plan your account returns to after a trial or paid subscription ends."
               ]
             },
             "paidTiers": {
               "title": "2.2 Paid Tiers",
               "content": [
-                "Paid subscriptions (Team, Business, and Enterprise tiers, ranging from $349 to $2,100+/month) are billed in advance on a monthly or annual basis. Because these services are delivered digitally and resources are provisioned immediately upon payment, subscriptions are generally non-refundable.",
+                "Paid subscriptions (Professional at $49/month or $499/year, and Business at $59/month or $599/year) are billed in advance on a monthly or annual basis. Enterprise plans are arranged separately through our partners. Because these services are delivered digitally and resources are provisioned when a paid subscription begins, subscriptions are generally non-refundable.",
                 "However, we offer refunds in the following circumstances:"
               ],
               "items": [
-                "<strong>First 14 days:</strong> If you are a new subscriber and request a refund within 14 days of your first payment, we will issue a full refund. This applies to your first subscription only.",
+                "<strong>14-day free trial:</strong> Professional and Business begin with a 14-day free trial. Cancel before the trial ends and you are never charged, so there is nothing to refund.",
                 "<strong>Service outage:</strong> If the platform experiences extended downtime (more than 48 consecutive hours) not caused by scheduled maintenance, you may request a pro-rated credit for the affected period.",
                 "<strong>Billing errors:</strong> If you were charged incorrectly (e.g., duplicate charges, wrong tier), we will issue a full refund for the erroneous charge."
               ]
@@ -2280,7 +2160,7 @@
             "annualSubscriptions": {
               "title": "2.3 Annual Subscriptions",
               "content": [
-                "Annual subscriptions may be cancelled at any time. Upon cancellation, you will retain access until the end of your current billing period. No partial refunds are issued for the remaining months of an annual subscription, except within the 14-day window for first-time subscribers."
+                "Annual subscriptions may be cancelled at any time. Upon cancellation, you keep access until the end of your current billing period, then your account returns to the free Community plan. No partial refunds are issued for the remaining months of an annual subscription."
               ]
             }
           }
@@ -2325,7 +2205,7 @@
           "title": "6. Non-Refundable Items",
           "content": ["The following are not eligible for refunds:"],
           "items": [
-            "Subscriptions cancelled after the 14-day new subscriber window",
+            "Billing periods already charged after the free trial has ended",
             "Usage-based charges (e.g., overage fees) for resources already consumed",
             "Professional services hours that have already been delivered and accepted",
             "Account reactivation fees",
@@ -2351,7 +2231,7 @@
     "telemetryPolicy": {
       "meta": {
         "title": "Telemetry Policy - Data Collection | Rediacc",
-        "description": "Details on what telemetry data Rediacc products collect, why, how it is processed, and how to opt out. Covers the CLI and Bridge.",
+        "description": "Details on what telemetry data Rediacc products collect, why, how it is processed, and how to opt out. Covers the CLI and Renet Agent.",
         "keywords": "telemetry policy, data collection, OpenTelemetry, opt-out, privacy, GDPR, Rediacc"
       },
       "hero": {
@@ -2367,7 +2247,7 @@
           "title": "1. Introduction",
           "content": [
             "Rediacc software products collect anonymized usage telemetry to help us improve product quality, diagnose issues, and understand how our tools are used. This Telemetry Policy describes exactly what data is collected, why, how it is processed, and how you can opt out.",
-            "This policy covers two products: the <strong>Rediacc CLI</strong> and the <strong>Rediacc Bridge (Renet)</strong>. Website analytics (Plausible) are covered separately in our <a href=\"privacy-policy\">Privacy Policy</a> and <a href=\"cookie-policy\">Cookie Policy</a>."
+            "This policy covers two products: the <strong>Rediacc CLI</strong> and the <strong>Rediacc Renet Agent</strong>. Website analytics (Plausible) are covered separately in our <a href=\"privacy-policy\">Privacy Policy</a> and <a href=\"cookie-policy\">Cookie Policy</a>."
           ]
         },
         "principles": {
@@ -2387,7 +2267,7 @@
           "title": "3. Legal Basis for Collection",
           "content": [
             "Under the EU General Data Protection Regulation (GDPR) and the ePrivacy Directive, our legal basis for telemetry collection depends on the product context:",
-            "For the <strong>CLI and Bridge</strong> (installed on your infrastructure): telemetry is collected under <strong>legitimate interest</strong> (GDPR Art. 6(1)(f)) with clear opt-out mechanisms provided. You can disable telemetry before any data is sent.",
+            "For the <strong>CLI and Renet Agent</strong> (installed on your infrastructure): telemetry is collected under <strong>legitimate interest</strong> (GDPR Art. 6(1)(f)) with clear opt-out mechanisms provided. You can disable telemetry before any data is sent.",
             "For users in jurisdictions requiring explicit consent (e.g., South Korea under PIPA), telemetry should be opted into explicitly through the product configuration before any data is transmitted."
           ]
         },
@@ -2426,27 +2306,27 @@
         },
         "bridge": {
           "id": "bridge",
-          "title": "5. Bridge (Renet) Telemetry",
+          "title": "5. Renet Agent Telemetry",
           "content": [
-            "The Rediacc Bridge (Renet) uses OpenTelemetry with gzip-compressed OTLP export. Telemetry is transmitted to <code>rediacc.com</code> in batches (maximum 10 spans, flushed every 5 seconds)."
+            "The Rediacc Renet Agent uses OpenTelemetry with gzip-compressed OTLP export. Telemetry is transmitted to <code>rediacc.com</code> in batches (maximum 10 spans, flushed every 5 seconds)."
           ],
           "subsections": {
             "bridgeDataCollected": {
               "title": "5.1 Data Collected",
-              "content": ["The Bridge collects the following categories of data:"],
+              "content": ["The Renet Agent collects the following categories of data:"],
               "items": [
                 "<strong>Queue operations:</strong> task ID, priority level, operation type, execution duration, success or failure status",
                 "<strong>SSH operations:</strong> target host, username, port number, exit code, execution duration (no command content or output is collected)",
                 "<strong>API calls:</strong> procedure name, request duration",
                 "<strong>Vault operations:</strong> operation type and duration (no secret values, keys, or vault contents are collected)",
-                "<strong>Bridge lifecycle:</strong> startup, shutdown, and reconnection events",
+                "<strong>Renet Agent lifecycle:</strong> startup, shutdown, and reconnection events",
                 "<strong>Performance profiling:</strong> CPU usage samples and memory allocation profiles, collected automatically and sent to our profiling endpoint"
               ]
             },
             "bridgeOptOut": {
               "title": "5.2 How to Opt Out",
               "content": [
-                "Set the environment variable <code>REDIACC_TELEMETRY_DISABLED=1</code> to disable Bridge telemetry (including profiling)."
+                "Set the environment variable <code>REDIACC_TELEMETRY_DISABLED=1</code> to disable Renet Agent telemetry (including profiling)."
               ]
             }
           }
@@ -2458,7 +2338,7 @@
             "All telemetry data is transmitted over encrypted connections (TLS 1.2+) to our telemetry endpoint. Data is processed and stored as follows:"
           ],
           "items": [
-            "<strong>Encryption:</strong> All data is encrypted in transit using TLS. The Bridge additionally uses gzip compression.",
+            "<strong>Encryption:</strong> All data is encrypted in transit using TLS. The Renet Agent additionally uses gzip compression.",
             "<strong>Retention:</strong> Raw telemetry traces are stored for up to 90 days for debugging and incident investigation. Aggregated metrics are retained for up to 12 months and then deleted.",
             "<strong>Access:</strong> Telemetry data is accessible only to Rediacc engineering and operations staff on a need-to-know basis.",
             "<strong>No third-party sharing:</strong> Telemetry data is not shared with, sold to, or accessible by any third party.",
@@ -2525,12 +2405,12 @@
       },
       "hero": {
         "title": "Built for Real Recovery Operations",
-        "subtitle": "Most teams start on the free tier and stay there. When hours offline would cost the business money, step up. Same product, no switching."
+        "subtitle": "Start with a 14-day free trial and move up only when hours offline would cost the business money. Same product, no switching."
       },
       "plans": {
         "community": {
           "name": "Community",
-          "description": "Production-ready disaster recovery from day one. Free forever.",
+          "description": "Production-ready disaster recovery from day one. The free fallback plan.",
           "features": [
             "Unlimited users and teams. Collaborate freely.",
             "Restore your latest backup in minutes after any failure.",
@@ -2550,7 +2430,7 @@
             "Everything in Community +",
             "Automated backup scheduling. Set it and forget it.",
             "Point-in-time recovery (24h)",
-            "Unlimited apps, 50 GB each",
+            "Unlimited apps, 100 GB each",
             "24-hour job timeout, 3 active/2 reserved jobs",
             "30-day audit log retention",
             "Email + chat support",
@@ -2568,7 +2448,7 @@
             "Storage across 3 regions. One failure won't stop you.",
             "Continuous data protection. Near-zero data loss.",
             "4-hour recovery SLA (guaranteed)",
-            "Unlimited apps, 200 GB each",
+            "Unlimited apps, 500 GB each",
             "7 active/3 reserved jobs",
             "90-day audit log retention",
             "Role-based access control and full audit logs",
@@ -2602,7 +2482,7 @@
       },
       "strategy": {
         "heading": "Built for every stage",
-        "copy": "Look: start where you are. Most teams stay there longer than they expect. Move up only when slow recovery would actually cost the business something. Same product throughout.",
+        "copy": "Look: start where you are. Most teams stay there longer than they expect. Move up only when slow recovery would actually cost the business something. Same product throughout. Run Kubernetes? Whole clusters move the same way, with a short measured cutover.",
         "distribution": [
           "Professional to Business: Your backups are stored in a second location. Every change is saved the moment it happens. You get a guaranteed 4-hour window to be back online. A dedicated support contact is included.",
           "Business to Enterprise: You choose how fast you need to be back online. That window runs from 15 to 60 min. Recovery happens in a completely separate environment your live systems cannot touch, and hands-on support is there when it matters most."
@@ -2626,7 +2506,7 @@
           },
           {
             "question": "Is there a free trial available?",
-            "answer": "Our Community plan is free forever. For paid plans, reach out to our sales team about trial options."
+            "answer": "Yes. Professional and Business both start with a 14-day free trial. You add a card at signup and are only charged when the trial ends. Cancel before then and you pay nothing; your account falls back to the free Community plan."
           },
           {
             "question": "What's included in support?",
@@ -2650,7 +2530,7 @@
         "heading": "Start Recovering Faster",
         "description": "Install Rediacc and run your first backup in under 10 minutes.",
         "buttons": {
-          "startFree": "Start Free",
+          "startFree": "Start free trial",
           "talkToSales": "Talk to Sales"
         }
       },
@@ -2667,6 +2547,8 @@
         "getStarted": "Install Now",
         "learnMore": "Compare Plans",
         "contactSales": "Contact Sales",
+        "contactUs": "Contact us",
+        "contactUsSub": "Custom limits & terms",
         "startingAt": "*Starting at",
         "keyBenefits": "Key Benefits",
         "monthOrYear": "per month or {{price}} per year",
@@ -2674,31 +2556,28 @@
         "taxDisclaimer": "All prices are in USD and exclude applicable taxes, levies, and duties.",
         "cta": {
           "community": {
-            "primary": "Start Free",
+            "primary": "Try Rediacc",
             "secondary": "See What's Included",
-            "note": "No credit card required"
+            "note": "Free fallback plan"
           },
           "professional": {
-            "primary": "Start Professional",
-            "secondary": "Contact Sales",
-            "guarantee": "Money Back Guarantee"
+            "primary": "Start free trial",
+            "secondary": "Contact Sales"
           },
           "business": {
-            "primary": "Book Setup Call",
+            "primary": "Start free trial",
             "secondary": "Contact Sales",
-            "guarantee": "Money Back Guarantee",
             "valueNote": "Includes $9,999 setup credit",
             "launchBadge": "Limited Launch Offer"
           },
           "enterprise": {
             "primary": "Book Demo",
             "secondary": "Contact Sales",
-            "guarantee": "Money Back Guarantee",
             "subtext": "Custom SLA · Dedicated support"
           }
         },
         "guarantees": {
-          "moneyBack": "14-Day Money Payback Guarantee",
+          "freeTrial": "14-day free trial",
           "cancelAnytime": "Cancel anytime",
           "noContracts": "No long-term contracts"
         }
@@ -2803,7 +2682,7 @@
           "title": "Clone production in 60 seconds",
           "subtitle": "Make an exact copy of production in seconds. The app, the database, and the settings. No tickets. No waiting.",
           "differentiator": "Every developer tool clones your code. None clone your data. Rediacc clones both.",
-          "primaryCta": "Start Free with Community",
+          "primaryCta": "Start free trial",
           "secondaryCta": "See cloning in action"
         },
         "terminal": {
@@ -3078,6 +2957,10 @@
             {
               "traditional": "10 clones = 10x storage (2.4 TB)",
               "rediacc": "10 clones share storage (~12 GB extra)"
+            },
+            {
+              "traditional": "Staging a Kubernetes app means building a second cluster",
+              "rediacc": "A namespace forks in 1 to 5 seconds, like any repo"
             }
           ]
         },
@@ -3154,9 +3037,9 @@
         },
         "bottomCta": {
           "title": "Give your developers their time back",
-          "description": "Start with the free Community edition. Clone up to 10 apps at no cost. No credit card.",
-          "primaryCta": "Start Free with Community",
-          "tierBadge": "Free forever for up to 10 apps",
+          "description": "Clone your first app in seconds. Start your 14-day free trial.",
+          "primaryCta": "Start free trial",
+          "tierBadge": "14-day free trial · Cancel anytime",
           "command": "rdc repo fork production my-first-clone -m primary"
         },
         "techStrip": {
@@ -3220,6 +3103,12 @@
               "title": "AI Pentesting",
               "description": "Clone production. Let AI attack it.",
               "slug": "ai-pentesting"
+            },
+            {
+              "category": "multi-cloud",
+              "title": "Kubernetes Cluster Mobility",
+              "description": "Fork or move a running cluster, data included",
+              "slug": "kubernetes-cluster-mobility"
             }
           ]
         },
@@ -3301,7 +3190,7 @@
           "title": "Stop paying for idle environments",
           "subtitle": "Spin up a test server when you need it. Kill it when you're done. You pay for what you use, not for servers sitting idle.",
           "differentiator": "Every cloud vendor bills you for servers running around the clock. Their copies each need full disk space. Ours share it, so a copy costs almost nothing.",
-          "primaryCta": "Start Free",
+          "primaryCta": "Start free trial",
           "secondaryCta": "See cost comparison"
         },
         "terminal": {
@@ -3567,6 +3456,10 @@
             {
               "traditional": "15–30 minutes to set up each new environment",
               "rediacc": "52 seconds to create an exact copy of production"
+            },
+            {
+              "traditional": "A staging Kubernetes cluster: a second set of nodes, paid 24/7",
+              "rediacc": "Fork the cluster for the test, delete it after. Copies share storage."
             }
           ]
         },
@@ -3643,9 +3536,9 @@
         },
         "bottomCta": {
           "title": "Cut your infrastructure costs today",
-          "description": "Start with the free Community edition. On-demand copies are included. No credit card needed.",
-          "primaryCta": "Start Free",
-          "tierBadge": "Free for up to 5 repositories · No credit card required",
+          "description": "On-demand copies are built in. Start your 14-day free trial.",
+          "primaryCta": "Start free trial",
+          "tierBadge": "14-day free trial · Cancel anytime",
           "command": "rdc repo fork production -m primary --tag dev-loadtest"
         },
         "techStrip": {
@@ -3703,6 +3596,12 @@
               "title": "AI Pentesting",
               "description": "Clone production. Let AI attack it.",
               "slug": "ai-pentesting"
+            },
+            {
+              "category": "multi-cloud",
+              "title": "Kubernetes Cluster Mobility",
+              "description": "Fork or move a running cluster, data included",
+              "slug": "kubernetes-cluster-mobility"
             }
           ]
         },
@@ -3760,7 +3659,7 @@
           "title": "Dev environments that match production. Exactly.",
           "subtitle": "You know the line: it works on my machine. Here, every dev setup is an exact copy of production.",
           "differentiator": "Every developer tool clones your code. None clone your data. Rediacc clones both.",
-          "primaryCta": "Start Free",
+          "primaryCta": "Start free trial",
           "secondaryCta": "See how parity works →"
         },
         "terminal": {
@@ -4037,6 +3936,10 @@
             {
               "traditional": "Days to set up, with no proof it matches",
               "rediacc": "47 seconds, with an automatic parity check (--verify-parity)"
+            },
+            {
+              "traditional": "A staging cluster built from the same YAML still drifts from prod",
+              "rediacc": "rdc cluster fork copies the running cluster, data included. 46 seconds in our lab"
             }
           ]
         },
@@ -4118,9 +4021,9 @@
         },
         "bottomCta": {
           "title": "End environment mismatch forever",
-          "description": "Start free with the Community edition. You match production from day one.",
-          "primaryCta": "Start Free",
-          "tierBadge": "Free for up to 5 repositories · No credit card required",
+          "description": "Match production from day one. Start your 14-day free trial.",
+          "primaryCta": "Start free trial",
+          "tierBadge": "14-day free trial · Cancel anytime",
           "command": "rdc repo validate dev-sarah"
         },
         "techStrip": {
@@ -4178,6 +4081,12 @@
               "title": "AI Pentesting",
               "description": "Clone production. Let AI attack it.",
               "slug": "ai-pentesting"
+            },
+            {
+              "category": "multi-cloud",
+              "title": "Kubernetes Cluster Mobility",
+              "description": "Fork or move a running cluster, data included",
+              "slug": "kubernetes-cluster-mobility"
             }
           ]
         },
@@ -4231,7 +4140,7 @@
           "title": "Plug into your existing workflow",
           "subtitle": "Push your code. Rediacc spins up a fresh copy of production. Your tests run on real data, not fake data. No custom scripts to write.",
           "differentiator": "Every CI tool can spin up empty containers. None give you a real copy of production with your actual data. Rediacc does.",
-          "primaryCta": "Start Free",
+          "primaryCta": "Start free trial",
           "secondaryCta": "See integrations →"
         },
         "terminal": {
@@ -4497,7 +4406,7 @@
             },
             {
               "title": "Production copies in CI",
-              "description": "Your tests run on real production data and settings. No more \"tests pass, then production breaks\" surprises.",
+              "description": "Your tests run on real production data and settings. No more \"tests pass, then production breaks\" surprises. Kubernetes apps included: a namespace forks like any repo. CI tests run against real cluster state.",
               "icon": "monitor"
             },
             {
@@ -4559,9 +4468,9 @@
         },
         "bottomCta": {
           "title": "Simplify your CI/CD pipeline",
-          "description": "Start with the free Community edition. Git integration is built in.",
-          "primaryCta": "Start Free",
-          "tierBadge": "Free for up to 5 repositories · No credit card required",
+          "description": "Git integration is built in. Start your 14-day free trial.",
+          "primaryCta": "Start free trial",
+          "tierBadge": "14-day free trial · Cancel anytime",
           "command": "rdc repo fork production ci-build -m primary"
         },
         "techStrip": {
@@ -4619,6 +4528,12 @@
               "title": "AI Pentesting",
               "description": "Clone production. Let AI attack it.",
               "slug": "ai-pentesting"
+            },
+            {
+              "category": "multi-cloud",
+              "title": "Kubernetes Cluster Mobility",
+              "description": "Fork or move a running cluster, data included",
+              "slug": "kubernetes-cluster-mobility"
             }
           ]
         },
@@ -4688,7 +4603,7 @@
           "title": "Backups that ransomware can’t touch",
           "subtitle": "Your backups lock the moment they're made. No one can change them. Not hackers. Not even you.",
           "differentiator": "Every backup vendor promises recovery. None prove it daily. Rediacc does.",
-          "primaryCta": "Start Free with Community",
+          "primaryCta": "Start free trial",
           "secondaryCta": "See how it works"
         },
         "terminal": {
@@ -5042,9 +4957,9 @@
         },
         "bottomCta": {
           "title": "Stop worrying about ransomware",
-          "description": "Start with the free Community edition. Protect up to 10 servers at no cost. No credit card needed.",
-          "primaryCta": "Start Free with Community",
-          "tierBadge": "Free forever for up to 10 servers",
+          "description": "Protect your production servers. Start your 14-day free trial.",
+          "primaryCta": "Start free trial",
+          "tierBadge": "14-day free trial · Cancel anytime",
           "command": "rdc repo push production --to backup-vault -m primary"
         },
         "techStrip": {
@@ -5219,7 +5134,7 @@
           "title": "Migrate without risking your data",
           "subtitle": "Switching servers, clouds, or providers? Your backups stay locked the whole way. No data exposed. None lost.",
           "differentiator": "Every vendor can move your data. But they unlock it first to do it. We never do.",
-          "primaryCta": "Start Free",
+          "primaryCta": "Start free trial",
           "secondaryCta": "See migration features →"
         },
         "terminal": {
@@ -5498,6 +5413,10 @@
             {
               "traditional": "Hopes the data arrived whole, no check",
               "rediacc": "A fingerprint check on every repo after transfer"
+            },
+            {
+              "traditional": "Cluster migrations need a parallel build and a leap of faith",
+              "rediacc": "Fork the cluster first. Test the move before you cut over"
             }
           ]
         },
@@ -5583,9 +5502,9 @@
         },
         "bottomCta": {
           "title": "Migrate safely, every time",
-          "description": "Start free with the Community edition. Locked migration is built in. No credit card.",
-          "primaryCta": "Start Free",
-          "tierBadge": "Free for up to 5 repositories · No credit card required",
+          "description": "Locked migration is built in. Start your 14-day free trial.",
+          "primaryCta": "Start free trial",
+          "tierBadge": "14-day free trial · Cancel anytime",
           "command": "rdc repo push --to secondary -m primary"
         },
         "techStrip": {
@@ -5651,6 +5570,12 @@
               "title": "AI Pentesting",
               "description": "Clone production. Let AI attack it.",
               "slug": "ai-pentesting"
+            },
+            {
+              "category": "multi-cloud",
+              "title": "Kubernetes Cluster Mobility",
+              "description": "Fork or move a running cluster, data included",
+              "slug": "kubernetes-cluster-mobility"
             }
           ]
         },
@@ -5724,7 +5649,7 @@
           "title": "Get your whole setup back in minutes",
           "subtitle": "Not just files. Whole setups: your servers, configs, and databases. Back up and running in minutes.",
           "differentiator": "Every vendor restores files. None bring back a whole running setup. Rediacc does, in under 5 minutes.",
-          "primaryCta": "Start Free with Community",
+          "primaryCta": "Start free trial",
           "secondaryCta": "See recovery speed →"
         },
         "terminal": {
@@ -6014,7 +5939,7 @@
             {
               "icon": "zap",
               "title": "Whole setups, not just files",
-              "description": "Servers, configs, databases, network. Your whole stack comes back as one unit. No rebuilding. No reconfiguring. Nothing left behind."
+              "description": "Servers, configs, databases, network. Your whole stack comes back as one unit. No rebuilding. No reconfiguring. Nothing left behind. Run Kubernetes? The whole cluster forks and moves the same way, apps and data together."
             },
             {
               "icon": "clock",
@@ -6089,9 +6014,9 @@
         },
         "bottomCta": {
           "title": "Be back online in minutes, not days",
-          "description": "Start with the free Community edition. Restore your first setup in under 5 minutes.",
-          "primaryCta": "Start Free with Community",
-          "tierBadge": "No credit card required",
+          "description": "Restore your first setup in under 5 minutes. Start your 14-day free trial.",
+          "primaryCta": "Start free trial",
+          "tierBadge": "14-day free trial · Cancel anytime",
           "command": "rdc repo pull production --from daily-2026-02-27 -m primary"
         },
         "techStrip": {
@@ -6157,6 +6082,12 @@
               "title": "AI Pentesting",
               "description": "Clone production. Let AI attack it.",
               "slug": "ai-pentesting"
+            },
+            {
+              "category": "multi-cloud",
+              "title": "Kubernetes Cluster Mobility",
+              "description": "Fork or move a running cluster, data included",
+              "slug": "kubernetes-cluster-mobility"
             }
           ]
         },
@@ -6234,7 +6165,7 @@
           "title": "Test OS updates without the risk",
           "subtitle": "Make a copy of your live servers. Install the update on the copy. See what breaks. If it goes wrong, throw the copy away. Your real servers never get touched.",
           "differentiator": "Every backup vendor promises recovery. Few ever prove it. We prove ours every day.",
-          "primaryCta": "Start Free with Community",
+          "primaryCta": "Start free trial",
           "secondaryCta": "See how cloning works →"
         },
         "terminal": {
@@ -6282,7 +6213,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc term connect -m patch-test-ubuntu-24",
+              "cmd": "rdc term connect patch-test-ubuntu-24",
               "flag": "-c",
               "value": "\"apt upgrade -y\""
             },
@@ -6603,9 +6534,9 @@
         },
         "bottomCta": {
           "title": "Patch with confidence",
-          "description": "Start with the free Community edition. Copy, test, and verify at no cost. No credit card needed.",
-          "primaryCta": "Start Free with Community",
-          "tierBadge": "Free forever for up to 10 servers",
+          "description": "Copy, test, and verify with confidence. Start your 14-day free trial.",
+          "primaryCta": "Start free trial",
+          "tierBadge": "14-day free trial · Cancel anytime",
           "command": "rdc repo fork production patch-test -m primary"
         },
         "techStrip": {
@@ -6748,7 +6679,7 @@
           "title": "Keep your data as long as the law requires",
           "subtitle": "Set how long to keep your backups. Rediacc keeps them that long, then cleans up. HIPAA, SOC2, and GDPR rules are covered from day one.",
           "differentiator": "Every vendor backs up your data. None check the restore actually works. Rediacc does, every day.",
-          "primaryCta": "Start Free with Community",
+          "primaryCta": "Start free trial",
           "secondaryCta": "See compliance features →"
         },
         "terminal": {
@@ -7114,9 +7045,9 @@
         },
         "bottomCta": {
           "title": "Make compliance automatic",
-          "description": "Start free with the Community edition. Set your first retention rule in 30 seconds. No credit card.",
-          "primaryCta": "Start Free with Community",
-          "tierBadge": "No credit card required",
+          "description": "Set your first retention rule in 30 seconds. Start your 14-day free trial.",
+          "primaryCta": "Start free trial",
+          "tierBadge": "14-day free trial · Cancel anytime",
           "command": "rdc config backup-strategy set --cron '0 2 * * *'"
         },
         "techStrip": {
@@ -7291,7 +7222,7 @@
           "title": "When AWS goes down, you don’t",
           "subtitle": "Your apps run across more than one cloud. When one cloud goes down, the others take over on their own. Nobody gets paged.",
           "differentiator": "Every cloud has backups. But none of them fail over to a different cloud in minutes. Rediacc does.",
-          "primaryCta": "Start Free with Community",
+          "primaryCta": "Start free trial",
           "secondaryCta": "See failover in action →"
         },
         "terminal": {
@@ -7588,7 +7519,7 @@
             {
               "icon": "layers",
               "title": "More than one cloud by default",
-              "description": "AWS, Azure, GCP, Hetzner, or your own servers. Mix and match however you like. Any Linux machine with our storage engine can be a backup target."
+              "description": "AWS, Azure, GCP, Hetzner, or your own servers. Mix and match however you like. Any Linux machine with our storage engine can be a backup target. Whole Kubernetes clusters can move too, with a short cutover."
             },
             {
               "icon": "lock",
@@ -7658,9 +7589,9 @@
         },
         "bottomCta": {
           "title": "Don’t bet your business on one cloud",
-          "description": "Start with the free Community edition. Copy your data across sites at no cost. No credit card needed.",
-          "primaryCta": "Start Free with Community",
-          "tierBadge": "Free forever for up to 10 apps",
+          "description": "Copy your data across sites. Start your 14-day free trial.",
+          "primaryCta": "Start free trial",
+          "tierBadge": "14-day free trial · Cancel anytime",
           "command": "rdc repo push --to secondary-dc -m primary"
         },
         "techStrip": {
@@ -7726,6 +7657,12 @@
               "title": "AI Pentesting",
               "description": "Clone production. Let AI attack it.",
               "slug": "ai-pentesting"
+            },
+            {
+              "category": "multi-cloud",
+              "title": "Kubernetes Cluster Mobility",
+              "description": "Fork or move a running cluster, data included",
+              "slug": "kubernetes-cluster-mobility"
             }
           ]
         },
@@ -7803,7 +7740,7 @@
           "title": "Test your failover before you need it",
           "subtitle": "Run a fake disaster on a safe copy of your systems. See if your recovery really works. Find the gaps before a real outage does.",
           "differentiator": "Every cloud gives you backup. None let you test the failover without risk. Rediacc does.",
-          "primaryCta": "Start Free with Community",
+          "primaryCta": "Start free trial",
           "secondaryCta": "See testing in action →"
         },
         "terminal": {
@@ -8077,6 +8014,10 @@
             {
               "traditional": "Manual checks: someone decides it 'looks right'",
               "rediacc": "Automated health checks: pass or fail with exact numbers"
+            },
+            {
+              "traditional": "Kubernetes DR drill: keep a second cluster in sync, then hope",
+              "rediacc": "Fork the whole cluster in 46 seconds and run the drill on the copy"
             }
           ]
         },
@@ -8162,9 +8103,9 @@
         },
         "bottomCta": {
           "title": "Test your failover plan today",
-          "description": "Start with the free Community edition. Run your first DR test in under 5 minutes.",
-          "primaryCta": "Start Free with Community",
-          "tierBadge": "No credit card required",
+          "description": "Run your first DR test in under 5 minutes. Start your 14-day free trial.",
+          "primaryCta": "Start free trial",
+          "tierBadge": "14-day free trial · Cancel anytime",
           "command": "rdc repo push production --to-machine secondary -m primary --checkpoint"
         },
         "techStrip": {
@@ -8230,6 +8171,12 @@
               "title": "AI Pentesting",
               "description": "Clone production. Let AI attack it.",
               "slug": "ai-pentesting"
+            },
+            {
+              "category": "multi-cloud",
+              "title": "Kubernetes Cluster Mobility",
+              "description": "Fork or move a running cluster, data included",
+              "slug": "kubernetes-cluster-mobility"
             }
           ]
         },
@@ -8295,7 +8242,7 @@
           "title": "Every backup verified. Automatically.",
           "subtitle": "Don’t wait for a disaster to find out your backup is corrupted. Rediacc checks every backup the moment it’s created.",
           "differentiator": "Every vendor backs up your data. None test that the restore works. Rediacc does, every day.",
-          "primaryCta": "Start Free with Community",
+          "primaryCta": "Start free trial",
           "secondaryCta": "See verification in action"
         },
         "terminal": {
@@ -8658,9 +8605,9 @@
         },
         "bottomCta": {
           "title": "Never trust an unverified backup",
-          "description": "Start with the free Community edition. Verify your first backup in under a minute.",
-          "primaryCta": "Start Free with Community",
-          "tierBadge": "No credit card required",
+          "description": "Verify your first backup in under a minute. Start your 14-day free trial.",
+          "primaryCta": "Start free trial",
+          "tierBadge": "14-day free trial · Cancel anytime",
           "command": "rdc repo backup list --from backup-vault -m primary"
         },
         "techStrip": {
@@ -8807,7 +8754,7 @@
           "title": "Fix vulnerabilities before attackers arrive",
           "subtitle": "Test your patch on an exact copy of production first. Then deploy the fix for real, sure it works.",
           "differentiator": "Every scanner finds holes. None let you test the fix on a real copy of production first. We do.",
-          "primaryCta": "Start Free",
+          "primaryCta": "Start free trial",
           "secondaryCta": "See the workflow →"
         },
         "terminal": {
@@ -9120,9 +9067,9 @@
         },
         "bottomCta": {
           "title": "Patch faster. Patch safer.",
-          "description": "Start with the free Community edition. Verify your first patch in under 4 minutes.",
-          "primaryCta": "Start Free",
-          "tierBadge": "No credit card required",
+          "description": "Verify your first patch in under 4 minutes. Start your 14-day free trial.",
+          "primaryCta": "Start free trial",
+          "tierBadge": "14-day free trial · Cancel anytime",
           "command": "rdc term production cve-2026-1234-fix"
         },
         "techStrip": {
@@ -9221,7 +9168,7 @@
           "title": "Clone production. Let AI attack it.",
           "subtitle": "Make an exact copy of your servers. Let AI attack the copy. Your real systems never get touched.",
           "differentiator": "Most security tools just scan for weak spots. None let you attack a real copy of production. We do.",
-          "primaryCta": "Start Free",
+          "primaryCta": "Start free trial",
           "secondaryCta": "See how it works →"
         },
         "terminal": {
@@ -9535,8 +9482,8 @@
         },
         "bottomCta": {
           "title": "Find your weak spots before attackers do",
-          "description": "Start with the free Community edition. No credit card. Run your first pentest in under 60 seconds.",
-          "ctaText": "Start Free",
+          "description": "Run your first pentest in under 60 seconds. Start your 14-day free trial.",
+          "ctaText": "Start free trial",
           "command": "rdc repo fork --parent production --tag pentest -m server-1"
         },
         "techStrip": {
@@ -9630,7 +9577,7 @@
           "title": "Your keys. Your encryption. No exceptions.",
           "subtitle": "Every backup is encrypted with keys you own. Not your vendor's keys. Not shared keys. Yours alone.",
           "differentiator": "Every vendor encrypts your data. None let you hold the only key. Rediacc does.",
-          "primaryCta": "Start Free with Community",
+          "primaryCta": "Start free trial",
           "secondaryCta": "See encryption details"
         },
         "terminal": {
@@ -9967,8 +9914,8 @@
         },
         "bottomCta": {
           "title": "Own your encryption keys",
-          "description": "Start with the free Community edition. Generate your first key in under a minute.",
-          "ctaText": "Start Free with Community",
+          "description": "Generate your first key in under a minute. Start your 14-day free trial.",
+          "ctaText": "Start free trial",
           "command": "rdc repo mount production -m primary"
         },
         "techStrip": {
@@ -10138,7 +10085,7 @@
           "title": "Test security continuously. Not annually.",
           "subtitle": "We test your security every day on a fresh copy of your live systems. You find holes the day they show up, not months later.",
           "differentiator": "Most tools just scan for known holes. None let you attack a real copy of your systems. We do. Every day, on autopilot.",
-          "primaryCta": "Start Free",
+          "primaryCta": "Start free trial",
           "secondaryCta": "See testing schedule"
         },
         "terminal": {
@@ -10430,8 +10377,8 @@
         },
         "bottomCta": {
           "title": "Close the window attackers count on",
-          "description": "Start with the free Community edition. No credit card. You can set up your first daily test in 30 seconds.",
-          "ctaText": "Start Free",
+          "description": "Set up your first daily test in 30 seconds. Start your 14-day free trial.",
+          "ctaText": "Start free trial",
           "command": "rdc repo validate production -m primary"
         },
         "techStrip": {
@@ -10525,7 +10472,7 @@
           "title": "Every action logged. Nothing hidden.",
           "subtitle": "See who did what, when, and why. Every action lands in a record nobody can fake.",
           "differentiator": "Every vendor logs backups. But none give you a signed record nobody can change. We do.",
-          "primaryCta": "Start Free with Community",
+          "primaryCta": "Start free trial",
           "secondaryCta": "See audit features →"
         },
         "terminal": {
@@ -10856,8 +10803,8 @@
         },
         "bottomCta": {
           "title": "See everything. Miss nothing.",
-          "description": "Start free with the Community edition. Make your first audit report in under a minute.",
-          "ctaText": "Start Free with Community",
+          "description": "Make your first audit report in under a minute. Start your 14-day free trial.",
+          "ctaText": "Start free trial",
           "command": "rdc repo status --name production -m server-1"
         },
         "techStrip": {
@@ -10995,7 +10942,7 @@
           "title": "Sovereign by design, not by certificate.",
           "subtitle": "You run it on your servers. You hold the only keys. A US-owned provider can't hand over data it never had.",
           "differentiator": "Every big cloud sells \"sovereignty.\" None can keep your data out of US court orders. We can.",
-          "primaryCta": "Start Free with Community",
+          "primaryCta": "Start free trial",
           "secondaryCta": "See sovereignty features"
         },
         "terminal": {
@@ -11258,7 +11205,7 @@
             {
               "icon": "globe",
               "title": "EU Data Act 2027 ready",
-              "description": "Open data format. No fees to leave, ever. Every backup is a working copy you can pick up and move. You meet Data Act Articles 23-31 well before the 12 January 2027 deadline that bans switching charges."
+              "description": "Open data format. No fees to leave, ever. Every backup is a working copy you can pick up and move. You meet Data Act Articles 23-31 well before the 12 January 2027 deadline that bans switching charges. The whole Kubernetes cluster moves too, data and all. The switch takes about 16 seconds."
             },
             {
               "icon": "check-circle",
@@ -11328,8 +11275,8 @@
         },
         "bottomCta": {
           "title": "Stop renting your own data back from a US-owned provider.",
-          "description": "Start with the free Community edition. No credit card. Run your first key-custody check in under a minute.",
-          "ctaText": "Start Free with Community",
+          "description": "Run your first key-custody check in under a minute. Start your 14-day free trial.",
+          "ctaText": "Start free trial",
           "command": "rdc config show"
         },
         "techStrip": {
@@ -11394,6 +11341,12 @@
               "description": "Clone production in 60 seconds",
               "slug": "environment-cloning",
               "dataCategory": "dev-env"
+            },
+            {
+              "category": "multi-cloud",
+              "title": "Kubernetes Cluster Mobility",
+              "description": "Fork or move a running cluster, data included",
+              "slug": "kubernetes-cluster-mobility"
             }
           ]
         },
@@ -11467,7 +11420,7 @@
           "title": "Recover in minutes. Not days.",
           "subtitle": "When ransomware hits, every minute costs you money. Rediacc gets you back online fast, before the damage spreads.",
           "differentiator": "Every backup vendor promises recovery. Almost none test it every day. We do.",
-          "primaryCta": "Start Free with Community",
+          "primaryCta": "Start free trial",
           "secondaryCta": "See recovery in action →"
         },
         "terminal": {
@@ -11722,7 +11675,7 @@
             {
               "icon": "zap",
               "title": "Minutes, not days",
-              "description": "Your full system recovers in under 5 minutes. Every container, every database, every settings file. All restored from a backup copy that can't be changed."
+              "description": "Your full system recovers in under 5 minutes. Every container, every database, every settings file. All restored from a backup copy that can't be changed. Kubernetes too: fork the whole cluster first. The copy keeps the evidence while you restore."
             },
             {
               "icon": "clock",
@@ -11792,8 +11745,8 @@
         },
         "bottomCta": {
           "title": "Don't let recovery be slower than the attack",
-          "description": "Start with the free Community edition. Protect up to 10 servers at no cost. No credit card needed.",
-          "ctaText": "Start Free with Community",
+          "description": "Protect your production servers. Start your 14-day free trial.",
+          "ctaText": "Start free trial",
           "command": "rdc repo pull production --from backup-vault -m primary --force"
         },
         "techStrip": {
@@ -11858,6 +11811,12 @@
               "description": "Clone production. Let AI attack it.",
               "slug": "ai-pentesting",
               "dataCategory": "defense"
+            },
+            {
+              "category": "multi-cloud",
+              "title": "Kubernetes Cluster Mobility",
+              "description": "Fork or move a running cluster, data included",
+              "slug": "kubernetes-cluster-mobility"
             }
           ]
         },
@@ -11940,6 +11899,413 @@
           "disclaimer": "Product performance claims are based on Rediacc's btrfs copy-on-write architecture. Calculator estimates use industry-standard cost models; actual costs vary by organization."
         }
       },
+      "kubernetesClusterMobility": {
+        "meta": {
+          "title": "Fork or Move a Kubernetes Cluster | Rediacc",
+          "description": "Fork or move a running Kubernetes cluster, data included, to another machine or datacenter. Short measured cutover. Built on Ceph RBD and k3s.",
+          "keywords": "kubernetes cluster migration, cluster fork, ceph rbd, k3s, datacenter mobility, kubernetes portability"
+        },
+        "hero": {
+          "badge": "MULTI-CLOUD",
+          "title": "Fork or move a running Kubernetes cluster",
+          "subtitle": "Your cluster moves as one set: nodes, config, and data. To another machine or another datacenter. The cutover is measured in seconds, not a weekend.",
+          "differentiator": "Velero restores backups. Cluster API clones shapes. Rediacc moves the running cluster, data included.",
+          "primaryCta": "Start free trial",
+          "secondaryCta": "See the measured numbers →"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "type": "command",
+              "cmd": "rdc cluster fork prod",
+              "value": "--tag staging"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "check",
+              "text": "Cloning node images (copy-on-write)........... done"
+            },
+            {
+              "type": "check",
+              "text": "Cloning Ceph RBD volumes...................... done"
+            },
+            {
+              "type": "check",
+              "text": "Rewriting node identity for new IPs........... done"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "success",
+              "text": "✓ Fork complete in 46s: prod-staging is up. Parent untouched."
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "command",
+              "cmd": "rdc cluster migrate prod",
+              "value": "--to fsn1-dc2"
+            },
+            {
+              "type": "check",
+              "text": "Pre-copy while the cluster keeps running...... done"
+            },
+            {
+              "type": "check",
+              "text": "Cutover: stop, final delta, restart........... 16s"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "type": "summary",
+              "text": "Fork: 46s   Migrate cutover: 16s   Consistency: crash-consistent"
+            }
+          ]
+        },
+        "stats": [
+          {
+            "number": "46s",
+            "label": "Whole 2-node cluster fork",
+            "icon": "layers"
+          },
+          {
+            "number": "16s",
+            "label": "Migrate cutover, measured",
+            "icon": "clock"
+          },
+          {
+            "number": "1-5s",
+            "label": "Namespace fork",
+            "icon": "zap"
+          }
+        ],
+        "problem": {
+          "overline": "THE PROBLEM",
+          "title": "Your cluster is stuck where you built it",
+          "description": "Kubernetes made your apps portable. The cluster itself is not. The data lives in one datacenter. Moving it means a rebuild project: new nodes, new storage, restore from backup, retest everything. So most teams never move. And their provider knows it.",
+          "statCallouts": [
+            {
+              "number": "27%",
+              "source": "Flexera 2024 State of the Cloud Report",
+              "ref": 1,
+              "text": "of cloud spend gets wasted every year"
+            },
+            {
+              "number": "17%",
+              "source": "Flexera 2025 State of the Cloud Report",
+              "ref": 2,
+              "text": "average amount companies blow past their cloud budget"
+            },
+            {
+              "number": "$0.09/GB",
+              "source": "AWS/Azure/GCP Pricing 2024",
+              "ref": 3,
+              "text": "in fees to move data out, built to make leaving costly"
+            }
+          ],
+          "timeline": {
+            "oldLabel": "THE OLD WAY",
+            "oldSteps": [
+              {
+                "day": "Month 1",
+                "text": "Stand up the new cluster"
+              },
+              {
+                "day": "Month 2",
+                "text": "Rebuild manifests and secrets"
+              },
+              {
+                "day": "Month 3",
+                "text": "Restore volumes from backup"
+              },
+              {
+                "day": "Month 4",
+                "text": "Retest every app"
+              },
+              {
+                "day": "Month 5+",
+                "text": "Cut over and hope"
+              }
+            ],
+            "newLabel": "WITH REDIACC",
+            "newSteps": ["Pre-copy", "16s cutover", "Live"]
+          }
+        },
+        "howItWorks": {
+          "overline": "HOW IT WORKS",
+          "title": "The whole cluster is one set of files",
+          "steps": [
+            {
+              "title": "Cluster images plus volumes",
+              "description": "Each node runs from an image file. Each volume is a Ceph RBD image. Together they are the whole cluster: apps, config, and data.",
+              "icon": "layers"
+            },
+            {
+              "title": "Fork in place",
+              "description": "One command clones every image, copy-on-write. A 2-node cluster forked in 46 seconds in our lab. The parent keeps running.",
+              "icon": "git-branch"
+            },
+            {
+              "title": "Migrate with a short cutover",
+              "description": "Rediacc pre-copies while the cluster runs. Then it stops, sends the final delta, and restarts on the new machine. Measured cutover: 16 seconds.",
+              "icon": "arrow-right-circle"
+            }
+          ],
+          "cloneVisual": {
+            "production": {
+              "title": "prod (Datacenter A)",
+              "status": "Running",
+              "services": [
+                {
+                  "name": "Nodes",
+                  "port": "2 (k3s + Ceph)"
+                },
+                {
+                  "name": "Namespaces",
+                  "port": "8 apps"
+                },
+                {
+                  "name": "Volumes",
+                  "port": "Ceph RBD"
+                },
+                {
+                  "name": "State",
+                  "port": "Keeps running"
+                }
+              ],
+              "containerCount": "Parent",
+              "size": "Untouched"
+            },
+            "clone": {
+              "title": "prod-staging (Datacenter B)",
+              "status": "Running",
+              "cardClass": "restored",
+              "services": [
+                {
+                  "name": "Nodes",
+                  "port": "2 (k3s + Ceph)"
+                },
+                {
+                  "name": "Namespaces",
+                  "port": "8 apps"
+                },
+                {
+                  "name": "Volumes",
+                  "port": "Ceph RBD clones"
+                },
+                {
+                  "name": "State",
+                  "port": "Own identity, new IPs"
+                }
+              ],
+              "containerCount": "Fork",
+              "size": "46s"
+            },
+            "arrow": {
+              "label": "Fork",
+              "time": "46s",
+              "icon": "arrow-right-circle-arrow"
+            }
+          }
+        },
+        "techDiff": {
+          "overline": "UNDER THE HOOD",
+          "title": "Why a cluster can move like a file",
+          "description": "Every node runs from an image file on btrfs. Every volume is a Ceph RBD image. Copying a cluster means cloning those images, copy-on-write. No export, no conversion, no restore step. That is why a fork takes seconds, not months.",
+          "rows": [
+            {
+              "traditional": "Backup tools restore into an empty cluster, piece by piece",
+              "rediacc": "Node images and volumes move as one set"
+            },
+            {
+              "traditional": "Data needs a separate replication product",
+              "rediacc": "Ceph RBD clones ride along, copy-on-write"
+            },
+            {
+              "traditional": "A cluster clone means re-provisioning and redeploying",
+              "rediacc": "A 2-node cluster fork took 46 seconds in our lab. The parent keeps running"
+            },
+            {
+              "traditional": "Cutover plans span a weekend",
+              "rediacc": "Measured cutover: 16 seconds. Workloads restart on the destination"
+            }
+          ]
+        },
+        "benefits": {
+          "overline": "WHY IT MATTERS",
+          "title": "Keep your Kubernetes. Gain mobility.",
+          "items": [
+            {
+              "icon": "check-circle",
+              "title": "Keep your Kubernetes",
+              "description": "Rediacc runs k3s for you, or connects to a cluster you already have. Volumes ride on ceph-csi RBD. Your manifests stay yours."
+            },
+            {
+              "icon": "arrow-right-circle",
+              "title": "Real datacenter mobility",
+              "description": "Provision on your own KVM hosts or on clouds like Linode with private VLANs. Node pools keep disk-heavy Ceph nodes apart from cpu-heavy Kubernetes nodes."
+            },
+            {
+              "icon": "git-branch",
+              "title": "One mentality for everything",
+              "description": "A Kubernetes app is a namespace. Fork it like any repo: 1 to 5 seconds, data included. Same commands you already use for Docker repos."
+            }
+          ]
+        },
+        "comparison": {
+          "overline": "THE GAP",
+          "title": "Nobody else moves a running cluster with its data",
+          "description": "Backup tools stop and restore. Cluster API clones the shape without the data. RBD mirroring copies volumes, not the cluster. Rediacc moves all of it.",
+          "capabilityLabel": "Capability",
+          "features": [
+            {
+              "name": "Backs up apps and volumes",
+              "values": ["check", "check", "cross", "Volumes only", "rediacc"],
+              "refs": [4, 5, 0, 9, 0]
+            },
+            {
+              "name": "Moves a whole cluster with its data",
+              "values": ["Stop and restore", "Stop and restore", "Shape only", "cross", "rediacc"],
+              "refs": [6, 7, 8, 0, 0]
+            },
+            {
+              "name": "Forks a running cluster, data included",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
+            },
+            {
+              "name": "Clones one app (namespace) in seconds",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
+            },
+            {
+              "name": "Copies data without a full rewrite",
+              "values": ["cross", "cross", "cross", "Async copy", "rediacc"],
+              "refs": [0, 0, 0, 10, 0]
+            },
+            {
+              "name": "Short measured cutover for a planned move",
+              "values": ["cross", "cross", "cross", "cross", "rediacc"],
+              "refs": [0, 0, 0, 0, 0]
+            }
+          ]
+        },
+        "bottomCta": {
+          "title": "Give your cluster an exit route",
+          "description": "Fork it, test the move, then migrate for real. Start your 14-day free trial.",
+          "ctaText": "Start free trial",
+          "command": "rdc cluster fork prod --tag staging"
+        },
+        "techStrip": {
+          "label": "Runs the apps you already ship",
+          "note": "Databases, CI/CD, CMS, monitoring, logins, storage. If it runs on Kubernetes, Rediacc can fork it and move it, data included."
+        },
+        "explore": {
+          "title": "Explore Other Solutions",
+          "solutions": [
+            {
+              "category": "multi-cloud",
+              "title": "Kubernetes Cluster Mobility",
+              "description": "Fork or move a running cluster, data included",
+              "slug": "kubernetes-cluster-mobility",
+              "current": true
+            },
+            {
+              "category": "multi-cloud",
+              "title": "Vendor Lock-in Freedom",
+              "description": "Your infrastructure. Your choice. Always.",
+              "slug": "vendor-lock-in"
+            },
+            {
+              "category": "multi-cloud",
+              "title": "Cloud Outage Protection",
+              "description": "When AWS goes down, you don't",
+              "slug": "cloud-outage-protection"
+            },
+            {
+              "category": "multi-cloud",
+              "title": "Failover Testing",
+              "description": "Test your failover before you need it",
+              "slug": "failover-testing"
+            },
+            {
+              "category": "encryption",
+              "title": "Migration Safety",
+              "description": "Migrate without risking your data",
+              "slug": "migration-safety"
+            },
+            {
+              "category": "dev-env",
+              "title": "Environment Cloning",
+              "description": "Clone production in 60 seconds",
+              "slug": "environment-cloning"
+            },
+            {
+              "category": "backups",
+              "title": "Instant Recovery",
+              "description": "Full environment recovery in minutes",
+              "slug": "instant-recovery"
+            },
+            {
+              "category": "encryption",
+              "title": "Encryption You Control",
+              "description": "Your keys. Your encryption. No exceptions.",
+              "slug": "encryption"
+            }
+          ]
+        },
+        "references": {
+          "label": "Sources & References",
+          "items": [
+            {
+              "text": "Flexera, \"2024 State of the Cloud Report,\" 2024. \"27% of cloud spend continues to be wasted.\"",
+              "url": "https://www.flexera.com/about-us/press-center/flexera-2024-state-of-the-cloud-managing-spending-top-challenge"
+            },
+            {
+              "text": "Flexera, \"2025 State of the Cloud Report,\" 2025. \"With cloud budgets already exceeding limits by 17%, organizations are increasingly turning to managed service providers.\"",
+              "url": "https://www.flexera.com/about-us/press-center/new-flexera-report-finds-84-percent-of-organizations-struggle-to-manage-cloud-spend"
+            },
+            {
+              "text": "AWS, \"Amazon S3 Pricing — Data Transfer,\" 2024. \"Data Transfer OUT from Amazon S3 to Internet: $0.09 per GB for the first 10 TB/month.\"",
+              "url": "https://aws.amazon.com/s3/pricing/"
+            },
+            {
+              "text": "Velero backs up Kubernetes cluster resources and persistent volumes and restores them into a cluster.",
+              "url": "https://velero.io/docs/"
+            },
+            {
+              "text": "Kasten K10 provides backup and restore of Kubernetes applications, including application data.",
+              "url": "https://docs.kasten.io/"
+            },
+            {
+              "text": "Velero cluster migration restores a backup into a new cluster; workloads are recreated from the backup point, not moved live.",
+              "url": "https://velero.io/docs/main/migration-case/"
+            },
+            {
+              "text": "Kasten K10 migrates applications between clusters by exporting a restore point and importing it into the target cluster.",
+              "url": "https://docs.kasten.io/latest/usage/migration.html"
+            },
+            {
+              "text": "Cluster API's clusterctl move relocates Cluster API objects (the cluster's definition) to another management cluster; it does not move workload data.",
+              "url": "https://cluster-api.sigs.k8s.io/clusterctl/commands/move"
+            },
+            {
+              "text": "Ceph RBD mirroring replicates block device images between Ceph clusters; it covers volumes, not Kubernetes cluster state.",
+              "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
+            },
+            {
+              "text": "Ceph RBD mirroring is asynchronous, based on journaling or periodic snapshots, and is designed for disaster recovery.",
+              "url": "https://docs.ceph.com/en/latest/rbd/rbd-mirroring/"
+            }
+          ],
+          "disclaimer": "Fork and migrate timings were measured end to end in Rediacc's KVM test lab on a 2-node cluster. The default consistency is crash-consistent, the same semantics as a power cycle. Workloads restart on the destination during a migrate cutover."
+        }
+      },
       "vendorLockIn": {
         "meta": {
           "title": "Vendor Lock-in Freedom — Rediacc",
@@ -11951,7 +12317,7 @@
           "title": "Your infrastructure. Your choice. Always.",
           "subtitle": "Run it on any cloud. Move it anytime. No long contracts. No locked-in data formats. Your data stays yours.",
           "differentiator": "Every cloud has backups. None can move you to another cloud in minutes. Rediacc does.",
-          "primaryCta": "Start Free with Community",
+          "primaryCta": "Start free trial",
           "secondaryCta": "See migration in action →"
         },
         "terminal": {
@@ -12200,6 +12566,10 @@
             {
               "traditional": "Needs cloud-specific tools: Terraform rewrites, API changes",
               "rediacc": "Works anywhere: same rdc commands on AWS, Hetzner, or your own servers"
+            },
+            {
+              "traditional": "Kubernetes clusters get rebuilt by hand on the new provider",
+              "rediacc": "rdc cluster migrate moves the running cluster, data included"
             }
           ]
         },
@@ -12285,8 +12655,8 @@
         },
         "bottomCta": {
           "title": "Take back control of your infrastructure",
-          "description": "Start with the free Community edition. Run it anywhere. Move it anytime. No credit card.",
-          "ctaText": "Start Free with Community",
+          "description": "Run it anywhere. Move it anytime. Start your 14-day free trial.",
+          "ctaText": "Start free trial",
           "command": "rdc repo push production --to-machine new-provider -m primary --checkpoint"
         },
         "techStrip": {
@@ -12351,6 +12721,12 @@
               "description": "Clone production. Let AI attack it.",
               "slug": "ai-pentesting",
               "dataCategory": "defense"
+            },
+            {
+              "category": "multi-cloud",
+              "title": "Kubernetes Cluster Mobility",
+              "description": "Fork or move a running cluster, data included",
+              "slug": "kubernetes-cluster-mobility"
             }
           ]
         },
@@ -12426,6 +12802,13 @@
         "dismissLabel": "Dismiss"
       }
     },
+    "solutionsIndex": {
+      "meta": {
+        "title": "Solutions - Business Continuity Software | Rediacc",
+        "description": "All Rediacc solutions: ransomware recovery, multi-cloud mobility, Kubernetes portability, verified backups, encryption, and fast dev environments.",
+        "keywords": "Rediacc solutions, ransomware recovery, multi-cloud, Kubernetes cluster mobility, verified backups, encryption control, dev environments"
+      }
+    },
     "personaPages": {
       "forDevops": {
         "meta": {
@@ -12437,7 +12820,7 @@
           "badge": "FOR DEVOPS ENGINEERS",
           "title": "Clone prod in a minute. Roll back in five. Stop filing tickets.",
           "subtitle": "CLI-first infrastructure that clones production in 60 seconds, rolls back in under five minutes, and runs on hardware you control. No tickets. No waiting. Your data stays yours.",
-          "primaryCta": "Get Started Free",
+          "primaryCta": "Start free trial",
           "secondaryCta": "Read the Docs"
         },
         "terminal": {
@@ -12668,6 +13051,10 @@
             {
               "traditional": "Rollback: restore from backup (30+ min)",
               "rediacc": "Rollback: btrfs snapshot switch (<5 min)"
+            },
+            {
+              "traditional": "Cloning a Kubernetes cluster: re-provision, redeploy, re-seed data",
+              "rediacc": "rdc cluster fork copies it, data included. 46 seconds in our lab"
             }
           ]
         },
@@ -12682,7 +13069,7 @@
             },
             {
               "title": "CLI-first, scriptable",
-              "description": "Everything is a command. Integrate with CI/CD, Git hooks, or your own automation. No GUI required.",
+              "description": "Everything is a command. Integrate with CI/CD, Git hooks, or your own automation. No GUI required. Kubernetes included: a namespace forks like any repo.",
               "icon": "terminal"
             },
             {
@@ -12709,8 +13096,8 @@
         },
         "bottomCta": {
           "title": "Try it yourself",
-          "description": "Install the CLI. Clone your first environment. No credit card. No sales call.",
-          "primaryCta": "Get Started Free",
+          "description": "Install the CLI. Clone your first environment. Start your 14-day free trial, no sales call.",
+          "primaryCta": "Start free trial",
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash"
         }
       },
@@ -12908,6 +13295,10 @@
             {
               "traditional": "Compliance: trust the vendor's attestation",
               "rediacc": "Compliance: verify on your own infrastructure"
+            },
+            {
+              "traditional": "Kubernetes ties you to the datacenter you built it in",
+              "rediacc": "Fork or move a running cluster to another datacenter, cutover measured in seconds"
             }
           ]
         },
@@ -12927,7 +13318,7 @@
             },
             {
               "title": "Zero vendor lock-in",
-              "description": "Your data stays on your infrastructure in open formats. Switch providers, self-manage, or move it tomorrow. Your call.",
+              "description": "Your data stays on your infrastructure in open formats. Switch providers, self-manage, or move it tomorrow. Your call. That now includes Kubernetes clusters.",
               "icon": "lock"
             }
           ]
@@ -13184,7 +13575,7 @@
             },
             {
               "title": "Business continuity",
-              "description": "Full recovery in under 5 minutes. Locked, write-once backups that ransomware cannot change. Your business keeps running.",
+              "description": "Full recovery in under 5 minutes. Locked, write-once backups that ransomware cannot change. Your business keeps running. If a provider fails you, the whole system can move, Kubernetes included.",
               "icon": "shield"
             }
           ]
@@ -13213,21 +13604,21 @@
         },
         "bottomCta": {
           "title": "See the pricing",
-          "description": "One flat price per machine. No per-seat fees. No surprises. Start with the free Community edition.",
+          "description": "One flat price per machine. No per-seat fees. No surprises. Start with a 14-day free trial.",
           "primaryCta": "See Pricing"
         }
       },
       "forAiAgents": {
         "meta": {
           "title": "For AI Agents - CLI-Native Automation | Rediacc",
-          "description": "Rediacc is built for AI coding assistants. CLI-first operations, structured JSON, SSH-based access, full agent discovery via rdc agent commands.",
+          "description": "Rediacc is built for AI coding assistants. CLI-first operations, structured JSON, SSH-based access, and a built-in MCP server for tool use.",
           "keywords": "AI agents, Claude Code, Cursor, Cline, infrastructure automation, CLI, JSON output, self-hosted, agent-native, MCP"
         },
         "hero": {
           "badge": "FOR AI AGENTS",
           "title": "Infrastructure your AI agent already knows how to use.",
           "subtitle": "CLI-first. SSH-based. JSON by default. Every rdc command is built for autonomous agents: no GUI, no browser automation, no custom integrations.",
-          "primaryCta": "Get Started Free",
+          "primaryCta": "Start free trial",
           "secondaryCta": "Read the Docs"
         },
         "terminal": {
@@ -13367,7 +13758,7 @@
             },
             {
               "title": "Discover",
-              "description": "Run rdc agent capabilities to get a structured JSON command tree. The agent knows what's available without documentation.",
+              "description": "Connect your assistant to rdc mcp serve and it gets typed tools for every operation. Or run rdc --help-all for the full command reference.",
               "icon": "code"
             },
             {
@@ -13452,7 +13843,11 @@
             },
             {
               "traditional": "No discovery: agents need docs or hardcoded API calls",
-              "rediacc": "rdc agent capabilities: structured command tree at runtime"
+              "rediacc": "MCP server: typed tools discovered at runtime"
+            },
+            {
+              "traditional": "Cluster changes: web consoles, wizards, multi-step runbooks",
+              "rediacc": "rdc cluster fork: one command, one JSON reply, whole cluster"
             }
           ]
         },
@@ -13472,7 +13867,7 @@
             },
             {
               "title": "Safe by default",
-              "description": "--dry-run previews destructive operations. --yes enables automation. Agents can deploy confidently with built-in guardrails.",
+              "description": "--dry-run previews destructive operations. --yes enables automation. Agents can deploy confidently with built-in guardrails. Even a whole-cluster fork follows the same rules.",
               "icon": "shield"
             }
           ]
@@ -13483,7 +13878,7 @@
         "bottomCta": {
           "title": "Let your AI agent manage your infrastructure",
           "description": "Install the CLI. Add the AGENTS.md template. Your AI assistant handles the rest.",
-          "primaryCta": "Get Started Free",
+          "primaryCta": "Start free trial",
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash"
         }
       }
@@ -14188,10 +14583,6 @@
       "twitter": {
         "site": "@rediacc",
         "creator": "@rediacc"
-      },
-      "designPartner": {
-        "ogPrefix": "Design Partner Program",
-        "ogDescPrefix": "Get BUSINESS free for life."
       }
     }
   }

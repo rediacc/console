@@ -28,11 +28,11 @@ export const PLAN_LIMITS: Record<
     maxRepoLicenseIssuancesPerMonth: 100,
   },
   PROFESSIONAL: {
-    maxRepositorySizeGb: 50,
+    maxRepositorySizeGb: 100,
     maxRepoLicenseIssuancesPerMonth: 2000,
   },
   BUSINESS: {
-    maxRepositorySizeGb: 200,
+    maxRepositorySizeGb: 500,
     maxRepoLicenseIssuancesPerMonth: 5000,
   },
   ENTERPRISE: {
@@ -120,6 +120,43 @@ export const SUBSCRIPTION_CONFIG = {
 } as const;
 
 /**
+ * Length of the self-serve free trial (Professional/Business checkout).
+ * Card is collected up front; the first charge lands when the trial ends.
+ */
+export const TRIAL_PERIOD_DAYS = 14;
+
+/**
+ * Accounts created before this instant keep a usable Community subscription
+ * without ever starting a trial (the pre-trial-era free tier). Accounts
+ * created after it must start a trial first; their Community access exists
+ * only as the fallback after a cancelled or lapsed subscription.
+ *
+ * Set to the deploy instant of the trial-based model. Bump to the actual
+ * deploy timestamp when the account server ships.
+ */
+export const COMMUNITY_LEGACY_CUTOFF_ISO = '2026-07-07T00:00:00.000Z';
+
+/**
+ * Whether a COMMUNITY subscription may issue licenses / activate machines.
+ *
+ * Usable when the account predates the trial-era cutoff (grandfathered
+ * free tier), or the customer has been through a trial (`trialUsedAt`), or
+ * the row is a post-cancellation fallback (`communityFallback`). A fresh
+ * post-cutoff signup that never checked out gets neither marker and must
+ * start a trial before using the product.
+ */
+export function isCommunityUsable(sub: {
+  createdAt: string | Date;
+  metadata?: Record<string, unknown> | null;
+}): boolean {
+  const created = typeof sub.createdAt === 'string' ? sub.createdAt : sub.createdAt.toISOString();
+  if (created < COMMUNITY_LEGACY_CUTOFF_ISO) {
+    return true;
+  }
+  return Boolean(sub.metadata?.trialUsedAt) || sub.metadata?.communityFallback === 'true';
+}
+
+/**
  * All valid plan codes in order from lowest to highest tier.
  */
 export const PLAN_ORDER: readonly PlanCode[] = [
@@ -131,11 +168,15 @@ export const PLAN_ORDER: readonly PlanCode[] = [
 
 /**
  * Maximum machines allowed per plan.
+ *
+ * Every self-serve plan includes exactly one Floating license (machine).
+ * Multi-machine deployments are an Enterprise concern, sold through partners;
+ * the ENTERPRISE value applies to partner-negotiated subscriptions only.
  */
 export const PLAN_MAX_MACHINES: Record<PlanCode, number> = {
-  COMMUNITY: 2,
-  PROFESSIONAL: 3,
-  BUSINESS: 10,
+  COMMUNITY: 1,
+  PROFESSIONAL: 1,
+  BUSINESS: 1,
   ENTERPRISE: 25,
 } as const;
 
@@ -301,7 +342,9 @@ export function comparePlans(a: PlanCode, b: PlanCode): number {
 
 /**
  * Pricing by plan. Amounts in cents (USD).
- * Annual prices reflect a 10-month rate (2 months free).
+ * Annual prices are 15% off the 12-month rate, rounded to a 9-ending price.
+ * ENTERPRISE is sold through partners only (never self-serve checkout); its
+ * amounts exist for internal accounting and partner-deal reference.
  */
 export const PLAN_PRICING: Record<PlanCode, PlanPricing> = {
   COMMUNITY: {
@@ -310,13 +353,13 @@ export const PLAN_PRICING: Record<PlanCode, PlanPricing> = {
     currency: 'usd',
   },
   PROFESSIONAL: {
-    monthlyPriceCents: 7_900,
-    annualPriceCents: 79_000,
+    monthlyPriceCents: 4_900,
+    annualPriceCents: 49_900,
     currency: 'usd',
   },
   BUSINESS: {
-    monthlyPriceCents: 29_900,
-    annualPriceCents: 299_000,
+    monthlyPriceCents: 5_900,
+    annualPriceCents: 59_900,
     currency: 'usd',
   },
   ENTERPRISE: {
@@ -332,27 +375,35 @@ export const PLAN_PRICING: Record<PlanCode, PlanPricing> = {
 export const PLAN_METADATA: Record<PlanCode, PlanMetadata> = {
   COMMUNITY: {
     displayName: 'Community',
-    description: 'Free for individuals and small projects',
+    description: 'Free fallback plan that keeps one machine running after a cancelled trial',
     paid: false,
-    featured: true,
+    featured: false,
+    selfServe: false,
+    webConsole: false,
   },
   PROFESSIONAL: {
     displayName: 'Professional',
-    description: 'For growing teams that need more power and flexibility',
+    description: 'For individuals and small projects that need one production machine',
     paid: true,
-    featured: false,
+    featured: true,
+    selfServe: true,
+    webConsole: true,
   },
   BUSINESS: {
     displayName: 'Business',
-    description: 'For organizations that need advanced management and compliance',
+    description: 'For teams that need larger repositories and advanced management',
     paid: true,
     featured: false,
+    selfServe: true,
+    webConsole: true,
   },
   ENTERPRISE: {
     displayName: 'Enterprise',
-    description: 'Contact us for custom terms, limits, and dedicated support',
+    description: 'Multi-machine deployments, sold through partners — contact us',
     paid: true,
     featured: false,
+    selfServe: false,
+    webConsole: true,
   },
 } as const;
 

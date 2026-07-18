@@ -98,6 +98,5 @@ Claude Code runs: rdc repo sync upload -m prod-1 -r mail -l ./config
 ## Tips
 
 - Claude Code auto-detects non-TTY and switches to JSON output, no need to specify `-o json` in most cases
-- Use `rdc agent capabilities` to let Claude Code discover all available commands
-- Use `rdc agent schema "command name"` for detailed argument/option info
+- Run `rdc --help-all` to let Claude Code discover all available commands
 - The `--fields` flag helps keep context window usage low when you only need specific data

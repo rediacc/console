@@ -3,29 +3,204 @@
     "description": "SSH 経由でマシン、リポジトリ、デプロイを管理する"
   },
   "commands": {
-    "agent": {
-      "capabilities": {
-        "description": "利用可能なすべてのコマンドと引数・オプションをリスト表示する"
+    "backup": {
+      "description": "バックアップ戦略、そのスケジュール実行、および生成されるアーティファクトを管理する: リポジトリに対して戦略を宣言し、必要に応じて実行・復元し、ストレージエンドポイントに書き出されたアーカイブを確認する",
+      "schedule": {
+        "description": "リモートマシンにバックアップスケジュールをデプロイする（systemd タイマー）",
+        "optionDryRun": "デプロイせずに生成されるユニットをプレビュー",
+        "optionForce": "現在バックアップが実行中でも続行する（新しいユニットは次のタイマーティックで適用され、実行中の呼び出しは古いユニットを保持）",
+        "optionResetFailed": "デプロイ成功後、変更したサービスの失敗状態をクリアする（既定は無効、失敗シグナルを保持）",
+        "success": "バックアップスケジュールを {{machine}} にデプロイしました"
       },
-      "description": "AIコーディングアシスタント向けのエージェントユーティリティ",
-      "descriptionShort": "AIコーディングアシスタント向けのエージェントユーティリティ",
-      "exec": {
-        "description": "stdin からの JSON 入力でコマンドを実行する"
+      "cancel": {
+        "cancelled": "{{name}} をキャンセルしました",
+        "cancelling": "{{name}} を停止中...",
+        "description": "リモートマシン上の実行中バックアップをキャンセル",
+        "notRunning": "戦略 \"{{name}}\" に実行中のバックアップはありません"
       },
-      "generateReference": {
-        "description": "Claude スキル用のコマンドリファレンス Markdown を生成"
+      "run": {
+        "description": "リモートマシンで今すぐバックアップを実行",
+        "examples": {
+          "basic": "バックアップ戦略を今すぐ実行する",
+          "watch": "バックアップ戦略を実行し、その進行状況を追跡する"
+        }
       },
-      "schema": {
-        "description": "特定のコマンドの詳細なスキーマを表示する"
+      "status": {
+        "description": "リモートマシンのバックアップ状態とタイマー状態を表示"
+      },
+      "strategy": {
+        "description": "名前付きバックアップ戦略を管理（ホット/コールドモード、宛先、スケジュール）",
+        "list": {
+          "description": "すべてのバックアップ戦略を一覧表示"
+        },
+        "remove": {
+          "description": "バックアップ戦略または宛先を削除",
+          "optionDestination": "この宛先のみ削除（他の宛先は保持）",
+          "removed": "バックアップ戦略を削除しました"
+        },
+        "set": {
+          "description": "バックアップ戦略を作成または更新",
+          "optionBwlimit": "rclone帯域幅制限（例: \"6M\"、\"10M:off\"、\"08:00,3M;22:00,10M\"）",
+          "optionCron": "cronスケジュール（例: \"0 * * * *\" で毎時実行）",
+          "optionDestination": "戦略内の宛先名",
+          "optionDisable": "戦略または宛先を無効にする",
+          "optionEnable": "戦略または宛先を有効にする",
+          "optionExclude": "これらのリポジトリをバックアップから除外（カンマ区切りの名前）",
+          "optionFolder": "この宛先のストレージバケット内のサブフォルダー（例: hot, cold）",
+          "optionInclude": "これらのリポジトリのみバックアップ（カンマ区切りの名前）",
+          "optionMode": "バックアップモード: \"hot\"（ダウンタイムなし）または \"cold\"（停止、スナップショット、再起動）",
+          "optionStorage": "ストレージ設定名（rclone資格情報）",
+          "saved": "バックアップ戦略の設定を保存しました",
+          "storageRequired": "新しい送信先を作成する場合、--storage は必須です。使用方法: --storage <storage-name>",
+          "examples": {
+            "configure": "バックアップ戦略のストレージとモードを設定する",
+            "disable": "バックアップ戦略を無効にする"
+          }
+        },
+        "show": {
+          "description": "バックアップ戦略の詳細を表示",
+          "destinationsHeader": "  送信先:",
+          "noDestinations": "  送信先: (なし)",
+          "notConfigured": "バックアップ戦略が設定されていません",
+          "notFound": "バックアップ戦略 \"{{name}}\" が見つかりません"
+        }
+      },
+      "descriptionShort": "バックアップを管理する",
+      "list": {
+        "description": "マシンまたはストレージ上のバックアップアーティファクトを一覧表示する",
+        "executorAmbiguous": "複数のマシンが登録されています。どのマシンで実行するかを指定するには、ストレージ一覧に @<machine> を付けてください",
+        "listing": "バックアップを一覧表示中...",
+        "optionPath": "ストレージルート内のサブディレクトリ。省略時は hot/ と cold/ の両方を一覧表示してマージする",
+        "optionStorage": "このストレージエンドポイント上のアーティファクトを一覧表示する",
+        "placementExclusive": "--machine か --storage のどちらか一方のみを指定してください（両方は不可）",
+        "placementRequired": "どこから一覧表示するか、--machine <m> または --storage <s> で指定してください",
+        "examples": {
+          "basic": "マシンに保存されたバックアップを一覧表示する",
+          "byStorage": "特定のストレージバックエンド内のバックアップを一覧表示する"
+        }
+      },
+      "restore": {
+        "datastoreUnattached": "データストア \"{{datastore}}\" はどのマシンにもアタッチされていません。先にアタッチしてください: rdc datastore attach {{datastore}} --to <machine>",
+        "deployFailed": "復元した {{name}} のデプロイに失敗しました",
+        "deployed": "{{machine}} に {{name}} をデプロイしました",
+        "deploying": "{{machine}} に {{name}} をデプロイ中...",
+        "description": "バックアップアーティファクトを稼働中のリポジトリに変換する。配置先はここで指定する",
+        "failed": "{{name}} の復元に失敗しました",
+        "optionAs": "復元後のリポジトリ名（デフォルトはアーティファクト名）",
+        "optionDatastore": "この名前付きデータストアに復元する（アタッチ先のマシンがホストする）",
+        "optionUp": "転送後に復元したリポジトリをデプロイする",
+        "placeRequired": "復元対象のアーティファクトは所在地を明示する必要がある: repo@place の形式を使用（例: shop:nightly@backup-1）",
+        "placementExclusive": "配置先フラグは --machine か --datastore のどちらか一方のみを指定してください",
+        "placementRequired": "復元先を指定してください: --machine <m>（Docker）または --datastore <d>（名前付きデータストア）",
+        "pulling": "{{place}} から {{name}} をプル中...",
+        "restored": "{{machine}} に {{name}} を復元しました",
+        "sourceUnknown": "この設定に \"{{name}}\" という名前のリポジトリが存在しないため、バックアップアーティファクトを特定できません",
+        "targetExists": "\"{{name}}\" は既に存在します。別名で復元する（--as）か、先に既存のリポジトリを削除してください",
+        "examples": {
+          "basic": "バックアップをマシンに復元する",
+          "asNewRepo": "バックアップを新しいリポジトリとして復元して起動する"
+        }
       }
     },
-    "backup": {
-      "description": "ストレージやマシン間でリポジトリバックアップのプッシュ、プル、同期を行う",
-      "schedule": {
-        "description": "リモートマシンにバックアップスケジュールをデプロイ"
+    "cluster": {
+      "create": {
+        "baseDomainOption": "クラスターの公開 DNS 用ベースドメイン（未指定の場合は兄弟マシンから継承）",
+        "controlDsBackendOption": "アンカーコントロールデータストアのバックエンド: local | ceph（デフォルト: クラスターに ceph があれば ceph、なければ local）",
+        "controlDsPoolOption": "アンカーコントロールデータストア用の Ceph rbd プール（ceph バックエンド）",
+        "controlDsSizeOption": "アンカーコントロールデータストアのサイズ（デフォルト 10G）",
+        "description": "クラスターを宣言・プロビジョニングする: マシン、Ceph プール、Kubernetes。--provider と --pool を渡すと1ステップで宣言できる。引数なしの create は、既に宣言済みのクラスターをプロビジョニングする",
+        "descriptionShort": "設定済みのクラスターをプロビジョニングする",
+        "sshUserOption": "プロビジョニングされたメンバー用の SSH ユーザー",
+        "cidrOption": "プライベートネットワークの CIDR（例: 10.0.0.0/24）",
+        "controlIdOption": "KVM: コントロールおよびレジストリノードの VM id（デフォルト: 1）",
+        "controlNodeOption": "コントロールノードとする明示的なマシン（デフォルト: 最初の k8s-server メンバー）",
+        "dockerRegistryOption": "KVM: このクラスターの VM 内 Docker レジストリのエンドポイント",
+        "netBaseOption": "KVM: ネットワークプレフィックス、最初の3オクテット（例: 192.168.112）",
+        "netNameOption": "KVM: このクラスターの libvirt ネットワーク（例: renet12）",
+        "netOffsetOption": "KVM: アドレスを導出する際に各 VM id に加算されるオフセット",
+        "poolOption": "プール指定 name:role:count[:size]（role: ceph|k8s-server|k8s-agent|hyperconverged）",
+        "primitiveOption": "ネットワークプリミティブ（例: vlan、vpc、network）",
+        "providerOption": "プロバイダー: cloudProviders のキー、または 'kvm'",
+        "declareOnlyOption": "プロビジョニングせずにクラスターを設定に記録する",
+        "declared": "クラスター \"{{name}}\" を宣言しました",
+        "examples": {
+          "basic": "プロバイダー上にクラスターを作成する",
+          "declareOnly": "既存のコントロールノードを中心にクラスターを宣言する"
+        }
       },
-      "sync": {
-        "description": "マシン間のバックアップの双方向同期"
+      "description": "クラスターをプロビジョニングして管理する: プライベートネットワーク上のノードプール（ceph、k8s-server、k8s-agent、hyperconverged）の名前付きセットです。プールのメンバーはマシンとして実体化するため、あらゆる -m コマンドがそのまま使えます。",
+      "descriptionShort": "クラスターを作成・管理する（プライベート LAN 上のノードプール）",
+      "destroy": {
+        "aborted": "中止しました。",
+        "confirm": "クラスター \"{{name}}\" とそのすべてのメンバーを破棄しますか？",
+        "description": "プロビジョニング済みのメンバーを解体し、クラスターとそのマシンを設定から削除する。",
+        "descriptionShort": "クラスターとそのメンバーを破棄する",
+        "forceOption": "確認をスキップし、解体中のエラーが出ても続行する"
+      },
+      "evict": {
+        "description": "ノードをドレインし、その Node オブジェクトを削除して、クラスターメンバーシップを解除する。クラスターはマシンから自動的に判定される。データストアをまだマウントしているマシンは拒否される。",
+        "descriptionShort": "ノードをクラスターから排出する",
+        "forceOption": "ノードが既にダウンしている場合はドレインをスキップする"
+      },
+      "fork": {
+        "description": "クラスター全体を、その配下のリポジトリのデータごと新しいクラスターへクローンする: クラスターイメージと PV イメージの copy-on-write を協調させたのち、ノードの identity を書き換えてフォークが新しいアドレスで起動する。複製元は動作を継続する。",
+        "descriptionShort": "クラスター全体をクローンする（データを含む）",
+        "tagOption": "フォークのタグ",
+        "upOption": "フォークしたリポジトリを起動し、フォーク起動後にクラスターの健全性を確認する",
+        "writesOption": "フォークの書き込み方式: local（一時的な dm-COW オーバーレイ、Ceph の使用量ゼロ） | ceph（永続的なクローン）。デフォルトは local",
+        "toOption": "フォークをホストするノードを持つ移動先クラスター（そのコントロールノードとエージェント）。クラスターは自分自身のマシンへフォークできない（2つの k3s が同一のホストネットワーク名前空間を共有できないため）",
+        "examples": {
+          "basic": "クラスターを新しい移動先にフォークする",
+          "andStart": "クラスターをフォークしてすぐに起動する"
+        }
+      },
+      "join": {
+        "clusterOption": "マシンの参加先クラスター",
+        "description": "既存の登録済みマシンを、クラスターの Kubernetes エージェントノードとして迎え入れる。アンカー構築や再参加時と同じ、CA 由来の join トークンを使用する。",
+        "descriptionShort": "マシンをエージェントとしてクラスターに追加する",
+        "examples": {
+          "basic": "マシンをクラスターに参加させる"
+        }
+      },
+      "kubeconfig": {
+        "cached": "Kubeconfig を {{path}} にキャッシュしました",
+        "description": "クラスターのコントロールノードから SSH 経由で kubeconfig を取得し、kubectl 用にローカルへキャッシュする（0600）。",
+        "descriptionShort": "クラスターの kubeconfig を取得してキャッシュする"
+      },
+      "migrate": {
+        "description": "クラスター全体を、その配下のリポジトリのデータごと、別のマシンまたはデータセンターへ短いカットオーバーで移動する（実行中にホットプリコピーを行い、移動先で停止・再起動する）。",
+        "descriptionShort": "クラスター全体を別の場所へ移動する",
+        "toOption": "移動先"
+      },
+      "rehearse": {
+        "description": "リリース/アップグレードをリハーサルする: クラスターを使い捨ての一時フォークとして目的地へフォークし（writes=local、シークレットを持たない role=rehearsal）、起動して健全性を確認したのち破棄する。複製元には一切手を加えない。",
+        "descriptionShort": "使い捨てフォークを起動し、健全性確認後に破棄する",
+        "tagOption": "リハーサルフォーク用のタグ（任意、デフォルトはタイムスタンプ）",
+        "onOption": "使い捨てのリハーサルを起動する移動先クラスター"
+      },
+      "scale": {
+        "countOption": "希望するメンバー数",
+        "description": "プールのメンバー数を変更する（マシンの追加・削除、ノードの参加・排出）。k8s-agent プールはその場でスケールされ、ceph プールの拡張は cephadm 経由で直接行う。",
+        "descriptionShort": "クラスターのプールをスケールアップ・ダウンする",
+        "poolOption": "プール名"
+      },
+      "status": {
+        "description": "すべてのクラスターを一覧表示、または --name で特定クラスターの全設定を表示する。",
+        "descriptionShort": "クラスターとそのプールを表示する",
+        "none": "クラスターが設定されていません。次のコマンドで追加してください: rdc cluster create <cluster>"
+      },
+      "snapshot": {
+        "create": {
+          "description": "クラスター内のすべての rbd バックエンドデータストアを、単一の瞬間でスナップショットする。何も停止しない。クラスター内の local バックエンドデータストアはこの瞬間の対象外として一覧表示され、スナップショットには含まれない。この瞬間はクラッシュコンシステントであり、アプリケーションコンシステントではない: 特定の書き込みをスナップショットに含めたい場合は、事前に同期（sync）しておくこと。",
+          "descriptionShort": "クラスター全体のスナップショットを取得する",
+          "labelOption": "スナップショットのラベル（デフォルト: UTC タイムスタンプ）"
+        },
+        "description": "クラスター全体のポイントインタイムスナップショット。クラスターが保有するすべての rbd バックエンドデータストアにわたる、クラッシュコンシステントな単一の瞬間を Ceph のグループスナップショットによって取得する: 何も停止せず、クラスターは何も気づかない。local バックエンドデータストアにはブロックレベルのグループプリミティブがないため、この瞬間の対象外となりその旨が報告される。この瞬間はクラッシュコンシステントであり、アプリケーションコンシステントではない: 特定の書き込みをスナップショットに含めたい場合は、事前に同期（sync）しておくこと。",
+        "descriptionShort": "クラスター内のすべてのデータストアを単一の瞬間でスナップショットする",
+        "list": {
+          "description": "クラスターのグループスナップショットを一覧表示する",
+          "descriptionShort": "クラスターのスナップショットを一覧表示する"
+        }
       }
     },
     "config": {
@@ -46,77 +221,6 @@
           "description": "すべての監査エントリにおける SHA-256 ハッシュチェーンの整合性を検証"
         }
       },
-      "backupStrategy": {
-        "description": "名前付きバックアップ戦略を管理（ホット/コールドモード、宛先、スケジュール）",
-        "list": {
-          "description": "すべてのバックアップ戦略を一覧表示"
-        },
-        "remove": {
-          "description": "バックアップ戦略または宛先を削除",
-          "optionDestination": "この宛先のみ削除（他の宛先は保持）",
-          "optionName": "戦略名（必須）",
-          "removed": "バックアップ戦略を削除しました"
-        },
-        "set": {
-          "description": "バックアップ戦略を作成または更新",
-          "optionBwlimit": "rclone帯域幅制限（例: \"6M\"、\"10M:off\"、\"08:00,3M;22:00,10M\"）",
-          "optionCron": "cronスケジュール（例: \"0 * * * *\" で毎時実行）",
-          "optionDestination": "戦略内の宛先名",
-          "optionDisable": "戦略または宛先を無効にする",
-          "optionEnable": "戦略または宛先を有効にする",
-          "optionExclude": "これらのリポジトリをバックアップから除外（カンマ区切りの名前）",
-          "optionFolder": "この宛先のストレージバケット内のサブフォルダー（例: hot, cold）",
-          "optionInclude": "これらのリポジトリのみバックアップ（カンマ区切りの名前）",
-          "optionMode": "バックアップモード: \"hot\"（ダウンタイムなし）または \"cold\"（停止、スナップショット、再起動）",
-          "optionName": "戦略名（必須）",
-          "optionStorage": "ストレージ設定名（rclone資格情報）",
-          "saved": "バックアップ戦略の設定を保存しました",
-          "storageRequired": "新しい送信先を作成する場合、--storage は必須です。使用方法: --storage <storage-name>"
-        },
-        "show": {
-          "description": "バックアップ戦略の詳細を表示",
-          "destinationsHeader": "  送信先:",
-          "noDestinations": "  送信先: (なし)",
-          "notConfigured": "バックアップ戦略が設定されていません",
-          "notFound": "バックアップ戦略 \"{{name}}\" が見つかりません",
-          "optionName": "戦略名（省略時はすべて表示）"
-        }
-      },
-      "certCache": {
-        "clear": {
-          "cleared": "証明書キャッシュを削除しました",
-          "description": "証明書キャッシュを削除",
-          "noCache": "削除する証明書キャッシュがありません"
-        },
-        "description": "キャッシュされたTLS証明書を管理",
-        "noBaseDomain": "マシンにbaseDomainが設定されていません",
-        "noCacheForDomain": "{{domain}} の証明書キャッシュが見つかりません",
-        "pull": {
-          "cached": "{{count}} 件の証明書をキャッシュしました ({{size}})",
-          "description": "マシンからTLS証明書をダウンロードしてキャッシュ",
-          "downloading": "{{machine}} から証明書をダウンロード中...",
-          "merged": "ローカルキャッシュからより長い有効期限の証明書を {{count}} 件保持しました",
-          "noAcmeJson": "{{machine}} に acme.json が見つかりません",
-          "optionNoPrune": "古いネットワークID証明書の整理をスキップ",
-          "pruned": "古い証明書を {{count}} 件整理しました",
-          "prunedExpired": "期限切れの証明書を {{count}} 件削除しました"
-        },
-        "push": {
-          "description": "キャッシュされたTLS証明書をマシンにアップロード",
-          "merged": "より長い有効期限の証明書 {{count}} 件を {{machine}} にマージしました",
-          "noCache": "証明書キャッシュが見つかりません。先に 'rdc config cert-cache pull -m <machine>' を実行してください",
-          "uploaded": "{{count}} 件の証明書を {{machine}} にアップロードしました",
-          "uploading": "キャッシュされた証明書を {{machine}} にアップロード中...",
-          "upToDate": "{{machine}} の証明書は最新です"
-        },
-        "status": {
-          "certCount": "{{count}} 件の証明書、{{size}} 圧縮",
-          "description": "キャッシュされた証明書のインベントリを表示",
-          "header": "{{baseDomain}} の証明書キャッシュ",
-          "noCache": "保存された証明書キャッシュはありません",
-          "updatedAt": "最終更新: {{date}} ({{machine}} から)"
-        }
-      },
       "clear": {
         "allCleared": "すべてのデフォルトをクリアしました",
         "description": "デフォルト値をクリアする（すべてまたは特定のキー）",
@@ -126,8 +230,8 @@
         "description": "設定ファイルを削除する",
         "success": "設定 \"{{name}}\" が削除されました"
       },
-      "description": "設定ファイル、マシン、SSH 接続を管理する",
-      "descriptionShort": "設定ファイル、マシン、SSH 接続を管理する",
+      "description": "設定ファイルを管理する: 作成、切り替え、編集、状態の reconcile、横断的機能（フィールド、監査、SSH キー、リモート同期）",
+      "descriptionShort": "設定ファイルを管理する",
       "edit": {
         "abortAfterRetries": "{{count}} 回の失敗後に中止します。下書きを保存: {{path}}",
         "applied": "{{path}} を適用しました",
@@ -184,125 +288,20 @@
           "success": "{{pointer}} を削除しました"
         }
       },
-      "infra": {
-        "description": "インフラ設定を管理する（プロキシ、DNS、証明書）",
-        "push": {
-          "certCacheUploaded": "キャッシュされた証明書をリモートにアップロードしました",
-          "description": "インフラ設定をマシンにプッシュします（Traefik プロキシ、ルーター、Cloudflare DNS）。先に 'config infra set <machine>' を実行してください",
-          "descriptionShort": "インフラ設定をマシンにプッシュする",
-          "dnsCreated": "DNS: {{type}} {{name}} → {{content}} を作成しました",
-          "dnsError": "DNS 警告: {{message}}（レコードの手動設定が必要な場合があります）",
-          "dnsResolvingZone": "{{domain}} の Cloudflare ゾーンを解決中...",
-          "dnsSkipLocal": "DNS をスキップ: .local ドメインは Cloudflare を使用しません",
-          "dnsSkipNoToken": "DNS をスキップ: Cloudflare API トークンがありません。次のコマンドで設定してください: rdc config infra set -m <machine> --cf-dns-token <token>",
-          "dnsUnchanged": "DNS: {{type}} {{name}} は既に正しい設定です",
-          "dnsUpdated": "DNS: {{type}} {{name}} → {{content}} を更新しました",
-          "installingProxy": "プロキシをインストールして起動中...",
-          "proxyInstallWarning": "プロキシのインストールに失敗しました（コード {{code}}）。手動で実行してください: sudo renet proxy install",
-          "success": "\"{{name}}\" にインフラ設定をプッシュしました"
-        },
-        "set": {
-          "description": "マシンのインフラ設定を行います（マシン固有: IP、ドメイン、ポート；共有: 証明書メール、CF DNS トークン）",
-          "descriptionShort": "マシンのインフラ設定を行う",
-          "invalidIPv4": "無効な IPv4 アドレス: {{ip}}",
-          "invalidIPv6": "無効な IPv6 アドレス: {{ip}}",
-          "noOptions": "オプションが指定されていません。--public-ipv4、--base-domain などを使用してください",
-          "optionBaseDomain": "アプリケーション用ベースドメイン（マシンごと）",
-          "optionCertEmail": "TLS 証明書通知用メールアドレス（マシン間で共有）",
-          "optionCfDnsToken": "ACME DNS-01 チャレンジ用 Cloudflare DNS API トークン（マシン間で共有）",
-          "optionPublicIPv4": "パブリック IPv4 アドレス（マシンごと）",
-          "optionPublicIPv6": "パブリック IPv6 アドレス（マシンごと）",
-          "optionTcpPorts": "転送する TCP ポート（カンマ区切り、例: 25,143,465）",
-          "optionUdpPorts": "転送する UDP ポート（カンマ区切り、例: 53）",
-          "success": "\"{{name}}\" のインフラ設定を更新しました"
-        },
-        "show": {
-          "description": "マシンのインフラ設定を表示する",
-          "noInfra": "\"{{name}}\" のインフラ設定がありません"
-        }
-      },
       "init": {
         "alreadyExists": "設定 \"{{name}}\" は既に存在します",
         "description": "新しい名前付き設定ファイルを作成する",
         "optionMasterPassword": "マスターパスワードでリソースを暗号化する",
-        "success": "設定 \"{{name}}\" が初期化されました"
+        "success": "設定 \"{{name}}\" が初期化されました",
+        "bareForm": "デフォルト設定は自動的に作成される。名前付き設定を作るには 'config init <name>' を使用するか、デフォルト設定にオプションを設定するにはフラグ（--ssh-key、--server など）を渡す",
+        "examples": {
+          "basic": "名前付きの設定プロファイルを作成する",
+          "withServer": "特定のアカウントサーバーを指すプロファイルを作成する"
+        }
       },
       "list": {
         "description": "すべての設定ファイルをリスト表示する",
         "noConfigs": "設定ファイルが見つかりません。次のコマンドで作成してください: rdc config init"
-      },
-      "machine": {
-        "add": {
-          "description": "現在の設定にマシンを追加",
-          "descriptionShort": "現在の設定にマシンを追加する",
-          "sshConfigFailed": "SSH エイリアスの書き込みに失敗しました（非致命的）: {{error}}",
-          "sshConfigWritten": "SSH エイリアス rediacc--{{name}} を ~/.ssh/config_rediacc に書き込みました",
-          "success": "マシン \"{{name}}\" を追加しました ({{user}}@{{ip}})"
-        },
-        "description": "現在の設定のマシンを管理する",
-        "list": {
-          "description": "現在の設定のマシンをリスト表示する",
-          "noMachines": "現在の設定にマシンがありません"
-        },
-        "remove": {
-          "description": "現在の設定からマシンを削除する",
-          "sshConfigCleared": "SSH エイリアス rediacc--{{name}} を削除しました",
-          "success": "マシン \"{{name}}\" を削除しました"
-        },
-        "scanKeys": {
-          "completed": "{{count}}/{{total}} 台のマシンをスキャン済み",
-          "description": "現在の設定のマシンの SSH ホストキーをスキャンする",
-          "keysScanned": "\"{{name}}\" のホストキーをスキャンしました",
-          "noKeys": "\"{{name}}\" のホストキーをスキャンできませんでした"
-        },
-        "setCeph": {
-          "description": "マシンの Ceph RBD 設定を行う",
-          "optionCluster": "Ceph クラスター名",
-          "optionImage": "RBD イメージ名（例: datastore-prod1）",
-          "optionPool": "Ceph プール名（例: rbd）",
-          "success": "\"{{name}}\" の Ceph 設定が完了しました: pool={{pool}}, image={{image}}"
-        },
-        "setup": {
-          "completed": "マシン \"{{machine}}\" のセットアップが完了しました",
-          "datastoreOption": "リモートマシン上のデータストアパス",
-          "datastoreSizeOption": "データストアサイズ（例: 95%、100G）",
-          "description": "リモートマシンをリポジトリ用にプロビジョニング（renetインストール、Docker設定、BTRFSデータストア）。冪等。config machine addの後、repo createの前に必要",
-          "descriptionShort": "リモートマシンをリポジトリ用にプロビジョニングする",
-          "failed": "マシン \"{{machine}}\" のセットアップに失敗しました: {{error}}",
-          "starting": "マシン \"{{machine}}\" をセットアップ中..."
-        }
-      },
-      "provider": {
-        "add": {
-          "description": "クラウドプロバイダーを追加する",
-          "optionImage": "デフォルトの OS イメージ",
-          "optionImageAttr": "カスタム: OS イメージの属性名",
-          "optionInstanceType": "デフォルトのインスタンスタイプ/サイズ",
-          "optionIpv4Output": "カスタム: IPv4 アドレスの出力属性",
-          "optionIpv6Output": "カスタム: IPv6 アドレスの出力属性",
-          "optionLabelAttr": "カスタム: VM ラベルの属性名",
-          "optionProvider": "既知のプロバイダーソース（例: linode/linode, hetznercloud/hcloud）",
-          "optionRegion": "新規マシンのデフォルトリージョン",
-          "optionRegionAttr": "カスタム: リージョンの属性名",
-          "optionResource": "カスタム: VM 用の OpenTofu リソースタイプ",
-          "optionSizeAttr": "カスタム: インスタンスタイプの属性名",
-          "optionSource": "カスタム OpenTofu プロバイダーソース（例: vultr/vultr）",
-          "optionSshKeyAttr": "カスタム: SSH キーの属性名",
-          "optionSshKeyFormat": "カスタム: SSH キーの形式（inline_list または resource_id）",
-          "optionSshKeyResource": "カスタム: SSH キー用の OpenTofu リソースタイプ",
-          "optionSshUser": "新規 VM 用の SSH ユーザー名（デフォルト: root）",
-          "optionToken": "クラウドプロバイダーの API トークン",
-          "success": "クラウドプロバイダー \"{{name}}\" を追加しました（{{provider}}）"
-        },
-        "description": "自動マシンプロビジョニング用クラウドプロバイダーを管理する",
-        "list": {
-          "description": "設定済みクラウドプロバイダーをリスト表示する",
-          "noProviders": "クラウドプロバイダーが設定されていません。次のコマンドで追加してください: rdc config provider add"
-        },
-        "remove": {
-          "description": "クラウドプロバイダー設定を削除する",
-          "success": "クラウドプロバイダー \"{{name}}\" を削除しました"
-        }
       },
       "prune": {
         "archivesOnlyOption": "期限切れアーカイブのパージに制限します。証明書キャッシュとクロスリファレンスのクリーンアップをスキップします。--certs-only および --refs-only と排他的。",
@@ -314,9 +313,9 @@
         "dryRun": "ドライラン: {{count}} 件の変更が適用されます。コミットするには --dry-run なしで再実行してください。",
         "dryRunOption": "設定ファイルを変更せずに削除される内容をプレビューします。他の prune コマンドのデフォルトオフセマンティクスを反映します。",
         "graceDaysOption": "この呼び出しのアーカイブ猶予期間（日数）を上書きします。設定の defaults.pruneGraceDays にフォールバックし、どちらも設定されていない場合は 7 にフォールバックします。",
-        "keptArchivesInGrace": "猶予期間内のアーカイブ済みリポジトリを保持（'rdc config repository restore-archived' で復元可能）：",
+        "keptArchivesInGrace": "猶予期間内のアーカイブ済みリポジトリを保持（'rdc repo admin archive restore' で復元可能）：",
         "nothingToPrune": "クリーンアップするものはありません。設定はすでにクリーンです。",
-        "purgeArchivedOption": "年齢に関係なく、猶予期間を過ぎたもののみではなくすべてのアーカイブ済みリポジトリを破棄します。'rdc config repository purge-archived' を実行することと同等です。復元のために保存された認証情報のいずれも不要であることが確実な場合のみ使用してください。",
+        "purgeArchivedOption": "猶予期間を過ぎたものだけでなく、経過期間に関係なくアーカイブ済みリポジトリをすべて削除する。すべてのアーカイブ済みリポジトリに対して 'rdc repo admin archive purge' を実行するのと同等。復元用に保存された認証情報が一切不要だと確信できる場合のみ使用すること",
         "purgedArchives": "{{count}} 件の期限切れアーカイブ済みリポジトリが{{verb}}削除されました：",
         "refsOnlyOption": "ぶら下がりクロスリファレンス（machine→strategy、strategy→repo excludes/includes）に制限します。証明書キャッシュとアーカイブをスキップします。--certs-only および --archives-only と排他的。",
         "removedCerts": "{{count}} 件の証明書キャッシュエントリが{{verb}}削除されました：",
@@ -332,69 +331,41 @@
       },
       "remote": {
         "description": "リモート設定ストレージ接続を管理",
+        "tokenExpired": "リモート設定トークンの有効期限が切れました。再認証してください: rdc config remote enable",
+        "passkeySecretMissing": "OSキーリングにパスキーシークレットが見つかりません。再認証してください: rdc config remote enable",
+        "staleSlot": "キースロットが古くなっています（設定の暗号化キーがローテーションされました）。次のコマンドで再登録してください: rdc config remote enable",
+        "enable": {
+          "description": "この設定をリモート暗号化ストレージにリンク",
+          "optionHeadless": "デバイスコードフローを使用（ヘッドレスサーバー用）",
+          "optionApiUrl": "アカウントサーバーURL",
+          "openBrowser": "このURLを開いてセットアップを完了してください:",
+          "waiting": "ブラウザの承認を待機中...",
+          "received": "ハンドオフを受信",
+          "polling": "ブラウザの承認を確認中...",
+          "success": "リモート設定を有効化しました。設定 \"{{name}}\" は {{apiUrl}} と同期されています。",
+          "alreadyEnabled": "設定 \"{{name}}\" は既にリモートストレージにリンクされています。先に無効化してください: rdc config remote disable",
+          "expired": "デバイスコードの有効期限が切れました。もう一度お試しください。",
+          "optionPassword": "事前にプロビジョニングされたパスワードスロットでヘッドレス登録する（ブラウザ不要）",
+          "passwordPrompt": "設定のマスターパスワード:",
+          "passwordNonInteractive": "設定のマスターパスワードが必要です。REDIACC_CONFIG_PASSWORD を設定するか、対話的なターミナルで --password を付けずに実行してください。",
+          "passwordRequirePasskey": "この組織では、設定ストレージのロック解除にパスキーが必須であり、パスワードによる登録は無効です。次のコマンドでブラウザから登録してください: rdc config remote enable",
+          "passwordNoSlot": "設定ストレージ用のパスワードスロットがプロビジョニングされていません。ポータル（Config Storage > key slots）から追加してから、もう一度お試しください。",
+          "passwordWrong": "そのパスワードでは設定のロックを解除できませんでした。REDIACC_CONFIG_PASSWORD（または入力したパスワード）を確認して、もう一度お試しください。"
+        },
         "disable": {
           "description": "リモートストレージから切断し、設定をローカルに保存",
           "notEnabled": "リモート設定は有効になっていません。",
           "success": "リモート設定を無効化しました。設定 \"{{name}}\" をローカルに保存しました。"
         },
-        "enable": {
-          "alreadyEnabled": "設定 \"{{name}}\" は既にリモートストレージにリンクされています。先に無効化してください: rdc config remote disable",
-          "description": "この設定をリモート暗号化ストレージにリンク",
-          "expired": "デバイスコードの有効期限が切れました。もう一度お試しください。",
-          "openBrowser": "このURLを開いてセットアップを完了してください:",
-          "optionApiUrl": "アカウントサーバーURL",
-          "optionHeadless": "デバイスコードフローを使用（ヘッドレスサーバー用）",
-          "polling": "ブラウザの承認を確認中...",
-          "received": "ハンドオフを受信",
-          "success": "リモート設定を有効化しました。設定 \"{{name}}\" は {{apiUrl}} と同期されています。",
-          "waiting": "ブラウザの承認を待機中..."
+        "status": {
+          "description": "リモート接続状態を表示"
         },
-        "passkeySecretMissing": "OSキーリングにパスキーシークレットが見つかりません。再認証してください: rdc config remote enable",
         "refresh": {
           "description": "リモートストレージから設定を強制再取得",
           "notEnabled": "リモート設定は有効になっていません。",
           "pulled": "設定を取得済み",
           "pulling": "リモートから設定を取得中...",
           "success": "リモートから設定を更新しました (バージョン {{version}})。"
-        },
-        "status": {
-          "description": "リモート接続状態を表示"
-        },
-        "tokenExpired": "リモート設定トークンの有効期限が切れました。再認証してください: rdc config remote enable"
-      },
-      "repository": {
-        "add": {
-          "description": "現在の設定にリポジトリ GUID マッピングを追加する",
-          "networkIdAssigned": "ネットワーク ID: {{networkId}}",
-          "optionCredential": "リポジトリ資格情報（暗号化パスフレーズ）",
-          "optionGuid": "リポジトリ GUID（ストレージバックアップファイル名の UUID）",
-          "optionNetworkId": "Docker 分離用のネットワーク ID（2816, 2880, ...）。省略時は自動割り当て",
-          "optionTag": "リポジトリタグ",
-          "success": "リポジトリ \"{{name}}\" を追加しました（{{guid}}, タグ: {{tag}}）"
-        },
-        "description": "現在の設定のリポジトリマッピングを管理する",
-        "list": {
-          "description": "現在の設定のリポジトリ GUID マッピングをリスト表示する",
-          "noRepositories": "リポジトリが設定されていません。次のコマンドで追加してください: rdc config repository add --name <name> --guid <guid>"
-        },
-        "listArchived": {
-          "description": "アーカイブ済みリポジトリ資格情報をリスト表示する",
-          "noArchived": "アーカイブ済みリポジトリはありません"
-        },
-        "purgeArchived": {
-          "description": "アーカイブ済み資格情報をすべて完全に削除する",
-          "noArchived": "パージするアーカイブ済みリポジトリはありません",
-          "success": "アーカイブ済みの認証情報を {{count}} 件削除しました"
-        },
-        "remove": {
-          "description": "現在の設定からリポジトリマッピングを削除する",
-          "descriptionShort": "現在の構成からリポジトリのマッピングを削除",
-          "success": "リポジトリ \"{{name}}\" を削除しました"
-        },
-        "restoreArchived": {
-          "description": "アーカイブ済みリポジトリ資格情報を復元する",
-          "optionName": "別の名前で復元する",
-          "success": "\"{{name}}\"（{{guid}}）を復元しました"
         }
       },
       "set": {
@@ -415,7 +386,6 @@
         },
         "set": {
           "description": "現在の設定に SSH キーを設定する",
-          "embedWarning": "キーの内容が設定ファイルに保存されます",
           "invalidKey": "ファイルに有効な SSH 秘密キーが含まれていません",
           "keyNotFound": "SSH キーファイルが見つかりません: {{path}}",
           "optionEmbed": "パスを保存する代わりにキーの内容を設定に埋め込む",
@@ -427,86 +397,182 @@
           "noKey": "SSH キーが設定されていません"
         }
       },
-      "storage": {
-        "description": "現在の設定のストレージバックエンドを管理する",
-        "import": {
-          "description": "rclone 設定ファイルからストレージをインポートする",
-          "imported": "ストレージ \"{{name}}\" をインポートしました（{{type}}）",
-          "noConfigs": "ファイル内に有効なストレージ設定が見つかりません",
-          "notFound": "ストレージ \"{{name}}\" が設定ファイルに見つかりません",
-          "optionName": "指定したセクションのみインポートする",
-          "summary": "{{count}} 件のストレージをインポートしました",
-          "unsupported": "\"{{name}}\" をスキップ: サポートされていないプロバイダータイプ \"{{type}}\""
+      "certCache": {
+        "noBaseDomain": "マシンにbaseDomainが設定されていません",
+        "noCacheForDomain": "{{domain}} の証明書キャッシュが見つかりません",
+        "pull": {
+          "cached": "{{count}} 件の証明書をキャッシュしました ({{size}})",
+          "downloading": "{{machine}} から証明書をダウンロード中...",
+          "merged": "ローカルキャッシュからより長い有効期限の証明書を {{count}} 件保持しました",
+          "noAcmeJson": "{{machine}} に acme.json が見つかりません",
+          "pruned": "古い証明書を {{count}} 件整理しました",
+          "prunedExpired": "期限切れの証明書を {{count}} 件削除しました"
         },
-        "list": {
-          "description": "現在の設定のストレージをリスト表示する",
-          "noStorages": "ストレージが設定されていません。次のコマンドでインポートしてください: rdc config storage import --file <path>"
+        "push": {
+          "merged": "より長い有効期限の証明書 {{count}} 件を {{machine}} にマージしました",
+          "noCache": "証明書キャッシュが見つかりません。先に 'rdc machine infra cert pull <machine>' を実行してください",
+          "upToDate": "{{machine}} の証明書は最新です",
+          "uploaded": "{{count}} 件の証明書を {{machine}} にアップロードしました",
+          "uploading": "キャッシュされた証明書を {{machine}} にアップロード中..."
+        }
+      },
+      "infra": {
+        "push": {
+          "certCacheUploaded": "キャッシュされた証明書をリモートにアップロードしました",
+          "dnsCreated": "{{type}} レコード {{name}} -> {{content}} を作成しました",
+          "dnsError": "DNS 警告: {{message}}（レコードの手動設定が必要な場合があります）",
+          "dnsResolvingZone": "{{domain}} の Cloudflare ゾーンを解決中...",
+          "dnsSkipLocal": "DNS をスキップ: .local ドメインは Cloudflare を使用しません",
+          "dnsSkipNoToken": "DNS をスキップ: Cloudflare API トークンがありません。次のコマンドで設定してください: rdc machine infra set <machine> --cf-dns-token <token>",
+          "dnsUnchanged": "{{type}} レコード {{name}} は既に最新です",
+          "dnsUpdated": "{{type}} レコード {{name}} -> {{content}} を更新しました"
+        }
+      },
+      "machine": {
+        "add": {
+          "sshConfigFailed": "SSH エイリアスの書き込みに失敗しました（非致命的）: {{error}}",
+          "sshConfigWritten": "SSH エイリアス rediacc--{{name}} を ~/.ssh/config_rediacc に書き込みました"
         },
         "remove": {
-          "description": "現在の設定からストレージを削除する",
-          "success": "ストレージ \"{{name}}\" を削除しました"
-        },
-        "show": {
-          "description": "ストレージのプロバイダーと構成を表示する",
-          "optionReveal": "ストレージ構成を平文で表示する(対話型 TTY のみ、監査ログに記録)"
+          "sshConfigCleared": "SSH エイリアス rediacc--{{name}} を削除しました"
         }
+      },
+      "reconcile": {
+        "description": "マシン側の実態からランタイム状態を再構築する。古くなったアタッチ情報やルーティング情報を修正する",
+        "optionMachine": "対象マシンを指定して reconcile を限定する",
+        "optionAcceptObserved": "宣言された配置を、イメージが実際にある場所に一致するよう書き換える。ただしそれが一意である場合のみ（正確に 1 台のマシンで観測された場合）。重複は競合のままとなる。",
+        "acceptObservedUnfiltered": "--accept-observed は --machine と組み合わせられません: 部分スキャンでは配置が一意であることを証明できないため、書き換えは推測になってしまいます。フィルタなしで 'rdc config reconcile --accept-observed' を実行してください。"
+      },
+      "rotateCek": {
+        "cancelled": "ローテーションをキャンセルしました。何も変更されていません",
+        "confirm": "設定暗号化キーを今すぐローテーションしますか？",
+        "confirmDone": "ブラウザでローテーションの完了が表示されましたか？",
+        "description": "組織の設定暗号化キーをローテーションする",
+        "notEnabled": "\"{{name}}\" ではリモート設定が有効になっていません",
+        "openWizard": "ブラウザでローテーションを完了してください:",
+        "optionApiUrl": "アカウントサーバー URL",
+        "received": "ハンドオフを受信しました",
+        "resync": "ローテーションによりこのデバイスの権限が失効しました。ブラウザで再リンクしてください:",
+        "success": "設定 \"{{name}}\" は新しいキーで暗号化されました（バージョン {{version}}）",
+        "verified": "新しいキーを検証しました",
+        "verifying": "新しいキーで設定を復号できるか検証中...",
+        "waiting": "ブラウザでの承認を待機中...",
+        "warning": "これは組織全体の設定を暗号化しているキーをローテーションする。他のすべてのデバイスは、その後再リンクが必要になる"
       }
     },
+    "credits": {
+      "bundledTitle": "ランタイムと同梱の依存関係:",
+      "description": "rdc に同梱されているサードパーティコンポーネントを表示する: renet が組み込み・配布するバイナリ（CRIU、rsync、rclone）、組み込みの Node.js ランタイム、同梱の npm 依存関係。バージョン、SPDX ライセンス識別子、GPL コンプライアンスに必要な正確なバージョンのソースアーカイブ URL を表示する。--licenses を指定するとリリースビルドに同梱される THIRD_PARTY_LICENSES の全文を表示する。",
+      "descriptionShort": "サードパーティのクレジットとライセンスコンプライアンス情報を表示する",
+      "embeddedTitle": "組み込みバイナリ（renet が配布）:",
+      "gplHeader": "GPL ソースの入手方法:",
+      "header": "Rediacc は Rediacc ライセンスの下で配布されるプロプライエタリソフトウェアです。以下のサードパーティコンポーネントは、それぞれ独自のライセンスの下で同梱配布されています。\n\nrdc に同梱されているサードパーティコンポーネント:",
+      "licensesUnavailable": "THIRD_PARTY_LICENSES の全文はビルド時に生成され、リリースビルドにのみ同梱されます。開発モードでは、CLI のビルドを実行して生成するか、次のコマンドでコンポーネントごとのクレジットを表示してください: rdc credits"
+    },
     "datastore": {
-      "description": "Ceph RBDデータストアのライフサイクルを管理（init、fork、unfork、status）",
-      "descriptionShort": "Ceph RBDデータストアのライフサイクルを管理（init、fork、unfork、status）",
+      "description": "リポジトリを保持する名前付きストレージプール。データストアは可搬（マシンにアタッチし、別のマシンへ移動できる）かつシングルマウンター（常にちょうど1台のマシンだけが保持する）である。各マシンの暗黙のデフォルトデータストアはここでは管理しない",
+      "descriptionShort": "名前付きの可搬なストレージプール",
       "fork": {
-        "completed": "データストアのフォークが完了しました（スナップショット: {{snapshot}}）",
-        "cowSizeOption": "COWバッキングファイルサイズ（デフォルト: auto、必要に応じて拡張）",
-        "description": "RBDスナップショット+クローンを使用してCephデータストアのローカルCOWコピーを作成（2秒未満）。unforkのために出力からスナップショット/クローン名を保存してください。ターゲット名ごとに1つのforkのみ。再forkする前にunforkしてください",
-        "descriptionShort": "Ceph データストアのローカル CoW コピーを作成する",
-        "failed": "データストアのフォークに失敗しました",
-        "starting": "\"{{source}}\"でデータストアをフォーク中（\"{{target}}\"のクローン）...",
-        "toOption": "クローンサフィックス（<image>-fork-<name>という名前のクローンを作成）。forkはソースマシンに残ります"
+        "cowSizeOption": "--writes local 用のオーバーレイサイズ",
+        "description": "データストアを copy-on-write でフォークする。フォークは即時に完了し、コストはプールのサイズに比例しない。rbd バックエンドが必要: local データストアにはブロックレベルのクローンがないため、内部のリポジトリは代わりに reflink で1つずつフォークする（rdc repo fork）",
+        "descriptionShort": "データストアを copy-on-write でフォークする",
+        "attachToOption": "フォーク作成後すぐにこのマシンへアタッチする（--writes が必要）",
+        "forked": "データストア \"{{ref}}\" を \"{{name}}\" からフォークしました（デタッチ状態）",
+        "tagOption": "フォークのタグ（結果は name:tag になる）",
+        "writesOption": "フォークの書き込み先: local（即時・一時的）または ceph（永続クローン）",
+        "examples": {
+          "basic": "データストアを新しいタグにフォークする",
+          "andAttach": "データストアをフォークしてマシンにアタッチする"
+        }
       },
-      "init": {
-        "backendOption": "バックエンドタイプ: local（デフォルト）またはceph",
-        "clusterOption": "Cephクラスター名（デフォルト: ceph）",
-        "completed": "データストアを初期化しました",
-        "description": "マシン上でデータストアを初期化（ローカルまたはCeph RBD）",
-        "failed": "データストアの初期化に失敗しました",
-        "forceOption": "データストアが既に存在していても強制的に初期化する（警告: ストレージを再フォーマットします）",
-        "imageOption": "Ceph RBDイメージ名（デフォルト: set-cephによるマシン設定から）",
-        "imageRequired": "cephバックエンドには--imageが必要です（または rdc config set-ceph -m <machine> --image <name> で設定してください）",
-        "poolOption": "Cephプール名（デフォルト: マシン設定から、またはrbd）",
-        "sizeOption": "データストアサイズ（例: 5G, 50G, 100G）",
-        "starting": "\"{{machine}}\"でデータストアを初期化中..."
-      },
-      "machineOption": "マシン名（Cephデータストアがホストされている場所）",
       "resize": {
-        "description": "マシンのデータストアプールをオフラインでリサイズします（拡張または縮小）。先にすべてのリポジトリをアンマウントしてください。",
-        "sizeOption": "新しいデータストアサイズ（例: 100G, 95%）",
-        "starting": "\"{{machine}}\" 上のデータストアを {{size}} にリサイズ中..."
+        "description": "データストアを拡張または縮小する。これはオフライン操作であり、内部のリポジトリは停止しておく必要がある",
+        "sizeOption": "新しいサイズ（例: 200G）",
+        "descriptionShort": "データストアを拡張または縮小する",
+        "resized": "データストア \"{{ref}}\" を {{size}} にリサイズしました"
       },
       "status": {
-        "description": "データストアのバックエンド、サイズ、使用量、マウント状態、cow_mode（フォーク時）を表示",
-        "starting": "\"{{machine}}\"でデータストアの状態を確認中..."
+        "description": "1つのデータストアを表示する: バックエンド、アタッチ状態、使用量、リポジトリ、スナップショット。デタッチされたデータストアでもレコードは表示される",
+        "descriptionShort": "1つのデータストアを表示する"
       },
-      "unfork": {
-        "completed": "forkのクリーンアップが完了しました",
-        "description": "forkのクリーンアップ: COWのアンマウント、クローンの削除、スナップショットの削除",
-        "destOption": "削除するクローンイメージ（fork出力の\"Clone:\"値、例: ds-prod-fork-<machine>）",
-        "failed": "forkのクリーンアップに失敗しました",
-        "forceOption": "個々のステップが失敗しても（例：アンマウント、スナップショット削除）クリーンアップを続行する",
-        "mountPointOption": "アンマウントするforkマウントポイント（デフォルト: /mnt/rediacc）",
-        "poolOption": "Cephプール名（デフォルト: マシン設定から）",
-        "snapshotOption": "削除するスナップショット（fork出力の\"Snapshot:\"値、例: fork-<timestamp>）",
-        "sourceOption": "フォークされた元のRBDイメージ（config set-ceph --imageから、例: ds-prod）",
-        "starting": "\"{{machine}}\"でフォークされたデータストアをクリーンアップ中..."
+      "attach": {
+        "attached": "データストア \"{{ref}}\" は {{machine}} にアタッチされました",
+        "cowSizeOption": "--writes local 用のオーバーレイサイズ",
+        "description": "データストアをマシンにアタッチする。常にちょうど1台のマシンだけがデータストアを保持するため、別のマシンへアタッチすると実質的に移動になる: 元の保持者が先に手放し、引き渡しに失敗した場合は元のアタッチがそのまま維持される。フォークは書き込み先（--writes）を指定する必要がある",
+        "descriptionShort": "データストアをマシンにアタッチする",
+        "forceOption": "データストアを正常に手放さなかった古い保持者をフェンシングする",
+        "noAutoOption": "起動時にこのデータストアを自動的に再アタッチしない",
+        "noop": "データストア \"{{ref}}\" は既に同じ方法で {{machine}} にアタッチされています。実行することはありません",
+        "relocating": "\"{{ref}}\" を {{from}} から {{to}} へ移動中（まず {{from}} からデタッチする）...",
+        "toOption": "データストアのアタッチ先マシン",
+        "writesOption": "フォークの書き込み先: local（即時・一時的、デタッチで消失）または ceph（プール内の永続クローン）。フォークの場合は必須",
+        "examples": {
+          "basic": "データストアをマシンにアタッチする",
+          "cephWrites": "Ceph バックエンドの書き込みを行うデータストアをアタッチする"
+        }
+      },
+      "create": {
+        "backendOption": "ストレージバックエンド: local（ファイルベース、このマシンに固定）または rbd（Ceph、移動可能）",
+        "clusterOption": "このデータストアが属する Kubernetes クラスター。指定すれば Kubernetes リポジトリ専用、未指定なら Docker リポジトリ専用となる。作成時に固定される",
+        "created": "データストア \"{{name}}\" を {{machine}} 上に作成しました（デタッチ状態）。アタッチするには: rdc datastore attach {{name}} --to {{machine}}",
+        "description": "マシン上に追加の名前付きデータストアを作成する。local バックエンドはそのマシン上のファイルベースのプールで、そこに固定される。rbd バックエンドは Ceph 上に存在するため、同じクラスターに到達できる任意のマシンへ移動できる。Kubernetes 用データストアにするには --cluster を渡す。この参照は作成時に固定される",
+        "descriptionShort": "マシン上に名前付きデータストアを作成する",
+        "imageOption": "rbd バックエンド用の RBD イメージ名（デフォルト: データストア名）",
+        "machineOption": "データストアを作成するマシン",
+        "poolOption": "rbd バックエンド用の Ceph プール（デフォルト: rbd）",
+        "sizeOption": "データストアサイズ（例: 100G）",
+        "examples": {
+          "basic": "マシン上にデータストアを作成する",
+          "ceph": "Ceph バックエンドのデータストアを作成する"
+        }
+      },
+      "delete": {
+        "aborted": "何も削除されませんでした",
+        "confirm": "データストア \"{{ref}}\" とその中身をすべて破棄しますか？",
+        "deleted": "データストア \"{{ref}}\" を削除しました",
+        "description": "データストアとその中身をすべて破棄する。まずデタッチを試み、正常にデタッチできない場合は、マウント中のプールを孤立させないよう削除自体を失敗させる",
+        "descriptionShort": "データストアとその中身をすべて破棄する",
+        "forceOption": "リポジトリがまだそれを参照していても削除する。それらのデータも一緒に失われる"
+      },
+      "detach": {
+        "aborted": "何も破棄されませんでした",
+        "confirmDiscard": "フォーク \"{{ref}}\" とそこに書き込まれたすべてのデータを破棄しますか？",
+        "description": "データストアをマシンからデタッチする。内部のリポジトリはまず停止される。--writes local でアタッチされたフォークはオーバーレイの書き戻し先がないため、デタッチするとオーバーレイは破棄され、--discard が必要になる",
+        "descriptionShort": "データストアをマシンからデタッチする",
+        "detached": "データストア \"{{ref}}\" を {{machine}} からデタッチしました",
+        "discardOption": "local 書き込みフォークとそのオーバーレイを破棄する。データは復元できない",
+        "discarded": "フォーク \"{{ref}}\" を破棄しました。オーバーレイは失われました",
+        "noop": "データストア \"{{ref}}\" はどこにもアタッチされていません。実行することはありません"
+      },
+      "list": {
+        "description": "名前付きデータストアの一覧、アタッチ先、保持しているリポジトリを表示する",
+        "descriptionShort": "名前付きデータストアを一覧表示する",
+        "placeArgument": "単一のクラスターまたはマシンに絞り込む",
+        "examples": {
+          "basic": "すべてのデータストアを一覧表示する",
+          "byPlace": "マシンまたはクラスターのデータストアを一覧表示する"
+        }
+      },
+      "snapshot": {
+        "create": {
+          "created": "データストア \"{{ref}}\" のスナップショットを \"{{label}}\" として作成しました",
+          "description": "データストアのポイントインタイムスナップショットを取得する。何も停止しない。この瞬間はクラッシュコンシステントであり、アプリケーションコンシステントではない: 特定の書き込みをスナップショットに含めたい場合は、事前に同期（sync）しておくこと。",
+          "descriptionShort": "データストアのスナップショットを取得する",
+          "labelOption": "スナップショットのラベル（デフォルト: UTC タイムスタンプ）"
+        },
+        "description": "データストアのポイントインタイムスナップショットを作成・一覧表示する。スナップショットは静止時に一切コストがかからず、フォークはここからクローンされる",
+        "descriptionShort": "データストアのポイントインタイムスナップショット",
+        "list": {
+          "description": "データストアのスナップショットを一覧表示する",
+          "descriptionShort": "データストアのスナップショットを一覧表示する"
+        }
       }
     },
     "doctor": {
       "allPassed": "すべてのチェックに合格しました",
       "checks": {
         "activeConfig": "アクティブな設定",
-        "authStatus": "ステータス",
         "cliVersion": "CLIバージョン",
-        "contextMode": "コンテキストモード",
         "dockerAvailable": "Docker",
         "goInstalled": "Go",
         "machines": "マシン",
@@ -516,7 +582,6 @@
         "renetCriu": "組み込みCRIU",
         "renetRsync": "組み込みrsync",
         "renetVersion": "バージョン",
-        "seaMode": "SEAモード",
         "sshKey": "SSHキー",
         "subscriptionMachineSlots": "マシンスロット",
         "subscriptionRepoLicenses": "リポジトリライセンス",
@@ -525,18 +590,13 @@
       },
       "description": "CLI環境とrenet統合を診断",
       "descriptionShort": "CLI環境とrenet統合を診断",
-      "devMode": "いいえ（開発モード）",
       "hasErrors": "{{count}}件のエラー",
       "hasWarnings": "{{count}}件の警告",
-      "notAuthenticated": "未認証",
       "notConfigured": "未設定",
       "notInstalled": "未インストール",
       "notLoggedIn": "未ログイン",
-      "opsNotSupported": "{{platform}}ではサポートされていません",
       "opsSkipped": "renetが利用できません（スキップ）",
-      "seaActive": "はい（単一実行可能アプリケーション）",
       "sections": {
-        "authentication": "認証",
         "configuration": "設定",
         "environment": "環境",
         "renet": "Renetネットワーク",
@@ -544,65 +604,10 @@
         "virtualization": "仮想化"
       },
       "serverMismatch": "サーバー不一致",
-      "status": {
-        "fail": "失敗",
-        "ok": "OK",
-        "warn": "警告"
-      },
       "subscriptionUnreachable": "サブスクリプションサーバーに接続できません",
       "title": "Rediacc CLI 診断ツール"
     },
     "machine": {
-      "backup": {
-        "cancel": {
-          "cancelled": "{{name}} をキャンセルしました",
-          "cancelling": "{{name}} を停止中...",
-          "description": "リモートマシン上の実行中バックアップをキャンセル",
-          "notRunning": "戦略 \"{{name}}\" に実行中のバックアップはありません",
-          "optionStrategy": "戦略名（省略時はすべてキャンセル）"
-        },
-        "description": "マシンバックアップ管理",
-        "list": {
-          "description": "すべてのマシンに紐づくバックアップ戦略を一覧表示",
-          "noMachines": "マシンが設定されていません"
-        },
-        "now": {
-          "description": "リモートマシンで今すぐバックアップを実行",
-          "optionStrategy": "戦略名（省略時はすべて実行）"
-        },
-        "schedule": {
-          "description": "リモートマシンにバックアップスケジュールをデプロイ（systemd タイマー）",
-          "optionDryRun": "デプロイせずに生成されるユニットをプレビュー",
-          "optionForce": "現在バックアップが実行中でも続行する（新しいユニットは次のタイマーティックで適用され、実行中の呼び出しは古いユニットを保持）",
-          "optionResetFailed": "デプロイ成功後、変更したサービスの失敗状態をクリアする（既定は無効、失敗シグナルを保持）",
-          "success": "バックアップスケジュールを {{machine}} にデプロイしました"
-        },
-        "status": {
-          "description": "リモートマシンのバックアップ状態とタイマー状態を表示",
-          "optionStrategy": "特定の戦略の詳細を表示"
-        }
-      },
-      "containers": {
-        "allHealthy": "すべてのコンテナが健全です",
-        "description": "マシン上の実行中コンテナを一覧表示する",
-        "descriptionShort": "マシン上のコンテナをリスト表示する",
-        "fetched": "コンテナが取得されました",
-        "fetching": "コンテナを取得中です...",
-        "healthCheck": "健全性チェックモード - 不健全なものがある場合はコード2で終了します",
-        "noContainers": "このマシンにコンテナが見つかりません",
-        "unhealthyFound": "{{count}} 個の不健全なコンテナが見つかりました"
-      },
-      "create": {
-        "creating": "マシンを作成中です...",
-        "description": "新しいマシンを作成する",
-        "success": "マシン \"{{name}}\" が作成されました"
-      },
-      "delete": {
-        "confirm": "マシン \"{{name}}\" を削除してもよろしいですか？",
-        "deleting": "マシンを削除中です...",
-        "description": "マシンを削除する",
-        "success": "マシン \"{{name}}\" が削除されました"
-      },
       "deprovision": {
         "completed": "マシン {{name}} が破棄され、設定から削除されました",
         "confirm": "マシン \"{{name}}\" とそのすべてのデータが完全に破棄されます。続行しますか？",
@@ -614,8 +619,8 @@
         "noState": "\"{{name}}\" のOpenTofu状態が見つかりません。手動で追加したマシンには 'config remove-machine' を使用してください。",
         "optionForce": "確認プロンプトをスキップ"
       },
-      "description": "リモートマシンの管理 (ステータス、コンテナ、サービス、ヘルス)",
-      "descriptionShort": "リモートマシンの管理 (ステータス、コンテナ、サービス、ヘルス)",
+      "description": "リモートマシンの状態を調べる: システムリソース、実行中のコンテナ、systemd サービス、デプロイ済みリポジトリ、ヘルス診断。読み取り専用のクエリであり、リポジトリを変更するには `repo` を使用する。主なサブコマンド: status（--system、--containers、--repositories、--services で絞り込める完全な状態）、health、list、add、remove、setup、prune、provision、deprovision。",
+      "descriptionShort": "リモートマシンの管理（status、health、list、add、remove、setup、prune）",
       "health": {
         "containersSection": "\nコンテナ:",
         "containersSummary": "  {{running}}/{{total}} 実行中 ({{healthy}} 健全, {{unhealthy}} 不健全)",
@@ -647,36 +652,39 @@
       },
       "list": {
         "description": "マシンをリスト表示する",
-        "fetching": "マシンを取得中です..."
+        "noMachines": "現在の設定にマシンがありません。次のコマンドで追加してください: rdc machine add <name> --ip <ip> --user <user>",
+        "examples": {
+          "basic": "登録済みのすべてのマシンを一覧表示する",
+          "sorted": "マシンを名前順に並べて一覧表示する"
+        }
       },
       "provision": {
         "completed": "マシン {{name}} がプロビジョニングされ準備完了 ({{ip}})",
         "configuringInfra": "{{name}} のインフラストラクチャ（プロキシ + DNS）を設定中...",
         "description": "OpenTofuを使用してクラウドプロバイダーに新しいマシンをプロビジョニングする",
-        "failed": "マシンのプロビジョニングに失敗しました: {{error}}",
         "infraInherited": "兄弟マシン \"{{source}}\" からベースドメインを自動検出しました",
-        "noInfraHint": "ベースドメインが設定されていません。'rdc config infra set -m <machine> --base-domain <domain>' を実行してから 'rdc config infra push -m <machine>' を実行してDNSとプロキシを有効にしてください。",
+        "noInfraHint": "ベースドメインが設定されていません。'rdc machine infra set <machine> --base-domain <domain>' を実行してから 'rdc machine infra push <machine>' を実行してDNSとプロキシを有効にしてください。",
         "optionBaseDomain": "インフラストラクチャのベースドメイン（例: example.com）。--infra を含む",
         "optionImage": "デフォルトOSイメージを上書き",
-        "optionInfra": "インフラストラクチャも設定する（infra set + infra push）",
         "optionNoInfra": "インフラ設定をスキップ（プロキシ + DNS）",
-        "optionProvider": "クラウドプロバイダー名（config provider addから）",
+        "optionProvider": "クラウドプロバイダー名（machine provider addから）",
         "optionRegion": "デフォルトリージョンを上書き",
         "optionSshUser": "新しいVMのSSHユーザー名（デフォルト: root）",
         "optionType": "デフォルトインスタンスタイプを上書き",
-        "providerRequired": "クラウドプロバイダー \"{{name}}\" が見つかりません。追加: rdc config provider add",
+        "providerRequired": "クラウドプロバイダー \"{{name}}\" が見つかりません。追加: rdc machine provider add <name>",
         "provisioning": "{{provider}} ({{region}}) で {{name}} をプロビジョニング中...",
         "settingUp": "マシンセットアップを実行中...",
         "sshReady": "SSH接続が確立されました",
-        "tofuNotInstalled": "OpenTofu (tofu) がインストールされていません。インストール: https://opentofu.org/docs/intro/install/",
-        "waitingSSH": "SSH接続を待機中..."
+        "waitingSSH": "SSH接続を待機中...",
+        "examples": {
+          "basic": "プロバイダーから新しいクラウドマシンをプロビジョニングする",
+          "sized": "選択したサイズでリージョンにマシンをプロビジョニングする"
+        }
       },
       "prune": {
-        "checkingActivity": "スナップショットのアクティビティを確認中...",
         "completed": "整理が完了しました",
         "datastoreCompleted": "データストアの整理が完了しました",
         "datastoreFailed": "データストアの整理に失敗しました",
-        "datastoreOnlyOption": "孤立したデータストアリソースのみを整理する",
         "datastorePrunedSummary": "{{count}} 個の孤立したデータストアリソースを削除しました",
         "description": "孤立したデータストアリソースと古いスナップショットをマシンから削除する",
         "descriptionShort": "孤立したリソースと古いスナップショットを整理する",
@@ -684,60 +692,158 @@
         "dryRunOption": "変更を加えずに削除される内容を表示する",
         "forceDeleteMountedOption": "マウント安全プリフライトを上書きし、現在マウントされているか実行中の Docker コンテナがあってもリポジトリを削除します。--force（アーカイブ猶予期間のみを上書き）とは異なります。--orphaned-repos と --prune-unknown の両方に適用されます。",
         "noReposFound": "マシン上にリポジトリが見つかりません",
-        "noStaleSnapshots": "古いスナップショットは見つかりませんでした",
         "noUnknownRepos": "不明なリポジトリは見つかりませんでした。すべてのマシンリポジトリはローカル設定にあるか、renet ミラーを持っています",
         "orphanedReposCompleted": "{{count}} 件の孤立したリポジトリを削除しました",
-        "orphanedReposOption": "どの設定にも存在しないリポジトリイメージも削除する",
+        "orphanedReposOption": "ローカル CLI 設定に存在しないマシン上のリポジトリイメージをすべて削除する。粗い操作であり、renet ミラーがフォークだと正しく識別している場合でも、ローカル設定エントリがない他ツール作成のフォークまで削除してしまう。ミラーを尊重するより狭い挙動には --prune-unknown を使用すること。",
         "orphanedReposStarting": "{{machine}} 上の孤立したリポジトリをスキャン中...",
         "previewEmpty": "孤立したデータストアリソースは見つかりませんでした",
         "pruneUnknownOption": "renet .interim/state ミラーが分類できないリポジトリのみを削除します（ローカル設定になく、かつフォークマークされたミラーがない）。--orphaned-repos より厳密に狭い：ミラーがそれらを識別する場合、設定なしのフォークは保持されます。プレミラーレガシー孤児と設定エントリが削除された古い grands は両方ともこのバケットに入ります。",
-        "snapshotDeleted": "{{name}} を削除しました",
-        "snapshotDeleting": "{{name}} を削除中...",
-        "snapshotInUse": "{{name}} をスキップ (使用中)",
-        "snapshotsCompleted": "スナップショット整理: {{deleted}} 件削除、{{skipped}} 件スキップ",
-        "snapshotsOnlyOption": "古いスナップショットのみを整理する",
-        "snapshotStale": "古い: {{name}} ({{size}})",
         "startingDatastore": "{{machine}} 上の孤立したデータストアリソースをスキャン中...",
-        "startingSnapshots": "{{machine}} 上の古いスナップショットをスキャン中...",
         "unknownCompleted": "{{count}} 件の不明なリポジトリをクリーンアップしました",
         "unknownFound": "{{count}} 件の不明なリポジトリが見つかりました（マウント安全チェック後に {{deletable}} 件削除可能）",
         "unknownStarting": "{{machine}} で不明なリポジトリをスキャンしています（ローカル設定になし + フォークマークされたミラーなし）..."
       },
-      "query": {
+      "add": {
+        "description": "現在の設定にマシンを追加",
+        "descriptionShort": "現在の設定にマシンを追加する",
+        "success": "マシン \"{{name}}\" を追加しました ({{user}}@{{ip}})",
+        "examples": {
+          "basic": "アドレスとログインユーザーを指定してマシンを登録する",
+          "customPort": "デフォルト以外の SSH ポートを使用するマシンを登録する"
+        }
+      },
+      "infra": {
+        "cert": {
+          "clear": {
+            "cleared": "証明書キャッシュを削除しました",
+            "description": "証明書キャッシュを削除",
+            "noCache": "削除する証明書キャッシュがありません"
+          },
+          "description": "キャッシュされたTLS証明書を管理",
+          "pull": {
+            "description": "マシンからTLS証明書をダウンロードしてキャッシュ",
+            "optionNoPrune": "古いネットワークID証明書の整理をスキップ"
+          },
+          "push": {
+            "description": "キャッシュされたTLS証明書をマシンにアップロード"
+          },
+          "status": {
+            "certCount": "{{count}} 件の証明書、{{size}} 圧縮",
+            "description": "キャッシュされた証明書のインベントリを表示",
+            "header": "{{baseDomain}} の証明書キャッシュ",
+            "noCache": "保存された証明書キャッシュはありません",
+            "updatedAt": "最終更新: {{date}} ({{machine}} から)"
+          }
+        },
+        "description": "インフラ設定を管理する（プロキシ、DNS、証明書）",
+        "push": {
+          "description": "インフラ設定をマシンにプッシュします（Traefik プロキシ、ルーター、Cloudflare DNS）。先に 'machine infra set <machine>' を実行してください",
+          "descriptionShort": "インフラ設定をマシンにプッシュする",
+          "installingProxy": "ルーターをインストール中...",
+          "success": "\"{{name}}\" にインフラ設定をプッシュしました"
+        },
+        "set": {
+          "description": "マシンのインフラ設定を行います（マシン固有: IP、ドメイン、ポート；共有: 証明書メール、CF DNS トークン）",
+          "descriptionShort": "マシンのインフラ設定を行う",
+          "noOptions": "オプションが指定されていません。--public-ipv4、--base-domain などを使用してください",
+          "optionBaseDomain": "アプリケーション用ベースドメイン（マシンごと）",
+          "optionCertEmail": "TLS 証明書通知用メールアドレス（マシン間で共有）",
+          "optionCfDnsToken": "ACME DNS-01 チャレンジ用 Cloudflare DNS API トークン（マシン間で共有）",
+          "optionPublicIPv4": "パブリック IPv4 アドレス（マシンごと）",
+          "optionPublicIPv6": "パブリック IPv6 アドレス（マシンごと）",
+          "optionTcpPorts": "転送する TCP ポート（カンマ区切り、例: 25,143,465）",
+          "optionUdpPorts": "転送する UDP ポート（カンマ区切り、例: 53）",
+          "success": "\"{{name}}\" のインフラ設定を更新しました"
+        },
+        "show": {
+          "description": "マシンのインフラ設定を表示する",
+          "noInfra": "\"{{name}}\" のインフラ設定がありません"
+        }
+      },
+      "provider": {
+        "add": {
+          "description": "クラウドプロバイダーを追加する",
+          "optionImage": "デフォルトの OS イメージ",
+          "optionImageAttr": "カスタム: OS イメージの属性名",
+          "optionInstanceType": "デフォルトのインスタンスタイプ/サイズ",
+          "optionIpv4Output": "カスタム: IPv4 アドレスの出力属性",
+          "optionIpv6Output": "カスタム: IPv6 アドレスの出力属性",
+          "optionLabelAttr": "カスタム: VM ラベルの属性名",
+          "optionProvider": "既知のプロバイダーソース（例: linode/linode, hetznercloud/hcloud）",
+          "optionRegion": "新規マシンのデフォルトリージョン",
+          "optionRegionAttr": "カスタム: リージョンの属性名",
+          "optionResource": "カスタム: VM 用の OpenTofu リソースタイプ",
+          "optionSizeAttr": "カスタム: インスタンスタイプの属性名",
+          "optionSource": "カスタム OpenTofu プロバイダーソース（例: vultr/vultr）",
+          "optionSshKeyAttr": "カスタム: SSH キーの属性名",
+          "optionSshKeyFormat": "カスタム: SSH キーの形式（inline_list または resource_id）",
+          "optionSshKeyResource": "カスタム: SSH キー用の OpenTofu リソースタイプ",
+          "optionSshUser": "新規 VM 用の SSH ユーザー名（デフォルト: root）",
+          "optionToken": "クラウドプロバイダーの API トークン",
+          "success": "クラウドプロバイダー \"{{name}}\" を追加しました（{{provider}}）"
+        },
+        "description": "自動マシンプロビジョニング用クラウドプロバイダーを管理する",
+        "list": {
+          "description": "設定済みクラウドプロバイダーをリスト表示する",
+          "noProviders": "クラウドプロバイダーが設定されていません。次のコマンドで追加してください: rdc machine provider add <name>"
+        },
+        "remove": {
+          "description": "クラウドプロバイダー設定を削除する",
+          "success": "クラウドプロバイダー \"{{name}}\" を削除しました"
+        }
+      },
+      "remove": {
+        "confirm": "マシン \"{{name}}\" を設定から削除しますか？",
+        "description": "現在の設定からマシンを削除する",
+        "forceDangling": "マシン \"{{name}}\" を削除しましたが、{{count}} 件のリポジトリ配置がまだ残っていました: {{repos}}。これらの配置は現在ダングリング状態です。\"rdc repo migrate\" で再配置するか、\"rdc repo delete\" で削除してください。",
+        "forceOption": "リポジトリがまだ配置されていてもマシンを削除し、それらの配置をダングリング状態のまま残す。",
+        "nextDelete": "このマシンに配置されている各リポジトリを削除する。",
+        "nextForce": "それでもマシンを削除し、それらのリポジトリ配置をダングリング状態のまま残す。",
+        "nextMigrate": "各リポジトリを先に別のマシンへ移動する。",
+        "placementConflict": "マシン \"{{name}}\" を削除できません: {{count}} 件のリポジトリ配置がまだ参照しています: {{repos}}。",
+        "placementConflictNext": "これらのリポジトリを先に移動または削除するか、削除を強制してください。",
+        "success": "マシン \"{{name}}\" を削除しました"
+      },
+      "scanKeys": {
+        "completed": "{{count}}/{{total}} 台のマシンをスキャン済み",
+        "description": "現在の設定のマシンの SSH ホストキーをスキャンする",
+        "keysScanned": "\"{{name}}\" のホストキーをスキャンしました",
+        "noKeys": "\"{{name}}\" のホストキーをスキャンできませんでした"
+      },
+      "setup": {
+        "completed": "マシン \"{{machine}}\" のセットアップが完了しました",
+        "datastoreOption": "リモートマシン上のデータストアパス",
+        "datastoreSizeOption": "データストアサイズ（例: 95%、100G）",
+        "description": "リモートマシンをリポジトリ用にプロビジョニング（renetインストール、Docker設定、BTRFSデータストア）。冪等。config machine addの後、repo createの前に必要",
+        "descriptionShort": "リモートマシンをリポジトリ用にプロビジョニングする",
+        "failed": "マシン \"{{machine}}\" のセットアップに失敗しました: {{error}}",
+        "starting": "マシン \"{{machine}}\" をセットアップ中..."
+      },
+      "status": {
         "connection": "接続",
+        "containersAllHealthy": "すべてのコンテナが健全です",
+        "containersUnhealthyFound": "{{count}} 個の不健全なコンテナが見つかりました",
         "description": "マシンの完全なステータスを表示（システム、リポジトリ、コンテナ、サービス）",
         "descriptionShort": "マシンの完全なステータスを表示する",
         "fetched": "ステータスを取得しました",
         "fetching": "{{machine}} からステータスを取得中...",
+        "healthCheck": "健全性チェックモード - 不健全なものがある場合はコード2で終了します",
         "infrastructure": "インフラストラクチャ",
-        "noData": "ステータスデータがありません",
+        "servicesAllStable": "すべてのサービスが安定しています",
+        "servicesUnstableFound": "{{count}} 個の不安定なサービスが見つかりました",
+        "stabilityCheck": "安定性チェックモード - 失敗/再起動中のものがある場合はコード2で終了します",
         "storageHealthFragmentationNote": "断片化は各リポジトリのコピーオンライト・イメージのエクステント数を数えるものであり、その中のファイルではありません。高い値はランダム書き込みのワークロード（データベース、コンテナレイヤー）では想定内であり、参考情報にすぎません。デフラグはここでは意図的に未対応です。reflink で共有されたフォークやバックアップスナップショットの共有を解除し、データストアの使用量を膨張させてしまうためです。",
         "storageHealthHint": "ヒント: --storage-health を付けて実行すると、リポジトリごとの BTRFS フラグメンテーションと reflink の節約量を確認できます",
         "storageHealthPoolSnapshots": "バックアップスナップショットが {{pinned}} を保持しています（アクティブ {{active}}、失効 {{stale}}。失効分は 'rdc machine prune' で削除されます）",
         "storageHealthPoolSummary": "プール: 使用 {{used}}、空き {{free}}（{{percent}}% 使用中）",
         "storageHealthSummary": "ストレージ効率: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} 個のコンテナがドリフトしきい値を超えました。ゼロ以外で終了します",
-        "syncCertsFailed": "証明書キャッシュの同期に失敗しました: {{error}}"
-      },
-      "rename": {
-        "description": "マシンの名前を変更"
-      },
-      "repos": {
-        "description": "マシンにデプロイされたリポジトリをリスト表示する",
-        "descriptionShort": "マシン上のデプロイ済みリポジトリをリスト表示する",
-        "fetched": "マシンが取得されました",
-        "fetching": "マシンを取得中です...",
-        "noRepos": "このマシンにデプロイされたリポジトリはありません"
-      },
-      "services": {
-        "allStable": "すべてのサービスが安定しています",
-        "description": "マシン上のsystemdサービスをリスト表示する",
-        "descriptionShort": "マシン上の rediacc 管理 systemd サービスをリスト表示する",
-        "fetched": "サービスが取得されました",
-        "fetching": "サービスを取得中です...",
-        "noServices": "このマシンにrediacサービスが見つかりません",
-        "stabilityCheck": "安定性チェックモード - 失敗/再起動中のものがある場合はコード2で終了します",
-        "unstableFound": "{{count}} 個の不安定なサービスが見つかりました"
+        "syncCertsFailed": "証明書キャッシュの同期に失敗しました: {{error}}",
+        "ambiguous": "複数のマシンが登録されています（{{machines}}）。表示するマシンを指定してください",
+        "examples": {
+          "basic": "マシンの完全なステータスを表示する",
+          "containers": "マシン上で実行中のコンテナのみを表示する"
+        }
       }
     },
     "mcp": {
@@ -747,12 +853,6 @@
         "configOption": "すべてのコマンドに使用する設定名",
         "description": "MCP サーバーを起動する (stdio トランスポート)",
         "timeoutOption": "デフォルトのコマンドタイムアウト (ミリ秒単位)"
-      },
-      "tools": {
-        "repo_fork": {
-          "parentDescription": "フォーク元の親リポジトリ名（または名前:タグ）",
-          "tagDescription": "フォークのタグ（名前:タグを作成、例: \"staging\"）"
-        }
       }
     },
     "ops": {
@@ -763,8 +863,8 @@
         "localFallback": "（ローカルチェック使用中 — renetが利用できません）",
         "title": "OPS 前提条件チェック"
       },
-      "description": "実験的な VM 操作（プロビジョニング、管理、破棄）",
-      "descriptionShort": "実験的な VM 操作（プロビジョニング、管理、破棄）",
+      "description": "KVM/QEMU/Hyper-V を使ったローカル VM のプロビジョニングと管理（プラットフォームは自動検出）。リモートマシン向けではない — そちらには `machine` を使用する。主なサブコマンド: up（VM 起動）、down（停止）、status（実行中 VM の一覧）、ssh（VM へ接続）、setup（前提条件のインストール）、check（ホストの準備状況を確認）。",
+      "descriptionShort": "ローカル VM 操作（プロビジョニング、管理、破棄）",
       "down": {
         "completed": "VM クラスターの破棄が完了しました",
         "description": "VM クラスターを破棄",
@@ -775,7 +875,6 @@
         "brewFailed": "Homebrew のインストールに失敗しました",
         "completed": "前提条件のインストールが完了しました",
         "description": "仮想化の前提条件をインストール",
-        "detecting": "プラットフォームを検出しています...",
         "failed": "インストールに失敗しました",
         "linux": "renet 経由で KVM の前提条件をインストールしています...",
         "macos": "Homebrew 経由で QEMU をインストールしています...",
@@ -789,7 +888,6 @@
       },
       "status": {
         "description": "VM クラスターの状態を表示",
-        "fetching": "VM クラスターの状態を取得しています...",
         "noVMs": "VM が見つかりません"
       },
       "up": {
@@ -800,58 +898,37 @@
       }
     },
     "repo": {
-      "autostart": {
-        "description": "起動時の自動リポジトリ開始を管理する",
-        "disable": {
-          "completed": "自動開始が無効になりました",
-          "completedAll": "すべてのリポジトリの自動起動を無効にしました",
-          "description": "リポジトリの自動開始を無効にする",
-          "failed": "自動開始の無効化に失敗しました",
-          "failedAll": "すべてのリポジトリの自動起動無効化に失敗しました",
-          "starting": "\"{{machine}}\" 上の \"{{repository}}\" の自動開始を無効化中...",
-          "startingAll": "\"{{machine}}\" の全リポジトリの自動起動を無効化中..."
-        },
-        "enable": {
-          "completed": "自動開始が有効になりました",
-          "completedAll": "すべてのリポジトリの自動起動を有効にしました",
-          "description": "リポジトリの自動開始を有効にする",
-          "failed": "自動開始の有効化に失敗しました",
-          "failedAll": "すべてのリポジトリの自動起動有効化に失敗しました",
-          "starting": "\"{{machine}}\" 上の \"{{repository}}\" の自動開始を有効化中...",
-          "startingAll": "\"{{machine}}\" の全リポジトリの自動起動を有効化中..."
-        },
-        "list": {
-          "completed": "自動開始リストを取得しました",
-          "description": "自動開始が有効なリポジトリを一覧表示する",
-          "empty": "\"{{machine}}\" に自動起動が有効なリポジトリはありません",
-          "failed": "自動開始リポジトリの一覧取得に失敗しました",
-          "service": "自動起動サービス: インストール済み={{installed}}、有効={{enabled}}",
-          "starting": "\"{{machine}}\" 上の自動開始リポジトリを一覧取得中..."
-        }
-      },
-      "backup": {
-        "description": "リポジトリバックアップを管理する",
-        "list": {
-          "description": "リモート（マシンまたはストレージ）の利用可能なバックアップを一覧表示",
-          "descriptionShort": "リモート上の利用可能なバックアップを一覧表示",
-          "listing": "バックアップを一覧表示中...",
-          "localOnly": "repo backup list はローカルアダプターモードでのみサポートされています",
-          "optionFrom": "ソースマシンまたはストレージ名（設定から自動検出）",
-          "optionPath": "ストレージルート内のサブディレクトリ。省略すると、hot/ と cold/ の両方がリストされ、マージされます。",
-          "sourceRequired": "--from <remote> を指定してください（設定からのマシンまたはストレージ名）"
-        }
-      },
       "batchConfirm": "\"{{machine}}\"上のすべての{{count}}リポジトリを{{action}}しますか？ [y/N]",
-      "batchFailed": "\"{{repo}}\"の{{action}}に失敗しました: {{error}}",
-      "batchIterating": "{{action}} {{current}}/{{total}}：「{{repo}}」...",
-      "batchResult": "{{action}}完了: {{succeeded}}/{{total}} 成功",
-      "batchStarting": "{{action}}：「{{repo}}」...",
       "branch": {
         "branchOption": "新しいブランチの名前",
         "completed": "branch \"{{branch}}\" -> {{commit}}",
         "description": "作業 fork の現在の commit（その先端）を指す名前付き branch 参照を作成します。branch 参照は CLI の設定内に保存されます（マシン = オブジェクトストア、設定 = 参照ストア）。",
-        "descriptionShort": "現在の commit を指す branch 参照を作成します",
-        "workingOption": "branch が指す現在の commit を持つ作業 fork"
+        "descriptionShort": "現在の commit を指す branch 参照を作成します"
+      },
+      "canary": {
+        "description": "新しいイメージを安定版と並行して稼働させ、ライブトラフィックを両者へパーセンテージで振り分ける（リリースラダーの第2段）。同一のライブデータ上にカナリア用の Deployment と Service を1つ作成する（フォークはしない。フォークしたデータ上のカナリアユーザーは古いデータを読み、どのみち破棄されるコピーへ書き込むことになるため）。そして Rediacc プロキシに対し、安定版ホスト名宛てトラフィックのうち指定した割合をカナリアへルーティングするよう指示する。ウェイト 0 はカナリアをダークのままにし、ウェイト 100 は blue/green への完全切り替えとなる。カナリアを変更するたびに、クラスターのデータストアの自動グループスナップショットが取得され（リリースラダーの第0段）、万能の取り消し手段として機能する。両バージョン間のスキーマ互換性（expand-contract 方式）を保つのはアプリケーション側の責任である。スキーマを破壊する変更を伴うリリースでは、代わりに blue/green を使用する: リポジトリをフォークし（即時完了、データを含む）、フォークの Service のウェイトを 100 にしてここへ向け、手を加えていない複製元を再起動することでロールバックする。切り替え後に行われた書き込みは新しいコピーにのみ残るため、ロールバック可能な期間をどこまで確保するかはポリシー上の判断となる。",
+        "descriptionShort": "カナリアリリース: 共有データ上での重み付けトラフィック分割",
+        "imageOption": "カナリアの Deployment が実行する新しいイメージ（共有の本番データに対して）",
+        "portOption": "アプリが待ち受けるポート（安定版の Service と一致させること）",
+        "remove": {
+          "description": "カナリアの Deployment と Service を削除する（ラベルスコープで対象を特定）。これにより安定版の Service が再び 100% のトラフィックを処理する。リリース取り消し用のスナップショットは保持されるので、データストアのスナップショットコマンドで整理する。",
+          "descriptionShort": "カナリアを破棄する"
+        },
+        "replicasOption": "カナリア Deployment のレプリカ数（デフォルト: 1）",
+        "serviceOption": "トラフィックを分割する対象の安定版 Service（デフォルト: リポジトリ名）",
+        "status": {
+          "description": "管理下のカナリアセットを表示する: ウェイト、イメージ、安定版 Service、直近のリリース取り消し用スナップショット。",
+          "descriptionShort": "管理下のカナリアセットを表示する"
+        },
+        "weight": {
+          "description": "カナリアへルーティングするトラフィックの割合を変更する。まず新しいリリース取り消し用のグループスナップショットを取得したうえでオーバーレイを再適用し、プロキシは次回の更新タイミングで新しい分割比率を反映する。ウェイトを 100 にするとすべてのトラフィックが新バージョンへ送られる（blue/green への完全切り替え）。",
+          "descriptionShort": "カナリアのトラフィック割合を変更する"
+        },
+        "weightOption": "カナリアへ振り分けるトラフィックの割合（0-100 の整数。0 = ダーク、100 = 完全切り替え）",
+        "create": {
+          "description": "安定版と並行して新しいイメージを実行し、ライブトラフィックの一部を送る。カナリアはリポジトリのライブデータを共有する（フォークしない）ため、両バージョン間のスキーマ互換性はアプリケーション側の責任となる。取り消し手段として、まずクラスターのデータストアのグループスナップショットを取得する",
+          "descriptionShort": "カナリアを開始する: ライブトラフィックの一部で新しいイメージを実行する"
+        }
       },
       "cat": {
         "description": "リポジトリ内のファイルを範囲指定で読み取り、stdout に書き出します（サーバー側で範囲制限あり。診断情報は stderr に出力）",
@@ -863,7 +940,10 @@
         "remoteFileOption": "リポジトリマウントルートからの相対パスで読み取るファイルパス",
         "starting": "\"{{machine}}\" 上の \"{{repository}}\" から \"{{path}}\" を読み取り中...",
         "statOption": "サイズ、種類、更新日時のみを出力する（コンテンツは読み取らない）",
-        "tailOption": "最後の N 行のみを出力する（バイト範囲との併用不可）"
+        "tailOption": "最後の N 行のみを出力する（バイト範囲との併用不可）",
+        "examples": {
+          "basic": "リポジトリ内のファイルを出力する"
+        }
       },
       "certSync": {
         "updated": "{{machine}} から ACME 証明書キャッシュを更新しました ({{count}} 件)"
@@ -871,8 +951,7 @@
       "checkout": {
         "description": "イミュータブルな commit（または branch の先端）を新しい書き込み可能な作業 fork に reflink クローンし、HEAD をそこに向けます。ほぼ瞬時かつ定数時間で完了します（BTRFS reflink）。",
         "descriptionShort": "commit／branch を書き込み可能な作業 fork に reflink クローンします",
-        "fromOption": "--ref をこの作業フォーク上のブランチ名として解決します",
-        "refOption": "チェックアウトする commit の GUID（または --from でブランチ名）",
+        "fromOption": "位置引数 <commit-or-branch-ref> をこの作業フォーク上のブランチ名として解決します",
         "tagOption": "新しい書き込み可能な作業 fork の名前"
       },
       "commit": {
@@ -881,49 +960,61 @@
         "description": "マウント中の作業 fork の現在の状態を凍結し、新しいイミュータブルな commit を作成します（git ライク）。commit はメッセージ・作成者・タイムスタンプ・親をボリューム内に記録するため、push 時にも一緒に転送されます。また読み取り専用としてマークされ、マウントを拒否します。作業 fork は git が作業ツリーをそのまま残すのと同様に、変更されずに維持されます。書き込み可能なコピーを得るには 'rdc repo checkout' で commit をチェックアウトしてください。",
         "descriptionShort": "作業中の fork を凍結して新しいイミュータブルな commit を作成します",
         "failed": "commit に失敗しました",
-        "messageOption": "commit メッセージ",
-        "nameOption": "commit する作業 fork（マウントされている必要があります）"
+        "messageOption": "commit メッセージ"
       },
       "create": {
         "alreadyExists": "リポジトリ \"{{name}}\" はコンテキスト内に既に存在します",
         "completed": "リポジトリを作成しました",
-        "description": "新しい暗号化リポジトリを作成する",
+        "description": "新しいリポジトリを作成する。ホームを一度だけ指定する: マシンまたはデータストア",
         "failed": "リポジトリの作成に失敗しました",
         "noDockerOption": "作成後に Docker デーモンの起動をスキップする",
         "registered": "\"{{repository}}\" を登録しました（{{guid}}、ネットワーク {{networkId}}）",
         "rollback": "\"{{repository}}\" の設定をロールバックしました",
         "sizeOption": "リポジトリサイズ（例: 10G、100G、1T）",
-        "starting": "\"{{machine}}\" でリポジトリ \"{{repository}}\"（{{size}}）を作成中..."
+        "starting": "\"{{machine}}\" でリポジトリ \"{{repository}}\"（{{size}}）を作成中...",
+        "datastoreNotAttached": "データストア \"{{datastore}}\" はどのマシンにもアタッチされていません。アタッチしてください: rdc datastore attach {{datastore}} --to <machine>。既にアタッチ済みなのに設定がそれを認識していない場合は、rdc config reconcile を実行してください。",
+        "datastoreNotFound": "データストア \"{{datastore}}\" はデータストアレジストリに存在しません",
+        "datastoreOption": "リポジトリを保持する名前付きデータストア（Docker の階層化、またはクラスター形式）",
+        "machineInCluster": "{{machine}} はクラスター {{cluster}} のメンバーです。クラスターマシン上のリポジトリにはデータストアが必要です: rdc datastore list {{cluster}}。ここで --machine を使うと、そのノード上に Docker リポジトリが作成されます",
+        "placementRequired": "repo create は配置フラグを1つだけ取る: --machine（Docker、デフォルトデータストア）または --datastore（名前付きデータストア。クラスターリポジトリでは必須）",
+        "sizeOnK8s": "Kubernetes リポジトリのボリュームサイズは PVC 宣言から決まる。--size は Docker リポジトリにのみ適用される",
+        "sizeRequiredDocker": "Docker リポジトリには --size が必須です（--machine、または Docker 用の --datastore）",
+        "startingDatastore": "データストア \"{{datastore}}\"（{{machine}}）上にリポジトリ \"{{repository}}\" を作成中...",
+        "examples": {
+          "basic": "マシン上に新しいリポジトリを作成する",
+          "sized": "固定サイズのボリュームでリポジトリを作成する"
+        }
       },
       "delete": {
+        "archived": "\"{{repository}}\" の資格情報をアーカイブしました",
         "archiveHint": "リカバリ用に認証情報をアーカイブするには: --archive-config を付けて再実行",
         "archiveOption": "設定エントリを deletedRepositories に移動して後から復元可能にする",
-        "archived": "\"{{repository}}\" の資格情報をアーカイブしました",
-        "cloudBackupHint": "クラウドバックアップ（存在する場合）は削除後も残ります。孤立したクラウドバックアップを削除するには: rdc storage prune --name <storage> -m {{machine}}",
+        "cloudBackupHint": "クラウドバックアップ（存在する場合）は削除後も残ります。孤立したクラウドバックアップを削除するには: rdc storage prune <storage> -m {{machine}}",
         "completed": "リポジトリを削除しました",
-        "configRetained": "\"{{repository}}\" の設定エントリを保持 (リポジトリは他のマシンに存在する可能性があります)。削除するには: rdc config repository remove --name {{repository}}",
+        "configRetained": "\"{{repository}}\" の設定エントリを保持しました（リポジトリは他のマシンに存在する可能性があります）。削除するには --archive-config を付けて再実行し、続けて \"rdc repo admin archive purge {{repository}}\" を実行してください",
         "confirm": "\"{{machine}}\" 上のリポジトリ \"{{repository}}\" を削除しますか？コンテナ、ボリューム、暗号化イメージが破棄されます。",
-        "description": "リポジトリを削除する（コンテナ、ボリューム、暗号化イメージを破棄）。設定エントリは保持されます。--archive-config を使用して資格情報を deletedRepositories に移動し、'config restore-archived' で復元できます",
-        "descriptionShort": "マシンからリポジトリを削除する",
-        "examples": "\n例:\n  $ rdc repo delete --name app -m server-1\n  $ rdc repo delete --name app:test -m server-1\n",
+        "description": "リポジトリとそのデータを削除する。設定エントリは保持される。--archive-config を使用すると、認証情報を deletedRepositories に移動し 'repo admin archive restore' で復元可能になる。位置引数として <ref> を取る。裸の名前はグランド系列に解決されるが、同じベース名を複数のリポジトリが共有している場合は拒否されるため、フォークを対象にするには 名前:タグ を指定すること",
+        "descriptionShort": "リポジトリとそのデータを削除する",
+        "examples": {
+          "basic": "リポジトリを削除する",
+          "fork": "タグを指定して単一のフォークを削除する"
+        },
         "failed": "リポジトリの削除に失敗しました",
-        "restoreHint": "復元するには: rdc config restore-archived {{guid}}",
+        "restoreHint": "復元するには: rdc repo admin archive restore {{guid}}",
         "starting": "\"{{machine}}\" で \"{{repository}}\" を削除中..."
       },
-      "description": "マシン上の暗号化リポジトリをデプロイ・管理する",
+      "description": "マシン上の暗号化リポジトリをデプロイ・管理する。主なサブコマンド: create、up（デプロイ）、down（停止）、fork（即時 CoW クローン）、delete、push/pull（バックアップ）、sync（ファイル転送）。ライフサイクル: repo create → repo up → repo down。アーキテクチャ、ルーティング、環境変数の詳細は rdc --help の Key Concepts を参照。",
       "descriptionShort": "マシン上の暗号化リポジトリをデプロイ・管理する",
       "diff": {
         "baseOption": "差分対象のリポジトリ（基底／旧側）。既定では --name の親",
-        "conflictingFormat": "--name-only, --stat, --content, --json のうち1つだけを選択してください。",
+        "conflictingFormat": "--name-only, --stat, --content のうち1つだけを選択してください。JSON 出力には -o json を使用してください。",
         "contentNeedsPath": "--content にはファイルパスが必要です (例: --content app/config.toml)",
         "contentOption": "単一ファイルの統一テキスト差分を表示（ファイルパスが必要）",
         "description": "コピーオンライトでフォークされた2つのリポジトリ間の、git風ファイル単位の差分。追加・変更・削除・リネームされたファイルを報告します。--name で与えられたリポジトリ（対象／新側）を、ローカル設定から解決した親、あるいは明示的な --base リポジトリ（基底／旧側）と比較します。メタデータのみでサイズに依存しません: 暗号化された LUKS イメージを復号せずブロックレベルで差分を取るため、1 GB のリポジトリと 100 GB のリポジトリが同じミリ秒で差分されます。",
         "descriptionShort": "2つのフォークされたリポジトリ間のgit風ファイル差分 (A/M/D/R)",
         "failed": "差分に失敗しました",
         "fastOption": "ブロックフィルタを信頼し、コンテンツハッシュ確認を省略する（変更を過大報告する可能性あり）",
-        "jsonOption": "構造化された差分結果を JSON エンベロープで出力",
         "nameOnlyOption": "変更されたファイルパスのみを1行ずつ出力（状態文字なし）",
-        "nameOption": "調査対象のリポジトリ（対象／新側）",
         "notAFork": "\"{{name}}\" はフォークではありません。--base で明示的なベースを指定してください。",
         "notFound": "コンテキストにリポジトリ \"{{name}}\" が見つかりません",
         "parentMissing": "\"{{name}}\" の親がこのコンテキストにありません。--base で明示的に指定してください。",
@@ -938,12 +1029,16 @@
         "allStarting": "\"{{machine}}\"上のすべてのリポジトリを停止しています...",
         "checkpointOption": "停止前に CRIU checkpoint を作成する（プロセスメモリ状態を保存し、後で 'repo up' で復元）",
         "completed": "サービスが停止されました",
-        "description": "リポジトリサービスを停止する",
+        "description": "リポジトリの Docker コンテナを停止する（renet compose 経由で Rediaccfile の down を実行）。マシンは ref の配置から自動的に決まる。暗号化ボリュームはアンマウントしない -- リポジトリはマウントされたままとなり、'repo up' で再起動できる。停止後に LUKS コンテナも閉じるには --unmount を使用する（廃止された 'repo unmount' を統合したもの）。停止前に CRIU プロセス状態を保存するには --checkpoint を使用する（次回の 'repo up' で自動復元される）。マシン上のすべてのリポジトリを停止するには --all --machine <m> を使用する",
         "descriptionShort": "リポジトリの Docker コンテナを停止する",
         "failed": "サービスの停止に失敗しました",
-        "grandOption": "グランドリポジトリ名 (自動的に GUID に解決)",
         "starting": "\"{{repository}}\" のサービスを \"{{machine}}\" で停止中...",
-        "unmountOption": "停止後にリポジトリをアンマウントする"
+        "unmountOption": "停止後にアンマウントも行う（LUKS コンテナを閉じる）。'repo resize' の前、またはボリュームを完全に保護するために必要",
+        "allOption": "--machine をホームとするすべてのリポジトリを停止する（バッチ形式）",
+        "examples": {
+          "basic": "リポジトリのコンテナを停止する",
+          "unmount": "リポジトリを停止し、暗号化ボリュームをアンマウントする"
+        }
       },
       "expand": {
         "completed": "拡張が完了しました",
@@ -956,12 +1051,15 @@
       "fork": {
         "alreadyExists": "リポジトリ \"{{name}}\" はコンテキスト内に既に存在します",
         "checkpointOption": "fork 前にソースで CRIU checkpoint を作成する（fork 先での復元用にプロセスメモリ状態を取得）",
-        "completed": "Forkが作成されました。ローカルでデプロイ: repo up {{repository}} -m {{machine}}。別のマシンにforkを移行: repo push {{repository}} -m {{machine}} --to <target> --up",
-        "description": "リポジトリのCoW（コピーオンライト）フォークを作成する",
+        "completed": "フォークを作成しました。デプロイ: repo up {{repository}}。別のマシンへコピーするには: repo push {{repository}} --to <target> を実行し、その後 backup restore {{repository}} --as {{repository}} -m <target> --up でそのマシン上のアーティファクトを起動してください",
+        "description": "リポジトリの CoW（コピーオンライト）フォークを作成する。フォークはリポジトリのサイズに関わらずほぼ瞬時かつ定数時間で完了する。BTRFS reflink が基盤イメージをクローンするため、100 GB のリポジトリと 1 GB のリポジトリが同じ数秒でフォークされる。フォークは新しい GUID、networkId、IP 範囲、自動ルートドメイン（{service}-fork-{tag}.{repo}.{machine}.{baseDomain}）を持ち、完全に独立したコピーとなる。オンラインフォークに対応しており、親は稼働したままでよい。フォークは親の暗号化認証情報を自動的に継承する。--checkpoint を使用するとフォーク前に CRIU プロセス状態をキャプチャし、フォークは最初の 'repo up' 時に自動復元される（メモリ内状態が保持される）。クロスマシンフォーク: まずローカルでフォークしてから転送する: (1) rdc repo fork <parent-ref> --tag <name>、(2) rdc repo push <fork-ref> --to <target-machine>、(3) rdc backup restore <fork-ref> --as <fork-name> -m <target-machine> --up。警告: フォークのために \"repo push\" だけを使用しないこと。同じ GUID を持つ生のコピーが作成される（独立したフォークではない）。常に先にフォークして新しい identity を取得すること。自動ルートはリポジトリ名を使用するため、各フォークは自動的に一意のドメインを取得する",
         "descriptionShort": "リポジトリの CoW フォークを作成する（新規 GUID、networkId、IP 範囲）",
-        "detachedHint": "サービスはバックグラウンドで起動中です — 状態確認: rdc machine query --containers --name {{machine}}",
+        "detachedHint": "サービスはバックグラウンドで起動中です。状態確認: rdc machine status {{machine}} --containers",
         "detachOption": "--up と併用: コンテナ起動後すぐに戻ります。ヘルスチェックはバックグラウンドで継続します（使い捨てフォークに最適）",
-        "examples": "\n例:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
+        "examples": {
+          "basic": "リポジトリを新しいタグでフォークする",
+          "andStart": "リポジトリをフォークしてそのフォークをすぐに起動する"
+        },
         "failed": "フォークの作成に失敗しました",
         "immutableOption": "フォークを読み取り専用にします。マウントを拒否し、イメージをバイト単位で永続的に安定させます（マシン間デルタプッシュのための凍結されたコミット/ベース）",
         "immutableUpConflict": "repo fork: --immutable と --up は同時に指定できません。イミュータブルなフォークはマウントを拒否するため、起動できません。--up を外すか、通常のフォークをデプロイするには --immutable を外してください。",
@@ -969,17 +1067,9 @@
         "rollback": "\"{{repository}}\" の設定をロールバックしました",
         "starting": "\"{{machine}}\" で \"{{parent}}\" を \"{{repository}}\" としてフォーク中...",
         "tagOption": "フォークのタグ（名前:タグを作成）",
-        "tagRequired": "フォークにはタグが必要です。使用法: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "tagReservedLatest": "repo fork: タグ \"latest\" はグランド (本番) リポジトリ用に予約されています — 別の --tag を選んでください (例: \"test\"、\"staging\"、\"<feature>\")",
-        "upOption": "fork後にマウントしてサービスを開始（fork + mount + upを1コマンドで）"
-      },
-      "fsck": {
-        "clean": "{{machine}} に乖離はありません: すべての ref が解決し、孤立コミットも見つかりませんでした",
-        "danglingHeader": "ダングリング ref {{count}} 件（存在しないオブジェクトを指しています）:",
-        "description": "CLI 設定の ref（ブランチ、HEAD）を、マシン上に実際に存在するオブジェクトと照合して検証します。ダングリング ref（存在しないオブジェクトを指す ref）と孤立コミット（どの ref からも到達できない不変コミット）を報告します。読み取り専用です。",
-        "descriptionShort": "設定の ref をマシン上のオブジェクトと照合する",
-        "orphanHeader": "孤立コミット {{count}} 件（どの ref からも到達できません）:",
-        "orphanHint": "孤立コミットを回収するには: rdc repo gc --apply -m <machine>"
+        "upOption": "fork後にマウントしてサービスを開始（fork + mount + upを1コマンドで）",
+        "noWaitOption": "--up と併用: コンテナが起動した時点で戻る。ヘルスチェックはバックグラウンドで継続する（使い捨てフォークに最適）"
       },
       "gc": {
         "applied": "ガベージコレクション完了: {{deleted}}/{{total}} 件のコミットを削除しました",
@@ -997,14 +1087,17 @@
         "description": "マシン上のリポジトリをリスト表示する",
         "failed": "一覧取得に失敗しました: {{error}}",
         "serverNameLegend": "* 名前はマシンから取得（ローカル設定にはありません）",
-        "starting": "\"{{machine}}\" のリポジトリをリスト表示中..."
+        "starting": "\"{{machine}}\" のリポジトリをリスト表示中...",
+        "datastoreOption": "このデータストア内のリポジトリを一覧表示する（現在保持しているマシンへ自動的に解決される）",
+        "examples": {
+          "basic": "マシン上のリポジトリを一覧表示する",
+          "byDatastore": "データストア内にあるリポジトリを一覧表示する"
+        }
       },
       "log": {
         "description": "作業 fork の現在の commit（または commit 参照）から到達可能な commit 履歴を、'rdc repo commit' が記録した親チェーンをたどって表示します。ボリューム外のミラーを読み取るため、commit がアンロックされることはありません。",
         "descriptionShort": "fork または commit の commit 履歴をたどります",
-        "failed": "log に失敗しました",
-        "jsonOption": "commit 履歴を JSON として出力します",
-        "nameOption": "履歴のたどり始めとなる作業 fork または commit"
+        "failed": "log に失敗しました"
       },
       "machineOption": "対象マシン名",
       "merge": {
@@ -1015,30 +1108,26 @@
         "failed": "merge に失敗しました",
         "forceOption": "マウント中/実行中の対象をまず停止してから merge します (稼働中のマウントを直接変更することはありません)",
         "fromOption": "merge 元となるソースの commit または fork",
-        "nameOption": "merge 先となる対象の作業用 fork",
         "resolveOption": "3-way マージのファイル単位の競合解決: 'ours' はターゲット側のバージョンを保持し、'theirs' はソース側を採用します。省略するとイメージ全体の fast-forward（take-theirs）になります。"
       },
       "migrate": {
         "checkpointing": "CRIUチェックポイントを作成中...",
         "complete": "移行完了: {{name}} を {{from}} から {{to}} に移動しました",
         "deltaDone": "差分同期完了",
-        "deltaFailed": "差分同期に失敗しました",
         "deltaSync": "差分を同期中...",
-        "description": "最小限のダウンタイムでリポジトリを別のマシンにライブマイグレーション。2フェーズrsync: 実行中にバルク転送、その後短時間停止して差分同期。CRIUチェックポイントによるプロセスメモリ移行とターゲットマシンの自動プロビジョニングに対応",
+        "description": "リポジトリを最小限のダウンタイムで別のマシンへライブマイグレーションする。二段階の rsync: 稼働中に一括転送し、その後短時間停止してデルタ同期を行う。リポジトリ全体を移動し（ルーティングは新しい場所に再設定される）、移動成功後にソースイメージを削除する（保持するには --keep-source を使用）。プロセスのメモリ状態を移行する CRIU チェックポイントと、ターゲットマシンの自動プロビジョニングをサポートする",
         "descriptionShort": "マシン間でリポジトリをライブマイグレーション",
-        "dnsSkipped": "DNS切り替えをスキップしました（baseDomainまたはCloudflare設定なし）",
         "downtime": "ダウンタイム: {{duration}}",
         "optionBwlimit": "rsync転送の帯域幅制限（例: 10M）",
         "optionCheckpoint": "CRIUライブマイグレーション: プロセスメモリ状態のキャプチャと復元",
         "optionDeltaBase": "切り替え差分用のイミュータブルなベースGUID（上級者向け。既定はフェーズ1のベース）",
-        "optionFrom": "移行元マシン名",
         "optionProvision": "クラウドプロバイダー経由でターゲットを自動プロビジョニング（例: hetzner, linode）",
         "optionSkipDns": "移行後のDNSレコード切り替えをスキップ",
+        "optionKeepSource": "移動成功後もソースイメージを保持する（デフォルトでは削除される。残されたコピーはどの設定レコードからも参照できず、reconcile によって迷子として検出される）",
         "optionStrategy": "切り替え時のブロック差分戦略: auto、physical、または shared",
-        "optionTo": "移行先マシン名",
+        "optionTo": "移行先マシンまたはクラスター",
         "phase1": "フェーズ1: バルクデータを転送中（ソースは実行中）...",
         "phase1Done": "バルク転送完了",
-        "phase1Failed": "バルク転送に失敗しました",
         "phase1Stats": "{{duration}} で {{transferred}} を転送（ソースは稼働したまま）",
         "phase2": "フェーズ2: 切り替え（短時間のダウンタイム）...",
         "phase2Stats": "カットオーバー（ダウンタイム）: {{duration}} で {{transferred}}",
@@ -1046,49 +1135,41 @@
         "provisioning": "{{provider}} 経由でターゲットマシン {{machine}} をプロビジョニング中...",
         "sourceStopped": "ソースサービスを停止しました",
         "sourceUnmounted": "ソースをアンマウントしました",
-        "startFailed": "ターゲットでの起動に失敗しました",
         "startingTarget": "ターゲットでサービスを起動中...",
-        "stopFailed": "ソースサービスの停止に失敗しました",
         "stoppingSource": "ソースサービスを停止中...",
         "switchingDns": "DNSレコードを切り替え中...",
         "targetStarted": "ターゲットサービスが起動しました",
-        "unmountFailed": "ソースのアンマウントに失敗しました",
-        "unmountingSource": "ソースをアンマウント中..."
-      },
-      "mount": {
-        "checkpointOption": "マウント後にチェックポイントから復元する",
-        "completed": "マウントが完了しました",
-        "description": "リポジトリをマウントする (LUKS コンテナを開く)",
-        "descriptionShort": "リポジトリをマウントする（LUKS コンテナを復号して開く）",
-        "failed": "マウントに失敗しました",
-        "noDockerOption": "マウント後に Docker デーモンの起動をスキップする",
-        "starting": "\"{{repository}}\" を \"{{machine}}\" でマウント中..."
+        "unmountingSource": "ソースをアンマウント中...",
+        "noOpSameHome": "リポジトリ {{name}} は既に {{machine}} 上にあります。移行の必要はありません",
+        "placementUpdated": "ルーティングを更新しました: {{name}} は現在 {{machine}} 上にあります",
+        "placementRetryHint": "ルーティングは既に {{machine}} を指しているため、'rdc repo up {{name}}' はそこで再試行されます。ソースイメージは復旧用の資材として保持されました。",
+        "forkRefError": "migrate はリポジトリとそのすべてのフォークをまとめて移動しますが、{{name}}:{{tag}} はフォークです。フォークのコピーを別の場所に置くには 'rdc repo push {{name}}:{{tag}} --to <place>' を使用してください（コピーはバックアップの成果物であり、'rdc backup restore' で有効化されます）。または先に 'rdc repo promote {{name}}:{{tag}}' で昇格させてください。",
+        "familyHasForks": "migrate はファミリー全体を 1 台のマシンに移動しますが、{{name}} にはまだフォークがあります: {{forks}}。各フォークを希望の場所に 'rdc repo push {{name}}:<tag> --to <place>' で push するか、ファミリー全体の移行を待ってください。",
+        "deletingSource": "{{machine}} 上のソースイメージを削除中...",
+        "sourceDeleted": "{{name}} のソースイメージを {{machine}} から削除しました",
+        "sourceRetained": "{{name}} のソースイメージを {{machine}} に保持しました。どの設定レコードからも参照できません。reconcile によって迷子として検出されます。",
+        "sourceDeleteFailed": "{{machine}} 上の {{name}} のソースイメージを削除できませんでした: {{error}}。移動自体は既に成功しています。'rdc machine prune {{machine}}' で残りを片付けてください。",
+        "examples": {
+          "basic": "リポジトリを別のマシンに移動する",
+          "strategy": "物理コピー戦略を使ってリポジトリを移動する"
+        }
       },
       "noCredential": "警告: リポジトリ \"{{name}}\" に認証情報が設定されていません。暗号化されたリポジトリの操作が失敗する可能性があります。",
-      "ownership": {
-        "completed": "所有権を更新しました",
-        "description": "リポジトリディレクトリの所有権を変更する",
-        "descriptionShort": "リポジトリディレクトリの所有者 UID を変更する",
-        "failed": "所有権の更新に失敗しました",
-        "starting": "\"{{machine}}\" で \"{{repository}}\" の所有権を設定中...",
-        "uidOption": "所有者UID（デフォルト: 7111）"
-      },
       "policy": {
-        "description": "マシンのストレージメンテナが適用する自動サイズポリシーを管理します。リポジトリが満杯に近づくとクォータをオンラインで拡大し（max-quota を超えず、プール残量が少ないときは拡大しません）、スケジュールされたトリムを実行します。自動縮小はありません。縮小には 'repo resize' を使ってください。--name を省略するとマシン全体のデフォルトポリシーを対象にします",
+        "description": "マシンのストレージメンテナが適用する自動サイズポリシーを管理する: リポジトリが満杯に近づくとクォータをオンラインで拡大し（max-quota を超えず、プール残量が少ないときは拡大しない）、スケジュールされたトリムを実行する。自動縮小はない。縮小には 'repo resize' を使用する。ref を省略すると、-m のマシン全体のデフォルトポリシーを対象とする",
         "descriptionShort": "自動サイズポリシーを管理（自動拡大、スケジュールトリム）",
         "failed": "ポリシー操作に失敗しました",
         "get": {
-          "description": "保存されたマシンデフォルト、リポジトリの上書き（--name 指定時）、メンテナが実際に適用するマージ済みの有効ポリシーを表示します",
+          "description": "保存されたマシンデフォルト、リポジトリの上書き（ref 指定時）、メンテナが実際に適用するマージ済みの有効ポリシーを表示する",
           "descriptionShort": "サイズポリシーを表示（マシンデフォルト、リポジトリ上書き、有効値）"
         },
         "invalidBool": "{{flag}} は 'true' または 'false' である必要があります。受け取った値: {{value}}",
-        "nameOption": "リポジトリ（デフォルト: マシン全体のポリシー）",
         "repoNotFound": "リポジトリが見つかりません: {{name}}",
         "set": {
           "autoGrowOption": "クォータのオンライン自動拡大を有効化（true/false）",
           "autoTrimOption": "スケジュールトリムを有効化（true/false）",
           "description": "サイズポリシーのフィールドを設定します。渡したフラグだけが変更され、他の保存済みフィールドは値を保持します。自動拡大の有効化には --max-quota が必要です。上限はプールのオーバープロビジョニングへの明示的な同意です",
-          "descriptionShort": "ポリシーのフィールドを設定（マシンデフォルト、または --name で単一リポジトリ）",
+          "descriptionShort": "サイズポリシーのフィールドを設定する（マシンデフォルト、または ref で単一リポジトリ）",
           "growStepOption": "1 ステップの拡大量: 絶対値（10G）またはクォータの割合（20%）",
           "growThresholdOption": "拡大を引き起こすファイルシステム使用率 %（デフォルト 85）",
           "maxQuotaOption": "自動拡大の上限（例: 200G）。自動拡大には必須",
@@ -1108,29 +1189,57 @@
         "optionStrategy": "差分ベース使用時のブロック差分戦略: auto、physical、または shared",
         "optionUp": "pull後、このマシンでリポジトリをマウントしてデプロイ",
         "pulling": "\"{{repo}}\" のバックアップをプル中...",
-        "sourceRequired": "--from <remote> を指定してください（設定からのマシンまたはストレージ名）"
+        "sourceRequired": "--from <remote> を指定してください（設定からのマシンまたはストレージ名）",
+        "examples": {
+          "basic": "リポジトリをストレージバックエンドからプルする",
+          "andStart": "リポジトリをプルしてすぐに起動する"
+        }
       },
       "push": {
         "deployed": "リポジトリ \"{{repo}}\" が {{machine}} にデプロイされました",
         "deployFailed": "プッシュ後の \"{{repo}}\" のデプロイに失敗しました",
         "deploying": "{{machine}} に \"{{repo}}\" をデプロイ中...",
-        "description": "リポジトリをリモート（マシンまたはストレージ）にプッシュ。名前を省略するとすべてのリポジトリをプッシュ。ターゲットタイプは設定から自動検出。マシン間転送では、暗号化されたリポジトリイメージが同じGUIDでコピーされます — これはバックアップ/移行であり、forkではありません。独立したforkを作成するには、まず'repo fork'を使用してからpush。push後にデプロイするには--upを使用",
+        "description": "リポジトリをリモート（マシンまたはストレージ）にプッシュ。ターゲットタイプは設定から自動検出。マシン間転送では、暗号化されたリポジトリイメージが同じGUIDでコピーされます — これはバックアップ/移行であり、forkではありません。独立したforkを作成するには、まず'repo fork'を使用してからpush。プッシュされたコピーはバックアップアーティファクトとして配置されます: 'backup restore <ref> --as <name> -m <target> --up' でターゲット上に起動してください",
         "descriptionShort": "リポジトリをリモート（マシンまたはストレージ）にプッシュ",
         "destRequired": "--to <remote> を指定してください（設定からのマシンまたはストレージ名）",
         "optionBwlimit": "rsync転送の帯域幅制限（例: \"6M\", \"10M\"）",
         "optionCheckpoint": "バックアップ前にCRIUチェックポイントを作成（ライブマイグレーション用にプロセスメモリ状態をキャプチャ）",
         "optionDeltaBase": "両マシンにバイト単位で同一に存在するイミュータブルなベースGUID。変更されたブロックのみを転送（マシンターゲット）。省略すると自動ベースで手間なく処理",
         "optionForce": "既存のバックアップを強制的に上書きする",
-        "optionJson": "転送統計を JSON で出力",
         "optionProvision": "ターゲットマシンが存在しない場合、クラウドプロバイダー経由で自動プロビジョニング",
         "optionStrategy": "差分ベース使用時のブロック差分戦略: auto、physical、または shared",
-        "optionTag": "バージョニング用デプロイタグ",
         "optionTo": "宛先マシンまたはストレージ名（設定から自動検出）",
-        "optionUp": "プッシュ後、ターゲットマシンにリポジトリをマウントしてデプロイする",
         "pushing": "\"{{repo}}\" のバックアップを {{dest}} にプッシュ中...",
         "statsDelta": "\"{{repo}}\" を {{machine}} にプッシュしました: {{duration}} で {{transferred}} を転送（ベース {{base}} とのデルタ、イメージ {{image}}）",
         "statsFull": "\"{{repo}}\" を {{machine}} にプッシュしました: {{duration}} で {{transferred}} を転送（フル転送）",
-        "statsNoBytes": "\"{{repo}}\" を {{machine}} にプッシュしました: 所要時間 {{duration}}"
+        "statsNoBytes": "\"{{repo}}\" を {{machine}} にプッシュしました: 所要時間 {{duration}}",
+        "examples": {
+          "toStorage": "リポジトリをストレージバックエンドにプッシュする",
+          "toMachine": "リポジトリを別のマシンにプッシュする"
+        }
+      },
+      "replicate": {
+        "description": "データベースのサイズに関わらず、数秒でリポジトリのリードレプリカを N 個作成する。まずデータストアのスナップショットを1回取得し、そこからクラスターの各ノードに分散させる形で N 個の定数時間フォークアタッチ（コピーオンライト、使い捨てのローカル書き込み）を行い、生成されたオーバーレイを適用する: レプリカごとに固定された PersistentVolume を1つ、StatefulSet を1つ、そして2つの Service（プライマリ向けの {repo}-rw と、全レプリカにまたがる {repo}-ro）。レプリカは特定時点のコピーであり、レプリケーションストリームは存在せず、書き込み直後の読み取り整合性（read-your-writes）も保証しない。各レプリカはサービス提供の前に1回のクラッシュリカバリを実行する。'repo replicate refresh' で最新化できる。レプリカセットは管理された状態であり、'repo replicate status' で確認し、'repo replicate remove' で削除する。",
+        "descriptionShort": "データストアフォークによる瞬時のリードレプリカ",
+        "headlessOption": "-ro Service を headless にする: DNS が全レプリカ Pod の IP を返すようになり、ドライバー側での負荷分散が可能になる（長時間持続する DB 接続は、通常の Service が行う接続単位の負荷分散を偏らせてしまうため）",
+        "imageOption": "レプリカが実行するエンジンイメージ（プライマリと同じエンジン）",
+        "portOption": "エンジンが待ち受けるポート",
+        "primaryAppOption": "-rw Service が対象とする、プライマリ Pod の 'app' ラベルの値（デフォルト: リポジトリ名）",
+        "pvcOption": "エンジンがデータディレクトリとしてマウントするボリューム名（デフォルト: data）",
+        "refresh": {
+          "description": "すべてのレプリカを新しい特定時点のスナップショットへ、1台ずつ順番に切り替える: レプリカ Pod を再起動し、そのデータストアを同じパスのまま破棄して再フォークし、readiness チェックが通ったら再びトラフィックを受け付けさせる。この間、残りの N-1 台のレプリカはサービスを提供し続ける。",
+          "descriptionShort": "レプリカを新しいスナップショットへ切り替える"
+        },
+        "refreshOption": "セットに記録される想定リフレッシュ間隔（例: 1h）。ロールするには: 'repo replicate refresh'",
+        "remove": {
+          "description": "レプリカセットを削除する: 生成された k8s オブジェクトを削除し（ラベルスコープで対象を特定）、フォークしたデータストアを破棄し、スナップショットを削除して、状態を忘れる。インフラ側の操作はベストエフォートで行われるため、クラスターの一部が既に失われていても削除処理は最終的に収束する。",
+          "descriptionShort": "レプリカセットを破棄する"
+        },
+        "replicasOption": "作成するリードレプリカの数",
+        "status": {
+          "description": "管理下のレプリカセットを表示する: レプリカ、ホスティングノード、フォークしたデータストア、スナップショット、更新日時。",
+          "descriptionShort": "管理下のレプリカセットを表示する"
+        }
       },
       "resize": {
         "completed": "リサイズが完了しました",
@@ -1141,14 +1250,16 @@
         "starting": "\"{{machine}}\" で \"{{repository}}\" を {{size}} にリサイズ中..."
       },
       "secret": {
-        "currentOption": "SHA-256 digest of the previous value (passwd-style precondition). Required for overwrite under agent context; optional for first-write.",
-        "description": "Manage per-repo secrets injected at deploy time. Two modes: env (REDIACC_SECRET_<KEY> via compose ${VAR} interpolation) and file (host tmpfs at /var/run/rediacc/secrets/<networkId>/<KEY>, mounted via Docker compose `secrets:` block). Secrets never enter the encrypted LUKS image, so forks inherit none — externals see the fork as a different principal.",
+        "currentOption": "以前の平文値（passwd スタイルの事前条件）。上書き/削除には必須。--rotate-secret とは併用不可。",
+        "description": "デプロイ時に注入されるリポジトリ単位のシークレットを管理する。書き込み専用: get はダイジェストのみを返し（平文は返さない）、set/unset には --current によるダイジェスト一致または --rotate-secret が必要。配信モードは2種類: env（REDIACC_SECRET_<KEY>）と file（compose の `secrets:` 経由で /var/run/rediacc/secrets/<networkId>/<KEY> の tmpfs に配置）。シークレットは暗号化された LUKS イメージには一切入らないため、フォークはシークレットを一切継承しない。",
         "descriptionShort": "リポジトリ単位のデプロイ時シークレットを管理 (env / file)",
         "get": {
-          "description": "Read a single secret. Returns a redacted stub (`<redacted:secret>:<digest8>`) under agent context regardless of policy.",
+          "description": "シークレットの SHA-256 ダイジェストを表示する。平文値は設計上決して返されない（書き込み専用）。既知の値を確認するには、後続の set/unset で --current を使用するか、`set --rotate-secret` でローテーションすること。",
           "descriptionShort": "シークレットのダイジェストを表示 (値は決して返されない)",
           "notFound": "リポジトリ \"{{repository}}\" にシークレット \"{{key}}\" が見つかりません",
-          "repoNotFound": "リポジトリ \"{{repository}}\" が見つかりません"
+          "examples": {
+            "basic": "リポジトリのシークレットを読み取る"
+          }
         },
         "keyOption": "UPPER_SNAKE_CASE 形式のシークレットキー（最大 64 文字）。env モードでは REDIACC_SECRET_<KEY> として、file モードではコンテナ内の /run/secrets/<key> として公開されます。",
         "list": {
@@ -1157,12 +1268,15 @@
           "empty": "\"{{repository}}\" にシークレットは定義されていません"
         },
         "modeOption": "配信モード: 'env'（コンテナ環境、docker inspect で表示）または 'file'（tmpfs ファイル、env には決して入らない）。デフォルト: file。",
-        "nameOption": "リポジトリ名（例: mail、mail:staging）。タグなしの場合、デフォルトは :latest。",
         "rotateOption": "ローテーションを承認；--current 前提条件をスキップ（ローテーションとして監査）。前の値を確認せずに意図的にローテーションする場合に使用。",
         "set": {
           "description": "シークレットを設定または上書き。フォークは継承しません。フォーク上に明示的に設定してください。エージェントコンテキストでは --current ダイジェスト一致が必要です（passwd スタイル）。",
           "descriptionShort": "リポジトリのシークレットを設定または上書き",
-          "success": "シークレット \"{{key}}\"（{{mode}}）を \"{{repository}}\" に設定しました"
+          "success": "シークレット \"{{key}}\"（{{mode}}）を \"{{repository}}\" に設定しました",
+          "examples": {
+            "basic": "リポジトリ用のシークレットを保存する",
+            "envMode": "シークレットを保存し、環境変数として公開する"
+          }
         },
         "unset": {
           "description": "シークレットを削除します。エージェントコンテキストでは --current ダイジェスト一致が必要です。",
@@ -1181,59 +1295,29 @@
         "description": "リポジトリとファイルの同期（一括プッシュ/プル、ファイル転送）",
         "download": {
           "description": "リポジトリからファイルをダウンロード",
-          "descriptionShort": "rsync 経由でリポジトリからファイルをダウンロードする"
+          "examples": {
+            "dir": "リポジトリのディレクトリをローカルフォルダにダウンロードする",
+            "file": "リポジトリから単一のファイルをダウンロードする"
+          }
         },
         "status": {
-          "description": "同期ステータスを確認しローカル/リモートファイルを比較",
-          "descriptionShort": "ローカルとリモートのファイルを比較する（ドライラン）"
+          "description": "同期ステータスを確認しローカル/リモートファイルを比較"
         },
         "upload": {
           "description": "リポジトリにファイルをアップロード",
-          "descriptionShort": "rsync 経由でリポジトリにファイルをアップロードする"
+          "examples": {
+            "dir": "ローカルディレクトリをリポジトリにアップロードする",
+            "file": "リポジトリ内のパスに単一のファイルをアップロードする"
+          }
         }
-      },
-      "takeover": {
-        "backupInfo": "古い本番データの保存先: {{backup}}",
-        "completed": "引き継ぎが完了しました。グランドリポジトリはフォークのデータを取得しました。",
-        "description": "グランドリポジトリのデータをフォークのデータで置き換えます。グランドはその ID（GUID、networkId、ドメイン、自動起動、バックアップチェーン）を保持しつつ、フォークの更新されたデータを取得します。古い本番データはバックアップフォークとして保存されます。使用方法: フォークでアップグレードをテスト → 確認 → 本番への引き継ぎ。",
-        "descriptionShort": "本番データをフォークのデータで置き換える",
-        "examples": "\n例:\n  $ rdc repo takeover --name app:test -m server-1\n",
-        "failed": "引き継ぎに失敗しました",
-        "forceOption": "変更の警告をスキップする",
-        "grandNotFound": "フォーク \"{{name}}\" のグランドリポジトリが見つかりません",
-        "notAFork": "\"{{name}}\" はフォークリポジトリではありません（parentGuid がありません）",
-        "revertHint": "元に戻すには: rdc repo takeover --name {{backup}} -m {{machine}}",
-        "rollback": "\"{{name}}\" の設定をロールバックしました",
-        "starting": "\"{{machine}}\" 上で \"{{fork}}\" のデータを使って \"{{grand}}\" を引き継いでいます..."
-      },
-      "template": {
-        "apply": {
-          "description": "Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. The template writes Rediaccfile, docker-compose.yml, and any additional files to the repository mount",
-          "descriptionShort": "リポジトリにテンプレートを適用",
-          "notFound": "テンプレート \"{{name}}\" が見つかりません。利用可能: {{available}}"
-        },
-        "completed": "テンプレートを適用しました。デプロイ: rdc repo up --name {{repository}} -m {{machine}}",
-        "description": "リポジトリにテンプレートを適用する",
-        "descriptionShort": "リポジトリにテンプレートを適用する（docker-compose.yml + Rediaccfile）",
-        "failed": "テンプレートの適用に失敗しました",
-        "fileNotFound": "テンプレートファイルが見つかりません: {{path}}",
-        "fileOption": "テンプレートJSONファイルのパス",
-        "grandOption": "グランドリポジトリ名（自動的にGUIDに解決）",
-        "list": {
-          "description": "CLIに組み込まれたすべてのデプロイテンプレートを一覧表示",
-          "descriptionShort": "利用可能なテンプレートを一覧表示",
-          "empty": "利用可能なテンプレートがありません"
-        },
-        "starting": "\"{{machine}}\" で \"{{repository}}\" にテンプレートを適用中..."
       },
       "trim": {
         "completed": "トリム完了: {{total}} を回収しました",
-        "description": "マウント済みリポジトリからデータストアプールの空き領域を回収します（オンライン、停止なし）。リポジトリ内で削除されたブロックは fstrim でプールに返されます。--name を省略すると、マウント済みのすべてのリポジトリとデータストア自体をトリムします。バックアップ実行中のリポジトリでは fstrim はスキップされますが、--docker の回収は引き続き実行されます",
+        "description": "マウント済みリポジトリからデータストアプールの空き領域を回収する（オンライン、停止なし）。リポジトリ内で削除されたブロックは fstrim でプールに返される。ref を省略すると、-m 上のマウント済みのすべてのリポジトリとデータストア自体をトリムする。バックアップ実行中のリポジトリでは fstrim はスキップされるが、--docker の回収は引き続き実行される",
         "descriptionShort": "リポジトリの空き領域をプールへ返却する",
         "dockerOption": "Docker の領域を回収（停止中コンテナ、宙吊りイメージ、ビルドキャッシュ）。バックアップのスナップショットが有効な間も実行されます",
         "dockerVolumesOption": "未使用の Docker ボリュームも削除する",
         "failed": "トリムに失敗しました",
-        "nameOption": "トリムするリポジトリ（デフォルト: マウント済みのすべて）",
         "noMountedRepos": "マウント済みのリポジトリが見つかりません",
         "repoNotFound": "リポジトリが見つかりません: {{name}}",
         "reportOnlyOption": "トリムせずに discard 状態と回収可能量の見積もりを表示する",
@@ -1259,45 +1343,174 @@
         "portOption": "転送するリモートコンテナポート",
         "urlOnlyOption": "トンネルが準備できたらローカル URL のみを表示する（スクリプト向け）"
       },
-      "unmount": {
-        "checkpointOption": "アンマウント前にチェックポイントを作成する",
-        "completed": "アンマウントが完了しました",
-        "description": "リポジトリをアンマウントする",
-        "descriptionShort": "リポジトリをアンマウントする（LUKS コンテナを閉じる）",
-        "failed": "アンマウントに失敗しました",
-        "starting": "\"{{repository}}\" を \"{{machine}}\" でアンマウント中..."
-      },
       "up": {
-        "checkpointOption": "起動時にCRIUチェックポイントを復元（保存されたメモリ状態からプロセスを再開）",
         "completed": "サービスが開始されました",
-        "description": "リポジトリをデプロイまたは更新する (マウント、サービス起動)",
-        "descriptionShort": "マシン上にリポジトリをデプロイまたは更新する",
-        "detachOption": "コンテナ起動後すぐに戻ります。ヘルスチェックはバックグラウンドで継続します",
+        "description": "リポジトリをデプロイまたは更新する（マウントし、renet compose を呼び出す Rediaccfile の up を実行する）。マシンは ref の配置から自動的に決まる。プロキシルートはデプロイ後 ~3 秒で有効になる。完了時に、HTTP 公開サービス（rediacc.service_port ラベル）の URL パターンを表示する。初回デプロイとフォークは自動的にマウントされる。CRIU チェックポイントの復元は自動検出される。新規に起動するには --skip-checkpoint を使用する。マシン上のすべてのリポジトリをデプロイするには --all --machine <m> を使用する",
+        "descriptionShort": "リポジトリをデプロイまたは更新する",
         "failed": "サービスの開始に失敗しました",
         "grandOption": "グランドリポジトリ名 (自動的に GUID に解決)",
-        "mountOption": "最初にリポジトリをマウントする",
         "skipCheckpointOption": "checkpoint データが存在しても CRIU checkpoint の復元をスキップする（強制的に新規起動）",
         "starting": "\"{{repository}}\" のサービスを \"{{machine}}\" で開始中...",
-        "tlsOption": "このリポジトリ用の専用 TLS 証明書をリクエスト (フォークはデフォルトで共有マシン証明書を使用)"
+        "tlsOption": "このリポジトリ用の専用 TLS 証明書をリクエスト (フォークはデフォルトで共有マシン証明書を使用)",
+        "allOption": "--machine をホームとするすべてのリポジトリをデプロイする（バッチ形式）",
+        "noStartOption": "up() の手順を実行せずにリポジトリをマウント・準備する（廃止された 'repo mount' を統合したもの。LUKS のオープン、クラスターリポジトリでは PV の生成を行う）",
+        "noWaitOption": "コンテナが起動した時点で戻る。ヘルスチェックはバックグラウンドで継続する",
+        "examples": {
+          "basic": "リポジトリをそのマシン上にデプロイする",
+          "all": "マシン上のすべてのリポジトリを一括デプロイする"
+        }
+      },
+      "mount": {
+        "starting": "\"{{repository}}\" を \"{{machine}}\" にマウント中...",
+        "completed": "リポジトリをマウントしました",
+        "failed": "マウントに失敗しました"
       },
       "upAll": {
         "completed": "すべてのリポジトリが開始されました",
         "concurrencyOption": "最大同時リポジトリ数 (デフォルト: 3)",
-        "dryRunOption": "実行せずに行われる内容を表示する",
         "failed": "全体開始操作に失敗しました",
         "includeForksOption": "フォークされたリポジトリもマウント/開始する",
-        "mountOnlyOption": "マウントのみ、サービスは開始しない",
         "parallelOption": "リポジトリを並行して開始する",
         "starting": "\"{{machine}}\" 上のすべてのリポジトリを開始中..."
       },
-      "validate": {
-        "completed": "検証が完了しました",
-        "description": "リポジトリの整合性を検証する",
-        "descriptionShort": "リポジトリの整合性を検証する",
-        "failed": "検証に失敗しました",
-        "starting": "\"{{machine}}\" で \"{{repository}}\" を検証中..."
+      "yesOption": "バッチ操作の確認をスキップ",
+      "admin": {
+        "archive": {
+          "list": {
+            "description": "アーカイブ済みリポジトリ資格情報をリスト表示する",
+            "noArchived": "アーカイブ済みリポジトリはありません"
+          },
+          "purge": {
+            "description": "アーカイブ済み資格情報をすべて完全に削除する",
+            "noArchived": "パージするアーカイブ済みリポジトリはありません",
+            "success": "アーカイブ済みの認証情報を {{count}} 件削除しました",
+            "confirm": "期限切れのアーカイブ済みレコードをすべてパージしますか？"
+          },
+          "restore": {
+            "description": "アーカイブ済みリポジトリ資格情報を復元する",
+            "success": "\"{{name}}\"（{{guid}}）を復元しました"
+          },
+          "description": "アーカイブ済みリポジトリレコードの管理"
+        },
+        "validate": {
+          "completed": "検証が完了しました",
+          "description": "リポジトリの整合性を検証する",
+          "descriptionShort": "リポジトリの整合性を検証する",
+          "failed": "検証に失敗しました",
+          "starting": "\"{{machine}}\" で \"{{repository}}\" を検証中..."
+        },
+        "fsck": {
+          "clean": "{{machine}} に乖離はありません: すべての ref が解決し、孤立コミットも見つかりませんでした",
+          "danglingHeader": "ダングリング ref {{count}} 件（存在しないオブジェクトを指しています）:",
+          "description": "CLI 設定の ref（ブランチ、HEAD）を、マシン上に実際に存在するオブジェクトと照合して検証します。ダングリング ref（存在しないオブジェクトを指す ref）と孤立コミット（どの ref からも到達できない不変コミット）を報告します。読み取り専用です。",
+          "descriptionShort": "設定の ref をマシン上のオブジェクトと照合する",
+          "orphanHeader": "孤立コミット {{count}} 件（どの ref からも到達できません）:",
+          "orphanHint": "孤立コミットを回収するには: rdc repo gc --apply -m <machine>"
+        },
+        "ownership": {
+          "completed": "所有権を更新しました",
+          "description": "リポジトリディレクトリの所有権を変更する",
+          "descriptionShort": "リポジトリディレクトリの所有者 UID を変更する",
+          "failed": "所有権の更新に失敗しました",
+          "starting": "\"{{machine}}\" で \"{{repository}}\" の所有権を設定中...",
+          "uidOption": "所有者UID（デフォルト: 7111）"
+        },
+        "autostart": {
+          "description": "起動時の自動リポジトリ開始を管理する",
+          "disable": {
+            "completed": "自動開始が無効になりました",
+            "completedAll": "すべてのリポジトリの自動起動を無効にしました",
+            "description": "リポジトリの自動開始を無効にする",
+            "failed": "自動開始の無効化に失敗しました",
+            "failedAll": "すべてのリポジトリの自動起動無効化に失敗しました",
+            "starting": "\"{{machine}}\" 上の \"{{repository}}\" の自動開始を無効化中...",
+            "startingAll": "\"{{machine}}\" の全リポジトリの自動起動を無効化中..."
+          },
+          "enable": {
+            "completed": "自動開始が有効になりました",
+            "completedAll": "すべてのリポジトリの自動起動を有効にしました",
+            "description": "リポジトリの自動開始を有効にする",
+            "failed": "自動開始の有効化に失敗しました",
+            "failedAll": "すべてのリポジトリの自動起動有効化に失敗しました",
+            "starting": "\"{{machine}}\" 上の \"{{repository}}\" の自動開始を有効化中...",
+            "startingAll": "\"{{machine}}\" の全リポジトリの自動起動を有効化中..."
+          },
+          "list": {
+            "description": "自動開始が有効なリポジトリを一覧表示する",
+            "empty": "\"{{machine}}\" に自動起動が有効なリポジトリはありません",
+            "failed": "自動開始リポジトリの一覧取得に失敗しました",
+            "service": "自動起動サービス: インストール済み={{installed}}、有効={{enabled}}",
+            "starting": "\"{{machine}}\" 上の自動開始リポジトリを一覧取得中..."
+          }
+        },
+        "template": {
+          "apply": {
+            "description": "リポジトリにテンプレートを適用します。組み込みテンプレート名（例: app-postgres）を使用するか、カスタム JSON テンプレートには --file を使用してください。Rediaccfile のライフサイクル: up() はコンテナを起動します（イメージの pull、設定生成はここで行う）、down() は停止します。最小構成の Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }。重要: Rediaccfile は必ず 'renet compose' を使用してください。'docker compose' は拒否されます。環境変数: 2 つのレベルがあります。(a) Rediaccfile シェル: ${SVCNAME_IP}（例: APP_IP）、${REDIACC_WORKING_DIR}、${REDIACC_NETWORK_ID}。(b) コンテナ内部: renet が SERVICE_IP と REDIACC_NETWORK_ID 環境変数を自動的に注入します。eBPF バインド書き換えが IP 分離を透過的に処理するため、アプリは 0.0.0.0 にバインドでき、カーネルが正しいループバック IP に書き換えます。ヘルスチェックは localhost を使用できます。network_mode:host が注入され、ports: は無視されます。ストレージ: ${REDIACC_WORKING_DIR}/... へのバインドマウントと Docker の named volume はどちらも安全です。Docker の data-root は暗号化された LUKS マウント内にあります。再起動ポリシー: 再起動ポリシーは安全です。renet が CRIU 互換性のために自動的に取り除き、watchdog が復旧を処理します。Compose: network_mode や rediacc.* ラベルは追加しないでください（renet が注入します）。マルチプロジェクト: 各サブプロジェクトを独自の Rediaccfile を持つ専用のサブディレクトリに配置してください。renet が自動的に検出し、順番に実行します。HTTPS ルーティング: (A) 自動ルート（フォークフレンドリー、推奨）: traefik.enable を追加しないでください。Renet が https://{serviceName}.{repoName}.{machineName}.{baseDomain} を自動生成します。80 番以外のポートには rediacc.service_port=<port> ラベルを追加してください。各フォークは一意のドメインを取得します。(B) Traefik ラベル（カスタムドメイン、フォークフレンドリーではない）: traefik.enable=true、traefik.http.routers.<n>.rule=Host(`domain`)、traefik.http.routers.<n>.entrypoints=websecure,websecure-v6、traefik.http.routers.<n>.tls.certresolver=letsencrypt、traefik.http.services.<n>.loadbalancer.server.port=<port>。TCP/UDP の場合: rediacc.tcp_ports=3306 / rediacc.udp_ports=53",
+            "descriptionShort": "リポジトリにテンプレートを適用",
+            "notFound": "テンプレート \"{{name}}\" が見つかりません。利用可能: {{available}}",
+            "templateOption": "適用するテンプレート"
+          },
+          "completed": "\"{{machine}}\" で \"{{repository}}\" にテンプレートを適用しました。デプロイ: rdc repo up {{repository}}",
+          "description": "リポジトリにテンプレートを適用する",
+          "descriptionShort": "リポジトリにテンプレートを適用する（docker-compose.yml + Rediaccfile）",
+          "failed": "テンプレートの適用に失敗しました",
+          "fileNotFound": "テンプレートファイルが見つかりません: {{path}}",
+          "fileOption": "カスタムテンプレート JSON ファイルのパス（{\"version\":\"2\",\"files\":{\"Rediaccfile\":\"...\",\"docker-compose.yml\":\"...\"}}）: 組み込みテンプレート名を上書きします",
+          "grandOption": "グランドリポジトリ名（自動的にGUIDに解決）",
+          "list": {
+            "description": "CLIに組み込まれたすべてのデプロイテンプレートを一覧表示",
+            "descriptionShort": "利用可能なテンプレートを一覧表示",
+            "empty": "利用可能なテンプレートがありません"
+          },
+          "starting": "\"{{machine}}\" で \"{{repository}}\" にテンプレートを適用中..."
+        },
+        "description": "リポジトリの管理・保守用コマンド群"
       },
-      "yesOption": "バッチ操作の確認をスキップ"
+      "promote": {
+        "backupInfo": "古い本番データの保存先: {{backup}}",
+        "completed": "引き継ぎが完了しました。グランドリポジトリはフォークのデータを取得しました。",
+        "confirm": "\"{{fork}}\" を \"{{grand}}\" として本番へ引き継ぎますか？現在の本番データはバックアップフォークとして保存されます。",
+        "description": "グランドリポジトリのデータをフォークのデータで置き換えます。グランドはその ID（GUID、networkId、ドメイン、自動起動、バックアップチェーン）を保持しつつ、フォークの更新されたデータを取得します。古い本番データはバックアップフォークとして保存されます。使用方法: フォークでアップグレードをテスト → 確認 → 本番への引き継ぎ。",
+        "descriptionShort": "本番データをフォークのデータで置き換える",
+        "examples": {
+          "basic": "フォークをメインリポジトリに昇格させる",
+          "noConfirm": "確認プロンプトなしでフォークを昇格させる"
+        },
+        "failed": "引き継ぎに失敗しました",
+        "grandNotFound": "フォーク \"{{name}}\" のグランドリポジトリが見つかりません",
+        "notAFork": "\"{{name}}\" はフォークリポジトリではありません（parentGuid がありません）",
+        "revertHint": "元に戻すには: rdc repo promote {{backup}}",
+        "starting": "\"{{machine}}\" 上で \"{{fork}}\" のデータを使って \"{{grand}}\" を引き継いでいます..."
+      },
+      "batchAllNeedsMachine": "--all には --machine <m> が必要です: バッチ処理の対象となるリポジトリを持つマシン",
+      "batchMachineOption": "--all と併用: バッチ処理の対象となるリポジトリを持つマシン",
+      "batchNeedRefOrAll": "リポジトリ ref を指定する（repo {{verb}} <ref>）か、バッチ形式 repo {{verb}} --all -m <machine> を使用してください",
+      "batchRefConflict": "リポジトリ ref はそれ自体でマシンを決定します。--all と --machine はバッチ形式専用です: repo {{verb}} --all -m <machine>",
+      "exec": {
+        "cmdArgument": "-- の後に実行するコマンド",
+        "containerOption": "実行対象のコンテナ（リポジトリが複数のコンテナを実行している場合のみ必要）",
+        "description": "リポジトリのコンテナ内でコマンドを実行する。コマンド自身の終了コードがそのまま返されるため、スクリプトや条件分岐でも利用できる。Docker リポジトリではリポジトリの Docker デーモン経由で実行され、Kubernetes リポジトリではリポジトリの namespace 内で実行される",
+        "descriptionShort": "リポジトリのコンテナ内でコマンドを実行する",
+        "interactiveOption": "ターミナルを割り当てる（ターミナルを前提とするコマンド向け）",
+        "userOption": "コマンドを実行するユーザー",
+        "examples": {
+          "basic": "リポジトリのコンテナ内でコマンドを実行する",
+          "interactive": "コンテナ内で対話的シェルを開く"
+        }
+      },
+      "logs": {
+        "containerOption": "ログを読み取るコンテナ（リポジトリが複数のコンテナを実行している場合のみ必要）",
+        "description": "リポジトリのコンテナからアプリケーションログを表示する。Docker リポジトリではリポジトリ自身の Docker デーモンから読み取り、Kubernetes リポジトリではリポジトリの namespace 内の Pod ログを読み取る。リポジトリが複数のコンテナを実行している場合は、--container で対象を指定する",
+        "descriptionShort": "リポジトリのコンテナログを表示する",
+        "followOption": "中断されるまで新しい行をストリーミングし続ける",
+        "linesOption": "表示する履歴の行数（デフォルト: 100）",
+        "timestampsOption": "各行の先頭にタイムスタンプを付ける",
+        "examples": {
+          "basic": "リポジトリのコンテナログを表示する",
+          "container": "1つのコンテナの直近50行のログを表示する"
+        }
+      },
+      "refMachineConflict": "リポジトリ ref はそれ自体でマシンを決定します。-m/--machine はマシン全体形式でのみ使用してください: repo {{verb}} --all -m <machine>"
     },
     "shortcuts": {
       "cancel": {
@@ -1311,35 +1524,40 @@
         "description": "関数を実行する (短縮形: queue create)",
         "descriptionShort": "マシン上で低レベルブリッジ関数を実行する（デバッグ専用）",
         "executingLocal": "{{machine}} で '{{function}}' を実行中です...",
-        "failedLocal": "失敗: {{error}}",
-        "watching": "完了を監視中です..."
+        "failedLocal": "失敗: {{error}}"
       },
       "trace": {
         "description": "タスクをトレースする (queue trace のショートカット)"
       }
     },
-    "snapshot": {
-      "description": "リモートマシンのBTRFSスナップショットを管理"
+    "serve": {
+      "description": "クライアントが自分で SSH 接続する代わりに、このプロセスをエグゼキューターとして実行し、コマンドを実行できるようにします",
+      "optionPort": "待ち受けるポート",
+      "optionHost": "バインドするアドレス",
+      "optionMode": "配置先: daemon（顧客ホスト）または container",
+      "summary": "リモートクライアント向けのエグゼキューターとして実行",
+      "listening": "エグゼキューターが http://{{host}}:{{port}} で待ち受け中（モード: {{mode}}）",
+      "hint": "次のコマンドでクライアントを接続してください: rdc --proxy <url> <command>",
+      "draining": "シャットダウン前に実行中のコマンドを完了させています。",
+      "examples": {
+        "basic": "ローカルのエグゼキューターサーバーを起動する",
+        "customPort": "特定のポートでエグゼキューターサーバーを起動する",
+        "container": "コンテナモードでエグゼキューターサーバーを起動する"
+      }
     },
     "storage": {
       "browse": {
         "description": "ストレージシステム内のファイルを参照する",
-        "failed": "ファイルのリスト表示に失敗しました: {{error}}",
         "listing": "\"{{name}}\" のファイルをリスト表示中...",
         "noFiles": "ファイルが見つかりません",
         "pathOption": "リスト表示するサブディレクトリのパス"
       },
-      "create": {
-        "description": "新しいストレージプロバイダーを作成"
-      },
-      "delete": {
-        "description": "ストレージプロバイダーを削除"
-      },
-      "description": "ストレージプロバイダーの管理とリモートファイルの参照",
-      "descriptionShort": "ストレージプロバイダーの管理とリモートファイルの参照",
+      "description": "外部バックアップストレージエンドポイント（S3 やその他の rclone 互換先）を管理する: 登録・削除、登録済み一覧の表示、保持しているアーティファクトの閲覧、孤立したバックアップの整理を行う。",
+      "descriptionShort": "ストレージを管理する",
       "list": {
-        "description": "ストレージプロバイダーをリスト表示する",
-        "fetching": "ストレージプロバイダーを取得中です..."
+        "description": "ストレージエンドポイントを一覧表示する。名前を指定すると詳細を表示する",
+        "optionReveal": "ストレージ構成を平文で表示する(対話型 TTY のみ、監査ログに記録)",
+        "noStorages": "ストレージエンドポイントが設定されていません。次のコマンドで登録してください: rdc storage add <name> --vault <json>"
       },
       "prune": {
         "completed": "{{count}} 件の孤立したバックアップを削除しました",
@@ -1347,37 +1565,51 @@
         "descriptionShort": "ストレージから孤立したバックアップを削除",
         "forceDeleteMountedOption": "マウント安全チェックを上書きし、ソース GUID が現在実行マシンにマウントされているか実行中のコンテナを持っていてもクラウドバックアップを削除します。--force（アーカイブ済みリポジトリの猶予期間のみを上書き）とは異なります。",
         "found": "ストレージに {{count}} 件のバックアップが見つかりました",
-        "listFailed": "ストレージバックアップのリスト表示に失敗しました",
         "listing": "\"{{storage}}\" のバックアップをリスト表示中...",
         "machineOption": "実行マシン、rclone のリスト/削除呼び出しをストレージに対して実行します。クライアントはローカルに rclone がインストールされていることが期待されないため必須です；ストレージの認証情報は引き続きローカル設定から取得されます。",
         "noBackups": "ストレージにバックアップが見つかりません"
       },
-      "rename": {
-        "description": "ストレージプロバイダーの名前を変更"
+      "import": {
+        "description": "rclone 設定ファイルからストレージをインポートする",
+        "imported": "ストレージ \"{{name}}\" をインポートしました（{{type}}）",
+        "noConfigs": "ファイル内に有効なストレージ設定が見つかりません",
+        "notFound": "ストレージ \"{{name}}\" が設定ファイルに見つかりません",
+        "optionName": "指定したセクションのみインポートする",
+        "summary": "{{count}} 件のストレージをインポートしました",
+        "unsupported": "\"{{name}}\" をスキップ: サポートされていないプロバイダータイプ \"{{type}}\""
+      },
+      "add": {
+        "added": "ストレージ \"{{name}}\" を登録しました",
+        "adding": "ストレージ \"{{name}}\" を登録中...",
+        "description": "ストレージエンドポイントを登録する",
+        "examples": {
+          "basic": "vault 定義からストレージバックエンドを登録する"
+        }
+      },
+      "remove": {
+        "confirm": "ストレージエンドポイント \"{{name}}\" を削除しますか？",
+        "description": "設定からストレージエンドポイントを削除する",
+        "removed": "ストレージ \"{{name}}\" を削除しました"
       }
     },
     "subscription": {
       "activation": {
-        "description": "マシンアクティベーション管理",
         "status": {
           "activations": "  アクティベーション: {{active}}/{{max}}",
           "active": "  アクティベーション: 有効（最終確認: {{lastSeenAt}}）",
-          "description": "1台のマシンのアクティベーション状態を表示する",
           "header": "\nマシンのアクティベーション（{{machineName}}）",
           "inactive": "  アクティベーション: マシンは現在アカウント状態でアクティブではありません",
           "machineId": "  マシン ID: {{machineId}}",
           "unavailable": "  アクティベーション: アカウント状態を照会できませんでした"
         }
       },
-      "description": "マシンライセンスとサブスクリプションの管理",
+      "description": "ライセンスとサブスクリプショントークンを管理する。login でサインインし、status で確認し、refresh でライセンスを再発行する",
       "descriptionShort": "マシンライセンスとサブスクリプションの管理",
       "login": {
-        "browserFailed": "ブラウザを自動的に開けませんでした。上記のURLにアクセスしてください。",
         "channelSynced": "更新チャンネルを{{channel}}に設定しました。",
         "description": "WebポータルのAPIトークンで認証",
         "discoveringRegions": "利用可能なリージョンを検出中...",
         "expired": "認証がタイムアウトしました。もう一度お試しください。",
-        "initFailed": "ログインの開始に失敗しました。サーバーは稼働していますか？",
         "machines": "マシン: {{active}}/{{max}}",
         "openBrowser": "このURLにアクセスして認証してください：",
         "plan": "プラン: {{plan}}",
@@ -1387,82 +1619,58 @@
         "regionSelected": "データリージョン: {{region}} ({{domain}})",
         "serverChanged": "サーバーが変更されました。以前のセッションはクリアされました。",
         "success": "ログイン成功",
-        "tokenInvalid": "トークンは rdt_ で始まる必要があります",
-        "tokenPrompt": "APIトークンを入力してください（Webポータルから）:",
         "validated": "トークン検証済み",
         "validating": "トークンを検証中...",
-        "waitingApproval": "ブラウザでの認証を待っています..."
+        "waitingApproval": "ブラウザでの認証を待っています...",
+        "edgeSeparator": "Edge チャンネル"
       },
       "logout": {
         "description": "保存されたサブスクリプショントークンを削除する",
         "success": "サブスクリプショントークンを削除しました"
       },
       "refresh": {
-        "activation": {
-          "description": "リモートマシンのアクティベーションを更新する"
-        },
-        "description": "マシンライセンスを更新",
-        "failed": "マシンライセンスを発行できませんでした",
-        "refreshed": "ライセンスが更新されました",
-        "refreshing": "ライセンスを更新中...",
+        "description": "アカウントサーバーからライセンスを更新する",
         "repo": {
-          "description": "特定のリポジトリのライセンスを更新する",
           "failed": "リポジトリライセンスの更新に失敗しました",
           "notFound": "リポジトリが見つかりません: {{repoName}}",
           "refreshed": "リポジトリライセンスが更新されました",
           "refreshing": "リポジトリライセンスを更新中...",
-          "repoArgument": "リポジトリ名",
           "success": "\"{{repoName}}\" のリポジトリライセンスを更新しました"
         },
         "repos": {
-          "description": "リモートマシン上のリポジトリライセンスを一括更新する",
           "refreshed": "リポジトリライセンスが更新されました",
-          "refreshing": "リポジトリライセンスを更新中...",
-          "success": "リポジトリライセンスの一括更新が完了しました"
+          "refreshing": "リポジトリライセンスを更新中..."
         },
-        "success": "ライセンスが更新・インストールされました"
+        "success": "ライセンスが更新・インストールされました",
+        "account": {
+          "failed": "アカウントサーバーからアカウント状態を読み取れませんでした",
+          "refreshed": "アカウント状態を更新しました",
+          "refreshing": "アカウント状態を更新中..."
+        },
+        "targetExclusive": "-m または --repo のどちらか一方のみを指定してください。--repo は ref から自動的にマシンを決定します"
       },
       "repo": {
-        "description": "リポジトリライセンス管理",
         "status": {
-          "description": "マシンにインストール済みのリポジトリライセンスを表示する",
           "empty": "  インストール済みのリポジトリライセンスはありません",
           "entry": "  - {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
-          "freshness": {
-            "hardExpired": "有効期限切れ",
-            "refreshRecommended": "更新推奨",
-            "unknown": "不明",
-            "valid": "有効"
-          },
           "hardExpirySuffix": "（有効期限: {{effectiveHardExpiry}}）",
           "header": "\nリポジトリライセンス:（{{machineName}}）"
         }
       },
       "status": {
-        "description": "サブスクリプションとライセンスの状態を表示",
-        "expired": "  ライセンスが期限切れです — `rdc subscription refresh` を実行してください",
-        "expires": "  有効期限:   {{expiresAt}}",
+        "description": "サブスクリプションと、マシンのライセンス状態を表示する",
         "issuanceLimitReached": "現在の UTC 暦月のリポジトリライセンス発行上限に達しました。",
         "issuanceUsageHigh80": "月間リポジトリライセンス発行数が現在の UTC 上限の 80% を超えています。",
         "issuanceUsageHigh95": "月間リポジトリライセンス発行数が現在の UTC 上限の 95% を超えています。",
-        "issued": "  発行日:     {{issuedAt}}",
-        "localLicense": "ローカルライセンス:",
-        "machine": "  マシン:     {{machineId}}",
-        "noLicense": "ローカルライセンスがインストールされていません。",
         "parseFailed": "  ライセンスファイルを解析できませんでした",
-        "plan": "  プラン:     {{plan}}",
         "remote": "\nリモートサブスクリプション:",
         "remoteMachine": "    - {{id}}... (最終確認: {{lastSeen}})",
         "remoteMachineActivations": "  マシンアクティベーション: {{active}}/{{max}}",
-        "remoteMachines": "  マシン: {{active}}/{{max}}",
         "remotePlan": "  プラン:     {{plan}}",
         "remoteRepoLicenseIssuances": "  フローティングライセンス要求: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  リポジトリライセンス: 追跡 {{totalTrackedRepos}}、有効 {{validCount}}、更新推奨 {{refreshRecommendedCount}}、完全失効 {{hardExpiredCount}}",
         "remoteStatus": "  ステータス: {{status}}",
-        "sequence": "  シーケンス: {{sequenceNumber}}",
-        "serverMismatch": "開発トークンは {{actualServerUrl}} 用ですが、このワークツリーは {{expectedServerUrl}} を使用しています。`rdc subscription login` を再実行してください。",
-        "statusLabel": "  ステータス: {{status}}",
-        "valid": "  有効（残り {{mins}} 分で期限切れ）"
+        "serverMismatch": "開発トークンは {{actualServerUrl}} 用ですが、このワークツリーは {{expectedServerUrl}} を使用しています。`rdc subscription login` を再実行してください。"
       }
     },
     "sync": {
@@ -1498,11 +1706,15 @@
     },
     "term": {
       "connect": {
-        "description": "マシンまたはリポジトリに SSH 経由で接続する"
+        "description": "マシン上、またはリポジトリ内（Docker 設定済み）でシェルを開く",
+        "examples": {
+          "machine": "マシンへの SSH ターミナルを開く",
+          "repo": "リポジトリ内でターミナルを開く",
+          "runCommand": "SSH 経由でマシン上の単一コマンドを実行する"
+        }
       },
-      "connecting": "{{machine}} に接続中です...",
       "connectingTo": "{{title}} に接続中です...",
-      "description": "マシンとリポジトリへの SSH ターミナルアクセス",
+      "description": "マシンまたはリポジトリへの SSH ターミナルを開く。対象にはマシン名またはリポジトリ ref を指定でき、リポジトリコンテキスト（DOCKER_HOST、作業ディレクトリ、環境変数）は自動的に設定される。`-c` で単一コマンドを非対話的に実行できる。コンテナのログや単発コマンドの実行には `repo logs` と `repo exec` を使用する。VS Code には `vscode` を使用する",
       "descriptionShort": "マシンとリポジトリへの SSH ターミナルアクセス",
       "fetchingDetails": "接続詳細を取得中です...",
       "launchingTerminal": "{{type}} ターミナルを起動中です...",
@@ -1510,7 +1722,6 @@
       "testingConnectivity": "{{host}}:{{port}} への接続をテスト中です..."
     },
     "update": {
-      "applyFailed": "準備された更新の適用に失敗しました: {{error}}",
       "autoApplied": "v{{version}} に更新しました（以前は v{{from}}）。変更は次回の実行時に反映されます。",
       "available": "アップデート利用可能: v{{version}} (現在: v{{current}})",
       "channelDescription": "リリースチャンネルを設定 (stable または edge)",
@@ -1545,7 +1756,6 @@
       "stagedFallback": "更新 v{{version}} がダウンロードされ準備されました。次回起動時に適用されます。",
       "statusDescription": "自動更新のステータスと診断情報を表示",
       "success": "v{{from}}からv{{to}}にアップデートしました",
-      "unknownError": "不明なエラー",
       "upToDate": "最新です (v{{version}})"
     },
     "vscode": {
@@ -1579,7 +1789,7 @@
         "browserUrl": "ブラウザで VS Code を開く: {{url}}",
         "configuringSSH": "SSH を設定中です...",
         "configuringVSCode": "VS Code 設定を設定中です...",
-        "description": "VS Code でマシンまたはリポジトリに接続する",
+        "description": "マシン上、またはリポジトリ内で VS Code を開く",
         "detecting": "VS Code を検出中です...",
         "extensionWarning": "警告: Remote SSH 拡張機能がインストールされていない可能性があります。\nインストール: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
         "fetchingDetails": "接続詳細を取得中です...",
@@ -1595,7 +1805,11 @@
         "startingServer": "リポジトリサンドボックス内で {{provider}} を起動しています...",
         "success": "VS Code が正常に起動されました。",
         "testingConnectivity": "{{host}}:{{port}} への接続をテスト中です...",
-        "tunnelReady": "localhost:{{port}} でトンネルが準備できました"
+        "tunnelReady": "localhost:{{port}} でトンネルが準備できました",
+        "examples": {
+          "basic": "SSH 経由でリポジトリを VS Code で開く",
+          "folder": "リポジトリの特定のフォルダを VS Code で開く"
+        }
       },
       "description": "マシンまたはリポジトリへの VS Code Remote SSH を開く",
       "descriptionShort": "マシンまたはリポジトリへの VS Code Remote SSH を開く",
@@ -1620,18 +1834,57 @@
           "stopped": "{{provider}} を停止しました"
         }
       }
+    },
+    "job": {
+      "description": "マシン上のデタッチジョブを管理します。一覧表示、ステータス確認、イベントログの再生またはフォロー、ジョブのキャンセル、完了済みジョブのガベージコレクションが行えます。デタッチジョブはマシン上で systemd によって実行されるため、接続が切断されても存続し、後で再アタッチできます。",
+      "summary": "マシン上のデタッチジョブを管理",
+      "machineOption": "対象マシン名",
+      "idOption": "ジョブID",
+      "list": {
+        "description": "マシン上のデタッチジョブを新しい順に一覧表示",
+        "empty": "{{machine}} にジョブはありません。",
+        "examples": {
+          "basic": "マシン上のジョブを一覧表示する"
+        }
+      },
+      "status": {
+        "description": "デタッチジョブのステータスを表示",
+        "examples": {
+          "basic": "1つのジョブのステータスを表示する"
+        }
+      },
+      "logs": {
+        "description": "デタッチジョブのイベントログを再生またはフォロー",
+        "followOption": "ジョブが完了するまでストリーミング",
+        "sinceLineOption": "指定した行数の続きから再開(すでに受信済みの行数)",
+        "invalidSinceLine": "--since-line には行数を指定してください(指定値: \"{{value}}\")",
+        "detached": "ジョブ {{jobId}} からデタッチしました。ジョブは {{machine}} 上で引き続き実行中であり、キャンセルはされていません。再アタッチするには次を実行してください: rdc job logs {{jobId}} -m {{machine}} --follow",
+        "examples": {
+          "basic": "ジョブのログを表示する",
+          "follow": "ジョブのログをリアルタイムで追跡する"
+        }
+      },
+      "cancel": {
+        "description": "実行中のデタッチジョブをキャンセル",
+        "confirm": "{{machine}} 上のジョブ {{jobId}}({{function}})をキャンセルしますか? 処理は停止されます。",
+        "requested": "ジョブ {{jobId}} のキャンセルをリクエストしました。",
+        "alreadyFinished": "ジョブ {{jobId}} はすでに {{state}} のため、キャンセルする対象がありません。",
+        "examples": {
+          "basic": "実行中のジョブをキャンセルする"
+        }
+      },
+      "gc": {
+        "description": "完了済みジョブとそのログを削除",
+        "olderThanOption": "指定した時間(単位:時間)より前に完了したジョブを収集します(デフォルト: 168)",
+        "invalidOlderThan": "--older-than には時間数を指定してください。例: 168 または 168h(指定値: \"{{value}}\")",
+        "confirm": "{{machine}} 上で {{hours}} 時間以上前に完了したジョブを削除しますか? ログも削除されます。",
+        "removed": "{{count}} 件のジョブを削除しました。"
+      },
+      "finished": {
+        "succeeded": "ジョブ {{jobId}} は成功しました。",
+        "other": "ジョブ {{jobId}} は {{state}}。{{error}}"
+      }
     }
-  },
-  "common": {
-    "completed": "完了",
-    "failed": "失敗",
-    "inProgress": "処理中",
-    "no": "いいえ",
-    "running": "実行中",
-    "stopped": "停止",
-    "success": "✓ 成功",
-    "unknown": "不明",
-    "yes": "はい"
   },
   "docs": {
     "admonitions": {
@@ -1675,18 +1928,19 @@
     },
     "overview": {
       "heading": "概要",
-      "text": "**Rediacc CLI**（`rdc`）は、Rediaccプラットフォームのすべての側面を管理するためのコマンドラインインターフェースです — 認証、インフラストラクチャ、リポジトリ、キュー、ストレージなど。"
+      "text": "**Rediacc CLI**（`rdc`）は、セルフホスト型インフラストラクチャ — マシン、リポジトリ、ストレージ、バックアップなど — を管理するためのコマンドラインインターフェースです。"
     },
     "pageTitle": "Rediacc CLIリファレンス",
     "sectionTitles": {
-      "agent": "エージェントユーティリティ",
       "backup": "バックアップと復元",
+      "cluster": "クラスター管理",
       "config": "設定管理",
+      "credits": "サードパーティクレジット",
       "datastore": "データストア管理",
       "doctor": "システム診断",
       "machine": "マシン管理",
       "mcp": "MCPサーバー",
-      "ops": "実験的 VM 操作",
+      "ops": "ローカル VM 操作",
       "repo": "リポジトリライフサイクル",
       "shortcuts": "クイックコマンド（ショートカット）",
       "storage": "ストレージ管理",
@@ -1694,7 +1948,9 @@
       "sync": "ファイル同期",
       "term": "SSHターミナルアクセス",
       "update": "CLIアップデート",
-      "vscode": "VS Code統合"
+      "vscode": "VS Code統合",
+      "job": "デタッチジョブ",
+      "serve": "エグゼキューターサービス"
     },
     "supplements": {
       "config": {
@@ -1719,138 +1975,109 @@
     }
   },
   "errors": {
-    "activationFailed": "有効化に失敗しました",
-    "affectedChildClones": "。影響を受ける子クローン: {{clones}}。子クローンを最初に削除するか昇格させてください。",
     "agent": {
-      "commandBlocked": "\"{{command}}\" コマンドはエージェントモードでは使用できません。\n\nこのコマンドは安全ガードなしに任意の低レベル関数を実行します。代わりに型付きCLIコマンドまたはMCPツールを使用してください。\n\n代替手段:\n  - MCP tools: repo_up, repo_down, repo_fork, machine_query, term_exec\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - 利用可能なすべてのコマンドを表示するには \"rdc agent capabilities\" を実行してください\n\n直接アクセスが必要な場合は、ユーザーにコマンドを直接実行するよう依頼してください。",
-      "configEdit": "対話型エディタはエージェント環境ではブロックされます。\n\n代替手段:\n  • rdc config edit --dump > config.jsonc    (安全な秘匿表示)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nオーバーライドするには、エージェントを起動する前に親シェルで\nREDIACC_ALLOW_CONFIG_EDIT=<scope-glob> を設定してください(エージェントの祖先プロセス内に存在する必要があります)。",
-      "configEditAncestry": "対話型エディタはエージェント環境ではブロックされます(REDIACC_ALLOW_CONFIG_EDIT は設定されましたが祖先検証に失敗 — オーバーライドはエージェントではなく親シェルから設定する必要があります)。\n\n代替手段:\n  • rdc config edit --dump > config.jsonc    (安全な秘匿表示)\n  • rdc config field set --name <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nエージェントを起動する前に親シェルで REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> を設定してください。",
-      "createGuard": "エージェントモードでは新しいgrandリポジトリ \"{{name}}\" を作成できません。\n\nエージェントはfork専用モードで動作します。grandリポジトリは本番環境であり、作成後にエージェントがアクセスすることはできません。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nユーザーへ: リポジトリの作成を許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO=*（または特定のリポジトリ名）を設定してください。",
-      "createGuardOverride": "新しいgrandリポジトリ \"{{name}}\" を作成できません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}",
-      "createGuardOverrideNonLinux": "新しいgrandリポジトリ \"{{name}}\" を作成できません。REDIACC_ALLOW_GRAND_REPO は設定されていますが、{{platform}} では起源が検証できません（祖先検証ヘルパーが使用不可またはエラー）。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\n注記: 検証は Linux、macOS、Windows で機能します（rdc インストールが正常な場合）。問題が続く場合は rdc を再インストールし、エージェント開始前にターミナルで変数を設定してください。",
+      "clusterOpBlocked": "クラスターコマンド \"{{command}}\" はエージェントモードではブロックされています。クラスター操作は実際のインフラを構築または破棄するため、エージェント自身が承認することはできません。ユーザーへ: これを許可するには、エージェントセッションを開始する前にターミナルで REDIACC_ALLOW_CLUSTER_OPS=<cluster-name>（またはすべてのクラスターに対して *）を設定してください。エージェント内部から設定されたオーバーライドは受け入れられません。",
+      "commandBlocked": "\"{{command}}\" コマンドはエージェントモードでは使用できません。\n\nこのコマンドは安全ガードなしに任意の低レベル関数を実行します。代わりに型付きCLIコマンドまたはMCPツールを使用してください。\n\n代替手段:\n  - MCP tools: repo_up, repo_down, repo_fork, repo_logs, repo_exec, machine_status\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - 利用可能なすべてのコマンドを表示するには \"rdc --help\" を実行してください\n\n直接アクセスが必要な場合は、ユーザーにコマンドを直接実行するよう依頼してください。",
+      "configEdit": "対話型エディタはエージェント環境ではブロックされます。\n\n代替手段:\n  • rdc config edit --dump > config.jsonc    (安全な秘匿表示)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nオーバーライドするには、エージェントを起動する前に親シェルで\nREDIACC_ALLOW_CONFIG_EDIT=<scope-glob> を設定してください(エージェントの祖先プロセス内に存在する必要があります)。",
+      "configEditAncestry": "対話型エディタはエージェント環境ではブロックされます(REDIACC_ALLOW_CONFIG_EDIT は設定されましたが祖先検証に失敗 — オーバーライドはエージェントではなく親シェルから設定する必要があります)。\n\n代替手段:\n  • rdc config edit --dump > config.jsonc    (安全な秘匿表示)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nエージェントを起動する前に親シェルで REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> を設定してください。",
+      "createGuard": "エージェントモードでは新しいgrandリポジトリ \"{{name}}\" を作成できません。\n\nエージェントはfork専用モードで動作します。grandリポジトリは本番環境であり、作成後にエージェントがアクセスすることはできません。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork <parent-ref> --tag {{name}}\n\nユーザーへ: リポジトリの作成を許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO=*（または特定のリポジトリ名）を設定してください。",
+      "createGuardOverride": "新しいgrandリポジトリ \"{{name}}\" を作成できません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork <parent-ref> --tag {{name}}",
+      "createGuardOverrideNonLinux": "新しいgrandリポジトリ \"{{name}}\" を作成できません。REDIACC_ALLOW_GRAND_REPO は設定されていますが、{{platform}} では起源が検証できません（祖先検証ヘルパーが使用不可またはエラー）。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork <parent-ref> --tag {{name}}\n\n注記: 検証は Linux、macOS、Windows で機能します（rdc インストールが正常な場合）。問題が続く場合は rdc を再インストールし、エージェント開始前にターミナルで変数を設定してください。",
       "fieldReveal": "機密フィールド {{pointer}} の --reveal はエージェント環境ではブロックされます。エージェントは --digest を使用してください。対話型端末の実ユーザーは --reveal を使えます。",
       "forkBlocked": "コマンド \"{{command}}\" はforkリポジトリでは使用できません。\n\nforkリポジトリは一時的なサンドボックス環境です。この操作はgrand（本番）リポジトリにのみ適用されます。ユーザーにこのコマンドを直接実行するよう依頼してください。",
-      "grandGuard": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントはgrandリポジトリを直接変更できません。\n\ngrandリポジトリには本番データが含まれています。代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです。\n\nワークフロー:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する（例: rdc repo up --name {{name}}:<tag-name> -m <machine>）\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます\n\nユーザーへ: 直接アクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。",
-      "grandGuardOverride": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます",
-      "grandGuardOverrideNonLinux": "\"{{name}}\" はgrand（本番）リポジトリです。REDIACC_ALLOW_GRAND_REPO は設定されていますが、{{platform}} では起源が検証できません（祖先検証ヘルパーが使用不可またはエラー）。したがってオーバーライドは受け入れられません。\n\nfork優先ワークフローを使用してください:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます\n\n注記: 検証は Linux、macOS、Windows で機能します（rdc インストールが正常な場合）。問題が続く場合は rdc を再インストールし、エージェント開始前にターミナルで変数を設定してください。",
-      "machineGuard": "エージェントモードでは \"{{machine}}\" への直接マシンアクセスは許可されていません。\n\nエージェントはサンドボックスアクセスのためにリポジトリコンテキストを通じて接続する必要があります。まずリポジトリのforkを作成し、fork に接続してください。\n\nワークフロー:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nユーザーへ: 直接マシンアクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO=*（または特定のリポジトリ名）を設定してください。",
-      "machineGuardOverride": "\"{{machine}}\" への直接マシンアクセスは許可されていません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\nまずリポジトリのforkを作成し、forkに接続してください:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"",
-      "machineGuardOverrideNonLinux": "直接マシンアクセスのオーバーライドが設定されていますが、{{platform}} では起源が検証できません（祖先検証ヘルパーが使用不可またはエラー）。したがってオーバーライドは受け入れられません。\n\nまずリポジトリのforkを作成し、forkに接続してください:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\n注記: 検証は Linux、macOS、Windows で機能します（rdc インストールが正常な場合）。問題が続く場合は rdc を再インストールし、エージェント開始前にターミナルで変数を設定してください。",
+      "grandGuard": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントはgrandリポジトリを直接変更できません。\n\ngrandリポジトリには本番データが含まれています。代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです。\n\nワークフロー:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. fork上で操作する（例: rdc repo up {{name}}:<tag-name>）\n  3. 完了したら、ユーザーは rdc repo promote {{name}}:<tag-name> でforkを昇格できます\n\nユーザーへ: 直接アクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。",
+      "grandGuardOverride": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo promote {{name}}:<tag-name> でforkを昇格できます",
+      "grandGuardOverrideNonLinux": "\"{{name}}\" はgrand（本番）リポジトリです。REDIACC_ALLOW_GRAND_REPO は設定されていますが、{{platform}} では起源が検証できません（祖先検証ヘルパーが使用不可またはエラー）。したがってオーバーライドは受け入れられません。\n\nfork優先ワークフローを使用してください:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo promote {{name}}:<tag-name> でforkを昇格できます\n\n注記: 検証は Linux、macOS、Windows で機能します（rdc インストールが正常な場合）。問題が続く場合は rdc を再インストールし、エージェント開始前にターミナルで変数を設定してください。",
+      "machineGuard": "エージェントモードでは \"{{machine}}\" への直接マシンアクセスは許可されていません。\n\nエージェントはサンドボックスアクセスのためにリポジトリコンテキストを通じて接続する必要があります。まずリポジトリのforkを作成し、fork に接続してください。\n\nワークフロー:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nユーザーへ: 直接マシンアクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO=*（または特定のリポジトリ名）を設定してください。",
+      "machineGuardOverride": "\"{{machine}}\" への直接マシンアクセスは許可されていません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\nまずリポジトリのforkを作成し、forkに接続してください:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"",
+      "machineGuardOverrideNonLinux": "\"{{machine}}\" への直接マシンアクセスのオーバーライドが設定されていますが、{{platform}} では起源が検証できません（祖先検証ヘルパーが使用不可またはエラー）。したがってオーバーライドは受け入れられません。\n\nまずリポジトリのforkを作成し、forkに接続してください:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\n注記: 検証は Linux、macOS、Windows で機能します（rdc インストールが正常な場合）。問題が続く場合は rdc を再インストールし、エージェント開始前にターミナルで変数を設定してください。",
       "mcpGrandGuard": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントはgrandリポジトリを直接変更できません。\n\nrepo_fork を使用して安全で分離されたサンドボックスコピーを作成し、fork上で操作してください。\n直接アクセスが必要な場合は、ユーザーに REDIACC_ALLOW_GRAND_REPO をエージェント開始前にエクスポートするよう依頼してください。",
       "mcpGrandGuardOverride": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。\n\nrepo_fork を使用して安全で分離されたサンドボックスコピーを作成し、fork上で操作してください。",
       "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" はgrand（本番）リポジトリです。REDIACC_ALLOW_GRAND_REPO オーバーライドは {{platform}} では検証できません（祖先検証ヘルパーが使用不可またはエラー）。受け入れられません。\n\nrepo_fork を使用して安全で分離されたサンドボックスコピーを作成し、fork上で操作してください。",
-      "mcpMachineGuard": "エージェントでは直接マシンアクセスは許可されていません。\n\nエージェントはリポジトリコンテキストを通じて接続する必要があります。repo_fork を使用してforkを作成し、接続してください。\n直接アクセスが必要な場合は、ユーザーに REDIACC_ALLOW_GRAND_REPO=* をエージェント開始前にエクスポートするよう依頼してください。",
-      "mcpMachineGuardOverride": "直接マシンアクセスは許可されていません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。\n\nrepo_fork を使用してforkを作成し、接続してください。",
-      "mcpMachineGuardOverrideNonLinux": "直接マシンアクセスのオーバーライドは {{platform}} では検証できません（祖先検証ヘルパーが使用不可またはエラー）。受け入れられません。\n\nrepo_fork を使用してforkを作成し、接続してください。",
       "revealRequiresTty": "--reveal には対話型 TTY が必要です。機密値をパイプに出力することは拒否します。",
       "rotateNotSensitive": "ポインタ「{{pointer}}」は機密フィールドではありません。代わりに 'config field set' を使用してください。",
       "rotateRequiresTty": "config field rotate には対話型 TTY による確認が必要です。非対話型では拒否されます(上書きには REDIACC_ALLOW_CONFIG_EDIT を設定)。",
-      "showReveal": "--reveal はエージェント環境ではブロックされます。秘匿された `rdc config show` または `rdc config field get --name <pointer> --digest` を使用してください。",
+      "showReveal": "--reveal はエージェント環境ではブロックされます。秘匿された `rdc config show` または `rdc config field get --pointer <pointer> --digest` を使用してください。",
       "showRevealRequiresTty": "--reveal には対話型 TTY が必要です。平文を非 TTY 先へ流すことは拒否します。"
     },
-    "authFailed": "認証に失敗しました",
-    "authRequired": "認証が必要です。実行してください: rdc auth login",
-    "cannotDeleteGrandRepo": "グランドリポジトリを削除できません: {{reason}}",
-    "cannotPromote": "昇格できません: {{reason}}",
-    "clusterNotFound": "Ceph クラスター \"{{name}}\" が見つかりません",
+    "authRequired": "認証が必要です。実行してください: rdc subscription login",
+    "cluster": {
+      "controlDsBackendInvalid": "--control-ds-backend には local または ceph を指定してください",
+      "countInvalid": "--count は 0 以上の整数を指定してください",
+      "dockerOnlyVerb": "\"repo {{verb}}\" は Docker リポジトリのみを対象としており、--cluster に対しては実行できません。v1 では Kubernetes 版の同等コマンドはありません",
+      "featureUnsupportedV1": "{{feature}} は v1 の --cluster では未対応です（コントロールノードのビュー）。{{hint}}",
+      "forkWritesInvalid": "--writes には local または ceph を指定してください",
+      "targetExclusive": "-m/--machine と --cluster はどちらか一方のみ指定してください（両方同時には指定不可）",
+      "targetRequired": "対象のマシン（-m）またはクラスター（--cluster）のいずれかが必要です",
+      "declareNeedsProvider": "--declare-only はプロビジョニングせずにクラスターを記録するため、--provider と --pool が必要です",
+      "poolRequired": "クラスターには少なくとも1つのノードプールが必要です。--pool <spec> を追加してください"
+    },
     "config": {
       "invalidEmail": "無効なメールアドレス: \"{{value}}\"。",
       "machineNotFound": "マシン \"{{name}}\" が設定に見つかりません。利用可能: {{available}}。",
       "noActiveConfig": "アクティブな設定がありません",
       "pointerNotFound": "ポインタ「{{pointer}}」が見つかりません",
-      "storageNotFound": "ストレージ \"{{name}}\" が設定に見つかりません。利用可能: {{available}}。"
+      "storageNotFound": "ストレージ \"{{name}}\" が設定に見つかりません。利用可能: {{available}}。",
+      "retiredKey": "デフォルト \"{{key}}\" は既に存在しません。有効なキー: {{keys}}"
     },
-    "contextNotFound": "コンテキスト \"{{name}}\" が見つかりません",
+    "container": {
+      "execFailed": "container_exec に失敗しました",
+      "logsFailed": "container_logs に失敗しました"
+    },
     "editor": {
       "headlessRefused": "ヘッドレス エディタ呼び出しは永久にブロックします: {{command}}。対話型フラグを付けて --editor を明示してください。",
       "nonzeroExit": "エディタ {{command}} はコード {{code}} で終了しました",
       "notFound": "エディタが設定されていません。$GIT_EDITOR、git config core.editor、$VISUAL、$EDITOR を設定するか、--editor を指定してください。",
       "spawnFailed": "エディタ {{command}} の起動に失敗しました: {{reason}}"
     },
-    "failedCreateQueueItem": "キュー項目の作成に失敗しました",
-    "invalidAction": "無効なアクション \"{{action}}\"。\"{{valid}}\" を使用してください。",
-    "invalidCredentials": "認証情報が無効です",
-    "invalidEmail": "有効なメールアドレスを入力してください",
-    "invalidExpiration": "トークン有効期限は 1 時間から 720 時間の間である必要があります",
     "invalidFunctionParams": "関数 \"{{function}}\" のパラメータが無効です: {{errors}}",
-    "invalidHost": "無効な IP アドレスまたはホスト名: \"{{host}}\"。有効な IPv4、IPv6、またはホスト名である必要があります。",
-    "invalidJsonFile": "提供されたファイルに有効な JSON が含まれていません。",
-    "invalidJsonVault": "無効な JSON ボルトデータです。",
     "invalidKey": "無効なキーです。有効なキー: {{keys}}",
-    "invalidMasterPassword": "ボルト暗号化のマスターパスワードが無効です",
-    "invalidPort": "無効なポート番号: \"{{port}}\"。1 から 65535 の間である必要があります。",
-    "invalidPriorityMax": "無効な priority-max 値です。1 から 5 の間である必要があります。",
-    "invalidPriorityMin": "無効な priority-min 値です。1 から 5 の間である必要があります。",
     "license": {
-      "preflightTokenNotReady": "Subscription token is not ready. Run: rdc subscription login. Deploy to {{machine}} skipped.",
-      "recoveryFailedNoKnownRepos": "{{machine}} でリポジトリが見つかりましたが、ローカル設定で追跡されているものはありません。まず `rdc config repository list`, で追跡中のリポジトリを確認してから再試行してください。",
-      "recoveryFailedServerRejected": "アカウントサーバーがリポジトリのライセンス発行を拒否しました。最初のエラー: {{error}}。詳細は次を実行してください: rdc subscription refresh repo --name <repo> -m {{machine}}",
-      "recoveryFailedTokenNotReady": "サブスクリプショントークンが準備できていません。実行してください: rdc subscription login、その後再試行してください。"
+      "preflightTokenNotReady": "サブスクリプショントークンの準備ができていません。実行してください: rdc subscription login。{{machine}} へのデプロイはスキップされました。",
+      "recoveryFailedNoKnownRepos": "{{machine}} でリポジトリが見つかりましたが、ローカル設定で追跡されているものはありません。追跡中のリポジトリを確認するには `rdc repo list` を実行してから再試行してください。",
+      "recoveryFailedServerRejected": "アカウントサーバーが \"{{machine}}\" 上のリポジトリのライセンス発行を拒否しました。最初のエラー: {{error}}。詳細は次を実行してください: rdc subscription refresh --repo <repo-ref>",
+      "recoveryFailedTokenNotReady": "サブスクリプショントークンが準備できていません。実行してください: rdc subscription login、その後再試行してください。",
+      "skipActivationHint": "使い捨てのマシンでは、REDIACC_SKIP_ACTIVATION=1 で有効化を完全にスキップできます"
     },
     "machineNotFound": "マシン \"{{name}}\" が見つかりません",
     "machineRequired": "マシン名が必要です。--machine <name> を使用してください",
     "machineRequiredLocal": "マシン名が必要です。--machine <name> を使用してください",
-    "networkError": "ネットワークエラー: {{message}}",
-    "noActiveConfig": "アクティブな設定がありません。`rdc config init --name <name>` で作成してください。",
-    "notAuthenticated": "認証されていません。実行してください: rdc auth login",
-    "passwordsMismatch": "パスワードが一致しません",
+    "noActiveConfig": "アクティブな設定がありません。次のコマンドで作成してください: rdc config init <name>",
     "permissionDenied": "権限がありません",
-    "poolNotFound": "Ceph プール \"{{name}}\" が見つかりません",
     "precondition": {
-      "currentSecretsRequired": "{{pointer}}: --current なしで機密フィールドが変更されました。ポインタ→旧値をマッピングした --current-secrets <file> を指定してください",
-      "digestMismatch": "--current ダイジェスト不一致(期待値 {{expected}}…、実際 {{got}}…)",
-      "kindMismatch": "値の種類が変わりました(保存: {{stored}}、申告: {{claimed}})",
-      "mismatch": "{{count}} パスで事前条件失敗:\n{{details}}",
-      "missing": "機密パスには --current(または --rotate-secret)が必要です",
       "next": {
         "options": {
           "confirm": {
             "description": "現在のダイジェストを再読し、--currentで再試行",
-            "run": "rdc repo secret get --name {{repository}} --key {{key}}"
+            "run": "rdc repo secret get {{repository}} --key {{key}}"
           },
           "rotate": {
-            "description": "前提条件をスキップ (ローテーション、監査記録)",
-            "run": "<元のコマンド> --rotate-secret"
+            "description": "前提条件をスキップ (ローテーション、監査記録)"
           }
         },
         "summary": "現在の値を提供するか、ローテーションを承認してください。"
-      },
-      "rotationRequiresTty": "{{pointer}}: ローテーションの確認には対話型 TTY が必要です(または --current-secrets を使用)",
-      "stubStillStub": "{{pointer}}: 編集された値は秘匿スタブのように見えますが、現在のダイジェストと一致しません"
+      }
     },
-    "protocol": {
-      "commandExitCode": "コマンドが終了コード {{code}} で終了しました",
-      "invalidAction": "無効なアクション '{{action}}'。次のいずれかである必要があります: {{validActions}}",
-      "invalidUrl": "無効なプロトコル URL: {{error}}",
-      "machineRequired": "マシン名が必要です。--machine <name> を使用してください",
-      "notSupported": "{{platform}} ではプロトコル登録がサポートされていません",
-      "parseFailed": "URL の解析に失敗しました: {{error}}",
-      "regionSelectionRequiresTTY": "リージョンの選択には対話型入力が必要です。--server <url> を使用してサーバーを直接指定してください。",
-      "teamRequired": "チーム名が必要です。--team <name> を使用してください",
-      "tokenRequired": "トークンが必要です。--token <token> を使用してください",
-      "unknownRegion": "不明なリージョン: {{region}}"
-    },
-    "regionRequired": "リージョン名が必要です。--region を使用するか、コンテキストを設定してください。",
-    "registrationFailed": "登録に失敗しました",
-    "remoteNotFound": "\"{{name}}\"は既知のマシンまたはストレージではありません。マシン: {{machines}}。ストレージ: {{storages}}",
+    "regionRequired": "リージョン名が必要です。--region を使用するか、次のコマンドでデフォルトを設定してください: rdc config set region <name>",
+    "remoteNotFound": "\"{{name}}\"は既知のマシン、ストレージ、またはクラスターではありません。マシン: {{machines}}。ストレージ: {{storages}}。クラスター: {{clusters}}",
     "repo": {
       "secret": {
         "badMode": "無効な --mode \"{{mode}}\"。許可: env、file。",
         "emptyValue": "シークレット値は空にできません（stdin がバイトを生成しませんでした）。",
         "mutuallyExclusive": "--current と --rotate-secret は相互排他的です。1 つ選んでください: --current は前の値を確認するため、--rotate-secret は確認なしでローテーションするため。"
-      }
+      },
+      "canaryNeedsCluster": "リポジトリ \"{{ref}}\" はクラスター内にありません。カナリアは2つのデプロイ間でトラフィックを分割するため、Kubernetes 配置のリポジトリが必要です",
+      "listTargetExclusive": "-m または --datastore のどちらか一方のみを指定してください。データストアはどのマシンが保持しているかを既に把握しています",
+      "replicateNeedsCluster": "リポジトリ \"{{ref}}\" はクラスター内にありません。レプリカはクラスターのノードに分散配置されたフォーク済みデータストアであるため、replicate には Kubernetes 配置のリポジトリが必要です"
     },
-    "repoNotDeployed": "リポジトリ \"{{repository}}\" は {{machine}} にデプロイされていません。\n\n先にデプロイしてください：\n  rdc repo up --name {{repository}} -m <マシン名>",
-    "repositoryAlreadyMounted": "リポジトリ \"{{name}}\" は既に \"{{machine}}\" にマウントされています。稼働中のリポジトリに対する移行はデータを破損させます。先に実行してください: rdc repo down --name {{name}} -m {{machine}} --unmount",
+    "repoNotDeployed": "リポジトリ \"{{repository}}\" は {{machine}} にデプロイされていません。\n\n先にデプロイしてください：\n  rdc repo up {{repository}}",
+    "repositoryAlreadyMounted": "リポジトリ \"{{name}}\" は既に \"{{machine}}\" にマウントされています。稼働中のリポジトリに対する移行はデータを破損させます。先に実行してください: rdc repo down {{name}} --unmount",
     "repositoryNotFound": "リポジトリ \"{{name}}\" が見つかりません",
-    "repositoryRequired": "リポジトリ名が必要です。--repository <name> を使用してください。",
-    "resourceNotFound": "{{resource}} が見つかりません",
     "ssh": {
       "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません",
       "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
       "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません"
     },
-    "sshKeyNotFound": "SSH キーが見つかりません: {{path}}",
     "subscription": {
       "activationFailed": "マシンの有効化に失敗しました。サブスクリプションがアクティブで、マシンスロットが利用可能であることを確認してください。",
       "notLoggedIn": "ログインしていません。先に `rdc subscription login` を実行してください。",
@@ -1861,24 +2088,21 @@
       "absolutePathBlocked": "--remote パスは絶対パスではなく相対パスでなければなりません。リポジトリルートからの相対パスを使用してください。",
       "localPathNotFound": "ローカルパスが存在しません: {{path}}",
       "mirrorWithFile": "ソースがファイルの場合、--mirror は使用できません。宛先ディレクトリの兄弟ファイルが削除されます。",
-      "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません",
-      "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
-      "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません",
       "pathTraversalBlocked": "--remote パスに \"..\" パストラバーサルを含めることはできません。リポジトリ内のパスを使用してください。",
       "remoteAndRemoteFile": "--remote と --remote-file は併用できません。どちらか一方を選択してください。",
       "remoteFileLocalNotDir": "--remote-file を指定した場合、--local は既存のディレクトリである必要があります: {{path}}",
       "remoteFileRequiresSingleFile": "--remote-file には、ファイルを指す --local パスが正確に 1 つ必要です。"
     },
-    "teamRequired": "チーム名が必要です。--team を使用するか、コンテキストを設定してください。",
+    "teamRequired": "チーム名が必要です。--team を使用するか、次のコマンドでデフォルトを設定してください: rdc config set team <name>",
     "term": {
       "connectivityFailed": "{{host}}:{{port}} に到達できません。{{error}}\n\nトラブルシューティング:\n  - マシンの電源が入っていてネットワークに接続されていることを確認してください\n  - マシンボルトの IP アドレスが正しいことを確認してください\n  - ポート {{port}} がファイアウォールによってブロックされていないことを確認してください\n  - マシンに ping を試してください: ping {{host}}",
-      "dockerComposeForbidden": "リポジトリコンテキストでは \"docker compose\" は許可されていません。\n\n代わりに \"renet compose -- <args>\" を使用してください。これによりリポジトリごとのループバック IP、ホストネットワーク注入、CRIU ケーパビリティ、および compose 検証が適用されます。\"docker compose\" を直接実行するとこれらすべてがバイパスされ、デプロイが静かに破損します。\n\nオーケストレーションされたデプロイには、次を推奨します: rdc repo up --name <repository> -m <machine>",
-      "fileWriteDetected": "ファイル書き込みを検出しました ({{detected}})。代わりに rdc repo sync を使用してください:\n  rdc repo sync upload -m MACHINE -r REPO --local FILE --remote PATH\n\nrsyncはデルタ圧縮、チェックサム、適切なパーミッションでファイルを転送します。",
+      "dockerComposeForbidden": "リポジトリコンテキストでは \"docker compose\" は許可されていません。\n\n代わりに \"renet compose -- <args>\" を使用してください。これによりリポジトリごとのループバック IP、ホストネットワーク注入、CRIU ケーパビリティ、および compose 検証が適用されます。\"docker compose\" を直接実行するとこれらすべてがバイパスされ、デプロイが静かに破損します。\n\nオーケストレーションされたデプロイには、次を推奨します: rdc repo up <repo-ref>",
+      "fileWriteDetected": "ファイル書き込みを検出しました ({{detected}})。代わりに rdc repo sync を使用してください:\n  rdc repo sync upload <repo-ref> --local FILE --remote PATH\n\nrsync はデルタ圧縮、チェックサム、適切なパーミッションでファイルを転送します。",
       "launchFailed": "ターミナルの起動に失敗しました: {{error}}",
       "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません",
       "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
       "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません",
-      "repoContextRequired": "コマンドにはリポジトリコンテキストが必要です。\n\nDOCKER_HOST とリポジトリ環境変数を必要とする \"{{detected}}\" が検出されました。\nこれらはリポジトリが指定されている場合にのみ利用可能です。\n\n次の代わりに:\n  rdc term connect -m {{machine}} -c \"{{command}}\"\n\n次を使用してください:\n  rdc term connect -m {{machine}} -r <repository> -c \"{{command}}\"",
+      "repoContextRequired": "コマンドにはリポジトリコンテキストが必要です。\n\nDOCKER_HOST とリポジトリ環境変数を必要とする \"{{detected}}\" が検出されました。\nこれらは対象がリポジトリである場合にのみ利用可能です。\n\n次の代わりに:\n  rdc term connect {{machine}} -c \"{{command}}\"\n\n次を使用してください:\n  rdc term connect <repo-ref> -c \"{{command}}\"",
       "sshCode1": "一般的なエラー - コマンド構文またはリモート権限を確認してください",
       "sshCode126": "権限がありません - リモートでコマンドを実行できません",
       "sshCode127": "リモートマシンにコマンドが見つかりません",
@@ -1886,27 +2110,32 @@
       "sshCode255": "SSH 接続に失敗しました - 考えられる原因:\n    - 認証に失敗しました (SSH キーの権限を確認してください)\n    - ホストキーの検証に失敗しました\n    - ネットワーク接続が切断されました\n    - リモート SSH サービスが実行されていません",
       "sshExitCode": "SSH が終了コード {{code}} で終了しました"
     },
-    "tfaVerificationFailed": "TFA認証に失敗しました",
-    "tokenExpired": "トークンが期限切れです。もう一度ログインしてください。",
-    "unexpectedError": "予期しないエラー: {{message}}",
     "unknownCommand": "不明なコマンド \"{{command}}\" です。利用可能なコマンド: {{available}}",
     "unknownSubcommand": "不明なサブコマンド \"{{command}}\" です。利用可能な {{parent}} サブコマンド: {{available}}",
-    "validationError": "検証エラー: {{message}}",
     "vscode": {
-      "browserNeedsRepo": "vscode --browser はリポジトリサンドボックスを提供します — --repository <name> を指定してください",
+      "browserNeedsRepo": "vscode --browser はリポジトリサンドボックスを提供するため、対象はリポジトリ ref である必要があります: rdc vscode connect <repo-ref> --browser",
       "cleanupRequired": "すべての接続を削除するには --all を指定するか、特定の接続には --connection <name> を指定してください。",
       "connectivityFailed": "{{host}}:{{port}} に到達できません。{{error}}\n\nトラブルシューティング:\n  - マシンの電源が入っていてネットワークに接続されていることを確認してください\n  - マシンボルトの IP アドレスが正しいことを確認してください\n  - ポート {{port}} がファイアウォールによってブロックされていないことを確認してください\n  - マシンに ping を試してください: ping {{host}}",
-      "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません",
-      "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
-      "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません",
       "notFound": "VS Code が見つかりません。\n\nhttps://code.visualstudio.com/ からインストールしてください\nまたは REDIACC_VSCODE_PATH 環境変数を設定してください。",
       "serverInstallFailed": "{{provider}} のインストールに失敗しました: {{error}}",
       "serverStartFailed": "{{provider}} の起動に失敗しました: {{error}}",
-      "unsupportedArch": "ブラウザ VS Code はこのマシンアーキテクチャに対応していません: {{arch}}"
+      "unsupportedArch": "ブラウザ VS Code はこのマシンアーキテクチャに対応していません: {{arch}}",
+      "repoRequired": "この VS Code サーバーにはリポジトリの対象が必要です。リポジトリ ref を指定してください"
+    },
+    "regionSelectionRequiresTTY": "リージョンの選択には対話型入力が必要です。--server <url> を使用してサーバーを直接指定してください。",
+    "unknownRegion": "不明なリージョン: {{region}}",
+    "datastore": {
+      "defaultIsImplicit": "デフォルトデータストアは暗黙的な存在であり、ここでの各コマンドはそれ以外の名前付きデータストアを管理する。",
+      "deleteHasRepos": "データストア \"{{ref}}\" にはまだリポジトリが存在します: {{repos}}。先にそれらを削除するか、--force を渡してデータストアと一緒に破棄してください",
+      "forkNeedsWrites": "\"{{ref}}\" はフォークです。書き込み先を指定してください: --writes local（即時・一時的、デタッチで消失）または --writes ceph（プール内の永続クローン）",
+      "localForkNeedsDiscard": "\"{{ref}}\" は --writes local でアタッチされているため、そのオーバーレイは一時的であり、デタッチすると破棄されます。それを望む場合は --discard を渡してください",
+      "localForkUnsupported": "\"{{name}}\" は local データストアであり、ブロックレベルのクローンは存在しません。local データストア内のリポジトリは reflink で1つずつフォークします（rdc repo fork）。データストア単位のフォークには rbd バックエンドが必要です。",
+      "writesImmutable": "\"{{ref}}\" は既に異なる writes 設定でここにアタッチされています。writes はアタッチ時に決まるため、先にデタッチしてください",
+      "writesOnNonFork": "\"{{ref}}\" はフォークではないため、他に書き込み先はありません。--writes を外してください"
     }
   },
   "help": {
-    "agentMode": "\n  エージェントモード\n    • フォークのみ: リポジトリに変更を加える前にフォークを作成してください\n    • Grand (非フォーク) リポジトリはエージェントに対して読み取り専用です\n    • ワークフロー: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> → term <machine> <fork>\n",
+    "agentMode": "\n  エージェントモード\n    • フォークのみ: リポジトリに変更を加える前にフォークを作成する\n    • Grand（非フォーク）リポジトリはエージェントに対して読み取り専用\n    • ワークフロー: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • リポジトリ ref（repo[:tag]）はそれ自体でマシンを決定するため、-m は不要\n    • JSON 出力は自動: すべてのコマンドが { success, data, errors, metrics } を返す\n    • 常に完全な JSON をパースし、JSON 出力に tail/head/grep を使わない\n    • フィルタフラグ（例: --repositories, --containers）でレスポンスサイズを削減する\n\n",
     "cli": {
       "machineQuery": "マシンの状態を表示",
       "repoUp": "リポジトリサービスをデプロイ",
@@ -1917,103 +2146,75 @@
     "config": {
       "addMachine": "Configにマシンを追加",
       "init": "SSH鍵付き名前付きConfigを作成",
-      "setMachine": "デフォルトマシンを設定",
       "setupMachine": "リモートマシンでセットアップを実行"
     },
     "examples": "例:",
-    "keyConcepts": "\nKey Concepts:\n\n  Architecture\n    • Each repository = isolated Docker environment (own daemon, loopback IP range, encrypted LUKS storage)\n    • Use renet compose (never raw docker compose) — auto-injects network_mode:host and rediacc.* labels\n    • Storage: bind-mount to ${REDIACC_WORKING_DIR}/... — never Docker named volumes (excluded from forks/backups)\n    • Containers must bind to SERVICE_IP to avoid port conflicts\n\n  Routing\n    • Auto-route (fork-friendly): https://{service}.{repo}.{machine}.{baseDomain}\n    • Custom domain: Traefik labels (traefik.enable=true) — not fork-friendly\n    • rediacc.service_port label for non-80 ports. Routes activate ~3s after deploy\n\n  Environment Variables\n    • Rediaccfile shell: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • Inside containers: SERVICE_IP, REDIACC_NETWORK_ID (auto-injected by renet)\n\n  Forking\n    • repo fork = instant CoW clone with new GUID, networkId, IP range, auto-route domain\n    • Parent stays running (online forking). Cross-machine: fork locally, then backup push\n    • Config entry persists after repo delete (repo may exist on other machines)",
+    "keyConcepts": "\nKey Concepts:\n\n  アーキテクチャ\n    • 各リポジトリ = 分離された Docker 環境（専用 daemon、ループバック IP 範囲、LUKS 暗号化ストレージ）\n    • renet compose を使用する（raw docker compose は使わない）— network_mode:host と rediacc.* ラベルを自動的に注入する\n    • ストレージ: ${REDIACC_WORKING_DIR}/... への bind-mount — Docker の named volume は使わない（フォークやバックアップから除外される）\n    • eBPF バインド書き換えが IP 分離を処理する: アプリは 0.0.0.0 にバインドし、カーネルが正しいループバック IP に書き換える\n\n  ルーティング\n    • 自動ルート（フォークフレンドリー）: https://{service}.{repo}.{machine}.{baseDomain}\n    • カスタムドメイン: Traefik ラベル（traefik.enable=true）— フォークフレンドリーではない\n    • 80 番以外のポートには rediacc.service_port ラベル。ルートはデプロイ後約3秒で有効化される\n    • HTTPS: Cloudflare DNS-01 経由の自動 Let's Encrypt ワイルドカード証明書。'rdc machine infra set' で設定する --cf-dns-token が必要。未設定の場合、HTTP は動作するが HTTPS 証明書はプロビジョニングされない\n    • Grand リポジトリは *.{repo}.{machine}.{baseDomain} を取得する — 最初の repo up 時に Traefik が自動的にプロビジョニングする\n    • フォークは親リポジトリのワイルドカード証明書を再利用する（プロビジョニング済み、レート制限への影響なし）\n\n  環境変数\n    • Rediaccfile シェル: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • コンテナ内: SERVICE_IP, REDIACC_NETWORK_ID（renet が自動的に注入する）\n\n  フォーク\n    • rdc repo fork <parent-ref> --tag <tag>: 新しい GUID、networkId、IP 範囲、自動ルートドメインを持つ即時 CoW クローン\n    • 親は稼働したままでよい（オンラインフォーク）。クロスマシン: まずローカルでフォークしてから rdc repo push <ref> --to <machine>\n    • リポジトリ削除後も設定エントリは残る（リポジトリは他のマシンに存在する可能性がある）",
     "machine": {
-      "containers": "実行中のコンテナを一覧表示",
       "health": "CI/CD用ヘルスチェック",
-      "keyConcepts": "\n主要概念:\n\n  クエリフィルター\n    • rdc machine query --name <name> はデフォルトで全セクションを返します\n    • --system、--repositories、--containers、--services、--network、--block-devices でフィルタリング\n    • JSON 出力はコンテナを拡張: repository (解決済み名)、domain、autoRoute\n\n  監視とヘルス\n    • machine health の終了コード: 0=正常、1=警告、2=エラー — CI/CD ゲートに使用\n    • containers --health-check は異常なコンテナがあれば終了コード 2\n    • services --stability-check は失敗・再起動中・再起動 3 回超のサービスがあれば終了コード 2\n\n  データストア構造 (/mnt/rediacc/)\n    • repositories/ — 暗号化された LUKS イメージ (リポジトリ GUID ごとに 1 つ)\n    • mounts/ — 復号化されたマウントポイント (リポジトリがマウントされている時にアクセス可能)\n    • immovable/ — リポジトリごとの Docker daemon データ\n    • Datastore is a BTRFS pool file on the system disk. Effective free space = min(disk free, datastore free). Expand with: rdc datastore resize\n",
-      "query": "マシンの完全な状態を表示"
+      "keyConcepts": "\n主要概念:\n\n  クエリフィルター\n    • rdc machine status <name> はデフォルトで全セクションを返します\n    • --system、--repositories、--containers、--services、--network、--block-devices でフィルタリング\n    • JSON 出力はコンテナを拡張: repository (解決済み名)、domain、autoRoute\n\n  監視とヘルス\n    • machine health の終了コード: 0=正常、1=警告、2=エラー — CI/CD ゲートに使用\n    • machine status <name> --containers --health-check は異常なコンテナがあれば終了コード 2\n    • machine status <name> --services --stability-check は失敗・再起動中・再起動 3 回超のサービスがあれば終了コード 2\n    • machine prune は削除済みリポジトリの孤立したループバック IP と systemd ユニットを削除します\n\n  データストア構造 (/mnt/rediacc/)\n    • repositories/ — 暗号化された LUKS イメージ (リポジトリ GUID ごとに 1 つ)\n    • mounts/ — 復号化されたマウントポイント (リポジトリがマウントされている時にアクセス可能)\n    • immovable/ — リポジトリごとの Docker daemon データ\n    • データストアはシステムディスク上の BTRFS プールファイルです。実効空き容量 = min(ディスク空き容量, データストア空き容量)。拡張: rdc datastore resize\n",
+      "query": "マシンの完全な状態を表示",
+      "containers": "コンテナの状態のみを表示"
     },
     "repo": {
       "create": "暗号化リポジトリを作成",
       "down": "サービスを停止",
       "fork": "テスト用CoWフォーク",
-      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. Bind to ${SERVICE_IP} in commands/configs\n    • Health checks must use ${SERVICE_IP}, not localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://${SERVICE_IP}:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing Examples\n    • Auto-route: service 'app' in repo 'marketing' on machine 'hostinger' → app.marketing.hostinger.{baseDomain}\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n\n  Lifecycle\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up -m <machine>\n    • Autostart: rdc repo autostart enable --name <name> -m <machine> — auto-mounts and starts repo on machine boot\n",
-      "listBackups": "ストレージ上のバックアップを一覧表示",
-      "pull": "ストレージからバックアップをプル",
-      "push": "バックアップをストレージにプッシュ",
-      "sync": {
-        "pullAll": "すべてのリポジトリをストレージから一括プル",
-        "pushAll": "すべてのリポジトリをストレージに一括プッシュ"
-      },
-      "takeover": "本番データをフォークのデータで置き換える",
-      "tunnel": "コンテナポートへのSSHトンネル",
+      "keyConcepts": "\n主要概念:\n\n  Compose と Rediaccfile\n    • renet compose -- up -d を使用する（生の docker compose は使わない）。-- セパレータは必須\n    • Rediaccfile は up() と down() 関数を定義する必要があります。up() では: ディレクトリ作成、設定生成、コンテナ起動を行うべきです\n    • compose の ports: は無視されます（network_mode:host）。外部アクセスには rediacc.service_port ラベルを使用してください\n    • restart: always/unless-stopped は renet によって自動的に取り除かれ .rediacc.json に保存されます — ルーターの watchdog が停止したサービスを自動復旧します\n    • 各サービスはループバック IP を取得します。eBPF バインド書き換えが分離を透過的に処理するため、アプリは 0.0.0.0 にバインドできます\n    • 隣接サービスに接続するにはそのサービス名を使用してください（例: \"db\"、\"redis\"）— renet がすべてのサービス名をホスト名として注入します。データベース内に保存する接続文字列に ${DB_IP} を直接埋め込まないでください — IP が固定化されフォーク分離が壊れます（検証エラー）\n    • ヘルスチェックには localhost を使用できます。例: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  ストレージ\n    • ${REDIACC_WORKING_DIR}/data、${REDIACC_WORKING_DIR}/config などへバインドマウントしてください\n    • 例: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker の named volume はフォークとバックアップから除外されます\n    • コンテナにバインドマウントされる設定ファイルは、コンテナが非デフォルト UID で実行される場合 world-readable（644）である必要があります\n\n  ルーティング\n    • Grand リポジトリの自動ルート: https://{service}.{repo}.{machine}.{baseDomain}（ワイルドカード証明書 *.{repo}.{machine}.{baseDomain} は最初の repo up 時に Traefik が自動プロビジョニング）\n    • フォークの自動ルート: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain}（親リポジトリのワイルドカード証明書を使用、レート制限への影響なし）\n    • カスタムドメイン: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP フォワーディング: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • カスタムドメイン（rediacc.domain ラベル）はフォークでは無視されます — ドメインは Grand リポジトリに属します\n\n  ライフサイクル\n    • repo delete は完全にクリーンアップします: ストレージ、Docker daemon、ループバック IP、systemd ユニット\n    • repo down はコンテナを停止しますが Docker daemon と IP は保持します（repo up で素早く再起動可能）\n    • condition: service_healthy を伴う depends_on は起動順序を処理しますが、ランタイムの復旧は処理しません\n    • データベースが正常終了（exit 0）した場合、依存サービスはクラッシュループに陥ります。対処: rdc repo up <repo-ref>\n    • 自動起動: rdc repo admin autostart enable <repo-ref> — マシン起動時にリポジトリを自動マウントして起動します\n    • 予約バックアップはフォークリポジトリを自動的にスキップします。手動でフォークをバックアップするには rdc repo push <repo-ref> --to <remote> を使用してください\n    • rdc repo promote <fork-ref> — 本番データをフォークのデータで置き換えます（ID は保持）。元に戻すには: rdc repo promote <backup-fork-ref>\n\n  命名とターゲット指定\n    • Grand（本番）リポジトリ: <repo> として参照します。<repo>:latest も同義です（latest がデフォルトタグ）。裸の ref は設定キーに完全一致すればそれに解決され、なければ <repo>:latest にフォールバックします\n    • フォーク: 常に latest 以外のタグを付けた <repo>:<tag> で参照します（例: app:test）。up/down/delete/term/sync はすべて同じ <repo>:<tag> を受け取ります\n    • つまり `app` は GRAND を対象とし、`app:test` はその FORK を対象とします。フォークを操作する際は必ずタグを含めてください — 唯一の曖昧なケースは、フォークが誤って裸/latest の名前で登録されている場合です\n    • エージェントはフォークのみを変更できます。Grand リポジトリは保護されており（オーバーライドは REDIACC_ALLOW_GRAND_REPO のみで可能。これはセッション開始前にオペレーターが設定する必要があります）、フォークは安全で使い捨て可能な単位です\n",
       "up": "自動マウントでデプロイ"
     },
     "sync": {
       "download": "リポジトリファイルをローカルにダウンロード",
-      "status": "同期状態を表示",
       "upload": "ローカルファイルをリポジトリにアップロード"
     },
     "term": {
+      "cluster": "クラスターのコントロールノードにSSH接続（KUBECONFIG自動設定、kubectl の namespace 固定）",
       "command": "対話シェルなしでコマンドを実行",
       "machine": "マシンにSSH接続",
       "repo": "リポジトリにSSH接続（DOCKER_HOST自動設定）",
-      "syncHint": "ファイル転送には rdc repo sync upload/download を使用してください"
+      "syncHint": "ファイル転送には rdc repo sync upload/download を使用してください",
+      "collisionHint": "名前がリポジトリとマシンの両方に該当する場合、<repo>@<machine> の形式でリポジトリを指定してください",
+      "fork": "フォークに SSH 接続"
     },
     "useHelpAll": "拡張説明を表示するには --help-all を使用してください",
     "vscode": {
+      "cluster": "クラスターのコントロールノードをVS Codeで開く（KUBECONFIG自動設定）",
       "machine": "VS Codeでマシンを開く",
-      "repo": "VS Codeでリポジトリを開く"
+      "repo": "VS Codeでリポジトリを開く",
+      "fork": "フォークを VS Code で開く"
     }
   },
   "options": {
-    "activationCode": "メールからの認証コード",
     "apiToken": "APIトークン (rdt_...)",
-    "apiUrl": "API の URL",
-    "bridge": "ブリッジ名",
     "cleanupAll": "すべての rediacc SSH 設定を削除する",
-    "cluster": "Ceph クラスター名",
     "command": "インタラクティブシェルの代わりにコマンドを実行する",
     "config": "このコマンドに特定の設定を使用する",
     "configKey": "設定キー",
     "configValue": "設定値",
-    "confirmPasswordNonInteractive": "パスワード確認 (非対話型モード)",
     "confirmSync": "同期前に変更をプレビューして確認を要求する",
     "connectionName": "特定の接続を削除する",
-    "container": "特定の Docker コンテナに接続する",
-    "containerAction": "コンテナアクション: terminal, logs, stats, exec",
-    "currentName": "現在のリソース名",
-    "datastore": "マシン上のデータストアパス",
     "debug": "デバッグ出力を有効化 (ローカルモード)",
     "dryRun": "変更を加えずに実行内容を表示する",
-    "email": "メールアドレス",
-    "endpoint": "API エンドポイント URL",
     "excludePatterns": "同期から除外するパターン",
-    "expires": "有効期限 (時間単位: 1-720)",
     "external": "外部ターミナルウィンドウで起動を強制する",
     "extraMachine": "マルチマシン操作用の追加マシン (名前:IP:ユーザー)",
     "fields": "出力に含めるフィールドのカンマ区切りリスト",
     "file": "ファイルパス",
-    "filterStatus": "ステータスでフィルター",
     "folder": "リモートフォルダーパス",
-    "follow": "ログ出力をフォローする",
     "force": "確認プロンプトをスキップする",
     "function": "実行する関数名",
     "graceDays": "最近アーカイブされたリポジトリの猶予期間（日数、デフォルト: 7）",
-    "image": "RBD イメージ名",
-    "importMode": "インポートモード (merge または replace)",
     "insiders": "VS Code Insiders 設定を使用する",
     "lang": "言語オーバーライド ({{languages}})",
-    "limit": "結果の最大数",
+    "licenses": "リリースビルドに同梱される THIRD_PARTY_LICENSES の全文を表示する",
     "localPath": "ローカルディレクトリパス (デフォルト: 現在のディレクトリ)",
     "localPaths": "1 つ以上のローカルファイルまたはディレクトリのパス（既定: カレントディレクトリ）",
-    "logLines": "表示するログ行数 (デフォルト: 50)",
     "machine": "マシン名",
-    "machineForVault": "マシン名 (テスト後にボルトを更新)",
     "machineIp": "マシン IP アドレスまたはホスト名",
-    "machineNames": "マシン名 (カンマ区切り)",
-    "machineShorthand": "マシン名 (--machine の短縮形)",
-    "masterPassword": "ボルト暗号化のマスターパスワード",
     "mirrorDownload": "ミラーモード - リモートに存在しないローカルファイルを削除",
     "mirrorUpload": "ミラーモード - ローカルに存在しないリモートファイルを削除",
     "name": "リソース名",
     "newName": "新しいリソース名",
-    "newPasswordNonInteractive": "新しいパスワード (非対話型モード)",
     "newWindow": "新しい VS Code ウィンドウで開く",
     "opsBackend": "仮想化バックエンド (kvm|qemu、自動検出)",
     "opsBasic": "最小構成クラスター (ブリッジ + ワーカー1台)",
@@ -2023,25 +2224,9 @@
     "opsParallel": "VM を並列で作成",
     "opsSkipOrchestration": "クラスターオーケストレーションをスキップ",
     "opsSSHUser": "VM 接続用の SSH ユーザー名",
-    "organization": "組織名",
     "output": "出力形式 (table|json|yaml|csv)。REDIACC_DEFAULT_OUTPUT でデフォルトを上書きします。",
     "outputFormat": "出力形式 (json)",
-    "outputPath": "出力ファイルを保存するパス",
     "param": "関数パラメータ",
-    "parentRepository": "親リポジトリ (フォーク用)",
-    "parentRepositoryTag": "親リポジトリタグ",
-    "password": "パスワード (非対話型ログイン用)",
-    "pollInterval": "ポーリング間隔 (ミリ秒単位)",
-    "pool": "Ceph プール名",
-    "priority": "優先度 (1=最高)",
-    "priorityMax": "最大優先度 (1-5)",
-    "priorityMin": "最小優先度 (1-5)",
-    "protocolAction": "アクション ({{actions}})",
-    "protocolForce": "既に登録されている場合でも再登録を強制する",
-    "protocolParams": "追加パラメータ",
-    "protocolSystem": "システム全体に登録する (管理者権限が必要)",
-    "protocolSystemUnregister": "システム全体の登録を解除する (管理者権限が必要)",
-    "protocolToken": "認証トークン",
     "queryBlockDevices": "ブロックデバイスのみを含める",
     "queryContainers": "コンテナのみを含める",
     "queryLicenses": "リポジトリのライセンス状態を含める",
@@ -2053,48 +2238,26 @@
     "querySyncCerts": "クエリ後にマシンから ACME 証明書キャッシュも取得します",
     "querySystem": "システム情報のみを含める",
     "quiet": "情報出力を抑制する",
-    "rawVault": "未加工ボルト JSON (スクリプト/CI 用)",
-    "region": "リージョン名",
     "remoteFile": "リポジトリ内のリモートファイルパス（単一ファイル転送時の --remote の代替）",
     "remoteFileUpload": "アップロード先となる単一のリモートファイルパス（リポジトリのルート相対）。--remote とは併用できません。",
     "remotePath": "リポジトリ内のリモートサブディレクトリパス",
     "renetPath": "renet バイナリへのパス (デフォルト: PATH の renet)",
-    "repository": "リポジトリ名 (リポジトリ環境に接続)",
-    "repositoryShorthand": "リポジトリ名 (--repository の短縮形)",
-    "repositoryTag": "リポジトリタグ",
     "resetHome": "リポジトリごとのホームオーバーレイをリセットして初期状態にする",
-    "saveAs": "認証情報を名前付きコンテキストに保存する",
-    "saveKnownHosts": "テスト成功後にマシンボルトに known_hosts を保存する",
     "searchInField": "{{field}}で検索",
-    "searchQueue": "タスク ID、チーム、マシン、ブリッジで検索",
     "searchRepos": "リポジトリ名でフィルター",
     "serverUrl": "アカウントサーバーURL",
-    "sessionName": "セッション名",
     "skipEnvSetup": "リモート環境セットアップをスキップする",
     "skipRouterRestart": "バイナリ更新後のルートサーバーの再起動をスキップする",
-    "snapshot": "RBD スナップショット名",
     "sortByField": "フィールドで並び替え",
     "sortDesc": "降順でソート",
     "sortDescending": "降順で並び替え",
-    "sortField": "フィールドでソート",
     "sshKey": "SSH 秘密鍵へのパス (例: ~/.ssh/id_rsa)",
-    "sshPassword": "初期認証用の SSH パスワード",
     "sshPort": "SSH ポート",
-    "sshPrivateKey": "SSH 秘密鍵へのパス",
-    "sshPublicKey": "SSH 公開鍵へのパス",
     "sshUser": "SSH ユーザー名",
-    "subscriptionPlan": "サブスクリプションプラン (COMMUNITY, PROFESSIONAL, BUSINESS, ENTERPRISE)",
-    "switch": "作成後このコンテキストに切り替える",
-    "target": "対象リソース名",
     "team": "チーム名",
-    "tfaCode": "検証用の現在の TFA コード",
-    "tokenName": "トークン名",
     "urlOnly": "VS Code URI を印刷して起動しない",
-    "userPassword": "新しいユーザーのパスワード",
     "vaultContent": "JSON 文字列としてのボルトコンテンツ",
     "vaultJson": "JSON 文字列としてのボルトコンテンツ",
-    "vaultJsonMachine": "JSON 文字列としてのマシンボルトデータ",
-    "vaultVersion": "楽観的ロック用の現在のボルトバージョン",
     "verifyChecksum": "同期後にチェックサムを使用してファイルを検証する",
     "vmId": "仮想マシン ID",
     "vscodeBrowser": "リポジトリサンドボックスからブラウザ VS Code を提供する（ローカルの VS Code 不要）",
@@ -2102,26 +2265,24 @@
     "vscodeServerArchive": "マシン上に事前配置されたサーバー tarball のパス（エアギャップインストール用）",
     "vscodeServerProvider": "ブラウザ VS Code サーバー実装 (openvscode, code-server)",
     "watch": "変更を監視する",
-    "watchUpdates": "更新を監視する",
-    "yes": "確認プロンプトをスキップする"
+    "yes": "確認プロンプトをスキップする",
+    "artifactRef": "バックアップアーティファクトの参照（repo[:tag][@place]）",
+    "background": "マシン上でデタッチジョブとして実行する: ID を出力して終了する",
+    "clusterName": "クラスター名",
+    "connectTarget": "対象: シェルを開くマシンまたはクラスター名、あるいはリポジトリ内でシェルを開くためのリポジトリ ref（名前、名前:タグ、任意で @machine）",
+    "datastoreRef": "データストア ref: 名前、またはフォークの場合は 名前:タグ（例: ds-data、ds-data:exp）",
+    "healthTimeout": "ヘルスチェック1回あたりのタイムアウト秒数（デフォルト 30）",
+    "healthWindow": "ヘルスゲート全体のウィンドウ秒数（デフォルト 300）",
+    "machineName": "マシン名",
+    "proxy": "直接接続する代わりに、この URL のエグゼキューター経由でマシン操作を実行する",
+    "queryDatastores": "アタッチされたデータストアを表示する（マウント、アタッチ、使用量）",
+    "repoRef": "リポジトリ ref: 名前、または 名前:タグ、任意で @machine を付加（例: shop、shop:test）",
+    "storageRef": "ストレージ ref: 登録済みストレージエンドポイントの名前（例: s3-main）",
+    "strategyName": "バックアップ戦略名"
   },
   "prompts": {
-    "apiUrl": "API URL (エンドポイント):",
     "cancelled": "キャンセルされました",
-    "confirm": "よろしいですか？",
-    "confirmDelete": "削除してもよろしいですか？",
-    "confirmNewPassword": "新しいパスワード確認:",
-    "confirmPassword": "パスワード確認:",
-    "email": "メールアドレス:",
-    "enterValue": "{{field}} を入力してください:",
     "masterPassword": "マスターパスワードを入力してください:",
-    "masterPasswordForVault": "ボルト暗号化のマスターパスワードを入力してください:",
-    "newPassword": "新しいパスワード:",
-    "password": "パスワード:",
-    "passwordForUser": "新しいユーザーのパスワード:",
-    "selectOption": "オプションを選択してください:",
-    "setPassword": "ユーザーのパスワードを設定:",
-    "sshPassword": "SSH パスワード (鍵認証を使用する場合は空のままにしてください): ",
     "syncConfirm": "\n同期を続行しますか？ [y/N/d(etails)] ",
     "syncConfirmHelp": "y (はい)、n (いいえ)、d (詳細) を入力してください"
   },
@@ -2132,29 +2293,10 @@
       "unreadableConfigs": "{{count}} 個の設定ファイルを読み取れません: {{names}} (暗号化済みまたは破損)"
     }
   },
-  "spinners": {
-    "connecting": "接続中です...",
-    "creating": "{{resource}} を作成中です...",
-    "deleting": "{{resource}} を削除中です...",
-    "fetching": "{{resource}} を取得中です...",
-    "loading": "読み込み中です...",
-    "processing": "処理中です...",
-    "saving": "保存中です...",
-    "updating": "{{resource}} を更新中です..."
-  },
   "status": {
-    "cancelled": "キャンセルされました",
-    "completed": "完了しました",
-    "failed": "失敗しました",
-    "pending": "保留中",
-    "processing": "処理中",
-    "success": "成功"
-  },
-  "table": {
-    "noData": "表示するデータがありません"
+    "cancelled": "キャンセルされました"
   },
   "timing": {
-    "completed": "{{operation}}で完了 (合計: {{total}})",
     "step": {
       "activating": "ライセンスを有効化中...",
       "configLoaded": "設定を読み込みました ({{duration}})",

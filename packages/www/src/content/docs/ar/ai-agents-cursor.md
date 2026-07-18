@@ -4,8 +4,8 @@ description: تهيئة بيئة تطوير Cursor للعمل مع بنية Redi
 category: Guides
 order: 32
 language: ar
-sourceHash: "b5e835461de00400"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "66821f514bc7a8bd"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 الملخص: يُحمِّل ملف `.cursorrules` سياق Rediacc في ذاكرة Cursor الذكية، بينما تتيح له الطرفية تشغيل أوامر `rdc` على أجهزتك الفعلية.
@@ -75,5 +75,5 @@ rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
 
 - وضع Composer في Cursor يعمل بشكل جيد للمهام التحتية متعددة الخطوات
 - استخدم `@terminal` في محادثة Cursor للإشارة إلى مخرجات الطرفية الأخيرة
-- يمنح أمر `rdc agent capabilities` لـ Cursor مرجعًا كاملاً للأوامر
+- يمنح أمر `rdc --help-all` لـ Cursor مرجعًا كاملاً للأوامر
 - ادمج `.cursorrules` مع ملف `CLAUDE.md` لتحقيق أقصى توافق عبر أدوات الذكاء الاصطناعي

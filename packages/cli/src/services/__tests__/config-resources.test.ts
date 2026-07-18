@@ -10,6 +10,14 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
         mockConfig = fn(mockConfig);
       }
     ),
+    // #89: removeMachine now drops the OBSERVATIONS of a machine that is gone
+    // (state.machines, plus any state.datastores hint still naming it), which goes
+    // through updateState — the no-version-bump writer.
+    updateState: vi.fn(
+      (_name: string, fn: (cfg: Record<string, unknown>) => Record<string, unknown>) => {
+        mockConfig = fn(mockConfig);
+      }
+    ),
     read: vi.fn(() => mockConfig),
     load: vi.fn(() => Promise.resolve(mockConfig)),
   },

@@ -4,8 +4,8 @@ description: "Dizin yapısı, renet komutları, systemd servisleri ve uzak sunuc
 category: "Concepts"
 order: 3
 language: tr
-sourceHash: "4fb53bb4cb1512f6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "af2e8fc3da708d9a"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # Sunucu Referansı
@@ -227,6 +227,38 @@ renet datastore validate    # Filesystem integrity check
 renet datastore expand      # Expand the datastore online
 ```
 
+### Veri Deposu Arka Uçları (Ceph RBD)
+
+Bir veri deposu ya yereldir (makinenin diskinde loop-destekli BTRFS, varsayılan) ya da bir RBD imajı aracılığıyla harici bir Ceph kümesi tarafından desteklenir. Arka uç, başlatma sırasında seçilir:
+
+```bash
+# Yerel arka uç (varsayılan)
+renet datastore init --size 50G
+
+# Ceph RBD arka ucu: harici bir Ceph kümesinden eşlenen bir RBD imajı üzerinde BTRFS
+renet datastore init --backend ceph --pool rbd --image {name} --cluster ceph
+```
+
+Ceph arka ucunda, fork ve unfork, BTRFS reflink'leri yerine RBD'nin kendi copy-on-write ilkellerini kullanır:
+
+```bash
+renet datastore fork   --source {image} --target {new-image}   # RBD snapshot -> protect -> clone
+renet datastore unfork --image {image}                         # bir klonu bağımlılık sırasına göre söker
+```
+
+Ceph düğümleri asla LUKS açmaz (bu arka uçta imaj başına LUKS katmanı yoktur), bu nedenle bellek kullanımları KDF matematiğini değil, Ceph daemon ayarlarını (`osd_memory_target`) takip eder. İkinci bir istemci, aynı RBD imajını salt okunur olarak yerel bir copy-on-write katmanıyla eşleyebilir; bu, ağırlıklı olarak okuma yapan yatay ölçekleme yoludur.
+
+### Kubernetes (renet kube)
+
+Bir küme düğümünde renet, k3s'i Docker'ı sardığı şekilde sarar. `renet kube`, compose'un analoğudur: `KUBECONFIG`'i enjekte eder ve bir Rediaccfile'ın `up()` fonksiyonundan manifestleri veya Helm chart'larını uygular.
+
+```bash
+sudo renet kube apply -f manifests/     # deponun ad alanına uygula
+sudo renet kube -- get pods             # sabitlenmiş ad alanındaki kubectl'e ilet
+```
+
+Küme durumu, veri deposu destekli copy-on-write imajlarında yaşar (k3s'in `--data-dir`'i imaj bağlama noktasının içine bağlanır), ve bu da bir kümenin tamamının fork'lanmasını ve taşınmasını sağlayan şeydir. Kalıcı birimler ayrı copy-on-write birimleridir: Ceph üzerinde RBD imajları (küme örneği ve fork başına bir RADOS ad alanı), veya yerel arka uçta yerel bir PV sağlayıcısı aracılığıyla küçük veri deposu imaj dosyaları. Kullanıcıya yönelik iş akışı [Kubernetes](/en/docs/kubernetes) kılavuzundadır; CLI bu yolları `rdc cluster` ve küme farkında `rdc repo` komutları aracılığıyla yönetir.
+
 ## Systemd Servisleri
 
 Her depo şu systemd birimlerini oluşturur:
@@ -236,6 +268,7 @@ Her depo şu systemd birimlerini oluşturur:
 | `rediacc-docker-{id}.service` | Yalıtılmış Docker daemon'u |
 | `rediacc-docker-{id}.socket` | Docker API soket aktivasyonu |
 | `rediacc-loopback-{id}.service` | Loopback IP takma adı kurulumu |
+| `rediacc-k3s-{id}.service` | Küme başına k3s düğümü (yalnızca küme sunucularında) |
 
 Tüm depolar arasında paylaşılan global servisler:
 

@@ -334,19 +334,20 @@ ensure_renet_built() {
     esac
 
     check_go_installed
-    local build_flags=""
-    # Drop --nolicense when RDC_BENCH=1 (real bench environment) OR
-    # RDC_RENET_LICENSE=1 (opt-in license-enforcing dev build, used to
-    # reproduce license-flow bugs like rediacc/console#482 locally).
-    if [[ "${RDC_BENCH:-0}" == "1" || "${RDC_RENET_LICENSE:-0}" == "1" ]]; then
-        build_flags=""
-    else
-        build_flags="--nolicense"
-    fi
+    # License enforcement is decided in ONE place now — build.sh dev, which
+    # defaults to nolicense and opts into enforcement on RDC_RENET_LICENSE=1 /
+    # RDC_BENCH=1 (both inherited from this shell's env). No local re-derivation.
 
     # Hash inputs that determine the binary's bytes. The build mode and the
     # account public key change ldflags, so they are part of the identity.
+    # The license mode is now env-derived (build.sh dev reads it), so the stamp
+    # hashes the EFFECTIVE mode — a license<->nolicense switch still forces a
+    # rebuild even though this function no longer passes a flag.
     local stamp_file="$LOCAL_ROOT_DIR/.ci/cache/build-renet.stamp"
+    local _license_mode="nolicense"
+    if [[ "${RDC_RENET_LICENSE:-0}" == "1" || "${RDC_BENCH:-0}" == "1" ]]; then
+        _license_mode="enforce"
+    fi
     local _account_key="${ACCOUNT_ED25519_PUBLIC_KEY:-}"
     if [[ -z "$_account_key" ]] && [[ -f "$renet_dir/../account/.env" ]]; then
         _account_key=$(sed -n 's/^ED25519_PUBLIC_KEY=//p' "$renet_dir/../account/.env" | tr -d '\r')
@@ -355,7 +356,7 @@ ensure_renet_built() {
     current_hash="$(
         {
             _renet_source_hash "$renet_dir"
-            printf 'flags=%s\n' "$build_flags"
+            printf 'license=%s\n' "$_license_mode"
             printf 'key=%s\n' "$_account_key"
         } | _sha256sum | awk '{print $1}'
     )"
@@ -372,7 +373,7 @@ ensure_renet_built() {
         log_step "Building renet (first time, requires Docker for asset extraction)..."
     fi
 
-    (cd "$renet_dir" && ./build.sh dev $build_flags)
+    (cd "$renet_dir" && ./build.sh dev)
 
     if [[ ! -f "$renet_bin" ]]; then
         log_error "Renet build failed: binary not found at $renet_bin"

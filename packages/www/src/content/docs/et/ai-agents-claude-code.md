@@ -4,6 +4,8 @@ description: Üksikasjalik samm-sammuline juhend Claude Code'i häälestamiseks 
 category: Guides
 order: 31
 language: et
+sourceHash: "0a4b93dedcf18e6d"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Claude Code töötab Rediacciga natiivselt `rdc` CLI kaudu. See juhend käsitleb seadistust, lubasid ja levinud töövoogusid.
@@ -98,6 +100,5 @@ Claude Code käivitab: rdc repo sync upload -m prod-1 -r mail -l ./config
 ## Näpunäited
 
 - Claude Code tuvastab automaatselt mitte-TTY-keskkonna ja lülitub JSON-väljundile, enamikul juhtudel ei ole vaja `-o json` täpsustada
-- Kasutage `rdc agent capabilities`, et lasta Claude Code'il avastada kõik saadaolevad käsud
-- Kasutage `rdc agent schema "käsu nimi"` üksikasjalike argumentide ja valikute info jaoks
+- Kasutage `rdc --help-all`, et lasta Claude Code'il avastada kõik saadaolevad käsud
 - Lipp `--fields` aitab kontekstiakna kasutust vähendada, kui vajate ainult konkreetseid andmeid

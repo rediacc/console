@@ -7,8 +7,8 @@
  * Uses the same X25519 + HKDF + AES-256-GCM pattern as the E2E module.
  */
 
-import { ENCRYPTION_CONFIG } from './constants.js';
 import { fromBase64, randomBytes, toBase64 } from './aes.js';
+import { ENCRYPTION_CONFIG } from './constants.js';
 import type { CekHandoffBlob } from './types.js';
 
 /** Extract ArrayBuffer from Uint8Array. */

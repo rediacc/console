@@ -4,7 +4,7 @@ description: "Remover backups órfãos, snapshots obsoletos, imagens de reposit�
 category: "Guides"
 order: 12
 language: pt
-sourceHash: "d2700c2ac4473962"
+sourceHash: "af01691f5fe908ee"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -14,8 +14,8 @@ O pruning elimina estado que já não corresponde a um recurso ativo. Três coma
 
 | Comando | O que limpa | Onde reside a fonte de verdade |
 |---|---|---|
-| `rdc storage prune --name <storage> -m <machine>` | Backups órfãos no armazenamento na nuvem | Config local do CLI (verificada cruzadamente com a máquina executora para segurança de montagem) |
-| `rdc machine prune --name <machine>` | Artefactos do datastore na máquina (sempre); imagens de repositório órfãs ou desconhecidas (opcional) | Config local do CLI + o espelho `.interim/state` da máquina |
+| `rdc storage prune <storage> -m <machine>` | Backups órfãos no armazenamento na nuvem | Config local do CLI (verificada cruzadamente com a máquina executora para segurança de montagem) |
+| `rdc machine prune <machine>` | Artefactos do datastore na máquina (sempre); imagens de repositório órfãs ou desconhecidas (opcional) | Config local do CLI + o espelho `.interim/state` da máquina |
 | `rdc config prune` | Resíduos da config local (cache de certificados, arquivos expirados, referências cruzadas pendentes) | Apenas a config local do CLI |
 
 Os três são independentes. Pode executar qualquer um sem os outros. Partilham um modelo de segurança comum descrito em [Segurança](#safety-model) abaixo.
@@ -202,7 +202,7 @@ O pruning é concebido para ser seguro por predefinição em configurações com
 
 ### Período de carência
 
-Quando um repositório é removido de uma config com `--archive-config`, a sua entrada de credencial é movida para `resources.deletedRepositories[]` com um timestamp `deletedAt`. Os comandos de pruning respeitam um período de carência (predefinição 7 dias) durante o qual repositórios arquivados recentemente estão protegidos contra eliminação. Isto dá-lhe tempo para restaurar um repositório (`rdc config repository restore-archived --name <guid>`) se tiver sido removido acidentalmente. Após a carência expirar, `storage prune`, `machine prune` e `config prune` eliminam automaticamente a entrada.
+Quando um repositório é removido de uma config com `--archive-config`, a sua entrada de credencial é movida para `resources.deletedRepositories[]` com um timestamp `deletedAt`. Os comandos de pruning respeitam um período de carência (predefinição 7 dias) durante o qual repositórios arquivados recentemente estão protegidos contra eliminação. Isto dá-lhe tempo para restaurar um repositório (`rdc repo admin archive restore <guid>`) se tiver sido removido acidentalmente. Após a carência expirar, `storage prune`, `machine prune` e `config prune` eliminam automaticamente a entrada.
 
 ### Preflight de segurança de montagem
 

@@ -4,7 +4,7 @@ description: "Rediacc 的自托管模型如何满足《加州消费者隐私法�
 category: "Legal"
 order: 4
 language: zh
-sourceHash: "949159b302cf6ab9"
+sourceHash: "3cee3262b53f7afd"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -35,7 +35,7 @@ Rediacc 作为软件不会访问、处理或存储消费者数据。您的 IT �
 
 每个 Rediacc 仓库都是具有唯一 GUID 的独立加密数据单元。您可以精确盘点数据所在位置：
 
-- `rdc machine query --name <machine> --repositories` 列出机器上所有仓库及其大小和挂载状态
+- `rdc machine status <machine> --repositories` 列出机器上所有仓库及其大小和挂载状态
 - 每个仓库在文件系统、网络和容器级别均实现隔离
 - Fork 关系被跟踪，因此您可以识别数据集的所有副本
 

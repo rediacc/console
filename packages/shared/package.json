@@ -70,6 +70,34 @@
       "types": "./dist/renet-contract/*.d.ts",
       "default": "./dist/renet-contract/*.js"
     },
+    "./cli-contract": {
+      "types": "./dist/cli-contract/index.d.ts",
+      "default": "./dist/cli-contract/index.js"
+    },
+    "./cli-contract/*": {
+      "types": "./dist/cli-contract/*.d.ts",
+      "default": "./dist/cli-contract/*.js"
+    },
+    "./policy": {
+      "types": "./dist/policy/index.d.ts",
+      "default": "./dist/policy/index.js"
+    },
+    "./policy/*": {
+      "types": "./dist/policy/*.d.ts",
+      "default": "./dist/policy/*.js"
+    },
+    "./config-schema": {
+      "types": "./dist/config-schema/index.d.ts",
+      "default": "./dist/config-schema/index.js"
+    },
+    "./config-schema/*": {
+      "types": "./dist/config-schema/*.d.ts",
+      "default": "./dist/config-schema/*.js"
+    },
+    "./ref": {
+      "types": "./dist/ref/index.d.ts",
+      "default": "./dist/ref/index.js"
+    },
     "./storage-browser": {
       "types": "./dist/storage-browser/index.d.ts",
       "default": "./dist/storage-browser/index.js"

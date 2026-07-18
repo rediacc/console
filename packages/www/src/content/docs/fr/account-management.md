@@ -4,8 +4,8 @@ description: 'Organisations, équipes, membres et abonnements dans Rediacc.'
 category: Guides
 order: 12
 language: fr
-sourceHash: 3887adc59fc63c26
-sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
+sourceHash: 9d77ef9087375fbc
+sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
 ### Organisations
@@ -16,7 +16,7 @@ Créez un compte et Rediacc crée automatiquement une organisation pour vous. Ce
 
 Chaque organisation dispose de :
 - Un nom unique (par défaut votre adresse e-mail)
-- Un plan d'abonnement (commence avec COMMUNITY)
+- Un plan d'abonnement (les nouveaux comptes démarrent un essai gratuit de 14 jours sur Professional ou Business ; voir Abonnements et Plans ci-dessous)
 - Une équipe par défaut (tous les membres y sont ajoutés automatiquement)
 
 ### Membres et Rôles
@@ -57,21 +57,21 @@ Rediacc propose quatre plans :
 
 | Plan | Machines | Licences repo/mois | Validité cert de délégation par défaut / max | Fonctionnalités |
 |------|----------|--------------------|----------------------------------------------|-----------------|
-| COMMUNITY | 2 | 100 | 15d / 30d | Basique |
-| PROFESSIONAL | 3 | 2 000+ | 60d / 120d | Groupes de permissions, journal d'audit, marque personnalisée, support prioritaire |
-| BUSINESS | 10 | 5 000+ | 90d / 180d | Ceph, analyses avancées, priorité de file d'attente, file d'attente avancée |
-| ENTERPRISE | 25+ | 15 000+ | 120d / 365d | Responsable de compte dédié |
+| COMMUNITY | 1 | 100 | 15d / 30d | Basique |
+| PROFESSIONAL | 1 | 2 000+ | 60d / 120d | Groupes de permissions, journal d'audit, marque personnalisée, support prioritaire |
+| BUSINESS | 1 | 5 000+ | 90d / 180d | Ceph, analyses avancées, priorité de file d'attente, file d'attente avancée |
+| ENTERPRISE | Sur mesure | 15 000+ | 120d / 365d | Responsable de compte dédié |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 
-Tous les plans commencent avec une période de grâce de 3 jours. Les activations de machines sont suivies par équipe et se libèrent automatiquement après inactivité. Voir [Abonnement et licences](/fr/docs/subscription-licensing) pour le modèle complet machine vs licence de dépôt.
+Professional et Business sont des plans en libre-service et incluent chacun une machine ; Enterprise multi-machines se vend via nos partenaires. Les nouvelles inscriptions démarrent un essai gratuit de 14 jours sur Professional ou Business, avec une carte bancaire enregistrée à l'inscription et le premier prélèvement effectué seulement à la fin de l'essai. Annuler pendant l'essai, annuler un plan payant plus tard, ou un paiement en échec, et le compte bascule sur le plan Community gratuit (une machine, 10 Go par dépôt, 100 setups par mois). Tous les plans commencent avec une période de grâce de 3 jours. Les activations de machines sont suivies par équipe et se libèrent automatiquement après inactivité. Voir [Abonnement et licences](/fr/docs/subscription-licensing) pour le modèle complet machine vs licence de dépôt.
 
 ### Facturation
 
 Seul le **propriétaire** de l'organisation peut gérer la facturation :
-- Créer une session de paiement Stripe pour les mises à niveau de plan
+- Créer une session de paiement Stripe pour démarrer un plan ou le mettre à niveau
 - Accéder au portail de facturation Stripe pour modifier le mode de paiement
-- Demander des remboursements en libre-service (dans les 14 jours, avec un délai de 30 jours)
+- Annuler ou modifier le plan depuis le portail de facturation ; l'annulation ramène le compte au plan Community gratuit
 
 ### Région des données
 

@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 41
 language: ko
-sourceHash: "2448559f0fcfc0e0"
+sourceHash: "fe334c1c94a0f417"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -308,7 +308,7 @@ $ rdc repo pull --name myapp:work --from-machine backup-1 --force -m server-1
 
 ## JSON 스키마
 
-`rdc repo log --json`은 renet 결과를 표준 봉투로 감쌉니다. 탐색된 이력은 `entries`에 있으며 최신 항목이 먼저 나옵니다:
+`rdc repo log <repo> --output json`은 renet 결과를 표준 봉투로 감쌉니다. 탐색된 이력은 `entries`에 있으며 최신 항목이 먼저 나옵니다:
 
 | 필드 | 타입 | 설명 |
 |------|------|------|

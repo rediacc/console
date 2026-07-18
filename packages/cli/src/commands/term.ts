@@ -1,17 +1,19 @@
-import { DEFAULTS } from '@rediacc/shared/config';
+import { Command } from 'commander';
+import { t } from '../i18n/index.js';
 import { generateSetupCommand, generateSourceCommand } from '../remote/repository/index.js';
 import { SSHConnection, spawnSSH, testSSHConnectivity } from '../remote/ssh/index.js';
 import { getDefaultTerminalType, launchTerminal } from '../remote/terminal/index.js';
-import { Command } from 'commander';
-import { t } from '../i18n/index.js';
+import { applyClusterConnectionContext } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
-import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
-import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
+import { auditService } from '../services/core/audit.js';
+import { outputService } from '../services/core/output.js';
 import {
   type ConnectionDetails,
   getSSHConnectionDetails,
 } from '../services/machine/ssh-connection.js';
+import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
 import {
   assertAgentMachineAccess,
   isAgentEnvironment,
@@ -19,7 +21,6 @@ import {
 } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
-import { auditService } from '../services/core/audit.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import {
   detectDirectRenetCommand,
@@ -27,44 +28,26 @@ import {
   detectFileWriteCommand,
   detectRepoContextCommand,
 } from '../utils/repo-context-guard.js';
+import { type ConnectTarget, resolveConnectTarget } from '../utils/repo-target.js';
 import { withSpinner } from '../utils/spinner.js';
 
-interface TermConnectOptions {
-  team?: string;
-  machine?: string;
-  repository?: string;
+/**
+ * `term connect <target>` (spec/03 §5.8). The target is a place (machine shell)
+ * or a repo ref (repo shell); everything else the command needs is derived from
+ * it. The container side door (`--container`, `--container-action`,
+ * `--log-lines`, `--follow`) is retired in favour of `repo logs` / `repo exec`,
+ * and `-t/--team` is dead vocabulary.
+ */
+export interface TermConnectOptions {
+  /** Run one command instead of an interactive shell; the exit code passes through. */
   command?: string;
-  container?: string;
-  /** Container action: 'terminal' (default), 'logs', 'stats', 'exec' */
-  containerAction?: 'terminal' | 'logs' | 'stats' | 'exec';
-  /** Number of log lines to show (default: 50) */
-  logLines?: string;
-  /** Follow logs output */
-  follow?: boolean;
+  /** Force an external terminal window. */
   external?: boolean;
+  /** Clear the per-repo home overlay for a fresh start. */
   resetHome?: boolean;
-  [key: string]: unknown;
 }
 
-type ContainerAction = 'terminal' | 'logs' | 'stats' | 'exec';
-
-const containerCommandBuilders: Record<
-  ContainerAction,
-  (options: TermConnectOptions, containerId: string) => string
-> = {
-  logs: (options, containerId) => {
-    const lines = options.logLines ?? DEFAULTS.REPOSITORY.LOG_LINES;
-    const followFlag = options.follow ? '-f' : '';
-    return `docker logs --tail ${lines} ${followFlag} ${containerId}`.trim();
-  },
-  stats: (_, containerId) => `docker stats ${containerId}`,
-  exec: (options, containerId) =>
-    `docker exec -it ${containerId} ${options.command ?? DEFAULTS.SHELL.BASH}`,
-  terminal: (options, containerId) =>
-    `docker exec -it ${containerId} ${options.command ?? DEFAULTS.SHELL.BASH}`,
-};
-
-function buildEnvPrefix(connectionDetails?: ConnectionDetails): string {
+export function buildEnvPrefix(connectionDetails?: ConnectionDetails): string {
   const parts: string[] = [];
 
   if (connectionDetails?.environment) {
@@ -72,6 +55,15 @@ function buildEnvPrefix(connectionDetails?: ConnectionDetails): string {
       const escaped = String(value).replaceAll("'", "'\\''");
       parts.push(`export ${key}='${escaped}'`);
     }
+  }
+
+  // Pin the kubectl current-context to the repo's namespace for a cluster-placed
+  // repo session (the k8s analog of the repo `cd` below). KUBECONFIG is already
+  // exported by the loop, so this runs against the cluster's kubeconfig; the
+  // `|| true` keeps a shell open even if kubectl is momentarily unavailable.
+  if (connectionDetails?.kubeNamespace) {
+    const ns = connectionDetails.kubeNamespace.replaceAll("'", "'\\''");
+    parts.push(`kubectl config set-context --current --namespace='${ns}' >/dev/null 2>&1 || true`);
   }
 
   if (connectionDetails?.workingDirectory) {
@@ -85,15 +77,11 @@ function buildEnvPrefix(connectionDetails?: ConnectionDetails): string {
 // The CLI just sends the raw command — sandbox-gateway on the remote
 // reads REDIACC_REPOSITORY from env and applies Landlock + OverlayFS.
 
-function buildContainerCommand(options: TermConnectOptions, envPrefix: string): string {
-  const containerId = options.container!;
-  const containerAction = options.containerAction ?? DEFAULTS.REPOSITORY.CONTAINER_ACTION;
-  const builder = containerCommandBuilders[containerAction];
-  const dockerCmd = builder(options, containerId);
-  return `${envPrefix}${dockerCmd}`;
-}
-
-function buildShellCommand(options: TermConnectOptions, envPrefix: string): string {
+function buildRemoteCommand(
+  options: TermConnectOptions,
+  connectionDetails: ConnectionDetails
+): string {
+  const envPrefix = buildEnvPrefix(connectionDetails);
   const ensureBashSetup = generateSetupCommand();
   const sourceCmd = generateSourceCommand();
   const userCmd = options.command;
@@ -107,35 +95,15 @@ function buildShellCommand(options: TermConnectOptions, envPrefix: string): stri
   return `${envPrefix}${ensureBashSetup}; exec bash ${rcfile}`;
 }
 
-function buildRemoteCommand(
-  options: TermConnectOptions,
-  connectionDetails: ConnectionDetails
-): string | undefined {
-  const envPrefix = buildEnvPrefix(connectionDetails);
-
-  if (options.container) {
-    return buildContainerCommand(options, envPrefix);
-  }
-
-  return buildShellCommand(options, envPrefix);
-}
-
 async function validateAndGetConnectionDetails(opts: {
-  team?: string;
-  machine?: string;
+  machine: string;
   repository?: string;
   quiet?: boolean;
-}) {
-  if (!opts.machine) {
-    throw new Error(t('errors.machineRequired'));
-  }
-
-  const teamName = opts.team ?? '';
-  const machineName = opts.machine;
+}): Promise<ConnectionDetails> {
   const connectionDetails = opts.quiet
-    ? await getSSHConnectionDetails(teamName, machineName, opts.repository)
+    ? await getSSHConnectionDetails('', opts.machine, opts.repository)
     : await withSpinner(t('commands.term.fetchingDetails'), () =>
-        getSSHConnectionDetails(teamName, machineName, opts.repository)
+        getSSHConnectionDetails('', opts.machine, opts.repository)
       );
 
   const connectivityResult = opts.quiet
@@ -158,12 +126,7 @@ async function validateAndGetConnectionDetails(opts: {
     );
   }
 
-  return {
-    connectionDetails,
-    teamName,
-    machineName,
-    repositoryName: opts.repository,
-  };
+  return connectionDetails;
 }
 
 function enforceDirectRenetGuard(command: string): void {
@@ -187,44 +150,54 @@ function enforceFileWriteGuard(command: string): void {
   }
   process.stderr.write(
     `\x1b[33mHint:\x1b[0m Detected file write pattern (${match.label}). ` +
-      `For file transfer, consider: rdc repo sync upload -m MACHINE -r REPO --local FILE --remote PATH\n`
+      `For file transfer, consider: rdc repo sync upload <ref> --local FILE --remote PATH\n`
   );
 }
 
-async function enforceTermPolicy(opts: TermConnectOptions): Promise<void> {
-  if (opts.command && detectDockerComposeCommand(opts.command)) {
+/**
+ * The gate (spec §4.7): the repo form is class B (grandGuard on the addressed
+ * repo), the machine form is class A plus the agent machine-access check. A
+ * cluster-placed repo is now a repo like any other, because the target resolver
+ * derives it from config; the retired `--cluster -r <namespace>` form could not
+ * be repo-gated, since its `-r` was a bare namespace string.
+ */
+async function enforceTermPolicy(
+  options: TermConnectOptions,
+  target: ConnectTarget
+): Promise<void> {
+  if (options.command && detectDockerComposeCommand(options.command)) {
     throw new ValidationError(t('errors.term.dockerComposeForbidden'));
   }
 
-  if (opts.command && !opts.repository) {
-    const match = detectRepoContextCommand(opts.command);
+  if (options.command && target.kind === 'place') {
+    const match = detectRepoContextCommand(options.command);
     if (match) {
       throw new ValidationError(
         t('errors.term.repoContextRequired', {
           detected: match.label,
-          machine: opts.machine ?? DEFAULTS.CLOUD.MACHINE_PLACEHOLDER,
-          command: opts.command,
+          machine: target.machineName,
+          command: options.command,
         })
       );
     }
   }
 
-  if (opts.command) {
-    enforceDirectRenetGuard(opts.command);
-    enforceFileWriteGuard(opts.command);
+  if (options.command) {
+    enforceDirectRenetGuard(options.command);
+    enforceFileWriteGuard(options.command);
   }
 
-  if (opts.repository) {
-    await assertCommandPolicy(CMD.TERM_REPO, opts.repository);
+  if (target.kind === 'repo') {
+    // Gate B on the repo arm only; the place arm below is a machine shell (class A).
+    await assertCommandPolicy(CMD.TERM_CONNECT, target.repoKey);
   } else {
-    assertAgentMachineAccess(opts.machine ?? DEFAULTS.CLOUD.MACHINE_PLACEHOLDER);
+    assertAgentMachineAccess(target.machineName);
   }
 }
 
 function shouldUseExternalTerminal(options: TermConnectOptions): boolean {
   const isTTY = process.stdin.isTTY && process.stdout.isTTY;
-  const hasCommand = !!options.command || !!options.container;
-  return hasCommand ? options.external === true : (options.external ?? !isTTY);
+  return options.command ? options.external === true : (options.external ?? !isTTY);
 }
 
 async function executeSSH(
@@ -261,35 +234,60 @@ async function executeSSH(
 // connectTerminal invocation.
 //
 // - quietOutput: skip the spinners and the "Connecting to..." stderr line so
-//   `term -c "..."` stdout stays clean (also applies to container modes since
-//   the user is asking for a specific docker action, not a shell session).
-// - noTTY: disable ssh -tt. Remote sandbox banner is gated by `[ -t 1 ]`, and
-//   ssh prints "Connection to HOST closed." only when -t allocated a PTY.
-//   Exception: container exec/terminal wrap the command in `docker exec -it`,
-//   which requires a real TTY upstream — keep forceTTY for those.
+//   `term connect <target> -c "..."` keeps stdout clean for the command's own
+//   output.
+// - noTTY: disable ssh -tt. The remote sandbox banner is gated by `[ -t 1 ]`,
+//   and ssh prints "Connection to HOST closed." only when -t allocated a PTY,
+//   so a one-shot command must not allocate one. The container side door was
+//   the only case that needed a PTY for a `-c` invocation (docker exec -it);
+//   it is retired, so one-shot and no-TTY now coincide exactly.
 export function resolveTermOutputMode(opts: TermConnectOptions): {
   quietOutput: boolean;
   noTTY: boolean;
 } {
-  const isContainerInteractive =
-    !!opts.container &&
-    (opts.containerAction === 'exec' ||
-      opts.containerAction === 'terminal' ||
-      opts.containerAction === undefined);
-  const quietOutput = !!opts.command || !!opts.container;
-  const noTTY = !!opts.command && !isContainerInteractive;
-  return { quietOutput, noTTY };
+  const oneShot = !!opts.command;
+  return { quietOutput: oneShot, noTTY: oneShot };
 }
 
-async function connectTerminal(options: TermConnectOptions): Promise<void> {
+/**
+ * Split a resolved target into the two roles the connection layer keeps apart:
+ * a docker repo (mount check, per-repo key, DOCKER_HOST + working dir) and a
+ * kubernetes namespace (KUBECONFIG + a kubectl context pin). A repo has exactly
+ * one of them, decided by whether its datastore lives in a cluster.
+ */
+function splitTargetRoles(target: ConnectTarget): {
+  dockerRepo?: string;
+  kubeNamespace?: string;
+  sessionScope?: string;
+} {
+  if (target.kind !== 'repo') return {};
+  return {
+    ...(target.kubeCluster === undefined && { dockerRepo: target.repoKey }),
+    ...(target.kubeCluster !== undefined && { kubeNamespace: target.repoKey }),
+    sessionScope: target.repoKey,
+  };
+}
+
+async function connectTerminal(targetRef: string, options: TermConnectOptions): Promise<void> {
   const startTime = Date.now();
-  const opts = await configService.applyDefaults(options);
-  await enforceTermPolicy(opts);
 
-  const { quietOutput, noTTY } = resolveTermOutputMode(opts);
+  const target = await resolveConnectTarget(targetRef, { readOnly: true });
+  await enforceTermPolicy(options, target);
 
-  const { connectionDetails, teamName, machineName, repositoryName } =
-    await validateAndGetConnectionDetails({ ...opts, quiet: quietOutput });
+  const { dockerRepo, kubeNamespace, sessionScope } = splitTargetRoles(target);
+  const { quietOutput, noTTY } = resolveTermOutputMode(options);
+  const machineName = target.machineName;
+
+  const connectionDetails = await validateAndGetConnectionDetails({
+    machine: machineName,
+    repository: dockerRepo,
+    quiet: quietOutput,
+  });
+
+  if (target.kubeCluster) {
+    applyClusterConnectionContext(connectionDetails, target.kubeCluster, kubeNamespace);
+  }
+
   const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
@@ -299,12 +297,12 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
   await provisionRenetToRemote(localConfig, machine, sshPrivateKey, {});
 
-  if (repositoryName) {
-    const repoConfig = await configService.getRepository(repositoryName);
+  if (dockerRepo) {
+    const repoConfig = await configService.getRepository(dockerRepo);
     if (repoConfig) {
-      await assertRepoMountedOnMachine(repositoryName, repoConfig.repositoryGuid, machineName);
+      await assertRepoMountedOnMachine(dockerRepo, repoConfig.repositoryGuid, machineName);
     }
-    await deployRepoKeyIfNeeded(repositoryName, machineName);
+    await deployRepoKeyIfNeeded(dockerRepo, machineName);
   }
 
   const sshConnection = new SSHConnection(
@@ -318,9 +316,11 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
   try {
     await sshConnection.setup();
 
-    const title = repositoryName
-      ? `Rediacc - ${teamName}/${machineName}/${repositoryName}`
-      : `Rediacc - ${teamName}/${machineName}`;
+    // The label is the cluster for a k8s target and the machine otherwise; the
+    // scope is the repo key, absent for a plain machine shell.
+    const title = sessionScope
+      ? `Rediacc - ${target.label}/${sessionScope}`
+      : `Rediacc - ${target.label}`;
 
     const destination = `${connectionDetails.user}@${connectionDetails.host}`;
     const remoteCommand = buildRemoteCommand(options, connectionDetails);
@@ -343,7 +343,7 @@ async function connectTerminal(options: TermConnectOptions): Promise<void> {
     auditService.recordOperation({
       functionName: 'term_connect',
       machineName,
-      repoName: repositoryName,
+      repoName: sessionScope,
       success,
       exitCode: success ? 0 : 1,
       durationMs: Date.now() - startTime,
@@ -366,8 +366,7 @@ async function launchExternalTerminal(
   const sshCommand = `ssh ${sshArgs.join(' ')}`;
   const terminalType = getDefaultTerminalType();
 
-  // eslint-disable-next-line no-console
-  console.log(t('commands.term.launchingTerminal', { type: terminalType }));
+  outputService.info(t('commands.term.launchingTerminal', { type: terminalType }));
 
   const result = launchTerminal(terminalType, {
     command: sshCommand,
@@ -392,8 +391,7 @@ async function launchExternalTerminal(
     });
   }
 
-  // eslint-disable-next-line no-console
-  console.log(t('commands.term.launchSuccess'));
+  outputService.info(t('commands.term.launchSuccess'));
 }
 
 const sshExitCodeMessages: Record<number, string> = {
@@ -459,10 +457,13 @@ export function registerTermCommands(program: Command): void {
     'after',
     `
 ${t('help.examples')}
-  $ rdc term connect -m server-1                  ${t('help.term.machine')}
-  $ rdc term connect -m server-1 -r my-app        ${t('help.term.repo')}
-  $ rdc term connect -m server-1 -c "uptime"      ${t('help.term.command')}
+  $ rdc term connect server-1                     ${t('help.term.machine')}
+  $ rdc term connect my-app                       ${t('help.term.repo')}
+  $ rdc term connect my-app:test                  ${t('help.term.fork')}
+  $ rdc term connect server-1 -c "uptime"         ${t('help.term.command')}
+  $ rdc term connect prod                         ${t('help.term.cluster')}
 
+  ${t('help.term.collisionHint')}
   ${t('help.term.syncHint')}
 `
   );
@@ -470,19 +471,13 @@ ${t('help.examples')}
   term
     .command('connect')
     .description(t('commands.term.connect.description'))
-    .option('-t, --team <name>', t('options.team'))
-    .option('-m, --machine <name>', t('options.machine'))
-    .option('-r, --repository <name>', t('options.repository'))
+    .argument('<target>', t('options.connectTarget'))
     .option('-c, --command <cmd>', t('options.command'))
-    .option('--container <id>', t('options.container'))
-    .option('--container-action <action>', t('options.containerAction'))
-    .option('--log-lines <lines>', t('options.logLines'))
-    .option('--follow', t('options.follow'))
     .option('--external', t('options.external'))
     .option('--reset-home', t('options.resetHome'))
-    .action(async (options: TermConnectOptions) => {
+    .action(async (target: string, options: TermConnectOptions) => {
       try {
-        await connectTerminal(options);
+        await connectTerminal(target, options);
       } catch (error) {
         handleError(error);
       }

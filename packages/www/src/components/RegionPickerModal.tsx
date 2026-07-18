@@ -1,16 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { REGIONS, type Region } from '../config/regions';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
-import { REGIONS, type Region } from '../config/regions';
+import { buildPortalRedirectUrl, getHostKind } from '../utils/marketing-host';
 
 const DEFAULT_TARGET_PATH = '/account/';
-
-declare global {
-  interface Window {
-    openRegionPicker?: (targetPath?: string) => void;
-    forceOpenRegionPicker?: (targetPath?: string) => void;
-  }
-}
 
 function handleFocusTrap(e: KeyboardEvent, modal: HTMLDivElement, close: () => void): void {
   if (e.key === 'Escape') {
@@ -87,12 +81,34 @@ function getStoredRegion(): { region: string; timestamp: number } | null {
   return null;
 }
 
+/** Release channel implied by the current host (stable only on www). */
+function hostChannel(): 'stable' | 'edge' {
+  return getHostKind(window.location.hostname) === 'marketing-stable' ? 'stable' : 'edge';
+}
+
+/** Captured utm_* params from the behavioral tracker, if it has any. */
+function capturedUtm(): Record<string, string> {
+  return window.__pa_get_utm?.() ?? {};
+}
+
+/**
+ * Cross-origin handoff to the regional portal. The channel is derived from
+ * the current host (www → stable domains, edge/localhost → edge domains) and
+ * captured utm_* params ride along so attribution survives the hop.
+ */
+function forwardToPortal(region: Region, targetPath: string): void {
+  window.location.href = buildPortalRedirectUrl(
+    window.location.hostname,
+    region,
+    targetPath,
+    capturedUtm()
+  );
+}
+
 const RegionPickerModal: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [targetPath, setTargetPath] = useState('/account/');
   const [selected, setSelected] = useState<string | null>(null);
-  const [useStable, setUseStable] = useState(false);
-  const [showChannelHint, setShowChannelHint] = useState(false);
   const currentLang = useLanguage();
   const { t } = useTranslation(currentLang);
 
@@ -103,7 +119,6 @@ const RegionPickerModal: React.FC = () => {
     previousFocusRef.current = document.activeElement as HTMLElement;
     setTargetPath(path ?? DEFAULT_TARGET_PATH);
     setSelected(detectLikelyRegion(REGIONS).id);
-    setUseStable(false);
     setIsOpen(true);
     window.plausible?.('region_picker_open', {
       props: { source: path?.includes('checkout') ? 'checkout' : 'nav' },
@@ -116,8 +131,10 @@ const RegionPickerModal: React.FC = () => {
       if (stored) {
         const region = REGIONS.find((r) => r.id === stored.region);
         if (region) {
-          window.plausible?.('region_selected', { props: { region: region.id, source: 'stored' } });
-          window.location.href = `https://${region.edgeDomain}${path ?? DEFAULT_TARGET_PATH}`;
+          window.plausible?.('region_selected', {
+            props: { region: region.id, channel: hostChannel(), source: 'stored' },
+          });
+          forwardToPortal(region, path ?? DEFAULT_TARGET_PATH);
           return;
         }
       }
@@ -141,12 +158,12 @@ const RegionPickerModal: React.FC = () => {
       } catch {
         /* quota exceeded or private mode */
       }
-      const channel = useStable ? 'stable' : 'edge';
-      window.plausible?.('region_selected', { props: { region: region.id, channel } });
-      const domain = useStable ? region.domain : region.edgeDomain;
-      window.location.href = `https://${domain}${targetPath}`;
+      window.plausible?.('region_selected', {
+        props: { region: region.id, channel: hostChannel() },
+      });
+      forwardToPortal(region, targetPath);
     },
-    [targetPath, useStable]
+    [targetPath]
   );
 
   // Expose global functions
@@ -247,67 +264,6 @@ const RegionPickerModal: React.FC = () => {
           ))}
         </div>
 
-        <div className="region-picker-channel-row">
-          <div className="region-picker-channel-switch">
-            <button
-              type="button"
-              className={`region-picker-channel-option ${useStable ? '' : 'region-picker-channel-option--active'}`}
-              onClick={() => setUseStable(false)}
-              data-track="region_picker_channel"
-              data-track-label="edge"
-            >
-              {t('regionPicker.channelEdge')}
-            </button>
-            <button
-              type="button"
-              className={`region-picker-channel-option ${useStable ? 'region-picker-channel-option--active' : ''}`}
-              onClick={() => setUseStable(true)}
-              data-track="region_picker_channel"
-              data-track-label="stable"
-            >
-              {t('regionPicker.channelStable')}
-            </button>
-          </div>
-          <button
-            type="button"
-            className="region-picker-channel-info"
-            aria-label={t('regionPicker.channelHintLabel')}
-            aria-describedby="region-picker-channel-tooltip"
-            aria-expanded={showChannelHint}
-            aria-controls="region-picker-channel-hint-mobile"
-            onClick={() => setShowChannelHint((prev) => !prev)}
-            data-track="region_picker_channel_hint_toggle"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 16v-4" />
-              <path d="M12 8h.01" />
-            </svg>
-            <span
-              id="region-picker-channel-tooltip"
-              className="region-picker-channel-tooltip"
-              role="tooltip"
-            >
-              {useStable ? t('regionPicker.stableHint') : t('regionPicker.edgeHint')}
-            </span>
-          </button>
-        </div>
-        <p
-          id="region-picker-channel-hint-mobile"
-          className={`region-picker-channel-hint-mobile ${
-            showChannelHint ? 'region-picker-channel-hint-mobile--visible' : ''
-          }`}
-        >
-          {useStable ? t('regionPicker.stableHint') : t('regionPicker.edgeHint')}
-        </p>
         <p className="region-picker-footer">{t('regionPicker.footer')}</p>
         <p className="region-picker-footer-note">{t('regionPicker.footerNote')}</p>
       </div>

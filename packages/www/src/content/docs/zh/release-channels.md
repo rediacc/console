@@ -4,8 +4,8 @@ description: "Edge 与 Stable 的区别，以及该运行哪个通道。"
 category: "Concepts"
 order: 2
 language: zh
-sourceHash: "5fdcb0e8944f5d60"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "6669b5b089f94a39"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Rediacc 通过两个通道发布更新：**Stable** 和 **Edge**。两者运行在独立的基础设施上，各有不同的权衡。
@@ -25,7 +25,7 @@ Edge 在每次变更合并到主分支的瞬间就会接收到，是软件的实
 
 - 最新功能和修复，每次合并后部署
 - Community 计划限制翻倍（见下表）
-- 永久免费，Edge 上不提供付费计划
+- Edge 上不提供付费计划，账户运行在 Community 计划上
 - 与 Stable 账户独立，数据不在通道间迁移
 - 域名：`edge-eu.rediacc.com`、`edge-us.rediacc.com`、`edge-asia.rediacc.com`
 
@@ -35,20 +35,20 @@ Edge 在每次变更合并到主分支的瞬间就会接收到，是软件的实
 |---|---|---|
 | **部署节奏** | 经过 7 天浸泡期后部署 | 每次合并到主分支即部署 |
 | **稳定性** | 经过 7 天测试 | 最新代码，浸泡时间较短 |
-| **Community 计划限制** | 10 GB 仓库，500 次/月颁发，2 台机器 | 20 GB 仓库，1,000 次/月颁发，4 台机器 |
+| **Community 计划限制** | 10 GB 仓库，每月 100 次设置，1 台机器 | 20 GB 仓库，每月 200 次设置，2 台机器 |
 | **付费计划** | 可用（Professional、Business、Enterprise） | 不可用 |
 | **账户** | 独立 | 独立（与 Stable 分离） |
 | **适合场景** | 生产环境、付费工作负载 | 测试、评估、个人项目、抢先体验 |
 
 ## Edge 翻倍限制
 
-在 Community 计划上使用 Edge，资源限制翻倍，无需额外费用：
+在 Community 计划上运行 Edge，资源限制将翻倍：
 
 | 资源 | Stable Community | Edge Community |
 |---|---|---|
 | 仓库大小 | 10 GB | 20 GB |
-| 每月许可证颁发次数 | 500 | 1,000 |
-| 机器激活数 | 2 | 4 |
+| 每月许可证颁发次数 | 100 | 200 |
+| 机器激活数 | 1 | 2 |
 
 需要更高限制或付费功能？在 Stable 上创建账户并在那里升级。
 

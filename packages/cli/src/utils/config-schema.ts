@@ -5,6 +5,7 @@
  * Used by config write commands for fail-fast validation.
  */
 import { isIP } from 'node:net';
+import { splitRef } from '@rediacc/shared/ref';
 import { z } from 'zod';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
@@ -54,33 +55,13 @@ export const MachineConfigSchema = z.object({
 
 // ── Per-repo secrets ──────────────────────────────────────────────
 //
-// Stored in config; resolved at deploy time. Two delivery modes:
-//   env  → exposed as REDIACC_SECRET_<KEY> in the renet shell, picked up
-//          by `renet compose --` interpolation in user compose YAML.
-//   file → materialized as a tmpfs file at /var/run/rediacc/secrets/<networkId>/<KEY>
-//          on the target machine, referenced via Docker compose `secrets:` block.
-//
-// Fork isolation: `registerFork` does not copy `secrets`, so a fork's map is
-// always empty. Externals see the fork as a different principal.
-//
-// Key format mirrors POSIX env-var identifiers so `REDIACC_SECRET_<KEY>` is
-// always a valid shell variable name.
-const SECRET_KEY_REGEX = /^[A-Z][A-Z0-9_]*$/;
-const SECRET_VALUE_MAX_BYTES = 10 * 1024 * 1024;
+// Single source of truth for the secret schemas + size caps is
+// config-schema/schemas.ts in packages/shared (spec 04 §5.1: the caps must live in one place). Imported
+// and re-exported here so the flat `RepositoryConfigSchema` below (used by
+// `config repository add` validation) and existing importers keep working.
+import { SecretEntrySchema, SecretKeySchema } from '@rediacc/shared/config-schema';
 
-export const SecretEntrySchema = z.object({
-  mode: z.enum(['env', 'file']),
-  value: z
-    .string()
-    .min(1, 'Secret value cannot be empty')
-    .max(SECRET_VALUE_MAX_BYTES, 'Secret value exceeds 10 MB cap'),
-});
-
-export const SecretKeySchema = z
-  .string()
-  .min(1)
-  .max(64, 'Secret key must be 64 characters or fewer')
-  .regex(SECRET_KEY_REGEX, 'Secret key must be UPPER_SNAKE_CASE (uppercase letter then [A-Z0-9_])');
+export { SecretEntrySchema, SecretKeySchema };
 
 export const RepositoryConfigSchema = z.object({
   repositoryGuid: z.uuid('Must be a valid UUID'),
@@ -102,11 +83,14 @@ const DEFAULT_TAG = 'latest';
  * Parse a repository reference into name and tag.
  * "marketing:staging" → { name: "marketing", tag: "staging" }
  * "marketing"         → { name: "marketing", tag: "latest" }
+ *
+ * Delegates to the shared lenient {@link splitRef}. The legacy `latest` default
+ * tag universe stays separate from the P4 `base` grammar (parseRef): these are
+ * config-key strings, not user-typed refs.
  */
 export function parseRepoRef(ref: string): { name: string; tag: string } {
-  const colonIndex = ref.indexOf(':');
-  if (colonIndex === -1) return { name: ref, tag: DEFAULT_TAG };
-  return { name: ref.slice(0, colonIndex), tag: ref.slice(colonIndex + 1) };
+  const { name, tag } = splitRef(ref, DEFAULT_TAG);
+  return { name, tag: tag ?? DEFAULT_TAG };
 }
 
 /**
@@ -242,7 +226,6 @@ const CONFIG_KEY_ORDER = [
   'userEmail',
   'team',
   'region',
-  'bridge',
 
   // Defaults
   'machine',

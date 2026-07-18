@@ -4,8 +4,8 @@ description: 了解 account、rdc 和 renet 如何处理机器槽位、仓库许
 category: Guides
 order: 7
 language: zh
-sourceHash: 10e9f781881854be
-sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
+sourceHash: "5fb6196d9b6e9b0b"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # 订阅与许可证
@@ -60,7 +60,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### 机器槽位（服务器端）
 
-机器槽位追踪在服务器端实施。当 CLI 发放仓库许可证时，账户服务器检查订阅的机器槽位配额（例如，Community 有 2 台机器，Professional 有 3 台）。槽位从该机器上最后一次仓库许可证发放起保持 5 小时，不活跃后自动释放。因此，一个 10 槽位的 Business 计划可以随时间覆盖数十台机器，因为槽位仅在您积极配置时才被保持。
+机器槽位追踪在服务器端强制执行。当 CLI 发放仓库许可证时，账户服务器会检查订阅的机器槽位配额。每个自助服务计划（Community、Professional、Business）都包含一个机器槽位；多机器部署属于需要与合作伙伴协商配置的 Enterprise 方案。槽位从该机器上最后一次仓库许可证发放起保持 5 小时，不活跃后自动释放。由于槽位仅在您积极进行配置操作时才被占用，一个槽位在一个月内仍可覆盖多台机器。
 
 机器上不存储任何机器许可证文件。槽位强制执行在服务器的发放时间进行。
 
@@ -91,12 +91,20 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 | 计划 | 浮动许可证 | 仓库大小 | 每月仓库许可证发放次数 | 委托证书默认/最大有效期 |
 |------|-----------|----------|------------------------|-------------------------|
-| Community | 2 | 10 GB | 100 | 15d / 30d |
-| Professional | 3 | 50 GB | 2,000+ | 60d / 120d |
-| Business | 10 | 200 GB | 5,000+ | 90d / 180d |
-| Enterprise | 25+ | 1 TB+ | 15,000+ | 120d / 365d |
+| Community | 1 | 10 GB | 100 | 15d / 30d |
+| Professional | 1 | 100 GB | 2,000+ | 60d / 120d |
+| Business | 1 | 500 GB | 5,000+ | 90d / 180d |
+| Enterprise | 定制 | 1 TB+ | 15,000+ | 120d / 365d |
 
 特定合同限制可以为特定客户提高或降低这些值。委托证书有效期还受 `subscription.expiresAt + 3 day grace` 的硬性上限约束，因此按月计费的订阅自然会获得与计费周期对齐的证书。完整规则请参阅 [许可链与委托 - 有效期策略](/zh/docs/license-chain)。
+
+## 免费试用与 Community 回退
+
+新注册用户会自动开始 Professional 或 Business 计划的 14 天免费试用。注册时会收集信用卡信息，但首次扣费只会在试用结束时发生，因此在此之前取消不会产生任何费用。每位客户仅可使用一次试用。
+
+Community 是始终存在的免费基础计划。新账户已不能直接注册使用该计划；相反，只要订阅结束（无论是试用期内取消、日后取消付费计划，还是扣款失败），账户就会回退到 Community。回退到 Community 后，您将保留 1 台机器、每个仓库 10 GB 以及每月 100 次设置的额度。在试用制模型上线之前创建的账户会保留其现有的 Community 权限。
+
+限制的执行方式较为宽松。订阅结束后，正在运行的仓库仍会继续正常工作；只有新的操作（创建、分叉、调整大小和许可证刷新）才会受到有效权益的限制。
 
 ## 虚拟机迁移宽限期
 
@@ -108,9 +116,9 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 - 虚拟机迁移，机器 ID 改变：仓库保持运行（在 40 天窗口内）
 - 下一个 `rdc` 操作用新机器 ID 刷新许可证
 - 无需手动干预
-- 使用 `rdc machine query --system --licenses --name <machine>` 检查机器 ID 和许可证状态
+- 使用 `rdc machine status <machine> --system --licenses` 检查机器 ID 和许可证状态
 
-**Edge 渠道用户**免费获得 Community 计划 2 倍的限制（20 GB 仓库、每月 200 次发放、4 台机器）。付费计划仅在 Stable 渠道提供。详情请参阅 [发布渠道](/zh/docs/release-channels)。
+**Edge 渠道账户**运行在 Community 计划上，限制为 2 倍（20 GB 仓库、每月 200 次设置、2 台机器）。付费计划仅在 Stable 渠道提供。详情请参阅 [发布渠道](/zh/docs/release-channels)。
 
 ## 仓库创建、启动、停止和重启期间发生的情况
 
@@ -173,28 +181,22 @@ rdc subscription status
 显示一台机器的机器激活详情：
 
 ```bash
-rdc subscription activation status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 显示一台机器上已安装的仓库许可证详情：
 
 ```bash
-rdc subscription repo status -m hostinger
+rdc subscription status -m hostinger
 ```
 
-在机器上批量刷新仓库许可证：
+刷新机器上某个仓库的许可证：
 
 ```bash
-rdc subscription refresh repos -m hostinger
+rdc subscription refresh -m hostinger --repo my-app
 ```
 
-在机器上发现但本地 `rdc` 配置中缺少的仓库在批量刷新期间被拒绝。它们被报告为失败，不会自动分类。
-
-强制刷新现有仓库的仓库许可证：
-
-```bash
-rdc subscription refresh repo --name my-app -m hostinger
-```
+`--repo` ref 必须能在本地 `rdc` 配置中解析。在机器上发现但本地配置中缺少的仓库将被拒绝：它会被报告为失败，且不会自动分类。
 
 首次使用时，找不到可用仓库许可证的已授权仓库或备份操作可以自动触发账户授权移交。CLI 打印授权 URL，在交互式终端中尝试打开浏览器，并在授权和发放成功后重试一次操作。
 
@@ -257,4 +259,4 @@ rdc subscription refresh repo --name my-app -m hostinger
 - 失败的发放尝试
 - 在发放前被拒绝的未追踪仓库
 
-如果您需要面向客户的使用情况和近期仓库许可证发放历史视图，请使用账户门户。如果您需要机器端检查，请使用 `rdc subscription activation status -m` 和 `rdc subscription repo status -m`。
+如果您需要面向客户的使用情况和近期仓库许可证发放历史视图，请使用账户门户。如果您需要机器端检查，请使用 `rdc subscription status -m` 和 `rdc subscription status -m`。

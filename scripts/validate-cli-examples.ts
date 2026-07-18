@@ -23,6 +23,11 @@ import {
 // Shared positional-syntax detector (zero-positional commands)
 import { scanText as scanPositional } from './lib/positional-cli-detector.ts';
 
+// Curated contract examples (also parsed and gated by the contract generator;
+// validated here too so this script stays the one place that proves every
+// `rdc …` line in the repo against the command tree)
+import { COMMAND_EXAMPLES } from '../packages/cli/src/config/command-docs.ts';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
@@ -61,6 +66,18 @@ const TARGET_GLOBS = [
   'packages/www/src/components/**/*.astro',
   'packages/json/templates/**/*.{md,mdx}',
 ];
+
+/**
+ * Files a scan must NOT read, because their content is EVIDENCE rather than instruction.
+ *
+ * BLOCKER: a verdict document quotes the broken syntax it is reporting. The P4 gate
+ * review's design-tree finding IS the line `rdc ops   up down …` plus an explanation that
+ * it parses as `rdc ops up` — so scanning it flags the review for containing the evidence
+ * that makes the review true. Its findings are also not ours to edit: it is an independent
+ * verdict, and rewriting it to satisfy a validator would destroy the only thing it is for.
+ * Any FIX it prompted lands as a later commit, never as an edit to the report.
+ */
+const EXCLUDED_FILES = new Set<string>(['docs/design/spec/11-p4-gate-review.md']);
 
 /**
  * Files that legitimately contain AGENTS.md-style copy-paste templates
@@ -214,6 +231,7 @@ function extractFromMarkdown(
     // Strip leading $ prompt
     let command = trimmed;
     if (command.startsWith('$ ')) command = command.slice(2);
+    command = normaliseInvocation(command);
 
     if (!command.startsWith('rdc ') && command !== 'rdc') continue;
     if (isSkippableContext(lines, i)) continue;
@@ -221,12 +239,46 @@ function extractFromMarkdown(
     const merged = mergeContinuationLines(lines, i);
     let mergedCommand = merged.command;
     if (mergedCommand.startsWith('$ ')) mergedCommand = mergedCommand.slice(2);
+    mergedCommand = normaliseInvocation(mergedCommand);
     i = merged.endIndex;
 
     // Pass surrounding lines for cloud-only context detection
     const ctx = lines.slice(Math.max(0, i - 10), i + 1);
     validateCommand(mergedCommand, filePath, i + 1, violations, ctx);
   }
+}
+
+/**
+ * Normalise the WRAPPER invocation to the bare binary.
+ *
+ * ★ CLAUDE.md's own convention MANDATES `./rdc.sh …`, and this scanner's line filter was
+ * `startsWith('rdc ')` — so it read the file and walked straight past every line the file
+ * is made of. It reported zero because it had looked at nothing.
+ *
+ * check-cli-docs.ts:624 already carries a comment describing this exact class ("failed
+ * startsWith('rdc'), and WAS SILENTLY DISCARDED. The scanner reported zero and had looked
+ * at nothing. Half a fix is a fresh blind spot."). Someone diagnosed it, fixed ONE scanner,
+ * and never applied it to the sibling. So: both wrappers, one place, both scanners.
+ */
+const WRAPPER_ONLY_FLAGS = /^\s*--(?:override-local|dev)\b/;
+
+function normaliseInvocation(command: string): string {
+  const m = /^(?:\.\/)?rdc\.sh(?=\s|$)/.exec(command);
+  if (!m) return command;
+  let rest = command.slice(m[0].length);
+  // `./rdc.sh --override-local` / `--dev` are consumed BY THE WRAPPER and never reach the
+  // CLI, so passing them to the parser would invent a new false-positive class while
+  // fixing a blind spot. See rdc.sh:82.
+  let stripped = true;
+  while (stripped) {
+    stripped = false;
+    const f = WRAPPER_ONLY_FLAGS.exec(rest);
+    if (f) {
+      rest = rest.slice(f[0].length);
+      stripped = true;
+    }
+  }
+  return `rdc${rest}`;
 }
 
 /**
@@ -269,7 +321,7 @@ function extractFromTypeScript(
     const line = lines[i];
 
     // Match patterns like:  $ rdc ...  in help text strings and JSX display
-    const rdcMatches = line.matchAll(/\$\s+rdc\s+[^\n`'"]+/g);
+    const rdcMatches = line.matchAll(/\$\s+(?:\.\/)?rdc(?:\.sh)?\s+[^\n`'"]+/g);
     for (const match of rdcMatches) {
       let command = match[0].replace(/^\$\s+/, '').trim();
       // Strip everything from ${t( onwards (i18n template expressions)
@@ -278,6 +330,7 @@ function extractFromTypeScript(
       command = command.replace(/\s*`.*$/, '').trim();
       // Strip HTML/XML tags (Astro, JSX)
       command = command.replace(/<\/?\w[^>]*>.*$/g, '').trim();
+      command = normaliseInvocation(command);
       if (!command.startsWith('rdc') || command.length < 5) continue;
       if (isSkippableContext(lines, i)) continue;
 
@@ -473,6 +526,28 @@ function validateCommand(
 }
 
 /**
+ * Validate the curated COMMAND_EXAMPLES registry (the source of the contract's
+ * worked examples and the CLI help "Examples:" blocks) through the same parser
+ * as every other example in the repo. The contract generator gates these too;
+ * this keeps them covered even when nothing regenerates.
+ */
+function extractFromCommandDocs(violations: Violation[]): void {
+  const relPath = 'packages/cli/src/config/command-docs.ts';
+  const content = fs.readFileSync(path.join(ROOT, relPath), 'utf-8');
+  const lines = content.split(/\r?\n/);
+  const findLine = (command: string): number => {
+    const index = lines.findIndex((l) => l.includes(command));
+    return index === -1 ? 1 : index + 1;
+  };
+
+  for (const examples of Object.values(COMMAND_EXAMPLES)) {
+    for (const example of examples) {
+      validateCommand(example.command, relPath, findLine(example.command), violations);
+    }
+  }
+}
+
+/**
  * Whole-file positional-syntax scan. Uses the shared detector to catch any
  * `rdc <zero-positional-cmd> <token>` pattern anywhere in the file.
  */
@@ -537,8 +612,8 @@ async function main(): Promise<void> {
     files.push(...matches);
   }
 
-  // Deduplicate
-  const uniqueFiles = [...new Set(files)].sort();
+  // Deduplicate, minus the evidence documents (see EXCLUDED_FILES)
+  const uniqueFiles = [...new Set(files)].filter((f) => !EXCLUDED_FILES.has(f)).sort();
 
   console.log(colors.dim(`Scanning ${uniqueFiles.length} files...`));
 
@@ -564,6 +639,9 @@ async function main(): Promise<void> {
       extractFromGo(content, relPath, violations);
     }
   }
+
+  // Curated contract examples, through the same parser as everything above
+  extractFromCommandDocs(violations);
 
   // Deduplicate: scanFileForPositional may overlap with narrow extractors
   dedupeViolations(violations);

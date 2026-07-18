@@ -5,6 +5,7 @@ category: Use Cases
 order: 1
 language: ja
 sourceHash: "7a75ab45703267eb"
+sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 ---
 
 > **クラウド アーキテクチャは厳格ですか? 無限の柔軟性を備えた構築。**

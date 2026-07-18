@@ -18,6 +18,7 @@ import { t } from '../../i18n/index.js';
 import { ValidationError } from '../../utils/errors.js';
 import { getInstallMethod, getNpmUpdateCommand } from '../../utils/platform.js';
 import { VERSION } from '../../version.js';
+import { resolveChannel } from '../update/updater.js';
 import {
   getSubscriptionServerUrl,
   getSubscriptionTokenState,
@@ -25,7 +26,6 @@ import {
   normalizeServerUrl,
   saveServerConfig,
 } from './subscription-auth.js';
-import { resolveChannel } from '../update/updater.js';
 
 /** Cached server key material (imported once per process). */
 let serverKeyCache: {

@@ -1,13 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { InfraConfig } from '../../types/index.js';
 
-const { mockEnsureRecord } = vi.hoisted(() => ({
+const { mockEnsureRecord, mockSearchRecordsBySuffix, mockDeleteRecord } = vi.hoisted(() => ({
   mockEnsureRecord: vi.fn().mockResolvedValue('unchanged' as const),
+  mockSearchRecordsBySuffix: vi.fn().mockResolvedValue([]),
+  mockDeleteRecord: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../provision/cloudflare-dns.js', () => ({
   CloudflareDnsClient: class MockCloudflareDnsClient {
     ensureRecord = mockEnsureRecord;
+    searchRecordsBySuffix = mockSearchRecordsBySuffix;
+    deleteRecord = mockDeleteRecord;
   },
 }));
 
@@ -31,7 +35,12 @@ vi.mock('../../i18n/index.js', () => ({
     params ? `${key}:${JSON.stringify(params)}` : key,
 }));
 
-import { buildInfraPayload, ensureRepoDnsRecords } from '../provision/infra-provision.js';
+import {
+  buildInfraPayload,
+  ensureClusterDnsRecords,
+  ensureRepoDnsRecords,
+  removeClusterDnsRecords,
+} from '../provision/infra-provision.js';
 
 const baseInfra: InfraConfig = {
   baseDomain: 'rediacc.io',
@@ -99,6 +108,94 @@ describe('ensureRepoDnsRecords wildcard hostname', () => {
       dnsConfig
     );
     expect(mockEnsureRecord).not.toHaveBeenCalled();
+  });
+});
+
+describe('ensureClusterDnsRecords wildcard hostname', () => {
+  beforeEach(() => {
+    mockEnsureRecord.mockClear();
+  });
+
+  it('creates the cluster base + wildcard A/AAAA records', async () => {
+    await ensureClusterDnsRecords('hostinger', 'prod', baseInfra, dnsConfig);
+
+    expect(mockEnsureRecord).toHaveBeenCalledWith(
+      'zone_abc',
+      'A',
+      'prod.hostinger.rediacc.io',
+      '72.61.137.225'
+    );
+    expect(mockEnsureRecord).toHaveBeenCalledWith(
+      'zone_abc',
+      'A',
+      '*.prod.hostinger.rediacc.io',
+      '72.61.137.225'
+    );
+    expect(mockEnsureRecord).toHaveBeenCalledWith(
+      'zone_abc',
+      'AAAA',
+      'prod.hostinger.rediacc.io',
+      '2a02:4780:c:e9b5::1'
+    );
+    expect(mockEnsureRecord).toHaveBeenCalledWith(
+      'zone_abc',
+      'AAAA',
+      '*.prod.hostinger.rediacc.io',
+      '2a02:4780:c:e9b5::1'
+    );
+  });
+
+  it('omits AAAA records when there is no IPv6', async () => {
+    await ensureClusterDnsRecords(
+      'hostinger',
+      'prod',
+      { ...baseInfra, publicIPv6: undefined },
+      dnsConfig
+    );
+    const types = mockEnsureRecord.mock.calls.map((args) => args[1] as string);
+    expect(types).toEqual(['A', 'A']);
+  });
+
+  it('is a no-op when cfDnsApiToken is missing', async () => {
+    await ensureClusterDnsRecords('hostinger', 'prod', baseInfra, {});
+    expect(mockEnsureRecord).not.toHaveBeenCalled();
+  });
+
+  it('is a no-op for .local base domains', async () => {
+    await ensureClusterDnsRecords(
+      'hostinger',
+      'prod',
+      { ...baseInfra, baseDomain: 'lan.local' },
+      dnsConfig
+    );
+    expect(mockEnsureRecord).not.toHaveBeenCalled();
+  });
+});
+
+describe('removeClusterDnsRecords', () => {
+  beforeEach(() => {
+    mockSearchRecordsBySuffix.mockClear();
+    mockDeleteRecord.mockClear();
+  });
+
+  it('deletes every record under the cluster suffix and returns the count', async () => {
+    mockSearchRecordsBySuffix.mockResolvedValueOnce([
+      { id: 'r1', type: 'A', name: 'prod.hostinger.rediacc.io' },
+      { id: 'r2', type: 'A', name: '*.prod.hostinger.rediacc.io' },
+    ]);
+
+    const deleted = await removeClusterDnsRecords('hostinger', 'prod', baseInfra, dnsConfig);
+
+    expect(mockSearchRecordsBySuffix).toHaveBeenCalledWith('zone_abc', 'prod.hostinger.rediacc.io');
+    expect(mockDeleteRecord).toHaveBeenCalledWith('zone_abc', 'r1');
+    expect(mockDeleteRecord).toHaveBeenCalledWith('zone_abc', 'r2');
+    expect(deleted).toBe(2);
+  });
+
+  it('is a no-op when cfDnsApiToken is missing', async () => {
+    const deleted = await removeClusterDnsRecords('hostinger', 'prod', baseInfra, {});
+    expect(deleted).toBe(0);
+    expect(mockSearchRecordsBySuffix).not.toHaveBeenCalled();
   });
 });
 

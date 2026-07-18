@@ -4,8 +4,8 @@ description: Cursor IDE'yi .cursorrules ve terminal entegrasyonu kullanarak Redi
 category: Guides
 order: 32
 language: tr
-sourceHash: "b5e835461de00400"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "66821f514bc7a8bd"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Kısaca: `.cursorrules` dosyası Rediacc bağlamını Cursor'ın yapay zekasına yükler; terminal ise gerçek makinelerinize karşı `rdc` komutları çalıştırmasını sağlar.
@@ -75,5 +75,5 @@ Takım projeleri için, Rediacc'a özel Cursor ayarlarını `.cursor/settings.js
 
 - Cursor'ın Composer modu, çok adımlı altyapı görevleri için iyi çalışır
 - Terminal çıktısına referans vermek için Cursor sohbetinde `@terminal` kullanın
-- `rdc agent capabilities` komutu, Cursor'a eksiksiz bir komut referansı sunar
+- `rdc --help-all` komutu, Cursor'a eksiksiz bir komut referansı sunar
 - AI araçları arasında maksimum uyumluluk için `.cursorrules` dosyasını `CLAUDE.md` dosyasıyla birleştirin

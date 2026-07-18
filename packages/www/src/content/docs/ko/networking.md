@@ -4,7 +4,7 @@ description: "리버스 프록시, Docker 레이블, TLS 인증서, DNS, TCP/UDP
 category: "Guides"
 order: 6
 language: ko
-sourceHash: "2bb63d224370c266"
+sourceHash: "20b29c1a791304e4"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -204,12 +204,12 @@ Let's Encrypt 인증서가 발급에서 각 저장소의 컨테이너까지 거�
 
 2. **저장소별 덤핑(선택사항).** 자체 컨테이너 내부에 인증서 파일이 필요한 서비스(예: `.pem`을 직접 읽는 메일 서버)는 소형 `traefik-certs-dumper` 컨테이너를 함께 배포합니다. 덤퍼는 `/opt/rediacc/proxy/letsencrypt`를 읽기 전용으로 바인드 마운트하고 추출된 인증서 + 키를 `cert.pem` / `key.pem`으로 저장소의 데이터 볼륨에 씁니다. 이를 위해 저장소별 Docker 데몬이 마운트 네임스페이스 허용 목록에 `/opt/rediacc/proxy`가 있어야 합니다. 이는 기본적으로 이미 포함되어 있습니다.
 
-3. **클라이언트 측 캐시(`rediacc.json`).** CLI는 `acme.json`의 압축 복사본을 `baseDomain`으로 키잉된 구성 파일의 `acmeCertCache` 아래에 캐시합니다. 이를 통해 여러 머신이 인증서를 공유(`rdc config cert-cache push -m <machine>`)하고 오프라인 인벤토리로 활용할 수 있습니다.
+3. **클라이언트 측 캐시(`rediacc.json`).** CLI는 `acme.json`의 압축 복사본을 `baseDomain`으로 키잉된 구성 파일의 `acmeCertCache` 아래에 캐시합니다. 이를 통해 여러 머신이 인증서를 공유(`rdc machine infra cert push <machine>`)하고 오프라인 인벤토리로 활용할 수 있습니다.
 
 **클라이언트 캐시 동기화 트리거:**
 
 - `rdc repo up` 후 자동으로, 단 머신의 `baseDomain`에 대한 로컬 캐시가 6시간보다 오래된 경우에만. 새로운 캐시는 그대로 유지되므로 연속 배포가 SSH를 과도하게 사용하지 않습니다.
-- 온디맨드: `rdc config cert-cache pull -m <machine>`(강제 pull) 또는 `rdc machine query --name <machine> --sync-certs`(상태 쿼리의 부작용으로 pull).
+- 온디맨드: `rdc machine infra cert pull <machine>`(강제 pull) 또는 `rdc machine status <machine> --sync-certs`(상태 쿼리의 부작용으로 pull).
 - `rdc config infra push` 시 캐시가 머신으로 푸시됩니다(더 긴 만료 기간을 가진 로컬 인증서가 원격보다 우선).
 
 **캐시 유지 관리:**
@@ -415,7 +415,7 @@ curl -s http://127.0.0.1:7111/ports | python3 -m json.tool
 | 서비스가 경로에 없음 | 컨테이너가 실행 중이지 않거나 레이블이 없음 | 저장소 데몬에서 `docker ps`로 확인. 레이블 점검 |
 | 인증서가 발급되지 않음 | DNS가 서버를 가리키지 않거나 유효하지 않은 Cloudflare 토큰 | DNS 해석 확인. Cloudflare API 토큰 권한 점검 |
 | 502 Bad Gateway | 애플리케이션이 선언된 포트에서 수신하지 않음 | 앱이 실행 중인지 확인하고 포트가 `loadbalancer.server.port`와 일치하는지 점검 |
-| TCP 포트에 접근할 수 없음 | 인프라에 포트가 등록되지 않음 | `rdc config infra set --tcp-ports ...` 및 `push-infra` 실행 |
+| TCP 포트에 접근할 수 없음 | 인프라에 포트가 등록되지 않음 | `rdc machine infra set <machine> --tcp-ports ...` 및 `push-infra` 실행 |
 | 라우트 서버가 이전 버전 실행 중 | 바이너리가 업데이트되었지만 서비스가 재시작되지 않음 | 프로비저닝 시 자동으로 발생함. 수동: `sudo systemctl restart rediacc-router` |
 | STUN/TURN 릴레이에 접근할 수 없음 | 릴레이 주소가 시작 시 캐시됨 | DNS 또는 IP 변경 후 서비스를 다시 생성하여 새 네트워크 구성을 적용 |
 

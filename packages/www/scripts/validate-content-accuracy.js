@@ -20,6 +20,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseRdcCommand } from './lib/cli-reference-catalog.js';
+import { findRegressions, loadBacklog, writeBacklog } from './lib/p7-backlog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
@@ -276,14 +277,36 @@ function printSummary(errors, warnings) {
     }
   }
 
+  // The frozen P7 backlog: see scripts/lib/p7-backlog.js for the BLOCKER and the
+  // self-destruct condition. The gate still fails on a NEW doc or a GROWING count.
+  const BASELINE_PATH = path.resolve(__dirname, 'content-accuracy-baseline.json');
+  if (process.argv.includes('--write-baseline')) {
+    const { files, violations } = writeBacklog(BASELINE_PATH, errors);
+    console.log(colors.yellow(`Wrote P7 backlog: ${files} files, ${violations} violations.`));
+    return 0;
+  }
+  const regressions = findRegressions(errors, loadBacklog(BASELINE_PATH));
+
   // Summary
   console.log('\n' + '='.repeat(60));
   const parts = [];
   if (errors.length > 0) parts.push(colors.red(`${errors.length} errors`));
   if (warnings.length > 0) parts.push(colors.yellow(`${warnings.length} warnings`));
   console.log(`SUMMARY: ${parts.join(', ')}`);
+
+  if (regressions.length > 0) {
+    console.log(colors.red('\n✗ CLI-usage REGRESSION beyond the frozen P7 backlog:\n'));
+    for (const r of regressions) console.log(colors.red(`  ✗ ${r}`));
+    console.log('='.repeat(60));
+    return 1;
+  }
+  if (errors.length > 0) {
+    console.log(
+      colors.yellow(`⚠ ${errors.length} violation(s), ALL within the frozen P7 backlog.`)
+    );
+  }
   console.log('='.repeat(60));
-  return errors.length > 0 ? 1 : 0;
+  return 0;
 }
 
 function main() {

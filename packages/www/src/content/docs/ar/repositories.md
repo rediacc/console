@@ -4,8 +4,8 @@ description: "إنشاء وإدارة وتشغيل المستودعات المش
 category: "Guides"
 order: 4
 language: ar
-sourceHash: "0f08c5b75c3588cc"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "c9553259c9bf6b4c"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # المستودعات
@@ -156,7 +156,7 @@ rdc repo fork --parent my-app --tag staging -m server-1 --up
 rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
 ```
 
-في اختباراتنا، تولّت النسخة من مستودع حجمه 128 غيغابايت ووصلت إلى خدمات جاهزة في نحو 57 ثانية، وفي نحو 31 ثانية مع `--detach`. تطبع العمليات المنفصلة تلميحاً لمتابعة التقدم: `rdc machine query --containers --name <machine>`.
+في اختباراتنا، تولّت النسخة من مستودع حجمه 128 غيغابايت ووصلت إلى خدمات جاهزة في نحو 57 ثانية، وفي نحو 31 ثانية مع `--detach`. تطبع العمليات المنفصلة تلميحاً لمتابعة التقدم: `rdc machine status <machine> --containers`.
 
 ### أين يذهب الوقت
 
@@ -226,7 +226,7 @@ secrets:
 
 > **عزل متقاطع مفروض**: مدقق compose في renet يرفض مسارات `secrets: file:` (و`configs: file:`، و`env_file:`) التي تشير إلى معرف شبكة مستودع آخر. الرمز الحرفي `${REDIACC_NETWORK_ID}` (أو عدد صحيح الشبكة الخاص بك) هو النموذج الوحيد المقبول لمراجع `/var/run/rediacc/secrets/...`. و`--unsafe` لا يلغي هذا الفحص. صندوق Landlock حول عملية فرعية bash في Rediaccfile ينطاق الوصول إلى نظام الملفات لدليل أسرار شبكتك فقط، لذا محاولة `cat /var/run/rediacc/secrets/<other>/X` من Rediaccfile خبيثة تفشل مع EACCES على مستوى kernel.
 
-> **النسخ**: `rdc repo fork` يقوم **بعدم** نسخ الأسرار. لاستخدام الأسرار في نسخة، شغّل `rdc repo secret set --name <fork>` على النسخ بوضوح. هذه هي خاصية الأمان الحملة. لا يجب أن تكون حاويات النسخة قادرة على التصرف كمبدأ الإنتاج ضد الخدمات الخارجية.
+> **النسخ**: `rdc repo fork` يقوم **بعدم** نسخ الأسرار. لاستخدام الأسرار في نسخة، شغّل `rdc repo secret set <fork>` على النسخ بوضوح. هذه هي خاصية الأمان الحملة. لا يجب أن تكون حاويات النسخة قادرة على التصرف كمبدأ الإنتاج ضد الخدمات الخارجية.
 
 > **العاملين** (Claude Code، Cursor، إلخ): `repo secret list` و`repo secret get` يتم كشفهم كأدوات MCP (آمنة للقراءة. الأسماء والملخصات فقط، أبداً القيم). `set` و`unset` هي CLI فقط لأن احتفالية `--current`/`--rotate-secret` تتطلب مراقبة العينين على البشر؛ العاملين الذين يستدعونهم عبر shell يحصلون على نفس البوابة مثل البشر. عند فشل الشرط المسبق، يحتوي الغلاف JSON على حقل `errors[].next.options[].run` منظم. يجب على العاملين تمرير هذه الأوامر حرفياً للمستخدم. انظر [أمان العاملين في الذكاء الاصطناعي](/ar/docs/ai-agents-safety) للنموذج الكامل.
 
@@ -267,7 +267,7 @@ rdc repo ownership --name my-app -m server-1
 تطبيق نموذج لتهيئة مستودع بملفات:
 
 ```bash
-rdc repo template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
 ```
 
 ## حذف

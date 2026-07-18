@@ -76,6 +76,34 @@ This command:
 
 > Setup only needs to be run once per machine. It is safe to re-run if needed.
 
+## Datastore Backends
+
+The datastore is the per-machine storage pool that holds encrypted repository images. `machine setup` creates a **local** datastore by default: a loop-backed BTRFS filesystem on the server's own disk, sized by `--datastore-size` (default `95%` of the available disk). This is the right backend for almost every single-machine deployment and needs nothing beyond the server.
+
+### Datastore sizing
+
+`--datastore-size` accepts a percentage (`95%`) or an absolute size (`50G`, `1T`). The datastore can be grown online later:
+
+```bash
+rdc datastore resize -m server-1 --size 200G
+```
+
+Repositories inside the datastore are sized independently at `repo create` time and can be expanded while running, so you do not need to over-provision the datastore up front.
+
+### Ceph RBD backend
+
+For shared, scale-out, or Kubernetes-backing storage, initialize the datastore on an external Ceph cluster instead. The datastore then lives on an RBD image (BTRFS on top, no per-image LUKS layer), and forks use RBD copy-on-write clones rather than BTRFS reflinks.
+
+```bash
+# 1. Record the machine's Ceph reference (pool + RBD image, non-secret)
+rdc config machine set-ceph -m server-1 --pool rbd --image datastore-server1
+
+# 2. Initialize the datastore on the Ceph backend
+rdc datastore init -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
+```
+
+Ceph keyrings stay on the machines; the config file holds only the non-secret pool and image references. Ceph is also the storage layer that Kubernetes clusters consume through ceph-csi. See the [Kubernetes](/en/docs/kubernetes) guide for clusters and persistent volumes, and [Architecture](/en/docs/architecture) for how the two backends compare.
+
 ## Host Key Management
 
 If a server's SSH host key changes (e.g., after reinstallation), refresh the stored keys:
@@ -102,7 +130,7 @@ For more detailed diagnostics, run:
 rdc doctor
 ```
 
-> **Tip**: To verify SSH connectivity, run `rdc term connect -m <machine> -c "hostname"` or use `ssh` directly.
+> **Tip**: To verify SSH connectivity, run `rdc term connect <machine> -c "hostname"` or use `ssh` directly.
 
 ## Infrastructure Configuration
 

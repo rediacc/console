@@ -4,8 +4,8 @@ description: .cursorrules 및 터미널 통합을 사용하여 Cursor IDE를 Red
 category: Guides
 order: 32
 language: ko
-sourceHash: "b5e835461de00400"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "66821f514bc7a8bd"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 요약: `.cursorrules`는 Rediacc 컨텍스트를 Cursor AI에 로드하고, 터미널을 통해 실제 머신에 `rdc` 명령을 실행할 수 있습니다.
@@ -75,5 +75,5 @@ rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
 
 - Cursor의 Composer 모드는 다단계 인프라 작업에 적합합니다
 - Cursor 채팅에서 `@terminal`을 사용하면 최근 터미널 출력을 참조할 수 있습니다
-- `rdc agent capabilities` 명령은 Cursor에게 전체 명령 참조를 제공합니다
+- `rdc --help-all` 명령은 Cursor에게 전체 명령 참조를 제공합니다
 - AI 도구 간 최대 호환성을 위해 `.cursorrules`와 `CLAUDE.md` 파일을 함께 사용하세요

@@ -4,7 +4,7 @@ description: "Rimuovi backup orfani, snapshot obsoleti, immagini di repository e
 category: "Guides"
 order: 12
 language: it
-sourceHash: "d2700c2ac4473962"
+sourceHash: "af01691f5fe908ee"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -14,8 +14,8 @@ Il pruning elimina lo stato che non corrisponde più a una risorsa attiva. Tre c
 
 | Comando | Cosa pulisce | Dove risiede la fonte di verità |
 |---|---|---|
-| `rdc storage prune --name <storage> -m <machine>` | Backup orfani nell'archiviazione cloud | Config CLI locale (verificata rispetto alla macchina esecutrice per la sicurezza del mount) |
-| `rdc machine prune --name <machine>` | Artefatti del datastore sulla macchina (sempre); immagini di repository orfane o sconosciute (opt-in) | Config CLI locale + lo specchio `.interim/state` della macchina |
+| `rdc storage prune <storage> -m <machine>` | Backup orfani nell'archiviazione cloud | Config CLI locale (verificata rispetto alla macchina esecutrice per la sicurezza del mount) |
+| `rdc machine prune <machine>` | Artefatti del datastore sulla macchina (sempre); immagini di repository orfane o sconosciute (opt-in) | Config CLI locale + lo specchio `.interim/state` della macchina |
 | `rdc config prune` | Residui del config locale (cache certificati, archivi scaduti, riferimenti incrociati pendenti) | Solo config CLI locale |
 
 I tre sono indipendenti. Puoi eseguirne uno qualsiasi senza gli altri. Condividono un modello di sicurezza comune descritto in [Sicurezza](#safety-model) di seguito.
@@ -202,7 +202,7 @@ Tutti e tre i comandi sono sicuri per default in configurazioni multi-config.
 
 ### Periodo di grazia
 
-Quando una repository viene rimossa da un config con `--archive-config`, la sua voce di credenziali viene spostata in `resources.deletedRepositories[]` con un timestamp `deletedAt`. I comandi di pruning rispettano un periodo di grazia (predefinito 7 giorni) durante il quale le repository archiviate di recente sono protette dall'eliminazione. Questo ti dà tempo di ripristinare una repository (`rdc config repository restore-archived --name <guid>`) se è stata rimossa accidentalmente. Una volta scaduta la grazia, `storage prune`, `machine prune` e `config prune` eliminano automaticamente la voce.
+Quando una repository viene rimossa da un config con `--archive-config`, la sua voce di credenziali viene spostata in `resources.deletedRepositories[]` con un timestamp `deletedAt`. I comandi di pruning rispettano un periodo di grazia (predefinito 7 giorni) durante il quale le repository archiviate di recente sono protette dall'eliminazione. Questo ti dà tempo di ripristinare una repository (`rdc repo admin archive restore <guid>`) se è stata rimossa accidentalmente. Una volta scaduta la grazia, `storage prune`, `machine prune` e `config prune` eliminano automaticamente la voce.
 
 ### Preflight di sicurezza del mount
 

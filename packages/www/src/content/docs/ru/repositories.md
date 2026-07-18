@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 4
 language: ru
-sourceHash: "0f08c5b75c3588cc"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "c9553259c9bf6b4c"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Репозитории
@@ -158,7 +158,7 @@ rdc repo fork --parent my-app --tag staging -m server-1 --up
 rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
 ```
 
-В наших тестах репозиторий объёмом 128 ГБ форкировался и выходил на работающие сервисы примерно за 57 секунд, а с `--detach` это занимает около 31 секунды. Отсоединённый запуск выводит подсказку для отслеживания прогресса: `rdc machine query --containers --name <machine>`.
+В наших тестах репозиторий объёмом 128 ГБ форкировался и выходил на работающие сервисы примерно за 57 секунд, а с `--detach` это занимает около 31 секунды. Отсоединённый запуск выводит подсказку для отслеживания прогресса: `rdc machine status <machine> --containers`.
 
 ### Куда уходит время
 
@@ -228,7 +228,7 @@ secrets:
 
 > **Кросс-репозиторная изоляция обеспечена**: validator compose renet отклоняет пути `secrets: file:` (и `configs: file:`, и `env_file:`), которые ссылаются на network ID любого другого репозитория. Литеральный токен `${REDIACC_NETWORK_ID}` (или целое число вашей собственной сети) - это единственно допустимая форма для ссылок `/var/run/rediacc/secrets/...`. И `--unsafe` НЕ переопределяет эту проверку. Песочница Landlock вокруг subprocess bash Rediaccfile также ограничивает доступ к файловой системе только к директории secrets вашей собственной сети, поэтому злонамеренный `cat /var/run/rediacc/secrets/<other>/X` из Rediaccfile не работает с EACCES на уровне ядра.
 
-> **Форки**: `rdc repo fork` **не копирует** secrets. Чтобы использовать secrets в форке, запустите `rdc repo secret set --name <fork>` на форке явно. Это load-bearing свойство безопасности. Контейнеры форка не должны иметь возможность действовать как production principal против внешних сервисов.
+> **Форки**: `rdc repo fork` **не копирует** secrets. Чтобы использовать secrets в форке, запустите `rdc repo secret set <fork>` на форке явно. Это load-bearing свойство безопасности. Контейнеры форка не должны иметь возможность действовать как production principal против внешних сервисов.
 
 > **Агенты** (Claude Code, Cursor и т.д.): `repo secret list` и `repo secret get` предоставляются как MCP-инструменты (read-safe. Только имена и digests, никогда значения). `set` и `unset` доступны только в CLI, потому что церемония `--current`/`--rotate-secret` требует человеческого надзора; агенты, вызывающие их через shell, получают тот же gate, что и люди. Когда предусловие не выполняется, JSON-оболочка содержит структурированное поле `errors[].next.options[].run`. Агенты должны передавать эти команды пользователю verbatim. Смотрите [безопасность AI-агентов](/ru/docs/ai-agents-safety) для полной модели.
 
@@ -269,7 +269,7 @@ rdc repo ownership --name my-app -m server-1
 Применить шаблон для инициализации репозитория файлами:
 
 ```bash
-rdc repo template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
 ```
 
 ## Удаление

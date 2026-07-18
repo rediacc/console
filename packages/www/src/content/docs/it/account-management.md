@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 12
 language: it
-sourceHash: 3887adc59fc63c26
-sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
+sourceHash: 9d77ef9087375fbc
+sourceCommit: 23543669cd22bce3f14d69a0886bac8a12061412
 ---
 
 ### Organizzazioni
@@ -18,7 +18,7 @@ Registra un account e Rediacc crea automaticamente un'organizzazione per te. Que
 
 Ogni organizzazione ha:
 - Un nome univoco (predefinito all'indirizzo email)
-- Un piano di abbonamento (inizia con COMMUNITY)
+- Un piano di abbonamento (i nuovi account iniziano con una prova gratuita di 14 giorni su Professional o Business; vedi Abbonamenti e piani più sotto)
 - Un team predefinito (tutti i membri vi aderiscono automaticamente)
 
 ### Membri e ruoli
@@ -59,21 +59,21 @@ Rediacc offre quattro piani:
 
 | Piano | Macchine | Licenze repo/mese | Validità cert delegazione predefinita / max | Funzionalità |
 |-------|----------|-------------------|---------------------------------------------|--------------|
-| COMMUNITY | 2 | 100 | 15g / 30g | Base |
-| PROFESSIONAL | 3 | 2.000+ | 60g / 120g | Gruppi di permessi, registro audit, branding personalizzato, supporto prioritario |
-| BUSINESS | 10 | 5.000+ | 90g / 180g | Ceph, analisi avanzate, priorità coda, coda avanzata |
-| ENTERPRISE | 25+ | 15.000+ | 120g / 365g | Account manager dedicato |
+| COMMUNITY | 1 | 100 | 15g / 30g | Base |
+| PROFESSIONAL | 1 | 2.000+ | 60g / 120g | Gruppi di permessi, registro audit, branding personalizzato, supporto prioritario |
+| BUSINESS | 1 | 5.000+ | 90g / 180g | Ceph, analisi avanzate, priorità coda, coda avanzata |
+| ENTERPRISE | Personalizzato | 15.000+ | 120g / 365g | Account manager dedicato |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 
-Tutti i piani iniziano con un periodo di grazia di 3 giorni. Gli slot macchina vengono tracciati per team e rilasciati automaticamente dopo 5 ore di inattività. Consulta [Abbonamento e licenze](/en/docs/subscription-licensing) per i dettagli.
+Professional e Business sono self-service e includono ciascuno una macchina; l'Enterprise multi-macchina viene venduto tramite i nostri partner. Le nuove registrazioni iniziano con una prova gratuita di 14 giorni su Professional o Business, con la carta di credito richiesta al momento della registrazione e il primo addebito effettuato solo alla fine della prova. Se disdici durante la prova, disdici un piano a pagamento in seguito, o salti un pagamento, l'account torna al piano Community gratuito (una macchina, 10 GB per repository, 100 configurazioni al mese). Tutti i piani iniziano con un periodo di grazia di 3 giorni. Gli slot macchina vengono tracciati per team e rilasciati automaticamente dopo 5 ore di inattività. Consulta [Abbonamento e licenze](/it/docs/subscription-licensing) per i dettagli.
 
 ### Fatturazione
 
 Solo il **proprietario** dell'organizzazione può gestire la fatturazione:
-- Creare una sessione di checkout Stripe per gli aggiornamenti del piano
+- Creare una sessione di checkout Stripe per attivare un piano o eseguire un upgrade
 - Accedere al portale di fatturazione Stripe per modificare il metodo di pagamento
-- Richiedere rimborsi self-service (entro 14 giorni, con un cooldown di 30 giorni)
+- Disdire o cambiare il piano dal portale di fatturazione; la disdetta riporta l'account al piano Community gratuito
 
 ### Regione dei dati
 

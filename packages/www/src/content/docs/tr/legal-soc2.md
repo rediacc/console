@@ -4,8 +4,8 @@ description: "SOC 2'nin özü: denetçiler kontrollerinizin çalıştığına da
 category: "Legal"
 order: 2
 language: tr
-sourceHash: "9ba8477a07292a7d"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "e03bef0cead86ab7"
+sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
 SOC 2'yi biliyorum çünkü denetim toplantılarında bulundum. Denetçiler, kontrollerinizin gerçekten çalıştığını kontrol etmek için AICPA çerçevesini kullanırlar; sadece söze inanmak değil. Beş Güven Hizmeti Kriterleri: güvenlik, kullanılabilirlik, işleme bütünlüğü, gizlilik ve mahremiyet.
@@ -41,7 +41,7 @@ Fork'lar değişiklik yönetimini denetlenebilir hale getirir: her fork, test ed
 1. Üretim deposunu fork'lama (`rdc repo fork`)
 2. Fork üzerinde değişiklikleri uygulama ve test etme
 3. Fork'u bağımsız olarak doğrulama
-4. Fork'u üretime yükseltme (`rdc repo takeover`)
+4. Fork'u üretime yükseltme (`rdc repo promote`)
 
 Her adım zaman damgaları ve aktör kimliği ile kaydedilir.
 

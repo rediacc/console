@@ -4,7 +4,7 @@ description: リバースプロキシ、Dockerラベル、TLS証明書、DNS、T
 category: Guides
 order: 6
 language: ja
-sourceHash: "2bb63d224370c266"
+sourceHash: "20b29c1a791304e4"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -204,12 +204,12 @@ Let's Encrypt証明書が発行されてから各リポジトリのコンテナ�
 
 2. **リポジトリごとのダンピング（オプション）。** 独自のコンテナ内に証明書ファイルが必要なサービス（例：`.pem`を直接読み込むメールサーバー）は、小さな`traefik-certs-dumper`コンテナを自分自身の隣にデプロイします。ダンパーは`/opt/rediacc/proxy/letsencrypt`を読み取り専用でバインドマウントし、抽出された証明書とキーをリポジトリのデータボリュームに`cert.pem` / `key.pem`として書き込みます。これが機能するには、リポジトリごとのDockerデーモンがマウント名前空間のアローリストに`/opt/rediacc/proxy`を持つ必要があります。これはデフォルトで既に含まれています。
 
-3. **クライアントサイドキャッシュ（`rediacc.json`）。** CLIは`acme.json`の圧縮コピーを設定ファイルの`acmeCertCache`に`baseDomain`をキーとして保存します。これにより複数のマシンが証明書を共有でき（`rdc config cert-cache push -m <machine>`経由）、オフラインインベントリとして機能します。
+3. **クライアントサイドキャッシュ（`rediacc.json`）。** CLIは`acme.json`の圧縮コピーを設定ファイルの`acmeCertCache`に`baseDomain`をキーとして保存します。これにより複数のマシンが証明書を共有でき（`rdc machine infra cert push <machine>`経由）、オフラインインベントリとして機能します。
 
 **クライアントキャッシュの同期トリガー：**
 
 - `rdc repo up`後に自動的に、ただしマシンの`baseDomain`のローカルキャッシュが6時間以上古い場合のみ。新鮮なキャッシュはそのまま残され、連続したデプロイがSSHを酷使しないようにします。
-- オンデマンド：`rdc config cert-cache pull -m <machine>`（強制プル）または`rdc machine query --name <machine> --sync-certs`（ステータスクエリの副作用としてのプル）。
+- オンデマンド：`rdc machine infra cert pull <machine>`（強制プル）または`rdc machine status <machine> --sync-certs`（ステータスクエリの副作用としてのプル）。
 - `rdc config infra push`時、キャッシュはマシンにプッシュされます（より長い有効期限のローカル証明書がリモートより優先されます）。
 
 **キャッシュメンテナンス：**
@@ -415,7 +415,7 @@ curl -s http://127.0.0.1:7111/ports | python3 -m json.tool
 | サービスがルートに表示されない | コンテナが実行されていない、またはラベルが不足 | リポジトリのデーモンで`docker ps`を確認、ラベルを確認 |
 | 証明書が発行されない | DNSがサーバーを指していない、または無効なCloudflareトークン | DNS解決を確認、Cloudflare APIトークンの権限を確認 |
 | 502 Bad Gateway | アプリケーションが宣言されたポートでリッスンしていない | アプリが実行中でポートが`loadbalancer.server.port`と一致していることを確認 |
-| TCPポートに到達できない | インフラストラクチャにポートが登録されていない | `rdc config infra set --tcp-ports ...`と`push-infra`を実行 |
+| TCPポートに到達できない | インフラストラクチャにポートが登録されていない | `rdc machine infra set <machine> --tcp-ports ...`と`push-infra`を実行 |
 | ルートサーバーが古いバージョン | バイナリは更新されたがサービスが再起動されていない | プロビジョニング時に自動的に発生します。手動の場合：`sudo systemctl restart rediacc-router` |
 | STUN/TURNリレーに到達できない | リレーアドレスが起動時にキャッシュされた | DNSまたはIP変更後、新しいネットワーク設定を取得するためにサービスを再作成 |
 

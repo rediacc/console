@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 35
 language: ko
-sourceHash: "eb4c8dd0389a45a6"
+sourceHash: "30c1cd3d88219e7c"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -29,7 +29,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 | `rdc config edit` (대화형 편집기) | 🔴 거부 | 사람이 에이전트 실행 전 `REDIACC_ALLOW_CONFIG_EDIT=*` 설정 |
 | `rdc config edit --apply <file>` | 🔴 거부 | 동일한 재정의 |
 | `rdc config field rotate --pointer <pointer>` | 🔴 거부 | 동일한 재정의, 대화형 확인 사용 |
-| `rdc term connect -m <machine>` (직접 머신 SSH) | 🔴 거부 | 먼저 레포를 포크한 후 포크에 연결 |
+| `rdc term connect <machine>` (직접 머신 SSH) | 🔴 거부 | 먼저 레포를 포크한 후 포크에 연결 |
 
 에이전트가 거부된 모든 작업은 `outcome: refused`와 이유가 함께 감사 로그에 기록됩니다.
 

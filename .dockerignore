@@ -21,7 +21,6 @@ private/homebrew-tap
 # CI files not needed in build context
 .ci/docker/ci
 .ci/docker/service
-.ci/docker/desktop
 .ci/scripts
 .ci/config
 .ci/lib

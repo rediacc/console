@@ -3,12 +3,12 @@
  * hash-chained audit log at `<configdir>/audit.log.jsonl`.
  */
 
-import { createReadStream, watchFile, unwatchFile, existsSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, statSync, unwatchFile, watchFile } from 'node:fs';
 import { createInterface } from 'node:readline';
-import type { Command } from 'commander';
+import { type Command, Option } from 'commander';
 import { t } from '../../i18n/index.js';
+import { type AuditEntry, readAuditLog, verifyChain } from '../../services/core/audit-log.js';
 import { outputService } from '../../services/core/output.js';
-import { readAuditLog, verifyChain, type AuditEntry } from '../../services/core/audit-log.js';
 import { handleError } from '../../utils/errors.js';
 
 function auditLogPath(): string {
@@ -56,7 +56,12 @@ export function registerAuditCommands(parent: Command, _program: Command): void 
     .description(t('commands.config.audit.log.description'))
     .option('--since <spec>', t('commands.config.audit.log.optionSince'))
     .option('--path <glob>', t('commands.config.audit.log.optionPath'))
-    .option('--actor <kind>', t('commands.config.audit.log.optionActor'))
+    .addOption(
+      new Option('--actor <kind>', t('commands.config.audit.log.optionActor')).choices([
+        'human',
+        'agent',
+      ])
+    )
     .action((options: { since?: string; path?: string; actor?: string }) => {
       try {
         const path = auditLogPath();

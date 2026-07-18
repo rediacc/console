@@ -1,12 +1,104 @@
 {
   "schemaVersion": 2,
   "id": "8d9e2f0a-3b4c-4d5e-9f70-2b3c4d5e6f70",
-  "version": 1,
+  "version": 7,
+  "account": {
+    "userEmail": "op@example.com",
+    "team": "acme",
+    "region": "eu"
+  },
   "defaults": {
     "language": "en",
-    "datastoreSize": "95%"
+    "datastoreSize": "95%",
+    "machine": "web-1",
+    "nextNetworkId": 3008
   },
-  "encryption": {
-    "mode": "plaintext"
-  }
+  "credentials": {
+    "ssh": {
+      "privateKey": "-----BEGIN OPENSSH PRIVATE KEY-----\nABC\n-----END OPENSSH PRIVATE KEY-----",
+      "publicKey": "ssh-ed25519 AAAA op@example.com"
+    },
+    "cfDnsApiToken": "cf-token-plain"
+  },
+  "resources": {
+    "machines": {
+      "web-1": {
+        "ip": "10.0.0.1",
+        "user": "deploy",
+        "ceph": { "pool": "rbd", "image": "web1-img", "clusterName": "ceph" }
+      }
+    },
+    "repositories": {
+      "erpnext": {
+        "repositoryGuid": "11111111-1111-4111-8111-111111111111",
+        "credential": "luks-erp",
+        "networkId": 2816
+      },
+      "shop:latest": {
+        "repositoryGuid": "22222222-2222-4222-8222-222222222222",
+        "tag": "latest",
+        "credential": "luks-shop",
+        "networkId": 2880,
+        "headCommit": "c0ffee",
+        "branches": { "main": "c0ffee" },
+        "pushState": {
+          "prod-2": { "lastPushAt": "2026-07-01T00:00:00Z", "method": "rsync" }
+        }
+      },
+      "shop:test": {
+        "repositoryGuid": "33333333-3333-4333-8333-333333333333",
+        "tag": "test",
+        "grandGuid": "22222222-2222-4222-8222-222222222222",
+        "networkId": 2944
+      },
+      "shop:staging": {
+        "repositoryGuid": "44444444-4444-4444-8444-444444444444",
+        "tag": "staging",
+        "grandGuid": "22222222-2222-4222-8222-222222222222",
+        "networkId": 3008,
+        "reflog": [{ "ref": "HEAD", "to": "c0ffee", "at": "2026-07-01T00:00:00Z" }]
+      }
+    },
+    "clusters": {
+      "c1": {
+        "provider": "kvm",
+        "pools": [{ "name": "server", "role": "k8s-server", "count": 1 }],
+        "kvm": {
+          "netName": "rediacc-c1",
+          "netBase": "192.168.90",
+          "controlId": 1,
+          "memberIds": { "server": [11] }
+        }
+      }
+    },
+    "cloudProviders": {
+      "hetzner": { "apiToken": "hz-token-plain" }
+    },
+    "backupStrategies": {
+      "daily": { "destinations": [], "schedule": "0 2 * * *" }
+    },
+    "deletedRepositories": [
+      {
+        "repositoryGuid": "55555555-5555-4555-8555-555555555555",
+        "name": "old:v1",
+        "deletedAt": "2026-06-01T00:00:00Z"
+      }
+    ]
+  },
+  "infra": {
+    "certEmail": "certs@example.com",
+    "acmeCertCache": {
+      "example.com": {
+        "baseDomain": "example.com",
+        "updatedAt": "2026-07-01T00:00:00Z",
+        "sourceMachine": "web-1",
+        "certCount": 1,
+        "certs": { "example.com": "2026-10-01" },
+        "data": "H4sIAAAAAAAA",
+        "rawSize": 42
+      }
+    }
+  },
+  "encryption": { "mode": "plaintext" },
+  "unknownFutureKey": { "kept": true }
 }

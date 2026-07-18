@@ -4,7 +4,8 @@ description: 配置 Claude Code 进行自主 Rediacc 基础设施管理的分步
 category: Guides
 order: 31
 language: zh
-sourceHash: "1cb28ab2dc3ac39f"
+sourceHash: "0a4b93dedcf18e6d"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Claude Code 通过 `rdc` CLI 与 Rediacc 原生集成。本指南涵盖设置、权限和常见工作流程。
@@ -97,6 +98,5 @@ Claude Code runs: rdc repo sync upload -m prod-1 -r mail -l ./config
 ## 提示
 
 - Claude Code 自动检测非 TTY 环境并切换到 JSON 输出, 大多数情况下无需指定 `-o json`
-- 使用 `rdc agent capabilities` 让 Claude Code 发现所有可用命令
-- 使用 `rdc agent schema "命令名称"` 获取详细的参数/选项信息
+- 使用 `rdc --help-all` 让 Claude Code 发现所有可用命令
 - `--fields` 标志有助于在只需要特定数据时降低上下文窗口的使用量

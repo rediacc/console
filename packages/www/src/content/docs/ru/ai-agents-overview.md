@@ -4,8 +4,8 @@ description: "Как Claude Code, Cursor и Cline управляют инфра�
 category: Guides
 order: 30
 language: ru
-sourceHash: "0aa0c975030d4856"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "27ea21c36250d4a9"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Честно говоря, `rdc` изначально проектировался с учётом агентов. Claude Code, Cursor, Cline: любой AI-ассистент, вызывающий `rdc` в подоболочке, получает структурированный JSON-вывод, машиночитаемые ошибки и защитные ограждения, необходимые для автономного управления инфраструктурой Rediacc. Вот как работает эта интеграция.
@@ -59,21 +59,6 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
     "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
   }]
 }
-```
-
-### 3. Обнаружение возможностей агента
-
-Подкоманда `rdc agent` предоставляет структурированную интроспекцию:
-
-```bash
-# List all commands with arguments and options
-rdc agent capabilities
-
-# Show detailed schema for a specific command
-rdc agent schema --command "machine query"
-
-# Execute a command with JSON stdin
-echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 ```
 
 ## Ключевые флаги для агентов

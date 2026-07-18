@@ -4,8 +4,8 @@ description: "Sauvegardez des dépôts chiffrés vers n'importe quel stockage co
 category: Guides
 order: 7
 language: fr
-sourceHash: "7ff112c2ec14c35f"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "d800519615085ee9"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Sauvegarde et restauration
@@ -118,28 +118,33 @@ Les sauvegardes planifiées atterrissent dans des sous-dossiers par mode à l'in
 
 Un dépôt peut apparaître dans `hot/` et dans `cold/` (la planification horaire le capture ; la planification hebdomadaire le capture également). Le listing fusionné fait remonter les deux lignes pour qu'il soit clair quels flux couvrent quels dépôts.
 
-## Synchronisation en masse
+## Synchroniser un dépôt à la fois
 
-Envoyez ou récupérez tous les dépôts en une seule fois :
+Push et pull agissent sur un seul dépôt, identifié par sa réf (`name`, `name:tag` ou `name@machine`). Il n'existe pas de forme « tous les dépôts en une fois » : exécutez la commande une fois par dépôt.
 
-### Envoyer tout vers le stockage
+### Envoyer vers le stockage
 
 ```bash
-rdc repo push --to my-storage -m server-1
+rdc repo push shop@server-1 --to my-storage
 ```
 
-### Récupérer tout depuis le stockage
+### Récupérer depuis le stockage
 
 ```bash
-rdc repo pull --from my-storage -m server-1
+rdc repo pull shop@server-1 --from my-storage
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--to <storage>` | Stockage cible (direction envoi) |
-| `--from <storage>` | Stockage source (direction récupération) |
-| `--repo <name>` | Synchroniser des dépôts spécifiques (répétable) |
-| `--override` | Écraser les sauvegardes existantes |
+| `--to <remote>` | Stockage ou machine de destination (envoi) |
+| `--to-machine <machine>` | Machine de destination pour l'envoi de machine à machine |
+| `--from <remote>` | Stockage ou machine source (récupération) |
+| `--from-machine <machine>` | Machine source pour la récupération de machine à machine |
+| `--force` | Écraser une sauvegarde ou un dépôt existant |
+| `--checkpoint` | Créer un checkpoint CRIU avant l'envoi (envoi uniquement) |
+| `--up` | Monter et déployer le dépôt après la récupération (récupération uniquement) |
+| `--bwlimit <limit>` | Limite de bande passante pour le transfert rsync (p. ex. `10M`) |
+| `--delta-base <guid>` | Ne transférer que les blocs modifiés par rapport à une GUID de base immuable |
 | `--debug` | Activer la sortie détaillée |
 | `--skip-router-restart` | Ignorer le redémarrage du serveur de routes après l'opération |
 
@@ -177,8 +182,8 @@ Une sauvegarde froide s'exécute en trois phases par dépôt inclus : **arrêt, 
 
 **Comment les opérateurs détectent les défaillances :**
 
-- `rdc machine query --name <machine> --containers` affiche l'état d'exécution. Comparez avec l'ensemble attendu.
-- `/var/run/rediacc/cold-backup-<guid>.status.json` sur la machine. Inspectez via `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` avec un `startedAt` obsolète signifie que la dernière sauvegarde ne s'est pas terminée proprement.
+- `rdc machine status <machine> --containers` affiche l'état d'exécution. Comparez avec l'ensemble attendu.
+- `/var/run/rediacc/cold-backup-<guid>.status.json` sur la machine. Inspectez via `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` avec un `startedAt` obsolète signifie que la dernière sauvegarde ne s'est pas terminée proprement.
 - Les journaux du run de sauvegarde renet (`journalctl -u renet-*` ou l'invocation directe `rdc machine backup schedule`) émettent une ligne de résumé finale de la forme `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` non vide est la cible de grep.
 
 ### Estimer le temps d'arrêt d'une sauvegarde froide
@@ -302,7 +307,7 @@ Dans votre configuration, associez un ou plusieurs noms de stratégie à une mac
 }
 ```
 
-> **La liaison ne concerne que la configuration locale.** Définir une stratégie et la lier à une machine n'agit pas sur la machine. Exécutez `rdc machine backup schedule -m <machine>` (voir [Déployer le calendrier sur une machine](#déployer-le-calendrier-sur-une-machine)) pour déployer les minuteurs systemd, et relancez-le après tout changement de stratégie ou de liaison.
+> **La liaison ne concerne que la configuration locale.** Définir une stratégie et la lier à une machine n'agit pas sur la machine. Exécutez `rdc backup schedule -m <machine>` (voir [Déployer le calendrier sur une machine](#déployer-le-calendrier-sur-une-machine)) pour déployer les minuteurs systemd, et relancez-le après tout changement de stratégie ou de liaison.
 
 ## Choisir entre hot et cold et filtrage par dépôt
 

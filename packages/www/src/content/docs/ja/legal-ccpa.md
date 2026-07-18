@@ -4,7 +4,7 @@ description: "Rediaccのセルフホスト型モデルがカリフォルニア�
 category: "Legal"
 order: 4
 language: ja
-sourceHash: "949159b302cf6ab9"
+sourceHash: "3cee3262b53f7afd"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -35,7 +35,7 @@ CCPAは個人情報に関する消費者の権利に焦点を当てています�
 
 各Rediaccリポジトリは、固有のGUIDを持つ個別の暗号化されたデータユニットです。どこにどのようなデータが存在するかを正確にインベントリできます：
 
-- `rdc machine query --name <machine> --repositories`がマシン上のすべてのリポジトリをサイズとマウント状態とともに一覧表示します
+- `rdc machine status <machine> --repositories`がマシン上のすべてのリポジトリをサイズとマウント状態とともに一覧表示します
 - 各リポジトリはファイルシステム、ネットワーク、コンテナレベルで分離されています
 - フォーク関係が追跡されるため、データセットのすべてのコピーを特定できます
 

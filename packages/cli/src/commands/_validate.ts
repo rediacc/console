@@ -27,7 +27,7 @@ export async function assertStorageExists(storageName: string): Promise<void> {
     const repoNames = new Set(repos.map((r) => r.name));
     if (repoNames.has(storageName) || repoNames.has(base) || repoNames.has(`${base}:latest`)) {
       throw new Error(
-        `"${storageName}" is a repository, not a storage. To delete a repository image use: rdc repository delete --name ${base}`
+        `"${storageName}" is a repository, not a storage. To delete a repository image use: rdc repo delete ${base}`
       );
     }
     throw storageErr;

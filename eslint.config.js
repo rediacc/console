@@ -19,7 +19,7 @@ import { noRawApiCalls } from './eslint-rules/no-raw-api-calls.js';
 import { noDuplicateTranslationProps } from './eslint-rules/no-duplicate-translation-props.js';
 import { preferConstArrays } from './eslint-rules/prefer-const-arrays.js';
 import { noHardcodedNullishDefaults } from './eslint-rules/no-hardcoded-nullish-defaults.js';
-import { noPositionalArguments } from './eslint-rules/no-positional-arguments.js';
+import { EXEMPT_COMMAND_PREFIXES } from './eslint-rules/lib/cli-exempt-lists.js';
 import { noPositionalCliSyntaxSource } from './eslint-rules/no-positional-cli-syntax-source.js';
 import { e2eTestNamingConvention } from './eslint-rules/e2e-test-naming-convention.js';
 import { requireDataTrack } from './eslint-rules/require-data-track.js';
@@ -28,6 +28,7 @@ import { seoRequireImgAlt } from './eslint-rules/seo-require-img-alt.js';
 import { seoNoHashBreadcrumbUrl } from './eslint-rules/seo-no-hash-breadcrumb-url.js';
 import { seoNoTrailingSlashInternalLink } from './eslint-rules/seo-no-trailing-slash-internal-link.js';
 import { noUnawaitedDrizzleTerminator } from './eslint-rules/no-unawaited-drizzle-terminator.js';
+import { noDirectSftpClient } from './eslint-rules/no-direct-sftp-client.js';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import { i18nJsonPlugin, i18nSourcePlugin } from './eslint-rules/i18n/index.js';
 
@@ -157,7 +158,7 @@ export default tseslint.config(
       // Ignore package-level scripts (plain JS utilities)
       'packages/*/scripts/**',
       // Ignore Playwright report artifacts (generated trace viewer files)
-      'packages/bridge-tests/reports/**',
+      'packages/e2e-tests/reports/**',
       // Ignore private submodules except account (which has i18n enforcement)
       'private/!(account)/**',
       'private/account/node_modules/**',
@@ -242,13 +243,13 @@ export default tseslint.config(
           'no-hardcoded-nullish-defaults': noHardcodedNullishDefaults,
           'e2e-test-naming-convention': e2eTestNamingConvention,
           'require-data-track': requireDataTrack,
-          'no-positional-arguments': noPositionalArguments,
           'no-positional-cli-syntax-source': noPositionalCliSyntaxSource,
           'seo-no-vague-anchor-text': seoNoVagueAnchorText,
           'seo-require-img-alt': seoRequireImgAlt,
           'seo-no-hash-breadcrumb-url': seoNoHashBreadcrumbUrl,
           'seo-no-trailing-slash-internal-link': seoNoTrailingSlashInternalLink,
           'no-unawaited-drizzle-terminator': noUnawaitedDrizzleTerminator,
+          'no-direct-sftp-client': noDirectSftpClient,
         },
       },
     },
@@ -520,13 +521,32 @@ export default tseslint.config(
   // CLI i18n enforcement
   {
     files: ['packages/cli/src/**/*.{js,ts}'],
-    ignores: ['packages/cli/src/__tests__/**'],
+    ignores: [
+      'packages/cli/src/__tests__/**',
+      // P4 task-zero throwaway probe (commands/refprobe.ts): it deliberately
+      // uses hardcoded English and a positional <ref>, and w1 deletes it, so it
+      // is exempt from the CLI i18n + positional rules rather than churning 13
+      // locales for a leaf that will not survive.
+      'packages/cli/src/commands/refprobe.ts',
+    ],
     plugins: {
       'i18n-source': i18nSourcePlugin,
     },
     rules: {
-      // Ban positional arguments -- enforce named options in Commander.js commands
-      'custom/no-positional-arguments': 'error',
+      // `custom/no-positional-arguments` used to live here, banning positional
+      // arguments in Commander registrations and requiring named options. P4's
+      // ref concept (spec 03 §2.2, operator ruling R-P4-1) INVERTS that: a noun's
+      // primary name is now a positional (`rdc repo up shop`), which is the whole
+      // addressing grammar the phase is built on. A rule that reds on every
+      // converted leaf is not a rule that needs a longer exempt list, it is a rule
+      // that is backwards, so it was deleted along with eslint-rules/
+      // no-positional-arguments.js.
+      //
+      // The DOCS side is still guarded, and correctly: `i18n/no-positional-cli-syntax`
+      // and `custom/no-positional-cli-syntax-source` autoDerive their denylist from
+      // command-tree.json, so they flag a positional example only for a command that
+      // genuinely takes no positional. They follow the tree instead of fighting it.
+
       // Enforce t() for CLI-specific patterns
       'custom/no-hardcoded-cli-text': ['error'],
       'custom/require-command-summary': 'error',
@@ -550,6 +570,12 @@ export default tseslint.config(
       // Ban positional CLI syntax in help text / error strings / JSX.
       // Mirrors custom/i18n/no-positional-cli-syntax but for source strings.
       'custom/no-positional-cli-syntax-source': 'error',
+      // Every SSH/SFTP session must come from the refcounted pool. A direct
+      // `new SFTPClient(...)` is unpooled and skips host-key verification.
+      // The pool module itself is the single exception.
+      'custom/no-direct-sftp-client': ['error', {
+        allow: ['src/services/machine/machine-connection.ts'],
+      }],
     }
   },
 
@@ -602,22 +628,19 @@ export default tseslint.config(
     ],
     // Ban documentation/help strings that teach positional syntax for
     // commands that actually require named options (see issue #446).
-    // Complements custom/no-positional-arguments which enforces the
-    // Commander API side in source files.
     //
     // autoDerive reads packages/cli/scripts/command-tree.json and builds
     // the denylist from every leaf command with zero positional arguments.
     // Keeps the rule in sync with Commander source with zero hand-editing.
     cliSyntax: {
       autoDerive: true,
-      // Legacy / cloud-adapter command groups that use positional
-      // subcommands legitimately. Skips a line if its trimmed start
-      // matches any prefix.
-      exemptCommandPrefixes: [
-        'rdc auth', 'rdc audit', 'rdc bridge', 'rdc organization',
-        'rdc permission', 'rdc protocol', 'rdc queue', 'rdc region',
-        'rdc repository', 'rdc team', 'rdc user', 'rdc ceph',
-      ],
+      // IMPORTED, not re-listed — this was a FOURTH copy of a list that also lived in
+      // scripts/lib/positional-cli-detector.ts and both ESLint rules. All four named
+      // the same twelve cloud-adapter commands (`rdc auth`, `rdc organization`, …),
+      // and all twelve were DELETED WITH THE CLOUD ADAPTER. The list exempted nothing
+      // that exists, in four places, and would have silently exempted any of those
+      // names the day one came back.
+      exemptCommandPrefixes: EXEMPT_COMMAND_PREFIXES,
     },
     // Ban help/description prose that references a `--flag` not registered on any
     // rdc command (see issue #489 — `repo up --mount` did not exist). Derives the
@@ -635,7 +658,7 @@ export default tseslint.config(
     extraUntranslatedPatterns: [
       '^[A-Za-z]+\\d+$',
       // Brand and product names (exact match)
-      '^(Rediacc|Stripe|Docker|rdc|rediacc)$',
+      '^(Rediacc|Stripe|Docker|Kubernetes|rdc|rediacc)$',
       // Strings ending with the brand (e.g. signoffs like "— Rediacc")
       'Rediacc$',
       // CLI commands (rdc ...) must not be translated
@@ -646,11 +669,77 @@ export default tseslint.config(
       '^N/A$',
       '^Sandbox$',
       '^S3 ID$',
+      // Certificate-number format example (public verify page placeholder) —
+      // a literal ID format, identical in every locale by design
+      '^CERT-\\d{4}-\\d{4}$',
+      // Recovery-code format placeholder (config-unlock input hint) — a literal
+      // format mask (RC1 prefix + four 8-char groups), product syntax with
+      // nothing to translate, identical in every locale by design. Same case as
+      // the CERT- placeholder above.
+      '^RC1-X{8}-X{8}-X{8}-X{8}$',
+      // Passkey: the WebAuthn/FIDO product term. German keeps the loanword
+      // ("der Passkey"), used throughout the de configStorage strings; other
+      // locales that coin a native term differ and are unaffected by this exempt.
+      '^Passkey$',
+      // Tag: the fork/git tag label. German keeps "Tag" (also used in
+      // "Fork-Tag"); locales that translate it differ and stay checked.
+      '^Tag$',
       // Plan tier proper names (product names used as-is internationally)
       '^(Business|Community|Enterprise|Professional)$',
+      // Certificate level designation ("Pro" certificate): a product-level
+      // label kept as the word "Pro" in every locale by design
+      '^Pro$',
+      // Clustering track label: an IT anglicism retained by several locales
+      // (de/es/fr/it/pt); mirrors ALLOWED_IDENTICAL in
+      // scripts/check-translation-completeness.ts
+      '^Clustering$',
       // Words that are legitimately identical in many target languages
       // (borrowed/shared vocabulary across European languages and international tech terms)
       '^(Plan|Type|Newsletter|Name|Limit|Source|Admin|Total|Team|Status|Magnet|Machines|Code|Permissions|General|Description|Date|Dashboard|Contact|Activations|Actions)$',
+      // Console table column headers (columnLabel_*): infrastructure nouns
+      // that several locales keep as loanwords/cognates rather than coin a
+      // native term, matching the SAME word already used elsewhere in this
+      // product for the identical concept (e.g. CLI locale files, or this
+      // same console.json's own nav/title labels for cluster/datastore/tag).
+      // "Commit" (git-like commit) has zero established local translation in
+      // ANY of the 12 locales — every CLI translation keeps "commit"
+      // untranslated, so it is kept identical across all languages here too.
+      '^Commit$',
+      // "Backend" (storage backend: local/S3/etc.) — de/es/fr/it/pt keep this
+      // as a loanword, mirroring packages/cli/src/i18n/locales' own
+      // translation of the same concept ("Speicher-Backend", "backend de
+      // almacenamiento", "backend de stockage", "backend di storage",
+      // "backend de armazenamento").
+      '^Backend$',
+      // "Provider" (cloud provider) — Italian keeps this as a loanword,
+      // matching this same console.json file's own providersTitle ("Provider
+      // cloud").
+      '^Provider$',
+      // "Repository" — Italian keeps this identical (singular = plural,
+      // invariant loanword), matching this same console.json file's own
+      // navRepos/reposEmpty wording ("Repository").
+      '^Repository$',
+      // "Destinations"/"Services" — genuine French cognates (backup
+      // destinations, Docker services), spelled identically in French and
+      // English; French CLI translations of the same concepts already keep
+      // them identical ("Destinations :", "Services :").
+      '^(Destinations|Services)$',
+      // "Mode" — genuine French cognate (le mode), spelled identically in
+      // both languages; no distinct native alternative in common use.
+      '^Mode$',
+      // "Port" (network port) — de/fr keep this as the standard technical
+      // term (no distinct native alternative in common IT usage).
+      '^Port$',
+      // "Pools" (resource/storage pools) — de/es/fr/pt keep the loanword
+      // "pool" and pluralize it as "Pools", matching packages/cli's own
+      // translation of the same datastore concept ("Nombre del pool", "Nom
+      // du pool", "Nome do pool").
+      '^Pools$',
+      // "Region"/"Image"/"Cluster"/"Datastore" — genuine German/French/
+      // Italian cognates or established loanwords for these cloud/storage
+      // nouns; already allowlisted for the same reason in the broader
+      // scripts/check-translation-completeness.ts ALLOWED_IDENTICAL set.
+      '^(Region|Image|Cluster|Datastore)$',
     ],
     cliSyntax: {
       autoDerive: true,
@@ -711,7 +800,14 @@ export default tseslint.config(
 
   // Disable rules for auto-generated files
   {
-    files: ['**/*.generated.ts', '**/*.generated.tsx', '**/api-schema.zod.ts'],
+    files: [
+      '**/*.generated.ts',
+      '**/*.generated.tsx',
+      '**/api-schema.zod.ts',
+      // renet contract Zod schemas emitted by `renet functions generate-types`
+      // (DO NOT EDIT headers); they grow past max-lines as functions are added.
+      '**/renet-contract/data/*.schema.ts',
+    ],
     rules: {
       'max-lines': 'off',
       '@typescript-eslint/no-unnecessary-condition': 'off',
@@ -729,13 +825,13 @@ export default tseslint.config(
   // TEST FILE OVERRIDES
   // =============================================================
   // These patterns cover ALL test file locations:
-  // - Bridge tests: packages/bridge-tests/**
+  // - E2E tests: packages/e2e-tests/**
   // - CLI Unit tests: packages/cli/src/**/__tests__/**
   // - Shared: packages/shared/src/**/__tests__/**
   // =============================================================
   {
     files: [
-      'packages/bridge-tests/**/*.ts',
+      'packages/e2e-tests/**/*.ts',
       // Unit test files (__tests__ convention)
       'packages/shared/src/**/__tests__/**/*.{ts,tsx}',
       'packages/cli/src/**/__tests__/**/*.ts',
@@ -794,10 +890,10 @@ export default tseslint.config(
   // list as tests are filled in.
   {
     files: [
-      // Bridge: tests with setup/cleanup steps lacking assertions
-      'packages/bridge-tests/tests/12a-full-integration-repository.test.ts',
-      'packages/bridge-tests/tests/13-postgres-fork-isolation.test.ts',
-      'packages/bridge-tests/tests/18-ops-workflow.test.ts',
+      // E2E: tests with setup/cleanup steps lacking assertions
+      'packages/e2e-tests/tests/12a-full-integration-repository.test.ts',
+      'packages/e2e-tests/tests/13-postgres-fork-isolation.test.ts',
+      'packages/e2e-tests/tests/18-ops-workflow.test.ts',
     ],
     rules: {
       'playwright/expect-expect': 'off',
@@ -1082,6 +1178,59 @@ export default tseslint.config(
       'no-regex-spaces': 'off',
       // Custom rules not applicable to utility scripts
       'custom/prefer-const-arrays': 'off',
+    },
+  },
+
+  // ── P4 reshape: size/complexity debt, suppressed deliberately, scheduled for P5 ──
+  {
+    // BLOCKER: splitting a command-REGISTERING module is not cosmetic, and this is the
+    // failure mode, not a plea that we were busy.
+    //   1. check:ci-command-planes attributes every leaf to the module whose .action()
+    //      REGISTERS it — it patches Command.prototype.command/.action and captures a
+    //      stack at registration time. Split the file and leaves get re-attributed: if a
+    //      split-out module's import graph no longer reaches a machine seam, a machine-plane
+    //      leaf becomes unattributable, or worse, silently changes plane.
+    //   2. command-tree.json is derived from registration ORDER, and a split can shift it.
+    //      Four validators and two ESLint rules read that file as their model of the CLI.
+    //   3. COMMAND_METADATA / COMMAND_PLANES / the policy globs are keyed by command-path
+    //      STRING and have no stale-entry gate. A split that re-nests or renames a leaf
+    //      ORPHANS its guard — and guards fail OPEN: a deny that stops denying (#55).
+    // command-metadata.ts (823 lines) is the authz table itself, so it is the most dangerous
+    // of the three and gets split LAST, under test. datastore.ts (539) and machine/status.ts
+    // (548) are ordinary size drift from the reshape.
+    // Deferred to P5, where the split is done deliberately with the plane/tree/guard artifacts
+    // regenerated and diffed. A 512-line cap is not worth a silent authz gap. The
+    // command-tree freshness gate added in this wave (check:ci-command-tree) is what makes
+    // that split safe to attempt — do it after that gate exists, never before.
+    files: [
+      'packages/cli/src/config/command-metadata.ts',
+      'packages/cli/src/commands/datastore.ts',
+      'packages/cli/src/commands/machine/status.ts',
+    ],
+    rules: {
+      'max-lines': 'off',
+    },
+  },
+  {
+    // BLOCKER: eight functions in the P4 command layer sit between 11 and 17 cognitive
+    // complexity against a limit of 10. Every one is a command action whose branching IS the
+    // contract it implements (the placement union, the datastore attach/detach state machine,
+    // the repo verb dispatch). Extracting helpers to please a counter, inside an unmerged wave
+    // that four feature-breaking bugs already survived, trades a real risk of behaviour change
+    // for a cosmetic number. These are also the exact functions whose guards the type system
+    // already lies about (noUncheckedIndexedAccess is off — see docs/design/spec/12-carried-debt),
+    // so a careless extraction can drop a load-bearing check while looking like a tidy-up.
+    // P5: extract deliberately, each with a red-first test.
+    files: [
+      'packages/cli/src/commands/datastore.ts',
+      'packages/cli/src/commands/repo.ts',
+      'packages/cli/src/commands/repo-create-delete.ts',
+      'packages/cli/src/commands/repo-trim.ts',
+      'packages/cli/src/commands/mcp/tool-factory.ts',
+      'packages/cli/src/commands/mcp/__tests__/argv-acceptance.test.ts',
+    ],
+    rules: {
+      'sonarjs/cognitive-complexity': 'off',
     },
   },
 

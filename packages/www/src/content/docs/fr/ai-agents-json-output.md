@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 51
 language: fr
-sourceHash: "9f8d61df26b59757"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "4da1be4753fa62bf"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Toutes les commandes `rdc` produisent du JSON structuré. Redirigez-le vers un script ou transmettez-le directement à un agent.
@@ -26,9 +26,8 @@ rdc machine query --name prod-1 -o json
 Lorsque `rdc` s'exécute dans un environnement non-TTY (tube, sous-shell ou lancé par un agent IA), la sortie bascule automatiquement en JSON. Aucune option n'est nécessaire.
 
 ```bash
-# These all produce JSON automatically
+# Produces JSON automatically
 result=$(rdc machine query --name prod-1)
-echo '{}' | rdc agent exec "machine query"
 ```
 
 ## Enveloppe JSON
@@ -175,56 +174,6 @@ rdc repo delete --name mail -m prod-1 --dry-run -o json
 ```
 
 Commandes prenant en charge `--dry-run` : `repo up`, `repo down`, `repo delete`, `snapshot delete`, `sync upload`, `sync download`.
-
-## Commandes de découverte pour les agents
-
-Le sous-commande `rdc agent` offre aux agents IA une façon structurée de découvrir les opérations disponibles au moment de l'exécution.
-
-### Lister toutes les commandes
-
-```bash
-rdc agent capabilities
-```
-
-Renvoie l'arbre complet des commandes avec les arguments, les options et les descriptions :
-
-```json
-{
-  "success": true,
-  "command": "agent capabilities",
-  "data": {
-    "version": "1.0.0",
-    "commands": [
-      {
-        "name": "machine query",
-        "description": "Show machine status",
-        "arguments": [
-          { "name": "machine", "description": "Machine name", "required": true }
-        ],
-        "options": [
-          { "flags": "-o, --output <format>", "description": "Output format" }
-        ]
-      }
-    ]
-  }
-}
-```
-
-### Obtenir le schéma d'une commande
-
-```bash
-rdc agent schema --command "machine query"
-```
-
-Renvoie le schéma complet d'une seule commande : chaque argument et option avec son type et sa valeur par défaut.
-
-### Exécuter via JSON
-
-```bash
-echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
-```
-
-Accepte du JSON sur stdin, associe les clés aux arguments et options de la commande, et exécute avec sortie JSON forcée. Utile quand vous préférez ne pas construire de chaînes de commandes shell pour les appels agent-CLI.
 
 ## Exemples d'analyse
 

@@ -1,14 +1,14 @@
 // Bridge Functions (generated)
 export {
-  BRIDGE_FUNCTIONS,
-  BRIDGE_FUNCTIONS_VERSION,
-  type BridgeFunctionName,
   createFunctionPayload,
   type FunctionParamsMap,
   getTypedParams,
-  isBridgeFunction,
+  isRenetFunction,
   type QueueFunctionsType,
   queueFunctions,
+  RENET_FUNCTIONS,
+  RENET_FUNCTIONS_VERSION,
+  type RenetFunctionName,
   type TypedFunctionPayload,
 } from './data/functions.generated';
 // Data
@@ -27,7 +27,7 @@ export type {
   FunctionRequirements,
   MachineSection,
   QueueRequestContext,
-  QueueVaultV2,
+  RenetVault,
   RepositoryInfo,
   SSHSection,
   StorageSection,
@@ -72,9 +72,9 @@ export {
 // Validation
 export {
   assertBridgeFunction,
-  assertQueueVaultV2,
+  assertRenetVault,
   type BridgeFunctionError,
-  isQueueVaultV2,
+  isRenetVault,
   validateBridgeFunction,
-  validateQueueVault,
+  validateRenetVault,
 } from './validation/index.js';

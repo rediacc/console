@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: ru
-sourceHash: "e2f5d37c534fc40d"
+sourceHash: "b6deba17f1137188"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -157,7 +157,7 @@ Rediacc автоматически планирует еженедельный �
 
 ### Статус скраба
 
-Результат последнего скраба сохраняется за пределами тома BTRFS (в `/var/lib/rediacc/scrub-last-result.json`), чтобы он оставался доступным для чтения, даже если у тома есть проблемы. Вывод `rdc machine query --system` включает поле `scrub_status`:
+Результат последнего скраба сохраняется за пределами тома BTRFS (в `/var/lib/rediacc/scrub-last-result.json`), чтобы он оставался доступным для чтения, даже если у тома есть проблемы. Вывод `rdc machine status --system` включает поле `scrub_status`:
 
 ```json
 "scrub_status": {
@@ -187,7 +187,7 @@ Rediacc автоматически планирует еженедельный �
 rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
-Результат сохраняется в тот же JSON-файл и сразу становится видимым при следующем вызове `rdc machine query --system`.
+Результат сохраняется в тот же JSON-файл и сразу становится видимым при следующем вызове `rdc machine status --system`.
 
 ## Обзор машины
 

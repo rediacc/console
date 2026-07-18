@@ -117,28 +117,33 @@ Scheduled backups land under per-mode subfolders inside the storage's configured
 
 A repo can appear in both `hot/` and `cold/` (the hourly schedule snapshots it; the weekly schedule snapshots it again). The merged listing shows both rows so you can see which streams cover which repos.
 
-## Bulk Sync
+## Sync One Repository at a Time
 
-Push or pull all repositories at once:
+Push and pull act on a single repository, addressed by ref (`name`, `name:tag`, or `name@machine`). There is no "all repositories at once" form: run the command once per repository.
 
-### Push All to Storage
+### Push to Storage
 
 ```bash
-rdc repo push --to my-storage -m server-1
+rdc repo push shop@server-1 --to my-storage
 ```
 
-### Pull All from Storage
+### Pull from Storage
 
 ```bash
-rdc repo pull --from my-storage -m server-1
+rdc repo pull shop@server-1 --from my-storage
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--to <storage>` | Target storage (push direction) |
-| `--from <storage>` | Source storage (pull direction) |
-| `--repo <name>` | Sync specific repositories (repeatable) |
-| `--override` | Override existing backups |
+| `--to <remote>` | Destination storage or machine (push) |
+| `--to-machine <machine>` | Destination machine for machine-to-machine push |
+| `--from <remote>` | Source storage or machine (pull) |
+| `--from-machine <machine>` | Source machine for machine-to-machine pull |
+| `--force` | Overwrite an existing backup or repository |
+| `--checkpoint` | Create a CRIU checkpoint before pushing (push only) |
+| `--up` | Mount and deploy the repository after pulling (pull only) |
+| `--bwlimit <limit>` | Bandwidth limit for the rsync transfer (e.g. `10M`) |
+| `--delta-base <guid>` | Transfer only changed blocks against an immutable base GUID |
 | `--debug` | Enable verbose output |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
@@ -176,8 +181,8 @@ A cold backup runs in three phases per included repo: **stop → snapshot → st
 
 **How you detect failures:**
 
-- `rdc machine query --name <machine> --containers` shows running state. Compare against the expected set.
-- `/var/run/rediacc/cold-backup-<guid>.status.json` on the machine. Inspect via `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` with a stale `startedAt` means the last backup didn't complete cleanly.
+- `rdc machine status <machine> --containers` shows running state. Compare against the expected set.
+- `/var/run/rediacc/cold-backup-<guid>.status.json` on the machine. Inspect via `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` with a stale `startedAt` means the last backup didn't complete cleanly.
 - Logs from the renet backup run (`journalctl -u renet-*` or the direct `rdc machine backup schedule` invocation) emit a final summary line of the form `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. A non-empty `failed_repos` is the grep target.
 
 ### Estimating Cold Backup Downtime
@@ -301,7 +306,7 @@ In your config, bind one or more strategy names to a machine:
 }
 ```
 
-> **Binding is local-config only.** Defining a strategy and binding it to a machine does not touch the machine. Run `rdc machine backup schedule -m <machine>` (see [Deploy Schedule to Machine](#deploy-schedule-to-machine)) to deploy the systemd timers, and re-run it after any strategy or binding change.
+> **Binding is local-config only.** Defining a strategy and binding it to a machine does not touch the machine. Run `rdc backup schedule -m <machine>` (see [Deploy Schedule to Machine](#deploy-schedule-to-machine)) to deploy the systemd timers, and re-run it after any strategy or binding change.
 
 ## Choosing Hot vs Cold and Per-Repo Filtering
 

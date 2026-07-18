@@ -4,8 +4,8 @@ description: 将加密仓库备份到任何与 rclone 兼容的存储，在任�
 category: Guides
 order: 7
 language: zh
-sourceHash: "7ff112c2ec14c35f"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "d800519615085ee9"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # 备份与恢复
@@ -118,28 +118,33 @@ rdc repo backup list --from my-storage -m server-1 --path cold
 
 一个仓库可以同时出现在 `hot/` 和 `cold/` 中（每小时计划对其快照；每周计划再次快照）。合并后的列表会将这两行同时显示出来，便于看清哪些流覆盖了哪些仓库。
 
-## 批量同步
+## 一次同步一个仓库
 
-一次推送或拉取所有仓库：
+推送和拉取一次只作用于一个仓库，通过 ref（`name`、`name:tag` 或 `name@machine`）指定。没有“一次处理所有仓库”的形式：请为每个仓库各运行一次命令。
 
-### 推送所有到存储
+### 推送到存储
 
 ```bash
-rdc repo push --to my-storage -m server-1
+rdc repo push shop@server-1 --to my-storage
 ```
 
-### 从存储拉取所有
+### 从存储拉取
 
 ```bash
-rdc repo pull --from my-storage -m server-1
+rdc repo pull shop@server-1 --from my-storage
 ```
 
 | 选项 | 描述 |
-|------|------|
-| `--to <storage>` | 目标存储（推送方向） |
-| `--from <storage>` | 源存储（拉取方向） |
-| `--repo <name>` | 同步指定仓库（可重复使用） |
-| `--override` | 覆盖已有备份 |
+|--------|-------------|
+| `--to <remote>` | 目标存储或机器（推送） |
+| `--to-machine <machine>` | 用于机器到机器推送的目标机器 |
+| `--from <remote>` | 源存储或机器（拉取） |
+| `--from-machine <machine>` | 用于机器到机器拉取的源机器 |
+| `--force` | 覆盖已有的备份或仓库 |
+| `--checkpoint` | 推送前创建 CRIU 检查点（仅推送） |
+| `--up` | 拉取后挂载并部署仓库（仅拉取） |
+| `--bwlimit <limit>` | rsync 传输的带宽限制（例如 `10M`） |
+| `--delta-base <guid>` | 仅传输相对于不可变基准 GUID 发生变化的块 |
 | `--debug` | 启用详细输出 |
 | `--skip-router-restart` | 操作后跳过路由服务器重启 |
 
@@ -177,8 +182,8 @@ Rediacc 使用具名备份策略。每个策略定义了一个计划、备份模
 
 **运维人员如何检测故障：**
 
-- `rdc machine query --name <machine> --containers` 显示运行状态。与预期集合进行比较。
-- 机器上的 `/var/run/rediacc/cold-backup-<guid>.status.json`。通过 `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"` 检查。`success: false` 加上过时的 `startedAt` 表示上次备份未正常完成。
+- `rdc machine status <machine> --containers` 显示运行状态。与预期集合进行比较。
+- 机器上的 `/var/run/rediacc/cold-backup-<guid>.status.json`。通过 `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"` 检查。`success: false` 加上过时的 `startedAt` 表示上次备份未正常完成。
 - renet 备份运行的日志（`journalctl -u renet-*` 或直接的 `rdc machine backup schedule` 调用）会输出 `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` 形式的最终摘要行。非空的 `failed_repos` 是 grep 的目标。
 
 ### 估算冷备份停机时间
@@ -302,7 +307,7 @@ rdc config backup-strategy remove --name weekly-cold
 }
 ```
 
-> **绑定仅作用于本地配置。** 定义策略并将其绑定到机器并不会改动机器本身。运行 `rdc machine backup schedule -m <machine>`（参见[将计划部署到机器](#将计划部署到机器)）以部署 systemd 定时器，并在任何策略或绑定更改后重新运行。
+> **绑定仅作用于本地配置。** 定义策略并将其绑定到机器并不会改动机器本身。运行 `rdc backup schedule -m <machine>`（参见[将计划部署到机器](#将计划部署到机器)）以部署 systemd 定时器，并在任何策略或绑定更改后重新运行。
 
 ## 选择热备份或冷备份以及按仓库筛选
 

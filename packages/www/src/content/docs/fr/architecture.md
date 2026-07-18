@@ -6,8 +6,8 @@ description: >-
 category: Concepts
 order: 0
 language: fr
-sourceHash: "947fcefa63eac600"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "b1f9e2e3bba92912"
+sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
 # Architecture
@@ -43,7 +43,7 @@ Tout l'état réside dans un fichier de configuration sur votre poste de travail
 
 - Connexions SSH directes aux machines
 - Aucun service externe requis
-- La configuration par défaut est créée automatiquement au premier lancement du CLI. Les configurations nommées sont créées avec `rdc config init --name <name>`
+- La configuration par défaut est créée automatiquement au premier lancement du CLI. Les configurations nommées sont créées avec `rdc config init <name>`
 - La synchronisation chiffrée de la configuration (optionnelle) stocke le même fichier dans le magasin de configuration, avec une portée par équipe
 
 ## L'utilisateur rediacc
@@ -84,7 +84,7 @@ Cela signifie :
 
 Les fonctions du Rediaccfile ont automatiquement `DOCKER_HOST` configuré avec le socket correct.
 
-Lorsqu'un agent IA accède à un dépôt via `rdc term connect -r <repo>`, la même isolation s'applique : la session s'exécute en tant qu'utilisateur non privilégié `rediacc` (UID 7111), dans un espace de noms de montage distinct, avec `DOCKER_HOST` limité au socket du daemon de ce seul dépôt. Le flux fork-first combine cette isolation d'exécution avec une primitive de clonage CoW : l'agent opère sur un fork dédié à la tâche, jamais sur les dépôts grand (production). Consultez [Sécurité et garde-fous pour les agents IA](/fr/docs/ai-agents-safety) pour le modèle de bac à sable complet, la sémantique des substitutions et la frontière de responsabilité du développeur pour les identifiants des services externes.
+Lorsqu'un agent IA accède à un dépôt via `rdc term connect <repo>`, la même isolation s'applique : la session s'exécute en tant qu'utilisateur non privilégié `rediacc` (UID 7111), dans un espace de noms de montage distinct, avec `DOCKER_HOST` limité au socket du daemon de ce seul dépôt. Le flux fork-first combine cette isolation d'exécution avec une primitive de clonage CoW : l'agent opère sur un fork dédié à la tâche, jamais sur les dépôts grand (production). Consultez [Sécurité et garde-fous pour les agents IA](/fr/docs/ai-agents-safety) pour le modèle de bac à sable complet, la sémantique des substitutions et la frontière de responsabilité du développeur pour les identifiants des services externes.
 
 ### Structure des chemins du daemon
 
@@ -118,6 +118,25 @@ Les dépôts sont des images disque chiffrées LUKS stockées dans le datastore 
 3. Est monté via `cryptsetup` lors de l'accès
 
 L'identifiant est stocké dans votre fichier de configuration mais **jamais** sur le serveur. Sans l'identifiant, les données du dépôt ne peuvent pas être lues. Lorsque le démarrage automatique est activé, un fichier de clé LUKS secondaire est stocké sur le serveur pour permettre le montage automatique au démarrage.
+
+## Backends de stockage
+
+Un datastore est un pool de stockage par machine qui contient les images des dépôts. Il a deux backends, choisis au moment de `datastore init` :
+
+- **Local (par défaut)** : un système de fichiers BTRFS adossé à un loop device sur le propre disque de la machine. Les images de dépôts sont des fichiers chiffrés LUKS à l'intérieur ; un fork est un simple `cp --reflink=always`. C'est le backend utilisé par tous les déploiements à machine unique, et il ne nécessite rien d'autre que le disque du serveur.
+- **Ceph RBD** : le datastore vit sur une image RBD mappée depuis un cluster Ceph externe, avec du BTRFS classique par-dessus (pas de LUKS à cette couche, puisque les nœuds Ceph n'ouvrent jamais LUKS). Le fork et l'architecture multi-clients en lecture seule utilisent les primitives copy-on-write propres à RBD (snapshot, protect, clone) et des namespaces RADOS pour l'isolation par tenant.
+
+Les deux backends présentent le même modèle de dépôt à tout ce qui se trouve au-dessus d'eux, donc les commandes `repo`, les sauvegardes et les forks fonctionnent de façon identique. La différence réside dans l'emplacement des octets et le mécanisme copy-on-write utilisé par un fork (reflink BTRFS contre clone RBD). Consultez [Configuration de la machine](/fr/docs/setup) pour savoir comment initialiser chaque backend, et [Référence serveur](/fr/docs/server-reference) pour les commandes de datastore au niveau renet.
+
+## Dépôts Kubernetes
+
+En plus des dépôts Docker, une machine peut héberger des **clusters**. Rediacc conserve la mentalité du dépôt en inversant le modèle d'objet habituel : le cluster est le conteneur, et un dépôt Kubernetes est un namespace à l'intérieur.
+
+- L'état du cluster (le répertoire de données k3s par nœud) vit dans des fichiers image copy-on-write adossés au datastore, un par nœud, si bien qu'un cluster fork et migre comme un ensemble d'images.
+- Un dépôt Kubernetes est le namespace `<repo>` plus ses volumes. Les volumes persistants sont des unités copy-on-write **séparées** (images RBD sur Ceph, ou petits fichiers image du datastore via un provisioner de PV local), jamais des répertoires à l'intérieur d'une seule image de cluster opaque. Cette séparation est ce qui permet à chaque fork de dépôt d'être copy-on-write indépendamment.
+- `KUBECONFIG` est injecté comme l'analogue de `DOCKER_HOST`, et un wrapper `renet kube` applique les manifestes depuis `up()` de la même façon que `renet compose` exécute Docker.
+
+Le clonage et la relocalisation d'un cluster entier se font via `rdc cluster fork` et `rdc cluster migrate`. C'est la capacité différenciante : forker ou déplacer un cluster en cours d'exécution, données comprises, vers une autre machine ou un autre datacenter avec une bascule courte. Consultez le guide [Kubernetes](/fr/docs/kubernetes) pour le modèle complet, les commandes et les chiffres de bascule mesurés.
 
 ## Structure de configuration
 

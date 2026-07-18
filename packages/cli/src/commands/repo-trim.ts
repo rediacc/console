@@ -1,10 +1,11 @@
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
-import { localExecutorService } from '../services/executor/local-executor.js';
 import { outputService } from '../services/core/output.js';
-import { getOutputFormat, handleError } from '../utils/errors.js';
+import { getExecutor } from '../services/executor/executor-factory.js';
+import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { resolveRepoRef, resolveRepoTarget } from '../utils/repo-target.js';
 import { assertMachineExists } from './_validate.js';
 import { parseDatastorePruneOutput } from './datastore-prune-parser.js';
 
@@ -30,8 +31,8 @@ interface TrimResult {
 }
 
 interface TrimOptions {
-  machine: string;
-  name?: string;
+  /** Machine-wide form: the machine whose mounted repositories to trim. */
+  machine?: string;
   docker?: boolean;
   dockerVolumes?: boolean;
   reportOnly?: boolean;
@@ -58,27 +59,49 @@ function trimRepoStatus(repo: TrimRepoResult, reportOnly: boolean): string {
   return repo.refreshed ? 'trimmed (mapping refreshed)' : 'trimmed';
 }
 
-/** Run repository_trim on a machine, optionally scoped to one repo. */
-async function handleTrimAction(options: TrimOptions): Promise<void> {
-  await assertMachineExists(options.machine);
-
+/**
+ * Run repository_trim. A positional `<ref>` scopes to one repo (its machine is
+ * derived from the ref); no ref runs the machine-wide form against `-m`.
+ */
+async function handleTrimAction(ref: string | undefined, options: TrimOptions): Promise<void> {
+  let machineName: string;
+  let kubeCluster: string | undefined;
   const params: Record<string, unknown> = {};
-  if (options.name) {
-    const repo = await configService.getRepository(options.name);
+
+  if (ref) {
+    // A ref carries its own machine, so -m would be contradictory.
+    if (options.machine) {
+      throw new ValidationError(t('commands.repo.refMachineConflict', { verb: 'trim' }));
+    }
+    // Gate A read-only resolution: the trim run is itself the verification.
+    const resolved = await resolveRepoRef(ref, { readOnly: true });
+    machineName = resolved.machineName;
+    kubeCluster = resolved.kubeCluster;
+    const repo = await configService.getRepository(resolved.repoKey);
     if (!repo) {
-      throw new Error(t('commands.repo.trim.repoNotFound', { name: options.name }));
+      throw new Error(t('commands.repo.trim.repoNotFound', { name: resolved.name }));
     }
     params.name = repo.repositoryGuid;
+  } else {
+    // Machine-wide form: trim every mounted repo on the machine (errors when
+    // -m is also absent, as before).
+    const target = await resolveRepoTarget({ machine: options.machine });
+    machineName = target.machineName;
+    kubeCluster = target.kubeCluster;
   }
+
+  await assertMachineExists(machineName);
+
   if (options.docker || options.dockerVolumes) params.docker = true;
   if (options.dockerVolumes) params.docker_volumes = true;
   if (options.reportOnly) params.report_only = true;
 
-  outputService.info(t('commands.repo.trim.starting', { machine: options.machine }));
+  outputService.info(t('commands.repo.trim.starting', { machine: machineName }));
 
-  const result = await localExecutorService.execute({
+  const result = await getExecutor().execute({
     functionName: 'repository_trim',
-    machineName: options.machine,
+    machineName,
+    ...(kubeCluster !== undefined && { kubeCluster }),
     params,
     debug: options.debug,
     captureOutput: true,
@@ -137,15 +160,15 @@ export function registerRepoTrimCommand(repo: Command): void {
     .command('trim')
     .summary(t('commands.repo.trim.descriptionShort'))
     .description(t('commands.repo.trim.description'))
-    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
-    .option('--name <name>', t('commands.repo.trim.nameOption'))
+    .argument('[ref]', t('options.repoRef'))
     .option('--docker', t('commands.repo.trim.dockerOption'))
     .option('--docker-volumes', t('commands.repo.trim.dockerVolumesOption'))
     .option('--report-only', t('commands.repo.trim.reportOnlyOption'))
+    .option('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
-    .action(async (options: TrimOptions) => {
+    .action(async (ref: string | undefined, options: TrimOptions) => {
       try {
-        await handleTrimAction(options);
+        await handleTrimAction(ref, options);
       } catch (error) {
         handleError(error);
       }

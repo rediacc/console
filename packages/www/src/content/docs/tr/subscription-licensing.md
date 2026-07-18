@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: 10e9f781881854be
-sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
+sourceHash: "5fb6196d9b6e9b0b"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # Abonelik ve Lisanslama
@@ -62,7 +62,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Makine slotları (sunucu tarafı)
 
-Makine slot takibi sunucu tarafında uygulanır. CLI bir depo lisansı düzenlediğinde, hesap sunucusu aboneliğin makine slot kotasını kontrol eder (örneğin, Community için 2 makine, Professional için 3). Bir slot, o makinedeki son depo lisansı düzenlemesinden itibaren 5 saat süresince tutulur ve inaktiviteden sonra otomatik olarak serbest bırakılır. Slotlar yalnızca aktif olarak sağlama yaparken tutulduğundan, 10 slotlu Business plan zaman içinde düzinelerce makineyi kapsayabilir.
+Makine slot takibi sunucu tarafında uygulanır. CLI bir depo lisansı düzenlediğinde, hesap sunucusu aboneliğin makine slot kotasını kontrol eder. Her self-servis plan (Community, Professional, Business) bir makine slotu içerir; çok makineli dağıtımlar ortaklarımızla birlikte boyutlandırılan bir Enterprise kurulumudur. Bir slot, o makinedeki son depo lisansı düzenlemesinden itibaren 5 saat süresince tutulur ve inaktiviteden sonra otomatik olarak serbest bırakılır. Bir slot yalnızca aktif olarak sağlama yaparken tutulduğundan, tek bir slot bir ay boyunca yine de birden fazla makineyi kapsayabilir.
 
 Makinede hiçbir makine lisans dosyası depolanmaz. Slot uygulaması, sunucuda düzenleme zamanında gerçekleşir.
 
@@ -93,12 +93,20 @@ Depo boyutu hak düzeyine bağlıdır:
 
 | Plan | Değişken Lisanslar | Depo Boyutu | Aylık depo lisansı düzenlemeleri | Delegasyon sertifikası varsayılan / maks |
 |------|---------------------|-------------|----------------------------------|----------------------------------------|
-| Community | 2 | 10 GB | 100 | 15g / 30g |
-| Professional | 3 | 50 GB | 2.000+ | 60g / 120g |
-| Business | 10 | 200 GB | 5.000+ | 90g / 180g |
-| Enterprise | 25+ | 1 TB+ | 15.000+ | 120g / 365g |
+| Community | 1 | 10 GB | 100 | 15g / 30g |
+| Professional | 1 | 100 GB | 2.000+ | 60g / 120g |
+| Business | 1 | 500 GB | 5.000+ | 90g / 180g |
+| Enterprise | Özel | 1 TB+ | 15.000+ | 120g / 365g |
 
 Sözleşmeye özgü limitler, belirli bir müşteri için bu değerleri artırabilir veya azaltabilir. Delegasyon sertifikası geçerliliği aynı zamanda `subscription.expiresAt + 3 günlük ek süre` ile kesin olarak sınırlandırılmıştır; dolayısıyla aylık faturalandırılan abonelikler doğal olarak faturalama döngüleriyle uyumlu sertifikalar alır. Tam kurallar için [Lisans Zinciri ve Delegasyon - Geçerlilik Politikası](/tr/docs/license-chain) sayfasına bakın.
+
+## Ücretsiz Deneme ve Community'ye Geri Dönüş
+
+Yeni kayıtlar Professional veya Business planında 14 günlük ücretsiz denemeyle başlar. Kayıt sırasında bir kredi kartı alınır; ilk ücretlendirme yalnızca deneme süresi bittiğinde yapılır, dolayısıyla deneme bitmeden iptal etmenin hiçbir maliyeti yoktur. Müşteri başına bir deneme hakkı vardır.
+
+Community, kalıcı ücretsiz tabandır. Artık yeni hesaplar için doğrudan kayıt seçeneği değildir; bunun yerine bir abonelik sona erdiğinde (deneme sırasında iptal, ücretli bir planın sonradan iptali veya başarısız bir ödeme) hesap Community'ye düşer. Community geri dönüşünde bir makine, depo başına 10 GB ve ayda 100 kurulum hakkınız kalır. Deneme tabanlı model başlamadan önce oluşturulmuş hesaplar mevcut Community erişimlerini korur.
+
+Uygulama yumuşak kalmaya devam eder. Abonelik sona erse bile çalışan depolar çalışmaya devam eder; yalnızca yeni işler (oluşturma, çatallama, yeniden boyutlandırma ve lisans yenileme) aktif bir hak ile sınırlandırılır.
 
 ## Makine Geçişi Uyum Dönemi
 
@@ -110,9 +118,9 @@ Pratikte:
 - VM taşındı, makine kimliği değişti: depolar çalışmaya devam eder (40 günlük pencere içinde)
 - Sonraki `rdc` işlemi lisansı yeni makine kimliğiyle yeniler
 - El ile müdahale gerekli değil
-- `rdc machine query --system --licenses --name <machine>` ile makine kimliği ve lisans durumunu kontrol edin
+- `rdc machine status <machine> --system --licenses` ile makine kimliği ve lisans durumunu kontrol edin
 
-**Edge kanalı kullanıcıları** 2X Community limitlerini ücretsiz alır (20 GB depolar, ayda 200 düzenleme, 4 makine). Ücretli planlar yalnızca Stable kanalında mevcuttur. Ayrıntılar için [Yayın Kanalları](/tr/docs/release-channels) sayfasına bakın.
+**Edge kanalı hesapları**, 2 katına çıkarılmış limitlerle Community planında çalışır (20 GB depolar, ayda 200 kurulum, 2 makine). Ücretli planlar yalnızca Stable kanalında mevcuttur. Ayrıntılar için [Yayın Kanalları](/tr/docs/release-channels) sayfasına bakın.
 
 ## Depo Oluşturma, Başlatma, Durdurma ve Yeniden Başlatma Sırasında Ne Olur
 
@@ -175,28 +183,22 @@ rdc subscription status
 Bir makine için makine aktivasyon ayrıntılarını göster:
 
 ```bash
-rdc subscription activation status -m hostinger
+rdc subscription status -m hostinger
 ```
 
 Bir makinede yüklü depo lisansı ayrıntılarını göster:
 
 ```bash
-rdc subscription repo status -m hostinger
+rdc subscription status -m hostinger
 ```
 
-Bir makinedeki depo lisanslarını toplu olarak yenile:
+Bir makinede bir deponun lisansını yenile:
 
 ```bash
-rdc subscription refresh repos -m hostinger
+rdc subscription refresh -m hostinger --repo my-app
 ```
 
-Makinede keşfedilen ancak yerel `rdc` yapılandırmasında bulunmayan depolar toplu yenileme sırasında reddedilir. Bunlar başarısızlık olarak raporlanır ve otomatik olarak sınıflandırılmaz.
-
-Mevcut bir depo için depo lisansı yenilemesini zorla:
-
-```bash
-rdc subscription refresh repo --name my-app -m hostinger
-```
+`--repo` ref'i yerel `rdc` yapılandırmanızda çözümlenebilmelidir. Makinede keşfedilen ancak yerel yapılandırmada bulunmayan bir depo reddedilir: başarısızlık olarak raporlanır ve otomatik olarak sınıflandırılmaz.
 
 İlk kullanımda, kullanılabilir depo lisansı bulamayan lisanslı bir depo veya yedekleme işlemi otomatik olarak hesap yetkilendirme aktarımını tetikleyebilir. CLI bir yetkilendirme URL'si yazdırır, etkileşimli terminallerde tarayıcıyı açmaya çalışır ve yetkilendirme ile düzenleme başarılı olduktan sonra işlemi bir kez yeniden dener.
 
@@ -259,4 +261,4 @@ Bu metrik, mevcut UTC takvim ayında başarılı hesap destekli depo lisansı d�
 - başarısız düzenleme girişimleri
 - düzenlemeden önce reddedilen izlenmeyen depolar
 
-Kullanım ve son depo lisansı düzenleme geçmişinin müşteri görünümüne ihtiyaç duyuyorsanız hesap portalını kullanın. Makine tarafında incelemeye ihtiyaç duyuyorsanız `rdc subscription activation status -m` ve `rdc subscription repo status -m` komutlarını kullanın.
+Kullanım ve son depo lisansı düzenleme geçmişinin müşteri görünümüne ihtiyaç duyuyorsanız hesap portalını kullanın. Makine tarafında incelemeye ihtiyaç duyuyorsanız `rdc subscription status -m` ve `rdc subscription status -m` komutlarını kullanın.

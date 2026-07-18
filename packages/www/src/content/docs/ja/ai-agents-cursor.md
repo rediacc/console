@@ -4,8 +4,8 @@ description: .cursorrules とターミナル統合を使用して、Cursor IDE �
 category: Guides
 order: 32
 language: ja
-sourceHash: "b5e835461de00400"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "66821f514bc7a8bd"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 手短に言うと: `.cursorrules` が Rediacc のコンテキストを Cursor の AI に読み込ませ、ターミナルが実際のマシンに対して `rdc` コマンドを実行できるようにします。
@@ -75,5 +75,5 @@ rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
 
 - CursorのComposerモードは複数ステップのインフラストラクチャタスクに適しています
 - Cursorチャットで `@terminal` を使用すると、最近のターミナル出力を参照できます
-- `rdc agent capabilities` コマンドでCursorに完全なコマンドリファレンスを提供できます
+- `rdc --help-all` コマンドでCursorに完全なコマンドリファレンスを提供できます
 - `.cursorrules` と `CLAUDE.md` ファイルを組み合わせると、AIツール間の互換性が最大化されます

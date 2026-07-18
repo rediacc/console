@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: ar
-sourceHash: "7ff112c2ec14c35f"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "d800519615085ee9"
+sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
 # النسخ الاحتياطي والاستعادة
@@ -120,28 +120,33 @@ rdc repo backup list --from my-storage -m server-1 --path cold
 
 يمكن أن يظهر المستودع في كلا `hot/` و `cold/` (يلتقطه الجدول الساعي ويلتقطه الجدول الأسبوعي مرة أخرى). يُظهر الإدراج المدموج كلا الصفين بحيث يكون من الواضح أي تدفقات تغطي أي مستودعات.
 
-## المزامنة المجمّعة
+## مزامنة مستودع واحد في كل مرة
 
-إرسال أو سحب جميع المستودعات دفعة واحدة:
+يعمل الدفع والسحب على مستودع واحد فقط، يُحدَّد عبر مرجع (`name` أو `name:tag` أو `name@machine`). لا توجد صيغة «جميع المستودعات دفعة واحدة»: شغّل الأمر مرة واحدة لكل مستودع.
 
-### إرسال الكل إلى التخزين
+### الإرسال إلى التخزين
 
 ```bash
-rdc repo push --to my-storage -m server-1
+rdc repo push shop@server-1 --to my-storage
 ```
 
-### سحب الكل من التخزين
+### السحب من التخزين
 
 ```bash
-rdc repo pull --from my-storage -m server-1
+rdc repo pull shop@server-1 --from my-storage
 ```
 
 | الخيار | الوصف |
-|--------|-------|
-| `--to <storage>` | التخزين الهدف (اتجاه الإرسال) |
-| `--from <storage>` | التخزين المصدر (اتجاه السحب) |
-| `--repo <name>` | مزامنة مستودعات محددة (قابل للتكرار) |
-| `--override` | استبدال النسخ الاحتياطية الموجودة |
+|--------|-------------|
+| `--to <remote>` | التخزين أو الجهاز الهدف (الإرسال) |
+| `--to-machine <machine>` | الجهاز الهدف للإرسال من جهاز إلى جهاز |
+| `--from <remote>` | التخزين أو الجهاز المصدر (السحب) |
+| `--from-machine <machine>` | الجهاز المصدر للسحب من جهاز إلى جهاز |
+| `--force` | استبدال نسخة احتياطية أو مستودع موجود |
+| `--checkpoint` | إنشاء نقطة تحقق CRIU قبل الإرسال (الإرسال فقط) |
+| `--up` | تحميل المستودع ونشره بعد السحب (السحب فقط) |
+| `--bwlimit <limit>` | حد عرض النطاق الترددي لنقل rsync (مثال: `10M`) |
+| `--delta-base <guid>` | نقل الكتل المتغيّرة فقط مقارنةً بـ GUID أساسي غير قابل للتغيير |
 | `--debug` | تفعيل الإخراج التفصيلي |
 | `--skip-router-restart` | تخطي إعادة تشغيل خادم المسار بعد العملية |
 
@@ -179,8 +184,8 @@ rdc repo pull --from my-storage -m server-1
 
 **كيف يكتشف المشغلون الأعطال:**
 
-- `rdc machine query --name <machine> --containers` يُظهر حالة التشغيل. قارن مع المجموعة المتوقعة.
-- `/var/run/rediacc/cold-backup-<guid>.status.json` على الجهاز. افحص عبر `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` مع `startedAt` قديم يعني أن آخر نسخة احتياطية لم تكتمل بنظافة.
+- `rdc machine status <machine> --containers` يُظهر حالة التشغيل. قارن مع المجموعة المتوقعة.
+- `/var/run/rediacc/cold-backup-<guid>.status.json` على الجهاز. افحص عبر `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` مع `startedAt` قديم يعني أن آخر نسخة احتياطية لم تكتمل بنظافة.
 - السجلات من تشغيل نسخ renet الاحتياطي (`journalctl -u renet-*` أو استدعاء `rdc machine backup schedule` المباشر) تصدر سطر ملخص نهائي بالشكل `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. `failed_repos` غير الفارغة هي هدف grep.
 
 ### تقدير وقت التوقف للنسخ الاحتياطي البارد
@@ -304,7 +309,7 @@ rdc config backup-strategy remove --name weekly-cold
 }
 ```
 
-> **الربط هو إعداد محلي فقط.** تعريف استراتيجية وربطها بجهاز لا يؤثر على الجهاز نفسه. شغّل `rdc machine backup schedule -m <machine>` (راجع [نشر الجدول على الجهاز](#نشر-الجدول-على-الجهاز)) لنشر مؤقتات systemd، وأعد تشغيله بعد أي تغيير في الاستراتيجية أو الربط.
+> **الربط هو إعداد محلي فقط.** تعريف استراتيجية وربطها بجهاز لا يؤثر على الجهاز نفسه. شغّل `rdc backup schedule -m <machine>` (راجع [نشر الجدول على الجهاز](#نشر-الجدول-على-الجهاز)) لنشر مؤقتات systemd، وأعد تشغيله بعد أي تغيير في الاستراتيجية أو الربط.
 
 ## اختيار الوضع الساخن أو البارد والتصفية لكل مستودع
 

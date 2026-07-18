@@ -4,8 +4,8 @@ description: "Como o Edge e o Stable diferem, e qual canal executar."
 category: "Concepts"
 order: 2
 language: pt
-sourceHash: "5fdcb0e8944f5d60"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "6669b5b089f94a39"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 O Rediacc distribui atualizações através de dois canais: **Stable** e **Edge**. Correm em infraestrutura separada e têm diferentes compromissos.
@@ -25,7 +25,7 @@ O Edge recebe cada alteração no momento em que é integrada no ramo principal.
 
 - Produção implementada continuamente, lançada a cada integração no ramo principal
 - Limites do plano Community 2X (consulte a tabela abaixo)
-- Gratuito para sempre. Não há planos pagos disponíveis no Edge.
+- Não há planos pagos disponíveis no Edge; as contas funcionam no plano Community.
 - Contas separadas do Stable. Os dados não transitam entre canais.
 - Domínios: `edge-eu.rediacc.com`, `edge-us.rediacc.com`, `edge-asia.rediacc.com`
 
@@ -35,20 +35,20 @@ O Edge recebe cada alteração no momento em que é integrada no ramo principal.
 |---|---|---|
 | **Cadência de implementação** | Após maturação de 7 dias | A cada integração no ramo principal |
 | **Estabilidade** | Testado durante 7 dias | Produção, implementado continuamente |
-| **Limites do plano Community** | Repositórios de 10 GB, 500 emissões/mês, 2 máquinas | Repositórios de 20 GB, 1.000 emissões/mês, 4 máquinas |
+| **Limites do plano Community** | Repositórios de 10 GB, 100 configurações/mês, 1 máquina | Repositórios de 20 GB, 200 configurações/mês, 2 máquinas |
 | **Planos pagos** | Disponíveis (Professional, Business, Enterprise) | Não disponíveis |
 | **Contas** | Independentes | Independentes (separadas do Stable) |
 | **Melhor para** | Produção, cargas de trabalho pagas | Produção, projetos pessoais, acesso antecipado |
 
 ## Limites 2X do Edge
 
-Execute o Edge no plano Community e os seus limites de recursos duplicam, sem custo adicional:
+Execute o Edge no plano Community e os seus limites de recursos duplicam:
 
 | Recurso | Community Stable | Community Edge |
 |---|---|---|
 | Tamanho do repositório | 10 GB | 20 GB |
-| Emissões de licença por mês | 500 | 1.000 |
-| Ativações de máquina | 2 | 4 |
+| Emissões de licença por mês | 100 | 200 |
+| Ativações de máquina | 1 | 2 |
 
 Precisa de limites mais elevados ou funcionalidades pagas? Crie a sua conta no Stable e faça a atualização aí.
 

@@ -6,8 +6,8 @@ description: >-
 category: Concepts
 order: 0
 language: et
-sourceHash: "947fcefa63eac600"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "b1f9e2e3bba92912"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 # Arhitektuur
@@ -43,7 +43,7 @@ Kogu olek elab tööjaamal konfiguratsioonifailis (nt `~/.config/rediacc/rediacc
 
 - Otsesed SSH-ühendused masinatega
 - Väliseid teenuseid ei nõuta
-- Vaikimisi konfiguratsioon luuakse automaatselt CLI esimesel kasutamisel. Nimetatud konfiguratsioonid luuakse käsuga `rdc config init --name <name>`
+- Vaikimisi konfiguratsioon luuakse automaatselt CLI esimesel kasutamisel. Nimetatud konfiguratsioonid luuakse käsuga `rdc config init <name>`
 - Valikuline krüpteeritud konfiguratsiooni sünkroonimine salvestab sama faili konfiguratsioonisalves, meeskonnapõhiselt piiritletuna
 
 ## Kasutaja rediacc
@@ -84,7 +84,7 @@ See tähendab:
 
 Rediaccfile'i funktsioonidel on automaatselt `DOCKER_HOST` seatud õigele pistikupesale.
 
-Kui AI agent siseneb repositooriumisse käsuga `rdc term connect -r <repo>`, kehtib sama isoleerimine: seanss töötab väheste õigustega kasutajana `rediacc` (UID 7111), eraldiseisvas ühenduspunkt-nimeruumis, kusjuures `DOCKER_HOST` on piiratud selle ühe repo daemoni pistikupesaga. Fork-esmane töövoog ühendab selle käitusaegse isoleerimise CoW-kloonimise primitiiviga: agent tegutseb ülesandekohase fork'i peal, mitte grand (tootmis) repositooriumides. Täieliku liivakastimudeli, ülekatte semantika ja arendaja vastutuse piiri väliste teenuste volituste osas vaata [AI agendi ohutus ja turvamehhanismid](/et/docs/ai-agents-safety).
+Kui AI agent siseneb repositooriumisse käsuga `rdc term connect <repo>`, kehtib sama isoleerimine: seanss töötab väheste õigustega kasutajana `rediacc` (UID 7111), eraldiseisvas ühenduspunkt-nimeruumis, kusjuures `DOCKER_HOST` on piiratud selle ühe repo daemoni pistikupesaga. Fork-esmane töövoog ühendab selle käitusaegse isoleerimise CoW-kloonimise primitiiviga: agent tegutseb ülesandekohase fork'i peal, mitte grand (tootmis) repositooriumides. Täieliku liivakastimudeli, ülekatte semantika ja arendaja vastutuse piiri väliste teenuste volituste osas vaata [AI agendi ohutus ja turvamehhanismid](/et/docs/ai-agents-safety).
 
 ### Daemoni teekava paigutus
 
@@ -118,6 +118,25 @@ Repositooriumid on LUKS-krüpteeritud kettapildid, mis on salvestatud serveri an
 3. Ühendatakse `cryptsetup` kaudu, kui sellele pääsetakse ligi
 
 Volitus salvestatakse sinu konfiguratsioonifailis, kuid **mitte kunagi** serveris. Ilma volituseta ei saa repositooriumi andmeid lugeda. Kui automaatne käivitamine on lubatud, salvestatakse serverisse teisene LUKS-võtmefail, et võimaldada automaatset ühendamist käivitumisel.
+
+## Andmesalvestuse taustasüsteemid
+
+Andmesalv on masinapõhine salvestuspesa, mis hoiab repositooriumi pilte. Sellel on kaks taustasüsteemi, mis valitakse `datastore init` ajal:
+
+- **Kohalik (vaikimisi)**: silmus-toetatud BTRFS-failisüsteem masina enda kettal. Repositooriumi pildid on selle sees LUKS-krüpteeritud failid; fork on üksainus `cp --reflink=always`. See on taustasüsteem, mida kasutab iga ühemasinaline juurutus, ja see ei vaja midagi peale serveri enda ketta.
+- **Ceph RBD**: andmesalv elab RBD-pildil, mis on kaardistatud välisest Ceph-klastrist, koos lihtsa BTRFS-iga selle peal (LUKS-kihti sellel tasandil pole, kuna Ceph-sõlmed ei ava kunagi LUKS-i). Fork ja kirjutuskaitstud mitme kliendi arhitektuur kasutavad RBD enda copy-on-write primitiive (hetktõmmis, kaitse, kloon) ja RADOS-nimeruume üürnikupõhise isoleerimise jaoks.
+
+Mõlemad taustasüsteemid näitavad kõigele nende kohal sama repositooriumi mudelit, nii et `repo`-käsud, varukoopiad ja fork'id töötavad identselt. Erinevus seisneb selles, kus baidid elavad ja millist copy-on-write mehhanismi fork kasutab (BTRFS-reflink versus RBD-kloon). Vaata [Masina ülesseadmine](/et/docs/setup), kuidas iga taustasüsteemi initsialiseerida, ja [Serveri viide](/et/docs/server-reference) renet-tasandi andmesalve käskude jaoks.
+
+## Kubernetese repositooriumid
+
+Docker-repode kõrval saab masin majutada **klastreid**. Rediacc säilitab repo mentaliteedi, pöörates tavapärase objektimudeli ümber: klaster on konteiner ja Kubernetese repo on selle sees olev nimeruum.
+
+- Klastri olek (k3s-i andmekataloog sõlme kohta) elab andmesalve-toetatud copy-on-write pildifailides, üks sõlme kohta, nii et klaster forkib ja migreerub pildikogumina.
+- Kubernetese repo on nimeruum `<repo>` pluss selle köited. Püsivad köited on **eraldi** copy-on-write üksused (RBD-pildid Cephis või väikesed andmesalve pildifailid kohaliku PV-provisioneerija kaudu), mitte kunagi kataloogid ühe läbipaistmatu klastripildi sees. See eraldus on see, mis teeb repo-põhised fork'id sõltumatult copy-on-write'iks.
+- `KUBECONFIG` süstitakse `DOCKER_HOST` analoogina ja `renet kube` ümbris rakendab manifeste `up()`-ist samamoodi nagu `renet compose` käitab Dockerit.
+
+Terve klastri kloonimine ja ümberpaigutamine elavad käskudes `rdc cluster fork` ja `rdc cluster migrate`. See on eristav võimekus: forkida või liigutada töötav klaster, sealhulgas selle andmed, teise masinasse või andmekeskusesse lühikese ülemineku ajaga. Vaata juhendit [Kubernetes](/et/docs/kubernetes) täieliku mudeli, käskude ja mõõdetud ülemineku numbrite jaoks.
 
 ## Konfiguratsioonistuktuur
 

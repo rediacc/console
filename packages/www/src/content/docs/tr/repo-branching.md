@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 41
 language: tr
-sourceHash: "2448559f0fcfc0e0"
+sourceHash: "fe334c1c94a0f417"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -308,7 +308,7 @@ Delta aktarımı yalnızca makineler arasında geçerlidir (FIEMAP tabanı olan 
 
 ## JSON şeması
 
-`rdc repo log --json`, renet sonucunu standart zarfla sarar. Yürütülen geçmiş, en yeniden başlayarak `entries`'te yaşar:
+`rdc repo log <repo> --output json`, renet sonucunu standart zarfla sarar. Yürütülen geçmiş, en yeniden başlayarak `entries`'te yaşar:
 
 | Alan | Tür | Açıklama |
 |------|-----|----------|

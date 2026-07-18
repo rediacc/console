@@ -4,8 +4,8 @@ description: "Cree una configuración, agregue máquinas, aprovisione servidores
 category: "Guides"
 order: 3
 language: es
-sourceHash: "19a208e453f7d742"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "1fba8ac242726528"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 # Configuración de Máquinas
@@ -78,6 +78,34 @@ Este comando:
 
 > La configuración solo necesita ejecutarse una vez por máquina. Es seguro volver a ejecutarla si es necesario.
 
+## Backends de Datastore
+
+El datastore es el pool de almacenamiento por máquina que contiene las imágenes cifradas de los repositorios. `machine setup` crea un datastore **local** por defecto: un sistema de archivos BTRFS respaldado por loop en el disco propio del servidor, dimensionado mediante `--datastore-size` (por defecto `95%` del disco disponible). Este es el backend correcto para casi cualquier despliegue de una sola máquina y no necesita nada más allá del servidor.
+
+### Dimensionamiento del datastore
+
+`--datastore-size` acepta un porcentaje (`95%`) o un tamaño absoluto (`50G`, `1T`). El datastore puede ampliarse en línea más tarde:
+
+```bash
+rdc datastore resize -m server-1 --size 200G
+```
+
+Los repositorios dentro del datastore se dimensionan de forma independiente en el momento de `repo create` y pueden expandirse mientras están en ejecución, por lo que no necesitas sobredimensionar el datastore de antemano.
+
+### Backend Ceph RBD
+
+Para almacenamiento compartido, de escalado horizontal o de respaldo para Kubernetes, inicializa el datastore en un clúster Ceph externo en su lugar. El datastore vive entonces en una imagen RBD (BTRFS encima, sin capa LUKS por imagen), y las bifurcaciones usan clones copy-on-write de RBD en lugar de reflinks de BTRFS.
+
+```bash
+# 1. Registrar la referencia Ceph de la máquina (pool + imagen RBD, no secreta)
+rdc config machine set-ceph -m server-1 --pool rbd --image datastore-server1
+
+# 2. Inicializar el datastore en el backend Ceph
+rdc datastore init -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
+```
+
+Los keyrings de Ceph permanecen en las máquinas; el archivo de configuración solo contiene las referencias no secretas de pool e imagen. Ceph es también la capa de almacenamiento que consumen los clústeres de Kubernetes a través de ceph-csi. Consulta la guía [Kubernetes](/es/docs/kubernetes) para clústeres y volúmenes persistentes, y [Arquitectura](/es/docs/architecture) para la comparación entre ambos backends.
+
 ## Gestión de Claves del Host
 
 Si las claves SSH de un servidor cambian (por ejemplo, después de una reinstalación), actualice las claves almacenadas:
@@ -104,7 +132,7 @@ Para diagnósticos más detallados, ejecute:
 rdc doctor
 ```
 
-> **Consejo**: Para verificar la conectividad SSH, ejecute `rdc term connect -m <machine> -c "hostname"` o use `ssh` directamente.
+> **Consejo**: Para verificar la conectividad SSH, ejecute `rdc term connect <machine> -c "hostname"` o use `ssh` directamente.
 
 ## Configuración de Infraestructura
 

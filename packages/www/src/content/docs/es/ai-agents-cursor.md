@@ -4,8 +4,8 @@ description: Configure el IDE Cursor para trabajar con la infraestructura Rediac
 category: Guides
 order: 32
 language: es
-sourceHash: "b5e835461de00400"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "66821f514bc7a8bd"
+sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
 Versión resumida: `.cursorrules` carga el contexto de Rediacc en la IA de Cursor; el terminal le permite ejecutar comandos `rdc` contra sus máquinas reales.
@@ -75,5 +75,5 @@ Para proyectos en equipo, añada la configuración específica de Rediacc para C
 
 - El modo Composer de Cursor funciona bien para tareas de infraestructura con múltiples pasos
 - Use `@terminal` en el chat de Cursor para hacer referencia a la salida reciente del terminal
-- El comando `rdc agent capabilities` proporciona a Cursor una referencia completa de comandos
+- El comando `rdc --help-all` proporciona a Cursor una referencia completa de comandos
 - Combine `.cursorrules` con un archivo `CLAUDE.md` para máxima compatibilidad entre herramientas de IA

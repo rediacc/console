@@ -4,8 +4,8 @@ description: "创建配置、添加机器、配置服务器和设置基础设施
 category: "Guides"
 order: 3
 language: zh
-sourceHash: "19a208e453f7d742"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "1fba8ac242726528"
+sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
 # 机器设置
@@ -78,6 +78,34 @@ rdc config machine setup --name server-1
 
 > 每台机器只需运行一次设置。如果需要，可以安全地重新运行。
 
+## 数据存储后端
+
+数据存储是每台机器上容纳加密仓库镜像的存储池。`machine setup` 默认创建**本地**数据存储：服务器自身磁盘上基于 loop 设备的 BTRFS 文件系统，通过 `--datastore-size` 设置大小（默认为可用磁盘的 `95%`）。这是几乎所有单机部署的正确后端，除了服务器本身外不需要任何其他东西。
+
+### 数据存储容量
+
+`--datastore-size` 接受百分比（`95%`）或绝对大小（`50G`、`1T`）。数据存储之后可以在线扩容：
+
+```bash
+rdc datastore resize -m server-1 --size 200G
+```
+
+数据存储内的仓库在 `repo create` 时独立设置大小，并可以在运行时扩容，因此您无需提前为数据存储预留过多空间。
+
+### Ceph RBD 后端
+
+对于共享、横向扩展或支撑 Kubernetes 的存储，请改为在外部 Ceph 集群上初始化数据存储。此时数据存储位于一个 RBD 镜像上（其上是 BTRFS，没有按镜像的 LUKS 层），fork 使用 RBD 的写时复制克隆，而不是 BTRFS reflink。
+
+```bash
+# 1. 记录机器的 Ceph 引用（池 + RBD 镜像，非机密信息）
+rdc config machine set-ceph -m server-1 --pool rbd --image datastore-server1
+
+# 2. 在 Ceph 后端上初始化数据存储
+rdc datastore init -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
+```
+
+Ceph 密钥环保留在各台机器上；配置文件仅保存非机密的池和镜像引用。Ceph 同时也是 Kubernetes 集群通过 ceph-csi 使用的存储层。关于集群与持久卷，请参阅 [Kubernetes](/en/docs/kubernetes) 指南；关于两种后端的对比，请参阅[架构](/en/docs/architecture)。
+
 ## 主机密钥管理
 
 如果服务器的 SSH 主机密钥发生变化（例如重新安装后），刷新已存储的密钥：
@@ -104,7 +132,7 @@ rdc term connect -m server-1 -c "hostname"
 rdc doctor
 ```
 
-> **提示**：要验证 SSH 连接，运行 `rdc term connect -m <machine> -c "hostname"` 或直接使用 `ssh`。
+> **提示**：要验证 SSH 连接，运行 `rdc term connect <machine> -c "hostname"` 或直接使用 `ssh`。
 
 ## 基础设施配置
 

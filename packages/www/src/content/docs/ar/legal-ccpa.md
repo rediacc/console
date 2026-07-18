@@ -4,7 +4,7 @@ description: "كيف يلبي نموذج الاستضافة الذاتية في 
 category: "Legal"
 order: 4
 language: ar
-sourceHash: "949159b302cf6ab9"
+sourceHash: "3cee3262b53f7afd"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -35,7 +35,7 @@ sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 
 كل مستودع في Rediacc هو وحدة بيانات مشفرة منفصلة بمعرف GUID فريد. يمكنك جرد البيانات الموجودة بدقة:
 
-- `rdc machine query --name <machine> --repositories` يسرد جميع المستودعات على الجهاز مع الحجم وحالة التركيب
+- `rdc machine status <machine> --repositories` يسرد جميع المستودعات على الجهاز مع الحجم وحالة التركيب
 - كل مستودع معزول على مستوى نظام الملفات والشبكة والحاويات
 - يتم تتبع علاقات الاستنساخ، بحيث يمكنك تحديد جميع نسخ مجموعة البيانات
 
