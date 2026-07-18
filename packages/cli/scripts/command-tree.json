@@ -994,6 +994,48 @@
               "subcommands": []
             },
             {
+              "name": "bind",
+              "descriptionKey": "commands.backup.strategy.bind.description",
+              "options": [
+                {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "commands.repo.machineOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "strategy",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "unbind",
+              "descriptionKey": "commands.backup.strategy.unbind.description",
+              "options": [
+                {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "commands.repo.machineOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "strategy",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
               "name": "remove",
               "descriptionKey": "commands.backup.strategy.remove.description",
               "options": [
@@ -3725,6 +3767,12 @@
             {
               "flags": "--purge-archived",
               "descriptionKey": "commands.config.prune.purgeArchivedOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--orphan-repos",
+              "descriptionKey": "commands.config.prune.orphanReposOption",
               "mandatory": false,
               "defaultValue": null
             },

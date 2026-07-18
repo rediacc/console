@@ -4,6 +4,99 @@
 
 **CRITICAL: This repo uses git worktrees.** Your working directory (from `pwd`) is the ONLY correct project root. NEVER use paths from other CLAUDE.md files that may appear in the system context — those belong to the main worktree and are a different checkout. All commands (`./run.sh`, `npx tsx`, file paths) MUST use the current working directory, not `/home/muhammed/monorepo/console/`.
 
+## Session Defaults
+
+Standing rules for every task, in this repo and its submodules. The operator should never
+have to restate them.
+
+### 1. Work stays uncommitted until asked
+
+The default deliverable is an **uncommitted working tree**. Do not `git commit`, create a
+branch, push, or open a PR unless the operator asks for it in that task. Approving a plan
+is not approval to commit. (`main` and releases carry stricter rules; see *Never push to
+`main` or cut a release without explicit user authorization*.)
+
+This means there is **no safety net**, and the tree usually holds work from other sessions
+and agents:
+
+- Never `git checkout` / `restore` / `stash` / `clean` to undo your own mistake. It
+  deletes uncommitted work, including work that is not yours. Repair forward instead.
+- Prefer targeted edits over scripted bulk rewrites. If you must script one, re-verify the
+  WHOLE file afterward, not just the part you aimed at. A find-and-replace scoped wider
+  than you intended lands in a neighbouring key, function, or file, and your own
+  verification will miss it if it only re-checks the target.
+
+### 2. Findings are part of the deliverable
+
+A session is scoped to one ask, but it walks past real defects on the way. Walking past
+them silently is the failure this rule exists to prevent.
+
+- **A workaround is a bug report.** If you route around something (a command that prints
+  nothing, a flag that misbehaves, an error that explains nothing), you have found a
+  defect. Say so, with the exact command and the exact output. Do not quietly take the
+  long way and leave the bug for the next session to rediscover.
+- **Discovery is always in scope. Fixing has a test.** Fix it on the spot, and say you
+  did, when ALL THREE hold: it is in code you are already editing, the fix is small and
+  local (no new abstraction, no signature change rippling outward), and the run you are
+  already doing proves it. Otherwise report it with a one-line repro and ask. Do not
+  silently start a second project inside the first one.
+- **Unblocking and cross-boundary fixes: do the minimum, then say so loudly.** A gate or
+  lint rule blocking the task, or a defect in another package or submodule, still gets
+  fixed. Make the smallest change that works and flag it in the summary as something the
+  operator did not ask for, rather than burying it in the diff. Never suppress a gate to
+  get past it (see the BLOCKER convention).
+- **Sweep the class, not the instance.** Before calling a bug fixed, grep for its
+  siblings. One bad call site usually has several.
+- **Ask for the big-bang, not for permission to patch one thing.** The operator prefers
+  ONE comprehensive change over a trickle of small ones, and will usually say yes. So when
+  findings cluster, do not ask about them one at a time and do not propose the minimal
+  patch: put the whole cluster into a single plan (root cause, siblings, tests,
+  regenerated artifacts, submodules included) and ask to run it. Ask as soon as the
+  cluster is visible, not after you have spent the session working around it.
+- **Clean break, no compatibility theater.** There is one operator and no external
+  consumers. Fix the root cause; do not add migration commands, deprecation windows,
+  fallbacks, or dual code paths to preserve behavior nobody depends on.
+- **Once a big-bang is approved, do not descope it unilaterally.** Fan out subagents if it
+  is large (rule 4). Never quietly downgrade a piece to a stub, a TODO, or a "follow-up
+  issue". If something genuinely cannot be done, say which piece and why, out loud.
+- **End with what you did NOT fix**, as a short "found, not fixed" list, and offer it as
+  the next big-bang so nothing discovered gets lost.
+
+### 3. Verify before you claim
+
+- **Run the real thing.** Output, exit-code, and error-path defects are invisible to code
+  reading and to mocked tests. Drive the actual command and read stdout and stderr
+  SEPARATELY: a wrapper that swallows output, or progress text landing on stdout, only
+  shows up in the raw bytes.
+- **A plan's claim about code you have not read is a hypothesis.** Verify the load-bearing
+  ones before relying on them. Approved plans are wrong about real code often enough that
+  the first live run is part of the implementation, not a formality.
+- **Do not trust a report you have not spot-checked**, including a subagent's and your own
+  from earlier in the session. Check the artifact, not the summary of it.
+- **Name the gates you ran, and the ones you skipped.** Before calling a failure
+  pre-existing or environmental, show that none of its findings are in files you touched.
+
+### 4. Reach for subagents on investigation and planning
+
+Reading and thinking parallelize well here; writing does not. Use them accordingly.
+
+- **Investigate with them by default.** Any question that means sweeping several files,
+  packages, or naming conventions goes to `Explore` or `general-purpose` agents rather
+  than into your own context. Read-only fan-out is cheap: run several at once. Ask each
+  for conclusions with `file:line` evidence, never file dumps.
+- **Plan with them on anything non-trivial.** For a design with real trade-offs, run
+  `Plan` agents (up to 3, different angles) and synthesize. Their plans are proposals, not
+  findings: check the load-bearing claims yourself before acting (see rule 3).
+- **Writing agents: at most 2 at a time, with disjoint file ownership.** State the exact
+  files each one owns and forbid it from touching any other. Two agents editing one file,
+  or one agent running a repo-wide regenerate script, corrupts the tree. Also forbid
+  `git checkout/restore/stash` and any `sync`/`regenerate` script in their prompts, for
+  the reasons in rule 1.
+- **Spot-check every agent's output against the artifact.** Their reports are accurate
+  about intent and quietly wrong about placement. Verify structure across the whole file
+  set they touched, not just the keys or symbols they claimed to change.
+- **Model choice:** Opus for code and design, Sonnet for translation and naturalization.
+
 ## Architecture
 
 Self-hosted infrastructure platform. Each machine runs Docker-based repositories with encrypted, isolated environments.
@@ -371,6 +464,12 @@ Auth: `SES_AK_ID`/`SES_AK_SECRET` for AWS IAM admin, `CLOUDFLARE_API_TOKEN` (or 
 | `lint:unused` | Add to `ignoreDependencies` in `knip.jsonc` with a `// BLOCKER:` reason if it's a transitive/runtime dep |
 | `check:ci-e2e-coverage` | Add coverage for new renet bridge functions in `packages/e2e-tests` (the gate greps e2e-tests for each generated function name) |
 | `check:ci-renet` (types) | `private/renet/bin/renet functions generate-types --output packages/shared/src/renet-contract/data --version dev` |
+| `check:ci-renet` (i18n orphan keys) | A locale defines a key `en.go` does not, so it is unreachable — lookups resolve against the English key set. Fix: `cd private/renet && ./bin/renet i18n prune-orphans --dry-run`, then re-run without `--dry-run` and `gofmt -w pkg/i18n/locales/`. Always safe to delete. This class hid 191 CORRUPTED KEY NAMES (machine translation rewrote the identifiers, `bridge.create_failed` -> `bridge.create_<arabic>`), invisible because validation only walked English keys. |
+| `check:ci-renet` (i18n format parity) | A translation's `%s`/`%d` verbs do not match English. This is a RUNTIME bug, not cosmetic: Go substitutes positionally, so a dropped verb loses the value it should print and an extra one renders `%!s(MISSING)`. Fix the translation in `pkg/i18n/locales/<loc>.go`. If the language needs a different argument order, use explicit indices — `%[1]s`, `%.0[2]f` — numbered by position in the ENGLISH string. The index goes immediately before the verb, AFTER any precision (`%.0[2]f` is valid, `%[2].0f` is `%!f(BADINDEX)`). |
+| `check:ci-renet` (i18n word blend) | An English morpheme is fused onto a translated root (`成功fully`, `başarıfully`, `Instすべてing`). Rewrite the whole string naturally; no `-ing`/`-fully` may remain welded to a translated root. Add genuine native words ending in those suffixes to `blendExceptions` in `pkg/i18n/rules.go` (e.g. Estonian `päring`). |
+| i18n gating model (renet) | `./bin/renet i18n validate` exits on `.totalCertain`: untranslated, missing/orphan keys, and format-parity (incl. word blends), in EVERY locale. Only the `suspected` fragment heuristic is advisory. This was staged behind a `strictLocales` set while ~1800 pre-existing defects were fixed; all 12 locales are clean and the set is gone. It was never a baseline — a baseline exempts everything and turns "we know" into "fine forever", which is how 2837 grandfathered entries came to hide real bugs. |
+| `check:ci-i18n-placeholders` | A locale DROPPED a `{{placeholder}}` English has (information silently lost) or INVENTED one it does not (renders literally to the reader). Covers three sets: `packages/cli`, `packages/www`, `private/account/web`. Fix the locale value; never add the placeholder to English unless the call site passes it. |
+| `check:i18n` (orphan keys) | Same class as renet's, in the JSON catalogs: a locale defines a key English does not. English is the source of truth; remove the extra key. Reported per set by `scripts/check-translation-completeness.ts`. |
 | `Initialize` (PR title) | PR title must follow Conventional Commits (`type(scope): summary` or `type: summary`). Fix with `gh pr edit <N> --title "fix: ..."`. |
 | `Quality / PR Description` (stale) | Description's `updatedAt` is older than 30 min and there are new commits. Run `gh pr edit <N> --body "..."` **immediately before pushing the next commit** so the fresh timestamp is visible to the next CI run (editing alone does not trigger CI). **The body must actually change** — an edit with identical content does NOT bump `updatedAt`; summarize the new commits instead of re-sending the same text. Stale-only failure: refresh + `gh run rerun <id> --failed`, no commit needed. |
 
@@ -417,7 +516,9 @@ Re-running (`gh run rerun`) is only appropriate for transient errors (network, f
 
 ### Never push to `main` or cut a release without explicit user authorization
 
-**AI agents MUST NOT push to `main` (console or any submodule) or trigger a release without an explicit, per-task user request.** Every push to `main` runs the full release pipeline (`cd-v2.yml` deploys edge on green), so an unprompted main push is an unprompted release. The default is always: create a feature branch, open a PR, and let the user merge. Approving an implementation plan is **not** authorization to push to `main` or release. Branch protection forbids direct pushes (`.github/CONTRIBUTING.md`); do not work around it. When in doubt, stop at the branch/PR and ask.
+**AI agents MUST NOT push to `main` (console or any submodule) or trigger a release without an explicit, per-task user request.** Every push to `main` runs the full release pipeline (`cd-v2.yml` deploys edge on green), so an unprompted main push is an unprompted release. Approving an implementation plan is **not** authorization to push to `main` or release. Branch protection forbids direct pushes (`.github/CONTRIBUTING.md`); do not work around it.
+
+Per *Session Defaults*, the standing default is to land nothing at all: leave the work uncommitted and let the operator decide. This section governs the case where the operator HAS asked for the work to land. Then the route is a feature branch and a PR for them to merge, never a direct push to `main`. When in doubt, stop and ask.
 
 ### Submodule commit order
 

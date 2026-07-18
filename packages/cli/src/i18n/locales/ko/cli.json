@@ -29,6 +29,11 @@
         "description": "원격 머신의 백업 상태 및 타이머 상태를 표시합니다"
       },
       "strategy": {
+        "bind": {
+          "alreadyBound": "백업 전략 \"{{strategy}}\"이(가) 이미 머신 \"{{machine}}\"에 연결되어 있습니다",
+          "bound": "백업 전략 \"{{strategy}}\"이(가) 머신 \"{{machine}}\"에 연결되었습니다",
+          "description": "백업 전략을 머신에 연결하여 일정이 그곳에 배포되도록 합니다"
+        },
         "description": "이름 지정 백업 전략을 관리합니다 (hot/cold 모드, 대상, 스케줄링)",
         "list": {
           "description": "모든 백업 전략을 나열합니다"
@@ -63,6 +68,11 @@
           "noDestinations": "  대상: (없음)",
           "notConfigured": "설정된 백업 전략이 없습니다",
           "notFound": "백업 전략 \"{{name}}\"을 찾을 수 없습니다"
+        },
+        "unbind": {
+          "description": "머신에서 백업 전략 연결을 해제합니다",
+          "notBound": "백업 전략 \"{{strategy}}\"이(가) 머신 \"{{machine}}\"에 연결되어 있지 않습니다",
+          "unbound": "백업 전략 \"{{strategy}}\"이(가) 머신 \"{{machine}}\"에서 연결 해제되었습니다"
         }
       },
       "descriptionShort": "백업 관리",
@@ -310,15 +320,20 @@
         "description": "~/.config/rediacc/<config>.json의 로컬 설정 파일에서 불필요한 항목을 제거합니다. 세 가지 버킷이 정리되며 모두 로컬에서만 처리됩니다 (SSH/renet 호출 없음): (1) 앵커 GUID/저장소/머신이 더 이상 활성 설정에 없는 ACME 인증서 캐시 항목; (2) 유예 기간이 만료된 보관된 저장소 (기본값 7일, defaults.pruneGraceDays 참조); (3) 끊어진 교차 참조 (machine→strategy, strategy→repo). 여전히 사용 중인 리소스, 자격증명, 스토리지 토큰, known-hosts는 변경되지 않습니다. 기본 동작은 변경 사항을 적용합니다. 미리 보기만 하려면 --dry-run을 사용하십시오.",
         "descriptionShort": "로컬 설정 파일에서 오래된 항목을 정리합니다",
         "droppedRefs": "{{count}}개의 끊어진 교차 참조가 {{verb}} 제거되었습니다:",
+        "droppedStateRepos": "{{count}}개의 상태 레코드(일치하는 저장소 항목 없음)가 {{verb}} 삭제되었습니다:",
         "dryRun": "드라이런: {{count}}개의 변경 사항이 적용됩니다. --dry-run 없이 다시 실행하여 적용하십시오.",
         "dryRunOption": "설정 파일을 수정하지 않고 제거될 항목을 미리 봅니다. 다른 prune 명령의 기본 비활성 의미론을 따릅니다.",
+        "foundOrphanRepos": "{{count}}개의 저장소 항목이 어떤 머신에도 배치되어 있지 않습니다:",
         "graceDaysOption": "이번 실행에 대한 보관 유예 기간 (일 단위)을 재정의합니다. 설정의 defaults.pruneGraceDays로 대체되며 둘 다 설정되지 않은 경우 7을 사용합니다.",
         "keptArchivesInGrace": "유예 기간 내에 있는 보관 저장소가 유지되었습니다 ('rdc repo admin archive restore'를 통해 복구 가능):",
         "nothingToPrune": "정리할 항목이 없습니다. 설정이 이미 깨끗합니다.",
+        "orphanReposHint": "'rdc config reconcile'를 실행하면 머신 정보로부터 배치를 도출합니다. 실행 후에도 여전히 목록에 남아 있는 항목은 실제로 배치되지 않은 것이므로 'rdc config prune --orphan-repos'로 제거하십시오.",
+        "orphanReposOption": "어떤 머신에도 배치되지 않은 저장소 항목을 제거합니다. 각 항목에는 해당 저장소의 자격증명과 SSH 키가 들어 있어 복구할 수 없습니다. 먼저 'rdc config reconcile'을 실행하여 배치 정보가 머신 상태를 반영하도록 하세요.",
         "purgeArchivedOption": "유예 기간을 지난 것뿐 아니라 경과 기간과 무관하게 보관된 저장소를 모두 삭제합니다. 모든 보관 저장소에 대해 'rdc repo admin archive purge'를 실행하는 것과 동일합니다. 복원용으로 저장된 자격증명이 전혀 필요 없다고 확신할 때만 사용하세요",
         "purgedArchives": "{{count}}개의 만료된 보관 저장소가 {{verb}} 제거되었습니다:",
         "refsOnlyOption": "끊어진 교차 참조만 처리합니다 (machine→strategy, strategy→repo excludes/includes). 인증서 캐시 및 보관을 건너뜁니다. --certs-only 및 --archives-only와 함께 사용할 수 없습니다.",
         "removedCerts": "{{count}}개의 인증서 캐시 항목이 {{verb}} 제거되었습니다:",
+        "removedOrphanRepos": "{{count}}개의 저장소 항목(어떤 머신에도 배치되지 않음)이 {{verb}} 제거되었습니다:",
         "scanning": "오래된 항목에 대해 로컬 설정을 검사하는 중...",
         "tooManyOnlyFlags": "--certs-only / --archives-only / --refs-only 중 하나만 전달하십시오."
       },
@@ -699,6 +714,9 @@
         "previewEmpty": "고아 데이터스토어 리소스를 찾을 수 없습니다",
         "pruneUnknownOption": "renet .interim/state 미러가 분류할 수 없는 저장소만 삭제합니다 (로컬 설정에 없고 포크 표시 미러도 없는 경우). --orphaned-repos보다 엄격하게 더 좁음: 미러가 식별한 포크 없음 설정은 미러가 식별할 때 보존됩니다. 이전 미러 레거시 고아 및 설정 항목이 삭제된 오래된 grand 모두 이 버킷에 해당합니다.",
         "startingDatastore": "{{machine}}에서 고아 데이터스토어 리소스 검색 중...",
+        "startingUnits": "{{machine}}에서 고아 systemd 유닛 검색 중...",
+        "unitsCompleted": "유닛 정리가 완료되었습니다",
+        "unitsFailed": "유닛 정리에 실패했습니다",
         "unknownCompleted": "알 수 없는 저장소 {{count}}개가 정리되었습니다",
         "unknownFound": "알 수 없는 저장소 {{count}}개 발견 (마운트 안전 확인 후 삭제 가능 {{deletable}}개)",
         "unknownStarting": "{{machine}}에서 알 수 없는 저장소 검색 중 (로컬 설정에 없고 포크 표시 미러도 없는 경우)..."
@@ -808,7 +826,8 @@
         "completed": "{{total}} 중 {{count}}개의 머신 검사 완료",
         "description": "현재 설정의 머신에 대한 SSH 호스트 키를 검사합니다",
         "keysScanned": "\"{{name}}\"에 대한 호스트 키 검사 완료",
-        "noKeys": "\"{{name}}\"에 대한 호스트 키를 검사할 수 없습니다"
+        "noKeys": "\"{{name}}\"에 대한 호스트 키를 검사할 수 없습니다",
+        "replaced": "\"{{name}}\"의 호스트 키: 기존 키 {{count}}개가 교체되었습니다 - 아래 핑거프린트를 반드시 별도의 경로로 확인하세요"
       },
       "setup": {
         "completed": "머신 '{{machine}}' 설정이 성공적으로 완료되었습니다",
@@ -1487,7 +1506,7 @@
       "batchNeedRefOrAll": "저장소 참조를 지정하거나(repo {{verb}} <ref>), 일괄 형식 repo {{verb}} --all -m <machine>을 사용하세요",
       "batchRefConflict": "저장소 참조는 그 자체로 머신을 결정합니다. --all과 --machine은 일괄 형식 전용입니다: repo {{verb}} --all -m <machine>",
       "exec": {
-        "cmdArgument": "-- 뒤에 실행할 명령",
+        "cmdArgument": "실행할 명령: -- 뒤의 모든 내용은 그대로 컨테이너에 전달되므로, CLI 플래그(-c, -i, -u, --debug)는 -- 앞에 와야 합니다",
         "containerOption": "실행할 컨테이너 (저장소가 컨테이너를 두 개 이상 실행할 때만 필요)",
         "description": "저장소 컨테이너 내부에서 명령을 실행합니다. 명령 자체의 종료 코드가 그대로 전달되므로 스크립트와 조건문에서도 사용할 수 있습니다. Docker 저장소는 저장소의 Docker 데몬을 통해 실행되고, Kubernetes 저장소는 저장소의 네임스페이스 안에서 실행됩니다",
         "descriptionShort": "저장소 컨테이너 내부에서 명령을 실행합니다",
@@ -1495,7 +1514,8 @@
         "userOption": "명령을 실행할 사용자",
         "examples": {
           "basic": "저장소 컨테이너 내부에서 명령을 실행합니다.",
-          "interactive": "컨테이너에서 대화형 셸을 엽니다."
+          "interactive": "컨테이너에서 대화형 셸을 엽니다.",
+          "separator": "원격 명령에 전달할 플래그는 -- 뒤에 두고, CLI 자체 플래그는 그 앞에 유지합니다."
         }
       },
       "logs": {
@@ -2160,7 +2180,7 @@
       "create": "암호화된 저장소 생성",
       "down": "서비스 중지",
       "fork": "테스트용 CoW 포크",
-      "keyConcepts": "\n핵심 개념:\n\n  Compose 및 Rediaccfile\n    • renet compose -- up -d 사용 (raw docker compose 사용 금지). -- 구분자가 반드시 필요\n    • Rediaccfile은 up()과 down() 함수를 정의해야 합니다. up()은 디렉터리 생성, 설정 생성, 컨테이너 시작을 수행해야 함\n    • compose ports: 무시됨 (network_mode:host). 외부 접근에는 rediacc.service_port 레이블 사용\n    • restart: always/unless-stopped는 renet에 의해 자동 제거되고 .rediacc.json에 저장됨 -- 라우터 워치독이 중단된 서비스를 자동 복구\n    • 각 서비스는 루프백 IP를 부여받습니다. eBPF 바인드 재작성이 격리를 투명하게 처리하므로 앱은 0.0.0.0에 바인딩 가능\n    • 인접 서비스에 연결하려면 서비스 이름 사용 (예: \"db\", \"redis\") -- renet이 모든 서비스 이름을 호스트명으로 주입. 데이터베이스 내부에 저장된 연결 문자열에 ${DB_IP}를 직접 포함하지 마세요 -- IP가 고정되어 포크 격리가 깨짐 (유효성 검사 오류)\n    • 헬스 체크는 localhost 사용 가능. 예: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  스토리지\n    • ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config 등에 바인드 마운트\n    • 예시: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker 이름 지정 볼륨은 포크 및 백업에서 제외됨\n    • 컨테이너에 바인드 마운트된 설정 파일은 컨테이너가 기본 UID가 아닌 UID로 실행되는 경우 world-readable (644)이어야 함\n\n  라우팅\n    • Grand 저장소 자동 라우트: https://{service}.{repo}.{machine}.{baseDomain} (와일드카드 인증서 *.{repo}.{machine}.{baseDomain}은 첫 번째 repo up 시 Traefik이 자동 프로비저닝)\n    • 포크 자동 라우트: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (상위 저장소의 와일드카드 인증서 사용, 속도 제한 영향 없음)\n    • 커스텀 도메인: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP 포워딩: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • 커스텀 도메인 (rediacc.domain 레이블)은 포크에서 무시됨 -- 도메인은 grand 저장소에 속함\n\n  라이프사이클\n    • repo delete: 스토리지, Docker 데몬, 루프백 IP, systemd 유닛을 완전히 정리\n    • repo down: 컨테이너를 중지하지만 Docker 데몬과 IP는 유지 (repo up으로 빠른 재시작 가능)\n    • depends_on with condition: service_healthy는 시작 순서를 처리하지만 런타임 복구는 처리하지 않음\n    • 데이터베이스가 정상적으로 종료되면 (exit 0), 의존 서비스가 충돌 루프에 빠집니다. 해결: rdc repo up <repo-ref>\n    • 자동 시작: rdc repo admin autostart enable <repo-ref> -- 머신 부팅 시 저장소를 자동 마운트 및 시작\n    • 예약 백업은 포크 저장소를 자동으로 건너뜀. 수동 포크 백업: rdc repo push <repo-ref> --to <remote>\n    • rdc repo promote <fork-ref> -- 프로덕션 데이터를 포크 데이터로 교체 (ID 보존). 되돌리기: rdc repo promote <backup-fork-ref>\n\n  이름 지정 및 대상 지정\n    • Grand(프로덕션) 저장소: <repo>로 참조하며, <repo>:latest와 동일합니다 (latest가 기본 태그). 단독 ref는 정확히 일치하는 설정 키로 해석되고, 없으면 <repo>:latest로 대체됩니다\n    • 포크: 항상 latest가 아닌 태그를 가진 <repo>:<tag> 형식입니다 (예: app:test). up/down/delete/term/sync는 모두 동일한 <repo>:<tag>를 받습니다\n    • 즉 `app`은 GRAND를 대상으로 하고, `app:test`는 해당 FORK를 대상으로 합니다. 포크를 조작할 때는 항상 태그를 포함하세요 -- 유일하게 모호한 경우는 포크가 실수로 단독/latest 이름으로 등록된 경우입니다\n    • 에이전트는 포크만 수정할 수 있습니다. grand 저장소는 보호되며 (REDIACC_ALLOW_GRAND_REPO를 통해서만 재정의 가능하며, 세션 시작 전에 운영자가 설정해야 함), 포크는 안전하게 폐기 가능한 단위입니다\n",
+      "keyConcepts": "\n핵심 개념:\n\n  Compose 및 Rediaccfile\n    • renet compose -- up -d 사용 (raw docker compose 사용 금지). -- 구분자가 반드시 필요\n    • rdc repo exec <ref> [CLI 플래그] -- <remote cmd>: -- 뒤의 모든 내용은 그대로 컨테이너에 전달되므로 -c/-i/-u/--debug는 -- 앞에 두어야 함. -- 뒤에 적은 --debug는 원격 명령으로 전달될 뿐 CLI 디버그 출력을 활성화하지 않음\n    • Rediaccfile은 up()과 down() 함수를 정의해야 합니다. up()은 디렉터리 생성, 설정 생성, 컨테이너 시작을 수행해야 함\n    • compose ports: 무시됨 (network_mode:host). 외부 접근에는 rediacc.service_port 레이블 사용\n    • restart: always/unless-stopped는 renet에 의해 자동 제거되고 .rediacc.json에 저장됨 -- 라우터 워치독이 중단된 서비스를 자동 복구\n    • 각 서비스는 루프백 IP를 부여받습니다. eBPF 바인드 재작성이 격리를 투명하게 처리하므로 앱은 0.0.0.0에 바인딩 가능\n    • 인접 서비스에 연결하려면 서비스 이름 사용 (예: \"db\", \"redis\") -- renet이 모든 서비스 이름을 호스트명으로 주입. 데이터베이스 내부에 저장된 연결 문자열에 ${DB_IP}를 직접 포함하지 마세요 -- IP가 고정되어 포크 격리가 깨짐 (유효성 검사 오류)\n    • 헬스 체크는 localhost 사용 가능. 예: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  스토리지\n    • ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config 등에 바인드 마운트\n    • 예시: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker 이름 지정 볼륨은 포크 및 백업에서 제외됨\n    • 컨테이너에 바인드 마운트된 설정 파일은 컨테이너가 기본 UID가 아닌 UID로 실행되는 경우 world-readable (644)이어야 함\n\n  라우팅\n    • Grand 저장소 자동 라우트: https://{service}.{repo}.{machine}.{baseDomain} (와일드카드 인증서 *.{repo}.{machine}.{baseDomain}은 첫 번째 repo up 시 Traefik이 자동 프로비저닝)\n    • 포크 자동 라우트: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (상위 저장소의 와일드카드 인증서 사용, 속도 제한 영향 없음)\n    • 커스텀 도메인: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP 포워딩: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • 커스텀 도메인 (rediacc.domain 레이블)은 포크에서 무시됨 -- 도메인은 grand 저장소에 속함\n\n  라이프사이클\n    • repo delete: 스토리지, Docker 데몬, 루프백 IP, systemd 유닛을 완전히 정리\n    • repo down: 컨테이너를 중지하지만 Docker 데몬과 IP는 유지 (repo up으로 빠른 재시작 가능)\n    • depends_on with condition: service_healthy는 시작 순서를 처리하지만 런타임 복구는 처리하지 않음\n    • 데이터베이스가 정상적으로 종료되면 (exit 0), 의존 서비스가 충돌 루프에 빠집니다. 해결: rdc repo up <repo-ref>\n    • 자동 시작: rdc repo admin autostart enable <repo-ref> -- 머신 부팅 시 저장소를 자동 마운트 및 시작\n    • 예약 백업은 포크 저장소를 자동으로 건너뜀. 수동 포크 백업: rdc repo push <repo-ref> --to <remote>\n    • rdc repo promote <fork-ref> -- 프로덕션 데이터를 포크 데이터로 교체 (ID 보존). 되돌리기: rdc repo promote <backup-fork-ref>\n\n  이름 지정 및 대상 지정\n    • Grand(프로덕션) 저장소: <repo>로 참조하며, <repo>:latest와 동일합니다 (latest가 기본 태그). 단독 ref는 정확히 일치하는 설정 키로 해석되고, 없으면 <repo>:latest로 대체됩니다\n    • 포크: 항상 latest가 아닌 태그를 가진 <repo>:<tag> 형식입니다 (예: app:test). up/down/delete/term/sync는 모두 동일한 <repo>:<tag>를 받습니다\n    • 즉 `app`은 GRAND를 대상으로 하고, `app:test`는 해당 FORK를 대상으로 합니다. 포크를 조작할 때는 항상 태그를 포함하세요 -- 유일하게 모호한 경우는 포크가 실수로 단독/latest 이름으로 등록된 경우입니다\n    • 에이전트는 포크만 수정할 수 있습니다. grand 저장소는 보호되며 (REDIACC_ALLOW_GRAND_REPO를 통해서만 재정의 가능하며, 세션 시작 전에 운영자가 설정해야 함), 포크는 안전하게 폐기 가능한 단위입니다\n",
       "up": "자동 마운트로 배포"
     },
     "sync": {

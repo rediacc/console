@@ -7,6 +7,15 @@ import { VERSION } from '../version.js';
 export const STAGED_UPDATE_DIR = join(getCacheDir(), 'staged-update');
 export const UPDATE_STATE_FILE = join(getStateDir(), 'update-state.json');
 
+/**
+ * Per-machine record of when repo licences were last refreshed.
+ *
+ * Lives beside the update state rather than in the config file: this is local,
+ * disposable bookkeeping about network calls already made, not configuration
+ * worth versioning or syncing. Losing it costs one extra refresh.
+ */
+export const LICENSE_REFRESH_STATE_FILE = join(getStateDir(), 'license-refresh-state.json');
+
 const UPDATE_LOCK_FILE = join(getStateDir(), 'update.lock');
 
 export type PlatformKey =

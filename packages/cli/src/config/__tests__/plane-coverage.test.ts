@@ -136,8 +136,16 @@ describe('command plane coverage', () => {
     // config's archive map — so the machine plane was a false claim, and it made them
     // proxy-capable: a proxied `archive purge` would have permanently deleted the
     // PROXY HOST's archived records rather than the caller's (§4.9).
-    expect(COMMANDS.length).toBe(164);
-    expect(counts).toEqual({ config: 51, machine: 93, other: 20 });
+    // 164 -> 166, config 51 -> 53: the two NEW leaves `backup strategy bind` and
+    // `unbind`. `machine.backupStrategies[]` decides which strategies `backup
+    // schedule` deploys, and nothing could write it — the only writer was
+    // config-refs-prune, which only removes — so completing a strategy rename
+    // required hand-editing the config file. They inherit the `backup strategy`
+    // subtree's config plane, which is correct and deliberate: both only
+    // read-modify-write the local config and import no executor or SSH. The
+    // machine-plane default of the `backup` domain would have been a false claim.
+    expect(COMMANDS.length).toBe(166);
+    expect(counts).toEqual({ config: 53, machine: 93, other: 20 });
   });
 
   it('records the interactive commands', () => {

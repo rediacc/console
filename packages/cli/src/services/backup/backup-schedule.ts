@@ -134,6 +134,39 @@ async function preDeployProvisioning(
 }
 
 /**
+ * Warn about enabled strategies that no machine binds.
+ *
+ * The silent case this exists for is PARTIAL binding: with one strategy bound
+ * and another orphaned, the deploy reported "unchanged" for the bound one and
+ * exited 0, never mentioning that the other was configured but would never run.
+ * The operator's only clue was a backup that silently did not happen.
+ *
+ * A warning rather than an error on purpose — a strategy staged before its
+ * machine exists is legitimate, and throwing here would block deploys to
+ * unrelated machines over a strategy that has nothing to do with them.
+ */
+async function warnAboutUnboundStrategies(
+  machines: Record<string, { backupStrategies?: string[] } | undefined>
+): Promise<void> {
+  const bound = new Set<string>();
+  for (const machine of Object.values(machines)) {
+    for (const name of machine?.backupStrategies ?? []) bound.add(name);
+  }
+
+  const strategies = await configService.listBackupStrategies();
+  const orphaned = Object.entries(strategies)
+    .filter(([name, strategy]) => strategy.enabled !== false && !bound.has(name))
+    .map(([name]) => name);
+
+  for (const name of orphaned) {
+    outputService.warn(
+      `Backup strategy "${name}" is enabled but bound to no machine, so it will never run. ` +
+        `Bind it with: rdc backup strategy bind ${name} -m <machine>`
+    );
+  }
+}
+
+/**
  * Push backup schedule to a remote machine.
  *
  * Reads machine.backupStrategies[] to determine which strategies to deploy.
@@ -153,11 +186,12 @@ export async function pushBackupSchedule(
   const strategyNames = machine.backupStrategies ?? [];
   if (strategyNames.length === 0) {
     throw new Error(
-      `No backup strategies bound to machine "${machineName}". Bind with: rdc config machine set --name ${machineName} --backup-strategy <name>`
+      `No backup strategies bound to machine "${machineName}". Bind with: rdc backup strategy bind <name> -m ${machineName}`
     );
   }
 
   const strategies = await loadAndValidateStrategies(strategyNames);
+  await warnAboutUnboundStrategies(localConfig.machines);
   const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));

@@ -54,7 +54,7 @@ function isObj(v: unknown): v is Obj {
 function warn(message: string): void {
   // console.warn goes to stderr on Node and is the one warn channel that also
   // exists in Workers and browsers, so this module stays runtime-portable.
-  console.warn(`rdc config migration (v2→v3): ${message}`);
+  console.warn(`config migration (v2→v3): ${message}`);
 }
 
 /** Split a v2 composite repo key on the first ':' (bare → tag 'latest'). */
@@ -119,7 +119,7 @@ function buildFamily(base: string, list: TagEntry[], families: Obj, stateRepos: 
   const grandish = list.filter((x) => x.grandish);
   if (grandish.length > 1) {
     throw new Error(
-      `Cannot migrate repository "${base}": both a bare "${base}" and a "${base}:latest" key exist (already ambiguous in v2). Remove one with 'rdc config repository remove' before upgrading.`
+      `Cannot migrate repository "${base}": both a bare "${base}" and a "${base}:latest" key exist (already ambiguous in v2). Remove one with 'rdc repo delete <ref>' before upgrading.`
     );
   }
 

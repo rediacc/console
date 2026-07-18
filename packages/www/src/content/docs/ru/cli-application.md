@@ -6,7 +6,7 @@ order: 2
 language: ru
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ru/cli.json
-sourceHash: "0b6dcd192fe3d8f1"
+sourceHash: "16f7e9d8dad6e5ec"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -66,6 +66,7 @@ rdc config prune [options]
 | `--archives-only` | {{t:cli.commands.config.prune.archivesOnlyOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--refs-only` | {{t:cli.commands.config.prune.refsOnlyOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--purge-archived` | {{t:cli.commands.config.prune.purgeArchivedOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--orphan-repos` | {{t:cli.commands.config.prune.orphanReposOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--grace-days <days>` | {{t:cli.commands.config.prune.graceDaysOption}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -2235,29 +2236,6 @@ rdc backup status [strategy] [options]
 
 {{t:cli.commands.backup.strategy.description}}
 
-<a id="cli-local-backup-strategy-list"></a>
-#### list
-
-{{t:cli.commands.backup.strategy.list.description}}
-
-```bash
-rdc backup strategy list
-```
-
-<a id="cli-local-backup-strategy-remove"></a>
-#### remove
-
-{{t:cli.commands.backup.strategy.remove.description}}
-
-```bash
-rdc backup strategy remove <strategy> [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--destination <name>` | {{t:cli.commands.backup.strategy.remove.optionDestination}} | {{t:cli.docs.optionLabels.no}} | - |
-
-
 <a id="cli-local-backup-strategy-set"></a>
 #### set
 
@@ -2280,6 +2258,57 @@ rdc backup strategy set <strategy> [options]
 | `--enable` | {{t:cli.commands.backup.strategy.set.optionEnable}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--disable` | {{t:cli.commands.backup.strategy.set.optionDisable}} | {{t:cli.docs.optionLabels.no}} | - |
 
+
+<a id="cli-local-backup-strategy-bind"></a>
+#### bind
+
+{{t:cli.commands.backup.strategy.bind.description}}
+
+```bash
+rdc backup strategy bind <strategy> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+
+
+<a id="cli-local-backup-strategy-unbind"></a>
+#### unbind
+
+{{t:cli.commands.backup.strategy.unbind.description}}
+
+```bash
+rdc backup strategy unbind <strategy> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+
+
+<a id="cli-local-backup-strategy-remove"></a>
+#### remove
+
+{{t:cli.commands.backup.strategy.remove.description}}
+
+```bash
+rdc backup strategy remove <strategy> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--destination <name>` | {{t:cli.commands.backup.strategy.remove.optionDestination}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-backup-strategy-list"></a>
+#### list
+
+{{t:cli.commands.backup.strategy.list.description}}
+
+```bash
+rdc backup strategy list
+```
 
 <a id="cli-local-backup-strategy-show"></a>
 #### show

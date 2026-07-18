@@ -186,6 +186,42 @@ function getSections(
       getData: (r) => buildStorageHealthRows(r.storage_health, repoName),
     },
     {
+      // How long ago each repo was actually uploaded, read from the state the
+      // backup job merges across runs. A backup can report success while
+      // covering less than it used to — a repo loses its licence, or a transfer
+      // window closes before the largest images are reached — and the exit
+      // status says nothing. The growing age here is what reveals it.
+      title: 'Backup Coverage',
+      getData: (r) =>
+        (r.backup_coverage?.repos ?? []).map((b) => ({
+          repository: resolve(b.guid),
+          lastBackup: b.last_success_at ?? DEFAULTS.STATUS.NEVER,
+          // -1 means no successful backup is on record; showing it as a number
+          // would read as "0 days ago", the opposite of the truth.
+          ageDays: b.age_days < 0 ? '-' : b.age_days,
+          lastSkipped: b.last_skipped_at ?? DEFAULTS.CLOUD.DISPLAY_PLACEHOLDER,
+          skipReason: b.last_skip_reason ?? DEFAULTS.CLOUD.DISPLAY_PLACEHOLDER,
+        })),
+    },
+    {
+      // Rendered by default, not only under --strict. The watchdog maintains
+      // this registry precisely to catch the slow silent failure — a container
+      // whose healthcheck has been failing for days — and it is worth nothing
+      // if seeing it requires already suspecting it and passing a flag. The
+      // table is empty when nothing is drifting, so a healthy machine stays
+      // quiet; --strict still controls the CI exit code.
+      title: 'Health Drift',
+      getData: (r) =>
+        (r.health_drift?.entries ?? []).map((e) => ({
+          container: e.container,
+          repository: e.repo ? resolve(e.repo) : '-',
+          status: e.status,
+          failingStreak: e.failing_streak,
+          firstSeen: e.first_seen,
+          lastSeen: e.last_seen,
+        })),
+    },
+    {
       title: 'Containers',
       getData: (r) =>
         getContainers(r).map((c) => ({

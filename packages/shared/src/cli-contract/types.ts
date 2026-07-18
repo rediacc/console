@@ -247,8 +247,6 @@ export interface ContractCommand {
    * entry (today: `cluster` and `credits`).
    */
   group: CommandGroup | null;
-  /** Hidden unless REDIACC_EXPERIMENTAL=1. */
-  experimental: boolean;
   /** Where this command runs. */
   plane: CommandPlane;
   /** i18n key for the description, or null (see ContractOption.descriptionKey). */

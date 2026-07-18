@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { cli } from '../../cli.js';
-import {
-  COMMAND_DOMAINS,
-  COMMAND_REGISTRY,
-  getCommandDef,
-  isExperimentalEnabled,
-} from '../command-registry.js';
+import { COMMAND_DOMAINS, COMMAND_REGISTRY, getCommandDef } from '../command-registry.js';
 
 describe('config/command-registry', () => {
   describe('getCommandDef', () => {
@@ -76,31 +71,17 @@ describe('config/command-registry', () => {
 
     it('machine experimental subcommands are declared', () => {
       const def = getCommandDef('machine');
-      expect(def?.subcommands?.health.experimental).toBe(true);
+      // `health` is a registry entry but carries no gating any more — it used to
+      // be experimental, which made `rdc machine health` answer "unknown
+      // command" unless an env var was set, so the one command that aggregates
+      // machine issues was the one nobody could run.
+      expect(def?.subcommands?.health).toBeDefined();
       // containers/services/repos were folded into `machine status --containers` etc.
       // by the P4 reshape. A registry entry for a command that no longer exists is a
       // name waiting to be silently re-bound, so it must stay gone.
       expect(def?.subcommands?.containers).toBeUndefined();
       expect(def?.subcommands?.services).toBeUndefined();
       expect(def?.subcommands?.repos).toBeUndefined();
-    });
-  });
-
-  describe('isExperimentalEnabled', () => {
-    it('reflects REDIACC_EXPERIMENTAL env var', () => {
-      const prev = process.env.REDIACC_EXPERIMENTAL;
-      try {
-        process.env.REDIACC_EXPERIMENTAL = '1';
-        expect(isExperimentalEnabled()).toBe(true);
-        delete process.env.REDIACC_EXPERIMENTAL;
-        expect(isExperimentalEnabled()).toBe(false);
-      } finally {
-        if (prev === undefined) {
-          delete process.env.REDIACC_EXPERIMENTAL;
-        } else {
-          process.env.REDIACC_EXPERIMENTAL = prev;
-        }
-      }
     });
   });
 });

@@ -30,6 +30,11 @@
         "description": "Afficher l'état de sauvegarde et l'état du minuteur sur une machine distante"
       },
       "strategy": {
+        "bind": {
+          "alreadyBound": "La stratégie de sauvegarde \"{{strategy}}\" est déjà associée à la machine \"{{machine}}\"",
+          "bound": "Stratégie de sauvegarde \"{{strategy}}\" associée à la machine \"{{machine}}\"",
+          "description": "Associer une stratégie de sauvegarde à une machine pour y déployer sa planification"
+        },
         "description": "Gérer les stratégies de sauvegarde nommées (modes chaud/froid, destinations, planification)",
         "list": {
           "description": "Lister toutes les stratégies de sauvegarde"
@@ -64,6 +69,11 @@
           "noDestinations": "  Destinations : (aucune)",
           "notConfigured": "Aucune stratégie de sauvegarde configurée",
           "notFound": "Stratégie de sauvegarde \"{{name}}\" introuvable"
+        },
+        "unbind": {
+          "description": "Dissocier une stratégie de sauvegarde d'une machine",
+          "notBound": "La stratégie de sauvegarde \"{{strategy}}\" n'est pas associée à la machine \"{{machine}}\"",
+          "unbound": "Stratégie de sauvegarde \"{{strategy}}\" dissociée de la machine \"{{machine}}\""
         }
       },
       "list": {
@@ -310,15 +320,20 @@
         "description": "Supprime le poids mort du fichier de configuration local dans ~/.config/rediacc/<config>.json. Trois catégories sont nettoyées, toutes purement locales (aucun appel SSH/renet) : (1) les entrées du cache de certificats ACME dont l'ancre GUID/repo/machine n'est plus dans la configuration active ; (2) les dépôts archivés dont la période de grâce a expiré (7 jours par défaut, voir defaults.pruneGraceDays) ; (3) les références croisées orphelines (machine→strategy, strategy→repo). Les ressources actives, identifiants, jetons de stockage et known-hosts ne sont jamais touchés. Le comportement par défaut applique les changements ; passez --dry-run pour prévisualiser uniquement.",
         "descriptionShort": "Nettoyer les résidus obsolètes du fichier de configuration local",
         "droppedRefs": "{{count}} référence(s) croisée(s) orpheline(s) {{verb}} supprimée(s) :",
+        "droppedStateRepos": "{{count}} enregistrement(s) d'état orphelin(s) {{verb}} supprimé(s) (aucune entrée de dépôt correspondante) :",
         "dryRun": "Essai à blanc : {{count}} changement(s) seraient appliqués. Réexécutez sans --dry-run pour valider.",
         "dryRunOption": "Prévisualise ce qui serait supprimé sans modifier le fichier de configuration. Reflète la sémantique désactivée par défaut des autres commandes prune.",
+        "foundOrphanRepos": "{{count}} entrée(s) de dépôt ne sont associées à aucune machine :",
         "graceDaysOption": "Remplace la fenêtre de grâce d'archive (en jours) pour cette invocation. Repli sur defaults.pruneGraceDays dans la configuration, puis sur 7 si aucun n'est défini.",
         "keptArchivesInGrace": "Dépôts archivés encore en période de grâce conservés (récupérables via 'rdc repo admin archive restore') :",
         "nothingToPrune": "Rien à nettoyer, la configuration est déjà propre.",
+        "orphanReposHint": "Exécute 'rdc config reconcile' pour déduire l'association à partir de tes machines. Les entrées encore listées ensuite ne sont vraiment associées à rien ; supprime-les avec 'rdc config prune --orphan-repos'.",
+        "orphanReposOption": "Supprime les entrées de dépôt qui ne sont associées à aucune machine. Chaque entrée contient les identifiants et la clé SSH de ce dépôt, cette action est donc irréversible. Exécute d'abord 'rdc config reconcile' pour que l'association reflète les machines.",
         "purgeArchivedOption": "Supprimer TOUS les dépôts archivés indépendamment de leur âge, pas seulement ceux après la grâce. Équivalent à exécuter 'rdc repo admin archive purge' pour chaque dépôt archivé. À n'utiliser que si vous êtes sûr de ne plus avoir besoin des identifiants stockés pour la restauration.",
         "purgedArchives": "{{count}} dépôt(s) archivé(s) expiré(s) {{verb}} supprimé(s) :",
         "refsOnlyOption": "Limite aux références croisées orphelines (machine→strategy, strategy→repo excludes/includes). Ignore le cache de certificats et les archives. Exclusif avec --certs-only et --archives-only.",
         "removedCerts": "{{count}} entrée(s) de cache de certificats {{verb}} supprimée(s) :",
+        "removedOrphanRepos": "{{count}} entrée(s) de dépôt {{verb}} supprimées (non associées à une machine) :",
         "scanning": "Analyse de la configuration locale à la recherche de résidus obsolètes...",
         "tooManyOnlyFlags": "Passez au maximum un de --certs-only / --archives-only / --refs-only."
       },
@@ -699,6 +714,9 @@
         "previewEmpty": "Aucune ressource de datastore orpheline trouvée",
         "pruneUnknownOption": "Supprime uniquement les dépôts que le miroir renet .interim/state ne peut pas classer (pas dans la configuration locale ET pas de miroir marqué fork). Strictement plus restreint que --orphaned-repos : les forks sans configuration sont préservés quand le miroir les identifie. Les orphelins hérités pré-miroir et les grands obsolètes dont l'entrée de configuration a été supprimée tombent tous dans cette catégorie.",
         "startingDatastore": "Recherche des ressources orphelines du datastore sur {{machine}}...",
+        "startingUnits": "Recherche des unités systemd orphelines sur {{machine}}...",
+        "unitsCompleted": "Nettoyage des unités terminé",
+        "unitsFailed": "Échec du nettoyage des unités",
         "unknownCompleted": "{{count}} dépôts inconnus nettoyés",
         "unknownFound": "{{count}} dépôt(s) inconnu(s) trouvé(s) ({{deletable}} supprimables après vérification de sécurité de montage)",
         "unknownStarting": "Recherche de dépôts inconnus sur {{machine}} (pas dans la configuration locale + pas de miroir marqué fork)..."
@@ -808,7 +826,8 @@
         "completed": "{{count}}/{{total}} machines analysées",
         "description": "Scanner les clés d'hôte SSH pour les machines de la configuration actuelle",
         "keysScanned": "Clés d'hôte analysées pour \"{{name}}\"",
-        "noKeys": "Impossible d'analyser les clés d'hôte pour \"{{name}}\""
+        "noKeys": "Impossible d'analyser les clés d'hôte pour \"{{name}}\"",
+        "replaced": "Clés d'hôte pour \"{{name}}\" : {{count}} clé(s) existante(s) REMPLACÉE(S) - vérifiez les empreintes ci-dessous via un canal de confiance distinct"
       },
       "setup": {
         "completed": "Machine \"{{machine}}\" configurée avec succès",
@@ -1490,13 +1509,14 @@
       "exec": {
         "descriptionShort": "Exécuter une commande dans un conteneur de dépôt",
         "description": "Exécuter une commande à l'intérieur d'un conteneur de dépôt. Le code de sortie propre de la commande est transmis tel quel, ce qui fonctionne donc dans les scripts et les conditions. Les dépôts docker l'exécutent via le démon Docker du dépôt ; les dépôts kubernetes l'exécutent dans le namespace du dépôt.",
-        "cmdArgument": "Commande à exécuter, après --",
+        "cmdArgument": "Commande à exécuter : tout ce qui suit -- est envoyé tel quel au conteneur, donc les options de la CLI (-c, -i, -u, --debug) doivent précéder --",
         "containerOption": "Conteneur dans lequel exécuter (nécessaire seulement si le dépôt en fait tourner plusieurs)",
         "interactiveOption": "Allouer un terminal (pour une commande qui en attend un)",
         "userOption": "Utilisateur sous lequel exécuter la commande",
         "examples": {
           "basic": "Exécuter une commande dans un conteneur d'un dépôt.",
-          "interactive": "Ouvrir un shell interactif dans un conteneur."
+          "interactive": "Ouvrir un shell interactif dans un conteneur.",
+          "separator": "Transmettez des options à la commande distante : placez-les après --, et gardez les options propres à la CLI avant."
         }
       },
       "logs": {
@@ -2160,7 +2180,7 @@
       "create": "Créer un dépôt chiffré",
       "down": "Arrêter les services",
       "fork": "Fork CoW pour les tests",
-      "keyConcepts": "\nConcepts Clés :\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (jamais docker compose brut). Le séparateur -- est requis\n    • Rediaccfile doit définir les fonctions up() et down(). up() doit : créer les répertoires, générer les configurations, démarrer les conteneurs\n    • compose ports : sont ignorés (network_mode:host). Utilisez le label rediacc.service_port pour l'accès externe\n    • restart: always/unless-stopped est retiré automatiquement par renet et enregistré dans .rediacc.json (le watchdog du routeur relance automatiquement les services arrêtés)\n    • Chaque service reçoit une IP loopback. La réécriture bind eBPF gère l'isolation de façon transparente, les applications peuvent donc se lier à 0.0.0.0\n    • Pour se connecter aux services voisins, utilisez leur nom de service (par ex. \"db\", \"redis\") : renet injecte tous les noms de service comme noms d'hôte. N'intégrez jamais ${DB_IP} dans des chaînes de connexion stockées dans des bases de données : cela fige l'IP et casse l'isolation des forks (erreur de validation)\n    • Les health checks peuvent utiliser localhost. Exemple : [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  Stockage\n    • Bind-mount vers ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Exemple : volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Les volumes Docker nommés sont exclus des forks et des sauvegardes\n    • Les fichiers de configuration montés dans les conteneurs doivent être lisibles par tous (644) si le conteneur s'exécute avec un UID non par défaut\n\n  Routage\n    • Auto-route du dépôt grand : https://{service}.{repo}.{machine}.{baseDomain} (certificat wildcard *.{repo}.{machine}.{baseDomain} provisionné automatiquement par Traefik au premier repo up)\n    • Auto-route du fork : https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (utilise le certificat wildcard du dépôt parent, aucun impact sur le rate limit)\n    • Domaine personnalisé : traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • Redirection TCP/UDP : rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Les domaines personnalisés (label rediacc.domain) sont ignorés sur les forks : le domaine appartient au dépôt grand\n\n  Cycle de vie\n    • repo delete nettoie entièrement : stockage, Docker daemon, IP loopback, unités systemd\n    • repo down arrête les conteneurs mais conserve le Docker daemon et les IP (redémarrage rapide avec repo up)\n    • depends_on avec condition: service_healthy gère l'ordre de démarrage mais pas la récupération à l'exécution\n    • Si une base de données s'arrête proprement (exit 0), les services dépendants entrent en crash-loop. Correction : rdc repo up <repo-ref>\n    • Démarrage automatique : rdc repo admin autostart enable <repo-ref> (monte et démarre automatiquement le dépôt au démarrage de la machine)\n    • Les sauvegardes planifiées ignorent automatiquement les dépôts fork. Utilisez rdc repo push <repo-ref> --to <remote> pour une sauvegarde manuelle de fork\n    • rdc repo promote <fork-ref> remplace les données de production par les données du fork (l'identité est conservée). Pour annuler : rdc repo promote <backup-fork-ref>\n\n  Nommage & ciblage\n    • Dépôt grand (production) : référencez-le comme <repo>, ce qui équivaut à <repo>:latest (latest est le tag par défaut). Une réf nue résout la clé de configuration exacte, sinon retombe sur <repo>:latest.\n    • Fork : toujours <repo>:<tag> avec un tag différent de latest (par ex. app:test). up/down/delete/term/sync prennent tous le même <repo>:<tag>.\n    • Ainsi `app` cible le GRAND ; `app:test` cible ce FORK. Incluez toujours le tag lorsque vous agissez sur un fork : le seul cas ambigu est un fork enregistré par erreur sous le nom nu/latest.\n    • Les agents ne peuvent modifier que les forks ; les dépôts grand sont protégés (contournement possible uniquement via REDIACC_ALLOW_GRAND_REPO, qui doit être défini par l'opérateur avant la session). Les forks sont l'unité sûre et jetable.\n",
+      "keyConcepts": "\nConcepts Clés :\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (jamais docker compose brut). Le séparateur -- est requis\n    • rdc repo exec <ref> [options CLI] -- <commande distante> : tout ce qui suit -- est envoyé tel quel au conteneur, donc placez -c/-i/-u/--debug AVANT --. Un --debug écrit après -- est transmis à la commande distante et n’active jamais la sortie de débogage de la CLI\n    • Rediaccfile doit définir les fonctions up() et down(). up() doit : créer les répertoires, générer les configurations, démarrer les conteneurs\n    • compose ports : sont ignorés (network_mode:host). Utilisez le label rediacc.service_port pour l'accès externe\n    • restart: always/unless-stopped est retiré automatiquement par renet et enregistré dans .rediacc.json (le watchdog du routeur relance automatiquement les services arrêtés)\n    • Chaque service reçoit une IP loopback. La réécriture bind eBPF gère l'isolation de façon transparente, les applications peuvent donc se lier à 0.0.0.0\n    • Pour se connecter aux services voisins, utilisez leur nom de service (par ex. \"db\", \"redis\") : renet injecte tous les noms de service comme noms d'hôte. N'intégrez jamais ${DB_IP} dans des chaînes de connexion stockées dans des bases de données : cela fige l'IP et casse l'isolation des forks (erreur de validation)\n    • Les health checks peuvent utiliser localhost. Exemple : [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  Stockage\n    • Bind-mount vers ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Exemple : volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Les volumes Docker nommés sont exclus des forks et des sauvegardes\n    • Les fichiers de configuration montés dans les conteneurs doivent être lisibles par tous (644) si le conteneur s'exécute avec un UID non par défaut\n\n  Routage\n    • Auto-route du dépôt grand : https://{service}.{repo}.{machine}.{baseDomain} (certificat wildcard *.{repo}.{machine}.{baseDomain} provisionné automatiquement par Traefik au premier repo up)\n    • Auto-route du fork : https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (utilise le certificat wildcard du dépôt parent, aucun impact sur le rate limit)\n    • Domaine personnalisé : traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • Redirection TCP/UDP : rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Les domaines personnalisés (label rediacc.domain) sont ignorés sur les forks : le domaine appartient au dépôt grand\n\n  Cycle de vie\n    • repo delete nettoie entièrement : stockage, Docker daemon, IP loopback, unités systemd\n    • repo down arrête les conteneurs mais conserve le Docker daemon et les IP (redémarrage rapide avec repo up)\n    • depends_on avec condition: service_healthy gère l'ordre de démarrage mais pas la récupération à l'exécution\n    • Si une base de données s'arrête proprement (exit 0), les services dépendants entrent en crash-loop. Correction : rdc repo up <repo-ref>\n    • Démarrage automatique : rdc repo admin autostart enable <repo-ref> (monte et démarre automatiquement le dépôt au démarrage de la machine)\n    • Les sauvegardes planifiées ignorent automatiquement les dépôts fork. Utilisez rdc repo push <repo-ref> --to <remote> pour une sauvegarde manuelle de fork\n    • rdc repo promote <fork-ref> remplace les données de production par les données du fork (l'identité est conservée). Pour annuler : rdc repo promote <backup-fork-ref>\n\n  Nommage & ciblage\n    • Dépôt grand (production) : référencez-le comme <repo>, ce qui équivaut à <repo>:latest (latest est le tag par défaut). Une réf nue résout la clé de configuration exacte, sinon retombe sur <repo>:latest.\n    • Fork : toujours <repo>:<tag> avec un tag différent de latest (par ex. app:test). up/down/delete/term/sync prennent tous le même <repo>:<tag>.\n    • Ainsi `app` cible le GRAND ; `app:test` cible ce FORK. Incluez toujours le tag lorsque vous agissez sur un fork : le seul cas ambigu est un fork enregistré par erreur sous le nom nu/latest.\n    • Les agents ne peuvent modifier que les forks ; les dépôts grand sont protégés (contournement possible uniquement via REDIACC_ALLOW_GRAND_REPO, qui doit être défini par l'opérateur avant la session). Les forks sont l'unité sûre et jetable.\n",
       "up": "Déployer avec montage automatique"
     },
     "sync": {

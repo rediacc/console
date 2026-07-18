@@ -210,18 +210,16 @@ function buildCommandFactory(
  * For each contract command whose path has a `mcp` entry in COMMAND_METADATA,
  * generates a ToolDef with a contract-derived Zod schema and command builder.
  *
- * Experimental commands are skipped: they are `_hidden` in the live tree (unless
- * REDIACC_EXPERIMENTAL=1), so they never became MCP tools, and one of them
- * (`machine health`) also ships a hand-written custom tool of the same name —
- * auto-deriving it here would collide with that. The contract carries the
- * `experimental` flag, so the skip is honoured without consulting the env.
+ * `machine health` is auto-derived here like any other command. It used to be
+ * skipped as experimental and shadowed by a hand-written `machine_health` tool
+ * that actually ran `machine status --system` — so the tool named "health" never
+ * invoked the health checker at all. That custom tool is gone; this one runs the
+ * real command and returns its aggregated issues.
  */
 export function buildToolsFromContract(): ToolDef[] {
   const tools: ToolDef[] = [];
 
   for (const cmd of CLI_CONTRACT.commands) {
-    if (cmd.experimental) continue;
-
     const meta = COMMAND_METADATA[cmd.pathKey] as CommandMeta | undefined;
     if (!meta?.mcp) continue;
 

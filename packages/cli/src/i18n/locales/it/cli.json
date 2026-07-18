@@ -29,6 +29,11 @@
         "description": "Mostra lo stato del backup e dei timer su una macchina remota"
       },
       "strategy": {
+        "bind": {
+          "alreadyBound": "La strategia di backup \"{{strategy}}\" è già associata alla macchina \"{{machine}}\"",
+          "bound": "Strategia di backup \"{{strategy}}\" associata alla macchina \"{{machine}}\"",
+          "description": "Associa una strategia di backup a una macchina per distribuirvi la sua pianificazione"
+        },
         "description": "Gestisci le strategie di backup con nome (modalità hot/cold, destinazioni, pianificazione)",
         "list": {
           "description": "Elenca tutte le strategie di backup"
@@ -63,6 +68,11 @@
           "noDestinations": "  Destinazioni: (nessuna)",
           "notConfigured": "Nessuna strategia di backup configurata",
           "notFound": "Strategia di backup \"{{name}}\" non trovata"
+        },
+        "unbind": {
+          "description": "Dissocia una strategia di backup da una macchina",
+          "notBound": "La strategia di backup \"{{strategy}}\" non è associata alla macchina \"{{machine}}\"",
+          "unbound": "Strategia di backup \"{{strategy}}\" dissociata dalla macchina \"{{machine}}\""
         }
       },
       "descriptionShort": "Gestisci i backup",
@@ -310,15 +320,20 @@
         "description": "Rimuove gli elementi superflui dal file di configurazione locale in ~/.config/rediacc/<config>.json. Vengono puliti tre bucket, tutti puramente locali (nessuna chiamata SSH/renet): (1) voci della cache certificati ACME il cui GUID/repo/macchinario di ancoraggio non è più nella configurazione attiva; (2) repository archiviati il cui periodo di grazia è scaduto (predefinito 7 giorni, vedi defaults.pruneGraceDays); (3) riferimenti incrociati non validi (machine→strategy, strategy→repo). Le risorse ancora in uso, le credenziali, i token di storage e gli host conosciuti non vengono mai toccati. Il comportamento predefinito è applicare le modifiche; usa --dry-run per visualizzare un'anteprima.",
         "descriptionShort": "Rimuovi gli elementi obsoleti dal file di configurazione locale",
         "droppedRefs": "{{count}} riferimento/i incrociato/i non valido/i {{verb}} rimosso/i:",
+        "droppedStateRepos": "{{count}} record di stato orfano/i {{verb}} eliminato/i (nessuna voce di repository corrispondente):",
         "dryRun": "Dry run: verrebbero applicate {{count}} modifica/modifiche. Riesegui senza --dry-run per confermare.",
         "dryRunOption": "Visualizza un'anteprima di cosa verrebbe rimosso senza modificare il file di configurazione. Specchio della semantica predefinita degli altri comandi prune.",
+        "foundOrphanRepos": "{{count}} voce/i di repository non sono associate a nessuna macchina:",
         "graceDaysOption": "Sovrascrive la finestra di grazia degli archivi (in giorni) per questa esecuzione. Usa defaults.pruneGraceDays dalla configurazione, poi 7 se nessuno dei due è impostato.",
         "keptArchivesInGrace": "Repository archiviati ancora in periodo di grazia conservati (recuperabili tramite 'rdc repo admin archive restore'):",
         "nothingToPrune": "Nessun elemento da rimuovere: la configurazione è già pulita.",
+        "orphanReposHint": "Esegui 'rdc config reconcile' per ricavare l'associazione dalle tue macchine. Le voci ancora elencate dopo sono effettivamente non associate; rimuovile con 'rdc config prune --orphan-repos'.",
+        "orphanReposOption": "Rimuove le voci di repository non associate a nessuna macchina. Ogni voce contiene la credenziale e la chiave SSH di quel repository, quindi l'operazione è irreversibile. Esegui prima 'rdc config reconcile' in modo che l'associazione rifletta le macchine.",
         "purgeArchivedOption": "Elimina TUTTI i repository archiviati indipendentemente dall'età, non solo quelli oltre il periodo di grazia. Equivale a eseguire 'rdc repo admin archive purge' per ogni repository archiviato. Usalo solo quando sei sicuro di non aver bisogno di nessuna delle credenziali archiviate per il ripristino.",
         "purgedArchives": "{{count}} repository archiviato/i scaduto/i {{verb}} rimosso/i:",
         "refsOnlyOption": "Limita ai riferimenti incrociati non validi (machine→strategy, strategy→repo excludes/includes). Ignora la cache certificati e gli archivi. Mutuamente esclusivo con --certs-only e --archives-only.",
         "removedCerts": "{{count}} voce/voci della cache certificati {{verb}} rimossa/e:",
+        "removedOrphanRepos": "{{count}} voce/i di repository {{verb}} rimosse (non associate a nessuna macchina):",
         "scanning": "Scansione della configurazione locale per elementi obsoleti...",
         "tooManyOnlyFlags": "Passa al massimo uno tra --certs-only / --archives-only / --refs-only."
       },
@@ -699,6 +714,9 @@
         "previewEmpty": "Nessuna risorsa orfana del datastore trovata",
         "pruneUnknownOption": "Elimina solo i repository che il mirror di stato .interim/renet non riesce a classificare (non presenti nella configurazione locale E senza mirror con marcatura fork). Strettamente più ristretto di --orphaned-repos: i fork senza configurazione sono preservati quando il mirror li identifica. In questo bucket rientrano gli orfani legacy pre-mirror e i grand il cui record di configurazione è stato eliminato.",
         "startingDatastore": "Scansione delle risorse del datastore orfane su {{machine}} in corso...",
+        "startingUnits": "Scansione delle unità systemd orfane su {{machine}} in corso...",
+        "unitsCompleted": "Pulizia delle unità completata",
+        "unitsFailed": "Pulizia delle unità fallita",
         "unknownCompleted": "{{count}} repository sconosciuti rimossi",
         "unknownFound": "Trovato/i {{count}} repository sconosciuto/i ({{deletable}} eliminabile/i dopo il controllo di sicurezza del montaggio)",
         "unknownStarting": "Scansione dei repository sconosciuti su {{machine}} (non presenti nella configurazione locale + senza mirror con marcatura fork) in corso..."
@@ -808,7 +826,8 @@
         "completed": "Scansionati {{count}}/{{total}} macchinari",
         "description": "Esegui la scansione delle chiavi host SSH per i macchinari nella configurazione corrente",
         "keysScanned": "Chiavi host scansionate per \"{{name}}\"",
-        "noKeys": "Impossibile eseguire la scansione delle chiavi host per \"{{name}}\""
+        "noKeys": "Impossibile eseguire la scansione delle chiavi host per \"{{name}}\"",
+        "replaced": "Chiavi host per \"{{name}}\": {{count}} chiave/i esistente/i SOSTITUITA/E - verifica le impronte digitali qui sotto tramite un canale attendibile separato"
       },
       "setup": {
         "completed": "Configurazione del macchinario '{{machine}}' completata con successo",
@@ -1487,7 +1506,7 @@
       "batchNeedRefOrAll": "Fornisci un riferimento di repository (repo {{verb}} <ref>), oppure usa la forma collettiva: repo {{verb}} --all -m <machine>.",
       "batchRefConflict": "Un riferimento di repository determina da sé la propria macchina. --all e --machine servono solo per la forma collettiva: repo {{verb}} --all -m <machine>.",
       "exec": {
-        "cmdArgument": "Comando da eseguire, dopo --",
+        "cmdArgument": "Comando da eseguire: tutto ciò che segue -- viene inviato al container così com'è, quindi i flag della CLI (-c, -i, -u, --debug) devono precedere --",
         "containerOption": "Container in cui eseguire (necessario solo se il repository ne esegue più di uno)",
         "description": "Esegue un comando all'interno di un container del repository. Il codice di uscita del comando viene propagato direttamente, quindi funziona in script e condizionali. I repository docker lo eseguono tramite il daemon Docker del repository; i repository kubernetes lo eseguono nel namespace del repository.",
         "descriptionShort": "Esegui un comando all'interno di un container del repository",
@@ -1495,7 +1514,8 @@
         "userOption": "Utente con cui eseguire il comando",
         "examples": {
           "basic": "Esegui un comando dentro un container di un repository.",
-          "interactive": "Apri una shell interattiva in un container."
+          "interactive": "Apri una shell interattiva in un container.",
+          "separator": "Passa i flag al comando remoto: mettili dopo --, mantenendo i flag della CLI prima."
         }
       },
       "logs": {
@@ -2160,7 +2180,7 @@
       "create": "Crea un repo cifrato",
       "down": "Ferma i servizi",
       "fork": "Fork CoW per i test",
-      "keyConcepts": "\nConcetti chiave:\n\n  Compose e Rediaccfile\n    • renet compose -- up -d (mai docker compose diretto). Il separatore -- è obbligatorio\n    • Il Rediaccfile deve definire le funzioni up() e down(). up() deve: creare directory, generare configurazioni, avviare container\n    • Le ports di compose vengono ignorate (network_mode:host). Usa l'etichetta rediacc.service_port per l'accesso esterno\n    • restart: always/unless-stopped vengono rimossi automaticamente da renet e salvati in .rediacc.json - il watchdog del router recupera automaticamente i servizi fermi\n    • Ogni servizio riceve un IP di loopback. La riscrittura bind eBPF gestisce l'isolamento in modo trasparente, quindi le applicazioni possono collegarsi a 0.0.0.0\n    • Per connettersi ai servizi fratelli usa il loro nome (es. \"db\", \"redis\") - renet inietta tutti i nomi come hostname. Non incorporare mai ${DB_IP} nelle stringhe di connessione salvate nei database - cristallizza l'IP e rompe l'isolamento dei fork (errore di validazione)\n    • I controlli di integrità possono usare localhost. Esempio: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  Storage\n    • Bind-mount su ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, ecc.\n    • Esempio: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • I volumi Docker con nome sono esclusi da fork e backup\n    • I file di config bind-montati nei container devono essere leggibili da tutti (644) se il container gira con UID non predefinito\n\n  Routing\n    • Auto-route grand repo: https://{service}.{repo}.{machine}.{baseDomain} (certificato wildcard *.{repo}.{machine}.{baseDomain} provisioning automatico da Traefik al primo repo up)\n    • Auto-route fork: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (usa il certificato wildcard del repo padre, nessun impatto sui rate limit)\n    • Dominio personalizzato: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • Forwarding TCP/UDP: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • I domini personalizzati (etichetta rediacc.domain) vengono ignorati sui fork - il dominio appartiene al grand repo\n\n  Ciclo di vita\n    • repo delete pulisce completamente: storage, daemon Docker, IP di loopback, unit systemd\n    • repo down ferma i container ma mantiene il daemon Docker e gli IP (riavvio rapido con repo up)\n    • depends_on con condition: service_healthy gestisce l'ordine di avvio ma non il recupero a runtime\n    • Se un database si ferma normalmente (exit 0), i servizi dipendenti vanno in crash-loop. Soluzione: rdc repo up <repo-ref>\n    • Avvio automatico: rdc repo admin autostart enable <repo-ref> - monta e avvia il repo all'avvio della macchina\n    • I backup pianificati saltano automaticamente i repo fork. Usa rdc repo push <repo-ref> --to <remote> per backup manuali dei fork\n    • rdc repo promote <fork-ref> - sostituisce i dati di produzione con quelli del fork (preserva l'identità). Ripristina con: rdc repo promote <backup-fork-ref>\n\n  Nomi e targeting\n    • Repo grand (produzione): riferiscilo come <repo>, equivalente a <repo>:latest (latest è il tag predefinito). Un riferimento semplice risolve alla chiave di config esatta, altrimenti ricade su <repo>:latest.\n    • Fork: sempre <repo>:<tag> con un tag diverso da latest (es. app:test). up/down/delete/term/sync usano tutti lo stesso <repo>:<tag>.\n    • Quindi `app` punta al GRAND; `app:test` punta a quel FORK. Includi sempre il tag quando agisci su un fork - l'unico caso ambiguo è un fork registrato per errore con il nome semplice/latest.\n    • Gli agenti possono modificare solo i fork; i repo grand sono protetti (l'override è possibile solo via REDIACC_ALLOW_GRAND_REPO, che deve essere impostata dall'operatore prima della sessione). I fork sono l'unità sicura e usa e getta.\n",
+      "keyConcepts": "\nConcetti chiave:\n\n  Compose e Rediaccfile\n    • renet compose -- up -d (mai docker compose diretto). Il separatore -- è obbligatorio\n    • rdc repo exec <ref> [flag CLI] -- <comando remoto>: tutto ciò che segue -- viene inviato al container così com’è, quindi metti -c/-i/-u/--debug PRIMA di --. Un --debug scritto dopo -- viene passato al comando remoto e non attiva mai l’output di debug della CLI\n    • Il Rediaccfile deve definire le funzioni up() e down(). up() deve: creare directory, generare configurazioni, avviare container\n    • Le ports di compose vengono ignorate (network_mode:host). Usa l'etichetta rediacc.service_port per l'accesso esterno\n    • restart: always/unless-stopped vengono rimossi automaticamente da renet e salvati in .rediacc.json - il watchdog del router recupera automaticamente i servizi fermi\n    • Ogni servizio riceve un IP di loopback. La riscrittura bind eBPF gestisce l'isolamento in modo trasparente, quindi le applicazioni possono collegarsi a 0.0.0.0\n    • Per connettersi ai servizi fratelli usa il loro nome (es. \"db\", \"redis\") - renet inietta tutti i nomi come hostname. Non incorporare mai ${DB_IP} nelle stringhe di connessione salvate nei database - cristallizza l'IP e rompe l'isolamento dei fork (errore di validazione)\n    • I controlli di integrità possono usare localhost. Esempio: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  Storage\n    • Bind-mount su ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, ecc.\n    • Esempio: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • I volumi Docker con nome sono esclusi da fork e backup\n    • I file di config bind-montati nei container devono essere leggibili da tutti (644) se il container gira con UID non predefinito\n\n  Routing\n    • Auto-route grand repo: https://{service}.{repo}.{machine}.{baseDomain} (certificato wildcard *.{repo}.{machine}.{baseDomain} provisioning automatico da Traefik al primo repo up)\n    • Auto-route fork: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (usa il certificato wildcard del repo padre, nessun impatto sui rate limit)\n    • Dominio personalizzato: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • Forwarding TCP/UDP: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • I domini personalizzati (etichetta rediacc.domain) vengono ignorati sui fork - il dominio appartiene al grand repo\n\n  Ciclo di vita\n    • repo delete pulisce completamente: storage, daemon Docker, IP di loopback, unit systemd\n    • repo down ferma i container ma mantiene il daemon Docker e gli IP (riavvio rapido con repo up)\n    • depends_on con condition: service_healthy gestisce l'ordine di avvio ma non il recupero a runtime\n    • Se un database si ferma normalmente (exit 0), i servizi dipendenti vanno in crash-loop. Soluzione: rdc repo up <repo-ref>\n    • Avvio automatico: rdc repo admin autostart enable <repo-ref> - monta e avvia il repo all'avvio della macchina\n    • I backup pianificati saltano automaticamente i repo fork. Usa rdc repo push <repo-ref> --to <remote> per backup manuali dei fork\n    • rdc repo promote <fork-ref> - sostituisce i dati di produzione con quelli del fork (preserva l'identità). Ripristina con: rdc repo promote <backup-fork-ref>\n\n  Nomi e targeting\n    • Repo grand (produzione): riferiscilo come <repo>, equivalente a <repo>:latest (latest è il tag predefinito). Un riferimento semplice risolve alla chiave di config esatta, altrimenti ricade su <repo>:latest.\n    • Fork: sempre <repo>:<tag> con un tag diverso da latest (es. app:test). up/down/delete/term/sync usano tutti lo stesso <repo>:<tag>.\n    • Quindi `app` punta al GRAND; `app:test` punta a quel FORK. Includi sempre il tag quando agisci su un fork - l'unico caso ambiguo è un fork registrato per errore con il nome semplice/latest.\n    • Gli agenti possono modificare solo i fork; i repo grand sono protetti (l'override è possibile solo via REDIACC_ALLOW_GRAND_REPO, che deve essere impostata dall'operatore prima della sessione). I fork sono l'unità sicura e usa e getta.\n",
       "up": "Deploy con mount automatico"
     },
     "sync": {

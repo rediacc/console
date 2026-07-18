@@ -38,8 +38,7 @@ function getGuidance(error: CliError): string | undefined {
   const map: Record<number, string> = {
     [EXIT_CODES.AUTH_REQUIRED]: 'Run "rdc subscription login" or set REDIACC_MASTER_PASSWORD',
     [EXIT_CODES.PERMISSION_DENIED]: 'Check team permissions or contact admin',
-    [EXIT_CODES.NOT_FOUND]:
-      'Verify the resource name with "rdc machine query" or "rdc config repositories"',
+    [EXIT_CODES.NOT_FOUND]: 'Verify the resource name with "rdc machine status" or "rdc repo list"',
     [EXIT_CODES.NETWORK_ERROR]: 'Check network connectivity and retry',
     [EXIT_CODES.RATE_LIMITED]: 'Wait and retry after a brief delay',
     [EXIT_CODES.PAYMENT_REQUIRED]: 'Upgrade subscription or check usage limits',

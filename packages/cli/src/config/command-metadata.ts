@@ -150,6 +150,12 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'backup strategy remove': {
     mcpExcludeReason: 'Backup policy mutation; use CLI directly.',
   },
+  'backup strategy bind': {
+    mcpExcludeReason: 'Backup policy mutation; use CLI directly.',
+  },
+  'backup strategy unbind': {
+    mcpExcludeReason: 'Backup policy mutation; use CLI directly.',
+  },
   'backup schedule': {
     mcpExcludeReason: 'Installs systemd backup timers on a machine; use CLI directly.',
   },

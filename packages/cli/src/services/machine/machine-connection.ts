@@ -80,16 +80,24 @@ function connectionKey(config: SFTPClientConfig): string {
   return `${config.host}:${port}:${config.username}:${credentialFingerprint(config)}`;
 }
 
-/** The canonical SFTP connect options for a configured machine. */
+/**
+ * The canonical SFTP connect options for a configured machine.
+ *
+ * `machineName` is passed through so a host-key mismatch can name the machine
+ * in its remedy (`rdc machine scan-keys <name>`). Without it the error falls
+ * back to the IP, and the command it suggests would not resolve.
+ */
 export function sftpConfigForMachine(
   machine: MachineConfig,
-  sshPrivateKey: string
+  sshPrivateKey: string,
+  machineName?: string
 ): SFTPClientConfig {
   return {
     host: machine.ip,
     port: machine.port ?? DEFAULTS.SSH.PORT,
     username: machine.user,
     privateKey: sshPrivateKey,
+    ...(machineName ? { machineName } : {}),
     ...(machine.knownHosts ? { knownHosts: machine.knownHosts } : {}),
   };
 }
@@ -110,12 +118,18 @@ class MachineConnectionManager {
         `No SSH key available for machine "${machineName}": config has neither sshPrivateKey nor a readable ssh.privateKeyPath`
       );
     }
-    return this.acquireFor(machine, sshPrivateKey);
+    return this.acquireFor(machine, sshPrivateKey, machineName);
   }
 
   /** Acquire a pooled connection lease for an already-resolved machine. */
-  async acquireFor(machine: MachineConfig, sshPrivateKey: string): Promise<MachineConnectionLease> {
-    const entry = await this.acquireEntry(sftpConfigForMachine(machine, sshPrivateKey));
+  async acquireFor(
+    machine: MachineConfig,
+    sshPrivateKey: string,
+    machineName?: string
+  ): Promise<MachineConnectionLease> {
+    const entry = await this.acquireEntry(
+      sftpConfigForMachine(machine, sshPrivateKey, machineName)
+    );
     const lease = this.createLease(entry);
     return {
       get sftp() {

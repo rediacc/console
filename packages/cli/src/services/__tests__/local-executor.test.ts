@@ -704,4 +704,158 @@ describe('localExecutorService create/fork licensing flow', () => {
       expect(opts.machine.datastore).toBe('/mnt/rediacc');
     });
   });
+
+  describe('passthroughOutput (repo exec / repo logs / run)', () => {
+    /** Capture what the executor writes to stdout without polluting the test run. */
+    function captureStdout(): { lines: () => string[]; restore: () => void } {
+      const written: string[] = [];
+      const spy = vi
+        .spyOn(process.stdout, 'write')
+        .mockImplementation((chunk: string | Uint8Array): boolean => {
+          written.push(typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString());
+          return true;
+        });
+      return { lines: () => written, restore: () => spy.mockRestore() };
+    }
+
+    function streamStdout(chunks: string[], exitCode = 0): void {
+      mockExecStreaming.mockImplementationOnce(
+        (_cmd: string, handlers: { onStdout?: (chunk: string) => void }) => {
+          for (const chunk of chunks) handlers.onStdout?.(chunk);
+          return Promise.resolve(exitCode);
+        }
+      );
+    }
+
+    it('prints the inner process output with the relay prefix stripped', async () => {
+      streamStdout(['[container_exec] hello\n[container_exec] world\n']);
+      const out = captureStdout();
+      await localExecutorService.execute({
+        functionName: 'container_exec',
+        machineName: 'hostinger',
+        passthroughOutput: true,
+      });
+      out.restore();
+      expect(out.lines().join('')).toBe('hello\nworld\n');
+    });
+
+    it('drops renet logrus lines but keeps program output', async () => {
+      streamStdout([
+        'time="2026-07-18T19:09:33Z" level=info msg="Starting Go executor operation"\n',
+        '[container_exec] real output\n',
+      ]);
+      const out = captureStdout();
+      await localExecutorService.execute({
+        functionName: 'container_exec',
+        machineName: 'hostinger',
+        passthroughOutput: true,
+      });
+      out.restore();
+      expect(out.lines().join('')).toBe('real output\n');
+    });
+
+    it('reassembles a line split across chunks', async () => {
+      // What `repo logs --follow` depends on: a socket read can split mid-line, and
+      // a handler that printed per-chunk would tear the line in half.
+      streamStdout(['[container_logs] li', 'ne1\n']);
+      const out = captureStdout();
+      await localExecutorService.execute({
+        functionName: 'container_logs',
+        machineName: 'hostinger',
+        passthroughOutput: true,
+      });
+      out.restore();
+      expect(out.lines().join('')).toBe('line1\n');
+    });
+
+    it('emits a final line that arrived without a trailing newline', async () => {
+      streamStdout(['[container_exec] no trailing newline']);
+      const out = captureStdout();
+      await localExecutorService.execute({
+        functionName: 'container_exec',
+        machineName: 'hostinger',
+        passthroughOutput: true,
+      });
+      out.restore();
+      expect(out.lines().join('')).toBe('no trailing newline\n');
+    });
+
+    it('suppresses step events so they cannot poison captured output', async () => {
+      streamStdout([
+        '{"step_done":{"name":"provisioning","duration_ms":12}}\n[container_exec] ok\n',
+      ]);
+      const out = captureStdout();
+      await localExecutorService.execute({
+        functionName: 'container_exec',
+        machineName: 'hostinger',
+        passthroughOutput: true,
+      });
+      out.restore();
+      expect(out.lines().join('')).toBe('ok\n');
+    });
+
+    it('keeps JSON container logs, which the failure-path cleaner would drop', async () => {
+      streamStdout(['[container_logs] {"level":"info","msg":"app started"}\n']);
+      const out = captureStdout();
+      await localExecutorService.execute({
+        functionName: 'container_logs',
+        machineName: 'hostinger',
+        passthroughOutput: true,
+      });
+      out.restore();
+      expect(out.lines().join('')).toBe('{"level":"info","msg":"app started"}\n');
+    });
+
+    it('stays silent without the opt-in, so other commands are unchanged', async () => {
+      streamStdout(['[repository_up] noisy renet chatter\n']);
+      const out = captureStdout();
+      await localExecutorService.execute({
+        functionName: 'repository_up',
+        machineName: 'hostinger',
+      });
+      out.restore();
+      expect(out.lines().join('')).toBe('');
+    });
+  });
+
+  describe("refusals survive the executor's catch-all", () => {
+    it('rethrows a CliExitError instead of flattening it to exit 1', async () => {
+      // The catch-all turns a thrown error into {success:false, exitCode:1}. That
+      // is right for an execution failure and WRONG for a deliberate refusal: a
+      // BUSY provisioning-lock timeout reached the user as an anonymous exit 1,
+      // losing its code, its retryable flag and its "here is the pid" next-action.
+      const { busy } = await import('../../utils/cli-exit-error.js');
+      const { CliExitError } = await import('../../utils/cli-exit-error.js');
+      mockProvisionRenetToRemote.mockImplementationOnce(() => {
+        throw busy('Another rdc process is still provisioning renet', {
+          details: ['Lock: /tmp/x.lock'],
+        });
+      });
+
+      const thrown = await localExecutorService
+        .execute({ functionName: 'repository_up', machineName: 'hostinger' })
+        .then(() => null)
+        .catch((e: unknown) => e);
+
+      expect(thrown).toBeInstanceOf(CliExitError);
+      expect((thrown as InstanceType<typeof CliExitError>).code).toBe('BUSY');
+      expect((thrown as InstanceType<typeof CliExitError>).exitCode).toBe(15);
+      expect((thrown as InstanceType<typeof CliExitError>).retryable).toBe(true);
+    });
+
+    it('still flattens an ordinary execution failure into a result', async () => {
+      mockProvisionRenetToRemote.mockImplementationOnce(() => {
+        throw new Error('ssh blew up');
+      });
+
+      const result = await localExecutorService.execute({
+        functionName: 'repository_up',
+        machineName: 'hostinger',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.exitCode).toBe(1);
+      expect(result.error).toContain('ssh blew up');
+    });
+  });
 });

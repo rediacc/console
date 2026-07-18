@@ -6,26 +6,19 @@
  * machine) and createCluster (pool members) share one bootstrap path.
  */
 
-import { execFileSync } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import { scanHostKeys } from '../../utils/host-keys.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { machineConnections } from '../machine/machine-connection.js';
 import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
 
-/** ssh-keyscan the host, returning its known_hosts lines (empty on failure). */
-export function scanHostKeys(ip: string, port: number): string {
-  try {
-    return execFileSync('ssh-keyscan', ['-p', String(port), ip], {
-      encoding: 'utf-8',
-      timeout: 10_000,
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim();
-  } catch {
-    return '';
-  }
-}
+// Re-exported so the provisioning call sites (services/tofu/provision.ts,
+// services/cluster/cluster-provision.ts) keep importing it from the bootstrap
+// module they already depend on. The implementation lives in utils/host-keys.ts
+// because the command layer needs it too.
+export { scanHostKeys };
 
 /** Poll until SSH is reachable (host keys scannable), or throw after timeout. */
 export async function waitForSSH(ip: string, port: number, timeoutMs = 120_000): Promise<void> {
@@ -33,12 +26,9 @@ export async function waitForSSH(ip: string, port: number, timeoutMs = 120_000):
   const interval = 5_000;
 
   while (Date.now() - start < timeoutMs) {
-    try {
-      const keys = scanHostKeys(ip, port);
-      if (keys) return;
-    } catch {
-      // ignore
-    }
+    // scanHostKeys returns '' rather than throwing on any failure, so an
+    // empty result — not an exception — is the "not up yet" signal.
+    if (scanHostKeys(ip, port)) return;
     await sleep(interval);
   }
 

@@ -84,6 +84,10 @@ async function runLocalMode(functionName: string, options: RunLocalOptions): Pro
     extraMachines,
     debug: options.debug,
     skipRouterRestart: options.skipRouterRestart,
+    // `run` exists to show a Rediaccfile function's output; the default handler
+    // drops everything that is not a step event, so without this it printed
+    // nothing unless --debug was passed.
+    passthroughOutput: true,
   });
   handleExecutionResult(result);
 }

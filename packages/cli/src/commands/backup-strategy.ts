@@ -2,6 +2,10 @@ import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
+import {
+  bindBackupStrategy,
+  unbindBackupStrategy,
+} from '../services/config/config-strategy-binding.js';
 import { outputService } from '../services/core/output.js';
 import type { BackupStrategyConfig } from '../types/index.js';
 import {
@@ -102,6 +106,28 @@ async function applyBackupStrategyOptions(
   }
 ): Promise<void> {
   const enabled = resolveEnabledFlag(options.enable, options.disable);
+  const targetsDestination = Boolean(options.destination);
+
+  // Strategy fields and destination fields are applied in the SAME call. This
+  // used to be an either/or, so creating a strategy with a destination took two
+  // invocations — and the first one, `set <new> --destination …`, silently
+  // produced a strategy with an empty schedule.
+  //
+  // `--bwlimit` and `--enable/--disable` stay scoped to the destination when one
+  // is named, which is what they have always meant there: `set s --destination d
+  // --disable` disables that destination, not the whole strategy.
+  const update = buildStrategyUpdate(
+    { ...options, bwlimit: targetsDestination ? undefined : options.bwlimit },
+    targetsDestination ? undefined : enabled
+  );
+
+  // Order matters: upsertBackupDestination reads the stored strategy to merge
+  // destination defaults, so the strategy has to exist before the destination
+  // is attached. These cannot run in parallel.
+  if (!targetsDestination || Object.keys(update).length > 0) {
+    await configService.setBackupStrategy(name, update);
+  }
+
   if (options.destination) {
     await upsertBackupDestination({
       strategyName: name,
@@ -111,9 +137,21 @@ async function applyBackupStrategyOptions(
       bwlimit: options.bwlimit,
       folder: options.folder,
     });
-  } else {
-    await configService.setBackupStrategy(name, buildStrategyUpdate(options, enabled));
   }
+}
+
+/** strategy name -> machines binding it, for reporting deployment reach. */
+async function strategyBindings(): Promise<Map<string, string[]>> {
+  const machines = await configService.listMachines();
+  const bindings = new Map<string, string[]>();
+  for (const { name, config } of machines) {
+    for (const strategy of config.backupStrategies ?? []) {
+      const list = bindings.get(strategy);
+      if (list) list.push(name);
+      else bindings.set(strategy, [name]);
+    }
+  }
+  return bindings;
 }
 
 function displayStrategy(name: string, strategy: BackupStrategyConfig): void {
@@ -173,6 +211,54 @@ export function registerBackupStrategyCommands(backup: Command): void {
     });
 
   group
+    .command('bind')
+    .argument('<strategy>', t('options.strategyName'))
+    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .description(t('commands.backup.strategy.bind.description'))
+    .action(async (strategy: string, options: { machine: string }) => {
+      try {
+        const bound = await bindBackupStrategy(options.machine, strategy);
+        outputService.success(
+          bound
+            ? t('commands.backup.strategy.bind.bound', {
+                strategy,
+                machine: options.machine,
+              })
+            : t('commands.backup.strategy.bind.alreadyBound', {
+                strategy,
+                machine: options.machine,
+              })
+        );
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  group
+    .command('unbind')
+    .argument('<strategy>', t('options.strategyName'))
+    .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .description(t('commands.backup.strategy.unbind.description'))
+    .action(async (strategy: string, options: { machine: string }) => {
+      try {
+        const removed = await unbindBackupStrategy(options.machine, strategy);
+        outputService.success(
+          removed
+            ? t('commands.backup.strategy.unbind.unbound', {
+                strategy,
+                machine: options.machine,
+              })
+            : t('commands.backup.strategy.unbind.notBound', {
+                strategy,
+                machine: options.machine,
+              })
+        );
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  group
     .command('remove')
     .argument('<strategy>', t('options.strategyName'))
     .description(t('commands.backup.strategy.remove.description'))
@@ -201,13 +287,18 @@ export function registerBackupStrategyCommands(backup: Command): void {
           outputService.info(t('commands.backup.strategy.show.notConfigured'));
           return;
         }
+        // A strategy is only ever deployed to machines that bind it, so a
+        // listing without bindings cannot answer "why did this not run?".
+        const boundTo = await strategyBindings();
         for (const name of names) {
           const s = strategies[name];
           const mode = s.mode ?? BACKUP_DEFAULTS.MODE;
           const destCount = s.destinations.length;
           const enabled = s.enabled !== false;
+          const machines = boundTo.get(name);
+          const bound = machines?.length ? machines.join(',') : '-';
           outputService.info(
-            `  ${name}  schedule=${s.schedule}  mode=${mode}  destinations=${destCount}  enabled=${enabled}`
+            `  ${name}  schedule=${s.schedule}  mode=${mode}  destinations=${destCount}  enabled=${enabled}  machines=${bound}`
           );
         }
       } catch (error) {

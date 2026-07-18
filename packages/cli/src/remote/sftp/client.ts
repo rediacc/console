@@ -8,6 +8,7 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { FileEntry, SFTPWrapper, Stats } from 'ssh2';
 import { type ConnectConfig, Client as SSHClient } from 'ssh2';
+import { fingerprint, keyBlobAlgorithm, parseKnownHosts } from '../../utils/host-keys.js';
 import type { FileInfo } from '../types/index.js';
 
 /**
@@ -28,6 +29,12 @@ export interface SFTPClientConfig {
   timeout?: number;
   /** Keep-alive interval in ms (default: 10000) */
   keepaliveInterval?: number;
+  /**
+   * Machine name as configured, used only to make a host-key mismatch error
+   * actionable (it names the machine to pass to `rdc machine scan-keys`).
+   * Falls back to `host` when absent.
+   */
+  machineName?: string;
   /** Known hosts entries for host-key verification (OpenSSH format) */
   knownHosts?: string;
 }
@@ -79,12 +86,21 @@ export class SFTPClient {
         keepaliveInterval: this.config.keepaliveInterval ?? DEFAULTS.SSH.KEEPALIVE_INTERVAL,
       };
 
-      // Add host-key verification when known_hosts entries are provided
+      // Add host-key verification when known_hosts entries are provided.
+      //
+      // On rejection ssh2 emits a generic transport error, which historically
+      // surfaced as an opaque "Host denied (verification failed)". Capture the
+      // offered key here so the error handler below can say what actually
+      // changed — a mismatch has several very different causes and the operator
+      // needs the fingerprints to tell them apart.
+      let offeredKey: string | undefined;
       if (this.config.knownHosts) {
         const trustedKeys = parseKnownHosts(this.config.knownHosts);
         connectConfig.hostVerifier = (key: Buffer) => {
           const keyBase64 = key.toString('base64');
-          return trustedKeys.some((tk) => tk === keyBase64);
+          const trusted = trustedKeys.some((tk) => tk.key === keyBase64);
+          if (!trusted) offeredKey = keyBase64;
+          return trusted;
         };
       }
 
@@ -102,6 +118,10 @@ export class SFTPClient {
       });
 
       this.ssh.on('error', (err) => {
+        if (offeredKey) {
+          reject(new Error(this.hostKeyMismatchMessage(offeredKey)));
+          return;
+        }
         reject(new Error(`SSH connection error: ${err.message}`));
       });
 
@@ -569,22 +589,63 @@ export class SFTPClient {
   private formatPermissions(mode: number): string {
     return (mode & 0o777).toString(8);
   }
+
+  /** Build the host-key mismatch message for this connection's config. */
+  private hostKeyMismatchMessage(offeredKey: string): string {
+    return buildHostKeyMismatchMessage({
+      machineName: this.config.machineName ?? this.config.host,
+      host: this.config.host,
+      knownHosts: this.config.knownHosts ?? '',
+      offeredKey,
+    });
+  }
 }
 
 /**
- * Parse OpenSSH known_hosts format into an array of base64-encoded public keys.
- * Each line is: hostname[,hostname] algo base64key [comment]
+ * Explain a host-key mismatch in terms the operator can act on.
+ *
+ * Deliberately not a "tip: run scan-keys" hint. Pinning exists to make exactly
+ * this failure loud, and an unconditional remedy trains the reflex of re-pinning
+ * on every mismatch, which defeats the point. The remedy is stated
+ * conditionally, after the causes and the fingerprints needed to tell them
+ * apart.
+ *
+ * A stale local config is listed as a cause because it is a real and easily
+ * missed one: several divergent copies of the config file will present an old
+ * pin against an unchanged host, which looks identical to key rotation.
  */
-function parseKnownHosts(knownHosts: string): string[] {
-  const keys: string[] = [];
-  for (const line of knownHosts.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    // Format: hostname algo base64-key [comment]
-    const parts = trimmed.split(/\s+/);
-    if (parts.length >= 3) {
-      keys.push(parts[2]);
-    }
-  }
-  return keys;
+export function buildHostKeyMismatchMessage(params: {
+  machineName: string;
+  host: string;
+  knownHosts: string;
+  offeredKey: string;
+}): string {
+  const { machineName, host, knownHosts, offeredKey } = params;
+
+  const offeredType = keyBlobAlgorithm(offeredKey);
+  const pinned = parseKnownHosts(knownHosts);
+
+  // Compare like with like: a host offers one key per algorithm, so the
+  // meaningful comparison is against the pin of the same algorithm. Falling
+  // back to listing every pin keeps the message useful when the offered blob
+  // cannot be decoded.
+  const sameAlgorithm = offeredType ? pinned.filter((e) => e.type === offeredType) : [];
+  const toShow = sameAlgorithm.length ? sameAlgorithm : pinned;
+
+  const pinnedSummary = toShow.length
+    ? toShow.map((e) => `  pinned:   ${e.type} ${fingerprint(e.key)}`).join('\n')
+    : '  pinned:   (none recorded)';
+
+  return [
+    `Host key mismatch for "${machineName}" (${host})`,
+    '',
+    pinnedSummary,
+    `  offered:  ${offeredType || '(unknown algorithm)'} ${fingerprint(offeredKey)}`,
+    '',
+    'A rebuilt, reinstalled, or migrated machine will do this. So will a stale',
+    'local config, and so will a man-in-the-middle. Confirm the fingerprint out',
+    'of band before trusting it.',
+    '',
+    `If the change is expected: rdc machine scan-keys ${machineName}`,
+  ].join('\n');
 }

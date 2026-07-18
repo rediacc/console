@@ -31,6 +31,10 @@ rdc repo exec <repo> -c <container> -i -- bash      # interactive shell in the c
 `rdc repo exec` passes the container command's own exit code straight through, so it
 works in scripts and conditionals.
 
+**Flag placement:** everything after `--` is sent to the container verbatim, so the CLI's
+own flags (`-c`, `-i`, `-u`, `--debug`) must come **before** `--`. A `--debug` written
+after `--` becomes an argument of the remote command and never turns on CLI debug output.
+
 ## rdc run — Low-Level Escape Hatch (hidden, debugging only)
 
 `rdc run` executes raw bridge functions on a machine. It is **hidden from help output and MCP** but still functional as a last resort. **Do NOT use it unless there is no higher-level alternative.** It bypasses safety checks and uses internal function names that may change. Always prefer typed commands (`rdc repo`, `rdc machine`, `rdc term`) over `rdc run`.

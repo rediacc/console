@@ -244,9 +244,22 @@ function isSmartHealthy(smartHealth: string | undefined): boolean {
   return smartHealth === 'PASSED' || smartHealth === 'OK';
 }
 
+/**
+ * SMART states that mean "we could not read it", not "the disk is dying".
+ *
+ * Virtualised disks are the common case: a QEMU/KVM guest sees a virtual block
+ * device with no SMART data at all and reports `unknown`. Counting that as a
+ * failure raises the highest-severity health issue on every VM, which is worse
+ * than saying nothing — an alert that always fires teaches people to ignore the
+ * ones that matter.
+ */
+const SMART_INDETERMINATE = new Set(['N/A', 'unknown', 'UNKNOWN', 'Unknown', '-', '']);
+
 /** Check if SMART health indicates a failing device */
 function isSmartFailing(smartHealth: string | undefined): boolean {
-  return Boolean(smartHealth) && smartHealth !== 'N/A' && !isSmartHealthy(smartHealth);
+  if (!smartHealth) return false;
+  if (SMART_INDETERMINATE.has(smartHealth.trim())) return false;
+  return !isSmartHealthy(smartHealth);
 }
 
 /** Collect storage metrics from block devices */
@@ -301,13 +314,70 @@ function checkRepositories(
     dockerRunning: listResult.repositories.filter((r) => r.docker_running).length,
   };
 
-  const unmountedCount = repositoryDetails.total - repositoryDetails.mounted;
+  // Only repos that are SUPPOSED to be up count as a problem. A repo with
+  // autostart off is deliberately parked — reporting it as unhealthy every time
+  // is the same cry-wolf failure as flagging a virtual disk's unknown SMART
+  // state, and it buries the repos that really did fall over.
+  const unmountedCount = listResult.repositories.filter((r) => r.autostart && !r.mounted).length;
   if (unmountedCount > 0) {
     ctx.issues.push(`${unmountedCount} repository(ies) not mounted`);
     ctx.exitCode = Math.max(ctx.exitCode, 1);
   }
 
   return repositoryDetails;
+}
+
+/**
+ * Days after which a repo's last successful backup is worth reporting.
+ *
+ * Set above the longest schedule in normal use (a weekly job legitimately leaves
+ * a repo six days old) so an on-schedule estate stays silent. The incident this
+ * exists for showed repos at 10 and 11 days while every other surface reported
+ * success.
+ */
+const BACKUP_STALE_DAYS = 10;
+
+/**
+ * Report repos whose backups have gone stale, or that were skipped outright.
+ *
+ * This is the check that catches a backup job succeeding while covering less
+ * than it should — the failure mode that unit status, exit codes and
+ * `backup status` all miss by construction, because the job genuinely succeeds.
+ */
+function checkBackupCoverage(listResult: ListResult, ctx: HealthCheckContext): void {
+  const coverage = listResult.backup_coverage;
+  if (!coverage) return; // no backup has ever run; absent is not a claim of health
+
+  const stale = coverage.repos.filter((r) => r.age_days >= BACKUP_STALE_DAYS);
+  if (stale.length > 0) {
+    ctx.issues.push(
+      `${stale.length} repository(ies) not backed up in over ${BACKUP_STALE_DAYS} days`
+    );
+    ctx.exitCode = Math.max(ctx.exitCode, 1);
+  }
+
+  // A repo with no successful backup on record AND a recorded skip is a real
+  // incident. Without the skip it is most likely newly created and simply has
+  // not had its first run yet — flagging that would fire on every new repo.
+  const neverBackedUp = coverage.repos.filter((r) => r.age_days < 0 && Boolean(r.last_skipped_at));
+  if (neverBackedUp.length > 0) {
+    ctx.issues.push(`${neverBackedUp.length} repository(ies) have never been backed up`);
+    ctx.exitCode = Math.max(ctx.exitCode, 2);
+  }
+}
+
+/**
+ * Whether a licence has entered its refresh window.
+ *
+ * An absent or unparseable timestamp means "no window published" and must not be
+ * read as overdue — the server owns this hint, and inventing urgency from a
+ * missing field would fire on every machine whose licences predate the field.
+ */
+function isPastRefreshWindow(refreshRecommendedAt: string | undefined): boolean {
+  if (!refreshRecommendedAt) return false;
+  const due = Date.parse(refreshRecommendedAt);
+  if (Number.isNaN(due)) return false;
+  return due <= Date.now();
 }
 
 /** Check license statuses */
@@ -346,6 +416,18 @@ function checkLicenses(
     }
   }
 
+  // Licences carry a soft window (refreshRecommendedAt) before they hard-expire,
+  // so a lapse is predictable rather than sudden. Saying so while everything
+  // still works is the only warning that arrives in time to act on: once a
+  // licence actually expires, the backup has already started skipping that repo.
+  // Severity stays below expired — this is "action is due", not "something broke".
+  const dueForRefresh = statuses.filter(
+    (s) => s.runtimeValid && isPastRefreshWindow(s.refreshRecommendedAt)
+  ).length;
+  if (dueForRefresh > 0) {
+    ctx.issues.push(`${dueForRefresh} repo license(s) due for refresh`);
+  }
+
   if (details.expired > 0) {
     ctx.issues.push(`${details.expired} repo license(s) expired`);
     ctx.exitCode = Math.max(ctx.exitCode, 1);
@@ -361,6 +443,13 @@ function checkLicenses(
   if (details.total > 0 && details.missing === details.total) {
     ctx.issues.push('All repo licenses are missing');
     ctx.exitCode = Math.max(ctx.exitCode, 2);
+  } else if (details.missing > 0) {
+    // A repo without a license is silently dropped from backups (the sync skips
+    // unlicensed repos and still exits 0), so a partial outage is exactly the
+    // case that needs saying out loud — previously only an all-missing estate
+    // raised anything, and losing 3 of 11 licenses reported nothing at all.
+    ctx.issues.push(`${details.missing} repo license(s) missing`);
+    ctx.exitCode = Math.max(ctx.exitCode, 1);
   }
 
   return details;
@@ -412,6 +501,7 @@ export function getMachineHealth(machine: MachineWithVaultStatus): MachineHealth
   const serviceDetails = checkServices(services, healthSummary, ctx);
   const storageDetails = checkStorage(blockDevices, ctx);
   const repositoryDetails = checkRepositories(listResult, healthSummary, ctx);
+  checkBackupCoverage(listResult, ctx);
   const licenseDetails = checkLicenses(listResult, ctx);
 
   return {

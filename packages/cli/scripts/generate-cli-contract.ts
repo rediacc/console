@@ -3,7 +3,7 @@
  * CLI Contract Generator
  *
  * Joins the live Commander tree with COMMAND_METADATA (planes, policy, MCP
- * annotations), the command registry (domain grouping, experimental gating),
+ * annotations), the command registry (domain grouping),
  * and the i18n catalogues, and emits the contract that drives the web console,
  * the `rdc --proxy` thin client, and the executor.
  *
@@ -221,15 +221,6 @@ const registryByName = new Map(COMMAND_REGISTRY.map((c) => [c.name, c]));
 
 function resolveGroup(domain: string): CommandGroup | null {
   return (registryByName.get(domain)?.domain as CommandGroup | undefined) ?? null;
-}
-
-/** Experimental commands are hidden unless REDIACC_EXPERIMENTAL=1. */
-function resolveExperimental(pathSegments: string[]): boolean {
-  const def = registryByName.get(pathSegments[0]);
-  if (!def) return false;
-  if (def.experimental) return true;
-  if (pathSegments.length < 2) return false;
-  return def.subcommands?.[pathSegments[1]]?.experimental === true;
 }
 
 // ---------- Options ----------
@@ -495,6 +486,23 @@ function parseExampleValues(
   for (let i = 0; i < rest.length; i++) {
     const token = rest[i];
 
+    // End-of-options: everything after `--` belongs to the trailing variadic
+    // positional verbatim, so no later token may be read as a flag. NOTE the
+    // `values` map does NOT retain the `--` itself; a consumer rebuilding a
+    // command line from `values` must re-insert it before that positional.
+    if (token === '--') {
+      const trailing = positionals[positionals.length - 1];
+      if (!trailing?.variadic) {
+        return fail('`--` needs a trailing variadic positional to collect into');
+      }
+      const remainder = rest.slice(i + 1);
+      if (remainder.length === 0) return fail('`--` is missing the command that follows it');
+      const joined = remainder.join(' ');
+      values[trailing.name] =
+        values[trailing.name] === undefined ? joined : `${values[trailing.name]} ${joined}`;
+      break;
+    }
+
     if (token.startsWith('-') && token.length > 1) {
       let flag = token;
       let inlineValue: string | undefined;
@@ -670,7 +678,6 @@ const commands: ContractCommand[] = walked.map((w) => {
     pathKey: w.pathKey,
     domain,
     group: resolveGroup(domain),
-    experimental: resolveExperimental(w.path),
     plane,
     descriptionKey: w.descriptionKey,
     label: liveCommand.description(),

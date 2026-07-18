@@ -176,8 +176,10 @@ async function runBackupNow(
 
 /** Try to cancel a single systemd unit if active. Returns true if cancelled. */
 async function tryCancelUnit(sftp: SFTPClient, unit: string, debug?: boolean): Promise<boolean> {
-  const isActive = await checkServiceActive(sftp, unit);
-  if (!isActive) return false;
+  // Only a running unit is worth stopping — a failed one has already exited, so
+  // `systemctl stop` on it would be a no-op reported as a cancellation.
+  const state = await readServiceState(sftp, unit);
+  if (state !== 'active' && state !== 'activating') return false;
   outputService.info(t('commands.backup.cancel.cancelling', { name: unit }));
   const exitCode = await sftp.execStreaming(`sudo systemctl stop ${unit}`, {
     onStdout: (data) => {
@@ -238,8 +240,16 @@ async function cancelStrategyUnits(sftp: SFTPClient, name: string, debug?: boole
   }
 }
 
-/** Check systemd service active status via SSH. */
-async function checkServiceActive(sftp: SFTPClient, serviceName: string): Promise<boolean> {
+/**
+ * Read a backup unit's systemd state.
+ *
+ * Returns the state verbatim rather than a boolean. Collapsing it to
+ * active-or-not made a FAILED unit render exactly like a healthy idle one, which
+ * is how a backup stayed broken for six days while this command kept reporting
+ * "idle" — the string systemd hands back already said `failed`, and the old code
+ * threw it away one line later.
+ */
+async function readServiceState(sftp: SFTPClient, serviceName: string): Promise<string> {
   let statusText = '';
   await sftp.execStreaming(`systemctl is-active ${serviceName} 2>/dev/null || true`, {
     onStdout: (data) => {
@@ -247,20 +257,41 @@ async function checkServiceActive(sftp: SFTPClient, serviceName: string): Promis
     },
     onStderr: () => {},
   });
-  const trimmed = statusText.trim();
-  return trimmed === 'active' || trimmed === 'activating';
+  return statusText.trim();
+}
+
+/**
+ * Map a systemd ActiveState to what an operator needs to see.
+ *
+ * `failed` must never be presentable as "nothing to see here"; an unknown state
+ * is passed through rather than bucketed, so a systemd state this code has not
+ * met yet shows up as itself instead of being silently normalised away.
+ */
+export function describeServiceState(state: string): string {
+  switch (state) {
+    case 'active':
+    case 'activating':
+      return 'RUNNING';
+    case 'failed':
+      return 'FAILED';
+    case 'inactive':
+    case '':
+      return 'idle';
+    default:
+      return state;
+  }
 }
 
 /** Build status row for a single backup strategy. */
 async function buildStatusRow(sftp: SFTPClient, name: string): Promise<Record<string, string>> {
   const serviceName = `rediacc-backup-${name}.service`;
-  const isActive = await checkServiceActive(sftp, serviceName);
+  const state = await readServiceState(sftp, serviceName);
   const strategy = await configService.getBackupStrategy(name);
   return {
     strategy: name,
     mode: strategy?.mode ?? BACKUP_DEFAULTS.MODE,
     schedule: strategy?.schedule ?? '-',
-    status: isActive ? 'RUNNING' : 'idle',
+    status: describeServiceState(state),
   };
 }
 

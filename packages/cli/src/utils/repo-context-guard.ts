@@ -170,7 +170,7 @@ const RENET_CLI_EQUIVALENTS: { pattern: RegExp; renetCommand: string; cliHelpCom
   {
     pattern: /\brenet\s+backup\b/,
     renetCommand: 'renet backup',
-    cliHelpCommand: 'rdc repo backup --help',
+    cliHelpCommand: 'rdc backup --help',
   },
   {
     pattern: /\brenet\s+daemon\b/,

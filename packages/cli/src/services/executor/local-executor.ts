@@ -21,7 +21,9 @@ import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { RepositoryConfig } from '../../types/index.js';
 import { isAgentEnvironment } from '../../utils/agent-guard.js';
 import { ValidationError } from '../../utils/errors.js';
+import { CliExitError } from '../../utils/cli-exit-error.js';
 import { formatDuration } from '../../utils/format.js';
+import { shellQuote } from '../../utils/shell-quote.js';
 import { startSpinner, stopSpinner } from '../../utils/spinner.js';
 import { formatStepDuration, getActiveLabel, getDoneLabel } from '../../utils/timeline.js';
 import {
@@ -49,6 +51,7 @@ import {
   RENET_LICENSE_REQUIRED_EXIT_CODE,
   type RenetLicenseFailure,
 } from '../renet/renet-license-contract.js';
+import { cleanRelayLine, isLogrusLine, stripRelayPrefix } from './output-lines.js';
 import { fetchOtlpCredentials } from '../telemetry/otlp-credentials.js';
 import { isTelemetryDisabled, telemetryService } from '../telemetry/telemetry.js';
 
@@ -75,6 +78,7 @@ async function timedStep<T>(
   }
 }
 
+import { isRefreshDue, markRefreshAttempted } from '../account/license-refresh-state.js';
 import { getSubscriptionTokenState } from '../account/subscription-auth.js';
 import { resolveExtraMachines } from './extra-machines.js';
 import {
@@ -451,12 +455,12 @@ function surfaceRenetWarnings(exitCode: number, combined: string, options: Execu
 export function parseCapturedJson<T>(stdout: string | undefined): T {
   const stripped = (stdout ?? '')
     .split('\n')
-    .map((line) => line.replace(/^\s*\[[A-Za-z_][A-Za-z0-9_]*\]\s?/, ''))
+    .map(stripRelayPrefix)
     // Drop renet logrus lines (`time="..." level=... msg="..."`) BEFORE the
     // payload scan: their messages carry stray brackets (e.g. a "[detached]"
     // fork message) that would otherwise be mistaken for the start of a JSON
     // array. The JSON payload itself never matches this shape.
-    .filter((line) => !/\blevel=(?:info|warn|warning|error|debug|fatal|trace)\b/.test(line))
+    .filter((line) => !isLogrusLine(line))
     .join('\n');
   const start = stripped.search(/[[{]/);
   if (start === -1) {
@@ -472,11 +476,12 @@ export function parseCapturedJson<T>(stdout: string | undefined): T {
 
 /** Strip bridge `[function] ` prefixes and drop empty lines and JSON
  * fragments (multi-line JSON yields lines starting with braces, brackets, or
- * quoted keys). */
+ * quoted keys). The JSON-fragment drop is specific to failure-message
+ * extraction and is why `cleanRelayLine` cannot simply replace this. */
 function cleanOutputLines(output: string): string[] {
   return output
     .split('\n')
-    .map((line) => line.replace(/^\s*\[[^\]]+\]\s?/, '').trim())
+    .map((line) => stripRelayPrefix(line).trim())
     .filter((line) => line.length > 0 && !/^[{}\][",]/.test(line));
 }
 
@@ -502,7 +507,12 @@ function capReason(reason: string): string {
     : reason;
 }
 
-type StdoutHandler = (data: Buffer) => void;
+/**
+ * A stdout sink. `flush` exists because the line-buffered handlers hold a
+ * trailing partial line: a stream that ends without a final newline (a killed
+ * `--follow`, a command whose last line has no `\n`) would otherwise drop it.
+ */
+type StdoutHandler = ((data: Buffer) => void) & { flush?: () => void };
 
 /** Handle NDJSON events from renet in events mode. */
 function handleEventsStdout(onEvent: (event: RenetEvent) => void): StdoutHandler {
@@ -524,15 +534,24 @@ function handleEventsStdout(onEvent: (event: RenetEvent) => void): StdoutHandler
   };
 }
 
-/** Render real-time step events from a single parsed JSON object. */
-function renderStepEvent(parsed: Record<string, unknown>): void {
+/**
+ * Render real-time step events from a single parsed JSON object.
+ *
+ * `write` exists so passthrough commands can send progress to STDERR: for
+ * `repo exec`/`repo logs` stdout is the command's data, and a `✔ Provisioning
+ * renet (2.0s)` line landing in `$(rdc repo exec …)` is corruption, not progress.
+ */
+function renderStepEvent(
+  parsed: Record<string, unknown>,
+  write: (text: string) => void = (text) => void process.stdout.write(text)
+): void {
   if (parsed.step_start && typeof parsed.step_start === 'object') {
     const s = parsed.step_start as { name?: string };
-    if (s.name) process.stdout.write(`⠋ ${getActiveLabel(s.name)}...`);
+    if (s.name) write(`⠋ ${getActiveLabel(s.name)}...`);
   } else if (parsed.step_done && typeof parsed.step_done === 'object') {
     const s = parsed.step_done as { name?: string; duration_ms?: number };
     if (s.name && s.duration_ms != null) {
-      process.stdout.write(`\r✔ ${getDoneLabel(s.name)} (${formatStepDuration(s.duration_ms)})\n`);
+      write(`\r✔ ${getDoneLabel(s.name)} (${formatStepDuration(s.duration_ms)})\n`);
     }
   }
 }
@@ -558,6 +577,58 @@ function handleStepDetectionStdout(): StdoutHandler {
   };
 }
 
+/**
+ * Stream the inner process's own output live, minus renet's relay scaffolding.
+ *
+ * This is what makes `repo exec`, `repo logs` and `run -f` print anything at
+ * all: the default handler below detects step events and DROPS every other
+ * line, which is right for `repo up`/`fork`/`push` (renet's chatter is noise
+ * there) and exactly wrong for the three verbs whose output is the answer.
+ *
+ * Line-buffered rather than accumulate-then-print, because `repo logs --follow`
+ * must emit each line as it completes. Step-event lines are swallowed, not
+ * printed: leaking a `{"step_done":...}` line would poison `$(rdc repo exec …)`.
+ */
+function handlePassthroughStdout(renderSteps: boolean): StdoutHandler {
+  let lineBuffer = '';
+
+  const emit = (line: string): void => {
+    const trimmed = line.trim();
+    const jsonIdx = trimmed.indexOf('{');
+    if (jsonIdx >= 0) {
+      try {
+        const parsed = JSON.parse(trimmed.slice(jsonIdx)) as Record<string, unknown>;
+        if (parsed.step_start || parsed.step_done) {
+          // Progress to stderr, never stdout: stdout belongs to the command.
+          if (renderSteps) renderStepEvent(parsed, writeStderr);
+          return;
+        }
+      } catch {
+        /* not a step event, fall through and print it */
+      }
+    }
+    // writeStdout, not process.stdout: inside the MCP/serve dispatch context
+    // this output belongs to ONE request's envelope, and writing to the process
+    // stream would interleave concurrent tenants' command output.
+    const cleaned = cleanRelayLine(line);
+    if (cleaned !== undefined) writeStdout(`${cleaned}\n`);
+  };
+
+  const handler: StdoutHandler = (data: Buffer) => {
+    lineBuffer += data.toString();
+    const lines = lineBuffer.split('\n');
+    lineBuffer = lines.pop() ?? '';
+    for (const line of lines) emit(line);
+  };
+  handler.flush = () => {
+    if (!lineBuffer) return;
+    const tail = lineBuffer;
+    lineBuffer = '';
+    emit(tail);
+  };
+  return handler;
+}
+
 /** Create the appropriate stdout handler based on execution options. */
 function createStdoutHandler(
   options: ExecuteOptions,
@@ -579,6 +650,11 @@ function createStdoutHandler(
   if (options.debug) {
     return (data: Buffer) => process.stdout.write(data);
   }
+  // Opt-in, per command: only the verbs whose output IS the answer ask for it,
+  // so every other command keeps the step-detection handler unchanged.
+  if (options.passthroughOutput) {
+    return handlePassthroughStdout(!options.quietSpinners);
+  }
   return handleStepDetectionStdout();
 }
 
@@ -587,10 +663,6 @@ function createStdoutHandler(
  * shell command. Wraps in `'...'` and escapes embedded single quotes. Used
  * by `buildRemoteCommand` to inject OTLP credentials as env vars.
  */
-function shellQuote(s: string): string {
-  return `'${s.replaceAll("'", `'\\''`)}'`;
-}
-
 /**
  * Build the `env K=V K=V ` prefix that carries telemetry state into a
  * renet subprocess launched over SSH. Shared by the `renet execute`
@@ -680,6 +752,14 @@ const EXIT_DETACHED = 130;
  * Whether a failed run is the kind that license recovery can retry: renet
  * refused for want of a repo license, and the caller has not opted out of
  * machine activation.
+ */
+/*
+ * Exit 10 is NO LONGER UNIQUE to the license path. renet now re-raises a child
+ * process's own exit code verbatim (cmd/renet/execute_command.go), so a
+ * `repo exec ... -- sh -c 'exit 10'` reports 10 too. That makes the structured
+ * payload parse at the call site LOAD-BEARING rather than merely defensive:
+ * this predicate answers "could this be a license refusal", and only a parsed
+ * LICENSE_REQUIRED payload confirms it. Do not act on this function alone.
  */
 export function needsLicenseRecovery(result: ExecuteResult): boolean {
   return (
@@ -928,15 +1008,41 @@ class LocalExecutorService {
     };
   }
 
-  private async maybeRefreshInvalidSignatures(
+  /**
+   * Opportunistically refresh repo licences on a machine we are already talking
+   * to.
+   *
+   * Gated on a per-machine cooldown, NOT on whether the renet binary happened to
+   * change. It used to run only `if (renetUploaded)`, which coupled licence
+   * maintenance to binary churn: on a stable machine renet does not change for
+   * weeks, so a daily-active operator got no refresh at all and licences drifted
+   * toward expiry unattended. Binary version and licence age are unrelated.
+   *
+   * Best-effort throughout. A machine can never refresh its own licences (renet
+   * only verifies them; issuance is CLI-side), so this is the only proactive
+   * path — but it can only run where the operator's subscription token lives,
+   * and it stays silent when there is none.
+   */
+  private async maybeRefreshRepoLicenses(
     machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
+    machineName: string,
     sshPrivateKey: string,
     remoteRenetPath: string,
     sftp: SFTPClient
   ): Promise<void> {
-    if (getSubscriptionTokenState().kind !== 'ready') return;
-
+    // The ENTIRE body is best-effort. This runs on every machine-touching
+    // command as a side-effect of doing something else, so nothing in here —
+    // token lookup, local state IO, the network call — may surface as a failure
+    // of the command the operator actually asked for.
     try {
+      if (getSubscriptionTokenState().kind !== 'ready') return;
+
+      if (!(await isRefreshDue(machineName))) return;
+      // Marked before the attempt, not after: a refresh that throws must still
+      // consume its cooldown slot, or an unreachable machine would be retried
+      // on every single command.
+      await markRefreshAttempted(machineName);
+
       const result = await refreshRepoLicensesBatch(machine, sshPrivateKey, remoteRenetPath, sftp);
       if (result.invalidSignatureDetected > 0) {
         const refreshed = result.issued + result.refreshed;
@@ -1287,6 +1393,8 @@ class LocalExecutorService {
         if (echoStderrLive) process.stderr.write(data);
       },
     });
+    // Emit any final line that arrived without a trailing newline.
+    stdoutHandler.flush?.();
 
     if (collector) stdout = collector.stdout;
 
@@ -1539,9 +1647,13 @@ class LocalExecutorService {
       await runVerify();
     }
 
-    if (renetUploaded) {
-      await this.maybeRefreshInvalidSignatures(machine, sshPrivateKey, remoteRenetPath, sftp);
-    }
+    await this.maybeRefreshRepoLicenses(
+      machine,
+      options.machineName,
+      sshPrivateKey,
+      remoteRenetPath,
+      sftp
+    );
 
     return { remoteRenetPath, renetUploaded };
   }
@@ -1722,6 +1834,12 @@ class LocalExecutorService {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const durationMs = Date.now() - startTime;
       this.recordAudit(options, { success: false, exitCode: 1, durationMs, error: errorMessage });
+      // A CliExitError is a deliberate REFUSAL carrying its own exit code, its
+      // retryable flag and its next-actions. Flattening it into a generic
+      // {exitCode: 1} result throws all of that away: a BUSY provisioning-lock
+      // timeout (exit 15, retryable, "here is the pid holding it") arrived at
+      // the user as an anonymous exit 1. Let it through untouched.
+      if (error instanceof CliExitError) throw error;
       return { success: false, exitCode: 1, error: errorMessage, durationMs };
     }
   }

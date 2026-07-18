@@ -23,6 +23,13 @@ import {
 // Shared positional-syntax detector (zero-positional commands)
 import { scanText as scanPositional } from './lib/positional-cli-detector.ts';
 
+// Shared stale-command-path detector (commands that no longer exist)
+import {
+  scanShellText,
+  scanSourceOptions,
+  scanSourceText,
+} from './lib/command-path-checker.ts';
+
 // Curated contract examples (also parsed and gated by the contract generator;
 // validated here too so this script stays the one place that proves every
 // `rdc …` line in the repo against the command tree)
@@ -66,6 +73,28 @@ const TARGET_GLOBS = [
   'packages/www/src/components/**/*.astro',
   'packages/json/templates/**/*.{md,mdx}',
 ];
+
+/**
+ * Files scanned for STALE COMMAND PATHS (commands that no longer exist).
+ *
+ * Deliberately wider than TARGET_GLOBS, which only reaches `commands/**` and so
+ * never saw the error messages in `services/**` naming `rdc config machine setup`.
+ * The other extractors stay on their narrower globs: they run the full option
+ * validator, which needs a CLI reference entry, whereas this check only resolves
+ * the command path and is safe to point at all source.
+ */
+const COMMAND_PATH_GLOBS = [
+  'packages/cli/src/**/*.ts',
+  'packages/shared/src/**/*.ts',
+  'private/renet/cmd/**/*.go',
+  'private/renet/pkg/**/*.go',
+  '*.sh',
+  'scripts/**/*.sh',
+  '.ci/scripts/**/*.sh',
+];
+
+/** Tests assert on message text, including deliberately-wrong fixtures. */
+const COMMAND_PATH_IGNORE = /(?:__tests__|\.test\.ts$|\.spec\.ts$)/;
 
 /**
  * Files a scan must NOT read, because their content is EVIDENCE rather than instruction.
@@ -574,6 +603,56 @@ function scanFileForPositional(
 }
 
 /**
+ * Scan source and shell for references to commands that no longer exist.
+ *
+ * Separate from the extractors above because it resolves only the command PATH
+ * against command-tree.json — no option or reference-entry validation — which is
+ * what lets it run over every source file rather than the curated doc globs.
+ */
+async function scanForStaleCommandPaths(violations: Violation[]): Promise<void> {
+  const files: string[] = [];
+  for (const pattern of COMMAND_PATH_GLOBS) {
+    files.push(...(await glob(pattern, { cwd: ROOT, absolute: false })));
+  }
+  const unique = [...new Set(files)]
+    .filter((f) => !EXCLUDED_FILES.has(f) && !COMMAND_PATH_IGNORE.test(f))
+    .sort();
+
+  for (const relPath of unique) {
+    const absPath = path.join(ROOT, relPath);
+    if (!fs.existsSync(absPath)) continue;
+    const content = fs.readFileSync(absPath, 'utf-8');
+    if (!content.includes('rdc')) continue;
+
+    const hits = relPath.endsWith('.sh') ? scanShellText(content) : scanSourceText(content);
+    for (const hit of hits) {
+      violations.push({
+        file: relPath,
+        line: hit.line,
+        command: hit.match,
+        reason: 'stale-command-path',
+        detail: hit.reason,
+      });
+    }
+
+    // Options too: a real command named with a flag it does not accept is just
+    // as broken as a command that does not exist, and shipped exactly that
+    // (`rdc job logs --id <id>` -> "unknown option '--id'").
+    if (!relPath.endsWith('.sh')) {
+      for (const hit of scanSourceOptions(content)) {
+        violations.push({
+          file: relPath,
+          line: hit.line,
+          command: hit.match,
+          reason: 'stale-command-option',
+          detail: hit.reason,
+        });
+      }
+    }
+  }
+}
+
+/**
  * Remove duplicate violations (same file + line + reason + command snippet).
  * The whole-file pre-scan overlaps with narrow extractors on clean cases.
  */
@@ -639,6 +718,9 @@ async function main(): Promise<void> {
       extractFromGo(content, relPath, violations);
     }
   }
+
+  // Stale command paths across all source + shell (wider glob, path-only check)
+  await scanForStaleCommandPaths(violations);
 
   // Curated contract examples, through the same parser as everything above
   extractFromCommandDocs(violations);

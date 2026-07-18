@@ -3,6 +3,7 @@
  */
 
 import { createHash } from 'node:crypto';
+import { shellQuote } from '../../utils/shell-quote.js';
 import type { SFTPClient } from '../sftp/client.js';
 
 export interface SftpTransferResult {
@@ -13,11 +14,6 @@ export interface SftpTransferResult {
   verifyFailures: number;
   errors: string[];
   duration: number;
-}
-
-export function shellQuote(arg: string): string {
-  // Single-quote escape: end quote, escape, reopen.
-  return `'${arg.replaceAll("'", "'\\''")}'`;
 }
 
 export function newResult(): SftpTransferResult {

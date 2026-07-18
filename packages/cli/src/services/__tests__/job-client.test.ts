@@ -396,8 +396,11 @@ describe('backgroundStartedHint', () => {
     expect(hint).toContain('Started job');
     expect(hint).toContain('keeps running in the background');
     expect(hint).toContain(JOB_ID);
-    expect(hint).toContain(`rdc job logs -m prod-1 --id ${JOB_ID} --follow`);
-    expect(hint).toContain(`rdc job status -m prod-1 --id ${JOB_ID}`);
+    // Positional job id, NOT --id. These assertions previously encoded the
+    // broken form, so the hint shipped `--id` and following it produced
+    // "error: unknown option '--id'" — the test pinned the bug in place.
+    expect(hint).toContain(`rdc job logs ${JOB_ID} -m prod-1 --follow`);
+    expect(hint).toContain(`rdc job status ${JOB_ID} -m prod-1`);
   });
 });
 
@@ -413,9 +416,9 @@ describe('resumeHint', () => {
     // Every command it offers must be a real one. It now points at the
     // first-class `rdc job` surface rather than telling the operator to shell
     // into the machine and drive renet by hand.
-    expect(hint).toContain(`rdc job logs -m prod-1 --id ${JOB_ID} --follow`);
-    expect(hint).toContain(`rdc job status -m prod-1 --id ${JOB_ID}`);
-    expect(hint).toContain(`rdc job cancel -m prod-1 --id ${JOB_ID}`);
+    expect(hint).toContain(`rdc job logs ${JOB_ID} -m prod-1 --follow`);
+    expect(hint).toContain(`rdc job status ${JOB_ID} -m prod-1`);
+    expect(hint).toContain(`rdc job cancel ${JOB_ID} -m prod-1`);
     expect(hint).not.toContain('rdc term connect');
   });
 });

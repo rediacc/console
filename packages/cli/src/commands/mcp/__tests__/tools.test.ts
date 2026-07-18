@@ -331,9 +331,13 @@ describe('MCP tool definitions', () => {
   });
 
   describe('custom tools', () => {
-    it('has exactly 4 custom tools', () => {
+    it('has exactly 3 custom tools', () => {
       // 5 -> 4: term_exec retired in w2b (repo_exec replaces it as a real leaf).
-      expect(CUSTOM_TOOLS.length).toBe(4);
+      // 4 -> 3: machine_health retired — it ran `machine status --system`, not
+      // the health checker, so the tool named "health" never returned the
+      // aggregated issues. `machine health` is no longer experimental, so the
+      // contract-derived tool of that name now runs the real command.
+      expect(CUSTOM_TOOLS.length).toBe(3);
     });
 
     it('custom tools are all present in full tool list', () => {
