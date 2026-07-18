@@ -260,8 +260,13 @@ export class InfrastructureManager {
     }
 
     try {
-      // Copy to temp location using SSHExecutor
-      const copyResult = await this.sshExecutor.copyTo(ip, localPath, '/tmp/renet', {
+      // Copy to a temp location using SSHExecutor. Stage in /var/tmp, NOT
+      // /tmp: Fedora mounts /tmp as tmpfs capped by VM RAM, and the dev renet
+      // binary intermittently does not fit ('scp: write remote "/tmp/renet":
+      // Failure' — the recurring fedora-only setup red). Same fix as renet's
+      // own Go staging sites (bridge/worker/image-builder); /var/tmp is
+      // disk-backed on every distro.
+      const copyResult = await this.sshExecutor.copyTo(ip, localPath, '/var/tmp/renet', {
         execTimeout: 60000, // Increased timeout for larger binaries
       });
 
@@ -279,7 +284,7 @@ export class InfrastructureManager {
       // after a VM reset that can exceed 10s, so give it real headroom.
       const moveResult = await this.sshExecutor.execute(
         ip,
-        `sudo mkdir -p ${installDir} ${currentDir} && sudo install -m 755 /tmp/renet ${VM_RENET_INSTALL_PATH} && sudo ln -sf ${VM_RENET_INSTALL_PATH} ${currentDir}/renet && sudo ln -sf ${VM_RENET_INSTALL_PATH} /usr/bin/renet`,
+        `sudo mkdir -p ${installDir} ${currentDir} && sudo install -m 755 /var/tmp/renet ${VM_RENET_INSTALL_PATH} && sudo ln -sf ${VM_RENET_INSTALL_PATH} ${currentDir}/renet && sudo ln -sf ${VM_RENET_INSTALL_PATH} /usr/bin/renet`,
         { execTimeout: 60000 }
       );
 
