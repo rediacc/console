@@ -1022,8 +1022,8 @@ export class BridgeTestRunner {
     this.repositoryMethods.repositoryNew(name, size, password, datastorePath);
   repositoryRm = (name: string, datastorePath?: string) =>
     this.repositoryMethods.repositoryRm(name, datastorePath);
-  repositoryMount = (name: string, password?: string, datastorePath?: string) =>
-    this.repositoryMethods.repositoryMount(name, password, datastorePath);
+  repositoryMount = (name: string, password?: string, datastorePath?: string, networkId?: string) =>
+    this.repositoryMethods.repositoryMount(name, password, datastorePath, networkId);
   repositoryUnmount = (name: string, datastorePath?: string) =>
     this.repositoryMethods.repositoryUnmount(name, datastorePath);
   repositoryUp = (name: string, datastorePath?: string, networkId?: string) =>

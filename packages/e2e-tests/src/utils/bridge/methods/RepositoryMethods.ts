@@ -62,13 +62,19 @@ export class RepositoryMethods {
   async repositoryMount(
     name: string,
     password?: string,
-    datastorePath?: string
+    datastorePath?: string,
+    networkId?: string
   ): Promise<ExecResult> {
+    // networkId matters for FORK mounts: without it the harness's default
+    // network-id (the parent's) rides along and the fork's docker daemon
+    // starts on the PARENT's network — which wedges the parent's daemon
+    // (13b test 7's parent counter read 0 exactly this way).
     return this.testFunction({
       function: 'repository_mount',
       repository: name,
       password,
       datastorePath,
+      networkId,
     });
   }
 

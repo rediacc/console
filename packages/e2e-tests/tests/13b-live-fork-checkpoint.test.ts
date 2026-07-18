@@ -53,7 +53,14 @@ test.describe
     let runner: BridgeTestRunner;
     const timestamp = Date.now();
     const parentRepoName = `cp-livefork-${timestamp}`;
-    const forkTag = `cpfork-${timestamp}`;
+    // In raw renet, `repository fork --tag` takes the fork's FULL image name —
+    // "--tag IS its image name; the rdc `name:tag` compositing is a config
+    // concern" (suite 17's ledger; the bridge ParamDef describes `tag` as
+    // "Fork repository name", and rdc passes the fork's GUID here). The fork's
+    // storage therefore lives at repositories/<forkRepoName>, NOT at
+    // repositories/<parent>:<tag> — mounting the latter was this suite's
+    // original bug: fork exit 0, then "repository storage not found".
+    const forkRepoName = `cpfork-${timestamp}`;
     const parentContainerName = `cp-counter-${timestamp}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const parentNetworkId = DEFAULT_NETWORK_ID;
@@ -100,7 +107,7 @@ test.describe
       // beforeAll skipped all provisioning without CRIU — nothing to tear down.
       if (!criuAvailable) return;
       for (const [name, netId] of [
-        [`${parentRepoName}:${forkTag}`, forkNetworkId],
+        [forkRepoName, forkNetworkId],
         [parentRepoName, parentNetworkId],
       ] as const) {
         try {
@@ -184,30 +191,30 @@ test.describe
     test('5. fork the RUNNING parent with --checkpoint', async () => {
       test.skip(!criuAvailable, 'CRIU not available on worker');
       const result = await runner.executeViaBridge(
-        `sudo renet repository fork --name "${parentRepoName}" --tag "${forkTag}" --datastore "${datastorePath}" --checkpoint --network-id ${parentNetworkId}`
+        `sudo renet repository fork --name "${parentRepoName}" --tag "${forkRepoName}" --datastore "${datastorePath}" --checkpoint --network-id ${parentNetworkId}`
       );
       expect(result.code).toBe(0);
       // The cow_sync fix is what makes this dump land inside the fork's
       // image: verify the fork's checkpoint manifest exists once mounted.
+      // Mount on the FORK's network: the harness otherwise injects its default
+      // network-id (the parent's), and a fork daemon started on the parent's
+      // network wedges the parent — test 7's "parent counter stalled (0 -> 0)".
       const mountResult = await runner.repositoryMount(
-        `${parentRepoName}:${forkTag}`,
+        forkRepoName,
         TEST_PASSWORD,
-        datastorePath
+        datastorePath,
+        String(forkNetworkId)
       );
       expect(runner.isSuccess(mountResult)).toBe(true);
       const manifestCheck = await runner.executeViaBridge(
-        `sudo test -f "${datastorePath}/mounts/${parentRepoName}:${forkTag}/.rediacc/checkpoint/default/manifest.json" && echo present || echo missing`
+        `sudo test -f "${datastorePath}/mounts/${forkRepoName}/.rediacc/checkpoint/default/manifest.json" && echo present || echo missing`
       );
       expect(manifestCheck.stdout.trim()).toBe('present');
     });
 
     test('6. fork up restores the checkpointed process (parent still running)', async () => {
       test.skip(!criuAvailable, 'CRIU not available on worker');
-      const result = await runner.repositoryUp(
-        `${parentRepoName}:${forkTag}`,
-        datastorePath,
-        String(forkNetworkId)
-      );
+      const result = await runner.repositoryUp(forkRepoName, datastorePath, String(forkNetworkId));
       expect(runner.isSuccess(result)).toBe(true);
 
       const forkCount = await counterValue(forkNetworkId);

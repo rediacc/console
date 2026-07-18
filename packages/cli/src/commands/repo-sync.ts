@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { Command } from 'commander';
 import ora from 'ora';
 import { t } from '../i18n/index.js';
@@ -87,9 +88,25 @@ function displaySyncResult(
   }
 }
 
+/**
+ * Non-secret shape summary of the SSH key the rsync leg will write to its temp
+ * file: PEM header line, byte length, and a hash prefix. Appended to the error
+ * output when the ssh client rejects the key ("Load key … error in libcrypto",
+ * observed once in CI with no local reproduction) so the next occurrence
+ * identifies WHICH key content was written without leaking any material.
+ */
+function sshKeyDiagnostic(privateKey: string): string {
+  const header = privateKey.trimStart().split('\n', 1)[0] ?? '';
+  const digest = createHash('sha256').update(privateKey).digest('hex').slice(0, 12);
+  return `ssh key diagnostic: header="${header}" length=${privateKey.length} sha256=${digest}`;
+}
+
+const SSH_KEY_FAILURE_PATTERN = /load key|libcrypto|permission denied \(publickey/i;
+
 async function executeSyncWithProgress(
   rsyncOptions: RsyncExecutorOptions,
-  mode: 'upload' | 'download'
+  mode: 'upload' | 'download',
+  keyDiagnostic?: string
 ): Promise<{ filesTransferred: number; bytesTransferred: number }> {
   const spinner = ora(t(`commands.sync.${mode}.starting`)).start();
 
@@ -102,6 +119,13 @@ async function executeSyncWithProgress(
   };
 
   const result = await executeRsync(rsyncOptions);
+  if (
+    !result.success &&
+    keyDiagnostic &&
+    result.errors.some((e) => SSH_KEY_FAILURE_PATTERN.test(e))
+  ) {
+    result.errors.push(keyDiagnostic);
+  }
   displaySyncResult(result, spinner, mode);
   return {
     filesTransferred: result.filesTransferred,
@@ -284,10 +308,11 @@ async function executeSyncWithSftpFallback(
     bytesTransferred: number;
     duration: number;
     errors: string[];
-  }>
+  }>,
+  keyDiagnostic?: string
 ): Promise<{ filesTransferred: number; bytesTransferred: number }> {
   try {
-    return await executeSyncWithProgress(rsyncOptions, mode);
+    return await executeSyncWithProgress(rsyncOptions, mode, keyDiagnostic);
   } catch (err: unknown) {
     if (!isRsyncNotFoundError(err)) throw err;
     const spinner = ora('rsync not available, using SFTP transfer (no delta sync)...').start();
@@ -367,15 +392,19 @@ async function syncUpload(ref: string, options: SyncUploadOptions): Promise<void
         return;
       }
 
-      const counts = await executeSyncWithSftpFallback(rsyncOptions, 'upload', (spinner) =>
-        sftpUploadTransfer(isFileMode, sftpSources, ctx, {
-          exclude: options.exclude,
-          verify: options.verify,
-          universalUser: ctx.details.universalUser,
-          onProgress: (file) => {
-            spinner.text = `Uploading: ${file}`;
-          },
-        })
+      const counts = await executeSyncWithSftpFallback(
+        rsyncOptions,
+        'upload',
+        (spinner) =>
+          sftpUploadTransfer(isFileMode, sftpSources, ctx, {
+            exclude: options.exclude,
+            verify: options.verify,
+            universalUser: ctx.details.universalUser,
+            onProgress: (file) => {
+              spinner.text = `Uploading: ${file}`;
+            },
+          }),
+        sshKeyDiagnostic(ctx.details.privateKey)
       );
       filesTransferred = counts.filesTransferred;
       bytesTransferred = counts.bytesTransferred;
@@ -460,13 +489,17 @@ async function syncDownload(
         return;
       }
 
-      const counts = await executeSyncWithSftpFallback(rsyncOptions, 'download', (spinner) =>
-        sftpDownloadTransfer(isFileMode, ctx, localPath, {
-          verify: options.verify,
-          onProgress: (file) => {
-            spinner.text = `Downloading: ${file}`;
-          },
-        })
+      const counts = await executeSyncWithSftpFallback(
+        rsyncOptions,
+        'download',
+        (spinner) =>
+          sftpDownloadTransfer(isFileMode, ctx, localPath, {
+            verify: options.verify,
+            onProgress: (file) => {
+              spinner.text = `Downloading: ${file}`;
+            },
+          }),
+        sshKeyDiagnostic(ctx.details.privateKey)
       );
       filesTransferred = counts.filesTransferred;
       bytesTransferred = counts.bytesTransferred;
