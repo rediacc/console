@@ -386,7 +386,7 @@ function checkCrossTutorial(slugs: string[], issues: Issue[]): void {
  * The STALE-RECORDING parity backlog.
  *
  * BLOCKER: the P4 reshape rewrote the CLI surface (positional refs, the config exodus), so the
- * four onboarding scenes below now carry the command a user must ACTUALLY type
+ * scenes below now carry the command a user must ACTUALLY type
  * (`rdc machine add <machine-name> …`) while their `.cast` recordings still show the pre-P4
  * text (`rdc config machine add --name machine-11 …`). Storyboard, recording and the account
  * portal's first-run flow are locked together and only two of the three can be true at once:
@@ -410,6 +410,15 @@ function checkCrossTutorial(slugs: string[], issues: Issue[]): void {
  * ★ THEY CLEAR TOGETHER. Same root cause and same fix event as the stale-recording backlog in
  * `tutorial-cast-baseline.json` (see its BLOCKER) and the "188 dead commands" entry in
  * `docs/design/spec/12-carried-debt.md`. One re-record clears all three, or all three are lying.
+ *
+ * 2026-07-19: grew 4 -> 75 scenes. The CLI-example campaign corrected the stale commands across
+ * every storyboard, which by this BLOCKER's own reasoning is NOT a repair on its own — it
+ * restates the same stale-recording debt across more scenes. The storyboards are now RIGHT and
+ * the recordings are now WRONG for all 75, where before they were consistently wrong together.
+ * That is a deliberate trade (the command text is the one that must be right, per below), but it
+ * is only paid off by the re-record, which needs the bridge VM and real TTS/GPU cost.
+ * This entry list is exact-keyed and shrink-only: the moment a scene is re-recorded, the gate
+ * demands its entry be deleted, so this cannot quietly become permanent.
  */
 function loadBaseline(): Baseline {
   if (!existsSync(baselinePath)) return {};
