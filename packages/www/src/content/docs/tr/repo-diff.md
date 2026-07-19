@@ -32,10 +32,12 @@ rdc repo diff <fork> --base <repo>   # herhangi bir ilgili depoya karşı karş�
 
 | Seçenek | Açıklama | Varsayılan |
 |--------|----------|-----------|
+| `--base <ref>` | Karşılaştırılacak depo (temel, eski taraf). Varsayılan olarak yerel konfigürasyondan çözümlenen pozisyonel referansın ana deposu. | referansın ana deposu |
 | (format bayrağı yok) | Ad-durum çıktısı: değişen her dosya için renkli `A`/`M`/`D`/`R` harfi ve bir satırlık özet. | açık |
 | `--name-only` | Satır başına bir değişen yol, durum harfi yok. Pipe dostu. | kapalı |
 | `--stat` | Dosya başına değişiklik büyüklüğü (bayt ve blok deltaları) ve toplamlar alt bilgisi. | kapalı |
 | `--content <path>` | Tek bir dosyanın birleştirilmiş metin farkı. Yalnızca metin; ikili dosyalar `Binary files differ` bildirirler. | kapalı |
+| `-o json` | Ajanlar ve betikler için yapılandırılmış çıktı. | `table` |
 | `--fast` | İçerik-hash doğrulaması adımını atlayın ve blok filtresine güvenin. Daha hızlı, ancak Değiştirilmiş dosyaları aşırı rapor edebilir. | kapalı |
 | `--debug` | stderr'de ayrıntılı tanılama. | kapalı |
 | `--skip-router-restart` | Yönlendirici yeniden başlatma adımını atlayın. | kapalı |
@@ -99,7 +101,7 @@ $ rdc repo diff test-1gb:fork1 --content hello.txt
 
 ### jq ile JSON filtreleme
 
-`--json` yapılandırılmış zarf çıktısını stdout'a gönderir, bu nedenle `jq` içine temiz bir şekilde pipe edilir:
+`-o json` yapılandırılmış zarf çıktısını stdout'a gönderir, bu nedenle `jq` içine temiz bir şekilde pipe edilir:
 
 ```bash
 $ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
@@ -137,7 +139,7 @@ Her satır dosyanın bayt deltası ve blok deltasını taşır. Bir alt bilgi to
 
 Tek bir metin dosyası için standart birleştirilmiş diff (`---`/`+++` başlıkları, `@@` parçaları). İkili dosyalar `Binary files differ` bildirirler ve hiçbir parça üretmezler.
 
-### `--json`
+### `-o json`
 
 Tam yapılandırılmış sonuç. Veri stdout'a gider; ilerleme ve tanılama stderr'e gider, bu nedenle JSON, ilerleme yazdırılırken bile `jq` veya başka bir ayrıştırıcıya temiz bir şekilde pipe edilir.
 

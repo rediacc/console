@@ -269,6 +269,7 @@ Der `--exclude`-Filter der Cold-Strategie ist der empfohlene Notausgang für seh
 
 | Option | Beschreibung |
 |--------|-------------|
+| `<strategy>` (positional) | Name der Strategie (wird zur Maschinenbindung verwendet) |
 | `--destination <storage>` | Speicheranbieter zum Hochladen |
 | `--cron <expression>` | Cron-Ausdruck (z. B. `"0 2 * * *"` für täglich um 2 Uhr) |
 | `--mode <hot\|cold>` | Backup-Modus |
@@ -410,6 +411,8 @@ rdc repo migrate my-app@server-1 --to server-2
 
 | Option | Beschreibung |
 |--------|-------------|
+| `<ref>` (positional) | Repository-Ref, das migriert werden soll; das `@machine` darin benennt die Quelle |
+| `--to <place>` | Zielmaschine oder Cluster |
 | `--provision` | Repository auf der Zielmaschine provisionieren, bevor übertragen wird |
 | `--checkpoint` | CRIU-Checkpoint vor der Migration erstellen |
 | `--skip-dns` | DNS-Aktualisierung nach der Migration überspringen |

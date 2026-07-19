@@ -149,14 +149,14 @@ rdc repo fork my-app --tag staging
 
 ### 一步完成分支并启动
 
-`--up` 以一次远程操作完成分支、挂载和服务启动。加上 `--detach` 可在容器启动后立即归还终端，健康检查在后台继续，代理会持续重试直到各服务就绪：
+`--up` 以一次远程操作完成分支、挂载和服务启动。加上 `--no-wait` 可在容器启动后立即归还终端，健康检查在后台继续，代理会持续重试直到各服务就绪：
 
 ```bash
 rdc repo fork my-app --tag staging --up
 rdc repo fork my-app --tag scratch --up --no-wait
 ```
 
-实测数据：一个 128 GB 的仓库从分支到服务运行约需 57 秒，使用 `--detach` 约需 31 秒。后台模式下命令会打印进度查询提示：`rdc machine status <machine> --containers`。
+实测数据：一个 128 GB 的仓库从分支到服务运行约需 57 秒，使用 `--no-wait` 约需 31 秒。后台模式下命令会打印进度查询提示：`rdc machine status <machine> --containers`。
 
 ### 耗时分布
 

@@ -32,10 +32,13 @@ rdc repo diff <fork> --base <repo>   # diff against an arbitrary related repo
 
 | Option | Description | Par défaut |
 |--------|-------------|---------|
+| `<ref>` (positionnel) | Réf du dépôt à inspecter (le côté cible, nouveau). Requis. | requis |
+| `--base <ref>` | Dépôt à comparer (le côté de base, ancien). Par défaut, le parent de la réf, résolu depuis la configuration locale. | parent de la réf |
 | (no format flag) | Sortie du statut du nom : une lettre colorée `A`/`M`/`D`/`R` par fichier modifié plus un résumé d'une ligne. | activé |
 | `--name-only` | Un chemin modifié par ligne, sans lettre de statut. Convivial pour les tuyaux. | désactivé |
 | `--stat` | Magnitude du changement par fichier (delta en octets et en blocs) avec un pied de page de totaux. | désactivé |
 | `--content <path>` | Comparaison textuelle unifiée d'un seul fichier. Texte uniquement ; les fichiers binaires signalent `Binary files differ`. | désactivé |
+| `-o json` | Sortie structurée pour les agents et scripts. | `table` |
 | `--fast` | Ignorez l'étape de confirmation de hachage de contenu et faites confiance au filtre de bloc. Plus rapide, mais peut signaler excessivement des fichiers comme Modifiés. | désactivé |
 | `--debug` | Diagnostiques détaillés sur stderr. | désactivé |
 | `--skip-router-restart` | Ignorez l'étape de redémarrage du routeur. | désactivé |
@@ -99,7 +102,7 @@ $ rdc repo diff test-1gb:fork1 --content hello.txt
 
 ### Filtrage JSON avec jq
 
-`--json` émet l'enveloppe structurée sur stdout, donc elle se branche facilement dans `jq` :
+`-o json` émet l'enveloppe structurée sur stdout, donc elle se branche facilement dans `jq` :
 
 ```bash
 $ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
@@ -137,7 +140,7 @@ Chaque ligne porte le delta en octets et le delta en blocs du fichier. Un pied d
 
 Une comparaison unifiée standard (en-têtes `---`/`+++`, blocs `@@`) pour un seul fichier texte. Les fichiers binaires signalent `Binary files differ` et ne produisent pas de blocs.
 
-### `--json`
+### `-o json`
 
 Le résultat structuré complet. Les données vont à stdout ; la progression et les diagnostiques vont à stderr, donc le JSON se branche facilement dans `jq` ou un autre analyseur même pendant l'impression de la progression.
 

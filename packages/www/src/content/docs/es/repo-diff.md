@@ -32,10 +32,13 @@ rdc repo diff <fork> --base <repo>   # diff against an arbitrary related repo
 
 | Opción | Descripción | Predeterminado |
 |--------|-------------|---------|
+| `<ref>` (posicional) | Ref del repositorio a inspeccionar (el lado objetivo, nuevo). Obligatorio. | obligatorio |
+| `--base <ref>` | Repositorio contra el que comparar (el lado base, antiguo). Por defecto es el principal de la ref, resuelto desde la configuración local. | principal de la ref |
 | (sin bandera de formato) | Salida de estado de nombre: una letra de color `A`/`M`/`D`/`R` por archivo cambiado más un resumen de una línea. | activado |
 | `--name-only` | Una ruta cambiada por línea, sin letra de estado. Compatible con tuberías. | desactivado |
 | `--stat` | Magnitud de cambio por archivo (deltas de bytes y bloques) con un pie de página de totales. | desactivado |
 | `--content <path>` | Comparación de texto unificada de un único archivo. Solo texto; los binarios reportan `Binary files differ`. | desactivado |
+| `-o json` | Salida estructurada para agentes y scripts. | `table` |
 | `--fast` | Omitir el paso de confirmación de hash de contenido y confiar en el filtro de bloque. Más rápido, pero puede reportar excesivamente archivos como Modificados. | desactivado |
 | `--debug` | Diagnósticos detallados en stderr. | desactivado |
 | `--skip-router-restart` | Omitir el paso de reinicio del enrutador. | desactivado |
@@ -99,7 +102,7 @@ $ rdc repo diff test-1gb:fork1 --content hello.txt
 
 ### Filtrado de JSON con jq
 
-`--json` emite la envoltura estructurada en stdout, por lo que se canaliza limpiamente a `jq`:
+`-o json` emite la envoltura estructurada en stdout, por lo que se canaliza limpiamente a `jq`:
 
 ```bash
 $ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
@@ -137,7 +140,7 @@ Cada línea lleva el delta de bytes del archivo y el delta de bloques. Un pie de
 
 Una comparación unificada estándar (encabezados `---`/`+++`, fragmentos `@@`) para un único archivo de texto. Los archivos binarios reportan `Binary files differ` y no producen fragmentos.
 
-### `--json`
+### `-o json`
 
 El resultado estructurado completo. Los datos van a stdout; el progreso y los diagnósticos van a stderr, por lo que el JSON se canaliza limpiamente a `jq` u otro analizador incluso mientras se imprime el progreso.
 

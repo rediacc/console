@@ -149,14 +149,14 @@ Fork oluşturma sırasında `repo fork`, [durum aynası ek dosyasını](#type-co
 
 ### Tek adımda fork ve başlatma
 
-`--up` seçeneği fork oluşturma, bağlama ve servisleri başlatma işlemlerini tek bir uzak operasyonda birleştirir. Konteynerler başlar başlamaz terminalinizi geri almak için `--detach` ekleyin; sağlık kontrolleri arka planda tamamlanır ve proxy her servis bağlanana kadar yeniden dener:
+`--up` seçeneği fork oluşturma, bağlama ve servisleri başlatma işlemlerini tek bir uzak operasyonda birleştirir. Konteynerler başlar başlamaz terminalinizi geri almak için `--no-wait` ekleyin; sağlık kontrolleri arka planda tamamlanır ve proxy her servis bağlanana kadar yeniden dener:
 
 ```bash
 rdc repo fork my-app --tag staging --up
 rdc repo fork my-app --tag scratch --up --no-wait
 ```
 
-Testlerimizde 128 GB'lık bir depo fork'landı ve servisler yaklaşık 57 saniyede çalışır hale geldi; `--detach` ile bu süre yaklaşık 31 saniyeye indi. Ayrılmış çalıştırmalar, ilerlemeyi kontrol etmek için bir ipucu yazdırır: `rdc machine status <machine> --containers`.
+Testlerimizde 128 GB'lık bir depo fork'landı ve servisler yaklaşık 57 saniyede çalışır hale geldi; `--no-wait` ile bu süre yaklaşık 31 saniyeye indi. Ayrılmış çalıştırmalar, ilerlemeyi kontrol etmek için bir ipucu yazdırır: `rdc machine status <machine> --containers`.
 
 ### Süre nereye gidiyor
 

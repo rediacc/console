@@ -1924,8 +1924,8 @@
   {
     "id": "search-6531",
     "content": "Konfiguratsioonivalikud",
-    "body": "| Valik | Vaikimisi | Kirjeldus | |-------|-----------|-----------| | --timeout <ms> | 120000 | Käsu vaikeaegumine millisekundites |",
-    "excerpt": "| Valik | Vaikimisi | Kirjeldus | |-------|-----------|-----------| | --timeout <ms> | 120000 | Käsu vaikeaegumine millisekundites |",
+    "body": "| Valik | Vaikimisi | Kirjeldus | |-------|-----------|-----------| | --config <name> | (vaikekonfiguratsioon) | Nimega konfiguratsioon, mida kasutada kõigi käskude jaoks | | --timeout <ms> | 120000 | Käsu vaikeaegumine millisekundites |",
+    "excerpt": "| Valik | Vaikimisi | Kirjeldus | |-------|-----------|-----------| | --config <name> | (vaikekonfiguratsioon) | Nimega konfiguratsioon, mida kasutada...",
     "category": "Documentation",
     "page": "/et/docs/ai-agents-mcp",
     "path": "docs.ai-agents-mcp.content",
@@ -2959,8 +2959,8 @@
   {
     "id": "search-6626",
     "content": "Repositooriumi migreerimine",
-    "body": "Liiguta repositoorium ühelt masinalt teisele: rdc repo migrate my-app@server-1 --to server-2 | Valik | Kirjeldus | |--------|-------------| | --provision | Provisiona repositoorium sihtmasinat enne ülekandmist | | --checkpoint | Loo CRIU kontrollpunkt enne migreerimist | | --skip-dns | Jäta DNS-kirjete uuendamine pärast migreerimist vahele | | --bwlimit <limit> | Ribalaiuse piirang ülekandele (nt 50M) | Migreerimine kannab krüpteeritud repositooriumi andmed üle rsync kaudu. Lähte-repositoorium jääb puutumatuks kuni selle eksplitsiitse eemaldamiseni.",
-    "excerpt": "Liiguta repositoorium ühelt masinalt teisele: rdc repo migrate my-app@server-1 --to server-2 | Valik | Kirjeldus | |--------|-------------| | --provis...",
+    "body": "Liiguta repositoorium ühelt masinalt teisele: rdc repo migrate my-app@server-1 --to server-2 | Valik | Kirjeldus | |--------|-------------| | --to <place> | Sihtmasin või klaster | | --provision | Provisiona repositoorium sihtmasinat enne ülekandmist | | --checkpoint | Loo CRIU kontrollpunkt enne migreerimist | | --skip-dns | Jäta DNS-kirjete uuendamine pärast migreerimist vahele | | --bwlimit <limit> | Ribalaiuse piirang ülekandele (nt 50M) | Migreerimine kannab krüpteeritud repositooriumi andmed üle rsync kaudu. Lähte-repositoorium jääb puutumatuks kuni selle eksplitsiitse eemaldamiseni.",
+    "excerpt": "Liiguta repositoorium ühelt masinalt teisele: rdc repo migrate my-app@server-1 --to server-2 | Valik | Kirjeldus | |--------|-------------| | --to <pl...",
     "category": "Documentation",
     "page": "/et/docs/backup-restore",
     "path": "docs.backup-restore.content",
@@ -9953,7 +9953,7 @@
   {
     "id": "search-7268",
     "content": "rdc repo commit",
-    "body": "Külmuta ühendatud töötav hark uueks muutumatuks komitiks. rdc repo commit <hark> --message \"<sõnum>\" | Valik | Kirjeldus | Vaikimisi | |--------|-------------|---------| | --debug | Detailsed diagnostikateated stderr-i. | väljas | Uus komit registreeritakse lokaalses konfiguratsioonis atribuudiga immutable: true ja töötava hargi headCommit edeneb sellele osutama. Muutumatu repositooriumi komiteerimine lükatakse tagasi: tee sellest esmalt kirjutatav hark kasutades checkout-i.",
+    "body": "Külmuta ühendatud töötav hark uueks muutumatuks komitiks. rdc repo commit <hark> --message \"<sõnum>\" | Valik | Kirjeldus | Vaikimisi | |--------|-------------|---------| | --message <msg> | Komiti sõnum. Kohustuslik. | kohustuslik | | --author <author> | Komiti autor, mis salvestatakse komiti metaandmetesse. | seadmata | | --debug | Detailsed diagnostikateated stderr-i. | väljas | Uus komit registreeritakse lokaalses konfiguratsioonis atribuudiga immutable: true ja töötava hargi headCommit edeneb sellele osutama. Muutumatu repositooriumi komiteerimine lükatakse tagasi: tee sellest esmalt kirjutatav hark kasutades checkout-i.",
     "excerpt": "Külmuta ühendatud töötav hark uueks muutumatuks komitiks. rdc repo commit <hark> --message \"<sõnum>\" | Valik | Kirjeldus | Vaikimisi | |--------|-----...",
     "category": "Documentation",
     "page": "/et/docs/repo-branching",
@@ -9964,7 +9964,7 @@
   {
     "id": "search-7269",
     "content": "rdc repo branch",
-    "body": "Loo nimega haru viide, mis osutab töötava hargi praegusele komitile. rdc repo branch <fork> --branch <nimi> | Valik | Kirjeldus | Vaikimisi | |--------|-------------|---------| See on ainult konfiguratsioonitoimingud. Masinal ei toimu midagi. Haru viide kaardistab nime töötava hargi headCommit-ile, seega peab hargil olema vähemalt üks komit esmalt.",
+    "body": "Loo nimega haru viide, mis osutab töötava hargi praegusele komitile. rdc repo branch <fork> --branch <nimi> | Valik | Kirjeldus | Vaikimisi | |--------|-------------|---------| | --branch <branch> | Uue haru nimi. Kohustuslik. | kohustuslik | See on ainult konfiguratsioonitoimingud. Masinal ei toimu midagi. Haru viide kaardistab nime töötava hargi headCommit-ile, seega peab hargil olema vähemalt üks komit esmalt.",
     "excerpt": "Loo nimega haru viide, mis osutab töötava hargi praegusele komitile. rdc repo branch <fork> --branch <nimi> | Valik | Kirjeldus | Vaikimisi | |-------...",
     "category": "Documentation",
     "page": "/et/docs/repo-branching",
@@ -9975,7 +9975,7 @@
   {
     "id": "search-7270",
     "content": "rdc repo checkout",
-    "body": "Reflink-klooni muutumatu komit (või haru tipp) värskeks kirjutatavaks töötavaks hargiks. rdc repo checkout <komit> --tag <uusHark> rdc repo checkout <haruNimi> --from <hark> --tag <uusHark> | Valik | Kirjeldus | Vaikimisi | |--------|-------------|---------| | --debug | Detailsed diagnostikateated stderr-i. | väljas | | --skip-router-restart | Jäta marsruuteri taaskäivitussamm vahele. | väljas | Checkout taaskasutab hargi reflink teed, seega on see peaaegu kohene ja konstantaja olenemata repositooriumi suurusest. Uue töötava hargi headCommit seatakse väljavõetud komitile.",
+    "body": "Reflink-klooni muutumatu komit (või haru tipp) värskeks kirjutatavaks töötavaks hargiks. rdc repo checkout <komit> --tag <uusHark> rdc repo checkout <haruNimi> --from <hark> --tag <uusHark> | Valik | Kirjeldus | Vaikimisi | |--------|-------------|---------| | --tag <name> | Uue kirjutatava töötava hargi nimi. Kohustuslik. | kohustuslik | | --from <workingFork> | Lahendab positsioonilise viite haru nimeks selle töötava hargi harude hulgas. | otsene komit | | --debug | Detailsed diagnostikateated stderr-i. | väljas | | --skip-router-restart | Jäta marsruuteri taaskäivitussamm vahele. | väljas | Checkout taaskasutab hargi reflink teed, seega on see peaaegu kohene ja konstantaja olenemata repositooriumi suurusest. Uue töötava hargi headCommit seatakse väljavõetud komitile.",
     "excerpt": "Reflink-klooni muutumatu komit (või haru tipp) värskeks kirjutatavaks töötavaks hargiks. rdc repo checkout <komit> --tag <uusHark> rdc repo checkout <...",
     "category": "Documentation",
     "page": "/et/docs/repo-branching",
@@ -9986,7 +9986,7 @@
   {
     "id": "search-7271",
     "content": "rdc repo log",
-    "body": "Jaluta komitide ajalugu, mis on töötavast hargist või komitist kättesaadav. rdc repo log <hark> | Valik | Kirjeldus | Vaikimisi | |--------|-------------|---------| | --debug | Detailsed diagnostikateated stderr-i. | väljas | log jalutab vanemate ahela, mida rdc repo commit salvestas, lugedes väljaspool mahtu olevat olekupeegli, nii et ühtegi komiti ei avata ega ühendata. See on ainult lugemiseks.",
+    "body": "Jaluta komitide ajalugu, mis on töötavast hargist või komitist kättesaadav. rdc repo log <hark> | Valik | Kirjeldus | Vaikimisi | |--------|-------------|---------| | -o json | Väljasta komitide ajalugu JSON-ina. | table | | --debug | Detailsed diagnostikateated stderr-i. | väljas | log jalutab vanemate ahela, mida rdc repo commit salvestas, lugedes väljaspool mahtu olevat olekupeegli, nii et ühtegi komiti ei avata ega ühendata. See on ainult lugemiseks.",
     "excerpt": "Jaluta komitide ajalugu, mis on töötavast hargist või komitist kättesaadav. rdc repo log <hark> | Valik | Kirjeldus | Vaikimisi | |--------|----------...",
     "category": "Documentation",
     "page": "/et/docs/repo-branching",
@@ -9997,7 +9997,7 @@
   {
     "id": "search-7272",
     "content": "rdc repo merge",
-    "body": "Ühenda lähtekomit või hark sihtmärgi töötavasse harku, muutmata elavat sihtmärki kohapeal. rdc repo merge <sihtmärk> --from <allikas> rdc repo merge <sihtmärk> --from <allikas> --resolve theirs | Valik | Kirjeldus | Vaikimisi | |--------|-------------|---------| | --force | Vaigistu ühendatud või töötav sihtmärk esmalt, seejärel ühenda. Ei muuda kunagi elavat ühendust. | väljas | | --resolve <ours\\|theirs> | Failipõhine kolmesuunaline ühendamine: voldi allika failipõhised muudatused sihtmärgile, hoides (ours) või võttes (theirs) allika versiooni failide jaoks, mis on muutunud mõlemal poolel. Välja jätmisel võetakse kogu kujutis allikast. | väljas | | --base <guid> | Ühise esivanema komit kolmesuunaliseks ühendamiseks (kasutatakse koos --resolve). Vaikimisi on allika komiti vanem või sihtmärgi praegune komit. | automaatne | | --debug | Detailsed diagnostikateated stderr-i. | väljas | Tulemus ehitatakse reflink-kloonist ja vahetatakse atomaarselt sisse krahhikindla markeri taha, nii et katkestatud ühendamine jätab algse sihtmärgi terveks. Ühendatud või töötav sihtmärk lükatakse tagasi, välja arvatud --force, mis sulgeb sihtmärgi puhaste enne vahetust. Ilma --resolve-ta on ühendamine kogu kujutise võtmine allikast (sihtmärgist saab allikas). Koos --resolve-ga on see failipõhine kolmesuunaline ühendamine allika komiti salvestatud vanema vastu: failid, mis muutusid ainult ühel poolel, võetakse sellelt poolelt, ja failid, mis muutusid mõlemal poolel, lahendatakse lipuga. Konfliktsed teed raporteeritakse.",
+    "body": "Ühenda lähtekomit või hark sihtmärgi töötavasse harku, muutmata elavat sihtmärki kohapeal. rdc repo merge <sihtmärk> --from <allikas> rdc repo merge <sihtmärk> --from <allikas> --resolve theirs | Valik | Kirjeldus | Vaikimisi | |--------|-------------|---------| | --from <source> | Lähtekomit või hark, millest ühendada. Kohustuslik. | kohustuslik | | --force | Vaigistu ühendatud või töötav sihtmärk esmalt, seejärel ühenda. Ei muuda kunagi elavat ühendust. | väljas | | --resolve <ours\\|theirs> | Failipõhine kolmesuunaline ühendamine: voldi allika failipõhised muudatused sihtmärgile, hoides (ours) või võttes (theirs) allika versiooni failide jaoks, mis on muutunud mõlemal poolel. Välja jätmisel võetakse kogu kujutis allikast. | väljas | | --base <guid> | Ühise esivanema komit kolmesuunaliseks ühendamiseks (kasutatakse koos --resolve). Vaikimisi on allika komiti vanem või sihtmärgi praegune komit. | automaatne | | --debug | Detailsed diagnostikateated stderr-i. | väljas | Tulemus ehitatakse reflink-kloonist ja vahetatakse atomaarselt sisse krahhikindla markeri taha, nii et katkestatud ühendamine jätab algse sihtmärgi terveks. Ühendatud või töötav sihtmärk lükatakse tagasi, välja arvatud --force, mis sulgeb sihtmärgi puhaste enne vahetust. Ilma --resolve-ta on ühendamine kogu kujutise võtmine allikast (sihtmärgist saab allikas). Koos --resolve-ga on see failipõhine kolmesuunaline ühendamine allika komiti salvestatud vanema vastu: failid, mis muutusid ainult ühel poolel, võetakse sellelt poolelt, ja failid, mis muutusid mõlemal poolel, lahendatakse lipuga. Konfliktsed teed raporteeritakse.",
     "excerpt": "Ühenda lähtekomit või hark sihtmärgi töötavasse harku, muutmata elavat sihtmärki kohapeal. rdc repo merge <sihtmärk> --from <allikas> rdc repo merge <...",
     "category": "Documentation",
     "page": "/et/docs/repo-branching",
@@ -10019,7 +10019,7 @@
   {
     "id": "search-7274",
     "content": "rdc repo admin fsck",
-    "body": "Valideeri konfiguratsiooni viited masinal olevate objektide vastu. rdc repo admin fsck -m <masin> | Valik | Kirjeldus | Vaikimisi | |--------|-------------|---------| Raporteerib rippuvad viited (haru tipp või HEAD, mis osutab GUID-ile ilma objektita masinal) ja orb-komitid (muutumatu komit masinal, mida ükski viide ei jõua). See on ainult lugemiseks; puhasta orbsid käsuga rdc repo gc --apply.",
+    "body": "Valideeri konfiguratsiooni viited masinal olevate objektide vastu. rdc repo admin fsck -m <masin> | Valik | Kirjeldus | Vaikimisi | |--------|-------------|---------| | -m, --machine <name> | Kontrollitav masin. Kohustuslik. | kohustuslik | Raporteerib rippuvad viited (haru tipp või HEAD, mis osutab GUID-ile ilma objektita masinal) ja orb-komitid (muutumatu komit masinal, mida ükski viide ei jõua). See on ainult lugemiseks; puhasta orbsid käsuga rdc repo gc --apply.",
     "excerpt": "Valideeri konfiguratsiooni viited masinal olevate objektide vastu. rdc repo admin fsck -m <masin> | Valik | Kirjeldus | Vaikimisi | |--------|--------...",
     "category": "Documentation",
     "page": "/et/docs/repo-branching",
@@ -10118,8 +10118,8 @@
   {
     "id": "search-7283",
     "content": "Ajalugu JSON-ina",
-    "body": "--json annab struktureeritud läbimise, uusimast esimesena: $ rdc repo log myapp:work -o json { \"success\": true, \"start\": \"4f3c2a1b9d8e\", \"entries\": [ { \"guid\": \"4f3c2a1b9d8e\", \"message\": \"schema migration applied\", \"author\": \"ci-bot\", \"parent\": \"9d8e7a1b2c3d\", \"committed_at\": \"2026-05-29T10:14:02Z\", \"immutable\": true } ] }",
-    "excerpt": "--json annab struktureeritud läbimise, uusimast esimesena: $ rdc repo log myapp:work -o json { \"success\": true, \"start\": \"4f3c2a1b9d8e\", \"entries\": [...",
+    "body": "-o json annab struktureeritud läbimise, uusimast esimesena: $ rdc repo log myapp:work -o json { \"success\": true, \"start\": \"4f3c2a1b9d8e\", \"entries\": [ { \"guid\": \"4f3c2a1b9d8e\", \"message\": \"schema migration applied\", \"author\": \"ci-bot\", \"parent\": \"9d8e7a1b2c3d\", \"committed_at\": \"2026-05-29T10:14:02Z\", \"immutable\": true } ] }",
+    "excerpt": "-o json annab struktureeritud läbimise, uusimast esimesena: $ rdc repo log myapp:work -o json { \"success\": true, \"start\": \"4f3c2a1b9d8e\", \"entries\": [...",
     "category": "Documentation",
     "page": "/et/docs/repo-branching",
     "path": "docs.repo-branching.content",
@@ -10292,8 +10292,8 @@
   {
     "id": "search-7299",
     "content": "Valikud",
-    "body": "| Valik | Kirjeldus | Vaikeväärtus | |--------|-------------|---------| | (formaadivali puudub) | Nime-staatuse väljund: värviline A/M/D/R täht muutunud faili kohta pluss üherealisi kokkuvõte. | sees | | --name-only | Üks muutunud tee rea kohta, staatuse täht puudub. Müra-sõbralik. | välja | | --stat | Faili kohta muutuste suuruus (baidi ja ploki deltad) kokku- võttega jaluses. | välja | | --content <path> | Ühendatud teksti diff ühe faili jaoks. Ainult tekst; binaarfailid teatavad Binary files differ. | välja | | --fast | Jäta sisu-räsi kinnitamise etapp vahele ja usalda plokkfiltrit. Kiirem, kuid võib üle teatada failidest kui Muudetud. | välja | | --debug | Üksikasjalik diagnostika stderr kohale. | välja | | --skip-router-restart | Jäta marsruuteri taaskäivitamise etapp vahele. | välja |",
-    "excerpt": "| Valik | Kirjeldus | Vaikeväärtus | |--------|-------------|---------| | (formaadivali puudub) | Nime-staatuse väljund: värviline A/M/D/R täht muutun...",
+    "body": "| Valik | Kirjeldus | Vaikeväärtus | |--------|-------------|---------| | --base <ref> | Hoidla, millega võrreldakse (baaspool, vana pool). Vaikimisi on see positsioonilise viite vanem, mis lahendatakse kohalikust konfiguratsioonist. | viite vanem | | (formaadivali puudub) | Nime-staatuse väljund: värviline A/M/D/R täht muutunud faili kohta pluss üherealisi kokkuvõte. | sees | | --name-only | Üks muutunud tee rea kohta, staatuse täht puudub. Müra-sõbralik. | välja | | --stat | Faili kohta muutuste suuruus (baidi ja ploki deltad) kokkuvõttega jaluses. | välja | | --content <path> | Ühendatud teksti diff ühe faili jaoks. Ainult tekst; binaarfailid teatavad Binary files differ. | välja | | -o json | Struktureeritud väljund agentidele ja skriptidele. | table | | --fast | Jäta sisu-räsi kinnitamise etapp vahele ja usalda plokkfiltrit. Kiirem, kuid võib üle teatada failidest kui Muudetud. | välja | | --debug | Üksikasjalik diagnostika stderr kohale. | välja | | --skip-router-restart | Jäta marsruuteri taaskäivitamise etapp vahele. | välja |",
+    "excerpt": "| Valik | Kirjeldus | Vaikeväärtus | |--------|-------------|---------| | --base <ref> | Hoidla, millega võrreldakse (baaspool, vana pool). Vaikimisi...",
     "category": "Documentation",
     "page": "/et/docs/repo-diff",
     "path": "docs.repo-diff.content",
@@ -10369,8 +10369,8 @@
   {
     "id": "search-7306",
     "content": "JSON filtreerimine jq-ga",
-    "body": "--json väljastab struktureeritud ümbrise stdout-le, nii et see toru puhtalt jq-sse: $ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status==\"M\")' { \"status\": \"M\", \"path\": \"/hello.txt\", \"type\": \"file\", \"old_size\": 53, \"size\": 61, \"bytes_changed\": 4096, \"blocks_changed\": 1, \"inode\": 13, \"content_changed\": true, \"mode_changed\": false, \"uid_changed\": false, \"gid_changed\": false }",
-    "excerpt": "--json väljastab struktureeritud ümbrise stdout-le, nii et see toru puhtalt jq-sse: $ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | sel...",
+    "body": "-o json väljastab struktureeritud ümbrise stdout-le, nii et see toru puhtalt jq-sse: $ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status==\"M\")' { \"status\": \"M\", \"path\": \"/hello.txt\", \"type\": \"file\", \"old_size\": 53, \"size\": 61, \"bytes_changed\": 4096, \"blocks_changed\": 1, \"inode\": 13, \"content_changed\": true, \"mode_changed\": false, \"uid_changed\": false, \"gid_changed\": false }",
+    "excerpt": "-o json väljastab struktureeritud ümbrise stdout-le, nii et see toru puhtalt jq-sse: $ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | se...",
     "category": "Documentation",
     "page": "/et/docs/repo-diff",
     "path": "docs.repo-diff.content",
@@ -10434,7 +10434,7 @@
   },
   {
     "id": "search-7312",
-    "content": "`--json`",
+    "content": "`-o json`",
     "body": "Täis struktureeritud tulemus. Andmed lähevad stdout-le; progress ja diagnostika lähevad stderr-le, seega JSON toru puhtalt jq või teise parseeri, isegi kui progress trükib.",
     "excerpt": "Täis struktureeritud tulemus. Andmed lähevad stdout-le; progress ja diagnostika lähevad stderr-le, seega JSON toru puhtalt jq või teise parseeri, iseg...",
     "category": "Documentation",
@@ -10620,8 +10620,8 @@
   {
     "id": "search-7329",
     "content": "Kahveldamine ja käivitamine ühe sammuga",
-    "body": "--up kahveldab, ühendab ja käivitab teenused ühe kaugoperatsiooniga. Lisage --detach, et saada terminal tagasi niipea, kui konteinerid on käivitatud; tervisekontrollid lõpetavad taustal ja puhverserver kordab katseid, kuni iga teenus seob end: rdc repo fork my-app --tag staging --up rdc repo fork my-app --tag scratch --up --no-wait Meie testides kahveldati 128 GB repositoorium ja jõuti töötavate teenusteni umbes 57 sekundiga, --detach-iga aga umbes 31 sekundiga. Eraldusrežiim trükib vihje edenemise jälgimiseks: rdc machine status <machine> --containers.",
-    "excerpt": "--up kahveldab, ühendab ja käivitab teenused ühe kaugoperatsiooniga. Lisage --detach, et saada terminal tagasi niipea, kui konteinerid on käivitatud;...",
+    "body": "--up kahveldab, ühendab ja käivitab teenused ühe kaugoperatsiooniga. Lisage --no-wait, et saada terminal tagasi niipea, kui konteinerid on käivitatud; tervisekontrollid lõpetavad taustal ja puhverserver kordab katseid, kuni iga teenus seob end: rdc repo fork my-app --tag staging --up rdc repo fork my-app --tag scratch --up --no-wait Meie testides kahveldati 128 GB repositoorium ja jõuti töötavate teenusteni umbes 57 sekundiga, --no-wait-iga aga umbes 31 sekundiga. Eraldusrežiim trükib vihje edenemise jälgimiseks: rdc machine status <machine> --containers.",
+    "excerpt": "--up kahveldab, ühendab ja käivitab teenused ühe kaugoperatsiooniga. Lisage --no-wait, et saada terminal tagasi niipea, kui konteinerid on käivitatud;...",
     "category": "Documentation",
     "page": "/et/docs/repositories",
     "path": "docs.repositories.content",
@@ -11578,8 +11578,8 @@
   {
     "id": "search-7417",
     "content": "Teenuste käivitamine",
-    "body": "Ühendage repositoorium ja käivitage kõik teenused: rdc repo up my-app | Valik | Kirjeldus | |--------|-------------| | --skip-router-restart | Jätke teeserveri taaskäivitamine pärast toimingut vahele | Täitmise järjekord on: Ühendage LUKS-krüpteeritud repositoorium (ühendatakse automaatselt, kui lahti ühendatud) Käivitage isoleeritud Dockeri deemon Genereerige .rediacc.json automaatselt compose-failidest Käivitage up() kõigis Rediaccfile'ides (A-Z järjekorras) Pärast juurutamist näitab väljund PROXY ROUTES jaotist iga teenuse tegelike URL-idega. Teenused kohandatud Traefiku siltidega (nt traefik.http.routers.myapp.rule=Host(...)) näitavad oma kohandatud domeene peamiste URL-idena: HTTP services (accessible via proxy after ~3s): gitlab-server: HTTPS: https://gitlab.example.com (custom) Auto: https://gitlab-server.gitlab.server-1.example.com IP: 127.0.11.130 Teenused ilma kohandatud Traefiku siltideta näitavad ainult automaatselt genereeritud teeserveri marsruuti. Kasutage neid URL-e (mitte CLI-le prinditud üldist mustrit) brauseri juurdepääsuks, API kutsete jaoks ja teenuste vaheliseks konfiguratsiooniks.",
-    "excerpt": "Ühendage repositoorium ja käivitage kõik teenused: rdc repo up my-app | Valik | Kirjeldus | |--------|-------------| | --skip-router-restart | Jätke t...",
+    "body": "Ühendage repositoorium ja käivitage kõik teenused: rdc repo up my-app | Valik | Kirjeldus | |--------|-------------| | --no-wait | Naase kohe, kui konteinerid on käivitatud; tervisekontrollid jätkuvad taustal | | --skip-router-restart | Jätke teeserveri taaskäivitamine pärast toimingut vahele | Täitmise järjekord on: Ühendage LUKS-krüpteeritud repositoorium (ühendatakse automaatselt, kui lahti ühendatud) Käivitage isoleeritud Dockeri deemon Genereerige .rediacc.json automaatselt compose-failidest Käivitage up() kõigis Rediaccfile'ides (A-Z järjekorras) Pärast juurutamist näitab väljund PROXY ROUTES jaotist iga teenuse tegelike URL-idega. Teenused kohandatud Traefiku siltidega (nt traefik.http.routers.myapp.rule=Host(...)) näitavad oma kohandatud domeene peamiste URL-idena: HTTP services (accessible via proxy after ~3s): gitlab-server: HTTPS: https://gitlab.example.com (custom) Auto: https://gitlab-server.gitlab.server-1.example.com IP: 127.0.11.130 Teenused ilma kohandatud Traefiku siltideta näitavad ainult automaatselt genereeritud teeserveri marsruuti. Kasutage neid URL-e (mitte CLI-le prinditud üldist mustrit) brauseri juurdepääsuks, API kutsete jaoks ja teenuste vaheliseks konfiguratsiooniks.",
+    "excerpt": "Ühendage repositoorium ja käivitage kõik teenused: rdc repo up my-app | Valik | Kirjeldus | |--------|-------------| | --no-wait | Naase kohe, kui kon...",
     "category": "Documentation",
     "page": "/et/docs/services",
     "path": "docs.services.content",
@@ -11589,8 +11589,8 @@
   {
     "id": "search-7418",
     "content": "Eraldusrežiimis käivitamine",
-    "body": "--detach-iga naaseb käsk kohe, kui konteinerid on käivitatud, ootamata tervisekontrollide lõppemist. Käivitamine jätkub taustal: puhverserver kordab ühendustkatseid ülesvoolu, kuni iga teenus end seob, nii et marsruudid taastuvad omal käel. Edenemist saab jälgida käsuga rdc machine status <machine> --containers. Sobib suurepäraselt ühekordsetele kahvlitele ja skriptitud silmustele, kus järgmine samm ei nõua teenuste valmidust.",
-    "excerpt": "--detach-iga naaseb käsk kohe, kui konteinerid on käivitatud, ootamata tervisekontrollide lõppemist. Käivitamine jätkub taustal: puhverserver kordab ü...",
+    "body": "--no-wait-iga naaseb käsk kohe, kui konteinerid on käivitatud, ootamata tervisekontrollide lõppemist. Käivitamine jätkub taustal: puhverserver kordab ühendustkatseid ülesvoolu, kuni iga teenus end seob, nii et marsruudid taastuvad omal käel. Edenemist saab jälgida käsuga rdc machine status <machine> --containers. Sobib suurepäraselt ühekordsetele kahvlitele ja skriptitud silmustele, kus järgmine samm ei nõua teenuste valmidust.",
+    "excerpt": "--no-wait-iga naaseb käsk kohe, kui konteinerid on käivitatud, ootamata tervisekontrollide lõppemist. Käivitamine jätkub taustal: puhverserver kordab...",
     "category": "Documentation",
     "page": "/et/docs/services",
     "path": "docs.services.content",
@@ -11622,7 +11622,7 @@
   {
     "id": "search-7421",
     "content": "Hulgioperatsioonid",
-    "body": "Käivitage või peatage kõik repositooriumid masinal korraga: rdc repo up --all -m server-1 | Valik | Kirjeldus | |--------|-------------| | --include-forks | Kaasa forkitud repositooriumid | | --dry-run | Näita, mida tehtaks | | --parallel | Käivita toimingud paralleelselt | | --concurrency <n> | Maksimaalsed samaaegsed toimingud (vaikimisi: 3) | | --skip-router-restart | Jätke teeserveri taaskäivitamine pärast toimingut vahele |",
+    "body": "Käivitage või peatage kõik repositooriumid masinal korraga: rdc repo up --all -m server-1 | Valik | Kirjeldus | |--------|-------------| | --include-forks | Kaasa forkitud repositooriumid | | --no-start | Ainult ühenda ja valmista ette, ära käivita repositooriumi up() samme | | --dry-run | Näita, mida tehtaks | | --parallel | Käivita toimingud paralleelselt | | --concurrency <n> | Maksimaalsed samaaegsed toimingud (vaikimisi: 3) | | --skip-router-restart | Jätke teeserveri taaskäivitamine pärast toimingut vahele |",
     "excerpt": "Käivitage või peatage kõik repositooriumid masinal korraga: rdc repo up --all -m server-1 | Valik | Kirjeldus | |--------|-------------| | --include-f...",
     "category": "Documentation",
     "page": "/et/docs/services",
@@ -12516,7 +12516,7 @@
   {
     "id": "search-7503",
     "content": "Konteineri toimingud",
-    "body": "Suhtle otse töötava konteineriga: # Ava kest konteineri sees rdc repo exec my-app -c <container> -i -- bash # Vaata konteineri logisid rdc repo logs my-app -c <container> # Jälgi logisid reaalajas rdc repo logs my-app -c <container> --follow # Vaata konteineri statistikat rdc repo exec my-app -c <container> -i -- bash --container-action stats # Käivita käsk konteineris rdc repo exec my-app -c <container> -- ls -la | Valik | Kirjeldus | |--------|-------------|",
+    "body": "Suhtle otse töötava konteineriga: # Ava kest konteineri sees rdc repo exec my-app -c <container> -i -- bash # Vaata konteineri logisid rdc repo logs my-app -c <container> # Jälgi logisid reaalajas rdc repo logs my-app -c <container> --follow # Vaata konteineri statistikat rdc repo exec my-app -c <container> -i -- bash --container-action stats # Käivita käsk konteineris rdc repo exec my-app -c <container> -- ls -la | Valik | Käsk | Kirjeldus | |--------|------|-------------| | -c, --container <name> | mõlemad | Sihtkonteiner repositooriumis | | --lines <n> | repo logs | Kuvatavate logiridade arv | | -f, --follow | repo logs | Jälgi logisid pidevalt | | --timestamps | repo logs | Lisa igale reale ajatempel | | -i, --interactive | repo exec | Hoia stdin avatuna (vajalik kesta jaoks) | | -u, --user <user> | repo exec | Käivita konkreetse kasutajana |",
     "excerpt": "Suhtle otse töötava konteineriga: # Ava kest konteineri sees rdc repo exec my-app -c <container> -i -- bash # Vaata konteineri logisid rdc repo logs m...",
     "category": "Documentation",
     "page": "/et/docs/tools",

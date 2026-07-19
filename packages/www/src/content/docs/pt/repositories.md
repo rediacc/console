@@ -149,14 +149,14 @@ Na criação do fork, `repo fork` escreve o [arquivo sidecar do espelho de estad
 
 ### Fork e inicialização em uma etapa
 
-`--up` executa fork, montagem e inicialização dos serviços em uma única operação remota. Adicione `--detach` para recuperar o terminal assim que os contêineres estiverem em execução; as verificações de saúde terminam em segundo plano e o proxy tenta novamente até que cada serviço esteja vinculado:
+`--up` executa fork, montagem e inicialização dos serviços em uma única operação remota. Adicione `--no-wait` para recuperar o terminal assim que os contêineres estiverem em execução; as verificações de saúde terminam em segundo plano e o proxy tenta novamente até que cada serviço esteja vinculado:
 
 ```bash
 rdc repo fork my-app --tag staging --up
 rdc repo fork my-app --tag scratch --up --no-wait
 ```
 
-Em nossos testes, um repositório de 128 GB fez fork e chegou a serviços em execução em aproximadamente 57 segundos, e cerca de 31 segundos com `--detach`. Execuções em modo detached exibem uma dica para acompanhar o progresso: `rdc machine status <machine> --containers`.
+Em nossos testes, um repositório de 128 GB fez fork e chegou a serviços em execução em aproximadamente 57 segundos, e cerca de 31 segundos com `--no-wait`. Execuções em modo detached exibem uma dica para acompanhar o progresso: `rdc machine status <machine> --containers`.
 
 ### Por onde vai o tempo
 

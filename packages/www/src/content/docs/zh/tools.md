@@ -61,6 +61,7 @@ rdc repo sync status my-app
 | 选项 | 说明 |
 |--------|-------------|
 | `-m, --machine <name>` | 目标机器 |
+| `<ref>`(位置参数) | 目标仓库引用：`name`、`name:tag`，可选 `@machine` |
 | `--local <paths...>` | 一个或多个本地文件或目录路径（上传）或本地目标目录（下载） |
 | `--remote <path>` | 远程目录（相对于仓库挂载点） |
 | `--remote-file <path>` | 远程文件路径，用于单文件上传或下载（`--remote` 的替代项） |
@@ -125,8 +126,14 @@ rdc repo exec my-app -c <container> -i -- bash --container-action stats
 rdc repo exec my-app -c <container> -- ls -la
 ```
 
-| 选项 | 说明 |
-|--------|-------------|
+| 选项 | 命令 | 说明 |
+|--------|------|-------------|
+| `-c, --container <name>` | 两者 | 仓库内的目标容器 |
+| `--lines <n>` | `repo logs` | 显示的日志行数 |
+| `-f, --follow` | `repo logs` | 实时跟踪日志 |
+| `--timestamps` | `repo logs` | 为每行添加时间戳前缀 |
+| `-i, --interactive` | `repo exec` | 保持 stdin 开启(shell 需要) |
+| `-u, --user <user>` | `repo exec` | 以指定用户身份运行 |
 
 ## VS Code 集成 (vscode)
 

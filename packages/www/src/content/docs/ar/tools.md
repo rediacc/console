@@ -125,8 +125,14 @@ rdc repo exec my-app -c <container> -i -- bash --container-action stats
 rdc repo exec my-app -c <container> -- ls -la
 ```
 
-| Option | الوصف |
-|--------|-------------|
+| الخيار | الأمر | الوصف |
+|--------|-------|-------------|
+| `-c, --container <name>` | كلاهما | الحاوية المستهدفة داخل المستودع |
+| `--lines <n>` | `repo logs` | عدد أسطر السجل المراد عرضها |
+| `-f, --follow` | `repo logs` | متابعة السجلات باستمرار |
+| `--timestamps` | `repo logs` | إضافة طابع زمني لبداية كل سطر |
+| `-i, --interactive` | `repo exec` | إبقاء stdin مفتوحًا (لازم لفتح غلاف) |
+| `-u, --user <user>` | `repo exec` | التشغيل كمستخدم محدد |
 
 ## تكامل VS Code (vscode)
 

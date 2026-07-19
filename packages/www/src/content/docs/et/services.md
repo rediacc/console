@@ -231,6 +231,7 @@ rdc repo up my-app
 
 | Valik | Kirjeldus |
 |--------|-------------|
+| `--no-wait` | Naase kohe, kui konteinerid on käivitatud; tervisekontrollid jätkuvad taustal |
 | `--skip-router-restart` | Jätke teeserveri taaskäivitamine pärast toimingut vahele |
 
 Täitmise järjekord on:
@@ -253,7 +254,7 @@ Teenused ilma kohandatud Traefiku siltideta näitavad ainult automaatselt genere
 
 ### Eraldusrežiimis käivitamine
 
-`--detach`-iga naaseb käsk kohe, kui konteinerid on käivitatud, ootamata tervisekontrollide lõppemist. Käivitamine jätkub taustal: puhverserver kordab ühendustkatseid ülesvoolu, kuni iga teenus end seob, nii et marsruudid taastuvad omal käel. Edenemist saab jälgida käsuga `rdc machine status <machine> --containers`. Sobib suurepäraselt ühekordsetele kahvlitele ja skriptitud silmustele, kus järgmine samm ei nõua teenuste valmidust.
+`--no-wait`-iga naaseb käsk kohe, kui konteinerid on käivitatud, ootamata tervisekontrollide lõppemist. Käivitamine jätkub taustal: puhverserver kordab ühendustkatseid ülesvoolu, kuni iga teenus end seob, nii et marsruudid taastuvad omal käel. Edenemist saab jälgida käsuga `rdc machine status <machine> --containers`. Sobib suurepäraselt ühekordsetele kahvlitele ja skriptitud silmustele, kus järgmine samm ei nõua teenuste valmidust.
 
 ### Valmisolekuproov
 
@@ -286,6 +287,7 @@ rdc repo up --all -m server-1
 | Valik | Kirjeldus |
 |--------|-------------|
 | `--include-forks` | Kaasa forkitud repositooriumid |
+| `--no-start` | Ainult ühenda ja valmista ette, ära käivita repositooriumi `up()` samme |
 | `--dry-run` | Näita, mida tehtaks |
 | `--parallel` | Käivita toimingud paralleelselt |
 | `--concurrency <n>` | Maksimaalsed samaaegsed toimingud (vaikimisi: 3) |

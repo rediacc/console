@@ -125,8 +125,14 @@ rdc repo exec my-app -c <container> -i -- bash --container-action stats
 rdc repo exec my-app -c <container> -- ls -la
 ```
 
-| Valik | Kirjeldus |
-|--------|-------------|
+| Valik | Käsk | Kirjeldus |
+|--------|------|-------------|
+| `-c, --container <name>` | mõlemad | Sihtkonteiner repositooriumis |
+| `--lines <n>` | `repo logs` | Kuvatavate logiridade arv |
+| `-f, --follow` | `repo logs` | Jälgi logisid pidevalt |
+| `--timestamps` | `repo logs` | Lisa igale reale ajatempel |
+| `-i, --interactive` | `repo exec` | Hoia stdin avatuna (vajalik kesta jaoks) |
+| `-u, --user <user>` | `repo exec` | Käivita konkreetse kasutajana |
 
 ## VS Code integratsioon (vscode)
 

@@ -413,6 +413,7 @@ rdc repo migrate my-app@server-1 --to server-2
 
 | Seçenek | Açıklama |
 |---------|----------|
+| `--to <place>` | Hedef makine veya küme |
 | `--provision` | Aktarımdan önce hedefte depoyu hazırla |
 | `--checkpoint` | Migrasyondan önce CRIU checkpoint oluştur |
 | `--skip-dns` | Migrasyondan sonra DNS kaydı güncellemeyi atla |

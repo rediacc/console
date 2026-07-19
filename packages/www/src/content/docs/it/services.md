@@ -231,6 +231,7 @@ rdc repo up my-app
 
 | Opzione | Descrizione |
 |---------|-------------|
+| `--no-wait` | Ritorna non appena i container sono avviati; gli health check continuano in background |
 | `--skip-router-restart` | Salta il riavvio del server delle route dopo l'operazione |
 
 La sequenza di esecuzione è:
@@ -253,7 +254,7 @@ I servizi senza etichette Traefik personalizzate mostrano solo la route generata
 
 ### Avvio distaccato
 
-Con `--detach`, il comando ritorna non appena i container sono avviati, senza attendere il completamento dei health check. L'avvio prosegue in background: il proxy riprova le connessioni upstream finché ogni servizio non si mette in ascolto, quindi le route si ripristinano da sole. Per controllare l'avanzamento, usa `rdc machine status <machine> --containers`. Questa modalità è ideale per fork usa e getta e cicli scriptati dove non è necessario che i servizi siano pronti prima del passo successivo.
+Con `--no-wait`, il comando ritorna non appena i container sono avviati, senza attendere il completamento dei health check. L'avvio prosegue in background: il proxy riprova le connessioni upstream finché ogni servizio non si mette in ascolto, quindi le route si ripristinano da sole. Per controllare l'avanzamento, usa `rdc machine status <machine> --containers`. Questa modalità è ideale per fork usa e getta e cicli scriptati dove non è necessario che i servizi siano pronti prima del passo successivo.
 
 ### Sonda di disponibilità
 
@@ -286,6 +287,7 @@ rdc repo up --all -m server-1
 | Opzione | Descrizione |
 |---------|-------------|
 | `--include-forks` | Include i repository forkati |
+| `--no-start` | Monta e prepara soltanto, senza eseguire i passaggi `up()` del repository |
 | `--dry-run` | Mostra cosa verrebbe fatto |
 | `--parallel` | Esegue le operazioni in parallelo |
 | `--concurrency <n>` | Numero massimo di operazioni concorrenti (predefinito: 3) |

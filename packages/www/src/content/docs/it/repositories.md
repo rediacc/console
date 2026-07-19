@@ -149,14 +149,14 @@ Alla creazione del fork, `repo fork` scrive il [sidecar dello state mirror](#typ
 
 ### Fork e avvio in un solo passo
 
-`--up` esegue il fork, il montaggio e l'avvio dei servizi in un'unica operazione remota. Aggiungi `--detach` per riprendere il terminale non appena i container sono avviati: i health check terminano in background e il proxy riprova finché ogni servizio non si mette in ascolto:
+`--up` esegue il fork, il montaggio e l'avvio dei servizi in un'unica operazione remota. Aggiungi `--no-wait` per riprendere il terminale non appena i container sono avviati: i health check terminano in background e il proxy riprova finché ogni servizio non si mette in ascolto:
 
 ```bash
 rdc repo fork my-app --tag staging --up
 rdc repo fork my-app --tag scratch --up --no-wait
 ```
 
-Nei nostri test, un repository da 128 GB ha completato il fork e raggiunto i servizi in esecuzione in circa 57 secondi, e circa 31 secondi con `--detach`. Le esecuzioni in modalità distaccata stampano un suggerimento per verificare l'avanzamento: `rdc machine status <machine> --containers`.
+Nei nostri test, un repository da 128 GB ha completato il fork e raggiunto i servizi in esecuzione in circa 57 secondi, e circa 31 secondi con `--no-wait`. Le esecuzioni in modalità distaccata stampano un suggerimento per verificare l'avanzamento: `rdc machine status <machine> --containers`.
 
 ### Distribuzione del tempo
 

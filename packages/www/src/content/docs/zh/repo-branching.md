@@ -39,9 +39,9 @@ rdc repo commit <fork> --message "<message>"
 
 | 选项 | 描述 | 默认值 |
 |------|------|--------|
+| `<ref>`(位置参数) | 要提交的工作 fork，必须已挂载，必填。 | 必填 |
 | `--message <msg>` | 提交消息，必填。 | 必填 |
 | `--author <author>` | 提交元数据中记录的作者。 | 未设置 |
-| `-m, --machine <name>` | 目标机器，必填。 | 必填 |
 | `--debug` | 在 stderr 上输出详细诊断信息。 | 关闭 |
 
 新提交在本地配置中以 `immutable: true` 注册，工作 fork 的 `headCommit` 更新以指向它。提交不可变仓库将被拒绝：请先将其检出到可写 fork 中。
@@ -57,6 +57,7 @@ rdc repo branch <fork> --branch <name>
 | 选项 | 描述 | 默认值 |
 |------|------|--------|
 | `--branch <branch>` | 新分支的名称，必填。 | 必填 |
+| `<ref>`(位置参数) | 该分支所指向、包含当前提交的工作 fork，必填。 | 必填 |
 
 这是纯配置操作，不在机器上执行任何工作。分支引用将名称映射到工作 fork 的 `headCommit`，因此 fork 必须至少有一个提交。
 
@@ -71,8 +72,8 @@ rdc repo checkout <branchName> --from <fork> --tag <newFork>
 
 | 选项 | 描述 | 默认值 |
 |------|------|--------|
+| `<commit-or-branch-ref>`(位置参数) | 要检出的提交 GUID，或在给定 `--from` 时的分支名称，必填。 | 必填 |
 | `--tag <name>` | 新的可写工作 fork 的名称，必填。 | 必填 |
-| `-m, --machine <name>` | 目标机器，必填。 | 必填 |
 | `--from <workingFork>` | 在此工作 fork 的分支集上将 `--ref` 解析为分支名称。 | 直接提交 |
 | `--debug` | 在 stderr 上输出详细诊断信息。 | 关闭 |
 | `--skip-router-restart` | 跳过路由器重启步骤。 | 关闭 |
@@ -89,7 +90,8 @@ rdc repo log <fork>
 
 | 选项 | 描述 | 默认值 |
 |------|------|--------|
-| `-m, --machine <name>` | 目标机器，必填。 | 必填 |
+| `<ref>`(位置参数) | 开始遍历历史记录的工作 fork 或提交，必填。 | 必填 |
+| `-o json` | 以 JSON 格式输出提交历史记录。 | `table` |
 | `--debug` | 在 stderr 上输出详细诊断信息。 | 关闭 |
 
 `log` 遍历由 `rdc repo commit` 记录的父链，读取卷外状态镜像，因此不会解锁或挂载任何提交。这是只读操作。
@@ -105,8 +107,8 @@ rdc repo merge <target> --from <source> --resolve theirs
 
 | 选项 | 描述 | 默认值 |
 |------|------|--------|
+| `<ref>`(位置参数) | 要合并入的目标工作 fork，必填。 | 必填 |
 | `--from <source>` | 合并来源的提交或 fork，必填。 | 必填 |
-| `-m, --machine <name>` | 目标机器，必填。 | 必填 |
 | `--force` | 先静默已挂载或运行中的目标，然后合并。永不改变实时挂载。 | 关闭 |
 | `--resolve <ours\|theirs>` | 逐文件三方合并：将源的逐文件变更叠加到目标上，对两侧都变更的文件保留 (`ours`) 或采用 (`theirs`) 源的版本。省略则使用全镜像取源。 | 关闭 |
 | `--base <guid>` | 三方合并的公共祖先提交（与 `--resolve` 一起使用）。默认为源提交的父提交，或目标的当前提交。 | 自动 |
@@ -208,7 +210,7 @@ commit 9d8e7a1b2c3d
 
 ### JSON 格式的历史记录
 
-`--json` 按从新到旧的顺序输出结构化遍历：
+`-o json` 按从新到旧的顺序输出结构化遍历：
 
 ```bash
 $ rdc repo log myapp:work -o json

@@ -39,6 +39,8 @@ rdc repo commit <hark> --message "<sõnum>"
 
 | Valik | Kirjeldus | Vaikimisi |
 |--------|-------------|---------|
+| `--message <msg>` | Komiti sõnum. Kohustuslik. | kohustuslik |
+| `--author <author>` | Komiti autor, mis salvestatakse komiti metaandmetesse. | seadmata |
 | `--debug` | Detailsed diagnostikateated stderr-i. | väljas |
 
 Uus komit registreeritakse lokaalses konfiguratsioonis atribuudiga `immutable: true` ja töötava hargi `headCommit` edeneb sellele osutama. Muutumatu repositooriumi komiteerimine lükatakse tagasi: tee sellest esmalt kirjutatav hark kasutades checkout-i.
@@ -53,6 +55,7 @@ rdc repo branch <fork> --branch <nimi>
 
 | Valik | Kirjeldus | Vaikimisi |
 |--------|-------------|---------|
+| `--branch <branch>` | Uue haru nimi. Kohustuslik. | kohustuslik |
 
 See on ainult konfiguratsioonitoimingud. Masinal ei toimu midagi. Haru viide kaardistab nime töötava hargi `headCommit`-ile, seega peab hargil olema vähemalt üks komit esmalt.
 
@@ -67,6 +70,8 @@ rdc repo checkout <haruNimi> --from <hark> --tag <uusHark>
 
 | Valik | Kirjeldus | Vaikimisi |
 |--------|-------------|---------|
+| `--tag <name>` | Uue kirjutatava töötava hargi nimi. Kohustuslik. | kohustuslik |
+| `--from <workingFork>` | Lahendab positsioonilise viite haru nimeks selle töötava hargi harude hulgas. | otsene komit |
 | `--debug` | Detailsed diagnostikateated stderr-i. | väljas |
 | `--skip-router-restart` | Jäta marsruuteri taaskäivitussamm vahele. | väljas |
 
@@ -82,6 +87,7 @@ rdc repo log <hark>
 
 | Valik | Kirjeldus | Vaikimisi |
 |--------|-------------|---------|
+| `-o json` | Väljasta komitide ajalugu JSON-ina. | `table` |
 | `--debug` | Detailsed diagnostikateated stderr-i. | väljas |
 
 `log` jalutab vanemate ahela, mida `rdc repo commit` salvestas, lugedes väljaspool mahtu olevat olekupeegli, nii et ühtegi komiti ei avata ega ühendata. See on ainult lugemiseks.
@@ -97,6 +103,7 @@ rdc repo merge <sihtmärk> --from <allikas> --resolve theirs
 
 | Valik | Kirjeldus | Vaikimisi |
 |--------|-------------|---------|
+| `--from <source>` | Lähtekomit või hark, millest ühendada. Kohustuslik. | kohustuslik |
 | `--force` | Vaigistu ühendatud või töötav sihtmärk esmalt, seejärel ühenda. Ei muuda kunagi elavat ühendust. | väljas |
 | `--resolve <ours\|theirs>` | Failipõhine kolmesuunaline ühendamine: voldi allika failipõhised muudatused sihtmärgile, hoides (`ours`) või võttes (`theirs`) allika versiooni failide jaoks, mis on muutunud mõlemal poolel. Välja jätmisel võetakse kogu kujutis allikast. | väljas |
 | `--base <guid>` | Ühise esivanema komit kolmesuunaliseks ühendamiseks (kasutatakse koos `--resolve`). Vaikimisi on allika komiti vanem või sihtmärgi praegune komit. | automaatne |
@@ -132,6 +139,7 @@ rdc repo admin fsck -m <masin>
 
 | Valik | Kirjeldus | Vaikimisi |
 |--------|-------------|---------|
+| `-m, --machine <name>` | Kontrollitav masin. Kohustuslik. | kohustuslik |
 
 Raporteerib rippuvad viited (haru tipp või HEAD, mis osutab GUID-ile ilma objektita masinal) ja orb-komitid (muutumatu komit masinal, mida ükski viide ei jõua). See on ainult lugemiseks; puhasta orbsid käsuga `rdc repo gc --apply`.
 
@@ -196,7 +204,7 @@ commit 9d8e7a1b2c3d
 
 ### Ajalugu JSON-ina
 
-`--json` annab struktureeritud läbimise, uusimast esimesena:
+`-o json` annab struktureeritud läbimise, uusimast esimesena:
 
 ```bash
 $ rdc repo log myapp:work -o json

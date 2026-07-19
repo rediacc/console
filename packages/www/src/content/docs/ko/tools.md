@@ -61,6 +61,7 @@ rdc repo sync status my-app
 | 옵션 | 설명 |
 |--------|-------------|
 | `-m, --machine <name>` | 대상 머신 |
+| `<ref>`(위치 인수) | 대상 저장소 참조: `name`, `name:tag`, 필요 시 `@machine` |
 | `--local <paths...>` | 하나 이상의 로컬 파일 또는 디렉터리 경로 (업로드) 또는 로컬 목적지 디렉터리 (다운로드) |
 | `--remote <path>` | 원격 디렉터리 (저장소 마운트 기준 상대 경로) |
 | `--remote-file <path>` | 단일 파일 업로드 또는 다운로드를 위한 원격 파일 경로 (`--remote` 대안) |
@@ -125,8 +126,14 @@ rdc repo exec my-app -c <container> -i -- bash --container-action stats
 rdc repo exec my-app -c <container> -- ls -la
 ```
 
-| 옵션 | 설명 |
-|--------|-------------|
+| 옵션 | 명령 | 설명 |
+|--------|------|-------------|
+| `-c, --container <name>` | 둘 다 | 저장소 내 대상 컨테이너 |
+| `--lines <n>` | `repo logs` | 표시할 로그 줄 수 |
+| `-f, --follow` | `repo logs` | 로그를 실시간으로 팔로우 |
+| `--timestamps` | `repo logs` | 각 줄에 타임스탬프 표시 |
+| `-i, --interactive` | `repo exec` | stdin을 열어 둠(셸에 필요) |
+| `-u, --user <user>` | `repo exec` | 특정 사용자로 실행 |
 
 ## VS Code 통합 (vscode)
 

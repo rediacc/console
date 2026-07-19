@@ -61,6 +61,7 @@ rdc repo sync status my-app
 | オプション | 説明 |
 |--------|-------------|
 | `-m, --machine <name>` | 対象マシン |
+| `<ref>`（位置引数） | 対象リポジトリの参照：`name`、`name:tag`、任意で`@machine` |
 | `--local <paths...>` | 1つ以上のローカルファイル/ディレクトリパス（アップロード）またはローカル出力ディレクトリ（ダウンロード） |
 | `--remote <path>` | リモートディレクトリ（リポジトリマウントからの相対パス） |
 | `--remote-file <path>` | 単一ファイルアップロード/ダウンロード用リモートファイルパス（`--remote`の代替） |
@@ -125,8 +126,14 @@ rdc repo exec my-app -c <container> -i -- bash --container-action stats
 rdc repo exec my-app -c <container> -- ls -la
 ```
 
-| オプション | 説明 |
-|--------|-------------|
+| オプション | コマンド | 説明 |
+|--------|---------|-------------|
+| `-c, --container <name>` | 両方 | リポジトリ内の対象コンテナ |
+| `--lines <n>` | `repo logs` | 表示するログ行数 |
+| `-f, --follow` | `repo logs` | ログをリアルタイムで追跡 |
+| `--timestamps` | `repo logs` | 各行にタイムスタンプを付与 |
+| `-i, --interactive` | `repo exec` | stdinを開いたままにする（シェルに必要） |
+| `-u, --user <user>` | `repo exec` | 特定のユーザーとして実行 |
 
 ## VS Code統合 (vscode)
 

@@ -231,6 +231,7 @@ rdc repo up my-app
 
 | Opción | Descripción |
 |--------|-------------|
+| `--no-wait` | Vuelve en cuanto los contenedores están iniciados; las comprobaciones de estado continúan en segundo plano |
 | `--skip-router-restart` | Omitir el reinicio del servidor de rutas después de la operación |
 
 La secuencia de ejecución es:
@@ -253,7 +254,7 @@ Los servicios sin etiquetas Traefik personalizadas muestran solo la ruta auto-ge
 
 ### Inicio en modo desconectado
 
-Con `--detach`, el comando devuelve el control en cuanto los contenedores están iniciados, sin esperar a que finalicen las comprobaciones de estado. El arranque termina en segundo plano: el proxy reintenta las conexiones con cada servicio hasta que esté disponible, por lo que las rutas se recuperan solas. Compruebe el progreso con `rdc machine status <machine> --containers`. Ideal para forks desechables y bucles automatizados donde no necesita que los servicios estén listos antes del siguiente paso.
+Con `--no-wait`, el comando devuelve el control en cuanto los contenedores están iniciados, sin esperar a que finalicen las comprobaciones de estado. El arranque termina en segundo plano: el proxy reintenta las conexiones con cada servicio hasta que esté disponible, por lo que las rutas se recuperan solas. Compruebe el progreso con `rdc machine status <machine> --containers`. Ideal para forks desechables y bucles automatizados donde no necesita que los servicios estén listos antes del siguiente paso.
 
 ### Sonda de disponibilidad
 
@@ -286,6 +287,7 @@ rdc repo up --all -m server-1
 | Opción | Descripción |
 |--------|-------------|
 | `--include-forks` | Incluir repositorios bifurcados |
+| `--no-start` | Solo montar y preparar, sin ejecutar los pasos `up()` del repositorio |
 | `--dry-run` | Mostrar lo que se haría |
 | `--parallel` | Ejecutar operaciones en paralelo |
 | `--concurrency <n>` | Máximo de operaciones concurrentes (predeterminado: 3) |

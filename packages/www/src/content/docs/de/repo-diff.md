@@ -32,10 +32,13 @@ rdc repo diff <fork> --base <repo>   # diff against an arbitrary related repo
 
 | Option | Beschreibung | Standard |
 |--------|-------------|---------|
+| `<ref>` (positional) | Repository-Ref, das untersucht werden soll (das Ziel, neue Seite). Erforderlich. | erforderlich |
+| `--base <ref>` | Repository, gegen das verglichen wird (die Basis, alte Seite). Standardmäßig der Parent des Refs, aufgelöst aus der lokalen Konfiguration. | Parent des Refs |
 | (kein Format-Flag) | Name-Status-Ausgabe: ein farbiger `A`/`M`/`D`/`R` Buchstabe pro geänderter Datei plus eine einteilige Zusammenfassung. | on |
 | `--name-only` | Ein geänderter Pfad pro Zeile, kein Status-Buchstabe. Pipe-freundlich. | aus |
 | `--stat` | Pro-Datei-Änderungsgröße (Byte- und Block-Deltas) mit einer Gesamt-Zeile. | aus |
 | `--content <path>` | Unified Text Diff einer einzelnen Datei. Nur Text; Binärdateien zeigen `Binary files differ`. | aus |
+| `-o json` | Strukturierte Ausgabe für Agenten und Skripte. | `table` |
 | `--fast` | Überspringe den Content-Hash-Bestätigungsschritt und vertraue dem Block-Filter. Schneller, kann aber Dateien als Modified über-berichten. | aus |
 | `--debug` | Verbose Diagnostik auf stderr. | aus |
 | `--skip-router-restart` | Überspringe den Router-Restart-Schritt. | aus |
@@ -99,7 +102,7 @@ $ rdc repo diff test-1gb:fork1 --content hello.txt
 
 ### JSON mit jq filtern
 
-`--json` gibt die strukturierte Envelope auf stdout aus, sodass sie sauber in `jq` weitergeleitet wird:
+`-o json` gibt die strukturierte Envelope auf stdout aus, sodass sie sauber in `jq` weitergeleitet wird:
 
 ```bash
 $ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
@@ -137,7 +140,7 @@ Jede Zeile trägt das Byte-Delta und Block-Delta der Datei. Eine Fußzeile melde
 
 Ein Standard-Unified Diff (`---`/`+++` Header, `@@` Chunks) für eine Textdatei. Binärdateien zeigen `Binary files differ` und erzeugen keine Chunks.
 
-### `--json`
+### `-o json`
 
 Das vollständige strukturierte Ergebnis. Daten gehen auf stdout; Fortschritt und Diagnostik gehen auf stderr, sodass das JSON sauber in `jq` oder einen anderen Parser weitergeleitet wird, auch während der Fortschritt gedruckt wird.
 

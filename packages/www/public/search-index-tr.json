@@ -2959,8 +2959,8 @@
   {
     "id": "search-15574",
     "content": "Depo Migrasyonu",
-    "body": "Bir depoyu bir makineden diğerine taşıyın: rdc repo migrate my-app@server-1 --to server-2 | Seçenek | Açıklama | |---------|----------| | --provision | Aktarımdan önce hedefte depoyu hazırla | | --checkpoint | Migrasyondan önce CRIU checkpoint oluştur | | --skip-dns | Migrasyondan sonra DNS kaydı güncellemeyi atla | | --bwlimit <limit> | Transfer için bant genişliği sınırı (örn. 50M) | Migrasyon, şifrelenmiş depo verilerini rsync aracılığıyla aktarır. Kaynak depo, siz açıkça kaldırana kadar bozulmadan kalır.",
-    "excerpt": "Bir depoyu bir makineden diğerine taşıyın: rdc repo migrate my-app@server-1 --to server-2 | Seçenek | Açıklama | |---------|----------| | --provision...",
+    "body": "Bir depoyu bir makineden diğerine taşıyın: rdc repo migrate my-app@server-1 --to server-2 | Seçenek | Açıklama | |---------|----------| | --to <place> | Hedef makine veya küme | | --provision | Aktarımdan önce hedefte depoyu hazırla | | --checkpoint | Migrasyondan önce CRIU checkpoint oluştur | | --skip-dns | Migrasyondan sonra DNS kaydı güncellemeyi atla | | --bwlimit <limit> | Transfer için bant genişliği sınırı (örn. 50M) | Migrasyon, şifrelenmiş depo verilerini rsync aracılığıyla aktarır. Kaynak depo, siz açıkça kaldırana kadar bozulmadan kalır.",
+    "excerpt": "Bir depoyu bir makineden diğerine taşıyın: rdc repo migrate my-app@server-1 --to server-2 | Seçenek | Açıklama | |---------|----------| | --to <place>...",
     "category": "Documentation",
     "page": "/tr/docs/backup-restore",
     "path": "docs.backup-restore.content",
@@ -5616,7 +5616,7 @@
   {
     "id": "search-15817",
     "content": "`rdc ops up` Seçenekleri",
-    "body": "| Seçenek | Açıklama | |---------|----------| | --basic | Minimal küme (köprü + 1 çalışan) | | --lite | VM hazırlamayı atla (yalnızca SSH anahtarları) | | --force | Mevcut VM'leri yeniden oluşturmaya zorla | | --parallel | VM'leri paralel olarak hazırla | | --skip-orchestration | Yalnızca VM'ler, Rediacc servisleri yok | | --backend <kvm\\|qemu> | Otomatik algılanan arka ucu geçersiz kıl | | --debug | Ayrıntılı çıktı |",
+    "body": "| Seçenek | Açıklama | |---------|----------| | --basic | Minimal küme (köprü + 1 çalışan) | | --lite | VM hazırlamayı atla (yalnızca SSH anahtarları) | | --force | Mevcut VM'leri yeniden oluşturmaya zorla | | --parallel | VM'leri paralel olarak hazırla | | --skip-orchestration | Yalnızca VM'ler, Rediacc servisleri yok | | --backend <kvm\\|qemu> | Otomatik algılanan arka ucu geçersiz kıl | | --os <name> | İşletim sistemi imajı (varsayılan: ubuntu-24.04) | | --debug | Ayrıntılı çıktı |",
     "excerpt": "| Seçenek | Açıklama | |---------|----------| | --basic | Minimal küme (köprü + 1 çalışan) | | --lite | VM hazırlamayı atla (yalnızca SSH anahtarları)...",
     "category": "Documentation",
     "page": "/tr/docs/experimental-vms",
@@ -9931,7 +9931,7 @@
   {
     "id": "search-16214",
     "content": "rdc repo commit",
-    "body": "Bağlı bir çalışma fork'unu yeni bir değişmez commit'e dondurun. rdc repo commit <fork> --message \"<message>\" | Seçenek | Açıklama | Varsayılan | |---------|----------|------------| | --message <msg> | Commit mesajı. Zorunlu. | zorunlu | | --author <author> | Commit meta verisine kaydedilen commit yazarı. | ayarlanmamış | | -m, --machine <name> | Hedef makine. Zorunlu. | zorunlu | | --debug | Stderr'de ayrıntılı tanılamalar. | kapalı | Yeni commit, immutable: true ile yerel yapılandırmaya kaydedilir ve çalışma fork'unun headCommit'i onu işaret edecek şekilde ilerler. Değişmez bir depoyu commit etmek reddedilir: önce yazılabilir bir fork'a aktarın.",
+    "body": "Bağlı bir çalışma fork'unu yeni bir değişmez commit'e dondurun. rdc repo commit <fork> --message \"<message>\" | Seçenek | Açıklama | Varsayılan | |---------|----------|------------| | --message <msg> | Commit mesajı. Zorunlu. | zorunlu | | --author <author> | Commit meta verisine kaydedilen commit yazarı. | ayarlanmamış | | --debug | Stderr'de ayrıntılı tanılamalar. | kapalı | Yeni commit, immutable: true ile yerel yapılandırmaya kaydedilir ve çalışma fork'unun headCommit'i onu işaret edecek şekilde ilerler. Değişmez bir depoyu commit etmek reddedilir: önce yazılabilir bir fork'a aktarın.",
     "excerpt": "Bağlı bir çalışma fork'unu yeni bir değişmez commit'e dondurun. rdc repo commit <fork> --message \"<message>\" | Seçenek | Açıklama | Varsayılan | |----...",
     "category": "Documentation",
     "page": "/tr/docs/repo-branching",
@@ -9953,7 +9953,7 @@
   {
     "id": "search-16216",
     "content": "rdc repo checkout",
-    "body": "Değişmez bir commit'i (veya dal ucunu) yeni bir yazılabilir çalışma fork'una reflink olarak klonlayın. rdc repo checkout <commit> --tag <newFork> rdc repo checkout <branchName> --from <fork> --tag <newFork> | Seçenek | Açıklama | Varsayılan | |---------|----------|------------| | --tag <name> | Yeni yazılabilir çalışma fork'unun adı. Zorunlu. | zorunlu | | -m, --machine <name> | Hedef makine. Zorunlu. | zorunlu | | --from <workingFork> | Bu çalışma fork'unun dal kümesinde --ref'i dal adı olarak çözümler. | doğrudan commit | | --debug | Stderr'de ayrıntılı tanılamalar. | kapalı | | --skip-router-restart | Router yeniden başlatma adımını atlar. | kapalı | Checkout, fork reflink yolunu yeniden kullanır; bu nedenle depo boyutundan bağımsız olarak neredeyse anlık ve sabit zaman alır. Yeni çalışma fork'unun headCommit'i aktarılan commit'e ayarlanır.",
+    "body": "Değişmez bir commit'i (veya dal ucunu) yeni bir yazılabilir çalışma fork'una reflink olarak klonlayın. rdc repo checkout <commit> --tag <newFork> rdc repo checkout <branchName> --from <fork> --tag <newFork> | Seçenek | Açıklama | Varsayılan | |---------|----------|------------| | --tag <name> | Yeni yazılabilir çalışma fork'unun adı. Zorunlu. | zorunlu | | --from <workingFork> | Bu çalışma fork'unun dal kümesinde --ref'i dal adı olarak çözümler. | doğrudan commit | | --debug | Stderr'de ayrıntılı tanılamalar. | kapalı | | --skip-router-restart | Router yeniden başlatma adımını atlar. | kapalı | Checkout, fork reflink yolunu yeniden kullanır; bu nedenle depo boyutundan bağımsız olarak neredeyse anlık ve sabit zaman alır. Yeni çalışma fork'unun headCommit'i aktarılan commit'e ayarlanır.",
     "excerpt": "Değişmez bir commit'i (veya dal ucunu) yeni bir yazılabilir çalışma fork'una reflink olarak klonlayın. rdc repo checkout <commit> --tag <newFork> rdc...",
     "category": "Documentation",
     "page": "/tr/docs/repo-branching",
@@ -9964,7 +9964,7 @@
   {
     "id": "search-16217",
     "content": "rdc repo log",
-    "body": "Bir çalışma fork'undan veya commit'ten erişilebilen commit geçmişini dolaşın. rdc repo log <fork> | Seçenek | Açıklama | Varsayılan | |---------|----------|------------| | -m, --machine <name> | Hedef makine. Zorunlu. | zorunlu | | --debug | Stderr'de ayrıntılı tanılamalar. | kapalı | log, rdc repo commit tarafından kaydedilen üst zinciri dolaşır; hiçbir commit kilitlenmeden veya bağlanmadan birim dışı durum yansımasını okur. Salt okunur.",
+    "body": "Bir çalışma fork'undan veya commit'ten erişilebilen commit geçmişini dolaşın. rdc repo log <fork> | Seçenek | Açıklama | Varsayılan | |---------|----------|------------| | -o json | Commit geçmişini JSON olarak çıktıla. | table | | --debug | Stderr'de ayrıntılı tanılamalar. | kapalı | log, rdc repo commit tarafından kaydedilen üst zinciri dolaşır; hiçbir commit kilitlenmeden veya bağlanmadan birim dışı durum yansımasını okur. Salt okunur.",
     "excerpt": "Bir çalışma fork'undan veya commit'ten erişilebilen commit geçmişini dolaşın. rdc repo log <fork> | Seçenek | Açıklama | Varsayılan | |---------|-----...",
     "category": "Documentation",
     "page": "/tr/docs/repo-branching",
@@ -9975,7 +9975,7 @@
   {
     "id": "search-16218",
     "content": "rdc repo merge",
-    "body": "Canlı hedefi yerinde değiştirmeden bir kaynak commit veya fork'u hedef çalışma fork'una birleştirin. rdc repo merge <target> --from <source> rdc repo merge <target> --from <source> --resolve theirs | Seçenek | Açıklama | Varsayılan | |---------|----------|------------| | --from <source> | Birleştirilecek kaynak commit veya fork. Zorunlu. | zorunlu | | -m, --machine <name> | Hedef makine. Zorunlu. | zorunlu | | --force | Önce bağlı veya çalışan bir hedefi susturun, sonra birleştirin. Canlı bağlamayı hiçbir zaman değiştirmez. | kapalı | | --resolve <ours\\|theirs> | Dosya başına üç yollu birleştirme: kaynağın dosya başına değişikliklerini hedefe katlayın; her iki tarafta değişen dosyalar için kaynağın sürümünü tutun (ours) veya alın (theirs). Tüm görüntü alma-onların için atlayın. | kapalı | | --base <guid> | Üç yollu birleştirme için ortak ata commit'i (--resolve ile kullanılır). Kaynak commit'in üst öğesini veya hedefin geçerli commit'ini varsayılan olarak kullanır. | otomatik | | --debug | Stderr'de ayrıntılı tanılamalar. | kapalı | Sonuç, bir reflink klonunda oluşturulur ve çökme korumalı bir işaret arkasında atomik olarak değiştirilir; böylece kesintiye uğrayan bir birleştirme orijinal hedefi bozulmadan bırakır. Bağlı veya çalışan hedef, hedefi değiştirmeden önce temizce kapatan --force olmadıkça reddedilir. --resolve olmadan birleştirme, tüm görüntü alma-onlarındır (hedef kaynak olur). --resolve ile, kaynak commit'in kaydedilen üst öğesine karşı dosya başına üç yollu birleştirmedir: yalnızca bir tarafta değişen dosyalar o taraftan alınır ve her iki tarafta değişen dosyalar bayrakla çözülür. Çatışan yollar raporlanır.",
+    "body": "Canlı hedefi yerinde değiştirmeden bir kaynak commit veya fork'u hedef çalışma fork'una birleştirin. rdc repo merge <target> --from <source> rdc repo merge <target> --from <source> --resolve theirs | Seçenek | Açıklama | Varsayılan | |---------|----------|------------| | --from <source> | Birleştirilecek kaynak commit veya fork. Zorunlu. | zorunlu | | --force | Önce bağlı veya çalışan bir hedefi susturun, sonra birleştirin. Canlı bağlamayı hiçbir zaman değiştirmez. | kapalı | | --resolve <ours\\|theirs> | Dosya başına üç yollu birleştirme: kaynağın dosya başına değişikliklerini hedefe katlayın; her iki tarafta değişen dosyalar için kaynağın sürümünü tutun (ours) veya alın (theirs). Tüm görüntü alma-onların için atlayın. | kapalı | | --base <guid> | Üç yollu birleştirme için ortak ata commit'i (--resolve ile kullanılır). Kaynak commit'in üst öğesini veya hedefin geçerli commit'ini varsayılan olarak kullanır. | otomatik | | --debug | Stderr'de ayrıntılı tanılamalar. | kapalı | Sonuç, bir reflink klonunda oluşturulur ve çökme korumalı bir işaret arkasında atomik olarak değiştirilir; böylece kesintiye uğrayan bir birleştirme orijinal hedefi bozulmadan bırakır. Bağlı veya çalışan hedef, hedefi değiştirmeden önce temizce kapatan --force olmadıkça reddedilir. --resolve olmadan birleştirme, tüm görüntü alma-onlarındır (hedef kaynak olur). --resolve ile, kaynak commit'in kaydedilen üst öğesine karşı dosya başına üç yollu birleştirmedir: yalnızca bir tarafta değişen dosyalar o taraftan alınır ve her iki tarafta değişen dosyalar bayrakla çözülür. Çatışan yollar raporlanır.",
     "excerpt": "Canlı hedefi yerinde değiştirmeden bir kaynak commit veya fork'u hedef çalışma fork'una birleştirin. rdc repo merge <target> --from <source> rdc repo...",
     "category": "Documentation",
     "page": "/tr/docs/repo-branching",
@@ -10096,8 +10096,8 @@
   {
     "id": "search-16229",
     "content": "JSON olarak geçmiş",
-    "body": "--json, yapılandırılmış yürüyüşü en yeniden başlayarak çıktılar: $ rdc repo log myapp:work -o json { \"success\": true, \"start\": \"4f3c2a1b9d8e\", \"entries\": [ { \"guid\": \"4f3c2a1b9d8e\", \"message\": \"schema migration applied\", \"author\": \"ci-bot\", \"parent\": \"9d8e7a1b2c3d\", \"committed_at\": \"2026-05-29T10:14:02Z\", \"immutable\": true } ] }",
-    "excerpt": "--json, yapılandırılmış yürüyüşü en yeniden başlayarak çıktılar: $ rdc repo log myapp:work -o json { \"success\": true, \"start\": \"4f3c2a1b9d8e\", \"entrie...",
+    "body": "-o json, yapılandırılmış yürüyüşü en yeniden başlayarak çıktılar: $ rdc repo log myapp:work -o json { \"success\": true, \"start\": \"4f3c2a1b9d8e\", \"entries\": [ { \"guid\": \"4f3c2a1b9d8e\", \"message\": \"schema migration applied\", \"author\": \"ci-bot\", \"parent\": \"9d8e7a1b2c3d\", \"committed_at\": \"2026-05-29T10:14:02Z\", \"immutable\": true } ] }",
+    "excerpt": "-o json, yapılandırılmış yürüyüşü en yeniden başlayarak çıktılar: $ rdc repo log myapp:work -o json { \"success\": true, \"start\": \"4f3c2a1b9d8e\", \"entri...",
     "category": "Documentation",
     "page": "/tr/docs/repo-branching",
     "path": "docs.repo-branching.content",
@@ -10270,8 +10270,8 @@
   {
     "id": "search-16245",
     "content": "Seçenekler",
-    "body": "| Seçenek | Açıklama | Varsayılan | |--------|----------|-----------| | (format bayrağı yok) | Ad-durum çıktısı: değişen her dosya için renkli A/M/D/R harfi ve bir satırlık özet. | açık | | --name-only | Satır başına bir değişen yol, durum harfi yok. Pipe dostu. | kapalı | | --stat | Dosya başına değişiklik büyüklüğü (bayt ve blok deltaları) ve toplamlar alt bilgisi. | kapalı | | --content <path> | Tek bir dosyanın birleştirilmiş metin farkı. Yalnızca metin; ikili dosyalar Binary files differ bildirirler. | kapalı | | --fast | İçerik-hash doğrulaması adımını atlayın ve blok filtresine güvenin. Daha hızlı, ancak Değiştirilmiş dosyaları aşırı rapor edebilir. | kapalı | | --debug | stderr'de ayrıntılı tanılama. | kapalı | | --skip-router-restart | Yönlendirici yeniden başlatma adımını atlayın. | kapalı |",
-    "excerpt": "| Seçenek | Açıklama | Varsayılan | |--------|----------|-----------| | (format bayrağı yok) | Ad-durum çıktısı: değişen her dosya için renkli A/M/D/R...",
+    "body": "| Seçenek | Açıklama | Varsayılan | |--------|----------|-----------| | --base <ref> | Karşılaştırılacak depo (temel, eski taraf). Varsayılan olarak yerel konfigürasyondan çözümlenen pozisyonel referansın ana deposu. | referansın ana deposu | | (format bayrağı yok) | Ad-durum çıktısı: değişen her dosya için renkli A/M/D/R harfi ve bir satırlık özet. | açık | | --name-only | Satır başına bir değişen yol, durum harfi yok. Pipe dostu. | kapalı | | --stat | Dosya başına değişiklik büyüklüğü (bayt ve blok deltaları) ve toplamlar alt bilgisi. | kapalı | | --content <path> | Tek bir dosyanın birleştirilmiş metin farkı. Yalnızca metin; ikili dosyalar Binary files differ bildirirler. | kapalı | | -o json | Ajanlar ve betikler için yapılandırılmış çıktı. | table | | --fast | İçerik-hash doğrulaması adımını atlayın ve blok filtresine güvenin. Daha hızlı, ancak Değiştirilmiş dosyaları aşırı rapor edebilir. | kapalı | | --debug | stderr'de ayrıntılı tanılama. | kapalı | | --skip-router-restart | Yönlendirici yeniden başlatma adımını atlayın. | kapalı |",
+    "excerpt": "| Seçenek | Açıklama | Varsayılan | |--------|----------|-----------| | --base <ref> | Karşılaştırılacak depo (temel, eski taraf). Varsayılan olarak y...",
     "category": "Documentation",
     "page": "/tr/docs/repo-diff",
     "path": "docs.repo-diff.content",
@@ -10347,8 +10347,8 @@
   {
     "id": "search-16252",
     "content": "jq ile JSON filtreleme",
-    "body": "--json yapılandırılmış zarf çıktısını stdout'a gönderir, bu nedenle jq içine temiz bir şekilde pipe edilir: $ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status==\"M\")' { \"status\": \"M\", \"path\": \"/hello.txt\", \"type\": \"file\", \"old_size\": 53, \"size\": 61, \"bytes_changed\": 4096, \"blocks_changed\": 1, \"inode\": 13, \"content_changed\": true, \"mode_changed\": false, \"uid_changed\": false, \"gid_changed\": false }",
-    "excerpt": "--json yapılandırılmış zarf çıktısını stdout'a gönderir, bu nedenle jq içine temiz bir şekilde pipe edilir: $ rdc repo diff test-1gb:fork1 -o json | j...",
+    "body": "-o json yapılandırılmış zarf çıktısını stdout'a gönderir, bu nedenle jq içine temiz bir şekilde pipe edilir: $ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status==\"M\")' { \"status\": \"M\", \"path\": \"/hello.txt\", \"type\": \"file\", \"old_size\": 53, \"size\": 61, \"bytes_changed\": 4096, \"blocks_changed\": 1, \"inode\": 13, \"content_changed\": true, \"mode_changed\": false, \"uid_changed\": false, \"gid_changed\": false }",
+    "excerpt": "-o json yapılandırılmış zarf çıktısını stdout'a gönderir, bu nedenle jq içine temiz bir şekilde pipe edilir: $ rdc repo diff test-1gb:fork1 -o json |...",
     "category": "Documentation",
     "page": "/tr/docs/repo-diff",
     "path": "docs.repo-diff.content",
@@ -10412,7 +10412,7 @@
   },
   {
     "id": "search-16258",
-    "content": "`--json`",
+    "content": "`-o json`",
     "body": "Tam yapılandırılmış sonuç. Veri stdout'a gider; ilerleme ve tanılama stderr'e gider, bu nedenle JSON, ilerleme yazdırılırken bile jq veya başka bir ayrıştırıcıya temiz bir şekilde pipe edilir.",
     "excerpt": "Tam yapılandırılmış sonuç. Veri stdout'a gider; ilerleme ve tanılama stderr'e gider, bu nedenle JSON, ilerleme yazdırılırken bile jq veya başka bir ay...",
     "category": "Documentation",
@@ -10598,7 +10598,7 @@
   {
     "id": "search-16275",
     "content": "Tek adımda fork ve başlatma",
-    "body": "--up seçeneği fork oluşturma, bağlama ve servisleri başlatma işlemlerini tek bir uzak operasyonda birleştirir. Konteynerler başlar başlamaz terminalinizi geri almak için --detach ekleyin; sağlık kontrolleri arka planda tamamlanır ve proxy her servis bağlanana kadar yeniden dener: rdc repo fork my-app --tag staging --up rdc repo fork my-app --tag scratch --up --no-wait Testlerimizde 128 GB'lık bir depo fork'landı ve servisler yaklaşık 57 saniyede çalışır hale geldi; --detach ile bu süre yaklaşık 31 saniyeye indi. Ayrılmış çalıştırmalar, ilerlemeyi kontrol etmek için bir ipucu yazdırır: rdc machine status <machine> --containers.",
+    "body": "--up seçeneği fork oluşturma, bağlama ve servisleri başlatma işlemlerini tek bir uzak operasyonda birleştirir. Konteynerler başlar başlamaz terminalinizi geri almak için --no-wait ekleyin; sağlık kontrolleri arka planda tamamlanır ve proxy her servis bağlanana kadar yeniden dener: rdc repo fork my-app --tag staging --up rdc repo fork my-app --tag scratch --up --no-wait Testlerimizde 128 GB'lık bir depo fork'landı ve servisler yaklaşık 57 saniyede çalışır hale geldi; --no-wait ile bu süre yaklaşık 31 saniyeye indi. Ayrılmış çalıştırmalar, ilerlemeyi kontrol etmek için bir ipucu yazdırır: rdc machine status <machine> --containers.",
     "excerpt": "--up seçeneği fork oluşturma, bağlama ve servisleri başlatma işlemlerini tek bir uzak operasyonda birleştirir. Konteynerler başlar başlamaz terminalin...",
     "category": "Documentation",
     "page": "/tr/docs/repositories",
@@ -11545,8 +11545,8 @@
   {
     "id": "search-16362",
     "content": "Servisleri Başlatma",
-    "body": "Depoyu bağlayın ve tüm servisleri başlatın: rdc repo up my-app | Seçenek | Açıklama | |---------|----------| | --skip-router-restart | İşlem sonrasında rota sunucusunun yeniden başlatılmasını atla | Çalıştırma sırası: LUKS ile şifrelenmiş depoyu bağla (bağlı değilse otomatik bağlanır) İzole Docker daemon'unu başlat Compose dosyalarından .rediacc.json dosyasını otomatik oluştur Tüm Rediaccfile'larda up() çalıştır (A-Z sırası) Dağıtım sonrasında çıktıda her servisin gerçek URL'lerini gösteren bir PROXY ROUTES bölümü yer alır. Özel Traefik etiketlerine sahip servisler özel etki alanlarını birincil URL olarak gösterir: HTTP services (accessible via proxy after ~3s): gitlab-server: HTTPS: https://gitlab.example.com (custom) Auto: https://gitlab-server.gitlab.server-1.example.com IP: 127.0.11.130 Özel Traefik etiketleri olmayan servisler yalnızca otomatik oluşturulan rotayı gösterir. Tarayıcı erişimi, API çağrıları ve servisler arası yapılandırma için bu URL'leri kullanın (CLI tarafından yazdırılan genel desen değil).",
-    "excerpt": "Depoyu bağlayın ve tüm servisleri başlatın: rdc repo up my-app | Seçenek | Açıklama | |---------|----------| | --skip-router-restart | İşlem sonrasınd...",
+    "body": "Depoyu bağlayın ve tüm servisleri başlatın: rdc repo up my-app | Seçenek | Açıklama | |---------|----------| | --no-wait | Konteynerler başlar başlamaz geri dön; sağlık kontrolleri arka planda devam eder | | --skip-router-restart | İşlem sonrasında rota sunucusunun yeniden başlatılmasını atla | Çalıştırma sırası: LUKS ile şifrelenmiş depoyu bağla (bağlı değilse otomatik bağlanır) İzole Docker daemon'unu başlat Compose dosyalarından .rediacc.json dosyasını otomatik oluştur Tüm Rediaccfile'larda up() çalıştır (A-Z sırası) Dağıtım sonrasında çıktıda her servisin gerçek URL'lerini gösteren bir PROXY ROUTES bölümü yer alır. Özel Traefik etiketlerine sahip servisler özel etki alanlarını birincil URL olarak gösterir: HTTP services (accessible via proxy after ~3s): gitlab-server: HTTPS: https://gitlab.example.com (custom) Auto: https://gitlab-server.gitlab.server-1.example.com IP: 127.0.11.130 Özel Traefik etiketleri olmayan servisler yalnızca otomatik oluşturulan rotayı gösterir. Tarayıcı erişimi, API çağrıları ve servisler arası yapılandırma için bu URL'leri kullanın (CLI tarafından yazdırılan genel desen değil).",
+    "excerpt": "Depoyu bağlayın ve tüm servisleri başlatın: rdc repo up my-app | Seçenek | Açıklama | |---------|----------| | --no-wait | Konteynerler başlar başlama...",
     "category": "Documentation",
     "page": "/tr/docs/services",
     "path": "docs.services.content",
@@ -11556,8 +11556,8 @@
   {
     "id": "search-16363",
     "content": "Ayrılmış Başlatma",
-    "body": "--detach ile komut, sağlık kontrollerinin tamamlanmasını beklemek yerine konteynerler başlar başlamaz geri döner. Başlatma arka planda tamamlanır: proxy, her servis bağlanana kadar yukarı yönlü bağlantıları yeniden dener ve rotalar otomatik olarak açılır. İlerlemeyi rdc machine status <machine> --containers ile takip edin. Sıradaki adımdan önce servislerin hazır olmasına gerek duyulmayan tek kullanımlık fork'lar ve betikleştirilmiş döngüler için idealdir.",
-    "excerpt": "--detach ile komut, sağlık kontrollerinin tamamlanmasını beklemek yerine konteynerler başlar başlamaz geri döner. Başlatma arka planda tamamlanır: pro...",
+    "body": "--no-wait ile komut, sağlık kontrollerinin tamamlanmasını beklemek yerine konteynerler başlar başlamaz geri döner. Başlatma arka planda tamamlanır: proxy, her servis bağlanana kadar yukarı yönlü bağlantıları yeniden dener ve rotalar otomatik olarak açılır. İlerlemeyi rdc machine status <machine> --containers ile takip edin. Sıradaki adımdan önce servislerin hazır olmasına gerek duyulmayan tek kullanımlık fork'lar ve betikleştirilmiş döngüler için idealdir.",
+    "excerpt": "--no-wait ile komut, sağlık kontrollerinin tamamlanmasını beklemek yerine konteynerler başlar başlamaz geri döner. Başlatma arka planda tamamlanır: pr...",
     "category": "Documentation",
     "page": "/tr/docs/services",
     "path": "docs.services.content",
@@ -11589,7 +11589,7 @@
   {
     "id": "search-16366",
     "content": "Toplu İşlemler",
-    "body": "Bir makinedeki tüm depoları aynı anda başlatın veya durdurun: rdc repo up --all -m server-1 | Seçenek | Açıklama | |---------|----------| | --include-forks | Çatallanmış depoları dahil et | | --dry-run | Ne yapılacağını göster | | --parallel | İşlemleri paralel çalıştır | | --concurrency <n> | Maksimum eşzamanlı işlem sayısı (varsayılan: 3) | | --skip-router-restart | İşlem sonrasında rota sunucusunun yeniden başlatılmasını atla |",
+    "body": "Bir makinedeki tüm depoları aynı anda başlatın veya durdurun: rdc repo up --all -m server-1 | Seçenek | Açıklama | |---------|----------| | --include-forks | Çatallanmış depoları dahil et | | --no-start | Yalnızca bağla ve hazırla, deponun up() adımlarını çalıştırma | | --dry-run | Ne yapılacağını göster | | --parallel | İşlemleri paralel çalıştır | | --concurrency <n> | Maksimum eşzamanlı işlem sayısı (varsayılan: 3) | | --skip-router-restart | İşlem sonrasında rota sunucusunun yeniden başlatılmasını atla |",
     "excerpt": "Bir makinedeki tüm depoları aynı anda başlatın veya durdurun: rdc repo up --all -m server-1 | Seçenek | Açıklama | |---------|----------| | --include-...",
     "category": "Documentation",
     "page": "/tr/docs/services",
@@ -12483,7 +12483,7 @@
   {
     "id": "search-16448",
     "content": "Konteyner İşlemleri",
-    "body": "Çalışan bir konteynerle doğrudan etkileşim kurun: # Konteyner içinde kabuk aç rdc repo exec my-app -c <container> -i -- bash # Konteyner günlüklerini görüntüle rdc repo logs my-app -c <container> # Günlükleri gerçek zamanlı takip et rdc repo logs my-app -c <container> --follow # Konteyner istatistiklerini görüntüle rdc repo exec my-app -c <container> -i -- bash --container-action stats # Konteynerde komut çalıştır rdc repo exec my-app -c <container> -- ls -la | Seçenek | Açıklama | |---------|----------|",
+    "body": "Çalışan bir konteynerle doğrudan etkileşim kurun: # Konteyner içinde kabuk aç rdc repo exec my-app -c <container> -i -- bash # Konteyner günlüklerini görüntüle rdc repo logs my-app -c <container> # Günlükleri gerçek zamanlı takip et rdc repo logs my-app -c <container> --follow # Konteyner istatistiklerini görüntüle rdc repo exec my-app -c <container> -i -- bash --container-action stats # Konteynerde komut çalıştır rdc repo exec my-app -c <container> -- ls -la | Seçenek | Komut | Açıklama | |---------|-------|----------| | -c, --container <name> | ikisi de | Depo içindeki hedef konteyner | | --lines <n> | repo logs | Gösterilecek günlük satırı sayısı | | -f, --follow | repo logs | Günlükleri sürekli takip et | | --timestamps | repo logs | Her satırın başına zaman damgası ekle | | -i, --interactive | repo exec | stdin'i açık tut (kabuk için gerekli) | | -u, --user <user> | repo exec | Belirli bir kullanıcı olarak çalıştır |",
     "excerpt": "Çalışan bir konteynerle doğrudan etkileşim kurun: # Konteyner içinde kabuk aç rdc repo exec my-app -c <container> -i -- bash # Konteyner günlüklerini...",
     "category": "Documentation",
     "page": "/tr/docs/tools",

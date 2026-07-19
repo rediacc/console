@@ -410,6 +410,7 @@ rdc repo migrate my-app@server-1 --to server-2
 
 | Valik | Kirjeldus |
 |--------|-------------|
+| `--to <place>` | Sihtmasin või klaster |
 | `--provision` | Provisiona repositoorium sihtmasinat enne ülekandmist |
 | `--checkpoint` | Loo CRIU kontrollpunkt enne migreerimist |
 | `--skip-dns` | Jäta DNS-kirjete uuendamine pärast migreerimist vahele |

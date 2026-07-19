@@ -32,10 +32,13 @@ rdc repo diff <fork> --base <repo>   # diff rispetto a un repository correlato a
 
 | Opzione | Descrizione | Predefinito |
 |---------|------------|-------------|
+| `<ref>` (posizionale) | Ref del repository da ispezionare (il lato target, nuovo). Obbligatorio. | obbligatorio |
+| `--base <ref>` | Repository con cui confrontare (il lato base, vecchio). Default al parent del ref, risolto dal config locale. | parent del ref |
 | (nessun flag di formato) | Output di stato dei nomi: una lettera A/M/D/R colorata per file modificato più un riepilogo di una riga. | attivo |
 | `--name-only` | Un percorso modificato per riga, nessuna lettera di stato. Compatibile con pipe. | disattivo |
 | `--stat` | Entità della modifica per file (delta di byte e blocchi) con un riepilogo dei totali. | disattivo |
 | `--content <path>` | Diff di testo unificato di un singolo file. Solo testo; i binari segnalano `Binary files differ`. | disattivo |
+| `-o json` | Output strutturato per agenti e script. | `table` |
 | `--fast` | Salta il passaggio di conferma del content-hash e fidati del filtro dei blocchi. Più veloce, ma potrebbe segnalare eccessivamente i file come Modificati. | disattivo |
 | `--debug` | Diagnostica dettagliata su stderr. | disattivo |
 | `--skip-router-restart` | Salta il passaggio di riavvio del router. | disattivo |
@@ -99,7 +102,7 @@ $ rdc repo diff test-1gb:fork1 --content hello.txt
 
 ### Filtraggio JSON con jq
 
-`--json` emette l'envelope strutturato su stdout, quindi si connette perfettamente a `jq`:
+`-o json` emette l'envelope strutturato su stdout, quindi si connette perfettamente a `jq`:
 
 ```bash
 $ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
@@ -137,7 +140,7 @@ Ogni riga contiene il delta di byte e il delta di blocchi del file. Un piè di p
 
 Un diff unificato standard (`---`/`+++` intestazioni, `@@` hunk) per un file di testo. I file binari segnalano `Binary files differ` e non producono hunk.
 
-### `--json`
+### `-o json`
 
 Il risultato strutturato completo. I dati vanno a stdout; l'avanzamento e la diagnostica vanno a stderr, quindi il JSON si connette perfettamente a `jq` o un altro parser anche mentre l'avanzamento viene stampato.
 

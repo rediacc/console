@@ -39,9 +39,9 @@ rdc repo commit <fork> --message "<message>"
 
 | Option | Description | Défaut |
 |--------|-------------|--------|
+| `<ref>` (positionnel) | Fork de travail à commiter. Doit être monté. Requis. | requis |
 | `--message <msg>` | Message de commit. Requis. | requis |
 | `--author <author>` | Auteur enregistré dans les métadonnées du commit. | non défini |
-| `-m, --machine <name>` | Machine cible. Requis. | requis |
 | `--debug` | Diagnostics détaillés sur stderr. | off |
 
 Le nouveau commit est enregistré dans la configuration locale avec `immutable: true`, et le `headCommit` du fork de travail avance pour pointer vers lui. Commiter un dépôt immuable est refusé : extrayez-le d'abord dans un fork modifiable.
@@ -56,6 +56,7 @@ rdc repo branch <fork> --branch <name>
 
 | Option | Description | Défaut |
 |--------|-------------|--------|
+| `<ref>` (positionnel) | Fork de travail dont la branche pointe vers le commit actuel. Requis. | requis |
 | `--branch <branch>` | Nom de la nouvelle branche. Requis. | requis |
 
 Il s'agit d'une opération purement côté config. Aucun travail n'est effectué sur la machine. La référence de branche associe un nom au `headCommit` du fork de travail ; le fork doit donc avoir au moins un commit au préalable.
@@ -71,8 +72,8 @@ rdc repo checkout <branchName> --from <fork> --tag <newFork>
 
 | Option | Description | Défaut |
 |--------|-------------|--------|
+| `<commit-or-branch-ref>` (positionnel) | GUID du commit à extraire, ou un nom de branche lorsque `--from` est fourni. Requis. | requis |
 | `--tag <name>` | Nom du nouveau fork de travail modifiable. Requis. | requis |
-| `-m, --machine <name>` | Machine cible. Requis. | requis |
 | `--from <workingFork>` | Résoudre `--ref` comme nom de branche sur l'ensemble de branches de ce fork de travail. | commit direct |
 | `--debug` | Diagnostics détaillés sur stderr. | off |
 | `--skip-router-restart` | Ignorer le redémarrage du routeur. | off |
@@ -89,7 +90,8 @@ rdc repo log <fork>
 
 | Option | Description | Défaut |
 |--------|-------------|--------|
-| `-m, --machine <name>` | Machine cible. Requis. | requis |
+| `<ref>` (positionnel) | Fork de travail ou commit à partir duquel parcourir l'historique. Requis. | requis |
+| `-o json` | Affiche l'historique des commits au format JSON. | `table` |
 | `--debug` | Diagnostics détaillés sur stderr. | off |
 
 `log` parcourt la chaîne de parents enregistrée par `rdc repo commit`, en lisant le miroir d'état hors volume : aucun commit n'est déverrouillé ni monté. Opération en lecture seule.
@@ -105,8 +107,8 @@ rdc repo merge <target> --from <source> --resolve theirs
 
 | Option | Description | Défaut |
 |--------|-------------|--------|
+| `<ref>` (positionnel) | Fork de travail cible dans lequel fusionner. Requis. | requis |
 | `--from <source>` | Commit ou fork source à fusionner. Requis. | requis |
-| `-m, --machine <name>` | Machine cible. Requis. | requis |
 | `--force` | Met en veille une cible montée ou en cours d'exécution, puis fusionne. Ne mute jamais un montage en cours. | off |
 | `--resolve <ours\|theirs>` | Fusion à trois voies par fichier : applique les modifications par fichier de la source sur la cible, en conservant (`ours`) ou en prenant (`theirs`) la version de la source pour les fichiers modifiés des deux côtés. Omettez ce paramètre pour une prise en bloc de la source. | off |
 | `--base <guid>` | Commit ancêtre commun pour la fusion à trois voies (utilisé avec `--resolve`). Par défaut, le parent du commit source ou le commit courant de la cible. | auto |
@@ -208,7 +210,7 @@ commit 9d8e7a1b2c3d
 
 ### Historique en JSON
 
-`--json` produit le parcours structuré, du plus récent au plus ancien :
+`-o json` produit le parcours structuré, du plus récent au plus ancien :
 
 ```bash
 $ rdc repo log myapp:work -o json

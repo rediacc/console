@@ -151,14 +151,14 @@ Beim Fork-Erstellen schreibt `repo fork` das [State-Mirror-Sidecar](#type-spalte
 
 ### Fork und Start in einem Schritt
 
-Mit `--up` werden Fork, Einbinden und Dienststart in einem einzigen Remote-Vorgang zusammengefasst. Wer das Terminal sofort zurückbekommen möchte, sobald die Container gestartet sind, hängt zusätzlich `--detach` an; Gesundheitsprüfungen laufen dann im Hintergrund weiter, und der Proxy versucht so lange, die Verbindung aufzubauen, bis jeder Dienst erreichbar ist:
+Mit `--up` werden Fork, Einbinden und Dienststart in einem einzigen Remote-Vorgang zusammengefasst. Wer das Terminal sofort zurückbekommen möchte, sobald die Container gestartet sind, hängt zusätzlich `--no-wait` an; Gesundheitsprüfungen laufen dann im Hintergrund weiter, und der Proxy versucht so lange, die Verbindung aufzubauen, bis jeder Dienst erreichbar ist:
 
 ```bash
 rdc repo fork my-app --tag staging --up
 rdc repo fork my-app --tag scratch --up --no-wait
 ```
 
-In unseren Tests hat ein 128-GB-Repository geforkt und laufende Dienste in etwa 57 Sekunden erreicht, mit `--detach` in etwa 31 Sekunden. Beim abgetrennten Lauf wird ein Hinweis ausgegeben, wie der Fortschritt verfolgt werden kann: `rdc machine status <machine> --containers`.
+In unseren Tests hat ein 128-GB-Repository geforkt und laufende Dienste in etwa 57 Sekunden erreicht, mit `--no-wait` in etwa 31 Sekunden. Beim abgetrennten Lauf wird ein Hinweis ausgegeben, wie der Fortschritt verfolgt werden kann: `rdc machine status <machine> --containers`.
 
 ### Wo die Zeit bleibt
 

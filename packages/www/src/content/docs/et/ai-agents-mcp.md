@@ -107,6 +107,7 @@ Agent kutsub `machine_health` → `machine_containers` → `term_exec` logide lu
 
 | Valik | Vaikimisi | Kirjeldus |
 |-------|-----------|-----------|
+| `--config <name>` | (vaikekonfiguratsioon) | Nimega konfiguratsioon, mida kasutada kõigi käskude jaoks |
 | `--timeout <ms>` | `120000` | Käsu vaikeaegumine millisekundites |
 
 ## Turvalisus

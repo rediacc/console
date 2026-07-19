@@ -39,9 +39,9 @@ rdc repo commit <fork> --message "<message>"
 
 | Option | Beschreibung | Standard |
 |--------|-------------|---------|
+| `<ref>` (positional) | Arbeitsfork, der committet werden soll. Muss eingebunden sein. Erforderlich. | erforderlich |
 | `--message <msg>` | Commit-Nachricht. Erforderlich. | erforderlich |
 | `--author <author>` | In den Commit-Metadaten aufgezeichneter Autor. | nicht gesetzt |
-| `-m, --machine <name>` | Zielmaschine. Erforderlich. | erforderlich |
 | `--debug` | Ausführliche Diagnose auf stderr. | aus |
 
 Der neue Commit wird in der lokalen Konfiguration mit `immutable: true` registriert, und der `headCommit` des Arbeitsforks wird aktualisiert, um auf ihn zu zeigen. Das Committen eines unveränderlichen Repositories wird abgelehnt: Checken Sie es zuerst in einen beschreibbaren Fork aus.
@@ -56,6 +56,7 @@ rdc repo branch <fork> --branch <name>
 
 | Option | Beschreibung | Standard |
 |--------|-------------|---------|
+| `<ref>` (positional) | Arbeitsfork, auf dessen aktuellen Commit der Branch zeigt. Erforderlich. | erforderlich |
 | `--branch <branch>` | Name des neuen Branches. Erforderlich. | erforderlich |
 
 Dies ist eine reine Konfigurationsoperation. Auf der Maschine geschieht nichts. Die Branch-Referenz bildet einen Namen auf den `headCommit` des Arbeitsforks ab, daher muss der Fork zuerst mindestens einen Commit haben.
@@ -71,8 +72,8 @@ rdc repo checkout <branchName> --from <fork> --tag <newFork>
 
 | Option | Beschreibung | Standard |
 |--------|-------------|---------|
+| `<commit-or-branch-ref>` (positional) | Commit-GUID zum Auschecken, oder ein Branch-Name, wenn `--from` angegeben ist. Erforderlich. | erforderlich |
 | `--tag <name>` | Name des neuen beschreibbaren Arbeitsforks. Erforderlich. | erforderlich |
-| `-m, --machine <name>` | Zielmaschine. Erforderlich. | erforderlich |
 | `--from <workingFork>` | `--ref` als Branch-Namen auf dem Branch-Set dieses Arbeitsforks auflösen. | direkter Commit |
 | `--debug` | Ausführliche Diagnose auf stderr. | aus |
 | `--skip-router-restart` | Router-Neustart überspringen. | aus |
@@ -89,7 +90,8 @@ rdc repo log <fork>
 
 | Option | Beschreibung | Standard |
 |--------|-------------|---------|
-| `-m, --machine <name>` | Zielmaschine. Erforderlich. | erforderlich |
+| `<ref>` (positional) | Arbeitsfork oder Commit, ab dem der Verlauf durchlaufen wird. Erforderlich. | erforderlich |
+| `-o json` | Commit-Verlauf als JSON ausgeben. | `table` |
 | `--debug` | Ausführliche Diagnose auf stderr. | aus |
 
 `log` durchläuft die von `rdc repo commit` aufgezeichnete Elternkette und liest den außerhalb des Volumes gespeicherten Zustandsspiegel, sodass kein Commit entsperrt oder eingebunden wird. Es ist schreibgeschützt.
@@ -105,8 +107,8 @@ rdc repo merge <target> --from <source> --resolve theirs
 
 | Option | Beschreibung | Standard |
 |--------|-------------|---------|
+| `<ref>` (positional) | Ziel-Arbeitsfork, in den gemergt wird. Erforderlich. | erforderlich |
 | `--from <source>` | Quell-Commit oder -Fork, aus dem gemergt wird. Erforderlich. | erforderlich |
-| `-m, --machine <name>` | Zielmaschine. Erforderlich. | erforderlich |
 | `--force` | Eingebundenes oder laufendes Ziel zuerst anhalten, dann mergen. Verändert niemals ein aktives Mount. | aus |
 | `--resolve <ours\|theirs>` | Dateiweiser Drei-Wege-Merge: Faltet die dateiweisen Änderungen der Quelle auf das Ziel, behält (`ours`) oder übernimmt (`theirs`) die Version der Quelle für beidseitig geänderte Dateien. Weglassen für ganzes-Abbild-Take-theirs. | aus |
 | `--base <guid>` | Gemeinsamer Vorfahren-Commit für den Drei-Wege-Merge (wird mit `--resolve` verwendet). Standardmäßig der Eltern-Commit der Quelle oder der aktuelle Commit des Ziels. | automatisch |
@@ -208,7 +210,7 @@ commit 9d8e7a1b2c3d
 
 ### Verlauf als JSON
 
-`--json` gibt den strukturierten Durchlauf aus, neueste zuerst:
+`-o json` gibt den strukturierten Durchlauf aus, neueste zuerst:
 
 ```bash
 $ rdc repo log myapp:work -o json

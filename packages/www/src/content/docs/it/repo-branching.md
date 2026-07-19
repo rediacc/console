@@ -39,9 +39,9 @@ rdc repo commit <fork> --message "<message>"
 
 | Opzione | Descrizione | Default |
 |---------|-------------|---------|
+| `<ref>` (posizionale) | Fork di lavoro da committare. Deve essere montato. Obbligatorio. | obbligatorio |
 | `--message <msg>` | Messaggio di commit. Obbligatorio. | obbligatorio |
 | `--author <author>` | Autore del commit registrato nei metadati. | non impostato |
-| `-m, --machine <name>` | Macchina target. Obbligatorio. | obbligatorio |
 | `--debug` | Diagnostica verbosa su stderr. | off |
 
 Il nuovo commit viene registrato nel config locale con `immutable: true`, e il `headCommit` del fork di lavoro avanza per puntarvi. Committare un repository immutabile viene rifiutato: prima eseguine il checkout in un fork scrivibile.
@@ -56,6 +56,7 @@ rdc repo branch <fork> --branch <name>
 
 | Opzione | Descrizione | Default |
 |---------|-------------|---------|
+| `<ref>` (posizionale) | Fork di lavoro al cui commit corrente punta il branch. Obbligatorio. | obbligatorio |
 | `--branch <branch>` | Nome del nuovo branch. Obbligatorio. | obbligatorio |
 
 Questa è un'operazione solo sul config. Non viene eseguito nessun lavoro sulla macchina. Il riferimento al branch mappa un nome al `headCommit` del fork di lavoro, quindi il fork deve avere almeno un commit prima.
@@ -71,8 +72,8 @@ rdc repo checkout <branchName> --from <fork> --tag <newFork>
 
 | Opzione | Descrizione | Default |
 |---------|-------------|---------|
+| `<commit-or-branch-ref>` (posizionale) | GUID del commit di cui fare il checkout, oppure un nome di branch quando viene fornito `--from`. Obbligatorio. | obbligatorio |
 | `--tag <name>` | Nome per il nuovo fork di lavoro scrivibile. Obbligatorio. | obbligatorio |
-| `-m, --machine <name>` | Macchina target. Obbligatorio. | obbligatorio |
 | `--from <workingFork>` | Risolve `--ref` come nome di branch su questo fork di lavoro. | commit diretto |
 | `--debug` | Diagnostica verbosa su stderr. | off |
 | `--skip-router-restart` | Salta il riavvio del router. | off |
@@ -89,7 +90,8 @@ rdc repo log <fork>
 
 | Opzione | Descrizione | Default |
 |---------|-------------|---------|
-| `-m, --machine <name>` | Macchina target. Obbligatorio. | obbligatorio |
+| `<ref>` (posizionale) | Fork di lavoro o commit da cui iniziare a percorrere la storia. Obbligatorio. | obbligatorio |
+| `-o json` | Mostra la storia dei commit come JSON. | `table` |
 | `--debug` | Diagnostica verbosa su stderr. | off |
 
 `log` percorre la catena parent registrata da `rdc repo commit`, leggendo il mirror di stato fuori-volume così nessun commit viene sbloccato o montato. È solo lettura.
@@ -105,8 +107,8 @@ rdc repo merge <target> --from <source> --resolve theirs
 
 | Opzione | Descrizione | Default |
 |---------|-------------|---------|
+| `<ref>` (posizionale) | Fork di lavoro target in cui fare il merge. Obbligatorio. | obbligatorio |
 | `--from <source>` | Commit sorgente o fork da cui fare il merge. Obbligatorio. | obbligatorio |
-| `-m, --machine <name>` | Macchina target. Obbligatorio. | obbligatorio |
 | `--force` | Chiude un target montato o in esecuzione prima del merge. Non muta mai un mount live. | off |
 | `--resolve <ours\|theirs>` | Merge three-way per file: applica le modifiche per-file della sorgente sul target, mantenendo (`ours`) o prendendo (`theirs`) la versione della sorgente per i file modificati su entrambi i lati. Ometti per take-theirs dell'intera immagine. | off |
 | `--base <guid>` | Commit antenato comune per il merge three-way (usato con `--resolve`). Default al parent del commit sorgente, o al commit corrente del target. | auto |
@@ -208,7 +210,7 @@ commit 9d8e7a1b2c3d
 
 ### Storia come JSON
 
-`--json` emette il walk strutturato, dal più recente al meno recente:
+`-o json` emette il walk strutturato, dal più recente al meno recente:
 
 ```bash
 $ rdc repo log myapp:work -o json

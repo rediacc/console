@@ -212,6 +212,7 @@ rdc repo up my-app
 
 | Seçenek | Açıklama |
 |---------|----------|
+| `--no-wait` | Konteynerler başlar başlamaz geri dön; sağlık kontrolleri arka planda devam eder |
 | `--skip-router-restart` | İşlem sonrasında rota sunucusunun yeniden başlatılmasını atla |
 
 Çalıştırma sırası:
@@ -234,7 +235,7 @@ HTTP services (accessible via proxy after ~3s):
 
 ### Ayrılmış Başlatma
 
-`--detach` ile komut, sağlık kontrollerinin tamamlanmasını beklemek yerine konteynerler başlar başlamaz geri döner. Başlatma arka planda tamamlanır: proxy, her servis bağlanana kadar yukarı yönlü bağlantıları yeniden dener ve rotalar otomatik olarak açılır. İlerlemeyi `rdc machine status <machine> --containers` ile takip edin. Sıradaki adımdan önce servislerin hazır olmasına gerek duyulmayan tek kullanımlık fork'lar ve betikleştirilmiş döngüler için idealdir.
+`--no-wait` ile komut, sağlık kontrollerinin tamamlanmasını beklemek yerine konteynerler başlar başlamaz geri döner. Başlatma arka planda tamamlanır: proxy, her servis bağlanana kadar yukarı yönlü bağlantıları yeniden dener ve rotalar otomatik olarak açılır. İlerlemeyi `rdc machine status <machine> --containers` ile takip edin. Sıradaki adımdan önce servislerin hazır olmasına gerek duyulmayan tek kullanımlık fork'lar ve betikleştirilmiş döngüler için idealdir.
 
 ### Hazırlık Sondası
 
@@ -267,6 +268,7 @@ rdc repo up --all -m server-1
 | Seçenek | Açıklama |
 |---------|----------|
 | `--include-forks` | Çatallanmış depoları dahil et |
+| `--no-start` | Yalnızca bağla ve hazırla, deponun `up()` adımlarını çalıştırma |
 | `--dry-run` | Ne yapılacağını göster |
 | `--parallel` | İşlemleri paralel çalıştır |
 | `--concurrency <n>` | Maksimum eşzamanlı işlem sayısı (varsayılan: 3) |

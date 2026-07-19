@@ -63,6 +63,7 @@ rdc repo sync status my-app
 | Opción | Descripción |
 |--------|-------------|
 | `-m, --machine <name>` | Máquina destino |
+| `<ref>` (posicional) | Ref del repositorio destino: `name`, `name:tag`, opcionalmente `@machine` |
 | `--local <paths...>` | Una o más rutas locales de archivo o directorio (subida) o directorio local de destino (descarga) |
 | `--remote <path>` | Directorio remoto (relativo al montaje del repositorio) |
 | `--remote-file <path>` | Ruta de archivo remoto para descargas o subidas de archivo único (alternativa a `--remote`) |
@@ -127,8 +128,14 @@ rdc repo exec my-app -c <container> -i -- bash --container-action stats
 rdc repo exec my-app -c <container> -- ls -la
 ```
 
-| Opción | Descripción |
-|--------|-------------|
+| Opción | Comando | Descripción |
+|--------|---------|-------------|
+| `-c, --container <name>` | ambos | Contenedor de destino dentro del repositorio |
+| `--lines <n>` | `repo logs` | Número de líneas de log a mostrar |
+| `-f, --follow` | `repo logs` | Sigue los logs de forma continua |
+| `--timestamps` | `repo logs` | Antepone una marca de tiempo a cada línea |
+| `-i, --interactive` | `repo exec` | Mantiene stdin abierto (necesario para una shell) |
+| `-u, --user <user>` | `repo exec` | Ejecuta como un usuario específico |
 
 ## Integración con VS Code (vscode)
 

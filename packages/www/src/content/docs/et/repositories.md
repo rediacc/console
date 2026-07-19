@@ -149,14 +149,14 @@ Kahvli loomisel kirjutab `repo fork` kohe [oleku peegli külgfaili](#tüübi-vee
 
 ### Kahveldamine ja käivitamine ühe sammuga
 
-`--up` kahveldab, ühendab ja käivitab teenused ühe kaugoperatsiooniga. Lisage `--detach`, et saada terminal tagasi niipea, kui konteinerid on käivitatud; tervisekontrollid lõpetavad taustal ja puhverserver kordab katseid, kuni iga teenus seob end:
+`--up` kahveldab, ühendab ja käivitab teenused ühe kaugoperatsiooniga. Lisage `--no-wait`, et saada terminal tagasi niipea, kui konteinerid on käivitatud; tervisekontrollid lõpetavad taustal ja puhverserver kordab katseid, kuni iga teenus seob end:
 
 ```bash
 rdc repo fork my-app --tag staging --up
 rdc repo fork my-app --tag scratch --up --no-wait
 ```
 
-Meie testides kahveldati 128 GB repositoorium ja jõuti töötavate teenusteni umbes 57 sekundiga, `--detach`-iga aga umbes 31 sekundiga. Eraldusrežiim trükib vihje edenemise jälgimiseks: `rdc machine status <machine> --containers`.
+Meie testides kahveldati 128 GB repositoorium ja jõuti töötavate teenusteni umbes 57 sekundiga, `--no-wait`-iga aga umbes 31 sekundiga. Eraldusrežiim trükib vihje edenemise jälgimiseks: `rdc machine status <machine> --containers`.
 
 ### Kuhu aeg läheb
 

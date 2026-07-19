@@ -230,6 +230,7 @@ rdc repo up my-app
 
 | 选项 | 描述 |
 |------|------|
+| `--no-wait` | 容器启动后立即返回,健康检查在后台继续 |
 | `--skip-router-restart` | 跳过操作后重启路由服务器 |
 
 执行顺序为：
@@ -252,7 +253,7 @@ HTTP services (accessible via proxy after ~3s):
 
 ### 后台启动
 
-加上 `--detach`，命令在容器启动后即返回，不等待健康检查完成。启动过程在后台继续：代理持续重试上游连接，直到各服务就绪，路由自动恢复。可通过 `rdc machine status <machine> --containers` 查看进度。适合一次性临时分支和无需等待服务就绪即可进行下一步的脚本化流程。
+加上 `--no-wait`，命令在容器启动后即返回，不等待健康检查完成。启动过程在后台继续：代理持续重试上游连接，直到各服务就绪，路由自动恢复。可通过 `rdc machine status <machine> --containers` 查看进度。适合一次性临时分支和无需等待服务就绪即可进行下一步的脚本化流程。
 
 ### 就绪探测
 
@@ -285,6 +286,7 @@ rdc repo up --all -m server-1
 | 选项 | 描述 |
 |------|------|
 | `--include-forks` | 包含 fork 仓库 |
+| `--no-start` | 仅挂载并准备,不运行仓库的 `up()` 步骤 |
 | `--dry-run` | 显示将要执行的操作 |
 | `--parallel` | 并行运行操作 |
 | `--concurrency <n>` | 最大并发操作数（默认：3） |

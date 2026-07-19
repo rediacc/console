@@ -41,7 +41,6 @@ rdc repo commit <fork> --message "<message>"
 |---------|----------|------------|
 | `--message <msg>` | Commit mesajı. Zorunlu. | zorunlu |
 | `--author <author>` | Commit meta verisine kaydedilen commit yazarı. | ayarlanmamış |
-| `-m, --machine <name>` | Hedef makine. Zorunlu. | zorunlu |
 | `--debug` | Stderr'de ayrıntılı tanılamalar. | kapalı |
 
 Yeni commit, `immutable: true` ile yerel yapılandırmaya kaydedilir ve çalışma fork'unun `headCommit`'i onu işaret edecek şekilde ilerler. Değişmez bir depoyu commit etmek reddedilir: önce yazılabilir bir fork'a aktarın.
@@ -72,7 +71,6 @@ rdc repo checkout <branchName> --from <fork> --tag <newFork>
 | Seçenek | Açıklama | Varsayılan |
 |---------|----------|------------|
 | `--tag <name>` | Yeni yazılabilir çalışma fork'unun adı. Zorunlu. | zorunlu |
-| `-m, --machine <name>` | Hedef makine. Zorunlu. | zorunlu |
 | `--from <workingFork>` | Bu çalışma fork'unun dal kümesinde `--ref`'i dal adı olarak çözümler. | doğrudan commit |
 | `--debug` | Stderr'de ayrıntılı tanılamalar. | kapalı |
 | `--skip-router-restart` | Router yeniden başlatma adımını atlar. | kapalı |
@@ -89,7 +87,7 @@ rdc repo log <fork>
 
 | Seçenek | Açıklama | Varsayılan |
 |---------|----------|------------|
-| `-m, --machine <name>` | Hedef makine. Zorunlu. | zorunlu |
+| `-o json` | Commit geçmişini JSON olarak çıktıla. | `table` |
 | `--debug` | Stderr'de ayrıntılı tanılamalar. | kapalı |
 
 `log`, `rdc repo commit` tarafından kaydedilen üst zinciri dolaşır; hiçbir commit kilitlenmeden veya bağlanmadan birim dışı durum yansımasını okur. Salt okunur.
@@ -106,7 +104,6 @@ rdc repo merge <target> --from <source> --resolve theirs
 | Seçenek | Açıklama | Varsayılan |
 |---------|----------|------------|
 | `--from <source>` | Birleştirilecek kaynak commit veya fork. Zorunlu. | zorunlu |
-| `-m, --machine <name>` | Hedef makine. Zorunlu. | zorunlu |
 | `--force` | Önce bağlı veya çalışan bir hedefi susturun, sonra birleştirin. Canlı bağlamayı hiçbir zaman değiştirmez. | kapalı |
 | `--resolve <ours\|theirs>` | Dosya başına üç yollu birleştirme: kaynağın dosya başına değişikliklerini hedefe katlayın; her iki tarafta değişen dosyalar için kaynağın sürümünü tutun (`ours`) veya alın (`theirs`). Tüm görüntü alma-onların için atlayın. | kapalı |
 | `--base <guid>` | Üç yollu birleştirme için ortak ata commit'i (`--resolve` ile kullanılır). Kaynak commit'in üst öğesini veya hedefin geçerli commit'ini varsayılan olarak kullanır. | otomatik |
@@ -208,7 +205,7 @@ commit 9d8e7a1b2c3d
 
 ### JSON olarak geçmiş
 
-`--json`, yapılandırılmış yürüyüşü en yeniden başlayarak çıktılar:
+`-o json`, yapılandırılmış yürüyüşü en yeniden başlayarak çıktılar:
 
 ```bash
 $ rdc repo log myapp:work -o json

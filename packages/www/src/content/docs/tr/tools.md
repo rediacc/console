@@ -127,8 +127,14 @@ rdc repo exec my-app -c <container> -i -- bash --container-action stats
 rdc repo exec my-app -c <container> -- ls -la
 ```
 
-| Seçenek | Açıklama |
-|---------|----------|
+| Seçenek | Komut | Açıklama |
+|---------|-------|----------|
+| `-c, --container <name>` | ikisi de | Depo içindeki hedef konteyner |
+| `--lines <n>` | `repo logs` | Gösterilecek günlük satırı sayısı |
+| `-f, --follow` | `repo logs` | Günlükleri sürekli takip et |
+| `--timestamps` | `repo logs` | Her satırın başına zaman damgası ekle |
+| `-i, --interactive` | `repo exec` | stdin'i açık tut (kabuk için gerekli) |
+| `-u, --user <user>` | `repo exec` | Belirli bir kullanıcı olarak çalıştır |
 
 ## VS Code Entegrasyonu (vscode)
 

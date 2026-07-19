@@ -149,14 +149,14 @@ Les forks utilisent le modèle name:tag : le fork résultant est nommé `my-app:
 
 ### Forker et démarrer en une seule opération
 
-`--up` enchaîne le fork, le montage et le démarrage des services en une unique opération distante. Ajoutez `--detach` pour récupérer la main dès que les conteneurs sont lancés ; les vérifications de santé se terminent en arrière-plan, et le proxy réessaie jusqu'à ce que chaque service soit prêt à répondre :
+`--up` enchaîne le fork, le montage et le démarrage des services en une unique opération distante. Ajoutez `--no-wait` pour récupérer la main dès que les conteneurs sont lancés ; les vérifications de santé se terminent en arrière-plan, et le proxy réessaie jusqu'à ce que chaque service soit prêt à répondre :
 
 ```bash
 rdc repo fork my-app --tag staging --up
 rdc repo fork my-app --tag scratch --up --no-wait
 ```
 
-Lors de nos tests, un dépôt de 128 Go a forké et atteint des services en cours d'exécution en environ 57 secondes, et environ 31 secondes avec `--detach`. Le mode détaché affiche une indication pour suivre la progression : `rdc machine status <machine> --containers`.
+Lors de nos tests, un dépôt de 128 Go a forké et atteint des services en cours d'exécution en environ 57 secondes, et environ 31 secondes avec `--no-wait`. Le mode détaché affiche une indication pour suivre la progression : `rdc machine status <machine> --containers`.
 
 ### Répartition du temps d'exécution
 

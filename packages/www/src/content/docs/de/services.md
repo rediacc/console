@@ -231,6 +231,7 @@ rdc repo up my-app
 
 | Option | Beschreibung |
 |--------|-------------|
+| `--no-wait` | Kehrt zurück, sobald die Container gestartet sind; die Gesundheitsprüfungen laufen im Hintergrund weiter |
 | `--skip-router-restart` | Route-Server-Neustart nach der Operation überspringen |
 
 Die Ausführungssequenz ist:
@@ -253,7 +254,7 @@ Dienste ohne benutzerdefinierte Traefik-Labels zeigen nur die auto-generierte Ro
 
 ### Abgetrennter Start
 
-Mit `--detach` kehrt der Befehl zurück, sobald die Container gestartet sind, anstatt auf den Abschluss der Gesundheitsprüfungen zu warten. Das Hochfahren läuft im Hintergrund weiter: Der Proxy versucht wiederholt, die Verbindung zu den Upstreams herzustellen, bis jeder Dienst antwortet, sodass Routen sich von selbst erholen. Den Fortschritt können Sie mit `rdc machine status <machine> --containers` verfolgen. Ideal für kurzlebige Forks und geskriptete Abläufe, bei denen die Dienste nicht zwingend bereit sein müssen, bevor der nächste Schritt beginnt.
+Mit `--no-wait` kehrt der Befehl zurück, sobald die Container gestartet sind, anstatt auf den Abschluss der Gesundheitsprüfungen zu warten. Das Hochfahren läuft im Hintergrund weiter: Der Proxy versucht wiederholt, die Verbindung zu den Upstreams herzustellen, bis jeder Dienst antwortet, sodass Routen sich von selbst erholen. Den Fortschritt können Sie mit `rdc machine status <machine> --containers` verfolgen. Ideal für kurzlebige Forks und geskriptete Abläufe, bei denen die Dienste nicht zwingend bereit sein müssen, bevor der nächste Schritt beginnt.
 
 ### Bereitschaftsprüfung
 
@@ -286,6 +287,7 @@ rdc repo up --all -m server-1
 | Option | Beschreibung |
 |--------|-------------|
 | `--include-forks` | Geforkte Repositories einschließen |
+| `--no-start` | Nur einbinden und vorbereiten, ohne die `up()`-Schritte des Repositories auszuführen |
 | `--dry-run` | Anzeigen, was ausgeführt würde |
 | `--parallel` | Operationen parallel ausführen |
 | `--concurrency <n>` | Maximale parallele Operationen (Standard: 3) |

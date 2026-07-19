@@ -125,8 +125,14 @@ rdc repo exec my-app -c <container> -i -- bash --container-action stats
 rdc repo exec my-app -c <container> -- ls -la
 ```
 
-| Параметр | Описание |
-|----------|----------|
+| Параметр | Команда | Описание |
+|----------|---------|----------|
+| `-c, --container <name>` | обе | Целевой контейнер внутри репозитория |
+| `--lines <n>` | `repo logs` | Количество строк лога для отображения |
+| `-f, --follow` | `repo logs` | Непрерывно следить за логами |
+| `--timestamps` | `repo logs` | Добавлять временную метку к каждой строке |
+| `-i, --interactive` | `repo exec` | Держать stdin открытым (нужно для оболочки) |
+| `-u, --user <user>` | `repo exec` | Выполнить от имени указанного пользователя |
 
 ## Интеграция с VS Code (vscode)
 

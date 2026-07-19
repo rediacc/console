@@ -231,6 +231,7 @@ rdc repo up my-app
 
 | Option | Description |
 |--------|-------------|
+| `--no-wait` | Revient dès que les conteneurs sont lancés ; les vérifications de santé continuent en arrière-plan |
 | `--skip-router-restart` | Ne pas redémarrer le serveur de routes après l'opération |
 
 La séquence d'exécution est :
@@ -253,7 +254,7 @@ Les services sans labels Traefik personnalisés affichent uniquement la route au
 
 ### Démarrage détaché
 
-Avec `--detach`, la commande rend la main dès que les conteneurs sont lancés, sans attendre la fin des vérifications de santé. Le démarrage se poursuit en arrière-plan : le proxy réessaie les connexions montantes jusqu'à ce que chaque service soit lié, les routes se rétablissent d'elles-mêmes. Suivez la progression avec `rdc machine status <machine> --containers`. Idéal pour les forks jetables et les boucles scriptées où la disponibilité immédiate des services n'est pas requise avant l'étape suivante.
+Avec `--no-wait`, la commande rend la main dès que les conteneurs sont lancés, sans attendre la fin des vérifications de santé. Le démarrage se poursuit en arrière-plan : le proxy réessaie les connexions montantes jusqu'à ce que chaque service soit lié, les routes se rétablissent d'elles-mêmes. Suivez la progression avec `rdc machine status <machine> --containers`. Idéal pour les forks jetables et les boucles scriptées où la disponibilité immédiate des services n'est pas requise avant l'étape suivante.
 
 ### Sonde de disponibilité
 
@@ -286,6 +287,7 @@ rdc repo up --all -m server-1
 | Option | Description |
 |--------|-------------|
 | `--include-forks` | Inclure les dépôts dupliqués (forks) |
+| `--no-start` | Monter et préparer uniquement, sans exécuter les étapes `up()` du dépôt |
 | `--dry-run` | Afficher ce qui serait fait |
 | `--parallel` | Exécuter les opérations en parallèle |
 | `--concurrency <n>` | Nombre maximum d'opérations simultanées (par défaut : 3) |

@@ -32,12 +32,12 @@ rdc repo diff <fork> --base <repo>   # diff against an arbitrary related repo
 
 | Valik | Kirjeldus | Vaikeväärtus |
 |--------|-------------|---------|
+| `--base <ref>` | Hoidla, millega võrreldakse (baaspool, vana pool). Vaikimisi on see positsioonilise viite vanem, mis lahendatakse kohalikust konfiguratsioonist. | viite vanem |
 | (formaadivali puudub) | Nime-staatuse väljund: värviline `A`/`M`/`D`/`R` täht muutunud faili kohta pluss üherealisi kokkuvõte. | sees |
 | `--name-only` | Üks muutunud tee rea kohta, staatuse täht puudub. Müra-sõbralik. | välja |
-| `--stat` | Faili kohta muutuste suuruus (baidi ja ploki deltad) kokku-
-
-võttega jaluses. | välja |
+| `--stat` | Faili kohta muutuste suuruus (baidi ja ploki deltad) kokkuvõttega jaluses. | välja |
 | `--content <path>` | Ühendatud teksti diff ühe faili jaoks. Ainult tekst; binaarfailid teatavad `Binary files differ`. | välja |
+| `-o json` | Struktureeritud väljund agentidele ja skriptidele. | `table` |
 | `--fast` | Jäta sisu-räsi kinnitamise etapp vahele ja usalda plokkfiltrit. Kiirem, kuid võib üle teatada failidest kui Muudetud. | välja |
 | `--debug` | Üksikasjalik diagnostika stderr kohale. | välja |
 | `--skip-router-restart` | Jäta marsruuteri taaskäivitamise etapp vahele. | välja |
@@ -103,7 +103,7 @@ $ rdc repo diff test-1gb:fork1 --content hello.txt
 
 ### JSON filtreerimine jq-ga
 
-`--json` väljastab struktureeritud ümbrise stdout-le, nii et see toru puhtalt `jq`-sse:
+`-o json` väljastab struktureeritud ümbrise stdout-le, nii et see toru puhtalt `jq`-sse:
 
 ```bash
 $ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
@@ -141,7 +141,7 @@ Iga rida kannab faili baidi deltad plokkide deltad. Jalus teatab kogu faili arvu
 
 Standardne ühendatud diff (`---`/`+++` pealkirjad, `@@` hunks) ühe tekstifaili jaoks. Binaarfailid teatavad `Binary files differ` ja ei tekita hunks.
 
-### `--json`
+### `-o json`
 
 Täis struktureeritud tulemus. Andmed lähevad stdout-le; progress ja diagnostika lähevad stderr-le, seega JSON toru puhtalt `jq` või teise parseeri, isegi kui progress trükib.
 

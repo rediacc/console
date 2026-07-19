@@ -32,10 +32,13 @@ rdc repo diff <fork> --base <repo>   # diff against an arbitrary related repo
 
 | Opção | Descrição | Padrão |
 |--------|-------------|---------|
+| `<ref>` (posicional) | Referência do repositório a inspecionar (o lado alvo, novo). Obrigatório. | obrigatório |
+| `--base <ref>` | Repositório para comparar (o lado base, antigo). Por predefinição usa o pai da referência posicional, resolvido a partir da configuração local. | pai da referência |
 | (sem flag de formato) | Saída de status de nome: uma letra colorida `A`/`M`/`D`/`R` por arquivo alterado mais um resumo de uma linha. | ativado |
 | `--name-only` | Um caminho alterado por linha, sem letra de status. Compatível com pipe. | desativado |
 | `--stat` | Magnitude de alteração por arquivo (deltas de byte e bloco) com rodapé de totais. | desativado |
 | `--content <path>` | Diff de texto unificado de um único arquivo. Somente texto; binários informam `Binary files differ`. | desativado |
+| `-o json` | Saída estruturada para agentes e scripts. | `table` |
 | `--fast` | Pule a etapa de confirmação de hash de conteúdo e confie no filtro de blocos. Mais rápido, mas pode sobre-relatar arquivos como Modified. | desativado |
 | `--debug` | Diagnósticos verbosos em stderr. | desativado |
 | `--skip-router-restart` | Pule a etapa de reinicialização do roteador. | desativado |
@@ -99,7 +102,7 @@ $ rdc repo diff test-1gb:fork1 --content hello.txt
 
 ### Filtrando JSON com jq
 
-`--json` emite o envelope estruturado em stdout, portanto é canalizado perfeitamente em `jq`:
+`-o json` emite o envelope estruturado em stdout, portanto é canalizado perfeitamente em `jq`:
 
 ```bash
 $ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
@@ -137,7 +140,7 @@ Cada linha contém o delta de byte e bloco do arquivo. Um rodapé relata a conta
 
 Um diff unificado padrão (cabeçalhos `---`/`+++`, chunks `@@`) para um arquivo de texto. Arquivos binários informam `Binary files differ` e não produzem chunks.
 
-### `--json`
+### `-o json`
 
 O resultado estruturado completo. Os dados vão para stdout; progresso e diagnósticos vão para stderr, portanto o JSON é canalizado perfeitamente em `jq` ou outro analisador mesmo enquanto o progresso está sendo impresso.
 

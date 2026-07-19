@@ -269,6 +269,7 @@ rdc backup strategy set weekly-cold \
 
 | オプション | 説明 |
 |-----------|------|
+| `<strategy>`（位置引数） | 戦略名（マシンバインディングに使用） |
 | `--destination <storage>` | アップロード先のストレージプロバイダ |
 | `--cron <expression>` | cron式（例：`"0 2 * * *"` で毎日午前2時） |
 | `--mode <hot\|cold>` | バックアップモード |
@@ -410,6 +411,8 @@ rdc repo migrate my-app@server-1 --to server-2
 
 | オプション | 説明 |
 |-----------|------|
+| `<ref>`（位置引数） | 移行するリポジトリの参照。`@machine`部分が移行元を指定 |
+| `--to <place>` | 宛先のマシンまたはクラスター |
 | `--provision` | 転送前に宛先でリポジトリをプロビジョニング |
 | `--checkpoint` | 移行前にCRIUチェックポイントを作成 |
 | `--skip-dns` | 移行後のDNSレコード更新をスキップ |

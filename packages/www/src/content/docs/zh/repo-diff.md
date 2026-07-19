@@ -32,10 +32,13 @@ rdc repo diff <fork> --base <repo>   # diff against an arbitrary related repo
 
 | 选项 | 说明 | 默认值 |
 |--------|-------------|---------|
+| `<ref>`(位置参数) | 要检查的仓库引用(目标、新的一侧)，必填。| 必填 |
+| `--base <ref>` | 用于比较的仓库(基准端,旧的一侧)。默认为从本地配置解析出的目标引用的父级。| 目标引用的父级 |
 | (无格式标志) | 名称状态输出:每个更改文件显示彩色的 `A` / `M` / `D` / `R` 字母加一行摘要。| 启用 |
 | `--name-only` | 每行一个更改路径,无状态字母。便于管道。| 禁用 |
 | `--stat` | 每个文件的更改幅度(字节和块增量)及总计页脚。| 禁用 |
 | `--content <path>` | 单个文件的统一文本差异。仅文本;二进制文件报告 `Binary files differ` 。| 禁用 |
+| `-o json` | 面向代理和脚本的结构化输出。| `table` |
 | `--fast` | 跳过内容哈希确认步骤,信任块筛选器。更快,但可能将文件过度报告为已修改。| 禁用 |
 | `--debug` | stderr上的详细诊断。| 禁用 |
 | `--skip-router-restart` | 跳过路由器重启步骤。| 禁用 |
@@ -99,7 +102,7 @@ $ rdc repo diff test-1gb:fork1 --content hello.txt
 
 ### 使用 jq 筛选JSON
 
-`--json` 在stdout上发出结构化信封,因此它可以干净地输入到 `jq` :
+`-o json` 在stdout上发出结构化信封,因此它可以干净地输入到 `jq` :
 
 ```bash
 $ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
@@ -137,7 +140,7 @@ $ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="
 
 单个文本文件的标准统一差异( `---` / `+++` 头部, `@@` 块)。二进制文件报告 `Binary files differ` 并产生无块。
 
-### `--json`
+### `-o json`
 
 完整的结构化结果。数据输出到stdout;进度和诊断输出到stderr,因此JSON可以干净地输入到 `jq` 或另一个解析器,即使进度正在打印。
 

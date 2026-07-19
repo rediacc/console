@@ -283,7 +283,14 @@ function stripInlineComment(text) {
     // parsed `>` and `out.json` as two positional args and reported a spurious
     // "excess positional" error -- a false positive, and a noisy gate is the
     // failure mode that gets gates suppressed.
-    if (!inQuote && (ch === '>' || ch === '|' || ch === ';')) {
+    // `>` must be WHITESPACE-PRECEDED to count as a redirect. Docs are full of
+    // `<ref>` / `<source>` / `<machine-name>` placeholders whose closing bracket
+    // is preceded by a letter; treating those as redirects truncated the command
+    // mid-placeholder and made every mandatory option after it look missing.
+    if (!inQuote && ch === '>' && ci > 0 && /\s/.test(text[ci - 1])) {
+      return text.slice(0, ci).trimEnd();
+    }
+    if (!inQuote && (ch === '|' || ch === ';')) {
       return text.slice(0, ci).trimEnd();
     }
     if (!inQuote && ch === '&' && text[ci + 1] === '&') {

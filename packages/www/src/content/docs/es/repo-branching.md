@@ -39,9 +39,9 @@ rdc repo commit <fork> --message "<message>"
 
 | Opción | Descripción | Predeterminado |
 |--------|-------------|----------------|
+| `<ref>` (posicional) | Bifurcación de trabajo a confirmar. Debe estar montada. Obligatorio. | obligatorio |
 | `--message <msg>` | Mensaje del commit. Obligatorio. | obligatorio |
 | `--author <author>` | Autor del commit registrado en los metadatos. | sin definir |
-| `-m, --machine <name>` | Máquina de destino. Obligatorio. | obligatorio |
 | `--debug` | Diagnósticos detallados en stderr. | desactivado |
 
 El nuevo commit se registra en la configuración local con `immutable: true`, y el `headCommit` de la bifurcación de trabajo avanza para apuntar a él. Confirmar un repositorio inmutable se rechaza: primero revíselo en una bifurcación escribible.
@@ -56,6 +56,7 @@ rdc repo branch <fork> --branch <name>
 
 | Opción | Descripción | Predeterminado |
 |--------|-------------|----------------|
+| `<ref>` (posicional) | Bifurcación de trabajo a cuyo commit actual apunta la rama. Obligatorio. | obligatorio |
 | `--branch <branch>` | Nombre de la nueva rama. Obligatorio. | obligatorio |
 
 Esta es una operación solo de configuración. No se realiza ningún trabajo en la máquina. La referencia de rama asigna un nombre al `headCommit` de la bifurcación de trabajo, por lo que la bifurcación debe tener al menos un commit primero.
@@ -71,8 +72,8 @@ rdc repo checkout <branchName> --from <fork> --tag <newFork>
 
 | Opción | Descripción | Predeterminado |
 |--------|-------------|----------------|
+| `<commit-or-branch-ref>` (posicional) | GUID del commit a revisar, o un nombre de rama cuando se indica `--from`. Obligatorio. | obligatorio |
 | `--tag <name>` | Nombre para la nueva bifurcación de trabajo escribible. Obligatorio. | obligatorio |
-| `-m, --machine <name>` | Máquina de destino. Obligatorio. | obligatorio |
 | `--from <workingFork>` | Resuelve `--ref` como nombre de rama en el conjunto de ramas de esta bifurcación de trabajo. | commit directo |
 | `--debug` | Diagnósticos detallados en stderr. | desactivado |
 | `--skip-router-restart` | Omitir el paso de reinicio del router. | desactivado |
@@ -89,7 +90,8 @@ rdc repo log <fork>
 
 | Opción | Descripción | Predeterminado |
 |--------|-------------|----------------|
-| `-m, --machine <name>` | Máquina de destino. Obligatorio. | obligatorio |
+| `<ref>` (posicional) | Bifurcación de trabajo o commit desde donde iniciar el recorrido del historial. Obligatorio. | obligatorio |
+| `-o json` | Muestra el historial de commits como JSON. | `table` |
 | `--debug` | Diagnósticos detallados en stderr. | desactivado |
 
 `log` recorre la cadena de padres registrada por `rdc repo commit`, leyendo el espejo de estado fuera del volumen, por lo que ningún commit se desbloquea ni se monta. Es de solo lectura.
@@ -105,8 +107,8 @@ rdc repo merge <target> --from <source> --resolve theirs
 
 | Opción | Descripción | Predeterminado |
 |--------|-------------|----------------|
+| `<ref>` (posicional) | Bifurcación de trabajo de destino en la que fusionar. Obligatorio. | obligatorio |
 | `--from <source>` | Commit fuente o bifurcación desde donde fusionar. Obligatorio. | obligatorio |
-| `-m, --machine <name>` | Máquina de destino. Obligatorio. | obligatorio |
 | `--force` | Aquietar primero un destino montado o en ejecución y luego fusionar. Nunca muta un montaje activo. | desactivado |
 | `--resolve <ours\|theirs>` | Fusión de tres vías por archivo: incorpora los cambios por archivo del fuente en el destino, conservando (`ours`) o tomando (`theirs`) la versión del fuente para los archivos cambiados en ambos lados. Omitir para tomar el fuente en su totalidad. | desactivado |
 | `--base <guid>` | Commit ancestro común para la fusión de tres vías (se usa con `--resolve`). Por defecto es el padre del commit fuente o el commit actual del destino. | automático |
@@ -208,7 +210,7 @@ commit 9d8e7a1b2c3d
 
 ### Historial como JSON
 
-`--json` emite el recorrido estructurado, el más reciente primero:
+`-o json` emite el recorrido estructurado, el más reciente primero:
 
 ```bash
 $ rdc repo log myapp:work -o json
