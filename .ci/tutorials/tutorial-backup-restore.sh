@@ -76,7 +76,7 @@ run_cmd "rdc repo push my-app --to my-storage"
 pause 2
 
 section "Step 3: List the backups"
-run_cmd "rdc backup list --storage my-storage
+run_cmd "rdc backup list --storage my-storage"
 
 pause 2
 
