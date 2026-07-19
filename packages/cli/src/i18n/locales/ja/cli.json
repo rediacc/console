@@ -29,6 +29,11 @@
         "description": "リモートマシンのバックアップ状態とタイマー状態を表示"
       },
       "strategy": {
+        "bind": {
+          "alreadyBound": "バックアップ戦略 \"{{strategy}}\" は既にマシン \"{{machine}}\" に紐付けられています",
+          "bound": "バックアップ戦略 \"{{strategy}}\" をマシン \"{{machine}}\" に紐付けました",
+          "description": "バックアップ戦略をマシンに紐付け、そのスケジュールをそこにデプロイする"
+        },
         "description": "名前付きバックアップ戦略を管理（ホット/コールドモード、宛先、スケジュール）",
         "list": {
           "description": "すべてのバックアップ戦略を一覧表示"
@@ -63,6 +68,11 @@
           "noDestinations": "  送信先: (なし)",
           "notConfigured": "バックアップ戦略が設定されていません",
           "notFound": "バックアップ戦略 \"{{name}}\" が見つかりません"
+        },
+        "unbind": {
+          "description": "バックアップ戦略をマシンから切り離す",
+          "notBound": "バックアップ戦略 \"{{strategy}}\" はマシン \"{{machine}}\" に紐付けられていません",
+          "unbound": "バックアップ戦略 \"{{strategy}}\" をマシン \"{{machine}}\" から切り離しました"
         }
       },
       "descriptionShort": "バックアップを管理する",
@@ -310,15 +320,20 @@
         "description": "~/.config/rediacc/<config>.json にあるローカル設定ファイルから不要な要素を削除します。3つのバケットがクリーンアップされ、すべて純粋にローカルです（SSH/renet 呼び出しなし）：(1) アンカー GUID/repo/machine がアクティブな設定にない ACME 証明書キャッシュエントリ；(2) 猶予期間が経過したアーカイブ済みリポジトリ（デフォルト 7 日、defaults.pruneGraceDays 参照）；(3) ぶら下がりクロスリファレンス（machine→strategy、strategy→repo）。使用中のリソース、認証情報、ストレージトークン、known-hosts は触れません。デフォルトでは変更が適用されます；--dry-run でプレビューのみ。",
         "descriptionShort": "ローカル設定ファイルから古い残留物を一掃する",
         "droppedRefs": "{{count}} 件のぶら下がりクロスリファレンスが{{verb}}削除されました：",
+        "droppedStateRepos": "{{count}} 件の孤立したステートレコードが{{verb}}削除されました（対応するリポジトリエントリなし）：",
         "dryRun": "ドライラン: {{count}} 件の変更が適用されます。コミットするには --dry-run なしで再実行してください。",
         "dryRunOption": "設定ファイルを変更せずに削除される内容をプレビューします。他の prune コマンドのデフォルトオフセマンティクスを反映します。",
+        "foundOrphanRepos": "{{count}} 件のリポジトリエントリがどのマシンにも配置されていません：",
         "graceDaysOption": "この呼び出しのアーカイブ猶予期間（日数）を上書きします。設定の defaults.pruneGraceDays にフォールバックし、どちらも設定されていない場合は 7 にフォールバックします。",
         "keptArchivesInGrace": "猶予期間内のアーカイブ済みリポジトリを保持（'rdc repo admin archive restore' で復元可能）：",
         "nothingToPrune": "クリーンアップするものはありません。設定はすでにクリーンです。",
+        "orphanReposHint": "'rdc config reconcile' を実行すると、マシンの情報から配置が導出されます。実行後もまだ一覧に残っているエントリは本当に配置先がないため、'rdc config prune --orphan-repos' で削除してください。",
+        "orphanReposOption": "どのマシンにも配置されていないリポジトリエントリを削除します。各エントリにはそのリポジトリの認証情報と SSH キーが保持されているため、この操作は復元できません。先に 'rdc config reconcile' を実行し、配置情報をマシンの状態に反映させてください。",
         "purgeArchivedOption": "猶予期間を過ぎたものだけでなく、経過期間に関係なくアーカイブ済みリポジトリをすべて削除する。すべてのアーカイブ済みリポジトリに対して 'rdc repo admin archive purge' を実行するのと同等。復元用に保存された認証情報が一切不要だと確信できる場合のみ使用すること",
         "purgedArchives": "{{count}} 件の期限切れアーカイブ済みリポジトリが{{verb}}削除されました：",
         "refsOnlyOption": "ぶら下がりクロスリファレンス（machine→strategy、strategy→repo excludes/includes）に制限します。証明書キャッシュとアーカイブをスキップします。--certs-only および --archives-only と排他的。",
         "removedCerts": "{{count}} 件の証明書キャッシュエントリが{{verb}}削除されました：",
+        "removedOrphanRepos": "{{count}} 件のリポジトリエントリ（どのマシンにも配置されていません）が{{verb}}削除されました：",
         "scanning": "古い残留物のためにローカル設定をスキャンしています...",
         "tooManyOnlyFlags": "--certs-only / --archives-only / --refs-only のうち最大 1 つを渡してください。"
       },
@@ -699,6 +714,9 @@
         "previewEmpty": "孤立したデータストアリソースは見つかりませんでした",
         "pruneUnknownOption": "renet .interim/state ミラーが分類できないリポジトリのみを削除します（ローカル設定になく、かつフォークマークされたミラーがない）。--orphaned-repos より厳密に狭い：ミラーがそれらを識別する場合、設定なしのフォークは保持されます。プレミラーレガシー孤児と設定エントリが削除された古い grands は両方ともこのバケットに入ります。",
         "startingDatastore": "{{machine}} 上の孤立したデータストアリソースをスキャン中...",
+        "startingUnits": "{{machine}} 上の孤立した systemd ユニットをスキャン中...",
+        "unitsCompleted": "ユニットの整理が完了しました",
+        "unitsFailed": "ユニットの整理に失敗しました",
         "unknownCompleted": "{{count}} 件の不明なリポジトリをクリーンアップしました",
         "unknownFound": "{{count}} 件の不明なリポジトリが見つかりました（マウント安全チェック後に {{deletable}} 件削除可能）",
         "unknownStarting": "{{machine}} で不明なリポジトリをスキャンしています（ローカル設定になし + フォークマークされたミラーなし）..."
@@ -808,7 +826,8 @@
         "completed": "{{count}}/{{total}} 台のマシンをスキャン済み",
         "description": "現在の設定のマシンの SSH ホストキーをスキャンする",
         "keysScanned": "\"{{name}}\" のホストキーをスキャンしました",
-        "noKeys": "\"{{name}}\" のホストキーをスキャンできませんでした"
+        "noKeys": "\"{{name}}\" のホストキーをスキャンできませんでした",
+        "replaced": "\"{{name}}\" のホストキー: 既存の鍵 {{count}} 件が置き換えられました - 下記のフィンガープリントを別の経路で必ず確認してください"
       },
       "setup": {
         "completed": "マシン \"{{machine}}\" のセットアップが完了しました",
@@ -1487,7 +1506,7 @@
       "batchNeedRefOrAll": "リポジトリ ref を指定する（repo {{verb}} <ref>）か、バッチ形式 repo {{verb}} --all -m <machine> を使用してください",
       "batchRefConflict": "リポジトリ ref はそれ自体でマシンを決定します。--all と --machine はバッチ形式専用です: repo {{verb}} --all -m <machine>",
       "exec": {
-        "cmdArgument": "-- の後に実行するコマンド",
+        "cmdArgument": "実行するコマンド: -- 以降はすべてそのままコンテナに渡されるため、CLI フラグ（-c、-i、-u、--debug）は -- より前に置く必要がある",
         "containerOption": "実行対象のコンテナ（リポジトリが複数のコンテナを実行している場合のみ必要）",
         "description": "リポジトリのコンテナ内でコマンドを実行する。コマンド自身の終了コードがそのまま返されるため、スクリプトや条件分岐でも利用できる。Docker リポジトリではリポジトリの Docker デーモン経由で実行され、Kubernetes リポジトリではリポジトリの namespace 内で実行される",
         "descriptionShort": "リポジトリのコンテナ内でコマンドを実行する",
@@ -1495,7 +1514,8 @@
         "userOption": "コマンドを実行するユーザー",
         "examples": {
           "basic": "リポジトリのコンテナ内でコマンドを実行する",
-          "interactive": "コンテナ内で対話的シェルを開く"
+          "interactive": "コンテナ内で対話的シェルを開く",
+          "separator": "リモートコマンドにフラグを渡す: -- の後に置き、CLI 自身のフラグはその前に保つ"
         }
       },
       "logs": {
@@ -2160,7 +2180,7 @@
       "create": "暗号化リポジトリを作成",
       "down": "サービスを停止",
       "fork": "テスト用CoWフォーク",
-      "keyConcepts": "\n主要概念:\n\n  Compose と Rediaccfile\n    • renet compose -- up -d を使用する（生の docker compose は使わない）。-- セパレータは必須\n    • Rediaccfile は up() と down() 関数を定義する必要があります。up() では: ディレクトリ作成、設定生成、コンテナ起動を行うべきです\n    • compose の ports: は無視されます（network_mode:host）。外部アクセスには rediacc.service_port ラベルを使用してください\n    • restart: always/unless-stopped は renet によって自動的に取り除かれ .rediacc.json に保存されます — ルーターの watchdog が停止したサービスを自動復旧します\n    • 各サービスはループバック IP を取得します。eBPF バインド書き換えが分離を透過的に処理するため、アプリは 0.0.0.0 にバインドできます\n    • 隣接サービスに接続するにはそのサービス名を使用してください（例: \"db\"、\"redis\"）— renet がすべてのサービス名をホスト名として注入します。データベース内に保存する接続文字列に ${DB_IP} を直接埋め込まないでください — IP が固定化されフォーク分離が壊れます（検証エラー）\n    • ヘルスチェックには localhost を使用できます。例: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  ストレージ\n    • ${REDIACC_WORKING_DIR}/data、${REDIACC_WORKING_DIR}/config などへバインドマウントしてください\n    • 例: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker の named volume はフォークとバックアップから除外されます\n    • コンテナにバインドマウントされる設定ファイルは、コンテナが非デフォルト UID で実行される場合 world-readable（644）である必要があります\n\n  ルーティング\n    • Grand リポジトリの自動ルート: https://{service}.{repo}.{machine}.{baseDomain}（ワイルドカード証明書 *.{repo}.{machine}.{baseDomain} は最初の repo up 時に Traefik が自動プロビジョニング）\n    • フォークの自動ルート: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain}（親リポジトリのワイルドカード証明書を使用、レート制限への影響なし）\n    • カスタムドメイン: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP フォワーディング: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • カスタムドメイン（rediacc.domain ラベル）はフォークでは無視されます — ドメインは Grand リポジトリに属します\n\n  ライフサイクル\n    • repo delete は完全にクリーンアップします: ストレージ、Docker daemon、ループバック IP、systemd ユニット\n    • repo down はコンテナを停止しますが Docker daemon と IP は保持します（repo up で素早く再起動可能）\n    • condition: service_healthy を伴う depends_on は起動順序を処理しますが、ランタイムの復旧は処理しません\n    • データベースが正常終了（exit 0）した場合、依存サービスはクラッシュループに陥ります。対処: rdc repo up <repo-ref>\n    • 自動起動: rdc repo admin autostart enable <repo-ref> — マシン起動時にリポジトリを自動マウントして起動します\n    • 予約バックアップはフォークリポジトリを自動的にスキップします。手動でフォークをバックアップするには rdc repo push <repo-ref> --to <remote> を使用してください\n    • rdc repo promote <fork-ref> — 本番データをフォークのデータで置き換えます（ID は保持）。元に戻すには: rdc repo promote <backup-fork-ref>\n\n  命名とターゲット指定\n    • Grand（本番）リポジトリ: <repo> として参照します。<repo>:latest も同義です（latest がデフォルトタグ）。裸の ref は設定キーに完全一致すればそれに解決され、なければ <repo>:latest にフォールバックします\n    • フォーク: 常に latest 以外のタグを付けた <repo>:<tag> で参照します（例: app:test）。up/down/delete/term/sync はすべて同じ <repo>:<tag> を受け取ります\n    • つまり `app` は GRAND を対象とし、`app:test` はその FORK を対象とします。フォークを操作する際は必ずタグを含めてください — 唯一の曖昧なケースは、フォークが誤って裸/latest の名前で登録されている場合です\n    • エージェントはフォークのみを変更できます。Grand リポジトリは保護されており（オーバーライドは REDIACC_ALLOW_GRAND_REPO のみで可能。これはセッション開始前にオペレーターが設定する必要があります）、フォークは安全で使い捨て可能な単位です\n",
+      "keyConcepts": "\n主要概念:\n\n  Compose と Rediaccfile\n    • renet compose -- up -d を使用する（生の docker compose は使わない）。-- セパレータは必須\n    • rdc repo exec <ref> [CLI フラグ] -- <remote cmd>: -- の後はすべてそのままコンテナに渡されるため、-c/-i/-u/--debug は -- より前に置く。-- の後に書いた --debug はリモートコマンドに渡され、CLI のデバッグ出力を有効にすることはない\n    • Rediaccfile は up() と down() 関数を定義する必要があります。up() では: ディレクトリ作成、設定生成、コンテナ起動を行うべきです\n    • compose の ports: は無視されます（network_mode:host）。外部アクセスには rediacc.service_port ラベルを使用してください\n    • restart: always/unless-stopped は renet によって自動的に取り除かれ .rediacc.json に保存されます — ルーターの watchdog が停止したサービスを自動復旧します\n    • 各サービスはループバック IP を取得します。eBPF バインド書き換えが分離を透過的に処理するため、アプリは 0.0.0.0 にバインドできます\n    • 隣接サービスに接続するにはそのサービス名を使用してください（例: \"db\"、\"redis\"）— renet がすべてのサービス名をホスト名として注入します。データベース内に保存する接続文字列に ${DB_IP} を直接埋め込まないでください — IP が固定化されフォーク分離が壊れます（検証エラー）\n    • ヘルスチェックには localhost を使用できます。例: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  ストレージ\n    • ${REDIACC_WORKING_DIR}/data、${REDIACC_WORKING_DIR}/config などへバインドマウントしてください\n    • 例: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker の named volume はフォークとバックアップから除外されます\n    • コンテナにバインドマウントされる設定ファイルは、コンテナが非デフォルト UID で実行される場合 world-readable（644）である必要があります\n\n  ルーティング\n    • Grand リポジトリの自動ルート: https://{service}.{repo}.{machine}.{baseDomain}（ワイルドカード証明書 *.{repo}.{machine}.{baseDomain} は最初の repo up 時に Traefik が自動プロビジョニング）\n    • フォークの自動ルート: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain}（親リポジトリのワイルドカード証明書を使用、レート制限への影響なし）\n    • カスタムドメイン: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP フォワーディング: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • カスタムドメイン（rediacc.domain ラベル）はフォークでは無視されます — ドメインは Grand リポジトリに属します\n\n  ライフサイクル\n    • repo delete は完全にクリーンアップします: ストレージ、Docker daemon、ループバック IP、systemd ユニット\n    • repo down はコンテナを停止しますが Docker daemon と IP は保持します（repo up で素早く再起動可能）\n    • condition: service_healthy を伴う depends_on は起動順序を処理しますが、ランタイムの復旧は処理しません\n    • データベースが正常終了（exit 0）した場合、依存サービスはクラッシュループに陥ります。対処: rdc repo up <repo-ref>\n    • 自動起動: rdc repo admin autostart enable <repo-ref> — マシン起動時にリポジトリを自動マウントして起動します\n    • 予約バックアップはフォークリポジトリを自動的にスキップします。手動でフォークをバックアップするには rdc repo push <repo-ref> --to <remote> を使用してください\n    • rdc repo promote <fork-ref> — 本番データをフォークのデータで置き換えます（ID は保持）。元に戻すには: rdc repo promote <backup-fork-ref>\n\n  命名とターゲット指定\n    • Grand（本番）リポジトリ: <repo> として参照します。<repo>:latest も同義です（latest がデフォルトタグ）。裸の ref は設定キーに完全一致すればそれに解決され、なければ <repo>:latest にフォールバックします\n    • フォーク: 常に latest 以外のタグを付けた <repo>:<tag> で参照します（例: app:test）。up/down/delete/term/sync はすべて同じ <repo>:<tag> を受け取ります\n    • つまり `app` は GRAND を対象とし、`app:test` はその FORK を対象とします。フォークを操作する際は必ずタグを含めてください — 唯一の曖昧なケースは、フォークが誤って裸/latest の名前で登録されている場合です\n    • エージェントはフォークのみを変更できます。Grand リポジトリは保護されており（オーバーライドは REDIACC_ALLOW_GRAND_REPO のみで可能。これはセッション開始前にオペレーターが設定する必要があります）、フォークは安全で使い捨て可能な単位です\n",
       "up": "自動マウントでデプロイ"
     },
     "sync": {

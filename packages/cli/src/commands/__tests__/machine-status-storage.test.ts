@@ -174,9 +174,15 @@ describe('fragmentationPerGb', () => {
 describe('table/JSON section parity guard', () => {
   // Every data-bearing ListResult section must be classified: either rendered as
   // a table section, or explicitly JSON-only (a conscious decision). This object
-  // is typed `Record<keyof ListResult, ...>`, so adding a new section to
-  // ListResult (via renet type regen) FAILS TO COMPILE until it is classified
-  // here — preventing a section from silently becoming JSON-only.
+  // is typed `Record<keyof ListResult, ...>` so that adding a section to
+  // ListResult forces a decision here.
+  //
+  // CAVEAT, verified 2026-07-18: that enforcement does NOT currently work.
+  // packages/cli/tsconfig.json excludes `**/*.test.ts`, and `npm run typecheck`
+  // is plain `tsc --noEmit` over that config, so this file is never typechecked
+  // and a missing key cannot fail a build. Adding `backup_coverage` produced no
+  // error until it was added by hand. Treat this list as a manual checklist
+  // until tests are typechecked (e.g. vitest --typecheck or a test tsconfig).
   const SECTION_COVERAGE: Record<keyof ListResult, 'table' | 'json-only'> = {
     system: 'table',
     repositories: 'table',
@@ -187,19 +193,22 @@ describe('table/JSON section parity guard', () => {
     network: 'table',
     block_devices: 'table',
     license_statuses: 'table',
-    // health_drift is surfaced via `--strict` (non-zero exit + stderr message),
-    // not as a table — a deliberate exception, not a silent drop.
-    health_drift: 'json-only',
+    health_drift: 'table',
+    backup_coverage: 'table',
   };
 
   it('renders storage_health in the table (the gap this change closes)', () => {
     expect(SECTION_COVERAGE.storage_health).toBe('table');
   });
 
-  it('keeps health_drift as the only intentionally JSON-only section', () => {
+  // health_drift used to be the one JSON-only section, visible only via
+  // `--strict`. The watchdog maintains it to catch containers failing their
+  // healthchecks for days; a signal you must already suspect to see is not a
+  // signal. --strict still governs the exit code, but the data is now shown.
+  it('leaves no section JSON-only', () => {
     const jsonOnly = Object.entries(SECTION_COVERAGE)
       .filter(([, mode]) => mode === 'json-only')
       .map(([key]) => key);
-    expect(jsonOnly).toEqual(['health_drift']);
+    expect(jsonOnly).toEqual([]);
   });
 });

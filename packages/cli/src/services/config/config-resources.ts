@@ -554,7 +554,7 @@ class ConfigService extends ConfigServiceBase {
     };
     if (!Object.hasOwn(strategies, strategyName)) {
       throw new Error(
-        `Backup strategy "${strategyName}" not found. Create it first with: rdc config backup-strategy set --name ${strategyName} --cron "..."`
+        `Backup strategy "${strategyName}" not found. Create it first with: rdc backup strategy set ${strategyName} --cron "..."`
       );
     }
     const strategy = strategies[strategyName];

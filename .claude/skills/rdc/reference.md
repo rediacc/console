@@ -150,6 +150,16 @@ Show a machine's system, repositories, containers, and services.
 
 > MCP tool
 
+### rdc machine health <name>
+
+Check machine health for CI/CD pipelines
+
+**Options:**
+
+- `-t, --team <name>` — Team name
+
+> MCP tool
+
 ### rdc machine provision <name>
 
 Provision a new machine on a cloud provider using OpenTofu
@@ -313,6 +323,26 @@ Create or update a backup strategy
 - `--folder <path>` — Subfolder under the storage bucket for this destination (e.g. hot, cold)
 - `--enable` — Enable the strategy or destination
 - `--disable` — Disable the strategy or destination
+
+> MCP excluded: Backup policy mutation; use CLI directly.
+
+### rdc backup strategy bind <strategy>
+
+Bind a backup strategy to a machine so its schedule is deployed there
+
+**Options:**
+
+- `-m, --machine <name>` — Target machine name
+
+> MCP excluded: Backup policy mutation; use CLI directly.
+
+### rdc backup strategy unbind <strategy>
+
+Unbind a backup strategy from a machine
+
+**Options:**
+
+- `-m, --machine <name>` — Target machine name
 
 > MCP excluded: Backup policy mutation; use CLI directly.
 
@@ -1510,6 +1540,7 @@ Remove dead weight from the local config file at ~/.config/rediacc/<config>.json
 - `--archives-only` — Restrict to expired-archive purging. Skips cert-cache and cross-reference cleanup. Mutually exclusive with --certs-only and --refs-only.
 - `--refs-only` — Restrict to dangling cross-references (machine→strategy, strategy→repo excludes/includes). Skips cert-cache and archives. Mutually exclusive with --certs-only and --archives-only.
 - `--purge-archived` — Drop ALL archived repositories regardless of age, not just those past grace. Equivalent to running 'rdc repo admin archive purge' for every archived repo. Use only when you're sure you don't need any of the stashed credentials for restore.
+- `--orphan-repos` — Remove repository entries that are placed on no machine. Each entry holds that repo's credential and SSH key, so this is unrecoverable — run 'rdc config reconcile' first so placement reflects the machines.
 - `--grace-days <days>` — Override the archive grace window (in days) for this invocation. Falls back to defaults.pruneGraceDays in the config, then to 7 if neither is set.
 
 > MCP tool

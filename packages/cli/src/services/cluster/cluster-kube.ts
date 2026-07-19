@@ -149,7 +149,7 @@ export async function assertDestNotRunningOwnK3s(
         `running its own k3s control plane (${controlDatastore(destCluster)} at ${ownMount}). The ` +
         `fork's control plane binds the same :${API_PORT} and would collide. Fork onto a BARE ` +
         `destination — tear the destination cluster's control plane down first ` +
-        `(rdc cluster destroy --name ${destCluster}, or uninstall its k3s) — then retry.`
+        `(rdc cluster destroy ${destCluster}, or uninstall its k3s) — then retry.`
     );
   }
 }

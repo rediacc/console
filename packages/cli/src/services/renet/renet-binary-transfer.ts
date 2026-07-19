@@ -13,6 +13,7 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import type { SFTPClient, SFTPClientConfig } from '../../remote/sftp/index.js';
 import { createTempSSHKeyFile, removeTempSSHKeyFile } from '../../remote/ssh/index.js';
 import { executeRsync, getRsyncCommand } from '../../remote/sync/index.js';
+import { shellQuote } from '../../utils/shell-quote.js';
 import { outputService } from '../core/output.js';
 
 /** Remote install layout needed to locate delta-sync seed binaries */
@@ -26,10 +27,6 @@ export interface RemoteRenetPaths {
 interface RemoteSeedCandidate {
   path: string;
   source: 'current' | 'slot';
-}
-
-export function shellEscape(v: string): string {
-  return `'${v.replaceAll("'", `'\\''`)}'`;
 }
 
 /**
@@ -90,7 +87,7 @@ async function tryDeltaSyncStage(
       `Seeding remote renet from ${seedCandidate.source === 'current' ? 'current slot' : 'existing slot'}...`
     );
     await sftp.exec(
-      `cp -f ${shellEscape(seedCandidate.path)} ${shellEscape(stagingPath)} && chmod 600 ${shellEscape(stagingPath)}`
+      `cp -f ${shellQuote(seedCandidate.path)} ${shellQuote(stagingPath)} && chmod 600 ${shellQuote(stagingPath)}`
     );
     outputService.info(`Syncing renet delta to ${config.host}...`);
     await deltaSyncBinary(config, binary, stagingPath, remoteRsyncPath);
@@ -115,7 +112,7 @@ async function tryDeltaSyncStage(
 
 async function cleanupStagingPath(sftp: SFTPClient, stagingPath: string): Promise<void> {
   try {
-    await sftp.exec(`rm -f ${shellEscape(stagingPath)}`);
+    await sftp.exec(`rm -f ${shellQuote(stagingPath)}`);
   } catch {
     // Best-effort cleanup only.
   }
@@ -126,7 +123,7 @@ async function findRemoteSeedCandidate(
   paths: RemoteRenetPaths
 ): Promise<RemoteSeedCandidate | null> {
   const currentTarget = (
-    await sftp.exec(`readlink ${shellEscape(paths.currentPath)} 2>/dev/null || true`)
+    await sftp.exec(`readlink ${shellQuote(paths.currentPath)} 2>/dev/null || true`)
   ).trim();
   if (currentTarget) {
     return { path: currentTarget, source: 'current' };
@@ -134,7 +131,7 @@ async function findRemoteSeedCandidate(
 
   const firstSlot = (
     await sftp.exec(
-      `find ${shellEscape(paths.installRoot)} -mindepth 2 -maxdepth 2 -type f -name renet 2>/dev/null | head -n 1`
+      `find ${shellQuote(paths.installRoot)} -mindepth 2 -maxdepth 2 -type f -name renet 2>/dev/null | head -n 1`
     )
   ).trim();
   if (firstSlot) {
@@ -198,7 +195,7 @@ async function deltaSyncBinary(
 
 async function getRemoteFileHash(sftp: SFTPClient, remotePath: string): Promise<string | null> {
   const output = await sftp.exec(
-    `sha256sum ${shellEscape(remotePath)} 2>/dev/null | cut -d' ' -f1 || true`
+    `sha256sum ${shellQuote(remotePath)} 2>/dev/null | cut -d' ' -f1 || true`
   );
   const hash = output.trim();
   return hash || null;

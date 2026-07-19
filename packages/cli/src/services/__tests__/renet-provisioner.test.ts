@@ -528,10 +528,32 @@ describe('RenetProvisionerService', () => {
       }
     ).buildLockedInstallCommand('/tmp/staging-renet', 'local-hash', remoteInstallPath);
 
-    expect(command).toContain("flock -w 120 '/tmp/.rdc-renet-provision.lock' sh -c");
+    expect(command).toContain("flock -w 120 -E 75 '/tmp/.rdc-renet-provision.lock' sh -c");
     expect(command).toContain("'set -eu;");
     expect(command).not.toContain('pipefail');
     expect(command).toContain('/usr/lib/rediacc/renet/current/renet');
+  });
+
+  it('gives a lock timeout its own exit status and marker', async () => {
+    // Without `-E`, flock's timeout exits 1, which the install body can also
+    // produce: a machine busy with someone else's provision was reported as
+    // "Unexpected provisioning result: (empty output)" and read as a broken
+    // install rather than as contention.
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
+    const command = (
+      renetProvisioner as unknown as {
+        buildLockedInstallCommand: (
+          stagingPath: string,
+          localHash: string,
+          remoteInstallPath: string
+        ) => string;
+      }
+    ).buildLockedInstallCommand('/tmp/staging-renet', 'local-hash', remoteInstallPath);
+
+    expect(command).toContain('-E 75');
+    expect(command).toContain('[ "$rc" = 75 ] && echo FLOCK_TIMEOUT >&2');
+    // The body's own status must still propagate untouched.
+    expect(command).toContain('exit "$rc"');
   });
 
   it('marks verified when only the current pointer changes', async () => {

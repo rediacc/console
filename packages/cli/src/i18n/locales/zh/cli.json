@@ -29,6 +29,11 @@
         "description": "显示远程机器上的备份状态和定时器状态"
       },
       "strategy": {
+        "bind": {
+          "alreadyBound": "备份策略 \"{{strategy}}\" 已经绑定到机器 \"{{machine}}\"",
+          "bound": "备份策略 \"{{strategy}}\" 已绑定到机器 \"{{machine}}\"",
+          "description": "将备份策略绑定到机器，以便其调度部署到该机器"
+        },
         "description": "管理命名备份策略（热/冷模式、目标、调度）",
         "list": {
           "description": "列出所有备份策略"
@@ -63,6 +68,11 @@
           "noDestinations": "  目标: (无)",
           "notConfigured": "未配置备份策略",
           "notFound": "备份策略 \"{{name}}\" 未找到"
+        },
+        "unbind": {
+          "description": "将备份策略从机器解绑",
+          "notBound": "备份策略 \"{{strategy}}\" 未绑定到机器 \"{{machine}}\"",
+          "unbound": "备份策略 \"{{strategy}}\" 已从机器 \"{{machine}}\" 解绑"
         }
       },
       "restore": {
@@ -310,15 +320,20 @@
         "description": "从 ~/.config/rediacc/<config>.json 中的本地配置文件中移除无用内容。清理三类内容，全部为纯本地操作（无 SSH/renet 调用）：（1）锚点 GUID/仓库/机器不再存在于活动配置中的 ACME 证书缓存条目；（2）宽限期已过期的归档仓库（默认 7 天，参见 defaults.pruneGraceDays）；（3）悬空的交叉引用（machine→strategy、strategy→repo）。在用资源、凭据、存储令牌和 known-hosts 永远不会被触及。默认行为是应用更改；使用 --dry-run 仅预览。",
         "descriptionShort": "清理本地配置文件中的过时残留",
         "droppedRefs": "{{count}} 个悬空交叉引用{{verb}}移除：",
+        "droppedStateRepos": "{{count}} 条孤立状态记录（无匹配的仓库条目）{{verb}}丢弃：",
         "dryRun": "试运行：将应用 {{count}} 项更改。不带 --dry-run 重新运行以提交。",
         "dryRunOption": "预览将要移除的内容，但不修改配置文件。镜像其他 prune 命令的默认关闭语义。",
+        "foundOrphanRepos": "{{count}} 个仓库条目未部署在任何机器上：",
         "graceDaysOption": "覆盖此调用的归档宽限窗口（以天为单位）。回退到配置中的 defaults.pruneGraceDays，如果都未设置则回退到 7。",
         "keptArchivesInGrace": "保留仍在宽限期内的归档仓库（可通过 'rdc repo admin archive restore' 恢复）：",
         "nothingToPrune": "无需清理，配置已经干净。",
+        "orphanReposHint": "运行 'rdc config reconcile' 以根据你的机器推导部署位置；此后仍列出的条目才是真正未部署的，使用 'rdc config prune --orphan-repos' 移除。",
+        "orphanReposOption": "移除未部署在任何机器上的仓库条目。每个条目都保存着该仓库的凭据和 SSH 密钥，因此该操作不可恢复，请先运行 'rdc config reconcile'，使部署信息与机器实际状态保持一致。",
         "purgeArchivedOption": "无论年龄如何，删除所有归档仓库，而不仅仅是超过宽限期的仓库。等同于对每个归档仓库运行 'rdc repo admin archive purge'。仅在确定不需要任何已保存的凭据进行恢复时使用。",
         "purgedArchives": "{{count}} 个过期归档仓库{{verb}}移除：",
         "refsOnlyOption": "限制为悬空交叉引用（machine→strategy、strategy→repo 排除/包含）。跳过证书缓存和归档。与 --certs-only 和 --archives-only 互斥。",
         "removedCerts": "{{count}} 个证书缓存条目{{verb}}移除：",
+        "removedOrphanRepos": "{{count}} 个仓库条目（未部署在任何机器上）{{verb}}移除：",
         "scanning": "正在扫描本地配置中的过时残留...",
         "tooManyOnlyFlags": "最多传递 --certs-only / --archives-only / --refs-only 中的一个。"
       },
@@ -699,6 +714,9 @@
         "previewEmpty": "未找到孤立的数据存储资源",
         "pruneUnknownOption": "仅删除 renet .interim/state 镜像无法分类的仓库（不在本地配置中且没有标记为 fork 的镜像）。比 --orphaned-repos 严格更窄：镜像识别时保留没有配置的 fork。镜像前的遗留孤儿和配置条目已删除的过时 grands 都属于此类别。",
         "startingDatastore": "正在扫描 {{machine}} 上的孤立数据存储资源...",
+        "startingUnits": "正在扫描 {{machine}} 上的孤立 systemd 单元...",
+        "unitsCompleted": "单元清理完成",
+        "unitsFailed": "单元清理失败",
         "unknownCompleted": "已清理 {{count}} 个未知仓库",
         "unknownFound": "找到 {{count}} 个未知仓库（挂载安全检查后 {{deletable}} 个可删除）",
         "unknownStarting": "正在 {{machine}} 上扫描未知仓库（不在本地配置中 + 没有标记为 fork 的镜像）..."
@@ -808,7 +826,8 @@
         "completed": "已扫描 {{count}}/{{total}} 台机器",
         "description": "扫描当前配置中机器的 SSH 主机密钥",
         "keysScanned": "已扫描 \"{{name}}\" 的主机密钥",
-        "noKeys": "无法扫描 \"{{name}}\" 的主机密钥"
+        "noKeys": "无法扫描 \"{{name}}\" 的主机密钥",
+        "replaced": "\"{{name}}\" 的主机密钥：{{count}} 个现有密钥已被替换 - 请务必通过其他可信渠道核实下方的指纹"
       },
       "setup": {
         "completed": "机器 \"{{machine}}\" 设置成功",
@@ -1484,14 +1503,15 @@
       },
       "exec": {
         "description": "在仓库容器内运行命令。命令自身的退出码会原样透传，因此可用于脚本和条件判断。docker 仓库通过其 Docker 守护进程运行命令；kubernetes 仓库在其命名空间中运行命令。",
-        "cmdArgument": "要运行的命令，置于 -- 之后",
+        "cmdArgument": "要运行的命令：-- 之后的所有内容会原样发送给容器，因此 CLI 标志（-c、-i、-u、--debug）必须放在 -- 之前",
         "containerOption": "要在其中运行的容器（仅当仓库运行多个容器时才需要）",
         "interactiveOption": "分配终端（用于需要终端的命令）",
         "userOption": "以哪个用户身份运行命令",
         "descriptionShort": "在仓库容器内运行命令",
         "examples": {
           "basic": "在仓库容器内执行命令。",
-          "interactive": "在容器中打开交互式 shell。"
+          "interactive": "在容器中打开交互式 shell。",
+          "separator": "将标志传给远程命令：把它们放在 -- 之后，CLI 自身的标志放在 -- 之前。"
         }
       },
       "batchAllNeedsMachine": "--all 需要 --machine <m>：指明要对哪台机器上的仓库执行批量操作。",
@@ -2160,7 +2180,7 @@
       "create": "创建加密仓库",
       "down": "停止服务",
       "fork": "创建 CoW 测试分支",
-      "keyConcepts": "\n关键概念:\n\n  Compose 与 Rediaccfile\n    • 使用 renet compose -- up -d（切勿使用原始 docker compose）。-- 分隔符是必需的\n    • Rediaccfile 必须定义 up() 和 down() 函数。up() 应该：创建目录、生成配置、启动容器\n    • compose 的 ports: 会被忽略（network_mode:host）。如需外部访问，请使用 rediacc.service_port 标签\n    • restart: always/unless-stopped 会被 renet 自动剥离并保存到 .rediacc.json — 路由器 watchdog 会自动恢复已停止的服务\n    • 每个服务都会获得一个回环 IP。eBPF 绑定重写会透明地处理隔离，因此应用可以绑定到 0.0.0.0\n    • 如需连接相邻服务，请使用其服务名（例如 \"db\"、\"redis\"）— renet 会将所有服务名注入为主机名。切勿在数据库内保存的连接字符串中嵌入 ${DB_IP} — 这会固化该 IP 并破坏 fork 隔离（校验错误）\n    • 健康检查可以使用 localhost。例如：[\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  存储\n    • 绑定挂载到 ${REDIACC_WORKING_DIR}/data、${REDIACC_WORKING_DIR}/config 等\n    • 示例：volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volume 会被排除在 fork 和备份之外\n    • 绑定挂载到容器中的配置文件，如果容器以非默认 UID 运行，必须是 world-readable（644）\n\n  路由\n    • Grand 仓库自动路由：https://{service}.{repo}.{machine}.{baseDomain}（通配符证书 *.{repo}.{machine}.{baseDomain} 在首次 repo up 时由 Traefik 自动签发）\n    • fork 自动路由：https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain}（复用父仓库的通配符证书，不影响速率限制）\n    • 自定义域名：traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP 转发：rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • 自定义域名（rediacc.domain 标签）在 fork 上会被忽略 — 该域名属于 grand 仓库\n\n  生命周期\n    • repo delete 会彻底清理：存储、Docker daemon、回环 IP、systemd 单元\n    • repo down 会停止容器，但保留 Docker daemon 和 IP（可用 repo up 快速重启）\n    • 带 condition: service_healthy 的 depends_on 会处理启动顺序，但不处理运行时恢复\n    • 如果数据库正常停止（exit 0），依赖它的服务会陷入崩溃循环。解决方法：rdc repo up <repo-ref>\n    • 自动启动：rdc repo admin autostart enable <repo-ref> — 在机器启动时自动挂载并启动仓库\n    • 计划备份会自动跳过 fork 仓库。如需手动备份 fork，请使用 rdc repo push <repo-ref> --to <remote>\n    • rdc repo promote <fork-ref> — 用 fork 的数据替换生产数据（保留身份标识）。如需还原：rdc repo promote <backup-fork-ref>\n\n  命名与定位\n    • Grand（生产）仓库：引用为 <repo>，等价于 <repo>:latest（latest 是默认标签）。裸 ref 会优先解析为精确匹配的配置键，否则回退到 <repo>:latest\n    • fork：始终使用带非 latest 标签的 <repo>:<tag>（例如 app:test）。up/down/delete/term/sync 都接受相同的 <repo>:<tag>\n    • 因此 `app` 指向 GRAND，而 `app:test` 指向该 FORK。对 fork 操作时务必带上标签 — 唯一的歧义情形是某个 fork 被误注册在裸名/latest 名下\n    • 代理只能修改 fork；grand 仓库受保护（仅可通过 REDIACC_ALLOW_GRAND_REPO 覆盖，该变量必须由操作者在会话开始前设置）。fork 是安全、可随意丢弃的操作单元\n",
+      "keyConcepts": "\n关键概念:\n\n  Compose 与 Rediaccfile\n    • 使用 renet compose -- up -d（切勿使用原始 docker compose）。-- 分隔符是必需的\n    • rdc repo exec <ref> [CLI 标志] -- <remote cmd>：-- 之后的所有内容会原样传给容器，因此 -c/-i/-u/--debug 必须放在 -- 之前。写在 -- 之后的 --debug 会被传给远程命令，永远不会启用 CLI 的调试输出\n    • Rediaccfile 必须定义 up() 和 down() 函数。up() 应该：创建目录、生成配置、启动容器\n    • compose 的 ports: 会被忽略（network_mode:host）。如需外部访问，请使用 rediacc.service_port 标签\n    • restart: always/unless-stopped 会被 renet 自动剥离并保存到 .rediacc.json — 路由器 watchdog 会自动恢复已停止的服务\n    • 每个服务都会获得一个回环 IP。eBPF 绑定重写会透明地处理隔离，因此应用可以绑定到 0.0.0.0\n    • 如需连接相邻服务，请使用其服务名（例如 \"db\"、\"redis\"）— renet 会将所有服务名注入为主机名。切勿在数据库内保存的连接字符串中嵌入 ${DB_IP} — 这会固化该 IP 并破坏 fork 隔离（校验错误）\n    • 健康检查可以使用 localhost。例如：[\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  存储\n    • 绑定挂载到 ${REDIACC_WORKING_DIR}/data、${REDIACC_WORKING_DIR}/config 等\n    • 示例：volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volume 会被排除在 fork 和备份之外\n    • 绑定挂载到容器中的配置文件，如果容器以非默认 UID 运行，必须是 world-readable（644）\n\n  路由\n    • Grand 仓库自动路由：https://{service}.{repo}.{machine}.{baseDomain}（通配符证书 *.{repo}.{machine}.{baseDomain} 在首次 repo up 时由 Traefik 自动签发）\n    • fork 自动路由：https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain}（复用父仓库的通配符证书，不影响速率限制）\n    • 自定义域名：traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP 转发：rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • 自定义域名（rediacc.domain 标签）在 fork 上会被忽略 — 该域名属于 grand 仓库\n\n  生命周期\n    • repo delete 会彻底清理：存储、Docker daemon、回环 IP、systemd 单元\n    • repo down 会停止容器，但保留 Docker daemon 和 IP（可用 repo up 快速重启）\n    • 带 condition: service_healthy 的 depends_on 会处理启动顺序，但不处理运行时恢复\n    • 如果数据库正常停止（exit 0），依赖它的服务会陷入崩溃循环。解决方法：rdc repo up <repo-ref>\n    • 自动启动：rdc repo admin autostart enable <repo-ref> — 在机器启动时自动挂载并启动仓库\n    • 计划备份会自动跳过 fork 仓库。如需手动备份 fork，请使用 rdc repo push <repo-ref> --to <remote>\n    • rdc repo promote <fork-ref> — 用 fork 的数据替换生产数据（保留身份标识）。如需还原：rdc repo promote <backup-fork-ref>\n\n  命名与定位\n    • Grand（生产）仓库：引用为 <repo>，等价于 <repo>:latest（latest 是默认标签）。裸 ref 会优先解析为精确匹配的配置键，否则回退到 <repo>:latest\n    • fork：始终使用带非 latest 标签的 <repo>:<tag>（例如 app:test）。up/down/delete/term/sync 都接受相同的 <repo>:<tag>\n    • 因此 `app` 指向 GRAND，而 `app:test` 指向该 FORK。对 fork 操作时务必带上标签 — 唯一的歧义情形是某个 fork 被误注册在裸名/latest 名下\n    • 代理只能修改 fork；grand 仓库受保护（仅可通过 REDIACC_ALLOW_GRAND_REPO 覆盖，该变量必须由操作者在会话开始前设置）。fork 是安全、可随意丢弃的操作单元\n",
       "up": "自动挂载部署"
     },
     "sync": {

@@ -96,6 +96,20 @@ export interface ExecuteOptions {
   skipRouterRestart?: boolean;
   /** Capture stdout/stderr instead of streaming them directly */
   captureOutput?: boolean;
+  /**
+   * Stream the REMOTE process's own stdout to the caller, live.
+   *
+   * Off by default and opted into per command, because the default handler
+   * detects step events and drops every other line: right for `repo up`/`fork`/
+   * `push`, where renet's chatter is noise, and wrong for the three verbs whose
+   * output IS the answer (`repo exec`, `repo logs`, `run -f`), which printed
+   * nothing at all until this existed.
+   *
+   * Not a synonym for `debug`: this strips renet's `[<function>] ` relay prefix
+   * and its logrus lines, so only the inner process's bytes survive. Unlike
+   * `captureOutput` it streams, which `repo logs --follow` depends on.
+   */
+  passthroughOutput?: boolean;
   /** Enable NDJSON events mode: renet emits structured events instead of text */
   eventsMode?: boolean;
   /**

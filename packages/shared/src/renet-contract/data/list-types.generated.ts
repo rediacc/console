@@ -309,6 +309,7 @@ export interface HealthDriftSummary {
 
 /** Complete machine status from 'renet list all --json' */
 export interface ListResult {
+  backup_coverage?: BackupCoverage;
   block_devices: BlockDevice[];
   containers?: ContainersResult;
   health_drift?: HealthDriftSummary;
@@ -319,6 +320,22 @@ export interface ListResult {
   storage_health?: StorageHealthResult;
   system?: SystemInfo;
   system_containers?: ContainersResult;
+}
+
+/** BackupCoverage (referenced type) */
+export interface BackupCoverage {
+  repos: BackupRepoStatus[];
+  updated_at?: string;
+}
+
+/** BackupRepoStatus (referenced type) */
+export interface BackupRepoStatus {
+  age_days: number;
+  guid: string;
+  last_skip_reason?: string;
+  last_skipped_at?: string;
+  last_success_at?: string;
+  name?: string;
 }
 
 // ============================================

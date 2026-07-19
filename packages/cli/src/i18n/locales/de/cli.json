@@ -30,6 +30,11 @@
         "description": "Backup-Status und Timer-Zustand auf einem Remote-Rechner anzeigen"
       },
       "strategy": {
+        "bind": {
+          "alreadyBound": "Backup-Strategie \"{{strategy}}\" ist bereits an Maschine \"{{machine}}\" gebunden",
+          "bound": "Backup-Strategie \"{{strategy}}\" an Maschine \"{{machine}}\" gebunden",
+          "description": "Backup-Strategie an eine Maschine binden, damit ihr Zeitplan dort deployed wird"
+        },
         "description": "Benannte Backup-Strategien verwalten (Hot/Cold-Modi, Ziele, Zeitplanung)",
         "list": {
           "description": "Alle Backup-Strategien auflisten"
@@ -64,6 +69,11 @@
           "noDestinations": "  Ziele: (keine)",
           "notConfigured": "Keine Backup-Strategien konfiguriert",
           "notFound": "Backup-Strategie \"{{name}}\" nicht gefunden"
+        },
+        "unbind": {
+          "description": "Backup-Strategie von einer Maschine lösen",
+          "notBound": "Backup-Strategie \"{{strategy}}\" ist nicht an Maschine \"{{machine}}\" gebunden",
+          "unbound": "Backup-Strategie \"{{strategy}}\" von Maschine \"{{machine}}\" gelöst"
         }
       },
       "list": {
@@ -310,15 +320,20 @@
         "description": "Entfernt überflüssigen Ballast aus der lokalen Konfigurationsdatei unter ~/.config/rediacc/<config>.json. Drei Bereiche werden bereinigt, alle rein lokal (keine SSH/renet-Aufrufe): (1) ACME-Zertifikat-Cache-Einträge, deren Anker GUID/Repo/Maschine nicht mehr in der aktiven Konfiguration steht; (2) archivierte Repositories, deren Schonfrist abgelaufen ist (Standard 7 Tage, siehe defaults.pruneGraceDays); (3) verwaiste Querverweise (machine→strategy, strategy→repo). Aktive Ressourcen, Anmeldedaten, Speicher-Tokens und Known-Hosts werden niemals angerührt. Standardverhalten ist Änderungen anwenden; mit --dry-run nur eine Vorschau anzeigen.",
         "descriptionShort": "Veraltete Reste aus der lokalen Konfigurationsdatei aufräumen",
         "droppedRefs": "{{count}} verwaiste Querverweis(e) {{verb}} entfernt:",
+        "droppedStateRepos": "{{count}} verwaiste(r) Statuseintrag/-einträge {{verb}} verworfen (kein passender Repository-Eintrag):",
         "dryRun": "Trockenlauf: {{count}} Änderung(en) würden angewendet werden. Erneut ohne --dry-run ausführen, um zu übernehmen.",
         "dryRunOption": "Vorschau dessen, was entfernt würde, ohne die Konfigurationsdatei zu ändern. Spiegelt die Standard-Aus-Semantik der anderen prune-Befehle.",
+        "foundOrphanRepos": "{{count}} Repository-Eintrag/-Einträge sind keiner Maschine zugeordnet:",
         "graceDaysOption": "Überschreibt das Archiv-Schonfristfenster (in Tagen) für diesen Aufruf. Greift auf defaults.pruneGraceDays in der Konfiguration zurück, dann auf 7, wenn keines gesetzt ist.",
         "keptArchivesInGrace": "Archivierte Repositories noch in Schonfrist behalten (wiederherstellbar über 'rdc repo admin archive restore'):",
         "nothingToPrune": "Nichts zu bereinigen, Konfiguration ist bereits sauber.",
+        "orphanReposHint": "Führen Sie 'rdc config reconcile' aus, um die Zuordnung anhand Ihrer Maschinen zu ermitteln. Einträge, die danach weiterhin aufgeführt werden, sind tatsächlich nicht zugeordnet; entfernen Sie sie mit 'rdc config prune --orphan-repos'.",
+        "orphanReposOption": "Entfernt Repository-Einträge, die keiner Maschine zugeordnet sind. Jeder Eintrag enthält die Zugangsdaten und den SSH-Schlüssel des jeweiligen Repos. Das Löschen ist daher nicht rückgängig zu machen. Führen Sie zuerst 'rdc config reconcile' aus, damit die Zuordnung die tatsächlichen Maschinen widerspiegelt.",
         "purgeArchivedOption": "ALLE archivierten Repositories unabhängig vom Alter verwerfen, nicht nur die nach Schonfrist. Äquivalent zum Ausführen von 'rdc repo admin archive purge' für jedes archivierte Repository. Nur verwenden, wenn Sie sicher sind, dass keine der gespeicherten Anmeldedaten zur Wiederherstellung benötigt werden.",
         "purgedArchives": "{{count}} abgelaufene archivierte Repository/Repositories {{verb}} entfernt:",
         "refsOnlyOption": "Auf verwaiste Querverweise (machine→strategy, strategy→repo excludes/includes) beschränken. Überspringt Zertifikat-Cache und Archive. Schließt sich mit --certs-only und --archives-only aus.",
         "removedCerts": "{{count}} Zertifikat-Cache-Eintrag/-einträge {{verb}} entfernt:",
+        "removedOrphanRepos": "{{count}} Repository-Eintrag/-Einträge {{verb}} entfernt (keiner Maschine zugeordnet):",
         "scanning": "Lokale Konfiguration wird auf veraltete Reste durchsucht...",
         "tooManyOnlyFlags": "Höchstens eines von --certs-only / --archives-only / --refs-only übergeben."
       },
@@ -699,6 +714,9 @@
         "previewEmpty": "Keine verwaisten Datastore-Ressourcen gefunden",
         "pruneUnknownOption": "Löscht nur Repos, die der renet .interim/state Mirror nicht klassifizieren kann (nicht in lokaler Konfiguration UND kein fork-markierter Mirror). Strikt enger als --orphaned-repos: Forks ohne Konfiguration werden bewahrt, wenn der Mirror sie identifiziert. Pre-mirror Legacy-Waisen und veraltete Grands mit gelöschtem Konfigurationseintrag fallen beide in diesen Bereich.",
         "startingDatastore": "Suche nach verwaisten Datenspeicher-Ressourcen auf {{machine}}...",
+        "startingUnits": "Suche nach verwaisten systemd-Units auf {{machine}}...",
+        "unitsCompleted": "Unit-Bereinigung abgeschlossen",
+        "unitsFailed": "Unit-Bereinigung fehlgeschlagen",
         "unknownCompleted": "{{count}} unbekannte Repositories bereinigt",
         "unknownFound": "{{count}} unbekannte(s) Repository/Repositories gefunden ({{deletable}} löschbar nach Mount-Sicherheitsprüfung)",
         "unknownStarting": "Suche nach unbekannten Repositories auf {{machine}} (nicht in lokaler Konfiguration + kein fork-markierter Mirror)..."
@@ -808,7 +826,8 @@
         "completed": "{{count}}/{{total}} Maschinen gescannt",
         "description": "SSH-Hostschlüssel für Maschinen in der aktuellen Konfiguration scannen",
         "keysScanned": "Host-Schlüssel für \"{{name}}\" gescannt",
-        "noKeys": "Host-Schlüssel für \"{{name}}\" konnten nicht gescannt werden"
+        "noKeys": "Host-Schlüssel für \"{{name}}\" konnten nicht gescannt werden",
+        "replaced": "Host-Schlüssel für \"{{name}}\": {{count}} vorhandene(r) Schlüssel wurden ERSETZT – überprüfen Sie die unten aufgeführten Fingerabdrücke über einen unabhängigen, vertrauenswürdigen Kanal"
       },
       "setup": {
         "completed": "Maschine \"{{machine}}\" erfolgreich eingerichtet",
@@ -1490,13 +1509,14 @@
       "exec": {
         "descriptionShort": "Einen Befehl innerhalb eines Repository-Containers ausführen",
         "description": "Einen Befehl innerhalb eines Repository-Containers ausführen. Der eigene Exit-Code des Befehls wird direkt durchgereicht, das funktioniert also in Skripten und Bedingungen. Docker-Repositories führen ihn über den Docker-Daemon des Repositorys aus; Kubernetes-Repositories führen ihn im Namespace des Repositorys aus.",
-        "cmdArgument": "Auszuführender Befehl, nach --",
+        "cmdArgument": "Auszuführender Befehl: Alles nach -- wird unverändert an den Container gesendet, daher müssen CLI-Flags (-c, -i, -u, --debug) vor -- stehen",
         "containerOption": "Container, in dem ausgeführt werden soll (nur nötig, wenn das Repository mehr als einen betreibt)",
         "interactiveOption": "Ein Terminal zuweisen (für einen Befehl, der eines erwartet)",
         "userOption": "Benutzer, als der der Befehl ausgeführt werden soll",
         "examples": {
           "basic": "Einen Befehl in einem Repository-Container ausführen.",
-          "interactive": "Eine interaktive Shell in einem Container öffnen."
+          "interactive": "Eine interaktive Shell in einem Container öffnen.",
+          "separator": "Flags an den Remote-Befehl übergeben: Sie kommen nach --, während die eigenen Flags der CLI davor stehen."
         }
       },
       "logs": {
@@ -2160,7 +2180,7 @@
       "create": "Verschlüsseltes Repository erstellen",
       "down": "Dienste stoppen",
       "fork": "CoW-Fork zum Testen",
-      "keyConcepts": "\nSchlüsselkonzepte:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (niemals rohes docker compose). Das Trennzeichen -- ist erforderlich\n    • Rediaccfile muss die Funktionen up() und down() definieren. up() sollte: Verzeichnisse anlegen, Konfigurationen generieren, Container starten\n    • compose ports: werden ignoriert (network_mode:host). Für externen Zugriff das Label rediacc.service_port verwenden\n    • restart: always/unless-stopped wird von renet automatisch entfernt und in .rediacc.json gespeichert (der Router-Watchdog stellt gestoppte Dienste automatisch wieder her)\n    • Jeder Dienst erhält eine Loopback-IP. eBPF-Bind-Rewriting übernimmt die Isolation transparent, sodass Apps an 0.0.0.0 binden können\n    • Um sich mit Nachbardiensten zu verbinden, deren Dienstnamen verwenden (z. B. \"db\", \"redis\"): renet injiziert alle Dienstnamen als Hostnamen. Niemals ${DB_IP} in Verbindungsstrings einbetten, die in Datenbanken gespeichert werden: das bäckt die IP fest ein und bricht die Fork-Isolation (Validierungsfehler)\n    • Health-Checks können localhost verwenden. Beispiel: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  Speicher\n    • Bind-Mount nach ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config usw.\n    • Beispiel: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Benannte Docker-Volumes sind von Forks und Backups ausgeschlossen\n    • In Container eingebundene Konfigurationsdateien müssen weltweit lesbar sein (644), wenn der Container mit einer abweichenden UID läuft\n\n  Routing\n    • Grand-Repository Auto-Route: https://{service}.{repo}.{machine}.{baseDomain} (Wildcard-Zertifikat *.{repo}.{machine}.{baseDomain} wird beim ersten repo up automatisch von Traefik bereitgestellt)\n    • Fork-Auto-Route: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (nutzt das Wildcard-Zertifikat des Eltern-Repositorys, keine Auswirkung auf das Rate-Limit)\n    • Eigene Domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP-Weiterleitung: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Eigene Domains (Label rediacc.domain) werden bei Forks ignoriert: die Domain gehört dem Grand-Repository\n\n  Lebenszyklus\n    • repo delete räumt vollständig auf: Speicher, Docker-Daemon, Loopback-IPs, systemd-Units\n    • repo down stoppt Container, behält aber Docker-Daemon und IPs (schneller Neustart mit repo up)\n    • depends_on mit condition: service_healthy steuert die Startreihenfolge, aber nicht die Laufzeit-Wiederherstellung\n    • Stoppt eine Datenbank sauber (exit 0), geraten abhängige Dienste in eine Crash-Loop. Fix: rdc repo up <repo-ref>\n    • Autostart: rdc repo admin autostart enable <repo-ref> (hängt das Repository beim Maschinenstart automatisch ein und startet es)\n    • Geplante Backups überspringen Fork-Repositories automatisch. Für manuelle Fork-Backups: rdc repo push <repo-ref> --to <remote>\n    • rdc repo promote <fork-ref> ersetzt die Produktionsdaten durch die Fork-Daten (Identität bleibt erhalten). Zum Zurücksetzen: rdc repo promote <backup-fork-ref>\n\n  Benennung & Adressierung\n    • Grand-(Produktions-)Repository: referenziert als <repo>, gleichbedeutend mit <repo>:latest (latest ist der Standard-Tag). Eine bloße Referenz löst zum exakten Konfigurationsschlüssel auf, sonst Fallback auf <repo>:latest.\n    • Fork: immer <repo>:<tag> mit einem Tag ungleich latest (z. B. app:test). up/down/delete/term/sync verwenden alle dasselbe <repo>:<tag>.\n    • Also zielt `app` auf den GRAND; `app:test` zielt auf diesen FORK. Beim Arbeiten mit einem Fork immer den Tag angeben — der einzige mehrdeutige Fall ist ein Fork, der versehentlich unter dem bloßen/latest-Namen registriert wurde.\n    • Agenten dürfen nur Forks verändern; Grand-Repositories sind geschützt (Override nur über REDIACC_ALLOW_GRAND_REPO, das vom Operator vor der Sitzung gesetzt werden muss). Forks sind die sichere, verwerfbare Einheit.\n",
+      "keyConcepts": "\nSchlüsselkonzepte:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (niemals rohes docker compose). Das Trennzeichen -- ist erforderlich\n    • rdc repo exec <ref> [CLI-Flags] -- <Remote-Befehl>: Alles nach -- geht unverändert an den Container, also -c/-i/-u/--debug VOR -- setzen. Ein --debug nach -- wird an den Remote-Befehl weitergereicht und aktiviert niemals die CLI-Debug-Ausgabe\n    • Rediaccfile muss die Funktionen up() und down() definieren. up() sollte: Verzeichnisse anlegen, Konfigurationen generieren, Container starten\n    • compose ports: werden ignoriert (network_mode:host). Für externen Zugriff das Label rediacc.service_port verwenden\n    • restart: always/unless-stopped wird von renet automatisch entfernt und in .rediacc.json gespeichert (der Router-Watchdog stellt gestoppte Dienste automatisch wieder her)\n    • Jeder Dienst erhält eine Loopback-IP. eBPF-Bind-Rewriting übernimmt die Isolation transparent, sodass Apps an 0.0.0.0 binden können\n    • Um sich mit Nachbardiensten zu verbinden, deren Dienstnamen verwenden (z. B. \"db\", \"redis\"): renet injiziert alle Dienstnamen als Hostnamen. Niemals ${DB_IP} in Verbindungsstrings einbetten, die in Datenbanken gespeichert werden: das bäckt die IP fest ein und bricht die Fork-Isolation (Validierungsfehler)\n    • Health-Checks können localhost verwenden. Beispiel: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  Speicher\n    • Bind-Mount nach ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config usw.\n    • Beispiel: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Benannte Docker-Volumes sind von Forks und Backups ausgeschlossen\n    • In Container eingebundene Konfigurationsdateien müssen weltweit lesbar sein (644), wenn der Container mit einer abweichenden UID läuft\n\n  Routing\n    • Grand-Repository Auto-Route: https://{service}.{repo}.{machine}.{baseDomain} (Wildcard-Zertifikat *.{repo}.{machine}.{baseDomain} wird beim ersten repo up automatisch von Traefik bereitgestellt)\n    • Fork-Auto-Route: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (nutzt das Wildcard-Zertifikat des Eltern-Repositorys, keine Auswirkung auf das Rate-Limit)\n    • Eigene Domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP-Weiterleitung: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Eigene Domains (Label rediacc.domain) werden bei Forks ignoriert: die Domain gehört dem Grand-Repository\n\n  Lebenszyklus\n    • repo delete räumt vollständig auf: Speicher, Docker-Daemon, Loopback-IPs, systemd-Units\n    • repo down stoppt Container, behält aber Docker-Daemon und IPs (schneller Neustart mit repo up)\n    • depends_on mit condition: service_healthy steuert die Startreihenfolge, aber nicht die Laufzeit-Wiederherstellung\n    • Stoppt eine Datenbank sauber (exit 0), geraten abhängige Dienste in eine Crash-Loop. Fix: rdc repo up <repo-ref>\n    • Autostart: rdc repo admin autostart enable <repo-ref> (hängt das Repository beim Maschinenstart automatisch ein und startet es)\n    • Geplante Backups überspringen Fork-Repositories automatisch. Für manuelle Fork-Backups: rdc repo push <repo-ref> --to <remote>\n    • rdc repo promote <fork-ref> ersetzt die Produktionsdaten durch die Fork-Daten (Identität bleibt erhalten). Zum Zurücksetzen: rdc repo promote <backup-fork-ref>\n\n  Benennung & Adressierung\n    • Grand-(Produktions-)Repository: referenziert als <repo>, gleichbedeutend mit <repo>:latest (latest ist der Standard-Tag). Eine bloße Referenz löst zum exakten Konfigurationsschlüssel auf, sonst Fallback auf <repo>:latest.\n    • Fork: immer <repo>:<tag> mit einem Tag ungleich latest (z. B. app:test). up/down/delete/term/sync verwenden alle dasselbe <repo>:<tag>.\n    • Also zielt `app` auf den GRAND; `app:test` zielt auf diesen FORK. Beim Arbeiten mit einem Fork immer den Tag angeben — der einzige mehrdeutige Fall ist ein Fork, der versehentlich unter dem bloßen/latest-Namen registriert wurde.\n    • Agenten dürfen nur Forks verändern; Grand-Repositories sind geschützt (Override nur über REDIACC_ALLOW_GRAND_REPO, das vom Operator vor der Sitzung gesetzt werden muss). Forks sind die sichere, verwerfbare Einheit.\n",
       "up": "Bereitstellen mit Auto-Mount"
     },
     "sync": {

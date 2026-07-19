@@ -39,6 +39,12 @@ export interface ConfigPruneOptions {
   graceDays?: number;
   /** Drop in-grace archives too (mirrors `config repository purge-archived`). */
   purgeArchived?: boolean;
+  /**
+   * Remove repository entries that are placed on no machine. Opt-in: a repo
+   * entry carries its LUKS credential and SSH key, so dropping one is
+   * unrecoverable if the image turns out to exist somewhere after all.
+   */
+  orphanRepos?: boolean;
 }
 
 export interface CertPruneEntry {
@@ -65,7 +71,29 @@ export interface ConfigPruneAnalysis {
   droppedRefs: DroppedRef[];
   /** Soft warnings (storage destination references — flagged, not auto-removed). */
   warnings: string[];
+  /**
+   * Repository entries placed on no machine. Always reported; only removed when
+   * `orphanRepos` is set.
+   */
+  orphanRepos: OrphanRepoEntry[];
+  /** `state.repos` records whose repository entry no longer exists. */
+  orphanStateRepos: OrphanStateRepo[];
 }
+
+export interface OrphanRepoEntry {
+  name: string;
+  /** Grand tag's GUID, for cross-checking against a machine before removing. */
+  guid?: string;
+}
+
+/**
+ * Names dropped from `state.repos` because no resource entry owns them.
+ *
+ * Unlike a repository entry, a state record holds only runtime status
+ * (networkId, registryPort, pushState, headCommit, branches, reflog) and no
+ * secrets, so it is pruned unconditionally rather than behind an opt-in flag.
+ */
+export type OrphanStateRepo = string;
 
 /**
  * Build the set of live anchors from the active config. Archived repos are
@@ -241,6 +269,8 @@ export async function analyzeConfigPrune(
       graceArchives: [],
       droppedRefs: [],
       warnings: [],
+      orphanRepos: [],
+      orphanStateRepos: [],
     };
   }
 
@@ -266,13 +296,99 @@ export async function analyzeConfigPrune(
     ? pruneDanglingRefs(clone)
     : { dropped: [] as DroppedRef[], warnings: [] as string[] };
 
+  // Reported whichever bucket filter is active: an orphan repo entry is worth
+  // surfacing even when the operator asked for a narrower run, because it is
+  // the one leftover that silently carries secrets.
+  const orphanRepos = findOrphanRepos(clone);
+  if (options.orphanRepos) removeOrphanRepos(clone, orphanRepos);
+  // Runs after removal so entries dropped above have their state records
+  // collected in the same pass rather than needing a second invocation.
+  const orphanStateRepos = pruneOrphanStateRepos(clone);
+
   return {
     staleCerts,
     expiredArchives: arch.expired,
     graceArchives: arch.inGrace,
     droppedRefs: refs.dropped,
     warnings: refs.warnings,
+    orphanRepos,
+    orphanStateRepos,
   };
+}
+
+/**
+ * Repository entries that name no machine.
+ *
+ * Placement is the config's record of which machine holds a repo's image. An
+ * entry with none is either genuinely dead (the repo was deleted elsewhere) or
+ * simply never reconciled. This check cannot tell those apart on its own —
+ * `config prune` is a local-only command and does not reach out to machines —
+ * so the caller reports the list and points at `config reconcile`, which does
+ * the machine-side scan, before offering to remove anything.
+ */
+export function findOrphanRepos(cfg: RdcConfig): OrphanRepoEntry[] {
+  const repos = cfg.resources?.repositories ?? {};
+  const orphans: OrphanRepoEntry[] = [];
+
+  for (const [name, repo] of Object.entries(repos)) {
+    // Placement is a union: a repo may be pinned to a machine OR to a
+    // datastore. Only an entry with neither is unplaced — treating a
+    // datastore-placed repo as an orphan would delete a live repo's secrets.
+    const placement = repo.placement;
+    const placed =
+      placement !== undefined &&
+      (('machine' in placement && Boolean(placement.machine)) ||
+        ('datastore' in placement && Boolean(placement.datastore)));
+    if (placed) continue;
+
+    const grandTag = repo.grand ? repo.tags[repo.grand] : undefined;
+    orphans.push({ name, guid: grandTag?.repositoryGuid });
+  }
+
+  return orphans;
+}
+
+/**
+ * Remove the given repository entries from `cfg` in-place.
+ *
+ * Also drops the matching `state.repos.<name>` runtime record. Per-repo runtime
+ * status lives there rather than on the resource entry, and nothing else prunes
+ * it — leaving it behind strands that repo's `networkId` in the allocation
+ * space, so a later repo create can believe an ID is taken when no repo owns it.
+ */
+function removeOrphanRepos(cfg: RdcConfig, orphans: OrphanRepoEntry[]): void {
+  const repos = cfg.resources?.repositories;
+  const stateRepos = cfg.state?.repos;
+
+  for (const { name } of orphans) {
+    if (repos) delete repos[name];
+    if (stateRepos) delete stateRepos[name];
+  }
+}
+
+/**
+ * Drop `state.repos` records that no repository entry owns, returning their
+ * names.
+ *
+ * These are left behind whenever a repository entry is removed — by this
+ * command's own --orphan-repos pass, or by any earlier hand-edit. Nothing else
+ * collects them, and each one strands a `networkId` in the allocation space
+ * that no live repo owns.
+ */
+export function pruneOrphanStateRepos(cfg: RdcConfig): OrphanStateRepo[] {
+  const stateRepos = cfg.state?.repos;
+  if (!stateRepos) return [];
+
+  const live = new Set(Object.keys(cfg.resources?.repositories ?? {}));
+  const dropped: OrphanStateRepo[] = [];
+
+  for (const name of Object.keys(stateRepos)) {
+    if (live.has(name)) continue;
+    delete stateRepos[name];
+    dropped.push(name);
+  }
+
+  return dropped;
 }
 
 /** Classify and remove expired archives from `cfg` in-place; return both lists. */
@@ -315,6 +431,8 @@ export async function applyConfigPrune(
     graceArchives: [],
     droppedRefs: [],
     warnings: [],
+    orphanRepos: [],
+    orphanStateRepos: [],
   };
 
   await configFileStorage.update(configName, (cfg) => {
@@ -333,12 +451,18 @@ export async function applyConfigPrune(
       ? pruneDanglingRefs(cfg)
       : { dropped: [] as DroppedRef[], warnings: [] as string[] };
 
+    const orphanRepos = findOrphanRepos(cfg);
+    if (options.orphanRepos) removeOrphanRepos(cfg, orphanRepos);
+    const orphanStateRepos = pruneOrphanStateRepos(cfg);
+
     analysis = {
       staleCerts,
       expiredArchives: arch.expired,
       graceArchives: arch.inGrace,
       droppedRefs: refs.dropped,
       warnings: refs.warnings,
+      orphanRepos,
+      orphanStateRepos,
     };
     return cfg;
   });

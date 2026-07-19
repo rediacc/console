@@ -14,6 +14,17 @@
  *
  * `repo exec` propagates the remote command's exit code VERBATIM (§1 deviation):
  * a wrapper that swallowed it would make `rdc repo exec app -- test -f x` useless.
+ * This is end-to-end only because renet's `handleExecuteResult` re-raises the
+ * child's code (cmd/renet/execute_command.go); it used to `os.Exit(1)`
+ * unconditionally, which silently collapsed every remote code to 1 and made the
+ * claim above false for years. If a remote `exit 7` ever reports 1 again, look
+ * there first, not here. NOTE the unavoidable ambiguity this buys: rdc reserves
+ * exit codes 2-15 for its own classes (types/index.ts), so a container exiting 7
+ * is indistinguishable from rdc's own API_ERROR to anything reading `$?`.
+ *
+ * Both verbs set `passthroughOutput` because their output IS the answer. Without
+ * it the executor's default handler keeps only step events and drops the rest,
+ * which is why `repo exec` printed nothing at all unless run with --debug.
  */
 
 import type { Command } from 'commander';
@@ -22,6 +33,7 @@ import { getExecutor } from '../services/executor/executor-factory.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
+import { shellQuote } from '../utils/shell-quote.js';
 
 /**
  * Which container the verb acts on. Omitting `--container` is only unambiguous
@@ -92,6 +104,7 @@ export function registerRepoContainerCommands(repo: Command): void {
               ...(options.timestamps && { timestamps: true }),
             },
             debug: options.debug,
+            passthroughOutput: true,
             ...(kubeCluster !== undefined && { kubeCluster }),
           });
           if (!result.success) {
@@ -135,11 +148,17 @@ export function registerRepoContainerCommands(repo: Command): void {
             params: {
               repository: repoKey,
               ...(container && { container }),
-              command: cmd.join(' '),
+              // Quote EACH argv element, then join. renet hands this string to
+              // `/bin/sh -c` as one argv element (pkg/functions/commands/
+              // container.go), so a bare join let the container's shell re-split
+              // it: `-- sh -c "echo A B"` arrived as `sh -c echo A B`, silently
+              // running something the operator never typed.
+              command: cmd.map(shellQuote).join(' '),
               ...(options.user && { user: options.user }),
               ...(options.interactive && { tty: true }),
             },
             debug: options.debug,
+            passthroughOutput: true,
             ...(kubeCluster !== undefined && { kubeCluster }),
           });
 

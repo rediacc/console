@@ -284,6 +284,10 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/state/repos/*/*/reflog/*/at': { kind: 'public' },
   '/state/repos/*/*/reflog/*/message': { kind: 'public' },
   '/state/networkIds/next': { kind: 'public' },
+  // Per-machine epoch-ms of the last opportunistic licence-refresh attempt.
+  // Public: a rate-limiting timestamp keyed by a machine name the config
+  // already lists in the clear, carrying no credential and no repo identity.
+  '/state/licenseRefresh/*': { kind: 'public' },
   // ACME cert cache moved from /infra/acmeCertCache. `data` is the compressed
   // acme.json dump — Traefik resolver state with private keys inside —
   // `commit:false` because state never enters the server envelope. The fields

@@ -24,6 +24,10 @@ picks the right one. There is no `-m` / `-r` flag pair any more.
 | Backup/push repos | `rdc repo push` | `rdc term connect <m> -c "rsync ..."` |
 | Checkpoint containers | `rdc repo push --checkpoint` | `rdc term connect <m> -c "docker checkpoint"` |
 
+With `rdc repo exec`, everything after `--` is sent to the container verbatim, so the
+CLI's own flags (`-c`, `-i`, `-u`, `--debug`) must come **before** `--`. A `--debug`
+placed after `--` is passed to the remote command instead of enabling CLI debug output.
+
 ## Sandbox isolation
 
 Each repo has its own SSH key. Repo connections are enforced server-side via `sandbox-gateway` (ForceCommand in `authorized_keys`). The sandbox provides:

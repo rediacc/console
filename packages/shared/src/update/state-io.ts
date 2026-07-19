@@ -1,11 +1,16 @@
 import { promises as fs } from 'node:fs';
 import { dirname } from 'node:path';
-import type { UpdateStateBase } from './types';
 
 /**
- * Read update state from disk. Returns default state on missing/corrupt file.
+ * Read versioned local state from disk. Returns defaults on missing/corrupt file.
+ *
+ * Constrained only to `schemaVersion`, which is the sole field this function
+ * reads. It previously required the full UpdateStateBase shape, which shut out
+ * every other kind of local bookkeeping — the atomic-write and
+ * corrupt-file-fallback behaviour here is generic, and a second copy of it
+ * elsewhere would be free to drift.
  */
-export async function readUpdateState<T extends UpdateStateBase>(
+export async function readUpdateState<T extends { schemaVersion: number }>(
   filePath: string,
   defaults: T
 ): Promise<T> {

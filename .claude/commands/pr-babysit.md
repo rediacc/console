@@ -34,7 +34,10 @@ allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status
 - Compose the **wave header** at the top of the round log (`reports/pr-babysit-<branch>.md`) per the agent file's slot spec — there is no separate briefing file in this mode.
 - **The round log is your compaction insurance.** After any context compaction or session restart, re-read the agent file + wave header + STATUS block before touching anything.
 - **Every turn that leaves a CI run in flight ends with an armed terminal-state watch** (agent file, wake-up section). Nobody else is watching the run.
-- Tier 3 = stop and put the question to the user (AskUserQuestion or structured report); keep draining tier-1/2 meanwhile; no push until ruled.
+- **AUTONOMOUS MODE — do NOT ask the user questions.** There is no tier-3 stop in default mode: decide every call yourself, take the safest reversible option, and keep the loop moving. Never use AskUserQuestion; never end a turn waiting on a ruling.
+  - Record each tier-3-class decision in the round log under **DECISIONS (post-hoc review)**: what you chose, the alternative, and why — so the user can veto afterwards instead of being interrupted mid-loop.
+  - Tie-breakers, in order: (1) prefer the option that cannot destroy data or weaken a check; (2) prefer completing an already-ruled intent over re-litigating it; (3) prefer the smallest change that makes the gate honest; (4) if genuinely 50/50, pick one, log it, and move on.
+  - Only exception: a change that would be **irreversible outside the PR** (pushing main, merging, releasing, deleting remote data). Those stay forbidden outright — not escalated, just not done.
 - **Default to farming bulky fix implementation out to worker sub-agents** (agent file, "Workers" section — Sonnet for i18n/mechanical sweeps, Opus for code fixes). That is what keeps a long in-context loop affordable; you keep diagnosis, commits, and pushes.
 - Scoping honesty: for a wave you expect to run **multi-day**, `bg` is usually the right call — the 0707 babysitter itself died of context exhaustion mid-campaign. The default is a default, not a dogma.
 

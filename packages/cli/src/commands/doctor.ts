@@ -218,7 +218,7 @@ async function checkMachineCount(checks: CheckResult[]): Promise<void> {
       name: t('commands.doctor.checks.machines'),
       value: `${machineCount} configured`,
       status: machineCount > 0 ? 'ok' : 'warn',
-      hint: machineCount === 0 ? 'Add machines with: rdc config machine add' : undefined,
+      hint: machineCount === 0 ? 'Add machines with: rdc machine add <name>' : undefined,
     });
   } catch {
     checks.push({
@@ -241,7 +241,7 @@ function checkSshKey(checks: CheckResult[], hasInlineKey: boolean): void {
     name: t('commands.doctor.checks.sshKey'),
     value: t('commands.doctor.notConfigured'),
     status: 'warn',
-    hint: 'Set SSH key during config init: rdc config init --name <name> --ssh-key <path>',
+    hint: 'Set SSH key during config init: rdc config init <name> --ssh-key <path>',
   });
 }
 
@@ -256,7 +256,7 @@ async function checkConfiguration(): Promise<CheckSection> {
           name: t('commands.doctor.checks.activeConfig'),
           value: t('commands.doctor.notConfigured'),
           status: 'warn',
-          hint: 'Default config is created automatically. For named configs: rdc config init --name <name>',
+          hint: 'Default config is created automatically. For named configs: rdc config init <name>',
         }
   );
   await checkMachineCount(checks);

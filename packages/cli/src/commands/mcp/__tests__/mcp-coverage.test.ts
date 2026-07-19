@@ -1,7 +1,7 @@
 /**
  * MCP Tool Coverage Test
  *
- * Ensures every non-experimental CLI command group in the command registry
+ * Ensures every CLI command group in the command registry
  * has at least one corresponding MCP tool or an explicit exclusion reason
  * in COMMAND_METADATA. Fails CI when a command is added to the registry
  * but not covered.
@@ -14,7 +14,6 @@ import {
   getCommandMeta,
   getMcpExclusions,
 } from '../../../config/command-metadata.js';
-import { COMMAND_REGISTRY } from '../../../config/command-registry.js';
 import { buildToolsFromContract } from '../tool-factory.js';
 import { buildAllTools } from '../tools.js';
 
@@ -105,13 +104,9 @@ function isExcluded(path: string): boolean {
 describe('MCP tool coverage', () => {
   const mcpPaths = getMcpCommandPaths();
   const mcpPrefixes = getMcpPrefixes(mcpPaths);
-  const experimentalPrefixes = new Set(
-    COMMAND_REGISTRY.filter((c) => c.experimental).map((c) => c.name)
-  );
 
   it('every visible leaf command has MCP metadata or an explicit exclusion (tree-walk)', () => {
     const missing = walkLeafPaths().filter((path) => {
-      if (experimentalPrefixes.has(path.split(' ')[0])) return false;
       if (isExcluded(path)) return false;
       // A path with no metadata entry at all is exactly what this test hunts for.
       if (!Object.hasOwn(COMMAND_METADATA, path)) return true;
@@ -132,7 +127,7 @@ describe('MCP tool coverage', () => {
 
   it('exclusion list has no stale entries', () => {
     // Validate against the real Commander tree (the registry only declares
-    // top-level domains + experimental overrides, not every subcommand).
+    // top-level domains, not every subcommand).
     const actualPaths = new Set<string>();
     function walk(cmd: (typeof cli.commands)[number], prefix: string): void {
       const path = prefix ? `${prefix} ${cmd.name()}` : cmd.name();
@@ -190,7 +185,7 @@ describe('MCP tool coverage', () => {
  * tool for every mcp-annotated contract command, none for an excluded one, and
  * nothing that does not trace back to such a command. This is the assertion that
  * would catch the derivation drifting away from the contract it now reads from
- * (an experimental command silently acquiring a tool, an exclusion being ignored,
+ * (an exclusion being ignored,
  * a stray tool with no backing command).
  */
 describe('contract-sourced tool derivation', () => {
@@ -198,9 +193,8 @@ describe('contract-sourced tool derivation', () => {
   const autoNames = new Set(autoTools.map((t) => t.name));
   const toolName = (pathKey: string): string => pathKey.replaceAll(' ', '_');
 
-  it('every non-experimental mcp-annotated contract command produces exactly one tool', () => {
+  it('every mcp-annotated contract command produces exactly one tool', () => {
     for (const cmd of CLI_CONTRACT.commands) {
-      if (cmd.experimental) continue;
       if (!getCommandMeta(cmd.pathKey)?.mcp) continue;
       const name = toolName(cmd.pathKey);
       const matches = autoTools.filter((t) => t.name === name);
@@ -228,11 +222,10 @@ describe('contract-sourced tool derivation', () => {
     }
   });
 
-  it('every auto-derived tool traces back to a non-experimental mcp-annotated command', () => {
+  it('every auto-derived tool traces back to an mcp-annotated command', () => {
     for (const tool of autoTools) {
       const cmd = CLI_CONTRACT.commands.find((c) => toolName(c.pathKey) === tool.name);
       expect(cmd, `tool "${tool.name}" has no backing contract command`).toBeDefined();
-      expect(cmd!.experimental, `tool "${tool.name}" backs an experimental command`).toBe(false);
       expect(
         getCommandMeta(cmd!.pathKey)?.mcp,
         `tool "${tool.name}" backs a command with no mcp metadata`

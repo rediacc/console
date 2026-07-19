@@ -1,10 +1,6 @@
 /**
- * Command Registry — single source of truth for domain grouping and
- * experimental gating. Help tags and runtime guards are auto-generated
- * from this registry.
- *
- * Commands marked `experimental: true` are hidden by default.
- * Enable with REDIACC_EXPERIMENTAL=1 env var.
+ * Command Registry — single source of truth for domain grouping. Help tags and
+ * runtime guards are auto-generated from this registry.
  */
 export const COMMAND_DOMAINS = {
   INFRASTRUCTURE: 'Infrastructure',
@@ -16,15 +12,15 @@ export const COMMAND_DOMAINS = {
 
 type CommandDomain = keyof typeof COMMAND_DOMAINS;
 
-export interface SubcommandDef {
-  experimental?: boolean;
-}
-
 export interface CommandDef {
   name: string;
   domain: CommandDomain;
-  experimental?: boolean;
-  subcommands?: Record<string, SubcommandDef>;
+  /**
+   * Subcommands worth naming explicitly. The value is intentionally empty: the
+   * entry exists so a leaf is registered rather than silently absent, which is
+   * what `experimental` used to hang off before it was removed.
+   */
+  subcommands?: Record<string, Record<string, never>>;
 }
 
 export const COMMAND_REGISTRY: readonly CommandDef[] = [
@@ -37,7 +33,7 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
       // / `--services` / `--repositories` by the P4 reshape; they are not leaves
       // any more, and a registry entry for a command that does not exist is a
       // name waiting to be silently re-bound.
-      health: { experimental: true },
+      health: {},
     },
   },
   { name: 'storage', domain: 'INFRASTRUCTURE' },
@@ -72,18 +68,4 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
 /** Lookup a command definition by name. */
 export function getCommandDef(commandName: string): CommandDef | undefined {
   return COMMAND_REGISTRY.find((c) => c.name === commandName);
-}
-
-/**
- * Check if experimental mode is enabled via REDIACC_EXPERIMENTAL=1 env var.
- *
- * Experimental gating is a feature flag, not a security boundary: without the
- * env var, agents never see experimental commands (hidden from help, guard
- * reports "unknown command"), but an explicit REDIACC_EXPERIMENTAL=1 opt-in is
- * honored even in agent environments so test harnesses spawned by agents can
- * exercise hidden commands. The actual security guards (machine access, repo
- * create, config edit) remain ancestry-verified in agent-guard.ts.
- */
-export function isExperimentalEnabled(): boolean {
-  return process.env.REDIACC_EXPERIMENTAL === '1';
 }

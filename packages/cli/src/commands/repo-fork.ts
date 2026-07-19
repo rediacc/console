@@ -402,7 +402,7 @@ async function handleForkLegFailure(
   if (forkCreated) {
     outputService.warn(
       `Fork "${forkKey}" was created on the machine but its up phase failed; ` +
-        `keeping the local registration. Retry with: rdc repo up --name ${forkKey} -m ${options.machine}`
+        `keeping the local registration. Retry with: rdc repo up ${forkKey} -m ${options.machine}`
     );
   } else {
     await configService.removeRepository(forkKey);

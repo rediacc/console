@@ -396,7 +396,7 @@ function buildInFlightError(blocking: StrategyDiff[]): Error {
     `Cannot deploy: backup(s) currently running:\n${listStr}\n\n` +
       `Options:\n` +
       `  - Wait for the backup to finish and retry\n` +
-      `  - Cancel it: rdc machine backup cancel -m <machine> --strategy ${blocking[0].name}\n` +
+      `  - Cancel it: rdc backup cancel ${blocking[0].name} -m <machine>\n` +
       `  - Use --force to deploy anyway (running invocation keeps old unit; new unit applies on next tick)`
   );
 }

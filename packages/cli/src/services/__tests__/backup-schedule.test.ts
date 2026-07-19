@@ -21,7 +21,9 @@ const mockReadSSHKey = vi.fn().mockResolvedValue('PRIVATE_KEY');
 const mockRefreshRepoLicensesBatch = vi.fn();
 
 const mockGetBackupStrategy = vi.fn();
-const mockListBackupStrategies = vi.fn();
+// Defaults to "no strategies beyond those under test" so the unbound-strategy
+// warning has something well-formed to read. Tests that care override it.
+const mockListBackupStrategies = vi.fn(() => Promise.resolve({}));
 const mockGetLocalConfig = vi.fn();
 const mockGetStorage = vi.fn();
 
@@ -652,6 +654,60 @@ describe('pushBackupSchedule (reconcile)', () => {
     expect(cmds.some((c) => c.includes('rm -f') && c.includes('rediacc-backup-*.service'))).toBe(
       false
     );
+  });
+
+  // The failure this covers is PARTIAL binding, which was completely silent:
+  // one strategy bound and deployed ("unchanged"), another enabled but bound to
+  // no machine, exit 0, no mention of the second. The operator's only signal was
+  // a backup that never ran.
+  it('warns about an enabled strategy that no machine binds', async () => {
+    mockListBackupStrategies.mockResolvedValueOnce({
+      'hourly-hot': DEFAULT_STRATEGY,
+      'weekly-cold': { ...DEFAULT_STRATEGY, schedule: '15 3 * * 0' },
+    });
+    scriptedExec([
+      { match: /find \/etc\/systemd\/system/, stdout: '' },
+      {
+        match: 'Id,LoadState,ActiveState,SubState,UnitFileState',
+        stdout: notFoundRecord('rediacc-backup-hourly-hot.service'),
+      },
+      {
+        match: 'Id,LoadState,ActiveState,UnitFileState',
+        stdout: healthyTimerRecord('rediacc-backup-hourly-hot.timer'),
+      },
+    ]);
+
+    const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
+    await pushBackupSchedule('hostinger');
+
+    expect(mockOutputWarn).toHaveBeenCalledWith(expect.stringContaining('weekly-cold'));
+    expect(mockOutputWarn).toHaveBeenCalledWith(
+      expect.stringContaining('rdc backup strategy bind weekly-cold')
+    );
+    // The bound one must NOT be reported as orphaned.
+    expect(mockOutputWarn).not.toHaveBeenCalledWith(expect.stringContaining('"hourly-hot" is'));
+  });
+
+  // Other direction: without this the assertion above would pass on a function
+  // that warns unconditionally.
+  it('stays silent when every enabled strategy is bound somewhere', async () => {
+    mockListBackupStrategies.mockResolvedValueOnce({ 'hourly-hot': DEFAULT_STRATEGY });
+    scriptedExec([
+      { match: /find \/etc\/systemd\/system/, stdout: '' },
+      {
+        match: 'Id,LoadState,ActiveState,SubState,UnitFileState',
+        stdout: notFoundRecord('rediacc-backup-hourly-hot.service'),
+      },
+      {
+        match: 'Id,LoadState,ActiveState,UnitFileState',
+        stdout: healthyTimerRecord('rediacc-backup-hourly-hot.timer'),
+      },
+    ]);
+
+    const { pushBackupSchedule } = await import('../backup/backup-schedule.js');
+    await pushBackupSchedule('hostinger');
+
+    expect(mockOutputWarn).not.toHaveBeenCalledWith(expect.stringContaining('bound to no machine'));
   });
 
   it('test 2: all hashes match → unchanged, no writes, no daemon-reload', async () => {

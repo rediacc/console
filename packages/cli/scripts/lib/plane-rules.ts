@@ -23,7 +23,19 @@ export const MACHINE_MARKERS = [
   'services/tofu',
 ];
 
+/**
+ * Reaching this means `--background` can actually detach the command.
+ *
+ * `-b` only bites inside `backgroundDecorator`, which wraps the executor handed
+ * out by `getExecutor()`. A command that talks to a machine by some other route
+ * (`machine status` goes over SSH directly) never crosses that seam, so `-b` is
+ * a silent no-op there — which is exactly what the contract used to advertise
+ * as `detachable: true`.
+ */
+export const DETACH_SEAM_MARKERS = ['services/executor/executor-factory'];
+
 export interface Reach {
+  /** Whether any marker was reached (the marker set decides which question). */
   machineTouching: boolean;
   /** The import chain that first hit a marker, for the report. */
   via: string[];
@@ -48,7 +60,10 @@ function resolveSpecifier(fromFile: string, spec: string): string | null {
 }
 
 /** Breadth-first walk of the import graph from `entry`, looking for a machine seam. */
-export function createReachability(src: string): (moduleRel: string) => Reach {
+export function createReachability(
+  src: string,
+  markers: readonly string[] = MACHINE_MARKERS
+): (moduleRel: string) => Reach {
   const cache = new Map<string, Reach>();
 
   return (moduleRel: string): Reach => {
@@ -70,7 +85,7 @@ export function createReachability(src: string): (moduleRel: string) => Reach {
       const rel = path.relative(src, file).replace(/\\/g, '/');
       const nextChain = [...chain, rel];
 
-      if (MACHINE_MARKERS.some((marker) => rel.includes(marker))) {
+      if (markers.some((marker) => rel.includes(marker))) {
         result = { machineTouching: true, via: nextChain };
         break;
       }

@@ -20,6 +20,7 @@ import * as fsPromises from 'node:fs/promises';
 import * as path from 'node:path';
 import { STATUS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import type { SFTPClient } from '../sftp/client.js';
+import { shellQuote } from '../../utils/shell-quote.js';
 import { isExcluded } from './sftp-patterns.js';
 import {
   chmodRemote,
@@ -29,7 +30,6 @@ import {
   newResult,
   type SftpTransferResult,
   sha256Hex,
-  shellQuote,
   symlinkRemote,
   verifyRemoteSha256,
 } from './sftp-remote-helpers.js';

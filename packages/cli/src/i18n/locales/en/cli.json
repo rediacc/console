@@ -190,6 +190,11 @@
         "archivesOnlyOption": "Restrict to expired-archive purging. Skips cert-cache and cross-reference cleanup. Mutually exclusive with --certs-only and --refs-only.",
         "refsOnlyOption": "Restrict to dangling cross-references (machine→strategy, strategy→repo excludes/includes). Skips cert-cache and archives. Mutually exclusive with --certs-only and --archives-only.",
         "purgeArchivedOption": "Drop ALL archived repositories regardless of age, not just those past grace. Equivalent to running 'rdc repo admin archive purge' for every archived repo. Use only when you're sure you don't need any of the stashed credentials for restore.",
+        "orphanReposOption": "Remove repository entries that are placed on no machine. Each entry holds that repo's credential and SSH key, so this is unrecoverable — run 'rdc config reconcile' first so placement reflects the machines.",
+        "foundOrphanRepos": "{{count}} repository entry/entries are placed on no machine:",
+        "removedOrphanRepos": "{{count}} repository entry/entries {{verb}} removed (placed on no machine):",
+        "orphanReposHint": "Run 'rdc config reconcile' to derive placement from your machines. Entries still listed after that are genuinely unplaced; remove them with 'rdc config prune --orphan-repos'.",
+        "droppedStateRepos": "{{count}} orphaned state record(s) {{verb}} dropped (no matching repository entry):",
         "graceDaysOption": "Override the archive grace window (in days) for this invocation. Falls back to defaults.pruneGraceDays in the config, then to 7 if neither is set.",
         "tooManyOnlyFlags": "Pass at most one of --certs-only / --archives-only / --refs-only.",
         "scanning": "Scanning local config for stale leftovers...",
@@ -517,6 +522,9 @@
         "startingDatastore": "Scanning for orphaned datastore resources on {{machine}}...",
         "datastoreCompleted": "Datastore prune completed",
         "datastoreFailed": "Datastore prune failed",
+        "startingUnits": "Scanning for orphaned systemd units on {{machine}}...",
+        "unitsCompleted": "Unit prune completed",
+        "unitsFailed": "Unit prune failed",
         "orphanedReposOption": "Delete every repo image on the machine that is not in your local CLI config. Coarse — also removes forks created by other tools that have no local config entry, even when their renet mirror correctly identifies them as forks. Use --prune-unknown for the narrower behavior that respects the mirror.",
         "orphanedReposStarting": "Scanning for orphaned repositories on {{machine}}...",
         "orphanedReposCompleted": "Pruned {{count}} orphaned repositories",
@@ -637,6 +645,7 @@
         "completed": "Scanned {{count}}/{{total}} machines",
         "description": "Scan SSH host keys for machines in the current config",
         "keysScanned": "Host keys scanned for \"{{name}}\"",
+        "replaced": "Host keys for \"{{name}}\": {{count}} existing key(s) REPLACED - verify the fingerprints below out of band",
         "noKeys": "Could not scan host keys for \"{{name}}\""
       },
       "setup": {
@@ -1421,13 +1430,14 @@
       "exec": {
         "descriptionShort": "Run a command inside a repository container",
         "description": "Run a command inside a repository container. The command's own exit code is passed straight through, so this works in scripts and conditionals. Docker repositories run it through the repository's Docker daemon; kubernetes repositories run it in the repository's namespace.",
-        "cmdArgument": "Command to run, after --",
+        "cmdArgument": "Command to run: everything after -- is sent to the container verbatim, so CLI flags (-c, -i, -u, --debug) must come before --",
         "containerOption": "Container to run in (only needed when the repository runs more than one)",
         "interactiveOption": "Allocate a terminal (for a command that expects one)",
         "userOption": "User to run the command as",
         "examples": {
           "basic": "Run a command inside a repository container.",
-          "interactive": "Open an interactive shell in a container."
+          "interactive": "Open an interactive shell in a container.",
+          "separator": "Pass flags to the remote command: put them after --, and keep the CLI's own flags before it."
         }
       }
     },
@@ -1494,14 +1504,6 @@
       },
       "strategy": {
         "description": "Manage named backup strategies (hot/cold modes, destinations, scheduling)",
-        "list": {
-          "description": "List all backup strategies"
-        },
-        "remove": {
-          "description": "Remove a backup strategy or destination",
-          "optionDestination": "Remove only this destination (keeps other destinations)",
-          "removed": "Backup strategy removed"
-        },
         "set": {
           "description": "Create or update a backup strategy",
           "optionBwlimit": "Rclone bandwidth limit (e.g., \"6M\", \"10M:off\", \"08:00,3M;22:00,10M\")",
@@ -1520,6 +1522,24 @@
             "configure": "Configure a backup strategy's storage and mode.",
             "disable": "Turn a backup strategy off."
           }
+        },
+        "bind": {
+          "description": "Bind a backup strategy to a machine so its schedule is deployed there",
+          "bound": "Backup strategy \"{{strategy}}\" bound to machine \"{{machine}}\"",
+          "alreadyBound": "Backup strategy \"{{strategy}}\" is already bound to machine \"{{machine}}\""
+        },
+        "unbind": {
+          "description": "Unbind a backup strategy from a machine",
+          "unbound": "Backup strategy \"{{strategy}}\" unbound from machine \"{{machine}}\"",
+          "notBound": "Backup strategy \"{{strategy}}\" is not bound to machine \"{{machine}}\""
+        },
+        "remove": {
+          "description": "Remove a backup strategy or destination",
+          "optionDestination": "Remove only this destination (keeps other destinations)",
+          "removed": "Backup strategy removed"
+        },
+        "list": {
+          "description": "List all backup strategies"
         },
         "show": {
           "description": "Show backup strategy details",
@@ -1923,7 +1943,7 @@
     },
     "repo": {
       "create": "Create encrypted repo",
-      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. eBPF bind rewriting handles isolation transparently, so apps can bind to 0.0.0.0\n    • To connect to sibling services use their service name (e.g. \"db\", \"redis\") — renet injects all service names as hostnames. Never embed ${DB_IP} in connection strings stored inside databases — it bakes the IP and breaks fork isolation (validation error)\n    • Health checks can use localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing\n    • Grand repo auto-route: https://{service}.{repo}.{machine}.{baseDomain} (wildcard cert *.{repo}.{machine}.{baseDomain} auto-provisioned by Traefik on first repo up)\n    • Fork auto-route: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (uses parent repo's wildcard cert, zero rate limit impact)\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Custom domains (rediacc.domain label) are ignored on forks — the domain belongs to the grand repo\n\n  Lifecycle\n    • repo delete fully cleans up: storage, Docker daemon, loopback IPs, systemd units\n    • repo down stops containers but keeps Docker daemon and IPs (quick restart with repo up)\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up <repo-ref>\n    • Autostart: rdc repo admin autostart enable <repo-ref> — auto-mounts and starts repo on machine boot\n    • Scheduled backups skip fork repos automatically. Use rdc repo push <repo-ref> --to <remote> for manual fork backup\n    • rdc repo promote <fork-ref> — replace production data with fork data (preserves identity). Revert with: rdc repo promote <backup-fork-ref>\n\n  Naming & targeting\n    • Grand (production) repo: reference it as <repo>, equivalently <repo>:latest (latest is the default tag). A bare ref resolves to the exact config key, else falls back to <repo>:latest.\n    • Fork: always <repo>:<tag> with a non-latest tag (e.g. app:test). up/down/delete/term/sync all take the same <repo>:<tag>.\n    • So `app` targets the GRAND; `app:test` targets that FORK. Always include the tag when acting on a fork — the one ambiguous case is a fork mistakenly registered under the bare/latest name.\n    • Agents may only modify forks; grand repos are protected (override only via REDIACC_ALLOW_GRAND_REPO, which must be set by the operator before the session). Forks are the safe, disposable unit.\n",
+      "keyConcepts": "\nKey Concepts:\n\n  Compose & Rediaccfile\n    • renet compose -- up -d (never raw docker compose). The -- separator is required\n    • rdc repo exec <ref> [CLI flags] -- <remote cmd>: everything after -- goes to the container verbatim, so put -c/-i/-u/--debug BEFORE --. A --debug written after -- is passed to the remote command and never enables CLI debug output\n    • Rediaccfile must define up() and down() functions. up() should: create dirs, generate configs, start containers\n    • compose ports: are ignored (network_mode:host). Use rediacc.service_port label for external access\n    • restart: always/unless-stopped are auto-stripped by renet and saved to .rediacc.json — the router watchdog auto-recovers stopped services\n    • Each service gets a loopback IP. eBPF bind rewriting handles isolation transparently, so apps can bind to 0.0.0.0\n    • To connect to sibling services use their service name (e.g. \"db\", \"redis\") — renet injects all service names as hostnames. Never embed ${DB_IP} in connection strings stored inside databases — it bakes the IP and breaks fork isolation (validation error)\n    • Health checks can use localhost. Example: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  Storage\n    • Bind-mount to ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config, etc.\n    • Example: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Docker named volumes are excluded from forks and backups\n    • Config files bind-mounted into containers must be world-readable (644) if the container runs as a non-default UID\n\n  Routing\n    • Grand repo auto-route: https://{service}.{repo}.{machine}.{baseDomain} (wildcard cert *.{repo}.{machine}.{baseDomain} auto-provisioned by Traefik on first repo up)\n    • Fork auto-route: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (uses parent repo's wildcard cert, zero rate limit impact)\n    • Custom domain: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP forwarding: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Custom domains (rediacc.domain label) are ignored on forks — the domain belongs to the grand repo\n\n  Lifecycle\n    • repo delete fully cleans up: storage, Docker daemon, loopback IPs, systemd units\n    • repo down stops containers but keeps Docker daemon and IPs (quick restart with repo up)\n    • depends_on with condition: service_healthy handles startup order but not runtime recovery\n    • If a database stops cleanly (exit 0), dependent services crash-loop. Fix: rdc repo up <repo-ref>\n    • Autostart: rdc repo admin autostart enable <repo-ref> — auto-mounts and starts repo on machine boot\n    • Scheduled backups skip fork repos automatically. Use rdc repo push <repo-ref> --to <remote> for manual fork backup\n    • rdc repo promote <fork-ref> — replace production data with fork data (preserves identity). Revert with: rdc repo promote <backup-fork-ref>\n\n  Naming & targeting\n    • Grand (production) repo: reference it as <repo>, equivalently <repo>:latest (latest is the default tag). A bare ref resolves to the exact config key, else falls back to <repo>:latest.\n    • Fork: always <repo>:<tag> with a non-latest tag (e.g. app:test). up/down/delete/term/sync all take the same <repo>:<tag>.\n    • So `app` targets the GRAND; `app:test` targets that FORK. Always include the tag when acting on a fork — the one ambiguous case is a fork mistakenly registered under the bare/latest name.\n    • Agents may only modify forks; grand repos are protected (override only via REDIACC_ALLOW_GRAND_REPO, which must be set by the operator before the session). Forks are the safe, disposable unit.\n",
       "up": "Deploy with auto-mount",
       "down": "Stop services",
       "fork": "CoW fork for testing"
