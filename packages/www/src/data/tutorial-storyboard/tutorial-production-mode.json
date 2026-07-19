@@ -43,7 +43,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo admin autostart list"
+        "commandFull": "rdc repo admin autostart list -m <machine-name>"
       }
     },
     {

@@ -34,7 +34,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "command": "rdc repo list",
+        "command": "rdc repo list --machine <machine-name>",
         "commandFull": "rdc repo list -m <machine-name>"
       }
     },
@@ -46,7 +46,7 @@
       "narrationRole": "transition",
       "card": {
         "command": "rdc vscode connect",
-        "commandFull": "rdc vscode connect -m <machine-name> --repository my-app"
+        "commandFull": "rdc vscode connect my-app@<machine-name>"
       }
     },
     {

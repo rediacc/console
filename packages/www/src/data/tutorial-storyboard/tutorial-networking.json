@@ -70,7 +70,7 @@
       "holdSec": 0.8,
       "narrationRole": "transition",
       "card": {
-        "commandFull": "rdc repo create --name infra -m <machine-name> --size 1G"
+        "commandFull": "rdc repo create infra -m <machine-name> --size 1G"
       }
     },
     {

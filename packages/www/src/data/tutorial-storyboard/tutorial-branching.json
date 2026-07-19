@@ -3,7 +3,7 @@
   "tutorial": "tutorial-branching",
   "nextTutorialKey": "tutorial-live-migration",
   "setupCommand": "bash .ci/tutorials/lib/stage-branching.sh",
-  "teardownCommand": "rdc vscode serve stop app:work;@${TUTORIAL_MACHINE_NAME} rdc vscode serve stop app:rollback@${TUTORIAL_MACHINE_NAME}",
+  "teardownCommand": "rdc vscode serve stop app:work@${TUTORIAL_MACHINE_NAME}; rdc vscode serve stop app:rollback@${TUTORIAL_MACHINE_NAME}",
   "sessions": {
     "rollback-pane": {
       "width": "half",
@@ -175,7 +175,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo log --name app:work"
+        "commandFull": "rdc repo log app:work"
       }
     },
     {
@@ -185,7 +185,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo checkout stable --tag rollback"
+        "commandFull": "rdc repo checkout stable --from app:work --tag rollback"
       }
     },
     {

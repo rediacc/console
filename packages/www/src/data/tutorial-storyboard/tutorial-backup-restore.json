@@ -77,7 +77,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo pull --name my-app --from my-storage --force --yes"
+        "commandFull": "rdc repo pull my-app --from my-storage --force --yes"
       }
     },
     {
@@ -87,7 +87,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo mount --name my-app"
+        "commandFull": "rdc repo up my-app --no-start"
       }
     },
     {

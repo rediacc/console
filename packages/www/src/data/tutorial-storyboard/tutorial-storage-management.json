@@ -62,7 +62,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo trim --name data-app"
+        "commandFull": "rdc repo trim data-app"
       }
     },
     {
@@ -72,7 +72,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo policy set --name data-app --auto-grow true --max-quota 8G --grow-step 25% --auto-trim true"
+        "commandFull": "rdc repo policy set data-app --auto-grow true --max-quota 8G --grow-step 25% --auto-trim true"
       }
     },
     {
@@ -82,7 +82,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo policy get --name data-app"
+        "commandFull": "rdc repo policy get data-app"
       }
     },
     {

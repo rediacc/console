@@ -157,7 +157,15 @@ jobs:
 
   quality-i18n:
     name: i18n
-    runs-on: ubuntu-slim
+    # ubuntu-latest, not ubuntu-slim: this job restores the tutorial-narration
+    # audio cache from R2 (see the step below), which needs the AWS CLI. Every
+    # other `aws s3` consumer in this repo already runs on ubuntu-latest, and
+    # ubuntu-slim is a minimal image -- check-workflow-gates.sh notes pyyaml is
+    # absent from it by default, and check-commands.sh exists precisely because
+    # commands "may not be available in ubuntu-slim". Without the restore the
+    # per-file audio assertion silently disables itself, which is the false
+    # green this change removes.
+    runs-on: ubuntu-latest
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -443,6 +451,13 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
+      # Field-aware: validates card.commandFull and teardownCommand against the
+      # live CLI tree. Runs BEFORE parity because a storyboard command that does
+      # not exist is a worse failure than one that merely disagrees with its
+      # recording -- teardownCommand is executed by the harness, and
+      # card.commandFull is generated into the portal's first-run flow.
+      - name: Validate tutorial storyboard commands against the live CLI
+        run: npm run check:ci-tutorial-commands
       - name: Validate tutorial cast/storyboard/transcript/mdx parity
         run: npm run check:ci-tutorial-parity
       - name: Validate account onboarding splash against canonical tutorials

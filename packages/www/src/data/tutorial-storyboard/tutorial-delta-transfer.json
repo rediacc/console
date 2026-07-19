@@ -53,7 +53,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo list"
+        "commandFull": "rdc repo list --machine <target-machine>"
       }
     },
     {
