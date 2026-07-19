@@ -37,8 +37,8 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "command": "rdc repo fork --parent my-app -m my-server --tag experiment --up",
-        "commandFull": "rdc repo fork --parent my-app -m <machine-name> --tag experiment --up"
+        "command": "rdc repo fork my-app --tag experiment --up",
+        "commandFull": "rdc repo fork my-app --tag experiment --up"
       }
     },
     {
@@ -59,8 +59,8 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "command": "rdc term connect -m my-server -r my-app -c 'ls -la index.html'",
-        "commandFull": "rdc term connect -m <machine-name> --repository my-app --command 'ls -la index.html'"
+        "command": "rdc term connect my-app@my-server -c 'ls -la index.html'",
+        "commandFull": "rdc term connect my-app@<machine-name> --command 'ls -la index.html'"
       }
     },
     {
@@ -77,8 +77,8 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "command": "rdc term connect -m my-server -r my-app:experiment -c 'rm index.html && echo removed'",
-        "commandFull": "rdc term connect -m <machine-name> --repository my-app:experiment --command 'rm index.html && echo removed'"
+        "command": "rdc term connect my-app:experiment@my-server -c 'rm index.html && echo removed'",
+        "commandFull": "rdc term connect my-app:experiment@<machine-name> --command 'rm index.html && echo removed'"
       }
     },
     {
@@ -88,8 +88,8 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "command": "rdc term connect -m my-server -r my-app -c 'ls -la index.html'",
-        "commandFull": "rdc term connect -m <machine-name> --repository my-app --command 'ls -la index.html'"
+        "command": "rdc term connect my-app@my-server -c 'ls -la index.html'",
+        "commandFull": "rdc term connect my-app@<machine-name> --command 'ls -la index.html'"
       }
     },
     {
@@ -99,8 +99,8 @@
       "holdSec": 0.8,
       "narrationRole": "transition",
       "card": {
-        "command": "rdc repo delete --name my-app:experiment -m my-server",
-        "commandFull": "rdc repo delete --name my-app:experiment -m <machine-name>"
+        "command": "rdc repo delete my-app:experiment",
+        "commandFull": "rdc repo delete my-app:experiment"
       }
     },
     {

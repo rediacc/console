@@ -104,7 +104,7 @@ Rediacc è un unico control plane con un audit log unificato, che sostituisce la
 
 **Ripristino istantaneo**: `rdc repo pull` da qualsiasi destinazione rclone in un fork fresco, avviato su un sottodominio specifico del fork coperto dal certificato wildcard del repository padre. Nessun rimescolamento DNS, nessuna complessità con i certificati.
 
-**Audit log unificato.** Oltre 70 tipi di eventi sull'intero control plane. Coprono accessi, API token, scritture di configurazione, ciclo di vita dei repo, backup, sync, sessioni terminale e operazioni sulle macchine. La catena e' hash-linked sulla workstation dell'operatore. `rdc audit verify` la controlla da un capo all'altro.
+**Audit log unificato.** Oltre 70 tipi di eventi sull'intero control plane. Coprono accessi, API token, scritture di configurazione, ciclo di vita dei repo, backup, sync, sessioni terminale e operazioni sulle macchine. La catena e' hash-linked sulla workstation dell'operatore. `rdc config audit verify` la controlla da un capo all'altro.
 
 Per un'entità essenziale mid-market con 250 dipendenti, il consolidamento passa da quattro vendor nominati (backup, DR, test-data, ripristino istantaneo) a uno. Una licenza, un audit log, un insieme di decisioni di aggiornamento, una voce nel registro.
 

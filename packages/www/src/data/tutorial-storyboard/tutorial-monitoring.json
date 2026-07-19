@@ -23,8 +23,8 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "command": "rdc machine query --name my-server --system",
-        "commandFull": "rdc machine query --name <machine-name> --system"
+        "command": "rdc machine status my-server --system",
+        "commandFull": "rdc machine status <machine-name> --system"
       }
     },
     {
@@ -34,8 +34,8 @@
       "holdSec": 0.8,
       "narrationRole": "transition",
       "card": {
-        "command": "rdc machine query --name my-server --containers",
-        "commandFull": "rdc machine query --name <machine-name> --containers"
+        "command": "rdc machine status my-server --containers",
+        "commandFull": "rdc machine status <machine-name> --containers"
       }
     },
     {
@@ -45,8 +45,8 @@
       "holdSec": 0.8,
       "narrationRole": "transition",
       "card": {
-        "command": "rdc machine query --name my-server --repositories",
-        "commandFull": "rdc machine query --name <machine-name> --repositories"
+        "command": "rdc machine status my-server --repositories",
+        "commandFull": "rdc machine status <machine-name> --repositories"
       }
     },
     {
@@ -56,8 +56,8 @@
       "holdSec": 0.8,
       "narrationRole": "transition",
       "card": {
-        "command": "rdc machine query --name my-server",
-        "commandFull": "rdc machine query --name <machine-name>"
+        "command": "rdc machine status my-server",
+        "commandFull": "rdc machine status <machine-name>"
       }
     },
     {

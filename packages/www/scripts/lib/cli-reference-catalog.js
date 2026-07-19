@@ -278,6 +278,17 @@ function stripInlineComment(text) {
     if (ch === '#' && !inQuote && (ci === 0 || /\s/.test(text[ci - 1]))) {
       return text.slice(0, ci).trimEnd();
     }
+    // A shell operator ends the rdc command; everything after it belongs to the
+    // shell, not to rdc. Without this, `rdc config audit log --since 1h > out.json`
+    // parsed `>` and `out.json` as two positional args and reported a spurious
+    // "excess positional" error -- a false positive, and a noisy gate is the
+    // failure mode that gets gates suppressed.
+    if (!inQuote && (ch === '>' || ch === '|' || ch === ';')) {
+      return text.slice(0, ci).trimEnd();
+    }
+    if (!inQuote && ch === '&' && text[ci + 1] === '&') {
+      return text.slice(0, ci).trimEnd();
+    }
   }
   return text;
 }

@@ -23,7 +23,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo up --name my-app -m <machine-name>"
+        "commandFull": "rdc repo up my-app"
       }
     },
     {
@@ -33,7 +33,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo autostart enable --name my-app -m <machine-name>"
+        "commandFull": "rdc repo admin autostart enable my-app"
       }
     },
     {
@@ -43,7 +43,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo autostart list -m <machine-name>"
+        "commandFull": "rdc repo admin autostart list"
       }
     },
     {
@@ -53,7 +53,7 @@
       "holdSec": 0.8,
       "narrationRole": "transition",
       "card": {
-        "commandFull": "rdc repo down --name my-app -m <machine-name>"
+        "commandFull": "rdc repo down my-app"
       }
     },
     {

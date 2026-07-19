@@ -153,12 +153,12 @@ See on taastamistest, mida 21(2)(c) ja (f) küsivad: mitte "varundusfaili tervik
 **5. samm**: Auditilogi tulemus, seejärel lamuta.
 
 ```bash
-rdc audit log --since "1 hour ago" > /tmp/effectiveness-2026w19.json
+rdc config audit log --since 1h > /tmp/effectiveness-2026w19.json
 rdc repo delete prod-app:effectiveness-2026w19 --yes
 rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
-Auditilogi jäädvustab iga sammu (forgi loomine, repo up, term-seansid, varunduse tõmbamine, repo hävitamine). See on räsiaheldatud. `rdc audit verify` operaatori tööjaamal kinnitab, et ahelat pole pärast sündmuste kirjutamist muudetud. Auditi mudeli kohta vaata [Konto turvalisus § CLI turvahoiak AI agentide jaoks](/et/docs/account-security).
+Auditilogi jäädvustab iga sammu (forgi loomine, repo up, term-seansid, varunduse tõmbamine, repo hävitamine). See on räsiaheldatud. `rdc config audit verify` operaatori tööjaamal kinnitab, et ahelat pole pärast sündmuste kirjutamist muudetud. Auditi mudeli kohta vaata [Konto turvalisus § CLI turvahoiak AI agentide jaoks](/et/docs/account-security).
 
 Rutiini kogu seinakellajaeg 128 GB hoidla puhul on alla 15 minuti. Suurem osa on suitsutets ja varundustõmbamise võrgu edasi-tagasi aeg. Fork operatsioonid ise on sekundid igaüks.
 
@@ -218,9 +218,9 @@ Nende õige lugemine: Rediacc on tööriistakiht, mitte turbepagramma. See eemal
 
 Kolm artefakti. Tooda need ja Article 21(2)(e) ja (f) vestlus läheb lühikeseks.
 
-**Artefakt 1: forgi-harjutuse sagedus**. Ajatempliga logi tõhususe harjutustest, mis on läbi viidud iganädalaselt või iga kahe nädala tagant jooksva kaheteistkümne kuu jooksul. Iga kirje näitab vanemhoidlat, forgi tagi, testitavat plaastrit või muudatust, suitsutesti tulemust ja lammutuse ajatempli. `rdc audit log --since` toodetud auditilogi jäädvustab kõike seda.
+**Artefakt 1: forgi-harjutuse sagedus**. Ajatempliga logi tõhususe harjutustest, mis on läbi viidud iganädalaselt või iga kahe nädala tagant jooksva kaheteistkümne kuu jooksul. Iga kirje näitab vanemhoidlat, forgi tagi, testitavat plaastrit või muudatust, suitsutesti tulemust ja lammutuse ajatempli. `rdc config audit log --since` toodetud auditilogi jäädvustab kõike seda.
 
-**Artefakt 2: nende harjutuste auditilogi, räsiaheldatud**. Räsiahel auditilogi on see, mis muudab "käitasime 47 harjutust eelmisel aastal" väitest tõendiks. `rdc audit verify` valideerib ahela otsast lõpuni. Valideerimisetulemus on üks käsu väljund, mida audiitor saab uuesti käivitada.
+**Artefakt 2: nende harjutuste auditilogi, räsiaheldatud**. Räsiahel auditilogi on see, mis muudab "käitasime 47 harjutust eelmisel aastal" väitest tõendiks. `rdc config audit verify` valideerib ahela otsast lõpuni. Valideerimisetulemus on üks käsu väljund, mida audiitor saab uuesti käivitada.
 
 **Artefakt 3: varunduse kontrollimise rada**. Iga ajakavastatud varundusstrateegiale toodab systemd üksus oleku lisafaili `/var/run/rediacc/cold-backup-<guid>.status.json` hoidla ja käituse kohta ning lõpliku kokkuvõtte logirea. `rdc backup status` esitab mõlemaid. Koos 4. sammust iganädalase taastamisharjutusega annab see audiitorile "varundus-ja-taastamine-testitud" raja, mitte ainult "varundus-võetud" raja. Diagnostilise pinna kohta vaata [Jälgimine](/et/docs/monitoring).
 

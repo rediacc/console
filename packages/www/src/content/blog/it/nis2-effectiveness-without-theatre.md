@@ -153,12 +153,12 @@ Questo è il test di recovery che Article 21(2)(c) e (f) richiedono: non "l'inte
 **Passo 5**: registra il risultato nel log di audit, poi smonta.
 
 ```bash
-rdc audit log --since "1 hour ago" > /tmp/effectiveness-2026w19.json
+rdc config audit log --since 1h > /tmp/effectiveness-2026w19.json
 rdc repo delete prod-app:effectiveness-2026w19 --yes
 rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
-Il log di audit cattura ogni passo (creazione del fork, repo up, sessioni term, backup pull, repo destroy). È incatenato per hash. `rdc audit verify` sulla workstation dell'operatore conferma che la catena non è stata modificata dalla scrittura degli eventi. Vedi [Account Security § CLI Security Posture for AI Agents](/it/docs/account-security) per il modello di audit.
+Il log di audit cattura ogni passo (creazione del fork, repo up, sessioni term, backup pull, repo destroy). È incatenato per hash. `rdc config audit verify` sulla workstation dell'operatore conferma che la catena non è stata modificata dalla scrittura degli eventi. Vedi [Account Security § CLI Security Posture for AI Agents](/it/docs/account-security) per il modello di audit.
 
 Il tempo totale di esecuzione per la routine, su un repository da 128 GB, è inferiore a 15 minuti. La maggior parte è lo smoke test e il round-trip di rete per il backup pull. Le operazioni di fork stesse richiedono pochi secondi ciascuna.
 
@@ -218,9 +218,9 @@ La lettura corretta di questi post: Rediacc è uno strato di strumenti, non un p
 
 Tre artefatti. Producili e la conversazione su Article 21(2)(e) e (f) diventa breve.
 
-**Artefatto 1: la cadenza delle esercitazioni di fork**. Un log con timestamp delle esercitazioni di efficacia eseguite su base settimanale o bisettimanale nell'arco dei dodici mesi precedenti. Ogni voce mostra il repository padre, il tag del fork, la patch o la modifica sotto test, il risultato dello smoke test e il timestamp di smontaggio. Il log di audit prodotto da `rdc audit log --since` cattura tutto questo.
+**Artefatto 1: la cadenza delle esercitazioni di fork**. Un log con timestamp delle esercitazioni di efficacia eseguite su base settimanale o bisettimanale nell'arco dei dodici mesi precedenti. Ogni voce mostra il repository padre, il tag del fork, la patch o la modifica sotto test, il risultato dello smoke test e il timestamp di smontaggio. Il log di audit prodotto da `rdc config audit log --since` cattura tutto questo.
 
-**Artefatto 2: il log di audit di quelle esercitazioni, incatenato per hash**. La catena hash sul log di audit è ciò che trasforma "abbiamo eseguito 47 esercitazioni l'anno scorso" da una dichiarazione in evidenza. `rdc audit verify` valida la catena end-to-end. Il risultato della validazione è un singolo output di comando che un auditor può rieseguire.
+**Artefatto 2: il log di audit di quelle esercitazioni, incatenato per hash**. La catena hash sul log di audit è ciò che trasforma "abbiamo eseguito 47 esercitazioni l'anno scorso" da una dichiarazione in evidenza. `rdc config audit verify` valida la catena end-to-end. Il risultato della validazione è un singolo output di comando che un auditor può rieseguire.
 
 **Artefatto 3: la traccia di verifica del backup**. Per ogni strategia di backup pianificata, l'unità systemd produce un file sidecar di stato in `/var/run/rediacc/cold-backup-<guid>.status.json` per repo per esecuzione, e una riga di log finale di riepilogo. `rdc backup status` espone entrambi. Combinato con l'esercitazione di ripristino settimanale del Passo 4 della routine sopra, questo fornisce all'auditor una traccia "backup-and-restore-tested," non solo "backup-taken." Vedi [Monitoring](/it/docs/monitoring) per la superficie diagnostica.
 

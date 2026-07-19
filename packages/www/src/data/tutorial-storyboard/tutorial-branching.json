@@ -3,12 +3,12 @@
   "tutorial": "tutorial-branching",
   "nextTutorialKey": "tutorial-live-migration",
   "setupCommand": "bash .ci/tutorials/lib/stage-branching.sh",
-  "teardownCommand": "rdc vscode serve stop --machine ${TUTORIAL_MACHINE_NAME} --repository app:work; rdc vscode serve stop --machine ${TUTORIAL_MACHINE_NAME} --repository app:rollback",
+  "teardownCommand": "rdc vscode serve stop app:work;@${TUTORIAL_MACHINE_NAME} rdc vscode serve stop app:rollback@${TUTORIAL_MACHINE_NAME}",
   "sessions": {
     "rollback-pane": {
       "width": "half",
       "recordScale": 1.5,
-      "urlFromCommand": "rdc vscode connect --machine ${TUTORIAL_MACHINE_NAME} --repository app:rollback --browser --url-only",
+      "urlFromCommand": "rdc vscode connect app:rollback@${TUTORIAL_MACHINE_NAME} --browser --url-only",
       "prepActions": [
         {
           "waitForSelector": ".explorer-folders-view .monaco-list-row"
@@ -42,7 +42,7 @@
     "work-pane": {
       "width": "half",
       "recordScale": 1.5,
-      "urlFromCommand": "rdc vscode connect --machine ${TUTORIAL_MACHINE_NAME} --repository app:work --browser --url-only",
+      "urlFromCommand": "rdc vscode connect app:work@${TUTORIAL_MACHINE_NAME} --browser --url-only",
       "prepActions": [
         {
           "waitForSelector": ".explorer-folders-view .monaco-list-row"
@@ -95,7 +95,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc term connect --machine <machine-name> --repository app:work --command 'echo v1 > version.txt && cat version.txt'"
+        "commandFull": "rdc term connect app:work@<machine-name> --command 'echo v1 > version.txt && cat version.txt'"
       }
     },
     {
@@ -105,7 +105,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc term connect --machine <machine-name> --repository app:work --command 'docker exec db psql -U app -d app -c \"SELECT count(*) FROM customers\"'"
+        "commandFull": "rdc term connect app:work@<machine-name> --command 'docker exec db psql -U app -d app -c \"SELECT count(*) FROM customers\"'"
       }
     },
     {
@@ -115,7 +115,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo commit --name app:work --message 'v1 baseline' --machine <machine-name>"
+        "commandFull": "rdc repo commit app:work --message 'v1 baseline'"
       }
     },
     {
@@ -125,7 +125,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo branch --branch stable --name app:work"
+        "commandFull": "rdc repo branch app:work --branch stable"
       }
     },
     {
@@ -135,7 +135,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc term connect --machine <machine-name> --repository app:work --command 'echo v2 > version.txt && cat version.txt'"
+        "commandFull": "rdc term connect app:work@<machine-name> --command 'echo v2 > version.txt && cat version.txt'"
       }
     },
     {
@@ -145,7 +145,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc term connect --machine <machine-name> --repository app:work --command 'docker exec db psql -U app -d app -c \"DROP TABLE customers\"'"
+        "commandFull": "rdc term connect app:work@<machine-name> --command 'docker exec db psql -U app -d app -c \"DROP TABLE customers\"'"
       }
     },
     {
@@ -155,7 +155,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc term connect --machine <machine-name> --repository app:work --command 'docker exec db psql -U app -d app -c \"SELECT count(*) FROM customers\"'"
+        "commandFull": "rdc term connect app:work@<machine-name> --command 'docker exec db psql -U app -d app -c \"SELECT count(*) FROM customers\"'"
       }
     },
     {
@@ -165,7 +165,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo commit --name app:work --message 'v2 risky change' --machine <machine-name>"
+        "commandFull": "rdc repo commit app:work --message 'v2 risky change'"
       }
     },
     {
@@ -175,7 +175,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo log --name app:work --machine <machine-name>"
+        "commandFull": "rdc repo log --name app:work"
       }
     },
     {
@@ -185,7 +185,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo checkout --ref stable --from app:work --tag rollback --machine <machine-name>"
+        "commandFull": "rdc repo checkout stable --tag rollback"
       }
     },
     {
@@ -195,7 +195,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo up --name app:rollback --machine <machine-name>"
+        "commandFull": "rdc repo up app:rollback"
       }
     },
     {
@@ -205,7 +205,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc term connect --machine <machine-name> --repository app:rollback --command 'cat version.txt'"
+        "commandFull": "rdc term connect app:rollback@<machine-name> --command 'cat version.txt'"
       }
     },
     {
@@ -215,7 +215,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc term connect --machine <machine-name> --repository app:rollback --command 'docker exec db psql -U app -d app -c \"SELECT count(*) FROM customers\"'"
+        "commandFull": "rdc term connect app:rollback@<machine-name> --command 'docker exec db psql -U app -d app -c \"SELECT count(*) FROM customers\"'"
       }
     },
     {

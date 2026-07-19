@@ -153,12 +153,12 @@ C'est le test de reprise que 21(2)(c) et (f) demandent : non pas "l'intégrité 
 **Étape 5** : consigner le résultat dans le journal d'audit, puis démonter.
 
 ```bash
-rdc audit log --since "1 hour ago" > /tmp/effectiveness-2026w19.json
+rdc config audit log --since 1h > /tmp/effectiveness-2026w19.json
 rdc repo delete prod-app:effectiveness-2026w19 --yes
 rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
-Le journal d'audit capture chaque étape (création du fork, repo up, sessions term, backup pull, repo destroy). Il est chaîné par hachage. `rdc audit verify` sur le poste de travail de l'opérateur confirme que la chaîne n'a pas été modifiée depuis que les événements ont été écrits. Voir [Sécurité du compte - Posture de sécurité CLI pour les agents IA](/fr/docs/account-security) pour le modèle d'audit.
+Le journal d'audit capture chaque étape (création du fork, repo up, sessions term, backup pull, repo destroy). Il est chaîné par hachage. `rdc config audit verify` sur le poste de travail de l'opérateur confirme que la chaîne n'a pas été modifiée depuis que les événements ont été écrits. Voir [Sécurité du compte - Posture de sécurité CLI pour les agents IA](/fr/docs/account-security) pour le modèle d'audit.
 
 Le temps total d'exécution de la routine, sur un dépôt de 128 Go, est inférieur à 15 minutes. La majeure partie correspond au test de fumée et au temps de transit réseau pour le backup pull. Les opérations de fork elles-mêmes prennent quelques secondes chacune.
 
@@ -218,9 +218,9 @@ La bonne lecture de ceux-ci : Rediacc est une couche d'outillage, pas un program
 
 Trois artefacts. Produisez-les et la conversation sur l'Article 21(2)(e) et (f) devient brève.
 
-**Artefact 1 : la cadence des exercices de fork**. Un journal horodaté des exercices d'efficacité exécutés sur une cadence hebdomadaire ou bihebdomadaire sur douze mois glissants. Chaque entrée montre le dépôt parent, l'étiquette du fork, le correctif ou changement testé, le résultat du test de fumée et l'horodatage du démontage. Le journal d'audit produit par `rdc audit log --since` capture tout cela.
+**Artefact 1 : la cadence des exercices de fork**. Un journal horodaté des exercices d'efficacité exécutés sur une cadence hebdomadaire ou bihebdomadaire sur douze mois glissants. Chaque entrée montre le dépôt parent, l'étiquette du fork, le correctif ou changement testé, le résultat du test de fumée et l'horodatage du démontage. Le journal d'audit produit par `rdc config audit log --since` capture tout cela.
 
-**Artefact 2 : le journal d'audit de ces exercices, chaîné par hachage**. La chaîne de hachage sur le journal d'audit est ce qui transforme "nous avons exécuté 47 exercices l'an dernier" d'une affirmation en preuve. `rdc audit verify` valide la chaîne de bout en bout. Le résultat de la validation est une sortie de commande unique qu'un auditeur peut réexécuter.
+**Artefact 2 : le journal d'audit de ces exercices, chaîné par hachage**. La chaîne de hachage sur le journal d'audit est ce qui transforme "nous avons exécuté 47 exercices l'an dernier" d'une affirmation en preuve. `rdc config audit verify` valide la chaîne de bout en bout. Le résultat de la validation est une sortie de commande unique qu'un auditeur peut réexécuter.
 
 **Artefact 3 : la piste de vérification des sauvegardes**. Pour chaque stratégie de sauvegarde planifiée, l'unité systemd produit un fichier sidecar de statut à `/var/run/rediacc/cold-backup-<guid>.status.json` par dépôt et par exécution, ainsi qu'une ligne de journal de résumé finale. `rdc backup status` expose les deux. Combiné avec l'exercice de restauration hebdomadaire de l'Étape 4 de la routine ci-dessus, cela donne à l'auditeur une piste "sauvegarde-et-restauration-testée", et non seulement "sauvegarde-prise". Voir [Surveillance](/fr/docs/monitoring) pour la surface de diagnostic.
 

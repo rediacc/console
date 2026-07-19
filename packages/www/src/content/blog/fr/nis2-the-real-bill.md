@@ -104,7 +104,7 @@ Rediacc est un plan de contrôle unique avec un journal d'audit unifié, rempla�
 
 **Restauration instantanée** : `rdc repo pull` depuis n'importe quelle cible rclone vers un nouveau fork, démarré sous un sous-domaine spécifique au fork couvert par le certificat wildcard du dépôt parent. Pas de manipulation DNS, pas de renouvellement de certificat.
 
-**Journal d'audit unifié.** Plus de 70 types d'événements sur l'ensemble du plan de contrôle. Ils couvrent les connexions, les jetons API, les écritures de configuration, le cycle de vie des dépôts, la sauvegarde, la synchronisation, les sessions terminal et les opérations machine. La chaîne est liée par hachage sur le poste de travail de l'opérateur. `rdc audit verify` la vérifie de bout en bout.
+**Journal d'audit unifié.** Plus de 70 types d'événements sur l'ensemble du plan de contrôle. Ils couvrent les connexions, les jetons API, les écritures de configuration, le cycle de vie des dépôts, la sauvegarde, la synchronisation, les sessions terminal et les opérations machine. La chaîne est liée par hachage sur le poste de travail de l'opérateur. `rdc config audit verify` la vérifie de bout en bout.
 
 Pour une entité essentielle du marché intermédiaire de 250 employés, la consolidation passe de quatre éditeurs nommés (sauvegarde, DR, données de test, restauration instantanée) à un seul. Une licence, un journal d'audit, un ensemble de décisions de mise à niveau, une entrée dans le registre.
 

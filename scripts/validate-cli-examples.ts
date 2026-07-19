@@ -55,8 +55,30 @@ const TARGET_GLOBS = [
   // i18n locales — ALL languages (positional-syntax drift surfaces in
   // translated `rdc …` fragments even when the surrounding prose is
   // correctly translated).
-  'packages/cli/src/i18n/locales/{ar,de,en,es,fr,ja,ru,tr,zh}/cli.json',
+  // All 13 locales. et/ko/pt/it were absent and therefore never validated;
+  // measured clean at the time they were added, so this closes a latent hole
+  // rather than importing a backlog.
+  'packages/cli/src/i18n/locales/{ar,de,en,es,et,fr,it,ja,ko,pt,ru,tr,zh}/cli.json',
   'private/account/web/src/i18n/locales/en/**/*.json',
+
+  // Surfaces that carried real stale commands with NO gate at all. `.cast`
+  // recordings are deliberately absent: validate-tutorial-cast-output.js
+  // already gates those, and double-gating one surface with two engines means
+  // two suppression records to keep honest.
+  'packages/www/src/content/blog/**/*.{md,mdx}',
+  'private/account/web/src/data/study-content/**/*.ts',
+  // NOT tutorial-storyboard/**: each step carries BOTH `command` (an
+  // abbreviated display label, e.g. "rdc machine add") and `commandFull` (the
+  // runnable form with its arguments). This extractor reads raw strings and
+  // cannot tell the two apart, so it reports the label as missing positional
+  // args. The storyboards' real stale commands WERE fixed in this campaign;
+  // gating them needs a field-aware extractor that reads only `commandFull`.
+  // NOT exam-question-bank.json: its answers discuss commands in prose
+  // ("rdc repo delete cryptographically erases the LUKS volume, and ..."),
+  // which this extractor reads as a command with 14 positional args. Precision
+  // over recall -- a gate that cries wolf gets suppressed, which is the exact
+  // failure this campaign removed. Its one real defect is fixed by hand; gating
+  // it needs an extractor that distinguishes a command from a sentence.
 
   // Account submodule
   'private/account/web/src/**/*.tsx',
@@ -534,9 +556,10 @@ function validateCommand(
   // Skip em-dash separated text (prose, not commands)
   if (/\s[\u2014\u2013]\s/.test(command) || /\s--\s[a-z]/.test(command)) return;
 
-  // Hidden or planned commands not yet in command-tree.json -- skip
+  // `rdc run` is a real command, deliberately hidden from help and MCP (it is
+  // the Rediaccfile escape hatch for debugging), so it is absent from
+  // command-tree.json and cannot be parsed. The skip is justified.
   if (/^rdc\s+run\s/.test(command)) return;
-  if (/^rdc\s+repo\s+snapshot\s/.test(command)) return;
 
   const parsed = parseRdcCommand(command);
   if (parsed.ok) return;

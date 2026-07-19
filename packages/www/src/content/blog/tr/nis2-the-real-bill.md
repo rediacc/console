@@ -103,7 +103,7 @@ Rediacc, kendi altyapısını barındıran yapılar için beş kategorinin dörd
 
 **Anlık geri yükleme:** herhangi bir rclone hedefinden `rdc repo pull` ile yeni bir fork'a; üst deponun wildcard sertifikasıyla kapsanan fork'a özgü bir alt alan adı altında ayağa kaldırılır. DNS karmaşası yok, sertifika dansı yok.
 
-**Birleşik denetim günlüğü.** Kontrol düzleminde 70'ten fazla olay türü. Oturum açmalar, API token'ları, yapılandırma yazmaları, depo yaşam döngüsü, yedekleme, senkronizasyon, terminal oturumları ve makine işlemleri. Zincir operatör iş istasyonunda hash'le bağlı. `rdc audit verify` baştan sona kontrol eder.
+**Birleşik denetim günlüğü.** Kontrol düzleminde 70'ten fazla olay türü. Oturum açmalar, API token'ları, yapılandırma yazmaları, depo yaşam döngüsü, yedekleme, senkronizasyon, terminal oturumları ve makine işlemleri. Zincir operatör iş istasyonunda hash'le bağlı. `rdc config audit verify` baştan sona kontrol eder.
 
 250 çalışanlı orta ölçekli bir temel kuruluş için birleştirme, dört adlandırılmış satıcıdan (yedekleme, DR, test verisi, anlık geri yükleme) bire iniyor. Tek lisans, tek denetim günlüğü, tek yükseltme kararı seti, tek kayıt girişi.
 

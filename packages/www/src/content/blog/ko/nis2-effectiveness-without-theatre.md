@@ -152,12 +152,12 @@ curl -fsS https://app-fork-restore-2026w19.prod-app.hostinger.example.com/health
 **5단계**: 결과를 감사 로그에 기록하고 종료.
 
 ```bash
-rdc audit log --since "1 hour ago" > /tmp/effectiveness-2026w19.json
+rdc config audit log --since 1h > /tmp/effectiveness-2026w19.json
 rdc repo delete prod-app:effectiveness-2026w19 --yes
 rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
-감사 로그는 모든 단계(포크 생성, repo up, term 세션, 백업 pull, repo destroy)를 캡처합니다. 해시 체인으로 연결되어 있습니다. 운영자의 워크스테이션에서 `rdc audit verify`를 실행하면 이벤트가 기록된 이후 체인이 수정되지 않았음을 확인합니다. 감사 모델에 대해서는 [계정 보안 § AI 에이전트를 위한 CLI 보안 자세](/ko/docs/account-security)를 참조하십시오.
+감사 로그는 모든 단계(포크 생성, repo up, term 세션, 백업 pull, repo destroy)를 캡처합니다. 해시 체인으로 연결되어 있습니다. 운영자의 워크스테이션에서 `rdc config audit verify`를 실행하면 이벤트가 기록된 이후 체인이 수정되지 않았음을 확인합니다. 감사 모델에 대해서는 [계정 보안 § AI 에이전트를 위한 CLI 보안 자세](/ko/docs/account-security)를 참조하십시오.
 
 128 GB 리포지토리에서 루틴의 총 실 소요 시간은 15분 미만입니다. 대부분은 스모크 테스트와 백업 pull의 네트워크 왕복 시간입니다. 포크 작업 자체는 각각 몇 초입니다.
 
@@ -217,9 +217,9 @@ SRE가 나머지 포스트가 흥미롭다고 결정하기 전에 미리 알아�
 
 세 가지 아티팩트입니다. 이것들을 제출하면 Article 21(2)(e)와 (f)에 관한 대화가 짧아집니다.
 
-**아티팩트 1: 포크 훈련 주기**. 롤링 12개월 동안 주간 또는 격주 주기로 실행된 효과성 훈련의 타임스탬프된 로그. 각 항목은 부모 리포지토리, 포크 태그, 테스트 중인 패치 또는 변경, 스모크 테스트 결과, 종료 타임스탬프를 보여줍니다. `rdc audit log --since`가 생성하는 감사 로그가 이 모든 것을 캡처합니다.
+**아티팩트 1: 포크 훈련 주기**. 롤링 12개월 동안 주간 또는 격주 주기로 실행된 효과성 훈련의 타임스탬프된 로그. 각 항목은 부모 리포지토리, 포크 태그, 테스트 중인 패치 또는 변경, 스모크 테스트 결과, 종료 타임스탬프를 보여줍니다. `rdc config audit log --since`가 생성하는 감사 로그가 이 모든 것을 캡처합니다.
 
-**아티팩트 2: 해시 체인으로 연결된 훈련의 감사 로그**. 감사 로그의 해시 체인이 "작년에 47번 훈련을 실행했다"를 주장에서 증거로 바꾸는 것입니다. `rdc audit verify`가 체인을 엔드투엔드로 검증합니다. 검증 결과는 감사자가 재실행할 수 있는 단일 명령어 출력입니다.
+**아티팩트 2: 해시 체인으로 연결된 훈련의 감사 로그**. 감사 로그의 해시 체인이 "작년에 47번 훈련을 실행했다"를 주장에서 증거로 바꾸는 것입니다. `rdc config audit verify`가 체인을 엔드투엔드로 검증합니다. 검증 결과는 감사자가 재실행할 수 있는 단일 명령어 출력입니다.
 
 **아티팩트 3: 백업 검증 트레일**. 예약된 각 백업 전략에 대해, systemd 유닛은 리포지토리별, 실행별로 `/var/run/rediacc/cold-backup-<guid>.status.json`에 상태 사이드카를 생성하고, 최종 요약 로그 라인을 생성합니다. `rdc backup status`가 둘 다 표시합니다. 위 루틴의 4단계에서 주간 복구 훈련과 결합하면, 감사자에게 "백업 수행" 트레일이 아닌 "백업 및 복구 테스트 완료" 트레일을 제공합니다. 진단 표면에 대해서는 [모니터링](/ko/docs/monitoring)을 참조하십시오.
 

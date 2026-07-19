@@ -23,7 +23,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc term connect --machine <machine-name> --repository pulse --command 'docker logs heartbeat_app --tail 5'"
+        "commandFull": "rdc term connect pulse@<machine-name> --command 'docker logs heartbeat_app --tail 5'"
       }
     },
     {
@@ -43,7 +43,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo list --machine <target-machine>"
+        "commandFull": "rdc repo list"
       }
     },
     {
@@ -53,7 +53,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo list --machine <machine-name>"
+        "commandFull": "rdc repo list"
       }
     },
     {
@@ -63,7 +63,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc term connect --machine <target-machine> --repository pulse --command 'docker logs heartbeat_app --tail 5'"
+        "commandFull": "rdc term connect pulse@<target-machine> --command 'docker logs heartbeat_app --tail 5'"
       }
     },
     {

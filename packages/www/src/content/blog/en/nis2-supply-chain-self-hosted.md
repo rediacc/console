@@ -99,7 +99,7 @@ Self-hosting shifts the supplier list, it does not delete it. Three things an au
 
 **2. Rediacc does not have ISO 27001, SOC 2, or BSI C5 yet.** These are on the roadmap, not in hand. For a procurement team that uses certifications as a gating mechanism, this is a real friction. The defensible counter is the one this post has been making: the data-path argument means most of what those certifications attest to (vendor cloud security controls, vendor personnel access management, vendor sub-processor management) is not in scope, because Rediacc-the-company is not in the data path. That argument needs to be made carefully and defensibly, not as a substitute for certifications when certifications are what the buyer needs.
 
-**3. The GRC layer is still yours.** Rediacc gives the operator a 70+-event hash-chained audit log (`rdc audit verify` validates the chain end-to-end). It does not give you a supplier register, a control framework, or an evidence-collection workflow. Those still come from Drata, Vanta, OneTrust, or one of the European entrants. The companion [real bill post](/en/blog/nis2-the-real-bill) covers the cost shape of that complementarity in detail.
+**3. The GRC layer is still yours.** Rediacc gives the operator a 70+-event hash-chained audit log (`rdc config audit verify` validates the chain end-to-end). It does not give you a supplier register, a control framework, or an evidence-collection workflow. Those still come from Drata, Vanta, OneTrust, or one of the European entrants. The companion [real bill post](/en/blog/nis2-the-real-bill) covers the cost shape of that complementarity in detail.
 
 ## The DPA you no longer have to negotiate
 

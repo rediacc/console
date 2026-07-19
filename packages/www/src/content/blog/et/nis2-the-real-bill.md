@@ -103,7 +103,7 @@ Rediacc on üks juhtimistasand ühtse auditilogi, asendades nelja viiest kategoo
 
 **Kiirtaaste**: `rdc repo pull` mis tahes rclone-sihtmärgist värskesse forki, mis käivitatakse fork-spetsiifilise alamdomeeni all, mida katab emRepositooriumi metamärgisertifikaat. Ei mingit DNS-i segadust, ei sertifikaadi tantsu.
 
-**Ühtne auditilog.** 70+ sündmusetüüpi juhtimistasandil. Need katavad sisselogimised, API tokenid, konfiguratsiooni kirjutamised, repositooriumi elutsükli, varunduse, sünkroonimise, terminaliseansid ja masina toimingud. Ahel on räsiga lingitud operaatori tööjaamal. `rdc audit verify` kontrollib seda otsast lõpuni.
+**Ühtne auditilog.** 70+ sündmusetüüpi juhtimistasandil. Need katavad sisselogimised, API tokenid, konfiguratsiooni kirjutamised, repositooriumi elutsükli, varunduse, sünkroonimise, terminaliseansid ja masina toimingud. Ahel on räsiga lingitud operaatori tööjaamal. `rdc config audit verify` kontrollib seda otsast lõpuni.
 
 250 töötajaga keskturu olulise üksuse jaoks on koondamine neljalt nimetatud tarnijalt (backup, DR, testandmed, kiirtaaste) ühele. Üks litsents, üks auditilog, üks komplekt uuendamisotsuseid, üks registrikirje.
 

@@ -40,7 +40,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc config infra set -m <machine-name> --public-ipv4 <server-ip> --base-domain <base-domain> --cert-email <cert-email> --cf-dns-token <cf-dns-token>"
+        "commandFull": "rdc machine infra set <machine-name> --public-ipv4 <server-ip> --base-domain <base-domain> --cert-email <cert-email> --cf-dns-token <cf-dns-token>"
       }
     },
     {
@@ -50,7 +50,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc config infra show -m <machine-name>"
+        "commandFull": "rdc machine infra show <machine-name>"
       }
     },
     {
@@ -60,7 +60,7 @@
       "holdSec": 0.8,
       "narrationRole": "transition",
       "card": {
-        "commandFull": "rdc config infra push -m <machine-name>"
+        "commandFull": "rdc machine infra push <machine-name>"
       }
     },
     {
@@ -80,7 +80,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo template apply --name single-service -m <machine-name> --repository infra"
+        "commandFull": "rdc repo admin template apply infra --template single-service"
       }
     },
     {
@@ -90,7 +90,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo up --name infra -m <machine-name>"
+        "commandFull": "rdc repo up infra"
       }
     },
     {

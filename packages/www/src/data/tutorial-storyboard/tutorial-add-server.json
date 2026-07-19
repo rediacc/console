@@ -23,7 +23,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "command": "rdc config machine add",
+        "command": "rdc machine add",
         "commandFull": "rdc machine add <machine-name> --ip <server-ip> --user <user>"
       }
     },
@@ -34,7 +34,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "command": "rdc config machine setup",
+        "command": "rdc machine setup",
         "commandFull": "rdc machine setup <machine-name>"
       }
     },

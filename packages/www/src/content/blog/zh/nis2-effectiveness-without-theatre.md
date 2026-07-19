@@ -152,12 +152,12 @@ curl -fsS https://app-fork-restore-2026w19.prod-app.hostinger.example.com/health
 **步骤五**：记录审计日志，然后拆除。
 
 ```bash
-rdc audit log --since "1 hour ago" > /tmp/effectiveness-2026w19.json
+rdc config audit log --since 1h > /tmp/effectiveness-2026w19.json
 rdc repo delete prod-app:effectiveness-2026w19 --yes
 rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
-审计日志记录每一个步骤（fork 创建、repo up、终端会话、备份拉取、repo 销毁），采用哈希链式结构。在操作员工作站上执行 `rdc audit verify` 可确认该链自事件写入以来未被篡改。审计模型详见[账户安全 § AI 智能体 CLI 安全态势](/zh/docs/account-security)。
+审计日志记录每一个步骤（fork 创建、repo up、终端会话、备份拉取、repo 销毁），采用哈希链式结构。在操作员工作站上执行 `rdc config audit verify` 可确认该链自事件写入以来未被篡改。审计模型详见[账户安全 § AI 智能体 CLI 安全态势](/zh/docs/account-security)。
 
 对于一个 128 GB 的仓库，整套例程的挂钟时间不超过 15 分钟。其中大部分时间用于冒烟测试和备份拉取的网络往返；fork 操作本身各只需数秒。
 
@@ -217,9 +217,9 @@ rdc repo up prod-app:serving-2026-05-09T14-30Z
 
 三类证据。提供这些，Article 21(2)(e) 和 (f) 的对话就会很简短。
 
-**证据一：fork 演练节奏记录**。一份按每周或双周节奏执行的有效性演练时间戳日志，覆盖滚动的十二个月。每条记录显示父仓库、fork 标签、待测补丁或变更、冒烟测试结果以及拆除时间戳。`rdc audit log --since` 产生的审计日志涵盖所有这些信息。
+**证据一：fork 演练节奏记录**。一份按每周或双周节奏执行的有效性演练时间戳日志，覆盖滚动的十二个月。每条记录显示父仓库、fork 标签、待测补丁或变更、冒烟测试结果以及拆除时间戳。`rdc config audit log --since` 产生的审计日志涵盖所有这些信息。
 
-**证据二：那些演练的哈希链式审计日志**。审计日志上的哈希链，是将"我们去年跑了 47 次演练"从声明转化为证据的关键。`rdc audit verify` 端到端验证该链，验证结果是一条单一的命令输出，审计人员可以自行重新运行。
+**证据二：那些演练的哈希链式审计日志**。审计日志上的哈希链，是将"我们去年跑了 47 次演练"从声明转化为证据的关键。`rdc config audit verify` 端到端验证该链，验证结果是一条单一的命令输出，审计人员可以自行重新运行。
 
 **证据三：备份验证追踪记录**。对于每个计划备份策略，systemd 单元在每次运行时为每个仓库在 `/var/run/rediacc/cold-backup-<guid>.status.json` 生成状态附属文件，并写入最终摘要日志行。`rdc backup status` 同时展示两者。结合上述例程步骤四中的每周恢复演练，这为审计人员提供了"已备份且已测试恢复"的追踪记录，而非仅仅"已执行备份"的记录。诊断界面详见[监控](/zh/docs/monitoring)文档。
 

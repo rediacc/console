@@ -153,12 +153,12 @@ Das ist der Wiederherstellungstest, den 21(2)(c) und (f) verlangen: nicht "die B
 **Schritt 5**: Das Ergebnis im Audit-Log festhalten, dann abbauen.
 
 ```bash
-rdc audit log --since "1 hour ago" > /tmp/effectiveness-2026w19.json
+rdc config audit log --since 1h > /tmp/effectiveness-2026w19.json
 rdc repo delete prod-app:effectiveness-2026w19 --yes
 rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
-Das Audit-Log erfasst jeden Schritt (Fork-Erstellung, repo up, Term-Sessions, Backup-Pull, repo destroy). Es ist hash-verkettet. `rdc audit verify` auf der Workstation des Operators bestätigt, dass die Kette seit dem Schreiben der Ereignisse nicht verändert wurde. Siehe [Account Security § CLI Security Posture for AI Agents](/de/docs/account-security) für das Audit-Modell.
+Das Audit-Log erfasst jeden Schritt (Fork-Erstellung, repo up, Term-Sessions, Backup-Pull, repo destroy). Es ist hash-verkettet. `rdc config audit verify` auf der Workstation des Operators bestätigt, dass die Kette seit dem Schreiben der Ereignisse nicht verändert wurde. Siehe [Account Security § CLI Security Posture for AI Agents](/de/docs/account-security) für das Audit-Modell.
 
 Die gesamte Wanduhrzeit für die Routine, bei einem 128-GB-Repository, liegt unter 15 Minuten. Der größte Teil davon entfällt auf den Smoke-Test und den Netzwerk-Round-Trip für den Backup-Pull. Die Fork-Operationen selbst dauern jeweils Sekunden.
 
@@ -218,9 +218,9 @@ Die richtige Lesart: Rediacc ist eine Tooling-Schicht, kein Sicherheitsprogramm.
 
 Drei Artefakte. Produzieren Sie diese und die Unterhaltung zu Artikel 21(2)(e) und (f) wird kurz.
 
-**Artefakt 1: die Fork-Drill-Kadenz**. Ein zeitgestempeltes Log von Wirksamkeits-Drills, die wöchentlich oder zweiwöchentlich über rollende zwölf Monate durchgeführt wurden. Jeder Eintrag zeigt das Eltern-Repository, das Fork-Tag, den zu testenden Patch oder die Änderung, das Smoke-Test-Ergebnis und den Abbau-Zeitstempel. Das von `rdc audit log --since` produzierte Audit-Log erfasst all das.
+**Artefakt 1: die Fork-Drill-Kadenz**. Ein zeitgestempeltes Log von Wirksamkeits-Drills, die wöchentlich oder zweiwöchentlich über rollende zwölf Monate durchgeführt wurden. Jeder Eintrag zeigt das Eltern-Repository, das Fork-Tag, den zu testenden Patch oder die Änderung, das Smoke-Test-Ergebnis und den Abbau-Zeitstempel. Das von `rdc config audit log --since` produzierte Audit-Log erfasst all das.
 
-**Artefakt 2: das Audit-Log dieser Drills, hash-verkettet**. Die Hash-Kette im Audit-Log ist das, was "wir haben letztes Jahr 47 Drills durchgeführt" von einer Behauptung zu einem Nachweis macht. `rdc audit verify` validiert die Kette End-to-End. Das Validierungsergebnis ist eine einzelne Befehlsausgabe, die ein Auditor erneut ausführen kann.
+**Artefakt 2: das Audit-Log dieser Drills, hash-verkettet**. Die Hash-Kette im Audit-Log ist das, was "wir haben letztes Jahr 47 Drills durchgeführt" von einer Behauptung zu einem Nachweis macht. `rdc config audit verify` validiert die Kette End-to-End. Das Validierungsergebnis ist eine einzelne Befehlsausgabe, die ein Auditor erneut ausführen kann.
 
 **Artefakt 3: der Backup-Verify-Trail**. Für jede geplante Backup-Strategie produziert die systemd-Unit eine Status-Sidecar-Datei unter `/var/run/rediacc/cold-backup-<guid>.status.json` pro Repo pro Durchlauf und eine abschließende Zusammenfassungslog-Zeile. `rdc backup status` zeigt beides an. Kombiniert mit dem wöchentlichen Wiederherstellungs-Drill aus Schritt 4 der obigen Routine ergibt das einen "Backup-und-Wiederherstellung-getestet"-Trail, nicht nur einen "Backup-genommen"-Trail. Siehe [Monitoring](/de/docs/monitoring) für die Diagnosefläche.
 

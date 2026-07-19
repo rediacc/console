@@ -22,7 +22,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc term connect --machine <machine-name> --repository data-app --command 'dd if=/dev/zero of=big.bin bs=1M count=1200 status=none && df -h .'"
+        "commandFull": "rdc term connect data-app@<machine-name> --command 'dd if=/dev/zero of=big.bin bs=1M count=1200 status=none && df -h .'"
       }
     },
     {
@@ -32,7 +32,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo expand --name data-app --machine <machine-name> --size 4G"
+        "commandFull": "rdc repo expand data-app --size 4G"
       }
     },
     {
@@ -42,7 +42,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc term connect --machine <machine-name> --repository data-app --command 'df -h .'"
+        "commandFull": "rdc term connect data-app@<machine-name> --command 'df -h .'"
       }
     },
     {
@@ -52,7 +52,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc term connect --machine <machine-name> --repository data-app --command 'rm big.bin && df -h .'"
+        "commandFull": "rdc term connect data-app@<machine-name> --command 'rm big.bin && df -h .'"
       }
     },
     {
@@ -62,7 +62,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo trim --name data-app --machine <machine-name>"
+        "commandFull": "rdc repo trim --name data-app"
       }
     },
     {
@@ -72,7 +72,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo policy set --machine <machine-name> --name data-app --auto-grow true --max-quota 8G --grow-step 25% --auto-trim true"
+        "commandFull": "rdc repo policy set --name data-app --auto-grow true --max-quota 8G --grow-step 25% --auto-trim true"
       }
     },
     {
@@ -82,7 +82,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo policy get --machine <machine-name> --name data-app"
+        "commandFull": "rdc repo policy get --name data-app"
       }
     },
     {
@@ -92,7 +92,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc machine query --name <machine-name> --storage-health"
+        "commandFull": "rdc machine status <machine-name> --storage-health"
       }
     },
     {

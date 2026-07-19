@@ -156,12 +156,12 @@ Bu, 21(2)(c) ve (f)'nin istediği kurtarma testidir: "yedek dosya bütünlüğü
 **Adım 5**: Denetim günlüğünü kaydet, ardından yık.
 
 ```bash
-rdc audit log --since "1 hour ago" > /tmp/effectiveness-2026w19.json
+rdc config audit log --since 1h > /tmp/effectiveness-2026w19.json
 rdc repo delete prod-app:effectiveness-2026w19 --yes
 rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
-Denetim günlüğü her adımı yakalar (fork oluşturma, repo up, term oturumları, yedek çekme, repo yıkma). Hash zincirine bağlıdır. Operatörün iş istasyonundaki `rdc audit verify`, olaylar yazıldığından bu yana zincirin değiştirilmediğini doğrular. Denetim modeli için bkz. [Hesap Güvenliği § Yapay Zeka Ajanları için CLI Güvenlik Duruşu](/tr/docs/account-security).
+Denetim günlüğü her adımı yakalar (fork oluşturma, repo up, term oturumları, yedek çekme, repo yıkma). Hash zincirine bağlıdır. Operatörün iş istasyonundaki `rdc config audit verify`, olaylar yazıldığından bu yana zincirin değiştirilmediğini doğrular. Denetim modeli için bkz. [Hesap Güvenliği § Yapay Zeka Ajanları için CLI Güvenlik Duruşu](/tr/docs/account-security).
 
 Rutinin 128 GB'lık bir depo için toplam gerçek zamanlı süresi 15 dakikanın altındadır. Bunun büyük çoğunluğu duman testi ve yedek çekme için ağ gidiş-dönüş süresidir. Fork işlemlerinin kendisi saniyeler alır.
 
@@ -221,9 +221,9 @@ Bunların doğru okunması şudur: Rediacc bir araç katmanıdır, güvenlik pro
 
 Üç kanıt. Bunları üretin; Article 21(2)(e) ve (f) görüşmesi kısalır.
 
-**Kanıt 1: fork tatbikat kadansı**. Yuvarlanan on iki ay boyunca haftalık veya iki haftada bir kadansla yürütülen etkinlik tatbikatlarının zaman damgalı günlüğü. Her giriş, üst depoyu, fork etiketini, test altındaki yamayı veya değişikliği, duman testi sonucunu ve yıkma zaman damgasını gösterir. `rdc audit log --since` tarafından üretilen denetim günlüğü bunların tümünü yakalar.
+**Kanıt 1: fork tatbikat kadansı**. Yuvarlanan on iki ay boyunca haftalık veya iki haftada bir kadansla yürütülen etkinlik tatbikatlarının zaman damgalı günlüğü. Her giriş, üst depoyu, fork etiketini, test altındaki yamayı veya değişikliği, duman testi sonucunu ve yıkma zaman damgasını gösterir. `rdc config audit log --since` tarafından üretilen denetim günlüğü bunların tümünü yakalar.
 
-**Kanıt 2: hash zincirine bağlı denetim günlüğü**. Denetim günlüğündeki hash zinciri, "geçen yıl 47 tatbikat yaptık" iddiasını kanıta dönüştüren şeydir. `rdc audit verify`, zinciri uçtan uca doğrular. Doğrulama sonucu, bir denetçinin yeniden çalıştırabileceği tek bir komut çıktısıdır.
+**Kanıt 2: hash zincirine bağlı denetim günlüğü**. Denetim günlüğündeki hash zinciri, "geçen yıl 47 tatbikat yaptık" iddiasını kanıta dönüştüren şeydir. `rdc config audit verify`, zinciri uçtan uca doğrular. Doğrulama sonucu, bir denetçinin yeniden çalıştırabileceği tek bir komut çıktısıdır.
 
 **Kanıt 3: yedek doğrulama izi**. Zamanlanmış her yedekleme stratejisi için systemd birimi, depo başına çalışma başına `/var/run/rediacc/cold-backup-<guid>.status.json` konumunda bir durum yan dosyası ve son bir özet günlük satırı üretir. `rdc backup status` her ikisini de ortaya çıkarır. Yukarıdaki rutinin 4. Adımındaki haftalık geri yükleme tatbikatıyla birleştirildiğinde, bu denetçiye yalnızca "yedek alındı" izi değil, "yedek alındı ve geri yükleme test edildi" izi sunar. Tanılama yüzeyi için bkz. [İzleme](/tr/docs/monitoring).
 
