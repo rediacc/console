@@ -61,7 +61,6 @@ rdc repo sync status my-app
 | Valik | Kirjeldus |
 |--------|-------------|
 | `-m, --machine <name>` | Sihtkohaks olev masin |
-| `-r, --repository <name>` | Sihtkohaks olev repositoorium |
 | `--local <paths...>` | Üks või mitu kohaliku faili või kataloogi teed (üleslaadimine) või kohalik sihtkataloog (allalaadimine) |
 | `--remote <path>` | Kaugkataloog (suhteliselt repositooriumi ühenduspunktist) |
 | `--remote-file <path>` | Kaugfaili tee ühe faili üles- või allalaadimiseks (alternatiiv `--remote`-le) |
@@ -128,11 +127,6 @@ rdc repo exec my-app -c <container> -- ls -la
 
 | Valik | Kirjeldus |
 |--------|-------------|
-| `--container <id>` | Sihtiks olev Dockeri konteineri ID |
-| `--container-action <action>` | Toiming: `terminal` (vaikimisi), `logs`, `stats`, `exec` |
-| `--log-lines <n>` | Kuvatavate logiridade arv (vaikimisi: 50) |
-| `--follow` | Jälgi logisid pidevalt |
-| `--external` | Kasuta välist terminali SSH-sisese asemel |
 
 ## VS Code integratsioon (vscode)
 

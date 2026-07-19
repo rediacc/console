@@ -32,15 +32,11 @@ rdc repo diff <fork> --base <repo>   # diff against an arbitrary related repo
 
 | Option | Beschreibung | Standard |
 |--------|-------------|---------|
-| `--name <name>` | Zu inspizierendes Repository (die Zielseite, neue Seite). Erforderlich. | erforderlich |
-| `--base <name>` | Repository zum Vergleich (die Basis, alte Seite). Standardmäßig der Parent von `--name`, aus der lokalen Konfiguration aufgelöst. | Parent von `--name` |
 | (kein Format-Flag) | Name-Status-Ausgabe: ein farbiger `A`/`M`/`D`/`R` Buchstabe pro geänderter Datei plus eine einteilige Zusammenfassung. | on |
 | `--name-only` | Ein geänderter Pfad pro Zeile, kein Status-Buchstabe. Pipe-freundlich. | aus |
 | `--stat` | Pro-Datei-Änderungsgröße (Byte- und Block-Deltas) mit einer Gesamt-Zeile. | aus |
 | `--content <path>` | Unified Text Diff einer einzelnen Datei. Nur Text; Binärdateien zeigen `Binary files differ`. | aus |
-| `--json` | Strukturierte Ausgabe für Agenten und Skripte. | aus |
 | `--fast` | Überspringe den Content-Hash-Bestätigungsschritt und vertraue dem Block-Filter. Schneller, kann aber Dateien als Modified über-berichten. | aus |
-| `-m, --machine <name>` | Zielmaschine. Erforderlich. | erforderlich |
 | `--debug` | Verbose Diagnostik auf stderr. | aus |
 | `--skip-router-restart` | Überspringe den Router-Restart-Schritt. | aus |
 

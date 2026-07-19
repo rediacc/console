@@ -39,7 +39,6 @@ rdc repo commit <fork> --message "<message>"
 
 | Opção | Descrição | Predefinição |
 |-------|-----------|--------------|
-| `--name <name>` | Fork de trabalho a commitar. Deve estar montado. Obrigatório. | obrigatório |
 | `--message <msg>` | Mensagem de commit. Obrigatório. | obrigatório |
 | `--author <author>` | Autor do commit registado nos metadados. | não definido |
 | `-m, --machine <name>` | Máquina alvo. Obrigatório. | obrigatório |
@@ -58,7 +57,6 @@ rdc repo branch <fork> --branch <name>
 | Opção | Descrição | Predefinição |
 |-------|-----------|--------------|
 | `--branch <branch>` | Nome do novo branch. Obrigatório. | obrigatório |
-| `--name <name>` | Fork de trabalho cujo commit atual o branch aponta. Obrigatório. | obrigatório |
 
 Esta é uma operação apenas na config. Não acontece trabalho na máquina. O ref do branch mapeia um nome para o `headCommit` do fork de trabalho, pelo que o fork deve ter pelo menos um commit primeiro.
 
@@ -73,7 +71,6 @@ rdc repo checkout <branchName> --from <fork> --tag <newFork>
 
 | Opção | Descrição | Predefinição |
 |-------|-----------|--------------|
-| `--ref <commit\|branch>` | GUID de commit a fazer checkout, ou nome de branch quando `--from` é fornecido. Obrigatório. | obrigatório |
 | `--tag <name>` | Nome para o novo fork de trabalho gravável. Obrigatório. | obrigatório |
 | `-m, --machine <name>` | Máquina alvo. Obrigatório. | obrigatório |
 | `--from <workingFork>` | Resolve `--ref` como nome de branch neste conjunto de branches do fork de trabalho. | commit direto |
@@ -92,9 +89,7 @@ rdc repo log <fork>
 
 | Opção | Descrição | Predefinição |
 |-------|-----------|--------------|
-| `--name <name>` | Fork de trabalho ou commit a partir do qual iniciar o percurso do histórico. Obrigatório. | obrigatório |
 | `-m, --machine <name>` | Máquina alvo. Obrigatório. | obrigatório |
-| `--json` | Saída do histórico de commits como JSON. | desligado |
 | `--debug` | Diagnósticos verbosos no stderr. | desligado |
 
 O `log` percorre a cadeia de pais registada por `rdc repo commit`, lendo o espelho de estado fora do volume para que nenhum commit seja desbloqueado ou montado. É apenas de leitura.
@@ -110,7 +105,6 @@ rdc repo merge <target> --from <source> --resolve theirs
 
 | Opção | Descrição | Predefinição |
 |-------|-----------|--------------|
-| `--name <name>` | Fork de trabalho alvo do merge. Obrigatório. | obrigatório |
 | `--from <source>` | Commit ou fork fonte do merge. Obrigatório. | obrigatório |
 | `-m, --machine <name>` | Máquina alvo. Obrigatório. | obrigatório |
 | `--force` | Quiece um alvo montado ou em execução primeiro, depois faz merge. Nunca modifica um mount em produção. | desligado |

@@ -230,7 +230,6 @@ rdc repo up my-app
 
 | 옵션 | 설명 |
 |------|------|
-| `--detach` | 컨테이너가 시작되면 즉시 반환. 헬스체크는 백그라운드에서 계속 진행 |
 | `--skip-router-restart` | 작업 후 라우트 서버 재시작 건너뜀 |
 
 실행 순서:
@@ -286,7 +285,6 @@ rdc repo up --all -m server-1
 | 옵션 | 설명 |
 |------|------|
 | `--include-forks` | Fork된 저장소 포함 |
-| `--mount-only` | 마운트만, 컨테이너 시작 안 함 |
 | `--dry-run` | 수행될 작업 미리보기 |
 | `--parallel` | 병렬로 작업 실행 |
 | `--concurrency <n>` | 최대 동시 작업 수 (기본값: 3) |

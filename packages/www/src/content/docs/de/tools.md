@@ -61,7 +61,6 @@ rdc repo sync status my-app
 | Option | Beschreibung |
 |--------|-------------|
 | `-m, --machine <name>` | Zielmaschine |
-| `-r, --repository <name>` | Ziel-Repository |
 | `--local <paths...>` | Ein oder mehrere lokale Datei-/Verzeichnispfade (Upload) oder lokales Zielverzeichnis (Download) |
 | `--remote <path>` | Entferntes Verzeichnis (relativ zum Repository-Einbindungspunkt) |
 | `--remote-file <path>` | Entfernter Dateipfad für einzelne Datei-Uploads oder Downloads (Alternative zu `--remote`) |
@@ -128,11 +127,6 @@ rdc repo exec my-app -c <container> -- ls -la
 
 | Option | Beschreibung |
 |--------|-------------|
-| `--container <id>` | Ziel-Docker-Container-ID |
-| `--container-action <action>` | Aktion: `terminal` (Standard), `logs`, `stats`, `exec` |
-| `--log-lines <n>` | Anzahl der anzuzeigenden Log-Zeilen (Standard: 50) |
-| `--follow` | Logs kontinuierlich verfolgen |
-| `--external` | Externes Terminal anstelle von Inline-SSH verwenden |
 
 ## VS Code-Integration (vscode)
 

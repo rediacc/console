@@ -212,7 +212,6 @@ rdc repo up my-app
 
 | Seçenek | Açıklama |
 |---------|----------|
-| `--detach` | Konteynerler başlar başlamaz geri dön; sağlık kontrolleri arka planda sürer |
 | `--skip-router-restart` | İşlem sonrasında rota sunucusunun yeniden başlatılmasını atla |
 
 Çalıştırma sırası:
@@ -268,7 +267,6 @@ rdc repo up --all -m server-1
 | Seçenek | Açıklama |
 |---------|----------|
 | `--include-forks` | Çatallanmış depoları dahil et |
-| `--mount-only` | Yalnızca bağla, konteynerleri başlatma |
 | `--dry-run` | Ne yapılacağını göster |
 | `--parallel` | İşlemleri paralel çalıştır |
 | `--concurrency <n>` | Maksimum eşzamanlı işlem sayısı (varsayılan: 3) |

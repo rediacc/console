@@ -61,7 +61,6 @@ rdc repo sync status my-app
 | 옵션 | 설명 |
 |--------|-------------|
 | `-m, --machine <name>` | 대상 머신 |
-| `-r, --repository <name>` | 대상 저장소 |
 | `--local <paths...>` | 하나 이상의 로컬 파일 또는 디렉터리 경로 (업로드) 또는 로컬 목적지 디렉터리 (다운로드) |
 | `--remote <path>` | 원격 디렉터리 (저장소 마운트 기준 상대 경로) |
 | `--remote-file <path>` | 단일 파일 업로드 또는 다운로드를 위한 원격 파일 경로 (`--remote` 대안) |
@@ -128,11 +127,6 @@ rdc repo exec my-app -c <container> -- ls -la
 
 | 옵션 | 설명 |
 |--------|-------------|
-| `--container <id>` | 대상 Docker 컨테이너 ID |
-| `--container-action <action>` | 작업: `terminal` (기본값), `logs`, `stats`, `exec` |
-| `--log-lines <n>` | 표시할 로그 줄 수 (기본값: 50) |
-| `--follow` | 로그 지속 팔로우 |
-| `--external` | 인라인 SSH 대신 외부 터미널 사용 |
 
 ## VS Code 통합 (vscode)
 

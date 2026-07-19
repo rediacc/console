@@ -152,7 +152,6 @@ Ortam değişkenleri çalışan VM kaynaklarını geçersiz kılar:
 | `--parallel` | VM'leri paralel olarak hazırla |
 | `--skip-orchestration` | Yalnızca VM'ler, Rediacc servisleri yok |
 | `--backend <kvm\|qemu>` | Otomatik algılanan arka ucu geçersiz kıl |
-| `--os <ad>` | İşletim sistemi imajı (varsayılan: ubuntu-24.04) |
 | `--debug` | Ayrıntılı çıktı |
 
 ## Platform Farklılıkları

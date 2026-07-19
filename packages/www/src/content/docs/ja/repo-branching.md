@@ -39,7 +39,6 @@ rdc repo commit <fork> --message "<message>"
 
 | オプション | 説明 | デフォルト |
 |--------|-------------|---------|
-| `--name <name>` | コミットするワーキングフォーク。マウントされている必要があります。必須。 | required |
 | `--message <msg>` | コミットメッセージ。必須。 | required |
 | `--author <author>` | コミットメタデータに記録されるコミット作成者。 | unset |
 | `-m, --machine <name>` | ターゲットマシン。必須。 | required |
@@ -58,7 +57,6 @@ rdc repo branch <fork> --branch <name>
 | オプション | 説明 | デフォルト |
 |--------|-------------|---------|
 | `--branch <branch>` | 新しいブランチの名前。必須。 | required |
-| `--name <name>` | ブランチが指すワーキングフォーク。必須。 | required |
 
 これはコンフィグのみの操作です。マシンでは何も実行されません。ブランチrefは名前をワーキングフォークの`headCommit`にマッピングするため、フォークには少なくとも1つのコミットが必要です。
 
@@ -73,7 +71,6 @@ rdc repo checkout <branchName> --from <fork> --tag <newFork>
 
 | オプション | 説明 | デフォルト |
 |--------|-------------|---------|
-| `--ref <commit\|branch>` | チェックアウトするコミットGUID、または`--from`が指定された場合のブランチ名。必須。 | required |
 | `--tag <name>` | 新しい書き込み可能なワーキングフォークの名前。必須。 | required |
 | `-m, --machine <name>` | ターゲットマシン。必須。 | required |
 | `--from <workingFork>` | このワーキングフォークのブランチセットで`--ref`をブランチ名として解決します。 | direct commit |
@@ -92,9 +89,7 @@ rdc repo log <fork>
 
 | オプション | 説明 | デフォルト |
 |--------|-------------|---------|
-| `--name <name>` | 履歴確認を開始するワーキングフォークまたはコミット。必須。 | required |
 | `-m, --machine <name>` | ターゲットマシン。必須。 | required |
-| `--json` | コミット履歴をJSONとして出力します。 | off |
 | `--debug` | stderrへの詳細な診断情報。 | off |
 
 `log`は`rdc repo commit`によって記録された親チェーンを確認し、ボリューム外の状態ミラーを読み取るため、コミットはアンロックまたはマウントされません。読み取り専用です。
@@ -110,7 +105,6 @@ rdc repo merge <target> --from <source> --resolve theirs
 
 | オプション | 説明 | デフォルト |
 |--------|-------------|---------|
-| `--name <name>` | マージ先のターゲットワーキングフォーク。必須。 | required |
 | `--from <source>` | マージ元のソースコミットまたはフォーク。必須。 | required |
 | `-m, --machine <name>` | ターゲットマシン。必須。 | required |
 | `--force` | まずマウントまたは実行中のターゲットを停止してからマージします。ライブマウントを変更することはありません。 | off |

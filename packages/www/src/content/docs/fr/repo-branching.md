@@ -39,7 +39,6 @@ rdc repo commit <fork> --message "<message>"
 
 | Option | Description | Défaut |
 |--------|-------------|--------|
-| `--name <name>` | Fork de travail à commiter. Doit être monté. Requis. | requis |
 | `--message <msg>` | Message de commit. Requis. | requis |
 | `--author <author>` | Auteur enregistré dans les métadonnées du commit. | non défini |
 | `-m, --machine <name>` | Machine cible. Requis. | requis |
@@ -58,7 +57,6 @@ rdc repo branch <fork> --branch <name>
 | Option | Description | Défaut |
 |--------|-------------|--------|
 | `--branch <branch>` | Nom de la nouvelle branche. Requis. | requis |
-| `--name <name>` | Fork de travail dont le commit courant est pointé par la branche. Requis. | requis |
 
 Il s'agit d'une opération purement côté config. Aucun travail n'est effectué sur la machine. La référence de branche associe un nom au `headCommit` du fork de travail ; le fork doit donc avoir au moins un commit au préalable.
 
@@ -73,7 +71,6 @@ rdc repo checkout <branchName> --from <fork> --tag <newFork>
 
 | Option | Description | Défaut |
 |--------|-------------|--------|
-| `--ref <commit\|branch>` | GUID de commit à extraire, ou nom de branche quand `--from` est fourni. Requis. | requis |
 | `--tag <name>` | Nom du nouveau fork de travail modifiable. Requis. | requis |
 | `-m, --machine <name>` | Machine cible. Requis. | requis |
 | `--from <workingFork>` | Résoudre `--ref` comme nom de branche sur l'ensemble de branches de ce fork de travail. | commit direct |
@@ -92,9 +89,7 @@ rdc repo log <fork>
 
 | Option | Description | Défaut |
 |--------|-------------|--------|
-| `--name <name>` | Fork de travail ou commit depuis lequel démarrer le parcours. Requis. | requis |
 | `-m, --machine <name>` | Machine cible. Requis. | requis |
-| `--json` | Afficher l'historique des commits en JSON. | off |
 | `--debug` | Diagnostics détaillés sur stderr. | off |
 
 `log` parcourt la chaîne de parents enregistrée par `rdc repo commit`, en lisant le miroir d'état hors volume : aucun commit n'est déverrouillé ni monté. Opération en lecture seule.
@@ -110,7 +105,6 @@ rdc repo merge <target> --from <source> --resolve theirs
 
 | Option | Description | Défaut |
 |--------|-------------|--------|
-| `--name <name>` | Fork de travail cible de la fusion. Requis. | requis |
 | `--from <source>` | Commit ou fork source à fusionner. Requis. | requis |
 | `-m, --machine <name>` | Machine cible. Requis. | requis |
 | `--force` | Met en veille une cible montée ou en cours d'exécution, puis fusionne. Ne mute jamais un montage en cours. | off |

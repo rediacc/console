@@ -269,7 +269,6 @@ cold 전략의 `--exclude` 필터는 주별 유지 관리 창에 맞지 않는 �
 
 | 옵션 | 설명 |
 |--------|-------------|
-| `--name <name>` | 전략 이름 (머신 바인딩에 사용) |
 | `--destination <storage>` | 업로드할 스토리지 제공자 |
 | `--cron <expression>` | Cron 표현식 (예: `"0 2 * * *"`는 매일 오전 2시) |
 | `--mode <hot\|cold>` | 백업 모드 |
@@ -411,9 +410,6 @@ rdc repo migrate my-app@server-1 --to server-2
 
 | 옵션 | 설명 |
 |--------|-------------|
-| `--name <repo>` | 마이그레이션할 레포지토리 |
-| `--from <machine>` | 소스 머신 |
-| `--to <machine>` | 대상 머신 |
 | `--provision` | 전송 전 대상에 레포지토리 프로비저닝 |
 | `--checkpoint` | 마이그레이션 전 CRIU 체크포인트 생성 |
 | `--skip-dns` | 마이그레이션 후 DNS 레코드 업데이트 건너뜀 |

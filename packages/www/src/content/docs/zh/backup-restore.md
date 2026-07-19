@@ -269,7 +269,6 @@ cold 策略上的 `--exclude` 过滤器是针对体积过大、无法纳入每�
 
 | 选项 | 描述 |
 |------|------|
-| `--name <name>` | 策略名称（用于机器绑定） |
 | `--destination <storage>` | 上传目标存储提供商 |
 | `--cron <expression>` | cron 表达式（例如 `"0 2 * * *"` 表示每天凌晨 2 点） |
 | `--mode <hot\|cold>` | 备份模式 |
@@ -411,9 +410,6 @@ rdc repo migrate my-app@server-1 --to server-2
 
 | 选项 | 描述 |
 |------|------|
-| `--name <repo>` | 要迁移的仓库 |
-| `--from <machine>` | 源机器 |
-| `--to <machine>` | 目标机器 |
 | `--provision` | 在传输前在目标上配置仓库 |
 | `--checkpoint` | 迁移前创建 CRIU 检查点 |
 | `--skip-dns` | 迁移后跳过 DNS 记录更新 |

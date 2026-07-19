@@ -14,7 +14,7 @@ tags:
   - mid-market
 featured: false
 language: ko
-sourceHash: "00ae2b4e6f58acb5"
+sourceHash: "d5f6a7108f614b9b"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---

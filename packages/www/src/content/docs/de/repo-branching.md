@@ -39,7 +39,6 @@ rdc repo commit <fork> --message "<message>"
 
 | Option | Beschreibung | Standard |
 |--------|-------------|---------|
-| `--name <name>` | Einzufrierende Arbeitsfork. Muss eingebunden sein. Erforderlich. | erforderlich |
 | `--message <msg>` | Commit-Nachricht. Erforderlich. | erforderlich |
 | `--author <author>` | In den Commit-Metadaten aufgezeichneter Autor. | nicht gesetzt |
 | `-m, --machine <name>` | Zielmaschine. Erforderlich. | erforderlich |
@@ -58,7 +57,6 @@ rdc repo branch <fork> --branch <name>
 | Option | Beschreibung | Standard |
 |--------|-------------|---------|
 | `--branch <branch>` | Name des neuen Branches. Erforderlich. | erforderlich |
-| `--name <name>` | Arbeitsfork, dessen aktueller Commit der Branch referenziert. Erforderlich. | erforderlich |
 
 Dies ist eine reine Konfigurationsoperation. Auf der Maschine geschieht nichts. Die Branch-Referenz bildet einen Namen auf den `headCommit` des Arbeitsforks ab, daher muss der Fork zuerst mindestens einen Commit haben.
 
@@ -73,7 +71,6 @@ rdc repo checkout <branchName> --from <fork> --tag <newFork>
 
 | Option | Beschreibung | Standard |
 |--------|-------------|---------|
-| `--ref <commit\|branch>` | Einzucheckende Commit-GUID oder ein Branch-Name, wenn `--from` angegeben ist. Erforderlich. | erforderlich |
 | `--tag <name>` | Name des neuen beschreibbaren Arbeitsforks. Erforderlich. | erforderlich |
 | `-m, --machine <name>` | Zielmaschine. Erforderlich. | erforderlich |
 | `--from <workingFork>` | `--ref` als Branch-Namen auf dem Branch-Set dieses Arbeitsforks auflösen. | direkter Commit |
@@ -92,9 +89,7 @@ rdc repo log <fork>
 
 | Option | Beschreibung | Standard |
 |--------|-------------|---------|
-| `--name <name>` | Arbeitsfork oder Commit, von dem aus der Verlauf durchlaufen wird. Erforderlich. | erforderlich |
 | `-m, --machine <name>` | Zielmaschine. Erforderlich. | erforderlich |
-| `--json` | Commit-Verlauf als JSON ausgeben. | aus |
 | `--debug` | Ausführliche Diagnose auf stderr. | aus |
 
 `log` durchläuft die von `rdc repo commit` aufgezeichnete Elternkette und liest den außerhalb des Volumes gespeicherten Zustandsspiegel, sodass kein Commit entsperrt oder eingebunden wird. Es ist schreibgeschützt.
@@ -110,7 +105,6 @@ rdc repo merge <target> --from <source> --resolve theirs
 
 | Option | Beschreibung | Standard |
 |--------|-------------|---------|
-| `--name <name>` | Ziel-Arbeitsfork, in den gemergt wird. Erforderlich. | erforderlich |
 | `--from <source>` | Quell-Commit oder -Fork, aus dem gemergt wird. Erforderlich. | erforderlich |
 | `-m, --machine <name>` | Zielmaschine. Erforderlich. | erforderlich |
 | `--force` | Eingebundenes oder laufendes Ziel zuerst anhalten, dann mergen. Verändert niemals ein aktives Mount. | aus |

@@ -269,7 +269,6 @@ Le filtre `--exclude` sur la stratégie cold est l'échappatoire recommandée po
 
 | Option | Description |
 |--------|-------------|
-| `--name <name>` | Nom de la stratégie (utilisé pour la liaison avec la machine) |
 | `--destination <storage>` | Fournisseur de stockage vers lequel charger |
 | `--cron <expression>` | Expression cron (p. ex. `"0 2 * * *"` pour tous les jours à 2h du matin) |
 | `--mode <hot\|cold>` | Mode de sauvegarde |
@@ -411,9 +410,6 @@ rdc repo migrate my-app@server-1 --to server-2
 
 | Option | Description |
 |--------|-------------|
-| `--name <repo>` | Dépôt à migrer |
-| `--from <machine>` | Machine source |
-| `--to <machine>` | Machine de destination |
 | `--provision` | Provisionner le dépôt sur la destination avant le transfert |
 | `--checkpoint` | Créer un checkpoint CRIU avant la migration |
 | `--skip-dns` | Ignorer la mise à jour des enregistrements DNS après la migration |

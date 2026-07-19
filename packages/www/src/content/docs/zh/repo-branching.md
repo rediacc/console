@@ -39,7 +39,6 @@ rdc repo commit <fork> --message "<message>"
 
 | 选项 | 描述 | 默认值 |
 |------|------|--------|
-| `--name <name>` | 要提交的工作 fork，必须已挂载，必填。 | 必填 |
 | `--message <msg>` | 提交消息，必填。 | 必填 |
 | `--author <author>` | 提交元数据中记录的作者。 | 未设置 |
 | `-m, --machine <name>` | 目标机器，必填。 | 必填 |
@@ -58,7 +57,6 @@ rdc repo branch <fork> --branch <name>
 | 选项 | 描述 | 默认值 |
 |------|------|--------|
 | `--branch <branch>` | 新分支的名称，必填。 | 必填 |
-| `--name <name>` | 分支所指向的当前提交所在的工作 fork，必填。 | 必填 |
 
 这是纯配置操作，不在机器上执行任何工作。分支引用将名称映射到工作 fork 的 `headCommit`，因此 fork 必须至少有一个提交。
 
@@ -73,7 +71,6 @@ rdc repo checkout <branchName> --from <fork> --tag <newFork>
 
 | 选项 | 描述 | 默认值 |
 |------|------|--------|
-| `--ref <commit\|branch>` | 要检出的提交 GUID，或在给定 `--from` 时的分支名称，必填。 | 必填 |
 | `--tag <name>` | 新的可写工作 fork 的名称，必填。 | 必填 |
 | `-m, --machine <name>` | 目标机器，必填。 | 必填 |
 | `--from <workingFork>` | 在此工作 fork 的分支集上将 `--ref` 解析为分支名称。 | 直接提交 |
@@ -92,9 +89,7 @@ rdc repo log <fork>
 
 | 选项 | 描述 | 默认值 |
 |------|------|--------|
-| `--name <name>` | 开始历史遍历的工作 fork 或提交，必填。 | 必填 |
 | `-m, --machine <name>` | 目标机器，必填。 | 必填 |
-| `--json` | 以 JSON 格式输出提交历史记录。 | 关闭 |
 | `--debug` | 在 stderr 上输出详细诊断信息。 | 关闭 |
 
 `log` 遍历由 `rdc repo commit` 记录的父链，读取卷外状态镜像，因此不会解锁或挂载任何提交。这是只读操作。
@@ -110,7 +105,6 @@ rdc repo merge <target> --from <source> --resolve theirs
 
 | 选项 | 描述 | 默认值 |
 |------|------|--------|
-| `--name <name>` | 要合并到的目标工作 fork，必填。 | 必填 |
 | `--from <source>` | 合并来源的提交或 fork，必填。 | 必填 |
 | `-m, --machine <name>` | 目标机器，必填。 | 必填 |
 | `--force` | 先静默已挂载或运行中的目标，然后合并。永不改变实时挂载。 | 关闭 |

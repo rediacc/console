@@ -39,7 +39,6 @@ rdc repo commit <fork> --message "<message>"
 
 | Opzione | Descrizione | Default |
 |---------|-------------|---------|
-| `--name <name>` | Fork di lavoro da committare. Deve essere montato. Obbligatorio. | obbligatorio |
 | `--message <msg>` | Messaggio di commit. Obbligatorio. | obbligatorio |
 | `--author <author>` | Autore del commit registrato nei metadati. | non impostato |
 | `-m, --machine <name>` | Macchina target. Obbligatorio. | obbligatorio |
@@ -58,7 +57,6 @@ rdc repo branch <fork> --branch <name>
 | Opzione | Descrizione | Default |
 |---------|-------------|---------|
 | `--branch <branch>` | Nome del nuovo branch. Obbligatorio. | obbligatorio |
-| `--name <name>` | Fork di lavoro il cui commit corrente il branch punta. Obbligatorio. | obbligatorio |
 
 Questa è un'operazione solo sul config. Non viene eseguito nessun lavoro sulla macchina. Il riferimento al branch mappa un nome al `headCommit` del fork di lavoro, quindi il fork deve avere almeno un commit prima.
 
@@ -73,7 +71,6 @@ rdc repo checkout <branchName> --from <fork> --tag <newFork>
 
 | Opzione | Descrizione | Default |
 |---------|-------------|---------|
-| `--ref <commit\|branch>` | GUID del commit da fare checkout, o nome di un branch quando si usa `--from`. Obbligatorio. | obbligatorio |
 | `--tag <name>` | Nome per il nuovo fork di lavoro scrivibile. Obbligatorio. | obbligatorio |
 | `-m, --machine <name>` | Macchina target. Obbligatorio. | obbligatorio |
 | `--from <workingFork>` | Risolve `--ref` come nome di branch su questo fork di lavoro. | commit diretto |
@@ -92,9 +89,7 @@ rdc repo log <fork>
 
 | Opzione | Descrizione | Default |
 |---------|-------------|---------|
-| `--name <name>` | Fork di lavoro o commit da cui iniziare la percorrenza della storia. Obbligatorio. | obbligatorio |
 | `-m, --machine <name>` | Macchina target. Obbligatorio. | obbligatorio |
-| `--json` | Output della storia dei commit come JSON. | off |
 | `--debug` | Diagnostica verbosa su stderr. | off |
 
 `log` percorre la catena parent registrata da `rdc repo commit`, leggendo il mirror di stato fuori-volume così nessun commit viene sbloccato o montato. È solo lettura.
@@ -110,7 +105,6 @@ rdc repo merge <target> --from <source> --resolve theirs
 
 | Opzione | Descrizione | Default |
 |---------|-------------|---------|
-| `--name <name>` | Fork di lavoro target in cui fare il merge. Obbligatorio. | obbligatorio |
 | `--from <source>` | Commit sorgente o fork da cui fare il merge. Obbligatorio. | obbligatorio |
 | `-m, --machine <name>` | Macchina target. Obbligatorio. | obbligatorio |
 | `--force` | Chiude un target montato o in esecuzione prima del merge. Non muta mai un mount live. | off |

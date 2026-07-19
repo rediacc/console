@@ -63,7 +63,6 @@ rdc repo sync status my-app
 | Seçenek | Açıklama |
 |---------|----------|
 | `-m, --machine <name>` | Hedef makine |
-| `-r, --repository <name>` | Hedef depo |
 | `--local <paths...>` | Bir veya daha fazla yerel dosya/dizin yolu (yükleme) ya da yerel hedef dizin (indirme) |
 | `--remote <path>` | Uzak dizin (depo bağlama noktasına göre) |
 | `--remote-file <path>` | Tek dosya yüklemeleri veya indirmeleri için uzak dosya yolu (`--remote` yerine) |
@@ -130,11 +129,6 @@ rdc repo exec my-app -c <container> -- ls -la
 
 | Seçenek | Açıklama |
 |---------|----------|
-| `--container <id>` | Hedef Docker konteyner kimliği |
-| `--container-action <action>` | İşlem: `terminal` (varsayılan), `logs`, `stats`, `exec` |
-| `--log-lines <n>` | Gösterilecek günlük satır sayısı (varsayılan: 50) |
-| `--follow` | Günlükleri sürekli takip et |
-| `--external` | Satır içi SSH yerine harici terminal kullan |
 
 ## VS Code Entegrasyonu (vscode)
 

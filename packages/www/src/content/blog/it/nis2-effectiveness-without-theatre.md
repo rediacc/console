@@ -17,7 +17,7 @@ tags:
   - incident-reporting
 featured: false
 language: it
-sourceHash: "468602ef23c7ce92"
+sourceHash: "8f8855f44bcea0b0"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---

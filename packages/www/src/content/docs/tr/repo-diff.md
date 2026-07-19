@@ -32,15 +32,11 @@ rdc repo diff <fork> --base <repo>   # herhangi bir ilgili depoya karşı karş�
 
 | Seçenek | Açıklama | Varsayılan |
 |--------|----------|-----------|
-| `--name <name>` | İncelenecek depo (hedef, yeni taraf). Gerekli. | gerekli |
-| `--base <name>` | Karşılaştırılacak depo (temel, eski taraf). `--name` adresinin ana deposu olarak yerel konfigürasyondan çözülür. | `--name` adresinin ana deposu |
 | (format bayrağı yok) | Ad-durum çıktısı: değişen her dosya için renkli `A`/`M`/`D`/`R` harfi ve bir satırlık özet. | açık |
 | `--name-only` | Satır başına bir değişen yol, durum harfi yok. Pipe dostu. | kapalı |
 | `--stat` | Dosya başına değişiklik büyüklüğü (bayt ve blok deltaları) ve toplamlar alt bilgisi. | kapalı |
 | `--content <path>` | Tek bir dosyanın birleştirilmiş metin farkı. Yalnızca metin; ikili dosyalar `Binary files differ` bildirirler. | kapalı |
-| `--json` | Ajanlar ve komut dosyaları için yapılandırılmış çıktı. | kapalı |
 | `--fast` | İçerik-hash doğrulaması adımını atlayın ve blok filtresine güvenin. Daha hızlı, ancak Değiştirilmiş dosyaları aşırı rapor edebilir. | kapalı |
-| `-m, --machine <name>` | Hedef makine. Gerekli. | gerekli |
 | `--debug` | stderr'de ayrıntılı tanılama. | kapalı |
 | `--skip-router-restart` | Yönlendirici yeniden başlatma adımını atlayın. | kapalı |
 

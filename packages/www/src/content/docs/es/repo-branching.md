@@ -39,7 +39,6 @@ rdc repo commit <fork> --message "<message>"
 
 | Opción | Descripción | Predeterminado |
 |--------|-------------|----------------|
-| `--name <name>` | Bifurcación de trabajo a confirmar. Debe estar montada. Obligatorio. | obligatorio |
 | `--message <msg>` | Mensaje del commit. Obligatorio. | obligatorio |
 | `--author <author>` | Autor del commit registrado en los metadatos. | sin definir |
 | `-m, --machine <name>` | Máquina de destino. Obligatorio. | obligatorio |
@@ -58,7 +57,6 @@ rdc repo branch <fork> --branch <name>
 | Opción | Descripción | Predeterminado |
 |--------|-------------|----------------|
 | `--branch <branch>` | Nombre de la nueva rama. Obligatorio. | obligatorio |
-| `--name <name>` | Bifurcación de trabajo cuyo commit actual apunta la rama. Obligatorio. | obligatorio |
 
 Esta es una operación solo de configuración. No se realiza ningún trabajo en la máquina. La referencia de rama asigna un nombre al `headCommit` de la bifurcación de trabajo, por lo que la bifurcación debe tener al menos un commit primero.
 
@@ -73,7 +71,6 @@ rdc repo checkout <branchName> --from <fork> --tag <newFork>
 
 | Opción | Descripción | Predeterminado |
 |--------|-------------|----------------|
-| `--ref <commit\|branch>` | GUID del commit a revisar, o un nombre de rama cuando se usa `--from`. Obligatorio. | obligatorio |
 | `--tag <name>` | Nombre para la nueva bifurcación de trabajo escribible. Obligatorio. | obligatorio |
 | `-m, --machine <name>` | Máquina de destino. Obligatorio. | obligatorio |
 | `--from <workingFork>` | Resuelve `--ref` como nombre de rama en el conjunto de ramas de esta bifurcación de trabajo. | commit directo |
@@ -92,9 +89,7 @@ rdc repo log <fork>
 
 | Opción | Descripción | Predeterminado |
 |--------|-------------|----------------|
-| `--name <name>` | Bifurcación de trabajo o commit desde donde iniciar el recorrido del historial. Obligatorio. | obligatorio |
 | `-m, --machine <name>` | Máquina de destino. Obligatorio. | obligatorio |
-| `--json` | Muestra el historial de commits como JSON. | desactivado |
 | `--debug` | Diagnósticos detallados en stderr. | desactivado |
 
 `log` recorre la cadena de padres registrada por `rdc repo commit`, leyendo el espejo de estado fuera del volumen, por lo que ningún commit se desbloquea ni se monta. Es de solo lectura.
@@ -110,7 +105,6 @@ rdc repo merge <target> --from <source> --resolve theirs
 
 | Opción | Descripción | Predeterminado |
 |--------|-------------|----------------|
-| `--name <name>` | Bifurcación de trabajo de destino en la que fusionar. Obligatorio. | obligatorio |
 | `--from <source>` | Commit fuente o bifurcación desde donde fusionar. Obligatorio. | obligatorio |
 | `-m, --machine <name>` | Máquina de destino. Obligatorio. | obligatorio |
 | `--force` | Aquietar primero un destino montado o en ejecución y luego fusionar. Nunca muta un montaje activo. | desactivado |

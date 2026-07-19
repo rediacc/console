@@ -32,15 +32,11 @@ rdc repo diff <fork> --base <repo>   # diff rispetto a un repository correlato a
 
 | Opzione | Descrizione | Predefinito |
 |---------|------------|-------------|
-| `--name <name>` | Repository da ispezionare (il lato target, nuovo). Obbligatorio. | obbligatorio |
-| `--base <name>` | Repository rispetto a cui confrontare (il lato base, vecchio). Per impostazione predefinita, il parent di `--name`, risolto dalla config locale. | parent di `--name` |
 | (nessun flag di formato) | Output di stato dei nomi: una lettera A/M/D/R colorata per file modificato più un riepilogo di una riga. | attivo |
 | `--name-only` | Un percorso modificato per riga, nessuna lettera di stato. Compatibile con pipe. | disattivo |
 | `--stat` | Entità della modifica per file (delta di byte e blocchi) con un riepilogo dei totali. | disattivo |
 | `--content <path>` | Diff di testo unificato di un singolo file. Solo testo; i binari segnalano `Binary files differ`. | disattivo |
-| `--json` | Output strutturato per agenti e script. | disattivo |
 | `--fast` | Salta il passaggio di conferma del content-hash e fidati del filtro dei blocchi. Più veloce, ma potrebbe segnalare eccessivamente i file come Modificati. | disattivo |
-| `-m, --machine <name>` | Macchina target. Obbligatorio. | obbligatorio |
 | `--debug` | Diagnostica dettagliata su stderr. | disattivo |
 | `--skip-router-restart` | Salta il passaggio di riavvio del router. | disattivo |
 

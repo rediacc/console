@@ -39,7 +39,6 @@ rdc repo commit <fork> --message "<message>"
 
 | Seçenek | Açıklama | Varsayılan |
 |---------|----------|------------|
-| `--name <name>` | Commit edilecek çalışma fork'u. Bağlı olmalıdır. Zorunlu. | zorunlu |
 | `--message <msg>` | Commit mesajı. Zorunlu. | zorunlu |
 | `--author <author>` | Commit meta verisine kaydedilen commit yazarı. | ayarlanmamış |
 | `-m, --machine <name>` | Hedef makine. Zorunlu. | zorunlu |
@@ -58,7 +57,6 @@ rdc repo branch <fork> --branch <name>
 | Seçenek | Açıklama | Varsayılan |
 |---------|----------|------------|
 | `--branch <branch>` | Yeni dalın adı. Zorunlu. | zorunlu |
-| `--name <name>` | Dalın işaret ettiği geçerli commit'e sahip çalışma fork'u. Zorunlu. | zorunlu |
 
 Bu yalnızca yapılandırma işlemidir. Makinede hiçbir iş olmaz. Dal ref'i bir adı çalışma fork'unun `headCommit`'ine eşler; bu nedenle fork'un önce en az bir commit'i olmalıdır.
 
@@ -73,7 +71,6 @@ rdc repo checkout <branchName> --from <fork> --tag <newFork>
 
 | Seçenek | Açıklama | Varsayılan |
 |---------|----------|------------|
-| `--ref <commit\|branch>` | Aktarılacak commit GUID'si veya `--from` verildiğinde dal adı. Zorunlu. | zorunlu |
 | `--tag <name>` | Yeni yazılabilir çalışma fork'unun adı. Zorunlu. | zorunlu |
 | `-m, --machine <name>` | Hedef makine. Zorunlu. | zorunlu |
 | `--from <workingFork>` | Bu çalışma fork'unun dal kümesinde `--ref`'i dal adı olarak çözümler. | doğrudan commit |
@@ -92,9 +89,7 @@ rdc repo log <fork>
 
 | Seçenek | Açıklama | Varsayılan |
 |---------|----------|------------|
-| `--name <name>` | Geçmiş yürüyüşüne başlanacak çalışma fork'u veya commit. Zorunlu. | zorunlu |
 | `-m, --machine <name>` | Hedef makine. Zorunlu. | zorunlu |
-| `--json` | Commit geçmişini JSON olarak çıktılar. | kapalı |
 | `--debug` | Stderr'de ayrıntılı tanılamalar. | kapalı |
 
 `log`, `rdc repo commit` tarafından kaydedilen üst zinciri dolaşır; hiçbir commit kilitlenmeden veya bağlanmadan birim dışı durum yansımasını okur. Salt okunur.
@@ -110,7 +105,6 @@ rdc repo merge <target> --from <source> --resolve theirs
 
 | Seçenek | Açıklama | Varsayılan |
 |---------|----------|------------|
-| `--name <name>` | Birleştirilecek hedef çalışma fork'u. Zorunlu. | zorunlu |
 | `--from <source>` | Birleştirilecek kaynak commit veya fork. Zorunlu. | zorunlu |
 | `-m, --machine <name>` | Hedef makine. Zorunlu. | zorunlu |
 | `--force` | Önce bağlı veya çalışan bir hedefi susturun, sonra birleştirin. Canlı bağlamayı hiçbir zaman değiştirmez. | kapalı |

@@ -39,10 +39,6 @@ rdc repo commit <hark> --message "<sõnum>"
 
 | Valik | Kirjeldus | Vaikimisi |
 |--------|-------------|---------|
-| `--name <nimi>` | Töötav hark komiteerimiseks. Peab olema ühendatud. Nõutud. | nõutud |
-| `--message <sõnum>` | Komiti sõnum. Nõutud. | nõutud |
-| `--author <autor>` | Komiti autor salvestatud komiti metaandmetesse. | määramata |
-| `-m, --machine <nimi>` | Sihtmasin. Nõutud. | nõutud |
 | `--debug` | Detailsed diagnostikateated stderr-i. | väljas |
 
 Uus komit registreeritakse lokaalses konfiguratsioonis atribuudiga `immutable: true` ja töötava hargi `headCommit` edeneb sellele osutama. Muutumatu repositooriumi komiteerimine lükatakse tagasi: tee sellest esmalt kirjutatav hark kasutades checkout-i.
@@ -57,8 +53,6 @@ rdc repo branch <fork> --branch <nimi>
 
 | Valik | Kirjeldus | Vaikimisi |
 |--------|-------------|---------|
-| `--branch <haru>` | Uue haru nimi. Nõutud. | nõutud |
-| `--name <nimi>` | Töötav hark, mille praegusele komitile haru osutab. Nõutud. | nõutud |
 
 See on ainult konfiguratsioonitoimingud. Masinal ei toimu midagi. Haru viide kaardistab nime töötava hargi `headCommit`-ile, seega peab hargil olema vähemalt üks komit esmalt.
 
@@ -73,10 +67,6 @@ rdc repo checkout <haruNimi> --from <hark> --tag <uusHark>
 
 | Valik | Kirjeldus | Vaikimisi |
 |--------|-------------|---------|
-| `--ref <komit\|haru>` | Väljavõttav komiti GUID või haru nimi, kui `--from` on antud. Nõutud. | nõutud |
-| `--tag <nimi>` | Nimi uuele kirjutatavale töötavale hargile. Nõutud. | nõutud |
-| `-m, --machine <nimi>` | Sihtmasin. Nõutud. | nõutud |
-| `--from <töötavHark>` | Lahendab `--ref` haru nimena selle töötava hargi harukomplektis. | otsene komit |
 | `--debug` | Detailsed diagnostikateated stderr-i. | väljas |
 | `--skip-router-restart` | Jäta marsruuteri taaskäivitussamm vahele. | väljas |
 
@@ -92,9 +82,6 @@ rdc repo log <hark>
 
 | Valik | Kirjeldus | Vaikimisi |
 |--------|-------------|---------|
-| `--name <nimi>` | Töötav hark või komit, millest ajaloo jalutamine algab. Nõutud. | nõutud |
-| `-m, --machine <nimi>` | Sihtmasin. Nõutud. | nõutud |
-| `--json` | Väljasta komitide ajalugu JSON-ina. | väljas |
 | `--debug` | Detailsed diagnostikateated stderr-i. | väljas |
 
 `log` jalutab vanemate ahela, mida `rdc repo commit` salvestas, lugedes väljaspool mahtu olevat olekupeegli, nii et ühtegi komiti ei avata ega ühendata. See on ainult lugemiseks.
@@ -110,9 +97,6 @@ rdc repo merge <sihtmärk> --from <allikas> --resolve theirs
 
 | Valik | Kirjeldus | Vaikimisi |
 |--------|-------------|---------|
-| `--name <nimi>` | Sihtmärgi töötav hark, kuhu ühendada. Nõutud. | nõutud |
-| `--from <allikas>` | Lähtekomit või hark, millest ühendada. Nõutud. | nõutud |
-| `-m, --machine <nimi>` | Sihtmasin. Nõutud. | nõutud |
 | `--force` | Vaigistu ühendatud või töötav sihtmärk esmalt, seejärel ühenda. Ei muuda kunagi elavat ühendust. | väljas |
 | `--resolve <ours\|theirs>` | Failipõhine kolmesuunaline ühendamine: voldi allika failipõhised muudatused sihtmärgile, hoides (`ours`) või võttes (`theirs`) allika versiooni failide jaoks, mis on muutunud mõlemal poolel. Välja jätmisel võetakse kogu kujutis allikast. | väljas |
 | `--base <guid>` | Ühise esivanema komit kolmesuunaliseks ühendamiseks (kasutatakse koos `--resolve`). Vaikimisi on allika komiti vanem või sihtmärgi praegune komit. | automaatne |
@@ -133,7 +117,6 @@ rdc repo gc --apply -m <masin>    # kustuta kättesaamatud komitid
 
 | Valik | Kirjeldus | Vaikimisi |
 |--------|-------------|---------|
-| `-m, --machine <nimi>` | Masin, millel koguda. Nõutud. | nõutud |
 | `--apply` | Kustuta tegelikult kättesaamatud komitid (muidu kuiva jooksu eelvaade). | väljas |
 | `--debug` | Detailsed diagnostikateated stderr-i. | väljas |
 
@@ -149,7 +132,6 @@ rdc repo admin fsck -m <masin>
 
 | Valik | Kirjeldus | Vaikimisi |
 |--------|-------------|---------|
-| `-m, --machine <nimi>` | Kontrollitav masin. Nõutud. | nõutud |
 
 Raporteerib rippuvad viited (haru tipp või HEAD, mis osutab GUID-ile ilma objektita masinal) ja orb-komitid (muutumatu komit masinal, mida ükski viide ei jõua). See on ainult lugemiseks; puhasta orbsid käsuga `rdc repo gc --apply`.
 

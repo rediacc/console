@@ -231,7 +231,6 @@ rdc repo up my-app
 
 | Opção | Descrição |
 |-------|-----------|
-| `--detach` | Retorna assim que os contêineres estiverem iniciados; as verificações de saúde continuam em segundo plano |
 | `--skip-router-restart` | Ignorar o reinício do servidor de rotas após a operação |
 
 A sequência de execução é:
@@ -287,7 +286,6 @@ rdc repo up --all -m server-1
 | Opção | Descrição |
 |-------|-----------|
 | `--include-forks` | Incluir repositórios com fork |
-| `--mount-only` | Apenas montar, sem iniciar contêineres |
 | `--dry-run` | Mostrar o que seria feito |
 | `--parallel` | Executar operações em paralelo |
 | `--concurrency <n>` | Número máximo de operações concorrentes (padrão: 3) |

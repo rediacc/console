@@ -61,7 +61,6 @@ rdc repo sync status my-app
 | 选项 | 说明 |
 |--------|-------------|
 | `-m, --machine <name>` | 目标机器 |
-| `-r, --repository <name>` | 目标仓库 |
 | `--local <paths...>` | 一个或多个本地文件或目录路径（上传）或本地目标目录（下载） |
 | `--remote <path>` | 远程目录（相对于仓库挂载点） |
 | `--remote-file <path>` | 远程文件路径，用于单文件上传或下载（`--remote` 的替代项） |
@@ -128,11 +127,6 @@ rdc repo exec my-app -c <container> -- ls -la
 
 | 选项 | 说明 |
 |--------|-------------|
-| `--container <id>` | 目标 Docker 容器 ID |
-| `--container-action <action>` | 操作：`terminal`（默认）、`logs`、`stats`、`exec` |
-| `--log-lines <n>` | 显示的日志行数（默认：50） |
-| `--follow` | 持续跟踪日志 |
-| `--external` | 使用外部终端而非内联 SSH |
 
 ## VS Code 集成 (vscode)
 

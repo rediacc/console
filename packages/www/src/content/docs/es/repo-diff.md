@@ -32,15 +32,11 @@ rdc repo diff <fork> --base <repo>   # diff against an arbitrary related repo
 
 | Opción | Descripción | Predeterminado |
 |--------|-------------|---------|
-| `--name <name>` | Repositorio a inspeccionar (el lado objetivo, nuevo). Requerido. | requerido |
-| `--base <name>` | Repositorio a comparar (el lado base, antiguo). Por defecto es el principal de `--name`, resuelto desde la configuración local. | principal de `--name` |
 | (sin bandera de formato) | Salida de estado de nombre: una letra de color `A`/`M`/`D`/`R` por archivo cambiado más un resumen de una línea. | activado |
 | `--name-only` | Una ruta cambiada por línea, sin letra de estado. Compatible con tuberías. | desactivado |
 | `--stat` | Magnitud de cambio por archivo (deltas de bytes y bloques) con un pie de página de totales. | desactivado |
 | `--content <path>` | Comparación de texto unificada de un único archivo. Solo texto; los binarios reportan `Binary files differ`. | desactivado |
-| `--json` | Salida estructurada para agentes y scripts. | desactivado |
 | `--fast` | Omitir el paso de confirmación de hash de contenido y confiar en el filtro de bloque. Más rápido, pero puede reportar excesivamente archivos como Modificados. | desactivado |
-| `-m, --machine <name>` | Máquina objetivo. Requerido. | requerido |
 | `--debug` | Diagnósticos detallados en stderr. | desactivado |
 | `--skip-router-restart` | Omitir el paso de reinicio del enrutador. | desactivado |
 

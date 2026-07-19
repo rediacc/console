@@ -272,7 +272,6 @@ Soğuk strateji üzerindeki `--exclude` filtresi, haftalık bakım pencerenize s
 
 | Seçenek | Açıklama |
 |---------|----------|
-| `--name <name>` | Strateji adı (makine bağlama için kullanılır) |
 | `--destination <storage>` | Yüklenecek depolama sağlayıcısı |
 | `--cron <expression>` | Cron ifadesi (örn. `"0 2 * * *"` günlük saat 02:00 için) |
 | `--mode <hot\|cold>` | Yedekleme modu |
@@ -414,9 +413,6 @@ rdc repo migrate my-app@server-1 --to server-2
 
 | Seçenek | Açıklama |
 |---------|----------|
-| `--name <repo>` | Migrasyon yapılacak depo |
-| `--from <machine>` | Kaynak makine |
-| `--to <machine>` | Hedef makine |
 | `--provision` | Aktarımdan önce hedefte depoyu hazırla |
 | `--checkpoint` | Migrasyondan önce CRIU checkpoint oluştur |
 | `--skip-dns` | Migrasyondan sonra DNS kaydı güncellemeyi atla |

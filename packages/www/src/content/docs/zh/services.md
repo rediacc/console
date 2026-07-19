@@ -230,7 +230,6 @@ rdc repo up my-app
 
 | 选项 | 描述 |
 |------|------|
-| `--detach` | 容器启动后立即返回；健康检查在后台继续运行 |
 | `--skip-router-restart` | 跳过操作后重启路由服务器 |
 
 执行顺序为：
@@ -286,7 +285,6 @@ rdc repo up --all -m server-1
 | 选项 | 描述 |
 |------|------|
 | `--include-forks` | 包含 fork 仓库 |
-| `--mount-only` | 仅挂载，不启动容器 |
 | `--dry-run` | 显示将要执行的操作 |
 | `--parallel` | 并行运行操作 |
 | `--concurrency <n>` | 最大并发操作数（默认：3） |

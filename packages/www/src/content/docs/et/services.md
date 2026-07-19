@@ -231,7 +231,6 @@ rdc repo up my-app
 
 | Valik | Kirjeldus |
 |--------|-------------|
-| `--detach` | Tagasta kohe, kui konteinerid on käivitatud; tervisekontrollid jätkavad taustal |
 | `--skip-router-restart` | Jätke teeserveri taaskäivitamine pärast toimingut vahele |
 
 Täitmise järjekord on:
@@ -287,7 +286,6 @@ rdc repo up --all -m server-1
 | Valik | Kirjeldus |
 |--------|-------------|
 | `--include-forks` | Kaasa forkitud repositooriumid |
-| `--mount-only` | Ainult ühenda, ära käivita konteinereid |
 | `--dry-run` | Näita, mida tehtaks |
 | `--parallel` | Käivita toimingud paralleelselt |
 | `--concurrency <n>` | Maksimaalsed samaaegsed toimingud (vaikimisi: 3) |

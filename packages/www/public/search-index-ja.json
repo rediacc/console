@@ -2816,7 +2816,7 @@
   {
     "id": "search-10451",
     "content": "戦略の定義",
-    "body": "標準的なデフォルトは 2 つの戦略の組み合わせです。すべてのリポジトリをキャプチャする高速な毎時ホットストリームと、アプリケーション整合性のあるスナップショットを取る低速な毎週コールドストリームです。2 つの戦略は異なるストレージサブフォルダ（hot/ と cold/）に書き込むため、バックアップが混ざることはありません。 rdc backup strategy set hourly-hot \\ --destination my-storage \\ --cron \"0 \" \\ --mode hot \\ --bwlimit 20M \\ --enable rdc backup strategy set weekly-cold \\ --destination my-storage \\ --cron \"15 3 0\" \\ --mode cold \\ --exclude very-large-repo \\ --enable コールド戦略の --exclude フィルターは、毎週のメンテナンスウィンドウに収まらない非常に大きなリポジトリのための推奨されるエスケープハッチです。毎時のホット戦略は引き続きそれらをカバーし、コールドはスキップするだけです。--exclude のリポジトリ名はローカル設定のリポジトリ名と一致します（:tag なし）。 | オプション | 説明 | |-----------|------| | --name <name> | 戦略名（マシンバインディングに使用） | | --destination <storage> | アップロード先のストレージプロバイダ | | --cron <expression> | cron式（例：\"0 2 *\" で毎日午前2時） | | --mode <hot\\|cold> | バックアップモード | | --bwlimit <limit> | アップロードの帯域幅制限（例：10M） | | --include <pattern> | 包含フィルター（繰り返し指定可能） | | --exclude <pattern> | 除外フィルター（繰り返し指定可能） | | --enable / --disable | 戦略を有効化または無効化 |",
+    "body": "標準的なデフォルトは 2 つの戦略の組み合わせです。すべてのリポジトリをキャプチャする高速な毎時ホットストリームと、アプリケーション整合性のあるスナップショットを取る低速な毎週コールドストリームです。2 つの戦略は異なるストレージサブフォルダ（hot/ と cold/）に書き込むため、バックアップが混ざることはありません。 rdc backup strategy set hourly-hot \\ --destination my-storage \\ --cron \"0 \" \\ --mode hot \\ --bwlimit 20M \\ --enable rdc backup strategy set weekly-cold \\ --destination my-storage \\ --cron \"15 3 0\" \\ --mode cold \\ --exclude very-large-repo \\ --enable コールド戦略の --exclude フィルターは、毎週のメンテナンスウィンドウに収まらない非常に大きなリポジトリのための推奨されるエスケープハッチです。毎時のホット戦略は引き続きそれらをカバーし、コールドはスキップするだけです。--exclude のリポジトリ名はローカル設定のリポジトリ名と一致します（:tag なし）。 | オプション | 説明 | |-----------|------| | --destination <storage> | アップロード先のストレージプロバイダ | | --cron <expression> | cron式（例：\"0 2 *\" で毎日午前2時） | | --mode <hot\\|cold> | バックアップモード | | --bwlimit <limit> | アップロードの帯域幅制限（例：10M） | | --include <pattern> | 包含フィルター（繰り返し指定可能） | | --exclude <pattern> | 除外フィルター（繰り返し指定可能） | | --enable / --disable | 戦略を有効化または無効化 |",
     "excerpt": "標準的なデフォルトは 2 つの戦略の組み合わせです。すべてのリポジトリをキャプチャする高速な毎時ホットストリームと、アプリケーション整合性のあるスナップショットを取る低速な毎週コールドストリームです。2 つの戦略は異なるストレージサブフォルダ（hot/ と cold/）に書き込むため、バックアップが...",
     "category": "Documentation",
     "page": "/ja/docs/backup-restore",
@@ -2959,8 +2959,8 @@
   {
     "id": "search-10464",
     "content": "リポジトリの移行",
-    "body": "リポジトリをあるマシンから別のマシンに移動します： rdc repo migrate my-app@server-1 --to server-2 | オプション | 説明 | |-----------|------| | --name <repo> | 移行するリポジトリ | | --from <machine> | ソースマシン | | --to <machine> | 宛先マシン | | --provision | 転送前に宛先でリポジトリをプロビジョニング | | --checkpoint | 移行前にCRIUチェックポイントを作成 | | --skip-dns | 移行後のDNSレコード更新をスキップ | | --bwlimit <limit> | 転送の帯域幅制限（例：50M） | 移行はrsyncを介して暗号化されたリポジトリデータを転送します。ソースリポジトリは明示的に削除するまで保持されます。",
-    "excerpt": "リポジトリをあるマシンから別のマシンに移動します： rdc repo migrate my-app@server-1 --to server-2 | オプション | 説明 | |-----------|------| | --name <repo> | 移行するリポジトリ | | --from <m...",
+    "body": "リポジトリをあるマシンから別のマシンに移動します： rdc repo migrate my-app@server-1 --to server-2 | オプション | 説明 | |-----------|------| | --provision | 転送前に宛先でリポジトリをプロビジョニング | | --checkpoint | 移行前にCRIUチェックポイントを作成 | | --skip-dns | 移行後のDNSレコード更新をスキップ | | --bwlimit <limit> | 転送の帯域幅制限（例：50M） | 移行はrsyncを介して暗号化されたリポジトリデータを転送します。ソースリポジトリは明示的に削除するまで保持されます。",
+    "excerpt": "リポジトリをあるマシンから別のマシンに移動します： rdc repo migrate my-app@server-1 --to server-2 | オプション | 説明 | |-----------|------| | --provision | 転送前に宛先でリポジトリをプロビジョニング | |...",
     "category": "Documentation",
     "page": "/ja/docs/backup-restore",
     "path": "docs.backup-restore.content",
@@ -9865,8 +9865,8 @@
   {
     "id": "search-11098",
     "content": "rdc repo commit",
-    "body": "マウントされたワーキングフォークを新しいイミュータブルコミットに凍結します。 rdc repo commit <fork> --message \"<message>\" | オプション | 説明 | デフォルト | |--------|-------------|---------| | --name <name> | コミットするワーキングフォーク。マウントされている必要があります。必須。 | required | | --message <msg> | コミットメッセージ。必須。 | required | | --author <author> | コミットメタデータに記録されるコミット作成者。 | unset | | -m, --machine <name> | ターゲットマシン。必須。 | required | | --debug | stderrへの詳細な診断情報。 | off | 新しいコミットはローカルコンフィグにimmutable: trueとして登録され、ワーキングフォークのheadCommitがそれを指すように更新されます。イミュータブルなリポジトリのコミットは拒否されます。まず書き込み可能なフォークにチェックアウトしてください。",
-    "excerpt": "マウントされたワーキングフォークを新しいイミュータブルコミットに凍結します。 rdc repo commit <fork> --message \"<message>\" | オプション | 説明 | デフォルト | |--------|-------------|---------| | --name...",
+    "body": "マウントされたワーキングフォークを新しいイミュータブルコミットに凍結します。 rdc repo commit <fork> --message \"<message>\" | オプション | 説明 | デフォルト | |--------|-------------|---------| | --message <msg> | コミットメッセージ。必須。 | required | | --author <author> | コミットメタデータに記録されるコミット作成者。 | unset | | -m, --machine <name> | ターゲットマシン。必須。 | required | | --debug | stderrへの詳細な診断情報。 | off | 新しいコミットはローカルコンフィグにimmutable: trueとして登録され、ワーキングフォークのheadCommitがそれを指すように更新されます。イミュータブルなリポジトリのコミットは拒否されます。まず書き込み可能なフォークにチェックアウトしてください。",
+    "excerpt": "マウントされたワーキングフォークを新しいイミュータブルコミットに凍結します。 rdc repo commit <fork> --message \"<message>\" | オプション | 説明 | デフォルト | |--------|-------------|---------| | --mess...",
     "category": "Documentation",
     "page": "/ja/docs/repo-branching",
     "path": "docs.repo-branching.content",
@@ -9876,7 +9876,7 @@
   {
     "id": "search-11099",
     "content": "rdc repo branch",
-    "body": "ワーキングフォークの現在のコミットを指す名前付きブランチrefを作成します。 rdc repo branch <fork> --branch <name> | オプション | 説明 | デフォルト | |--------|-------------|---------| | --branch <branch> | 新しいブランチの名前。必須。 | required | | --name <name> | ブランチが指すワーキングフォーク。必須。 | required | これはコンフィグのみの操作です。マシンでは何も実行されません。ブランチrefは名前をワーキングフォークのheadCommitにマッピングするため、フォークには少なくとも1つのコミットが必要です。",
+    "body": "ワーキングフォークの現在のコミットを指す名前付きブランチrefを作成します。 rdc repo branch <fork> --branch <name> | オプション | 説明 | デフォルト | |--------|-------------|---------| | --branch <branch> | 新しいブランチの名前。必須。 | required | これはコンフィグのみの操作です。マシンでは何も実行されません。ブランチrefは名前をワーキングフォークのheadCommitにマッピングするため、フォークには少なくとも1つのコミットが必要です。",
     "excerpt": "ワーキングフォークの現在のコミットを指す名前付きブランチrefを作成します。 rdc repo branch <fork> --branch <name> | オプション | 説明 | デフォルト | |--------|-------------|---------| | --branch <br...",
     "category": "Documentation",
     "page": "/ja/docs/repo-branching",
@@ -9887,7 +9887,7 @@
   {
     "id": "search-11100",
     "content": "rdc repo checkout",
-    "body": "イミュータブルコミット（またはブランチの先端）をリファリンクで新しい書き込み可能なワーキングフォークにクローンします。 rdc repo checkout <commit> --tag <newFork> rdc repo checkout <branchName> --from <fork> --tag <newFork> | オプション | 説明 | デフォルト | |--------|-------------|---------| | --ref <commit\\|branch> | チェックアウトするコミットGUID、または--fromが指定された場合のブランチ名。必須。 | required | | --tag <name> | 新しい書き込み可能なワーキングフォークの名前。必須。 | required | | -m, --machine <name> | ターゲットマシン。必須。 | required | | --from <workingFork> | このワーキングフォークのブランチセットで--refをブランチ名として解決します。 | direct commit | | --debug | stderrへの詳細な診断情報。 | off | | --skip-router-restart | ルーター再起動ステップをスキップします。 | off | チェックアウトはフォークリファリンクパスを再利用するため、リポジトリサイズに関わらずほぼ瞬時で定数時間です。新しいワーキングフォークのheadCommitはチェックアウトされたコミットに設定されます。",
+    "body": "イミュータブルコミット（またはブランチの先端）をリファリンクで新しい書き込み可能なワーキングフォークにクローンします。 rdc repo checkout <commit> --tag <newFork> rdc repo checkout <branchName> --from <fork> --tag <newFork> | オプション | 説明 | デフォルト | |--------|-------------|---------| | --tag <name> | 新しい書き込み可能なワーキングフォークの名前。必須。 | required | | -m, --machine <name> | ターゲットマシン。必須。 | required | | --from <workingFork> | このワーキングフォークのブランチセットで--refをブランチ名として解決します。 | direct commit | | --debug | stderrへの詳細な診断情報。 | off | | --skip-router-restart | ルーター再起動ステップをスキップします。 | off | チェックアウトはフォークリファリンクパスを再利用するため、リポジトリサイズに関わらずほぼ瞬時で定数時間です。新しいワーキングフォークのheadCommitはチェックアウトされたコミットに設定されます。",
     "excerpt": "イミュータブルコミット（またはブランチの先端）をリファリンクで新しい書き込み可能なワーキングフォークにクローンします。 rdc repo checkout <commit> --tag <newFork> rdc repo checkout <branchName> --from <fork> --...",
     "category": "Documentation",
     "page": "/ja/docs/repo-branching",
@@ -9898,8 +9898,8 @@
   {
     "id": "search-11101",
     "content": "rdc repo log",
-    "body": "ワーキングフォークまたはコミットから到達可能なコミット履歴を確認します。 rdc repo log <fork> | オプション | 説明 | デフォルト | |--------|-------------|---------| | --name <name> | 履歴確認を開始するワーキングフォークまたはコミット。必須。 | required | | -m, --machine <name> | ターゲットマシン。必須。 | required | | --json | コミット履歴をJSONとして出力します。 | off | | --debug | stderrへの詳細な診断情報。 | off | logはrdc repo commitによって記録された親チェーンを確認し、ボリューム外の状態ミラーを読み取るため、コミットはアンロックまたはマウントされません。読み取り専用です。",
-    "excerpt": "ワーキングフォークまたはコミットから到達可能なコミット履歴を確認します。 rdc repo log <fork> | オプション | 説明 | デフォルト | |--------|-------------|---------| | --name <name> | 履歴確認を開始するワーキングフォー...",
+    "body": "ワーキングフォークまたはコミットから到達可能なコミット履歴を確認します。 rdc repo log <fork> | オプション | 説明 | デフォルト | |--------|-------------|---------| | -m, --machine <name> | ターゲットマシン。必須。 | required | | --debug | stderrへの詳細な診断情報。 | off | logはrdc repo commitによって記録された親チェーンを確認し、ボリューム外の状態ミラーを読み取るため、コミットはアンロックまたはマウントされません。読み取り専用です。",
+    "excerpt": "ワーキングフォークまたはコミットから到達可能なコミット履歴を確認します。 rdc repo log <fork> | オプション | 説明 | デフォルト | |--------|-------------|---------| | -m, --machine <name> | ターゲットマシン。必...",
     "category": "Documentation",
     "page": "/ja/docs/repo-branching",
     "path": "docs.repo-branching.content",
@@ -9909,7 +9909,7 @@
   {
     "id": "search-11102",
     "content": "rdc repo merge",
-    "body": "ライブターゲットをその場で変更することなく、ソースコミットまたはフォークをターゲットワーキングフォークにマージします。 rdc repo merge <target> --from <source> rdc repo merge <target> --from <source> --resolve theirs | オプション | 説明 | デフォルト | |--------|-------------|---------| | --name <name> | マージ先のターゲットワーキングフォーク。必須。 | required | | --from <source> | マージ元のソースコミットまたはフォーク。必須。 | required | | -m, --machine <name> | ターゲットマシン。必須。 | required | | --force | まずマウントまたは実行中のターゲットを停止してからマージします。ライブマウントを変更することはありません。 | off | | --resolve <ours\\|theirs> | ファイル単位の3方向マージ：ソースのファイル単位の変更をターゲットに適用し、両側で変更されたファイルにはソース版を保持（ours）または採用（theirs）します。全体イメージの取り込みには省略します。 | off | | --base <guid> | 3方向マージの共通祖先コミット（--resolveと共に使用）。デフォルトはソースコミットの親、またはターゲットの現在のコミット。 | auto | | --debug | stderrへの詳細な診断情報。 | off | 結果はリファリンクのクローンで構築され、クラッシュセーフなマーカーの背後でアトミックに入れ替えられるため、マージが中断されてもオリジナルのターゲットは無傷のままです。マウントまたは実行中のターゲットは--forceなしでは拒否されます。--forceはターゲットを入れ替え前にクリーンにシャットダウンします。 --resolveなしでは、マージは全体イメージの取り込み（ターゲットがソースになります）です。--resolveありでは、ソースコミットの記録された親に対するファイル単位の3方向マージです。一方のみで変更されたファイルはその側から取得され、両側で変更されたファイルはフラグで解決されます。競合するパスが報告されます。",
+    "body": "ライブターゲットをその場で変更することなく、ソースコミットまたはフォークをターゲットワーキングフォークにマージします。 rdc repo merge <target> --from <source> rdc repo merge <target> --from <source> --resolve theirs | オプション | 説明 | デフォルト | |--------|-------------|---------| | --from <source> | マージ元のソースコミットまたはフォーク。必須。 | required | | -m, --machine <name> | ターゲットマシン。必須。 | required | | --force | まずマウントまたは実行中のターゲットを停止してからマージします。ライブマウントを変更することはありません。 | off | | --resolve <ours\\|theirs> | ファイル単位の3方向マージ：ソースのファイル単位の変更をターゲットに適用し、両側で変更されたファイルにはソース版を保持（ours）または採用（theirs）します。全体イメージの取り込みには省略します。 | off | | --base <guid> | 3方向マージの共通祖先コミット（--resolveと共に使用）。デフォルトはソースコミットの親、またはターゲットの現在のコミット。 | auto | | --debug | stderrへの詳細な診断情報。 | off | 結果はリファリンクのクローンで構築され、クラッシュセーフなマーカーの背後でアトミックに入れ替えられるため、マージが中断されてもオリジナルのターゲットは無傷のままです。マウントまたは実行中のターゲットは--forceなしでは拒否されます。--forceはターゲットを入れ替え前にクリーンにシャットダウンします。 --resolveなしでは、マージは全体イメージの取り込み（ターゲットがソースになります）です。--resolveありでは、ソースコミットの記録された親に対するファイル単位の3方向マージです。一方のみで変更されたファイルはその側から取得され、両側で変更されたファイルはフラグで解決されます。競合するパスが報告されます。",
     "excerpt": "ライブターゲットをその場で変更することなく、ソースコミットまたはフォークをターゲットワーキングフォークにマージします。 rdc repo merge <target> --from <source> rdc repo merge <target> --from <source> --resolve...",
     "category": "Documentation",
     "page": "/ja/docs/repo-branching",
@@ -10204,8 +10204,8 @@
   {
     "id": "search-11129",
     "content": "オプション",
-    "body": "| オプション | 説明 | デフォルト | |--------|-------------|---------| | --name <name> | 検査対象のリポジトリ（ターゲット、新しい側）。必須。 | 必須 | | --base <name> | 比較対象のリポジトリ（ベース、古い側）。--name の親にデフォルト設定されており、ローカル設定から解決されます。 | --name の親 | | （フォーマットフラグなし） | 名前ステータス出力：変更されたファイルごとにカラー付きの A/M/D/R 文字と 1 行のサマリー。 | オン | | --name-only | 変更されたパスを 1 行に 1 つ、ステータス文字なし。パイプフレンドリー。 | オフ | | --stat | ファイルごとの変更量（バイトとブロック差分）合計行付き。 | オフ | | --content <path> | 単一ファイルの統一 diff テキスト。テキストのみ。バイナリは Binary files differ と報告します。 | オフ | | --json | エージェントとスクリプト向けの構造化出力。 | オフ | | --fast | コンテンツハッシュ確認ステップをスキップし、ブロックフィルタを信頼します。高速ですが、ファイルを Modified として過剰に報告する可能性があります。 | オフ | | -m, --machine <name> | ターゲットマシン。必須。 | 必須 | | --debug | stderr への詳細な診断情報。 | オフ | | --skip-router-restart | ルータ再起動ステップをスキップします。 | オフ |",
-    "excerpt": "| オプション | 説明 | デフォルト | |--------|-------------|---------| | --name <name> | 検査対象のリポジトリ（ターゲット、新しい側）。必須。 | 必須 | | --base <name> | 比較対象のリポジトリ（ベース、古い側）。--...",
+    "body": "| オプション | 説明 | デフォルト | |--------|-------------|---------| | （フォーマットフラグなし） | 名前ステータス出力：変更されたファイルごとにカラー付きの A/M/D/R 文字と 1 行のサマリー。 | オン | | --name-only | 変更されたパスを 1 行に 1 つ、ステータス文字なし。パイプフレンドリー。 | オフ | | --stat | ファイルごとの変更量（バイトとブロック差分）合計行付き。 | オフ | | --content <path> | 単一ファイルの統一 diff テキスト。テキストのみ。バイナリは Binary files differ と報告します。 | オフ | | --fast | コンテンツハッシュ確認ステップをスキップし、ブロックフィルタを信頼します。高速ですが、ファイルを Modified として過剰に報告する可能性があります。 | オフ | | --debug | stderr への詳細な診断情報。 | オフ | | --skip-router-restart | ルータ再起動ステップをスキップします。 | オフ |",
+    "excerpt": "| オプション | 説明 | デフォルト | |--------|-------------|---------| | （フォーマットフラグなし） | 名前ステータス出力：変更されたファイルごとにカラー付きの A/M/D/R 文字と 1 行のサマリー。 | オン | | --name-only |...",
     "category": "Documentation",
     "page": "/ja/docs/repo-diff",
     "path": "docs.repo-diff.content",
@@ -11490,8 +11490,8 @@
   {
     "id": "search-11247",
     "content": "サービスの開始",
-    "body": "リポジトリをマウントし、すべてのサービスを開始します： rdc repo up my-app | オプション | 説明 | |--------|-------------| | --detach | コンテナが起動した時点で制御を返す。ヘルスチェックはバックグラウンドで継続される | | --skip-router-restart | 操作後にルートサーバーの再起動をスキップ | 実行シーケンスは以下の通りです： LUKS暗号化リポジトリをマウント（未マウントの場合は自動マウント） 隔離Dockerデーモンを起動 composeファイルから.rediacc.jsonを自動生成 すべてのRediaccfileでup()を実行（A-Z順） デプロイ後、出力には各サービスの実際のURLを示すPROXY ROUTESセクションが表示されます。カスタムTraefikラベルを持つサービス（例：traefik.http.routers.myapp.rule=Host(...)）は、カスタムドメインをプライマリURLとして表示します： HTTP services (accessible via proxy after ~3s): gitlab-server: HTTPS: https://gitlab.example.com (custom) Auto: https://gitlab-server.gitlab.server-1.example.com IP: 127.0.11.130 カスタムTraefikラベルを持たないサービスは、自動生成されたルートのみを表示します。ブラウザアクセス、API呼び出し、サービス間設定にはこれらのURL（CLIで表示される汎用パターンではなく）を使用してください。",
-    "excerpt": "リポジトリをマウントし、すべてのサービスを開始します： rdc repo up my-app | オプション | 説明 | |--------|-------------| | --detach | コンテナが起動した時点で制御を返す。ヘルスチェックはバックグラウンドで継続される | | --ski...",
+    "body": "リポジトリをマウントし、すべてのサービスを開始します： rdc repo up my-app | オプション | 説明 | |--------|-------------| | --skip-router-restart | 操作後にルートサーバーの再起動をスキップ | 実行シーケンスは以下の通りです： LUKS暗号化リポジトリをマウント（未マウントの場合は自動マウント） 隔離Dockerデーモンを起動 composeファイルから.rediacc.jsonを自動生成 すべてのRediaccfileでup()を実行（A-Z順） デプロイ後、出力には各サービスの実際のURLを示すPROXY ROUTESセクションが表示されます。カスタムTraefikラベルを持つサービス（例：traefik.http.routers.myapp.rule=Host(...)）は、カスタムドメインをプライマリURLとして表示します： HTTP services (accessible via proxy after ~3s): gitlab-server: HTTPS: https://gitlab.example.com (custom) Auto: https://gitlab-server.gitlab.server-1.example.com IP: 127.0.11.130 カスタムTraefikラベルを持たないサービスは、自動生成されたルートのみを表示します。ブラウザアクセス、API呼び出し、サービス間設定にはこれらのURL（CLIで表示される汎用パターンではなく）を使用してください。",
+    "excerpt": "リポジトリをマウントし、すべてのサービスを開始します： rdc repo up my-app | オプション | 説明 | |--------|-------------| | --skip-router-restart | 操作後にルートサーバーの再起動をスキップ | 実行シーケンスは以下の通りで...",
     "category": "Documentation",
     "page": "/ja/docs/services",
     "path": "docs.services.content",
@@ -11534,8 +11534,8 @@
   {
     "id": "search-11251",
     "content": "一括操作",
-    "body": "マシン上のすべてのリポジトリを一度に開始または停止します： rdc repo up --all -m server-1 | オプション | 説明 | |--------|-------------| | --include-forks | フォークされたリポジトリを含める | | --mount-only | マウントのみ行い、コンテナは起動しない | | --dry-run | 実行される操作を表示 | | --parallel | 操作を並列実行 | | --concurrency <n> | 最大同時操作数（デフォルト：3） | | --skip-router-restart | 操作後にルートサーバーの再起動をスキップ |",
-    "excerpt": "マシン上のすべてのリポジトリを一度に開始または停止します： rdc repo up --all -m server-1 | オプション | 説明 | |--------|-------------| | --include-forks | フォークされたリポジトリを含める | | --mount-o...",
+    "body": "マシン上のすべてのリポジトリを一度に開始または停止します： rdc repo up --all -m server-1 | オプション | 説明 | |--------|-------------| | --include-forks | フォークされたリポジトリを含める | | --dry-run | 実行される操作を表示 | | --parallel | 操作を並列実行 | | --concurrency <n> | 最大同時操作数（デフォルト：3） | | --skip-router-restart | 操作後にルートサーバーの再起動をスキップ |",
+    "excerpt": "マシン上のすべてのリポジトリを一度に開始または停止します： rdc repo up --all -m server-1 | オプション | 説明 | |--------|-------------| | --include-forks | フォークされたリポジトリを含める | | --dry-run...",
     "category": "Documentation",
     "page": "/ja/docs/services",
     "path": "docs.services.content",
@@ -12373,8 +12373,8 @@
   {
     "id": "search-11328",
     "content": "オプション",
-    "body": "| オプション | 説明 | |--------|-------------| | -m, --machine <name> | 対象マシン | | -r, --repository <name> | 対象リポジトリ | | --local <paths...> | 1つ以上のローカルファイル/ディレクトリパス（アップロード）またはローカル出力ディレクトリ（ダウンロード） | | --remote <path> | リモートディレクトリ（リポジトリマウントからの相対パス） | | --remote-file <path> | 単一ファイルアップロード/ダウンロード用リモートファイルパス（--remoteの代替） | | --dry-run | 転送せずに変更をプレビュー | | --mirror | ソースをデスティネーションにミラーリング、余分なファイルを削除（ディレクトリソースのみ） | | --verify | 転送後にチェックサムを検証 | | --confirm | 詳細ビューによるインタラクティブな確認 | | --exclude <patterns...> | ファイルパターンを除外 | | --skip-router-restart | 操作後のルートサーバーの再起動をスキップ |",
-    "excerpt": "| オプション | 説明 | |--------|-------------| | -m, --machine <name> | 対象マシン | | -r, --repository <name> | 対象リポジトリ | | --local <paths...> | 1つ以上のローカルファイル/ディ...",
+    "body": "| オプション | 説明 | |--------|-------------| | -m, --machine <name> | 対象マシン | | --local <paths...> | 1つ以上のローカルファイル/ディレクトリパス（アップロード）またはローカル出力ディレクトリ（ダウンロード） | | --remote <path> | リモートディレクトリ（リポジトリマウントからの相対パス） | | --remote-file <path> | 単一ファイルアップロード/ダウンロード用リモートファイルパス（--remoteの代替） | | --dry-run | 転送せずに変更をプレビュー | | --mirror | ソースをデスティネーションにミラーリング、余分なファイルを削除（ディレクトリソースのみ） | | --verify | 転送後にチェックサムを検証 | | --confirm | 詳細ビューによるインタラクティブな確認 | | --exclude <patterns...> | ファイルパターンを除外 | | --skip-router-restart | 操作後のルートサーバーの再起動をスキップ |",
+    "excerpt": "| オプション | 説明 | |--------|-------------| | -m, --machine <name> | 対象マシン | | --local <paths...> | 1つ以上のローカルファイル/ディレクトリパス（アップロード）またはローカル出力ディレクトリ（ダウンロード）...",
     "category": "Documentation",
     "page": "/ja/docs/tools",
     "path": "docs.tools.content",
@@ -12428,7 +12428,7 @@
   {
     "id": "search-11333",
     "content": "コンテナ操作",
-    "body": "実行中のコンテナと直接やり取りします： # コンテナ内でシェルを開く rdc repo exec my-app -c <container> -i -- bash # コンテナログを表示 rdc repo logs my-app -c <container> # リアルタイムでログを追跡 rdc repo logs my-app -c <container> --follow # コンテナの統計情報を表示 rdc repo exec my-app -c <container> -i -- bash --container-action stats # コンテナ内でコマンドを実行 rdc repo exec my-app -c <container> -- ls -la | オプション | 説明 | |--------|-------------| | --container <id> | 対象のDockerコンテナID | | --container-action <action> | アクション：terminal（デフォルト）、logs、stats、exec | | --log-lines <n> | 表示するログの行数（デフォルト：50） | | --follow | ログを継続的に追跡 | | --external | インラインSSHの代わりに外部ターミナルを使用 |",
+    "body": "実行中のコンテナと直接やり取りします： # コンテナ内でシェルを開く rdc repo exec my-app -c <container> -i -- bash # コンテナログを表示 rdc repo logs my-app -c <container> # リアルタイムでログを追跡 rdc repo logs my-app -c <container> --follow # コンテナの統計情報を表示 rdc repo exec my-app -c <container> -i -- bash --container-action stats # コンテナ内でコマンドを実行 rdc repo exec my-app -c <container> -- ls -la | オプション | 説明 | |--------|-------------|",
     "excerpt": "実行中のコンテナと直接やり取りします： # コンテナ内でシェルを開く rdc repo exec my-app -c <container> -i -- bash # コンテナログを表示 rdc repo logs my-app -c <container> # リアルタイムでログを追跡 rdc r...",
     "category": "Documentation",
     "page": "/ja/docs/tools",

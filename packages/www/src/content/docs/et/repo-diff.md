@@ -32,17 +32,13 @@ rdc repo diff <fork> --base <repo>   # diff against an arbitrary related repo
 
 | Valik | Kirjeldus | Vaikeväärtus |
 |--------|-------------|---------|
-| `--name <name>` | Kontrollitav hoidla (siht, uus pool). Nõutav. | nõutav |
-| `--base <name>` | Hoidla, millega võrrelda (baas, vana pool). Vaikimisi `--name` vanem, lahendatud kohaliku configist. | `--name` vanem |
 | (formaadivali puudub) | Nime-staatuse väljund: värviline `A`/`M`/`D`/`R` täht muutunud faili kohta pluss üherealisi kokkuvõte. | sees |
 | `--name-only` | Üks muutunud tee rea kohta, staatuse täht puudub. Müra-sõbralik. | välja |
 | `--stat` | Faili kohta muutuste suuruus (baidi ja ploki deltad) kokku-
 
 võttega jaluses. | välja |
 | `--content <path>` | Ühendatud teksti diff ühe faili jaoks. Ainult tekst; binaarfailid teatavad `Binary files differ`. | välja |
-| `--json` | Struktureeritud väljund agentidele ja skriptidele. | välja |
 | `--fast` | Jäta sisu-räsi kinnitamise etapp vahele ja usalda plokkfiltrit. Kiirem, kuid võib üle teatada failidest kui Muudetud. | välja |
-| `-m, --machine <name>` | Sihtmasin. Nõutav. | nõutav |
 | `--debug` | Üksikasjalik diagnostika stderr kohale. | välja |
 | `--skip-router-restart` | Jäta marsruuteri taaskäivitamise etapp vahele. | välja |
 

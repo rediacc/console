@@ -2816,7 +2816,7 @@
   {
     "id": "search-11723",
     "content": "전략 정의",
-    "body": "표준 기본값은 두 전략 분할입니다. 모든 레포를 캡처하는 빠른 시간별 hot 스트림과 애플리케이션 일관성 스냅샷을 찍는 느린 주별 cold 스트림입니다. 두 전략은 서로 다른 스토리지 하위 폴더(hot/과 cold/)에 쓰므로 백업이 절대 섞이지 않습니다. rdc backup strategy set hourly-hot \\ --destination my-storage \\ --cron \"0 \" \\ --mode hot \\ --bwlimit 20M \\ --enable rdc backup strategy set weekly-cold \\ --destination my-storage \\ --cron \"15 3 0\" \\ --mode cold \\ --exclude very-large-repo \\ --enable cold 전략의 --exclude 필터는 주별 유지 관리 창에 맞지 않는 매우 큰 레포를 위한 권장 탈출구입니다. 시간별 hot 전략이 여전히 이들을 커버합니다. cold는 단순히 건너뜁니다. --exclude의 레포지토리 이름은 로컬 설정 레포 이름과 일치합니다(:tag 없음). | 옵션 | 설명 | |--------|-------------| | --name <name> | 전략 이름 (머신 바인딩에 사용) | | --destination <storage> | 업로드할 스토리지 제공자 | | --cron <expression> | Cron 표현식 (예: \"0 2 *\"는 매일 오전 2시) | | --mode <hot\\|cold> | 백업 모드 | | --bwlimit <limit> | 업로드 대역폭 제한 (예: 10M) | | --include <pattern> | 포함 필터 (반복 사용 가능) | | --exclude <pattern> | 제외 필터 (반복 사용 가능) | | --enable / --disable | 전략 활성화 또는 비활성화 |",
+    "body": "표준 기본값은 두 전략 분할입니다. 모든 레포를 캡처하는 빠른 시간별 hot 스트림과 애플리케이션 일관성 스냅샷을 찍는 느린 주별 cold 스트림입니다. 두 전략은 서로 다른 스토리지 하위 폴더(hot/과 cold/)에 쓰므로 백업이 절대 섞이지 않습니다. rdc backup strategy set hourly-hot \\ --destination my-storage \\ --cron \"0 \" \\ --mode hot \\ --bwlimit 20M \\ --enable rdc backup strategy set weekly-cold \\ --destination my-storage \\ --cron \"15 3 0\" \\ --mode cold \\ --exclude very-large-repo \\ --enable cold 전략의 --exclude 필터는 주별 유지 관리 창에 맞지 않는 매우 큰 레포를 위한 권장 탈출구입니다. 시간별 hot 전략이 여전히 이들을 커버합니다. cold는 단순히 건너뜁니다. --exclude의 레포지토리 이름은 로컬 설정 레포 이름과 일치합니다(:tag 없음). | 옵션 | 설명 | |--------|-------------| | --destination <storage> | 업로드할 스토리지 제공자 | | --cron <expression> | Cron 표현식 (예: \"0 2 *\"는 매일 오전 2시) | | --mode <hot\\|cold> | 백업 모드 | | --bwlimit <limit> | 업로드 대역폭 제한 (예: 10M) | | --include <pattern> | 포함 필터 (반복 사용 가능) | | --exclude <pattern> | 제외 필터 (반복 사용 가능) | | --enable / --disable | 전략 활성화 또는 비활성화 |",
     "excerpt": "표준 기본값은 두 전략 분할입니다. 모든 레포를 캡처하는 빠른 시간별 hot 스트림과 애플리케이션 일관성 스냅샷을 찍는 느린 주별 cold 스트림입니다. 두 전략은 서로 다른 스토리지 하위 폴더(hot/과 cold/)에 쓰므로 백업이 절대 섞이지 않습니다. rdc ba...",
     "category": "Documentation",
     "page": "/ko/docs/backup-restore",
@@ -2959,8 +2959,8 @@
   {
     "id": "search-11736",
     "content": "레포지토리 마이그레이션",
-    "body": "한 머신에서 다른 머신으로 레포지토리를 이동합니다. rdc repo migrate my-app@server-1 --to server-2 | 옵션 | 설명 | |--------|-------------| | --name <repo> | 마이그레이션할 레포지토리 | | --from <machine> | 소스 머신 | | --to <machine> | 대상 머신 | | --provision | 전송 전 대상에 레포지토리 프로비저닝 | | --checkpoint | 마이그레이션 전 CRIU 체크포인트 생성 | | --skip-dns | 마이그레이션 후 DNS 레코드 업데이트 건너뜀 | | --bwlimit <limit> | 전송 대역폭 제한 (예: 50M) | 마이그레이션은 rsync를 통해 암호화된 레포지토리 데이터를 전송합니다. 소스 레포지토리는 명시적으로 삭제할 때까지 그대로 유지됩니다.",
-    "excerpt": "한 머신에서 다른 머신으로 레포지토리를 이동합니다. rdc repo migrate my-app@server-1 --to server-2 | 옵션 | 설명 | |--------|-------------| | --name <repo> | 마이그레이션할 레포지토리 | | -...",
+    "body": "한 머신에서 다른 머신으로 레포지토리를 이동합니다. rdc repo migrate my-app@server-1 --to server-2 | 옵션 | 설명 | |--------|-------------| | --provision | 전송 전 대상에 레포지토리 프로비저닝 | | --checkpoint | 마이그레이션 전 CRIU 체크포인트 생성 | | --skip-dns | 마이그레이션 후 DNS 레코드 업데이트 건너뜀 | | --bwlimit <limit> | 전송 대역폭 제한 (예: 50M) | 마이그레이션은 rsync를 통해 암호화된 레포지토리 데이터를 전송합니다. 소스 레포지토리는 명시적으로 삭제할 때까지 그대로 유지됩니다.",
+    "excerpt": "한 머신에서 다른 머신으로 레포지토리를 이동합니다. rdc repo migrate my-app@server-1 --to server-2 | 옵션 | 설명 | |--------|-------------| | --provision | 전송 전 대상에 레포지토리 프로비저닝...",
     "category": "Documentation",
     "page": "/ko/docs/backup-restore",
     "path": "docs.backup-restore.content",
@@ -9953,8 +9953,8 @@
   {
     "id": "search-12378",
     "content": "rdc repo commit",
-    "body": "마운트된 작업 포크를 새 변경 불가능한 커밋으로 고정합니다. rdc repo commit <fork> --message \"<message>\" | 옵션 | 설명 | 기본값 | |------|------|--------| | --name <name> | 커밋할 작업 포크. 마운트되어 있어야 합니다. 필수. | 필수 | | --message <msg> | 커밋 메시지. 필수. | 필수 | | --author <author> | 커밋 메타데이터에 기록되는 커밋 작성자. | 미설정 | | -m, --machine <name> | 대상 머신. 필수. | 필수 | | --debug | stderr에 자세한 진단 출력. | 꺼짐 | 새 커밋은 immutable: true로 로컬 config에 등록되고, 작업 포크의 headCommit이 해당 커밋을 가리키도록 업데이트됩니다. 변경 불가능한 리포지터리를 커밋하는 것은 거부됩니다. 먼저 쓰기 가능한 포크로 체크아웃하세요.",
-    "excerpt": "마운트된 작업 포크를 새 변경 불가능한 커밋으로 고정합니다. rdc repo commit <fork> --message \"<message>\" | 옵션 | 설명 | 기본값 | |------|------|--------| | --name <name> | 커밋할 작업 포크....",
+    "body": "마운트된 작업 포크를 새 변경 불가능한 커밋으로 고정합니다. rdc repo commit <fork> --message \"<message>\" | 옵션 | 설명 | 기본값 | |------|------|--------| | --message <msg> | 커밋 메시지. 필수. | 필수 | | --author <author> | 커밋 메타데이터에 기록되는 커밋 작성자. | 미설정 | | -m, --machine <name> | 대상 머신. 필수. | 필수 | | --debug | stderr에 자세한 진단 출력. | 꺼짐 | 새 커밋은 immutable: true로 로컬 config에 등록되고, 작업 포크의 headCommit이 해당 커밋을 가리키도록 업데이트됩니다. 변경 불가능한 리포지터리를 커밋하는 것은 거부됩니다. 먼저 쓰기 가능한 포크로 체크아웃하세요.",
+    "excerpt": "마운트된 작업 포크를 새 변경 불가능한 커밋으로 고정합니다. rdc repo commit <fork> --message \"<message>\" | 옵션 | 설명 | 기본값 | |------|------|--------| | --message <msg> | 커밋 메시지....",
     "category": "Documentation",
     "page": "/ko/docs/repo-branching",
     "path": "docs.repo-branching.content",
@@ -9964,7 +9964,7 @@
   {
     "id": "search-12379",
     "content": "rdc repo branch",
-    "body": "작업 포크의 현재 커밋을 가리키는 명명된 브랜치 참조를 생성합니다. rdc repo branch <fork> --branch <name> | 옵션 | 설명 | 기본값 | |------|------|--------| | --branch <branch> | 새 브랜치의 이름. 필수. | 필수 | | --name <name> | 브랜치가 가리킬 현재 커밋을 가진 작업 포크. 필수. | 필수 | 이것은 config 전용 작업입니다. 머신에서는 아무 작업도 수행되지 않습니다. 브랜치 참조는 이름을 작업 포크의 headCommit에 매핑하므로, 포크에 먼저 커밋이 하나 이상 있어야 합니다.",
+    "body": "작업 포크의 현재 커밋을 가리키는 명명된 브랜치 참조를 생성합니다. rdc repo branch <fork> --branch <name> | 옵션 | 설명 | 기본값 | |------|------|--------| | --branch <branch> | 새 브랜치의 이름. 필수. | 필수 | 이것은 config 전용 작업입니다. 머신에서는 아무 작업도 수행되지 않습니다. 브랜치 참조는 이름을 작업 포크의 headCommit에 매핑하므로, 포크에 먼저 커밋이 하나 이상 있어야 합니다.",
     "excerpt": "작업 포크의 현재 커밋을 가리키는 명명된 브랜치 참조를 생성합니다. rdc repo branch <fork> --branch <name> | 옵션 | 설명 | 기본값 | |------|------|--------| | --branch <branch> | 새 브랜치의 이...",
     "category": "Documentation",
     "page": "/ko/docs/repo-branching",
@@ -9975,7 +9975,7 @@
   {
     "id": "search-12380",
     "content": "rdc repo checkout",
-    "body": "변경 불가능한 커밋(또는 브랜치 팁)을 새 쓰기 가능한 작업 포크로 reflink 복제합니다. rdc repo checkout <commit> --tag <newFork> rdc repo checkout <branchName> --from <fork> --tag <newFork> | 옵션 | 설명 | 기본값 | |------|------|--------| | --ref <commit\\|branch> | 체크아웃할 커밋 GUID, 또는 --from이 주어졌을 때 브랜치 이름. 필수. | 필수 | | --tag <name> | 새 쓰기 가능한 작업 포크의 이름. 필수. | 필수 | | -m, --machine <name> | 대상 머신. 필수. | 필수 | | --from <workingFork> | 이 작업 포크의 브랜치 세트에서 --ref를 브랜치 이름으로 해석. | 직접 커밋 | | --debug | stderr에 자세한 진단 출력. | 꺼짐 | | --skip-router-restart | 라우터 재시작 단계를 건너뜀. | 꺼짐 | 체크아웃은 포크 reflink 경로를 재사용하므로 리포지터리 크기에 상관없이 거의 즉각적이고 constant-time입니다. 새 작업 포크의 headCommit은 체크아웃된 커밋으로 설정됩니다.",
+    "body": "변경 불가능한 커밋(또는 브랜치 팁)을 새 쓰기 가능한 작업 포크로 reflink 복제합니다. rdc repo checkout <commit> --tag <newFork> rdc repo checkout <branchName> --from <fork> --tag <newFork> | 옵션 | 설명 | 기본값 | |------|------|--------| | --tag <name> | 새 쓰기 가능한 작업 포크의 이름. 필수. | 필수 | | -m, --machine <name> | 대상 머신. 필수. | 필수 | | --from <workingFork> | 이 작업 포크의 브랜치 세트에서 --ref를 브랜치 이름으로 해석. | 직접 커밋 | | --debug | stderr에 자세한 진단 출력. | 꺼짐 | | --skip-router-restart | 라우터 재시작 단계를 건너뜀. | 꺼짐 | 체크아웃은 포크 reflink 경로를 재사용하므로 리포지터리 크기에 상관없이 거의 즉각적이고 constant-time입니다. 새 작업 포크의 headCommit은 체크아웃된 커밋으로 설정됩니다.",
     "excerpt": "변경 불가능한 커밋(또는 브랜치 팁)을 새 쓰기 가능한 작업 포크로 reflink 복제합니다. rdc repo checkout <commit> --tag <newFork> rdc repo checkout <branchName> --from <fork> --tag <ne...",
     "category": "Documentation",
     "page": "/ko/docs/repo-branching",
@@ -9986,8 +9986,8 @@
   {
     "id": "search-12381",
     "content": "rdc repo log",
-    "body": "작업 포크 또는 커밋에서 도달 가능한 커밋 이력을 탐색합니다. rdc repo log <fork> | 옵션 | 설명 | 기본값 | |------|------|--------| | --name <name> | 이력 탐색을 시작할 작업 포크 또는 커밋. 필수. | 필수 | | -m, --machine <name> | 대상 머신. 필수. | 필수 | | --json | 커밋 이력을 JSON으로 출력. | 꺼짐 | | --debug | stderr에 자세한 진단 출력. | 꺼짐 | log는 rdc repo commit이 기록한 부모 체인을 탐색하며, 볼륨 외부 상태 미러를 읽으므로 커밋이 잠금 해제되거나 마운트되지 않습니다. 읽기 전용입니다.",
-    "excerpt": "작업 포크 또는 커밋에서 도달 가능한 커밋 이력을 탐색합니다. rdc repo log <fork> | 옵션 | 설명 | 기본값 | |------|------|--------| | --name <name> | 이력 탐색을 시작할 작업 포크 또는 커밋. 필수. | 필수 |...",
+    "body": "작업 포크 또는 커밋에서 도달 가능한 커밋 이력을 탐색합니다. rdc repo log <fork> | 옵션 | 설명 | 기본값 | |------|------|--------| | -m, --machine <name> | 대상 머신. 필수. | 필수 | | --debug | stderr에 자세한 진단 출력. | 꺼짐 | log는 rdc repo commit이 기록한 부모 체인을 탐색하며, 볼륨 외부 상태 미러를 읽으므로 커밋이 잠금 해제되거나 마운트되지 않습니다. 읽기 전용입니다.",
+    "excerpt": "작업 포크 또는 커밋에서 도달 가능한 커밋 이력을 탐색합니다. rdc repo log <fork> | 옵션 | 설명 | 기본값 | |------|------|--------| | -m, --machine <name> | 대상 머신. 필수. | 필수 | | --debug...",
     "category": "Documentation",
     "page": "/ko/docs/repo-branching",
     "path": "docs.repo-branching.content",
@@ -9997,7 +9997,7 @@
   {
     "id": "search-12382",
     "content": "rdc repo merge",
-    "body": "라이브 대상을 직접 변경하지 않고 소스 커밋 또는 포크를 대상 작업 포크에 병합합니다. rdc repo merge <target> --from <source> rdc repo merge <target> --from <source> --resolve theirs | 옵션 | 설명 | 기본값 | |------|------|--------| | --name <name> | 병합 대상 작업 포크. 필수. | 필수 | | --from <source> | 병합 소스 커밋 또는 포크. 필수. | 필수 | | -m, --machine <name> | 대상 머신. 필수. | 필수 | | --force | 마운트되었거나 실행 중인 대상을 먼저 종료한 후 병합. 라이브 마운트는 절대 변경하지 않음. | 꺼짐 | | --resolve <ours\\|theirs> | 파일 수준 3방향 병합: 소스의 파일별 변경 사항을 대상에 적용하여, 양쪽에서 변경된 파일에 대해 소스 버전을 유지(ours)하거나 채택(theirs). 전체 이미지 take-theirs를 위해서는 생략. | 꺼짐 | | --base <guid> | 3방향 병합의 공통 조상 커밋(--resolve와 함께 사용). 기본값은 소스 커밋의 부모 또는 대상의 현재 커밋. | 자동 | | --debug | stderr에 자세한 진단 출력. | 꺼짐 | 결과는 reflink 복제본에서 빌드되고 충돌 안전 마커 뒤에 원자적으로 교체되므로 중단된 병합이 발생해도 원래 대상이 그대로 유지됩니다. 마운트되었거나 실행 중인 대상은 --force가 없으면 거부되며, --force는 교체 전에 대상을 깔끔하게 종료합니다. --resolve 없이는 병합이 전체 이미지 take-theirs입니다(대상이 소스가 됨). --resolve를 사용하면 소스 커밋의 기록된 부모에 대한 파일 수준 3방향 병합입니다. 한쪽에서만 변경된 파일은 그쪽에서 가져오고, 양쪽에서 변경된 파일은 플래그에 따라 해결됩니다. 충돌 경로가 보고됩니다.",
+    "body": "라이브 대상을 직접 변경하지 않고 소스 커밋 또는 포크를 대상 작업 포크에 병합합니다. rdc repo merge <target> --from <source> rdc repo merge <target> --from <source> --resolve theirs | 옵션 | 설명 | 기본값 | |------|------|--------| | --from <source> | 병합 소스 커밋 또는 포크. 필수. | 필수 | | -m, --machine <name> | 대상 머신. 필수. | 필수 | | --force | 마운트되었거나 실행 중인 대상을 먼저 종료한 후 병합. 라이브 마운트는 절대 변경하지 않음. | 꺼짐 | | --resolve <ours\\|theirs> | 파일 수준 3방향 병합: 소스의 파일별 변경 사항을 대상에 적용하여, 양쪽에서 변경된 파일에 대해 소스 버전을 유지(ours)하거나 채택(theirs). 전체 이미지 take-theirs를 위해서는 생략. | 꺼짐 | | --base <guid> | 3방향 병합의 공통 조상 커밋(--resolve와 함께 사용). 기본값은 소스 커밋의 부모 또는 대상의 현재 커밋. | 자동 | | --debug | stderr에 자세한 진단 출력. | 꺼짐 | 결과는 reflink 복제본에서 빌드되고 충돌 안전 마커 뒤에 원자적으로 교체되므로 중단된 병합이 발생해도 원래 대상이 그대로 유지됩니다. 마운트되었거나 실행 중인 대상은 --force가 없으면 거부되며, --force는 교체 전에 대상을 깔끔하게 종료합니다. --resolve 없이는 병합이 전체 이미지 take-theirs입니다(대상이 소스가 됨). --resolve를 사용하면 소스 커밋의 기록된 부모에 대한 파일 수준 3방향 병합입니다. 한쪽에서만 변경된 파일은 그쪽에서 가져오고, 양쪽에서 변경된 파일은 플래그에 따라 해결됩니다. 충돌 경로가 보고됩니다.",
     "excerpt": "라이브 대상을 직접 변경하지 않고 소스 커밋 또는 포크를 대상 작업 포크에 병합합니다. rdc repo merge <target> --from <source> rdc repo merge <target> --from <source> --resolve theirs | 옵션...",
     "category": "Documentation",
     "page": "/ko/docs/repo-branching",
@@ -10292,8 +10292,8 @@
   {
     "id": "search-12409",
     "content": "옵션",
-    "body": "| 옵션 | 설명 | 기본값 | |--------|-------------|---------| | --name <name> | 검사할 저장소(대상, 신 측). 필수. | 필수 | | --base <name> | 비교할 저장소(기본, 구 측). --name의 부모로 기본값 설정. | --name의 부모 | | (형식 플래그 없음) | 이름-상태 출력: 변경된 파일당 색상 A/M/D/R 문자 및 한 줄 요약. | 켜짐 | | --name-only | 한 줄에 한 개의 변경된 경로, 상태 문자 없음. 파이프 친화적. | 꺼짐 | | --stat | 파일당 변경 크기(바이트 및 블록 델타) 및 합계 바닥글. | 꺼짐 | | --content <path> | 단일 파일의 통합 텍스트 diff. 텍스트만; 바이너리는 Binary files differ 보고. | 꺼짐 | | --json | 에이전트 및 스크립트를 위한 구조화된 출력. | 꺼짐 | | --fast | 컨텐츠-해시 확인 단계를 건너뛰고 블록 필터를 신뢰합니다. 더 빠르지만 Modified로 파일을 과다 보고할 수 있습니다. | 꺼짐 | | -m, --machine <name> | 대상 머신. 필수. | 필수 | | --debug | stderr의 상세한 진단. | 꺼짐 | | --skip-router-restart | 라우터 재시작 단계 건너뜀. | 꺼짐 |",
-    "excerpt": "| 옵션 | 설명 | 기본값 | |--------|-------------|---------| | --name <name> | 검사할 저장소(대상, 신 측). 필수. | 필수 | | --base <name> | 비교할 저장소(기본, 구 측). --name의 부모로 기본...",
+    "body": "| 옵션 | 설명 | 기본값 | |--------|-------------|---------| | (형식 플래그 없음) | 이름-상태 출력: 변경된 파일당 색상 A/M/D/R 문자 및 한 줄 요약. | 켜짐 | | --name-only | 한 줄에 한 개의 변경된 경로, 상태 문자 없음. 파이프 친화적. | 꺼짐 | | --stat | 파일당 변경 크기(바이트 및 블록 델타) 및 합계 바닥글. | 꺼짐 | | --content <path> | 단일 파일의 통합 텍스트 diff. 텍스트만; 바이너리는 Binary files differ 보고. | 꺼짐 | | --fast | 컨텐츠-해시 확인 단계를 건너뛰고 블록 필터를 신뢰합니다. 더 빠르지만 Modified로 파일을 과다 보고할 수 있습니다. | 꺼짐 | | --debug | stderr의 상세한 진단. | 꺼짐 | | --skip-router-restart | 라우터 재시작 단계 건너뜀. | 꺼짐 |",
+    "excerpt": "| 옵션 | 설명 | 기본값 | |--------|-------------|---------| | (형식 플래그 없음) | 이름-상태 출력: 변경된 파일당 색상 A/M/D/R 문자 및 한 줄 요약. | 켜짐 | | --name-only | 한 줄에 한 개의 변경된 경로...",
     "category": "Documentation",
     "page": "/ko/docs/repo-diff",
     "path": "docs.repo-diff.content",
@@ -11578,8 +11578,8 @@
   {
     "id": "search-12527",
     "content": "서비스 시작",
-    "body": "저장소를 마운트하고 모든 서비스를 시작합니다. rdc repo up my-app | 옵션 | 설명 | |------|------| | --detach | 컨테이너가 시작되면 즉시 반환. 헬스체크는 백그라운드에서 계속 진행 | | --skip-router-restart | 작업 후 라우트 서버 재시작 건너뜀 | 실행 순서: LUKS 암호화 저장소 마운트 (마운트되지 않은 경우 자동 마운트) 격리된 Docker 데몬 시작 compose 파일에서 .rediacc.json 자동 생성 모든 Rediaccfile에서 up() 실행 (A-Z 순서) 배포 후 출력에 각 서비스의 실제 URL이 포함된 PROXY ROUTES 섹션이 표시됩니다. 사용자 정의 Traefik 레이블(예: traefik.http.routers.myapp.rule=Host(...))이 있는 서비스는 사용자 정의 도메인을 기본 URL로 표시합니다. HTTP services (accessible via proxy after ~3s): gitlab-server: HTTPS: https://gitlab.example.com (custom) Auto: https://gitlab-server.gitlab.server-1.example.com IP: 127.0.11.130 사용자 정의 Traefik 레이블이 없는 서비스는 자동 생성된 경로만 표시합니다. 브라우저 접근, API 호출, 서비스 간 설정에 이 URL(CLI가 출력하는 일반 패턴이 아님)을 사용하십시오.",
-    "excerpt": "저장소를 마운트하고 모든 서비스를 시작합니다. rdc repo up my-app | 옵션 | 설명 | |------|------| | --detach | 컨테이너가 시작되면 즉시 반환. 헬스체크는 백그라운드에서 계속 진행 | | --skip-router-restart...",
+    "body": "저장소를 마운트하고 모든 서비스를 시작합니다. rdc repo up my-app | 옵션 | 설명 | |------|------| | --skip-router-restart | 작업 후 라우트 서버 재시작 건너뜀 | 실행 순서: LUKS 암호화 저장소 마운트 (마운트되지 않은 경우 자동 마운트) 격리된 Docker 데몬 시작 compose 파일에서 .rediacc.json 자동 생성 모든 Rediaccfile에서 up() 실행 (A-Z 순서) 배포 후 출력에 각 서비스의 실제 URL이 포함된 PROXY ROUTES 섹션이 표시됩니다. 사용자 정의 Traefik 레이블(예: traefik.http.routers.myapp.rule=Host(...))이 있는 서비스는 사용자 정의 도메인을 기본 URL로 표시합니다. HTTP services (accessible via proxy after ~3s): gitlab-server: HTTPS: https://gitlab.example.com (custom) Auto: https://gitlab-server.gitlab.server-1.example.com IP: 127.0.11.130 사용자 정의 Traefik 레이블이 없는 서비스는 자동 생성된 경로만 표시합니다. 브라우저 접근, API 호출, 서비스 간 설정에 이 URL(CLI가 출력하는 일반 패턴이 아님)을 사용하십시오.",
+    "excerpt": "저장소를 마운트하고 모든 서비스를 시작합니다. rdc repo up my-app | 옵션 | 설명 | |------|------| | --skip-router-restart | 작업 후 라우트 서버 재시작 건너뜀 | 실행 순서: LUKS 암호화 저장소 마운트 (마운트되...",
     "category": "Documentation",
     "page": "/ko/docs/services",
     "path": "docs.services.content",
@@ -11622,8 +11622,8 @@
   {
     "id": "search-12531",
     "content": "일괄 작업",
-    "body": "한 번에 머신의 모든 저장소를 시작하거나 중지합니다. rdc repo up --all -m server-1 | 옵션 | 설명 | |------|------| | --include-forks | Fork된 저장소 포함 | | --mount-only | 마운트만, 컨테이너 시작 안 함 | | --dry-run | 수행될 작업 미리보기 | | --parallel | 병렬로 작업 실행 | | --concurrency <n> | 최대 동시 작업 수 (기본값: 3) | | --skip-router-restart | 작업 후 라우트 서버 재시작 건너뜀 |",
-    "excerpt": "한 번에 머신의 모든 저장소를 시작하거나 중지합니다. rdc repo up --all -m server-1 | 옵션 | 설명 | |------|------| | --include-forks | Fork된 저장소 포함 | | --mount-only | 마운트만, 컨테이너...",
+    "body": "한 번에 머신의 모든 저장소를 시작하거나 중지합니다. rdc repo up --all -m server-1 | 옵션 | 설명 | |------|------| | --include-forks | Fork된 저장소 포함 | | --dry-run | 수행될 작업 미리보기 | | --parallel | 병렬로 작업 실행 | | --concurrency <n> | 최대 동시 작업 수 (기본값: 3) | | --skip-router-restart | 작업 후 라우트 서버 재시작 건너뜀 |",
+    "excerpt": "한 번에 머신의 모든 저장소를 시작하거나 중지합니다. rdc repo up --all -m server-1 | 옵션 | 설명 | |------|------| | --include-forks | Fork된 저장소 포함 | | --dry-run | 수행될 작업 미리보기 |...",
     "category": "Documentation",
     "page": "/ko/docs/services",
     "path": "docs.services.content",
@@ -12461,8 +12461,8 @@
   {
     "id": "search-12608",
     "content": "옵션",
-    "body": "| 옵션 | 설명 | |--------|-------------| | -m, --machine <name> | 대상 머신 | | -r, --repository <name> | 대상 저장소 | | --local <paths...> | 하나 이상의 로컬 파일 또는 디렉터리 경로 (업로드) 또는 로컬 목적지 디렉터리 (다운로드) | | --remote <path> | 원격 디렉터리 (저장소 마운트 기준 상대 경로) | | --remote-file <path> | 단일 파일 업로드 또는 다운로드를 위한 원격 파일 경로 (--remote 대안) | | --dry-run | 전송 없이 변경 사항 미리보기 | | --mirror | 소스를 목적지에 미러링, 추가 파일 삭제 (디렉터리 소스만) | | --verify | 전송 후 체크섬 검증 | | --confirm | 상세 보기와 함께 대화형 확인 | | --exclude <patterns...> | 파일 패턴 제외 | | --skip-router-restart | 작업 후 라우트 서버 재시작 건너뜀 |",
-    "excerpt": "| 옵션 | 설명 | |--------|-------------| | -m, --machine <name> | 대상 머신 | | -r, --repository <name> | 대상 저장소 | | --local <paths...> | 하나 이상의 로컬 파일 또는 디렉터리...",
+    "body": "| 옵션 | 설명 | |--------|-------------| | -m, --machine <name> | 대상 머신 | | --local <paths...> | 하나 이상의 로컬 파일 또는 디렉터리 경로 (업로드) 또는 로컬 목적지 디렉터리 (다운로드) | | --remote <path> | 원격 디렉터리 (저장소 마운트 기준 상대 경로) | | --remote-file <path> | 단일 파일 업로드 또는 다운로드를 위한 원격 파일 경로 (--remote 대안) | | --dry-run | 전송 없이 변경 사항 미리보기 | | --mirror | 소스를 목적지에 미러링, 추가 파일 삭제 (디렉터리 소스만) | | --verify | 전송 후 체크섬 검증 | | --confirm | 상세 보기와 함께 대화형 확인 | | --exclude <patterns...> | 파일 패턴 제외 | | --skip-router-restart | 작업 후 라우트 서버 재시작 건너뜀 |",
+    "excerpt": "| 옵션 | 설명 | |--------|-------------| | -m, --machine <name> | 대상 머신 | | --local <paths...> | 하나 이상의 로컬 파일 또는 디렉터리 경로 (업로드) 또는 로컬 목적지 디렉터리 (다운로드) | | -...",
     "category": "Documentation",
     "page": "/ko/docs/tools",
     "path": "docs.tools.content",
@@ -12516,7 +12516,7 @@
   {
     "id": "search-12613",
     "content": "컨테이너 작업",
-    "body": "실행 중인 컨테이너와 직접 상호작용합니다: # 컨테이너 내부에서 셸 열기 rdc repo exec my-app -c <container> -i -- bash # 컨테이너 로그 보기 rdc repo logs my-app -c <container> # 실시간 로그 팔로우 rdc repo logs my-app -c <container> --follow # 컨테이너 통계 보기 rdc repo exec my-app -c <container> -i -- bash --container-action stats # 컨테이너에서 명령 실행 rdc repo exec my-app -c <container> -- ls -la | 옵션 | 설명 | |--------|-------------| | --container <id> | 대상 Docker 컨테이너 ID | | --container-action <action> | 작업: terminal (기본값), logs, stats, exec | | --log-lines <n> | 표시할 로그 줄 수 (기본값: 50) | | --follow | 로그 지속 팔로우 | | --external | 인라인 SSH 대신 외부 터미널 사용 |",
+    "body": "실행 중인 컨테이너와 직접 상호작용합니다: # 컨테이너 내부에서 셸 열기 rdc repo exec my-app -c <container> -i -- bash # 컨테이너 로그 보기 rdc repo logs my-app -c <container> # 실시간 로그 팔로우 rdc repo logs my-app -c <container> --follow # 컨테이너 통계 보기 rdc repo exec my-app -c <container> -i -- bash --container-action stats # 컨테이너에서 명령 실행 rdc repo exec my-app -c <container> -- ls -la | 옵션 | 설명 | |--------|-------------|",
     "excerpt": "실행 중인 컨테이너와 직접 상호작용합니다: # 컨테이너 내부에서 셸 열기 rdc repo exec my-app -c <container> -i -- bash # 컨테이너 로그 보기 rdc repo logs my-app -c <container> # 실시간 로그 팔로우...",
     "category": "Documentation",
     "page": "/ko/docs/tools",

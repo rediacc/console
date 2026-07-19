@@ -61,7 +61,6 @@ rdc repo sync status my-app
 | Option | الوصف |
 |--------|-------------|
 | `-m, --machine <name>` | الجهاز المستهدف |
-| `-r, --repository <name>` | المستودع المستهدف |
 | `--local <paths...>` | مسار واحد أو أكثر لملف أو مجلد محلي (رفع) أو مجلد الوجهة المحلي (تنزيل) |
 | `--remote <path>` | مجلد بعيد (نسبي إلى نقطة تحميل المستودع) |
 | `--remote-file <path>` | مسار ملف بعيد لعمليات الرفع أو التنزيل الفردية (بديل لـ `--remote`) |
@@ -128,11 +127,6 @@ rdc repo exec my-app -c <container> -- ls -la
 
 | Option | الوصف |
 |--------|-------------|
-| `--container <id>` | معرّف حاوية Docker المستهدفة |
-| `--container-action <action>` | الإجراء: `terminal` (افتراضي)، `logs`، `stats`، `exec` |
-| `--log-lines <n>` | عدد أسطر السجل المعروضة (الافتراضي: 50) |
-| `--follow` | متابعة السجلات بشكل مستمر |
-| `--external` | استخدام طرفية خارجية بدلاً من SSH المضمّن |
 
 ## تكامل VS Code (vscode)
 

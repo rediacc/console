@@ -2816,7 +2816,7 @@
   {
     "id": "search-16838",
     "content": "定义策略",
-    "body": "规范的默认设置是双策略组合：一个快速的每小时 hot 流，覆盖每个仓库；一个较慢的每周 cold 流，进行应用一致性快照。两个策略写入不同的存储子文件夹（hot/ 和 cold/），以保证备份永不混合。 rdc backup strategy set hourly-hot \\ --destination my-storage \\ --cron \"0 \" \\ --mode hot \\ --bwlimit 20M \\ --enable rdc backup strategy set weekly-cold \\ --destination my-storage \\ --cron \"15 3 0\" \\ --mode cold \\ --exclude very-large-repo \\ --enable cold 策略上的 --exclude 过滤器是针对体积过大、无法纳入每周维护窗口的仓库的推荐逃生口。每小时 hot 策略仍然覆盖它们；cold 只是跳过。--exclude 中的仓库名称匹配本地配置的仓库名称（不带 :tag）。 | 选项 | 描述 | |------|------| | --name <name> | 策略名称（用于机器绑定） | | --destination <storage> | 上传目标存储提供商 | | --cron <expression> | cron 表达式（例如 \"0 2 *\" 表示每天凌晨 2 点） | | --mode <hot\\|cold> | 备份模式 | | --bwlimit <limit> | 上传带宽限制（例如 10M） | | --include <pattern> | 包含过滤器（可重复使用） | | --exclude <pattern> | 排除过滤器（可重复使用） | | --enable / --disable | 启用或禁用策略 |",
+    "body": "规范的默认设置是双策略组合：一个快速的每小时 hot 流，覆盖每个仓库；一个较慢的每周 cold 流，进行应用一致性快照。两个策略写入不同的存储子文件夹（hot/ 和 cold/），以保证备份永不混合。 rdc backup strategy set hourly-hot \\ --destination my-storage \\ --cron \"0 \" \\ --mode hot \\ --bwlimit 20M \\ --enable rdc backup strategy set weekly-cold \\ --destination my-storage \\ --cron \"15 3 0\" \\ --mode cold \\ --exclude very-large-repo \\ --enable cold 策略上的 --exclude 过滤器是针对体积过大、无法纳入每周维护窗口的仓库的推荐逃生口。每小时 hot 策略仍然覆盖它们；cold 只是跳过。--exclude 中的仓库名称匹配本地配置的仓库名称（不带 :tag）。 | 选项 | 描述 | |------|------| | --destination <storage> | 上传目标存储提供商 | | --cron <expression> | cron 表达式（例如 \"0 2 *\" 表示每天凌晨 2 点） | | --mode <hot\\|cold> | 备份模式 | | --bwlimit <limit> | 上传带宽限制（例如 10M） | | --include <pattern> | 包含过滤器（可重复使用） | | --exclude <pattern> | 排除过滤器（可重复使用） | | --enable / --disable | 启用或禁用策略 |",
     "excerpt": "规范的默认设置是双策略组合：一个快速的每小时 hot 流，覆盖每个仓库；一个较慢的每周 cold 流，进行应用一致性快照。两个策略写入不同的存储子文件夹（hot/ 和 cold/），以保证备份永不混合。 rdc backup strategy set hourly-hot \\ --destinati...",
     "category": "Documentation",
     "page": "/zh/docs/backup-restore",
@@ -2959,8 +2959,8 @@
   {
     "id": "search-16851",
     "content": "仓库迁移",
-    "body": "将仓库从一台机器移动到另一台机器： rdc repo migrate my-app@server-1 --to server-2 | 选项 | 描述 | |------|------| | --name <repo> | 要迁移的仓库 | | --from <machine> | 源机器 | | --to <machine> | 目标机器 | | --provision | 在传输前在目标上配置仓库 | | --checkpoint | 迁移前创建 CRIU 检查点 | | --skip-dns | 迁移后跳过 DNS 记录更新 | | --bwlimit <limit> | 传输的带宽限制（例如 50M） | 迁移通过 rsync 传输加密的仓库数据。源仓库保持完整，直到您显式删除它。",
-    "excerpt": "将仓库从一台机器移动到另一台机器： rdc repo migrate my-app@server-1 --to server-2 | 选项 | 描述 | |------|------| | --name <repo> | 要迁移的仓库 | | --from <machine> | 源机器 | | -...",
+    "body": "将仓库从一台机器移动到另一台机器： rdc repo migrate my-app@server-1 --to server-2 | 选项 | 描述 | |------|------| | --provision | 在传输前在目标上配置仓库 | | --checkpoint | 迁移前创建 CRIU 检查点 | | --skip-dns | 迁移后跳过 DNS 记录更新 | | --bwlimit <limit> | 传输的带宽限制（例如 50M） | 迁移通过 rsync 传输加密的仓库数据。源仓库保持完整，直到您显式删除它。",
+    "excerpt": "将仓库从一台机器移动到另一台机器： rdc repo migrate my-app@server-1 --to server-2 | 选项 | 描述 | |------|------| | --provision | 在传输前在目标上配置仓库 | | --checkpoint | 迁移前创建 CRI...",
     "category": "Documentation",
     "page": "/zh/docs/backup-restore",
     "path": "docs.backup-restore.content",
@@ -9865,8 +9865,8 @@
   {
     "id": "search-17485",
     "content": "rdc repo commit",
-    "body": "将已挂载的工作 fork 冻结为新的不可变提交。 rdc repo commit <fork> --message \"<message>\" | 选项 | 描述 | 默认值 | |------|------|--------| | --name <name> | 要提交的工作 fork，必须已挂载，必填。 | 必填 | | --message <msg> | 提交消息，必填。 | 必填 | | --author <author> | 提交元数据中记录的作者。 | 未设置 | | -m, --machine <name> | 目标机器，必填。 | 必填 | | --debug | 在 stderr 上输出详细诊断信息。 | 关闭 | 新提交在本地配置中以 immutable: true 注册，工作 fork 的 headCommit 更新以指向它。提交不可变仓库将被拒绝：请先将其检出到可写 fork 中。",
-    "excerpt": "将已挂载的工作 fork 冻结为新的不可变提交。 rdc repo commit <fork> --message \"<message>\" | 选项 | 描述 | 默认值 | |------|------|--------| | --name <name> | 要提交的工作 fork，必须已挂载，必...",
+    "body": "将已挂载的工作 fork 冻结为新的不可变提交。 rdc repo commit <fork> --message \"<message>\" | 选项 | 描述 | 默认值 | |------|------|--------| | --message <msg> | 提交消息，必填。 | 必填 | | --author <author> | 提交元数据中记录的作者。 | 未设置 | | -m, --machine <name> | 目标机器，必填。 | 必填 | | --debug | 在 stderr 上输出详细诊断信息。 | 关闭 | 新提交在本地配置中以 immutable: true 注册，工作 fork 的 headCommit 更新以指向它。提交不可变仓库将被拒绝：请先将其检出到可写 fork 中。",
+    "excerpt": "将已挂载的工作 fork 冻结为新的不可变提交。 rdc repo commit <fork> --message \"<message>\" | 选项 | 描述 | 默认值 | |------|------|--------| | --message <msg> | 提交消息，必填。 | 必填 | |...",
     "category": "Documentation",
     "page": "/zh/docs/repo-branching",
     "path": "docs.repo-branching.content",
@@ -9876,8 +9876,8 @@
   {
     "id": "search-17486",
     "content": "rdc repo branch",
-    "body": "创建指向工作 fork 当前提交的命名分支引用。 rdc repo branch <fork> --branch <name> | 选项 | 描述 | 默认值 | |------|------|--------| | --branch <branch> | 新分支的名称，必填。 | 必填 | | --name <name> | 分支所指向的当前提交所在的工作 fork，必填。 | 必填 | 这是纯配置操作，不在机器上执行任何工作。分支引用将名称映射到工作 fork 的 headCommit，因此 fork 必须至少有一个提交。",
-    "excerpt": "创建指向工作 fork 当前提交的命名分支引用。 rdc repo branch <fork> --branch <name> | 选项 | 描述 | 默认值 | |------|------|--------| | --branch <branch> | 新分支的名称，必填。 | 必填 | | -...",
+    "body": "创建指向工作 fork 当前提交的命名分支引用。 rdc repo branch <fork> --branch <name> | 选项 | 描述 | 默认值 | |------|------|--------| | --branch <branch> | 新分支的名称，必填。 | 必填 | 这是纯配置操作，不在机器上执行任何工作。分支引用将名称映射到工作 fork 的 headCommit，因此 fork 必须至少有一个提交。",
+    "excerpt": "创建指向工作 fork 当前提交的命名分支引用。 rdc repo branch <fork> --branch <name> | 选项 | 描述 | 默认值 | |------|------|--------| | --branch <branch> | 新分支的名称，必填。 | 必填 | 这是纯...",
     "category": "Documentation",
     "page": "/zh/docs/repo-branching",
     "path": "docs.repo-branching.content",
@@ -9887,7 +9887,7 @@
   {
     "id": "search-17487",
     "content": "rdc repo checkout",
-    "body": "将不可变提交（或分支尖端）通过 reflink 克隆到新的可写工作 fork 中。 rdc repo checkout <commit> --tag <newFork> rdc repo checkout <branchName> --from <fork> --tag <newFork> | 选项 | 描述 | 默认值 | |------|------|--------| | --ref <commit\\|branch> | 要检出的提交 GUID，或在给定 --from 时的分支名称，必填。 | 必填 | | --tag <name> | 新的可写工作 fork 的名称，必填。 | 必填 | | -m, --machine <name> | 目标机器，必填。 | 必填 | | --from <workingFork> | 在此工作 fork 的分支集上将 --ref 解析为分支名称。 | 直接提交 | | --debug | 在 stderr 上输出详细诊断信息。 | 关闭 | | --skip-router-restart | 跳过路由器重启步骤。 | 关闭 | 检出复用 fork reflink 路径，因此无论仓库大小如何都几乎是即时的常数时间操作。新工作 fork 的 headCommit 被设置为检出的提交。",
+    "body": "将不可变提交（或分支尖端）通过 reflink 克隆到新的可写工作 fork 中。 rdc repo checkout <commit> --tag <newFork> rdc repo checkout <branchName> --from <fork> --tag <newFork> | 选项 | 描述 | 默认值 | |------|------|--------| | --tag <name> | 新的可写工作 fork 的名称，必填。 | 必填 | | -m, --machine <name> | 目标机器，必填。 | 必填 | | --from <workingFork> | 在此工作 fork 的分支集上将 --ref 解析为分支名称。 | 直接提交 | | --debug | 在 stderr 上输出详细诊断信息。 | 关闭 | | --skip-router-restart | 跳过路由器重启步骤。 | 关闭 | 检出复用 fork reflink 路径，因此无论仓库大小如何都几乎是即时的常数时间操作。新工作 fork 的 headCommit 被设置为检出的提交。",
     "excerpt": "将不可变提交（或分支尖端）通过 reflink 克隆到新的可写工作 fork 中。 rdc repo checkout <commit> --tag <newFork> rdc repo checkout <branchName> --from <fork> --tag <newFork> | 选项...",
     "category": "Documentation",
     "page": "/zh/docs/repo-branching",
@@ -9898,8 +9898,8 @@
   {
     "id": "search-17488",
     "content": "rdc repo log",
-    "body": "遍历从工作 fork 或提交可达的提交历史记录。 rdc repo log <fork> | 选项 | 描述 | 默认值 | |------|------|--------| | --name <name> | 开始历史遍历的工作 fork 或提交，必填。 | 必填 | | -m, --machine <name> | 目标机器，必填。 | 必填 | | --json | 以 JSON 格式输出提交历史记录。 | 关闭 | | --debug | 在 stderr 上输出详细诊断信息。 | 关闭 | log 遍历由 rdc repo commit 记录的父链，读取卷外状态镜像，因此不会解锁或挂载任何提交。这是只读操作。",
-    "excerpt": "遍历从工作 fork 或提交可达的提交历史记录。 rdc repo log <fork> | 选项 | 描述 | 默认值 | |------|------|--------| | --name <name> | 开始历史遍历的工作 fork 或提交，必填。 | 必填 | | -m, --machin...",
+    "body": "遍历从工作 fork 或提交可达的提交历史记录。 rdc repo log <fork> | 选项 | 描述 | 默认值 | |------|------|--------| | -m, --machine <name> | 目标机器，必填。 | 必填 | | --debug | 在 stderr 上输出详细诊断信息。 | 关闭 | log 遍历由 rdc repo commit 记录的父链，读取卷外状态镜像，因此不会解锁或挂载任何提交。这是只读操作。",
+    "excerpt": "遍历从工作 fork 或提交可达的提交历史记录。 rdc repo log <fork> | 选项 | 描述 | 默认值 | |------|------|--------| | -m, --machine <name> | 目标机器，必填。 | 必填 | | --debug | 在 stderr...",
     "category": "Documentation",
     "page": "/zh/docs/repo-branching",
     "path": "docs.repo-branching.content",
@@ -9909,7 +9909,7 @@
   {
     "id": "search-17489",
     "content": "rdc repo merge",
-    "body": "将源提交或 fork 合并到目标工作 fork 中，而不就地改变实时目标。 rdc repo merge <target> --from <source> rdc repo merge <target> --from <source> --resolve theirs | 选项 | 描述 | 默认值 | |------|------|--------| | --name <name> | 要合并到的目标工作 fork，必填。 | 必填 | | --from <source> | 合并来源的提交或 fork，必填。 | 必填 | | -m, --machine <name> | 目标机器，必填。 | 必填 | | --force | 先静默已挂载或运行中的目标，然后合并。永不改变实时挂载。 | 关闭 | | --resolve <ours\\|theirs> | 逐文件三方合并：将源的逐文件变更叠加到目标上，对两侧都变更的文件保留 (ours) 或采用 (theirs) 源的版本。省略则使用全镜像取源。 | 关闭 | | --base <guid> | 三方合并的公共祖先提交（与 --resolve 一起使用）。默认为源提交的父提交，或目标的当前提交。 | 自动 | | --debug | 在 stderr 上输出详细诊断信息。 | 关闭 | 结果在 reflink 克隆中构建，并通过崩溃安全标记原子性地交换进来，因此中断的合并会保持原始目标完整。已挂载或运行中的目标将被拒绝，除非使用 --force，这会在交换前干净地关闭目标。 不使用 --resolve 时，合并是全镜像取源（目标变为源）。使用 --resolve 时，它是针对源提交记录的父提交的逐文件三方合并：只在一侧变更的文件从那一侧获取，两侧都变更的文件按标志解决。冲突路径会被报告。",
+    "body": "将源提交或 fork 合并到目标工作 fork 中，而不就地改变实时目标。 rdc repo merge <target> --from <source> rdc repo merge <target> --from <source> --resolve theirs | 选项 | 描述 | 默认值 | |------|------|--------| | --from <source> | 合并来源的提交或 fork，必填。 | 必填 | | -m, --machine <name> | 目标机器，必填。 | 必填 | | --force | 先静默已挂载或运行中的目标，然后合并。永不改变实时挂载。 | 关闭 | | --resolve <ours\\|theirs> | 逐文件三方合并：将源的逐文件变更叠加到目标上，对两侧都变更的文件保留 (ours) 或采用 (theirs) 源的版本。省略则使用全镜像取源。 | 关闭 | | --base <guid> | 三方合并的公共祖先提交（与 --resolve 一起使用）。默认为源提交的父提交，或目标的当前提交。 | 自动 | | --debug | 在 stderr 上输出详细诊断信息。 | 关闭 | 结果在 reflink 克隆中构建，并通过崩溃安全标记原子性地交换进来，因此中断的合并会保持原始目标完整。已挂载或运行中的目标将被拒绝，除非使用 --force，这会在交换前干净地关闭目标。 不使用 --resolve 时，合并是全镜像取源（目标变为源）。使用 --resolve 时，它是针对源提交记录的父提交的逐文件三方合并：只在一侧变更的文件从那一侧获取，两侧都变更的文件按标志解决。冲突路径会被报告。",
     "excerpt": "将源提交或 fork 合并到目标工作 fork 中，而不就地改变实时目标。 rdc repo merge <target> --from <source> rdc repo merge <target> --from <source> --resolve theirs | 选项 | 描述 | 默认值...",
     "category": "Documentation",
     "page": "/zh/docs/repo-branching",
@@ -10204,8 +10204,8 @@
   {
     "id": "search-17516",
     "content": "选项",
-    "body": "| 选项 | 说明 | 默认值 | |--------|-------------|---------| | --name <name> | 要检查的仓库(目标,新端)。必需。| 必需 | | --base <name> | 要进行差异比较的仓库(基础,旧端)。默认为 --name 的父仓库,从本地配置解析。| --name 的父仓库 | | (无格式标志) | 名称状态输出:每个更改文件显示彩色的 A / M / D / R 字母加一行摘要。| 启用 | | --name-only | 每行一个更改路径,无状态字母。便于管道。| 禁用 | | --stat | 每个文件的更改幅度(字节和块增量)及总计页脚。| 禁用 | | --content <path> | 单个文件的统一文本差异。仅文本;二进制文件报告 Binary files differ 。| 禁用 | | --json | 用于代理和脚本的结构化输出。| 禁用 | | --fast | 跳过内容哈希确认步骤,信任块筛选器。更快,但可能将文件过度报告为已修改。| 禁用 | | -m, --machine <name> | 目标机器。必需。| 必需 | | --debug | stderr上的详细诊断。| 禁用 | | --skip-router-restart | 跳过路由器重启步骤。| 禁用 |",
-    "excerpt": "| 选项 | 说明 | 默认值 | |--------|-------------|---------| | --name <name> | 要检查的仓库(目标,新端)。必需。| 必需 | | --base <name> | 要进行差异比较的仓库(基础,旧端)。默认为 --name 的父仓库,从本地...",
+    "body": "| 选项 | 说明 | 默认值 | |--------|-------------|---------| | (无格式标志) | 名称状态输出:每个更改文件显示彩色的 A / M / D / R 字母加一行摘要。| 启用 | | --name-only | 每行一个更改路径,无状态字母。便于管道。| 禁用 | | --stat | 每个文件的更改幅度(字节和块增量)及总计页脚。| 禁用 | | --content <path> | 单个文件的统一文本差异。仅文本;二进制文件报告 Binary files differ 。| 禁用 | | --fast | 跳过内容哈希确认步骤,信任块筛选器。更快,但可能将文件过度报告为已修改。| 禁用 | | --debug | stderr上的详细诊断。| 禁用 | | --skip-router-restart | 跳过路由器重启步骤。| 禁用 |",
+    "excerpt": "| 选项 | 说明 | 默认值 | |--------|-------------|---------| | (无格式标志) | 名称状态输出:每个更改文件显示彩色的 A / M / D / R 字母加一行摘要。| 启用 | | --name-only | 每行一个更改路径,无状态字母。便于管道。|...",
     "category": "Documentation",
     "page": "/zh/docs/repo-diff",
     "path": "docs.repo-diff.content",
@@ -11490,8 +11490,8 @@
   {
     "id": "search-17634",
     "content": "启动服务",
-    "body": "挂载仓库并启动所有服务： rdc repo up my-app | 选项 | 描述 | |------|------| | --detach | 容器启动后立即返回；健康检查在后台继续运行 | | --skip-router-restart | 跳过操作后重启路由服务器 | 执行顺序为： 挂载 LUKS 加密仓库（未挂载时自动挂载） 启动此仓库的隔离 Docker 守护进程 从 compose 文件自动生成 .rediacc.json 按 A-Z 顺序在所有 Rediaccfile 中运行 up() 部署后，输出显示 PROXY ROUTES 部分，其中包含每个服务的实际 URL。具有自定义 Traefik 标签的服务将其自定义域名显示为主要 URL： HTTP services (accessible via proxy after ~3s): gitlab-server: HTTPS: https://gitlab.example.com (custom) Auto: https://gitlab-server.gitlab.server-1.example.com IP: 127.0.11.130 未具有自定义 Traefik 标签的服务仅显示自动生成的路由。使用这些 URL（而非 CLI 输出的通用模式）进行浏览器访问、API 调用和跨服务配置。",
-    "excerpt": "挂载仓库并启动所有服务： rdc repo up my-app | 选项 | 描述 | |------|------| | --detach | 容器启动后立即返回；健康检查在后台继续运行 | | --skip-router-restart | 跳过操作后重启路由服务器 | 执行顺序为： 挂载 LU...",
+    "body": "挂载仓库并启动所有服务： rdc repo up my-app | 选项 | 描述 | |------|------| | --skip-router-restart | 跳过操作后重启路由服务器 | 执行顺序为： 挂载 LUKS 加密仓库（未挂载时自动挂载） 启动此仓库的隔离 Docker 守护进程 从 compose 文件自动生成 .rediacc.json 按 A-Z 顺序在所有 Rediaccfile 中运行 up() 部署后，输出显示 PROXY ROUTES 部分，其中包含每个服务的实际 URL。具有自定义 Traefik 标签的服务将其自定义域名显示为主要 URL： HTTP services (accessible via proxy after ~3s): gitlab-server: HTTPS: https://gitlab.example.com (custom) Auto: https://gitlab-server.gitlab.server-1.example.com IP: 127.0.11.130 未具有自定义 Traefik 标签的服务仅显示自动生成的路由。使用这些 URL（而非 CLI 输出的通用模式）进行浏览器访问、API 调用和跨服务配置。",
+    "excerpt": "挂载仓库并启动所有服务： rdc repo up my-app | 选项 | 描述 | |------|------| | --skip-router-restart | 跳过操作后重启路由服务器 | 执行顺序为： 挂载 LUKS 加密仓库（未挂载时自动挂载） 启动此仓库的隔离 Docker 守护进...",
     "category": "Documentation",
     "page": "/zh/docs/services",
     "path": "docs.services.content",
@@ -11534,8 +11534,8 @@
   {
     "id": "search-17638",
     "content": "批量操作",
-    "body": "一次启动或停止机器上的所有仓库： rdc repo up --all -m server-1 | 选项 | 描述 | |------|------| | --include-forks | 包含 fork 仓库 | | --mount-only | 仅挂载，不启动容器 | | --dry-run | 显示将要执行的操作 | | --parallel | 并行运行操作 | | --concurrency <n> | 最大并发操作数（默认：3） | | --skip-router-restart | 跳过操作后重启路由服务器 |",
-    "excerpt": "一次启动或停止机器上的所有仓库： rdc repo up --all -m server-1 | 选项 | 描述 | |------|------| | --include-forks | 包含 fork 仓库 | | --mount-only | 仅挂载，不启动容器 | | --dry-run |...",
+    "body": "一次启动或停止机器上的所有仓库： rdc repo up --all -m server-1 | 选项 | 描述 | |------|------| | --include-forks | 包含 fork 仓库 | | --dry-run | 显示将要执行的操作 | | --parallel | 并行运行操作 | | --concurrency <n> | 最大并发操作数（默认：3） | | --skip-router-restart | 跳过操作后重启路由服务器 |",
+    "excerpt": "一次启动或停止机器上的所有仓库： rdc repo up --all -m server-1 | 选项 | 描述 | |------|------| | --include-forks | 包含 fork 仓库 | | --dry-run | 显示将要执行的操作 | | --parallel | 并...",
     "category": "Documentation",
     "page": "/zh/docs/services",
     "path": "docs.services.content",
@@ -12373,8 +12373,8 @@
   {
     "id": "search-17715",
     "content": "选项",
-    "body": "| 选项 | 说明 | |--------|-------------| | -m, --machine <name> | 目标机器 | | -r, --repository <name> | 目标仓库 | | --local <paths...> | 一个或多个本地文件或目录路径（上传）或本地目标目录（下载） | | --remote <path> | 远程目录（相对于仓库挂载点） | | --remote-file <path> | 远程文件路径，用于单文件上传或下载（--remote 的替代项） | | --dry-run | 预览更改，不实际传输 | | --mirror | 将源镜像到目标，删除多余文件（仅限目录源） | | --verify | 传输后验证校验和 | | --confirm | 交互式确认，带详细视图 | | --exclude <patterns...> | 排除文件模式 | | --skip-router-restart | 操作后跳过重启路由服务器 |",
-    "excerpt": "| 选项 | 说明 | |--------|-------------| | -m, --machine <name> | 目标机器 | | -r, --repository <name> | 目标仓库 | | --local <paths...> | 一个或多个本地文件或目录路径（上传）或本地目标...",
+    "body": "| 选项 | 说明 | |--------|-------------| | -m, --machine <name> | 目标机器 | | --local <paths...> | 一个或多个本地文件或目录路径（上传）或本地目标目录（下载） | | --remote <path> | 远程目录（相对于仓库挂载点） | | --remote-file <path> | 远程文件路径，用于单文件上传或下载（--remote 的替代项） | | --dry-run | 预览更改，不实际传输 | | --mirror | 将源镜像到目标，删除多余文件（仅限目录源） | | --verify | 传输后验证校验和 | | --confirm | 交互式确认，带详细视图 | | --exclude <patterns...> | 排除文件模式 | | --skip-router-restart | 操作后跳过重启路由服务器 |",
+    "excerpt": "| 选项 | 说明 | |--------|-------------| | -m, --machine <name> | 目标机器 | | --local <paths...> | 一个或多个本地文件或目录路径（上传）或本地目标目录（下载） | | --remote <path> | 远程目录（相...",
     "category": "Documentation",
     "page": "/zh/docs/tools",
     "path": "docs.tools.content",
@@ -12428,7 +12428,7 @@
   {
     "id": "search-17720",
     "content": "容器操作",
-    "body": "直接与运行中的容器交互： # 在容器内打开 shell rdc repo exec my-app -c <container> -i -- bash # 查看容器日志 rdc repo logs my-app -c <container> # 实时跟踪日志 rdc repo logs my-app -c <container> --follow # 查看容器统计信息 rdc repo exec my-app -c <container> -i -- bash --container-action stats # 在容器中执行命令 rdc repo exec my-app -c <container> -- ls -la | 选项 | 说明 | |--------|-------------| | --container <id> | 目标 Docker 容器 ID | | --container-action <action> | 操作：terminal（默认）、logs、stats、exec | | --log-lines <n> | 显示的日志行数（默认：50） | | --follow | 持续跟踪日志 | | --external | 使用外部终端而非内联 SSH |",
+    "body": "直接与运行中的容器交互： # 在容器内打开 shell rdc repo exec my-app -c <container> -i -- bash # 查看容器日志 rdc repo logs my-app -c <container> # 实时跟踪日志 rdc repo logs my-app -c <container> --follow # 查看容器统计信息 rdc repo exec my-app -c <container> -i -- bash --container-action stats # 在容器中执行命令 rdc repo exec my-app -c <container> -- ls -la | 选项 | 说明 | |--------|-------------|",
     "excerpt": "直接与运行中的容器交互： # 在容器内打开 shell rdc repo exec my-app -c <container> -i -- bash # 查看容器日志 rdc repo logs my-app -c <container> # 实时跟踪日志 rdc repo logs my-app...",
     "category": "Documentation",
     "page": "/zh/docs/tools",
