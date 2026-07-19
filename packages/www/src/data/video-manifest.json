@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-02T07:24:06.521Z",
+  "generatedAt": "2026-07-19T15:19:36.625Z",
   "baseUrl": "https://media.rediacc.com",
   "tutorials": {
     "tutorial-add-server": {
@@ -6878,171 +6878,171 @@
       "de": {
         "mp4": {
           "path": "videos/solutions/de/cloud-outage-protection.mp4",
-          "size": 11151062,
-          "sha256": "d39cb72c950a5371f8f2cf4768278cbf3e06f2c8c836847a3104eea302f1b22d"
+          "size": 10992388,
+          "sha256": "a3b583d53e2fd3e2c7659074708e1a3da0ff332ea30d2592edab20e3e8b779cd"
         },
         "vertical": {
           "path": "videos/solutions/de/cloud-outage-protection.vertical.mp4",
-          "size": 10640120,
-          "sha256": "c0ffc2baa9813eaf6b84f7d85f5065f62388110303d9114811ac7ea69df311c1"
+          "size": 10437008,
+          "sha256": "2e49c6bf591267d47f873e634539cf120bea32a944141e3f48e82fb168fb8973"
         },
         "poster": {
           "path": "videos/solutions/de/cloud-outage-protection.poster.jpg",
-          "size": 36627,
-          "sha256": "22c24ef69a9eb9bb585c43089e1cf16e7d5992d1d304e824831b5c03d7e001d4"
+          "size": 53167,
+          "sha256": "d9663184bca8181a5a3e3bf38d00b85f753fa99fc8b601a457657b4dcbcd2153"
         }
       },
       "en": {
         "mp4": {
           "path": "videos/solutions/en/cloud-outage-protection.mp4",
-          "size": 9879704,
-          "sha256": "d1dcb01e23b3088e255d99d7fe4bc54183683e32a40e2297261697c53d4243fa"
+          "size": 9899899,
+          "sha256": "ced50e6d783b250fe8a574e8ead2daebf707319500b65038f076e80c03ff23d4"
         },
         "vertical": {
           "path": "videos/solutions/en/cloud-outage-protection.vertical.mp4",
-          "size": 9416392,
-          "sha256": "cdc3ad0d2c79970141fded23702b145d5bbb706e6782b0690bfbb6e672b47417"
+          "size": 9458219,
+          "sha256": "dd833b9cf977f09a62140869ffc42f703676a499c2b4acc2655671341eb49756"
         },
         "poster": {
           "path": "videos/solutions/en/cloud-outage-protection.poster.jpg",
-          "size": 52156,
-          "sha256": "e2aba2d3a7f6a03407577c5940826b7c3cb3783e52ce3097836564cde1e6dcd2"
+          "size": 50366,
+          "sha256": "6ea06edb3310df5dd86af08e49f78e85bec68513cd17b87a4f6d19c9b5c5eb89"
         }
       },
       "es": {
         "mp4": {
           "path": "videos/solutions/es/cloud-outage-protection.mp4",
-          "size": 11942521,
-          "sha256": "1715bf39c4a0b08ae2bb4312399baccec8b49f280dff1cec0aa206dcb7d47468"
+          "size": 11649688,
+          "sha256": "b7246704c019345b2e7fe6bceecab7309ca5b198b4a8281bcc47b64435e8927e"
         },
         "vertical": {
           "path": "videos/solutions/es/cloud-outage-protection.vertical.mp4",
-          "size": 11332139,
-          "sha256": "4e68d77d3f6b7238c816ffb0025214f26a8a614eb83e7eb93bef0477f6d0878e"
+          "size": 11016998,
+          "sha256": "69293dba35b21f37620c118351014b2adf191f0258f06da49d1164fd78e486e4"
         },
         "poster": {
           "path": "videos/solutions/es/cloud-outage-protection.poster.jpg",
-          "size": 50007,
-          "sha256": "2ef930e189a73e12f00027cf59c277fe64362c72eb364b6032c41be55f5e8176"
+          "size": 47031,
+          "sha256": "f601af1f6da9782950d6dc0c92bea67189456d38108e5c7c797ff0e84c4a7782"
         }
       },
       "fr": {
         "mp4": {
           "path": "videos/solutions/fr/cloud-outage-protection.mp4",
-          "size": 11038339,
-          "sha256": "8230a56e32cce6188a7302f9d2827e032c1b8191fa0115c615c450b44325e3d7"
+          "size": 11016966,
+          "sha256": "55ed2bf2d9b276d07cf39a15d60bc9ccf1bf5c0df28ce1bb4232042ebfbb7c5e"
         },
         "vertical": {
           "path": "videos/solutions/fr/cloud-outage-protection.vertical.mp4",
-          "size": 10396983,
-          "sha256": "4686b0d2611dba2f690eaf635d9e6ad4ba198579d71d8e4c1d202d9f15c2913e"
+          "size": 10436174,
+          "sha256": "e25b4f8c100f1533a0b70f2929107fc8a3e1d14d8d400ff230a0d35b50f41505"
         },
         "poster": {
           "path": "videos/solutions/fr/cloud-outage-protection.poster.jpg",
-          "size": 56860,
-          "sha256": "3e4c5fe2e516fab2c2c5b510119ec915e3d33724b115f4736b8e9a5fe4c99128"
+          "size": 58515,
+          "sha256": "becafb4aff740f31e6b5b56b36d30e24561a759656acca5197eaf21a5730802b"
         }
       },
       "it": {
         "mp4": {
           "path": "videos/solutions/it/cloud-outage-protection.mp4",
-          "size": 11271967,
-          "sha256": "692fd750ab62b575813c573b38356b9b8b84a4fa187beb32472cb62f28291690"
+          "size": 11367982,
+          "sha256": "108c29b4145189871f0d5b23e77b2610c62c4c3cf15a715a1e0ecec8b93cee63"
         },
         "vertical": {
           "path": "videos/solutions/it/cloud-outage-protection.vertical.mp4",
-          "size": 10710897,
-          "sha256": "a4d0b14d706ef6cbcd8903cc51790c39e8d0cfcf782520465317fadedf41f7d7"
+          "size": 10866558,
+          "sha256": "6830073b0502229652dae293fac1cf51b60b6e5ef096a646cbe5223507c0005d"
         },
         "poster": {
           "path": "videos/solutions/it/cloud-outage-protection.poster.jpg",
-          "size": 53614,
-          "sha256": "5f3064d84948297d845d1c48dffd0291a0143b41b3c9abe4bbdccfd06deb4213"
+          "size": 40446,
+          "sha256": "83708b70943dc059808c0f793108316607da1ba2acf6907356d6dcdfd0d3f725"
         }
       },
       "ja": {
         "mp4": {
           "path": "videos/solutions/ja/cloud-outage-protection.mp4",
-          "size": 10218008,
-          "sha256": "70a0f2ce4b366a9399c22b6bffb54d465dfe0c88d665baeaaa261f4510b30c0d"
+          "size": 10215255,
+          "sha256": "3f5ccf4e750eb136f0b5fdd75dcda1e64f3d97c1b89949b1c812562e154ccc87"
         },
         "vertical": {
           "path": "videos/solutions/ja/cloud-outage-protection.vertical.mp4",
-          "size": 9574819,
-          "sha256": "152eab425bc07f566100d504b25d1206f7a6f9551e3f816916833f13578ba0a3"
+          "size": 9580415,
+          "sha256": "4545043c87875d2dbedb8f8ab281b02ca25731b931341fdd989bbebcc0a6ee3c"
         },
         "poster": {
           "path": "videos/solutions/ja/cloud-outage-protection.poster.jpg",
-          "size": 69676,
-          "sha256": "d131dfbc4590cd2c42cf8e683380b49d9110d334e21c56a98370b3e5f5417ce6"
+          "size": 70896,
+          "sha256": "97885443fb868eddf1a98bbeecc8285bde75898ae4db8b8dab9aaaeefe2aa36a"
         }
       },
       "ko": {
         "mp4": {
           "path": "videos/solutions/ko/cloud-outage-protection.mp4",
-          "size": 11643377,
-          "sha256": "28d0574f805acbb0477bd63a316d7bd691b3564b99b648d25853d7d5be2a63bf"
+          "size": 11633183,
+          "sha256": "72ed519bbae76279f724d43d7dc46af80615c5a6fa6690f60d8be0d2b1bf2cba"
         },
         "vertical": {
           "path": "videos/solutions/ko/cloud-outage-protection.vertical.mp4",
-          "size": 10980386,
-          "sha256": "d97dc0adedc9950a01e3659a3231ec720f3ad54decac078d4f29596988a4910d"
+          "size": 10980494,
+          "sha256": "89494e06f496399dc5efd24d4dbb1f798eb0ea8bb9056ee05ba7fdab5a2e7ff7"
         },
         "poster": {
           "path": "videos/solutions/ko/cloud-outage-protection.poster.jpg",
-          "size": 57347,
-          "sha256": "51d93a8694ed21eb7ca5864dacd0dacb37d950ae98c3d00bc6fcb10422f3eb41"
+          "size": 56676,
+          "sha256": "adb65431306b5849e5262b8f3deba7d5114856178551d6f365f9929cae31bfb4"
         }
       },
       "pt": {
         "mp4": {
           "path": "videos/solutions/pt/cloud-outage-protection.mp4",
-          "size": 11325311,
-          "sha256": "b75834599e076002f8b5a1da43407c8d6a5436e2a1d1cb7004851ab15359a5dc"
+          "size": 11336502,
+          "sha256": "b508a8bcefe29fc2ca53b4de7de69644eb72b4f55a98f1aeb57de96d340a2eff"
         },
         "vertical": {
           "path": "videos/solutions/pt/cloud-outage-protection.vertical.mp4",
-          "size": 10719012,
-          "sha256": "f3dec1bdd3440a01dac3507676c7605a0bd13a430499a7fdb52fda96fcbc884a"
+          "size": 10699836,
+          "sha256": "e130320f76acd9dc4604121e109df6cf81a7795795b57e9f3b4df6a51eab3c45"
         },
         "poster": {
           "path": "videos/solutions/pt/cloud-outage-protection.poster.jpg",
-          "size": 47295,
-          "sha256": "b1b29f62713049863378eff1af2244da99b55523105ffebdcbd4faebeb5823d9"
+          "size": 49253,
+          "sha256": "9b89e8ecb52113dc6b1a1b522f497b53d54cd8f5caeaeaf8c6915b23cf91d4c2"
         }
       },
       "ru": {
         "mp4": {
           "path": "videos/solutions/ru/cloud-outage-protection.mp4",
-          "size": 10918686,
-          "sha256": "ab51ef0592147b85572cc521ce7813af4a6ff8bf96d2f938335d26e038d43ae4"
+          "size": 10910389,
+          "sha256": "a7d4fe46d2a578eddd7bc552c4d3323f842e208929ee128e0ef0cca8fd326fb9"
         },
         "vertical": {
           "path": "videos/solutions/ru/cloud-outage-protection.vertical.mp4",
-          "size": 10388742,
-          "sha256": "668da31cf394307f72125c5e700449532280007250fc5e2a2fc1971d9d38cba1"
+          "size": 10388151,
+          "sha256": "a3ef8d9dea3075201a5eb0f7dcf9d67b7a7cb1f35842d2d3c604bee30635b4c0"
         },
         "poster": {
           "path": "videos/solutions/ru/cloud-outage-protection.poster.jpg",
-          "size": 53507,
-          "sha256": "fde8fb4d7e898241c5fd6dd62cf7e0d8732b3f8c75523de7c18da429ed823ce2"
+          "size": 52960,
+          "sha256": "5871c9b377b26ac6c26d3b5112fd395685e160e3fdd97c5af2b4c3f0d970ada2"
         }
       },
       "zh": {
         "mp4": {
           "path": "videos/solutions/zh/cloud-outage-protection.mp4",
-          "size": 9814491,
-          "sha256": "5207e3deb70e7dee72550aeb294bf8251424ca20f1284bd13499ff83b33615f9"
+          "size": 9808960,
+          "sha256": "7eb6d9d04ac23d0a2880024691ae4e2b27e782d9e9e6ed90b264254fb03f9aa3"
         },
         "vertical": {
           "path": "videos/solutions/zh/cloud-outage-protection.vertical.mp4",
-          "size": 9304962,
-          "sha256": "0dccca6689e420353be4dc66711ff393304db933a7a3063246c63b2cc7a1768e"
+          "size": 9304124,
+          "sha256": "aa625324d7e3f77a5236785152c6579f457da6b51a648280e130d54324cc2506"
         },
         "poster": {
           "path": "videos/solutions/zh/cloud-outage-protection.poster.jpg",
-          "size": 64469,
-          "sha256": "9e5c65b0659eee018084dcf759bd081e228896fa21ab269da7447088c1e01f74"
+          "size": 64040,
+          "sha256": "a71e70510c4c8c846ba8a8ea8b86355fe20abd94735480bea8fcbf463d136383"
         }
       }
     },

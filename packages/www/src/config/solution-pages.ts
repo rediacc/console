@@ -470,6 +470,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
       'hero',
       'stats',
       'problem',
+      'video',
       'howItWorks',
       'techDiff',
       'benefits',

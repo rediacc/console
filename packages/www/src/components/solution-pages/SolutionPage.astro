@@ -10,7 +10,6 @@ import SPHowItWorks from './SPHowItWorks.astro';
 import SPTechDiff from './SPTechDiff.astro';
 import SPBenefits from './SPBenefits.astro';
 import SPComparisonTable from './SPComparisonTable.astro';
-import SPSocialProof from './SPSocialProof.astro';
 import SPBottomCta from './SPBottomCta.astro';
 import SPDownloadGated from './SPDownloadGated.astro';
 import SPDownloadShort from './SPDownloadShort.astro';
@@ -115,9 +114,26 @@ const breadcrumbItems = [
       />
     )}
 
-    {has('socialProof') && (
-      <SPSocialProof socialProof={(content as any).socialProof} />
-    )}
+    {/*
+      DISABLED — do not re-enable until the content behind it is real.
+
+          import SPSocialProof from './SPSocialProof.astro';
+
+          {has('socialProof') && (
+            <SPSocialProof socialProof={(content as any).socialProof} />
+          )}
+
+      Every quote and impact metric in the i18n data is invented: named
+      incidents, timestamps, and dollar figures attributed to customers that do
+      not exist. Rediacc has no public customers, and the partner sales training
+      tells sellers never to invent one.
+
+      The i18n keys are left in place for a future honest replacement (mechanism
+      and measured demo numbers, no attributed quote). Restoring the two lines
+      above is all it takes once that content exists.
+
+      See rediacc/console#519.
+    */}
 
     {has('bottomCta') && (
       <SPBottomCta bottomCta={(content as any).bottomCta} ctaHref={ctaHref} lang={lang} />

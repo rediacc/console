@@ -50,7 +50,12 @@ function resolveUrl(slug: string, lang: VideoLang, field: 'mp4' | 'vertical' | '
   if (!VIDEO_CDN_BASE_URL) return localFallback[field];
 
   const manifest = loadManifest();
-  const path = manifest.solutions[slug][lang][field].path;
+  // Optional-chained deliberately: a slug absent from the manifest used to throw
+  // here ("Cannot read properties of undefined"), which failed the whole CDN
+  // build rather than degrading one player. A page can legitimately render the
+  // video section before its videos are published, and check-solution-videos.ts
+  // is the gate that catches that — this path must not be a second, louder one.
+  const path = manifest.solutions[slug]?.[lang]?.[field]?.path;
   if (!path) return localFallback[field];
 
   return `${VIDEO_CDN_BASE_URL}/${path}`;

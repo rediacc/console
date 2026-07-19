@@ -3,18 +3,18 @@
  *
  * The kubeconfig is never stored in rediacc.json (large, rotates). It is fetched
  * over SSH from the cluster's control node and cached at
- * ~/.config/rediacc/kube/<cluster>.yaml (0600), following the tofu-workdir and
+ * <config dir>/kube/<cluster>.yaml (0600), following the tofu-workdir and
  * cert-cache side-state precedents. `rdc cluster kubeconfig` exposes it.
  */
 
 import { promises as fs } from 'node:fs';
-import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { getConfigDir } from '@rediacc/shared/paths';
 import { resolveControlNode } from '../config/config-cluster-ops.js';
 import { machineConnections } from '../machine/machine-connection.js';
 import { clusterKubeconfigRemotePath } from './cluster-target.js';
 
-const KUBE_CACHE_DIR = join(homedir(), '.config', 'rediacc', 'kube');
+const KUBE_CACHE_DIR = join(getConfigDir(), 'kube');
 
 /** Local cache path for a cluster's kubeconfig. */
 export function kubeconfigCachePath(cluster: string): string {

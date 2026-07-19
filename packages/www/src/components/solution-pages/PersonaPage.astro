@@ -9,7 +9,6 @@ import SPHowItWorks from './SPHowItWorks.astro';
 import SPTechDiff from './SPTechDiff.astro';
 import SPBenefits from './SPBenefits.astro';
 import SPComparisonTable from './SPComparisonTable.astro';
-import SPSocialProof from './SPSocialProof.astro';
 import SPBottomCta from './SPBottomCta.astro';
 import SPTechStrip from './SPTechStrip.astro';
 import SPRelatedSolutions from './SPRelatedSolutions.astro';
@@ -106,9 +105,21 @@ const breadcrumbItems = [
       />
     )}
 
-    {has('socialProof') && (
-      <SPSocialProof socialProof={(content as any).socialProof} />
-    )}
+    {/*
+      DISABLED — do not re-enable until the content behind it is real.
+
+          import SPSocialProof from './SPSocialProof.astro';
+
+          {has('socialProof') && (
+            <SPSocialProof socialProof={(content as any).socialProof} />
+          )}
+
+      The quotes and impact metrics are invented and Rediacc has no public
+      customers. The i18n keys are retained for a future honest replacement;
+      restoring the two lines above is all it takes once that content exists.
+
+      See SolutionPage.astro for the fuller note and rediacc/console#519.
+    */}
 
     {has('teamVideo') && config.teamVideo && (
       <section class="sp-section sp-team-video-section">
