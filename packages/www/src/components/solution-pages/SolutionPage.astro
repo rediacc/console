@@ -1,4 +1,26 @@
 ---
+// SOCIAL PROOF — DISABLED, do not re-enable until the content behind it is real.
+//
+// To restore, both halves:
+//   1. here in the frontmatter:  import SPSocialProof from './SPSocialProof.astro';
+//   2. at the marked spot in the template below:
+//        {has('socialProof') && (
+//          <SPSocialProof socialProof={(content as any).socialProof} />
+//        )}
+//
+// Every quote and impact metric in the i18n data is invented: named incidents,
+// timestamps, and dollar figures attributed to customers that do not exist.
+// Rediacc has no public customers, and the partner sales training tells sellers
+// never to invent one.
+//
+// The i18n keys are left in place for a future honest replacement (mechanism and
+// measured demo numbers, no attributed quote).
+//
+// This note lives in the frontmatter, not in a template comment: the
+// hardcoded-string gate reads template comment bodies as text nodes, and an HTML
+// comment would ship this reasoning to every visitor's page source.
+//
+// See rediacc/console#519.
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import StructuredData from '../StructuredData.astro';
 import SPHero from './SPHero.astro';
@@ -114,27 +136,7 @@ const breadcrumbItems = [
       />
     )}
 
-    {/*
-      DISABLED — do not re-enable until the content behind it is real.
-
-          import SPSocialProof from './SPSocialProof.astro';
-
-          {has('socialProof') && (
-            <SPSocialProof socialProof={(content as any).socialProof} />
-          )}
-
-      Every quote and impact metric in the i18n data is invented: named
-      incidents, timestamps, and dollar figures attributed to customers that do
-      not exist. Rediacc has no public customers, and the partner sales training
-      tells sellers never to invent one.
-
-      The i18n keys are left in place for a future honest replacement (mechanism
-      and measured demo numbers, no attributed quote). Restoring it means both
-      halves shown above: the import back into the frontmatter (an import inside
-      the template is not valid Astro), and the JSX block back here.
-
-      See rediacc/console#519.
-    */}
+    {/* SPSocialProof was rendered here — see the SOCIAL PROOF note in the frontmatter. */}
 
     {has('bottomCta') && (
       <SPBottomCta bottomCta={(content as any).bottomCta} ctaHref={ctaHref} lang={lang} />

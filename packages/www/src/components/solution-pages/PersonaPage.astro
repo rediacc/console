@@ -1,4 +1,21 @@
 ---
+// SOCIAL PROOF — DISABLED, do not re-enable until the content behind it is real.
+//
+// To restore, both halves:
+//   1. here in the frontmatter:  import SPSocialProof from './SPSocialProof.astro';
+//   2. at the marked spot in the template below:
+//        {has('socialProof') && (
+//          <SPSocialProof socialProof={(content as any).socialProof} />
+//        )}
+//
+// The quotes and impact metrics are invented and Rediacc has no public customers.
+// The i18n keys are retained for a future honest replacement.
+//
+// This note lives in the frontmatter, not in a template comment: the
+// hardcoded-string gate reads template comment bodies as text nodes, and an HTML
+// comment would ship this reasoning to every visitor's page source.
+//
+// See SolutionPage.astro for the fuller note and rediacc/console#519.
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import StructuredData from '../StructuredData.astro';
 import SPHero from './SPHero.astro';
@@ -105,25 +122,7 @@ const breadcrumbItems = [
       />
     )}
 
-    {/*
-      DISABLED — do not re-enable until the content behind it is real.
-
-          import SPSocialProof from './SPSocialProof.astro';
-
-          import SPSocialProof from './SPSocialProof.astro';
-
-          {has('socialProof') && (
-            <SPSocialProof socialProof={(content as any).socialProof} />
-          )}
-
-      The quotes and impact metrics are invented and Rediacc has no public
-      customers. The i18n keys are retained for a future honest replacement;
-      restoring it means both halves shown above — the import back into the
-      frontmatter (an import inside the template is not valid Astro), and the
-      JSX block back here.
-
-      See SolutionPage.astro for the fuller note and rediacc/console#519.
-    */}
+    {/* SPSocialProof was rendered here — see the SOCIAL PROOF note in the frontmatter. */}
 
     {has('teamVideo') && config.teamVideo && (
       <section class="sp-section sp-team-video-section">

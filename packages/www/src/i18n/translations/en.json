@@ -3040,7 +3040,7 @@
           "description": "Clone your first app in seconds. Start your 14-day free trial.",
           "primaryCta": "Start free trial",
           "tierBadge": "14-day free trial · Cancel anytime",
-          "command": "rdc repo fork production my-first-clone -m primary"
+          "command": "rdc repo fork production --tag my-first-clone"
         },
         "techStrip": {
           "label": "Clone any app in a container",
@@ -3539,7 +3539,7 @@
           "description": "On-demand copies are built in. Start your 14-day free trial.",
           "primaryCta": "Start free trial",
           "tierBadge": "14-day free trial · Cancel anytime",
-          "command": "rdc repo fork production -m primary --tag dev-loadtest"
+          "command": "rdc repo fork production --tag dev-loadtest"
         },
         "techStrip": {
           "label": "Copy any containerized app",
@@ -3667,7 +3667,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc repo validate dev-sarah",
+              "cmd": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
               "flag": "",
               "value": ""
             },
@@ -4024,7 +4024,7 @@
           "description": "Match production from day one. Start your 14-day free trial.",
           "primaryCta": "Start free trial",
           "tierBadge": "14-day free trial · Cancel anytime",
-          "command": "rdc repo validate dev-sarah"
+          "command": "rdc backup restore dev-sarah --as dev-sarah-verify --up"
         },
         "techStrip": {
           "label": "Copy any app that runs in a container",
@@ -4471,7 +4471,7 @@
           "description": "Git integration is built in. Start your 14-day free trial.",
           "primaryCta": "Start free trial",
           "tierBadge": "14-day free trial · Cancel anytime",
-          "command": "rdc repo fork production ci-build -m primary"
+          "command": "rdc repo fork production --tag ci-build"
         },
         "techStrip": {
           "label": "Copy any app that runs in a container",
@@ -4960,7 +4960,7 @@
           "description": "Protect your production servers. Start your 14-day free trial.",
           "primaryCta": "Start free trial",
           "tierBadge": "14-day free trial · Cancel anytime",
-          "command": "rdc repo push production --to backup-vault -m primary"
+          "command": "rdc repo push production --to backup-vault"
         },
         "techStrip": {
           "label": "Protect any app in a container",
@@ -5505,7 +5505,7 @@
           "description": "Locked migration is built in. Start your 14-day free trial.",
           "primaryCta": "Start free trial",
           "tierBadge": "14-day free trial · Cancel anytime",
-          "command": "rdc repo push --to secondary -m primary"
+          "command": "rdc repo push production --to secondary"
         },
         "techStrip": {
           "label": "Lock any app you run in a container",
@@ -6017,7 +6017,7 @@
           "description": "Restore your first setup in under 5 minutes. Start your 14-day free trial.",
           "primaryCta": "Start free trial",
           "tierBadge": "14-day free trial · Cancel anytime",
-          "command": "rdc repo pull production --from daily-2026-02-27 -m primary"
+          "command": "rdc repo pull production --from daily-2026-02-27"
         },
         "techStrip": {
           "label": "Restore any app in a container",
@@ -6537,7 +6537,7 @@
           "description": "Copy, test, and verify with confidence. Start your 14-day free trial.",
           "primaryCta": "Start free trial",
           "tierBadge": "14-day free trial · Cancel anytime",
-          "command": "rdc repo fork production patch-test -m primary"
+          "command": "rdc repo fork production --tag patch-test"
         },
         "techStrip": {
           "label": "Protect any app in a container",
@@ -7592,7 +7592,7 @@
           "description": "Copy your data across sites. Start your 14-day free trial.",
           "primaryCta": "Start free trial",
           "tierBadge": "14-day free trial · Cancel anytime",
-          "command": "rdc repo push --to secondary-dc -m primary"
+          "command": "rdc repo push production --to secondary-dc"
         },
         "techStrip": {
           "label": "Copy any app that runs in a container",
@@ -8106,7 +8106,7 @@
           "description": "Run your first DR test in under 5 minutes. Start your 14-day free trial.",
           "primaryCta": "Start free trial",
           "tierBadge": "14-day free trial · Cancel anytime",
-          "command": "rdc repo push production --to-machine secondary -m primary --checkpoint"
+          "command": "rdc repo push production --to secondary --checkpoint"
         },
         "techStrip": {
           "label": "Copy any app that runs in a container",
@@ -8250,7 +8250,7 @@
             {
               "type": "command",
               "prompt": "$",
-              "cmd": "rdc repo backup list",
+              "cmd": "rdc backup list",
               "flag": "",
               "value": ""
             },
@@ -8608,7 +8608,7 @@
           "description": "Verify your first backup in under a minute. Start your 14-day free trial.",
           "primaryCta": "Start free trial",
           "tierBadge": "14-day free trial · Cancel anytime",
-          "command": "rdc repo backup list --from backup-vault -m primary"
+          "command": "rdc backup list --storage backup-vault -m primary"
         },
         "techStrip": {
           "label": "Verify any containerized workload",
@@ -9484,7 +9484,7 @@
           "title": "Find your weak spots before attackers do",
           "description": "Run your first pentest in under 60 seconds. Start your 14-day free trial.",
           "ctaText": "Start free trial",
-          "command": "rdc repo fork --parent production --tag pentest -m server-1"
+          "command": "rdc repo fork production --tag pentest"
         },
         "techStrip": {
           "label": "Test any app in a container",
@@ -9584,7 +9584,7 @@
           "lines": [
             {
               "type": "command",
-              "cmd": "rdc repo mount production",
+              "cmd": "rdc repo up production",
               "flag": "",
               "value": ""
             },
@@ -9916,7 +9916,7 @@
           "title": "Own your encryption keys",
           "description": "Generate your first key in under a minute. Start your 14-day free trial.",
           "ctaText": "Start free trial",
-          "command": "rdc repo mount production -m primary"
+          "command": "rdc repo up production"
         },
         "techStrip": {
           "label": "Encrypt any app you run in a container",
@@ -10379,7 +10379,7 @@
           "title": "Close the window attackers count on",
           "description": "Set up your first daily test in 30 seconds. Start your 14-day free trial.",
           "ctaText": "Start free trial",
-          "command": "rdc repo validate production -m primary"
+          "command": "rdc backup restore production --as production-verify -m primary --up"
         },
         "techStrip": {
           "label": "Test any app in a container",
@@ -10805,7 +10805,7 @@
           "title": "See everything. Miss nothing.",
           "description": "Make your first audit report in under a minute. Start your 14-day free trial.",
           "ctaText": "Start free trial",
-          "command": "rdc repo status --name production -m server-1"
+          "command": "rdc repo status production"
         },
         "techStrip": {
           "label": "Audit any app you run in Docker",
@@ -11573,7 +11573,7 @@
           "steps": [
             {
               "title": "Detect",
-              "description": "Run rdc repo backup list --verified to find your last clean backup.",
+              "description": "Run rdc backup list to find your last clean backup.",
               "icon": "eye"
             },
             {
@@ -11747,7 +11747,7 @@
           "title": "Don't let recovery be slower than the attack",
           "description": "Protect your production servers. Start your 14-day free trial.",
           "ctaText": "Start free trial",
-          "command": "rdc repo pull production --from backup-vault -m primary --force"
+          "command": "rdc repo pull production --from backup-vault --force"
         },
         "techStrip": {
           "label": "Protect any app in a container",
@@ -12657,7 +12657,7 @@
           "title": "Take back control of your infrastructure",
           "description": "Run it anywhere. Move it anytime. Start your 14-day free trial.",
           "ctaText": "Start free trial",
-          "command": "rdc repo push production --to-machine new-provider -m primary --checkpoint"
+          "command": "rdc repo push production --to new-provider --checkpoint"
         },
         "techStrip": {
           "label": "Copy any app that runs in a container",

@@ -3861,7 +3861,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo fork --parent production --tag pentest -m server-1",
+          "command": "rdc repo fork production --tag pentest",
           "ctaText": "免费开始",
           "description": "从免费的社区版开始。60 秒内运行你的第一次渗透测试。",
           "title": "在攻击者之前发现漏洞"
@@ -4270,7 +4270,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo status --name production -m server-1",
+          "command": "rdc repo status production",
           "ctaText": "免费开始使用社区版",
           "description": "从免费的社区版开始。一分钟内生成你的第一份审计报告。",
           "title": "看到一切，遗漏为零。"
@@ -4740,7 +4740,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo backup list --from backup-vault -m primary",
+          "command": "rdc backup list --storage backup-vault -m primary",
           "description": "从免费的社区版开始。一分钟内验证你的第一个备份。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "无需信用卡",
@@ -5152,7 +5152,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo backup list",
+              "cmd": "rdc backup list",
               "flag": "",
               "prompt": "$",
               "type": "command",
@@ -5252,7 +5252,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo push --to secondary-dc -m primary",
+          "command": "rdc repo push production --to secondary-dc",
           "description": "从免费的社区版开始。免费跨地域复制。无需信用卡。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "最多 10 个工作负载永久免费",
@@ -5770,7 +5770,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo validate production -m primary",
+          "command": "rdc backup restore production --as production-verify -m primary --up",
           "ctaText": "免费开始",
           "description": "从免费的社区版开始。30 秒内安排你的第一次持续渗透测试。",
           "title": "关闭攻击者依赖的窗口"
@@ -6646,7 +6646,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo mount production -m primary",
+          "command": "rdc repo up production",
           "ctaText": "免费开始使用社区版",
           "description": "从免费的社区版开始。一分钟内生成你的第一个密钥。",
           "title": "掌控你的加密"
@@ -7078,7 +7078,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo mount production",
+              "cmd": "rdc repo up production",
               "flag": "",
               "type": "command",
               "value": ""
@@ -7154,7 +7154,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo fork production my-first-clone -m primary",
+          "command": "rdc repo fork production --tag my-first-clone",
           "description": "从免费的社区版开始。免费克隆最多 10 个工作负载。无需信用卡。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "最多 10 个工作负载永久免费",
@@ -7662,7 +7662,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to-machine secondary -m primary --checkpoint",
+          "command": "rdc repo push production --to secondary --checkpoint",
           "description": "从免费的社区版开始。5 分钟内运行你的第一次 DR 测试。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "无需信用卡",
@@ -8164,7 +8164,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to backup-vault -m primary",
+          "command": "rdc repo push production --to backup-vault",
           "description": "从免费的社区版开始。免费保护最多 10 个工作负载。无需信用卡。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "最多 10 个工作负载永久免费",
@@ -8695,7 +8695,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo fork production -m primary --tag dev-loadtest",
+          "command": "rdc repo fork production --tag dev-loadtest",
           "description": "从免费的社区版开始。包含按需克隆功能。",
           "primaryCta": "免费开始",
           "tierBadge": "最多 5 个仓库免费 · 无需信用卡",
@@ -9164,7 +9164,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo pull production --from daily-2026-02-27 -m primary",
+          "command": "rdc repo pull production --from daily-2026-02-27",
           "description": "从免费的社区版开始。5 分钟内恢复你的第一个环境。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "无需信用卡",
@@ -9680,7 +9680,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo fork production ci-build -m primary",
+          "command": "rdc repo fork production --tag ci-build",
           "description": "从免费的社区版开始。包含 Git 集成。",
           "primaryCta": "免费开始",
           "tierBadge": "最多 5 个仓库免费 · 无需信用卡",
@@ -10570,7 +10570,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo push --to secondary -m primary",
+          "command": "rdc repo push production --to secondary",
           "description": "从免费的社区版开始。包含加密迁移功能。",
           "primaryCta": "免费开始",
           "tierBadge": "最多 5 个仓库免费 · 无需信用卡",
@@ -11085,7 +11085,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo validate dev-sarah",
+          "command": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
           "description": "从免费的社区版开始。包含生产一致性功能。",
           "primaryCta": "免费开始",
           "tierBadge": "最多 5 个仓库免费 · 无需信用卡",
@@ -11463,7 +11463,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo validate dev-sarah",
+              "cmd": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
               "flag": "",
               "prompt": "$",
               "type": "command",
@@ -11566,7 +11566,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo pull production --from backup-vault -m primary --force",
+          "command": "rdc repo pull production --from backup-vault --force",
           "ctaText": "免费开始使用社区版",
           "description": "从免费的社区版开始。免费保护最多 10 个工作负载。无需信用卡。",
           "title": "不要让恢复比攻击还慢"
@@ -11773,7 +11773,7 @@
           "overline": "工作原理",
           "steps": [
             {
-              "description": "运行 rdc repo backup list --verified 找到最后一个干净快照。",
+              "description": "运行 rdc backup list 找到最后一个干净快照。",
               "icon": "eye",
               "title": "检测"
             },
@@ -12599,7 +12599,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo fork production patch-test -m primary",
+          "command": "rdc repo fork production --tag patch-test",
           "description": "从免费的社区版开始。免费克隆、测试和验证。无需信用卡。",
           "primaryCta": "免费开始使用社区版",
           "tierBadge": "最多 10 个工作负载永久免费",
@@ -13113,7 +13113,7 @@
           "title": "您将获得什么"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to-machine new-provider -m primary --checkpoint",
+          "command": "rdc repo push production --to new-provider --checkpoint",
           "ctaText": "免费开始使用社区版",
           "description": "从免费的社区版开始。随处部署，随时迁移。无需信用卡。",
           "title": "夺回基础设施的控制权"
@@ -13330,7 +13330,7 @@
               "title": "标准格式"
             },
             {
-              "description": "运行 rdc repo push production --to-machine new-provider -m primary --checkpoint。增量传输。零宕机。",
+              "description": "运行 rdc repo push production --to new-provider --checkpoint。增量传输。零宕机。",
               "icon": "arrow-right-circle",
               "title": "一条命令迁移"
             },
