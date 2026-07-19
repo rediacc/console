@@ -113,6 +113,20 @@ submodule_checked_out() {
     [[ -n "$(ls -A "$root" 2>/dev/null)" ]]
 }
 
+# declared_submodule <path> -- true when .gitmodules declares this path.
+#
+# A `private/<name>` that is NOT declared is an EXTERNAL repository this one does
+# not track (private/growth and private/generative are separate GitLab repos; the
+# scripts referencing them handle their absence). Such a root is legitimately
+# missing from a fresh checkout, so its absence is not a dead path -- CI has no
+# private/growth at all, which is what made this gate fail there while passing
+# locally. Deriving this from .gitmodules rather than a hardcoded list keeps it
+# correct when a submodule is added or removed.
+declared_submodule() {
+    local root="$1"
+    grep -qE "^[[:space:]]*path[[:space:]]*=[[:space:]]*${root}[[:space:]]*$" "$REPO_ROOT/.gitmodules" 2>/dev/null
+}
+
 collect_dead_paths() {
     cd "$REPO_ROOT"
     local file line path root
@@ -124,6 +138,8 @@ collect_dead_paths() {
 
             root="$(printf '%s' "$path" | cut -d/ -f1-2)"
             if [[ ! -d "$root" ]]; then
+                # An undeclared private/<name> is an external repo, not a dead path.
+                [[ "$root" == private/* ]] && ! declared_submodule "$root" && continue
                 printf 'TIER-A %s:%s: %s (workspace root %s does not exist)\n' \
                     "$file" "$line" "$path" "$root"
                 continue
