@@ -17,7 +17,7 @@ tags:
   - cli
 featured: false
 language: fr
-sourceHash: 1b08ca130594e2e4
+sourceHash: "79ca3074954024fd"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
@@ -66,7 +66,7 @@ Cela fait de l'identité une comparaison d'ensembles. Un inode des deux côtés 
 Voici le formulaire nom-statut par défaut, la même grammaire A/M/D/R que vous lisez déjà depuis `git status --short` :
 
 ```
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -83,7 +83,7 @@ La raison pour laquelle cette commande existe, c'est le flux de travail de l'age
 L'agent ne lit pas le statut de nom, il lit `--json` :
 
 ```
-$ rdc repo diff --name prod:experiment --json -m hostinger
+$ rdc repo diff prod:experiment -o json
 ```
 
 La sortie structurée donne à l'agent un ensemble de modifications précis : quels chemins il a modifiés, créés, supprimés. Avec `--stat`, la taille de modification par fichier en octets et en blocs. Un agent qui voit son diff avant de promouvoir est un agent qu'on peut laisser près de la production. Le rayon d'impact est inspecta­ble, pas affirmé. D'autres modes servent la même boucle de revue. `--name-only` pour une simple liste de chemins. `--content <path>` pour un diff texte unifié d'un seul fichier (texte uniquement ; un fichier binaire signale `Binary files differ`). `--stat` quand l'agent a besoin de savoir ce qui a changé et de combien.

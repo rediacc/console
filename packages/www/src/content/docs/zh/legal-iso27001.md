@@ -4,7 +4,7 @@ description: "Rediacc 如何满足 ISO 27001 加密、访问管理和运营安�
 category: "Legal"
 order: 5
 language: zh
-sourceHash: "315946a692b6ee29"
+sourceHash: "1e23c89ae8cf0185"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -22,8 +22,8 @@ sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 | **A.8**，资产管理 | A.8.24 加密使用 | 所有仓库强制使用 LUKS2 AES-256 加密。密钥管理：凭据仅存储在操作员的本地配置中，从不在服务器上。 |
 | **A.9**，访问控制 | A.9.2 用户访问管理 | SSH 密钥认证。带 IP 绑定、团队范围限定和团队移除时自动撤销的 API 令牌。双因素认证 (TOTP)。 |
 | **A.10**，加密 | A.10.1 加密控制 | 可配置密钥参数的 LUKS2。每仓库加密凭据。所有远程传输通过 SSH。配置存储实现零知识加密：HKDF 密钥派生的 AES-256-GCM、X25519 成员密钥交换和用于即时撤销的时间窗口 SDK 密钥。 |
-| **A.12**，运营安全 | A.12.3 备份 | `rdc repo push/pull` 支持到多个目标（SSH、S3、B2、Azure、GDrive）的加密异地存储。CoW 快照实现时间点恢复。`rdc repo validate` 验证备份健康状况和仓库完整性。 |
-| **A.12**，运营安全 | A.12.4 日志和监控 | 70 多种事件类型（认证、API 令牌、配置、许可、机器操作）。通过 `rdc machine query` 监控机器健康。容器状态和资源监控。 |
+| **A.12**，运营安全 | A.12.3 备份 | `rdc repo push/pull` 支持到多个目标（SSH、S3、B2、Azure、GDrive）的加密异地存储。CoW 快照实现时间点恢复。`rdc repo admin validate` 验证备份健康状况和仓库完整性。 |
+| **A.12**，运营安全 | A.12.4 日志和监控 | 70 多种事件类型（认证、API 令牌、配置、许可、机器操作）。通过 `rdc machine status` 监控机器健康。容器状态和资源监控。 |
 | **A.13**，通信安全 | A.13.1 网络安全管理 | 每仓库 Docker daemon 隔离。iptables 规则阻止跨仓库流量。每仓库环回 IP 子网（/26）。TLS 终端反向代理用于外部访问。 |
 | **A.14**，系统开发 | A.14.2 开发安全 | 基于 Fork 的开发环境在不暴露生产数据的情况下提供生产环境对等。Rediaccfile 生命周期钩子支持克隆环境中的自动数据清理。 |
 
@@ -49,4 +49,4 @@ Rediacc 的仓库模型自然支持资产清单要求：
 
 - 审计日志导出支持定期安全审查
 - 机器健康检查（`rdc machine status --system`）支持运营监控
-- `rdc repo validate` 在每次操作后验证备份健康状况
+- `rdc repo admin validate` 在每次操作后验证备份健康状况

@@ -17,7 +17,7 @@ tags:
   - notification-incident
 featured: false
 language: fr
-sourceHash: 0e471ac41759e4cb
+sourceHash: "468602ef23c7ce92"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -118,7 +118,7 @@ Voici une routine concrète qui satisfait l'Article 21(2)(e) et (f) pour un dép
 **Étape 1** : forker la production.
 
 ```bash
-rdc repo fork --parent prod-app --tag effectiveness-2026w19 -m hostinger
+rdc repo fork prod-app --tag effectiveness-2026w19
 ```
 
 Le fork est nommé avec la semaine ISO pour que le journal d'audit se lise de lui-même. Le dépôt est actif sous un sous-domaine de fork (`<service>-fork-effectiveness-2026w19.prod-app.<machine>.<basedomain>`). Le certificat wildcard du parent le couvre. Pas de nouvelle négociation TLS.
@@ -126,8 +126,8 @@ Le fork est nommé avec la semaine ISO pour que le journal d'audit se lise de lu
 **Étape 2** : appliquer le correctif à tester, sur le fork.
 
 ```bash
-rdc repo up --name prod-app:effectiveness-2026w19 -m hostinger
-rdc term connect -m hostinger -r prod-app:effectiveness-2026w19 -c "apt-get install -y openssl=3.5.5-1"
+rdc repo up prod-app:effectiveness-2026w19
+rdc term connect prod-app:effectiveness-2026w19 -c "apt-get install -y openssl=3.5.5-1"
 ```
 
 La session term s'exécute en tant qu'utilisateur non privilégié `rediacc` (UID 7111), dans un espace de noms de montage séparé, avec `DOCKER_HOST` limité à la socket du daemon du fork. L'accès entre dépôts est bloqué au niveau noyau (le fork ne peut pas atteindre le sous-réseau loopback de la production). Voir [Architecture - Isolation Docker](/fr/docs/architecture) pour le modèle d'isolation.
@@ -142,8 +142,8 @@ curl -fsS https://app-fork-effectiveness-2026w19.prod-app.hostinger.example.com/
 **Étape 4** : exécuter l'exercice de restauration. Utiliser la sauvegarde à chaud la plus récente de la production, récupérée vers une cible alignée sur le fork.
 
 ```bash
-rdc repo backup pull --from offsite-b2 --name prod-app:restore-2026w19 -m hostinger
-rdc repo up --name prod-app:restore-2026w19 -m hostinger
+rdc repo pull prod-app:restore-2026w19 --from offsite-b2
+rdc repo up prod-app:restore-2026w19
 # vérifier que le fork restauré répond au même test de fumée
 curl -fsS https://app-fork-restore-2026w19.prod-app.hostinger.example.com/health
 ```
@@ -154,8 +154,8 @@ C'est le test de reprise que 21(2)(c) et (f) demandent : non pas "l'intégrité 
 
 ```bash
 rdc audit log --since "1 hour ago" > /tmp/effectiveness-2026w19.json
-rdc repo destroy --name prod-app:effectiveness-2026w19 -m hostinger --force
-rdc repo destroy --name prod-app:restore-2026w19 -m hostinger --force
+rdc repo delete prod-app:effectiveness-2026w19 --yes
+rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
 Le journal d'audit capture chaque étape (création du fork, repo up, sessions term, backup pull, repo destroy). Il est chaîné par hachage. `rdc audit verify` sur le poste de travail de l'opérateur confirme que la chaîne n'a pas été modifiée depuis que les événements ont été écrits. Voir [Sécurité du compte - Posture de sécurité CLI pour les agents IA](/fr/docs/account-security) pour le modèle d'audit.
@@ -184,11 +184,11 @@ Concrètement, lors d'un incident :
 
 ```bash
 # Instantané de l'état compromis pour la forensique. Le fork est l'instantané.
-rdc repo fork --parent prod-app --tag forensic-2026-05-09T14-23Z -m hostinger
+rdc repo fork prod-app --tag forensic-2026-05-09T14-23Z
 
 # Démarrage d'un fork de service depuis la dernière sauvegarde propre. Étiquette différente.
-rdc repo backup pull --from offsite-b2 --name prod-app:serving-2026-05-09T14-30Z -m hostinger
-rdc repo up --name prod-app:serving-2026-05-09T14-30Z -m hostinger
+rdc repo pull prod-app:serving-2026-05-09T14-30Z --from offsite-b2
+rdc repo up prod-app:serving-2026-05-09T14-30Z
 # Basculer le trafic vers le nouveau fork de service via DNS ou le serveur de route.
 ```
 
@@ -222,7 +222,7 @@ Trois artefacts. Produisez-les et la conversation sur l'Article 21(2)(e) et (f) 
 
 **Artefact 2 : le journal d'audit de ces exercices, chaîné par hachage**. La chaîne de hachage sur le journal d'audit est ce qui transforme "nous avons exécuté 47 exercices l'an dernier" d'une affirmation en preuve. `rdc audit verify` valide la chaîne de bout en bout. Le résultat de la validation est une sortie de commande unique qu'un auditeur peut réexécuter.
 
-**Artefact 3 : la piste de vérification des sauvegardes**. Pour chaque stratégie de sauvegarde planifiée, l'unité systemd produit un fichier sidecar de statut à `/var/run/rediacc/cold-backup-<guid>.status.json` par dépôt et par exécution, ainsi qu'une ligne de journal de résumé finale. `rdc machine backup status` expose les deux. Combiné avec l'exercice de restauration hebdomadaire de l'Étape 4 de la routine ci-dessus, cela donne à l'auditeur une piste "sauvegarde-et-restauration-testée", et non seulement "sauvegarde-prise". Voir [Surveillance](/fr/docs/monitoring) pour la surface de diagnostic.
+**Artefact 3 : la piste de vérification des sauvegardes**. Pour chaque stratégie de sauvegarde planifiée, l'unité systemd produit un fichier sidecar de statut à `/var/run/rediacc/cold-backup-<guid>.status.json` par dépôt et par exécution, ainsi qu'une ligne de journal de résumé finale. `rdc backup status` expose les deux. Combiné avec l'exercice de restauration hebdomadaire de l'Étape 4 de la routine ci-dessus, cela donne à l'auditeur une piste "sauvegarde-et-restauration-testée", et non seulement "sauvegarde-prise". Voir [Surveillance](/fr/docs/monitoring) pour la surface de diagnostic.
 
 Ensemble, les artefacts répondent à la question "vos contrôles sont-ils efficaces" avec des horodatages et une chaîne de hachage. Pas une attestation. Des preuves.
 

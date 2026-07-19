@@ -4,7 +4,7 @@ description: "Wie Autostart funktioniert, der periodische Reconciler, der Reposi
 category: "Guides"
 order: 5
 language: de
-sourceHash: "7fa4f919475b304e"
+sourceHash: "62148f7a55752783"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,7 +109,7 @@ Repositories mit dauerhaften Fehlermarkierungen auflisten:
 ls /var/lib/rediacc/reconcile/failed/
 ```
 
-Jeder Dateiname ist eine Repository-GUID. Gleichen Sie diese mit `rdc config repository list` ab, um GUIDs auf Repository-Namen abzubilden.
+Jeder Dateiname ist eine Repository-GUID. Gleichen Sie diese mit `rdc repo list` ab, um GUIDs auf Repository-Namen abzubilden.
 
 Um eine Markierung nach Behebung des zugrundeliegenden Problems zu löschen, löschen Sie die Datei:
 

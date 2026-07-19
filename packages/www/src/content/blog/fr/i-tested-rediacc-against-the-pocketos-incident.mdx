@@ -11,7 +11,7 @@ tags:
   - case-study
 featured: true
 language: fr
-sourceHash: "277ccd50e4bac37f"
+sourceHash: "4658b7226eb1e696"
 sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 ---
 
@@ -63,7 +63,7 @@ Mon agent pour le test était Claude Code, exécutant Claude Opus. Même famille
 La première chose que l'agent (moi, en l'occurrence) tenterait : ouvrir un shell dans le dépôt de production et regarder autour.
 
 ```bash
-$ rdc term connect -m hostinger -r demo-stackoverflow -c "ls -la"
+$ rdc term connect demo-stackoverflow -c "ls -la"
 ```
 
 Le CLI a refusé. Mot pour mot :
@@ -97,7 +97,7 @@ J'ai aussi essayé de me connecter à un autre dépôt de production, `nextcloud
 C'est le flux de travail que Rediacc veut réellement vous voir adopter.
 
 ```bash
-$ time rdc repo fork --parent demo-stackoverflow -m hostinger --tag agent-test
+$ time rdc repo fork demo-stackoverflow --tag agent-test
 ```
 
 Sortie, copiée depuis mon terminal :
@@ -129,7 +129,7 @@ Je travaille maintenant sur le fork. Il a son propre GUID (`22c57178-...`). Son 
 Quand je fais `term connect` dans le fork, voici ce que je vois :
 
 ```
-$ rdc term connect -m hostinger -r demo-stackoverflow:agent-test -c "id"
+$ rdc term connect demo-stackoverflow:agent-test -c "id"
 uid=7111(rediacc) gid=7111(rediacc) groups=7111(rediacc),988(docker)
 ```
 
@@ -194,7 +194,7 @@ La lacune résiduelle honnête. Les secrets que vous avez écrits dans l'image d
 
 Pour le modèle de menace agent en particulier, deux effets secondaires de cette conception méritent d'être soulignés. Premièrement, `repo secret list` et `repo secret get` sont exposés comme outils MCP (sûrs en lecture. Noms et condensés, jamais les valeurs), de sorte qu'un agent qui vous aide à configurer une application peut découvrir ce qui est configuré sans voir ce que c'est. Deuxièmement, lorsqu'une écriture échoue à la précondition, l'enveloppe d'erreur JSON inclut un champ structuré `next.options[].run` avec les commandes concrètes que l'agent doit relayer mot pour mot à l'humain. Y compris l'échappatoire de rotation pour « j'ai oublié la valeur précédente ». Voir [Sûreté des agents IA](/fr/docs/ai-agents-safety) pour le modèle complet.
 
-Le mode d'emploi complet vit dans [Dépôts § Secrets](/fr/docs/repositories#secrets). Trois étapes. Premièrement, amorcez la valeur : `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""`. Ensuite, référencez `${REDIACC_SECRET_<KEY>}` dans votre fichier compose. Enfin, exécutez `rdc repo fork` et confirmez que le fork démarre avec une liste de secrets vide.
+Le mode d'emploi complet vit dans [Dépôts § Secrets](/fr/docs/repositories#secrets). Trois étapes. Premièrement, amorcez la valeur : `rdc repo secret set <repo> --key <KEY> --value <val> --current ""`. Ensuite, référencez `${REDIACC_SECRET_<KEY>}` dans votre fichier compose. Enfin, exécutez `rdc repo fork` et confirmez que le fork démarre avec une liste de secrets vide.
 
 ## Ce que cela change pour quelqu'un faisant ce genre de travail
 

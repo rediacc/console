@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 41
 language: et
-sourceHash: "fe334c1c94a0f417"
+sourceHash: "b8bd3176ecabfa4b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -34,7 +34,7 @@ Repositoorium on üks LUKS-kujutisfail btrfs-basseinil. Hark on konstantaja refl
 Külmuta ühendatud töötav hark uueks muutumatuks komitiks.
 
 ```bash
-rdc repo commit --name <hark> --message "<sõnum>" -m <masin>
+rdc repo commit <hark> --message "<sõnum>"
 ```
 
 | Valik | Kirjeldus | Vaikimisi |
@@ -52,7 +52,7 @@ Uus komit registreeritakse lokaalses konfiguratsioonis atribuudiga `immutable: t
 Loo nimega haru viide, mis osutab töötava hargi praegusele komitile.
 
 ```bash
-rdc repo branch --branch <nimi> --name <hark>
+rdc repo branch <fork> --branch <nimi>
 ```
 
 | Valik | Kirjeldus | Vaikimisi |
@@ -67,8 +67,8 @@ See on ainult konfiguratsioonitoimingud. Masinal ei toimu midagi. Haru viide kaa
 Reflink-klooni muutumatu komit (või haru tipp) värskeks kirjutatavaks töötavaks hargiks.
 
 ```bash
-rdc repo checkout --ref <komit> --tag <uusHark> -m <masin>
-rdc repo checkout --ref <haruNimi> --from <hark> --tag <uusHark> -m <masin>
+rdc repo checkout <komit> --tag <uusHark>
+rdc repo checkout <haruNimi> --from <hark> --tag <uusHark>
 ```
 
 | Valik | Kirjeldus | Vaikimisi |
@@ -87,7 +87,7 @@ Checkout taaskasutab hargi reflink teed, seega on see peaaegu kohene ja konstant
 Jaluta komitide ajalugu, mis on töötavast hargist või komitist kättesaadav.
 
 ```bash
-rdc repo log --name <hark> -m <masin>
+rdc repo log <hark>
 ```
 
 | Valik | Kirjeldus | Vaikimisi |
@@ -104,8 +104,8 @@ rdc repo log --name <hark> -m <masin>
 Ühenda lähtekomit või hark sihtmärgi töötavasse harku, muutmata elavat sihtmärki kohapeal.
 
 ```bash
-rdc repo merge --name <sihtmärk> --from <allikas> -m <masin>
-rdc repo merge --name <sihtmärk> --from <allikas> --resolve theirs -m <masin>
+rdc repo merge <sihtmärk> --from <allikas>
+rdc repo merge <sihtmärk> --from <allikas> --resolve theirs
 ```
 
 | Valik | Kirjeldus | Vaikimisi |
@@ -139,12 +139,12 @@ rdc repo gc --apply -m <masin>    # kustuta kättesaamatud komitid
 
 Kättesaadavus arvutatakse lokaalse konfiguratsiooni põhjal (viitehoidla): komitide hulk, mis on kättesaadavad, järgides iga haru tippu ja HEAD-i vanemate ahela kaudu. Masinal olevad muutumatud komitid, mis jäävad sellest hulgast väljapoole, on kättesaamatud. Ühendatud objekti ega töötavat harku ei koguta kunagi.
 
-### rdc repo fsck
+### rdc repo admin fsck
 
 Valideeri konfiguratsiooni viited masinal olevate objektide vastu.
 
 ```bash
-rdc repo fsck -m <masin>
+rdc repo admin fsck -m <masin>
 ```
 
 | Valik | Kirjeldus | Vaikimisi |
@@ -158,7 +158,7 @@ Raporteerib rippuvad viited (haru tipp või HEAD, mis osutab GUID-ile ilma objek
 `rdc repo fork --immutable` märgib uue harki loomise hetkel ainult lugemiseks, tootes komitiekvivalentse aluse ilma eraldi `commit` sammuta.
 
 ```bash
-rdc repo fork --parent <nimi> --tag <tag> --immutable -m <masin>
+rdc repo fork <nimi> --tag <tag> --immutable
 ```
 
 Muutumatu hark keeldub ühendamast, mis hoiab selle kujutise baidiliselt stabiilsena igavesti. See on kasulik külmutatud alusena masinate vaheliseks delta edastuseks, kus alus peab mõlemal otsas identne olema. Muudatuste tegemiseks tee sellest checkout (või hargista uuesti) kirjutatavasse koopisse.
@@ -168,28 +168,28 @@ Muutumatu hark keeldub ühendamast, mis hoiab selle kujutise baidiliselt stabiil
 ### Töötava hargi komiteerimine
 
 ```bash
-$ rdc repo commit --name myapp:work --message "schema migration applied" -m server-1
+$ rdc repo commit myapp:work --message "schema migration applied"
 Committed 4f3c2a1b9d8e: schema migration applied
 ```
 
 ### Komiteerimine selgesõnalise autoriga
 
 ```bash
-$ rdc repo commit --name myapp:work --message "nightly snapshot" --author ci-bot -m server-1
+$ rdc repo commit myapp:work --message "nightly snapshot" --author ci-bot
 Committed 7a1b2c3d4e5f: nightly snapshot
 ```
 
 ### Haru nimetamine praegusel komitil
 
 ```bash
-$ rdc repo branch --branch staging --name myapp:work
+$ rdc repo branch myapp:work --branch staging
 Branch "staging" -> 4f3c2a1b9d8e
 ```
 
 ### Komiti väljavõtmine värskesse kirjutatavasse harku
 
 ```bash
-$ rdc repo checkout --ref 4f3c2a1b9d8e --tag rollback-test -m server-1
+$ rdc repo checkout 4f3c2a1b9d8e --tag rollback-test
 ```
 
 ### Haru tipu väljavõtmine nime järgi
@@ -197,13 +197,13 @@ $ rdc repo checkout --ref 4f3c2a1b9d8e --tag rollback-test -m server-1
 Koos `--from`-iga lahendatakse `--ref` väärtus haru nimena antud töötaval hargil:
 
 ```bash
-$ rdc repo checkout --ref staging --from myapp:work --tag staging-copy -m server-1
+$ rdc repo checkout staging --from myapp:work --tag staging-copy
 ```
 
 ### Ajaloo jalutamine
 
 ```bash
-$ rdc repo log --name myapp:work -m server-1
+$ rdc repo log myapp:work
 commit 4f3c2a1b9d8e
   Author: ci-bot  Date: 2026-05-29T10:14:02Z
   schema migration applied
@@ -217,7 +217,7 @@ commit 9d8e7a1b2c3d
 `--json` annab struktureeritud läbimise, uusimast esimesena:
 
 ```bash
-$ rdc repo log --name myapp:work --json -m server-1
+$ rdc repo log myapp:work -o json
 {
   "success": true,
   "start": "4f3c2a1b9d8e",
@@ -239,8 +239,8 @@ $ rdc repo log --name myapp:work --json -m server-1
 `rdc repo diff` töötab iga kahe komiti vahel, sest neil on ühine koopiakirjutamise esivanem. Võta üks komit välja, seejärel võrdle teisega:
 
 ```bash
-$ rdc repo checkout --ref 4f3c2a1b9d8e --tag review -m server-1
-$ rdc repo diff --name review --base myapp:work -m server-1
+$ rdc repo checkout 4f3c2a1b9d8e --tag review
+$ rdc repo diff review --base myapp:work
 M  db/schema.sql
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -251,7 +251,7 @@ Täieliku difividite kohta vaata [rdc repo diff](/et/docs/repo-diff).
 ### Ülevaadatud tööliini tagasi ühendamine
 
 ```bash
-$ rdc repo merge --name myapp:main --from myapp:work -m server-1
+$ rdc repo merge myapp:main --from myapp:work
 Merged myapp:work into myapp:main
 ```
 
@@ -260,7 +260,7 @@ Merged myapp:work into myapp:main
 Ühendatud või töötav sihtmärk lükatakse tagasi, välja arvatud `--force`, mis vaikib selle esmalt:
 
 ```bash
-$ rdc repo merge --name myapp:main --from myapp:work --force -m server-1
+$ rdc repo merge myapp:main --from myapp:work --force
 Merged myapp:work into myapp:main
 ```
 
@@ -269,7 +269,7 @@ Merged myapp:work into myapp:main
 Kaks harku (`feature` ja `hotfix`), mis on väljavõetud samast komitist, muutsid mõlemad mõningaid faile. `--resolve theirs` voldib allika (`hotfix`) sihtmärgile (`feature`): failid, mida muutis ainult üks pool, võetakse sellelt poolelt, ja failid, mida muutsid mõlemad pooled, lahendatakse allika kasuks. Alus tuvastatakse automaatselt jagatud esivanema põhjal (või kinnita `--base`-ga):
 
 ```bash
-$ rdc repo merge --name myapp:feature --from myapp:hotfix --resolve theirs -m server-1
+$ rdc repo merge myapp:feature --from myapp:hotfix --resolve theirs
 Merged myapp:hotfix into myapp:feature (three-way); 1 conflict(s) resolved --theirs: [config/app.yaml]
 ```
 
@@ -278,7 +278,7 @@ Merged myapp:hotfix into myapp:feature (three-way); 1 conflict(s) resolved --the
 ### Muutumatu aluse otse loomine
 
 ```bash
-$ rdc repo fork --parent myapp --tag baseline-v1 --immutable -m server-1
+$ rdc repo fork myapp --tag baseline-v1 --immutable
 ```
 
 ## Delta edastus ja tõmbamine
@@ -289,19 +289,19 @@ Tavaliselt ei pea alust käsitsi andma. Pärast täielikku edastamist säilitab 
 
 ```bash
 # Esimene edastamine on täielik; see säilitab ka korduvkasutatava aluse mõlemal otsas.
-$ rdc repo push --name myapp:work --to-machine backup-1 -m server-1
+$ rdc repo push myapp:work --to backup-1
 
 # Pärast lokaalseid muudatusi saadab järgmine edastamine ainult muutunud plokid, ilma liputa.
-$ rdc repo push --name myapp:work --to-machine backup-1 -m server-1
+$ rdc repo push myapp:work --to backup-1
 
 # Kinnita selgesõnaline alus (muutumatu komit, mis on mõlemal masinal olemas).
-$ rdc repo push --name myapp:work --to-machine backup-1 --delta-base 4f3c2a1b9d8e -m server-1
+$ rdc repo push myapp:work --to backup-1 --delta-base 4f3c2a1b9d8e
 
 # Delta töötab ka vastupidises suunas, tõmmates ainult muutunud plokid masinalt.
-$ rdc repo pull --name myapp:work --from-machine backup-1 --delta-base 4f3c2a1b9d8e -m server-1
+$ rdc repo pull myapp:work --from backup-1 --delta-base 4f3c2a1b9d8e
 
 # Tõmba uuesti olemasolev lokaalne repositoorium (kirjuta üle) koos --force.
-$ rdc repo pull --name myapp:work --from-machine backup-1 --force -m server-1
+$ rdc repo pull myapp:work --from backup-1 --force
 ```
 
 Delta edastamine rakendub ainult masinate vahel (kaugarvutiga, millel on FIEMAP alus). Pilveobjektide salvestusele edastamine edastab alati täieliku kujutise. Alus peab mõlemal otsas baidiliselt identne olema, mis on täpselt see, mida muutumatu komit või `--immutable` hark garanteerib.

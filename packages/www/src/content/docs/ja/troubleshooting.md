@@ -4,7 +4,7 @@ description: "SSH、セットアップ、リポジトリ、サービス、Docker
 category: "Guides"
 order: 10
 language: ja
-sourceHash: "a1c58ae1fe3d0514"
+sourceHash: "429b4004d99c37e6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -72,7 +72,7 @@ CRIUがAppArmorに引っかかる既知のケースです。Renetは `rediacc.ch
 
 ### btrfsモジュールが見つからない (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)
 
-`rdc config machine setup` または `renet system check-btrfs` が次のエラーで失敗する場合:
+`rdc machine setup` または `renet system check-btrfs` が次のエラーで失敗する場合:
 
 ```
 Module btrfs not found
@@ -94,13 +94,13 @@ Module btrfs not found
 - リポジトリのDockerソケットを使用してコンテナログを確認してください:
 
 ```bash
-rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
+rdc repo logs my-app -c <container-name>
 ```
 
 または全てのコンテナを表示:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## 権限拒否エラー
@@ -115,7 +115,7 @@ rdc machine containers --name server-1
 
 ```bash
 # rdc termを使用（自動設定済み）:
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect my-app -c "docker ps"
 
 # またはソケットを手動で指定:
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -132,7 +132,7 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 **アドホックなコンテナでネットワークアクセスを得るには、ホストネットワーキングを使用してください:**
 
 ```bash
-# リポジトリシェル内で（rdc term connect -m <machine> -r <repo>）
+# リポジトリシェル内で（rdc term connect <repo>）
 docker run --rm --network host -it ubuntu bash
 # これで apt update、curl、pip install はすべて動作します。
 ```
@@ -181,7 +181,7 @@ sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50
 
 - `-c` を使用してインラインモードでコマンドを直接実行してください:
   ```bash
-  rdc term connect -m server-1 -c "ls -la"
+  rdc term connect server-1 -c "ls -la"
   ```
 - インラインモードに問題がある場合は `--external` で外部ターミナルを強制してください
 - Linuxでは、`gnome-terminal`、`xterm`、またはその他のターミナルエミュレータがインストールされていることを確認してください

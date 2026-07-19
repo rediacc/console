@@ -4,7 +4,7 @@ description: Üksikasjalik samm-sammuline juhend Claude Code'i häälestamiseks 
 category: Guides
 order: 31
 language: et
-sourceHash: "0a4b93dedcf18e6d"
+sourceHash: "c0034de091da3349"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -30,11 +30,11 @@ Paigutage see oma projekti juurkausta. Täieliku versiooni jaoks vaadake [AGENTS
 ## CLI Tool: rdc
 
 ### Common Operations
-- Status: rdc machine query --name <machine> -o json
-- Deploy: rdc repo up --name <repo> -m <machine> --yes
-- Containers: rdc machine containers --name <machine> -o json
-- Health: rdc machine health --name <machine> -o json
-- SSH: rdc term connect -m <machine> [-r <repo>]
+- Status: rdc machine status <machine> -o json
+- Deploy: rdc repo up <repo>@<machine> --yes
+- Containers: rdc machine status <machine> --containers -o json
+- Health: rdc machine health <machine> -o json
+- SSH: rdc term connect <machine|repo-ref>
 
 ### Rules
 - Always use --output json when parsing output
@@ -46,10 +46,10 @@ Paigutage see oma projekti juurkausta. Täieliku versiooni jaoks vaadake [AGENTS
 
 Claude Code küsib luba `rdc` käskude käivitamiseks. Saate levinud toimingud eelnevalt lubada, lisades oma Claude Code'i seadetesse:
 
-- Lubage `rdc machine query *`, kirjutuskaitstud olekukontrollid
-- Lubage `rdc machine containers *`, konteinerite loetlemine
+- Lubage `rdc machine status *`, kirjutuskaitstud olekukontrollid
+- Lubage `rdc machine status * --containers`, konteinerite loetlemine
 - Lubage `rdc machine health *`, terviskontrollid
-- Lubage `rdc config repository list`, repositooriumide loetlemine
+- Lubage `rdc repo list`, repositooriumide loetlemine
 
 Hävitavate toimingute puhul (`rdc repo up`, `rdc repo delete`) küsib Claude Code alati kinnitust, välja arvatud juhul, kui lubate need sõnaselgelt.
 
@@ -60,7 +60,7 @@ Hävitavate toimingute puhul (`rdc repo up`, `rdc repo delete`) küsib Claude Co
 ```
 Teie: "Mis on prod-1 olek?"
 
-Claude Code käivitab: rdc machine query --name prod-1 -o json
+Claude Code käivitab: rdc machine status prod-1 -o json
 → Kuvab masina oleku, repositooriumid, konteinerid, teenused
 ```
 
@@ -69,9 +69,9 @@ Claude Code käivitab: rdc machine query --name prod-1 -o json
 ```
 Teie: "Juuruta mail-repo prod-1-le"
 
-Claude Code käivitab: rdc repo up --name mail -m prod-1 --dry-run -o json
+Claude Code käivitab: rdc repo up mail@prod-1 --dry-run -o json
 → Näitab, mis juhtuks
-Claude Code käivitab: rdc repo up --name mail -m prod-1 --yes
+Claude Code käivitab: rdc repo up mail@prod-1 --yes
 → Juurutab repositooriumi
 ```
 
@@ -80,9 +80,9 @@ Claude Code käivitab: rdc repo up --name mail -m prod-1 --yes
 ```
 Teie: "Miks on nextcloud'i konteiner ebaterve?"
 
-Claude Code käivitab: rdc machine containers --name prod-1 -o json --fields name,status,repository
+Claude Code käivitab: rdc machine status prod-1 --containers -o json --fields name,status,repository
 → Loetleb konteinerite olekud
-Claude Code käivitab: rdc term connect -m prod-1 -c "docker logs nextcloud-app --tail 50"
+Claude Code käivitab: rdc repo logs nextcloud@prod-1 -c nextcloud-app --lines 50 "docker logs nextcloud-app --tail 50"
 → Kontrollib hiljutisi logisid
 ```
 
@@ -91,9 +91,9 @@ Claude Code käivitab: rdc term connect -m prod-1 -c "docker logs nextcloud-app 
 ```
 Teie: "Laadi kohalik konfiguratsioon mail-repo-sse üles"
 
-Claude Code käivitab: rdc repo sync upload -m prod-1 -r mail -l ./config --dry-run
+Claude Code käivitab: rdc repo sync upload mail@prod-1 --local ./config --dry-run
 → Näitab, milliseid faile sünkroonitaks
-Claude Code käivitab: rdc repo sync upload -m prod-1 -r mail -l ./config
+Claude Code käivitab: rdc repo sync upload mail@prod-1 --local ./config
 → Sünkroonib failid
 ```
 

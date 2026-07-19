@@ -12,7 +12,7 @@ tags:
   - vastavus
 featured: false
 language: et
-sourceHash: "ffdb86da48dacc58"
+sourceHash: "d8da6730f7912fc9"
 sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 translatedFrom: en
 ---
@@ -129,7 +129,7 @@ Pärast Rediaccile üleminekut Hetzneris:
 | Alluttöötlejad | (1) Ise majutavatele puuduvad; (2) Ainult Hetzner-sisesed, loetletud nende DPA-s |
 | Lepingu staatus | (1) Tarkvaralitsents, DPA pole vajalik; (2) Hetzner DPA + SCC-d juba paigas |
 | Võtmehaldus | Klient (LUKS2 mandaat operaatori konfiguratsioonis, mitte serveris) |
-| Väljumisplaan | "rdc repo backup pull mis tahes rclone-ühilduvast sihtmärgist. Mahud on LUKS2-krüptitud; operaator hoiab mandaati." |
+| Väljumisplaan | "rdc repo pull mis tahes rclone-ühilduvast sihtmärgist. Mahud on LUKS2-krüptitud; operaator hoiab mandaati." |
 | Viimane hindamine | (2) kaetud olemasoleva IaaS-i ülevaatusega |
 
 Kaks registrikirjet ühe asemel. Kriitilise taseme kanne on IaaS-i pakkuja jaoks, kellel oli ostjal juba DPA paigas ja testitud väljumisplaan, sest IaaS on suhe, mida enamik tiime oskab hallata. Rediacc'i kanne on mittekriitiline, sest see on tarkvaralitsents, mitte andmetöötleja.

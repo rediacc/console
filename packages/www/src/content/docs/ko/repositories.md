@@ -4,7 +4,7 @@ description: "원격 머신에서 LUKS 암호화된 리포지터리를 생성, �
 category: "Guides"
 order: 4
 language: ko
-sourceHash: "c9553259c9bf6b4c"
+sourceHash: "b67203062ab832f8"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -18,7 +18,7 @@ sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ## 리포지터리 생성
 
 ```bash
-rdc repo create --name my-app -m server-1 --size 10G
+rdc repo create my-app -m server-1 --size 10G
 ```
 
 | 옵션 | 필수 여부 | 설명 |
@@ -40,8 +40,8 @@ rdc repo create --name my-app -m server-1 --size 10G
 마운트는 리포지터리 파일 시스템을 복호화하여 접근 가능하게 합니다. 언마운트는 암호화된 볼륨을 닫습니다.
 
 ```bash
-rdc repo mount --name my-app -m server-1  # 복호화 및 마운트
-rdc repo unmount --name my-app -m server-1  # 언마운트 및 재암호화
+rdc repo up my-app  # 복호화 및 마운트
+rdc repo down my-app --unmount  # 언마운트 및 재암호화
 ```
 
 | 옵션 | 설명 |
@@ -52,7 +52,7 @@ rdc repo unmount --name my-app -m server-1  # 언마운트 및 재암호화
 ## 상태 확인
 
 ```bash
-rdc repo status --name my-app -m server-1
+rdc repo status my-app
 ```
 
 ## 리포지터리 목록
@@ -78,8 +78,8 @@ rdc repo list -m server-1
 리포지터리를 정확한 크기로 설정하거나 주어진 양만큼 확장합니다:
 
 ```bash
-rdc repo resize --name my-app -m server-1 --size 20G  # 정확한 크기로 설정
-rdc repo expand --name my-app -m server-1 --size 5G  # 현재 크기에 5G 추가
+rdc repo resize my-app --size 20G  # 정확한 크기로 설정
+rdc repo expand my-app --size 5G  # 현재 크기에 5G 추가
 ```
 
 > 크기를 조정하기 전에 리포지터리를 언마운트해야 합니다. `repo expand`는 온라인 상태에서 실행됩니다. 크기 조정은 리포지터리의 최대 크기를 변경합니다. 최대 크기를 변경하지 않고 해제된 블록을 풀에 돌려주려면 대신 [`repo trim`](#공간-회수-trim)을 사용하세요.
@@ -90,8 +90,8 @@ rdc repo expand --name my-app -m server-1 --size 5G  # 현재 크기에 5G 추�
 
 ```bash
 rdc repo trim -m server-1                       # Trim every mounted repository plus the datastore
-rdc repo trim -m server-1 --name my-app          # Trim one repository
-rdc repo trim -m server-1 --report-only          # Show reclaimable space without trimming
+rdc repo trim my-app                            # Trim one repository
+rdc repo trim -m server-1 --report-only         # Show reclaimable space without trimming
 rdc repo trim -m server-1 --docker               # Also clear stopped containers, dangling images, and build cache first
 ```
 
@@ -112,10 +112,10 @@ rdc repo trim -m server-1 --docker               # Also clear stopped containers
 rdc repo policy set -m server-1 --auto-trim true
 
 # Per-repository: grow my-app automatically, up to a hard ceiling
-rdc repo policy set -m server-1 --name my-app --auto-grow true --max-quota 50G
+rdc repo policy set my-app --auto-grow true --max-quota 50G
 
 # Inspect the stored and effective policy
-rdc repo policy get -m server-1 --name my-app
+rdc repo policy get my-app
 ```
 
 정책 필드:
@@ -138,7 +138,7 @@ rdc repo policy get -m server-1 --name my-app
 기존 리포지터리의 현재 상태에서 복사본을 만듭니다:
 
 ```bash
-rdc repo fork --parent my-app --tag staging -m server-1
+rdc repo fork my-app --tag staging
 ```
 
 포크는 name:tag 모델을 사용합니다: 결과 포크의 이름은 `my-app:staging`입니다. 이렇게 하면 부모의 이름을 공유하면서 자체 GUID와 네트워크 ID를 가진 새로운 암호화된 복사본이 생성됩니다. 포크는 부모와 동일한 LUKS 자격 증명을 공유합니다.
@@ -152,8 +152,8 @@ rdc repo fork --parent my-app --tag staging -m server-1
 `--up` 플래그 하나로 포크 생성, 마운트, 서비스 시작을 원격에서 한 번에 처리합니다. `--detach`를 추가하면 컨테이너가 시작되는 즉시 터미널이 반환됩니다. 헬스체크는 백그라운드에서 완료되며, 프록시는 각 서비스가 바인딩될 때까지 재시도를 계속합니다.
 
 ```bash
-rdc repo fork --parent my-app --tag staging -m server-1 --up
-rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
+rdc repo fork my-app --tag staging --up
+rdc repo fork my-app --tag scratch --up --no-wait
 ```
 
 테스트 결과, 128 GB 리포지터리가 포크 후 서비스가 실행 상태에 이르기까지 약 57초가 걸렸으며, `--detach` 사용 시에는 약 31초로 단축되었습니다. 분리 실행 시에는 진행 상황을 확인하는 힌트가 출력됩니다: `rdc machine status <machine> --containers`.
@@ -173,9 +173,9 @@ rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
 포크는 git 커밋처럼 사용할 수 있습니다. `rdc repo commit`은 작업 중인 포크를 변경 불가능하고 바이트 안정적인 커밋으로 고정합니다. `rdc repo branch`는 기록 라인에 이름을 부여합니다. `rdc repo checkout`은 커밋을 쓰기 가능한 포크로 reflink-복제합니다. `rdc repo log`는 부모 체인을 탐색합니다. `rdc repo merge`는 라이브 리포지터리를 직접 변경하지 않고 두 라인을 결합합니다. `rdc repo fork --immutable`은 단일 단계에서 커밋 동등한 베이스를 생성합니다.
 
 ```bash
-rdc repo commit --name my-app:work --message "schema migration applied" -m server-1
-rdc repo branch --branch staging --name my-app:work
-rdc repo checkout --ref staging --from my-app:work --tag staging-copy -m server-1
+rdc repo commit my-app:work --message "schema migration applied"
+rdc repo branch my-app:work --branch staging
+rdc repo checkout staging --from my-app:work --tag staging-copy
 ```
 
 전체 명령 세트, 옵션, 예시는 [Git과 유사한 브랜칭 참조](/ko/docs/repo-branching)를 참조하세요.
@@ -195,11 +195,11 @@ rdc repo checkout --ref staging --from my-app:work --tag staging-copy -m server-
 
 ```bash
 # 설정, 목록, 가져오기 (다이제스트만), 해제
-rdc repo secret set --name my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
-rdc repo secret set --name my-app --key DB_HOST         --value postgres.internal --mode env --current ""
-rdc repo secret list --name my-app
-rdc repo secret get  --name my-app --key DB_HOST    # → { key, mode, digest } - 값 없음
-rdc repo secret unset --name my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
+rdc repo secret set my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
+rdc repo secret set my-app --key DB_HOST         --value postgres.internal --mode env --current ""
+rdc repo secret list my-app
+rdc repo secret get my-app --key DB_HOST    # → { key, mode, digest } - 값 없음
+rdc repo secret unset my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
 ```
 
 **대칭 변경 게이트.** 사람과 에이전트 모두 시크릿을 덮어쓰거나 해제하려면 `--current <이전-값>`이 필요합니다 (passwd 스타일 전제 조건). 새 키를 처음 쓸 때는 `--current ""`(빈 문자열)를 전달하세요. 이전 값 확인 없이 교체하려면 대신 `--rotate-secret`을 전달하세요. 이것은 교체로 크게 감사됩니다. `--current`와 `--rotate-secret`은 상호 배타적입니다.
@@ -235,7 +235,7 @@ secrets:
 리포지터리의 파일 시스템 무결성을 확인합니다:
 
 ```bash
-rdc repo validate --name my-app -m server-1
+rdc repo admin validate my-app
 ```
 
 ## 소유권
@@ -243,7 +243,7 @@ rdc repo validate --name my-app -m server-1
 리포지터리 내의 파일 소유권을 범용 사용자 (UID 7111)로 설정합니다. 이것은 일반적으로 워크스테이션에서 파일을 업로드한 후 필요합니다. 파일이 로컬 UID와 함께 도착하기 때문입니다.
 
 ```bash
-rdc repo ownership --name my-app -m server-1
+rdc repo admin ownership my-app
 ```
 
 이 명령은 Docker 컨테이너 데이터 디렉터리 (쓰기 가능한 바인드 마운트)를 자동으로 감지하고 제외합니다. 이것은 자체 UID로 파일을 관리하는 컨테이너가 손상되는 것을 방지합니다 (예: MariaDB=999, www-data=33).
@@ -256,7 +256,7 @@ rdc repo ownership --name my-app -m server-1
 컨테이너 데이터를 포함한 모든 파일에 소유권을 강제 적용하려면:
 
 ```bash
-rdc repo ownership --name my-app -m server-1
+rdc repo admin ownership my-app
 ```
 
 프로젝트 마이그레이션 중 소유권 사용 시기와 방법에 대한 전체 안내는 [마이그레이션 가이드](/ko/docs/migration)를 참조하세요.
@@ -266,7 +266,7 @@ rdc repo ownership --name my-app -m server-1
 파일로 리포지터리를 초기화하기 위해 템플릿을 적용합니다:
 
 ```bash
-rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo admin template apply my-app --template my-template --file ./my-template.tar.gz
 ```
 
 ## 삭제
@@ -274,7 +274,7 @@ rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./
 리포지터리와 내부의 모든 데이터를 영구적으로 삭제합니다:
 
 ```bash
-rdc repo delete --name my-app -m server-1
+rdc repo delete my-app
 ```
 
 > 이것은 암호화된 디스크 이미지를 영구적으로 삭제합니다. 이 작업은 되돌릴 수 없습니다.
@@ -284,7 +284,7 @@ rdc repo delete --name my-app -m server-1
 한 머신에서 다른 머신으로 리포지터리를 라이브 마이그레이션합니다. 유일한 다운타임은 최종 delta-sync 단계입니다: 컷오버 시 쓰기 속도에 따라 일반적으로 초에서 몇 분 정도입니다.
 
 ```bash
-rdc repo migrate --name my-app --from server-1 --to server-2
+rdc repo migrate my-app@server-1 --to server-2
 ```
 
 | 옵션 | 설명 |
@@ -318,10 +318,10 @@ rdc repo migrate --name my-app --from server-1 --to server-2
 
 ```bash
 # 제거될 항목 미리보기
-rdc machine prune --name server-1 --dry-run
+rdc machine prune server-1 --dry-run
 
 # 고아 리소스 제거
-rdc machine prune --name server-1
+rdc machine prune server-1
 ```
 
 일치하는 리포지터리 이미지가 없는 리소스만 영향을 받습니다. 비어 있지 않은 마운트 디렉터리는 절대 제거되지 않습니다.

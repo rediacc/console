@@ -4,7 +4,7 @@ description: "Kuidas automaatkäivitus toimib, perioodiline leppija, mis taastab
 category: "Guides"
 order: 5
 language: et
-sourceHash: "7fa4f919475b304e"
+sourceHash: "62148f7a55752783"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,7 +109,7 @@ Loetlege püsivate tõrkemarkritega repositooriumid:
 ls /var/lib/rediacc/reconcile/failed/
 ```
 
-Iga failinimi on repositooriumi GUID. Kasutage `rdc config repository list` GUIDide kaardistamiseks repositooriuminimedeks.
+Iga failinimi on repositooriumi GUID. Kasutage `rdc repo list` GUIDide kaardistamiseks repositooriuminimedeks.
 
 Markeri kustutamiseks pärast aluspõhjuse lahendamist kustutage fail:
 

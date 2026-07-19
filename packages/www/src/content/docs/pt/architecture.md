@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: pt
-sourceHash: "b1f9e2e3bba92912"
+sourceHash: "16b02000a82f3acd"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -48,7 +48,7 @@ Todo o estado reside num ficheiro de configuração na sua workstation (por exem
 
 ## O Utilizador rediacc
 
-Quando executa `rdc config machine setup`, o renet cria um utilizador de sistema chamado `rediacc` no servidor remoto:
+Quando executa `rdc machine setup`, o renet cria um utilizador de sistema chamado `rediacc` no servidor remoto:
 
 - **UID**: 7111
 - **Shell**: `/sbin/nologin` (não pode iniciar sessão via SSH)

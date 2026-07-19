@@ -4,7 +4,7 @@ description: 监控机器健康状况、容器、服务、仓库，并运行诊�
 category: Guides
 order: 9
 language: zh
-sourceHash: "b6deba17f1137188"
+sourceHash: "ab050e731db18848"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -17,7 +17,7 @@ Rediacc 提供内置的监控命令，用于检查机器健康状况、运行中
 获取机器的完整健康报告：
 
 ```bash
-rdc machine health --name server-1
+rdc machine health server-1
 ```
 
 报告内容：
@@ -33,7 +33,7 @@ rdc machine health --name server-1
 查看机器上所有仓库中运行的全部容器：
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 | 列名 | 描述 |
@@ -57,7 +57,7 @@ JSON 输出包含完整的容器详情（`labels`、`port_mappings`、`image`、
 查看机器上与 Rediacc 相关的 systemd 服务：
 
 ```bash
-rdc machine services --name server-1
+rdc machine status server-1 --services
 ```
 
 | 列名 | 描述 |
@@ -80,7 +80,7 @@ JSON 输出包含完整的服务详情，并带有 `repository`（解析后的�
 查看机器上的仓库及详细统计信息：
 
 ```bash
-rdc machine repos --name server-1
+rdc machine status server-1 --repositories
 ```
 
 | 列名 | 描述 |
@@ -104,7 +104,7 @@ JSON 输出包含 `name`（解析后的名称）和 `guid`（原始 GUID），�
 检查机器上所有仓库的 BTRFS 碎片化程度和 reflink 共享情况：
 
 ```bash
-rdc machine query --name server-1 --storage-health
+rdc machine status server-1 --storage-health
 ```
 
 | 列名 | 描述 |
@@ -182,7 +182,7 @@ Scrub 计时器在 renet 升级后的第一次 daemon 启动时自动安装。�
 立即运行 scrub（例如，在断电或磁盘迁移后）：
 
 ```bash
-rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
+rdc term connect server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
 结果保存到同一 JSON 文件，并在下次 `rdc machine status --system` 时立即可见。
@@ -192,7 +192,7 @@ rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/r
 获取机器的完整概览，包括部署信息：
 
 ```bash
-rdc machine query --name server-1
+rdc machine status server-1
 ```
 
 提供的信息：
@@ -208,7 +208,7 @@ rdc machine query --name server-1
 验证与机器的 SSH 连接：
 
 ```bash
-rdc term connect -m server-1 -c "hostname"
+rdc term connect server-1 -c "hostname"
 ```
 
 该命令在成功时打印远程主机名，失败时打印连接错误，一步即可验证 DNS、SSH 端口和密钥认证。

@@ -11,7 +11,7 @@ tags:
   - case-study
 featured: true
 language: ja
-sourceHash: "277ccd50e4bac37f"
+sourceHash: "4658b7226eb1e696"
 sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 ---
 
@@ -63,7 +63,7 @@ Jer氏のタイムラインを丁寧に読んでみてください。4つの独�
 エージェント（この場合は私）が最初に試みること：本番リポジトリにシェルを開いて中を見てみる。
 
 ```bash
-$ rdc term connect -m hostinger -r demo-stackoverflow -c "ls -la"
+$ rdc term connect demo-stackoverflow -c "ls -la"
 ```
 
 CLIは拒否しました。原文のまま：
@@ -97,7 +97,7 @@ $ REDIACC_ALLOW_GRAND_REPO=demo-stackoverflow rdc term connect ...
 これがRediaccが本来推奨するワークフローです。
 
 ```bash
-$ time rdc repo fork --parent demo-stackoverflow -m hostinger --tag agent-test
+$ time rdc repo fork demo-stackoverflow --tag agent-test
 ```
 
 私のターミナルからコピーした出力：
@@ -129,7 +129,7 @@ Total: 6.3s
 フォークに`term connect`した時に見えるのは以下のとおり：
 
 ```
-$ rdc term connect -m hostinger -r demo-stackoverflow:agent-test -c "id"
+$ rdc term connect demo-stackoverflow:agent-test -c "id"
 uid=7111(rediacc) gid=7111(rediacc) groups=7111(rediacc),988(docker)
 ```
 
@@ -194,7 +194,7 @@ Rediaccはインフラを分離します：ディスク上のファイル、Dock
 
 特にエージェントの脅威モデルについて、この設計の副次的効果のうち2点に触れておく価値があります。第一に、`repo secret list`と`repo secret get`はMCPツールとして公開されています（読み取り安全. 名前とダイジェストのみで、値は決して返しません）。そのため、アプリのセットアップを手伝うエージェントは、設定内容を見ることなく、何が設定されているかを発見できます。第二に、書き込みが前提条件で失敗した場合、JSONエラーエンベロープには構造化された`next.options[].run`フィールドが含まれ、エージェントが人間にそのまま伝えるべき具体的なコマンドが入っています。「前の値を忘れた」場合のローテーション用エスケープハッチも含めて。完全なモデルについては[AIエージェントの安全性](/ja/docs/ai-agents-safety)をご覧ください。
 
-完全なハウツーは[リポジトリ § シークレット](/ja/docs/repositories#secrets)にあります。3つのステップです。まず値をシードします：`rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""`。次にコンポーズファイルで `${REDIACC_SECRET_<KEY>}` を参照します。最後に `rdc repo fork` を実行してフォークが空のシークレットリストで始まることを確認します。これで完了です。
+完全なハウツーは[リポジトリ § シークレット](/ja/docs/repositories#secrets)にあります。3つのステップです。まず値をシードします：`rdc repo secret set <repo> --key <KEY> --value <val> --current ""`。次にコンポーズファイルで `${REDIACC_SECRET_<KEY>}` を参照します。最後に `rdc repo fork` を実行してフォークが空のシークレットリストで始まることを確認します。これで完了です。
 
 ## こうした作業をする人にとって何が変わるか
 

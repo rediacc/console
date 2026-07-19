@@ -38,8 +38,8 @@ for ip in "$TUTORIAL_MACHINE_IP" "$M2_IP"; do
 done
 rdc machine setup "$M"
 rdc machine setup "$M2"
-rdc machine prune --name "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
-rdc machine prune --name "$M2" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
+rdc machine prune "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
+rdc machine prune "$M2" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 
 # One delete, not two: the machine is derived from the ref, and a repo has a
 # single home in the config. Leftovers on $M2 (the migrate target) are reaped by
@@ -95,4 +95,4 @@ end_recording
 # orphaned, so the GUID sweep below can reap it.
 rdc repo down pulse --unmount 2>/dev/null || true
 rdc repo delete pulse --archive-config -y 2>/dev/null || true
-rdc machine prune --name "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
+rdc machine prune "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true

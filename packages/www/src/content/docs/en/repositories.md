@@ -17,7 +17,7 @@ A **repository** is a LUKS-encrypted disk image on a remote server. When mounted
 ## Create a Repository
 
 ```bash
-rdc repo create --name my-app -m server-1 --size 10G
+rdc repo create my-app -m server-1 --size 10G
 ```
 
 | Option | Required | Description |
@@ -36,22 +36,22 @@ The output will show three auto-generated values:
 
 ## Mount and Unmount
 
-Mount decrypts and makes the repository filesystem accessible. Unmount closes the encrypted volume.
+Mounting is part of the deploy step. `repo up` decrypts and mounts the repository before it runs the Rediaccfile, so there is no separate mount command. Use `--no-start` to mount and prepare the repository without running its `up()` steps, and `repo down --unmount` to close the encrypted volume again.
 
 ```bash
-rdc repo mount --name my-app -m server-1  # Decrypt and mount
-rdc repo unmount --name my-app -m server-1  # Unmount and re-encrypt
+rdc repo up my-app --no-start     # Decrypt and mount, without starting services
+rdc repo down my-app --unmount    # Stop, unmount, and re-encrypt
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--checkpoint` | Create a CRIU checkpoint before mount/unmount (for containers with `rediacc.checkpoint=true` label) |
+| `--checkpoint` | On `repo down`: create a CRIU checkpoint before unmounting (for containers with `rediacc.checkpoint=true` label) |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 ## Check Status
 
 ```bash
-rdc repo status --name my-app -m server-1
+rdc repo status my-app
 ```
 
 ## List Repositories
@@ -77,8 +77,8 @@ For routine cleanup of unknown entries, see [`rdc machine prune --prune-unknown`
 Set the repository to an exact size or expand by a given amount:
 
 ```bash
-rdc repo resize --name my-app -m server-1 --size 20G  # Set to exact size
-rdc repo expand --name my-app -m server-1 --size 5G  # Add 5G to current size
+rdc repo resize my-app --size 20G  # Set to exact size
+rdc repo expand my-app --size 5G  # Add 5G to current size
 ```
 
 > The repository must be unmounted before resizing. `repo expand` works online. Resizing changes the repository's maximum size; to give freed blocks back to the pool without changing the maximum, use [`repo trim`](#reclaim-space-trim) instead.
@@ -89,8 +89,8 @@ Deleting files inside a repository frees space for that repository, and `repo tr
 
 ```bash
 rdc repo trim -m server-1                       # Trim every mounted repository plus the datastore
-rdc repo trim -m server-1 --name my-app          # Trim one repository
-rdc repo trim -m server-1 --report-only          # Show reclaimable space without trimming
+rdc repo trim my-app                            # Trim one repository
+rdc repo trim -m server-1 --report-only         # Show reclaimable space without trimming
 rdc repo trim -m server-1 --docker               # Also clear stopped containers, dangling images, and build cache first
 ```
 
@@ -111,10 +111,10 @@ Instead of resizing by hand, let the machine manage repository sizes. A policy e
 rdc repo policy set -m server-1 --auto-trim true
 
 # Per-repository: grow my-app automatically, up to a hard ceiling
-rdc repo policy set -m server-1 --name my-app --auto-grow true --max-quota 50G
+rdc repo policy set my-app --auto-grow true --max-quota 50G
 
 # Inspect the stored and effective policy
-rdc repo policy get -m server-1 --name my-app
+rdc repo policy get my-app
 ```
 
 Policy fields:
@@ -137,7 +137,7 @@ Per-repository settings override the machine-wide default. Repeated `policy set`
 Create a copy of an existing repository at its current state:
 
 ```bash
-rdc repo fork --parent my-app --tag staging -m server-1
+rdc repo fork my-app --tag staging
 ```
 
 Forks use the name:tag model: the resulting fork is named `my-app:staging`. This creates a new encrypted copy with its own GUID and network ID, while sharing the parent's name. The fork shares the same LUKS credential as the parent.
@@ -148,14 +148,14 @@ At fork creation, `repo fork` writes the [state mirror sidecar](#type-column-and
 
 ### Fork and start in one step
 
-`--up` forks, mounts, and starts services in a single remote operation. Add `--detach` to get your terminal back as soon as the containers are started; health checks finish in the background, and the proxy retries until each service binds:
+`--up` forks, mounts, and starts services in a single remote operation. Add `--no-wait` to get your terminal back as soon as the containers are started; health checks finish in the background, and the proxy retries until each service binds:
 
 ```bash
-rdc repo fork --parent my-app --tag staging -m server-1 --up
-rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
+rdc repo fork my-app --tag staging --up
+rdc repo fork my-app --tag scratch --up --no-wait
 ```
 
-In our tests, a 128 GB repository forked and reached running services in about 57 seconds, and about 31 seconds with `--detach`. Detached runs print a hint for checking progress: `rdc machine status <machine> --containers`.
+In our tests, a 128 GB repository forked and reached running services in about 57 seconds, and about 31 seconds with `--no-wait`. Such runs print a hint for checking progress: `rdc machine status <machine> --containers`.
 
 ### Where the time goes
 
@@ -172,9 +172,9 @@ Service startup is your containers booting (images, init, health checks, as defi
 Forks can act as git commits. `rdc repo commit` freezes a working fork into an immutable, byte-stable commit; `rdc repo branch` names a line of history; `rdc repo checkout` reflink-clones a commit back into a writable fork; `rdc repo log` walks the parent chain; and `rdc repo merge` combines two lines without mutating a live repository in place. `rdc repo fork --immutable` produces a commit-equivalent base in a single step.
 
 ```bash
-rdc repo commit --name my-app:work --message "schema migration applied" -m server-1
-rdc repo branch --branch staging --name my-app:work
-rdc repo checkout --ref staging --from my-app:work --tag staging-copy -m server-1
+rdc repo commit my-app:work --message "schema migration applied"
+rdc repo branch my-app:work --branch staging
+rdc repo checkout staging --from my-app:work --tag staging-copy
 ```
 
 See the [Git-like branching reference](/en/docs/repo-branching) for the full command set, options, and worked examples.
@@ -194,11 +194,11 @@ Two delivery modes:
 
 ```bash
 # Set, list, get (digest only), unset
-rdc repo secret set --name my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
-rdc repo secret set --name my-app --key DB_HOST         --value postgres.internal --mode env --current ""
-rdc repo secret list --name my-app
-rdc repo secret get  --name my-app --key DB_HOST    # → { key, mode, digest } — no value
-rdc repo secret unset --name my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
+rdc repo secret set my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
+rdc repo secret set my-app --key DB_HOST         --value postgres.internal --mode env --current ""
+rdc repo secret list my-app
+rdc repo secret get  my-app --key DB_HOST    # → { key, mode, digest } — no value
+rdc repo secret unset my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
 ```
 
 **Symmetric mutation gate.** Both humans and agents need `--current <previous-value>` to overwrite or unset a secret (passwd-style precondition). For first-write of a new key, pass `--current ""` (empty). To rotate without verifying the prior value, pass `--rotate-secret` instead. This is loudly audited as a rotation. `--current` and `--rotate-secret` are mutually exclusive.
@@ -234,7 +234,7 @@ The lowercase service-side reference (`stripe_live_key`) is the in-container `/r
 Check the filesystem integrity of a repository:
 
 ```bash
-rdc repo validate --name my-app -m server-1
+rdc repo admin validate my-app
 ```
 
 ## Ownership
@@ -242,7 +242,7 @@ rdc repo validate --name my-app -m server-1
 Set file ownership within a repository to the universal user (UID 7111). This is typically needed after uploading files from your workstation, which arrive with your local UID.
 
 ```bash
-rdc repo ownership --name my-app -m server-1
+rdc repo admin ownership my-app
 ```
 
 The command automatically detects Docker container data directories (writable bind mounts) and excludes them. This prevents breaking containers that manage files with their own UIDs (e.g., MariaDB=999, www-data=33).
@@ -255,7 +255,7 @@ The command automatically detects Docker container data directories (writable bi
 To force ownership on all files, including container data:
 
 ```bash
-rdc repo ownership --name my-app -m server-1
+rdc repo admin ownership my-app
 ```
 
 
@@ -266,7 +266,7 @@ See the [Migration Guide](/en/docs/migration) for a complete walkthrough of when
 Apply a template to initialize a repository with files:
 
 ```bash
-rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo admin template apply my-app --template my-template --file ./my-template.tar.gz
 ```
 
 ## Delete
@@ -274,7 +274,7 @@ rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./
 Permanently destroy a repository and all data inside it:
 
 ```bash
-rdc repo delete --name my-app -m server-1
+rdc repo delete my-app
 ```
 
 > This permanently destroys the encrypted disk image. This action cannot be undone.
@@ -284,7 +284,7 @@ rdc repo delete --name my-app -m server-1
 Live-migrate a repository from one machine to another. The only downtime is the final delta-sync phase: typically seconds to low minutes depending on write rate at cutover.
 
 ```bash
-rdc repo migrate --name my-app --from server-1 --to server-2
+rdc repo migrate my-app@server-1 --to server-2
 ```
 
 | Option | Description |
@@ -318,10 +318,10 @@ After deleting repositories or recovering from failed operations, orphaned mount
 
 ```bash
 # Preview what would be removed
-rdc machine prune --name server-1 --dry-run
+rdc machine prune server-1 --dry-run
 
 # Remove orphaned resources
-rdc machine prune --name server-1
+rdc machine prune server-1
 ```
 
 Only resources with no matching repository image are affected. Non-empty mount directories are never removed.

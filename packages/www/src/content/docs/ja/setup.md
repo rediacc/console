@@ -4,7 +4,7 @@ description: "設定の作成、マシンの追加、サーバーのプロビジ
 category: "Guides"
 order: 3
 language: ja
-sourceHash: "1fba8ac242726528"
+sourceHash: "6e0b338423280f98"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -17,7 +17,7 @@ sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 **Config**は、SSH資格情報、マシン定義、リポジトリマッピングを保存する名前付き設定ファイルです。プロジェクトワークスペースと考えてください。
 
 ```bash
-rdc config init --name my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 | オプション | 必須 | 説明 |
@@ -34,7 +34,7 @@ rdc config init --name my-infra --ssh-key ~/.ssh/id_ed25519
 リモートサーバーを設定内のマシンとして登録します：
 
 ```bash
-rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
+rdc machine add server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | オプション | 必須 | デフォルト | 説明 |
@@ -47,13 +47,13 @@ rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
 マシンを追加すると、rdcは自動的に`ssh-keyscan`を実行してサーバーのホスト鍵を取得します。手動で実行することもできます：
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 登録済みのすべてのマシンを表示するには：
 
 ```bash
-rdc config machine list
+rdc machine list
 ```
 
 ## ステップ3：マシンのセットアップ
@@ -61,7 +61,7 @@ rdc config machine list
 リモートサーバーに必要なすべての依存関係をプロビジョニングします：
 
 ```bash
-rdc config machine setup --name server-1
+rdc machine setup server-1
 ```
 
 このコマンドは以下を実行します：
@@ -87,7 +87,7 @@ rdc config machine setup --name server-1
 `--datastore-size` はパーセンテージ（`95%`）または絶対サイズ（`50G`、`1T`）を受け付けます。データストアは後からオンラインで拡張できます。
 
 ```bash
-rdc datastore resize -m server-1 --size 200G
+rdc datastore resize ds-server-1 --size 200G
 ```
 
 データストア内のリポジトリは `repo create` の時点で個別にサイズが決まり、実行中でも拡張できるため、事前にデータストアを過剰にプロビジョニングする必要はありません。
@@ -98,10 +98,9 @@ rdc datastore resize -m server-1 --size 200G
 
 ```bash
 # 1. マシンの Ceph 参照を記録する（pool + RBD イメージ、非シークレット）
-rdc config machine set-ceph -m server-1 --pool rbd --image datastore-server1
 
 # 2. Ceph バックエンドでデータストアを初期化する
-rdc datastore init -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
+rdc datastore create ds-server-1 -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
 ```
 
 Ceph の keyring はマシン上にとどまり、設定ファイルには非シークレットな pool とイメージの参照のみが保存されます。Ceph は、Kubernetes クラスターが ceph-csi を通じて利用するストレージ層でもあります。クラスターと永続ボリュームについては [Kubernetes](/ja/docs/kubernetes) ガイドを、2つのバックエンドの比較については [アーキテクチャ](/ja/docs/architecture) を参照してください。
@@ -111,7 +110,7 @@ Ceph の keyring はマシン上にとどまり、設定ファイルには非シ
 サーバーのSSHホスト鍵が変更された場合（例：再インストール後）、保存されている鍵を更新します：
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 これにより、そのマシンの設定内の`knownHosts`フィールドが更新されます。
@@ -121,7 +120,7 @@ rdc config machine scan-keys -m server-1
 マシンを追加した後、到達可能であることを確認します：
 
 ```bash
-rdc term connect -m server-1 -c "hostname"
+rdc term connect server-1 -c "hostname"
 ```
 
 このコマンドはマシンへのSSH接続を開き、コマンドを実行します。成功すれば、SSH設定が正しいことが確認できます。
@@ -141,7 +140,7 @@ rdc doctor
 ### インフラストラクチャの設定
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -163,7 +162,7 @@ Machineスコープのオプションはマシンごとに保存されます。C
 ### インフラストラクチャの表示
 
 ```bash
-rdc config infra show -m server-1
+rdc machine infra show server-1
 ```
 
 ### サーバーへのプッシュ
@@ -171,7 +170,7 @@ rdc config infra show -m server-1
 Traefikリバースプロキシ設定を生成してサーバーにデプロイします：
 
 ```bash
-rdc config infra push -m server-1
+rdc machine infra push server-1
 ```
 
 このコマンドは以下を実行します：
@@ -198,7 +197,7 @@ rdc config ssh set --key ~/.ssh/id_ed25519
 ### クラウドプロバイダーの追加
 
 ```bash
-rdc config provider add --name my-linode \
+rdc machine provider add my-linode \
   --provider linode/linode \
   --token $LINODE_API_TOKEN \
   --region us-east \
@@ -220,7 +219,7 @@ rdc config provider add --name my-linode \
 ### マシンのプロビジョニング
 
 ```bash
-rdc machine provision --name prod-2 --provider my-linode
+rdc machine provision prod-2 --provider my-linode
 ```
 
 この単一コマンドで以下を実行します：
@@ -243,7 +242,7 @@ rdc machine provision --name prod-2 --provider my-linode
 ### マシンのデプロビジョニング
 
 ```bash
-rdc machine deprovision --name prod-2
+rdc machine deprovision prod-2
 ```
 
 OpenTofu経由でVMを破棄し、設定から削除します。`--force` を使用しない限り確認が必要です。`machine provision` で作成されたマシンのみ動作します。
@@ -251,7 +250,7 @@ OpenTofu経由でVMを破棄し、設定から削除します。`--force` を使
 ### プロバイダーの一覧表示
 
 ```bash
-rdc config provider list
+rdc machine provider list
 ```
 
 ## デフォルトの設定
@@ -260,13 +259,13 @@ rdc config provider list
 
 ```bash
 rdc config field set --pointer /defaults/machine --new '"server-1"'   # デフォルトマシン
-rdc config set --key team --value my-team                   # デフォルトチーム（設定ストア用）
+rdc config set team my-team                   # デフォルトチーム（設定ストア用）
 ```
 
 デフォルトマシンを設定した後は、コマンドから`-m server-1`を省略できます：
 
 ```bash
-rdc repo create --name my-app -m my-server --size 10G
+rdc repo create my-app -m my-server --size 10G
 ```
 
 ## 複数の設定
@@ -275,8 +274,8 @@ rdc repo create --name my-app -m my-server --size 10G
 
 ```bash
 # 別々の設定を作成
-rdc config init --name production --ssh-key ~/.ssh/id_prod
-rdc config init --name staging --ssh-key ~/.ssh/id_staging
+rdc config init production --ssh-key ~/.ssh/id_prod
+rdc config init staging --ssh-key ~/.ssh/id_staging
 
 # 特定の設定を使用
 rdc repo list -m server-1 --config production

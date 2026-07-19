@@ -4,7 +4,7 @@ description: "何时使用 rdc，何时使用 renet。"
 category: "Concepts"
 order: 1
 language: zh
-sourceHash: "ea6ff6dd3b8f5d5b"
+sourceHash: "938f63c27cdbb192"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -37,17 +37,17 @@ Rediacc 有两个二进制文件。两个任务，两个地方。以下是各自
 
 ```bash
 # 配置新服务器
-rdc config machine setup --name server-1
+rdc machine setup server-1
 
 # 创建并启动仓库
-rdc repo create --name my-app -m server-1 --size 10G
-rdc repo up --name my-app -m server-1
+rdc repo create my-app -m server-1 --size 10G
+rdc repo up my-app
 
 # 停止仓库
-rdc repo down --name my-app -m server-1
+rdc repo down my-app
 
 # 检查机器健康状态
-rdc machine health --name server-1
+rdc machine health server-1
 ```
 
 完整操作流程请参阅[快速入门](/zh/docs/quick-start)。

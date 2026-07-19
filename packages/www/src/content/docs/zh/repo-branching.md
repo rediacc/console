@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 41
 language: zh
-sourceHash: "fe334c1c94a0f417"
+sourceHash: "b8bd3176ecabfa4b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -34,7 +34,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 将已挂载的工作 fork 冻结为新的不可变提交。
 
 ```bash
-rdc repo commit --name <fork> --message "<message>" -m <machine>
+rdc repo commit <fork> --message "<message>"
 ```
 
 | 选项 | 描述 | 默认值 |
@@ -52,7 +52,7 @@ rdc repo commit --name <fork> --message "<message>" -m <machine>
 创建指向工作 fork 当前提交的命名分支引用。
 
 ```bash
-rdc repo branch --branch <name> --name <fork>
+rdc repo branch <fork> --branch <name>
 ```
 
 | 选项 | 描述 | 默认值 |
@@ -67,8 +67,8 @@ rdc repo branch --branch <name> --name <fork>
 将不可变提交（或分支尖端）通过 reflink 克隆到新的可写工作 fork 中。
 
 ```bash
-rdc repo checkout --ref <commit> --tag <newFork> -m <machine>
-rdc repo checkout --ref <branchName> --from <fork> --tag <newFork> -m <machine>
+rdc repo checkout <commit> --tag <newFork>
+rdc repo checkout <branchName> --from <fork> --tag <newFork>
 ```
 
 | 选项 | 描述 | 默认值 |
@@ -87,7 +87,7 @@ rdc repo checkout --ref <branchName> --from <fork> --tag <newFork> -m <machine>
 遍历从工作 fork 或提交可达的提交历史记录。
 
 ```bash
-rdc repo log --name <fork> -m <machine>
+rdc repo log <fork>
 ```
 
 | 选项 | 描述 | 默认值 |
@@ -104,8 +104,8 @@ rdc repo log --name <fork> -m <machine>
 将源提交或 fork 合并到目标工作 fork 中，而不就地改变实时目标。
 
 ```bash
-rdc repo merge --name <target> --from <source> -m <machine>
-rdc repo merge --name <target> --from <source> --resolve theirs -m <machine>
+rdc repo merge <target> --from <source>
+rdc repo merge <target> --from <source> --resolve theirs
 ```
 
 | 选项 | 描述 | 默认值 |
@@ -139,12 +139,12 @@ rdc repo gc --apply -m <machine>    # 删除不可达的提交
 
 可达性从本地配置（引用存储）计算：通过跟随每个分支尖端和 HEAD 沿父链向下可达的提交集合。机器上不在该集合中的不可变提交是不可达的。已挂载的对象或工作 fork 永远不会被回收。
 
-### rdc repo fsck
+### rdc repo admin fsck
 
 验证配置引用与机器上存在的对象。
 
 ```bash
-rdc repo fsck -m <machine>
+rdc repo admin fsck -m <machine>
 ```
 
 | 选项 | 描述 | 默认值 |
@@ -158,7 +158,7 @@ rdc repo fsck -m <machine>
 `rdc repo fork --immutable` 在创建时将新 fork 标记为只读，无需单独的 `commit` 步骤即可产生等同于提交的基础。
 
 ```bash
-rdc repo fork --parent <name> --tag <tag> --immutable -m <machine>
+rdc repo fork <name> --tag <tag> --immutable
 ```
 
 不可变 fork 拒绝挂载，这使其镜像永久字节稳定。这对于跨机器增量推送的冻结基础很有用，其中基础在两端必须完全相同。要进行更改，请将其检出（或再次 fork）到可写副本中。
@@ -168,28 +168,28 @@ rdc repo fork --parent <name> --tag <tag> --immutable -m <machine>
 ### 提交工作 fork
 
 ```bash
-$ rdc repo commit --name myapp:work --message "schema migration applied" -m server-1
+$ rdc repo commit myapp:work --message "schema migration applied"
 Committed 4f3c2a1b9d8e: schema migration applied
 ```
 
 ### 带明确作者的提交
 
 ```bash
-$ rdc repo commit --name myapp:work --message "nightly snapshot" --author ci-bot -m server-1
+$ rdc repo commit myapp:work --message "nightly snapshot" --author ci-bot
 Committed 7a1b2c3d4e5f: nightly snapshot
 ```
 
 ### 在当前提交处命名分支
 
 ```bash
-$ rdc repo branch --branch staging --name myapp:work
+$ rdc repo branch myapp:work --branch staging
 Branch "staging" -> 4f3c2a1b9d8e
 ```
 
 ### 将提交检出到新的可写 fork
 
 ```bash
-$ rdc repo checkout --ref 4f3c2a1b9d8e --tag rollback-test -m server-1
+$ rdc repo checkout 4f3c2a1b9d8e --tag rollback-test
 ```
 
 ### 按名称检出分支尖端
@@ -197,13 +197,13 @@ $ rdc repo checkout --ref 4f3c2a1b9d8e --tag rollback-test -m server-1
 使用 `--from` 时，`--ref` 值在给定工作 fork 的分支集上解析为分支名称：
 
 ```bash
-$ rdc repo checkout --ref staging --from myapp:work --tag staging-copy -m server-1
+$ rdc repo checkout staging --from myapp:work --tag staging-copy
 ```
 
 ### 遍历历史记录
 
 ```bash
-$ rdc repo log --name myapp:work -m server-1
+$ rdc repo log myapp:work
 commit 4f3c2a1b9d8e
   Author: ci-bot  Date: 2026-05-29T10:14:02Z
   schema migration applied
@@ -217,7 +217,7 @@ commit 9d8e7a1b2c3d
 `--json` 按从新到旧的顺序输出结构化遍历：
 
 ```bash
-$ rdc repo log --name myapp:work --json -m server-1
+$ rdc repo log myapp:work -o json
 {
   "success": true,
   "start": "4f3c2a1b9d8e",
@@ -239,8 +239,8 @@ $ rdc repo log --name myapp:work --json -m server-1
 `rdc repo diff` 可以在任意两个提交之间工作，因为它们共享写时复制祖先。检出一个提交，然后将其与另一个对比：
 
 ```bash
-$ rdc repo checkout --ref 4f3c2a1b9d8e --tag review -m server-1
-$ rdc repo diff --name review --base myapp:work -m server-1
+$ rdc repo checkout 4f3c2a1b9d8e --tag review
+$ rdc repo diff review --base myapp:work
 M  db/schema.sql
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -251,7 +251,7 @@ M  db/schema.sql
 ### 将已审查的工作线合并回来
 
 ```bash
-$ rdc repo merge --name myapp:main --from myapp:work -m server-1
+$ rdc repo merge myapp:main --from myapp:work
 Merged myapp:work into myapp:main
 ```
 
@@ -260,7 +260,7 @@ Merged myapp:work into myapp:main
 已挂载或运行中的目标将被拒绝，除非使用 `--force`，它会先静默目标：
 
 ```bash
-$ rdc repo merge --name myapp:main --from myapp:work --force -m server-1
+$ rdc repo merge myapp:main --from myapp:work --force
 Merged myapp:work into myapp:main
 ```
 
@@ -269,7 +269,7 @@ Merged myapp:work into myapp:main
 两个从同一提交检出的 fork（`feature` 和 `hotfix`）各自更改了一些文件。`--resolve theirs` 将源（`hotfix`）叠加到目标（`feature`）：只有一侧更改的文件从那一侧获取，两侧都更改的文件解析为源的版本。基础从共同祖先自动检测（或用 `--base` 固定）：
 
 ```bash
-$ rdc repo merge --name myapp:feature --from myapp:hotfix --resolve theirs -m server-1
+$ rdc repo merge myapp:feature --from myapp:hotfix --resolve theirs
 Merged myapp:hotfix into myapp:feature (three-way); 1 conflict(s) resolved --theirs: [config/app.yaml]
 ```
 
@@ -278,7 +278,7 @@ Merged myapp:hotfix into myapp:feature (three-way); 1 conflict(s) resolved --the
 ### 直接创建不可变基础
 
 ```bash
-$ rdc repo fork --parent myapp --tag baseline-v1 --immutable -m server-1
+$ rdc repo fork myapp --tag baseline-v1 --immutable
 ```
 
 ## 增量推送与拉取
@@ -289,19 +289,19 @@ $ rdc repo fork --parent myapp --tag baseline-v1 --immutable -m server-1
 
 ```bash
 # 第一次推送是完整传输；它还在两端保留可复用的基础。
-$ rdc repo push --name myapp:work --to-machine backup-1 -m server-1
+$ rdc repo push myapp:work --to backup-1
 
 # 本地更改后，下一次推送只发送变更的块，无需标志。
-$ rdc repo push --name myapp:work --to-machine backup-1 -m server-1
+$ rdc repo push myapp:work --to backup-1
 
 # 固定明确的基础（两台机器上都存在的不可变提交）。
-$ rdc repo push --name myapp:work --to-machine backup-1 --delta-base 4f3c2a1b9d8e -m server-1
+$ rdc repo push myapp:work --to backup-1 --delta-base 4f3c2a1b9d8e
 
 # 增量也适用于反向操作，只从机器源拉取变更的块。
-$ rdc repo pull --name myapp:work --from-machine backup-1 --delta-base 4f3c2a1b9d8e -m server-1
+$ rdc repo pull myapp:work --from backup-1 --delta-base 4f3c2a1b9d8e
 
 # 使用 --force 重新拉取已有的本地仓库（覆盖它）。
-$ rdc repo pull --name myapp:work --from-machine backup-1 --force -m server-1
+$ rdc repo pull myapp:work --from backup-1 --force
 ```
 
 增量传输仅适用于机器之间（使用 FIEMAP 基础的远程端）。推送到云对象存储始终传输完整镜像。基础在两端必须字节相同，这正是不可变提交或 `--immutable` fork 所保证的。

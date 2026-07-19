@@ -4,7 +4,7 @@ description: تشغيل خدمة حاويات على خادمك في دقائق.
 category: Guides
 order: -1
 language: ar
-sourceHash: "a1350abc611570ef"
+sourceHash: "12382a10b8fd01cb"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -59,8 +59,8 @@ rdc config ssh set --key ~/.ssh/id_ed25519
 ### 3. أضف خادمك
 
 ```bash
-rdc config machine add --name my-server --ip 192.168.1.100 --user admin
-rdc config machine setup --name my-server  # يجهّز renet + ينشئ مخزن البيانات
+rdc machine add my-server --ip 192.168.1.100 --user admin
+rdc machine setup my-server  # يجهّز renet + ينشئ مخزن البيانات
 ```
 
 **ما يحدث:** يتم فحص مفتاح مضيف SSH، ورفع ملف renet الثنائي، وتهيئة مخزن البيانات المشفر على الخادم. جاهز للمستودعات.
@@ -83,7 +83,7 @@ cat ~/.config/rediacc/rediacc.json         # ملف JSON الخام: الأجه�
 ### 1. إنشاء مستودع
 
 ```bash
-rdc repo create --name my-app -m my-server --size 2G  # إنشاء مستودع مشفر بحجم 2 جيجابايت
+rdc repo create my-app -m my-server --size 2G  # إنشاء مستودع مشفر بحجم 2 جيجابايت
 ```
 
 ينشئ وحدة التخزين المشفرة، ويوصّلها، ويبدأ Docker daemon الخاص بها. يتم تسجيل المستودع في إعداداتك ويصبح جاهزًا للاستخدام.
@@ -94,7 +94,7 @@ rdc repo create --name my-app -m my-server --size 2G  # إنشاء مستودع 
 
 ```bash
 rdc repo admin template list                                        # عرض القوالب المضمنة
-rdc repo admin template apply --name app-postgres -m my-server -r my-app  # نشر docker-compose.yml + Rediaccfile
+rdc repo admin template apply my-app --template app-postgres  # نشر docker-compose.yml + Rediaccfile
 ```
 
 توفر القوالب ملف `docker-compose.yml` وملف `Rediaccfile` وملفات مساعدة. بدون قالب (أو ملف compose خاص بك)، لا يوجد شيء لتشغيله. استخدم القالب المضمن لأول مستودع لك. إنها الطريقة الأسرع لرؤية سير العمل الكامل من البداية إلى النهاية.
@@ -102,9 +102,9 @@ rdc repo admin template apply --name app-postgres -m my-server -r my-app  # نش
 ### 3. تشغيل المستودع
 
 ```bash
-rdc repo up --name my-app -m my-server  # تنفيذ Rediaccfile up()
+rdc repo up my-app -m my-server  # تنفيذ Rediaccfile up()
 rdc repo list -m my-server                           # عرض جميع المستودعات على الجهاز
-rdc repo status --name my-app -m my-server  # حالة التوصيل، Docker، الحجم، التشفير
+rdc repo status my-app  # حالة التوصيل، Docker، الحجم، التشفير
 ```
 
 يقوم `repo up` بالتوصيل التلقائي عند الحاجة. لا حاجة لمعاملات إضافية.
@@ -142,25 +142,25 @@ rdc vscode connect my-app              # يفتح VS Code عبر SSH، داخل 
 
 **الطرفية:**
 ```bash
-rdc term connect -m my-server -r my-app                            # SSH إلى صندوق حماية المستودع
-rdc term connect -m my-server -r my-app -c "curl localhost:3000"   # تنفيذ أمر والخروج
-rdc term connect -m my-server                                   # SSH إلى الجهاز (بدون صندوق حماية)
+rdc term connect my-app                            # SSH إلى صندوق حماية المستودع
+rdc term connect my-app -c "curl localhost:3000"   # تنفيذ أمر والخروج
+rdc term connect my-server                                   # SSH إلى الجهاز (بدون صندوق حماية)
 ```
 
 **مزامنة الملفات (rsync عبر SSH):**
 ```bash
-rdc repo sync upload -m my-server -r my-app --local ./src                                   # رفع مجلد
-rdc repo sync upload -m my-server -r my-app --local ./config.yml --remote conf              # رفع ملف واحد
-rdc repo sync download -m my-server -r my-app --local ./backup                              # تنزيل مجلد
-rdc repo sync download -m my-server -r my-app --remote-file conf/config.yml --local ./dl    # تنزيل ملف واحد
-rdc repo sync download -m my-server -r my-app --local ./backup --dry-run                    # معاينة أولاً
+rdc repo sync upload my-app@my-server --local ./src                                   # رفع مجلد
+rdc repo sync upload my-app@my-server --local ./config.yml --remote conf              # رفع ملف واحد
+rdc repo sync download my-app@my-server --local ./backup                              # تنزيل مجلد
+rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl    # تنزيل ملف واحد
+rdc repo sync download my-app@my-server --local ./backup --dry-run                    # معاينة أولاً
 ```
 
 **النفق (تحويل منفذ SSH إلى الحاوية):**
 ```bash
-rdc repo tunnel -m my-server -r my-app -c app  # كشف تلقائي للمنفذ لحاوية app
-rdc repo tunnel -m my-server -r my-app -c db --port 5432  # نفق Postgres
-rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # منفذ محلي مخصص
+rdc repo tunnel my-app@my-server -c app  # كشف تلقائي للمنفذ لحاوية app
+rdc repo tunnel my-app@my-server -c db --port 5432  # نفق Postgres
+rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432  # منفذ محلي مخصص
 ```
 
 شغّل النفق ثم افتح `localhost:3000` في المتصفح ثم شاهد التطبيق الحي من الخادم البعيد.
@@ -174,9 +174,9 @@ rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # منف
 ### 1. المستودعات الأصلية والمتفرعة
 
 ```bash
-rdc repo fork --parent my-app -m my-server --tag experiment --up  # استنساخ فوري بتقنية CoW + تشغيل
+rdc repo fork my-app --tag experiment --up  # استنساخ فوري بتقنية CoW + تشغيل
 rdc repo list -m my-server                                  # يعرض: my-app (أصلي) + my-app:experiment (متفرع)
-rdc repo delete --name my-app:experiment -m my-server  # حذف المتفرع، الأصلي لا يتأثر
+rdc repo delete my-app:experiment  # حذف المتفرع، الأصلي لا يتأثر
 ```
 
 **استنساخ فوري بدون نسخ.** تقنية CoW (النسخ عند الكتابة). يتم في أجزاء من الثانية، بدون نسخ بيانات. تُشارَك الكتل حتى يقوم أحد الطرفين بالكتابة.
@@ -192,32 +192,32 @@ rdc repo delete --name my-app:experiment -m my-server  # حذف المتفرع،
 
 ```bash
 # دفع المستودع إلى جهاز آخر
-rdc repo push --name my-app -m my-server --to backup-server
+rdc repo push my-app --to backup-server
 
 # دفع مع نشر تلقائي على الهدف
-rdc repo push --name my-app -m my-server --to backup-server --up
+rdc backup restore my-app --as my-app -m backup-server --up
 
 # دفع مع نقطة تفتيش CRIU (ترحيل حي، يحفظ حالة الذاكرة)
-rdc repo push --name my-app -m my-server --to new-server --checkpoint --up
+rdc repo push my-app --to new-server --checkpoint
 
 # دفع إلى جهاز جديد (تجهيز تلقائي عبر مزود سحابي)
-rdc repo push --name my-app -m my-server --to new-server --provision linode --up
+rdc repo push my-app --to new-server --provision linode
 ```
 
 ### 3. الدفع إلى التخزين السحابي (OneDrive، Google Drive، S3)
 
 ```bash
 # استيراد إعدادات rclone كخلفية تخزين
-rdc config storage import --file ~/rclone.conf
+rdc storage import ~/rclone.conf
 
 # عرض وحدات التخزين المتاحة
 rdc storage list
 
 # دفع المستودع إلى التخزين السحابي
-rdc repo push --name my-app -m my-server --to my-s3-backup
+rdc repo push my-app --to my-s3-backup
 
 # عرض النسخ الاحتياطية على التخزين
-rdc repo backup list --from my-s3-backup -m my-server
+rdc backup list -m my-server --storage my-s3-backup
 ```
 
 يكشف `--to` تلقائيًا ما إذا كان الهدف جهازًا أو خلفية تخزين. يعمل مع أي مزود يدعمه rclone: S3، R2، B2، OneDrive، Google Drive، SFTP، وغيرها.
@@ -226,13 +226,13 @@ rdc repo backup list --from my-s3-backup -m my-server
 
 ```bash
 # سحب مستودع من جهاز سحابي إلى خادمك المحلي
-rdc repo pull --name my-app -m my-local-server --from cloud-server
+rdc repo pull my-app@my-local-server --from cloud-server
 
 # سحب من التخزين السحابي
-rdc repo pull --name my-app -m my-local-server --from my-s3-backup
+rdc repo pull my-app@my-local-server --from my-s3-backup
 
 # سحب وتشغيل فوري
-rdc repo pull --name my-app -m my-local-server --from my-s3-backup --up
+rdc repo pull my-app@my-local-server --from my-s3-backup --up
 ```
 
 **لماذا السحب؟** جهازك المحلي خلف NAT. السحابة لا تستطيع الدفع إليك. لكنك تستطيع الوصول إلى السحابة. السحب يجلب المستودع إلى بيئتك.
@@ -248,9 +248,9 @@ rdc repo pull --name my-app -m my-local-server --from my-s3-backup --up
 ### 1. إعداد البنية التحتية
 
 ```bash
-rdc config infra set -m my-server  # إعداد: النطاق الأساسي، عناوين IP العامة، نطاقات المنافذ
-rdc config infra show -m my-server  # مراجعة الإعدادات
-rdc config infra push -m my-server  # دفع إعدادات الوكيل إلى الخادم البعيد
+rdc machine infra set my-server  # إعداد: النطاق الأساسي، عناوين IP العامة، نطاقات المنافذ
+rdc machine infra show my-server  # مراجعة الإعدادات
+rdc machine infra push my-server  # دفع إعدادات الوكيل إلى الخادم البعيد
 ```
 
 **كيف يعمل التوجيه:**
@@ -261,8 +261,8 @@ rdc config infra push -m my-server  # دفع إعدادات الوكيل إلى 
 ### 2. قالب الوكيل العكسي
 
 ```bash
-rdc repo admin template apply --name proxy -m my-server -r infra  # نشر الوكيل في مستودع
-rdc repo up --name infra -m my-server  # تشغيل Traefik
+rdc repo admin template apply infra --template proxy  # نشر الوكيل في مستودع
+rdc repo up infra -m my-server  # تشغيل Traefik
 ```
 
 الآن يقوم Traefik بتوجيه حركة المرور الخارجية إلى جميع المستودعات على هذا الجهاز. كل حاوية تحصل على نقطة نهاية HTTPS تلقائيًا.

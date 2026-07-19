@@ -1,4 +1,5 @@
 ---
+sourceHash: "5bdc0ff205ae9c73"
 title: "Installimine"
 description: "Installige Rediacci CLI Linuxi, macOS-i või Windowsi."
 category: "Guides"

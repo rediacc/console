@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: fr
-sourceHash: "2d470a876c00c352"
+sourceHash: "f33bcf4598caedc8"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -213,7 +213,7 @@ renet et Docker ont délibérément des avis divergents sur la façon de gérer 
 
 **Comment corriger une dérive.** Si la politique sauvegardée dans `.rediacc.json` d'un conteneur est incorrecte (par exemple parce que vous avez modifié compose sans jamais recréer le conteneur), relancez `rdc repo up <repo>`. Le conteneur est recréé avec la politique mise à jour enregistrée.
 
-> **Expérimental :** La récupération basée sur le sidecar cold backup et le flag `--sync-certs` sur `rdc machine query` ont été livrés dans renet 0.9+. Les versions antérieures s'appuient uniquement sur la `restart_policy` sauvegardée pour la récupération par watchdog, ce qui peut laisser les conteneurs `on-failure` bloqués après un cold backup.
+> **Expérimental :** La récupération basée sur le sidecar cold backup et le flag `--sync-certs` sur `rdc machine status` ont été livrés dans renet 0.9+. Les versions antérieures s'appuient uniquement sur la `restart_policy` sauvegardée pour la récupération par watchdog, ce qui peut laisser les conteneurs `on-failure` bloqués après un cold backup.
 
 > **Le réseau bridge Docker est désactivé pour les daemons par dépôt.** Chaque daemon par dépôt (`FlavorRediacc`) est configuré avec `"bridge": "none"` et `"iptables": false`. Un simple `docker run <image>` dans un shell de dépôt se lancera quand même, mais le conteneur n'obtiendra qu'une interface de loopback et ne disposera ni de DNS ni de connectivité sortante. C'est voulu : l'isolation de loopback entre dépôts est appliquée par des hooks cgroup eBPF qu'un conteneur bridgé contournerait. Les services de production doivent utiliser `renet compose` (qui injecte le réseau hôte pour vous) ; pour le débogage ponctuel, passez explicitement `--network host` : `docker run --rm --network host -it ubuntu bash`.
 >
@@ -226,7 +226,7 @@ renet et Docker ont délibérément des avis divergents sur la façon de gérer 
 Montez le dépôt et démarrez tous les services :
 
 ```bash
-rdc repo up --name my-app -m server-1
+rdc repo up my-app
 ```
 
 | Option | Description |
@@ -263,12 +263,12 @@ Après `up()`, renet sonde chaque service HTTP jusqu'à ce qu'il accepte les con
 ## Arrêter les services
 
 ```bash
-rdc repo down --name my-app -m server-1
+rdc repo down my-app
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--unmount` | Démonter le dépôt chiffré après l'arrêt des services. Si cela ne prend pas effet, utilisez `rdc repo unmount` séparément. |
+| `--unmount` | Démonter le dépôt chiffré après l'arrêt des services. |
 | `--skip-router-restart` | Ne pas redémarrer le serveur de routes après l'opération |
 
 La séquence d'exécution est :
@@ -281,7 +281,7 @@ La séquence d'exécution est :
 Démarrez ou arrêtez tous les dépôts d'une machine en une seule fois :
 
 ```bash
-rdc repo up -m server-1
+rdc repo up --all -m server-1
 ```
 
 | Option | Description |
@@ -312,7 +312,7 @@ Lors de l'arrêt, le service arrête gracieusement tous les services (Rediaccfil
 ### Activer
 
 ```bash
-rdc repo autostart enable --name my-app -m server-1
+rdc repo admin autostart enable my-app
 ```
 
 La phrase secrète du dépôt vous sera demandée.
@@ -320,13 +320,13 @@ La phrase secrète du dépôt vous sera demandée.
 ### Activer pour tous les dépôts
 
 ```bash
-rdc repo autostart enable -m server-1
+rdc repo admin autostart enable
 ```
 
 ### Désactiver
 
 ```bash
-rdc repo autostart disable --name my-app -m server-1
+rdc repo admin autostart disable my-app
 ```
 
 Ceci supprime le fichier de clé et invalide le slot LUKS 1.
@@ -352,7 +352,7 @@ activé, la vérification est silencieusement ignorée. Les échecs sont non fat
 ### Lister le statut
 
 ```bash
-rdc repo autostart list -m server-1
+rdc repo admin autostart list -m server-1
 ```
 
 Pour plus de détails sur la façon dont le réconciliateur périodique récupère les dépôts qui tombent après le démarrage, consultez [Démarrage automatique et récupération](/fr/docs/autostart-recovery).
@@ -365,16 +365,16 @@ Cet exemple déploie une application web avec PostgreSQL, Redis et un serveur AP
 
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
-rdc config init --name production --ssh-key ~/.ssh/id_ed25519
-rdc config machine add --name prod-1 --ip 203.0.113.50 --user deploy
-rdc config machine setup --name prod-1
-rdc repo create --name webapp -m prod-1 --size 10G
+rdc config init production --ssh-key ~/.ssh/id_ed25519
+rdc machine add prod-1 --ip 203.0.113.50 --user deploy
+rdc machine setup prod-1
+rdc repo create webapp -m prod-1 --size 10G
 ```
 
 ### 2. Monter et préparer
 
 ```bash
-rdc repo mount --name webapp -m prod-1
+rdc repo up webapp --no-start
 ```
 
 ### 3. Créer les fichiers de l'application
@@ -433,13 +433,13 @@ down() {
 ### 4. Démarrer
 
 ```bash
-rdc repo up --name webapp -m prod-1
+rdc repo up webapp
 ```
 
 ### 5. Activer le démarrage automatique
 
 ```bash
-rdc repo autostart enable --name webapp -m prod-1
+rdc repo admin autostart enable webapp
 ```
 
 ## Utiliser des secrets par dépôt dans compose

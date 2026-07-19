@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 0
 language: de
-sourceHash: "e84db3bb90270473"
+sourceHash: "88e8186bc7c0e629"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -60,7 +60,7 @@ Die `rdc`-CLI lässt sich zusätzlich sauber auf Alpine 3.19+ (APK mit der `gcom
 
 ### Sicherheitsrichtlinien nach Betriebssystem
 
-Der repo-spezifische Docker-Daemon und die Repo-Container laufen mit **Standard-Container-Labels** auf jedem unterstützten OS. `rdc config machine setup` installiert keine benutzerdefinierten SELinux-Richtlinien oder AppArmor-Profile. Verhalten nach Betriebssystem:
+Der repo-spezifische Docker-Daemon und die Repo-Container laufen mit **Standard-Container-Labels** auf jedem unterstützten OS. `rdc machine setup` installiert keine benutzerdefinierten SELinux-Richtlinien oder AppArmor-Profile. Verhalten nach Betriebssystem:
 
 - **Ubuntu 24.04, openSUSE Leap 16.0**: AppArmor ist standardmäßig aktiviert. Das Standard-Docker-Container-Profil wird angewendet; kein zusätzliches Setup erforderlich.
 - **Fedora 43, Oracle Linux 10**: SELinux läuft im Enforcing-Modus. Der repo-spezifische Daemon kennzeichnet Container mit dem Standard-`container_t`-Kontext. Keine benutzerdefinierte SELinux-Richtlinie erforderlich.
@@ -77,7 +77,7 @@ Wenn ein Setup-Schritt mit SELinux-AVC-Ablehnungen oder AppArmor-Zurückweisunge
 
 ### Automatisch installiert
 
-Der Befehl `rdc config machine setup` installiert Folgendes auf dem entfernten Server:
+Der Befehl `rdc machine setup` installiert Folgendes auf dem entfernten Server:
 
 - **Docker** und **containerd** (Container-Runtime)
 - **cryptsetup** (LUKS-Festplattenverschlüsselung)

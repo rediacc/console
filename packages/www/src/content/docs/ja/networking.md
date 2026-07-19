@@ -4,7 +4,7 @@ description: リバースプロキシ、Dockerラベル、TLS証明書、DNS、T
 category: Guides
 order: 6
 language: ja
-sourceHash: "20b29c1a791304e4"
+sourceHash: "89a755491d11fbd6"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -130,16 +130,16 @@ labels:
 
    ```bash
    # 共有資格情報（configごとに一度、すべてのマシンに適用）
-   rdc config infra set -m server-1 \
+   rdc machine infra set server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
    # マシン固有の設定
-   rdc config infra set -m server-1 \
+   rdc machine infra set server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com
 
-   rdc config infra push -m server-1
+   rdc machine infra push server-1
    ```
 
 2. ドメインのDNSレコードがサーバーのパブリックIPを指していること（下記の[DNS設定](#dns設定)を参照）。
@@ -183,14 +183,14 @@ services:
 TLS証明書はCloudflare DNS-01チャレンジを使用してLet's Encrypt経由で自動的に取得されます。資格情報はconfigごとに一度設定します（すべてのマシンで共有）：
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
 
 自動ルートはサービスごとの証明書の代わりにリポジトリサブドメインレベルの**ワイルドカード証明書**（`*.marketing.server-1.example.com`）を使用します。証明書は最初の`repo up`時にTraefikによって自動的にプロビジョニングされます。手動の手順は不要です。フォークは親リポジトリの既存のワイルドカードを再利用するため、新しい証明書リクエストが発生することはありません。カスタムドメインルートはマシンレベルのワイルドカード（`*.server-1.example.com`）を使用します。
 
-> **Cloudflare資格情報が必要です。** ワイルドカード証明書はDNS-01チャレンジを使用します。`--cf-dns-token`（およびオプションの`--cert-email`）なしでは、TraefikはチャレンジをDNS完了できず、HTTPSは機能しません。HTTPは機能し続けます。最初のデプロイ前に`rdc config infra set`で資格情報を設定してください。
+> **Cloudflare資格情報が必要です。** ワイルドカード証明書はDNS-01チャレンジを使用します。`--cf-dns-token`（およびオプションの`--cert-email`）なしでは、TraefikはチャレンジをDNS完了できず、HTTPSは機能しません。HTTPは機能し続けます。最初のデプロイ前に`rdc machine infra set`で資格情報を設定してください。
 
 `traefik.http.routers.{name}.tls.certresolver=letsencrypt`を持つティア2ルートでは、ルートのホスト名に基づいてワイルドカードドメインSANが自動的に注入されます。
 
@@ -210,17 +210,17 @@ Let's Encrypt証明書が発行されてから各リポジトリのコンテナ�
 
 - `rdc repo up`後に自動的に、ただしマシンの`baseDomain`のローカルキャッシュが6時間以上古い場合のみ。新鮮なキャッシュはそのまま残され、連続したデプロイがSSHを酷使しないようにします。
 - オンデマンド：`rdc machine infra cert pull <machine>`（強制プル）または`rdc machine status <machine> --sync-certs`（ステータスクエリの副作用としてのプル）。
-- `rdc config infra push`時、キャッシュはマシンにプッシュされます（より長い有効期限のローカル証明書がリモートより優先されます）。
+- `rdc machine infra push`時、キャッシュはマシンにプッシュされます（より長い有効期限のローカル証明書がリモートより優先されます）。
 
 **キャッシュメンテナンス：**
 
 - 古い自動ルートエントリ（`service-3200.rediacc.io`のような古いネットワークIDタグ付きドメイン）は、各プル時に削除されます。
 - `notAfter`が7日以上過去の証明書は完全に削除されます。不活性でキャッシュを膨張させるだけです。
-- `rdc config cert-cache clear`はすべてを消去します。`rdc config cert-cache status`はインベントリを表示します。
+- `rdc config prune --certs-only`はすべてを消去します。`rdc config prune --certs-only`はインベントリを表示します。
 
 **トラブルシューティング：** `traefik-certs-dumper`が`/traefik/acme.json: no such file or directory`でクラッシュする場合、リポジトリごとのデーモンがホストのletsencryptストアを見ることができません。（a）ホスト上に`/opt/rediacc/proxy/letsencrypt/acme.json`が存在することを確認してください（これはホストレベルの`rediacc-proxy`の責任です）、および（b）リポジトリごとのデーモンが`/opt/rediacc/proxy`をアローリストに含む十分に新しいrenetで起動されたことを確認してください。renetをアップグレードした後、`rdc repo up`でリポジトリを再デプロイして適用してください。
 
-> **実験的：** 自動同期ケイデンスと有効期限ベースの削除はrenet 0.9+で導入されました。古いCLI/renetバージョンは`rdc config cert-cache pull`経由の純粋な手動同期を使用します。
+> **実験的：** 自動同期ケイデンスと有効期限ベースの削除はrenet 0.9+で導入されました。古いCLI/renetバージョンは`rdc config prune --certs-only`経由の純粋な手動同期を使用します。
 
 ## TCP/UDPポートフォワーディング
 
@@ -231,16 +231,16 @@ Let's Encrypt証明書が発行されてから各リポジトリのコンテナ�
 インフラストラクチャ設定時に必要なポートを追加します：
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config infra push -m server-1
+rdc machine infra push server-1
 ```
 
 これにより`tcp-{port}`と`udp-{port}`という名前のTraefikエントリポイントが作成されます。
 
-> ポートの追加または削除後は、プロキシ設定を更新するために常に`rdc config infra push`を再実行してください。
+> ポートの追加または削除後は、プロキシ設定を更新するために常に`rdc machine infra push`を再実行してください。
 
 ### ステップ2：TCP/UDPラベルの追加
 
@@ -313,7 +313,7 @@ services:
 
 ### 自動DNS（Cloudflare）
 
-`--cf-dns-token`が設定されている場合、`rdc config infra push`はCloudflareに必要なDNSレコードを自動的に作成します：
+`--cf-dns-token`が設定されている場合、`rdc machine infra push`はCloudflareに必要なDNSレコードを自動的に作成します：
 
 | レコード | タイプ | 内容 | 作成元 |
 |----------|--------|------|--------|
@@ -480,7 +480,7 @@ app.example.com   A   203.0.113.50
 ### デプロイ
 
 ```bash
-rdc repo up --name my-app -m server-1
+rdc repo up my-app
 ```
 
 数秒以内にルートサーバーがコンテナを検出し、Traefikがルートを取得してTLS証明書をリクエストし、`https://app.example.com`が公開されます。

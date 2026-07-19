@@ -126,7 +126,7 @@ After moving to Rediacc on Hetzner:
 | Sub-processors | (1) None for self-hosted; (2) Hetzner-internal only, listed in their DPA |
 | Contract status | (1) Software licence, no DPA needed; (2) Hetzner DPA + SCCs already in place |
 | Key custody | Customer (LUKS credential in operator config, not on server) |
-| Exit plan | "rdc repo backup pull from any rclone-compatible target. Volumes are LUKS-encrypted; operator holds credential." |
+| Exit plan | "rdc repo pull from any rclone-compatible target. Volumes are LUKS-encrypted; operator holds credential." |
 | Last assessment | (2) covered by existing IaaS review |
 
 Two register entries instead of one. The critical-tier entry is for the IaaS provider, where the buyer already had a DPA in place and a tested exit plan, because IaaS is a relationship most teams know how to manage. The Rediacc entry is non-critical because it is a software licence, not a data processor.

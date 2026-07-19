@@ -4,7 +4,7 @@ description: Süsteeminõuded ja toetatud platvormid Rediacci käitamiseks.
 category: Guides
 order: 0
 language: et
-sourceHash: "e84db3bb90270473"
+sourceHash: "88e8186bc7c0e629"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -58,7 +58,7 @@ Oracle Linux 10 kasutab vaikimisi **Unbreakable Enterprise Kernel (UEK)**, mis h
 
 ### Turvapoliitikad OS-i kaupa
 
-Repositooriumipõhine Dockeri deemon ja repositooriumi konteinerid ise töötavad **vaikimisi konteinerisiltidega** kõigil toetatud OS-del. `rdc config machine setup` ei installi kohandatud SELinuxi poliitikaid ega AppArmori profiile. Käitumine OS-i kaupa:
+Repositooriumipõhine Dockeri deemon ja repositooriumi konteinerid ise töötavad **vaikimisi konteinerisiltidega** kõigil toetatud OS-del. `rdc machine setup` ei installi kohandatud SELinuxi poliitikaid ega AppArmori profiile. Käitumine OS-i kaupa:
 
 - **Ubuntu 24.04, openSUSE Leap 16.0**: AppArmor on vaikimisi lubatud. Rakendub vaikimisi docker-container profiil; lisaseadistust ei nõuta.
 - **Fedora 43, Oracle Linux 10**: SELinux töötab jõustataval režiimil. Repositooriumipõhine deemon märgistab konteinerid standardse `container_t` kontekstiga. Kohandatud SELinuxi poliitika pole vajalik.
@@ -75,7 +75,7 @@ Kui seadistamise samm ebaõnnestub SELinuxi AVC-keeldumiste või AppArmori tagas
 
 ### Installitakse automaatselt
 
-`rdc config machine setup` käsk installib kaugserverile järgmised:
+`rdc machine setup` käsk installib kaugserverile järgmised:
 
 - **Docker** ja **containerd** (konteineri käitusaeg)
 - **cryptsetup** (LUKS-ketta krüpteerimine)

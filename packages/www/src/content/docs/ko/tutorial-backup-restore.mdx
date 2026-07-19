@@ -5,7 +5,7 @@ category: "Tutorials"
 subcategory: advanced
 order: 11
 language: ko
-sourceHash: "c13a0f880039d7e7"
+sourceHash: "c5c847e04186c9b1"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -70,8 +70,8 @@ S3, B2, Google Drive, Dropbox 등 다양한 스토리지를 지원합니다. 연
 동일한 pull 명령이 새 서버에서도 작동합니다: 설정하고, `rdc`에 추가한 다음 거기서 pull을 실행합니다.
 
 ```bash
-rdc repo pull --name my-app -m new-server --from my-storage
-rdc repo up --name my-app -m new-server
+rdc repo pull my-app@new-server --from my-storage
+rdc repo up my-app@new-server
 ```
 
 동일한 데이터, 동일한 컨테이너, 다른 머신.
@@ -81,7 +81,7 @@ rdc repo up --name my-app -m new-server
 클라우드 스토리지 없이 머신 간에 직접 푸시할 수도 있습니다:
 
 ```bash
-rdc repo push --name my-app -m my-server --to-machine backup-server
+rdc repo push my-app --to backup-server
 ```
 
 > **Pro tip.** 머신 간 푸시는 첫 번째 이후부터 변경된 블록만 전송합니다. [델타 전송 튜토리얼](/ko/docs/tutorial-delta-transfer)에서 직접 확인할 수 있습니다.

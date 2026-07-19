@@ -4,7 +4,7 @@ description: リモートマシン上のLUKS暗号化リポジトリの作成、
 category: Guides
 order: 4
 language: ja
-sourceHash: "c9553259c9bf6b4c"
+sourceHash: "b67203062ab832f8"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -18,7 +18,7 @@ sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ## リポジトリの作成
 
 ```bash
-rdc repo create --name my-app -m server-1 --size 10G
+rdc repo create my-app -m server-1 --size 10G
 ```
 
 | オプション | 必須 | 説明 |
@@ -40,8 +40,8 @@ rdc repo create --name my-app -m server-1 --size 10G
 マウントはリポジトリのファイルシステムを復号してアクセス可能にします。アンマウントは暗号化ボリュームを閉じます。
 
 ```bash
-rdc repo mount --name my-app -m server-1  # 復号してマウント
-rdc repo unmount --name my-app -m server-1  # アンマウントして再暗号化
+rdc repo up my-app  # 復号してマウント
+rdc repo down my-app --unmount  # アンマウントして再暗号化
 ```
 
 | オプション | 説明 |
@@ -52,7 +52,7 @@ rdc repo unmount --name my-app -m server-1  # アンマウントして再暗号�
 ## ステータスの確認
 
 ```bash
-rdc repo status --name my-app -m server-1
+rdc repo status my-app
 ```
 
 ## リポジトリ一覧
@@ -78,8 +78,8 @@ rdc repo list -m server-1
 リポジトリを正確なサイズに設定するか、指定した量だけ拡張します。
 
 ```bash
-rdc repo resize --name my-app -m server-1 --size 20G  # 正確なサイズに設定
-rdc repo expand --name my-app -m server-1 --size 5G  # 現在のサイズに5G追加
+rdc repo resize my-app --size 20G  # 正確なサイズに設定
+rdc repo expand my-app --size 5G  # 現在のサイズに5G追加
 ```
 
 > サイズ変更の前にリポジトリをアンマウントする必要があります。`repo expand` はオンラインで動作します。サイズ変更はリポジトリの最大サイズを変更します。最大サイズを変えずに解放済みブロックをプールに返すには、代わりに [`repo trim`](#領域の回収-trim) を使用してください。
@@ -90,8 +90,8 @@ rdc repo expand --name my-app -m server-1 --size 5G  # 現在のサイズに5G�
 
 ```bash
 rdc repo trim -m server-1                       # Trim every mounted repository plus the datastore
-rdc repo trim -m server-1 --name my-app          # Trim one repository
-rdc repo trim -m server-1 --report-only          # Show reclaimable space without trimming
+rdc repo trim my-app                            # Trim one repository
+rdc repo trim -m server-1 --report-only         # Show reclaimable space without trimming
 rdc repo trim -m server-1 --docker               # Also clear stopped containers, dangling images, and build cache first
 ```
 
@@ -112,10 +112,10 @@ rdc repo trim -m server-1 --docker               # Also clear stopped containers
 rdc repo policy set -m server-1 --auto-trim true
 
 # Per-repository: grow my-app automatically, up to a hard ceiling
-rdc repo policy set -m server-1 --name my-app --auto-grow true --max-quota 50G
+rdc repo policy set my-app --auto-grow true --max-quota 50G
 
 # Inspect the stored and effective policy
-rdc repo policy get -m server-1 --name my-app
+rdc repo policy get my-app
 ```
 
 ポリシーフィールド:
@@ -138,7 +138,7 @@ rdc repo policy get -m server-1 --name my-app
 既存のリポジトリを現在の状態でコピーします。
 
 ```bash
-rdc repo fork --parent my-app --tag staging -m server-1
+rdc repo fork my-app --tag staging
 ```
 
 フォークはname:tagモデルを使用します。作成されたフォークは `my-app:staging` という名前になります。これにより、親の名前を共有しながら、独自のGUIDとネットワークIDを持つ新しい暗号化コピーが作成されます。フォークは親と同じLUKSクレデンシャルを共有します。
@@ -152,8 +152,8 @@ rdc repo fork --parent my-app --tag staging -m server-1
 `--up` はフォーク、マウント、サービス起動をリモートで一括実行します。`--detach` を追加すると、コンテナが起動した時点でターミナルに制御が戻ります。ヘルスチェックはバックグラウンドで完了し、プロキシは各サービスがバインドするまで再試行を続けます。
 
 ```bash
-rdc repo fork --parent my-app --tag staging -m server-1 --up
-rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
+rdc repo fork my-app --tag staging --up
+rdc repo fork my-app --tag scratch --up --no-wait
 ```
 
 実測値として、128 GB のリポジトリをフォークしてサービスが稼働状態に達するまで約 57 秒、`--detach` では約 31 秒でした。デタッチ実行は進捗確認のヒントを出力します：`rdc machine status <machine> --containers`。
@@ -173,9 +173,9 @@ rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
 フォークはgitのコミットのように機能できます。`rdc repo commit` は作業中のフォークを不変のバイト安定コミットにフリーズし、`rdc repo branch` は履歴の系列に名前を付け、`rdc repo checkout` はコミットを書き込み可能なフォークにリフリンク複製し、`rdc repo log` は親チェーンをたどり、`rdc repo merge` はライブリポジトリをその場で変更することなく2つの系列を結合します。`rdc repo fork --immutable` は1ステップでコミット相当のベースを作成します。
 
 ```bash
-rdc repo commit --name my-app:work --message "schema migration applied" -m server-1
-rdc repo branch --branch staging --name my-app:work
-rdc repo checkout --ref staging --from my-app:work --tag staging-copy -m server-1
+rdc repo commit my-app:work --message "schema migration applied"
+rdc repo branch my-app:work --branch staging
+rdc repo checkout staging --from my-app:work --tag staging-copy
 ```
 
 完全なコマンドセット、オプション、および実践例については [Gitのようなブランチングリファレンス](/en/docs/repo-branching) を参照してください。
@@ -195,11 +195,11 @@ rdc repo checkout --ref staging --from my-app:work --tag staging-copy -m server-
 
 ```bash
 # Set, list, get（ダイジェストのみ）, unset
-rdc repo secret set --name my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
-rdc repo secret set --name my-app --key DB_HOST         --value postgres.internal --mode env --current ""
-rdc repo secret list --name my-app
-rdc repo secret get  --name my-app --key DB_HOST    # → { key, mode, digest } — 値なし
-rdc repo secret unset --name my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
+rdc repo secret set my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
+rdc repo secret set my-app --key DB_HOST         --value postgres.internal --mode env --current ""
+rdc repo secret list my-app
+rdc repo secret get my-app --key DB_HOST    # → { key, mode, digest } — 値なし
+rdc repo secret unset my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
 ```
 
 **対称変更ゲート。** 人間もエージェントも、シークレットを上書きまたは削除するには `--current <前回の値>` が必要です（passwd形式の前提条件）。新しいキーの初回書き込みには `--current ""`（空）を渡します。前回の値を検証せずにローテーションするには `--rotate-secret` を使用します。これはローテーションとして大々的に監査されます。`--current` と `--rotate-secret` は相互排他的です。
@@ -235,7 +235,7 @@ secrets:
 リポジトリのファイルシステムの整合性を確認します。
 
 ```bash
-rdc repo validate --name my-app -m server-1
+rdc repo admin validate my-app
 ```
 
 ## 所有権
@@ -243,7 +243,7 @@ rdc repo validate --name my-app -m server-1
 リポジトリ内のファイル所有権をユニバーサルユーザー（UID 7111）に設定します。これは通常、ワークステーションからファイルをアップロードした後に必要です。アップロードされたファイルはローカルのUIDで到着するためです。
 
 ```bash
-rdc repo ownership --name my-app -m server-1
+rdc repo admin ownership my-app
 ```
 
 このコマンドはDockerコンテナのデータディレクトリ（書き込み可能なバインドマウント）を自動的に検出し、除外します。これにより、独自のUIDでファイルを管理するコンテナ（例: MariaDB=999、www-data=33）が壊れることを防ぎます。
@@ -256,7 +256,7 @@ rdc repo ownership --name my-app -m server-1
 コンテナデータを含む全ファイルに所有権を強制するには:
 
 ```bash
-rdc repo ownership --name my-app -m server-1
+rdc repo admin ownership my-app
 ```
 
 
@@ -267,7 +267,7 @@ rdc repo ownership --name my-app -m server-1
 テンプレートを適用してリポジトリをファイルで初期化します。
 
 ```bash
-rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo admin template apply my-app --template my-template --file ./my-template.tar.gz
 ```
 
 ## 削除
@@ -275,7 +275,7 @@ rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./
 リポジトリとその中のすべてのデータを永久に破棄します。
 
 ```bash
-rdc repo delete --name my-app -m server-1
+rdc repo delete my-app
 ```
 
 > これにより暗号化ディスクイメージが永久に破棄されます。この操作は元に戻せません。
@@ -285,7 +285,7 @@ rdc repo delete --name my-app -m server-1
 あるマシンから別のマシンにリポジトリをライブ移行します。唯一のダウンタイムは最終デルタシンク段階であり、カットオーバー時の書き込みレートに応じて通常は数秒から数分です。
 
 ```bash
-rdc repo migrate --name my-app --from server-1 --to server-2
+rdc repo migrate my-app@server-1 --to server-2
 ```
 
 | オプション | 説明 |
@@ -319,10 +319,10 @@ rdc repo migrate --name my-app --from server-1 --to server-2
 
 ```bash
 # 削除されるものをプレビュー
-rdc machine prune --name server-1 --dry-run
+rdc machine prune server-1 --dry-run
 
 # 孤立したリソースを削除
-rdc machine prune --name server-1
+rdc machine prune server-1
 ```
 
 対応するリポジトリイメージが存在しないリソースのみが対象となります。空でないマウントディレクトリは削除されません。

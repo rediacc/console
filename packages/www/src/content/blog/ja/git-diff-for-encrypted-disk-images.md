@@ -14,7 +14,7 @@ tags:
   - cli
 featured: false
 language: ja
-sourceHash: 1b08ca130594e2e4
+sourceHash: "79ca3074954024fd"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
@@ -63,7 +63,7 @@ LUKSはaes-xtsで暗号化します。これは長さ保存型であり、各512
 これがデフォルトのname-status形式で、`git status --short` と同じA/M/D/Rの文法です：
 
 ```
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -80,7 +80,7 @@ M  hello.txt
 エージェントはname-statusを読まず、`--json` を読みます：
 
 ```
-$ rdc repo diff --name prod:experiment --json -m hostinger
+$ rdc repo diff prod:experiment -o json
 ```
 
 構造化された出力はエージェントに正確な変更セットを提供します。変更、作成、削除されたパスが何か。`--stat` があれば、ファイルごとの変更サイズをバイトとブロックで。昇格させる前に差分を見られるエージェントは、本番の近くに置けるものです。爆発半径は検査可能であり、主張されるものではありません。他のモードも同じレビューループを提供します。`--name-only` でパスのみのリスト。`--content <path>` で1つのファイルの統合テキスト差分（テキストのみ。バイナリファイルは `Binary files differ` と報告）。`--stat` でエージェントが何がどれだけ変わったかを知る必要がある場合。

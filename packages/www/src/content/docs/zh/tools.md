@@ -4,7 +4,7 @@ description: 文件同步、终端访问、VS Code 集成和 CLI 更新。
 category: Guides
 order: 9
 language: zh
-sourceHash: "59abc2faa1157369"
+sourceHash: "2b8afb656455d6ec"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -22,16 +22,16 @@ Rediacc 提供四个工具用于日常远程工作：基于 SSH 的文件同步�
 
 ```bash
 # 目录（内容合并到远程）
-rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
+rdc repo sync upload my-app --local ./src --remote /app/src
 
 # 单个文件放入远程目录（保留基础名称）
-rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote /app/conf
+rdc repo sync upload my-app --local ./config.yml --remote /app/conf
 
 # 单个文件，明确指定目标路径
-rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote-file /app/conf/config.yml
+rdc repo sync upload my-app --local ./config.yml --remote-file /app/conf/config.yml
 
 # 一次调用中的多个源
-rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote /app
+rdc repo sync upload my-app --local a.yml b.yml ./assets --remote /app
 ```
 
 `--remote` 和 `--remote-file` 互斥。`--remote-file` 要求恰好一个 `--local` 路径指向文件。
@@ -44,16 +44,16 @@ rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote
 
 ```bash
 # 目录
-rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
+rdc repo sync download my-app --remote /app/data --local ./data
 
 # 单个文件：--local 必须是现有目录
-rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
+rdc repo sync download my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
 ### 检查同步状态
 
 ```bash
-rdc repo sync status -m server-1 -r my-app
+rdc repo sync status my-app
 ```
 
 ### 选项
@@ -81,8 +81,8 @@ rdc repo sync status -m server-1 -r my-app
 最快的连接方式：
 
 ```bash
-rdc term connect -m server-1                    # 连接到机器
-rdc term connect -m server-1 -r my-app             # 连接到仓库
+rdc term connect server-1                    # 连接到机器
+rdc term connect my-app             # 连接到仓库
 ```
 
 ### 运行命令
@@ -90,8 +90,8 @@ rdc term connect -m server-1 -r my-app             # 连接到仓库
 无需打开交互式会话即可执行命令：
 
 ```bash
-rdc term connect -m server-1 -c "uptime"
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect server-1 -c "uptime"
+rdc term connect my-app -c "docker ps"
 ```
 
 连接到仓库时，`DOCKER_HOST` 会自动设置为该仓库的隔离 Docker 套接字，因此 `docker ps` 只显示该仓库的容器。
@@ -101,8 +101,8 @@ rdc term connect -m server-1 -r my-app -c "docker ps"
 或使用 `connect` 子命令实现相同结果，并带有显式标志：
 
 ```bash
-rdc term connect -m server-1
-rdc term connect -m server-1 -r my-app
+rdc term connect server-1
+rdc term connect my-app
 ```
 
 ### 容器操作
@@ -111,19 +111,19 @@ rdc term connect -m server-1 -r my-app
 
 ```bash
 # 在容器内打开 shell
-rdc term connect -m server-1 -r my-app --container <container-id>
+rdc repo exec my-app -c <container> -i -- bash
 
 # 查看容器日志
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs
+rdc repo logs my-app -c <container>
 
 # 实时跟踪日志
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs --follow
+rdc repo logs my-app -c <container> --follow
 
 # 查看容器统计信息
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action stats
+rdc repo exec my-app -c <container> -i -- bash --container-action stats
 
 # 在容器中执行命令
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action exec -c "ls -la"
+rdc repo exec my-app -c <container> -- ls -la
 ```
 
 | 选项 | 说明 |
@@ -141,7 +141,7 @@ rdc term connect -m server-1 -r my-app --container <container-id> --container-ac
 ### 连接到仓库
 
 ```bash
-rdc vscode connect -r my-app -m server-1
+rdc vscode connect my-app
 ```
 
 此命令会：
@@ -179,7 +179,7 @@ rdc vscode check
 没有本地 VS Code？从仓库沙盒内部启动编辑器服务端，在任意浏览器中打开：
 
 ```bash
-rdc vscode connect -r my-app -m server-1 --browser
+rdc vscode connect my-app --browser
 ```
 
 此命令会：
@@ -190,8 +190,8 @@ rdc vscode connect -r my-app -m server-1 --browser
 关闭隧道后服务端继续运行；重新连接时直接复用。管理命令：
 
 ```bash
-rdc vscode serve status -r my-app -m server-1
-rdc vscode serve stop -r my-app -m server-1
+rdc vscode serve status my-app
+rdc vscode serve stop my-app
 ```
 
 | 选项 | 说明 |

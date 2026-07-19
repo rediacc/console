@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: tr
-sourceHash: "b6deba17f1137188"
+sourceHash: "ab050e731db18848"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -19,7 +19,7 @@ Rediacc, makine sağlığını, çalışan konteynerleri, servisleri, depo durum
 Bir makine için tam bir sağlık raporu alın:
 
 ```bash
-rdc machine health --name server-1
+rdc machine health server-1
 ```
 
 Rapor içeriği:
@@ -35,7 +35,7 @@ Makine tarafından okunabilir çıktı için `--output json` kullanın.
 Bir makinedeki tüm depolardaki çalışan konteynerleri görüntüleyin:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 | Sütun | Açıklama |
@@ -59,7 +59,7 @@ JSON çıktısı tam konteyner ayrıntılarını (`labels`, `port_mappings`, `im
 Bir makinedeki Rediacc ile ilgili systemd servislerini görüntüleyin:
 
 ```bash
-rdc machine services --name server-1
+rdc machine status server-1 --services
 ```
 
 | Sütun | Açıklama |
@@ -82,7 +82,7 @@ JSON çıktısı, `repository` (çözümlenmiş ad) ve `repository_guid` (orijin
 Bir makinedeki depoları ayrıntılı istatistiklerle görüntüleyin:
 
 ```bash
-rdc machine repos --name server-1
+rdc machine status server-1 --repositories
 ```
 
 | Sütun | Açıklama |
@@ -106,7 +106,7 @@ JSON çıktısı `name` (çözümlenmiş) ve `guid` (orijinal GUID) alanlarını
 Bir makinedeki tüm depolarda BTRFS parçalanmasını ve reflink paylaşımını inceleyin:
 
 ```bash
-rdc machine query --name server-1 --storage-health
+rdc machine status server-1 --storage-health
 ```
 
 | Sütun | Açıklama |
@@ -184,7 +184,7 @@ Son scrubun sonucu, BTRFS biriminin dışında (`/var/lib/rediacc/scrub-last-res
 Bir scrub'u hemen çalıştırmak için (örneğin, güç kesintisi veya disk taşıma sonrasında):
 
 ```bash
-rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
+rdc term connect server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
 Sonuç aynı JSON dosyasına kaydedilir ve bir sonraki `rdc machine status --system` çağrısında hemen görünür.
@@ -194,7 +194,7 @@ Sonuç aynı JSON dosyasına kaydedilir ve bir sonraki `rdc machine status --sys
 Dağıtım bilgileri dahil bir makinenin tam genel görünümünü alın:
 
 ```bash
-rdc machine query --name server-1
+rdc machine status server-1
 ```
 
 Sağlanan bilgiler:
@@ -210,7 +210,7 @@ Makine tarafından okunabilir çıktı için `--output json` kullanın.
 Bir makineye SSH bağlantısını doğrulayın:
 
 ```bash
-rdc term connect -m server-1 -c "hostname"
+rdc term connect server-1 -c "hostname"
 ```
 
 Bu komut, başarılı olduğunda uzak ana bilgisayar adını yazdırır, başarısız olduğunda ise bir bağlantı hatası gösterir; böylece DNS'i, SSH portunu ve anahtar kimlik doğrulamasını tek adımda doğrulamış olursunuz.

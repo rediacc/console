@@ -1,4 +1,5 @@
 ---
+sourceHash: "51a38f7f8567e63e"
 title: Panganduse järjepidevus elektrikatkestuse ajal
 description: Hoia pangandusoperatsioone käigus elektrikatkestuste ajal mandritevaheline andmete peegeldamisega.
 category: Use Cases

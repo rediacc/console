@@ -4,7 +4,7 @@ description: "Como funciona o autostart, o reconciliador periódico que recupera
 category: "Guides"
 order: 5
 language: pt
-sourceHash: "7fa4f919475b304e"
+sourceHash: "62148f7a55752783"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,7 +109,7 @@ Liste os repositórios com marcadores de falha duráveis:
 ls /var/lib/rediacc/reconcile/failed/
 ```
 
-Cada nome de ficheiro é um GUID de repositório. Use `rdc config repository list` para mapear GUIDs a nomes de repositório.
+Cada nome de ficheiro é um GUID de repositório. Use `rdc repo list` para mapear GUIDs a nomes de repositório.
 
 Para remover um marcador depois de ter resolvido o problema subjacente, elimine o ficheiro:
 

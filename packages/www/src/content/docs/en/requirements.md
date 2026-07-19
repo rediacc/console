@@ -56,7 +56,7 @@ The `rdc` CLI additionally installs cleanly on Alpine 3.19+ (APK with the `gcomp
 
 ### Security Policies by OS
 
-The per-repo Docker daemon and the repo containers themselves run with **default container labels** on every supported OS. `rdc config machine setup` does not install custom SELinux policies or AppArmor profiles. Behavior by OS:
+The per-repo Docker daemon and the repo containers themselves run with **default container labels** on every supported OS. `rdc machine setup` does not install custom SELinux policies or AppArmor profiles. Behavior by OS:
 
 - **Ubuntu 24.04, openSUSE Leap 16.0**: AppArmor is enabled by default. The default docker-container profile applies; no extra setup required.
 - **Fedora 43, Oracle Linux 10**: SELinux runs enforcing. The per-repo daemon labels containers with the standard `container_t` context. No custom SELinux policy is needed.
@@ -73,7 +73,7 @@ If a setup step fails with SELinux AVC denials or AppArmor rejections, see [Trou
 
 ### Installed Automatically
 
-The `rdc config machine setup` command installs the following on the remote server:
+The `rdc machine setup` command installs the following on the remote server:
 
 - **Docker** and **containerd** (container runtime)
 - **cryptsetup** (LUKS disk encryption)

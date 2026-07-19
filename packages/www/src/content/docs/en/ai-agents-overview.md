@@ -54,7 +54,7 @@ Error responses include `retryable` and `guidance` fields:
     "code": "NOT_FOUND",
     "message": "Machine \"prod-2\" not found",
     "retryable": false,
-    "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
+    "guidance": "Verify the resource name with \"rdc machine status\" or \"rdc repo list\""
   }]
 }
 ```

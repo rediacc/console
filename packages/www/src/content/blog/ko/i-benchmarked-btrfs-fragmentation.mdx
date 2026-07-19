@@ -13,11 +13,11 @@ tags:
   - benchmarks
 featured: false
 language: ko
-sourceHash: 36cb029ebe9b6edc
+sourceHash: "362ac76977739eb6"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
-> **요약.** Rediacc의 `rdc machine query --storage-health`는 저장소별 단편화 수치를 보고합니다. 한 프로덕션 머신에서 GitLab이 기가바이트당 약 19,650개의 익스텐트로 표시됩니다. 본능적으로 조각 모음을 실행하고 싶어집니다. 저는 대신 측정해봤습니다.
+> **요약.** Rediacc의 `rdc machine status --storage-health`는 저장소별 단편화 수치를 보고합니다. 한 프로덕션 머신에서 GitLab이 기가바이트당 약 19,650개의 익스텐트로 표시됩니다. 본능적으로 조각 모음을 실행하고 싶어집니다. 저는 대신 측정해봤습니다.
 >
 > - 이웃 저장소보다 **16배 더 단편화된** 저장소가 순차 읽기에서 **149 MB/s** 대 143 MB/s로 읽혔고, 무작위 4K 읽기에서는 **더 빨랐습니다** (719 us 대 957 us).
 > - 해당 장치는 플래시입니다. 단편화는 탐색 시간을 통해 회전 디스크에 영향을 줍니다. SSD에서는 단편화가 해를 끼칠 메커니즘이 거의 남아 있지 않습니다.

@@ -4,7 +4,7 @@ description: Настройка Cursor IDE для работы с инфраст
 category: Guides
 order: 32
 language: ru
-sourceHash: "66821f514bc7a8bd"
+sourceHash: "bab7e70ffbd9f32b"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -39,7 +39,7 @@ Cursor может выполнять команды `rdc` через встро�
 
 Cursor выполняет в терминале:
 ```bash
-rdc machine query --name prod-1 -o json
+rdc machine status prod-1 -o json
 ```
 
 ### Развёртывание изменений
@@ -48,7 +48,7 @@ rdc machine query --name prod-1 -o json
 
 Cursor выполняет в терминале:
 ```bash
-rdc repo up --name nextcloud -m prod-1 --yes
+rdc repo up nextcloud@prod-1 --yes
 ```
 
 ### Просмотр логов
@@ -57,7 +57,7 @@ rdc repo up --name nextcloud -m prod-1 --yes
 
 Cursor выполняет в терминале:
 ```bash
-rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
+rdc repo logs mail@prod-1 -c mail-postfix --lines 100
 ```
 
 ## Настройки рабочего пространства

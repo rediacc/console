@@ -4,7 +4,7 @@ description: "일반적인 SSH, 설정, 저장소, 서비스, Docker 문제에 �
 category: "Guides"
 order: 10
 language: ko
-sourceHash: "a1c58ae1fe3d0514"
+sourceHash: "429b4004d99c37e6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -72,7 +72,7 @@ CRIU는 AppArmor에 걸리는 알려진 경우입니다. Renet은 `rediacc.check
 
 ### btrfs 모듈 누락 (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)
 
-`rdc config machine setup` 또는 `renet system check-btrfs`가 다음과 같이 실패하는 경우:
+`rdc machine setup` 또는 `renet system check-btrfs`가 다음과 같이 실패하는 경우:
 
 ```
 Module btrfs not found
@@ -94,13 +94,13 @@ Module btrfs not found
 - 저장소의 Docker 소켓을 사용하여 컨테이너 로그를 확인하세요:
 
 ```bash
-rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
+rdc repo logs my-app -c <container-name>
 ```
 
 또는 모든 컨테이너를 확인하세요:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## 권한 거부 오류
@@ -115,7 +115,7 @@ rdc machine containers --name server-1
 
 ```bash
 # rdc term 사용 (자동 구성됨):
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect my-app -c "docker ps"
 
 # 또는 소켓으로 수동 지정:
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -132,7 +132,7 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 **임시 컨테이너에서 네트워크 접근을 위해서는 호스트 네트워킹을 사용하세요:**
 
 ```bash
-# 저장소 셸 내부 (rdc term connect -m <machine> -r <repo>)
+# 저장소 셸 내부 (rdc term connect <repo>)
 docker run --rm --network host -it ubuntu bash
 # 이제 apt update, curl, pip install이 모두 작동합니다.
 ```
@@ -181,7 +181,7 @@ sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50
 
 - `-c`와 함께 인라인 모드를 사용하여 명령을 직접 실행하세요:
   ```bash
-  rdc term connect -m server-1 -c "ls -la"
+  rdc term connect server-1 -c "ls -la"
   ```
 - 인라인 모드에 문제가 있으면 `--external`로 외부 터미널을 강제 사용하세요
 - Linux에서는 `gnome-terminal`, `xterm` 또는 다른 터미널 에뮬레이터가 설치되어 있는지 확인하세요

@@ -46,7 +46,7 @@ All state lives in a config file on your workstation (e.g., `~/.config/rediacc/r
 
 ## The rediacc User
 
-When you run `rdc config machine setup`, renet creates a system user called `rediacc` on the remote server:
+When you run `rdc machine setup`, renet creates a system user called `rediacc` on the remote server:
 
 - **UID**: 7111
 - **Shell**: `/sbin/nologin` (cannot log in via SSH)

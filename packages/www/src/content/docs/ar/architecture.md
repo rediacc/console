@@ -5,7 +5,7 @@ description: >-
 category: Concepts
 order: 0
 language: ar
-sourceHash: "b1f9e2e3bba92912"
+sourceHash: "16b02000a82f3acd"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -47,7 +47,7 @@ sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 
 ## مستخدم rediacc
 
-عند تشغيل `rdc config machine setup`، يُنشئ renet مستخدم نظام باسم `rediacc` على الخادم البعيد:
+عند تشغيل `rdc machine setup`، يُنشئ renet مستخدم نظام باسم `rediacc` على الخادم البعيد:
 
 - **UID**: 7111
 - **Shell**: `/sbin/nologin` (لا يمكن تسجيل الدخول عبر SSH)

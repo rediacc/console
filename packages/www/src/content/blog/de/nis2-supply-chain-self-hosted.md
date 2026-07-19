@@ -12,7 +12,7 @@ tags:
   - compliance
 featured: false
 language: de
-sourceHash: "ffdb86da48dacc58"
+sourceHash: "d8da6730f7912fc9"
 sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 translatedFrom: en
 ---
@@ -129,7 +129,7 @@ Nach dem Wechsel zu Rediacc auf Hetzner:
 | Unterauftragsverarbeiter | (1) Keine für Self-Hosted; (2) Nur Hetzner-intern, im Hetzner-AVV aufgelistet |
 | Vertragsstatus | (1) Softwarelizenz, kein AVV erforderlich; (2) Hetzner-AVV + SCCs bereits vorhanden |
 | Schlüsselgewahrsam | Kunde (LUKS-Credential in Operator-Konfiguration, nicht auf dem Server) |
-| Exit-Plan | "rdc repo backup pull von einem beliebigen rclone-kompatiblen Ziel. Volumes sind LUKS-verschlüsselt; Operator hält Credential." |
+| Exit-Plan | "rdc repo pull von einem beliebigen rclone-kompatiblen Ziel. Volumes sind LUKS-verschlüsselt; Operator hält Credential." |
 | Letzte Bewertung | (2) durch bestehende IaaS-Bewertung abgedeckt |
 
 Zwei Registereinträge statt einem. Der kritische Eintrag gilt für den IaaS-Anbieter, bei dem der Einkäufer bereits einen AVV und einen getesteten Exit-Plan hatte, weil IaaS eine Beziehung ist, die die meisten Teams zu managen wissen. Der Rediacc-Eintrag ist nicht kritisch, weil es sich um eine Softwarelizenz handelt, nicht um einen Auftragsverarbeitungsvertrag.

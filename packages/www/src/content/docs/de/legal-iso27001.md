@@ -4,7 +4,7 @@ description: "Wie Rediacc den Informationssicherheitskontrollen von ISO 27001 f�
 category: "Legal"
 order: 5
 language: de
-sourceHash: "315946a692b6ee29"
+sourceHash: "1e23c89ae8cf0185"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -22,8 +22,8 @@ Schau, Rediacc ist eine Komponente der technischen Kontrollschicht innerhalb ein
 | **A.8**, Asset-Management | A.8.24 Einsatz von Kryptographie | LUKS2 AES-256 obligatorische Verschlüsselung aller Repositories. Key-Management: Anmeldedaten nur in der lokalen Konfiguration des Operators, nie auf dem Server. |
 | **A.9**, Zugangskontrolle | A.9.2 Benutzerzugangsverwaltung | SSH-Schlüssel-Authentifizierung. API-Tokens mit IP-Bindung, Team-Scoping und automatischem Widerruf bei Team-Entfernung. Zwei-Faktor-Authentifizierung (TOTP). |
 | **A.10**, Kryptographie | A.10.1 Kryptographische Kontrollen | LUKS2 mit konfigurierbaren Schlüsselparametern. Pro-Repository-Verschlüsselungsanmeldedaten. Gesamter Remote-Transport über SSH. Config Store implementiert Zero-Knowledge-Verschlüsselung: AES-256-GCM mit HKDF-Schlüsselableitung, X25519-Mitglieder-Schlüsselaustausch und zeitlich begrenzte SDK-Schlüssel für sofortigen Widerruf. |
-| **A.12**, Betriebssicherheit | A.12.3 Backup | `rdc repo push/pull` mit verschlüsseltem Offsite-Speicher auf mehrere Ziele (SSH, S3, B2, Azure, GDrive). CoW-Snapshots für Point-in-Time-Recovery. `rdc repo validate` überprüft Backup-Gesundheit und Repository-Integrität. |
-| **A.12**, Betriebssicherheit | A.12.4 Protokollierung und Überwachung | 70+ Ereignistypen (Auth, API-Tokens, Config, Lizenzierung, Maschinenoperationen). Maschinengesundheitsüberwachung via `rdc machine query`. Container-Status und Ressourcenüberwachung. |
+| **A.12**, Betriebssicherheit | A.12.3 Backup | `rdc repo push/pull` mit verschlüsseltem Offsite-Speicher auf mehrere Ziele (SSH, S3, B2, Azure, GDrive). CoW-Snapshots für Point-in-Time-Recovery. `rdc repo admin validate` überprüft Backup-Gesundheit und Repository-Integrität. |
+| **A.12**, Betriebssicherheit | A.12.4 Protokollierung und Überwachung | 70+ Ereignistypen (Auth, API-Tokens, Config, Lizenzierung, Maschinenoperationen). Maschinengesundheitsüberwachung via `rdc machine status`. Container-Status und Ressourcenüberwachung. |
 | **A.13**, Kommunikationssicherheit | A.13.1 Netzwerksicherheitsmanagement | Pro-Repository Docker-Daemon-Isolation. iptables-Regeln blockieren repositoryübergreifenden Verkehr. Loopback-IP-Subnetze (/26) pro Repository. Reverse Proxy mit TLS-Terminierung für externen Zugang. |
 | **A.14**, Systementwicklung | A.14.2 Sicherheit in der Entwicklung | Fork-basierte Entwicklungsumgebungen bieten Produktionsparität ohne Produktionsdatenexposition. Rediaccfile-Lebenszyklus-Hooks ermöglichen automatisierte Datenbereinigung in geklonten Umgebungen. |
 
@@ -49,4 +49,4 @@ Das wird interessant: Der Fork-Test-Promote-Workflow entspricht den Änderungsma
 
 - Audit-Log-Export unterstützt regelmäßige Sicherheitsüberprüfungen
 - Maschinengesundheitsprüfungen (`rdc machine status --system`) unterstützen Betriebsüberwachung
-- `rdc repo validate` überprüft Backup-Gesundheit nach jeder Operation
+- `rdc repo admin validate` überprüft Backup-Gesundheit nach jeder Operation

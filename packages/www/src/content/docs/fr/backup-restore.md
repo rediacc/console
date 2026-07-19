@@ -4,7 +4,7 @@ description: "Sauvegardez des dépôts chiffrés vers n'importe quel stockage co
 category: Guides
 order: 7
 language: fr
-sourceHash: "d800519615085ee9"
+sourceHash: "659b41577a6a220c"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -21,7 +21,7 @@ Avant d'envoyer des sauvegardes, enregistrez un fournisseur de stockage. Rediacc
 Si vous avez déjà un remote rclone configuré :
 
 ```bash
-rdc config storage import --file rclone.conf
+rdc storage import rclone.conf
 ```
 
 Ceci importe des configurations de stockage depuis un fichier de configuration rclone dans la configuration actuelle. Types pris en charge : S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob et Swift.
@@ -29,7 +29,7 @@ Ceci importe des configurations de stockage depuis un fichier de configuration r
 ### Afficher les stockages
 
 ```bash
-rdc config storage list
+rdc storage list
 ```
 
 ## Envoyer une sauvegarde
@@ -37,10 +37,10 @@ rdc config storage list
 Envoyez une sauvegarde de dépôt vers un stockage externe :
 
 ```bash
-rdc repo push --name my-app -m server-1 --to my-storage
+rdc repo push my-app --to my-storage
 ```
 
-La sauvegarde atterrit dans le dossier `hot/` du stockage quand le dépôt est monté au moment du push, et dans `cold/` quand il est démonté. C'est la même disposition qu'utilisent les sauvegardes planifiées, de sorte que `rdc repo backup list` affiche toutes les sauvegardes dans un seul tableau.
+La sauvegarde atterrit dans le dossier `hot/` du stockage quand le dépôt est monté au moment du push, et dans `cold/` quand il est démonté. C'est la même disposition qu'utilisent les sauvegardes planifiées, de sorte que `rdc backup list` affiche toutes les sauvegardes dans un seul tableau.
 
 | Option | Description |
 |--------|-------------|
@@ -60,7 +60,7 @@ La sauvegarde atterrit dans le dossier `hot/` du stockage quand le dépôt est m
 Récupérez une sauvegarde de dépôt depuis un stockage externe :
 
 ```bash
-rdc repo pull --name my-app -m server-1 --from my-storage
+rdc repo pull my-app --from my-storage
 ```
 
 Pull vérifie toujours que le dépôt cible est monté avant d'écrire. S'il ne l'est pas, l'opération est annulée.
@@ -80,7 +80,7 @@ Pull vérifie toujours que le dépôt cible est monté avant d'écrire. S'il ne 
 Affichez les sauvegardes disponibles dans un emplacement de stockage :
 
 ```bash
-rdc repo backup list --from my-storage -m server-1
+rdc backup list -m server-1 --storage my-storage
 ```
 
 La sortie est un tableau unifié qui fusionne les deux [dossiers de sauvegardes planifiées](#sauvegardes-planifiées) (`hot/` et `cold/`) afin que vous voyiez toutes les sauvegardes en une seule vue :
@@ -96,8 +96,8 @@ La sortie est un tableau unifié qui fusionne les deux [dossiers de sauvegardes 
 Pour zoomer sur un seul mode, passez `--path` :
 
 ```bash
-rdc repo backup list --from my-storage -m server-1 --path hot
-rdc repo backup list --from my-storage -m server-1 --path cold
+rdc backup list -m server-1 --storage my-storage --path hot
+rdc backup list -m server-1 --storage my-storage --path cold
 ```
 
 ### Disposition du stockage
@@ -184,7 +184,7 @@ Une sauvegarde froide s'exécute en trois phases par dépôt inclus : **arrêt, 
 
 - `rdc machine status <machine> --containers` affiche l'état d'exécution. Comparez avec l'ensemble attendu.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` sur la machine. Inspectez via `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` avec un `startedAt` obsolète signifie que la dernière sauvegarde ne s'est pas terminée proprement.
-- Les journaux du run de sauvegarde renet (`journalctl -u renet-*` ou l'invocation directe `rdc machine backup schedule`) émettent une ligne de résumé finale de la forme `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` non vide est la cible de grep.
+- Les journaux du run de sauvegarde renet (`journalctl -u renet-*` ou l'invocation directe `rdc backup schedule`) émettent une ligne de résumé finale de la forme `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` non vide est la cible de grep.
 
 ### Estimer le temps d'arrêt d'une sauvegarde froide
 
@@ -248,8 +248,7 @@ Les interruptions sont sans danger. Arrêter le service (ou redémarrer la machi
 Le défaut canonique est un partage en deux stratégies : un flux hot horaire rapide qui capture chaque dépôt, et un flux cold hebdomadaire plus lent qui prend des snapshots cohérents au niveau applicatif. Les deux stratégies écrivent dans des sous-dossiers de stockage différents (`hot/` et `cold/`) afin que les sauvegardes ne se mélangent jamais.
 
 ```bash
-rdc config backup-strategy set \
-  --name hourly-hot \
+rdc backup strategy set hourly-hot \
   --destination my-storage \
   --cron "0 * * * *" \
   --mode hot \
@@ -258,8 +257,7 @@ rdc config backup-strategy set \
 ```
 
 ```bash
-rdc config backup-strategy set \
-  --name weekly-cold \
+rdc backup strategy set weekly-cold \
   --destination my-storage \
   --cron "15 3 * * 0" \
   --mode cold \
@@ -283,14 +281,14 @@ Le filtre `--exclude` sur la stratégie cold est l'échappatoire recommandée po
 ### Afficher les stratégies
 
 ```bash
-rdc config backup-strategy list
-rdc config backup-strategy show --name weekly-cold
+rdc backup strategy list
+rdc backup strategy show weekly-cold
 ```
 
 ### Supprimer une stratégie
 
 ```bash
-rdc config backup-strategy remove --name weekly-cold
+rdc backup strategy remove weekly-cold
 ```
 
 ### Associer des stratégies à une machine
@@ -330,8 +328,7 @@ Chaque stratégie peut porter des filtres `--include` et `--exclude`. Les noms d
 
 ```bash
 # Stratégie hot : sauvegarder tout toutes les heures
-rdc config backup-strategy set \
-  --name hourly-hot \
+rdc backup strategy set hourly-hot \
   --destination my-storage \
   --cron "0 * * * *" \
   --mode hot \
@@ -339,8 +336,7 @@ rdc config backup-strategy set \
   --enable
 
 # Stratégie cold : sauvegarder tout chaque semaine, sauf le grand jeu de données dérivé
-rdc config backup-strategy set \
-  --name weekly-cold \
+rdc backup strategy set weekly-cold \
   --destination my-storage \
   --cron "15 3 * * 0" \
   --mode cold \
@@ -359,7 +355,7 @@ Excluez un dépôt de l'exécution haute fréquence quand :
 
 > **Si les données sont purement régénérables**, envisagez si vous avez vraiment besoin de les sauvegarder. Une alternative est de ne sauvegarder que les entrées sources brutes (les dumps CSV dans cet exemple) et d'ignorer entièrement la copie dérivée. Une sauvegarde froide hebdomadaire des entrées sources est bien plus petite et entièrement suffisante pour la récupération.
 
-Les dépôts non exclus d'aucune des deux stratégies apparaissent dans les sous-dossiers `hot/` et `cold/` du stockage. La sortie fusionnée de `rdc repo backup list` affiche les deux lignes pour vérifier quels flux couvrent quels dépôts.
+Les dépôts non exclus d'aucune des deux stratégies apparaissent dans les sous-dossiers `hot/` et `cold/` du stockage. La sortie fusionnée de `rdc backup list` affiche les deux lignes pour vérifier quels flux couvrent quels dépôts.
 
 ## Opérations de sauvegarde
 
@@ -368,8 +364,8 @@ Les dépôts non exclus d'aucune des deux stratégies apparaissent dans les sous
 Envoyez les stratégies associées vers une machine en tant que timers systemd :
 
 ```bash
-rdc machine backup schedule -m server-1
-rdc machine backup schedule -m server-1 --dry-run
+rdc backup schedule -m server-1
+rdc backup schedule -m server-1 --dry-run
 ```
 
 Le déploiement est un réconciliateur d'état. Il lit les fichiers d'unité actuels et l'état de systemd sur la machine, les compare à ce que la configuration produirait (SHA-256 par fichier) et ne touche que les unités dont le contenu a réellement changé. Relancer sans changement de configuration est un no-op : pas d'écritures, pas de `daemon-reload`, pas d'agitation des minuteurs.
@@ -385,8 +381,8 @@ Si une sauvegarde est en cours d'exécution pour une stratégie que vous êtes s
 Déclenchez une sauvegarde immédiatement sans attendre le timer. Fonctionne même sans timers déployés, en utilisant `systemd-run` pour une exécution ad hoc :
 
 ```bash
-rdc machine backup now -m server-1
-rdc machine backup now -m server-1 --strategy weekly-cold
+rdc backup run -m server-1
+rdc backup run weekly-cold -m server-1
 ```
 
 ### Voir le statut de la sauvegarde
@@ -394,15 +390,15 @@ rdc machine backup now -m server-1 --strategy weekly-cold
 Affiche le statut actuel des timers de sauvegarde et les résultats récents des tâches :
 
 ```bash
-rdc machine backup status -m server-1
-rdc machine backup status -m server-1 --strategy hourly-hot
+rdc backup status -m server-1
+rdc backup status hourly-hot -m server-1
 ```
 
 ### Annuler une sauvegarde en cours
 
 ```bash
-rdc machine backup cancel -m server-1
-rdc machine backup cancel -m server-1 --strategy weekly-cold
+rdc backup cancel -m server-1
+rdc backup cancel weekly-cold -m server-1
 ```
 
 ## Migration de dépôt
@@ -410,7 +406,7 @@ rdc machine backup cancel -m server-1 --strategy weekly-cold
 Déplacer un dépôt d'une machine à une autre :
 
 ```bash
-rdc repo migrate --name my-app --from server-1 --to server-2
+rdc repo migrate my-app@server-1 --to server-2
 ```
 
 | Option | Description |
@@ -430,7 +426,7 @@ La migration transfère les données du dépôt chiffré via rsync. Le dépôt s
 Parcourez le contenu d'un emplacement de stockage :
 
 ```bash
-rdc storage browse --name my-storage
+rdc storage browse my-storage
 ```
 
 ## Bonnes pratiques

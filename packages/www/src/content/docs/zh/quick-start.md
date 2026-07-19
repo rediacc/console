@@ -4,7 +4,7 @@ description: 几分钟内在您的服务器上运行容器化服务。
 category: Guides
 order: -1
 language: zh
-sourceHash: "a1350abc611570ef"
+sourceHash: "12382a10b8fd01cb"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -59,8 +59,8 @@ rdc config ssh set --key ~/.ssh/id_ed25519
 ### 3. 添加服务器
 
 ```bash
-rdc config machine add --name my-server --ip 192.168.1.100 --user admin
-rdc config machine setup --name my-server  # 配置 renet + 创建数据存储
+rdc machine add my-server --ip 192.168.1.100 --user admin
+rdc machine setup my-server  # 配置 renet + 创建数据存储
 ```
 
 **过程说明：** 扫描 SSH 主机密钥，上传 renet 二进制文件，在服务器上初始化加密数据存储。准备好接收仓库。
@@ -83,7 +83,7 @@ cat ~/.config/rediacc/rediacc.json         # 原始 JSON：机器、仓库、存
 ### 1. 创建仓库
 
 ```bash
-rdc repo create --name my-app -m my-server --size 2G  # 创建 2 GB 加密仓库
+rdc repo create my-app -m my-server --size 2G  # 创建 2 GB 加密仓库
 ```
 
 创建加密卷，挂载它，并启动其 Docker 守护进程。仓库已注册到您的配置中，可以使用了。
@@ -94,7 +94,7 @@ rdc repo create --name my-app -m my-server --size 2G  # 创建 2 GB 加密仓库
 
 ```bash
 rdc repo admin template list                                        # 显示内置模板
-rdc repo admin template apply --name app-postgres -m my-server -r my-app  # 部署 docker-compose.yml + Rediaccfile
+rdc repo admin template apply my-app --template app-postgres  # 部署 docker-compose.yml + Rediaccfile
 ```
 
 模板提供 `docker-compose.yml`、`Rediaccfile` 和辅助文件。如果没有模板（或您自己的 compose 文件），就没有可启动的内容。使用内置模板作为您第一个仓库的起点。这是从头到尾体验完整工作流程的最快途径。
@@ -102,9 +102,9 @@ rdc repo admin template apply --name app-postgres -m my-server -r my-app  # 部�
 ### 3. 启动仓库
 
 ```bash
-rdc repo up --name my-app -m my-server  # 运行 Rediaccfile up()
+rdc repo up my-app -m my-server  # 运行 Rediaccfile up()
 rdc repo list -m my-server                           # 查看机器上的所有仓库
-rdc repo status --name my-app -m my-server  # 挂载状态、Docker、大小、加密
+rdc repo status my-app  # 挂载状态、Docker、大小、加密
 ```
 
 `repo up` 会在需要时自动挂载。无需额外参数。
@@ -142,25 +142,25 @@ rdc vscode connect my-app              # 打开 VS Code SSH，进入仓库沙箱
 
 **终端：**
 ```bash
-rdc term connect -m my-server -r my-app                            # SSH 进入仓库沙箱
-rdc term connect -m my-server -r my-app -c "curl localhost:3000"   # 运行命令并退出
-rdc term connect -m my-server                                   # SSH 到机器（无沙箱）
+rdc term connect my-app                            # SSH 进入仓库沙箱
+rdc term connect my-app -c "curl localhost:3000"   # 运行命令并退出
+rdc term connect my-server                                   # SSH 到机器（无沙箱）
 ```
 
 **文件同步（通过 SSH 的 rsync）：**
 ```bash
-rdc repo sync upload -m my-server -r my-app --local ./src                                   # 上传目录
-rdc repo sync upload -m my-server -r my-app --local ./config.yml --remote conf              # 上传单个文件
-rdc repo sync download -m my-server -r my-app --local ./backup                              # 下载目录
-rdc repo sync download -m my-server -r my-app --remote-file conf/config.yml --local ./dl    # 下载单个文件
-rdc repo sync download -m my-server -r my-app --local ./backup --dry-run                    # 先预览
+rdc repo sync upload my-app@my-server --local ./src                                   # 上传目录
+rdc repo sync upload my-app@my-server --local ./config.yml --remote conf              # 上传单个文件
+rdc repo sync download my-app@my-server --local ./backup                              # 下载目录
+rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl    # 下载单个文件
+rdc repo sync download my-app@my-server --local ./backup --dry-run                    # 先预览
 ```
 
 **隧道（SSH 端口转发到容器）：**
 ```bash
-rdc repo tunnel -m my-server -r my-app -c app  # 自动检测 app 容器的端口
-rdc repo tunnel -m my-server -r my-app -c db --port 5432  # 隧道连接 Postgres
-rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # 自定义本地端口
+rdc repo tunnel my-app@my-server -c app  # 自动检测 app 容器的端口
+rdc repo tunnel my-app@my-server -c db --port 5432  # 隧道连接 Postgres
+rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432  # 自定义本地端口
 ```
 
 运行隧道 → 在浏览器中打开 `localhost:3000` → 从远程服务器访问实时应用。
@@ -174,9 +174,9 @@ rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # 自定
 ### 1. 主仓库与分叉仓库
 
 ```bash
-rdc repo fork --parent my-app -m my-server --tag experiment --up  # 即时 CoW 克隆 + 启动
+rdc repo fork my-app --tag experiment --up  # 即时 CoW 克隆 + 启动
 rdc repo list -m my-server                                  # 显示：my-app（主仓库）+ my-app:experiment（分叉）
-rdc repo delete --name my-app:experiment -m my-server  # 删除分叉，主仓库不受影响
+rdc repo delete my-app:experiment  # 删除分叉，主仓库不受影响
 ```
 
 **即时、零拷贝克隆。** CoW（写时复制）。微秒级完成，不复制数据。块在一方写入前保持共享。
@@ -192,32 +192,32 @@ rdc repo delete --name my-app:experiment -m my-server  # 删除分叉，主仓�
 
 ```bash
 # 将仓库推送到另一台机器
-rdc repo push --name my-app -m my-server --to backup-server
+rdc repo push my-app --to backup-server
 
 # 推送并在目标机器上自动部署
-rdc repo push --name my-app -m my-server --to backup-server --up
+rdc backup restore my-app --as my-app -m backup-server --up
 
 # 使用 CRIU 检查点推送（实时迁移，保留内存状态）
-rdc repo push --name my-app -m my-server --to new-server --checkpoint --up
+rdc repo push my-app --to new-server --checkpoint
 
 # 推送到新机器（通过云服务商自动配置）
-rdc repo push --name my-app -m my-server --to new-server --provision linode --up
+rdc repo push my-app --to new-server --provision linode
 ```
 
 ### 3. 推送到云存储（OneDrive、Google Drive、S3）
 
 ```bash
 # 导入您的 rclone 配置作为存储后端
-rdc config storage import --file ~/rclone.conf
+rdc storage import ~/rclone.conf
 
 # 列出可用的存储
 rdc storage list
 
 # 将仓库推送到云存储
-rdc repo push --name my-app -m my-server --to my-s3-backup
+rdc repo push my-app --to my-s3-backup
 
 # 列出存储上的备份
-rdc repo backup list --from my-s3-backup -m my-server
+rdc backup list -m my-server --storage my-s3-backup
 ```
 
 `--to` 自动检测目标是机器还是存储后端。支持所有 rclone 支持的提供商：S3、R2、B2、OneDrive、Google Drive、SFTP 等。
@@ -226,13 +226,13 @@ rdc repo backup list --from my-s3-backup -m my-server
 
 ```bash
 # 从云机器拉取仓库到本地服务器
-rdc repo pull --name my-app -m my-local-server --from cloud-server
+rdc repo pull my-app@my-local-server --from cloud-server
 
 # 从云存储拉取
-rdc repo pull --name my-app -m my-local-server --from my-s3-backup
+rdc repo pull my-app@my-local-server --from my-s3-backup
 
 # 拉取并立即启动
-rdc repo pull --name my-app -m my-local-server --from my-s3-backup --up
+rdc repo pull my-app@my-local-server --from my-s3-backup --up
 ```
 
 **为什么要拉取？** 您的本地机器在 NAT 之后。云端无法推送到您这里。但您可以访问云端。拉取将仓库带回本地。
@@ -248,9 +248,9 @@ rdc repo pull --name my-app -m my-local-server --from my-s3-backup --up
 ### 1. 基础设施配置
 
 ```bash
-rdc config infra set -m my-server  # 配置：基础域名、公共 IP、端口范围
-rdc config infra show -m my-server  # 查看配置
-rdc config infra push -m my-server  # 将代理配置推送到远程
+rdc machine infra set my-server  # 配置：基础域名、公共 IP、端口范围
+rdc machine infra show my-server  # 查看配置
+rdc machine infra push my-server  # 将代理配置推送到远程
 ```
 
 **路由工作原理：**
@@ -261,8 +261,8 @@ rdc config infra push -m my-server  # 将代理配置推送到远程
 ### 2. 代理模板
 
 ```bash
-rdc repo admin template apply --name proxy -m my-server -r infra  # 将代理部署到仓库
-rdc repo up --name infra -m my-server  # 启动 Traefik
+rdc repo admin template apply infra --template proxy  # 将代理部署到仓库
+rdc repo up infra -m my-server  # 启动 Traefik
 ```
 
 Traefik 现在将外部流量路由到此机器上的所有仓库。每个容器自动获得 HTTPS 端点。

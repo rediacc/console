@@ -1,4 +1,5 @@
 ---
+sourceHash: "51a38f7f8567e63e"
 title: Continuidade Bancária Durante Apagão
 description: Manter as operações bancárias durante cortes de energia com espelhamento de dados intercontinental.
 category: Use Cases

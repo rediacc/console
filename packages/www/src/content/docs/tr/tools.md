@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: tr
-sourceHash: "59abc2faa1157369"
+sourceHash: "2b8afb656455d6ec"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -24,16 +24,16 @@ SSH üzerinden rsync kullanarak iş istasyonunuz ile uzak depo arasında dosya a
 
 ```bash
 # Dizin (içeriği uzak konuma birleştirilir)
-rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
+rdc repo sync upload my-app --local ./src --remote /app/src
 
 # Tek dosya, uzak dizine bırakılır (temel ad korunur)
-rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote /app/conf
+rdc repo sync upload my-app --local ./config.yml --remote /app/conf
 
 # Tek dosya, açık hedef yolu
-rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote-file /app/conf/config.yml
+rdc repo sync upload my-app --local ./config.yml --remote-file /app/conf/config.yml
 
 # Bir çağrıda birden fazla kaynak
-rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote /app
+rdc repo sync upload my-app --local a.yml b.yml ./assets --remote /app
 ```
 
 `--remote` ve `--remote-file` karşılıklı olarak dışlayıcıdır. `--remote-file` tamamen bir dosyaya işaret eden bir `--local` yolu gerektirir.
@@ -46,16 +46,16 @@ Bir dizin için `--remote` (varsayılan) veya tek bir dosya için `--remote-file
 
 ```bash
 # Dizin
-rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
+rdc repo sync download my-app --remote /app/data --local ./data
 
 # Tek dosya: `--local` mevcut bir dizin olmalıdır
-rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
+rdc repo sync download my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
 ### Senkronizasyon Durumunu Kontrol Etme
 
 ```bash
-rdc repo sync status -m server-1 -r my-app
+rdc repo sync status my-app
 ```
 
 ### Seçenekler
@@ -83,8 +83,8 @@ Bir makineye veya depo ortamına etkileşimli SSH oturumu açın.
 Bağlanmanın en hızlı yolu:
 
 ```bash
-rdc term connect -m server-1                    # Bir makineye bağlan
-rdc term connect -m server-1 -r my-app             # Bir depoya bağlan
+rdc term connect server-1                    # Bir makineye bağlan
+rdc term connect my-app             # Bir depoya bağlan
 ```
 
 ### Komut Çalıştırma
@@ -92,8 +92,8 @@ rdc term connect -m server-1 -r my-app             # Bir depoya bağlan
 Etkileşimli oturum açmadan bir komut çalıştırın:
 
 ```bash
-rdc term connect -m server-1 -c "uptime"
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect server-1 -c "uptime"
+rdc term connect my-app -c "docker ps"
 ```
 
 Bir depoya bağlanırken, `DOCKER_HOST` otomatik olarak deponun izole Docker soketine ayarlanır, böylece `docker ps` yalnızca o deponun konteynerlerini gösterir.
@@ -103,8 +103,8 @@ Bir depoya bağlanırken, `DOCKER_HOST` otomatik olarak deponun izole Docker sok
 Veya aynı sonuç için açık bayraklarla `connect` alt komutunu kullanın:
 
 ```bash
-rdc term connect -m server-1
-rdc term connect -m server-1 -r my-app
+rdc term connect server-1
+rdc term connect my-app
 ```
 
 ### Konteyner İşlemleri
@@ -113,19 +113,19 @@ rdc term connect -m server-1 -r my-app
 
 ```bash
 # Konteyner içinde kabuk aç
-rdc term connect -m server-1 -r my-app --container <container-id>
+rdc repo exec my-app -c <container> -i -- bash
 
 # Konteyner günlüklerini görüntüle
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs
+rdc repo logs my-app -c <container>
 
 # Günlükleri gerçek zamanlı takip et
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs --follow
+rdc repo logs my-app -c <container> --follow
 
 # Konteyner istatistiklerini görüntüle
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action stats
+rdc repo exec my-app -c <container> -i -- bash --container-action stats
 
 # Konteynerde komut çalıştır
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action exec -c "ls -la"
+rdc repo exec my-app -c <container> -- ls -la
 ```
 
 | Seçenek | Açıklama |
@@ -143,7 +143,7 @@ Doğru SSH ayarlarıyla önceden yapılandırılmış bir uzak SSH oturumunu VS 
 ### Depoya Bağlanma
 
 ```bash
-rdc vscode connect -r my-app -m server-1
+rdc vscode connect my-app
 ```
 
 Bu komut:
@@ -181,7 +181,7 @@ VS Code kurulumunu, Remote SSH eklentisini ve etkin bağlantıları doğrular.
 Yerel VS Code yok mu? Editörü depo sandbox'ının içinden sunun ve herhangi bir tarayıcıda açın:
 
 ```bash
-rdc vscode connect -r my-app -m server-1 --browser
+rdc vscode connect my-app --browser
 ```
 
 Bu komut:
@@ -192,8 +192,8 @@ Bu komut:
 Siz tüneli kapattıktan sonra sunucu çalışmaya devam eder; yeniden bağlanırken mevcut sunucu kullanılır. Yönetmek için:
 
 ```bash
-rdc vscode serve status -r my-app -m server-1
-rdc vscode serve stop -r my-app -m server-1
+rdc vscode serve status my-app
+rdc vscode serve stop my-app
 ```
 
 | Seçenek | Açıklama |

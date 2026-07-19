@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: tr
-sourceHash: "b1f9e2e3bba92912"
+sourceHash: "16b02000a82f3acd"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -48,7 +48,7 @@ Tüm durum bilgisi iş istasyonunuzdaki bir yapılandırma dosyasında saklanır
 
 ## rediacc Kullanıcısı
 
-`rdc config machine setup` komutunu çalıştırdığınızda, renet uzak sunucuda `rediacc` adında bir sistem kullanıcısı oluşturur:
+`rdc machine setup` komutunu çalıştırdığınızda, renet uzak sunucuda `rediacc` adında bir sistem kullanıcısı oluşturur:
 
 - **UID**: 7111
 - **Kabuk**: `/sbin/nologin` (SSH üzerinden oturum açılamaz)

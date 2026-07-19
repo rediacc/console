@@ -4,7 +4,7 @@ description: "머신 상태, 컨테이너, 서비스, 저장소를 모니터링�
 category: "Guides"
 order: 9
 language: ko
-sourceHash: "b6deba17f1137188"
+sourceHash: "ab050e731db18848"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -17,7 +17,7 @@ Rediacc는 머신 상태, 실행 중인 컨테이너, 서비스, 저장소 상�
 머신에 대한 전체 상태 보고서를 가져옵니다.
 
 ```bash
-rdc machine health --name server-1
+rdc machine health server-1
 ```
 
 다음을 보고합니다.
@@ -33,7 +33,7 @@ rdc machine health --name server-1
 머신의 모든 저장소에서 실행 중인 컨테이너를 봅니다.
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 | 열 | 설명 |
@@ -57,7 +57,7 @@ JSON 출력에는 전체 컨테이너 세부 정보(`labels`, `port_mappings`, `
 머신에서 Rediacc와 관련된 systemd 서비스를 봅니다.
 
 ```bash
-rdc machine services --name server-1
+rdc machine status server-1 --services
 ```
 
 | 열 | 설명 |
@@ -80,7 +80,7 @@ JSON 출력에는 `repository`(해석된 이름) 및 `repository_guid`(원본 GU
 상세한 통계와 함께 머신의 저장소를 봅니다.
 
 ```bash
-rdc machine repos --name server-1
+rdc machine status server-1 --repositories
 ```
 
 | 열 | 설명 |
@@ -104,7 +104,7 @@ JSON 출력에는 `name`(해석된 이름)과 `guid`(원본 GUID)가 포함되�
 머신의 모든 저장소에서 BTRFS 단편화 및 reflink 공유를 검사합니다.
 
 ```bash
-rdc machine query --name server-1 --storage-health
+rdc machine status server-1 --storage-health
 ```
 
 | 열 | 설명 |
@@ -182,7 +182,7 @@ Rediacc는 모든 머신에서 주간 BTRFS 스크럽을 자동으로 예약합�
 즉시 스크럽을 실행하려면(예: 전원 장애 또는 디스크 마이그레이션 후):
 
 ```bash
-rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
+rdc term connect server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
 결과는 동일한 JSON 파일에 저장되며 다음 `rdc machine status --system`에서 즉시 확인할 수 있습니다.
@@ -192,7 +192,7 @@ rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/r
 배포 정보를 포함한 머신의 완전한 개요를 가져옵니다.
 
 ```bash
-rdc machine query --name server-1
+rdc machine status server-1
 ```
 
 다음을 제공합니다.
@@ -208,7 +208,7 @@ rdc machine query --name server-1
 머신에 대한 SSH 연결을 확인합니다.
 
 ```bash
-rdc term connect -m server-1 -c "hostname"
+rdc term connect server-1 -c "hostname"
 ```
 
 이 명령은 성공 시 원격 호스트명을 출력하고, 실패 시 연결 오류를 출력하여

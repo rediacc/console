@@ -109,7 +109,7 @@ Renet auto-injects these into every container:
 - **Dependency-aware restore**: Uses compose `depends_on` to start databases first (wait for healthy), then CRIU-restore app containers.
 - **TCP connections become stale after restore**, apps must handle `ECONNRESET` and reconnect. CRIU does not preserve active TCP connection state across restore in any supported flow.
 - **Docker experimental mode** is enabled automatically on per-repo daemons.
-- **CRIU is installed** during `rdc config machine setup`.
+- **CRIU is installed** during `rdc machine setup`.
 - **`/etc/criu/runc.conf`** is configured with `tcp-established` by default.
 - **Container security settings are auto-injected for labeled containers**, `renet compose` adds the following to containers with `rediacc.checkpoint=true`:
   - `cap_add`: `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` (minimal set for CRIU on kernel 5.9+)
@@ -130,7 +130,7 @@ Renet auto-injects these into every container:
 
 ### Host security policies by OS
 
-Across the five officially supported server OSes (see [Requirements](/en/docs/requirements)), the per-repo docker daemon and the containers it runs use **default container labels**. `rdc config machine setup` does not install a custom SELinux policy or AppArmor profile. That is intentional: the trade-off is that container processes run under the host OS default label policy, not a Rediacc-specific confinement profile. If your threat model requires mandatory access controls at the container layer, configure them at the host level before deploying.
+Across the five officially supported server OSes (see [Requirements](/en/docs/requirements)), the per-repo docker daemon and the containers it runs use **default container labels**. `rdc machine setup` does not install a custom SELinux policy or AppArmor profile. That is intentional: the trade-off is that container processes run under the host OS default label policy, not a Rediacc-specific confinement profile. If your threat model requires mandatory access controls at the container layer, configure them at the host level before deploying.
 
 - **Ubuntu 24.04 / openSUSE Leap 16.0**: AppArmor is enabled by default. Containers run under the default docker-container profile. The only carve-out is CRIU (`apparmor=unconfined` for `rediacc.checkpoint=true` containers, per the note above).
 - **Fedora 43 / Oracle Linux 10**: SELinux runs enforcing by default. Containers get the standard `container_t` context. No extra policy installation is needed. If a setup step fails with AVC denials, see [Troubleshooting → SELinux denials](/en/docs/troubleshooting).

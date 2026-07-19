@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 40
 language: zh
-sourceHash: "c72fbcc13e7e77ed"
+sourceHash: "b555f4ca6b58ff4b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,8 +24,8 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ### 概览
 
 ```bash
-rdc repo diff --name <fork> -m <machine>            # diff a fork against its parent
-rdc repo diff --name <fork> --base <repo> -m <machine>   # diff against an arbitrary related repo
+rdc repo diff <fork>                 # diff a fork against its parent
+rdc repo diff <fork> --base <repo>   # diff against an arbitrary related repo
 ```
 
 ### 选项
@@ -51,7 +51,7 @@ rdc repo diff --name <fork> --base <repo> -m <machine>   # diff against an arbit
 仅使用 `--name` 时,分支与本地配置中记录的父仓库进行差异比较。此处分支 `test-1gb:fork1` 有一个已修改的文件:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -62,7 +62,7 @@ M  hello.txt
 传递 `--base` 以针对任意相关仓库进行差异比较。 `--base` 是基础(旧)端, `--name` 是目标(新)端:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --base test-1gb:latest -m hostinger
+$ rdc repo diff test-1gb:fork1 --base test-1gb:latest
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -73,7 +73,7 @@ M  hello.txt
 `--stat` 添加每个文件的字节和块增量及总计页脚:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
+$ rdc repo diff test-1gb:fork1 --stat
  hello.txt | +8 bytes, 1 block
 
 1 file changed, 4096 bytes touched
@@ -84,7 +84,7 @@ $ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
 `--name-only` 每行打印一个路径,无状态字母,准备好输入到另一条命令:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --name-only -m hostinger | xargs -I{} echo "review: {}"
+$ rdc repo diff test-1gb:fork1 --name-only | xargs -I{} echo "review: {}"
 review: hello.txt
 ```
 
@@ -93,7 +93,7 @@ review: hello.txt
 `--content` 生成单个文本文件的统一差异:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
+$ rdc repo diff test-1gb:fork1 --content hello.txt
 --- a/hello.txt
 +++ b/hello.txt
 @@ -1 +1 @@
@@ -106,7 +106,7 @@ $ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
 `--json` 在stdout上发出结构化信封,因此它可以干净地输入到 `jq` :
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --json -m hostinger | jq '.data.entries[] | select(.status=="M")'
+$ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
 {
   "status": "M",
   "path": "/hello.txt",

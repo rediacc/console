@@ -12,7 +12,7 @@ tags:
   - compliance
 featured: false
 language: ko
-sourceHash: "ffdb86da48dacc58"
+sourceHash: "d8da6730f7912fc9"
 sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 translatedFrom: en
 ---
@@ -130,7 +130,7 @@ Hetzner에서 Rediacc으로 이전 후:
 | 하위 처리자 | (1) 셀프호스팅에 해당 없음; (2) Hetzner 내부 전용, DPA에 명시 |
 | 계약 상태 | (1) 소프트웨어 라이선스, DPA 불필요; (2) Hetzner DPA + SCC 기체결 |
 | 키 관리 | 고객(LUKS2 자격증명이 운영자 구성에 있으며 서버에 없음) |
-| 종료 계획 | "rclone 호환 대상에서 rdc repo backup pull. 볼륨은 LUKS2 암호화; 운영자가 자격증명 보유." |
+| 종료 계획 | "rclone 호환 대상에서 rdc repo pull. 볼륨은 LUKS2 암호화; 운영자가 자격증명 보유." |
 | 최근 평가 | (2) 기존 IaaS 검토로 충당 |
 
 하나 대신 두 개의 등록부 항목입니다. 중요 티어 항목은 IaaS 공급자를 위한 것으로, 구매자는 이미 DPA와 테스트된 종료 계획을 갖추고 있었습니다. IaaS는 대부분의 팀이 관리하는 방법을 알고 있는 관계이기 때문입니다. Rediacc 항목은 비중요 티어입니다. 데이터 처리자가 아닌 소프트웨어 라이선스이기 때문입니다.

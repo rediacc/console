@@ -5,7 +5,7 @@ description: >-
 category: Guides
 order: 5
 language: ja
-sourceHash: "2d470a876c00c352"
+sourceHash: "f33bcf4598caedc8"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -212,7 +212,7 @@ renetとDockerは、コンテナの再起動処理について意図的に見解
 
 **ドリフトの修正方法。** コンテナの`.rediacc.json`に保存されたポリシーが誤っている場合（例：composeを編集したがコンテナを再作成しなかった場合）、`rdc repo up <repo>`を再実行してください。コンテナは更新されたポリシーを記録した状態で再作成されます。
 
-> **実験的：** コールドバックアップサイドカーベースの回復と`rdc machine query`の`--sync-certs`フラグはrenet 0.9+で導入されました。古いバージョンはウォッチドッグ回復のために保存された`restart_policy`のみに依存するため、コールドバックアップ後に`on-failure`コンテナが孤立する可能性があります。
+> **実験的：** コールドバックアップサイドカーベースの回復と`rdc machine status`の`--sync-certs`フラグはrenet 0.9+で導入されました。古いバージョンはウォッチドッグ回復のために保存された`restart_policy`のみに依存するため、コールドバックアップ後に`on-failure`コンテナが孤立する可能性があります。
 
 > **Docker のブリッジネットワーキングはリポジトリごとのデーモンでは無効化されています。** リポジトリごとの各デーモン（`FlavorRediacc`）は `"bridge": "none"` と `"iptables": false` で構成されています。リポジトリシェル内で単純に `docker run <image>` を実行してもコンテナは起動しますが、ループバックインターフェースしか持たず、DNS も外向きの接続性もありません。これは仕様です。なぜなら、リポジトリ間のループバック分離は eBPF の cgroup フックによって強制されており、ブリッジ化されたコンテナはそれを迂回してしまうからです。本番サービスは `renet compose` を使用してください（ホストネットワーキングを自動で注入してくれます）。アドホックなデバッグでは、明示的に `--network host` を指定してください: `docker run --rm --network host -it ubuntu bash`。
 >
@@ -225,7 +225,7 @@ renetとDockerは、コンテナの再起動処理について意図的に見解
 リポジトリをマウントし、すべてのサービスを開始します：
 
 ```bash
-rdc repo up --name my-app -m server-1
+rdc repo up my-app
 ```
 
 | オプション | 説明 |
@@ -262,12 +262,12 @@ HTTP services (accessible via proxy after ~3s):
 ## サービスの停止
 
 ```bash
-rdc repo down --name my-app -m server-1
+rdc repo down my-app
 ```
 
 | オプション | 説明 |
 |--------|-------------|
-| `--unmount` | 停止後に暗号化リポジトリをアンマウント。効果が現れない場合は、`rdc repo unmount` を別途使用してください。 |
+| `--unmount` | 停止後に暗号化リポジトリをアンマウント。 |
 | `--skip-router-restart` | 操作後にルートサーバーの再起動をスキップ |
 
 実行シーケンスは以下の通りです：
@@ -280,7 +280,7 @@ rdc repo down --name my-app -m server-1
 マシン上のすべてのリポジトリを一度に開始または停止します：
 
 ```bash
-rdc repo up -m server-1
+rdc repo up --all -m server-1
 ```
 
 | オプション | 説明 |
@@ -311,7 +311,7 @@ rdc repo up -m server-1
 ### 有効化
 
 ```bash
-rdc repo autostart enable --name my-app -m server-1
+rdc repo admin autostart enable my-app
 ```
 
 リポジトリのパスフレーズの入力を求められます。
@@ -319,13 +319,13 @@ rdc repo autostart enable --name my-app -m server-1
 ### すべてを有効化
 
 ```bash
-rdc repo autostart enable -m server-1
+rdc repo admin autostart enable
 ```
 
 ### 無効化
 
 ```bash
-rdc repo autostart disable --name my-app -m server-1
+rdc repo admin autostart disable my-app
 ```
 
 これによりキーファイルが削除され、LUKSスロット1が無効化されます。
@@ -351,7 +351,7 @@ Adding keyfile to LUKS slot 1: /mnt/rediacc/repositories/<guid>
 ### ステータスの一覧表示
 
 ```bash
-rdc repo autostart list -m server-1
+rdc repo admin autostart list -m server-1
 ```
 
 起動後に停止したリポジトリを定期リコンサイラーが回復する仕組みの詳細については、[自動開始と回復](/ja/docs/autostart-recovery)を参照してください。
@@ -364,16 +364,16 @@ rdc repo autostart list -m server-1
 
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
-rdc config init --name production --ssh-key ~/.ssh/id_ed25519
-rdc config machine add --name prod-1 --ip 203.0.113.50 --user deploy
-rdc config machine setup --name prod-1
-rdc repo create --name webapp -m prod-1 --size 10G
+rdc config init production --ssh-key ~/.ssh/id_ed25519
+rdc machine add prod-1 --ip 203.0.113.50 --user deploy
+rdc machine setup prod-1
+rdc repo create webapp -m prod-1 --size 10G
 ```
 
 ### 2. マウントと準備
 
 ```bash
-rdc repo mount --name webapp -m prod-1
+rdc repo up webapp --no-start
 ```
 
 ### 3. アプリケーションファイルの作成
@@ -432,13 +432,13 @@ down() {
 ### 4. 開始
 
 ```bash
-rdc repo up --name webapp -m prod-1
+rdc repo up webapp
 ```
 
 ### 5. 自動開始の有効化
 
 ```bash
-rdc repo autostart enable --name webapp -m prod-1
+rdc repo admin autostart enable webapp
 ```
 
 ## composeでリポジトリごとのシークレットを使用する

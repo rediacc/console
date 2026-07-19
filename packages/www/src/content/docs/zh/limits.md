@@ -5,7 +5,7 @@ description: >-
 category: "Reference"
 order: 99
 language: zh
-sourceHash: "05755ef64f8d0ff6"
+sourceHash: "5b839348d23c213f"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -85,8 +85,8 @@ labels:
 在机器级别打开端口（对所有服务可用）：
 
 ```bash
-rdc config infra set -m server-1 --tcp-ports 25,587,993   # mail server
-rdc config infra push -m server-1
+rdc machine infra set server-1 --tcp-ports 25,587,993   # mail server
+rdc machine infra push server-1
 ```
 
 > 除非有特定需求，否则切勿将数据库或缓存端口暴露到外部。使用 HTTPS 自动路由为 Web 服务提供访问，并将存储服务保持在内部。

@@ -4,7 +4,7 @@ description: "Как работает автозапуск, периодичес
 category: "Guides"
 order: 5
 language: ru
-sourceHash: "7fa4f919475b304e"
+sourceHash: "62148f7a55752783"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,7 +109,7 @@ journalctl -u rediacc-autostart-reconcile.service --since "1 hour ago"
 ls /var/lib/rediacc/reconcile/failed/
 ```
 
-Каждое имя файла: это GUID репозитория. Для сопоставления GUID с именами репозиториев используйте `rdc config repository list`.
+Каждое имя файла: это GUID репозитория. Для сопоставления GUID с именами репозиториев используйте `rdc repo list`.
 
 Чтобы удалить маркер после устранения основной проблемы, удалите файл:
 

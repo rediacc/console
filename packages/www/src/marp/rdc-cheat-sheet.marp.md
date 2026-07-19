@@ -215,31 +215,22 @@ rdc repo sync status <repo>@<machine>
 
 ```bash
 # List all containers in a repo
-rdc run container_list \
-  -m <machine> \
-  --param repository=<repo>
+rdc machine status <machine> --containers
 
 # Stream container logs
-rdc run container_logs \
-  -m <machine> \
-  --param repository=<repo> \
-  --param container=<name>
+rdc repo logs <repo>@<machine> -c <name> --follow
 
 # Execute a command inside a container
-rdc run container_exec \
-  -m <machine> \
-  --param repository=<repo> \
-  --param container=<name> \
-  --param command="bash"
+rdc repo exec <repo>@<machine> -c <name> -i -- bash
 
-# Restart a container
-rdc run container_restart \
+# Restart a container (no first-class verb yet)
+rdc run -f container_restart \
   -m <machine> \
   --param repository=<repo> \
   --param container=<name>
 ```
 
-> `rdc run` is a low-level escape hatch — prefer `rdc term … --container` for interactive access.
+> `rdc run` is a low-level escape hatch — prefer `repo logs` and `repo exec` for day-to-day container access.
 
 ---
 <!-- _class: cat-blue -->
@@ -312,21 +303,20 @@ rdc repo push <repo> --to <storage>
 <h2><a href="repositories">Snapshots</a></h2>
 
 ```bash
-# Create a BTRFS snapshot of a repository
-rdc repo snapshot create --name <repo> -m <machine>
+# Snapshot a whole datastore
+rdc datastore snapshot create <datastore>
 
-# Create with an explicit snapshot name
-rdc repo snapshot create --name <repo> -m <machine> \
-  --snapshot-name <name>
+# Create with an explicit snapshot label
+rdc datastore snapshot create <datastore> --snapshot <label>
 
-# List all snapshots on a machine
-rdc repo snapshot list -m <machine>
+# List a datastore's snapshots
+rdc datastore snapshot list <datastore>
 
-# Delete a snapshot
-rdc repo snapshot delete --name <snapshot-name> -m <machine>
+# Snapshot a whole cluster (control plane, then PVs)
+rdc cluster snapshot create <cluster> --snapshot <label>
 ```
 
-> Snapshots are instant BTRFS subvolume snapshots of the repository mount directory — space-efficient and suitable for quick rollbacks.
+> Snapshots are taken at the datastore or cluster level, not per repository. For a point-in-time copy of a single repo, fork it: `rdc repo fork <repo> --tag <tag>` is instant and constant-time.
 
 ---
 <!-- _class: cat-amber -->
@@ -335,14 +325,14 @@ rdc repo snapshot delete --name <snapshot-name> -m <machine>
 
 | Flag | Applies to | Meaning |
 |------|-----------|---------|
-| `-m, --machine <name>` | most commands | Target machine alias |
-| `-r, --repository <name>` | sync, term | Repository name |
+| `<ref>` (positional) | repo, term, vscode | Repository ref: `name`, `name:tag`, optionally `@machine` |
+| `-m, --machine <name>` | create / batch / query | Target machine alias, where there is no ref to derive it from |
 | `-t, --team <name>` | resource commands | Team name |
-| `-l, --local <path>` | sync | Local directory path |
+| `--local <paths...>` | sync | Local file or directory paths |
 | `--output <fmt>` | list / get | `table` `json` `yaml` `csv` |
 | `--dry-run` | sync, repo up | Preview without changes |
 | `--param key=value` | run | Bridge function parameter |
-| `--debug` | repo, run | Verbose debug output (local mode) |
+| `--debug` | repo, run | Verbose debug output |
 | `--force` / `-y` | delete, backup | Skip confirmation prompts |
 
 ---
@@ -357,16 +347,16 @@ rdc repo snapshot delete --name <snapshot-name> -m <machine>
 # info()  — print service URLs and status
 
 # Run any bridge function directly (escape hatch)
-rdc run <function> -m <machine> [--param key=value ...]
+rdc run -f <function> -m <machine> [--param key=value ...]
 
 # Common bridge functions via rdc run
-rdc run repository_list    -m <machine>
-rdc run repository_up      -m <machine> --param repository=<repo>
-rdc run repository_down    -m <machine> --param repository=<repo>
-rdc run container_list     -m <machine> --param repository=<repo>
-rdc run container_logs     -m <machine> \
+rdc run -f repository_list    -m <machine>
+rdc run -f repository_up      -m <machine> --param repository=<repo>
+rdc run -f repository_down    -m <machine> --param repository=<repo>
+rdc run -f container_list     -m <machine> --param repository=<repo>
+rdc run -f container_logs     -m <machine> \
   --param repository=<repo> --param container=<name>
-rdc run container_exec     -m <machine> \
+rdc run -f container_exec     -m <machine> \
   --param repository=<repo> --param container=<name> \
   --param command="bash"
 ```

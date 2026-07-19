@@ -5,7 +5,7 @@ description: >-
 category: Reference
 order: 99
 language: ru
-sourceHash: "05755ef64f8d0ff6"
+sourceHash: "5b839348d23c213f"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -85,8 +85,8 @@ labels:
 Чтобы открыть порт на уровне машины (доступно всем сервисам):
 
 ```bash
-rdc config infra set -m server-1 --tcp-ports 25,587,993   # mail server
-rdc config infra push -m server-1
+rdc machine infra set server-1 --tcp-ports 25,587,993   # mail server
+rdc machine infra push server-1
 ```
 
 > Никогда не открывайте порты базы данных или кэша снаружи, если у вас нет особых требований. Используйте автоматические HTTPS-маршруты для веб-сервисов и держите сервисы хранилища внутри.

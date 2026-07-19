@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 40
 language: ko
-sourceHash: "c72fbcc13e7e77ed"
+sourceHash: "b555f4ca6b58ff4b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,8 +24,8 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ### 개요
 
 ```bash
-rdc repo diff --name <fork> -m <machine>            # fork를 부모 저장소와 비교
-rdc repo diff --name <fork> --base <repo> -m <machine>   # 임의의 관련 저장소와 비교
+rdc repo diff <fork>            # fork를 부모 저장소와 비교
+rdc repo diff <fork> --base <repo>   # 임의의 관련 저장소와 비교
 ```
 
 ### 옵션
@@ -51,7 +51,7 @@ rdc repo diff --name <fork> --base <repo> -m <machine>   # 임의의 관련 저�
 `--name`만 사용하면 fork가 로컬 설정에 기록된 부모와 비교됩니다. 여기서 fork `test-1gb:fork1`은 하나의 수정된 파일을 가지고 있습니다:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -62,7 +62,7 @@ M  hello.txt
 `--base`를 사용하여 임의의 관련 저장소와 비교합니다. `--base`는 기본(구) 측이고 `--name`은 대상(신) 측입니다:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --base test-1gb:latest -m hostinger
+$ rdc repo diff test-1gb:fork1 --base test-1gb:latest
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -73,7 +73,7 @@ M  hello.txt
 `--stat`은 파일당 바이트 델타 및 블록 델타와 합계 바닥글을 추가합니다:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
+$ rdc repo diff test-1gb:fork1 --stat
  hello.txt | +8 bytes, 1 block
 
 1 file changed, 4096 bytes touched
@@ -84,7 +84,7 @@ $ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
 `--name-only`는 상태 문자 없이 한 줄에 하나의 경로를 인쇄하므로 다른 명령에 공급할 수 있습니다:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --name-only -m hostinger | xargs -I{} echo "review: {}"
+$ rdc repo diff test-1gb:fork1 --name-only | xargs -I{} echo "review: {}"
 review: hello.txt
 ```
 
@@ -93,7 +93,7 @@ review: hello.txt
 `--content`는 단일 텍스트 파일의 통합 diff를 생성합니다:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
+$ rdc repo diff test-1gb:fork1 --content hello.txt
 --- a/hello.txt
 +++ b/hello.txt
 @@ -1 +1 @@
@@ -106,7 +106,7 @@ $ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
 `--json`은 stdout의 구조화된 봉투를 내보내므로 `jq`로 깔끔하게 파이프됩니다:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --json -m hostinger | jq '.data.entries[] | select(.status=="M")'
+$ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
 {
   "status": "M",
   "path": "/hello.txt",

@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 40
 language: it
-sourceHash: "c72fbcc13e7e77ed"
+sourceHash: "b555f4ca6b58ff4b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,8 +24,8 @@ Non usarlo tra repository non correlati. I due lati devono condividere un antena
 ### Sinossi
 
 ```bash
-rdc repo diff --name <fork> -m <machine>            # diff a fork rispetto al suo parent
-rdc repo diff --name <fork> --base <repo> -m <machine>   # diff rispetto a un repository correlato arbitrario
+rdc repo diff <fork>            # diff a fork rispetto al suo parent
+rdc repo diff <fork> --base <repo>   # diff rispetto a un repository correlato arbitrario
 ```
 
 ### Opzioni
@@ -51,7 +51,7 @@ rdc repo diff --name <fork> --base <repo> -m <machine>   # diff rispetto a un re
 Con solo `--name`, la fork viene confrontata rispetto al parent registrato nella config locale. Qui la fork `test-1gb:fork1` ha un file modificato:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -62,7 +62,7 @@ M  hello.txt
 Passa `--base` per confrontare rispetto a un repository correlato arbitrario. `--base` è il lato base (vecchio), `--name` è il lato target (nuovo):
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --base test-1gb:latest -m hostinger
+$ rdc repo diff test-1gb:fork1 --base test-1gb:latest
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -73,7 +73,7 @@ M  hello.txt
 `--stat` aggiunge il delta di byte e blocchi per file e un riepilogo dei totali:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
+$ rdc repo diff test-1gb:fork1 --stat
  hello.txt | +8 bytes, 1 block
 
 1 file changed, 4096 bytes touched
@@ -84,7 +84,7 @@ $ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
 `--name-only` stampa un percorso per riga senza lettera di stato, pronto per essere trasmesso a un altro comando:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --name-only -m hostinger | xargs -I{} echo "review: {}"
+$ rdc repo diff test-1gb:fork1 --name-only | xargs -I{} echo "review: {}"
 review: hello.txt
 ```
 
@@ -93,7 +93,7 @@ review: hello.txt
 `--content` produce un diff unificato di un singolo file di testo:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
+$ rdc repo diff test-1gb:fork1 --content hello.txt
 --- a/hello.txt
 +++ b/hello.txt
 @@ -1 +1 @@
@@ -106,7 +106,7 @@ $ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
 `--json` emette l'envelope strutturato su stdout, quindi si connette perfettamente a `jq`:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --json -m hostinger | jq '.data.entries[] | select(.status=="M")'
+$ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
 {
   "status": "M",
   "path": "/hello.txt",

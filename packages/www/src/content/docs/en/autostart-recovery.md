@@ -107,7 +107,7 @@ List repositories with durable failure markers:
 ls /var/lib/rediacc/reconcile/failed/
 ```
 
-Each filename is a repository GUID. Cross-reference with `rdc config repository list` to map GUIDs to repository names.
+Each filename is a repository GUID. Cross-reference with `rdc repo list` to map GUIDs to repository names.
 
 To clear a marker after you have resolved the underlying issue, delete the file:
 

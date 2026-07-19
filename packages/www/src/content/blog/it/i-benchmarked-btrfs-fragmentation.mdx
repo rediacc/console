@@ -14,11 +14,11 @@ tags:
   - benchmarks
 featured: false
 language: it
-sourceHash: 36cb029ebe9b6edc
+sourceHash: "362ac76977739eb6"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
-> **TL;DR.** Il comando `rdc machine query --storage-health` di Rediacc riporta un indice di frammentazione per ogni repository. Su una macchina di produzione segnala GitLab a circa 19.650 estensioni per gigabyte. L'istinto e' di deframmentare. Ho misurato invece.
+> **TL;DR.** Il comando `rdc machine status --storage-health` di Rediacc riporta un indice di frammentazione per ogni repository. Su una macchina di produzione segnala GitLab a circa 19.650 estensioni per gigabyte. L'istinto e' di deframmentare. Ho misurato invece.
 >
 > - Un repository frammentato **16 volte di piu'** rispetto al suo vicino ha letto a **149 MB/s** contro 143 MB/s in lettura sequenziale, ed era **piu' veloce** nelle letture casuali da 4K (719 vs 957 microsecondi).
 > - Il dispositivo e' flash. La frammentazione danneggia i dischi magnetici attraverso il tempo di seek. Su un SSD non rimane quasi nessun meccanismo per causare danni.

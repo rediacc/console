@@ -4,7 +4,7 @@ description: Dateisynchronisation, Terminalzugriff, VS Code-Unterstützung und C
 category: Guides
 order: 9
 language: de
-sourceHash: "59abc2faa1157369"
+sourceHash: "2b8afb656455d6ec"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -22,16 +22,16 @@ Rediacc bündelt vier Werkzeuge für die tägliche Arbeit an Ihren Maschinen und
 
 ```bash
 # Verzeichnis (Inhalt in Fernverzeichnis zusammengeführt)
-rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
+rdc repo sync upload my-app --local ./src --remote /app/src
 
 # Einzelne Datei in ein Fernverzeichnis (Basename erhalten)
-rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote /app/conf
+rdc repo sync upload my-app --local ./config.yml --remote /app/conf
 
 # Einzelne Datei mit explizitem Zielpfad
-rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote-file /app/conf/config.yml
+rdc repo sync upload my-app --local ./config.yml --remote-file /app/conf/config.yml
 
 # Mehrere Quellen in einem Aufruf
-rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote /app
+rdc repo sync upload my-app --local a.yml b.yml ./assets --remote /app
 ```
 
 `--remote` und `--remote-file` schließen sich gegenseitig aus. `--remote-file` erfordert genau einen `--local`-Pfad, der auf eine Datei zeigt.
@@ -44,16 +44,16 @@ Verwenden Sie `--remote` für ein Verzeichnis (Standard) oder `--remote-file` f�
 
 ```bash
 # Verzeichnis
-rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
+rdc repo sync download my-app --remote /app/data --local ./data
 
 # Einzelne Datei - --local muss ein vorhandenes Verzeichnis sein
-rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
+rdc repo sync download my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
 ### Synchronisierungsstatus prüfen
 
 ```bash
-rdc repo sync status -m server-1 -r my-app
+rdc repo sync status my-app
 ```
 
 ### Optionen
@@ -81,8 +81,8 @@ rdc repo sync status -m server-1 -r my-app
 Der schnellste Weg, sich zu verbinden:
 
 ```bash
-rdc term connect -m server-1                    # Mit einer Maschine verbinden
-rdc term connect -m server-1 -r my-app             # Mit einem Repository verbinden
+rdc term connect server-1                    # Mit einer Maschine verbinden
+rdc term connect my-app             # Mit einem Repository verbinden
 ```
 
 ### Befehl ausführen
@@ -90,8 +90,8 @@ rdc term connect -m server-1 -r my-app             # Mit einem Repository verbin
 Führen Sie einen Befehl aus, ohne eine interaktive Sitzung zu öffnen:
 
 ```bash
-rdc term connect -m server-1 -c "uptime"
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect server-1 -c "uptime"
+rdc term connect my-app -c "docker ps"
 ```
 
 Bei der Verbindung zu einem Repository wird `DOCKER_HOST` automatisch auf den isolierten Docker-Socket des Repositories gesetzt, sodass `docker ps` nur die Container dieses Repositories anzeigt.
@@ -101,8 +101,8 @@ Bei der Verbindung zu einem Repository wird `DOCKER_HOST` automatisch auf den is
 Oder verwenden Sie den `connect`-Unterbefehl mit demselben Ergebnis und expliziten Flags:
 
 ```bash
-rdc term connect -m server-1
-rdc term connect -m server-1 -r my-app
+rdc term connect server-1
+rdc term connect my-app
 ```
 
 ### Container-Aktionen
@@ -111,19 +111,19 @@ Interagieren Sie direkt mit einem laufenden Container:
 
 ```bash
 # Eine Shell im Container öffnen
-rdc term connect -m server-1 -r my-app --container <container-id>
+rdc repo exec my-app -c <container> -i -- bash
 
 # Container-Logs anzeigen
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs
+rdc repo logs my-app -c <container>
 
 # Logs in Echtzeit verfolgen
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs --follow
+rdc repo logs my-app -c <container> --follow
 
 # Container-Statistiken anzeigen
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action stats
+rdc repo exec my-app -c <container> -i -- bash --container-action stats
 
 # Einen Befehl im Container ausführen
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action exec -c "ls -la"
+rdc repo exec my-app -c <container> -- ls -la
 ```
 
 | Option | Beschreibung |
@@ -141,7 +141,7 @@ rdc term connect -m server-1 -r my-app --container <container-id> --container-ac
 ### Mit einem Repository verbinden
 
 ```bash
-rdc vscode connect -r my-app -m server-1
+rdc vscode connect my-app
 ```
 
 Dieser Befehl:
@@ -179,7 +179,7 @@ rdc vscode check
 Kein lokales VS Code? Starten Sie den Editor direkt aus der Repository-Sandbox und öffnen Sie ihn in jedem Browser:
 
 ```bash
-rdc vscode connect -r my-app -m server-1 --browser
+rdc vscode connect my-app --browser
 ```
 
 Dieser Befehl:
@@ -190,8 +190,8 @@ Dieser Befehl:
 Der Server läuft weiter, nachdem Sie den Tunnel schließen; beim erneuten Verbinden wird er wiederverwendet. Verwalten Sie ihn mit:
 
 ```bash
-rdc vscode serve status -r my-app -m server-1
-rdc vscode serve stop -r my-app -m server-1
+rdc vscode serve status my-app
+rdc vscode serve stop my-app
 ```
 
 | Option | Beschreibung |

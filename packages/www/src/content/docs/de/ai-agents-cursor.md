@@ -4,7 +4,7 @@ description: Konfiguration der Cursor-IDE für die Arbeit mit der Rediacc-Infras
 category: Guides
 order: 32
 language: de
-sourceHash: "66821f514bc7a8bd"
+sourceHash: "bab7e70ffbd9f32b"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -39,7 +39,7 @@ Fragen Sie Cursor: *"Pruefe den Status meines Produktionsservers"*
 
 Cursor fuehrt im Terminal aus:
 ```bash
-rdc machine query --name prod-1 -o json
+rdc machine status prod-1 -o json
 ```
 
 ### Aenderungen bereitstellen
@@ -48,7 +48,7 @@ Fragen Sie Cursor: *"Stelle die aktualisierte nextcloud-Konfiguration bereit"*
 
 Cursor fuehrt im Terminal aus:
 ```bash
-rdc repo up --name nextcloud -m prod-1 --yes
+rdc repo up nextcloud@prod-1 --yes
 ```
 
 ### Logs anzeigen
@@ -57,7 +57,7 @@ Fragen Sie Cursor: *"Zeige mir die letzten mail-Container-Logs"*
 
 Cursor fuehrt im Terminal aus:
 ```bash
-rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
+rdc repo logs mail@prod-1 -c mail-postfix --lines 100
 ```
 
 ## Arbeitsbereichseinstellungen

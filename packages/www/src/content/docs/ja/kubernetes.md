@@ -4,7 +4,7 @@ description: "Rediaccのリポジトリの考え方でKubernetesを運用する:
 category: "Guides"
 order: 6
 language: ja
-sourceHash: "d36c468ae2350e25"
+sourceHash: "6ad4b60e09edde94"
 sourceCommit: "4401262fffbf29b9480dee8ecd209013e4b87f60"
 ---
 
@@ -39,34 +39,32 @@ Rediaccは、リポジトリの考え方が引き続き成り立つように、�
 
 ```bash
 # プールを持つクラスターを宣言する(まだ何もプロビジョニングされていない)
-rdc config cluster add --name prod \
+rdc cluster create prod --declare-only \
   --provider my-linode \
   --pool ceph:ceph:3 \
   --pool k8s:k8s-server:3
 
 # プールメンバーをプロビジョニングし、各ノードにrenetをブートストラップし、コンポーネント(まずCeph)をインストールする
-rdc cluster create --name prod
+rdc cluster create prod
 ```
 
 プールのロールは `ceph`、`k8s-server`、`k8s-agent`、`hyperconverged` です(Cephのメモリターゲットとkubeletのeviction閾値がRAMを奪い合うため、明示的なopt-inです)。各プールはハードウェアの非対称性をプールごとのサイズとディスクパラメータとして持ちます。ディスク重視のCephノード、CPU/RAM重視のKubernetesノードです。
 
-プールメンバーは `<cluster>-<pool>-<n>` として `resources.machines` に実体化され、バックリファレンスを持つため、**既存のあらゆる `-m` コマンドがそのまま使えます**。`rdc machine query`、`rdc term connect`、repoコマンド、バックアップ戦略はすべて、クラスターノードを通常のマシンとして扱います。
+プールメンバーは `<cluster>-<pool>-<n>` として `resources.machines` に実体化され、バックリファレンスを持つため、**既存のあらゆる `-m` コマンドがそのまま使えます**。`rdc machine status`、`rdc term connect`、repoコマンド、バックアップ戦略はすべて、クラスターノードを通常のマシンとして扱います。
 
 クラウドプロバイダーは、`rdc machine provision` が使うのと同じ `ProviderMapping` レジストリに従い、プライベートネットワークブロック(VLANかVPCか、スタンプするMTU、プライベートNICの命名)で拡張された形で[OpenTofu](https://opentofu.org/)経由でプロビジョニングします。ローカルKVMは `rdc ops` 経由で常に利用可能なテスト経路です。
 
 ```bash
 # クラスターを確認する
 rdc cluster status                 # すべてのクラスターを一覧表示
-rdc cluster status --name prod     # 1つのクラスターの全設定
+rdc cluster status prod     # 1つのクラスターの全設定
 
 # プールを拡大・縮小する(マシンの追加/削除、ノードの参加/排出)
-rdc cluster scale --name prod --pool k8s --count 5
+rdc cluster scale prod --pool k8s --count 5
 
-# プロビジョニング済みメンバーにコンポーネントをインストールする
-rdc cluster install --name prod
 
 # プロビジョニング済みメンバーを破棄し、設定からクラスターを削除する
-rdc cluster destroy --name prod
+rdc cluster destroy prod
 ```
 
 ### kubeconfigの取得
@@ -74,7 +72,7 @@ rdc cluster destroy --name prod
 kubeconfigは設定ファイルには決して保存されません(サイズが大きく、ローテーションするためです)。SSH経由でオンデマンドに取得され、OpenTofuのworkdirや証明書キャッシュと同じ副次的な状態パターンに従って、`0600` パーミッションでローカルにキャッシュされます。
 
 ```bash
-rdc cluster kubeconfig --name prod
+rdc cluster kubeconfig prod
 # 表示: export KUBECONFIG=~/.config/rediacc/kube/prod.yaml
 ```
 
@@ -84,17 +82,17 @@ rdc cluster kubeconfig --name prod
 
 ```bash
 # Dockerリポジトリ(変更なし): マシン上の分離されたDockerデーモン
-rdc repo create --name shop -m server-1 --size 10G
+rdc repo create shop -m server-1 --size 10G
 
 # Kubernetesリポジトリ: クラスター内の namespace "shop" + そのストレージ
-rdc repo create --name shop --cluster prod --size 10G
+rdc repo create shop --datastore prod --size 10G
 ```
 
 repoの各動詞は、リポジトリ単位の作業に対する単一のサーフェスです。ターゲット解決の漏斗を通じて、repoコマンド群のほぼ全体がクラスター対応になります。`fork`、`migrate`、`push`、`pull`、`up`、`down`、`resize`、`diff`、`commit`、`branch`、`checkout`、`merge`、`trim`、`cat`、`mount`、`sync`、`list`、`status`、`log` はすべて `--cluster` を受け付けます。クラスターターゲットは、そのコントロールノードと、リポジトリのnamespaceに固定されたKUBECONFIGコンテキストに解決されます。これは、マシンが `DOCKER_HOST` と作業ディレクトリに解決されるのと同じ類推です。
 
 ```bash
-rdc repo sync upload --cluster prod -r shop --local ./config
-rdc cluster kubeconfig --name prod           # KUBECONFIGをエクスポートし、そのままkubectlを使う
+rdc repo sync upload shop --local ./config
+rdc cluster kubeconfig prod           # KUBECONFIGをエクスポートし、そのままkubectlを使う
 ```
 
 クラスターノードも `resources.machines` に実体化されるため、通常の `rdc term connect <cluster>-<pool>-<n>` で特定のノードにSSH接続できます。
@@ -120,7 +118,7 @@ up() {
 Kubernetesリポジトリに対する `rdc repo fork` は、常にデータをコピーし、常に瞬時です。`--full` フラグやバリエーションはありません。
 
 ```bash
-rdc repo fork --parent shop --tag joseph --cluster prod
+rdc repo fork shop --tag joseph
 ```
 
 これにより同じクラスター内にnamespace `shop-joseph` が作成され、すべてのボリュームがcopy-on-writeでクローンされ(Ceph上ではRBDクローン、ローカルバックエンドではPVイメージファイルのreflink)、そこにワークロードがデプロイされます。フォークのURLは親のワイルドカード証明書の下で即座に有効になるため、新しい証明書やDNSレコードは発行されません。
@@ -138,10 +136,10 @@ KVMテストラボで測定したところ、namespaceフォークは親ワー�
 
 ```bash
 # クラスター全体を、そのリポジトリのデータごと、新しいクラスターへクローンする
-rdc cluster fork --name prod --tag staging
+rdc cluster fork prod --to spare --tag staging
 
 # クラスター全体を、そのリポジトリのデータごと、別のマシンやデータセンターへ移動する
-rdc cluster migrate --name prod --to server-2
+rdc cluster migrate prod --to spare
 ```
 
 どちらも、クラスターイメージと各リポジトリのPVイメージのcopy-on-writeを協調させたのち、ノードのidentityを書き換えて、クローンまたは再配置されたクラスターが新しいアドレスで健全に起動するようにします。k3sはコントロールプレーンの状態を組み込みデータストアに保存するため、クラスターイメージそのものがスナップショットになります。整合性の順序はコントロールプレーン、次にPV、そしてエージェントの順です。

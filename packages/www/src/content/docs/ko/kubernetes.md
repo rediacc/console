@@ -4,7 +4,7 @@ description: "Rediacc의 저장소 사고방식으로 Kubernetes를 운영하세
 category: "Guides"
 order: 6
 language: ko
-sourceHash: "d36c468ae2350e25"
+sourceHash: "6ad4b60e09edde94"
 sourceCommit: "4401262fffbf29b9480dee8ecd209013e4b87f60"
 ---
 
@@ -39,34 +39,32 @@ Rediacc는 저장소 사고방식이 계속 적용되도록 "클러스터가 모
 
 ```bash
 # 풀을 가진 클러스터를 선언합니다 (아직 아무것도 프로비저닝되지 않음)
-rdc config cluster add --name prod \
+rdc cluster create prod --declare-only \
   --provider my-linode \
   --pool ceph:ceph:3 \
   --pool k8s:k8s-server:3
 
 # 풀 멤버를 프로비저닝하고, 각 멤버에 renet을 부트스트랩하고, 구성 요소(ceph 먼저)를 설치합니다
-rdc cluster create --name prod
+rdc cluster create prod
 ```
 
 풀 역할은 `ceph`, `k8s-server`, `k8s-agent`, `hyperconverged`입니다(Ceph의 메모리 목표와 kubelet의 축출 임계값이 RAM을 두고 경쟁하므로 명시적인 opt-in입니다). 각 풀은 풀별 크기와 디스크 파라미터로 하드웨어 비대칭성을 담습니다. 디스크 중심의 Ceph 노드, CPU/RAM 중심의 Kubernetes 노드입니다.
 
-풀 멤버는 백레퍼런스와 함께 `<cluster>-<pool>-<n>`으로 `resources.machines`에 구체화되므로, **기존의 모든 `-m` 명령이 그대로 작동합니다**. `rdc machine query`, `rdc term connect`, repo 명령, 백업 전략 모두 클러스터 노드를 일반 머신으로 취급합니다.
+풀 멤버는 백레퍼런스와 함께 `<cluster>-<pool>-<n>`으로 `resources.machines`에 구체화되므로, **기존의 모든 `-m` 명령이 그대로 작동합니다**. `rdc machine status`, `rdc term connect`, repo 명령, 백업 전략 모두 클러스터 노드를 일반 머신으로 취급합니다.
 
 클라우드 공급자는 `rdc machine provision`이 사용하는 것과 동일한 `ProviderMapping` 레지스트리를 따르며, 프라이빗 네트워크 블록(VLAN 또는 VPC, 적용할 MTU, 프라이빗 NIC 명명)으로 확장되어 [OpenTofu](https://opentofu.org/)를 통해 프로비저닝됩니다. 로컬 KVM은 `rdc ops`를 통해 항상 사용 가능한 테스트 경로입니다.
 
 ```bash
 # 클러스터를 확인합니다
 rdc cluster status                 # 모든 클러스터 나열
-rdc cluster status --name prod     # 클러스터 하나의 전체 설정
+rdc cluster status prod     # 클러스터 하나의 전체 설정
 
 # 풀을 확장하거나 축소합니다 (머신 추가/제거, 노드 조인/드레인)
-rdc cluster scale --name prod --pool k8s --count 5
+rdc cluster scale prod --pool k8s --count 5
 
-# 이미 프로비저닝된 멤버에 구성 요소를 설치합니다
-rdc cluster install --name prod
 
 # 프로비저닝된 멤버를 폐기하고 설정에서 클러스터를 제거합니다
-rdc cluster destroy --name prod
+rdc cluster destroy prod
 ```
 
 ### kubeconfig 가져오기
@@ -74,7 +72,7 @@ rdc cluster destroy --name prod
 kubeconfig는 설정 파일에 저장되지 않습니다(크기가 크고 회전하기 때문입니다). SSH를 통해 요청 시점에 가져와, OpenTofu의 workdir 및 인증서 캐시와 동일한 부가 상태 패턴에 따라 `0600` 권한으로 로컬에 캐시됩니다.
 
 ```bash
-rdc cluster kubeconfig --name prod
+rdc cluster kubeconfig prod
 # 출력: export KUBECONFIG=~/.config/rediacc/kube/prod.yaml
 ```
 
@@ -84,17 +82,17 @@ rdc cluster kubeconfig --name prod
 
 ```bash
 # Docker 저장소 (변경 없음): 머신 위의 격리된 Docker 데몬
-rdc repo create --name shop -m server-1 --size 10G
+rdc repo create shop -m server-1 --size 10G
 
 # Kubernetes 저장소: 클러스터 안의 네임스페이스 "shop" + 그 스토리지
-rdc repo create --name shop --cluster prod --size 10G
+rdc repo create shop --datastore prod --size 10G
 ```
 
 repo 동사들은 저장소 단위 작업을 위한 단일한 표면입니다. 대상 해석 깔때기를 통해, repo 명령 집합 거의 전체가 클러스터를 다룰 수 있게 됩니다. `fork`, `migrate`, `push`, `pull`, `up`, `down`, `resize`, `diff`, `commit`, `branch`, `checkout`, `merge`, `trim`, `cat`, `mount`, `sync`, `list`, `status`, `log` 모두 `--cluster`를 받습니다. 클러스터 대상은 그 컨트롤 노드와, 저장소의 네임스페이스에 고정된 KUBECONFIG 컨텍스트로 해석됩니다. 이는 머신이 `DOCKER_HOST`와 작업 디렉터리로 해석되는 것과 같은 방식입니다.
 
 ```bash
-rdc repo sync upload --cluster prod -r shop --local ./config
-rdc cluster kubeconfig --name prod           # KUBECONFIG를 export한 뒤 kubectl을 직접 사용
+rdc repo sync upload shop --local ./config
+rdc cluster kubeconfig prod           # KUBECONFIG를 export한 뒤 kubectl을 직접 사용
 ```
 
 클러스터 노드도 `resources.machines`에 구체화되므로, 일반적인 `rdc term connect <cluster>-<pool>-<n>`으로 특정 노드에 SSH 접속할 수 있습니다.
@@ -120,7 +118,7 @@ up() {
 Kubernetes 저장소에 대한 `rdc repo fork`는 항상 데이터를 복사하며, 항상 즉시 실행됩니다. `--full` 플래그도, 변형도 없습니다.
 
 ```bash
-rdc repo fork --parent shop --tag joseph --cluster prod
+rdc repo fork shop --tag joseph
 ```
 
 이렇게 하면 동일한 클러스터 안에 네임스페이스 `shop-joseph`가 생성되고, 모든 볼륨이 copy-on-write로 복제되며(Ceph에서는 RBD 클론, 로컬 백엔드에서는 PV 이미지 파일의 reflink), 그곳에 워크로드가 배포됩니다. 포크의 URL은 부모의 와일드카드 인증서 아래에서 즉시 활성화되므로 새 인증서나 DNS 레코드가 발급되지 않습니다.
@@ -138,10 +136,10 @@ KVM 테스트 랩에서 측정한 결과, 네임스페이스 포크는 부모 �
 
 ```bash
 # 클러스터 전체를 그 저장소들의 데이터까지 포함해 새 클러스터로 복제합니다
-rdc cluster fork --name prod --tag staging
+rdc cluster fork prod --to spare --tag staging
 
 # 클러스터 전체를 그 저장소들의 데이터까지 포함해 다른 머신이나 데이터센터로 이동합니다
-rdc cluster migrate --name prod --to server-2
+rdc cluster migrate prod --to spare
 ```
 
 두 명령 모두 클러스터 이미지와 각 저장소의 PV 이미지에 대한 copy-on-write를 조율한 뒤, 노드 identity를 다시 써서 클론되거나 재배치된 클러스터가 새 주소에서 정상적으로 기동하도록 합니다. k3s는 컨트롤 플레인 상태를 내장 데이터스토어에 저장하므로 클러스터 이미지 자체가 스냅샷이 됩니다. 일관성 순서는 컨트롤 플레인 먼저, 그다음 PV, 그다음 에이전트입니다.

@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 40
 language: ja
-sourceHash: "c72fbcc13e7e77ed"
+sourceHash: "b555f4ca6b58ff4b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,8 +24,8 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ### 概要
 
 ```bash
-rdc repo diff --name <fork> -m <machine>            # フォークと親の差分を表示
-rdc repo diff --name <fork> --base <repo> -m <machine>   # 任意の関連リポジトリとの差分を表示
+rdc repo diff <fork>            # フォークと親の差分を表示
+rdc repo diff <fork> --base <repo>   # 任意の関連リポジトリとの差分を表示
 ```
 
 ### オプション
@@ -51,7 +51,7 @@ rdc repo diff --name <fork> --base <repo> -m <machine>   # 任意の関連リポ
 `--name` のみを指定すると、フォークはローカル設定に記録された親と比較されます。ここではフォーク `test-1gb:fork1` に変更されたファイルが 1 つあります：
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -62,7 +62,7 @@ M  hello.txt
 `--base` を指定して、任意の関連リポジトリと比較します。`--base` がベース（古い）側、`--name` がターゲット（新しい）側です：
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --base test-1gb:latest -m hostinger
+$ rdc repo diff test-1gb:fork1 --base test-1gb:latest
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -73,7 +73,7 @@ M  hello.txt
 `--stat` はファイルごとのバイト差分とブロック差分、および合計行を追加します：
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
+$ rdc repo diff test-1gb:fork1 --stat
  hello.txt | +8 bytes, 1 block
 
 1 file changed, 4096 bytes touched
@@ -84,7 +84,7 @@ $ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
 `--name-only` は 1 行に 1 パスを、ステータス文字なしで出力し、別のコマンドにフィードする準備ができています：
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --name-only -m hostinger | xargs -I{} echo "review: {}"
+$ rdc repo diff test-1gb:fork1 --name-only | xargs -I{} echo "review: {}"
 review: hello.txt
 ```
 
@@ -93,7 +93,7 @@ review: hello.txt
 `--content` は単一のテキストファイルの統一 diff を生成します：
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
+$ rdc repo diff test-1gb:fork1 --content hello.txt
 --- a/hello.txt
 +++ b/hello.txt
 @@ -1 +1 @@
@@ -106,7 +106,7 @@ $ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
 `--json` は stdout の構造化エンベロープを出力するため、`jq` にクリーンにパイプできます：
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --json -m hostinger | jq '.data.entries[] | select(.status=="M")'
+$ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
 {
   "status": "M",
   "path": "/hello.txt",

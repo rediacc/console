@@ -4,7 +4,7 @@ description: "Konto-serveri ja CLI jaotuse käitamine oma infrastruktuuris."
 category: "Guides"
 order: 5
 language: et
-sourceHash: "eea76db2d612133f"
+sourceHash: "a2f88ead9bf140c6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -54,13 +54,13 @@ Mitme serveriga (kohapealne, tootmine, edge) ühendamisel hoiavad nimega konfigu
 
 ```bash
 # Loo konfiguratsioon sinu kohapealsele serverile
-rdc config init --name myserver --server https://account.example.com
+rdc config init myserver --server https://account.example.com
 
 # Logi sisse seda konfiguratsiooni kasutades
 rdc --config myserver subscription login
 
 # Kõik käsud --config-iga kasutavad kohapealset serverit
-rdc --config myserver machine query --name prod-1
+rdc --config myserver machine status prod-1
 ```
 
 Iga nimega konfiguratsioon salvestab oma konto-serveri URL-i ja tellimustoekeni. Konfiguratsiooni vahetamine vahetab kogu serveri konteksti.

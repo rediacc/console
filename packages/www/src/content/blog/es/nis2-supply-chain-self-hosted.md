@@ -12,7 +12,7 @@ tags:
   - compliance
 featured: false
 language: es
-sourceHash: "ffdb86da48dacc58"
+sourceHash: "d8da6730f7912fc9"
 sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 translatedFrom: en
 ---
@@ -129,7 +129,7 @@ Tras migrar a Rediacc en Hetzner:
 | Subencargados | (1) Ninguno para autoalojado; (2) Solo internos de Hetzner, listados en su DPA |
 | Estado del contrato | (1) Licencia de software, no se necesita DPA; (2) DPA de Hetzner + SCCs ya en vigor |
 | Custodia de claves | Cliente (credencial LUKS2 en la configuración del operador, no en el servidor) |
-| Plan de salida | "rdc repo backup pull desde cualquier destino compatible con rclone. Los volúmenes están cifrados con LUKS2; el operador conserva la credencial." |
+| Plan de salida | "rdc repo pull desde cualquier destino compatible con rclone. Los volúmenes están cifrados con LUKS2; el operador conserva la credencial." |
 | Última evaluación | (2) cubierta por la revisión IaaS existente |
 
 Dos entradas en el registro en lugar de una. La entrada de nivel crítico corresponde al proveedor IaaS, para quien el comprador ya tenía un DPA en vigor y un plan de salida probado, porque IaaS es una relación que la mayoría de los equipos sabe gestionar. La entrada de Rediacc es no crítica porque es una licencia de software, no un procesador de datos.

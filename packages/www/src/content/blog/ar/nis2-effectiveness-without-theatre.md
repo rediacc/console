@@ -17,7 +17,7 @@ tags:
   - incident-reporting
 featured: false
 language: ar
-sourceHash: 0e471ac41759e4cb
+sourceHash: "468602ef23c7ce92"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -124,7 +124,7 @@ translatedFrom: en
 **الخطوة 1**: تفريع الإنتاج.
 
 ```bash
-rdc repo fork --parent prod-app --tag effectiveness-2026w19 -m hostinger
+rdc repo fork prod-app --tag effectiveness-2026w19
 ```
 
 الفرع مسمى بأسبوع ISO حتى يقرأ سجل التدقيق نفسه بنفسه. يرتفع المستودع تحت نطاق فرعي خاص بالفرع (`<service>-fork-effectiveness-2026w19.prod-app.<machine>.<basedomain>`). شهادة الوايلد كارد للأصل تغطيه. لا مصافحة TLS جديدة.
@@ -132,8 +132,8 @@ rdc repo fork --parent prod-app --tag effectiveness-2026w19 -m hostinger
 **الخطوة 2**: تطبيق التصحيح الخاضع للاختبار على الفرع.
 
 ```bash
-rdc repo up --name prod-app:effectiveness-2026w19 -m hostinger
-rdc term connect -m hostinger -r prod-app:effectiveness-2026w19 -c "apt-get install -y openssl=3.5.5-1"
+rdc repo up prod-app:effectiveness-2026w19
+rdc term connect prod-app:effectiveness-2026w19 -c "apt-get install -y openssl=3.5.5-1"
 ```
 
 جلسة المحطة تعمل بوصفها مستخدم `rediacc` غير المتميز (UID 7111)، في فضاء أسماء تثبيت منفصل، مع `DOCKER_HOST` مقيد بمقبس محرك الفرع. الوصول بين المستودعات محجوب على مستوى النواة (لا يستطيع الفرع الوصول إلى الشبكة الفرعية loopback للإنتاج). راجع [البنية § عزل Docker](/ar/docs/architecture) لنموذج العزل.
@@ -148,8 +148,8 @@ curl -fsS https://app-fork-effectiveness-2026w19.prod-app.hostinger.example.com/
 **الخطوة 4**: تشغيل تدريب الاستعادة. استخدم أحدث نسخة احتياطية ساخنة للإنتاج، مسحوبة إلى هدف مُحاذٍ للفرع.
 
 ```bash
-rdc repo backup pull --from offsite-b2 --name prod-app:restore-2026w19 -m hostinger
-rdc repo up --name prod-app:restore-2026w19 -m hostinger
+rdc repo pull prod-app:restore-2026w19 --from offsite-b2
+rdc repo up prod-app:restore-2026w19
 # تحقق من أن الفرع المستعاد يجيب على نفس اختبار الدخان
 curl -fsS https://app-fork-restore-2026w19.prod-app.hostinger.example.com/health
 ```
@@ -160,8 +160,8 @@ curl -fsS https://app-fork-restore-2026w19.prod-app.hostinger.example.com/health
 
 ```bash
 rdc audit log --since "1 hour ago" > /tmp/effectiveness-2026w19.json
-rdc repo destroy --name prod-app:effectiveness-2026w19 -m hostinger --force
-rdc repo destroy --name prod-app:restore-2026w19 -m hostinger --force
+rdc repo delete prod-app:effectiveness-2026w19 --yes
+rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
 سجل التدقيق يلتقط كل خطوة (إنشاء الفرع وتشغيل المستودع وجلسات المحطة وسحب النسخة الاحتياطية وتدمير المستودع). إنه مرتبط بتسلسل تجزئة. `rdc audit verify` على محطة عمل المشغل يؤكد أن السلسلة لم تُعدَّل منذ كتابة الأحداث. راجع [أمان الحساب § الوضع الأمني للـ CLI لوكلاء الذكاء الاصطناعي](/ar/docs/account-security) لنموذج التدقيق.
@@ -190,11 +190,11 @@ rdc repo destroy --name prod-app:restore-2026w19 -m hostinger --force
 
 ```bash
 # لقطة الحالة المخترقة للتحقيق الجنائي. الفرع هو اللقطة.
-rdc repo fork --parent prod-app --tag forensic-2026-05-09T14-23Z -m hostinger
+rdc repo fork prod-app --tag forensic-2026-05-09T14-23Z
 
 # رفع فرع خادم من آخر نسخة احتياطية نظيفة. وسم مختلف.
-rdc repo backup pull --from offsite-b2 --name prod-app:serving-2026-05-09T14-30Z -m hostinger
-rdc repo up --name prod-app:serving-2026-05-09T14-30Z -m hostinger
+rdc repo pull prod-app:serving-2026-05-09T14-30Z --from offsite-b2
+rdc repo up prod-app:serving-2026-05-09T14-30Z
 # تحويل حركة المرور إلى الفرع الخادم الجديد عبر DNS أو خادم التوجيه.
 ```
 
@@ -228,7 +228,7 @@ rdc repo up --name prod-app:serving-2026-05-09T14-30Z -m hostinger
 
 **المخرج 2: سجل تدقيق تلك التدريبات مرتبطاً بتسلسل تجزئة**. سلسلة التجزئة في سجل التدقيق هي ما يحوّل "أجرينا 47 تدريباً العام الماضي" من مجرد ادعاء إلى دليل. `rdc audit verify` يتحقق من صحة السلسلة من البداية إلى النهاية. نتيجة التحقق هي مخرج أمر واحد يستطيع المدقق إعادة تشغيله.
 
-**المخرج 3: مسار التحقق من النسخ الاحتياطية**. لكل استراتيجية نسخ احتياطي مجدولة، يُنتج وحدة systemd ملف تحقق جانبي في `/var/run/rediacc/cold-backup-<guid>.status.json` لكل مستودع لكل تشغيل، وسطر سجل ملخص نهائي. `rdc machine backup status` يعرض كليهما. مقترناً بتدريب الاستعادة الأسبوعي من الخطوة 4 من الروتين أعلاه، يمنح هذا المدقق مساراً "نسخ احتياطي تم ويمكن استعادته واختباره"، لا مجرد "نسخة احتياطية تم أخذها". راجع [المراقبة](/ar/docs/monitoring) للسطح التشخيصي.
+**المخرج 3: مسار التحقق من النسخ الاحتياطية**. لكل استراتيجية نسخ احتياطي مجدولة، يُنتج وحدة systemd ملف تحقق جانبي في `/var/run/rediacc/cold-backup-<guid>.status.json` لكل مستودع لكل تشغيل، وسطر سجل ملخص نهائي. `rdc backup status` يعرض كليهما. مقترناً بتدريب الاستعادة الأسبوعي من الخطوة 4 من الروتين أعلاه، يمنح هذا المدقق مساراً "نسخ احتياطي تم ويمكن استعادته واختباره"، لا مجرد "نسخة احتياطية تم أخذها". راجع [المراقبة](/ar/docs/monitoring) للسطح التشخيصي.
 
 مجتمعةً، تُجيب المخرجات على سؤال "هل ضوابطك فعّالة" بتوقيتات زمنية وسلسلة تجزئة. لا شهادات. بل أدلة.
 

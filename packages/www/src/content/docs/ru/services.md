@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: ru
-sourceHash: "2d470a876c00c352"
+sourceHash: "f33bcf4598caedc8"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -213,7 +213,7 @@ renet и Docker намеренно расходятся во мнении о т�
 
 **Как исправить расхождение.** Если сохранённая политика контейнера в `.rediacc.json` неверна (например, потому что вы изменили compose, но никогда не пересоздавали контейнер), повторно запустите `rdc repo up <repo>`. Контейнер будет пересоздан с записанной обновлённой политикой.
 
-> **Экспериментально:** Восстановление на основе cold backup sidecar и флаг `--sync-certs` в `rdc machine query` появились в renet 0.9+. Более старые версии полностью полагаются на сохранённую `restart_policy` для восстановления watchdog, что может оставить контейнеры `on-failure` зависшими после cold backup.
+> **Экспериментально:** Восстановление на основе cold backup sidecar и флаг `--sync-certs` в `rdc machine status` появились в renet 0.9+. Более старые версии полностью полагаются на сохранённую `restart_policy` для восстановления watchdog, что может оставить контейнеры `on-failure` зависшими после cold backup.
 
 > **Сетевой мост Docker отключён для демонов, отвечающих за отдельные репозитории.** Каждый такой демон (`FlavorRediacc`) настроен с `"bridge": "none"` и `"iptables": false`. Обычный `docker run <image>` внутри оболочки репозитория всё равно запустится, но контейнер получит только loopback-интерфейс и не будет иметь DNS или исходящего сетевого подключения. Это сделано намеренно, поскольку изоляция loopback между репозиториями обеспечивается eBPF cgroup-хуками, которые обойдёт контейнер в режиме bridge. Для production-сервисов используйте `renet compose` (который сам внедряет host-сеть); для разовой отладки передавайте `--network host` явно: `docker run --rm --network host -it ubuntu bash`.
 >
@@ -226,7 +226,7 @@ renet и Docker намеренно расходятся во мнении о т�
 Смонтируйте репозиторий и запустите все сервисы:
 
 ```bash
-rdc repo up --name my-app -m server-1
+rdc repo up my-app
 ```
 
 | Опция | Описание |
@@ -263,12 +263,12 @@ HTTP services (accessible via proxy after ~3s):
 ## Остановка сервисов
 
 ```bash
-rdc repo down --name my-app -m server-1
+rdc repo down my-app
 ```
 
 | Опция | Описание |
 |-------|----------|
-| `--unmount` | Размонтировать зашифрованный репозиторий после остановки сервисов. Если это не вступит в силу, используйте `rdc repo unmount` отдельно. |
+| `--unmount` | Размонтировать зашифрованный репозиторий после остановки сервисов. |
 | `--skip-router-restart` | Пропустить перезапуск сервера маршрутов после операции |
 
 Последовательность выполнения:
@@ -281,7 +281,7 @@ rdc repo down --name my-app -m server-1
 Запуск или остановка всех репозиториев на машине одновременно:
 
 ```bash
-rdc repo up -m server-1
+rdc repo up --all -m server-1
 ```
 
 | Опция | Описание |
@@ -312,7 +312,7 @@ rdc repo up -m server-1
 ### Включение
 
 ```bash
-rdc repo autostart enable --name my-app -m server-1
+rdc repo admin autostart enable my-app
 ```
 
 Вам будет предложено ввести парольную фразу репозитория.
@@ -320,13 +320,13 @@ rdc repo autostart enable --name my-app -m server-1
 ### Включение для всех репозиториев
 
 ```bash
-rdc repo autostart enable -m server-1
+rdc repo admin autostart enable
 ```
 
 ### Отключение
 
 ```bash
-rdc repo autostart disable --name my-app -m server-1
+rdc repo admin autostart disable my-app
 ```
 
 Эта команда удаляет ключевой файл и деактивирует LUKS-слот 1.
@@ -352,7 +352,7 @@ Adding keyfile to LUKS slot 1: /mnt/rediacc/repositories/<guid>
 ### Список статусов
 
 ```bash
-rdc repo autostart list -m server-1
+rdc repo admin autostart list -m server-1
 ```
 
 Подробнее о том, как периодический реконсилятор восстанавливает репозитории, остановившиеся после загрузки, см. [Автозапуск и восстановление](/ru/docs/autostart-recovery).
@@ -365,16 +365,16 @@ rdc repo autostart list -m server-1
 
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
-rdc config init --name production --ssh-key ~/.ssh/id_ed25519
-rdc config machine add --name prod-1 --ip 203.0.113.50 --user deploy
-rdc config machine setup --name prod-1
-rdc repo create --name webapp -m prod-1 --size 10G
+rdc config init production --ssh-key ~/.ssh/id_ed25519
+rdc machine add prod-1 --ip 203.0.113.50 --user deploy
+rdc machine setup prod-1
+rdc repo create webapp -m prod-1 --size 10G
 ```
 
 ### 2. Монтирование и подготовка
 
 ```bash
-rdc repo mount --name webapp -m prod-1
+rdc repo up webapp --no-start
 ```
 
 ### 3. Создание файлов приложения
@@ -433,13 +433,13 @@ down() {
 ### 4. Запуск
 
 ```bash
-rdc repo up --name webapp -m prod-1
+rdc repo up webapp
 ```
 
 ### 5. Включение автозапуска
 
 ```bash
-rdc repo autostart enable --name webapp -m prod-1
+rdc repo admin autostart enable webapp
 ```
 
 ## Использование per-repo secrets в compose

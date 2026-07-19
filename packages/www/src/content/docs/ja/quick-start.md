@@ -4,7 +4,7 @@ description: 数分でサーバー上にコンテナ化されたサービスを�
 category: Guides
 order: -1
 language: ja
-sourceHash: "a1350abc611570ef"
+sourceHash: "12382a10b8fd01cb"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -59,8 +59,8 @@ rdc config ssh set --key ~/.ssh/id_ed25519
 ### 3. サーバーの追加
 
 ```bash
-rdc config machine add --name my-server --ip 192.168.1.100 --user admin
-rdc config machine setup --name my-server  # renet のプロビジョニング + データストアの作成
+rdc machine add my-server --ip 192.168.1.100 --user admin
+rdc machine setup my-server  # renet のプロビジョニング + データストアの作成
 ```
 
 **実行される処理:** SSH ホストキーのスキャン、renet バイナリのアップロード、サーバー上で暗号化データストアの初期化。リポジトリの準備が完了します。
@@ -83,7 +83,7 @@ cat ~/.config/rediacc/rediacc.json         # 生の JSON: マシン、リポジ�
 ### 1. リポジトリの作成
 
 ```bash
-rdc repo create --name my-app -m my-server --size 2G  # 2 GB の暗号化リポジトリを作成
+rdc repo create my-app -m my-server --size 2G  # 2 GB の暗号化リポジトリを作成
 ```
 
 暗号化ボリュームの作成、マウント、Docker デーモンの起動が行われます。リポジトリは設定に登録され、使用可能になります。
@@ -94,7 +94,7 @@ rdc repo create --name my-app -m my-server --size 2G  # 2 GB の暗号化リポ�
 
 ```bash
 rdc repo admin template list                                        # 組み込みテンプレートを表示
-rdc repo admin template apply --name app-postgres -m my-server -r my-app  # docker-compose.yml + Rediaccfile をデプロイ
+rdc repo admin template apply my-app --template app-postgres  # docker-compose.yml + Rediaccfile をデプロイ
 ```
 
 テンプレートは `docker-compose.yml`、`Rediaccfile`、およびサポートファイルを提供します。テンプレート（または独自の compose ファイル）がなければ、起動するものがありません。最初のリポジトリには組み込みテンプレートを使用してください。これが全体のワークフローをエンドツーエンドで学習する最速の方法です。
@@ -102,9 +102,9 @@ rdc repo admin template apply --name app-postgres -m my-server -r my-app  # dock
 ### 3. リポジトリの起動
 
 ```bash
-rdc repo up --name my-app -m my-server  # Rediaccfile の up() を実行
+rdc repo up my-app -m my-server  # Rediaccfile の up() を実行
 rdc repo list -m my-server                           # マシン上のすべてのリポジトリを表示
-rdc repo status --name my-app -m my-server  # マウント状態、Docker、サイズ、暗号化
+rdc repo status my-app  # マウント状態、Docker、サイズ、暗号化
 ```
 
 `repo up` は必要に応じて自動マウントします。フラグは不要です。
@@ -142,25 +142,25 @@ rdc vscode connect my-app              # VS Code SSH を開き、リポジトリ
 
 **ターミナル:**
 ```bash
-rdc term connect -m my-server -r my-app                            # リポジトリサンドボックスに SSH 接続
-rdc term connect -m my-server -r my-app -c "curl localhost:3000"   # コマンドを実行して終了
-rdc term connect -m my-server                                   # マシンに SSH 接続（サンドボックスなし）
+rdc term connect my-app                            # リポジトリサンドボックスに SSH 接続
+rdc term connect my-app -c "curl localhost:3000"   # コマンドを実行して終了
+rdc term connect my-server                                   # マシンに SSH 接続（サンドボックスなし）
 ```
 
 **ファイル同期（SSH 経由の rsync）:**
 ```bash
-rdc repo sync upload -m my-server -r my-app --local ./src                                   # ディレクトリをアップロード
-rdc repo sync upload -m my-server -r my-app --local ./config.yml --remote conf              # 単一ファイルをアップロード
-rdc repo sync download -m my-server -r my-app --local ./backup                              # ディレクトリをダウンロード
-rdc repo sync download -m my-server -r my-app --remote-file conf/config.yml --local ./dl    # 単一ファイルをダウンロード
-rdc repo sync download -m my-server -r my-app --local ./backup --dry-run                    # まずプレビュー
+rdc repo sync upload my-app@my-server --local ./src                                   # ディレクトリをアップロード
+rdc repo sync upload my-app@my-server --local ./config.yml --remote conf              # 単一ファイルをアップロード
+rdc repo sync download my-app@my-server --local ./backup                              # ディレクトリをダウンロード
+rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl    # 単一ファイルをダウンロード
+rdc repo sync download my-app@my-server --local ./backup --dry-run                    # まずプレビュー
 ```
 
 **トンネル（コンテナへの SSH ポートフォワーディング）:**
 ```bash
-rdc repo tunnel -m my-server -r my-app -c app  # app コンテナのポートを自動検出
-rdc repo tunnel -m my-server -r my-app -c db --port 5432  # Postgres をトンネル
-rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # カスタムローカルポート
+rdc repo tunnel my-app@my-server -c app  # app コンテナのポートを自動検出
+rdc repo tunnel my-app@my-server -c db --port 5432  # Postgres をトンネル
+rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432  # カスタムローカルポート
 ```
 
 トンネルを実行 → ブラウザで `localhost:3000` を開く → リモートサーバーのライブアプリが表示されます。
@@ -174,9 +174,9 @@ rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # カス
 ### 1. グランドとリポジトリのフォーク
 
 ```bash
-rdc repo fork --parent my-app -m my-server --tag experiment --up  # 即座に CoW クローン + 起動
+rdc repo fork my-app --tag experiment --up  # 即座に CoW クローン + 起動
 rdc repo list -m my-server                                  # 表示: my-app (grand) + my-app:experiment (fork)
-rdc repo delete --name my-app:experiment -m my-server  # フォークを削除、グランドは影響なし
+rdc repo delete my-app:experiment  # フォークを削除、グランドは影響なし
 ```
 
 **即座のゼロコピークローン。** CoW（コピーオンライト）。マイクロ秒で完了、データのコピーは不要。一方が書き込むまでブロックは共有されます。
@@ -192,32 +192,32 @@ rdc repo delete --name my-app:experiment -m my-server  # フォークを削除�
 
 ```bash
 # リポジトリを別のマシンにプッシュ
-rdc repo push --name my-app -m my-server --to backup-server
+rdc repo push my-app --to backup-server
 
 # プッシュしてターゲットで自動デプロイ
-rdc repo push --name my-app -m my-server --to backup-server --up
+rdc backup restore my-app --as my-app -m backup-server --up
 
 # CRIU チェックポイント付きプッシュ（ライブマイグレーション、メモリ状態を保持）
-rdc repo push --name my-app -m my-server --to new-server --checkpoint --up
+rdc repo push my-app --to new-server --checkpoint
 
 # 新しいマシンにプッシュ（クラウドプロバイダー経由で自動プロビジョニング）
-rdc repo push --name my-app -m my-server --to new-server --provision linode --up
+rdc repo push my-app --to new-server --provision linode
 ```
 
 ### 3. クラウドストレージへのプッシュ（OneDrive、Google Drive、S3）
 
 ```bash
 # rclone 設定をストレージバックエンドとしてインポート
-rdc config storage import --file ~/rclone.conf
+rdc storage import ~/rclone.conf
 
 # 利用可能なストレージを一覧表示
 rdc storage list
 
 # リポジトリをクラウドストレージにプッシュ
-rdc repo push --name my-app -m my-server --to my-s3-backup
+rdc repo push my-app --to my-s3-backup
 
 # ストレージ上のバックアップを一覧表示
-rdc repo backup list --from my-s3-backup -m my-server
+rdc backup list -m my-server --storage my-s3-backup
 ```
 
 `--to` はターゲットがマシンかストレージバックエンドかを自動検出します。rclone がサポートするすべてのプロバイダーで動作します: S3、R2、B2、OneDrive、Google Drive、SFTP など。
@@ -226,13 +226,13 @@ rdc repo backup list --from my-s3-backup -m my-server
 
 ```bash
 # クラウドマシンからローカルサーバーにリポジトリをプル
-rdc repo pull --name my-app -m my-local-server --from cloud-server
+rdc repo pull my-app@my-local-server --from cloud-server
 
 # クラウドストレージからプル
-rdc repo pull --name my-app -m my-local-server --from my-s3-backup
+rdc repo pull my-app@my-local-server --from my-s3-backup
 
 # プルして即座に起動
-rdc repo pull --name my-app -m my-local-server --from my-s3-backup --up
+rdc repo pull my-app@my-local-server --from my-s3-backup --up
 ```
 
 **なぜプルするのか?** ローカルマシンは NAT の背後にあります。クラウドからプッシュすることはできません。しかし、クラウドには到達できます。プルでリポジトリを手元に持ってきます。
@@ -248,9 +248,9 @@ rdc repo pull --name my-app -m my-local-server --from my-s3-backup --up
 ### 1. インフラ設定
 
 ```bash
-rdc config infra set -m my-server  # 設定: ベースドメイン、パブリック IP、ポート範囲
-rdc config infra show -m my-server  # 設定を確認
-rdc config infra push -m my-server  # プロキシ設定をリモートにプッシュ
+rdc machine infra set my-server  # 設定: ベースドメイン、パブリック IP、ポート範囲
+rdc machine infra show my-server  # 設定を確認
+rdc machine infra push my-server  # プロキシ設定をリモートにプッシュ
 ```
 
 **ルーティングの仕組み:**
@@ -261,8 +261,8 @@ rdc config infra push -m my-server  # プロキシ設定をリモートにプッ
 ### 2. プロキシテンプレート
 
 ```bash
-rdc repo admin template apply --name proxy -m my-server -r infra  # リポジトリにプロキシをデプロイ
-rdc repo up --name infra -m my-server  # Traefik を起動
+rdc repo admin template apply infra --template proxy  # リポジトリにプロキシをデプロイ
+rdc repo up infra -m my-server  # Traefik を起動
 ```
 
 Traefik がこのマシン上のすべてのリポジトリに外部トラフィックをルーティングします。すべてのコンテナが自動的に HTTPS エンドポイントを取得します。

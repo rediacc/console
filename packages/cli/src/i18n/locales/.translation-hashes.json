@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 1685,
-    "sourceCommit": "970f98050d45735f27b47cbef6ac156152be52d5"
+    "sourceCommit": "0e3a80522385b5f9d2b1e3bf8c77595e17836754"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -144,7 +144,7 @@
     "commands.cluster.snapshot.descriptionShort": "b7314027",
     "commands.cluster.snapshot.list.description": "471b677b",
     "commands.cluster.snapshot.list.descriptionShort": "67f1d0f7",
-    "commands.cluster.status.description": "335fa619",
+    "commands.cluster.status.description": "122c70bb",
     "commands.cluster.status.descriptionShort": "59a1a34e",
     "commands.cluster.status.none": "0db6099d",
     "commands.config.audit.description": "e6478b05",
@@ -827,11 +827,11 @@
     "commands.repo.delete.starting": "b4ba15bb",
     "commands.repo.description": "f76030cf",
     "commands.repo.descriptionShort": "13455479",
-    "commands.repo.diff.baseOption": "a3df238a",
+    "commands.repo.diff.baseOption": "13d1568f",
     "commands.repo.diff.conflictingFormat": "48f02647",
     "commands.repo.diff.contentNeedsPath": "86587a35",
     "commands.repo.diff.contentOption": "d2fb3332",
-    "commands.repo.diff.description": "ef4db67c",
+    "commands.repo.diff.description": "76054cfe",
     "commands.repo.diff.descriptionShort": "21f2b041",
     "commands.repo.diff.failed": "f9ed9e61",
     "commands.repo.diff.fastOption": "4a1df3b0",

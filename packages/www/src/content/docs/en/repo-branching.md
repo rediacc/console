@@ -32,15 +32,14 @@ A repository is one LUKS image file on a btrfs pool. A fork is a constant-time r
 Freeze a mounted working fork into a new immutable commit.
 
 ```bash
-rdc repo commit --name <fork> --message "<message>" -m <machine>
+rdc repo commit <fork> --message "<message>"
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--name <name>` | Working fork to commit. Must be mounted. Required. | required |
+| `<ref>` (positional) | Working fork to commit. Must be mounted. Required. | required |
 | `--message <msg>` | Commit message. Required. | required |
 | `--author <author>` | Commit author recorded in the commit metadata. | unset |
-| `-m, --machine <name>` | Target machine. Required. | required |
 | `--debug` | Verbose diagnostics on stderr. | off |
 
 The new commit is registered in local config with `immutable: true`, and the working fork's `headCommit` advances to point at it. Committing an immutable repository is refused: check it out into a writable fork first.
@@ -50,13 +49,13 @@ The new commit is registered in local config with `immutable: true`, and the wor
 Create a named branch ref pointing at a working fork's current commit.
 
 ```bash
-rdc repo branch --branch <name> --name <fork>
+rdc repo branch <fork> --branch <name>
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--branch <branch>` | Name of the new branch. Required. | required |
-| `--name <name>` | Working fork whose current commit the branch points at. Required. | required |
+| `<ref>` (positional) | Working fork whose current commit the branch points at. Required. | required |
 
 This is a config-only operation. No work happens on the machine. The branch ref maps a name to the working fork's `headCommit`, so the fork must have at least one commit first.
 
@@ -65,16 +64,15 @@ This is a config-only operation. No work happens on the machine. The branch ref 
 Reflink-clone an immutable commit (or a branch tip) into a fresh writable working fork.
 
 ```bash
-rdc repo checkout --ref <commit> --tag <newFork> -m <machine>
-rdc repo checkout --ref <branchName> --from <fork> --tag <newFork> -m <machine>
+rdc repo checkout <commit> --tag <newFork>
+rdc repo checkout <branchName> --from <fork> --tag <newFork>
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--ref <commit\|branch>` | Commit GUID to check out, or a branch name when `--from` is given. Required. | required |
+| `<commit-or-branch-ref>` (positional) | Commit GUID to check out, or a branch name when `--from` is given. Required. | required |
 | `--tag <name>` | Name for the new writable working fork. Required. | required |
-| `-m, --machine <name>` | Target machine. Required. | required |
-| `--from <workingFork>` | Resolve `--ref` as a branch name on this working fork's branch set. | direct commit |
+| `--from <workingFork>` | Resolve the positional ref as a branch name on this working fork's branch set. | direct commit |
 | `--debug` | Verbose diagnostics on stderr. | off |
 | `--skip-router-restart` | Skip the router restart step. | off |
 
@@ -85,14 +83,13 @@ Checkout reuses the fork reflink path, so it is near-instant and constant-time r
 Walk the commit history reachable from a working fork or a commit.
 
 ```bash
-rdc repo log --name <fork> -m <machine>
+rdc repo log <fork>
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--name <name>` | Working fork or commit to start the history walk from. Required. | required |
-| `-m, --machine <name>` | Target machine. Required. | required |
-| `--json` | Output the commit history as JSON. | off |
+| `<ref>` (positional) | Working fork or commit to start the history walk from. Required. | required |
+| `-o json` | Output the commit history as JSON. | `table` |
 | `--debug` | Verbose diagnostics on stderr. | off |
 
 `log` walks the parent chain recorded by `rdc repo commit`, reading the out-of-volume state mirror so no commit is unlocked or mounted. It is read-only.
@@ -102,15 +99,14 @@ rdc repo log --name <fork> -m <machine>
 Merge a source commit or fork into a target working fork, without mutating the live target in place.
 
 ```bash
-rdc repo merge --name <target> --from <source> -m <machine>
-rdc repo merge --name <target> --from <source> --resolve theirs -m <machine>
+rdc repo merge <target> --from <source>
+rdc repo merge <target> --from <source> --resolve theirs
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--name <name>` | Target working fork to merge into. Required. | required |
+| `<ref>` (positional) | Target working fork to merge into. Required. | required |
 | `--from <source>` | Source commit or fork to merge from. Required. | required |
-| `-m, --machine <name>` | Target machine. Required. | required |
 | `--force` | Quiesce a mounted or running target first, then merge. Never mutates a live mount. | off |
 | `--resolve <ours\|theirs>` | Per-file three-way merge: fold the source's per-file changes onto the target, keeping (`ours`) or taking (`theirs`) the source's version for files changed on both sides. Omit for whole-image take-theirs. | off |
 | `--base <guid>` | Common-ancestor commit for the three-way merge (used with `--resolve`). Defaults to the source commit's parent, or the target's current commit. | auto |
@@ -137,12 +133,12 @@ rdc repo gc --apply -m <machine>    # delete the unreachable commits
 
 Reachability is computed from the local config (the ref store): the set of commits reachable by following each branch tip and HEAD down the parent chain. Immutable commits on the machine outside that set are unreachable. A mounted object or a working fork is never collected.
 
-### rdc repo fsck
+### rdc repo admin fsck
 
 Validate the config refs against the objects present on a machine.
 
 ```bash
-rdc repo fsck -m <machine>
+rdc repo admin fsck -m <machine>
 ```
 
 | Option | Description | Default |
@@ -156,7 +152,7 @@ Reports dangling refs (a branch tip or HEAD pointing at a GUID with no object on
 `rdc repo fork --immutable` marks the new fork read-only at creation, producing a commit-equivalent base without a separate `commit` step.
 
 ```bash
-rdc repo fork --parent <name> --tag <tag> --immutable -m <machine>
+rdc repo fork <name> --tag <tag> --immutable
 ```
 
 An immutable fork refuses to mount, which keeps its image byte-stable forever. This is useful as a frozen base for cross-machine delta push, where the base must be identical on both ends. To make changes, check it out (or fork it again) into a writable copy.
@@ -166,28 +162,28 @@ An immutable fork refuses to mount, which keeps its image byte-stable forever. T
 ### Commit a working fork
 
 ```bash
-$ rdc repo commit --name myapp:work --message "schema migration applied" -m server-1
+$ rdc repo commit myapp:work --message "schema migration applied"
 Committed 4f3c2a1b9d8e: schema migration applied
 ```
 
 ### Commit with an explicit author
 
 ```bash
-$ rdc repo commit --name myapp:work --message "nightly snapshot" --author ci-bot -m server-1
+$ rdc repo commit myapp:work --message "nightly snapshot" --author ci-bot
 Committed 7a1b2c3d4e5f: nightly snapshot
 ```
 
 ### Name a branch at the current commit
 
 ```bash
-$ rdc repo branch --branch staging --name myapp:work
+$ rdc repo branch myapp:work --branch staging
 Branch "staging" -> 4f3c2a1b9d8e
 ```
 
 ### Check a commit out into a fresh writable fork
 
 ```bash
-$ rdc repo checkout --ref 4f3c2a1b9d8e --tag rollback-test -m server-1
+$ rdc repo checkout 4f3c2a1b9d8e --tag rollback-test
 ```
 
 ### Check a branch tip out by name
@@ -195,13 +191,13 @@ $ rdc repo checkout --ref 4f3c2a1b9d8e --tag rollback-test -m server-1
 With `--from`, the `--ref` value is resolved as a branch name on the given working fork:
 
 ```bash
-$ rdc repo checkout --ref staging --from myapp:work --tag staging-copy -m server-1
+$ rdc repo checkout staging --from myapp:work --tag staging-copy
 ```
 
 ### Walk the history
 
 ```bash
-$ rdc repo log --name myapp:work -m server-1
+$ rdc repo log myapp:work
 commit 4f3c2a1b9d8e
   Author: ci-bot  Date: 2026-05-29T10:14:02Z
   schema migration applied
@@ -212,10 +208,10 @@ commit 9d8e7a1b2c3d
 
 ### History as JSON
 
-`--json` emits the structured walk, newest first:
+`-o json` emits the structured walk, newest first:
 
 ```bash
-$ rdc repo log --name myapp:work --json -m server-1
+$ rdc repo log myapp:work -o json
 {
   "success": true,
   "start": "4f3c2a1b9d8e",
@@ -237,8 +233,8 @@ $ rdc repo log --name myapp:work --json -m server-1
 `rdc repo diff` works between any two commits because they share a copy-on-write ancestor. Check one commit out, then diff it against another:
 
 ```bash
-$ rdc repo checkout --ref 4f3c2a1b9d8e --tag review -m server-1
-$ rdc repo diff --name review --base myapp:work -m server-1
+$ rdc repo checkout 4f3c2a1b9d8e --tag review
+$ rdc repo diff review --base myapp:work
 M  db/schema.sql
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -249,7 +245,7 @@ See [rdc repo diff](/en/docs/repo-diff) for the full diff reference.
 ### Merge a reviewed line back
 
 ```bash
-$ rdc repo merge --name myapp:main --from myapp:work -m server-1
+$ rdc repo merge myapp:main --from myapp:work
 Merged myapp:work into myapp:main
 ```
 
@@ -258,7 +254,7 @@ Merged myapp:work into myapp:main
 A mounted or running target is refused unless `--force`, which quiesces it first:
 
 ```bash
-$ rdc repo merge --name myapp:main --from myapp:work --force -m server-1
+$ rdc repo merge myapp:main --from myapp:work --force
 Merged myapp:work into myapp:main
 ```
 
@@ -267,7 +263,7 @@ Merged myapp:work into myapp:main
 Two forks (`feature` and `hotfix`) checked out from the same commit each changed some files. `--resolve theirs` folds the source (`hotfix`) into the target (`feature`): files only one side changed are taken from that side, and files both sides changed are resolved to the source. The base is auto-detected from the shared ancestor (or pin it with `--base`):
 
 ```bash
-$ rdc repo merge --name myapp:feature --from myapp:hotfix --resolve theirs -m server-1
+$ rdc repo merge myapp:feature --from myapp:hotfix --resolve theirs
 Merged myapp:hotfix into myapp:feature (three-way); 1 conflict(s) resolved --theirs: [config/app.yaml]
 ```
 
@@ -276,7 +272,7 @@ Merged myapp:hotfix into myapp:feature (three-way); 1 conflict(s) resolved --the
 ### Create an immutable base directly
 
 ```bash
-$ rdc repo fork --parent myapp --tag baseline-v1 --immutable -m server-1
+$ rdc repo fork myapp --tag baseline-v1 --immutable
 ```
 
 ## Delta push and pull
@@ -287,19 +283,19 @@ You do not normally pass a base by hand. After a full push, the CLI retains the 
 
 ```bash
 # First push is a full transfer; it also retains a reusable base on both ends.
-$ rdc repo push --name myapp:work --to-machine backup-1 -m server-1
+$ rdc repo push myapp:work --to backup-1
 
 # After local changes, the next push ships only the changed blocks, no flag needed.
-$ rdc repo push --name myapp:work --to-machine backup-1 -m server-1
+$ rdc repo push myapp:work --to backup-1
 
 # Pin an explicit base (an immutable commit present on both machines).
-$ rdc repo push --name myapp:work --to-machine backup-1 --delta-base 4f3c2a1b9d8e -m server-1
+$ rdc repo push myapp:work --to backup-1 --delta-base 4f3c2a1b9d8e
 
 # Delta also works in reverse, pulling only changed blocks from a machine source.
-$ rdc repo pull --name myapp:work --from-machine backup-1 --delta-base 4f3c2a1b9d8e -m server-1
+$ rdc repo pull myapp:work --from backup-1 --delta-base 4f3c2a1b9d8e
 
 # Re-pull an existing local repository (overwrite it) with --force.
-$ rdc repo pull --name myapp:work --from-machine backup-1 --force -m server-1
+$ rdc repo pull myapp:work --from backup-1 --force
 ```
 
 Delta transfer applies only between machines (a remote with the FIEMAP base). Pushes to cloud object storage always transfer the full image. The base must be byte-identical on both ends, which is exactly what an immutable commit or `--immutable` fork guarantees.

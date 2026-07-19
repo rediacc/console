@@ -5,7 +5,7 @@ description: >-
 category: Guides
 order: 5
 language: ja
-sourceHash: "b2d38b48d1fac737"
+sourceHash: "1ceb078c7eb045b7"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -112,7 +112,7 @@ Renetはすべてのコンテナに以下を自動注入します:
 - **依存関係を考慮した復元**: composeの`depends_on`を使用してデータベースを先に起動（healthyを待機）し、その後アプリコンテナをCRIU復元します。
 - **TCP 接続は復元後に無効になります**。アプリケーションは `ECONNRESET` を処理して再接続する必要があります。CRIU は、サポートされているどのフローでも、復元時にアクティブな TCP 接続状態を保持しません。
 - **Docker実験モード**はリポジトリごとのデーモンで自動的に有効になります。
-- **CRIUはインストールされます** `rdc config machine setup`の実行時に。
+- **CRIUはインストールされます** `rdc machine setup`の実行時に。
 - **`/etc/criu/runc.conf`** はデフォルトで `tcp-established` が設定されています。
 - **コンテナのセキュリティ設定はラベル付きコンテナに自動注入されます**, `renet compose`は`rediacc.checkpoint=true`を持つコンテナに以下を追加します:
   - `cap_add`: `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN`（カーネル5.9+でのCRIU最小セット）
@@ -133,7 +133,7 @@ Renetはすべてのコンテナに以下を自動注入します:
 
 ### OSごとのホストセキュリティポリシー
 
-公式にサポートされている5つのサーバーOS（[要件](/en/docs/requirements)を参照）において、各リポジトリのDockerデーモンとその上で動作するコンテナは**デフォルトのコンテナラベル**を使用します。`rdc config machine setup`はカスタムSELinuxポリシーやAppArmorプロファイルをインストールしません。これは意図的です。トレードオフとしては、コンテナプロセスがRediacc固有の制限プロファイルではなく、ホストOSのデフォルトラベルポリシーで実行されることです。コンテナレイヤーでの強制アクセス制御を脅威モデルで必要とする場合は、デプロイ前にホストレベルで設定してください。
+公式にサポートされている5つのサーバーOS（[要件](/en/docs/requirements)を参照）において、各リポジトリのDockerデーモンとその上で動作するコンテナは**デフォルトのコンテナラベル**を使用します。`rdc machine setup`はカスタムSELinuxポリシーやAppArmorプロファイルをインストールしません。これは意図的です。トレードオフとしては、コンテナプロセスがRediacc固有の制限プロファイルではなく、ホストOSのデフォルトラベルポリシーで実行されることです。コンテナレイヤーでの強制アクセス制御を脅威モデルで必要とする場合は、デプロイ前にホストレベルで設定してください。
 
 - **Ubuntu 24.04 / openSUSE Leap 16.0**: AppArmorはデフォルトで有効です。コンテナはデフォルトのdocker-containerプロファイルで動作します。唯一の例外はCRIUです（上記の注意書きのとおり、`rediacc.checkpoint=true`を持つコンテナには`apparmor=unconfined`が適用されます）。
 - **Fedora 43 / Oracle Linux 10**: SELinuxはデフォルトでenforcing（強制）モードで動作します。コンテナは標準の`container_t`コンテキストを取得します。追加のポリシーインストールは不要です。AVCの拒否によってセットアップステップが失敗した場合は、[トラブルシューティング: SELinuxの拒否](/en/docs/troubleshooting)を参照してください。

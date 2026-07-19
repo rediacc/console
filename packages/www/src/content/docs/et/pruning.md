@@ -4,7 +4,7 @@ description: "Eemalda orvuks jäänud varukoopiad, aegunud hetktõmmised, hoidla
 category: "Guides"
 order: 12
 language: et
-sourceHash: "af01691f5fe908ee"
+sourceHash: "928f117282b38484"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -34,16 +34,16 @@ Skannib mälupakkuja ja kustutab varukoopiad, mille GUID-id ei esine enam ühesk
 
 ```bash
 # Ainult eelvaade -- näita, mida kustutataks
-rdc storage prune --name my-s3 -m server-1 --dry-run
+rdc storage prune my-s3 -m server-1 --dry-run
 
 # Tegelikult kustuta orvuks jäänud varukoopiad (vaikekäitumine)
-rdc storage prune --name my-s3 -m server-1
+rdc storage prune my-s3 -m server-1
 
 # Alista armuaeg (vaikimisi 7 päeva)
-rdc storage prune --name my-s3 -m server-1 --grace-days 14
+rdc storage prune my-s3 -m server-1 --grace-days 14
 
 # Alista ühendamise ohutuse kontroll (kasuta ettevaatlikult)
-rdc storage prune --name my-s3 -m server-1 --force-delete-mounted
+rdc storage prune my-s3 -m server-1 --force-delete-mounted
 ```
 
 `--machine` on nõutav, kuna rclone kutsed käivituvad teotusmasinal, mitte sinu sülearvutis. Klientidel ei eeldata rclone'i kohalikku paigaldust. Mälumandaadid pärinevad endiselt sinu kohalikust konfiguratsioonist; masin on lihtsalt rclone käivitaja.
@@ -82,10 +82,10 @@ Authorized_keys skaneerimine vaatab `/home/*/.ssh/authorized_keys` ja `/root/.ss
 
 ```bash
 # Kuiv käivitus, näitab, mida eemaldataks (muudatusi ei rakendateta)
-rdc machine prune --name server-1 --dry-run
+rdc machine prune server-1 --dry-run
 
 # Käivita puhastamine
-rdc machine prune --name server-1
+rdc machine prune server-1
 ```
 
 > **Kaskaadpuhastamine.** Mõned kategooriad sõltuvad varasematest. Näiteks tühjade ühenduskataloogide kustutamine võib paljastada täiendavaid liivakasti orve, mille toetav ühendus äsja kadus. `rdc machine prune` teine käivitamine tabab kaskaadi ja lõpetab puhastamise. Lõplik kuiv käivitus lõpeb teatega `No orphaned resources found. Datastore is clean.` kui midagi pole enam teha.
@@ -95,8 +95,8 @@ rdc machine prune --name server-1
 `--orphaned-repos` puhul kustutab CLI ka masinal olevad hoidlakujutised, mis ei esine **üheski** kohalikus konfiguratsioonifailis.
 
 ```bash
-rdc machine prune --name server-1 --orphaned-repos --dry-run
-rdc machine prune --name server-1 --orphaned-repos
+rdc machine prune server-1 --orphaned-repos --dry-run
+rdc machine prune server-1 --orphaned-repos
 ```
 
 See on **jäme**. See kustutab kõik, mis pole sinu kohalikus konfiguratsioonis, sealhulgas legitiimsed forkid, mida haldavad teised tööriistad või teise operaatori CLI väljavõte. Kui renet `.interim/state` peegel tuvastab hoidla korrektselt forkina, kuid kohalik konfiguratsioon pole seda kunagi näinud, eemaldab see faas selle ikkagi. Eelista 3. faasi (`--prune-unknown`), kui soovid olla konservatiivne.
@@ -106,8 +106,8 @@ See on **jäme**. See kustutab kõik, mis pole sinu kohalikus konfiguratsioonis,
 `--prune-unknown` puhul kustutab CLI ainult hoidlad, mida **mõlemad** signaalid ei suuda klassifitseerida: pole üheski kohalikus konfiguratsioonis **ega** masina `.interim/state` peeglis fork-märgistatud kirjet (vt [Hoidlad. `Type` veerg](/et/docs/repositories#type-column-and-the-state-mirror)).
 
 ```bash
-rdc machine prune --name server-1 --prune-unknown --dry-run
-rdc machine prune --name server-1 --prune-unknown
+rdc machine prune server-1 --prune-unknown --dry-run
+rdc machine prune server-1 --prune-unknown
 ```
 
 Praktikas on `--prune-unknown` see, mida soovid rutiinil puhastamiseks; `--orphaned-repos` on õige ainult siis, kui oled kindel, et sinu kohalik konfiguratsioon on täielik ja autoriteetne inventuur kõigist hoidlatest masinal. Eelpeegli pärandforkid ja hoidlad, mille konfiguratsioonikirje kustutati kogemata, kuuluvad mõlemad "tundmatu" kategooriasse. Need on tõesti ebakindlad, ja kirurgiline lipp palub operaatoril seda sõnaselgelt tunnistada.
@@ -116,7 +116,7 @@ Praktikas on `--prune-unknown` see, mida soovid rutiinil puhastamiseks; `--orpha
 
 ```bash
 # Kombineeritud: täielik masina puhastamine kirurgilise fork-teadliku teega
-rdc machine prune --name server-1 --prune-unknown
+rdc machine prune server-1 --prune-unknown
 ```
 
 ## Konfiguratsiooni kärpimine
@@ -154,7 +154,7 @@ rdc config prune --grace-days 30
 - Aktiivsed ressursid (masinad, mäluhoidlad, hoidlad, varundustrateegiad, pilvepakkujad).
 - Mandaadid, konto blokk, krüpterimisblokk, vaikeväärtused.
 - Mäluhoidla `vaultContent` (kaasa arvatud aegunud OneDrive `access_token`. Refresh_token vermib endiselt uusi; kärpimine sunniks uuesti autentima).
-- `knownHosts` kirjed (automaatne värskendamise tee on `rdc config machine scan-keys`).
+- `knownHosts` kirjed (automaatne värskendamise tee on `rdc machine scan-keys`).
 - Tihendatud serdi blobimassiiv (`infra.acmeCertCache.<base>.data[]`) taastatakse automaatselt puhastatud serdinimistust; sa ei kaota ühtegi ahelat, mis katab endiselt säilitatud nime.
 
 ### Töötav näide
@@ -180,7 +180,7 @@ Serdinimed, mille ankur on elav masin, hoidla või GUID, jäetakse alles, samuti
 `.interim/state/<guid>/.rediacc.json` peegel, mis toitab `--prune-unknown` ja `rdc repo list -m` veergu `Type`, kirjutatakse:
 
 - **Forki ajal** (`rdc repo fork`). Kohe, isegi enne, kui fork on kunagi ühendatud.
-- **Iga olekusalvestuse korral** (`rdc repo mount` ja mis tahes toimingul, mis uuendab hoidla olekut). Hoidlate jaoks, mis loodi enne peegelkoodi laevamist.
+- **Iga olekusalvestuse korral** (`rdc repo up` ja mis tahes toimingul, mis uuendab hoidla olekut). Hoidlate jaoks, mis loodi enne peegelkoodi laevamist.
 
 Hoidlad, mis loodi **enne peegli olemasolu ja mida pole pärast uuendust uuesti ühendatud**, pole peeglifaili. Need kuvatakse `rdc repo list -m` all kui `unknown`, isegi kui mõned on legitiimselt forkid. Pärandforkide parandamiseks käivita masinal ühekordne tagasiasustamine:
 
@@ -238,6 +238,6 @@ rdc config field set --pointer /defaults/pruneGraceDays --new 14
 - **Eelista `--prune-unknown` vs `--orphaned-repos`.** Kirurgiline lipp austab renet-peegli; jäme lipp kustutab rõõmsalt teiste tööriistade loodud forkid.
 - **Kasuta tootmises suuremeelseid armuaegu.** Vaikimisi 7-päevane armuaeg sobib enamiku töövoogudega. Ebaregulaarsetel hooldusakendega tootmiskeskkondade jaoks kaaluge 14 või 30 päeva.
 - **Ajasta mäluhoidla kärpimine pärast varunduskäivitusi.** Sidumine `storage prune` sinu varundusajakavaga, et hoida mäluhoidla kulusid kontrolli all ilma käsitsi sekkumiseta.
-- **Kombineeri masina kärpimine varundusajakavaga.** Pärast varundusajakavade juurutamist (`rdc machine backup schedule`) lisa perioodiline masina kärpimine, et puhastada aegunud hetktõmmised ja orvuks jäänud andmehoidla artefaktid.
+- **Kombineeri masina kärpimine varundusajakavaga.** Pärast varundusajakavade juurutamist (`rdc backup schedule`) lisa perioodiline masina kärpimine, et puhastada aegunud hetktõmmised ja orvuks jäänud andmehoidla artefaktid.
 - **Käivita `config prune` perioodiliselt.** Kohaliku konfiguratsiooni paisumine (eriti serdi vahemälu) koguneb vaikselt; kord kvartalis tehtud `config prune --dry-run` on piisav selle tabamiseks.
 - **Auditeeri enne `--force` või `--force-delete-mounted` kasutamist.** Mõlemad lipud mööduvad ohutuskontrollidest. Kasuta `--force` ainult siis, kui oled kindel, et ükski teine konfiguratsioon ei viita küsimuses olevatele hoidlatele; kasuta `--force-delete-mounted` ainult siis, kui oled kindel, et masina elav olek on vale.

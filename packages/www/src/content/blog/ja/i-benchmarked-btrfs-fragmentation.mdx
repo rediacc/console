@@ -12,11 +12,11 @@ tags:
   - benchmarks
 featured: false
 language: ja
-sourceHash: 36cb029ebe9b6edc
+sourceHash: "362ac76977739eb6"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
-> **TL;DR.** Rediaccの `rdc machine query --storage-health` はリポジトリごとに断片化の数値を報告します。ある本番マシンではGitLabが約19,650エクステント/ギガバイトとフラグされています。反射的にデフラグしたくなります。私は代わりに計測しました。
+> **TL;DR.** Rediaccの `rdc machine status --storage-health` はリポジトリごとに断片化の数値を報告します。ある本番マシンではGitLabが約19,650エクステント/ギガバイトとフラグされています。反射的にデフラグしたくなります。私は代わりに計測しました。
 >
 > - 隣のリポジトリより**16倍断片化している**リポジトリが順次読み取りで**149 MB/s**（対143 MB/s）を記録し、ランダム4K読み取りでは**より高速**でした（719対957マイクロ秒）。
 > - デバイスはフラッシュストレージです。断片化がスピンドルディスクを傷つけるのはシーク時間を通じてです。SSDではそのメカニズムがほぼ存在しません。

@@ -4,7 +4,7 @@ description: "고아 백업, 오래된 스냅샷, 리포지터리 이미지, 로
 category: "Guides"
 order: 12
 language: ko
-sourceHash: "af01691f5fe908ee"
+sourceHash: "928f117282b38484"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -34,16 +34,16 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 
 ```bash
 # 미리 보기만 - 삭제될 항목 표시
-rdc storage prune --name my-s3 -m server-1 --dry-run
+rdc storage prune my-s3 -m server-1 --dry-run
 
 # 실제로 고아 백업 삭제 (기본 동작)
-rdc storage prune --name my-s3 -m server-1
+rdc storage prune my-s3 -m server-1
 
 # 유예 기간 재정의 (기본값 7일)
-rdc storage prune --name my-s3 -m server-1 --grace-days 14
+rdc storage prune my-s3 -m server-1 --grace-days 14
 
 # 마운트 안전성 검사 재정의 (주의해서 사용)
-rdc storage prune --name my-s3 -m server-1 --force-delete-mounted
+rdc storage prune my-s3 -m server-1 --force-delete-mounted
 ```
 
 `--machine`은 rclone 호출이 노트북이 아닌 실행기 머신에서 실행되기 때문에 필요합니다. 클라이언트는 rclone을 로컬에 설치할 필요가 없습니다. 스토리지 자격 증명은 여전히 로컬 config에서 가져오며, 머신은 단지 rclone 실행기입니다.
@@ -82,10 +82,10 @@ authorized_keys 스캔은 `/home/*/.ssh/authorized_keys`와 `/root/.ssh/authoriz
 
 ```bash
 # 드라이런, 제거될 항목을 표시합니다 (변경 사항 적용 없음)
-rdc machine prune --name server-1 --dry-run
+rdc machine prune server-1 --dry-run
 
 # 정리 실행
-rdc machine prune --name server-1
+rdc machine prune server-1
 ```
 
 > **연쇄 정리.** 일부 범주는 이전 범주에 의존합니다. 예를 들어, 빈 마운트 디렉터리를 삭제하면 지원 마운트가 방금 사라진 추가 샌드박스 고아가 노출될 수 있습니다. `rdc machine prune`을 두 번째 실행하면 연쇄가 포착되고 정리가 완료됩니다. 아무것도 남지 않으면 최종 드라이런은 `No orphaned resources found. Datastore is clean.`으로 끝납니다.
@@ -95,8 +95,8 @@ rdc machine prune --name server-1
 `--orphaned-repos`를 사용하면, CLI는 **어떤** 로컬 config 파일에도 나타나지 않는 머신의 리포지터리 이미지도 삭제합니다.
 
 ```bash
-rdc machine prune --name server-1 --orphaned-repos --dry-run
-rdc machine prune --name server-1 --orphaned-repos
+rdc machine prune server-1 --orphaned-repos --dry-run
+rdc machine prune server-1 --orphaned-repos
 ```
 
 이것은 **대략적**입니다. 다른 도구나 다른 운영자의 CLI 체크아웃에서 관리하는 합법적인 포크를 포함하여 로컬 config에 없는 모든 것을 삭제합니다. renet `.interim/state` 미러가 리포지터리를 포크로 올바르게 식별하지만 로컬 config가 그것을 본 적이 없다면, 이 단계는 여전히 그것을 제거합니다. 보수적으로 처리하려면 3단계(`--prune-unknown`)를 선호합니다.
@@ -106,8 +106,8 @@ rdc machine prune --name server-1 --orphaned-repos
 `--prune-unknown`을 사용하면, CLI는 **두 가지** 신호가 모두 분류에 실패한 리포지터리만 삭제합니다: 어떤 로컬 config에도 없고 **그리고** 머신의 `.interim/state` 미러에 포크로 표시된 항목이 없는 것 ([리포지터리. `Type` 열](/ko/docs/repositories#type-column-and-the-state-mirror) 참조).
 
 ```bash
-rdc machine prune --name server-1 --prune-unknown --dry-run
-rdc machine prune --name server-1 --prune-unknown
+rdc machine prune server-1 --prune-unknown --dry-run
+rdc machine prune server-1 --prune-unknown
 ```
 
 실제로 `--prune-unknown`은 일상적인 정리에 필요한 것이며, `--orphaned-repos`는 로컬 config가 머신의 모든 리포지터리의 완전하고 권위 있는 목록임을 확신할 때만 올바릅니다. 미러 이전 레거시 고아와 실수로 config 항목이 삭제된 리포지터리 모두 "알 수 없는" 버킷에 속합니다. 이것들은 진정으로 불확실하며, 정밀 플래그는 운영자에게 이를 명시적으로 인정하도록 요청합니다.
@@ -116,7 +116,7 @@ rdc machine prune --name server-1 --prune-unknown
 
 ```bash
 # 결합: 정밀 포크 인식 경로를 사용한 전체 머신 정리
-rdc machine prune --name server-1 --prune-unknown
+rdc machine prune server-1 --prune-unknown
 ```
 
 ## Config Prune
@@ -154,7 +154,7 @@ rdc config prune --grace-days 30
 - 활성 리소스 (머신, 스토리지, 리포지터리, 백업 전략, 클라우드 공급자).
 - 자격 증명, 계정 블록, 암호화 블록, 기본값.
 - 스토리지 `vaultContent` (만료된 OneDrive `access_token` 포함. refresh_token은 여전히 새 토큰을 발급합니다; pruning하면 재인증이 필요합니다).
-- `knownHosts` 항목 (자동 갱신 경로는 `rdc config machine scan-keys`).
+- `knownHosts` 항목 (자동 갱신 경로는 `rdc machine scan-keys`).
 - 압축된 인증서 blob 배열 (`infra.acmeCertCache.<base>.data[]`)은 정리된 인증서 목록에서 자동으로 재구성됩니다; 여전히 유지된 이름을 다루는 체인은 잃지 않습니다.
 
 ### 작업 예시
@@ -180,7 +180,7 @@ Dry run: 6 change(s) would be applied. Re-run without --dry-run to commit.
 `--prune-unknown`과 `rdc repo list -m`의 `Type` 열을 지원하는 `.interim/state/<guid>/.rediacc.json` 미러는 다음 경우에 작성됩니다.
 
 - **포크 시** (`rdc repo fork`). 포크가 마운트되기 전이라도 즉시.
-- **모든 상태 저장 시** (`rdc repo mount` 및 리포지터리 상태를 업데이트하는 모든 작업). 미러 코드가 배포되기 전에 생성된 리포지터리의 경우.
+- **모든 상태 저장 시** (`rdc repo up` 및 리포지터리 상태를 업데이트하는 모든 작업). 미러 코드가 배포되기 전에 생성된 리포지터리의 경우.
 
 **미러가 존재하기 전에 생성되었고 업그레이드 이후 다시 마운트되지 않은** 리포지터리에는 미러 파일이 없습니다. 일부는 합법적인 포크임에도 불구하고 `rdc repo list -m`에서 `unknown`으로 표시됩니다. 레거시 고아에 대한 이 문제를 해결하려면, 머신에서 일회성 백필을 실행합니다.
 
@@ -238,6 +238,6 @@ rdc config field set --pointer /defaults/pruneGraceDays --new 14
 - **`--orphaned-repos` 대신 `--prune-unknown`을 선호합니다.** 정밀 플래그는 renet 미러를 존중합니다; 대략적인 플래그는 다른 도구가 생성한 포크를 기꺼이 삭제합니다.
 - **프로덕션에는 넉넉한 유예 기간을 사용합니다.** 기본 7일 유예 기간은 대부분의 워크플로에 적합합니다. 유지 관리 기간이 드문 프로덕션 환경의 경우 14일 또는 30일을 고려합니다.
 - **백업 실행 후 스토리지 prune을 예약합니다.** `storage prune`을 백업 일정과 함께 사용하여 수동 개입 없이 스토리지 비용을 관리합니다.
-- **머신 prune을 백업 일정과 결합합니다.** 백업 일정을 배포한 후(`rdc machine backup schedule`), 오래된 스냅샷과 고아 데이터스토어 아티팩트를 정리하기 위해 주기적인 머신 prune을 추가합니다.
+- **머신 prune을 백업 일정과 결합합니다.** 백업 일정을 배포한 후(`rdc backup schedule`), 오래된 스냅샷과 고아 데이터스토어 아티팩트를 정리하기 위해 주기적인 머신 prune을 추가합니다.
 - **`config prune`을 주기적으로 실행합니다.** 로컬 config 팽창(특히 인증서 캐시)은 조용히 누적됩니다; 분기별 `config prune --dry-run`으로 충분히 확인할 수 있습니다.
 - **`--force` 또는 `--force-delete-mounted` 사용 전에 감사합니다.** 두 플래그 모두 안전 검사를 우회합니다. 다른 config가 해당 리포지터리를 참조하지 않는다고 확신할 때만 `--force`를 사용합니다; 머신의 실제 상태가 잘못되었다고 확신할 때만 `--force-delete-mounted`를 사용합니다.

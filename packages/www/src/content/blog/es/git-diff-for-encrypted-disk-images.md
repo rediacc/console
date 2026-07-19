@@ -15,7 +15,7 @@ tags:
   - cli
 featured: false
 language: es
-sourceHash: 1b08ca130594e2e4
+sourceHash: "79ca3074954024fd"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
@@ -64,7 +64,7 @@ Eso convierte la identidad en una comparación de conjuntos. Un inodo en ambos l
 Aquí está el formulario de estado de nombre predeterminado, la misma gramática A/M/D/R que ya lees en `git status --short`:
 
 ```
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -81,7 +81,7 @@ La razón por la que este comando existe en absoluto es el flujo de trabajo del 
 El agente no lee el estado de nombre, lee `--json`:
 
 ```
-$ rdc repo diff --name prod:experiment --json -m hostinger
+$ rdc repo diff prod:experiment -o json
 ```
 
 La salida estructurada le da al agente un conjunto de cambios preciso. Qué rutas modificó, creó, borró. Con `--stat`, el tamaño del cambio por archivo en bytes y bloques. Un agente que ve su diff antes de promover es uno al que puedes dejar cerca de producción. El radio de explosión es inspeccionable, no afirmado. Otros modos sirven el mismo bucle de revisión. `--name-only` para una lista de rutas simple. `--content <ruta>` para un diff unificado de texto de un archivo (solo texto; un archivo binario reporta `Binary files differ`). `--stat` cuando el agente necesita saber qué cambió y cuánto.

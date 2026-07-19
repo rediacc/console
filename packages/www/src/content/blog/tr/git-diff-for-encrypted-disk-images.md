@@ -17,7 +17,7 @@ tags:
   - cli
 featured: false
 language: tr
-sourceHash: 1b08ca130594e2e4
+sourceHash: "79ca3074954024fd"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
@@ -66,7 +66,7 @@ Bu, kimliği bir küme karşılaştırması yapar. Her iki tarafta da farklı bi
 İşte varsayılan isim-durum formu, `git status --short`'tan zaten okuduğunuz A/M/D/R grameri:
 
 ```
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -83,7 +83,7 @@ Bu komutun var olmasının nedeni ajan iş akışıdır. Ajanların üretimi for
 Ajan isim-durumu okumaz, `--json` okur:
 
 ```
-$ rdc repo diff --name prod:experiment --json -m hostinger
+$ rdc repo diff prod:experiment -o json
 ```
 
 Yapılandırılmış çıktı ajana kesin bir değişiklik kümesi verir: hangi yolları değiştirdiği, oluşturduğu, sildiği. `--stat` ile bayt ve blok cinsinden dosya başına değişiklik boyutu. Tanıtmadan önce farkını gören bir ajan, üretim yakınına izin verebileceğiniz ajandır. Patlama yarıçapı incelenebilir, savunulabilir değil. Diğer modlar aynı inceleme döngüsüne hizmet eder. `--name-only`, yalın yol listesi için. `--content <path>`, tek bir dosyanın birleşik metin farkı için (yalnızca metin; bir ikili dosya `Binary files differ` bildirir). `--stat`, ajan neyin değiştiğini ve ne kadar değiştiğini bilmek istediğinde.

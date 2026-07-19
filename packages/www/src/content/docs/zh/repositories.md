@@ -4,7 +4,7 @@ description: "在远程机器上创建、管理和操作 LUKS 加密仓库。"
 category: Guides
 order: 4
 language: zh
-sourceHash: "c9553259c9bf6b4c"
+sourceHash: "b67203062ab832f8"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -18,7 +18,7 @@ sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ## 创建仓库
 
 ```bash
-rdc repo create --name my-app -m server-1 --size 10G
+rdc repo create my-app -m server-1 --size 10G
 ```
 
 | 选项 | 必需 | 描述 |
@@ -40,8 +40,8 @@ rdc repo create --name my-app -m server-1 --size 10G
 挂载解密并使仓库文件系统可访问。卸载关闭加密卷。
 
 ```bash
-rdc repo mount --name my-app -m server-1  # 解密并挂载
-rdc repo unmount --name my-app -m server-1  # 卸载并重新加密
+rdc repo up my-app  # 解密并挂载
+rdc repo down my-app --unmount  # 卸载并重新加密
 ```
 
 | 选项 | 描述 |
@@ -52,7 +52,7 @@ rdc repo unmount --name my-app -m server-1  # 卸载并重新加密
 ## 检查状态
 
 ```bash
-rdc repo status --name my-app -m server-1
+rdc repo status my-app
 ```
 
 ## 列出仓库
@@ -78,8 +78,8 @@ rdc repo list -m server-1
 将仓库设置为精确大小或按给定数量扩展：
 
 ```bash
-rdc repo resize --name my-app -m server-1 --size 20G  # 设置为精确大小
-rdc repo expand --name my-app -m server-1 --size 5G  # 在当前大小基础上增加 5G
+rdc repo resize my-app --size 20G  # 设置为精确大小
+rdc repo expand my-app --size 5G  # 在当前大小基础上增加 5G
 ```
 
 > 调整大小前，仓库必须处于卸载状态。`repo expand` 支持在线执行。调整大小会改变仓库的最大容量上限；若只想将已释放的块归还给存储池而不改变上限，请改用 [`repo trim`](#reclaim-space-trim)。
@@ -90,8 +90,8 @@ rdc repo expand --name my-app -m server-1 --size 5G  # 在当前大小基础上�
 
 ```bash
 rdc repo trim -m server-1                       # Trim every mounted repository plus the datastore
-rdc repo trim -m server-1 --name my-app          # Trim one repository
-rdc repo trim -m server-1 --report-only          # Show reclaimable space without trimming
+rdc repo trim my-app                            # Trim one repository
+rdc repo trim -m server-1 --report-only         # Show reclaimable space without trimming
 rdc repo trim -m server-1 --docker               # Also clear stopped containers, dangling images, and build cache first
 ```
 
@@ -112,10 +112,10 @@ rdc repo trim -m server-1 --docker               # Also clear stopped containers
 rdc repo policy set -m server-1 --auto-trim true
 
 # Per-repository: grow my-app automatically, up to a hard ceiling
-rdc repo policy set -m server-1 --name my-app --auto-grow true --max-quota 50G
+rdc repo policy set my-app --auto-grow true --max-quota 50G
 
 # Inspect the stored and effective policy
-rdc repo policy get -m server-1 --name my-app
+rdc repo policy get my-app
 ```
 
 策略字段：
@@ -138,7 +138,7 @@ rdc repo policy get -m server-1 --name my-app
 创建现有仓库在其当前状态的副本：
 
 ```bash
-rdc repo fork --parent my-app --tag staging -m server-1
+rdc repo fork my-app --tag staging
 ```
 
 分支使用 name:tag 模型：生成的分支命名为 `my-app:staging`。这创建了一个具有自己 GUID 和网络 ID 的新加密副本，同时共享父级的名称。分支与父级共享相同的 LUKS 凭证。
@@ -152,8 +152,8 @@ rdc repo fork --parent my-app --tag staging -m server-1
 `--up` 以一次远程操作完成分支、挂载和服务启动。加上 `--detach` 可在容器启动后立即归还终端，健康检查在后台继续，代理会持续重试直到各服务就绪：
 
 ```bash
-rdc repo fork --parent my-app --tag staging -m server-1 --up
-rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
+rdc repo fork my-app --tag staging --up
+rdc repo fork my-app --tag scratch --up --no-wait
 ```
 
 实测数据：一个 128 GB 的仓库从分支到服务运行约需 57 秒，使用 `--detach` 约需 31 秒。后台模式下命令会打印进度查询提示：`rdc machine status <machine> --containers`。
@@ -173,9 +173,9 @@ rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
 分支可以充当 git 提交的角色。`rdc repo commit` 将工作分支冻结为不可变的、字节稳定的提交；`rdc repo branch` 命名历史线；`rdc repo checkout` 将提交通过 reflink 克隆回可写分支；`rdc repo log` 遍历父链；`rdc repo merge` 在不就地改变实时仓库的情况下合并两条历史线。`rdc repo fork --immutable` 一步产生等同于提交的基础。
 
 ```bash
-rdc repo commit --name my-app:work --message "schema migration applied" -m server-1
-rdc repo branch --branch staging --name my-app:work
-rdc repo checkout --ref staging --from my-app:work --tag staging-copy -m server-1
+rdc repo commit my-app:work --message "schema migration applied"
+rdc repo branch my-app:work --branch staging
+rdc repo checkout staging --from my-app:work --tag staging-copy
 ```
 
 完整的命令集、选项和示例请参阅[类 Git 分支管理参考](/zh/docs/repo-branching)。
@@ -195,11 +195,11 @@ rdc repo checkout --ref staging --from my-app:work --tag staging-copy -m server-
 
 ```bash
 # 设置、列出、获取（仅摘要）、取消设置
-rdc repo secret set --name my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
-rdc repo secret set --name my-app --key DB_HOST         --value postgres.internal --mode env --current ""
-rdc repo secret list --name my-app
-rdc repo secret get  --name my-app --key DB_HOST    # → { key, mode, digest }（无值）
-rdc repo secret unset --name my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
+rdc repo secret set my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
+rdc repo secret set my-app --key DB_HOST         --value postgres.internal --mode env --current ""
+rdc repo secret list my-app
+rdc repo secret get my-app --key DB_HOST    # → { key, mode, digest }（无值）
+rdc repo secret unset my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
 ```
 
 **对称变化门。** 人类和代理都需要 `--current <previous-value>` 来覆盖或取消设置密钥（passwd 风格前置条件）。对于新密钥的首次写入，传递 `--current ""`（空）。要在不验证先前值的情况下轮换，改用 `--rotate-secret`。这会被大声审计为轮换。`--current` 和 `--rotate-secret` 互斥。
@@ -235,7 +235,7 @@ secrets:
 检查仓库的文件系统完整性：
 
 ```bash
-rdc repo validate --name my-app -m server-1
+rdc repo admin validate my-app
 ```
 
 ## 所有权
@@ -243,7 +243,7 @@ rdc repo validate --name my-app -m server-1
 将仓库内的文件所有权设置为通用用户（UID 7111）。这通常在从工作站上传文件后需要，那些文件到达时带有本地 UID。
 
 ```bash
-rdc repo ownership --name my-app -m server-1
+rdc repo admin ownership my-app
 ```
 
 命令自动检测 Docker 容器数据目录（可写绑定挂载）并排除它们。这防止破坏用自己的 UID 管理文件的容器（例如 MariaDB=999、www-data=33）。
@@ -256,7 +256,7 @@ rdc repo ownership --name my-app -m server-1
 要强制对所有文件设置所有权，包括容器数据：
 
 ```bash
-rdc repo ownership --name my-app -m server-1
+rdc repo admin ownership my-app
 ```
 
 
@@ -267,7 +267,7 @@ rdc repo ownership --name my-app -m server-1
 应用模板以使用文件初始化仓库：
 
 ```bash
-rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo admin template apply my-app --template my-template --file ./my-template.tar.gz
 ```
 
 ## 删除
@@ -275,7 +275,7 @@ rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./
 永久销毁仓库及其内所有数据：
 
 ```bash
-rdc repo delete --name my-app -m server-1
+rdc repo delete my-app
 ```
 
 > 这会永久销毁加密磁盘镜像。此操作无法撤销。
@@ -285,7 +285,7 @@ rdc repo delete --name my-app -m server-1
 将仓库从一台机器实时迁移到另一台。唯一的停机时间是最后的增量同步阶段：通常是几秒到数分钟，具体取决于转换时的写入速率。
 
 ```bash
-rdc repo migrate --name my-app --from server-1 --to server-2
+rdc repo migrate my-app@server-1 --to server-2
 ```
 
 | 选项 | 描述 |
@@ -319,10 +319,10 @@ rdc repo migrate --name my-app --from server-1 --to server-2
 
 ```bash
 # 预览将删除的内容
-rdc machine prune --name server-1 --dry-run
+rdc machine prune server-1 --dry-run
 
 # 删除孤立资源
-rdc machine prune --name server-1
+rdc machine prune server-1
 ```
 
 只有无匹配仓库镜像的资源受影响。非空挂载目录永不删除。

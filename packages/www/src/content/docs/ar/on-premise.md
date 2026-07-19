@@ -4,7 +4,7 @@ description: "تشغيل خادم الحساب وتوزيع CLI على بنيت�
 category: "Guides"
 order: 5
 language: ar
-sourceHash: "eea76db2d612133f"
+sourceHash: "a2f88ead9bf140c6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -54,13 +54,13 @@ curl -fsSL https://account.example.com/install.sh | \
 
 ```bash
 # Create a config for your on-premise server
-rdc config init --name myserver --server https://account.example.com
+rdc config init myserver --server https://account.example.com
 
 # Log in using that config
 rdc --config myserver subscription login
 
 # All commands with --config use the on-premise server
-rdc --config myserver machine query --name prod-1
+rdc --config myserver machine status prod-1
 ```
 
 يخزن كل تكوين مسمى عنوان URL لخادم الحساب الخاص به ورمز الاشتراك. يُؤدي التبديل بين التكوينات إلى تبديل سياق الخادم بأكمله.

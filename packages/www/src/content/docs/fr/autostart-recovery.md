@@ -4,7 +4,7 @@ description: "Comment fonctionne le démarrage automatique, le réconciliateur p
 category: "Guides"
 order: 5
 language: fr
-sourceHash: "7fa4f919475b304e"
+sourceHash: "62148f7a55752783"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,7 +109,7 @@ Lister les dépôts avec des marqueurs de défaillance durables :
 ls /var/lib/rediacc/reconcile/failed/
 ```
 
-Chaque nom de fichier est un GUID de dépôt. Faites la correspondance avec `rdc config repository list` pour associer les GUID aux noms de dépôts.
+Chaque nom de fichier est un GUID de dépôt. Faites la correspondance avec `rdc repo list` pour associer les GUID aux noms de dépôts.
 
 Pour effacer un marqueur après avoir résolu le problème sous-jacent, supprimez le fichier :
 

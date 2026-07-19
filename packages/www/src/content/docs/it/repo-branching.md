@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 41
 language: it
-sourceHash: "fe334c1c94a0f417"
+sourceHash: "b8bd3176ecabfa4b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -34,7 +34,7 @@ Un repository è un file immagine LUKS su un pool btrfs. Un fork è un reflink a
 Congela un fork di lavoro montato in un nuovo commit immutabile.
 
 ```bash
-rdc repo commit --name <fork> --message "<message>" -m <machine>
+rdc repo commit <fork> --message "<message>"
 ```
 
 | Opzione | Descrizione | Default |
@@ -52,7 +52,7 @@ Il nuovo commit viene registrato nel config locale con `immutable: true`, e il `
 Crea un riferimento di branch nominato che punta al commit corrente di un fork di lavoro.
 
 ```bash
-rdc repo branch --branch <name> --name <fork>
+rdc repo branch <fork> --branch <name>
 ```
 
 | Opzione | Descrizione | Default |
@@ -67,8 +67,8 @@ Questa è un'operazione solo sul config. Non viene eseguito nessun lavoro sulla 
 Clona tramite reflink un commit immutabile (o la punta di un branch) in un nuovo fork di lavoro scrivibile.
 
 ```bash
-rdc repo checkout --ref <commit> --tag <newFork> -m <machine>
-rdc repo checkout --ref <branchName> --from <fork> --tag <newFork> -m <machine>
+rdc repo checkout <commit> --tag <newFork>
+rdc repo checkout <branchName> --from <fork> --tag <newFork>
 ```
 
 | Opzione | Descrizione | Default |
@@ -87,7 +87,7 @@ Il checkout riusa il percorso reflink del fork, quindi è quasi istantaneo e a t
 Percorre la storia dei commit raggiungibile da un fork di lavoro o da un commit.
 
 ```bash
-rdc repo log --name <fork> -m <machine>
+rdc repo log <fork>
 ```
 
 | Opzione | Descrizione | Default |
@@ -104,8 +104,8 @@ rdc repo log --name <fork> -m <machine>
 Fa il merge di un commit sorgente o fork in un fork di lavoro target, senza mutare il target live in place.
 
 ```bash
-rdc repo merge --name <target> --from <source> -m <machine>
-rdc repo merge --name <target> --from <source> --resolve theirs -m <machine>
+rdc repo merge <target> --from <source>
+rdc repo merge <target> --from <source> --resolve theirs
 ```
 
 | Opzione | Descrizione | Default |
@@ -139,12 +139,12 @@ rdc repo gc --apply -m <machine>    # elimina i commit irraggiungibili
 
 La raggiungibilità viene calcolata dal config locale (il ref store): l'insieme dei commit raggiungibili seguendo ogni punta di branch e HEAD giù per la catena parent. I commit immutabili sulla macchina fuori da quell'insieme sono irraggiungibili. Un object montato o un fork di lavoro non vengono mai raccolti.
 
-### rdc repo fsck
+### rdc repo admin fsck
 
 Valida i riferimenti del config contro gli object presenti su una macchina.
 
 ```bash
-rdc repo fsck -m <machine>
+rdc repo admin fsck -m <machine>
 ```
 
 | Opzione | Descrizione | Default |
@@ -158,7 +158,7 @@ Segnala i riferimenti pendenti (una punta di branch o HEAD che punta a un GUID s
 `rdc repo fork --immutable` marca il nuovo fork in sola lettura alla creazione, producendo una base equivalente a un commit senza un passo `commit` separato.
 
 ```bash
-rdc repo fork --parent <name> --tag <tag> --immutable -m <machine>
+rdc repo fork <name> --tag <tag> --immutable
 ```
 
 Un fork immutabile rifiuta il mount, il che mantiene la sua immagine byte-stabile per sempre. Utile come base congelata per il push delta cross-machine, dove la base deve essere identica su entrambi i lati. Per apportare modifiche, fanne il checkout (o un altro fork) in una copia scrivibile.
@@ -168,28 +168,28 @@ Un fork immutabile rifiuta il mount, il che mantiene la sua immagine byte-stabil
 ### Committa un fork di lavoro
 
 ```bash
-$ rdc repo commit --name myapp:work --message "schema migration applied" -m server-1
+$ rdc repo commit myapp:work --message "schema migration applied"
 Committed 4f3c2a1b9d8e: schema migration applied
 ```
 
 ### Commit con autore esplicito
 
 ```bash
-$ rdc repo commit --name myapp:work --message "nightly snapshot" --author ci-bot -m server-1
+$ rdc repo commit myapp:work --message "nightly snapshot" --author ci-bot
 Committed 7a1b2c3d4e5f: nightly snapshot
 ```
 
 ### Nomina un branch al commit corrente
 
 ```bash
-$ rdc repo branch --branch staging --name myapp:work
+$ rdc repo branch myapp:work --branch staging
 Branch "staging" -> 4f3c2a1b9d8e
 ```
 
 ### Fai checkout di un commit in un nuovo fork scrivibile
 
 ```bash
-$ rdc repo checkout --ref 4f3c2a1b9d8e --tag rollback-test -m server-1
+$ rdc repo checkout 4f3c2a1b9d8e --tag rollback-test
 ```
 
 ### Fai checkout della punta di un branch per nome
@@ -197,13 +197,13 @@ $ rdc repo checkout --ref 4f3c2a1b9d8e --tag rollback-test -m server-1
 Con `--from`, il valore `--ref` viene risolto come nome di branch sul fork di lavoro indicato:
 
 ```bash
-$ rdc repo checkout --ref staging --from myapp:work --tag staging-copy -m server-1
+$ rdc repo checkout staging --from myapp:work --tag staging-copy
 ```
 
 ### Percorri la storia
 
 ```bash
-$ rdc repo log --name myapp:work -m server-1
+$ rdc repo log myapp:work
 commit 4f3c2a1b9d8e
   Author: ci-bot  Date: 2026-05-29T10:14:02Z
   schema migration applied
@@ -217,7 +217,7 @@ commit 9d8e7a1b2c3d
 `--json` emette il walk strutturato, dal più recente al meno recente:
 
 ```bash
-$ rdc repo log --name myapp:work --json -m server-1
+$ rdc repo log myapp:work -o json
 {
   "success": true,
   "start": "4f3c2a1b9d8e",
@@ -239,8 +239,8 @@ $ rdc repo log --name myapp:work --json -m server-1
 `rdc repo diff` funziona tra qualsiasi due commit perché condividono un antenato copy-on-write. Fai checkout di un commit, poi confrontalo con un altro:
 
 ```bash
-$ rdc repo checkout --ref 4f3c2a1b9d8e --tag review -m server-1
-$ rdc repo diff --name review --base myapp:work -m server-1
+$ rdc repo checkout 4f3c2a1b9d8e --tag review
+$ rdc repo diff review --base myapp:work
 M  db/schema.sql
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -251,7 +251,7 @@ Vedi [rdc repo diff](/it/docs/repo-diff) per il riferimento completo al diff.
 ### Fai merge di una linea revisionata
 
 ```bash
-$ rdc repo merge --name myapp:main --from myapp:work -m server-1
+$ rdc repo merge myapp:main --from myapp:work
 Merged myapp:work into myapp:main
 ```
 
@@ -260,7 +260,7 @@ Merged myapp:work into myapp:main
 Un target montato o in esecuzione viene rifiutato a meno che non si usi `--force`, che lo chiude prima:
 
 ```bash
-$ rdc repo merge --name myapp:main --from myapp:work --force -m server-1
+$ rdc repo merge myapp:main --from myapp:work --force
 Merged myapp:work into myapp:main
 ```
 
@@ -269,7 +269,7 @@ Merged myapp:work into myapp:main
 Due fork (`feature` e `hotfix`) fatti checkout dallo stesso commit hanno ciascuno cambiato alcuni file. `--resolve theirs` incorpora la sorgente (`hotfix`) nel target (`feature`): i file cambiati solo da un lato vengono presi da quel lato, e i file cambiati da entrambi i lati vengono risolti alla sorgente. La base viene rilevata automaticamente dall'antenato condiviso (o pinnala con `--base`):
 
 ```bash
-$ rdc repo merge --name myapp:feature --from myapp:hotfix --resolve theirs -m server-1
+$ rdc repo merge myapp:feature --from myapp:hotfix --resolve theirs
 Merged myapp:hotfix into myapp:feature (three-way); 1 conflict(s) resolved --theirs: [config/app.yaml]
 ```
 
@@ -278,7 +278,7 @@ Merged myapp:hotfix into myapp:feature (three-way); 1 conflict(s) resolved --the
 ### Crea una base immutabile direttamente
 
 ```bash
-$ rdc repo fork --parent myapp --tag baseline-v1 --immutable -m server-1
+$ rdc repo fork myapp --tag baseline-v1 --immutable
 ```
 
 ## Push e pull delta
@@ -289,19 +289,19 @@ Di norma non devi passare una base a mano. Dopo un push completo, la CLI conserv
 
 ```bash
 # Il primo push è un trasferimento completo; conserva anche una base riutilizzabile su entrambi i lati.
-$ rdc repo push --name myapp:work --to-machine backup-1 -m server-1
+$ rdc repo push myapp:work --to backup-1
 
 # Dopo le modifiche locali, il prossimo push spedisce solo i blocchi modificati, senza flag.
-$ rdc repo push --name myapp:work --to-machine backup-1 -m server-1
+$ rdc repo push myapp:work --to backup-1
 
 # Pinna una base esplicita (un commit immutabile presente su entrambe le macchine).
-$ rdc repo push --name myapp:work --to-machine backup-1 --delta-base 4f3c2a1b9d8e -m server-1
+$ rdc repo push myapp:work --to backup-1 --delta-base 4f3c2a1b9d8e
 
 # Il delta funziona anche al contrario, pullando solo i blocchi modificati da una sorgente macchina.
-$ rdc repo pull --name myapp:work --from-machine backup-1 --delta-base 4f3c2a1b9d8e -m server-1
+$ rdc repo pull myapp:work --from backup-1 --delta-base 4f3c2a1b9d8e
 
 # Re-pull di un repository locale esistente (sovrascrivilo) con --force.
-$ rdc repo pull --name myapp:work --from-machine backup-1 --force -m server-1
+$ rdc repo pull myapp:work --from backup-1 --force
 ```
 
 Il trasferimento delta si applica solo tra macchine (un remoto con la base FIEMAP). I push verso lo storage cloud object trasferiscono sempre l'immagine completa. La base deve essere byte-identica su entrambi i lati, il che è esattamente ciò che garantisce un commit immutabile o un fork `--immutable`.

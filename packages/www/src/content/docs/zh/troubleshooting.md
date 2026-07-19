@@ -4,7 +4,7 @@ description: "SSH、设置、仓库、服务和 Docker 常见问题的修复方�
 category: "Guides"
 order: 10
 language: zh
-sourceHash: "a1c58ae1fe3d0514"
+sourceHash: "429b4004d99c37e6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -72,7 +72,7 @@ CRIU 是触发 AppArmor 的已知情况。Renet 自动为标记了 `rediacc.chec
 
 ### btrfs 模块缺失（RHEL 10 / Rocky Linux 10 / AlmaLinux 10）
 
-如果 `rdc config machine setup` 或 `renet system check-btrfs` 失败并显示：
+如果 `rdc machine setup` 或 `renet system check-btrfs` 失败并显示：
 
 ```
 Module btrfs not found
@@ -94,13 +94,13 @@ Module btrfs not found
 - 通过仓库的 Docker 套接字检查容器日志：
 
 ```bash
-rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
+rdc repo logs my-app -c <container-name>
 ```
 
 或查看所有容器：
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## 权限被拒绝错误
@@ -115,7 +115,7 @@ rdc machine containers --name server-1
 
 ```bash
 # 使用 rdc term（自动配置）：
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect my-app -c "docker ps"
 
 # 或手动指定套接字：
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -132,7 +132,7 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 **要在临时容器中获得网络访问，请使用主机网络：**
 
 ```bash
-# 在仓库 shell 内（rdc term connect -m <machine> -r <repo>）
+# 在仓库 shell 内（rdc term connect <repo>）
 docker run --rm --network host -it ubuntu bash
 # 现在 apt update、curl、pip install 都能正常工作。
 ```
@@ -181,7 +181,7 @@ sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50
 
 - 使用 `-c` 的内联模式直接运行命令：
   ```bash
-  rdc term connect -m server-1 -c "ls -la"
+  rdc term connect server-1 -c "ls -la"
   ```
 - 如果内联模式有问题，使用 `--external` 强制打开外部终端
 - 在 Linux 上，确保已安装 `gnome-terminal`、`xterm` 或其他终端模拟器

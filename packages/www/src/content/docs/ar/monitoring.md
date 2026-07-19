@@ -4,7 +4,7 @@ description: مراقبة صحة الأجهزة والحاويات والخدم�
 category: Guides
 order: 9
 language: ar
-sourceHash: "b6deba17f1137188"
+sourceHash: "ab050e731db18848"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -17,7 +17,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 الحصول على تقرير صحي كامل لجهاز:
 
 ```bash
-rdc machine health --name server-1
+rdc machine health server-1
 ```
 
 يُبلغ هذا عن:
@@ -33,7 +33,7 @@ rdc machine health --name server-1
 عرض جميع الحاويات قيد التشغيل عبر جميع المستودعات على جهاز:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 | العمود | الوصف |
@@ -57,7 +57,7 @@ rdc machine containers --name server-1
 عرض خدمات systemd المتعلقة بـ Rediacc على جهاز:
 
 ```bash
-rdc machine services --name server-1
+rdc machine status server-1 --services
 ```
 
 | العمود | الوصف |
@@ -80,7 +80,7 @@ rdc machine services --name server-1
 عرض المستودعات على جهاز مع إحصائيات مفصلة:
 
 ```bash
-rdc machine repos --name server-1
+rdc machine status server-1 --repositories
 ```
 
 | العمود | الوصف |
@@ -104,7 +104,7 @@ rdc machine repos --name server-1
 فحص تجزئة BTRFS ومشاركة reflink عبر جميع المستودعات على جهاز:
 
 ```bash
-rdc machine query --name server-1 --storage-health
+rdc machine status server-1 --storage-health
 ```
 
 | العمود | الوصف |
@@ -182,7 +182,7 @@ Unique data: 323.7 MB | Shared: 224.0 GB | Efficiency: 99.9%
 لتشغيل فحص فوري (مثلًا بعد انقطاع التيار الكهربائي أو ترحيل القرص):
 
 ```bash
-rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
+rdc term connect server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
 تُحفظ النتيجة في ملف JSON ذاته وتظهر فورًا في `rdc machine status --system` التالي.
@@ -192,7 +192,7 @@ rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/r
 الحصول على نظرة عامة كاملة على جهاز بما في ذلك معلومات النشر:
 
 ```bash
-rdc machine query --name server-1
+rdc machine status server-1
 ```
 
 يوفر هذا:
@@ -208,7 +208,7 @@ rdc machine query --name server-1
 التحقق من اتصال SSH بجهاز:
 
 ```bash
-rdc term connect -m server-1 -c "hostname"
+rdc term connect server-1 -c "hostname"
 ```
 
 يطبع هذا الأمر اسم المضيف البعيد عند النجاح أو خطأ اتصال في حال الفشل، مما

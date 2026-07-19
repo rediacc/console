@@ -14,7 +14,7 @@ tags:
   - cli
 featured: false
 language: ko
-sourceHash: 1b08ca130594e2e4
+sourceHash: "79ca3074954024fd"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
@@ -63,7 +63,7 @@ LUKS는 aes-xts로 암호화합니다. 길이를 보존하며 각 512바이트 �
 다음은 기본 이름-상태 형식으로 `git status --short`에서 이미 읽은 것과 동일한 A/M/D/R 문법입니다:
 
 ```
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -80,7 +80,7 @@ M  hello.txt
 에이전트는 이름-상태를 읽지 않고 `--json`을 읽습니다:
 
 ```
-$ rdc repo diff --name prod:experiment --json -m hostinger
+$ rdc repo diff prod:experiment -o json
 ```
 
 구조화된 출력은 에이전트에게 정확한 변경 집합을 제공합니다. 수정, 생성, 삭제된 경로들. `--stat`을 사용하면 파일당 변경 크기(바이트와 블록). diff를 본 후 승격하는 에이전트는 프로덕션 근처에 놔둘 수 있는 에이전트입니다. 폭발 반경은 검사 가능하지, 단언이 아닙니다. 다른 모드들은 동일한 리뷰 루프를 지원합니다. `--name-only`는 순수 경로 목록. `--content <path>`는 한 파일의 통합 텍스트 diff(텍스트만; 이진 파일은 `Binary files differ` 보고). `--stat`은 에이전트가 무엇이 얼마나 변경되었는지 알아야 할 때.

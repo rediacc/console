@@ -16,7 +16,7 @@ tags:
   - mid-market
 featured: false
 language: it
-sourceHash: 29fbcbffd8a304bc
+sourceHash: "00ae2b4e6f58acb5"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -102,7 +102,7 @@ Rediacc è un unico control plane con un audit log unificato, che sostituisce la
 
 **Il test data e il full-stack cloning** girano su BTRFS reflink. Il fork e' a tempo costante, indipendentemente dalla dimensione del repo. Full-stack significa dati, configurazioni, container e servizi. Abbiamo forkato un repo da 128 GB in 7,2 secondi nel nostro [test PocketOS](/it/blog/i-tested-rediacc-against-the-pocketos-incident). Il fork e' la produzione corrente, non una copia di staging semplificata. Vedi [Risk-Free Upgrades](/it/docs/risk-free-upgrades).
 
-**Ripristino istantaneo**: `rdc repo backup pull` da qualsiasi destinazione rclone in un fork fresco, avviato su un sottodominio specifico del fork coperto dal certificato wildcard del repository padre. Nessun rimescolamento DNS, nessuna complessità con i certificati.
+**Ripristino istantaneo**: `rdc repo pull` da qualsiasi destinazione rclone in un fork fresco, avviato su un sottodominio specifico del fork coperto dal certificato wildcard del repository padre. Nessun rimescolamento DNS, nessuna complessità con i certificati.
 
 **Audit log unificato.** Oltre 70 tipi di eventi sull'intero control plane. Coprono accessi, API token, scritture di configurazione, ciclo di vita dei repo, backup, sync, sessioni terminale e operazioni sulle macchine. La catena e' hash-linked sulla workstation dell'operatore. `rdc audit verify` la controlla da un capo all'altro.
 
@@ -153,7 +153,7 @@ Cinque contratti. Due di essi (Veeam, Veeam Cloud Connect) sono con lo stesso ve
 - Drata rimane (EUR 18.000)
 - Lo schema di test data fatto in casa viene ritirato; la mezza giornata bisettimanale dell'SRE viene destinata all'esecuzione della routine settimanale di efficacia
 
-Consolidamento del data plane: da 5 voci a 1 (Rediacc) più la linea IaaS esistente. La sezione data plane del registro dei fornitori scende da 5 voci a 2. La storia dell'efficacia continua è ora costituita da esercitazioni settimanali con evidenze dell'audit log con hash chain; la storia del test di ripristino è ora supportata dall'output di `rdc machine backup status` e da un'esercitazione di ripristino settimanale.
+Consolidamento del data plane: da 5 voci a 1 (Rediacc) più la linea IaaS esistente. La sezione data plane del registro dei fornitori scende da 5 voci a 2. La storia dell'efficacia continua è ora costituita da esercitazioni settimanali con evidenze dell'audit log con hash chain; la storia del test di ripristino è ora supportata dall'output di `rdc backup status` e da un'esercitazione di ripristino settimanale.
 
 I numeri sono illustrativi, non promesse. Il vostro stack è diverso. La forma, da quattro a cinque voci che collassano in una più l'IaaS esistente, è quella di una conversazione reale con un acquirente.
 

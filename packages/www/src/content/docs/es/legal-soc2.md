@@ -4,7 +4,7 @@ description: "Aquí está el punto sobre SOC 2: los auditores quieren evidencia 
 category: "Legal"
 order: 2
 language: es
-sourceHash: "e03bef0cead86ab7"
+sourceHash: "28b4309f81f43d8d"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -18,7 +18,7 @@ Referencia: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit
 |-----------------------|----------|---------------------|
 | **Seguridad** (CC6) | Controles de acceso lógico, cifrado | Cifrado LUKS2 AES-256 en reposo. Credenciales almacenadas solo en la configuración local del operador (`~/.config/rediacc/`), nunca en el servidor. Acceso basado en clave SSH. Docker daemons aislados por repositorio. |
 | **Disponibilidad** (A1) | Recuperación y resiliencia del sistema | `rdc repo push/pull` con copias cifradas fuera del sitio a SSH, S3, B2, Azure o GDrive. Snapshots CoW para rollback instantáneo. Actualizaciones basadas en fork para cambios sin tiempo de inactividad. |
-| **Integridad del procesamiento** (PI1) | Procesamiento preciso y completo | Los hooks de ciclo de vida determinísticos del Rediaccfile (`up`/`down`) aseguran despliegues consistentes. `rdc repo validate` verifica la integridad del repositorio y la salud del respaldo después de apagados inesperados u operaciones de respaldo. |
+| **Integridad del procesamiento** (PI1) | Procesamiento preciso y completo | Los hooks de ciclo de vida determinísticos del Rediaccfile (`up`/`down`) aseguran despliegues consistentes. `rdc repo admin validate` verifica la integridad del repositorio y la salud del respaldo después de apagados inesperados u operaciones de respaldo. |
 | **Confidencialidad** (C1) | Protección de datos contra acceso no autorizado | Cifrado por repositorio con credenciales LUKS únicas. Aislamiento de red vía iptables, Docker daemons separados y subredes de IP loopback. Los contenedores de diferentes repositorios no pueden verse entre sí. El almacén de configuración de conocimiento cero cifra las configuraciones del lado del cliente antes de subirlas. El servidor solo almacena blobs opacos que no puede descifrar. |
 | **Privacidad** (P1-P8) | Manejo de datos personales | Autoalojado: sin egreso de datos durante operaciones. Rastro de auditoría para todo acceso a datos. Gestión de claves de cifrado bajo control del cliente. El almacén de configuración usa derivación de clave dividida (passkey PRF + secreto del servidor) para que ninguna parte pueda acceder a los datos por sí sola. |
 

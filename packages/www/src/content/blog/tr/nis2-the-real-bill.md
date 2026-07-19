@@ -15,7 +15,7 @@ tags:
   - mid-market
 featured: false
 language: tr
-sourceHash: 29fbcbffd8a304bc
+sourceHash: "00ae2b4e6f58acb5"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -101,7 +101,7 @@ Rediacc, kendi altyapısını barındıran yapılar için beş kategorinin dörd
 
 **Test verisi ve tam yığın klonlama** BTRFS reflink üzerinde çalışır. Fork sabit zamanlıdır, depo boyutundan bağımsız. Tam yığın: veri, yapılandırmalar, konteynerler ve servisler. [PocketOS testimizde](/tr/blog/i-tested-rediacc-against-the-pocketos-incident) 128 GB deposunu 7,2 saniyede fork ettik. Fork mevcut üretimdir, sadeleştirilmiş bir test kopyası değil. Bkz. [Risk-Free Upgrades](/tr/docs/risk-free-upgrades).
 
-**Anlık geri yükleme:** herhangi bir rclone hedefinden `rdc repo backup pull` ile yeni bir fork'a; üst deponun wildcard sertifikasıyla kapsanan fork'a özgü bir alt alan adı altında ayağa kaldırılır. DNS karmaşası yok, sertifika dansı yok.
+**Anlık geri yükleme:** herhangi bir rclone hedefinden `rdc repo pull` ile yeni bir fork'a; üst deponun wildcard sertifikasıyla kapsanan fork'a özgü bir alt alan adı altında ayağa kaldırılır. DNS karmaşası yok, sertifika dansı yok.
 
 **Birleşik denetim günlüğü.** Kontrol düzleminde 70'ten fazla olay türü. Oturum açmalar, API token'ları, yapılandırma yazmaları, depo yaşam döngüsü, yedekleme, senkronizasyon, terminal oturumları ve makine işlemleri. Zincir operatör iş istasyonunda hash'le bağlı. `rdc audit verify` baştan sona kontrol eder.
 
@@ -152,7 +152,7 @@ Beş sözleşme. İkisi (Veeam, Veeam Cloud Connect) aynı satıcıyla ama farkl
 - Drata kalıyor (EUR 18.000)
 - Evde yapılmış test verisi düzeni emekliye ayrılıyor; her iki haftada bir yarım SRE günü bunun yerine haftalık etkinlik rutinini çalıştırmaya gidiyor
 
-Veri düzlemi birleştirmesi: 5 kalemden 1'e (Rediacc) artı mevcut IaaS kalemi. Tedarikçi kaydının veri düzlemi bölümü 5 girişten 2'ye düşüyor. Sürekli etkinlik hikayesi artık hash zincirli denetim günlüğü kanıtıyla haftalık tatbikatlar; kurtarma testi hikayesi artık `rdc machine backup status` çıktısı ve haftada bir geri yükleme tatbikatıyla desteklenmiş.
+Veri düzlemi birleştirmesi: 5 kalemden 1'e (Rediacc) artı mevcut IaaS kalemi. Tedarikçi kaydının veri düzlemi bölümü 5 girişten 2'ye düşüyor. Sürekli etkinlik hikayesi artık hash zincirli denetim günlüğü kanıtıyla haftalık tatbikatlar; kurtarma testi hikayesi artık `rdc backup status` çıktısı ve haftada bir geri yükleme tatbikatıyla desteklenmiş.
 
 Rakamlar gösterge niteliğinde, vaat değil. Sizin yığınınız farklı. Şekil (dört-beş kalemin tek artı mevcut IaaS'a indirgenmesi), gerçek bir alıcı görüşmesinin nasıl göründüğü.
 

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: tr
-sourceHash: "2d470a876c00c352"
+sourceHash: "f33bcf4598caedc8"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -194,7 +194,7 @@ renet ve Docker, konteyner yeniden başlatmalarının nasıl ele alınacağı ko
 
 **Sapmanın düzeltilmesi.** Bir konteynerin `.rediacc.json` dosyasındaki kaydedilmiş politika yanlışsa (örneğin compose düzenlendi ama konteyner hiç yeniden oluşturulmadı), `rdc repo up <repo>` komutunu yeniden çalıştırın. Konteyner, güncellenen politika kaydedilerek yeniden oluşturulur.
 
-> **Deneysel:** Soğuk yedek sidecar tabanlı kurtarma ve `rdc machine query` komutundaki `--sync-certs` bayrağı renet 0.9+ ile sunuldu. Eski sürümler watchdog kurtarması için yalnızca kaydedilmiş `restart_policy`'ye güvenir; bu da soğuk yedekten sonra `on-failure` konteynerlerini mahsur bırakabilir.
+> **Deneysel:** Soğuk yedek sidecar tabanlı kurtarma ve `rdc machine status` komutundaki `--sync-certs` bayrağı renet 0.9+ ile sunuldu. Eski sürümler watchdog kurtarması için yalnızca kaydedilmiş `restart_policy`'ye güvenir; bu da soğuk yedekten sonra `on-failure` konteynerlerini mahsur bırakabilir.
 
 > **Docker bridge ağı, depo başına daemonlarda devre dışıdır.** Her depo başına daemon (`FlavorRediacc`), `"bridge": "none"` ve `"iptables": false` ile yapılandırılmıştır. Bir depo kabuğunda düz bir `docker run <image>` komutu yine de başlar, ancak konteynere yalnızca bir loopback arayüzü verilir ve DNS ya da dışa doğru bağlantı bulunmaz. Bu tasarım gereğidir, çünkü depolar arası loopback izolasyonu, köprülü bir konteynerin atlayacağı eBPF cgroup kancaları tarafından zorunlu kılınır. Üretim servisleri `renet compose` kullanmalıdır (bu sizin için host ağını enjekte eder); geçici hata ayıklama için `--network host` parametresini açıkça geçin: `docker run --rm --network host -it ubuntu bash`.
 >
@@ -207,7 +207,7 @@ renet ve Docker, konteyner yeniden başlatmalarının nasıl ele alınacağı ko
 Depoyu bağlayın ve tüm servisleri başlatın:
 
 ```bash
-rdc repo up --name my-app -m server-1
+rdc repo up my-app
 ```
 
 | Seçenek | Açıklama |
@@ -244,12 +244,12 @@ HTTP services (accessible via proxy after ~3s):
 ## Servisleri Durdurma
 
 ```bash
-rdc repo down --name my-app -m server-1
+rdc repo down my-app
 ```
 
 | Seçenek | Açıklama |
 |---------|----------|
-| `--unmount` | Durdurduktan sonra şifrelenmiş depoyu ayır. Bu etkili olmazsa, `rdc repo unmount` komutunu ayrıca kullanın. |
+| `--unmount` | Durdurduktan sonra şifrelenmiş depoyu ayır. |
 | `--skip-router-restart` | İşlem sonrasında rota sunucusunun yeniden başlatılmasını atla |
 
 Çalıştırma sırası:
@@ -262,7 +262,7 @@ rdc repo down --name my-app -m server-1
 Bir makinedeki tüm depoları aynı anda başlatın veya durdurun:
 
 ```bash
-rdc repo up -m server-1
+rdc repo up --all -m server-1
 ```
 
 | Seçenek | Açıklama |
@@ -293,7 +293,7 @@ Sistem kapatma veya yeniden başlatma sırasında, servis tüm servisleri düzg�
 ### Etkinleştirme
 
 ```bash
-rdc repo autostart enable --name my-app -m server-1
+rdc repo admin autostart enable my-app
 ```
 
 Depo parolası sorulacaktır.
@@ -301,13 +301,13 @@ Depo parolası sorulacaktır.
 ### Tümünü Etkinleştirme
 
 ```bash
-rdc repo autostart enable -m server-1
+rdc repo admin autostart enable
 ```
 
 ### Devre Dışı Bırakma
 
 ```bash
-rdc repo autostart disable --name my-app -m server-1
+rdc repo admin autostart disable my-app
 ```
 
 Bu, anahtar dosyasını kaldırır ve LUKS slot 1'i siler.
@@ -333,7 +333,7 @@ kontrol sessizce atlanır. Hatalar kritik değildir ve dağıtımı engellemez.
 ### Durumu Listeleme
 
 ```bash
-rdc repo autostart list -m server-1
+rdc repo admin autostart list -m server-1
 ```
 
 Periyodik uzlaştırıcının önyükleme sonrası duran depoları nasıl kurtardığına ilişkin ayrıntılar için bkz. [Otomatik Başlatma ve Kurtarma](/tr/docs/autostart-recovery).
@@ -346,16 +346,16 @@ Bu örnek, PostgreSQL, Redis ve bir API sunucusu içeren bir web uygulamasını 
 
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
-rdc config init --name production --ssh-key ~/.ssh/id_ed25519
-rdc config machine add --name prod-1 --ip 203.0.113.50 --user deploy
-rdc config machine setup --name prod-1
-rdc repo create --name webapp -m prod-1 --size 10G
+rdc config init production --ssh-key ~/.ssh/id_ed25519
+rdc machine add prod-1 --ip 203.0.113.50 --user deploy
+rdc machine setup prod-1
+rdc repo create webapp -m prod-1 --size 10G
 ```
 
 ### 2. Depoyu Bağlama ve Hazırlama
 
 ```bash
-rdc repo mount --name webapp -m prod-1
+rdc repo up webapp --no-start
 ```
 
 ### 3. Uygulama Dosyalarını Oluşturma
@@ -414,13 +414,13 @@ down() {
 ### 4. Başlatma
 
 ```bash
-rdc repo up --name webapp -m prod-1
+rdc repo up webapp
 ```
 
 ### 5. Otomatik Başlatmayı Etkinleştirme
 
 ```bash
-rdc repo autostart enable --name webapp -m prod-1
+rdc repo admin autostart enable webapp
 ```
 
 ## Compose'ta Depo Başına Sırları Kullanma

@@ -4,7 +4,7 @@ description: "SOC 2 的核心问题是：审计人员需要你的控制措施有
 category: "Legal"
 order: 2
 language: zh
-sourceHash: "e03bef0cead86ab7"
+sourceHash: "28b4309f81f43d8d"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -18,7 +18,7 @@ sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 |---------|------|-------------|
 | **安全性** (CC6) | 逻辑访问控制、加密 | LUKS2 AES-256 静态加密。凭据仅存储在操作员的本地配置（`~/.config/rediacc/`）中，从不在服务器上。SSH 密钥访问。每个仓库隔离的 Docker daemon。 |
 | **可用性** (A1) | 系统恢复和韧性 | `rdc repo push/pull` 支持到 SSH、S3、B2、Azure 或 GDrive 的加密异地副本。CoW 快照实现即时回滚。基于 fork 的升级实现零停机变更。 |
-| **处理完整性** (PI1) | 准确完整的处理 | 确定性的 Rediaccfile 生命周期钩子（`up`/`down`）确保一致的部署。`rdc repo validate` 在意外关机或备份操作后验证仓库完整性和备份健康状况。 |
+| **处理完整性** (PI1) | 准确完整的处理 | 确定性的 Rediaccfile 生命周期钩子（`up`/`down`）确保一致的部署。`rdc repo admin validate` 在意外关机或备份操作后验证仓库完整性和备份健康状况。 |
 | **机密性** (C1) | 防止未授权访问的数据保护 | 使用唯一 LUKS 凭据的每仓库加密。通过 iptables、独立 Docker daemon 和环回 IP 子网实现网络隔离。不同仓库的容器无法互相看到。零知识配置存储在上传前在客户端加密配置。服务器仅存储无法解密的不透明 blob。 |
 | **隐私** (P1-P8) | 个人数据处理 | 自托管：操作期间无数据外泄。所有数据访问的审计追踪。加密密钥管理在客户控制之下。配置存储使用分割密钥派生（passkey PRF + 服务器密钥），任何一方都无法单独访问数据。 |
 

@@ -4,7 +4,7 @@ description: "Exécuter le serveur de compte et la distribution de la CLI sur vo
 category: "Guides"
 order: 5
 language: fr
-sourceHash: "eea76db2d612133f"
+sourceHash: "a2f88ead9bf140c6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -54,13 +54,13 @@ Pour les utilisateurs qui se connectent à plusieurs serveurs (on-premise, produ
 
 ```bash
 # Créer un config pour votre serveur on-premise
-rdc config init --name myserver --server https://account.example.com
+rdc config init myserver --server https://account.example.com
 
 # Se connecter avec ce config
 rdc --config myserver subscription login
 
 # Toutes les commandes avec --config utilisent le serveur on-premise
-rdc --config myserver machine query --name prod-1
+rdc --config myserver machine status prod-1
 ```
 
 Chaque config nommé stocke sa propre URL de serveur de compte et son jeton d'abonnement. Changer de config change tout le contexte serveur.

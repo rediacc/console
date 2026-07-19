@@ -28,11 +28,11 @@ Place this at your project root. See the full [AGENTS.md template](/en/docs/agen
 ## CLI Tool: rdc
 
 ### Common Operations
-- Status: rdc machine query --name <machine> -o json
-- Deploy: rdc repo up --name <repo> -m <machine> --yes
-- Containers: rdc machine containers --name <machine> -o json
-- Health: rdc machine health --name <machine> -o json
-- SSH: rdc term connect -m <machine> [-r <repo>]
+- Status: rdc machine status <machine> -o json
+- Deploy: rdc repo up <repo>@<machine> --yes
+- Containers: rdc machine status <machine> --containers -o json
+- Health: rdc machine health <machine> -o json
+- SSH: rdc term connect <machine|repo-ref>
 
 ### Rules
 - Always use --output json when parsing output
@@ -44,10 +44,10 @@ Place this at your project root. See the full [AGENTS.md template](/en/docs/agen
 
 Claude Code will request permission to run `rdc` commands. You can pre-authorize common operations by adding to your Claude Code settings:
 
-- Allow `rdc machine query *`, read-only status checks
-- Allow `rdc machine containers *`, container listing
+- Allow `rdc machine status *`, read-only status checks
+- Allow `rdc machine status * --containers`, container listing
 - Allow `rdc machine health *`, health checks
-- Allow `rdc config repository list`, repository listing
+- Allow `rdc repo list`, repository listing
 
 For destructive operations (`rdc repo up`, `rdc repo delete`), Claude Code will always ask for confirmation unless you explicitly authorize them.
 
@@ -58,7 +58,7 @@ For destructive operations (`rdc repo up`, `rdc repo delete`), Claude Code will 
 ```
 You: "What's the status of prod-1?"
 
-Claude Code runs: rdc machine query --name prod-1 -o json
+Claude Code runs: rdc machine status prod-1 -o json
 → Shows machine status, repositories, containers, services
 ```
 
@@ -67,9 +67,9 @@ Claude Code runs: rdc machine query --name prod-1 -o json
 ```
 You: "Deploy the mail repo to prod-1"
 
-Claude Code runs: rdc repo up --name mail -m prod-1 --dry-run -o json
+Claude Code runs: rdc repo up mail@prod-1 --dry-run -o json
 → Shows what would happen
-Claude Code runs: rdc repo up --name mail -m prod-1 --yes
+Claude Code runs: rdc repo up mail@prod-1 --yes
 → Deploys the repository
 ```
 
@@ -78,9 +78,9 @@ Claude Code runs: rdc repo up --name mail -m prod-1 --yes
 ```
 You: "Why is the nextcloud container unhealthy?"
 
-Claude Code runs: rdc machine containers --name prod-1 -o json --fields name,status,repository
+Claude Code runs: rdc machine status prod-1 --containers -o json --fields name,status,repository
 → Lists container states
-Claude Code runs: rdc term connect -m prod-1 -c "docker logs nextcloud-app --tail 50"
+Claude Code runs: rdc repo logs nextcloud@prod-1 -c nextcloud-app --lines 50
 → Checks recent logs
 ```
 
@@ -89,9 +89,9 @@ Claude Code runs: rdc term connect -m prod-1 -c "docker logs nextcloud-app --tai
 ```
 You: "Upload the local config to the mail repo"
 
-Claude Code runs: rdc repo sync upload -m prod-1 -r mail -l ./config --dry-run
+Claude Code runs: rdc repo sync upload mail@prod-1 --local ./config --dry-run
 → Shows files that would be synced
-Claude Code runs: rdc repo sync upload -m prod-1 -r mail -l ./config
+Claude Code runs: rdc repo sync upload mail@prod-1 --local ./config
 → Syncs the files
 ```
 

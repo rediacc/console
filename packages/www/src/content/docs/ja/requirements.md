@@ -4,7 +4,7 @@ description: Rediaccを実行するためのシステム要件とサポートさ
 category: Guides
 order: 0
 language: ja
-sourceHash: "e84db3bb90270473"
+sourceHash: "88e8186bc7c0e629"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -58,7 +58,7 @@ Oracle Linux 10はデフォルトで **Unbreakable Enterprise Kernel (UEK)** を
 
 ### OSごとのセキュリティポリシー
 
-リポジトリごとのDockerデーモンとリポジトリコンテナ自体は、すべてのサポート対象OSで**デフォルトのコンテナラベル**で実行されます。`rdc config machine setup` はカスタムSELinuxポリシーやAppArmorプロファイルをインストールしません。OSごとの動作：
+リポジトリごとのDockerデーモンとリポジトリコンテナ自体は、すべてのサポート対象OSで**デフォルトのコンテナラベル**で実行されます。`rdc machine setup` はカスタムSELinuxポリシーやAppArmorプロファイルをインストールしません。OSごとの動作：
 
 - **Ubuntu 24.04、openSUSE Leap 16.0**：AppArmormがデフォルトで有効です。デフォルトのdocker-containerプロファイルが適用されます。追加のセットアップは不要です。
 - **Fedora 43、Oracle Linux 10**：SELinuxがenforcing状態で実行されます。リポジトリごとのデーモンは、標準の `container_t` コンテキストでコンテナにラベルを付けます。カスタムSELinuxポリシーは不要です。
@@ -75,7 +75,7 @@ SELinux AVCの拒否またはAppArmorの拒否でセットアップステップ�
 
 ### 自動インストール
 
-`rdc config machine setup`コマンドは、リモートサーバーに以下をインストールします：
+`rdc machine setup`コマンドは、リモートサーバーに以下をインストールします：
 
 - **Docker** と **containerd**（コンテナランタイム）
 - **cryptsetup**（LUKS ディスク暗号化）

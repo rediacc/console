@@ -4,7 +4,7 @@ description: "Failide sünkroonimine, terminali ligipääs, VS Code integratsioo
 category: "Guides"
 order: 9
 language: et
-sourceHash: "59abc2faa1157369"
+sourceHash: "2b8afb656455d6ec"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -22,16 +22,16 @@ Edasta faile oma tööjaama ja kaugrepositooriumi vahel, kasutades rsync üle SS
 
 ```bash
 # Kataloog (sisu ühineb kaugsisuga)
-rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
+rdc repo sync upload my-app --local ./src --remote /app/src
 
 # Üks fail, mis lisatakse kaugkataloogi (basename säilitatakse)
-rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote /app/conf
+rdc repo sync upload my-app --local ./config.yml --remote /app/conf
 
 # Üks fail, otsene sihtkoha tee
-rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote-file /app/conf/config.yml
+rdc repo sync upload my-app --local ./config.yml --remote-file /app/conf/config.yml
 
 # Mitu allikat ühes käsus
-rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote /app
+rdc repo sync upload my-app --local a.yml b.yml ./assets --remote /app
 ```
 
 `--remote` ja `--remote-file` on üksteist välistavad. `--remote-file` nõuab täpselt ühte `--local` teed, mis osutab failile.
@@ -44,16 +44,16 @@ Kataloogi puhul kasuta `--remote` (vaikimisi) või ühe faili puhul `--remote-fi
 
 ```bash
 # Kataloog
-rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
+rdc repo sync download my-app --remote /app/data --local ./data
 
 # Üks fail - --local peab olema olemasolev kataloog
-rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
+rdc repo sync download my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
 ### Sünkroonimise oleku kontrollimine
 
 ```bash
-rdc repo sync status -m server-1 -r my-app
+rdc repo sync status my-app
 ```
 
 ### Valikud
@@ -81,8 +81,8 @@ Ava interaktiivne SSH-seanss masinaga või repositooriumi keskkonda.
 Kiireim viis ühenduse loomiseks:
 
 ```bash
-rdc term connect -m server-1                    # Ühenda masinaga
-rdc term connect -m server-1 -r my-app             # Ühenda repositooriumiga
+rdc term connect server-1                    # Ühenda masinaga
+rdc term connect my-app             # Ühenda repositooriumiga
 ```
 
 ### Käsu käivitamine
@@ -90,8 +90,8 @@ rdc term connect -m server-1 -r my-app             # Ühenda repositooriumiga
 Käivita käsk ilma interaktiivset seanssi avamata:
 
 ```bash
-rdc term connect -m server-1 -c "uptime"
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect server-1 -c "uptime"
+rdc term connect my-app -c "docker ps"
 ```
 
 Repositooriumiga ühendamisel seadistatakse `DOCKER_HOST` automaatselt repositooriumi isoleeritud Dockeri soklile, nii et `docker ps` näitab ainult selle repositooriumi konteinereid.
@@ -101,8 +101,8 @@ Repositooriumiga ühendamisel seadistatakse `DOCKER_HOST` automaatselt repositoo
 Alamkäsk `connect` teeb sama otseste lippudega:
 
 ```bash
-rdc term connect -m server-1
-rdc term connect -m server-1 -r my-app
+rdc term connect server-1
+rdc term connect my-app
 ```
 
 ### Konteineri toimingud
@@ -111,19 +111,19 @@ Suhtle otse töötava konteineriga:
 
 ```bash
 # Ava kest konteineri sees
-rdc term connect -m server-1 -r my-app --container <container-id>
+rdc repo exec my-app -c <container> -i -- bash
 
 # Vaata konteineri logisid
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs
+rdc repo logs my-app -c <container>
 
 # Jälgi logisid reaalajas
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs --follow
+rdc repo logs my-app -c <container> --follow
 
 # Vaata konteineri statistikat
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action stats
+rdc repo exec my-app -c <container> -i -- bash --container-action stats
 
 # Käivita käsk konteineris
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action exec -c "ls -la"
+rdc repo exec my-app -c <container> -- ls -la
 ```
 
 | Valik | Kirjeldus |
@@ -141,7 +141,7 @@ Ava kaugne SSH-seanss VS Code'is, eelkonfigureeritud õigete SSH seadetega.
 ### Repositooriumiga ühendamine
 
 ```bash
-rdc vscode connect -r my-app -m server-1
+rdc vscode connect my-app
 ```
 
 See käsk:
@@ -179,7 +179,7 @@ Kontrollib VS Code'i paigaldust, Remote SSH laiendust ja aktiivseid ühendusi.
 Kohalikku VS Code'i pole? Käivita redaktor repositooriumi liivakastist ja ava see mistahes brauseris:
 
 ```bash
-rdc vscode connect -r my-app -m server-1 --browser
+rdc vscode connect my-app --browser
 ```
 
 See käsk:
@@ -190,8 +190,8 @@ See käsk:
 Server jätkab tööd pärast tunneli sulgemist; uuesti ühendades kasutatakse seda uuesti. Halda seda käskudega:
 
 ```bash
-rdc vscode serve status -r my-app -m server-1
-rdc vscode serve stop -r my-app -m server-1
+rdc vscode serve status my-app
+rdc vscode serve stop my-app
 ```
 
 | Valik | Kirjeldus |

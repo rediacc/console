@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 41
 language: ja
-sourceHash: "fe334c1c94a0f417"
+sourceHash: "b8bd3176ecabfa4b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -34,7 +34,7 @@ Rediaccリポジトリは、コピーオンライトフォークを基盤とす�
 マウントされたワーキングフォークを新しいイミュータブルコミットに凍結します。
 
 ```bash
-rdc repo commit --name <fork> --message "<message>" -m <machine>
+rdc repo commit <fork> --message "<message>"
 ```
 
 | オプション | 説明 | デフォルト |
@@ -52,7 +52,7 @@ rdc repo commit --name <fork> --message "<message>" -m <machine>
 ワーキングフォークの現在のコミットを指す名前付きブランチrefを作成します。
 
 ```bash
-rdc repo branch --branch <name> --name <fork>
+rdc repo branch <fork> --branch <name>
 ```
 
 | オプション | 説明 | デフォルト |
@@ -67,8 +67,8 @@ rdc repo branch --branch <name> --name <fork>
 イミュータブルコミット（またはブランチの先端）をリファリンクで新しい書き込み可能なワーキングフォークにクローンします。
 
 ```bash
-rdc repo checkout --ref <commit> --tag <newFork> -m <machine>
-rdc repo checkout --ref <branchName> --from <fork> --tag <newFork> -m <machine>
+rdc repo checkout <commit> --tag <newFork>
+rdc repo checkout <branchName> --from <fork> --tag <newFork>
 ```
 
 | オプション | 説明 | デフォルト |
@@ -87,7 +87,7 @@ rdc repo checkout --ref <branchName> --from <fork> --tag <newFork> -m <machine>
 ワーキングフォークまたはコミットから到達可能なコミット履歴を確認します。
 
 ```bash
-rdc repo log --name <fork> -m <machine>
+rdc repo log <fork>
 ```
 
 | オプション | 説明 | デフォルト |
@@ -104,8 +104,8 @@ rdc repo log --name <fork> -m <machine>
 ライブターゲットをその場で変更することなく、ソースコミットまたはフォークをターゲットワーキングフォークにマージします。
 
 ```bash
-rdc repo merge --name <target> --from <source> -m <machine>
-rdc repo merge --name <target> --from <source> --resolve theirs -m <machine>
+rdc repo merge <target> --from <source>
+rdc repo merge <target> --from <source> --resolve theirs
 ```
 
 | オプション | 説明 | デフォルト |
@@ -139,12 +139,12 @@ rdc repo gc --apply -m <machine>    # 到達不能なコミットを削除
 
 到達可能性はローカルコンフィグ（refストア）から計算されます。各ブランチの先端とHEADを親チェーンをたどって到達可能なコミットのセットです。そのセット外のマシン上のイミュータブルコミットは到達不能です。マウントされたオブジェクトやワーキングフォークは収集されません。
 
-### rdc repo fsck
+### rdc repo admin fsck
 
 マシン上に存在するオブジェクトに対してコンフィグのrefを検証します。
 
 ```bash
-rdc repo fsck -m <machine>
+rdc repo admin fsck -m <machine>
 ```
 
 | オプション | 説明 | デフォルト |
@@ -158,7 +158,7 @@ rdc repo fsck -m <machine>
 `rdc repo fork --immutable`は、新しいフォークを作成時に読み取り専用としてマークし、別の`commit`ステップなしにコミット相当のベースを生成します。
 
 ```bash
-rdc repo fork --parent <name> --tag <tag> --immutable -m <machine>
+rdc repo fork <name> --tag <tag> --immutable
 ```
 
 イミュータブルフォークはマウントを拒否し、イメージを永久にバイト安定した状態に保ちます。これはクロスマシンデルタプッシュのための凍結ベースとして有用です。ベースは両端で同一である必要があります。変更を加えるには、書き込み可能なコピーにチェックアウト（または再フォーク）してください。
@@ -168,28 +168,28 @@ rdc repo fork --parent <name> --tag <tag> --immutable -m <machine>
 ### ワーキングフォークをコミットする
 
 ```bash
-$ rdc repo commit --name myapp:work --message "schema migration applied" -m server-1
+$ rdc repo commit myapp:work --message "schema migration applied"
 Committed 4f3c2a1b9d8e: schema migration applied
 ```
 
 ### 明示的な作成者でコミットする
 
 ```bash
-$ rdc repo commit --name myapp:work --message "nightly snapshot" --author ci-bot -m server-1
+$ rdc repo commit myapp:work --message "nightly snapshot" --author ci-bot
 Committed 7a1b2c3d4e5f: nightly snapshot
 ```
 
 ### 現在のコミットにブランチ名を付ける
 
 ```bash
-$ rdc repo branch --branch staging --name myapp:work
+$ rdc repo branch myapp:work --branch staging
 Branch "staging" -> 4f3c2a1b9d8e
 ```
 
 ### コミットを新しい書き込み可能なフォークにチェックアウトする
 
 ```bash
-$ rdc repo checkout --ref 4f3c2a1b9d8e --tag rollback-test -m server-1
+$ rdc repo checkout 4f3c2a1b9d8e --tag rollback-test
 ```
 
 ### ブランチの先端を名前でチェックアウトする
@@ -197,13 +197,13 @@ $ rdc repo checkout --ref 4f3c2a1b9d8e --tag rollback-test -m server-1
 `--from`を使用すると、`--ref`の値は指定されたワーキングフォークのブランチ名として解決されます：
 
 ```bash
-$ rdc repo checkout --ref staging --from myapp:work --tag staging-copy -m server-1
+$ rdc repo checkout staging --from myapp:work --tag staging-copy
 ```
 
 ### 履歴を確認する
 
 ```bash
-$ rdc repo log --name myapp:work -m server-1
+$ rdc repo log myapp:work
 commit 4f3c2a1b9d8e
   Author: ci-bot  Date: 2026-05-29T10:14:02Z
   schema migration applied
@@ -217,7 +217,7 @@ commit 9d8e7a1b2c3d
 `--json`は構造化されたウォークを新しい順に出力します：
 
 ```bash
-$ rdc repo log --name myapp:work --json -m server-1
+$ rdc repo log myapp:work -o json
 {
   "success": true,
   "start": "4f3c2a1b9d8e",
@@ -239,8 +239,8 @@ $ rdc repo log --name myapp:work --json -m server-1
 `rdc repo diff`はコピーオンライトの共通祖先を共有するため、任意の2つのコミット間で動作します。1つのコミットをチェックアウトし、別のコミットとdiffします：
 
 ```bash
-$ rdc repo checkout --ref 4f3c2a1b9d8e --tag review -m server-1
-$ rdc repo diff --name review --base myapp:work -m server-1
+$ rdc repo checkout 4f3c2a1b9d8e --tag review
+$ rdc repo diff review --base myapp:work
 M  db/schema.sql
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -251,7 +251,7 @@ M  db/schema.sql
 ### レビュー済みのラインをマージして戻す
 
 ```bash
-$ rdc repo merge --name myapp:main --from myapp:work -m server-1
+$ rdc repo merge myapp:main --from myapp:work
 Merged myapp:work into myapp:main
 ```
 
@@ -260,7 +260,7 @@ Merged myapp:work into myapp:main
 マウントまたは実行中のターゲットは`--force`なしでは拒否されます。`--force`は先にターゲットを停止します：
 
 ```bash
-$ rdc repo merge --name myapp:main --from myapp:work --force -m server-1
+$ rdc repo merge myapp:main --from myapp:work --force
 Merged myapp:work into myapp:main
 ```
 
@@ -269,7 +269,7 @@ Merged myapp:work into myapp:main
 同じコミットからチェックアウトした2つのフォーク（`feature`と`hotfix`）がそれぞれいくつかのファイルを変更しました。`--resolve theirs`はソース（`hotfix`）をターゲット（`feature`）に適用します。一方のみで変更されたファイルはその側から取得され、両側で変更されたファイルはソースに解決されます。ベースは共通祖先から自動検出されます（または`--base`で固定します）：
 
 ```bash
-$ rdc repo merge --name myapp:feature --from myapp:hotfix --resolve theirs -m server-1
+$ rdc repo merge myapp:feature --from myapp:hotfix --resolve theirs
 Merged myapp:hotfix into myapp:feature (three-way); 1 conflict(s) resolved --theirs: [config/app.yaml]
 ```
 
@@ -278,7 +278,7 @@ Merged myapp:hotfix into myapp:feature (three-way); 1 conflict(s) resolved --the
 ### イミュータブルベースを直接作成する
 
 ```bash
-$ rdc repo fork --parent myapp --tag baseline-v1 --immutable -m server-1
+$ rdc repo fork myapp --tag baseline-v1 --immutable
 ```
 
 ## デルタプッシュとプル
@@ -289,19 +289,19 @@ $ rdc repo fork --parent myapp --tag baseline-v1 --immutable -m server-1
 
 ```bash
 # 最初のプッシュはフル転送で、両端に再利用可能なベースを保持します。
-$ rdc repo push --name myapp:work --to-machine backup-1 -m server-1
+$ rdc repo push myapp:work --to backup-1
 
 # ローカルで変更した後、次のプッシュは変更されたブロックのみを送信します。フラグ不要。
-$ rdc repo push --name myapp:work --to-machine backup-1 -m server-1
+$ rdc repo push myapp:work --to backup-1
 
 # 明示的なベースを固定します（両マシンに存在するイミュータブルコミット）。
-$ rdc repo push --name myapp:work --to-machine backup-1 --delta-base 4f3c2a1b9d8e -m server-1
+$ rdc repo push myapp:work --to backup-1 --delta-base 4f3c2a1b9d8e
 
 # デルタはマシンソースからの逆方向（プル）でも動作します。
-$ rdc repo pull --name myapp:work --from-machine backup-1 --delta-base 4f3c2a1b9d8e -m server-1
+$ rdc repo pull myapp:work --from backup-1 --delta-base 4f3c2a1b9d8e
 
 # --forceで既存のローカルリポジトリを（上書きして）再プルします。
-$ rdc repo pull --name myapp:work --from-machine backup-1 --force -m server-1
+$ rdc repo pull myapp:work --from backup-1 --force
 ```
 
 デルタ転送はマシン間（FIEMAPベースを持つリモート）にのみ適用されます。クラウドオブジェクトストレージへのプッシュは常にフルイメージを転送します。ベースは両端でバイト同一である必要があります。イミュータブルコミットまたは`--immutable`フォークが保証するのがまさにこれです。

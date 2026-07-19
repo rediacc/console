@@ -12,7 +12,7 @@ tags:
   - compliance
 featured: false
 language: ja
-sourceHash: "ffdb86da48dacc58"
+sourceHash: "d8da6730f7912fc9"
 sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 ---
 
@@ -129,7 +129,7 @@ Hetzner 上の Rediacc に移行後：
 | 副処理者 | (1) セルフホスト型ではなし；(2) Hetzner 内部のみ、同社 DPA に記載 |
 | 契約状況 | (1) ソフトウェアライセンス、DPA 不要；(2) Hetzner DPA + SCC 既存 |
 | 鍵管理 | 顧客管理（LUKS2 認証情報はオペレーター設定ファイル、サーバー上にはなし） |
-| 終了計画 | 「rclone 互換の任意のターゲットから `rdc repo backup pull`。ボリュームは LUKS2 暗号化済み、オペレーターが認証情報を保有。」 |
+| 終了計画 | 「rclone 互換の任意のターゲットから `rdc repo pull`。ボリュームは LUKS2 暗号化済み、オペレーターが認証情報を保有。」 |
 | 最終評価 | (2) 既存の IaaS レビューで対応済み |
 
 1 エントリではなく 2 エントリになりました。クリティカルティアのエントリは IaaS プロバイダーのもので、買い手はすでに DPA と検証済みの終了計画を持っていました。IaaS は大半のチームが管理方法を知っている関係だからです。Rediacc のエントリは非クリティカルです。データ処理者ではなく、ソフトウェアライセンスだからです。

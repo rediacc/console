@@ -4,7 +4,7 @@ description: "Olulised reeglid ja kokkulepped rakenduste ehitamiseks Rediacci pl
 category: "Guides"
 order: 5
 language: et
-sourceHash: "b2d38b48d1fac737"
+sourceHash: "1ceb078c7eb045b7"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -111,7 +111,7 @@ Renet süstib need automaatselt igasse konteinerisse:
 - **Sõltuvusteadlik taastamine**: Kasutab compose'i `depends_on`, et käivitada andmebaasid esmalt (oodata tervena), seejärel CRIU-taastada rakenduse konteinerid.
 - **TCP-ühendused muutuvad taastamisel aegunuks**, rakendused peavad käsitlema `ECONNRESET`-i ja uuesti ühenduma. CRIU ei säilita aktiivse TCP-ühenduse olekut taastamise üleselt üheski toetatud voos.
 - **Dockeri eksperimentaalne režiim** on lubatud automaatselt repositooriumipõhistel deemonitel.
-- **CRIU installitakse** `rdc config machine setup` käigus.
+- **CRIU installitakse** `rdc machine setup` käigus.
 - **`/etc/criu/runc.conf`** on konfigureeritud vaikimisi koos `tcp-established`-ga.
 - **Konteineri turvapoliitikad süstitakse automaatselt märgistatud konteineritele**, `renet compose` lisab järgmised `rediacc.checkpoint=true`-ga konteineritele:
   - `cap_add`: `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` (minimaalne komplekt CRIU jaoks kernelis 5.9+)
@@ -132,7 +132,7 @@ Renet süstib need automaatselt igasse konteinerisse:
 
 ### Hosti turvapoliitikad OS-i kaupa
 
-Kõigil viiel ametlikult toetatud serveri OS-il (vaadake [Nõuded](/en/docs/requirements)) kasutavad repositooriumipõhine dockeri deemon ja selle käitatavad konteinerid **vaikimisi konteinersilte**. `rdc config machine setup` ei installi kohandatud SELinuxi poliitikat ega AppArmori profiili. See on tahtlik: kompromiss seisneb selles, et konteineri protsessid töötavad hosti OS-i vaikimisi sildi poliitika all, mitte Rediacci-spetsiifilise pidamispoliitika all. Kui teie ohumudelis on vajalikud kohustusliku juurdepääsu kontrollid konteineri tasandil, konfigureerige need hosti tasandil enne juurutamist.
+Kõigil viiel ametlikult toetatud serveri OS-il (vaadake [Nõuded](/en/docs/requirements)) kasutavad repositooriumipõhine dockeri deemon ja selle käitatavad konteinerid **vaikimisi konteinersilte**. `rdc machine setup` ei installi kohandatud SELinuxi poliitikat ega AppArmori profiili. See on tahtlik: kompromiss seisneb selles, et konteineri protsessid töötavad hosti OS-i vaikimisi sildi poliitika all, mitte Rediacci-spetsiifilise pidamispoliitika all. Kui teie ohumudelis on vajalikud kohustusliku juurdepääsu kontrollid konteineri tasandil, konfigureerige need hosti tasandil enne juurutamist.
 
 - **Ubuntu 24.04 / openSUSE Leap 16.0**: AppArmor on vaikimisi lubatud. Konteinerid töötavad vaikimisi docker-container profiili all. Ainus erand on CRIU (`apparmor=unconfined` `rediacc.checkpoint=true`-konteinerite jaoks, vastavalt ülaltoodud märkusele).
 - **Fedora 43 / Oracle Linux 10**: SELinux töötab vaikimisi jõustataval režiimil. Konteinerid saavad standardse `container_t` konteksti. Lisapoliitika installimine pole vajalik. Kui seadistamise samm ebaõnnestub AVC-keeldumistega, vaadake [Tõrkeotsing – SELinuxi keeldumised](/en/docs/troubleshooting).

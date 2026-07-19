@@ -4,7 +4,7 @@ description: "암호화된 레포지토리를 rclone 호환 스토리지에 백�
 category: "Guides"
 order: 7
 language: ko
-sourceHash: "d800519615085ee9"
+sourceHash: "659b41577a6a220c"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -21,7 +21,7 @@ Rediacc는 암호화된 레포지토리를 외부 스토리지 제공자에 백�
 이미 rclone 원격이 설정되어 있는 경우:
 
 ```bash
-rdc config storage import --file rclone.conf
+rdc storage import rclone.conf
 ```
 
 이 명령어는 rclone 설정 파일에서 현재 설정으로 스토리지 설정을 가져옵니다. 지원 형식: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob, Swift.
@@ -29,7 +29,7 @@ rdc config storage import --file rclone.conf
 ### 스토리지 목록 보기
 
 ```bash
-rdc config storage list
+rdc storage list
 ```
 
 ## 백업 푸시
@@ -37,10 +37,10 @@ rdc config storage list
 레포지토리 백업을 외부 스토리지에 푸시합니다.
 
 ```bash
-rdc repo push --name my-app -m server-1 --to my-storage
+rdc repo push my-app --to my-storage
 ```
 
-백업은 푸시 시점에 레포지토리가 마운트되어 있으면 스토리지의 `hot/` 폴더에, 마운트 해제 상태이면 `cold/` 폴더에 저장됩니다. 이는 예약 백업이 사용하는 것과 동일한 레이아웃이므로, `rdc repo backup list`에서 모든 백업을 한 테이블에 확인할 수 있습니다.
+백업은 푸시 시점에 레포지토리가 마운트되어 있으면 스토리지의 `hot/` 폴더에, 마운트 해제 상태이면 `cold/` 폴더에 저장됩니다. 이는 예약 백업이 사용하는 것과 동일한 레이아웃이므로, `rdc backup list`에서 모든 백업을 한 테이블에 확인할 수 있습니다.
 
 | 옵션 | 설명 |
 |--------|-------------|
@@ -60,7 +60,7 @@ rdc repo push --name my-app -m server-1 --to my-storage
 외부 스토리지에서 레포지토리 백업을 풀합니다.
 
 ```bash
-rdc repo pull --name my-app -m server-1 --from my-storage
+rdc repo pull my-app --from my-storage
 ```
 
 풀은 쓰기 전에 항상 대상 레포지토리가 마운트되어 있는지 확인합니다. 마운트되지 않은 경우 작업이 중단됩니다.
@@ -80,7 +80,7 @@ rdc repo pull --name my-app -m server-1 --from my-storage
 스토리지 위치에서 사용 가능한 백업을 확인합니다.
 
 ```bash
-rdc repo backup list --from my-storage -m server-1
+rdc backup list -m server-1 --storage my-storage
 ```
 
 출력은 [예약 백업 폴더](#scheduled-backups)(`hot/`과 `cold/`) 모두를 병합한 통합 테이블로, 모든 백업을 한 번에 볼 수 있습니다.
@@ -96,8 +96,8 @@ rdc repo backup list --from my-storage -m server-1
 단일 모드를 조회하려면 `--path`를 전달하세요.
 
 ```bash
-rdc repo backup list --from my-storage -m server-1 --path hot
-rdc repo backup list --from my-storage -m server-1 --path cold
+rdc backup list -m server-1 --storage my-storage --path hot
+rdc backup list -m server-1 --storage my-storage --path cold
 ```
 
 ### 스토리지 레이아웃
@@ -184,7 +184,7 @@ Rediacc는 명명된 백업 전략을 사용합니다. 각 전략은 일정, 백
 
 - `rdc machine status <machine> --containers`는 실행 상태를 표시합니다. 예상 세트와 비교하세요.
 - 머신의 `/var/run/rediacc/cold-backup-<guid>.status.json`. `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`으로 검사하세요. 오래된 `startedAt`과 함께 `success: false`는 마지막 백업이 깔끔하게 완료되지 않았음을 의미합니다.
-- renet 백업 실행 로그(`journalctl -u renet-*` 또는 직접 `rdc machine backup schedule` 호출)는 `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` 형식의 최종 요약 줄을 출력합니다. 비어 있지 않은 `failed_repos`가 grep 대상입니다.
+- renet 백업 실행 로그(`journalctl -u renet-*` 또는 직접 `rdc backup schedule` 호출)는 `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` 형식의 최종 요약 줄을 출력합니다. 비어 있지 않은 `failed_repos`가 grep 대상입니다.
 
 ### 콜드 백업 다운타임 추정
 
@@ -248,8 +248,7 @@ concurrency = min(repoCount, max(2, NumCPU/2), 8)
 표준 기본값은 두 전략 분할입니다. 모든 레포를 캡처하는 빠른 시간별 hot 스트림과 애플리케이션 일관성 스냅샷을 찍는 느린 주별 cold 스트림입니다. 두 전략은 서로 다른 스토리지 하위 폴더(`hot/`과 `cold/`)에 쓰므로 백업이 절대 섞이지 않습니다.
 
 ```bash
-rdc config backup-strategy set \
-  --name hourly-hot \
+rdc backup strategy set hourly-hot \
   --destination my-storage \
   --cron "0 * * * *" \
   --mode hot \
@@ -258,8 +257,7 @@ rdc config backup-strategy set \
 ```
 
 ```bash
-rdc config backup-strategy set \
-  --name weekly-cold \
+rdc backup strategy set weekly-cold \
   --destination my-storage \
   --cron "15 3 * * 0" \
   --mode cold \
@@ -283,14 +281,14 @@ cold 전략의 `--exclude` 필터는 주별 유지 관리 창에 맞지 않는 �
 ### 전략 보기
 
 ```bash
-rdc config backup-strategy list
-rdc config backup-strategy show --name weekly-cold
+rdc backup strategy list
+rdc backup strategy show weekly-cold
 ```
 
 ### 전략 삭제
 
 ```bash
-rdc config backup-strategy remove --name weekly-cold
+rdc backup strategy remove weekly-cold
 ```
 
 ### 머신에 전략 바인딩
@@ -330,8 +328,7 @@ rdc config backup-strategy remove --name weekly-cold
 
 ```bash
 # 핫 전략: 매시간 모든 것 백업
-rdc config backup-strategy set \
-  --name hourly-hot \
+rdc backup strategy set hourly-hot \
   --destination my-storage \
   --cron "0 * * * *" \
   --mode hot \
@@ -339,8 +336,7 @@ rdc config backup-strategy set \
   --enable
 
 # 콜드 전략: 매주 모든 것 백업, 큰 파생 데이터셋 제외
-rdc config backup-strategy set \
-  --name weekly-cold \
+rdc backup strategy set weekly-cold \
   --destination my-storage \
   --cron "15 3 * * 0" \
   --mode cold \
@@ -359,7 +355,7 @@ rdc config backup-strategy set \
 
 > **데이터가 순수하게 재생성 가능한 경우**, 그것을 전혀 백업할 필요가 있는지 고려하세요. 대안으로 원시 소스 입력(이 예에서는 CSV 덤프)만 백업하고 파생 사본을 완전히 건너뛸 수 있습니다. 소스 입력의 주간 콜드 백업은 훨씬 작고 복구에 완전히 충분합니다.
 
-두 전략에서 모두 제외되지 않은 레포는 `hot/`과 `cold/` 스토리지 서브폴더 모두에 나타납니다. 병합된 `rdc repo backup list` 출력은 두 행을 모두 표시하여 어떤 스트림이 어떤 레포를 커버하는지 확인할 수 있습니다.
+두 전략에서 모두 제외되지 않은 레포는 `hot/`과 `cold/` 스토리지 서브폴더 모두에 나타납니다. 병합된 `rdc backup list` 출력은 두 행을 모두 표시하여 어떤 스트림이 어떤 레포를 커버하는지 확인할 수 있습니다.
 
 ## 백업 작업
 
@@ -368,8 +364,8 @@ rdc config backup-strategy set \
 바인딩된 전략을 systemd 타이머로 머신에 푸시합니다.
 
 ```bash
-rdc machine backup schedule -m server-1
-rdc machine backup schedule -m server-1 --dry-run
+rdc backup schedule -m server-1
+rdc backup schedule -m server-1 --dry-run
 ```
 
 배포는 상태 조정자입니다. 머신의 현재 유닛 파일과 systemd 상태를 읽고, 설정이 생성할 내용과 비교하여(파일당 SHA-256), 실제로 변경된 유닛만 건드립니다. 설정 변경 없이 다시 실행하면 아무 작업도 없습니다. 쓰기 없음, `daemon-reload` 없음, 타이머 변경 없음.
@@ -385,8 +381,8 @@ rdc machine backup schedule -m server-1 --dry-run
 타이머를 기다리지 않고 즉시 백업을 트리거합니다. 타이머가 배포되지 않은 경우에도 `systemd-run`을 사용한 임시 실행으로 작동합니다.
 
 ```bash
-rdc machine backup now -m server-1
-rdc machine backup now -m server-1 --strategy weekly-cold
+rdc backup run -m server-1
+rdc backup run weekly-cold -m server-1
 ```
 
 ### 백업 상태 보기
@@ -394,15 +390,15 @@ rdc machine backup now -m server-1 --strategy weekly-cold
 백업 타이머의 현재 상태와 최근 작업 결과를 표시합니다.
 
 ```bash
-rdc machine backup status -m server-1
-rdc machine backup status -m server-1 --strategy hourly-hot
+rdc backup status -m server-1
+rdc backup status hourly-hot -m server-1
 ```
 
 ### 실행 중인 백업 취소
 
 ```bash
-rdc machine backup cancel -m server-1
-rdc machine backup cancel -m server-1 --strategy weekly-cold
+rdc backup cancel -m server-1
+rdc backup cancel weekly-cold -m server-1
 ```
 
 ## 레포지토리 마이그레이션
@@ -410,7 +406,7 @@ rdc machine backup cancel -m server-1 --strategy weekly-cold
 한 머신에서 다른 머신으로 레포지토리를 이동합니다.
 
 ```bash
-rdc repo migrate --name my-app --from server-1 --to server-2
+rdc repo migrate my-app@server-1 --to server-2
 ```
 
 | 옵션 | 설명 |
@@ -430,7 +426,7 @@ rdc repo migrate --name my-app --from server-1 --to server-2
 스토리지 위치의 내용을 탐색합니다.
 
 ```bash
-rdc storage browse --name my-storage
+rdc storage browse my-storage
 ```
 
 ## 모범 사례

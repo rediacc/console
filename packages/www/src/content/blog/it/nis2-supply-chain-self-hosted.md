@@ -12,7 +12,7 @@ tags:
   - conformita
 featured: false
 language: it
-sourceHash: "ffdb86da48dacc58"
+sourceHash: "d8da6730f7912fc9"
 sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 translatedFrom: en
 ---
@@ -129,7 +129,7 @@ Dopo il passaggio a Rediacc su Hetzner:
 | Sub-responsabili | (1) Nessuno per self-hosted; (2) Solo interni a Hetzner, elencati nel loro DPA |
 | Stato contrattuale | (1) Licenza software, nessun DPA necessario; (2) DPA Hetzner + SCCs già in vigore |
 | Custodia chiavi | Cliente (credenziale LUKS2 nel config dell'operatore, non sul server) |
-| Piano di uscita | "`rdc repo backup pull` da qualsiasi destinazione compatibile con rclone. I volumi sono cifrati con LUKS2; l'operatore detiene la credenziale." |
+| Piano di uscita | "`rdc repo pull` da qualsiasi destinazione compatibile con rclone. I volumi sono cifrati con LUKS2; l'operatore detiene la credenziale." |
 | Ultima valutazione | (2) coperta dalla revisione IaaS esistente |
 
 Due voci nel registro invece di una. La voce di livello critico riguarda il fornitore IaaS, con cui l'acquirente aveva già un DPA in vigore e un piano di uscita testato, perché l'IaaS è un tipo di rapporto che la maggior parte dei team sa gestire. La voce Rediacc è non critica perché si tratta di una licenza software, non di un titolare del trattamento dei dati.

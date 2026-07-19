@@ -4,7 +4,7 @@ description: "Cómo funciona el inicio automático, el reconciliador periódico 
 category: "Guides"
 order: 5
 language: es
-sourceHash: "7fa4f919475b304e"
+sourceHash: "62148f7a55752783"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,7 +109,7 @@ Listar repositorios con marcadores de fallo duraderos:
 ls /var/lib/rediacc/reconcile/failed/
 ```
 
-Cada nombre de archivo es un GUID de repositorio. Crúcelo con `rdc config repository list` para asociar GUIDs a nombres de repositorios.
+Cada nombre de archivo es un GUID de repositorio. Crúcelo con `rdc repo list` para asociar GUIDs a nombres de repositorios.
 
 Para eliminar un marcador después de haber resuelto el problema subyacente, elimine el archivo:
 

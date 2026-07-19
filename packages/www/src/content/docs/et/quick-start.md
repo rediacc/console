@@ -4,7 +4,7 @@ description: Konteineerpõhise teenuse käivitamine oma serveris minutitega.
 category: Guides
 order: -1
 language: et
-sourceHash: "a1350abc611570ef"
+sourceHash: "12382a10b8fd01cb"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -59,8 +59,8 @@ Iga rdc käsk autentib nüüd selle võtmega. Paroole pole.
 ### 3. Lisa oma server
 
 ```bash
-rdc config machine add --name my-server --ip 192.168.1.100 --user admin
-rdc config machine setup --name my-server  # Provisioonib renet + loob andmehoidla
+rdc machine add my-server --ip 192.168.1.100 --user admin
+rdc machine setup my-server  # Provisioonib renet + loob andmehoidla
 ```
 
 **Mis juhtub:** SSH-hostivõti skannitakse, renet-binaar laaditakse üles, serveris initsialiseeritakse krüpteeritud andmehoidla. Valmis hoidlateks.
@@ -83,7 +83,7 @@ cat ~/.config/rediacc/rediacc.json         # Toores JSON: masinad, hoidlad, mäl
 ### 1. Loo hoidla
 
 ```bash
-rdc repo create --name my-app -m my-server --size 2G  # Loo 2 GB krüpteeritud hoidla
+rdc repo create my-app -m my-server --size 2G  # Loo 2 GB krüpteeritud hoidla
 ```
 
 Loob krüpteeritud mahu, ühendab selle ja käivitab selle Dockeri daemoni. Hoidla registreeritakse sinu konfiguratsioonis ja on kasutamiseks valmis.
@@ -94,7 +94,7 @@ Loob krüpteeritud mahu, ühendab selle ja käivitab selle Dockeri daemoni. Hoid
 
 ```bash
 rdc repo admin template list                                        # Kuva sisseehitatud mallid
-rdc repo admin template apply --name app-postgres -m my-server -r my-app  # Juuruta docker-compose.yml + Rediaccfile
+rdc repo admin template apply my-app --template app-postgres  # Juuruta docker-compose.yml + Rediaccfile
 ```
 
 Mallid pakuvad `docker-compose.yml`, `Rediaccfile` ja toetavad faile. Ilma mallit (või oma compose-faili) pole midagi käivitada. Kasuta sisseehitatud malli oma esimese hoidla jaoks. See on kiireim viis kogu töövoo nägemiseks otsast lõpuni.
@@ -102,9 +102,9 @@ Mallid pakuvad `docker-compose.yml`, `Rediaccfile` ja toetavad faile. Ilma malli
 ### 3. Käivita hoidla
 
 ```bash
-rdc repo up --name my-app -m my-server  # Käivita Rediaccfile up()
+rdc repo up my-app -m my-server  # Käivita Rediaccfile up()
 rdc repo list -m my-server                           # Vaata kõiki hoidlaid masinal
-rdc repo status --name my-app -m my-server  # Ühenduse olek, Docker, suurus, krüpteerimine
+rdc repo status my-app  # Ühenduse olek, Docker, suurus, krüpteerimine
 ```
 
 `repo up` ühendab automaatselt vajadusel. Lippe pole vaja.
@@ -142,25 +142,25 @@ Redigeerid faile *krüpteeritud mahu sees*. `docker ps` näitab ainult selle hoi
 
 **Terminal:**
 ```bash
-rdc term connect -m my-server -r my-app                            # SSH hoidla liivakasti
-rdc term connect -m my-server -r my-app -c "curl localhost:3000"   # Käivita käsk ja välju
-rdc term connect -m my-server                                   # SSH masinale (ilma liivakastita)
+rdc term connect my-app                            # SSH hoidla liivakasti
+rdc term connect my-app -c "curl localhost:3000"   # Käivita käsk ja välju
+rdc term connect my-server                                   # SSH masinale (ilma liivakastita)
 ```
 
 **Failisünkroonimine (rsync üle SSH):**
 ```bash
-rdc repo sync upload -m my-server -r my-app --local ./src                                   # Lükka kataloog üles
-rdc repo sync upload -m my-server -r my-app --local ./config.yml --remote conf              # Lükka üks fail üles
-rdc repo sync download -m my-server -r my-app --local ./backup                              # Tõmba kataloog alla
-rdc repo sync download -m my-server -r my-app --remote-file conf/config.yml --local ./dl    # Tõmba üks fail alla
-rdc repo sync download -m my-server -r my-app --local ./backup --dry-run                    # Esmalt eelvaade
+rdc repo sync upload my-app@my-server --local ./src                                   # Lükka kataloog üles
+rdc repo sync upload my-app@my-server --local ./config.yml --remote conf              # Lükka üks fail üles
+rdc repo sync download my-app@my-server --local ./backup                              # Tõmba kataloog alla
+rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl    # Tõmba üks fail alla
+rdc repo sync download my-app@my-server --local ./backup --dry-run                    # Esmalt eelvaade
 ```
 
 **Tunnel (SSH pordiedastus konteinerile):**
 ```bash
-rdc repo tunnel -m my-server -r my-app -c app  # Tuvasta automaatselt port rakenduse konteinerile
-rdc repo tunnel -m my-server -r my-app -c db --port 5432  # Tunnel Postgres'ile
-rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # Kohandatud kohalik port
+rdc repo tunnel my-app@my-server -c app  # Tuvasta automaatselt port rakenduse konteinerile
+rdc repo tunnel my-app -c db --port 5432  # Tunnel Postgres'ile
+rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432  # Kohandatud kohalik port
 ```
 
 Käivita tunnel → ava brauseris `localhost:3000` → elav rakendus kaugserverist.
@@ -174,9 +174,9 @@ Käivita tunnel → ava brauseris `localhost:3000` → elav rakendus kaugserveri
 ### 1. Grand ja fork hoidlad
 
 ```bash
-rdc repo fork --parent my-app -m my-server --tag experiment --up  # Kohene CoW kloon + käivita
+rdc repo fork my-app --tag experiment --up  # Kohene CoW kloon + käivita
 rdc repo list -m my-server                                  # Näitab: my-app (grand) + my-app:experiment (fork)
-rdc repo delete --name my-app:experiment -m my-server  # Kustuta fork, grand puutumata
+rdc repo delete my-app:experiment  # Kustuta fork, grand puutumata
 ```
 
 **Kohene, nullkopeerimisega kloon.** CoW (copy-on-write ehk kirjutamisel kopeerimine). Mikrosekundid, andmeid ei kopeerita. Plokid on jagatud kuni üks pool kirjutab.
@@ -192,32 +192,32 @@ rdc repo delete --name my-app:experiment -m my-server  # Kustuta fork, grand puu
 
 ```bash
 # Lükka hoidla teisele masinale
-rdc repo push --name my-app -m my-server --to backup-server
+rdc repo push my-app --to backup-server
 
 # Lükka ja juuruta automaatselt sihtkohas
-rdc repo push --name my-app -m my-server --to backup-server --up
+rdc backup restore my-app --as my-app -m backup-server --up
 
 # Lükka CRIU kontrollpunktiga (elav migreerimine, säilitab mäluoleku)
-rdc repo push --name my-app -m my-server --to new-server --checkpoint --up
+rdc repo push my-app --to new-server --checkpoint
 
 # Lükka uuele masinale (automaatne provisioneerimine pilvepakkuja kaudu)
-rdc repo push --name my-app -m my-server --to new-server --provision linode --up
+rdc repo push my-app --to new-server --provision linode
 ```
 
 ### 3. Lükka pilvemällu (OneDrive, Google Drive, S3)
 
 ```bash
 # Impordi oma rclone konfiguratsioon mäluhoidla tagaplaanina
-rdc config storage import --file ~/rclone.conf
+rdc storage import ~/rclone.conf
 
 # Loenda saadaolevad mäluhoidlad
 rdc storage list
 
 # Lükka hoidla pilvemällu
-rdc repo push --name my-app -m my-server --to my-s3-backup
+rdc repo push my-app --to my-s3-backup
 
 # Loenda varukoopiad mäluhoidlas
-rdc repo backup list --from my-s3-backup -m my-server
+rdc backup list -m my-server --storage my-s3-backup
 ```
 
 `--to` tuvastab automaatselt, kas sihtkoht on masin või mäluhoidla tagaplaan. Töötab mis tahes rclone'i toetatud pakkujaga: S3, R2, B2, OneDrive, Google Drive, SFTP jne.
@@ -226,13 +226,13 @@ rdc repo backup list --from my-s3-backup -m my-server
 
 ```bash
 # Tõmba hoidla pilvemassinalt oma kohalikku serverisse
-rdc repo pull --name my-app -m my-local-server --from cloud-server
+rdc repo pull my-app@my-local-server --from cloud-server
 
 # Tõmba pilvemälust
-rdc repo pull --name my-app -m my-local-server --from my-s3-backup
+rdc repo pull my-app@my-local-server --from my-s3-backup
 
 # Tõmba ja käivita kohe
-rdc repo pull --name my-app -m my-local-server --from my-s3-backup --up
+rdc repo pull my-app@my-local-server --from my-s3-backup --up
 ```
 
 **Miks tõmmata?** Sinu kohalik masin on NAT taga. Pilv ei saa sulle lükata. Aga sina saad pilve jõuda. Tõmbamine toob hoidla koju.
@@ -248,9 +248,9 @@ rdc repo pull --name my-app -m my-local-server --from my-s3-backup --up
 ### 1. Infrastruktuuri konfiguratsioon
 
 ```bash
-rdc config infra set -m my-server  # Konfigureeri: põhidomeen, avalikud IP-d, pordivahemikud
-rdc config infra show -m my-server  # Vaata konfiguratsiooni
-rdc config infra push -m my-server  # Lükka proksi konfiguratsioon kaugele
+rdc machine infra set my-server  # Konfigureeri: põhidomeen, avalikud IP-d, pordivahemikud
+rdc machine infra show my-server  # Vaata konfiguratsiooni
+rdc machine infra push my-server  # Lükka proksi konfiguratsioon kaugele
 ```
 
 **Kuidas marsruutimine toimib:**
@@ -261,8 +261,8 @@ rdc config infra push -m my-server  # Lükka proksi konfiguratsioon kaugele
 ### 2. Proksi mall
 
 ```bash
-rdc repo admin template apply --name proxy -m my-server -r infra  # Juuruta proksi hoidlasse
-rdc repo up --name infra -m my-server  # Käivita Traefik
+rdc repo admin template apply infra --template proxy  # Juuruta proksi hoidlasse
+rdc repo up infra -m my-server  # Käivita Traefik
 ```
 
 Traefik suunab nüüd välist liiklust kõigile selle masina hoidlatele. Iga konteiner saab HTTPS lõpp-punkti automaatselt.

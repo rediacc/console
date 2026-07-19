@@ -1,4 +1,5 @@
 ---
+sourceHash: "5bdc0ff205ae9c73"
 title: "Installazione"
 description: "Installa la CLI Rediacc su Linux, macOS o Windows. È sufficiente un singolo comando e l'installazione è completata in pochi secondi."
 category: "Guides"

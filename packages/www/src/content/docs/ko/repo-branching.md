@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 41
 language: ko
-sourceHash: "fe334c1c94a0f417"
+sourceHash: "b8bd3176ecabfa4b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -34,7 +34,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 마운트된 작업 포크를 새 변경 불가능한 커밋으로 고정합니다.
 
 ```bash
-rdc repo commit --name <fork> --message "<message>" -m <machine>
+rdc repo commit <fork> --message "<message>"
 ```
 
 | 옵션 | 설명 | 기본값 |
@@ -52,7 +52,7 @@ rdc repo commit --name <fork> --message "<message>" -m <machine>
 작업 포크의 현재 커밋을 가리키는 명명된 브랜치 참조를 생성합니다.
 
 ```bash
-rdc repo branch --branch <name> --name <fork>
+rdc repo branch <fork> --branch <name>
 ```
 
 | 옵션 | 설명 | 기본값 |
@@ -67,8 +67,8 @@ rdc repo branch --branch <name> --name <fork>
 변경 불가능한 커밋(또는 브랜치 팁)을 새 쓰기 가능한 작업 포크로 reflink 복제합니다.
 
 ```bash
-rdc repo checkout --ref <commit> --tag <newFork> -m <machine>
-rdc repo checkout --ref <branchName> --from <fork> --tag <newFork> -m <machine>
+rdc repo checkout <commit> --tag <newFork>
+rdc repo checkout <branchName> --from <fork> --tag <newFork>
 ```
 
 | 옵션 | 설명 | 기본값 |
@@ -87,7 +87,7 @@ rdc repo checkout --ref <branchName> --from <fork> --tag <newFork> -m <machine>
 작업 포크 또는 커밋에서 도달 가능한 커밋 이력을 탐색합니다.
 
 ```bash
-rdc repo log --name <fork> -m <machine>
+rdc repo log <fork>
 ```
 
 | 옵션 | 설명 | 기본값 |
@@ -104,8 +104,8 @@ rdc repo log --name <fork> -m <machine>
 라이브 대상을 직접 변경하지 않고 소스 커밋 또는 포크를 대상 작업 포크에 병합합니다.
 
 ```bash
-rdc repo merge --name <target> --from <source> -m <machine>
-rdc repo merge --name <target> --from <source> --resolve theirs -m <machine>
+rdc repo merge <target> --from <source>
+rdc repo merge <target> --from <source> --resolve theirs
 ```
 
 | 옵션 | 설명 | 기본값 |
@@ -139,12 +139,12 @@ rdc repo gc --apply -m <machine>    # 도달 불가능한 커밋 삭제
 
 도달 가능성은 로컬 config(참조 저장소)에서 계산됩니다. 각 브랜치 팁과 HEAD를 부모 체인 아래로 따라가 도달 가능한 커밋 세트가 결정됩니다. 해당 세트 외부의 머신에 있는 변경 불가능한 커밋은 도달 불가능합니다. 마운트된 객체나 작업 포크는 절대 수집되지 않습니다.
 
-### rdc repo fsck
+### rdc repo admin fsck
 
 머신에 있는 객체에 대해 config 참조를 검증합니다.
 
 ```bash
-rdc repo fsck -m <machine>
+rdc repo admin fsck -m <machine>
 ```
 
 | 옵션 | 설명 | 기본값 |
@@ -158,7 +158,7 @@ rdc repo fsck -m <machine>
 `rdc repo fork --immutable`은 별도의 `commit` 단계 없이 생성 시 새 포크를 읽기 전용으로 표시하여 커밋 동등한 기반을 만듭니다.
 
 ```bash
-rdc repo fork --parent <name> --tag <tag> --immutable -m <machine>
+rdc repo fork <name> --tag <tag> --immutable
 ```
 
 변경 불가능한 포크는 마운트를 거부하여 이미지를 영원히 바이트 안정 상태로 유지합니다. 이것은 베이스가 양쪽 끝에서 동일해야 하는 교차 머신 델타 푸시의 고정된 기반으로 유용합니다. 변경하려면 쓰기 가능한 복사본으로 체크아웃하거나 다시 포크하세요.
@@ -168,28 +168,28 @@ rdc repo fork --parent <name> --tag <tag> --immutable -m <machine>
 ### 작업 포크 커밋
 
 ```bash
-$ rdc repo commit --name myapp:work --message "schema migration applied" -m server-1
+$ rdc repo commit myapp:work --message "schema migration applied"
 Committed 4f3c2a1b9d8e: schema migration applied
 ```
 
 ### 명시적 작성자로 커밋
 
 ```bash
-$ rdc repo commit --name myapp:work --message "nightly snapshot" --author ci-bot -m server-1
+$ rdc repo commit myapp:work --message "nightly snapshot" --author ci-bot
 Committed 7a1b2c3d4e5f: nightly snapshot
 ```
 
 ### 현재 커밋에 브랜치 이름 지정
 
 ```bash
-$ rdc repo branch --branch staging --name myapp:work
+$ rdc repo branch myapp:work --branch staging
 Branch "staging" -> 4f3c2a1b9d8e
 ```
 
 ### 커밋을 새 쓰기 가능한 포크로 체크아웃
 
 ```bash
-$ rdc repo checkout --ref 4f3c2a1b9d8e --tag rollback-test -m server-1
+$ rdc repo checkout 4f3c2a1b9d8e --tag rollback-test
 ```
 
 ### 이름으로 브랜치 팁 체크아웃
@@ -197,13 +197,13 @@ $ rdc repo checkout --ref 4f3c2a1b9d8e --tag rollback-test -m server-1
 `--from`을 사용하면 `--ref` 값이 주어진 작업 포크의 브랜치 이름으로 해석됩니다:
 
 ```bash
-$ rdc repo checkout --ref staging --from myapp:work --tag staging-copy -m server-1
+$ rdc repo checkout staging --from myapp:work --tag staging-copy
 ```
 
 ### 이력 탐색
 
 ```bash
-$ rdc repo log --name myapp:work -m server-1
+$ rdc repo log myapp:work
 commit 4f3c2a1b9d8e
   Author: ci-bot  Date: 2026-05-29T10:14:02Z
   schema migration applied
@@ -217,7 +217,7 @@ commit 9d8e7a1b2c3d
 `--json`은 구조화된 탐색을 출력하며, 최신 항목이 먼저 나옵니다:
 
 ```bash
-$ rdc repo log --name myapp:work --json -m server-1
+$ rdc repo log myapp:work -o json
 {
   "success": true,
   "start": "4f3c2a1b9d8e",
@@ -239,8 +239,8 @@ $ rdc repo log --name myapp:work --json -m server-1
 `rdc repo diff`는 copy-on-write 조상을 공유하기 때문에 어떤 두 커밋 사이에서도 작동합니다. 커밋 하나를 체크아웃한 다음 다른 커밋과 비교하세요:
 
 ```bash
-$ rdc repo checkout --ref 4f3c2a1b9d8e --tag review -m server-1
-$ rdc repo diff --name review --base myapp:work -m server-1
+$ rdc repo checkout 4f3c2a1b9d8e --tag review
+$ rdc repo diff review --base myapp:work
 M  db/schema.sql
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -251,7 +251,7 @@ M  db/schema.sql
 ### 검토된 라인 병합
 
 ```bash
-$ rdc repo merge --name myapp:main --from myapp:work -m server-1
+$ rdc repo merge myapp:main --from myapp:work
 Merged myapp:work into myapp:main
 ```
 
@@ -260,7 +260,7 @@ Merged myapp:work into myapp:main
 마운트되었거나 실행 중인 대상은 `--force`가 없으면 거부되며, `--force`는 먼저 종료합니다:
 
 ```bash
-$ rdc repo merge --name myapp:main --from myapp:work --force -m server-1
+$ rdc repo merge myapp:main --from myapp:work --force
 Merged myapp:work into myapp:main
 ```
 
@@ -269,7 +269,7 @@ Merged myapp:work into myapp:main
 동일한 커밋에서 체크아웃된 두 포크(`feature`와 `hotfix`)가 각각 일부 파일을 변경했습니다. `--resolve theirs`는 소스(`hotfix`)를 대상(`feature`)에 적용합니다. 한쪽에서만 변경된 파일은 그쪽에서 가져오고, 양쪽에서 변경된 파일은 소스로 해결됩니다. 베이스는 공유 조상에서 자동으로 감지됩니다(`--base`로 지정할 수도 있음):
 
 ```bash
-$ rdc repo merge --name myapp:feature --from myapp:hotfix --resolve theirs -m server-1
+$ rdc repo merge myapp:feature --from myapp:hotfix --resolve theirs
 Merged myapp:hotfix into myapp:feature (three-way); 1 conflict(s) resolved --theirs: [config/app.yaml]
 ```
 
@@ -278,7 +278,7 @@ Merged myapp:hotfix into myapp:feature (three-way); 1 conflict(s) resolved --the
 ### 직접 변경 불가능한 기반 생성
 
 ```bash
-$ rdc repo fork --parent myapp --tag baseline-v1 --immutable -m server-1
+$ rdc repo fork myapp --tag baseline-v1 --immutable
 ```
 
 ## 델타 푸시 및 풀
@@ -289,19 +289,19 @@ $ rdc repo fork --parent myapp --tag baseline-v1 --immutable -m server-1
 
 ```bash
 # 첫 번째 푸시는 전체 전송입니다. 양쪽 끝에 재사용 가능한 기반을 유지합니다.
-$ rdc repo push --name myapp:work --to-machine backup-1 -m server-1
+$ rdc repo push myapp:work --to backup-1
 
 # 로컬 변경 후 다음 푸시는 플래그 없이 변경된 블록만 전송합니다.
-$ rdc repo push --name myapp:work --to-machine backup-1 -m server-1
+$ rdc repo push myapp:work --to backup-1
 
 # 명시적 베이스 지정 (양쪽 머신에 있는 변경 불가능한 커밋).
-$ rdc repo push --name myapp:work --to-machine backup-1 --delta-base 4f3c2a1b9d8e -m server-1
+$ rdc repo push myapp:work --to backup-1 --delta-base 4f3c2a1b9d8e
 
 # 델타는 역방향으로도 작동합니다. 머신 소스에서 변경된 블록만 풀.
-$ rdc repo pull --name myapp:work --from-machine backup-1 --delta-base 4f3c2a1b9d8e -m server-1
+$ rdc repo pull myapp:work --from backup-1 --delta-base 4f3c2a1b9d8e
 
 # 기존 로컬 리포지터리를 --force로 재풀 (덮어쓰기).
-$ rdc repo pull --name myapp:work --from-machine backup-1 --force -m server-1
+$ rdc repo pull myapp:work --from backup-1 --force
 ```
 
 델타 전송은 머신 간(FIEMAP 기반이 있는 원격)에만 적용됩니다. 클라우드 객체 스토리지로의 푸시는 항상 전체 이미지를 전송합니다. 베이스는 양쪽 끝에서 바이트 동일해야 하며, 이것이 바로 변경 불가능한 커밋 또는 `--immutable` 포크가 보장하는 것입니다.

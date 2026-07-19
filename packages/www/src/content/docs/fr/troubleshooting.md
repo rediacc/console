@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 10
 language: fr
-sourceHash: "a1c58ae1fe3d0514"
+sourceHash: "429b4004d99c37e6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -74,7 +74,7 @@ CRIU est le cas connu qui déclenche AppArmor. Renet définit automatiquement `s
 
 ### Module btrfs manquant (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)
 
-Si `rdc config machine setup` ou `renet system check-btrfs` échoue avec :
+Si `rdc machine setup` ou `renet system check-btrfs` échoue avec :
 
 ```
 Module btrfs not found
@@ -96,13 +96,13 @@ Module btrfs not found
 - Consultez les journaux des conteneurs via le socket Docker du dépôt :
 
 ```bash
-rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
+rdc repo logs my-app -c <container-name>
 ```
 
 Ou affichez tous les conteneurs :
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## Erreurs de permission refusée
@@ -117,7 +117,7 @@ Chaque dépôt dispose de son propre Docker daemon. Lorsque vous exécutez des c
 
 ```bash
 # Avec rdc term (configuré automatiquement) :
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect my-app -c "docker ps"
 
 # Ou manuellement avec le socket :
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -134,7 +134,7 @@ C'est intentionnel. Le modèle réseau de Rediacc est **le réseau hôte pour ch
 **Pour obtenir un accès réseau dans un conteneur ad hoc, utilisez le réseau hôte :**
 
 ```bash
-# À l'intérieur d'un shell de dépôt (rdc term connect -m <machine> -r <repo>)
+# À l'intérieur d'un shell de dépôt (rdc term connect <repo>)
 docker run --rm --network host -it ubuntu bash
 # Désormais apt update, curl, pip install fonctionnent tous.
 ```
@@ -183,7 +183,7 @@ Si `rdc term` ne parvient pas à ouvrir une fenêtre de terminal :
 
 - Utilisez le mode en ligne avec `-c` pour exécuter des commandes directement :
   ```bash
-  rdc term connect -m server-1 -c "ls -la"
+  rdc term connect server-1 -c "ls -la"
   ```
 - Forcez un terminal externe avec `--external` si le mode en ligne pose des problèmes
 - Sous Linux, assurez-vous d'avoir installé `gnome-terminal`, `xterm` ou un autre émulateur de terminal

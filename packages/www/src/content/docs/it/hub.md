@@ -1,4 +1,5 @@
 ---
+sourceHash: "6fa16a1c73af497e"
 title: "Hub"
 description: "Fornisci ambienti containerizzati per utente con daemon Docker per utente, selezione multi-template, checkpoint/restore CRIU, log di audit e garbage collection dei data-root. È più sicuro degli ambienti condivisi tradizionali."
 category: "Guides"

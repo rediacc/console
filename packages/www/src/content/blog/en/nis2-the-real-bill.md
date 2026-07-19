@@ -95,7 +95,7 @@ Rediacc is one control plane with a unified audit log, replacing four of the fiv
 
 **Test data and full-stack cloning** runs on BTRFS reflink. The fork is constant-time, no matter the repo size. Full-stack means data, configs, containers, and services. We forked a 128 GB repo in 7.2 seconds in our [PocketOS test](/en/blog/i-tested-rediacc-against-the-pocketos-incident). The fork is current production, not a stripped-down staging copy. See [Risk-Free Upgrades](/en/docs/risk-free-upgrades).
 
-**Instant restore**: `rdc repo backup pull` from any rclone target into a fresh fork, brought up under a fork-specific subdomain covered by the parent repository's wildcard certificate. No DNS scramble, no certificate dance.
+**Instant restore**: `rdc repo pull` from any rclone target into a fresh fork, brought up under a fork-specific subdomain covered by the parent repository's wildcard certificate. No DNS scramble, no certificate dance.
 
 **Unified audit log.** 70+ event types across the control plane. They cover sign-ins, API tokens, config writes, repo lifecycle, backup, sync, terminal sessions, and machine ops. The chain is hash-linked on the operator workstation. `rdc audit verify` checks it end to end.
 
@@ -146,7 +146,7 @@ Five contracts. Two of them (Veeam, Veeam Cloud Connect) are with the same vendo
 - Drata stays (EUR 18,000)
 - The homegrown test-data scheme is retired; the SRE half-day every two weeks goes to running the weekly effectiveness routine instead
 
-Data-plane consolidation: 5 line items down to 1 (Rediacc) plus the existing IaaS line. The supplier register's data-plane section drops from 5 entries to 2. The continuous-effectiveness story is now weekly drills with hash-chained audit log evidence; the recovery-test story is now backed by `rdc machine backup status` output and a per-week restore drill.
+Data-plane consolidation: 5 line items down to 1 (Rediacc) plus the existing IaaS line. The supplier register's data-plane section drops from 5 entries to 2. The continuous-effectiveness story is now weekly drills with hash-chained audit log evidence; the recovery-test story is now backed by `rdc backup status` output and a per-week restore drill.
 
 The numbers are illustrative, not promises. Your stack is different. The shape, four to five line items collapsing into one plus existing IaaS, is what a real buyer conversation looks like.
 

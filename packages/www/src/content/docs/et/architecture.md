@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: et
-sourceHash: "b1f9e2e3bba92912"
+sourceHash: "16b02000a82f3acd"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -48,7 +48,7 @@ Kogu olek elab tööjaamal konfiguratsioonifailis (nt `~/.config/rediacc/rediacc
 
 ## Kasutaja rediacc
 
-Kui käivitad `rdc config machine setup`, loob renet kaugserverisse süsteemikasutaja nimega `rediacc`:
+Kui käivitad `rdc machine setup`, loob renet kaugserverisse süsteemikasutaja nimega `rediacc`:
 
 - **UID**: 7111
 - **Shell**: `/sbin/nologin` (ei saa SSH kaudu sisse logida)

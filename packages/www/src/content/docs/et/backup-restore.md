@@ -4,7 +4,7 @@ description: "Varunda krüpteeritud repositooriumeid mis tahes rclone-ühilduvas
 category: "Guides"
 order: 7
 language: et
-sourceHash: "d800519615085ee9"
+sourceHash: "659b41577a6a220c"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -21,7 +21,7 @@ Enne varukoopiaid, registreeri salvestusteenuse pakkuja. Rediacc toetab mis tahe
 Kui sul on juba rclone-kaughoidla konfigureeritud:
 
 ```bash
-rdc config storage import --file rclone.conf
+rdc storage import rclone.conf
 ```
 
 See impordib salvestuskonfiguratsioone rclone-konfiguratsioonifailist praegusesse konfiguratsiooni. Toetatud tüübid: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob ja Swift.
@@ -29,7 +29,7 @@ See impordib salvestuskonfiguratsioone rclone-konfiguratsioonifailist praegusess
 ### Salvestuste vaatamine
 
 ```bash
-rdc config storage list
+rdc storage list
 ```
 
 ## Varukoopia saatmine
@@ -37,10 +37,10 @@ rdc config storage list
 Saada repositooriumi varukoopia välisesse salvestusse:
 
 ```bash
-rdc repo push --name my-app -m server-1 --to my-storage
+rdc repo push my-app --to my-storage
 ```
 
-Varukoopia jõuab salvestuse `hot/` kausta, kui repositoorium on saatmise ajal ühendatud, ja `cold/` kausta, kui see on lahti ühendatud. See on sama paigutus, mida ajastatud varundamine kasutab, seega `rdc repo backup list` näitab kõiki varukoopiad ühes tabelis.
+Varukoopia jõuab salvestuse `hot/` kausta, kui repositoorium on saatmise ajal ühendatud, ja `cold/` kausta, kui see on lahti ühendatud. See on sama paigutus, mida ajastatud varundamine kasutab, seega `rdc backup list` näitab kõiki varukoopiad ühes tabelis.
 
 | Valik | Kirjeldus |
 |--------|-------------|
@@ -60,7 +60,7 @@ Varukoopia jõuab salvestuse `hot/` kausta, kui repositoorium on saatmise ajal �
 Tõmba repositooriumi varukoopia välisest salvestusest:
 
 ```bash
-rdc repo pull --name my-app -m server-1 --from my-storage
+rdc repo pull my-app --from my-storage
 ```
 
 Pull kontrollib alati enne kirjutamist, kas siht-repositoorium on ühendatud. Kui see pole ühendatud, katkestatakse toiming.
@@ -80,7 +80,7 @@ Pull kontrollib alati enne kirjutamist, kas siht-repositoorium on ühendatud. Ku
 Vaata salvestuskohas saadaolevaid varukoopiad:
 
 ```bash
-rdc repo backup list --from my-storage -m server-1
+rdc backup list -m server-1 --storage my-storage
 ```
 
 Väljund on ühtne tabel, mis ühendab mõlemad [ajastatud varundamise kaustad](#ajastatud-varundamine) (`hot/` ja `cold/`), et näeksid kõiki varukoopiad ühes vaates:
@@ -96,8 +96,8 @@ Väljund on ühtne tabel, mis ühendab mõlemad [ajastatud varundamise kaustad](
 Ühe režiimis süvitsi minekuks kasuta `--path`:
 
 ```bash
-rdc repo backup list --from my-storage -m server-1 --path hot
-rdc repo backup list --from my-storage -m server-1 --path cold
+rdc backup list -m server-1 --storage my-storage --path hot
+rdc backup list -m server-1 --storage my-storage --path cold
 ```
 
 ### Salvestuse paigutus
@@ -184,7 +184,7 @@ Külm varundamine käib kolmes faasis kaasatud repo kohta: **peatus → hetktõm
 
 - `rdc machine status <machine> --containers` näitab töötavat olekut. Võrdle oodatud hulgaga.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` masinas. Vaata seda käsuga `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` koos vana `startedAt`-ga tähendab, et viimane varukoopia ei lõppenud puhtalt.
-- Logid renet-i varundamiskäivitusest (`journalctl -u renet-*` või otsene `rdc machine backup schedule` kutse) väljastavad lõplik kokkuvõtterida kujul `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Mittevühi `failed_repos` on grep-sihtmärk.
+- Logid renet-i varundamiskäivitusest (`journalctl -u renet-*` või otsene `rdc backup schedule` kutse) väljastavad lõplik kokkuvõtterida kujul `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Mittevühi `failed_repos` on grep-sihtmärk.
 
 ### Külma varundamise seisakuaja hindamine
 
@@ -248,8 +248,7 @@ Katkestused on ohutud. Teenuse peatamine (või masina taaskäivitamine) paneb va
 Kanooniline vaikeväärtus on kahe strateegiaga jaotus: kiire tunnine hot-voog, mis hõlmab kõiki repo-sid, ja aeglasem iganädalane cold-voog, mis teeb rakenduse-ühilduvaid hetktõmmiseid. Kaks strateegiat kirjutavad erinevatesse salvestuse alamkaustadesse (`hot/` ja `cold/`), nii et varukopiad ei segune kunagi.
 
 ```bash
-rdc config backup-strategy set \
-  --name hourly-hot \
+rdc backup strategy set hourly-hot \
   --destination my-storage \
   --cron "0 * * * *" \
   --mode hot \
@@ -258,8 +257,7 @@ rdc config backup-strategy set \
 ```
 
 ```bash
-rdc config backup-strategy set \
-  --name weekly-cold \
+rdc backup strategy set weekly-cold \
   --destination my-storage \
   --cron "15 3 * * 0" \
   --mode cold \
@@ -283,14 +281,14 @@ rdc config backup-strategy set \
 ### Strateegiate vaatamine
 
 ```bash
-rdc config backup-strategy list
-rdc config backup-strategy show --name weekly-cold
+rdc backup strategy list
+rdc backup strategy show weekly-cold
 ```
 
 ### Strateegia eemaldamine
 
 ```bash
-rdc config backup-strategy remove --name weekly-cold
+rdc backup strategy remove weekly-cold
 ```
 
 ### Strateegiate sidumine masinaga
@@ -330,8 +328,7 @@ Igal strateegial võivad olla `--include` ja `--exclude` filtrid. Repositooriumi
 
 ```bash
 # Kuum strateegia: varundage kõik tunnis
-rdc config backup-strategy set \
-  --name hourly-hot \
+rdc backup strategy set hourly-hot \
   --destination my-storage \
   --cron "0 * * * *" \
   --mode hot \
@@ -339,8 +336,7 @@ rdc config backup-strategy set \
   --enable
 
 # Külm strateegia: varundage kõik nädalas, välja arvatud suur tuletatud andmestik
-rdc config backup-strategy set \
-  --name weekly-cold \
+rdc backup strategy set weekly-cold \
   --destination my-storage \
   --cron "15 3 * * 0" \
   --mode cold \
@@ -359,7 +355,7 @@ Jätke repositoorium kõrgsageduslikust käivitamisest välja, kui:
 
 > **Kui andmed on puhtalt taasgenereeritavad**, kaaluge, kas peate neid üldse varundama. Alternatiiviks on varundada ainult toorallikate sisendid (CSV-dumpid selles näites) ja jätta tuletatud koopia täielikult vahele. Toorallikate sisendite nädalane külm varukoopia on palju väiksem ja taaste jaoks täiesti piisav.
 
-Repositooriumid, mis ei ole kummastki strateegiast välja jäetud, ilmuvad mõlemas salvestuse alamkaustas `hot/` ja `cold/`. `rdc repo backup list` ühendatud väljund näitab mõlemat rida, nii et saate kontrollida, millised vood milliseid repositooriumeid katavad.
+Repositooriumid, mis ei ole kummastki strateegiast välja jäetud, ilmuvad mõlemas salvestuse alamkaustas `hot/` ja `cold/`. `rdc backup list` ühendatud väljund näitab mõlemat rida, nii et saate kontrollida, millised vood milliseid repositooriumeid katavad.
 
 ## Varundamistoimingud
 
@@ -368,8 +364,8 @@ Repositooriumid, mis ei ole kummastki strateegiast välja jäetud, ilmuvad mõle
 Lükka seotud strateegiad masinale systemd-taimeritena:
 
 ```bash
-rdc machine backup schedule -m server-1
-rdc machine backup schedule -m server-1 --dry-run
+rdc backup schedule -m server-1
+rdc backup schedule -m server-1 --dry-run
 ```
 
 Juurutamine on oleku sobitaja. See loeb masinalt praegused üksuse failid ja systemd oleku, võrdleb konfiguratsioonist tuleneva vastu (SHA-256 faili kohta) ja puudutab ainult üksusi, mille sisu tegelikult muutus. Uuesti käivitamine ilma konfiguratsioonimuutusteta on no-op: pole kirjutusi, pole `daemon-reload`-i, pole taimeri müra.
@@ -385,8 +381,8 @@ Kui strateegia, mida kavatsed uuendada või eemaldada, puhul on käimas varukoop
 Käivita varukoopia koheselt ilma taimeri ootamiseta. Töötab isegi kui taimereid pole juurutatud, kasutades ad-hoc täitmiseks `systemd-run`-i:
 
 ```bash
-rdc machine backup now -m server-1
-rdc machine backup now -m server-1 --strategy weekly-cold
+rdc backup run -m server-1
+rdc backup run weekly-cold -m server-1
 ```
 
 ### Varundamise oleku vaatamine
@@ -394,15 +390,15 @@ rdc machine backup now -m server-1 --strategy weekly-cold
 Näita varundamise taimerite praegust olekut ja hiljutisi töö tulemusi:
 
 ```bash
-rdc machine backup status -m server-1
-rdc machine backup status -m server-1 --strategy hourly-hot
+rdc backup status -m server-1
+rdc backup status hourly-hot -m server-1
 ```
 
 ### Käimasoleva varundamise tühistamine
 
 ```bash
-rdc machine backup cancel -m server-1
-rdc machine backup cancel -m server-1 --strategy weekly-cold
+rdc backup cancel -m server-1
+rdc backup cancel weekly-cold -m server-1
 ```
 
 ## Repositooriumi migreerimine
@@ -410,7 +406,7 @@ rdc machine backup cancel -m server-1 --strategy weekly-cold
 Liiguta repositoorium ühelt masinalt teisele:
 
 ```bash
-rdc repo migrate --name my-app --from server-1 --to server-2
+rdc repo migrate my-app@server-1 --to server-2
 ```
 
 | Valik | Kirjeldus |
@@ -430,7 +426,7 @@ Migreerimine kannab krüpteeritud repositooriumi andmed üle rsync kaudu. Lähte
 Sirvi salvestuskoha sisu:
 
 ```bash
-rdc storage browse --name my-storage
+rdc storage browse my-storage
 ```
 
 ## Parimad praktikad

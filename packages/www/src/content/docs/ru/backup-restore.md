@@ -4,7 +4,7 @@ description: "Резервное копирование зашифрованны
 category: Guides
 order: 7
 language: ru
-sourceHash: "d800519615085ee9"
+sourceHash: "659b41577a6a220c"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -21,7 +21,7 @@ Rediacc создает резервные копии зашифрованных 
 Если у вас уже настроен удаленный ресурс rclone:
 
 ```bash
-rdc config storage import --file rclone.conf
+rdc storage import rclone.conf
 ```
 
 Эта команда импортирует конфигурации хранилища из файла конфигурации rclone в текущую конфигурацию. Поддерживаемые типы: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob и Swift.
@@ -29,7 +29,7 @@ rdc config storage import --file rclone.conf
 ### Просмотр хранилищ
 
 ```bash
-rdc config storage list
+rdc storage list
 ```
 
 ## Отправка резервной копии
@@ -37,10 +37,10 @@ rdc config storage list
 Отправьте резервную копию репозитория во внешнее хранилище:
 
 ```bash
-rdc repo push --name my-app -m server-1 --to my-storage
+rdc repo push my-app --to my-storage
 ```
 
-Резервная копия попадает в папку `hot/` хранилища, если репозиторий смонтирован в момент отправки, и в `cold/`, если не смонтирован. Эта раскладка совпадает с той, что используют запланированные резервные копии, поэтому `rdc repo backup list` показывает все резервные копии в одной таблице.
+Резервная копия попадает в папку `hot/` хранилища, если репозиторий смонтирован в момент отправки, и в `cold/`, если не смонтирован. Эта раскладка совпадает с той, что используют запланированные резервные копии, поэтому `rdc backup list` показывает все резервные копии в одной таблице.
 
 | Опция | Описание |
 |-------|----------|
@@ -60,7 +60,7 @@ rdc repo push --name my-app -m server-1 --to my-storage
 Получите резервную копию репозитория из внешнего хранилища:
 
 ```bash
-rdc repo pull --name my-app -m server-1 --from my-storage
+rdc repo pull my-app --from my-storage
 ```
 
 Команда pull всегда проверяет, смонтирован ли целевой репозиторий перед записью. Если он не смонтирован, операция прерывается.
@@ -80,7 +80,7 @@ rdc repo pull --name my-app -m server-1 --from my-storage
 Просмотрите доступные резервные копии в хранилище:
 
 ```bash
-rdc repo backup list --from my-storage -m server-1
+rdc backup list -m server-1 --storage my-storage
 ```
 
 Вывод представляет собой объединённую таблицу, которая сводит обе [папки запланированных резервных копий](#запланированное-резервное-копирование) (`hot/` и `cold/`), так что вы видите каждую резервную копию в одном представлении:
@@ -96,8 +96,8 @@ rdc repo backup list --from my-storage -m server-1
 Чтобы перейти к одному режиму, передайте `--path`:
 
 ```bash
-rdc repo backup list --from my-storage -m server-1 --path hot
-rdc repo backup list --from my-storage -m server-1 --path cold
+rdc backup list -m server-1 --storage my-storage --path hot
+rdc backup list -m server-1 --storage my-storage --path cold
 ```
 
 ### Раскладка хранилища
@@ -184,7 +184,7 @@ Rediacc использует именованные стратегии резе�
 
 - `rdc machine status <machine> --containers` показывает состояние выполнения. Сравните с ожидаемым набором.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` на машине. Проверьте через `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` с устаревшим `startedAt` означает, что последнее резервное копирование не завершилось корректно.
-- Логи запуска резервного копирования renet (`journalctl -u renet-*` или прямой вызов `rdc machine backup schedule`) содержат итоговую строку вида `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Непустой `failed_repos` является целевым шаблоном для grep.
+- Логи запуска резервного копирования renet (`journalctl -u renet-*` или прямой вызов `rdc backup schedule`) содержат итоговую строку вида `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Непустой `failed_repos` является целевым шаблоном для grep.
 
 ### Оценка простоя при холодном резервном копировании
 
@@ -248,8 +248,7 @@ concurrency = min(repoCount, max(2, NumCPU/2), 8)
 Стандартная конфигурация по умолчанию разделяет на две стратегии: быстрый почасовой hot-поток, охватывающий каждый репозиторий, и более медленный еженедельный cold-поток, делающий согласованные на уровне приложения снимки. Две стратегии пишут в разные подпапки хранилища (`hot/` и `cold/`), так что резервные копии никогда не смешиваются.
 
 ```bash
-rdc config backup-strategy set \
-  --name hourly-hot \
+rdc backup strategy set hourly-hot \
   --destination my-storage \
   --cron "0 * * * *" \
   --mode hot \
@@ -258,8 +257,7 @@ rdc config backup-strategy set \
 ```
 
 ```bash
-rdc config backup-strategy set \
-  --name weekly-cold \
+rdc backup strategy set weekly-cold \
   --destination my-storage \
   --cron "15 3 * * 0" \
   --mode cold \
@@ -283,14 +281,14 @@ rdc config backup-strategy set \
 ### Просмотр стратегий
 
 ```bash
-rdc config backup-strategy list
-rdc config backup-strategy show --name weekly-cold
+rdc backup strategy list
+rdc backup strategy show weekly-cold
 ```
 
 ### Удаление стратегии
 
 ```bash
-rdc config backup-strategy remove --name weekly-cold
+rdc backup strategy remove weekly-cold
 ```
 
 ### Привязка стратегий к машине
@@ -330,8 +328,7 @@ rdc config backup-strategy remove --name weekly-cold
 
 ```bash
 # Горячая стратегия: резервное копирование всего ежечасно
-rdc config backup-strategy set \
-  --name hourly-hot \
+rdc backup strategy set hourly-hot \
   --destination my-storage \
   --cron "0 * * * *" \
   --mode hot \
@@ -339,8 +336,7 @@ rdc config backup-strategy set \
   --enable
 
 # Холодная стратегия: резервное копирование всего еженедельно, исключая большой производный набор данных
-rdc config backup-strategy set \
-  --name weekly-cold \
+rdc backup strategy set weekly-cold \
   --destination my-storage \
   --cron "15 3 * * 0" \
   --mode cold \
@@ -359,7 +355,7 @@ rdc config backup-strategy set \
 
 > **Если данные полностью воспроизводимы**, подумайте, нужно ли вообще делать их резервную копию. Альтернатива: создавать резервную копию только необработанных исходных данных (CSV-файлов в данном примере) и полностью пропустить производную копию. Еженедельная холодная резервная копия исходных данных намного меньше и полностью достаточна для восстановления.
 
-Репозитории, не исключённые ни из одной стратегии, отображаются как в подпапке `hot/`, так и в `cold/`. Объединённый вывод `rdc repo backup list` показывает обе строки, чтобы вы могли проверить, какие потоки покрывают какие репозитории.
+Репозитории, не исключённые ни из одной стратегии, отображаются как в подпапке `hot/`, так и в `cold/`. Объединённый вывод `rdc backup list` показывает обе строки, чтобы вы могли проверить, какие потоки покрывают какие репозитории.
 
 ## Операции резервного копирования
 
@@ -368,8 +364,8 @@ rdc config backup-strategy set \
 Отправьте привязанные стратегии на машину в виде systemd-таймеров:
 
 ```bash
-rdc machine backup schedule -m server-1
-rdc machine backup schedule -m server-1 --dry-run
+rdc backup schedule -m server-1
+rdc backup schedule -m server-1 --dry-run
 ```
 
 Развёртывание является реконсилятором состояния. Оно читает текущие юнит-файлы и состояние systemd на машине, сравнивает их с тем, что произвела бы конфигурация (SHA-256 на файл), и трогает только те юниты, содержимое которых действительно изменилось. Повторный запуск без изменений конфигурации не производит действий: нет записей, нет `daemon-reload`, нет колебаний таймеров.
@@ -385,8 +381,8 @@ rdc machine backup schedule -m server-1 --dry-run
 Запустить резервное копирование немедленно, не дожидаясь таймера. Работает даже без развернутых таймеров, используя `systemd-run` для разовых запусков:
 
 ```bash
-rdc machine backup now -m server-1
-rdc machine backup now -m server-1 --strategy weekly-cold
+rdc backup run -m server-1
+rdc backup run weekly-cold -m server-1
 ```
 
 ### Просмотр статуса резервного копирования
@@ -394,15 +390,15 @@ rdc machine backup now -m server-1 --strategy weekly-cold
 Отображает текущий статус таймеров резервного копирования и результаты последних задач:
 
 ```bash
-rdc machine backup status -m server-1
-rdc machine backup status -m server-1 --strategy hourly-hot
+rdc backup status -m server-1
+rdc backup status hourly-hot -m server-1
 ```
 
 ### Отмена выполняющегося резервного копирования
 
 ```bash
-rdc machine backup cancel -m server-1
-rdc machine backup cancel -m server-1 --strategy weekly-cold
+rdc backup cancel -m server-1
+rdc backup cancel weekly-cold -m server-1
 ```
 
 ## Миграция репозитория
@@ -410,7 +406,7 @@ rdc machine backup cancel -m server-1 --strategy weekly-cold
 Перенос репозитория с одной машины на другую:
 
 ```bash
-rdc repo migrate --name my-app --from server-1 --to server-2
+rdc repo migrate my-app@server-1 --to server-2
 ```
 
 | Опция | Описание |
@@ -430,7 +426,7 @@ rdc repo migrate --name my-app --from server-1 --to server-2
 Просмотрите содержимое хранилища:
 
 ```bash
-rdc storage browse --name my-storage
+rdc storage browse my-storage
 ```
 
 ## Лучшие практики

@@ -1,4 +1,5 @@
 ---
+sourceHash: "5bdc0ff205ae9c73"
 title: "설치"
 description: "Linux, macOS, 또는 Windows에 Rediacc CLI를 설치합니다."
 category: "Guides"

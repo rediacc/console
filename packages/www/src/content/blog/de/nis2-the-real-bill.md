@@ -15,7 +15,7 @@ tags:
   - mittelstand
 featured: false
 language: de
-sourceHash: 29fbcbffd8a304bc
+sourceHash: "00ae2b4e6f58acb5"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -101,7 +101,7 @@ Rediacc ist eine Control Plane mit einem einheitlichen Audit-Log, die die Kernfu
 
 **Testdaten und Full-Stack-Klonen** läuft auf BTRFS-Reflink. Der Fork ist zeitkonstant, unabhängig von der Repository-Größe. Full-Stack bedeutet Daten, Konfigurationen, Container und Dienste. Ein 128-GB-Repository wurde in 7,2 Sekunden in unserem [PocketOS-Test](/de/blog/i-tested-rediacc-against-the-pocketos-incident) geforkt. Der Fork ist aktuelle Produktion, keine abgespeckte Staging-Kopie. Siehe [Risikofreie Upgrades](/de/docs/risk-free-upgrades).
 
-**Sofortwiederherstellung**: `rdc repo backup pull` von einem beliebigen rclone-Ziel in einen frischen Fork, der unter einer Fork-spezifischen Subdomain bereitgestellt wird, die durch das Wildcard-Zertifikat des übergeordneten Repositorys abgedeckt ist. Kein DNS-Durcheinander, kein Zertifikatstanz.
+**Sofortwiederherstellung**: `rdc repo pull` von einem beliebigen rclone-Ziel in einen frischen Fork, der unter einer Fork-spezifischen Subdomain bereitgestellt wird, die durch das Wildcard-Zertifikat des übergeordneten Repositorys abgedeckt ist. Kein DNS-Durcheinander, kein Zertifikatstanz.
 
 **Einheitliches Audit-Log.** Mehr als 70 Ereignistypen über die gesamte Control Plane. Sie erfassen Anmeldungen, API-Token, Konfigurations-Writes, Repository-Lifecycle, Backup, Sync, Terminal-Sitzungen und Maschinenoperationen. Die Kette ist hash-verknüpft auf der Workstation des Betreibers. `rdc audit verify` prüft sie von Ende zu Ende.
 
@@ -152,7 +152,7 @@ Fünf Verträge. Zwei davon (Veeam, Veeam Cloud Connect) sind beim gleichen Anbi
 - Drata bleibt (EUR 18.000)
 - Das selbst gebaute Testdaten-Schema wird abgelöst; der halbe SRE-Tag alle zwei Wochen fließt stattdessen in die wöchentliche Wirksamkeitsroutine
 
-Datenebenen-Konsolidierung: 5 Posten auf 1 (Rediacc) plus die bestehende IaaS-Zeile. Der Datenebenen-Abschnitt des Lieferantenregisters sinkt von 5 auf 2 Einträge. Die kontinuierliche Wirksamkeitsgeschichte besteht jetzt aus wöchentlichen Übungen mit hash-verketteten Audit-Log-Nachweisen; die Wiederherstellungstest-Geschichte wird jetzt durch `rdc machine backup status`-Ausgabe und eine wöchentliche Restore-Übung untermauert.
+Datenebenen-Konsolidierung: 5 Posten auf 1 (Rediacc) plus die bestehende IaaS-Zeile. Der Datenebenen-Abschnitt des Lieferantenregisters sinkt von 5 auf 2 Einträge. Die kontinuierliche Wirksamkeitsgeschichte besteht jetzt aus wöchentlichen Übungen mit hash-verketteten Audit-Log-Nachweisen; die Wiederherstellungstest-Geschichte wird jetzt durch `rdc backup status`-Ausgabe und eine wöchentliche Restore-Übung untermauert.
 
 Die Zahlen sind illustrativ, keine Versprechen. Ihr Stack ist anders. Die Form, vier bis fünf Posten, die sich zu einem plus bestehender IaaS-Zeile zusammenführen, ist das, wie ein echtes Einkäufergespräch aussieht.
 

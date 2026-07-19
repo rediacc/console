@@ -4,7 +4,7 @@ description: "Das ist der Knackpunkt bei SOC 2: Auditoren brauchen Nachweise, da
 category: "Legal"
 order: 2
 language: de
-sourceHash: "e03bef0cead86ab7"
+sourceHash: "28b4309f81f43d8d"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -18,7 +18,7 @@ Referenz: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-a
 |---------------|-----------|-------------------|
 | **Sicherheit** (CC6) | Logische Zugriffskontrollen, Verschlüsselung | LUKS2 AES-256-Verschlüsselung im Ruhezustand. Anmeldedaten werden ausschließlich in der lokalen Konfiguration des Operators (`~/.config/rediacc/`) gespeichert, nie auf dem Server. SSH-Schlüssel-basierter Zugang. Isolierte Docker Daemons pro Repository. |
 | **Verfügbarkeit** (A1) | Systemwiederherstellung und Resilienz | `rdc repo push/pull` mit verschlüsselten Offsite-Kopien auf SSH, S3, B2, Azure oder GDrive. CoW-Snapshots für sofortiges Rollback. Fork-basierte Upgrades für Änderungen ohne Ausfallzeit. |
-| **Verarbeitungsintegrität** (PI1) | Genaue und vollständige Verarbeitung | Deterministische Rediaccfile-Lebenszyklus-Hooks (`up`/`down`) gewährleisten konsistente Deployments. `rdc repo validate` überprüft Repository-Integrität und Backup-Gesundheit nach unerwarteten Abschaltungen oder Backup-Operationen. |
+| **Verarbeitungsintegrität** (PI1) | Genaue und vollständige Verarbeitung | Deterministische Rediaccfile-Lebenszyklus-Hooks (`up`/`down`) gewährleisten konsistente Deployments. `rdc repo admin validate` überprüft Repository-Integrität und Backup-Gesundheit nach unerwarteten Abschaltungen oder Backup-Operationen. |
 | **Vertraulichkeit** (C1) | Datenschutz vor unbefugtem Zugriff | Pro-Repository-Verschlüsselung mit einzigartigen LUKS-Anmeldedaten. Netzwerkisolation via iptables, separate Docker Daemons und Loopback-IP-Subnetze. Container verschiedener Repositories können sich nicht sehen. Zero-Knowledge-Config-Store verschlüsselt Configs clientseitig vor dem Upload. Der Server speichert nur opake Blobs, die er nicht entschlüsseln kann. |
 | **Datenschutz** (P1-P8) | Umgang mit personenbezogenen Daten | Self-Hosted: kein Datenabfluss während Operationen. Audit-Trail für alle Datenzugriffe. Verschlüsselungs-Key-Management unter Kundenkontrollen. Config Store verwendet Split-Key-Ableitung (Passkey PRF + Server-Geheimnis), sodass keine Partei allein Zugang zu den Daten hat. |
 

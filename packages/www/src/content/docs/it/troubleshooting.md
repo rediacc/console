@@ -4,7 +4,7 @@ description: "Soluzioni per i problemi più comuni con SSH, configurazione, repo
 category: "Guides"
 order: 10
 language: it
-sourceHash: "a1c58ae1fe3d0514"
+sourceHash: "429b4004d99c37e6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -72,7 +72,7 @@ CRIU è il caso noto che colpisce AppArmor. Renet imposta automaticamente `secur
 
 ### Modulo btrfs mancante (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)
 
-Se `rdc config machine setup` o `renet system check-btrfs` fallisce con:
+Se `rdc machine setup` o `renet system check-btrfs` fallisce con:
 
 ```
 Module btrfs not found
@@ -94,13 +94,13 @@ Module btrfs not found
 - Controlla i log del container usando il socket Docker del repository:
 
 ```bash
-rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
+rdc repo logs my-app -c <container-name>
 ```
 
 Oppure visualizza tutti i container:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## Errori di Permesso Negato
@@ -115,7 +115,7 @@ Ogni repository ha il proprio daemon Docker. Quando esegui comandi Docker manual
 
 ```bash
 # Usando rdc term (configurato automaticamente):
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect my-app -c "docker ps"
 
 # Oppure manualmente con il socket:
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -132,7 +132,7 @@ Questo è intenzionale. Il modello di rete di Rediacc è **host networking per o
 **Per ottenere accesso alla rete in un container ad hoc, usa host networking:**
 
 ```bash
-# All'interno di una shell di repository (rdc term connect -m <machine> -r <repo>)
+# All'interno di una shell di repository (rdc term connect <repo>)
 docker run --rm --network host -it ubuntu bash
 # Ora apt update, curl, pip install funzionano tutti.
 ```
@@ -181,7 +181,7 @@ Se `rdc term` non riesce ad aprire una finestra del terminale:
 
 - Usa la modalità inline con `-c` per eseguire comandi direttamente:
   ```bash
-  rdc term connect -m server-1 -c "ls -la"
+  rdc term connect server-1 -c "ls -la"
   ```
 - Forza il terminale esterno con `--external` se la modalità inline ha problemi
 - Su Linux, assicurati di avere `gnome-terminal`, `xterm` o un altro emulatore di terminale installato

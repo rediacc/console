@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 41
 language: ru
-sourceHash: "fe334c1c94a0f417"
+sourceHash: "b8bd3176ecabfa4b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -34,7 +34,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 Заморозить смонтированный рабочий форк в новый неизменяемый коммит.
 
 ```bash
-rdc repo commit --name <fork> --message "<message>" -m <machine>
+rdc repo commit <fork> --message "<message>"
 ```
 
 | Параметр | Описание | По умолчанию |
@@ -52,7 +52,7 @@ rdc repo commit --name <fork> --message "<message>" -m <machine>
 Создать именованную ссылку ветви, указывающую на текущий коммит рабочего форка.
 
 ```bash
-rdc repo branch --branch <name> --name <fork>
+rdc repo branch <fork> --branch <name>
 ```
 
 | Параметр | Описание | По умолчанию |
@@ -67,8 +67,8 @@ rdc repo branch --branch <name> --name <fork>
 Клонировать неизменяемый коммит (или верхушку ветви) через reflink в свежий перезаписываемый рабочий форк.
 
 ```bash
-rdc repo checkout --ref <commit> --tag <newFork> -m <machine>
-rdc repo checkout --ref <branchName> --from <fork> --tag <newFork> -m <machine>
+rdc repo checkout <commit> --tag <newFork>
+rdc repo checkout <branchName> --from <fork> --tag <newFork>
 ```
 
 | Параметр | Описание | По умолчанию |
@@ -87,7 +87,7 @@ rdc repo checkout --ref <branchName> --from <fork> --tag <newFork> -m <machine>
 Обходить историю коммитов, достижимую из рабочего форка или коммита.
 
 ```bash
-rdc repo log --name <fork> -m <machine>
+rdc repo log <fork>
 ```
 
 | Параметр | Описание | По умолчанию |
@@ -104,8 +104,8 @@ rdc repo log --name <fork> -m <machine>
 Объединить исходный коммит или форк в целевой рабочий форк без изменения живого целевого форка на месте.
 
 ```bash
-rdc repo merge --name <target> --from <source> -m <machine>
-rdc repo merge --name <target> --from <source> --resolve theirs -m <machine>
+rdc repo merge <target> --from <source>
+rdc repo merge <target> --from <source> --resolve theirs
 ```
 
 | Параметр | Описание | По умолчанию |
@@ -139,12 +139,12 @@ rdc repo gc --apply -m <machine>    # удалить недостижимые к
 
 Достижимость вычисляется из локальной конфигурации (хранилища ссылок): набор коммитов, достижимых при следовании каждой верхушки ветви и HEAD вниз по цепочке родителей. Неизменяемые коммиты на машине вне этого набора недостижимы. Смонтированный объект или рабочий форк никогда не собирается.
 
-### rdc repo fsck
+### rdc repo admin fsck
 
 Проверить соответствие ссылок конфигурации объектам, присутствующим на машине.
 
 ```bash
-rdc repo fsck -m <machine>
+rdc repo admin fsck -m <machine>
 ```
 
 | Параметр | Описание | По умолчанию |
@@ -158,7 +158,7 @@ rdc repo fsck -m <machine>
 `rdc repo fork --immutable` помечает новый форк как доступный только для чтения при создании, создавая базу, эквивалентную коммиту, без отдельного шага `commit`.
 
 ```bash
-rdc repo fork --parent <name> --tag <tag> --immutable -m <machine>
+rdc repo fork <name> --tag <tag> --immutable
 ```
 
 Неизменяемый форк отказывается монтироваться, что сохраняет его образ побайтово стабильным навсегда. Это полезно как замороженная база для кросс-машинной дельта-передачи, где база должна быть идентичной на обоих концах. Чтобы вносить изменения, извлеките его (или снова разветвите) в перезаписываемую копию.
@@ -168,28 +168,28 @@ rdc repo fork --parent <name> --tag <tag> --immutable -m <machine>
 ### Зафиксировать рабочий форк
 
 ```bash
-$ rdc repo commit --name myapp:work --message "schema migration applied" -m server-1
+$ rdc repo commit myapp:work --message "schema migration applied"
 Committed 4f3c2a1b9d8e: schema migration applied
 ```
 
 ### Зафиксировать с явным автором
 
 ```bash
-$ rdc repo commit --name myapp:work --message "nightly snapshot" --author ci-bot -m server-1
+$ rdc repo commit myapp:work --message "nightly snapshot" --author ci-bot
 Committed 7a1b2c3d4e5f: nightly snapshot
 ```
 
 ### Назвать ветвь в текущем коммите
 
 ```bash
-$ rdc repo branch --branch staging --name myapp:work
+$ rdc repo branch myapp:work --branch staging
 Branch "staging" -> 4f3c2a1b9d8e
 ```
 
 ### Извлечь коммит в свежий перезаписываемый форк
 
 ```bash
-$ rdc repo checkout --ref 4f3c2a1b9d8e --tag rollback-test -m server-1
+$ rdc repo checkout 4f3c2a1b9d8e --tag rollback-test
 ```
 
 ### Извлечь верхушку ветви по имени
@@ -197,13 +197,13 @@ $ rdc repo checkout --ref 4f3c2a1b9d8e --tag rollback-test -m server-1
 С `--from` значение `--ref` разрешается как имя ветви на заданном рабочем форке:
 
 ```bash
-$ rdc repo checkout --ref staging --from myapp:work --tag staging-copy -m server-1
+$ rdc repo checkout staging --from myapp:work --tag staging-copy
 ```
 
 ### Обход истории
 
 ```bash
-$ rdc repo log --name myapp:work -m server-1
+$ rdc repo log myapp:work
 commit 4f3c2a1b9d8e
   Author: ci-bot  Date: 2026-05-29T10:14:02Z
   schema migration applied
@@ -217,7 +217,7 @@ commit 9d8e7a1b2c3d
 `--json` выдаёт структурированный обход, сначала новые:
 
 ```bash
-$ rdc repo log --name myapp:work --json -m server-1
+$ rdc repo log myapp:work -o json
 {
   "success": true,
   "start": "4f3c2a1b9d8e",
@@ -239,8 +239,8 @@ $ rdc repo log --name myapp:work --json -m server-1
 `rdc repo diff` работает между любыми двумя коммитами, поскольку они имеют общего предка с копированием при записи. Извлеките один коммит, затем сравните его с другим:
 
 ```bash
-$ rdc repo checkout --ref 4f3c2a1b9d8e --tag review -m server-1
-$ rdc repo diff --name review --base myapp:work -m server-1
+$ rdc repo checkout 4f3c2a1b9d8e --tag review
+$ rdc repo diff review --base myapp:work
 M  db/schema.sql
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -251,7 +251,7 @@ M  db/schema.sql
 ### Слияние проверенной линии обратно
 
 ```bash
-$ rdc repo merge --name myapp:main --from myapp:work -m server-1
+$ rdc repo merge myapp:main --from myapp:work
 Merged myapp:work into myapp:main
 ```
 
@@ -260,7 +260,7 @@ Merged myapp:work into myapp:main
 Смонтированный или запущенный целевой форк отклоняется, если не задан `--force`, который сначала останавливает его:
 
 ```bash
-$ rdc repo merge --name myapp:main --from myapp:work --force -m server-1
+$ rdc repo merge myapp:main --from myapp:work --force
 Merged myapp:work into myapp:main
 ```
 
@@ -269,7 +269,7 @@ Merged myapp:work into myapp:main
 Два форка (`feature` и `hotfix`), извлечённые из одного коммита, каждый изменил некоторые файлы. `--resolve theirs` применяет источник (`hotfix`) к цели (`feature`): файлы, изменённые только с одной стороны, берутся с этой стороны, а файлы, изменённые с обеих сторон, разрешаются в пользу источника. База определяется автоматически из общего предка (или укажите её с `--base`):
 
 ```bash
-$ rdc repo merge --name myapp:feature --from myapp:hotfix --resolve theirs -m server-1
+$ rdc repo merge myapp:feature --from myapp:hotfix --resolve theirs
 Merged myapp:hotfix into myapp:feature (three-way); 1 conflict(s) resolved --theirs: [config/app.yaml]
 ```
 
@@ -278,7 +278,7 @@ Merged myapp:hotfix into myapp:feature (three-way); 1 conflict(s) resolved --the
 ### Создание неизменяемой базы напрямую
 
 ```bash
-$ rdc repo fork --parent myapp --tag baseline-v1 --immutable -m server-1
+$ rdc repo fork myapp --tag baseline-v1 --immutable
 ```
 
 ## Дельта-передача push и pull
@@ -289,19 +289,19 @@ $ rdc repo fork --parent myapp --tag baseline-v1 --immutable -m server-1
 
 ```bash
 # Первый push является полной передачей; он также сохраняет повторно используемую базу на обоих концах.
-$ rdc repo push --name myapp:work --to-machine backup-1 -m server-1
+$ rdc repo push myapp:work --to backup-1
 
 # После локальных изменений следующий push отправляет только изменённые блоки, без флага.
-$ rdc repo push --name myapp:work --to-machine backup-1 -m server-1
+$ rdc repo push myapp:work --to backup-1
 
 # Указать явную базу (неизменяемый коммит, присутствующий на обеих машинах).
-$ rdc repo push --name myapp:work --to-machine backup-1 --delta-base 4f3c2a1b9d8e -m server-1
+$ rdc repo push myapp:work --to backup-1 --delta-base 4f3c2a1b9d8e
 
 # Дельта также работает в обратном направлении, извлекая только изменённые блоки из машины-источника.
-$ rdc repo pull --name myapp:work --from-machine backup-1 --delta-base 4f3c2a1b9d8e -m server-1
+$ rdc repo pull myapp:work --from backup-1 --delta-base 4f3c2a1b9d8e
 
 # Повторное извлечение существующего локального репозитория (перезапись) с --force.
-$ rdc repo pull --name myapp:work --from-machine backup-1 --force -m server-1
+$ rdc repo pull myapp:work --from backup-1 --force
 ```
 
 Дельта-передача применяется только между машинами (удалённый с базой FIEMAP). Push в облачное объектное хранилище всегда передаёт полный образ. База должна быть побайтово идентичной на обоих концах, что именно гарантирует неизменяемый коммит или форк с `--immutable`.

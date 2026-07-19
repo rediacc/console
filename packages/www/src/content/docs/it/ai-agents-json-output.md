@@ -4,7 +4,7 @@ description: Riferimento completo per il formato di output JSON della CLI rdc, s
 category: Reference
 order: 51
 language: it
-sourceHash: "4da1be4753fa62bf"
+sourceHash: "cc88f8f06960df3a"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -15,8 +15,8 @@ Tutti i comandi `rdc` producono JSON strutturato. Passalo via pipe a uno script 
 ### Flag esplicito
 
 ```bash
-rdc machine query --name prod-1 --output json
-rdc machine query --name prod-1 -o json
+rdc machine status prod-1 --output json
+rdc machine status prod-1 -o json
 ```
 
 ### Rilevamento automatico
@@ -25,7 +25,7 @@ Quando `rdc` viene eseguito in un ambiente non-TTY (pipe, subshell o avviato da 
 
 ```bash
 # Produce JSON automaticamente
-result=$(rdc machine query --name prod-1)
+result=$(rdc machine status prod-1)
 ```
 
 ## Envelope JSON
@@ -72,7 +72,7 @@ I comandi falliti restituiscono errori strutturati con suggerimenti di ripristin
       "code": "NOT_FOUND",
       "message": "Machine \"prod-2\" not found",
       "retryable": false,
-      "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
+      "guidance": "Verify the resource name with \"rdc machine status\" or \"rdc repo list\""
     }
   ],
   "warnings": [],
@@ -106,11 +106,11 @@ Per i codici di errore ad alto valore come `PRECONDITION_MISMATCH`, l'errore inc
       "options": [
         {
           "description": "Re-read current digest, then retry with --current",
-          "run": "rdc repo secret get --name mail --key STRIPE_KEY"
+          "run": "rdc repo secret get mail --key STRIPE_KEY"
         },
         {
           "description": "Skip the precondition (rotation, audited)",
-          "run": "rdc repo secret set --name mail --key STRIPE_KEY --value <new> --mode file --rotate-secret"
+          "run": "rdc repo secret set mail --key STRIPE_KEY --value <new> --mode file --rotate-secret"
         }
       ]
     }
@@ -142,7 +142,7 @@ Gli errori non riprovabili (autenticazione, non trovato, argomenti non validi) r
 Usa `--fields` per limitare l'output a chiavi specifiche e ridurre l'utilizzo dei token:
 
 ```bash
-rdc machine containers --name prod-1 -o json --fields name,status,repository
+rdc machine status prod-1 --containers -o json --fields name,status,repository
 ```
 
 ## Output in modalità dry-run
@@ -150,7 +150,7 @@ rdc machine containers --name prod-1 -o json --fields name,status,repository
 I comandi distruttivi supportano `--dry-run` per visualizzare in anteprima cosa succederebbe:
 
 ```bash
-rdc repo delete --name mail -m prod-1 --dry-run -o json
+rdc repo delete mail@prod-1 --dry-run -o json
 ```
 
 ```json
@@ -178,7 +178,7 @@ Comandi con supporto `--dry-run`: `repo up`, `repo down`, `repo delete`, `snapsh
 ### Shell (jq)
 
 ```bash
-status=$(rdc machine query --name prod-1 -o json | jq -r '.data.status')
+status=$(rdc machine status prod-1 -o json | jq -r '.data.status')
 ```
 
 ### Python

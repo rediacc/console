@@ -4,7 +4,7 @@ description: "Hesap sunucusunu ve CLI dağıtımını kendi altyapınızda çal�
 category: "Guides"
 order: 5
 language: tr
-sourceHash: "eea76db2d612133f"
+sourceHash: "a2f88ead9bf140c6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -54,13 +54,13 @@ Birden fazla sunucuya (yerinde, üretim, edge) bağlanan kullanıcılar için ad
 
 ```bash
 # Yerinde sunucunuz için bir yapılandırma oluşturun
-rdc config init --name myserver --server https://account.example.com
+rdc config init myserver --server https://account.example.com
 
 # Bu yapılandırmayı kullanarak giriş yapın
 rdc --config myserver subscription login
 
 # --config ile tüm komutlar yerinde sunucuyu kullanır
-rdc --config myserver machine query --name prod-1
+rdc --config myserver machine status prod-1
 ```
 
 Her adlandırılmış yapılandırma kendi hesap sunucusu URL'sini ve abonelik tokenini saklar. Yapılandırma değiştirmek tüm sunucu bağlamını değiştirir.

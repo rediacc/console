@@ -4,7 +4,7 @@ description: "Rediacc의 암호화 및 격리 아키텍처가 의료정보 보�
 category: "Legal"
 order: 3
 language: ko
-sourceHash: "a0dd73c1923519b0"
+sourceHash: "58f208db31474a81"
 sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
@@ -22,7 +22,7 @@ HIPAA는 관리적, 기술적, 물리적 보호 조치를 요구합니다. 아�
 |-------------|----------------|-------------------|
 | 접근 제어 | [45 CFR 164.312(a)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | SSH 키 기반 인증. IP 바인딩 및 범위 제한이 있는 API 토큰. 리포지토리당 Docker 데몬 격리로 리포지토리 간 접근을 방지합니다. |
 | 감사 제어 | [45 CFR 164.312(b)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | 인증, API 토큰, 설정 작업, 라이선싱 및 머신 작업(리포지토리 수명 주기, 백업, 동기화, 터미널)을 포함하는 70가지 이상의 이벤트 유형. 사용자별 및 팀별 추적. 관리자 대시보드 또는 포털 활동 페이지를 통해 내보낼 수 있습니다(JSON 내보내기 지원). |
-| 무결성 제어 | [45 CFR 164.312(c)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | CoW 스냅샷이 수정 전 원본 데이터를 보존합니다. `rdc repo validate`가 리포지토리 무결성 및 백업 상태(LUKS 컨테이너, 파일 시스템 일관성, 구성)를 검증합니다. |
+| 무결성 제어 | [45 CFR 164.312(c)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | CoW 스냅샷이 수정 전 원본 데이터를 보존합니다. `rdc repo admin validate`가 리포지토리 무결성 및 백업 상태(LUKS 컨테이너, 파일 시스템 일관성, 구성)를 검증합니다. |
 | 저장 시 암호화 | [45 CFR 164.312(a)(2)(iv)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | 모든 리포지토리 볼륨에 LUKS2 AES-256 암호화 적용. 자격증명은 서버가 아닌 운영자의 로컬 설정에만 저장됩니다. 설정 저장소는 분할 키 파생을 사용한 제로 지식 AES-256-GCM 암호화를 적용합니다. 서버도 저장된 설정을 복호화할 수 없습니다. |
 | 전송 보안 | [45 CFR 164.312(e)](https://www.govinfo.gov/content/pkg/PLAW-104publ191/html/PLAW-104publ191.htm) | 모든 원격 작업이 SSH를 사용합니다. 백업 전송은 종단 간 암호화됩니다. 비암호화 데이터 이전이 없습니다. |
 

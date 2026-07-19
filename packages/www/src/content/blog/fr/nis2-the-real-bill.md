@@ -16,7 +16,7 @@ tags:
   - marche-intermediaire
 featured: false
 language: fr
-sourceHash: 29fbcbffd8a304bc
+sourceHash: "00ae2b4e6f58acb5"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -102,7 +102,7 @@ Rediacc est un plan de contrôle unique avec un journal d'audit unifié, rempla�
 
 **Données de test et clonage complet de la pile** : fonctionne sur le reflink BTRFS. Le fork est à durée constante, quelle que soit la taille du dépôt. Complet signifie données, configurations, conteneurs et services. Nous avons forké un dépôt de 128 Go en 7,2 secondes lors de notre [test PocketOS](/fr/blog/i-tested-rediacc-against-the-pocketos-incident). Le fork est la production actuelle, pas un environnement de préproduction allégé. Voir [Mises à jour sans risque](/fr/docs/risk-free-upgrades).
 
-**Restauration instantanée** : `rdc repo backup pull` depuis n'importe quelle cible rclone vers un nouveau fork, démarré sous un sous-domaine spécifique au fork couvert par le certificat wildcard du dépôt parent. Pas de manipulation DNS, pas de renouvellement de certificat.
+**Restauration instantanée** : `rdc repo pull` depuis n'importe quelle cible rclone vers un nouveau fork, démarré sous un sous-domaine spécifique au fork couvert par le certificat wildcard du dépôt parent. Pas de manipulation DNS, pas de renouvellement de certificat.
 
 **Journal d'audit unifié.** Plus de 70 types d'événements sur l'ensemble du plan de contrôle. Ils couvrent les connexions, les jetons API, les écritures de configuration, le cycle de vie des dépôts, la sauvegarde, la synchronisation, les sessions terminal et les opérations machine. La chaîne est liée par hachage sur le poste de travail de l'opérateur. `rdc audit verify` la vérifie de bout en bout.
 
@@ -153,7 +153,7 @@ Cinq contrats. Deux d'entre eux (Veeam, Veeam Cloud Connect) sont chez le même 
 - Drata est maintenu (18 000 EUR)
 - Le schéma de données de test fait maison est retiré ; la demi-journée bihebdomadaire du SRE est réaffectée à l'exécution de la routine d'efficacité hebdomadaire
 
-Consolidation du plan de données : 5 postes réduits à 1 (Rediacc) plus la ligne IaaS existante. La section plan de données du registre fournisseurs passe de 5 entrées à 2. Le dispositif d'efficacité continue repose désormais sur des exercices hebdomadaires avec des preuves issues du journal d'audit chaîné par hachage ; le dispositif de test de reprise est désormais étayé par la sortie de `rdc machine backup status` et un exercice de restauration par semaine.
+Consolidation du plan de données : 5 postes réduits à 1 (Rediacc) plus la ligne IaaS existante. La section plan de données du registre fournisseurs passe de 5 entrées à 2. Le dispositif d'efficacité continue repose désormais sur des exercices hebdomadaires avec des preuves issues du journal d'audit chaîné par hachage ; le dispositif de test de reprise est désormais étayé par la sortie de `rdc backup status` et un exercice de restauration par semaine.
 
 Les chiffres sont illustratifs, pas des promesses. Votre pile est différente. La forme -- quatre à cinq postes qui se consolident en un seul plus l'IaaS existant -- est ce à quoi ressemble une vraie conversation avec un acheteur.
 

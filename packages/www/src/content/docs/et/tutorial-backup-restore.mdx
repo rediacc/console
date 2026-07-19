@@ -5,7 +5,7 @@ category: "Tutorials"
 subcategory: advanced
 order: 11
 language: et
-sourceHash: "c13a0f880039d7e7"
+sourceHash: "c5c847e04186c9b1"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -70,8 +70,8 @@ Ja ühenda see uuesti -- täielikult taastatud:
 Sama tõmme töötab ka täiesti uuel serveril: seadista see, lisa `rdc`-sse ja käivita tõmme seal.
 
 ```bash
-rdc repo pull --name my-app -m new-server --from my-storage
-rdc repo up --name my-app -m new-server
+rdc repo pull my-app@new-server --from my-storage
+rdc repo up my-app@new-server
 ```
 
 Samad andmed, samad konteinerid, erinev masin.
@@ -81,7 +81,7 @@ Samad andmed, samad konteinerid, erinev masin.
 Varukoopia saab saata ka otse masinate vahel, ilma pilvesalvestuseta:
 
 ```bash
-rdc repo push --name my-app -m my-server --to-machine backup-server
+rdc repo push my-app --to backup-server
 ```
 
 > **Nõuanne.** Masina ja masina vahelised tõuked saadavad pärast esimest korda ainult muutunud plokid. [Deltatransferi juhend](/et/docs/tutorial-delta-transfer) näitab seda otseülekandes.

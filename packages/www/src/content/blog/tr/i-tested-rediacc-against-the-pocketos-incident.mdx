@@ -11,7 +11,7 @@ tags:
   - case-study
 featured: true
 language: tr
-sourceHash: "277ccd50e4bac37f"
+sourceHash: "4658b7226eb1e696"
 sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 ---
 
@@ -63,7 +63,7 @@ Test için ajanım, Claude Opus çalıştıran Claude Code idi. Cursor'unkiyle a
 Ajanın (bu durumda benim) deneyeceği ilk şey en doğalı buydu: üretim deposuna bir kabuk açıp etrafa bakmak.
 
 ```bash
-$ rdc term connect -m hostinger -r demo-stackoverflow -c "ls -la"
+$ rdc term connect demo-stackoverflow -c "ls -la"
 ```
 
 CLI reddetti. Birebir:
@@ -97,7 +97,7 @@ Ayrıca `demo-stackoverflow` için geçersiz kılma aktifken farklı bir üretim
 Rediacc'ın sizi kullanmaya teşvik ettiği iş akışı bu.
 
 ```bash
-$ time rdc repo fork --parent demo-stackoverflow -m hostinger --tag agent-test
+$ time rdc repo fork demo-stackoverflow --tag agent-test
 ```
 
 Terminalimden kopyalanan çıktı:
@@ -129,7 +129,7 @@ Total: 6.3s
 Çatallamaya `term connect` yaptığımda gördüğüm şey şu:
 
 ```
-$ rdc term connect -m hostinger -r demo-stackoverflow:agent-test -c "id"
+$ rdc term connect demo-stackoverflow:agent-test -c "id"
 uid=7111(rediacc) gid=7111(rediacc) groups=7111(rediacc),988(docker)
 ```
 
@@ -194,7 +194,7 @@ Kalan dürüst boşluk şu: `rdc repo secret`'ı benimsemeden önce depo imajın
 
 Ajan tehdit modeli açısından bu tasarımın iki yan etkisi özellikle dikkat çekici. Birincisi, `repo secret list` ve `repo secret get` MCP araçları olarak açığa çıkar (okumaya güvenli. Adlar ve özetler, asla değerler), böylece bir uygulama kurmanıza yardım eden bir ajan, ne olduğunu görmeden neyin yapılandırıldığını keşfedebilir. İkincisi, bir yazma işlemi ön koşulu sağlamadığında, JSON hata zarfı, ajanın insana aynen aktarması gereken somut komutları içeren yapılandırılmış bir `next.options[].run` alanı içerir. "Önceki değeri unuttum" durumu için rotasyon kaçış kapısı dahil. Tam model için [Yapay Zeka Ajan Güvenliği](/tr/docs/ai-agents-safety) sayfasına bakın.
 
-Tam nasıl yapılır rehberi [Depolar § Gizli Anahtarlar](/tr/docs/repositories#secrets) sayfasında. Üç adım. Önce değeri ayarlayın: `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""`. Ardından compose dosyanızda `${REDIACC_SECRET_<KEY>}` referansını kullanın. Son olarak, `rdc repo fork` komutunu çalıştırın ve fork'un boş bir gizli anahtar listesiyle başladığını doğrulayın.
+Tam nasıl yapılır rehberi [Depolar § Gizli Anahtarlar](/tr/docs/repositories#secrets) sayfasında. Üç adım. Önce değeri ayarlayın: `rdc repo secret set <repo> --key <KEY> --value <val> --current ""`. Ardından compose dosyanızda `${REDIACC_SECRET_<KEY>}` referansını kullanın. Son olarak, `rdc repo fork` komutunu çalıştırın ve fork'un boş bir gizli anahtar listesiyle başladığını doğrulayın.
 
 ## Bu tür bir iş yapan biri için ne değişir
 

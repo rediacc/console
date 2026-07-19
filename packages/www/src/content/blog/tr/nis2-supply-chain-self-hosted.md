@@ -12,7 +12,7 @@ tags:
   - compliance
 featured: false
 language: tr
-sourceHash: "ffdb86da48dacc58"
+sourceHash: "d8da6730f7912fc9"
 sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 translatedFrom: en
 ---
@@ -130,7 +130,7 @@ Hetzner üzerinde Rediacc'a geçildikten sonra:
 | Alt işlemciler | (1) Self-hosted için hiçbiri; (2) Yalnızca Hetzner dahili, kendi DPA'larında listelenmiş |
 | Sözleşme durumu | (1) Yazılım lisansı, DPA gerekmiyor; (2) Hetzner DPA + SCC'ler zaten mevcut |
 | Anahtar yönetimi | Müşteri (LUKS2 kimlik bilgisi operatör yapılandırmasında, sunucuda değil) |
-| Çıkış planı | "rdc repo backup pull ile herhangi bir rclone uyumlu hedeften. Birimler LUKS2 şifreli; operatör kimlik bilgisini tutar." |
+| Çıkış planı | "rdc repo pull ile herhangi bir rclone uyumlu hedeften. Birimler LUKS2 şifreli; operatör kimlik bilgisini tutar." |
 | Son değerlendirme | (2) mevcut IaaS incelemesiyle kapsanmış |
 
 Bir yerine iki kayıt girişi. Kritik katman girişi, alıcının zaten DPA ve test edilmiş çıkış planı mevcut olan IaaS sağlayıcısı içindir; çünkü IaaS, çoğu ekibin nasıl yöneteceğini bildiği bir ilişkidir. Rediacc girişi, veri işleyici değil yazılım lisansı olduğu için kritik olmayan olarak sınıflandırılmıştır.

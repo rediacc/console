@@ -5,7 +5,7 @@ description: >-
 category: Guides
 order: 5
 language: ar
-sourceHash: "2d470a876c00c352"
+sourceHash: "f33bcf4598caedc8"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -212,7 +212,7 @@ services:
 
 **كيفية إصلاح الانحراف.** إذا كانت السياسة المحفوظة في `.rediacc.json` للحاوية غير صحيحة (مثلاً لأنك عدّلت compose لكن لم تُعد إنشاء الحاوية)، أعد تشغيل `rdc repo up <repo>`. ستُعاد إنشاء الحاوية مع تسجيل السياسة المحدّثة.
 
-> **تجريبي:** وصل استرداد sidecar النسخ الاحتياطية الباردة وعلامة `--sync-certs` في `rdc machine query` في renet 0.9+. الإصدارات الأقدم تعتمد كلياً على `restart_policy` المحفوظة لاسترداد watchdog، مما قد يترك حاويات `on-failure` عالقة بعد نسخة احتياطية باردة.
+> **تجريبي:** وصل استرداد sidecar النسخ الاحتياطية الباردة وعلامة `--sync-certs` في `rdc machine status` في renet 0.9+. الإصدارات الأقدم تعتمد كلياً على `restart_policy` المحفوظة لاسترداد watchdog، مما قد يترك حاويات `on-failure` عالقة بعد نسخة احتياطية باردة.
 
 > **شبكات Docker bridge معطّلة لعمليات daemon الخاصة بكل مستودع.** يتم تكوين كل daemon خاص بمستودع (`FlavorRediacc`) بالقيم `"bridge": "none"` و `"iptables": false`. سيظل أمر `docker run <image>` البسيط داخل شل المستودع يبدأ، لكن الحاوية ستحصل فقط على واجهة loopback وبدون DNS أو اتصال خارجي. هذا بالتصميم، لأن عزل الـ loopback بين المستودعات تفرضه خطاطيف cgroup الخاصة بـ eBPF، وهي خطاطيف تتجاوزها الحاويات التي تعمل عبر bridge. يجب أن تستخدم خدمات الإنتاج `renet compose` (الذي يحقن شبكة المضيف تلقائياً)؛ وللتصحيح العابر، مرّر `--network host` بشكل صريح: `docker run --rm --network host -it ubuntu bash`.
 >
@@ -225,7 +225,7 @@ services:
 حمّل المستودع وشغّل جميع الخدمات:
 
 ```bash
-rdc repo up --name my-app -m server-1
+rdc repo up my-app
 ```
 
 | الخيار | الوصف |
@@ -262,12 +262,12 @@ HTTP services (accessible via proxy after ~3s):
 ## إيقاف الخدمات
 
 ```bash
-rdc repo down --name my-app -m server-1
+rdc repo down my-app
 ```
 
 | الخيار | الوصف |
 |--------|-------|
-| `--unmount` | إلغاء تحميل المستودع المشفر بعد إيقاف الخدمات. إذا لم يسرِ مفعوله، استخدم `rdc repo unmount` بشكل منفصل. |
+| `--unmount` | إلغاء تحميل المستودع المشفر بعد إيقاف الخدمات. |
 | `--skip-router-restart` | تخطي إعادة تشغيل خادم المسارات بعد العملية |
 
 تسلسل التنفيذ هو:
@@ -280,7 +280,7 @@ rdc repo down --name my-app -m server-1
 شغّل أو أوقف جميع المستودعات على جهاز دفعة واحدة:
 
 ```bash
-rdc repo up -m server-1
+rdc repo up --all -m server-1
 ```
 
 | الخيار | الوصف |
@@ -311,7 +311,7 @@ rdc repo up -m server-1
 ### تفعيل
 
 ```bash
-rdc repo autostart enable --name my-app -m server-1
+rdc repo admin autostart enable my-app
 ```
 
 سيُطلب منك إدخال عبارة مرور المستودع.
@@ -319,13 +319,13 @@ rdc repo autostart enable --name my-app -m server-1
 ### تفعيل الكل
 
 ```bash
-rdc repo autostart enable -m server-1
+rdc repo admin autostart enable
 ```
 
 ### تعطيل
 
 ```bash
-rdc repo autostart disable --name my-app -m server-1
+rdc repo admin autostart disable my-app
 ```
 
 يزيل هذا ملف المفتاح ويحذف فتحة LUKS رقم 1.
@@ -351,7 +351,7 @@ Adding keyfile to LUKS slot 1: /mnt/rediacc/repositories/<guid>
 ### عرض الحالة
 
 ```bash
-rdc repo autostart list -m server-1
+rdc repo admin autostart list -m server-1
 ```
 
 لتفاصيل حول كيفية استرداد المُوفِّق الدوري للمستودعات التي تتوقف بعد الإقلاع، راجع [التشغيل التلقائي والاسترداد](/ar/docs/autostart-recovery).
@@ -364,16 +364,16 @@ rdc repo autostart list -m server-1
 
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
-rdc config init --name production --ssh-key ~/.ssh/id_ed25519
-rdc config machine add --name prod-1 --ip 203.0.113.50 --user deploy
-rdc config machine setup --name prod-1
-rdc repo create --name webapp -m prod-1 --size 10G
+rdc config init production --ssh-key ~/.ssh/id_ed25519
+rdc machine add prod-1 --ip 203.0.113.50 --user deploy
+rdc machine setup prod-1
+rdc repo create webapp -m prod-1 --size 10G
 ```
 
 ### 2. التحميل والتحضير
 
 ```bash
-rdc repo mount --name webapp -m prod-1
+rdc repo up webapp --no-start
 ```
 
 ### 3. إنشاء ملفات التطبيق
@@ -432,13 +432,13 @@ down() {
 ### 4. التشغيل
 
 ```bash
-rdc repo up --name webapp -m prod-1
+rdc repo up webapp
 ```
 
 ### 5. تفعيل التشغيل التلقائي
 
 ```bash
-rdc repo autostart enable --name webapp -m prod-1
+rdc repo admin autostart enable webapp
 ```
 
 ## استخدام أسرار المستودع في compose

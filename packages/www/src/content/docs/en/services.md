@@ -211,7 +211,7 @@ renet and Docker disagree, on purpose, about how to handle container restarts. U
 
 **How to fix a drift.** If a container's `.rediacc.json` saved policy is wrong (for example, because you edited compose but never recreated the container), re-run `rdc repo up <repo>`. The container is recreated with the updated policy recorded.
 
-> **Experimental:** Cold-backup sidecar-based recovery and the `--sync-certs` flag on `rdc machine query` shipped in renet 0.9+. Older versions rely purely on saved `restart_policy` for watchdog recovery, which can leave `on-failure` containers stranded after a cold backup.
+> **Experimental:** Cold-backup sidecar-based recovery and the `--sync-certs` flag on `rdc machine status` shipped in renet 0.9+. Older versions rely purely on saved `restart_policy` for watchdog recovery, which can leave `on-failure` containers stranded after a cold backup.
 
 > **Docker bridge networking is disabled for per-repo daemons.** Each per-repo daemon (`FlavorRediacc`) is configured with `"bridge": "none"` and `"iptables": false`. A plain `docker run <image>` inside a repository shell will still launch, but the container gets only a loopback interface and has no DNS or outbound connectivity. This is by design, since loopback isolation between repos is enforced by eBPF cgroup hooks that a bridged container would bypass. Production services should use `renet compose` (which injects host networking for you); for ad-hoc debugging, pass `--network host` explicitly: `docker run --rm --network host -it ubuntu bash`.
 >
@@ -224,12 +224,12 @@ renet and Docker disagree, on purpose, about how to handle container restarts. U
 Mount the repository and start all services:
 
 ```bash
-rdc repo up --name my-app -m server-1
+rdc repo up my-app
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--detach` | Return once containers are started; health checks continue in the background |
+| `--no-wait` | Return once containers are started; health checks continue in the background |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 The execution sequence is:
@@ -252,7 +252,7 @@ Services without custom Traefik labels show only the auto-generated route. Use t
 
 ### Detached Start
 
-With `--detach`, the command returns as soon as the containers are started instead of waiting for health checks. Startup finishes in the background: the proxy retries upstream connections until each service binds, so routes recover on their own. Check progress with `rdc machine status <machine> --containers`. Ideal for throwaway forks and scripted loops where you don't need the services ready before the next step.
+With `--no-wait`, the command returns as soon as the containers are started instead of waiting for health checks. Startup finishes in the background: the proxy retries upstream connections until each service binds, so routes recover on their own. Check progress with `rdc machine status <machine> --containers`. Ideal for throwaway forks and scripted loops where you don't need the services ready before the next step.
 
 ### Readiness Probe
 
@@ -261,12 +261,12 @@ After `up()`, renet probes each HTTP service until it accepts TCP connections, s
 ## Stopping Services
 
 ```bash
-rdc repo down --name my-app -m server-1
+rdc repo down my-app
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--unmount` | Unmount the encrypted repository after stopping. If this does not take effect, use `rdc repo unmount` separately. |
+| `--unmount` | Unmount the encrypted repository after stopping. |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 The execution sequence is:
@@ -279,13 +279,13 @@ The execution sequence is:
 Start or stop all repositories on a machine at once:
 
 ```bash
-rdc repo up -m server-1
+rdc repo up --all -m server-1
 ```
 
 | Option | Description |
 |--------|-------------|
 | `--include-forks` | Include forked repositories |
-| `--mount-only` | Only mount, don't start containers |
+| `--no-start` | Only mount and prepare, don't run the repository's `up()` steps |
 | `--dry-run` | Show what would be done |
 | `--parallel` | Run operations in parallel |
 | `--concurrency <n>` | Max concurrent operations (default: 3) |
@@ -310,7 +310,7 @@ On shutdown, the service gracefully stops all services (Rediaccfile `down()`), s
 ### Enable
 
 ```bash
-rdc repo autostart enable --name my-app -m server-1
+rdc repo admin autostart enable my-app
 ```
 
 You will be prompted for the repository passphrase.
@@ -318,13 +318,13 @@ You will be prompted for the repository passphrase.
 ### Enable All
 
 ```bash
-rdc repo autostart enable -m server-1
+rdc repo admin autostart enable
 ```
 
 ### Disable
 
 ```bash
-rdc repo autostart disable --name my-app -m server-1
+rdc repo admin autostart disable my-app
 ```
 
 This removes the keyfile and kills LUKS slot 1.
@@ -351,7 +351,7 @@ the deploy.
 ### List Status
 
 ```bash
-rdc repo autostart list -m server-1
+rdc repo admin autostart list -m server-1
 ```
 
 For details on how the periodic reconciler recovers repositories that go down after boot, see [Autostart & Recovery](/en/docs/autostart-recovery).
@@ -364,16 +364,16 @@ This deploys a web application with PostgreSQL, Redis, and an API server.
 
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
-rdc config init --name production --ssh-key ~/.ssh/id_ed25519
-rdc config machine add --name prod-1 --ip 203.0.113.50 --user deploy
-rdc config machine setup --name prod-1
-rdc repo create --name webapp -m prod-1 --size 10G
+rdc config init production --ssh-key ~/.ssh/id_ed25519
+rdc machine add prod-1 --ip 203.0.113.50 --user deploy
+rdc machine setup prod-1
+rdc repo create webapp -m prod-1 --size 10G
 ```
 
 ### 2. Mount and Prepare
 
 ```bash
-rdc repo mount --name webapp -m prod-1
+rdc repo up webapp --no-start
 ```
 
 ### 3. Create Application Files
@@ -432,13 +432,13 @@ down() {
 ### 4. Start
 
 ```bash
-rdc repo up --name webapp -m prod-1
+rdc repo up webapp
 ```
 
 ### 5. Enable Autostart
 
 ```bash
-rdc repo autostart enable --name webapp -m prod-1
+rdc repo admin autostart enable webapp
 ```
 
 ## Using per-repo secrets in compose

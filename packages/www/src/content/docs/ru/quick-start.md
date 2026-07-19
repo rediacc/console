@@ -4,7 +4,7 @@ description: Запустите контейнерный сервис на ва�
 category: Guides
 order: -1
 language: ru
-sourceHash: "a1350abc611570ef"
+sourceHash: "12382a10b8fd01cb"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -59,8 +59,8 @@ rdc config ssh set --key ~/.ssh/id_ed25519
 ### 3. Добавление сервера
 
 ```bash
-rdc config machine add --name my-server --ip 192.168.1.100 --user admin
-rdc config machine setup --name my-server  # Устанавливает renet + создаёт хранилище данных
+rdc machine add my-server --ip 192.168.1.100 --user admin
+rdc machine setup my-server  # Устанавливает renet + создаёт хранилище данных
 ```
 
 **Что происходит:** сканируется ключ хоста SSH, загружается бинарник renet, на сервере инициализируется зашифрованное хранилище данных. Готово к созданию репозиториев.
@@ -83,7 +83,7 @@ cat ~/.config/rediacc/rediacc.json         # Исходный JSON: машины
 ### 1. Создание репозитория
 
 ```bash
-rdc repo create --name my-app -m my-server --size 2G  # Создать зашифрованный репозиторий на 2 ГБ
+rdc repo create my-app -m my-server --size 2G  # Создать зашифрованный репозиторий на 2 ГБ
 ```
 
 Создаёт зашифрованный том, монтирует его и запускает Docker-демон. Репозиторий регистрируется в вашей конфигурации и готов к использованию.
@@ -94,7 +94,7 @@ rdc repo create --name my-app -m my-server --size 2G  # Создать заши�
 
 ```bash
 rdc repo admin template list                                        # Показать встроенные шаблоны
-rdc repo admin template apply --name app-postgres -m my-server -r my-app  # Развернуть docker-compose.yml + Rediaccfile
+rdc repo admin template apply my-app --template app-postgres  # Развернуть docker-compose.yml + Rediaccfile
 ```
 
 Шаблоны предоставляют `docker-compose.yml`, `Rediaccfile` и вспомогательные файлы. Без шаблона (или собственного compose-файла) запускать нечего. Используйте встроенный шаблон для первого репозитория. Это самый быстрый способ увидеть полный рабочий процесс от начала до конца.
@@ -102,9 +102,9 @@ rdc repo admin template apply --name app-postgres -m my-server -r my-app  # Ра
 ### 3. Запуск репозитория
 
 ```bash
-rdc repo up --name my-app -m my-server  # Выполнить Rediaccfile up()
+rdc repo up my-app -m my-server  # Выполнить Rediaccfile up()
 rdc repo list -m my-server                           # Список всех репозиториев на машине
-rdc repo status --name my-app -m my-server  # Состояние монтирования, Docker, размер, шифрование
+rdc repo status my-app  # Состояние монтирования, Docker, размер, шифрование
 ```
 
 `repo up` автоматически монтирует при необходимости. Дополнительные флаги не требуются.
@@ -142,25 +142,25 @@ rdc vscode connect my-app              # Открывает VS Code через S
 
 **Терминал:**
 ```bash
-rdc term connect -m my-server -r my-app                            # SSH в песочницу репозитория
-rdc term connect -m my-server -r my-app -c "curl localhost:3000"   # Выполнить команду и выйти
-rdc term connect -m my-server                                   # SSH на машину (без песочницы)
+rdc term connect my-app                            # SSH в песочницу репозитория
+rdc term connect my-app -c "curl localhost:3000"   # Выполнить команду и выйти
+rdc term connect my-server                                   # SSH на машину (без песочницы)
 ```
 
 **Синхронизация файлов (rsync через SSH):**
 ```bash
-rdc repo sync upload -m my-server -r my-app --local ./src                                   # Загрузить каталог
-rdc repo sync upload -m my-server -r my-app --local ./config.yml --remote conf              # Загрузить один файл
-rdc repo sync download -m my-server -r my-app --local ./backup                              # Скачать каталог
-rdc repo sync download -m my-server -r my-app --remote-file conf/config.yml --local ./dl    # Скачать один файл
-rdc repo sync download -m my-server -r my-app --local ./backup --dry-run                    # Предварительный просмотр
+rdc repo sync upload my-app@my-server --local ./src                                   # Загрузить каталог
+rdc repo sync upload my-app@my-server --local ./config.yml --remote conf              # Загрузить один файл
+rdc repo sync download my-app@my-server --local ./backup                              # Скачать каталог
+rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl    # Скачать один файл
+rdc repo sync download my-app@my-server --local ./backup --dry-run                    # Предварительный просмотр
 ```
 
 **Туннель (SSH-проброс порта к контейнеру):**
 ```bash
-rdc repo tunnel -m my-server -r my-app -c app  # Автоопределение порта для контейнера app
-rdc repo tunnel -m my-server -r my-app -c db --port 5432  # Туннель к Postgres
-rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # Свой локальный порт
+rdc repo tunnel my-app@my-server -c app  # Автоопределение порта для контейнера app
+rdc repo tunnel my-app@my-server -c db --port 5432  # Туннель к Postgres
+rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432  # Свой локальный порт
 ```
 
 Запустите туннель -> откройте `localhost:3000` в браузере -> живое приложение с удалённого сервера.
@@ -174,9 +174,9 @@ rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # Сво
 ### 1. Гранд и форк репозиториев
 
 ```bash
-rdc repo fork --parent my-app -m my-server --tag experiment --up  # Мгновенный CoW-клон + запуск
+rdc repo fork my-app --tag experiment --up  # Мгновенный CoW-клон + запуск
 rdc repo list -m my-server                                  # Показывает: my-app (grand) + my-app:experiment (fork)
-rdc repo delete --name my-app:experiment -m my-server  # Удалить форк, гранд не затронут
+rdc repo delete my-app:experiment  # Удалить форк, гранд не затронут
 ```
 
 **Мгновенное клонирование без копирования.** CoW (copy-on-write). Микросекунды, данные не копируются. Блоки разделяются, пока одна из сторон не выполнит запись.
@@ -192,32 +192,32 @@ rdc repo delete --name my-app:experiment -m my-server  # Удалить форк
 
 ```bash
 # Отправить репозиторий на другую машину
-rdc repo push --name my-app -m my-server --to backup-server
+rdc repo push my-app --to backup-server
 
 # Отправить и автоматически развернуть на целевой машине
-rdc repo push --name my-app -m my-server --to backup-server --up
+rdc backup restore my-app --as my-app -m backup-server --up
 
 # Отправить с CRIU-чекпоинтом (живая миграция, сохранение состояния памяти)
-rdc repo push --name my-app -m my-server --to new-server --checkpoint --up
+rdc repo push my-app --to new-server --checkpoint
 
 # Отправить на новую машину (автоматическое создание через облачного провайдера)
-rdc repo push --name my-app -m my-server --to new-server --provision linode --up
+rdc repo push my-app --to new-server --provision linode
 ```
 
 ### 3. Отправка в облачное хранилище (OneDrive, Google Drive, S3)
 
 ```bash
 # Импортировать конфигурацию rclone как бэкенд хранилища
-rdc config storage import --file ~/rclone.conf
+rdc storage import ~/rclone.conf
 
 # Список доступных хранилищ
 rdc storage list
 
 # Отправить репозиторий в облачное хранилище
-rdc repo push --name my-app -m my-server --to my-s3-backup
+rdc repo push my-app --to my-s3-backup
 
 # Список резервных копий в хранилище
-rdc repo backup list --from my-s3-backup -m my-server
+rdc backup list -m my-server --storage my-s3-backup
 ```
 
 `--to` автоматически определяет, является ли цель машиной или бэкендом хранилища. Работает с любым провайдером, поддерживаемым rclone: S3, R2, B2, OneDrive, Google Drive, SFTP и т.д.
@@ -226,13 +226,13 @@ rdc repo backup list --from my-s3-backup -m my-server
 
 ```bash
 # Получить репозиторий с облачной машины на локальный сервер
-rdc repo pull --name my-app -m my-local-server --from cloud-server
+rdc repo pull my-app@my-local-server --from cloud-server
 
 # Получить из облачного хранилища
-rdc repo pull --name my-app -m my-local-server --from my-s3-backup
+rdc repo pull my-app@my-local-server --from my-s3-backup
 
 # Получить и сразу запустить
-rdc repo pull --name my-app -m my-local-server --from my-s3-backup --up
+rdc repo pull my-app@my-local-server --from my-s3-backup --up
 ```
 
 **Зачем pull?** Ваша локальная машина за NAT. Облако не может отправить данные вам. Но вы можете обратиться к облаку. Pull доставляет репозиторий домой.
@@ -248,9 +248,9 @@ rdc repo pull --name my-app -m my-local-server --from my-s3-backup --up
 ### 1. Конфигурация инфраструктуры
 
 ```bash
-rdc config infra set -m my-server  # Настроить: базовый домен, публичные IP, диапазоны портов
-rdc config infra show -m my-server  # Просмотр конфигурации
-rdc config infra push -m my-server  # Отправить конфигурацию прокси на удалённый сервер
+rdc machine infra set my-server  # Настроить: базовый домен, публичные IP, диапазоны портов
+rdc machine infra show my-server  # Просмотр конфигурации
+rdc machine infra push my-server  # Отправить конфигурацию прокси на удалённый сервер
 ```
 
 **Как работает маршрутизация:**
@@ -261,8 +261,8 @@ rdc config infra push -m my-server  # Отправить конфигураци�
 ### 2. Шаблон прокси
 
 ```bash
-rdc repo admin template apply --name proxy -m my-server -r infra  # Развернуть прокси в репозитории
-rdc repo up --name infra -m my-server  # Запустить Traefik
+rdc repo admin template apply infra --template proxy  # Развернуть прокси в репозитории
+rdc repo up infra -m my-server  # Запустить Traefik
 ```
 
 Теперь Traefik маршрутизирует внешний трафик ко всем репозиториям на этой машине. Каждый контейнер автоматически получает HTTPS-эндпоинт.

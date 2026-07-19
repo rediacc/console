@@ -4,7 +4,7 @@ description: "Развёртывание сервера учётных запи�
 category: "Guides"
 order: 5
 language: ru
-sourceHash: "eea76db2d612133f"
+sourceHash: "a2f88ead9bf140c6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -54,13 +54,13 @@ curl -fsSL https://account.example.com/install.sh | \
 
 ```bash
 # Создайте конфигурацию для вашего локального сервера
-rdc config init --name myserver --server https://account.example.com
+rdc config init myserver --server https://account.example.com
 
 # Выполните вход, используя эту конфигурацию
 rdc --config myserver subscription login
 
 # Все команды с --config используют локальный сервер
-rdc --config myserver machine query --name prod-1
+rdc --config myserver machine status prod-1
 ```
 
 Каждая именованная конфигурация хранит свой URL сервера учётных записей и токен подписки. Переключение конфигураций переключает весь контекст сервера.

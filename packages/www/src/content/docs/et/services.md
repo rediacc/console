@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: et
-sourceHash: "2d470a876c00c352"
+sourceHash: "f33bcf4598caedc8"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -213,7 +213,7 @@ renet ja Docker ei nõustu tahtlikult, kuidas käsitleda konteineri taaskäivitu
 
 **Kuidas triivi parandada.** Kui konteineri `.rediacc.json`-sse salvestatud poliitika on vale (näiteks sellepärast, et muutsite compose'i, kuid ei loonud kunagi konteinerit uuesti), käivitage uuesti `rdc repo up <repo>`. Konteiner luuakse uuesti koos uuendatud salvestatud poliitikaga.
 
-> **Eksperimentaalne:** Külma varukoopia külgfailist taastamine ja `--sync-certs` lipp `rdc machine query` saadeti renet 0.9+-s. Vanemad versioonid toetuvad ainult salvestatud `restart_policy`-le valvekoera taastamiseks, mis võib jätta `on-failure` konteinerid külma varukoopia järel ummikusse.
+> **Eksperimentaalne:** Külma varukoopia külgfailist taastamine ja `--sync-certs` lipp `rdc machine status` saadeti renet 0.9+-s. Vanemad versioonid toetuvad ainult salvestatud `restart_policy`-le valvekoera taastamiseks, mis võib jätta `on-failure` konteinerid külma varukoopia järel ummikusse.
 
 > **Dockeri silla võrgundus on keelatud repositooriumipõhiste deemonite jaoks.** Iga repositooriumipõhine deemon (`FlavorRediacc`) on konfigureeritud koos `"bridge": "none"` ja `"iptables": false`-ga. Tavaline `docker run <image>` repositooriumi kestus käivitub siiski, kuid konteiner saab ainult loopback-liidese ning ei oma DNS-i ega väljuvat ühendust. See on disaini järgi, kuna repositooriumite vaheline loopback-isoleerimine on jõustatud eBPF-cgroup-konksude abil, millest sillaga konteiner möödub. Tootmisteenused peaksid kasutama `renet compose`-it (mis süstib hosti võrgunduse teie eest); ad-hoc silumisel edastage `--network host` selgesõnaliselt: `docker run --rm --network host -it ubuntu bash`.
 >
@@ -226,7 +226,7 @@ renet ja Docker ei nõustu tahtlikult, kuidas käsitleda konteineri taaskäivitu
 Ühendage repositoorium ja käivitage kõik teenused:
 
 ```bash
-rdc repo up --name my-app -m server-1
+rdc repo up my-app
 ```
 
 | Valik | Kirjeldus |
@@ -263,12 +263,12 @@ Pärast `up()` käivitamist testib renet iga HTTP-teenust, kuni see aktsepteerib
 ## Teenuste peatamine
 
 ```bash
-rdc repo down --name my-app -m server-1
+rdc repo down my-app
 ```
 
 | Valik | Kirjeldus |
 |--------|-------------|
-| `--unmount` | Lahtiühendage krüpteeritud repositoorium pärast peatamist. Kui see ei rakendu, kasutage `rdc repo unmount` eraldi. |
+| `--unmount` | Lahtiühendage krüpteeritud repositoorium pärast peatamist. |
 | `--skip-router-restart` | Jätke teeserveri taaskäivitamine pärast toimingut vahele |
 
 Täitmise järjekord on:
@@ -281,7 +281,7 @@ Täitmise järjekord on:
 Käivitage või peatage kõik repositooriumid masinal korraga:
 
 ```bash
-rdc repo up -m server-1
+rdc repo up --all -m server-1
 ```
 
 | Valik | Kirjeldus |
@@ -312,7 +312,7 @@ Sulgemise ajal peatab teenus sujuvalt kõik teenused (Rediaccfile'i `down()`), p
 ### Lubamine
 
 ```bash
-rdc repo autostart enable --name my-app -m server-1
+rdc repo admin autostart enable my-app
 ```
 
 Teilt küsitakse repositooriumi paroolilauset.
@@ -320,13 +320,13 @@ Teilt küsitakse repositooriumi paroolilauset.
 ### Kõigi lubamine
 
 ```bash
-rdc repo autostart enable -m server-1
+rdc repo admin autostart enable
 ```
 
 ### Keelamine
 
 ```bash
-rdc repo autostart disable --name my-app -m server-1
+rdc repo admin autostart disable my-app
 ```
 
 See eemaldab võtmefaili ja tapab LUKS-pesa 1.
@@ -353,7 +353,7 @@ juurutamist.
 ### Oleku loetlemine
 
 ```bash
-rdc repo autostart list -m server-1
+rdc repo admin autostart list -m server-1
 ```
 
 Üksikasjade saamiseks selle kohta, kuidas perioodiline leppija taastab pärast käivitamist seiskunud repositooriumeid, vaadake [Automaatkäivitus ja taastamine](/et/docs/autostart-recovery).
@@ -366,16 +366,16 @@ See juurutab veebirakenduse PostgreSQL-i, Redise ja API-serveriga.
 
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
-rdc config init --name production --ssh-key ~/.ssh/id_ed25519
-rdc config machine add --name prod-1 --ip 203.0.113.50 --user deploy
-rdc config machine setup --name prod-1
-rdc repo create --name webapp -m prod-1 --size 10G
+rdc config init production --ssh-key ~/.ssh/id_ed25519
+rdc machine add prod-1 --ip 203.0.113.50 --user deploy
+rdc machine setup prod-1
+rdc repo create webapp -m prod-1 --size 10G
 ```
 
 ### 2. Ühendamine ja ettevalmistamine
 
 ```bash
-rdc repo mount --name webapp -m prod-1
+rdc repo up webapp --no-start
 ```
 
 ### 3. Rakenduse failide loomine
@@ -434,13 +434,13 @@ down() {
 ### 4. Käivitamine
 
 ```bash
-rdc repo up --name webapp -m prod-1
+rdc repo up webapp
 ```
 
 ### 5. Automaatkäivituse lubamine
 
 ```bash
-rdc repo autostart enable --name webapp -m prod-1
+rdc repo admin autostart enable webapp
 ```
 
 ## Repositooriumipõhiste saladuste kasutamine compose'is

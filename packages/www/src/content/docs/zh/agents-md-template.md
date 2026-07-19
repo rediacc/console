@@ -4,7 +4,7 @@ description: 用于配置 Claude Code、Cursor 和其他 AI 编程助手以使�
 category: Reference
 order: 50
 language: zh
-sourceHash: "7290c90fe7218ea4"
+sourceHash: "1edff3471ded906d"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -37,31 +37,31 @@ On error: {"success": false, "command": "...", "data": null, "errors": [{"code":
 ### Common Operations
 
 # Machine status
-rdc machine query --name <machine> -o json
+rdc machine status <machine> -o json
 
 # List containers on a machine
-rdc machine containers --name <machine> -o json
+rdc machine status <machine> --containers -o json
 
 # Machine health check
-rdc machine health --name <machine> -o json
+rdc machine health <machine> -o json
 
 # Deploy a repository
-rdc repo up --name <repo> -m <machine> --yes
+rdc repo up <repo>@<machine> --yes
 
 # Stop a repository
-rdc repo down --name <repo> -m <machine> --yes
+rdc repo down <repo>@<machine> --yes
 
 # SSH terminal to machine
-rdc term connect -m <machine> 
+rdc term connect <machine> 
 # SSH terminal to specific repo (sets DOCKER_HOST)
-rdc term connect -m <machine> -r <repo>
+rdc term connect <repo>@<machine>
 
 # Run command on machine
-rdc term connect -m <machine> -c "command"
+rdc term connect <machine> -c "command"
 
 # File sync
-rdc repo sync upload -m <machine> -r <repo> --local ./local-path
-rdc repo sync download -m <machine> -r <repo> --local ./local-path
+rdc repo sync upload <repo>@<machine> --local ./local-path
+rdc repo sync download <repo>@<machine> --local ./local-path
 
 # List all available commands
 rdc --help-all
@@ -82,16 +82,16 @@ rdc --help-all
 
 ## 自定义
 
-将 `<machine>` 和 `<repo>` 替换为您实际的机器和仓库名称。运行 `rdc config repository list` 可列出可用仓库及其名称到 GUID 的映射。
+将 `<machine>` 和 `<repo>` 替换为您实际的机器和仓库名称。运行 `rdc repo list` 可列出可用仓库及其名称到 GUID 的映射。
 
 ### 发现您的配置
 
 ```bash
 # List configured machines
-rdc machine query --name <machine-name>
+rdc machine status <machine-name>
 
 # List repositories with GUIDs
-rdc config repository list
+rdc repo list
 
 # Check what commands are available
 rdc --help-all

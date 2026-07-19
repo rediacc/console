@@ -4,7 +4,7 @@ description: "Regole e convenzioni essenziali per creare applicazioni sulla piat
 category: "Guides"
 order: 5
 language: it
-sourceHash: "b2d38b48d1fac737"
+sourceHash: "1ceb078c7eb045b7"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -111,7 +111,7 @@ Renet inietta automaticamente queste in ogni container:
 - **Ripristino consapevole delle dipendenze**: Usa `depends_on` di compose per avviare prima i database (attendere che siano healthy), poi ripristinare i container dell'app tramite CRIU.
 - **Le connessioni TCP diventano obsolete dopo il ripristino**; le app devono gestire `ECONNRESET` e riconnettersi. CRIU non preserva lo stato attivo delle connessioni TCP attraverso il ripristino in nessun flusso supportato.
 - **La modalità sperimentale di Docker** è abilitata automaticamente sui daemon per singolo repository.
-- **CRIU viene installato** durante `rdc config machine setup`.
+- **CRIU viene installato** durante `rdc machine setup`.
 - **`/etc/criu/runc.conf`** è configurato con `tcp-established` per impostazione predefinita.
 - **Le impostazioni di sicurezza del container vengono iniettate automaticamente per i container etichettati**: `renet compose` aggiunge quanto segue ai container con `rediacc.checkpoint=true`:
   - `cap_add`: `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` (set minimale per CRIU su kernel 5.9+)
@@ -132,7 +132,7 @@ Renet inietta automaticamente queste in ogni container:
 
 ### Policy di sicurezza dell'host per OS
 
-Su tutti e cinque gli OS server ufficialmente supportati (vedi [Requisiti](/it/docs/requirements)), il daemon docker per singolo repository e i container che esegue usano **etichette container predefinite**. `rdc config machine setup` non installa una policy SELinux personalizzata né un profilo AppArmor. Questa è una scelta intenzionale: il compromesso è che i processi dei container vengono eseguiti con la policy di etichettatura predefinita del sistema operativo host, non con un profilo di confinamento specifico di Rediacc. Se il tuo modello di minaccia richiede controlli di accesso obbligatori a livello di container, configurali a livello di host prima di distribuire.
+Su tutti e cinque gli OS server ufficialmente supportati (vedi [Requisiti](/it/docs/requirements)), il daemon docker per singolo repository e i container che esegue usano **etichette container predefinite**. `rdc machine setup` non installa una policy SELinux personalizzata né un profilo AppArmor. Questa è una scelta intenzionale: il compromesso è che i processi dei container vengono eseguiti con la policy di etichettatura predefinita del sistema operativo host, non con un profilo di confinamento specifico di Rediacc. Se il tuo modello di minaccia richiede controlli di accesso obbligatori a livello di container, configurali a livello di host prima di distribuire.
 
 - **Ubuntu 24.04 / openSUSE Leap 16.0**: AppArmor è abilitato per impostazione predefinita. I container vengono eseguiti con il profilo docker-container predefinito. L'unica eccezione è CRIU (`apparmor=unconfined` per i container con `rediacc.checkpoint=true`, come indicato sopra).
 - **Fedora 43 / Oracle Linux 10**: SELinux è in modalità enforcing per impostazione predefinita. I container ottengono il contesto standard `container_t`. Non è necessaria l'installazione di policy aggiuntive. Se un passaggio di configurazione fallisce con denial AVC, consulta [Risoluzione dei problemi → Denial SELinux](/it/docs/troubleshooting).

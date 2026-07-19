@@ -4,7 +4,7 @@ description: "Ejecutar el servidor de cuentas y la distribución del CLI en tu p
 category: "Guides"
 order: 5
 language: es
-sourceHash: "eea76db2d612133f"
+sourceHash: "a2f88ead9bf140c6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -54,13 +54,13 @@ Si te conectas a múltiples servidores (on-premise, producción, edge), las conf
 
 ```bash
 # Crear una config para tu servidor on-premise
-rdc config init --name myserver --server https://account.example.com
+rdc config init myserver --server https://account.example.com
 
 # Iniciar sesión usando esa config
 rdc --config myserver subscription login
 
 # Todos los comandos con --config usan el servidor on-premise
-rdc --config myserver machine query --name prod-1
+rdc --config myserver machine status prod-1
 ```
 
 Cada config con nombre almacena su propia URL del servidor de cuentas y token de suscripción. Cambiar de config cambia todo el contexto del servidor.

@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 41
 language: ar
-sourceHash: "fe334c1c94a0f417"
+sourceHash: "b8bd3176ecabfa4b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -34,7 +34,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 يجمّد فرع عمل مثبتاً في نقطة إيداع جديدة غير قابلة للتعديل.
 
 ```bash
-rdc repo commit --name <fork> --message "<message>" -m <machine>
+rdc repo commit <fork> --message "<message>"
 ```
 
 | الخيار | الوصف | الافتراضي |
@@ -52,7 +52,7 @@ rdc repo commit --name <fork> --message "<message>" -m <machine>
 ينشئ مرجع فرع مسمى يشير إلى نقطة الإيداع الحالية لفرع العمل.
 
 ```bash
-rdc repo branch --branch <name> --name <fork>
+rdc repo branch <fork> --branch <name>
 ```
 
 | الخيار | الوصف | الافتراضي |
@@ -67,8 +67,8 @@ rdc repo branch --branch <name> --name <fork>
 يستنسخ نقطة إيداع غير قابلة للتعديل (أو طرف فرع) عبر رابط مرجعي إلى فرع عمل جديد قابل للكتابة.
 
 ```bash
-rdc repo checkout --ref <commit> --tag <newFork> -m <machine>
-rdc repo checkout --ref <branchName> --from <fork> --tag <newFork> -m <machine>
+rdc repo checkout <commit> --tag <newFork>
+rdc repo checkout <branchName> --from <fork> --tag <newFork>
 ```
 
 | الخيار | الوصف | الافتراضي |
@@ -87,7 +87,7 @@ rdc repo checkout --ref <branchName> --from <fork> --tag <newFork> -m <machine>
 يستعرض سجل الإيداعات القابلة للوصول من فرع عمل أو نقطة إيداع.
 
 ```bash
-rdc repo log --name <fork> -m <machine>
+rdc repo log <fork>
 ```
 
 | الخيار | الوصف | الافتراضي |
@@ -104,8 +104,8 @@ rdc repo log --name <fork> -m <machine>
 يدمج نقطة إيداع أو فرع مصدر في فرع عمل هدف، دون تعديل الهدف الحي في مكانه.
 
 ```bash
-rdc repo merge --name <target> --from <source> -m <machine>
-rdc repo merge --name <target> --from <source> --resolve theirs -m <machine>
+rdc repo merge <target> --from <source>
+rdc repo merge <target> --from <source> --resolve theirs
 ```
 
 | الخيار | الوصف | الافتراضي |
@@ -139,12 +139,12 @@ rdc repo gc --apply -m <machine>    # حذف الإيداعات غير القا�
 
 تُحسَب قابلية الوصول من التكوين المحلي (مخزن المراجع): مجموعة الإيداعات القابلة للوصول بمتابعة كل طرف فرع و HEAD أسفل سلسلة الآباء. الإيداعات الغير قابلة للتعديل على الجهاز خارج تلك المجموعة غير قابلة للوصول. لا يُجمَع كائن مثبت أو فرع عمل.
 
-### rdc repo fsck
+### rdc repo admin fsck
 
 يتحقق من مراجع التكوين مقابل الكائنات الموجودة على الجهاز.
 
 ```bash
-rdc repo fsck -m <machine>
+rdc repo admin fsck -m <machine>
 ```
 
 | الخيار | الوصف | الافتراضي |
@@ -158,7 +158,7 @@ rdc repo fsck -m <machine>
 `rdc repo fork --immutable` يضع علامة على الفرع الجديد بأنه للقراءة فقط عند الإنشاء، منتجاً قاعدة مكافئة لنقطة إيداع دون خطوة `commit` منفصلة.
 
 ```bash
-rdc repo fork --parent <name> --tag <tag> --immutable -m <machine>
+rdc repo fork <name> --tag <tag> --immutable
 ```
 
 يرفض الفرع الغير قابل للتعديل الوصل، مما يحافظ على استقرار صورته على مستوى البايتات إلى الأبد. هذا مفيد كقاعدة مجمّدة لنقل الدلتا بين الأجهزة، حيث يجب أن تكون القاعدة متطابقة على كلا الطرفين. لإجراء تغييرات، استرجعه (أو فرّعه مجدداً) في نسخة قابلة للكتابة.
@@ -168,28 +168,28 @@ rdc repo fork --parent <name> --tag <tag> --immutable -m <machine>
 ### إيداع فرع عمل
 
 ```bash
-$ rdc repo commit --name myapp:work --message "schema migration applied" -m server-1
+$ rdc repo commit myapp:work --message "schema migration applied"
 Committed 4f3c2a1b9d8e: schema migration applied
 ```
 
 ### إيداع مع مؤلف صريح
 
 ```bash
-$ rdc repo commit --name myapp:work --message "nightly snapshot" --author ci-bot -m server-1
+$ rdc repo commit myapp:work --message "nightly snapshot" --author ci-bot
 Committed 7a1b2c3d4e5f: nightly snapshot
 ```
 
 ### تسمية فرع عند نقطة الإيداع الحالية
 
 ```bash
-$ rdc repo branch --branch staging --name myapp:work
+$ rdc repo branch myapp:work --branch staging
 Branch "staging" -> 4f3c2a1b9d8e
 ```
 
 ### استرجاع نقطة إيداع في فرع عمل جديد قابل للكتابة
 
 ```bash
-$ rdc repo checkout --ref 4f3c2a1b9d8e --tag rollback-test -m server-1
+$ rdc repo checkout 4f3c2a1b9d8e --tag rollback-test
 ```
 
 ### استرجاع طرف فرع بالاسم
@@ -197,13 +197,13 @@ $ rdc repo checkout --ref 4f3c2a1b9d8e --tag rollback-test -m server-1
 مع `--from`، تُحلّ قيمة `--ref` كاسم فرع على فرع العمل المعطى:
 
 ```bash
-$ rdc repo checkout --ref staging --from myapp:work --tag staging-copy -m server-1
+$ rdc repo checkout staging --from myapp:work --tag staging-copy
 ```
 
 ### استعراض السجل
 
 ```bash
-$ rdc repo log --name myapp:work -m server-1
+$ rdc repo log myapp:work
 commit 4f3c2a1b9d8e
   Author: ci-bot  Date: 2026-05-29T10:14:02Z
   schema migration applied
@@ -217,7 +217,7 @@ commit 9d8e7a1b2c3d
 `--json` يُخرج الاستعراض المنظَّم، الأحدث أولاً:
 
 ```bash
-$ rdc repo log --name myapp:work --json -m server-1
+$ rdc repo log myapp:work -o json
 {
   "success": true,
   "start": "4f3c2a1b9d8e",
@@ -239,8 +239,8 @@ $ rdc repo log --name myapp:work --json -m server-1
 يعمل `rdc repo diff` بين أي نقطتَي إيداع لأنهما تشتركان في سلف ذي نسخ عند الكتابة. استرجع نقطة إيداع ثم قارنها بأخرى:
 
 ```bash
-$ rdc repo checkout --ref 4f3c2a1b9d8e --tag review -m server-1
-$ rdc repo diff --name review --base myapp:work -m server-1
+$ rdc repo checkout 4f3c2a1b9d8e --tag review
+$ rdc repo diff review --base myapp:work
 M  db/schema.sql
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -251,7 +251,7 @@ M  db/schema.sql
 ### دمج خط عمل مراجَع
 
 ```bash
-$ rdc repo merge --name myapp:main --from myapp:work -m server-1
+$ rdc repo merge myapp:main --from myapp:work
 Merged myapp:work into myapp:main
 ```
 
@@ -260,7 +260,7 @@ Merged myapp:work into myapp:main
 يُرفض الهدف المثبت أو قيد التشغيل ما لم يُعطَ `--force`، الذي يُهدئه أولاً:
 
 ```bash
-$ rdc repo merge --name myapp:main --from myapp:work --force -m server-1
+$ rdc repo merge myapp:main --from myapp:work --force
 Merged myapp:work into myapp:main
 ```
 
@@ -269,7 +269,7 @@ Merged myapp:work into myapp:main
 فرعان (`feature` و`hotfix`) مسترجَعان من نفس نقطة الإيداع كلٌّ عدَّل بعض الملفات. `--resolve theirs` يطوي المصدر (`hotfix`) في الهدف (`feature`): تُؤخذ الملفات التي عدَّل جانبٌ واحدٌ منها من ذلك الجانب، وتُحلّ الملفات التي عدَّلها الجانبان لصالح المصدر. يُكتشف الأساس تلقائياً من السلف المشترك (أو حدّده بـ `--base`):
 
 ```bash
-$ rdc repo merge --name myapp:feature --from myapp:hotfix --resolve theirs -m server-1
+$ rdc repo merge myapp:feature --from myapp:hotfix --resolve theirs
 Merged myapp:hotfix into myapp:feature (three-way); 1 conflict(s) resolved --theirs: [config/app.yaml]
 ```
 
@@ -278,7 +278,7 @@ Merged myapp:hotfix into myapp:feature (three-way); 1 conflict(s) resolved --the
 ### إنشاء قاعدة غير قابلة للتعديل مباشرة
 
 ```bash
-$ rdc repo fork --parent myapp --tag baseline-v1 --immutable -m server-1
+$ rdc repo fork myapp --tag baseline-v1 --immutable
 ```
 
 ## نقل الدلتا والسحب
@@ -289,19 +289,19 @@ $ rdc repo fork --parent myapp --tag baseline-v1 --immutable -m server-1
 
 ```bash
 # الدفع الأول هو نقل كامل؛ يحتفظ أيضاً بقاعدة قابلة لإعادة الاستخدام على كلا الطرفين.
-$ rdc repo push --name myapp:work --to-machine backup-1 -m server-1
+$ rdc repo push myapp:work --to backup-1
 
 # بعد التغييرات المحلية، يشحن الدفع التالي الكتل المتغيرة فقط دون راية.
-$ rdc repo push --name myapp:work --to-machine backup-1 -m server-1
+$ rdc repo push myapp:work --to backup-1
 
 # تحديد قاعدة صريحة (نقطة إيداع غير قابلة للتعديل موجودة على كلا الجهازين).
-$ rdc repo push --name myapp:work --to-machine backup-1 --delta-base 4f3c2a1b9d8e -m server-1
+$ rdc repo push myapp:work --to backup-1 --delta-base 4f3c2a1b9d8e
 
 # يعمل نقل الدلتا أيضاً عكسياً، بسحب الكتل المتغيرة فقط من جهاز المصدر.
-$ rdc repo pull --name myapp:work --from-machine backup-1 --delta-base 4f3c2a1b9d8e -m server-1
+$ rdc repo pull myapp:work --from backup-1 --delta-base 4f3c2a1b9d8e
 
 # إعادة سحب مستودع محلي موجود (استبداله) بـ --force.
-$ rdc repo pull --name myapp:work --from-machine backup-1 --force -m server-1
+$ rdc repo pull myapp:work --from backup-1 --force
 ```
 
 ينطبق نقل الدلتا فقط بين الأجهزة (جهاز بعيد مع قاعدة FIEMAP). الدفع إلى تخزين الكائنات السحابي ينقل الصورة الكاملة دائماً. يجب أن تكون القاعدة متطابقة تماماً على الطرفين، وهو ما يضمنه بالضبط نقطة إيداع غير قابلة للتعديل أو فرع `--immutable`.
