@@ -10,11 +10,12 @@ let mockState: Record<string, unknown> = {};
 vi.mock('../../adapters/config-file-storage.js', () => ({
   configFileStorage: {
     updateState: vi.fn(
-      async (
+      (
         _name: string,
         fn: (cfg: Record<string, unknown>) => Record<string, unknown>
       ): Promise<void> => {
-        mockState = fn({ state: mockState.state }) as Record<string, unknown>;
+        mockState = fn({ state: mockState.state });
+        return Promise.resolve();
       }
     ),
   },
