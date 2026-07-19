@@ -50,12 +50,23 @@ function resolveUrl(slug: string, lang: VideoLang, field: 'mp4' | 'vertical' | '
   if (!VIDEO_CDN_BASE_URL) return localFallback[field];
 
   const manifest = loadManifest();
-  // Optional-chained deliberately: a slug absent from the manifest used to throw
-  // here ("Cannot read properties of undefined"), which failed the whole CDN
-  // build rather than degrading one player. A page can legitimately render the
-  // video section before its videos are published, and check-solution-videos.ts
-  // is the gate that catches that — this path must not be a second, louder one.
-  const path = manifest.solutions[slug]?.[lang]?.[field]?.path;
+  // VideoManifest types every level as Record<string, …>, so without
+  // noUncheckedIndexedAccess TypeScript believes each index access always
+  // resolves. It does not: a slug absent from the manifest yields undefined and
+  // used to throw here ("Cannot read properties of undefined"), failing the
+  // whole CDN build rather than degrading one player. Widening to admit
+  // undefined (a plain assignment — Record<string, T> is assignable to
+  // Record<string, T | undefined>, no cast needed) makes the lookup honest and
+  // the optional chaining below genuinely load-bearing.
+  //
+  // A page can legitimately render the video section before its videos are
+  // published; check-solution-videos.ts is the gate that catches that, and this
+  // path must not become a second, louder one.
+  const solutions: Record<
+    string,
+    Record<string, Record<string, { path?: string } | undefined> | undefined> | undefined
+  > = manifest.solutions;
+  const path = solutions[slug]?.[lang]?.[field]?.path;
   if (!path) return localFallback[field];
 
   return `${VIDEO_CDN_BASE_URL}/${path}`;
