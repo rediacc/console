@@ -32,7 +32,8 @@ rdc repo diff <fork> --base <repo>   # herhangi bir ilgili depoya karşı karş�
 
 | Seçenek | Açıklama | Varsayılan |
 |--------|----------|-----------|
-| `--base <ref>` | Karşılaştırılacak depo (temel, eski taraf). Varsayılan olarak yerel konfigürasyondan çözümlenen pozisyonel referansın ana deposu. | referansın ana deposu |
+| `<ref>` (konumsal) | İncelenecek depo referansı (hedef, yeni taraf). Zorunlu. | zorunlu |
+| `--base <ref>` | Karşılaştırılacak depo (temel, eski taraf). Varsayılan olarak yerel konfigürasyondan çözümlenen konumsal referansın ana deposu. | referansın ana deposu |
 | (format bayrağı yok) | Ad-durum çıktısı: değişen her dosya için renkli `A`/`M`/`D`/`R` harfi ve bir satırlık özet. | açık |
 | `--name-only` | Satır başına bir değişen yol, durum harfi yok. Pipe dostu. | kapalı |
 | `--stat` | Dosya başına değişiklik büyüklüğü (bayt ve blok deltaları) ve toplamlar alt bilgisi. | kapalı |

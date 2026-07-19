@@ -63,6 +63,7 @@ rdc repo sync status my-app
 | Seçenek | Açıklama |
 |---------|----------|
 | `-m, --machine <name>` | Hedef makine |
+| `<ref>` (konumsal) | Hedef depo referansı: `name`, `name:tag`, isteğe bağlı olarak `@machine` |
 | `--local <paths...>` | Bir veya daha fazla yerel dosya/dizin yolu (yükleme) ya da yerel hedef dizin (indirme) |
 | `--remote <path>` | Uzak dizin (depo bağlama noktasına göre) |
 | `--remote-file <path>` | Tek dosya yüklemeleri veya indirmeleri için uzak dosya yolu (`--remote` yerine) |

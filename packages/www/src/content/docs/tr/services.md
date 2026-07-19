@@ -127,6 +127,26 @@ Servis adlarını **slot** numaralarıyla eşler. Her slot, deponun alt ağı i�
 3. Yeni servislere bir sonraki kullanılabilir slotu atar
 4. Sonucu `{repository}/.rediacc.json` dosyasına kaydeder
 
+### Yetenek Etiketleri
+
+Konteynerler varsayılan olarak asgari bir Linux yetenek kümesiyle çalışır. Bir servis, `docker-compose.yml` dosyasına bir etiket ekleyerek ek yeteneklere dahil olur:
+
+| Etiket | Verdiği yetkiler | Kullanım amacı |
+|--------|------------------|----------------|
+| `rediacc.checkpoint=true` | `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` | CRIU denetim noktası/geri yükleme (canlı taşıma, kaydet ve sürdür) |
+| `rediacc.wireguard=true` | `NET_ADMIN` ve `/dev/net/tun` aygıtı | Konteyner içinde bir WireGuard istemcisi çalıştırma |
+
+```yaml
+services:
+  vpn:
+    image: alpine
+    labels:
+      - "rediacc.wireguard=true"
+```
+
+`rediacc.wireguard`, bir servisin WireGuard tüneli açmasına izin verir; örneğin tek bir süreci uzak bir uç nokta üzerinden yönlendirmek için. Her servis host ağıyla çalıştığı için tüneli konteyner içindeki bir ağ ad alanıyla sınırlayın, aksi hâlde host'un yönlendirmesi değişir. `privileged: true`, `pid: host` ve `ipc: host` gibi geniş ayrıcalık seçenekleri, etiketlerden bağımsız olarak doğrulama tarafından reddedilmeye devam eder.
+
+
 ### IP Hesaplama
 
 Bir servisin IP'si, deponun ağ kimliğinden ve servisin slotundan hesaplanır. Ağ kimliği, `127.x.y.z` loopback adresinin ikinci, üçüncü ve dördüncü oktetlerine dağıtılır. Servisler ofset 2'den başlar:

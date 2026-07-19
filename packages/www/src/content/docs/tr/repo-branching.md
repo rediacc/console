@@ -39,6 +39,7 @@ rdc repo commit <fork> --message "<message>"
 
 | Seçenek | Açıklama | Varsayılan |
 |---------|----------|------------|
+| `<ref>` (konumsal) | Commit edilecek çalışma fork'u. Bağlı olmalıdır. Zorunlu. | zorunlu |
 | `--message <msg>` | Commit mesajı. Zorunlu. | zorunlu |
 | `--author <author>` | Commit meta verisine kaydedilen commit yazarı. | ayarlanmamış |
 | `--debug` | Stderr'de ayrıntılı tanılamalar. | kapalı |
@@ -56,6 +57,7 @@ rdc repo branch <fork> --branch <name>
 | Seçenek | Açıklama | Varsayılan |
 |---------|----------|------------|
 | `--branch <branch>` | Yeni dalın adı. Zorunlu. | zorunlu |
+| `<ref>` (konumsal) | Dalın işaret ettiği geçerli commit'e sahip çalışma fork'u. Zorunlu. | zorunlu |
 
 Bu yalnızca yapılandırma işlemidir. Makinede hiçbir iş olmaz. Dal ref'i bir adı çalışma fork'unun `headCommit`'ine eşler; bu nedenle fork'un önce en az bir commit'i olmalıdır.
 
@@ -70,6 +72,7 @@ rdc repo checkout <branchName> --from <fork> --tag <newFork>
 
 | Seçenek | Açıklama | Varsayılan |
 |---------|----------|------------|
+| `<commit-or-branch-ref>` (konumsal) | Checkout edilecek commit GUID'i veya `--from` verildiğinde bir dal adı. Zorunlu. | zorunlu |
 | `--tag <name>` | Yeni yazılabilir çalışma fork'unun adı. Zorunlu. | zorunlu |
 | `--from <workingFork>` | Bu çalışma fork'unun dal kümesinde `--ref`'i dal adı olarak çözümler. | doğrudan commit |
 | `--debug` | Stderr'de ayrıntılı tanılamalar. | kapalı |
@@ -87,6 +90,7 @@ rdc repo log <fork>
 
 | Seçenek | Açıklama | Varsayılan |
 |---------|----------|------------|
+| `<ref>` (konumsal) | Geçmiş yürüyüşünün başlayacağı çalışma fork'u veya commit. Zorunlu. | zorunlu |
 | `-o json` | Commit geçmişini JSON olarak çıktıla. | `table` |
 | `--debug` | Stderr'de ayrıntılı tanılamalar. | kapalı |
 
@@ -103,6 +107,7 @@ rdc repo merge <target> --from <source> --resolve theirs
 
 | Seçenek | Açıklama | Varsayılan |
 |---------|----------|------------|
+| `<ref>` (konumsal) | İçine birleştirilecek hedef çalışma fork'u. Zorunlu. | zorunlu |
 | `--from <source>` | Birleştirilecek kaynak commit veya fork. Zorunlu. | zorunlu |
 | `--force` | Önce bağlı veya çalışan bir hedefi susturun, sonra birleştirin. Canlı bağlamayı hiçbir zaman değiştirmez. | kapalı |
 | `--resolve <ours\|theirs>` | Dosya başına üç yollu birleştirme: kaynağın dosya başına değişikliklerini hedefe katlayın; her iki tarafta değişen dosyalar için kaynağın sürümünü tutun (`ours`) veya alın (`theirs`). Tüm görüntü alma-onların için atlayın. | kapalı |

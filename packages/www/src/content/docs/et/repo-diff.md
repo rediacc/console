@@ -32,6 +32,7 @@ rdc repo diff <fork> --base <repo>   # diff against an arbitrary related repo
 
 | Valik | Kirjeldus | Vaikeväärtus |
 |--------|-------------|---------|
+| `<ref>` (positsiooniline) | Uuritava hoidla viide (sihtmärk, uus pool). Kohustuslik. | kohustuslik |
 | `--base <ref>` | Hoidla, millega võrreldakse (baaspool, vana pool). Vaikimisi on see positsioonilise viite vanem, mis lahendatakse kohalikust konfiguratsioonist. | viite vanem |
 | (formaadivali puudub) | Nime-staatuse väljund: värviline `A`/`M`/`D`/`R` täht muutunud faili kohta pluss üherealisi kokkuvõte. | sees |
 | `--name-only` | Üks muutunud tee rea kohta, staatuse täht puudub. Müra-sõbralik. | välja |

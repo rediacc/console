@@ -61,6 +61,7 @@ rdc repo sync status my-app
 | Valik | Kirjeldus |
 |--------|-------------|
 | `-m, --machine <name>` | Sihtkohaks olev masin |
+| `<ref>` (positsiooniline) | Siht-hoidla viide: `name`, `name:tag`, valikuliselt `@machine` |
 | `--local <paths...>` | Üks või mitu kohaliku faili või kataloogi teed (üleslaadimine) või kohalik sihtkataloog (allalaadimine) |
 | `--remote <path>` | Kaugkataloog (suhteliselt repositooriumi ühenduspunktist) |
 | `--remote-file <path>` | Kaugfaili tee ühe faili üles- või allalaadimiseks (alternatiiv `--remote`-le) |

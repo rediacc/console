@@ -39,6 +39,7 @@ rdc repo commit <hark> --message "<sõnum>"
 
 | Valik | Kirjeldus | Vaikimisi |
 |--------|-------------|---------|
+| `<ref>` (positsiooniline) | Komitatav töötav hark. Peab olema haagitud. Kohustuslik. | kohustuslik |
 | `--message <msg>` | Komiti sõnum. Kohustuslik. | kohustuslik |
 | `--author <author>` | Komiti autor, mis salvestatakse komiti metaandmetesse. | seadmata |
 | `--debug` | Detailsed diagnostikateated stderr-i. | väljas |
@@ -56,6 +57,7 @@ rdc repo branch <fork> --branch <nimi>
 | Valik | Kirjeldus | Vaikimisi |
 |--------|-------------|---------|
 | `--branch <branch>` | Uue haru nimi. Kohustuslik. | kohustuslik |
+| `<ref>` (positsiooniline) | Töötav hark, mille praegusele komitile haru osutab. Kohustuslik. | kohustuslik |
 
 See on ainult konfiguratsioonitoimingud. Masinal ei toimu midagi. Haru viide kaardistab nime töötava hargi `headCommit`-ile, seega peab hargil olema vähemalt üks komit esmalt.
 
@@ -70,6 +72,7 @@ rdc repo checkout <haruNimi> --from <hark> --tag <uusHark>
 
 | Valik | Kirjeldus | Vaikimisi |
 |--------|-------------|---------|
+| `<commit-or-branch-ref>` (positsiooniline) | Väljavõetava komiti GUID või haru nimi, kui `--from` on antud. Kohustuslik. | kohustuslik |
 | `--tag <name>` | Uue kirjutatava töötava hargi nimi. Kohustuslik. | kohustuslik |
 | `--from <workingFork>` | Lahendab positsioonilise viite haru nimeks selle töötava hargi harude hulgas. | otsene komit |
 | `--debug` | Detailsed diagnostikateated stderr-i. | väljas |
@@ -87,6 +90,7 @@ rdc repo log <hark>
 
 | Valik | Kirjeldus | Vaikimisi |
 |--------|-------------|---------|
+| `<ref>` (positsiooniline) | Töötav hark või komit, millest ajaloo läbimist alustada. Kohustuslik. | kohustuslik |
 | `-o json` | Väljasta komitide ajalugu JSON-ina. | `table` |
 | `--debug` | Detailsed diagnostikateated stderr-i. | väljas |
 
@@ -103,6 +107,7 @@ rdc repo merge <sihtmärk> --from <allikas> --resolve theirs
 
 | Valik | Kirjeldus | Vaikimisi |
 |--------|-------------|---------|
+| `<ref>` (positsiooniline) | Sihtmärk-töötav hark, millesse ühendada. Kohustuslik. | kohustuslik |
 | `--from <source>` | Lähtekomit või hark, millest ühendada. Kohustuslik. | kohustuslik |
 | `--force` | Vaigistu ühendatud või töötav sihtmärk esmalt, seejärel ühenda. Ei muuda kunagi elavat ühendust. | väljas |
 | `--resolve <ours\|theirs>` | Failipõhine kolmesuunaline ühendamine: voldi allika failipõhised muudatused sihtmärgile, hoides (`ours`) või võttes (`theirs`) allika versiooni failide jaoks, mis on muutunud mõlemal poolel. Välja jätmisel võetakse kogu kujutis allikast. | väljas |
@@ -124,6 +129,7 @@ rdc repo gc --apply -m <masin>    # kustuta kättesaamatud komitid
 
 | Valik | Kirjeldus | Vaikimisi |
 |--------|-------------|---------|
+| `-m, --machine <name>` | Masin, millelt koguda. Kohustuslik. | kohustuslik |
 | `--apply` | Kustuta tegelikult kättesaamatud komitid (muidu kuiva jooksu eelvaade). | väljas |
 | `--debug` | Detailsed diagnostikateated stderr-i. | väljas |
 

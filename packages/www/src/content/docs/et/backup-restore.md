@@ -269,6 +269,7 @@ rdc backup strategy set weekly-cold \
 
 | Valik | Kirjeldus |
 |--------|-------------|
+| `<strategy>` (positsiooniline) | Strateegia nimi (kasutatakse masinaga sidumiseks) |
 | `--destination <storage>` | Salvestusteenuse pakkuja üleslaadimiseks |
 | `--cron <expression>` | Cron-avaldis (nt `"0 2 * * *"` päevaks kell 2) |
 | `--mode <hot\|cold>` | Varundamisrežiim |
@@ -410,6 +411,7 @@ rdc repo migrate my-app@server-1 --to server-2
 
 | Valik | Kirjeldus |
 |--------|-------------|
+| `<ref>` (positsiooniline) | Teisaldatava hoidla viide; selle `@machine` osa määrab lähte |
 | `--to <place>` | Sihtmasin või klaster |
 | `--provision` | Provisiona repositoorium sihtmasinat enne ülekandmist |
 | `--checkpoint` | Loo CRIU kontrollpunkt enne migreerimist |
