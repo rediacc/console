@@ -90,7 +90,10 @@ The test for every failure: **"Could this fix be wrong in a way that changes pro
 - Any suppression: BLOCKER entries, allowlists, blocklists, `test.fixme`.
 - A count/baseline that moved and you cannot reconcile **with a mechanism**. A count that moved is a question, not a chore — and a count that *improved* is as suspicious as one that got worse.
 
-**Escalation format** (the same structure in both modes): the failing gate, the complete relevant log excerpt, 2–3 candidate fixes with blast radius, and your recommendation. **In-context**: STOP and put it to the user — AskUserQuestion or a structured report; the turn may end on it (keep the CI watch armed). **Delegated**: one message to the lead. Either way, while waiting: keep draining the tier-1/2 queue but **do not push** — a push that predates the ruling burns a full CI round.
+**Handling a tier-3 depends on mode.**
+
+- **In-context (default `/pr-babysit`): AUTONOMOUS — never ask the user.** Decide it yourself and keep the loop moving. Take the safest reversible option; log the call in a **DECISIONS (post-hoc review)** section of the round log with the alternative you rejected and why, so the user can veto after the fact rather than being interrupted. Tie-breakers, in order: (1) never destroy data or weaken a check; (2) complete an already-ruled intent rather than re-litigate it; (3) smallest change that makes the gate honest; (4) genuinely 50/50 → pick one, log it, move on. Irreversible-outside-the-PR actions (push main, merge, release, delete remote data) are simply forbidden — not escalated.
+- **Delegated (`bg`)**: one message to the lead — the failing gate, the complete log excerpt, 2–3 candidate fixes with blast radius, your recommendation. While waiting, keep draining tier-1/2 but **do not push**.
 
 ## Workers — delegate the typing, keep the loop
 

@@ -68,6 +68,19 @@ vi.mock('../account/license.js', () => ({
   refreshRepoLicenseIdentity: mockRefreshRepoLicenseIdentity,
 }));
 
+// The opportunistic licence refresh is gated by a COOLDOWN persisted to a real
+// file under the user's state dir. Without this mock the test reads whatever
+// that file happens to hold on the machine running it: on a developer box that
+// has run `rdc` recently the cooldown suppresses the refresh and the test
+// passes, while CI — with a clean state dir — takes the refresh path and gets a
+// different error code. It passed locally and failed in CI for exactly that
+// reason. Point it at a per-process temp path so the test decides its own state.
+vi.mock('../account/license-refresh-state.js', () => ({
+  isRefreshDue: vi.fn(() => Promise.resolve(false)),
+  markRefreshAttempted: vi.fn(() => Promise.resolve()),
+  LICENSE_REFRESH_COOLDOWN_MS: 12 * 60 * 60 * 1000,
+}));
+
 vi.mock('../account/subscription-device-auth.js', () => ({
   authorizeSubscriptionViaDeviceCode: mockAuthorizeSubscriptionViaDeviceCode,
 }));

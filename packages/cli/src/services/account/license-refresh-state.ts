@@ -12,13 +12,22 @@
  * already decides per repo whether to issue, refresh, or leave alone
  * (`/account/api/v1/licenses/activate-repo-batch`), so calling it on a slow
  * cadence IS the age-based policy; this file only bounds how often we ask.
+ *
+ * State lives in the CONFIG (`state.licenseRefresh`), not in a sidecar file.
+ * A separate `license-refresh-state.json` under the user's state dir made the
+ * CLI's behaviour depend on machine-local litter that nothing else knew about,
+ * and it leaked straight into the test suite: `local-executor.test.ts` passed on
+ * a developer box that had run `rdc` recently and failed in CI, because the
+ * sidecar's mere presence decided which code path executed. Config state is
+ * already mocked, versioned, inspectable, and travels with the config it
+ * describes.
+ *
+ * Written through `updateState`, so cooldown churn never bumps the config's
+ * version counter (R2-F2) — the same treatment `state.networkIds` gets.
  */
 
-import {
-  readUpdateState as readState,
-  writeUpdateState as writeState,
-} from '@rediacc/shared/update';
-import { LICENSE_REFRESH_STATE_FILE } from '../../utils/platform.js';
+import { configFileStorage } from '../../adapters/config-file-storage.js';
+import { configService } from '../config/config-resources.js';
 
 /**
  * How long to wait between refresh attempts for a given machine.
@@ -29,43 +38,11 @@ import { LICENSE_REFRESH_STATE_FILE } from '../../utils/platform.js';
  */
 export const LICENSE_REFRESH_COOLDOWN_MS = 12 * 60 * 60 * 1000;
 
-/**
- * The on-disk shape. `lastAttemptAt` is optional because the reader casts
- * untrusted JSON (`parsed as T`) without validating it — a hand-edited or
- * half-written file can satisfy the schemaVersion check and still be missing
- * the map. Declaring it required here would make the type lie about data this
- * process does not control.
- */
-interface StoredLicenseRefreshState {
-  schemaVersion: 1;
-  lastAttemptAt?: Record<string, number>;
-}
-
-/** The shape after `read()` has filled in anything the file omitted. */
-interface LicenseRefreshState extends StoredLicenseRefreshState {
-  lastAttemptAt: Record<string, number>;
-}
-
-const DEFAULT_STATE: LicenseRefreshState = {
-  schemaVersion: 1,
-  lastAttemptAt: {},
-};
-
-async function read(): Promise<LicenseRefreshState> {
-  const state = await readState<StoredLicenseRefreshState>(
-    LICENSE_REFRESH_STATE_FILE,
-    DEFAULT_STATE
-  );
-  // Normalise here so every caller downstream can rely on the map existing;
-  // refusing to refresh because bookkeeping is malformed would be the wrong
-  // failure.
-  return { ...state, lastAttemptAt: state.lastAttemptAt ?? {} };
-}
-
 /** Whether enough time has passed to attempt a refresh for this machine. */
 export async function isRefreshDue(machineName: string, now = Date.now()): Promise<boolean> {
-  const state = await read();
-  const last = state.lastAttemptAt[machineName];
+  const config = await configService.getCurrent();
+  const last = config?.state?.licenseRefresh?.[machineName];
+
   if (typeof last !== 'number' || Number.isNaN(last)) return true;
   // A timestamp in the future means a clock change, not a recent refresh.
   // Treating it as recent would suppress refreshes until the clock caught up.
@@ -82,7 +59,15 @@ export async function isRefreshDue(machineName: string, now = Date.now()): Promi
  * blocking work, so a failed opportunistic refresh never strands anyone.
  */
 export async function markRefreshAttempted(machineName: string, now = Date.now()): Promise<void> {
-  const state = await read();
-  state.lastAttemptAt[machineName] = now;
-  await writeState(LICENSE_REFRESH_STATE_FILE, state);
+  const configName = configService.getEffectiveConfigName();
+  await configFileStorage.updateState(configName, (config) => ({
+    ...config,
+    state: {
+      ...(config.state ?? {}),
+      licenseRefresh: {
+        ...(config.state?.licenseRefresh ?? {}),
+        [machineName]: now,
+      },
+    },
+  }));
 }
