@@ -47,12 +47,6 @@ interface ProcessResult {
 // Configuration for each locale directory
 const LOCALE_CONFIGS: LocaleConfig[] = [
   {
-    name: 'web',
-    dir: path.join(__dirname, '../packages/web/src/i18n/locales'),
-    // Web has multiple namespace files (common.json, auth.json, etc.)
-    multipleNamespaces: true,
-  },
-  {
     name: 'cli',
     dir: path.join(__dirname, '../packages/cli/src/i18n/locales'),
     // CLI has single file per language (cli.json)

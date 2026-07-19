@@ -6,6 +6,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { resolveRequiredDirOption } from './shared/require-path-option.js';
 
 // Cache for loaded locale data
 let localeCache = new Map();
@@ -94,14 +95,14 @@ export const crossLanguageConsistency = {
 
   create(context) {
     const options = context.options[0] || {};
-    const localesDir = options.localesDir || 'packages/web/src/i18n/locales';
     const sourceLanguage = options.sourceLanguage || 'en';
 
     // Resolve paths
-    const projectRoot = process.cwd();
-    const absoluteLocalesDir = path.isAbsolute(localesDir)
-      ? localesDir
-      : path.join(projectRoot, localesDir);
+    const absoluteLocalesDir = resolveRequiredDirOption(
+      'i18n/cross-language-consistency',
+      'localesDir',
+      options.localesDir,
+    );
 
     // Get current file info
     const filename = context.filename;

@@ -240,7 +240,6 @@ interface ManifestConfig {
 }
 
 const MANIFEST_CONFIGS: ManifestConfig[] = [
-  { name: 'web', dir: 'packages/web/src/i18n/locales', flatFiles: false },
   { name: 'cli', dir: 'packages/cli/src/i18n/locales', flatFiles: false },
   { name: 'www', dir: 'packages/www/src/i18n/translations', flatFiles: true },
   { name: 'account-web', dir: 'private/account/web/src/i18n/locales', flatFiles: false },

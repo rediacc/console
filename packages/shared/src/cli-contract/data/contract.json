@@ -1938,7 +1938,7 @@
       "group": "INFRASTRUCTURE",
       "plane": "config",
       "descriptionKey": "commands.cluster.status.description",
-      "label": "List all clusters, or show one cluster's full config with --name.",
+      "label": "List all clusters, or pass a cluster name to show that cluster's full config.",
       "options": [],
       "positionals": [
         {
@@ -7976,7 +7976,7 @@
       "group": "REPOSITORIES",
       "plane": "machine",
       "descriptionKey": "commands.repo.diff.description",
-      "label": "Git-style file-level diff between two copy-on-write forked repositories. Reports Added, Modified, Deleted, and Renamed files. Diffs the repository given by --name (the target / new side) against its parent, resolved from local config, or against an explicit --base repository (the base / old side). Metadata-only and size-independent: it diffs the encrypted LUKS images at the block level without decrypting them, so a 1 GB repo and a 100 GB repo diff in the same milliseconds.",
+      "label": "Git-style file-level diff between two copy-on-write forked repositories. Reports Added, Modified, Deleted, and Renamed files. Diffs the repository given by the positional <ref> (the target / new side) against its parent, resolved from local config, or against an explicit --base repository (the base / old side). Metadata-only and size-independent: it diffs the encrypted LUKS images at the block level without decrypting them, so a 1 GB repo and a 100 GB repo diff in the same milliseconds.",
       "options": [
         {
           "flags": "--base <ref>",
@@ -7990,7 +7990,7 @@
           ],
           "tier": "common",
           "descriptionKey": "commands.repo.diff.baseOption",
-          "label": "Repository to diff against (the base / old side); defaults to the parent of --name"
+          "label": "Repository to diff against (the base / old side); defaults to the parent of <ref>"
         },
         {
           "flags": "--name-only",

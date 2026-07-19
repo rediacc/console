@@ -169,6 +169,12 @@ jobs:
           cp dist/cli/manifest.json dist/pages/cli/
 
       - name: Build package repositories
+        # build-pkg-repo.sh hard-exits on an empty --channel, and the nightly
+        # (schedule) run derives channel="" on purpose to avoid orphaning ~5 GB
+        # of R2 bytes. Every UPLOAD step here already self-gates; this is a BUILD
+        # step, so it was never covered by that invariant and reddened the whole
+        # nightly. Same gate as its neighbours.
+        if: inputs.channel != ''
         run: |
           VERSION="${{ inputs.next_version }}"
 

@@ -5,6 +5,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { resolveRequiredDirOption } from './shared/require-path-option.js';
 
 // Cache for loaded translations
 let translationCache = new Map();
@@ -114,13 +115,12 @@ export const interpolationMatch = {
 
   create(context) {
     const options = context.options[0] || {};
-    const localeDir = options.localeDir || 'packages/web/src/i18n/locales/en';
-
     // Resolve relative to project root
-    const projectRoot = process.cwd();
-    const absoluteLocaleDir = path.isAbsolute(localeDir)
-      ? localeDir
-      : path.join(projectRoot, localeDir);
+    const absoluteLocaleDir = resolveRequiredDirOption(
+      'i18n-source/interpolation-match',
+      'localeDir',
+      options.localeDir,
+    );
 
     const translations = loadTranslations(absoluteLocaleDir);
 

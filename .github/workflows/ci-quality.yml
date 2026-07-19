@@ -17,6 +17,12 @@ on:
         required: false
       DOCKERHUB_TOKEN:
         required: false
+      R2_MEDIA_ACCESS_KEY_ID:
+        required: false
+      R2_MEDIA_SECRET_ACCESS_KEY:
+        required: false
+      R2_MEDIA_ENDPOINT:
+        required: false
 
 permissions:
   contents: read
@@ -183,6 +189,18 @@ jobs:
       # Without this build the gate does not fail — it CRASHES with ERR_MODULE_NOT_FOUND,
       # which is why it went unnoticed locally, where dist/ is already warm.
       - run: npm run build:packages
+      # check:i18n -> validate:content -> validate:tutorial-audio asserts that every
+      # narration .mp3 referenced by a tutorial timeline exists on disk. The audio cache
+      # is gitignored and lives in R2, so without this restore AUDIO_TREE_PRESENT is
+      # false (validate-tutorial-audio.js:63) and that assertion silently skips --
+      # the gate has never once run it in CI. Failing here is deliberate: a skip is
+      # exactly the false-green this step exists to remove.
+      - name: Restore tutorial-narration audio cache from R2
+        env:
+          R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
+          R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
+          R2_MEDIA_ENDPOINT: ${{ secrets.R2_MEDIA_ENDPOINT }}
+        run: .ci/scripts/deploy/sync-media-from-r2.sh --audio-only
       - run: npm run check:i18n
       - run: npm run check:ci-search-index
 

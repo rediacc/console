@@ -47,23 +47,34 @@ interface LocaleCheckConfig {
 }
 
 const LOCALE_CONFIGS: LocaleCheckConfig[] = [
-  { name: 'web', dir: path.join(__dirname, '../packages/web/src/i18n/locales'), useNamespacePrefix: true, flatFiles: false },
   { name: 'cli', dir: path.join(__dirname, '../packages/cli/src/i18n/locales'), useNamespacePrefix: false, flatFiles: false },
   { name: 'www', dir: path.join(__dirname, '../packages/www/src/i18n/translations'), useNamespacePrefix: false, flatFiles: true },
   { name: 'account-web', dir: path.join(__dirname, '../private/account/web/src/i18n/locales'), useNamespacePrefix: true, flatFiles: false },
   { name: 'account-emails', dir: path.join(__dirname, '../private/account/src/i18n/locales'), useNamespacePrefix: false, flatFiles: false },
 ];
 
-function loadEnglishFlat(config: LocaleCheckConfig): Record<string, string> | null {
+/**
+ * Load the flattened English source for a configured locale set.
+ *
+ * Throws (rather than returning null) when the English source is absent: a
+ * declared locale set with no English source is a broken configuration, not a
+ * set with nothing to check. Returning null here previously let the caller
+ * treat a vanished tree as "clean".
+ */
+function loadEnglishFlat(config: LocaleCheckConfig): Record<string, string> {
   if (config.flatFiles) {
     const enFile = path.join(config.dir, 'en.json');
-    if (!fs.existsSync(enFile)) return null;
+    if (!fs.existsSync(enFile)) {
+      throw new Error(`[${config.name}] English source file missing: ${enFile}`);
+    }
     const content = JSON.parse(fs.readFileSync(enFile, 'utf-8')) as Record<string, unknown>;
     return flattenJson(content, '');
   }
 
   const enDir = path.join(config.dir, 'en');
-  if (!fs.existsSync(enDir)) return null;
+  if (!fs.existsSync(enDir)) {
+    throw new Error(`[${config.name}] English source directory missing: ${enDir}`);
+  }
 
   const result: Record<string, string> = {};
   const jsonFiles = fs.readdirSync(enDir).filter((f) => f.endsWith('.json'));
@@ -134,10 +145,6 @@ function checkLocaleDir(config: LocaleCheckConfig): string[] {
 
   // Compute current hashes using the same algorithm as the generator
   const currentFlat = loadEnglishFlat(config);
-  if (!currentFlat) {
-    errors.push(`English source not found for ${config.name}`);
-    return errors;
-  }
   const currentHashes: Record<string, string> = {};
   // Re-compute using flattenAndHash (CRC32) for hash comparison
   if (config.flatFiles) {
@@ -242,9 +249,25 @@ function checkLocaleDir(config: LocaleCheckConfig): string[] {
 function main(): void {
   const errors: string[] = [];
 
+  // Declared-set assertion: every configured locale tree MUST exist. Skipping
+  // missing dirs silently (the previous behaviour) meant a tree that was moved,
+  // renamed or deleted dropped out of hash validation while the gate still
+  // printed "up-to-date". The set of validated trees must equal the set of
+  // declared trees.
   for (const config of LOCALE_CONFIGS) {
-    if (fs.existsSync(config.dir)) {
+    if (!fs.existsSync(config.dir)) {
+      errors.push(
+        `[${config.name}] Configured locale directory does not exist: ${config.dir}\n` +
+          `  → The tree was moved, renamed or deleted. Update LOCALE_CONFIGS in ` +
+          `scripts/check-translation-hashes.ts (and its writer half, ` +
+          `scripts/generate-translation-hashes.ts) to match reality.`
+      );
+      continue;
+    }
+    try {
       errors.push(...checkLocaleDir(config));
+    } catch (err) {
+      errors.push(err instanceof Error ? err.message : String(err));
     }
   }
 
