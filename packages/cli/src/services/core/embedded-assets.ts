@@ -266,6 +266,12 @@ export async function extractRenetToLocal(): Promise<string> {
 
   const binary = getEmbeddedRenetBinary(platform, arch);
   await fs.mkdir(dir, { recursive: true, mode: 0o700 });
+  // mkdir's `mode` applies only when it creates the directory. An extraction dir
+  // left over from an earlier release (or widened by a permissive umask) keeps
+  // its old permissions, so narrow it explicitly rather than assuming.
+  if (platform !== 'windows') {
+    await fs.chmod(dir, 0o700);
+  }
 
   const tmpPath = path.join(dir, `renet.${process.pid}.tmp`);
   await fs.writeFile(tmpPath, binary);
@@ -305,6 +311,10 @@ export function extractRenetToLocalSync(): string {
 
   const binary = getEmbeddedRenetBinary(platform, arch);
   fsSync.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  // See the async path: mkdir's `mode` does not narrow a pre-existing directory.
+  if (platform !== 'windows') {
+    fsSync.chmodSync(dir, 0o700);
+  }
 
   const tmpPath = path.join(dir, `renet.${process.pid}.tmp`);
   fsSync.writeFileSync(tmpPath, binary);
