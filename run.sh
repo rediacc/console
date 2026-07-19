@@ -222,6 +222,29 @@ _tutorial_script_hash() {
     cat "$script" "$helpers" 2>/dev/null | sha256sum | awk '{print $1}'
 }
 
+# --- VM provisioning ----------------------------------------------------------
+# These wrap `rdc ops`, which owns local KVM/QEMU provisioning. They existed as
+# call sites with no definitions anywhere in the repo: `./run.sh provision
+# start|stop|status` and the tutorial recorder both died with
+# "provision_start: command not found" (exit 127). The recorder is the only way
+# to regenerate tutorial casts, so that surface was completely unreachable.
+#
+# `rdc ops up` also writes $_BRIDGE_SSH_CONFIG (see the note below), which is
+# what the bridge helpers need, so there is nothing left for a separate
+# post-setup step to do -- the recorder bootstraps the bridge itself right
+# after provisioning.
+provision_start() {
+    "$ROOT_DIR/rdc.sh" ops up "$@"
+}
+
+provision_stop() {
+    "$ROOT_DIR/rdc.sh" ops down
+}
+
+provision_status() {
+    "$ROOT_DIR/rdc.sh" ops status
+}
+
 # --- Bridge recording helpers -------------------------------------------------
 # Tutorials are recorded INSIDE the bridge VM so the local host's
 # ~/.config/rediacc is never touched and the cast captures a pristine machine.
@@ -456,7 +479,6 @@ www_tutorials_record() {
     # Provision the cluster (bridge + workers) and prepare host->bridge SSH.
     log_step "Provisioning VMs for tutorial recording..."
     provision_start
-    provision_post_setup
 
     # The backup-restore tutorial pushes to an S3-compatible storage. RustFS
     # runs on the bridge VM (renet-managed container); bucket name must match
@@ -1493,11 +1515,10 @@ main() {
                     ;;
                 stop) provision_stop ;;
                 status) provision_status ;;
-                auto) provision_auto ;;
                 *)
                     log_error "Unknown provision command: ${1:-}"
                     echo ""
-                    echo "Usage: ./run.sh provision [start|stop|status|auto]"
+                    echo "Usage: ./run.sh provision [start|stop|status]"
                     exit 1
                     ;;
             esac
