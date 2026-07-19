@@ -217,7 +217,7 @@ rdc storage list
 rdc repo push my-app --to my-s3-backup
 
 # Список резервных копий в хранилище
-rdc backup list -m my-server --storage my-s3-backup
+rdc backup list --storage my-s3-backup
 ```
 
 `--to` автоматически определяет, является ли цель машиной или бэкендом хранилища. Работает с любым провайдером, поддерживаемым rclone: S3, R2, B2, OneDrive, Google Drive, SFTP и т.д.

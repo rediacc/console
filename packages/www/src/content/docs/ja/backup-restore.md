@@ -80,7 +80,7 @@ rdc repo pull my-app --from my-storage
 ストレージの場所にある利用可能なバックアップを表示します：
 
 ```bash
-rdc backup list -m server-1 --storage my-storage
+rdc backup list --storage my-storage
 ```
 
 出力は [スケジュールバックアップ](#スケジュールバックアップ) のフォルダ（`hot/` と `cold/`）の両方をマージした統一テーブルで、すべてのバックアップを 1 つのビューで確認できます。
@@ -96,8 +96,8 @@ rdc backup list -m server-1 --storage my-storage
 特定のモードに絞り込むには `--path` を渡します。
 
 ```bash
-rdc backup list -m server-1 --storage my-storage --path hot
-rdc backup list -m server-1 --storage my-storage --path cold
+rdc backup list --storage my-storage --path hot
+rdc backup list --storage my-storage --path cold
 ```
 
 ### ストレージレイアウト

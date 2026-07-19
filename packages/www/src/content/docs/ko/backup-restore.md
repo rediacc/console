@@ -80,7 +80,7 @@ rdc repo pull my-app --from my-storage
 스토리지 위치에서 사용 가능한 백업을 확인합니다.
 
 ```bash
-rdc backup list -m server-1 --storage my-storage
+rdc backup list --storage my-storage
 ```
 
 출력은 [예약 백업 폴더](#scheduled-backups)(`hot/`과 `cold/`) 모두를 병합한 통합 테이블로, 모든 백업을 한 번에 볼 수 있습니다.
@@ -96,8 +96,8 @@ rdc backup list -m server-1 --storage my-storage
 단일 모드를 조회하려면 `--path`를 전달하세요.
 
 ```bash
-rdc backup list -m server-1 --storage my-storage --path hot
-rdc backup list -m server-1 --storage my-storage --path cold
+rdc backup list --storage my-storage --path hot
+rdc backup list --storage my-storage --path cold
 ```
 
 ### 스토리지 레이아웃

@@ -49,7 +49,7 @@ Schreibgeschützte Anmeldedaten zur Bereitstellungszeit. `get` gibt nur den Dige
 | `rdc repo push ... --bwlimit <limit>` | rsync-Bandbreite beim Hochladen begrenzen (z. B. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | rsync-Bandbreite beim Herunterladen begrenzen |
 | `rdc repo push ... --checkpoint` | Container vor dem Hochladen sichern |
-| `rdc backup list --storage <storage> -m <machine>` | Verfügbare Sicherungen im Speicher auflisten |
+| `rdc backup list --storage <storage> | Verfügbare Sicherungen im Speicher auflisten |
 | `rdc storage browse <storage>` | Speicherinhalte durchsuchen |
 
 ## Repository-Migration

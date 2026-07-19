@@ -184,7 +184,7 @@ export const CLI_CONTRACT: CliContract = {
           "label": "List the backups stored for a machine."
         },
         {
-          "command": "rdc backup list -m prod-1 --storage backups-s3",
+          "command": "rdc backup list --storage backups-s3",
           "values": {
             "machine": "prod-1",
             "storage": "backups-s3"

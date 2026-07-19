@@ -80,7 +80,7 @@ Il download verifica sempre che il repository di destinazione sia montato prima 
 Visualizza i backup disponibili in una posizione di storage:
 
 ```bash
-rdc backup list -m server-1 --storage my-storage
+rdc backup list --storage my-storage
 ```
 
 L'output è una tabella unificata che unisce entrambe le [cartelle dei backup pianificati](#backup-pianificati) (`hot/` e `cold/`) in modo da vedere ogni backup in un'unica vista:
@@ -96,8 +96,8 @@ L'output è una tabella unificata che unisce entrambe le [cartelle dei backup pi
 Per approfondire una singola modalità, passare `--path`:
 
 ```bash
-rdc backup list -m server-1 --storage my-storage --path hot
-rdc backup list -m server-1 --storage my-storage --path cold
+rdc backup list --storage my-storage --path hot
+rdc backup list --storage my-storage --path cold
 ```
 
 ### Layout dello storage

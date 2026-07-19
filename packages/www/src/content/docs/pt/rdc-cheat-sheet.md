@@ -49,7 +49,7 @@ Credenciais de implantação apenas de escrita. `get` devolve apenas o digest. O
 | `rdc repo push ... --bwlimit <limit>` | Limitar a largura de banda rsync durante o envio (p. ex. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Limitar a largura de banda rsync durante a receção |
 | `rdc repo push ... --checkpoint` | Criar checkpoint dos contentores antes de enviar |
-| `rdc backup list --storage <storage> -m <machine>` | Listar backups disponíveis no armazenamento |
+| `rdc backup list --storage <storage> | Listar backups disponíveis no armazenamento |
 | `rdc storage browse <storage>` | Navegar pelo conteúdo do armazenamento |
 
 ## Migração de Repositório

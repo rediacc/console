@@ -49,7 +49,7 @@ sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 | `rdc repo push ... --bwlimit <limit>` | 推送时限制 rsync 带宽（如 `10M`） |
 | `rdc repo pull ... --bwlimit <limit>` | 拉取时限制 rsync 带宽 |
 | `rdc repo push ... --checkpoint` | 推送前对容器创建检查点 |
-| `rdc backup list --storage <storage> -m <machine>` | 列出存储中的可用备份 |
+| `rdc backup list --storage <storage> | 列出存储中的可用备份 |
 | `rdc storage browse <storage>` | 浏览存储内容 |
 
 ## 仓库迁移

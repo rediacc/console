@@ -80,7 +80,7 @@ rdc repo pull my-app --from my-storage
 Просмотрите доступные резервные копии в хранилище:
 
 ```bash
-rdc backup list -m server-1 --storage my-storage
+rdc backup list --storage my-storage
 ```
 
 Вывод представляет собой объединённую таблицу, которая сводит обе [папки запланированных резервных копий](#запланированное-резервное-копирование) (`hot/` и `cold/`), так что вы видите каждую резервную копию в одном представлении:
@@ -96,8 +96,8 @@ rdc backup list -m server-1 --storage my-storage
 Чтобы перейти к одному режиму, передайте `--path`:
 
 ```bash
-rdc backup list -m server-1 --storage my-storage --path hot
-rdc backup list -m server-1 --storage my-storage --path cold
+rdc backup list --storage my-storage --path hot
+rdc backup list --storage my-storage --path cold
 ```
 
 ### Раскладка хранилища

@@ -80,7 +80,7 @@ Pull kontrollib alati enne kirjutamist, kas siht-repositoorium on ühendatud. Ku
 Vaata salvestuskohas saadaolevaid varukoopiad:
 
 ```bash
-rdc backup list -m server-1 --storage my-storage
+rdc backup list --storage my-storage
 ```
 
 Väljund on ühtne tabel, mis ühendab mõlemad [ajastatud varundamise kaustad](#ajastatud-varundamine) (`hot/` ja `cold/`), et näeksid kõiki varukoopiad ühes vaates:
@@ -96,8 +96,8 @@ Väljund on ühtne tabel, mis ühendab mõlemad [ajastatud varundamise kaustad](
 Ühe režiimis süvitsi minekuks kasuta `--path`:
 
 ```bash
-rdc backup list -m server-1 --storage my-storage --path hot
-rdc backup list -m server-1 --storage my-storage --path cold
+rdc backup list --storage my-storage --path hot
+rdc backup list --storage my-storage --path cold
 ```
 
 ### Salvestuse paigutus

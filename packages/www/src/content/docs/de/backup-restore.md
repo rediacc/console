@@ -80,7 +80,7 @@ Pull prüft immer, ob das Ziel-Repository eingehängt ist, bevor geschrieben wir
 Verfügbare Backups an einem Speicherort anzeigen:
 
 ```bash
-rdc backup list -m server-1 --storage my-storage
+rdc backup list --storage my-storage
 ```
 
 Die Ausgabe ist eine vereinheitlichte Tabelle, die beide [Ordner für geplante Backups](#geplante-backups) (`hot/` und `cold/`) zusammenführt, sodass Sie jedes Backup in einer einzigen Ansicht sehen:
@@ -96,8 +96,8 @@ Die Ausgabe ist eine vereinheitlichte Tabelle, die beide [Ordner für geplante B
 Um in einen einzelnen Modus hineinzuzoomen, übergeben Sie `--path`:
 
 ```bash
-rdc backup list -m server-1 --storage my-storage --path hot
-rdc backup list -m server-1 --storage my-storage --path cold
+rdc backup list --storage my-storage --path hot
+rdc backup list --storage my-storage --path cold
 ```
 
 ### Storage layout

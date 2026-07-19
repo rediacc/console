@@ -49,7 +49,7 @@ Credenciales de solo escritura en tiempo de despliegue. `get` devuelve solo el r
 | `rdc repo push ... --bwlimit <limit>` | Limitar el ancho de banda de rsync al subir (p. ej. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Limitar el ancho de banda de rsync al bajar |
 | `rdc repo push ... --checkpoint` | Guardar punto de control de contenedores antes de subir |
-| `rdc backup list --storage <storage> -m <machine>` | Listar las copias de seguridad disponibles en el almacenamiento |
+| `rdc backup list --storage <storage> | Listar las copias de seguridad disponibles en el almacenamiento |
 | `rdc storage browse <storage>` | Explorar el contenido del almacenamiento |
 
 ## Migración de repositorios

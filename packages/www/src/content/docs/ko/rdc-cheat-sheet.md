@@ -49,7 +49,7 @@ sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 | `rdc repo push ... --bwlimit <limit>` | 푸시 중 rsync 대역폭 제한 (예: `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | 풀 중 rsync 대역폭 제한 |
 | `rdc repo push ... --checkpoint` | 푸시 전 컨테이너 체크포인트 생성 |
-| `rdc backup list --storage <storage> -m <machine>` | 스토리지의 사용 가능한 백업 나열 |
+| `rdc backup list --storage <storage> | 스토리지의 사용 가능한 백업 나열 |
 | `rdc storage browse <storage>` | 스토리지 내용 탐색 |
 
 ## 리포지터리 마이그레이션

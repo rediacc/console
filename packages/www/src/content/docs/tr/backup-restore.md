@@ -83,7 +83,7 @@ Pull, yazmadan önce her zaman hedef deponun bağlı olup olmadığını kontrol
 Bir depolama konumundaki mevcut yedekleri görüntüleyin:
 
 ```bash
-rdc backup list -m server-1 --storage my-storage
+rdc backup list --storage my-storage
 ```
 
 Çıktı, hem [zamanlanmış yedekleme klasörlerini](#zamanlanmis-yedeklemeler) (`hot/` ve `cold/`) birleştiren birleşik bir tablodur; böylece her yedeği tek bir görünümde görebilirsiniz:
@@ -99,8 +99,8 @@ rdc backup list -m server-1 --storage my-storage
 Tek bir moda inmek için `--path` geçirin:
 
 ```bash
-rdc backup list -m server-1 --storage my-storage --path hot
-rdc backup list -m server-1 --storage my-storage --path cold
+rdc backup list --storage my-storage --path hot
+rdc backup list --storage my-storage --path cold
 ```
 
 ### Depolama düzeni

@@ -80,7 +80,7 @@ A receção verifica sempre que o repositório de destino está montado antes de
 Ver os backups disponíveis numa localização de armazenamento:
 
 ```bash
-rdc backup list -m server-1 --storage my-storage
+rdc backup list --storage my-storage
 ```
 
 A saída é uma tabela unificada que combina ambas as [pastas de backups agendados](#backups-agendados) (`hot/` e `cold/`) para que veja todos os backups numa só vista:
@@ -96,8 +96,8 @@ A saída é uma tabela unificada que combina ambas as [pastas de backups agendad
 Para analisar um único modo, passe `--path`:
 
 ```bash
-rdc backup list -m server-1 --storage my-storage --path hot
-rdc backup list -m server-1 --storage my-storage --path cold
+rdc backup list --storage my-storage --path hot
+rdc backup list --storage my-storage --path cold
 ```
 
 ### Layout de armazenamento

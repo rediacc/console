@@ -82,7 +82,7 @@ rdc repo pull my-app --from my-storage
 عرض النسخ الاحتياطية المتاحة في موقع تخزين:
 
 ```bash
-rdc backup list -m server-1 --storage my-storage
+rdc backup list --storage my-storage
 ```
 
 الإخراج عبارة عن جدول موحَّد يدمج كلا مجلدَي [النسخ الاحتياطية المجدولة](#scheduled-backups) (`hot/` و `cold/`) لرؤية كل نسخة احتياطية في عرض واحد:
@@ -98,8 +98,8 @@ rdc backup list -m server-1 --storage my-storage
 للتنقيب في وضع واحد، مرّر `--path`:
 
 ```bash
-rdc backup list -m server-1 --storage my-storage --path hot
-rdc backup list -m server-1 --storage my-storage --path cold
+rdc backup list --storage my-storage --path hot
+rdc backup list --storage my-storage --path cold
 ```
 
 ### تخطيط التخزين

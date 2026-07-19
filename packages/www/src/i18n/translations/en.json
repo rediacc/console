@@ -8608,7 +8608,7 @@
           "description": "Verify your first backup in under a minute. Start your 14-day free trial.",
           "primaryCta": "Start free trial",
           "tierBadge": "14-day free trial · Cancel anytime",
-          "command": "rdc backup list --storage backup-vault -m primary"
+          "command": "rdc backup list --storage backup-vault"
         },
         "techStrip": {
           "label": "Verify any containerized workload",

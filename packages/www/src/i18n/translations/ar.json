@@ -4762,7 +4762,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc backup list --storage backup-vault -m primary",
+          "command": "rdc backup list --storage backup-vault",
           "description": "ابدأ مع الإصدار المجاني Community. تحقق من أول نسخة في أقل من دقيقة.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "بدون بطاقة ائتمان",

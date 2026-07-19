@@ -49,7 +49,7 @@ Yalnızca dağıtım sırasında yazılabilen kimlik bilgileri. `get` komutu yal
 | `rdc repo push ... --bwlimit <limit>` | Gönderme sırasında rsync bant genişliğini sınırla (örn. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Alma sırasında rsync bant genişliğini sınırla |
 | `rdc repo push ... --checkpoint` | Göndermeden önce konteynerlerde kontrol noktası oluştur |
-| `rdc backup list --storage <storage> -m <machine>` | Depolamadaki mevcut yedeklemeleri listele |
+| `rdc backup list --storage <storage> | Depolamadaki mevcut yedeklemeleri listele |
 | `rdc storage browse <storage>` | Depolama içeriğine göz at |
 
 ## Depo Taşıma

@@ -20,7 +20,7 @@
     "recorded": "rdc repo push --name my-app --machine machine-11 --to my-storage"
   },
   "tutorial-backup-restore#cast-step-3": {
-    "commandFull": "rdc backup list --storage my-storage -m <machine-name>",
+    "commandFull": "rdc backup list --storage my-storage",
     "recorded": "rdc repo backup list --from my-storage --machine machine-11"
   },
   "tutorial-backup-restore#cast-step-4": {

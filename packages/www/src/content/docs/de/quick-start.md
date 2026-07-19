@@ -217,7 +217,7 @@ rdc storage list
 rdc repo push my-app --to my-s3-backup
 
 # Backups im Speicher auflisten
-rdc backup list -m my-server --storage my-s3-backup
+rdc backup list --storage my-s3-backup
 ```
 
 `--to` erkennt automatisch, ob das Ziel eine Maschine oder ein Speicher-Backend ist. Funktioniert mit jedem von rclone unterstützten Anbieter: S3, R2, B2, OneDrive, Google Drive, SFTP usw.

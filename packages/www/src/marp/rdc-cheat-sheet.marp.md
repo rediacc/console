@@ -282,7 +282,7 @@ rdc repo fork <parent> --tag <tag> --checkpoint
 rdc repo pull <repo> --from <storage>
 
 # List available backups on storage
-rdc backup list <repo> -m <machine> --storage <storage>
+rdc backup list <repo> --storage <storage>
 
 # Configure backup schedule
 rdc backup strategy set primary \

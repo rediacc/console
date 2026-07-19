@@ -49,7 +49,7 @@ sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 | `rdc repo push ... --bwlimit <limit>` | Ограничить пропускную способность rsync при отправке (например `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Ограничить пропускную способность rsync при получении |
 | `rdc repo push ... --checkpoint` | Создать контрольную точку контейнеров перед отправкой |
-| `rdc backup list --storage <storage> -m <machine>` | Список доступных резервных копий в хранилище |
+| `rdc backup list --storage <storage> | Список доступных резервных копий в хранилище |
 | `rdc storage browse <storage>` | Просмотреть содержимое хранилища |
 
 ## Миграция репозитория

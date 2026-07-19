@@ -4797,7 +4797,7 @@
           "title": "Cosa ottieni"
         },
         "bottomCta": {
-          "command": "rdc backup list --storage backup-vault -m primary",
+          "command": "rdc backup list --storage backup-vault",
           "description": "Inizia con l'edizione Community gratuita. Verifica il tuo primo backup in meno di un minuto.",
           "primaryCta": "Inizia Gratis con Community",
           "tierBadge": "Nessuna carta di credito richiesta",

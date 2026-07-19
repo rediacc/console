@@ -49,7 +49,7 @@ sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 | `rdc repo push ... --bwlimit <limit>` | プッシュ時の rsync 帯域幅を制限する (例: `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | プル時の rsync 帯域幅を制限する |
 | `rdc repo push ... --checkpoint` | プッシュ前にコンテナのチェックポイントを作成する |
-| `rdc backup list --storage <storage> -m <machine>` | ストレージ内の利用可能なバックアップを一覧表示する |
+| `rdc backup list --storage <storage> | ストレージ内の利用可能なバックアップを一覧表示する |
 | `rdc storage browse <storage>` | ストレージの内容を参照する |
 
 ## リポジトリの移行

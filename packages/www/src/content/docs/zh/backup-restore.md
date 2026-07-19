@@ -80,7 +80,7 @@ rdc repo pull my-app --from my-storage
 查看存储位置中的可用备份：
 
 ```bash
-rdc backup list -m server-1 --storage my-storage
+rdc backup list --storage my-storage
 ```
 
 输出是一个统一的表格，合并了两个[计划备份](#scheduled-backups)文件夹（`hot/` 和 `cold/`），让您一次看到所有备份：
@@ -96,8 +96,8 @@ rdc backup list -m server-1 --storage my-storage
 要深入查看单一模式，传入 `--path`：
 
 ```bash
-rdc backup list -m server-1 --storage my-storage --path hot
-rdc backup list -m server-1 --storage my-storage --path cold
+rdc backup list --storage my-storage --path hot
+rdc backup list --storage my-storage --path cold
 ```
 
 ### 存储布局

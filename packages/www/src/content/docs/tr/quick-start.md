@@ -217,7 +217,7 @@ rdc storage list
 rdc repo push my-app --to my-s3-backup
 
 # Depolamadaki yedekleri listeleyin
-rdc backup list -m my-server --storage my-s3-backup
+rdc backup list --storage my-s3-backup
 ```
 
 `--to` hedefin bir makine mi yoksa depolama arka ucu mu olduğunu otomatik algılar. rclone destekli tüm sağlayıcılarla çalışır: S3, R2, B2, OneDrive, Google Drive, SFTP, vb.

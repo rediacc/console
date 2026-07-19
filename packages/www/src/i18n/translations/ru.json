@@ -4773,7 +4773,7 @@
           "title": "Что вы получаете"
         },
         "bottomCta": {
-          "command": "rdc backup list --storage backup-vault -m primary",
+          "command": "rdc backup list --storage backup-vault",
           "description": "Начните с бесплатной редакции Community. Верифицируйте первый бэкап за 60 секунд.",
           "primaryCta": "Начать бесплатно с Community",
           "tierBadge": "Кредитная карта не требуется",

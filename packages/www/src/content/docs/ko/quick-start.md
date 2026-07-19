@@ -217,7 +217,7 @@ rdc storage list
 rdc repo push my-app --to my-s3-backup
 
 # 스토리지의 백업 목록
-rdc backup list -m my-server --storage my-s3-backup
+rdc backup list --storage my-s3-backup
 ```
 
 `--to`는 대상이 머신인지 스토리지 백엔드인지 자동으로 감지합니다. 모든 rclone 지원 공급자와 작동합니다: S3, R2, B2, OneDrive, Google Drive, SFTP 등.

@@ -49,7 +49,7 @@ Credenziali di deploy accessibili solo in scrittura. `get` restituisce solo il d
 | `rdc repo push ... --bwlimit <limit>` | Limita la banda rsync durante il push (es. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Limita la banda rsync durante il pull |
 | `rdc repo push ... --checkpoint` | Esegui il checkpoint dei container prima del push |
-| `rdc backup list --storage <storage> -m <machine>` | Elenca i backup disponibili nello storage |
+| `rdc backup list --storage <storage> | Elenca i backup disponibili nello storage |
 | `rdc storage browse <storage>` | Esplora il contenuto dello storage |
 
 ## Migrazione dei repository

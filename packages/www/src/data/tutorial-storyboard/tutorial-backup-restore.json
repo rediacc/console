@@ -56,8 +56,8 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "command": "rdc backup list --storage my-storage -m my-server",
-        "commandFull": "rdc backup list --storage my-storage -m <machine-name>"
+        "command": "rdc backup list --storage my-storage",
+        "commandFull": "rdc backup list --storage my-storage"
       }
     },
     {

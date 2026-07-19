@@ -49,7 +49,7 @@ sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 | `rdc repo push ... --bwlimit <limit>` | تحديد عرض نطاق rsync أثناء الرفع (مثال: `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | تحديد عرض نطاق rsync أثناء السحب |
 | `rdc repo push ... --checkpoint` | عمل نقطة تحقق للحاويات قبل الرفع |
-| `rdc backup list --storage <storage> -m <machine>` | عرض النسخ الاحتياطية المتاحة في التخزين |
+| `rdc backup list --storage <storage> | عرض النسخ الاحتياطية المتاحة في التخزين |
 | `rdc storage browse <storage>` | تصفح محتويات التخزين |
 
 ## نقل المستودعات

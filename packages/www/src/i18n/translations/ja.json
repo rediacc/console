@@ -4770,7 +4770,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc backup list --storage backup-vault -m primary",
+          "command": "rdc backup list --storage backup-vault",
           "description": "無料のCommunityエディションから始めましょう。1分以内に最初のバックアップを検証できます。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "クレジットカード不要",

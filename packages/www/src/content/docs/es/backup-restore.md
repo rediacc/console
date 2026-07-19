@@ -80,7 +80,7 @@ Pull siempre verifica que el repositorio de destino esté montado antes de escri
 Ver los respaldos disponibles en una ubicación de almacenamiento:
 
 ```bash
-rdc backup list -m server-1 --storage my-storage
+rdc backup list --storage my-storage
 ```
 
 La salida es una tabla unificada que combina ambas [carpetas de respaldos programados](#respaldos-programados) (`hot/` y `cold/`) para que vea cada respaldo en una sola vista:
@@ -96,8 +96,8 @@ La salida es una tabla unificada que combina ambas [carpetas de respaldos progra
 Para profundizar en un solo modo, pase `--path`:
 
 ```bash
-rdc backup list -m server-1 --storage my-storage --path hot
-rdc backup list -m server-1 --storage my-storage --path cold
+rdc backup list --storage my-storage --path hot
+rdc backup list --storage my-storage --path cold
 ```
 
 ### Disposición de almacenamiento

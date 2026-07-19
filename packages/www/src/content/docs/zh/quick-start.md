@@ -217,7 +217,7 @@ rdc storage list
 rdc repo push my-app --to my-s3-backup
 
 # 列出存储上的备份
-rdc backup list -m my-server --storage my-s3-backup
+rdc backup list --storage my-s3-backup
 ```
 
 `--to` 自动检测目标是机器还是存储后端。支持所有 rclone 支持的提供商：S3、R2、B2、OneDrive、Google Drive、SFTP 等。

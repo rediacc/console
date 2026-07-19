@@ -217,7 +217,7 @@ rdc storage list
 rdc repo push my-app --to my-s3-backup
 
 # Loenda varukoopiad mäluhoidlas
-rdc backup list -m my-server --storage my-s3-backup
+rdc backup list --storage my-s3-backup
 ```
 
 `--to` tuvastab automaatselt, kas sihtkoht on masin või mäluhoidla tagaplaan. Töötab mis tahes rclone'i toetatud pakkujaga: S3, R2, B2, OneDrive, Google Drive, SFTP jne.

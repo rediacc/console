@@ -79,7 +79,7 @@ Pull always checks that the target repository is mounted before writing. If it i
 View available backups in a storage location:
 
 ```bash
-rdc backup list -m server-1 --storage my-storage
+rdc backup list --storage my-storage
 ```
 
 The output is a unified table that merges both [scheduled-backup folders](#scheduled-backups) (`hot/` and `cold/`) so you see every backup in one view:
@@ -95,8 +95,8 @@ The output is a unified table that merges both [scheduled-backup folders](#sched
 To drill into a single mode, pass `--path`:
 
 ```bash
-rdc backup list -m server-1 --storage my-storage --path hot
-rdc backup list -m server-1 --storage my-storage --path cold
+rdc backup list --storage my-storage --path hot
+rdc backup list --storage my-storage --path cold
 ```
 
 ### Storage layout

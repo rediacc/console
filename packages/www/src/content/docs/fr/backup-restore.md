@@ -80,7 +80,7 @@ Pull vérifie toujours que le dépôt cible est monté avant d'écrire. S'il ne 
 Affichez les sauvegardes disponibles dans un emplacement de stockage :
 
 ```bash
-rdc backup list -m server-1 --storage my-storage
+rdc backup list --storage my-storage
 ```
 
 La sortie est un tableau unifié qui fusionne les deux [dossiers de sauvegardes planifiées](#sauvegardes-planifiées) (`hot/` et `cold/`) afin que vous voyiez toutes les sauvegardes en une seule vue :
@@ -96,8 +96,8 @@ La sortie est un tableau unifié qui fusionne les deux [dossiers de sauvegardes 
 Pour zoomer sur un seul mode, passez `--path` :
 
 ```bash
-rdc backup list -m server-1 --storage my-storage --path hot
-rdc backup list -m server-1 --storage my-storage --path cold
+rdc backup list --storage my-storage --path hot
+rdc backup list --storage my-storage --path cold
 ```
 
 ### Disposition du stockage

@@ -49,7 +49,7 @@ Ainult kirjutatavad juurutamisaegsed mandaadid. `get` tagastab ainult kontrollsu
 | `rdc repo push ... --bwlimit <limit>` | Piira rsync-i ribalaiust lükkamise ajal (nt `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Piira rsync-i ribalaiust tõmbamise ajal |
 | `rdc repo push ... --checkpoint` | Tee konteinerite kontrollpunkt enne lükkamist |
-| `rdc backup list --storage <storage> -m <machine>` | Loenda mäluhoidlas saadaolevad varukoopiad |
+| `rdc backup list --storage <storage> | Loenda mäluhoidlas saadaolevad varukoopiad |
 | `rdc storage browse <storage>` | Sirvi mäluhoidla sisu |
 
 ## Hoidla migreerimine

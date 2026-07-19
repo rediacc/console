@@ -49,7 +49,7 @@ Identifiants de déploiement en lecture seule. `get` retourne seulement un diges
 | `rdc repo push ... --bwlimit <limit>` | Limiter la bande passante rsync lors de l'envoi (ex. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Limiter la bande passante rsync lors de la réception |
 | `rdc repo push ... --checkpoint` | Créer un point de contrôle des conteneurs avant l'envoi |
-| `rdc backup list --storage <storage> -m <machine>` | Lister les sauvegardes disponibles dans le stockage |
+| `rdc backup list --storage <storage> | Lister les sauvegardes disponibles dans le stockage |
 | `rdc storage browse <storage>` | Parcourir le contenu du stockage |
 
 ## Migration de dépôt
