@@ -64,6 +64,45 @@ async function pruneDatastore(machineName: string, options: PruneOptions): Promi
   renderPruneOutcome(parsed, Boolean(options.dryRun));
 }
 
+/**
+ * Phase 2: sweep orphaned systemd units (loopback + per-network daemon units)
+ * left behind by deleted repos.
+ *
+ * This is a different renet subsystem from phase 1. `repository_prune` only
+ * looks at datastore artifacts, and its own stale-unit check is narrower still
+ * (pre-refactor daemon units missing --repo-mount-path), so loopback units for
+ * long-deleted repos accumulate forever without this.
+ *
+ * Scoped with units_only: the same renet command can also prune orphaned IPs
+ * out of *live* networks, which is a separate and riskier decision that this
+ * phase deliberately does not make.
+ */
+async function pruneUnits(machineName: string, options: PruneOptions): Promise<void> {
+  const params: Record<string, unknown> = { units_only: true };
+  if (options.dryRun) params.dry_run = true;
+
+  outputService.info(t('commands.machine.prune.startingUnits', { machine: machineName }));
+
+  const result = await getExecutor().execute({
+    functionName: 'network_prune',
+    machineName,
+    params,
+    debug: options.debug,
+    captureOutput: true,
+  });
+
+  if (!result.success) {
+    renderLocalExecutionFailure(result, t('commands.machine.prune.unitsFailed'));
+    return;
+  }
+
+  // `renet prune` emits a human-readable report, not JSON, so pass it through
+  // rather than inventing a parse for a format that has no schema.
+  const raw = result.stdout?.trim();
+  if (raw) outputService.print(raw);
+  outputService.success(t('commands.machine.prune.unitsCompleted'));
+}
+
 /** Render the parsed prune payload: a preview table (dry-run) or a removed-count
  * summary (real run) in table mode; the raw structured object in JSON mode. */
 function renderPruneOutcome(parsed: Record<string, unknown>, dryRun: boolean): void {
@@ -313,6 +352,7 @@ export function registerPruneCommand(machine: Command): void {
       try {
         await assertMachineExists(machineName);
         await pruneDatastore(machineName, options);
+        await pruneUnits(machineName, options);
 
         if (options.orphanedRepos) {
           await pruneOrphanedRepos(machineName, options);

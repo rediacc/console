@@ -60,16 +60,14 @@ describe('command help text coverage', () => {
     const missing = COMMAND_REGISTRY.flatMap((cmd) => {
       if (!cmd.subcommands) return [];
       const parentKey = i18nKeyFor(cmd.name);
-      return Object.entries(cmd.subcommands)
-        .filter(([, subDef]) => !subDef.experimental)
-        .flatMap(([subName]) => {
-          const key = `${parentKey}.${subName}.description`;
-          const desc = getNestedValue(commands, key);
-          if (typeof desc !== 'string' || desc.trim().length === 0) {
-            return [`commands.${key} (registry: "${cmd.name} ${subName}")`];
-          }
-          return [];
-        });
+      return Object.entries(cmd.subcommands).flatMap(([subName]) => {
+        const key = `${parentKey}.${subName}.description`;
+        const desc = getNestedValue(commands, key);
+        if (typeof desc !== 'string' || desc.trim().length === 0) {
+          return [`commands.${key} (registry: "${cmd.name} ${subName}")`];
+        }
+        return [];
+      });
     });
 
     if (missing.length > 0) {

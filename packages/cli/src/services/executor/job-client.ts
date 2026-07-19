@@ -168,9 +168,9 @@ export function resumeHint(jobId: string, machineName: string): string {
   return [
     `Detached from job ${jobId}. It is STILL RUNNING on '${machineName}' and was NOT cancelled.`,
     ``,
-    `  Follow it again:  rdc job logs -m ${machineName} --id ${jobId} --follow`,
-    `  Check the result: rdc job status -m ${machineName} --id ${jobId}`,
-    `  Stop it:          rdc job cancel -m ${machineName} --id ${jobId}`,
+    `  Follow it again:  rdc job logs ${jobId} -m ${machineName} --follow`,
+    `  Check the result: rdc job status ${jobId} -m ${machineName}`,
+    `  Stop it:          rdc job cancel ${jobId} -m ${machineName}`,
   ].join('\n');
 }
 
@@ -184,8 +184,8 @@ export function backgroundStartedHint(jobId: string, machineName: string): strin
   return [
     `Started job ${jobId} on '${machineName}'. It keeps running in the background.`,
     ``,
-    `  Follow it:        rdc job logs -m ${machineName} --id ${jobId} --follow`,
-    `  Check the result: rdc job status -m ${machineName} --id ${jobId}`,
+    `  Follow it:        rdc job logs ${jobId} -m ${machineName} --follow`,
+    `  Check the result: rdc job status ${jobId} -m ${machineName}`,
   ].join('\n');
 }
 

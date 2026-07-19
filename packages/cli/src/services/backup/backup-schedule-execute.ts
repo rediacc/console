@@ -9,6 +9,7 @@
  */
 
 import type { SFTPClient } from '../../remote/sftp/index.js';
+import { shellQuote } from '../../utils/shell-quote.js';
 import { outputService } from '../core/output.js';
 import { envFilePath } from './backup-env-file.js';
 import type {
@@ -46,10 +47,6 @@ async function captureStdout(sftp: SFTPClient, command: string): Promise<string>
     onStderr: () => {},
   });
   return stdout;
-}
-
-function shellEscape(value: string): string {
-  return `'${value.replaceAll("'", "'\\''")}'`;
 }
 
 async function stageFile(
@@ -122,7 +119,7 @@ async function removeOneStrategy(
   if (paths.length === 0) return;
   await runRemoteCommand(
     sftp,
-    `sudo rm -f ${paths.map(shellEscape).join(' ')}`,
+    `sudo rm -f ${paths.map(shellQuote).join(' ')}`,
     options,
     `Failed to remove files for strategy "${diff.name}"`
   );
@@ -155,7 +152,7 @@ async function stageEnvFile(
     // for removals — the deploy semantics accept this as a directed change.
     await runRemoteCommand(
       sftp,
-      `sudo rm -f ${shellEscape(finalPath)}`,
+      `sudo rm -f ${shellQuote(finalPath)}`,
       options,
       `Failed to remove obsolete env file for "${unit.strategyName}"`
     );
@@ -201,7 +198,7 @@ async function stageTouched(
 
 async function rollbackStaged(sftp: SFTPClient, staged: StagedFile[]): Promise<void> {
   if (staged.length === 0) return;
-  const quoted = staged.map((s) => shellEscape(s.stagingPath)).join(' ');
+  const quoted = staged.map((s) => shellQuote(s.stagingPath)).join(' ');
   await sftp
     .execStreaming(`sudo rm -f ${quoted}`, {
       onStdout: () => {},
@@ -220,7 +217,7 @@ async function commitStaged(
   for (const { stagingPath, finalPath } of staged) {
     await runRemoteCommand(
       sftp,
-      `sudo mv ${shellEscape(stagingPath)} ${shellEscape(finalPath)}`,
+      `sudo mv ${shellQuote(stagingPath)} ${shellQuote(finalPath)}`,
       options,
       `Failed to commit ${finalPath}`
     );

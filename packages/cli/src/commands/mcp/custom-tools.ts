@@ -44,16 +44,14 @@ const MACHINE_STATUS_VIEWS: ToolDef[] = [
     isIdempotent: true,
     timeoutMs: READ_TIMEOUT,
   },
-  {
-    name: 'machine_health',
-    description: 'Run health check on a machine (system, containers, services, storage)',
-    schema: { name: z.string().describe('Machine name') },
-    command: (args) => ['machine', 'status', args.name as string, '--system'],
-    isDestructive: false,
-    isIdempotent: true,
-    timeoutMs: READ_TIMEOUT,
-  },
 ];
+
+// ★ machine_health is GONE. It claimed to "run health check on a machine" but
+// its argv was `machine status <name> --system` — a raw system-stats dump that
+// never called the health checker, so an agent asking for health got facts to
+// interpret rather than the aggregated issues[] and exit code. `machine health`
+// is no longer experimental, so the contract-derived tool of the same name now
+// runs the real command.
 
 /** All custom MCP tools that are not auto-derived from Commander. */
 // ★ TERM_EXEC is GONE (w2b). It built `term connect -m <machine> [-r <repo>] -c

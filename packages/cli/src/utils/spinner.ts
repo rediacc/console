@@ -35,6 +35,17 @@ export function startSpinner(text: string): Ora | null {
   return currentSpinner;
 }
 
+/**
+ * Retitle the running spinner in place, for when a step learns mid-flight WHY it
+ * is slow (say, queued behind another process). Returns false when there is no
+ * spinner to update, which is the caller's cue to say it another way.
+ */
+export function updateSpinnerText(text: string): boolean {
+  if (!currentSpinner) return false;
+  currentSpinner.text = text;
+  return true;
+}
+
 export function stopSpinner(success = true, text?: string): void {
   if (!currentSpinner) return;
 

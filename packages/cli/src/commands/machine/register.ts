@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { type Command, Option } from 'commander';
 import { t } from '../../i18n/index.js';
@@ -12,6 +11,7 @@ import { deployAllRepoKeys } from '../../services/repo/repo-key-deployment.js';
 import type { MachineConfig, OutputFormat } from '../../types/index.js';
 import { assertResourceName, MachineConfigSchema, parseConfig } from '../../utils/config-schema.js';
 import { handleError } from '../../utils/errors.js';
+import { classifyKeyChange, scanHostKeys, shortFingerprint } from '../../utils/host-keys.js';
 
 async function postSetupMachineTasks(name: string, debug?: boolean): Promise<void> {
   // Deploy all per-repo SSH keys to the newly set up machine
@@ -37,25 +37,46 @@ async function postSetupMachineTasks(name: string, debug?: boolean): Promise<voi
   }
 }
 
-function scanHostKeys(ip: string, port: number): string {
-  try {
-    const result = execFileSync('ssh-keyscan', ['-p', String(port), ip], {
-      encoding: 'utf-8',
-      timeout: 10_000,
-      stdio: ['ignore', 'pipe', 'ignore'],
-    });
-    return result.trim();
-  } catch {
-    return '';
+/**
+ * Report what a scan did to each pinned algorithm.
+ *
+ * Replacing an existing pin and pinning a key for the first time are very
+ * different acts, and printing one line for both hides the security-relevant
+ * case. Only prints per-key detail when something was actually replaced, so the
+ * ordinary re-scan stays quiet.
+ */
+function reportKeyChanges(machineName: string, previous: string, scanned: string): void {
+  const changes = classifyKeyChange(previous, scanned);
+  const replaced = changes.filter((c) => c.kind === 'replaced');
+
+  if (replaced.length === 0) {
+    outputService.success(t('commands.machine.scanKeys.keysScanned', { name: machineName }));
+    return;
+  }
+
+  outputService.warn(
+    t('commands.machine.scanKeys.replaced', { name: machineName, count: replaced.length })
+  );
+  for (const c of changes) {
+    if (c.kind === 'replaced' && c.oldKey) {
+      outputService.print(
+        `  ${c.type.padEnd(22)} REPLACED  ${shortFingerprint(c.oldKey)} -> ${shortFingerprint(c.newKey)}`
+      );
+    } else {
+      outputService.print(
+        `  ${c.type.padEnd(22)} ${c.kind === 'pinned' ? 'pinned (new)' : 'unchanged'}`
+      );
+    }
   }
 }
 
 async function scanSingleMachine(machineName: string): Promise<void> {
   const machine = await configService.getLocalMachine(machineName);
+  const previous = machine.knownHosts ?? '';
   const keyscan = scanHostKeys(machine.ip, machine.port ?? DEFAULTS.SSH.PORT);
   if (keyscan) {
     await configService.updateMachine(machineName, { knownHosts: keyscan });
-    outputService.success(t('commands.machine.scanKeys.keysScanned', { name: machineName }));
+    reportKeyChanges(machineName, previous, keyscan);
   } else {
     outputService.warn(t('commands.machine.scanKeys.noKeys', { name: machineName }));
   }
@@ -66,10 +87,17 @@ async function scanAllMachines(): Promise<void> {
   let scanned = 0;
   for (const m of machines) {
     try {
+      const previous = m.config.knownHosts ?? '';
       const keyscan = scanHostKeys(m.config.ip, m.config.port ?? DEFAULTS.SSH.PORT);
       if (keyscan) {
         await configService.updateMachine(m.name, { knownHosts: keyscan });
-        outputService.info(t('commands.machine.scanKeys.keysScanned', { name: m.name }));
+        // Stay one line per machine in the bulk case unless a pin was actually
+        // replaced, which is worth interrupting the summary for.
+        if (classifyKeyChange(previous, keyscan).some((c) => c.kind === 'replaced')) {
+          reportKeyChanges(m.name, previous, keyscan);
+        } else {
+          outputService.info(t('commands.machine.scanKeys.keysScanned', { name: m.name }));
+        }
         scanned++;
       }
     } catch {

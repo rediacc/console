@@ -114,7 +114,6 @@ export const ContractCommandSchema = z.object({
   pathKey: z.string().min(1),
   domain: z.string().min(1),
   group: CommandGroupSchema.nullable(),
-  experimental: z.boolean(),
   plane: CommandPlaneSchema,
   descriptionKey: z.string().nullable(),
   label: z.string(),

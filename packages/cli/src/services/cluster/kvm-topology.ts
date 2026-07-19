@@ -117,7 +117,7 @@ export function resolveKvmTopology(
   if (!cluster.kvm) {
     throw new Error(
       `Cluster "${clusterName}" has no kvm topology. Add one with ` +
-        `\`rdc config cluster add --provider kvm --net-name <libvirt-net> --net-base <a.b.c>\`.`
+        `\`rdc cluster create --provider kvm --net-name <libvirt-net> --net-base <a.b.c>\`.`
     );
   }
   const unsupported = cluster.pools.filter((p) => p.role === 'hyperconverged');

@@ -32,7 +32,7 @@ export function registerMachineCommands(program: Command): void {
 ${t('help.examples')}
   $ rdc machine status server-1                          ${t('help.machine.query')}
   $ rdc machine status server-1 --containers             ${t('help.machine.containers')}
-  $ rdc machine status server-1 --system --output json   ${t('help.machine.health')}
+  $ rdc machine status server-1 --system   ${t('help.machine.health')}
 `
   );
 

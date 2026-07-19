@@ -18,6 +18,9 @@ const machineEventTypes = [
   'cli.machine.health',
   'cli.machine.id',
   'cli.machine.list',
+  // Emitted by `machine prune` (packages/cli/src/commands/machine/prune.ts),
+  // which prunes orphaned network units on the machine.
+  'cli.network_prune',
   'cli.machine.match',
   'cli.machine.mismatch',
   'cli.machine.ping',

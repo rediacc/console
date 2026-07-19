@@ -189,6 +189,19 @@ export const StateSchema = z.object({
   /** Managed canary sets keyed by set name (spec 05 §2, R2-F17). */
   canaries: z.record(z.string(), CanarySetSchema).optional(),
   reconciledAt: z.string().optional(),
+
+  /**
+   * Per-machine timestamp (epoch ms) of the last opportunistic repo-licence
+   * refresh attempt, used only to rate-limit that attempt.
+   *
+   * Lives in the config's state bucket rather than a separate file on purpose:
+   * a sidecar under the user's state dir made the CLI's behaviour depend on
+   * machine-local litter that nothing else knew about, and it silently leaked
+   * into tests — `local-executor.test.ts` passed on a developer box that had
+   * run `rdc` recently and failed in CI, because the sidecar's presence
+   * decided which code path ran.
+   */
+  licenseRefresh: z.record(z.string(), z.number()).optional(),
 });
 
 export type RdcState = z.infer<typeof StateSchema>;

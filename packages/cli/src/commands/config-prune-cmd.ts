@@ -50,6 +50,33 @@ function renderArchives(analysis: ConfigPruneAnalysis, verb: string): void {
   }
 }
 
+/**
+ * Report repository entries that name no machine.
+ *
+ * Without --orphan-repos this only warns, and points at `config reconcile`
+ * first: an entry with no placement may simply never have been reconciled, and
+ * a repo entry holds the LUKS credential and SSH key for its image, so removing
+ * one that is merely unreconciled loses the only copy of those secrets.
+ */
+function renderOrphanRepos(analysis: ConfigPruneAnalysis, verb: string, removing: boolean): void {
+  if (analysis.orphanRepos.length === 0) return;
+
+  outputService.info(
+    removing
+      ? t('commands.config.prune.removedOrphanRepos', {
+          count: analysis.orphanRepos.length,
+          verb,
+        })
+      : t('commands.config.prune.foundOrphanRepos', { count: analysis.orphanRepos.length })
+  );
+  for (const r of analysis.orphanRepos) {
+    outputService.info(`  ${r.name}${r.guid ? `  (${r.guid.slice(0, 8)}…)` : ''}`);
+  }
+  if (!removing) {
+    outputService.info(t('commands.config.prune.orphanReposHint'));
+  }
+}
+
 function renderRefs(analysis: ConfigPruneAnalysis, verb: string): void {
   if (analysis.droppedRefs.length === 0) return;
   outputService.info(
@@ -60,17 +87,39 @@ function renderRefs(analysis: ConfigPruneAnalysis, verb: string): void {
   }
 }
 
-function renderAnalysis(analysis: ConfigPruneAnalysis, dryRun: boolean): void {
+function renderAnalysis(
+  analysis: ConfigPruneAnalysis,
+  dryRun: boolean,
+  removingOrphanRepos: boolean
+): void {
   const verb = dryRun ? 'would be' : 'were';
   renderCerts(analysis, verb);
   renderArchives(analysis, verb);
   renderRefs(analysis, verb);
+  renderOrphanRepos(analysis, verb, removingOrphanRepos);
+  if (analysis.orphanStateRepos.length > 0) {
+    outputService.info(
+      t('commands.config.prune.droppedStateRepos', {
+        count: analysis.orphanStateRepos.length,
+        verb,
+      })
+    );
+    for (const name of analysis.orphanStateRepos) {
+      outputService.info(`  ${name}`);
+    }
+  }
   for (const w of analysis.warnings) {
     outputService.warn(w);
   }
 
   const totalChanges =
-    analysis.staleCerts.length + analysis.expiredArchives.length + analysis.droppedRefs.length;
+    analysis.staleCerts.length +
+    analysis.expiredArchives.length +
+    analysis.droppedRefs.length +
+    analysis.orphanStateRepos.length +
+    // Only counted as a change when actually being removed; otherwise the
+    // orphan list is informational and must not make an empty run look busy.
+    (removingOrphanRepos ? analysis.orphanRepos.length : 0);
   if (totalChanges === 0) {
     outputService.success(t('commands.config.prune.nothingToPrune'));
   } else if (dryRun) {
@@ -90,6 +139,7 @@ export function registerPruneCommand(config: Command): void {
     .option('--archives-only', t('commands.config.prune.archivesOnlyOption'))
     .option('--refs-only', t('commands.config.prune.refsOnlyOption'))
     .option('--purge-archived', t('commands.config.prune.purgeArchivedOption'))
+    .option('--orphan-repos', t('commands.config.prune.orphanReposOption'))
     .option('--grace-days <days>', t('commands.config.prune.graceDaysOption'), Number.parseInt)
     .action(async (options: PruneCommandOptions) => {
       try {
@@ -107,7 +157,7 @@ export function registerPruneCommand(config: Command): void {
           ? await analyzeConfigPrune(options)
           : await applyConfigPrune(options);
 
-        renderAnalysis(analysis, dryRun);
+        renderAnalysis(analysis, dryRun, Boolean(options.orphanRepos));
       } catch (error) {
         handleError(error);
       }

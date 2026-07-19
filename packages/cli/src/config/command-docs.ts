@@ -149,6 +149,10 @@ export const COMMAND_EXAMPLES: Record<string, readonly CommandExampleDef[]> = {
       command: 'rdc repo exec shop -c web -i bash',
       descriptionKey: 'commands.repo.exec.examples.interactive',
     },
+    {
+      command: 'rdc repo exec shop -c web -- ls -la /var/log',
+      descriptionKey: 'commands.repo.exec.examples.separator',
+    },
   ],
   'repo cat': [
     {

@@ -100,6 +100,19 @@ vi.mock('../../../utils/agent-guard.js', () => ({
   isAgentEnvironment: vi.fn().mockReturnValue(false),
 }));
 
+// Opportunistic licence refresh is cooldown-gated against a file in the real
+// user state dir. Left unmocked, whether it runs depends on when the developer
+// last used the CLI on this machine — so a licence-recovery assertion would
+// pass or fail based on unrelated local history.
+//
+// Defaulted to "not due" so these tests observe only the REACTIVE path they are
+// about. Otherwise every command here would also refresh during setup, and
+// `toHaveBeenCalledTimes(1)` below would be counting two unrelated things.
+vi.mock('../../account/license-refresh-state.js', () => ({
+  isRefreshDue: vi.fn().mockResolvedValue(false),
+  markRefreshAttempted: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('../../renet/renet-execution.js', () => ({
   buildLocalVault: mockBuildLocalVault,
   provisionRenetToRemote: mockProvisionRenetToRemote,

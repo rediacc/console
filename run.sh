@@ -1442,7 +1442,7 @@ MAINTENANCE:
 QUICK START:
   ./run.sh setup          # One-time setup
   ./run.sh dev            # Start www development
-  ./rdc.sh auth login     # Run CLI command in dev mode
+  ./rdc.sh subscription login # Run CLI command in dev mode
 
 REQUIREMENTS:
   Node.js v${NODE_VERSION_REQUIRED}.x (https://nodejs.org/)

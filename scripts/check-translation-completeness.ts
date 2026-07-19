@@ -656,6 +656,21 @@ function checkLocaleDir(name: string, localeDir: string, flatFiles = false): Che
       }
     }
 
+    // ORPHAN KEYS: present in this locale, absent from English.
+    //
+    // The loop above walks ENGLISH keys, so a key English does not have can
+    // never be reached by it — the locale could carry any number of extra keys
+    // and every gate would stay green. That is not hypothetical: the renet
+    // catalogs accumulated 191 orphans through exactly this blind spot, and
+    // they were CORRUPTED KEY NAMES, machine translation having rewritten the
+    // identifiers themselves ("bridge.create_failed" -> "bridge.create_<ar>").
+    // Nothing referenced them and nothing could see them.
+    //
+    // English is the source of truth and lookups resolve against its key set,
+    // so a key absent from English is unreachable by definition. Deleting it is
+    // always safe; keeping it is always dead weight.
+    const orphanKeys = Object.keys(langKeys).filter((key) => !(key in enKeys));
+
     const total = totalEnKeys;
     const untranslatedPercent = ((untranslated / total) * 100).toFixed(1);
     const missingPercent = ((missing / total) * 100).toFixed(1);
@@ -672,6 +687,14 @@ function checkLocaleDir(name: string, localeDir: string, flatFiles = false): Che
     // Report issues
     if (missing > 0) {
       errors.push(`[${name}/${lang}] Missing ${missing} keys (${missingPercent}%)`);
+    }
+
+    if (orphanKeys.length > 0) {
+      errors.push(
+        `[${name}/${lang}] ${orphanKeys.length} orphan keys not present in English ` +
+          `(${orphanKeys.slice(0, 5).join(', ')}${orphanKeys.length > 5 ? ', ...' : ''}) - ` +
+          `remove them; English is the source of truth and these are unreachable`
+      );
     }
 
     if (Number.parseFloat(untranslatedPercent) > MAX_UNTRANSLATED_PERCENT) {

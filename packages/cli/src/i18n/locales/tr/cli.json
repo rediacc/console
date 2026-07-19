@@ -29,6 +29,11 @@
         "description": "Uzak makinede yedekleme durumunu ve zamanlayıcı durumunu göster"
       },
       "strategy": {
+        "bind": {
+          "alreadyBound": "\"{{strategy}}\" yedekleme stratejisi zaten \"{{machine}}\" makinesine bağlı",
+          "bound": "\"{{strategy}}\" yedekleme stratejisi \"{{machine}}\" makinesine bağlandı",
+          "description": "Bir yedekleme stratejisini bir makineye bağla, böylece zamanlaması orada dağıtılır"
+        },
         "description": "Adlandırılmış yedekleme stratejilerini yönet (sıcak/soğuk modlar, hedefler, zamanlama)",
         "list": {
           "description": "Tüm yedekleme stratejilerini listele"
@@ -63,6 +68,11 @@
           "noDestinations": "  Hedefler: (yok)",
           "notConfigured": "Yapılandırılmış yedekleme stratejisi yok",
           "notFound": "Yedekleme stratejisi \"{{name}}\" bulunamadı"
+        },
+        "unbind": {
+          "description": "Bir yedekleme stratejisinin bir makineyle bağlantısını kes",
+          "notBound": "\"{{strategy}}\" yedekleme stratejisi \"{{machine}}\" makinesine bağlı değil",
+          "unbound": "\"{{strategy}}\" yedekleme stratejisinin \"{{machine}}\" makinesiyle bağlantısı kesildi"
         }
       },
       "descriptionShort": "Yedeklemeleri yönet",
@@ -310,15 +320,20 @@
         "description": "~/.config/rediacc/<config>.json dosyasındaki yerel yapılandırmadaki ölü ağırlığı kaldırır. Üç kategori temizlenir, hepsi yerel (SSH/renet çağrısı yok): (1) çapası GUID/repo/makine artık etkin yapılandırmada olmayan ACME sertifika önbellek girişleri; (2) erteleme süresi dolmuş arşivlenmiş depolar (varsayılan 7 gün, defaults.pruneGraceDays bakın); (3) askıdaki çapraz referanslar (machine→strategy, strategy→repo). Kullanımdaki kaynaklar, kimlik bilgileri, depolama belirteçleri ve known-hosts asla dokunulmaz. Varsayılan davranış değişiklikleri uygulamaktır; sadece önizleme için --dry-run kullanın.",
         "descriptionShort": "Yerel yapılandırma dosyasındaki eski kalıntıları temizle",
         "droppedRefs": "{{count}} askıdaki çapraz referans {{verb}} kaldırıldı:",
+        "droppedStateRepos": "{{count}} sahipsiz durum kaydı (eşleşen depo girişi yok) {{verb}} silindi:",
         "dryRun": "Kuru çalıştırma: {{count}} değişiklik uygulanacaktır. Kaydetmek için --dry-run olmadan yeniden çalıştırın.",
         "dryRunOption": "Yapılandırma dosyasını değiştirmeden neyin kaldırılacağını önizler. Diğer prune komutlarının varsayılan-kapalı semantiğini yansıtır.",
+        "foundOrphanRepos": "{{count}} depo girişi hiçbir makinede yer almıyor:",
         "graceDaysOption": "Bu çağrı için arşiv erteleme penceresini (gün cinsinden) geçersiz kıl. Yapılandırmadaki defaults.pruneGraceDays değerine geri döner, hiçbiri ayarlanmazsa 7'ye düşer.",
         "keptArchivesInGrace": "Hâlâ erteleme süresinde olan arşivlenmiş depolar saklandı ('rdc repo admin archive restore' ile kurtarılabilir):",
         "nothingToPrune": "Temizlenecek bir şey yok, yapılandırma zaten temiz.",
+        "orphanReposHint": "Yerleşimi makinelerinizden türetmek için 'rdc config reconcile' komutunu çalıştırın. Bundan sonra hâlâ listelenen girişler gerçekten yerleştirilmemiştir; bunları 'rdc config prune --orphan-repos' ile kaldırın.",
+        "orphanReposOption": "Hiçbir makinede yer almayan depo girişlerini kaldırır. Her giriş o deponun kimlik bilgisini ve SSH anahtarını tutar, bu yüzden bu işlem geri alınamaz. Önce 'rdc config reconcile' komutunu çalıştırarak yerleşimin makineleri yansıtmasını sağlayın.",
         "purgeArchivedOption": "Yaştan bağımsız olarak TÜM arşivlenmiş depoları düşür, yalnızca erteleme süresini aşmış olanları değil. Her arşivlenmiş depo için 'rdc repo admin archive purge' çalıştırmaya eşdeğerdir. Yalnızca depolanan kimlik bilgilerinden hiçbirinin geri yüklemek için gerekli olmadığından emin olduğunuzda kullanın.",
         "purgedArchives": "{{count}} süresi dolmuş arşivlenmiş depo {{verb}} kaldırıldı:",
         "refsOnlyOption": "Askıdaki çapraz referanslarla (machine→strategy, strategy→repo excludes/includes) sınırla. Sertifika önbelleği ve arşivleri atlar. --certs-only ve --archives-only ile dışlayıcıdır.",
         "removedCerts": "{{count}} sertifika önbellek girişi {{verb}} kaldırıldı:",
+        "removedOrphanRepos": "{{count}} depo girişi (hiçbir makinede yer almayan) {{verb}} kaldırıldı:",
         "scanning": "Yerel yapılandırma eski kalıntılar için taranıyor...",
         "tooManyOnlyFlags": "--certs-only / --archives-only / --refs-only seçeneklerinden en fazla birini geçirin."
       },
@@ -699,6 +714,9 @@
         "previewEmpty": "Artık veri deposu kaynağı bulunamadı",
         "pruneUnknownOption": "Sadece renet .interim/state aynasının sınıflandıramadığı depoları sil (yerel yapılandırmada yok VE fork işaretli ayna yok). --orphaned-repos seçeneğinden kesinlikle daha dardır: ayna onları tanımladığında yapılandırması olmayan fork'lar korunur. Pre-mirror eski yetimler ve yapılandırma girişi silinmiş eski grands ikisi de bu kovaya düşer.",
         "startingDatastore": "{{machine}} üzerinde sahipsiz veri deposu kaynakları taranıyor...",
+        "startingUnits": "{{machine}} üzerinde sahipsiz systemd birimleri taranıyor...",
+        "unitsCompleted": "Birim temizliği tamamlandı",
+        "unitsFailed": "Birim temizliği başarısız oldu",
         "unknownCompleted": "{{count}} bilinmeyen depo temizlendi",
         "unknownFound": "{{count}} bilinmeyen depo bulundu (bağlama güvenlik kontrolünden sonra {{deletable}} silinebilir)",
         "unknownStarting": "{{machine}} üzerinde bilinmeyen depolar taranıyor (yerel yapılandırmada yok + fork işaretli ayna yok)..."
@@ -808,7 +826,8 @@
         "completed": "{{count}}/{{total}} makine tarandı",
         "description": "Mevcut yapılandırmadaki makineler için SSH ana bilgisayar anahtarlarını tara",
         "keysScanned": "\"{{name}}\" için host anahtarları tarandı",
-        "noKeys": "\"{{name}}\" için host anahtarları taranamadı"
+        "noKeys": "\"{{name}}\" için host anahtarları taranamadı",
+        "replaced": "\"{{name}}\" için host anahtarları: {{count}} mevcut anahtar DEĞİŞTİRİLDİ - aşağıdaki parmak izlerini mutlaka ayrı bir kanaldan doğrulayın"
       },
       "setup": {
         "completed": "Makine \"{{machine}}\" başarıyla kuruldu",
@@ -1487,7 +1506,7 @@
       "batchNeedRefOrAll": "Bir depo referansı verin (repo {{verb}} <ref>) veya toplu biçimi kullanın: repo {{verb}} --all -m <machine>.",
       "batchRefConflict": "Bir depo referansı kendi makinesini kendisi belirler. --all ve --machine yalnızca toplu biçim içindir: repo {{verb}} --all -m <machine>.",
       "exec": {
-        "cmdArgument": "--'dan sonra çalıştırılacak komut",
+        "cmdArgument": "Çalıştırılacak komut: --'dan sonraki her şey olduğu gibi konteynere gönderilir, bu yüzden CLI bayrakları (-c, -i, -u, --debug) --'dan önce gelmelidir",
         "containerOption": "İçinde çalıştırılacak konteyner (depo birden fazla çalıştırdığında gerekir)",
         "description": "Bir depo konteyneri içinde bir komut çalıştır. Komutun kendi çıkış kodu doğrudan iletilir, bu yüzden betiklerde ve koşullu ifadelerde çalışır. Docker depoları bunu deponun kendi Docker daemon'ı üzerinden çalıştırır; kubernetes depoları deponun ad alanında çalıştırır.",
         "descriptionShort": "Bir depo konteyneri içinde komut çalıştır",
@@ -1495,7 +1514,8 @@
         "userOption": "Komutun çalıştırılacağı kullanıcı",
         "examples": {
           "basic": "Bir depo konteyneri içinde komut çalıştır.",
-          "interactive": "Bir konteynerde etkileşimli kabuk aç."
+          "interactive": "Bir konteynerde etkileşimli kabuk aç.",
+          "separator": "Uzak komuta bayrak geçir: bunları --'dan sonraya koy, CLI'nin kendi bayraklarını ondan önce tut."
         }
       },
       "logs": {
@@ -2160,7 +2180,7 @@
       "create": "Şifreli depo oluştur",
       "down": "Servisleri durdur",
       "fork": "Test için CoW fork",
-      "keyConcepts": "\nTemel Kavramlar:\n\n  Compose ve Rediaccfile\n    • renet compose -- up -d (asla ham docker compose değil). -- ayırıcı zorunludur\n    • Rediaccfile, up() ve down() fonksiyonlarını tanımlamalıdır. up() şunları yapmalıdır: dizinleri oluşturmak, yapılandırmaları üretmek, konteynerleri başlatmak\n    • compose ports: yok sayılır (network_mode:host). Dış erişim için rediacc.service_port etiketini kullanın\n    • restart: always/unless-stopped değerleri renet tarafından otomatik olarak kaldırılır ve .rediacc.json içine kaydedilir — router watchdog'u durmuş servisleri otomatik olarak kurtarır\n    • Her servis bir loopback IP alır. eBPF bind yeniden yazımı izolasyonu şeffaf biçimde yönetir, böylece uygulamalar 0.0.0.0'a bağlanabilir\n    • Kardeş servislere bağlanmak için servis adlarını kullanın (ör. \"db\", \"redis\") — renet tüm servis adlarını hostname olarak enjekte eder. Veritabanları içinde saklanan bağlantı dizelerine asla ${DB_IP} gömmeyin — bu IP'yi sabitler ve fork izolasyonunu bozar (doğrulama hatası)\n    • Health check'ler localhost kullanabilir. Örnek: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  Depolama\n    • ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config vb. için bind-mount yapın.\n    • Örnek: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Adlandırılmış Docker birimleri forklardan ve yedeklerden hariç tutulur\n    • Konteyner varsayılan olmayan bir UID ile çalışıyorsa, konteynerlere bind-mount edilen yapılandırma dosyaları herkes tarafından okunabilir (644) olmalıdır\n\n  Yönlendirme\n    • Grand depo otomatik rota: https://{service}.{repo}.{machine}.{baseDomain} (joker sertifika *.{repo}.{machine}.{baseDomain} ilk repo up sırasında Traefik tarafından otomatik sağlanır)\n    • Fork otomatik rota: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (üst deponun joker sertifikasını kullanır, rate limit üzerinde etkisi yoktur)\n    • Özel alan adı: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP yönlendirme: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Özel alan adları (rediacc.domain etiketi) forklarda yok sayılır — alan adı grand depoya aittir\n\n  Yaşam Döngüsü\n    • repo delete tamamen temizler: depolama, Docker daemon, loopback IP'leri, systemd birimleri\n    • repo down konteynerleri durdurur ancak Docker daemon'ı ve IP'leri korur (repo up ile hızlı yeniden başlatma)\n    • condition: service_healthy içeren depends_on, başlangıç sırasını yönetir ancak çalışma zamanı kurtarmasını yönetmez\n    • Bir veritabanı temiz şekilde durursa (exit 0), bağımlı servisler crash-loop'a girer. Çözüm: rdc repo up <repo-ref>\n    • Otomatik başlatma: rdc repo admin autostart enable <repo-ref> — makine önyüklemesinde depoyu otomatik olarak bağlar ve başlatır\n    • Zamanlanmış yedeklemeler fork depoları otomatik olarak atlar. Manuel fork yedeklemesi için rdc repo push <repo-ref> --to <remote> kullanın\n    • rdc repo promote <fork-ref> — üretim verisini fork verisiyle değiştirir (kimliği korur). Geri almak için: rdc repo promote <backup-fork-ref>\n\n  Adlandırma ve hedefleme\n    • Grand (üretim) depo: <repo> olarak, eşdeğer şekilde <repo>:latest olarak referans verin (latest varsayılan etikettir). Sade bir ref, tam yapılandırma anahtarına çözümlenir, aksi halde <repo>:latest'e geri döner.\n    • Fork: her zaman latest olmayan bir etiketle <repo>:<tag> (ör. app:test). up/down/delete/term/sync hepsi aynı <repo>:<tag>'i alır.\n    • Yani `app`, GRAND'ı hedefler; `app:test` ise o FORK'u hedefler. Bir fork üzerinde işlem yaparken etiketi her zaman ekleyin — tek belirsiz durum, bir forkun yanlışlıkla sade/latest adı altında kaydedilmesidir.\n    • Ajanlar yalnızca forkları değiştirebilir; grand depolar korumalıdır (geçersiz kılma yalnızca oturumdan önce operatör tarafından ayarlanması gereken REDIACC_ALLOW_GRAND_REPO ile mümkündür). Forklar güvenli, tek kullanımlık birimdir.\n",
+      "keyConcepts": "\nTemel Kavramlar:\n\n  Compose ve Rediaccfile\n    • renet compose -- up -d (asla ham docker compose değil). -- ayırıcı zorunludur\n    • rdc repo exec <ref> [CLI bayrakları] -- <remote cmd>: --'dan sonraki her şey olduğu gibi konteynere gider, bu yüzden -c/-i/-u/--debug --'dan ÖNCE gelmelidir. --'dan sonra yazılan bir --debug, uzak komuta iletilir ve CLI hata ayıklama çıktısını asla etkinleştirmez\n    • Rediaccfile, up() ve down() fonksiyonlarını tanımlamalıdır. up() şunları yapmalıdır: dizinleri oluşturmak, yapılandırmaları üretmek, konteynerleri başlatmak\n    • compose ports: yok sayılır (network_mode:host). Dış erişim için rediacc.service_port etiketini kullanın\n    • restart: always/unless-stopped değerleri renet tarafından otomatik olarak kaldırılır ve .rediacc.json içine kaydedilir — router watchdog'u durmuş servisleri otomatik olarak kurtarır\n    • Her servis bir loopback IP alır. eBPF bind yeniden yazımı izolasyonu şeffaf biçimde yönetir, böylece uygulamalar 0.0.0.0'a bağlanabilir\n    • Kardeş servislere bağlanmak için servis adlarını kullanın (ör. \"db\", \"redis\") — renet tüm servis adlarını hostname olarak enjekte eder. Veritabanları içinde saklanan bağlantı dizelerine asla ${DB_IP} gömmeyin — bu IP'yi sabitler ve fork izolasyonunu bozar (doğrulama hatası)\n    • Health check'ler localhost kullanabilir. Örnek: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"]\n\n  Depolama\n    • ${REDIACC_WORKING_DIR}/data, ${REDIACC_WORKING_DIR}/config vb. için bind-mount yapın.\n    • Örnek: volumes: ['${REDIACC_WORKING_DIR}/data:/var/lib/postgresql/data']\n    • Adlandırılmış Docker birimleri forklardan ve yedeklerden hariç tutulur\n    • Konteyner varsayılan olmayan bir UID ile çalışıyorsa, konteynerlere bind-mount edilen yapılandırma dosyaları herkes tarafından okunabilir (644) olmalıdır\n\n  Yönlendirme\n    • Grand depo otomatik rota: https://{service}.{repo}.{machine}.{baseDomain} (joker sertifika *.{repo}.{machine}.{baseDomain} ilk repo up sırasında Traefik tarafından otomatik sağlanır)\n    • Fork otomatik rota: https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain} (üst deponun joker sertifikasını kullanır, rate limit üzerinde etkisi yoktur)\n    • Özel alan adı: traefik.enable=true + traefik.http.routers.{name}.rule=Host(`domain.com`)\n    • TCP/UDP yönlendirme: rediacc.tcp_ports=5432 / rediacc.udp_ports=53\n    • Özel alan adları (rediacc.domain etiketi) forklarda yok sayılır — alan adı grand depoya aittir\n\n  Yaşam Döngüsü\n    • repo delete tamamen temizler: depolama, Docker daemon, loopback IP'leri, systemd birimleri\n    • repo down konteynerleri durdurur ancak Docker daemon'ı ve IP'leri korur (repo up ile hızlı yeniden başlatma)\n    • condition: service_healthy içeren depends_on, başlangıç sırasını yönetir ancak çalışma zamanı kurtarmasını yönetmez\n    • Bir veritabanı temiz şekilde durursa (exit 0), bağımlı servisler crash-loop'a girer. Çözüm: rdc repo up <repo-ref>\n    • Otomatik başlatma: rdc repo admin autostart enable <repo-ref> — makine önyüklemesinde depoyu otomatik olarak bağlar ve başlatır\n    • Zamanlanmış yedeklemeler fork depoları otomatik olarak atlar. Manuel fork yedeklemesi için rdc repo push <repo-ref> --to <remote> kullanın\n    • rdc repo promote <fork-ref> — üretim verisini fork verisiyle değiştirir (kimliği korur). Geri almak için: rdc repo promote <backup-fork-ref>\n\n  Adlandırma ve hedefleme\n    • Grand (üretim) depo: <repo> olarak, eşdeğer şekilde <repo>:latest olarak referans verin (latest varsayılan etikettir). Sade bir ref, tam yapılandırma anahtarına çözümlenir, aksi halde <repo>:latest'e geri döner.\n    • Fork: her zaman latest olmayan bir etiketle <repo>:<tag> (ör. app:test). up/down/delete/term/sync hepsi aynı <repo>:<tag>'i alır.\n    • Yani `app`, GRAND'ı hedefler; `app:test` ise o FORK'u hedefler. Bir fork üzerinde işlem yaparken etiketi her zaman ekleyin — tek belirsiz durum, bir forkun yanlışlıkla sade/latest adı altında kaydedilmesidir.\n    • Ajanlar yalnızca forkları değiştirebilir; grand depolar korumalıdır (geçersiz kılma yalnızca oturumdan önce operatör tarafından ayarlanması gereken REDIACC_ALLOW_GRAND_REPO ile mümkündür). Forklar güvenli, tek kullanımlık birimdir.\n",
       "up": "Otomatik bağlama ile dağıt"
     },
     "sync": {

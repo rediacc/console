@@ -56,6 +56,18 @@ export function stateMismatch(message: string, options?: CliExitErrorOptions): C
   return new CliExitError(ERROR_CODES.STATE_MISMATCH, message, options);
 }
 
+/**
+ * `BUSY` (exit 15): another process holds the resource; the same command can
+ * succeed later untouched.
+ *
+ * `retryable` is set explicitly because `isRetryable` only defaults the network
+ * classes to true, and "come back in a moment" is the entire meaning of BUSY.
+ * Callers may still override it via `options`.
+ */
+export function busy(message: string, options?: CliExitErrorOptions): CliExitError {
+  return new CliExitError(ERROR_CODES.BUSY, message, { retryable: true, ...options });
+}
+
 /** `NOT_FOUND` (exit 5): a named resource does not exist in config or on the machine. */
 export function notFound(message: string, options?: CliExitErrorOptions): CliExitError {
   return new CliExitError(ERROR_CODES.NOT_FOUND, message, options);

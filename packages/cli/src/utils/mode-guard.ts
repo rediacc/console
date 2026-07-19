@@ -1,41 +1,15 @@
 /**
  * Registry-driven command guard system.
- * Auto-tags help descriptions and hides experimental commands unless
- * REDIACC_EXPERIMENTAL=1.
+ * Auto-tags help descriptions and applies domain grouping from the registry.
  */
 
 import type { Command } from 'commander';
-import {
-  COMMAND_DOMAINS,
-  getCommandDef,
-  isExperimentalEnabled,
-  type SubcommandDef,
-} from '../config/command-registry.js';
+import { COMMAND_DOMAINS, getCommandDef } from '../config/command-registry.js';
 import { t } from '../i18n/index.js';
-import { outputService } from '../services/core/output.js';
-import { exitProcess } from '../services/core/request-context.js';
 import { isAgentEnvironment } from './agent-guard.js';
 
 /** Whether to show extended (full) help descriptions instead of summaries. */
 let _extendedHelp = false;
-
-/**
- * Add a preAction hook that blocks the command when experimental mode is not enabled.
- */
-function addExperimentalGuard(command: Command): void {
-  command.hook('preAction', () => {
-    if (!isExperimentalEnabled()) {
-      if (isAgentEnvironment()) {
-        outputService.error(`unknown command "${command.name()}"`);
-      } else {
-        outputService.error(
-          `"${command.name()}" is an experimental command. Enable with REDIACC_EXPERIMENTAL=1 environment variable.`
-        );
-      }
-      exitProcess(1);
-    }
-  });
-}
 
 /** Format an argument for display (e.g. `<name>`, `[command]`, `<files...>`). */
 function humanReadableArgName(arg: {
@@ -88,7 +62,7 @@ function buildOptionTerm(options: { short?: string; long?: string; flags: string
   };
 }
 
-/** Check if a command is hidden (experimental or otherwise). */
+/** Check if a command is hidden. */
 function isHidden(cmd: Command): boolean {
   return (cmd as Command & { _hidden?: boolean })._hidden === true;
 }
@@ -172,58 +146,16 @@ function applyHelpConfig(cmd: Command): void {
   }
 }
 
-/** Apply subcommand-level experimental guards for override entries. */
-function applySubcommandGuards(cmd: Command, subcommands: Record<string, SubcommandDef>): void {
-  for (const sub of cmd.commands) {
-    const subDef = subcommands[sub.name()] as SubcommandDef | undefined;
-    if (!subDef) continue;
-
-    if (subDef.experimental) {
-      addExperimentalGuard(sub);
-    }
-  }
-}
-
-/** Hide experimental subcommands from help output. */
-function applyExperimentalHiding(cmd: Command, subcommands: Record<string, SubcommandDef>): void {
-  for (const sub of cmd.commands) {
-    const subDef = subcommands[sub.name()] as SubcommandDef | undefined;
-    if (subDef?.experimental) {
-      (sub as Command & { _hidden: boolean })._hidden = true;
-    }
-  }
-}
-
 /** Apply registry definition to a single command. */
-function applyCommandDef(
-  cmd: Command,
-  def: ReturnType<typeof getCommandDef> & object,
-  experimental: boolean
-): void {
+function applyCommandDef(cmd: Command, def: ReturnType<typeof getCommandDef> & object): void {
   // Domain grouping via Commander.js helpGroup()
   cmd.helpGroup(COMMAND_DOMAINS[def.domain]);
-
-  // Hide and guard experimental commands
-  if (def.experimental) {
-    addExperimentalGuard(cmd);
-    if (!experimental) {
-      (cmd as Command & { _hidden: boolean })._hidden = true;
-    }
-  }
-
-  // Subcommand-level experimental guards
-  if (def.subcommands) {
-    applySubcommandGuards(cmd, def.subcommands);
-    if (!experimental) {
-      applyExperimentalHiding(cmd, def.subcommands);
-    }
-  }
 }
 
 /**
  * Apply the command registry to the CLI instance.
- * Sets help group headings, mode guards, experimental guards, and a custom
- * help formatter that renders mode tags as a separate column.
+ * Sets help group headings, mode guards, and a custom help formatter that
+ * renders mode tags as a separate column.
  */
 export function applyRegistry(cli: Command): void {
   // Detect --help-all: replace with --help so Commander's built-in help machinery fires
@@ -238,13 +170,11 @@ export function applyRegistry(cli: Command): void {
     _extendedHelp = true;
   }
 
-  const experimental = isExperimentalEnabled();
-
   for (const cmd of cli.commands) {
     const def = getCommandDef(cmd.name());
     if (!def) continue;
 
-    applyCommandDef(cmd, def, experimental);
+    applyCommandDef(cmd, def);
   }
 
   // Apply custom help formatting to the entire command tree

@@ -70,7 +70,7 @@ async function loadSSHPublicKey(): Promise<string> {
   }
   if (!sshPublicKey) {
     throw new Error(
-      'SSH public key required for cluster provisioning. Set with: rdc config init --name <name> --ssh-key <path>'
+      'SSH public key required for cluster provisioning. Set with: rdc config init <name> --ssh-key <path>'
     );
   }
   return sshPublicKey;
@@ -118,7 +118,7 @@ async function provisionCloud(
   const providerConfig = current?.resources?.cloudProviders?.[cluster.provider];
   if (!providerConfig) {
     throw new Error(
-      `Cluster "${clusterName}" references cloud provider "${cluster.provider}", which is not configured. Add it with: rdc config cloud-provider add`
+      `Cluster "${clusterName}" references cloud provider "${cluster.provider}", which is not configured. Add it with: rdc machine provider add`
     );
   }
 
