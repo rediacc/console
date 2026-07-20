@@ -49,6 +49,19 @@ run_guard() {
     ' "$WATCHDOG" "$1" "$2" "$3" "$INSTALL_PATTERNS"
 }
 
+# Runs formatFailureRoster with a JSON job array and prints "<summary>\n<banner>".
+# $1 = JSON array of failed jobs [{name,id}]
+run_roster() {
+    node -e '
+      const fmt = require(process.argv[1]).formatFailureRoster;
+      const { lines, summary } = fmt(JSON.parse(process.argv[2]), {
+        owner: "rediacc", repo: "console", runId: 42,
+      });
+      console.log(summary);
+      console.log(lines.join("\n"));
+    ' "$WATCHDOG" "$1"
+}
+
 WINDOWS_LOG='rdc.exe : The term is not recognized
 Program rdc.exe is not a valid application for this OS platform.
 Error: Process completed with exit code 1.'
@@ -173,6 +186,31 @@ test_workflow_sets_the_required_env_var() {
     log_pass "ci.yml wires WATCHDOG_INSTALL_VALIDATION_PATTERNS"
 }
 
+# The whole point of the roster: a poll with several failed jobs must name ALL
+# of them, not just the first the watchdog classified.
+test_roster_lists_every_failed_job() {
+    local out
+    out=$(run_roster '[
+      {"name":"Quality / Lint","id":111},
+      {"name":"Quality / TypeScript","id":222},
+      {"name":"Tests / Unit","id":333}
+    ]')
+    assert_contains "$out" "3 jobs failed:" "summary must count all failures"
+    assert_contains "$out" '"Quality / Lint"' "summary/banner names the first failure"
+    assert_contains "$out" '"Quality / TypeScript"' "the second failure must not be dropped"
+    assert_contains "$out" '"Tests / Unit"' "the third failure must not be dropped"
+    assert_contains "$out" "runs/42/job/222" "each failed job carries its direct job URL"
+    log_pass "roster enumerates every failed job in the poll"
+}
+
+# A single failure keeps the original, unpluralized phrasing.
+test_roster_single_failure_reads_naturally() {
+    local out
+    out=$(run_roster '[{"name":"Quality / Lint","id":111}]')
+    assert_contains "$out" "Job failed: \"Quality / Lint\"" "single failure keeps the singular message"
+    log_pass "single-failure roster reads naturally"
+}
+
 log_test "test-watchdog-binary-exec-guard"
 test_module_still_callable_from_github_script
 test_deferred_job_is_not_marked_handled
@@ -184,5 +222,7 @@ test_skipped_sibling_stays_transient
 test_non_install_job_is_ignored
 test_other_failure_signature_is_ignored
 test_workflow_sets_the_required_env_var
+test_roster_lists_every_failed_job
+test_roster_single_failure_reads_naturally
 echo ""
 log_pass "all tests passed"
