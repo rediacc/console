@@ -34,8 +34,9 @@ export function getMinReleaseAgeMs(npmrcFile: string = DEFAULT_NPMRC): number {
   return 0;
 }
 
-/** Epoch ms of 00:00:00 UTC on the day AFTER the day that contains `ms`. */
-export function startOfNextUtcDay(ms: number): number {
+/** Epoch ms of 00:00:00 UTC on the day AFTER the day that contains `ms`.
+ *  Module-private: only isWithinFreshnessWindow needs it. */
+function startOfNextUtcDay(ms: number): number {
   const d = new Date(ms);
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1);
 }
