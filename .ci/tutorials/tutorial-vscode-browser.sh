@@ -55,26 +55,26 @@ run_cmd_interrupt "rdc vscode connect my-app --browser --no-open" 8
 pause 2
 
 section "The editor lives INSIDE the repo sandbox"
-run_cmd "rdc term connect my-app -c 'pwd && ls'"
+run_cmd "rdc term connect my-app --command 'pwd && ls'"
 
 pause 2
 
 # The video's browser scene creates notes/todo.md inside the editor at render
 # time. For the cast we seed the same file silently so the round-trip step
 # below always has something to show, regardless of scene ordering.
-rdc term connect my-app -c 'mkdir -p notes && printf "%s\n" "- ship the demo" "- write the report" > notes/todo.md' >/dev/null 2>&1
+rdc term connect my-app --command 'mkdir -p notes && printf "%s\n" "- ship the demo" "- write the report" > notes/todo.md' >/dev/null 2>&1
 
 section "Files made in the browser are real repo files"
-run_cmd "rdc term connect my-app -c 'cat notes/todo.md'"
+run_cmd "rdc term connect my-app --command 'cat notes/todo.md'"
 
 pause 2
 
 section "Try to leave the repo — the kernel says no"
-run_cmd_expect_fail "rdc term connect my-app -c 'ls /'"
+run_cmd_expect_fail "rdc term connect my-app --command 'ls /'"
 
 pause 2
 
-run_cmd_expect_fail "rdc term connect my-app -c 'ls /home'"
+run_cmd_expect_fail "rdc term connect my-app --command 'ls /home'"
 
 pause 2
 

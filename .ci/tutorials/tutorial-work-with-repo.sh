@@ -51,7 +51,7 @@ run_cmd_interrupt "rdc repo tunnel my-app --container app" 4
 pause 2
 
 section "Term — run a command inside the repo"
-run_cmd "rdc term connect my-app -c 'docker ps'"
+run_cmd "rdc term connect my-app --command 'docker ps'"
 
 pause 2
 

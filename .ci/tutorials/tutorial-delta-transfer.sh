@@ -63,8 +63,8 @@ run_cmd "rdc repo push my-app --to $M2"
 pause 2
 
 section "Change a little data"
-run_cmd "rdc term connect my-app -c 'dd if=/dev/urandom of=delta-test.bin bs=1M count=50 status=none && ls -lh delta-test.bin'" \
-    "rdc term connect my-app -c 'dd if=/dev/urandom of=delta-test.bin bs=1M count=50 status=none && sync && ls -lh delta-test.bin'"
+run_cmd "rdc term connect my-app --command 'dd if=/dev/urandom of=delta-test.bin bs=1M count=50 status=none && ls -lh delta-test.bin'" \
+    "rdc term connect my-app --command 'dd if=/dev/urandom of=delta-test.bin bs=1M count=50 status=none && sync && ls -lh delta-test.bin'"
 
 pause 2
 

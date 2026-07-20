@@ -34,7 +34,7 @@ rdc repo delete my-app --yes 2>/dev/null || true
 rdc repo create my-app --machine "$M" --size 2G
 rdc repo admin template apply my-app --template app-postgres
 rdc repo up my-app
-rdc term connect my-app -c "echo 'Hello from production' > index.html" 2>/dev/null || true
+rdc term connect my-app --command "echo 'Hello from production' > index.html" 2>/dev/null || true
 
 # Restore stdout/stderr so asciinema captures only the demo from here on.
 exec >&3 2>&4
@@ -52,17 +52,17 @@ run_cmd "rdc repo list --machine $M"
 pause 2
 
 section "Original — index.html is here"
-run_cmd "rdc term connect my-app -c 'ls -la index.html'"
+run_cmd "rdc term connect my-app --command 'ls -la index.html'"
 
 pause 2
 
 section "Fork — change something only in the fork"
-run_cmd "rdc term connect my-app:experiment -c 'rm index.html && echo removed'"
+run_cmd "rdc term connect my-app:experiment --command 'rm index.html && echo removed'"
 
 pause 2
 
 section "Original is untouched"
-run_cmd "rdc term connect my-app -c 'ls -la index.html'"
+run_cmd "rdc term connect my-app --command 'ls -la index.html'"
 
 pause 2
 

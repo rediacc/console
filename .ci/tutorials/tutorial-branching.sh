@@ -59,13 +59,13 @@ section "Version one of your app state"
 # Exec variant adds `sync`: repo commit reflink-clones the LUKS image at
 # the btrfs level, and a just-written file can still sit in the inner
 # ext4 page cache — the clone would miss it (see lib/stage-branching.sh).
-run_cmd "rdc term connect app:work -c 'echo v1 > version.txt && cat version.txt'" \
-    "rdc term connect app:work -c 'echo v1 > version.txt && sync && sync && cat version.txt'"
+run_cmd "rdc term connect app:work --command 'echo v1 > version.txt && cat version.txt'" \
+    "rdc term connect app:work --command 'echo v1 > version.txt && sync && sync && cat version.txt'"
 
 pause 2
 
 section "Real data lives here too"
-run_cmd "rdc term connect app:work -c 'docker exec db psql -U app -d app -c \"SELECT count(*) FROM customers\"'"
+run_cmd "rdc term connect app:work --command 'docker exec db psql -U app -d app -c \"SELECT count(*) FROM customers\"'"
 
 pause 2
 
@@ -80,18 +80,18 @@ run_cmd "rdc repo branch app:work --branch stable"
 pause 2
 
 section "Keep working — version two"
-run_cmd "rdc term connect app:work -c 'echo v2 > version.txt && cat version.txt'" \
-    "rdc term connect app:work -c 'echo v2 > version.txt && sync && sync && cat version.txt'"
+run_cmd "rdc term connect app:work --command 'echo v2 > version.txt && cat version.txt'" \
+    "rdc term connect app:work --command 'echo v2 > version.txt && sync && sync && cat version.txt'"
 
 pause 2
 
 section "Disaster — the risky change drops the table"
-run_cmd "rdc term connect app:work -c 'docker exec db psql -U app -d app -c \"DROP TABLE customers\"'" \
-    "rdc term connect app:work -c 'docker exec db psql -U app -d app -c \"DROP TABLE customers\" && sync && sync'"
+run_cmd "rdc term connect app:work --command 'docker exec db psql -U app -d app -c \"DROP TABLE customers\"'" \
+    "rdc term connect app:work --command 'docker exec db psql -U app -d app -c \"DROP TABLE customers\" && sync && sync'"
 
 pause 1
 
-run_cmd_expect_fail "rdc term connect app:work -c 'docker exec db psql -U app -d app -c \"SELECT count(*) FROM customers\"'"
+run_cmd_expect_fail "rdc term connect app:work --command 'docker exec db psql -U app -d app -c \"SELECT count(*) FROM customers\"'"
 
 pause 2
 
@@ -114,15 +114,15 @@ run_cmd "rdc repo up app:rollback"
 pause 2
 
 section "Proof — the rollback is version one"
-run_cmd "rdc term connect app:rollback -c 'cat version.txt'"
+run_cmd "rdc term connect app:rollback --command 'cat version.txt'"
 
 pause 2
 
 section "And the dropped table is back — all three rows"
 # Exec variant waits for postgres to finish crash recovery after the
 # fresh fork's first boot before running the same SELECT.
-run_cmd "rdc term connect app:rollback -c 'docker exec db psql -U app -d app -c \"SELECT count(*) FROM customers\"'" \
-    "rdc term connect app:rollback -c 'for i in \$(seq 1 30); do docker exec db pg_isready -q -U app -d app && break; sleep 2; done; docker exec db psql -U app -d app -c \"SELECT count(*) FROM customers\"'"
+run_cmd "rdc term connect app:rollback --command 'docker exec db psql -U app -d app -c \"SELECT count(*) FROM customers\"'" \
+    "rdc term connect app:rollback --command 'for i in \$(seq 1 30); do docker exec db pg_isready -q -U app -d app && break; sleep 2; done; docker exec db psql -U app -d app -c \"SELECT count(*) FROM customers\"'"
 
 pause 2
 

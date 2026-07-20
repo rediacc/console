@@ -76,12 +76,12 @@ run_cmd "rdc repo up my-app"
 pause 2
 
 section "Proof — the env secret reaches the container"
-run_cmd "rdc term connect my-app -c 'docker exec app printenv DB_HOST'"
+run_cmd "rdc term connect my-app --command 'docker exec app printenv DB_HOST'"
 
 pause 2
 
 section "Proof — the file secret is mounted at /run/secrets"
-run_cmd "rdc term connect my-app -c 'docker exec app cat /run/secrets/stripe_key'"
+run_cmd "rdc term connect my-app --command 'docker exec app cat /run/secrets/stripe_key'"
 
 pause 2
 

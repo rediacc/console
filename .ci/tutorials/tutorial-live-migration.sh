@@ -63,7 +63,7 @@ exec >&3 2>&4
 clear_screen
 
 section "A live app — its in-memory counter is beating"
-run_cmd "rdc term connect pulse -c 'docker logs heartbeat_app --tail 5'"
+run_cmd "rdc term connect pulse --command 'docker logs heartbeat_app --tail 5'"
 
 pause 2
 
@@ -83,7 +83,7 @@ run_cmd "rdc repo list --machine $M"
 pause 2
 
 section "The counter CONTINUED — process memory made the trip"
-run_cmd "rdc term connect pulse -c 'docker logs heartbeat_app --tail 5'"
+run_cmd "rdc term connect pulse --command 'docker logs heartbeat_app --tail 5'"
 
 pause 2
 

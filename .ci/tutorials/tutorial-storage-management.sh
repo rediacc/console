@@ -40,7 +40,7 @@ exec >&3 2>&4
 clear_screen
 
 section "The repo is filling up"
-run_cmd "rdc term connect data-app -c 'dd if=/dev/zero of=big.bin bs=1M count=1200 status=none && df -h .'"
+run_cmd "rdc term connect data-app --command 'dd if=/dev/zero of=big.bin bs=1M count=1200 status=none && df -h .'"
 
 pause 2
 
@@ -49,12 +49,12 @@ run_cmd "rdc repo expand data-app --size 4G"
 
 pause 1
 
-run_cmd "rdc term connect data-app -c 'df -h .'"
+run_cmd "rdc term connect data-app --command 'df -h .'"
 
 pause 2
 
 section "Delete data, then give the blocks back to the pool"
-run_cmd "rdc term connect data-app -c 'rm big.bin && df -h .'"
+run_cmd "rdc term connect data-app --command 'rm big.bin && df -h .'"
 
 pause 1
 

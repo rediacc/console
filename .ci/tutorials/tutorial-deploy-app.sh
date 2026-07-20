@@ -49,7 +49,7 @@ run_cmd "rdc repo admin template apply my-app --template app-postgres"
 pause 2
 
 section "See what the template added"
-run_cmd "rdc term connect my-app -c 'ls -la'"
+run_cmd "rdc term connect my-app --command 'ls -la'"
 
 pause 2
 
@@ -59,7 +59,7 @@ run_cmd "rdc repo up my-app"
 pause 2
 
 section "Verify what's running"
-run_cmd "rdc term connect my-app -c 'docker ps'"
+run_cmd "rdc term connect my-app --command 'docker ps'"
 
 pause 2
 

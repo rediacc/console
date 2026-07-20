@@ -3,7 +3,7 @@
 # Demonstrates the dev → prod transition: rdc repo up (production), autostart
 # enable, autostart list, rdc repo down. The "renet dev down" piece runs from
 # inside the repo sandbox in the real flow; here we replicate it via
-# `rdc term connect <repo> -c "renet dev down"` for a single-pass cast.
+# `rdc term connect <repo> --command "renet dev down"` for a single-pass cast.
 #
 # Prerequisites: shared tutorial config + provisioned worker VM.
 
@@ -50,7 +50,7 @@ run_cmd "rdc repo admin autostart enable my-app"
 pause 1
 
 section "List autostart-enabled repos"
-run_cmd "rdc repo admin autostart list -m $M"
+run_cmd "rdc repo admin autostart list --machine $M"
 
 pause 2
 
