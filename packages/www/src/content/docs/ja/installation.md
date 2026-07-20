@@ -92,15 +92,15 @@ sudo pacman -Sy rediacc-cli
 CLIをコンテナとしてプルして実行:
 
 ```bash
-docker pull ghcr.io/rediacc/elite/cli:stable
+docker pull ghcr.io/rediacc/rdc:stable
 
-docker run --rm ghcr.io/rediacc/elite/cli:stable --version
+docker run --rm ghcr.io/rediacc/rdc:stable --version
 ```
 
 便利なエイリアスを作成:
 
 ```bash
-alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable'
+alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/rdc:stable'
 ```
 
 利用可能なDockerタグ:
@@ -174,7 +174,7 @@ REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
 echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
 
 # Docker edge
-docker pull ghcr.io/rediacc/elite/cli:edge
+docker pull ghcr.io/rediacc/rdc:edge
 ```
 
 ### チャンネルの仕組み
@@ -183,7 +183,7 @@ docker pull ghcr.io/rediacc/elite/cli:edge
 
 - **インストールスクリプト**: 環境変数 `REDIACC_CHANNEL` でチャンネルを選択
 - **パッケージリポジトリ**: `releases.rediacc.com/{フォーマット}/{チャンネル}/`
-- **Dockerタグ**: `ghcr.io/rediacc/elite/cli:{チャンネル}`
+- **Dockerタグ**: `ghcr.io/rediacc/rdc:{チャンネル}`
 - **CLIアップデート**: `rdc update` はインストール時に設定されたチャンネルを確認
 
 ### PRプレビューの自動設定

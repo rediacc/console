@@ -6118,8 +6118,8 @@
   {
     "id": "search-14585",
     "content": "Docker",
-    "body": "Загрузите и запустите CLI как контейнер: docker pull ghcr.io/rediacc/elite/cli:stable docker run --rm ghcr.io/rediacc/elite/cli:stable --version Создайте псевдоним для удобства: alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable' Доступные теги Docker: | Тег | Описание | |-----|----------| | :stable | Последний стабильный релиз (рекомендуется) | | :edge | Последний edge-релиз | | :0.8.4 | Фиксированная версия (неизменяемая) | | :latest | Псевдоним для :stable |",
-    "excerpt": "Загрузите и запустите CLI как контейнер: docker pull ghcr.io/rediacc/elite/cli:stable docker run --rm ghcr.io/rediacc/elite/cli:stable --version Созда...",
+    "body": "Загрузите и запустите CLI как контейнер: docker pull ghcr.io/rediacc/rdc:stable docker run --rm ghcr.io/rediacc/rdc:stable --version Создайте псевдоним для удобства: alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/rdc:stable' Доступные теги Docker: | Тег | Описание | |-----|----------| | :stable | Последний стабильный релиз (рекомендуется) | | :edge | Последний edge-релиз | | :0.8.4 | Фиксированная версия (неизменяемая) | | :latest | Псевдоним для :stable |",
+    "excerpt": "Загрузите и запустите CLI как контейнер: docker pull ghcr.io/rediacc/rdc:stable docker run --rm ghcr.io/rediacc/rdc:stable --version Создайте псевдони...",
     "category": "Documentation",
     "page": "/ru/docs/installation",
     "path": "docs.installation.content",
@@ -6162,7 +6162,7 @@
   {
     "id": "search-14589",
     "content": "Переключение каналов",
-    "body": "rdc update --channel edge # Переключиться на канал edge rdc update --channel stable # Вернуться на канал stable Установить напрямую из канала edge: REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash Для менеджеров пакетов замените stable на edge в URL репозитория: # APT edge echo \"deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main\" | sudo tee /etc/apt/sources.list.d/rediacc.list # Docker edge docker pull ghcr.io/rediacc/elite/cli:edge",
+    "body": "rdc update --channel edge # Переключиться на канал edge rdc update --channel stable # Вернуться на канал stable Установить напрямую из канала edge: REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash Для менеджеров пакетов замените stable на edge в URL репозитория: # APT edge echo \"deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main\" | sudo tee /etc/apt/sources.list.d/rediacc.list # Docker edge docker pull ghcr.io/rediacc/rdc:edge",
     "excerpt": "rdc update --channel edge # Переключиться на канал edge rdc update --channel stable # Вернуться на канал stable Установить напрямую из канала edge: RE...",
     "category": "Documentation",
     "page": "/ru/docs/installation",
@@ -6173,7 +6173,7 @@
   {
     "id": "search-14590",
     "content": "Как работают каналы",
-    "body": "Канал применяется единообразно ко всем методам доставки: Скрипты установки: Переменная окружения REDIACC_CHANNEL выбирает канал Репозитории пакетов: releases.rediacc.com/{формат}/{канал}/ Теги Docker: ghcr.io/rediacc/elite/cli:{канал} Обновления CLI: rdc update проверяет канал, настроенный при установке",
+    "body": "Канал применяется единообразно ко всем методам доставки: Скрипты установки: Переменная окружения REDIACC_CHANNEL выбирает канал Репозитории пакетов: releases.rediacc.com/{формат}/{канал}/ Теги Docker: ghcr.io/rediacc/rdc:{канал} Обновления CLI: rdc update проверяет канал, настроенный при установке",
     "excerpt": "Канал применяется единообразно ко всем методам доставки: Скрипты установки: Переменная окружения REDIACC_CHANNEL выбирает канал Репозитории пакетов: r...",
     "category": "Documentation",
     "page": "/ru/docs/installation",

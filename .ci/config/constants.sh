@@ -26,14 +26,11 @@ readonly CI_CONFIG_DIR="$CI_DIR/config"
 # DOCKER REGISTRY CONFIGURATION
 # =============================================================================
 # DOCKER_REGISTRY can be overridden by .env for local development
-DOCKER_REGISTRY="${DOCKER_REGISTRY:-ghcr.io/rediacc/elite}"
+DOCKER_REGISTRY="${DOCKER_REGISTRY:-ghcr.io/rediacc}"
 DOCKER_TAG="${DOCKER_TAG:-latest}"
 
 # Supported architectures for multi-arch builds
 readonly SUPPORTED_ARCHS=("amd64" "arm64")
-
-# Docker Images
-readonly ELITE_IMAGE_RENET="${DOCKER_REGISTRY}/renet:${DOCKER_TAG}"
 
 # Docker Networks
 readonly DOCKER_NETWORK_INTERNET="rediacc_internet"
@@ -115,14 +112,14 @@ readonly DOCKER_BUILD_ARG_NODE_VERSION="NODE_VERSION=$NODE_VERSION_REQUIRED"
 # =============================================================================
 # PUBLISHING CONFIGURATION
 # =============================================================================
-PUBLISH_DOCKER_REGISTRY="${PUBLISH_DOCKER_REGISTRY:-ghcr.io/rediacc/elite}"
+PUBLISH_DOCKER_REGISTRY="${PUBLISH_DOCKER_REGISTRY:-ghcr.io/rediacc}"
 
 # Bot identity for CI commits: set GIT_BOT_NAME / GIT_BOT_EMAIL org variables.
 # Used by: update-homebrew-tap.sh, cd-v2.yml (git tag creation).
 # NOT declared here to avoid breaking local scripts that source constants.sh.
 
 # Docker images to publish
-readonly PUBLISH_IMAGES=("renet" "cli")
+readonly PUBLISH_IMAGES=("renet" "rdc")
 
 # Dockerfiles (relative to CONSOLE_ROOT_DIR)
 # Associative arrays require bash 4+; skip on older bash (e.g. macOS system bash 3.2).
@@ -130,13 +127,13 @@ readonly PUBLISH_IMAGES=("renet" "cli")
 if ((BASH_VERSINFO[0] >= 4)); then
     declare -A DOCKERFILES=(
         ["renet"]="private/renet/Dockerfile"
-        ["cli"]="packages/cli/Dockerfile"
+        ["rdc"]="packages/cli/Dockerfile"
     )
 
     # Build contexts (relative to CONSOLE_ROOT_DIR)
     declare -A BUILD_CONTEXTS=(
         ["renet"]="private/renet"
-        ["cli"]="."
+        ["rdc"]="."
     )
 fi
 

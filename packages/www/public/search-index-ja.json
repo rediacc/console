@@ -6074,8 +6074,8 @@
   {
     "id": "search-10749",
     "content": "Docker",
-    "body": "CLIをコンテナとしてプルして実行: docker pull ghcr.io/rediacc/elite/cli:stable docker run --rm ghcr.io/rediacc/elite/cli:stable --version 便利なエイリアスを作成: alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable' 利用可能なDockerタグ: | タグ | 説明 | |------|------| | :stable | 最新の安定版リリース (推奨) | | :edge | 最新のエッジリリース | | :0.8.4 | 固定バージョン (不変) | | :latest | :stable のエイリアス |",
-    "excerpt": "CLIをコンテナとしてプルして実行: docker pull ghcr.io/rediacc/elite/cli:stable docker run --rm ghcr.io/rediacc/elite/cli:stable --version 便利なエイリアスを作成: alias rdc='doc...",
+    "body": "CLIをコンテナとしてプルして実行: docker pull ghcr.io/rediacc/rdc:stable docker run --rm ghcr.io/rediacc/rdc:stable --version 便利なエイリアスを作成: alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/rdc:stable' 利用可能なDockerタグ: | タグ | 説明 | |------|------| | :stable | 最新の安定版リリース (推奨) | | :edge | 最新のエッジリリース | | :0.8.4 | 固定バージョン (不変) | | :latest | :stable のエイリアス |",
+    "excerpt": "CLIをコンテナとしてプルして実行: docker pull ghcr.io/rediacc/rdc:stable docker run --rm ghcr.io/rediacc/rdc:stable --version 便利なエイリアスを作成: alias rdc='docker run --rm...",
     "category": "Documentation",
     "page": "/ja/docs/installation",
     "path": "docs.installation.content",
@@ -6118,7 +6118,7 @@
   {
     "id": "search-10753",
     "content": "チャンネルの切り替え",
-    "body": "rdc update --channel edge # エッジチャンネルに切り替え rdc update --channel stable # 安定版チャンネルに戻る エッジチャンネルから直接インストール: REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash パッケージマネージャーの場合、リポジトリURLの stable を edge に置き換えてください: # APT edge echo \"deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main\" | sudo tee /etc/apt/sources.list.d/rediacc.list # Docker edge docker pull ghcr.io/rediacc/elite/cli:edge",
+    "body": "rdc update --channel edge # エッジチャンネルに切り替え rdc update --channel stable # 安定版チャンネルに戻る エッジチャンネルから直接インストール: REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash パッケージマネージャーの場合、リポジトリURLの stable を edge に置き換えてください: # APT edge echo \"deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main\" | sudo tee /etc/apt/sources.list.d/rediacc.list # Docker edge docker pull ghcr.io/rediacc/rdc:edge",
     "excerpt": "rdc update --channel edge # エッジチャンネルに切り替え rdc update --channel stable # 安定版チャンネルに戻る エッジチャンネルから直接インストール: REDIACC_CHANNEL=edge curl -fsSL https://www.re...",
     "category": "Documentation",
     "page": "/ja/docs/installation",
@@ -6129,8 +6129,8 @@
   {
     "id": "search-10754",
     "content": "チャンネルの仕組み",
-    "body": "チャンネルはすべての配信方法に統一的に適用されます: インストールスクリプト: 環境変数 REDIACC_CHANNEL でチャンネルを選択 パッケージリポジトリ: releases.rediacc.com/{フォーマット}/{チャンネル}/ Dockerタグ: ghcr.io/rediacc/elite/cli:{チャンネル} CLIアップデート: rdc update はインストール時に設定されたチャンネルを確認",
-    "excerpt": "チャンネルはすべての配信方法に統一的に適用されます: インストールスクリプト: 環境変数 REDIACC_CHANNEL でチャンネルを選択 パッケージリポジトリ: releases.rediacc.com/{フォーマット}/{チャンネル}/ Dockerタグ: ghcr.io/rediacc/el...",
+    "body": "チャンネルはすべての配信方法に統一的に適用されます: インストールスクリプト: 環境変数 REDIACC_CHANNEL でチャンネルを選択 パッケージリポジトリ: releases.rediacc.com/{フォーマット}/{チャンネル}/ Dockerタグ: ghcr.io/rediacc/rdc:{チャンネル} CLIアップデート: rdc update はインストール時に設定されたチャンネルを確認",
+    "excerpt": "チャンネルはすべての配信方法に統一的に適用されます: インストールスクリプト: 環境変数 REDIACC_CHANNEL でチャンネルを選択 パッケージリポジトリ: releases.rediacc.com/{フォーマット}/{チャンネル}/ Dockerタグ: ghcr.io/rediacc/rd...",
     "category": "Documentation",
     "page": "/ja/docs/installation",
     "path": "docs.installation.content",

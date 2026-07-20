@@ -18,10 +18,10 @@ on:
       web_exists:
         type: string
         required: false
-      cli_tag:
+      rdc_tag:
         type: string
         required: false
-      cli_exists:
+      rdc_exists:
         type: string
         required: false
       test_images_only:
@@ -395,7 +395,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [build-cli]
-    if: "!inputs.test_images_only && inputs.cli_exists != 'true'"
+    if: "!inputs.test_images_only && inputs.rdc_exists != 'true'"
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
@@ -417,7 +417,7 @@ jobs:
           docker buildx build \
             --file packages/cli/Dockerfile.native \
             --platform linux/amd64 \
-            --tag ghcr.io/rediacc/elite/cli:${{ inputs.cli_tag }}-amd64 \
+            --tag ghcr.io/rediacc/rdc:${{ inputs.rdc_tag }}-amd64 \
             --push \
             .
 
@@ -426,22 +426,22 @@ jobs:
           docker buildx build \
             --file packages/cli/Dockerfile.native \
             --platform linux/arm64 \
-            --tag ghcr.io/rediacc/elite/cli:${{ inputs.cli_tag }}-arm64 \
+            --tag ghcr.io/rediacc/rdc:${{ inputs.rdc_tag }}-arm64 \
             --push \
             .
 
       - name: Create multi-arch manifest
         run: |
           .ci/scripts/docker/create-manifest.sh \
-            --image cli \
-            --tag "${{ inputs.cli_tag }}"
+            --image rdc \
+            --tag "${{ inputs.rdc_tag }}"
 
   build-cli-docker-skip:
     name: CLI Docker (cached)
     runs-on: ubuntu-latest
-    if: "!inputs.test_images_only && inputs.cli_exists == 'true'"
+    if: "!inputs.test_images_only && inputs.rdc_exists == 'true'"
     steps:
-      - run: echo "::notice::Skipping Docker build - cli:${{ inputs.cli_tag }} already exists in registry"
+      - run: echo "::notice::Skipping Docker build - rdc:${{ inputs.rdc_tag }} already exists in registry"
 
   # ============================================================
   # RENET: Docker Images
@@ -495,7 +495,7 @@ jobs:
             --file private/renet/Dockerfile.native \
             --platform linux/amd64 \
             --build-arg TARGETARCH=amd64 \
-            --tag ghcr.io/rediacc/elite/renet:${{ inputs.renet_tag }}-amd64 \
+            --tag ghcr.io/rediacc/renet:${{ inputs.renet_tag }}-amd64 \
             --push \
             .
 
@@ -506,7 +506,7 @@ jobs:
             --file private/renet/Dockerfile.native \
             --platform linux/arm64 \
             --build-arg TARGETARCH=arm64 \
-            --tag ghcr.io/rediacc/elite/renet:${{ inputs.renet_tag }}-arm64 \
+            --tag ghcr.io/rediacc/renet:${{ inputs.renet_tag }}-arm64 \
             --push \
             .
 

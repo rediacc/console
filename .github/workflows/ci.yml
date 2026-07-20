@@ -46,8 +46,8 @@ jobs:
       renet_exists: ${{ steps.init.outputs.renet_exists }}
       web_tag: ${{ steps.init.outputs.web_tag }}
       web_exists: ${{ steps.init.outputs.web_exists }}
-      cli_tag: ${{ steps.init.outputs.cli_tag }}
-      cli_exists: ${{ steps.init.outputs.cli_exists }}
+      rdc_tag: ${{ steps.init.outputs.rdc_tag }}
+      rdc_exists: ${{ steps.init.outputs.rdc_exists }}
       image_tag: ${{ steps.init.outputs.image_tag }}
       # full_suite: run all jobs on PR and nightly. Skip expensive
       # jobs (quality, standalone, elite) on push-to-main since PR already validated.
@@ -498,8 +498,8 @@ jobs:
       renet_exists: ${{ needs.initialize.outputs.renet_exists }}
       web_tag: ${{ needs.initialize.outputs.web_tag }}
       web_exists: ${{ needs.initialize.outputs.web_exists }}
-      cli_tag: ${{ needs.initialize.outputs.cli_tag }}
-      cli_exists: ${{ needs.initialize.outputs.cli_exists }}
+      rdc_tag: ${{ needs.initialize.outputs.rdc_tag }}
+      rdc_exists: ${{ needs.initialize.outputs.rdc_exists }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
@@ -518,8 +518,8 @@ jobs:
       renet_exists: ${{ needs.initialize.outputs.renet_exists }}
       web_tag: ${{ needs.initialize.outputs.web_tag }}
       web_exists: ${{ needs.initialize.outputs.web_exists }}
-      cli_tag: ${{ needs.initialize.outputs.cli_tag }}
-      cli_exists: ${{ needs.initialize.outputs.cli_exists }}
+      rdc_tag: ${{ needs.initialize.outputs.rdc_tag }}
+      rdc_exists: ${{ needs.initialize.outputs.rdc_exists }}
       test_images_only: true
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
@@ -642,7 +642,7 @@ jobs:
       next_version: ${{ needs.initialize.outputs.next_version }}
       renet_tag: ${{ needs.initialize.outputs.renet_tag }}
       web_tag: ${{ needs.initialize.outputs.web_tag }}
-      cli_tag: ${{ needs.initialize.outputs.cli_tag }}
+      rdc_tag: ${{ needs.initialize.outputs.rdc_tag }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}

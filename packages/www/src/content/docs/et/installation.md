@@ -103,15 +103,15 @@ npm install -g https://releases.rediacc.com/npm/stable/rediacc-cli-0.8.5.tgz
 Tõmmake ja käivitage CLI konteinerina:
 
 ```bash
-docker pull ghcr.io/rediacc/elite/cli:stable
+docker pull ghcr.io/rediacc/rdc:stable
 
-docker run --rm ghcr.io/rediacc/elite/cli:stable --version
+docker run --rm ghcr.io/rediacc/rdc:stable --version
 ```
 
 Looge alias mugavuse huvides:
 
 ```bash
-alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable'
+alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/rdc:stable'
 ```
 
 Saadaolevad Docker sildid:
@@ -185,7 +185,7 @@ Pakethaldite puhul asendage hoidla URL-is `stable` sõnaga `edge`:
 echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
 
 # Docker edge
-docker pull ghcr.io/rediacc/elite/cli:edge
+docker pull ghcr.io/rediacc/rdc:edge
 ```
 
 ### Kuidas kanalid töötavad
@@ -194,7 +194,7 @@ Kanal rakendub ühtlaselt kõigi tarnimismeetodite lõikes:
 
 - **Installiskriptid**: `REDIACC_CHANNEL` keskkonna muutuja valib kanali
 - **Pakettide hoidlad**: `releases.rediacc.com/{format}/{channel}/`
-- **Docker sildid**: `ghcr.io/rediacc/elite/cli:{channel}`
+- **Docker sildid**: `ghcr.io/rediacc/rdc:{channel}`
 - **CLI uuendused**: `rdc update` kontrollib installimise ajal konfigureeritud kanalit
 
 ### PR eelvaate automaatkonfiguratsioon

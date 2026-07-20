@@ -6129,8 +6129,8 @@
   {
     "id": "search-6916",
     "content": "Docker",
-    "body": "Tõmmake ja käivitage CLI konteinerina: docker pull ghcr.io/rediacc/elite/cli:stable docker run --rm ghcr.io/rediacc/elite/cli:stable --version Looge alias mugavuse huvides: alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable' Saadaolevad Docker sildid: | Silt | Kirjeldus | |-----|-------------| | :stable | Viimane stabiilne väljalase (soovitatav) | | :edge | Viimane edge väljalase | | :0.8.4 | Fikseeritud versioon (muutumatu) | | :latest | :stable alias |",
-    "excerpt": "Tõmmake ja käivitage CLI konteinerina: docker pull ghcr.io/rediacc/elite/cli:stable docker run --rm ghcr.io/rediacc/elite/cli:stable --version Looge a...",
+    "body": "Tõmmake ja käivitage CLI konteinerina: docker pull ghcr.io/rediacc/rdc:stable docker run --rm ghcr.io/rediacc/rdc:stable --version Looge alias mugavuse huvides: alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/rdc:stable' Saadaolevad Docker sildid: | Silt | Kirjeldus | |-----|-------------| | :stable | Viimane stabiilne väljalase (soovitatav) | | :edge | Viimane edge väljalase | | :0.8.4 | Fikseeritud versioon (muutumatu) | | :latest | :stable alias |",
+    "excerpt": "Tõmmake ja käivitage CLI konteinerina: docker pull ghcr.io/rediacc/rdc:stable docker run --rm ghcr.io/rediacc/rdc:stable --version Looge alias mugavus...",
     "category": "Documentation",
     "page": "/et/docs/installation",
     "path": "docs.installation.content",
@@ -6173,7 +6173,7 @@
   {
     "id": "search-6920",
     "content": "Kanalite vahetamine",
-    "body": "rdc update --channel edge # Lülitu edge kanalile rdc update --channel stable # Lülitu tagasi stable kanalile Installige otse edge kanalist: REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash Pakethaldite puhul asendage hoidla URL-is stable sõnaga edge: # APT edge echo \"deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main\" | sudo tee /etc/apt/sources.list.d/rediacc.list # Docker edge docker pull ghcr.io/rediacc/elite/cli:edge",
+    "body": "rdc update --channel edge # Lülitu edge kanalile rdc update --channel stable # Lülitu tagasi stable kanalile Installige otse edge kanalist: REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash Pakethaldite puhul asendage hoidla URL-is stable sõnaga edge: # APT edge echo \"deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main\" | sudo tee /etc/apt/sources.list.d/rediacc.list # Docker edge docker pull ghcr.io/rediacc/rdc:edge",
     "excerpt": "rdc update --channel edge # Lülitu edge kanalile rdc update --channel stable # Lülitu tagasi stable kanalile Installige otse edge kanalist: REDIACC_CH...",
     "category": "Documentation",
     "page": "/et/docs/installation",
@@ -6184,7 +6184,7 @@
   {
     "id": "search-6921",
     "content": "Kuidas kanalid töötavad",
-    "body": "Kanal rakendub ühtlaselt kõigi tarnimismeetodite lõikes: Installiskriptid: REDIACC_CHANNEL keskkonna muutuja valib kanali Pakettide hoidlad: releases.rediacc.com/{format}/{channel}/ Docker sildid: ghcr.io/rediacc/elite/cli:{channel} CLI uuendused: rdc update kontrollib installimise ajal konfigureeritud kanalit",
+    "body": "Kanal rakendub ühtlaselt kõigi tarnimismeetodite lõikes: Installiskriptid: REDIACC_CHANNEL keskkonna muutuja valib kanali Pakettide hoidlad: releases.rediacc.com/{format}/{channel}/ Docker sildid: ghcr.io/rediacc/rdc:{channel} CLI uuendused: rdc update kontrollib installimise ajal konfigureeritud kanalit",
     "excerpt": "Kanal rakendub ühtlaselt kõigi tarnimismeetodite lõikes: Installiskriptid: REDIACC_CHANNEL keskkonna muutuja valib kanali Pakettide hoidlad: releases....",
     "category": "Documentation",
     "page": "/et/docs/installation",

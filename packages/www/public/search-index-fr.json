@@ -6118,8 +6118,8 @@
   {
     "id": "search-8195",
     "content": "Docker",
-    "body": "Téléchargez et exécutez la CLI en tant que conteneur : docker pull ghcr.io/rediacc/elite/cli:stable docker run --rm ghcr.io/rediacc/elite/cli:stable --version Créez un alias pour plus de commodité : alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable' Tags Docker disponibles : | Tag | Description | |-----|-------------| | :stable | Dernière version stable (recommandée) | | :edge | Dernière version edge | | :0.8.4 | Version épinglée (immuable) | | :latest | Alias pour :stable |",
-    "excerpt": "Téléchargez et exécutez la CLI en tant que conteneur : docker pull ghcr.io/rediacc/elite/cli:stable docker run --rm ghcr.io/rediacc/elite/cli:stable -...",
+    "body": "Téléchargez et exécutez la CLI en tant que conteneur : docker pull ghcr.io/rediacc/rdc:stable docker run --rm ghcr.io/rediacc/rdc:stable --version Créez un alias pour plus de commodité : alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/rdc:stable' Tags Docker disponibles : | Tag | Description | |-----|-------------| | :stable | Dernière version stable (recommandée) | | :edge | Dernière version edge | | :0.8.4 | Version épinglée (immuable) | | :latest | Alias pour :stable |",
+    "excerpt": "Téléchargez et exécutez la CLI en tant que conteneur : docker pull ghcr.io/rediacc/rdc:stable docker run --rm ghcr.io/rediacc/rdc:stable --version Cré...",
     "category": "Documentation",
     "page": "/fr/docs/installation",
     "path": "docs.installation.content",
@@ -6162,7 +6162,7 @@
   {
     "id": "search-8199",
     "content": "Changer de canal",
-    "body": "rdc update --channel edge # Passer au canal edge rdc update --channel stable # Revenir au canal stable Installer directement depuis le canal edge : REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash Pour les gestionnaires de paquets, remplacez stable par edge dans l'URL du dépôt : # APT edge echo \"deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main\" | sudo tee /etc/apt/sources.list.d/rediacc.list # Docker edge docker pull ghcr.io/rediacc/elite/cli:edge",
+    "body": "rdc update --channel edge # Passer au canal edge rdc update --channel stable # Revenir au canal stable Installer directement depuis le canal edge : REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash Pour les gestionnaires de paquets, remplacez stable par edge dans l'URL du dépôt : # APT edge echo \"deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main\" | sudo tee /etc/apt/sources.list.d/rediacc.list # Docker edge docker pull ghcr.io/rediacc/rdc:edge",
     "excerpt": "rdc update --channel edge # Passer au canal edge rdc update --channel stable # Revenir au canal stable Installer directement depuis le canal edge : RE...",
     "category": "Documentation",
     "page": "/fr/docs/installation",
@@ -6173,7 +6173,7 @@
   {
     "id": "search-8200",
     "content": "Comment fonctionnent les canaux",
-    "body": "Le canal s'applique uniformément à toutes les méthodes de distribution : Scripts d'installation : La variable d'environnement REDIACC_CHANNEL sélectionne le canal Dépôts de paquets : releases.rediacc.com/{format}/{canal}/ Tags Docker : ghcr.io/rediacc/elite/cli:{canal} Mises à jour CLI : rdc update vérifie le canal configuré lors de l'installation",
+    "body": "Le canal s'applique uniformément à toutes les méthodes de distribution : Scripts d'installation : La variable d'environnement REDIACC_CHANNEL sélectionne le canal Dépôts de paquets : releases.rediacc.com/{format}/{canal}/ Tags Docker : ghcr.io/rediacc/rdc:{canal} Mises à jour CLI : rdc update vérifie le canal configuré lors de l'installation",
     "excerpt": "Le canal s'applique uniformément à toutes les méthodes de distribution : Scripts d'installation : La variable d'environnement REDIACC_CHANNEL sélectio...",
     "category": "Documentation",
     "page": "/fr/docs/installation",

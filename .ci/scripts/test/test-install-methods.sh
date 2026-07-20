@@ -84,7 +84,7 @@ fi
 # Configuration
 # =============================================================================
 
-DOCKER_IMAGE="ghcr.io/rediacc/elite/cli"
+DOCKER_IMAGE="ghcr.io/rediacc/rdc"
 SITE_URL="${SITE_URL:-https://www.rediacc.com}"
 # RELEASES_BASE_URL is set by constants.sh (sourced via common.sh) as readonly
 # REPO_CHANNEL: optional channel path segment (e.g., "stable", "edge", or "" for staging)

@@ -92,15 +92,15 @@ sudo pacman -Sy rediacc-cli
 Ziehen und starten Sie die CLI als Container:
 
 ```bash
-docker pull ghcr.io/rediacc/elite/cli:stable
+docker pull ghcr.io/rediacc/rdc:stable
 
-docker run --rm ghcr.io/rediacc/elite/cli:stable --version
+docker run --rm ghcr.io/rediacc/rdc:stable --version
 ```
 
 Erstellen Sie einen Alias zur Vereinfachung:
 
 ```bash
-alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable'
+alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/rdc:stable'
 ```
 
 Verfügbare Docker-Tags:
@@ -174,7 +174,7 @@ Für Paketmanager ersetzen Sie `stable` durch `edge` in der Repository-URL:
 echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
 
 # Docker edge
-docker pull ghcr.io/rediacc/elite/cli:edge
+docker pull ghcr.io/rediacc/rdc:edge
 ```
 
 ### Wie Kanäle funktionieren
@@ -183,7 +183,7 @@ Der Kanal gilt einheitlich für alle Bereitstellungsmethoden:
 
 - **Installationsskripte**: Die Umgebungsvariable `REDIACC_CHANNEL` wählt den Kanal
 - **Paket-Repositories**: `releases.rediacc.com/{format}/{kanal}/`
-- **Docker-Tags**: `ghcr.io/rediacc/elite/cli:{kanal}`
+- **Docker-Tags**: `ghcr.io/rediacc/rdc:{kanal}`
 - **CLI-Updates**: `rdc update` prüft den bei der Installation konfigurierten Kanal
 
 ### Automatische PR-Vorschau-Konfiguration

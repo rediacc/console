@@ -29,11 +29,10 @@ GITHUB_ORG="rediacc"
 TAG_REPOS=("console" "renet")
 
 # GHCR packages to clean. Each entry is the full package path under
-# ghcr.io/rediacc/* (org-relative). Most images live under elite/, but the
-# customer-facing on-prem image is at ghcr.io/rediacc/server (no namespace).
+# All images publish flat under ghcr.io/rediacc/<name>.
 GHCR_PACKAGES=(
-    "elite/renet"
-    "elite/cli"
+    "renet"
+    "rdc"
     "server"
 )
 

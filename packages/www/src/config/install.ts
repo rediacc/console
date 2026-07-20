@@ -57,13 +57,13 @@ Invoke-WebRequest -Uri ${RELEASES_URL}/cli/${CHANNEL}/rdc-win-arm64.exe -OutFile
 };
 
 export const DOCKER_COMMANDS = `# Pull the image
-docker pull ghcr.io/rediacc/elite/cli:${CHANNEL}
+docker pull ghcr.io/rediacc/rdc:${CHANNEL}
 
 # Run a command
-docker run --rm ghcr.io/rediacc/elite/cli:${CHANNEL} --version
+docker run --rm ghcr.io/rediacc/rdc:${CHANNEL} --version
 
 # Create an alias for convenience
-alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:${CHANNEL}'`;
+alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/rdc:${CHANNEL}'`;
 
 export const APT_COMMANDS = `curl -fsSL ${RELEASES_URL}/apt/${CHANNEL}/gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/rediacc.gpg
 echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] ${RELEASES_URL}/apt/${CHANNEL} stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list

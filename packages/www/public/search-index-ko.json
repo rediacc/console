@@ -6129,8 +6129,8 @@
   {
     "id": "search-12026",
     "content": "Docker",
-    "body": "CLI를 컨테이너로 가져와 실행합니다. docker pull ghcr.io/rediacc/elite/cli:stable docker run --rm ghcr.io/rediacc/elite/cli:stable --version 편의를 위해 별칭을 만드십시오. alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable' 사용 가능한 Docker 태그: | 태그 | 설명 | |-----|-------------| | :stable | 최신 안정 릴리스 (권장) | | :edge | 최신 edge 릴리스 | | :0.8.4 | 고정된 버전 (변경 불가) | | :latest | :stable의 별칭 |",
-    "excerpt": "CLI를 컨테이너로 가져와 실행합니다. docker pull ghcr.io/rediacc/elite/cli:stable docker run --rm ghcr.io/rediacc/elite/cli:stable --version 편의를 위해 별칭을 만드십시오. alias...",
+    "body": "CLI를 컨테이너로 가져와 실행합니다. docker pull ghcr.io/rediacc/rdc:stable docker run --rm ghcr.io/rediacc/rdc:stable --version 편의를 위해 별칭을 만드십시오. alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/rdc:stable' 사용 가능한 Docker 태그: | 태그 | 설명 | |-----|-------------| | :stable | 최신 안정 릴리스 (권장) | | :edge | 최신 edge 릴리스 | | :0.8.4 | 고정된 버전 (변경 불가) | | :latest | :stable의 별칭 |",
+    "excerpt": "CLI를 컨테이너로 가져와 실행합니다. docker pull ghcr.io/rediacc/rdc:stable docker run --rm ghcr.io/rediacc/rdc:stable --version 편의를 위해 별칭을 만드십시오. alias rdc='docker...",
     "category": "Documentation",
     "page": "/ko/docs/installation",
     "path": "docs.installation.content",
@@ -6173,7 +6173,7 @@
   {
     "id": "search-12030",
     "content": "채널 전환",
-    "body": "rdc update --channel edge # edge 채널로 전환 rdc update --channel stable # stable 채널로 복귀 edge 채널에서 직접 설치: REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash 패키지 매니저의 경우 리포지토리 URL에서 stable을 edge로 교체하십시오. # APT edge echo \"deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main\" | sudo tee /etc/apt/sources.list.d/rediacc.list # Docker edge docker pull ghcr.io/rediacc/elite/cli:edge",
+    "body": "rdc update --channel edge # edge 채널로 전환 rdc update --channel stable # stable 채널로 복귀 edge 채널에서 직접 설치: REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash 패키지 매니저의 경우 리포지토리 URL에서 stable을 edge로 교체하십시오. # APT edge echo \"deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main\" | sudo tee /etc/apt/sources.list.d/rediacc.list # Docker edge docker pull ghcr.io/rediacc/rdc:edge",
     "excerpt": "rdc update --channel edge # edge 채널로 전환 rdc update --channel stable # stable 채널로 복귀 edge 채널에서 직접 설치: REDIACC_CHANNEL=edge curl -fsSL https://www.redia...",
     "category": "Documentation",
     "page": "/ko/docs/installation",
@@ -6184,8 +6184,8 @@
   {
     "id": "search-12031",
     "content": "채널 작동 방식",
-    "body": "채널은 모든 전달 방법에 균일하게 적용됩니다. 설치 스크립트: REDIACC_CHANNEL 환경 변수로 채널 선택 패키지 리포지토리: releases.rediacc.com/{format}/{channel}/ Docker 태그: ghcr.io/rediacc/elite/cli:{channel} CLI 업데이트: rdc update는 설치 시 구성된 채널을 확인합니다.",
-    "excerpt": "채널은 모든 전달 방법에 균일하게 적용됩니다. 설치 스크립트: REDIACC_CHANNEL 환경 변수로 채널 선택 패키지 리포지토리: releases.rediacc.com/{format}/{channel}/ Docker 태그: ghcr.io/rediacc/elite/c...",
+    "body": "채널은 모든 전달 방법에 균일하게 적용됩니다. 설치 스크립트: REDIACC_CHANNEL 환경 변수로 채널 선택 패키지 리포지토리: releases.rediacc.com/{format}/{channel}/ Docker 태그: ghcr.io/rediacc/rdc:{channel} CLI 업데이트: rdc update는 설치 시 구성된 채널을 확인합니다.",
+    "excerpt": "채널은 모든 전달 방법에 균일하게 적용됩니다. 설치 스크립트: REDIACC_CHANNEL 환경 변수로 채널 선택 패키지 리포지토리: releases.rediacc.com/{format}/{channel}/ Docker 태그: ghcr.io/rediacc/rdc:{ch...",
     "category": "Documentation",
     "page": "/ko/docs/installation",
     "path": "docs.installation.content",

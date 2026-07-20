@@ -280,7 +280,7 @@ async function checkInstallPs1(expectedChannel: string): Promise<void> {
 async function checkMarketingHtml(expectedChannel: string): Promise<void> {
   // The install page renders BINARY_COMMANDS, DOCKER_COMMANDS, and package
   // manager snippets. The worker rewrites `releases.rediacc.com/<fmt>/stable`
-  // → `.../<expectedChannel>` and `elite/cli:stable` → `elite/cli:<expectedChannel>`
+  // → `.../<expectedChannel>` and `rdc:stable` → `rdc:<expectedChannel>`
   // for every channel-scoped URL baked at build time.
   try {
     const resp = await fetch(`${PREVIEW_URL}/install`);
@@ -293,7 +293,7 @@ async function checkMarketingHtml(expectedChannel: string): Promise<void> {
       'releases.rediacc.com/rpm/stable',
       'releases.rediacc.com/apk/stable',
       'releases.rediacc.com/archlinux/stable',
-      'elite/cli:stable',
+      'rdc:stable',
     ];
     const leaked = stale.filter((s) => body.includes(s));
     if (leaked.length > 0) {

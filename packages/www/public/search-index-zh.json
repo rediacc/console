@@ -6074,8 +6074,8 @@
   {
     "id": "search-17137",
     "content": "Docker",
-    "body": "拉取并作为容器运行 CLI： docker pull ghcr.io/rediacc/elite/cli:stable docker run --rm ghcr.io/rediacc/elite/cli:stable --version 创建别名以方便使用： alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable' 可用的 Docker 标签： | 标签 | 说明 | |------|------| | :stable | 最新稳定版（推荐） | | :edge | 最新 edge 版本 | | :0.8.4 | 固定版本（不可变） | | :latest | :stable 的别名 |",
-    "excerpt": "拉取并作为容器运行 CLI： docker pull ghcr.io/rediacc/elite/cli:stable docker run --rm ghcr.io/rediacc/elite/cli:stable --version 创建别名以方便使用： alias rdc='docker ru...",
+    "body": "拉取并作为容器运行 CLI： docker pull ghcr.io/rediacc/rdc:stable docker run --rm ghcr.io/rediacc/rdc:stable --version 创建别名以方便使用： alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/rdc:stable' 可用的 Docker 标签： | 标签 | 说明 | |------|------| | :stable | 最新稳定版（推荐） | | :edge | 最新 edge 版本 | | :0.8.4 | 固定版本（不可变） | | :latest | :stable 的别名 |",
+    "excerpt": "拉取并作为容器运行 CLI： docker pull ghcr.io/rediacc/rdc:stable docker run --rm ghcr.io/rediacc/rdc:stable --version 创建别名以方便使用： alias rdc='docker run --rm -it -...",
     "category": "Documentation",
     "page": "/zh/docs/installation",
     "path": "docs.installation.content",
@@ -6118,7 +6118,7 @@
   {
     "id": "search-17141",
     "content": "切换渠道",
-    "body": "rdc update --channel edge # 切换到 edge 渠道 rdc update --channel stable # 切换回 stable 渠道 直接从 edge 渠道安装： REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash 对于包管理器，将仓库 URL 中的 stable 替换为 edge： # APT edge echo \"deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main\" | sudo tee /etc/apt/sources.list.d/rediacc.list # Docker edge docker pull ghcr.io/rediacc/elite/cli:edge",
+    "body": "rdc update --channel edge # 切换到 edge 渠道 rdc update --channel stable # 切换回 stable 渠道 直接从 edge 渠道安装： REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash 对于包管理器，将仓库 URL 中的 stable 替换为 edge： # APT edge echo \"deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main\" | sudo tee /etc/apt/sources.list.d/rediacc.list # Docker edge docker pull ghcr.io/rediacc/rdc:edge",
     "excerpt": "rdc update --channel edge # 切换到 edge 渠道 rdc update --channel stable # 切换回 stable 渠道 直接从 edge 渠道安装： REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc...",
     "category": "Documentation",
     "page": "/zh/docs/installation",
@@ -6129,8 +6129,8 @@
   {
     "id": "search-17142",
     "content": "渠道工作原理",
-    "body": "渠道统一应用于所有分发方式： 安装脚本：REDIACC_CHANNEL 环境变量选择渠道 包仓库：releases.rediacc.com/{格式}/{渠道}/ Docker 标签：ghcr.io/rediacc/elite/cli:{渠道} CLI 更新：rdc update 检查安装时配置的渠道",
-    "excerpt": "渠道统一应用于所有分发方式： 安装脚本：REDIACC_CHANNEL 环境变量选择渠道 包仓库：releases.rediacc.com/{格式}/{渠道}/ Docker 标签：ghcr.io/rediacc/elite/cli:{渠道} CLI 更新：rdc update 检查安装时配置的渠道",
+    "body": "渠道统一应用于所有分发方式： 安装脚本：REDIACC_CHANNEL 环境变量选择渠道 包仓库：releases.rediacc.com/{格式}/{渠道}/ Docker 标签：ghcr.io/rediacc/rdc:{渠道} CLI 更新：rdc update 检查安装时配置的渠道",
+    "excerpt": "渠道统一应用于所有分发方式： 安装脚本：REDIACC_CHANNEL 环境变量选择渠道 包仓库：releases.rediacc.com/{格式}/{渠道}/ Docker 标签：ghcr.io/rediacc/rdc:{渠道} CLI 更新：rdc update 检查安装时配置的渠道",
     "category": "Documentation",
     "page": "/zh/docs/installation",
     "path": "docs.installation.content",

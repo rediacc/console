@@ -61,15 +61,14 @@ if [[ ! "$STAGING_TAG" =~ ^staging- ]]; then
     exit 1
 fi
 
-# Extract org and package base from registry URL
-# PUBLISH_DOCKER_REGISTRY is typically "ghcr.io/rediacc/elite"
-REGISTRY_PATH="${PUBLISH_DOCKER_REGISTRY#ghcr.io/}" # Remove ghcr.io/ prefix
-ORG="${REGISTRY_PATH%%/*}"                          # Get org (rediacc)
-PACKAGE_BASE="${REGISTRY_PATH#*/}"                  # Get package base (elite)
+# Extract org from registry URL. Images publish FLAT as ghcr.io/rediacc/<name>,
+# so the GHCR package name is just <image_name> under the org (no base namespace).
+ORG="${PUBLISH_DOCKER_REGISTRY#ghcr.io/}" # -> "rediacc"
+ORG="${ORG%%/*}"                          # defensive: strip any trailing path
 
 delete_staging_tag() {
     local image_name="$1"
-    local package_name="${PACKAGE_BASE}/${image_name}"
+    local package_name="${image_name}"
     local full_image="${PUBLISH_DOCKER_REGISTRY}/${image_name}:${STAGING_TAG}"
 
     log_step "Deleting staging tag for $image_name: $STAGING_TAG"

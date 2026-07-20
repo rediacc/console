@@ -6118,8 +6118,8 @@
   {
     "id": "search-1790",
     "content": "Docker",
-    "body": "قم بسحب وتشغيل واجهة سطر الأوامر كحاوية: docker pull ghcr.io/rediacc/elite/cli:stable docker run --rm ghcr.io/rediacc/elite/cli:stable --version أنشئ اسمًا مستعارًا للراحة: alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable' علامات Docker المتاحة: | العلامة | الوصف | |---------|-------| | :stable | أحدث إصدار مستقر (مُوصى به) | | :edge | أحدث إصدار edge | | :0.8.4 | إصدار مثبّت (غير قابل للتغيير) | | :latest | اسم مستعار لـ :stable |",
-    "excerpt": "قم بسحب وتشغيل واجهة سطر الأوامر كحاوية: docker pull ghcr.io/rediacc/elite/cli:stable docker run --rm ghcr.io/rediacc/elite/cli:stable --version أنشئ...",
+    "body": "قم بسحب وتشغيل واجهة سطر الأوامر كحاوية: docker pull ghcr.io/rediacc/rdc:stable docker run --rm ghcr.io/rediacc/rdc:stable --version أنشئ اسمًا مستعارًا للراحة: alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/rdc:stable' علامات Docker المتاحة: | العلامة | الوصف | |---------|-------| | :stable | أحدث إصدار مستقر (مُوصى به) | | :edge | أحدث إصدار edge | | :0.8.4 | إصدار مثبّت (غير قابل للتغيير) | | :latest | اسم مستعار لـ :stable |",
+    "excerpt": "قم بسحب وتشغيل واجهة سطر الأوامر كحاوية: docker pull ghcr.io/rediacc/rdc:stable docker run --rm ghcr.io/rediacc/rdc:stable --version أنشئ اسمًا مستعار...",
     "category": "Documentation",
     "page": "/ar/docs/installation",
     "path": "docs.installation.content",
@@ -6162,7 +6162,7 @@
   {
     "id": "search-1794",
     "content": "تبديل القنوات",
-    "body": "rdc update --channel edge # التبديل إلى قناة edge rdc update --channel stable # العودة إلى قناة stable التثبيت مباشرة من قناة edge: REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash لمديري الحزم، استبدل stable بـ edge في عنوان URL للمستودع: # APT edge echo \"deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main\" | sudo tee /etc/apt/sources.list.d/rediacc.list # Docker edge docker pull ghcr.io/rediacc/elite/cli:edge",
+    "body": "rdc update --channel edge # التبديل إلى قناة edge rdc update --channel stable # العودة إلى قناة stable التثبيت مباشرة من قناة edge: REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash لمديري الحزم، استبدل stable بـ edge في عنوان URL للمستودع: # APT edge echo \"deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main\" | sudo tee /etc/apt/sources.list.d/rediacc.list # Docker edge docker pull ghcr.io/rediacc/rdc:edge",
     "excerpt": "rdc update --channel edge # التبديل إلى قناة edge rdc update --channel stable # العودة إلى قناة stable التثبيت مباشرة من قناة edge: REDIACC_CHANNEL=ed...",
     "category": "Documentation",
     "page": "/ar/docs/installation",
@@ -6173,7 +6173,7 @@
   {
     "id": "search-1795",
     "content": "كيف تعمل القنوات",
-    "body": "تُطبّق القناة بشكل موحد عبر جميع طرق التوزيع: سكريبتات التثبيت: متغير البيئة REDIACC_CHANNEL يحدد القناة مستودعات الحزم: releases.rediacc.com/{التنسيق}/{القناة}/ علامات Docker: ghcr.io/rediacc/elite/cli:{القناة} تحديثات CLI: يتحقق rdc update من القناة المُعدّة أثناء التثبيت",
+    "body": "تُطبّق القناة بشكل موحد عبر جميع طرق التوزيع: سكريبتات التثبيت: متغير البيئة REDIACC_CHANNEL يحدد القناة مستودعات الحزم: releases.rediacc.com/{التنسيق}/{القناة}/ علامات Docker: ghcr.io/rediacc/rdc:{القناة} تحديثات CLI: يتحقق rdc update من القناة المُعدّة أثناء التثبيت",
     "excerpt": "تُطبّق القناة بشكل موحد عبر جميع طرق التوزيع: سكريبتات التثبيت: متغير البيئة REDIACC_CHANNEL يحدد القناة مستودعات الحزم: releases.rediacc.com/{التنسيق...",
     "category": "Documentation",
     "page": "/ar/docs/installation",

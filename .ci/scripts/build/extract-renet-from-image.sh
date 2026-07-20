@@ -5,7 +5,7 @@
 # Usage: extract-renet-from-image.sh --tag TAG --output DIR
 #   --tag TAG       Renet image tag to extract from (required)
 #   --output DIR    Output directory for binaries (default: private/bin)
-#   --registry REG  Docker registry (default: ghcr.io/rediacc/elite)
+#   --registry REG  Docker registry (default: ghcr.io/rediacc)
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,7 +14,7 @@ source "$SCRIPT_DIR/../lib/common.sh"
 # Defaults
 TAG=""
 OUTPUT_DIR=""
-REGISTRY="ghcr.io/rediacc/elite"
+REGISTRY="ghcr.io/rediacc"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do

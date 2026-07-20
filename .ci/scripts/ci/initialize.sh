@@ -126,16 +126,16 @@ log_step "Generating CI tags..."
 RENET_TAG=$(.ci/scripts/ci/generate-tag.sh --submodule private/renet)
 WEB_TAG=$(.ci/scripts/ci/generate-tag.sh --self)
 
-CLI_TAG="$WEB_TAG" # Same console commit hash
+RDC_TAG="$WEB_TAG" # Same console commit hash
 
 write_output "renet_tag" "$RENET_TAG"
 write_output "web_tag" "$WEB_TAG"
-write_output "cli_tag" "$CLI_TAG"
+write_output "rdc_tag" "$RDC_TAG"
 write_output "image_tag" "$RENET_TAG"
 
 log_info "Renet tag: $RENET_TAG (renet commit)"
 log_info "Web tag: $WEB_TAG (console commit)"
-log_info "CLI tag: $CLI_TAG (console commit)"
+log_info "RDC tag: $RDC_TAG (console commit)"
 
 # =============================================================================
 # Step 5: Detect bump type and calculate next version
@@ -160,7 +160,7 @@ log_info "Next version: $NEXT_VERSION (from tag: $(.ci/scripts/version/resolve-v
 # (push event) do — different tags ensure cache miss and rebuild with correct
 # version.
 if [[ "${GITHUB_EVENT_NAME:-}" == "push" ]]; then
-    local_tags=("RENET" "PLUGINS" "WEB" "CLI")
+    local_tags=("RENET" "WEB" "RDC")
     log_parts=()
     for prefix in "${local_tags[@]}"; do
         var_name="${prefix}_TAG"
@@ -196,23 +196,21 @@ check_image_path() {
     fi
 }
 
-# Images published under ghcr.io/rediacc/elite/<name>.
+# All images publish flat under ghcr.io/rediacc/<name> (renet, rdc, server).
 check_image() {
-    check_image_path "ghcr.io/rediacc/elite/$1" "$2"
+    check_image_path "ghcr.io/rediacc/$1" "$2"
 }
 
 RENET_EXISTS=$(check_image "renet" "$RENET_TAG")
-# The server image is the onprem build, published to ghcr.io/rediacc/server
-# (outside the elite/ namespace) and tagged with web_tag.
-WEB_EXISTS=$(check_image_path "ghcr.io/rediacc/server" "$WEB_TAG")
-CLI_EXISTS=$(check_image "cli" "$CLI_TAG")
+WEB_EXISTS=$(check_image "server" "$WEB_TAG")
+RDC_EXISTS=$(check_image "rdc" "$RDC_TAG")
 
 write_output "renet_exists" "$RENET_EXISTS"
 write_output "web_exists" "$WEB_EXISTS"
-write_output "cli_exists" "$CLI_EXISTS"
+write_output "rdc_exists" "$RDC_EXISTS"
 
 log_info "renet:$RENET_TAG exists=$RENET_EXISTS"
 log_info "web:$WEB_TAG exists=$WEB_EXISTS"
-log_info "cli:$CLI_TAG exists=$CLI_EXISTS"
+log_info "rdc:$RDC_TAG exists=$RDC_EXISTS"
 
 log_info "Initialization complete"

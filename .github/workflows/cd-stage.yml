@@ -29,7 +29,7 @@ on:
       web_tag:
         type: string
         required: false
-      cli_tag:
+      rdc_tag:
         type: string
         required: false
       upload_pages:
@@ -206,7 +206,7 @@ jobs:
           CHANNEL="${{ inputs.channel }}"
 
           .ci/scripts/docker/retag-image.sh --image renet --from "${{ inputs.renet_tag }}" --to "$CHANNEL"
-          .ci/scripts/docker/retag-image.sh --image cli --from "${{ inputs.cli_tag }}" --to "$CHANNEL"
+          .ci/scripts/docker/retag-image.sh --image rdc --from "${{ inputs.rdc_tag }}" --to "$CHANNEL"
           # On-prem server image lives outside the elite/ namespace; use --image-path
           # so retag doesn't try to prepend PUBLISH_DOCKER_REGISTRY. Built by the
           # build-server-docker-{amd64,arm64} jobs, sharing the web_tag.

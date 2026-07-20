@@ -6118,8 +6118,8 @@
   {
     "id": "search-15863",
     "content": "Docker",
-    "body": "CLI'yi bir konteyner olarak çekin ve çalıştırın: docker pull ghcr.io/rediacc/elite/cli:stable docker run --rm ghcr.io/rediacc/elite/cli:stable --version Kolaylık için bir takma ad oluşturun: alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable' Mevcut Docker etiketleri: | Etiket | Açıklama | |--------|----------| | :stable | En son kararlı sürüm (önerilen) | | :edge | En son edge sürümü | | :0.8.4 | Sabitlenmiş sürüm (değiştirilemez) | | :latest | :stable için takma ad |",
-    "excerpt": "CLI'yi bir konteyner olarak çekin ve çalıştırın: docker pull ghcr.io/rediacc/elite/cli:stable docker run --rm ghcr.io/rediacc/elite/cli:stable --versi...",
+    "body": "CLI'yi bir konteyner olarak çekin ve çalıştırın: docker pull ghcr.io/rediacc/rdc:stable docker run --rm ghcr.io/rediacc/rdc:stable --version Kolaylık için bir takma ad oluşturun: alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/rdc:stable' Mevcut Docker etiketleri: | Etiket | Açıklama | |--------|----------| | :stable | En son kararlı sürüm (önerilen) | | :edge | En son edge sürümü | | :0.8.4 | Sabitlenmiş sürüm (değiştirilemez) | | :latest | :stable için takma ad |",
+    "excerpt": "CLI'yi bir konteyner olarak çekin ve çalıştırın: docker pull ghcr.io/rediacc/rdc:stable docker run --rm ghcr.io/rediacc/rdc:stable --version Kolaylık...",
     "category": "Documentation",
     "page": "/tr/docs/installation",
     "path": "docs.installation.content",
@@ -6162,7 +6162,7 @@
   {
     "id": "search-15867",
     "content": "Kanal değiştirme",
-    "body": "rdc update --channel edge # Edge kanalına geç rdc update --channel stable # Stable kanalına geri dön Doğrudan edge kanalından kurulum yapın: REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash Paket yöneticileri için depo URL'sindeki stable ifadesini edge ile değiştirin: # APT edge echo \"deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main\" | sudo tee /etc/apt/sources.list.d/rediacc.list # Docker edge docker pull ghcr.io/rediacc/elite/cli:edge",
+    "body": "rdc update --channel edge # Edge kanalına geç rdc update --channel stable # Stable kanalına geri dön Doğrudan edge kanalından kurulum yapın: REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash Paket yöneticileri için depo URL'sindeki stable ifadesini edge ile değiştirin: # APT edge echo \"deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main\" | sudo tee /etc/apt/sources.list.d/rediacc.list # Docker edge docker pull ghcr.io/rediacc/rdc:edge",
     "excerpt": "rdc update --channel edge # Edge kanalına geç rdc update --channel stable # Stable kanalına geri dön Doğrudan edge kanalından kurulum yapın: REDIACC_C...",
     "category": "Documentation",
     "page": "/tr/docs/installation",
@@ -6173,7 +6173,7 @@
   {
     "id": "search-15868",
     "content": "Kanallar nasıl çalışır",
-    "body": "Kanal, tüm dağıtım yöntemlerinde aynı şekilde uygulanır: Kurulum betikleri: REDIACC_CHANNEL ortam değişkeni kanalı seçer Paket depoları: releases.rediacc.com/{format}/{kanal}/ Docker etiketleri: ghcr.io/rediacc/elite/cli:{kanal} CLI güncellemeleri: rdc update kurulum sırasında yapılandırılan kanalı kontrol eder",
+    "body": "Kanal, tüm dağıtım yöntemlerinde aynı şekilde uygulanır: Kurulum betikleri: REDIACC_CHANNEL ortam değişkeni kanalı seçer Paket depoları: releases.rediacc.com/{format}/{kanal}/ Docker etiketleri: ghcr.io/rediacc/rdc:{kanal} CLI güncellemeleri: rdc update kurulum sırasında yapılandırılan kanalı kontrol eder",
     "excerpt": "Kanal, tüm dağıtım yöntemlerinde aynı şekilde uygulanır: Kurulum betikleri: REDIACC_CHANNEL ortam değişkeni kanalı seçer Paket depoları: releases.redi...",
     "category": "Documentation",
     "page": "/tr/docs/installation",

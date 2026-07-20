@@ -354,7 +354,7 @@ jobs:
           VERSION="${{ needs.init.outputs.next_version }}"
 
           .ci/scripts/docker/retag-image.sh --image renet --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
-          .ci/scripts/docker/retag-image.sh --image cli --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag-image.sh --image rdc --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
           # On-prem server image lives at ghcr.io/rediacc/server (outside elite/),
           # so PUBLISH_DOCKER_REGISTRY can't reach it. cd-stage stages :CHANNEL.
           .ci/scripts/docker/retag-image.sh --image-path ghcr.io/rediacc/server --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
@@ -514,11 +514,11 @@ jobs:
       - name: Promote Docker to stable (hotfix)
         if: needs.init.outputs.workers_only != 'true' && inputs.publish_stable == true
         run: |
-          for image in renet cli; do
+          for image in renet rdc; do
             echo "Promoting ${image}: edge -> stable"
             docker buildx imagetools create \
-              -t "ghcr.io/rediacc/elite/${image}:stable" \
-              "ghcr.io/rediacc/elite/${image}:edge"
+              -t "ghcr.io/rediacc/${image}:stable" \
+              "ghcr.io/rediacc/${image}:edge"
           done
           # On-prem server image lives at ghcr.io/rediacc/server (outside elite/).
           echo "Promoting server: edge -> stable"
@@ -568,8 +568,8 @@ jobs:
           echo "**Pages URL:** https://www.rediacc.com" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Docker images:**" >> $GITHUB_STEP_SUMMARY
-          echo "- ghcr.io/rediacc/elite/renet:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
-          echo "- ghcr.io/rediacc/elite/cli:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/renet:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
+          echo "- ghcr.io/rediacc/rdc:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
           echo "- ghcr.io/rediacc/server:${{ needs.init.outputs.next_version }} + :latest (on-prem)" >> $GITHUB_STEP_SUMMARY
 
   # Install validation moved to CI (pre-publish). CI validates on all 6 platforms
