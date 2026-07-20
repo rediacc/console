@@ -2695,8 +2695,8 @@
   {
     "id": "search-12992",
     "content": "Listar Backups",
-    "body": "Ver os backups disponíveis numa localização de armazenamento: rdc backup list -m server-1 --storage my-storage A saída é uma tabela unificada que combina ambas as pastas de backups agendados (hot/ e cold/) para que veja todos os backups numa só vista: | Coluna | Significado | |---|---| | Mode | hot ou cold. Em que pasta de backup agendado esta entrada reside | | Name | Nome do repositório resolvido a partir da sua configuração local (usa o GUID para repositórios não presentes na configuração) | | GUID | O GUID do repositório em disco | | Size | Tamanho legível por humanos do ficheiro de backup | | Modified | Timestamp UTC do backend de armazenamento | Para analisar um único modo, passe --path: rdc backup list -m server-1 --storage my-storage --path hot rdc backup list -m server-1 --storage my-storage --path cold",
-    "excerpt": "Ver os backups disponíveis numa localização de armazenamento: rdc backup list -m server-1 --storage my-storage A saída é uma tabela unificada que comb...",
+    "body": "Ver os backups disponíveis numa localização de armazenamento: rdc backup list --storage my-storage A saída é uma tabela unificada que combina ambas as pastas de backups agendados (hot/ e cold/) para que veja todos os backups numa só vista: | Coluna | Significado | |---|---| | Mode | hot ou cold. Em que pasta de backup agendado esta entrada reside | | Name | Nome do repositório resolvido a partir da sua configuração local (usa o GUID para repositórios não presentes na configuração) | | GUID | O GUID do repositório em disco | | Size | Tamanho legível por humanos do ficheiro de backup | | Modified | Timestamp UTC do backend de armazenamento | Para analisar um único modo, passe --path: rdc backup list --storage my-storage --path hot rdc backup list --storage my-storage --path cold",
+    "excerpt": "Ver os backups disponíveis numa localização de armazenamento: rdc backup list --storage my-storage A saída é uma tabela unificada que combina ambas as...",
     "category": "Documentation",
     "page": "/pt/docs/backup-restore",
     "path": "docs.backup-restore.content",
@@ -9466,7 +9466,7 @@
   {
     "id": "search-13613",
     "content": "3. Enviar para Armazenamento na Nuvem (OneDrive, Google Drive, S3)",
-    "body": "# Importar a sua config rclone como backend de armazenamento rdc storage import ~/rclone.conf # Listar armazenamentos disponíveis rdc storage list # Enviar repositório para armazenamento na nuvem rdc repo push my-app --to my-s3-backup # Listar backups no armazenamento rdc backup list -m my-server --storage my-s3-backup --to deteta automaticamente se o destino é uma máquina ou um backend de armazenamento. Funciona com qualquer fornecedor suportado pelo rclone: S3, R2, B2, OneDrive, Google Drive, SFTP, etc.",
+    "body": "# Importar a sua config rclone como backend de armazenamento rdc storage import ~/rclone.conf # Listar armazenamentos disponíveis rdc storage list # Enviar repositório para armazenamento na nuvem rdc repo push my-app --to my-s3-backup # Listar backups no armazenamento rdc backup list --storage my-s3-backup --to deteta automaticamente se o destino é uma máquina ou um backend de armazenamento. Funciona com qualquer fornecedor suportado pelo rclone: S3, R2, B2, OneDrive, Google Drive, SFTP, etc.",
     "excerpt": "# Importar a sua config rclone como backend de armazenamento rdc storage import ~/rclone.conf # Listar armazenamentos disponíveis rdc storage list # E...",
     "category": "Documentation",
     "page": "/pt/docs/quick-start",
@@ -9585,7 +9585,7 @@
   {
     "id": "search-13624",
     "content": "Backup e Restauro",
-    "body": "| Comando | Descrição | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Enviar um backup de repositório para o armazenamento | | rdc repo pull <repo>@<machine> --from <storage> | Restaurar um repositório do armazenamento | | rdc repo push ... --bwlimit <limit> | Limitar a largura de banda rsync durante o envio (p. ex. 10M) | | rdc repo pull ... --bwlimit <limit> | Limitar a largura de banda rsync durante a receção | | rdc repo push ... --checkpoint | Criar checkpoint dos contentores antes de enviar | | rdc backup list --storage <storage> -m <machine> | Listar backups disponíveis no armazenamento | | rdc storage browse <storage> | Navegar pelo conteúdo do armazenamento |",
+    "body": "| Comando | Descrição | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Enviar um backup de repositório para o armazenamento | | rdc repo pull <repo>@<machine> --from <storage> | Restaurar um repositório do armazenamento | | rdc repo push ... --bwlimit <limit> | Limitar a largura de banda rsync durante o envio (p. ex. 10M) | | rdc repo pull ... --bwlimit <limit> | Limitar a largura de banda rsync durante a receção | | rdc repo push ... --checkpoint | Criar checkpoint dos contentores antes de enviar | | rdc backup list --storage <storage> | Listar backups disponíveis no armazenamento | | rdc storage browse <storage>` | Navegar pelo conteúdo do armazenamento |",
     "excerpt": "| Comando | Descrição | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Enviar um backup de repositório para o armazenamen...",
     "category": "Documentation",
     "page": "/pt/docs/rdc-cheat-sheet",

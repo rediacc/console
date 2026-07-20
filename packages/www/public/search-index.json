@@ -2843,8 +2843,8 @@
   {
     "id": "search-4033",
     "content": "List Backups",
-    "body": "View available backups in a storage location: rdc backup list -m server-1 --storage my-storage The output is a unified table that merges both scheduled-backup folders (hot/ and cold/) so you see every backup in one view: | Column | Meaning | |---|---| | Mode | hot or cold. Which scheduled-backup folder this entry lives in | | Name | Repository name resolved from your local config (falls back to GUID for repos not in config) | | GUID | The on-disk repository GUID | | Size | Human-readable size of the backup file | | Modified | UTC timestamp from the storage backend | To drill into a single mode, pass --path: rdc backup list -m server-1 --storage my-storage --path hot rdc backup list -m server-1 --storage my-storage --path cold",
-    "excerpt": "View available backups in a storage location: rdc backup list -m server-1 --storage my-storage The output is a unified table that merges both schedule...",
+    "body": "View available backups in a storage location: rdc backup list --storage my-storage The output is a unified table that merges both scheduled-backup folders (hot/ and cold/) so you see every backup in one view: | Column | Meaning | |---|---| | Mode | hot or cold. Which scheduled-backup folder this entry lives in | | Name | Repository name resolved from your local config (falls back to GUID for repos not in config) | | GUID | The on-disk repository GUID | | Size | Human-readable size of the backup file | | Modified | UTC timestamp from the storage backend | To drill into a single mode, pass --path: rdc backup list --storage my-storage --path hot rdc backup list --storage my-storage --path cold",
+    "excerpt": "View available backups in a storage location: rdc backup list --storage my-storage The output is a unified table that merges both scheduled-backup fol...",
     "category": "Documentation",
     "page": "/en/docs/backup-restore",
     "path": "docs.backup-restore.content",
@@ -9614,7 +9614,7 @@
   {
     "id": "search-4654",
     "content": "3. Push to Cloud Storage (OneDrive, Google Drive, S3)",
-    "body": "# Import your rclone config as a storage backend rdc storage import ~/rclone.conf # List available storages rdc storage list # Push repo to cloud storage rdc repo push my-app --to my-s3-backup # List backups on storage rdc backup list -m my-server --storage my-s3-backup --to auto-detects whether the target is a machine or a storage backend. Works with any rclone-supported provider: S3, R2, B2, OneDrive, Google Drive, SFTP, etc.",
+    "body": "# Import your rclone config as a storage backend rdc storage import ~/rclone.conf # List available storages rdc storage list # Push repo to cloud storage rdc repo push my-app --to my-s3-backup # List backups on storage rdc backup list --storage my-s3-backup --to auto-detects whether the target is a machine or a storage backend. Works with any rclone-supported provider: S3, R2, B2, OneDrive, Google Drive, SFTP, etc.",
     "excerpt": "# Import your rclone config as a storage backend rdc storage import ~/rclone.conf # List available storages rdc storage list # Push repo to cloud stor...",
     "category": "Documentation",
     "page": "/en/docs/quick-start",
@@ -9733,7 +9733,7 @@
   {
     "id": "search-4665",
     "content": "Backup and Restore",
-    "body": "| Command | Description | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Push a repository backup to storage | | rdc repo pull <repo>@<machine> --from <storage> | Restore a repository from storage | | rdc repo push ... --bwlimit <limit> | Limit rsync bandwidth during push (e.g. 10M) | | rdc repo pull ... --bwlimit <limit> | Limit rsync bandwidth during pull | | rdc repo push ... --checkpoint | Checkpoint containers before pushing | | rdc backup list --storage <storage> -m <machine> | List available backups in storage | | rdc storage browse <storage> | Browse storage contents |",
+    "body": "| Command | Description | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Push a repository backup to storage | | rdc repo pull <repo>@<machine> --from <storage> | Restore a repository from storage | | rdc repo push ... --bwlimit <limit> | Limit rsync bandwidth during push (e.g. 10M) | | rdc repo pull ... --bwlimit <limit> | Limit rsync bandwidth during pull | | rdc repo push ... --checkpoint | Checkpoint containers before pushing | | rdc backup list --storage <storage> | List available backups in storage | | rdc storage browse <storage>` | Browse storage contents |",
     "excerpt": "| Command | Description | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Push a repository backup to storage | | rdc repo...",
     "category": "Documentation",
     "page": "/en/docs/rdc-cheat-sheet",

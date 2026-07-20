@@ -2695,8 +2695,8 @@
   {
     "id": "search-15550",
     "content": "Yedekleri Listeleme",
-    "body": "Bir depolama konumundaki mevcut yedekleri görüntüleyin: rdc backup list -m server-1 --storage my-storage Çıktı, hem zamanlanmış yedekleme klasörlerini (hot/ ve cold/) birleştiren birleşik bir tablodur; böylece her yedeği tek bir görünümde görebilirsiniz: | Sütun | Anlamı | |---|---| | Mode | hot veya cold. Bu girişin hangi zamanlanmış yedekleme klasöründe yer aldığı | | Name | Yerel yapılandırmanızdan çözümlenen depo adı (yapılandırmada olmayan depolar için GUID'e geri döner) | | GUID | Disk üzerindeki depo GUID'i | | Size | Yedekleme dosyasının okunabilir boyutu | | Modified | Depolama arka ucundan UTC zaman damgası | Tek bir moda inmek için --path geçirin: rdc backup list -m server-1 --storage my-storage --path hot rdc backup list -m server-1 --storage my-storage --path cold",
-    "excerpt": "Bir depolama konumundaki mevcut yedekleri görüntüleyin: rdc backup list -m server-1 --storage my-storage Çıktı, hem zamanlanmış yedekleme klasörlerini...",
+    "body": "Bir depolama konumundaki mevcut yedekleri görüntüleyin: rdc backup list --storage my-storage Çıktı, hem zamanlanmış yedekleme klasörlerini (hot/ ve cold/) birleştiren birleşik bir tablodur; böylece her yedeği tek bir görünümde görebilirsiniz: | Sütun | Anlamı | |---|---| | Mode | hot veya cold. Bu girişin hangi zamanlanmış yedekleme klasöründe yer aldığı | | Name | Yerel yapılandırmanızdan çözümlenen depo adı (yapılandırmada olmayan depolar için GUID'e geri döner) | | GUID | Disk üzerindeki depo GUID'i | | Size | Yedekleme dosyasının okunabilir boyutu | | Modified | Depolama arka ucundan UTC zaman damgası | Tek bir moda inmek için --path geçirin: rdc backup list --storage my-storage --path hot rdc backup list --storage my-storage --path cold",
+    "excerpt": "Bir depolama konumundaki mevcut yedekleri görüntüleyin: rdc backup list --storage my-storage Çıktı, hem zamanlanmış yedekleme klasörlerini (hot/ ve co...",
     "category": "Documentation",
     "page": "/tr/docs/backup-restore",
     "path": "docs.backup-restore.content",
@@ -9444,7 +9444,7 @@
   {
     "id": "search-16169",
     "content": "3. Bulut Depolamaya Gönderme (OneDrive, Google Drive, S3)",
-    "body": "# rclone yapılandırmanızı depolama arka ucu olarak içe aktarın rdc storage import ~/rclone.conf # Kullanılabilir depolamaları listeleyin rdc storage list # Repoyu bulut depolamaya gönderin rdc repo push my-app --to my-s3-backup # Depolamadaki yedekleri listeleyin rdc backup list -m my-server --storage my-s3-backup --to hedefin bir makine mi yoksa depolama arka ucu mu olduğunu otomatik algılar. rclone destekli tüm sağlayıcılarla çalışır: S3, R2, B2, OneDrive, Google Drive, SFTP, vb.",
+    "body": "# rclone yapılandırmanızı depolama arka ucu olarak içe aktarın rdc storage import ~/rclone.conf # Kullanılabilir depolamaları listeleyin rdc storage list # Repoyu bulut depolamaya gönderin rdc repo push my-app --to my-s3-backup # Depolamadaki yedekleri listeleyin rdc backup list --storage my-s3-backup --to hedefin bir makine mi yoksa depolama arka ucu mu olduğunu otomatik algılar. rclone destekli tüm sağlayıcılarla çalışır: S3, R2, B2, OneDrive, Google Drive, SFTP, vb.",
     "excerpt": "# rclone yapılandırmanızı depolama arka ucu olarak içe aktarın rdc storage import ~/rclone.conf # Kullanılabilir depolamaları listeleyin rdc storage l...",
     "category": "Documentation",
     "page": "/tr/docs/quick-start",
@@ -9563,7 +9563,7 @@
   {
     "id": "search-16180",
     "content": "Yedekleme ve Geri Yükleme",
-    "body": "| Komut | Açıklama | |-------|----------| | rdc repo push <repo>@<machine> --to <storage> | Depo yedeklemesini depolamaya gönder | | rdc repo pull <repo>@<machine> --from <storage> | Depoyu depolamadan geri yükle | | rdc repo push ... --bwlimit <limit> | Gönderme sırasında rsync bant genişliğini sınırla (örn. 10M) | | rdc repo pull ... --bwlimit <limit> | Alma sırasında rsync bant genişliğini sınırla | | rdc repo push ... --checkpoint | Göndermeden önce konteynerlerde kontrol noktası oluştur | | rdc backup list --storage <storage> -m <machine> | Depolamadaki mevcut yedeklemeleri listele | | rdc storage browse <storage> | Depolama içeriğine göz at |",
+    "body": "| Komut | Açıklama | |-------|----------| | rdc repo push <repo>@<machine> --to <storage> | Depo yedeklemesini depolamaya gönder | | rdc repo pull <repo>@<machine> --from <storage> | Depoyu depolamadan geri yükle | | rdc repo push ... --bwlimit <limit> | Gönderme sırasında rsync bant genişliğini sınırla (örn. 10M) | | rdc repo pull ... --bwlimit <limit> | Alma sırasında rsync bant genişliğini sınırla | | rdc repo push ... --checkpoint | Göndermeden önce konteynerlerde kontrol noktası oluştur | | rdc backup list --storage <storage> | Depolamadaki mevcut yedeklemeleri listele | | rdc storage browse <storage>` | Depolama içeriğine göz at |",
     "excerpt": "| Komut | Açıklama | |-------|----------| | rdc repo push <repo>@<machine> --to <storage> | Depo yedeklemesini depolamaya gönder | | rdc repo pull <re...",
     "category": "Documentation",
     "page": "/tr/docs/rdc-cheat-sheet",

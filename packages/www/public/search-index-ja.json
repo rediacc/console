@@ -2695,8 +2695,8 @@
   {
     "id": "search-10440",
     "content": "バックアップの一覧表示",
-    "body": "ストレージの場所にある利用可能なバックアップを表示します： rdc backup list -m server-1 --storage my-storage 出力は スケジュールバックアップ のフォルダ（hot/ と cold/）の両方をマージした統一テーブルで、すべてのバックアップを 1 つのビューで確認できます。 | カラム | 意味 | |---|---| | Mode | hot または cold. このエントリが属するスケジュールバックアップフォルダ | | Name | ローカル設定から解決されたリポジトリ名（設定にないリポジトリの場合は GUID にフォールバック） | | GUID | ディスク上のリポジトリ GUID | | Size | バックアップファイルの人間可読のサイズ | | Modified | ストレージバックエンドからの UTC タイムスタンプ | 特定のモードに絞り込むには --path を渡します。 rdc backup list -m server-1 --storage my-storage --path hot rdc backup list -m server-1 --storage my-storage --path cold",
-    "excerpt": "ストレージの場所にある利用可能なバックアップを表示します： rdc backup list -m server-1 --storage my-storage 出力は スケジュールバックアップ のフォルダ（hot/ と cold/）の両方をマージした統一テーブルで、すべてのバックアップを 1 つのビュ...",
+    "body": "ストレージの場所にある利用可能なバックアップを表示します： rdc backup list --storage my-storage 出力は スケジュールバックアップ のフォルダ（hot/ と cold/）の両方をマージした統一テーブルで、すべてのバックアップを 1 つのビューで確認できます。 | カラム | 意味 | |---|---| | Mode | hot または cold. このエントリが属するスケジュールバックアップフォルダ | | Name | ローカル設定から解決されたリポジトリ名（設定にないリポジトリの場合は GUID にフォールバック） | | GUID | ディスク上のリポジトリ GUID | | Size | バックアップファイルの人間可読のサイズ | | Modified | ストレージバックエンドからの UTC タイムスタンプ | 特定のモードに絞り込むには --path を渡します。 rdc backup list --storage my-storage --path hot rdc backup list --storage my-storage --path cold",
+    "excerpt": "ストレージの場所にある利用可能なバックアップを表示します： rdc backup list --storage my-storage 出力は スケジュールバックアップ のフォルダ（hot/ と cold/）の両方をマージした統一テーブルで、すべてのバックアップを 1 つのビューで確認できます。 |...",
     "category": "Documentation",
     "page": "/ja/docs/backup-restore",
     "path": "docs.backup-restore.content",
@@ -9378,7 +9378,7 @@
   {
     "id": "search-11053",
     "content": "3. クラウドストレージへのプッシュ（OneDrive、Google Drive、S3）",
-    "body": "# rclone 設定をストレージバックエンドとしてインポート rdc storage import ~/rclone.conf # 利用可能なストレージを一覧表示 rdc storage list # リポジトリをクラウドストレージにプッシュ rdc repo push my-app --to my-s3-backup # ストレージ上のバックアップを一覧表示 rdc backup list -m my-server --storage my-s3-backup --to はターゲットがマシンかストレージバックエンドかを自動検出します。rclone がサポートするすべてのプロバイダーで動作します: S3、R2、B2、OneDrive、Google Drive、SFTP など。",
+    "body": "# rclone 設定をストレージバックエンドとしてインポート rdc storage import ~/rclone.conf # 利用可能なストレージを一覧表示 rdc storage list # リポジトリをクラウドストレージにプッシュ rdc repo push my-app --to my-s3-backup # ストレージ上のバックアップを一覧表示 rdc backup list --storage my-s3-backup --to はターゲットがマシンかストレージバックエンドかを自動検出します。rclone がサポートするすべてのプロバイダーで動作します: S3、R2、B2、OneDrive、Google Drive、SFTP など。",
     "excerpt": "# rclone 設定をストレージバックエンドとしてインポート rdc storage import ~/rclone.conf # 利用可能なストレージを一覧表示 rdc storage list # リポジトリをクラウドストレージにプッシュ rdc repo push my-app --to m...",
     "category": "Documentation",
     "page": "/ja/docs/quick-start",
@@ -9497,7 +9497,7 @@
   {
     "id": "search-11064",
     "content": "バックアップと復元",
-    "body": "| コマンド | 説明 | |---------|------| | rdc repo push <repo>@<machine> --to <storage> | リポジトリのバックアップをストレージにプッシュする | | rdc repo pull <repo>@<machine> --from <storage> | ストレージからリポジトリを復元する | | rdc repo push ... --bwlimit <limit> | プッシュ時の rsync 帯域幅を制限する (例: 10M) | | rdc repo pull ... --bwlimit <limit> | プル時の rsync 帯域幅を制限する | | rdc repo push ... --checkpoint | プッシュ前にコンテナのチェックポイントを作成する | | rdc backup list --storage <storage> -m <machine> | ストレージ内の利用可能なバックアップを一覧表示する | | rdc storage browse <storage> | ストレージの内容を参照する |",
+    "body": "| コマンド | 説明 | |---------|------| | rdc repo push <repo>@<machine> --to <storage> | リポジトリのバックアップをストレージにプッシュする | | rdc repo pull <repo>@<machine> --from <storage> | ストレージからリポジトリを復元する | | rdc repo push ... --bwlimit <limit> | プッシュ時の rsync 帯域幅を制限する (例: 10M) | | rdc repo pull ... --bwlimit <limit> | プル時の rsync 帯域幅を制限する | | rdc repo push ... --checkpoint | プッシュ前にコンテナのチェックポイントを作成する | | rdc backup list --storage <storage> | ストレージ内の利用可能なバックアップを一覧表示する | | rdc storage browse <storage>` | ストレージの内容を参照する |",
     "excerpt": "| コマンド | 説明 | |---------|------| | rdc repo push <repo>@<machine> --to <storage> | リポジトリのバックアップをストレージにプッシュする | | rdc repo pull <repo>@<machine> --from...",
     "category": "Documentation",
     "page": "/ja/docs/rdc-cheat-sheet",

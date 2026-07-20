@@ -2695,8 +2695,8 @@
   {
     "id": "search-7882",
     "content": "Lister les sauvegardes",
-    "body": "Affichez les sauvegardes disponibles dans un emplacement de stockage : rdc backup list -m server-1 --storage my-storage La sortie est un tableau unifié qui fusionne les deux dossiers de sauvegardes planifiées (hot/ et cold/) afin que vous voyiez toutes les sauvegardes en une seule vue : | Colonne | Signification | |---|---| | Mode | hot ou cold. Dans quel dossier de sauvegarde planifiée cette entrée se trouve | | Name | Nom du dépôt résolu depuis votre configuration locale (retombe sur le GUID pour les dépôts absents de la configuration) | | GUID | Le GUID du dépôt sur disque | | Size | Taille lisible de la sauvegarde | | Modified | Horodatage UTC du backend de stockage | Pour zoomer sur un seul mode, passez --path : rdc backup list -m server-1 --storage my-storage --path hot rdc backup list -m server-1 --storage my-storage --path cold",
-    "excerpt": "Affichez les sauvegardes disponibles dans un emplacement de stockage : rdc backup list -m server-1 --storage my-storage La sortie est un tableau unifi...",
+    "body": "Affichez les sauvegardes disponibles dans un emplacement de stockage : rdc backup list --storage my-storage La sortie est un tableau unifié qui fusionne les deux dossiers de sauvegardes planifiées (hot/ et cold/) afin que vous voyiez toutes les sauvegardes en une seule vue : | Colonne | Signification | |---|---| | Mode | hot ou cold. Dans quel dossier de sauvegarde planifiée cette entrée se trouve | | Name | Nom du dépôt résolu depuis votre configuration locale (retombe sur le GUID pour les dépôts absents de la configuration) | | GUID | Le GUID du dépôt sur disque | | Size | Taille lisible de la sauvegarde | | Modified | Horodatage UTC du backend de stockage | Pour zoomer sur un seul mode, passez --path : rdc backup list --storage my-storage --path hot rdc backup list --storage my-storage --path cold",
+    "excerpt": "Affichez les sauvegardes disponibles dans un emplacement de stockage : rdc backup list --storage my-storage La sortie est un tableau unifié qui fusion...",
     "category": "Documentation",
     "page": "/fr/docs/backup-restore",
     "path": "docs.backup-restore.content",
@@ -9444,7 +9444,7 @@
   {
     "id": "search-8501",
     "content": "3. Pousser vers un stockage cloud (OneDrive, Google Drive, S3)",
-    "body": "# Importer votre configuration rclone comme backend de stockage rdc storage import ~/rclone.conf # Lister les stockages disponibles rdc storage list # Pousser le repo vers un stockage cloud rdc repo push my-app --to my-s3-backup # Lister les sauvegardes sur le stockage rdc backup list -m my-server --storage my-s3-backup --to détecte automatiquement si la cible est une machine ou un backend de stockage. Fonctionne avec tout fournisseur supporté par rclone : S3, R2, B2, OneDrive, Google Drive, SFTP, etc.",
+    "body": "# Importer votre configuration rclone comme backend de stockage rdc storage import ~/rclone.conf # Lister les stockages disponibles rdc storage list # Pousser le repo vers un stockage cloud rdc repo push my-app --to my-s3-backup # Lister les sauvegardes sur le stockage rdc backup list --storage my-s3-backup --to détecte automatiquement si la cible est une machine ou un backend de stockage. Fonctionne avec tout fournisseur supporté par rclone : S3, R2, B2, OneDrive, Google Drive, SFTP, etc.",
     "excerpt": "# Importer votre configuration rclone comme backend de stockage rdc storage import ~/rclone.conf # Lister les stockages disponibles rdc storage list #...",
     "category": "Documentation",
     "page": "/fr/docs/quick-start",
@@ -9563,7 +9563,7 @@
   {
     "id": "search-8512",
     "content": "Sauvegarde et restauration",
-    "body": "| Commande | Description | |----------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Pousser une sauvegarde du dépôt vers le stockage | | rdc repo pull <repo>@<machine> --from <storage> | Restaurer un dépôt depuis le stockage | | rdc repo push ... --bwlimit <limit> | Limiter la bande passante rsync lors de l'envoi (ex. 10M) | | rdc repo pull ... --bwlimit <limit> | Limiter la bande passante rsync lors de la réception | | rdc repo push ... --checkpoint | Créer un point de contrôle des conteneurs avant l'envoi | | rdc backup list --storage <storage> -m <machine> | Lister les sauvegardes disponibles dans le stockage | | rdc storage browse <storage> | Parcourir le contenu du stockage |",
+    "body": "| Commande | Description | |----------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Pousser une sauvegarde du dépôt vers le stockage | | rdc repo pull <repo>@<machine> --from <storage> | Restaurer un dépôt depuis le stockage | | rdc repo push ... --bwlimit <limit> | Limiter la bande passante rsync lors de l'envoi (ex. 10M) | | rdc repo pull ... --bwlimit <limit> | Limiter la bande passante rsync lors de la réception | | rdc repo push ... --checkpoint | Créer un point de contrôle des conteneurs avant l'envoi | | rdc backup list --storage <storage> | Lister les sauvegardes disponibles dans le stockage | | rdc storage browse <storage>` | Parcourir le contenu du stockage |",
     "excerpt": "| Commande | Description | |----------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Pousser une sauvegarde du dépôt vers le stocka...",
     "category": "Documentation",
     "page": "/fr/docs/rdc-cheat-sheet",

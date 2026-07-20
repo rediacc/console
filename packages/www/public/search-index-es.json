@@ -2695,8 +2695,8 @@
   {
     "id": "search-5324",
     "content": "Listar Respaldos",
-    "body": "Ver los respaldos disponibles en una ubicación de almacenamiento: rdc backup list -m server-1 --storage my-storage La salida es una tabla unificada que combina ambas carpetas de respaldos programados (hot/ y cold/) para que vea cada respaldo en una sola vista: | Columna | Significado | |---|---| | Mode | hot o cold. En qué carpeta de respaldos programados vive esta entrada | | Name | Nombre del repositorio resuelto desde su configuración local (recurre al GUID para repositorios no presentes en la configuración) | | GUID | El GUID del repositorio en disco | | Size | Tamaño legible del archivo de respaldo | | Modified | Marca de tiempo UTC del backend de almacenamiento | Para profundizar en un solo modo, pase --path: rdc backup list -m server-1 --storage my-storage --path hot rdc backup list -m server-1 --storage my-storage --path cold",
-    "excerpt": "Ver los respaldos disponibles en una ubicación de almacenamiento: rdc backup list -m server-1 --storage my-storage La salida es una tabla unificada qu...",
+    "body": "Ver los respaldos disponibles en una ubicación de almacenamiento: rdc backup list --storage my-storage La salida es una tabla unificada que combina ambas carpetas de respaldos programados (hot/ y cold/) para que vea cada respaldo en una sola vista: | Columna | Significado | |---|---| | Mode | hot o cold. En qué carpeta de respaldos programados vive esta entrada | | Name | Nombre del repositorio resuelto desde su configuración local (recurre al GUID para repositorios no presentes en la configuración) | | GUID | El GUID del repositorio en disco | | Size | Tamaño legible del archivo de respaldo | | Modified | Marca de tiempo UTC del backend de almacenamiento | Para profundizar en un solo modo, pase --path: rdc backup list --storage my-storage --path hot rdc backup list --storage my-storage --path cold",
+    "excerpt": "Ver los respaldos disponibles en una ubicación de almacenamiento: rdc backup list --storage my-storage La salida es una tabla unificada que combina am...",
     "category": "Documentation",
     "page": "/es/docs/backup-restore",
     "path": "docs.backup-restore.content",
@@ -9444,7 +9444,7 @@
   {
     "id": "search-5943",
     "content": "3. Push a almacenamiento en la nube (OneDrive, Google Drive, S3)",
-    "body": "# Importar su configuración de rclone como backend de almacenamiento rdc storage import ~/rclone.conf # Listar almacenamientos disponibles rdc storage list # Enviar repo a almacenamiento en la nube rdc repo push my-app --to my-s3-backup # Listar copias de seguridad en almacenamiento rdc backup list -m my-server --storage my-s3-backup --to auto-detecta si el destino es una máquina o un backend de almacenamiento. Funciona con cualquier proveedor soportado por rclone: S3, R2, B2, OneDrive, Google Drive, SFTP, etc.",
+    "body": "# Importar su configuración de rclone como backend de almacenamiento rdc storage import ~/rclone.conf # Listar almacenamientos disponibles rdc storage list # Enviar repo a almacenamiento en la nube rdc repo push my-app --to my-s3-backup # Listar copias de seguridad en almacenamiento rdc backup list --storage my-s3-backup --to auto-detecta si el destino es una máquina o un backend de almacenamiento. Funciona con cualquier proveedor soportado por rclone: S3, R2, B2, OneDrive, Google Drive, SFTP, etc.",
     "excerpt": "# Importar su configuración de rclone como backend de almacenamiento rdc storage import ~/rclone.conf # Listar almacenamientos disponibles rdc storage...",
     "category": "Documentation",
     "page": "/es/docs/quick-start",
@@ -9563,7 +9563,7 @@
   {
     "id": "search-5954",
     "content": "Copia de seguridad y restauración",
-    "body": "| Comando | Descripción | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Subir una copia de seguridad del repositorio al almacenamiento | | rdc repo pull <repo>@<machine> --from <storage> | Restaurar un repositorio desde el almacenamiento | | rdc repo push ... --bwlimit <limit> | Limitar el ancho de banda de rsync al subir (p. ej. 10M) | | rdc repo pull ... --bwlimit <limit> | Limitar el ancho de banda de rsync al bajar | | rdc repo push ... --checkpoint | Guardar punto de control de contenedores antes de subir | | rdc backup list --storage <storage> -m <machine> | Listar las copias de seguridad disponibles en el almacenamiento | | rdc storage browse <storage> | Explorar el contenido del almacenamiento |",
+    "body": "| Comando | Descripción | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Subir una copia de seguridad del repositorio al almacenamiento | | rdc repo pull <repo>@<machine> --from <storage> | Restaurar un repositorio desde el almacenamiento | | rdc repo push ... --bwlimit <limit> | Limitar el ancho de banda de rsync al subir (p. ej. 10M) | | rdc repo pull ... --bwlimit <limit> | Limitar el ancho de banda de rsync al bajar | | rdc repo push ... --checkpoint | Guardar punto de control de contenedores antes de subir | | rdc backup list --storage <storage> | Listar las copias de seguridad disponibles en el almacenamiento | | rdc storage browse <storage>` | Explorar el contenido del almacenamiento |",
     "excerpt": "| Comando | Descripción | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Subir una copia de seguridad del repositorio al...",
     "category": "Documentation",
     "page": "/es/docs/rdc-cheat-sheet",

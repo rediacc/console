@@ -2695,8 +2695,8 @@
   {
     "id": "search-1477",
     "content": "عرض النسخ الاحتياطية",
-    "body": "عرض النسخ الاحتياطية المتاحة في موقع تخزين: rdc backup list -m server-1 --storage my-storage الإخراج عبارة عن جدول موحَّد يدمج كلا مجلدَي النسخ الاحتياطية المجدولة (hot/ و cold/) لرؤية كل نسخة احتياطية في عرض واحد: | العمود | المعنى | |---|---| | Mode | hot أو cold. مجلد النسخ الاحتياطي المجدول الذي يقع فيه هذا الإدخال | | Name | اسم المستودع المُحلَّل من الإعدادات المحلية (يعود إلى GUID للمستودعات غير الموجودة في الإعدادات) | | GUID | GUID المستودع على القرص | | Size | حجم ملف النسخة الاحتياطية بصيغة قابلة للقراءة | | Modified | الطابع الزمني UTC من وحدة التخزين الخلفية | للتنقيب في وضع واحد، مرّر --path: rdc backup list -m server-1 --storage my-storage --path hot rdc backup list -m server-1 --storage my-storage --path cold",
-    "excerpt": "عرض النسخ الاحتياطية المتاحة في موقع تخزين: rdc backup list -m server-1 --storage my-storage الإخراج عبارة عن جدول موحَّد يدمج كلا مجلدَي النسخ الاحتي...",
+    "body": "عرض النسخ الاحتياطية المتاحة في موقع تخزين: rdc backup list --storage my-storage الإخراج عبارة عن جدول موحَّد يدمج كلا مجلدَي النسخ الاحتياطية المجدولة (hot/ و cold/) لرؤية كل نسخة احتياطية في عرض واحد: | العمود | المعنى | |---|---| | Mode | hot أو cold. مجلد النسخ الاحتياطي المجدول الذي يقع فيه هذا الإدخال | | Name | اسم المستودع المُحلَّل من الإعدادات المحلية (يعود إلى GUID للمستودعات غير الموجودة في الإعدادات) | | GUID | GUID المستودع على القرص | | Size | حجم ملف النسخة الاحتياطية بصيغة قابلة للقراءة | | Modified | الطابع الزمني UTC من وحدة التخزين الخلفية | للتنقيب في وضع واحد، مرّر --path: rdc backup list --storage my-storage --path hot rdc backup list --storage my-storage --path cold",
+    "excerpt": "عرض النسخ الاحتياطية المتاحة في موقع تخزين: rdc backup list --storage my-storage الإخراج عبارة عن جدول موحَّد يدمج كلا مجلدَي النسخ الاحتياطية المجدول...",
     "category": "Documentation",
     "page": "/ar/docs/backup-restore",
     "path": "docs.backup-restore.content",
@@ -9444,7 +9444,7 @@
   {
     "id": "search-2096",
     "content": "3. الدفع إلى التخزين السحابي (OneDrive، Google Drive، S3)",
-    "body": "# استيراد إعدادات rclone كخلفية تخزين rdc storage import ~/rclone.conf # عرض وحدات التخزين المتاحة rdc storage list # دفع المستودع إلى التخزين السحابي rdc repo push my-app --to my-s3-backup # عرض النسخ الاحتياطية على التخزين rdc backup list -m my-server --storage my-s3-backup يكشف --to تلقائيًا ما إذا كان الهدف جهازًا أو خلفية تخزين. يعمل مع أي مزود يدعمه rclone: S3، R2، B2، OneDrive، Google Drive، SFTP، وغيرها.",
+    "body": "# استيراد إعدادات rclone كخلفية تخزين rdc storage import ~/rclone.conf # عرض وحدات التخزين المتاحة rdc storage list # دفع المستودع إلى التخزين السحابي rdc repo push my-app --to my-s3-backup # عرض النسخ الاحتياطية على التخزين rdc backup list --storage my-s3-backup يكشف --to تلقائيًا ما إذا كان الهدف جهازًا أو خلفية تخزين. يعمل مع أي مزود يدعمه rclone: S3، R2، B2، OneDrive، Google Drive، SFTP، وغيرها.",
     "excerpt": "# استيراد إعدادات rclone كخلفية تخزين rdc storage import ~/rclone.conf # عرض وحدات التخزين المتاحة rdc storage list # دفع المستودع إلى التخزين السحابي...",
     "category": "Documentation",
     "page": "/ar/docs/quick-start",
@@ -9563,7 +9563,7 @@
   {
     "id": "search-2107",
     "content": "النسخ الاحتياطي والاستعادة",
-    "body": "| الأمر | الوصف | |-------|-------| | rdc repo push <repo>@<machine> --to <storage> | رفع نسخة احتياطية للمستودع إلى التخزين | | rdc repo pull <repo>@<machine> --from <storage> | استعادة مستودع من التخزين | | rdc repo push ... --bwlimit <limit> | تحديد عرض نطاق rsync أثناء الرفع (مثال: 10M) | | rdc repo pull ... --bwlimit <limit> | تحديد عرض نطاق rsync أثناء السحب | | rdc repo push ... --checkpoint | عمل نقطة تحقق للحاويات قبل الرفع | | rdc backup list --storage <storage> -m <machine> | عرض النسخ الاحتياطية المتاحة في التخزين | | rdc storage browse <storage> | تصفح محتويات التخزين |",
+    "body": "| الأمر | الوصف | |-------|-------| | rdc repo push <repo>@<machine> --to <storage> | رفع نسخة احتياطية للمستودع إلى التخزين | | rdc repo pull <repo>@<machine> --from <storage> | استعادة مستودع من التخزين | | rdc repo push ... --bwlimit <limit> | تحديد عرض نطاق rsync أثناء الرفع (مثال: 10M) | | rdc repo pull ... --bwlimit <limit> | تحديد عرض نطاق rsync أثناء السحب | | rdc repo push ... --checkpoint | عمل نقطة تحقق للحاويات قبل الرفع | | rdc backup list --storage <storage> | عرض النسخ الاحتياطية المتاحة في التخزين | | rdc storage browse <storage>` | تصفح محتويات التخزين |",
     "excerpt": "| الأمر | الوصف | |-------|-------| | rdc repo push <repo>@<machine> --to <storage> | رفع نسخة احتياطية للمستودع إلى التخزين | | rdc repo pull <repo>@...",
     "category": "Documentation",
     "page": "/ar/docs/rdc-cheat-sheet",

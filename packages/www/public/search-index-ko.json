@@ -2695,8 +2695,8 @@
   {
     "id": "search-11712",
     "content": "백업 목록 보기",
-    "body": "스토리지 위치에서 사용 가능한 백업을 확인합니다. rdc backup list -m server-1 --storage my-storage 출력은 예약 백업 폴더(hot/과 cold/) 모두를 병합한 통합 테이블로, 모든 백업을 한 번에 볼 수 있습니다. | 열 | 의미 | |---|---| | Mode | hot 또는 cold. 이 항목이 속한 예약 백업 폴더 | | Name | 로컬 설정에서 확인된 레포지토리 이름 (설정에 없는 레포는 GUID로 대체) | | GUID | 디스크상 레포지토리 GUID | | Size | 백업 파일의 사람이 읽을 수 있는 크기 | | Modified | 스토리지 백엔드의 UTC 타임스탬프 | 단일 모드를 조회하려면 --path를 전달하세요. rdc backup list -m server-1 --storage my-storage --path hot rdc backup list -m server-1 --storage my-storage --path cold",
-    "excerpt": "스토리지 위치에서 사용 가능한 백업을 확인합니다. rdc backup list -m server-1 --storage my-storage 출력은 예약 백업 폴더(hot/과 cold/) 모두를 병합한 통합 테이블로, 모든 백업을 한 번에 볼 수 있습니다. | 열 | 의미...",
+    "body": "스토리지 위치에서 사용 가능한 백업을 확인합니다. rdc backup list --storage my-storage 출력은 예약 백업 폴더(hot/과 cold/) 모두를 병합한 통합 테이블로, 모든 백업을 한 번에 볼 수 있습니다. | 열 | 의미 | |---|---| | Mode | hot 또는 cold. 이 항목이 속한 예약 백업 폴더 | | Name | 로컬 설정에서 확인된 레포지토리 이름 (설정에 없는 레포는 GUID로 대체) | | GUID | 디스크상 레포지토리 GUID | | Size | 백업 파일의 사람이 읽을 수 있는 크기 | | Modified | 스토리지 백엔드의 UTC 타임스탬프 | 단일 모드를 조회하려면 --path를 전달하세요. rdc backup list --storage my-storage --path hot rdc backup list --storage my-storage --path cold",
+    "excerpt": "스토리지 위치에서 사용 가능한 백업을 확인합니다. rdc backup list --storage my-storage 출력은 예약 백업 폴더(hot/과 cold/) 모두를 병합한 통합 테이블로, 모든 백업을 한 번에 볼 수 있습니다. | 열 | 의미 | |---|---|...",
     "category": "Documentation",
     "page": "/ko/docs/backup-restore",
     "path": "docs.backup-restore.content",
@@ -9466,7 +9466,7 @@
   {
     "id": "search-12333",
     "content": "3. 클라우드 스토리지로 푸시 (OneDrive, Google Drive, S3)",
-    "body": "# rclone config를 스토리지 백엔드로 가져오기 rdc storage import ~/rclone.conf # 사용 가능한 스토리지 목록 rdc storage list # 리포지터리를 클라우드 스토리지로 푸시 rdc repo push my-app --to my-s3-backup # 스토리지의 백업 목록 rdc backup list -m my-server --storage my-s3-backup --to는 대상이 머신인지 스토리지 백엔드인지 자동으로 감지합니다. 모든 rclone 지원 공급자와 작동합니다: S3, R2, B2, OneDrive, Google Drive, SFTP 등.",
+    "body": "# rclone config를 스토리지 백엔드로 가져오기 rdc storage import ~/rclone.conf # 사용 가능한 스토리지 목록 rdc storage list # 리포지터리를 클라우드 스토리지로 푸시 rdc repo push my-app --to my-s3-backup # 스토리지의 백업 목록 rdc backup list --storage my-s3-backup --to는 대상이 머신인지 스토리지 백엔드인지 자동으로 감지합니다. 모든 rclone 지원 공급자와 작동합니다: S3, R2, B2, OneDrive, Google Drive, SFTP 등.",
     "excerpt": "# rclone config를 스토리지 백엔드로 가져오기 rdc storage import ~/rclone.conf # 사용 가능한 스토리지 목록 rdc storage list # 리포지터리를 클라우드 스토리지로 푸시 rdc repo push my-app --to my...",
     "category": "Documentation",
     "page": "/ko/docs/quick-start",
@@ -9585,7 +9585,7 @@
   {
     "id": "search-12344",
     "content": "백업 및 복원",
-    "body": "| 명령 | 설명 | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | 리포지터리 백업을 스토리지로 푸시 | | rdc repo pull <repo>@<machine> --from <storage> | 스토리지에서 리포지터리 복원 | | rdc repo push ... --bwlimit <limit> | 푸시 중 rsync 대역폭 제한 (예: 10M) | | rdc repo pull ... --bwlimit <limit> | 풀 중 rsync 대역폭 제한 | | rdc repo push ... --checkpoint | 푸시 전 컨테이너 체크포인트 생성 | | rdc backup list --storage <storage> -m <machine> | 스토리지의 사용 가능한 백업 나열 | | rdc storage browse <storage> | 스토리지 내용 탐색 |",
+    "body": "| 명령 | 설명 | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | 리포지터리 백업을 스토리지로 푸시 | | rdc repo pull <repo>@<machine> --from <storage> | 스토리지에서 리포지터리 복원 | | rdc repo push ... --bwlimit <limit> | 푸시 중 rsync 대역폭 제한 (예: 10M) | | rdc repo pull ... --bwlimit <limit> | 풀 중 rsync 대역폭 제한 | | rdc repo push ... --checkpoint | 푸시 전 컨테이너 체크포인트 생성 | | rdc backup list --storage <storage> | 스토리지의 사용 가능한 백업 나열 | | rdc storage browse <storage>` | 스토리지 내용 탐색 |",
     "excerpt": "| 명령 | 설명 | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | 리포지터리 백업을 스토리지로 푸시 | | rdc repo pull <repo>@<machine> --from <...",
     "category": "Documentation",
     "page": "/ko/docs/rdc-cheat-sheet",

@@ -2695,8 +2695,8 @@
   {
     "id": "search-16828",
     "content": "列出备份",
-    "body": "查看存储位置中的可用备份： rdc backup list -m server-1 --storage my-storage 输出是一个统一的表格，合并了两个计划备份文件夹（hot/ 和 cold/），让您一次看到所有备份： | 列 | 含义 | |---|---| | Mode | hot 或 cold。此条目所属的计划备份文件夹 | | Name | 从本地配置解析的仓库名称（对于不在配置中的仓库回退到 GUID） | | GUID | 磁盘上的仓库 GUID | | Size | 备份文件的可读大小 | | Modified | 来自存储后端的 UTC 时间戳 | 要深入查看单一模式，传入 --path： rdc backup list -m server-1 --storage my-storage --path hot rdc backup list -m server-1 --storage my-storage --path cold",
-    "excerpt": "查看存储位置中的可用备份： rdc backup list -m server-1 --storage my-storage 输出是一个统一的表格，合并了两个计划备份文件夹（hot/ 和 cold/），让您一次看到所有备份： | 列 | 含义 | |---|---| | Mode | hot 或 c...",
+    "body": "查看存储位置中的可用备份： rdc backup list --storage my-storage 输出是一个统一的表格，合并了两个计划备份文件夹（hot/ 和 cold/），让您一次看到所有备份： | 列 | 含义 | |---|---| | Mode | hot 或 cold。此条目所属的计划备份文件夹 | | Name | 从本地配置解析的仓库名称（对于不在配置中的仓库回退到 GUID） | | GUID | 磁盘上的仓库 GUID | | Size | 备份文件的可读大小 | | Modified | 来自存储后端的 UTC 时间戳 | 要深入查看单一模式，传入 --path： rdc backup list --storage my-storage --path hot rdc backup list --storage my-storage --path cold",
+    "excerpt": "查看存储位置中的可用备份： rdc backup list --storage my-storage 输出是一个统一的表格，合并了两个计划备份文件夹（hot/ 和 cold/），让您一次看到所有备份： | 列 | 含义 | |---|---| | Mode | hot 或 cold。此条目所属的计划...",
     "category": "Documentation",
     "page": "/zh/docs/backup-restore",
     "path": "docs.backup-restore.content",
@@ -9378,7 +9378,7 @@
   {
     "id": "search-17441",
     "content": "3. 推送到云存储（OneDrive、Google Drive、S3）",
-    "body": "# 导入您的 rclone 配置作为存储后端 rdc storage import ~/rclone.conf # 列出可用的存储 rdc storage list # 将仓库推送到云存储 rdc repo push my-app --to my-s3-backup # 列出存储上的备份 rdc backup list -m my-server --storage my-s3-backup --to 自动检测目标是机器还是存储后端。支持所有 rclone 支持的提供商：S3、R2、B2、OneDrive、Google Drive、SFTP 等。",
+    "body": "# 导入您的 rclone 配置作为存储后端 rdc storage import ~/rclone.conf # 列出可用的存储 rdc storage list # 将仓库推送到云存储 rdc repo push my-app --to my-s3-backup # 列出存储上的备份 rdc backup list --storage my-s3-backup --to 自动检测目标是机器还是存储后端。支持所有 rclone 支持的提供商：S3、R2、B2、OneDrive、Google Drive、SFTP 等。",
     "excerpt": "# 导入您的 rclone 配置作为存储后端 rdc storage import ~/rclone.conf # 列出可用的存储 rdc storage list # 将仓库推送到云存储 rdc repo push my-app --to my-s3-backup # 列出存储上的备份 rdc b...",
     "category": "Documentation",
     "page": "/zh/docs/quick-start",
@@ -9497,7 +9497,7 @@
   {
     "id": "search-17452",
     "content": "备份与恢复",
-    "body": "| 命令 | 说明 | |------|------| | rdc repo push <repo>@<machine> --to <storage> | 将仓库备份推送到存储 | | rdc repo pull <repo>@<machine> --from <storage> | 从存储恢复仓库 | | rdc repo push ... --bwlimit <limit> | 推送时限制 rsync 带宽（如 10M） | | rdc repo pull ... --bwlimit <limit> | 拉取时限制 rsync 带宽 | | rdc repo push ... --checkpoint | 推送前对容器创建检查点 | | rdc backup list --storage <storage> -m <machine> | 列出存储中的可用备份 | | rdc storage browse <storage> | 浏览存储内容 |",
+    "body": "| 命令 | 说明 | |------|------| | rdc repo push <repo>@<machine> --to <storage> | 将仓库备份推送到存储 | | rdc repo pull <repo>@<machine> --from <storage> | 从存储恢复仓库 | | rdc repo push ... --bwlimit <limit> | 推送时限制 rsync 带宽（如 10M） | | rdc repo pull ... --bwlimit <limit> | 拉取时限制 rsync 带宽 | | rdc repo push ... --checkpoint | 推送前对容器创建检查点 | | rdc backup list --storage <storage> | 列出存储中的可用备份 | | rdc storage browse <storage>` | 浏览存储内容 |",
     "excerpt": "| 命令 | 说明 | |------|------| | rdc repo push <repo>@<machine> --to <storage> | 将仓库备份推送到存储 | | rdc repo pull <repo>@<machine> --from <storage> | 从存储恢复仓库...",
     "category": "Documentation",
     "page": "/zh/docs/rdc-cheat-sheet",

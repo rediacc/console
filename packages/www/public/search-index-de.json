@@ -2695,8 +2695,8 @@
   {
     "id": "search-2755",
     "content": "Backups auflisten",
-    "body": "Verfügbare Backups an einem Speicherort anzeigen: rdc backup list -m server-1 --storage my-storage Die Ausgabe ist eine vereinheitlichte Tabelle, die beide Ordner für geplante Backups (hot/ und cold/) zusammenführt, sodass Sie jedes Backup in einer einzigen Ansicht sehen: | Spalte | Bedeutung | |---|---| | Mode | hot oder cold. In welchem Ordner für geplante Backups dieser Eintrag liegt | | Name | Aus Ihrer lokalen Konfiguration aufgelöster Repository-Name (Fallback auf GUID für Repos, die nicht in der Konfiguration sind) | | GUID | Die Repository-GUID auf der Festplatte | | Size | Menschenlesbare Größe der Backup-Datei | | Modified | UTC-Zeitstempel vom Storage-Backend | Um in einen einzelnen Modus hineinzuzoomen, übergeben Sie --path: rdc backup list -m server-1 --storage my-storage --path hot rdc backup list -m server-1 --storage my-storage --path cold",
-    "excerpt": "Verfügbare Backups an einem Speicherort anzeigen: rdc backup list -m server-1 --storage my-storage Die Ausgabe ist eine vereinheitlichte Tabelle, die...",
+    "body": "Verfügbare Backups an einem Speicherort anzeigen: rdc backup list --storage my-storage Die Ausgabe ist eine vereinheitlichte Tabelle, die beide Ordner für geplante Backups (hot/ und cold/) zusammenführt, sodass Sie jedes Backup in einer einzigen Ansicht sehen: | Spalte | Bedeutung | |---|---| | Mode | hot oder cold. In welchem Ordner für geplante Backups dieser Eintrag liegt | | Name | Aus Ihrer lokalen Konfiguration aufgelöster Repository-Name (Fallback auf GUID für Repos, die nicht in der Konfiguration sind) | | GUID | Die Repository-GUID auf der Festplatte | | Size | Menschenlesbare Größe der Backup-Datei | | Modified | UTC-Zeitstempel vom Storage-Backend | Um in einen einzelnen Modus hineinzuzoomen, übergeben Sie --path: rdc backup list --storage my-storage --path hot rdc backup list --storage my-storage --path cold",
+    "excerpt": "Verfügbare Backups an einem Speicherort anzeigen: rdc backup list --storage my-storage Die Ausgabe ist eine vereinheitlichte Tabelle, die beide Ordner...",
     "category": "Documentation",
     "page": "/de/docs/backup-restore",
     "path": "docs.backup-restore.content",
@@ -9444,7 +9444,7 @@
   {
     "id": "search-3374",
     "content": "3. In Cloud-Speicher pushen (OneDrive, Google Drive, S3)",
-    "body": "# Ihre rclone-Konfiguration als Speicher-Backend importieren rdc storage import ~/rclone.conf # Verfügbare Speicher auflisten rdc storage list # Repo in Cloud-Speicher pushen rdc repo push my-app --to my-s3-backup # Backups im Speicher auflisten rdc backup list -m my-server --storage my-s3-backup --to erkennt automatisch, ob das Ziel eine Maschine oder ein Speicher-Backend ist. Funktioniert mit jedem von rclone unterstützten Anbieter: S3, R2, B2, OneDrive, Google Drive, SFTP usw.",
+    "body": "# Ihre rclone-Konfiguration als Speicher-Backend importieren rdc storage import ~/rclone.conf # Verfügbare Speicher auflisten rdc storage list # Repo in Cloud-Speicher pushen rdc repo push my-app --to my-s3-backup # Backups im Speicher auflisten rdc backup list --storage my-s3-backup --to erkennt automatisch, ob das Ziel eine Maschine oder ein Speicher-Backend ist. Funktioniert mit jedem von rclone unterstützten Anbieter: S3, R2, B2, OneDrive, Google Drive, SFTP usw.",
     "excerpt": "# Ihre rclone-Konfiguration als Speicher-Backend importieren rdc storage import ~/rclone.conf # Verfügbare Speicher auflisten rdc storage list # Repo...",
     "category": "Documentation",
     "page": "/de/docs/quick-start",
@@ -9563,7 +9563,7 @@
   {
     "id": "search-3385",
     "content": "Sicherung und Wiederherstellung",
-    "body": "| Befehl | Beschreibung | |--------|--------------| | rdc repo push <repo>@<machine> --to <storage> | Repository-Sicherung in Speicher hochladen | | rdc repo pull <repo>@<machine> --from <storage> | Repository aus Speicher wiederherstellen | | rdc repo push ... --bwlimit <limit> | rsync-Bandbreite beim Hochladen begrenzen (z. B. 10M) | | rdc repo pull ... --bwlimit <limit> | rsync-Bandbreite beim Herunterladen begrenzen | | rdc repo push ... --checkpoint | Container vor dem Hochladen sichern | | rdc backup list --storage <storage> -m <machine> | Verfügbare Sicherungen im Speicher auflisten | | rdc storage browse <storage> | Speicherinhalte durchsuchen |",
+    "body": "| Befehl | Beschreibung | |--------|--------------| | rdc repo push <repo>@<machine> --to <storage> | Repository-Sicherung in Speicher hochladen | | rdc repo pull <repo>@<machine> --from <storage> | Repository aus Speicher wiederherstellen | | rdc repo push ... --bwlimit <limit> | rsync-Bandbreite beim Hochladen begrenzen (z. B. 10M) | | rdc repo pull ... --bwlimit <limit> | rsync-Bandbreite beim Herunterladen begrenzen | | rdc repo push ... --checkpoint | Container vor dem Hochladen sichern | | rdc backup list --storage <storage> | Verfügbare Sicherungen im Speicher auflisten | | rdc storage browse <storage>` | Speicherinhalte durchsuchen |",
     "excerpt": "| Befehl | Beschreibung | |--------|--------------| | rdc repo push <repo>@<machine> --to <storage> | Repository-Sicherung in Speicher hochladen | | r...",
     "category": "Documentation",
     "page": "/de/docs/rdc-cheat-sheet",

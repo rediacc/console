@@ -2695,8 +2695,8 @@
   {
     "id": "search-6602",
     "content": "Varukoopiote loetlemine",
-    "body": "Vaata salvestuskohas saadaolevaid varukoopiad: rdc backup list -m server-1 --storage my-storage Väljund on ühtne tabel, mis ühendab mõlemad ajastatud varundamise kaustad (hot/ ja cold/), et näeksid kõiki varukoopiad ühes vaates: | Veerg | Tähendus | |---|---| | Mode | hot või cold. Milline ajastatud varundamise kaust see kirje asub | | Name | Repositooriumi nimi, mis on lahendatud sinu kohalikust konfiguratsioonist (langeb tagasi GUID-ile repo-de puhul, mida konfiguratsioonis pole) | | GUID | Kettal olev repositooriumi GUID | | Size | Inimloetav varukoopifaili suurus | | Modified | UTC ajatempel salvestusteenuse pakkujalt | Ühe režiimis süvitsi minekuks kasuta --path: rdc backup list -m server-1 --storage my-storage --path hot rdc backup list -m server-1 --storage my-storage --path cold",
-    "excerpt": "Vaata salvestuskohas saadaolevaid varukoopiad: rdc backup list -m server-1 --storage my-storage Väljund on ühtne tabel, mis ühendab mõlemad ajastatud...",
+    "body": "Vaata salvestuskohas saadaolevaid varukoopiad: rdc backup list --storage my-storage Väljund on ühtne tabel, mis ühendab mõlemad ajastatud varundamise kaustad (hot/ ja cold/), et näeksid kõiki varukoopiad ühes vaates: | Veerg | Tähendus | |---|---| | Mode | hot või cold. Milline ajastatud varundamise kaust see kirje asub | | Name | Repositooriumi nimi, mis on lahendatud sinu kohalikust konfiguratsioonist (langeb tagasi GUID-ile repo-de puhul, mida konfiguratsioonis pole) | | GUID | Kettal olev repositooriumi GUID | | Size | Inimloetav varukoopifaili suurus | | Modified | UTC ajatempel salvestusteenuse pakkujalt | Ühe režiimis süvitsi minekuks kasuta --path: rdc backup list --storage my-storage --path hot rdc backup list --storage my-storage --path cold",
+    "excerpt": "Vaata salvestuskohas saadaolevaid varukoopiad: rdc backup list --storage my-storage Väljund on ühtne tabel, mis ühendab mõlemad ajastatud varundamise...",
     "category": "Documentation",
     "page": "/et/docs/backup-restore",
     "path": "docs.backup-restore.content",
@@ -9466,7 +9466,7 @@
   {
     "id": "search-7223",
     "content": "3. Lükka pilvemällu (OneDrive, Google Drive, S3)",
-    "body": "# Impordi oma rclone konfiguratsioon mäluhoidla tagaplaanina rdc storage import ~/rclone.conf # Loenda saadaolevad mäluhoidlad rdc storage list # Lükka hoidla pilvemällu rdc repo push my-app --to my-s3-backup # Loenda varukoopiad mäluhoidlas rdc backup list -m my-server --storage my-s3-backup --to tuvastab automaatselt, kas sihtkoht on masin või mäluhoidla tagaplaan. Töötab mis tahes rclone'i toetatud pakkujaga: S3, R2, B2, OneDrive, Google Drive, SFTP jne.",
+    "body": "# Impordi oma rclone konfiguratsioon mäluhoidla tagaplaanina rdc storage import ~/rclone.conf # Loenda saadaolevad mäluhoidlad rdc storage list # Lükka hoidla pilvemällu rdc repo push my-app --to my-s3-backup # Loenda varukoopiad mäluhoidlas rdc backup list --storage my-s3-backup --to tuvastab automaatselt, kas sihtkoht on masin või mäluhoidla tagaplaan. Töötab mis tahes rclone'i toetatud pakkujaga: S3, R2, B2, OneDrive, Google Drive, SFTP jne.",
     "excerpt": "# Impordi oma rclone konfiguratsioon mäluhoidla tagaplaanina rdc storage import ~/rclone.conf # Loenda saadaolevad mäluhoidlad rdc storage list # Lükk...",
     "category": "Documentation",
     "page": "/et/docs/quick-start",
@@ -9585,7 +9585,7 @@
   {
     "id": "search-7234",
     "content": "Varundamine ja taastamine",
-    "body": "| Käsk | Kirjeldus | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Lükka hoidla varukoopia mäluhoidlasse | | rdc repo pull <repo>@<machine> --from <storage> | Taasta hoidla mäluhoidlast | | rdc repo push ... --bwlimit <limit> | Piira rsync-i ribalaiust lükkamise ajal (nt 10M) | | rdc repo pull ... --bwlimit <limit> | Piira rsync-i ribalaiust tõmbamise ajal | | rdc repo push ... --checkpoint | Tee konteinerite kontrollpunkt enne lükkamist | | rdc backup list --storage <storage> -m <machine> | Loenda mäluhoidlas saadaolevad varukoopiad | | rdc storage browse <storage> | Sirvi mäluhoidla sisu |",
+    "body": "| Käsk | Kirjeldus | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Lükka hoidla varukoopia mäluhoidlasse | | rdc repo pull <repo>@<machine> --from <storage> | Taasta hoidla mäluhoidlast | | rdc repo push ... --bwlimit <limit> | Piira rsync-i ribalaiust lükkamise ajal (nt 10M) | | rdc repo pull ... --bwlimit <limit> | Piira rsync-i ribalaiust tõmbamise ajal | | rdc repo push ... --checkpoint | Tee konteinerite kontrollpunkt enne lükkamist | | rdc backup list --storage <storage> | Loenda mäluhoidlas saadaolevad varukoopiad | | rdc storage browse <storage>` | Sirvi mäluhoidla sisu |",
     "excerpt": "| Käsk | Kirjeldus | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Lükka hoidla varukoopia mäluhoidlasse | | rdc repo pu...",
     "category": "Documentation",
     "page": "/et/docs/rdc-cheat-sheet",
