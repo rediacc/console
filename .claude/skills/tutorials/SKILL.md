@@ -107,6 +107,16 @@ watcher keyed on "no ffmpeg + stale log" reports completion that never happened.
 the TOP-LEVEL pid instead — walk `ps -o ppid=` up until the parent is the session relay, then
 `while kill -0 <root>`.
 
+**`pgrep … | head -1` picks the WRAPPER, not the worker.** Bit three separate jobs here (video,
+record, r2 sync): the lowest pid is the `setsid`/`nohup`/`run.sh` shell that exits immediately,
+so a watch on it reports completion while the real work continues. Confirm what you are about to
+wait on before waiting on it:
+
+```bash
+pgrep -af "<job>"            # read the FULL command lines, pick the one doing the work
+ps -o pid=,etime=,cmd= -p <pid>
+```
+
 **The PID you launch is not the process doing the work.** `run.sh … video --jobs N` forks a second
 `run.sh` that owns the workers; the first exits immediately, so a `kill -0 <launched-pid>` watch
 reports "completed" while ffmpeg is still spawning. Kill the process GROUP and verify by count:
