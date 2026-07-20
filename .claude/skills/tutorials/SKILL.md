@@ -78,6 +78,30 @@ stat -c '%y' <logfile>          # if this is minutes old, it is stuck
 ssh <bridge> "uptime"           # load ~0 while "running" = blocked on a prompt
 ```
 
+**Never wait on `pgrep -f "<phrase>"` when the watcher's own command line contains that
+phrase.** `until ! pgrep -f "tutorials generate"; do sleep 15; done` matches ITSELF and can
+never exit — it polls forever against a step that already finished. This cost 13 minutes of
+apparent "still running" on a completed `generate`. Wait on the log's terminal marker instead,
+which is also what actually tells you the step succeeded:
+
+```bash
+until grep -q 'Manifests written:' "$LOG"; do sleep 15; done
+```
+
+**`video` is safe to stop; `record` and `generate` are not.** Video is pure ffmpeg re-derived
+from the timelines — stopping costs CPU only. Stop it whenever its inputs (the casts) are about
+to change, rather than letting it finish against stale ones.
+
+**The PID you launch is not the process doing the work.** `run.sh … video --jobs N` forks a second
+`run.sh` that owns the workers; the first exits immediately, so a `kill -0 <launched-pid>` watch
+reports "completed" while ffmpeg is still spawning. Kill the process GROUP and verify by count:
+
+```bash
+kill -9 -- -$(ps -o pgid= -p <worker-parent> | tr -d ' ')
+pgrep -c ffmpeg          # must reach 0; re-check, it respawns while the parent lives
+rm -rf /tmp/tutorial-video-*
+```
+
 **Recording restarts from zero on any interruption.** `.recording-hashes` is written only after a
 complete run, so killing it to peek discards all progress. Read the log instead.
 
@@ -131,8 +155,21 @@ npm run check:ci-account-onboarding   # commandFull feeds the portal first-run f
 flags exist) but the CLI rejects the pair. Only executing the tutorial finds that class — which is
 the argument for re-recording rather than hand-editing casts.
 
-`tutorial-parity-baseline.json` is exact-keyed and shrink-only: it *demands* deletion of entries
-once a scene is re-recorded. Delete them, never re-freeze.
+**Parity compares the resolved command PATH, not the text.** `commandPath()` delegates to
+`rdcCommandPath()`, which walks the real command tree — a storyboard's `<machine-name>` and the
+recording's `machine-11` both resolve to `machine add`. Never reintroduce the old heuristic
+("leading tokens up to the first `-` or `<`"): it silently broke when targets became positional
+refs, since a concrete value is indistinguishable from a subcommand while a placeholder still
+stops the scan. It produced 68 phantom breaks, all of which got baselined.
+
+`tutorial-parity-baseline.json` was exact-keyed and shrink-only: it *demanded* deletion of entries
+once a scene was re-recorded. It is now DELETED — all 75 entries turned out to be that one parser
+bug, not real drift. If a baseline ever returns, treat a large entry count as evidence of a broken
+gate, not of accumulated debt. A baseline that only ever grows is hiding something.
+
+**Recorded commands must use long flags for literal values.** `rdc term connect <ref> -c 'cmd'`
+fails parity; use `--command`. When sweeping, anchor on `rdc term connect <one-token>` — several
+payloads contain a nested `psql … -c "…"` that must survive.
 
 ## Publish
 
