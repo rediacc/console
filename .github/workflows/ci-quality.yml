@@ -465,6 +465,12 @@ jobs:
       # tree, so a new one is covered the day it lands.
       - name: Validate tutorial commands are non-interactive
         run: npm run check:ci-tutorial-noninteractive
+      # `npm run ci` is the promise that a local run catches CI failures. This
+      # fails when a gate is wired into a workflow but not into that chain --
+      # four had already drifted out, including the harness that runs the
+      # meta-gates, so the checks that verify other checks never ran locally.
+      - name: Validate every workflow gate is in `npm run ci`
+        run: npm run check:ci-chain-parity
       - name: Validate tutorial cast/storyboard/transcript/mdx parity
         run: npm run check:ci-tutorial-parity
       - name: Validate account onboarding splash against canonical tutorials
