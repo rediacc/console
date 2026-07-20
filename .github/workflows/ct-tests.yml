@@ -1236,17 +1236,20 @@ jobs:
       - name: Add renet to PATH
         run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
-      # VM base-image cache shared with the OPS Provision jobs (same default
-      # amd64 Ubuntu image, same monthly key). Restored before any sudo step
-      # touches $RUNNER_TEMP/renet so extraction happens as the runner user.
+      # VM base-image cache shared with the OPS Provision / E2E jobs. Key and
+      # path MUST match those jobs exactly (`vm-base-image-e2e-ubuntu-24.04-<YYYY-MM>`
+      # over the whole disks/ dir) or the same Ubuntu image is stored twice under
+      # two keys, doubling its footprint in the 10GB/repo pool and hastening the
+      # LRU eviction that forces live upstream re-downloads. Restored before any
+      # sudo step touches $RUNNER_TEMP/renet so extraction happens as the runner user.
       - name: Compute VM image cache key
         id: vm-image-key
-        run: echo "key=vm-base-image-ubuntu-24.04-minimal-cloudimg-amd64-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+        run: echo "key=vm-base-image-e2e-ubuntu-24.04-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
       - name: Restore VM base image cache
         id: vm-image-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ${{ runner.temp }}/renet/disks/ubuntu-24.04-minimal-cloudimg-amd64.img
+          path: ${{ runner.temp }}/renet/disks
           key: ${{ steps.vm-image-key.outputs.key }}
 
       - name: Setup KVM Host
@@ -1324,7 +1327,7 @@ jobs:
         if: always() && steps.vm-image-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ${{ runner.temp }}/renet/disks/ubuntu-24.04-minimal-cloudimg-amd64.img
+          path: ${{ runner.temp }}/renet/disks
           key: ${{ steps.vm-image-key.outputs.key }}
 
   test-renet:

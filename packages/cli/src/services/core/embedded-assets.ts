@@ -226,6 +226,41 @@ function expectedRenetSha(metaKey: string): string | null {
 }
 
 /**
+ * Read the host's embedded renet binary back out of the SEA at runtime and
+ * verify its sha256 against the value recorded in the embedded metadata (which
+ * is computed at build time by prepare-cli-assets.sh).
+ *
+ * This is the runtime proof that node's SEA asset lookup returns the exact bytes
+ * that were injected. It is distinct from, and stronger than, the two checks
+ * around it: the build-time container check (sea-inject/verify.mjs) re-parses the
+ * file structurally without executing it, and `rdc --version` never touches an
+ * asset at all — so a binary whose main script is intact but whose payload note
+ * is corrupt, truncated, or unreachable at the loaded address would pass both
+ * while failing here.
+ *
+ * Never throws — returns a structured result so callers (the `doctor` health
+ * check, the CI build smoke test) report rather than crash.
+ */
+export function verifyEmbeddedRenetIntegrity(): { ok: boolean; detail: string } {
+  if (!isSEA()) return { ok: false, detail: 'not running as a SEA binary' };
+  try {
+    const { platform, arch, metaKey } = hostRenetTarget();
+    const expected = expectedRenetSha(metaKey);
+    if (!expected) return { ok: false, detail: `metadata has no sha256 for '${metaKey}'` };
+    const actual = computeSha256(getEmbeddedRenetBinary(platform, arch));
+    if (actual !== expected) {
+      return {
+        ok: false,
+        detail: `sha256 mismatch for '${metaKey}': read ${actual.slice(0, 12)}…, expected ${expected.slice(0, 12)}…`,
+      };
+    }
+    return { ok: true, detail: `renet '${metaKey}' read back, sha256 verified` };
+  } catch (err) {
+    return { ok: false, detail: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+/**
  * Reuse a previously extracted binary when it hashes to the embedded sha256.
  * Avoids rewriting the large binary on every invocation, and verifies the
  * on-disk copy before anything spawns it.
