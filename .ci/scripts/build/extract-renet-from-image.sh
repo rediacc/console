@@ -73,36 +73,26 @@ docker cp "$CONTAINER_ID:/opt/renet/renet-linux-arm64" "$OUTPUT_DIR/"
 # Resolve OUTPUT_DIR to absolute path before changing directories
 OUTPUT_DIR="$(cd "$OUTPUT_DIR" && pwd)"
 
-# Extract embedded assets (CRIU/rsync/rclone) from the renet container.
-# These are Linux binaries deployed INTO VMs during provisioning — needed
-# regardless of host platform (Linux KVM or macOS QEMU).
-log_step "Extracting embedded assets from container..."
-EMBED_DIR="$REPO_ROOT/private/renet/pkg/embed/assets"
-mkdir -p "$EMBED_DIR"
-
-for tool in criu rsync rclone; do
-    for arch in amd64 arm64; do
-        asset="$tool-linux-$arch"
-        log_info "Extracting $asset..."
-        docker cp "$CONTAINER_ID:/opt/$tool/$asset" "$EMBED_DIR/" 2>/dev/null || {
-            log_error "Failed to extract $asset from container"
-            exit 1
-        }
-    done
-done
-
-log_info "Compressing assets..."
-for f in "$EMBED_DIR"/*-linux-*; do
-    [ -f "$f" ] && [ "${f##*.}" != "gz" ] && gzip -f "$f"
-done
-
-log_info "Embedded assets:"
-ls -la "$EMBED_DIR"/*.gz
-
-# Stage proxy and datastore docs for go:embed
-log_step "Staging proxy/datastore for embedding..."
-cp "$REPO_ROOT/private/renet/proxy/docker-compose.yml" "$REPO_ROOT/private/renet/pkg/embed/proxy/"
-cp "$REPO_ROOT/private/renet/docs/datastore/README.md" "$REPO_ROOT/private/renet/pkg/embed/datastore/"
+# Embed the assets (all eight Linux binaries deployed INTO VMs — needed on every
+# host, Linux KVM or macOS QEMU) and stage the proxy compose by DELEGATING to
+# renet's build.sh, the single source of truth for the per-arch assets/<arch>/
+# layout the go:embed directives read (pkg/embed/embed_assets_{amd64,arm64}.go).
+# This image is the same full renet image build.sh itself builds, so retag it to
+# the name embed_assets looks for and let it extract from it.
+#
+# Re-implementing the extraction here is exactly what silently shipped assetless
+# darwin/windows binaries: this script predated the per-arch split and kept
+# writing a FLAT assets/ dir (only criu/rsync/rclone) that the per-arch embeds no
+# longer read, so the cross-compiled darwin/windows renet embedded nothing and
+# `ops up` failed with "embedded assets missing". Delegating keeps the two paths
+# from drifting again. (embed_proxy stages only the proxy compose; the datastore
+# README is a tracked embed file and must NOT be overwritten — see build.sh.)
+log_step "Embedding assets via renet build.sh (single source of truth)..."
+docker tag "$RENET_IMAGE" rediacc/renet:latest
+pushd "$REPO_ROOT/private/renet" >/dev/null
+./build.sh embed_assets --force
+./build.sh embed_proxy
+popd >/dev/null
 
 # Cross-compile Darwin binaries (with embedded assets for VM provisioning)
 log_step "Cross-compiling renet Darwin binaries..."
