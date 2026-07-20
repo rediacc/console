@@ -140,21 +140,20 @@ jobs:
           path: packages/json/dist/
           retention-days: 3
 
-  # Server Docker: builds the consolidated Dockerfile in two variants from
-  # one source. The cloud variant publishes to the existing internal
-  # ghcr.io/rediacc/elite/web path; the onprem variant publishes to the
-  # customer-facing ghcr.io/rediacc/server path.
+  # Server Docker: builds the consolidated Dockerfile as the onprem variant
+  # from one source. It publishes to the customer-facing
+  # ghcr.io/rediacc/server path.
   #
-  # Both consume the same pre-built artifacts: build-www (marketing site),
+  # It consumes pre-built artifacts: build-www (marketing site),
   # cli-npm (CLI tarball), and the renet-binaries
   # artifact from ci-build-renet.yml (which embeds CRIU/rsync/rclone and
   # bakes ACCOUNT_ED25519_PUBLIC_KEY into the binary). The account server
   # bundle is built inside the Dockerfile via esbuild --bundle, with the
-  # entry point parameterized by ACCOUNT_ENTRY (node | on-premise).
+  # entry point parameterized by ACCOUNT_ENTRY (on-premise).
   #
   # Builds are split per-arch onto NATIVE runners (ubuntu-latest for amd64,
   # ubuntu-24.04-arm for arm64). Earlier revisions ran both archs in a single
-  # job with QEMU emulation for arm64; the cloud arm64 build (npm install +
+  # job with QEMU emulation for arm64; the arm64 build (npm install +
   # esbuild bundling under qemu) consistently exceeded the 30 minute timeout
   # and got watchdog-cancelled. Native runners eliminate the emulation tax.
   # Per-arch tags are pushed by these jobs; build-server-docker-manifest
@@ -174,7 +173,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [cloud, onprem]
+        variant: [onprem]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/app-token
@@ -233,10 +232,6 @@ jobs:
         id: resolve
         run: |
           case "${{ matrix.variant }}" in
-            cloud)
-              echo "image_path=ghcr.io/rediacc/elite/web" >> "$GITHUB_OUTPUT"
-              echo "account_entry=node" >> "$GITHUB_OUTPUT"
-              ;;
             onprem)
               echo "image_path=ghcr.io/rediacc/server" >> "$GITHUB_OUTPUT"
               echo "account_entry=on-premise" >> "$GITHUB_OUTPUT"
@@ -267,7 +262,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [cloud, onprem]
+        variant: [onprem]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/app-token
@@ -326,10 +321,6 @@ jobs:
         id: resolve
         run: |
           case "${{ matrix.variant }}" in
-            cloud)
-              echo "image_path=ghcr.io/rediacc/elite/web" >> "$GITHUB_OUTPUT"
-              echo "account_entry=node" >> "$GITHUB_OUTPUT"
-              ;;
             onprem)
               echo "image_path=ghcr.io/rediacc/server" >> "$GITHUB_OUTPUT"
               echo "account_entry=on-premise" >> "$GITHUB_OUTPUT"
@@ -363,7 +354,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [cloud, onprem]
+        variant: [onprem]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
@@ -379,9 +370,6 @@ jobs:
         id: resolve
         run: |
           case "${{ matrix.variant }}" in
-            cloud)
-              echo "image_path=ghcr.io/rediacc/elite/web" >> "$GITHUB_OUTPUT"
-              ;;
             onprem)
               echo "image_path=ghcr.io/rediacc/server" >> "$GITHUB_OUTPUT"
               ;;

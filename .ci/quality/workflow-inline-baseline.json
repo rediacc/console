@@ -5,7 +5,7 @@
   "cd-deploy-worker.yml": 2,
   "cd-stage.yml": 3,
   "cd-v2.yml": 13,
-  "ci-build-docker.yml": 5,
+  "ci-build-docker.yml": 3,
   "ci-ops-test.yml": 2,
   "ci.yml": 6,
   "cleanup-r2-staging.yml": 1,

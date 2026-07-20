@@ -354,7 +354,6 @@ jobs:
           VERSION="${{ needs.init.outputs.next_version }}"
 
           .ci/scripts/docker/retag-image.sh --image renet --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
-          .ci/scripts/docker/retag-image.sh --image web --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
           .ci/scripts/docker/retag-image.sh --image cli --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
           # On-prem server image lives at ghcr.io/rediacc/server (outside elite/),
           # so PUBLISH_DOCKER_REGISTRY can't reach it. cd-stage stages :CHANNEL.
@@ -515,7 +514,7 @@ jobs:
       - name: Promote Docker to stable (hotfix)
         if: needs.init.outputs.workers_only != 'true' && inputs.publish_stable == true
         run: |
-          for image in renet web cli; do
+          for image in renet cli; do
             echo "Promoting ${image}: edge -> stable"
             docker buildx imagetools create \
               -t "ghcr.io/rediacc/elite/${image}:stable" \
@@ -570,7 +569,6 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Docker images:**" >> $GITHUB_STEP_SUMMARY
           echo "- ghcr.io/rediacc/elite/renet:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
-          echo "- ghcr.io/rediacc/elite/web:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
           echo "- ghcr.io/rediacc/elite/cli:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
           echo "- ghcr.io/rediacc/server:${{ needs.init.outputs.next_version }} + :latest (on-prem)" >> $GITHUB_STEP_SUMMARY
 

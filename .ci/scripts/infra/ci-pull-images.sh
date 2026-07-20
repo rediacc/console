@@ -48,9 +48,10 @@ WEB_TAG="${WEB_TAG:-$TAG}"
     log_step "Authenticating with ghcr.io..."
     echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
 
-    # Pull all required images
-    log_step "Pulling web:${WEB_TAG}..."
-    docker pull --quiet "${DOCKER_REGISTRY}/web:${WEB_TAG}"
+    # Pull all required images. The server image is the onprem build at
+    # ghcr.io/rediacc/server (outside the elite/ namespace), tagged with WEB_TAG.
+    log_step "Pulling server:${WEB_TAG}..."
+    docker pull --quiet "ghcr.io/rediacc/server:${WEB_TAG}"
 
     log_step "Pulling renet:${RENET_TAG}..."
     docker pull --quiet "${DOCKER_REGISTRY}/renet:${RENET_TAG}"

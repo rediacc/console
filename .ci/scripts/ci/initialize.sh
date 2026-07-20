@@ -181,11 +181,11 @@ fi
 # =============================================================================
 log_step "Checking image cache in registry..."
 
-check_image() {
-    local name="$1"
+check_image_path() {
+    local path="$1"
     local tag="$2"
     if command -v docker &>/dev/null; then
-        if docker manifest inspect "ghcr.io/rediacc/elite/${name}:${tag}" &>/dev/null 2>&1; then
+        if docker manifest inspect "${path}:${tag}" &>/dev/null 2>&1; then
             echo "true"
         else
             echo "false"
@@ -196,8 +196,15 @@ check_image() {
     fi
 }
 
+# Images published under ghcr.io/rediacc/elite/<name>.
+check_image() {
+    check_image_path "ghcr.io/rediacc/elite/$1" "$2"
+}
+
 RENET_EXISTS=$(check_image "renet" "$RENET_TAG")
-WEB_EXISTS=$(check_image "web" "$WEB_TAG")
+# The server image is the onprem build, published to ghcr.io/rediacc/server
+# (outside the elite/ namespace) and tagged with web_tag.
+WEB_EXISTS=$(check_image_path "ghcr.io/rediacc/server" "$WEB_TAG")
 CLI_EXISTS=$(check_image "cli" "$CLI_TAG")
 
 write_output "renet_exists" "$RENET_EXISTS"

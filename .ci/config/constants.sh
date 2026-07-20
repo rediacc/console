@@ -33,7 +33,6 @@ DOCKER_TAG="${DOCKER_TAG:-latest}"
 readonly SUPPORTED_ARCHS=("amd64" "arm64")
 
 # Docker Images
-readonly ELITE_IMAGE_WEB="${DOCKER_REGISTRY}/web:${DOCKER_TAG}"
 readonly ELITE_IMAGE_RENET="${DOCKER_REGISTRY}/renet:${DOCKER_TAG}"
 readonly ELITE_IMAGE_SQL="mcr.microsoft.com/mssql/server:2022-CU21-ubuntu-22.04"
 readonly ELITE_IMAGE_SQL_ARM64="mcr.microsoft.com/azure-sql-edge:1.0.7"
@@ -49,7 +48,6 @@ readonly CI_DOCKER_DIR="${CONSOLE_ROOT_DIR}/.ci/docker/ci"
 readonly CI_COMPOSE_FILE="${CI_DOCKER_DIR}/docker-compose.yml"
 
 # Container Names
-readonly CI_CONTAINER_WEB="rediacc-web"
 readonly CI_CONTAINER_SQL="rediacc-sql"
 
 # Backend state file
@@ -130,7 +128,7 @@ PUBLISH_DOCKER_REGISTRY="${PUBLISH_DOCKER_REGISTRY:-ghcr.io/rediacc/elite}"
 # NOT declared here to avoid breaking local scripts that source constants.sh.
 
 # Docker images to publish
-readonly PUBLISH_IMAGES=("renet" "web" "cli")
+readonly PUBLISH_IMAGES=("renet" "cli")
 
 # Dockerfiles (relative to CONSOLE_ROOT_DIR)
 # Associative arrays require bash 4+; skip on older bash (e.g. macOS system bash 3.2).
@@ -138,14 +136,12 @@ readonly PUBLISH_IMAGES=("renet" "web" "cli")
 if ((BASH_VERSINFO[0] >= 4)); then
     declare -A DOCKERFILES=(
         ["renet"]="private/renet/Dockerfile"
-        ["web"]="Dockerfile"
         ["cli"]="packages/cli/Dockerfile"
     )
 
     # Build contexts (relative to CONSOLE_ROOT_DIR)
     declare -A BUILD_CONTEXTS=(
         ["renet"]="private/renet"
-        ["web"]="."
         ["cli"]="."
     )
 fi

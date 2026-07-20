@@ -206,11 +206,10 @@ jobs:
           CHANNEL="${{ inputs.channel }}"
 
           .ci/scripts/docker/retag-image.sh --image renet --from "${{ inputs.renet_tag }}" --to "$CHANNEL"
-          .ci/scripts/docker/retag-image.sh --image web --from "${{ inputs.web_tag }}" --to "$CHANNEL"
           .ci/scripts/docker/retag-image.sh --image cli --from "${{ inputs.cli_tag }}" --to "$CHANNEL"
           # On-prem server image lives outside the elite/ namespace; use --image-path
-          # so retag doesn't try to prepend PUBLISH_DOCKER_REGISTRY. Built by the same
-          # build-server-docker-{amd64,arm64} jobs as elite/web, sharing the web_tag.
+          # so retag doesn't try to prepend PUBLISH_DOCKER_REGISTRY. Built by the
+          # build-server-docker-{amd64,arm64} jobs, sharing the web_tag.
           .ci/scripts/docker/retag-image.sh --image-path ghcr.io/rediacc/server --from "${{ inputs.web_tag }}" --to "$CHANNEL"
 
       # -----------------------------------------------------------------------

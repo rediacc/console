@@ -33,7 +33,6 @@ TAG_REPOS=("console" "renet")
 # customer-facing on-prem image is at ghcr.io/rediacc/server (no namespace).
 GHCR_PACKAGES=(
     "elite/renet"
-    "elite/web"
     "elite/cli"
     "server"
 )
