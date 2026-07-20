@@ -97,7 +97,7 @@ function toSegments(v: string): number[] {
   // Strip a leading v, split the k3s-style "1.36.2+k3s1" into ["1.36.2", "k3s1"].
   const cleaned = v.replace(/^v/i, '');
   const [core, meta = ''] = cleaned.split('+');
-  const nums = core.split(/[.\-]/).map((s) => Number.parseInt(s, 10) || 0);
+  const nums = core.split(/[.-]/).map((s) => Number.parseInt(s, 10) || 0);
   const metaNum = Number.parseInt(meta.replace(/\D/g, ''), 10) || 0;
   return [...nums, metaNum];
 }

@@ -346,8 +346,6 @@ async function fetchChangelogUrls(packages: PackageInfo[]): Promise<Map<string, 
   return results;
 }
 
-const NPMRC_FILE = path.join(CONSOLE_ROOT, '.npmrc');
-
 // getMinReleaseAgeMs / startOfNextUtcDay / isWithinFreshnessWindow now live in
 // scripts/lib/release-age.ts, shared with the embed-asset freshness gate.
 
