@@ -39,6 +39,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseDockerfileVersions } from './lib/dockerfile-versions.js';
 import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.js';
+import { getMinReleaseAgeMs, isWithinFreshnessWindow } from './lib/release-age.js';
 import { GREEN, NC, RED, YELLOW } from './utils/console.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -46,8 +47,6 @@ const CONSOLE_ROOT = path.resolve(__dirname, '..');
 const DOCKERFILE = path.join(CONSOLE_ROOT, 'private/renet/Dockerfile');
 const BLOCKLIST = path.join(CONSOLE_ROOT, '.embed-assets-upgrade-blocklist');
 
-/** Releases younger than this are deferred (not flagged as making us stale). */
-const FRESHNESS_WINDOW_DAYS = 2;
 const HTTP_TIMEOUT_MS = 15_000;
 
 interface Source {
@@ -148,8 +147,31 @@ async function fetchText(url: string): Promise<string> {
   }
 }
 
+/**
+ * Test seam: EMBED_FRESHNESS_FIXTURE points at a JSON map
+ * `{ "<base>": { "version": "x.y.z", "publishedAt"?: "ISO" } }` used INSTEAD of
+ * hitting the network, so the gate test can prove it fires (stale) and passes
+ * (current) deterministically. A base absent from the fixture throws (→ the
+ * could-not-check / fail-soft path), which the test also exercises.
+ */
+let fixtureCache: Record<string, { version: string; publishedAt?: string }> | null | undefined;
+function loadFixture(): Record<string, { version: string; publishedAt?: string }> | null {
+  const cached = fixtureCache;
+  if (cached !== undefined) return cached;
+  const p = process.env.EMBED_FRESHNESS_FIXTURE;
+  const loaded = p ? JSON.parse(fs.readFileSync(p, 'utf-8')) : null;
+  fixtureCache = loaded;
+  return loaded;
+}
+
 /** Latest stable release for a source, or throws (caught as could-not-check). */
 async function latestFor(src: Source): Promise<Latest> {
+  const fixture = loadFixture();
+  if (fixture) {
+    const hit = fixture[src.base];
+    if (!hit) throw new Error('not in fixture');
+    return { version: hit.version, publishedAt: hit.publishedAt ? new Date(hit.publishedAt) : null };
+  }
   if (src.kind === 'github') {
     // /releases/latest excludes prereleases/drafts — the stable line we track.
     try {
@@ -187,10 +209,6 @@ async function latestFor(src: Source): Promise<Latest> {
   return { version: versions[versions.length - 1], publishedAt: null };
 }
 
-function daysSince(d: Date | null): number {
-  if (!d) return Number.POSITIVE_INFINITY; // no date -> treat as old enough
-  return (Date.now() - d.getTime()) / 86_400_000;
-}
 
 interface Finding {
   display: string;
@@ -211,6 +229,10 @@ async function main(): Promise<void> {
   const dockerfile = fs.readFileSync(DOCKERFILE, 'utf-8');
   const { versions, conflicts } = parseDockerfileVersions(dockerfile);
   const { held, errors: blockerErrors } = loadBlocklist();
+  // Same soak as the npm-dep gate: a release that only just aged past the window
+  // is deferred to the next UTC day so a day's upgrades surface together.
+  const minReleaseAgeMs = getMinReleaseAgeMs();
+  const nowMs = Date.now();
 
   console.log('Embed-asset Freshness');
   console.log('='.repeat(60));
@@ -246,10 +268,15 @@ async function main(): Promise<void> {
       continue;
     }
     if (!isNewer(latest.version, pinned)) continue;
-    const age = daysSince(latest.publishedAt);
-    if (age < FRESHNESS_WINDOW_DAYS) {
+    // FAIL-OPEN on a missing publish date (git tags, the rsync index): unlike the
+    // npm-dep gate we flag it, because a dateless source must still surface a
+    // stale pin. With a date, apply the shared soak.
+    if (
+      latest.publishedAt !== null &&
+      isWithinFreshnessWindow(latest.publishedAt.getTime(), nowMs, minReleaseAgeMs)
+    ) {
       deferred.push(
-        `${src.display}: ${latest.version} is ${age.toFixed(1)}d old (< ${FRESHNESS_WINDOW_DAYS}d window) — deferred`
+        `${src.display}: ${latest.version} just released — deferred to the next UTC day (soak)`
       );
       continue;
     }
@@ -285,12 +312,25 @@ async function main(): Promise<void> {
   console.error('');
   console.error(`${RED}✗ ${stale.length} embed-asset pin(s) are behind upstream:${NC}`);
   for (const f of stale) {
-    console.error(`  ${f.display}: pinned ${f.pinned}, upstream ${f.latest}`);
+    console.error(`  ${f.display}: pinned ${f.pinned}  ->  upstream ${f.latest}`);
   }
+  // A prominent, copy-paste HOW-TO-FIX so a human or an AI agent can act without
+  // hunting: the exact upgrade command, then the follow-ups it can't do itself.
   console.error('');
-  console.error('Bump them with `npx tsx scripts/check-embed-asset-freshness.ts --upgrade`');
-  console.error('(then refresh SHA256/embed.go/credits), or hold one back with a BLOCKER');
-  console.error('reason in .embed-assets-upgrade-blocklist.');
+  console.error(`${YELLOW}TO FIX — bump the Dockerfile pins:${NC}`);
+  console.error('    npm run check:ci-embed-asset-freshness -- --upgrade');
+  console.error('  then, for each bumped component:');
+  console.error('    1. rebuild the builder image so the new binaries are pulled:');
+  console.error('         (cd private/renet && docker build -t rediacc/renet:latest . && ./build.sh embed_assets --force)');
+  console.error('    2. refresh any SHA256 pin (zot/k3s) + the AssetK3sVersion const in');
+  console.error('       private/renet/pkg/embed/embed.go if k3s changed;');
+  console.error('    3. update the credits inventories (credits.go + third-party-credits.json)');
+  console.error('       — `npm run check:ci-embed-credits` tells you the exact expected versions.');
+  console.error('  A bump may need a Dockerfile tweak (e.g. a version-pinned patch that no longer');
+  console.error('  applies); the --upgrade only rewrites the ARG, so re-run this gate to confirm.');
+  console.error('');
+  console.error('TO HOLD one back instead: add its base name (e.g. `k3s`) with a `# BLOCKER:`');
+  console.error('reason to .embed-assets-upgrade-blocklist.');
   process.exit(1);
 }
 

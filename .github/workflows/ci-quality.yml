@@ -641,6 +641,15 @@ jobs:
       - name: Check embed credits consistency
         run: npm run check:ci-embed-credits
 
+      # Freshness of the embedded-binary version pins vs upstream. GITHUB_TOKEN
+      # raises the API rate limit; the gate fails SOFT on any network/rate-limit
+      # error, so a missing token or a blip never reddens the build — only a
+      # confirmed-stale pin does.
+      - name: Check embed-asset upstream freshness
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npm run check:ci-embed-asset-freshness
+
   quality-account:
     name: Account Server
     runs-on: ubuntu-latest

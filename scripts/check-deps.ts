@@ -25,6 +25,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BLUE, GREEN, NC, RED, YELLOW } from './utils/console.js';
 import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.js';
+import { getMinReleaseAgeMs, isWithinFreshnessWindow } from './lib/release-age.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..');
@@ -347,24 +348,8 @@ async function fetchChangelogUrls(packages: PackageInfo[]): Promise<Map<string, 
 
 const NPMRC_FILE = path.join(CONSOLE_ROOT, '.npmrc');
 
-/**
- * Read the `minimum-release-age` setting (in minutes) from .npmrc and return it
- * in milliseconds — the base freshness window for this CI gate (pinned to 1440 =
- * 24h). NOTE: `minimum-release-age` is our CI-gate knob, NOT npm's native install
- * guard (npm's real key is `min-release-age`, in days); see the .npmrc comment.
- * The actual deferral rounds this up to the next UTC day (see startOfNextUtcDay).
- * Returns 0 when the setting is absent (feature disabled — no deferral).
- */
-function getMinReleaseAgeMs(): number {
-  try {
-    const content = fs.readFileSync(NPMRC_FILE, 'utf-8');
-    const m = content.match(/^\s*minimum-release-age\s*=\s*(\d+)/m);
-    if (m) return Number(m[1]) * 60 * 1000;
-  } catch {
-    // No .npmrc — feature disabled.
-  }
-  return 0;
-}
+// getMinReleaseAgeMs / startOfNextUtcDay / isWithinFreshnessWindow now live in
+// scripts/lib/release-age.ts, shared with the embed-asset freshness gate.
 
 // Cache for version publish timestamps to avoid duplicate registry fetches.
 const publishTimeCache = new Map<string, number | null>();
@@ -414,18 +399,6 @@ async function fetchVersionPublishTime(packageName: string, version: string): Pr
 }
 
 /**
- * Epoch ms of 00:00:00 UTC on the day AFTER the day that contains `ms`. Used to
- * batch freshness deferral onto a daily boundary: a version that ages past the
- * base window on a given UTC day becomes eligible together with every other such
- * version at the following midnight, so a day's upgrades surface as one batch
- * instead of trickling in one-at-a-time as each crosses its own T+24h moment.
- */
-function startOfNextUtcDay(ms: number): number {
-  const d = new Date(ms);
-  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1);
-}
-
-/**
  * Split must-upgrade packages into those eligible to bump now vs those still
  * within the freshness window. A version becomes eligible only at the next UTC
  * midnight after it has aged the base window (minimum-release-age), so all of a
@@ -452,7 +425,8 @@ async function partitionByReleaseAge(
   await Promise.all(
     packages.map(async (pkg) => {
       const published = await fetchVersionPublishTime(pkg.name, pkg.latest);
-      if (published === null || nowMs < startOfNextUtcDay(published + minReleaseAgeMs)) {
+      // Fail-closed: a null publish time (registry hiccup) is treated as too-new.
+      if (published === null || isWithinFreshnessWindow(published, nowMs, minReleaseAgeMs)) {
         tooNew.push(pkg);
       } else {
         installable.push(pkg);
