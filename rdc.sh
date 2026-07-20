@@ -124,23 +124,13 @@ if [[ "${1:-}" == "--native" ]]; then
     ensure_deps
     ensure_packages_built
     # Build renet for BOTH linux arches into the slots build-cli-executables.sh
-    # embeds (private/bin/renet-linux-<arch>). The SEA only ever RUNS on
-    # linux/mac/win, but it embeds linux renet binaries for remote provisioning,
-    # and a remote machine may be amd64 or arm64 — the embedded provisioner sends
-    # the one matching each machine's `uname -m`. Staging both here is what lets a
-    # locally-built SEA provision either. Assets must be staged first (build.sh
-    # embed_assets, idempotent) or the per-arch go:embed picks up an empty dir.
-    mkdir -p "$ROOT_DIR/private/bin"
-    (cd "$ROOT_DIR/private/renet" && ./build.sh embed_assets >/dev/null)
-    for _ovr_ga in amd64 arm64; do
-        log_step "Cross-building renet → private/bin/renet-linux-${_ovr_ga}"
-        (cd "$ROOT_DIR/private/renet" &&
-            CGO_ENABLED=0 GOOS=linux GOARCH="$_ovr_ga" go build \
-                -tags nolicense \
-                -ldflags="-s -w -X main.Version=0.0.0-dev" \
-                -o "$ROOT_DIR/private/bin/renet-linux-${_ovr_ga}" \
-                ./cmd/renet)
-    done
+    # embeds (private/bin/renet-linux-<arch>). The SEA embeds linux renet binaries
+    # for remote provisioning, and a remote machine may be amd64 or arm64 — the
+    # embedded provisioner sends the one matching each machine's `uname -m`, so
+    # both must be present. Delegated to build.sh's stage_linux so the per-arch
+    # cross-compile lives in exactly one place (shared with dev/build).
+    log_step "Cross-building renet (both linux arches) → private/bin"
+    (cd "$ROOT_DIR/private/renet" && ./build.sh stage_linux "$ROOT_DIR/private/bin")
     log_step "Building SEA for $_ovr_platform/$_ovr_arch"
     bash "$ROOT_DIR/.ci/scripts/build/build-cli-executables.sh" \
         --platform "$_ovr_platform" --arch "$_ovr_arch"

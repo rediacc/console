@@ -79,31 +79,22 @@ log_info "  Output: $OUTPUT_DIR"
 
 # Embed assets if not skipped
 if [[ "$SKIP_EMBED" != "true" ]]; then
-    log_step "Preparing embedded assets..."
+    log_step "Staging embedded assets"
 
-    ASSETS_DIR="${ASSETS_DIR:-$REPO_ROOT/binaries}"
-
-    # Convert to absolute path (handles relative paths, symlinks, and ..)
-    ASSETS_DIR="$(readlink -f "$ASSETS_DIR")"
-
-    EMBED_DIR="$RENET_DIR/pkg/embed/assets"
-    mkdir -p "$EMBED_DIR"
-
-    for asset in criu-linux-amd64 criu-linux-arm64 rsync-linux-amd64 rsync-linux-arm64 rclone-linux-amd64 rclone-linux-arm64; do
-        if [[ -f "$ASSETS_DIR/$asset" ]]; then
-            log_info "Embedding $asset..."
-            gzip -c "$ASSETS_DIR/$asset" >"$EMBED_DIR/$asset.gz"
-        else
-            log_error "Missing asset: $ASSETS_DIR/$asset"
-            exit 1
-        fi
-    done
+    # SINGLE SOURCE OF TRUTH: private/renet/Dockerfile, driven by `build.sh
+    # embed_assets`. It acquires AND per-arch-stages every embedded binary —
+    # criu/rsync/CSI compiled from source, rclone/k3s/zot downloaded at their
+    # pinned versions with sha256 verification — into pkg/embed/assets/<arch>/.
+    # It is idempotent (skips assets already staged). Do NOT re-encode asset
+    # acquisition or the per-arch gzip layout here; that lives in the Dockerfile,
+    # and duplicating it is exactly the drift this consolidation removes.
+    (cd "$RENET_DIR" && ./build.sh embed_assets)
 
     log_info "Embedded assets:"
-    ls -la "$EMBED_DIR"
+    ls -la "$RENET_DIR/pkg/embed/assets/amd64" "$RENET_DIR/pkg/embed/assets/arm64"
 
-    # Stage proxy and datastore docs for go:embed
-    log_info "Staging proxy/datastore for embedding..."
+    # proxy compose + datastore doc for go:embed (documents, not binary assets)
+    log_info "Staging proxy/datastore docs..."
     cp "$REPO_ROOT/private/renet/proxy/docker-compose.yml" "$RENET_DIR/pkg/embed/proxy/"
     cp "$REPO_ROOT/private/renet/docs/datastore/README.md" "$RENET_DIR/pkg/embed/datastore/"
 else

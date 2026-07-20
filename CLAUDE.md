@@ -293,13 +293,15 @@ running. `RDC_BENCH=1` targets bench.rediacc.com as before. There is no
 `RDC_PROD` any more. The renet build stays `--nolicense` in all wrapper modes;
 `RDC_RENET_LICENSE=1` is the independent enforcement opt-in (below).
 
-### Iterating on a local SEA (`./rdc.sh --override-local`)
+### Iterating on a local SEA (`./rdc.sh --native`)
 
-`./rdc.sh --override-local` rebuilds the CLI SEA from local source and installs it over `~/.local/share/rediacc/bin/rdc`. Use it when iterating on SEA-only behaviors (embedded renet, auto-update gating) that the dev-mode `cli-bundle.cjs` path doesn't exercise.
+`./rdc.sh --native` builds the real single-executable binary (Node SEA) from local source and installs it over `~/.local/share/rediacc/bin/rdc`, instead of running via the dev bundle. Use it when iterating on SEA-only behaviors (embedded renet, auto-update gating) that the dev-mode `cli-bundle.cjs` path doesn't exercise. It cross-builds renet for BOTH linux arches into `private/bin` (via `build.sh stage_linux`) so the produced SEA can provision an amd64 or arm64 remote.
 
-The flag runs `ensure_deps` + `ensure_packages_built` first, so edits to `packages/shared` or `packages/provisioning` are picked up by the bundler — those packages resolve through their own `dist/` outputs, and forgetting to rebuild them was a silent footgun. Auto-update is short-circuited via the `VERSION === '0.0.0-dev'` guard in `packages/cli/src/utils/platform.ts::isUpdateDisabled`, so the override binary survives the next `rdc` invocation.
+The flag runs `ensure_deps` + `ensure_packages_built` first, so edits to `packages/shared` or `packages/provisioning` are picked up by the bundler — those packages resolve through their own `dist/` outputs, and forgetting to rebuild them was a silent footgun. Auto-update is short-circuited via the `VERSION === '0.0.0-dev'` guard in `packages/cli/src/utils/platform.ts::isUpdateDisabled`, so the `--native` binary survives the next `rdc` invocation.
 
 The previous binary is preserved as a backup matching `getOldBinaryPath()` (`<base>.old<ext>` — `rdc.old` on Linux/macOS, `rdc.old.exe` on Windows) so `cleanupOldBinary()` removes it on the next successful update.
+
+The SEA is injected by `.ci/scripts/build/sea-inject/` (a streaming replacement for postject, which could not inject a blob this large — see #525), so a full-fat SEA carrying the entire k8s stack for both arches builds fine.
 
 ### Reproducing license-flow bugs in dev (`RDC_RENET_LICENSE=1`)
 
