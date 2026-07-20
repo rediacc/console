@@ -92,6 +92,15 @@ until grep -q 'Manifests written:' "$LOG"; do sleep 15; done
 from the timelines — stopping costs CPU only. Stop it whenever its inputs (the casts) are about
 to change, rather than letting it finish against stale ones.
 
+**A 15-20 min silent gap in `video2.log` is NORMAL.** The log prints one line per scene START, so
+a slow render looks like silence. `tutorial-live-migration.cast` is 160K — 4x the next largest —
+and `agg` spends 16+ min per locale on it, six locales at once. Before calling it hung, check the
+work rather than the log:
+
+```bash
+ps -eo pcpu,etime,comm --sort=-pcpu | head   # agg/ffmpeg with rising ELAPSED = progressing
+```
+
 **`ffmpeg` idling is NOT a stall.** Video alternates `agg` (renders the cast to frames) and
 `ffmpeg` (muxes). During an agg phase `pgrep ffmpeg` is legitimately 0 while load stays ~40, so a
 watcher keyed on "no ffmpeg + stale log" reports completion that never happened. Key completion on
