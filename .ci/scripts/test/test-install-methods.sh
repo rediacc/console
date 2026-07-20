@@ -253,9 +253,24 @@ test_binary_download() {
             return 77
         fi
 
+        # Bound each download attempt (-TimeoutSec) and retry, so a stalled
+        # connection fails fast and retries instead of hanging until the job's
+        # timeout-minutes kills it (observed: a mid-stream stall ate the full
+        # 15-min Windows budget while every sibling arch downloaded fine).
         test_script="
             \$ErrorActionPreference = 'Stop'
-            Invoke-WebRequest -Uri '$url' -OutFile '$binary_name'
+            \$attempt = 0
+            while (\$true) {
+                \$attempt++
+                try {
+                    Invoke-WebRequest -Uri '$url' -OutFile '$binary_name' -TimeoutSec 180
+                    break
+                } catch {
+                    if (\$attempt -ge 3) { throw }
+                    Write-Host \"Download attempt \$attempt failed: \$(\$_.Exception.Message) - retrying in 10s...\"
+                    Start-Sleep -Seconds 10
+                }
+            }
             .\\$binary_name --version
         "
         powershell.exe -Command "$test_script"
@@ -270,7 +285,10 @@ test_binary_download() {
         mkdir -p "$download_dir"
         cd "$download_dir"
 
-        curl -fsSL "$url" -o "$binary_name"
+        # Bounded + retried for the same reason as the Windows path above: a
+        # stalled transfer must fail the attempt (not hang), then retry.
+        curl -fsSL --connect-timeout 30 --max-time 300 --retry 3 --retry-delay 5 \
+            --retry-connrefused "$url" -o "$binary_name"
         chmod +x "$binary_name"
         local output
         output=$("./$binary_name" --version 2>&1 || true)
@@ -385,7 +403,8 @@ test_channel_verify() {
     local url
     url="$(get_binary_url "linux" "x64" "$VERSION")"
     local binary="/tmp/rdc-verify-$$"
-    curl -fsSL "$url" -o "$binary" || {
+    curl -fsSL --connect-timeout 30 --max-time 300 --retry 3 --retry-delay 5 \
+        --retry-connrefused "$url" -o "$binary" || {
         log_error "Failed to download binary from $url"
         return 1
     }
