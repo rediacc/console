@@ -524,24 +524,15 @@ jobs:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      # Download full renet binaries (with embedded CRIU/rsync) from unified build
+      # Download the renet artifact from the unified build. It carries both the
+      # renet binaries AND the raw native binaries (criu/rsync/rclone), which the
+      # build-renet job exported from the same Docker builder image. Dockerfile.native
+      # COPYs the native binaries into /opt for remote-machine distribution — so
+      # there is one source (the builder image), no separate native-* build.
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: renet-binaries-${{ github.sha }}
           path: binaries/
-
-      # Download native CRIU/rsync binaries (also from unified build)
-      # These are copied to /opt/ in Docker image for remote machine distribution
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
-        with:
-          name: native-amd64-${{ github.sha }}
-          path: binaries/
-
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
-        with:
-          name: native-arm64-${{ github.sha }}
-          path: binaries/
-          merge-multiple: true
 
       - name: List binaries
         run: ls -la binaries/

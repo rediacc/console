@@ -97,6 +97,26 @@ if [[ "$SKIP_EMBED" != "true" ]]; then
     log_info "Staging proxy/datastore docs..."
     cp "$REPO_ROOT/private/renet/proxy/docker-compose.yml" "$RENET_DIR/pkg/embed/proxy/"
     cp "$REPO_ROOT/private/renet/docs/datastore/README.md" "$RENET_DIR/pkg/embed/datastore/"
+
+    # Export the RAW (ungzipped) native binaries from the SAME builder image, for
+    # the renet runtime docker image (private/renet/Dockerfile.native, built by
+    # ci-build-docker). That image used to consume a separate native-* build; now
+    # it takes these from the renet artifact, so the builder image is the single
+    # source for both the SEA embed AND the runtime image. If docker is
+    # unavailable (embed_assets skipped), skip — a no-SEA-assets build anyway.
+    if [[ -n "$OUTPUT_DIR" ]] && command -v docker >/dev/null 2>&1 &&
+        docker image inspect rediacc/renet:latest >/dev/null 2>&1; then
+        log_step "Exporting native binaries (criu/rsync/rclone) for the runtime image..."
+        mkdir -p "$OUTPUT_DIR"
+        _nb_cid="$(docker create rediacc/renet:latest)"
+        for _nb in criu rsync rclone; do
+            for _na in amd64 arm64; do
+                docker cp "$_nb_cid:/opt/$_nb/$_nb-linux-$_na" "$OUTPUT_DIR/" 2>/dev/null ||
+                    log_warn "native binary $_nb-linux-$_na not found in builder image"
+            done
+        done
+        docker rm "$_nb_cid" >/dev/null 2>&1 || true
+    fi
 else
     log_info "Skipping asset embedding (--skip-embed)"
 fi

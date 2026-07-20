@@ -89,7 +89,7 @@ if [[ -n "$SUBMODULE_PATH" ]]; then
         "$SUBMODULE_PATH/Dockerfile"
         "$SUBMODULE_PATH/Dockerfile.native"
         ".github/workflows/ci-build.yml"
-        ".ci/scripts/docker/build-native-binaries.sh"
+        ".ci/scripts/build/build-renet.sh"
     )
     for f in "${BUILD_CONFIG_FILES[@]}"; do
         if [[ -f "$f" ]]; then
