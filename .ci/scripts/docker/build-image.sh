@@ -3,9 +3,9 @@
 # Supports multi-architecture builds via Docker Buildx
 #
 # Usage:
-#   build-image.sh --image api                       # Build API image
-#   build-image.sh --image bridge --version 0.4.30   # Build with version tag
-#   build-image.sh --image api --ci-tag 20260120-104603  # Build with CI tag (no :latest)
+#   build-image.sh --image renet                     # Build renet image
+#   build-image.sh --image cli --version 0.4.30      # Build with version tag
+#   build-image.sh --image cli --ci-tag 20260120-104603  # Build with CI tag (no :latest)
 #   build-image.sh --all                             # Build all images
 #   build-image.sh --all --push                      # Build and push all
 #   build-image.sh --dry-run --all                   # Preview builds
@@ -148,9 +148,6 @@ build_image() {
     local build_args=""
     if [[ "$name" == "api" ]]; then
         # API image may need version build arg
-        build_args="--build-arg VERSION=${VERSION:-dev}"
-    elif [[ "$name" == "bridge" ]]; then
-        # Bridge image may need version for Go ldflags
         build_args="--build-arg VERSION=${VERSION:-dev}"
     elif [[ "$name" == "web" ]]; then
         # Web image needs version for Vite and build type
