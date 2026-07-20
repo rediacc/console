@@ -131,7 +131,12 @@ for audio **if** the cache is present:
 `generate` restores this itself. If it starts synthesizing broadly, **stop** — `extract` changed
 narration text and the cost assumption is broken.
 
-Wall-clock is dominated by `video` (ffmpeg), not recording.
+Wall-clock is dominated by `video` (ffmpeg), not recording. Budget it: **18 tutorials × 10
+narrated locales = 180 mp4s**, several hours on a 20-core box.
+
+**Do not raise `--jobs` to "use idle cores".** Each ffmpeg is already multi-threaded, so
+`--jobs 6` drives load average to ~40 on 20 cores — the box is oversubscribed 2× before you add
+anything. Check `/proc/loadavg` against `nproc` before concluding there is headroom.
 
 ## Locales
 
