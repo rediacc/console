@@ -127,7 +127,7 @@ readonly PUBLISH_IMAGES=("renet" "rdc")
 if ((BASH_VERSINFO[0] >= 4)); then
     declare -A DOCKERFILES=(
         ["renet"]="private/renet/Dockerfile"
-        ["rdc"]="packages/cli/Dockerfile"
+        ["rdc"]="packages/cli/Dockerfile.native"
     )
 
     # Build contexts (relative to CONSOLE_ROOT_DIR)

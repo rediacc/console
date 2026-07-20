@@ -486,11 +486,13 @@ jobs:
 
   build-docker:
     name: Build (Docker)
-    needs: [initialize, build-renet]
+    # build-cli produces the musl SEA that the rdc container image embeds; the
+    # rdc-image build (build-cli-docker) downloads it, so order after build-cli.
+    needs: [initialize, build-renet, build-cli]
     permissions:
       contents: read
       packages: write   # GHCR push
-    if: always() && needs.initialize.result == 'success' && needs.build-renet.result == 'success'
+    if: always() && needs.initialize.result == 'success' && needs.build-renet.result == 'success' && needs.build-cli.result == 'success'
     uses: ./.github/workflows/ci-build-docker.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
