@@ -16,13 +16,6 @@ source "$ROOT_DIR/.ci/config/constants.sh"
 source "$ROOT_DIR/.ci/lib/local-common.sh"
 source "$ROOT_DIR/.ci/lib/service.sh"
 
-# Backward compatibility: Load parent .env if exists
-if [[ -f "$ROOT_DIR/../.env" ]]; then
-    set +u # Disable unset variable errors temporarily
-    source "$ROOT_DIR/../.env"
-    set -u
-fi
-
 # =============================================================================
 # HELPER FUNCTIONS
 # =============================================================================
@@ -289,7 +282,7 @@ _bridge_rsync() {
 
 # Build the linux-x64 dev rdc SEA (for the bridge), cached by source hash so
 # reruns skip the rebuild when packages/cli, packages/shared, or renet
-# are unchanged. Output: dist/cli/rdc-linux-x64. Mirrors `rdc.sh --override-local`
+# are unchanged. Output: dist/cli/rdc-linux-x64. Mirrors `rdc.sh --native`
 # but installs nothing on the host.
 _build_cli_sea_cached() {
     local out="$ROOT_DIR/dist/cli/rdc-linux-x64"

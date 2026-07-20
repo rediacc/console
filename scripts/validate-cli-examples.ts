@@ -311,13 +311,13 @@ function extractFromMarkdown(
  * at nothing. Half a fix is a fresh blind spot."). Someone diagnosed it, fixed ONE scanner,
  * and never applied it to the sibling. So: both wrappers, one place, both scanners.
  */
-const WRAPPER_ONLY_FLAGS = /^\s*--(?:override-local|dev)\b/;
+const WRAPPER_ONLY_FLAGS = /^\s*--(?:native|dev)\b/;
 
 function normaliseInvocation(command: string): string {
   const m = /^(?:\.\/)?rdc\.sh(?=\s|$)/.exec(command);
   if (!m) return command;
   let rest = command.slice(m[0].length);
-  // `./rdc.sh --override-local` / `--dev` are consumed BY THE WRAPPER and never reach the
+  // `./rdc.sh --native` / `--dev` are consumed BY THE WRAPPER and never reach the
   // CLI, so passing them to the parser would invent a new false-positive class while
   // fixing a blind spot. See rdc.sh:82.
   let stripped = true;
