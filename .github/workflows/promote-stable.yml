@@ -256,7 +256,7 @@ jobs:
       - name: Promote Docker images (:edge -> :stable)
         if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
         run: |
-          for image in renet plugin-terminal plugin-browser web cli; do
+          for image in renet web cli; do
             SRC="ghcr.io/rediacc/elite/${image}:edge"
             DST="ghcr.io/rediacc/elite/${image}:stable"
             echo "Promoting ${image}: edge -> stable"

@@ -12,12 +12,6 @@ on:
       renet_exists:
         type: string
         required: false
-      plugins_tag:
-        type: string
-        required: false
-      plugins_exists:
-        type: string
-        required: false
       web_tag:
         type: string
         required: false
@@ -145,44 +139,6 @@ jobs:
           name: build-json${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
           path: packages/json/dist/
           retention-days: 3
-
-  build-plugins:
-    name: Plugins & Docker
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    if: "!inputs.test_images_only"
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - name: Apply version bump
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
-
-      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
-
-      # Build validation (dry-run)
-      - name: Validate plugin images
-        run: .ci/scripts/build/build-plugins.sh --dry-run
-
-      - uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-
-      - name: Determine version
-        id: version
-        run: |
-          echo "version=${{ inputs.next_version }}" >> $GITHUB_OUTPUT
-
-      - name: Build & Push Plugin Docker images
-        if: inputs.plugins_exists != 'true'
-        run: |
-          .ci/scripts/docker/build-image.sh --image plugin-terminal --ci-tag ${{ inputs.plugins_tag }} --version ${{ steps.version.outputs.version }} --push
-          .ci/scripts/docker/build-image.sh --image plugin-browser --ci-tag ${{ inputs.plugins_tag }} --version ${{ steps.version.outputs.version }} --push
-
-      - name: Skip Docker build (cached)
-        if: inputs.plugins_exists == 'true'
-        run: echo "::notice::Skipping Docker build - plugins:${{ inputs.plugins_tag }} already exists in registry"
 
   # Server Docker: builds the consolidated Dockerfile in two variants from
   # one source. The cloud variant publishes to the existing internal

@@ -9,7 +9,7 @@
 #
 # Options:
 #   --image NAME       Re-tag specific image relative to PUBLISH_DOCKER_REGISTRY
-#                      (api, bridge, plugin-terminal, plugin-browser, web, cli).
+#                      (renet, web, cli).
 #                      Mutually exclusive with --image-path.
 #   --image-path PATH  Full image path, ignores PUBLISH_DOCKER_REGISTRY (e.g.,
 #                      ghcr.io/rediacc/server). Mutually exclusive with --image.

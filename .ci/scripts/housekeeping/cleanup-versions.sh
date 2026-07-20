@@ -34,8 +34,6 @@ TAG_REPOS=("console" "renet")
 GHCR_PACKAGES=(
     "elite/renet"
     "elite/web"
-    "elite/plugin-terminal"
-    "elite/plugin-browser"
     "elite/cli"
     "server"
 )

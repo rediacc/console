@@ -130,7 +130,7 @@ PUBLISH_DOCKER_REGISTRY="${PUBLISH_DOCKER_REGISTRY:-ghcr.io/rediacc/elite}"
 # NOT declared here to avoid breaking local scripts that source constants.sh.
 
 # Docker images to publish
-readonly PUBLISH_IMAGES=("renet" "plugin-terminal" "plugin-browser" "web" "cli")
+readonly PUBLISH_IMAGES=("renet" "web" "cli")
 
 # Dockerfiles (relative to CONSOLE_ROOT_DIR)
 # Associative arrays require bash 4+; skip on older bash (e.g. macOS system bash 3.2).
@@ -138,8 +138,6 @@ readonly PUBLISH_IMAGES=("renet" "plugin-terminal" "plugin-browser" "web" "cli")
 if ((BASH_VERSINFO[0] >= 4)); then
     declare -A DOCKERFILES=(
         ["renet"]="private/renet/Dockerfile"
-        ["plugin-terminal"]="packages/plugins/terminal/Dockerfile"
-        ["plugin-browser"]="packages/plugins/browser/Dockerfile"
         ["web"]="Dockerfile"
         ["cli"]="packages/cli/Dockerfile"
     )
@@ -147,8 +145,6 @@ if ((BASH_VERSINFO[0] >= 4)); then
     # Build contexts (relative to CONSOLE_ROOT_DIR)
     declare -A BUILD_CONTEXTS=(
         ["renet"]="private/renet"
-        ["plugin-terminal"]="packages/plugins/terminal"
-        ["plugin-browser"]="packages/plugins/browser"
         ["web"]="."
         ["cli"]="."
     )

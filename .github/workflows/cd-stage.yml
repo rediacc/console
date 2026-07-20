@@ -26,9 +26,6 @@ on:
       renet_tag:
         type: string
         required: false
-      plugins_tag:
-        type: string
-        required: false
       web_tag:
         type: string
         required: false
@@ -209,8 +206,6 @@ jobs:
           CHANNEL="${{ inputs.channel }}"
 
           .ci/scripts/docker/retag-image.sh --image renet --from "${{ inputs.renet_tag }}" --to "$CHANNEL"
-          .ci/scripts/docker/retag-image.sh --image plugin-terminal --from "${{ inputs.plugins_tag }}" --to "$CHANNEL"
-          .ci/scripts/docker/retag-image.sh --image plugin-browser --from "${{ inputs.plugins_tag }}" --to "$CHANNEL"
           .ci/scripts/docker/retag-image.sh --image web --from "${{ inputs.web_tag }}" --to "$CHANNEL"
           .ci/scripts/docker/retag-image.sh --image cli --from "${{ inputs.cli_tag }}" --to "$CHANNEL"
           # On-prem server image lives outside the elite/ namespace; use --image-path

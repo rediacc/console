@@ -49,7 +49,7 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 --image NAME --tag TAG [OPTIONS]"
             echo ""
             echo "Required:"
-            echo "  --image NAME         Image name (e.g., api, bridge, plugin-terminal)"
+            echo "  --image NAME         Image name (e.g., renet, web, cli)"
             echo "  --tag TAG            Image tag to check (e.g., fb33b0f, latest)"
             echo ""
             echo "Options:"

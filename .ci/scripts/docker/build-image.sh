@@ -11,7 +11,7 @@
 #   build-image.sh --dry-run --all                   # Preview builds
 #
 # Options:
-#   --image NAME     Build specific image (api, bridge, plugin-terminal, plugin-browser)
+#   --image NAME     Build specific image (renet, web, cli)
 #   --all            Build all images
 #   --version X.Y.Z  Version tag (default: latest only)
 #   --ci-tag TAG     CI-only tag (YYYYMMDD-HHMMSS format, no :latest pushed)

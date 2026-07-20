@@ -17,11 +17,9 @@
 # Outputs (written to --output file or stdout):
 #   is_bot=true|false
 #   renet_tag=<hash>
-#   plugins_tag=<hash>
 #   web_tag=<hash>
 #   image_tag=<hash>
 #   renet_exists=true|false
-#   plugins_exists=true|false
 #   web_exists=true|false
 
 set -euo pipefail
@@ -126,19 +124,16 @@ fi
 log_step "Generating CI tags..."
 
 RENET_TAG=$(.ci/scripts/ci/generate-tag.sh --submodule private/renet)
-PLUGINS_TAG=$(.ci/scripts/ci/generate-tag.sh --self)
 WEB_TAG=$(.ci/scripts/ci/generate-tag.sh --self)
 
 CLI_TAG="$WEB_TAG" # Same console commit hash
 
 write_output "renet_tag" "$RENET_TAG"
-write_output "plugins_tag" "$PLUGINS_TAG"
 write_output "web_tag" "$WEB_TAG"
 write_output "cli_tag" "$CLI_TAG"
 write_output "image_tag" "$RENET_TAG"
 
 log_info "Renet tag: $RENET_TAG (renet commit)"
-log_info "Plugins tag: $PLUGINS_TAG (console commit)"
 log_info "Web tag: $WEB_TAG (console commit)"
 log_info "CLI tag: $CLI_TAG (console commit)"
 
@@ -202,17 +197,14 @@ check_image() {
 }
 
 RENET_EXISTS=$(check_image "renet" "$RENET_TAG")
-PLUGINS_EXISTS=$(check_image "plugin-terminal" "$PLUGINS_TAG")
 WEB_EXISTS=$(check_image "web" "$WEB_TAG")
 CLI_EXISTS=$(check_image "cli" "$CLI_TAG")
 
 write_output "renet_exists" "$RENET_EXISTS"
-write_output "plugins_exists" "$PLUGINS_EXISTS"
 write_output "web_exists" "$WEB_EXISTS"
 write_output "cli_exists" "$CLI_EXISTS"
 
 log_info "renet:$RENET_TAG exists=$RENET_EXISTS"
-log_info "plugins:$PLUGINS_TAG exists=$PLUGINS_EXISTS"
 log_info "web:$WEB_TAG exists=$WEB_EXISTS"
 log_info "cli:$CLI_TAG exists=$CLI_EXISTS"
 
