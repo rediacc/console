@@ -458,6 +458,13 @@ jobs:
       # card.commandFull is generated into the portal's first-run flow.
       - name: Validate tutorial storyboard commands against the live CLI
         run: npm run check:ci-tutorial-commands
+      # Tutorial scripts run headless inside asciinema. A command that stops to
+      # ask "are you sure?" never returns, and `2>/dev/null || true` hides the
+      # question rather than preventing it -- one such line hung a re-record for
+      # six hours. The prompting commands are derived from the CLI's own command
+      # tree, so a new one is covered the day it lands.
+      - name: Validate tutorial commands are non-interactive
+        run: npm run check:ci-tutorial-noninteractive
       - name: Validate tutorial cast/storyboard/transcript/mdx parity
         run: npm run check:ci-tutorial-parity
       - name: Validate account onboarding splash against canonical tutorials
