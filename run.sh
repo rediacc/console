@@ -313,17 +313,16 @@ _build_cli_sea_cached() {
     ensure_packages_built
     local embed_renet="$ROOT_DIR/private/bin/renet-linux-amd64"
     mkdir -p "$ROOT_DIR/private/bin"
-    # -tags slim omits the Kubernetes assets (k3s, zot, CSI sidecars): 351 MB of
-    # the 408 MB staged into renet's pkg/embed/assets. Without it renet is
-    # ~459 MB, the SEA blob lands at ~561 MB, and postject 1.0.0-alpha.6 (an
-    # Emscripten build, and the latest published version) aborts with a bare
-    # `Aborted()` -- which is what made tutorial recording impossible. See
-    # rediacc/console#525. Slim renet is 87 MB, matching the pre-k8s binary.
-    # No tutorial provisions a cluster, and rclone IS kept so the backup-restore
-    # tutorial's S3 push still works.
+    # Full renet, all assets. The old `slim` tag existed only because the SEA blob
+    # had to stay under postject 1.0.0-alpha.6's ~300 MB injection ceiling (its
+    # Emscripten build aborts above that, which is what once made tutorial
+    # recording impossible, #525). The streaming injector that replaced postject
+    # has no such ceiling, so the bridge now carries the complete k8s stack and a
+    # cluster tutorial can be recorded like any other. Per-arch embedding keeps the
+    # binary to its own architecture's assets.
     (cd "$ROOT_DIR/private/renet" &&
         CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-            -tags "nolicense slim" -ldflags="-s -w -X main.Version=0.0.0-dev" \
+            -tags "nolicense" -ldflags="-s -w -X main.Version=0.0.0-dev" \
             -o "$embed_renet" ./cmd/renet)
     bash "$ROOT_DIR/.ci/scripts/build/build-cli-executables.sh" --platform linux --arch x64
     [[ -f "$out" ]] || {

@@ -8,7 +8,7 @@
 # Install a clean, license-free binary as the system `rdc` (renet built with
 # -tags nolicense, no account-server calls), then repoint the PATH symlink once:
 #
-#     ./rdc.sh --override-local
+#     ./rdc.sh --native
 #     ln -sf ../share/rediacc/bin/rdc ~/.local/bin/rdc
 #
 # After that, `rdc` from any terminal is the binary (no dev-wrapper output).
@@ -64,22 +64,23 @@ ROOT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd -P)"
 source "$ROOT_DIR/.ci/config/constants.sh"
 source "$ROOT_DIR/.ci/lib/local-common.sh"
 
-# --override-local: rebuild the SEA from local source and install it over the
-# user's rdc binary at ~/.local/share/rediacc/bin/rdc. Useful when iterating on
-# CLI internals that aren't reachable through the dev-mode `node cli-bundle.cjs`
-# path (e.g. SEA-only behaviors, embedded renet, auto-update gating). The dev
-# SEA self-disables auto-update via the VERSION === "0.0.0-dev" gate in
+# --native: build the real single-executable binary (Node SEA) from local source
+# and install it over the user's rdc at ~/.local/share/rediacc/bin/rdc, instead of
+# running via the dev bundle. Use it to exercise SEA-only behaviors the bundle
+# cannot reach (embedded-renet extraction, auto-update gating). The dev SEA
+# self-disables auto-update via the VERSION === "0.0.0-dev" gate in
 # packages/cli/src/utils/platform.ts::isUpdateDisabled, so it won't be clobbered
 # on the next invocation.
 #
 # Steps performed (must match the manual sequence documented in CLAUDE.md):
-#   1. Cross-build renet into private/bin/renet-linux-<arch> with -tags
-#      nolicense so license checks are off (CI does the same for dev SEAs).
-#      This is the slot the SEA's embedded provisioner reads from.
+#   1. Cross-build renet for BOTH linux arches into private/bin/renet-linux-<arch>
+#      with -tags nolicense, so the SEA can provision an amd64 OR arm64 remote
+#      (the embedded provisioner picks the arch matching each machine's uname -m).
 #   2. Run .ci/scripts/build/build-cli-executables.sh --platform $P --arch $A
-#      to assemble the SEA at dist/cli/rdc-$P-$A.
+#      to assemble the SEA at dist/cli/rdc-$P-$A (injected by sea-inject/, which
+#      streams the blob and has no size ceiling — full k8s assets embed fine).
 #   3. Back up the existing user binary to *.old and replace it.
-if [[ "${1:-}" == "--override-local" ]]; then
+if [[ "${1:-}" == "--native" ]]; then
     shift
     # Detect platform + arch + executable suffix from uname. The .exe suffix
     # matters because build-cli-executables.sh emits rdc-win-<arch>.exe and
@@ -99,21 +100,19 @@ if [[ "${1:-}" == "--override-local" ]]; then
             _ovr_exe=".exe"
             ;;
         *)
-            log_error "Unsupported platform $(uname -s) for --override-local"
+            log_error "Unsupported platform $(uname -s) for --native"
             exit 1
             ;;
     esac
     case "$(uname -m)" in
         x86_64 | amd64)
             _ovr_arch="x64"
-            _ovr_goarch="amd64"
             ;;
         aarch64 | arm64)
             _ovr_arch="arm64"
-            _ovr_goarch="arm64"
             ;;
         *)
-            log_error "Unsupported arch $(uname -m) for --override-local"
+            log_error "Unsupported arch $(uname -m) for --native"
             exit 1
             ;;
     esac
@@ -124,19 +123,24 @@ if [[ "${1:-}" == "--override-local" ]]; then
     check_node_version "$NODE_VERSION_MIN"
     ensure_deps
     ensure_packages_built
-    # The build-cli-executables script's slot for renet:
-    #   private/bin/renet-${platform-key}-${goarch}  (linux only — that's
-    #   what gets embedded; the SEA only ever runs on linux/mac/win but
-    #   embeds a linux renet for remote provisioning).
-    _ovr_embed_renet="$ROOT_DIR/private/bin/renet-linux-${_ovr_goarch}"
-    log_step "Cross-building renet → $_ovr_embed_renet"
+    # Build renet for BOTH linux arches into the slots build-cli-executables.sh
+    # embeds (private/bin/renet-linux-<arch>). The SEA only ever RUNS on
+    # linux/mac/win, but it embeds linux renet binaries for remote provisioning,
+    # and a remote machine may be amd64 or arm64 — the embedded provisioner sends
+    # the one matching each machine's `uname -m`. Staging both here is what lets a
+    # locally-built SEA provision either. Assets must be staged first (build.sh
+    # embed_assets, idempotent) or the per-arch go:embed picks up an empty dir.
     mkdir -p "$ROOT_DIR/private/bin"
-    (cd "$ROOT_DIR/private/renet" &&
-        CGO_ENABLED=0 GOOS=linux GOARCH="$_ovr_goarch" go build \
-            -tags nolicense \
-            -ldflags="-s -w -X main.Version=0.0.0-dev" \
-            -o "$_ovr_embed_renet" \
-            ./cmd/renet)
+    (cd "$ROOT_DIR/private/renet" && ./build.sh embed_assets >/dev/null)
+    for _ovr_ga in amd64 arm64; do
+        log_step "Cross-building renet → private/bin/renet-linux-${_ovr_ga}"
+        (cd "$ROOT_DIR/private/renet" &&
+            CGO_ENABLED=0 GOOS=linux GOARCH="$_ovr_ga" go build \
+                -tags nolicense \
+                -ldflags="-s -w -X main.Version=0.0.0-dev" \
+                -o "$ROOT_DIR/private/bin/renet-linux-${_ovr_ga}" \
+                ./cmd/renet)
+    done
     log_step "Building SEA for $_ovr_platform/$_ovr_arch"
     bash "$ROOT_DIR/.ci/scripts/build/build-cli-executables.sh" \
         --platform "$_ovr_platform" --arch "$_ovr_arch"
@@ -169,7 +173,7 @@ check_node_version "$NODE_VERSION_MIN"
 if [[ "${REDIACC_SKIP_MACHINE_ACTIVATION:-0}" == "1" ]]; then
     # Self-register as 'rdc' in ~/.local/bin so it's accessible from any terminal,
     # but ONLY when nothing is already installed there. A real SEA binary (from
-    # `./rdc.sh --override-local`) installs to ~/.local/share/rediacc/bin/rdc and
+    # `./rdc.sh --native`) installs to ~/.local/share/rediacc/bin/rdc and
     # points this symlink at it; forcibly repointing it back to the wrapper would
     # silently undo that install. So we never overwrite an existing rdc on PATH —
     # we only bootstrap the link when it is entirely absent (no file, no symlink,
