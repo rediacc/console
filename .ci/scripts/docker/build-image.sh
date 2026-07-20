@@ -144,15 +144,8 @@ build_image() {
         fi
     fi
 
-    # Build arguments
+    # Build arguments (renet/cli need none; the retired api/web/bridge cases are gone)
     local build_args=""
-    if [[ "$name" == "api" ]]; then
-        # API image may need version build arg
-        build_args="--build-arg VERSION=${VERSION:-dev}"
-    elif [[ "$name" == "web" ]]; then
-        # Web image needs version for Vite and build type
-        build_args="--build-arg VITE_APP_VERSION=${VERSION:-latest} --build-arg REDIACC_BUILD_TYPE=RELEASE"
-    fi
 
     # Push flag
     local push_flag=""

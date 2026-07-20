@@ -34,8 +34,6 @@ readonly SUPPORTED_ARCHS=("amd64" "arm64")
 
 # Docker Images
 readonly ELITE_IMAGE_RENET="${DOCKER_REGISTRY}/renet:${DOCKER_TAG}"
-readonly ELITE_IMAGE_SQL="mcr.microsoft.com/mssql/server:2022-CU21-ubuntu-22.04"
-readonly ELITE_IMAGE_SQL_ARM64="mcr.microsoft.com/azure-sql-edge:1.0.7"
 
 # Docker Networks
 readonly DOCKER_NETWORK_INTERNET="rediacc_internet"
@@ -46,9 +44,6 @@ readonly DOCKER_NETWORK_INTRANET="rediacc_intranet"
 # =============================================================================
 readonly CI_DOCKER_DIR="${CONSOLE_ROOT_DIR}/.ci/docker/ci"
 readonly CI_COMPOSE_FILE="${CI_DOCKER_DIR}/docker-compose.yml"
-
-# Container Names
-readonly CI_CONTAINER_SQL="rediacc-sql"
 
 # Backend state file
 readonly BACKEND_STATE_FILE="$CONSOLE_ROOT_DIR/.backend-state"
@@ -97,7 +92,6 @@ readonly BACKEND_PRESET_SANDBOX="https://sandbox.rediacc.com"
 # =============================================================================
 readonly PORT_WEB=80
 readonly PORT_WEB_HTTPS=443
-readonly PORT_SQL=1433
 readonly PORT_CONSOLE_DEV=3000
 
 # =============================================================================
