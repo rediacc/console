@@ -4,8 +4,8 @@ description: "Kiirviide rdc käskudele: konfiguratsioonid, hoidlad, masinad, sü
 category: Guides
 order: 3
 language: et
-sourceHash: "d92987c4766d91ae"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "baeb612f4804f526"
+sourceCommit: "e4a4e0de590cf69aa4f3a1760376a0b7e3d7bf70"
 ---
 
 # RDC CLI petuleht
@@ -49,7 +49,7 @@ Ainult kirjutatavad juurutamisaegsed mandaadid. `get` tagastab ainult kontrollsu
 | `rdc repo push ... --bwlimit <limit>` | Piira rsync-i ribalaiust lükkamise ajal (nt `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Piira rsync-i ribalaiust tõmbamise ajal |
 | `rdc repo push ... --checkpoint` | Tee konteinerite kontrollpunkt enne lükkamist |
-| `rdc backup list --storage <storage> | Loenda mäluhoidlas saadaolevad varukoopiad |
+| `rdc backup list --storage <storage>` | Loenda mäluhoidlas saadaolevad varukoopiad |
 | `rdc storage browse <storage>` | Sirvi mäluhoidla sisu |
 
 ## Hoidla migreerimine

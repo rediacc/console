@@ -4,8 +4,8 @@ description: Birkaç dakika içinde sunucunuzda konteynerize bir servis çalış
 category: Guides
 order: -1
 language: tr
-sourceHash: "12382a10b8fd01cb"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "6e81b15303ed64f9"
+sourceCommit: "e4a4e0de5"
 ---
 
 # Hızlı Başlangıç
@@ -102,7 +102,7 @@ rdc repo admin template apply my-app --template app-postgres  # docker-compose.y
 ### 3. Repoyu Başlatma
 
 ```bash
-rdc repo up my-app -m my-server  # Rediaccfile up() çalıştır
+rdc repo up my-app  # Rediaccfile up() çalıştır
 rdc repo list -m my-server                           # Makinedeki tüm repoları gör
 rdc repo status my-app  # Bağlama durumu, Docker, boyut, şifreleme
 ```
@@ -149,18 +149,18 @@ rdc term connect my-server                                   # Makineye SSH (san
 
 **Dosya Senkronizasyonu (SSH üzerinden rsync):**
 ```bash
-rdc repo sync upload my-app@my-server --local ./src                                   # Bir dizin yükle
-rdc repo sync upload my-app@my-server --local ./config.yml --remote conf              # Tek bir dosya yükle
-rdc repo sync download my-app@my-server --local ./backup                              # Bir dizin indir
-rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl    # Tek bir dosya indir
-rdc repo sync download my-app@my-server --local ./backup --dry-run                    # Önce önizleme yap
+rdc repo sync upload my-app --local ./src                                   # Bir dizin yükle
+rdc repo sync upload my-app --local ./config.yml --remote conf              # Tek bir dosya yükle
+rdc repo sync download my-app --local ./backup                              # Bir dizin indir
+rdc repo sync download my-app --remote-file conf/config.yml --local ./dl    # Tek bir dosya indir
+rdc repo sync download my-app --local ./backup --dry-run                    # Önce önizleme yap
 ```
 
 **Tünel (Konteynere SSH port yönlendirme):**
 ```bash
-rdc repo tunnel my-app@my-server -c app  # app konteynerinin portunu otomatik algıla
-rdc repo tunnel my-app@my-server -c db --port 5432  # Postgres tüneli
-rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432  # Özel yerel port
+rdc repo tunnel my-app -c app  # app konteynerinin portunu otomatik algıla
+rdc repo tunnel my-app -c db --port 5432  # Postgres tüneli
+rdc repo tunnel my-app -c db --port 5432 --local 15432  # Özel yerel port
 ```
 
 Tünel çalıştırın → tarayıcıda `localhost:3000` açın → uzak sunucudan canlı uygulama.
@@ -262,7 +262,7 @@ rdc machine infra push my-server  # Proxy yapılandırmasını uzak sunucuya gö
 
 ```bash
 rdc repo admin template apply infra --template proxy  # Proxy'yi bir repoya dağıt
-rdc repo up infra -m my-server  # Traefik'i başlat
+rdc repo up infra  # Traefik'i başlat
 ```
 
 Traefik artık bu makinedeki tüm repolara gelen dış trafiği yönlendirir. Her konteyner otomatik olarak bir HTTPS uç noktası alır.

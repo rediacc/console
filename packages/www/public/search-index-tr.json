@@ -9356,8 +9356,8 @@
   {
     "id": "search-16161",
     "content": "3. Repoyu Başlatma",
-    "body": "rdc repo up my-app -m my-server # Rediaccfile up() çalıştır rdc repo list -m my-server # Makinedeki tüm repoları gör rdc repo status my-app # Bağlama durumu, Docker, boyut, şifreleme repo up gerektiğinde otomatik bağlama yapar. Ek bayrak gerekmez.",
-    "excerpt": "rdc repo up my-app -m my-server # Rediaccfile up() çalıştır rdc repo list -m my-server # Makinedeki tüm repoları gör rdc repo status my-app # Bağlama...",
+    "body": "rdc repo up my-app # Rediaccfile up() çalıştır rdc repo list -m my-server # Makinedeki tüm repoları gör rdc repo status my-app # Bağlama durumu, Docker, boyut, şifreleme repo up gerektiğinde otomatik bağlama yapar. Ek bayrak gerekmez.",
+    "excerpt": "rdc repo up my-app # Rediaccfile up() çalıştır rdc repo list -m my-server # Makinedeki tüm repoları gör rdc repo status my-app # Bağlama durumu, Docke...",
     "category": "Documentation",
     "page": "/tr/docs/quick-start",
     "path": "docs.quick-start.content",
@@ -9400,7 +9400,7 @@
   {
     "id": "search-16165",
     "content": "7. Terminal, Senkronizasyon ve Tünel",
-    "body": "Terminal: rdc term connect my-app # Repo sandbox'una SSH bağlantısı rdc term connect my-app -c \"curl localhost:3000\" # Komut çalıştır ve çık rdc term connect my-server # Makineye SSH (sandbox yok) Dosya Senkronizasyonu (SSH üzerinden rsync): rdc repo sync upload my-app@my-server --local ./src # Bir dizin yükle rdc repo sync upload my-app@my-server --local ./config.yml --remote conf # Tek bir dosya yükle rdc repo sync download my-app@my-server --local ./backup # Bir dizin indir rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl # Tek bir dosya indir rdc repo sync download my-app@my-server --local ./backup --dry-run # Önce önizleme yap Tünel (Konteynere SSH port yönlendirme): rdc repo tunnel my-app@my-server -c app # app konteynerinin portunu otomatik algıla rdc repo tunnel my-app@my-server -c db --port 5432 # Postgres tüneli rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432 # Özel yerel port Tünel çalıştırın → tarayıcıda localhost:3000 açın → uzak sunucudan canlı uygulama. Senkronizasyon, terminal, VS Code detayları: Araçlar. ---",
+    "body": "Terminal: rdc term connect my-app # Repo sandbox'una SSH bağlantısı rdc term connect my-app -c \"curl localhost:3000\" # Komut çalıştır ve çık rdc term connect my-server # Makineye SSH (sandbox yok) Dosya Senkronizasyonu (SSH üzerinden rsync): rdc repo sync upload my-app --local ./src # Bir dizin yükle rdc repo sync upload my-app --local ./config.yml --remote conf # Tek bir dosya yükle rdc repo sync download my-app --local ./backup # Bir dizin indir rdc repo sync download my-app --remote-file conf/config.yml --local ./dl # Tek bir dosya indir rdc repo sync download my-app --local ./backup --dry-run # Önce önizleme yap Tünel (Konteynere SSH port yönlendirme): rdc repo tunnel my-app -c app # app konteynerinin portunu otomatik algıla rdc repo tunnel my-app -c db --port 5432 # Postgres tüneli rdc repo tunnel my-app -c db --port 5432 --local 15432 # Özel yerel port Tünel çalıştırın → tarayıcıda localhost:3000 açın → uzak sunucudan canlı uygulama. Senkronizasyon, terminal, VS Code detayları: Araçlar. ---",
     "excerpt": "Terminal: rdc term connect my-app # Repo sandbox'una SSH bağlantısı rdc term connect my-app -c \"curl localhost:3000\" # Komut çalıştır ve çık rdc term...",
     "category": "Documentation",
     "page": "/tr/docs/quick-start",
@@ -9488,8 +9488,8 @@
   {
     "id": "search-16173",
     "content": "2. Proxy Şablonu",
-    "body": "rdc repo admin template apply infra --template proxy # Proxy'yi bir repoya dağıt rdc repo up infra -m my-server # Traefik'i başlat Traefik artık bu makinedeki tüm repolara gelen dış trafiği yönlendirir. Her konteyner otomatik olarak bir HTTPS uç noktası alır. # https://my-app.example.com adresine gidin → konteynere yönlendirilir # Veritabanları için TCP/UDP yönlendirme: # rediacc.tcp_ports=3306,5432 → otomatik atanan harici portlar Yönlendirme kuralları, DNS, TLS yapılandırması: Ağ. ---",
-    "excerpt": "rdc repo admin template apply infra --template proxy # Proxy'yi bir repoya dağıt rdc repo up infra -m my-server # Traefik'i başlat Traefik artık bu ma...",
+    "body": "rdc repo admin template apply infra --template proxy # Proxy'yi bir repoya dağıt rdc repo up infra # Traefik'i başlat Traefik artık bu makinedeki tüm repolara gelen dış trafiği yönlendirir. Her konteyner otomatik olarak bir HTTPS uç noktası alır. # https://my-app.example.com adresine gidin → konteynere yönlendirilir # Veritabanları için TCP/UDP yönlendirme: # rediacc.tcp_ports=3306,5432 → otomatik atanan harici portlar Yönlendirme kuralları, DNS, TLS yapılandırması: Ağ. ---",
+    "excerpt": "rdc repo admin template apply infra --template proxy # Proxy'yi bir repoya dağıt rdc repo up infra # Traefik'i başlat Traefik artık bu makinedeki tüm...",
     "category": "Documentation",
     "page": "/tr/docs/quick-start",
     "path": "docs.quick-start.content",

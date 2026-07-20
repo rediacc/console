@@ -4,8 +4,8 @@ description: Avvia un servizio containerizzato sul tuo server in pochi minuti.
 category: Guides
 order: -1
 language: it
-sourceHash: "12382a10b8fd01cb"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "6e81b15303ed64f9"
+sourceCommit: "ab31ee30c372b9e9cb6178a63646bf1b2d096816"
 ---
 
 # Quick Start
@@ -102,7 +102,7 @@ I template forniscono un `docker-compose.yml`, un `Rediaccfile` e file di suppor
 ### 3. Avvia la Repository
 
 ```bash
-rdc repo up my-app -m my-server  # Esegui Rediaccfile up()
+rdc repo up my-app  # Esegui Rediaccfile up()
 rdc repo list -m my-server                           # Vedi tutte le repository sulla macchina
 rdc repo status my-app  # Stato mount, Docker, dimensione, cifratura
 ```
@@ -149,18 +149,18 @@ rdc term connect my-server                                   # SSH sulla macchin
 
 **Sincronizzazione file (rsync su SSH):**
 ```bash
-rdc repo sync upload my-app@my-server --local ./src                                   # Carica una directory
-rdc repo sync upload my-app@my-server --local ./config.yml --remote conf              # Carica un singolo file
-rdc repo sync download my-app@my-server --local ./backup                              # Scarica una directory
-rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl    # Scarica un singolo file
-rdc repo sync download my-app@my-server --local ./backup --dry-run                    # Anteprima prima
+rdc repo sync upload my-app --local ./src                                   # Carica una directory
+rdc repo sync upload my-app --local ./config.yml --remote conf              # Carica un singolo file
+rdc repo sync download my-app --local ./backup                              # Scarica una directory
+rdc repo sync download my-app --remote-file conf/config.yml --local ./dl    # Scarica un singolo file
+rdc repo sync download my-app --local ./backup --dry-run                    # Anteprima prima
 ```
 
 **Tunnel (port-forwarding SSH al container):**
 ```bash
-rdc repo tunnel my-app@my-server -c app  # Rileva automaticamente la porta per il container app
+rdc repo tunnel my-app -c app  # Rileva automaticamente la porta per il container app
 rdc repo tunnel my-app -c db --port 5432  # Tunnel Postgres
-rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432  # Porta locale personalizzata
+rdc repo tunnel my-app -c db --port 5432 --local 15432  # Porta locale personalizzata
 ```
 
 Esegui il tunnel -> apri `localhost:3000` nel browser -> app live dal server remoto.
@@ -262,7 +262,7 @@ rdc machine infra push my-server  # Carica la config proxy in remoto
 
 ```bash
 rdc repo admin template apply infra --template proxy  # Distribuisce il proxy in una repository
-rdc repo up infra -m my-server  # Avvia Traefik
+rdc repo up infra  # Avvia Traefik
 ```
 
 Traefik instrada ora il traffico esterno a tutte le repository su questa macchina. Ogni container ottiene automaticamente un endpoint HTTPS.

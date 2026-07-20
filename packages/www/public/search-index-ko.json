@@ -9378,8 +9378,8 @@
   {
     "id": "search-12325",
     "content": "3. 리포지터리 시작",
-    "body": "rdc repo up my-app -m my-server # Rediaccfile up() 실행 rdc repo list -m my-server # 머신의 모든 리포지터리 보기 rdc repo status my-app # 마운트 상태, Docker, 크기, 암호화 repo up은 필요하면 자동으로 마운트합니다. 플래그가 필요하지 않습니다.",
-    "excerpt": "rdc repo up my-app -m my-server # Rediaccfile up() 실행 rdc repo list -m my-server # 머신의 모든 리포지터리 보기 rdc repo status my-app # 마운트 상태, Docker, 크기, 암호화 re...",
+    "body": "rdc repo up my-app # Rediaccfile up() 실행 rdc repo list -m my-server # 머신의 모든 리포지터리 보기 rdc repo status my-app # 마운트 상태, Docker, 크기, 암호화 repo up은 필요하면 자동으로 마운트합니다. 플래그가 필요하지 않습니다.",
+    "excerpt": "rdc repo up my-app # Rediaccfile up() 실행 rdc repo list -m my-server # 머신의 모든 리포지터리 보기 rdc repo status my-app # 마운트 상태, Docker, 크기, 암호화 repo up은 필요하면 자...",
     "category": "Documentation",
     "page": "/ko/docs/quick-start",
     "path": "docs.quick-start.content",
@@ -9422,7 +9422,7 @@
   {
     "id": "search-12329",
     "content": "7. 터미널, 동기화 및 터널",
-    "body": "터미널: rdc term connect my-app # 리포지터리 샌드박스로 SSH rdc term connect my-app -c \"curl localhost:3000\" # 명령 실행 후 종료 rdc term connect my-server # 머신으로 SSH (샌드박스 없음) 파일 동기화 (SSH를 통한 rsync): rdc repo sync upload my-app@my-server --local ./src # 디렉터리 푸시 rdc repo sync upload my-app@my-server --local ./config.yml --remote conf # 단일 파일 푸시 rdc repo sync download my-app@my-server --local ./backup # 디렉터리 풀 rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl # 단일 파일 풀 rdc repo sync download my-app@my-server --local ./backup --dry-run # 먼저 미리 보기 터널 (컨테이너로의 SSH 포트 포워딩): rdc repo tunnel my-app@my-server -c app # 앱 컨테이너에 대한 포트 자동 감지 rdc repo tunnel my-app@my-server -c db --port 5432 # Postgres 터널 rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432 # 사용자 정의 로컬 포트 터널 실행 → 브라우저에서 localhost:3000 열기 → 원격 서버의 실제 앱. 동기화, 터미널, VS Code 세부 사항: 도구. ---",
+    "body": "터미널: rdc term connect my-app # 리포지터리 샌드박스로 SSH rdc term connect my-app -c \"curl localhost:3000\" # 명령 실행 후 종료 rdc term connect my-server # 머신으로 SSH (샌드박스 없음) 파일 동기화 (SSH를 통한 rsync): rdc repo sync upload my-app --local ./src # 디렉터리 푸시 rdc repo sync upload my-app --local ./config.yml --remote conf # 단일 파일 푸시 rdc repo sync download my-app --local ./backup # 디렉터리 풀 rdc repo sync download my-app --remote-file conf/config.yml --local ./dl # 단일 파일 풀 rdc repo sync download my-app --local ./backup --dry-run # 먼저 미리 보기 터널 (컨테이너로의 SSH 포트 포워딩): rdc repo tunnel my-app -c app # 앱 컨테이너에 대한 포트 자동 감지 rdc repo tunnel my-app -c db --port 5432 # Postgres 터널 rdc repo tunnel my-app -c db --port 5432 --local 15432 # 사용자 정의 로컬 포트 터널 실행 → 브라우저에서 localhost:3000 열기 → 원격 서버의 실제 앱. 동기화, 터미널, VS Code 세부 사항: 도구. ---",
     "excerpt": "터미널: rdc term connect my-app # 리포지터리 샌드박스로 SSH rdc term connect my-app -c \"curl localhost:3000\" # 명령 실행 후 종료 rdc term connect my-server # 머신으로 SSH (샌드...",
     "category": "Documentation",
     "page": "/ko/docs/quick-start",
@@ -9510,8 +9510,8 @@
   {
     "id": "search-12337",
     "content": "2. 프록시 템플릿",
-    "body": "rdc repo admin template apply infra --template proxy # 리포지터리에 프록시 배포 rdc repo up infra -m my-server # Traefik 시작 이제 Traefik이 이 머신의 모든 리포지터리로 외부 트래픽을 라우팅합니다. 모든 컨테이너는 자동으로 HTTPS 엔드포인트를 갖습니다. # https://my-app.example.com으로 이동 → 컨테이너로 라우팅됨 # 데이터베이스용 TCP/UDP 포워딩: # rediacc.tcp_ports=3306,5432 → 자동 할당된 외부 포트 라우팅 규칙, DNS, TLS 구성: 네트워킹. ---",
-    "excerpt": "rdc repo admin template apply infra --template proxy # 리포지터리에 프록시 배포 rdc repo up infra -m my-server # Traefik 시작 이제 Traefik이 이 머신의 모든 리포지터리로 외부 트래픽을 라...",
+    "body": "rdc repo admin template apply infra --template proxy # 리포지터리에 프록시 배포 rdc repo up infra # Traefik 시작 이제 Traefik이 이 머신의 모든 리포지터리로 외부 트래픽을 라우팅합니다. 모든 컨테이너는 자동으로 HTTPS 엔드포인트를 갖습니다. # https://my-app.example.com으로 이동 → 컨테이너로 라우팅됨 # 데이터베이스용 TCP/UDP 포워딩: # rediacc.tcp_ports=3306,5432 → 자동 할당된 외부 포트 라우팅 규칙, DNS, TLS 구성: 네트워킹. ---",
+    "excerpt": "rdc repo admin template apply infra --template proxy # 리포지터리에 프록시 배포 rdc repo up infra # Traefik 시작 이제 Traefik이 이 머신의 모든 리포지터리로 외부 트래픽을 라우팅합니다. 모든 컨테이...",
     "category": "Documentation",
     "page": "/ko/docs/quick-start",
     "path": "docs.quick-start.content",

@@ -9378,8 +9378,8 @@
   {
     "id": "search-9773",
     "content": "3. Avvia la Repository",
-    "body": "rdc repo up my-app -m my-server # Esegui Rediaccfile up() rdc repo list -m my-server # Vedi tutte le repository sulla macchina rdc repo status my-app # Stato mount, Docker, dimensione, cifratura repo up monta automaticamente se necessario. Nessun flag richiesto.",
-    "excerpt": "rdc repo up my-app -m my-server # Esegui Rediaccfile up() rdc repo list -m my-server # Vedi tutte le repository sulla macchina rdc repo status my-app...",
+    "body": "rdc repo up my-app # Esegui Rediaccfile up() rdc repo list -m my-server # Vedi tutte le repository sulla macchina rdc repo status my-app # Stato mount, Docker, dimensione, cifratura repo up monta automaticamente se necessario. Nessun flag richiesto.",
+    "excerpt": "rdc repo up my-app # Esegui Rediaccfile up() rdc repo list -m my-server # Vedi tutte le repository sulla macchina rdc repo status my-app # Stato mount...",
     "category": "Documentation",
     "page": "/it/docs/quick-start",
     "path": "docs.quick-start.content",
@@ -9422,7 +9422,7 @@
   {
     "id": "search-9777",
     "content": "7. Terminale, Sync e Tunnel",
-    "body": "Terminale: rdc term connect my-app # SSH nel sandbox della repository rdc term connect my-app -c \"curl localhost:3000\" # Esegui comando ed esci rdc term connect my-server # SSH sulla macchina (senza sandbox) Sincronizzazione file (rsync su SSH): rdc repo sync upload my-app@my-server --local ./src # Carica una directory rdc repo sync upload my-app@my-server --local ./config.yml --remote conf # Carica un singolo file rdc repo sync download my-app@my-server --local ./backup # Scarica una directory rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl # Scarica un singolo file rdc repo sync download my-app@my-server --local ./backup --dry-run # Anteprima prima Tunnel (port-forwarding SSH al container): rdc repo tunnel my-app@my-server -c app # Rileva automaticamente la porta per il container app rdc repo tunnel my-app -c db --port 5432 # Tunnel Postgres rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432 # Porta locale personalizzata Esegui il tunnel -> apri localhost:3000 nel browser -> app live dal server remoto. Sync, terminale, dettagli VS Code: Tools. ---",
+    "body": "Terminale: rdc term connect my-app # SSH nel sandbox della repository rdc term connect my-app -c \"curl localhost:3000\" # Esegui comando ed esci rdc term connect my-server # SSH sulla macchina (senza sandbox) Sincronizzazione file (rsync su SSH): rdc repo sync upload my-app --local ./src # Carica una directory rdc repo sync upload my-app --local ./config.yml --remote conf # Carica un singolo file rdc repo sync download my-app --local ./backup # Scarica una directory rdc repo sync download my-app --remote-file conf/config.yml --local ./dl # Scarica un singolo file rdc repo sync download my-app --local ./backup --dry-run # Anteprima prima Tunnel (port-forwarding SSH al container): rdc repo tunnel my-app -c app # Rileva automaticamente la porta per il container app rdc repo tunnel my-app -c db --port 5432 # Tunnel Postgres rdc repo tunnel my-app -c db --port 5432 --local 15432 # Porta locale personalizzata Esegui il tunnel -> apri localhost:3000 nel browser -> app live dal server remoto. Sync, terminale, dettagli VS Code: Tools. ---",
     "excerpt": "Terminale: rdc term connect my-app # SSH nel sandbox della repository rdc term connect my-app -c \"curl localhost:3000\" # Esegui comando ed esci rdc te...",
     "category": "Documentation",
     "page": "/it/docs/quick-start",
@@ -9510,8 +9510,8 @@
   {
     "id": "search-9785",
     "content": "2. Template Proxy",
-    "body": "rdc repo admin template apply infra --template proxy # Distribuisce il proxy in una repository rdc repo up infra -m my-server # Avvia Traefik Traefik instrada ora il traffico esterno a tutte le repository su questa macchina. Ogni container ottiene automaticamente un endpoint HTTPS. # Naviga su https://my-app.example.com → instradato al container # Forwarding TCP/UDP per database: # rediacc.tcp_ports=3306,5432 → porte esterne allocate automaticamente Regole di routing, DNS, configurazione TLS: Networking. ---",
-    "excerpt": "rdc repo admin template apply infra --template proxy # Distribuisce il proxy in una repository rdc repo up infra -m my-server # Avvia Traefik Traefik...",
+    "body": "rdc repo admin template apply infra --template proxy # Distribuisce il proxy in una repository rdc repo up infra # Avvia Traefik Traefik instrada ora il traffico esterno a tutte le repository su questa macchina. Ogni container ottiene automaticamente un endpoint HTTPS. # Naviga su https://my-app.example.com → instradato al container # Forwarding TCP/UDP per database: # rediacc.tcp_ports=3306,5432 → porte esterne allocate automaticamente Regole di routing, DNS, configurazione TLS: Networking. ---",
+    "excerpt": "rdc repo admin template apply infra --template proxy # Distribuisce il proxy in una repository rdc repo up infra # Avvia Traefik Traefik instrada ora...",
     "category": "Documentation",
     "page": "/it/docs/quick-start",
     "path": "docs.quick-start.content",
@@ -9585,7 +9585,7 @@
   {
     "id": "search-9792",
     "content": "Backup e ripristino",
-    "body": "| Comando | Descrizione | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Invia il backup di un repository sullo storage | | rdc repo pull <repo>@<machine> --from <storage> | Ripristina un repository dallo storage | | rdc repo push ... --bwlimit <limit> | Limita la banda rsync durante il push (es. 10M) | | rdc repo pull ... --bwlimit <limit> | Limita la banda rsync durante il pull | | rdc repo push ... --checkpoint | Esegui il checkpoint dei container prima del push | | rdc backup list --storage <storage> | Elenca i backup disponibili nello storage | | rdc storage browse <storage>` | Esplora il contenuto dello storage |",
+    "body": "| Comando | Descrizione | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Invia il backup di un repository sullo storage | | rdc repo pull <repo>@<machine> --from <storage> | Ripristina un repository dallo storage | | rdc repo push ... --bwlimit <limit> | Limita la banda rsync durante il push (es. 10M) | | rdc repo pull ... --bwlimit <limit> | Limita la banda rsync durante il pull | | rdc repo push ... --checkpoint | Esegui il checkpoint dei container prima del push | | rdc backup list --storage <storage> | Elenca i backup disponibili nello storage | | rdc storage browse <storage> | Esplora il contenuto dello storage |",
     "excerpt": "| Comando | Descrizione | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Invia il backup di un repository sullo storage |...",
     "category": "Documentation",
     "page": "/it/docs/rdc-cheat-sheet",

@@ -4,8 +4,8 @@ description: Konteineerpõhise teenuse käivitamine oma serveris minutitega.
 category: Guides
 order: -1
 language: et
-sourceHash: "12382a10b8fd01cb"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "6e81b15303ed64f9"
+sourceCommit: "ab31ee30c372b9e9cb6178a63646bf1b2d096816"
 ---
 
 # Kiirjuhend
@@ -102,7 +102,7 @@ Mallid pakuvad `docker-compose.yml`, `Rediaccfile` ja toetavad faile. Ilma malli
 ### 3. Käivita hoidla
 
 ```bash
-rdc repo up my-app -m my-server  # Käivita Rediaccfile up()
+rdc repo up my-app  # Käivita Rediaccfile up()
 rdc repo list -m my-server                           # Vaata kõiki hoidlaid masinal
 rdc repo status my-app  # Ühenduse olek, Docker, suurus, krüpteerimine
 ```
@@ -149,18 +149,18 @@ rdc term connect my-server                                   # SSH masinale (ilm
 
 **Failisünkroonimine (rsync üle SSH):**
 ```bash
-rdc repo sync upload my-app@my-server --local ./src                                   # Lükka kataloog üles
-rdc repo sync upload my-app@my-server --local ./config.yml --remote conf              # Lükka üks fail üles
-rdc repo sync download my-app@my-server --local ./backup                              # Tõmba kataloog alla
-rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl    # Tõmba üks fail alla
-rdc repo sync download my-app@my-server --local ./backup --dry-run                    # Esmalt eelvaade
+rdc repo sync upload my-app --local ./src                                   # Lükka kataloog üles
+rdc repo sync upload my-app --local ./config.yml --remote conf              # Lükka üks fail üles
+rdc repo sync download my-app --local ./backup                              # Tõmba kataloog alla
+rdc repo sync download my-app --remote-file conf/config.yml --local ./dl    # Tõmba üks fail alla
+rdc repo sync download my-app --local ./backup --dry-run                    # Esmalt eelvaade
 ```
 
 **Tunnel (SSH pordiedastus konteinerile):**
 ```bash
-rdc repo tunnel my-app@my-server -c app  # Tuvasta automaatselt port rakenduse konteinerile
+rdc repo tunnel my-app -c app  # Tuvasta automaatselt port rakenduse konteinerile
 rdc repo tunnel my-app -c db --port 5432  # Tunnel Postgres'ile
-rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432  # Kohandatud kohalik port
+rdc repo tunnel my-app -c db --port 5432 --local 15432  # Kohandatud kohalik port
 ```
 
 Käivita tunnel → ava brauseris `localhost:3000` → elav rakendus kaugserverist.
@@ -262,7 +262,7 @@ rdc machine infra push my-server  # Lükka proksi konfiguratsioon kaugele
 
 ```bash
 rdc repo admin template apply infra --template proxy  # Juuruta proksi hoidlasse
-rdc repo up infra -m my-server  # Käivita Traefik
+rdc repo up infra  # Käivita Traefik
 ```
 
 Traefik suunab nüüd välist liiklust kõigile selle masina hoidlatele. Iga konteiner saab HTTPS lõpp-punkti automaatselt.

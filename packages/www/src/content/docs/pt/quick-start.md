@@ -4,8 +4,8 @@ description: Coloque um serviço em contentor a funcionar no seu servidor em min
 category: Guides
 order: -1
 language: pt
-sourceHash: "12382a10b8fd01cb"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "6e81b15303ed64f9"
+sourceCommit: "e4a4e0de5"
 ---
 
 # Início Rápido
@@ -102,7 +102,7 @@ Os modelos fornecem um `docker-compose.yml`, um `Rediaccfile` e ficheiros de sup
 ### 3. Iniciar o Repositório
 
 ```bash
-rdc repo up my-app -m my-server  # Executar Rediaccfile up()
+rdc repo up my-app  # Executar Rediaccfile up()
 rdc repo list -m my-server                           # Ver todos os repositórios na máquina
 rdc repo status my-app  # Estado de montagem, Docker, tamanho, encriptação
 ```
@@ -149,18 +149,18 @@ rdc term connect my-server                                   # SSH para a máqui
 
 **Sincronização de Ficheiros (rsync sobre SSH):**
 ```bash
-rdc repo sync upload my-app@my-server --local ./src                                   # Enviar um diretório
-rdc repo sync upload my-app@my-server --local ./config.yml --remote conf              # Enviar um único ficheiro
-rdc repo sync download my-app@my-server --local ./backup                              # Receber um diretório
-rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl    # Receber um único ficheiro
-rdc repo sync download my-app@my-server --local ./backup --dry-run                    # Pré-visualizar primeiro
+rdc repo sync upload my-app --local ./src                                   # Enviar um diretório
+rdc repo sync upload my-app --local ./config.yml --remote conf              # Enviar um único ficheiro
+rdc repo sync download my-app --local ./backup                              # Receber um diretório
+rdc repo sync download my-app --remote-file conf/config.yml --local ./dl    # Receber um único ficheiro
+rdc repo sync download my-app --local ./backup --dry-run                    # Pré-visualizar primeiro
 ```
 
 **Túnel (encaminhamento de portas SSH para contentor):**
 ```bash
-rdc repo tunnel my-app@my-server -c app  # Detetar automaticamente a porta para o contentor da aplicação
-rdc repo tunnel my-app@my-server -c db --port 5432  # Túnel Postgres
-rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432  # Porta local personalizada
+rdc repo tunnel my-app -c app  # Detetar automaticamente a porta para o contentor da aplicação
+rdc repo tunnel my-app -c db --port 5432  # Túnel Postgres
+rdc repo tunnel my-app -c db --port 5432 --local 15432  # Porta local personalizada
 ```
 
 Execute o túnel → abra `localhost:3000` no browser → aplicação ao vivo a partir do servidor remoto.
@@ -262,7 +262,7 @@ rdc machine infra push my-server  # Enviar a config do proxy para remoto
 
 ```bash
 rdc repo admin template apply infra --template proxy  # Implementar proxy num repositório
-rdc repo up infra -m my-server  # Iniciar Traefik
+rdc repo up infra  # Iniciar Traefik
 ```
 
 O Traefik encaminha agora o tráfego externo para todos os repositórios nesta máquina. Cada contentor obtém automaticamente um endpoint HTTPS.

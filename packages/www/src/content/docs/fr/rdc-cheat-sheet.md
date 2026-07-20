@@ -4,8 +4,8 @@ description: "Référence rapide des commandes rdc : configurations, dépôts, m
 category: Guides
 order: 3
 language: fr
-sourceHash: "d92987c4766d91ae"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "baeb612f4804f526"
+sourceCommit: "e4a4e0de590cf69aa4f3a1760376a0b7e3d7bf70"
 ---
 
 # Aide-mémoire RDC CLI
@@ -49,7 +49,7 @@ Identifiants de déploiement en lecture seule. `get` retourne seulement un diges
 | `rdc repo push ... --bwlimit <limit>` | Limiter la bande passante rsync lors de l'envoi (ex. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Limiter la bande passante rsync lors de la réception |
 | `rdc repo push ... --checkpoint` | Créer un point de contrôle des conteneurs avant l'envoi |
-| `rdc backup list --storage <storage> | Lister les sauvegardes disponibles dans le stockage |
+| `rdc backup list --storage <storage>` | Lister les sauvegardes disponibles dans le stockage |
 | `rdc storage browse <storage>` | Parcourir le contenu du stockage |
 
 ## Migration de dépôt

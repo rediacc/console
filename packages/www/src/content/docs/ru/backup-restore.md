@@ -4,8 +4,8 @@ description: "Резервное копирование зашифрованны
 category: Guides
 order: 7
 language: ru
-sourceHash: "659b41577a6a220c"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "7cc6e8e80bab7952"
+sourceCommit: "e4a4e0de5"
 ---
 
 # Резервное копирование и восстановление

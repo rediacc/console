@@ -9290,8 +9290,8 @@
   {
     "id": "search-11045",
     "content": "3. リポジトリの起動",
-    "body": "rdc repo up my-app -m my-server # Rediaccfile の up() を実行 rdc repo list -m my-server # マシン上のすべてのリポジトリを表示 rdc repo status my-app # マウント状態、Docker、サイズ、暗号化 repo up は必要に応じて自動マウントします。フラグは不要です。",
-    "excerpt": "rdc repo up my-app -m my-server # Rediaccfile の up() を実行 rdc repo list -m my-server # マシン上のすべてのリポジトリを表示 rdc repo status my-app # マウント状態、Docker、サイズ、暗号化...",
+    "body": "rdc repo up my-app # Rediaccfile の up() を実行 rdc repo list -m my-server # マシン上のすべてのリポジトリを表示 rdc repo status my-app # マウント状態、Docker、サイズ、暗号化 repo up は必要に応じて自動マウントします。フラグは不要です。",
+    "excerpt": "rdc repo up my-app # Rediaccfile の up() を実行 rdc repo list -m my-server # マシン上のすべてのリポジトリを表示 rdc repo status my-app # マウント状態、Docker、サイズ、暗号化 repo up は必要に...",
     "category": "Documentation",
     "page": "/ja/docs/quick-start",
     "path": "docs.quick-start.content",
@@ -9334,7 +9334,7 @@
   {
     "id": "search-11049",
     "content": "7. ターミナル、同期、トンネル",
-    "body": "ターミナル: rdc term connect my-app # リポジトリサンドボックスに SSH 接続 rdc term connect my-app -c \"curl localhost:3000\" # コマンドを実行して終了 rdc term connect my-server # マシンに SSH 接続（サンドボックスなし） ファイル同期（SSH 経由の rsync）: rdc repo sync upload my-app@my-server --local ./src # ディレクトリをアップロード rdc repo sync upload my-app@my-server --local ./config.yml --remote conf # 単一ファイルをアップロード rdc repo sync download my-app@my-server --local ./backup # ディレクトリをダウンロード rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl # 単一ファイルをダウンロード rdc repo sync download my-app@my-server --local ./backup --dry-run # まずプレビュー トンネル（コンテナへの SSH ポートフォワーディング）: rdc repo tunnel my-app@my-server -c app # app コンテナのポートを自動検出 rdc repo tunnel my-app@my-server -c db --port 5432 # Postgres をトンネル rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432 # カスタムローカルポート トンネルを実行 → ブラウザで localhost:3000 を開く → リモートサーバーのライブアプリが表示されます。 同期、ターミナル、VS Code の詳細: ツール。 ---",
+    "body": "ターミナル: rdc term connect my-app # リポジトリサンドボックスに SSH 接続 rdc term connect my-app -c \"curl localhost:3000\" # コマンドを実行して終了 rdc term connect my-server # マシンに SSH 接続（サンドボックスなし） ファイル同期（SSH 経由の rsync）: rdc repo sync upload my-app --local ./src # ディレクトリをアップロード rdc repo sync upload my-app --local ./config.yml --remote conf # 単一ファイルをアップロード rdc repo sync download my-app --local ./backup # ディレクトリをダウンロード rdc repo sync download my-app --remote-file conf/config.yml --local ./dl # 単一ファイルをダウンロード rdc repo sync download my-app --local ./backup --dry-run # まずプレビュー トンネル（コンテナへの SSH ポートフォワーディング）: rdc repo tunnel my-app -c app # app コンテナのポートを自動検出 rdc repo tunnel my-app -c db --port 5432 # Postgres をトンネル rdc repo tunnel my-app -c db --port 5432 --local 15432 # カスタムローカルポート トンネルを実行 → ブラウザで localhost:3000 を開く → リモートサーバーのライブアプリが表示されます。 同期、ターミナル、VS Code の詳細: ツール。 ---",
     "excerpt": "ターミナル: rdc term connect my-app # リポジトリサンドボックスに SSH 接続 rdc term connect my-app -c \"curl localhost:3000\" # コマンドを実行して終了 rdc term connect my-server # マシンに...",
     "category": "Documentation",
     "page": "/ja/docs/quick-start",
@@ -9422,8 +9422,8 @@
   {
     "id": "search-11057",
     "content": "2. プロキシテンプレート",
-    "body": "rdc repo admin template apply infra --template proxy # リポジトリにプロキシをデプロイ rdc repo up infra -m my-server # Traefik を起動 Traefik がこのマシン上のすべてのリポジトリに外部トラフィックをルーティングします。すべてのコンテナが自動的に HTTPS エンドポイントを取得します。 # https://my-app.example.com にアクセス → コンテナにルーティング # データベース用の TCP/UDP フォワーディング: # rediacc.tcp_ports=3306,5432 → 自動割り当ての外部ポート ルーティングルール、DNS、TLS 設定: ネットワーキング。 ---",
-    "excerpt": "rdc repo admin template apply infra --template proxy # リポジトリにプロキシをデプロイ rdc repo up infra -m my-server # Traefik を起動 Traefik がこのマシン上のすべてのリポジトリに外部トラフィック...",
+    "body": "rdc repo admin template apply infra --template proxy # リポジトリにプロキシをデプロイ rdc repo up infra # Traefik を起動 Traefik がこのマシン上のすべてのリポジトリに外部トラフィックをルーティングします。すべてのコンテナが自動的に HTTPS エンドポイントを取得します。 # https://my-app.example.com にアクセス → コンテナにルーティング # データベース用の TCP/UDP フォワーディング: # rediacc.tcp_ports=3306,5432 → 自動割り当ての外部ポート ルーティングルール、DNS、TLS 設定: ネットワーキング。 ---",
+    "excerpt": "rdc repo admin template apply infra --template proxy # リポジトリにプロキシをデプロイ rdc repo up infra # Traefik を起動 Traefik がこのマシン上のすべてのリポジトリに外部トラフィックをルーティングします。すべ...",
     "category": "Documentation",
     "page": "/ja/docs/quick-start",
     "path": "docs.quick-start.content",

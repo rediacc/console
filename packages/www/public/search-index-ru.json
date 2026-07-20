@@ -9356,8 +9356,8 @@
   {
     "id": "search-14883",
     "content": "3. Запуск репозитория",
-    "body": "rdc repo up my-app -m my-server # Выполнить Rediaccfile up() rdc repo list -m my-server # Список всех репозиториев на машине rdc repo status my-app # Состояние монтирования, Docker, размер, шифрование repo up автоматически монтирует при необходимости. Дополнительные флаги не требуются.",
-    "excerpt": "rdc repo up my-app -m my-server # Выполнить Rediaccfile up() rdc repo list -m my-server # Список всех репозиториев на машине rdc repo status my-app #...",
+    "body": "rdc repo up my-app # Выполнить Rediaccfile up() rdc repo list -m my-server # Список всех репозиториев на машине rdc repo status my-app # Состояние монтирования, Docker, размер, шифрование repo up автоматически монтирует при необходимости. Дополнительные флаги не требуются.",
+    "excerpt": "rdc repo up my-app # Выполнить Rediaccfile up() rdc repo list -m my-server # Список всех репозиториев на машине rdc repo status my-app # Состояние мон...",
     "category": "Documentation",
     "page": "/ru/docs/quick-start",
     "path": "docs.quick-start.content",
@@ -9400,7 +9400,7 @@
   {
     "id": "search-14887",
     "content": "7. Терминал, синхронизация и туннель",
-    "body": "Терминал: rdc term connect my-app # SSH в песочницу репозитория rdc term connect my-app -c \"curl localhost:3000\" # Выполнить команду и выйти rdc term connect my-server # SSH на машину (без песочницы) Синхронизация файлов (rsync через SSH): rdc repo sync upload my-app@my-server --local ./src # Загрузить каталог rdc repo sync upload my-app@my-server --local ./config.yml --remote conf # Загрузить один файл rdc repo sync download my-app@my-server --local ./backup # Скачать каталог rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl # Скачать один файл rdc repo sync download my-app@my-server --local ./backup --dry-run # Предварительный просмотр Туннель (SSH-проброс порта к контейнеру): rdc repo tunnel my-app@my-server -c app # Автоопределение порта для контейнера app rdc repo tunnel my-app@my-server -c db --port 5432 # Туннель к Postgres rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432 # Свой локальный порт Запустите туннель -> откройте localhost:3000 в браузере -> живое приложение с удалённого сервера. Синхронизация, терминал, подробности VS Code: Инструменты. ---",
+    "body": "Терминал: rdc term connect my-app # SSH в песочницу репозитория rdc term connect my-app -c \"curl localhost:3000\" # Выполнить команду и выйти rdc term connect my-server # SSH на машину (без песочницы) Синхронизация файлов (rsync через SSH): rdc repo sync upload my-app --local ./src # Загрузить каталог rdc repo sync upload my-app --local ./config.yml --remote conf # Загрузить один файл rdc repo sync download my-app --local ./backup # Скачать каталог rdc repo sync download my-app --remote-file conf/config.yml --local ./dl # Скачать один файл rdc repo sync download my-app --local ./backup --dry-run # Предварительный просмотр Туннель (SSH-проброс порта к контейнеру): rdc repo tunnel my-app -c app # Автоопределение порта для контейнера app rdc repo tunnel my-app -c db --port 5432 # Туннель к Postgres rdc repo tunnel my-app -c db --port 5432 --local 15432 # Свой локальный порт Запустите туннель -> откройте localhost:3000 в браузере -> живое приложение с удалённого сервера. Синхронизация, терминал, подробности VS Code: Инструменты. ---",
     "excerpt": "Терминал: rdc term connect my-app # SSH в песочницу репозитория rdc term connect my-app -c \"curl localhost:3000\" # Выполнить команду и выйти rdc term...",
     "category": "Documentation",
     "page": "/ru/docs/quick-start",
@@ -9488,8 +9488,8 @@
   {
     "id": "search-14895",
     "content": "2. Шаблон прокси",
-    "body": "rdc repo admin template apply infra --template proxy # Развернуть прокси в репозитории rdc repo up infra -m my-server # Запустить Traefik Теперь Traefik маршрутизирует внешний трафик ко всем репозиториям на этой машине. Каждый контейнер автоматически получает HTTPS-эндпоинт. # Перейдите на https://my-app.example.com -> маршрутизация к контейнеру # TCP/UDP-проброс для баз данных: # rediacc.tcp_ports=3306,5432 -> автоматически выделенные внешние порты Правила маршрутизации, DNS, настройка TLS: Сеть. ---",
-    "excerpt": "rdc repo admin template apply infra --template proxy # Развернуть прокси в репозитории rdc repo up infra -m my-server # Запустить Traefik Теперь Traef...",
+    "body": "rdc repo admin template apply infra --template proxy # Развернуть прокси в репозитории rdc repo up infra # Запустить Traefik Теперь Traefik маршрутизирует внешний трафик ко всем репозиториям на этой машине. Каждый контейнер автоматически получает HTTPS-эндпоинт. # Перейдите на https://my-app.example.com -> маршрутизация к контейнеру # TCP/UDP-проброс для баз данных: # rediacc.tcp_ports=3306,5432 -> автоматически выделенные внешние порты Правила маршрутизации, DNS, настройка TLS: Сеть. ---",
+    "excerpt": "rdc repo admin template apply infra --template proxy # Развернуть прокси в репозитории rdc repo up infra # Запустить Traefik Теперь Traefik маршрутизи...",
     "category": "Documentation",
     "page": "/ru/docs/quick-start",
     "path": "docs.quick-start.content",

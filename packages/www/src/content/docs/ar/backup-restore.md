@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: ar
-sourceHash: "659b41577a6a220c"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "7cc6e8e80bab7952"
+sourceCommit: "ab31ee30c372b9e9cb6178a63646bf1b2d096816"
 ---
 
 # النسخ الاحتياطي والاستعادة

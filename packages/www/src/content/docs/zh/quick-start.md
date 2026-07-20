@@ -4,8 +4,8 @@ description: 几分钟内在您的服务器上运行容器化服务。
 category: Guides
 order: -1
 language: zh
-sourceHash: "12382a10b8fd01cb"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "6e81b15303ed64f9"
+sourceCommit: "e4a4e0de5"
 ---
 
 # 快速开始
@@ -102,7 +102,7 @@ rdc repo admin template apply my-app --template app-postgres  # 部署 docker-co
 ### 3. 启动仓库
 
 ```bash
-rdc repo up my-app -m my-server  # 运行 Rediaccfile up()
+rdc repo up my-app  # 运行 Rediaccfile up()
 rdc repo list -m my-server                           # 查看机器上的所有仓库
 rdc repo status my-app  # 挂载状态、Docker、大小、加密
 ```
@@ -149,18 +149,18 @@ rdc term connect my-server                                   # SSH 到机器（�
 
 **文件同步（通过 SSH 的 rsync）：**
 ```bash
-rdc repo sync upload my-app@my-server --local ./src                                   # 上传目录
-rdc repo sync upload my-app@my-server --local ./config.yml --remote conf              # 上传单个文件
-rdc repo sync download my-app@my-server --local ./backup                              # 下载目录
-rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl    # 下载单个文件
-rdc repo sync download my-app@my-server --local ./backup --dry-run                    # 先预览
+rdc repo sync upload my-app --local ./src                                   # 上传目录
+rdc repo sync upload my-app --local ./config.yml --remote conf              # 上传单个文件
+rdc repo sync download my-app --local ./backup                              # 下载目录
+rdc repo sync download my-app --remote-file conf/config.yml --local ./dl    # 下载单个文件
+rdc repo sync download my-app --local ./backup --dry-run                    # 先预览
 ```
 
 **隧道（SSH 端口转发到容器）：**
 ```bash
-rdc repo tunnel my-app@my-server -c app  # 自动检测 app 容器的端口
-rdc repo tunnel my-app@my-server -c db --port 5432  # 隧道连接 Postgres
-rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432  # 自定义本地端口
+rdc repo tunnel my-app -c app  # 自动检测 app 容器的端口
+rdc repo tunnel my-app -c db --port 5432  # 隧道连接 Postgres
+rdc repo tunnel my-app -c db --port 5432 --local 15432  # 自定义本地端口
 ```
 
 运行隧道 → 在浏览器中打开 `localhost:3000` → 从远程服务器访问实时应用。
@@ -262,7 +262,7 @@ rdc machine infra push my-server  # 将代理配置推送到远程
 
 ```bash
 rdc repo admin template apply infra --template proxy  # 将代理部署到仓库
-rdc repo up infra -m my-server  # 启动 Traefik
+rdc repo up infra  # 启动 Traefik
 ```
 
 Traefik 现在将外部流量路由到此机器上的所有仓库。每个容器自动获得 HTTPS 端点。

@@ -9733,7 +9733,7 @@
   {
     "id": "search-4665",
     "content": "Backup and Restore",
-    "body": "| Command | Description | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Push a repository backup to storage | | rdc repo pull <repo>@<machine> --from <storage> | Restore a repository from storage | | rdc repo push ... --bwlimit <limit> | Limit rsync bandwidth during push (e.g. 10M) | | rdc repo pull ... --bwlimit <limit> | Limit rsync bandwidth during pull | | rdc repo push ... --checkpoint | Checkpoint containers before pushing | | rdc backup list --storage <storage> | List available backups in storage | | rdc storage browse <storage>` | Browse storage contents |",
+    "body": "| Command | Description | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Push a repository backup to storage | | rdc repo pull <repo>@<machine> --from <storage> | Restore a repository from storage | | rdc repo push ... --bwlimit <limit> | Limit rsync bandwidth during push (e.g. 10M) | | rdc repo pull ... --bwlimit <limit> | Limit rsync bandwidth during pull | | rdc repo push ... --checkpoint | Checkpoint containers before pushing | | rdc backup list --storage <storage> | List available backups in storage | | rdc storage browse <storage> | Browse storage contents |",
     "excerpt": "| Command | Description | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Push a repository backup to storage | | rdc repo...",
     "category": "Documentation",
     "page": "/en/docs/rdc-cheat-sheet",

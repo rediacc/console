@@ -4,8 +4,8 @@ description: 数分でサーバー上にコンテナ化されたサービスを�
 category: Guides
 order: -1
 language: ja
-sourceHash: "12382a10b8fd01cb"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "6e81b15303ed64f9"
+sourceCommit: "e4a4e0de5"
 ---
 
 # クイックスタート
@@ -102,7 +102,7 @@ rdc repo admin template apply my-app --template app-postgres  # docker-compose.y
 ### 3. リポジトリの起動
 
 ```bash
-rdc repo up my-app -m my-server  # Rediaccfile の up() を実行
+rdc repo up my-app  # Rediaccfile の up() を実行
 rdc repo list -m my-server                           # マシン上のすべてのリポジトリを表示
 rdc repo status my-app  # マウント状態、Docker、サイズ、暗号化
 ```
@@ -149,18 +149,18 @@ rdc term connect my-server                                   # マシンに SSH 
 
 **ファイル同期（SSH 経由の rsync）:**
 ```bash
-rdc repo sync upload my-app@my-server --local ./src                                   # ディレクトリをアップロード
-rdc repo sync upload my-app@my-server --local ./config.yml --remote conf              # 単一ファイルをアップロード
-rdc repo sync download my-app@my-server --local ./backup                              # ディレクトリをダウンロード
-rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl    # 単一ファイルをダウンロード
-rdc repo sync download my-app@my-server --local ./backup --dry-run                    # まずプレビュー
+rdc repo sync upload my-app --local ./src                                   # ディレクトリをアップロード
+rdc repo sync upload my-app --local ./config.yml --remote conf              # 単一ファイルをアップロード
+rdc repo sync download my-app --local ./backup                              # ディレクトリをダウンロード
+rdc repo sync download my-app --remote-file conf/config.yml --local ./dl    # 単一ファイルをダウンロード
+rdc repo sync download my-app --local ./backup --dry-run                    # まずプレビュー
 ```
 
 **トンネル（コンテナへの SSH ポートフォワーディング）:**
 ```bash
-rdc repo tunnel my-app@my-server -c app  # app コンテナのポートを自動検出
-rdc repo tunnel my-app@my-server -c db --port 5432  # Postgres をトンネル
-rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432  # カスタムローカルポート
+rdc repo tunnel my-app -c app  # app コンテナのポートを自動検出
+rdc repo tunnel my-app -c db --port 5432  # Postgres をトンネル
+rdc repo tunnel my-app -c db --port 5432 --local 15432  # カスタムローカルポート
 ```
 
 トンネルを実行 → ブラウザで `localhost:3000` を開く → リモートサーバーのライブアプリが表示されます。
@@ -262,7 +262,7 @@ rdc machine infra push my-server  # プロキシ設定をリモートにプッ�
 
 ```bash
 rdc repo admin template apply infra --template proxy  # リポジトリにプロキシをデプロイ
-rdc repo up infra -m my-server  # Traefik を起動
+rdc repo up infra  # Traefik を起動
 ```
 
 Traefik がこのマシン上のすべてのリポジトリに外部トラフィックをルーティングします。すべてのコンテナが自動的に HTTPS エンドポイントを取得します。

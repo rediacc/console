@@ -4,8 +4,8 @@ description: "rdc 빠른 참조: 설정, 리포지터리, 머신, 파일 동기�
 category: Guides
 order: 3
 language: ko
-sourceHash: "d92987c4766d91ae"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "baeb612f4804f526"
+sourceCommit: "e4a4e0de5"
 ---
 
 # RDC CLI 치트 시트

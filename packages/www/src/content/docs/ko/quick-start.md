@@ -4,8 +4,8 @@ description: 몇 분 안에 서버에서 컨테이너화된 서비스를 실행�
 category: Guides
 order: -1
 language: ko
-sourceHash: "12382a10b8fd01cb"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "6e81b15303ed64f9"
+sourceCommit: "e4a4e0de5"
 ---
 
 # 빠른 시작
@@ -102,7 +102,7 @@ rdc repo admin template apply my-app --template app-postgres  # docker-compose.y
 ### 3. 리포지터리 시작
 
 ```bash
-rdc repo up my-app -m my-server  # Rediaccfile up() 실행
+rdc repo up my-app  # Rediaccfile up() 실행
 rdc repo list -m my-server                           # 머신의 모든 리포지터리 보기
 rdc repo status my-app  # 마운트 상태, Docker, 크기, 암호화
 ```
@@ -149,18 +149,18 @@ rdc term connect my-server                                   # 머신으로 SSH 
 
 **파일 동기화 (SSH를 통한 rsync):**
 ```bash
-rdc repo sync upload my-app@my-server --local ./src                                   # 디렉터리 푸시
-rdc repo sync upload my-app@my-server --local ./config.yml --remote conf              # 단일 파일 푸시
-rdc repo sync download my-app@my-server --local ./backup                              # 디렉터리 풀
-rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl    # 단일 파일 풀
-rdc repo sync download my-app@my-server --local ./backup --dry-run                    # 먼저 미리 보기
+rdc repo sync upload my-app --local ./src                                   # 디렉터리 푸시
+rdc repo sync upload my-app --local ./config.yml --remote conf              # 단일 파일 푸시
+rdc repo sync download my-app --local ./backup                              # 디렉터리 풀
+rdc repo sync download my-app --remote-file conf/config.yml --local ./dl    # 단일 파일 풀
+rdc repo sync download my-app --local ./backup --dry-run                    # 먼저 미리 보기
 ```
 
 **터널 (컨테이너로의 SSH 포트 포워딩):**
 ```bash
-rdc repo tunnel my-app@my-server -c app  # 앱 컨테이너에 대한 포트 자동 감지
-rdc repo tunnel my-app@my-server -c db --port 5432  # Postgres 터널
-rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432  # 사용자 정의 로컬 포트
+rdc repo tunnel my-app -c app  # 앱 컨테이너에 대한 포트 자동 감지
+rdc repo tunnel my-app -c db --port 5432  # Postgres 터널
+rdc repo tunnel my-app -c db --port 5432 --local 15432  # 사용자 정의 로컬 포트
 ```
 
 터널 실행 → 브라우저에서 `localhost:3000` 열기 → 원격 서버의 실제 앱.
@@ -262,7 +262,7 @@ rdc machine infra push my-server  # 원격에 프록시 config 푸시
 
 ```bash
 rdc repo admin template apply infra --template proxy  # 리포지터리에 프록시 배포
-rdc repo up infra -m my-server  # Traefik 시작
+rdc repo up infra  # Traefik 시작
 ```
 
 이제 Traefik이 이 머신의 모든 리포지터리로 외부 트래픽을 라우팅합니다. 모든 컨테이너는 자동으로 HTTPS 엔드포인트를 갖습니다.

@@ -4,8 +4,8 @@ description: Запустите контейнерный сервис на ва�
 category: Guides
 order: -1
 language: ru
-sourceHash: "12382a10b8fd01cb"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "6e81b15303ed64f9"
+sourceCommit: "e4a4e0de5"
 ---
 
 # Быстрый старт
@@ -102,7 +102,7 @@ rdc repo admin template apply my-app --template app-postgres  # Разверну
 ### 3. Запуск репозитория
 
 ```bash
-rdc repo up my-app -m my-server  # Выполнить Rediaccfile up()
+rdc repo up my-app  # Выполнить Rediaccfile up()
 rdc repo list -m my-server                           # Список всех репозиториев на машине
 rdc repo status my-app  # Состояние монтирования, Docker, размер, шифрование
 ```
@@ -149,18 +149,18 @@ rdc term connect my-server                                   # SSH на маши
 
 **Синхронизация файлов (rsync через SSH):**
 ```bash
-rdc repo sync upload my-app@my-server --local ./src                                   # Загрузить каталог
-rdc repo sync upload my-app@my-server --local ./config.yml --remote conf              # Загрузить один файл
-rdc repo sync download my-app@my-server --local ./backup                              # Скачать каталог
-rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl    # Скачать один файл
-rdc repo sync download my-app@my-server --local ./backup --dry-run                    # Предварительный просмотр
+rdc repo sync upload my-app --local ./src                                   # Загрузить каталог
+rdc repo sync upload my-app --local ./config.yml --remote conf              # Загрузить один файл
+rdc repo sync download my-app --local ./backup                              # Скачать каталог
+rdc repo sync download my-app --remote-file conf/config.yml --local ./dl    # Скачать один файл
+rdc repo sync download my-app --local ./backup --dry-run                    # Предварительный просмотр
 ```
 
 **Туннель (SSH-проброс порта к контейнеру):**
 ```bash
-rdc repo tunnel my-app@my-server -c app  # Автоопределение порта для контейнера app
-rdc repo tunnel my-app@my-server -c db --port 5432  # Туннель к Postgres
-rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432  # Свой локальный порт
+rdc repo tunnel my-app -c app  # Автоопределение порта для контейнера app
+rdc repo tunnel my-app -c db --port 5432  # Туннель к Postgres
+rdc repo tunnel my-app -c db --port 5432 --local 15432  # Свой локальный порт
 ```
 
 Запустите туннель -> откройте `localhost:3000` в браузере -> живое приложение с удалённого сервера.
@@ -262,7 +262,7 @@ rdc machine infra push my-server  # Отправить конфигурацию 
 
 ```bash
 rdc repo admin template apply infra --template proxy  # Развернуть прокси в репозитории
-rdc repo up infra -m my-server  # Запустить Traefik
+rdc repo up infra  # Запустить Traefik
 ```
 
 Теперь Traefik маршрутизирует внешний трафик ко всем репозиториям на этой машине. Каждый контейнер автоматически получает HTTPS-эндпоинт.

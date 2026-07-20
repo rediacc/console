@@ -9378,8 +9378,8 @@
   {
     "id": "search-7215",
     "content": "3. Käivita hoidla",
-    "body": "rdc repo up my-app -m my-server # Käivita Rediaccfile up() rdc repo list -m my-server # Vaata kõiki hoidlaid masinal rdc repo status my-app # Ühenduse olek, Docker, suurus, krüpteerimine repo up ühendab automaatselt vajadusel. Lippe pole vaja.",
-    "excerpt": "rdc repo up my-app -m my-server # Käivita Rediaccfile up() rdc repo list -m my-server # Vaata kõiki hoidlaid masinal rdc repo status my-app # Ühenduse...",
+    "body": "rdc repo up my-app # Käivita Rediaccfile up() rdc repo list -m my-server # Vaata kõiki hoidlaid masinal rdc repo status my-app # Ühenduse olek, Docker, suurus, krüpteerimine repo up ühendab automaatselt vajadusel. Lippe pole vaja.",
+    "excerpt": "rdc repo up my-app # Käivita Rediaccfile up() rdc repo list -m my-server # Vaata kõiki hoidlaid masinal rdc repo status my-app # Ühenduse olek, Docker...",
     "category": "Documentation",
     "page": "/et/docs/quick-start",
     "path": "docs.quick-start.content",
@@ -9422,7 +9422,7 @@
   {
     "id": "search-7219",
     "content": "7. Terminal, sünkroonimine ja tunnel",
-    "body": "Terminal: rdc term connect my-app # SSH hoidla liivakasti rdc term connect my-app -c \"curl localhost:3000\" # Käivita käsk ja välju rdc term connect my-server # SSH masinale (ilma liivakastita) Failisünkroonimine (rsync üle SSH): rdc repo sync upload my-app@my-server --local ./src # Lükka kataloog üles rdc repo sync upload my-app@my-server --local ./config.yml --remote conf # Lükka üks fail üles rdc repo sync download my-app@my-server --local ./backup # Tõmba kataloog alla rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl # Tõmba üks fail alla rdc repo sync download my-app@my-server --local ./backup --dry-run # Esmalt eelvaade Tunnel (SSH pordiedastus konteinerile): rdc repo tunnel my-app@my-server -c app # Tuvasta automaatselt port rakenduse konteinerile rdc repo tunnel my-app -c db --port 5432 # Tunnel Postgres'ile rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432 # Kohandatud kohalik port Käivita tunnel → ava brauseris localhost:3000 → elav rakendus kaugserverist. Sünkroonimine, terminal, VS Code üksikasjad: Tööriistad. ---",
+    "body": "Terminal: rdc term connect my-app # SSH hoidla liivakasti rdc term connect my-app -c \"curl localhost:3000\" # Käivita käsk ja välju rdc term connect my-server # SSH masinale (ilma liivakastita) Failisünkroonimine (rsync üle SSH): rdc repo sync upload my-app --local ./src # Lükka kataloog üles rdc repo sync upload my-app --local ./config.yml --remote conf # Lükka üks fail üles rdc repo sync download my-app --local ./backup # Tõmba kataloog alla rdc repo sync download my-app --remote-file conf/config.yml --local ./dl # Tõmba üks fail alla rdc repo sync download my-app --local ./backup --dry-run # Esmalt eelvaade Tunnel (SSH pordiedastus konteinerile): rdc repo tunnel my-app -c app # Tuvasta automaatselt port rakenduse konteinerile rdc repo tunnel my-app -c db --port 5432 # Tunnel Postgres'ile rdc repo tunnel my-app -c db --port 5432 --local 15432 # Kohandatud kohalik port Käivita tunnel → ava brauseris localhost:3000 → elav rakendus kaugserverist. Sünkroonimine, terminal, VS Code üksikasjad: Tööriistad. ---",
     "excerpt": "Terminal: rdc term connect my-app # SSH hoidla liivakasti rdc term connect my-app -c \"curl localhost:3000\" # Käivita käsk ja välju rdc term connect my...",
     "category": "Documentation",
     "page": "/et/docs/quick-start",
@@ -9510,8 +9510,8 @@
   {
     "id": "search-7227",
     "content": "2. Proksi mall",
-    "body": "rdc repo admin template apply infra --template proxy # Juuruta proksi hoidlasse rdc repo up infra -m my-server # Käivita Traefik Traefik suunab nüüd välist liiklust kõigile selle masina hoidlatele. Iga konteiner saab HTTPS lõpp-punkti automaatselt. # Mine https://my-app.example.com → suunatakse konteinerile # TCP/UDP edastus andmebaaside jaoks: # rediacc.tcp_ports=3306,5432 → automaatselt eraldatud välispordid Marsruutimisreeglid, DNS, TLS konfigureerimine: Võrgundus. ---",
-    "excerpt": "rdc repo admin template apply infra --template proxy # Juuruta proksi hoidlasse rdc repo up infra -m my-server # Käivita Traefik Traefik suunab nüüd v...",
+    "body": "rdc repo admin template apply infra --template proxy # Juuruta proksi hoidlasse rdc repo up infra # Käivita Traefik Traefik suunab nüüd välist liiklust kõigile selle masina hoidlatele. Iga konteiner saab HTTPS lõpp-punkti automaatselt. # Mine https://my-app.example.com → suunatakse konteinerile # TCP/UDP edastus andmebaaside jaoks: # rediacc.tcp_ports=3306,5432 → automaatselt eraldatud välispordid Marsruutimisreeglid, DNS, TLS konfigureerimine: Võrgundus. ---",
+    "excerpt": "rdc repo admin template apply infra --template proxy # Juuruta proksi hoidlasse rdc repo up infra # Käivita Traefik Traefik suunab nüüd välist liiklus...",
     "category": "Documentation",
     "page": "/et/docs/quick-start",
     "path": "docs.quick-start.content",
@@ -9585,7 +9585,7 @@
   {
     "id": "search-7234",
     "content": "Varundamine ja taastamine",
-    "body": "| Käsk | Kirjeldus | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Lükka hoidla varukoopia mäluhoidlasse | | rdc repo pull <repo>@<machine> --from <storage> | Taasta hoidla mäluhoidlast | | rdc repo push ... --bwlimit <limit> | Piira rsync-i ribalaiust lükkamise ajal (nt 10M) | | rdc repo pull ... --bwlimit <limit> | Piira rsync-i ribalaiust tõmbamise ajal | | rdc repo push ... --checkpoint | Tee konteinerite kontrollpunkt enne lükkamist | | rdc backup list --storage <storage> | Loenda mäluhoidlas saadaolevad varukoopiad | | rdc storage browse <storage>` | Sirvi mäluhoidla sisu |",
+    "body": "| Käsk | Kirjeldus | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Lükka hoidla varukoopia mäluhoidlasse | | rdc repo pull <repo>@<machine> --from <storage> | Taasta hoidla mäluhoidlast | | rdc repo push ... --bwlimit <limit> | Piira rsync-i ribalaiust lükkamise ajal (nt 10M) | | rdc repo pull ... --bwlimit <limit> | Piira rsync-i ribalaiust tõmbamise ajal | | rdc repo push ... --checkpoint | Tee konteinerite kontrollpunkt enne lükkamist | | rdc backup list --storage <storage> | Loenda mäluhoidlas saadaolevad varukoopiad | | rdc storage browse <storage> | Sirvi mäluhoidla sisu |",
     "excerpt": "| Käsk | Kirjeldus | |---------|-------------| | rdc repo push <repo>@<machine> --to <storage> | Lükka hoidla varukoopia mäluhoidlasse | | rdc repo pu...",
     "category": "Documentation",
     "page": "/et/docs/rdc-cheat-sheet",

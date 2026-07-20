@@ -4,8 +4,8 @@ description: "Kurzreferenz für rdc: Konfigurationen, Repos, Maschinen, Dateisyn
 category: Guides
 order: 3
 language: de
-sourceHash: "d92987c4766d91ae"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "baeb612f4804f526"
+sourceCommit: "e4a4e0de590cf69aa4f3a1760376a0b7e3d7bf70"
 ---
 
 # RDC CLI Cheat Sheet
@@ -49,7 +49,7 @@ Schreibgeschützte Anmeldedaten zur Bereitstellungszeit. `get` gibt nur den Dige
 | `rdc repo push ... --bwlimit <limit>` | rsync-Bandbreite beim Hochladen begrenzen (z. B. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | rsync-Bandbreite beim Herunterladen begrenzen |
 | `rdc repo push ... --checkpoint` | Container vor dem Hochladen sichern |
-| `rdc backup list --storage <storage> | Verfügbare Sicherungen im Speicher auflisten |
+| `rdc backup list --storage <storage>` | Verfügbare Sicherungen im Speicher auflisten |
 | `rdc storage browse <storage>` | Speicherinhalte durchsuchen |
 
 ## Repository-Migration

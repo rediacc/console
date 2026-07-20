@@ -9378,8 +9378,8 @@
   {
     "id": "search-13605",
     "content": "3. Iniciar o Repositório",
-    "body": "rdc repo up my-app -m my-server # Executar Rediaccfile up() rdc repo list -m my-server # Ver todos os repositórios na máquina rdc repo status my-app # Estado de montagem, Docker, tamanho, encriptação repo up monta automaticamente se necessário. Não são necessárias flags.",
-    "excerpt": "rdc repo up my-app -m my-server # Executar Rediaccfile up() rdc repo list -m my-server # Ver todos os repositórios na máquina rdc repo status my-app #...",
+    "body": "rdc repo up my-app # Executar Rediaccfile up() rdc repo list -m my-server # Ver todos os repositórios na máquina rdc repo status my-app # Estado de montagem, Docker, tamanho, encriptação repo up monta automaticamente se necessário. Não são necessárias flags.",
+    "excerpt": "rdc repo up my-app # Executar Rediaccfile up() rdc repo list -m my-server # Ver todos os repositórios na máquina rdc repo status my-app # Estado de mo...",
     "category": "Documentation",
     "page": "/pt/docs/quick-start",
     "path": "docs.quick-start.content",
@@ -9422,7 +9422,7 @@
   {
     "id": "search-13609",
     "content": "7. Terminal, Sincronização e Túnel",
-    "body": "Terminal: rdc term connect my-app # SSH para a sandbox do repositório rdc term connect my-app -c \"curl localhost:3000\" # Executar comando e sair rdc term connect my-server # SSH para a máquina (sem sandbox) Sincronização de Ficheiros (rsync sobre SSH): rdc repo sync upload my-app@my-server --local ./src # Enviar um diretório rdc repo sync upload my-app@my-server --local ./config.yml --remote conf # Enviar um único ficheiro rdc repo sync download my-app@my-server --local ./backup # Receber um diretório rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl # Receber um único ficheiro rdc repo sync download my-app@my-server --local ./backup --dry-run # Pré-visualizar primeiro Túnel (encaminhamento de portas SSH para contentor): rdc repo tunnel my-app@my-server -c app # Detetar automaticamente a porta para o contentor da aplicação rdc repo tunnel my-app@my-server -c db --port 5432 # Túnel Postgres rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432 # Porta local personalizada Execute o túnel → abra localhost:3000 no browser → aplicação ao vivo a partir do servidor remoto. Detalhes de sincronização, terminal e VS Code: Ferramentas. ---",
+    "body": "Terminal: rdc term connect my-app # SSH para a sandbox do repositório rdc term connect my-app -c \"curl localhost:3000\" # Executar comando e sair rdc term connect my-server # SSH para a máquina (sem sandbox) Sincronização de Ficheiros (rsync sobre SSH): rdc repo sync upload my-app --local ./src # Enviar um diretório rdc repo sync upload my-app --local ./config.yml --remote conf # Enviar um único ficheiro rdc repo sync download my-app --local ./backup # Receber um diretório rdc repo sync download my-app --remote-file conf/config.yml --local ./dl # Receber um único ficheiro rdc repo sync download my-app --local ./backup --dry-run # Pré-visualizar primeiro Túnel (encaminhamento de portas SSH para contentor): rdc repo tunnel my-app -c app # Detetar automaticamente a porta para o contentor da aplicação rdc repo tunnel my-app -c db --port 5432 # Túnel Postgres rdc repo tunnel my-app -c db --port 5432 --local 15432 # Porta local personalizada Execute o túnel → abra localhost:3000 no browser → aplicação ao vivo a partir do servidor remoto. Detalhes de sincronização, terminal e VS Code: Ferramentas. ---",
     "excerpt": "Terminal: rdc term connect my-app # SSH para a sandbox do repositório rdc term connect my-app -c \"curl localhost:3000\" # Executar comando e sair rdc t...",
     "category": "Documentation",
     "page": "/pt/docs/quick-start",
@@ -9510,8 +9510,8 @@
   {
     "id": "search-13617",
     "content": "2. Modelo de Proxy",
-    "body": "rdc repo admin template apply infra --template proxy # Implementar proxy num repositório rdc repo up infra -m my-server # Iniciar Traefik O Traefik encaminha agora o tráfego externo para todos os repositórios nesta máquina. Cada contentor obtém automaticamente um endpoint HTTPS. # Navegar para https://my-app.example.com → encaminhado para o contentor # Encaminhamento TCP/UDP para bases de dados: # rediacc.tcp_ports=3306,5432 → portas externas alocadas automaticamente Regras de encaminhamento, DNS, configuração TLS: Redes. ---",
-    "excerpt": "rdc repo admin template apply infra --template proxy # Implementar proxy num repositório rdc repo up infra -m my-server # Iniciar Traefik O Traefik en...",
+    "body": "rdc repo admin template apply infra --template proxy # Implementar proxy num repositório rdc repo up infra # Iniciar Traefik O Traefik encaminha agora o tráfego externo para todos os repositórios nesta máquina. Cada contentor obtém automaticamente um endpoint HTTPS. # Navegar para https://my-app.example.com → encaminhado para o contentor # Encaminhamento TCP/UDP para bases de dados: # rediacc.tcp_ports=3306,5432 → portas externas alocadas automaticamente Regras de encaminhamento, DNS, configuração TLS: Redes. ---",
+    "excerpt": "rdc repo admin template apply infra --template proxy # Implementar proxy num repositório rdc repo up infra # Iniciar Traefik O Traefik encaminha agora...",
     "category": "Documentation",
     "page": "/pt/docs/quick-start",
     "path": "docs.quick-start.content",

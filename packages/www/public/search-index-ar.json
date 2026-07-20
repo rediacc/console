@@ -9356,8 +9356,8 @@
   {
     "id": "search-2088",
     "content": "3. تشغيل المستودع",
-    "body": "rdc repo up my-app -m my-server # تنفيذ Rediaccfile up() rdc repo list -m my-server # عرض جميع المستودعات على الجهاز rdc repo status my-app # حالة التوصيل، Docker، الحجم، التشفير يقوم repo up بالتوصيل التلقائي عند الحاجة. لا حاجة لمعاملات إضافية.",
-    "excerpt": "rdc repo up my-app -m my-server # تنفيذ Rediaccfile up() rdc repo list -m my-server # عرض جميع المستودعات على الجهاز rdc repo status my-app # حالة الت...",
+    "body": "rdc repo up my-app # تنفيذ Rediaccfile up() rdc repo list -m my-server # عرض جميع المستودعات على الجهاز rdc repo status my-app # حالة التوصيل، Docker، الحجم، التشفير يقوم repo up بالتوصيل التلقائي عند الحاجة. لا حاجة لمعاملات إضافية.",
+    "excerpt": "rdc repo up my-app # تنفيذ Rediaccfile up() rdc repo list -m my-server # عرض جميع المستودعات على الجهاز rdc repo status my-app # حالة التوصيل، Docker،...",
     "category": "Documentation",
     "page": "/ar/docs/quick-start",
     "path": "docs.quick-start.content",
@@ -9400,7 +9400,7 @@
   {
     "id": "search-2092",
     "content": "7. الطرفية، المزامنة والأنفاق",
-    "body": "الطرفية: rdc term connect my-app # SSH إلى صندوق حماية المستودع rdc term connect my-app -c \"curl localhost:3000\" # تنفيذ أمر والخروج rdc term connect my-server # SSH إلى الجهاز (بدون صندوق حماية) مزامنة الملفات (rsync عبر SSH): rdc repo sync upload my-app@my-server --local ./src # رفع مجلد rdc repo sync upload my-app@my-server --local ./config.yml --remote conf # رفع ملف واحد rdc repo sync download my-app@my-server --local ./backup # تنزيل مجلد rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl # تنزيل ملف واحد rdc repo sync download my-app@my-server --local ./backup --dry-run # معاينة أولاً النفق (تحويل منفذ SSH إلى الحاوية): rdc repo tunnel my-app@my-server -c app # كشف تلقائي للمنفذ لحاوية app rdc repo tunnel my-app@my-server -c db --port 5432 # نفق Postgres rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432 # منفذ محلي مخصص شغّل النفق ثم افتح localhost:3000 في المتصفح ثم شاهد التطبيق الحي من الخادم البعيد. تفاصيل المزامنة، الطرفية، VS Code: الأدوات. ---",
+    "body": "الطرفية: rdc term connect my-app # SSH إلى صندوق حماية المستودع rdc term connect my-app -c \"curl localhost:3000\" # تنفيذ أمر والخروج rdc term connect my-server # SSH إلى الجهاز (بدون صندوق حماية) مزامنة الملفات (rsync عبر SSH): rdc repo sync upload my-app --local ./src # رفع مجلد rdc repo sync upload my-app --local ./config.yml --remote conf # رفع ملف واحد rdc repo sync download my-app --local ./backup # تنزيل مجلد rdc repo sync download my-app --remote-file conf/config.yml --local ./dl # تنزيل ملف واحد rdc repo sync download my-app --local ./backup --dry-run # معاينة أولاً النفق (تحويل منفذ SSH إلى الحاوية): rdc repo tunnel my-app -c app # كشف تلقائي للمنفذ لحاوية app rdc repo tunnel my-app -c db --port 5432 # نفق Postgres rdc repo tunnel my-app -c db --port 5432 --local 15432 # منفذ محلي مخصص شغّل النفق ثم افتح localhost:3000 في المتصفح ثم شاهد التطبيق الحي من الخادم البعيد. تفاصيل المزامنة، الطرفية، VS Code: الأدوات. ---",
     "excerpt": "الطرفية: rdc term connect my-app # SSH إلى صندوق حماية المستودع rdc term connect my-app -c \"curl localhost:3000\" # تنفيذ أمر والخروج rdc term connect...",
     "category": "Documentation",
     "page": "/ar/docs/quick-start",
@@ -9488,8 +9488,8 @@
   {
     "id": "search-2100",
     "content": "2. قالب الوكيل العكسي",
-    "body": "rdc repo admin template apply infra --template proxy # نشر الوكيل في مستودع rdc repo up infra -m my-server # تشغيل Traefik الآن يقوم Traefik بتوجيه حركة المرور الخارجية إلى جميع المستودعات على هذا الجهاز. كل حاوية تحصل على نقطة نهاية HTTPS تلقائيًا. # انتقل إلى https://my-app.example.com لرؤية التوجيه إلى الحاوية # تحويل TCP/UDP لقواعد البيانات: # rediacc.tcp_ports=3306,5432 منافذ خارجية مخصصة تلقائيًا قواعد التوجيه، DNS، إعدادات TLS: الشبكات. ---",
-    "excerpt": "rdc repo admin template apply infra --template proxy # نشر الوكيل في مستودع rdc repo up infra -m my-server # تشغيل Traefik الآن يقوم Traefik بتوجيه حر...",
+    "body": "rdc repo admin template apply infra --template proxy # نشر الوكيل في مستودع rdc repo up infra # تشغيل Traefik الآن يقوم Traefik بتوجيه حركة المرور الخارجية إلى جميع المستودعات على هذا الجهاز. كل حاوية تحصل على نقطة نهاية HTTPS تلقائيًا. # انتقل إلى https://my-app.example.com لرؤية التوجيه إلى الحاوية # تحويل TCP/UDP لقواعد البيانات: # rediacc.tcp_ports=3306,5432 منافذ خارجية مخصصة تلقائيًا قواعد التوجيه، DNS، إعدادات TLS: الشبكات. ---",
+    "excerpt": "rdc repo admin template apply infra --template proxy # نشر الوكيل في مستودع rdc repo up infra # تشغيل Traefik الآن يقوم Traefik بتوجيه حركة المرور الخ...",
     "category": "Documentation",
     "page": "/ar/docs/quick-start",
     "path": "docs.quick-start.content",
@@ -9563,7 +9563,7 @@
   {
     "id": "search-2107",
     "content": "النسخ الاحتياطي والاستعادة",
-    "body": "| الأمر | الوصف | |-------|-------| | rdc repo push <repo>@<machine> --to <storage> | رفع نسخة احتياطية للمستودع إلى التخزين | | rdc repo pull <repo>@<machine> --from <storage> | استعادة مستودع من التخزين | | rdc repo push ... --bwlimit <limit> | تحديد عرض نطاق rsync أثناء الرفع (مثال: 10M) | | rdc repo pull ... --bwlimit <limit> | تحديد عرض نطاق rsync أثناء السحب | | rdc repo push ... --checkpoint | عمل نقطة تحقق للحاويات قبل الرفع | | rdc backup list --storage <storage> | عرض النسخ الاحتياطية المتاحة في التخزين | | rdc storage browse <storage>` | تصفح محتويات التخزين |",
+    "body": "| الأمر | الوصف | |-------|-------| | rdc repo push <repo>@<machine> --to <storage> | رفع نسخة احتياطية للمستودع إلى التخزين | | rdc repo pull <repo>@<machine> --from <storage> | استعادة مستودع من التخزين | | rdc repo push ... --bwlimit <limit> | تحديد عرض نطاق rsync أثناء الرفع (مثال: 10M) | | rdc repo pull ... --bwlimit <limit> | تحديد عرض نطاق rsync أثناء السحب | | rdc repo push ... --checkpoint | عمل نقطة تحقق للحاويات قبل الرفع | | rdc backup list --storage <storage> | عرض النسخ الاحتياطية المتاحة في التخزين | | rdc storage browse <storage> | تصفح محتويات التخزين |",
     "excerpt": "| الأمر | الوصف | |-------|-------| | rdc repo push <repo>@<machine> --to <storage> | رفع نسخة احتياطية للمستودع إلى التخزين | | rdc repo pull <repo>@...",
     "category": "Documentation",
     "page": "/ar/docs/rdc-cheat-sheet",

@@ -4,8 +4,8 @@ description: تشغيل خدمة حاويات على خادمك في دقائق.
 category: Guides
 order: -1
 language: ar
-sourceHash: "12382a10b8fd01cb"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "6e81b15303ed64f9"
+sourceCommit: "ab31ee30c372b9e9cb6178a63646bf1b2d096816"
 ---
 
 # البدء السريع
@@ -102,7 +102,7 @@ rdc repo admin template apply my-app --template app-postgres  # نشر docker-co
 ### 3. تشغيل المستودع
 
 ```bash
-rdc repo up my-app -m my-server  # تنفيذ Rediaccfile up()
+rdc repo up my-app  # تنفيذ Rediaccfile up()
 rdc repo list -m my-server                           # عرض جميع المستودعات على الجهاز
 rdc repo status my-app  # حالة التوصيل، Docker، الحجم، التشفير
 ```
@@ -149,18 +149,18 @@ rdc term connect my-server                                   # SSH إلى الج
 
 **مزامنة الملفات (rsync عبر SSH):**
 ```bash
-rdc repo sync upload my-app@my-server --local ./src                                   # رفع مجلد
-rdc repo sync upload my-app@my-server --local ./config.yml --remote conf              # رفع ملف واحد
-rdc repo sync download my-app@my-server --local ./backup                              # تنزيل مجلد
-rdc repo sync download my-app@my-server --remote-file conf/config.yml --local ./dl    # تنزيل ملف واحد
-rdc repo sync download my-app@my-server --local ./backup --dry-run                    # معاينة أولاً
+rdc repo sync upload my-app --local ./src                                   # رفع مجلد
+rdc repo sync upload my-app --local ./config.yml --remote conf              # رفع ملف واحد
+rdc repo sync download my-app --local ./backup                              # تنزيل مجلد
+rdc repo sync download my-app --remote-file conf/config.yml --local ./dl    # تنزيل ملف واحد
+rdc repo sync download my-app --local ./backup --dry-run                    # معاينة أولاً
 ```
 
 **النفق (تحويل منفذ SSH إلى الحاوية):**
 ```bash
-rdc repo tunnel my-app@my-server -c app  # كشف تلقائي للمنفذ لحاوية app
-rdc repo tunnel my-app@my-server -c db --port 5432  # نفق Postgres
-rdc repo tunnel my-app@my-server -c db --port 5432 --local 15432  # منفذ محلي مخصص
+rdc repo tunnel my-app -c app  # كشف تلقائي للمنفذ لحاوية app
+rdc repo tunnel my-app -c db --port 5432  # نفق Postgres
+rdc repo tunnel my-app -c db --port 5432 --local 15432  # منفذ محلي مخصص
 ```
 
 شغّل النفق ثم افتح `localhost:3000` في المتصفح ثم شاهد التطبيق الحي من الخادم البعيد.
@@ -262,7 +262,7 @@ rdc machine infra push my-server  # دفع إعدادات الوكيل إلى ا
 
 ```bash
 rdc repo admin template apply infra --template proxy  # نشر الوكيل في مستودع
-rdc repo up infra -m my-server  # تشغيل Traefik
+rdc repo up infra  # تشغيل Traefik
 ```
 
 الآن يقوم Traefik بتوجيه حركة المرور الخارجية إلى جميع المستودعات على هذا الجهاز. كل حاوية تحصل على نقطة نهاية HTTPS تلقائيًا.
