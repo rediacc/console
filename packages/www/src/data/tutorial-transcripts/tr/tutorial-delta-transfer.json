@@ -6,7 +6,7 @@
     {
       "id": "tutorial-delta-transfer-01",
       "markerIndex": 0,
-      "at": 2.413668,
+      "at": 2.414842,
       "text": "İlk push başka bir makineye tam imajı taşır ve çıktı bunu açıkça söyler: iki gigabayt aktarıldı, full olarak işaretlendi. Bu taban noktasıdır.",
       "afterText": "Kırk dört saniyede iki gigabayt, full olarak işaretlendi. CLI ayrıca her iki tarafta da özdeş bir taban tuttu, bu da sihrin hazırlığıdır.",
       "cardLabel": "Tam Push",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-delta-transfer-02",
       "markerIndex": 1,
-      "at": 10.922135,
+      "at": 8.165229,
       "text": "Biraz veri değiştirin: iki gigabayttan elli megabayt.",
       "afterText": "Büyük bir imajda küçük bir değişiklik.",
       "cardLabel": "Veri Değiştir",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-delta-transfer-03",
       "markerIndex": 2,
-      "at": 21.404869,
+      "at": 16.388163,
       "text": "Tekrar push edin. Aynı komut, ama bu sefer çıktıyı okuyun: iki gigabaytlık bir imaja karşı yaklaşık elli megabayt aktarıldı, delta olarak işaretlendi. Yalnızca değişen bloklar iletildi.",
       "afterText": "İki gigabaytlık bir imajdan altı saniyenin altında elli megabayt. Sayılar bunun kanıtıdır.",
       "cardLabel": "Delta Push",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-delta-transfer-04",
       "markerIndex": 3,
-      "at": 29.764702,
+      "at": 22.149817,
       "text": "Her iki makine de aynı repository'yi tutar, saniyeler içinde güncellenir. İsterseniz saatlik çalıştırın, maliyet boyut değil değişiklik kadardır.",
       "afterText": "Sık yedeklemeler artık pahalı olmaktan çıkar.",
       "cardLabel": "Senkronize",

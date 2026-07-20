@@ -6,7 +6,7 @@
     {
       "id": "tutorial-live-migration-01",
       "markerIndex": 0,
-      "at": 2.413171,
+      "at": 2.420835,
       "text": "Tutvuge pulse'iga. See hoiab protsessimälus loendurit ja prindib löögi iga viie sekundi järel. Loendur on kuuel ja tõuseb ning see elab ainult RAM-is. Taaskäivitage protsess ja see alustab uuesti ühest.",
       "afterText": "Elav loendur, mis lööb mälus. See on meie tõestus.",
       "cardLabel": "Elav Loendur",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-live-migration-02",
       "markerIndex": 1,
-      "at": 10.379022,
+      "at": 8.294774,
       "text": "Üks käsk liigutab seda, reaalajas. Esimene faas edastab põhiosa, kaks gigabaiti umbes poole minutiga, samal ajal kui allikas jätkab töötamist. Seejärel üleminek: see salvestab töötavate protsesside kontrollpunkti, kannab viimased mõned megabaidid üle ja prindib seisakuaja kohe sealsamas. Umbes kakskümmend sekundit kahe gigabaidi liigutamiseks.",
       "afterText": "Kaks gigabaiti liigutatud, samal ajal kui rakendus töötas. Seisakurida näitab, mida liigutamine tegelikult maksis.",
       "cardLabel": "Elav Migratsioon",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-live-migration-03",
       "markerIndex": 2,
-      "at": 101.149024,
+      "at": 94.394579,
       "text": "Kontrollige uut masinat: seal see on. Ühendatud, Docker töötab, kaks containerit üleval.",
       "afterText": "Sama repo, uus kodu, juba töötab.",
       "cardLabel": "Uus Kodu",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-live-migration-04",
       "markerIndex": 3,
-      "at": 106.859481,
+      "at": 99.812481,
       "text": "Aga allikas? Repository on endiselt loetletud, kuid vaadake rida: pole ühendatud, Docker puudub, null containerit. Siin ei tööta enam midagi. Pilt jääb tahtlikult maha, järgmise delta-ülekande alusena.",
       "afterText": "Peatatud ja lahti ühendatud. Järelejäänud pilt on delta alus, mitte töötav rakendus.",
       "cardLabel": "Allikas Peatatud",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-live-migration-05",
       "markerIndex": 4,
-      "at": 112.346008,
+      "at": 105.151877,
       "text": "Nüüd lõpptulemus. Loendur näitab seitsetteist, kaheksateist, üheksateist, ikka tõuseb. See jätkas täpselt sealt, kust kontrollpunkt selle külmutas, selle asemel et uuesti ühest alustada. Protsess ei märganud kunagi, et see vahetas masinaid.",
       "afterText": "Loendur jätkas lugemist. Protsessimälu tegi teekonna.",
       "cardLabel": "Loendur Jätkas",

@@ -6,7 +6,7 @@
     {
       "id": "tutorial-live-migration-01",
       "markerIndex": 0,
-      "at": 2.413171,
+      "at": 2.420835,
       "text": "来认识一下 pulse。它在进程内存中维护一个计数器，每五秒打印一次心跳。计数器现在到六了，还在往上涨，而且只存在于 RAM 中。重启进程，它就从一重新开始。",
       "afterText": "一个实时计数器，在内存中跳动。这就是我们的证据。",
       "cardLabel": "实时计数器",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-live-migration-02",
       "markerIndex": 1,
-      "at": 10.379022,
+      "at": 8.294774,
       "text": "一条命令，实时迁移。第一阶段在源端保持运行的同时，传输主体数据，大约两 GB，半分钟左右。然后切换：对运行中的进程做检查点，传输最后几 MB，并在那里打印出停机时间。两 GB 的迁移，大约二十秒。",
       "afterText": "两 GB 数据在应用保持运行时完成迁移。停机时间一行显示了迁移的实际代价。",
       "cardLabel": "实时迁移",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-live-migration-03",
       "markerIndex": 2,
-      "at": 101.149024,
+      "at": 94.394579,
       "text": "检查新机器：就在这里。已挂载，Docker 正在运行，两个 container 已启动。",
       "afterText": "同一个 repo，新的家，已经在运行了。",
       "cardLabel": "新主机",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-live-migration-04",
       "markerIndex": 3,
-      "at": 106.859481,
+      "at": 99.812481,
       "text": "那源端呢？repository 还在列表里，但看看这一行：未挂载，没有 Docker，零个 container。这里什么都不运行了。镜像特意保留在这里，作为下一次增量传输的基础。",
       "afterText": "已停止并卸载。残留的镜像是增量基础，而不是运行中的应用。",
       "cardLabel": "源端停止",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-live-migration-05",
       "markerIndex": 4,
-      "at": 112.346008,
+      "at": 105.151877,
       "text": "现在是重点。计数器显示十七、十八、十九，还在往上涨。它从检查点冻结的地方继续，而不是从一重新开始。进程根本没察觉它换了机器。",
       "afterText": "计数器持续计数。进程内存完成了这次迁移。",
       "cardLabel": "计数延续",

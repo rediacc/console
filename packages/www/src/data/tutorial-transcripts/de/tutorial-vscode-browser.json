@@ -6,7 +6,7 @@
     {
       "id": "tutorial-vscode-browser-01",
       "markerIndex": 0,
-      "at": 2.414862,
+      "at": 2.418779,
       "text": "Ein Befehl. Die CLI installiert den Editor-Server einmalig auf der Maschine, startet ihn in der repo sandbox, öffnet einen Tunnel und gibt dir einen Link. Kein lokales VS Code, keine Extensions zum Einrichten.",
       "afterText": "Diese URL ist dein Editor. Funktioniert auf jedem Betriebssystem, du brauchst nur einen Browser.",
       "cardLabel": "Browser verbinden",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-vscode-browser-02",
       "markerIndex": 1,
-      "at": 12.531234,
+      "at": 10.10448,
       "text": "Dasselbe repo im normalen Terminal: Das Arbeitsverzeichnis ist das repo, die Dateien sind die Dateien des repos.",
       "afterText": "Terminal und Editor stimmen überein, es ist dieselbe sandbox.",
       "cardLabel": "Gleiche Ansicht",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-vscode-browser-03",
       "markerIndex": 2,
-      "at": 19.464899,
+      "at": 14.856043,
       "text": "Und die Datei, die wir im Browser-Editor erstellt haben? Genau hier. Dateien aus VS Code sind sofort echte repo-Dateien.",
       "afterText": "Im Browser erstellt, vom Terminal lesbar. Ein repo, zwei Zugänge.",
       "cardLabel": "Hin und zurück",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-vscode-browser-04",
       "markerIndex": 3,
-      "at": 26.768996,
+      "at": 19.933198,
       "text": "Jetzt versuchen wir auszubrechen. Das Stammverzeichnis des Servers auflisten: Zugriff verweigert. Der Kernel beschränkt Editor, Terminal und jeden Kindprozess auf dieses repo.",
       "afterText": "Vom Kernel verweigert, nicht durch Konfiguration.",
       "cardLabel": "Root verweigert",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-vscode-browser-05",
       "markerIndex": 4,
-      "at": 32.439211,
+      "at": 23.377274,
       "text": "Die Homes anderer Nutzer? Auch verweigert. Was auch immer in dieser sandbox läuft, Editoren, Terminals, Build-Tools, endet an den Mauern des repos.",
       "afterText": "Die sandbox kennt keine Ausnahmen. Das ist der Sinn der Sache.",
       "cardLabel": "Home verweigert",

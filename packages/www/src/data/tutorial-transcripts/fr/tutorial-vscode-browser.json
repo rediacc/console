@@ -6,7 +6,7 @@
     {
       "id": "tutorial-vscode-browser-01",
       "markerIndex": 0,
-      "at": 2.414862,
+      "at": 2.418779,
       "text": "Une seule commande. Le CLI installe le serveur d'éditeur sur la machine une fois, le démarre dans le sandbox du repo, ouvre un tunnel et vous donne un lien. Pas de VS Code local, pas d'extensions à configurer.",
       "afterText": "Cette URL, c'est votre éditeur. Fonctionne sur n'importe quel OS, la seule condition est un navigateur.",
       "cardLabel": "Connecter Navigateur",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-vscode-browser-02",
       "markerIndex": 1,
-      "at": 12.531234,
+      "at": 10.10448,
       "text": "Le même repo depuis le terminal classique : le répertoire de travail, c'est le repo, les fichiers sont ceux du repo.",
       "afterText": "Le terminal et l'éditeur sont d'accord : c'est le même sandbox.",
       "cardLabel": "Même Vue",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-vscode-browser-03",
       "markerIndex": 2,
-      "at": 19.464899,
+      "at": 14.856043,
       "text": "Et le fichier qu'on a créé dans l'éditeur du navigateur ? Le voilà. Les fichiers créés dans VS Code sont de vrais fichiers du repo, instantanément.",
       "afterText": "Créé dans le navigateur, lisible depuis le terminal. Un repo, deux portes.",
       "cardLabel": "Aller-Retour",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-vscode-browser-04",
       "markerIndex": 3,
-      "at": 26.768996,
+      "at": 19.933198,
       "text": "Essayons maintenant de sortir. Lister la racine du serveur : permission refusée. Le kernel confine l'éditeur, son terminal et chaque processus enfant à ce repo.",
       "afterText": "Refusé par le noyau, pas par la configuration.",
       "cardLabel": "Racine Refusée",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-vscode-browser-05",
       "markerIndex": 4,
-      "at": 32.439211,
+      "at": 23.377274,
       "text": "Les répertoires personnels des autres utilisateurs ? Refusés aussi. Tout ce qui tourne dans ce sandbox — éditeurs, terminaux, outils de build — s'arrête aux murs du repo.",
       "afterText": "Le sandbox n'a pas d'exceptions. C'est tout l'intérêt.",
       "cardLabel": "Home Refusé",

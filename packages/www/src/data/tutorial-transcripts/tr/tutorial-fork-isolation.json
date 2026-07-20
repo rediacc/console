@@ -6,7 +6,7 @@
     {
       "id": "tutorial-fork-isolation-01",
       "markerIndex": 0,
-      "at": 2.412666,
+      "at": 2.43605,
       "text": "Uygulamayla tanışın: demo-pgadmin, pgAdmin arayüzlü bir PostgreSQL; mount edilmiş ve çalışıyor.",
       "afterText": "Bir canlı repo. Hadi klonlayalım.",
       "cardLabel": "Canlı Uygulama",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-fork-isolation-02",
       "markerIndex": 1,
-      "at": 8.155445,
+      "at": 7.868777,
       "text": "Fork'layın. Copy-on-write klon, boyut fark etmeksizin saniyeler sürer; detach, container'lar başlar başlamaz döner, sağlık kontrolleri ise arka planda sürer.",
       "afterText": "Fork edildi ve başlatılıyor. Veri kopyalanmadı, paylaşıldı. Bir taraf değiştirinceye kadar.",
       "cardLabel": "Fork + Başlat",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-fork-isolation-03",
       "markerIndex": 2,
-      "at": 19.24953,
+      "at": 16.847684,
       "text": "Artık iki repository var: orijinal ve deney, her biri kendi container'ları, ağı ve disk görünümüyle.",
       "afterText": "Aynı makine, iki izole dünya.",
       "cardLabel": "Yan Yana",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-fork-isolation-04",
       "markerIndex": 3,
-      "at": 24.926391,
+      "at": 22.322161,
       "text": "Deneme bitti mi? Fork'u silin. Oluşturması saniyeler sürdü, atması da öyle; orijinalin bundan hiç haberi olmadı.",
       "afterText": "Silindi. Orijinal tüm bu süre boyunca çalışmaya devam etti.",
       "cardLabel": "Fork'u Sil",

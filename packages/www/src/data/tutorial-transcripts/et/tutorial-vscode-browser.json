@@ -6,7 +6,7 @@
     {
       "id": "tutorial-vscode-browser-01",
       "markerIndex": 0,
-      "at": 2.414862,
+      "at": 2.418779,
       "text": "Üks käsk. CLI installib redaktorserveri masinale ühe korra, käivitab selle repo sandbox'is, avab tunneli ja annab sulle lingi. Kohalikku VS Code'i ei ole vaja, laiendusi ei ole vaja seadistada.",
       "afterText": "See URL on sinu redaktor. Töötab igal opsüsteemil, ainus nõue on brauser.",
       "cardLabel": "Ühenda brauser",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-vscode-browser-02",
       "markerIndex": 1,
-      "at": 12.531234,
+      "at": 10.10448,
       "text": "Sama repo tavalisest terminalist: töökataloog on repo, failid on repo failid.",
       "afterText": "Terminal ja redaktor on ühel meelel, see on sama sandbox.",
       "cardLabel": "Sama vaade",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-vscode-browser-03",
       "markerIndex": 2,
-      "at": 19.464899,
+      "at": 14.856043,
       "text": "Ja fail, mille lõime brauseri redaktoris? Siin ta on. VS Code'is loodud failid on päris repo failid, otsekohe.",
       "afterText": "Loodud brauseris, loetav terminalist. Üks repo, kaks ust.",
       "cardLabel": "Ringkäik",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-vscode-browser-04",
       "markerIndex": 3,
-      "at": 26.768996,
+      "at": 19.933198,
       "text": "Nüüd proovi lahkuda. Serveri juurkataloogi loetlemine: luba keelatud. Kernel piirab redaktori, selle terminali ja iga alamprotsessi sellesse repo'sse.",
       "afterText": "Keelatud kerneli poolt, mitte konfiguratsiooni poolt.",
       "cardLabel": "Root keelatud",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-vscode-browser-05",
       "markerIndex": 4,
-      "at": 32.439211,
+      "at": 23.377274,
       "text": "Teiste kasutajate kodukataloogid? Samuti keelatud. Mis iganes selles sandbox'is töötab -- redaktorid, terminalid, build-tööriistad -- lõpeb repo müüride juures.",
       "afterText": "Sandboxil pole erandeid. See ongi mõte.",
       "cardLabel": "Home keelatud",

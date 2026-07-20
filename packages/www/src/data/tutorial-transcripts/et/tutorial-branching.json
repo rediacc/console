@@ -6,7 +6,7 @@
     {
       "id": "tutorial-branching-01",
       "markerIndex": 0,
-      "at": 2.418102,
+      "at": 2.423373,
       "text": "Meie töötav fork hoiab rakenduse oleku esimest versiooni, lihtne märgisfail teeb selle nähtavaks.",
       "afterText": "Esimene versioon, kettal.",
       "cardLabel": "Esimene Versioon",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-branching-02",
       "markerIndex": 1,
-      "at": 10.876025,
+      "at": 8.659919,
       "text": "See ei ole ainult failid. Selles forkis töötab ka päris PostgreSQL andmebaas ja customers-tabel sisaldab kolme rida. Pidage see number meeles.",
       "afterText": "Kolm rida. See on andmestik, mida kohe ohtu paneme.",
       "cardLabel": "Kolm Rida",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-branching-03",
       "markerIndex": 2,
-      "at": 20.708803,
+      "at": 16.216982,
       "text": "Külmutage see. Commit jäädvustab kogu repository muutumatu pildina, sõnumi, autori ja vanemaga. Täpselt nagu git, aga kõige jaoks, andmebaas kaasatud.",
       "afterText": "Commit tehtud. See hetktõmmis ei saa kunagi muutuda. See keeldub isegi mountimisest.",
       "cardLabel": "Commit v1",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-branching-04",
       "markerIndex": 3,
-      "at": 29.448478,
+      "at": 21.875788,
       "text": "Andke commitile nimi. Stable-haru osutab nüüd esimesele versioonile.",
       "afterText": "Haru on nimi, mille juurde saab tagasi tulla.",
       "cardLabel": "Haru Stable",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-branching-05",
       "markerIndex": 4,
-      "at": 34.241982,
+      "at": 26.408746,
       "text": "Jätkake tööd. Teine versioon asendab töötavas forkis esimese versiooni. Commit ei hooli sellest.",
       "afterText": "Töötav fork liikus edasi. Ajalugu ei liikunud.",
       "cardLabel": "Teine Versioon",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-branching-06",
       "markerIndex": 5,
-      "at": 42.690283,
+      "at": 32.630295,
       "text": "Nüüd katastroof. Riskantne muudatus eemaldab customers-tabeli. Päriselus on see hetk, mil kõhus vajub.",
       "afterText": "Drop table käivitati. Andmed on töötavast forkist kadunud.",
       "cardLabel": "Eemalda Tabel",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-branching-07",
       "markerIndex": 6,
-      "at": 51.047933,
+      "at": 38.597418,
       "text": "Küsige ridu uuesti ja andmebaas ütleb otse: relatsioon customers ei ole olemas. Katastroof on reaalne. Iga rida on kadunud.",
       "afterText": "Relatsioon ei ole olemas. Kolm rida, kadunud.",
       "cardLabel": "Tabel On Kadunud",
@@ -69,7 +69,7 @@
     {
       "id": "tutorial-branching-08",
       "markerIndex": 7,
-      "at": 59.69522,
+      "at": 45.023533,
       "text": "Tehke ka riskantse muudatuse commit, purunenud tabeliga ja kõigega. Ajalugu jäädvustab, mis tegelikult juhtus. Nüüd on kaks commiti, vanem ja laps.",
       "afterText": "Kaks hetktõmmist ahelas.",
       "cardLabel": "Commit v2",
@@ -78,7 +78,7 @@
     {
       "id": "tutorial-branching-09",
       "markerIndex": 8,
-      "at": 68.35661,
+      "at": 50.876553,
       "text": "Ja siin on ajalugu: teine versioon üleval, esimene allpool, sõnumid ja autorid kaasas, ilma et ühtegi pilti avada.",
       "afterText": "Repository logi, täpselt nagu git log.",
       "cardLabel": "Repo Log",
@@ -87,7 +87,7 @@
     {
       "id": "tutorial-branching-10",
       "markerIndex": 9,
-      "at": 75.614559,
+      "at": 55.851239,
       "text": "Nüüd tasu. Checkoutige stable-haru uude kirjutatavasse forki. Reflink-kloon: peaaegu kohene, mis tahes suurus.",
       "afterText": "Külmutatud esimese versiooni kirjutatav koopia, umbes sekundiga.",
       "cardLabel": "Checkout",
@@ -96,7 +96,7 @@
     {
       "id": "tutorial-branching-11",
       "markerIndex": 10,
-      "at": 83.292425,
+      "at": 60.773115,
       "text": "Käivitage rollback-fork nagu iga teine repository.",
       "afterText": "Kaks forki töötab: tänane versioon ja kontrollpunkt.",
       "cardLabel": "Käivita Rollback",
@@ -105,7 +105,7 @@
     {
       "id": "tutorial-branching-12",
       "markerIndex": 11,
-      "at": 91.555233,
+      "at": 67.070568,
       "text": "Ja tõestus: rollback-fork loeb esimest versiooni. Töötavas forkis on ikka veel teine versioon. Ajalugu, mida saab käivitada.",
       "afterText": "Rollback lõpetatud. Selleni jõudmiseks ei kirjutatud midagi üle.",
       "cardLabel": "Tõestus: v1",
@@ -114,7 +114,7 @@
     {
       "id": "tutorial-branching-13",
       "markerIndex": 12,
-      "at": 98.952411,
+      "at": 72.350149,
       "text": "Ja see, mis kõige rohkem loeb: eemaldatud tabel on tagasi, kõik kolm rida. Rollback taastas andmebaasi, mitte ainult failid.",
       "afterText": "Kolm rida jälle. Katastroof on kõrvaldatud.",
       "cardLabel": "Andmed Taastatud",

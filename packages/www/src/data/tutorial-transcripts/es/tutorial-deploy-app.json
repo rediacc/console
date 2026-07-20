@@ -6,7 +6,7 @@
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "at": 2.408078,
+      "at": 2.420634,
       "text": "Paso uno: lista las plantillas disponibles. Rediacc incluye configuraciones listas para las aplicaciones más comunes, así que no hace falta escribir un docker-compose desde cero.",
       "afterText": "El catálogo completo de plantillas. Cada una es un par compose más Rediaccfile ya probado.",
       "cardLabel": "Ver Plantillas",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "at": 6.077084,
+      "at": 6.399014,
       "text": "Paso dos: añade la plantilla app-postgres al repo. Un conjunto de archivos probados, copiados directamente.",
       "afterText": "Plantilla aplicada. El repo ya tiene su archivo compose y su Rediaccfile.",
       "cardLabel": "Aplicar Plantilla",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "at": 14.72542,
+      "at": 12.523372,
       "text": "Echa un vistazo al repo y lista lo que llegó: un Rediaccfile con los hooks de inicio y parada, y un archivo docker-compose que describe los containers.",
       "afterText": "Contenedores en ejecución, volumen montado, Docker daemon aislado activo.",
       "cardLabel": "Ver los Archivos",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "at": 21.699752,
+      "at": 17.108804,
       "text": "Paso tres: levanta el repo. Un solo comando, la CLI monta el volumen cifrado, inicia el Docker daemon aislado y lanza los containers.",
       "afterText": "Solo los contenedores de este repo. El aislamiento es real, no de configuración.",
       "cardLabel": "Iniciar Repo",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-deploy-app-05",
       "markerIndex": 4,
-      "at": 28.8781,
+      "at": 22.317819,
       "text": "Verifica qué está en ejecución. Docker ps aquí lista solo los containers de este repo. Cada otro repo en este servidor tiene su propio daemon, completamente invisible desde esta vista.",
       "afterText": "Solo los contenedores de este repo. El aislamiento es real, no es configuración.",
       "cardLabel": "Verificar Aislamiento",
