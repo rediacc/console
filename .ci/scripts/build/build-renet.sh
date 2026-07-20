@@ -116,6 +116,18 @@ if [[ "$SKIP_EMBED" != "true" ]]; then
             done
         done
         docker rm "$_nb_cid" >/dev/null 2>&1 || true
+
+        # Fail fast: the runtime image (Dockerfile.native) COPYs all six, so a
+        # missing one must break HERE, not later as a cryptic COPY error in the
+        # docker build job on an artifact that looked complete.
+        for _nb in criu rsync rclone; do
+            for _na in amd64 arm64; do
+                [[ -f "$OUTPUT_DIR/$_nb-linux-$_na" ]] || {
+                    log_error "native binary $_nb-linux-$_na missing after export — builder image is incomplete"
+                    exit 1
+                }
+            done
+        done
     fi
 else
     log_info "Skipping asset embedding (--skip-embed)"

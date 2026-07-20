@@ -88,7 +88,9 @@ if [[ -n "$SUBMODULE_PATH" ]]; then
     BUILD_CONFIG_FILES=(
         "$SUBMODULE_PATH/Dockerfile"
         "$SUBMODULE_PATH/Dockerfile.native"
-        ".github/workflows/ci-build.yml"
+        "$SUBMODULE_PATH/build.sh"
+        ".github/workflows/ci-build-renet.yml"
+        ".github/workflows/ci-build-docker.yml"
         ".ci/scripts/build/build-renet.sh"
     )
     for f in "${BUILD_CONFIG_FILES[@]}"; do
