@@ -94,9 +94,13 @@ if [[ "$SKIP_EMBED" != "true" ]]; then
     ls -la "$RENET_DIR/pkg/embed/assets/amd64" "$RENET_DIR/pkg/embed/assets/arm64"
 
     # proxy compose + datastore doc for go:embed (documents, not binary assets)
-    log_info "Staging proxy/datastore docs..."
-    cp "$REPO_ROOT/private/renet/proxy/docker-compose.yml" "$RENET_DIR/pkg/embed/proxy/"
-    cp "$REPO_ROOT/private/renet/docs/datastore/README.md" "$RENET_DIR/pkg/embed/datastore/"
+    # Stage the proxy compose for go:embed via build.sh's own helper (single
+    # source). Do NOT copy docs/datastore/README.md over pkg/embed/datastore/
+    # README.md: that embed file is TRACKED and is a distinct, concise server
+    # reference — build.sh's own note forbids overwriting it, and doing so
+    # corrupted the tracked file.
+    log_info "Staging proxy compose doc..."
+    (cd "$RENET_DIR" && ./build.sh embed_proxy)
 
     # Export the RAW (ungzipped) native binaries from the SAME builder image, for
     # the renet runtime docker image (private/renet/Dockerfile.native, built by
