@@ -99,9 +99,13 @@ if [[ -n "$SUBMODULE_PATH" ]]; then
         fi
     done
 
-    # Combine submodule commit with build config hash (first 7 chars each)
+    # Combine the submodule commit with a hash of the build config. Keep 12 hex
+    # chars (48 bits): the old 3-char (12-bit, 4096-value) hash collided often
+    # enough that a build-config change could map to an existing tag and silently
+    # reuse a stale image built from a DIFFERENT Dockerfile/workflow. 12 chars
+    # makes that collision negligible.
     if [[ -n "$BUILD_CONFIG_HASH" ]]; then
-        CONFIG_SHORT=$(echo -n "$BUILD_CONFIG_HASH" | sha256sum | cut -c1-3)
+        CONFIG_SHORT=$(echo -n "$BUILD_CONFIG_HASH" | sha256sum | cut -c1-12)
         CI_TAG="${SUBMODULE_COMMIT}-${CONFIG_SHORT}"
     else
         CI_TAG="$SUBMODULE_COMMIT"

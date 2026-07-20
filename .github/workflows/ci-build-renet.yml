@@ -112,6 +112,11 @@ jobs:
             private/bin/criu-linux-*
             private/bin/rsync-linux-*
             private/bin/rclone-linux-*
+            private/bin/zot-linux-*
+            private/bin/k3s-linux-*
+            private/bin/csiprovisioner-linux-*
+            private/bin/csisnapshotter-linux-*
+            private/bin/snapshotcontroller-linux-*
             private/bin/checksums.sha256
           retention-days: 1
           if-no-files-found: error

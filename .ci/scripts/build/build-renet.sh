@@ -110,24 +110,36 @@ if [[ "$SKIP_EMBED" != "true" ]]; then
     # unavailable (embed_assets skipped), skip — a no-SEA-assets build anyway.
     if [[ -n "$OUTPUT_DIR" ]] && command -v docker >/dev/null 2>&1 &&
         docker image inspect rediacc/renet:latest >/dev/null 2>&1; then
-        log_step "Exporting native binaries (criu/rsync/rclone) for the runtime image..."
+        log_step "Exporting native binaries (all 8 assets) for the runtime image..."
         mkdir -p "$OUTPUT_DIR"
+        # <container /opt subdir>:<binary base name>. criu/rsync/rclone/zot/k3s
+        # each live under /opt/<name>; the three CSI sidecars share /opt/csi. The
+        # runtime image (Dockerfile.native) COPYs ALL of these so the cached-renet
+        # fast-path reconstructs the SAME complete darwin/windows binaries as a
+        # full build — no divergence between cached and Full.
+        _native_assets=(
+            "criu:criu" "rsync:rsync" "rclone:rclone" "zot:zot" "k3s:k3s"
+            "csi:csiprovisioner" "csi:csisnapshotter" "csi:snapshotcontroller"
+        )
         _nb_cid="$(docker create rediacc/renet:latest)"
-        for _nb in criu rsync rclone; do
+        for _entry in "${_native_assets[@]}"; do
+            _dir="${_entry%%:*}"
+            _base="${_entry##*:}"
             for _na in amd64 arm64; do
-                docker cp "$_nb_cid:/opt/$_nb/$_nb-linux-$_na" "$OUTPUT_DIR/" 2>/dev/null ||
-                    log_warn "native binary $_nb-linux-$_na not found in builder image"
+                docker cp "$_nb_cid:/opt/$_dir/$_base-linux-$_na" "$OUTPUT_DIR/" 2>/dev/null ||
+                    log_warn "native binary $_base-linux-$_na not found in builder image"
             done
         done
         docker rm "$_nb_cid" >/dev/null 2>&1 || true
 
-        # Fail fast: the runtime image (Dockerfile.native) COPYs all six, so a
-        # missing one must break HERE, not later as a cryptic COPY error in the
-        # docker build job on an artifact that looked complete.
-        for _nb in criu rsync rclone; do
+        # Fail fast: the runtime image COPYs every one of these, so a missing one
+        # must break HERE, not later as a cryptic COPY error in the docker build
+        # job on an artifact that looked complete.
+        for _entry in "${_native_assets[@]}"; do
+            _base="${_entry##*:}"
             for _na in amd64 arm64; do
-                [[ -f "$OUTPUT_DIR/$_nb-linux-$_na" ]] || {
-                    log_error "native binary $_nb-linux-$_na missing after export — builder image is incomplete"
+                [[ -f "$OUTPUT_DIR/$_base-linux-$_na" ]] || {
+                    log_error "native binary $_base-linux-$_na missing after export — builder image is incomplete"
                     exit 1
                 }
             done
