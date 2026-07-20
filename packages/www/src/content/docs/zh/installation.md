@@ -4,8 +4,8 @@ description: "在 Linux、macOS 或 Windows 上安装 Rediacc CLI。"
 category: "Guides"
 order: 1
 language: zh
-sourceHash: "5bdc0ff205ae9c73"
-sourceCommit: "407174f41c12c0a2ee252a7812290c1ef9ecc9ca"
+sourceHash: "a557e2aa2cad3a0f"
+sourceCommit: "6bec8a25ef911a0a26ed273c92f4aa7201b9870f"
 ---
 
 # 安装

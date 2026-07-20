@@ -1,5 +1,6 @@
 ---
-sourceHash: "5bdc0ff205ae9c73"
+sourceHash: "a557e2aa2cad3a0f"
+sourceCommit: "6bec8a25ef911a0a26ed273c92f4aa7201b9870f"
 title: "Installimine"
 description: "Installige Rediacci CLI Linuxi, macOS-i või Windowsi."
 category: "Guides"
