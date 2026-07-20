@@ -92,6 +92,12 @@ until grep -q 'Manifests written:' "$LOG"; do sleep 15; done
 from the timelines — stopping costs CPU only. Stop it whenever its inputs (the casts) are about
 to change, rather than letting it finish against stale ones.
 
+**`ffmpeg` idling is NOT a stall.** Video alternates `agg` (renders the cast to frames) and
+`ffmpeg` (muxes). During an agg phase `pgrep ffmpeg` is legitimately 0 while load stays ~40, so a
+watcher keyed on "no ffmpeg + stale log" reports completion that never happened. Key completion on
+the TOP-LEVEL pid instead — walk `ps -o ppid=` up until the parent is the session relay, then
+`while kill -0 <root>`.
+
 **The PID you launch is not the process doing the work.** `run.sh … video --jobs N` forks a second
 `run.sh` that owns the workers; the first exits immediately, so a `kill -0 <launched-pid>` watch
 reports "completed" while ffmpeg is still spawning. Kill the process GROUP and verify by count:
