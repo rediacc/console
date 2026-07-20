@@ -32,8 +32,8 @@ rdc machine setup "$M"
 # Reap any orphaned repo state from previous tutorial runs.
 rdc machine prune "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 
-rdc repo delete my-app:test 2>/dev/null || true
-rdc repo delete my-app 2>/dev/null || true
+rdc repo delete my-app:test --yes 2>/dev/null || true
+rdc repo delete my-app --yes 2>/dev/null || true
 rdc repo create my-app --machine "$M" --size 2G
 # Stage the compose that consumes BOTH secret modes (env interpolation +
 # /run/secrets file mount) so the on-camera `repo up` has something real
@@ -105,6 +105,6 @@ pause 2
 # End the on-camera portion; cleanup below is not recorded.
 end_recording
 # Cleanup
-rdc repo delete my-app:test --archive-config -y 2>/dev/null || true
+rdc repo delete my-app:test --yes --archive-config -y 2>/dev/null || true
 rdc repo down my-app --unmount 2>/dev/null || true
-rdc repo delete my-app 2>/dev/null || true
+rdc repo delete my-app --yes 2>/dev/null || true

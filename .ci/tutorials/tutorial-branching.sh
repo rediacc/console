@@ -31,9 +31,9 @@ rdc machine setup "$M"
 # Reap any orphaned repo state from previous tutorial runs.
 rdc machine prune "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 
-rdc repo delete app:rollback 2>/dev/null || true
-rdc repo delete app:work 2>/dev/null || true
-rdc repo delete app 2>/dev/null || true
+rdc repo delete app:rollback --yes 2>/dev/null || true
+rdc repo delete app:work --yes 2>/dev/null || true
+rdc repo delete app --yes 2>/dev/null || true
 rdc repo create app --machine "$M" --size 2G
 rdc repo admin template apply app --template app-postgres
 # Commits are made from working FORKS; the grand stays pristine.

@@ -99,8 +99,8 @@
       "holdSec": 0.8,
       "narrationRole": "transition",
       "card": {
-        "command": "rdc repo delete my-app:experiment",
-        "commandFull": "rdc repo delete my-app:experiment"
+        "command": "rdc repo delete my-app:experiment --yes",
+        "commandFull": "rdc repo delete my-app:experiment --yes"
       }
     },
     {

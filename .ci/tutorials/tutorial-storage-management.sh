@@ -29,7 +29,7 @@ rdc machine setup "$M"
 # Reap any orphaned repo state from previous tutorial runs.
 rdc machine prune "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 
-rdc repo delete data-app 2>/dev/null || true
+rdc repo delete data-app --yes 2>/dev/null || true
 rdc repo create data-app --machine "$M" --size 2G
 rdc repo admin template apply data-app --template app-postgres
 rdc repo up data-app
@@ -81,4 +81,4 @@ end_recording
 # Cleanup
 rdc repo down data-app 2>/dev/null || true
 rdc repo down data-app --unmount 2>/dev/null || true
-rdc repo delete data-app 2>/dev/null || true
+rdc repo delete data-app --yes 2>/dev/null || true

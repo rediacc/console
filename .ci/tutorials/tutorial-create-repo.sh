@@ -29,7 +29,7 @@ rdc machine setup "$M"
 rdc machine prune "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 
 # Make sure no leftover repo
-rdc repo delete my-app 2>/dev/null || true
+rdc repo delete my-app --yes 2>/dev/null || true
 
 # Restore stdout/stderr so asciinema captures only the demo from here on.
 exec >&3 2>&4
@@ -55,4 +55,4 @@ pause 2
 # End the on-camera portion; cleanup below is not recorded.
 end_recording
 # Clean up
-rdc repo delete my-app 2>/dev/null || true
+rdc repo delete my-app --yes 2>/dev/null || true

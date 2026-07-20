@@ -44,7 +44,7 @@ rdc machine prune "$M2" --orphaned-repos --force --grace-days 0 --force-delete-m
 # One delete, not two: the machine is derived from the ref, and a repo has a
 # single home in the config. Leftovers on $M2 (the migrate target) are reaped by
 # the `machine prune --orphaned-repos` sweep above, which matches by GUID.
-rdc repo delete pulse --archive-config -y 2>/dev/null || true
+rdc repo delete pulse --yes --archive-config -y 2>/dev/null || true
 rdc repo create pulse --machine "$M" --size 2G
 rdc repo sync upload pulse --local "$APP_DIR/"
 rdc repo up pulse
@@ -94,5 +94,5 @@ end_recording
 # row, which makes any same-GUID residue left behind on the SOURCE machine
 # orphaned, so the GUID sweep below can reap it.
 rdc repo down pulse --unmount 2>/dev/null || true
-rdc repo delete pulse --archive-config -y 2>/dev/null || true
+rdc repo delete pulse --yes --archive-config -y 2>/dev/null || true
 rdc machine prune "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true

@@ -30,7 +30,7 @@ rdc machine setup "$M"
 # Reap any orphaned repo state from previous tutorial runs.
 rdc machine prune "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 
-rdc repo delete my-app 2>/dev/null || true
+rdc repo delete my-app --yes 2>/dev/null || true
 rdc repo create my-app --machine "$M" --size 2G
 
 # Restore stdout/stderr so asciinema captures only the demo from here on.
@@ -68,4 +68,4 @@ end_recording
 # Clean up
 rdc repo down my-app 2>/dev/null || true
 rdc repo down my-app --unmount 2>/dev/null || true
-rdc repo delete my-app 2>/dev/null || true
+rdc repo delete my-app --yes 2>/dev/null || true

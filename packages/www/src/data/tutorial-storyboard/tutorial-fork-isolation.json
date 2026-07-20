@@ -399,7 +399,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo delete demo-pgadmin:experiment"
+        "commandFull": "rdc repo delete demo-pgadmin:experiment --yes"
       }
     },
     {

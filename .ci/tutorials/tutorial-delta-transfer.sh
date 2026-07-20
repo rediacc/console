@@ -42,7 +42,7 @@ rdc machine prune "$M2" --orphaned-repos --force --grace-days 0 --force-delete-m
 # One delete, not two: the machine is derived from the ref, and a repo has a
 # single home in the config. Leftovers on $M2 (the push target) are reaped by
 # the `machine prune --orphaned-repos` sweep above, which matches by GUID.
-rdc repo delete my-app --archive-config -y 2>/dev/null || true
+rdc repo delete my-app --yes --archive-config -y 2>/dev/null || true
 rdc repo create my-app --machine "$M" --size 2G
 rdc repo admin template apply my-app --template app-postgres
 rdc repo up my-app
@@ -86,5 +86,5 @@ end_recording
 # makes that GUID orphaned, then sweep $M2 by GUID.
 rdc repo down my-app 2>/dev/null || true
 rdc repo down my-app --unmount 2>/dev/null || true
-rdc repo delete my-app --archive-config -y 2>/dev/null || true
+rdc repo delete my-app --yes --archive-config -y 2>/dev/null || true
 rdc machine prune "$M2" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
