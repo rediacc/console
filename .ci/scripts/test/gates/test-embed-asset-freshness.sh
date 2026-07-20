@@ -68,10 +68,27 @@ EOF
 
     # Empty fixture -> every source "not in fixture" -> could-not-check (fail soft).
     echo '{}' >"$FIXTURE_DIR/empty.json"
+
+    # A blocklist entry with NO BLOCKER reason -> verifyAllBlockers must reject it.
+    printf 'criu\n' >"$FIXTURE_DIR/blocklist-bad"
+
+    # A blocklist entry WITH a substantive BLOCKER reason -> accepted, no error.
+    printf '# BLOCKER: upstream criu 4.3 regressed cgroup-v2 restore; holding at 4.2 until fixed\ncriu\n' \
+        >"$FIXTURE_DIR/blocklist-good"
 }
 
 run_gate() { # <fixture-file> -> stdout+stderr, returns gate exit code
     (cd "$REPO_ROOT" && EMBED_FRESHNESS_FIXTURE="$FIXTURE_DIR/$1" npx tsx "$VALIDATOR" 2>&1)
+}
+
+# Runs the gate with a fixture upstream map AND a fixture blocklist, so the
+# blocklist's BLOCKER validation can be exercised in isolation from the network.
+# $1 = freshness fixture file, $2 = blocklist fixture file
+run_gate_blocklist() {
+    (cd "$REPO_ROOT" &&
+        EMBED_FRESHNESS_FIXTURE="$FIXTURE_DIR/$1" \
+            EMBED_BLOCKLIST_FILE="$FIXTURE_DIR/$2" \
+            npx tsx "$VALIDATOR" 2>&1)
 }
 
 test_passes_when_current() {
@@ -105,11 +122,31 @@ test_fails_soft_when_uncheckable() {
     log_pass "uncheckable sources fail soft"
 }
 
+# The blocklist is a BLOCKER-gated suppression list; a bare entry with no
+# substantive reason must fail the gate, not silently hold the pin.
+test_blocklist_rejects_missing_reason() {
+    local out rc=0
+    out=$(run_gate_blocklist all-current.json blocklist-bad) || rc=$?
+    assert_exit_code 1 "$rc" "a blocklist entry lacking a BLOCKER reason must fail the gate"
+    assert_contains "$out" "invalid entries" "error names the malformed blocklist"
+    log_pass "blocklist entry without a BLOCKER reason fires"
+}
+
+# A properly-reasoned blocklist entry is accepted (freshness itself passes here).
+test_blocklist_accepts_valid_reason() {
+    local out rc=0
+    out=$(run_gate_blocklist all-current.json blocklist-good) || rc=$?
+    assert_exit_code 0 "$rc" "a blocklist entry with a substantive BLOCKER reason must be accepted"
+    log_pass "well-formed blocklist entry is accepted"
+}
+
 log_test "test-embed-asset-freshness"
 setup_fixtures
 test_passes_when_current
 test_fires_when_stale
 test_defers_fresh_release
 test_fails_soft_when_uncheckable
+test_blocklist_rejects_missing_reason
+test_blocklist_accepts_valid_reason
 echo ""
 log_pass "all tests passed"

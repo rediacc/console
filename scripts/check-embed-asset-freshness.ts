@@ -45,7 +45,10 @@ import { GREEN, NC, RED, YELLOW } from './utils/console.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..');
 const DOCKERFILE = path.join(CONSOLE_ROOT, 'private/renet/Dockerfile');
-const BLOCKLIST = path.join(CONSOLE_ROOT, '.embed-assets-upgrade-blocklist');
+// Test seam: EMBED_BLOCKLIST_FILE points at a fixture blocklist so the gate
+// test can prove the BLOCKER-reason validation fires without mutating the real,
+// tracked .embed-assets-upgrade-blocklist.
+const BLOCKLIST = process.env.EMBED_BLOCKLIST_FILE || path.join(CONSOLE_ROOT, '.embed-assets-upgrade-blocklist');
 
 const HTTP_TIMEOUT_MS = 15_000;
 

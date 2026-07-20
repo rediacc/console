@@ -553,6 +553,7 @@ Every escape hatch in the repo (allowlists, blocklists, overrides, ignore lists)
 | Dev npm audit allowlist | `.audit-allowlist` | same |
 | npm dep upgrade blocklist | `.deps-upgrade-blocklist` | `scripts/check-deps.ts` |
 | Go dep upgrade blocklist | `.go-deps-upgrade-blocklist` | `.ci/scripts/quality/check-go-deps.sh` |
+| Embed-asset upgrade blocklist | `.embed-assets-upgrade-blocklist` | `scripts/check-embed-asset-freshness.ts` |
 | `package.json` overrides | `package.json`: `overrides` + `_overridesReasons` | `scripts/check-overrides-reasons.ts` |
 | knip suppressions (`ignore*` arrays) | `knip.jsonc` (inline `// BLOCKER:` comments) | `scripts/check-knip-blockers.ts` |
 
