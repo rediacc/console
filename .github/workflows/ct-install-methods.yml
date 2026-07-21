@@ -28,10 +28,6 @@ on:
         required: false
         type: string
         default: ''
-    secrets:
-      APP_PRIVATE_KEY:
-        required: false
-
 permissions:
   contents: read
   packages: read    # GHCR pull for install tests
@@ -48,10 +44,10 @@ jobs:
       DOCKER_TAG: ${{ inputs.docker_tag }}
       REPO_CHANNEL: ${{ inputs.repo_channel }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Login to GHCR
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -108,10 +104,10 @@ jobs:
       DOCKER_TAG: ${{ inputs.docker_tag }}
       REPO_CHANNEL: ${{ inputs.repo_channel }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Login to GHCR
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -142,7 +138,7 @@ jobs:
     env:
       REPO_CHANNEL: ${{ inputs.repo_channel }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Test Binary Download
         run: |
@@ -159,7 +155,7 @@ jobs:
     env:
       REPO_CHANNEL: ${{ inputs.repo_channel }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Test Binary Download
         run: |
@@ -178,7 +174,7 @@ jobs:
     env:
       REPO_CHANNEL: ${{ inputs.repo_channel }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Test Binary Download
         shell: bash
@@ -197,7 +193,7 @@ jobs:
     env:
       REPO_CHANNEL: ${{ inputs.repo_channel }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Test Binary Download
         shell: bash
@@ -220,38 +216,17 @@ jobs:
       - test-windows-arm64
     if: always() && !cancelled()
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .ci/scripts
+
       - name: Check all tests passed
-        run: |
-          echo "## Install Method Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # Check each job result
-          linux_x64="${{ needs.test-linux-x64.result }}"
-          linux_arm64="${{ needs.test-linux-arm64.result }}"
-          macos_arm64="${{ needs.test-macos-arm64.result }}"
-          macos_x64="${{ needs.test-macos-x64.result }}"
-          windows_x64="${{ needs.test-windows-x64.result }}"
-          windows_arm64="${{ needs.test-windows-arm64.result }}"
-
-          echo "| Platform | Result |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Linux x64 (Binary, Docker, APT, DNF, APK, Pacman, Quick, Linuxbrew) | $linux_x64 |" >> $GITHUB_STEP_SUMMARY
-          echo "| Linux arm64 (Binary, Docker, Quick) | $linux_arm64 |" >> $GITHUB_STEP_SUMMARY
-          echo "| macOS ARM64 (Binary, Homebrew) | $macos_arm64 |" >> $GITHUB_STEP_SUMMARY
-          echo "| macOS x64 (Binary, Homebrew) | $macos_x64 |" >> $GITHUB_STEP_SUMMARY
-          echo "| Windows x64 (Binary) | $windows_x64 |" >> $GITHUB_STEP_SUMMARY
-          echo "| Windows arm64 (Binary) | $windows_arm64 |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # Fail if any test failed
-          if [[ "$linux_x64" != "success" ]] || \
-             [[ "$linux_arm64" != "success" ]] || \
-             [[ "$macos_arm64" != "success" ]] || \
-             [[ "$macos_x64" != "success" ]] || \
-             [[ "$windows_x64" != "success" ]] || \
-             [[ "$windows_arm64" != "success" ]]; then
-            echo "**Status:** Some installation method tests failed" >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-
-          echo "**Status:** All installation method tests passed for version ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
+        run: .ci/scripts/ci/assert-install-methods-complete.sh
+        env:
+          RESULT_LINUX_X64: ${{ needs.test-linux-x64.result }}
+          RESULT_LINUX_ARM64: ${{ needs.test-linux-arm64.result }}
+          RESULT_MACOS_ARM64: ${{ needs.test-macos-arm64.result }}
+          RESULT_MACOS_X64: ${{ needs.test-macos-x64.result }}
+          RESULT_WINDOWS_X64: ${{ needs.test-windows-x64.result }}
+          RESULT_WINDOWS_ARM64: ${{ needs.test-windows-arm64.result }}
+          VERSION: ${{ inputs.version }}

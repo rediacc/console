@@ -1,0 +1,57 @@
+# Discovery mechanisms that scripts/check-dead-bash.ts cannot see statically.
+#
+# This file covers HOW something is reached, never WHETHER it should exist.
+# "glob:<dir>/"        a directory whose .sh files are found by a glob, so no
+#                      file in it is ever named individually.
+# "dispatch:<prefix>"  a function-name prefix assembled at runtime, so no static
+#                      reference to the full name exists.
+#
+# NOT a place to park dead code. If a script or function is genuinely unused,
+# delete it — there is one operator and no external consumers. An entry here is
+# a claim about a discovery mechanism, and it is checked: the liveness probe in
+# scripts/check-suppression-liveness.ts fails when a glob root no longer exists
+# or a dispatch prefix matches zero functions.
+#
+# Each entry MUST carry a "# BLOCKER: <reason>" naming the discovering site and
+# line, validated by the shared blocker-validator (30-char minimum, no
+# low-effort phrases).
+
+# BLOCKER: expanded as a glob by .ci/scripts/test/run-all.sh (PATTERN="test-*.sh" into TEST_FILES), so the 17 gate scripts are executed without ever being named individually
+glob:.ci/scripts/test/gates/
+
+# BLOCKER: iterated as a glob by run.sh (for script in "$tutorials_dir"/tutorial-*.sh) and by the readdirSync scans in scripts/check-tutorial-commands.ts and check-tutorial-noninteractive.ts
+glob:.ci/tutorials/
+
+# BLOCKER: assembled at runtime in scripts/dev/linode-cluster-validation.sh as "phase_$p", so phase_preflight/phase_plan/phase_idempotency have no static call site
+dispatch:phase_
+
+# ---------------------------------------------------------------------------
+# manual: an entrypoint a human runs directly. Still a discovery mechanism --
+# the operator is the caller -- but the loosest one, so each BLOCKER must name
+# WHO runs it and WHEN. If you cannot write that sentence truthfully, the
+# script is dead: delete it.
+# ---------------------------------------------------------------------------
+
+# BLOCKER: deliberately not wired into the release pipeline; its own header at the top of the file states MANUAL ONLY, and it is run by the operator when a proxy deploy is needed
+manual:.ci/scripts/deploy/deploy-proxy.sh
+
+# BLOCKER: NIS2/CRA supply-chain SBOM enumeration, run by the operator on demand when a dependency inventory is required for compliance evidence rather than on every build
+manual:.ci/scripts/security/dependency-inventory.sh
+
+# BLOCKER: smoke-tests every Claude Code guard hook; run by the operator after a /hooks reload, which is why nothing in CI references it
+manual:.claude/hooks/test-hooks.sh
+
+# BLOCKER: starts OpenVSCode Server for self-hosted browser access and refuses to run inside Codespaces; invoked by the operator on a self-hosted box, not by the devcontainer lifecycle
+manual:.devcontainer/start-vscode.sh
+
+# BLOCKER: idempotent Cloudflare apex-redirect reconciler for rediacc.com, run by the operator when the redirect ruleset drifts; safe to re-run and asserts current state before writing
+manual:scripts/dev/apply-cf-redirect-rules.sh
+
+# BLOCKER: multi-phase Linode cluster provisioning validation driven interactively by the operator, phases selected on the command line and dispatched via "phase_$p"
+manual:scripts/dev/linode-cluster-validation.sh
+
+# BLOCKER: one-shot idempotent R2 scrub for legacy orphan prefixes, run by the operator when release-path pollution needs clearing; deliberately not automated because it hard-deletes prefixes
+manual:scripts/dev/r2-oneshot-scrub.sh
+
+# BLOCKER: pre-commit quality gate wired through the operator's local Claude Code hook settings rather than tracked config, and explicitly protected from deletion by .claude/hooks/pre-bash/block-protected-files.sh
+manual:scripts/pre-commit-check.sh

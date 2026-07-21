@@ -263,10 +263,29 @@ check_stale_entries() {
     local -n _allowed_ref="$3"
     local -n _blocker_ref="$4"
     local advisory info fix_type is_major fix_version fix_value pkg hint
+    local total_vulns
+    total_vulns=$(jq '.vulnerabilities | length' "$audit_json" 2>/dev/null || echo 0)
 
     for advisory in "${!_allowed_ref[@]}"; do
         info=$(get_advisory_fix_info "$advisory" "$audit_json")
-        [[ -z "$info" || "$info" == "null" ]] && continue
+        if [[ -z "$info" || "$info" == "null" ]]; then
+            # The advisory is absent from the report entirely: whatever chain
+            # pulled it is gone. This is the COMMON form of staleness, and this
+            # branch used to `continue` silently -- which is how 101 dead
+            # entries accumulated across the two allowlists (18 in
+            # .audit-allowlist, 83 in .audit-prod-allowlist), every one of them
+            # justified by an electron chain that no longer exists.
+            #
+            # Guard: with zero vulnerabilities in the report we cannot tell a
+            # genuinely clean tree from an audit that returned nothing useful,
+            # so say nothing rather than condemn every entry at once.
+            if [[ "${total_vulns:-0}" -gt 0 ]]; then
+                log_error "Stale allowlist entry: $advisory does not appear in $audit_json"
+                log_error "  The advisory no longer fires — delete $advisory (and its comment group if it is the last id) from $allowlist_file"
+                stale_actionable=true
+            fi
+            continue
+        fi
 
         fix_type=$(echo "$info" | jq -r '.fixType')
         is_major=$(echo "$info" | jq -r '.isMajor // "null"')
@@ -426,8 +445,7 @@ main() {
     run_audit audit-report.json
     build_advisory_map audit-report.json
 
-    local all_total all_critical all_high
-    all_total=$(jq '.metadata.vulnerabilities.total // 0' audit-report.json)
+    local all_critical all_high
     all_critical=$(jq '.metadata.vulnerabilities.critical // 0' audit-report.json)
     all_high=$(jq '.metadata.vulnerabilities.high // 0' audit-report.json)
 
@@ -490,7 +508,7 @@ main() {
     check_stale_entries ".audit-allowlist" audit-report.json ALLOWED_DEV BLOCKER_DEV
 
     if [[ "$stale_actionable" == "true" ]]; then
-        log_error "One or more allowlisted advisories have available fixes without BLOCKER annotations — see errors above"
+        log_error "Allowlist problems found — see errors above: an entry either has an available fix without a BLOCKER annotation, or is stale (the advisory no longer fires and the entry should be deleted)"
         exit 1
     fi
 

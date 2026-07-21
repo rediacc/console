@@ -97,7 +97,6 @@ log_step "Scanning for unaudited execution paths..."
 KNOWN_SFTP_COMMAND_FILES=(
     "packages/cli/src/commands/repo-sync.ts"
     "packages/cli/src/commands/storage.ts"
-    "packages/cli/src/commands/config-setup.ts"
 )
 
 # Find CLI command files that import SFTPClient (potential SFTP-based operations)

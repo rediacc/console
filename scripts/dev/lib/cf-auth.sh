@@ -22,20 +22,6 @@
 CF_API_BASE="https://api.cloudflare.com/client/v4"
 CF_AUTH_HEADERS=()
 
-# Update or append a key=value in a .env file.
-update_env_file() {
-    local file="$1" key="$2" value="$3"
-    # Quote values that contain spaces or shell-special characters
-    if [[ "$value" =~ [[:space:]\|\&\;\(\)\<\>\$\`\\\"\'#] ]]; then
-        value="\"$value\""
-    fi
-    if grep -q "^${key}=" "$file" 2>/dev/null; then
-        sed -i "s|^${key}=.*|${key}=${value}|" "$file"
-    else
-        echo "${key}=${value}" >>"$file"
-    fi
-}
-
 # Resolve Cloudflare authentication.
 # Sets CF_AUTH_HEADERS array for use with curl.
 # If CF_API_KEY + CF_EMAIL are provided (Global API Key), auto-creates a scoped

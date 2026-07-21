@@ -66,7 +66,6 @@ FAILED_SCENARIOS=()
 # and restarts the server on a fresh port.
 # -----------------------------------------------------------------------
 
-FIXTURE_DIR=""
 FIXTURE_PORT=""
 FIXTURE_PID=""
 

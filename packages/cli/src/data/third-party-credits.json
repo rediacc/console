@@ -6,11 +6,11 @@
       "kind": "embedded-binary",
       "asset": "criu",
       "name": "CRIU",
-      "version": "4.2",
+      "version": "4.2.1",
       "spdx": "GPL-2.0-only",
       "license": "GNU General Public License, version 2 (some libraries LGPL-2.1); conveyed as an unmodified binary, invoked via exec.",
-      "upstreamSourceUrl": "https://github.com/checkpoint-restore/criu/archive/v4.2/criu-4.2.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/criu-4.2.tar.gz"
+      "upstreamSourceUrl": "https://github.com/checkpoint-restore/criu/archive/v4.2.1/criu-4.2.1.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/criu-4.2.1.tar.gz"
     },
     {
       "kind": "embedded-binary",

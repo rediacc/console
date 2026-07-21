@@ -4,277 +4,40 @@
 # Each group MUST have a "# BLOCKER: <reason>" line in its comment block;
 # the audit script (.ci/scripts/security/audit.sh) enforces this strictly.
 
-# fast-xml-parser entity/numeric expansion family
-# (@astrojs/rss pins fast-xml-parser exactly at 5.4.1, no override possible)
-# Tracking: https://github.com/nicbarker/fast-xml-parser/issues
-# BLOCKER: build-time only via @astrojs/rss RSS generator; no runtime untrusted XML parse
-1114772
-1114952
-1115134
-
-# flatted prototype pollution via parse()
-# BLOCKER: transitive via @vitest/ui devDep; not reachable from runtime code paths
-1114934
-1115357
-
-# h3 SSE event injection + double-decoding path traversal bypass in serveStatic
-# BLOCKER: transitive dep via astro/nitro; no upstream fix published yet
-1115114
-1115117
-
-# fast-xml-parser entity expansion limits bypass when set to zero
-# BLOCKER: same @astrojs/rss build-time chain as 1114772 family; no runtime exposure
-1115359
-
-# yaml stack overflow via deeply nested collections
-# BLOCKER: transitive dep via astro; no upstream fix published yet
-1115369
-
-# picomatch ReDoS via extglob quantifiers
-# BLOCKER: transitive dep (micromatch chain); no upstream fix published yet
-1115382
-1115384
-
-# smol-toml DoS via thousands of consecutive commented lines
-# BLOCKER: transitive dep via astro toolchain; no upstream fix published yet
-1115393
-
-# picomatch method injection in POSIX character classes
-# BLOCKER: transitive dep; no upstream fix published yet
-1115394
-1115396
-
-# picomatch method injection + ReDoS (superseded advisories, same root cause)
-# BLOCKER: transitive dep; no upstream fix published yet (waiting on micromatch bump)
-1115490
-1115492
-1115493
-1115495
-1115549
-1115551
-1115552
-1115554
-
-# path-to-regexp backtracking regex family
-# (GHSA-9wv6-86v2-598j for 1101848; GHSA-j3q9-mxjg-w52f + GHSA-27v5-c462-wpq7 for 1115573/1115582)
-# @ant-design/pro-layout 7.22.7 pins path-to-regexp exactly at 8.2.0 and a
-# workspace-side npm override does not propagate (verified). The older 2.0-3.2
-# chain (1101848) is also via the same pro-layout pin.
-# BLOCKER: @ant-design/pro-layout pins path-to-regexp exactly; build-time router compile only, input is operator-controlled
-1101848
-1115573
-1115582
-
-# @xmldom/xmldom 0.8.x: uncontrolled recursion DoS + XML injection
-# (GHSA-2v35-w6hq-6mfw, GHSA-f6ww-3ggp-fr8h, GHSA-x6wf-f3px-wcqx, GHSA-j759-j44w-7fr8)
-# Transitive via electron-builder > app-builder-lib > plist > @xmldom/xmldom@0.8.12
-# AND marp-core > mathjax-full > speech-rule-engine.
-# BLOCKER: electron-builder 26.x pins plist > xmldom 0.8.x; major electron migration required; build-time only, no untrusted XML parse
-1115764
-1115765
-1116959
-1116960
-1116962
-1116963
-1116965
-1116966
-1116968
-1116969
-
-# lodash / lodash-es Code Injection via _.template imports key names
-# BLOCKER: transitive prod dep; no upstream fix published yet (lodash effectively unmaintained)
-1115805
-1115806
-
-# lodash / lodash-es Prototype Pollution via array path bypass in _.unset/_.omit
-# BLOCKER: transitive prod dep; no upstream fix published yet
-1115809
-1115810
-
-# vite path traversal in optimized deps .map handling
-# BLOCKER: dev tool only; not runtime-exposed (vite dev server is never shipped)
-1116005
-1116006
-1116123
-1116124
-
-# vite server.fs.deny bypass with queries
-# BLOCKER: dev tool only; not runtime-exposed
-1116008
-1116126
-
-# vite arbitrary file read via dev server WebSocket
-# BLOCKER: dev tool only; not runtime-exposed
-1116010
-1116011
-1116099
-1116100
-
-# axios NO_PROXY hostname normalization bypass leading to SSRF
-# BLOCKER: transitive dep (packages/cli axios); no upstream fix published yet, not reachable in CLI auth flows
-1116365
-
-# axios cloud metadata exfiltration via header injection chain
-# BLOCKER: transitive dep (packages/cli axios); no upstream fix published yet, not reachable in CLI auth flows
-1116425
-1116473
-
-# hono Improperly Handles JSX Attribute Names Allows HTML Injection in hono/jsx SSR
-# (GHSA-458j-xx4x-4375, <4.12.14; transitive via @modelcontextprotocol/sdk)
-# BLOCKER: @hono/node-server pins hono ^4; not used for SSR in our build path; revisit when @modelcontextprotocol/sdk bumps hono
-1116669
-
-# protobufjs arbitrary code execution via malicious decode input
-# (GHSA-xq3m-2v4x-88gg and sibling for protobufjs 8.0.0)
-# 1116756/1116832: <7.5.5 via @grpc/proto-loader 0.8.0 (pinned at ^7.5.3 upstream).
-# 1116757/1116833: 8.0.0 via @opentelemetry/otlp-transformer 0.211.x, deliberately
-# pinned in .syncpackrc.json at ^0.211.0 (bumping to 0.215.x would take the fix).
-# 1117042/1117043: same advisory re-issued under new IDs after the GitHub
-# Advisory Database split. Same chain (proto-loader + otlp-transformer), same
-# rationale; needs to be allowlisted because npm overrides for protobufjs ranges
-# don't propagate cleanly across both 7.x and 8.x consumers.
-# BLOCKER: OTLP exporters only serialize our own telemetry to our own collector; no untrusted protobuf decode path; OTel pin is deliberate
-1116756
-1116757
-1116832
-1116833
-1117042
-1117043
-
 # astro <6.1.6 XSS in define:vars via incomplete </script> sanitization
 # (GHSA-j687-52p2-xcff; fix requires Astro 6.x major)
-# 1116896 + 1117141 are sibling re-issues of the same advisory across the
-# GitHub Advisory Database split; same vuln, two source IDs.
+# A sibling re-issue (1116896) existed across the GitHub Advisory Database
+# split; it no longer appears in npm audit output and has been pruned.
 # BLOCKER: astro 6 is a major migration tracked separately; the marketing site
 # is statically pre-rendered (output: 'static') and only the locale-prefixed
 # routes from getStaticPaths() are emitted, so define:vars in BaseLayout.astro
 # never serializes a runtime-attacker-controlled pathname — Cloudflare Workers
 # returns 404 for any path Astro didn't bake at build time
-1116896
 1117141
-
-# fast-xml-parser XMLBuilder XML Comment / CDATA injection via unescaped delimiters
-# (GHSA-gh4j-gqv2-49f6, <=5.5.x; same chain as 1114772 family)
-# BLOCKER: build-time only via @astrojs/rss; no runtime exposure
-1116957
-
-# protobufjs arbitrary code execution via unsafe codegen on crafted JSON descriptor
-# (GHSA-xq3m-2v4x-88gg, >=8.0.0 <8.0.1)
-# BLOCKER: transitive via @opentelemetry/otlp-transformer pinned 8.0.0 exact; the .syncpackrc opentelemetry pin holds sdk-node back, override fights with strict pin (npm leaves both versions installed). All otel telemetry payloads are static internal schemas under our control, not crafted JSON descriptors from untrusted sources, so the codegen attack vector is not reachable at runtime.
-1117571
-1117572
-
-# ip-address Address6 HTML-emitting methods XSS
-# (GHSA-v2v4-37r5-5v8g; ip-address@10.1.0)
-# Two transitive paths: (a) @modelcontextprotocol/sdk -> express-rate-limit -> ip-address, and (b) electron-builder -> @electron/rebuild -> ... -> socks -> ip-address. Both are server-side / build-tool consumers that parse IP strings; neither calls the Address6 HTML-emitting methods (toRFC5952String/toLink/etc) that the advisory targets.
-# BLOCKER: transitive prod dep used only for IP parsing in MCP rate-limit middleware and electron-builder's npm fetch path; the vulnerable HTML-emitting methods are never called and we never render Address6 output to a browser
-1117683
 
 # astro <6.1.10 server island encrypted-parameter cross-component replay
 # (GHSA-xr5h-phrj-8vxv; fix requires Astro 6.x major)
-# BLOCKER: same astro 6 major migration as 1116896/1117141; server islands are
+# BLOCKER: same astro 6 major migration as 1117141; server islands are
 # disabled in our static-output marketing site (no SSR endpoints emit encrypted
 # Astro.props blobs), so the cross-component replay surface is not present at
 # runtime; revisit when @astrojs/mdx unblocks the Astro 6 upgrade
 1118920
 
-# @opentelemetry/exporter-prometheus + @opentelemetry/sdk-node Prometheus HTTP listener crash
-# (GHSA-q7rr-3cgh-j5r3; affects exporter-prometheus shipped with sdk-node 0.x)
-# Fixed upstream in exporter-prometheus >= 0.220.x, which in turn requires the whole
-# OpenTelemetry stack to move past 0.220. The .syncpackrc.json holds sdk-node and
-# every paired exporter/instrumentation package pinned at ^0.211.0 across all
-# workspaces for compatible runtime semantics; bumping just one package leaves npm
-# with duplicate otel installs that syncpack's sameRange highestSemver group rejects.
-# Importantly, we never start the Prometheus HTTP scrape endpoint: telemetry leaves
-# every workspace via OTLP HTTP exporters to our collector, not via the Prometheus
-# pull endpoint. The malformed-request DoS lives only inside the HTTP listener code
-# path that we do not enable, so the advisory is not reachable from any deployed
-# surface at runtime.
-# BLOCKER: transitive via pinned @opentelemetry/sdk-node ^0.211.0; the vulnerable Prometheus HTTP listener is never started in our config (OTLP-only egress), so the malformed-request DoS is structurally unreachable; revisit when the syncpack OpenTelemetry pin advances past 0.220
-1117942
-1117943
-
-# BLOCKER: four newly-disclosed hono advisories on the transitive hono 4.12.19 (pulled by
-# @modelcontextprotocol/sdk + @hono/node-server for the rdc CLI MCP server, and used directly
-# by the account Cloudflare worker). All are fixed in hono 4.12.21+, but the repo .npmrc
-# minimum-release-age supply-chain guard refuses to install 4.12.21+ in this build environment
-# (npm pins the resolved copy at 4.12.19; npm ci honors the lockfile). Practical reachability is
-# nil: ipRestriction (1120082), JWT/bearer middleware (1120084) and app.mount() prefix routing
-# (1120085) are not imported or called anywhere (verified by grep); the cookie sameSite/priority
-# injection (1120083) needs user-controlled cookie attributes, but the account worker only ever
-# sets a hardcoded sameSite:'Strict'. Drop this allowlist once the release-age guard admits hono 4.12.21+.
-1120082
-1120083
-1120084
-1120085
-
-# @opentelemetry/sdk-node + @opentelemetry/exporter-prometheus: Prometheus exporter
-# process crash via malformed HTTP request (GHSA-q7rr-3cgh-j5r3), fixed only in
-# sdk-node 0.218.0 which is outside the deliberate ^0.211.0 pin in .syncpackrc.json
-# (OTel upgrade chain breaks CLI instrumentation; see versionGroup "Pin OpenTelemetry
-# sdk-node for CLI").
-# BLOCKER: exporter-prometheus is transitive via pinned sdk-node; PrometheusExporter is never instantiated in any source (verified by grep — we export via OTLP only), so the vulnerable HTTP server never starts; DoS-only advisory. Drop when the sdk-node pin moves to >=0.218.0.
-1120252
-1120253
-
-# esbuild 0.27.7 (GHSA-gv7w-rqvm-qjhr high + GHSA-g7r4-m6w7-qqqr low), fixed in 0.28.1.
+# esbuild 0.27.7 (GHSA-g7r4-m6w7-qqqr low), fixed in 0.28.1. A sibling high
+# advisory (1120679) no longer appears in npm audit output and was pruned.
 # Pulled transitively by astro@5.18.1 (esbuild ^0.27.3) and vite@7.3.3 (esbuild ^0.27.0);
 # 0.28.1 is outside both ^0.27.x carets, so reaching the fix needs a forced override that
 # overrides astro's pinned peer range and risks an esbuild 0.28 www-build regression.
 # BLOCKER: neither advisory is reachable in our build — the high one is the esbuild Deno module (lib/deno/mod.ts), which we never import (Node-only toolchain), and the low one is the esbuild dev server's Windows path traversal; the dev server is never shipped to prod and CI/prod builds do not run on Windows. Drop once astro/vite widen the esbuild range to admit 0.28.1.
-1120679
 1120680
 
-# protobufjs 7.5.9 (GHSA-f38q-mgvj-vph7 moderate name-shadowing + GHSA-wcpc-wj8m-hjx6 high Any-expansion DoS).
-# Transitive via @grpc/grpc-js -> @grpc/proto-loader (the OTLP telemetry exporter chain), already pinned by an
-# overrides entry to ^7.5.6; the in-range 7.x fix needs a focused overrides bump + careful lockfile regen.
-# BLOCKER: both advisories require an attacker-controlled .proto schema / Any message, but every protobuf definition we load is our own OpenTelemetry export schema (compiled from version-controlled .proto, never user input), so neither the runtime-property shadowing nor the unbounded-Any JSON DoS is reachable. Take the 7.x fix in a dedicated dependency-bump PR where the lockfile can be regenerated without dropping platform-specific optional deps.
-1120742
-1120799
-
-# form-data 4.0.5 (GHSA-hmw2-7cc7-3qxx high CRLF injection), fixed in 4.0.6.
-# Transitive via axios (HTTP client) and electron-publish (build); 4.0.6 satisfies axios's ^4.0.5 caret but
-# reaching it needs an overrides bump + lockfile regen, deferred to a focused dependency PR.
-# BLOCKER: the CRLF injection requires an attacker-controlled multipart FIELD NAME or filename, but every FormData append call in our code passes static, code-defined field names (never user input), so the header-injection vector is unreachable. Take the 4.0.6 fix via overrides in a dedicated dependency-bump PR.
-1120743
-
-# js-yaml 4.1.1 (GHSA-h67p-54hq-rp68 moderate quadratic-DoS via merge keys), fixed in 4.2.0.
-# Transitive via astro 5.x static rendering; reaching 4.2.0 needs an overrides bump, deferred to a dependency PR.
-# BLOCKER: astro uses js-yaml only at build time to parse our own .md/.mdx frontmatter (trusted, version-controlled input), never runtime user input, and it does not run in the deployed static output, so the merge-key DoS has no attacker-controlled YAML to trigger. Take 4.2.0 via overrides in a dedicated dependency-bump PR.
-1120792
-
-# @babel/core 7.29.0 (GHSA-4x5r-pxfx-6jf8 low arbitrary file read via sourceMappingURL), fixed in-range at 7.29.1+.
-# Transitive via electron-vite and eslint-plugin-react-hooks (build/lint toolchain), never in the deployed runtime.
-# BLOCKER: babel compiles our own first-party source and never runs in production; the arbitrary-file-read requires compiling attacker-controlled source carrying a malicious sourceMappingURL comment, which our build never does (all inputs are version-controlled). Low severity, build-time only. Take the in-range 7.29.x fix via overrides in a dedicated dependency-bump PR.
-1120793
-
-# markdown-it 14.1.1 (GHSA-6v5v-wf23-fmfq moderate quadratic-DoS in the smartquotes rule).
-# Transitive via @marp-team/marp-core -> @marp-team/marpit (Marp slide/PDF rendering of growth content);
-# no fixed version is published yet (14.1.1 is the latest and still in the vulnerable <=14.1.1 range).
-# BLOCKER: marp uses markdown-it only at build time to render our own version-controlled markdown into slides/PDFs, never runtime user input, so the quadratic smartquotes DoS has no attacker-controlled markdown to trigger. Build-time only, never in the deployed output. Drop once markdown-it ships a fixed release.
-1120820
-
-# @opentelemetry/core 2.7.1 (GHSA-8988-4f7v-96qf moderate unbounded memory allocation in W3C Baggage propagation).
-# Same pinned chain as the exporter-prometheus entry above: the only fix is @opentelemetry/sdk-node 0.219.0, a
-# major outside the deliberate ^0.211.0 pin in .syncpackrc.json (the OTel upgrade chain breaks CLI instrumentation).
-# BLOCKER: the unbounded allocation requires attacker-controlled inbound W3C Baggage headers, but our SDK only propagates baggage we set ourselves and exports via OTLP — it never parses untrusted inbound baggage from external callers, so the allocation path is unreachable. Drop when the sdk-node pin moves to >=0.219.0.
-1120821
-
-# vite 7.3.3 (GHSA-v6wh-96g9-6wx3 moderate launch-editor NTLMv2 disclosure + GHSA-fx2h-pf6j-xcff high server.fs.deny bypass).
-# vite is pinned by an overrides entry to >=6.4.2 <8 (astro@5.x peer range); the fix is vite 8.0.4, a major outside
-# both the override and astro's range, so reaching it needs an astro v6 migration (not scheduled — see @astrojs/mdx).
-# BLOCKER: both advisories are vite DEV-SERVER + Windows-only — the launch-editor NTLMv2 UNC disclosure and the server.fs.deny alternate-path bypass only affect `vite dev` on Windows. We use vite solely at build time for astro static generation; the dev server is never shipped to prod, and CI/prod builds do not run on Windows, so neither path is reachable. Same class as the esbuild dev-server entry above. Drop once astro/vite admit vite 8.
-1120785
-1120790
-
 # astro 5.18.1 reflected-XSS / unescaped-attribute / host-header SSRF advisories
-# (GHSA-xxxx for 1120912, 1120914, 1120917). The patched versions are astro 7.0.2+, a
-# major upgrade that removes legacy content collections and requires migrating
-# src/content/config.ts to src/content.config.ts with collection loaders — a breaking
-# change across the docs site that is out of scope for this PR.
+# (1120912, 1120917; sibling 1120914 no longer fires and was pruned). The patched
+# versions are astro 7.0.2+, a major upgrade that removes legacy content collections
+# and requires migrating src/content/config.ts to src/content.config.ts with
+# collection loaders — a breaking change across the docs site, tracked separately.
 # BLOCKER: @rediacc/www builds with astro output: 'static'; the slot-name XSS,
 # spread-attribute XSS, and prerendered error-page SSRF paths are all SSR/host-header
 # paths that do not exist in a static export. Drop once the site migrates to astro v7.
 1120912
-1120914
 1120917

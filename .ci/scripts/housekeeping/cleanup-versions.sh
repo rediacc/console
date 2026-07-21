@@ -64,16 +64,20 @@ R2_PR_MAX_AGE_DAYS=3
 # Package-manager channel retention (apt/, rpm/, apk/, archlinux/).
 # Each aws s3 sync during release adds new rediacc-cli-<semver>.<ext> without
 # deleting predecessors -- without retention the channel dir grows unbounded.
-# Keep if rank < R2_PACKAGE_KEEP_VERSIONS OR age < R2_PACKAGE_KEEP_DAYS.
+# Retention is top-N by semver ONLY, by design -- see the rationale in Phase 8f
+# (promote-stable re-uploads every file, so LastModified is not a usable age
+# signal on the stable channel). A vestigial R2_PACKAGE_KEEP_DAYS=7 used to sit
+# here, and two comments claimed retention was "rank OR age", but no code path
+# ever read it. Constant and claims removed; the rank-only behaviour they
+# misdescribed is the intended one and is unchanged.
 R2_PACKAGE_KEEP_VERSIONS=20
-R2_PACKAGE_KEEP_DAYS=7
 
 # Phase 10: Workflow runs. Keep N newest per workflow -- a global top-N
-# would starve rarely-fired workflows like Release while letting the
-# Claude Code workflow (fires on every comment) eat the quota.
+# would starve rarely-fired workflows like Release while letting high-frequency
+# ones (Console CI fires on every push and PR synchronize) eat the quota.
 GH_RUNS_KEEP_PER_WORKFLOW=100
 GH_RUNS_RETENTION_DAYS=30
-# Bound cost per invocation: ~25 workflows * 10 pages * 100 runs = 25k candidates
+# Bound cost per invocation: ~20 workflows * 10 pages * 100 runs = 20k candidates
 # max. At the 5000 req/h REST bucket, DELETEs for ~2500 eligible runs eat half
 # the budget; everything else in the housekeeping job is order-of-magnitude
 # cheaper so this cap is comfortable.
@@ -1257,7 +1261,8 @@ cleanup_r2() {
     #   apk/<channel>/     -> rediacc-cli-<ver>.apk
     #   archlinux/<ch>/    -> rediacc-cli-<ver>-<arch>.pkg.tar.zst
     #   npm/<channel>/     -> rediacc-cli-<ver>.tgz
-    # Retention: keep if rank < R2_PACKAGE_KEEP_VERSIONS OR age < KEEP_DAYS.
+    # Retention: keep the top R2_PACKAGE_KEEP_VERSIONS semvers. Rank only;
+    # the "no age grace" rationale is three lines below.
     # Special case: rediacc-cli-0.0.0-dev-* are PR CI pollution from
     # before the version-injection fix; always delete.
     # Metadata (Packages.gz, Release*, InRelease, APKINDEX.tar.gz, repodata/,
@@ -1485,7 +1490,7 @@ cleanup_stale_branches() {
 # PHASE 10: WORKFLOW RUNS
 # Per-workflow retention: keep_per_workflow newest OR within retention window.
 # Iterates each active workflow so that rarely-fired workflows (Release) are
-# not starved by chatty ones (Claude Code).
+# not starved by high-frequency ones (Console CI).
 # =============================================================================
 
 cleanup_workflow_runs() {

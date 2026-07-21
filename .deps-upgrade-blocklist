@@ -19,7 +19,7 @@
 @eslint/js  # BLOCKER: v10.x requires eslint v10; typescript-eslint/import/react plugins lack v10 peer dep support
 
 # Astro/React integration
-@astrojs/react  # BLOCKER: 5.0.3 won't install; npm workspace lock + electron-builder conflict prevents clean install
+@astrojs/react  # BLOCKER: 6.x is a major on the Astro integration stack while astro itself is deliberately held on the 5 line (see the astro entry below); move it with that migration, not standalone. Only the major is blocked — in-range 5.0.x patches still upgrade normally.
 @astrojs/mdx  # BLOCKER: v5.x requires astro@^6.0.0; we are on astro 5.x and astro v6 migration is not scheduled
 astro  # BLOCKER: www is built on the astro 5 line; v6/v7 are breaking majors covering the whole site build — same unscheduled-migration hold as @astrojs/mdx, take them together as a dedicated project
 

@@ -121,7 +121,12 @@ if [[ "$DO_D1" == "true" ]]; then
         exit 1
     fi
 
-    mapfile -t tables < <(echo "$tables_json" | jq -r '.result[0].results[].name')
+    # Portable read loop, not `mapfile`: same bash-4-only builtin the CI gate
+    # bans elsewhere in the repo (the ubuntu-slim shell lacks it).
+    tables=()
+    while IFS= read -r _t; do
+        [[ -n "$_t" ]] && tables+=("$_t")
+    done < <(echo "$tables_json" | jq -r '.result[0].results[].name')
     if [[ ${#tables[@]} -eq 0 ]]; then
         log_info "No user tables to drop"
     else

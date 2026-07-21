@@ -48,19 +48,19 @@ jobs:
     outputs:
       artifact_name: renet-binaries-${{ github.sha }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 'stable'
           cache: true
@@ -69,7 +69,7 @@ jobs:
       # QEMU lets the Docker builder image's arm64 stages run on this amd64
       # runner (arm64 CRIU comes from a Debian .deb, so this is package
       # extraction under emulation, not a slow source compile).
-      - uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
+      - uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
 
       - name: Install clang for BPF compilation
         # `apt-get update` is mandatory before install: the Azure runner image
@@ -102,6 +102,14 @@ jobs:
             --version "${{ inputs.next_version }}" \
             --output ./private/bin
 
+      # The step above states "OTLP credentials are NOT baked at build time any
+      # more". Nothing verified it: check:ci-no-otlp-creds was in `npm run ci`
+      # and in no workflow, and it is the ONE gate that needs built binaries, so
+      # it could never have lived in a quality job. Here it inspects the real
+      # release binaries, which is the only place the claim is falsifiable.
+      - name: Assert no OTLP credentials baked into the built binaries
+        run: .ci/scripts/quality/check-no-otlp-creds.sh
+
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: renet-binaries-${{ github.sha }}
@@ -131,7 +139,7 @@ jobs:
     outputs:
       artifact_name: renet-binaries-${{ github.sha }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -142,19 +150,19 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
 
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
 
       - name: Login to GHCR
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -191,7 +199,7 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -214,7 +222,7 @@ jobs:
           git config --global url."https://x-access-token:${GH_APP_TOKEN}@github.com/".insteadOf "https://github.com/"
           git submodule update --init --depth=1 private/renet
 
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 'stable'
           cache: true

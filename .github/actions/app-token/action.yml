@@ -12,10 +12,26 @@ inputs:
     required: true
   preset:
     description: >
-      Permission preset: readonly (contents:read), ci (contents:write +
-      pull_requests:read + actions:write), cd (contents:write +
-      pull_requests:write + actions:write), housekeeping (contents:write +
-      packages:write + actions:write + deployments:write)
+      Permission preset. Pick the NARROWEST one that works — these tokens are
+      minted in PR-triggered jobs whose code comes from the PR itself, and the
+      app holds an `always` bypass on the main-branch ruleset, so a write-scoped
+      token in a PR job is a branch-protection bypass in PR-controlled hands.
+
+        readonly     contents:read
+                     Checkout-only jobs. Fetching private submodules needs
+                     nothing more than this. THIS IS THE DEFAULT AND THE RIGHT
+                     ANSWER FOR ALMOST EVERY CI JOB.
+        pr-read      contents:read + pull_requests:read
+                     Jobs that read PR metadata (gh pr list/view, review
+                     threads, comments) but never write it back.
+        push         contents:write
+                     Jobs that genuinely push commits/branches. Currently only
+                     ci-quality.yml's `quality-branch` (auto-rebase via
+                     .ci/scripts/quality/check-branch.sh).
+        cd           contents:write + pull_requests:write + actions:write
+                     Release/deploy paths (push-to-main, workflow_dispatch).
+        housekeeping contents:write + packages:write + actions:write +
+                     deployments:write
     required: false
     default: readonly
   repositories:
@@ -42,11 +58,17 @@ runs:
           readonly)
             echo "perm-contents=read" >> "$GITHUB_OUTPUT"
             ;;
-          ci)
-            echo "perm-contents=write" >> "$GITHUB_OUTPUT"
+          pr-read)
+            echo "perm-contents=read" >> "$GITHUB_OUTPUT"
             echo "perm-pull-requests=read" >> "$GITHUB_OUTPUT"
-            echo "perm-actions=write" >> "$GITHUB_OUTPUT"
             ;;
+          push)
+            echo "perm-contents=write" >> "$GITHUB_OUTPUT"
+            ;;
+          # NOTE: the old `ci` preset (contents:write + pull_requests:read +
+          # actions:write) was deleted, not merely unused. It was the catch-all
+          # on PR-triggered jobs, and this App bypasses the main-branch ruleset.
+          # `preset: ci` now fails loudly here rather than silently over-scoping.
           cd)
             echo "perm-contents=write" >> "$GITHUB_OUTPUT"
             echo "perm-pull-requests=write" >> "$GITHUB_OUTPUT"
@@ -66,7 +88,7 @@ runs:
 
     - name: Generate token
       id: token
-      uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3  # v3.1.1
+      uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
       with:
         client-id: ${{ inputs.client-id }}
         private-key: ${{ inputs.private-key }}

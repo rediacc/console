@@ -32,8 +32,8 @@ Design principles:
 
 This is no longer a target. It is a transcript of the shipped tree, generated from
 `packages/cli/scripts/command-tree.json` and checked in BOTH directions: every leaf below
-exists in the CLI, and every leaf in the CLI appears below. **164 contract commands**
-(93 machine-plane, 51 config-plane, 20 other; 82 proxyCapable). `run` is hidden and held
+exists in the CLI, and every leaf in the CLI appears below. **166 contract commands**
+(93 machine-plane, 53 config-plane, 20 other; 82 proxyCapable). `run` is hidden and held
 out of the contract.
 
 ```
@@ -56,7 +56,7 @@ rdc repo:       create up down status list delete fork push pull migrate promote
                 canary {create status weight remove}
 rdc cluster:    create scale join evict destroy status kubeconfig snapshot {create list}
                 fork migrate rehearse
-rdc backup:     strategy {set remove list show}  schedule  run  status  cancel  list  restore
+rdc backup:     strategy {set remove list show bind unbind}  schedule  run  status  cancel  list  restore
 rdc storage:    add remove list import browse prune
 rdc term:       connect
 rdc vscode:     connect list cleanup check serve {status stop}
@@ -68,7 +68,8 @@ rdc doctor | credits | update | serve | mcp serve | run (hidden)
 
 ### 1.1 Where the shipped tree differs from the tree this section used to draw
 
-Five differences. Each is deliberate and each is traceable to a ruling; none is drift.
+Six differences. The first five are deliberate and each is traceable to a ruling. The
+sixth IS drift, and is recorded as such: it is what this gate exists to catch.
 
 | Was drawn as | Shipped as | Why |
 |---|---|---|
@@ -77,6 +78,7 @@ Five differences. Each is deliberate and each is traceable to a ruling; none is 
 | `repo replicate {status remove}` | `repo replicate <ref>` (actionable parent) + `{status remove refresh}` | `refresh` was a CONDITIONAL in the table below: delete it if it only reconciles, keep it if it forces a re-fork. It forces a re-fork, so it stays, and its help says so. The parent keeps its bare create form (spec §5.4), which makes it an actionable parent — that is load-bearing, see §7's Commander note. |
 | `cluster snapshot` | `cluster snapshot {create list}` | R2-F13 landed it as a group, matching `datastore snapshot`. |
 | `machine query` | `machine status` | §5.2. Recorded here because the `--fix` map in `scripts/check-cli-docs.ts` had the rename pointing the WRONG WAY and would have rewritten correct docs into broken ones. |
+| `backup strategy {set remove list show}` | `backup strategy {set remove list show bind unbind}` | `bind`/`unbind` landed with the backup-strategy binding work in #524 and this transcript was not updated with them. Caught only when `check:ci-design-tree` was run locally: that gate is in `npm run ci` but no workflow invokes it, so main merged the drift green. |
 
 Four families were built by operator commits AFTER this tree was drawn. They exist in the
 live CLI today, so P4 recontracts them; it does not invent them. **All four were ruled on
