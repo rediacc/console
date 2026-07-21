@@ -119,7 +119,14 @@ if [[ "$SKIP_EMBED" != "true" ]]; then
             log_error "embed lockfile not found: $_lockfile"
             exit 1
         }
-        mapfile -t _native_assets < <(jq -r '
+        # Read into the array with a while-loop, NOT mapfile: macOS ships bash 3.2
+        # (GPLv3), mapfile/readarray needs 4.0+, and .ci/scripts/security/shellcheck.sh
+        # gates build scripts for exactly this.
+        _native_assets=()
+        while IFS= read -r _line; do
+            [ -n "$_line" ] || continue
+            _native_assets+=("$_line")
+        done < <(jq -r '
             .components
             | to_entries[]
             | .value as $c
