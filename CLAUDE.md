@@ -66,10 +66,14 @@ them silently is the failure this rule exists to prevent.
   Read it at session start; append on discovery, tick on completion.
 - **The worklist is shared, so ADD with `>>` and never rewrite the whole file.** A
   second session may be running in this worktree. Two read-modify-writes lose the
-  loser's items silently. Append single lines, tag them `(<session-id-prefix>)` so
-  another session can tell whose they are, and re-read immediately before ticking.
-  If an open item is not yours and not part of your task, leave it: being blocked by
-  it is the point, but doing it blind risks duplicating another session's work.
+  loser's items silently. Append single lines and re-read immediately before ticking.
+- **Tag every item `(<session-id-prefix>)`. The tag is load-bearing, not a label.**
+  The hook blocks only on items tagged with YOUR session (an untagged item counts as
+  yours, so forgetting the tag is safe but claims it). Other sessions' open items are
+  REPORTED to the operator, never blocked on. Without ownership a second session
+  deadlocks: it cannot do those items without racing live work in the same tree, and
+  it must not tick or delete another session's tracking. Never tick or remove an item
+  that is not yours.
 - **Defer as a QUESTION, not a note.** Three states, and only three: `- [ ]` open,
   `- [x]` done, `- [?]` needs an operator decision. A `- [?]` goes to AskUserQuestion,
   and the hook prints every one of them back to the operator on stop, so a deferral

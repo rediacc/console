@@ -49,8 +49,18 @@ import re
 import sys
 
 MAX_BLOCKS = 25
-OPEN = re.compile(r"^\s*-\s*\[ \]")
-DEFERRED = re.compile(r"^\s*-\s*\[\?\]")
+# `- [ ] (5546d4bb) do the thing`  ->  state " ", owner "5546d4bb"
+ITEM = re.compile(r"^\s*-\s*\[(?P<state>[ x?])\]\s*(?:\((?P<owner>[0-9a-fA-F][0-9a-fA-F-]*)\)\s*)?")
+
+
+def owned_by_me(owner, session_id):
+    """An UNTAGGED item is mine: that is the safe default, since the cost of
+    wrongly claiming one is doing a little extra work, while the cost of wrongly
+    disowning one is silently dropping it. A tag is a PREFIX of the session id
+    (CLAUDE.md asks for a short prefix, not the whole uuid)."""
+    if owner is None:
+        return True
+    return bool(session_id) and session_id.startswith(owner)
 
 
 def project_root(start):
@@ -90,20 +100,48 @@ def main():
     )
     counter = worklist.with_suffix(".blocks")
 
+    session_id = event.get("session_id", "")
     lines = worklist.read_text().splitlines() if worklist.exists() else []
-    open_items = [line.strip() for line in lines if OPEN.match(line)]
-    deferred = [line.strip() for line in lines if DEFERRED.match(line)]
+
+    open_items, others, deferred = [], {}, []
+    for line in lines:
+        m = ITEM.match(line)
+        if not m:
+            continue
+        state, owner = m.group("state"), m.group("owner")
+        mine = owned_by_me(owner, session_id)
+        if state == " ":
+            if mine:
+                open_items.append(line.strip())
+            else:
+                others.setdefault(owner, []).append(line.strip())
+        elif state == "?" and mine:
+            deferred.append(line.strip())
+
+    def other_sessions_note():
+        if not others:
+            return ""
+        return "\n".join(
+            "  %d open item(s) owned by session %s" % (len(v), k) for k, v in sorted(others.items())
+        )
 
     if not open_items:
         counter.unlink(missing_ok=True)
+        parts = []
         if deferred:
             # The operator sees these even if my summary buries them.
-            emit(
-                {
-                    "systemMessage": "Worklist: %d item(s) deferred rather than done:\n%s"
-                    % (len(deferred), "\n".join("  " + d for d in deferred))
-                }
+            parts.append(
+                "Worklist: %d item(s) deferred rather than done:\n%s"
+                % (len(deferred), "\n".join("  " + d for d in deferred))
             )
+        if others:
+            # Reported, never blocked on. Blocking one session on another's
+            # items deadlocks it: it cannot do them without racing live work in
+            # the same tree, and it must not tick or delete someone else's
+            # tracking. Surfacing beats blocking.
+            parts.append("Worklist: nothing open for this session.\n" + other_sessions_note())
+        if parts:
+            emit({"systemMessage": "\n\n".join(parts)})
         return
 
     count = int(counter.read_text()) if counter.exists() else 0
@@ -125,8 +163,16 @@ def main():
             # the outside: the operator saw a long turn and no explanation of
             # why it kept going. A supervisor nobody can see supervising is
             # indistinguishable from one that is not running.
-            "systemMessage": "Stop hook: %d item(s) still open, continuing (block %d/%d). %s"
-            % (len(open_items), count + 1, MAX_BLOCKS, open_items[0][:70]),
+            "systemMessage": "Stop hook: %d item(s) still open, continuing (block %d/%d). %s%s"
+            % (
+                len(open_items),
+                count + 1,
+                MAX_BLOCKS,
+                open_items[0][:70],
+                ("  [+%d owned by other sessions]" % sum(len(v) for v in others.values()))
+                if others
+                else "",
+            ),
             "decision": "block",
             "reason": "Do not stop yet: %d open item(s) on the session worklist (%s).\n\n%s\n\n"
             "Pick the next open item and do it. Tick with '- [x]' as they land and append what you discover.\n"
