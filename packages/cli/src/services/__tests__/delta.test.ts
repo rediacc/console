@@ -67,9 +67,9 @@ function server(target: Uint8Array) {
     get fetched() {
       return fetched;
     },
-    fetchRange: async (start: number, end: number) => {
+    fetchRange: (start: number, end: number): Promise<Uint8Array> => {
       fetched += end - start;
-      return target.subarray(start, end);
+      return Promise.resolve(target.subarray(start, end));
     },
   };
 }
@@ -166,7 +166,9 @@ describe('delta updates', () => {
     const sources = matchBlocks(index, oldBin);
 
     await expect(
-      reconstruct(index, oldBin, sources, async (start, end) => newBin.subarray(start, end - 1))
+      reconstruct(index, oldBin, sources, (start, end) =>
+        Promise.resolve(newBin.subarray(start, end - 1))
+      )
     ).rejects.toThrow(/expected/);
   });
 

@@ -41,14 +41,27 @@ export const BLOCK_SIZE = 64 * 1024;
 /** Modulus for the rolling checksum halves (rsync uses 2^16). */
 const M = 65536;
 
+/** Layout version of the published index. Bumped only on a breaking change. */
+export const DELTA_FORMAT_VERSION = 1;
+
+/** Per block, in order: [weak rolling checksum, strong hash prefix (hex)]. */
+export type DeltaBlock = [number, string];
+
 export interface DeltaIndex {
-  formatVersion: 1;
+  /**
+   * Layout version. Deliberately typed `number` rather than the literal: an
+   * index reaches a client by being parsed from the network, so its value is
+   * whatever the server sent. Typing it as the literal would make the client's
+   * version check look like a tautology to the compiler and invite deleting the
+   * one guard that keeps a future format out of an old client.
+   */
+  formatVersion: number;
   blockSize: number;
   totalSize: number;
   /** sha256 of the complete target file, for the caller's final verification. */
   sha256: string;
   /** Per block, in order: [weak rolling checksum, strong hash prefix (hex)]. */
-  blocks: Array<[number, string]>;
+  blocks: DeltaBlock[];
 }
 
 /** Strong hash of a block: a sha256 prefix. Weak+strong collisions are then
@@ -74,13 +87,13 @@ export function weakChecksum(buf: Uint8Array, start: number, end: number): numbe
  */
 export async function buildIndex(filePath: string): Promise<DeltaIndex> {
   const data = await fs.readFile(filePath);
-  const blocks: Array<[number, string]> = [];
+  const blocks: DeltaBlock[] = [];
   for (let off = 0; off < data.length; off += BLOCK_SIZE) {
     const end = Math.min(off + BLOCK_SIZE, data.length);
     blocks.push([weakChecksum(data, off, end), strongHash(data.subarray(off, end))]);
   }
   return {
-    formatVersion: 1,
+    formatVersion: DELTA_FORMAT_VERSION,
     blockSize: BLOCK_SIZE,
     totalSize: data.length,
     sha256: createHash('sha256').update(data).digest('hex'),
@@ -90,6 +103,277 @@ export async function buildIndex(filePath: string): Promise<DeltaIndex> {
 
 /** Where a given target block's bytes can be taken from. */
 type BlockSource = { kind: 'local'; offset: number } | { kind: 'remote' };
+
+/**
+ * State shared by the steps of one matchBlocks run.
+ *
+ * It exists so the scan can be split into named steps without threading a dozen
+ * positional arguments through each of them. Nothing here is read per byte
+ * offset: the rolling loop lifts what it needs into locals first, because a
+ * property load repeated ~600 million times is not free.
+ */
+interface ScanContext {
+  local: Uint8Array;
+  blocks: DeltaBlock[];
+  sources: BlockSource[];
+  blockSize: number;
+  totalSize: number;
+  /**
+   * weak checksum -> UNRESOLVED target block indices sharing it. Entries are
+   * pruned as blocks resolve — that pruning is load-bearing, see pruneResolved.
+   */
+  byWeak: Map<number, number[]>;
+  /**
+   * Fast reject table over the LOW half of the weak checksum (which is a % M).
+   *
+   * This is load-bearing for performance, not a micro-optimisation. The scan
+   * visits every byte offset of the local binary — ~600 million of them for a
+   * release-sized file — and a Map lookup at each one does not finish in any
+   * reasonable time (measured: still running after 10 minutes). A single typed
+   * array read rejects virtually every offset before the Map is ever consulted.
+   */
+  seen: Uint8Array;
+  /**
+   * How many live byWeak entries share each low half, so `seen` can be cleared
+   * as entries are pruned and a repeated-content run stops paying even the Map
+   * lookup once its blocks are resolved.
+   */
+  lowRefs: Uint32Array;
+  /**
+   * Strong hash of a uniform window (one byte value repeated across the whole
+   * window), keyed by that byte. WHY: a large zero-padded (or any
+   * repeated-byte) region makes every offset inside it produce the same weak
+   * checksum. If that weak collides with an unresolved target block, the naive
+   * path computes a 64KiB sha256 at EVERY offset of the run — millions of
+   * hashes, tens of GB hashed. The memo reduces that to one hash per distinct
+   * byte value.
+   */
+  uniformStrong: Map<number, string>;
+}
+
+/** Index the full-size target blocks by weak checksum, with the reject tables. */
+function buildWeakTables(
+  blocks: DeltaBlock[],
+  fullBlockCount: number
+): Pick<ScanContext, 'byWeak' | 'seen' | 'lowRefs'> {
+  const byWeak = new Map<number, number[]>();
+  const seen = new Uint8Array(M);
+  const lowRefs = new Uint32Array(M);
+  for (let i = 0; i < fullBlockCount; i++) {
+    const w = blocks[i][0];
+    const list = byWeak.get(w);
+    if (list) {
+      list.push(i);
+      continue;
+    }
+    byWeak.set(w, [i]);
+    const low = w % M;
+    seen[low] = 1;
+    lowRefs[low]++;
+  }
+  return { byWeak, seen, lowRefs };
+}
+
+/** A rolling window's two sums, plus its trailing run of identical bytes. */
+interface RollingWindow {
+  a: number;
+  b: number;
+  /**
+   * Length of the run of identical bytes ending at the window's LAST byte. When
+   * it reaches the window length the window is one repeated byte, which is what
+   * makes the uniform-window memos usable (see ScanContext.uniformStrong).
+   */
+  runLen: number;
+}
+
+/**
+ * Compute the window sums from scratch at `start`. Needed at the top of a scan
+ * and after each block-sized skip, where rolling by one byte is not possible.
+ */
+function primeWindow(local: Uint8Array, start: number, len: number): RollingWindow {
+  let a = 0;
+  let b = 0;
+  for (let i = 0; i < len; i++) {
+    const v = local[start + i];
+    a += v;
+    b += (len - i) * v;
+  }
+  const last = start + len - 1;
+  let runLen = 1;
+  while (runLen < len && local[last - runLen] === local[last]) runLen++;
+  return { a, b, runLen };
+}
+
+/**
+ * Prune resolved blocks out of a candidate list. Without this, a run of
+ * repeated content (every offset hitting the same weak) re-walks a candidate
+ * list of already-resolved duplicates at each of millions of offsets:
+ * O(run length × duplicate count).
+ */
+function pruneResolved(ctx: ScanContext, candidates: number[], weak: number, low: number): void {
+  const rest = candidates.filter((bi) => ctx.sources[bi].kind !== 'local');
+  if (rest.length === 0) {
+    ctx.byWeak.delete(weak);
+    if (--ctx.lowRefs[low] === 0) ctx.seen[low] = 0;
+  } else {
+    ctx.byWeak.set(weak, rest);
+  }
+}
+
+/**
+ * Settle a window that survived the `seen` fast reject: look up its full weak
+ * checksum and, on a hit, confirm the candidates with the strong hash. Returns
+ * how many target blocks this offset newly resolved — usually 0, since the low
+ * half alone is a coarse filter.
+ */
+function confirmAtWindow(
+  ctx: ScanContext,
+  off: number,
+  low: number,
+  b: number,
+  uniform: boolean
+): number {
+  const weak = low + M * (b & (M - 1));
+  const candidates = ctx.byWeak.get(weak);
+  if (!candidates) return 0;
+
+  const { local, blocks, sources, blockSize, uniformStrong } = ctx;
+  let strong = uniform ? uniformStrong.get(local[off]) : undefined;
+  if (strong === undefined) {
+    strong = strongHash(local.subarray(off, off + blockSize));
+    if (uniform) uniformStrong.set(local[off], strong);
+  }
+
+  let hits = 0;
+  for (const bi of candidates) {
+    if (strong === blocks[bi][1]) {
+      sources[bi] = { kind: 'local', offset: off };
+      hits++;
+    }
+  }
+  if (hits > 0) pruneResolved(ctx, candidates, weak, low);
+  return hits;
+}
+
+/**
+ * Roll a blockSize window forward from `start` until it lands on a confirmed
+ * match. Returns that offset and how many blocks it resolved, or `hits: 0` once
+ * the local buffer is exhausted.
+ *
+ * This is the hot loop — it runs once per byte of the local binary — so the
+ * tables it consults are lifted into locals and every offset is rejected by a
+ * single typed-array read before anything more expensive is reached.
+ */
+function rollToNextMatch(ctx: ScanContext, start: number): { off: number; hits: number } {
+  const { local, blockSize, seen } = ctx;
+  const lastOff = local.length - blockSize;
+  let { a, b, runLen } = primeWindow(local, start, blockSize);
+  let off = start;
+  for (;;) {
+    // a and b are the true sums for the window at `off`; both stay
+    // non-negative by construction and well inside the exact-integer range
+    // of a double. M is 2^16, so `& (M - 1)` is `% M` on these values.
+    const low = a & (M - 1);
+    const hits = seen[low] === 0 ? 0 : confirmAtWindow(ctx, off, low, b, runLen >= blockSize);
+    if (hits > 0) return { off, hits };
+    if (off === lastOff) return { off, hits: 0 };
+    // Roll the window forward by one byte.
+    const out = local[off];
+    const inc = local[off + blockSize];
+    a = a - out + inc;
+    b = b - blockSize * out + a;
+    runLen = inc === local[off + blockSize - 1] ? runLen + 1 : 1;
+    off++;
+  }
+}
+
+/**
+ * Rolling scan over the full-size blocks.
+ *
+ * After every confirmed match the next window starts blockSize bytes later —
+ * rsync's skip: those bytes are consumed by the match. Besides skipping
+ * blockSize-1 pointless offsets per match, this is what makes a scan of an
+ * identical file linear in blocks rather than bytes hashed. Windows overlapping
+ * the consumed bytes could in principle match some OTHER block, but rsync
+ * accepts that trade and so do we: unmatched blocks are simply fetched.
+ */
+function scanFullBlocks(ctx: ScanContext, fullBlockCount: number): void {
+  const { local, blockSize } = ctx;
+  let off = 0;
+  let resolved = 0;
+  while (resolved < fullBlockCount && off + blockSize <= local.length) {
+    const hit = rollToNextMatch(ctx, off);
+    if (hit.hits === 0) return;
+    resolved += hit.hits;
+    off = hit.off + blockSize;
+  }
+}
+
+/** Everything the tail scan needs about the one block it is hunting for. */
+interface TailTarget {
+  local: Uint8Array;
+  tailLen: number;
+  weak: number;
+  strong: string;
+  /**
+   * Same repeated-byte guard as the main scan: inside a uniform run every
+   * offset repeats the identical window, so remember per byte value whether
+   * that window already failed the strong check.
+   */
+  uniformMiss: Uint8Array;
+}
+
+/** Does the tail-length window at `off` hold the tail block's exact bytes? */
+function tailHit(t: TailTarget, off: number, a: number, b: number, runLen: number): boolean {
+  if ((a & (M - 1)) + M * (b & (M - 1)) !== t.weak) return false;
+  const { local, tailLen, uniformMiss } = t;
+  const uniform = runLen >= tailLen;
+  if (uniform && uniformMiss[local[off]] !== 0) return false;
+  if (strongHash(local.subarray(off, off + tailLen)) === t.strong) return true;
+  if (uniform) uniformMiss[local[off]] = 1;
+  return false;
+}
+
+/**
+ * The trailing short block. It needs its own scan because a rolling window
+ * of a different length has an unrelated checksum — but the index DOES store
+ * the tail's weak checksum (buildIndex computes it at the tail's length), so
+ * the same weak-first rolling rejection applies here. The first version of
+ * this loop went straight to the strong hash at every offset: a ~60KB sha256
+ * per byte of the local file, ~25 minutes for a 50MB local (measured), which
+ * is what made matchBlocks appear to hang.
+ */
+function matchTailBlock(ctx: ScanContext, fullBlockCount: number): void {
+  const { local, blocks, sources, blockSize, totalSize } = ctx;
+  const tailLen = totalSize - fullBlockCount * blockSize;
+  if (tailLen === 0 || local.length < tailLen) return;
+
+  const ti = blocks.length - 1;
+  const target: TailTarget = {
+    local,
+    tailLen,
+    weak: blocks[ti][0],
+    strong: blocks[ti][1],
+    uniformMiss: new Uint8Array(256),
+  };
+
+  let { a, b, runLen } = primeWindow(local, 0, tailLen);
+  let off = 0;
+  for (;;) {
+    if (tailHit(target, off, a, b, runLen)) {
+      sources[ti] = { kind: 'local', offset: off };
+      return;
+    }
+    off++;
+    if (off + tailLen > local.length) return;
+    // Roll the tail-length window forward by one byte.
+    const out = local[off - 1];
+    const inc = local[off + tailLen - 1];
+    a = a - out + inc;
+    b = b - tailLen * out + a;
+    runLen = inc === local[off + tailLen - 2] ? runLen + 1 : 1;
+  }
+}
 
 /**
  * Find, for each block of the target, an offset in `local` holding those exact
@@ -102,173 +386,19 @@ type BlockSource = { kind: 'local'; offset: number } | { kind: 'remote' };
 export function matchBlocks(index: DeltaIndex, local: Uint8Array): BlockSource[] {
   const { blockSize, blocks, totalSize } = index;
   const fullBlockCount = Math.floor(totalSize / blockSize);
-
-  // weak checksum -> UNRESOLVED target block indices sharing it. Entries are
-  // pruned as blocks resolve — that pruning is load-bearing, see the resolve
-  // path below.
-  const byWeak = new Map<number, number[]>();
-  // Fast reject table over the LOW half of the weak checksum (which is a % M).
-  //
-  // This is load-bearing for performance, not a micro-optimisation. The scan
-  // visits every byte offset of the local binary — ~600 million of them for a
-  // release-sized file — and a Map lookup at each one does not finish in any
-  // reasonable time (measured: still running after 10 minutes). A single typed
-  // array read rejects virtually every offset before the Map is ever consulted.
-  const seen = new Uint8Array(M);
-  // How many live byWeak entries share each low half, so `seen` can be cleared
-  // as entries are pruned and a repeated-content run stops paying even the Map
-  // lookup once its blocks are resolved.
-  const lowRefs = new Uint32Array(M);
-  for (let i = 0; i < fullBlockCount; i++) {
-    const w = blocks[i][0];
-    const list = byWeak.get(w);
-    if (list) list.push(i);
-    else {
-      byWeak.set(w, [i]);
-      const low = w % M;
-      seen[low] = 1;
-      lowRefs[low]++;
-    }
-  }
-
   const sources: BlockSource[] = blocks.map(() => ({ kind: 'remote' }));
-  let resolved = 0;
+  const ctx: ScanContext = {
+    local,
+    blocks,
+    sources,
+    blockSize,
+    totalSize,
+    uniformStrong: new Map<number, string>(),
+    ...buildWeakTables(blocks, fullBlockCount),
+  };
 
-  if (local.length >= blockSize && fullBlockCount > 0) {
-    let a = 0;
-    let b = 0;
-    // Length of the run of identical bytes ending at the window's LAST byte.
-    // When runLen >= blockSize the window is one repeated byte, and its strong
-    // hash can be memoised per byte value. WHY: a large zero-padded (or any
-    // repeated-byte) region makes every offset inside it produce the same weak
-    // checksum. If that weak collides with an unresolved target block, the
-    // naive path computes a 64KiB sha256 at EVERY offset of the run — millions
-    // of hashes, tens of GB hashed. The memo reduces that to one hash per
-    // distinct byte value.
-    let runLen = 0;
-    const uniformStrong = new Map<number, string>();
-
-    // (Re)compute the window sums from scratch at `start`. Needed at the top
-    // and after each block-sized skip, where rolling by one is not possible.
-    const prime = (start: number): void => {
-      a = 0;
-      b = 0;
-      for (let i = 0; i < blockSize; i++) {
-        const v = local[start + i];
-        a += v;
-        b += (blockSize - i) * v;
-      }
-      const last = start + blockSize - 1;
-      runLen = 1;
-      while (runLen < blockSize && local[last - runLen] === local[last]) runLen++;
-    };
-    prime(0);
-
-    let off = 0;
-    while (off + blockSize <= local.length) {
-      // a and b are the true sums for the window at `off`; both stay
-      // non-negative by construction and well inside the exact-integer range
-      // of a double. M is 2^16, so `& (M - 1)` is `% M` on these values.
-      const low = a & (M - 1);
-      let matched = false;
-      if (seen[low] !== 0) {
-        const weak = low + M * (b & (M - 1));
-        const candidates = byWeak.get(weak);
-        if (candidates) {
-          let strong: string | null =
-            runLen >= blockSize ? (uniformStrong.get(local[off]) ?? null) : null;
-          for (const bi of candidates) {
-            strong ??= strongHash(local.subarray(off, off + blockSize));
-            if (strong === blocks[bi][1]) {
-              sources[bi] = { kind: 'local', offset: off };
-              resolved++;
-              matched = true;
-            }
-          }
-          if (strong !== null && runLen >= blockSize) uniformStrong.set(local[off], strong);
-          if (matched) {
-            // Prune resolved blocks out of the candidate list. Without this, a
-            // run of repeated content (every offset hitting the same weak)
-            // re-walks a candidate list of already-resolved duplicates at each
-            // of millions of offsets: O(run length × duplicate count).
-            const rest = candidates.filter((bi) => sources[bi].kind !== 'local');
-            if (rest.length === 0) {
-              byWeak.delete(weak);
-              if (--lowRefs[low] === 0) seen[low] = 0;
-            } else {
-              byWeak.set(weak, rest);
-            }
-          }
-        }
-      }
-      if (resolved === fullBlockCount) break;
-
-      if (matched) {
-        // rsync's skip: these blockSize bytes are consumed by a confirmed
-        // match, so the next window starts after them. Besides skipping
-        // blockSize-1 pointless offsets per match, this is what makes a scan
-        // of an identical file linear in blocks rather than bytes hashed.
-        // Windows overlapping the consumed bytes could in principle match some
-        // OTHER block, but rsync accepts that trade and so do we: unmatched
-        // blocks are simply fetched.
-        off += blockSize;
-        if (off + blockSize <= local.length) prime(off);
-        continue;
-      }
-      if (off + 1 + blockSize > local.length) break;
-      // Roll the window forward by one byte.
-      const out = local[off];
-      const inc = local[off + blockSize];
-      a = a - out + inc;
-      b = b - blockSize * out + a;
-      runLen = inc === local[off + blockSize - 1] ? runLen + 1 : 1;
-      off++;
-    }
-  }
-
-  // The trailing short block. It needs its own scan because a rolling window
-  // of a different length has an unrelated checksum — but the index DOES store
-  // the tail's weak checksum (buildIndex computes it at the tail's length), so
-  // the same weak-first rolling rejection applies here. The first version of
-  // this loop went straight to the strong hash at every offset: a ~60KB sha256
-  // per byte of the local file, ~25 minutes for a 50MB local (measured), which
-  // is what made matchBlocks appear to hang.
-  const tailLen = totalSize - fullBlockCount * blockSize;
-  if (tailLen > 0 && local.length >= tailLen) {
-    const ti = blocks.length - 1;
-    const wantWeak = blocks[ti][0];
-    const wantStrong = blocks[ti][1];
-    let a = 0;
-    let b = 0;
-    for (let i = 0; i < tailLen; i++) {
-      a += local[i];
-      b += (tailLen - i) * local[i];
-    }
-    // Same repeated-byte guard as the main scan: inside a uniform run every
-    // offset repeats the identical window, so remember per byte value whether
-    // that window already failed the strong check.
-    let runLen = 1;
-    while (runLen < tailLen && local[tailLen - 1 - runLen] === local[tailLen - 1]) runLen++;
-    const uniformMiss = new Uint8Array(256);
-
-    for (let off = 0; off + tailLen <= local.length; off++) {
-      if (off > 0) {
-        const out = local[off - 1];
-        const inc = local[off + tailLen - 1];
-        a = a - out + inc;
-        b = b - tailLen * out + a;
-        runLen = inc === local[off + tailLen - 2] ? runLen + 1 : 1;
-      }
-      if ((a & (M - 1)) + M * (b & (M - 1)) !== wantWeak) continue;
-      const uniform = runLen >= tailLen;
-      if (uniform && uniformMiss[local[off]] !== 0) continue;
-      if (strongHash(local.subarray(off, off + tailLen)) === wantStrong) {
-        sources[ti] = { kind: 'local', offset: off };
-        break;
-      }
-      if (uniform) uniformMiss[local[off]] = 1;
-    }
-  }
+  scanFullBlocks(ctx, fullBlockCount);
+  matchTailBlock(ctx, fullBlockCount);
 
   return sources;
 }

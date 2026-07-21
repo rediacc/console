@@ -18,7 +18,14 @@ import {
 import { VERSION } from '../../version.js';
 import { loadServerConfig } from '../account/subscription-auth.js';
 import { telemetryService } from '../telemetry/telemetry.js';
-import { type DeltaIndex, bytesToFetch, matchBlocks, reconstruct, remoteRanges } from './delta.js';
+import {
+  DELTA_FORMAT_VERSION,
+  type DeltaIndex,
+  bytesToFetch,
+  matchBlocks,
+  reconstruct,
+  remoteRanges,
+} from './delta.js';
 import { getStagedBinaryPath, readUpdateState, writeUpdateState } from './update-state.js';
 
 const DEFAULT_MANIFEST_BASE_URL = 'https://releases.rediacc.com/cli';
@@ -318,7 +325,11 @@ async function tryDeltaDownload(
 ): Promise<boolean> {
   try {
     const index = await fetchJson<DeltaIndex>(getDeltaIndexUrl(binaryUrl), CHECK_TIMEOUT_MS);
-    if (index.formatVersion !== 1 || !Array.isArray(index.blocks) || index.blocks.length === 0) {
+    if (
+      index.formatVersion !== DELTA_FORMAT_VERSION ||
+      !Array.isArray(index.blocks) ||
+      index.blocks.length === 0
+    ) {
       return false;
     }
 
