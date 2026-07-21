@@ -239,41 +239,33 @@ test_binary_download() {
     local url
     url="$(get_binary_url "$platform" "$arch" "$VERSION")"
 
-    local test_script
+    # Stall-aware download flags shared by every platform. The SEA binaries are
+    # ~800 MB (they embed renet + the k8s stack for both arches), so a legitimate
+    # download takes minutes — we must NOT abort a slow-but-progressing transfer.
+    # --speed-limit/--speed-time abort ONLY on a true stall (<1 KB/s for 30s);
+    # --max-time is a 25-min safety cap under the job budget; --retry recovers a
+    # transient drop or stall. (An earlier Invoke-WebRequest -TimeoutSec attempt
+    # was useless: PowerShell 5.1 does not bound an -OutFile body transfer, so a
+    # stalled Windows download hung the entire 15-min job budget.)
+    local -a dl_flags=(-fsSL --connect-timeout 30 --speed-limit 1024 --speed-time 30
+        --max-time 1500 --retry 3 --retry-delay 5 --retry-connrefused)
+
     if [[ "$platform" == "win" ]]; then
-        # Windows test requires PowerShell - only available on Windows
         if [[ "$DRY_RUN" == "true" ]]; then
             log_info "[DRY-RUN] Would download and test Windows binary"
             return 0
         fi
 
-        # Check if we're on Windows (where powershell.exe is available)
-        # Return special exit code 77 to indicate "skip" (convention from GNU Automake)
+        # Return exit code 77 ("skip", GNU Automake convention) when we're not
+        # actually on Windows (no powershell.exe to run the .exe).
         if ! command -v powershell.exe &>/dev/null; then
             return 77
         fi
 
-        # Bound each download attempt (-TimeoutSec) and retry, so a stalled
-        # connection fails fast and retries instead of hanging until the job's
-        # timeout-minutes kills it (observed: a mid-stream stall ate the full
-        # 15-min Windows budget while every sibling arch downloaded fine).
-        test_script="
-            \$ErrorActionPreference = 'Stop'
-            \$attempt = 0
-            while (\$true) {
-                \$attempt++
-                try {
-                    Invoke-WebRequest -Uri '$url' -OutFile '$binary_name' -TimeoutSec 180
-                    break
-                } catch {
-                    if (\$attempt -ge 3) { throw }
-                    Write-Host \"Download attempt \$attempt failed: \$(\$_.Exception.Message) - retrying in 10s...\"
-                    Start-Sleep -Seconds 10
-                }
-            }
-            .\\$binary_name --version
-        "
-        powershell.exe -Command "$test_script"
+        # Download with curl (Git-bash on the Windows runner ships it) for real
+        # stall detection, then run the .exe through PowerShell to validate it.
+        curl "${dl_flags[@]}" "$url" -o "$binary_name"
+        powershell.exe -Command ".\\$binary_name --version"
     else
         # Linux/macOS test
         if [[ "$DRY_RUN" == "true" ]]; then
@@ -285,10 +277,7 @@ test_binary_download() {
         mkdir -p "$download_dir"
         cd "$download_dir"
 
-        # Bounded + retried for the same reason as the Windows path above: a
-        # stalled transfer must fail the attempt (not hang), then retry.
-        curl -fsSL --connect-timeout 30 --max-time 300 --retry 3 --retry-delay 5 \
-            --retry-connrefused "$url" -o "$binary_name"
+        curl "${dl_flags[@]}" "$url" -o "$binary_name"
         chmod +x "$binary_name"
         local output
         output=$("./$binary_name" --version 2>&1 || true)
@@ -403,8 +392,10 @@ test_channel_verify() {
     local url
     url="$(get_binary_url "linux" "x64" "$VERSION")"
     local binary="/tmp/rdc-verify-$$"
-    curl -fsSL --connect-timeout 30 --max-time 300 --retry 3 --retry-delay 5 \
-        --retry-connrefused "$url" -o "$binary" || {
+    # Stall-aware (see dl_flags note in test_binary_download): abort only on a
+    # true stall, not on a slow-but-progressing ~800 MB transfer.
+    curl -fsSL --connect-timeout 30 --speed-limit 1024 --speed-time 30 \
+        --max-time 1500 --retry 3 --retry-delay 5 --retry-connrefused "$url" -o "$binary" || {
         log_error "Failed to download binary from $url"
         return 1
     }

@@ -172,7 +172,9 @@ jobs:
   test-windows-x64:
     name: Windows (x64)
     runs-on: windows-latest
-    timeout-minutes: 15
+    # 30 min (was 15) to match macOS/Linux: the SEA binary is ~800 MB, and 15 min
+    # was too tight to download it on the Windows runner (job hit the cap mid-download).
+    timeout-minutes: 30
     env:
       REPO_CHANNEL: ${{ inputs.repo_channel }}
     steps:
@@ -190,7 +192,8 @@ jobs:
   test-windows-arm64:
     name: Windows (arm64)
     runs-on: windows-11-arm
-    timeout-minutes: 15
+    # 30 min (was 15): same ~800 MB SEA-binary download as Windows x64.
+    timeout-minutes: 30
     env:
       REPO_CHANNEL: ${{ inputs.repo_channel }}
     steps:
